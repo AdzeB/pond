@@ -1,13 +1,13 @@
 import { extname } from "node:path";
 import type { SaveFile } from "@pond/schema/db";
-import { walkCaptureMedia } from "@pond/schema/raw";
+import { type RawJson, walkCaptureMedia } from "@pond/schema/raw";
 import log from "electron-log/main.js";
 import { fetchMediaBatch } from "../../../lib/blob";
 import { probeImageDims, processImage } from "../../../lib/image-process";
 import { persistSave } from "../../persist-save";
 import { getImageDownloadPrefs } from "../../prefs";
 import { TransientError } from "../extractors/errors";
-import { readSave } from "./apply";
+import { readSave, type WriteFileArgs } from "./apply";
 import { fetchSourceIcon } from "./source-icon";
 
 export async function runFetchBlobs(saveId: string): Promise<void> {
@@ -44,7 +44,9 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
     : null;
 
   const results = await fetchMediaBatch(missing, { imageMaxBytes });
-  const fetched = results.filter((r) => r.file);
+  const fetched = results.flatMap((r) =>
+    r.file ? [{ url: r.url, file: r.file }] : [],
+  );
   const transientMisses = results.filter((r) => r.miss === "transient").length;
 
   if (fetched.length === 0) {
@@ -63,7 +65,7 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
 
   const newFiles = await Promise.all(
     fetched.map(async (entry) => {
-      const tx = entry.file as NonNullable<typeof entry.file>;
+      const tx = entry.file;
       const kind: SaveFile["kind"] = tx.filename.startsWith("video")
         ? "video"
         : tx.filename.startsWith("cover")
@@ -90,14 +92,18 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
         }
         dims ??= await probeImageDims(bytes);
       }
-      return {
+      const write: WriteFileArgs = {
         kind,
         filename,
         bytes,
         sourceUrl: entry.url,
-        ...(mimeType ? { mimeType } : {}),
-        ...(dims ?? {}),
       };
+      if (mimeType) write.mimeType = mimeType;
+      if (dims) {
+        write.width = dims.width;
+        write.height = dims.height;
+      }
+      return write;
     }),
   );
 
@@ -121,14 +127,10 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
   }
 }
 
-function collectMediaUrls(rawJson: unknown): string[] {
-  if (!rawJson || typeof rawJson !== "object") return [];
-  const capture = (
-    rawJson as { capture?: Parameters<typeof walkCaptureMedia>[0] }
-  ).capture;
+function collectMediaUrls(rawJson: RawJson | null): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
-  for (const m of walkCaptureMedia(capture)) {
+  for (const m of walkCaptureMedia(rawJson?.capture)) {
     if (m.type === "video" && !hasDirectVideoExtension(m.url)) continue;
     if (seen.has(m.url)) continue;
     seen.add(m.url);
@@ -161,7 +163,7 @@ function missingMediaUrls(
   const mapped = new Set(
     mediaFiles
       .map((f) => f.sourceUrl)
-      .filter((u): u is string => typeof u === "string" && u.length > 0),
+      .filter((u): u is string => u != null && u.length > 0),
   );
   if (mapped.size > 0) {
     return urls.filter((u) => !mapped.has(u));

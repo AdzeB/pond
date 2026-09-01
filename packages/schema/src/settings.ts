@@ -36,16 +36,16 @@ export const SETTINGS_GROUP_ORDER: readonly SettingsGroup[] = [
   "capture",
 ];
 
-export const SETTINGS_GROUP_LABELS: Record<SettingsGroup, string> = {
+export const SETTINGS_GROUP_LABELS = {
   general: "General",
   library: "Library",
   capture: "Capture",
-};
+} satisfies Record<SettingsGroup, string>;
 
-export const SETTINGS_SECTION_ALIASES: Readonly<Record<string, string>> = {
+export const SETTINGS_SECTION_ALIASES = {
   downloads: "videos",
   ai: "enrichment",
   "ai-models": "enrichment",
   "ai-providers": "enrichment",
   skills: "enrichment",
-};
+} satisfies Readonly<Record<string, string>>;

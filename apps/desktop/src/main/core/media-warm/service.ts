@@ -294,8 +294,8 @@ async function readCandidateSave(
   );
 }
 
-function fail(err: unknown): void {
-  const message = err instanceof Error ? err.message : String(err);
-  log.warn("[pond media-index] failed to start", err);
+function fail(cause: unknown): void {
+  const message = cause instanceof Error ? cause.message : String(cause);
+  log.warn("[pond media-index] failed to start", cause);
   publish({ state: "error", lastError: message, currentTitle: null });
 }

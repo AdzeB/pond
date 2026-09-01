@@ -4,6 +4,7 @@ import { TrayCard } from "@pond/ui";
 import { Calligraph } from "calligraph";
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { z } from "zod";
 import { useDock } from "@/components/library/dock/lib/context";
 import { useAccounts } from "@/hooks/use-accounts";
 import { WATCH_NEEDS_SESSION, watchKindsFor } from "@/hooks/use-watches";
@@ -14,13 +15,28 @@ import { WatchTargetMatch } from "../target-match";
 import { WatchTargetSkeleton } from "../target-skeleton";
 import styles from "./styles.module.css";
 
-interface WatchTargetMatchData {
-  kind?: WatchKind;
-  handle: string;
-  display: string;
-}
+const WatchTargetMatchSchema = z.object({
+  kind: z
+    .enum(["channel", "user", "group", "playlist", "board", "cluster", "list"])
+    .optional(),
+  handle: z.string(),
+  display: z.string(),
+});
 
-const KIND_TITLES: Record<WatchKind, string> = {
+type WatchTargetMatchData = z.infer<typeof WatchTargetMatchSchema>;
+
+const ResolveWatchSchema = z.object({
+  ok: z.boolean(),
+  target: WatchTargetMatchSchema.optional(),
+});
+
+const AddWatchSchema = z.object({
+  ok: z.boolean(),
+  reason: z.string().optional(),
+  watch: z.object({ id: z.string() }).optional(),
+});
+
+const KIND_TITLES = {
   user: "Watch an Account",
   channel: "Watch a Channel",
   group: "Watch a Group",
@@ -28,7 +44,7 @@ const KIND_TITLES: Record<WatchKind, string> = {
   board: "Watch a Board",
   cluster: "Watch a Cluster",
   list: "Watch a List",
-};
+} satisfies Record<WatchKind, string>;
 
 function watchHint(
   source: Source,
@@ -112,10 +128,9 @@ export function WatchTargetSection() {
     let cancelled = false;
     const timer = setTimeout(async () => {
       try {
-        const res = (await window.pond.query("watches.resolve", {
-          source,
-          input,
-        })) as { ok: boolean; target?: WatchTargetMatchData };
+        const res = ResolveWatchSchema.parse(
+          await window.pond.query("watches.resolve", { source, input }),
+        );
         if (!cancelled && res.ok && res.target) setResolved(res.target);
       } catch {
       } finally {
@@ -136,10 +151,12 @@ export function WatchTargetSection() {
     setBusy(true);
     setError(null);
     try {
-      const res = (await window.pond.query("watches.add", {
-        source,
-        handle: handle.trim(),
-      })) as { ok: boolean; reason?: string; watch?: { id: string } };
+      const res = AddWatchSchema.parse(
+        await window.pond.query("watches.add", {
+          source,
+          handle: handle.trim(),
+        }),
+      );
       if (res.ok && res.watch) {
         watchFlow.added(res.watch.id);
         dock.closeViewMenu();

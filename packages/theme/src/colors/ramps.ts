@@ -3,7 +3,7 @@ type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 const STEPS: readonly Step[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
 /** Step 9 is the vivid "solid" anchor (~0.55, Radix-style) rather than a dark mid, so saturated colors read bright instead of muddy. */
-const LIGHTNESS: Record<Step, number> = {
+const LIGHTNESS = {
   1: 0.97,
   2: 0.938,
   3: 0.885,
@@ -16,9 +16,9 @@ const LIGHTNESS: Record<Step, number> = {
   10: 0.52,
   11: 0.45,
   12: 0.38,
-};
+} satisfies Record<Step, number>;
 
-const CHROMA_SCALE: Record<Step, number> = {
+const CHROMA_SCALE = {
   1: 0.16,
   2: 0.32,
   3: 0.51,
@@ -31,9 +31,9 @@ const CHROMA_SCALE: Record<Step, number> = {
   10: 0.88,
   11: 0.76,
   12: 0.62,
-};
+} satisfies Record<Step, number>;
 
-const ALPHA: Record<Step, number> = {
+const ALPHA = {
   1: 0.03,
   2: 0.07,
   3: 0.135,
@@ -46,7 +46,7 @@ const ALPHA: Record<Step, number> = {
   10: 0.68,
   11: 0.75,
   12: 0.81,
-};
+} satisfies Record<Step, number>;
 
 interface Ramp {
   hue: number;
@@ -74,6 +74,10 @@ const HUE_RAMPS = {
 } as const satisfies Record<string, Ramp>;
 
 type HueName = keyof typeof HUE_RAMPS;
+
+function isHueName(value: string): value is HueName {
+  return value in HUE_RAMPS;
+}
 
 const P3_CHROMA_BOOST = 1.4;
 
@@ -112,7 +116,7 @@ function indent(block: string, spaces: number): string {
 }
 
 export function buildColorsCss(): string {
-  const names = Object.keys(HUE_RAMPS) as HueName[];
+  const names = Object.keys(HUE_RAMPS).filter(isHueName);
   const huesBase = names
     .map((name) => rampBlock(name, HUE_RAMPS[name]))
     .join("\n\n");

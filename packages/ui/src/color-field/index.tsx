@@ -28,7 +28,6 @@ const AREA_SIZE = 156;
 const TRACK_WIDTH = 12;
 
 function defaultNormalize(input: string): string | null {
-  if (typeof input !== "string") return null;
   const trimmed = input.trim().replace(/^#/, "");
   const expanded =
     trimmed.length === 3

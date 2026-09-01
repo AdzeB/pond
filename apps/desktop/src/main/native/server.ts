@@ -2,14 +2,15 @@ import { unlinkSync } from "node:fs";
 import { chmod, mkdir } from "node:fs/promises";
 import { createServer, type Server, type Socket } from "node:net";
 import { dirname } from "node:path";
-import type { NativeResponse } from "@pond/schema/native";
+import type { JsonValue } from "@pond/schema/json";
+import type { NativeMessage, NativeResponse } from "@pond/schema/native";
 import log from "electron-log/main.js";
 import { encodeFrame, tryDecodeFrame } from "./frame";
 import { nativeSocketPath } from "./paths";
 import { liveNativePorts } from "./ports";
 import { dispatchNative } from "./rpc";
 
-export type NativeDispatch = (raw: unknown) => Promise<NativeResponse>;
+export type NativeDispatch = (raw: JsonValue) => Promise<NativeResponse>;
 
 export interface NativeServerOpts {
   path?: string;
@@ -18,7 +19,7 @@ export interface NativeServerOpts {
 
 const listenPaths = new WeakMap<Server, string>();
 
-function writeFrame(socket: Socket, value: unknown): void {
+function writeFrame(socket: Socket, value: NativeMessage): void {
   socket.end(encodeFrame(value));
 }
 

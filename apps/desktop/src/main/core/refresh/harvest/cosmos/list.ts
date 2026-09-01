@@ -3,6 +3,12 @@
 import type { MediaType } from "@pond/schema/db";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 
+interface JsonRecord {
+  [key: string]: JsonValue;
+}
+
+type JsonValue = string | number | boolean | null | JsonValue[] | JsonRecord;
+
 export function cosmosProfileUrl(handle: string): string {
   return `https://www.cosmos.so/${encodeURIComponent(handle)}`;
 }
@@ -32,6 +38,12 @@ async function inPageCosmosList(
     return { ok: false, reason: "auth_required" };
   }
 
+  interface CosmosEntryMedia {
+    url: string;
+    type?: MediaType;
+    poster?: string;
+  }
+
   interface CosmosEntry {
     sourceId: string;
     url: string;
@@ -39,15 +51,18 @@ async function inPageCosmosList(
     description?: string;
     author?: string;
     mediaUrl?: string;
-    mediaUrls?: Array<{
-      url: string;
-      type?: MediaType;
-      poster?: string;
-    }>;
+    mediaUrls?: CosmosEntryMedia[];
     mediaType?: MediaType;
     savedAt?: string;
-    meta?: Record<string, unknown>;
   }
+
+  // This function is serialised into the page, so zod cannot reach it.
+  const isRecord = (value: JsonValue | undefined): value is JsonRecord =>
+    typeof value === "object" && value !== null && !Array.isArray(value);
+  const asText = (value: JsonValue | undefined): string | undefined =>
+    typeof value === "string" ? value : undefined;
+  const asNumber = (value: JsonValue | undefined): number | undefined =>
+    typeof value === "number" && Number.isFinite(value) ? value : undefined;
 
   const known = new Set(args.knownIds.map(String));
   const collected = new Map<string, CosmosEntry>();
@@ -77,28 +92,30 @@ async function inPageCosmosList(
   };
 
   const pickString = (
-    obj: Record<string, unknown>,
+    record: JsonRecord,
     keys: string[],
   ): string | undefined => {
     for (const k of keys) {
-      const v = obj[k];
-      if (typeof v === "string" && v.trim().length > 0) return v.trim();
+      const v = asText(record[k]);
+      if (v !== undefined && v.trim().length > 0) return v.trim();
     }
     return undefined;
   };
 
-  const readElementId = (obj: Record<string, unknown>): string | null => {
-    const candidates: unknown[] = [
-      obj.id,
-      obj.elementId,
-      obj.element_id,
-      obj.nodeId,
+  const readElementId = (record: JsonRecord): string | null => {
+    const candidates = [
+      record.id,
+      record.elementId,
+      record.element_id,
+      record.nodeId,
     ];
     for (const c of candidates) {
-      if (typeof c === "number" && Number.isInteger(c) && c > 0) {
-        return String(c);
+      const numeric = asNumber(c);
+      if (numeric !== undefined && Number.isInteger(numeric) && numeric > 0) {
+        return String(numeric);
       }
-      if (typeof c === "string" && /^\d+$/.test(c) && c !== "0") return c;
+      const text = asText(c);
+      if (text !== undefined && /^\d+$/.test(text) && text !== "0") return text;
     }
     return null;
   };
@@ -111,47 +128,44 @@ async function inPageCosmosList(
     return undefined;
   };
 
-  const mediaFromTile = (
-    obj: Record<string, unknown>,
-  ): {
+  interface TileMedia {
     mediaUrl?: string;
     poster?: string;
     type: MediaType;
-  } => {
-    const media = obj.media as Record<string, unknown> | undefined;
-    if (!media || typeof media !== "object") {
+  }
+
+  const mediaFromTile = (tile: JsonRecord): TileMedia => {
+    const media = tile.media;
+    if (!isRecord(media)) {
       return { type: "link" };
     }
     const typename = String(media.__typename ?? "").toLowerCase();
     if (typename.includes("video")) {
-      const mux = media.mux as Record<string, unknown> | undefined;
-      const thumbnail = media.thumbnail as Record<string, unknown> | undefined;
+      const mux = isRecord(media.mux) ? media.mux : undefined;
+      const thumbnail = isRecord(media.thumbnail) ? media.thumbnail : undefined;
       const playback =
-        (typeof mux?.mp4Url === "string" && mux.mp4Url) ||
-        (typeof mux?.playbackUrl === "string" && mux.playbackUrl) ||
-        (typeof media.url === "string" && media.url) ||
+        asText(mux?.mp4Url) ||
+        asText(mux?.playbackUrl) ||
+        asText(media.url) ||
         undefined;
-      const poster =
-        (typeof thumbnail?.url === "string" && thumbnail.url) ||
-        (typeof media.url === "string" && media.url) ||
-        undefined;
+      const poster = asText(thumbnail?.url) || asText(media.url) || undefined;
       return {
         mediaUrl: playback,
-        poster: typeof poster === "string" ? poster : undefined,
+        poster,
         type: "video",
       };
     }
     if (typename.includes("animated")) {
-      const video = media.video as Record<string, unknown> | undefined;
-      const videoUrl = typeof video?.url === "string" ? video.url : undefined;
-      const stillUrl = typeof media.url === "string" ? media.url : undefined;
+      const video = isRecord(media.video) ? media.video : undefined;
+      const videoUrl = asText(video?.url);
+      const stillUrl = asText(media.url);
       return {
         mediaUrl: videoUrl ?? stillUrl,
         poster: stillUrl,
         type: videoUrl ? "video" : "image",
       };
     }
-    const staticUrl = typeof media.url === "string" ? media.url : undefined;
+    const staticUrl = asText(media.url);
     const guessed = staticUrl ? detectMediaTypeFromUrl(staticUrl) : undefined;
     return {
       mediaUrl: staticUrl,
@@ -159,13 +173,17 @@ async function inPageCosmosList(
     };
   };
 
-  const authorFromTile = (
-    obj: Record<string, unknown>,
-  ): { author?: string; authorUrl?: string; avatarUrl?: string } => {
-    const source = obj.source as Record<string, unknown> | undefined;
-    if (!source || typeof source !== "object") return {};
-    const author = source.author as Record<string, unknown> | undefined;
-    if (!author || typeof author !== "object") return {};
+  interface TileAuthor {
+    author?: string;
+    authorUrl?: string;
+    avatarUrl?: string;
+  }
+
+  const authorFromTile = (tile: JsonRecord): TileAuthor => {
+    const source = tile.source;
+    if (!isRecord(source)) return {};
+    const author = source.author;
+    if (!isRecord(author)) return {};
     const username = pickString(author, ["username"]);
     const fullName = pickString(author, ["fullName"]);
     const profileUrl = pickString(author, ["profileUrl"]);
@@ -175,17 +193,19 @@ async function inPageCosmosList(
         ? username
         : `@${username}`
       : fullName;
-    return {
-      ...(name ? { author: name } : {}),
-      ...(profileUrl ? { authorUrl: profileUrl } : {}),
-      ...(avatarUrl ? { avatarUrl } : {}),
-    };
+    const out: TileAuthor = {};
+    if (name) out.author = name;
+    if (profileUrl) out.authorUrl = profileUrl;
+    if (avatarUrl) out.avatarUrl = avatarUrl;
+    return out;
   };
 
-  const titleFromTile = (obj: Record<string, unknown>): string | undefined => {
-    const websiteTitle = pickString(obj, ["websiteTitle"]);
+  const titleFromTile = (tile: JsonRecord): string | undefined => {
+    const websiteTitle = pickString(tile, ["websiteTitle"]);
     if (websiteTitle) return websiteTitle;
-    const cap = obj.generatedCaption as Record<string, unknown> | undefined;
+    const cap = isRecord(tile.generatedCaption)
+      ? tile.generatedCaption
+      : undefined;
     const capText = cap ? pickString(cap, ["text"]) : undefined;
     if (capText) {
       const cleaned = capText.replace(/<\/?n>/g, "").trim();
@@ -194,18 +214,16 @@ async function inPageCosmosList(
     return undefined;
   };
 
-  const descriptionFromTile = (
-    obj: Record<string, unknown>,
-  ): string | undefined => {
-    const websiteDescription = pickString(obj, ["websiteDescription"]);
+  const descriptionFromTile = (tile: JsonRecord): string | undefined => {
+    const websiteDescription = pickString(tile, ["websiteDescription"]);
     if (!websiteDescription) return undefined;
     return websiteDescription.length > 4000
       ? `${websiteDescription.slice(0, 4000)}…`
       : websiteDescription;
   };
 
-  const shapeTile = (obj: Record<string, unknown>): CosmosEntry | null => {
-    const typename = String(obj.__typename ?? "");
+  const entryFromTile = (tile: JsonRecord): CosmosEntry | null => {
+    const typename = String(tile.__typename ?? "");
     if (
       typename !== "MediaElementTile" &&
       typename !== "WebsiteElementTile" &&
@@ -213,18 +231,15 @@ async function inPageCosmosList(
     ) {
       return null;
     }
-    const id = readElementId(obj);
+    const id = readElementId(tile);
     if (!id) return null;
 
-    const shareUrl =
-      typeof obj.shareUrl === "string" && obj.shareUrl.length > 0
-        ? obj.shareUrl
-        : `https://www.cosmos.so/e/${id}`;
+    const shareUrl = asText(tile.shareUrl) || `https://www.cosmos.so/e/${id}`;
 
-    const media = mediaFromTile(obj);
-    const author = authorFromTile(obj);
-    const title = titleFromTile(obj);
-    const description = descriptionFromTile(obj);
+    const media = mediaFromTile(tile);
+    const author = authorFromTile(tile);
+    const title = titleFromTile(tile);
+    const description = descriptionFromTile(tile);
 
     const entry: CosmosEntry = {
       sourceId: id,
@@ -242,27 +257,25 @@ async function inPageCosmosList(
         ? upgradeCosmosImage(media.poster)
         : undefined;
       entry.mediaUrl = url;
-      entry.mediaUrls = [
-        {
-          url,
-          type: media.type,
-          ...(poster ? { poster } : {}),
-        },
-      ];
+      const mediaEntry: CosmosEntryMedia = { url, type: media.type };
+      if (poster) mediaEntry.poster = poster;
+      entry.mediaUrls = [mediaEntry];
       entry.mediaType = media.type;
     } else {
       entry.mediaType = "link";
     }
-    if (typeof obj.createdAt === "string") entry.savedAt = obj.createdAt;
+    const createdAt = asText(tile.createdAt);
+    if (createdAt !== undefined) entry.savedAt = createdAt;
     return entry;
   };
 
-  const _isPlainRecord = (value: unknown): value is Record<string, unknown> =>
-    typeof value === "object" && value !== null && !Array.isArray(value);
+  interface IngestResult {
+    added: number;
+  }
 
-  const walk = (root: unknown): { added: number } => {
+  const walk = (root: JsonValue): IngestResult => {
     let added = 0;
-    const stack: unknown[] = [root];
+    const stack: JsonValue[] = [root];
     let safety = 250_000;
     while (stack.length > 0 && safety > 0) {
       safety -= 1;
@@ -272,38 +285,42 @@ async function inPageCosmosList(
         for (const child of node) stack.push(child);
         continue;
       }
-      if (typeof node !== "object") continue;
-      const obj = node as Record<string, unknown>;
-      const entry = shapeTile(obj);
+      if (!isRecord(node)) continue;
+      const entry = entryFromTile(node);
       if (entry && !collected.has(entry.sourceId)) {
         collected.set(entry.sourceId, entry);
         added += 1;
         continue;
       }
-      for (const key of Object.keys(obj)) {
-        const child = obj[key];
-        if (child && typeof child === "object") stack.push(child);
+      for (const key of Object.keys(node)) {
+        const child = node[key];
+        if (child !== null && typeof child === "object") stack.push(child);
       }
     }
     return { added };
   };
 
-  const readApolloSSR = (): unknown => {
+  interface ApolloDevtoolsClient {
+    cache?: { extract?: () => JsonValue };
+  }
+
+  const readApolloSSR = (): JsonValue | null => {
     try {
       const sym = Symbol.for("ApolloSSRDataTransport");
-      return (globalThis as unknown as Record<symbol, unknown>)[sym];
+      const transport: JsonValue | undefined = Object.getOwnPropertyDescriptor(
+        globalThis,
+        sym,
+      )?.value;
+      return transport ?? null;
     } catch {
       return null;
     }
   };
 
-  const readApolloCache = (): unknown => {
+  const readApolloCache = (): JsonValue | null => {
     try {
-      const ac = (
-        globalThis as unknown as {
-          __APOLLO_CLIENT__?: { cache?: { extract?: () => unknown } };
-        }
-      ).__APOLLO_CLIENT__;
+      const ac: ApolloDevtoolsClient | undefined =
+        Object.getOwnPropertyDescriptor(globalThis, "__APOLLO_CLIENT__")?.value;
       const extracted = ac?.cache?.extract?.();
       return extracted ?? null;
     } catch {
@@ -311,7 +328,7 @@ async function inPageCosmosList(
     }
   };
 
-  const collectFromDom = (): { added: number } => {
+  const collectFromDom = (): IngestResult => {
     let added = 0;
     const anchors = Array.from(
       document.querySelectorAll<HTMLAnchorElement>('a[href*="/e/"]'),
@@ -330,7 +347,7 @@ async function inPageCosmosList(
       const img = card.querySelector<HTMLImageElement>("img");
       const src = img?.currentSrc ?? img?.src ?? undefined;
       const mediaUrl =
-        typeof src === "string" && !src.startsWith("data:")
+        src !== undefined && !src.startsWith("data:")
           ? upgradeCosmosImage(src)
           : undefined;
       const title = img?.alt?.trim() || undefined;
@@ -371,23 +388,23 @@ async function inPageCosmosList(
     return out;
   };
 
-  const stats: {
+  interface HarvestStats {
     phase: "hydrate" | "scroll";
     collected: number;
     fresh: number;
     scrolls: number;
     updatedAt: number;
-  } = {
+  }
+
+  const stats: HarvestStats = {
     phase: "hydrate",
     collected: 0,
     fresh: 0,
     scrolls: 0,
     updatedAt: Date.now(),
   };
-  (
-    globalThis as unknown as { __pondHarvestStats?: typeof stats }
-  ).__pondHarvestStats = stats;
-  const publishStats = (phase: typeof stats.phase): void => {
+  Object.assign(globalThis, { __pondHarvestStats: stats });
+  const publishStats = (phase: HarvestStats["phase"]): void => {
     stats.phase = phase;
     stats.collected = collected.size;
     let fresh = 0;
@@ -428,7 +445,7 @@ async function inPageCosmosList(
   while (Date.now() < scrollDeadline) {
     window.scrollBy({
       top: window.innerHeight * 0.9,
-      behavior: "instant" as ScrollBehavior,
+      behavior: "instant",
     });
     await new Promise((r) => setTimeout(r, 700 + Math.random() * 300));
     stats.scrolls += 1;

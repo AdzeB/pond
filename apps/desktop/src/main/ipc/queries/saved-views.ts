@@ -1,6 +1,13 @@
-import type { NewSavedView } from "@pond/schema/db";
-import type { Query } from "@pond/schema/filters/types";
-import type { QueryHandlerMap } from "../helpers";
+import { z } from "zod";
+import {
+  NonEmptyTextParam,
+  NullableStringParam,
+  type QueryHandlerMap,
+  QueryParam,
+  query,
+  StringListParam,
+  StringParam,
+} from "./params";
 
 export const savedViewsQueries: QueryHandlerMap = {
   async "savedViews.list"() {
@@ -8,37 +15,67 @@ export const savedViewsQueries: QueryHandlerMap = {
     return await listViews();
   },
 
-  async "savedViews.create"(params) {
-    const { createView } = await import("../../core/saved-views");
-    return await createView({
-      name: String(params.name ?? ""),
-      question: params.question == null ? null : String(params.question),
-      query: params.query as Query | undefined,
-      sortKey: params.sortKey ? String(params.sortKey) : undefined,
-      sortDir: params.sortDir ? String(params.sortDir) : undefined,
-      layout: params.layout == null ? null : String(params.layout),
-    });
-  },
+  "savedViews.create": query(
+    z.object({
+      name: StringParam,
+      question: NullableStringParam,
+      query: QueryParam,
+      sortKey: NonEmptyTextParam,
+      sortDir: NonEmptyTextParam,
+      layout: NullableStringParam,
+    }),
+    async (params) => {
+      const { createView } = await import("../../core/saved-views");
+      return await createView({
+        name: params.name,
+        question: params.question,
+        query: params.query ?? undefined,
+        sortKey: params.sortKey ?? undefined,
+        sortDir: params.sortDir ?? undefined,
+        layout: params.layout,
+      });
+    },
+  ),
 
-  async "savedViews.rename"(params) {
-    const { renameView } = await import("../../core/saved-views");
-    return await renameView(String(params.id ?? ""), String(params.name ?? ""));
-  },
+  "savedViews.rename": query(
+    z.object({ id: StringParam, name: StringParam }),
+    async (params) => {
+      const { renameView } = await import("../../core/saved-views");
+      return await renameView(params.id, params.name);
+    },
+  ),
 
-  async "savedViews.update"(params) {
-    const { updateView } = await import("../../core/saved-views");
-    const patch = (params.patch as Partial<NewSavedView>) ?? {};
-    return await updateView(String(params.id ?? ""), patch);
-  },
+  "savedViews.update": query(
+    z.object({
+      id: StringParam,
+      patch: z
+        .object({
+          name: z.string().optional(),
+          question: z.string().nullable().optional(),
+          query: QueryParam.transform((value) => value ?? undefined).optional(),
+          sortKey: z.string().optional(),
+          sortDir: z.string().optional(),
+          layout: z.string().nullable().optional(),
+          sortOrder: z.number().optional(),
+        })
+        .catch({}),
+    }),
+    async (params) => {
+      const { updateView } = await import("../../core/saved-views");
+      return await updateView(params.id, params.patch);
+    },
+  ),
 
-  async "savedViews.delete"(params) {
+  "savedViews.delete": query(z.object({ id: StringParam }), async (params) => {
     const { deleteView } = await import("../../core/saved-views");
-    return await deleteView(String(params.id ?? ""));
-  },
+    return await deleteView(params.id);
+  }),
 
-  async "savedViews.reorder"(params) {
-    const { reorderViews } = await import("../../core/saved-views");
-    const ids = Array.isArray(params.ids) ? (params.ids as string[]) : [];
-    return await reorderViews(ids);
-  },
+  "savedViews.reorder": query(
+    z.object({ ids: StringListParam }),
+    async (params) => {
+      const { reorderViews } = await import("../../core/saved-views");
+      return await reorderViews(params.ids);
+    },
+  ),
 };

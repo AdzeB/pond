@@ -6,7 +6,7 @@ import {
   syncActions,
   tasks,
 } from "@pond/schema/db";
-import type { CaptureAuthor, RawJson } from "@pond/schema/raw";
+import type { Capture, CaptureAuthor, RawJson } from "@pond/schema/raw";
 import { and, eq } from "drizzle-orm";
 import { ulid } from "ulid";
 import { getDb } from "../../db";
@@ -48,7 +48,7 @@ export async function applySeedToExistingSave(
       modelName: "save",
       modelId: saveId,
       action: "U",
-      data: patch as unknown,
+      data: patch,
       actor: "system",
       actorReason: "pipeline:enqueue:reseed",
       batchId: ulid(),
@@ -69,10 +69,7 @@ export function mergeSeedIntoExistingSave(
   current: Save,
   seed: EnqueueSeed,
 ): SeedMerge {
-  const existingRaw =
-    current.rawJson && typeof current.rawJson === "object"
-      ? (current.rawJson as RawJson)
-      : null;
+  const existingRaw = current.rawJson;
   const seedRaw = seed.rawJson;
   const existingCapture = existingRaw?.capture;
   const seedCapture = seedRaw.capture;
@@ -92,7 +89,7 @@ export function mergeSeedIntoExistingSave(
     const have = nextAuthor[key];
     const fresh = seedAuthor[key];
     if ((have === undefined || have === null || have === "") && fresh != null) {
-      (nextAuthor[key] as unknown) = fresh;
+      Object.assign(nextAuthor, { [key]: fresh });
       filled.push(`capture.author.${key}`);
       if (key === "avatarUrl") didFillAvatarUrl = true;
     }
@@ -124,15 +121,10 @@ export function mergeSeedIntoExistingSave(
 
   const baseRaw = existingRaw ?? seedRaw;
   const baseCapture = existingCapture ?? seedCapture;
-  const nextRaw: RawJson = {
-    ...baseRaw,
-    capture: {
-      ...baseCapture,
-      author: nextAuthor,
-      ...(nextMetrics ? { metrics: nextMetrics } : {}),
-      ...(nextCard ? { card: nextCard } : {}),
-    },
-  };
+  const nextCapture: Capture = { ...baseCapture, author: nextAuthor };
+  if (nextMetrics) nextCapture.metrics = nextMetrics;
+  if (nextCard) nextCapture.card = nextCard;
+  const nextRaw: RawJson = { ...baseRaw, capture: nextCapture };
 
   return { changed: true, filled, didFillAvatarUrl, rawJson: nextRaw };
 }
@@ -151,7 +143,7 @@ export async function persistEnrichment(
       modelName: "save",
       modelId: saveId,
       action: "U",
-      data: { filled: merge.filled } as unknown,
+      data: { filled: merge.filled },
       actor: "system",
       actorReason: "pipeline:enqueue:enrich",
       batchId: ulid(),

@@ -1,15 +1,15 @@
 type ViewPrefKey = "view" | "sort" | "dir" | "inspector" | "sidebar";
 
-const STORAGE_KEYS: Record<ViewPrefKey, string> = {
+const STORAGE_KEYS = {
   view: "pond.view",
   sort: "pond.sort",
   dir: "pond.dir",
   inspector: "pond.inspector",
   sidebar: "pond.sidebar",
-};
+} satisfies Record<ViewPrefKey, string>;
 
 export function readViewPref(key: ViewPrefKey): string | null {
-  if (typeof window === "undefined") return null;
+  if (!globalThis.window) return null;
   try {
     return window.localStorage.getItem(STORAGE_KEYS[key]);
   } catch {
@@ -18,7 +18,7 @@ export function readViewPref(key: ViewPrefKey): string | null {
 }
 
 export function writeViewPref(key: ViewPrefKey, value: string): void {
-  if (typeof window === "undefined") return;
+  if (!globalThis.window) return;
   try {
     window.localStorage.setItem(STORAGE_KEYS[key], value);
   } catch {}
@@ -33,7 +33,7 @@ const LAYOUT_CYCLE: ReadonlyArray<LayoutValue> = [
 ];
 
 export function isLayoutValue(value: string): value is LayoutValue {
-  return (LAYOUT_CYCLE as ReadonlyArray<string>).includes(value);
+  return LAYOUT_CYCLE.some((layout) => layout === value);
 }
 
 export function nextLayout(current: LayoutValue): LayoutValue {

@@ -1,3 +1,4 @@
+import type { JsonObject } from "@pond/schema/json";
 import type { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import { sleep } from "./util";
@@ -8,7 +9,7 @@ const CDP_COMMAND_TIMEOUT_MS = 10_000;
 async function sendCdpCommand(
   dbg: Electron.Debugger,
   method: string,
-  params: Record<string, unknown> | undefined,
+  params: JsonObject | undefined,
   timeoutMs: number,
 ): Promise<void> {
   await Promise.race([

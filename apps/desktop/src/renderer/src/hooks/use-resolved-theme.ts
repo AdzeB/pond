@@ -3,7 +3,7 @@ import { useSyncExternalStore } from "react";
 export type ResolvedTheme = "light" | "dark";
 
 export function resolveCurrentTheme(): ResolvedTheme {
-  if (typeof document === "undefined") return "dark";
+  if (!globalThis.document) return "dark";
   const attr = document.documentElement.dataset.theme;
   return attr === "light" ? "light" : "dark";
 }
@@ -12,7 +12,7 @@ const listeners = new Set<() => void>();
 let observer: MutationObserver | null = null;
 
 function ensureObserver(): void {
-  if (observer || typeof document === "undefined") return;
+  if (observer || !globalThis.document) return;
   observer = new MutationObserver(() => {
     for (const fn of listeners) fn();
   });

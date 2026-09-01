@@ -38,7 +38,7 @@ import { ZoomSection } from "@/components/library/view-menu/zoom";
 import { SearchHelpSection } from "@/components/search/bar/lib/help";
 import styles from "./styles.module.css";
 
-const SECTIONS: Record<ViewMenuSection, () => React.JSX.Element | null> = {
+const SECTIONS = {
   options: OptionsSection,
   layout: LayoutSection,
   zoom: ZoomSection,
@@ -72,7 +72,7 @@ const SECTIONS: Record<ViewMenuSection, () => React.JSX.Element | null> = {
   "selection-tag": SelectionTagSection,
   "selection-copy": SelectionCopySection,
   "selection-export": SelectionExportSection,
-};
+} satisfies Record<ViewMenuSection, () => React.JSX.Element | null>;
 
 export function OptionsContent({ section }: { section: ViewMenuSection }) {
   const Section = SECTIONS[section];

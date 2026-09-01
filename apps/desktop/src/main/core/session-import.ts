@@ -26,6 +26,13 @@ import {
 } from "./sync/accounts";
 import { fillMissingAvatars } from "./sync/avatars";
 
+interface AccountIdentityPatch {
+  identityKey?: string;
+  handle?: string;
+  avatarUrl?: string | null;
+  avatarCheckedAt?: string;
+}
+
 export async function importSessionCookies(
   source: Source,
   cookies: ExtensionCookie[],
@@ -93,12 +100,7 @@ export async function importSessionCookies(
       `wrote ${written} (skipped ${skipped}, filtered out ${cookies.length - filtered.length})`,
   );
 
-  const patch: {
-    identityKey?: string;
-    handle?: string;
-    avatarUrl?: string | null;
-    avatarCheckedAt?: string;
-  } = {};
+  const patch: AccountIdentityPatch = {};
   if (identityKey && account.identityKey !== identityKey) {
     patch.identityKey = identityKey;
   }

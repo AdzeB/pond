@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { extname } from "node:path";
-import type { Source } from "@pond/schema/db";
+import type { NewSave, Source } from "@pond/schema/db";
+import type { CaptureMedia, RawJson, RawYtdlp } from "@pond/schema/raw";
+import { storedAsRawJson } from "@pond/schema/raw-schema";
 import { isVideoFile } from "@shared/media-index";
 import log from "electron-log/main.js";
 import { probeImageDims } from "../../../lib/image-process";
@@ -65,14 +67,15 @@ export async function runFetchVideoYtdlp(
     expected,
     allowPlaylist,
   });
-  const dl = await downloadVideo({
+  const request: Parameters<typeof downloadVideo>[0] = {
     url: target,
     source: save.source,
     accountId: save.accountId,
     allowPlaylist,
     expectedCount: expected,
-    ...(ctx?.signal ? { signal: ctx.signal } : {}),
-  });
+  };
+  if (ctx?.signal) request.signal = ctx.signal;
+  const dl = await downloadVideo(request);
   if (!dl || dl.items.length === 0) {
     throw new TransientError(
       `fetch-video-ytdlp: no video produced for ${saveId}`,
@@ -96,23 +99,19 @@ export async function runFetchVideoYtdlp(
 
     const primary = dl.items[0];
     const primaryDims = newFiles.find((f) => f.kind === "video");
-    await persistSave(
-      saveId,
-      {
-        mediaType: "video",
-        ...(primaryDims?.width && primaryDims.height
-          ? { width: primaryDims.width, height: primaryDims.height }
-          : {}),
-        ...(primary?.infoJson
-          ? { rawJson: mergeYtdlpInfo(save.rawJson, primary.infoJson) }
-          : {}),
-      },
-      {
-        actorReason: "pipeline:fetch-video-ytdlp",
-        replaceFilesWithKind: ["video", "poster"],
-        newFiles,
-      },
-    );
+    const patch: Partial<NewSave> = { mediaType: "video" };
+    if (primaryDims?.width && primaryDims.height) {
+      patch.width = primaryDims.width;
+      patch.height = primaryDims.height;
+    }
+    if (primary?.infoJson) {
+      patch.rawJson = mergeYtdlpInfo(save.rawJson, primary.infoJson);
+    }
+    await persistSave(saveId, patch, {
+      actorReason: "pipeline:fetch-video-ytdlp",
+      replaceFilesWithKind: ["video", "poster"],
+      newFiles,
+    });
     log.info("[pond pipeline:fetch-video-ytdlp] wrote", {
       saveId,
       count: dl.items.length,
@@ -202,26 +201,23 @@ async function resolvePoster(args: {
   );
 }
 
-function readCaptureMedia(rawJson: unknown): Array<{ type?: string }> | null {
-  if (!rawJson || typeof rawJson !== "object") return null;
-  const v = rawJson as { capture?: { media?: Array<{ type?: string }> } };
-  const media = v.capture?.media;
+function readCaptureMedia(rawJson: RawJson | null): CaptureMedia[] | null {
+  const media = rawJson?.capture?.media;
   return Array.isArray(media) ? media : null;
 }
 
+const CAPTURELESS = storedAsRawJson({ capture: {} });
+
 function mergeYtdlpInfo(
-  rawJson: unknown,
-  info: Record<string, unknown>,
-): unknown {
-  const base =
-    rawJson && typeof rawJson === "object"
-      ? (rawJson as Record<string, unknown>)
-      : {};
-  return { ...base, capture: base.capture ?? {}, ytdlp: info };
+  rawJson: RawJson | null | undefined,
+  info: RawYtdlp,
+): RawJson {
+  const base = rawJson ?? CAPTURELESS;
+  return { ...base, capture: base.capture ?? CAPTURELESS.capture, ytdlp: info };
 }
 
 function dimsFromYtdlpInfo(
-  info: Record<string, unknown> | null | undefined,
+  info: RawYtdlp | null | undefined,
 ): { width: number; height: number } | null {
   if (!info) return null;
   const width = Number(info.width);

@@ -1,7 +1,8 @@
-import { type Op, saves, tasks } from "@pond/schema/db";
+import { CANCEL_REASON, saves, tasks } from "@pond/schema/db";
 import type { PipelineTaskEvent } from "@pond/schema/events";
 import { and, eq, inArray } from "drizzle-orm";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { getDb } from "../../db";
 import { commitEvent, startTaskEvent, toErrorInfo } from "../../lib/wide-event";
 import { persistSave } from "../persist-save";
@@ -32,12 +33,14 @@ import {
   maybeFinalizeSave,
 } from "./task-settlement";
 
+const TaskPayloadSchema = z.json().catch(null);
+
 let started = false;
 let paused = false;
 let pollTimer: NodeJS.Timeout | null = null;
 let kickPending = false;
 let nextOrphanSweepAt = 0;
-const inflightByOp: Record<Op, number> = {
+const inflightByOp = {
   harvest_metadata: 0,
   capture_tweet: 0,
   render_text_cover: 0,
@@ -56,7 +59,12 @@ export function isReconcilerPaused(): boolean {
   return paused;
 }
 
-export function pipelineSnapshot(): { paused: boolean; inflight: number } {
+export interface PipelineSnapshot {
+  paused: boolean;
+  inflight: number;
+}
+
+export function pipelineSnapshot(): PipelineSnapshot {
   return { paused, inflight: inflightGlobal };
 }
 
@@ -99,7 +107,7 @@ export async function cancelSaveIngest(saveId: string): Promise<boolean> {
   db.update(tasks)
     .set({
       status: "failed",
-      lastError: "cancelled by user",
+      lastError: CANCEL_REASON,
       updatedAt: new Date(),
     })
     .where(and(eq(tasks.saveId, saveId), eq(tasks.status, "pending")))
@@ -236,7 +244,7 @@ async function dispatchTask(task: DueTask): Promise<void> {
   runningTasks.set(task.id, controller);
   const ev: PipelineTaskEvent = startTaskEvent({
     saveId: task.saveId,
-    source: task.source as PipelineTaskEvent["source"],
+    source: task.source,
     op: task.op,
     taskId: task.id,
     attempts: task.attempts,
@@ -246,10 +254,7 @@ async function dispatchTask(task: DueTask): Promise<void> {
   const t0 = Date.now();
   try {
     await markRunning(task);
-    const payload =
-      task.payload && typeof task.payload === "object"
-        ? (task.payload as Record<string, unknown>)
-        : {};
+    const payload = TaskPayloadSchema.parse(task.payload);
     const budget = TASK_WATCHDOG_MS[task.op];
     let watchdogHandle: NodeJS.Timeout | null = null;
     const watchdog = new Promise<never>((_, reject) => {
@@ -271,7 +276,7 @@ async function dispatchTask(task: DueTask): Promise<void> {
     }
     await markDone(task);
     metrics.tasksCompleted++;
-    if (isSourceTask(task.op)) noteSuccess(task.source as never);
+    if (isSourceTask(task.op)) noteSuccess(task.source);
     await maybeFinalizeSave(task.saveId);
     ev.outcome = "ok";
     ev.attempts = task.attempts + 1;

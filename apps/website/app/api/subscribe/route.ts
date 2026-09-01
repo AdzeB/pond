@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
+
+const SubscribeBodySchema = z.object({ email: z.string() });
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request: Request) {
   let email = "";
   try {
-    const body = (await request.json()) as { email?: unknown };
-    if (typeof body.email === "string") {
-      email = body.email.trim().toLowerCase();
-    }
+    const body = SubscribeBodySchema.safeParse(await request.json());
+    email = body.success ? body.data.email.trim().toLowerCase() : "";
   } catch {
     email = "";
   }

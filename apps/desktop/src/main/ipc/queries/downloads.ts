@@ -1,11 +1,22 @@
-import { OPS, type Op, type Source, saves } from "@pond/schema/db";
-import { pipelineEvents, type SaveIngestEvent } from "@pond/schema/events";
-import { isSource as isSourceId } from "@pond/schema/sources";
+import {
+  OPS,
+  type Op,
+  SOURCES,
+  type Source,
+  saves,
+  tasks,
+} from "@pond/schema/db";
+import {
+  type PipelineEventRow,
+  pipelineEvents,
+  type SaveIngestEvent,
+} from "@pond/schema/events";
 import { and, desc, eq, inArray, like, lt, or, sql } from "drizzle-orm";
+import { z } from "zod";
 import { pipelineSnapshot } from "../../core/pipeline/reconciler";
 import { getDb } from "../../db";
-import type { QueryHandlerMap } from "../helpers";
-import { cursorFor, type HistoryCursor } from "./downloads-page";
+import { cursorFor } from "./downloads-page";
+import { type QueryHandlerMap, query, TrimmedTextParam } from "./params";
 
 const PAGE_MAX = 200;
 const PAGE_DEFAULT = 50;
@@ -24,38 +35,45 @@ export interface DownloadHistoryRow {
   ts: number;
 }
 
-function isSource(value: unknown): value is Source {
-  return typeof value === "string" && isSourceId(value);
-}
-
-function isOp(value: unknown): value is Op {
-  return (
-    typeof value === "string" && (OPS as readonly string[]).includes(value)
+const LimitParam = z.coerce
+  .number()
+  .nullish()
+  .catch(Number.NaN)
+  .transform((value) =>
+    value != null && Number.isFinite(value)
+      ? Math.min(Math.max(Math.trunc(value), 1), PAGE_MAX)
+      : PAGE_DEFAULT,
   );
-}
 
-function parseCursor(raw: unknown): HistoryCursor | null {
-  if (raw == null || typeof raw !== "object") return null;
-  const rec = raw as Record<string, unknown>;
-  const ts = Number(rec.ts);
-  const id = Number(rec.id);
-  if (!Number.isFinite(ts) || !Number.isFinite(id)) return null;
-  return { ts, id };
-}
+const CursorParam = z
+  .object({ ts: z.number(), id: z.number() })
+  .nullish()
+  .catch(null)
+  .transform((value) => value ?? null);
 
-function toHistoryRow(row: {
-  id: number;
-  ts: unknown;
-  saveId: string | null;
-  source: Source | null;
-  payload: unknown;
+const SourceListParam = z
+  .array(z.enum(SOURCES).nullable().catch(null))
+  .catch([])
+  .transform((values) => values.filter((value) => value !== null));
+
+const OpListParam = z
+  .array(z.enum(OPS).nullable().catch(null))
+  .catch([])
+  .transform((values) => values.filter((value) => value !== null));
+
+type HistoryRow = Pick<
+  PipelineEventRow,
+  "id" | "ts" | "saveId" | "source" | "payload"
+> & {
   title: string | null;
   url: string | null;
-}): DownloadHistoryRow | null {
-  const payload = row.payload as SaveIngestEvent;
+};
+
+function toHistoryRow(row: HistoryRow): DownloadHistoryRow | null {
+  const payload = row.payload;
+  if (payload.kind !== "save.ingest.completed") return null;
   const saveId = payload.saveId ?? row.saveId;
   if (!saveId) return null;
-  const ts = row.ts instanceof Date ? row.ts.getTime() : Number(row.ts);
   return {
     id: row.id,
     saveId,
@@ -67,87 +85,90 @@ function toHistoryRow(row: {
     attempts: payload.attempts ?? 0,
     failedOp: payload.failedOp ?? null,
     error: payload.error ?? null,
-    ts,
+    ts: row.ts.getTime(),
   };
 }
 
 export const downloadsQueries: QueryHandlerMap = {
-  "pipeline.status"() {
-    return pipelineSnapshot();
-  },
+  "pipeline.status": query(z.object({}), () => pipelineSnapshot()),
 
-  async "downloads.history"(params) {
-    const rawLimit = Number(params.limit ?? PAGE_DEFAULT);
-    const limit = Number.isFinite(rawLimit)
-      ? Math.min(Math.max(Math.trunc(rawLimit), 1), PAGE_MAX)
-      : PAGE_DEFAULT;
-    const cursor = parseCursor(params.cursor);
-    const q =
-      typeof params.q === "string" && params.q.trim().length > 0
-        ? params.q.trim()
-        : null;
-    const sources = Array.isArray(params.sources)
-      ? params.sources.filter(isSource)
-      : [];
-    const ops = Array.isArray(params.ops) ? params.ops.filter(isOp) : [];
-
+  /** Task rows change state without a sync action, so the downloads view polls for what is in flight. */
+  "pipeline.inflight": query(z.object({}), async () => {
     const db = await getDb();
-    const clauses = [
-      eq(pipelineEvents.kind, "save.ingest.completed"),
-      eq(pipelineEvents.outcome, "complete"),
-    ];
-    if (sources.length > 0) {
-      clauses.push(inArray(pipelineEvents.source, sources));
-    }
-    if (ops.length > 0) {
-      clauses.push(inArray(pipelineEvents.op, ops));
-    }
-    if (cursor) {
-      const older = or(
-        lt(pipelineEvents.ts, new Date(cursor.ts)),
-        and(
-          eq(pipelineEvents.ts, new Date(cursor.ts)),
-          lt(pipelineEvents.id, cursor.id),
-        ),
-      );
-      if (older) clauses.push(older);
-    }
-    if (q) {
-      const pattern = `%${q.replaceAll("%", "").replaceAll("_", "")}%`;
-      const match = or(
-        like(saves.title, pattern),
-        like(saves.url, pattern),
-        like(pipelineEvents.errorMessage, pattern),
-        sql`json_extract(${pipelineEvents.payload}, '$.url') like ${pattern}`,
-      );
-      if (match) clauses.push(match);
-    }
+    const rows = await db
+      .selectDistinct({ saveId: tasks.saveId })
+      .from(tasks)
+      .where(eq(tasks.status, "running"));
+    return rows.map((row) => row.saveId);
+  }),
 
-    const raw = db
-      .select({
-        id: pipelineEvents.id,
-        ts: pipelineEvents.ts,
-        saveId: pipelineEvents.saveId,
-        source: pipelineEvents.source,
-        payload: pipelineEvents.payload,
-        title: saves.title,
-        url: saves.url,
-      })
-      .from(pipelineEvents)
-      .leftJoin(saves, eq(pipelineEvents.saveId, saves.id))
-      .where(and(...clauses))
-      .orderBy(desc(pipelineEvents.ts), desc(pipelineEvents.id))
-      .limit(limit + 1)
-      .all();
+  "downloads.history": query(
+    z.object({
+      limit: LimitParam,
+      cursor: CursorParam,
+      q: TrimmedTextParam,
+      sources: SourceListParam,
+      ops: OpListParam,
+    }),
+    async ({ limit, cursor, q, sources, ops }) => {
+      const db = await getDb();
+      const clauses = [
+        eq(pipelineEvents.kind, "save.ingest.completed"),
+        eq(pipelineEvents.outcome, "complete"),
+      ];
+      if (sources.length > 0) {
+        clauses.push(inArray(pipelineEvents.source, sources));
+      }
+      if (ops.length > 0) {
+        clauses.push(inArray(pipelineEvents.op, ops));
+      }
+      if (cursor) {
+        const older = or(
+          lt(pipelineEvents.ts, new Date(cursor.ts)),
+          and(
+            eq(pipelineEvents.ts, new Date(cursor.ts)),
+            lt(pipelineEvents.id, cursor.id),
+          ),
+        );
+        if (older) clauses.push(older);
+      }
+      if (q) {
+        const pattern = `%${q.replaceAll("%", "").replaceAll("_", "")}%`;
+        const match = or(
+          like(saves.title, pattern),
+          like(saves.url, pattern),
+          like(pipelineEvents.errorMessage, pattern),
+          sql`json_extract(${pipelineEvents.payload}, '$.url') like ${pattern}`,
+        );
+        if (match) clauses.push(match);
+      }
 
-    const mapped = raw
-      .map(toHistoryRow)
-      .filter((row): row is DownloadHistoryRow => row != null);
-    const hasMore = mapped.length > limit;
-    const rows = hasMore ? mapped.slice(0, limit) : mapped;
-    return {
-      rows,
-      nextCursor: hasMore ? cursorFor(rows) : null,
-    };
-  },
+      const raw = db
+        .select({
+          id: pipelineEvents.id,
+          ts: pipelineEvents.ts,
+          saveId: pipelineEvents.saveId,
+          source: pipelineEvents.source,
+          payload: pipelineEvents.payload,
+          title: saves.title,
+          url: saves.url,
+        })
+        .from(pipelineEvents)
+        .leftJoin(saves, eq(pipelineEvents.saveId, saves.id))
+        .where(and(...clauses))
+        .orderBy(desc(pipelineEvents.ts), desc(pipelineEvents.id))
+        .limit(limit + 1)
+        .all();
+
+      const mapped = raw
+        .map(toHistoryRow)
+        .filter((row): row is DownloadHistoryRow => row != null);
+      const hasMore = mapped.length > limit;
+      const rows = hasMore ? mapped.slice(0, limit) : mapped;
+      return {
+        rows,
+        nextCursor: hasMore ? cursorFor(rows) : null,
+      };
+    },
+  ),
 };

@@ -1,9 +1,9 @@
 import type { ListHarvestArgs } from "../list-types";
 import { inPageScrollCollect } from "./scroll";
 
-export function buildItemExpression<Norm>(
+export function buildItemExpression<Norm, Result>(
   normalizeFactory: () => Norm,
-  harvestFn: (id: string, norm: Norm) => unknown,
+  harvestFn: (id: string, norm: Norm) => Result | Promise<Result>,
   id: string,
 ): string {
   const normSrc = `(${normalizeFactory.toString()})()`;
@@ -15,13 +15,13 @@ export function buildItemExpression<Norm>(
   })()`;
 }
 
-export function buildScrollListExpression<Norm>(
+export function buildScrollListExpression<Norm, Result>(
   normalizeFactory: () => Norm,
   listFn: (
     args: ListHarvestArgs,
     scroll: ReturnType<typeof inPageScrollCollect>,
     norm: Norm,
-  ) => unknown,
+  ) => Result | Promise<Result>,
   args: ListHarvestArgs,
 ): string {
   const scrollSrc = `(${inPageScrollCollect.toString()})()`;

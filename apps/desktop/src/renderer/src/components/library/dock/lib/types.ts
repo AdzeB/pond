@@ -71,7 +71,7 @@ export type ViewMenuSection =
   | "selection-copy"
   | "selection-export";
 
-const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
+const VIEW_MENU_SECTIONS: ReadonlySet<string> = new Set<ViewMenuSection>([
   "options",
   "layout",
   "zoom",
@@ -105,16 +105,17 @@ const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
   "selection-tag",
   "selection-copy",
   "selection-export",
-];
+]);
 
-export const SELECTION_CARD_MODES: readonly ViewMenuSection[] = [
-  "confirm",
-  "selection-run",
-  "selection-tag",
-  "selection-copy",
-  "selection-export",
-];
+export const SELECTION_CARD_MODES: ReadonlySet<string> =
+  new Set<ViewMenuSection>([
+    "confirm",
+    "selection-run",
+    "selection-tag",
+    "selection-copy",
+    "selection-export",
+  ]);
 
 export function isViewMenu(view: DockView): view is ViewMenuSection {
-  return (VIEW_MENU_SECTIONS as readonly string[]).includes(view);
+  return VIEW_MENU_SECTIONS.has(view);
 }

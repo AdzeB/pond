@@ -1,59 +1,73 @@
 import type { RawJson } from "@pond/schema/raw";
+import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import type Database from "better-sqlite3";
+import { z } from "zod";
 
 export function slimRawJson(raw: RawJson | null | undefined): RawJson | null {
   if (!raw) return null;
   const cap = raw.capture;
-  return {
-    capture: {
-      id: cap.id,
-      source: cap.source,
-      url: cap.url,
-      ...(cap.author?.avatarUrl
-        ? { author: { avatarUrl: cap.author.avatarUrl } }
-        : {}),
-      media: (cap.media ?? []).map((m) => ({
+  const capture: RawJson["capture"] = {
+    id: cap.id,
+    source: cap.source,
+    url: cap.url,
+    media: (cap.media ?? []).map((m) => {
+      const media: RawJson["capture"]["media"][number] = {
         url: m.url,
         type: m.type,
-        ...(m.durationSec != null ? { durationSec: m.durationSec } : {}),
-      })),
-      ...(cap.duration != null ? { duration: cap.duration } : {}),
-    },
+      };
+      if (m.durationSec != null) media.durationSec = m.durationSec;
+      return media;
+    }),
+  };
+  if (cap.author?.avatarUrl)
+    capture.author = { avatarUrl: cap.author.avatarUrl };
+  if (cap.duration != null) capture.duration = cap.duration;
+
+  const slim: RawJson = {
+    capture,
     extractorId: raw.extractorId,
     extractedAt: raw.extractedAt,
-    ...(raw.ytdlp?.duration != null
-      ? { ytdlp: { duration: raw.ytdlp.duration } }
-      : {}),
   };
+  if (raw.ytdlp?.duration != null)
+    slim.ytdlp = { duration: raw.ytdlp.duration };
+  return slim;
 }
 
-export function withRawSlim<T extends { rawJson?: unknown }>(
+export function withRawSlim<T extends { rawJson?: RawJson | null }>(
   values: T,
 ): T & { rawSlim?: RawJson | null } {
   if (!("rawJson" in values)) return values;
-  return {
-    ...values,
-    rawSlim: slimRawJson(values.rawJson as RawJson | null | undefined),
-  };
+  return { ...values, rawSlim: slimRawJson(values.rawJson) };
 }
+
+const BackfillRowSchema = z.object({ id: z.string(), rawJson: z.string() });
+
+const StoredJsonText = z.preprocess((text) => {
+  try {
+    return JSON.parse(String(text));
+  } catch {
+    return null;
+  }
+}, StoredRawJsonSchema);
 
 export function backfillRawSlim(sqlite: Database.Database): void {
   const rows = sqlite
     .prepare(
       `SELECT id, raw_json AS rawJson FROM saves WHERE raw_slim IS NULL AND raw_json IS NOT NULL`,
     )
-    .all() as Array<{ id: string; rawJson: string }>;
+    .all()
+    .map((row) => BackfillRowSchema.safeParse(row))
+    .filter((parsed) => parsed.success)
+    .map((parsed) => parsed.data);
   if (rows.length === 0) return;
 
   const update = sqlite.prepare(`UPDATE saves SET raw_slim = ? WHERE id = ?`);
   const run = sqlite.transaction((batch: typeof rows) => {
     for (const row of batch) {
-      let slim: RawJson | null = null;
-      try {
-        slim = slimRawJson(JSON.parse(row.rawJson) as RawJson);
-      } catch {
-        slim = null;
-      }
+      const stored = StoredJsonText.safeParse(row.rawJson);
+      const slim = stored.success
+        ? slimRawJson(storedAsRawJson(stored.data))
+        : null;
       update.run(JSON.stringify(slim), row.id);
     }
   });

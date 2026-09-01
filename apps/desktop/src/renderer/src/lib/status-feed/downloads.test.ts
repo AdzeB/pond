@@ -90,6 +90,29 @@ describe("projectLiveDownloads", () => {
     expect(rows.find((r) => r.saveId === "run")?.progress).toBe(0.5);
   });
 
+  it("puts work in flight above the queue no matter how old it is", () => {
+    const rows = projectLiveDownloads([
+      save({ id: "fresh", status: "ingesting", savedAt: 5_000 }),
+      save({
+        id: "old-runner",
+        status: "ingesting",
+        savedAt: 1_000,
+        tasks: [
+          {
+            op: "fetch_blobs",
+            status: "running",
+            attempts: 1,
+            maxAttempts: 5,
+            lastError: null,
+            nextRunAt: 0,
+            updatedAt: 0,
+          },
+        ],
+      }),
+    ]);
+    expect(rows.map((r) => r.saveId)).toEqual(["old-runner", "fresh"]);
+  });
+
   it("skips deleted saves", () => {
     const rows = projectLiveDownloads([
       save({ id: "gone", status: "failed", deletedAt: 1 }),

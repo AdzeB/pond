@@ -90,10 +90,8 @@ export function LibraryTray() {
 
   const { destructive, confirmDeleteForever } = useDockActions();
 
-  const view: DockView = (SELECTION_CARD_MODES as readonly string[]).includes(
-    mode,
-  )
-    ? (mode as DockView)
+  const view: DockView = SELECTION_CARD_MODES.has(mode)
+    ? mode
     : mode !== "nav"
       ? mode
       : selectionSize > 0

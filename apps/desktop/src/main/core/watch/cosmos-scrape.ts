@@ -1,4 +1,5 @@
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { sourceIdFromUrl } from "../pipeline/url";
 import { NAV_TIMEOUT_MS } from "../refresh/scrape-window/constants";
 import { navigateWithTimeout } from "../refresh/scrape-window/navigation";
@@ -63,6 +64,16 @@ const COLLECTOR = `
   })()
 `;
 
+const CosmosPageSchema = z.object({
+  authWall: z.boolean().optional().catch(undefined),
+  notFound: z.boolean().optional().catch(undefined),
+  links: z
+    .array(z.unknown())
+    .transform((items) =>
+      items.flatMap((item) => z.string().safeParse(item).data ?? []),
+    ),
+});
+
 export async function listCosmosWatch(
   handle: string,
 ): Promise<WatchHarvestResult> {
@@ -85,18 +96,13 @@ export async function listCosmosWatch(
     ]);
     if (raw === "__pond_watch_timeout__")
       return { ok: false, reason: "timeout" };
-    const result = raw as {
-      authWall?: boolean;
-      notFound?: boolean;
-      links?: unknown;
-    };
-    if (result?.authWall) return { ok: false, reason: "auth_required" };
-    if (result?.notFound) return { ok: false, reason: "not_found" };
-    if (!Array.isArray(result?.links)) return { ok: false, reason: "unknown" };
+    const page = CosmosPageSchema.safeParse(raw);
+    if (!page.success) return { ok: false, reason: "unknown" };
+    if (page.data.authWall) return { ok: false, reason: "auth_required" };
+    if (page.data.notFound) return { ok: false, reason: "not_found" };
     const entries: WatchEntry[] = [];
     const seen = new Set<string>();
-    for (const link of result.links) {
-      if (typeof link !== "string") continue;
+    for (const link of page.data.links) {
       const sourceId = sourceIdFromUrl("cosmos", link);
       if (!sourceId || seen.has(sourceId)) continue;
       seen.add(sourceId);

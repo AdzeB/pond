@@ -39,6 +39,8 @@ async function main() {
     throw err;
   }
 
+  await mkdir(buildDir, { recursive: true });
+
   const size = meta.width ?? 1024;
   const contentSize = Math.round(size * CONTENT_SCALE);
   const offset = Math.round((size - contentSize) / 2);

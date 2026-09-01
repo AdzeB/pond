@@ -12,7 +12,11 @@ export {
   harvestTwitterBookmarks,
   harvestTwitterLikes,
 } from "./harvest-bookmarks";
-export { harvestSourceList, harvestYoutubeLikedList } from "./harvest-list";
+export {
+  harvestInstagramLikedList,
+  harvestSourceList,
+  harvestYoutubeLikedList,
+} from "./harvest-list";
 export { harvestThreadsLikes, harvestThreadsSaved } from "./harvest-saved";
 
 interface HarvestArgs {

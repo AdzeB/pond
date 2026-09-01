@@ -30,7 +30,7 @@ export {
   tagsExists,
 } from "./sql";
 
-export const FIELD_DESCRIPTORS: Record<FieldId, FieldDescriptor> = {
+export const FIELD_DESCRIPTORS = {
   tags,
   list,
   source,
@@ -48,4 +48,4 @@ export const FIELD_DESCRIPTORS: Record<FieldId, FieldDescriptor> = {
   savedAt,
   publishedAt,
   modifiedAt,
-};
+} satisfies Record<FieldId, FieldDescriptor>;

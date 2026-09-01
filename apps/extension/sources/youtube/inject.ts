@@ -3,6 +3,13 @@ import {
   installInterceptor,
   type RequestLens,
 } from "@/utils/intercept";
+import {
+  asText,
+  at,
+  isRecord,
+  type JsonValue,
+  parseJsonValue,
+} from "@/utils/json";
 
 const YOUTUBEI_RE = /\/youtubei\/v1\//i;
 const PLAYLIST_EDIT_HINT_RE =
@@ -10,92 +17,72 @@ const PLAYLIST_EDIT_HINT_RE =
 const LIKE_RE = /\/youtubei\/v1\/like\/like\b/i;
 const VIDEO_ID_RE = /^[\w-]{11}$/;
 
-function readJson(text: string | null): any {
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
+function collectAddedVideoIds(node: JsonValue, out: Set<string>): void {
+  if (Array.isArray(node)) {
+    for (const child of node) collectAddedVideoIds(child, out);
+    return;
+  }
+  if (!isRecord(node)) return;
+  for (const [key, value] of Object.entries(node)) {
+    const id =
+      key === "addedVideoId" || key === "videoId" ? asText(value) : undefined;
+    if (id !== undefined && VIDEO_ID_RE.test(id)) out.add(id);
+    else collectAddedVideoIds(value, out);
   }
 }
 
-function collectAddedVideoIds(node: unknown, out: Set<string>): void {
-  if (!node || typeof node !== "object") return;
+function findPlaylistIds(node: JsonValue, out: Set<string>): void {
   if (Array.isArray(node)) {
-    for (const x of node) collectAddedVideoIds(x, out);
+    for (const child of node) findPlaylistIds(child, out);
     return;
   }
-  const obj = node as Record<string, unknown>;
-  for (const k of Object.keys(obj)) {
-    const v = obj[k];
-    if (
-      (k === "addedVideoId" || k === "videoId") &&
-      typeof v === "string" &&
-      VIDEO_ID_RE.test(v)
-    ) {
-      out.add(v);
-    } else if (v && typeof v === "object") {
-      collectAddedVideoIds(v, out);
-    }
-  }
-}
-
-function findPlaylistIds(node: unknown, out: Set<string>): void {
-  if (!node || typeof node !== "object") return;
-  if (Array.isArray(node)) {
-    for (const x of node) findPlaylistIds(x, out);
-    return;
-  }
-  const obj = node as Record<string, unknown>;
-  for (const k of Object.keys(obj)) {
-    const v = obj[k];
-    if (k === "playlistId" && typeof v === "string" && v.length > 0) {
-      out.add(v);
-    } else if (v && typeof v === "object") {
-      findPlaylistIds(v, out);
-    }
+  if (!isRecord(node)) return;
+  for (const [key, value] of Object.entries(node)) {
+    const id = key === "playlistId" ? asText(value) : undefined;
+    if (id) out.add(id);
+    else findPlaylistIds(value, out);
   }
 }
 
 function anyStringMatches(
-  node: unknown,
+  node: JsonValue,
   predicate: (s: string) => boolean,
 ): boolean {
-  if (typeof node === "string") return predicate(node);
-  if (!node || typeof node !== "object") return false;
+  const text = asText(node);
+  if (text !== undefined) return predicate(text);
   if (Array.isArray(node)) {
-    for (const x of node) if (anyStringMatches(x, predicate)) return true;
-    return false;
+    return node.some((child) => anyStringMatches(child, predicate));
   }
-  for (const v of Object.values(node)) {
-    if (anyStringMatches(v, predicate)) return true;
+  if (isRecord(node)) {
+    return Object.values(node).some((child) =>
+      anyStringMatches(child, predicate),
+    );
   }
   return false;
 }
 
-function collectEditedVideoIds(node: unknown, out: Set<string>): void {
-  if (!node || typeof node !== "object") return;
+function collectEditedVideoIds(node: JsonValue, out: Set<string>): void {
   if (Array.isArray(node)) {
-    for (const x of node) collectEditedVideoIds(x, out);
+    for (const child of node) collectEditedVideoIds(child, out);
     return;
   }
-  const obj = node as Record<string, unknown>;
-  const added = obj.playlistEditVideoAddedResultData as
-    | Record<string, unknown>
-    | undefined;
-  if (added && typeof added.videoId === "string") {
-    out.add(added.videoId);
-  }
-  for (const v of Object.values(obj)) {
-    if (v && typeof v === "object") collectEditedVideoIds(v, out);
-  }
+  if (!isRecord(node)) return;
+  const videoId = asText(
+    at(node, "playlistEditVideoAddedResultData", "videoId"),
+  );
+  if (videoId !== undefined) out.add(videoId);
+  for (const child of Object.values(node)) collectEditedVideoIds(child, out);
 }
 
 function extractLikeVideoId(body: string | null): string | null {
-  const json = readJson(body);
+  const json = parseJsonValue(body);
   const id =
-    json?.target?.videoId ?? json?.videoId ?? json?.params?.videoId ?? null;
-  return id && VIDEO_ID_RE.test(String(id)) ? String(id) : null;
+    at(json, "target", "videoId") ??
+    at(json, "videoId") ??
+    at(json, "params", "videoId");
+  if (!id) return null;
+  const videoId = String(id);
+  return VIDEO_ID_RE.test(videoId) ? videoId : null;
 }
 
 function classifyYoutubeiPost(
@@ -103,20 +90,20 @@ function classifyYoutubeiPost(
   requestBody: string | null,
   responseBody: string | null,
 ): Set<string> {
-  const reqJson = readJson(requestBody);
-  const resJson = readJson(responseBody);
+  const requestJson = parseJsonValue(requestBody);
+  const responseJson = parseJsonValue(responseBody);
 
   const reqVideoIds = new Set<string>();
-  collectAddedVideoIds(reqJson, reqVideoIds);
+  collectAddedVideoIds(requestJson, reqVideoIds);
   const reqPlaylistIds = new Set<string>();
-  findPlaylistIds(reqJson, reqPlaylistIds);
+  findPlaylistIds(requestJson, reqPlaylistIds);
   const hasAddVideoAction = anyStringMatches(
-    reqJson,
+    requestJson,
     (s) => s === "ACTION_ADD_VIDEO" || s === "addToPlaylistCommand",
   );
 
   const resVideoIds = new Set<string>();
-  collectEditedVideoIds(resJson, resVideoIds);
+  collectEditedVideoIds(responseJson, resVideoIds);
   const looksLikePlaylistEdit = PLAYLIST_EDIT_HINT_RE.test(url);
   const allVideoIds = new Set<string>([...reqVideoIds, ...resVideoIds]);
 

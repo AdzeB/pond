@@ -35,13 +35,13 @@ const ASPECT_PRESETS = [
 
 type AspectPresetValue = (typeof ASPECT_PRESETS)[number]["value"];
 
-const ASPECT_TARGETS: Record<AspectPresetValue, number> = {
+const ASPECT_TARGETS = {
   "1:1": 1,
   "4:3": 4 / 3,
   "3:4": 3 / 4,
   "16:9": 16 / 9,
   "9:16": 9 / 16,
-};
+} satisfies Record<AspectPresetValue, number>;
 
 const ASPECT_TOLERANCE = 0.06;
 

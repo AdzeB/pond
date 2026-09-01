@@ -1,17 +1,23 @@
 /// <reference lib="dom" />
 
+import type { JsonValue } from "@pond/schema/json";
 import type { Capture } from "@pond/schema/raw";
+import { z } from "zod";
 import {
-  captureFromTweetShaped,
+  captureFromTweetDraft,
   draftFromDomHarvest,
-} from "../../../capture/tweet-shaped";
+} from "../../../capture/tweet-draft";
 import { type HarvestAdaptCtx, parsePageBlob } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
 import { bindSourceId } from "../source-id";
 import {
+  type HarvestedMedia,
+  type HarvestedMeta,
+  type HarvestedPost,
   inPageThreadsNormalize,
   isThreadsLandingCopy,
   isThreadsLandingMedia,
+  type ThreadsMediaNode,
 } from "./normalize";
 
 export function buildExpression(code: string): string {
@@ -25,7 +31,7 @@ export function buildExpression(code: string): string {
 async function inPageThreadsHarvest(
   code: string,
   norm: ReturnType<typeof inPageThreadsNormalize>,
-): Promise<unknown> {
+): Promise<HarvestedPost | null> {
   const pk = norm.shortcodeToPk(code);
   try {
     const res = await fetch(`/api/v1/media/${pk}/info/`, {
@@ -39,7 +45,7 @@ async function inPageThreadsHarvest(
       },
     });
     if (res.ok) {
-      const json = await res.json();
+      const json: { items?: ThreadsMediaNode[] } | null = await res.json();
       const node = json?.items?.[0] ?? null;
       if (node) return norm.normalizeMediaNode(node);
     }
@@ -84,9 +90,9 @@ async function inPageThreadsHarvest(
 
   return scrapeDom(root);
 
-  function scrapeDom(root: Element): Record<string, unknown> | null {
-    const out: Record<string, unknown> = {};
-    const meta: Record<string, unknown> = {};
+  function scrapeDom(root: Element): HarvestedPost | null {
+    const out: HarvestedPost = {};
+    const meta: HarvestedMeta = {};
 
     const handleLink = Array.from(
       root.querySelectorAll<HTMLAnchorElement>('a[href^="/@"]'),
@@ -120,19 +126,12 @@ async function inPageThreadsHarvest(
       meta.lang = htmlLang;
     }
 
-    const media: Array<Record<string, unknown>> = [];
+    const media: HarvestedMedia[] = [];
     const seen = new Set<string>();
-    const push = (entry: Record<string, unknown> | undefined) => {
-      const url = entry && typeof entry.url === "string" ? entry.url : null;
-      if (
-        !entry ||
-        !url ||
-        /^blob:/i.test(url) ||
-        norm.isBrandAsset(url) ||
-        seen.has(url)
-      ) {
-        return;
-      }
+    const push = (entry: HarvestedMedia) => {
+      const url = entry.url;
+      if (!url || /^blob:/i.test(url) || norm.isBrandAsset(url)) return;
+      if (seen.has(url)) return;
       seen.add(url);
       media.push(entry);
     };
@@ -148,16 +147,12 @@ async function inPageThreadsHarvest(
       const dur = v.duration;
       const w = v.videoWidth;
       const h = v.videoHeight;
-      push({
-        url,
-        type: "video",
-        ...(poster ? { poster } : {}),
-        ...(Number.isFinite(dur) && dur > 0
-          ? { durationSec: Math.round(dur) }
-          : {}),
-        ...(w ? { width: w } : {}),
-        ...(h ? { height: h } : {}),
-      });
+      const entry: HarvestedMedia = { url, type: "video" };
+      if (poster) entry.poster = poster;
+      if (Number.isFinite(dur) && dur > 0) entry.durationSec = Math.round(dur);
+      if (w) entry.width = w;
+      if (h) entry.height = h;
+      push(entry);
     }
     for (const img of Array.from(
       root.querySelectorAll<HTMLImageElement>("img"),
@@ -172,20 +167,19 @@ async function inPageThreadsHarvest(
       const alt = img.getAttribute("alt")?.trim();
       const w = img.naturalWidth;
       const h = img.naturalHeight;
-      push({
-        url: best,
-        type: "image",
-        ...(alt ? { altText: alt } : {}),
-        ...(w ? { width: w } : {}),
-        ...(h ? { height: h } : {}),
-      });
+      const entry: HarvestedMedia = { url: best, type: "image" };
+      if (alt) entry.altText = alt;
+      if (w) entry.width = w;
+      if (h) entry.height = h;
+      push(entry);
     }
     if (avatarUrl) meta.authorAvatar = avatarUrl;
 
-    if (media.length > 0) {
+    const first = media[0];
+    if (first) {
       out.mediaUrls = media;
-      out.mediaUrl = (media[0] as Record<string, unknown>).url;
-      out.mediaType = (media[0] as Record<string, unknown>).type ?? "image";
+      out.mediaUrl = first.url;
+      out.mediaType = first.type;
       meta.media = media;
     }
 
@@ -195,58 +189,79 @@ async function inPageThreadsHarvest(
   }
 }
 
-function dropLanding<T extends { url?: string }>(
-  items: T[] | undefined,
-): T[] | undefined {
+const HarvestedMediaSchema = z
+  .object({
+    url: z.string().optional().catch(undefined),
+    type: z.string().optional().catch(undefined),
+    poster: z.string().optional().catch(undefined),
+    altText: z.string().optional().catch(undefined),
+    durationSec: z.number().optional().catch(undefined),
+    width: z.number().optional().catch(undefined),
+    height: z.number().optional().catch(undefined),
+  })
+  .catch({});
+
+type HarvestedMediaEntry = z.infer<typeof HarvestedMediaSchema>;
+
+const HarvestedPostSchema = z
+  .object({
+    title: z.string().optional().catch(undefined),
+    description: z.string().optional().catch(undefined),
+    author: z.string().optional().catch(undefined),
+    lang: z.string().optional().catch(undefined),
+    mediaUrl: z.string().optional().catch(undefined),
+    mediaUrls: z.array(HarvestedMediaSchema).optional().catch(undefined),
+    mediaType: z.string().optional().catch(undefined),
+    meta: z
+      .looseObject({
+        media: z.array(HarvestedMediaSchema).optional().catch(undefined),
+      })
+      .optional()
+      .catch(undefined),
+  })
+  .catch({});
+
+function dropLanding(
+  items: HarvestedMediaEntry[] | undefined,
+): HarvestedMediaEntry[] | undefined {
   if (!items) return undefined;
   const kept = items.filter(
-    (m) => typeof m.url === "string" && !isThreadsLandingMedia(m.url),
+    (m) => m.url !== undefined && !isThreadsLandingMedia(m.url),
   );
   return kept.length > 0 ? kept : undefined;
 }
 
-export function adapt(raw: unknown, ctx: HarvestAdaptCtx): Capture | null {
-  if (!raw || typeof raw !== "object") return null;
-  const o = raw as Record<string, unknown>;
+export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx): Capture | null {
+  const post = HarvestedPostSchema.parse(raw);
   const title =
-    typeof o.title === "string" && !isThreadsLandingCopy(o.title)
-      ? o.title
+    post.title !== undefined && !isThreadsLandingCopy(post.title)
+      ? post.title
       : undefined;
   const description =
-    typeof o.description === "string" && !isThreadsLandingCopy(o.description)
-      ? o.description
+    post.description !== undefined && !isThreadsLandingCopy(post.description)
+      ? post.description
       : undefined;
-  const mediaUrls = dropLanding(
-    Array.isArray(o.mediaUrls)
-      ? (o.mediaUrls as Array<{ url?: string; type?: string; poster?: string }>)
-      : undefined,
-  );
+  const mediaUrls = dropLanding(post.mediaUrls);
   const mediaUrl =
-    typeof o.mediaUrl === "string" && !isThreadsLandingMedia(o.mediaUrl)
-      ? o.mediaUrl
+    post.mediaUrl !== undefined && !isThreadsLandingMedia(post.mediaUrl)
+      ? post.mediaUrl
       : mediaUrls?.[0]?.url;
-  if (!title && !description && !mediaUrl && typeof o.author !== "string") {
+  if (!title && !description && !mediaUrl && post.author === undefined) {
     return null;
   }
-  const metaObj =
-    o.meta && typeof o.meta === "object"
-      ? (o.meta as Record<string, unknown>)
-      : undefined;
-  if (metaObj && Array.isArray(metaObj.media)) {
-    const media = dropLanding(metaObj.media as Array<{ url?: string }>);
-    if (media) metaObj.media = media;
-    else delete metaObj.media;
+  const meta = post.meta;
+  if (meta && Array.isArray(meta.media)) {
+    const media = dropLanding(meta.media);
+    if (media) meta.media = media;
+    else delete meta.media;
   }
-  const page = parsePageBlob({
-    ...o,
-    ...(title ? { title } : { title: undefined }),
-    ...(description ? { description } : { description: undefined }),
-    ...(mediaUrl ? { mediaUrl } : {}),
-    ...(mediaUrls ? { mediaUrls } : {}),
-    ...(metaObj ? { meta: metaObj } : {}),
-  });
+  const blob = { ...post, title, description };
+  if (mediaUrl) blob.mediaUrl = mediaUrl;
+  if (mediaUrls) blob.mediaUrls = mediaUrls;
+  if (meta) blob.meta = meta;
+  const page = parsePageBlob(blob);
   if (!page) return null;
-  return captureFromTweetShaped(
+  return captureFromTweetDraft(
     draftFromDomHarvest({
       source: "threads",
       id: ctx.sourceId,

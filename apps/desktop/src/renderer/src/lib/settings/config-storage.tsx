@@ -1,9 +1,10 @@
 import { LocationRow } from "@/components/settings/sections/storage";
-import { defineSection } from "@/lib/settings/engine-types";
+import {
+  defineSection,
+  type SettingsValues,
+} from "@/lib/settings/engine-types";
 
-type Values = Record<string, unknown>;
-
-const guardsOn = (v: Values) => v.guardsEnabled === true;
+const guardsOn = (v: SettingsValues) => v.guardsEnabled === true;
 
 export const storageSection = defineSection("storage", {
   title: "Storage",

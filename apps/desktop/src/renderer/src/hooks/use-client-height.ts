@@ -1,9 +1,11 @@
 import { useCallback, useRef, useState } from "react";
 
-export function useClientHeight(): {
+interface ClientHeight {
   ref: (el: HTMLDivElement | null) => void;
   height: number;
-} {
+}
+
+export function useClientHeight(): ClientHeight {
   const observer = useRef<ResizeObserver | null>(null);
   const [height, setHeight] = useState(0);
 

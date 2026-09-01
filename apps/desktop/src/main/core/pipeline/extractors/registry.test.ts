@@ -1,5 +1,9 @@
 import { SOURCES } from "@pond/schema/db";
-import { EXTERNAL_SOURCE_IDS, syncConfigFor } from "@pond/schema/sources";
+import {
+  DEFAULT_RATE_PROFILE,
+  EXTERNAL_SOURCE_IDS,
+  syncConfigFor,
+} from "@pond/schema/sources";
 import { describe, expect, it } from "vitest";
 import { sourceIdFromUrl } from "../url";
 import { EXTRACTOR_LIST, extractorFor, resolveExtractor } from ".";
@@ -35,8 +39,18 @@ describe("sync config totality", () => {
       expect(cfg.rate.maxPerWindow).toBeGreaterThan(0);
       expect(cfg.rate.windowMs).toBeGreaterThan(0);
       expect(cfg.rate.firstSyncSlowdown).toBeGreaterThanOrEqual(1);
+      expect(cfg.rate.maxPerHour).toBeGreaterThan(cfg.rate.maxPerWindow);
+      expect(cfg.rate.maxPerDay).toBeGreaterThan(cfg.rate.maxPerHour);
     });
   }
+
+  it("paces the sources that block accounts harder than the default", () => {
+    for (const source of ["twitter", "instagram"] as const) {
+      const rate = syncConfigFor(source).rate;
+      expect(rate.maxPerHour).toBeLessThan(DEFAULT_RATE_PROFILE.maxPerHour);
+      expect(rate.maxPerDay).toBeLessThan(DEFAULT_RATE_PROFILE.maxPerDay);
+    }
+  });
 
   it("treats web and local as non-syncing", () => {
     expect(syncConfigFor("web").strategy).toBe("none");

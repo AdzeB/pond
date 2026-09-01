@@ -33,3 +33,5 @@ export const nativeResponseSchema = z.union([
 ]);
 
 export type NativeResponse = z.infer<typeof nativeResponseSchema>;
+
+export type NativeMessage = NativeRequest | NativeResponse;

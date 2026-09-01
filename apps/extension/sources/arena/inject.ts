@@ -3,6 +3,14 @@ import {
   installInterceptor,
   type RequestLens,
 } from "@/utils/intercept";
+import {
+  asText,
+  at,
+  isRecord,
+  type JsonRecord,
+  type JsonValue,
+  parseJsonValue,
+} from "@/utils/json";
 
 const GRAPHQL_RE = /\/graphql(?:\?|$)/i;
 const CONN_RE = /\/v2\/channels\/[^/]+\/connections(?:\?|$|\/)/;
@@ -16,35 +24,23 @@ const SAVE_OPERATIONS = new Set([
   "CreateBlockMutation",
 ]);
 
-function parseJson(body: string | null): any {
-  if (!body) return null;
-  try {
-    return JSON.parse(body);
-  } catch {
-    return null;
-  }
+function asOperations(json: JsonValue | null): JsonRecord[] {
+  if (Array.isArray(json)) return json.filter(isRecord);
+  return isRecord(json) ? [json] : [];
 }
 
-function asOps(json: any): any[] {
-  if (!json) return [];
-  if (Array.isArray(json)) return json;
-  return [json];
-}
-
-function pickSaveOpFromRequest(body: string | null): any {
-  const ops = asOps(parseJson(body));
+function pickSaveOpFromRequest(ops: JsonRecord[]): JsonRecord | null {
   for (const op of ops) {
-    if (!op || typeof op !== "object") continue;
-    if (op.operationName && SAVE_OPERATIONS.has(op.operationName)) return op;
-    const vars = op.variables;
-    if (vars && typeof vars === "object" && vars.connectableId) return op;
+    const operation = asText(op.operationName);
+    if (operation && SAVE_OPERATIONS.has(operation)) return op;
+    if (at(op, "variables", "connectableId")) return op;
   }
   return null;
 }
 
-function pickSaveOpFromResponse(json: any): any {
-  for (const op of asOps(json)) {
-    if (op?.data?.create_connection?.connectable?.id) return op;
+function pickSaveOpFromResponse(ops: JsonRecord[]): JsonRecord | null {
+  for (const op of ops) {
+    if (at(op, "data", "create_connection", "connectable", "id")) return op;
   }
   return null;
 }
@@ -70,21 +66,27 @@ export function inject(): void {
       if (!res.ok) return;
       const text = await res.readText();
       if (GRAPHQL_RE.test(req.url)) {
-        const requestOp = pickSaveOpFromRequest(await req.readBody());
-        const responseOp = pickSaveOpFromResponse(parseJson(text));
+        const requestOp = pickSaveOpFromRequest(
+          asOperations(parseJsonValue(await req.readBody())),
+        );
+        const responseOp = pickSaveOpFromResponse(
+          asOperations(parseJsonValue(text)),
+        );
         if (!requestOp && !responseOp) return;
-        const conn = responseOp?.data?.create_connection;
         const blockId = String(
-          conn?.connectable?.id ?? requestOp?.variables?.connectableId ?? "",
+          at(responseOp, "data", "create_connection", "connectable", "id") ??
+            at(requestOp, "variables", "connectableId") ??
+            "",
         );
         if (blockId) emitBlock(blockId);
         return;
       }
       if (CONN_RE.test(req.url) || BLOCK_RE.test(req.url)) {
-        const json = parseJson(text);
-        if (!json || typeof json !== "object") return;
+        const json = parseJsonValue(text);
+        if (!isRecord(json)) return;
         const block = json.block ?? json.connectable ?? (json.id ? json : null);
-        if (block?.id) emitBlock(String(block.id));
+        const blockId = at(block, "id");
+        if (blockId) emitBlock(String(blockId));
       }
     },
   });

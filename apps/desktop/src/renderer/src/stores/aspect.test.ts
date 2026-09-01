@@ -6,21 +6,25 @@ function save(partial: Partial<Save> & { id: string }): Save {
   return {
     url: "https://example.com",
     title: null,
+    description: null,
+    author: null,
     notes: null,
     source: "web",
+    sourceId: "",
     accountId: null,
+    mediaUrl: null,
     mediaType: null,
     fileSize: null,
     width: null,
     height: null,
     savedAt: Date.now(),
     createdAt: Date.now(),
-    updatedAt: Date.now(),
     deletedAt: null,
     coverIndex: 0,
     files: [],
+    tags: [],
     ...partial,
-  } as Save;
+  };
 }
 
 describe("aspectDimsFor", () => {
@@ -33,6 +37,8 @@ describe("aspectDimsFor", () => {
             path: "video.mp4",
             kind: "video",
             mimeType: "video/mp4",
+            sha256: "",
+            size: 0,
             width: 480,
             height: 854,
           },
@@ -40,10 +46,12 @@ describe("aspectDimsFor", () => {
             path: "poster.jpg",
             kind: "poster",
             mimeType: "image/jpeg",
+            sha256: "",
+            size: 0,
             width: 1280,
             height: 720,
           },
-        ] as never,
+        ],
       }),
     );
     expect(result).toEqual({ w: 480, h: 854 });
@@ -60,6 +68,8 @@ describe("aspectDimsFor", () => {
             path: "video.mp4",
             kind: "video",
             mimeType: "video/mp4",
+            sha256: "",
+            size: 0,
             width: null,
             height: null,
           },
@@ -67,10 +77,12 @@ describe("aspectDimsFor", () => {
             path: "poster.jpg",
             kind: "poster",
             mimeType: "image/jpeg",
+            sha256: "",
+            size: 0,
             width: 1280,
             height: 720,
           },
-        ] as never,
+        ],
       }),
     );
     expect(result).toEqual({ w: 480, h: 854 });
@@ -85,6 +97,8 @@ describe("aspectDimsFor", () => {
             path: "video.mp4",
             kind: "video",
             mimeType: "video/mp4",
+            sha256: "",
+            size: 0,
             width: null,
             height: null,
           },
@@ -92,10 +106,12 @@ describe("aspectDimsFor", () => {
             path: "poster.jpg",
             kind: "poster",
             mimeType: "image/jpeg",
+            sha256: "",
+            size: 0,
             width: 720,
             height: 1280,
           },
-        ] as never,
+        ],
       }),
     );
     expect(result).toEqual({ w: null, h: null });

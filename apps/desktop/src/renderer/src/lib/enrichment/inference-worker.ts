@@ -15,14 +15,14 @@ import type {
   SerializedImage,
 } from "./inference-protocol";
 
-const ctx = self as unknown as DedicatedWorkerGlobalScope;
+declare const self: DedicatedWorkerGlobalScope;
 
 function toRawImage(s: SerializedImage): RawImage {
   return new RawImage(
     new Uint8ClampedArray(s.data),
     s.width,
     s.height,
-    s.channels as 1 | 2 | 3 | 4,
+    s.channels,
   );
 }
 
@@ -68,20 +68,20 @@ async function handle(
   }
 }
 
-ctx.onmessage = (event: MessageEvent<InferenceRequest>) => {
+self.onmessage = (event: MessageEvent<InferenceRequest>) => {
   const req = event.data;
   void (async () => {
     try {
       const { result, transfer } = await handle(req);
       const response: InferenceResponse = { id: req.id, ok: true, result };
-      ctx.postMessage(response, transfer);
+      self.postMessage(response, transfer);
     } catch (err) {
       const response: InferenceResponse = {
         id: req.id,
         ok: false,
         error: err instanceof Error ? err.message : String(err),
       };
-      ctx.postMessage(response);
+      self.postMessage(response);
     }
   })();
 };

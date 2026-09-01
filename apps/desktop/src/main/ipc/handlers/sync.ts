@@ -1,4 +1,4 @@
-import type { Source } from "@pond/schema/db";
+import { isSource } from "@pond/schema/sources";
 import { IPC } from "../../../shared/constants";
 import {
   isAllPaused,
@@ -72,7 +72,7 @@ export function registerSyncHandlers(): void {
   });
 
   safeHandle(IPC.governorResumeSource, async (_, source: string) => {
-    resumeSource(source as Source);
+    if (isSource(source)) resumeSource(source);
     return { ok: true as const };
   });
 }

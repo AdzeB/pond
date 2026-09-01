@@ -1,6 +1,7 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
+import { z } from "zod";
 import { bySortOrderThenName } from "@/lib/util/sort";
 
 export interface TagGroupRow {
@@ -24,6 +25,21 @@ const tagGroupsStore = new Store<TagGroupsState>({
   loaded: false,
 });
 
+const TagGroupRowSchema = z.object({
+  id: z.string().min(1),
+  name: z.string(),
+  description: z.string().nullable().catch(null),
+  color: z.string().nullable().catch(null),
+  sortOrder: z.number().catch(0),
+  collapsed: z.coerce.boolean(),
+  tagIds: z.array(z.string()).catch([]),
+  tagNames: z.array(z.string()).catch([]),
+});
+
+const TagGroupRowsSchema = z.array(TagGroupRowSchema.nullable().catch(null));
+
+const TagGroupPatchSchema = TagGroupRowSchema.partial().nullish().catch(null);
+
 let inflight: Promise<ReadonlyArray<TagGroupRow>> | null = null;
 let subscribed = false;
 
@@ -39,33 +55,15 @@ async function load(): Promise<ReadonlyArray<TagGroupRow>> {
   if (tagGroupsStore.state.loaded) return tagGroupsStore.state.rows;
   if (inflight) return inflight;
   inflight = (async () => {
-    const rows = (await window.pond.query("tagGroups.list", {})) as Array<
-      Partial<TagGroupRow> & { id?: string; name?: string }
-    >;
-    const normalised = rows
-      .map(normaliseRow)
-      .filter((r): r is TagGroupRow => r !== null);
+    const rows = TagGroupRowsSchema.parse(
+      await window.pond.query("tagGroups.list", {}),
+    );
+    const normalised = rows.filter((r): r is TagGroupRow => r !== null);
     setRows(normalised);
     inflight = null;
     return tagGroupsStore.state.rows;
   })();
   return inflight;
-}
-
-function normaliseRow(
-  raw: Partial<TagGroupRow> & { id?: string; name?: string },
-): TagGroupRow | null {
-  if (!raw.id || typeof raw.name !== "string") return null;
-  return {
-    id: raw.id,
-    name: raw.name,
-    description: typeof raw.description === "string" ? raw.description : null,
-    color: raw.color ?? null,
-    sortOrder: typeof raw.sortOrder === "number" ? raw.sortOrder : 0,
-    collapsed: Boolean(raw.collapsed),
-    tagIds: Array.isArray(raw.tagIds) ? raw.tagIds : [],
-    tagNames: Array.isArray(raw.tagNames) ? raw.tagNames : [],
-  };
 }
 
 let refetchScheduled = false;
@@ -85,13 +83,7 @@ function scheduleRefetch(): void {
 function ensureSubscribed(): void {
   if (subscribed) return;
   subscribed = true;
-  window.pond.onSyncAction((raw) => {
-    const event = raw as {
-      modelName?: string;
-      action?: "I" | "U" | "D" | "A";
-      modelId?: string;
-      data?: unknown;
-    };
+  window.pond.onSyncAction((event) => {
     if (event.modelName === "tag_group_member") {
       scheduleRefetch();
       return;
@@ -102,8 +94,9 @@ function ensureSubscribed(): void {
     const cache = tagGroupsStore.state.rows;
 
     if (event.action === "I") {
-      const row = normaliseRow(event.data as Partial<TagGroupRow>);
-      if (!row) return;
+      const inserted = TagGroupRowSchema.safeParse(event.data);
+      if (!inserted.success) return;
+      const row = inserted.data;
       const idx = cache.findIndex((r) => r.id === row.id);
       const next = cache.slice();
       if (idx >= 0)
@@ -117,13 +110,12 @@ function ensureSubscribed(): void {
       return;
     }
     if (event.action === "U") {
-      const patch = (event.data ?? {}) as Partial<TagGroupRow>;
       const idx = cache.findIndex((r) => r.id === event.modelId);
       if (idx < 0) return;
       const existing = cache[idx];
       if (!existing) return;
       const next = cache.slice();
-      next[idx] = { ...existing, ...patch };
+      next[idx] = { ...existing, ...TagGroupPatchSchema.parse(event.data) };
       setRows(next);
       return;
     }

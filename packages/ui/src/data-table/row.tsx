@@ -127,4 +127,6 @@ function RowImpl<T>({
   return <div {...rowProps}>{cells}</div>;
 }
 
-export const Row = memo(RowImpl) as typeof RowImpl;
+export const Row =
+  // SAFETY: `memo` renders `RowImpl` with the same props; only the type parameter is lost, because React types `memo` without one.
+  memo(RowImpl) as typeof RowImpl;

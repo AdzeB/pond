@@ -14,6 +14,8 @@ export function openShortcutsSheet(): void {
   handle.open(null);
 }
 
+// SAFETY: `ShortcutId` is `keyof typeof SHORTCUTS`, so the own keys of that
+// literal object are exactly its members.
 const IDS = Object.keys(SHORTCUTS) as ShortcutId[];
 
 export function ShortcutsSheetHost() {

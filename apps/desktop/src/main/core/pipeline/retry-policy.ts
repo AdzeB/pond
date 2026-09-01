@@ -35,14 +35,14 @@ function backoffFor(attempts: number): number {
 }
 
 export function classifyError(
-  err: unknown,
+  cause: unknown,
   ctx: { attempts: number; maxAttempts: number },
 ): RetryDecision {
   const now = Date.now();
   const lastError =
-    err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    cause instanceof Error ? `${cause.name}: ${cause.message}` : String(cause);
 
-  if (err instanceof AuthRequiredError) {
+  if (cause instanceof AuthRequiredError) {
     return {
       status: "blocked",
       nextRunAt: new Date(now + 24 * 60 * 60_000),
@@ -50,8 +50,8 @@ export function classifyError(
       lastError,
     };
   }
-  if (err instanceof RateLimitedError) {
-    const ms = (err.retryAfterSec ?? 60) * 1000;
+  if (cause instanceof RateLimitedError) {
+    const ms = (cause.retryAfterSec ?? 60) * 1000;
     return {
       status: "pending",
       nextRunAt: new Date(now + ms),
@@ -59,7 +59,7 @@ export function classifyError(
       lastError,
     };
   }
-  if (err instanceof GeoRestrictedError) {
+  if (cause instanceof GeoRestrictedError) {
     return {
       status: "failed",
       nextRunAt: new Date(now + 24 * 60 * 60_000),
@@ -67,7 +67,7 @@ export function classifyError(
       lastError,
     };
   }
-  if (err instanceof UnsupportedError || err instanceof TerminalError) {
+  if (cause instanceof UnsupportedError || cause instanceof TerminalError) {
     return {
       status: "failed",
       nextRunAt: new Date(now + 24 * 60 * 60_000),
@@ -76,7 +76,7 @@ export function classifyError(
     };
   }
   const isTransient =
-    err instanceof TransientError || !(err instanceof ExtractorError);
+    cause instanceof TransientError || !(cause instanceof ExtractorError);
   if (isTransient) {
     const nextAttempts = ctx.attempts + 1;
     if (nextAttempts >= ctx.maxAttempts) {

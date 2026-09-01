@@ -11,6 +11,11 @@ const SINGLE_MAX_H = 430;
 const SINGLE_MAX_H_COMPACT = 280;
 const DEFAULT_RATIO = 4 / 5;
 
+interface SingleMediaStyle extends CSSProperties {
+  "--threads-media-max-h": string;
+  "--threads-media-ratio"?: string;
+}
+
 export function ThreadsMedia({
   media,
   compact,
@@ -51,17 +56,14 @@ function Single({
   const maxH = compact ? SINGLE_MAX_H_COMPACT : SINGLE_MAX_H;
   const ratio =
     media.width && media.height ? media.width / media.height : undefined;
+  const style: SingleMediaStyle = { "--threads-media-max-h": `${maxH}px` };
+  if (ratio) style["--threads-media-ratio"] = String(ratio);
   return (
     <div
       className={styles.single}
       data-compact={compact ? "true" : undefined}
       data-ratio={ratio ? "true" : undefined}
-      style={
-        {
-          "--threads-media-max-h": `${maxH}px`,
-          ...(ratio ? { "--threads-media-ratio": String(ratio) } : {}),
-        } as CSSProperties
-      }
+      style={style}
     >
       <Tile media={media} />
     </div>
@@ -95,7 +97,7 @@ function Tile({
           <span className={styles["play-badge"]} aria-hidden>
             <PlayIcon width={22} height={22} />
           </span>
-          {typeof media.durationSec === "number" ? (
+          {media.durationSec !== undefined ? (
             <span className={styles["duration-badge"]}>
               {formatDuration(media.durationSec)}
             </span>

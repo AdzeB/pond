@@ -19,15 +19,14 @@ export function packUniform(
   containerWidth: number,
   colMin: number,
   gap: number,
-  cellHeight: number | ((colW: number) => number),
+  cellHeight: (colW: number) => number,
 ): PackResult {
   if (containerWidth <= 0 || ids.length === 0) {
     return { items: [], totalHeight: 0 };
   }
   const cols = Math.max(1, Math.floor((containerWidth + gap) / (colMin + gap)));
   const colW = (containerWidth - gap * (cols - 1)) / cols;
-  const cellH =
-    typeof cellHeight === "function" ? cellHeight(colW) : cellHeight;
+  const cellH = cellHeight(colW);
   const place = (idx: number) => {
     const col = idx % cols;
     const row = Math.floor(idx / cols);

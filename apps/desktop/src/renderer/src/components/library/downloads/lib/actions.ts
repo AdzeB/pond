@@ -1,15 +1,18 @@
+import { z } from "zod";
 import { openTrayConfirm } from "@/components/library/dock/confirm";
 import { type DownloadRow, statusFeed } from "@/lib/status-feed";
 import { downloadsSelection } from "@/stores/downloads-selection";
+
+const RetryResultSchema = z.object({ ok: z.boolean(), requeued: z.number() });
 
 export async function retryDownloadRows(
   rows: readonly DownloadRow[],
 ): Promise<boolean> {
   const ids = rows.filter((r) => r.status === "failed").map((r) => r.saveId);
   if (ids.length === 0) return false;
-  const result = (await window.pond.query("saves.retryFailed", {
-    ids,
-  })) as { ok: boolean; requeued: number };
+  const result = RetryResultSchema.parse(
+    await window.pond.query("saves.retryFailed", { ids }),
+  );
   if (!result.ok || result.requeued === 0) {
     statusFeed.error("Retry failed items", "Couldn't retry failed items.");
     return false;

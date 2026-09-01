@@ -3,7 +3,7 @@ type AudioCodec = "aac" | "opus" | "any";
 type VideoContainer = "auto" | "mp4" | "mkv" | "webm" | "mov";
 type SubtitleMode = "off" | "download" | "embed";
 
-export interface VideoDownloadPrefs {
+export type VideoDownloadPrefs = {
   enabled: boolean;
   maxHeight: number | null;
   maxFps: number | null;
@@ -17,7 +17,7 @@ export interface VideoDownloadPrefs {
   embedThumbnail: boolean;
   embedChapters: boolean;
   sponsorblockRemove: boolean;
-}
+};
 
 export const DEFAULT_VIDEO_DOWNLOAD: VideoDownloadPrefs = {
   enabled: true,
@@ -37,7 +37,7 @@ export const DEFAULT_VIDEO_DOWNLOAD: VideoDownloadPrefs = {
 
 type ImageFormat = "original" | "jpeg" | "png" | "webp" | "avif";
 
-export interface ImageDownloadPrefs {
+export type ImageDownloadPrefs = {
   maxLongEdge: number | null;
   format: ImageFormat;
   quality: number;
@@ -45,7 +45,7 @@ export interface ImageDownloadPrefs {
   progressive: boolean;
   preserveMetadata: boolean;
   maxFileSizeMb: number | null;
-}
+};
 
 export const DEFAULT_IMAGE_DOWNLOAD: ImageDownloadPrefs = {
   maxLongEdge: 2048,

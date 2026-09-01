@@ -1,4 +1,5 @@
 import type { SaveFile } from "@pond/schema/db";
+import { storedAsRawJson } from "@pond/schema/raw-schema";
 import { describe, expect, it } from "vitest";
 import {
   needsPosterRepair,
@@ -14,12 +15,18 @@ function file(
   path: string,
   dims?: { width: number; height: number },
 ): SaveFile {
-  return {
+  const file: SaveFile = {
     kind,
     path,
+    sha256: "",
+    size: 0,
     mimeType: kind === "video" ? "video/mp4" : "image/jpeg",
-    ...(dims ?? {}),
-  } as SaveFile;
+  };
+  if (dims) {
+    file.width = dims.width;
+    file.height = dims.height;
+  }
+  return file;
 }
 
 describe("usesPlatformPoster", () => {
@@ -76,21 +83,26 @@ describe("needsPosterRepair", () => {
 describe("youtubeThumbnailUrl", () => {
   it("prefers ytdlp thumbnail then capture posterUrl", () => {
     expect(
-      youtubeThumbnailUrl({
-        ytdlp: { thumbnail: "https://i.ytimg.com/vi/x/hqdefault.jpg" },
-      }),
+      youtubeThumbnailUrl(
+        storedAsRawJson({
+          ytdlp: { thumbnail: "https://i.ytimg.com/vi/x/hqdefault.jpg" },
+        }),
+      ),
     ).toBe("https://i.ytimg.com/vi/x/hqdefault.jpg");
     expect(
-      youtubeThumbnailUrl({
-        capture: {
-          media: [
-            {
-              type: "video",
-              posterUrl: "https://i.ytimg.com/vi/y/hqdefault.jpg",
-            },
-          ],
-        },
-      }),
+      youtubeThumbnailUrl(
+        storedAsRawJson({
+          capture: {
+            media: [
+              {
+                url: "https://video.example/y.mp4",
+                type: "video",
+                posterUrl: "https://i.ytimg.com/vi/y/hqdefault.jpg",
+              },
+            ],
+          },
+        }),
+      ),
     ).toBe("https://i.ytimg.com/vi/y/hqdefault.jpg");
   });
 });

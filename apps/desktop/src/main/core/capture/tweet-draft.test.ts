@@ -1,6 +1,6 @@
 import { QUOTE_DEPTH_CAP, walkCaptureMedia } from "@pond/schema/raw";
 import { describe, expect, it } from "vitest";
-import { captureFromTweetShaped, type TweetShapedDraft } from "./tweet-shaped";
+import { captureFromTweetDraft, type TweetDraft } from "./tweet-draft";
 
 const parentMedia = {
   url: "https://cdn.example.com/parent.jpg",
@@ -16,7 +16,7 @@ const quotedMedia = {
   height: 400,
 };
 
-const quotedDraft: TweetShapedDraft = {
+const quotedDraft: TweetDraft = {
   source: "twitter",
   id: "2",
   url: "https://x.com/carol/status/2",
@@ -25,7 +25,7 @@ const quotedDraft: TweetShapedDraft = {
   media: [quotedMedia],
 };
 
-const parentDraft: TweetShapedDraft = {
+const parentDraft: TweetDraft = {
   source: "twitter",
   id: "1",
   url: "https://x.com/alice/status/1",
@@ -41,9 +41,9 @@ const parentDraft: TweetShapedDraft = {
   metrics: { likes: 12, replies: 3 },
 };
 
-describe("captureFromTweetShaped", () => {
+describe("captureFromTweetDraft", () => {
   it("puts quote media on the quoted Capture, not the parent", () => {
-    const capture = captureFromTweetShaped(parentDraft);
+    const capture = captureFromTweetDraft(parentDraft);
     expect(capture.media.map((m) => m.url)).toEqual([parentMedia.url]);
     expect(capture.quoted?.id).toBe("2");
     expect(capture.quoted?.description).toBe("original thought");
@@ -59,7 +59,7 @@ describe("captureFromTweetShaped", () => {
   });
 
   it("walks quote media for fetch and video counts", () => {
-    const capture = captureFromTweetShaped(parentDraft);
+    const capture = captureFromTweetDraft(parentDraft);
     expect(walkCaptureMedia(capture).map((m) => m.url)).toEqual([
       parentMedia.url,
       quotedMedia.url,
@@ -67,7 +67,7 @@ describe("captureFromTweetShaped", () => {
   });
 
   it("caps quote depth", () => {
-    let draft: TweetShapedDraft = {
+    let draft: TweetDraft = {
       source: "threads",
       id: "leaf",
       url: "https://www.threads.com/@z/post/leaf",
@@ -82,7 +82,7 @@ describe("captureFromTweetShaped", () => {
         quoted: draft,
       };
     }
-    const capture = captureFromTweetShaped(draft);
+    const capture = captureFromTweetDraft(draft);
     let depth = 0;
     let current = capture.quoted;
     while (current) {
@@ -93,7 +93,7 @@ describe("captureFromTweetShaped", () => {
   });
 
   it("records reply fields on the Capture", () => {
-    const capture = captureFromTweetShaped({
+    const capture = captureFromTweetDraft({
       ...parentDraft,
       quoted: undefined,
       card: undefined,

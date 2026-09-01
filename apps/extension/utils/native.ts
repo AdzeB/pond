@@ -2,6 +2,7 @@ import {
   NATIVE_HOST_NAME,
   type NativeRequest,
   type NativeResponse,
+  nativeResponseSchema,
 } from "@pond/schema/native";
 
 export async function nativeCall(
@@ -13,16 +14,8 @@ export async function nativeCall(
         resolve({ ok: false, error: "offline" });
         return;
       }
-      if (!response || typeof response !== "object") {
-        resolve({ ok: false, error: "offline" });
-        return;
-      }
-      const row = response as NativeResponse;
-      if (row.ok === true || row.ok === false) {
-        resolve(row);
-        return;
-      }
-      resolve({ ok: false, error: "offline" });
+      const parsed = nativeResponseSchema.safeParse(response);
+      resolve(parsed.success ? parsed.data : { ok: false, error: "offline" });
     });
   });
 }

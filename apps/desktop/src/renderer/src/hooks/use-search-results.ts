@@ -35,13 +35,15 @@ function commitHits(query: string, deletedOnly: boolean, saves: Save[]): void {
   };
 }
 
+interface SearchResults {
+  results: Save[] | null;
+  searching: boolean;
+}
+
 export function useSearchResults(
   query: string,
   opts?: { deletedOnly?: boolean },
-): {
-  results: Save[] | null;
-  searching: boolean;
-} {
+): SearchResults {
   const _saves = useSaves();
   const deletedOnly = opts?.deletedOnly ?? false;
   const [results, setResults] = useState<Save[] | null>(() =>

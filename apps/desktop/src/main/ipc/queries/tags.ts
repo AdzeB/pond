@@ -1,4 +1,14 @@
-import type { QueryHandlerMap } from "../helpers";
+import { z } from "zod";
+import {
+  NullableStringParam,
+  type QueryHandlerMap,
+  query,
+  StringListParam,
+  StringParam,
+} from "./params";
+
+const NameParams = z.object({ name: StringParam });
+const RenameParams = z.object({ from: StringParam, to: StringParam });
 
 export const tagsQueries: QueryHandlerMap = {
   async "tags.list"() {
@@ -6,58 +16,63 @@ export const tagsQueries: QueryHandlerMap = {
     return await listTags();
   },
 
-  async "tags.create"(params) {
+  "tags.create": query(NameParams, async (params) => {
     const { createTag } = await import("../../core/tags");
-    return await createTag({
-      name: String(params.name ?? ""),
-    });
-  },
+    return await createTag({ name: params.name });
+  }),
 
-  async "tags.rename"(params) {
+  "tags.rename": query(RenameParams, async (params) => {
     const { renameTag } = await import("../../core/tags");
-    return await renameTag(String(params.from ?? ""), String(params.to ?? ""));
-  },
+    return await renameTag(params.from, params.to);
+  }),
 
-  async "tags.merge"(params) {
+  "tags.merge": query(RenameParams, async (params) => {
     const { mergeTags } = await import("../../core/tags");
-    return await mergeTags(String(params.from ?? ""), String(params.to ?? ""));
-  },
+    return await mergeTags(params.from, params.to);
+  }),
 
-  async "tags.update"(params) {
-    const { updateTag } = await import("../../core/tags");
-    const patch = (params.patch as Record<string, unknown>) ?? {};
-    return await updateTag(String(params.name ?? ""), {
-      ...("starred" in patch ? { starred: Boolean(patch.starred) } : {}),
-      ...("description" in patch
-        ? {
-            description:
-              patch.description == null ? null : String(patch.description),
-          }
-        : {}),
-    });
-  },
+  "tags.update": query(
+    z.object({
+      name: StringParam,
+      patch: z
+        .looseObject({
+          starred: z.coerce.boolean().optional(),
+          description: NullableStringParam.optional(),
+        })
+        .catch({}),
+    }),
+    async (params) => {
+      const { updateTag } = await import("../../core/tags");
+      const patch: Parameters<typeof updateTag>[1] = {};
+      if ("starred" in params.patch) patch.starred = params.patch.starred;
+      if ("description" in params.patch) {
+        patch.description = params.patch.description;
+      }
+      return await updateTag(params.name, patch);
+    },
+  ),
 
-  async "tags.delete"(params) {
+  "tags.delete": query(NameParams, async (params) => {
     const { deleteTag } = await import("../../core/tags");
-    return await deleteTag(String(params.name ?? ""));
-  },
+    return await deleteTag(params.name);
+  }),
 
-  async "tags.convertToGroup"(params) {
+  "tags.convertToGroup": query(NameParams, async (params) => {
     const { createGroup } = await import("../../core/tag-groups");
     const { deleteTag } = await import("../../core/tags");
-    const name = String(params.name ?? "").trim();
+    const name = params.name.trim();
     if (!name) return { ok: false };
     const created = await createGroup({ name });
     if (!created.ok) return { ok: false };
     await deleteTag(name);
     return { ok: true };
-  },
+  }),
 
-  async "tags.setForSave"(params) {
-    const { setSaveTags } = await import("../../core/tags");
-    return await setSaveTags(
-      String(params.saveId ?? ""),
-      Array.isArray(params.tags) ? (params.tags as string[]) : [],
-    );
-  },
+  "tags.setForSave": query(
+    z.object({ saveId: StringParam, tags: StringListParam }),
+    async (params) => {
+      const { setSaveTags } = await import("../../core/tags");
+      return await setSaveTags(params.saveId, params.tags);
+    },
+  ),
 };

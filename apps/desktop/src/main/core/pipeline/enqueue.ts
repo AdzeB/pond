@@ -1,4 +1,5 @@
 import {
+  CANCEL_REASON,
   type ListKind,
   type NewSave,
   type NewSyncAction,
@@ -11,7 +12,18 @@ import {
 } from "@pond/schema/db";
 import { domainFromUrl } from "@pond/schema/domain";
 import { listKindsEqual, mergeListKinds } from "@pond/schema/list-kinds";
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import type { Capture } from "@pond/schema/raw";
+import {
+  and,
+  eq,
+  exists,
+  inArray,
+  isNull,
+  ne,
+  notExists,
+  or,
+  sql,
+} from "drizzle-orm";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { getDb } from "../../db";
@@ -99,13 +111,25 @@ export interface EnqueueOptions {
 
 const HARVEST_FRESH_MS = 24 * 60 * 60 * 1000;
 
-export function isFreshHarvest(rawJson: unknown, now = Date.now()): boolean {
-  if (!rawJson || typeof rawJson !== "object") return false;
-  const v = rawJson as { extractedAt?: unknown; capture?: unknown };
-  if (typeof v.extractedAt !== "string" || !v.capture) return false;
-  const ms = Date.parse(v.extractedAt);
+interface HarvestedRawJson {
+  capture?: Partial<Capture>;
+  extractedAt?: string;
+}
+
+export function isFreshHarvest(
+  rawJson: HarvestedRawJson | null,
+  now = Date.now(),
+): boolean {
+  if (!rawJson?.extractedAt || !rawJson.capture) return false;
+  const ms = Date.parse(rawJson.extractedAt);
   if (!Number.isFinite(ms)) return false;
   return now - ms < HARVEST_FRESH_MS;
+}
+
+function isItemList(
+  input: string | readonly EnqueueItem[],
+): input is readonly EnqueueItem[] {
+  return Array.isArray(input);
 }
 
 export function enqueue(
@@ -120,8 +144,8 @@ export async function enqueue(
   input: string | readonly EnqueueItem[],
   opts: EnqueueOptions = {},
 ): Promise<EnqueueOneResult | EnqueueManyResult> {
-  if (typeof input === "string") return enqueueOne(input, opts);
-  return enqueueMany(input, opts);
+  if (isItemList(input)) return enqueueMany(input, opts);
+  return enqueueOne(input, opts);
 }
 
 async function enqueueOne(
@@ -223,8 +247,8 @@ async function enqueueOne(
     coverIndex: 0,
     savedAt: now,
     createdAt: now,
-    ...(opts.seed ? seedToInsertColumns(opts.seed) : {}),
   };
+  if (opts.seed) Object.assign(insertValues, seedToInsertColumns(opts.seed));
 
   const ops = planOps(source);
   const taskRows: NewTask[] = ops.map((op) => ({
@@ -249,7 +273,7 @@ async function enqueueOne(
         modelName: "save",
         modelId: id,
         action: "I",
-        data: insertValues as unknown,
+        data: insertValues,
         actor: opts.trigger?.startsWith("user:") ? "user" : "system",
         actorReason: opts.trigger ?? "pipeline:enqueue",
         batchId: ulid(),
@@ -318,7 +342,40 @@ export async function retryFailedSaves(
     : db
         .select({ id: saves.id })
         .from(saves)
-        .where(and(eq(saves.status, "failed"), isNull(saves.deletedAt)))
+        .where(
+          and(
+            eq(saves.status, "failed"),
+            isNull(saves.deletedAt),
+            or(
+              notExists(
+                db
+                  .select({ one: sql`1` })
+                  .from(tasks)
+                  .where(
+                    and(
+                      eq(tasks.saveId, saves.id),
+                      eq(tasks.lastError, CANCEL_REASON),
+                    ),
+                  ),
+              ),
+              exists(
+                db
+                  .select({ one: sql`1` })
+                  .from(tasks)
+                  .where(
+                    and(
+                      eq(tasks.saveId, saves.id),
+                      inArray(tasks.status, ["failed", "blocked"]),
+                      or(
+                        isNull(tasks.lastError),
+                        ne(tasks.lastError, CANCEL_REASON),
+                      ),
+                    ),
+                  ),
+              ),
+            ),
+          ),
+        )
         .all();
   if (rows.length === 0) return 0;
 
@@ -415,19 +472,14 @@ async function enqueueMany(
       prev.listKinds = mergeListKinds(prev.listKinds, kinds);
       continue;
     }
-    const candidate: Candidate = {
-      url,
-      source,
-      sourceId,
-      listKinds: kinds,
-      ...(item.seed ? { seed: item.seed } : {}),
-    };
+    const candidate: Candidate = { url, source, sourceId, listKinds: kinds };
+    if (item.seed) candidate.seed = item.seed;
     byKey.set(key, candidate);
     candidates.push(candidate);
   }
   if (candidates.length === 0) return result;
 
-  const bySource = new Map<string, Candidate[]>();
+  const bySource = new Map<Source, Candidate[]>();
   for (const c of candidates) {
     const list = bySource.get(c.source) ?? [];
     list.push(c);
@@ -440,12 +492,7 @@ async function enqueueMany(
       const rows = db
         .select({ sourceId: saves.sourceId })
         .from(saves)
-        .where(
-          and(
-            eq(saves.source, source as Candidate["source"]),
-            inArray(saves.sourceId, idChunk),
-          ),
-        )
+        .where(and(eq(saves.source, source), inArray(saves.sourceId, idChunk)))
         .all();
       for (const r of rows) existingKeys.add(`${source}\u0000${r.sourceId}`);
     }
@@ -460,13 +507,14 @@ async function enqueueMany(
 
   for (const c of existing) {
     try {
-      await enqueueOne(c.url, {
+      const one: EnqueueOptions = {
         trigger: opts.trigger,
         force: opts.force,
         accountId: opts.accountId,
         listKinds: c.listKinds,
-        ...(c.seed ? { seed: c.seed } : {}),
-      });
+      };
+      if (c.seed) one.seed = c.seed;
+      await enqueueOne(c.url, one);
       result.existing += 1;
     } catch (err) {
       result.failed += 1;
@@ -504,8 +552,8 @@ async function enqueueMany(
       coverIndex: 0,
       savedAt: now,
       createdAt: now,
-      ...(c.seed ? seedToInsertColumns(c.seed) : {}),
     };
+    if (c.seed) Object.assign(save, seedToInsertColumns(c.seed));
     const taskRows: NewTask[] = planOps(c.source).map((op) => ({
       id: ulid(),
       saveId: id,
@@ -521,7 +569,7 @@ async function enqueueMany(
       modelName: "save",
       modelId: id,
       action: "I",
-      data: save as unknown,
+      data: save,
       actor: actorOf(),
       actorReason: opts.trigger ?? "pipeline:enqueue:many",
       batchId: ulid(),

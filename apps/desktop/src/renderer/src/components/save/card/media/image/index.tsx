@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { BlurHash } from "@/components/save/card/media/blur-hash";
 import { useImageReady } from "@/components/save/card/media/lib/use-image-ready";
 import type { MediaUnit } from "@/lib/media/units";
+import { thumbUrlFor } from "@/lib/media/url";
 import type { Save } from "@/lib/types";
 import { aspectCoverKey, aspectDimsFor, recordAspect } from "@/stores/aspect";
 import styles from "./styles.module.css";
@@ -9,16 +10,18 @@ import styles from "./styles.module.css";
 export function CardImage({
   save,
   unit,
+  width,
   onBroken,
   onReady,
 }: {
   save: Save;
   unit: MediaUnit;
+  width?: number;
   onBroken: () => void;
   onReady?: () => void;
 }) {
   const { w, h } = aspectDimsFor(save, {}, unit);
-  const src = unit.url;
+  const src = thumbUrlFor(unit.url, width);
   const reportReady = useCallback(
     (image: HTMLImageElement) => {
       recordAspect(save.id, image.naturalWidth, image.naturalHeight, {

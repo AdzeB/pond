@@ -6,18 +6,19 @@ interface PageProps extends React.ComponentPropsWithoutRef<"div"> {
   inset?: number;
 }
 
+interface PageStyle extends React.CSSProperties {
+  "--settings-padding-inline-inset"?: string;
+}
+
 function Page({ className, width, inset, style, ...props }: PageProps) {
+  const pageStyle: PageStyle = { ...style };
+  if (inset) pageStyle["--settings-padding-inline-inset"] = `${inset}px`;
   return (
     <div
       className={cn(styles.page, className)}
       data-width={width}
       data-inset={inset}
-      style={
-        {
-          ...style,
-          ...(inset ? { "--settings-padding-inline-inset": `${inset}px` } : {}),
-        } as React.CSSProperties
-      }
+      style={pageStyle}
       {...props}
     />
   );

@@ -107,16 +107,49 @@ export function useCarouselNavigation(
     centerSlide(scroller, 0, "instant");
   }, [scroller]);
 
-  const goPrev = useCallback(() => {
+  /** Where the last keypress aimed. Reading the live scroll position instead makes a burst of presses all resolve to the same slide. */
+  const targetRef = useRef<number | null>(null);
+
+  useEffect(() => {
     if (!scroller) return;
-    interactedRef.current = true;
-    centerSlide(scroller, centeredIndex(scroller) - 1, "smooth");
-  }, [scroller]);
-  const goNext = useCallback(() => {
-    if (!scroller) return;
-    interactedRef.current = true;
-    centerSlide(scroller, centeredIndex(scroller) + 1, "smooth");
+    const settle = () => {
+      if (targetRef.current === centeredIndex(scroller))
+        targetRef.current = null;
+    };
+    const release = () => {
+      targetRef.current = null;
+    };
+    scroller.addEventListener("scrollend", settle);
+    scroller.addEventListener("pointerdown", release, { passive: true });
+    scroller.addEventListener("wheel", release, { passive: true });
+    return () => {
+      scroller.removeEventListener("scrollend", settle);
+      scroller.removeEventListener("pointerdown", release);
+      scroller.removeEventListener("wheel", release);
+    };
   }, [scroller]);
 
-  return { goPrev, goNext };
+  const step = useCallback(
+    (delta: number): boolean => {
+      if (!scroller) return false;
+      const count = slideNodes(scroller).length;
+      const from = targetRef.current ?? centeredIndex(scroller);
+      const next = clamp(from + delta, 0, count - 1);
+      if (next === from) return false;
+      interactedRef.current = true;
+      targetRef.current = next;
+      centerSlide(scroller, next, "smooth");
+      return true;
+    },
+    [scroller],
+  );
+
+  const goPrev = useCallback(() => {
+    step(-1);
+  }, [step]);
+  const goNext = useCallback(() => {
+    step(1);
+  }, [step]);
+
+  return { goPrev, goNext, step };
 }

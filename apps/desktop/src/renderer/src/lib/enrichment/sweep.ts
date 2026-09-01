@@ -6,6 +6,12 @@ import { getPrefsSnapshot } from "@/stores/prefs";
 import { ENRICHERS, ENRICHERS_BY_ID } from "./registry";
 import type { Enricher } from "./types";
 
+declare global {
+  interface Navigator {
+    getBattery?(): Promise<EventTarget & { charging: boolean }>;
+  }
+}
+
 /** Models are CPU/GPU heavy and share the UI renderer; one-at-a-time keeps the sweep from starving interactive work. */
 const limit = pLimit(1);
 const inflight = new Set<string>();
@@ -71,16 +77,9 @@ function cooldown(lastRunMs: number): Promise<void> {
 
 function whenIdle(timeout = 2000): Promise<void> {
   return new Promise((resolve) => {
-    const ric = (
-      globalThis as {
-        requestIdleCallback?: (
-          cb: () => void,
-          opts?: { timeout: number },
-        ) => void;
-      }
-    ).requestIdleCallback;
-    if (typeof ric === "function") ric(() => resolve(), { timeout });
-    else setTimeout(resolve, 0);
+    if (globalThis.requestIdleCallback) {
+      globalThis.requestIdleCallback(() => resolve(), { timeout });
+    } else setTimeout(resolve, 0);
   });
 }
 
@@ -225,17 +224,21 @@ function setHidden(next: boolean): void {
 export function startEnrichmentSweep(): () => void {
   if (sweepStarted) return () => {};
   sweepStarted = true;
-  const hydrations = ENRICHERS.filter((e) => e.hydrate).map((e) =>
-    (e.hydrate as () => Promise<void>)().catch((err) => {
-      console.warn(`[enrichment] hydrate failed (${e.id})`, err);
-    }),
+  const hydrations = ENRICHERS.flatMap((e) =>
+    e.hydrate
+      ? [
+          e.hydrate().catch((err) => {
+            console.warn(`[enrichment] hydrate failed (${e.id})`, err);
+          }),
+        ]
+      : [],
   );
   void Promise.all(hydrations).then(() => scheduleScan());
   const detachDirty = onPoolDirty((ids) => scheduleScan(ids));
   const fullScanTimer = setInterval(() => scheduleScan(), FULL_SCAN_MS);
 
   let detachVisibility = (): void => {};
-  if (typeof document !== "undefined") {
+  if (globalThis.document) {
     hidden = document.hidden;
     const onVisibility = (): void => setHidden(document.hidden);
     document.addEventListener("visibilitychange", onVisibility);
@@ -244,12 +247,8 @@ export function startEnrichmentSweep(): () => void {
   }
 
   let detachBattery = (): void => {};
-  const getBattery = (
-    navigator as Navigator & {
-      getBattery?: () => Promise<EventTarget & { charging: boolean }>;
-    }
-  ).getBattery;
-  if (typeof getBattery === "function") {
+  const { getBattery } = navigator;
+  if (getBattery) {
     void getBattery
       .call(navigator)
       .then((battery) => {

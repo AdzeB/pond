@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { resolveFileIndex } from "@/lib/save/actions";
 import {
   purgeSaves,
@@ -13,6 +14,40 @@ import { libraryViewContext } from "@/stores/library-view-context";
 import { pool } from "@/stores/pool";
 import { selection } from "@/stores/selection";
 import { mergeUniqueTags, tagClipboard } from "@/stores/tag-clipboard";
+
+const OkSchema = z
+  .object({ ok: z.boolean().catch(false) })
+  .catch({ ok: false });
+
+const RetryReplySchema = z
+  .object({
+    ok: z.boolean().catch(false),
+    requeued: z.number().catch(0),
+  })
+  .catch({ ok: false, requeued: 0 });
+
+const FilePathReplySchema = z
+  .object({
+    ok: z.boolean().catch(false),
+    path: z.string().nullish().catch(null),
+  })
+  .catch({ ok: false, path: null });
+
+const ExportReplySchema = z
+  .object({
+    ok: z.boolean().catch(false),
+    exported: z.number().catch(0),
+    count: z.number().catch(0),
+    error: z.string().nullish().catch(null),
+  })
+  .catch({ ok: false, exported: 0, count: 0, error: null });
+
+const PublicUrlReplySchema = z
+  .object({
+    ok: z.boolean().catch(false),
+    url: z.string().nullish().catch(null),
+  })
+  .catch({ ok: false, url: null });
 
 export interface SelectionActionResult {
   ok: boolean;
@@ -39,9 +74,9 @@ function resolve(ids: readonly string[]): Save[] {
 async function writeClipboard(text: string): Promise<boolean> {
   if (!text) return false;
   try {
-    const result = (await window.pond.query("clipboard.writeText", {
-      text,
-    })) as { ok: boolean };
+    const result = OkSchema.parse(
+      await window.pond.query("clipboard.writeText", { text }),
+    );
     return result.ok;
   } catch {
     return false;
@@ -64,9 +99,9 @@ export async function retryFailedSelection(
 ): Promise<void> {
   const failed = failedIdsIn(ids);
   if (failed.length === 0) return;
-  const result = (await window.pond.query("saves.retryFailed", {
-    ids: failed,
-  })) as { ok: boolean; requeued: number };
+  const result = RetryReplySchema.parse(
+    await window.pond.query("saves.retryFailed", { ids: failed }),
+  );
   if (!result.ok || result.requeued === 0) {
     statusFeed.error("Retry failed items", "Couldn't retry failed items.");
   }
@@ -126,11 +161,13 @@ export async function copyFilePathsForSelection(
   const saves = resolve(ids).filter((s) => s.files.length > 0);
   const paths: string[] = [];
   for (const save of saves) {
-    const result = (await window.pond.query("saves.filePath", {
-      id: save.id,
-      fileIndex: save.coverIndex ?? 0,
-    })) as { ok: true; path: string } | { ok: false; reason: string };
-    if (result.ok) paths.push(result.path);
+    const result = FilePathReplySchema.parse(
+      await window.pond.query("saves.filePath", {
+        id: save.id,
+        fileIndex: save.coverIndex ?? 0,
+      }),
+    );
+    if (result.ok && result.path) paths.push(result.path);
   }
   if (paths.length === 0) {
     return { ok: false, message: "No files in selection" };
@@ -146,11 +183,9 @@ export async function exportSelectionFiles(
 ): Promise<SelectionActionResult> {
   if (ids.length === 0) return { ok: false, message: "Nothing selected" };
   const job = statusFeed.start("Exporting files");
-  const result = (await window.pond.query("saves.exportFiles", {
-    ids: [...ids],
-  })) as
-    | { ok: true; exported: number; dir: string }
-    | { ok: false; error: string };
+  const result = ExportReplySchema.parse(
+    await window.pond.query("saves.exportFiles", { ids: [...ids] }),
+  );
   if (!result.ok) {
     if (result.error === "canceled") {
       statusFeed.dismiss(job);
@@ -169,11 +204,9 @@ export async function exportSelectionCsv(
 ): Promise<SelectionActionResult> {
   if (ids.length === 0) return { ok: false, message: "Nothing selected" };
   const job = statusFeed.start("Exporting CSV");
-  const result = (await window.pond.query("saves.exportCsv", {
-    ids: [...ids],
-  })) as
-    | { ok: true; count: number; path: string }
-    | { ok: false; error: string };
+  const result = ExportReplySchema.parse(
+    await window.pond.query("saves.exportCsv", { ids: [...ids] }),
+  );
   if (!result.ok) {
     if (result.error === "canceled") {
       statusFeed.dismiss(job);
@@ -197,10 +230,10 @@ export async function copyFilesForSelection(
     files.push({ id: save.id, fileIndex });
   }
   if (files.length === 0) return;
-  const result = (await window.pond.query("saves.copyFiles", { files })) as {
-    ok: boolean;
-  };
-  if (!result?.ok) return;
+  const result = OkSchema.parse(
+    await window.pond.query("saves.copyFiles", { files }),
+  );
+  if (!result.ok) return;
   notify({
     id: "copy-media",
     title:
@@ -238,10 +271,10 @@ export async function openDefaultAppForSelection(
     const fileIndex = resolveFileIndex(save);
     if (fileIndex == null) continue;
     attempted += 1;
-    const result = (await window.pond.openSaveFile(save.id, fileIndex)) as {
-      ok: boolean;
-    };
-    if (!result?.ok) failed += 1;
+    const result = OkSchema.parse(
+      await window.pond.openSaveFile(save.id, fileIndex),
+    );
+    if (!result.ok) failed += 1;
   }
   if (attempted === 0 || failed === 0) return;
   statusFeed.error(
@@ -261,10 +294,10 @@ export async function revealFilesForSelection(
     const fileIndex = resolveFileIndex(save);
     if (fileIndex == null) continue;
     attempted += 1;
-    const result = (await window.pond.revealSave(save.id, fileIndex)) as {
-      ok: boolean;
-    };
-    if (!result?.ok) failed += 1;
+    const result = OkSchema.parse(
+      await window.pond.revealSave(save.id, fileIndex),
+    );
+    if (!result.ok) failed += 1;
   }
   if (attempted === 0 || failed === 0) return;
   statusFeed.error(
@@ -298,9 +331,9 @@ export async function reverseImageSearchForSelection(
   if (!engine) return;
   let opened = 0;
   for (const save of resolve(ids)) {
-    const result = (await window.pond.query("saves.publicImageUrl", {
-      id: save.id,
-    })) as { ok: true; url: string | null } | { ok: false; url: null };
+    const result = PublicUrlReplySchema.parse(
+      await window.pond.query("saves.publicImageUrl", { id: save.id }),
+    );
     if (!result.ok || !result.url) continue;
     await window.pond.openExternal(engine.url(encodeURIComponent(result.url)));
     opened += 1;

@@ -7,36 +7,35 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { z } from "zod";
 import { DownloadsEmpty, MatchesEmpty } from "@/components/library/empty";
 import { TableSelectionSync } from "@/components/library/table-selection-sync";
 import { confirm } from "@/components/shared/confirm-dialog";
 import { useClientHeight } from "@/hooks/use-client-height";
 import { useSaves } from "@/hooks/use-saves";
+import { refreshSaves } from "@/lib/save/ensure-saves";
 import {
   type DownloadFilters,
   type DownloadRow,
   defaultDownloadFilters,
+  type HistoryCursor,
+  HistoryPageSchema,
   historyToDownloadRow,
   matchesDownloadFilters,
   mergeDownloadRows,
+  PipelineStatusSchema,
   projectLiveDownloads,
   type StatusFilter,
 } from "@/lib/status-feed";
 import { openSave } from "@/lib/ui/save-nav";
 import { toggleInSet } from "@/lib/util/set";
+import { hydrateFullPool } from "@/stores/bootstrap";
 import { downloadsSelection } from "@/stores/downloads-selection";
 import { SOURCE_OPTIONS, STAGE_OPTIONS, STATUS_OPTIONS } from "../lib/filters";
 import { downloadsColumns } from "./columns";
 import styles from "./styles.module.css";
 
-interface HistoryPage {
-  rows: Parameters<typeof historyToDownloadRow>[0][];
-  nextCursor: { ts: number; id: number } | null;
-}
-
-interface PipelineStatus {
-  paused: boolean;
-}
+const INITIAL_CURSOR: HistoryCursor = null;
 
 function FilterMenu({
   label,
@@ -61,9 +60,38 @@ function FilterMenu({
   );
 }
 
+const InflightIdsSchema = z.array(z.string()).catch([]);
+
 export function DownloadsPage() {
   const saves = useSaves();
   const qc = useQueryClient();
+  /** Saves in flight are the oldest by savedAt, so paged loading never reaches them. */
+  useEffect(() => {
+    void hydrateFullPool().catch((err) => {
+      console.warn("[pond pool] full hydrate for downloads failed", err);
+    });
+  }, []);
+
+  /** A task moving to running writes no sync action, so the rows in flight are re-read on a timer. */
+  useEffect(() => {
+    let stopped = false;
+    const tick = async () => {
+      try {
+        const ids = InflightIdsSchema.parse(
+          await window.pond.query("pipeline.inflight", {}),
+        );
+        if (!stopped) await refreshSaves(ids);
+      } catch (err) {
+        console.warn("[pond downloads] inflight refresh failed", err);
+      }
+    };
+    void tick();
+    const timer = setInterval(tick, 2_000);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
+  }, []);
   const [filters, setFilters] = useState<DownloadFilters>(
     defaultDownloadFilters,
   );
@@ -82,14 +110,16 @@ export function DownloadsPage() {
     ],
     enabled: filters.statuses.has("complete"),
     queryFn: async ({ pageParam }) =>
-      (await window.pond.query("downloads.history", {
-        cursor: pageParam,
-        limit: 50,
-        q: filters.q.trim() || undefined,
-        sources: filters.sources.size > 0 ? [...filters.sources] : undefined,
-        ops: filters.ops.size > 0 ? [...filters.ops] : undefined,
-      })) as HistoryPage,
-    initialPageParam: null as { ts: number; id: number } | null,
+      HistoryPageSchema.parse(
+        await window.pond.query("downloads.history", {
+          cursor: pageParam,
+          limit: 50,
+          q: filters.q.trim() || undefined,
+          sources: filters.sources.size > 0 ? [...filters.sources] : undefined,
+          ops: filters.ops.size > 0 ? [...filters.ops] : undefined,
+        }),
+      ),
+    initialPageParam: INITIAL_CURSOR,
     getNextPageParam: (last) => last.nextCursor,
   });
 
@@ -128,10 +158,15 @@ export function DownloadsPage() {
 
   const pipeline = useQuery({
     queryKey: ["pipeline.status"],
-    queryFn: () =>
-      window.pond.query("pipeline.status", {}) as Promise<PipelineStatus>,
+    queryFn: async () =>
+      PipelineStatusSchema.parse(
+        await window.pond.query("pipeline.status", {}),
+      ),
   });
   const paused = pipeline.data?.paused === true;
+
+  const countLabel =
+    rows.length === 1 ? "1 item" : `${rows.length.toLocaleString()} items`;
 
   const hasDefault =
     filters.statuses.has("in-progress") &&
@@ -226,7 +261,7 @@ export function DownloadsPage() {
             .filter((row): row is DownloadRow => row != null),
         );
       }}
-      defaultSort={{ id: "time", desc: true }}
+      defaultSort={{ id: "status", desc: false }}
       height={
         showPlaceEmpty || showMatchesEmpty || tableHeight < 76
           ? undefined
@@ -252,6 +287,7 @@ export function DownloadsPage() {
           <FilterMenu label="Status" items={statusItems} />
           <FilterMenu label="Source" items={sourceItems} />
           <FilterMenu label="Stage" items={stageItems} />
+          <span className={styles.count}>{countLabel}</span>
           <span className={styles.spacer} />
           <Button
             variant="secondary"

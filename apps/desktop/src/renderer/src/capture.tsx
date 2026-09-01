@@ -23,6 +23,8 @@ document.documentElement.style.background = SCHEME === "dark" ? "#000" : "#fff";
 function decodePayload<T>(fallback: T): T {
   try {
     const raw = location.hash.replace(/^#/, "") || params.get("data") || "";
+    // SAFETY: main opens this window with the card payload it wants rendered
+    // encoded in the hash, and `kind` selects which decode is actually used.
     return JSON.parse(decodeURIComponent(escape(atob(raw)))) as T;
   } catch {
     return fallback;

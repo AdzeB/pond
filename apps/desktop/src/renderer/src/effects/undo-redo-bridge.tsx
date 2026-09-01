@@ -20,14 +20,12 @@ export function UndoRedoBridge() {
 }
 
 function isEditableTarget(): boolean {
-  const el = document.activeElement as HTMLElement | null;
-  if (!el) return false;
+  const el = document.activeElement;
+  if (!(el instanceof HTMLElement)) return false;
   if (el.isContentEditable) return true;
-  const tag = el.tagName;
-  if (tag === "TEXTAREA") return true;
-  if (tag === "INPUT") {
-    const type = (el as HTMLInputElement).type.toLowerCase();
-    return !NON_TEXT_INPUTS.has(type);
+  if (el instanceof HTMLTextAreaElement) return true;
+  if (el instanceof HTMLInputElement) {
+    return !NON_TEXT_INPUTS.has(el.type.toLowerCase());
   }
   return false;
 }

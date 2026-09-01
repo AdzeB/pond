@@ -1,11 +1,12 @@
 import type {
   ListKind,
-  Op,
+  MediaType,
   SaveStatus,
-  TaskStatus,
+  Source,
   VideoNote,
 } from "@pond/schema/db";
 import type { RawJson } from "@pond/schema/raw";
+import type { WireTask } from "@shared/wire";
 
 export type ViewMode = "waterfall" | "justified" | "grid";
 
@@ -19,19 +20,9 @@ export interface SaveFile {
   height?: number | null;
 }
 
-interface SaveTask {
-  op: Op;
-  status: TaskStatus;
-  attempts: number;
-  maxAttempts: number;
-  lastError: string | null;
-  nextRunAt: number;
-  updatedAt: number;
-}
-
 export interface Save {
   id: string;
-  source: string;
+  source: Source;
   sourceId: string;
   accountId?: string | null;
   url: string;
@@ -40,7 +31,7 @@ export interface Save {
   author: string | null;
   notes: string | null;
   mediaUrl: string | null;
-  mediaType: string | null;
+  mediaType: MediaType | null;
   files: SaveFile[];
   coverIndex?: number;
   width?: number | null;
@@ -69,7 +60,7 @@ export interface Save {
   status?: SaveStatus;
   ingestStartedAt?: number | null;
   ingestCompletedAt?: number | null;
-  tasks?: SaveTask[];
+  tasks?: WireTask[];
   savedAt: number;
   createdAt: number;
   publishedAt?: number | null;

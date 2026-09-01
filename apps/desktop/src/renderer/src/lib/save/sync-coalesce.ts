@@ -18,7 +18,7 @@ function scheduleFlush(): void {
     for (const id of deletes) deleteSave(id);
     if (upserts.length > 0) bulkUpsertSaves(upserts);
   };
-  if (typeof requestAnimationFrame === "function") {
+  if ("requestAnimationFrame" in globalThis) {
     requestAnimationFrame(run);
   } else {
     queueMicrotask(run);
@@ -41,7 +41,7 @@ export function applyActionCoalesced(event: SyncActionEvent): void {
   pendingDeletes.delete(event.modelId);
 
   if (event.action === "I") {
-    const save = normalise(event.data as Partial<Save>);
+    const save = normalise(event.data);
     if (save) {
       pending.set(save.id, save);
       scheduleFlush();
@@ -50,8 +50,9 @@ export function applyActionCoalesced(event: SyncActionEvent): void {
   }
 
   if (event.action === "U") {
-    const patch = event.data as Partial<Save>;
+    const patch = event.data;
     const base = pending.get(event.modelId) ?? pool.get(event.modelId);
+    if (!base && !patch?.url) return;
     const merged = normalise(
       base
         ? { ...base, ...patch, id: base.id }
@@ -69,7 +70,7 @@ export function applyActionCoalesced(event: SyncActionEvent): void {
     if (!base) return;
     const merged = normalise({
       ...base,
-      ...(event.data as Partial<Save>),
+      ...event.data,
       id: base.id,
     });
     if (merged) {

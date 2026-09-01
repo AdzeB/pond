@@ -5,6 +5,7 @@
 
 import {
   type DragEvent as ReactDragEvent,
+  type ReactNode,
   type PointerEvent as ReactPointerEvent,
   useRef,
 } from "react";
@@ -13,18 +14,20 @@ import { useDataTable } from "./context";
 import styles from "./styles.module.css";
 import type { HeaderContext, TableColumn } from "./types";
 
+function isTextNode(node: ReactNode): node is string {
+  return typeof node === "string";
+}
+
 function HeaderCell<T>({ column }: { column: TableColumn<T> }) {
   const { actions, meta } = useDataTable<T>();
   const headRef = useRef<HTMLDivElement>(null);
-  const label =
-    typeof column.header === "function" ? null : (column.header ?? null);
   const sortable = Boolean(column.accessor);
   const sorted = meta.getSorted(column.id);
 
   const content =
-    typeof column.header === "function"
+    column.header instanceof Function
       ? column.header({ sorted } satisfies HeaderContext)
-      : label;
+      : (column.header ?? null);
 
   const dragProps = column.reorderable
     ? {
@@ -119,7 +122,7 @@ function HeaderCell<T>({ column }: { column: TableColumn<T> }) {
         type="button"
         className={styles["sort-button"]}
         data-active={sorted ? true : undefined}
-        aria-label={`Sort by ${typeof content === "string" ? content : column.id}`}
+        aria-label={`Sort by ${isTextNode(content) ? content : column.id}`}
         onClick={() => actions.toggleSort(column.id)}
       >
         {content}

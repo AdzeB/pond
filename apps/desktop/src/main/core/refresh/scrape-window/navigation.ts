@@ -67,7 +67,7 @@ export async function navigateWithTimeout(
       resolve(true);
     };
     const onFail = (
-      _e: unknown,
+      _e: Electron.Event,
       code: number,
       desc: string,
       failedUrl: string,
@@ -87,9 +87,10 @@ export async function navigateWithTimeout(
   });
 
   /** loadURL can hang on stalled hosts; race the whole nav against a timeout and stop on miss. */
-  const navPromise = wc.loadURL(url).then(
-    () => finished,
-    (err: unknown) => {
+  const navPromise = (async () => {
+    try {
+      await wc.loadURL(url);
+    } catch (err) {
       if (err instanceof Error && err.message.includes("ERR_ABORTED")) {
         return finished;
       }
@@ -98,8 +99,9 @@ export async function navigateWithTimeout(
         err: err instanceof Error ? err.message : String(err),
       });
       return false as const;
-    },
-  );
+    }
+    return finished;
+  })();
   const TIMEOUT = Symbol("nav-timeout");
   const result = await Promise.race([
     navPromise,

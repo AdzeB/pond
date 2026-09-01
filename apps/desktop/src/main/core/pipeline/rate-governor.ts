@@ -53,7 +53,23 @@ export function sourcePausedUntil(source: Source): number {
     const parkUntil = ar.since + AT_RISK_PARK_MS;
     if (parkUntil > until) until = parkUntil;
   }
+  const budget = budgetUntil(source);
+  if (budget > until) {
+    until = budget;
+    noteBudgetPark(source, budget);
+  }
   return until <= t ? 0 : until;
+}
+
+const budgetParkLogged = new Map<Source, number>();
+
+function noteBudgetPark(source: Source, until: number): void {
+  if (until <= now() || budgetParkLogged.get(source) === until) return;
+  budgetParkLogged.set(source, until);
+  const p = profile(source);
+  log.warn(
+    `[pond governor] ${source} hit its request ceiling (${p.maxPerHour}/h, ${p.maxPerDay}/day); parked for ${Math.ceil((until - now()) / 60_000)}m`,
+  );
 }
 
 export function setSourceCooldown(source: Source, ms: number): void {
@@ -121,12 +137,41 @@ function effectiveDelay(source: Source, firstSync: boolean): number {
   return Math.round(base + jitter);
 }
 
+const HOUR_MS = 60 * 60_000;
+const DAY_MS = 24 * HOUR_MS;
+
 function pruneLog(source: Source): number[] {
-  const p = profile(source);
-  const cutoff = now() - p.windowMs;
+  const cutoff = now() - DAY_MS;
   const log_ = (requestLog.get(source) ?? []).filter((ts) => ts >= cutoff);
   requestLog.set(source, log_);
   return log_;
+}
+
+function recentCount(log_: number[], windowMs: number): number {
+  const cutoff = now() - windowMs;
+  let count = 0;
+  for (let i = log_.length - 1; i >= 0; i--) {
+    const ts = log_[i];
+    if (ts === undefined || ts < cutoff) break;
+    count += 1;
+  }
+  return count;
+}
+
+function budgetUntil(source: Source): number {
+  const p = profile(source);
+  const log_ = pruneLog(source);
+  let until = 0;
+  for (const [windowMs, max] of [
+    [HOUR_MS, p.maxPerHour],
+    [DAY_MS, p.maxPerDay],
+  ] as const) {
+    if (recentCount(log_, windowMs) < max) continue;
+    const oldest = log_[Math.max(0, log_.length - max)] ?? now();
+    const free = oldest + windowMs;
+    if (free > until) until = free;
+  }
+  return until;
 }
 
 interface AcquireOptions {
@@ -182,8 +227,9 @@ export async function acquire(
   const p = profile(source);
   for (;;) {
     const log_ = pruneLog(source);
-    if (log_.length < p.maxPerWindow) break;
-    const oldest = log_[0] ?? now();
+    const inWindow = recentCount(log_, p.windowMs);
+    if (inWindow < p.maxPerWindow) break;
+    const oldest = log_[log_.length - inWindow] ?? now();
     const waitMs = Math.min(oldest + p.windowMs - now(), deadline - now());
     if (waitMs <= 0 && deadline <= now()) throw new GovernorAbortError();
     await wait(Math.max(50, Math.min(waitMs, 5_000)), opts.signal);

@@ -24,7 +24,7 @@ interface SourceDef {
   icon: GlyphIcon | null;
 }
 
-const SOURCE_LOGOS: Record<Source, string | null> = {
+const SOURCE_LOGOS = {
   twitter: twitterLogo,
   pinterest: pinterestLogo,
   arena: arenaLogo,
@@ -36,19 +36,19 @@ const SOURCE_LOGOS: Record<Source, string | null> = {
   threads: threadsLogo,
   web: null,
   local: null,
-};
+} satisfies Record<Source, string | null>;
 
-const GLYPH_ICONS: Partial<Record<Source, GlyphIcon>> = {
-  web: WebIcon,
-  local: LocalIcon,
-};
+const GLYPH_ICONS = new Map<Source, GlyphIcon>([
+  ["web", WebIcon],
+  ["local", LocalIcon],
+]);
 
 export function getSourceDef(source: Source): SourceDef {
   return {
     source,
     label: sourceLabel(source),
     logo: SOURCE_LOGOS[source],
-    icon: GLYPH_ICONS[source] ?? null,
+    icon: GLYPH_ICONS.get(source) ?? null,
   };
 }
 
@@ -59,5 +59,5 @@ export function getSourceLogo(source: string): string | null {
 
 export function getSourceIcon(source: string): GlyphIcon | null {
   const normalized = resolveSourceId(source);
-  return normalized ? (GLYPH_ICONS[normalized] ?? null) : null;
+  return normalized ? (GLYPH_ICONS.get(normalized) ?? null) : null;
 }

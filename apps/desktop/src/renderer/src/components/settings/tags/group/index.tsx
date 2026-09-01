@@ -1,7 +1,6 @@
 import { IconChevronRightOutline12 as ChevronRight } from "@pond/icons/outline/12";
 import { Accordion } from "@pond/ui";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import type { Ref } from "react";
 import { SpecContextMenu } from "@/components/shared/spec-context-menu";
 import { gentleSpring } from "@/lib/ui/motion";
 import { TagItem } from "../item";
@@ -66,7 +65,7 @@ function GroupHeader() {
   return (
     <SpecContextMenu buildItems={buildMenuItems}>
       <div
-        ref={rowRef as Ref<HTMLDivElement>}
+        ref={rowRef}
         className={styles.header}
         data-tag-row=""
         tabIndex={-1}

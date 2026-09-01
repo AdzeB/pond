@@ -3,7 +3,7 @@ import type { SyncRunEvent } from "@pond/schema/events";
 import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
-import { enqueue } from "../pipeline/enqueue";
+import { type EnqueueItem, enqueue } from "../pipeline/enqueue";
 import { mergeListKindsOntoExisting } from "../pipeline/list-kinds";
 import {
   harvestTwitterBookmarks,
@@ -16,7 +16,7 @@ import {
   patchAccountSync,
   persistWatermark,
 } from "./sync-baseline";
-import { emit } from "./sync-status";
+import { emit, listGapNote } from "./sync-status";
 import { buildTwitterBookmarkSeed } from "./twitter-seed";
 
 export async function syncTwitter(
@@ -122,6 +122,11 @@ export async function syncTwitter(
           { partition: partitionForAccount(accountId), handle },
         )
       : { ok: false as const, reason: "no_match" as const };
+  const gaps: string[] = [];
+  if (!likes.ok) {
+    log.warn(`[pond sync:twitter] likes harvest failed: ${likes.reason}`);
+    gaps.push(listGapNote("Likes", likes.reason));
+  }
   const entries = likes.ok
     ? unionById(
         stampListKind(harvest.entries, "saved"),
@@ -164,7 +169,7 @@ export async function syncTwitter(
       accountId,
       source,
       state: "done",
-      message: "All caught up.",
+      message: ["All caught up.", ...gaps].join(" "),
       lastSyncedAt,
       lastError: null,
     });
@@ -187,12 +192,11 @@ export async function syncTwitter(
   const queue = [...fresh, ...recovery];
   const bulk = await enqueue(
     queue.map((entry) => {
-      const seed = buildTwitterBookmarkSeed(entry) ?? undefined;
-      return {
-        url: entry.url,
-        ...(seed ? { seed } : {}),
-        ...(entry.listKinds ? { listKinds: entry.listKinds } : {}),
-      };
+      const item: EnqueueItem = { url: entry.url };
+      const seed = buildTwitterBookmarkSeed(entry);
+      if (seed) item.seed = seed;
+      if (entry.listKinds) item.listKinds = entry.listKinds;
+      return item;
     }),
     { trigger: "sync:twitter", accountId },
   );
@@ -212,10 +216,12 @@ export async function syncTwitter(
     accountId,
     source,
     state: "done",
-    message:
+    message: [
       recovery.length > 0
         ? `Queued ${fresh.length} new + recovered ${recovery.length} failed.`
         : `Queued ${succeeded} bookmark${succeeded === 1 ? "" : "s"} for ingest.`,
+      ...gaps,
+    ].join(" "),
     progress: { current: total, total },
     lastSyncedAt,
     lastError: null,

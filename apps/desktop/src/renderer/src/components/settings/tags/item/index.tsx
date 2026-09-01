@@ -1,4 +1,3 @@
-import type { Ref } from "react";
 import { SpecContextMenu } from "@/components/shared/spec-context-menu";
 import { ActionsCell, NameCell } from "../lib/cells";
 import { TagRowProvider, useTagRow } from "../lib/row-context";
@@ -27,7 +26,7 @@ function ItemRow({ variant }: { variant: "row" | "card" }) {
   return (
     <SpecContextMenu buildItems={buildMenuItems}>
       <div
-        ref={rowRef as Ref<HTMLDivElement>}
+        ref={rowRef}
         className={styles.row}
         data-tag-row=""
         data-card={variant === "card" || undefined}

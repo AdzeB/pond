@@ -95,11 +95,11 @@ function FiltersFragment() {
 
 export type LibraryStaticVariant = "layouts" | "zoom" | "filters";
 
-const FRAGMENTS: Record<LibraryStaticVariant, () => React.JSX.Element> = {
+const FRAGMENTS = {
   layouts: LayoutsFragment,
   zoom: ZoomFragment,
   filters: FiltersFragment,
-};
+} satisfies Record<LibraryStaticVariant, () => React.JSX.Element>;
 
 export function LibraryStatic({ variant }: { variant: LibraryStaticVariant }) {
   const Fragment = FRAGMENTS[variant];

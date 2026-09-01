@@ -30,7 +30,7 @@ function Root({ className, children, ...props }: RootProps) {
     () => ({
       state,
       actions,
-      meta: {} as Record<string, never>,
+      meta: {},
     }),
     [state, actions],
   );

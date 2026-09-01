@@ -13,12 +13,12 @@ interface State {
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { error: null, componentStack: null };
 
-  static getDerivedStateFromError(error: unknown): Partial<State> {
-    return { error };
+  static getDerivedStateFromError(cause: unknown): Partial<State> {
+    return { error: cause };
   }
 
-  componentDidCatch(error: unknown, info: ErrorInfo): void {
-    console.error("[pond] render error", error, info.componentStack);
+  componentDidCatch(cause: unknown, info: ErrorInfo): void {
+    console.error("[pond] render error", cause, info.componentStack);
     this.setState({ componentStack: info.componentStack ?? null });
   }
 

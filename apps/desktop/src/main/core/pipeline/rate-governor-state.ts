@@ -1,9 +1,10 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import type { Source } from "@pond/schema/db";
+import { SOURCES, type Source } from "@pond/schema/db";
 import { type RateProfile, syncConfigFor } from "@pond/schema/sources";
 import { app } from "electron";
 import log from "electron-log/main.js";
+import { z } from "zod";
 
 type PausedReason = "cooldown" | "breaker" | "at_risk" | "manual";
 
@@ -13,19 +14,24 @@ export interface PausedState {
   reason: PausedReason;
 }
 
-export type AtRiskKind =
-  | "challenge"
-  | "checkpoint"
-  | "captcha"
-  | "login"
-  | "rate_limit";
+const AT_RISK_KINDS = [
+  "challenge",
+  "checkpoint",
+  "captcha",
+  "login",
+  "rate_limit",
+] as const;
 
-export interface AtRiskState {
-  source: Source;
-  kind: AtRiskKind;
-  since: number;
-  note: string;
-}
+export type AtRiskKind = (typeof AT_RISK_KINDS)[number];
+
+const AtRiskStateSchema = z.object({
+  source: z.enum(SOURCES),
+  kind: z.enum(AT_RISK_KINDS),
+  since: z.number(),
+  note: z.string(),
+});
+
+export type AtRiskState = z.infer<typeof AtRiskStateSchema>;
 
 export const BREAKER_WINDOW_MS = 60_000;
 export const BREAKER_THRESHOLD = 3;
@@ -40,13 +46,25 @@ export const AT_RISK_PARK_MS = 30 * 60_000;
 
 const PERSIST_DEBOUNCE_MS = 3_000;
 
-interface PersistShape {
+const PersistedStateSchema = z.object({
+  cooldownUntil: z.record(z.string(), z.number()).catch({}),
+  breakerUntil: z.record(z.string(), z.number()).catch({}),
+  atRisk: z.record(z.string(), AtRiskStateSchema).catch({}),
+  requestLog: z.record(z.string(), z.array(z.number())).catch({}),
+  allPausedUntil: z.number().catch(0),
+});
+
+interface PersistedState {
   schemaVersion: 1;
   cooldownUntil: Partial<Record<Source, number>>;
   breakerUntil: Partial<Record<Source, number>>;
   atRisk: Partial<Record<Source, AtRiskState>>;
   requestLog: Partial<Record<Source, number[]>>;
   allPausedUntil: number;
+}
+
+function toSource(key: string): Source | undefined {
+  return SOURCES.find((source) => source === key);
 }
 
 export const cooldownUntil = new Map<Source, number>();
@@ -79,36 +97,38 @@ function statePath(): string {
 export function loadState(): void {
   if (loaded) return;
   loaded = true;
+  let parsed: z.infer<typeof PersistedStateSchema>;
   try {
-    const raw = readFileSync(statePath(), "utf-8");
-    const parsed = JSON.parse(raw) as Partial<PersistShape>;
-    const t = now();
-    for (const [s, until] of Object.entries(parsed.cooldownUntil ?? {})) {
-      if (typeof until === "number" && until > t)
-        cooldownUntil.set(s as Source, until);
-    }
-    for (const [s, until] of Object.entries(parsed.breakerUntil ?? {})) {
-      if (typeof until === "number" && until > t)
-        breakerUntil.set(s as Source, until);
-    }
-    for (const [s, st] of Object.entries(parsed.atRisk ?? {})) {
-      if (st && typeof st === "object")
-        atRisk.set(s as Source, st as AtRiskState);
-    }
-    for (const [s, log_] of Object.entries(parsed.requestLog ?? {})) {
-      if (Array.isArray(log_)) requestLog.set(s as Source, log_.slice(-500));
-    }
-    if (
-      typeof parsed.allPausedUntil === "number" &&
-      parsed.allPausedUntil > t
-    ) {
-      allPaused = true;
-    }
-    log.info("[pond governor] loaded persisted state", {
-      cooldowns: cooldownUntil.size,
-      atRisk: atRisk.size,
-    });
-  } catch {}
+    parsed = PersistedStateSchema.parse(
+      JSON.parse(readFileSync(statePath(), "utf-8")),
+    );
+  } catch {
+    return;
+  }
+
+  const t = now();
+  for (const [key, until] of Object.entries(parsed.cooldownUntil)) {
+    const source = toSource(key);
+    if (source && until > t) cooldownUntil.set(source, until);
+  }
+  for (const [key, until] of Object.entries(parsed.breakerUntil)) {
+    const source = toSource(key);
+    if (source && until > t) breakerUntil.set(source, until);
+  }
+  for (const [key, state] of Object.entries(parsed.atRisk)) {
+    const source = toSource(key);
+    if (source) atRisk.set(source, state);
+  }
+  for (const [key, entries] of Object.entries(parsed.requestLog)) {
+    const source = toSource(key);
+    if (source) requestLog.set(source, entries.slice(-500));
+  }
+  if (parsed.allPausedUntil > t) allPaused = true;
+
+  log.info("[pond governor] loaded persisted state", {
+    cooldowns: cooldownUntil.size,
+    atRisk: atRisk.size,
+  });
 }
 
 export function schedulePersist(immediate = false): void {
@@ -129,16 +149,12 @@ export function schedulePersist(immediate = false): void {
 
 function writeState(): void {
   try {
-    const body: PersistShape = {
+    const body: PersistedState = {
       schemaVersion: 1,
-      cooldownUntil: Object.fromEntries(
-        cooldownUntil,
-      ) as PersistShape["cooldownUntil"],
-      breakerUntil: Object.fromEntries(
-        breakerUntil,
-      ) as PersistShape["breakerUntil"],
-      atRisk: Object.fromEntries(atRisk) as PersistShape["atRisk"],
-      requestLog: Object.fromEntries(requestLog) as PersistShape["requestLog"],
+      cooldownUntil: Object.fromEntries(cooldownUntil),
+      breakerUntil: Object.fromEntries(breakerUntil),
+      atRisk: Object.fromEntries(atRisk),
+      requestLog: Object.fromEntries(requestLog),
       allPausedUntil: allPaused ? now() + 365 * 24 * 60 * 60_000 : 0,
     };
     const file = statePath();

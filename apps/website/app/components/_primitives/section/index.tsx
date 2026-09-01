@@ -82,6 +82,11 @@ interface CardProps {
   surface?: "panel" | "plain";
 }
 
+interface CardStyle extends CSSProperties {
+  "--card-span"?: string;
+  "--card-span-md"?: string;
+}
+
 function Card({
   children,
   span = 6,
@@ -94,9 +99,9 @@ function Card({
   media = "start",
   surface = "panel",
 }: CardProps) {
-  const style: CSSProperties = {
-    ["--card-span" as string]: String(span),
-    ["--card-span-md" as string]: String(spanMd ?? (span >= 8 ? 12 : span)),
+  const style: CardStyle = {
+    "--card-span": String(span),
+    "--card-span-md": String(spanMd ?? (span >= 8 ? 12 : span)),
   };
 
   const body =

@@ -1,62 +1,43 @@
-import type { Op, Save, SyncAction, Task, TaskStatus } from "@pond/schema/db";
-import type { RawJson } from "@pond/schema/raw";
+import type { SyncAction, Task } from "@pond/schema/db";
 import { toMs } from "@shared/to-ms";
+import type {
+  WireRow,
+  WireSave,
+  WireSaveRow,
+  WireSyncAction,
+  WireSyncPayload,
+  WireTask,
+} from "@shared/wire";
+import { z } from "zod";
 import { slimRawJson } from "../lib/raw-slim";
 
-interface WireTask {
-  op: Op;
-  status: TaskStatus;
-  attempts: number;
-  maxAttempts: number;
-  lastError: string | null;
-  nextRunAt: number;
-  updatedAt: number;
-}
-
-type WireSave = Omit<
-  Save,
-  | "savedAt"
-  | "createdAt"
-  | "deletedAt"
-  | "publishedAt"
-  | "ingestStartedAt"
-  | "ingestCompletedAt"
-> & {
-  savedAt: number;
-  createdAt: number;
-  deletedAt: number | null;
-  publishedAt: number | null;
-  ingestStartedAt: number | null;
-  ingestCompletedAt: number | null;
-  tasks?: WireTask[];
-};
+export type { WireSaveRow as SaveListRow } from "@shared/wire";
 
 interface WireSaveOptions {
   slim?: boolean;
 }
 
 export function toWireSave(
-  row: Save,
+  row: WireSaveRow,
   taskRows?: Task[],
   opts?: WireSaveOptions,
 ): WireSave {
-  return {
+  const wire: WireSave = {
     ...row,
-    rawJson: opts?.slim
-      ? slimRawJson(row.rawJson as RawJson | null)
-      : row.rawJson,
+    rawJson: opts?.slim ? slimRawJson(row.rawJson) : row.rawJson,
     savedAt: toMs(row.savedAt) ?? 0,
     createdAt: toMs(row.createdAt) ?? 0,
     deletedAt: toMs(row.deletedAt),
     publishedAt: toMs(row.publishedAt),
     ingestStartedAt: toMs(row.ingestStartedAt),
     ingestCompletedAt: toMs(row.ingestCompletedAt),
-    ...(taskRows ? { tasks: taskRows.map(toWireTask) } : {}),
   };
+  if (taskRows) wire.tasks = taskRows.map(toWireTask);
+  return wire;
 }
 
 export function toWireSaves(
-  rows: Save[],
+  rows: WireSaveRow[],
   tasksBySave?: Map<string, Task[]>,
   opts?: WireSaveOptions,
 ): WireSave[] {
@@ -75,13 +56,21 @@ function toWireTask(task: Task): WireTask {
   };
 }
 
-export function toWireSyncAction(action: SyncAction): SyncAction {
+const WireRowSchema = z.custom<WireRow>(
+  (value) => value instanceof Object && !Array.isArray(value),
+);
+const WirePayloadSchema = z
+  .union([z.array(WireRowSchema), WireRowSchema])
+  .nullable()
+  .catch(null);
+
+export function toWireSyncAction(action: SyncAction): WireSyncAction {
   return {
     ...action,
     createdAt: toMs(action.createdAt) ?? 0,
     data: normaliseDataPayload(action.data),
     prevData: normaliseDataPayload(action.prevData),
-  } as unknown as SyncAction;
+  };
 }
 
 const TIMESTAMP_KEYS = [
@@ -91,13 +80,17 @@ const TIMESTAMP_KEYS = [
   "publishedAt",
 ] as const;
 
-function normaliseDataPayload(value: unknown): unknown {
-  if (!value || typeof value !== "object") return value;
-  if (Array.isArray(value)) return value.map(normaliseDataPayload);
-  const obj = value as Record<string, unknown>;
-  const out: Record<string, unknown> = { ...obj };
-  for (const key of TIMESTAMP_KEYS) {
-    if (key in out) out[key] = toMs(out[key]);
-  }
-  return out;
+function normaliseDataPayload(value: SyncAction["data"]): WireSyncPayload {
+  const payload = WirePayloadSchema.parse(value);
+  if (payload === null) return null;
+  return Array.isArray(payload)
+    ? payload.map(normaliseRow)
+    : normaliseRow(payload);
+}
+
+function normaliseRow(row: WireRow): WireRow {
+  const stamped = TIMESTAMP_KEYS.filter((key) => key in row).map(
+    (key) => [key, toMs(row[key])] as const,
+  );
+  return { ...row, ...Object.fromEntries(stamped) };
 }

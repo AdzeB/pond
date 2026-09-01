@@ -121,8 +121,7 @@ function Close({ onClick, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
 }
 
 const CommonButtonProps: ButtonProps = {
-  size: "lg" as const,
-  className: styles.button,
+  size: "lg",
   style: {
     width: "100%",
   },
@@ -144,6 +143,7 @@ function Cancel({
       }}
       {...CommonButtonProps}
       {...props}
+      className={cn(styles.button, className)}
     >
       {children ?? "Cancel"}
     </Button>
@@ -166,6 +166,7 @@ function Confirm({
       }}
       {...CommonButtonProps}
       {...props}
+      className={cn(styles.button, className)}
     >
       {children ?? "Confirm"}
     </Button>

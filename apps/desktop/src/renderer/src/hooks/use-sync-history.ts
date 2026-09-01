@@ -1,5 +1,6 @@
-import type { Source } from "@pond/schema/db";
+import { SOURCES, type Source } from "@pond/schema/db";
 import { useEffect, useState } from "react";
+import { z } from "zod";
 import { useSyncByAccount } from "@/stores/sync-monitor";
 
 type SyncOutcome =
@@ -28,11 +29,72 @@ export interface SyncRun {
   watchdogTripped: boolean;
 }
 
+const HistoryReplySchema = z
+  .object({
+    runs: z
+      .array(
+        z.object({
+          id: z.number(),
+          ts: z.number().catch(0),
+          source: z.enum(SOURCES),
+          accountId: z.string().nullable().catch(null),
+          trigger: z.string().catch(""),
+          outcome: z
+            .enum([
+              "ok",
+              "noop",
+              "auth_required",
+              "rate_limited",
+              "aborted",
+              "error",
+            ])
+            .catch("error"),
+          durationMs: z.number().catch(0),
+          harvest: z
+            .object({
+              seen: z.number().nullable().catch(null),
+              fresh: z.number().nullable().catch(null),
+              recovery: z.number().nullable().catch(null),
+            })
+            .nullable()
+            .catch(null),
+          enqueue: z
+            .object({
+              succeeded: z.number().catch(0),
+              failed: z.number().catch(0),
+            })
+            .nullable()
+            .catch(null),
+          error: z
+            .object({
+              name: z.string().catch(""),
+              message: z.string().catch(""),
+            })
+            .nullable()
+            .catch(null),
+          watchdogTripped: z.boolean().catch(false),
+        }),
+      )
+      .catch([]),
+  })
+  .catch({ runs: [] });
+
+type HistoryParams = {
+  source: Source;
+  limit: number;
+  accountId?: string;
+};
+
+interface SyncHistoryResult {
+  runs: SyncRun[];
+  loading: boolean;
+}
+
 export function useSyncHistory(
   source: Source,
   limit = 10,
   accountId?: string,
-): { runs: SyncRun[]; loading: boolean } {
+): SyncHistoryResult {
   const [runs, setRuns] = useState<SyncRun[]>([]);
   const [loaded, setLoaded] = useState(false);
   const byAccount = useSyncByAccount();
@@ -47,12 +109,12 @@ export function useSyncHistory(
     let cancelled = false;
     void (async () => {
       try {
-        const res = (await window.pond.query("sync.history", {
-          source,
-          limit,
-          ...(accountId ? { accountId } : {}),
-        })) as { runs: SyncRun[] };
-        if (!cancelled) setRuns(res?.runs ?? []);
+        const params: HistoryParams = { source, limit };
+        if (accountId) params.accountId = accountId;
+        const res = HistoryReplySchema.parse(
+          await window.pond.query("sync.history", params),
+        );
+        if (!cancelled) setRuns(res.runs);
       } catch {
         if (!cancelled) setRuns([]);
       } finally {

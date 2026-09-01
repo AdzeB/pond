@@ -29,11 +29,15 @@ interface SlideProps {
  * @remarks 16/9 seeds the box until the media reports its natural size, so it is never zero and ends up pixel-accurate. */
 const FALLBACK_RATIO = 16 / 9;
 
-function ratioStyle(ratio: number): CSSProperties {
+interface RatioStyle extends CSSProperties {
+  "--ratio": string;
+}
+
+function ratioStyle(ratio: number): RatioStyle {
   return {
     aspectRatio: String(ratio),
     "--ratio": String(ratio),
-  } as CSSProperties;
+  };
 }
 
 function knownRatio(slide: MediaSlide): number | null {

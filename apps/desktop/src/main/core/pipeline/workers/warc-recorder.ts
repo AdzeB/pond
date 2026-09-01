@@ -1,8 +1,10 @@
 import { once } from "node:events";
 import { createWriteStream, type WriteStream } from "node:fs";
+import type { JsonValue } from "@pond/schema/json";
 import type { WebContents } from "electron";
 import log from "electron-log/main.js";
 import { WARCRecord, WARCSerializer } from "warcio";
+import { z } from "zod";
 
 const MAX_BODY_BYTES = 30 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 250 * 1024 * 1024;
@@ -31,20 +33,42 @@ export async function withTimeout<T>(
   }
 }
 
-interface CdpResponse {
-  url: string;
-  status: number;
-  statusText: string;
-  headers: Record<string, string>;
-}
+const CdpResponseSchema = z.object({
+  url: z.string(),
+  status: z.number(),
+  statusText: z.string(),
+  headers: z.record(z.string(), z.string()),
+});
 
-interface FetchRequestPaused {
-  requestId: string;
-  request: { url: string };
-  responseStatusCode?: number;
-  responseStatusText?: string;
-  responseHeaders?: { name: string; value: string }[];
-}
+type CdpResponse = z.infer<typeof CdpResponseSchema>;
+
+const ResponseReceivedSchema = z.object({
+  requestId: z.string(),
+  response: CdpResponseSchema,
+});
+
+const RequestWillBeSentSchema = z.object({
+  redirectResponse: CdpResponseSchema.optional(),
+});
+
+const RequestIdSchema = z.object({ requestId: z.string() });
+
+const FetchRequestPausedSchema = z.object({
+  requestId: z.string(),
+  request: z.object({ url: z.string() }),
+  responseStatusCode: z.number().optional(),
+  responseStatusText: z.string().optional(),
+  responseHeaders: z
+    .array(z.object({ name: z.string(), value: z.string() }))
+    .optional(),
+});
+
+type FetchRequestPaused = z.infer<typeof FetchRequestPausedSchema>;
+
+const CdpBodySchema = z.object({
+  body: z.string(),
+  base64Encoded: z.boolean(),
+});
 
 function isArchivableUrl(url: string): boolean {
   return url.startsWith("http://") || url.startsWith("https://");
@@ -137,35 +161,30 @@ export class WarcRecorder {
   }
 
   private onMessage = (
-    _event: unknown,
+    _event: Electron.Event,
     method: string,
-    params: unknown,
+    params: JsonValue,
   ): void => {
     try {
       if (method.startsWith("Network.")) {
         this.lastNetworkActivity = Date.now();
       }
       if (method === "Network.responseReceived") {
-        const p = params as {
-          requestId: string;
-          response: CdpResponse;
-        };
+        const p = ResponseReceivedSchema.parse(params);
         if (isArchivableUrl(p.response.url)) {
           this.responses.set(p.requestId, p.response);
         }
         return;
       }
       if (method === "Network.requestWillBeSent") {
-        const p = params as {
-          redirectResponse?: CdpResponse;
-        };
+        const p = RequestWillBeSentSchema.parse(params);
         if (p.redirectResponse && isArchivableUrl(p.redirectResponse.url)) {
           this.enqueueWrite(p.redirectResponse, new Uint8Array(0));
         }
         return;
       }
       if (method === "Network.loadingFinished") {
-        const p = params as { requestId: string };
+        const p = RequestIdSchema.parse(params);
         const meta = this.responses.get(p.requestId);
         if (!meta) return;
         this.responses.delete(p.requestId);
@@ -177,12 +196,12 @@ export class WarcRecorder {
         return;
       }
       if (method === "Network.loadingFailed") {
-        const p = params as { requestId: string };
+        const p = RequestIdSchema.parse(params);
         this.responses.delete(p.requestId);
         return;
       }
       if (method === "Fetch.requestPaused") {
-        const p = params as FetchRequestPaused;
+        const p = FetchRequestPausedSchema.parse(params);
         const task = this.capturePausedResponse(p).catch((err) => {
           log.debug("[pond warc] paused capture failed", p.request.url, err);
         });
@@ -204,12 +223,14 @@ export class WarcRecorder {
         isArchivableUrl(p.request.url) &&
         !this.writtenUrls.has(p.request.url)
       ) {
-        const res = (await withTimeout(
-          this.wc.debugger.sendCommand("Fetch.getResponseBody", {
-            requestId: p.requestId,
-          }) as Promise<{ body: string; base64Encoded: boolean }>,
-          CDP_TIMEOUT_MS,
-        )) as { body: string; base64Encoded: boolean };
+        const res = CdpBodySchema.parse(
+          await withTimeout(
+            this.wc.debugger.sendCommand("Fetch.getResponseBody", {
+              requestId: p.requestId,
+            }),
+            CDP_TIMEOUT_MS,
+          ),
+        );
         const body = res.base64Encoded
           ? new Uint8Array(Buffer.from(res.body, "base64"))
           : new Uint8Array(Buffer.from(res.body, "utf8"));
@@ -250,12 +271,14 @@ export class WarcRecorder {
     let body = new Uint8Array(0);
     let bodyRetrieved = false;
     try {
-      const res = (await withTimeout(
-        this.wc.debugger.sendCommand("Network.getResponseBody", {
-          requestId,
-        }) as Promise<{ body: string; base64Encoded: boolean }>,
-        CDP_TIMEOUT_MS,
-      )) as { body: string; base64Encoded: boolean };
+      const res = CdpBodySchema.parse(
+        await withTimeout(
+          this.wc.debugger.sendCommand("Network.getResponseBody", {
+            requestId,
+          }),
+          CDP_TIMEOUT_MS,
+        ),
+      );
       body = res.base64Encoded
         ? new Uint8Array(Buffer.from(res.body, "base64"))
         : new Uint8Array(Buffer.from(res.body, "utf8"));

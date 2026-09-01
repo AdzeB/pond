@@ -1,7 +1,10 @@
 import { Select } from "@pond/ui";
 import { clsx as cn } from "clsx";
 import type { ReactNode } from "react";
+import { z } from "zod";
 import styles from "./styles.module.css";
+
+const StringLabelSchema = z.string();
 
 export interface EnumOption<T> {
   value: T;
@@ -24,8 +27,9 @@ interface EnumSelectProps<T> {
 function longestStringLabel<T>(options: readonly EnumOption<T>[]): string {
   let longest = "";
   for (const option of options) {
-    if (typeof option.label !== "string") continue;
-    if (option.label.length > longest.length) longest = option.label;
+    const label = StringLabelSchema.safeParse(option.label);
+    if (label.success && label.data.length > longest.length)
+      longest = label.data;
   }
   return longest;
 }
@@ -52,6 +56,8 @@ export function EnumSelect<T>({
       disabled={disabled}
       onValueChange={(next) => {
         if (next === null && !hasNullOption) return;
+        // SAFETY: the popup only emits values drawn from `options`, and a null
+        // reaches here only when `options` declares a null value.
         onValueChange(next as T);
       }}
     >

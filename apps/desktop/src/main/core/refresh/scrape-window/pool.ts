@@ -4,12 +4,12 @@ import { resolvePreload } from "../../../lib/resolve-preload";
 import { acquire } from "../../pipeline/rate-governor";
 import { PARTITION } from "./constants";
 
-export const GLOBAL_POOL_CAP = 6;
+export const GLOBAL_POOL_CAP = 3;
 
 /** Idle windows keep a heavy SPA resident in a full renderer process; blank on release and tear down after this grace so a finished sync doesn't pin CPU/memory. */
 const IDLE_EVICT_MS = 60_000;
 
-const PER_SOURCE_CAP: Record<Source, number> = {
+const PER_SOURCE_CAP = {
   twitter: 3,
   instagram: 2,
   tiktok: 2,
@@ -21,7 +21,7 @@ const PER_SOURCE_CAP: Record<Source, number> = {
   threads: 2,
   web: 2,
   local: 0,
-};
+} satisfies Record<Source, number>;
 
 interface PoolSlot {
   win: BrowserWindow;
@@ -38,13 +38,29 @@ interface Waiter {
 }
 
 const pool: PoolSlot[] = [];
-const busyBySource: Record<Source, number> = Object.fromEntries(
-  SOURCES.map((s) => [s, 0]),
-) as Record<Source, number>;
-const waitQueues: Record<Source, Waiter[]> = Object.fromEntries(
-  SOURCES.map((s) => [s, [] as Waiter[]]),
-) as Record<Source, Waiter[]>;
+const busyBySource = {
+  twitter: 0,
+  instagram: 0,
+  tiktok: 0,
+  youtube: 0,
+  cosmos: 0,
+  pinterest: 0,
+  arena: 0,
+  reddit: 0,
+  threads: 0,
+  web: 0,
+  local: 0,
+} satisfies Record<Source, number>;
+const waitQueues = new Map<Source, Waiter[]>();
 let roundRobinCursor = 0;
+
+function queueFor(source: Source): Waiter[] {
+  const existing = waitQueues.get(source);
+  if (existing) return existing;
+  const created: Waiter[] = [];
+  waitQueues.set(source, created);
+  return created;
+}
 
 function createHiddenWindow(partition: string): BrowserWindow {
   const persistent = session.fromPartition(partition);
@@ -148,8 +164,9 @@ function enqueueWaiter(
       },
     };
     const onAbort = (): void => {
-      const idx = waitQueues[source].indexOf(waiter);
-      if (idx !== -1) waitQueues[source].splice(idx, 1);
+      const queue = queueFor(source);
+      const idx = queue.indexOf(waiter);
+      if (idx !== -1) queue.splice(idx, 1);
       reject(new Error("window lease wait aborted"));
     };
     if (signal?.aborted) {
@@ -157,7 +174,7 @@ function enqueueWaiter(
       return;
     }
     signal?.addEventListener("abort", onAbort, { once: true });
-    waitQueues[source].push(waiter);
+    queueFor(source).push(waiter);
   });
 }
 
@@ -200,7 +217,7 @@ function drainQueues(): void {
     for (let i = 0; i < SOURCES.length; i += 1) {
       const source = SOURCES[(roundRobinCursor + i) % SOURCES.length];
       if (!source) continue;
-      const queue = waitQueues[source];
+      const queue = queueFor(source);
       if (queue.length === 0) continue;
       if (busyBySource[source] >= PER_SOURCE_CAP[source]) continue;
       const next = queue[0];
@@ -227,7 +244,7 @@ export function disposeHiddenWindow(): void {
   }
   pool.length = 0;
   for (const source of SOURCES) {
-    waitQueues[source].length = 0;
+    queueFor(source).length = 0;
     busyBySource[source] = 0;
   }
 }

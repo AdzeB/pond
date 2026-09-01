@@ -57,8 +57,7 @@ export async function reconcileLibrary(): Promise<{
       const insertValues: typeof saves.$inferInsert = {
         ...enrichment,
         id,
-        source:
-          metadata.source as unknown as (typeof saves.$inferInsert)["source"],
+        source: metadata.source,
         sourceId: metadata.sourceId,
         url: metadata.url,
         title: metadata.name,
@@ -66,11 +65,7 @@ export async function reconcileLibrary(): Promise<{
         author: metadata.pond.author ?? null,
         notes: metadata.annotation || null,
         mediaUrl: null,
-        mediaType:
-          (metadata.pond.mediaType as
-            | (typeof saves.$inferInsert)["mediaType"]
-            | null
-            | undefined) ?? null,
+        mediaType: metadata.pond.mediaType ?? null,
         rawJson: metadata.pond.rawSource ?? null,
         tags,
         files,
@@ -116,9 +111,7 @@ export async function reconcileLibrary(): Promise<{
           modelName: "save",
           modelId: id,
           action: wasInsert ? "I" : "U",
-          data: (wasInsert
-            ? insertValues
-            : updateSet) as unknown as (typeof syncActions.$inferInsert)["data"],
+          data: wasInsert ? insertValues : updateSet,
           actor: "system",
           actorReason: "library-scan",
         })

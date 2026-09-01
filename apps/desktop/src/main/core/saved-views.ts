@@ -7,13 +7,17 @@ import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
 import type { Transaction } from "@pond/schema/tx";
 import { asc, eq, sql } from "drizzle-orm";
 import { ulid } from "ulid";
+import { z } from "zod";
 import type { Db } from "../db";
 import { getDb } from "../db";
 import { executeBatch, executeTransaction } from "./executor";
 
-function coerceQuery(raw: unknown): Query {
-  if (!raw || typeof raw !== "object") return EMPTY_QUERY;
-  return raw as Query;
+const StoredQuerySchema = z.custom<Query>(
+  (value) => value instanceof Object && !Array.isArray(value),
+);
+
+function coerceQuery(raw: Query | null): Query {
+  return StoredQuerySchema.safeParse(raw).data ?? EMPTY_QUERY;
 }
 
 export async function listViews(): Promise<SavedView[]> {

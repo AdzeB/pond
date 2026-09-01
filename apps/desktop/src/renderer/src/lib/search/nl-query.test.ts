@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { compileStageA, EMPTY_FACETS } from "@/lib/search/nl-query";
 
 const rules = (input: string): Predicate[] =>
-  compileStageA(input, EMPTY_FACETS).query.rules as Predicate[];
+  compileStageA(input, EMPTY_FACETS).query.rules;
 
 describe("compileStageA — dates compose with the rest of the compiler", () => {
   it("pairs a rolling date with a type and a sort", () => {

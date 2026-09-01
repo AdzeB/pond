@@ -39,7 +39,7 @@ export function rememberScrollAnchor(
 function prune(): void {
   while (positions.size > MAX_POSITIONS) {
     const oldest = positions.keys().next().value;
-    if (typeof oldest !== "string") break;
+    if (oldest === undefined) break;
     positions.delete(oldest);
   }
 }

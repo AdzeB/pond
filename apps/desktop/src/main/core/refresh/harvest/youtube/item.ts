@@ -1,9 +1,10 @@
 /// <reference lib="dom" />
 
+import type { JsonValue } from "@pond/schema/json";
 import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
 import { bindSourceId } from "../source-id";
-import { inPageYoutubeNormalize } from "./normalize";
+import { inPageYoutubeNormalize, type YoutubeWatchPage } from "./normalize";
 
 export function buildExpression(videoId: string): string {
   return buildItemExpression(
@@ -16,7 +17,7 @@ export function buildExpression(videoId: string): string {
 async function inPageYoutubeHarvest(
   _videoId: string,
   norm: ReturnType<typeof inPageYoutubeNormalize>,
-): Promise<unknown> {
+): Promise<YoutubeWatchPage | null> {
   const deadline = Date.now() + 12_000;
   while (Date.now() < deadline) {
     if (document.querySelector("#title h1, ytd-video-primary-info-renderer"))
@@ -26,7 +27,7 @@ async function inPageYoutubeHarvest(
   return norm.extractWatchPageMeta();
 }
 
-export function adapt(raw: unknown, ctx: HarvestAdaptCtx) {
+export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx) {
   return captureFromPageDom(raw, ctx);
 }
 

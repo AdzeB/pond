@@ -1,3 +1,4 @@
+import type { SyncAccounts } from "@pond/schema/db";
 import { describe, expect, it } from "vitest";
 import {
   mergePondSlice,
@@ -5,7 +6,7 @@ import {
   splitPrefsPatch,
 } from "./prefs-scope";
 
-const GREEN = { appearance: "system", lightPresetId: "mint" };
+const GREEN = { appearance: "system", lightPresetId: "mint" } as const;
 
 describe("splitPrefsPatch", () => {
   it("routes appearance (preferences) to the library slice", () => {
@@ -45,7 +46,7 @@ describe("normalizeStoredPrefs", () => {
 });
 
 describe("mergePondSlice (sync account registry)", () => {
-  const account = {
+  const account: SyncAccounts[string] = {
     id: "01ACCOUNT",
     source: "twitter",
     handle: "personal",
@@ -68,10 +69,10 @@ describe("mergePondSlice (sync account registry)", () => {
         handles: { twitter: "personal" },
         sources: { twitter: { knownCount: 42 } },
       },
-    } as Parameters<typeof mergePondSlice>[0];
+    };
     const drained = mergePondSlice(base, {
       sync: { handles: {}, sources: {} },
-    } as Parameters<typeof mergePondSlice>[1]);
+    });
     expect(drained.sync.handles).toEqual({});
     expect(drained.sync.sources).toEqual({});
   });
@@ -79,10 +80,10 @@ describe("mergePondSlice (sync account registry)", () => {
   it("keeps the account registry intact across unrelated sync patches", () => {
     const base = {
       sync: { accounts: { [account.id]: account } },
-    } as unknown as Parameters<typeof mergePondSlice>[0];
+    };
     const next = mergePondSlice(base, {
       sync: { cron: { enabled: false, intervalHours: 12 } },
-    } as Parameters<typeof mergePondSlice>[1]);
+    });
     expect(next.sync.accounts).toEqual({ [account.id]: account });
     expect(next.sync.cron).toEqual({ enabled: false, intervalHours: 12 });
   });

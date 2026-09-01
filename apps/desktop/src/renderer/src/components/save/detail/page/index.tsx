@@ -3,7 +3,7 @@ import { useParams } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SaveArchiveViewer } from "@/components/save/archive-viewer";
 import { SaveAbout, SaveInfo } from "@/components/save/detail/pane";
-import { MediaViewer } from "@/components/save/media-viewer";
+import { MediaViewer, type ViewerNav } from "@/components/save/media-viewer";
 import {
   buildViewerMenu,
   fileIndexFromSlide,
@@ -45,7 +45,27 @@ export function SaveDetailPage() {
     [id],
   );
 
+  const viewerNav = useRef<ViewerNav | null>(null);
+
+  const stepImageOrSave = useCallback(
+    (delta: number) => {
+      if (viewerNav.current?.step(delta)) return;
+      stepSave(delta);
+    },
+    [stepSave],
+  );
+
   useHotkeys([
+    {
+      hotkey: SHORTCUTS["viewer.step-prev"].keys!,
+      callback: () => stepImageOrSave(-1),
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: SHORTCUTS["viewer.step-next"].keys!,
+      callback: () => stepImageOrSave(1),
+      options: { ignoreInputs: true },
+    },
     {
       hotkey: SHORTCUTS["viewer.prev-save"].keys!,
       callback: () => stepSave(-1),
@@ -120,6 +140,7 @@ export function SaveDetailPage() {
               <MediaViewer
                 save={save}
                 onActiveFileIndexChange={onActiveFileIndexChange}
+                navRef={viewerNav}
               />
             )}
           </div>

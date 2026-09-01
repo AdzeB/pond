@@ -1,15 +1,18 @@
 import { Button } from "@pond/ui";
+import { z } from "zod";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
 import styles from "./styles.module.css";
 
-function messageOf(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (typeof error === "string") return error;
-  return "Pond hit an unexpected error.";
+const ThrownStringSchema = z.string();
+
+function messageOf(cause: unknown): string {
+  if (cause instanceof Error) return cause.message;
+  const thrown = ThrownStringSchema.safeParse(cause);
+  return thrown.success ? thrown.data : "Pond hit an unexpected error.";
 }
 
-function stackOf(error: unknown): string | undefined {
-  return error instanceof Error ? error.stack : undefined;
+function stackOf(cause: unknown): string | undefined {
+  return cause instanceof Error ? cause.stack : undefined;
 }
 
 export function ErrorScreen({

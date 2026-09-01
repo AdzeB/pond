@@ -84,9 +84,7 @@ export function ChromeHistoryNav() {
       const r = getAppRouter();
       if (!r) return;
       setCanBack(r.history.canGoBack());
-      const index =
-        (r.state.location.state as { __TSR_index?: number } | undefined)
-          ?.__TSR_index ?? 0;
+      const index = r.state.location.state.__TSR_index ?? 0;
       setCanForward(index < r.history.length - 1);
     };
 

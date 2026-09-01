@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { embedModelVersion, embedTexts } from "@/lib/enrichment/embeddings";
 import type { Save } from "@/lib/types";
 import { dot } from "@/lib/util/vector";
@@ -13,6 +14,10 @@ interface VocabEntry {
   vec: Float32Array;
 }
 
+const TagRowsSchema = z.array(
+  z.object({ name: z.string().optional().catch(undefined) }),
+);
+
 let vocabPromise: Promise<VocabEntry[]> | null = null;
 let vocabKey = "";
 
@@ -21,15 +26,16 @@ async function getVocab(): Promise<VocabEntry[]> {
   if (vocabPromise && vocabKey === key) return vocabPromise;
   vocabKey = key;
   vocabPromise = (async () => {
-    const rows = (await window.pond.query("tags.list", {})) as Array<{
-      name?: string;
-    }>;
+    const rows = TagRowsSchema.parse(await window.pond.query("tags.list", {}));
     const names = rows
       .map((r) => r.name)
       .filter((n): n is string => !!n && n.trim().length > 0);
     if (names.length === 0) return [];
     const vecs = await embedTexts(names);
-    return names.map((name, i) => ({ name, vec: vecs[i] as Float32Array }));
+    return names.flatMap((name, i) => {
+      const vec = vecs[i];
+      return vec ? [{ name, vec }] : [];
+    });
   })();
   vocabPromise.catch(() => {
     vocabPromise = null;

@@ -1,9 +1,10 @@
 /// <reference lib="dom" />
 
+import type { JsonValue } from "@pond/schema/json";
 import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
 import { bindSourceId } from "../source-id";
-import { inPageTiktokNormalize } from "./normalize";
+import { inPageTiktokNormalize, type TiktokVideoPage } from "./normalize";
 
 export function buildExpression(videoId: string): string {
   return buildItemExpression(
@@ -16,7 +17,7 @@ export function buildExpression(videoId: string): string {
 async function inPageTiktokHarvest(
   _videoId: string,
   norm: ReturnType<typeof inPageTiktokNormalize>,
-): Promise<unknown> {
+): Promise<TiktokVideoPage | null> {
   const deadline = Date.now() + 12_000;
   while (Date.now() < deadline) {
     if (
@@ -29,7 +30,7 @@ async function inPageTiktokHarvest(
   return norm.extractVideoPageMeta();
 }
 
-export function adapt(raw: unknown, ctx: HarvestAdaptCtx) {
+export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx) {
   return captureFromPageDom(raw, ctx);
 }
 

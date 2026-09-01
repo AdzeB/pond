@@ -6,9 +6,15 @@ export function buildPondUrl(saveId: string, file: SaveFile): string {
   return bust ? `${base}?v=${bust}` : base;
 }
 
-export function withThumbWidth(url: string, width: number): string {
-  const sep = url.includes("?") ? "&" : "?";
-  return `${url}${sep}tw=${Math.round(width)}`;
+/** Buckets hold the thumbnail cache to a few sizes per file rather than one per zoom step. */
+const THUMB_BUCKETS = [256, 384, 512, 768, 1024] as const;
+const THUMB_MAX = 1536;
+
+export function thumbUrlFor(url: string, cssWidth: number | undefined): string {
+  if (!cssWidth || cssWidth <= 0) return url;
+  const wanted = cssWidth * (globalThis.devicePixelRatio || 1);
+  const width = THUMB_BUCKETS.find((b) => b >= wanted) ?? THUMB_MAX;
+  return `${url}${url.includes("?") ? "&" : "?"}tw=${width}`;
 }
 
 export function pickAuthorAvatarUrl(save: Save): string | null {
@@ -16,8 +22,7 @@ export function pickAuthorAvatarUrl(save: Save): string | null {
   if (local) return buildPondUrl(save.id, local);
 
   const url = save.rawJson?.capture?.author?.avatarUrl;
-  if (typeof url === "string" && url.trim().length > 0) return url;
-  return null;
+  return url && url.trim().length > 0 ? url : null;
 }
 
 export function pickSourceIconUrl(save: Save): string | null {
@@ -25,8 +30,7 @@ export function pickSourceIconUrl(save: Save): string | null {
   if (local) return buildPondUrl(save.id, local);
 
   const url = save.rawJson?.capture?.extras?.faviconUrl;
-  if (typeof url === "string" && url.trim().length > 0) return url;
-  return null;
+  return url && url.trim().length > 0 ? url : null;
 }
 
 function cacheBuster(file: SaveFile): string | null {

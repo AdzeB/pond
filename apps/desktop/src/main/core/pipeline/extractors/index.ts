@@ -49,10 +49,12 @@ export function resolveExtractor(rawUrl: string): Extractor {
   throw new UnsupportedError(`no extractor for ${rawUrl}`);
 }
 
-export function classifyUrlToSource(rawUrl: string): {
+interface UrlClassification {
   source: Source | null;
   extractorId: string | null;
-} {
+}
+
+export function classifyUrlToSource(rawUrl: string): UrlClassification {
   let url: URL;
   try {
     url = new URL(rawUrl);

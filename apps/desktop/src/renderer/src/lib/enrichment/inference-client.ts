@@ -1,16 +1,17 @@
 import type { RawImage } from "@huggingface/transformers";
+import { z } from "zod";
 import type { FlorenceTask } from "./inference-core";
 import type {
   InferenceRequest,
   InferenceResponse,
+  InferenceResult,
   SerializedImage,
 } from "./inference-protocol";
 
 /** Main-thread client for the inference Web Worker. In-thread fallback is only for a worker that never started, not one that died mid-run; Whisper in the UI renderer has crashed the process (exit 5). */
 
 function serializeImage(image: RawImage): SerializedImage {
-  const src = image.data as Uint8ClampedArray;
-  const copy = src.slice();
+  const copy = new Uint8ClampedArray(image.data);
   return {
     data: copy.buffer,
     width: image.width,
@@ -19,10 +20,10 @@ function serializeImage(image: RawImage): SerializedImage {
   };
 }
 
-type Pending = {
-  resolve: (value: unknown) => void;
-  reject: (reason: unknown) => void;
-};
+interface Pending {
+  resolve(value: InferenceResult): void;
+  reject(error: Error): void;
+}
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
   ? Omit<T, K>
@@ -35,8 +36,8 @@ let workerEverStarted = false;
 let nextId = 1;
 const pending = new Map<number, Pending>();
 
-function failAllPending(reason: unknown): void {
-  for (const p of pending.values()) p.reject(reason);
+function failAllPending(error: Error): void {
+  for (const p of pending.values()) p.reject(error);
   pending.clear();
 }
 
@@ -75,13 +76,26 @@ function ensureWorker(): Worker | null {
   }
 }
 
-function callWorker<T>(msg: RequestBody, transfer: Transferable[]): Promise<T> {
+const TextSchema = z.string();
+const LabelsSchema = z.array(TextSchema);
+const VectorSchema = z.instanceof(Float32Array);
+const VectorsSchema = z.array(VectorSchema);
+
+function callWorker<T extends InferenceResult>(
+  result: z.ZodType<T>,
+  msg: RequestBody,
+  transfer: Transferable[],
+): Promise<T> {
   const w = ensureWorker();
   if (!w) return Promise.reject(new Error("inference worker unavailable"));
   const id = nextId++;
   return new Promise<T>((resolve, reject) => {
-    pending.set(id, { resolve: resolve as (v: unknown) => void, reject });
-    w.postMessage({ id, ...msg } as InferenceRequest, transfer);
+    pending.set(id, {
+      resolve: (value) => resolve(result.parse(value)),
+      reject,
+    });
+    const request: InferenceRequest = { id, ...msg };
+    w.postMessage(request, transfer);
   });
 }
 
@@ -111,9 +125,11 @@ export function inferFlorence(
   return viaWorker(
     () => {
       const img = serializeImage(image);
-      return callWorker<string>({ op: "florence", image: img, task, modelId }, [
-        img.data,
-      ]);
+      return callWorker(
+        TextSchema,
+        { op: "florence", image: img, task, modelId },
+        [img.data],
+      );
     },
     async () =>
       (await import("./inference-core")).coreFlorence(image, task, modelId),
@@ -127,7 +143,8 @@ export function inferClipImage(
   return viaWorker(
     () => {
       const img = serializeImage(image);
-      return callWorker<Float32Array>(
+      return callWorker(
+        VectorSchema,
         { op: "clipImage", image: img, modelId },
         [img.data],
       );
@@ -145,7 +162,8 @@ export function inferClipAesthetic(
   return viaWorker(
     () => {
       const img = serializeImage(image);
-      return callWorker<string[]>(
+      return callWorker(
+        LabelsSchema,
         { op: "clipAesthetic", image: img, labels, modelId },
         [img.data],
       );
@@ -164,7 +182,7 @@ export function inferEmbedText(
   modelId: string,
 ): Promise<Float32Array> {
   return viaWorker(
-    () => callWorker<Float32Array>({ op: "embedText", text, modelId }, []),
+    () => callWorker(VectorSchema, { op: "embedText", text, modelId }, []),
     async () => (await import("./inference-core")).coreEmbedText(text, modelId),
   );
 }
@@ -174,7 +192,7 @@ export function inferEmbedTexts(
   modelId: string,
 ): Promise<Float32Array[]> {
   return viaWorker(
-    () => callWorker<Float32Array[]>({ op: "embedTexts", texts, modelId }, []),
+    () => callWorker(VectorsSchema, { op: "embedTexts", texts, modelId }, []),
     async () =>
       (await import("./inference-core")).coreEmbedTexts(texts, modelId),
   );
@@ -187,9 +205,11 @@ export function inferTranscribe(
   return viaWorker(
     () => {
       const copy = audio.slice();
-      return callWorker<string>({ op: "transcribe", audio: copy, modelId }, [
-        copy.buffer,
-      ]);
+      return callWorker(
+        TextSchema,
+        { op: "transcribe", audio: copy, modelId },
+        [copy.buffer],
+      );
     },
     async () => {
       throw new Error("whisper requires the inference worker");

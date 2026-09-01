@@ -17,21 +17,21 @@ import { broadcastSyncAction } from "./executor";
 import { persistSave } from "./persist-save";
 import { normalizeTagList } from "./tags";
 
-const IMAGE_EXT: Record<string, string> = {
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".png": "image/png",
-  ".gif": "image/gif",
-  ".webp": "image/webp",
-  ".avif": "image/avif",
-  ".svg": "image/svg+xml",
-};
-const VIDEO_EXT: Record<string, string> = {
-  ".mp4": "video/mp4",
-  ".webm": "video/webm",
-  ".mov": "video/quicktime",
-  ".m4v": "video/x-m4v",
-};
+const IMAGE_EXT = new Map<string, string>([
+  [".jpg", "image/jpeg"],
+  [".jpeg", "image/jpeg"],
+  [".png", "image/png"],
+  [".gif", "image/gif"],
+  [".webp", "image/webp"],
+  [".avif", "image/avif"],
+  [".svg", "image/svg+xml"],
+]);
+const VIDEO_EXT = new Map<string, string>([
+  [".mp4", "video/mp4"],
+  [".webm", "video/webm"],
+  [".mov", "video/quicktime"],
+  [".m4v", "video/x-m4v"],
+]);
 const TEXT_EXT = new Set([".txt", ".md", ".markdown"]);
 
 const MAX_TEXT_BODY_BYTES = 100_000;
@@ -42,18 +42,16 @@ type Classified =
 
 function classifyExt(ext: string): Classified | null {
   const lower = ext.toLowerCase();
-  if (IMAGE_EXT[lower]) {
-    return {
-      kind: "image",
-      mediaType: "image",
-      mimeType: IMAGE_EXT[lower],
-    };
+  const image = IMAGE_EXT.get(lower);
+  if (image) {
+    return { kind: "image", mediaType: "image", mimeType: image };
   }
-  if (VIDEO_EXT[lower]) {
+  const video = VIDEO_EXT.get(lower);
+  if (video) {
     return {
       kind: "video",
       mediaType: "video",
-      mimeType: VIDEO_EXT[lower],
+      mimeType: video,
     };
   }
   if (TEXT_EXT.has(lower)) {
@@ -219,13 +217,13 @@ export async function createManualSave(
     listKinds: ["saved"],
     files: [],
     coverIndex: 0,
-    ...(input.width != null ? { width: input.width } : {}),
-    ...(input.height != null ? { height: input.height } : {}),
     ingestStartedAt: now,
     ingestCompletedAt: now,
     savedAt: now,
     createdAt: now,
   };
+  if (input.width != null) insertValues.width = input.width;
+  if (input.height != null) insertValues.height = input.height;
   db.insert(saves).values(insertValues).run();
 
   const insertedAction = db
@@ -234,7 +232,7 @@ export async function createManualSave(
       modelName: "save",
       modelId: id,
       action: "I",
-      data: insertValues as unknown,
+      data: insertValues,
       actor: "user",
       actorReason: "manual:create",
       batchId: ulid(),

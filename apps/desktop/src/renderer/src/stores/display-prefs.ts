@@ -18,14 +18,14 @@ export interface DisplayPrefs {
   notes: boolean;
 }
 
-const STORAGE_KEYS: Record<DisplayPrefKey, string> = {
+const STORAGE_KEYS = {
   name: "pond.display.name",
   date: "pond.display.date",
   fileCount: "pond.display.fileCount",
   source: "pond.display.source",
   type: "pond.display.type",
   notes: "pond.display.notes",
-};
+} satisfies Record<DisplayPrefKey, string>;
 
 const DISPLAY_DEFAULTS: DisplayPrefs = {
   name: true,
@@ -37,7 +37,7 @@ const DISPLAY_DEFAULTS: DisplayPrefs = {
 };
 
 function readKey(key: DisplayPrefKey): boolean {
-  if (typeof window === "undefined") return DISPLAY_DEFAULTS[key];
+  if (!globalThis.window) return DISPLAY_DEFAULTS[key];
   try {
     const raw = window.localStorage.getItem(STORAGE_KEYS[key]);
     if (raw == null) return DISPLAY_DEFAULTS[key];
@@ -61,7 +61,7 @@ function readAll(): DisplayPrefs {
 const store = new Store<DisplayPrefs>(readAll());
 
 export function setDisplayPref(key: DisplayPrefKey, value: boolean): void {
-  if (typeof window !== "undefined") {
+  if (globalThis.window) {
     try {
       window.localStorage.setItem(STORAGE_KEYS[key], value ? "1" : "0");
     } catch {}

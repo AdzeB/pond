@@ -7,14 +7,14 @@ import type { Context } from "hono";
 import { getDb } from "../db";
 import { itemFile } from "../paths";
 
-const IMAGE_TYPES: Record<string, string> = {
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".png": "image/png",
-  ".gif": "image/gif",
-  ".webp": "image/webp",
-  ".avif": "image/avif",
-};
+const IMAGE_TYPES = new Map([
+  [".jpg", "image/jpeg"],
+  [".jpeg", "image/jpeg"],
+  [".png", "image/png"],
+  [".gif", "image/gif"],
+  [".webp", "image/webp"],
+  [".avif", "image/avif"],
+]);
 
 export async function itemThumbHandler(c: Context): Promise<Response> {
   const id = c.req.query("id");
@@ -35,7 +35,7 @@ export async function itemThumbHandler(c: Context): Promise<Response> {
   const type =
     cover.mimeType?.startsWith("image/") === true
       ? cover.mimeType
-      : IMAGE_TYPES[extname(cover.path).toLowerCase()];
+      : IMAGE_TYPES.get(extname(cover.path).toLowerCase());
   if (!type) return c.json({ status: "error", error: "no cover" }, 404);
 
   /** File names come from our own DB, but basename() keeps a corrupted row from escaping the item dir. */

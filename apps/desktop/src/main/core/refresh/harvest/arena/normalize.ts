@@ -1,5 +1,31 @@
 /// <reference lib="dom" />
 
+import type { MediaType } from "@pond/schema/db";
+
+interface ArenaBlockPageMedia {
+  url: string;
+  type: MediaType;
+  poster?: string;
+}
+
+interface ArenaBlockPageMeta {
+  authorUrl?: string;
+  sourceUrl?: string;
+  connectedChannels?: string[];
+  lang?: string;
+}
+
+export interface ArenaBlockPage {
+  title?: string;
+  description?: string;
+  author?: string;
+  lang?: string;
+  mediaUrl?: string;
+  mediaUrls?: ArenaBlockPageMedia[];
+  mediaType?: MediaType;
+  meta?: ArenaBlockPageMeta;
+}
+
 export function inPageArenaNormalize() {
   function extractBlockId(href: string): string | null {
     try {
@@ -10,9 +36,9 @@ export function inPageArenaNormalize() {
     }
   }
 
-  function extractBlockPageMeta(): Record<string, unknown> | null {
-    const out: Record<string, unknown> = {};
-    const meta: Record<string, unknown> = {};
+  function extractBlockPageMeta(): ArenaBlockPage | null {
+    const out: ArenaBlockPage = {};
+    const meta: ArenaBlockPageMeta = {};
 
     const titleEl = document.querySelector<HTMLElement>(
       "[class*='BlockTitle'], [class*='block__title'], h1, h2",
@@ -51,9 +77,11 @@ export function inPageArenaNormalize() {
         "[class*='BlockConnections'] a, [class*='connected'] a",
       ),
     );
-    const channels = channelLinks
-      .map((a) => a.textContent?.trim())
-      .filter(Boolean);
+    const channels: string[] = [];
+    for (const a of channelLinks) {
+      const text = a.textContent?.trim();
+      if (text) channels.push(text);
+    }
     if (channels.length > 0) meta.connectedChannels = channels;
 
     const mainImg = document.querySelector<HTMLImageElement>(
@@ -70,13 +98,9 @@ export function inPageArenaNormalize() {
     if (video?.src) {
       const poster = video.poster || imgSrc || undefined;
       out.mediaUrl = poster || video.src;
-      out.mediaUrls = [
-        {
-          url: video.src,
-          type: "video",
-          ...(poster ? { poster } : {}),
-        },
-      ];
+      const entry: ArenaBlockPageMedia = { url: video.src, type: "video" };
+      if (poster) entry.poster = poster;
+      out.mediaUrls = [entry];
       out.mediaType = "video";
     }
 

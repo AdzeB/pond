@@ -464,14 +464,113 @@ const THREADS_HOOK = `
   })();
 `;
 
-const host =
-  typeof location !== "undefined" ? location.hostname.toLowerCase() : "";
+const INSTAGRAM_HOOK = `
+  (() => {
+    if (globalThis.__pondIgBloksHookInstalled) return;
+    globalThis.__pondIgBloksHookInstalled = true;
+    globalThis.__pondIgBloksCaptures = [];
+
+    const isBloksUrl = (u) => {
+      try {
+        return typeof u === "string" && u.indexOf("/async/wbloks/fetch/") !== -1;
+      } catch (e) {
+        return false;
+      }
+    };
+
+    const push = (text) => {
+      try {
+        const buf = globalThis.__pondIgBloksCaptures;
+        if (!Array.isArray(buf)) return;
+        if (buf.length > 60) buf.shift();
+        buf.push(text);
+      } catch (e) {
+        /* buffer unavailable; skip */
+      }
+    };
+
+    const xhrOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function (method, url) {
+      try {
+        if (isBloksUrl(url)) {
+          this.addEventListener("load", () => {
+            try {
+              push(this.responseText);
+            } catch (e) {
+              /* response body not readable; skip */
+            }
+          });
+        }
+      } catch (e) {
+        /* URL match threw; never block the request */
+      }
+      return xhrOpen.apply(this, arguments);
+    };
+
+    /** Keep the likes screen's paging request so the harvest can replay it with later cursors. */
+    const rememberTemplate = (url, init) => {
+      if (url.indexOf("activity_center.liked_next") === -1) return;
+      try {
+        const body = init && init.body;
+        let form = "";
+        if (typeof body === "string") form = body;
+        else if (body && typeof body.entries === "function") {
+          const parts = [];
+          for (const [k, v] of body.entries()) {
+            parts.push(encodeURIComponent(k) + "=" + encodeURIComponent(String(v)));
+          }
+          form = parts.join("&");
+        }
+        if (!form) return;
+        const headers = {};
+        const raw = init && init.headers;
+        if (raw && typeof raw.forEach === "function") raw.forEach((v, k) => { headers[k] = String(v); });
+        else if (raw && typeof raw === "object") for (const k of Object.keys(raw)) headers[k] = String(raw[k]);
+        globalThis.__pondIgLikesRequest = { url: url, body: form, headers: headers };
+      } catch (e) {
+        /* template unreadable; the harvest reports what it managed to read */
+      }
+    };
+
+    const origFetch = globalThis.fetch;
+    if (typeof origFetch === "function") {
+      globalThis.fetch = function (input, init) {
+        let url = "";
+        try {
+          url = typeof input === "string" ? input : (input && input.url) || "";
+        } catch (e) {
+          /* opaque request; leave url empty */
+        }
+        rememberTemplate(url, init);
+        const promise = origFetch.apply(this, arguments);
+        if (isBloksUrl(url)) {
+          promise
+            .then((res) => {
+              try {
+                res.clone().text().then(push).catch(() => {});
+              } catch (e) {
+                /* body already consumed; skip */
+              }
+              return res;
+            })
+            .catch(() => {
+              /* don't disturb the caller's error path */
+            });
+        }
+        return promise;
+      };
+    }
+  })();
+`;
+
+const host = globalThis.location?.hostname.toLowerCase() ?? "";
 const isTwitter =
   host === "x.com" ||
   host === "twitter.com" ||
   host.endsWith(".x.com") ||
   host.endsWith(".twitter.com");
 const isCosmos = host === "cosmos.so" || host.endsWith(".cosmos.so");
+const isInstagram = host === "instagram.com" || host.endsWith(".instagram.com");
 const isThreads =
   host === "threads.com" ||
   host === "threads.net" ||
@@ -484,6 +583,10 @@ if (isTwitter) {
 
 if (isCosmos) {
   webFrame.executeJavaScript(COSMOS_HOOK).catch(() => {});
+}
+
+if (isInstagram) {
+  webFrame.executeJavaScript(INSTAGRAM_HOOK).catch(() => {});
 }
 
 if (isThreads) {

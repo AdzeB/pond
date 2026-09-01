@@ -210,9 +210,7 @@ function Scrubber({ className }: { className?: string }) {
       min={0}
       max={max}
       step={0.01}
-      onValueChange={(v) =>
-        actions.seek(typeof v === "number" ? v : (v[0] ?? 0))
-      }
+      onValueChange={(v) => actions.seek(Array.isArray(v) ? (v[0] ?? 0) : v)}
       onPointerMove={onPointerMove}
       onPointerLeave={() => setHover(null)}
       aria-label="Seek"

@@ -1,4 +1,4 @@
-import type { Source, WatchedAccount } from "@pond/schema/db";
+import type { Source, SourceSyncPrefs, WatchedAccount } from "@pond/schema/db";
 import { saves } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
 import { and, count, eq } from "drizzle-orm";
@@ -307,12 +307,13 @@ async function persistWatchWatermark(
   opts: { firstCheck: boolean; newestId: string | null; total: number },
 ): Promise<string> {
   const lastSyncedAt = new Date().toISOString();
-  await patchWatchSync(watchId, {
+  const patch: Partial<SourceSyncPrefs> = {
     lastSyncedAt,
     lastError: null,
     knownCount: opts.total,
-    ...(opts.newestId ? { highWaterMark: opts.newestId } : {}),
-    ...(opts.firstCheck ? { lastFullSyncAt: lastSyncedAt } : {}),
-  });
+  };
+  if (opts.newestId) patch.highWaterMark = opts.newestId;
+  if (opts.firstCheck) patch.lastFullSyncAt = lastSyncedAt;
+  await patchWatchSync(watchId, patch);
   return lastSyncedAt;
 }

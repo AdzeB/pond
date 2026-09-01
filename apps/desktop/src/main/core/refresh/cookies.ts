@@ -42,9 +42,13 @@ export async function writeNetscapeCookies(
   try {
     const persistent = session.fromPartition(partition);
     const buckets = await Promise.all(
-      COOKIE_HOSTS.map((url) =>
-        persistent.cookies.get({ url }).catch(() => [] as Cookie[]),
-      ),
+      COOKIE_HOSTS.map(async (url): Promise<Cookie[]> => {
+        try {
+          return await persistent.cookies.get({ url });
+        } catch {
+          return [];
+        }
+      }),
     );
     const seen = new Set<string>();
     for (const bucket of buckets) {

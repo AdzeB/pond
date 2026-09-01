@@ -6,6 +6,8 @@ export interface RateProfile {
   readonly maxPerWindow: number;
   readonly windowMs: number;
   readonly firstSyncSlowdown: number;
+  readonly maxPerHour: number;
+  readonly maxPerDay: number;
 }
 
 export interface SourceSyncConfig {

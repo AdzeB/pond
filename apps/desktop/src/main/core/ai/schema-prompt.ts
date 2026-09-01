@@ -1,5 +1,6 @@
 import { FIELD_IDS, FIELD_META } from "@pond/schema/filters/meta";
 import { COMPARATORS_BY_TYPE } from "@pond/schema/filters/types";
+import type { JsonObject } from "@pond/schema/json";
 import type { CompileContext } from "./types";
 
 function fieldLines(): string {
@@ -59,7 +60,7 @@ export function buildSystemPrompt(ctx: CompileContext): string {
   ].join("\n");
 }
 
-export function queryJsonSchema(): Record<string, unknown> {
+export function queryJsonSchema(): JsonObject {
   return {
     type: "object",
     properties: {

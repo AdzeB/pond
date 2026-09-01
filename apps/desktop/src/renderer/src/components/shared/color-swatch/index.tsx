@@ -5,10 +5,15 @@ import { colorCopyFormats } from "@/lib/util/color";
 import { setQuery } from "@/stores/view-store";
 import styles from "./styles.module.css";
 
-const POPUP_STYLE = {
+interface PopupStyle extends CSSProperties {
+  "--popup-width": string;
+  "--popup-min-width": string;
+}
+
+const POPUP_STYLE: PopupStyle = {
   "--popup-width": "max-content",
   "--popup-min-width": "200px",
-} as CSSProperties;
+};
 
 const COPIED_HOLD_MS = 1200;
 

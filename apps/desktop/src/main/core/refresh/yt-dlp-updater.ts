@@ -11,6 +11,7 @@ import {
 } from "node:fs/promises";
 import { join } from "node:path";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import {
   invalidateBinariesCache,
   userBinDir,
@@ -21,13 +22,19 @@ const REPO = "yt-dlp/yt-dlp";
 const LATEST_API = `https://api.github.com/repos/${REPO}/releases/latest`;
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const DOWNLOAD_TIMEOUT_MS = 120_000;
+const ReleaseSchema = z.object({
+  tag_name: z.string().optional().catch(undefined),
+});
+
 const SMOKE_TIMEOUT_MS = 20_000;
 
-const ASSET_BY_PLATFORM: Record<string, string | undefined> = {
-  darwin: "yt-dlp_macos",
-  linux: "yt-dlp_linux",
-  win32: "yt-dlp.exe",
-};
+const ASSET_BY_PLATFORM = new Map<string, string>(
+  Object.entries({
+    darwin: "yt-dlp_macos",
+    linux: "yt-dlp_linux",
+    win32: "yt-dlp.exe",
+  }),
+);
 
 const VERSION_FILE = ".yt-dlp-version";
 const VERSION_PREVIOUS_FILE = ".yt-dlp-version.previous";
@@ -47,7 +54,7 @@ export function maybeUpdateYtDlp(
 }
 
 async function runUpdate(force: boolean): Promise<void> {
-  const asset = ASSET_BY_PLATFORM[process.platform];
+  const asset = ASSET_BY_PLATFORM.get(process.platform);
   if (!asset) return;
 
   const dir = userBinDir();
@@ -162,8 +169,8 @@ async function fetchLatestTag(): Promise<string | null> {
     log.debug("[pond yt-dlp-update] latest release lookup", res.status);
     return null;
   }
-  const json = (await res.json()) as { tag_name?: string };
-  return json.tag_name ?? null;
+  const json = ReleaseSchema.safeParse(await res.json());
+  return json.data?.tag_name ?? null;
 }
 
 async function fetchExpectedSha(

@@ -8,8 +8,7 @@ interface SavesState {
 }
 
 function savedAtMs(save: Save): number {
-  const v = save.savedAt;
-  return typeof v === "number" && Number.isFinite(v) ? v : 0;
+  return Number.isFinite(save.savedAt) ? save.savedAt : 0;
 }
 
 function sortByRecency(list: Iterable<Save>): Save[] {

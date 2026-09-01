@@ -10,9 +10,7 @@ type IconDefaults = {
 export function createIcon(
   inner: IconInner,
   defaults?: IconDefaults,
-): (
-  props: SVGProps<SVGSVGElement> & { size?: number | string },
-) => JSX.Element {
+): (props: SVGProps<SVGSVGElement> & { size?: number }) => JSX.Element {
   const viewBoxSize = defaults?.size ?? 18;
 
   return function Icon({
@@ -21,23 +19,15 @@ export function createIcon(
     width,
     height,
     ...props
-  }: SVGProps<SVGSVGElement> & { size?: number | string }) {
-    const resolvedStroke =
-      typeof strokeWidth === "number"
-        ? strokeWidth
-        : typeof strokeWidth === "string" && strokeWidth !== ""
-          ? Number(strokeWidth)
-          : (defaults?.strokeWidth ?? 1.5);
-    const resolved =
-      width ??
-      (typeof size === "number" ? size : undefined) ??
-      defaults?.size ??
-      18;
-    const resolvedHeight =
-      height ??
-      (typeof size === "number" ? size : undefined) ??
-      defaults?.size ??
-      18;
+  }: SVGProps<SVGSVGElement> & { size?: number }) {
+    /** `Number(undefined)` is NaN, which is what falls back; do not coerce a missing stroke to 0. */
+    const strokeNumber = Number(strokeWidth);
+    const resolvedStroke = Number.isFinite(strokeNumber)
+      ? strokeNumber
+      : (defaults?.strokeWidth ?? 1.5);
+    const fallbackSize = size ?? defaults?.size ?? 18;
+    const resolved = width ?? fallbackSize;
+    const resolvedHeight = height ?? fallbackSize;
 
     return (
       <svg

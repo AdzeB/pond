@@ -1,9 +1,14 @@
 import type { Save } from "@pond/schema/db";
+import type { RawJson } from "@pond/schema/raw";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { fetchSourceIconToTxFile } from "../../../lib/blob";
 import { persistSave } from "../../persist-save";
+import type { WriteFileArgs } from "./apply";
 
 const SOURCE_ICON_KIND = "source_icon";
+
+const FaviconUrlSchema = z.string().min(1).optional().catch(undefined);
 
 export function hasSourceIcon(files: Save["files"]): boolean {
   return (files ?? []).some((f) => f.kind === SOURCE_ICON_KIND);
@@ -21,21 +26,20 @@ export async function fetchSourceIcon(
   const outcome = await fetchSourceIconToTxFile(iconUrl);
   if (!("file" in outcome)) return false;
   const tx = outcome.file;
+  const iconFile: WriteFileArgs = {
+    kind: SOURCE_ICON_KIND,
+    filename: tx.filename,
+    bytes: Buffer.from(tx.bytes),
+    sourceUrl: iconUrl,
+  };
+  if (tx.mimeType) iconFile.mimeType = tx.mimeType;
 
   await persistSave(
     saveId,
     {},
     {
       actorReason: "pipeline:source-icon",
-      newFiles: [
-        {
-          kind: SOURCE_ICON_KIND,
-          filename: tx.filename,
-          bytes: Buffer.from(tx.bytes),
-          sourceUrl: iconUrl,
-          ...(tx.mimeType ? { mimeType: tx.mimeType } : {}),
-        },
-      ],
+      newFiles: [iconFile],
     },
   );
   log.info("[pond pipeline:source-icon] wrote", saveId);
@@ -46,13 +50,8 @@ function pickFaviconUrl(save: Save): string | null {
   return scrapedFaviconUrl(save.rawJson) ?? fallbackFaviconUrl(save.url);
 }
 
-function scrapedFaviconUrl(rawJson: unknown): string | null {
-  if (!rawJson || typeof rawJson !== "object") return null;
-  const v = rawJson as {
-    capture?: { extras?: { faviconUrl?: unknown } };
-  };
-  const url = v.capture?.extras?.faviconUrl;
-  return typeof url === "string" && url.length > 0 ? url : null;
+function scrapedFaviconUrl(rawJson: RawJson | null): string | null {
+  return FaviconUrlSchema.parse(rawJson?.capture?.extras?.faviconUrl) ?? null;
 }
 
 function fallbackFaviconUrl(saveUrl: string): string | null {

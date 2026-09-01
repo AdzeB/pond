@@ -10,26 +10,28 @@ interface DateExtraction {
   rest: string;
 }
 
-const DIRECTION: Record<string, "before" | "after" | "since"> = {
-  before: "before",
-  older: "before",
-  earlier: "before",
-  after: "after",
-  newer: "after",
-  since: "since",
-};
+type Direction = "before" | "after" | "since";
 
-const QUALIFIER: Record<string, FieldId> = {
-  published: "publishedAt",
-  posted: "publishedAt",
-  modified: "modifiedAt",
-  updated: "modifiedAt",
-  edited: "modifiedAt",
-  changed: "modifiedAt",
-  saved: "savedAt",
-  added: "savedAt",
-  created: "savedAt",
-};
+const DIRECTION = new Map<string, Direction>([
+  ["before", "before"],
+  ["older", "before"],
+  ["earlier", "before"],
+  ["after", "after"],
+  ["newer", "after"],
+  ["since", "since"],
+]);
+
+const QUALIFIER = new Map<string, FieldId>([
+  ["published", "publishedAt"],
+  ["posted", "publishedAt"],
+  ["modified", "modifiedAt"],
+  ["updated", "modifiedAt"],
+  ["edited", "modifiedAt"],
+  ["changed", "modifiedAt"],
+  ["saved", "savedAt"],
+  ["added", "savedAt"],
+  ["created", "savedAt"],
+]);
 
 const PREFIX_RE =
   /(?:\b(published|posted|modified|updated|edited|changed|saved|added|created)\b\s+)?(?:\b(before|after|since|older|newer|earlier)\b\s+(?:than\s+|to\s+)?)?(?:\b(?:in|on|from|during|of)\b\s+)?$/i;
@@ -100,14 +102,13 @@ function isTimeOnly(c: ChronoComponents): boolean {
   return hasTime && !hasDate;
 }
 
-function readPrefix(
-  input: string,
-  start: number,
-): {
+interface DatePrefix {
   field: FieldId;
-  dir: "before" | "after" | "since" | null;
+  dir: Direction | null;
   from: number;
-} {
+}
+
+function readPrefix(input: string, start: number): DatePrefix {
   const m = PREFIX_RE.exec(input.slice(0, start));
   if (!m || m[0].length === 0) {
     return { field: "savedAt", dir: null, from: start };
@@ -115,15 +116,15 @@ function readPrefix(
   const qualifier = m[1]?.toLowerCase();
   const direction = m[2]?.toLowerCase();
   return {
-    field: qualifier ? (QUALIFIER[qualifier] ?? "savedAt") : "savedAt",
-    dir: direction ? (DIRECTION[direction] ?? null) : null,
+    field: qualifier ? (QUALIFIER.get(qualifier) ?? "savedAt") : "savedAt",
+    dir: direction ? (DIRECTION.get(direction) ?? null) : null,
     from: start - m[0].length,
   };
 }
 
 function directionalPredicate(
   field: FieldId,
-  dir: "before" | "after" | "since" | null,
+  dir: Direction | null,
   lo: Date,
   hi: Date,
 ): Predicate {
@@ -136,15 +137,12 @@ function directionalPredicate(
 function rollingPrefix(
   input: string,
   start: number,
-): {
-  field: FieldId;
-  from: number;
-} | null {
+): Omit<DatePrefix, "dir"> | null {
   const m = PREFIX_RE.exec(input.slice(0, start));
   if (m?.[2]) return null;
   const qualifier = m?.[1]?.toLowerCase();
   return {
-    field: qualifier ? (QUALIFIER[qualifier] ?? "savedAt") : "savedAt",
+    field: qualifier ? (QUALIFIER.get(qualifier) ?? "savedAt") : "savedAt",
     from: m && m[0].length > 0 ? start - m[0].length : start,
   };
 }

@@ -1,3 +1,4 @@
+import type { RawQueryPlan } from "@pond/schema/query-plan";
 import log from "electron-log/main.js";
 import { LlamaCppProvider } from "./llamacpp-provider";
 import type { CompileContext } from "./types";
@@ -14,7 +15,7 @@ function getBundled(): LlamaCppProvider {
 export async function compilePlan(
   input: string,
   ctx: CompileContext,
-): Promise<unknown> {
+): Promise<RawQueryPlan | null> {
   try {
     return await getBundled().compilePlan(input, ctx);
   } catch (err) {

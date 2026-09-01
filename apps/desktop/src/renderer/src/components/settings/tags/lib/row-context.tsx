@@ -25,7 +25,7 @@ import type { TagsRowData } from "./types";
 
 interface TagRowContextValue {
   row: TagsRowData;
-  rowRef: RefObject<HTMLElement | null>;
+  rowRef: RefObject<HTMLDivElement | null>;
   renaming: boolean;
   renameDraft: string;
   setRenameDraft: (v: string) => void;
@@ -57,7 +57,7 @@ export function TagRowProvider({
 
   const [renaming, setRenaming] = useState(false);
   const [renameDraft, setRenameDraft] = useState(name);
-  const rowRef = useRef<HTMLElement | null>(null);
+  const rowRef = useRef<HTMLDivElement | null>(null);
 
   function startRename() {
     setRenameDraft(name);

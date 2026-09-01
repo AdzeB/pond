@@ -20,7 +20,7 @@ export function Metrics({ metrics }: { metrics: TweetCardMetrics }) {
     { key: "shares", Icon: ShareIcon, value: metrics.shares },
   ];
 
-  const shown = items.filter((i) => typeof i.value === "number");
+  const shown = items.filter((i) => i.value !== undefined);
   if (shown.length === 0) return null;
 
   return (

@@ -6,12 +6,12 @@ import { canonicalKey, TOKEN_FIELDS } from "@/lib/search/syntax";
 type FieldGroup = FieldMeta["group"];
 
 const GROUP_ORDER: FieldGroup[] = ["content", "media", "time", "people"];
-export const GROUP_LABELS: Record<FieldGroup, string> = {
+export const GROUP_LABELS = {
   content: "Content",
   media: "Media",
   time: "Time",
   people: "People",
-};
+} satisfies Record<FieldGroup, string>;
 
 export interface FieldEntry {
   field: FieldId;

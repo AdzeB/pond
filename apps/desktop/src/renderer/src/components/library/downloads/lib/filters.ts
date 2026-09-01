@@ -9,6 +9,7 @@ export const STATUS_OPTIONS: readonly {
 }[] = [
   { id: "in-progress", label: "In Progress" },
   { id: "failed", label: "Failed" },
+  { id: "cancelled", label: "Cancelled" },
   { id: "complete", label: "Completed" },
 ];
 

@@ -106,12 +106,14 @@ function buildMenu(
   const prefix = negate ? "-" : "";
 
   const opMatch = /^([A-Za-z][\w]*)(:|>=|<=|>|<)(.*)$/.exec(body);
-  if (opMatch) {
-    const field = fieldForKey(opMatch[1] as string);
+  const opKey = opMatch?.[1];
+  const opValue = opMatch?.[3];
+  if (opKey !== undefined && opValue !== undefined) {
+    const field = fieldForKey(opKey);
     if (!field) return null;
     const suggestions = valueSuggestionsFor(field, facets);
     if (!suggestions) return null;
-    const q = (opMatch[3] as string).toLowerCase();
+    const q = opValue.toLowerCase();
     const key = canonicalKey(field);
     const matches = suggestions.filter(
       (s) =>
@@ -140,7 +142,7 @@ function buildMenu(
   )
     .slice(0, LOOKUP_CAP)
     .map((spec) => {
-      const key = spec.keys[0] as string;
+      const key = canonicalKey(spec.field);
       return {
         kind: "field" as const,
         key: `field-${spec.field}`,
@@ -167,8 +169,8 @@ class FilterOption extends MenuOption {
 
 function triggerFn(text: string): MenuTextMatch | null {
   const match = /(?:^|\s)(-?[A-Za-z][^\s]*)$/.exec(text);
-  if (!match) return null;
-  const token = match[1] as string;
+  const token = match?.[1];
+  if (!match || token === undefined) return null;
   const leadOffset = match.index + (match[0].length - token.length);
   return { leadOffset, matchingString: token, replaceableString: token };
 }

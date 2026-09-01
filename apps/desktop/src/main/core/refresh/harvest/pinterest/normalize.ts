@@ -1,5 +1,32 @@
 /// <reference lib="dom" />
 
+import type { MediaType } from "@pond/schema/db";
+
+export interface PinterestMedia {
+  url: string;
+  type: MediaType;
+  poster?: string;
+}
+
+export interface PinterestPinMeta {
+  authorName?: string;
+  authorUrl?: string;
+  authorAvatar?: string;
+  boardName?: string;
+  lang?: string;
+}
+
+export interface PinterestPinPage {
+  title?: string;
+  description?: string;
+  author?: string;
+  lang?: string;
+  mediaUrl?: string;
+  mediaUrls?: PinterestMedia[];
+  mediaType?: MediaType;
+  meta?: PinterestPinMeta;
+}
+
 export function inPagePinterestNormalize() {
   function extractPinId(href: string): string | null {
     try {
@@ -10,9 +37,9 @@ export function inPagePinterestNormalize() {
     }
   }
 
-  function extractPinPageMeta(): Record<string, unknown> | null {
-    const out: Record<string, unknown> = {};
-    const meta: Record<string, unknown> = {};
+  function extractPinPageMeta(): PinterestPinPage | null {
+    const out: PinterestPinPage = {};
+    const meta: PinterestPinMeta = {};
 
     const getMeta = (selectors: readonly string[]): string | undefined => {
       for (const sel of selectors) {
@@ -123,10 +150,10 @@ export function inPagePinterestNormalize() {
       video?.src || video?.querySelector("source")?.src || ogVideo || "";
     if (videoSrc) {
       const poster = video?.poster || imgSrc || undefined;
+      const clip: PinterestMedia = { url: videoSrc, type: "video" };
+      if (poster) clip.poster = poster;
       out.mediaUrl = poster || videoSrc;
-      out.mediaUrls = [
-        { url: videoSrc, type: "video", ...(poster ? { poster } : {}) },
-      ];
+      out.mediaUrls = [clip];
       out.mediaType = "video";
     }
 

@@ -24,7 +24,7 @@ function deriveQuery(rows: Predicate[], combinator: Combinator): Query {
 }
 
 function applyZoomVar(zoom: number): void {
-  if (typeof document === "undefined") return;
+  if (!globalThis.document) return;
   document.documentElement.style.setProperty("--grid-min", `${zoom}px`);
 }
 
@@ -48,7 +48,7 @@ function readInitialLayout(): LayoutValue {
 }
 
 function readInitialZoom(): number {
-  if (typeof window === "undefined") return ZOOM_DEFAULT;
+  if (!globalThis.window) return ZOOM_DEFAULT;
   try {
     const raw = window.localStorage.getItem(ZOOM_STORAGE_KEY);
     const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
@@ -240,7 +240,7 @@ export function adjustZoom(delta: number): void {
 
 export function setZoom(zoom: number): void {
   const clamped = clampZoom(zoom);
-  if (typeof window !== "undefined") {
+  if (globalThis.window) {
     try {
       window.localStorage.setItem(ZOOM_STORAGE_KEY, String(clamped));
     } catch {}
@@ -253,7 +253,7 @@ export function restoreDefaults(): void {
   writeViewPref("view", "waterfall");
   writeViewPref("sort", "savedAt");
   writeViewPref("dir", "desc");
-  if (typeof window !== "undefined") {
+  if (globalThis.window) {
     try {
       window.localStorage.setItem(ZOOM_STORAGE_KEY, String(ZOOM_DEFAULT));
     } catch {}

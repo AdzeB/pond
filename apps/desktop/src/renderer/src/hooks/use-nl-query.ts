@@ -1,14 +1,17 @@
 import { matches } from "@pond/schema/filters/match";
 import type { Query } from "@pond/schema/filters/types";
 import { useCallback, useMemo } from "react";
+import { z } from "zod";
 import { compileAsk } from "@/lib/search/compile-ask";
 import { resolveFacets } from "@/lib/search/facet-resolver";
 import { computeLiveFacets } from "@/lib/search/live-facets";
 import type { NlFacets } from "@/lib/search/nl-query";
-import { validatePlan } from "@/lib/search/nl-validate";
+import { RawPlanSchema, validatePlan } from "@/lib/search/nl-validate";
 import { pool } from "@/stores/pool";
 import { usePrefs } from "@/stores/prefs";
 import { useSaves } from "./use-saves";
+
+const ReplySchema = z.object({ plan: RawPlanSchema });
 
 function countMatches(query: Query): number {
   let n = 0;
@@ -43,7 +46,7 @@ export function useNlCompiler(): (
                 input: nextInput,
                 facets: nextFacets,
               });
-              return validatePlan((res as { plan: unknown }).plan);
+              return validatePlan(ReplySchema.parse(res).plan);
             }
           : undefined,
         countMatches,

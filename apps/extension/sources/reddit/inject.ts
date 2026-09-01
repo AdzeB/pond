@@ -4,6 +4,18 @@ import {
   log,
   type RequestLens,
 } from "@/utils/intercept";
+import {
+  asText,
+  isRecord,
+  type JsonRecord,
+  parseJsonRecord,
+} from "@/utils/json";
+
+declare global {
+  interface Window {
+    __pondRedditInjected?: boolean;
+  }
+}
 
 const LEGACY_SAVE_RE = /\/api\/save\b/i;
 const LEGACY_VOTE_RE = /\/api\/vote\b/i;
@@ -12,7 +24,7 @@ const POST_ID_RE = /t3_([a-z0-9]+)/i;
 const COMMENT_ID_RE = /t1_[a-z0-9]+/i;
 
 function composedNodes(ev: Event): EventTarget[] {
-  return typeof ev.composedPath === "function" ? ev.composedPath() : [];
+  return ev.composedPath ? ev.composedPath() : [];
 }
 
 function compactText(raw: string | null | undefined): string {
@@ -149,50 +161,28 @@ function regexFullname(body: string): string | null {
   return m?.[1] ?? null;
 }
 
-function parseJson(body: string | null): Record<string, unknown> | null {
-  if (!body) return null;
-  try {
-    const json = JSON.parse(body) as unknown;
-    return json && typeof json === "object"
-      ? (json as Record<string, unknown>)
-      : null;
-  } catch {
-    return null;
-  }
-}
+const POST_ID_FIELDS = ["postId", "post_id", "id", "thingId", "thing_id"];
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object"
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-function operationName(
-  json: Record<string, unknown> | null,
-  body: string,
-): string {
-  if (json) {
-    const op = json.operation ?? json.operationName;
-    if (typeof op === "string") return op;
-  }
+function operationName(request: JsonRecord | null, body: string): string {
+  const op = asText(request?.operation ?? request?.operationName);
+  if (op !== undefined) return op;
   return /"operation(?:Name)?"\s*:\s*"([^"]+)"/.exec(body)?.[1] ?? "";
 }
 
-function graphqlInput(
-  json: Record<string, unknown> | null,
-): Record<string, unknown> {
-  const vars = asRecord(json?.variables) ?? {};
-  return asRecord(vars.input) ?? vars;
+function graphqlInput(request: JsonRecord | null): JsonRecord {
+  const vars = request?.variables;
+  if (!isRecord(vars)) return {};
+  return isRecord(vars.input) ? vars.input : vars;
 }
 
 function isGraphqlSave(body: string | null): boolean {
   if (!body || !/save/i.test(body)) return false;
   if (COMMENT_ID_RE.test(body) && !POST_ID_RE.test(body)) return false;
-  const json = parseJson(body);
-  const op = operationName(json, body);
+  const request = parseJsonRecord(body);
+  const op = operationName(request, body);
   if (/comment/i.test(op) && /save/i.test(op)) return false;
   if (/unsave/i.test(op)) return false;
-  const input = graphqlInput(json);
+  const input = graphqlInput(request);
   if (input.saved === false || input.save === false) return false;
   const action = String(input.action ?? "").toLowerCase();
   if (action === "unsave") return false;
@@ -222,7 +212,7 @@ function voteDir(url: string, body: string | null): string | null {
 function isGraphqlUpvote(body: string | null): boolean {
   if (!body || !/vote/i.test(body)) return false;
   if (COMMENT_ID_RE.test(body) && !POST_ID_RE.test(body)) return false;
-  const json = parseJson(body);
+  const json = parseJsonRecord(body);
   const op = operationName(json, body);
   if (/comment/i.test(op) && /vote/i.test(op)) return false;
   if (!/vote/i.test(op) && !/updatePostVoteState/i.test(body)) return false;
@@ -240,22 +230,18 @@ function isGraphqlUpvote(body: string | null): boolean {
 
 function postIdFromGraphql(body: string | null): string | null {
   if (!body) return null;
-  const json = parseJson(body);
-  const input = graphqlInput(json);
-  for (const key of ["postId", "post_id", "id", "thingId", "thing_id"]) {
-    const v = input[key];
-    if (typeof v === "string") {
-      const m = v.match(POST_ID_RE);
-      if (m) return m[1];
-    }
+  const input = graphqlInput(parseJsonRecord(body));
+  for (const key of POST_ID_FIELDS) {
+    const m = asText(input[key])?.match(POST_ID_RE);
+    if (m) return m[1];
   }
   const m = body.match(POST_ID_RE);
   return m?.[1] ?? null;
 }
 
 export function inject(): void {
-  if ((window as any).__pondRedditInjected) return;
-  (window as any).__pondRedditInjected = true;
+  if (window.__pondRedditInjected) return;
+  window.__pondRedditInjected = true;
 
   const recent = new Map<string, number>();
 

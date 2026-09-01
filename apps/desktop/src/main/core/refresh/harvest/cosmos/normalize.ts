@@ -1,5 +1,30 @@
 /// <reference lib="dom" />
 
+import type { MediaType } from "@pond/schema/db";
+
+interface CosmosElementPageMedia {
+  url: string;
+  type: MediaType;
+  poster?: string;
+}
+
+interface CosmosElementPageMeta {
+  authorUrl?: string;
+  authorAvatar?: string;
+  lang?: string;
+}
+
+export interface CosmosElementPage {
+  title?: string;
+  description?: string;
+  author?: string;
+  lang?: string;
+  mediaUrl?: string;
+  mediaUrls?: CosmosElementPageMedia[];
+  mediaType?: MediaType;
+  meta?: CosmosElementPageMeta;
+}
+
 export function inPageCosmosNormalize() {
   function extractElementId(href: string): string | null {
     try {
@@ -35,9 +60,9 @@ export function inPageCosmosNormalize() {
     }
   }
 
-  function extractElementPageMeta(): Record<string, unknown> | null {
-    const out: Record<string, unknown> = {};
-    const meta: Record<string, unknown> = {};
+  function extractElementPageMeta(): CosmosElementPage | null {
+    const out: CosmosElementPage = {};
+    const meta: CosmosElementPageMeta = {};
 
     const titleEl = document.querySelector<HTMLElement>(
       "[class*='title' i], [class*='Title'], h1, h2",
@@ -90,15 +115,11 @@ export function inPageCosmosNormalize() {
 
     const video = document.querySelector<HTMLVideoElement>("video");
     if (video?.src) {
-      const poster = video.poster || ogImageUrl || (out.mediaUrl as string);
+      const poster = video.poster || ogImageUrl || out.mediaUrl;
       out.mediaUrl = poster || video.src;
-      out.mediaUrls = [
-        {
-          url: video.src,
-          type: "video",
-          ...(poster ? { poster } : {}),
-        },
-      ];
+      const entry: CosmosElementPageMedia = { url: video.src, type: "video" };
+      if (poster) entry.poster = poster;
+      out.mediaUrls = [entry];
       out.mediaType = "video";
     }
 

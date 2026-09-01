@@ -72,8 +72,8 @@ function isAvatarUrl(url: string): boolean {
 
 /** Hidden capture windows cannot load blob: posters harvested from X's <video> element. */
 function isRenderableImageUrl(url: string): boolean {
-  if (url.startsWith("data:image/")) return true;
   try {
+    if (url.startsWith("data:image/")) return true;
     const u = new URL(url);
     return u.protocol === "http:" || u.protocol === "https:";
   } catch {
@@ -90,29 +90,23 @@ function mapMedia(
     if (m.type === "link") continue;
     if (isAvatarUrl(m.url)) continue;
     const poster =
-      typeof m.posterUrl === "string" && isRenderableImageUrl(m.posterUrl)
+      m.posterUrl !== undefined && isRenderableImageUrl(m.posterUrl)
         ? m.posterUrl
         : undefined;
     if (m.type === "video") {
-      out.push({
-        url: m.url,
-        type: "video",
-        ...(poster ? { posterUrl: poster } : {}),
-        ...(typeof m.durationSec === "number"
-          ? { durationSec: m.durationSec }
-          : {}),
-        ...(typeof m.width === "number" ? { width: m.width } : {}),
-        ...(typeof m.height === "number" ? { height: m.height } : {}),
-      });
+      const video: TweetCardMedia = { url: m.url, type: "video" };
+      if (poster) video.posterUrl = poster;
+      if (m.durationSec !== undefined) video.durationSec = m.durationSec;
+      if (m.width !== undefined) video.width = m.width;
+      if (m.height !== undefined) video.height = m.height;
+      out.push(video);
       continue;
     }
     if (!isRenderableImageUrl(m.url)) continue;
-    out.push({
-      url: m.url,
-      type: "image",
-      ...(typeof m.width === "number" ? { width: m.width } : {}),
-      ...(typeof m.height === "number" ? { height: m.height } : {}),
-    });
+    const image: TweetCardMedia = { url: m.url, type: "image" };
+    if (m.width !== undefined) image.width = m.width;
+    if (m.height !== undefined) image.height = m.height;
+    out.push(image);
   }
   return out;
 }
@@ -128,37 +122,30 @@ function buildQuoted(quoted: Capture | undefined): TweetCardData | undefined {
     quoted.author?.handle ??
     (quoted.url ? handleFromUrl(quoted.url) : undefined) ??
     "";
-  return {
-    author: {
-      name: quoted.author?.name ?? handle,
-      handle,
-      ...(quoted.author?.avatarUrl
-        ? { avatarUrl: quoted.author.avatarUrl }
-        : {}),
-    },
-    ...(quoted.description ? { text: quoted.description } : {}),
-    ...(quoted.media.length > 0 ? { media: mapMedia(quoted.media) } : {}),
+  const author: TweetCardAuthor = {
+    name: quoted.author?.name ?? handle,
+    handle,
   };
+  if (quoted.author?.avatarUrl) author.avatarUrl = quoted.author.avatarUrl;
+
+  const data: TweetCardData = { author };
+  if (quoted.description) data.text = quoted.description;
+  if (quoted.media.length > 0) data.media = mapMedia(quoted.media);
+  return data;
 }
 
 function buildCard(capture: Capture): TweetCardLink | undefined {
   const c = capture.card;
   if (!c) return undefined;
-  const url = typeof c.url === "string" ? c.url : undefined;
-  const domain = typeof c.domain === "string" ? c.domain : undefined;
-  const title = typeof c.title === "string" ? c.title : undefined;
-  const description =
-    typeof c.description === "string" ? c.description : undefined;
-  const imageUrl = typeof c.imageUrl === "string" ? c.imageUrl : undefined;
-  if (!url && !title && !imageUrl) return undefined;
-  return {
-    ...(url ? { url } : {}),
-    ...(domain ? { domain } : {}),
-    ...(title ? { title } : {}),
-    ...(description ? { description } : {}),
-    ...(imageUrl ? { imageUrl } : {}),
-    ...(c.large === true ? { large: true } : {}),
-  };
+  if (!c.url && !c.title && !c.imageUrl) return undefined;
+  const link: TweetCardLink = {};
+  if (c.url) link.url = c.url;
+  if (c.domain) link.domain = c.domain;
+  if (c.title) link.title = c.title;
+  if (c.description) link.description = c.description;
+  if (c.imageUrl) link.imageUrl = c.imageUrl;
+  if (c.large === true) link.large = true;
+  return link;
 }
 
 export function buildTweetCardData(
@@ -174,17 +161,14 @@ export function buildTweetCardData(
     "";
   const name = author.name ?? fallbackAuthor ?? handle;
 
-  const data: TweetCardData = {
-    author: {
-      name,
-      handle,
-      ...(author.avatarUrl ? { avatarUrl: author.avatarUrl } : {}),
-      ...(author.verified ? { verified: true } : {}),
-    },
-    ...(capture.description ? { text: capture.description } : {}),
-    ...(capture.publishedAt ? { publishedAt: capture.publishedAt } : {}),
-    ...(capture.lang ? { lang: capture.lang } : {}),
-  };
+  const cardAuthor: TweetCardAuthor = { name, handle };
+  if (author.avatarUrl) cardAuthor.avatarUrl = author.avatarUrl;
+  if (author.verified) cardAuthor.verified = true;
+
+  const data: TweetCardData = { author: cardAuthor };
+  if (capture.description) data.text = capture.description;
+  if (capture.publishedAt) data.publishedAt = capture.publishedAt;
+  if (capture.lang) data.lang = capture.lang;
 
   if (capture.isReply) data.isReply = true;
   if (capture.replyingTo) data.replyingTo = capture.replyingTo;
@@ -201,18 +185,14 @@ export function buildTweetCardData(
 
   if (capture.metrics) {
     const m = capture.metrics;
-    const metrics: TweetCardMetrics = {
-      ...(typeof m.replies === "number"
-        ? { replies: m.replies }
-        : typeof m.comments === "number"
-          ? { replies: m.comments }
-          : {}),
-      ...(typeof m.retweets === "number" ? { retweets: m.retweets } : {}),
-      ...(typeof m.likes === "number" ? { likes: m.likes } : {}),
-      ...(typeof m.views === "number" ? { views: m.views } : {}),
-      ...(typeof m.bookmarks === "number" ? { bookmarks: m.bookmarks } : {}),
-      ...(typeof m.shares === "number" ? { shares: m.shares } : {}),
-    };
+    const metrics: TweetCardMetrics = {};
+    if (m.replies !== undefined) metrics.replies = m.replies;
+    else if (m.comments !== undefined) metrics.replies = m.comments;
+    if (m.retweets !== undefined) metrics.retweets = m.retweets;
+    if (m.likes !== undefined) metrics.likes = m.likes;
+    if (m.views !== undefined) metrics.views = m.views;
+    if (m.bookmarks !== undefined) metrics.bookmarks = m.bookmarks;
+    if (m.shares !== undefined) metrics.shares = m.shares;
     if (Object.keys(metrics).length > 0) data.metrics = metrics;
   }
 

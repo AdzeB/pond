@@ -1,5 +1,6 @@
 import type { Source, WatchKind } from "@pond/schema/db";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { markAtRisk } from "../pipeline/rate-governor";
 import { sourceIdFromUrl } from "../pipeline/url";
 import { NAV_TIMEOUT_MS } from "../refresh/scrape-window/constants";
@@ -63,6 +64,14 @@ function buildCollectorExpression(source: Source): string {
   `;
 }
 
+const LinksPageSchema = z.object({
+  links: z
+    .array(z.unknown())
+    .transform((items) =>
+      items.flatMap((item) => z.string().safeParse(item).data ?? []),
+    ),
+});
+
 export async function listProfileWatch(
   source: Source,
   handle: string,
@@ -96,12 +105,11 @@ export async function listProfileWatch(
     if (raw === "__pond_watch_timeout__") {
       return { ok: false, reason: "timeout" };
     }
-    const links = (raw as { links?: unknown })?.links;
-    if (!Array.isArray(links)) return { ok: false, reason: "unknown" };
+    const page = LinksPageSchema.safeParse(raw);
+    if (!page.success) return { ok: false, reason: "unknown" };
     const entries: WatchEntry[] = [];
     const seen = new Set<string>();
-    for (const link of links) {
-      if (typeof link !== "string") continue;
+    for (const link of page.data.links) {
       const sourceId = sourceIdFromUrl(source, link);
       if (!sourceId || seen.has(sourceId)) continue;
       seen.add(sourceId);

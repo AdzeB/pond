@@ -4,6 +4,16 @@ import type { MediaType } from "@pond/schema/db";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 import { inPageRedditNormalize } from "./normalize";
 
+type ListHarvestFailure = Extract<ListHarvestResult, { ok: false }>;
+
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
 export function redditSavedUrl(handle: string): string {
   return `https://www.reddit.com/user/${encodeURIComponent(handle)}/saved/`;
 }
@@ -42,6 +52,12 @@ async function inPageRedditList(
     mediaType?: MediaType;
   };
 
+  // This function is serialised into the page, so zod cannot reach it.
+  const asText = (value: JsonValue): string | undefined =>
+    typeof value === "string" ? value : undefined;
+  const asNumber = (value: JsonValue): number | undefined =>
+    typeof value === "number" && Number.isFinite(value) ? value : undefined;
+
   const username =
     location.pathname.match(/^\/user\/([^/]+)\/saved/i)?.[1] ??
     location.pathname.match(/^\/u\/([^/]+)\/saved/i)?.[1];
@@ -64,11 +80,13 @@ async function inPageRedditList(
     const STOP_AFTER_KNOWN_PAGES = 2;
 
     function reportProgress(phase: string) {
-      (globalThis as any).__pondHarvestStats = {
-        phase,
-        collected: entries.length,
-        fresh: entries.filter((e) => !known.has(e.sourceId)).length,
-      };
+      Object.assign(globalThis, {
+        __pondHarvestStats: {
+          phase,
+          collected: entries.length,
+          fresh: entries.filter((e) => !known.has(e.sourceId)).length,
+        },
+      });
     }
 
     reportProgress("connecting");
@@ -98,11 +116,12 @@ async function inPageRedditList(
         if (res.status === 429) {
           const retryAfter = res.headers.get("retry-after");
           const n = retryAfter ? Number(retryAfter) : Number.NaN;
-          return {
+          const limited: ListHarvestFailure = {
             ok: false,
             reason: "rate_limited",
-            ...(Number.isFinite(n) ? { retryAfterSec: Math.max(0, n) } : {}),
           };
+          if (Number.isFinite(n)) limited.retryAfterSec = Math.max(0, n);
+          return limited;
         }
         if (!res.ok) return null;
 
@@ -122,48 +141,36 @@ async function inPageRedditList(
       for (const child of children) {
         if (child?.kind !== "t3") continue;
         const data = child.data ?? {};
-        const id = typeof data.id === "string" ? data.id : null;
+        const id = asText(data.id) ?? null;
         if (!id) continue;
-        const permalink =
-          typeof data.permalink === "string"
-            ? data.permalink
-            : `/comments/${id}/`;
+        const permalink = asText(data.permalink) ?? `/comments/${id}/`;
         const urlAbs = permalink.startsWith("http")
           ? permalink
           : `https://www.reddit.com${permalink}`;
-        const thumb =
-          typeof data.thumbnail === "string" &&
-          data.thumbnail.startsWith("http")
-            ? data.thumbnail
-            : typeof data.preview?.images?.[0]?.source?.url === "string"
-              ? String(data.preview.images[0].source.url).replace(/&amp;/g, "&")
-              : undefined;
-        const entry: Entry = {
-          sourceId: id,
-          url: urlAbs,
-          ...(typeof data.title === "string" ? { title: data.title } : {}),
-          ...(typeof data.selftext === "string" && data.selftext
-            ? {
-                description:
-                  data.selftext.length > 4000
-                    ? `${data.selftext.slice(0, 4000)}…`
-                    : data.selftext,
-              }
-            : {}),
-          ...(typeof data.author === "string" ? { author: data.author } : {}),
-          ...(thumb
-            ? {
-                mediaUrl: thumb,
-                mediaUrls: [{ url: thumb, type: "image" as MediaType }],
-                mediaType: "image" as MediaType,
-              }
-            : {}),
-          ...(typeof data.created_utc === "number"
-            ? {
-                savedAt: new Date(data.created_utc * 1000).toISOString(),
-              }
-            : {}),
-        };
+        const thumbnail = asText(data.thumbnail);
+        const previewUrl = asText(data.preview?.images?.[0]?.source?.url);
+        const thumb = thumbnail?.startsWith("http")
+          ? thumbnail
+          : previewUrl?.replace(/&amp;/g, "&");
+        const title = asText(data.title);
+        const selftext = asText(data.selftext);
+        const author = asText(data.author);
+        const createdUtc = asNumber(data.created_utc);
+        const entry: Entry = { sourceId: id, url: urlAbs };
+        if (title !== undefined) entry.title = title;
+        if (selftext) {
+          entry.description =
+            selftext.length > 4000 ? `${selftext.slice(0, 4000)}…` : selftext;
+        }
+        if (author !== undefined) entry.author = author;
+        if (thumb) {
+          entry.mediaUrl = thumb;
+          entry.mediaUrls = [{ url: thumb, type: "image" }];
+          entry.mediaType = "image";
+        }
+        if (createdUtc !== undefined) {
+          entry.savedAt = new Date(createdUtc * 1000).toISOString();
+        }
         if (!known.has(id)) pageFresh += 1;
         entries.push(entry);
       }
@@ -180,8 +187,8 @@ async function inPageRedditList(
         knownPageStreak = 0;
       }
 
-      const next = json?.data?.after;
-      if (!next || typeof next !== "string") {
+      const next = asText(json?.data?.after);
+      if (!next) {
         reportProgress("done");
         return { ok: true, entries, reachedEnd: true };
       }
@@ -269,11 +276,13 @@ async function inPageRedditList(
           pageFresh += 1;
         }
       }
-      (globalThis as any).__pondHarvestStats = {
-        phase: "scrolling",
-        collected: collected.size,
-        fresh: [...collected.keys()].filter((id) => !known.has(id)).length,
-      };
+      Object.assign(globalThis, {
+        __pondHarvestStats: {
+          phase: "scrolling",
+          collected: collected.size,
+          fresh: [...collected.keys()].filter((id) => !known.has(id)).length,
+        },
+      });
       if (collected.size === before) stable += 1;
       else stable = 0;
       if (earlyStopEnabled && batch.length > 0 && pageFresh === 0) {

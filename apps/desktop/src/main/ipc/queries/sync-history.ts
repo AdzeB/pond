@@ -1,8 +1,19 @@
-import { SOURCES, type Source } from "@pond/schema/db";
-import { pipelineEvents, type SyncRunEvent } from "@pond/schema/events";
+import type { Source } from "@pond/schema/db";
+import {
+  type PipelineEventRow,
+  pipelineEvents,
+  type SyncRunEvent,
+} from "@pond/schema/events";
 import { and, desc, eq, gte } from "drizzle-orm";
+import { z } from "zod";
 import { getDb } from "../../db";
-import type { QueryHandlerMap } from "../helpers";
+import {
+  NonEmptyTextParam,
+  OptionalNumberParam,
+  type QueryHandlerMap,
+  query,
+  SourceParam,
+} from "./params";
 
 interface SyncRunHistoryEntry {
   id: number;
@@ -18,22 +29,12 @@ interface SyncRunHistoryEntry {
   watchdogTripped: boolean;
 }
 
-function isSource(value: unknown): value is Source {
-  return (
-    typeof value === "string" && (SOURCES as readonly string[]).includes(value)
-  );
-}
-
-function toEntry(row: {
-  id: number;
-  ts: unknown;
-  trigger: string | null;
-  payload: unknown;
-}): SyncRunHistoryEntry {
-  const payload = row.payload as SyncRunEvent;
+function toEntry(row: PipelineEventRow): SyncRunHistoryEntry | null {
+  const payload = row.payload;
+  if (payload.kind !== "sync.run.completed") return null;
   return {
     id: row.id,
-    ts: row.ts instanceof Date ? row.ts.getTime() : Number(row.ts),
+    ts: row.ts.getTime(),
     source: payload.source,
     accountId: payload.accountId ?? null,
     trigger: payload.trigger ?? row.trigger ?? "manual",
@@ -72,43 +73,53 @@ interface SyncStats {
   lastRunAt: number | null;
 }
 
+function toEntries(rows: PipelineEventRow[]): SyncRunHistoryEntry[] {
+  return rows.map(toEntry).filter((entry) => entry !== null);
+}
+
+function clampWindow(value: number, ceiling: number, fallback: number): number {
+  return Number.isFinite(value)
+    ? Math.min(Math.max(Math.trunc(value), 1), ceiling)
+    : fallback;
+}
+
+const LimitParams = z.object({ limit: OptionalNumberParam });
+const DaysParams = z.object({ days: OptionalNumberParam });
+
 export const syncHistoryQueries: QueryHandlerMap = {
-  async "sync.history"(params) {
-    const source = params.source;
-    if (!isSource(source)) return { runs: [] as SyncRunHistoryEntry[] };
-    const accountId =
-      typeof params.accountId === "string" && params.accountId.length > 0
-        ? params.accountId
-        : null;
+  "sync.history": query(
+    z.object({
+      source: SourceParam,
+      accountId: NonEmptyTextParam,
+      limit: OptionalNumberParam,
+    }),
+    async (params) => {
+      const source = params.source;
+      if (!source) return { runs: [] };
+      const accountId = params.accountId;
+      const limit = clampWindow(params.limit ?? 25, 200, 25);
 
-    const rawLimit = Number(params.limit ?? 25);
-    const limit = Number.isFinite(rawLimit)
-      ? Math.min(Math.max(Math.trunc(rawLimit), 1), 200)
-      : 25;
+      const db = await getDb();
+      const rows = db
+        .select()
+        .from(pipelineEvents)
+        .where(
+          and(
+            eq(pipelineEvents.kind, "sync.run.completed"),
+            eq(pipelineEvents.source, source),
+            ...(accountId ? [eq(pipelineEvents.accountId, accountId)] : []),
+          ),
+        )
+        .orderBy(desc(pipelineEvents.ts))
+        .limit(limit)
+        .all();
 
-    const db = await getDb();
-    const rows = db
-      .select()
-      .from(pipelineEvents)
-      .where(
-        and(
-          eq(pipelineEvents.kind, "sync.run.completed"),
-          eq(pipelineEvents.source, source),
-          ...(accountId ? [eq(pipelineEvents.accountId, accountId)] : []),
-        ),
-      )
-      .orderBy(desc(pipelineEvents.ts))
-      .limit(limit)
-      .all();
+      return { runs: toEntries(rows) };
+    },
+  ),
 
-    return { runs: rows.map(toEntry) };
-  },
-
-  async "sync.recent"(params) {
-    const rawLimit = Number(params.limit ?? 50);
-    const limit = Number.isFinite(rawLimit)
-      ? Math.min(Math.max(Math.trunc(rawLimit), 1), 500)
-      : 50;
+  "sync.recent": query(LimitParams, async (params) => {
+    const limit = clampWindow(params.limit ?? 50, 500, 50);
 
     const db = await getDb();
     const rows = db
@@ -119,14 +130,11 @@ export const syncHistoryQueries: QueryHandlerMap = {
       .limit(limit)
       .all();
 
-    return { runs: rows.map(toEntry) };
-  },
+    return { runs: toEntries(rows) };
+  }),
 
-  async "sync.runs"(params) {
-    const rawDays = Number(params.days ?? 7);
-    const days = Number.isFinite(rawDays)
-      ? Math.min(Math.max(Math.trunc(rawDays), 1), 90)
-      : 7;
+  "sync.runs": query(DaysParams, async (params) => {
+    const days = clampWindow(params.days ?? 7, 90, 7);
     const sinceMs = Date.now() - days * 86_400_000;
 
     const db = await getDb();
@@ -143,24 +151,22 @@ export const syncHistoryQueries: QueryHandlerMap = {
       .limit(2000)
       .all();
 
-    return { runs: rows.map(toEntry) };
-  },
+    return { runs: toEntries(rows) };
+  }),
 
-  async "sync.stats"(params) {
-    const rawDays = Number(params.days ?? 7);
-    const days = Number.isFinite(rawDays)
-      ? Math.min(Math.max(Math.trunc(rawDays), 1), 90)
-      : 7;
+  "sync.stats": query(DaysParams, async (params) => {
+    const days = clampWindow(params.days ?? 7, 90, 7);
 
     const db = await getDb();
-    const rows = db
-      .select()
-      .from(pipelineEvents)
-      .where(eq(pipelineEvents.kind, "sync.run.completed"))
-      .orderBy(desc(pipelineEvents.ts))
-      .limit(2000)
-      .all()
-      .map(toEntry);
+    const rows = toEntries(
+      db
+        .select()
+        .from(pipelineEvents)
+        .where(eq(pipelineEvents.kind, "sync.run.completed"))
+        .orderBy(desc(pipelineEvents.ts))
+        .limit(2000)
+        .all(),
+    );
 
     const now = Date.now();
     const dayMs = 86_400_000;
@@ -206,5 +212,5 @@ export const syncHistoryQueries: QueryHandlerMap = {
     };
 
     return stats;
-  },
+  }),
 };

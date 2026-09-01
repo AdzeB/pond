@@ -3,9 +3,11 @@
  * Patches fetch/XHR/sendBeacon once per page and fans each request out to registered source interceptors.
  */
 
+import type { PondMessage } from "@/utils/types";
+
 const POND_EVENT = "pond:capture";
 
-function emit(message: unknown): void {
+function emit(message: PondMessage): void {
   window.postMessage({ type: POND_EVENT, message }, "*");
 }
 
@@ -16,7 +18,7 @@ export function capture(url: string, trigger: string): void {
 export function log(
   level: "info" | "warn" | "error",
   message: string,
-  data?: unknown,
+  data?: string,
 ): void {
   emit({ kind: "log", level, message, data });
 }
@@ -49,22 +51,24 @@ interface Registry {
   patchedBeacon: boolean;
 }
 
-const REGISTRY_KEY = "__pondInterceptors";
+declare global {
+  interface Window {
+    __pondInterceptors?: Registry;
+  }
+}
 
 function registry(): Registry {
-  const w = window as unknown as Record<string, Registry | undefined>;
-  let reg = w[REGISTRY_KEY];
-  if (!reg) {
-    reg = {
-      handlers: [],
-      ids: new Set<string>(),
-      patchedFetch: false,
-      patchedXhr: false,
-      patchedBeacon: false,
-    };
-    w[REGISTRY_KEY] = reg;
-  }
-  return reg;
+  const existing = window.__pondInterceptors;
+  if (existing) return existing;
+  const created: Registry = {
+    handlers: [],
+    ids: new Set<string>(),
+    patchedFetch: false,
+    patchedXhr: false,
+    patchedBeacon: false,
+  };
+  window.__pondInterceptors = created;
+  return created;
 }
 
 function once<T>(fn: () => Promise<T>): () => Promise<T> {
@@ -77,41 +81,43 @@ function once<T>(fn: () => Promise<T>): () => Promise<T> {
 
 function normalizeHeaders(
   source: HeadersInit | Headers | null | undefined,
-): Record<string, string> {
-  const out: Record<string, string> = {};
+): Map<string, string> {
+  const out = new Map<string, string>();
   if (!source) return out;
-  if (typeof Headers !== "undefined" && source instanceof Headers) {
+  if ("Headers" in globalThis && source instanceof Headers) {
     source.forEach((value, key) => {
-      out[key.toLowerCase()] = value;
+      out.set(key.toLowerCase(), value);
     });
     return out;
   }
   if (Array.isArray(source)) {
     for (const entry of source) {
       if (Array.isArray(entry) && entry.length >= 2) {
-        out[String(entry[0]).toLowerCase()] = String(entry[1]);
+        out.set(String(entry[0]).toLowerCase(), String(entry[1]));
       }
     }
     return out;
   }
-  for (const key of Object.keys(source as Record<string, string>)) {
-    out[key.toLowerCase()] = String((source as Record<string, string>)[key]);
+  for (const [key, value] of Object.entries(source)) {
+    out.set(key.toLowerCase(), String(value));
   }
   return out;
 }
 
-async function bodyToText(body: unknown): Promise<string | null> {
+type InterceptedBody = Document | BodyInit | null | undefined;
+
+async function bodyToText(body: InterceptedBody): Promise<string | null> {
   if (body == null) return null;
   if (typeof body === "string") return body;
   if (body instanceof URLSearchParams) return body.toString();
-  if (typeof FormData !== "undefined" && body instanceof FormData) {
+  if ("FormData" in globalThis && body instanceof FormData) {
     const params = new URLSearchParams();
     body.forEach((value, key) => {
       params.append(key, typeof value === "string" ? value : "[file]");
     });
     return params.toString();
   }
-  if (typeof Blob !== "undefined" && body instanceof Blob) {
+  if ("Blob" in globalThis && body instanceof Blob) {
     try {
       return await body.text();
     } catch {
@@ -119,9 +125,7 @@ async function bodyToText(body: unknown): Promise<string | null> {
     }
   }
   if (body instanceof ArrayBuffer) return new TextDecoder().decode(body);
-  if (ArrayBuffer.isView(body)) {
-    return new TextDecoder().decode(body as ArrayBufferView);
-  }
+  if (ArrayBuffer.isView(body)) return new TextDecoder().decode(body);
   return null;
 }
 
@@ -142,8 +146,8 @@ function dispatch(
   for (const handler of matched) {
     try {
       const result = handler.onResponse(req, res);
-      if (result && typeof (result as Promise<void>).catch === "function") {
-        (result as Promise<void>).catch((err) =>
+      if (result instanceof Promise) {
+        result.catch((err) =>
           log("warn", `${handler.id} hook error`, String(err)),
         );
       }
@@ -159,25 +163,23 @@ function patchFetch(reg: Registry): void {
   const origFetch = window.fetch;
 
   window.fetch = function patchedFetch(
-    this: unknown,
+    this: Window,
     input: RequestInfo | URL,
     init?: RequestInit,
   ): Promise<Response> {
-    const isRequest =
-      typeof Request !== "undefined" && input instanceof Request;
-    const url = isRequest ? (input as Request).url : String(input);
+    const request =
+      "Request" in globalThis && input instanceof Request ? input : null;
+    const url = request ? request.url : String(input);
     const method = String(
-      init?.method ?? (isRequest ? (input as Request).method : "GET"),
+      init?.method ?? request?.method ?? "GET",
     ).toUpperCase();
-    const headers = normalizeHeaders(
-      init?.headers ?? (isRequest ? (input as Request).headers : null),
-    );
+    const headers = normalizeHeaders(init?.headers ?? request?.headers);
 
     let matched: SourceInterceptor[] = [];
     let req: RequestLens | null = null;
     if (reg.handlers.length > 0) {
       const requestClone =
-        isRequest && init?.body == null ? (input as Request).clone() : null;
+        request && init?.body == null ? request.clone() : null;
       const readBody = once(async () => {
         if (init?.body != null) return bodyToText(init.body);
         if (requestClone) {
@@ -192,7 +194,7 @@ function patchFetch(reg: Registry): void {
       req = {
         url,
         method,
-        getHeader: (name) => headers[name.toLowerCase()] ?? null,
+        getHeader: (name) => headers.get(name.toLowerCase()) ?? null,
         readBody,
       };
       const candidate = req;
@@ -230,47 +232,53 @@ function patchFetch(reg: Registry): void {
       .catch(() => {});
 
     return promise;
-  } as typeof window.fetch;
+  };
 }
 
 interface XhrState {
   method: string;
   url: string;
-  headers: Record<string, string>;
-  body: unknown;
+  headers: Map<string, string>;
+  body: InterceptedBody;
 }
+
+type XhrOpenRest = [
+  async?: boolean,
+  username?: string | null,
+  password?: string | null,
+];
 
 function patchXhr(reg: Registry): void {
   if (reg.patchedXhr) return;
   reg.patchedXhr = true;
 
   const proto = XMLHttpRequest.prototype;
-  const origOpen = proto.open;
+  const origOpen: (
+    this: XMLHttpRequest,
+    method: string,
+    url: string | URL,
+    ...rest: XhrOpenRest
+  ) => void = proto.open;
   const origSend = proto.send;
   const origSetHeader = proto.setRequestHeader;
   const states = new WeakMap<XMLHttpRequest, XhrState>();
 
-  proto.open = function (
+  proto.open = function patchedOpen(
     this: XMLHttpRequest,
     method: string,
     url: string | URL,
-    ...rest: unknown[]
+    ...rest: XhrOpenRest
   ) {
     states.set(this, {
       method: String(method ?? "GET").toUpperCase(),
       url: String(url ?? ""),
-      headers: {},
+      headers: new Map(),
       body: null,
     });
-    return (origOpen as (...args: unknown[]) => void).call(
-      this,
-      method,
-      url,
-      ...rest,
-    );
-  } as typeof proto.open;
+    return origOpen.call(this, method, url, ...rest);
+  };
 
-  proto.setRequestHeader = function (
+  proto.setRequestHeader = function patchedSetRequestHeader(
     this: XMLHttpRequest,
     name: string,
     value: string,
@@ -278,13 +286,13 @@ function patchXhr(reg: Registry): void {
     const state = states.get(this);
     if (state) {
       try {
-        state.headers[String(name).toLowerCase()] = String(value);
+        state.headers.set(String(name).toLowerCase(), String(value));
       } catch {}
     }
     return origSetHeader.call(this, name, value);
-  } as typeof proto.setRequestHeader;
+  };
 
-  proto.send = function (
+  proto.send = function patchedSend(
     this: XMLHttpRequest,
     body?: Document | XMLHttpRequestBodyInit | null,
   ) {
@@ -295,7 +303,7 @@ function patchXhr(reg: Registry): void {
       const req: RequestLens = {
         url: state.url,
         method: state.method,
-        getHeader: (name) => state.headers[name.toLowerCase()] ?? null,
+        getHeader: (name) => state.headers.get(name.toLowerCase()) ?? null,
         readBody,
       };
       const matched = reg.handlers.filter((h) => safeMatch(h, req));
@@ -319,12 +327,12 @@ function patchXhr(reg: Registry): void {
       }
     }
     return origSend.call(this, body);
-  } as typeof proto.send;
+  };
 }
 
 function patchBeacon(reg: Registry): void {
   if (reg.patchedBeacon) return;
-  if (typeof navigator === "undefined" || !navigator.sendBeacon) return;
+  if (!globalThis.navigator?.sendBeacon) return;
   reg.patchedBeacon = true;
   const origBeacon = navigator.sendBeacon.bind(navigator);
 
@@ -332,12 +340,12 @@ function patchBeacon(reg: Registry): void {
     const result = origBeacon(url, data);
     const beaconHandlers = reg.handlers.filter((h) => h.onBeacon);
     if (beaconHandlers.length > 0) {
-      const u = typeof url === "string" ? url : url.toString();
+      const beaconUrl = String(url);
       void bodyToText(data).then((body) => {
         for (const handler of beaconHandlers) {
           try {
-            void Promise.resolve(handler.onBeacon?.(u, body)).catch((err) =>
-              log("warn", `${handler.id} beacon error`, String(err)),
+            void Promise.resolve(handler.onBeacon?.(beaconUrl, body)).catch(
+              (err) => log("warn", `${handler.id} beacon error`, String(err)),
             );
           } catch (err) {
             log("warn", `${handler.id} beacon error`, String(err));

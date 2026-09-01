@@ -1,53 +1,62 @@
 export const LIST_KINDS = ["liked", "saved"] as const;
 export type ListKind = (typeof LIST_KINDS)[number];
 
-const ALIASES: Record<string, ListKind> = {
-  liked: "liked",
-  like: "liked",
-  likes: "liked",
-  upvote: "liked",
-  upvoted: "liked",
-  saved: "saved",
-  save: "saved",
-  bookmark: "saved",
-  bookmarks: "saved",
-  bookmarked: "saved",
-  favorite: "saved",
-  favorites: "saved",
-  favourite: "saved",
-  favourites: "saved",
-};
+const ALIASES = new Map<string, ListKind>([
+  ["liked", "liked"],
+  ["like", "liked"],
+  ["likes", "liked"],
+  ["upvote", "liked"],
+  ["upvoted", "liked"],
+  ["saved", "saved"],
+  ["save", "saved"],
+  ["bookmark", "saved"],
+  ["bookmarks", "saved"],
+  ["bookmarked", "saved"],
+  ["favorite", "saved"],
+  ["favorites", "saved"],
+  ["favourite", "saved"],
+  ["favourites", "saved"],
+]);
 
-export const LIST_KIND_LABELS: Record<ListKind, string> = {
+export const LIST_KIND_LABELS = {
   liked: "Liked",
   saved: "Saved",
-};
+} satisfies Record<ListKind, string>;
+
+export type ListKindInput =
+  | string
+  | null
+  | undefined
+  | readonly ListKindInput[];
 
 export function canonicalListKind(raw: string): ListKind | null {
-  return ALIASES[raw.trim().toLowerCase()] ?? null;
+  return ALIASES.get(raw.trim().toLowerCase()) ?? null;
 }
 
-export function normalizeListKinds(raw: unknown): ListKind[] {
+function isKindList(value: ListKindInput): value is readonly ListKindInput[] {
+  return Array.isArray(value);
+}
+
+export function normalizeListKinds(raw: ListKindInput): ListKind[] {
   const found = new Set<ListKind>();
-  const visit = (value: unknown): void => {
-    if (typeof value === "string") {
-      const kind = canonicalListKind(value);
-      if (kind) found.add(kind);
+  const visit = (value: ListKindInput): void => {
+    if (isKindList(value)) {
+      for (const item of value) visit(item);
       return;
     }
-    if (Array.isArray(value)) {
-      for (const item of value) visit(item);
-    }
+    if (!value) return;
+    const kind = canonicalListKind(value);
+    if (kind) found.add(kind);
   };
   visit(raw);
   return LIST_KINDS.filter((kind) => found.has(kind));
 }
 
-export function mergeListKinds(...parts: unknown[]): ListKind[] {
+export function mergeListKinds(...parts: ListKindInput[]): ListKind[] {
   return normalizeListKinds(parts);
 }
 
-export function listKindsEqual(a: unknown, b: unknown): boolean {
+export function listKindsEqual(a: ListKindInput, b: ListKindInput): boolean {
   const left = normalizeListKinds(a);
   const right = normalizeListKinds(b);
   return (
@@ -55,7 +64,7 @@ export function listKindsEqual(a: unknown, b: unknown): boolean {
   );
 }
 
-export function formatListKinds(raw: unknown): string | null {
+export function formatListKinds(raw: ListKindInput): string | null {
   const kinds = normalizeListKinds(raw);
   if (kinds.length === 0) return null;
   return kinds.map((kind) => LIST_KIND_LABELS[kind]).join(", ");

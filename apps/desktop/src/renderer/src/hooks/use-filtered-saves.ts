@@ -2,6 +2,7 @@ import { queryIsFullySqlSupported } from "@pond/schema/filters";
 import { matches } from "@pond/schema/filters/match";
 import { isEmptyQuery, type Query } from "@pond/schema/filters/types";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { z } from "zod";
 import { ensureSaves } from "@/lib/save/ensure-saves";
 import type { Save } from "@/lib/types";
 import { hydrateFullPool } from "@/stores/bootstrap";
@@ -45,8 +46,12 @@ const SORT_KEYS: readonly SortKey[] = [
 ];
 
 export function isSortKey(value: string): value is SortKey {
-  return (SORT_KEYS as readonly string[]).includes(value);
+  return SORT_KEYS.some((key) => key === value);
 }
+
+const SqlResultSchema = z
+  .object({ ids: z.array(z.string()).catch([]) })
+  .catch({ ids: [] });
 
 interface FilterOptions {
   sortKey?: SortKey;
@@ -94,14 +99,10 @@ export function useFilteredSaves(
     }
     let cancelled = false;
     void window.pond
-      .query("saves.query", {
-        query,
-        sortKey,
-        sortDir,
-      })
+      .query("saves.query", { query, sortKey, sortDir })
       .then(async (res) => {
         if (cancelled) return;
-        const ids = (res as { ids: string[] }).ids ?? [];
+        const { ids } = SqlResultSchema.parse(res);
         await ensureSaves(ids);
         if (cancelled) return;
         setSqlResult({ query, sortKey, sortDir, ids });
@@ -124,7 +125,7 @@ export function useFilteredSaves(
   const prevRef = useRef<ReadonlyArray<Save>>(saves);
 
   const next = useMemo(() => {
-    if (empty) {
+    if (empty || !query) {
       if (sortKey === "savedAt" && sortDir === "desc") return saves;
       return sortSaves(saves, sortKey, sortDir);
     }
@@ -132,14 +133,14 @@ export function useFilteredSaves(
       return intersectSqlResults(saves, sqlIds);
     }
     if (useSql && sqlIds === null) {
-      const filtered = saves.filter((s) => matches(query as Query, s));
+      const filtered = saves.filter((s) => matches(query, s));
       const preview =
         sortKey === "savedAt" && sortDir === "desc"
           ? filtered
           : sortSaves(filtered, sortKey, sortDir);
       return preview.length > 0 ? preview : prevRef.current;
     }
-    const filtered = saves.filter((s) => matches(query as Query, s));
+    const filtered = saves.filter((s) => matches(query, s));
     if (sortKey === "savedAt" && sortDir === "desc") return filtered;
     return sortSaves(filtered, sortKey, sortDir);
   }, [saves, query, sortKey, sortDir, empty, useSql, sqlIds]);
@@ -234,7 +235,7 @@ function createdAtMs(s: Save): number {
 
 function publishedAtMs(s: Save): number | null {
   const value = s.publishedAt;
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
+  return value != null && Number.isFinite(value) ? value : null;
 }
 
 function titleFor(s: Save): string {
@@ -257,17 +258,13 @@ function tagNameFor(s: Save): string | null {
 function durationFor(s: Save): number | null {
   const raw = s.rawJson;
   const captureDuration = raw?.capture?.duration;
-  if (typeof captureDuration === "number" && captureDuration > 0) {
-    return captureDuration;
-  }
+  if (captureDuration != null && captureDuration > 0) return captureDuration;
   const mediaDuration = raw?.capture?.media.find(
-    (media) => typeof media.durationSec === "number" && media.durationSec > 0,
+    (media) => media.durationSec != null && media.durationSec > 0,
   )?.durationSec;
-  if (typeof mediaDuration === "number") return mediaDuration;
+  if (mediaDuration != null) return mediaDuration;
   const ytdlpDuration = raw?.ytdlp?.duration;
-  return typeof ytdlpDuration === "number" && ytdlpDuration > 0
-    ? ytdlpDuration
-    : null;
+  return ytdlpDuration != null && ytdlpDuration > 0 ? ytdlpDuration : null;
 }
 
 function sizeFor(s: Save): number | null {

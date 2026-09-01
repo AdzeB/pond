@@ -30,7 +30,7 @@ function go(path: string): void {
 function cycleAppearance(): void {
   const current = getPrefsSnapshot()?.preferences.appearance ?? "system";
   const order = ["system", "light", "dark"] as const;
-  const idx = order.indexOf(current as (typeof order)[number]);
+  const idx = order.indexOf(current);
   const next = order[(idx < 0 ? 0 : idx + 1) % order.length] ?? "system";
   patchPrefsSection("preferences", { appearance: next });
 }

@@ -11,6 +11,7 @@
       "**",
       "!**/dist",
       "!**/node_modules/**/*",
+      "!tools/oxlint/anti-slop",
       "!branding",
       "!docs/brand",
       "!.mobbin",

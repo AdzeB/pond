@@ -21,12 +21,8 @@ export interface DetailRow {
 }
 
 function readCardUrl(save: Save): string | undefined {
-  const raw = save.rawJson as
-    | { capture?: { card?: { url?: unknown } } }
-    | null
-    | undefined;
-  const url = raw?.capture?.card?.url;
-  return typeof url === "string" && url.length > 0 ? url : undefined;
+  const url = save.rawJson?.capture?.card?.url;
+  return url ? url : undefined;
 }
 
 function isTwitterShortUrl(url: string): boolean {
@@ -70,9 +66,8 @@ export interface DetailGroup {
   rows: DetailRow[];
 }
 
-function asHttpUrl(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
+function asHttpUrl(value: string | undefined): string | null {
+  const trimmed = (value ?? "").trim();
   if (!trimmed) return null;
   try {
     const parsed = new URL(trimmed);
@@ -124,15 +119,16 @@ function pickFromRow(
   if (!id) return null;
   const ref = findAccountRef(id, refs);
   if (!ref) return null;
-  return {
+  const row: DetailRow = {
     id: "from",
     label: "From",
     value: accountDisplayName(ref),
     kind: "account",
     accountId: ref.id,
-    ...(ref.avatarUrl ? { avatarUrl: ref.avatarUrl } : {}),
-    ...(ref.watch ? { watch: true } : {}),
   };
+  if (ref.avatarUrl) row.avatarUrl = ref.avatarUrl;
+  if (ref.watch) row.watch = true;
+  return row;
 }
 
 export function collectIdentityRows(
@@ -143,14 +139,15 @@ export function collectIdentityRows(
     { id: "id", label: "ID", value: save.id, kind: "mono" },
   ];
   if (save.author) {
-    const href = pickAuthorProfileUrl(save) ?? undefined;
-    rows.push({
+    const author: DetailRow = {
       id: "author",
       label: "Author",
       value: save.author,
       kind: "author",
-      ...(href ? { href } : {}),
-    });
+    };
+    const href = pickAuthorProfileUrl(save);
+    if (href) author.href = href;
+    rows.push(author);
   }
   const from = pickFromRow(save, refs);
   if (from) rows.push(from);

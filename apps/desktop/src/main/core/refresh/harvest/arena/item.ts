@@ -1,9 +1,10 @@
 /// <reference lib="dom" />
 
+import type { JsonValue } from "@pond/schema/json";
 import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
 import { bindSourceId } from "../source-id";
-import { inPageArenaNormalize } from "./normalize";
+import { type ArenaBlockPage, inPageArenaNormalize } from "./normalize";
 
 export function buildExpression(blockId: string): string {
   return buildItemExpression(inPageArenaNormalize, inPageArenaHarvest, blockId);
@@ -12,7 +13,7 @@ export function buildExpression(blockId: string): string {
 async function inPageArenaHarvest(
   _blockId: string,
   norm: ReturnType<typeof inPageArenaNormalize>,
-): Promise<unknown> {
+): Promise<ArenaBlockPage | null> {
   const deadline = Date.now() + 12_000;
   while (Date.now() < deadline) {
     if (
@@ -26,7 +27,7 @@ async function inPageArenaHarvest(
   return norm.extractBlockPageMeta();
 }
 
-export function adapt(raw: unknown, ctx: HarvestAdaptCtx) {
+export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx) {
   return captureFromPageDom(raw, ctx);
 }
 

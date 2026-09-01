@@ -27,20 +27,22 @@ export function unionById<T>(
   return out;
 }
 
-export function stampListKind<T>(
+interface ListKindsEntry {
+  listKinds?: ListKind[];
+}
+
+/** The `& object` keeps an entry literal without `listKinds` from tripping excess-property checks. */
+export function stampListKind<T extends ListKindsEntry & object>(
   entries: T[],
   kind: ListKind,
 ): Array<T & { listKinds: ListKind[] }> {
   return entries.map((entry) => ({
     ...entry,
-    listKinds: mergeListKinds(
-      (entry as { listKinds?: ListKind[] }).listKinds,
-      kind,
-    ),
+    listKinds: mergeListKinds(entry.listKinds, kind),
   }));
 }
 
-export function mergeEntryListKinds<T extends { listKinds?: ListKind[] }>(
+export function mergeEntryListKinds<T extends ListKindsEntry>(
   kept: T,
   incoming: T,
 ): T {

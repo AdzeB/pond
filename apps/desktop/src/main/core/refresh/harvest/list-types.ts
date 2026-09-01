@@ -5,7 +5,7 @@ export interface ListHarvestArgs {
   earlyStop?: boolean;
 }
 
-interface ListEntry {
+export interface ListEntry {
   sourceId: string;
   url: string;
   savedAt?: string;

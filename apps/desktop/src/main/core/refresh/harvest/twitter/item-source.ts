@@ -2,20 +2,86 @@
 
 import type { inPageTwitterNormalize } from "./normalize";
 
+interface TweetPageMedia {
+  url: string;
+  type: "image" | "video";
+  poster?: string;
+  durationSec?: number;
+  width?: number;
+  height?: number;
+  altText?: string;
+}
+
+interface TweetPageQuoted {
+  tweetId?: string;
+  url?: string;
+  author?: string;
+  authorName?: string;
+  authorAvatar?: string;
+  text?: string;
+  media?: TweetPageMedia[];
+}
+
+interface TweetPageCard {
+  url?: string;
+  large?: boolean;
+  imageUrl?: string;
+  domain?: string;
+  title?: string;
+  description?: string;
+}
+
+interface TweetPageMetrics {
+  replies?: number;
+  retweets?: number;
+  likes?: number;
+  views?: number;
+  bookmarks?: number;
+  quotes?: number;
+}
+
+interface TweetPageMeta {
+  lang?: string;
+  authorUrl?: string;
+  authorName?: string;
+  authorAvatar?: string;
+  verified?: boolean;
+  publishedAt?: string;
+  isReply?: boolean;
+  isQuote?: boolean;
+  isThreadRoot?: boolean;
+  conversationId?: string;
+  quotedTweet?: TweetPageQuoted;
+  metrics?: TweetPageMetrics;
+  media?: TweetPageMedia[];
+  card?: TweetPageCard;
+}
+
+interface TweetPage {
+  title?: string;
+  description?: string;
+  author?: string;
+  lang?: string;
+  mediaUrl?: string;
+  mediaUrls?: TweetPageMedia[];
+  mediaType?: "image" | "video";
+  meta?: TweetPageMeta;
+}
+
 export function harvestSource(): string {
   function inPage(
     tweetId: string,
     norm: ReturnType<typeof inPageTwitterNormalize>,
-  ): unknown {
+  ): TweetPage | null {
     const anchor = document.querySelector<HTMLAnchorElement>(
       `a[href*="/status/${tweetId}"]`,
     );
     const article = anchor?.closest("article") ?? null;
     if (!article) return null;
 
-    const out: Record<string, unknown> = {};
-    const meta: Record<string, unknown> = {};
-    const mediaItems: Array<Record<string, unknown>> = [];
+    const out: TweetPage = {};
+    const meta: TweetPageMeta = {};
+    const mediaItems: TweetPageMedia[] = [];
 
     function notInNested(el: Element): boolean {
       const closest = el.closest("article");
@@ -110,7 +176,7 @@ export function harvestSource(): string {
     ).find((a) => a !== article);
     if (innerArticle) {
       meta.isQuote = true;
-      const quoted: Record<string, unknown> = {};
+      const quoted: TweetPageQuoted = {};
       const innerLink = Array.from(
         innerArticle.querySelectorAll<HTMLAnchorElement>('a[href*="/status/"]'),
       )[0];
@@ -171,7 +237,7 @@ export function harvestSource(): string {
       meta.conversationId = tweetId;
     }
 
-    const metrics: Record<string, unknown> = {};
+    const metrics: TweetPageMetrics = {};
     const reply = norm.metricFromTestid(article, "reply");
     if (reply !== undefined) metrics.replies = reply;
     const rt = norm.metricFromTestid(article, "retweet");
@@ -220,13 +286,12 @@ export function harvestSource(): string {
     if (quotes !== undefined) metrics.quotes = quotes;
     if (Object.keys(metrics).length > 0) meta.metrics = metrics;
 
-    const media: Array<Record<string, unknown>> = [];
+    const media: TweetPageMedia[] = [];
     const seen = new Set<string>();
-    const push = (m: Record<string, unknown> | undefined) => {
-      const u = m && typeof m.url === "string" ? m.url : undefined;
-      if (!u || seen.has(u)) return;
-      seen.add(u);
-      media.push(m as Record<string, unknown>);
+    const push = (m: TweetPageMedia) => {
+      if (!m.url || seen.has(m.url)) return;
+      seen.add(m.url);
+      media.push(m);
     };
 
     const videos = Array.from(
@@ -244,14 +309,11 @@ export function harvestSource(): string {
       const poster = norm.httpMediaUrl(v.poster);
       if (!poster) continue;
       push({ url: poster, type: "video", poster });
-      mediaItems.push({
-        url: poster,
-        type: "video",
-        poster,
-        ...(dur ? { durationSec: dur } : {}),
-        ...(v.videoWidth ? { width: v.videoWidth } : {}),
-        ...(v.videoHeight ? { height: v.videoHeight } : {}),
-      });
+      const item: TweetPageMedia = { url: poster, type: "video", poster };
+      if (dur) item.durationSec = dur;
+      if (v.videoWidth) item.width = v.videoWidth;
+      if (v.videoHeight) item.height = v.videoHeight;
+      mediaItems.push(item);
       capturedVideoPoster = true;
     }
     if (!capturedVideoPoster) {
@@ -267,14 +329,11 @@ export function harvestSource(): string {
         const poster = norm.httpMediaUrl(best ?? img.currentSrc ?? img.src);
         if (!poster) continue;
         push({ url: poster, type: "video", poster });
-        mediaItems.push({
-          url: poster,
-          type: "video",
-          poster,
-          ...(videoDuration ? { durationSec: videoDuration } : {}),
-          ...(videoWidth ? { width: videoWidth } : {}),
-          ...(videoHeight ? { height: videoHeight } : {}),
-        });
+        const item: TweetPageMedia = { url: poster, type: "video", poster };
+        if (videoDuration) item.durationSec = videoDuration;
+        if (videoWidth) item.width = videoWidth;
+        if (videoHeight) item.height = videoHeight;
+        mediaItems.push(item);
         capturedVideoPoster = true;
       }
     }
@@ -289,10 +348,7 @@ export function harvestSource(): string {
       const src = norm.httpMediaUrl(best ?? img.currentSrc ?? img.src);
       if (!src) continue;
       push({ url: src, type: "image" });
-      const item: Record<string, unknown> = {
-        url: src,
-        type: "image",
-      };
+      const item: TweetPageMedia = { url: src, type: "image" };
       const alt = img.getAttribute("alt")?.trim();
       if (alt) item.altText = alt;
       const w = img.naturalWidth;
@@ -303,8 +359,8 @@ export function harvestSource(): string {
     }
 
     if (innerArticle) {
-      const quotedMedia: Array<Record<string, unknown>> = [];
-      const pushQuoted = (m: Record<string, unknown>) => {
+      const quotedMedia: TweetPageMedia[] = [];
+      const pushQuoted = (m: TweetPageMedia) => {
         push(m);
         mediaItems.push(m);
         quotedMedia.push(m);
@@ -319,14 +375,11 @@ export function harvestSource(): string {
         const dur = norm.readDuration(v);
         const w = v.videoWidth;
         const h = v.videoHeight;
-        pushQuoted({
-          url: poster,
-          type: "video",
-          poster,
-          ...(dur ? { durationSec: dur } : {}),
-          ...(w ? { width: w } : {}),
-          ...(h ? { height: h } : {}),
-        });
+        const item: TweetPageMedia = { url: poster, type: "video", poster };
+        if (dur) item.durationSec = dur;
+        if (w) item.width = w;
+        if (h) item.height = h;
+        pushQuoted(item);
         capturedQuotedVideo = true;
       }
       if (!capturedQuotedVideo) {
@@ -356,7 +409,7 @@ export function harvestSource(): string {
           : undefined;
         const src = norm.httpMediaUrl(best ?? img.currentSrc ?? img.src);
         if (!src) continue;
-        const item: Record<string, unknown> = { url: src, type: "image" };
+        const item: TweetPageMedia = { url: src, type: "image" };
         const alt = img.getAttribute("alt")?.trim();
         if (alt) item.altText = alt;
         const w = img.naturalWidth;
@@ -367,7 +420,7 @@ export function harvestSource(): string {
       }
 
       if (quotedMedia.length > 0 && meta.quotedTweet) {
-        (meta.quotedTweet as Record<string, unknown>).media = quotedMedia;
+        meta.quotedTweet.media = quotedMedia;
       }
     }
 
@@ -377,28 +430,27 @@ export function harvestSource(): string {
       );
       const ogSrc = ogMeta?.content?.trim();
       const isSsrDefault =
-        typeof ogSrc === "string" &&
+        ogSrc !== undefined &&
         /^https?:\/\/abs\.twimg\.com\/rweb\/ssr\/default\//i.test(ogSrc);
-      const isAvatar =
-        typeof ogSrc === "string" && /\/profile_images\//i.test(ogSrc);
+      const isAvatar = ogSrc !== undefined && /\/profile_images\//i.test(ogSrc);
       if (ogSrc && !isSsrDefault && !isAvatar) {
         const upgraded = norm.httpMediaUrl(ogSrc);
         if (upgraded) {
-          const type = videos.length > 0 ? "video" : "image";
-          const entry =
-            type === "video"
-              ? { url: upgraded, type, poster: upgraded }
-              : { url: upgraded, type };
+          const entry: TweetPageMedia =
+            videos.length > 0
+              ? { url: upgraded, type: "video", poster: upgraded }
+              : { url: upgraded, type: "image" };
           push(entry);
           mediaItems.push(entry);
         }
       }
     }
 
-    if (media.length > 0) {
+    const first = media[0];
+    if (first) {
       out.mediaUrls = media;
-      out.mediaUrl = (media[0] as Record<string, unknown>).url;
-      out.mediaType = (media[0] as Record<string, unknown>).type ?? "image";
+      out.mediaUrl = first.url;
+      out.mediaType = first.type;
     }
 
     if (mediaItems.length > 0) meta.media = mediaItems;
@@ -407,7 +459,7 @@ export function harvestSource(): string {
       article.querySelectorAll<HTMLElement>('[data-testid="card.wrapper"]'),
     ).find(notInNested);
     if (cardWrap) {
-      const card: Record<string, unknown> = {};
+      const card: TweetPageCard = {};
 
       const linkEl = cardWrap.querySelector<HTMLAnchorElement>("a[href]");
       if (linkEl?.href) card.url = linkEl.href;

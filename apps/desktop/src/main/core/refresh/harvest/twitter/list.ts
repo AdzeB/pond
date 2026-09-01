@@ -3,6 +3,23 @@
 import type { ListKind, MediaType } from "@pond/schema/db";
 import type { BookmarksCapture, RichTweet } from "./graphql";
 
+declare global {
+  var __pondBookmarksHookInstalled: boolean | undefined;
+  var __pondBookmarksCaptures: BookmarksCapture[] | undefined;
+  var __pondLikesCaptures: BookmarksCapture[] | undefined;
+  var __pondHarvestStats: HarvestStats | undefined;
+}
+
+export interface HarvestStats {
+  seen: number;
+  fresh: number;
+  articles: number;
+  captures: number;
+  scrolls: number;
+  phase: "hydrate" | "scroll" | "done";
+  updatedAt: number;
+}
+
 export interface BookmarksHarvestArgs {
   knownIds: string[];
 }
@@ -22,6 +39,11 @@ export interface BookmarksEntry {
   }>;
   rich?: RichTweet;
   listKinds?: ListKind[];
+}
+
+interface Scroller {
+  el: HTMLElement | null;
+  kind: BookmarksHarvestDebug["scrollerKind"];
 }
 
 interface BookmarksHarvestDebug {
@@ -96,9 +118,7 @@ async function inPageBookmarks(
         finalArticleCount: 0,
         finalSeenSize: 0,
         finalCapturesLength: 0,
-        hookInstalled: !!(
-          globalThis as unknown as { __pondBookmarksHookInstalled?: boolean }
-        ).__pondBookmarksHookInstalled,
+        hookInstalled: !!globalThis.__pondBookmarksHookInstalled,
         scrollerKind: "none",
         exitReason: "auth_required",
       },
@@ -116,33 +136,22 @@ async function inPageBookmarks(
     finalArticleCount: 0,
     finalSeenSize: 0,
     finalCapturesLength: 0,
-    hookInstalled: !!(
-      globalThis as unknown as { __pondBookmarksHookInstalled?: boolean }
-    ).__pondBookmarksHookInstalled,
+    hookInstalled: !!globalThis.__pondBookmarksHookInstalled,
     scrollerKind: "none",
     exitReason: "deadline",
   };
 
   const drainCaptures = (): void => {
-    const g = globalThis as unknown as {
-      __pondBookmarksCaptures?: BookmarksCapture[];
-      __pondLikesCaptures?: BookmarksCapture[];
-    };
-    for (const buf of [g.__pondBookmarksCaptures, g.__pondLikesCaptures]) {
+    for (const buf of [
+      globalThis.__pondBookmarksCaptures,
+      globalThis.__pondLikesCaptures,
+    ]) {
       if (!Array.isArray(buf) || buf.length === 0) continue;
       for (const item of buf.splice(0)) captures.push(item);
     }
   };
 
-  const stats: {
-    seen: number;
-    fresh: number;
-    articles: number;
-    captures: number;
-    scrolls: number;
-    phase: "hydrate" | "scroll" | "done";
-    updatedAt: number;
-  } = {
+  const stats: HarvestStats = {
     seen: 0,
     fresh: 0,
     articles: 0,
@@ -151,9 +160,7 @@ async function inPageBookmarks(
     phase: "hydrate",
     updatedAt: Date.now(),
   };
-  (
-    globalThis as unknown as { __pondHarvestStats?: typeof stats }
-  ).__pondHarvestStats = stats;
+  globalThis.__pondHarvestStats = stats;
   const publishStats = (phase: "hydrate" | "scroll" | "done"): void => {
     stats.seen = seen.size;
     let fresh = 0;
@@ -303,11 +310,7 @@ async function inPageBookmarks(
   const hydrateStart = Date.now();
   const hydrateDeadline = hydrateStart + 20_000;
   const peekCapturesLen = (): number => {
-    const buf = (
-      globalThis as unknown as {
-        __pondBookmarksCaptures?: BookmarksCapture[];
-      }
-    ).__pondBookmarksCaptures;
+    const buf = globalThis.__pondBookmarksCaptures;
     return Array.isArray(buf) ? buf.length : 0;
   };
   while (Date.now() < hydrateDeadline) {
@@ -407,14 +410,9 @@ async function inPageBookmarks(
   drainCaptures();
   publishStats("scroll");
 
-  const findScroller = (): {
-    el: HTMLElement | null;
-    kind: BookmarksHarvestDebug["scrollerKind"];
-  } => {
-    const docCanScroll =
-      document.scrollingElement &&
-      (document.scrollingElement as HTMLElement).scrollHeight >
-        (document.scrollingElement as HTMLElement).clientHeight;
+  const findScroller = (): Scroller => {
+    const root = document.scrollingElement;
+    const docCanScroll = root !== null && root.scrollHeight > root.clientHeight;
     const main = document.querySelector("main") ?? document.body;
     const candidates = Array.from(
       main.querySelectorAll<HTMLElement>("*"),
@@ -439,12 +437,12 @@ async function inPageBookmarks(
     if (scroller.el) {
       scroller.el.scrollBy({
         top: scroller.el.clientHeight * 0.9,
-        behavior: "instant" as ScrollBehavior,
+        behavior: "instant",
       });
     } else {
       window.scrollBy({
         top: window.innerHeight * 0.9,
-        behavior: "instant" as ScrollBehavior,
+        behavior: "instant",
       });
     }
     await new Promise((r) => setTimeout(r, 700 + Math.random() * 300));

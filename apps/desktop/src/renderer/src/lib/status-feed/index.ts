@@ -4,13 +4,17 @@ export type {
   DownloadFilters,
   DownloadRow,
   DownloadStatus,
+  HistoryCursor,
   StatusFilter,
 } from "./downloads";
 export {
   defaultDownloadFilters,
+  HistoryPageSchema,
   historyToDownloadRow,
+  LIVE_ORDER,
   matchesDownloadFilters,
   mergeDownloadRows,
+  PipelineStatusSchema,
   projectLiveDownloads,
   statusBucket,
 } from "./downloads";

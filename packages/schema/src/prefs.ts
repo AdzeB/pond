@@ -13,9 +13,15 @@ import {
   type SyncSources,
   type SyncWatches,
   type ThemeAppearance,
+  type ThemeDef,
   type WindowBounds,
 } from "./prefs.types";
-import { getPreset, migrateThemeDef, presetDef } from "./theme-presets";
+import {
+  getPreset,
+  migrateThemeDef,
+  presetDef,
+  StoredThemeDefSchema,
+} from "./theme-presets";
 
 export * from "./prefs.types";
 
@@ -37,103 +43,121 @@ const darkThemeDefSchema = z
   })
   .catch(DEFAULT_DARK_THEME);
 
+const StoredPreferencesSchema = z
+  .object({
+    appearance: z.string().optional().catch(undefined),
+    lightPresetId: z.string().optional().catch(undefined),
+    darkPresetId: z.string().optional().catch(undefined),
+    light: StoredThemeDefSchema.optional().catch(undefined),
+    dark: StoredThemeDefSchema.optional().catch(undefined),
+    pointerCursors: z.boolean().optional().catch(undefined),
+    reduceMotion: z.string().optional().catch(undefined),
+    tweetCover: z.string().optional().catch(undefined),
+    soundsEnabled: z.boolean().optional().catch(undefined),
+    soundFeel: z.string().optional().catch(undefined),
+    themeMode: z.string().optional().catch(undefined),
+    presetId: z.string().optional().catch(undefined),
+    systemLightId: z.string().optional().catch(undefined),
+    systemDarkId: z.string().optional().catch(undefined),
+    custom: StoredThemeDefSchema.optional().catch(undefined),
+  })
+  .catch({});
+
+const APPEARANCES = ["system", "light", "dark"] as const;
+
+function toAppearance(value: string | undefined): ThemeAppearance {
+  return APPEARANCES.find((appearance) => appearance === value) ?? "system";
+}
+
+interface MigratedPreferences {
+  appearance: ThemeAppearance;
+  lightPresetId: string;
+  darkPresetId: string;
+  light: ThemeDef;
+  dark: ThemeDef;
+  pointerCursors?: boolean;
+  reduceMotion?: string;
+  tweetCover?: string;
+  soundsEnabled?: boolean;
+}
+
 function migratePreferencesTheme(
-  raw: Record<string, unknown>,
-): Record<string, unknown> {
+  stored: z.infer<typeof StoredPreferencesSchema>,
+): MigratedPreferences {
+  const carried = {
+    pointerCursors: stored.pointerCursors,
+    reduceMotion: stored.reduceMotion,
+    tweetCover: stored.tweetCover,
+    soundsEnabled: stored.soundFeel === "off" ? false : stored.soundsEnabled,
+  };
+
   if (
-    typeof raw.appearance === "string" &&
-    raw.light &&
-    raw.dark &&
-    typeof raw.lightPresetId === "string" &&
-    typeof raw.darkPresetId === "string"
+    stored.appearance &&
+    stored.light &&
+    stored.dark &&
+    stored.lightPresetId &&
+    stored.darkPresetId
   ) {
     return {
-      ...raw,
-      light: migrateThemeDef(raw.light, "light"),
-      dark: migrateThemeDef(raw.dark, "dark"),
+      ...carried,
+      appearance: toAppearance(stored.appearance),
+      lightPresetId: stored.lightPresetId,
+      darkPresetId: stored.darkPresetId,
+      light: migrateThemeDef(stored.light, "light"),
+      dark: migrateThemeDef(stored.dark, "dark"),
     };
   }
 
-  const themeMode = raw.themeMode;
-  const presetId =
-    typeof raw.presetId === "string" ? raw.presetId : DEFAULT_LIGHT_PRESET_ID;
-  const systemLightId =
-    typeof raw.systemLightId === "string"
-      ? raw.systemLightId
-      : DEFAULT_LIGHT_PRESET_ID;
-  const systemDarkId =
-    typeof raw.systemDarkId === "string"
-      ? raw.systemDarkId
-      : DEFAULT_DARK_PRESET_ID;
-
-  let appearance: ThemeAppearance = "system";
-  let lightPresetId = systemLightId;
-  let darkPresetId = systemDarkId;
-  let light = presetDef(systemLightId, DEFAULT_LIGHT_THEME);
-  let dark = presetDef(systemDarkId, DEFAULT_DARK_THEME);
-
-  if (themeMode === "custom") {
-    const legacy = raw.custom as
-      | { base?: string; background?: string }
-      | undefined;
-    const bgHex = (legacy?.background ?? legacy?.base ?? "").toLowerCase();
-    const isDarkish =
-      bgHex.startsWith("#0") || bgHex.startsWith("#1") || bgHex === "#000000";
-    if (isDarkish) {
-      appearance = "dark";
-      dark = migrateThemeDef(raw.custom, "dark");
-    } else {
-      appearance = "light";
-      light = migrateThemeDef(raw.custom, "light");
-    }
-  } else if (themeMode === "preset") {
-    const catalog = getPreset(presetId);
-    if (catalog?.appearance === "dark") {
-      appearance = "dark";
-      darkPresetId = presetId;
-      dark = catalog.def;
-    } else {
-      appearance = "light";
-      lightPresetId = presetId;
-      light = catalog?.def ?? presetDef(presetId, DEFAULT_LIGHT_THEME);
-    }
-  } else {
-    appearance = "system";
-    lightPresetId = systemLightId;
-    darkPresetId = systemDarkId;
-    light = presetDef(systemLightId, DEFAULT_LIGHT_THEME);
-    dark = presetDef(systemDarkId, DEFAULT_DARK_THEME);
-  }
-
-  const {
-    themeMode: _tm,
-    presetId: _pid,
-    systemLightId: _sl,
-    systemDarkId: _sd,
-    custom: _c,
-    ...rest
-  } = raw;
-
-  return {
-    ...rest,
-    appearance,
+  const presetId = stored.presetId ?? DEFAULT_LIGHT_PRESET_ID;
+  const lightPresetId = stored.systemLightId ?? DEFAULT_LIGHT_PRESET_ID;
+  const darkPresetId = stored.systemDarkId ?? DEFAULT_DARK_PRESET_ID;
+  const sides = {
+    ...carried,
     lightPresetId,
     darkPresetId,
-    light,
-    dark,
+    light: presetDef(lightPresetId, DEFAULT_LIGHT_THEME),
+    dark: presetDef(darkPresetId, DEFAULT_DARK_THEME),
   };
+
+  if (stored.themeMode === "custom") {
+    const custom = stored.custom ?? {};
+    const background = (custom.background ?? custom.base ?? "").toLowerCase();
+    const isDark =
+      background.startsWith("#0") ||
+      background.startsWith("#1") ||
+      background === "#000000";
+    return isDark
+      ? { ...sides, appearance: "dark", dark: migrateThemeDef(custom, "dark") }
+      : {
+          ...sides,
+          appearance: "light",
+          light: migrateThemeDef(custom, "light"),
+        };
+  }
+
+  if (stored.themeMode === "preset") {
+    const preset = getPreset(presetId);
+    return preset?.appearance === "dark"
+      ? {
+          ...sides,
+          appearance: "dark",
+          darkPresetId: presetId,
+          dark: preset.def,
+        }
+      : {
+          ...sides,
+          appearance: "light",
+          lightPresetId: presetId,
+          light: preset?.def ?? presetDef(presetId, DEFAULT_LIGHT_THEME),
+        };
+  }
+
+  return { ...sides, appearance: "system" };
 }
 
 /** Older builds stored mute as `soundFeel: "off"`; lift that into `soundsEnabled`. */
 const preferences = z.preprocess(
-  (raw) => {
-    if (!raw || typeof raw !== "object") return raw;
-    let prefs = raw as Record<string, unknown>;
-    if (prefs.soundFeel === "off") {
-      prefs = { ...prefs, soundsEnabled: false };
-    }
-    return migratePreferencesTheme(prefs);
-  },
+  (raw) => migratePreferencesTheme(StoredPreferencesSchema.parse(raw)),
   z.object({
     appearance: z
       .enum(["system", "light", "dark"])
@@ -273,5 +297,27 @@ export type Prefs = z.infer<typeof PrefsObject>;
 export const DEFAULT_PREFS: Prefs = PrefsObject.parse({});
 
 export const PrefsSchema = PrefsObject.catch(DEFAULT_PREFS);
+
+export const PrefsPatchSchema = PrefsObject.partial();
+
+export type PrefsPatch = z.infer<typeof PrefsPatchSchema>;
+
+export type PrefsPatchDeep = DeepPartial<Prefs>;
+
+export type DeepPartial<T> = T extends object
+  ? { [K in keyof T]?: DeepPartial<T[K]> }
+  : T;
+
+export interface StoredPrefsEnvelope {
+  version: number;
+  app: PrefsPatchDeep;
+  pending: PrefsPatchDeep | null;
+}
+
+export interface StoredPrefsEnvelopeV2 {
+  version: number;
+  app?: PrefsPatchDeep;
+  ponds?: Record<string, PrefsPatchDeep>;
+}
 
 export type PrefsParsed = z.infer<typeof PrefsSchema>;

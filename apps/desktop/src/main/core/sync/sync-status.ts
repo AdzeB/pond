@@ -11,6 +11,19 @@ export interface SyncStatusUpdate {
   lastError?: string | null;
 }
 
+const GAP_TEXT = new Map<string, string>([
+  ["auth_required", "sign-in needed"],
+  ["rate_limited", "rate limited"],
+  ["timeout", "timed out"],
+  ["no_match", "not available"],
+  ["fallback", "unavailable"],
+  ["unknown", "failed"],
+]);
+
+export function listGapNote(label: string, reason: string): string {
+  return `${label} unavailable (${GAP_TEXT.get(reason) ?? reason}).`;
+}
+
 type StatusListener = (update: SyncStatusUpdate) => void;
 const listeners = new Set<StatusListener>();
 

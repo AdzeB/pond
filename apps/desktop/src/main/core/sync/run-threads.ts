@@ -3,7 +3,7 @@ import type { SyncRunEvent } from "@pond/schema/events";
 import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
-import { enqueue } from "../pipeline/enqueue";
+import { type EnqueueItem, enqueue } from "../pipeline/enqueue";
 import { mergeListKindsOntoExisting } from "../pipeline/list-kinds";
 import {
   harvestThreadsLikes,
@@ -16,7 +16,7 @@ import {
   patchAccountSync,
   persistWatermark,
 } from "./sync-baseline";
-import { emit } from "./sync-status";
+import { emit, listGapNote } from "./sync-status";
 import { buildThreadsSavedSeed } from "./threads-seed";
 
 export async function syncThreads(
@@ -118,6 +118,11 @@ export async function syncThreads(
     },
     { partition: partitionForAccount(accountId) },
   );
+  const gaps: string[] = [];
+  if (!likes.ok) {
+    log.warn(`[pond sync:threads] likes harvest failed: ${likes.reason}`);
+    gaps.push(listGapNote("Likes", likes.reason));
+  }
   const entries = likes.ok
     ? unionById(
         stampListKind(harvest.entries, "saved"),
@@ -160,7 +165,7 @@ export async function syncThreads(
       accountId,
       source,
       state: "done",
-      message: "All caught up.",
+      message: ["All caught up.", ...gaps].join(" "),
       lastSyncedAt,
       lastError: null,
     });
@@ -183,12 +188,11 @@ export async function syncThreads(
   const queue = [...fresh, ...recovery];
   const bulk = await enqueue(
     queue.map((entry) => {
-      const seed = buildThreadsSavedSeed(entry) ?? undefined;
-      return {
-        url: entry.url,
-        ...(seed ? { seed } : {}),
-        ...(entry.listKinds ? { listKinds: entry.listKinds } : {}),
-      };
+      const item: EnqueueItem = { url: entry.url };
+      const seed = buildThreadsSavedSeed(entry);
+      if (seed) item.seed = seed;
+      if (entry.listKinds) item.listKinds = entry.listKinds;
+      return item;
     }),
     { trigger: "sync:threads", accountId },
   );
@@ -208,10 +212,12 @@ export async function syncThreads(
     accountId,
     source,
     state: "done",
-    message:
+    message: [
       recovery.length > 0
         ? `Queued ${fresh.length} new + recovered ${recovery.length} failed.`
         : `Queued ${succeeded} post${succeeded === 1 ? "" : "s"} for ingest.`,
+      ...gaps,
+    ].join(" "),
     progress: { current: total, total },
     lastSyncedAt,
     lastError: null,

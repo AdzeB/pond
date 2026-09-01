@@ -1,17 +1,18 @@
 import { type TableColumn, Tooltip } from "@pond/ui";
 import { getSourceLabel } from "@/lib/save/source-labels";
 import { getSourceIcon, getSourceLogo } from "@/lib/save/sources-registry";
-import type { DownloadRow } from "@/lib/status-feed";
+import { type DownloadRow, LIVE_ORDER } from "@/lib/status-feed";
 import { relativeTimeFromMs } from "@/lib/util/relative-time";
 import styles from "./styles.module.css";
 
-const STATUS_LABEL: Record<DownloadRow["status"], string> = {
-  pending: "Pending",
+const STATUS_LABEL = {
+  pending: "Queued",
   running: "In progress",
   blocked: "Blocked",
   failed: "Failed",
+  cancelled: "Cancelled",
   complete: "Complete",
-};
+} satisfies Record<DownloadRow["status"], string>;
 
 const RING = 100;
 
@@ -103,6 +104,14 @@ function StatusGlyph({
   );
 }
 
+/** A queue thousands deep reads as broken when every waiting row shows the same 0%. */
+function readoutOf(row: DownloadRow, progress: number): string {
+  if (row.status === "running" || row.status === "blocked") {
+    return `${Math.round(progress * 100)}%`;
+  }
+  return STATUS_LABEL[row.status];
+}
+
 function StatusMark({ row }: { row: DownloadRow }) {
   const label = row.error ?? statusOf(row);
   const progress = progressOf(row);
@@ -112,7 +121,7 @@ function StatusMark({ row }: { row: DownloadRow }) {
         <span className={styles.mark} data-status={row.status}>
           <StatusGlyph status={row.status} progress={progress} />
         </span>
-        <span className={styles.percent}>{Math.round(progress * 100)}%</span>
+        <span className={styles.percent}>{readoutOf(row, progress)}</span>
       </button>
     </Tooltip>
   );
@@ -151,7 +160,8 @@ export const downloadsColumns: TableColumn<DownloadRow>[] = [
   {
     id: "status",
     header: "Status",
-    accessor: (row) => row.status,
+    /** Sorting by state ascending puts what is running above what is only waiting. */
+    accessor: (row) => LIVE_ORDER[row.status],
     width: "80px",
     cell: (row) => <StatusMark row={row} />,
   },

@@ -1,3 +1,4 @@
+import type { JsonObject, JsonValue } from "@pond/schema/json";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { isThreadsLandingMedia } from "./normalize";
@@ -39,16 +40,18 @@ interface RichThreadCard {
   large?: boolean;
 }
 
+interface RichThreadAuthor {
+  handle: string;
+  name: string;
+  avatarUrl?: string;
+  verified?: boolean;
+}
+
 export interface RichThread {
   postId: string;
   url: string;
   fullText: string;
-  author: {
-    handle: string;
-    name: string;
-    avatarUrl?: string;
-    verified?: boolean;
-  };
+  author: RichThreadAuthor;
   media: RichThreadMedia[];
   metrics: RichThreadMetrics;
   quoted?: RichThread;
@@ -59,12 +62,139 @@ export interface RichThread {
   raw: unknown;
 }
 
+const OptionalText = z.string().min(1).optional().catch(undefined);
+const OptionalCount = z
+  .number()
+  .refine(Number.isFinite)
+  .optional()
+  .catch(undefined);
+
+const JsonObjectSchema = z.custom<JsonObject>(
+  (value) => value instanceof Object && !Array.isArray(value),
+);
+
+const MediaVersionSchema = z
+  .object({
+    url: OptionalText,
+    width: OptionalCount,
+    height: OptionalCount,
+  })
+  .catch({});
+
+type MediaVersion = z.infer<typeof MediaVersionSchema>;
+
+const ImageVersionsSchema = z
+  .object({
+    candidates: z.array(MediaVersionSchema).optional().catch(undefined),
+  })
+  .optional()
+  .catch(undefined);
+
+type ImageVersions = z.infer<typeof ImageVersionsSchema>;
+
+const UserSchema = z
+  .object({
+    username: OptionalText,
+    full_name: OptionalText,
+    profile_pic_url: OptionalText,
+    is_verified: z.boolean().optional().catch(undefined),
+  })
+  .optional()
+  .catch(undefined);
+
+const CaptionTextSchema = z
+  .union([
+    z.object({ text: OptionalText }).transform((caption) => caption.text),
+    z.string().min(1),
+  ])
+  .optional()
+  .catch(undefined);
+
+const LinkPreviewSchema = z
+  .object({
+    url: OptionalText,
+    display_url: OptionalText,
+    title: OptionalText,
+    description: OptionalText,
+    image_url: OptionalText,
+    image: z
+      .object({ url: OptionalText, uri: OptionalText })
+      .optional()
+      .catch(undefined),
+  })
+  .optional()
+  .catch(undefined);
+
+const QuotedWrapperSchema = z
+  .object({
+    code: z.string().optional().catch(undefined),
+    user: z.unknown().optional(),
+    owner: z.unknown().optional(),
+    post: JsonObjectSchema.optional().catch(undefined),
+    media: JsonObjectSchema.optional().catch(undefined),
+  })
+  .catch({});
+
+const QuotedPostSchema = z.preprocess((raw) => {
+  const wrapper = QuotedWrapperSchema.parse(raw);
+  return wrapper.code !== undefined || wrapper.user || wrapper.owner
+    ? raw
+    : (wrapper.post ?? wrapper.media);
+}, JsonObjectSchema.optional().catch(undefined));
+
+const TextPostAppInfoSchema = z.object({
+  direct_reply_count: OptionalCount,
+  quote_count: OptionalCount,
+  repost_count: OptionalCount,
+  is_reply: z.boolean().optional().catch(undefined),
+  reply_to_author: z
+    .object({ username: OptionalText })
+    .optional()
+    .catch(undefined),
+  share_info: z
+    .object({ quoted_post: QuotedPostSchema })
+    .optional()
+    .catch(undefined),
+  link_preview_attachment: LinkPreviewSchema,
+  link_preview_response: LinkPreviewSchema,
+});
+
+type ThreadPostInfo = z.infer<typeof TextPostAppInfoSchema>;
+
+const MediaNodeSchema = z.object({
+  media_type: OptionalCount,
+  video_duration: OptionalCount,
+  original_width: OptionalCount,
+  original_height: OptionalCount,
+  image_versions2: ImageVersionsSchema,
+  video_versions: z.array(MediaVersionSchema).optional().catch(undefined),
+});
+
+type MediaNode = z.infer<typeof MediaNodeSchema>;
+
+const ThreadPostSchema = MediaNodeSchema.extend({
+  code: OptionalText,
+  taken_at: OptionalCount,
+  like_count: OptionalCount,
+  comment_count: OptionalCount,
+  caption: CaptionTextSchema,
+  user: UserSchema,
+  owner: UserSchema,
+  carousel_media: z
+    .array(MediaNodeSchema.catch({}))
+    .optional()
+    .catch(undefined),
+  text_post_app_info: TextPostAppInfoSchema.optional().catch(undefined),
+});
+
+type ThreadPost = z.infer<typeof ThreadPostSchema>;
+
 export function parseSavedResponses(
   captures: SavedCapture[],
 ): Map<string, RichThread> {
   const out = new Map<string, RichThread>();
   for (const cap of captures) {
-    let json: unknown;
+    let json: JsonValue;
     try {
       json = parseGraphqlBody(cap.body);
     } catch (err) {
@@ -85,14 +215,14 @@ export function parseSavedResponses(
       );
     }
     for (const node of collectThreadPosts(json)) {
-      const thread = shapeRichThread(node);
+      const thread = richThreadFromNode(node);
       if (thread) out.set(thread.postId, thread);
     }
   }
   return out;
 }
 
-function parseGraphqlBody(body: string): unknown {
+function parseGraphqlBody(body: string): JsonValue {
   let s = body.trim();
   if (s.startsWith("for (;;);")) s = s.slice("for (;;);".length).trim();
   if (s.startsWith(")]}'")) {
@@ -103,39 +233,42 @@ function parseGraphqlBody(body: string): unknown {
 }
 
 /** Walks a GraphQL payload for post nodes; skips quoted/reposted children so they stay nested on the parent. */
-function collectThreadPosts(json: unknown): unknown[] {
-  const out: unknown[] = [];
+function collectThreadPosts(json: JsonValue): JsonObject[] {
+  const out: JsonObject[] = [];
   const seen = new Set<string>();
-  walk(json, false, (obj) => {
-    const code = typeof obj.code === "string" ? obj.code : null;
+  walk(json, false, (node) => {
+    const code = OptionalText.parse(node.code);
     if (!code || seen.has(code)) return;
     if (
-      !obj.text_post_app_info &&
-      !obj.user &&
-      !obj.owner &&
-      !obj.caption &&
-      !obj.image_versions2
+      !node.text_post_app_info &&
+      !node.user &&
+      !node.owner &&
+      !node.caption &&
+      !node.image_versions2
     )
       return;
     seen.add(code);
-    out.push(obj);
+    out.push(node);
   });
   return out;
 }
 
+function isJsonObject(value: JsonValue): value is JsonObject {
+  return value instanceof Object && !Array.isArray(value);
+}
+
 function walk(
-  value: unknown,
+  value: JsonValue,
   skipCollect: boolean,
-  visit: (obj: Record<string, unknown>) => void,
+  visit: (node: JsonObject) => void,
 ): void {
-  if (!value || typeof value !== "object") return;
   if (Array.isArray(value)) {
     for (const item of value) walk(item, skipCollect, visit);
     return;
   }
-  const obj = value as Record<string, unknown>;
-  if (!skipCollect) visit(obj);
-  for (const [key, child] of Object.entries(obj)) {
+  if (!isJsonObject(value)) return;
+  if (!skipCollect) visit(value);
+  for (const [key, child] of Object.entries(value)) {
     const nestedSkip =
       skipCollect ||
       key === "share_info" ||
@@ -145,67 +278,59 @@ function walk(
   }
 }
 
-export function shapeRichThread(raw: unknown): RichThread | null {
-  const node = asRecord(raw);
-  if (!node) return null;
-  const postId = str(node.code);
+export function richThreadFromNode(raw: JsonObject): RichThread | null {
+  const node = ThreadPostSchema.parse(raw);
+  const postId = node.code;
   if (!postId) return null;
 
-  const user = asRecord(node.user) ?? asRecord(node.owner);
-  const handle = str(user?.username) ?? "";
+  const user = node.user ?? node.owner;
+  const handle = user?.username ?? "";
   const url = handle
     ? `https://www.threads.com/@${handle}/post/${postId}`
     : `https://www.threads.com/t/${postId}`;
 
-  const info = asRecord(node.text_post_app_info);
-  const caption = captionText(node.caption);
+  const info = node.text_post_app_info;
   const media = collectNodeMedia(node);
-  const quotedRaw = unwrapQuotedPost(asRecord(info?.share_info)?.quoted_post);
+  const quotedNode = info?.share_info?.quoted_post;
   const quoted =
-    quotedRaw && str(quotedRaw.code) !== postId
-      ? (shapeRichThread(quotedRaw) ?? undefined)
+    quotedNode && OptionalText.parse(quotedNode.code) !== postId
+      ? (richThreadFromNode(quotedNode) ?? undefined)
       : undefined;
   const card = pickCard(info);
 
-  const likes = num(node.like_count) ?? 0;
-  const replies = num(info?.direct_reply_count) ?? num(node.comment_count) ?? 0;
-  const retweets = num(info?.repost_count) ?? 0;
-  const quotes = num(info?.quote_count);
+  const author: RichThreadAuthor = { handle, name: user?.full_name ?? handle };
+  if (user?.profile_pic_url) author.avatarUrl = user.profile_pic_url;
+  if (user?.is_verified === true) author.verified = true;
 
-  const takenAt = num(node.taken_at);
-  const publishedAt =
-    takenAt != null ? new Date(takenAt * 1000).toISOString() : undefined;
+  const metrics: RichThreadMetrics = {
+    likes: node.like_count ?? 0,
+    retweets: info?.repost_count ?? 0,
+    replies: info?.direct_reply_count ?? node.comment_count ?? 0,
+  };
+  if (info?.quote_count != null) metrics.quotes = info.quote_count;
 
-  const avatarUrl = str(user?.profile_pic_url);
-  return {
+  const thread: RichThread = {
     postId,
     url,
-    fullText: caption ?? "",
-    author: {
-      handle,
-      name: str(user?.full_name) ?? handle,
-      ...(avatarUrl ? { avatarUrl } : {}),
-      ...(user?.is_verified === true ? { verified: true } : {}),
-    },
+    fullText: node.caption ?? "",
+    author,
     media,
-    metrics: {
-      likes,
-      retweets,
-      replies,
-      ...(quotes != null ? { quotes } : {}),
-    },
-    ...(quoted ? { quoted } : {}),
-    ...(card ? { card } : {}),
-    ...(info?.is_reply === true ? { isReply: true } : {}),
-    ...(str(asRecord(info?.reply_to_author)?.username)
-      ? { replyingTo: str(asRecord(info?.reply_to_author)?.username) }
-      : {}),
-    ...(publishedAt ? { publishedAt } : {}),
-    raw: node,
+    metrics,
+    raw,
   };
+  if (quoted) thread.quoted = quoted;
+  if (card) thread.card = card;
+  if (info?.is_reply === true) thread.isReply = true;
+  if (info?.reply_to_author?.username) {
+    thread.replyingTo = info.reply_to_author.username;
+  }
+  if (node.taken_at != null) {
+    thread.publishedAt = new Date(node.taken_at * 1000).toISOString();
+  }
+  return thread;
 }
 
-function collectNodeMedia(node: Record<string, unknown>): RichThreadMedia[] {
+function collectNodeMedia(node: ThreadPost): RichThreadMedia[] {
   const media: RichThreadMedia[] = [];
   const seen = new Set<string>();
   const push = (entry: RichThreadMedia | null) => {
@@ -217,11 +342,9 @@ function collectNodeMedia(node: Record<string, unknown>): RichThreadMedia[] {
   };
 
   const carousel = node.carousel_media;
-  if (node.media_type === 8 && Array.isArray(carousel)) {
+  if (node.media_type === 8 && carousel) {
     for (const child of carousel) {
-      const rec = asRecord(child);
-      if (!rec) continue;
-      push(mediaFromVersions(rec));
+      push(mediaFromVersions(child));
     }
     return media;
   }
@@ -229,87 +352,85 @@ function collectNodeMedia(node: Record<string, unknown>): RichThreadMedia[] {
   return media;
 }
 
-function mediaFromVersions(
-  node: Record<string, unknown>,
-): RichThreadMedia | null {
-  const img = pickBestImage(asRecord(node.image_versions2));
+function mediaFromVersions(node: MediaNode): RichThreadMedia | null {
+  const img = pickBestImage(node.image_versions2);
   const video = pickBestVideo(node.video_versions);
-  const width = num(node.original_width) ?? img?.width ?? video?.width;
-  const height = num(node.original_height) ?? img?.height ?? video?.height;
-  const dur = num(node.video_duration);
+  const width = node.original_width ?? img?.width ?? video?.width;
+  const height = node.original_height ?? img?.height ?? video?.height;
+  const dur = node.video_duration;
   if (node.media_type === 2 || video) {
     const src = video ?? img;
     if (!src) return null;
-    return {
-      url: src.url,
-      type: "video",
-      ...(img ? { poster: img.url } : {}),
-      ...(width ? { width } : {}),
-      ...(height ? { height } : {}),
-      ...(dur != null ? { durationSec: Math.round(dur) } : {}),
-    };
+    const entry: RichThreadMedia = { url: src.url, type: "video" };
+    if (img) entry.poster = img.url;
+    if (width) entry.width = width;
+    if (height) entry.height = height;
+    if (dur != null) entry.durationSec = Math.round(dur);
+    return entry;
   }
   if (!img) return null;
-  return {
-    url: img.url,
-    type: "image",
-    ...(width ? { width } : {}),
-    ...(height ? { height } : {}),
-  };
+  const entry: RichThreadMedia = { url: img.url, type: "image" };
+  if (width) entry.width = width;
+  if (height) entry.height = height;
+  return entry;
 }
 
-function pickBestImage(
-  iv2: Record<string, unknown> | null,
-): { url: string; width?: number; height?: number } | null {
+interface PickedImage {
+  url: string;
+  width: number;
+  height?: number;
+}
+
+interface PickedVideo {
+  url: string;
+  width?: number;
+  height?: number;
+}
+
+function pickBestImage(iv2: ImageVersions): PickedImage | null {
   if (!iv2) return null;
-  const cands = Array.isArray(iv2.candidates) ? iv2.candidates : [];
-  let best: { url: string; width: number; height?: number } | null = null;
+  const cands = iv2.candidates ?? [];
+  let best: PickedImage | null = null;
   for (const c of cands) {
-    const rec = asRecord(c);
-    const url = str(rec?.url);
+    const url = c.url;
     if (!url) continue;
-    const w = num(rec?.width) ?? 0;
-    const h = num(rec?.height);
+    const w = c.width ?? 0;
+    const h = c.height;
     if (!best || w > best.width) {
-      best = { url, width: w, ...(h ? { height: h } : {}) };
+      best = { url, width: w };
+      if (h) best.height = h;
     }
   }
   return best;
 }
 
 function pickBestVideo(
-  versions: unknown,
-): { url: string; width?: number; height?: number } | null {
-  if (!Array.isArray(versions)) return null;
+  versions: MediaVersion[] | undefined,
+): PickedVideo | null {
+  if (!versions) return null;
   for (const v of versions) {
-    const rec = asRecord(v);
-    const url = str(rec?.url);
+    const url = v.url;
     if (!url) continue;
-    const w = num(rec?.width);
-    const h = num(rec?.height);
-    return {
-      url,
-      ...(w ? { width: w } : {}),
-      ...(h ? { height: h } : {}),
-    };
+    const picked: PickedVideo = { url };
+    if (v.width) picked.width = v.width;
+    if (v.height) picked.height = v.height;
+    return picked;
   }
   return null;
 }
 
 function pickCard(
-  info: Record<string, unknown> | null,
+  info: ThreadPostInfo | undefined,
 ): RichThreadCard | undefined {
-  const att =
-    asRecord(info?.link_preview_attachment) ??
-    asRecord(info?.link_preview_response);
+  const att = info?.link_preview_attachment ?? info?.link_preview_response;
   if (!att) return undefined;
-  const url = str(att.url) ?? str(att.display_url);
-  const title = str(att.title);
-  const description = str(att.description);
-  const image = asRecord(att.image);
-  const imageUrl = str(att.image_url) ?? str(image?.url) ?? str(image?.uri);
+  const url = att.url ?? att.display_url;
+  const title = att.title;
+  const description = att.description;
+  const image = att.image;
+  const imageUrl = att.image_url ?? image?.url ?? image?.uri;
   if (!url && !title && !imageUrl) return undefined;
-  let domain = str(att.display_url);
+  let domain = att.display_url;
   if (url) {
     try {
       domain = new URL(url).hostname.replace(/^www\./, "");
@@ -318,39 +439,11 @@ function pickCard(
     }
   }
   if (domain) domain = domain.replace(/^www\./, "").split("/")[0];
-  return {
-    ...(url ? { url } : {}),
-    ...(domain ? { domain } : {}),
-    ...(title ? { title } : {}),
-    ...(description ? { description } : {}),
-    ...(imageUrl ? { imageUrl } : {}),
-  };
-}
-
-function unwrapQuotedPost(raw: unknown): Record<string, unknown> | null {
-  const rec = asRecord(raw);
-  if (!rec) return null;
-  if (typeof rec.code === "string" || rec.user || rec.owner) return rec;
-  return asRecord(rec.post) ?? asRecord(rec.media);
-}
-
-function captionText(caption: unknown): string | undefined {
-  if (caption && typeof caption === "object") {
-    return str((caption as { text?: unknown }).text);
-  }
-  return str(caption);
-}
-
-function asRecord(v: unknown): Record<string, unknown> | null {
-  return v && typeof v === "object" && !Array.isArray(v)
-    ? (v as Record<string, unknown>)
-    : null;
-}
-
-function str(v: unknown): string | undefined {
-  return typeof v === "string" && v.length > 0 ? v : undefined;
-}
-
-function num(v: unknown): number | undefined {
-  return typeof v === "number" && Number.isFinite(v) ? v : undefined;
+  const card: RichThreadCard = {};
+  if (url) card.url = url;
+  if (domain) card.domain = domain;
+  if (title) card.title = title;
+  if (description) card.description = description;
+  if (imageUrl) card.imageUrl = imageUrl;
+  return card;
 }

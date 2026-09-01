@@ -57,7 +57,7 @@ function useDataTable<T>(): DataTableContextValue<T> {
   const ctx = use(DataTableContext);
   if (!ctx)
     throw new Error("DataTable parts must be used within DataTable.Provider");
-  return ctx as DataTableContextValue<T>;
+  return ctx;
 }
 
 export { DataTableContext, useDataTable };

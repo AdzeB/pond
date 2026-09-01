@@ -1,11 +1,28 @@
+import { z } from "zod";
 import { colorNear } from "./color";
 import { isoDurationToMillis } from "./duration";
 import { FIELD_DESCRIPTORS } from "./fields";
+import type { FieldValue } from "./fields/descriptor";
 import type { SaveLike } from "./fields/save-like";
-import type { Clause, ComparatorId, Predicate, Query } from "./types";
+import type {
+  Clause,
+  ComparatorId,
+  Predicate,
+  PredicateValue,
+  Query,
+} from "./types";
 import { isGroup } from "./types";
 
 export type { SaveLike } from "./fields/save-like";
+
+const Text = z.string();
+const TextList = z.array(z.union([z.string(), z.number()]));
+const Pair = z.tuple([
+  z.union([z.string(), z.number()]),
+  z.union([z.string(), z.number()]),
+]);
+const Numeric = z.number().refine(Number.isFinite);
+const Timestamp = z.string();
 
 export function matches(query: Query, save: SaveLike): boolean {
   return evalClause(query, save);
@@ -31,22 +48,26 @@ function evalPredicate(p: Predicate, s: SaveLike): boolean {
 
 function runComparator(
   operator: ComparatorId,
-  projected: unknown,
-  value: unknown,
+  projected: FieldValue,
+  value: PredicateValue,
 ): boolean {
   switch (operator) {
     case "eq":
       return scalarEqual(projected, value);
     case "neq":
       return !scalarEqual(projected, value);
-    case "in":
-      return Array.isArray(value)
-        ? value.some((v) => scalarEqual(projected, v))
+    case "in": {
+      const list = TextList.safeParse(value);
+      return list.success
+        ? list.data.some((v) => scalarEqual(projected, v))
         : false;
-    case "nin":
-      return Array.isArray(value)
-        ? value.every((v) => !scalarEqual(projected, v))
+    }
+    case "nin": {
+      const list = TextList.safeParse(value);
+      return list.success
+        ? list.data.every((v) => !scalarEqual(projected, v))
         : true;
+    }
     case "lt":
       return numLike(projected) < resolveNumeric(value);
     case "lte":
@@ -56,79 +77,110 @@ function runComparator(
     case "gte":
       return numLike(projected) >= resolveNumeric(value);
     case "between": {
-      if (!Array.isArray(value) || value.length !== 2) return false;
-      const lo = resolveNumeric(value[0]);
-      const hi = resolveNumeric(value[1]);
+      const pair = Pair.safeParse(value);
+      if (!pair.success) return false;
+      const lo = resolveNumeric(pair.data[0]);
+      const hi = resolveNumeric(pair.data[1]);
       const x = numLike(projected);
       return x >= lo && x <= hi;
     }
     case "contains":
-      return typeof projected === "string" && typeof value === "string"
-        ? projected.includes(value.toLowerCase())
-        : false;
+      return withText(projected, value, (text, needle) =>
+        text.includes(needle.toLowerCase()),
+      );
     case "startsWith":
-      return typeof projected === "string" && typeof value === "string"
-        ? projected.startsWith(value.toLowerCase())
-        : false;
+      return withText(projected, value, (text, needle) =>
+        text.startsWith(needle.toLowerCase()),
+      );
     case "endsWith":
-      return typeof projected === "string" && typeof value === "string"
-        ? projected.endsWith(value.toLowerCase())
-        : false;
+      return withText(projected, value, (text, needle) =>
+        text.endsWith(needle.toLowerCase()),
+      );
     case "some":
-      return Array.isArray(projected) && Array.isArray(value)
-        ? value.some((v) => projected.includes(String(v).toLowerCase()))
-        : false;
+      return withLists(projected, value, (have, want) =>
+        want.some((v) => have.includes(String(v).toLowerCase())),
+      );
     case "every":
-      return Array.isArray(projected) && Array.isArray(value)
-        ? value.every((v) => projected.includes(String(v).toLowerCase()))
-        : false;
+      return withLists(projected, value, (have, want) =>
+        want.every((v) => have.includes(String(v).toLowerCase())),
+      );
     case "none":
-      return Array.isArray(projected) && Array.isArray(value)
-        ? value.every((v) => !projected.includes(String(v).toLowerCase()))
-        : true;
+      return withLists(
+        projected,
+        value,
+        (have, want) =>
+          want.every((v) => !have.includes(String(v).toLowerCase())),
+        true,
+      );
     case "exists":
       return value ? projected != null : projected == null;
     case "empty":
       return Array.isArray(projected)
         ? projected.length === 0
         : projected == null;
-    case "near":
-      return Array.isArray(projected) && typeof value === "string"
-        ? colorNear(value, projected as string[])
+    case "near": {
+      const needle = Text.safeParse(value);
+      return Array.isArray(projected) && needle.success
+        ? colorNear(needle.data, projected)
         : false;
+    }
   }
 }
 
-function scalarEqual(a: unknown, b: unknown): boolean {
+function withText(
+  projected: FieldValue,
+  value: PredicateValue,
+  run: (text: string, needle: string) => boolean,
+): boolean {
+  const text = Text.safeParse(projected);
+  const needle = Text.safeParse(value);
+  return text.success && needle.success ? run(text.data, needle.data) : false;
+}
+
+function withLists(
+  projected: FieldValue,
+  value: PredicateValue,
+  run: (have: string[], want: ReadonlyArray<string | number>) => boolean,
+  fallback = false,
+): boolean {
+  const want = TextList.safeParse(value);
+  if (!Array.isArray(projected) || !want.success) return fallback;
+  return run(projected, want.data);
+}
+
+function scalarEqual(a: FieldValue, b: PredicateValue): boolean {
   if (a == null || b == null) return false;
-  if (typeof a === "string" && typeof b === "string") {
-    return a.toLowerCase() === b.toLowerCase();
+  const left = Text.safeParse(a);
+  const right = Text.safeParse(b);
+  if (left.success && right.success) {
+    return left.data.toLowerCase() === right.data.toLowerCase();
   }
   return a === b;
 }
 
-function numLike(v: unknown): number {
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string") {
-    const n = Date.parse(v);
-    if (Number.isFinite(n)) return n;
-    const f = Number.parseFloat(v);
-    return Number.isFinite(f) ? f : Number.NaN;
-  }
-  return Number.NaN;
+function numLike(v: FieldValue): number {
+  const num = Numeric.safeParse(v);
+  if (num.success) return num.data;
+  const text = Timestamp.safeParse(v);
+  if (!text.success) return Number.NaN;
+  const parsed = Date.parse(text.data);
+  if (Number.isFinite(parsed)) return parsed;
+  const float = Number.parseFloat(text.data);
+  return Number.isFinite(float) ? float : Number.NaN;
 }
 
-function resolveNumeric(v: unknown): number {
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string") {
-    if (v.startsWith("P") || v.startsWith("-P") || v.startsWith("+P")) {
-      const ms = isoDurationToMillis(v);
-      if (ms !== null) return Date.now() + ms;
-    }
-    const t = Date.parse(v);
-    if (Number.isFinite(t)) return t;
-    const f = Number.parseFloat(v);
-    if (Number.isFinite(f)) return f;
+function resolveNumeric(v: PredicateValue): number {
+  const num = Numeric.safeParse(v);
+  if (num.success) return num.data;
+  const text = Timestamp.safeParse(v);
+  if (!text.success) return Number.NaN;
+  const raw = text.data;
+  if (raw.startsWith("P") || raw.startsWith("-P") || raw.startsWith("+P")) {
+    const ms = isoDurationToMillis(raw);
+    if (ms !== null) return Date.now() + ms;
   }
-  return Number.NaN;
+  const parsed = Date.parse(raw);
+  if (Number.isFinite(parsed)) return parsed;
+  const float = Number.parseFloat(raw);
+  return Number.isFinite(float) ? float : Number.NaN;
 }

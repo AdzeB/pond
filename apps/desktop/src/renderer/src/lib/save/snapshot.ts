@@ -1,4 +1,5 @@
 import { debounce } from "@tanstack/pacer";
+import { type SavePatch, SavePatchesSchema } from "@/lib/save/reconcile";
 import type { Save } from "@/lib/types";
 import { pool } from "@/stores/pool";
 
@@ -30,14 +31,14 @@ function openDb(): Promise<IDBDatabase> {
   return dbPromise;
 }
 
-export async function readSnapshot(): Promise<Save[]> {
+export async function readSnapshot(): Promise<Array<SavePatch | null>> {
   try {
     const db = await openDb();
     const tx = db.transaction(STORE, "readonly");
     const store = tx.objectStore(STORE);
-    return await new Promise<Save[]>((resolve, reject) => {
+    return await new Promise<Array<SavePatch | null>>((resolve, reject) => {
       const req = store.getAll();
-      req.onsuccess = () => resolve((req.result as Save[]) ?? []);
+      req.onsuccess = () => resolve(SavePatchesSchema.parse(req.result ?? []));
       req.onerror = () => reject(req.error);
     });
   } catch (err) {

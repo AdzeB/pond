@@ -3,6 +3,9 @@ import { mkdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline as streamPipeline } from "node:stream/promises";
+import type { JsonValue } from "@pond/schema/json";
+import type { RawQueryPlan } from "@pond/schema/query-plan";
+import { parseQueryPlan } from "@pond/schema/query-plan";
 import { app } from "electron";
 import log from "electron-log/main.js";
 import { buildSystemPrompt, queryJsonSchema } from "./schema-prompt";
@@ -23,6 +26,8 @@ async function loadModule(): Promise<LlamaModule | null> {
     modulePromise = (async () => {
       try {
         const specifier = ["node", "llama", "cpp"].join("-");
+        // SAFETY: node-llama-cpp is an optional dependency with no bundled types; every
+        // call through this handle is behind `available()`.
         const mod = (await import(specifier)) as LlamaModule;
         return mod;
       } catch (err) {
@@ -66,6 +71,8 @@ async function ensureModel(): Promise<string> {
       }
       const tmp = `${path}.part`;
       await streamPipeline(
+        // SAFETY: `res.body` is non-null (checked above) and node's `fromWeb` wants its own
+        // ReadableStream nominal type, not the DOM one this fetch returns.
         Readable.fromWeb(res.body as Parameters<typeof Readable.fromWeb>[0]),
         createWriteStream(tmp),
       );
@@ -109,7 +116,10 @@ export class LlamaCppProvider implements AiProvider {
     return { mod, session: this.session };
   }
 
-  async compilePlan(input: string, ctx: CompileContext): Promise<unknown> {
+  async compilePlan(
+    input: string,
+    ctx: CompileContext,
+  ): Promise<RawQueryPlan | null> {
     const { mod, session } = await this.ensureSession();
     const grammar = await mod
       .getLlama()
@@ -119,6 +129,7 @@ export class LlamaCppProvider implements AiProvider {
           : undefined,
       );
     const system = buildSystemPrompt(ctx);
+    // SAFETY: the session comes from the untyped optional module above.
     // biome-ignore lint/suspicious/noExplicitAny: native session
     const s = session as any;
     s.resetChatHistory?.();
@@ -128,22 +139,22 @@ export class LlamaCppProvider implements AiProvider {
       temperature: 0,
       maxTokens: 512,
     });
-    try {
-      const filter = grammar?.parse
-        ? grammar.parse(answer)
-        : JSON.parse(answer);
-      return { filter };
-    } catch {
-      const start = answer.indexOf("{");
-      const end = answer.lastIndexOf("}");
-      if (start >= 0 && end > start) {
-        try {
-          return { filter: JSON.parse(answer.slice(start, end + 1)) };
-        } catch {
-          return null;
-        }
-      }
-      return null;
-    }
+    const direct = grammar?.parse
+      ? tryPlan(() => grammar.parse(answer))
+      : tryPlan(() => JSON.parse(answer));
+    if (direct) return direct;
+
+    const start = answer.indexOf("{");
+    const end = answer.lastIndexOf("}");
+    if (start < 0 || end <= start) return null;
+    return tryPlan(() => JSON.parse(answer.slice(start, end + 1)));
+  }
+}
+
+function tryPlan(read: () => JsonValue): RawQueryPlan | null {
+  try {
+    return parseQueryPlan({ filter: read() });
+  } catch {
+    return null;
   }
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from "react";
+import { z } from "zod";
 import type { SaveListMode } from "@/lib/save/list";
 import { asUrlList, filePathsFromText } from "@/lib/save/url-list";
 import { openSave } from "@/lib/ui/save-nav";
@@ -15,14 +16,21 @@ interface CardActions {
   onDrop: (e: React.DragEvent) => Promise<void>;
 }
 
+const ImportReplySchema = z
+  .object({
+    ok: z.boolean().catch(false),
+    ids: z.array(z.string()).optional().catch(undefined),
+  })
+  .catch({ ok: false });
+
 function pasteSavedTitle(count: number): string {
   return count === 1 ? "Saved to Pond" : `Saved ${count} items to Pond`;
 }
 
 async function importFilesAndNotify(paths: readonly string[]): Promise<void> {
-  const result = (await window.pond.query("saves.importFiles", {
-    paths: [...paths],
-  })) as { ok: boolean; ids?: string[] };
+  const result = ImportReplySchema.parse(
+    await window.pond.query("saves.importFiles", { paths: [...paths] }),
+  );
   if (!result.ok) return;
   const count = result.ids?.length ?? paths.length;
   if (count === 0) return;
@@ -35,9 +43,9 @@ async function importFilesAndNotify(paths: readonly string[]): Promise<void> {
 async function quickAddUrls(urls: readonly string[]): Promise<void> {
   let added = 0;
   for (const url of urls) {
-    const result = (await window.pond.query("saves.quickAdd", { url })) as {
-      ok: boolean;
-    };
+    const result = ImportReplySchema.parse(
+      await window.pond.query("saves.quickAdd", { url }),
+    );
     if (result.ok) added += 1;
   }
   if (added === 0) return;
@@ -48,10 +56,9 @@ async function quickAddUrls(urls: readonly string[]): Promise<void> {
 }
 
 async function importClipboardAndNotify(): Promise<void> {
-  const result = (await window.pond.query("saves.importClipboard", {})) as {
-    ok: boolean;
-    ids?: string[];
-  };
+  const result = ImportReplySchema.parse(
+    await window.pond.query("saves.importClipboard", {}),
+  );
   if (!result.ok) return;
   const count = result.ids?.length ?? 1;
   if (count === 0) return;
@@ -109,9 +116,9 @@ export function useCardActions(
 
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
-      const el = document.activeElement as HTMLElement | null;
+      const el = document.activeElement;
       if (
-        el &&
+        el instanceof HTMLElement &&
         (el.isContentEditable ||
           el.tagName === "TEXTAREA" ||
           el.tagName === "INPUT")

@@ -1,4 +1,5 @@
-import type { Prefs } from "@pond/schema/db";
+import { type Prefs, PrefsSchema } from "@pond/schema";
+import type { WirePrefsPatch } from "@shared/wire";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
@@ -15,7 +16,9 @@ async function load(): Promise<Prefs> {
   if (prefsStore.state.value) return prefsStore.state.value;
   if (inflight) return inflight;
   inflight = (async () => {
-    const next = (await window.pond.query("settings.getPrefs", {})) as Prefs;
+    const next = PrefsSchema.parse(
+      await window.pond.query("settings.getPrefs", {}),
+    );
     prefsStore.setState(() => ({ value: next }));
     inflight = null;
     return next;
@@ -37,11 +40,10 @@ export function patchPrefsSection<K extends keyof Prefs>(
     [section]: { ...cache[section], ...delta },
   };
   prefsStore.setState(() => ({ value: merged }));
-  void window.pond
-    .query("settings.setPrefs", { [section]: delta } as Partial<Prefs>)
-    .catch(() => {
-      prefsStore.setState(() => ({ value: cache }));
-    });
+  const message: WirePrefsPatch = { [section]: delta };
+  void window.pond.query("settings.setPrefs", message).catch(() => {
+    prefsStore.setState(() => ({ value: cache }));
+  });
 }
 
 export function loadPrefs(): Promise<Prefs> {
@@ -61,6 +63,8 @@ export function usePrefs<K extends keyof Prefs>(
     patchPrefsSection(section, delta);
   };
 
+  // SAFETY: a section is missing only until the first load resolves; the third
+  // tuple element reports that, and callers read its fields with `?.`/`??`.
   return [value ?? ({} as Prefs[K]), patch, value !== null];
 }
 

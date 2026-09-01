@@ -1,79 +1,97 @@
-import type { Capture, CaptureMedia, CaptureMetrics } from "@pond/schema/raw";
+import type { JsonObject, JsonValue } from "@pond/schema/json";
+import type {
+  Capture,
+  CaptureExtras,
+  CaptureMedia,
+  CaptureMetrics,
+} from "@pond/schema/raw";
 import log from "electron-log/main.js";
+import { z } from "zod";
 
 const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 " +
   "(KHTML, like Gecko) Version/17.0 Safari/605.1.15 PondBot/0.1";
 const FETCH_TIMEOUT_MS = 15_000;
 
-interface RelayUser {
-  fullName?: string;
-  firstName?: string;
-  username?: string;
-  websiteUrl?: string;
-  profileUrl?: string;
-  imageLargeUrl?: string;
-  imageMediumUrl?: string;
-  imageSmallUrl?: string;
-  id?: string;
-  entityId?: string;
-}
+const OptionalText = z.string().optional().catch(undefined);
+const OptionalCount = z.number().optional().catch(undefined);
 
-interface RelayImage {
-  url?: string;
-  width?: number;
-  height?: number;
-}
+const RelayUserSchema = z
+  .object({
+    fullName: OptionalText,
+    username: OptionalText,
+    profileUrl: OptionalText,
+    imageLargeUrl: OptionalText,
+    imageMediumUrl: OptionalText,
+    imageSmallUrl: OptionalText,
+  })
+  .optional()
+  .catch(undefined);
 
-interface RelayPin {
-  title?: string;
-  closeupUnifiedTitle?: string;
-  description?: string;
-  closeupUnifiedDescription?: string;
-  seoTitle?: string;
-  seoDescription?: string;
-  seoAltText?: string;
-  dominantColor?: string;
-  imageLargeUrl?: string;
-  imageSignature?: string;
-  createdAt?: string;
-  repinCount?: number;
-  favoriteUserCount?: number;
-  totalReactionCount?: number;
-  shareCount?: number;
-  isVideo?: boolean;
-  domain?: string;
-  link?: string;
-  mobileLink?: string;
-  priceCurrency?: string;
-  closeupAttribution?: RelayUser;
-  closeupUnifiedAttribution?: RelayUser;
-  nativeCreator?: RelayUser;
-  originPinner?: RelayUser;
-  pinner?: RelayUser & { domainUrl?: string };
-  board?: { url?: string };
-  images_orig?: RelayImage;
-  images_736x?: RelayImage;
-  images_564x?: RelayImage;
-  images_474x?: RelayImage;
-  images_236x?: RelayImage;
-  aggregatedPinData?: {
-    aggregatedStats?: { saves?: number };
-    commentCount?: number;
-  };
-  pinJoin?: {
-    visualAnnotation?: string[];
-    seoBreadcrumbs?: Array<{ name?: string; url?: string }>;
-    seoCanonicalUrl?: string;
-    seoCanonicalDomain?: string;
-    canonicalPin?: { entityId?: string; id?: string };
-  };
-  storyPinData?: {
-    totalVideoDuration?: number;
-    metadata?: { pinTitle?: string };
-    pages?: Array<unknown>;
-  };
-}
+type RelayUser = NonNullable<z.infer<typeof RelayUserSchema>>;
+
+const RelayImageSchema = z
+  .object({ url: OptionalText, width: OptionalCount, height: OptionalCount })
+  .optional()
+  .catch(undefined);
+
+const RelayPinSchema = z
+  .object({
+    title: OptionalText,
+    closeupUnifiedTitle: OptionalText,
+    description: OptionalText,
+    closeupUnifiedDescription: OptionalText,
+    seoTitle: OptionalText,
+    dominantColor: OptionalText,
+    imageLargeUrl: OptionalText,
+    createdAt: OptionalText,
+    repinCount: OptionalCount,
+    totalReactionCount: OptionalCount,
+    shareCount: OptionalCount,
+    isVideo: z.boolean().optional().catch(undefined),
+    link: OptionalText,
+    mobileLink: OptionalText,
+    closeupAttribution: RelayUserSchema,
+    closeupUnifiedAttribution: RelayUserSchema,
+    nativeCreator: RelayUserSchema,
+    originPinner: RelayUserSchema,
+    board: z.object({ url: OptionalText }).optional().catch(undefined),
+    images_orig: RelayImageSchema,
+    images_736x: RelayImageSchema,
+    images_564x: RelayImageSchema,
+    images_474x: RelayImageSchema,
+    aggregatedPinData: z
+      .object({
+        aggregatedStats: z
+          .object({ saves: OptionalCount })
+          .optional()
+          .catch(undefined),
+        commentCount: OptionalCount,
+      })
+      .optional()
+      .catch(undefined),
+  })
+  .catch({});
+
+type RelayPin = z.infer<typeof RelayPinSchema>;
+
+const JsonObjectSchema = z.custom<JsonObject>(
+  (value) => value instanceof Object && !Array.isArray(value),
+);
+
+const RelayEnvelopeSchema = z
+  .object({
+    data: z
+      .object({
+        v3GetPinQueryv2: z
+          .object({ data: JsonObjectSchema.optional().catch(undefined) })
+          .optional()
+          .catch(undefined),
+      })
+      .optional()
+      .catch(undefined),
+  })
+  .catch({});
 
 type PinterestCaptureResult =
   | { ok: true; capture: Capture }
@@ -120,7 +138,7 @@ export async function fetchPinterestCapture({
 }
 
 function extractPin(html: string): RelayPin | null {
-  const candidates: RelayPin[] = [];
+  const candidates: JsonObject[] = [];
   const callOpen = "__PWS_RELAY_REGISTER_COMPLETED_REQUEST__(";
   let cursor = 0;
   while (true) {
@@ -134,37 +152,31 @@ function extractPin(html: string): RelayPin | null {
     if (secondArgOffset >= 0) {
       const jsonStr = inner.slice(secondArgOffset).replace(/[\s,]+$/, "");
       try {
-        const parsed = JSON.parse(jsonStr) as {
-          data?: { v3GetPinQueryv2?: { data?: RelayPin } };
-        };
-        const candidate = parsed?.data?.v3GetPinQueryv2?.data;
-        if (candidate && typeof candidate === "object") {
-          candidates.push(candidate);
-        }
+        const envelope = RelayEnvelopeSchema.parse(JSON.parse(jsonStr));
+        const candidate = envelope.data?.v3GetPinQueryv2?.data;
+        if (candidate) candidates.push(candidate);
       } catch {}
     }
     cursor = callEnd + 1;
   }
   if (candidates.length === 0) return null;
-  return mergePins(candidates);
+  return RelayPinSchema.parse(mergePins(candidates));
 }
 
-function mergePins(pins: RelayPin[]): RelayPin {
-  const out: Record<string, unknown> = {};
+function mergePins(pins: JsonObject[]): JsonObject {
+  const out: JsonObject = {};
   const keys = new Set<string>();
   for (const p of pins) {
     for (const k of Object.keys(p)) keys.add(k);
   }
   for (const key of keys) {
-    let best: unknown;
+    let best: JsonValue | undefined;
     let bestScore = -1;
     for (const p of pins) {
-      const v = (p as Record<string, unknown>)[key];
+      const v = p[key];
       if (v == null) continue;
       const score =
-        typeof v === "object" && !Array.isArray(v)
-          ? Object.keys(v as Record<string, unknown>).length
-          : 1;
+        v instanceof Object && !Array.isArray(v) ? Object.keys(v).length : 1;
       if (score > bestScore) {
         best = v;
         bestScore = score;
@@ -172,7 +184,7 @@ function mergePins(pins: RelayPin[]): RelayPin {
     }
     if (best !== undefined) out[key] = best;
   }
-  return out as RelayPin;
+  return out;
 }
 
 function findCallEnd(s: string, start: number): number {
@@ -266,29 +278,30 @@ function buildCapture(sourceId: string, url: string, pin: RelayPin): Capture {
       url: primary,
       type: pin.isVideo ? "video" : "image",
     };
-    if (typeof dims?.width === "number") entry.width = dims.width;
-    if (typeof dims?.height === "number") entry.height = dims.height;
+    if (dims?.width !== undefined) entry.width = dims.width;
+    if (dims?.height !== undefined) entry.height = dims.height;
     return [entry];
   })();
 
   const metrics = ((): CaptureMetrics | undefined => {
     const out: CaptureMetrics = {};
-    if (typeof pin.totalReactionCount === "number") {
+    const aggregated = pin.aggregatedPinData;
+    if (pin.totalReactionCount !== undefined) {
       out.reactions = pin.totalReactionCount;
     }
-    if (typeof pin.aggregatedPinData?.commentCount === "number") {
-      out.comments = pin.aggregatedPinData.commentCount;
+    if (aggregated?.commentCount !== undefined) {
+      out.comments = aggregated.commentCount;
     }
-    if (typeof pin.aggregatedPinData?.aggregatedStats?.saves === "number") {
-      out.saves = pin.aggregatedPinData.aggregatedStats.saves;
+    if (aggregated?.aggregatedStats?.saves !== undefined) {
+      out.saves = aggregated.aggregatedStats.saves;
     }
-    if (typeof pin.repinCount === "number") out.repins = pin.repinCount;
-    if (typeof pin.shareCount === "number") out.shares = pin.shareCount;
+    if (pin.repinCount !== undefined) out.repins = pin.repinCount;
+    if (pin.shareCount !== undefined) out.shares = pin.shareCount;
     return Object.keys(out).length > 0 ? out : undefined;
   })();
 
-  const extras = ((): Record<string, unknown> | undefined => {
-    const out: Record<string, unknown> = {};
+  const extras = ((): CaptureExtras | undefined => {
+    const out: CaptureExtras = {};
     const externalLink = pickStr([pin.link, pin.mobileLink]);
     if (externalLink) out.externalLink = externalLink;
     if (pin.dominantColor) out.dominantColor = pin.dominantColor;
@@ -368,7 +381,7 @@ function pickDescription(pin: RelayPin): string | null {
 
 function pickStr(values: Array<string | undefined | null>): string | null {
   for (const v of values) {
-    if (typeof v === "string" && v.trim()) return v.trim();
+    if (v?.trim()) return v.trim();
   }
   return null;
 }

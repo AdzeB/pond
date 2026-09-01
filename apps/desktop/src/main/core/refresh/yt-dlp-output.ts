@@ -1,5 +1,7 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { basename, extname, join } from "node:path";
+import type { RawYtdlp } from "@pond/schema/raw";
+import { RawYtdlpSchema } from "@pond/schema/raw-schema";
 
 export interface SubtitleFile {
   path: string;
@@ -7,94 +9,31 @@ export interface SubtitleFile {
   mimeType: string;
 }
 
-const YTDLP_KEEP_KEYS = [
-  "id",
-  "title",
-  "description",
-  "thumbnail",
-  "webpage_url",
-  "original_url",
-  "extractor",
-  "extractor_key",
-
-  "view_count",
-  "like_count",
-  "dislike_count",
-  "comment_count",
-  "repost_count",
-  "concurrent_view_count",
-  "average_rating",
-
-  "duration",
-  "uploader",
-  "uploader_id",
-  "uploader_url",
-  "channel",
-  "channel_id",
-  "channel_url",
-
-  "upload_date",
-  "release_date",
-  "release_timestamp",
-  "timestamp",
-  "live_status",
-  "was_live",
-  "availability",
-  "age_limit",
-
-  "width",
-  "height",
-  "fps",
-  "format_note",
-  "vcodec",
-  "acodec",
-  "filesize",
-  "filesize_approx",
-  "tbr",
-
-  "track",
-  "artist",
-  "album",
-  "genre",
-  "release_year",
-
-  "language",
-  "tags",
-  "categories",
-  "chapters",
-
-  "playlist",
-  "playlist_id",
-  "playlist_title",
-  "playlist_index",
-  "n_entries",
-] as const;
-
 async function readInfoJson(
   dir: string,
   videoPath: string,
-): Promise<Record<string, unknown> | null> {
+): Promise<RawYtdlp | null> {
   const stem = basename(videoPath, extname(videoPath));
   const sidecar = join(dir, `${stem}.info.json`);
+  let text: string;
   try {
-    const raw = await readFile(sidecar, "utf8");
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
-    const out: Record<string, unknown> = {};
-    for (const k of YTDLP_KEEP_KEYS) {
-      const v = parsed[k];
-      if (v !== undefined && v !== null) out[k] = v;
-    }
-    return Object.keys(out).length > 0 ? out : null;
+    text = await readFile(sidecar, "utf8");
   } catch {
     return null;
   }
+  const parsed = RawYtdlpSchema.safeParse(JSON.parse(text));
+  if (!parsed.success) return null;
+  const kept = Object.fromEntries(
+    Object.entries(parsed.data).filter(([, value]) => value !== undefined),
+  );
+  return Object.keys(kept).length > 0 ? kept : null;
 }
 
 export interface ProducedFile {
   path: string;
   size: number;
   mimeType: string;
-  infoJson: Record<string, unknown> | null;
+  infoJson: RawYtdlp | null;
 }
 
 /** Playlist order from info.json; size must not win, or a quoted 4K clip outranks the parent. */
@@ -130,13 +69,7 @@ export async function pickProducedFiles(dir: string): Promise<ProducedFile[]> {
 }
 
 function playlistIndex(file: ProducedFile): number {
-  const v = file.infoJson?.playlist_index;
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string") {
-    const n = Number.parseInt(v, 10);
-    if (Number.isFinite(n)) return n;
-  }
-  return 1;
+  return file.infoJson?.playlist_index ?? 1;
 }
 
 function isThumbnail(name: string): boolean {

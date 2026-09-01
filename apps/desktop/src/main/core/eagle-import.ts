@@ -2,7 +2,8 @@ import type { Dirent } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
 import log from "electron-log/main.js";
-import { createManualSave } from "./manual-import";
+import { z } from "zod";
+import { createManualSave, type ManualSaveInput } from "./manual-import";
 
 interface EagleFolder {
   id?: string;
@@ -11,17 +12,30 @@ interface EagleFolder {
   children?: EagleFolder[];
 }
 
-interface EagleItemMeta {
-  id?: string;
-  name?: string;
-  tags?: string[];
-  folders?: string[];
-  url?: string;
-  annotation?: string;
-  width?: number;
-  height?: number;
-  isDeleted?: boolean;
-}
+const EagleFolderSchema: z.ZodType<EagleFolder> = z.lazy(() =>
+  z.object({
+    id: z.string().optional().catch(undefined),
+    name: z.string().optional().catch(undefined),
+    password: z.string().optional().catch(undefined),
+    children: z.array(EagleFolderSchema).optional().catch(undefined),
+  }),
+);
+
+const EagleLibrarySchema = z.object({
+  folders: z.array(EagleFolderSchema).optional().catch(undefined),
+});
+
+const EagleItemMetaSchema = z.object({
+  id: z.string().optional().catch(undefined),
+  name: z.string().optional().catch(undefined),
+  tags: z.array(z.string()).optional().catch(undefined),
+  folders: z.array(z.string()).optional().catch(undefined),
+  url: z.string().optional().catch(undefined),
+  annotation: z.string().optional().catch(undefined),
+  width: z.number().optional().catch(undefined),
+  height: z.number().optional().catch(undefined),
+  isDeleted: z.boolean().optional().catch(undefined),
+});
 
 export interface EagleImportResult {
   ok: boolean;
@@ -43,15 +57,25 @@ function buildFolderMap(
   return map;
 }
 
-async function readJson<T>(path: string): Promise<T | null> {
+async function readJson<T>(
+  path: string,
+  schema: z.ZodType<T>,
+): Promise<T | null> {
+  let text: string;
   try {
-    return JSON.parse(await readFile(path, "utf8")) as T;
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException)?.code !== "ENOENT") {
-      log.warn("[pond eagle] failed to read json", path, err);
+    text = await readFile(path, "utf8");
+  } catch (cause) {
+    if (errnoCode(cause) !== "ENOENT") {
+      log.warn("[pond eagle] failed to read json", path, cause);
     }
     return null;
   }
+  const parsed = schema.safeParse(JSON.parse(text));
+  return parsed.success ? parsed.data : null;
+}
+
+function errnoCode(cause: unknown): string | null {
+  return cause instanceof Error && "code" in cause ? String(cause.code) : null;
 }
 
 async function resolveImagesDir(libraryPath: string): Promise<string | null> {
@@ -83,7 +107,7 @@ async function resolveLibraryMeta(
     join(libraryPath, "metadata.json"),
     join(imagesDir, "..", "metadata.json"),
   ]) {
-    const doc = await readJson<{ folders?: EagleFolder[] }>(path);
+    const doc = await readJson(path, EagleLibrarySchema);
     if (doc?.folders) return { folders: doc.folders };
   }
   return { folders: [] };
@@ -128,7 +152,10 @@ export async function importEagleLibrary(
     if (!entry.isDirectory() || !entry.name.endsWith(".info")) continue;
     const itemDir = join(imagesDir, entry.name);
 
-    const meta = await readJson<EagleItemMeta>(join(itemDir, "metadata.json"));
+    const meta = await readJson(
+      join(itemDir, "metadata.json"),
+      EagleItemMetaSchema,
+    );
     if (!meta?.id) {
       failed += 1;
       continue;
@@ -164,16 +191,17 @@ export async function importEagleLibrary(
     const filePaths = mediaFiles.map((name) => join(itemDir, name));
 
     try {
-      const res = await createManualSave({
+      const input: ManualSaveInput = {
         title: meta.name?.trim() || basename(mediaFiles[0] ?? meta.id),
         url: meta.url?.trim() || null,
         note: meta.annotation?.trim() || null,
         tags,
         filePaths,
         sourceId: `eagle:${meta.id}`,
-        ...(typeof meta.width === "number" ? { width: meta.width } : {}),
-        ...(typeof meta.height === "number" ? { height: meta.height } : {}),
-      });
+      };
+      if (meta.width !== undefined) input.width = meta.width;
+      if (meta.height !== undefined) input.height = meta.height;
+      const res = await createManualSave(input);
       if (!res.ok) {
         failed += 1;
         continue;

@@ -1,5 +1,6 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import { z } from "zod";
 import { pondScopedKey } from "@/lib/pond-scope";
 
 export interface Tab {
@@ -49,19 +50,33 @@ function rememberClosed(
   return [...entries, ...existing].slice(0, 10);
 }
 
+const PersistedTabsSchema = z.object({
+  tabs: z
+    .array(
+      z.object({
+        id: z.string(),
+        path: z.string(),
+        pinned: z.boolean().catch(false),
+      }),
+    )
+    .nonempty(),
+  activeId: z.string().nullish().catch(null),
+});
+
 function loadPersistedState(): TabState | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as TabState;
-    if (!Array.isArray(parsed.tabs) || parsed.tabs.length === 0) return null;
-    const tabs = parsed.tabs.map((t) => ({
+    const parsed = PersistedTabsSchema.safeParse(JSON.parse(raw));
+    if (!parsed.success) return null;
+    const tabs = parsed.data.tabs.map((t) => ({
       ...t,
       path: sanitizePath(t.path),
     }));
     const first = tabs[0];
     if (!first) return null;
-    const activeId = tabs.find((t) => t.id === parsed.activeId)?.id ?? first.id;
+    const activeId =
+      tabs.find((t) => t.id === parsed.data.activeId)?.id ?? first.id;
     return { tabs, activeId, recentlyClosed: [] };
   } catch {
     return null;
@@ -76,18 +91,10 @@ function sanitizePath(path: string): string {
 
 let pendingPersist: TabState | null = null;
 let persistHandle: ReturnType<typeof setTimeout> | null = null;
-const persistIdle: (cb: () => void) => unknown =
-  typeof window !== "undefined" &&
-  typeof (
-    window as unknown as { requestIdleCallback?: (cb: () => void) => number }
-  ).requestIdleCallback === "function"
-    ? (cb) =>
-        (
-          window as unknown as {
-            requestIdleCallback: (cb: () => void) => number;
-          }
-        ).requestIdleCallback(cb)
-    : (cb) => setTimeout(cb, 100);
+const persistIdle = (cb: () => void): void => {
+  if (globalThis.requestIdleCallback) globalThis.requestIdleCallback(cb);
+  else setTimeout(cb, 100);
+};
 
 function writeNow(state: TabState): void {
   try {
@@ -112,7 +119,7 @@ function persist(state: TabState): void {
   }, 0);
 }
 
-if (typeof window !== "undefined") {
+if (globalThis.window) {
   window.addEventListener("pagehide", () => {
     if (pendingPersist) writeNow(pendingPersist);
   });

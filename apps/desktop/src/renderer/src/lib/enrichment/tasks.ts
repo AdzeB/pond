@@ -1,4 +1,5 @@
 import type { Prefs } from "@pond/schema/db";
+import { z } from "zod";
 import { setSaveTags } from "@/lib/save/mutate";
 import { statusFeed } from "@/lib/status-feed";
 import type { Save } from "@/lib/types";
@@ -7,6 +8,11 @@ import { clearEmbeddings } from "@/stores/embedding-store";
 import { pool } from "@/stores/pool";
 import { getPrefsSnapshot } from "@/stores/prefs";
 import { mergeUniqueTags } from "@/stores/tag-clipboard";
+
+const BackfillReplySchema = z.object({
+  ok: z.boolean().catch(false),
+  updated: z.number().optional().catch(undefined),
+});
 
 export interface TaskResult {
   ok: boolean;
@@ -71,10 +77,9 @@ export async function autoTag(ids?: TaskScope): Promise<TaskResult> {
 
 export async function backfillColors(): Promise<TaskResult> {
   const job = statusFeed.start("Backfilling colors");
-  const res = (await window.pond.query("saves.backfillColors", {})) as {
-    ok: boolean;
-    updated?: number;
-  };
+  const res = BackfillReplySchema.parse(
+    await window.pond.query("saves.backfillColors", {}),
+  );
   if (!res.ok) {
     statusFeed.fail(job, "Color backfill failed.");
     return { ok: false, message: "Color backfill failed." };

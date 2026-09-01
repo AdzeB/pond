@@ -83,12 +83,12 @@ function tokenize(input: string): RawToken[] {
   const n = input.length;
   let i = 0;
   while (i < n) {
-    while (i < n && /\s/.test(input[i] as string)) i += 1;
+    while (i < n && /\s/.test(input[i] ?? "")) i += 1;
     if (i >= n) break;
     const start = i;
     let inQuote = false;
     while (i < n) {
-      const ch = input[i] as string;
+      const ch = input[i] ?? "";
       if (ch === '"') inQuote = !inQuote;
       else if (!inQuote && /\s/.test(ch)) break;
       i += 1;
@@ -98,7 +98,9 @@ function tokenize(input: string): RawToken[] {
   return tokens;
 }
 
-type OpSymbol = ":" | ">" | ">=" | "<" | "<=";
+const OP_SYMBOLS = [":", ">", ">=", "<", "<="] as const;
+
+type OpSymbol = (typeof OP_SYMBOLS)[number];
 
 interface FieldToken {
   field: FieldId;
@@ -112,14 +114,10 @@ const FIELD_TOKEN_RE = /^(-?)([a-zA-Z]+)(>=|<=|:|>|<)(.*)$/s;
 function matchFieldToken(token: string): FieldToken | null {
   const m = FIELD_TOKEN_RE.exec(token);
   if (!m) return null;
-  const field = fieldForKey(m[2] as string);
-  if (!field) return null;
-  return {
-    field,
-    op: m[3] as OpSymbol,
-    rawValue: m[4] ?? "",
-    negate: m[1] === "-",
-  };
+  const field = fieldForKey(m[2] ?? "");
+  const op = OP_SYMBOLS.find((symbol) => symbol === m[3]);
+  if (!field || !op) return null;
+  return { field, op, rawValue: m[4] ?? "", negate: m[1] === "-" };
 }
 
 function unquote(value: string): string {
@@ -155,7 +153,7 @@ function toColorValue(value: string): string | null {
   const t = value.trim();
   const short = /^#?([0-9a-f]{3})$/i.exec(t);
   if (short) {
-    const [r, g, b] = short[1] as string;
+    const [r, g, b] = short[1] ?? "";
     return `#${r}${r}${g}${g}${b}${b}`.toLowerCase();
   }
   if (/^#?[0-9a-f]{6}$/i.test(t)) return t.startsWith("#") ? t : `#${t}`;
@@ -201,14 +199,18 @@ function buildPredicate(token: FieldToken): Predicate | null {
 
   switch (type) {
     case "enum": {
-      const list = splitList(raw).map((v) =>
+      const [first, ...rest] = splitList(raw).map((v) =>
         field === "account" ? resolveAccountToken(v) : v.toLowerCase(),
       );
-      if (list.length === 0) return null;
-      if (list.length === 1) {
-        return { field, operator: negate ? "neq" : "eq", value: list[0] };
+      if (first === undefined) return null;
+      if (rest.length === 0) {
+        return { field, operator: negate ? "neq" : "eq", value: first };
       }
-      return { field, operator: negate ? "nin" : "in", value: list };
+      return {
+        field,
+        operator: negate ? "nin" : "in",
+        value: [first, ...rest],
+      };
     }
     case "stringArray": {
       const list =

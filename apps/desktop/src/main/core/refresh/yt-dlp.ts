@@ -2,6 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Source } from "@pond/schema/db";
+import type { RawYtdlp } from "@pond/schema/raw";
 import log from "electron-log/main.js";
 import { getVideoDownloadPrefs } from "../prefs";
 import { partitionForIngest } from "../sync/accounts";
@@ -30,7 +31,7 @@ export interface DownloadedVideoItem {
   path: string;
   mimeType: string;
   size: number;
-  infoJson: Record<string, unknown> | null;
+  infoJson: RawYtdlp | null;
   posterPath: string | null;
   posterMimeType: string | null;
   subtitles: SubtitleFile[];

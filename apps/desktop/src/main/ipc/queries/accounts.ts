@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { isAccountConnected } from "../../core/refresh/scrape-window";
 import { isSyncing } from "../../core/sync";
 import {
@@ -7,7 +8,12 @@ import {
   removeAccount,
 } from "../../core/sync/accounts";
 import { fillMissingAvatars } from "../../core/sync/avatars";
-import type { QueryHandlerMap } from "../helpers";
+import {
+  type QueryHandlerMap,
+  query,
+  StringParam,
+  TrimmedTextParam,
+} from "./params";
 
 export const accountsQueries: QueryHandlerMap = {
   async "accounts.list"() {
@@ -23,34 +29,36 @@ export const accountsQueries: QueryHandlerMap = {
     return { accounts: rows };
   },
 
-  async "accounts.setHandle"(params) {
-    const accountId = String(params.accountId ?? "");
-    const raw = params.handle;
-    const handle =
-      typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : null;
-    const account = await patchAccount(accountId, {
-      handle,
-      avatarUrl: null,
-      avatarCheckedAt: null,
-    });
-    if (account) fillMissingAvatars();
-    return { ok: account !== null, account };
-  },
+  "accounts.setHandle": query(
+    z.object({ accountId: StringParam, handle: TrimmedTextParam }),
+    async (params) => {
+      const account = await patchAccount(params.accountId, {
+        handle: params.handle,
+        avatarUrl: null,
+        avatarCheckedAt: null,
+      });
+      if (account) fillMissingAvatars();
+      return { ok: account !== null, account };
+    },
+  ),
 
-  async "accounts.setLabel"(params) {
-    const accountId = String(params.accountId ?? "");
-    const raw = params.label;
-    const label =
-      typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : null;
-    const account = await patchAccount(accountId, { label });
-    return { ok: account !== null, account };
-  },
+  "accounts.setLabel": query(
+    z.object({ accountId: StringParam, label: TrimmedTextParam }),
+    async (params) => {
+      const account = await patchAccount(params.accountId, {
+        label: params.label,
+      });
+      return { ok: account !== null, account };
+    },
+  ),
 
-  async "accounts.disconnect"(params) {
-    const accountId = String(params.accountId ?? "");
-    const account = await getAccount(accountId);
-    if (!account) return { ok: false };
-    await removeAccount(accountId);
-    return { ok: true };
-  },
+  "accounts.disconnect": query(
+    z.object({ accountId: StringParam }),
+    async (params) => {
+      const account = await getAccount(params.accountId);
+      if (!account) return { ok: false };
+      await removeAccount(params.accountId);
+      return { ok: true };
+    },
+  ),
 };

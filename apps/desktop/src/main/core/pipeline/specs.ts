@@ -1,9 +1,9 @@
 import { OPS, type Op, type Save, type Source } from "@pond/schema/db";
-import { walkCaptureMedia } from "@pond/schema/raw";
+import { type RawJson, walkCaptureMedia } from "@pond/schema/raw";
 
 const UNIVERSAL_SPEC: readonly Op[] = OPS;
 
-const MAX_ATTEMPTS: Record<Op, number> = {
+const MAX_ATTEMPTS = {
   harvest_metadata: 5,
   capture_tweet: 4,
   render_text_cover: 3,
@@ -13,7 +13,7 @@ const MAX_ATTEMPTS: Record<Op, number> = {
   ensure_poster: 4,
   fetch_avatar: 3,
   finalize: 5,
-};
+} satisfies Record<Op, number>;
 
 export function maxAttemptsFor(op: Op): number {
   return MAX_ATTEMPTS[op];
@@ -40,12 +40,33 @@ export function planOps(source: Source): readonly Op[] {
   );
 }
 
+export type CaptureField =
+  | "author"
+  | "description"
+  | "mediaUrl"
+  | "sourceId"
+  | "title"
+  | "capture.author.avatarUrl"
+  | "capture.author.handle"
+  | "capture.author.name"
+  | "capture.duration"
+  | "capture.id"
+  | "capture.media"
+  | "capture.metrics.comments"
+  | "capture.metrics.likes"
+  | "capture.metrics.replies"
+  | "capture.metrics.retweets"
+  | "capture.metrics.shares"
+  | "capture.metrics.views"
+  | "capture.publishedAt"
+  | "capture.upstream.url";
+
 interface CaptureExpectation {
-  required: readonly string[];
-  recommended: readonly string[];
+  required: readonly CaptureField[];
+  recommended: readonly CaptureField[];
 }
 
-export const CAPTURE_EXPECTATIONS: Record<Source, CaptureExpectation> = {
+export const CAPTURE_EXPECTATIONS = {
   twitter: {
     required: ["author"],
     recommended: [
@@ -132,26 +153,18 @@ export const CAPTURE_EXPECTATIONS: Record<Source, CaptureExpectation> = {
     recommended: ["description", "mediaUrl"],
   },
   local: { required: [], recommended: [] },
-};
+} satisfies Record<Source, CaptureExpectation>;
 
 export function resolveYtDlpTarget(save: Save): string | null {
-  const raw = save.rawJson as {
-    capture?: { upstream?: { url?: string } };
-  } | null;
-  const upstreamUrl = raw?.capture?.upstream?.url;
-  if (typeof upstreamUrl === "string" && upstreamUrl.length > 0) {
-    return upstreamUrl;
-  }
+  const upstreamUrl = save.rawJson?.capture?.upstream?.url;
+  if (upstreamUrl) return upstreamUrl;
   if (save.source === "pinterest") return null;
   return save.url;
 }
 
-export function countCaptureVideos(rawJson: unknown): number {
-  if (!rawJson || typeof rawJson !== "object") return 0;
-  const capture = (
-    rawJson as { capture?: Parameters<typeof walkCaptureMedia>[0] }
-  ).capture;
-  return walkCaptureMedia(capture).filter((m) => m.type === "video").length;
+export function countCaptureVideos(rawJson: RawJson | null): number {
+  return walkCaptureMedia(rawJson?.capture).filter((m) => m.type === "video")
+    .length;
 }
 
 export function expectedVideoDownloads(

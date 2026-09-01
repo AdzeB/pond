@@ -9,7 +9,7 @@ import { setPrefs } from "../../core/prefs";
 import { reconcileLibrary } from "../../core/scan";
 import { closeDb } from "../../db";
 import { libraryRoot } from "../../paths";
-import type { QueryHandlerMap } from "../helpers";
+import type { QueryHandlerMap } from "./params";
 
 export const libraryMaintenanceQueries: QueryHandlerMap = {
   async "library.info"() {

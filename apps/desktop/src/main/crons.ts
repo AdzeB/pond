@@ -37,6 +37,7 @@ export function registerYtDlpUpdateCron() {
 
 let lastSyncCronRunAt = 0;
 const SYNC_CRON_JITTER_MS = 10 * 60_000;
+const CRON_BATCH_LIMIT = 150;
 
 export function registerSyncCron() {
   schedule({
@@ -66,7 +67,7 @@ export function registerSyncCron() {
       log.info("[pond sync-cron] starting background sync", {
         intervalHours: cron.intervalHours,
       });
-      await syncAllSources({ trigger: "cron" });
+      await syncAllSources({ trigger: "cron", maxItems: CRON_BATCH_LIMIT });
     },
   });
 }

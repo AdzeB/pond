@@ -1,11 +1,10 @@
 import {
   DEFAULT_IMAGE_DOWNLOAD,
   DEFAULT_VIDEO_DOWNLOAD,
-  type ImageDownloadSettings,
   settings as settingsTable,
-  type VideoDownloadSettings,
 } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
+import { z } from "zod";
 import {
   getImageDownloadPrefs,
   getPrefs,
@@ -17,7 +16,50 @@ import {
 import { getGlobalDb } from "../../db";
 import { getIngestToken, rotateIngestToken } from "../../keychain";
 import { syncShellChrome } from "../../window";
-import type { QueryHandlerMap } from "../helpers";
+import { type QueryHandlerMap, query } from "./params";
+
+const VideoDownloadPatchSchema = z.object({
+  enabled: z.boolean().optional().catch(undefined),
+  maxHeight: z.number().nullable().optional().catch(undefined),
+  maxFps: z.number().nullable().optional().catch(undefined),
+  videoCodec: z
+    .enum(["h264", "hevc", "av1", "vp9", "any"])
+    .optional()
+    .catch(undefined),
+  audioCodec: z.enum(["aac", "opus", "any"]).optional().catch(undefined),
+  container: z
+    .enum(["auto", "mp4", "mkv", "webm", "mov"])
+    .optional()
+    .catch(undefined),
+  maxFileSizeMb: z.number().nullable().optional().catch(undefined),
+  subtitles: z.enum(["off", "download", "embed"]).optional().catch(undefined),
+  subtitleLang: z.string().optional().catch(undefined),
+  embedMetadata: z.boolean().optional().catch(undefined),
+  embedThumbnail: z.boolean().optional().catch(undefined),
+  embedChapters: z.boolean().optional().catch(undefined),
+  sponsorblockRemove: z.boolean().optional().catch(undefined),
+});
+
+const ImageDownloadPatchSchema = z.object({
+  maxLongEdge: z.number().nullable().optional().catch(undefined),
+  format: z
+    .enum(["original", "jpeg", "png", "webp", "avif"])
+    .optional()
+    .catch(undefined),
+  quality: z.number().optional().catch(undefined),
+  lossless: z.boolean().optional().catch(undefined),
+  progressive: z.boolean().optional().catch(undefined),
+  preserveMetadata: z.boolean().optional().catch(undefined),
+  maxFileSizeMb: z.number().nullable().optional().catch(undefined),
+});
+
+const PrefsPatchParamsSchema = z.looseObject({
+  preferences: z.looseObject({}).catch({}).optional(),
+  window: z
+    .looseObject({ appIcon: z.string().optional().catch(undefined) })
+    .catch({})
+    .optional(),
+});
 
 export const settingsQueries: QueryHandlerMap = {
   async "settings.get"() {
@@ -49,19 +91,21 @@ export const settingsQueries: QueryHandlerMap = {
     };
   },
 
-  async "settings.setVideoDownload"(params) {
-    const next = await setVideoDownloadPrefs(
-      params as Partial<VideoDownloadSettings>,
-    );
-    return { ok: true, videoDownload: next };
-  },
+  "settings.setVideoDownload": query(
+    VideoDownloadPatchSchema,
+    async (params) => {
+      const next = await setVideoDownloadPrefs(params);
+      return { ok: true, videoDownload: next };
+    },
+  ),
 
-  async "settings.setImageDownload"(params) {
-    const next = await setImageDownloadPrefs(
-      params as Partial<ImageDownloadSettings>,
-    );
-    return { ok: true, imageDownload: next };
-  },
+  "settings.setImageDownload": query(
+    ImageDownloadPatchSchema,
+    async (params) => {
+      const next = await setImageDownloadPrefs(params);
+      return { ok: true, imageDownload: next };
+    },
+  ),
 
   async "settings.ingestToken"() {
     return { token: await getIngestToken() };
@@ -99,23 +143,13 @@ export const settingsQueries: QueryHandlerMap = {
     return await getPrefs();
   },
 
-  async "settings.setPrefs"(params) {
-    const next = await setPrefs(params as Parameters<typeof setPrefs>[0]);
-    if (params && typeof params === "object" && "preferences" in params) {
-      await syncShellChrome();
-    }
-    if (
-      params &&
-      typeof params === "object" &&
-      "window" in params &&
-      params.window &&
-      typeof params.window === "object" &&
-      "appIcon" in params.window
-    ) {
+  "settings.setPrefs": query(PrefsPatchParamsSchema, async (params) => {
+    const next = await setPrefs(params);
+    if ("preferences" in params) await syncShellChrome();
+    if (params.window && "appIcon" in params.window) {
       const { applyAppIcon } = await import("../../core/app-icon");
-      const nextIcon = params.window.appIcon;
-      await applyAppIcon(typeof nextIcon === "string" ? nextIcon : undefined);
+      await applyAppIcon(params.window.appIcon);
     }
     return { ok: true, prefs: next };
-  },
+  }),
 };

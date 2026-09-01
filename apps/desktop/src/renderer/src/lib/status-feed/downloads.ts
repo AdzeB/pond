@@ -1,15 +1,43 @@
-import type { Op, Source } from "@pond/schema/db";
+import { CANCEL_REASON, OPS, type Op, SOURCES } from "@pond/schema/db";
+import { INGEST_OUTCOMES } from "@pond/schema/events";
+import { z } from "zod";
 import type { Save } from "@/lib/types";
 import { humanizeError, preferIngestError, stageLabel } from "./queue";
+
+export const HistoryPageSchema = z.object({
+  rows: z.array(
+    z.object({
+      id: z.number(),
+      saveId: z.string(),
+      title: z.string().nullable(),
+      url: z.string(),
+      source: z.enum(SOURCES),
+      outcome: z.enum(INGEST_OUTCOMES),
+      durationMs: z.number(),
+      attempts: z.number(),
+      failedOp: z.enum(OPS).nullable(),
+      error: z.object({ name: z.string(), message: z.string() }).nullable(),
+      ts: z.number(),
+    }),
+  ),
+  nextCursor: z.object({ ts: z.number(), id: z.number() }).nullable(),
+});
+
+type HistoryRow = z.infer<typeof HistoryPageSchema>["rows"][number];
+
+export type HistoryCursor = z.infer<typeof HistoryPageSchema>["nextCursor"];
+
+export const PipelineStatusSchema = z.object({ paused: z.boolean() });
 
 export type DownloadStatus =
   | "pending"
   | "running"
   | "blocked"
   | "failed"
+  | "cancelled"
   | "complete";
 
-export type StatusFilter = "in-progress" | "failed" | "complete";
+export type StatusFilter = "in-progress" | "failed" | "cancelled" | "complete";
 
 export interface DownloadRow {
   id: string;
@@ -49,8 +77,19 @@ export function defaultDownloadFilters(): DownloadFilters {
   };
 }
 
+function wasCancelled(save: Save): boolean {
+  const stopped = (save.tasks ?? []).filter(
+    (t) => t.status === "failed" || t.status === "blocked",
+  );
+  return (
+    stopped.length > 0 && stopped.every((t) => t.lastError === CANCEL_REASON)
+  );
+}
+
 function liveStatus(save: Save): DownloadStatus | null {
-  if (save.status === "failed") return "failed";
+  if (save.status === "failed") {
+    return wasCancelled(save) ? "cancelled" : "failed";
+  }
   if (save.status !== "ingesting") return null;
   const tasks = save.tasks ?? [];
   if (tasks.some((t) => t.status === "running")) return "running";
@@ -78,6 +117,16 @@ function rowError(save: Save): string | null {
   }
   return error;
 }
+
+/** Thousands of rows queue behind a handful in flight, so the work happening now sorts to the top. */
+export const LIVE_ORDER: Record<DownloadStatus, number> = {
+  running: 0,
+  blocked: 1,
+  pending: 2,
+  failed: 3,
+  cancelled: 4,
+  complete: 5,
+};
 
 export function projectLiveDownloads(saves: readonly Save[]): DownloadRow[] {
   const rows: DownloadRow[] = [];
@@ -108,12 +157,15 @@ export function projectLiveDownloads(saves: readonly Save[]): DownloadRow[] {
       live: true,
     });
   }
-  rows.sort((a, b) => b.ts - a.ts);
+  rows.sort(
+    (a, b) => LIVE_ORDER[a.status] - LIVE_ORDER[b.status] || b.ts - a.ts,
+  );
   return rows;
 }
 
 export function statusBucket(status: DownloadStatus): StatusFilter {
   if (status === "failed") return "failed";
+  if (status === "cancelled") return "cancelled";
   if (status === "complete") return "complete";
   return "in-progress";
 }
@@ -152,19 +204,7 @@ export function mergeDownloadRows(
   return [...live, ...extra];
 }
 
-export function historyToDownloadRow(input: {
-  id: number;
-  saveId: string;
-  title: string | null;
-  url: string;
-  source: Source;
-  outcome: "complete" | "failed";
-  durationMs: number;
-  attempts: number;
-  failedOp: Op | null;
-  error: { name: string; message: string } | null;
-  ts: number;
-}): DownloadRow {
+export function historyToDownloadRow(input: HistoryRow): DownloadRow {
   const failed = input.outcome === "failed";
   return {
     id: `history:${input.id}`,

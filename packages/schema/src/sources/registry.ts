@@ -6,6 +6,8 @@ export const DEFAULT_RATE_PROFILE: RateProfile = {
   maxPerWindow: 60,
   windowMs: 60_000,
   firstSyncSlowdown: 2,
+  maxPerHour: 240,
+  maxPerDay: 1500,
 };
 
 const NO_SYNC: SourceSyncConfig = {
@@ -22,7 +24,10 @@ export const SOURCE_DESCRIPTORS = [
       /^https?:\/\/(?:www\.)?(?:x|twitter)\.com\/[^/]+\/status\/(\d+)/i,
       /^https?:\/\/(?:www\.)?(?:x|twitter)\.com\/i\/web\/status\/(\d+)/i,
     ],
-    sync: { strategy: "cursor" },
+    sync: {
+      strategy: "cursor",
+      rate: { minDelayMs: 3000, maxPerHour: 150, maxPerDay: 1000 },
+    },
   },
   {
     id: "instagram",
@@ -34,7 +39,12 @@ export const SOURCE_DESCRIPTORS = [
     /** Saved-feed API is cursor-paginated; IG rate-limits aggressively, so pace it slower. */
     sync: {
       strategy: "cursor",
-      rate: { minDelayMs: 2500, maxPerWindow: 30 },
+      rate: {
+        minDelayMs: 2500,
+        maxPerWindow: 30,
+        maxPerHour: 120,
+        maxPerDay: 600,
+      },
     },
   },
   {

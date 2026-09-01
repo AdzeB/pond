@@ -1,6 +1,7 @@
 import { debounce } from "@tanstack/pacer";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import { z } from "zod";
 import {
   type MediaPickOptions,
   type MediaUnit,
@@ -107,22 +108,28 @@ function touchMeasured(key: string, ratio: number): void {
   measuredAspects.set(key, ratio);
   while (measuredAspects.size > MAX_MEASURED) {
     const oldest = measuredAspects.keys().next().value;
-    if (typeof oldest !== "string") return;
+    if (oldest === undefined) return;
     measuredAspects.delete(oldest);
   }
 }
 
+const StoredAspectsSchema = z.record(
+  z.string(),
+  z
+    .number()
+    .refine((n) => Number.isFinite(n) && n > 0)
+    .nullable()
+    .catch(null),
+);
+
 function hydrateFromStorage(): void {
-  if (typeof localStorage === "undefined") return;
+  if (!("localStorage" in globalThis)) return;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const parsed = StoredAspectsSchema.parse(JSON.parse(raw));
     const entries = Object.entries(parsed).filter(
-      (entry): entry is [string, number] =>
-        typeof entry[1] === "number" &&
-        Number.isFinite(entry[1]) &&
-        entry[1] > 0,
+      (entry): entry is [string, number] => entry[1] !== null,
     );
     const start = Math.max(0, entries.length - MAX_MEASURED);
     for (const [id, value] of entries.slice(start)) {
@@ -133,7 +140,7 @@ function hydrateFromStorage(): void {
 
 const persistSoon = debounce(
   () => {
-    if (typeof localStorage === "undefined") return;
+    if (!("localStorage" in globalThis)) return;
     try {
       const obj: Record<string, number> = {};
       for (const [id, ratio] of measuredAspects) obj[id] = ratio;
@@ -187,8 +194,7 @@ function flush() {
 }
 
 function schedule() {
-  const now =
-    typeof performance !== "undefined" ? performance.now() : Date.now();
+  const now = "performance" in globalThis ? performance.now() : Date.now();
   const gap = now - lastRecordAt;
   lastRecordAt = now;
 
@@ -204,7 +210,7 @@ function schedule() {
 
   if (burstTimer !== 0) return;
   if (rafScheduled !== 0) return;
-  if (typeof requestAnimationFrame === "undefined") {
+  if (!("requestAnimationFrame" in globalThis)) {
     flush();
     return;
   }

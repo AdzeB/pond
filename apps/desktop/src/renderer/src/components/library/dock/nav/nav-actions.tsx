@@ -16,6 +16,7 @@ import { useDock } from "@/components/library/dock/lib/context";
 import type { DockTab } from "@/components/library/dock/lib/nav-tabs";
 import { ShortcutKeys } from "@/components/shared/shortcut-keys";
 import type { ShortcutId } from "@/lib/save/shortcuts";
+import { PipelineStatusSchema } from "@/lib/status-feed";
 import { dockMode } from "@/stores/dock-mode";
 
 function Action({
@@ -107,10 +108,10 @@ function DownloadsActions() {
   const qc = useQueryClient();
   const pipeline = useQuery({
     queryKey: ["pipeline.status"],
-    queryFn: () =>
-      window.pond.query("pipeline.status", {}) as Promise<{
-        paused: boolean;
-      }>,
+    queryFn: async () =>
+      PipelineStatusSchema.parse(
+        await window.pond.query("pipeline.status", {}),
+      ),
   });
   const paused = pipeline.data?.paused === true;
 

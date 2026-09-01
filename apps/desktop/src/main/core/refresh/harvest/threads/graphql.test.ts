@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildThreadsSavedSeed } from "../../../sync/threads-seed";
-import { parseSavedResponses, shapeRichThread } from "./graphql";
+import { parseSavedResponses, richThreadFromNode } from "./graphql";
 
 const quotedNode = {
   code: "QuotedCode01",
@@ -71,7 +71,7 @@ const savedPayload = {
 };
 
 describe("parseSavedResponses", () => {
-  it("shapes posts, quotes, and cards from a saved-feed payload", () => {
+  it("reads posts, quotes, and cards from a saved-feed payload", () => {
     const rich = parseSavedResponses([
       {
         url: "https://www.threads.com/graphql/query",
@@ -112,7 +112,7 @@ describe("parseSavedResponses", () => {
 
 describe("buildThreadsSavedSeed", () => {
   it("writes quoted Capture, card, and quote media on the quoted item", () => {
-    const rich = shapeRichThread(parentNode);
+    const rich = richThreadFromNode(parentNode);
     expect(rich).not.toBeNull();
     const seed = buildThreadsSavedSeed({
       postId: "ParentCode01",

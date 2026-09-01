@@ -3,6 +3,7 @@ import { cp, mkdir, readdir, rm } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import { app, BrowserWindow, dialog } from "electron";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { createPondBundle } from "../../core/ensure-default-library";
 import { relocateLibrary } from "../../core/library-ops";
 import { invalidatePrefs } from "../../core/prefs";
@@ -17,15 +18,15 @@ import {
   libraryRoot as libraryRootDir,
   resolvePaths,
 } from "../../paths";
-import type { QueryHandlerMap } from "../helpers";
+import { type QueryHandlerMap, query, StringParam } from "./params";
+
+const PathParams = z.object({ path: StringParam });
 
 export const libraryLocationQueries: QueryHandlerMap = {
-  async "library.createAt"(params) {
-    return createPondBundle(
-      String(params.path ?? ""),
-      String(params.name ?? ""),
-    );
-  },
+  "library.createAt": query(
+    z.object({ path: StringParam, name: StringParam }),
+    async (params) => createPondBundle(params.path, params.name),
+  ),
 
   async "library.pickFolder"() {
     const win = BrowserWindow.getFocusedWindow() ?? undefined;
@@ -62,8 +63,8 @@ export const libraryLocationQueries: QueryHandlerMap = {
     return { ok: true as const, path: dest };
   },
 
-  async "library.switchTo"(params) {
-    const dest = String(params.path ?? "").trim();
+  "library.switchTo": query(PathParams, async (params) => {
+    const dest = params.path.trim();
     if (!dest) return { ok: false as const, reason: "no_path" as const };
 
     const destNorm = dest.replace(/\/+$/, "");
@@ -92,17 +93,15 @@ export const libraryLocationQueries: QueryHandlerMap = {
         reason: err instanceof Error ? err.message : "switch_failed",
       };
     }
-  },
+  }),
 
-  async "library.move"(params) {
+  "library.move": query(PathParams, async (params) => {
     const src = libraryRootDir().replace(/\/+$/, "");
     if (!src || !existsSync(src)) {
       return { ok: false as const, reason: "no_library" as const };
     }
 
-    const explicitDest =
-      typeof params.path === "string" ? params.path.trim() : "";
-    let dest = explicitDest;
+    let dest = params.path.trim();
     if (!dest) {
       const win = BrowserWindow.getFocusedWindow() ?? undefined;
       const dialogOpts = {
@@ -151,7 +150,7 @@ export const libraryLocationQueries: QueryHandlerMap = {
         reason: err instanceof Error ? err.message : "move_failed",
       };
     }
-  },
+  }),
 
   async "library.backupTo"() {
     const src = libraryRootDir().replace(/\/+$/, "");

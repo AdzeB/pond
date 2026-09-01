@@ -22,6 +22,16 @@ interface TagPickerContextValue {
   target: TagPickerTarget;
 }
 
+interface PopupStyle extends CSSProperties {
+  "--popup-min-width": string;
+  "--popup-width": string;
+}
+
+const POPUP_STYLE: PopupStyle = {
+  "--popup-min-width": "max-content",
+  "--popup-width": "max-content",
+};
+
 const TagPickerContext = createContext<TagPickerContextValue | null>(null);
 
 function useTagPickerContext(): TagPickerContextValue {
@@ -142,12 +152,7 @@ function Content({
         align={align}
         sideOffset={sideOffset}
         collisionPadding={{ top: 48 }}
-        style={
-          {
-            "--popup-min-width": "max-content",
-            "--popup-width": "max-content",
-          } as CSSProperties
-        }
+        style={POPUP_STYLE}
       >
         <Menu.Popup>
           <Menu.Viewport>

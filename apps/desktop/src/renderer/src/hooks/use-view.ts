@@ -22,7 +22,7 @@ import {
   updateRow,
   useViewStore,
 } from "@/stores/view-store";
-import type { SortDir, SortKey } from "./use-filtered-saves";
+import { isSortKey, type SortDir, type SortKey } from "./use-filtered-saves";
 
 export type { SortKey };
 
@@ -74,6 +74,7 @@ const actions: ViewActions = {
 export function useView(): ViewContextValue {
   const view = useViewStore();
   const displayPrefs = useDisplayPrefs();
+  const sortKey = isSortKey(view.sortKey) ? view.sortKey : "savedAt";
   return useMemo(
     () => ({
       state: {
@@ -81,12 +82,12 @@ export function useView(): ViewContextValue {
         rows: view.rows,
         combinator: view.combinator,
         layout: view.layout,
-        sort: { key: view.sortKey as SortKey, dir: view.sortDir },
+        sort: { key: sortKey, dir: view.sortDir },
         displayPrefs,
         zoom: view.zoom,
       },
       actions,
     }),
-    [view, displayPrefs],
+    [view, sortKey, displayPrefs],
   );
 }

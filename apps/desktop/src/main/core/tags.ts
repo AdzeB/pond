@@ -196,9 +196,8 @@ export async function updateTag(
   const next: TagPatch = {};
   if ("starred" in patch) next.starred = Boolean(patch.starred);
   if ("description" in patch) {
-    const d =
-      typeof patch.description === "string" ? patch.description.trim() : "";
-    next.description = d ? d : null;
+    const description = patch.description?.trim() ?? "";
+    next.description = description || null;
   }
   if (Object.keys(next).length === 0) return { ok: true };
 

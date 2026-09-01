@@ -13,7 +13,8 @@ import {
   Switch,
 } from "@pond/ui";
 import type { ReactNode } from "react";
-import { type EnumOption, EnumSelect } from "@/components/shared/enum-select";
+import { z } from "zod";
+import { EnumSelect } from "@/components/shared/enum-select";
 import type {
   Binding,
   ButtonItem,
@@ -24,6 +25,15 @@ import type {
 } from "@/lib/settings/engine-types";
 import { clamp as clampNum } from "@/lib/util/math";
 import styles from "./styles.module.css";
+
+const ControlValueSchema = z
+  .union([z.string(), z.number(), z.boolean(), z.null()])
+  .catch(null);
+
+type ControlValue = z.infer<typeof ControlValueSchema>;
+
+const FiniteNumberSchema = z.number().refine(Number.isFinite);
+const HexColorSchema = z.string().catch("#000000");
 
 export function ItemView({ item, binding }: { item: Item; binding: Binding }) {
   if (item.control === "custom") {
@@ -92,7 +102,7 @@ function FieldControl({
   binding: Binding;
 }): ReactNode {
   const { values, patch } = binding;
-  const current = values[item.key];
+  const current = ControlValueSchema.parse(values[item.key]);
   const disabled = item.disabled?.(values) ?? false;
 
   switch (item.control) {
@@ -111,13 +121,13 @@ function FieldControl({
     case "select":
       return (
         <EnumSelect<SelectOption["value"]>
-          value={current as SelectOption["value"]}
+          value={current}
           disabled={disabled}
           onValueChange={(next) => {
             patch({ [item.key]: next });
             runApply(item);
           }}
-          options={item.options as readonly EnumOption<SelectOption["value"]>[]}
+          options={item.options}
           placeholder={item.placeholder}
         />
       );
@@ -130,7 +140,7 @@ function FieldControl({
           step={item.step}
           value={toNumber(current, item.min)}
           onValueChange={(next) => {
-            const n = typeof next === "number" ? next : (next[0] ?? item.min);
+            const n = Array.isArray(next) ? (next[0] ?? item.min) : next;
             patch({ [item.key]: n });
             runApply(item);
           }}
@@ -212,7 +222,7 @@ function FieldControl({
       return (
         <ColorField
           aria-label={item.title}
-          value={typeof current === "string" ? current : "#000000"}
+          value={HexColorSchema.parse(current)}
           onChange={(hex) => {
             patch({ [item.key]: hex });
             runApply(item);
@@ -225,8 +235,9 @@ function FieldControl({
   }
 }
 
-function toNumber(value: unknown, fallback: number): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+function toNumber(value: ControlValue, fallback: number): number {
+  const parsed = FiniteNumberSchema.safeParse(value);
+  return parsed.success ? parsed.data : fallback;
 }
 
 function clamp(value: number, min: number, max: number): number {

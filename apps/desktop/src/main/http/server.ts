@@ -1,5 +1,4 @@
-import type { Server } from "node:http";
-import { serve } from "@hono/node-server";
+import { type ServerType, serve } from "@hono/node-server";
 import { getConnInfo } from "@hono/node-server/conninfo";
 import { app as electronApp } from "electron";
 import log from "electron-log/main.js";
@@ -142,7 +141,7 @@ function buildApp(): Hono {
 }
 
 export interface RunningServer {
-  server: Server;
+  server: ServerType;
   port: number;
   host: string;
   close: () => Promise<void>;
@@ -155,10 +154,10 @@ export async function startHttpServer(
   const hono = buildApp();
   const host = bind === "lan" ? "0.0.0.0" : "127.0.0.1";
 
-  const nodeServer = await new Promise<Server>((resolve, reject) => {
+  const nodeServer = await new Promise<ServerType>((resolve, reject) => {
     const server = serve(
       { fetch: hono.fetch, hostname: host, port: preferredPort },
-      () => resolve(server as unknown as Server),
+      () => resolve(server),
     );
     server.once("error", reject);
   });

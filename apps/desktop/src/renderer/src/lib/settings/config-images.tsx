@@ -1,14 +1,17 @@
 import { useImageDownloadBinding } from "@/components/settings/sections/downloads";
-import { defineCustomSection, group } from "@/lib/settings/engine-types";
+import {
+  defineCustomSection,
+  group,
+  type SettingsValues,
+} from "@/lib/settings/engine-types";
 
-type Values = Record<string, unknown>;
-
-const imageReencode = (v: Values) => v.format !== "original";
-const imageQuality = (v: Values) =>
+const imageReencode = (v: SettingsValues) => v.format !== "original";
+const imageQuality = (v: SettingsValues) =>
   (v.format === "jpeg" || v.format === "webp" || v.format === "avif") &&
   !v.lossless;
-const imageLossless = (v: Values) => v.format === "webp" || v.format === "avif";
-const imageProgressive = (v: Values) =>
+const imageLossless = (v: SettingsValues) =>
+  v.format === "webp" || v.format === "avif";
+const imageProgressive = (v: SettingsValues) =>
   v.format === "jpeg" || v.format === "png";
 
 export const imagesSection = defineCustomSection({

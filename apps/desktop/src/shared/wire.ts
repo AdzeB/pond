@@ -1,0 +1,101 @@
+import type {
+  Op,
+  Prefs,
+  Save,
+  Source,
+  SyncAction,
+  TaskStatus,
+} from "@pond/schema/db";
+import type { Query } from "@pond/schema/filters/types";
+
+export type WireJson =
+  | string
+  | number
+  | boolean
+  | null
+  | Date
+  | readonly WireJson[]
+  | { readonly [key: string]: WireJson | undefined };
+
+export interface WireRow {
+  readonly [key: string]: WireJson | undefined;
+}
+
+export type WireQueryParams = WireRow;
+
+/** `interface` types get no implicit index signature, so `WireRow` cannot describe these. */
+export interface WireFilterQueryParams {
+  query: Query;
+  sortKey: string;
+  sortDir: string;
+}
+
+export type WirePrefsPatch = { [K in keyof Prefs]?: Partial<Prefs[K]> };
+
+export interface WireTask {
+  op: Op;
+  status: TaskStatus;
+  attempts: number;
+  maxAttempts: number;
+  lastError: string | null;
+  nextRunAt: number;
+  updatedAt: number;
+}
+
+export type WireSaveRow = Omit<
+  Save,
+  "embedding" | "clipEmbedding" | "transcript" | "rawSlim"
+>;
+
+export type WireSave = Omit<
+  WireSaveRow,
+  | "savedAt"
+  | "createdAt"
+  | "deletedAt"
+  | "publishedAt"
+  | "ingestStartedAt"
+  | "ingestCompletedAt"
+> & {
+  savedAt: number;
+  createdAt: number;
+  deletedAt: number | null;
+  publishedAt: number | null;
+  ingestStartedAt: number | null;
+  ingestCompletedAt: number | null;
+  tasks?: WireTask[];
+};
+
+export type WireSyncPayload = WireRow | readonly WireRow[] | null;
+
+export type WireSyncAction = Omit<
+  SyncAction,
+  "createdAt" | "data" | "prevData"
+> & {
+  createdAt: number;
+  data: WireSyncPayload;
+  prevData: WireSyncPayload;
+};
+
+export type WireSyncState =
+  | "idle"
+  | "running"
+  | "done"
+  | "error"
+  | "auth_required"
+  | "paused";
+
+export interface WireSyncStatusUpdate {
+  accountId: string;
+  source: Source;
+  state: WireSyncState;
+  message?: string;
+  progress?: { current: number; total: number };
+  lastSyncedAt?: string | null;
+  lastError?: string | null;
+}
+
+export interface WireUndoState {
+  ok: boolean;
+  canUndo: boolean;
+  canRedo: boolean;
+}

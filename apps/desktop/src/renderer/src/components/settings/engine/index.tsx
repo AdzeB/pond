@@ -1,5 +1,6 @@
 import type { Prefs } from "@pond/schema/db";
 import { Settings } from "@pond/ui";
+import { z } from "zod";
 import { ItemView } from "@/components/settings/engine/field-control";
 import type {
   Binding,
@@ -12,6 +13,8 @@ import { CollapsibleGroup } from "./collapsible-group";
 
 export type { Binding, SectionConfig } from "@/lib/settings/engine-types";
 
+const GroupTitleSchema = z.string();
+
 const EMPTY_BINDING: Binding = {
   values: {},
   patch: () => {},
@@ -20,8 +23,11 @@ const EMPTY_BINDING: Binding = {
 
 function usePrefsBinding(prefsKey: keyof Prefs): Binding {
   const [values, patch, loaded] = usePrefs(prefsKey);
+  // SAFETY: every prefs section is a plain keyed object, and `patch` is the
+  // setter for the very section `values` came from, so the pair stays coherent
+  // once the engine addresses them by string key.
   return {
-    values: values as Record<string, unknown>,
+    values: values as Binding["values"],
     patch: patch as Binding["patch"],
     loaded,
   };
@@ -113,7 +119,8 @@ function SectionBody({
 }
 
 function groupKey(group: GroupConfig, index: number): string {
-  return typeof group.title === "string" ? group.title : `group-${index}`;
+  const title = GroupTitleSchema.safeParse(group.title);
+  return title.success ? title.data : `group-${index}`;
 }
 
 function GroupRouter({

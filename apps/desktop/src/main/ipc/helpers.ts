@@ -30,7 +30,7 @@ export function safeHandle<Args extends unknown[], R>(
   handler: (event: IpcMainInvokeEvent, ...args: Args) => R,
   bus: IpcMain = ipcMain,
 ): void {
-  bus.handle(channel, (event, ...args) => {
+  bus.handle(channel, (event, ...args: Args) => {
     if (!isTrustedSender(event)) {
       log.warn(
         "[pond ipc] rejected untrusted sender",
@@ -39,7 +39,7 @@ export function safeHandle<Args extends unknown[], R>(
       );
       throw new Error("untrusted sender");
     }
-    return handler(event, ...(args as Args));
+    return handler(event, ...args);
   });
 }
 
@@ -67,8 +67,7 @@ export async function resolveSaveFilePath(
     const files = toWireSave(row).files ?? [];
     if (files.length === 0) return { ok: false, reason: "no_files" };
 
-    const idx = typeof fileIndex === "number" ? fileIndex : 0;
-    const file = files[idx];
+    const file = files[fileIndex ?? 0];
     if (!file) return { ok: false, reason: "out_of_range" };
 
     const absolute = resolvePath(itemFile(id, file.path));
@@ -105,10 +104,3 @@ export function resolvePondItemPath(
   if (!existsSync(absolute)) return null;
   return { saveId, path: absolute };
 }
-
-type QueryParams = Record<string, unknown>;
-export type QueryHandler = (
-  params: QueryParams,
-  event?: IpcMainInvokeEvent,
-) => Promise<unknown> | unknown;
-export type QueryHandlerMap = Record<string, QueryHandler>;

@@ -4,6 +4,7 @@ import {
   type ComparatorId,
   type FieldId,
   type FieldTypeId,
+  type PredicateValue,
 } from "../types";
 import type { SaveLike } from "./save-like";
 
@@ -12,8 +13,16 @@ export type FieldGroup = "content" | "media" | "time" | "people";
 export interface FieldPreset {
   id: string;
   label: string;
-  value: unknown;
+  value: PredicateValue;
 }
+
+export type FieldValue =
+  | string
+  | number
+  | boolean
+  | string[]
+  | null
+  | undefined;
 
 export interface FieldDescriptor {
   id: FieldId;
@@ -22,7 +31,7 @@ export interface FieldDescriptor {
   group: FieldGroup;
   presets?: ReadonlyArray<FieldPreset>;
   comparators: readonly ComparatorId[];
-  project(save: SaveLike): unknown;
+  project(save: SaveLike): FieldValue;
   sqlProjection?: () => SQL | null;
 }
 

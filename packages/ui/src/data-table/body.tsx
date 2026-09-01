@@ -13,9 +13,9 @@ function scrollEdgesOf(element: HTMLDivElement): ScrollEdges {
   const start = element.scrollTop > 1;
   const end =
     element.scrollTop + element.clientHeight < element.scrollHeight - 1;
-  return [start && "start", end && "end"]
-    .filter(Boolean)
-    .join(" ") as ScrollEdges;
+  if (start && end) return "start end";
+  if (start) return "start";
+  return end ? "end" : "";
 }
 
 export function DataTableBody<T>({

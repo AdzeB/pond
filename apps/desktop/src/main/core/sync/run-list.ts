@@ -2,9 +2,10 @@ import type { ConnectedAccount, Source } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
 import { sourceLabel } from "@pond/schema/sources";
 import log from "electron-log/main.js";
-import { enqueue } from "../pipeline/enqueue";
+import { type EnqueueItem, enqueue } from "../pipeline/enqueue";
 import { mergeListKindsOntoExisting } from "../pipeline/list-kinds";
 import {
+  harvestInstagramLikedList,
   harvestSourceList,
   harvestYoutubeLikedList,
 } from "../refresh/scrape-window";
@@ -16,7 +17,7 @@ import {
   patchAccountSync,
   persistWatermark,
 } from "./sync-baseline";
-import { emit } from "./sync-status";
+import { emit, listGapNote } from "./sync-status";
 
 export const LIST_HARVEST_SOURCES = new Set<Source>([
   "youtube",
@@ -141,11 +142,31 @@ export async function syncListSource(
     return;
   }
 
-  const dualHarvest =
-    source === "reddit" || source === "instagram" || source === "tiktok";
+  const gaps: string[] = [];
+  const dualHarvest = source === "reddit" || source === "tiktok";
   let combined = dualHarvest
     ? harvest.entries
     : stampListKind(harvest.entries, "saved");
+  if (source === "instagram") {
+    const liked = await harvestInstagramLikedList(
+      {
+        knownIds: Array.from(knownIds),
+        earlyStop: !baseline.full,
+      },
+      { partition },
+    );
+    if (liked.ok) {
+      combined = unionById(
+        combined,
+        stampListKind(liked.entries, "liked"),
+        (e) => e.sourceId,
+        mergeEntryListKinds,
+      );
+    } else {
+      log.warn(`[pond sync:instagram] likes harvest failed: ${liked.reason}`);
+      gaps.push(listGapNote("Likes", liked.reason));
+    }
+  }
   if (source === "youtube") {
     const liked = await harvestYoutubeLikedList(
       {
@@ -161,6 +182,11 @@ export async function syncListSource(
         (e) => e.sourceId,
         mergeEntryListKinds,
       );
+    } else {
+      log.warn(
+        `[pond sync:youtube] liked list harvest failed: ${liked.reason}`,
+      );
+      gaps.push(listGapNote("Liked videos", liked.reason));
     }
   }
 
@@ -189,9 +215,12 @@ export async function syncListSource(
       accountId,
       source,
       state: "done",
-      message: harvest.reachedEnd
-        ? "All caught up."
-        : "Paused mid-list. Will keep going next sync.",
+      message: [
+        harvest.reachedEnd
+          ? "All caught up."
+          : "Paused mid-list. Will keep going next sync.",
+        ...gaps,
+      ].join(" "),
       lastSyncedAt,
       lastError: null,
     });
@@ -212,10 +241,11 @@ export async function syncListSource(
   });
 
   const bulk = await enqueue(
-    fresh.map((entry) => ({
-      url: entry.url,
-      ...(entry.listKinds ? { listKinds: entry.listKinds } : {}),
-    })),
+    fresh.map((entry) => {
+      const item: EnqueueItem = { url: entry.url };
+      if (entry.listKinds) item.listKinds = entry.listKinds;
+      return item;
+    }),
     { trigger: `sync:${source}`, accountId },
   );
   const succeeded = bulk.created + bulk.existing;
@@ -234,9 +264,12 @@ export async function syncListSource(
     accountId,
     source,
     state: "done",
-    message: harvest.reachedEnd
-      ? `Queued ${succeeded} item${succeeded === 1 ? "" : "s"} for ingest.`
-      : `Queued ${succeeded} item${succeeded === 1 ? "" : "s"}. More remain for the next sync.`,
+    message: [
+      harvest.reachedEnd
+        ? `Queued ${succeeded} item${succeeded === 1 ? "" : "s"} for ingest.`
+        : `Queued ${succeeded} item${succeeded === 1 ? "" : "s"}. More remain for the next sync.`,
+      ...gaps,
+    ].join(" "),
     progress: { current: fresh.length, total: fresh.length },
     lastSyncedAt,
     lastError: null,

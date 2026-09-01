@@ -3,6 +3,11 @@ import type { Save } from "@/lib/types";
 
 type RowStatus = "saving" | "failed";
 
+export interface QueueProjection {
+  saving: QueueRow[];
+  failed: QueueRow[];
+}
+
 export interface QueueRow {
   save: Save;
   name: string;
@@ -12,7 +17,7 @@ export interface QueueRow {
   error: string | null;
 }
 
-export const STAGE_LABELS: Record<Op, string> = {
+export const STAGE_LABELS = {
   harvest_metadata: "Reading page",
   capture_tweet: "Capturing tweet",
   render_text_cover: "Rendering text cover",
@@ -22,7 +27,7 @@ export const STAGE_LABELS: Record<Op, string> = {
   ensure_poster: "Making poster",
   fetch_avatar: "Fetching avatar",
   finalize: "Finalizing",
-};
+} satisfies Record<Op, string>;
 
 export function stageLabel(op: Op, source: string): string {
   if (op === "capture_tweet" && source === "threads") return "Capturing post";
@@ -86,10 +91,7 @@ export function humanizeError(error: string | null): string {
   return tail.charAt(0).toUpperCase() + tail.slice(1);
 }
 
-export function projectQueue(saves: readonly Save[]): {
-  saving: QueueRow[];
-  failed: QueueRow[];
-} {
+export function projectQueue(saves: readonly Save[]): QueueProjection {
   const rows: QueueRow[] = [];
   for (const save of saves) {
     if (save.deletedAt != null) continue;

@@ -174,19 +174,19 @@ export function registerProtocol() {
   void net;
 }
 
-function fileBody(
-  path: string,
-  range?: { start: number; end: number },
-): ReadableStream<Uint8Array> {
-  return Readable.toWeb(
-    createReadStream(path, range),
-  ) as ReadableStream<Uint8Array>;
+function fileBody(path: string, range?: { start: number; end: number }) {
+  // SAFETY: `Readable.toWeb` is typed `ReadableStream<any>`; a file stream yields byte chunks.
+  return Readable.toWeb(createReadStream(path, range)) as ReadableStream<
+    Uint8Array<ArrayBufferLike>
+  >;
 }
 
-function resolveTarget(
-  host: string,
-  file: string,
-): { resolved: string; prefix: string } {
+interface ProtocolTarget {
+  resolved: string;
+  prefix: string;
+}
+
+function resolveTarget(host: string, file: string): ProtocolTarget {
   if (host === META_HOST) {
     const base = join(libraryRoot(), META_DIR);
     return { resolved: resolve(join(base, file)), prefix: normalize(base) };

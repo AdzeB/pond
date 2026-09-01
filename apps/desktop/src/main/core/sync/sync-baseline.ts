@@ -17,7 +17,9 @@ export interface SyncBaseline {
   full: boolean;
 }
 
-export function syncBaselineWhere(account: ConnectedAccount) {
+export function syncBaselineWhere(
+  account: Pick<ConnectedAccount, "id" | "source">,
+) {
   return and(
     eq(saves.source, account.source),
     or(eq(saves.accountId, account.id), isNull(saves.accountId)),

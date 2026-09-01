@@ -4,6 +4,20 @@ import {
   log,
   type RequestLens,
 } from "@/utils/intercept";
+import {
+  asNumber,
+  asText,
+  isRecord,
+  type JsonRecord,
+  type JsonValue,
+  parseJsonRecord,
+} from "@/utils/json";
+
+declare global {
+  interface Window {
+    __pondThreadsInjected?: boolean;
+  }
+}
 
 const ALPHABET =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
@@ -222,45 +236,37 @@ function isLikeMutation(
   return false;
 }
 
-function parseVariables(
-  bodyStr: string | null,
-): Record<string, unknown> | null {
+function parseVariables(bodyStr: string | null): JsonRecord | null {
   if (!bodyStr) return null;
   try {
-    const params = new URLSearchParams(bodyStr);
-    const raw = params.get("variables");
-    if (raw) return JSON.parse(raw) as Record<string, unknown>;
+    const raw = new URLSearchParams(bodyStr).get("variables");
+    if (raw) {
+      const variables: JsonValue = JSON.parse(raw);
+      return isRecord(variables) ? variables : null;
+    }
   } catch {
     return variablesFromJson(bodyStr);
   }
   return variablesFromJson(bodyStr);
 }
 
-function variablesFromJson(bodyStr: string): Record<string, unknown> | null {
-  try {
-    const json = JSON.parse(bodyStr) as Record<string, unknown>;
-    if (json && typeof json === "object") {
-      const vars = json.variables;
-      if (vars && typeof vars === "object") {
-        return vars as Record<string, unknown>;
-      }
-      return json;
-    }
-  } catch {
-    return null;
-  }
-  return null;
+function variablesFromJson(bodyStr: string): JsonRecord | null {
+  const json = parseJsonRecord(bodyStr);
+  if (!json) return null;
+  return isRecord(json.variables) ? json.variables : json;
 }
 
-function firstString(
-  vars: Record<string, unknown>,
-  keys: readonly string[],
-): string | null {
+function firstString(vars: JsonRecord, keys: readonly string[]): string | null {
   for (const key of keys) {
-    const v = vars[key];
-    if (typeof v === "string" && v.length > 0) return v;
-    if (typeof v === "number" && Number.isFinite(v)) return String(v);
-    if (Array.isArray(v) && typeof v[0] === "string") return v[0];
+    const value = vars[key];
+    const text = asText(value);
+    if (text !== undefined && text.length > 0) return text;
+    const numeric = asNumber(value);
+    if (numeric !== undefined) return String(numeric);
+    if (Array.isArray(value)) {
+      const first = asText(value[0]);
+      if (first !== undefined) return first;
+    }
   }
   return null;
 }
@@ -291,8 +297,8 @@ function postUrlFromSaveRequest(
 }
 
 export function inject(): void {
-  if ((window as any).__pondThreadsInjected) return;
-  (window as any).__pondThreadsInjected = true;
+  if (window.__pondThreadsInjected) return;
+  window.__pondThreadsInjected = true;
 
   const recent = new Map<string, number>();
 

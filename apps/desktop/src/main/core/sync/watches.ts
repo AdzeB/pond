@@ -55,12 +55,13 @@ export async function createWatch(args: {
     id: ulid(),
     source: args.source,
     handle,
-    ...(args.kind ? { kind: args.kind } : {}),
     label: args.label ?? null,
     via: args.via ?? null,
     addedAt: new Date().toISOString(),
     sync: { ...DEFAULT_SOURCE_SYNC_PREFS },
   };
+  if (args.kind) watch.kind = args.kind;
+
   await writeWatches((watches) => ({ ...watches, [watch.id]: watch }));
   log.info(`[pond watches] created ${watch.source} watch`, watch.id, handle);
   return watch;

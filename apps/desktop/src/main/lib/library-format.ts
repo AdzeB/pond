@@ -1,4 +1,5 @@
 import type { Save } from "@pond/schema/db";
+import { z } from "zod";
 
 export const INFO_FILE = "info.json";
 export const SOURCE_FILE = "source.json";
@@ -38,19 +39,47 @@ export interface InfoDoc {
   files: InfoFile[];
 }
 
-function toIso(
-  value: Date | string | number | null | undefined,
-): string | null {
-  if (value == null) return null;
-  if (value instanceof Date) return value.toISOString();
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? new Date(value).toISOString() : null;
-  }
-  if (typeof value === "string") {
-    const ms = Date.parse(value);
-    return Number.isFinite(ms) ? new Date(ms).toISOString() : value;
-  }
-  return null;
+const nullableText = z.string().nullable().catch(null);
+
+export const StoredInfoDocSchema = z.object({
+  id: z.string().catch(""),
+  source: z.string().catch(""),
+  sourceId: z.string().catch(""),
+  url: z.string().catch(""),
+  title: nullableText,
+  description: nullableText,
+  author: nullableText,
+  lang: nullableText,
+  siteName: nullableText,
+  notes: nullableText,
+  tags: z.array(z.string()).catch([]),
+  mediaType: nullableText,
+  coverIndex: z.number().int().nonnegative().catch(0),
+  width: z.number().nullable().catch(null),
+  height: z.number().nullable().catch(null),
+  publishedAt: nullableText,
+  savedAt: nullableText,
+  createdAt: nullableText,
+  deletedAt: nullableText,
+  files: z
+    .array(
+      z.object({
+        kind: z.string().catch("other"),
+        path: z.string().catch(""),
+        sha256: z.string().catch(""),
+        size: z.number().catch(0),
+        mimeType: z.string().optional().catch(undefined),
+        width: z.number().optional().catch(undefined),
+        height: z.number().optional().catch(undefined),
+      }),
+    )
+    .catch([]),
+});
+
+export type StoredInfoDoc = z.infer<typeof StoredInfoDocSchema>;
+
+function toIso(value: Date | null | undefined): string | null {
+  return value ? value.toISOString() : null;
 }
 
 export function infoDocFromSave(save: Save, files: InfoFile[]): InfoDoc {
@@ -98,12 +127,15 @@ const EXPORTED_SAVE_FIELDS = [
 
 const EXPORTED_FIELD_SET = new Set<string>(EXPORTED_SAVE_FIELDS);
 
-export function patchTouchesInfo(patch: object): boolean {
+export function patchTouchesInfo(patch: Partial<Save>): boolean {
   return Object.keys(patch).some((key) => EXPORTED_FIELD_SET.has(key));
 }
 
-export function applyPatchToInfo(info: InfoDoc, patch: Partial<Save>): InfoDoc {
-  const next: InfoDoc = { ...info };
+export function applyPatchToInfo(
+  info: StoredInfoDoc,
+  patch: Partial<Save>,
+): InfoDoc {
+  const next: InfoDoc = { schema: INFO_SCHEMA, ...info };
   if (patch.url !== undefined) next.url = patch.url;
   if (patch.title !== undefined) next.title = patch.title ?? null;
   if (patch.description !== undefined)

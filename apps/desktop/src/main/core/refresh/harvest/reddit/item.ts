@@ -1,9 +1,10 @@
 /// <reference lib="dom" />
 
+import type { JsonValue } from "@pond/schema/json";
 import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
 import { bindSourceId } from "../source-id";
-import { inPageRedditNormalize } from "./normalize";
+import { inPageRedditNormalize, type RedditPostPage } from "./normalize";
 
 export function buildExpression(postId: string): string {
   return buildItemExpression(
@@ -16,7 +17,7 @@ export function buildExpression(postId: string): string {
 async function inPageRedditHarvest(
   _postId: string,
   norm: ReturnType<typeof inPageRedditNormalize>,
-): Promise<unknown> {
+): Promise<RedditPostPage | null> {
   const deadline = Date.now() + 12_000;
   while (Date.now() < deadline) {
     if (
@@ -30,7 +31,7 @@ async function inPageRedditHarvest(
   return norm.extractPostMeta();
 }
 
-export function adapt(raw: unknown, ctx: HarvestAdaptCtx) {
+export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx) {
   return captureFromPageDom(raw, ctx);
 }
 

@@ -1,5 +1,11 @@
 import { Store } from "@tanstack/store";
-import { normalise, type SyncActionEvent } from "@/lib/save/reconcile";
+import { z } from "zod";
+import {
+  normalise,
+  type SavePatch,
+  SavePatchesSchema,
+  SyncActionEventSchema,
+} from "@/lib/save/reconcile";
 import { readSnapshot, scheduleSnapshotWrite } from "@/lib/save/snapshot";
 import { applyActionCoalesced } from "@/lib/save/sync-coalesce";
 import type { Save } from "@/lib/types";
@@ -9,10 +15,10 @@ import { bulkUpsertSaves, deleteSave, pool } from "@/stores/pool";
 const SNAPSHOT_TIMEOUT_MS = 2_000;
 const FIRST_PAGE_TIMEOUT_MS = 4_000;
 
-interface SavePageCursor {
+type SavePageCursor = {
   readonly savedAt: number;
   readonly id: string;
-}
+};
 
 interface PagingState {
   readonly ready: boolean;
@@ -97,7 +103,8 @@ export function bootPool(): Promise<void> {
 
 async function primeSnapshot(): Promise<void> {
   const cached = await readSnapshot();
-  applyListRows(cached.slice(0, PAGE_SIZE));
+  const usable = cached.filter((row) => row?.url);
+  applyListRows(usable.slice(0, PAGE_SIZE));
 }
 
 export function loadNextPage(): Promise<void> {
@@ -124,9 +131,9 @@ export function hydrateFullPool(): Promise<void> {
     }
 
     pagingStore.setState((state) => ({ ...state, loading: true }));
-    const rows = (await window.pond.query("saves.list", {})) as Array<
-      Partial<Save>
-    >;
+    const rows = SavePatchesSchema.parse(
+      await window.pond.query("saves.list", {}),
+    );
     const fresh = applyListRows(rows, { pruneMissing: true });
     scheduleSnapshotWrite();
     pagingStore.setState((state) => ({
@@ -144,26 +151,31 @@ export function hydrateFullPool(): Promise<void> {
   return fullPoolInflight;
 }
 
-interface SavePage {
-  readonly rows: Array<Partial<Save>>;
-  readonly nextCursor: SavePageCursor | null;
-  readonly total: number;
-}
+const SavePageSchema = z.object({
+  rows: SavePatchesSchema.catch([]),
+  nextCursor: z
+    .object({ savedAt: z.number(), id: z.string() })
+    .nullish()
+    .catch(null),
+  total: z.number().nullish().catch(null),
+});
 
 async function fetchPage(cursor: SavePageCursor | null): Promise<void> {
   pagingStore.setState((state) => ({ ...state, loading: true }));
   try {
     const params = cursor ? { limit: PAGE_SIZE, cursor } : { limit: PAGE_SIZE };
-    const page = (await window.pond.query(
-      "saves.listPage",
-      params,
-    )) as SavePage;
+    const page = SavePageSchema.parse(
+      await window.pond.query("saves.listPage", params),
+    );
     const fresh = applyListRows(page.rows);
     const nextCursor = page.nextCursor ?? null;
     pagingStore.setState((state) => ({
       ...state,
       loaded: state.loaded + fresh.length,
-      total: Number.isFinite(page.total) ? page.total : state.total,
+      total:
+        page.total != null && Number.isFinite(page.total)
+          ? page.total
+          : state.total,
       nextCursor,
       hasMore: nextCursor !== null,
     }));
@@ -173,7 +185,7 @@ async function fetchPage(cursor: SavePageCursor | null): Promise<void> {
 }
 
 function applyListRows(
-  rows: Array<Partial<Save>>,
+  rows: Array<SavePatch | null>,
   opts: { pruneMissing?: boolean } = {},
 ): Save[] {
   const fresh = rows
@@ -195,7 +207,8 @@ function subscribeToSyncActions(): void {
   if (subscribedToSync) return;
   window.pond.onSyncAction((raw) => {
     try {
-      applyActionCoalesced(raw as SyncActionEvent);
+      const event = SyncActionEventSchema.safeParse(raw);
+      if (event.success) applyActionCoalesced(event.data);
       scheduleSnapshotWrite();
     } catch (err) {
       console.warn("[pond pool] applyAction failed", err, raw);

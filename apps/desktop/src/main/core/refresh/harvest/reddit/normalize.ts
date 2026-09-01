@@ -1,5 +1,38 @@
 /// <reference lib="dom" />
 
+import type { MediaType } from "@pond/schema/db";
+
+interface RedditPostPageMedia {
+  url: string;
+  type: MediaType;
+  poster?: string;
+}
+
+interface RedditPostPageMetrics {
+  likes?: number;
+  comments?: number;
+}
+
+interface RedditPostPageMeta {
+  authorName?: string;
+  authorUrl?: string;
+  subreddit?: string;
+  publishedAt?: string;
+  metrics?: RedditPostPageMetrics;
+  lang?: string;
+}
+
+export interface RedditPostPage {
+  title?: string;
+  description?: string;
+  author?: string;
+  lang?: string;
+  mediaUrl?: string;
+  mediaUrls?: RedditPostPageMedia[];
+  mediaType?: MediaType;
+  meta?: RedditPostPageMeta;
+}
+
 export function inPageRedditNormalize() {
   const getMeta = (selectors: readonly string[]): string | undefined => {
     for (const sel of selectors) {
@@ -10,9 +43,9 @@ export function inPageRedditNormalize() {
     return undefined;
   };
 
-  function extractPostMeta(): Record<string, unknown> | null {
-    const out: Record<string, unknown> = {};
-    const meta: Record<string, unknown> = {};
+  function extractPostMeta(): RedditPostPage | null {
+    const out: RedditPostPage = {};
+    const meta: RedditPostPageMeta = {};
 
     const post = document.querySelector("shreddit-post");
 
@@ -58,7 +91,7 @@ export function inPageRedditNormalize() {
     const created = post?.getAttribute("created-timestamp")?.trim();
     if (created) meta.publishedAt = created;
 
-    const metrics: Record<string, number> = {};
+    const metrics: RedditPostPageMetrics = {};
     const score = post?.getAttribute("score");
     if (score && Number.isFinite(Number(score))) metrics.likes = Number(score);
     const comments = post?.getAttribute("comment-count");
@@ -90,9 +123,9 @@ export function inPageRedditNormalize() {
         ogImage ||
         undefined;
       out.mediaUrl = poster || videoSrc;
-      out.mediaUrls = [
-        { url: videoSrc, type: "video", ...(poster ? { poster } : {}) },
-      ];
+      const entry: RedditPostPageMedia = { url: videoSrc, type: "video" };
+      if (poster) entry.poster = poster;
+      out.mediaUrls = [entry];
       out.mediaType = "video";
     } else if (ogImage) {
       out.mediaUrl = ogImage;

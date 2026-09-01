@@ -1,6 +1,5 @@
 import {
   P3_CHROMA_BOOST,
-  type Prefs,
   resolveActiveTheme,
   themeCssVars,
 } from "@pond/schema/db";
@@ -45,10 +44,7 @@ export function ThemeApplier() {
   useEffect(() => {
     const root = document.documentElement;
 
-    const def = resolveActiveTheme(
-      { preferences: prefs } as Prefs,
-      prefersDark,
-    );
+    const def = resolveActiveTheme({ preferences: prefs }, prefersDark);
     const v = themeCssVars(def);
     const accentC = prefersP3 ? v.accentC * P3_CHROMA_BOOST : v.accentC;
     root.style.setProperty("--ds-bg-l", String(v.bgL));

@@ -1,6 +1,9 @@
 import type { QueryPlan } from "@pond/schema";
-import type { Predicate, Query } from "@pond/schema/filters/types";
-import { encode } from "gpt-tokenizer";
+import {
+  isPredicate,
+  type Predicate,
+  type Query,
+} from "@pond/schema/filters/types";
 import {
   compileStageA,
   dedupePredicates,
@@ -23,18 +26,22 @@ export interface CompileAskResult {
 
 const FACET_TOKEN_BUDGET = 1200;
 
-function tokenLength(text: string): number {
-  return encode(text).length;
+let encoderPromise: Promise<(text: string) => number[]> | null = null;
+
+function loadEncoder(): Promise<(text: string) => number[]> {
+  encoderPromise ??= import("gpt-tokenizer").then((m) => m.encode);
+  return encoderPromise;
 }
 
-function capFacets(
+async function capFacets(
   facets: NlFacets,
   budget: number = FACET_TOKEN_BUDGET,
-): NlFacets {
+): Promise<NlFacets> {
+  const encode = await loadEncoder();
   const take = (values: string[], hardCap: number): string[] => {
     const out: string[] = [];
     for (const value of values.slice(0, hardCap)) {
-      const cost = tokenLength(`${value}, `);
+      const cost = encode(`${value}, `).length;
       if (cost > budget) break;
       budget -= cost;
       out.push(value);
@@ -49,29 +56,29 @@ function capFacets(
 }
 
 function mergeModelQuery(model: Query, deterministic: Predicate[]): Query {
-  const hasGroups = model.rules.some((r) => "rules" in r);
-  if (model.combinator !== "and" || hasGroups) return model;
-  const merged = dedupePredicates([
-    ...(model.rules as Predicate[]),
-    ...deterministic,
-  ]);
-  return { combinator: "and", rules: merged };
+  const predicates = model.rules.filter(isPredicate);
+  if (model.combinator !== "and" || predicates.length !== model.rules.length) {
+    return model;
+  }
+  return {
+    combinator: "and",
+    rules: dedupePredicates([...predicates, ...deterministic]),
+  };
 }
 
 function repairEmpty(
   query: Query,
   countMatches: (query: Query) => number,
 ): Query {
-  if (query.rules.some((r) => "rules" in r)) return query;
-  const rules = [...(query.rules as Predicate[])];
-  if (rules.length <= 1) return query;
+  const predicates = query.rules.filter(isPredicate);
+  if (predicates.length !== query.rules.length || predicates.length <= 1) {
+    return query;
+  }
   let current: Query = query;
-  while (
-    (current.rules as Predicate[]).length > 1 &&
-    countMatches(current) === 0
-  ) {
-    const next = (current.rules as Predicate[]).slice(0, -1);
-    current = { combinator: "and", rules: next };
+  let rules = predicates;
+  while (rules.length > 1 && countMatches(current) === 0) {
+    rules = rules.slice(0, -1);
+    current = { combinator: "and", rules };
   }
   return current;
 }
@@ -82,7 +89,7 @@ export async function compileAsk(
   ports: AskPorts,
 ): Promise<CompileAskResult> {
   const stageA = compileStageA(input, facets);
-  let rules: Predicate[] = [...(stageA.query.rules as Predicate[])];
+  let rules: Predicate[] = [...stageA.query.rules];
   let residual = stageA.residual;
 
   const stageB =
@@ -90,8 +97,11 @@ export async function compileAsk(
       ? ports.resolveFacets(residual, facets).catch(() => null)
       : Promise.resolve(null);
 
-  const compiled = ports.compilePlan
-    ? ports.compilePlan(input, capFacets(facets)).catch(() => null)
+  const compilePlan = ports.compilePlan;
+  const compiled = compilePlan
+    ? capFacets(facets)
+        .then((capped) => compilePlan(input, capped))
+        .catch(() => null)
     : Promise.resolve(null);
 
   const [b, modelPlan] = await Promise.all([stageB, compiled]);
