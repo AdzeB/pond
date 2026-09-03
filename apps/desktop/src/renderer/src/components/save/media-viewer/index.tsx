@@ -18,6 +18,7 @@ import { useResolvedTheme } from "@/hooks/use-resolved-theme";
 import { copyVideoFrame, saveVideoFrame } from "@/lib/media/capture-frame";
 import { type ChapterCue, chaptersForSave } from "@/lib/media/chapters-vtt";
 import { buildMediaUnits } from "@/lib/media/units";
+import { previewUrlFor } from "@/lib/media/url";
 import { SHORTCUTS } from "@/lib/save/shortcuts";
 import type { Save } from "@/lib/types";
 import {
@@ -57,7 +58,7 @@ export function MediaViewer({
         const file = save.files[fileIndex];
         return [
           {
-            src: u.url,
+            src: u.requiresGeneratedPreview ? previewUrlFor(u.url) : u.url,
             fileIndex,
             isVideo: u.isVideo,
             posterUrl: u.posterUrl,
@@ -117,6 +118,7 @@ export function MediaViewer({
       <Frame>
         <Slide
           slide={only}
+          saveId={save.id}
           active
           inView
           title={save.title}
@@ -284,6 +286,7 @@ function Carousel({
           <Slide
             key={s.src}
             slide={s}
+            saveId={save.id}
             active={i === active}
             inView={Math.abs(i - active) <= 1}
             title={save.title}

@@ -109,6 +109,9 @@ export const selection = {
 export function useSelectionSize(): number {
   return useSelector(selectionStore, (s) => s.ids.size);
 }
+export function useSelectionAnchor(): string | null {
+  return useSelector(selectionStore, (s) => s.anchor);
+}
 export function useIsAnchor(id: string): boolean {
   return useSelector(selectionStore, (s) => s.anchor === id);
 }

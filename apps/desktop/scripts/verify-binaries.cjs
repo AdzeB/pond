@@ -1,4 +1,4 @@
-const { existsSync, statSync } = require("node:fs");
+const { existsSync, readdirSync, rmSync, statSync } = require("node:fs");
 const { join } = require("node:path");
 
 // ffmpeg ships in the bundle (yt-dlp is fetched at runtime into userData,
@@ -7,6 +7,7 @@ const { join } = require("node:path");
 exports.default = async function verifyBinaries(context) {
   const platform = normalizePlatform(context.electronPlatformName);
   const resourcesDir = resolveResourcesDir(context, platform);
+  pruneOnnxRuntime(resourcesDir, platform, normalizeArch(context.arch));
   const ffmpegPath = join(resourcesDir, "bin", "ffmpeg");
   const nativeHostPath = join(resourcesDir, "bin", "pond-native-host");
 
@@ -17,6 +18,38 @@ exports.default = async function verifyBinaries(context) {
 
   console.log(`[pond verify] bundled ffmpeg OK (${platform})`);
 };
+
+const ARCH_NAMES = ["ia32", "x64", "armv7l", "arm64", "universal"];
+
+function normalizeArch(arch) {
+  return typeof arch === "number" ? ARCH_NAMES[arch] : arch;
+}
+
+function pruneOnnxRuntime(resourcesDir, platform, arch) {
+  const runtimeRoot = join(
+    resourcesDir,
+    "app.asar.unpacked",
+    "node_modules",
+    "onnxruntime-node",
+    "bin",
+    "napi-v6",
+  );
+  if (!existsSync(runtimeRoot)) return;
+
+  for (const platformName of readdirSync(runtimeRoot)) {
+    const platformDir = join(runtimeRoot, platformName);
+    if (platformName !== platform) {
+      rmSync(platformDir, { recursive: true, force: true });
+      continue;
+    }
+    if (!arch || arch === "universal") continue;
+    for (const archName of readdirSync(platformDir)) {
+      if (archName !== arch) {
+        rmSync(join(platformDir, archName), { recursive: true, force: true });
+      }
+    }
+  }
+}
 
 function normalizePlatform(electronPlatformName) {
   if (electronPlatformName === "mas") return "darwin";

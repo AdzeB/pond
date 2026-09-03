@@ -50,16 +50,29 @@ const StoredJsonText = z.preprocess((text) => {
   }
 }, StoredRawJsonSchema);
 
-export function backfillRawSlim(sqlite: Database.Database): void {
+export interface RawSlimBackfillResult {
+  processed: number;
+  hasMore: boolean;
+}
+
+export function backfillRawSlimBatch(
+  sqlite: Database.Database,
+  limit = 500,
+): RawSlimBackfillResult {
+  const batchLimit = Math.max(1, Math.floor(limit));
   const rows = sqlite
     .prepare(
-      `SELECT id, raw_json AS rawJson FROM saves WHERE raw_slim IS NULL AND raw_json IS NOT NULL`,
+      `SELECT id, raw_json AS rawJson
+       FROM saves
+       WHERE raw_slim IS NULL AND raw_json IS NOT NULL
+       ORDER BY saved_at DESC, id DESC
+       LIMIT ?`,
     )
-    .all()
+    .all(batchLimit)
     .map((row) => BackfillRowSchema.safeParse(row))
     .filter((parsed) => parsed.success)
     .map((parsed) => parsed.data);
-  if (rows.length === 0) return;
+  if (rows.length === 0) return { processed: 0, hasMore: false };
 
   const update = sqlite.prepare(`UPDATE saves SET raw_slim = ? WHERE id = ?`);
   const run = sqlite.transaction((batch: typeof rows) => {
@@ -72,4 +85,5 @@ export function backfillRawSlim(sqlite: Database.Database): void {
     }
   });
   run(rows);
+  return { processed: rows.length, hasMore: rows.length === batchLimit };
 }

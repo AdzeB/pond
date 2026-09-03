@@ -26,8 +26,20 @@ export function ChangeReview({
   const applied = changes.filter((c) => c.status === "applied");
   const eligible = pending.filter((c) => selected.has(c.id));
   const failures = pending.filter((c) => c.error && selected.has(c.id));
-  function display(change: AssistantChange, value: string | string[] | null) {
-    if (!Array.isArray(value)) return value || "Untitled";
+  function display(
+    change: AssistantChange,
+    value: string | string[] | number | null,
+  ) {
+    if (change.field === "rating")
+      return value == null ? "None" : String(value);
+    if (change.field === "trash")
+      return value === "trashed" ? "Trash" : "Library";
+    if (change.field === "action") return value ? String(value) : "None";
+    if (!Array.isArray(value)) {
+      if (change.field === "note" || change.field === "comments")
+        return value || "None";
+      return value || "Untitled";
+    }
     return (
       value
         .map((id) =>
@@ -39,6 +51,16 @@ export function ChangeReview({
         .join(", ") || "None"
     );
   }
+  const fieldLabel: Record<string, string> = {
+    title: "Title",
+    note: "Note",
+    tags: "Tags",
+    folders: "Folders",
+    rating: "Rating",
+    comments: "Comments",
+    trash: "Trash",
+    action: "Library",
+  };
   async function run(
     action: "apply" | "undo" | "dismiss",
     rows: AssistantChange[],
@@ -66,7 +88,14 @@ export function ChangeReview({
       <div className={styles["review-header"]}>
         <span className={styles["review-eyebrow"]}>LIBRARY CHANGES</span>
         <h3>Review before applying</h3>
-        <p>Only selected changes will be applied. You can undo them here.</p>
+        <p>
+          {changes.some(
+            (change) =>
+              change.field === "action" && change.action === "purgeTrash",
+          )
+            ? "Empty trash removes Saves forever. Only selected changes will be applied."
+            : "Only selected changes will be applied. You can undo them here."}
+        </p>
       </div>
       <div className={styles["change-list"]}>
         {changes.map((change) => (
@@ -93,20 +122,16 @@ export function ChangeReview({
               />
               <button
                 type="button"
-                disabled={disabled}
-                onClick={() => openSave(change.saveId)}
+                disabled={disabled || !change.saveId}
+                onClick={() => {
+                  if (change.saveId) openSave(change.saveId);
+                }}
               >
                 {change.title}
               </button>
             </div>
             <div className={styles["change-field"]}>
-              <span>
-                {change.field === "title"
-                  ? "Title"
-                  : change.field === "tags"
-                    ? "Tags"
-                    : "Folders"}
-              </span>
+              <span>{fieldLabel[change.field] ?? change.field}</span>
               <span role="status">
                 {working === change.id
                   ? "Updating"

@@ -63,6 +63,7 @@ export function InspectorToggle({ open }: { open: boolean }) {
         icon
         size="sm"
         variant="ghost"
+        rounding="rounded"
         aria-label="Toggle Assistant"
         aria-pressed={open}
         onClick={() => libraryChrome.toggleRightPane()}

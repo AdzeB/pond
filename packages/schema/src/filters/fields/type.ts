@@ -5,6 +5,10 @@ import { defineField } from "./descriptor";
 const TYPE_PRESETS = [
   { id: "image", label: "Image", value: "image" },
   { id: "video", label: "Video", value: "video" },
+  { id: "audio", label: "Audio", value: "audio" },
+  { id: "document", label: "Document", value: "document" },
+  { id: "font", label: "Font", value: "font" },
+  { id: "file", label: "File", value: "file" },
   { id: "link", label: "Website", value: "link" },
   { id: "text", label: "Text", value: "text" },
 ] as const;

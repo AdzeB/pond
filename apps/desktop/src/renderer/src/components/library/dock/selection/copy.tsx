@@ -53,8 +53,7 @@ export function SelectionCopySection() {
   return (
     <>
       <TrayCard.Header>
-        <TrayCard.Back disabled={busy} onClick={() => dock.closeViewMenu()} />
-        <TrayCard.Title position="center">Copy</TrayCard.Title>
+        <TrayCard.Title>Copy</TrayCard.Title>
         <TrayCard.Close disabled={busy} />
         <TrayCard.Separator />
       </TrayCard.Header>

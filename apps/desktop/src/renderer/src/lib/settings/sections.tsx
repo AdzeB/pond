@@ -4,6 +4,7 @@ import { appearanceSection } from "@/lib/settings/config-appearance";
 import { enrichmentSection } from "@/lib/settings/config-enrichment";
 import { generalSection } from "@/lib/settings/config-general";
 import { imagesSection } from "@/lib/settings/config-images";
+import { mcpSection } from "@/lib/settings/config-mcp";
 import { storageSection } from "@/lib/settings/config-storage";
 import { trashSection } from "@/lib/settings/config-trash";
 import { videosSection } from "@/lib/settings/config-videos";
@@ -16,6 +17,11 @@ const TagsSection = lazy(() =>
 const AgentSection = lazy(() =>
   import("@/components/settings/agent").then((m) => ({
     default: m.AgentSection,
+  })),
+);
+const McpSection = lazy(() =>
+  import("@/components/settings/mcp").then((m) => ({
+    default: m.McpSection,
   })),
 );
 
@@ -32,17 +38,33 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
     },
   ],
   [
-    "agent",
+    "models",
     {
       component: AgentSection,
-      title: "Assistant",
-      description: "Paste a provider key or stay on Minnow on this Mac.",
-      keywords: ["ai", "openai", "anthropic", "gemini", "minnow", "key", "mcp"],
+      title: "Models",
+      description: "Paste a key, or point at Ollama or LM Studio on this Mac.",
+      keywords: [
+        "ai",
+        "agent",
+        "openai",
+        "anthropic",
+        "gemini",
+        "ollama",
+        "key",
+        "provider",
+      ],
     },
   ],
   ["trash", trashSection],
   ["storage", storageSection],
   ["videos", videosSection],
   ["images", imagesSection],
-  ["enrichment", enrichmentSection],
+  ["search", enrichmentSection],
+  [
+    "mcp",
+    {
+      ...mcpSection,
+      component: McpSection,
+    },
+  ],
 ]);

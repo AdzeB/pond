@@ -6,6 +6,7 @@ import {
   readFile,
   rm,
   stat,
+  unlink,
   writeFile,
 } from "node:fs/promises";
 import { extname, join } from "node:path";
@@ -99,10 +100,12 @@ async function writeInfoFiles(
   const dir = itemDir(id);
   await mkdir(dir, { recursive: true });
   await writeFile(join(dir, INFO_FILE), JSON.stringify(info, null, 2));
-  await writeFile(
-    join(dir, SOURCE_FILE),
-    JSON.stringify(rawSource ?? null, null, 2),
-  );
+  const sourcePath = join(dir, SOURCE_FILE);
+  if (rawSource == null) {
+    await unlink(sourcePath).catch(() => {});
+  } else {
+    await writeFile(sourcePath, JSON.stringify(rawSource, null, 2));
+  }
 }
 
 export async function writeSaveInfo(save: Save): Promise<void> {
@@ -210,7 +213,9 @@ async function readSourceDoc(id: string): Promise<RawJson | null> {
   } catch {
     return null;
   }
-  const parsed = StoredRawJsonSchema.safeParse(JSON.parse(text));
+  const decoded: unknown = JSON.parse(text);
+  if (decoded == null) return null;
+  const parsed = StoredRawJsonSchema.safeParse(decoded);
   if (!parsed.success) {
     log.warn("[pond library] corrupt source.json", id, parsed.error.message);
     return null;

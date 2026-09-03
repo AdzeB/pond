@@ -27,6 +27,20 @@
   white-space: nowrap;
 }
 
+.name[data-index] {
+  gap: 7px;
+}
+
+.name[data-index] .text {
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-gray-11);
+}
+
+.name[data-index] .meta {
+  font-size: var(--ds-text-mini);
+  color: var(--ds-gray-8);
+}
+
 .input {
   flex: 1;
   min-width: 0;

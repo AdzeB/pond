@@ -34,7 +34,7 @@ import { classifyUrlToSource } from "./extractors";
 import { UnsupportedError } from "./extractors/errors";
 import { listKindsFromTrigger } from "./list-kinds";
 import { stashPageCookies } from "./page-cookies";
-import { kickReconciler } from "./reconciler";
+import { kickReconciler } from "./reconciler-client";
 import {
   applySeedToExistingSave,
   type EnqueueSeed,

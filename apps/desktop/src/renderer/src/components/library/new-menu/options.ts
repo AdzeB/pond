@@ -14,7 +14,7 @@ export const NEW_ACTION_GROUPS = [
       {
         id: "files",
         label: "Import Files",
-        keywords: "from image video text media",
+        keywords: "from image video audio pdf font document text file media",
       },
       {
         id: "folders",
@@ -30,6 +30,16 @@ export const NEW_ACTION_GROUPS = [
         id: "clipboard",
         label: "Import from Clipboard",
         keywords: "paste image files",
+      },
+      {
+        id: "bookmarks",
+        label: "Import Bookmarks",
+        keywords: "netscape chrome safari html bookmark file",
+      },
+      {
+        id: "page-assets",
+        label: "Import Page Assets",
+        keywords: "extract images website scrape batch",
       },
       {
         id: "eagle",

@@ -24,16 +24,25 @@ export function fileIndexFromSlide(
   return Number.isFinite(idx) ? idx : null;
 }
 
+function omitCopyImage(items: MenuItemSpec[]): MenuItemSpec[] {
+  const out: MenuItemSpec[] = [];
+  for (const item of items) {
+    if (item.type === "submenu" || item.type === "group") {
+      out.push({ ...item, items: omitCopyImage(item.items) });
+      continue;
+    }
+    if ("label" in item && item.label === "Copy Image") continue;
+    out.push(item);
+  }
+  return out;
+}
+
 export function buildViewerMenu(
   save: Save,
   { clipboardEmpty, video, fileIndex }: BuildViewerMenuOptions,
 ): MenuItemSpec[] {
   const base = buildSaveMenu(save, { clipboardEmpty, fileIndex });
   if (!video?.videoWidth) return base;
-
-  const withoutCopyImage = base.filter(
-    (item) => !("label" in item && item.label === "Copy Image"),
-  );
 
   const frameItems: MenuItemSpec[] = [
     {
@@ -53,5 +62,5 @@ export function buildViewerMenu(
     { type: "separator" },
   ];
 
-  return [...frameItems, ...withoutCopyImage];
+  return [...frameItems, ...omitCopyImage(base)];
 }

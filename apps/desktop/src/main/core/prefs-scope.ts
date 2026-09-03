@@ -40,6 +40,7 @@ export interface StoredPrefs {
 const APP_PREF_KEYS = [
   "window",
   "quickCapture",
+  "autoImport",
   "api",
   "updates",
   "agent",
@@ -124,6 +125,7 @@ function mergeAll(base: Prefs, patch: DeepPartial<Prefs>): Prefs {
     trash: { ...base.trash, ...patch.trash },
     window: { ...base.window, ...patch.window },
     quickCapture: { ...base.quickCapture, ...patch.quickCapture },
+    autoImport: { ...base.autoImport, ...patch.autoImport },
     tagPicker: { ...base.tagPicker, ...patch.tagPicker },
     allTags: { ...base.allTags, ...patch.allTags },
     sourcesView: { ...base.sourcesView, ...patch.sourcesView },

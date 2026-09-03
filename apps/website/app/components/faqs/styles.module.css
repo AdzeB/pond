@@ -8,10 +8,6 @@
   border-bottom: 1px solid var(--ds-gray-a4);
 }
 
-.header {
-  margin: 0;
-}
-
 .trigger {
   display: flex;
   gap: 16px;
@@ -24,7 +20,12 @@
   color: var(--ds-gray-12);
   text-align: left;
   cursor: pointer;
+  list-style: none;
   background: transparent;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
 
   &:hover {
     color: var(--ds-gray-11);
@@ -42,23 +43,12 @@
   transition: transform 160ms ease;
 }
 
-.trigger[data-panel-open] .plus,
-.trigger[data-open] .plus {
+.item[open] .plus {
   transform: rotate(45deg);
 }
 
 .panel {
-  height: var(--accordion-panel-height);
   overflow: hidden;
-  transition:
-    height var(--ds-duration-medium) var(--ds-easing-snap),
-    opacity var(--ds-duration-snap) var(--ds-easing-standard);
-
-  &[data-starting-style],
-  &[data-ending-style] {
-    height: 0;
-    opacity: 0;
-  }
 }
 
 .answer {

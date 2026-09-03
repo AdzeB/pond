@@ -1,6 +1,10 @@
 import { KEYCHAIN_AGENT_PREFIX } from "../../../shared/constants";
 import { deleteSecret, getSecret, getSecrets, setSecret } from "../../keychain";
 import { getPrefs, setPrefs } from "../prefs";
+import {
+  modelsFromProviderResponse,
+  type ProviderModel,
+} from "./provider-models";
 
 const AGENT_PROVIDERS = [
   "openai",
@@ -70,6 +74,7 @@ export async function saveKey(
   await setPrefs({
     agent: {
       enabledKeys: { ...prefs.agent.enabledKeys, [provider]: true },
+      ...(prefs.agent.languageModel ? {} : { languageModel: provider }),
     },
   });
   return { ok: true };
@@ -101,11 +106,6 @@ export async function setKeyEnabled(
   return { ok: true };
 }
 
-export async function allowCloud(): Promise<{ ok: boolean }> {
-  await setPrefs({ agent: { cloudAllowed: true } });
-  return { ok: true };
-}
-
 export async function keyFor(
   provider: AgentProviderId,
 ): Promise<string | null> {
@@ -126,6 +126,44 @@ export async function verifyKey(
   });
 }
 
+export async function listProviderModels(
+  provider: AgentProviderId,
+): Promise<{ ok: boolean; models: ProviderModel[]; error?: string }> {
+  const prefs = await getPrefs();
+  const key = (await getSecret(accountFor(provider))) ?? "";
+  const fetched = await fetchProviderModels({
+    provider,
+    key,
+    ollamaBaseUrl: prefs.agent.ollamaBaseUrl,
+    lmstudioBaseUrl: prefs.agent.lmstudioBaseUrl,
+    compatibleBaseUrl: prefs.agent.compatibleBaseUrl,
+  });
+  if (!fetched.ok) return { ok: false, models: [], error: fetched.error };
+  return {
+    ok: true,
+    models: modelsFromProviderResponse(provider, fetched.json),
+  };
+}
+
+export async function listAvailableModels(): Promise<{
+  providers: Array<{
+    provider: AgentProviderId;
+    ok: boolean;
+    models: ProviderModel[];
+    error?: string;
+  }>;
+}> {
+  const rows = await listKeys();
+  const connected = rows.filter((row) => row.hasKey && row.enabled);
+  const providers = await Promise.all(
+    connected.map(async (row) => {
+      const listed = await listProviderModels(row.provider);
+      return { provider: row.provider, ...listed };
+    }),
+  );
+  return { providers };
+}
+
 export async function checkProviderKey(input: {
   provider: AgentProviderId;
   key: string;
@@ -133,12 +171,24 @@ export async function checkProviderKey(input: {
   lmstudioBaseUrl: string;
   compatibleBaseUrl: string;
 }): Promise<{ ok: boolean; error?: string }> {
+  const fetched = await fetchProviderModels(input);
+  return fetched.ok ? { ok: true } : { ok: false, error: fetched.error };
+}
+
+async function fetchProviderModels(input: {
+  provider: AgentProviderId;
+  key: string;
+  ollamaBaseUrl: string;
+  lmstudioBaseUrl: string;
+  compatibleBaseUrl: string;
+}): Promise<{ ok: boolean; json?: unknown; error?: string }> {
   const { provider, key } = input;
   try {
+    let res: Response;
     if (provider === "ollama" || provider === "lmstudio") {
       const base =
         provider === "ollama" ? input.ollamaBaseUrl : input.lmstudioBaseUrl;
-      const res = await fetch(`${base.replace(/\/$/, "")}/models`, {
+      res = await fetch(`${base.replace(/\/$/, "")}/models`, {
         headers: key ? { Authorization: `Bearer ${key}` } : {},
       });
       if (!res.ok) {
@@ -147,10 +197,8 @@ export async function checkProviderKey(input: {
           error: `${label(provider)} did not accept this endpoint.`,
         };
       }
-      return { ok: true };
-    }
-    if (provider === "anthropic") {
-      const res = await fetch("https://api.anthropic.com/v1/models", {
+    } else if (provider === "anthropic") {
+      res = await fetch("https://api.anthropic.com/v1/models", {
         headers: {
           "x-api-key": key,
           "anthropic-version": "2023-06-01",
@@ -162,10 +210,8 @@ export async function checkProviderKey(input: {
           error: "Anthropic rejected this key. Check it in Settings.",
         };
       }
-      return { ok: true };
-    }
-    if (provider === "gemini") {
-      const res = await fetch(
+    } else if (provider === "gemini") {
+      res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`,
       );
       if (!res.ok) {
@@ -174,22 +220,28 @@ export async function checkProviderKey(input: {
           error: "Gemini rejected this key. Check it in Settings.",
         };
       }
-      return { ok: true };
+    } else {
+      const base =
+        provider === "compatible" && input.compatibleBaseUrl
+          ? input.compatibleBaseUrl
+          : "https://api.openai.com/v1";
+      res = await fetch(`${base.replace(/\/$/, "")}/models`, {
+        headers: { Authorization: `Bearer ${key}` },
+      });
+      if (!res.ok) {
+        return {
+          ok: false,
+          error: `${label(provider)} rejected this key. Check it in Settings.`,
+        };
+      }
     }
-    const base =
-      provider === "compatible" && input.compatibleBaseUrl
-        ? input.compatibleBaseUrl
-        : "https://api.openai.com/v1";
-    const res = await fetch(`${base.replace(/\/$/, "")}/models`, {
-      headers: { Authorization: `Bearer ${key}` },
-    });
-    if (!res.ok) {
-      return {
-        ok: false,
-        error: `${label(provider)} rejected this key. Check it in Settings.`,
-      };
+    let json: unknown;
+    try {
+      json = await res.json();
+    } catch {
+      json = null;
     }
-    return { ok: true };
+    return { ok: true, json };
   } catch {
     return {
       ok: false,

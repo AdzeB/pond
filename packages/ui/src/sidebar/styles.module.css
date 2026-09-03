@@ -1,10 +1,16 @@
 .root {
   --sidebar-height-lg: 32px;
   --sidebar-height-md: 28px;
+
   display: flex;
   flex-direction: column;
   width: 220px;
   height: 100%;
+  min-height: 0;
+
+  &[data-width="full"] {
+    width: 100%;
+  }
 }
 
 .toolbar {
@@ -17,6 +23,7 @@
 
 .header {
   display: flex;
+  flex: none;
   gap: 8px;
   align-items: center;
   justify-content: space-between;
@@ -24,7 +31,10 @@
 }
 
 .scroll {
+  display: flex;
   flex: 1;
+  flex-direction: column;
+  gap: 1px;
   min-height: 0;
   padding-bottom: 24px;
   overflow-y: auto;
@@ -136,6 +146,20 @@ button.label:hover {
   background: var(--ds-gray-a3);
 }
 
+.group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: var(--sidebar-height-md);
+
+  > .label {
+    flex: none;
+    width: auto;
+    max-width: calc(100% - var(--sidebar-height-md));
+  }
+}
+
 .panel {
   display: flex;
   flex-direction: column;
@@ -150,9 +174,12 @@ button.label:hover {
   width: 100%;
   height: var(--sidebar-height-md);
   padding: 0 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: var(--ds-text-small);
   font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-10);
+  white-space: nowrap;
   border-radius: var(--ds-radius-md);
   transition:
     color var(--ds-duration-medium) var(--ds-easing-standard),

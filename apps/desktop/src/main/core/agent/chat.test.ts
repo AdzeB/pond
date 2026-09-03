@@ -8,7 +8,11 @@ import { sendMessage, stopMessage } from "./chat";
 
 const mock = vi.hoisted(() => ({
   prefs: {
-    agent: { enabledKeys: {}, cloudAllowed: false, languageModel: "minnow" },
+    agent: {
+      enabledKeys: {} as Record<string, boolean>,
+      languageModel: "openai",
+      modelIds: {} as Record<string, string>,
+    },
   },
   complete: vi.fn(),
   append: vi.fn(),
@@ -28,7 +32,20 @@ vi.mock("../../db", () => ({
 vi.mock("../prefs", () => ({ getPrefs: async () => mock.prefs }));
 vi.mock("../folders", () => ({ listFolders: async () => [] }));
 vi.mock("../../lib/broadcast", () => ({ broadcast: mock.broadcast }));
-vi.mock("./keys", () => ({ keyFor: mock.key }));
+vi.mock("./keys", () => ({
+  keyFor: mock.key,
+  parseProvider: (value: string) =>
+    [
+      "openai",
+      "anthropic",
+      "gemini",
+      "ollama",
+      "lmstudio",
+      "compatible",
+    ].includes(value)
+      ? value
+      : null,
+}));
 vi.mock("./complete", () => ({ completeWithTools: mock.complete }));
 vi.mock("./persist", () => ({
   appendMessage: mock.append,
@@ -59,14 +76,17 @@ const request: AssistantSend = {
   attachmentIds: [],
   scope: { kind: "library" },
   provider: "openai",
-  allowCloudOnce: false,
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
   mock.history = [];
   mock.question = undefined;
-  mock.prefs.agent.cloudAllowed = false;
+  mock.prefs.agent = {
+    enabledKeys: {},
+    languageModel: "openai",
+    modelIds: {},
+  };
   mock.key.mockResolvedValue("test-key");
   mock.append.mockResolvedValue(undefined);
   mock.complete.mockImplementation(async (input) => {
@@ -76,18 +96,8 @@ beforeEach(() => {
 });
 
 describe("Assistant requests", () => {
-  it("does not append a message or contact a provider before consent", async () => {
-    expect(await sendMessage(request)).toEqual({
-      chatId: "chat",
-      needsCloud: true,
-    });
-    expect(mock.append).not.toHaveBeenCalled();
-    expect(mock.complete).not.toHaveBeenCalled();
-  });
-  it("allows one request without changing the cloud preference", async () => {
-    expect(
-      await sendMessage({ ...request, allowCloudOnce: true }),
-    ).toMatchObject({ accepted: true });
+  it("sends to the chosen provider without a cloud consent gate", async () => {
+    expect(await sendMessage(request)).toMatchObject({ accepted: true });
     expect(mock.append).toHaveBeenCalledTimes(2);
     expect(mock.append).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -104,24 +114,27 @@ describe("Assistant requests", () => {
         }),
       }),
     );
-    expect(mock.prefs.agent.cloudAllowed).toBe(false);
-    expect(await sendMessage({ ...request, requestId: "next" })).toHaveProperty(
-      "needsCloud",
-      true,
-    );
+    expect(mock.complete).toHaveBeenCalledOnce();
+    expect(mock.complete.mock.calls[0]?.[0].model).toBe("gpt-5.6-sol");
+  });
+  it("uses the saved model id for the chosen provider", async () => {
+    mock.prefs.agent = {
+      enabledKeys: {},
+      languageModel: "openai",
+      modelIds: { openai: "gpt-5.4-mini" },
+    };
+    expect(await sendMessage(request)).toMatchObject({ accepted: true });
+    expect(mock.complete.mock.calls[0]?.[0].model).toBe("gpt-5.4-mini");
   });
   it("checks provider keys before adding a user message", async () => {
     mock.key.mockResolvedValue(null);
-    expect(
-      await sendMessage({ ...request, allowCloudOnce: true }),
-    ).toHaveProperty("error");
+    expect(await sendMessage(request)).toHaveProperty("error");
     expect(mock.append).not.toHaveBeenCalled();
   });
   it("rejects empty attachment scope instead of searching the whole library", async () => {
     expect(
       await sendMessage({
         ...request,
-        provider: "minnow",
         scope: { kind: "attachments" },
       }),
     ).toHaveProperty("error");
@@ -143,14 +156,13 @@ describe("Assistant requests", () => {
         ),
       );
     });
-    const result = sendMessage({ ...request, provider: "minnow" });
+    const result = sendMessage(request);
     await ready;
     expect(stopMessage("chat", "different-request")).toEqual({ ok: false });
     expect(
       await sendMessage({
         ...request,
         requestId: "duplicate",
-        provider: "minnow",
       }),
     ).toHaveProperty("error");
     expect(stopMessage("chat", "request")).toEqual({ ok: true });
@@ -174,7 +186,7 @@ it("persists a question even when there is no duplicate prose answer", async () 
     options: ["Film", "Architecture"],
   };
   mock.complete.mockResolvedValue("");
-  expect(await sendMessage({ ...request, provider: "minnow" })).toMatchObject({
+  expect(await sendMessage(request)).toMatchObject({
     accepted: true,
   });
   expect(mock.append).toHaveBeenLastCalledWith(
@@ -200,7 +212,7 @@ it("links a freeform reply to the latest unanswered question", async () => {
       },
     },
   ];
-  await sendMessage({ ...request, provider: "minnow", content: "Typography" });
+  await sendMessage({ ...request, content: "Typography" });
   expect(mock.append).toHaveBeenNthCalledWith(
     1,
     expect.objectContaining({
@@ -215,7 +227,6 @@ it("links a freeform reply to the latest unanswered question", async () => {
 it("rejects stale or foreign question replies before appending", async () => {
   const result = await sendMessage({
     ...request,
-    provider: "minnow",
     replyToQuestion: "foreign",
   });
   expect(result.error).toMatch(/no longer awaiting/);

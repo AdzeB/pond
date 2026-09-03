@@ -28,12 +28,9 @@ allowBuilds:
   core-js: false
   electron: true
   electron-winstaller: true
+  es5-ext: false
   esbuild: true
   ffmpeg-static: true
-  # Optional bundled-AI dependency. Like better-sqlite3, we don't let pnpm run
-  # its node-gyp build (that yields a plain-Node binary); node-llama-cpp resolves
-  # the correct prebuilt binaries for this Electron ABI itself on first use.
-  node-llama-cpp: false
   onnxruntime-node: true
   protobufjs: true
   # Native module pulled in transitively by metascraper (via url-regex-safe).

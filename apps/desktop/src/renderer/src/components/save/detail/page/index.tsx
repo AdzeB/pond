@@ -2,6 +2,7 @@ import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useParams } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SaveArchiveViewer } from "@/components/save/archive-viewer";
+import { StoredFileViewer } from "@/components/save/file-viewer";
 import { MediaViewer, type ViewerNav } from "@/components/save/media-viewer";
 import {
   buildViewerMenu,
@@ -12,6 +13,8 @@ import { SpecContextMenu } from "@/components/shared/spec-context-menu";
 import { AppShell } from "@/components/shell/app-shell";
 import { useSave } from "@/hooks/use-saves";
 import { hasArchive } from "@/lib/media/archive";
+import { storedFileViewerKind } from "@/lib/media/file-viewer";
+import { pickPrimaryFile } from "@/lib/media/units";
 import { SHORTCUTS } from "@/lib/save/shortcuts";
 import { isTextOnlySave } from "@/lib/save/text";
 import { closeSave, openSave } from "@/lib/ui/save-nav";
@@ -109,6 +112,9 @@ export function SaveDetailPage() {
     );
   }
 
+  const storedFile = pickPrimaryFile(save);
+  const storedViewerKind = storedFileViewerKind(storedFile);
+
   return (
     <AppShell.Content>
       <SpecContextMenu
@@ -136,6 +142,8 @@ export function SaveDetailPage() {
               <SaveArchiveViewer save={save} />
             ) : isTextOnlySave(save) ? (
               <TextViewer save={save} />
+            ) : storedFile && storedViewerKind ? (
+              <StoredFileViewer save={save} file={storedFile} />
             ) : (
               <MediaViewer
                 save={save}

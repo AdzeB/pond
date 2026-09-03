@@ -1,4 +1,4 @@
-import { useVideo, Video } from "@pond/ui";
+import { Button, useVideo, Video } from "@pond/ui";
 import {
   type ReactEventHandler,
   useCallback,
@@ -6,6 +6,7 @@ import {
   useState,
 } from "react";
 import { useMediaSession } from "@/hooks/use-media-session";
+import { setVideoThumbnail } from "@/lib/media/capture-frame";
 import { type ChapterCue, chaptersToVttUrl } from "@/lib/media/chapters-vtt";
 import {
   clearActiveMediaSeek,
@@ -24,6 +25,7 @@ interface VideoPlayerProps {
   poster?: string;
   title?: string | null;
   artist?: string | null;
+  saveId?: string;
   chapters?: readonly ChapterCue[];
   noteMarkers?: readonly NoteMarker[];
   active?: boolean;
@@ -84,6 +86,42 @@ function EndPoster({ src }: { src?: string }) {
   );
 }
 
+function StudyControls({ saveId }: { saveId?: string }) {
+  const { actions, meta } = useVideo();
+  return (
+    <>
+      <Button
+        size="xs"
+        variant="ghost"
+        aria-label="Previous Frame"
+        onClick={() => actions.stepFrame(-1)}
+      >
+        Previous Frame
+      </Button>
+      <Button
+        size="xs"
+        variant="ghost"
+        aria-label="Next Frame"
+        onClick={() => actions.stepFrame(1)}
+      >
+        Next Frame
+      </Button>
+      {saveId ? (
+        <Button
+          size="xs"
+          variant="ghost"
+          onClick={() => {
+            const video = meta.videoRef.current;
+            if (video) void setVideoThumbnail(saveId, video);
+          }}
+        >
+          Set Cover
+        </Button>
+      ) : null}
+    </>
+  );
+}
+
 function NoteMarkers({ markers }: { markers: readonly NoteMarker[] }) {
   const { state, actions } = useVideo();
   if (markers.length === 0 || state.duration <= 0) return null;
@@ -131,6 +169,7 @@ export function VideoPlayer({
   poster,
   title,
   artist,
+  saveId,
   chapters,
   noteMarkers,
   active,
@@ -193,6 +232,7 @@ export function VideoPlayer({
         <Video.Row>
           <Video.PlayButton />
           <Video.Volume />
+          <StudyControls saveId={saveId} />
           <Video.Spacer />
           <Video.SpeedSelect />
           <Video.FullscreenButton />

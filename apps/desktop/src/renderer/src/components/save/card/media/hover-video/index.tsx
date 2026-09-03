@@ -79,7 +79,6 @@ export function HoverVideo({
     const el = internalRef.current;
     if (!el) return;
     el.pause();
-    seekToStart(el);
   }, []);
 
   const onLoadedMetadata = useCallback(() => {
@@ -142,6 +141,19 @@ export function HoverVideo({
         aria-label={label}
         onMouseEnter={onEnter}
         onMouseLeave={onLeave}
+        onMouseMove={(event) => {
+          const el = internalRef.current;
+          if (!el || !Number.isFinite(el.duration) || el.duration <= 0) return;
+          const rect = event.currentTarget.getBoundingClientRect();
+          if (rect.width === 0) return;
+          const ratio = Math.min(
+            1,
+            Math.max(0, (event.clientX - rect.left) / rect.width),
+          );
+          try {
+            el.currentTime = ratio * el.duration;
+          } catch {}
+        }}
         onFocus={onEnter}
         onBlur={onLeave}
         onError={onBroken}

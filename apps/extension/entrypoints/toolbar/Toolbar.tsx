@@ -1,4 +1,5 @@
-import { Button, Logo } from "@pond/ui";
+import { Button } from "@pond/ui/button";
+import { Logo } from "@pond/ui/logo";
 import { BorderBeam } from "border-beam";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import styles from "./styles.module.css";

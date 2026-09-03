@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { createReadStream, existsSync } from "node:fs";
 import { copyFile, mkdir, rm, stat, writeFile } from "node:fs/promises";
-import { extname, join } from "node:path";
+import { extname, join, resolve, sep } from "node:path";
 import {
   type NewSave,
   type Save,
@@ -38,6 +38,21 @@ interface ApplyPatchOptions {
   replaceFilesWithKind?: SaveFile["kind"] | SaveFile["kind"][];
 }
 
+export function mergeSaveFiles(
+  current: readonly SaveFile[],
+  written: readonly SaveFile[],
+  replaceKinds?: SaveFile["kind"] | readonly SaveFile["kind"][] | null,
+): SaveFile[] {
+  const kinds =
+    replaceKinds == null
+      ? null
+      : new Set(Array.isArray(replaceKinds) ? replaceKinds : [replaceKinds]);
+  const retained = kinds
+    ? current.filter((file) => !kinds.has(file.kind))
+    : current;
+  return [...retained, ...written];
+}
+
 export async function applySavePatch(
   saveId: string,
   patch: Partial<NewSave>,
@@ -68,16 +83,16 @@ export async function applySavePatch(
             ? opts.replaceFilesWithKind
             : [opts.replaceFilesWithKind],
         );
-  const baseFiles = replaceKinds
-    ? (current.files ?? []).filter((f) => !replaceKinds.has(f.kind))
-    : (current.files ?? []);
-
   const written: SaveFile[] = [];
   if (opts.newFiles && opts.newFiles.length > 0) {
     const dir = itemDir(saveId);
     if (!existsSync(dir)) await mkdir(dir, { recursive: true });
     for (const file of opts.newFiles) {
-      const target = uniqueFilename(file.filename, baseFiles, written);
+      const target = uniqueFilename(
+        file.filename,
+        current.files ?? [],
+        written,
+      );
       const targetPath = join(dir, target);
       const details = await persistWriteFile(file, targetPath);
       if (!details) {
@@ -102,10 +117,12 @@ export async function applySavePatch(
     }
   }
   const nextFiles =
-    written.length > 0 ? [...baseFiles, ...written] : current.files;
+    written.length > 0 || replaceKinds
+      ? mergeSaveFiles(current.files ?? [], written, opts.replaceFilesWithKind)
+      : current.files;
 
   const fullPatch: Partial<NewSave> = { ...patch };
-  if (written.length > 0) fullPatch.files = nextFiles;
+  if (written.length > 0 || replaceKinds) fullPatch.files = nextFiles;
 
   db.update(saves)
     .set(withRawSlim(fullPatch))
@@ -131,6 +148,20 @@ export async function applySavePatch(
     .returning()
     .all()[0];
   if (inserted) broadcastSyncAction(inserted);
+
+  if (replaceKinds) {
+    const retainedPaths = new Set((nextFiles ?? []).map((file) => file.path));
+    const dir = resolve(itemDir(saveId));
+    for (const file of current.files ?? []) {
+      if (!replaceKinds.has(file.kind) || retainedPaths.has(file.path))
+        continue;
+      const path = resolve(join(dir, file.path));
+      if (path === dir || !path.startsWith(`${dir}${sep}`)) continue;
+      await rm(path, { force: true }).catch((err) => {
+        log.warn("[pond pipeline] failed to remove replaced file", path, err);
+      });
+    }
+  }
 
   return updated;
 }

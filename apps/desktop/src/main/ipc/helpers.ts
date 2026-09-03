@@ -55,6 +55,7 @@ export async function resolveSaveFilePath(
         | "no_files"
         | "out_of_range"
         | "missing"
+        | "auxiliary_file"
         | "unsafe_path";
     }
 > {
@@ -69,6 +70,9 @@ export async function resolveSaveFilePath(
 
     const file = files[fileIndex ?? 0];
     if (!file) return { ok: false, reason: "out_of_range" };
+    if (file.kind === "custom_thumbnail") {
+      return { ok: false, reason: "auxiliary_file" };
+    }
 
     const absolute = resolvePath(itemFile(id, file.path));
     if (!isInsideLibrary(absolute)) {

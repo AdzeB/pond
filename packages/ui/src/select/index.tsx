@@ -28,7 +28,7 @@ function Trigger({
   variant,
   size,
   icon,
-  rounding,
+  rounding = "rounded",
   ...props
 }: TriggerProps) {
   return (

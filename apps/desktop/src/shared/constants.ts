@@ -20,6 +20,7 @@ export const IPC = {
   query: "pond:query",
   syncAction: "pond:sync-action",
   appInfo: "pond:app-info",
+  rendererReady: "pond:renderer-ready",
   nav: "pond:nav",
   openExternal: "pond:open-external",
   revealSave: "pond:reveal-save",
@@ -52,6 +53,7 @@ export const IPC = {
   agentChunk: "pond:agent-chunk",
   agentFilter: "pond:agent-filter",
   agentCite: "pond:agent-cite",
+  agentOverlay: "pond:agent-overlay",
 } as const;
 
 export interface RecentMenuEntry {

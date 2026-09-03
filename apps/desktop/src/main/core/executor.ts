@@ -1,5 +1,6 @@
 import type { Save, SyncAction, Tag } from "@pond/schema/db";
 import {
+  folders as foldersTable,
   savedViews as savedViewsTable,
   saves as savesTable,
   syncActions as syncActionsTable,
@@ -106,8 +107,8 @@ export async function executeTransaction(
     try {
       raw
         .prepare(
-          `DELETE FROM sync_actions WHERE id <= (
-             SELECT id FROM sync_actions ORDER BY id DESC LIMIT 1 OFFSET ?
+          `DELETE FROM sync_actions WHERE actor != 'agent' AND id <= (
+             SELECT id FROM sync_actions WHERE actor != 'agent' ORDER BY id DESC LIMIT 1 OFFSET ?
            )`,
         )
         .run(SYNC_ACTIONS_RING);
@@ -173,8 +174,8 @@ export async function executeBatch(
     try {
       raw
         .prepare(
-          `DELETE FROM sync_actions WHERE id <= (
-             SELECT id FROM sync_actions ORDER BY id DESC LIMIT 1 OFFSET ?
+          `DELETE FROM sync_actions WHERE actor != 'agent' AND id <= (
+             SELECT id FROM sync_actions WHERE actor != 'agent' ORDER BY id DESC LIMIT 1 OFFSET ?
            )`,
         )
         .run(SYNC_ACTIONS_RING);
@@ -354,6 +355,22 @@ function applyToIndex(
         return;
       case "delete":
         db.delete(savedViewsTable).where(eq(savedViewsTable.id, tx.id)).run();
+        return;
+    }
+  }
+  if (tx.model === "folder") {
+    switch (tx.kind) {
+      case "create":
+        db.insert(foldersTable).values(tx.data).onConflictDoNothing().run();
+        return;
+      case "update":
+        db.update(foldersTable)
+          .set(tx.patch)
+          .where(eq(foldersTable.id, tx.id))
+          .run();
+        return;
+      case "delete":
+        db.delete(foldersTable).where(eq(foldersTable.id, tx.id)).run();
         return;
     }
   }

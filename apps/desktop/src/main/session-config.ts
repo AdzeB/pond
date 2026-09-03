@@ -30,7 +30,7 @@ export function configureSessionDefaults(): void {
       "script-src 'self' 'wasm-unsafe-eval' blob:",
       "worker-src 'self' blob:",
       "connect-src 'self' blob: http://127.0.0.1:* pond: https:",
-      "font-src 'self' data:",
+      "font-src 'self' data: pond:",
       "frame-src pond: https://www.youtube-nocookie.com",
       "object-src 'none'",
       "frame-ancestors 'none'",

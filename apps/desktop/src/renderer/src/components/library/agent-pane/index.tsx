@@ -13,16 +13,18 @@ import {
   IconGridLayoutRowsOutline18,
   IconXmarkOutline18,
 } from "@pond/icons/outline/18";
-import { Button, Tooltip } from "@pond/ui";
+import { Button, PromptInput, Tooltip } from "@pond/ui";
 import { Logo } from "@pond/ui/logo";
 import {
   ASSISTANT_MODELS,
   type AssistantProvider,
   type AssistantSource,
 } from "@shared/assistant";
+import { chosenModelId } from "@shared/provider-models";
 import { useReducedMotion } from "motion/react";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { getAppRouter } from "@/lib/ui/app-router";
+import { openSettings } from "@/lib/ui/open-settings";
 import { openSave } from "@/lib/ui/save-nav";
 import {
   type AssistantState,
@@ -32,7 +34,6 @@ import {
 import { libraryChrome } from "@/stores/library-chrome";
 import { usePrefs } from "@/stores/prefs";
 import { selection, useSelectionSize } from "@/stores/selection";
-import { settingsModal } from "@/stores/settings-modal";
 import { ASSISTANT_ACTIONS, type AssistantAction } from "./actions";
 import { AddMenu } from "./add-menu";
 import { AssistantResponse } from "./assistant-response";
@@ -166,7 +167,6 @@ function AssistantMessage() {
         provider={provider}
         attachedIds={attachedIds}
         busy={state.busy}
-        consent={Boolean(state.consent)}
         attach={attach}
         focus={focus}
       />
@@ -213,13 +213,15 @@ function AgentPaneContent({
   layout,
   state,
   provider,
-  patchProvider,
+  modelId,
+  patchModel,
   reduceMotion,
 }: {
   layout: "page" | "pane";
   state: AssistantState;
-  provider: AssistantProvider;
-  patchProvider: (provider: AssistantProvider) => void;
+  provider: AssistantProvider | "";
+  modelId: string;
+  patchModel: (next: { provider: AssistantProvider; modelId: string }) => void;
   reduceMotion: boolean;
 }) {
   const aui = useAui();
@@ -231,7 +233,7 @@ function AgentPaneContent({
     value: state.draft,
     attachments: state.attachments,
     inputRef: input,
-    disabled: state.busy || state.loading || Boolean(state.consent),
+    disabled: state.busy || state.loading || !provider,
     onChange: assistant.setDraft,
     onAttach: assistant.attach,
   });
@@ -259,7 +261,13 @@ function AgentPaneContent({
     if (selected) assistant.appendDraft(selected.prompt);
     requestAnimationFrame(focus);
   }
-  const messageContext = { state, provider, attachedIds, attach, focus };
+  const messageContext = {
+    state,
+    provider: provider || ASSISTANT_MODELS[0].id,
+    attachedIds,
+    attach,
+    focus,
+  };
 
   return (
     <AgentMessageContext.Provider value={messageContext}>
@@ -332,36 +340,13 @@ function AgentPaneContent({
           <div className={styles["assistant-body"]} data-empty={empty}>
             {!empty ? <Conversation loading={state.loading} /> : null}
             <div className={styles["compose-area"]}>
-              {state.consent ? (
+              {!provider ? (
                 <div className={styles.notice} role="status">
                   <div>
-                    <strong>
-                      Send this message to{" "}
-                      {
-                        ASSISTANT_MODELS.find(
-                          (model) => model.id === state.consent?.provider,
-                        )?.provider
-                      }
-                      ?
-                    </strong>
-                    <p>
-                      Your conversation and Saves read to answer this message
-                      will be sent to your provider. This allows this message
-                      only.
-                    </p>
+                    <p>Add a provider in Settings before you can send.</p>
                     <div className={styles["notice-actions"]}>
-                      <Button
-                        size="sm"
-                        onClick={() => void assistant.allowOnce()}
-                      >
-                        Allow Once
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={assistant.cancelConsent}
-                      >
-                        Cancel
+                      <Button size="sm" onClick={() => openSettings("models")}>
+                        Open Settings
                       </Button>
                     </div>
                   </div>
@@ -383,7 +368,7 @@ function AgentPaneContent({
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => settingsModal.open("agent")}
+                        onClick={() => openSettings("models")}
                       >
                         Model Settings
                       </Button>
@@ -402,39 +387,42 @@ function AgentPaneContent({
                 suggestions={suggestions}
                 anchorRef={composer}
               />
-              <div className={styles["composer-shell"]} ref={composer}>
-                <ComposerPrimitive.Root className={styles.composer}>
-                  {selectedCount ? (
-                    <div className={styles["selection-line"]}>
-                      <Button
-                        size="xs"
-                        variant="ghost"
-                        onClick={() =>
-                          void assistant.attachIds([...selection.snapshot()])
-                        }
-                      >
-                        Attach {selectedCount} Selected
-                      </Button>
-                    </div>
-                  ) : null}
-                  <Attachments
-                    saves={state.attachments}
-                    onRemove={assistant.removeAttachment}
-                  />
-                  <ComposerPrimitive.Input
-                    ref={input}
-                    minRows={2}
-                    maxRows={7}
-                    maxLength={32000}
-                    aria-label="Message Assistant"
-                    placeholder="Ask anything about your library"
-                    {...suggestions.inputProps}
-                    onKeyDown={(event) => {
-                      suggestions.onKeyDown(event);
-                    }}
-                  />
-                  <div className={styles["composer-toolbar"]}>
-                    <div className={styles["composer-tools"]}>
+              <PromptInput.Root ref={composer}>
+                <ComposerPrimitive.Root className={styles["composer-form"]}>
+                  <PromptInput.Body className={styles["composer-body"]}>
+                    {selectedCount ? (
+                      <div className={styles["selection-line"]}>
+                        <Button
+                          size="xs"
+                          variant="ghost"
+                          onClick={() =>
+                            void assistant.attachIds([...selection.snapshot()])
+                          }
+                        >
+                          Attach {selectedCount} Selected
+                        </Button>
+                      </div>
+                    ) : null}
+                    <Attachments
+                      saves={state.attachments}
+                      onRemove={assistant.removeAttachment}
+                    />
+                    <ComposerPrimitive.Input
+                      ref={input}
+                      className={styles["composer-input"]}
+                      minRows={2}
+                      maxRows={7}
+                      maxLength={32000}
+                      aria-label="Message Assistant"
+                      placeholder="Ask anything about your library"
+                      {...suggestions.inputProps}
+                      onKeyDown={(event) => {
+                        suggestions.onKeyDown(event);
+                      }}
+                    />
+                  </PromptInput.Body>
+                  <PromptInput.Toolbar>
+                    <PromptInput.ToolbarGroup>
                       <AddMenu
                         referencedCount={references.length}
                         composerRef={input}
@@ -444,29 +432,30 @@ function AgentPaneContent({
                         onAction={action}
                       />
                       <ModelPicker
-                        value={provider}
-                        disabled={state.busy || Boolean(state.consent)}
-                        onChange={patchProvider}
+                        provider={provider}
+                        modelId={modelId}
+                        disabled={state.busy}
+                        onChange={patchModel}
                       />
-                    </div>
+                    </PromptInput.ToolbarGroup>
                     {state.busy ? (
-                      <ComposerPrimitive.Cancel
-                        className={styles["send-button"]}
+                      <PromptInput.Submit
+                        render={<ComposerPrimitive.Cancel />}
                         aria-label="Stop Response"
                       >
                         <span className={styles["stop-square"]} />
-                      </ComposerPrimitive.Cancel>
+                      </PromptInput.Submit>
                     ) : (
-                      <ComposerPrimitive.Send
-                        className={styles["send-button"]}
+                      <PromptInput.Submit
+                        render={<ComposerPrimitive.Send />}
                         aria-label="Send Message"
                       >
                         <IconArrowUpFill18 />
-                      </ComposerPrimitive.Send>
+                      </PromptInput.Submit>
                     )}
-                  </div>
+                  </PromptInput.Toolbar>
                 </ComposerPrimitive.Root>
-              </div>
+              </PromptInput.Root>
             </div>
           </div>
           {boardSources?.length ? (
@@ -508,9 +497,10 @@ export function AgentPane({ layout = "pane" }: { layout?: "page" | "pane" }) {
   const reduceMotion =
     preferences.reduceMotion === "always" ||
     (preferences.reduceMotion !== "never" && Boolean(systemReducedMotion));
-  const provider = (ASSISTANT_MODELS.find(
-    (model) => model.id === prefs.languageModel,
-  )?.id ?? "minnow") as AssistantProvider;
+  const provider =
+    ASSISTANT_MODELS.find((model) => model.id === prefs.languageModel)?.id ??
+    "";
+  const modelId = provider ? chosenModelId(provider, prefs) : "";
   const runtime = usePondAssistantRuntime(state, provider);
 
   return (
@@ -519,7 +509,22 @@ export function AgentPane({ layout = "pane" }: { layout?: "page" | "pane" }) {
         layout={layout}
         state={state}
         provider={provider}
-        patchProvider={(next) => patchPrefs({ languageModel: next })}
+        modelId={modelId}
+        patchModel={(next) => {
+          patchPrefs({
+            languageModel: next.provider,
+            modelIds: { ...prefs.modelIds, [next.provider]: next.modelId },
+            ...(next.provider === "ollama"
+              ? { ollamaModelId: next.modelId }
+              : {}),
+            ...(next.provider === "lmstudio"
+              ? { lmstudioModelId: next.modelId }
+              : {}),
+            ...(next.provider === "compatible"
+              ? { compatibleModelId: next.modelId }
+              : {}),
+          });
+        }}
         reduceMotion={reduceMotion}
       />
     </AssistantRuntimeProvider>

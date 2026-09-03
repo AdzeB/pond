@@ -18,7 +18,7 @@
   },
   "packageManager": "pnpm@11.3.0",
   "scripts": {
-    "build": "turbo run build",
+    "build": "turbo run build && node scripts/check-performance-budgets.mjs",
     "dev": "turbo run dev",
     "dev:desktop": "pnpm --filter @pond/desktop dev",
     "generate": "turbo run generate",
@@ -28,6 +28,7 @@
     "oxlint": "oxlint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "perf:check": "node scripts/check-performance-budgets.mjs",
     "new-source": "node ./scripts/new-source.mjs",
     "dist": "turbo run dist",
     "dist:mac": "pnpm --filter @pond/desktop dist:mac",

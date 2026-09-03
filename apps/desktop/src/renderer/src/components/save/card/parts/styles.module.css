@@ -260,12 +260,6 @@
   transition: opacity var(--ds-duration-snap) var(--ds-easing-standard);
 }
 
-:global([data-multi-select]) .item:not([data-multi]) .media,
-:global([data-multi-select]) .item:not([data-multi]) .meta {
-  opacity: 0.7;
-  transition: opacity var(--ds-duration-snap) var(--ds-easing-standard);
-}
-
 .overlay {
   position: absolute;
   inset: 6px;

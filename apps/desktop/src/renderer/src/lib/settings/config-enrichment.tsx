@@ -51,33 +51,34 @@ function ModelPickerRow({
 }
 
 export const enrichmentSection = defineSection("ai", {
-  title: "Enrichments",
-  description: "Search, caption, and transcribe saves on-device.",
+  title: "Search",
+  description:
+    "Search by meaning or in plain language, with enrichments on this Mac.",
+  keywords: [
+    "search",
+    "semantic",
+    "caption",
+    "ocr",
+    "transcript",
+    "clip",
+    "enrichment",
+  ],
   groups: [
     {
-      title: "Search",
       items: [
         {
           control: "switch",
           key: "nlCompiler",
           title: "Natural-Language Search",
           description:
-            "Turn questions into filters. Uses your Agent model, or Minnow.",
-          keywords: [
-            "nlp",
-            "query",
-            "ask",
-            "minnow",
-            "llama",
-            "on-device",
-            "natural language",
-          ],
+            "Turn questions into filters. Uses the Agent model you configured.",
+          keywords: ["nlp", "query", "ask", "agent", "natural language"],
         },
         {
           control: "switch",
           key: "semanticSearch",
           title: "Semantic Search",
-          description: "Rank results by meaning.",
+          description: "Ranks Saves by meaning, including unlabeled photos.",
           keywords: ["embeddings", "meaning", "vector", "similarity"],
         },
         {
@@ -125,8 +126,9 @@ export const enrichmentSection = defineSection("ai", {
           control: "switch",
           key: "enableClip",
           title: "Visual Similarity",
-          description: "Find similar images and duplicates.",
-          keywords: ["clip", "embeddings", "duplicates"],
+          description:
+            "Find images that look alike from a Save or a dropped picture.",
+          keywords: ["clip", "embeddings", "look alike", "visual match"],
         },
         {
           control: "switch",
@@ -155,7 +157,7 @@ export const enrichmentSection = defineSection("ai", {
       ],
     },
     {
-      title: "Models",
+      title: "On-Device Models",
       items: [
         {
           control: "custom",

@@ -10,6 +10,12 @@ vi.mock("./tools", async () => {
   return {
     searchLibraryInput: z.object({ query: z.string().optional() }),
     readSaveInput: z.object({ id: z.string() }),
+    grepLibraryInput: z.object({ query: z.string() }),
+    applyFilterInput: z.object({ query: z.unknown() }),
+    setOverlayInput: z.object({}).passthrough(),
+    citeSavesInput: z.object({ ids: z.array(z.string()) }),
+    openSaveInput: z.object({ id: z.string() }),
+    describeSavesInput: z.object({ ids: z.array(z.string()) }),
     searchLibrary: async () => ({
       saves: [
         {
@@ -21,6 +27,14 @@ vi.mock("./tools", async () => {
       ],
     }),
     readSave: async () => ({ error: "Unavailable" }),
+    grepLibrary: async () => ({ hits: [] }),
+    libraryOverview: async () => ({}),
+    applyFilter: async () => ({ ok: true }),
+    setOverlay: async () => ({ ok: true }),
+    citeSaves: async () => ({ ok: true, ids: [] }),
+    openSave: async () => ({ ok: true }),
+    describeSaves: async () => ({ ids: [], images: 0 }),
+    findDuplicateSaves: async () => ({ groups: [] }),
   };
 });
 

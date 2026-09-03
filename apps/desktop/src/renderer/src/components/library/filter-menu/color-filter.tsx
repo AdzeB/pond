@@ -38,8 +38,8 @@ export function ColorFilter({
         <ColorPicker
           value={hex}
           ariaLabel="Filter Color"
-          areaWidth={260}
-          areaHeight={150}
+          areaWidth={220}
+          areaHeight={126}
           onChange={(value) => apply(value)}
         />
         <div className={styles.swatches}>
@@ -115,7 +115,6 @@ export function ColorFilter({
             </Slider.Track>
           </Slider.Control>
         </Slider.Root>
-        <p className={styles.hint}>Lower values match colors more closely.</p>
       </fieldset>
     </>
   );

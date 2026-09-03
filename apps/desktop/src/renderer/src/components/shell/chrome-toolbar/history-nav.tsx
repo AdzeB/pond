@@ -90,6 +90,7 @@ export function ChromeHistoryNav() {
           icon
           size="sm"
           variant="ghost"
+          rounding="rounded"
           aria-label="History"
           disabled={historySaves.length === 0}
         >
@@ -119,6 +120,7 @@ export function ChromeHistoryNav() {
         icon
         size="sm"
         variant="ghost"
+        rounding="rounded"
         aria-label="Back"
         disabled={!canBack}
         onClick={() => router.history.back()}
@@ -129,6 +131,7 @@ export function ChromeHistoryNav() {
         icon
         size="sm"
         variant="ghost"
+        rounding="rounded"
         aria-label="Forward"
         disabled={!canForward}
         onClick={() => router.history.forward()}

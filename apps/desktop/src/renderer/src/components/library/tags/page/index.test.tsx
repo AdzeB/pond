@@ -10,6 +10,7 @@ import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Library } from "@/components/library/page";
+import type { TagGroupRow } from "@/stores/tag-groups";
 import type { TagRow } from "@/stores/tags";
 import { TagsPage } from ".";
 
@@ -17,12 +18,13 @@ const fixtures = vi.hoisted(() => ({
   tags: ["Animation", "Typography"].map((name, index) => ({
     id: String(index),
     name,
+    starred: index === 0,
     description: null,
     lastUsedAt: null,
     usageCount: 0,
     createdAt: null,
   })) satisfies TagRow[],
-  groups: [],
+  groups: [] as TagGroupRow[],
   saves: [],
 }));
 
@@ -60,6 +62,7 @@ describe("library Tags page", () => {
       },
     );
     query.mockClear();
+    fixtures.groups.length = 0;
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
@@ -100,18 +103,21 @@ describe("library Tags page", () => {
 
   it("renders the tag manager instead of the saves grid", async () => {
     await mount();
-    expect(host.querySelector("h1")?.textContent).toBe("Tags");
+    expect(host.querySelector('[aria-current="page"]')?.textContent).toContain(
+      "All",
+    );
     expect(host.querySelector('[data-testid="save-grid"]')).toBeNull();
     expect(host.querySelector('[data-testid="save-filters"]')).toBeNull();
     expect(host.textContent).toContain("Animation");
     expect(host.textContent).toContain("Typography");
-    expect(host.textContent).toContain("New Group");
-    expect(host.textContent).toContain("New Tag");
+    expect(host.textContent).toContain("Starred");
+    expect(host.querySelector('[aria-label="New Group"]')).not.toBeNull();
+    expect(host.textContent).not.toContain("New Tag");
   });
 
   it("filters tags using the existing manager", async () => {
     await mount();
-    const search = host.querySelector('input[placeholder="Search…"]');
+    const search = host.querySelector('input[placeholder="Search tags…"]');
     if (!(search instanceof HTMLInputElement))
       throw new Error("Missing search");
     await fill(search, "animation");
@@ -119,17 +125,82 @@ describe("library Tags page", () => {
     expect(host.textContent).not.toContain("Typography");
   });
 
-  it.each([
-    ["New Tag", "Tag name", "tags.create"],
-    ["New Group", "Group name", "tagGroups.create"],
-  ])("supports %s on the library page", async (label, placeholder, command) => {
+  it("filters to starred tags from the Eagle-style rail", async () => {
+    await mount();
+    const starred = [...host.querySelectorAll("button")].find((node) =>
+      node.textContent?.includes("Starred"),
+    );
+    if (!starred) throw new Error("Missing Starred collection");
+    await act(async () => starred.click());
+    expect(host.textContent).toContain("Animation");
+    expect(host.textContent).not.toContain("Typography");
+  });
+
+  it("shows group details and its add-tags picker trigger", async () => {
+    fixtures.groups.push({
+      id: "design",
+      name: "Design",
+      description: "Visual references",
+      color: null,
+      sortOrder: 0,
+      collapsed: false,
+      tagIds: ["0"],
+      tagNames: ["Animation"],
+    });
+    await mount();
+    const group = [...host.querySelectorAll("button")].find(
+      (node) => node.textContent?.trim() === "Design1",
+    );
+    if (!group) throw new Error("Missing Design group");
+    await act(async () => group.click());
+    expect(host.querySelector("h1")?.textContent).toContain("Design");
+    expect(
+      host.querySelector('[aria-label="Add Tags to Design"]'),
+    ).not.toBeNull();
+    const description = host.querySelector('[aria-label="Design description"]');
+    if (!(description instanceof HTMLInputElement)) {
+      throw new Error("Missing group description");
+    }
+    await fill(description, "Changed");
+    await act(async () => {
+      description.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+    });
+    expect(query).not.toHaveBeenCalledWith(
+      "tagGroups.update",
+      expect.anything(),
+    );
+  });
+
+  it("selects a tag only with Shift-click and shows no checkbox", async () => {
+    await mount();
+    const row = host.querySelector('[role="option"]');
+    const checkbox = host.querySelector('[aria-label="Select Animation"]');
+    if (!(row instanceof HTMLDivElement)) throw new Error("Missing tag row");
+
+    expect(checkbox).toBeNull();
+    await act(async () => row.click());
+    expect(row.getAttribute("aria-selected")).toBe("false");
+
+    await act(async () => {
+      row.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, shiftKey: true }),
+      );
+    });
+    expect(row.getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("supports New Group on the library page", async () => {
     await mount();
     const button = [...host.querySelectorAll("button")].find(
-      (node) => node.textContent === label,
+      (node) =>
+        node.textContent === "New Group" ||
+        node.getAttribute("aria-label") === "New Group",
     );
-    if (!button) throw new Error(`Missing ${label}`);
+    if (!button) throw new Error("Missing New Group");
     await act(async () => button.click());
-    const draft = host.querySelector(`input[placeholder="${placeholder}"]`);
+    const draft = host.querySelector('input[placeholder="Group name"]');
     if (!(draft instanceof HTMLInputElement)) throw new Error("Missing draft");
     await fill(draft, "Design");
     await act(async () => {
@@ -137,6 +208,6 @@ describe("library Tags page", () => {
         new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
       );
     });
-    expect(query).toHaveBeenCalledWith(command, { name: "Design" });
+    expect(query).toHaveBeenCalledWith("tagGroups.create", { name: "Design" });
   });
 });

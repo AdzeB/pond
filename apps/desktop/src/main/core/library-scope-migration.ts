@@ -3,7 +3,6 @@ import { saves } from "@pond/schema/db";
 import { domainFromUrl } from "@pond/schema/domain";
 import { majorityMediaType } from "@pond/schema/media-type";
 import type { RawJson } from "@pond/schema/raw";
-import type { Transaction } from "@pond/schema/tx";
 import {
   arenaBlockClassFromRawJson,
   TEXT_COVER_KINDS,
@@ -11,7 +10,6 @@ import {
 import { eq, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../db";
-import { executeBatch } from "./executor";
 
 function fileMediaKind(file: SaveFile): "image" | "video" | null {
   if (TEXT_COVER_KINDS.has(file.kind)) return null;
@@ -58,24 +56,12 @@ export async function runLibraryScopeMigration(): Promise<void> {
   const db = await getDb();
 
   const fileRows = db
-    .select()
+    .select({ id: saves.id })
     .from(saves)
     .where(sql`${saves.mediaType} = 'file'`)
     .all();
-
   if (fileRows.length > 0) {
-    const txs: Transaction[] = fileRows.map((row) => ({
-      kind: "purge" as const,
-      model: "save" as const,
-      id: row.id,
-      before: row,
-      meta: {
-        actor: "system" as const,
-        actorReason: "migrate:purge-file-saves",
-      },
-    }));
-    await executeBatch(txs);
-    log.info("[pond migrate] purged mediaType=file saves", {
+    log.info("[pond migrate] retained mediaType=file saves", {
       count: fileRows.length,
     });
   }

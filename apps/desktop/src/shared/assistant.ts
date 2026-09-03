@@ -2,21 +2,6 @@ import { z } from "zod";
 
 export const ASSISTANT_MODELS = [
   {
-    id: "minnow",
-    name: "Minnow",
-    provider: "On this Mac",
-    model: "minnow",
-    local: true,
-    needsKey: false,
-    quality: "private",
-    capabilities: {
-      tools: false,
-      structuredOutput: true,
-      vision: false,
-      customModel: false,
-    },
-  },
-  {
     id: "anthropic",
     name: "Claude Opus 5",
     provider: "Anthropic",
@@ -119,6 +104,33 @@ export const assistantScope = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("attachments") }),
 ]);
 export type AssistantScope = z.infer<typeof assistantScope>;
+
+export const ASSISTANT_CHANGE_CAP = 100;
+export const ASSISTANT_ATTACH_CAP = 200;
+
+export const assistantLibraryAction = z.enum([
+  "folderCreate",
+  "folderRename",
+  "folderDelete",
+  "tagCreate",
+  "tagRename",
+  "tagMerge",
+  "savedViewCreate",
+  "savedViewRename",
+  "savedViewUpdate",
+  "quickAdd",
+  "mergeDuplicates",
+  "exportFiles",
+  "exportCsv",
+  "syncNow",
+  "refresh",
+  "archive",
+  "copyUrl",
+  "reveal",
+  "batchRename",
+  "purgeTrash",
+]);
+export type AssistantLibraryAction = z.infer<typeof assistantLibraryAction>;
 export const assistantQuestion = z.object({
   question: z.string().trim().min(1).max(300),
   options: z.array(z.string().trim().min(1).max(160)).min(2).max(4),
@@ -134,18 +146,50 @@ export const assistantChangeProposal = z.discriminatedUnion("field", [
   }),
   z.object({
     saveId: z.string(),
+    field: z.literal("note"),
+    after: z.string().trim().max(4000),
+    reason: z.string().max(500),
+  }),
+  z.object({
+    saveId: z.string(),
     field: z.enum(["tags", "folders"]),
     after: z.array(z.string().trim().min(1).max(100)).max(24),
     reason: z.string().max(500),
   }),
+  z.object({
+    saveId: z.string(),
+    field: z.literal("rating"),
+    after: z.number().int().min(0).max(5),
+    reason: z.string().max(500),
+  }),
+  z.object({
+    saveId: z.string(),
+    field: z.literal("comments"),
+    after: z.array(z.string().trim().min(1).max(2000)).max(24),
+    reason: z.string().max(500),
+  }),
+  z.object({
+    saveId: z.string(),
+    field: z.literal("trash"),
+    after: z.enum(["trash", "restore"]),
+    reason: z.string().max(500),
+  }),
+  z.object({
+    saveId: z.string().default(""),
+    field: z.literal("action"),
+    action: assistantLibraryAction,
+    after: z.string().trim().min(1).max(500),
+    payload: z.record(z.string(), z.unknown()).optional(),
+    reason: z.string().max(500),
+  }),
 ]);
 export const assistantProposalInput = z.object({
-  changes: z.array(assistantChangeProposal).min(1).max(24),
+  changes: z.array(assistantChangeProposal).min(1).max(ASSISTANT_CHANGE_CAP),
 });
 
 export const assistantResultSet = z.object({
   title: z.string().trim().min(1).max(120),
-  saveIds: z.array(z.string().min(1)).min(1).max(24),
+  saveIds: z.array(z.string().min(1)).min(1).max(80),
 });
 export type AssistantResultSet = z.infer<typeof assistantResultSet>;
 
@@ -162,11 +206,15 @@ export const assistantSend = z.object({
   chatId: z.string().min(1),
   requestId: z.string().min(1).max(100),
   content: z.string().trim().min(1).max(32000),
-  attachmentIds: z.array(z.string().min(1)).max(24).default([]),
+  attachmentIds: z
+    .array(z.string().min(1))
+    .max(ASSISTANT_ATTACH_CAP)
+    .default([]),
   scope: assistantScope.default({ kind: "library" }),
   provider: assistantProvider,
-  allowCloudOnce: z.boolean().default(false),
   replyToQuestion: z.string().min(1).optional(),
+  semanticQuery: z.string().nullable().optional(),
+  visualSaveId: z.string().nullable().optional(),
 });
 export type AssistantSend = z.infer<typeof assistantSend>;
 
@@ -196,9 +244,36 @@ export const assistantChange = z.intersection(
       after: z.string(),
     }),
     z.object({
+      field: z.literal("note"),
+      before: z.string().nullable(),
+      after: z.string(),
+    }),
+    z.object({
       field: z.enum(["tags", "folders"]),
       before: z.array(z.string()),
       after: z.array(z.string()),
+    }),
+    z.object({
+      field: z.literal("rating"),
+      before: z.number().nullable(),
+      after: z.number(),
+    }),
+    z.object({
+      field: z.literal("comments"),
+      before: z.array(z.string()),
+      after: z.array(z.string()),
+    }),
+    z.object({
+      field: z.literal("trash"),
+      before: z.enum(["active", "trashed"]),
+      after: z.enum(["active", "trashed"]),
+    }),
+    z.object({
+      field: z.literal("action"),
+      action: assistantLibraryAction,
+      before: z.string().nullable(),
+      after: z.string(),
+      payload: z.record(z.string(), z.unknown()).optional(),
     }),
   ]),
 );
@@ -258,7 +333,6 @@ export interface AssistantChunk {
 export const assistantSendResult = z.object({
   chatId: z.string(),
   accepted: z.boolean().optional(),
-  needsCloud: z.boolean().optional(),
   error: z.string().optional(),
   stopped: z.boolean().optional(),
 });

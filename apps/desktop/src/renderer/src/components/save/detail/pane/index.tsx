@@ -1,7 +1,8 @@
 import { IconXmarkOutline18 as Cross } from "@pond/icons/outline/18";
-import { Button, TitleBar, Tooltip } from "@pond/ui";
+import { Button, Input, TitleBar, Tooltip } from "@pond/ui";
 import { type ComponentType, useEffect, useState } from "react";
 import { KebabMenu } from "@/components/save/detail/kebab";
+import { RatingStars } from "@/components/save/detail/rating";
 import { Section } from "@/components/save/detail/section";
 import { SaveTags } from "@/components/save/detail/tags";
 import { VideoNotesSection } from "@/components/save/detail/video-notes";
@@ -121,8 +122,69 @@ function AboutSections({ save }: { save: Save }) {
         <SaveTags save={save} />
       </div>
 
+      <div className={styles.tags}>
+        <span className={styles.label}>Rating</span>
+        <RatingStars save={save} />
+      </div>
+
       {hasVideo ? <VideoNotesSection save={save} /> : null}
+      {(save.comments ?? []).length > 0 ? (
+        <div className={styles.tags}>
+          <span className={styles.label}>Comments</span>
+          <ul>
+            {(save.comments ?? []).map((comment) => (
+              <li key={comment.id}>{comment.text}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      <CommentComposer save={save} />
     </>
+  );
+}
+
+function CommentComposer({ save }: { save: Save }) {
+  const [text, setText] = useState("");
+  return (
+    <div className={styles.tags}>
+      <span className={styles.label}>Add Comment</span>
+      <Input.Root size="sm">
+        <Input.Field
+          value={text}
+          placeholder="Write a comment"
+          onValueChange={setText}
+        />
+      </Input.Root>
+      <Button
+        size="xs"
+        variant="secondary"
+        disabled={!text.trim()}
+        onClick={() => {
+          const next = text.trim();
+          if (!next) return;
+          void mutateSave(
+            save.id,
+            {
+              comments: [
+                ...(save.comments ?? []),
+                {
+                  id: crypto.randomUUID(),
+                  x: 0.46,
+                  y: 0.46,
+                  w: 0.08,
+                  h: 0.08,
+                  text: next,
+                },
+              ],
+            },
+            { actorReason: "inspect:comment" },
+          );
+          setText("");
+        }}
+      >
+        Add
+      </Button>
+    </div>
   );
 }
 

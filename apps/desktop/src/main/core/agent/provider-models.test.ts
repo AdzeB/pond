@@ -1,0 +1,99 @@
+import { describe, expect, it } from "vitest";
+import {
+  displayName,
+  modelsFromProviderResponse,
+  resolveModelId,
+} from "./provider-models";
+
+describe("modelsFromProviderResponse", () => {
+  it("keeps OpenAI chat models and drops embeddings, whisper, and images", () => {
+    const models = modelsFromProviderResponse("openai", {
+      data: [
+        { id: "gpt-5.4-mini" },
+        { id: "gpt-5.6" },
+        { id: "o3" },
+        { id: "text-embedding-3-large" },
+        { id: "whisper-1" },
+        { id: "dall-e-3" },
+        { id: "gpt-image-1" },
+      ],
+    });
+    expect(models.map((model) => model.id)).toEqual([
+      "gpt-5.4-mini",
+      "gpt-5.6",
+      "o3",
+    ]);
+    expect(models.map((model) => model.name)).toEqual([
+      "GPT 5.4 Mini",
+      "GPT 5.6",
+      "O3",
+    ]);
+  });
+
+  it("uses Anthropic display names when the API sends them", () => {
+    const models = modelsFromProviderResponse("anthropic", {
+      data: [
+        { id: "claude-opus-4-5", display_name: "Claude Opus 4.5" },
+        { id: "claude-sonnet-4-5", display_name: "Claude Sonnet 4.5" },
+      ],
+    });
+    expect(models).toEqual([
+      { id: "claude-opus-4-5", name: "Claude Opus 4.5" },
+      { id: "claude-sonnet-4-5", name: "Claude Sonnet 4.5" },
+    ]);
+  });
+
+  it("strips Gemini model prefixes and requires generateContent", () => {
+    const models = modelsFromProviderResponse("gemini", {
+      models: [
+        {
+          name: "models/gemini-2.5-pro",
+          displayName: "Gemini 2.5 Pro",
+          supportedGenerationMethods: ["generateContent"],
+        },
+        {
+          name: "models/embedding-001",
+          displayName: "Embedding",
+          supportedGenerationMethods: ["embedContent"],
+        },
+      ],
+    });
+    expect(models).toEqual([{ id: "gemini-2.5-pro", name: "Gemini 2.5 Pro" }]);
+  });
+
+  it("keeps every Ollama id the host reports", () => {
+    const models = modelsFromProviderResponse("ollama", {
+      data: [{ id: "llama3.2:latest" }, { id: "qwen2.5vl" }],
+    });
+    expect(models).toEqual([
+      { id: "llama3.2:latest", name: "llama3.2:latest" },
+      { id: "qwen2.5vl", name: "qwen2.5vl" },
+    ]);
+  });
+});
+
+describe("displayName", () => {
+  it("formats an API id without a vendor nickname map", () => {
+    expect(displayName("gpt-5.4-mini")).toBe("GPT 5.4 Mini");
+    expect(displayName("gpt-4o-mini")).toBe("GPT 4o Mini");
+  });
+});
+
+describe("resolveModelId", () => {
+  it("prefers the saved id for that provider over the catalog fallback", () => {
+    expect(
+      resolveModelId(
+        "openai",
+        { modelIds: { openai: "gpt-5.4-mini" } },
+        "gpt-5.6-sol",
+      ),
+    ).toBe("gpt-5.4-mini");
+  });
+
+  it("falls back to the legacy ollama field, then the catalog", () => {
+    expect(
+      resolveModelId("ollama", { ollamaModelId: "qwen2.5vl" }, "llama3.2"),
+    ).toBe("qwen2.5vl");
+    expect(resolveModelId("openai", {}, "gpt-5.6-sol")).toBe("gpt-5.6-sol");
+  });
+});

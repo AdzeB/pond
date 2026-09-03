@@ -1,10 +1,11 @@
 import { useCallback, useEffect } from "react";
 import { z } from "zod";
 import type { SaveListMode } from "@/lib/save/list";
+import { clearSaveSelection, clickSave } from "@/lib/save/select";
 import { asUrlList, filePathsFromText } from "@/lib/save/url-list";
 import { openSave } from "@/lib/ui/save-nav";
 import { notify } from "@/lib/ui/toast";
-import { selection, useSelectionSize } from "@/stores/selection";
+import { useSelectionSize } from "@/stores/selection";
 
 interface CardActions {
   selectionSize: number;
@@ -89,21 +90,8 @@ export function useCardActions(
     (id: string, e: React.MouseEvent) => {
       const meta = e.metaKey || e.ctrlKey;
       const shift = e.shiftKey;
-      if (meta) {
-        e.preventDefault();
-        selection.toggle(id);
-        if (selection.has(id)) selection.setAnchor(id);
-        return;
-      }
-      if (shift) {
-        e.preventDefault();
-        const anchor = selection.getAnchor() ?? id;
-        selection.setRange(filteredIds, anchor, id);
-        return;
-      }
-      if (selection.size() > 0) selection.clear();
-      selection.setAnchor(id);
-      openSave(id);
+      if (meta || shift) e.preventDefault();
+      clickSave(id, { meta, shift }, filteredIds);
     },
     [filteredIds],
   );
@@ -111,7 +99,7 @@ export function useCardActions(
   useEffect(() => {
     void mode;
     void sourceFilter;
-    selection.clear();
+    clearSaveSelection();
   }, [mode, sourceFilter]);
 
   useEffect(() => {

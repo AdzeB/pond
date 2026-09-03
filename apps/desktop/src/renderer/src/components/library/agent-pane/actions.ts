@@ -1,5 +1,6 @@
 import {
   IconFileOutline18,
+  IconImageOutline18,
   IconLink2Outline18,
   IconTagsOutline18,
 } from "@pond/icons/outline/18";
@@ -26,6 +27,14 @@ export const ASSISTANT_ACTIONS = [
     icon: IconTagsOutline18,
     prompt:
       "Suggest better titles, tags, and folders for these Saves. Let me review the changes before applying them.",
+  },
+  {
+    id: "describe",
+    title: "Describe Images",
+    detail: "Title and tag from what you see",
+    icon: IconImageOutline18,
+    prompt:
+      "Look at these Saves and propose titles and tags from the images. Use proposeChanges so I can review.",
   },
 ] as const;
 

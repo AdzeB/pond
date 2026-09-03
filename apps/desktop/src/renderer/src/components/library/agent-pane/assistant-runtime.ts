@@ -43,7 +43,7 @@ function convertMessage(message: PondRuntimeMessage): ThreadMessageLike {
 
 export function usePondAssistantRuntime(
   state: AssistantState,
-  provider: AssistantProvider,
+  provider: AssistantProvider | "",
 ) {
   const messages = useMemo<PondRuntimeMessage[]>(() => {
     if (!state.busy || !state.requestId) return state.messages;
@@ -78,10 +78,10 @@ export function usePondAssistantRuntime(
     convertMessage,
     isRunning: state.busy,
     isLoading: state.loading,
-    isSendDisabled: Boolean(state.consent) || state.loading,
+    isSendDisabled: !provider || state.loading,
     onNew: async (message) => {
       const content = messageText(message);
-      if (!content) return;
+      if (!content || !provider) return;
       assistant.setDraft(content);
       await assistant.send(provider);
     },

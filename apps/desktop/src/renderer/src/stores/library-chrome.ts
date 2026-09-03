@@ -99,6 +99,11 @@ export const libraryChrome = {
       };
     });
   },
+  setInspectorSaveId(inspectorSaveId: string | null): void {
+    store.setState((s) =>
+      s.inspectorSaveId === inspectorSaveId ? s : { ...s, inspectorSaveId },
+    );
+  },
   setNav(nav: LibraryNav): void {
     store.setState((s) => ({ ...s, nav }));
   },

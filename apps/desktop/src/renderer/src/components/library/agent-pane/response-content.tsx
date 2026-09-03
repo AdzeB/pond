@@ -70,7 +70,6 @@ export function ResponseContent({
   provider,
   attachedIds,
   busy,
-  consent,
   attach,
   focus,
 }: {
@@ -80,7 +79,6 @@ export function ResponseContent({
   provider: AssistantProvider;
   attachedIds: string[];
   busy: boolean;
-  consent: boolean;
   attach: (sources: AssistantSource[]) => void;
   focus: () => void;
 }) {
@@ -160,7 +158,7 @@ export function ResponseContent({
         {message.content || message.metadata?.results?.length ? (
           <MessageActions
             text={responseText(message)}
-            disabled={consent}
+            disabled={busy}
             onQuote={() => {
               if (assistant.quote(responseText(message))) attach(sources);
             }}

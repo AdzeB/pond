@@ -6,32 +6,34 @@ import {
   saves,
 } from "@pond/schema/db";
 import { buildWhere, type Query } from "@pond/schema/filters";
-import {
-  and,
-  desc,
-  eq,
-  inArray,
-  isNotNull,
-  isNull,
-  type SQL,
-  sql,
-} from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, type SQL, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { type Db, getDb } from "../db";
 import {
-  cosineSimilarity,
   encodeQueryEmbeddings,
   type QueryEmbeddings,
   reciprocalRankFusion,
+  type VersionedVector,
 } from "./query-embeddings";
+import { knnVec, parseJsonVector } from "./vec-index";
+
+export const visualProbe = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("saveId"), id: z.string().min(1) }),
+  z.object({
+    kind: z.literal("vector"),
+    model: z.string().min(1),
+    values: z.array(z.number()).min(1),
+  }),
+]);
 
 export const libraryRetrievalInput = z.object({
   query: z.string().optional(),
   source: z.enum(SOURCES).optional(),
   folderId: z.string().optional(),
   media: z.array(z.enum(MEDIA_TYPES)).max(MEDIA_TYPES.length).optional(),
-  limit: z.number().int().min(1).max(50).optional(),
+  limit: z.number().int().min(1).max(500).optional(),
+  visual: visualProbe.optional(),
 });
 
 export type LibraryRetrievalInput = z.infer<typeof libraryRetrievalInput>;
@@ -145,21 +147,55 @@ function publicSaves(
   }));
 }
 
-function topDenseMatches(
-  rows: Array<{ id: string; vector: number[] | null }>,
-  query: number[],
-  limit = 50,
-): string[] {
-  const top: Array<{ id: string; score: number }> = [];
-  for (const row of rows) {
-    if (!row.vector) continue;
-    const score = cosineSimilarity(query, row.vector);
-    if (score == null || score <= 0) continue;
-    const index = top.findIndex((candidate) => candidate.score < score);
-    top.splice(index < 0 ? top.length : index, 0, { id: row.id, score });
-    if (top.length > limit) top.pop();
+function knnLimit(limit: number): number {
+  return Math.min(500, Math.max(limit * 8, 200));
+}
+
+async function denseChannel(
+  db: Db,
+  kind: "text" | "visual",
+  vector: VersionedVector,
+  clauses: SQL[],
+  limit: number,
+): Promise<string[]> {
+  const ids = knnVec(
+    db.$raw,
+    kind === "text" ? "text" : "clip",
+    vector.vector,
+    knnLimit(limit),
+  ).map((hit) => hit.id);
+  if (!ids.length) return [];
+  const modelColumn = kind === "text" ? saves.embeddingModel : saves.clipModel;
+  const rows = await db
+    .select({ id: saves.id })
+    .from(saves)
+    .where(
+      and(...clauses, eq(modelColumn, vector.model), inArray(saves.id, ids)),
+    );
+  const admitted = new Set(rows.map((row) => row.id));
+  return ids.filter((id) => admitted.has(id));
+}
+
+export async function resolveVisualProbe(
+  db: Db,
+  probe: z.infer<typeof visualProbe> | undefined,
+): Promise<VersionedVector | undefined> {
+  if (!probe) return undefined;
+  if (probe.kind === "vector") {
+    return { model: probe.model, vector: probe.values };
   }
-  return top.map((row) => row.id);
+  const rows = await db
+    .select({
+      clipEmbedding: saves.clipEmbedding,
+      clipModel: saves.clipModel,
+    })
+    .from(saves)
+    .where(eq(saves.id, probe.id))
+    .limit(1);
+  const row = rows[0];
+  const vector = parseJsonVector(row?.clipEmbedding);
+  if (!vector || !row?.clipModel) return undefined;
+  return { model: row.clipModel, vector };
 }
 
 export async function retrieveLibraryWithDb(
@@ -172,7 +208,8 @@ export async function retrieveLibraryWithDb(
   const clauses = [...libraryScopeClauses(scope), ...inputClauses(input)];
   const query = input.query?.trim() ?? "";
   const match = toFtsMatchQuery(query);
-  if (!match) {
+  const hasDense = Boolean(queryEmbeddings.text || queryEmbeddings.visual);
+  if (!match && !hasDense) {
     const rows = await db
       .select(projection)
       .from(saves)
@@ -187,77 +224,62 @@ export async function retrieveLibraryWithDb(
     return { hits, saves: publicSaves(hits) };
   }
 
-  const candidates = db.$raw
-    .prepare(
-      `SELECT f.id AS id, bm25(saves_fts, 8.0, 3.0, 2.0, 2.0, 2.0, 1.5, 1.5, 1.0, 1.0) AS rank
-       FROM saves_fts f
-       WHERE saves_fts MATCH ?
-       ORDER BY rank
-       LIMIT ?`,
-    )
-    .all(match, Math.max(limit * 8, 50)) as Array<{
-    id: string;
-    rank: number;
-  }>;
   const ranked: Array<{ channel: RetrievalChannel; ids: string[] }> = [];
-  if (candidates.length) {
-    const rows = await db
-      .select({ id: saves.id })
-      .from(saves)
-      .where(
-        and(
-          ...clauses,
-          inArray(
-            saves.id,
-            candidates.map((row) => row.id),
+  if (match) {
+    const candidates = db.$raw
+      .prepare(
+        `SELECT f.id AS id, bm25(saves_fts, 8.0, 3.0, 2.0, 2.0, 2.0, 1.5, 1.5, 1.0, 1.0) AS rank
+         FROM saves_fts f
+         WHERE saves_fts MATCH ?
+         ORDER BY rank
+         LIMIT ?`,
+      )
+      .all(match, Math.max(limit * 8, 50)) as Array<{
+      id: string;
+      rank: number;
+    }>;
+    if (candidates.length) {
+      const rows = await db
+        .select({ id: saves.id })
+        .from(saves)
+        .where(
+          and(
+            ...clauses,
+            inArray(
+              saves.id,
+              candidates.map((row) => row.id),
+            ),
           ),
-        ),
-      );
-    const admitted = new Set(rows.map((row) => row.id));
-    ranked.push({
-      channel: "fts",
-      ids: candidates
-        .map((candidate) => candidate.id)
-        .filter((id) => admitted.has(id)),
-    });
+        );
+      const admitted = new Set(rows.map((row) => row.id));
+      ranked.push({
+        channel: "fts",
+        ids: candidates
+          .map((candidate) => candidate.id)
+          .filter((id) => admitted.has(id)),
+      });
+    }
   }
 
-  const denseChannels = await Promise.all([
-    queryEmbeddings.text
-      ? db
-          .select({ id: saves.id, vector: saves.embedding })
-          .from(saves)
-          .where(
-            and(
-              ...clauses,
-              eq(saves.embeddingModel, queryEmbeddings.text.model),
-              isNotNull(saves.embedding),
-            ),
-          )
-          .then((rows) => ({
-            channel: "text" as const,
-            ids: topDenseMatches(rows, queryEmbeddings.text?.vector ?? []),
-          }))
-      : undefined,
-    queryEmbeddings.visual
-      ? db
-          .select({ id: saves.id, vector: saves.clipEmbedding })
-          .from(saves)
-          .where(
-            and(
-              ...clauses,
-              eq(saves.clipModel, queryEmbeddings.visual.model),
-              isNotNull(saves.clipEmbedding),
-            ),
-          )
-          .then((rows) => ({
-            channel: "visual" as const,
-            ids: topDenseMatches(rows, queryEmbeddings.visual?.vector ?? []),
-          }))
-      : undefined,
-  ]);
-  for (const channel of denseChannels) {
-    if (channel?.ids.length) ranked.push(channel);
+  if (queryEmbeddings.text) {
+    const ids = await denseChannel(
+      db,
+      "text",
+      queryEmbeddings.text,
+      clauses,
+      limit,
+    );
+    if (ids.length) ranked.push({ channel: "text", ids });
+  }
+  if (queryEmbeddings.visual) {
+    const ids = await denseChannel(
+      db,
+      "visual",
+      queryEmbeddings.visual,
+      clauses,
+      limit,
+    );
+    if (ids.length) ranked.push({ channel: "visual", ids });
   }
 
   const channelById = new Map<string, RetrievalChannel[]>();
@@ -307,6 +329,7 @@ export async function retrieveLibrary(
   scope: LibraryRetrievalScope = {},
 ): Promise<LibraryRetrievalResult> {
   const startedAt = Date.now();
+  const db = await getDb();
   let embeddings: QueryEmbeddings = {};
   if (input.query?.trim()) {
     try {
@@ -320,12 +343,15 @@ export async function retrieveLibrary(
       });
     }
   }
-  const result = await retrieveLibraryWithDb(
-    await getDb(),
-    input,
-    scope,
-    embeddings,
-  );
+  try {
+    const visual = await resolveVisualProbe(db, input.visual);
+    if (visual) embeddings = { ...embeddings, visual };
+  } catch (error) {
+    log.warn("[pond retrieval] visual probe unavailable", {
+      error: error instanceof Error ? error.message : "unknown error",
+    });
+  }
+  const result = await retrieveLibraryWithDb(db, input, scope, embeddings);
   log.info("[pond retrieval] complete", {
     queryLength: input.query?.trim().length ?? 0,
     media: normalizeMedia(input.media),

@@ -89,6 +89,10 @@ const api = {
 
   query,
 
+  rendererReady(): void {
+    ipcRenderer.send(IPC.rendererReady);
+  },
+
   /** Electron 41 removed File.path; resolve dropped/picked files here so main can read them without the bytes crossing IPC. */
   pathForFile(file: File): string {
     return webUtils.getPathForFile(file);
@@ -302,6 +306,23 @@ const api = {
     const listener = (_: unknown, ids: string[]) => cb(ids);
     ipcRenderer.on(IPC.agentCite, listener);
     return () => ipcRenderer.off(IPC.agentCite, listener);
+  },
+
+  onAgentOverlay(
+    cb: (overlay: {
+      semanticQuery?: string | null;
+      visualSaveId?: string | null;
+    }) => void,
+  ): () => void {
+    const listener = (
+      _: unknown,
+      overlay: {
+        semanticQuery?: string | null;
+        visualSaveId?: string | null;
+      },
+    ) => cb(overlay);
+    ipcRenderer.on(IPC.agentOverlay, listener);
+    return () => ipcRenderer.off(IPC.agentOverlay, listener);
   },
 };
 

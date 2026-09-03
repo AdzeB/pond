@@ -92,7 +92,7 @@ export async function importPaths(kind: "files" | "folders"): Promise<void> {
   );
   if (!result.ok || !result.ids?.length) {
     throw new Error(
-      "No supported files were imported. Choose images, videos, or text files.",
+      "No files were imported. Choose readable, non-empty files.",
     );
   }
   reportSaved(result.ids.length);
@@ -108,6 +108,45 @@ export async function importClipboard(): Promise<void> {
     );
   }
   reportSaved(result.ids.length);
+}
+
+export async function importBookmarks(): Promise<void> {
+  const result = (await window.pond.query("saves.importBookmarks", {})) as {
+    ok: boolean;
+    imported: number;
+    skipped: number;
+  };
+  if (!result.ok && result.imported === 0) {
+    if (result.skipped === 0) return;
+    throw new Error("Couldn't import those bookmarks. Try another file.");
+  }
+  notify({
+    id: "new-import",
+    title: result.imported
+      ? `Imported ${result.imported} bookmark${result.imported === 1 ? "" : "s"}`
+      : "Nothing new to import",
+    description: result.skipped > 0 ? `${result.skipped} skipped` : undefined,
+    timeout: 5000,
+  });
+}
+
+export async function importPageAssets(url: string): Promise<void> {
+  const href = url.trim();
+  if (!href) throw new Error("Enter a website link.");
+  notify({ id: "new-import", title: "Extracting page assets", timeout: 0 });
+  const result = (await window.pond.query("saves.extractPageAssets", {
+    url: href,
+  })) as { ok: boolean; imported: number; skipped: number; error?: string };
+  if (!result.ok && !result.imported) {
+    throw new Error("Couldn't extract images from that page. Try again.");
+  }
+  notify({
+    id: "new-import",
+    title: result.imported
+      ? `Saved ${result.imported} image${result.imported === 1 ? "" : "s"}`
+      : "No images large enough",
+    timeout: 5000,
+  });
 }
 
 export async function importEagle(): Promise<void> {

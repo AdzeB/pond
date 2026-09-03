@@ -72,6 +72,29 @@
   margin-right: 6px;
 }
 
+.chromeButton {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--ds-gray-11);
+  background: transparent;
+  border: 0;
+  border-radius: var(--ds-radius-full);
+}
+
+.chromeButton:disabled {
+  opacity: 0.5;
+}
+
+.chromeButton > svg {
+  width: 14px;
+  height: 14px;
+}
+
 .tabs {
   display: flex;
   flex: 0 1 auto;
@@ -83,9 +106,55 @@
 }
 
 .group {
+  display: flex;
+  align-items: center;
   padding-block: 6px;
   padding-right: 4px;
   padding-left: 2px;
+}
+
+.tab {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 152px;
+  height: 28px;
+  padding: 0 6px 0 9px;
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-a3);
+  border-radius: var(--ds-radius-md);
+}
+
+.tabIcon,
+.tabClose {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.tabIcon > svg {
+  width: 16px;
+  height: 16px;
+}
+
+.tabLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tabClose {
+  width: 20px;
+  height: 20px;
+  color: var(--ds-gray-10);
+}
+
+.tabClose > svg {
+  width: 12px;
+  height: 12px;
 }
 
 .spacer {

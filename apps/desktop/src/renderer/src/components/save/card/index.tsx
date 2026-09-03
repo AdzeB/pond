@@ -6,17 +6,14 @@ import { SaveContextMenu } from "@/components/save/context-menu";
 import { useLibraryCardCallbacks } from "@/components/shared/grid-context";
 import { useMediaPickOptions } from "@/hooks/use-media-pick-options";
 import { useSave } from "@/hooks/use-saves";
-import { pickPrimaryUnit } from "@/lib/media/units";
+import { pickCardUnit, pickPrimaryFile } from "@/lib/media/units";
+import { resolveFileIndex } from "@/lib/save/actions";
+import { startNativeDrag } from "@/lib/save/start-drag";
 import type { Save } from "@/lib/types";
 import { formatAbsolute } from "@/lib/util/format";
 import { aspectDimsFor, clampRatio } from "@/stores/aspect";
 import { useDisplayPref } from "@/stores/display-prefs";
-import {
-  selection,
-  useIsAnchor,
-  useIsPrimary,
-  useIsSelected,
-} from "@/stores/selection";
+import { useIsAnchor, useIsPrimary, useIsSelected } from "@/stores/selection";
 import { useIsTumbling } from "@/stores/trash-tumble";
 
 interface PackedCardStyle extends React.CSSProperties {
@@ -79,28 +76,14 @@ export const SaveCard = memo(function SaveCard({
     return base;
   }, [packedWidth, packedHeight, packedTop, packedLeft]);
 
-  const files = save?.files;
-  const coverIndex = save?.coverIndex;
+  const dragFileIndex = save ? resolveFileIndex(save) : null;
   const onDragStart = useCallback(
     (e: React.DragEvent) => {
-      if (!files || files.length === 0) return;
+      if (dragFileIndex == null) return;
       e.preventDefault();
-      void window.pond.query("saves.startDrag", {
-        id,
-        fileIndex: coverIndex ?? 0,
-      });
+      startNativeDrag(id);
     },
-    [id, files, coverIndex],
-  );
-
-  const onCheckboxClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      selection.toggle(id);
-      if (selection.has(id)) selection.setAnchor(id);
-    },
-    [id],
+    [id, dragFileIndex],
   );
 
   const onSelectClick = useCallback(
@@ -119,21 +102,14 @@ export const SaveCard = memo(function SaveCard({
   if (!save) return null;
 
   const children = (
-    <>
-      <Card.Checkbox
-        checked={isMulti}
-        aria-label={isMulti ? "Deselect" : "Select"}
-        onClick={onCheckboxClick}
-      />
-      <Card.Select
-        aria-pressed={isPrimary}
-        onClick={onSelectClick}
-        onAuxClick={onSelectAuxClick}
-        onDoubleClick={onSelectDoubleClick}
-      >
-        <SaveCardBody save={save} layout={layout} width={packedWidth} />
-      </Card.Select>
-    </>
+    <Card.Select
+      aria-pressed={isMulti || isPrimary}
+      onClick={onSelectClick}
+      onAuxClick={onSelectAuxClick}
+      onDoubleClick={onSelectDoubleClick}
+    >
+      <SaveCardBody save={save} layout={layout} width={packedWidth} />
+    </Card.Select>
   );
 
   const rootProps = {
@@ -143,7 +119,7 @@ export const SaveCard = memo(function SaveCard({
     "data-layout": layout,
     "data-cursor": isAnchor || undefined,
     style: liStyle,
-    draggable: save.files.length > 0,
+    draggable: dragFileIndex != null,
     onNativeDragStart: onDragStart,
     children,
   };
@@ -177,11 +153,11 @@ const SaveCardBody = memo(function SaveCardBody({
   const showName = useDisplayPref("name");
   const showDate = useDisplayPref("date");
   const packed = layout === "waterfall" || layout === "justified";
-  const unit = useMemo(() => pickPrimaryUnit(save, pickOpts), [save, pickOpts]);
-  const primary = useMemo(() => {
-    if (!unit) return null;
-    return (save.files ?? []).find((f) => f.path === unit.key) ?? null;
-  }, [save.files, unit]);
+  const unit = useMemo(() => pickCardUnit(save, pickOpts), [save, pickOpts]);
+  const primary = useMemo(
+    () => pickPrimaryFile(save, pickOpts),
+    [save, pickOpts],
+  );
   const mediaStyle = useMemo<MediaAspectStyle>(() => {
     if (packed) return {};
     const { w, h } = aspectDimsFor(save, pickOpts, unit);

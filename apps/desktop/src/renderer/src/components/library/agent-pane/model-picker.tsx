@@ -4,44 +4,142 @@ import {
 } from "@pond/icons/outline/18";
 import { Button, Combobox } from "@pond/ui";
 import { ASSISTANT_MODELS, type AssistantProvider } from "@shared/assistant";
+import { displayName } from "@shared/provider-models";
 import { useState } from "react";
-import { settingsModal } from "@/stores/settings-modal";
+import { z } from "zod";
+import { useScrollFade } from "@/hooks/use-scroll-fade";
+import { openSettings } from "@/lib/ui/open-settings";
 import styles from "./styles.module.css";
 
-const models = ASSISTANT_MODELS.map((model) => ({
-  ...model,
-  search: `${model.name} ${model.provider}`,
-  detail: model.provider,
-}));
+const ListedSchema = z.object({
+  providers: z.array(
+    z.object({
+      provider: z.enum([
+        "anthropic",
+        "openai",
+        "gemini",
+        "ollama",
+        "lmstudio",
+        "compatible",
+      ]),
+      ok: z.boolean(),
+      models: z.array(z.object({ id: z.string(), name: z.string() })),
+    }),
+  ),
+});
+
+type PickerModel = {
+  key: string;
+  provider: AssistantProvider;
+  modelId: string;
+  name: string;
+  detail: string;
+  search: string;
+  local: boolean;
+};
+
+function catalogItems(): PickerModel[] {
+  return ASSISTANT_MODELS.map((model) => ({
+    key: model.id,
+    provider: model.id,
+    modelId: model.model,
+    name: model.provider,
+    detail: model.local ? "This Mac" : model.provider,
+    search: `${model.provider} ${model.model}`,
+    local: model.local,
+  }));
+}
+
+function liveItems(
+  providers: z.infer<typeof ListedSchema>["providers"],
+): PickerModel[] {
+  const items: PickerModel[] = [];
+  for (const row of providers) {
+    const catalog = ASSISTANT_MODELS.find((model) => model.id === row.provider);
+    if (!catalog || !row.ok || !row.models.length) continue;
+    for (const model of row.models) {
+      items.push({
+        key: `${row.provider}:${model.id}`,
+        provider: row.provider,
+        modelId: model.id,
+        name: model.name,
+        detail: catalog.provider,
+        search: `${model.name} ${model.id} ${catalog.provider}`,
+        local: catalog.local,
+      });
+    }
+  }
+  return items;
+}
+
+function withCurrent(
+  items: PickerModel[],
+  provider?: AssistantProvider | "",
+  modelId?: string,
+): PickerModel[] {
+  if (!provider || !modelId) return items;
+  if (
+    items.some((item) => item.provider === provider && item.modelId === modelId)
+  )
+    return items;
+  const catalog = ASSISTANT_MODELS.find((model) => model.id === provider);
+  return [
+    {
+      key: `${provider}:${modelId}`,
+      provider,
+      modelId,
+      name: displayName(modelId),
+      detail: catalog?.provider ?? provider,
+      search: `${modelId} ${catalog?.provider ?? ""}`,
+      local: catalog?.local ?? false,
+    },
+    ...items,
+  ];
+}
 
 export function ModelPicker({
-  value,
+  provider,
+  modelId,
   onChange,
   disabled,
 }: {
   disabled?: boolean;
-  value: AssistantProvider;
-  onChange: (provider: AssistantProvider) => void;
+  provider?: AssistantProvider | "";
+  modelId?: string;
+  onChange: (next: { provider: AssistantProvider; modelId: string }) => void;
 }) {
   const [query, setQuery] = useState("");
-  const selected = models.find((model) => model.id === value) ?? {
-    ...ASSISTANT_MODELS[0],
-    search: "Minnow",
-    detail: "On this Mac",
-  };
+  const [listed, setListed] = useState<PickerModel[]>(catalogItems);
+  const items = withCurrent(listed, provider, modelId);
+  const scrollFade = useScrollFade<HTMLDivElement>();
+  const selected = items.find(
+    (item) => item.provider === provider && item.modelId === modelId,
+  );
+  const label =
+    selected?.name ?? (modelId ? displayName(modelId) : "Choose a model");
 
   return (
-    <Combobox.Root<(typeof models)[number]>
+    <Combobox.Root<PickerModel>
       disabled={disabled}
-      items={models}
+      items={items}
       value={selected}
       onValueChange={(model) => {
-        if (model) onChange(model.id);
+        if (model)
+          onChange({ provider: model.provider, modelId: model.modelId });
       }}
       itemToStringLabel={(model) => model.search}
       inputValue={query}
       onInputValueChange={setQuery}
-      onOpenChange={() => setQuery("")}
+      onOpenChange={(open) => {
+        setQuery("");
+        if (!open) return;
+        void window.pond.query("agent.listAvailableModels", {}).then((res) => {
+          const payload = ListedSchema.safeParse(res);
+          if (!payload.success) return;
+          const next = liveItems(payload.data.providers);
+          setListed(next.length ? next : catalogItems());
+        });
+      }}
       autoHighlight
     >
       <Combobox.Trigger
@@ -52,9 +150,9 @@ export function ModelPicker({
             className={styles["model-trigger"]}
           />
         }
-        aria-label={`Choose model, ${selected.name}`}
+        aria-label={`Choose model, ${label}`}
       >
-        <span className={styles["model-trigger-name"]}>{selected.name}</span>
+        <span className={styles["model-trigger-name"]}>{label}</span>
         <IconChevronDownOutline18 />
       </Combobox.Trigger>
       <Combobox.Portal>
@@ -69,11 +167,15 @@ export function ModelPicker({
                 autoFocus
               />
             </div>
-            <Combobox.List className={styles["model-list"]} aria-label="Models">
-              {(model: (typeof models)[number]) => (
+            <Combobox.List
+              className={styles["model-list"]}
+              aria-label="Models"
+              {...scrollFade}
+            >
+              {(model: PickerModel) => (
                 <Combobox.Item
                   className={styles["model-row"]}
-                  key={model.id}
+                  key={model.key}
                   value={model}
                 >
                   <Combobox.ItemLabel className={styles["model-name"]}>
@@ -95,7 +197,7 @@ export function ModelPicker({
               No models found. Try another name.
             </Combobox.Empty>
             <div className={styles["model-picker-note"]}>
-              <button type="button" onClick={() => settingsModal.open("agent")}>
+              <button type="button" onClick={() => openSettings("models")}>
                 Manage Models and Keys
               </button>
             </div>

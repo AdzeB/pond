@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { FolderSidebar } from "@/components/library/folder-sidebar";
 import { RightPane } from "@/components/library/right-pane";
 import { SourceFlowHost } from "@/components/library/source-flow";
-import { SettingsModal } from "@/components/settings/modal";
+import { SettingsSidebar } from "@/components/settings/sidebar";
 import { AppShell } from "@/components/shell/app-shell";
 import { Toolbar } from "@/components/shell/toolbar";
 import { Tray } from "@/components/shell/tray";
@@ -12,22 +12,21 @@ import { MenuBridge } from "@/effects/menu-bridge";
 import { SaveHotkeys } from "@/effects/save-hotkeys";
 import { UndoRedoBridge } from "@/effects/undo-redo-bridge";
 import { getAppRouter } from "@/lib/ui/app-router";
+import { settingsHref } from "@/lib/ui/open-settings";
 import { openSave, saveIdFromPath } from "@/lib/ui/save-nav";
-import { settingsModal } from "@/stores/settings-modal";
 
 export function RootShell() {
   const isComponentGallery = useRouterState({
     select: (state) => state.location.pathname.startsWith("/dev/"),
   });
+  const isSettings = useRouterState({
+    select: (state) => state.location.pathname.startsWith("/settings"),
+  });
   useEffect(() => {
     return window.pond.onNavigate((path) => {
       const pathname = path.split("?")[0] ?? "";
       if (pathname === "/settings") {
-        settingsModal.open();
-        return;
-      }
-      if (pathname.startsWith("/settings/")) {
-        settingsModal.open(pathname.slice("/settings/".length));
+        getAppRouter()?.history.push(settingsHref());
         return;
       }
       const saveId = saveIdFromPath(pathname);
@@ -49,14 +48,13 @@ export function RootShell() {
       <AppHotkeys />
       <AppShell.Root
         header={<Toolbar />}
-        left={<FolderSidebar />}
-        right={<RightPane />}
+        left={isSettings ? <SettingsSidebar /> : <FolderSidebar />}
+        right={isSettings ? undefined : <RightPane />}
       >
         <Outlet />
       </AppShell.Root>
       <Tray.Library />
       <SourceFlowHost />
-      <SettingsModal />
     </>
   );
 }

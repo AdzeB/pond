@@ -63,6 +63,7 @@ export function SidebarToggle({ open }: { open: boolean }) {
         icon
         size="sm"
         variant="ghost"
+        rounding="rounded"
         aria-label="Toggle Sidebar"
         aria-pressed={open}
         onClick={() => libraryChrome.toggleSidebar()}

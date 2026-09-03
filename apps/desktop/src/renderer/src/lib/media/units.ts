@@ -1,4 +1,9 @@
 import type { TweetCover } from "@pond/schema/db";
+import {
+  classifyLibraryFile,
+  requiresGeneratedImagePreview,
+  typeLabelForPath,
+} from "@shared/file-format";
 import { isVideoFile } from "@shared/media-index";
 import {
   RENDER_TEXT_COVER_VERSION,
@@ -43,11 +48,19 @@ export interface MediaUnit {
   isVideo: boolean;
   posterUrl?: string;
   posterKey?: string;
+  requiresGeneratedPreview?: boolean;
 }
 
 export interface MediaPickOptions {
   theme?: ResolvedTheme;
   tweetCover?: TweetCover;
+}
+
+function isRenderableVideoFile(file: SaveFile): boolean {
+  return (
+    isVideoFile(file) &&
+    classifyLibraryFile(file.path, file.mimeType).previewKind === "video"
+  );
 }
 
 function resolveCurrentTweetCover(): TweetCover {
@@ -62,6 +75,7 @@ export function buildMediaUnits(
     (f) =>
       f.kind !== "avatar" &&
       f.kind !== "source_icon" &&
+      f.kind !== "custom_thumbnail" &&
       !isArchiveFile(f) &&
       !TWEET_SCREENSHOT_KINDS.has(f.kind) &&
       !TEXT_COVER_KINDS.has(f.kind) &&
@@ -70,14 +84,14 @@ export function buildMediaUnits(
   const posters = files.filter((f) => f.kind === "poster");
   const covers = files.filter((f) => f.kind === "cover");
   const withoutPosters = files.filter((f) => f.kind !== "poster");
-  const hasVideo = withoutPosters.some(isVideoFile);
+  const hasVideo = withoutPosters.some(isRenderableVideoFile);
   const slides = hasVideo
     ? withoutPosters.filter((f) => f.kind !== "cover")
     : withoutPosters;
 
   const quoteUnits = buildQuoteScreenshotUnits(save, opts.theme);
 
-  const videos = slides.filter(isVideoFile);
+  const videos = slides.filter(isRenderableVideoFile);
   const images = slides.filter(isImageFile);
 
   if (videos.length === 1 && images.length <= 1 && quoteUnits.length === 0) {
@@ -99,7 +113,7 @@ export function buildMediaUnits(
   const units: MediaUnit[] = [];
   let videoSeen = 0;
   for (const f of slides) {
-    if (isVideoFile(f)) {
+    if (isRenderableVideoFile(f)) {
       const poster = posters[videoSeen] ?? posters[0] ?? covers[0];
       const unit: MediaUnit = {
         key: f.path,
@@ -113,11 +127,15 @@ export function buildMediaUnits(
       units.push(unit);
       videoSeen++;
     } else if (isImageFile(f)) {
-      units.push({
+      const unit: MediaUnit = {
         key: f.path,
         url: buildPondUrl(save.id, f),
         isVideo: false,
-      });
+      };
+      if (requiresGeneratedImagePreview(f.path)) {
+        unit.requiresGeneratedPreview = true;
+      }
+      units.push(unit);
     }
   }
   units.push(...quoteUnits);
@@ -204,13 +222,71 @@ export function pickPrimaryUnit(
   return units[0] ?? null;
 }
 
+/** Card-only selection. Custom previews never become viewer content or export targets. */
+export function pickCardUnit(
+  save: Save,
+  opts: MediaPickOptions = {},
+): MediaUnit | null {
+  const custom = (save.files ?? []).find(
+    (file) => file.kind === "custom_thumbnail",
+  );
+  if (custom) {
+    const unit: MediaUnit = {
+      key: custom.path,
+      url: buildPondUrl(save.id, custom),
+      isVideo: false,
+    };
+    if (requiresGeneratedImagePreview(custom.path)) {
+      unit.requiresGeneratedPreview = true;
+    }
+    return unit;
+  }
+  const primary = pickPrimaryUnit(save, opts);
+  if (primary) return primary;
+
+  const previewable = (save.files ?? []).find((file) => {
+    if (isAuxiliaryFile(file)) return false;
+    const kind = classifyLibraryFile(file.path, file.mimeType).previewKind;
+    return (
+      kind === "audio" ||
+      kind === "pdf" ||
+      kind === "font" ||
+      kind === "generic"
+    );
+  });
+  return previewable
+    ? {
+        key: previewable.path,
+        url: buildPondUrl(save.id, previewable),
+        isVideo: false,
+        requiresGeneratedPreview: true,
+      }
+    : null;
+}
+
 export function pickPrimaryFile(
   save: Save,
   opts: MediaPickOptions = {},
 ): SaveFile | null {
   const unit = pickPrimaryUnit(save, opts);
-  if (!unit) return null;
-  return (save.files ?? []).find((f) => f.path === unit.key) ?? null;
+  if (unit) {
+    const file = (save.files ?? []).find((f) => f.path === unit.key);
+    if (file) return file;
+  }
+  return (save.files ?? []).find((file) => !isAuxiliaryFile(file)) ?? null;
+}
+
+function isAuxiliaryFile(file: SaveFile): boolean {
+  return (
+    file.kind === "avatar" ||
+    file.kind === "source_icon" ||
+    file.kind === "poster" ||
+    file.kind === "custom_thumbnail" ||
+    isArchiveFile(file) ||
+    TWEET_SCREENSHOT_KINDS.has(file.kind) ||
+    TEXT_COVER_KINDS.has(file.kind) ||
+    isQuoteScreenshotKind(file.kind)
+  );
 }
 
 function pickTweetScreenshot(
@@ -265,39 +341,43 @@ export function needsTextCover(save: Save): boolean {
 
 export function isImageFile(file: SaveFile): boolean {
   if (file.kind === "cover") return true;
-  const ext = file.path.split(".").pop()?.toLowerCase() ?? "";
-  if (IMAGE_EXT.test(ext)) return true;
-  return file.mimeType?.startsWith("image/") === true;
+  const previewKind = classifyLibraryFile(file.path, file.mimeType).previewKind;
+  return previewKind === "direct-image" || previewKind === "native-image";
 }
 
-type TypeKind = "image" | "video" | "audio" | "link" | "text" | "doc" | "other";
-
-const IMAGE_EXT = /^(png|jpe?g|gif|webp|avif|heic|heif|svg|bmp|tiff?|ico)$/;
-const VIDEO_EXT = /^(mp4|webm|mov|m4v|mkv|avi|gifv|ogv)$/;
-const AUDIO_EXT = /^(mp3|wav|flac|aac|ogg|oga|m4a|opus)$/;
-const DOC_EXT = /^(pdf|docx?|txt|md|markdown|rtf|csv|tsv|xlsx?|pptx?|epub)$/;
+type TypeKind =
+  | "image"
+  | "video"
+  | "audio"
+  | "font"
+  | "link"
+  | "text"
+  | "doc"
+  | "other";
 
 export function deriveTypeKind(file: SaveFile | null, save: Save): TypeKind {
   if (save.source === "web") return "link";
   if (file && TEXT_COVER_KINDS.has(file.kind)) return "text";
   if (file?.kind === "cover") return "image";
 
-  const ext = file?.path.split(".").pop()?.toLowerCase() ?? "";
-  if (IMAGE_EXT.test(ext)) return "image";
-  if (VIDEO_EXT.test(ext)) return "video";
-  if (AUDIO_EXT.test(ext)) return "audio";
-  if (DOC_EXT.test(ext)) return "doc";
-
-  const mime = file?.mimeType?.split("/")[0]?.toLowerCase();
-  if (mime === "image") return "image";
-  if (mime === "video") return "video";
-  if (mime === "audio") return "audio";
+  if (file) {
+    const format = classifyLibraryFile(file.path, file.mimeType);
+    if (format.mediaType === "image") return "image";
+    if (format.mediaType === "video") return "video";
+    if (format.mediaType === "audio") return "audio";
+    if (format.mediaType === "font") return "font";
+    if (format.mediaType === "document") return "doc";
+    if (format.mediaType === "text") return "text";
+  }
 
   const media = save.mediaType?.toLowerCase();
   if (media === "text") return "text";
   if (media === "image") return "image";
   if (media === "video") return "video";
   if (media === "audio") return "audio";
+  if (media === "document") return "doc";
+  if (media === "font") return "font";
+  if (media === "file") return "other";
   if (media === "link") return "link";
 
   return save.url ? "link" : "other";
@@ -318,8 +398,8 @@ export function deriveTypeLabel(
   ) {
     return "Text";
   }
-  const ext = file?.path.split(".").pop()?.toLowerCase();
-  if (ext && /^[a-z0-9]{1,4}$/.test(ext)) return ext.toUpperCase();
+  const extensionLabel = file ? typeLabelForPath(file.path) : null;
+  if (extensionLabel) return extensionLabel;
   const subtype = file?.mimeType?.split("/")[1]?.split(";")[0];
   if (subtype) return subtype.toUpperCase();
   const media = save.mediaType?.toLowerCase();

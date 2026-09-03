@@ -14,10 +14,14 @@ import {
 import { Input } from "../input";
 import styles from "./styles.module.css";
 
-interface RootProps extends React.ComponentPropsWithoutRef<"div"> {}
+interface RootProps extends React.ComponentPropsWithoutRef<"div"> {
+  width?: "default" | "full";
+}
 
-function Root({ className, ...props }: RootProps) {
-  return <div className={cn(styles.root, className)} {...props} />;
+function Root({ className, width = "default", ...props }: RootProps) {
+  return (
+    <div className={cn(styles.root, className)} data-width={width} {...props} />
+  );
 }
 
 interface ToolbarProps extends React.ComponentPropsWithoutRef<"div"> {}
@@ -80,6 +84,12 @@ interface GroupLabelProps extends React.ComponentPropsWithoutRef<"div"> {}
 
 function GroupLabel({ className, ...props }: GroupLabelProps) {
   return <div className={cn(styles.label, className)} {...props} />;
+}
+
+interface GroupHeaderProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function GroupHeader({ className, ...props }: GroupHeaderProps) {
+  return <div className={cn(styles["group-header"], className)} {...props} />;
 }
 
 interface GroupContentProps extends React.ComponentPropsWithoutRef<"div"> {}
@@ -249,6 +259,7 @@ export const Sidebar = {
   Empty,
   Footer,
   Group,
+  GroupHeader,
   GroupLabel,
   GroupContent,
   CollapsibleGroup,

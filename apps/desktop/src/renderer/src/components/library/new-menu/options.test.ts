@@ -17,6 +17,8 @@ describe("new menu actions", () => {
       "folders",
       "links",
       "clipboard",
+      "bookmarks",
+      "page-assets",
       "eagle",
       "connect",
       "watch",
@@ -28,7 +30,7 @@ describe("new menu actions", () => {
   });
 
   it("matches keywords and all search terms", () => {
-    expect(ids("text document")).toEqual(["note"]);
+    expect(ids("text document")).toEqual(["note", "files"]);
     expect(ids("auto import")).toEqual(["connect", "watch"]);
     expect(ids("paste")).toEqual(["clipboard"]);
     expect(ids("from folder")).toEqual(["folders"]);

@@ -16,7 +16,7 @@ Open http://127.0.0.1:4317. The state strip includes 17 scenarios. Full Page / S
 4. **Organize These Saves**: prepares changes for the answer's referenced Saves. Review each before/after edit, select a subset, then Apply or Dismiss. Zero selected edits disables Apply.
 5. **Apply → undo**: progress is shown per Save. Show in Library reflects applied edits. Undo restores the original sample values; Review Again reopens the proposal.
 6. **Partial failure**: use the scenario or the review card's explicitly labeled preview checkbox. Retry changes only unfinished items. Stop during application preserves completed edits and leaves unfinished ones available to retry. Undo reverts the completed edits.
-7. **Provider Consent / Error**: cloud selection requires explicit consent for each simulated message. Retry or choose Minnow without losing the draft. No automatic cloud fallback.
+7. **Provider Consent / Error**: cloud selection requires explicit consent for each simulated message. Retry or choose Ollama without losing the draft. No automatic cloud fallback.
 
 Searching, Reading, and Preparing gallery scenarios remain still for inspection (their logo animates); actual submissions progress automatically. Responding and Applying gallery scenarios play automatically. Use Stop / Continue to advance a held work example.
 

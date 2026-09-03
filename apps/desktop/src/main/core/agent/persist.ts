@@ -35,7 +35,7 @@ export async function listMessages(chatId: string) {
     .orderBy(asc(agentMessages.createdAt), asc(agentMessages.id));
 }
 
-export async function recentMessages(chatId: string, limit = 12) {
+export async function recentMessages(chatId: string, limit = 24) {
   const db = await getDb();
   const rows = await db
     .select()

@@ -24,6 +24,7 @@ export function applyNavFilter(
   nav: LibraryNav,
   memberships: Record<string, string[]>,
   folders: readonly Folder[],
+  includeDescendants = true,
 ): Save[] {
   if (
     nav.kind === "all" ||
@@ -37,7 +38,9 @@ export function applyNavFilter(
     return saves.filter((save) => (memberships[save.id] ?? []).length === 0);
   }
   if (nav.kind === "folder") {
-    const ids = descendantFolderIds(nav.id, folders);
+    const ids = includeDescendants
+      ? descendantFolderIds(nav.id, folders)
+      : new Set([nav.id]);
     return saves.filter((save) =>
       (memberships[save.id] ?? []).some((folderId) => ids.has(folderId)),
     );

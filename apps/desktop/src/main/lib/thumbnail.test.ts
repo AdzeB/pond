@@ -5,6 +5,7 @@ import {
   isIsoBaseMediaHeader,
   isRasterImageHeader,
   isThumbnailable,
+  thumbnailKindForExtension,
 } from "./thumbnail";
 
 describe("thumbnail formats", () => {
@@ -16,6 +17,21 @@ describe("thumbnail formats", () => {
   it("accepts HEIC covers for native conversion", () => {
     expect(isThumbnailable(".heic")).toBe(true);
     expect(isThumbnailable(".heif")).toBe(true);
+  });
+
+  it.each([
+    [".heic", "native"],
+    [".heif", "native"],
+    [".jxl", "sharp-or-native"],
+    [".tif", "sharp-or-native"],
+    [".tiff", "sharp-or-native"],
+    [".pdf", "native"],
+    [".otf", "native"],
+    [".woff2", "native"],
+    [".usdz", "native"],
+    [".mp3", "native"],
+  ])("chooses the preview pipeline for %s", (extension, expected) => {
+    expect(thumbnailKindForExtension(extension)).toBe(expected);
   });
 
   it("distinguishes genuine HEIC bytes from a JPEG with a .heic suffix", () => {

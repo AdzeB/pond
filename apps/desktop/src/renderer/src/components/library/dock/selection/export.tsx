@@ -57,8 +57,7 @@ export function SelectionExportSection() {
   return (
     <>
       <TrayCard.Header>
-        <TrayCard.Back disabled={busy} onClick={() => dock.closeViewMenu()} />
-        <TrayCard.Title position="center">Export</TrayCard.Title>
+        <TrayCard.Title>Export</TrayCard.Title>
         <TrayCard.Close disabled={busy} />
         <TrayCard.Separator />
       </TrayCard.Header>

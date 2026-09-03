@@ -8,6 +8,10 @@ import {
 import { MotionConfig } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import type { PondApi } from "../../preload";
+import { CaptureShell } from "./components/library/capture-shell";
+import { CollectShell } from "./components/library/collect-shell";
+import { CommandMenuHost } from "./components/library/command-menu";
+import { PreviewShell } from "./components/library/preview-shell";
 import { ConfirmDialogHost } from "./components/shared/confirm-dialog";
 import { PromptDialogHost } from "./components/shared/prompt-dialog";
 import { ShortcutsSheetHost } from "./components/shared/shortcuts-sheet";
@@ -15,6 +19,7 @@ import { ToastHost } from "./components/shared/toast-host";
 import { BootScreen } from "./components/shell/boot-screen";
 import { ErrorBoundary } from "./components/shell/error-boundary";
 import { ErrorScreen } from "./components/shell/error-screen";
+import { AgentLibraryBridge } from "./effects/agent-library-bridge";
 import { EnrichmentSweep } from "./effects/enrichment-sweep";
 import { ExtensionCaptureToast } from "./effects/extension-capture-toast";
 import { MenuRecentsBridge } from "./effects/menu-recents-bridge";
@@ -27,7 +32,6 @@ import { syncPrimaryFromPath } from "./lib/ui/save-nav";
 import { routeTree } from "./routeTree.gen";
 import { useHydrateFolders } from "./stores/folders";
 import { usePrefs } from "./stores/prefs";
-import { settingsModal } from "./stores/settings-modal";
 
 declare global {
   interface Window {
@@ -76,11 +80,11 @@ function readStored(key: string): string | null {
 
 function initialPath(): string {
   const startup = readStored(STARTUP_PAGE_KEY) ?? "continue";
-  if (startup === "settings") return "/";
+  if (startup === "settings") return "/settings/general";
   const startupRoute = STARTUP_ROUTES.get(startup);
   if (startup !== "continue" && startupRoute) return startupRoute;
   const last = readStored(LAST_PATH_KEY) || "/";
-  if (last.startsWith("/settings") || last.startsWith("/dev")) return "/";
+  if (last.startsWith("/dev")) return "/";
   return last;
 }
 
@@ -119,11 +123,32 @@ function AppContent() {
 }
 
 export function App() {
-  useHydrateFolders();
+  const shell = new URLSearchParams(window.location.search).get("shell");
+  if (shell === "preview") {
+    const id = new URLSearchParams(window.location.search).get("id") ?? "";
+    return (
+      <MotionConfig reducedMotion="user">
+        <ThemeApplier />
+        <PreviewShell id={id} />
+      </MotionConfig>
+    );
+  }
+  if (shell === "capture") {
+    return <CaptureShell />;
+  }
+  if (shell === "collect") {
+    return (
+      <MotionConfig reducedMotion="user">
+        <ThemeApplier />
+        <CollectShell />
+      </MotionConfig>
+    );
+  }
+  return <LibraryApp />;
+}
 
-  useEffect(() => {
-    if (readStored(STARTUP_PAGE_KEY) === "settings") settingsModal.open();
-  }, []);
+function LibraryApp() {
+  useHydrateFolders();
 
   const [windowPrefs] = usePrefs("window");
   const startupPage = windowPrefs?.startupPage;
@@ -154,6 +179,7 @@ export function App() {
           <ThemeApplier />
           <UiSounds />
           <MenuRecentsBridge />
+          <AgentLibraryBridge />
           <SyncStatusBridge />
           <ExtensionCaptureToast />
           <EnrichmentSweep />
@@ -163,6 +189,7 @@ export function App() {
           </ErrorBoundary>
           <ConfirmDialogHost />
           <PromptDialogHost />
+          <CommandMenuHost />
           <ShortcutsSheetHost />
           <ToastHost />
         </Tooltip.Provider>

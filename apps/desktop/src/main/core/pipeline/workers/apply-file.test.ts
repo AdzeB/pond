@@ -3,7 +3,7 @@ import { mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { persistWriteFile } from "./apply";
+import { mergeSaveFiles, persistWriteFile } from "./apply";
 
 const temporaryDirectories: string[] = [];
 
@@ -80,5 +80,33 @@ describe("persistWriteFile", () => {
       ),
     ).toBeNull();
     await expect(stat(targetPath)).rejects.toMatchObject({ code: "ENOENT" });
+  });
+});
+
+describe("mergeSaveFiles", () => {
+  const original = {
+    kind: "file",
+    path: "original.pdf",
+    sha256: "original",
+    size: 10,
+  };
+  const thumbnail = {
+    kind: "custom_thumbnail",
+    path: "thumbnail.png",
+    sha256: "thumbnail",
+    size: 5,
+  };
+
+  it("clears a replaced kind even when no new file is written", () => {
+    expect(
+      mergeSaveFiles([original, thumbnail], [], "custom_thumbnail"),
+    ).toEqual([original]);
+  });
+
+  it("replaces one kind without disturbing original files", () => {
+    const next = { ...thumbnail, path: "next.png", sha256: "next" };
+    expect(
+      mergeSaveFiles([original, thumbnail], [next], "custom_thumbnail"),
+    ).toEqual([original, next]);
   });
 });

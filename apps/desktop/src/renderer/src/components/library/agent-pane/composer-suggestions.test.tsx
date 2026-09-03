@@ -131,9 +131,9 @@ it("supports arrows, Tab selection, and Escape dismissal", async () => {
   await press("ArrowUp");
   expect(
     document.querySelector('[aria-selected="true"]')?.textContent,
-  ).toContain("Organize Saves");
+  ).toContain("Describe Images");
   await press("Tab");
-  expect(textarea().value).toContain("Suggest better titles");
+  expect(textarea().value).toContain("Look at these Saves");
   await type("/sum");
   await press("Escape");
   expect(textarea().getAttribute("aria-expanded")).toBe("false");

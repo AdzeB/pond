@@ -1,0 +1,50 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100vh;
+  padding: 36px 16px 16px;
+  background: var(--ds-gray-1);
+  -webkit-app-region: drag;
+}
+
+.title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.copy {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ds-gray-11);
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  -webkit-app-region: no-drag;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  -webkit-app-region: no-drag;
+}
+
+.drop {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  min-height: 120px;
+  color: var(--ds-gray-11);
+  -webkit-app-region: no-drag;
+  border: 1px dashed var(--ds-gray-6);
+  border-radius: var(--ds-radius-lg);
+
+  &[data-busy] {
+    opacity: 0.6;
+  }
+}

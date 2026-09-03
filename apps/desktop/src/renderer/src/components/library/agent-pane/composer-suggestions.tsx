@@ -1,4 +1,4 @@
-import { Popover } from "@pond/ui";
+import { Keyboard, Popover } from "@pond/ui";
 import { type RefObject, useEffect, useRef } from "react";
 import styles from "./composer-suggestions.module.css";
 import type { useComposerSuggestions } from "./use-composer-suggestions";
@@ -80,14 +80,16 @@ export function ComposerSuggestions({
             ) : null}
             <div className={styles.footer} aria-hidden="true">
               <span>
-                <kbd>↑</kbd>
-                <kbd>↓</kbd> Navigate
+                <Keyboard.Cluster keys={["↑", "↓"]} />
+                Navigate
               </span>
               <span>
-                <kbd>↵</kbd> {kind === "@" ? "Attach" : "Insert"}
+                <Keyboard.Key>↵</Keyboard.Key>
+                {kind === "@" ? "Attach" : "Insert"}
               </span>
               <span>
-                <kbd>esc</kbd> Close
+                <Keyboard.Key>esc</Keyboard.Key>
+                Close
               </span>
             </div>
           </Popover.Popup>

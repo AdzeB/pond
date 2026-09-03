@@ -102,6 +102,13 @@
   color: var(--ds-gray-10);
 }
 
+.breadcrumbs .crumb {
+  gap: 6px;
+  height: 28px;
+  padding: 0 6px;
+  font-size: var(--ds-text-small);
+}
+
 .current {
   color: var(--ds-gray-12);
 }

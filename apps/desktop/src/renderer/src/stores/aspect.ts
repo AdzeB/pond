@@ -5,7 +5,7 @@ import { z } from "zod";
 import {
   type MediaPickOptions,
   type MediaUnit,
-  pickPrimaryUnit,
+  pickCardUnit,
 } from "@/lib/media/units";
 import { pondScopedKey } from "@/lib/pond-scope";
 import type { Save } from "@/lib/types";
@@ -52,7 +52,7 @@ function coverKeyForSave(save: Save, opts: MediaPickOptions): string {
   const fingerprint = optsCacheKey(opts);
   const cached = byOpts.get(fingerprint);
   if (cached !== undefined) return cached;
-  const coverKey = aspectCoverKey(pickPrimaryUnit(save, opts));
+  const coverKey = aspectCoverKey(pickCardUnit(save, opts));
   byOpts.set(fingerprint, coverKey);
   return coverKey;
 }
@@ -68,7 +68,7 @@ function measuredKey(saveId: string, coverKey: string): string {
 export function aspectDimsFor(
   save: Save,
   opts: MediaPickOptions = {},
-  unit = pickPrimaryUnit(save, opts),
+  unit = pickCardUnit(save, opts),
 ): { w: number | null; h: number | null } {
   const files = save.files ?? [];
   const primary = unit
@@ -172,7 +172,7 @@ export function aspectFor(save: Save, opts: MediaPickOptions = {}): number {
   }
   const cached = byCover.get(coverKey);
   if (cached !== undefined) return cached;
-  const unit = pickPrimaryUnit(save, opts);
+  const unit = pickCardUnit(save, opts);
   const { w, h } = aspectDimsFor(save, opts, unit);
   const ratio = w && h ? clampRatio(w, h) : 1;
   byCover.set(coverKey, ratio);

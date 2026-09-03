@@ -1,4 +1,3 @@
-import { IconPlusOutline12 } from "@pond/icons/outline/12";
 import {
   IconClone2Outline18,
   IconDownloadOutline18,
@@ -6,18 +5,24 @@ import {
   IconFileOutline18,
   IconFolderOpenOutline18,
   IconFolderOutline18,
+  IconGlobeOutline18,
+  IconImageOutline18,
   IconLink2Outline18,
   IconNotepadOutline18,
+  IconPlusOutline18,
   IconTagsOutline18,
   IconUserPlusOutline18,
   IconVersionsOutline18,
 } from "@pond/icons/outline/18";
 import { Menu, Tooltip } from "@pond/ui";
 import { type ComponentType, Fragment, useState } from "react";
+import { prompt } from "@/components/shared/prompt-dialog";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
 import {
+  importBookmarks,
   importClipboard,
   importEagle,
+  importPageAssets,
   importPaths,
   newFolder,
   newSource,
@@ -37,6 +42,8 @@ const ICONS = {
   folders: IconFolderOpenOutline18,
   links: IconLink2Outline18,
   clipboard: IconClone2Outline18,
+  bookmarks: IconGlobeOutline18,
+  "page-assets": IconImageOutline18,
   eagle: IconDownloadOutline18,
   connect: IconUserPlusOutline18,
   watch: IconEyeOutline18,
@@ -46,6 +53,8 @@ const IMPORT_IDS: ReadonlySet<NewActionId> = new Set([
   "files",
   "folders",
   "clipboard",
+  "bookmarks",
+  "page-assets",
   "eagle",
 ]);
 
@@ -70,6 +79,19 @@ export function NewMenu() {
       case "note":
       case "links":
         setDialog(id);
+        return;
+      case "page-assets":
+        prompt({
+          title: "Import Page Assets",
+          confirmLabel: "Import",
+          placeholder: "https://",
+          onConfirm: (url) => void runNewAction(() => importPageAssets(url)),
+        });
+        return;
+      case "bookmarks":
+        if (pending) return;
+        setPending(id);
+        void runNewAction(importBookmarks).finally(() => setPending(null));
         return;
       case "connect":
       case "watch":
@@ -98,8 +120,14 @@ export function NewMenu() {
         }}
       >
         <Tooltip label="New" side="bottom">
-          <Menu.Trigger icon size="sm" variant="ghost" aria-label="New">
-            <IconPlusOutline12 />
+          <Menu.Trigger
+            icon
+            size="sm"
+            variant="ghost"
+            rounding="rounded"
+            aria-label="New"
+          >
+            <IconPlusOutline18 />
           </Menu.Trigger>
         </Tooltip>
         <Menu.Portal>

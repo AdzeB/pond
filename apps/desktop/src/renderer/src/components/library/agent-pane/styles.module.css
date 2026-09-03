@@ -82,6 +82,27 @@
   align-items: center;
   min-width: 0;
 }
+.composer-form {
+  display: contents;
+}
+.composer-input {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  max-height: 150px;
+  padding: 0;
+  overflow-y: auto;
+  font-size: var(--assistant-text-size);
+  line-height: var(--assistant-line-height);
+  color: var(--ds-gray-12);
+  resize: none;
+  outline: 0;
+  background: transparent;
+  border: 0;
+}
+.composer-input::placeholder {
+  color: var(--ds-gray-8);
+}
 .assistant .model-trigger {
   display: flex;
   gap: 6px;
@@ -334,7 +355,9 @@
   border-bottom-color: var(--ds-gray-7);
 }
 .assistant-model-picker .model-list {
+  max-height: 280px;
   padding: 5px;
+  overflow-y: auto;
 }
 .assistant-model-picker .model-row {
   gap: 8px;
@@ -402,6 +425,9 @@
 .assistant[data-layout="pane"] .composer textarea {
   font-size: 13px;
 }
+.assistant[data-layout="pane"] .composer-input {
+  font-size: 13px;
+}
 .assistant[data-layout="pane"] .compose-area {
   width: calc(100% - 24px);
   margin-bottom: 12px;
@@ -433,6 +459,9 @@
   }
 }
 .composer textarea::placeholder {
+  color: var(--ds-gray-10);
+}
+.composer-input::placeholder {
   color: var(--ds-gray-10);
 }
 
@@ -489,6 +518,11 @@
   min-width: 0;
 }
 .composer .attachment-list {
+  max-height: 138px;
+  margin-bottom: 10px;
+  overflow-y: auto;
+}
+.composer-body .attachment-list {
   max-height: 138px;
   margin-bottom: 10px;
   overflow-y: auto;

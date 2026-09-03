@@ -95,7 +95,7 @@ export const scenarios = [
 export type Scenario = (typeof scenarios)[number]["id"];
 export type Surface = "page" | "pane";
 export type Theme = "dark" | "light";
-export type Provider = "Minnow" | "Anthropic" | "OpenAI";
+export type Provider = "Ollama" | "Anthropic" | "OpenAI";
 export type Scope = "library" | "design" | "attached";
 export const scopeLabels: Record<Scope, string> = {
   library: "Library",

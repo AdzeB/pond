@@ -163,45 +163,55 @@ export function CustomFilter({
             />
           </Input.Root>
         </label>
+        {field === "duration" ? (
+          <div className={styles.field}>
+            <span>Unit</span>
+            <FilterSelect
+              label="Duration Unit"
+              value={unit}
+              items={[
+                { value: "seconds", label: "Seconds" },
+                { value: "minutes", label: "Minutes" },
+                { value: "hours", label: "Hours" },
+              ]}
+              onChange={(next) => {
+                const nextFactor = unitFactor(next);
+                const convert = (value: string) =>
+                  value
+                    ? String(
+                        Number(
+                          ((Number(value) * factor) / nextFactor).toPrecision(
+                            12,
+                          ),
+                        ),
+                      )
+                    : "";
+                setStart(convert(start));
+                setEnd(convert(end));
+                setUnit(next);
+                onUnitChange?.(next);
+              }}
+            />
+          </div>
+        ) : null}
       </div>
-      {field === "duration" ? (
-        <div className={styles["control-row"]}>
-          <span>Unit</span>
-          <FilterSelect
-            label="Duration Unit"
-            value={unit}
-            items={[
-              { value: "seconds", label: "Seconds" },
-              { value: "minutes", label: "Minutes" },
-              { value: "hours", label: "Hours" },
-            ]}
-            onChange={(next) => {
-              const nextFactor = unitFactor(next);
-              const convert = (value: string) =>
-                value
-                  ? String(
-                      Number(
-                        ((Number(value) * factor) / nextFactor).toPrecision(12),
-                      ),
-                    )
-                  : "";
-              setStart(convert(start));
-              setEnd(convert(end));
-              setUnit(next);
-              onUnitChange?.(next);
-            }}
-          />
-        </div>
-      ) : null}
-      <p className={styles.hint}>Leave either bound empty for an open range.</p>
-      {(start || end) && !predicate ? (
-        <p className={styles.error} role="status">
-          Enter a valid range with the minimum first.
-        </p>
-      ) : null}
-      <Button type="submit" size="sm" variant="secondary" disabled={!predicate}>
-        Apply Filter
-      </Button>
+      <div className={styles["form-footer"]}>
+        {(start || end) && !predicate ? (
+          <p className={styles.error} role="status">
+            Enter a valid range with the minimum first.
+          </p>
+        ) : (
+          <span />
+        )}
+        <Button
+          type="submit"
+          size="sm"
+          variant="secondary"
+          disabled={!predicate}
+        >
+          Apply
+        </Button>
+      </div>
     </form>
   );
 }

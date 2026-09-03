@@ -9,9 +9,8 @@ import { RedditPostExtractor } from "./sources/reddit";
 import { ThreadsPostExtractor } from "./sources/threads";
 import { TikTokVideoExtractor } from "./sources/tiktok";
 import { TwitterTweetExtractor } from "./sources/twitter";
-import { WebPageExtractor } from "./sources/web";
 import { YouTubeWatchExtractor } from "./sources/youtube";
-import type { Extractor } from "./types";
+import type { ExtractInput, Extractor } from "./types";
 
 const EXTRACTORS = {
   twitter: new TwitterTweetExtractor(),
@@ -25,7 +24,18 @@ const EXTRACTORS = {
   threads: new ThreadsPostExtractor(),
 } as const satisfies Record<ExternalSource, Extractor>;
 
-const WEB_EXTRACTOR = new WebPageExtractor();
+const WEB_EXTRACTOR: Extractor = {
+  id: "web-page",
+  source: "web",
+  validUrl: [],
+  cookieDomain: null,
+  authCookies: () => false,
+  suitable: (url: URL) => url.protocol === "http:" || url.protocol === "https:",
+  extract: async (input: ExtractInput) => {
+    const { WebPageExtractor } = await import("./sources/web");
+    return new WebPageExtractor().extract(input);
+  },
+};
 
 export const EXTRACTOR_LIST: readonly Extractor[] = Object.values(EXTRACTORS);
 

@@ -5,7 +5,7 @@ import { expect, it, vi } from "vitest";
 import { assistant, useAssistant } from "./assistant";
 
 vi.mock("./folders", () => ({ folders: { refresh: vi.fn() } }));
-it("keeps the composer draft and attachments when answering a question, including cloud consent", async () => {
+it("keeps the composer draft and attachments when answering a question", async () => {
   const question = {
     id: "question",
     chatId: "chat",
@@ -15,14 +15,10 @@ it("keeps the composer draft and attachments when answering a question, includin
       question: { question: "Which topic?", options: ["Film", "Architecture"] },
     },
   };
-  let accepted = false;
   const query = vi.fn(async (name: string) => {
     if (name === "agent.messages") return [question];
     if (name === "agent.chats") return [{ id: "chat", title: "Topics" }];
-    if (name === "agent.send")
-      return accepted
-        ? { chatId: "chat", accepted: true }
-        : { chatId: "chat", needsCloud: true };
+    if (name === "agent.send") return { chatId: "chat", accepted: true };
     return {};
   });
   vi.stubGlobal("pond", { query, onAgentChunk: () => () => {} });
@@ -35,7 +31,6 @@ it("keeps the composer draft and attachments when answering a question, includin
         {JSON.stringify({
           draft: state.draft,
           attached: state.attachments.length,
-          consent: state.consent?.content,
         })}
       </output>
     );
@@ -58,19 +53,17 @@ it("keeps the composer draft and attachments when answering a question, includin
   });
   expect(host.textContent).toContain('"draft":"Keep this draft"');
   expect(host.textContent).toContain('"attached":1');
-  expect(host.textContent).toContain('"consent":"Architecture"');
-  accepted = true;
-  await act(async () => {
-    await assistant.allowOnce();
-  });
   expect(query).toHaveBeenCalledWith(
     "agent.send",
     expect.objectContaining({
       content: "Architecture",
       replyToQuestion: "question",
-      allowCloudOnce: true,
     }),
   );
+  const sendCall = query.mock.calls.find((call) => call[0] === "agent.send") as
+    | [string, Record<string, unknown>]
+    | undefined;
+  expect(sendCall?.[1]).not.toHaveProperty("allowCloudOnce");
   expect(host.textContent).toContain('"draft":"Keep this draft"');
   expect(host.textContent).toContain('"attached":1');
   await act(async () => assistant.quote("A paragraph.\n\nSecond paragraph."));

@@ -39,7 +39,7 @@ See [`apps/desktop/README.md`](apps/desktop/README.md) for architecture and on-d
 
 ## Agent and MCP
 
-Agent lives in the right column. It searches this library with the model you pick in Settings: Minnow on this Mac, or a key you paste for OpenAI, Anthropic, Gemini, Ollama, LM Studio, or an OpenAI-compatible endpoint. Pond never stores those keys on a Pond server.
+Agent lives in the right column. It searches this library with a key you paste in Settings, or a local host you run such as Ollama or LM Studio. Pond never stores those keys on a Pond server.
 
 Cursor, Claude, and other MCP hosts can search the same library. Pond speaks MCP over stdio. This block belongs in Cursor `mcp.json`. It launches Pond as a local stdio server (`--mcp`) against the library on this Mac:
 
@@ -92,3 +92,4 @@ adapter authors are expected to respect.
 - [Releasing](RELEASING.md)
 - [Contributing](CONTRIBUTING.md)
 - [Extension](apps/extension/README.md)
+- [Supported File Formats](docs/supported-formats.md)

@@ -19,6 +19,7 @@ describe("bootPool", () => {
       pond: {
         query,
         onSyncAction: vi.fn(),
+        rendererReady: vi.fn(),
       },
     });
 

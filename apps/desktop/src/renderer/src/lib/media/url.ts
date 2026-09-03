@@ -11,10 +11,27 @@ const THUMB_BUCKETS = [256, 384, 512, 768, 1024] as const;
 const THUMB_MAX = 1536;
 
 export function thumbUrlFor(url: string, cssWidth: number | undefined): string {
-  if (!cssWidth || cssWidth <= 0) return url;
-  const wanted = cssWidth * (globalThis.devicePixelRatio || 1);
-  const width = THUMB_BUCKETS.find((b) => b >= wanted) ?? THUMB_MAX;
+  const width = thumbnailWidth(cssWidth);
+  if (!width) return url;
   return `${url}${url.includes("?") ? "&" : "?"}tw=${width}`;
+}
+
+/** Waits for a renderer-safe WebP when Chromium cannot decode the original. */
+export function previewUrlFor(url: string, width = 2048): string {
+  return `${url}${url.includes("?") ? "&" : "?"}preview=${width}`;
+}
+
+export function previewThumbUrlFor(
+  url: string,
+  cssWidth: number | undefined,
+): string {
+  return previewUrlFor(url, thumbnailWidth(cssWidth) ?? 1024);
+}
+
+function thumbnailWidth(cssWidth: number | undefined): number | null {
+  if (!cssWidth || cssWidth <= 0) return null;
+  const wanted = cssWidth * (globalThis.devicePixelRatio || 1);
+  return THUMB_BUCKETS.find((bucket) => bucket >= wanted) ?? THUMB_MAX;
 }
 
 export function pickAuthorAvatarUrl(save: Save): string | null {

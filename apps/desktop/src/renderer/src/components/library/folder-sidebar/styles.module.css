@@ -1,18 +1,11 @@
 .root {
   --folder-indent: 24px;
 
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  padding: 0 8px 12px;
+  padding: 0 12px 16px;
 }
 
 .workspace {
-  display: flex;
-  flex: 0 0 auto;
   gap: 4px;
-  align-items: center;
-  width: 100%;
   height: 44px;
   padding: 4px 0 4px 2px;
 }
@@ -27,13 +20,8 @@
   padding-left: 4px;
   color: var(--ds-gray-12);
 
-  /* last element should align end */
   > :last-child {
     justify-self: end;
-  }
-
-  &[data-popup-open] {
-    background: var(--ds-gray-a3);
   }
 }
 
@@ -75,28 +63,7 @@
 }
 
 .scroll {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
   padding-top: 8px;
-}
-
-.heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  height: var(--sidebar-height-md);
-}
-
-.title {
-  flex: none;
-  width: auto;
-  max-width: calc(100% - 28px);
-}
-
-.heading .title:hover {
-  background: var(--ds-gray-a3);
 }
 
 .trigger {
@@ -132,22 +99,6 @@
   inset-inline-start: 0;
   content: "";
   border-inline-start: 1px solid var(--ds-gray-a5);
-}
-
-.root .item {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.root .item:hover {
-  background: var(--ds-gray-a3);
-}
-
-.root .item[data-pressed],
-.root .item[data-status="active"],
-.root .item[data-popup-open] {
-  background: var(--ds-gray-a4);
 }
 
 .progress {

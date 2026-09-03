@@ -66,7 +66,9 @@ describe("new menu actions", () => {
     query
       .mockResolvedValueOnce({ paths: ["/tmp/unsupported"] })
       .mockResolvedValueOnce({ ok: false });
-    await expect(importPaths("files")).rejects.toThrow("No supported files");
+    await expect(importPaths("files")).rejects.toThrow(
+      "No files were imported",
+    );
     expect(notify).not.toHaveBeenCalled();
   });
 

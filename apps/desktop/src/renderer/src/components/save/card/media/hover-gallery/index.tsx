@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { BlurHash } from "@/components/save/card/media/blur-hash";
 import { useImageReady } from "@/components/save/card/media/lib/use-image-ready";
 import type { MediaUnit } from "@/lib/media/units";
-import { thumbUrlFor } from "@/lib/media/url";
+import { previewThumbUrlFor, thumbUrlFor } from "@/lib/media/url";
 import type { Save } from "@/lib/types";
 import { aspectCoverKey, aspectDimsFor, recordAspect } from "@/stores/aspect";
 import styles from "./styles.module.css";
@@ -65,7 +65,9 @@ function GallerySlide({
   const dims = primary ? aspectDimsFor(save, {}, unit) : null;
   const w = dims?.w ?? undefined;
   const h = dims?.h ?? undefined;
-  const src = thumbUrlFor(unit.url, width);
+  const src = unit.requiresGeneratedPreview
+    ? previewThumbUrlFor(unit.url, width)
+    : thumbUrlFor(unit.url, width);
   const reportReady = useCallback(
     (image: HTMLImageElement) => {
       if (!primary) return;

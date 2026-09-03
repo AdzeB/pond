@@ -52,8 +52,7 @@ export function SelectionTagSection() {
   return (
     <>
       <TrayCard.Header>
-        <TrayCard.Back disabled={busy} onClick={() => dock.closeViewMenu()} />
-        <TrayCard.Title position="center">Add Tags</TrayCard.Title>
+        <TrayCard.Title>Add Tags</TrayCard.Title>
         <TrayCard.Close disabled={busy} />
         <TrayCard.Separator />
       </TrayCard.Header>

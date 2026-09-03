@@ -29,6 +29,10 @@ function applyZoomVar(zoom: number): void {
   document.documentElement.style.setProperty("--grid-min", `${zoom}px`);
 }
 
+export type VisualProbe =
+  | { kind: "saveId"; id: string; label: string }
+  | { kind: "vector"; model: string; values: number[]; label: string };
+
 interface ViewStoreState {
   q: string;
   searchInput: string;
@@ -41,6 +45,9 @@ interface ViewStoreState {
   zoom: number;
   capture: boolean;
   activeViewId: string | null;
+  includeSubfolders: boolean;
+  semanticQuery: string | null;
+  visualProbe: VisualProbe | null;
 }
 
 function readInitialLayout(): LayoutValue {
@@ -71,6 +78,9 @@ const store = new Store<ViewStoreState>({
   zoom: readInitialZoom(),
   capture: false,
   activeViewId: null,
+  includeSubfolders: readViewPref("subfolders") !== "0",
+  semanticQuery: null,
+  visualProbe: null,
 });
 
 applyZoomVar(store.state.zoom);
@@ -164,6 +174,75 @@ export function resetFilters(): void {
     searchInput: "",
     rows: [],
     query: EMPTY_QUERY,
+    activeViewId: null,
+    semanticQuery: null,
+    visualProbe: null,
+  }));
+}
+
+export function setSemanticQuery(semanticQuery: string | null): void {
+  const next = semanticQuery?.trim() || null;
+  store.setState((s) =>
+    s.semanticQuery === next ? s : { ...s, semanticQuery: next },
+  );
+}
+
+export function setVisualProbe(visualProbe: VisualProbe | null): void {
+  store.setState((s) => ({ ...s, visualProbe }));
+}
+
+export function useSemanticQuery(): string | null {
+  return useSelector(store, (s) => s.semanticQuery);
+}
+
+export function useVisualProbe(): VisualProbe | null {
+  return useSelector(store, (s) => s.visualProbe);
+}
+
+export function overlayIsActive(): boolean {
+  return Boolean(store.state.semanticQuery || store.state.visualProbe);
+}
+
+export function getOverlays(): {
+  semanticQuery: string | null;
+  visualSaveId: string | null;
+} {
+  const probe = store.state.visualProbe;
+  return {
+    semanticQuery: store.state.semanticQuery,
+    visualSaveId: probe?.kind === "saveId" ? probe.id : null,
+  };
+}
+
+export function setIncludeSubfolders(include: boolean): void {
+  writeViewPref("subfolders", include ? "1" : "0");
+  store.setState((s) => ({ ...s, includeSubfolders: include }));
+}
+
+export function useIncludeSubfolders(): boolean {
+  return useSelector(store, (s) => s.includeSubfolders);
+}
+
+export function applySavedView(view: {
+  id: string;
+  query: Query;
+  sortKey?: string;
+  sortDir?: string;
+  layout?: string | null;
+}): void {
+  const rows = view.query.rules.filter(
+    (clause): clause is Predicate => !("rules" in clause),
+  );
+  const combinator: Combinator = view.query.combinator === "or" ? "or" : "and";
+  store.setState((s) => ({
+    ...s,
+    rows,
+    combinator,
+    query: deriveQuery(rows, combinator),
+    activeViewId: view.id,
+    sortKey: view.sortKey ?? s.sortKey,
+    sortDir: view.sortDir === "asc" ? "asc" : s.sortDir,
+    layout: view.layout && isLayoutValue(view.layout) ? view.layout : s.layout,
   }));
 }
 
@@ -249,6 +328,7 @@ const SORT_KEY_CYCLE: readonly string[] = [
   "aspectRatio",
   "fileSize",
   "fileCount",
+  "rating",
 ];
 
 export function toggleSortDir(): void {
@@ -299,6 +379,8 @@ export function restoreDefaults(): void {
     sortKey: "savedAt",
     sortDir: "desc",
     zoom: ZOOM_DEFAULT,
+    semanticQuery: null,
+    visualProbe: null,
   }));
 }
 

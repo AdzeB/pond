@@ -76,8 +76,7 @@ export function SelectionRunSection() {
   return (
     <>
       <TrayCard.Header>
-        <TrayCard.Back disabled={busy} onClick={() => dock.closeViewMenu()} />
-        <TrayCard.Title position="center">Run a Task</TrayCard.Title>
+        <TrayCard.Title>Run a Task</TrayCard.Title>
         <TrayCard.Close disabled={busy} />
         <TrayCard.Separator />
       </TrayCard.Header>

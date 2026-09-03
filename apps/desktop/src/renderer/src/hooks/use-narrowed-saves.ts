@@ -11,6 +11,7 @@ import { useLibraryNav } from "@/stores/library-chrome";
 import { useRecents } from "@/stores/recents";
 import {
   useFilterQuery,
+  useIncludeSubfolders,
   useSearchText,
   useSortDir,
   useSortKey,
@@ -21,6 +22,7 @@ import {
   type SortKey,
   useFilteredSaves,
 } from "./use-filtered-saves";
+import { useRetrievalOverlay } from "./use-retrieval-overlay";
 import { useSaves } from "./use-saves";
 import { useSearchResults } from "./use-search-results";
 import { useStableById } from "./use-stable-array";
@@ -35,6 +37,7 @@ export function useNarrowedSaves(
   const q = useSearchText();
   const viewSortKey = useSortKey();
   const viewSortDir = useSortDir();
+  const includeSubfolders = useIncludeSubfolders();
   const nav = useLibraryNav();
   const memberships = useFolderMemberships();
   const folderRows = useFolders();
@@ -62,6 +65,7 @@ export function useNarrowedSaves(
       nav,
       memberships,
       folderRows,
+      includeSubfolders,
     );
     return applyModeSort(
       filteredList.map((save) => ({
@@ -79,6 +83,7 @@ export function useNarrowedSaves(
     nav,
     memberships,
     folderRows,
+    includeSubfolders,
   ]);
 
   const narrowed = useStableById(narrowedFresh);
@@ -93,11 +98,12 @@ export function useNarrowedSaves(
   }, [mode, viewSortKey, viewSortDir]);
 
   const filteredFresh = useFilteredSaves(narrowed, query, sortOpts);
-  const normal = useStableById(filteredFresh);
+  const filtered = useStableById(filteredFresh);
+  const ranked = useRetrievalOverlay(filtered);
 
-  const settledRef = useRef(normal);
-  if (!searchHits.searching) settledRef.current = normal;
+  const settledRef = useRef(ranked);
+  if (!searchHits.searching) settledRef.current = ranked;
   return searchHits.searching && settledRef.current.length > 0
     ? settledRef.current
-    : normal;
+    : ranked;
 }

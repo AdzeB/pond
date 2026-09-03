@@ -9,19 +9,23 @@ import { ChoiceFilter } from "./choice-filter";
 import { ColorFilter } from "./color-filter";
 import { ContentFilter } from "./content-filter";
 import { CustomFilter, type DurationUnit } from "./custom-filter";
+import { filterLayout } from "./layout";
 import type { FilterOption } from "./options";
 import { isFilterSelected, selectFilter } from "./selection";
 import styles from "./styles.module.css";
 import { filterSummary } from "./summary";
+import { type FilterTagGroup, TagChoiceFilter } from "./tag-choice-filter";
 
 export function FilterCategory({
   field,
   options,
+  tagGroups = [],
   rows,
   onChange,
 }: {
   field: FieldId;
   options: FilterOption[];
+  tagGroups?: readonly FilterTagGroup[];
   rows: Predicate[];
   onChange: (rows: Predicate[]) => void;
 }) {
@@ -35,6 +39,7 @@ export function FilterCategory({
       ? summary
       : `${meta.label}: ${summary}`
     : meta.label;
+  const layout = filterLayout(field, options.length);
   return (
     <div className={styles.category} data-active={active || undefined}>
       <Menu.Root
@@ -60,11 +65,13 @@ export function FilterCategory({
           <Menu.Positioner side="bottom" align="start" sideOffset={6}>
             <Menu.Popup
               className={styles.popup}
+              data-layout={layout}
               aria-label={`${meta.label} Filter`}
             >
               <FilterEditor
                 field={field}
                 options={options}
+                tagGroups={tagGroups}
                 rows={rows}
                 onChange={onChange}
               />
@@ -104,11 +111,13 @@ export function FilterCategory({
 function FilterEditor({
   field,
   options,
+  tagGroups,
   rows,
   onChange,
 }: {
   field: FieldId;
   options: FilterOption[];
+  tagGroups: readonly FilterTagGroup[];
   rows: Predicate[];
   onChange: (rows: Predicate[]) => void;
 }) {
@@ -121,6 +130,15 @@ function FilterEditor({
   );
   const apply = (predicate: Predicate) =>
     onChange(selectFilter(rows, predicate, true));
+  if (field === "tags")
+    return (
+      <TagChoiceFilter
+        options={options}
+        groups={tagGroups}
+        rows={rows}
+        onChange={onChange}
+      />
+    );
   if (type === "enum" || type === "stringArray")
     return (
       <ChoiceFilter
@@ -130,7 +148,7 @@ function FilterEditor({
         onChange={onChange}
       />
     );
-  if (type === "optional")
+  if (type === "optional" || type === "string")
     return (
       <ContentFilter
         key={JSON.stringify(current)}

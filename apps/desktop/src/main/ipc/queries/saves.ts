@@ -21,10 +21,12 @@ import { clipboard, nativeImage } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { executeBatch } from "../../core/executor";
+import { libraryRetrievalInput } from "../../core/library-retrieval";
 import { persistSave } from "../../core/persist-save";
 import { retryFailedSaves } from "../../core/pipeline/enqueue";
 import { runRenderTextCover } from "../../core/pipeline/workers/render-text-cover";
 import { recordForUndo } from "../../core/undo";
+import { parseJsonVector, upsertVec } from "../../core/vec-index";
 import type { Db } from "../../db";
 import { getDb } from "../../db";
 import { resolveSaveFilePath } from "../helpers";
@@ -160,6 +162,20 @@ export const savesQueries: QueryHandlerMap = {
   ...savesImportQueries,
   ...savesExportQueries,
 
+  "saves.get": query(z.object({ id: StringParam }), async (params) => {
+    if (!params.id) return null;
+    const db = await getDb();
+    const rows = await db
+      .select(SAVE_LIST_COLUMNS)
+      .from(saves)
+      .where(eq(saves.id, params.id));
+    const row = rows[0];
+    if (!row) return null;
+    const grouped = await loadTasksFor(db, [row.id]);
+    const { rawSlim, ...rest } = row;
+    return toWireSaves([{ ...rest, rawJson: rawSlim }], grouped)[0] ?? null;
+  }),
+
   "saves.list": query(
     z.object({ limit: OptionalNumberParam }),
     async (params) => {
@@ -211,7 +227,9 @@ export const savesQueries: QueryHandlerMap = {
         db,
         pageRows.map((row) => row.id),
       );
-      const totalRow = (await db.select({ value: count() }).from(saves))[0];
+      const totalRow = cursor
+        ? null
+        : (await db.select({ value: count() }).from(saves))[0];
       const listRows = pageRows.map(({ rawSlim, ...rest }) => ({
         ...rest,
         rawJson: rawSlim,
@@ -227,7 +245,7 @@ export const savesQueries: QueryHandlerMap = {
                 })),
               )
             : null,
-        total: Number(totalRow?.value ?? 0),
+        total: totalRow ? Number(totalRow.value ?? 0) : null,
       };
       log.info("[pond ipc] saves.listPage", {
         rows: payload.rows.length,
@@ -273,6 +291,17 @@ export const savesQueries: QueryHandlerMap = {
         scores[row.id] = -row.rank;
       }
       return { ids, scores };
+    },
+  ),
+
+  "saves.retrieve": query(
+    libraryRetrievalInput.extend({
+      saveIds: z.array(z.string()).max(10_000).optional(),
+    }),
+    async (params) => {
+      const { retrieveLibrary } = await import("../../core/library-retrieval");
+      const { saveIds, ...input } = params;
+      return await retrieveLibrary(input, saveIds ? { saveIds } : {});
     },
   ),
 
@@ -413,17 +442,36 @@ export const savesQueries: QueryHandlerMap = {
     const rows = await db
       .select({
         id: saves.id,
+        embeddingModel: saves.embeddingModel,
+      })
+      .from(saves)
+      .where(isNotNull(saves.embeddingModel));
+    return rows.map((r) => ({
+      id: r.id,
+      embedding: null,
+      embeddingModel: r.embeddingModel ?? null,
+    }));
+  },
+
+  "saves.getEmbedding": query(IdParams, async (params) => {
+    const db = await getDb();
+    const rows = await db
+      .select({
+        id: saves.id,
         embedding: saves.embedding,
         embeddingModel: saves.embeddingModel,
       })
       .from(saves)
-      .where(isNotNull(saves.embedding));
-    return rows.map((r) => ({
-      id: r.id,
-      embedding: r.embedding ?? null,
-      embeddingModel: r.embeddingModel ?? null,
-    }));
-  },
+      .where(eq(saves.id, params.id))
+      .limit(1);
+    const row = rows[0];
+    if (!row) return { id: params.id, embedding: null, embeddingModel: null };
+    return {
+      id: row.id,
+      embedding: row.embedding ?? null,
+      embeddingModel: row.embeddingModel ?? null,
+    };
+  }),
 
   "saves.setEmbedding": query(
     z.object({
@@ -444,6 +492,8 @@ export const savesQueries: QueryHandlerMap = {
           embeddingModel: params.embeddingModel,
         })
         .where(eq(saves.id, params.id));
+      const vector = parseJsonVector(params.embedding);
+      if (vector) upsertVec(db.$raw, "text", params.id, vector);
       return { ok: true };
     },
   ),
@@ -453,14 +503,13 @@ export const savesQueries: QueryHandlerMap = {
     const rows = await db
       .select({
         id: saves.id,
-        clipEmbedding: saves.clipEmbedding,
         clipModel: saves.clipModel,
       })
       .from(saves)
-      .where(isNotNull(saves.clipEmbedding));
+      .where(isNotNull(saves.clipModel));
     return rows.map((r) => ({
       id: r.id,
-      clipEmbedding: r.clipEmbedding ?? null,
+      clipEmbedding: null,
       clipModel: r.clipModel ?? null,
     }));
   },
@@ -472,6 +521,10 @@ export const savesQueries: QueryHandlerMap = {
       if (Object.keys(params.patch).length === 0) return { ok: false as const };
       const db = await getDb();
       await db.update(saves).set(params.patch).where(eq(saves.id, params.id));
+      if (params.patch.clipEmbedding) {
+        const vector = parseJsonVector(params.patch.clipEmbedding);
+        if (vector) upsertVec(db.$raw, "clip", params.id, vector);
+      }
       return { ok: true as const };
     },
   ),
@@ -600,6 +653,82 @@ export const savesQueries: QueryHandlerMap = {
       return { ok: true as const, captured };
     },
   ),
+
+  async "saves.findDuplicates"() {
+    const db = await getDb();
+    const rows = await db
+      .select({
+        id: saves.id,
+        title: saves.title,
+        phash: saves.phash,
+        files: saves.files,
+      })
+      .from(saves)
+      .where(isNull(saves.deletedAt));
+    const byHash = new Map<string, string[]>();
+    for (const row of rows) {
+      const file = row.files?.[0];
+      const key = file?.sha256 || row.phash;
+      if (!key) continue;
+      const list = byHash.get(key) ?? [];
+      list.push(row.id);
+      byHash.set(key, list);
+    }
+    const groups = [...byHash.values()]
+      .filter((ids) => ids.length > 1)
+      .map((ids) => ({ ids }));
+    return { groups };
+  },
+
+  "saves.mergeDuplicates": query(
+    z.object({ keepId: StringParam, ids: StringListParam }),
+    async (params) => {
+      const keepId = params.keepId.trim();
+      const extras = params.ids.filter((id) => id && id !== keepId);
+      if (!keepId || extras.length === 0) return { ok: false, trashed: 0 };
+      const txs: Transaction[] = extras.map((id) => ({
+        kind: "trash" as const,
+        model: "save" as const,
+        id,
+        meta: { actor: "user" as const, actorReason: "merge-duplicates" },
+      }));
+      await executeBatch(txs);
+      return { ok: true, trashed: extras.length };
+    },
+  ),
+
+  "saves.batchRename": query(
+    z.object({ ids: StringListParam, pattern: StringParam }),
+    async (params) => {
+      const pattern = params.pattern.trim();
+      if (!pattern || params.ids.length === 0) return { ok: false, renamed: 0 };
+      const db = await getDb();
+      const rows = await db
+        .select()
+        .from(saves)
+        .where(inArray(saves.id, params.ids));
+      const txs: Transaction[] = [];
+      let n = 0;
+      for (const row of rows) {
+        n += 1;
+        const title = pattern
+          .replaceAll("{n}", String(n))
+          .replaceAll("{title}", row.title ?? "Untitled")
+          .replaceAll("{id}", row.id);
+        if (title === row.title) continue;
+        txs.push({
+          kind: "update",
+          model: "save",
+          id: row.id,
+          patch: { title },
+          before: { title: row.title },
+          meta: { actor: "user", actorReason: "batch-rename" },
+        });
+      }
+      if (txs.length > 0) await executeBatch(txs);
+      return { ok: true, renamed: txs.length };
+    },
+  ),
 };
 
 function sortColumn(sortKey: string): SQLWrapper {
@@ -616,8 +745,8 @@ function sortColumn(sortKey: string): SQLWrapper {
       return sql`json_array_length(${saves.tags})`;
     case "duration":
       return durationProjection();
-    case "fileSize":
-      return saves.fileSize;
+    case "rating":
+      return saves.rating;
     case "fileCount":
       return sql`json_array_length(${saves.files})`;
     case "width":

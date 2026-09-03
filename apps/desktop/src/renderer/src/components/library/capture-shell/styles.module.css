@@ -1,0 +1,26 @@
+.root {
+  position: fixed;
+  inset: 0;
+  cursor: crosshair;
+  background: rgb(0 0 0 / 0.28);
+  -webkit-app-region: no-drag;
+}
+
+.rect {
+  position: absolute;
+  pointer-events: none;
+  background: rgb(255 255 255 / 0.06);
+  border: 1px solid var(--ds-white-a12);
+}
+
+.hint {
+  position: absolute;
+  top: 24px;
+  left: 0;
+  width: 100%;
+  margin: 0;
+  font-size: 13px;
+  color: var(--ds-white-a12);
+  text-align: center;
+  pointer-events: none;
+}

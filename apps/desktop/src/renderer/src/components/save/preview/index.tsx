@@ -84,6 +84,7 @@ export function TagsEditor({
           size="xs"
           variant="ghost"
           aria-label="Add Tag"
+          data-tag-add=""
         >
           <Plus />
           {addLabel}

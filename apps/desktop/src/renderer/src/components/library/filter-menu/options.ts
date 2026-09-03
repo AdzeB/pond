@@ -11,9 +11,10 @@ export interface FilterOption {
 
 export const FILTER_GROUPS: readonly (readonly FieldId[])[] = [
   ["tags", "folder", "source", "list"],
-  ["type", "color", "shape", "aspect", "duration", "fileCount"],
+  ["type", "color", "shape", "aspect", "duration", "fileCount", "rating"],
+  ["fileSize", "width", "height"],
   ["savedAt", "modifiedAt", "publishedAt"],
-  ["creator", "account", "note", "caption", "transcript"],
+  ["creator", "account", "note", "caption", "transcript", "comment", "url"],
 ];
 
 export function fieldMatchesQuery(
@@ -80,18 +81,21 @@ export function presetOptions(field: FieldId): FilterOption[] {
       },
     ];
   }
+  if (field === "duration" || field === "fileSize") {
+    return (meta.presets ?? []).map(({ id, label, value }) => ({
+      label: label.replace(/\b[a-z]/g, (c) => c.toUpperCase()),
+      predicate: {
+        field,
+        operator: id === "longer" || id === "large" ? "gte" : "lt",
+        value,
+      },
+    }));
+  }
   return (meta.presets ?? []).map(({ id, label, value }) => ({
     label: label.replace(/\b[a-z]/g, (c) => c.toUpperCase()),
     predicate: {
       field,
-      operator:
-        field === "duration"
-          ? id === "longer"
-            ? "gte"
-            : "lt"
-          : meta.type === "stringArray"
-            ? "some"
-            : "eq",
+      operator: meta.type === "stringArray" ? "some" : "eq",
       value:
         meta.type === "stringArray"
           ? Array.isArray(value)

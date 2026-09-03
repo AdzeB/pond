@@ -1,30 +1,32 @@
-"use client";
+import type { AnchorHTMLAttributes } from "react";
+import styles from "./link-button.module.css";
 
-import { Button, type ButtonProps } from "@pond/ui";
-
-type LinkButtonProps = Omit<ButtonProps, "nativeButton" | "render"> & {
+type LinkButtonProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
   href: string;
   external?: boolean;
+  variant?: "primary" | "ghost";
+  size?: "md";
 };
 
 export function LinkButton({
   href,
   external,
   children,
+  variant = "primary",
+  size = "md",
+  className,
   ...props
 }: LinkButtonProps) {
   return (
-    <Button
+    <a
       {...props}
-      nativeButton={false}
-      render={
-        <a
-          href={href}
-          {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
-        />
-      }
+      href={href}
+      data-variant={variant}
+      data-size={size}
+      className={[styles.root, className].filter(Boolean).join(" ")}
+      {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
     >
       {children}
-    </Button>
+    </a>
   );
 }

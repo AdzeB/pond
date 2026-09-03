@@ -10,7 +10,6 @@ import {
   useState,
 } from "react";
 import { ConfirmSection } from "@/components/library/dock/confirm";
-import { SelectionContent } from "@/components/library/dock/selection";
 import { SelectionCopySection } from "@/components/library/dock/selection/copy";
 import { DownloadsSelectionContent } from "@/components/library/dock/selection/downloads";
 import { SelectionExportSection } from "@/components/library/dock/selection/export";
@@ -119,7 +118,8 @@ export function LibraryTray() {
       ? mode
       : "selection";
   const isMenuView = isViewMenu(view);
-  const idle = mode === "nav" && selectionSize === 0;
+  const showSelectionBar = (isDownloads || isSources) && selectionSize > 0;
+  const idle = mode === "nav" && !showSelectionBar;
 
   useEffect(() => {
     if (isDownloads) {
@@ -270,9 +270,7 @@ export function LibraryTray() {
                         <DownloadsSelectionContent key="downloads-selection" />
                       ) : isSources ? (
                         <SourcesSelectionContent key="sources-selection" />
-                      ) : (
-                        <SelectionContent key="selection" />
-                      )
+                      ) : null
                     ) : isViewMenu(view) ? (
                       <motion.div
                         key={view}

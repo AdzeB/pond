@@ -103,6 +103,17 @@ describe("independent Agent and inspector panes", () => {
     expect(libraryChrome.getState().rightPane).toBe("agent");
   });
 
+  it("remembers a save for Details without opening the pane", async () => {
+    const { libraryChrome } = await import("./library-chrome");
+    libraryChrome.setAgentOpen(true);
+    libraryChrome.setInspectorSaveId("first");
+    expect(libraryChrome.getState().rightPane).toBe("agent");
+    expect(libraryChrome.getState().inspectorSaveId).toBe("first");
+    libraryChrome.setInspectorSaveId("second");
+    expect(libraryChrome.getState().rightPane).toBe("agent");
+    expect(libraryChrome.getState().inspectorSaveId).toBe("second");
+  });
+
   it("collapses the whole slot instead of swapping during a columns toggle", async () => {
     const { libraryChrome } = await import("./library-chrome");
     libraryChrome.inspectSave("first");

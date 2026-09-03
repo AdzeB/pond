@@ -2,7 +2,6 @@ import { IconMediaPauseFill18, IconMediaPlayFill18 } from "@pond/icons/fill/18";
 import {
   IconBarsFilterOutline18,
   IconDotsOutline18,
-  IconMagnifierOutline18,
   IconRefreshOutline18,
 } from "@pond/icons/outline/18";
 import type { Op, Source } from "@pond/schema/db";
@@ -24,6 +23,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { DownloadsEmpty, MatchesEmpty } from "@/components/library/empty";
 import { FilterSelect } from "@/components/library/filter-menu/filter-select";
+import {
+  SearchChrome,
+  SearchChromeInput,
+} from "@/components/library/search-chrome";
 import { TableSelectionSync } from "@/components/library/table-selection-sync";
 import { confirm } from "@/components/shared/confirm-dialog";
 import { useClientHeight } from "@/hooks/use-client-height";
@@ -239,6 +242,9 @@ export function DownloadsPage() {
       ops: toggleInSet(cur.ops, id, on),
     }));
   };
+  const resetDownloadFilters = useCallback(() => {
+    setFilters(defaultDownloadFilters());
+  }, []);
 
   const sourceItems: MenuItemSpec[] = SOURCE_OPTIONS.map((opt) => ({
     type: "checkbox",
@@ -326,23 +332,9 @@ export function DownloadsPage() {
       renderRow={renderRow}
     >
       <div className={styles.page}>
-        <div className={styles.header}>
-          <div className={styles.toolbar}>
-            <span className={styles.searchIcon} aria-hidden="true">
-              <IconMagnifierOutline18 />
-            </span>
-            <input
-              className={styles.search}
-              value={filters.q}
-              onChange={(e) =>
-                setFilters((cur) => ({ ...cur, q: e.target.value }))
-              }
-              spellCheck={false}
-              placeholder="Search downloads…"
-              aria-label="Search Downloads"
-              data-downloads-search=""
-            />
-            <div className={styles.actions}>
+        <SearchChrome
+          actions={
+            <>
               <Tooltip
                 label={filtersOpen ? "Hide Filters" : "Show Filters"}
                 side="bottom"
@@ -427,50 +419,65 @@ export function DownloadsPage() {
                   </Menu.Positioner>
                 </Menu.Portal>
               </Menu.Root>
-            </div>
-          </div>
-          <fieldset
-            id="downloads-filters"
-            className={styles.filters}
-            aria-label="Download Filters"
-            hidden={!filtersOpen}
-          >
-            <FilterSelect
-              label="Download Status"
-              value={view}
-              items={STATUS_ITEMS}
-              onChange={setView}
-            />
-            <FilterMenu
-              label={
-                filters.sources.size
-                  ? `Sources (${filters.sources.size})`
-                  : "All Sources"
-              }
-              items={sourceItems}
-            />
-            <FilterMenu
-              label={
-                filters.ops.size ? `Stages (${filters.ops.size})` : "All Stages"
-              }
-              items={stageItems}
-            />
-            {hasFilters ? (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() =>
-                  setFilters((cur) => ({
-                    ...defaultDownloadFilters(),
-                    q: cur.q,
-                  }))
+            </>
+          }
+          below={
+            <fieldset
+              id="downloads-filters"
+              className={styles.filters}
+              aria-label="Download Filters"
+              hidden={!filtersOpen}
+            >
+              <FilterSelect
+                label="Download Status"
+                value={view}
+                items={STATUS_ITEMS}
+                onChange={setView}
+              />
+              <FilterMenu
+                label={
+                  filters.sources.size
+                    ? `Sources (${filters.sources.size})`
+                    : "All Sources"
                 }
-              >
-                Clear Filters
-              </Button>
-            ) : null}
-          </fieldset>
-        </div>
+                items={sourceItems}
+              />
+              <FilterMenu
+                label={
+                  filters.ops.size
+                    ? `Stages (${filters.ops.size})`
+                    : "All Stages"
+                }
+                items={stageItems}
+              />
+              {hasFilters ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() =>
+                    setFilters((cur) => ({
+                      ...defaultDownloadFilters(),
+                      q: cur.q,
+                    }))
+                  }
+                >
+                  Clear Filters
+                </Button>
+              ) : null}
+            </fieldset>
+          }
+        >
+          <SearchChromeInput
+            value={filters.q}
+            onChange={(e) =>
+              setFilters((cur) => ({ ...cur, q: e.target.value }))
+            }
+            spellCheck={false}
+            placeholder="Search downloads…"
+            aria-label="Search Downloads"
+            data-downloads-search=""
+          />
+        </SearchChrome>
 
         {showPlaceEmpty ? (
           <div className={styles.empty}>
@@ -478,7 +485,7 @@ export function DownloadsPage() {
           </div>
         ) : showMatchesEmpty ? (
           <div className={styles.empty}>
-            <MatchesEmpty />
+            <MatchesEmpty onReset={resetDownloadFilters} />
           </div>
         ) : rows.length === 0 && historyError ? (
           <div className={styles.message} role="alert">
@@ -500,7 +507,9 @@ export function DownloadsPage() {
           <div ref={tableRef} className={styles.table}>
             <DataTable.Root variant="list">
               <DataTable.Empty>
-                {historyPending ? null : <MatchesEmpty />}
+                {historyPending ? null : (
+                  <MatchesEmpty onReset={resetDownloadFilters} />
+                )}
               </DataTable.Empty>
               {showHistory && (historyQuery.hasNextPage || historyError) ? (
                 <DataTable.ExtraRow>

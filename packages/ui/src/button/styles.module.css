@@ -50,6 +50,7 @@
   }
 
   &:where([data-disabled]),
+  &:disabled,
   &:where([data-loading]) {
     cursor: not-allowed;
     opacity: 0.5;

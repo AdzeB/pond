@@ -54,6 +54,17 @@ export function useTagsData() {
   }, [groups, tagsById]);
 
   const groupOptions = useMemo(() => groups.map((g) => g.name), [groups]);
+  const groupSummaries = useMemo(
+    () =>
+      groups.map((group) => ({
+        id: group.id,
+        name: group.name,
+        count: groupStats.get(group.id)?.members.length ?? 0,
+      })),
+    [groups, groupStats],
+  );
+  const ungroupedTotal = tags.length - taggedIds.size;
+  const starredTotal = tags.filter((tag) => tag.starred).length;
   const needle = deferredQ.trim().toLowerCase();
 
   const data = useMemo<TagsRowData[]>(() => {
@@ -173,6 +184,9 @@ export function useTagsData() {
     onToggleExpand,
     namesFromIds,
     groupOptions,
+    groupSummaries,
+    ungroupedTotal,
+    starredTotal,
     total: tags.length,
   };
 }

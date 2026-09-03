@@ -6,13 +6,21 @@ import {
   usePresenceData,
   useReducedMotion,
 } from "motion/react";
-import { useCallback, useState } from "react";
+import { lazy, Suspense, useCallback, useState } from "react";
 import { createPortal } from "react-dom";
-import { AgentPane } from "@/components/library/agent-pane";
-import { SaveInspector } from "@/components/save/detail/pane";
 import { useInspectorSaveId, useRightPane } from "@/stores/library-chrome";
 import { usePrefs } from "@/stores/prefs";
 import styles from "./styles.module.css";
+
+const AgentPane = lazy(async () => {
+  const module = await import("@/components/library/agent-pane");
+  return { default: module.AgentPane };
+});
+
+const SaveInspector = lazy(async () => {
+  const module = await import("@/components/save/detail/pane");
+  return { default: module.SaveInspector };
+});
 
 function createContentHost() {
   const host = document.createElement("div");
@@ -73,6 +81,7 @@ export function RightPane() {
   });
   const saveId = useInspectorSaveId();
   const [inspectorId, setInspectorId] = useState(saveId);
+  const [agentActivated, setAgentActivated] = useState(pane === "agent");
   const [agentHost] = useState(createContentHost);
   const [inspectorHost] = useState(createContentHost);
   const [preferences] = usePrefs("preferences");
@@ -82,13 +91,23 @@ export function RightPane() {
     (preferences.reduceMotion !== "never" && Boolean(systemReducedMotion));
 
   if (saveId && saveId !== inspectorId) setInspectorId(saveId);
+  if (pane === "agent" && !agentActivated) setAgentActivated(true);
 
   return (
     <div className={styles.viewport}>
-      {createPortal(assistantPage ? null : <AgentPane />, agentHost)}
+      {createPortal(
+        agentActivated && !assistantPage ? (
+          <Suspense fallback={null}>
+            <AgentPane />
+          </Suspense>
+        ) : null,
+        agentHost,
+      )}
       {createPortal(
         inspectorId ? (
-          <SaveInspector key={inspectorId} saveId={inspectorId} />
+          <Suspense fallback={null}>
+            <SaveInspector key={inspectorId} saveId={inspectorId} />
+          </Suspense>
         ) : null,
         inspectorHost,
       )}

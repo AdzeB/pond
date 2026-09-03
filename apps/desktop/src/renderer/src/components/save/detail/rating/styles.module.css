@@ -1,0 +1,16 @@
+.root {
+  display: flex;
+  gap: 2px;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.star {
+  color: var(--ds-gray-8);
+
+  &[data-active] {
+    color: var(--ds-amber-9);
+  }
+}

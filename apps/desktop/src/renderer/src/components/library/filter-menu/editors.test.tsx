@@ -24,6 +24,13 @@ describe("filter editors", () => {
   let rows: Predicate[];
   beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        disconnect() {}
+      },
+    );
     rows = [];
     host = document.createElement("div");
     document.body.append(host);
@@ -61,7 +68,9 @@ describe("filter editors", () => {
   }
   function element(role: string, text: string): HTMLElement {
     const elements = [
-      ...document.querySelectorAll<HTMLElement>(`[role="${role}"]`),
+      ...document.querySelectorAll<HTMLElement>(
+        role === "button" ? "button" : `[role="${role}"]`,
+      ),
     ];
     const match = elements.find(
       (node) =>
@@ -102,15 +111,13 @@ describe("filter editors", () => {
 
   it("chooses All before selecting values and changes a selection into an exclusion", async () => {
     await render("tags");
-    await click("combobox", "Match Selected Values");
-    await click("option", "All Selected");
+    await click("button", "All Selected");
     await click("menuitemcheckbox", "Design2");
     await click("menuitemcheckbox", "Motion1");
     expect(rows).toEqual([
       { field: "tags", operator: "every", value: ["design", "motion"] },
     ]);
-    await click("combobox", "Selection Action");
-    await click("option", "Exclude");
+    await click("button", "Exclude Selected");
     await click("menuitemcheckbox", "Motion1");
     expect(rows).toEqual([
       { field: "tags", operator: "every", value: ["design"] },
@@ -144,8 +151,7 @@ describe("filter editors", () => {
   it("finds untagged saves through search and lets the exclusion action omit them", async () => {
     await render("tags");
     await fill("Filter Tags", "untagged");
-    await click("combobox", "Selection Action");
-    await click("option", "Exclude");
+    await click("button", "Exclude Selected");
     await click("menuitemcheckbox", "Untagged1");
     expect(rows).toEqual([
       { field: "tags", operator: "empty", value: true, negate: true },

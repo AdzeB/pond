@@ -55,7 +55,7 @@ export const SHORTCUTS = {
     label: "Scroll to Bottom",
     group: "Navigate",
   },
-  "library.search": { keys: "Mod+F", label: "Search", group: "Navigate" },
+  "library.search": { keys: "Mod+K", label: "Search Pond", group: "Navigate" },
   "app.settings": {
     keys: "Mod+,",
     label: "Settings",
@@ -96,7 +96,16 @@ export const SHORTCUTS = {
   "view.inspector": { keys: "Mod+I", label: "Toggle Details", group: "View" },
   "view.sidebar": { keys: "[", label: "Toggle Sidebar", group: "View" },
   "view.agent": { keys: "]", label: "Toggle Assistant", group: "View" },
-  "grid.hover-preview": { keys: "Z", label: "Hover Preview", group: "View" },
+  "view.grayscale": {
+    keys: "Mod+Alt+G",
+    label: "Grayscale Overlay",
+    group: "View",
+  },
+  "view.pin-preview": {
+    keys: "Mod+Shift+P",
+    label: "Pin Preview",
+    group: "View",
+  },
   "view.options": { keys: "V", label: "View Options", group: "View" },
   "view.display": { keys: "D", label: "Display Options", group: "View" },
   "view.sort-dir": {
@@ -132,7 +141,7 @@ export const SHORTCUTS = {
     group: "Selection",
   },
   "grid.open": { keys: "Enter", label: "Open Save", group: "Selection" },
-  "grid.preview": { keys: "Space", label: "Open Save", group: "Selection" },
+  "grid.preview": { keys: "Space", label: "Preview Save", group: "Selection" },
   "grid.select-all": {
     keys: "Mod+A",
     label: "Select All",

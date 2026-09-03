@@ -15,4 +15,36 @@
     border-radius: var(--ds-radius-xl);
     box-shadow: var(--ds-shadow-1);
   }
+
+  &[data-index] {
+    min-height: 34px;
+    padding: 0 4px;
+    background: transparent;
+    border-radius: var(--ds-radius-md);
+  }
+
+  &[data-index]:hover,
+  &[data-index]:focus-within {
+    background: var(--ds-gray-a2);
+  }
+
+  &[data-index][data-selected] {
+    background: var(--ds-accent-a2);
+  }
+}
+
+.indexSelector {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+}
+
+.indexMarker {
+  width: 6px;
+  height: 6px;
+  color: var(--ds-gray-7);
 }

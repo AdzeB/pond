@@ -1,3 +1,4 @@
+import { SETTINGS_SECTIONS } from "@pond/schema";
 import type { Folder } from "@pond/schema/db";
 import { getSourceLabel } from "@/lib/save/source-labels";
 import { saveIdFromPath } from "@/lib/ui/save-nav";
@@ -15,6 +16,14 @@ interface BreadcrumbInput {
   nav: LibraryNav;
   folders: readonly Pick<Folder, "id" | "name" | "parentId">[];
   saveLabel?: string;
+}
+
+const SETTINGS_LABELS = new Map(
+  SETTINGS_SECTIONS.map((section) => [section.path, section.label]),
+);
+
+function settingsCrumb(section: string): string {
+  return SETTINGS_LABELS.get(section) ?? "Settings";
 }
 
 export function buildBreadcrumbs({
@@ -35,6 +44,10 @@ export function buildBreadcrumbs({
     crumbs.push({ label: "Sources", path: base, nav: { kind: "sources" } });
   } else if (base === "/tags") {
     crumbs.push({ label: "Tags", path: base });
+  } else if (base.startsWith("/settings")) {
+    crumbs.push({ label: "Settings", path: "/settings" });
+    const section = base.slice("/settings/".length);
+    if (section) crumbs.push({ label: settingsCrumb(section), path: base });
   } else if (base === "/downloads") {
     crumbs.push({ label: "Downloads", path: base, nav: { kind: "downloads" } });
   } else if (base === "/trash") {

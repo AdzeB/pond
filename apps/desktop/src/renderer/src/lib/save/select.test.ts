@@ -1,0 +1,104 @@
+// @vitest-environment jsdom
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { libraryChrome } from "@/stores/library-chrome";
+import { primarySelection, selection } from "@/stores/selection";
+import {
+  clearSaveSelection,
+  clickSave,
+  isLibraryBackgroundTarget,
+  selectOnlySave,
+} from "./select";
+
+beforeEach(() => {
+  const memory = new Map<string, string>();
+  vi.stubGlobal("localStorage", {
+    getItem: (key: string) => memory.get(key) ?? null,
+    setItem: (key: string, value: string) => memory.set(key, value),
+  });
+  selection.clear();
+  primarySelection.set(null);
+  libraryChrome.setInspectorSaveId(null);
+  libraryChrome.closeRightPane();
+});
+
+afterEach(() => {
+  selection.clear();
+  primarySelection.set(null);
+  vi.unstubAllGlobals();
+});
+
+describe("clickSave", () => {
+  it("selects the clicked save without opening a range", () => {
+    clickSave("a", { meta: false, shift: false }, ["a", "b", "c"]);
+    expect(selection.snapshot()).toEqual(["a"]);
+    expect(selection.getAnchor()).toBe("a");
+    expect(primarySelection.get()).toBe("a");
+    expect(libraryChrome.getState().inspectorSaveId).toBe("a");
+    expect(libraryChrome.getState().rightPane).toBeNull();
+  });
+
+  it("replaces the previous selection on a plain click", () => {
+    clickSave("a", { meta: false, shift: false }, ["a", "b", "c"]);
+    clickSave("c", { meta: false, shift: false }, ["a", "b", "c"]);
+    expect(selection.snapshot()).toEqual(["c"]);
+    expect(primarySelection.get()).toBe("c");
+  });
+
+  it("toggles a save with the meta key", () => {
+    clickSave("a", { meta: false, shift: false }, ["a", "b", "c"]);
+    clickSave("c", { meta: true, shift: false }, ["a", "b", "c"]);
+    expect(selection.snapshot()).toEqual(["a", "c"]);
+    expect(primarySelection.get()).toBe("c");
+    clickSave("c", { meta: true, shift: false }, ["a", "b", "c"]);
+    expect(selection.snapshot()).toEqual(["a"]);
+    expect(primarySelection.get()).toBe("a");
+  });
+
+  it("selects a range with shift", () => {
+    clickSave("a", { meta: false, shift: false }, ["a", "b", "c"]);
+    clickSave("c", { meta: false, shift: true }, ["a", "b", "c"]);
+    expect(selection.snapshot()).toEqual(["a", "b", "c"]);
+    expect(selection.getAnchor()).toBe("a");
+    expect(primarySelection.get()).toBe("c");
+  });
+});
+
+describe("clearSaveSelection", () => {
+  it("clears the selection and primary without closing Details", () => {
+    libraryChrome.inspectSave("a");
+    selectOnlySave("a");
+    clearSaveSelection();
+    expect(selection.size()).toBe(0);
+    expect(primarySelection.get()).toBeNull();
+    expect(libraryChrome.getState().inspectorSaveId).toBe("a");
+    expect(libraryChrome.getState().rightPane).toBe("inspector");
+  });
+});
+
+describe("isLibraryBackgroundTarget", () => {
+  it("treats empty grid space as a background click", () => {
+    const root = document.createElement("div");
+    root.setAttribute("data-library-grid", "");
+    const gap = document.createElement("div");
+    root.append(gap);
+    expect(isLibraryBackgroundTarget(gap)).toBe(true);
+  });
+
+  it("ignores clicks on a save card", () => {
+    const root = document.createElement("div");
+    root.setAttribute("data-library-grid", "");
+    const card = document.createElement("li");
+    card.setAttribute("data-save-id", "a");
+    root.append(card);
+    expect(isLibraryBackgroundTarget(card)).toBe(false);
+  });
+
+  it("ignores clicks on a hover preview", () => {
+    const root = document.createElement("div");
+    root.setAttribute("data-library-grid", "");
+    const preview = document.createElement("div");
+    preview.setAttribute("role", "dialog");
+    root.append(preview);
+    expect(isLibraryBackgroundTarget(preview)).toBe(false);
+  });
+});

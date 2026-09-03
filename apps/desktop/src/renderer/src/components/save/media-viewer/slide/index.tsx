@@ -1,6 +1,7 @@
 import { type CSSProperties, useCallback, useState } from "react";
 import { type NoteMarker, VideoPlayer } from "@/components/shared/video-player";
 import type { ChapterCue } from "@/lib/media/chapters-vtt";
+import { startNativeDrag } from "@/lib/save/start-drag";
 import styles from "./styles.module.css";
 
 export interface MediaSlide {
@@ -16,6 +17,7 @@ interface SlideProps {
   slide: MediaSlide;
   active: boolean;
   inView: boolean;
+  saveId: string;
   title?: string | null;
   artist?: string | null;
   chapters?: ChapterCue[];
@@ -48,6 +50,7 @@ export function Slide({
   slide,
   active,
   inView,
+  saveId,
   title,
   artist,
   chapters,
@@ -68,6 +71,7 @@ export function Slide({
           <VideoSlide
             slide={slide}
             active={active}
+            saveId={saveId}
             title={title}
             artist={artist}
             chapters={chapters}
@@ -77,13 +81,14 @@ export function Slide({
             onError={onError}
           />
         ) : (
-          <PosterSlide slide={slide} ratioOverride={ratio} />
+          <PosterSlide slide={slide} saveId={saveId} ratioOverride={ratio} />
         )
       ) : (
         <ImageSlide
           slide={slide}
           title={title}
           active={active}
+          saveId={saveId}
           ratioOverride={ratio}
           onRatio={onRatio}
           onError={onError}
@@ -104,6 +109,7 @@ function VideoSlide({
   active,
   title,
   artist,
+  saveId,
   chapters,
   noteMarkers,
   ratioOverride,
@@ -112,6 +118,7 @@ function VideoSlide({
 }: {
   slide: MediaSlide;
   active: boolean;
+  saveId: string;
   title?: string | null;
   artist?: string | null;
   chapters?: ChapterCue[];
@@ -128,6 +135,7 @@ function VideoSlide({
         poster={slide.posterUrl}
         title={title}
         artist={artist}
+        saveId={saveId}
         active={active}
         width={slide.width}
         height={slide.height}
@@ -145,16 +153,27 @@ function VideoSlide({
 
 function PosterSlide({
   slide,
+  saveId,
   ratioOverride,
 }: {
   slide: MediaSlide;
+  saveId: string;
   ratioOverride?: number;
 }) {
   const { ratio } = useResolvedRatio(slide, ratioOverride);
   if (!slide.posterUrl)
     return <div className={styles["media-shell"]} style={ratioStyle(ratio)} />;
   return (
-    <div className={styles["media-shell"]} style={ratioStyle(ratio)}>
+    // biome-ignore lint/a11y/noStaticElementInteractions: native drag from the poster
+    <div
+      className={styles["media-shell"]}
+      style={ratioStyle(ratio)}
+      draggable
+      onDragStart={(event) => {
+        event.preventDefault();
+        startNativeDrag(saveId);
+      }}
+    >
       <img
         src={slide.posterUrl}
         alt=""
@@ -172,6 +191,7 @@ function ImageSlide({
   slide,
   title,
   active,
+  saveId,
   ratioOverride,
   onRatio,
   onError,
@@ -179,6 +199,7 @@ function ImageSlide({
   slide: MediaSlide;
   title?: string | null;
   active: boolean;
+  saveId: string;
   ratioOverride?: number;
   onRatio?: (src: string, ratio: number) => void;
   onError: () => void;
@@ -196,7 +217,16 @@ function ImageSlide({
     [slide.src, onRatio, setLocal],
   );
   return (
-    <div className={styles["media-shell"]} style={ratioStyle(ratio)}>
+    // biome-ignore lint/a11y/noStaticElementInteractions: native drag from the image
+    <div
+      className={styles["media-shell"]}
+      style={ratioStyle(ratio)}
+      draggable
+      onDragStart={(event) => {
+        event.preventDefault();
+        startNativeDrag(saveId);
+      }}
+    >
       <img
         ref={measure}
         src={slide.src}

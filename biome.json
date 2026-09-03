@@ -17,6 +17,7 @@
       "!.mobbin",
       "!.impeccable",
       "!prototypes",
+      "!apps/desktop/prototypes",
       "!packages/theme/src/colors/palette.css",
       "!packages/theme/src/colors/scale.css"
     ]

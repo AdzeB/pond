@@ -96,6 +96,7 @@ export function bootPool(): Promise<void> {
     scheduleSnapshotWrite();
     pagingStore.setState((state) => ({ ...state, ready: true }));
     dismissBootCover();
+    window.pond.rendererReady();
   })();
 
   return bootPromise;

@@ -39,6 +39,11 @@ const EagleImportSchema = z.object({
   imported: z.number(),
   skipped: z.number(),
   failed: z.number(),
+  deletedSkipped: z.number().optional(),
+  lockedFolders: z
+    .array(z.object({ id: z.string(), name: z.string() }))
+    .optional(),
+  droppedFields: z.array(z.string()).optional(),
   error: z.string().optional(),
 });
 
@@ -155,7 +160,7 @@ export function LocationRow() {
   });
 
   const importEagle = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (mode: "import" | "preview") => {
       clearNotes();
       const picked = PickedEagleLibrarySchema.parse(
         await window.pond.query("saves.pickEagleLibrary", {}),
@@ -164,6 +169,7 @@ export function LocationRow() {
       const res = EagleImportSchema.parse(
         await window.pond.query("saves.importEagleLibrary", {
           path: picked.path,
+          dryRun: mode === "preview",
         }),
       );
       if (!res.ok && res.error === "not_eagle_library") {
@@ -174,18 +180,33 @@ export function LocationRow() {
       }
       return res;
     },
-    onSuccess: (res) => {
+    onSuccess: (res, mode) => {
       if (!res) return;
+      const locked = res.lockedFolders?.length
+        ? `Locked folders skipped: ${res.lockedFolders.map((folder) => folder.name).join(", ")}`
+        : null;
+      const deleted =
+        (res.deletedSkipped ?? 0) > 0
+          ? `skipped ${res.deletedSkipped} deleted`
+          : null;
+      const importedLabel =
+        mode === "preview"
+          ? res.imported > 0
+            ? `Would import ${res.imported} item${res.imported === 1 ? "" : "s"}`
+            : null
+          : res.imported > 0
+            ? `Imported ${res.imported} item${res.imported === 1 ? "" : "s"}`
+            : null;
       const parts = [
-        res.imported > 0
-          ? `Imported ${res.imported} item${res.imported === 1 ? "" : "s"}`
-          : null,
+        importedLabel,
         res.skipped > 0 ? `skipped ${res.skipped}` : null,
+        deleted,
         res.failed > 0 ? `failed ${res.failed}` : null,
+        locked,
       ].filter(Boolean);
       setNote({
         row: "import",
-        message: parts.join(", ") || "Nothing new to import.",
+        message: parts.join(". ") || "Nothing new to import.",
       });
     },
   });
@@ -292,7 +313,8 @@ export function LocationRow() {
         <Settings.ItemDetails>
           <Settings.ItemTitle>Import Eagle Library</Settings.ItemTitle>
           <Settings.ItemDescription>
-            Import from Eagle. Tags and folders become Pond tags.
+            Pond keeps titles, notes, tags, folders, files, ratings, palettes,
+            comments, and video notes. Locked folders are listed, not imported.
             <StatusNote
               error={
                 importEagle.isError
@@ -309,11 +331,37 @@ export function LocationRow() {
         <Settings.ItemControl>
           <Button
             size="sm"
+            variant="ghost"
+            disabled={importEagle.isPending}
+            onClick={() => importEagle.mutate("preview")}
+          >
+            Preview
+          </Button>
+          <Button
+            size="sm"
             variant="secondary"
             disabled={importEagle.isPending}
-            onClick={() => importEagle.mutate()}
+            onClick={() => importEagle.mutate("import")}
           >
             {importEagle.isPending ? "Importing" : "Import"}
+          </Button>
+        </Settings.ItemControl>
+      </Settings.Item>
+      <Settings.Item>
+        <Settings.ItemDetails>
+          <Settings.ItemTitle>Watched Folder</Settings.ItemTitle>
+          <Settings.ItemDescription>
+            Copy new files into the library. History lives in the library
+            folder.
+          </Settings.ItemDescription>
+        </Settings.ItemDetails>
+        <Settings.ItemControl>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => void window.pond.query("autoImport.pickFolder", {})}
+          >
+            Choose Folder
           </Button>
         </Settings.ItemControl>
       </Settings.Item>

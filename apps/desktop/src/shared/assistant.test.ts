@@ -17,8 +17,8 @@ describe("Assistant model policy", () => {
     }
   });
 
-  it("keeps app-owned retrieval available even when a model has no tools", () => {
-    expect(ASSISTANT_MODELS.some((model) => !model.capabilities.tools)).toBe(
+  it("ships tool-capable models. Retrieval still runs in the app", () => {
+    expect(ASSISTANT_MODELS.every((model) => model.capabilities.tools)).toBe(
       true,
     );
   });

@@ -3,8 +3,10 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  getOverlays,
   resetFilters,
   setSearchInput,
+  setSemanticQuery,
   useFilterQuery,
   useSearchText,
 } from "@/stores/view-store";
@@ -21,6 +23,7 @@ vi.mock("@/hooks/use-nl-query", () => ({
 }));
 vi.mock("@/hooks/use-scroll-fade", () => ({ useScrollFade: () => ({}) }));
 vi.mock("@/stores/tags", () => ({ useTags: () => [{ name: "Design" }] }));
+vi.mock("@/stores/tag-groups", () => ({ useTagGroups: () => [] }));
 vi.mock("@/stores/folders", () => ({
   useFolders: () => [{ id: "folder-a", name: "Inspiration" }],
 }));
@@ -93,9 +96,16 @@ describe("filter toolbar", () => {
     const before = state();
     await act(async () => toggle.click());
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
-    expect(host.querySelector("fieldset")?.hidden).toBe(true);
+    const toolbar = host.querySelector("fieldset");
+    expect(toolbar?.hasAttribute("data-open")).toBe(false);
+    expect(toolbar?.getAttribute("aria-hidden")).toBe("true");
+    expect(toolbar?.hasAttribute("inert")).toBe(true);
+    expect(button("Source: youtube.com")).toBeTruthy();
     expect(state()).toEqual(before);
     await act(async () => toggle.click());
+    expect(toolbar?.hasAttribute("data-open")).toBe(true);
+    expect(toolbar?.getAttribute("aria-hidden")).toBe("false");
+    expect(toolbar?.hasAttribute("inert")).toBe(false);
     expect(button("Source: youtube.com")).toBeTruthy();
   });
 
@@ -153,5 +163,14 @@ describe("filter toolbar", () => {
     expect(button("Folders: Inspiration").textContent).toBe("Inspiration");
     await act(async () => filterToolbar.setPinned("transcript", true));
     expect(button("Transcript")).toBeTruthy();
+  });
+
+  it("clears a Semantic overlay with Clear Filters", async () => {
+    setSemanticQuery("black cat");
+    await render();
+    expect(button("Filter (1 active)")).toBeTruthy();
+    expect(getOverlays().semanticQuery).toBe("black cat");
+    await act(async () => button("Clear Filters").click());
+    expect(getOverlays().semanticQuery).toBeNull();
   });
 });

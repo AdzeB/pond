@@ -18,7 +18,24 @@ vi.mock("@/lib/status-feed", () => ({
   useStatusFeed: () => ({ inProgress: { busy: false } }),
 }));
 vi.mock("@/stores/folders", () => ({ useFolders: () => [] }));
-vi.mock("@/stores/view-store", () => ({ resetFilters: vi.fn() }));
+vi.mock("@/stores/view-store", () => ({
+  resetFilters: vi.fn(),
+  applySavedView: vi.fn(),
+  setIncludeSubfolders: vi.fn(),
+  useIncludeSubfolders: () => true,
+  useViewStore: () => ({
+    activeViewId: null,
+    query: { combinator: "and", rules: [] },
+    sortKey: "savedAt",
+    sortDir: "desc",
+    layout: "waterfall",
+  }),
+}));
+vi.mock("@/stores/saved-views", () => ({
+  savedViews: { refresh: vi.fn() },
+  useSavedViews: () => [],
+  useHydrateSavedViews: () => {},
+}));
 vi.mock("@/components/library/new-menu", () => ({ NewMenu: () => null }));
 vi.mock("@/components/library/new-menu/actions", () => ({
   newFolder: vi.fn(),
@@ -80,6 +97,15 @@ describe("folder sidebar", () => {
     expect(router.state.location.pathname).toBe("/sources");
     expect(libraryChrome.getState().nav).toEqual({ kind: "sources" });
     expect(button("Sources").getAttribute("aria-current")).toBe("page");
+  });
+
+  it("does not show Uncategorized in the sidebar", async () => {
+    await mount();
+    expect(
+      [...host.querySelectorAll("button")].some(
+        (node) => node.textContent?.trim() === "Uncategorized",
+      ),
+    ).toBe(false);
   });
 
   it("opens Tags from the sidebar with an outline icon", async () => {

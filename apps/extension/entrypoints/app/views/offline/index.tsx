@@ -1,4 +1,4 @@
-import { Button } from "@pond/ui";
+import { Button } from "@pond/ui/button";
 import { PopupShell } from "../shell";
 import styles from "./styles.module.css";
 

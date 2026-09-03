@@ -8,11 +8,8 @@ asarUnpack:
   - resources/**
   - "**/*.node"
   - "**/node_modules/better-sqlite3/**"
-  # node-llama-cpp ships a native addon plus platform-specific llama.cpp
-  # binaries (under the @node-llama-cpp scope); they must live outside the
-  # asar so the addon can dlopen() them at runtime.
-  - "**/node_modules/node-llama-cpp/**"
-  - "**/node_modules/@node-llama-cpp/**"
+  - "**/node_modules/sqlite-vec/**"
+  - "**/node_modules/sqlite-vec-*/**"
 
 directories:
   buildResources: build
@@ -28,6 +25,12 @@ files:
   - "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}"
   - "!**/*.{d.ts,map}"
   - "!**/*.tsbuildinfo"
+  # These dependencies are already bundled into `out`; keeping their source
+  # packages duplicates tens of megabytes in app.asar.
+  - "!node_modules/@pond/icons/brand/tints/**"
+  - "!node_modules/ffmpeg-static/**"
+  - "!node_modules/gpt-tokenizer/**"
+  - "!node_modules/onnxruntime-web/**"
 
 # Tray icons and any other runtime-loaded assets. At runtime we read
 # them from `process.resourcesPath` which lands inside `Contents/Resources`

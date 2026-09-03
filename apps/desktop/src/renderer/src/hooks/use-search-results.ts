@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ensureSaves } from "@/lib/save/ensure-saves";
 import { searchFtsScores } from "@/lib/search/fts-client";
+import { retrieveSaveIds } from "@/lib/search/retrieve-client";
 import type { Save } from "@/lib/types";
 import { pool } from "@/stores/pool";
 import { useSaves } from "./use-saves";
@@ -8,13 +9,25 @@ import { useSaves } from "./use-saves";
 const MAX_RESULTS = 500;
 const DEBOUNCE_MS = 100;
 
-let lastHits: { query: string; deletedOnly: boolean; ids: string[] } | null =
-  null;
+let lastHits: {
+  query: string;
+  deletedOnly: boolean;
+  retrieve: boolean;
+  ids: string[];
+} | null = null;
 
-function resolveHits(query: string, deletedOnly: boolean): Save[] | null {
+function resolveHits(
+  query: string,
+  deletedOnly: boolean,
+  retrieve: boolean,
+): Save[] | null {
   const trimmed = query.trim();
   if (!trimmed || !lastHits) return null;
-  if (lastHits.query !== trimmed || lastHits.deletedOnly !== deletedOnly) {
+  if (
+    lastHits.query !== trimmed ||
+    lastHits.deletedOnly !== deletedOnly ||
+    lastHits.retrieve !== retrieve
+  ) {
     return null;
   }
   const out: Save[] = [];
@@ -27,10 +40,16 @@ function resolveHits(query: string, deletedOnly: boolean): Save[] | null {
   return out;
 }
 
-function commitHits(query: string, deletedOnly: boolean, saves: Save[]): void {
+function commitHits(
+  query: string,
+  deletedOnly: boolean,
+  retrieve: boolean,
+  saves: Save[],
+): void {
   lastHits = {
     query,
     deletedOnly,
+    retrieve,
     ids: saves.map((s) => s.id),
   };
 }
@@ -42,12 +61,13 @@ interface SearchResults {
 
 export function useSearchResults(
   query: string,
-  opts?: { deletedOnly?: boolean },
+  opts?: { deletedOnly?: boolean; retrieve?: boolean },
 ): SearchResults {
   const _saves = useSaves();
   const deletedOnly = opts?.deletedOnly ?? false;
+  const retrieve = opts?.retrieve ?? false;
   const [results, setResults] = useState<Save[] | null>(() =>
-    resolveHits(query, deletedOnly),
+    resolveHits(query, deletedOnly, retrieve),
   );
   const [searching, setSearching] = useState(false);
 
@@ -59,34 +79,40 @@ export function useSearchResults(
       setSearching(false);
       return;
     }
-    const cached = resolveHits(trimmed, deletedOnly);
+    const cached = resolveHits(trimmed, deletedOnly, retrieve);
     if (cached) setResults(cached);
     setSearching(true);
     let cancelled = false;
     const timer = setTimeout(() => {
       void (async () => {
         try {
-          const scores = await searchFtsScores(trimmed, "all", {
-            deletedOnly,
-          });
+          const ids = retrieve
+            ? await retrieveSaveIds({ query: trimmed, limit: MAX_RESULTS })
+            : [
+                ...(
+                  await searchFtsScores(trimmed, "all", {
+                    deletedOnly,
+                    limit: MAX_RESULTS,
+                  })
+                ).keys(),
+              ];
           if (cancelled) return;
-          if (scores.size === 0) {
-            commitHits(trimmed, deletedOnly, []);
+          if (ids.length === 0) {
+            commitHits(trimmed, deletedOnly, retrieve, []);
             setResults([]);
             return;
           }
-          await ensureSaves([...scores.keys()]);
+          await ensureSaves(ids);
           if (cancelled) return;
-          const scored: Array<{ save: Save; score: number }> = [];
-          for (const [id, score] of scores) {
+          const next: Save[] = [];
+          for (const id of ids) {
             const save = pool.get(id);
             if (!save) continue;
             if (deletedOnly ? !save.deletedAt : save.deletedAt) continue;
-            scored.push({ save, score });
+            next.push(save);
+            if (next.length >= MAX_RESULTS) break;
           }
-          scored.sort((a, b) => b.score - a.score);
-          const next = scored.slice(0, MAX_RESULTS).map((row) => row.save);
-          commitHits(trimmed, deletedOnly, next);
+          commitHits(trimmed, deletedOnly, retrieve, next);
           setResults(next);
         } catch (error) {
           if (!cancelled)
@@ -100,7 +126,7 @@ export function useSearchResults(
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [query, deletedOnly]);
+  }, [query, deletedOnly, retrieve]);
 
   return { results, searching };
 }

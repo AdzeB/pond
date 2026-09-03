@@ -8,54 +8,43 @@ interface EmbeddingEntry {
 
 interface EmbeddingState {
   readonly byId: Map<string, EmbeddingEntry>;
-  readonly loaded: boolean;
 }
 
 const store = new Store<EmbeddingState>({
   byId: new Map(),
-  loaded: false,
 });
 
 export const embeddingStore = store;
 
-const WireRowsSchema = z.array(
-  z.object({
-    id: z.string(),
-    embedding: z.array(z.number()).nullable().catch(null),
-    embeddingModel: z.string().nullable().catch(null),
-  }),
-);
-
-let loadInflight: Promise<void> | null = null;
+const OneRowSchema = z.object({
+  id: z.string(),
+  embedding: z.array(z.number()).nullable().catch(null),
+  embeddingModel: z.string().nullable().catch(null),
+});
 
 export function loadEmbeddings(): Promise<void> {
-  if (store.state.loaded) return Promise.resolve();
-  if (loadInflight) return loadInflight;
-  loadInflight = (async () => {
-    try {
-      const rows = WireRowsSchema.parse(
-        await window.pond.query("saves.embeddings", {}),
-      );
-      const byId = new Map<string, EmbeddingEntry>();
-      for (const row of rows) {
-        if (!row.embedding || !row.embeddingModel) continue;
-        byId.set(row.id, {
-          vec: Float32Array.from(row.embedding),
-          model: row.embeddingModel,
-        });
-      }
-      store.setState(() => ({
-        byId,
-        loaded: true,
-      }));
-    } catch (err) {
-      console.warn("[embeddings] failed to load persisted vectors", err);
-      store.setState((s) => ({ ...s, loaded: true }));
-    } finally {
-      loadInflight = null;
-    }
-  })();
-  return loadInflight;
+  return Promise.resolve();
+}
+
+export async function embeddingFor(
+  id: string,
+): Promise<EmbeddingEntry | undefined> {
+  const cached = store.state.byId.get(id);
+  if (cached) return cached;
+  const row = OneRowSchema.parse(
+    await window.pond.query("saves.getEmbedding", { id }),
+  );
+  if (!row.embedding || !row.embeddingModel) return undefined;
+  const entry = {
+    vec: Float32Array.from(row.embedding),
+    model: row.embeddingModel,
+  };
+  store.setState((s) => {
+    const byId = new Map(s.byId);
+    byId.set(id, entry);
+    return { byId };
+  });
+  return entry;
 }
 
 export function setEmbedding(
@@ -66,7 +55,7 @@ export function setEmbedding(
   store.setState((s) => {
     const byId = new Map(s.byId);
     byId.set(id, { vec, model });
-    return { byId, loaded: s.loaded };
+    return { byId };
   });
   void window.pond
     .query("saves.setEmbedding", {
@@ -85,15 +74,12 @@ export function clearEmbeddings(ids?: readonly string[]): number {
     store.setState((s) => {
       const byId = new Map(s.byId);
       for (const id of ids) if (byId.delete(id)) count++;
-      return count === 0 ? s : { byId, loaded: s.loaded };
+      return count === 0 ? s : { byId };
     });
     return count;
   }
   const count = store.state.byId.size;
   if (count === 0) return 0;
-  store.setState((s) => ({
-    byId: new Map(),
-    loaded: s.loaded,
-  }));
+  store.setState(() => ({ byId: new Map() }));
   return count;
 }

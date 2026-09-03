@@ -2,16 +2,6 @@ import type { Op, Source, Task, tasks } from "@pond/schema/db";
 import type { JsonValue } from "@pond/schema/json";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
-import { TransientError } from "./extractors/errors";
-import { runArchivePage } from "./workers/archive-page";
-import { runCaptureTweet } from "./workers/capture-tweet";
-import { runEnsurePoster } from "./workers/ensure-poster";
-import { runFetchAvatar } from "./workers/fetch-avatar";
-import { runFetchBlobs } from "./workers/fetch-blobs";
-import { runFetchVideoYtdlp } from "./workers/fetch-video-ytdlp";
-import { runFinalize } from "./workers/finalize";
-import { runHarvestMetadata } from "./workers/harvest-metadata";
-import { runRenderTextCover } from "./workers/render-text-cover";
 
 export const POLL_INTERVAL_MS = 5_000;
 export const MAX_GLOBAL_INFLIGHT = 4;
@@ -67,9 +57,15 @@ const ArchivePayloadSchema = z
   .catch({});
 
 export const WORKERS = {
-  harvest_metadata: (saveId, payload) =>
-    runHarvestMetadata(saveId, HarvestPayloadSchema.parse(payload)),
+  harvest_metadata: async (saveId, payload) => {
+    const { runHarvestMetadata } = await import("./workers/harvest-metadata");
+    await runHarvestMetadata(saveId, HarvestPayloadSchema.parse(payload));
+  },
   capture_tweet: async (saveId) => {
+    const [{ runCaptureTweet }, { TransientError }] = await Promise.all([
+      import("./workers/capture-tweet"),
+      import("./extractors/errors"),
+    ]);
     const result = await runCaptureTweet(saveId);
     if (result.authWall && result.captured === 0) {
       throw new TransientError(
@@ -78,15 +74,33 @@ export const WORKERS = {
     }
   },
   render_text_cover: async (saveId) => {
+    const { runRenderTextCover } = await import("./workers/render-text-cover");
     await runRenderTextCover(saveId);
   },
-  fetch_blobs: (saveId) => runFetchBlobs(saveId),
-  archive_page: (saveId, payload, ctx) =>
-    runArchivePage(saveId, ArchivePayloadSchema.parse(payload), ctx),
-  fetch_video_ytdlp: (saveId, _payload, ctx) => runFetchVideoYtdlp(saveId, ctx),
-  ensure_poster: (saveId) => runEnsurePoster(saveId),
-  fetch_avatar: (saveId) => runFetchAvatar(saveId),
-  finalize: (saveId) => runFinalize(saveId),
+  fetch_blobs: async (saveId) => {
+    const { runFetchBlobs } = await import("./workers/fetch-blobs");
+    await runFetchBlobs(saveId);
+  },
+  archive_page: async (saveId, payload, ctx) => {
+    const { runArchivePage } = await import("./workers/archive-page");
+    await runArchivePage(saveId, ArchivePayloadSchema.parse(payload), ctx);
+  },
+  fetch_video_ytdlp: async (saveId, _payload, ctx) => {
+    const { runFetchVideoYtdlp } = await import("./workers/fetch-video-ytdlp");
+    await runFetchVideoYtdlp(saveId, ctx);
+  },
+  ensure_poster: async (saveId) => {
+    const { runEnsurePoster } = await import("./workers/ensure-poster");
+    await runEnsurePoster(saveId);
+  },
+  fetch_avatar: async (saveId) => {
+    const { runFetchAvatar } = await import("./workers/fetch-avatar");
+    await runFetchAvatar(saveId);
+  },
+  finalize: async (saveId) => {
+    const { runFinalize } = await import("./workers/finalize");
+    await runFinalize(saveId);
+  },
 } satisfies Record<Op, Worker>;
 
 export const NON_FATAL_OPS: ReadonlySet<Op> = new Set<Op>([

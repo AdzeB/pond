@@ -1,4 +1,5 @@
 import { formatListKinds } from "@pond/schema/list-kinds";
+import { deriveTypeLabel, pickPrimaryFile } from "@/lib/media/units";
 import type { Save } from "@/lib/types";
 import {
   formatBytes,
@@ -17,10 +18,8 @@ interface PaneRow {
 export function collectInfoRows(save: Save): PaneRow[] {
   const out: PaneRow[] = [];
 
-  const type =
-    save.source === "web"
-      ? "web"
-      : (save.mediaType ?? (save.url ? "Link" : null));
+  const primary = pickPrimaryFile(save);
+  const type = deriveTypeLabel(primary, save);
   if (type) {
     out.push({
       id: "type",

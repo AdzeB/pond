@@ -4,11 +4,7 @@ import {
   saveEmbeddingText,
 } from "@/lib/enrichment/embeddings";
 import type { Save } from "@/lib/types";
-import {
-  embeddingStore,
-  loadEmbeddings,
-  setEmbedding,
-} from "@/stores/embedding-store";
+import { setEmbedding } from "@/stores/embedding-store";
 import { getPrefsSnapshot } from "@/stores/prefs";
 import type { Enricher } from "../types";
 
@@ -23,19 +19,18 @@ function embeddingTextFor(save: Save): string {
 export const textEmbeddingEnricher: Enricher = {
   id: "textEmbedding",
   dependsOn: ["caption", "ocr", "transcript"],
-  hydrate: loadEmbeddings,
   enabled: () => getPrefsSnapshot()?.ai?.semanticSearch === true,
   eligible(save: Save) {
     if (save.status !== "complete" || save.deletedAt != null) return false;
     if (!embeddingTextFor(save)) return false;
-    const entry = embeddingStore.state.byId.get(save.id);
-    return !entry || entry.model !== embedModelVersion();
+    return save.embeddingModel !== embedModelVersion();
   },
   async run(save: Save) {
     const text = embeddingTextFor(save);
     if (!text) return null;
     const vec = await embedText(text);
-    setEmbedding(save.id, vec, embedModelVersion());
-    return {};
+    const model = embedModelVersion();
+    setEmbedding(save.id, vec, model);
+    return { optimistic: { embeddingModel: model } };
   },
 };

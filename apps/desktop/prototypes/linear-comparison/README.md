@@ -1,6 +1,6 @@
 # Pond × Linear
 
-An isolated, interactive component comparison. Linear is reconstructed from the actual app’s extracted styles; Pond renders its unchanged `@pond/ui` components. There is no public/signed-in source switch and no screenshot standing in for rendered UI.
+An isolated, interactive component comparison. Linear is reconstructed from the actual app’s extracted styles; Pond renders its unchanged `@pond/ui` components. The command menu audit is the exception: it uses matched live screenshots so the full surfaces can be compared without rebuilding Linear’s application behavior.
 
 ## Run
 
@@ -12,6 +12,18 @@ node apps/desktop/prototypes/linear-comparison/extract-sources.mjs
 ```
 
 Open <http://127.0.0.1:4321/?component=Menu>.
+
+The command menu audit is available at
+<http://127.0.0.1:4321/?page=command-menu>. It compares the current Linear and
+Pond surfaces, measured geometry, typography, content structure, and the
+highest-impact differences. It also includes a 12-state context study captured
+after populating Linear's Playground team with a contained benchmark dataset.
+
+The live Pond × Eagle filter audit is available at
+<http://127.0.0.1:4321/?page=filters>. It contains eleven matched filter
+captures, seven Pond-only filters, per-filter findings, and implementation
+recommendations. The audit source images live in
+`public/evidence/filter-audit/`.
 
 ## What is extracted
 
@@ -33,6 +45,12 @@ Some names represent related patterns, not identical components:
 
 ## Source files
 
+- `public/evidence/linear-command-menu-current.json`: current light-theme command menu extraction with 203 scoped nodes, all resolved CSS properties, pseudo-elements, bounds, SVG attributes, and 148 matching authored rules. URLs and input values are excluded.
+- `public/evidence/linear-command-menu-current.png`: accepted full-window default-state capture.
+- `public/evidence/linear-command-menu-search-current.png`: accepted filtered-state capture for the query `settings`.
+- `public/evidence/pond-command-menu-current.png`: accepted current Pond preview capture.
+- `public/evidence/pond-command-menu-search-current.png`: accepted Pond filtered-state capture for the same query.
+- `public/evidence/context-audit/`: twelve current workspace, project, issue, document, mixed-result, and empty-result captures plus the seeded-record inventory and content findings.
 - `public/evidence/linear-native-styles.json`: 77 measured native elements, immediate child styles, generic source icon paths, and switch pseudo-element states.
 - `public/evidence/linear-authored-rules.json`: 270 matched authored rules across seven controls, with their referenced CSS variables. Includes hover, active, and pseudo-element declarations. These are available for inspection; not every authored state is reproduced in the local controls.
 - `public/evidence/linear-app-styles.json`: earlier component-scoped app measurements. Their computed-style list is partial; the selected metrics are retained.
@@ -51,7 +69,7 @@ Linear’s captured palette is light mode. Pond defaults to light for comparison
 
 Both inspectors follow their own open overlays. The table shows original Linear measurements, the current Linear reconstruction, and the current Pond element. Different content or states can produce different dimensions; these are not automatically styling defects. Equivalent CSS color notations can also differ as strings.
 
-The source font and generic icons are local. No private issue titles, messages, account values, workspace URLs, user images, or full-window screenshots were saved. No issue, chat message, or preference was submitted or changed. The user explicitly approved reading the native window to locate Inspect Element. Auto-review separately blocked opening private Settings; that action was not retried indirectly.
+The source font and generic icons are local. The original style extraction excludes private issue titles, messages, account values, workspace URLs, and user images. The separate context study intentionally contains full-window screenshots of a user-approved, isolated benchmark dataset created in the Playground team. It created two projects, ten issues, one document, and one team label; one project was marked canceled because Linear does not expose manual project archiving. No chat message or preference was submitted or changed. The user explicitly approved both reading the native window and creating the benchmark records. Auto-review separately blocked opening private Settings; that action was not retried indirectly.
 
 ## Verification
 

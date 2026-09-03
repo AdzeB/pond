@@ -1,4 +1,4 @@
-import { pickPrimaryUnit } from "@/lib/media/units";
+import { pickCardUnit } from "@/lib/media/units";
 import type { Save } from "@/lib/types";
 
 export type SaveListMode =
@@ -24,7 +24,7 @@ interface ModeFilterOptions {
 }
 
 function isRenderable(save: Save): boolean {
-  if (pickPrimaryUnit(save)) return true;
+  if (pickCardUnit(save)) return true;
   if (save.mediaType === "link" || save.mediaType === "text") return true;
   if (save.url && !save.url.startsWith("pond:")) return true;
   return false;

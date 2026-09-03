@@ -53,6 +53,12 @@ export const TOKEN_FIELDS: readonly TokenFieldSpec[] = [
   { field: "savedAt", keys: ["saved", "savedat"] },
   { field: "publishedAt", keys: ["published", "publishedat"] },
   { field: "modifiedAt", keys: ["modified", "modifiedat"] },
+  { field: "rating", keys: ["rating", "star", "stars"] },
+  { field: "fileSize", keys: ["size", "filesize"] },
+  { field: "width", keys: ["width"] },
+  { field: "height", keys: ["height"] },
+  { field: "url", keys: ["url"] },
+  { field: "comment", keys: ["comment", "comments"] },
 ];
 
 const KEY_TO_FIELD = new Map<string, FieldId>();
@@ -227,9 +233,22 @@ function buildPredicate(token: FieldToken): Predicate | null {
       return { field, operator: negate ? "none" : "some", value: list };
     }
     case "optional": {
-      let exists = !OPTIONAL_FALSE.has(raw.toLowerCase());
-      if (negate) exists = !exists;
-      return { field, operator: "exists", value: exists };
+      if (OPTIONAL_FALSE.has(raw.toLowerCase())) {
+        return { field, operator: "exists", value: negate };
+      }
+      if (raw.toLowerCase() === "with" || raw.toLowerCase() === "true") {
+        return { field, operator: "exists", value: !negate };
+      }
+      if (!raw) return { field, operator: "exists", value: !negate };
+      return { field, operator: "contains", value: raw.toLowerCase() };
+    }
+    case "string": {
+      if (!raw) return null;
+      return {
+        field,
+        operator: "contains",
+        value: raw.toLowerCase(),
+      };
     }
     case "color": {
       const hex = toColorValue(raw);
@@ -340,6 +359,11 @@ export function serializePredicate(predicate: Predicate): string | null {
       return `${negate ? "-" : ""}${key}:${list.join(",")}`;
     }
     case "optional": {
+      if (operator === "contains") {
+        const text = String(value ?? "").trim();
+        if (!text) return null;
+        return `${key}:${quoteIfNeeded(text)}`;
+      }
       if (operator !== "exists") return null;
       return `${key}:${value === false ? "without" : "with"}`;
     }
@@ -367,6 +391,11 @@ export function serializePredicate(predicate: Predicate): string | null {
       const preset = DATE_PRESETS.find((d) => d.iso === text);
       if (preset && operator === "gte") return `${key}:${preset.slug}`;
       return `${key}${operatorSymbol(operator)}${text}`;
+    }
+    case "string": {
+      const text = String(value ?? "").trim();
+      if (!text) return null;
+      return `${key}:${quoteIfNeeded(text)}`;
     }
     default:
       return null;

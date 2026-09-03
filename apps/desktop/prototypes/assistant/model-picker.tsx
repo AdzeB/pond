@@ -9,10 +9,10 @@ import type { Provider } from "./fixtures";
 
 const models = [
   {
-    id: "Minnow",
-    name: "Minnow",
+    id: "Ollama",
+    name: "Ollama",
     detail: "Local",
-    search: "Minnow local on this Mac",
+    search: "Ollama local on this Mac",
   },
   {
     id: "Anthropic",
@@ -82,7 +82,7 @@ export function ModelPicker({
                   </Combobox.ItemLabel>
                   <span
                     className="model-detail"
-                    data-local={model.id === "Minnow" || undefined}
+                    data-local={model.id === "Ollama" || undefined}
                   >
                     {model.detail}
                   </span>

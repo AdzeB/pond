@@ -5,7 +5,9 @@ type ViewPrefKey =
   | "inspector"
   | "sidebar"
   | "filters"
-  | "filterFields";
+  | "filterFields"
+  | "filterOverlays"
+  | "subfolders";
 
 const STORAGE_KEYS = {
   view: "pond.view",
@@ -15,6 +17,8 @@ const STORAGE_KEYS = {
   sidebar: "pond.sidebar",
   filters: "pond.filters",
   filterFields: "pond.filterFields",
+  filterOverlays: "pond.filterOverlays",
+  subfolders: "pond.subfolders",
 } satisfies Record<ViewPrefKey, string>;
 
 export function readViewPref(key: ViewPrefKey): string | null {

@@ -4,6 +4,7 @@ import { Menu } from "@pond/ui";
 import { Fragment, useState } from "react";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { FilterSelect } from "./filter-select";
+import { choiceIsSearchable } from "./layout";
 import type { FilterOption } from "./options";
 import {
   changeChoiceMode,
@@ -31,7 +32,8 @@ export function ChoiceFilter({
   const meta = FIELD_META[field];
   const [match, setMatch] = useState(selectedChoiceMode(rows, field));
   const mode = action === "exclude" ? "exclude" : match;
-  const { counts, empty, partial } = useChoiceCounts(field);
+  const { counts, empty } = useChoiceCounts(field);
+  const searchable = choiceIsSearchable(field, options.length);
   const emptyLabel =
     field === "tags"
       ? "Untagged"
@@ -117,44 +119,42 @@ export function ChoiceFilter({
   };
   return (
     <>
-      <Menu.Input
-        aria-label={`Filter ${meta.label}`}
-        placeholder={`Filter ${meta.label.toLowerCase()}…`}
-        value={search}
-        onValueChange={setSearch}
-      />
-      <div className={styles.controls}>
-        <div className={styles["control-row"]}>
-          <span>Selection</span>
+      {searchable ? (
+        <Menu.Input
+          aria-label={`Filter ${meta.label}`}
+          placeholder={`Search ${meta.label.toLowerCase()}…`}
+          value={search}
+          onValueChange={setSearch}
+        />
+      ) : null}
+      <fieldset
+        className={styles["rule-bar"]}
+        aria-label={`${meta.label} Filter Rules`}
+      >
+        <FilterSelect
+          label="Selection Action"
+          value={action}
+          onChange={setAction}
+          items={[
+            { value: "include", label: "Include" },
+            { value: "exclude", label: "Exclude" },
+          ]}
+        />
+        {meta.type === "stringArray" ? (
           <FilterSelect
-            label="Selection Action"
-            value={action}
-            onChange={setAction}
+            label="Match Selected Values"
+            value={match}
+            onChange={(next) => {
+              setMatch(next);
+              onChange(changeChoiceMode(rows, field, next));
+            }}
             items={[
-              { value: "include", label: "Include" },
-              { value: "exclude", label: "Exclude" },
+              { value: "any", label: "Any Selected" },
+              { value: "all", label: "All Selected" },
             ]}
           />
-        </div>
-        {meta.type === "stringArray" ? (
-          <div className={styles["control-row"]}>
-            <span>Match</span>
-            <FilterSelect
-              label="Match Selected Values"
-              value={match}
-              onChange={(next) => {
-                setMatch(next);
-                onChange(changeChoiceMode(rows, field, next));
-              }}
-              items={[
-                { value: "any", label: "Any Selected" },
-                { value: "all", label: "All Selected" },
-              ]}
-            />
-          </div>
         ) : null}
-      </div>
-      <Menu.Separator />
+      </fieldset>
       <div className={styles.options} {...scrollFade}>
         {showEmpty ? (
           <Menu.CheckboxItem
@@ -197,7 +197,7 @@ export function ChoiceFilter({
             {index === 0 && selected.length > 0 ? (
               <Menu.SectionLabel>Selected</Menu.SectionLabel>
             ) : null}
-            {index === selected.length ? (
+            {index === selected.length && selected.length > 0 ? (
               <Menu.SectionLabel>{meta.label}</Menu.SectionLabel>
             ) : null}
             {renderOption(option)}
@@ -211,12 +211,6 @@ export function ChoiceFilter({
           </Menu.Item>
         ) : null}
       </div>
-      <Menu.Separator />
-      <p className={styles.hint}>
-        {partial
-          ? "Counts reflect loaded saves in this view."
-          : "Counts reflect this view before filters."}
-      </p>
     </>
   );
 }

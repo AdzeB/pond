@@ -37,10 +37,9 @@ it("renders a citation-only lookup as visual Saves instead of numbered prose", a
           metadata: { sources },
         }}
         questionDisabled
-        provider="minnow"
+        provider="openai"
         attachedIds={[]}
         busy={false}
-        consent={false}
         attach={vi.fn()}
         focus={vi.fn()}
       />,

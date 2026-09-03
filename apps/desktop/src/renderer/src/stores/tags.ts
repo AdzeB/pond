@@ -8,6 +8,7 @@ import { byName } from "@/lib/util/sort";
 export interface TagRow {
   id: string;
   name: string;
+  starred: boolean;
   description: string | null;
   lastUsedAt: number | null;
   usageCount: number;
@@ -32,6 +33,7 @@ const Timestamp = z
 const TagRowSchema = z.object({
   id: z.string().min(1),
   name: z.string(),
+  starred: z.coerce.boolean().catch(false),
   description: z.string().nullable().catch(null),
   lastUsedAt: Timestamp.transform(toMs),
   usageCount: z.number().catch(0),

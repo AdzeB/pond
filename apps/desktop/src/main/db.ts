@@ -8,8 +8,14 @@ import {
 } from "drizzle-orm/better-sqlite3";
 import log from "electron-log/main.js";
 import { z } from "zod";
+import {
+  backfillVecBatch,
+  ensureVecDeleteTrigger,
+  ensureVecTables,
+  loadSqliteVec,
+} from "./core/vec-index";
 import { readOrCreatePondId } from "./lib/pond-identity";
-import { backfillRawSlim } from "./lib/raw-slim";
+import { backfillRawSlimBatch } from "./lib/raw-slim";
 import { resolvePaths } from "./paths";
 
 const combinedSchema = { ...schema, ...eventsSchema };
@@ -20,8 +26,9 @@ export type Db = BetterSQLite3Database<typeof combinedSchema> & {
 
 let cachedPond: Db | null = null;
 let cachedGlobal: Db | null = null;
+let pondDbInflight: Promise<Db> | null = null;
 
-function openSqlite(file: string): Database.Database {
+function openSqlite(file: string, vec = false): Database.Database {
   const sqlite = new Database(file);
   sqlite.pragma("journal_mode = WAL");
   sqlite.pragma("synchronous = NORMAL");
@@ -31,6 +38,12 @@ function openSqlite(file: string): Database.Database {
   sqlite.pragma("busy_timeout = 5000");
   sqlite.pragma("cache_size = -65536");
   sqlite.pragma("wal_autocheckpoint = 2000");
+  if (vec) {
+    if (loadSqliteVec(sqlite)) {
+      ensureVecTables(sqlite);
+      ensureVecDeleteTrigger(sqlite);
+    }
+  }
   return sqlite;
 }
 
@@ -54,27 +67,67 @@ export async function getGlobalDb(): Promise<Db> {
 
 export async function getDb(): Promise<Db> {
   if (cachedPond) return cachedPond;
+  if (pondDbInflight) return pondDbInflight;
+
+  pondDbInflight = openPondDb().finally(() => {
+    pondDbInflight = null;
+  });
+  return pondDbInflight;
+}
+
+async function openPondDb(): Promise<Db> {
+  await new Promise<void>((resolve) => setImmediate(resolve));
 
   const paths = resolvePaths();
   log.info("[pond db] opening pond index", paths.indexDb);
 
-  const sqlite = openSqlite(paths.indexDb);
+  const sqlite = openSqlite(paths.indexDb, true);
   migratePond(sqlite);
-  backfillRawSlim(sqlite);
   cachedPond = wrap(sqlite);
 
   ensureLibraryMetadata();
 
-  try {
-    const { runLibraryScopeMigration } = await import(
-      "./core/library-scope-migration"
-    );
-    await runLibraryScopeMigration();
-  } catch (err) {
-    log.warn("[pond db] library scope migration failed", err);
-  }
+  scheduleDataMigrations(sqlite);
 
   return cachedPond;
+}
+
+function scheduleDataMigrations(sqlite: Database.Database): void {
+  const runRawSlimBatch = (): void => {
+    if (!sqlite.open || cachedPond?.$raw !== sqlite) return;
+    try {
+      const result = backfillRawSlimBatch(sqlite);
+      if (result.processed > 0) {
+        log.info("[pond db] raw-slim migration batch", result);
+      }
+      if (result.hasMore) setImmediate(runRawSlimBatch);
+    } catch (err) {
+      log.warn("[pond db] raw-slim migration failed", err);
+    }
+  };
+  setImmediate(runRawSlimBatch);
+
+  const runVecBatch = (): void => {
+    if (!sqlite.open || cachedPond?.$raw !== sqlite) return;
+    try {
+      const result = backfillVecBatch(sqlite);
+      if (result.processed > 0) {
+        log.info("[pond db] vec backfill batch", result);
+      }
+      if (result.hasMore) setImmediate(runVecBatch);
+    } catch (err) {
+      log.warn("[pond db] vec backfill failed", err);
+    }
+  };
+  setImmediate(runVecBatch);
+
+  setImmediate(() => {
+    void import("./core/library-scope-migration")
+      .then(({ runLibraryScopeMigration }) => runLibraryScopeMigration())
+      .catch((err) =>
+        log.warn("[pond db] library scope migration failed", err),
+      );
+  });
 }
 
 export function closeDb(): void {
@@ -145,6 +198,12 @@ function migratePond(sqlite: Database.Database): void {
 					suggested_tags TEXT,
 					suggested_tags_model TEXT,
 					video_notes TEXT NOT NULL DEFAULT '[]',
+					comments TEXT NOT NULL DEFAULT '[]',
+					rating INTEGER,
+					rotate INTEGER NOT NULL DEFAULT 0,
+					flip_x INTEGER NOT NULL DEFAULT 0,
+					flip_y INTEGER NOT NULL DEFAULT 0,
+					crop TEXT,
 					dominant_colors TEXT NOT NULL DEFAULT '[]',
 					status TEXT NOT NULL DEFAULT 'ingesting',
 					ingest_started_at INTEGER,
@@ -334,6 +393,12 @@ function migratePond(sqlite: Database.Database): void {
   addColumnIfMissing(sqlite, "saves", "suggested_tags_model", "TEXT");
   addColumnIfMissing(sqlite, "saves", "account_id", "TEXT");
   addColumnIfMissing(sqlite, "saves", "blurhash", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "comments", "TEXT NOT NULL DEFAULT '[]'");
+  addColumnIfMissing(sqlite, "saves", "rating", "INTEGER");
+  addColumnIfMissing(sqlite, "saves", "rotate", "INTEGER NOT NULL DEFAULT 0");
+  addColumnIfMissing(sqlite, "saves", "flip_x", "INTEGER NOT NULL DEFAULT 0");
+  addColumnIfMissing(sqlite, "saves", "flip_y", "INTEGER NOT NULL DEFAULT 0");
+  addColumnIfMissing(sqlite, "saves", "crop", "TEXT");
   addColumnIfMissing(sqlite, "pipeline_events", "account_id", "TEXT");
   sqlite.exec(
     "CREATE INDEX IF NOT EXISTS saves_account_idx ON saves(account_id);",

@@ -2,19 +2,25 @@ import {
   IconGridLayoutRowsOutline18 as AspectIcon,
   IconCalendarOutline18 as Calendar,
   IconChatBubbleOutline18 as Caption,
+  IconMsg2Outline18 as Comment,
   IconFileOutline18 as FileIcon,
   IconClone2Outline18 as FilesIcon,
   IconFolderOutline18 as FolderIcon,
+  IconVectorOutline18 as HeightIcon,
   IconLink2Outline18 as LinkIcon,
   IconListFavsOutline18 as ListIcon,
   IconMicrophoneOutline18 as Mic,
   IconColorPaletteOutline18 as Palette,
   IconPencilOutline18 as Pencil,
   IconGridLayoutColsOutline18 as ShapeIcon,
+  IconServerOutline18 as SizeIcon,
+  IconStarOutline18 as Star,
   IconTagOutline18 as Tag,
   IconStopwatchOutline18 as Timer,
   IconUploadOutline18 as Upload,
+  IconGlobeOutline18 as UrlIcon,
   IconUserOutline18 as User,
+  IconImageOutline18 as WidthIcon,
 } from "@pond/icons/outline/18";
 import { COLOR_PRESETS, readColorMatch } from "@pond/schema/filters/color";
 import { FIELD_META } from "@pond/schema/filters/meta";
@@ -51,6 +57,12 @@ export const FIELD_ICONS = {
   savedAt: Upload,
   publishedAt: Calendar,
   modifiedAt: Calendar,
+  rating: Star,
+  fileSize: SizeIcon,
+  width: WidthIcon,
+  height: HeightIcon,
+  url: UrlIcon,
+  comment: Comment,
 } satisfies Record<FieldId, FieldIcon>;
 
 export const FIELD_HINTS = {
@@ -72,6 +84,12 @@ export const FIELD_HINTS = {
   savedAt: "past-week, 2024-01-01",
   publishedAt: "past-week, 2024-01-01",
   modifiedAt: "past-week, 2024-01-01",
+  rating: "0, 3, 5",
+  fileSize: "<1mb, >10mb",
+  width: ">1920",
+  height: ">1080",
+  url: "youtube.com",
+  comment: "with, without",
 } satisfies Partial<Record<FieldId, string>>;
 
 const COMPARATOR_SYMBOL = new Map<ComparatorId, string>([

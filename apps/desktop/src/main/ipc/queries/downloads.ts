@@ -13,7 +13,7 @@ import {
 } from "@pond/schema/events";
 import { and, desc, eq, inArray, like, lt, or, sql } from "drizzle-orm";
 import { z } from "zod";
-import { pipelineSnapshot } from "../../core/pipeline/reconciler";
+import { pipelineSnapshot } from "../../core/pipeline/reconciler-client";
 import { getDb } from "../../db";
 import { cursorFor } from "./downloads-page";
 import { type QueryHandlerMap, query, TrimmedTextParam } from "./params";

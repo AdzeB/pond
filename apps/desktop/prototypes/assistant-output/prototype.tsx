@@ -1077,7 +1077,7 @@ export function Prototype() {
             aria-expanded={menu === "model"}
             onClick={() => setMenu(menu === "model" ? null : "model")}
           >
-            Minnow <I.Down />
+            Ollama <I.Down />
           </button>
           <span className="composer-spacer" />
           <span className="input-hint">@ context &nbsp; / actions</span>
@@ -1112,7 +1112,7 @@ export function Prototype() {
               {menu === "saves"
                 ? "Saves from Your Library"
                 : menu === "model"
-                  ? "Minnow"
+                  ? "Ollama"
                   : "Actions"}
             </span>
             <IconButton label="Close actions" onClick={() => setMenu(null)}>

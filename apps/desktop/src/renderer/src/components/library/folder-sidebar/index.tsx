@@ -1,7 +1,4 @@
-import {
-  IconChevronDownOutline12,
-  IconPlusOutline12,
-} from "@pond/icons/outline/12";
+import { IconChevronDownOutline12 } from "@pond/icons/outline/12";
 import {
   IconAlbum2Outline18,
   IconArrowRotateClockwiseOutline18,
@@ -13,8 +10,10 @@ import {
   IconGlobeOutline18,
   IconMagnifierOutline18,
   IconMsg2Outline18,
+  IconPlusOutline18,
   IconTagsOutline18,
   IconTrash2Outline18,
+  IconVersionsOutline18,
 } from "@pond/icons/outline/18";
 import {
   Button,
@@ -30,22 +29,34 @@ import { NewMenu } from "@/components/library/new-menu";
 import { newFolder } from "@/components/library/new-menu/actions";
 import { confirm } from "@/components/shared/confirm-dialog";
 import { prompt } from "@/components/shared/prompt-dialog";
+import { ShortcutKeys } from "@/components/shared/shortcut-keys";
 import { openShortcutsSheet } from "@/components/shared/shortcuts-sheet";
 import { SpecContextMenu } from "@/components/shared/spec-context-menu";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { shortcutGlyphs } from "@/lib/save/shortcuts";
 import { useStatusFeed } from "@/lib/status-feed";
 import { getAppRouter } from "@/lib/ui/app-router";
-import { focusLibrarySearch } from "@/lib/ui/open-search";
+import { openSettings } from "@/lib/ui/open-settings";
+import { commandMenu } from "@/stores/command-menu";
 import { folders, useFolders } from "@/stores/folders";
 import {
   type LibraryNav,
   libraryChrome,
   useLibraryNav,
 } from "@/stores/library-chrome";
+import {
+  savedViews,
+  useHydrateSavedViews,
+  useSavedViews,
+} from "@/stores/saved-views";
 import { selection } from "@/stores/selection";
-import { settingsModal } from "@/stores/settings-modal";
-import { resetFilters } from "@/stores/view-store";
+import {
+  applySavedView,
+  resetFilters,
+  setIncludeSubfolders,
+  useIncludeSubfolders,
+  useViewStore,
+} from "@/stores/view-store";
 import styles from "./styles.module.css";
 import { flattenFolderTree } from "./tree";
 
@@ -81,12 +92,12 @@ const WORKSPACE_MENU: MenuItemSpec[] = [
     label: "Settings",
     icon: <IconGear3Outline18 />,
     shortcut: shortcutGlyphs("app.settings"),
-    onClick: () => settingsModal.open(),
+    onClick: () => openSettings(),
   },
   {
     label: "Check for Updates",
     icon: <IconArrowRotateClockwiseOutline18 />,
-    onClick: () => settingsModal.open("general"),
+    onClick: () => openSettings("general"),
   },
   { type: "separator" },
   {
@@ -137,11 +148,16 @@ function selectNav(nav: LibraryNav): void {
   else go("/");
 }
 
-function WorkspaceHeader() {
+export function WorkspaceHeader() {
   return (
-    <div className={styles.workspace}>
+    <Sidebar.Header className={styles.workspace}>
       <Menu.Root>
-        <Menu.Trigger variant="ghost" size="sm" className={styles.identity}>
+        <Menu.Trigger
+          variant="ghost"
+          size="sm"
+          rounding="rounded"
+          className={styles.identity}
+        >
           <span className={styles.mark} aria-hidden>
             <Logo size={12} />
           </span>
@@ -157,20 +173,25 @@ function WorkspaceHeader() {
         </Menu.Portal>
       </Menu.Root>
       <div className={styles["workspace-actions"]}>
-        <Tooltip label="Search" side="bottom">
+        <Tooltip
+          label="Search"
+          shortcut={<ShortcutKeys id="library.search" />}
+          side="bottom"
+        >
           <Button
             icon
             size="sm"
             variant="ghost"
+            rounding="rounded"
             aria-label="Search"
-            onClick={() => focusLibrarySearch()}
+            onClick={() => commandMenu.open()}
           >
             <IconMagnifierOutline18 />
           </Button>
         </Tooltip>
         <NewMenu />
       </div>
-    </div>
+    </Sidebar.Header>
   );
 }
 
@@ -195,7 +216,6 @@ function Row({
 }) {
   return (
     <Sidebar.Item
-      className={styles.item}
       data-status={active ? "active" : undefined}
       data-depth={depth || undefined}
       aria-current={active ? "page" : undefined}
@@ -262,14 +282,17 @@ export function FolderSidebar() {
   const tagsPage = pathname === "/tags";
   const libraryPage = !assistantPage && !sourcesPage && !tagsPage;
   const folderRows = useFolders();
+  const includeSubfolders = useIncludeSubfolders();
   const { inProgress } = useStatusFeed();
   const scrollFade = useScrollFade<HTMLDivElement>();
+  useHydrateSavedViews();
 
   const nested = useMemo(() => flattenFolderTree(folderRows), [folderRows]);
 
   return (
     <Sidebar.Root
       className={styles.root}
+      width="full"
       role="navigation"
       aria-label="Library"
     >
@@ -283,12 +306,6 @@ export function FolderSidebar() {
             resetFilters();
             selectNav({ kind: "all" });
           }}
-        />
-        <Row
-          label="Uncategorized"
-          icon={<IconFolderOutline18 />}
-          active={libraryPage && nav.kind === "uncategorized"}
-          onClick={() => selectNav({ kind: "uncategorized" })}
         />
         <Row
           label="Trash"
@@ -316,6 +333,7 @@ export function FolderSidebar() {
           active={tagsPage}
           onClick={() => go("/tags")}
         />
+        <SavedViewsSection />
         <Row
           label="Assistant"
           icon={<IconMsg2Outline18 />}
@@ -324,8 +342,8 @@ export function FolderSidebar() {
         />
 
         <Sidebar.CollapsibleGroup>
-          <div className={styles.heading}>
-            <Sidebar.CollapsibleGroupLabel className={styles.title}>
+          <Sidebar.GroupHeader>
+            <Sidebar.CollapsibleGroupLabel>
               Folders
             </Sidebar.CollapsibleGroupLabel>
             <Button
@@ -335,9 +353,9 @@ export function FolderSidebar() {
               aria-label="New Folder"
               onClick={() => newFolder()}
             >
-              <IconPlusOutline12 />
+              <IconPlusOutline18 />
             </Button>
-          </div>
+          </Sidebar.GroupHeader>
           <Sidebar.CollapsibleGroupContent>
             {nested.map(({ folder, depth, guides }) => (
               <SpecContextMenu
@@ -346,6 +364,12 @@ export function FolderSidebar() {
                   {
                     label: "New Subfolder",
                     onClick: () => newFolder(folder.id),
+                  },
+                  {
+                    label: includeSubfolders
+                      ? "Hide Subfolder Contents"
+                      : "Show Subfolder Contents",
+                    onClick: () => setIncludeSubfolders(!includeSubfolders),
                   },
                   {
                     label: "Rename",
@@ -430,5 +454,96 @@ export function FolderSidebar() {
         </Sidebar.CollapsibleGroup>
       </Sidebar.Scroll>
     </Sidebar.Root>
+  );
+}
+
+function SavedViewsSection() {
+  const views = useSavedViews();
+  const { activeViewId, query, sortKey, sortDir, layout } = useViewStore();
+
+  return (
+    <Sidebar.CollapsibleGroup>
+      <Sidebar.GroupHeader>
+        <Sidebar.CollapsibleGroupLabel>
+          Saved Views
+        </Sidebar.CollapsibleGroupLabel>
+        <Button
+          icon
+          size="sm"
+          variant="ghost"
+          aria-label="Save Current View"
+          onClick={() =>
+            prompt({
+              title: "Save View",
+              confirmLabel: "Save",
+              initialValue: "Untitled View",
+              onConfirm: async (name) => {
+                await window.pond.query("savedViews.create", {
+                  name,
+                  query: query as never,
+                  sortKey,
+                  sortDir,
+                  layout,
+                });
+                await savedViews.refresh();
+              },
+            })
+          }
+        >
+          <IconPlusOutline18 />
+        </Button>
+      </Sidebar.GroupHeader>
+      <Sidebar.CollapsibleGroupContent>
+        {views.map((view) => (
+          <SpecContextMenu
+            key={view.id}
+            buildItems={() => [
+              {
+                label: "Rename",
+                onClick: () =>
+                  prompt({
+                    title: "Rename View",
+                    confirmLabel: "Save",
+                    initialValue: view.name,
+                    onConfirm: async (name) => {
+                      await window.pond.query("savedViews.rename", {
+                        id: view.id,
+                        name,
+                      });
+                      await savedViews.refresh();
+                    },
+                  }),
+              },
+              {
+                label: "Delete",
+                onClick: () =>
+                  confirm({
+                    title: "Delete View",
+                    description: "The view is removed. Your Saves stay.",
+                    confirmLabel: "Delete",
+                    confirmVariant: "destructive",
+                    onConfirm: async () => {
+                      await window.pond.query("savedViews.delete", {
+                        id: view.id,
+                      });
+                      await savedViews.refresh();
+                    },
+                  }),
+              },
+            ]}
+          >
+            <Row
+              label={view.name}
+              icon={<IconVersionsOutline18 />}
+              active={activeViewId === view.id}
+              onClick={() => {
+                applySavedView(view);
+                selectNav({ kind: "all" });
+              }}
+            />
+          </SpecContextMenu>
+        ))}
+      </Sidebar.CollapsibleGroupContent>
+    </Sidebar.CollapsibleGroup>
   );
 }

@@ -149,6 +149,9 @@ function schedule(enricher: Enricher, save: Save): void {
   });
 }
 
+let mutationGeneration = 0;
+let lastFullScanGeneration = -1;
+
 function scan(ids?: readonly string[]): void {
   if (suspended()) return;
   const prefs = getPrefsSnapshot();
@@ -173,12 +176,13 @@ function scan(ids?: readonly string[]): void {
       `[enrichment] scan backlog ${backlog.join(" ")} (inflight=${inflight.size})`,
     );
   }
+  if (!scope) lastFullScanGeneration = mutationGeneration;
 }
 
 let sweepStarted = false;
 let scanScheduled = false;
 let pendingScope: Set<string> | null = null;
-const FULL_SCAN_MS = 60_000;
+const FULL_SCAN_MS = 15 * 60_000;
 
 function scheduleScan(ids?: readonly string[]): void {
   const scoped = ids && ids.length > 0 ? ids : null;
@@ -234,8 +238,13 @@ export function startEnrichmentSweep(): () => void {
       : [],
   );
   void Promise.all(hydrations).then(() => scheduleScan());
-  const detachDirty = onPoolDirty((ids) => scheduleScan(ids));
-  const fullScanTimer = setInterval(() => scheduleScan(), FULL_SCAN_MS);
+  const detachDirty = onPoolDirty((ids) => {
+    mutationGeneration += 1;
+    scheduleScan(ids);
+  });
+  const fullScanTimer = setInterval(() => {
+    if (lastFullScanGeneration !== mutationGeneration) scheduleScan();
+  }, FULL_SCAN_MS);
 
   let detachVisibility = (): void => {};
   if (globalThis.document) {

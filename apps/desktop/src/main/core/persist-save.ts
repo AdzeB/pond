@@ -26,8 +26,9 @@ export async function persistSave(
   });
   if (!updated) return null;
 
-  const wroteFiles = (opts.newFiles?.length ?? 0) > 0;
-  if (opts.writeInfo || wroteFiles || patchTouchesInfo(patch)) {
+  const filesChanged =
+    (opts.newFiles?.length ?? 0) > 0 || opts.replaceFilesWithKind != null;
+  if (opts.writeInfo || filesChanged || patchTouchesInfo(patch)) {
     await writeSaveInfo(updated);
   }
   if (patchTouchesEnrichment(patch)) {

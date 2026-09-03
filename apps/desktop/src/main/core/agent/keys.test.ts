@@ -13,7 +13,10 @@ describe("checkProviderKey", () => {
   });
 
   it("accepts an openai key when /models is ok", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: [] }) }),
+    );
     const result = await checkProviderKey({
       provider: "openai",
       key: "sk-test",
@@ -37,7 +40,10 @@ describe("checkProviderKey", () => {
   });
 
   it("checks ollama without a bearer token", async () => {
-    const fetch = vi.fn().mockResolvedValue({ ok: true });
+    const fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [] }),
+    });
     vi.stubGlobal("fetch", fetch);
     const result = await checkProviderKey({
       provider: "ollama",

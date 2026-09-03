@@ -4,6 +4,7 @@ import { saves } from "@pond/schema/db";
 import { desc, eq, inArray, isNull } from "drizzle-orm";
 import { dialog } from "electron";
 import log from "electron-log/main.js";
+import sharp from "sharp";
 import { z } from "zod";
 import { getDb } from "../../db";
 import { toCsv } from "../../lib/csv";
@@ -79,7 +80,13 @@ export const savesExportQueries: QueryHandlerMap = {
     const used = new Set<string>();
     let exported = 0;
     for (const row of rows) {
-      const target = await resolveSaveFilePath(row.id, row.coverIndex ?? 0);
+      const preferred = row.coverIndex ?? 0;
+      const fileIndex =
+        row.files[preferred]?.kind !== "custom_thumbnail"
+          ? preferred
+          : row.files.findIndex((file) => file.kind !== "custom_thumbnail");
+      if (fileIndex < 0) continue;
+      const target = await resolveSaveFilePath(row.id, fileIndex);
       if (!target.ok) continue;
       const ext = extname(target.path);
       const base =
@@ -90,6 +97,31 @@ export const savesExportQueries: QueryHandlerMap = {
       used.add(name.toLowerCase());
       await copyFile(target.path, join(dir, name));
       exported++;
+    }
+    return { ok: true as const, exported, dir };
+  }),
+
+  "saves.exportWebp": query(IdListParams, async (params) => {
+    const ids = params.ids.filter(Boolean);
+    if (ids.length === 0) return { ok: false as const, error: "no_selection" };
+    const picked = await dialog.showOpenDialog({
+      properties: ["openDirectory", "createDirectory"],
+    });
+    if (picked.canceled || !picked.filePaths[0]) {
+      return { ok: false as const, error: "canceled" };
+    }
+    const dir = picked.filePaths[0];
+    let exported = 0;
+    for (const id of ids) {
+      const target = await resolveSaveFilePath(id, 0);
+      if (!target.ok) continue;
+      try {
+        const out = join(dir, `${id}.webp`);
+        await sharp(target.path).webp({ quality: 80 }).toFile(out);
+        exported += 1;
+      } catch (err) {
+        log.warn("[pond ipc] exportWebp failed", id, err);
+      }
     }
     return { ok: true as const, exported, dir };
   }),

@@ -1,7 +1,4 @@
-"use client";
-
 import { IconPlusOutline18 } from "@pond/icons/outline/18";
-import { Accordion } from "@pond/ui";
 import styles from "./styles.module.css";
 
 interface FaqItem {
@@ -44,7 +41,7 @@ const FAQS: FaqItem[] = [
     value: "ai",
     question: "Does Pond send my data anywhere?",
     answer:
-      "Your library stays on your Mac. On-device enrichment (captions, text in images, transcripts, visual search) never leaves the machine. Ask runs locally with Minnow.",
+      "Your library stays on your Mac. On-device enrichment (captions, text in images, transcripts, visual search) never leaves the machine. Agent uses a key you paste or a local host you run.",
   },
   {
     value: "platforms",
@@ -56,24 +53,18 @@ const FAQS: FaqItem[] = [
 
 export function Faqs() {
   return (
-    <Accordion.Root className={styles.list}>
+    <div className={styles.list}>
       {FAQS.map((item) => (
-        <Accordion.Item
-          key={item.value}
-          value={item.value}
-          className={styles.item}
-        >
-          <Accordion.Header className={styles.header}>
-            <Accordion.Trigger className={styles.trigger}>
-              <span>{item.question}</span>
-              <IconPlusOutline18 className={styles.plus} />
-            </Accordion.Trigger>
-          </Accordion.Header>
-          <Accordion.Panel className={styles.panel}>
+        <details key={item.value} className={styles.item}>
+          <summary className={styles.trigger}>
+            <span>{item.question}</span>
+            <IconPlusOutline18 className={styles.plus} />
+          </summary>
+          <div className={styles.panel}>
             <p className={styles.answer}>{item.answer}</p>
-          </Accordion.Panel>
-        </Accordion.Item>
+          </div>
+        </details>
       ))}
-    </Accordion.Root>
+    </div>
   );
 }

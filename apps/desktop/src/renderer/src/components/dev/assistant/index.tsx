@@ -244,7 +244,7 @@ function Composer({ sources }: { sources: AssistantSource[] }) {
                   onAction={() => undefined}
                 />
                 <button type="button" className={agentStyles["model-trigger"]}>
-                  Minnow
+                  Ollama
                 </button>
               </div>
               <Button

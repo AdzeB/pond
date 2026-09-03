@@ -16,6 +16,9 @@ const store = new Store<FoldersState>({
 });
 
 export const folders = {
+  snapshot(): Folder[] {
+    return store.state.folders;
+  },
   async refresh(): Promise<void> {
     const [folderRows, membershipRows] = await Promise.all([
       window.pond.query("folders.list", {}) as Promise<Folder[]>,

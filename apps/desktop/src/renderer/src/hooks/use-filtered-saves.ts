@@ -23,7 +23,8 @@ export type SortKey =
   | "aspectRatio"
   | "creator"
   | "source"
-  | "type";
+  | "type"
+  | "rating";
 export type SortDir = "asc" | "desc";
 
 const SORT_KEYS: readonly SortKey[] = [
@@ -43,6 +44,7 @@ const SORT_KEYS: readonly SortKey[] = [
   "creator",
   "source",
   "type",
+  "rating",
 ];
 
 export function isSortKey(value: string): value is SortKey {
@@ -197,6 +199,8 @@ function cmp(a: Save, b: Save, key: SortKey): number {
       return nullableNumber(durationFor(a), durationFor(b));
     case "fileSize":
       return nullableNumber(sizeFor(a), sizeFor(b));
+    case "rating":
+      return (a.rating ?? 0) - (b.rating ?? 0);
     case "fileCount":
       return a.files.length - b.files.length;
     case "width":
@@ -304,6 +308,8 @@ function isMissingSortValue(s: Save, key: SortKey): boolean {
       return durationFor(s) == null;
     case "fileSize":
       return sizeFor(s) == null;
+    case "rating":
+      return s.rating == null;
     case "width":
       return widthFor(s) == null;
     case "height":

@@ -26,7 +26,16 @@ export * from "./theme-presets";
 export const SOURCES = [...EXTERNAL_SOURCE_IDS, "web", "local"] as const;
 export type Source = (typeof SOURCES)[number];
 
-export const MEDIA_TYPES = ["image", "video", "link", "text"] as const;
+export const MEDIA_TYPES = [
+  "image",
+  "video",
+  "audio",
+  "document",
+  "font",
+  "file",
+  "link",
+  "text",
+] as const;
 export type MediaType = (typeof MEDIA_TYPES)[number];
 
 export const SAVE_STATUSES = ["ingesting", "complete", "failed"] as const;
@@ -71,6 +80,22 @@ export interface VideoNote {
   id: string;
   timeSec: number;
   text: string;
+}
+
+export interface ImageComment {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  text: string;
+}
+
+export interface ImageCrop {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
 export const saves = sqliteTable(
@@ -129,6 +154,15 @@ export const saves = sqliteTable(
       .$type<VideoNote[]>()
       .notNull()
       .default(sql`'[]'`),
+    comments: text("comments", { mode: "json" })
+      .$type<ImageComment[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    rating: integer("rating"),
+    rotate: integer("rotate").notNull().default(0),
+    flipX: integer("flip_x", { mode: "boolean" }).notNull().default(false),
+    flipY: integer("flip_y", { mode: "boolean" }).notNull().default(false),
+    crop: text("crop", { mode: "json" }).$type<ImageCrop | null>(),
     dominantColors: text("dominant_colors", { mode: "json" })
       .$type<string[]>()
       .notNull()
@@ -333,7 +367,7 @@ export const SYNC_MODELS = [
 ] as const;
 export type SyncModel = (typeof SYNC_MODELS)[number];
 
-export const SYNC_ACTORS = ["user", "system"] as const;
+export const SYNC_ACTORS = ["user", "system", "agent"] as const;
 export type SyncActor = (typeof SYNC_ACTORS)[number];
 
 export const syncActions = sqliteTable(

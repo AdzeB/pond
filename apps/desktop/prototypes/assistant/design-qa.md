@@ -82,7 +82,7 @@ This is an intentional Linear/Notion blend using Pond’s design system, not a p
 - Full Page/Side Pane and URL-backed scenario/theme/width selection.
 - Suggestions fill the composer; Enter submits; Shift+Enter adds a line.
 - Simulated search, streamed text, and completed response.
-- Provider consent starts the simulation; Minnow fallback preserves the draft.
+- Provider consent starts the simulation; Ollama fallback preserves the draft.
 - Context addition/removal, model selection, and chat history.
 - Collapsible references and sample Save dialog.
 - No-results follow-up fills a broader search.

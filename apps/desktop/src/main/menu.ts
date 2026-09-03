@@ -152,9 +152,32 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
           click: () => openLibraryWindow(),
         },
         {
-          ...sym("link"),
-          label: "Connect Source",
-          click: sendMenuAction("library.connect"),
+          ...sym("square.and.arrow.down"),
+          label: "Collection Window",
+          click: () => {
+            void import("./aux-windows").then((m) => m.openCollectionWindow());
+          },
+        },
+        {
+          ...sym("camera"),
+          label: "Screenshot Display",
+          click: () => {
+            void import("./core/screenshot").then((m) => m.captureDisplay());
+          },
+        },
+        {
+          ...sym("camera.viewfinder"),
+          label: "Screenshot Area",
+          click: () => {
+            void import("./aux-windows").then((m) => m.openCaptureWindow());
+          },
+        },
+        {
+          ...sym("macwindow"),
+          label: "Screenshot Window",
+          click: () => {
+            void import("./core/screenshot").then((m) => m.captureWindow());
+          },
         },
         { type: "separator" },
         {
@@ -434,7 +457,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         {
           ...sym("magnifyingglass"),
           label: "Search",
-          accelerator: "CmdOrCtrl+F",
+          accelerator: "CmdOrCtrl+K",
           registerAccelerator: false,
           click: sendMenuAction("library.search"),
         },

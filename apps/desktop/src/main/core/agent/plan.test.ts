@@ -18,6 +18,40 @@ describe("planAssistantTurn", () => {
     });
   });
 
+  it("maps source nouns onto retrieval filters", () => {
+    expect(
+      planAssistantTurn({ latest: "Kanye tweets", hasSearch: true }),
+    ).toMatchObject({
+      intent: "search",
+      query: "Kanye",
+      source: "twitter",
+      media: [],
+    });
+    expect(
+      planAssistantTurn({ latest: "instagram photos", hasSearch: true }),
+    ).toMatchObject({
+      intent: "search",
+      query: "",
+      source: "instagram",
+      media: ["image"],
+    });
+    expect(
+      planAssistantTurn({ latest: "youtube videos", hasSearch: true }),
+    ).toMatchObject({
+      intent: "search",
+      query: "",
+      source: "youtube",
+      media: ["video"],
+    });
+    expect(
+      planAssistantTurn({ latest: "tweets", hasSearch: true }),
+    ).toMatchObject({
+      intent: "search",
+      query: "",
+      source: "twitter",
+    });
+  });
+
   it("turns media nouns into filters instead of lexical terms", () => {
     expect(
       planAssistantTurn({ latest: "recent vids", hasSearch: true }),
@@ -92,5 +126,20 @@ describe("planAssistantTurn", () => {
         attachmentCount: 1,
       }),
     ).toMatchObject({ intent: "attachments", edit: true });
+  });
+
+  it("keeps organize and import turns on the tool loop", () => {
+    expect(
+      planAssistantTurn({
+        latest: "Create a folder named References",
+        hasSearch: true,
+      }),
+    ).toMatchObject({ intent: "chat", edit: true });
+    expect(
+      planAssistantTurn({
+        latest: "Import https://example.com",
+        hasSearch: true,
+      }),
+    ).toMatchObject({ intent: "chat", edit: true });
   });
 });

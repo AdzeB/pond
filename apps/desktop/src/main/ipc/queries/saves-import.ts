@@ -1,12 +1,23 @@
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { BrowserWindow, clipboard, dialog } from "electron";
 import log from "electron-log/main.js";
+import mime from "mime-types";
 import { z } from "zod";
-import { importEagleLibrary } from "../../core/eagle-import";
+import {
+  classifyLibraryFile,
+  libraryFilename,
+} from "../../../shared/file-format";
+import { parseNetscapeBookmarks } from "../../core/bookmarks";
+import {
+  dryRunEagleLibrary,
+  importEagleLibrary,
+} from "../../core/eagle-import";
+import { setSaveFolders } from "../../core/folders";
 import { createManualSave } from "../../core/manual-import";
+import { extractPageAssets } from "../../core/page-extract";
 import { persistSave } from "../../core/persist-save";
 import { enqueue, normalizeUrl } from "../../core/pipeline/enqueue";
 import { classifyUrlToSource } from "../../core/pipeline/extractors";
@@ -27,13 +38,18 @@ import {
 
 async function importFilesImpl(
   paths: string[],
+  tags: string[] = [],
+  folderIds: string[] = [],
 ): Promise<{ ok: boolean; ids: string[]; error?: string }> {
   const files = await walkImportPaths(paths);
   if (files.length === 0) return { ok: false, ids: [], error: "no_files" };
   const ids: string[] = [];
   for (const path of files) {
-    const res = await createManualSave({ filePaths: [path] });
-    if (res.ok && res.id) ids.push(res.id);
+    const res = await createManualSave({ filePaths: [path], tags });
+    if (res.ok && res.id) {
+      ids.push(res.id);
+      if (folderIds.length > 0) await setSaveFolders(res.id, folderIds);
+    }
   }
   return { ok: ids.length > 0, ids };
 }
@@ -82,11 +98,89 @@ export const savesImportQueries: QueryHandlerMap = {
   }),
 
   "saves.importFiles": query(
-    z.object({ paths: StringListParam }),
+    z.object({
+      paths: StringListParam,
+      tags: StringListParam,
+      folderIds: StringListParam,
+    }),
     async (params) => {
       const paths = params.paths.filter(Boolean);
       if (paths.length === 0) return { ok: false, error: "no_files" };
-      return importFilesImpl(paths);
+      return importFilesImpl(paths, params.tags, params.folderIds);
+    },
+  ),
+
+  "saves.setCustomThumbnail": query(
+    z.object({ id: StringParam }),
+    async (params) => {
+      const win = BrowserWindow.getFocusedWindow() ?? undefined;
+      const options = {
+        properties: ["openFile" as const],
+        message: "Choose a custom thumbnail",
+        filters: [
+          {
+            name: "Images",
+            extensions: [
+              "jpg",
+              "jpeg",
+              "png",
+              "webp",
+              "avif",
+              "gif",
+              "heic",
+              "heif",
+              "jxl",
+              "tif",
+              "tiff",
+            ],
+          },
+        ],
+      };
+      const result = win
+        ? await dialog.showOpenDialog(win, options)
+        : await dialog.showOpenDialog(options);
+      const path = result.filePaths[0];
+      if (result.canceled || !path) return { ok: false, canceled: true };
+      const format = classifyLibraryFile(path, mime.lookup(path) || null);
+      if (format.mediaType !== "image") {
+        return { ok: false, error: "not_an_image" };
+      }
+      const fileInfo = await stat(path).catch(() => null);
+      if (!fileInfo?.isFile() || fileInfo.size === 0) {
+        return { ok: false, error: "empty_file" };
+      }
+      const updated = await persistSave(
+        params.id,
+        {},
+        {
+          actorReason: "user:set-custom-thumbnail",
+          replaceFilesWithKind: "custom_thumbnail",
+          newFiles: [
+            {
+              kind: "custom_thumbnail",
+              filename: libraryFilename(path, "custom-thumbnail.png"),
+              sourcePath: path,
+              mimeType: format.mimeType,
+            },
+          ],
+        },
+      );
+      return { ok: Boolean(updated) };
+    },
+  ),
+
+  "saves.removeCustomThumbnail": query(
+    z.object({ id: StringParam }),
+    async (params) => {
+      const updated = await persistSave(
+        params.id,
+        {},
+        {
+          actorReason: "user:remove-custom-thumbnail",
+          replaceFilesWithKind: "custom_thumbnail",
+        },
+      );
+      return { ok: Boolean(updated) };
     },
   ),
 
@@ -136,7 +230,7 @@ export const savesImportQueries: QueryHandlerMap = {
   },
 
   "saves.importEagleLibrary": query(
-    z.object({ path: StringParam }),
+    z.object({ path: StringParam, dryRun: z.boolean().optional() }),
     async (params) => {
       const path = params.path.trim();
       if (!path)
@@ -146,7 +240,11 @@ export const savesImportQueries: QueryHandlerMap = {
           imported: 0,
           skipped: 0,
           failed: 0,
+          deletedSkipped: 0,
+          lockedFolders: [],
+          droppedFields: [],
         };
+      if (params.dryRun) return dryRunEagleLibrary(path);
       return importEagleLibrary(path);
     },
   ),
@@ -170,15 +268,35 @@ export const savesImportQueries: QueryHandlerMap = {
   },
 
   "saves.startDrag": query(
-    z.object({ id: StringParam, fileIndex: FileIndexParam }),
+    z.object({
+      id: StringParam,
+      ids: StringListParam,
+      fileIndex: FileIndexParam,
+    }),
     async (params, event) => {
-      if (!params.id || !event) return { ok: false };
-      const target = await resolveSaveFilePath(params.id, params.fileIndex);
-      if (!target.ok) return { ok: false };
+      const ids = [
+        ...new Set(
+          (params.ids.length > 0 ? params.ids : [params.id]).filter(Boolean),
+        ),
+      ];
+      if (ids.length === 0 || !event) return { ok: false };
+      const files: string[] = [];
+      for (const id of ids) {
+        const target = await resolveSaveFilePath(id, params.fileIndex);
+        if (target.ok) files.push(target.path);
+      }
+      if (files.length === 0) return { ok: false };
       try {
         const { nativeImage } = await import("electron");
-        const icon = nativeImage.createEmpty();
-        event.sender.startDrag({ file: target.path, icon });
+        const first = files[0] ?? "";
+        let icon = nativeImage.createFromPath(first);
+        if (icon.isEmpty()) icon = nativeImage.createEmpty();
+        else icon = icon.resize({ width: 72, height: 72, quality: "better" });
+        if (files.length === 1) {
+          event.sender.startDrag({ file: first, icon });
+        } else {
+          event.sender.startDrag({ file: first, files, icon });
+        }
         return { ok: true };
       } catch (err) {
         log.warn("[pond ipc] startDrag failed", err);
@@ -233,6 +351,42 @@ export const savesImportQueries: QueryHandlerMap = {
           error: err instanceof Error ? err.message : String(err),
         };
       }
+    },
+  ),
+
+  async "saves.importBookmarks"() {
+    const win = BrowserWindow.getFocusedWindow();
+    const options = {
+      properties: ["openFile" as const],
+      message: "Choose a bookmark HTML file",
+      filters: [{ name: "Bookmarks", extensions: ["html", "htm"] }],
+    };
+    const picked = win
+      ? await dialog.showOpenDialog(win, options)
+      : await dialog.showOpenDialog(options);
+    const path = picked.filePaths[0];
+    if (picked.canceled || !path) return { ok: false, imported: 0, skipped: 0 };
+    const html = await readFile(path, "utf8");
+    const urls = parseNetscapeBookmarks(html);
+    let imported = 0;
+    const failed: string[] = [];
+    for (const url of urls) {
+      try {
+        await enqueue(url, { trigger: "user:quickAdd" });
+        imported += 1;
+      } catch {
+        failed.push(url);
+      }
+    }
+    return { ok: imported > 0, imported, skipped: failed.length };
+  },
+
+  "saves.extractPageAssets": query(
+    z.object({ url: StringParam }),
+    async (params) => {
+      const url = params.url.trim();
+      if (!url) return { ok: false, imported: 0, skipped: 0, error: "empty" };
+      return extractPageAssets(url);
     },
   ),
 };

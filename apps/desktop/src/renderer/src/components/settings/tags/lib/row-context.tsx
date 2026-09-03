@@ -10,7 +10,6 @@ import {
   useState,
 } from "react";
 import { confirm } from "@/components/shared/confirm-dialog";
-import { prompt } from "@/components/shared/prompt-dialog";
 import {
   buildTagMenuItems,
   type TagMenuActions,
@@ -20,6 +19,9 @@ import {
   type TagGroupMenuActions,
 } from "@/components/tags/group-context-menu";
 import { SHORTCUTS } from "@/lib/save/shortcuts";
+import { getAppRouter } from "@/lib/ui/app-router";
+import { libraryChrome } from "@/stores/library-chrome";
+import { resetFilters } from "@/stores/view-store";
 import { useTagsTable } from "./context";
 import type { TagsRowData } from "./types";
 
@@ -82,12 +84,6 @@ export function TagRowProvider({
     await window.pond.query("tags.rename", { from: name, to: cleaned });
   }
 
-  async function commitMerge(raw: string) {
-    const target = normalizeLabelName(raw);
-    if (!target || target.toLowerCase() === name.toLowerCase()) return;
-    await window.pond.query("tags.merge", { from: name, to: target });
-  }
-
   function confirmDelete() {
     if (isGroup) {
       confirm({
@@ -99,29 +95,10 @@ export function TagRowProvider({
       return;
     }
     confirm({
-      title: "Delete Tag",
+      title: "Remove Tag",
       description: `"${name}" will be removed from every save. This cannot be undone.`,
-      confirmLabel: "Delete",
+      confirmLabel: "Remove",
       onConfirm: () => void window.pond.query("tags.delete", { name }),
-    });
-  }
-
-  function confirmConvert() {
-    confirm({
-      title: "Convert to Group",
-      description: `"${name}" will become a label group. It can no longer be applied to saves directly, and the label will be removed from every save it's on.`,
-      confirmLabel: "Convert",
-      onConfirm: () => void window.pond.query("tags.convertToGroup", { name }),
-    });
-  }
-
-  function promptMerge() {
-    prompt({
-      title: `Merge "${name}"`,
-      description: `Every save tagged "${name}" will be re-tagged with the target, and "${name}" will be removed.`,
-      confirmLabel: "Merge",
-      placeholder: "Target tag name",
-      onConfirm: (value) => void commitMerge(value),
     });
   }
 
@@ -137,21 +114,41 @@ export function TagRowProvider({
     const actions: TagMenuActions = {
       groups,
       inGroup,
-      onAddToGroup: (g) => {
-        if (inGroup && inGroup !== g) {
-          void window.pond.query("tagGroups.removeTag", {
+      starred: row.kind === "tag" && row.tag.starred,
+      onFilter: () => {
+        resetFilters();
+        libraryChrome.setNav({ kind: "tag", name });
+        getAppRouter()?.history.push("/");
+      },
+      onSetStarred: (starred) =>
+        void window.pond.query("tags.update", {
+          name,
+          patch: { starred },
+        }),
+      onAddToGroup: (g) =>
+        void window.pond.query("tagGroups.addTags", { tags: [name], group: g }),
+      onMoveToGroup: (g) => {
+        if (!inGroup || inGroup === g) return;
+        void (async () => {
+          await window.pond.query("tagGroups.addTags", {
+            tags: [name],
+            group: g,
+          });
+          await window.pond.query("tagGroups.removeTag", {
             tag: name,
             group: inGroup,
           });
-        }
-        void window.pond.query("tagGroups.addTags", { tags: [name], group: g });
+        })();
       },
-      onRemoveFromGroup: (g) =>
-        void window.pond.query("tagGroups.removeTag", { tag: name, group: g }),
+      onRemoveFromGroup: () => {
+        if (!inGroup) return;
+        void window.pond.query("tagGroups.removeTag", {
+          tag: name,
+          group: inGroup,
+        });
+      },
       onRename: startRename,
-      onConvertToGroup: confirmConvert,
-      onMerge: promptMerge,
-      onDelete: confirmDelete,
+      onRemove: confirmDelete,
     };
     return buildTagMenuItems(actions);
   }

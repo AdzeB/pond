@@ -1,10 +1,12 @@
 import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useRef } from "react";
+import { clearSaveSelection, selectOnlySave } from "@/lib/save/select";
 import { SHORTCUTS } from "@/lib/save/shortcuts";
 import { getAppRouter } from "@/lib/ui/app-router";
 import { openSave, saveIdFromPath } from "@/lib/ui/save-nav";
 import { dockMode } from "@/stores/dock-mode";
-import { selection } from "@/stores/selection";
+import { libraryChrome } from "@/stores/library-chrome";
+import { primarySelection, selection } from "@/stores/selection";
 
 function gridFocusFree(): boolean {
   const el = document.activeElement;
@@ -51,9 +53,10 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
       const from = anchor ?? next;
       if (!anchor) selection.setAnchor(next);
       selection.setRange(ids, from, next);
+      primarySelection.set(next);
+      libraryChrome.setInspectorSaveId(next);
     } else {
-      if (selection.size() > 0) selection.clear();
-      selection.setAnchor(next);
+      selectOnlySave(next);
     }
     cursorRef.current = next;
     scrollToCard(next);
@@ -95,11 +98,6 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
       options: { preventDefault: false },
     },
     {
-      hotkey: SHORTCUTS["grid.preview"].keys!,
-      callback: open,
-      options: { preventDefault: false },
-    },
-    {
       hotkey: SHORTCUTS["grid.select-all"].keys!,
       callback: (event) => {
         if (saveRouteOpen()) return;
@@ -109,7 +107,12 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
         event.preventDefault();
         selection.set(ids);
         const first = ids[0];
-        if (!selection.getAnchor() && first) selection.setAnchor(first);
+        if (first && !selection.getAnchor()) selection.setAnchor(first);
+        const focus = selection.getAnchor() ?? first;
+        if (focus) {
+          primarySelection.set(focus);
+          libraryChrome.setInspectorSaveId(focus);
+        }
       },
       options: { preventDefault: false },
     },
@@ -138,7 +141,7 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
         }
         if (mode !== "nav") return;
         if (selection.size() === 0 && !selection.getAnchor()) return;
-        selection.clear();
+        clearSaveSelection();
         cursorRef.current = null;
       },
       options: { preventDefault: false },

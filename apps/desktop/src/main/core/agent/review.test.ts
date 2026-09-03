@@ -6,9 +6,12 @@ const mock = vi.hoisted(() => ({
   changes: [] as AssistantChange[],
   title: "Original",
   tags: ["design"],
+  deletedAt: null as Date | null,
   folderIds: ["folder"],
   write: vi.fn(),
   saveFolders: vi.fn(),
+  setTags: vi.fn().mockResolvedValue({ ok: true }),
+  createFolder: vi.fn().mockResolvedValue({ id: "new-folder" }),
   fail: false,
 }));
 vi.mock("../../db", () => ({
@@ -22,6 +25,7 @@ vi.mock("../../db", () => ({
             id: "save",
             title: mock.title,
             tags: mock.tags,
+            deletedAt: mock.deletedAt,
           }),
         }),
       }),
@@ -40,11 +44,22 @@ vi.mock("../folders", () => ({
   folderIdsForSave: async () => mock.folderIds,
   listFolders: async () => [{ id: "folder" }],
   setSaveFolders: mock.saveFolders,
+  createFolder: mock.createFolder,
+  deleteFolder: vi.fn(),
+  renameFolder: vi.fn(),
+}));
+vi.mock("../tags", () => ({
+  setSaveTags: mock.setTags,
+  createTag: vi.fn(),
+  mergeTags: vi.fn(),
+  renameTag: vi.fn(),
 }));
 
 beforeEach(() => {
   vi.clearAllMocks();
   mock.title = "Original";
+  mock.tags = ["design"];
+  mock.deletedAt = null;
   mock.fail = false;
   mock.changes = [
     {
@@ -58,9 +73,9 @@ beforeEach(() => {
       status: "pending",
     },
   ];
-  mock.write.mockImplementation(async ({ patch }) => {
+  mock.write.mockImplementation(async (tx: { patch?: { title?: string } }) => {
     if (mock.fail) throw new Error("Disk unavailable");
-    if (patch.title !== undefined) mock.title = patch.title;
+    if (tx.patch?.title !== undefined) mock.title = tx.patch.title;
   });
 });
 const input = {
@@ -113,5 +128,65 @@ describe("reviewed library edits", () => {
     expect(mock.changes[0]?.status).toBe("dismissed");
     await reviewChanges(input);
     expect(mock.write).not.toHaveBeenCalled();
+  });
+  it("applies tag, folder create, and trash proposals", async () => {
+    mock.changes = [
+      {
+        id: "tags",
+        saveId: "save",
+        title: "Original",
+        reason: "Add poster",
+        field: "tags",
+        before: ["design"],
+        after: ["design", "poster"],
+        status: "pending",
+      },
+    ];
+    await reviewChanges({ ...input, changeIds: ["tags"] });
+    expect(mock.setTags).toHaveBeenCalledWith("save", ["design", "poster"]);
+    mock.changes = [
+      {
+        id: "folder",
+        saveId: "",
+        title: "References",
+        reason: "New folder",
+        field: "action",
+        action: "folderCreate",
+        before: null,
+        after: "References",
+        payload: { name: "References" },
+        status: "pending",
+      },
+    ];
+    await reviewChanges({ ...input, changeIds: ["folder"] });
+    expect(mock.createFolder).toHaveBeenCalledWith({
+      name: "References",
+      parentId: null,
+    });
+    mock.changes = [
+      {
+        id: "trash",
+        saveId: "save",
+        title: "Original",
+        reason: "Remove",
+        field: "trash",
+        before: "active",
+        after: "trashed",
+        status: "pending",
+      },
+    ];
+    await reviewChanges({ ...input, changeIds: ["trash"] });
+    expect(mock.write).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "trash", id: "save" }),
+    );
+    mock.deletedAt = new Date();
+    await reviewChanges({
+      messageId: "message",
+      changeIds: ["trash"],
+      action: "undo",
+    });
+    expect(mock.write).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "untrash", id: "save" }),
+    );
   });
 });

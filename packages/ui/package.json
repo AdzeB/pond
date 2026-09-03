@@ -22,7 +22,11 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./accordion": "./src/accordion/index.tsx",
+    "./button": "./src/button/index.tsx",
+    "./input": "./src/input/index.tsx",
     "./logo": "./src/logo/index.tsx",
+    "./tab": "./src/tab/index.tsx",
     "./reset.css": "./src/reset.css"
   },
   "scripts": {

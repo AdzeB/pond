@@ -52,6 +52,17 @@ describe("library breadcrumb paths", () => {
     }
   });
 
+  it("nests a settings section under Settings", () => {
+    expect(
+      buildBreadcrumbs({
+        pathname: "/settings/models",
+        listPath: "/",
+        nav: { kind: "folder", id: "child" },
+        folders,
+      }).map((c) => c.label),
+    ).toEqual(["Library", "Settings", "Models"]);
+  });
+
   it("includes a save after its containing folder path", () => {
     const crumbs = buildBreadcrumbs({
       pathname: "/save/one",

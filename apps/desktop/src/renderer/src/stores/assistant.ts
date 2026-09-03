@@ -17,6 +17,9 @@ import { Store } from "@tanstack/store";
 import { useEffect } from "react";
 import { z } from "zod";
 import { folders } from "./folders";
+import { libraryChrome } from "./library-chrome";
+import { selection } from "./selection";
+import { getOverlays } from "./view-store";
 
 const ChatsSchema = z.array(
   z.object({ id: z.string(), title: z.string().nullable() }),
@@ -46,7 +49,6 @@ export interface AssistantState {
   results: AssistantResultSet[];
   steps: AssistantToolStep[];
   error: string | null;
-  consent: DraftSnapshot | null;
   failed: DraftSnapshot | null;
 }
 const store = new Store<AssistantState>({
@@ -65,7 +67,6 @@ const store = new Store<AssistantState>({
   results: [],
   steps: [],
   error: null,
-  consent: null,
   failed: null,
 });
 const patch = (value: Partial<AssistantState>) =>
@@ -146,10 +147,10 @@ export const assistant = {
       ).values(),
     ];
     patch({
-      attachments: merged.slice(0, 24),
+      attachments: merged.slice(0, 200),
       error:
-        merged.length > 24
-          ? "You can attach up to 24 Saves per message."
+        merged.length > 200
+          ? "You can attach up to 200 Saves per message."
           : null,
     });
   },
@@ -161,7 +162,7 @@ export const assistant = {
       assistant.attach(
         assistantSources.parse(
           await window.pond.query("agent.attachments", {
-            ids: ids.slice(0, 24),
+            ids: ids.slice(0, 200),
           }),
         ),
       );
@@ -183,7 +184,6 @@ export const assistant = {
       results: [],
       steps: [],
       error: null,
-      consent: null,
       failed: null,
       loading: false,
     });
@@ -200,7 +200,6 @@ export const assistant = {
       results: [],
       steps: [],
       error: null,
-      consent: null,
       failed: null,
       loading: true,
     });
@@ -213,11 +212,7 @@ export const assistant = {
       if (version === historyVersion) patch({ loading: false });
     }
   },
-  async send(
-    provider: AssistantProvider,
-    allowCloudOnce = false,
-    snapshot?: DraftSnapshot,
-  ) {
+  async send(provider: AssistantProvider, snapshot?: DraftSnapshot) {
     if (store.state.busy || store.state.loading) return;
     const sent = snapshot ?? {
       content: store.state.draft.trim(),
@@ -229,7 +224,6 @@ export const assistant = {
     patch({
       busy: true,
       error: null,
-      consent: null,
       failed: null,
       stream: "",
       sources: [],
@@ -263,31 +257,48 @@ export const assistant = {
         },
       };
       patch({ messages: [...store.state.messages, message] });
+      const overlays = getOverlays();
+      const nav = libraryChrome.getState().nav;
+      const selected = selection.snapshot();
+      const these =
+        /\b(these|those|them|selected|this selection|attached)\b/i.test(
+          sent.content,
+        );
+      let attachmentIds = sent.attachments.map((save) => save.id);
+      let scope:
+        | { kind: "library" }
+        | { kind: "folder"; id: string }
+        | { kind: "attachments" } = { kind: "library" };
+      if (attachmentIds.length || (these && selected.length)) {
+        if (!attachmentIds.length) attachmentIds = [...selected].slice(0, 200);
+        scope = { kind: "attachments" };
+      } else if (nav.kind === "folder") {
+        scope = { kind: "folder", id: nav.id };
+      }
       const result = assistantSendResult.parse(
         await window.pond.query("agent.send", {
           chatId,
           requestId,
           content: sent.content,
-          attachmentIds: sent.attachments.map((s) => s.id),
+          attachmentIds,
+          scope,
           provider: sent.provider,
-          allowCloudOnce,
           replyToQuestion: sent.replyToQuestion,
+          semanticQuery: overlays.semanticQuery,
+          visualSaveId: overlays.visualSaveId,
         }),
       );
       if (!result.accepted) {
         patch({
           messages: store.state.messages.filter((m) => m.id !== requestId),
         });
-        if (result.needsCloud) patch({ consent: sent });
-        else {
-          restoreDraft(sent);
-          patch({
-            error:
-              result.error ??
-              (result.stopped ? null : "Could not send this message."),
-            failed: sent,
-          });
-        }
+        restoreDraft(sent);
+        patch({
+          error:
+            result.error ??
+            (result.stopped ? null : "Could not send this message."),
+          failed: sent,
+        });
       } else {
         await refreshMessages(chatId);
         patch({ error: null });
@@ -311,7 +322,7 @@ export const assistant = {
     provider: AssistantProvider,
   ) {
     if (store.state.messages.at(-1)?.id !== messageId) return;
-    await assistant.send(provider, false, {
+    await assistant.send(provider, {
       content,
       attachments: [],
       provider,
@@ -328,26 +339,9 @@ export const assistant = {
       patch({ error: "Could not stop the reply. Try again." });
     }
   },
-  cancelConsent() {
-    const sent = store.state.consent;
-    patch({ consent: null });
-    if (sent) {
-      if (store.state.draft)
-        patch({
-          failed: sent,
-          error:
-            "The previous message was not sent. Your current draft was kept.",
-        });
-      else restoreDraft(sent);
-    }
-  },
-  async allowOnce() {
-    const sent = store.state.consent;
-    if (sent) await assistant.send(sent.provider, true, sent);
-  },
   async retry() {
     const sent = store.state.failed;
-    if (sent) await assistant.send(sent.provider, false, sent);
+    if (sent) await assistant.send(sent.provider, sent);
   },
   async review(
     messageId: string,

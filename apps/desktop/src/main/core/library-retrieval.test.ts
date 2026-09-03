@@ -11,6 +11,8 @@ const dialect = new SQLiteSyncDialect();
 
 function fakeDb(input: {
   candidates?: Array<{ id: string; rank: number }>;
+  knnClip?: Array<{ id: string; distance: number }>;
+  knnText?: Array<{ id: string; distance: number }>;
   rows?: Array<Record<string, unknown>>;
 }) {
   const where = vi.fn();
@@ -20,12 +22,23 @@ function fakeDb(input: {
       where(condition);
       return Object.assign(Promise.resolve(rows), {
         orderBy: () => ({ limit: async () => rows }),
+        limit: async () => rows,
       });
     },
   };
   const db = {
     $raw: {
-      prepare: () => ({ all: () => input.candidates ?? [] }),
+      prepare: (sql: string) => ({
+        all: () => {
+          if (sql.includes("save_clip_vec")) return input.knnClip ?? [];
+          if (sql.includes("save_text_vec")) return input.knnText ?? [];
+          return input.candidates ?? [];
+        },
+        get: () =>
+          input.knnClip?.length || input.knnText?.length
+            ? { dimensions: 2 }
+            : undefined,
+      }),
     },
     select: () => ({ from: () => selected }),
   } as unknown as Db;
@@ -131,7 +144,11 @@ describe("LibraryRetrievalService", () => {
       clipModel: "Xenova/clip-vit-base-patch32@1",
       vector: [1, 0],
     };
-    const harness = fakeDb({ candidates: [], rows: [visual] });
+    const harness = fakeDb({
+      candidates: [],
+      knnClip: [{ id: "visual", distance: 0 }],
+      rows: [visual],
+    });
     const result = await retrieveLibraryWithDb(
       harness.db,
       { query: "Kanye", media: ["image"] },
@@ -147,8 +164,39 @@ describe("LibraryRetrievalService", () => {
     expect(result.hits[0]).toMatchObject({ channels: ["visual"] });
   });
 
+  it("ranks a visual probe without a lexical query", async () => {
+    const visual = {
+      id: "visual",
+      title: "Untitled portrait",
+      url: "https://example.com/visual",
+      author: null,
+      source: "arena",
+      notes: null,
+      description: null,
+      mediaType: "image",
+      savedAt: new Date(400),
+    };
+    const harness = fakeDb({
+      knnClip: [{ id: "visual", distance: 0 }],
+      rows: [visual],
+    });
+    const result = await retrieveLibraryWithDb(
+      harness.db,
+      {},
+      {},
+      {
+        visual: {
+          model: "Xenova/clip-vit-base-patch32@1",
+          vector: [1, 0],
+        },
+      },
+    );
+    expect(result.saves.map((save) => save.id)).toEqual(["visual"]);
+    expect(result.hits[0]).toMatchObject({ channels: ["visual"] });
+  });
+
   it("never compares vectors from different model versions", async () => {
-    const stale = {
+    const _stale = {
       id: "stale",
       title: "Stale vector",
       url: "https://example.com/stale",
@@ -163,7 +211,11 @@ describe("LibraryRetrievalService", () => {
       clipEmbedding: null,
       clipModel: null,
     };
-    const harness = fakeDb({ candidates: [], rows: [stale] });
+    const harness = fakeDb({
+      candidates: [],
+      knnText: [{ id: "stale", distance: 0 }],
+      rows: [],
+    });
     const result = await retrieveLibraryWithDb(
       harness.db,
       { query: "Kanye" },

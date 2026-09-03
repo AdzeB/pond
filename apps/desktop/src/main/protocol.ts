@@ -9,6 +9,7 @@ import { POND_PROTOCOL } from "../shared/constants";
 import {
   clampThumbWidth,
   ensureThumbnailInBackground,
+  getOrCreateThumbnail,
   lookupCachedThumbnail,
 } from "./lib/thumbnail";
 import { itemFile, libraryRoot, resolvePaths } from "./paths";
@@ -73,21 +74,25 @@ export function registerProtocol() {
       let target = resolved;
       let immutable = version !== null;
 
+      const previewParam = url.searchParams.get("preview");
       const widthParam =
-        url.searchParams.get("tw") ?? url.searchParams.get("w");
+        previewParam ?? url.searchParams.get("tw") ?? url.searchParams.get("w");
       if (host !== META_HOST && widthParam) {
         const width = clampThumbWidth(Number(widthParam));
         if (width !== null) {
-          const thumb = lookupCachedThumbnail({
+          const request = {
             saveId: host,
             sourcePath: resolved,
             width,
             version,
-          });
+          };
+          const thumb = previewParam
+            ? await getOrCreateThumbnail({ ...request, priority: "foreground" })
+            : lookupCachedThumbnail(request);
           if (thumb) {
             target = thumb.path;
             immutable = true;
-          } else {
+          } else if (!previewParam) {
             ensureThumbnailInBackground({
               saveId: host,
               sourcePath: resolved,

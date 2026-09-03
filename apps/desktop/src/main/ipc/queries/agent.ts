@@ -41,9 +41,18 @@ export const agentQueries: QueryHandlerMap = {
     return await verifyKey(provider, String(params.key ?? ""));
   }),
 
-  "agent.allowCloud": query(Params, async () => {
-    const { allowCloud } = await import("../../core/agent/keys");
-    return await allowCloud();
+  "agent.listModels": query(Params, async (params) => {
+    const { listProviderModels, parseProvider } = await import(
+      "../../core/agent/keys"
+    );
+    const provider = parseProvider(String(params.provider ?? ""));
+    if (!provider) return { ok: false, models: [], error: "Unknown provider." };
+    return await listProviderModels(provider);
+  }),
+
+  "agent.listAvailableModels": query(Params, async () => {
+    const { listAvailableModels } = await import("../../core/agent/keys");
+    return await listAvailableModels();
   }),
 
   "agent.chats": query(Params, async () => {
@@ -85,7 +94,7 @@ export const agentQueries: QueryHandlerMap = {
 
   "agent.attachments": query(Params, async (params) => {
     const { readSave } = await import("../../core/agent/tools");
-    const ids = z.array(z.string()).max(24).parse(params.ids);
+    const ids = z.array(z.string()).max(200).parse(params.ids);
     return (await Promise.all(ids.map((id) => readSave({ id })))).flatMap(
       (result) => (result.save ? [result.save] : []),
     );

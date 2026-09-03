@@ -1,7 +1,8 @@
 :root {
   --ds-empty-max-width: 360px;
-  --ds-empty-padding-block-start: 72px;
-  --ds-empty-padding-block-end: 96px;
+  --ds-empty-min-height: 280px;
+  --ds-empty-padding-block-start: 48px;
+  --ds-empty-padding-block-end: 48px;
   --ds-empty-padding-inline: 24px;
   --ds-empty-gap: 20px;
   --ds-empty-copy-gap: 8px;

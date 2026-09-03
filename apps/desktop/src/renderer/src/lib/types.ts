@@ -1,4 +1,6 @@
 import type {
+  ImageComment,
+  ImageCrop,
   ListKind,
   MediaType,
   SaveStatus,
@@ -45,6 +47,7 @@ export interface Save {
   ocrModel?: string | null;
   transcript?: string | null;
   transcriptModel?: string | null;
+  embeddingModel?: string | null;
   clipEmbedding?: number[] | null;
   clipModel?: string | null;
   aesthetic?: string[] | null;
@@ -53,6 +56,12 @@ export interface Save {
   suggestedTags?: string[] | null;
   suggestedTagsModel?: string | null;
   videoNotes?: VideoNote[];
+  comments?: ImageComment[];
+  rating?: number | null;
+  rotate?: number;
+  flipX?: boolean;
+  flipY?: boolean;
+  crop?: ImageCrop | null;
   dominantColors?: string[];
   tags: string[];
   folderIds?: string[];

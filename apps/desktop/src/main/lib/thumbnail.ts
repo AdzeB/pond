@@ -4,6 +4,7 @@ import { copyFile, mkdir, open, rename, stat, unlink } from "node:fs/promises";
 import { extname, join } from "node:path";
 import log from "electron-log/main.js";
 import sharp, { type Metadata } from "sharp";
+import { canRequestNativeThumbnail } from "../../shared/file-format";
 import { isThumbnailFileExtension } from "../../shared/media-index";
 import { libraryRoot, thumbnailCacheRoot } from "../paths";
 
@@ -118,10 +119,10 @@ interface ThumbnailRequest {
   priority?: ThumbnailPriority;
 }
 
-type ThumbnailKind = "sharp" | "native";
+export type ThumbnailKind = "sharp" | "native" | "sharp-or-native";
 type ThumbnailOutput = { width: number; out: string };
 
-async function getOrCreateThumbnail(
+export async function getOrCreateThumbnail(
   req: ThumbnailRequest,
 ): Promise<{ path: string } | null> {
   const exact = lookupExactCachedThumbnail(req);
@@ -314,22 +315,39 @@ async function thumbnailPipeline(
   if (kind === "native") {
     return nativeThumbnailPipeline(sourcePath, width);
   }
+  try {
+    const pipeline = sharp(sourcePath, { failOn: "none", pages: 1 });
+    return { pipeline, metadata: await pipeline.metadata() };
+  } catch {
+    return kind === "sharp-or-native"
+      ? nativeThumbnailPipeline(sourcePath, width)
+      : null;
+  }
+}
 
-  const pipeline = sharp(sourcePath, { failOn: "none", pages: 1 });
-  return { pipeline, metadata: await pipeline.metadata() };
+export function thumbnailKindForExtension(ext: string): ThumbnailKind | null {
+  const lower = ext.toLowerCase();
+  if (NATIVE_RASTER_EXT.has(lower)) return "native";
+  if (lower === ".jxl" || lower === ".tif" || lower === ".tiff") {
+    return "sharp-or-native";
+  }
+  if (isThumbnailable(lower)) return "sharp";
+  if (canRequestNativeThumbnail(`preview${lower}`)) return "native";
+  return null;
 }
 
 async function detectThumbnailKind(
   sourcePath: string,
 ): Promise<ThumbnailKind | null> {
   const ext = extname(sourcePath).toLowerCase();
-  if (isThumbnailable(ext) && !NATIVE_RASTER_EXT.has(ext)) return "sharp";
+  const extensionKind = thumbnailKindForExtension(ext);
+  if (extensionKind && extensionKind !== "native") return extensionKind;
   try {
     const header = await readFileHeader(sourcePath);
-    if (!isRasterImageHeader(header)) return null;
+    if (!isRasterImageHeader(header)) return extensionKind;
     return isIsoBaseMediaHeader(header) ? "native" : "sharp";
   } catch {
-    return null;
+    return extensionKind;
   }
 }
 

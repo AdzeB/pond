@@ -3,17 +3,59 @@
   inset: 0;
   z-index: 40;
   display: flex;
+  flex-direction: column;
+  gap: 12px;
   align-items: center;
   justify-content: center;
   pointer-events: none;
   background: rgb(0 0 0 / 40%);
+
+  &[data-interactive] {
+    pointer-events: auto;
+  }
 }
 
 .frame {
+  position: relative;
   width: min(72vw, 720px);
   height: min(72vh, 720px);
   overflow: hidden;
-  pointer-events: none;
+  pointer-events: inherit;
   border-radius: var(--ds-radius-xl);
   box-shadow: var(--ds-shadow-3);
+
+  &[data-grayscale] {
+    filter: grayscale(1);
+  }
+}
+
+.media {
+  width: 100%;
+  height: 100%;
+
+  &[data-grayscale] {
+    filter: grayscale(1);
+  }
+}
+
+.compare {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.crop {
+  position: absolute;
+  pointer-events: none;
+  background: rgb(0 0 0 / 0.2);
+  border: 1px solid var(--ds-white-a12);
 }

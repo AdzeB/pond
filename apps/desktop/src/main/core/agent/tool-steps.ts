@@ -5,7 +5,15 @@ import type { ToolSpec } from "./complete";
 const labels: Record<string, string> = {
   searchLibrary: "Search library",
   readSave: "Read Save",
+  grepLibrary: "Grep library",
+  libraryOverview: "Library overview",
   listFolders: "Read folders",
+  applyFilter: "Apply filter",
+  setOverlay: "Set overlay",
+  citeSaves: "Cite Saves",
+  openSave: "Open Save",
+  findDuplicates: "Find duplicates",
+  describeSaves: "Describe images",
   proposeChanges: "Prepare changes for review",
 };
 

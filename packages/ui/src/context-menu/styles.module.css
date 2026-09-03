@@ -10,6 +10,13 @@
   --popup-width: max-content;
   composes: popup from "../shared/styles/popup/styles.module.css";
   max-width: var(--available-width);
+
+  /* Base UI sets data-instant=click on contextmenu (event.detail is 0). */
+  &[data-open][data-instant="click"] {
+    transition:
+      opacity var(--ds-duration-snap) var(--ds-easing-decelerate),
+      transform var(--ds-duration-snap) var(--ds-easing-decelerate);
+  }
 }
 
 .arrow {

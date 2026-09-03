@@ -1,5 +1,4 @@
 import { Store } from "@tanstack/store";
-import { z } from "zod";
 
 interface ClipEntry {
   vec: Float32Array;
@@ -9,52 +8,17 @@ interface ClipEntry {
 interface ClipState {
   readonly byId: Map<string, ClipEntry>;
   readonly version: number;
-  readonly loaded: boolean;
 }
 
 const store = new Store<ClipState>({
   byId: new Map(),
   version: 0,
-  loaded: false,
 });
 
 export const clipEmbeddingStore = store;
 
-const WireRowsSchema = z.array(
-  z.object({
-    id: z.string(),
-    clipEmbedding: z.array(z.number()).nullable().catch(null),
-    clipModel: z.string().nullable().catch(null),
-  }),
-);
-
-let loadInflight: Promise<void> | null = null;
-
 export function loadClipEmbeddings(): Promise<void> {
-  if (store.state.loaded) return Promise.resolve();
-  if (loadInflight) return loadInflight;
-  loadInflight = (async () => {
-    try {
-      const rows = WireRowsSchema.parse(
-        await window.pond.query("saves.clipEmbeddings", {}),
-      );
-      const byId = new Map<string, ClipEntry>();
-      for (const row of rows) {
-        if (!row.clipEmbedding || !row.clipModel) continue;
-        byId.set(row.id, {
-          vec: Float32Array.from(row.clipEmbedding),
-          model: row.clipModel,
-        });
-      }
-      store.setState((s) => ({ byId, version: s.version + 1, loaded: true }));
-    } catch (err) {
-      console.warn("[clip] failed to load persisted vectors", err);
-      store.setState((s) => ({ ...s, loaded: true }));
-    } finally {
-      loadInflight = null;
-    }
-  })();
-  return loadInflight;
+  return Promise.resolve();
 }
 
 export function setClipEmbedding(
@@ -65,7 +29,7 @@ export function setClipEmbedding(
   store.setState((s) => {
     const byId = new Map(s.byId);
     byId.set(id, { vec, model });
-    return { byId, version: s.version + 1, loaded: s.loaded };
+    return { byId, version: s.version + 1 };
   });
   void window.pond
     .query("saves.patchDerived", {
@@ -83,9 +47,7 @@ export function clearClipEmbeddings(ids?: readonly string[]): number {
     store.setState((s) => {
       const byId = new Map(s.byId);
       for (const id of ids) if (byId.delete(id)) count++;
-      return count === 0
-        ? s
-        : { byId, version: s.version + 1, loaded: s.loaded };
+      return count === 0 ? s : { byId, version: s.version + 1 };
     });
     return count;
   }
@@ -94,7 +56,6 @@ export function clearClipEmbeddings(ids?: readonly string[]): number {
   store.setState((s) => ({
     byId: new Map(),
     version: s.version + 1,
-    loaded: s.loaded,
   }));
   return count;
 }

@@ -83,7 +83,7 @@ export function Assistant({
         : "",
   );
   const [provider, setProvider] = useState<Provider>(
-    scenario === "consent" || scenario === "error" ? "Anthropic" : "Minnow",
+    scenario === "consent" || scenario === "error" ? "Anthropic" : "Ollama",
   );
   const [attached, setAttached] = useState<number[]>(
     scenario === "context" ? [0, 1] : [],
@@ -255,7 +255,7 @@ export function Assistant({
 
   function start(text: string, allow = false, contextOverride?: number[]) {
     if (!text.trim() || busy) return;
-    if (provider !== "Minnow" && !allow) {
+    if (provider !== "Ollama" && !allow) {
       setMode("consent");
       setDraft(text);
       if (contextOverride) {
@@ -699,7 +699,7 @@ export function Assistant({
               <div>
                 <strong>Couldn't reach Anthropic</strong>
                 <p>
-                  Your question is still here. Try again or use Minnow on this
+                  Your question is still here. Try again or use Ollama on this
                   Mac.
                 </p>
                 <div className="notice-actions">
@@ -709,11 +709,11 @@ export function Assistant({
                   <button
                     type="button"
                     onClick={() => {
-                      setProvider("Minnow");
+                      setProvider("Ollama");
                       setMode("empty");
                     }}
                   >
-                    Use Minnow
+                    Use Ollama
                   </button>
                 </div>
               </div>
@@ -726,7 +726,7 @@ export function Assistant({
                 <strong>Send to {provider}?</strong>
                 <p>
                   Your question and relevant Save content will be sent to this
-                  provider. Minnow keeps the conversation on this Mac.
+                  provider. Ollama keeps the conversation on this Mac.
                 </p>
                 <div className="notice-actions">
                   <Button
@@ -739,11 +739,11 @@ export function Assistant({
                   <button
                     type="button"
                     onClick={() => {
-                      setProvider("Minnow");
+                      setProvider("Ollama");
                       setMode("empty");
                     }}
                   >
-                    Use Minnow
+                    Use Ollama
                   </button>
                 </div>
               </div>

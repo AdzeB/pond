@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, Input } from "@pond/ui";
+import { Button } from "@pond/ui/button";
+import { Input } from "@pond/ui/input";
 import { type FormEvent, useState } from "react";
 import { z } from "zod";
 import styles from "./styles.module.css";

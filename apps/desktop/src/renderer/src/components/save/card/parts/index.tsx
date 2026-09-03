@@ -127,7 +127,7 @@ const Overlay = memo(function Overlay({
   primary: SaveFile | null;
 }) {
   const showType = useDisplayPref("type");
-  const showSource = useDisplayPref("source");
+  const showSource = useDisplayPref("source") && save.source !== "local";
   const showFileCount = useDisplayPref("fileCount");
   const showNotes = useDisplayPref("notes");
   const pickOpts = useMediaPickOptions();

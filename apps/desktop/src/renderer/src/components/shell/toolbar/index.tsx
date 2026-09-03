@@ -59,6 +59,7 @@ function Breadcrumbs() {
                     icon
                     variant="ghost"
                     size="sm"
+                    rounding="rounded"
                     className={styles.more}
                     aria-label="Show Parent Folders"
                   >
@@ -111,6 +112,7 @@ function Breadcrumbs() {
                 <Button
                   variant="ghost"
                   size="sm"
+                  rounding="rounded"
                   className={styles.crumb}
                   title={crumb.label}
                   onClick={() => navigate(crumb)}
@@ -130,9 +132,11 @@ function Breadcrumbs() {
 }
 
 export function Toolbar() {
-  const ownsRightPane = useRouterState({
-    select: (s) => s.location.pathname === "/assistant",
+  const pathname = useRouterState({
+    select: (s) => s.location.pathname,
   });
+  const hideInspector =
+    pathname === "/assistant" || pathname.startsWith("/settings");
   const sidebarOpen = useSidebarOpen();
   const rightPane = useRightPane();
   return (
@@ -145,7 +149,7 @@ export function Toolbar() {
         <Breadcrumbs />
       </div>
       <div className={styles.actions}>
-        {ownsRightPane ? null : <InspectorToggle open={rightPane !== null} />}
+        {hideInspector ? null : <InspectorToggle open={rightPane !== null} />}
       </div>
     </div>
   );

@@ -189,6 +189,12 @@ const windowSlice = z.object({
   appIcon: z.string().min(1).catch(DEFAULT_APP_ICON),
 });
 
+const autoImport = z.object({
+  enabled: z.boolean().catch(false),
+  path: z.string().catch(""),
+  mode: z.enum(["copy", "move"]).catch("copy"),
+});
+
 const quickCapture = z.object({
   menuBarIcon: z.boolean().catch(true),
   launchAtLogin: z.boolean().catch(false),
@@ -250,15 +256,19 @@ const storage = z.object({
 });
 
 const agent = z.object({
-  languageModel: z.string().catch("minnow"),
-  cloudAllowed: z.boolean().catch(false),
+  languageModel: z
+    .string()
+    .catch("")
+    .transform((value) => (value === "minnow" ? "" : value)),
   compatibleBaseUrl: z.string().catch(""),
   ollamaBaseUrl: z.string().catch("http://127.0.0.1:11434/v1"),
   lmstudioBaseUrl: z.string().catch("http://127.0.0.1:1234/v1"),
   compatibleModelId: z.string().catch("gpt-5.6-sol"),
   ollamaModelId: z.string().catch("llama3.2"),
   lmstudioModelId: z.string().catch("local"),
+  modelIds: z.record(z.string(), z.string()).catch({}),
   enabledKeys: z.record(z.string(), z.boolean()).catch({}),
+  visionModel: z.string().catch(""),
 });
 
 const ai = z.object({
@@ -293,6 +303,7 @@ const PrefsObject = z.object({
   trash: trash.catch(trash.parse({})),
   window: windowSlice.catch(windowSlice.parse({})),
   quickCapture: quickCapture.catch(quickCapture.parse({})),
+  autoImport: autoImport.catch(autoImport.parse({})),
   tagPicker: tagPicker.catch(tagPicker.parse({})),
   allTags: allTags.catch(allTags.parse({})),
   sourcesView: sourcesView.catch(sourcesView.parse({})),

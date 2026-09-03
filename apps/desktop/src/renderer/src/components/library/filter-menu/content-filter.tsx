@@ -47,7 +47,7 @@ export function ContentFilter({
       ))}
       <Menu.Separator />
       <form
-        className={styles.form}
+        className={styles["content-form"]}
         onKeyDown={(event) => {
           if (event.key !== "Escape" && event.key !== "Tab")
             event.stopPropagation();
@@ -58,8 +58,8 @@ export function ContentFilter({
             apply({ field, operator: "contains", value: text.trim() });
         }}
       >
-        <label className={styles.field} htmlFor={inputId}>
-          Contains Text
+        <label className={styles["content-field"]} htmlFor={inputId}>
+          <span>Contains Text</span>
           <Input.Root size="sm">
             <Input.Field
               id={inputId}
@@ -70,14 +70,13 @@ export function ContentFilter({
             />
           </Input.Root>
         </label>
-        <p className={styles.hint}>Matches this phrase, ignoring case.</p>
         <Button
           type="submit"
           size="sm"
           variant="secondary"
           disabled={!text.trim()}
         >
-          Apply Filter
+          Apply
         </Button>
       </form>
     </>

@@ -6,7 +6,7 @@ import { getDb } from "../../db";
 import { itemFile } from "../../paths";
 import { persistSave } from "../persist-save";
 import { resetTasksForSave } from "../pipeline/enqueue";
-import { kickReconciler } from "../pipeline/reconciler";
+import { kickReconciler } from "../pipeline/reconciler-client";
 
 export type RefreshOutcome =
   | { ok: true; method: "metadata" | "pipeline-reset" }

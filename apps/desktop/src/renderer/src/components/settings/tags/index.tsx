@@ -163,36 +163,30 @@ export function TagsSection() {
                 ))}
               </div>
             ) : total === 0 ? (
-              <Empty.Root align="start">
+              <Empty.Root>
                 <Empty.Media>
                   <IconTagFill18 />
                 </Empty.Media>
-                <Empty.Title>Tags</Empty.Title>
+                <Empty.Title>No tags yet</Empty.Title>
                 <Empty.Description>
-                  Labels keep your saves organized.
-                </Empty.Description>
-                <Empty.Description>
-                  Create one, then add it to a group to build a hierarchy.
+                  Create your first tag to start organizing your library.
                 </Empty.Description>
                 <Empty.Action>
                   <Button
                     variant="primary"
-                    size="md"
+                    size="sm"
                     onClick={() => startCreate("tag")}
                   >
                     New Tag
                   </Button>
-                  <Button
-                    variant="secondary"
-                    size="md"
-                    onClick={() => startCreate("group")}
-                  >
-                    New Group
-                  </Button>
                 </Empty.Action>
               </Empty.Root>
             ) : (
-              <MatchesEmpty />
+              <MatchesEmpty
+                actionLabel="Clear Search"
+                description="Try a different tag name."
+                onReset={() => setQ("")}
+              />
             )}
           </TagsTableContext>
         </div>

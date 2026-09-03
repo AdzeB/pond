@@ -2,6 +2,7 @@ import { useCallback, useEffect } from "react";
 import {
   LibraryEmpty,
   LibraryLoading,
+  LibrarySectionEmpty,
   MatchesEmpty,
   TrashEmpty,
 } from "@/components/library/empty";
@@ -12,8 +13,13 @@ import { useCardActions } from "@/hooks/use-card-actions";
 import { useGridHotkeys } from "@/hooks/use-grid-hotkeys";
 import { useLibraryState } from "@/hooks/use-library-state";
 import { useSavePaging } from "@/hooks/use-saves";
-import { hydrateFullPool, loadNextPage } from "@/stores/bootstrap";
+import {
+  clearSaveSelection,
+  isLibraryBackgroundTarget,
+} from "@/lib/save/select";
+import { loadNextPage } from "@/stores/bootstrap";
 import { libraryViewContext } from "@/stores/library-view-context";
+import { resetFilters } from "@/stores/view-store";
 
 export function LibraryView() {
   const data = useLibraryState();
@@ -35,22 +41,19 @@ export function LibraryView() {
     void loadNextPage();
   }, []);
 
-  /** Paging stops while narrowing, so every save has to be in the pool for the result to be whole. */
-  const needsFullPool =
-    data.mode !== "library" || data.hasActiveSearch || data.hasActiveFilter;
-  useEffect(() => {
-    if (!needsFullPool) return;
-    void hydrateFullPool().catch((err) => {
-      console.warn("[pond pool] full hydrate for library mode failed", err);
-    });
-  }, [needsFullPool]);
-
   useEffect(() => {
     libraryViewContext.set(data.filteredIds, data.mode);
   }, [data.filteredIds, data.mode]);
 
   return (
     <LibraryGrid.Root
+      data-library-grid=""
+      onMouseDown={(event) => {
+        if (event.button !== 0) return;
+        if (event.metaKey || event.ctrlKey || event.shiftKey) return;
+        if (!isLibraryBackgroundTarget(event.target)) return;
+        clearSaveSelection();
+      }}
       onDragOver={actions.onDragOver}
       onDrop={(e) => void actions.onDrop(e)}
     >
@@ -63,8 +66,12 @@ export function LibraryView() {
           <TrashEmpty />
         ) : paging.total === 0 && data.mode !== "trash" ? (
           <LibraryEmpty />
+        ) : data.hasActiveSearch || data.hasActiveFilter ? (
+          <MatchesEmpty onReset={resetFilters} />
+        ) : data.mode !== "library" && data.mode !== "trash" ? (
+          <LibrarySectionEmpty mode={data.mode} />
         ) : (
-          <MatchesEmpty />
+          <MatchesEmpty onReset={resetFilters} />
         )
       ) : (
         <LayoutSwitcher

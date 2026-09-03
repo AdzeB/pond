@@ -1,10 +1,16 @@
-import { MEDIA_TYPES, type MediaType } from "@pond/schema/db";
+import {
+  MEDIA_TYPES,
+  type MediaType,
+  SOURCES,
+  type Source,
+} from "@pond/schema/db";
 import { z } from "zod";
 
 export const assistantPlan = z.object({
   intent: z.enum(["chat", "search", "recent", "attachments", "clarify"]),
   query: z.string().max(150),
   media: z.array(z.enum(MEDIA_TYPES)).max(MEDIA_TYPES.length),
+  source: z.enum(SOURCES).optional(),
   requiresEvidence: z.boolean(),
   directLookup: z.boolean(),
   edit: z.boolean(),
@@ -28,11 +34,28 @@ const MEDIA_WORDS: ReadonlyArray<{
   { pattern: /\b(?:notes?|text(?:s)?)\b/gi, media: "text" },
 ];
 
+const SOURCE_WORDS: ReadonlyArray<{
+  pattern: RegExp;
+  source: Source;
+}> = [
+  { pattern: /\b(?:tweets?|twitter)\b/gi, source: "twitter" },
+  { pattern: /\b(?:instagram|insta|ig|reels?)\b/gi, source: "instagram" },
+  { pattern: /\b(?:youtube|yt)\b/gi, source: "youtube" },
+  { pattern: /\btiktoks?\b/gi, source: "tiktok" },
+  { pattern: /\bpinterest\b/gi, source: "pinterest" },
+  { pattern: /\b(?:reddit|subreddit)\b/gi, source: "reddit" },
+  { pattern: /\bthreads\b/gi, source: "threads" },
+  { pattern: /\b(?:are\.na|arena)\b/gi, source: "arena" },
+  { pattern: /\bcosmos\b/gi, source: "cosmos" },
+];
+
 const CHAT_OPENERS =
   /^(?:hi|hey|hello|thanks|thank you|cheers|good (?:morning|afternoon|evening)|who|what|when|where|why|how|can|could|would|should|tell|give|write|draft|create|make)\b/i;
 const COMPLEX_TASK =
   /\b(?:summari[sz]e|compare|explain|analy[sz]e|organize|categorize|tag|rename|move|export|write|draft)\b/i;
 const EDIT_TASK = /\b(?:organize|categorize|tag|rename|retitle|move)\b/i;
+const ACTION_SIGNAL =
+  /\b(?:import|export|sync now|create(?:\s+a)?\s+folder|delete folder|rename folder|merge tags|empty trash|purge|batch rename|apply filter|show these|grep|copy url|reveal)\b/i;
 const SEARCH_SIGNAL =
   /\b(?:find|search|show|browse|look\s+up)\b|\b(?:my|our)\s+(?:saved|saves?|library|references?)\b|\bsaved\s+(?:references?|saves?|items?)\b/i;
 const RECENT_SIGNAL =
@@ -61,6 +84,27 @@ function mediaFor(text: string): MediaType[] {
   return [...media];
 }
 
+function sourceFor(text: string): Source | undefined {
+  for (const entry of SOURCE_WORDS) {
+    entry.pattern.lastIndex = 0;
+    if (entry.pattern.test(text)) return entry.source;
+  }
+  return undefined;
+}
+
+function stripNouns(text: string): string {
+  let query = text;
+  for (const entry of MEDIA_WORDS) {
+    entry.pattern.lastIndex = 0;
+    query = query.replace(entry.pattern, " ");
+  }
+  for (const entry of SOURCE_WORDS) {
+    entry.pattern.lastIndex = 0;
+    query = query.replace(entry.pattern, " ");
+  }
+  return query;
+}
+
 function literalQuery(text: string): string {
   let query = text.trim().replace(/[?.!,;:]+$/g, "");
   const about = query.match(/\babout\s+(.+)$/i)?.[1];
@@ -70,10 +114,7 @@ function literalQuery(text: string): string {
     .replace(FORMAT_SUFFIX, "")
     .replace(LEADING_COMMAND, "")
     .replace(LEADING_TASK, "");
-  for (const entry of MEDIA_WORDS) {
-    entry.pattern.lastIndex = 0;
-    query = query.replace(entry.pattern, " ");
-  }
+  query = stripNouns(query);
   return query
     .replace(LIBRARY_FILLER, " ")
     .replace(/\b(?:about|for)\b/gi, " ")
@@ -97,13 +138,18 @@ export function planAssistantTurn(input: PlanInput): AssistantPlan {
   if (!latest) return chatPlan();
 
   const media = mediaFor(latest);
+  const source = sourceFor(latest);
   const edit = EDIT_TASK.test(latest);
   const complex = COMPLEX_TASK.test(latest);
+  if (ACTION_SIGNAL.test(latest) && !SEARCH_SIGNAL.test(latest)) {
+    return { ...chatPlan(), edit: true };
+  }
   if ((input.attachmentCount ?? 0) > 0 && ATTACHMENT_SIGNAL.test(latest)) {
     return {
       intent: "attachments",
       query: "",
       media,
+      source,
       requiresEvidence: true,
       directLookup: false,
       edit,
@@ -115,6 +161,7 @@ export function planAssistantTurn(input: PlanInput): AssistantPlan {
       intent: "recent",
       query: "",
       media,
+      source,
       requiresEvidence: true,
       directLookup: !complex && !edit,
       edit,
@@ -131,11 +178,13 @@ export function planAssistantTurn(input: PlanInput): AssistantPlan {
   if (!needsSearch) return chatPlan();
 
   const query = literalQuery(latest);
-  if (!query || VAGUE_TARGET.test(query)) {
+  const hasFilters = Boolean(source) || media.length > 0;
+  if ((!query || VAGUE_TARGET.test(query)) && !hasFilters) {
     return {
       intent: "clarify",
       query: "",
       media,
+      source,
       requiresEvidence: false,
       directLookup: false,
       edit,
@@ -143,8 +192,9 @@ export function planAssistantTurn(input: PlanInput): AssistantPlan {
   }
   return {
     intent: "search",
-    query,
+    query: VAGUE_TARGET.test(query) ? "" : query,
     media,
+    source,
     requiresEvidence: true,
     directLookup: !complex && !edit,
     edit,

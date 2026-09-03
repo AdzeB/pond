@@ -15,10 +15,10 @@ import {
 import { confirmEmptyTrash } from "@/lib/save/empty-trash";
 import { trashSelection } from "@/lib/save/selection";
 import { getAppRouter } from "@/lib/ui/app-router";
-import { focusLibrarySearch } from "@/lib/ui/open-search";
 import { closeSave, openSave } from "@/lib/ui/save-nav";
 import { isLayoutValue } from "@/lib/ui/view-prefs";
 import { ZOOM_DEFAULT } from "@/lib/ui/zoom";
+import { commandMenu } from "@/stores/command-menu";
 import { libraryChrome } from "@/stores/library-chrome";
 import { pool } from "@/stores/pool";
 import { usePrefs } from "@/stores/prefs";
@@ -78,7 +78,7 @@ export function MenuBridge() {
           return;
 
         case "library.search":
-          focusLibrarySearch();
+          commandMenu.open();
           return;
 
         case "view.layout.waterfall":

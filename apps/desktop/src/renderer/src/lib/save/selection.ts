@@ -140,6 +140,18 @@ export async function addTagsToSelection(
   }
 }
 
+export async function copyIdsForSelection(
+  ids: readonly string[],
+): Promise<SelectionActionResult> {
+  if (ids.length === 0) {
+    return { ok: false, message: "Nothing selected" };
+  }
+  const ok = await writeClipboard(ids.join("\n"));
+  return ok
+    ? { ok: true, message: `Copied ${pluralize(ids.length, "ID")}` }
+    : { ok: false, message: "Couldn't copy" };
+}
+
 export async function copyUrlsForSelection(
   ids: readonly string[],
 ): Promise<SelectionActionResult> {
@@ -158,13 +170,13 @@ export async function copyUrlsForSelection(
 export async function copyFilePathsForSelection(
   ids: readonly string[],
 ): Promise<SelectionActionResult> {
-  const saves = resolve(ids).filter((s) => s.files.length > 0);
+  const saves = resolve(ids).filter((save) => resolveFileIndex(save) != null);
   const paths: string[] = [];
   for (const save of saves) {
     const result = FilePathReplySchema.parse(
       await window.pond.query("saves.filePath", {
         id: save.id,
-        fileIndex: save.coverIndex ?? 0,
+        fileIndex: resolveFileIndex(save) ?? 0,
       }),
     );
     if (result.ok && result.path) paths.push(result.path);

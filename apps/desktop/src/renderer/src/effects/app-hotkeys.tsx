@@ -1,12 +1,12 @@
 import { useHotkeySequences, useHotkeys } from "@tanstack/react-hotkeys";
 import { SHORTCUTS } from "@/lib/save/shortcuts";
 import { getAppRouter } from "@/lib/ui/app-router";
-import { focusLibrarySearch } from "@/lib/ui/open-search";
+import { openSettings } from "@/lib/ui/open-settings";
 import type { LayoutValue } from "@/lib/ui/view-prefs";
+import { commandMenu } from "@/stores/command-menu";
 import { libraryChrome } from "@/stores/library-chrome";
 import { libraryHeader } from "@/stores/library-header";
 import { getPrefsSnapshot, patchPrefsSection } from "@/stores/prefs";
-import { settingsModal } from "@/stores/settings-modal";
 import { sourceFlow } from "@/stores/source-flow";
 import { cycleSortKey, setLayout, toggleSortDir } from "@/stores/view-store";
 
@@ -62,7 +62,7 @@ export function AppHotkeys() {
       },
       {
         sequence: [...SHORTCUTS["nav.settings"].sequence!],
-        callback: () => settingsModal.open(),
+        callback: () => openSettings(),
       },
     ],
     { ignoreInputs: true },
@@ -71,7 +71,7 @@ export function AppHotkeys() {
   useHotkeys([
     {
       hotkey: SHORTCUTS["library.search"].keys!,
-      callback: () => focusLibrarySearch(),
+      callback: () => commandMenu.toggle(),
       options: { ignoreInputs: false },
     },
     {

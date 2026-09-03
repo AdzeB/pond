@@ -65,6 +65,7 @@ export const SavePatchSchema = z.object({
   ocrModel: Text,
   transcript: Text,
   transcriptModel: Text,
+  embeddingModel: Text,
   clipEmbedding: z.array(z.number()).nullish().catch(null),
   clipModel: Text,
   aesthetic: Texts,
@@ -74,6 +75,32 @@ export const SavePatchSchema = z.object({
   suggestedTagsModel: Text,
   videoNotes: z
     .array(z.object({ id: z.string(), timeSec: z.number(), text: z.string() }))
+    .nullish()
+    .catch(null),
+  comments: z
+    .array(
+      z.object({
+        id: z.string(),
+        x: z.number(),
+        y: z.number(),
+        w: z.number(),
+        h: z.number(),
+        text: z.string(),
+      }),
+    )
+    .nullish()
+    .catch(null),
+  rating: Num,
+  rotate: z.number().nullish().catch(0),
+  flipX: z.boolean().nullish().catch(false),
+  flipY: z.boolean().nullish().catch(false),
+  crop: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+      w: z.number(),
+      h: z.number(),
+    })
     .nullish()
     .catch(null),
   dominantColors: Texts,
@@ -182,6 +209,12 @@ export function normalise(
     suggestedTags: raw.suggestedTags ?? null,
     suggestedTagsModel: raw.suggestedTagsModel ?? null,
     videoNotes: raw.videoNotes ?? [],
+    comments: raw.comments ?? [],
+    rating: raw.rating ?? null,
+    rotate: raw.rotate ?? 0,
+    flipX: raw.flipX ?? false,
+    flipY: raw.flipY ?? false,
+    crop: raw.crop ?? null,
     dominantColors: raw.dominantColors ?? [],
     tags: raw.tags ?? [],
     listKinds: raw.listKinds ?? [],

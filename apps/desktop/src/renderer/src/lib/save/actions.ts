@@ -47,7 +47,11 @@ export function resolveFileIndex(
   }
   if (save.files.length === 0) return null;
   const cover = save.coverIndex ?? 0;
-  return save.files[cover] ? cover : 0;
+  if (save.files[cover]?.kind !== "custom_thumbnail") return cover;
+  const original = save.files.findIndex(
+    (file) => file.kind !== "custom_thumbnail",
+  );
+  return original >= 0 ? original : null;
 }
 
 async function toggleTrash(save: Save): Promise<void> {

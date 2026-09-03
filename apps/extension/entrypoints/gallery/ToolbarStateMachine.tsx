@@ -2,7 +2,7 @@ import {
   IconChevronLeftOutline18,
   IconChevronRightOutline18,
 } from "@pond/icons/outline/18";
-import { Button } from "@pond/ui";
+import { Button } from "@pond/ui/button";
 import { useEffect, useState } from "react";
 import { Toolbar, type ToolbarMode } from "../toolbar/Toolbar";
 import styles from "./styles.module.css";

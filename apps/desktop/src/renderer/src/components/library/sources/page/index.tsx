@@ -1,8 +1,11 @@
-import { IconMagnifierOutline12 as Magnifier } from "@pond/icons/outline/12";
 import type { MenuItemSpec } from "@pond/ui";
-import { Button, DataTable, Input, Menu } from "@pond/ui";
+import { Button, DataTable, Menu } from "@pond/ui";
 import { useCallback, useEffect, useMemo } from "react";
 import { MatchesEmpty, SourcesEmpty } from "@/components/library/empty";
+import {
+  SearchChrome,
+  SearchChromeInput,
+} from "@/components/library/search-chrome";
 import { cardModel } from "@/components/library/sources/sync-monitor/lib/helpers";
 import { TableSelectionSync } from "@/components/library/table-selection-sync";
 import { SpecContextMenu } from "@/components/shared/spec-context-menu";
@@ -189,14 +192,6 @@ export function SourcesPage() {
     openEntry(row.entry);
   }, []);
 
-  if (loaded && entries.length === 0) {
-    return (
-      <div className={styles.page}>
-        <SourcesEmpty />
-      </div>
-    );
-  }
-
   return (
     <DataTable.Provider
       data={rows}
@@ -221,78 +216,87 @@ export function SourcesPage() {
       )}
     >
       <div className={styles.page}>
-        <DataTable.Toolbar className={styles.toolbar}>
-          <Input.Root className={styles.search} size="sm">
-            <Input.Icon>
-              <Magnifier />
-            </Input.Icon>
-            <Input.Field
-              value={filters.q}
-              onChange={(e) => sourcesFilters.setQ(e.target.value)}
-              spellCheck={false}
-              placeholder="Find by name…"
-              data-sources-search=""
-            />
-          </Input.Root>
-          <FilterMenu
-            label="Status"
-            items={STATUS_OPTIONS.map((opt) => ({
-              type: "checkbox",
-              label: opt.label,
-              checked: filters.statuses.has(opt.id),
-              closeOnClick: false,
-              onCheckedChange: (on) => sourcesFilters.toggleStatus(opt.id, on),
-            }))}
+        <SearchChrome
+          actions={
+            <>
+              <FilterMenu
+                label="Status"
+                items={STATUS_OPTIONS.map((opt) => ({
+                  type: "checkbox",
+                  label: opt.label,
+                  checked: filters.statuses.has(opt.id),
+                  closeOnClick: false,
+                  onCheckedChange: (on) =>
+                    sourcesFilters.toggleStatus(opt.id, on),
+                }))}
+              />
+              <FilterMenu
+                label="Source"
+                items={SOURCE_OPTIONS.map((opt) => ({
+                  type: "checkbox",
+                  label: opt.label,
+                  checked: filters.sources.has(opt.id),
+                  closeOnClick: false,
+                  onCheckedChange: (on) =>
+                    sourcesFilters.toggleSource(opt.id, on),
+                }))}
+              />
+              <FilterMenu
+                label="Type"
+                items={KIND_OPTIONS.map((opt) => ({
+                  type: "checkbox",
+                  label: opt.label,
+                  checked: filters.kinds.has(opt.id),
+                  closeOnClick: false,
+                  onCheckedChange: (on) =>
+                    sourcesFilters.toggleKind(opt.id, on),
+                }))}
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void window.pond.syncRunAll()}
+              >
+                Sync All
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => sourceFlow.open("source-new")}
+              >
+                New Source
+              </Button>
+            </>
+          }
+        >
+          <SearchChromeInput
+            value={filters.q}
+            onChange={(e) => sourcesFilters.setQ(e.target.value)}
+            spellCheck={false}
+            placeholder="Search sources…"
+            aria-label="Search Sources"
+            data-sources-search=""
           />
-          <FilterMenu
-            label="Source"
-            items={SOURCE_OPTIONS.map((opt) => ({
-              type: "checkbox",
-              label: opt.label,
-              checked: filters.sources.has(opt.id),
-              closeOnClick: false,
-              onCheckedChange: (on) => sourcesFilters.toggleSource(opt.id, on),
-            }))}
-          />
-          <FilterMenu
-            label="Type"
-            items={KIND_OPTIONS.map((opt) => ({
-              type: "checkbox",
-              label: opt.label,
-              checked: filters.kinds.has(opt.id),
-              closeOnClick: false,
-              onCheckedChange: (on) => sourcesFilters.toggleKind(opt.id, on),
-            }))}
-          />
-          <span className={styles.spacer} />
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => void window.pond.syncRunAll()}
-          >
-            Sync All
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => sourceFlow.open("source-new")}
-          >
-            New Source
-          </Button>
-        </DataTable.Toolbar>
-        {showMatchesEmpty ? (
-          <div className={styles.empty}>
-            <MatchesEmpty />
-          </div>
-        ) : (
-          <div ref={tableRef} className={styles.table}>
-            <DataTable.Root>
-              <DataTable.Empty>
-                {loaded ? <MatchesEmpty /> : null}
-              </DataTable.Empty>
-            </DataTable.Root>
-          </div>
-        )}
+        </SearchChrome>
+        <div className={styles.content}>
+          {loaded && entries.length === 0 ? (
+            <SourcesEmpty />
+          ) : showMatchesEmpty ? (
+            <div className={styles.empty}>
+              <MatchesEmpty onReset={sourcesFilters.reset} />
+            </div>
+          ) : (
+            <div ref={tableRef} className={styles.table}>
+              <DataTable.Root>
+                <DataTable.Empty>
+                  {loaded ? (
+                    <MatchesEmpty onReset={sourcesFilters.reset} />
+                  ) : null}
+                </DataTable.Empty>
+              </DataTable.Root>
+            </div>
+          )}
+        </div>
       </div>
       <TableSelectionSync selection={sourcesSelection} rowsById={rowsById} />
     </DataTable.Provider>

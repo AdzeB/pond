@@ -6,11 +6,13 @@ import {
   type NewFolder,
   saveFolders as saveFoldersTable,
 } from "@pond/schema/db";
+import type { Transaction } from "@pond/schema/tx";
 import { asc, eq, inArray } from "drizzle-orm";
 import { ulid } from "ulid";
 import { getDb } from "../db";
 import { INFO_FILE, type InfoDoc } from "../lib/library-format";
 import { itemDir } from "../paths";
+import { executeBatch, executeTransaction } from "./executor";
 
 export async function listFolders(): Promise<Folder[]> {
   const db = await getDb();
@@ -34,7 +36,13 @@ export async function createFolder(input: {
     color: input.color ?? null,
     sortOrder: 0,
   };
-  await db.insert(foldersTable).values(row);
+  await executeTransaction({
+    kind: "create",
+    model: "folder",
+    id: row.id,
+    data: row,
+    meta: { actor: "user", actorReason: "folder-create" },
+  });
   const created = await db
     .select()
     .from(foldersTable)
@@ -51,10 +59,18 @@ export async function renameFolder(
   const trimmed = name.trim();
   if (!trimmed) return { ok: false };
   const db = await getDb();
-  await db
-    .update(foldersTable)
-    .set({ name: trimmed })
-    .where(eq(foldersTable.id, id));
+  const row = (
+    await db.select().from(foldersTable).where(eq(foldersTable.id, id))
+  )[0];
+  if (!row) return { ok: false };
+  await executeTransaction({
+    kind: "update",
+    model: "folder",
+    id,
+    patch: { name: trimmed },
+    before: { name: row.name },
+    meta: { actor: "user", actorReason: "folder-rename" },
+  });
   return { ok: true };
 }
 
@@ -65,7 +81,19 @@ export async function deleteFolder(id: string): Promise<{ ok: boolean }> {
   await db
     .delete(saveFoldersTable)
     .where(inArray(saveFoldersTable.folderId, ids));
-  await db.delete(foldersTable).where(inArray(foldersTable.id, ids));
+  const txs: Transaction[] = [];
+  for (const folderId of ids.reverse()) {
+    const row = all.find((folder) => folder.id === folderId);
+    if (!row) continue;
+    txs.push({
+      kind: "delete",
+      model: "folder",
+      id: folderId,
+      before: row,
+      meta: { actor: "user", actorReason: "folder-delete" },
+    });
+  }
+  if (txs.length > 0) await executeBatch(txs);
   return { ok: true };
 }
 
@@ -156,20 +184,29 @@ export async function importFolderTree(
     name: string;
     parentId: string | null;
     color?: string | null;
+    sortOrder?: number;
   }>,
 ): Promise<Map<string, string>> {
-  const db = await getDb();
   const mapped = new Map<string, string>();
+  const txs: Transaction[] = [];
   for (const node of nodes) {
     const id = ulid();
     mapped.set(node.id, id);
-    await db.insert(foldersTable).values({
+    const data: NewFolder = {
       id,
       parentId: node.parentId ? (mapped.get(node.parentId) ?? null) : null,
       name: node.name,
       color: node.color ?? null,
-      sortOrder: 0,
+      sortOrder: node.sortOrder ?? 0,
+    };
+    txs.push({
+      kind: "create",
+      model: "folder",
+      id,
+      data,
+      meta: { actor: "user", actorReason: "folder-import" },
     });
   }
+  if (txs.length > 0) await executeBatch(txs);
   return mapped;
 }

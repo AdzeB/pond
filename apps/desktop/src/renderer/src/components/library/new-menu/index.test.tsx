@@ -7,12 +7,15 @@ vi.mock("@/hooks/use-scroll-fade", () => ({ useScrollFade: () => ({}) }));
 vi.mock("./actions", () => ({
   importClipboard: vi.fn(),
   importEagle: vi.fn(),
+  importBookmarks: vi.fn(),
+  importPageAssets: vi.fn(),
   importPaths: vi.fn(),
   newFolder: vi.fn(),
   newSource: vi.fn(),
   newTag: vi.fn(),
   runNewAction: vi.fn(),
 }));
+vi.mock("@/components/shared/prompt-dialog", () => ({ prompt: vi.fn() }));
 vi.mock("./save-dialog", () => ({
   SaveDialog: ({ kind }: { kind: string }) => <div>Save {kind}</div>,
 }));
@@ -29,6 +32,8 @@ const labels = [
   "Import Folders",
   "Import from Links",
   "Import from Clipboard",
+  "Import Bookmarks",
+  "Import Page Assets",
   "Import Eagle Library",
   "Connect a Source",
   "Watch Account",

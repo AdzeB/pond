@@ -19,7 +19,7 @@ describe("__root route", () => {
     const src = readFileSync(rootShellPath, "utf8");
     expect(src).toContain("Tray.Library");
     expect(src).toContain("SourceFlowHost");
-    expect(src).toContain("SettingsModal");
+    expect(src).not.toContain("SettingsModal");
     expect(src).toContain("window.pond.onNavigate");
   });
 });

@@ -17,9 +17,9 @@ The Pond extension talks to Pond on your Mac through native messaging. Saves and
 
 When you sync a source (X, Instagram, Pinterest, etc.), Pond uses **your own authenticated browser session** on your machine. Pond does not store your platform passwords on any remote service. Traffic originates from your account and is subject to each platform's terms.
 
-## Ask and enrichments
+## Agent and enrichments
 
-Ask and enrichment run **on your Mac**. Natural-language search uses Minnow, a bundled on-device model downloaded to Application Support on first use. Captions, text in images, transcripts, and embeddings use Transformers.js / ONNX locally. Pond does not send prompts or library content to hosted AI APIs.
+Enrichments run **on your Mac**. Captions, text in images, transcripts, and embeddings use Transformers.js / ONNX locally. Agent uses a key you paste or a local host you run. Pond does not send prompts or library content unless you configure a hosted provider.
 
 ## On-device ML
 

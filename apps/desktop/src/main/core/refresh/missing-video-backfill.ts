@@ -5,7 +5,7 @@ import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { getDb } from "../../db";
 import { persistSave } from "../persist-save";
-import { kickReconciler } from "../pipeline/reconciler";
+import { kickReconciler } from "../pipeline/reconciler-client";
 import { expectedVideoDownloads, maxAttemptsFor } from "../pipeline/specs";
 
 const VIDEO_FOLLOW_UPS = [

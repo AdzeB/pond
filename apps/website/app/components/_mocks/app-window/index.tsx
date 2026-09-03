@@ -1,6 +1,5 @@
-"use client";
-
 import { IconArchiveContent2Fill18, IconPlusFill18 } from "@pond/icons/fill/18";
+import { IconXmarkOutline12 } from "@pond/icons/outline/12";
 import {
   IconArrowLeftOutline18,
   IconArrowRightOutline18,
@@ -10,7 +9,6 @@ import {
   IconTriangleWarningOutline18,
   IconVersionsOutline18,
 } from "@pond/icons/outline/18";
-import { Button, Tab } from "@pond/ui";
 import type { ReactNode } from "react";
 import { SaveThumb } from "../save-thumb";
 import { demoImage, packMasonry, SAVES } from "../saves";
@@ -37,15 +35,15 @@ function ChromeButton({
   disabled?: boolean;
 }) {
   return (
-    <Button
-      icon
-      size="sm"
-      variant="ghost"
+    <button
+      type="button"
+      className={styles.chromeButton}
       aria-label={label}
       disabled={disabled}
+      tabIndex={-1}
     >
       {children}
-    </Button>
+    </button>
   );
 }
 
@@ -70,15 +68,17 @@ export function AppWindow() {
           </ChromeButton>
         </div>
         <div className={styles.tabs}>
-          <Tab.List className={styles.group}>
-            <Tab.Item data-active>
-              <Tab.Icon>
+          <div className={styles.group}>
+            <div className={styles.tab} data-active>
+              <span className={styles.tabIcon}>
                 <IconArchiveContent2Fill18 />
-              </Tab.Icon>
-              <Tab.Label>Library</Tab.Label>
-              <Tab.Close aria-label="Close Tab" />
-            </Tab.Item>
-          </Tab.List>
+              </span>
+              <span className={styles.tabLabel}>Library</span>
+              <span className={styles.tabClose}>
+                <IconXmarkOutline12 />
+              </span>
+            </div>
+          </div>
           <ChromeButton label="New tab">
             <IconPlusFill18 />
           </ChromeButton>

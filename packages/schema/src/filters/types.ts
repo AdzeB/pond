@@ -94,7 +94,13 @@ export type FieldId =
   | "color"
   | "savedAt"
   | "publishedAt"
-  | "modifiedAt";
+  | "modifiedAt"
+  | "rating"
+  | "fileSize"
+  | "width"
+  | "height"
+  | "url"
+  | "comment";
 
 export interface FieldMeta {
   id: FieldId;

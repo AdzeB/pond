@@ -119,13 +119,7 @@ library, and accepts saves from the browser extension over Chrome native messagi
 
 Plus the workspace packages `@pond/icons`, `@pond/schema`, `@pond/theme`, `@pond/ui`.
 
-Enrichments run on-device. Agent uses a key you paste (OpenAI, Anthropic, Gemini, or OpenAI-compatible) stored in `safeStorage`, or Minnow when no key is set. Pond does not host a model gateway. Pond also speaks MCP over stdio so Cursor and Claude can search this library.
-
-### Optional dependency
-
-| Package | Version | Purpose |
-|---|---|---|
-| [`node-llama-cpp`](https://node-llama-cpp.withcat.ai/) | `^3.0.0` | Bundled on-device LLM (llama.cpp). The GGUF downloads on first use. |
+Enrichments run on-device. Agent uses a key you paste (OpenAI, Anthropic, Gemini, or OpenAI-compatible) stored in `safeStorage`, or a local host you run such as Ollama or LM Studio. Pond does not host a model gateway. Pond also speaks MCP over stdio so Cursor and Claude can search this library.
 
 ### Dev dependencies
 
@@ -151,8 +145,7 @@ Enrichments run on-device. Agent uses a key you paste (OpenAI, Anthropic, Gemini
 
 ### Transitive native modules of note (`pnpm-workspace.yaml` build flags)
 
-- `better-sqlite3`, `node-llama-cpp`, `re2` — pnpm builds disabled; the first two
-  are rebuilt for the Electron ABI (or resolve prebuilds), `re2` falls back to
+- `better-sqlite3`, `re2` — pnpm builds disabled; sqlite is rebuilt for the Electron ABI (or resolves prebuilds), `re2` falls back to
   `RegExp`.
 - `onnxruntime-node` — ONNX inference backend for Transformers.js.
 - `sharp`, `protobufjs`, `esbuild`, `electron`, `electron-winstaller`, `ffmpeg-static`, `spawn-sync` — `allowBuilds: true`.
@@ -279,14 +272,9 @@ lives in `src/colors/gen.ts`.
 Inference runs locally via Transformers.js (`@huggingface/transformers`, ONNX
 backend). Model catalogs are defined in
 `apps/desktop/src/renderer/src/lib/enrichment/model-catalogs.ts`. Natural-language
-search compiles on-device with the bundled Minnow GGUF. Weights come from
+search compiles with the Agent provider you configured in Settings. Weights for
+on-device enrichments come from
 [Hugging Face](https://huggingface.co/).
-
-### Minnow (natural-language compiler)
-
-[Llama 3.2 1B Instruct](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct),
-Q4_K_M GGUF by [bartowski](https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF).
-Downloaded on first use to `userData/models/`. Runs through `node-llama-cpp`.
 
 ### Text embeddings (semantic search) — default `Xenova/all-MiniLM-L6-v2`
 
@@ -513,7 +501,6 @@ Scratch boards live locally in `.mobbin/` (gitignored).
 | [prinsss](https://github.com/prinsss/twitter-web-exporter) | — | X GraphQL bookmark capture. |
 | [Wu Zhu](https://github.com/wzhudev/reverse-linear-sync-engine) | — | Linear sync-engine reverse-engineering. |
 | [Max Barvian](https://barvian.me/react-exit-animations) | [@MBarvian](https://x.com/MBarvian) | React exit animations. |
-| [bartowski](https://huggingface.co/bartowski) | — | Minnow GGUF quantization. |
 | [Shiryoku](https://www.figma.com/design/q6vqVdIg4xqjFxzv6t1OPV/Browser-Mockups-%E2%80%94-by-Shiryoku--Community-) | [@mx_shiryoku](https://x.com/mx_shiryoku) | Browser mockup Figma community file. |
 | [Paco Coursey](https://github.com/pacocoursey/cmdk) | [@pacocoursey](https://x.com/pacocoursey) | Command palette composition studied for search (`cmdk`). |
 | [Bora Baloglu](https://github.com/borabaloglu/cmdk-base) | [@borabalogluu](https://x.com/borabalogluu) | Command palette composition studied for search (`cmdk-base`). |

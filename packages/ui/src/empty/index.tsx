@@ -18,7 +18,13 @@ function Root({ className, align, ...props }: RootProps) {
 interface MediaProps extends React.ComponentPropsWithoutRef<"div"> {}
 
 function Media({ className, ...props }: MediaProps) {
-  return <div className={cn(styles.media, className)} {...props} />;
+  return (
+    <div
+      aria-hidden="true"
+      className={cn(styles.media, className)}
+      {...props}
+    />
+  );
 }
 
 interface TitleProps extends React.ComponentPropsWithoutRef<"h2"> {}

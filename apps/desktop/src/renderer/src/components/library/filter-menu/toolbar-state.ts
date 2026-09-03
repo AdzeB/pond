@@ -4,6 +4,8 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { readViewPref, writeViewPref } from "@/lib/ui/view-prefs";
 
+export type OverlayId = "semantic" | "visual";
+
 export const DEFAULT_FILTER_FIELDS: readonly FieldId[] = [
   "color",
   "tags",
@@ -36,9 +38,27 @@ function readPinnedFields(): FieldId[] {
   return [...DEFAULT_FILTER_FIELDS];
 }
 
+function readPinnedOverlays(): OverlayId[] {
+  try {
+    const saved: unknown = JSON.parse(readViewPref("filterOverlays") ?? "null");
+    if (Array.isArray(saved)) {
+      return [
+        ...new Set(
+          saved.filter(
+            (value): value is OverlayId =>
+              value === "semantic" || value === "visual",
+          ),
+        ),
+      ];
+    }
+  } catch {}
+  return [];
+}
+
 const store = new Store({
   open: readViewPref("filters") !== "0",
   pinned: readPinnedFields(),
+  overlays: readPinnedOverlays(),
 });
 
 export const filterToolbar = {
@@ -52,10 +72,17 @@ export const filterToolbar = {
     writeViewPref("filterFields", JSON.stringify(fields));
     store.setState((state) => ({ ...state, pinned: fields }));
   },
+  setOverlayPinned(overlay: OverlayId, pinned: boolean): void {
+    const overlays = store.state.overlays.filter((value) => value !== overlay);
+    if (pinned) overlays.push(overlay);
+    writeViewPref("filterOverlays", JSON.stringify(overlays));
+    store.setState((state) => ({ ...state, overlays }));
+  },
   restoreDefaults(): void {
     const pinned = [...DEFAULT_FILTER_FIELDS];
     writeViewPref("filterFields", JSON.stringify(pinned));
-    store.setState((state) => ({ ...state, pinned }));
+    writeViewPref("filterOverlays", JSON.stringify([]));
+    store.setState((state) => ({ ...state, pinned, overlays: [] }));
   },
 };
 

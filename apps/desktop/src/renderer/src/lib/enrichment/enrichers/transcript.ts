@@ -1,8 +1,5 @@
-import {
-  deriveTypeKind,
-  pickPrimaryFile,
-  pickPrimaryUnit,
-} from "@/lib/media/units";
+import { deriveTypeKind, pickPrimaryFile } from "@/lib/media/units";
+import { buildPondUrl } from "@/lib/media/url";
 import type { Save } from "@/lib/types";
 import type { Enricher } from "../types";
 import {
@@ -32,10 +29,9 @@ export const transcriptEnricher: Enricher = {
   },
   async run(save: Save) {
     const model = whisperModelVersion();
-    const unit = pickPrimaryUnit(save);
-    const url = unit?.url;
-    if (!url) return skipped(model);
     const file = pickPrimaryFile(save);
+    const url = file ? buildPondUrl(save.id, file) : null;
+    if (!url) return skipped(model);
     if (file?.size != null && file.size > MAX_TRANSCRIPT_BYTES) {
       return skipped(model);
     }

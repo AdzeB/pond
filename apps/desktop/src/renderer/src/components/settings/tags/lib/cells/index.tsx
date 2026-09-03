@@ -9,7 +9,7 @@ function stop(e: MouseEvent) {
   e.stopPropagation();
 }
 
-export function NameCell() {
+export function NameCell({ index = false }: { index?: boolean }) {
   const {
     row,
     renaming,
@@ -22,7 +22,7 @@ export function NameCell() {
   const name = row.kind === "tag" ? row.tag.name : row.group.name;
 
   return (
-    <span className={styles.name}>
+    <span className={styles.name} data-index={index || undefined}>
       {renaming ? (
         <input
           ref={focusInput}
@@ -46,7 +46,7 @@ export function NameCell() {
         <span className={styles.text}>{name}</span>
       )}
       {!renaming && saves > 0 ? (
-        <span className={styles.meta}>{saves}</span>
+        <span className={styles.meta}>{index ? `(${saves})` : saves}</span>
       ) : null}
     </span>
   );

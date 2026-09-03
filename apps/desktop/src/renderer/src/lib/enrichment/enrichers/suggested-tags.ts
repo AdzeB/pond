@@ -2,7 +2,7 @@ import { z } from "zod";
 import { embedModelVersion, embedTexts } from "@/lib/enrichment/embeddings";
 import type { Save } from "@/lib/types";
 import { dot } from "@/lib/util/vector";
-import { embeddingStore } from "@/stores/embedding-store";
+import { embeddingFor } from "@/stores/embedding-store";
 import type { Enricher } from "../types";
 
 const SUGGESTED_TAGS_VERSION = "suggested-tags@1";
@@ -52,11 +52,10 @@ export const suggestedTagsEnricher: Enricher = {
   eligible(save: Save) {
     if (save.status !== "complete" || save.deletedAt != null) return false;
     if (save.suggestedTagsModel === SUGGESTED_TAGS_VERSION) return false;
-    const entry = embeddingStore.state.byId.get(save.id);
-    return !!entry && entry.model === embedModelVersion();
+    return save.embeddingModel === embedModelVersion();
   },
   async run(save: Save) {
-    const entry = embeddingStore.state.byId.get(save.id);
+    const entry = await embeddingFor(save.id);
     if (!entry) return null;
     const vocab = await getVocab();
     const existing = new Set((save.tags ?? []).map((t) => t.toLowerCase()));

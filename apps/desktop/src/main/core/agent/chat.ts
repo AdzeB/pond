@@ -15,9 +15,11 @@ import { listFolders } from "../folders";
 import { getPrefs } from "../prefs";
 import { completeWithTools } from "./complete";
 import { libraryContext } from "./context";
-import { keyFor } from "./keys";
+import { keyFor, parseProvider } from "./keys";
 import { appendMessage, recentMessages } from "./persist";
+import { connectionFor } from "./provider-models";
 import type { LibraryScope } from "./tools";
+import { imagesForSaves, visionEnabled } from "./vision";
 
 const active = new Map<
   string,
@@ -40,8 +42,6 @@ export async function sendMessage(
   const { chatId, requestId, content, provider } = input;
   if (active.has(chatId))
     return { chatId, error: "Wait for the current reply or stop it first." };
-  if (provider === "minnow" && [...active.values()].length)
-    return { chatId, error: "Wait for the current reply before using Minnow." };
   const controller = new AbortController();
   active.set(chatId, { requestId, controller });
   let lastActivity: AssistantChunk["activity"];
@@ -68,17 +68,15 @@ export async function sendMessage(
       throw new Error("This conversation no longer exists. Start a new chat.");
     const prefs = await getPrefs();
     const model = ASSISTANT_MODELS.find((entry) => entry.id === provider);
-    if (!model) throw new Error("Choose a supported model.");
-    const apiKey = provider === "minnow" ? null : await keyFor(provider);
-    if (
-      !model.local &&
-      (!apiKey || prefs.agent.enabledKeys[provider] === false)
-    )
-      throw new Error(
-        "Add an enabled provider key in Settings, or choose Minnow.",
-      );
-    if (!model.local && !prefs.agent.cloudAllowed && !input.allowCloudOnce)
-      return { chatId, needsCloud: true };
+    const agentProvider = parseProvider(provider);
+    if (!model || !agentProvider) throw new Error("Choose a supported model.");
+    const apiKey = await keyFor(agentProvider);
+    if (model.needsKey) {
+      if (!apiKey || prefs.agent.enabledKeys[provider] === false)
+        throw new Error("Add an enabled provider key in Settings.");
+    } else if (prefs.agent.enabledKeys[provider] !== true) {
+      throw new Error("Add an enabled provider key in Settings.");
+    }
     const scope: LibraryScope =
       input.scope.kind === "attachments"
         ? { saveIds: input.attachmentIds }
@@ -105,7 +103,7 @@ export async function sendMessage(
       onResults: (results) => emit({ type: "results", results }),
       onSteps: (steps) => emit({ type: "steps", steps }),
     });
-    const previous = await recentMessages(chatId, 11);
+    const previous = await recentMessages(chatId, 23);
     const pendingQuestion = previous.at(-1);
     if (
       input.replyToQuestion &&
@@ -155,33 +153,47 @@ export async function sendMessage(
       metadata: userMetadata,
     });
     accepted = true;
-    const custom =
-      provider === "ollama"
-        ? {
-            baseUrl: prefs.agent.ollamaBaseUrl,
-            modelId: prefs.agent.ollamaModelId,
-          }
-        : provider === "lmstudio"
-          ? {
-              baseUrl: prefs.agent.lmstudioBaseUrl,
-              modelId: prefs.agent.lmstudioModelId,
-            }
-          : provider === "compatible"
-            ? {
-                baseUrl: prefs.agent.compatibleBaseUrl,
-                modelId: prefs.agent.compatibleModelId,
-              }
-            : undefined;
     const history = [
       ...previous,
       { role: "user", content, metadata: userMetadata },
     ];
+    const overlay = [
+      input.semanticQuery ? `Semantic: ${input.semanticQuery}.` : "",
+      input.visualSaveId ? `Visual Match Save: ${input.visualSaveId}.` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    const images = visionEnabled(provider, prefs.agent.visionModel)
+      ? await imagesForSaves(attachmentIds)
+      : [];
+    const visionProvider = parseProvider(prefs.agent.visionModel || provider);
+    const chatProvider =
+      images.length > 0 &&
+      visionProvider &&
+      visionEnabled(visionProvider, visionProvider)
+        ? visionProvider
+        : agentProvider;
+    const chatModel =
+      ASSISTANT_MODELS.find((entry) => entry.id === chatProvider) ?? model;
+    const chatKey =
+      chatProvider === agentProvider ? apiKey : await keyFor(chatProvider);
+    if (
+      chatProvider !== agentProvider &&
+      chatModel.needsKey &&
+      (!chatKey || prefs.agent.enabledKeys[chatProvider] === false)
+    )
+      throw new Error("Add an enabled vision model key in Settings.");
+    const connection = connectionFor(
+      chatProvider,
+      prefs.agent,
+      chatModel.model,
+    );
     emit({ type: "activity", activity: "thinking" });
     await completeWithTools({
-      provider,
-      model: custom?.modelId.trim() || model.model,
-      apiKey,
-      baseUrl: custom?.baseUrl || undefined,
+      provider: chatProvider,
+      model: connection.modelId,
+      apiKey: chatKey,
+      baseUrl: connection.baseUrl,
       messages: history.map((row) => {
         const question = assistantQuestion.safeParse(row.metadata?.question);
         return {
@@ -191,8 +203,10 @@ export async function sendMessage(
             : row.content,
         };
       }),
-      context: `Library scope: ${scopeLabel}.`,
+      context:
+        `Library scope: ${scopeLabel}. ${overlay} Pond Agent is Cursor for this Library.`.trim(),
       attachments,
+      images,
       retrieveLibrary: context.retrieve,
       onActivity: (activity) => emit({ type: "activity", activity }),
       tools: context.tools,

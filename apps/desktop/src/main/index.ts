@@ -9,23 +9,15 @@ import {
   IPC,
   type RecentMenuEntry,
 } from "../shared/constants";
-import { backfillEnrichmentSidecars } from "./core/enrichment-sidecar";
+import { startAutoImport } from "./core/auto-import";
 import { ensureDefaultLibrary } from "./core/ensure-default-library";
 import { registerSyncActionListener } from "./core/executor";
 import { syncLibraryRootMetadata } from "./core/library-ops";
-import { startMediaWarmer, stopMediaWarmer } from "./core/media-warm/service";
 import { flushGovernor } from "./core/pipeline/rate-governor";
-import { startReconciler } from "./core/pipeline/reconciler";
+import { startReconciler } from "./core/pipeline/reconciler-client";
 import { getPrefs, invalidatePrefs } from "./core/prefs";
-import { startArchiveBackfill } from "./core/refresh/archive-backfill";
-import { startMissingVideoBackfill } from "./core/refresh/missing-video-backfill";
-import { startPosterBackfill } from "./core/refresh/poster-backfill";
 import { disposeHiddenWindow } from "./core/refresh/scrape-window";
-import { backfillSourceIcons } from "./core/refresh/source-icon-backfill";
-import { startThreadsCardBackfill } from "./core/refresh/threads-card-backfill";
-import { startThreadsLandingOgTrash } from "./core/refresh/threads-landing-og-trash";
 import { disposeRenderCardWindow } from "./core/render-card";
-import { reconcileLibrary } from "./core/scan";
 import {
   startStorageWatcher,
   stopStorageWatcher,
@@ -105,6 +97,16 @@ const wantsMcp = process.argv.includes("--mcp");
 
 let httpServer: RunningServer | null = null;
 let nativeServer: NetServer | null = null;
+let stopMediaWarmer: (() => void) | null = null;
+
+let signalRendererReady: (() => void) | null = null;
+const rendererReady = new Promise<void>((resolve) => {
+  signalRendererReady = resolve;
+});
+ipcMain.once(IPC.rendererReady, () => {
+  signalRendererReady?.();
+  signalRendererReady = null;
+});
 
 const broadcastSyncStatus = (status: SyncStatusUpdate): void =>
   broadcast(IPC.syncStatus, status);
@@ -154,16 +156,10 @@ app.whenReady().then(async () => {
 
   configureSessionDefaults();
 
-  await ensureIngestToken();
   registerProtocol();
 
-  try {
-    await getDb();
-  } catch (err) {
-    log.error("[pond] db init failed", err);
-  }
-
   if (wantsMcp) {
+    await Promise.all([ensureIngestToken(), getDb()]);
     const { startPondMcp } = await import("./core/agent/mcp");
     await startPondMcp();
     return;
@@ -196,6 +192,17 @@ app.whenReady().then(async () => {
     await createWindow();
   }
 
+  const [tokenResult, dbResult] = await Promise.allSettled([
+    ensureIngestToken(),
+    getDb(),
+  ]);
+  if (tokenResult.status === "rejected") {
+    log.error("[pond] ingest token init failed", tokenResult.reason);
+  }
+  if (dbResult.status === "rejected") {
+    log.error("[pond] db init failed", dbResult.reason);
+  }
+
   app.on("activate", () => void handleActivate());
 
   void postLaunchInit().catch((err) =>
@@ -222,25 +229,7 @@ async function postLaunchInit(): Promise<void> {
     log.warn("[pond] tags.json hydrate failed", err);
   }
 
-  void reconcileLibrary()
-    .catch((err) => log.warn("[pond] scan failed", err))
-    .finally(() => startMediaWarmer())
-    .then(() => startArchiveBackfill())
-    .catch((err) => log.warn("[pond] archive backfill failed", err))
-    .then(() => startMissingVideoBackfill())
-    .catch((err) => log.warn("[pond] missing video backfill failed", err))
-    .then(() => startPosterBackfill())
-    .catch((err) => log.warn("[pond] poster backfill failed", err))
-    .then(() => startThreadsCardBackfill())
-    .catch((err) => log.warn("[pond] native card backfill failed", err))
-    .then(() => startThreadsLandingOgTrash())
-    .catch((err) => log.warn("[pond] threads landing-og trash failed", err))
-    .then(() => backfillSourceIcons())
-    .catch((err) => log.warn("[pond] source icon backfill failed", err));
-  void backfillEnrichmentSidecars().catch((err) =>
-    log.warn("[pond] enrichment sidecar backfill failed", err),
-  );
-  startReconciler();
+  void startDeferredMaintenance();
 
   try {
     const prefs = await getPrefs();
@@ -273,6 +262,9 @@ async function postLaunchInit(): Promise<void> {
   void startStorageWatcher().catch((err) =>
     log.warn("[pond] storage watcher failed to start", err),
   );
+  void startAutoImport().catch((err) =>
+    log.warn("[pond] auto-import failed to start", err),
+  );
 
   await initTray();
   registerSyncActionListener(() => queueTrayRefresh());
@@ -282,6 +274,62 @@ async function postLaunchInit(): Promise<void> {
   );
 
   subscribeToSyncStatus(broadcastSyncStatus);
+}
+
+async function startDeferredMaintenance(): Promise<void> {
+  const fallback = new Promise<void>((resolve) => {
+    const timer = setTimeout(resolve, 10_000);
+    timer.unref();
+  });
+  await Promise.race([rendererReady, fallback]);
+  startReconciler();
+
+  const [scanModule, mediaModule, enrichmentModule] = await Promise.all([
+    import("./core/scan"),
+    import("./core/media-warm/service"),
+    import("./core/enrichment-sidecar"),
+  ]);
+  stopMediaWarmer = mediaModule.stopMediaWarmer;
+
+  void scanModule
+    .reconcileLibrary()
+    .catch((err) => log.warn("[pond] scan failed", err))
+    .finally(() => mediaModule.startMediaWarmer())
+    .then(async () =>
+      (await import("./core/refresh/archive-backfill")).startArchiveBackfill(),
+    )
+    .catch((err) => log.warn("[pond] archive backfill failed", err))
+    .then(async () =>
+      (
+        await import("./core/refresh/missing-video-backfill")
+      ).startMissingVideoBackfill(),
+    )
+    .catch((err) => log.warn("[pond] missing video backfill failed", err))
+    .then(async () =>
+      (await import("./core/refresh/poster-backfill")).startPosterBackfill(),
+    )
+    .catch((err) => log.warn("[pond] poster backfill failed", err))
+    .then(async () =>
+      (
+        await import("./core/refresh/threads-card-backfill")
+      ).startThreadsCardBackfill(),
+    )
+    .catch((err) => log.warn("[pond] native card backfill failed", err))
+    .then(async () =>
+      (
+        await import("./core/refresh/threads-landing-og-trash")
+      ).startThreadsLandingOgTrash(),
+    )
+    .catch((err) => log.warn("[pond] threads landing-og trash failed", err))
+    .then(async () =>
+      (
+        await import("./core/refresh/source-icon-backfill")
+      ).backfillSourceIcons(),
+    )
+    .catch((err) => log.warn("[pond] source icon backfill failed", err));
+  void enrichmentModule
+    .backfillEnrichmentSidecars()
+    .catch((err) => log.warn("[pond] enrichment sidecar backfill failed", err));
 }
 
 function snapshotBundleJsons(): void {
@@ -360,7 +408,7 @@ app.on("window-all-closed", () => {
 
 app.on("before-quit", async () => {
   beginQuit();
-  stopMediaWarmer();
+  stopMediaWarmer?.();
   globalShortcut.unregisterAll();
   try {
     await flushTagsDump();

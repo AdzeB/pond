@@ -1,4 +1,5 @@
 import type {
+  NewFolder,
   NewSave,
   NewSavedView,
   NewTag,
@@ -7,7 +8,7 @@ import type {
   SyncAction,
 } from "./db";
 
-export type ActorKind = "user" | "system";
+export type ActorKind = "user" | "system" | "agent";
 
 export interface TxMeta {
   actor?: ActorKind;
@@ -145,6 +146,28 @@ export type Transaction =
       id: string;
       before: NewSavedView;
       meta?: TxMeta;
+    }
+  | {
+      kind: "create";
+      model: "folder";
+      id: string;
+      data: NewFolder;
+      meta?: TxMeta;
+    }
+  | {
+      kind: "update";
+      model: "folder";
+      id: string;
+      patch: Partial<NewFolder>;
+      before: Partial<NewFolder>;
+      meta?: TxMeta;
+    }
+  | {
+      kind: "delete";
+      model: "folder";
+      id: string;
+      before: NewFolder;
+      meta?: TxMeta;
     };
 
 export type SyncActionPayload =
@@ -205,6 +228,14 @@ export function inverse(tx: Transaction): Transaction {
             before: tx.data,
             meta: tx.meta,
           };
+        case "folder":
+          return {
+            kind: "delete",
+            model: "folder",
+            id: tx.id,
+            before: tx.data,
+            meta: tx.meta,
+          };
       }
       break;
     case "update":
@@ -240,6 +271,15 @@ export function inverse(tx: Transaction): Transaction {
           return {
             kind: "update",
             model: "saved_view",
+            id: tx.id,
+            patch: tx.before,
+            before: tx.patch,
+            meta: tx.meta,
+          };
+        case "folder":
+          return {
+            kind: "update",
+            model: "folder",
             id: tx.id,
             patch: tx.before,
             before: tx.patch,
@@ -285,6 +325,14 @@ export function inverse(tx: Transaction): Transaction {
           return {
             kind: "create",
             model: "saved_view",
+            id: tx.id,
+            data: tx.before,
+            meta: tx.meta,
+          };
+        case "folder":
+          return {
+            kind: "create",
+            model: "folder",
             id: tx.id,
             data: tx.before,
             meta: tx.meta,

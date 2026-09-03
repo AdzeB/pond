@@ -1,13 +1,22 @@
+import { typeLabelForPath } from "@shared/file-format";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import type { GridLayout } from "@/components/library/layouts/grid";
 import { DownloadingBadge } from "@/components/save/card/media/downloading-badge";
 import { HoverGallery } from "@/components/save/card/media/hover-gallery";
 import { HoverVideo } from "@/components/save/card/media/hover-video";
 import { CardImage } from "@/components/save/card/media/image";
+import { RichFilePreview } from "@/components/save/card/rich-file-preview";
 import { useIsVideoDownloading } from "@/hooks/use-is-video-downloading";
 import { useMediaPickOptions } from "@/hooks/use-media-pick-options";
-import { buildMediaUnits, pickPrimaryUnit } from "@/lib/media/units";
+import { richFilePreviewKind } from "@/lib/media/rich-file-preview";
+import {
+  buildMediaUnits,
+  pickCardUnit,
+  pickPrimaryFile,
+} from "@/lib/media/units";
+import { buildPondUrl } from "@/lib/media/url";
 import { ensureTextCover } from "@/lib/save/ensure-text-cover";
+import { mediaTransformStyle } from "@/lib/save/media-transform";
 import { isTextOnlySave, textBodyForSave } from "@/lib/save/text";
 import type { Save } from "@/lib/types";
 import styles from "./styles.module.css";
@@ -24,7 +33,17 @@ export const CardThumb = memo(function CardThumb({
   width?: number;
 }) {
   const pickOpts = useMediaPickOptions();
-  const unit = useMemo(() => pickPrimaryUnit(save, pickOpts), [save, pickOpts]);
+  const unit = useMemo(() => pickCardUnit(save, pickOpts), [save, pickOpts]);
+  const richPreview = useMemo(() => {
+    if ((save.files ?? []).some((file) => file.kind === "custom_thumbnail")) {
+      return null;
+    }
+    const file = pickPrimaryFile(save, pickOpts);
+    const kind = richFilePreviewKind(file);
+    return file && kind
+      ? { file, kind, url: buildPondUrl(save.id, file) }
+      : null;
+  }, [pickOpts, save]);
   const hasVideoDims = useMemo(() => {
     if (!unit?.isVideo) return false;
     const primary = (save.files ?? []).find((f) => f.path === unit.key) ?? null;
@@ -88,9 +107,13 @@ export const CardThumb = memo(function CardThumb({
   const onBroken = useCallback(() => setBrokenSrc(pickedSrc), [pickedSrc]);
 
   const safeActive = slides ? Math.min(active, slides.length - 1) : 0;
-  const showPlaceholder = !unit || broken;
+  const showPlaceholder = (!unit || broken) && !richPreview;
   const textPreview =
     showPlaceholder && isTextOnlySave(save) ? textBodyForSave(save) : null;
+  const fallbackFile = showPlaceholder ? pickPrimaryFile(save, pickOpts) : null;
+  const fileLabel = fallbackFile
+    ? (typeLabelForPath(fallbackFile.path) ?? "FILE")
+    : null;
 
   return (
     <div
@@ -99,10 +122,19 @@ export const CardThumb = memo(function CardThumb({
       data-pending={pending || undefined}
       data-multi-media={slides && !broken ? "true" : undefined}
       aria-busy={pending || undefined}
+      style={mediaTransformStyle(save)}
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
     >
-      {slides && !broken ? (
+      {richPreview ? (
+        <RichFilePreview
+          kind={richPreview.kind}
+          saveId={save.id}
+          title={save.title}
+          file={richPreview.file}
+          url={richPreview.url}
+        />
+      ) : slides && !broken ? (
         <HoverGallery
           save={save}
           slides={slides}
@@ -120,7 +152,7 @@ export const CardThumb = memo(function CardThumb({
           onBroken={onBroken}
         />
       ) : null}
-      {unit?.isVideo && !broken ? (
+      {!richPreview && unit?.isVideo && !broken ? (
         <HoverVideo
           key={unit.url}
           saveId={save.id}
@@ -138,6 +170,10 @@ export const CardThumb = memo(function CardThumb({
         textPreview ? (
           <div className={styles["text-preview"]}>
             <span className={styles["text-preview-body"]}>{textPreview}</span>
+          </div>
+        ) : fileLabel ? (
+          <div className={styles["file-preview"]} aria-hidden>
+            <span>{fileLabel}</span>
           </div>
         ) : (
           <div className={styles.placeholder} aria-hidden />

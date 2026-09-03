@@ -13,6 +13,10 @@ import type { PondCapturePayload, PushSessionResult } from "@/utils/types";
 import { cookieDomainsForSource } from "@/utils/url";
 
 const AUTO_PUSH_COOLDOWN_MS = 60_000;
+const ACTIVE_PROBE_MS = 30_000;
+const IDLE_PROBE_MS = 5 * 60_000;
+const SESSION_ALARM = "pond-session";
+const SCHEDULER_STORAGE_KEY = "sessionPushScheduler";
 const SAVE_MENU_ID = "pond-save";
 
 const capturePayloadSchema = z.object({
@@ -21,9 +25,29 @@ const capturePayloadSchema = z.object({
 });
 
 const pendingSessionSchema = z.object({ source: z.enum(SOURCES) });
+const schedulerStateSchema = z.object({
+  nextProbeAt: z.number().catch(0),
+  failures: z.number().int().nonnegative().catch(0),
+  pending: z.boolean().catch(false),
+  lastPushAt: z.number().catch(0),
+  lastPushSource: z.enum(SOURCES).nullable().catch(null),
+});
+
+type SchedulerState = z.infer<typeof schedulerStateSchema>;
+type PendingProbe =
+  | { kind: "pending"; source: Source }
+  | { kind: "idle" }
+  | { kind: "offline" };
+
+const DEFAULT_SCHEDULER_STATE: SchedulerState = {
+  nextProbeAt: 0,
+  failures: 0,
+  pending: false,
+  lastPushAt: 0,
+  lastPushSource: null,
+};
 
 export default defineBackground(() => {
-  const recentAutoPush = new Map<Source, number>();
   let autoPushInFlight = false;
 
   chrome.runtime.onInstalled.addListener(async () => {
@@ -89,16 +113,20 @@ export default defineBackground(() => {
 
   onMessage("openPond", ({ data }) => openPondTab(data));
 
-  onMessage("pushSession", ({ data }) =>
-    pushSession(data).catch((err) => {
+  onMessage("pushSession", async ({ data }) => {
+    try {
+      const result = await pushSession(data);
+      if (result.ok && result.data.connected) await markSchedulerIdle();
+      return result;
+    } catch (err) {
       console.error("[pond] pushSession threw", err);
       return {
         ok: false,
         reason: "network",
         detail: String(err),
       } satisfies PushSessionResult;
-    }),
-  );
+    }
+  });
 
   onMessage("probe", async () => {
     try {
@@ -113,20 +141,13 @@ export default defineBackground(() => {
     void maybeAutoPush();
   });
 
-  chrome.tabs.onUpdated.addListener((_tabId, info) => {
-    if (info.status === "complete" || info.url) void maybeAutoPush();
-  });
-
-  chrome.cookies.onChanged.addListener((changeInfo) => {
-    if (changeInfo.removed) return;
-    void maybeAutoPush();
-  });
-
-  chrome.alarms.create("pond-session", { periodInMinutes: 0.5 });
   chrome.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === "pond-session") void maybeAutoPush();
+    if (alarm.name === SESSION_ALARM) void maybeAutoPush();
   });
-  void maybeAutoPush();
+  void readSchedulerState()
+    .then((state) => scheduleSessionAlarm(state.pending))
+    .catch(() => scheduleSessionAlarm(false))
+    .finally(() => maybeAutoPush());
 
   async function openPondTab(path: string | undefined): Promise<boolean> {
     const target = path ? `pond://${path}` : "pond://";
@@ -139,30 +160,98 @@ export default defineBackground(() => {
     }
   }
 
-  async function fetchPendingSource(): Promise<Source | null> {
+  async function fetchPendingSource(): Promise<PendingProbe> {
     const result = await nativeCall({ type: "session.pending" });
-    if (!result.ok) return null;
+    if (!result.ok) return { kind: "offline" };
     const pending = pendingSessionSchema.safeParse(result.data);
-    return pending.success ? pending.data.source : null;
+    return pending.success
+      ? { kind: "pending", source: pending.data.source }
+      : { kind: "idle" };
+  }
+
+  async function readSchedulerState(): Promise<SchedulerState> {
+    const stored = await chrome.storage.session.get(SCHEDULER_STORAGE_KEY);
+    return schedulerStateSchema
+      .catch(DEFAULT_SCHEDULER_STATE)
+      .parse(stored[SCHEDULER_STORAGE_KEY]);
+  }
+
+  async function writeSchedulerState(state: SchedulerState): Promise<void> {
+    await chrome.storage.session.set({ [SCHEDULER_STORAGE_KEY]: state });
+  }
+
+  function scheduleSessionAlarm(pending: boolean): void {
+    chrome.alarms.create(SESSION_ALARM, {
+      periodInMinutes: pending ? 0.5 : 5,
+    });
+  }
+
+  async function markSchedulerIdle(): Promise<void> {
+    await writeSchedulerState({
+      ...DEFAULT_SCHEDULER_STATE,
+      nextProbeAt: Date.now() + IDLE_PROBE_MS,
+    });
+    scheduleSessionAlarm(false);
   }
 
   async function maybeAutoPush(): Promise<void> {
     if (autoPushInFlight) return;
     autoPushInFlight = true;
     try {
-      const pending = await fetchPendingSource();
-      if (!pending || cookieDomainsForSource(pending).length === 0) return;
+      const now = Date.now();
+      const state = await readSchedulerState();
+      if (now < state.nextProbeAt) return;
 
-      const last = recentAutoPush.get(pending);
-      if (last && Date.now() - last < AUTO_PUSH_COOLDOWN_MS) return;
+      const probeResult = await fetchPendingSource();
+      if (probeResult.kind === "idle") {
+        await markSchedulerIdle();
+        return;
+      }
+      if (probeResult.kind === "offline") {
+        const failures = state.failures + 1;
+        const delay = Math.min(
+          IDLE_PROBE_MS,
+          ACTIVE_PROBE_MS * 2 ** Math.min(failures - 1, 4),
+        );
+        await writeSchedulerState({
+          ...state,
+          failures,
+          nextProbeAt: now + delay,
+        });
+        scheduleSessionAlarm(state.pending);
+        return;
+      }
 
-      recentAutoPush.set(pending, Date.now());
+      const pending = probeResult.source;
+      if (cookieDomainsForSource(pending).length === 0) {
+        await markSchedulerIdle();
+        return;
+      }
+
+      const nextState: SchedulerState = {
+        ...state,
+        failures: 0,
+        pending: true,
+        nextProbeAt: now + ACTIVE_PROBE_MS,
+      };
+      scheduleSessionAlarm(true);
+      if (
+        state.lastPushSource === pending &&
+        now - state.lastPushAt < AUTO_PUSH_COOLDOWN_MS
+      ) {
+        await writeSchedulerState(nextState);
+        return;
+      }
+
+      nextState.lastPushSource = pending;
+      nextState.lastPushAt = now;
+      await writeSchedulerState(nextState);
       const result = await pushSession(pending);
       if (result.ok && result.data.connected) {
+        await markSchedulerIdle();
         flashBadge(undefined, "ok", "#1f9d55");
         return;
       }
-      recentAutoPush.delete(pending);
       if (result.ok) return;
       if (result.reason === "network") {
         console.warn("[pond] auto-push failed", result.detail);
