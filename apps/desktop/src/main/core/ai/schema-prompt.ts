@@ -1,6 +1,5 @@
 import { FIELD_IDS, FIELD_META } from "@pond/schema/filters/meta";
 import { COMPARATORS_BY_TYPE } from "@pond/schema/filters/types";
-import type { JsonObject } from "@pond/schema/json";
 import type { CompileContext } from "./types";
 
 function fieldLines(): string {
@@ -58,27 +57,4 @@ export function buildSystemPrompt(ctx: CompileContext): string {
     list("tags", f.tags.slice(0, 80)),
     list("creators", f.creators.slice(0, 60)),
   ].join("\n");
-}
-
-export function queryJsonSchema(): JsonObject {
-  return {
-    type: "object",
-    properties: {
-      combinator: { type: "string", enum: ["and", "or"] },
-      rules: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            field: { type: "string", enum: [...FIELD_IDS] },
-            operator: { type: "string" },
-            value: {},
-            negate: { type: "boolean" },
-          },
-          required: ["field", "operator", "value"],
-        },
-      },
-    },
-    required: ["combinator", "rules"],
-  };
 }

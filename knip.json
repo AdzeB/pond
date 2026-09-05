@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignoreBinaries": ["iconutil"],
+  "ignoreBinaries": ["iconutil", "cc"],
   "ignoreDependencies": ["@pond/theme", "ffmpeg-static", "drizzle-kit"],
   "workspaces": {
     "apps/desktop": {
@@ -9,13 +9,24 @@
         "src/main/index.ts",
         "src/preload/index.ts",
         "src/preload/scrape.cjs.ts",
-        "src/renderer/src/main.tsx",
         "src/renderer/src/capture.tsx",
         "src/renderer/src/routes/**/*.{ts,tsx}",
-        "scripts/*.{mjs,cjs,ts}"
+        "scripts/*.{mjs,cjs,ts}",
+        "src/renderer/{assistant,components,command-menu-preview}.tsx",
+        "prototypes/*/main.tsx",
+        "prototypes/*/*.mjs",
+        "src/main/core/media-warm/service.ts",
+        "src/main/core/enrichment-sidecar.ts"
       ],
-      "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{mjs,cjs,ts}"],
-      "ignoreDependencies": ["@tanstack/ai-react"]
+      "project": [
+        "src/**/*.{ts,tsx}",
+        "scripts/**/*.{mjs,cjs,ts}",
+        "prototypes/**/*.{ts,tsx,mjs}"
+      ],
+      "ignoreDependencies": ["@tanstack/ai-react"],
+      "vite": {
+        "config": ["components.vite.config.ts", "prototypes/*/vite.config.ts"]
+      }
     },
     "apps/website": {
       "entry": ["app/**/*.{ts,tsx}", "next.config.{js,ts,mjs}"],
@@ -30,6 +41,13 @@
     },
     "packages/schema": {
       "entry": ["scripts/*.ts"]
+    },
+    ".": {
+      "entry": ["scripts/*.{mjs,cjs,ts}", "tools/**/*.{ts,mjs}"]
     }
+  },
+  "ignoreExportsUsedInFile": {
+    "interface": true,
+    "type": true
   }
 }

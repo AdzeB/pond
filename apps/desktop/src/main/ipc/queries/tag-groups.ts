@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { QueryResult } from "../../../shared/query-contracts";
 import {
   NonEmptyTextParam,
   type QueryHandlerMap,
@@ -7,8 +8,8 @@ import {
   StringParam,
 } from "./params";
 
-export const tagGroupsQueries: QueryHandlerMap = {
-  async "tagGroups.list"() {
+export const tagGroupsQueries = {
+  async "tagGroups.list"(): Promise<QueryResult<"tagGroups.list">> {
     const { listGroups } = await import("../../core/tag-groups");
     return await listGroups();
   },
@@ -68,4 +69,4 @@ export const tagGroupsQueries: QueryHandlerMap = {
       return await removeTagFromGroup(params.tag, params.group);
     },
   ),
-};
+} satisfies QueryHandlerMap;

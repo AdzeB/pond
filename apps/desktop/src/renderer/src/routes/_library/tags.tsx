@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { TagsPage } from "@/components/library/tags/page";
+import { TagsPage } from "@/features/tags/components/page/page";
 
 export const Route = createFileRoute("/_library/tags")({
   component: TagsPage,

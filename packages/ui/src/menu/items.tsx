@@ -80,7 +80,7 @@ interface MenuParts {
   }>;
   ItemIcon: React.ComponentType<{ children?: ReactNode }>;
   ItemLabel: React.ComponentType<{ children?: ReactNode }>;
-  ItemKeyboard: React.ComponentType<{ children?: ReactNode }>;
+  ItemKeyboard: React.ComponentType<{ children?: MenuShortcut }>;
   CheckboxItem: React.ComponentType<{
     checked?: boolean;
     onCheckedChange?: (checked: boolean) => void;

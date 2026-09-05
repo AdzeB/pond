@@ -1,6 +1,6 @@
 import { MotionConfig } from "motion/react";
 import { createRoot } from "react-dom/client";
-import { AssistantLab } from "./src/components/dev/assistant";
+import { AssistantLab } from "./src/dev/assistant/assistant";
 import "./src/styles.css";
 
 const container = document.getElementById("root");

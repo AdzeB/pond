@@ -22,7 +22,7 @@ import { type QueryHandlerMap, query, StringParam } from "./params";
 
 const PathParams = z.object({ path: StringParam });
 
-export const libraryLocationQueries: QueryHandlerMap = {
+export const libraryLocationQueries = {
   "library.createAt": query(
     z.object({ path: StringParam, name: StringParam }),
     async (params) => createPondBundle(params.path, params.name),
@@ -223,7 +223,7 @@ export const libraryLocationQueries: QueryHandlerMap = {
       };
     }
   },
-};
+} satisfies QueryHandlerMap;
 
 function ensurePondSuffix(path: string): string {
   const trimmed = path.replace(/\/+$/, "");

@@ -1,3 +1,4 @@
+import type { Query } from "@pond/schema/filters/types";
 import type { Transaction } from "@pond/schema/tx";
 import {
   contextBridge,
@@ -11,26 +12,17 @@ import {
   type MenuActionId,
   type RecentMenuEntry,
 } from "../shared/constants";
+import { FilterQuery } from "../shared/filter-query";
+import type { QueryClient } from "../shared/query-contracts";
 import type {
-  WireFilterQueryParams,
   WireJson,
-  WirePrefsPatch,
-  WireQueryParams,
   WireSyncAction,
   WireSyncStatusUpdate,
   WireUndoState,
 } from "../shared/wire";
 
-interface QueryFn {
-  (name: "saves.query", params: WireFilterQueryParams): Promise<WireJson>;
-  (name: "settings.setPrefs", params: WirePrefsPatch): Promise<WireJson>;
-  (name: string, params?: WireQueryParams): Promise<WireJson>;
-}
-
-const query: QueryFn = (
-  name: string,
-  params?: WireQueryParams | WireFilterQueryParams | WirePrefsPatch,
-): Promise<WireJson> => ipcRenderer.invoke(IPC.query, name, params);
+const query: QueryClient = (name, ...args) =>
+  ipcRenderer.invoke(IPC.query, name, args[0]);
 
 export interface RelocatePreviewWire {
   currentPath: string;
@@ -291,19 +283,22 @@ const api = {
   },
 
   onAgentChunk(cb: (chunk: AssistantChunk) => void): () => void {
-    const listener = (_: unknown, chunk: AssistantChunk) => cb(chunk);
+    const listener = (_: IpcRendererEvent, chunk: AssistantChunk) => cb(chunk);
     ipcRenderer.on(IPC.agentChunk, listener);
     return () => ipcRenderer.off(IPC.agentChunk, listener);
   },
 
-  onAgentFilter(cb: (query: unknown) => void): () => void {
-    const listener = (_: unknown, query: unknown) => cb(query);
+  onAgentFilter(cb: (query: Query) => void): () => void {
+    const listener = (_: IpcRendererEvent, query: WireJson) => {
+      const parsed = FilterQuery.safeParse(query);
+      if (parsed.success) cb(parsed.data);
+    };
     ipcRenderer.on(IPC.agentFilter, listener);
     return () => ipcRenderer.off(IPC.agentFilter, listener);
   },
 
   onAgentCite(cb: (ids: string[]) => void): () => void {
-    const listener = (_: unknown, ids: string[]) => cb(ids);
+    const listener = (_: IpcRendererEvent, ids: string[]) => cb(ids);
     ipcRenderer.on(IPC.agentCite, listener);
     return () => ipcRenderer.off(IPC.agentCite, listener);
   },
@@ -315,7 +310,7 @@ const api = {
     }) => void,
   ): () => void {
     const listener = (
-      _: unknown,
+      _: IpcRendererEvent,
       overlay: {
         semanticQuery?: string | null;
         visualSaveId?: string | null;

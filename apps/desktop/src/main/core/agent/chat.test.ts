@@ -1,59 +1,57 @@
+import { DEFAULT_PREFS } from "@pond/schema/db";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import type {
   AssistantMessage,
   AssistantQuestion,
   AssistantSend,
 } from "../../../shared/assistant";
-import { sendMessage, stopMessage } from "./chat";
+import {
+  type ChatDependencies,
+  sendMessage as send,
+  stopMessage,
+} from "./chat";
+import type { ToolSpec } from "./complete";
 
-const mock = vi.hoisted(() => ({
-  prefs: {
-    agent: {
-      enabledKeys: {} as Record<string, boolean>,
-      languageModel: "openai",
-      modelIds: {} as Record<string, string>,
-    },
-  },
-  complete: vi.fn(),
-  append: vi.fn(),
-  broadcast: vi.fn(),
-  key: vi.fn(),
-  read: vi.fn(),
-  history: [] as AssistantMessage[],
-  question: undefined as AssistantQuestion | undefined,
-}));
-vi.mock("../../db", () => ({
-  getDb: async () => ({
-    select: () => ({
-      from: () => ({ where: () => ({ get: async () => ({ id: "chat" }) }) }),
-    }),
-  }),
-}));
-vi.mock("../prefs", () => ({ getPrefs: async () => mock.prefs }));
-vi.mock("../folders", () => ({ listFolders: async () => [] }));
-vi.mock("../../lib/broadcast", () => ({ broadcast: mock.broadcast }));
-vi.mock("./keys", () => ({
+interface ChatTestState {
+  prefs: typeof DEFAULT_PREFS;
+  complete: ReturnType<typeof vi.fn<ChatDependencies["completeWithTools"]>>;
+  append: ReturnType<typeof vi.fn<ChatDependencies["appendMessage"]>>;
+  broadcast: ReturnType<typeof vi.fn<ChatDependencies["broadcast"]>>;
+  key: ReturnType<typeof vi.fn<ChatDependencies["keyFor"]>>;
+  read: ReturnType<typeof vi.fn<ToolSpec["execute"]>>;
+  history: AssistantMessage[];
+  question: AssistantQuestion | undefined;
+}
+const mock: ChatTestState = {
+  prefs: structuredClone(DEFAULT_PREFS),
+  complete: vi.fn<ChatDependencies["completeWithTools"]>(),
+  append: vi.fn<ChatDependencies["appendMessage"]>(),
+  broadcast: vi.fn<ChatDependencies["broadcast"]>(),
+  key: vi.fn<ChatDependencies["keyFor"]>(),
+  read: vi.fn<ToolSpec["execute"]>().mockResolvedValue({}),
+  history: [],
+  question: undefined,
+};
+const dependencies: ChatDependencies = {
+  conversationExists: async () => true,
+  getPrefs: async () => mock.prefs,
+  listFolders: async () => [],
+  imagesForSaves: async () => [],
+  broadcast: mock.broadcast,
   keyFor: mock.key,
-  parseProvider: (value: string) =>
-    [
-      "openai",
-      "anthropic",
-      "gemini",
-      "ollama",
-      "lmstudio",
-      "compatible",
-    ].includes(value)
-      ? value
-      : null,
-}));
-vi.mock("./complete", () => ({ completeWithTools: mock.complete }));
-vi.mock("./persist", () => ({
+  completeWithTools: mock.complete,
   appendMessage: mock.append,
   recentMessages: async () => mock.history,
-}));
-vi.mock("./context", () => ({
   libraryContext: () => ({
-    tools: [{ name: "readSave", execute: mock.read }],
+    tools: [
+      {
+        name: "readSave",
+        description: "Read a Save",
+        schema: z.object({ id: z.string() }),
+        execute: mock.read,
+      },
+    ],
     sources: () => [],
     changes: () => [],
     question: () => mock.question,
@@ -66,9 +64,10 @@ vi.mock("./context", () => ({
         elapsedMs: 10,
       },
     ],
-    retrieve: vi.fn().mockResolvedValue([]),
+    retrieve: async () => [],
   }),
-}));
+};
+const sendMessage = (input: AssistantSend) => send(input, dependencies);
 const request: AssistantSend = {
   chatId: "chat",
   requestId: "request",
@@ -83,6 +82,7 @@ beforeEach(() => {
   mock.history = [];
   mock.question = undefined;
   mock.prefs.agent = {
+    ...DEFAULT_PREFS.agent,
     enabledKeys: {},
     languageModel: "openai",
     modelIds: {},
@@ -119,6 +119,7 @@ describe("Assistant requests", () => {
   });
   it("uses the saved model id for the chosen provider", async () => {
     mock.prefs.agent = {
+      ...DEFAULT_PREFS.agent,
       enabledKeys: {},
       languageModel: "openai",
       modelIds: { openai: "gpt-5.4-mini" },
@@ -155,6 +156,7 @@ describe("Assistant requests", () => {
           { once: true },
         ),
       );
+      return "";
     });
     const result = sendMessage(request);
     await ready;
@@ -174,7 +176,10 @@ describe("Assistant requests", () => {
       }),
     );
     expect(
-      mock.broadcast.mock.calls.some(([, chunk]) => chunk.type === "done"),
+      mock.broadcast.mock.calls.some(
+        ([, chunk]) =>
+          z.object({ type: z.string() }).parse(chunk).type === "done",
+      ),
     ).toBe(false);
     expect(stopMessage("chat", "request")).toEqual({ ok: false });
   });
@@ -220,7 +225,7 @@ it("links a freeform reply to the latest unanswered question", async () => {
       metadata: expect.objectContaining({ replyToQuestion: "question" }),
     }),
   );
-  expect(mock.complete.mock.calls[0]?.[0].messages[0].content).toContain(
+  expect(mock.complete.mock.calls[0]?.[0].messages[0]?.content).toContain(
     "Which topic?",
   );
 });

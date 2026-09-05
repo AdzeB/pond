@@ -58,12 +58,10 @@ function Key({ density = "default", className, ...props }: KeyProps) {
   );
 }
 
-function keysFromChildren(children: React.ReactNode): string[] | null {
-  if (typeof children === "string" && children.length > 0) return [children];
-  if (Array.isArray(children) && children.every((c) => typeof c === "string")) {
-    return children as string[];
-  }
-  return null;
+export interface ShortcutProps
+  extends Omit<React.ComponentPropsWithoutRef<"span">, "children"> {
+  children?: string | string[];
+  density?: Density;
 }
 
 function Shortcut({
@@ -71,8 +69,12 @@ function Shortcut({
   children,
   density = "default",
   ...props
-}: React.ComponentPropsWithoutRef<"span"> & { density?: Density }) {
-  const keys = keysFromChildren(children);
+}: ShortcutProps) {
+  const keys = Array.isArray(children)
+    ? children
+    : children
+      ? [children]
+      : null;
   return (
     <span className={className} {...props}>
       {keys ? <Cluster keys={keys} density={density} /> : children}

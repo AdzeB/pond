@@ -9,7 +9,6 @@ import {
 } from "../../../capture/tweet-draft";
 import { type HarvestAdaptCtx, parsePageBlob } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
-import { bindSourceId } from "../source-id";
 import {
   type HarvestedMedia,
   type HarvestedMeta,
@@ -270,5 +269,3 @@ export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx): Capture | null {
     }),
   );
 }
-
-export const sourceIdFromUrl = bindSourceId("threads");

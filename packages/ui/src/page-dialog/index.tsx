@@ -118,18 +118,22 @@ function Popup({
     [pageId, depth, deeper, reduceMotion, setSize],
   );
 
+  const popupStyle: CSSProperties & {
+    "--width"?: string;
+    "--height"?: string;
+  } = {
+    ...style,
+  };
+  if (size) {
+    popupStyle["--width"] = `${size.width}px`;
+    popupStyle["--height"] = `${size.height}px`;
+  }
+
   return (
     <Base.Popup
       className={cn(styles.popup, className)}
       data-sized={animateSize || undefined}
-      style={
-        {
-          ...style,
-          ...(size
-            ? { "--width": `${size.width}px`, "--height": `${size.height}px` }
-            : {}),
-        } as CSSProperties
-      }
+      style={popupStyle}
       {...props}
     >
       <PageDialogContext value={value}>{children}</PageDialogContext>

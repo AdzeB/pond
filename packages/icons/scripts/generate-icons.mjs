@@ -153,7 +153,7 @@ async function main() {
     const content = `/** Generated from Nucleo. Do not edit by hand. */
 import { createIcon } from "../../../lib/create-icon";
 
-const inner = ({ strokeWidth = 1.5 }) => (${body});
+const inner = (${strokeWidth ? "{ strokeWidth = 1.5 }" : ""}) => (${body});
 
 export const ${exportName} = createIcon(inner${defaultArgs});
 `;

@@ -66,3 +66,7 @@ apps/desktop/resources/bin/pond-native-host
 
 # generated icon previews
 apps/desktop/src/renderer/src/generated/
+
+# Local package cache and UI inspection captures
+.pnpm-store/
+.tmp/

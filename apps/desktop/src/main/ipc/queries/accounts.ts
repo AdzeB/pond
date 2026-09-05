@@ -15,7 +15,7 @@ import {
   TrimmedTextParam,
 } from "./params";
 
-export const accountsQueries: QueryHandlerMap = {
+export const accountsQueries = {
   async "accounts.list"() {
     fillMissingAvatars();
     const accounts = await listAccounts();
@@ -61,4 +61,4 @@ export const accountsQueries: QueryHandlerMap = {
       return { ok: true };
     },
   ),
-};
+} satisfies QueryHandlerMap;

@@ -5,7 +5,7 @@ import { color } from "./color";
 import { comment } from "./comment";
 import { creator } from "./creator";
 import type { FieldDescriptor } from "./descriptor";
-import { aspect, shape } from "./dims";
+import { aspect, orientation } from "./dims";
 import { duration } from "./duration";
 import { fileCount } from "./file-count";
 import { fileSize } from "./file-size";
@@ -29,7 +29,7 @@ export type {
   FieldGroup,
   FieldPreset,
 } from "./descriptor";
-export { aspectFromDims, shapeFromDims } from "./dims";
+export { aspectFromDims, orientationFromDims } from "./dims";
 export {
   durationProjection,
   folderExists,
@@ -37,6 +37,8 @@ export {
   tagsEmpty,
   tagsExists,
 } from "./sql";
+
+const orientationFieldId = "shape";
 
 export const FIELD_DESCRIPTORS = {
   tags,
@@ -47,7 +49,7 @@ export const FIELD_DESCRIPTORS = {
   format,
   fileCount,
   duration,
-  shape,
+  [orientationFieldId]: orientation,
   aspect,
   creator,
   account,

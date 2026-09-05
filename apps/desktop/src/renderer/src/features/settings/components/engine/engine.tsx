@@ -1,0 +1,290 @@
+import type { Prefs } from "@pond/schema/db";
+import { Settings } from "@pond/ui";
+import { z } from "zod";
+import { ItemView } from "@/features/settings/components/engine/field-control/field-control";
+import type {
+  Binding,
+  GroupConfig,
+  Item,
+  SectionConfig,
+} from "@/features/settings/lib/engine-types";
+import { usePrefs } from "@/features/settings/state/prefs";
+import { CollapsibleGroup } from "./collapsible-group/collapsible-group";
+
+export type {
+  Binding,
+  SectionConfig,
+} from "@/features/settings/lib/engine-types";
+
+const GroupTitleSchema = z.string();
+
+const EMPTY_BINDING: Binding = {
+  values: {},
+  patch: () => {},
+  loaded: true,
+};
+
+function usePrefsBinding(prefsKey: keyof Prefs): Binding {
+  const [values, patch, loaded] = usePrefs(prefsKey);
+  // SAFETY: every prefs section is a plain keyed object, and `patch` is the
+  // setter for the very section `values` came from, so the pair stays coherent
+  // once the engine addresses them by string key.
+  return {
+    values: values as Binding["values"],
+    patch: patch as Binding["patch"],
+    loaded,
+  };
+}
+
+export function SettingsSectionView({
+  config,
+  sectionId,
+}: {
+  config: SectionConfig;
+  sectionId?: string;
+}) {
+  if (config.component) {
+    const Custom = config.component;
+    return <Custom />;
+  }
+  if (config.useBinding)
+    return <BoundSection config={config} sectionId={sectionId} />;
+  if (config.prefsKey)
+    return (
+      <PrefsSection
+        config={config}
+        prefsKey={config.prefsKey}
+        sectionId={sectionId}
+      />
+    );
+  return (
+    <SectionBody
+      config={config}
+      binding={EMPTY_BINDING}
+      sectionId={sectionId}
+    />
+  );
+}
+
+function PrefsSection({
+  config,
+  prefsKey,
+  sectionId,
+}: {
+  config: SectionConfig;
+  prefsKey: NonNullable<SectionConfig["prefsKey"]>;
+  sectionId?: string;
+}) {
+  return (
+    <SectionBody
+      config={config}
+      sectionId={sectionId}
+      binding={usePrefsBinding(prefsKey)}
+    />
+  );
+}
+
+function BoundSection({
+  config,
+  sectionId,
+}: {
+  config: SectionConfig;
+  sectionId?: string;
+}) {
+  const binding = config.useBinding?.() ?? EMPTY_BINDING;
+  return (
+    <SectionBody config={config} binding={binding} sectionId={sectionId} />
+  );
+}
+
+function SectionBody({
+  config,
+  binding,
+  sectionId,
+}: {
+  config: SectionConfig;
+  binding: Binding;
+  sectionId?: string;
+}) {
+  const groups = config.groups ?? [];
+  return (
+    <>
+      {groups.map((group, index) => (
+        <GroupRouter
+          key={groupKey(group, index)}
+          group={group}
+          sectionBinding={binding}
+          sectionId={sectionId}
+        />
+      ))}
+    </>
+  );
+}
+
+function groupKey(group: GroupConfig, index: number): string {
+  const title = GroupTitleSchema.safeParse(group.title);
+  return title.success ? title.data : `group-${index}`;
+}
+
+function GroupRouter({
+  group,
+  sectionBinding,
+  sectionId,
+}: {
+  group: GroupConfig;
+  sectionBinding: Binding;
+  sectionId?: string;
+}) {
+  if (group.useBinding)
+    return <UseBindingGroup group={group} sectionId={sectionId} />;
+  if (group.prefsKey)
+    return (
+      <PrefsGroup
+        group={group}
+        prefsKey={group.prefsKey}
+        sectionId={sectionId}
+      />
+    );
+  return <Group group={group} binding={sectionBinding} sectionId={sectionId} />;
+}
+
+function PrefsGroup({
+  group,
+  prefsKey,
+  sectionId,
+}: {
+  group: GroupConfig;
+  prefsKey: NonNullable<GroupConfig["prefsKey"]>;
+  sectionId?: string;
+}) {
+  return (
+    <Group
+      group={group}
+      sectionId={sectionId}
+      binding={usePrefsBinding(prefsKey)}
+    />
+  );
+}
+
+function UseBindingGroup({
+  group,
+  sectionId,
+}: {
+  group: GroupConfig;
+  sectionId?: string;
+}) {
+  const binding = group.useBinding?.() ?? EMPTY_BINDING;
+  return <Group group={group} binding={binding} sectionId={sectionId} />;
+}
+
+function Group({
+  group,
+  binding,
+  sectionId,
+}: {
+  group: GroupConfig;
+  binding: Binding;
+  sectionId?: string;
+}) {
+  if (group.visible && !group.visible(binding.values)) return null;
+
+  const items = (group.items ?? []).filter(
+    (item) =>
+      item.prefsKey !== undefined ||
+      !item.visible ||
+      item.visible(binding.values),
+  );
+
+  if (group.render === undefined && items.length === 0) return null;
+
+  const body = (
+    <>
+      {items.length > 0 ? (
+        <Settings.List>
+          {items.map((item) => (
+            <ItemRow
+              key={item.key}
+              item={item}
+              groupBinding={binding}
+              sectionId={sectionId}
+            />
+          ))}
+        </Settings.List>
+      ) : null}
+      {group.render ? group.render(binding) : null}
+    </>
+  );
+
+  if (group.collapsible && group.title) {
+    return (
+      <CollapsibleGroup
+        title={group.title}
+        defaultCollapsed={group.defaultCollapsed}
+        fullWidth={group.fullWidth}
+      >
+        {body}
+      </CollapsibleGroup>
+    );
+  }
+
+  return (
+    <Settings.Section span={group.fullWidth ? "full" : undefined}>
+      {group.title ? (
+        <Settings.SectionTitle>{group.title}</Settings.SectionTitle>
+      ) : null}
+      {body}
+    </Settings.Section>
+  );
+}
+
+function ItemRow({
+  item,
+  groupBinding,
+  sectionId,
+}: {
+  item: Item;
+  groupBinding: Binding;
+  sectionId?: string;
+}) {
+  if (item.prefsKey)
+    return (
+      <OverriddenItemRow
+        item={item}
+        prefsKey={item.prefsKey}
+        sectionId={sectionId}
+      />
+    );
+  return <ItemShell item={item} binding={groupBinding} sectionId={sectionId} />;
+}
+
+function OverriddenItemRow({
+  item,
+  prefsKey,
+  sectionId,
+}: {
+  item: Item;
+  prefsKey: NonNullable<Item["prefsKey"]>;
+  sectionId?: string;
+}) {
+  const binding = usePrefsBinding(prefsKey);
+  if (item.visible && !item.visible(binding.values)) return null;
+  return <ItemShell item={item} binding={binding} sectionId={sectionId} />;
+}
+
+function ItemShell({
+  item,
+  binding,
+  sectionId,
+}: {
+  item: Item;
+  binding: Binding;
+  sectionId?: string;
+}) {
+  return (
+    <Settings.Item
+      id={sectionId ? `setting-${sectionId}-${item.key}` : undefined}
+    >
+      <ItemView item={item} binding={binding} />
+    </Settings.Item>
+  );
+}

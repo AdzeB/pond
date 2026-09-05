@@ -55,35 +55,54 @@ export interface RawSlimBackfillResult {
   hasMore: boolean;
 }
 
+interface RawSlimStore {
+  readBatch(limit: number): Array<{ id: string; rawJson: string }>;
+  writeBatch(rows: Array<{ id: string; rawSlim: string }>): void;
+}
+
 export function backfillRawSlimBatch(
   sqlite: Database.Database,
   limit = 500,
 ): RawSlimBackfillResult {
-  const batchLimit = Math.max(1, Math.floor(limit));
-  const rows = sqlite
-    .prepare(
-      `SELECT id, raw_json AS rawJson
-       FROM saves
-       WHERE raw_slim IS NULL AND raw_json IS NOT NULL
-       ORDER BY saved_at DESC, id DESC
-       LIMIT ?`,
-    )
-    .all(batchLimit)
-    .map((row) => BackfillRowSchema.safeParse(row))
-    .filter((parsed) => parsed.success)
-    .map((parsed) => parsed.data);
-  if (rows.length === 0) return { processed: 0, hasMore: false };
+  return backfillRawSlim(
+    {
+      readBatch: (batchLimit) =>
+        sqlite
+          .prepare(
+            `SELECT id, raw_json AS rawJson FROM saves WHERE raw_slim IS NULL AND raw_json IS NOT NULL ORDER BY saved_at DESC, id DESC LIMIT ?`,
+          )
+          .all(batchLimit)
+          .map((row) => BackfillRowSchema.safeParse(row))
+          .filter((parsed) => parsed.success)
+          .map((parsed) => parsed.data),
+      writeBatch(rows) {
+        const update = sqlite.prepare(
+          `UPDATE saves SET raw_slim = ? WHERE id = ?`,
+        );
+        sqlite.transaction(() => {
+          for (const row of rows) update.run(row.rawSlim, row.id);
+        })();
+      },
+    },
+    limit,
+  );
+}
 
-  const update = sqlite.prepare(`UPDATE saves SET raw_slim = ? WHERE id = ?`);
-  const run = sqlite.transaction((batch: typeof rows) => {
-    for (const row of batch) {
+export function backfillRawSlim(
+  store: RawSlimStore,
+  limit = 500,
+): RawSlimBackfillResult {
+  const batchLimit = Math.max(1, Math.floor(limit));
+  const rows = store.readBatch(batchLimit);
+  if (rows.length === 0) return { processed: 0, hasMore: false };
+  store.writeBatch(
+    rows.map((row) => {
       const stored = StoredJsonText.safeParse(row.rawJson);
       const slim = stored.success
         ? slimRawJson(storedAsRawJson(stored.data))
         : null;
-      update.run(JSON.stringify(slim), row.id);
-    }
-  });
-  run(rows);
+      return { id: row.id, rawSlim: JSON.stringify(slim) };
+    }),
+  );
   return { processed: rows.length, hasMore: rows.length === batchLimit };
 }

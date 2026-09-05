@@ -3,11 +3,11 @@ import {
   redirect,
   useRouterState,
 } from "@tanstack/react-router";
-import { SettingsDetail } from "@/components/settings/detail";
+import { SettingsDetail } from "@/features/settings/components/detail/detail";
 import {
   rememberSettingsSection,
   resolveSettingsSection,
-} from "@/lib/ui/open-settings";
+} from "@/features/settings/lib/open-settings";
 
 export const Route = createFileRoute("/_library/settings/$section")({
   beforeLoad: ({ params, location }) => {

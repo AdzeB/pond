@@ -17,7 +17,7 @@ const FacetsSchema: z.ZodType<CompileFacets, unknown> = z
   })
   .catch({ sources: [], types: [], tags: [], creators: [] });
 
-export const aiQueries: QueryHandlerMap = {
+export const aiQueries = {
   "ai.compilePlan": query(
     z.object({
       input: StringParam,
@@ -30,4 +30,4 @@ export const aiQueries: QueryHandlerMap = {
       return { plan };
     },
   ),
-};
+} satisfies QueryHandlerMap;

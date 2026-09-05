@@ -44,7 +44,7 @@ function Label({ className, ...props }: LabelProps) {
 
 function Operator({
   className,
-  size = "sm",
+  size = "xs",
   variant = "ghost",
   ...props
 }: ButtonProps) {

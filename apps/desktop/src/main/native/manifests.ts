@@ -18,7 +18,7 @@ const BROWSER_NMH_DIRS = [
   "Library/Application Support/Vivaldi/NativeMessagingHosts",
 ] as const;
 
-export function nativeHostBinaryPath(): string {
+function nativeHostBinaryPath(): string {
   if (app.isPackaged) {
     return join(process.resourcesPath, "bin", "pond-native-host");
   }

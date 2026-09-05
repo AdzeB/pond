@@ -90,10 +90,7 @@ export interface FlattenedEagleFolder {
   sortOrder: number;
 }
 
-export function partitionEagleItemFiles(files: readonly string[]): {
-  mediaFiles: string[];
-  thumbnail: string | null;
-} {
+export function partitionEagleItemFiles(files: readonly string[]) {
   const visible = files.filter(
     (name) => name !== "metadata.json" && !name.startsWith("."),
   );

@@ -96,7 +96,7 @@ function collect(element: Element): Measurement {
         key,
         key === "background"
           ? css.backgroundColor
-          : String(css[key as keyof CSSStyleDeclaration]),
+          : css.getPropertyValue(key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)),
       ]),
     ),
     computed: Object.fromEntries(
@@ -176,9 +176,9 @@ function useMeasurement(
   return measurement;
 }
 
-function download(name: string, data: unknown) {
+function download(name: string, data: string) {
   const url = URL.createObjectURL(
-    new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
+    new Blob([data], { type: "application/json" }),
   );
   const link = document.createElement("a");
   link.href = url;
@@ -356,14 +356,14 @@ function Compare({
               className="download"
               type="button"
               onClick={() =>
-                download(`pond-linear-${entry.id.toLowerCase()}.json`, {
+                download(`pond-linear-${entry.id.toLowerCase()}.json`, JSON.stringify({
                   component: entry.id,
                   linearSource: source ?? null,
                   linearRender: linear,
                   pond,
                   theme,
                   files,
-                })
+                }, null, 2))
               }
             >
               Export JSON
@@ -376,7 +376,7 @@ function Compare({
                   const captured = await captureComponent(root);
                   download(
                     `pond-${entry.id.toLowerCase()}-anatomy.json`,
-                    captured,
+                    JSON.stringify(captured, null, 2),
                   );
                   setCaptureStatus(
                     `Captured ${captured.count} elements${captured.truncated ? " (truncated)" : ""}; text and URLs excluded.`,
@@ -419,7 +419,7 @@ function Compare({
                     <tr key={key}>
                       <th>{labels[index]}</th>
                       <td>
-                        {(source?.metrics as Metrics | undefined)?.[key] ?? "—"}
+                        {source?.metrics[key] ?? "—"}
                       </td>
                       <td>{linear?.metrics[key] ?? "—"}</td>
                       <td>{pond?.metrics[key] ?? "—"}</td>

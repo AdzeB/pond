@@ -9,7 +9,7 @@ import {
   StringParam,
 } from "./params";
 
-export const savedViewsQueries: QueryHandlerMap = {
+export const savedViewsQueries = {
   async "savedViews.list"() {
     const { listViews } = await import("../../core/saved-views");
     return await listViews();
@@ -78,4 +78,4 @@ export const savedViewsQueries: QueryHandlerMap = {
       return await reorderViews(params.ids);
     },
   ),
-};
+} satisfies QueryHandlerMap;

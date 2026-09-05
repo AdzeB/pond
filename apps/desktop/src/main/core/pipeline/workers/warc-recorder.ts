@@ -346,7 +346,7 @@ export class WarcRecorder {
     while (this.pending.size > 0 && Date.now() < deadline) {
       const remaining = deadline - Date.now();
       await Promise.race([
-        Promise.allSettled([...this.pending]),
+        Promise.allSettled(this.pending),
         new Promise((r) => setTimeout(r, remaining)),
       ]);
     }

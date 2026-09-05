@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 
 import type { MediaType } from "@pond/schema/db";
+import type { BrowserValidators } from "../lib/browser-validation";
 
 declare global {
   var __UNIVERSAL_DATA_FOR_REHYDRATION__: TiktokHydration | undefined;
@@ -81,7 +82,7 @@ export interface TiktokVideoPage {
   meta?: TiktokVideoMeta;
 }
 
-export function inPageTiktokNormalize() {
+export function inPageTiktokNormalize(validators: BrowserValidators) {
   function extractVideoId(href: string): string | null {
     try {
       const u = new URL(href, location.origin);
@@ -199,10 +200,11 @@ export function inPageTiktokNormalize() {
       data.__DEFAULT_SCOPE__?.["webapp.video-detail"]?.itemInfo?.itemStruct ??
       data.ItemModule;
     if (!container) return null;
-    const item = isItemStruct(container)
+    const rawItem = isItemStruct(container)
       ? container
       : Object.values(container)[0];
-    if (!item) return null;
+    if (!rawItem) return null;
+    const item = validators.tiktokItem.parse(rawItem);
 
     const out: TiktokVideoPage = {};
     const meta: TiktokVideoMeta = {};
@@ -223,20 +225,19 @@ export function inPageTiktokNormalize() {
       meta.authorUrl = `https://www.tiktok.com/@${author.uniqueId}`;
       if (author.nickname) meta.authorName = author.nickname;
       if (author.avatarThumb) meta.authorAvatar = author.avatarThumb;
-      if (typeof author.verified === "boolean") meta.verified = author.verified;
+      if (author.verified !== undefined) meta.verified = author.verified;
     }
 
     const stats = item.stats;
     if (stats) {
       const metrics: NonNullable<TiktokVideoMeta["metrics"]> = {};
-      if (typeof stats.diggCount === "number") metrics.likes = stats.diggCount;
-      if (typeof stats.commentCount === "number")
+      if (stats.diggCount !== undefined) metrics.likes = stats.diggCount;
+      if (stats.commentCount !== undefined)
         metrics.comments = stats.commentCount;
-      if (typeof stats.shareCount === "number")
-        metrics.shares = stats.shareCount;
-      if (typeof stats.playCount === "number") metrics.plays = stats.playCount;
+      if (stats.shareCount !== undefined) metrics.shares = stats.shareCount;
+      if (stats.playCount !== undefined) metrics.plays = stats.playCount;
       /** collectCount is TikTok's "Favorites" button, the equivalent of bookmarks elsewhere. */
-      if (typeof stats.collectCount === "number")
+      if (stats.collectCount !== undefined)
         metrics.bookmarks = stats.collectCount;
       if (Object.keys(metrics).length > 0) meta.metrics = metrics;
     }
@@ -255,12 +256,12 @@ export function inPageTiktokNormalize() {
         out.mediaUrls = [clip];
         out.mediaType = "video";
       }
-      if (typeof videoData.duration === "number") {
+      if (videoData.duration !== undefined) {
         meta.durationSec = videoData.duration;
       }
     }
 
-    if (typeof item.createTime === "number") {
+    if (item.createTime !== undefined) {
       meta.publishedAt = new Date(item.createTime * 1000).toISOString();
     }
 

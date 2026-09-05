@@ -18,6 +18,7 @@ export interface HeaderContext {
 export interface TableColumn<T> {
   id: string;
   header?: ReactNode | ((ctx: HeaderContext) => ReactNode);
+  sortLabel?: string;
   cell: (row: T, ctx: CellContext) => ReactNode;
   accessor?: (row: T) => SortValue;
   sort?: SortKind;

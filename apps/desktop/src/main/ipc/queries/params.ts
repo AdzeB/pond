@@ -3,6 +3,7 @@ import { FIELD_DESCRIPTORS } from "@pond/schema/filters/fields";
 import { COMPARATORS_BY_TYPE, type Query } from "@pond/schema/filters/types";
 import type { IpcMainInvokeEvent } from "electron";
 import { z } from "zod";
+import type { QueryName, QueryResult } from "../../../shared/query-contracts";
 
 const QueryParamsSchema = z.looseObject({}).catch({});
 
@@ -16,7 +17,12 @@ export function query<Schema extends z.ZodType, Result>(
     run(schema.parse(QueryParamsSchema.parse(raw)), event);
 }
 
-export type QueryHandlerMap = Record<string, ReturnType<typeof query>>;
+export type QueryHandlerMap = Partial<{
+  [Name in QueryName]: (
+    raw?: QueryParams,
+    event?: IpcMainInvokeEvent,
+  ) => QueryResult<Name> | Promise<QueryResult<Name>>;
+}>;
 
 export const StringParam = z.coerce
   .string()

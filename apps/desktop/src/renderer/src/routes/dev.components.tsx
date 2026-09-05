@@ -1,12 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ComponentsPage } from "@/components/dev/components";
+import { z } from "zod";
+import { ComponentsPage } from "@/dev/components/components";
 
 export const Route = createFileRoute("/dev/components")({
-  validateSearch: (
-    search: Record<string, unknown>,
-  ): { component?: string } => ({
-    component:
-      typeof search.component === "string" ? search.component : undefined,
+  validateSearch: z.object({
+    component: z.string().optional().catch(undefined),
   }),
   component: ComponentGalleryRoute,
 });

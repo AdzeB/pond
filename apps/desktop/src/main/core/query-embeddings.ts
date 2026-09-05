@@ -1,3 +1,8 @@
+import type {
+  CLIPTextModelWithProjection,
+  FeatureExtractionPipeline,
+  PreTrainedTokenizer,
+} from "@huggingface/transformers";
 import type { MediaType, Prefs } from "@pond/schema/db";
 import {
   clipEmbeddingVersion,
@@ -17,34 +22,19 @@ export interface QueryEmbeddings {
   visual?: VersionedVector;
 }
 
-type TextExtractor = (
-  text: string,
-  options: { pooling: "mean"; normalize: true },
-) => Promise<{ data: Float32Array }>;
-
-type Disposable = { dispose?: () => void | Promise<void> };
-
-type ClipTextBundle = {
-  tokenizer: (
-    texts: string[],
-    options: { padding: true; truncation: true },
-  ) => Record<string, unknown>;
-  model: (
-    inputs: Record<string, unknown>,
-  ) => Promise<{ text_embeds: { data: Float32Array } }>;
-  dispose: () => Promise<void>;
-};
-
-const textCache = new Map<string, Promise<TextExtractor & Disposable>>();
+interface Disposable {
+  dispose(): void | Promise<void>;
+}
+interface ClipTextBundle {
+  tokenizer: PreTrainedTokenizer;
+  model: CLIPTextModelWithProjection;
+  dispose(): Promise<void>;
+}
+const textCache = new Map<string, Promise<FeatureExtractionPipeline>>();
 const clipCache = new Map<string, Promise<ClipTextBundle>>();
 const MODEL_CACHE_LIMIT = 2;
 
-function dispose(value: unknown): Promise<void> {
-  const candidate = value as Disposable;
-  return Promise.resolve(candidate.dispose?.()).then(() => undefined);
-}
-
-function memo<T>(
+function memo<T extends Disposable>(
   cache: Map<string, Promise<T>>,
   key: string,
   load: () => Promise<T>,
@@ -55,12 +45,13 @@ function memo<T>(
   cache.set(key, pending);
   pending.catch(() => cache.delete(key));
   if (cache.size > MODEL_CACHE_LIMIT) {
-    const oldest = cache.entries().next().value as
-      | [string, Promise<T>]
-      | undefined;
+    const oldest = cache.entries().next().value;
     if (oldest && oldest[0] !== key) {
       cache.delete(oldest[0]);
-      void oldest[1].then(dispose, () => undefined);
+      void oldest[1].then(
+        (value) => value.dispose(),
+        () => undefined,
+      );
     }
   }
   return pending;
@@ -79,14 +70,14 @@ function normalize(vector: ArrayLike<number>): number[] {
 
 async function textExtractor(
   modelId: string,
-): Promise<TextExtractor & Disposable> {
+): Promise<FeatureExtractionPipeline> {
   return memo(textCache, modelId, async () => {
     const transformers = await import("@huggingface/transformers");
     transformers.env.allowLocalModels = false;
-    return (await transformers.pipeline("feature-extraction", modelId, {
+    return transformers.pipeline("feature-extraction", modelId, {
       device: "wasm",
       dtype: "q8",
-    })) as unknown as TextExtractor & Disposable;
+    });
   });
 }
 
@@ -102,10 +93,10 @@ async function clipTextBundle(modelId: string): Promise<ClipTextBundle> {
       }),
     ]);
     return {
-      tokenizer: tokenizer as unknown as ClipTextBundle["tokenizer"],
-      model: model as unknown as ClipTextBundle["model"],
+      tokenizer,
+      model,
       dispose: async () => {
-        await Promise.all([dispose(tokenizer), dispose(model)]);
+        await model.dispose();
       },
     };
   });
@@ -167,7 +158,7 @@ export async function encodeQueryEmbeddings(
         });
         return {
           model: textEmbeddingVersion(modelId),
-          vector: normalize(output.data),
+          vector: normalize(Array.from(output.data, Number)),
         };
       })()
     : undefined;
@@ -184,13 +175,13 @@ export async function encodeQueryEmbeddings(
           const output = await bundle.model(inputs);
           return {
             model: clipEmbeddingVersion(modelId),
-            vector: normalize(output.text_embeds.data),
+            vector: normalize(Array.from(output.text_embeds.data, Number)),
           };
         })()
       : undefined;
   const [textResult, visualResult] = await Promise.all([text, visual]);
-  return {
-    ...(textResult ? { text: textResult } : {}),
-    ...(visualResult ? { visual: visualResult } : {}),
-  };
+  const result: QueryEmbeddings = {};
+  if (textResult) result.text = textResult;
+  if (visualResult) result.visual = visualResult;
+  return result;
 }

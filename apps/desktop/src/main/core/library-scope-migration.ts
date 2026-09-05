@@ -1,4 +1,4 @@
-import type { SaveFile } from "@pond/schema/db";
+import type { Save, SaveFile } from "@pond/schema/db";
 import { saves } from "@pond/schema/db";
 import { domainFromUrl } from "@pond/schema/domain";
 import { majorityMediaType } from "@pond/schema/media-type";
@@ -9,7 +9,7 @@ import {
 } from "@shared/text-card";
 import { eq, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
-import { getDb } from "../db";
+import type { Db } from "../db";
 
 function fileMediaKind(file: SaveFile): "image" | "video" | null {
   if (TEXT_COVER_KINDS.has(file.kind)) return null;
@@ -52,89 +52,86 @@ function repairTextMediaType(row: {
   return "link";
 }
 
-export async function runLibraryScopeMigration(): Promise<void> {
-  const db = await getDb();
+interface MigrationStore {
+  fileSaveIds(): Array<Pick<Save, "id">>;
+  mixedSaves(): Array<Pick<Save, "id" | "files">>;
+  textSaves(): Array<
+    Pick<Save, "id" | "source" | "description" | "files" | "rawJson">
+  >;
+  missingSiteNames(): Array<Pick<Save, "id" | "url">>;
+  updateSave(
+    id: string,
+    patch: Pick<Partial<Save>, "mediaType" | "siteName">,
+  ): void;
+}
 
-  const fileRows = db
-    .select({ id: saves.id })
-    .from(saves)
-    .where(sql`${saves.mediaType} = 'file'`)
-    .all();
-  if (fileRows.length > 0) {
+export async function runLibraryScopeMigration(db: Db): Promise<void> {
+  migrateLibraryScope({
+    fileSaveIds: () =>
+      db
+        .select({ id: saves.id })
+        .from(saves)
+        .where(sql`${saves.mediaType} = 'file'`)
+        .all(),
+    mixedSaves: () =>
+      db
+        .select({ id: saves.id, files: saves.files })
+        .from(saves)
+        .where(sql`${saves.mediaType} = 'mixed'`)
+        .all(),
+    textSaves: () =>
+      db.select().from(saves).where(sql`${saves.mediaType} = 'text'`).all(),
+    missingSiteNames: () =>
+      db
+        .select({ id: saves.id, url: saves.url })
+        .from(saves)
+        .where(
+          sql`(${saves.siteName} is null or trim(${saves.siteName}) = '') and ${saves.source} != 'local' and ${saves.url} is not null and ${saves.url} not like 'pond:%'`,
+        )
+        .all(),
+    updateSave: (id, patch) => {
+      db.update(saves).set(patch).where(eq(saves.id, id)).run();
+    },
+  });
+}
+
+export function migrateLibraryScope(store: MigrationStore): void {
+  const fileRows = store.fileSaveIds();
+  if (fileRows.length > 0)
     log.info("[pond migrate] retained mediaType=file saves", {
       count: fileRows.length,
     });
-  }
-
-  const mixedRows = db
-    .select({ id: saves.id, files: saves.files })
-    .from(saves)
-    .where(sql`${saves.mediaType} = 'mixed'`)
-    .all();
-
+  const mixedRows = store.mixedSaves();
   for (const row of mixedRows) {
     const kinds = (row.files ?? [])
       .map(fileMediaKind)
-      .filter((k): k is "image" | "video" => k != null);
-    const next = majorityMediaType(kinds) ?? "image";
-    db.update(saves).set({ mediaType: next }).where(eq(saves.id, row.id)).run();
+      .filter((kind): kind is "image" | "video" => kind != null);
+    store.updateSave(row.id, {
+      mediaType: majorityMediaType(kinds) ?? "image",
+    });
   }
-  if (mixedRows.length > 0) {
+  if (mixedRows.length > 0)
     log.info("[pond migrate] collapsed mediaType=mixed", {
       count: mixedRows.length,
     });
-  }
-
-  const textRows = db
-    .select({
-      id: saves.id,
-      source: saves.source,
-      url: saves.url,
-      description: saves.description,
-      files: saves.files,
-      rawJson: saves.rawJson,
-    })
-    .from(saves)
-    .where(sql`${saves.mediaType} = 'text'`)
-    .all();
-
   let repairedText = 0;
-  for (const row of textRows) {
+  for (const row of store.textSaves()) {
     const next = repairTextMediaType(row);
     if (next === "text") continue;
-    db.update(saves).set({ mediaType: next }).where(eq(saves.id, row.id)).run();
+    store.updateSave(row.id, { mediaType: next });
     repairedText += 1;
   }
-  if (repairedText > 0) {
+  if (repairedText > 0)
     log.info("[pond migrate] repaired mediaType=text stamps", {
       count: repairedText,
     });
-  }
-
-  const needsSite = db
-    .select({
-      id: saves.id,
-      url: saves.url,
-      source: saves.source,
-      siteName: saves.siteName,
-    })
-    .from(saves)
-    .where(
-      sql`(${saves.siteName} is null or trim(${saves.siteName}) = '')
-        and ${saves.source} != 'local'
-        and ${saves.url} is not null
-        and ${saves.url} not like 'pond:%'`,
-    )
-    .all();
-
   let filled = 0;
-  for (const row of needsSite) {
+  for (const row of store.missingSiteNames()) {
     const site = domainFromUrl(row.url);
     if (!site) continue;
-    db.update(saves).set({ siteName: site }).where(eq(saves.id, row.id)).run();
+    store.updateSave(row.id, { siteName: site });
     filled += 1;
   }
-  if (filled > 0) {
+  if (filled > 0)
     log.info("[pond migrate] backfilled siteName", { count: filled });
-  }
 }

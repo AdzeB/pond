@@ -1,20 +1,16 @@
+import type { JsonObject } from "@pond/schema/json";
 import { beforeEach, expect, it, vi } from "vitest";
 import { z } from "zod";
 import type { AssistantSource } from "../../../shared/assistant";
-import { completeWithTools } from "./complete";
+import {
+  type CompletionInput,
+  type CompletionStream,
+  completeWithTools as complete,
+} from "./complete";
 
-const mock = vi.hoisted(() => ({ chat: vi.fn() }));
-vi.mock("@tanstack/ai", async (original) => ({
-  ...(await original<typeof import("@tanstack/ai")>()),
-  chat: mock.chat,
-}));
-vi.mock("@tanstack/ai-openai", () => ({
-  createOpenaiChat: () => ({}),
-  createOpenaiChatCompletions: () => ({}),
-}));
-vi.mock("@tanstack/ai-anthropic", () => ({ createAnthropicChat: () => ({}) }));
-vi.mock("@tanstack/ai-gemini", () => ({ createGeminiChat: () => ({}) }));
-vi.mock("@tanstack/ai-ollama", () => ({ createOllamaChat: () => ({}) }));
+const mock = { chat: vi.fn<CompletionStream>() };
+const completeWithTools = (input: CompletionInput) =>
+  complete(input, mock.chat);
 
 const dump =
   '{"saves":[{"id":"film","title":"Film","url":"https://example.com","description":"Transcript\\nShow transcript"}]}';
@@ -40,12 +36,12 @@ function chatText(text: string) {
 }
 
 function retrieval(
-  execute: (input: Record<string, unknown>) => Promise<unknown>,
+  execute: (
+    input: JsonObject,
+  ) => Promise<{ saves?: AssistantSource[] } | undefined>,
 ) {
-  return async (input: Record<string, unknown>) => {
-    const result = (await execute(input)) as
-      | { saves?: AssistantSource[] }
-      | undefined;
+  return async (input: JsonObject) => {
+    const result = await execute(input);
     return result?.saves ?? [];
   };
 }
@@ -155,7 +151,7 @@ it("retrieves first, then lets the model write instead of a result list", async 
   expect(answer).toBe("Most of these are studio portraits. I can tag them.");
   expect(answer).not.toMatch(/matching your search|Here are Saves matching/i);
   expect(mock.chat).toHaveBeenCalledOnce();
-  expect(mock.chat.mock.calls[0]?.[0].systemPrompts.join("\n")).toContain(
+  expect(mock.chat.mock.calls[0]?.[0].systemPrompts?.join("\n")).toContain(
     "Save ID: one",
   );
 });

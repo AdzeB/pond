@@ -1,3 +1,14 @@
+interface CapturedElement {
+  tag: string;
+  rect: { x: number; y: number; width: number; height: number };
+  css: Record<string, string>;
+  pseudo: Record<string, { css: Record<string, string>; hasGeneratedContent: boolean }>;
+  state: Record<string, boolean>;
+  svg?: Record<string, string>;
+  children: Array<CapturedElement | null>;
+  hasOpenShadowRoot: boolean;
+}
+
 export async function captureComponent(root: Element) {
   if (root === document.body || root === document.documentElement) {
     throw new Error("Select a component, not the whole document.");
@@ -66,7 +77,7 @@ export async function captureComponent(root: Element) {
   ]);
   let count = 0;
   let truncated = false;
-  const visit = (element: Element, depth: number): unknown => {
+  const visit = (element: Element, depth: number): CapturedElement | null => {
     if (count >= 250 || depth > 12) {
       truncated = true;
       return null;

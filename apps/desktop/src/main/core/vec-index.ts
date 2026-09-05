@@ -1,39 +1,45 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { arch, platform } from "node:process";
+import type { JsonValue } from "@pond/schema/json";
 import type Database from "better-sqlite3";
 import log from "electron-log/main.js";
 import { load as loadSqliteVecExtension } from "sqlite-vec";
+import { z } from "zod";
 
-export const TEXT_VEC_TABLE = "save_text_vec";
-export const CLIP_VEC_TABLE = "save_clip_vec";
-export const DEFAULT_TEXT_DIM = 384;
-export const DEFAULT_CLIP_DIM = 512;
+const TEXT_VEC_TABLE = "save_text_vec";
+const CLIP_VEC_TABLE = "save_clip_vec";
+const DEFAULT_TEXT_DIM = 384;
+const DEFAULT_CLIP_DIM = 512;
 
 export type VecKind = "text" | "clip";
 
-const TABLES: Record<VecKind, string> = {
+const TABLES = {
   text: TEXT_VEC_TABLE,
   clip: CLIP_VEC_TABLE,
-};
+} satisfies Record<VecKind, string>;
 
-const DimRow = { dimensions: 0 as number };
+const DimRowSchema = z.object({ dimensions: z.number() }).optional();
+const VectorRowsSchema = z.array(
+  z.object({ id: z.string(), embedding: z.string() }),
+);
+const NeighborRowsSchema = z.array(
+  z.object({ id: z.string(), distance: z.number() }),
+);
+const VectorSchema = z.array(z.number());
 
 export function toVecBlob(vector: ArrayLike<number>): Buffer {
   return Buffer.from(Float32Array.from(vector).buffer);
 }
 
-export function parseJsonVector(raw: unknown): number[] | null {
-  if (Array.isArray(raw)) {
-    const values = raw.filter(
-      (value): value is number => typeof value === "number",
-    );
-    return values.length === raw.length ? values : null;
-  }
-  if (typeof raw !== "string" || !raw) return null;
+export function parseJsonVector(raw: JsonValue | undefined): number[] | null {
+  const direct = VectorSchema.safeParse(raw);
+  if (direct.success) return direct.data;
+  const text = z.string().safeParse(raw);
+  if (!text.success || !text.data) return null;
   try {
-    const parsed: unknown = JSON.parse(raw);
-    return parseJsonVector(parsed);
+    const decoded = VectorSchema.safeParse(JSON.parse(text.data));
+    return decoded.success ? decoded.data : null;
   } catch {
     return null;
   }
@@ -95,7 +101,7 @@ export function ensureVecTables(
   ensureKind(db, "clip", dims.clip);
 }
 
-export function ensureVecDim(
+function ensureVecDim(
   db: Database.Database,
   kind: VecKind,
   dimensions: number,
@@ -110,9 +116,9 @@ function ensureKind(
   dimensions: number,
 ): void {
   const table = TABLES[kind];
-  const row = db
-    .prepare("SELECT dimensions FROM vec_meta WHERE kind = ?")
-    .get(kind) as { dimensions: number } | undefined;
+  const row = DimRowSchema.parse(
+    db.prepare("SELECT dimensions FROM vec_meta WHERE kind = ?").get(kind),
+  );
   if (row?.dimensions !== dimensions) {
     db.exec(`DROP TABLE IF EXISTS ${table}`);
   }
@@ -128,13 +134,10 @@ function ensureKind(
   ).run(kind, dimensions);
 }
 
-export function currentVecDim(
-  db: Database.Database,
-  kind: VecKind,
-): number | null {
-  const row = db
-    .prepare("SELECT dimensions FROM vec_meta WHERE kind = ?")
-    .get(kind) as typeof DimRow | undefined;
+function currentVecDim(db: Database.Database, kind: VecKind): number | null {
+  const row = DimRowSchema.parse(
+    db.prepare("SELECT dimensions FROM vec_meta WHERE kind = ?").get(kind),
+  );
   return row?.dimensions ?? null;
 }
 
@@ -156,17 +159,6 @@ export function upsertVec(
   return true;
 }
 
-export function deleteVec(db: Database.Database, saveId: string): void {
-  if (!saveId) return;
-  for (const table of Object.values(TABLES)) {
-    try {
-      db.prepare(`DELETE FROM ${table} WHERE save_id = ?`).run(saveId);
-    } catch {
-      /** Table may not exist yet. */
-    }
-  }
-}
-
 export function knnVec(
   db: Database.Database,
   kind: VecKind,
@@ -177,11 +169,13 @@ export function knnVec(
     const dimensions = currentVecDim(db, kind);
     if (!dimensions || vector.length !== dimensions || k < 1) return [];
     const table = TABLES[kind];
-    return db
-      .prepare(
-        `SELECT save_id AS id, distance FROM ${table} WHERE embedding MATCH ? AND k = ?`,
-      )
-      .all(toVecBlob(vector), k) as Array<{ id: string; distance: number }>;
+    return NeighborRowsSchema.parse(
+      db
+        .prepare(
+          `SELECT save_id AS id, distance FROM ${table} WHERE embedding MATCH ? AND k = ?`,
+        )
+        .all(toVecBlob(vector), k),
+    );
   } catch (error) {
     log.warn("[pond vec] knn failed", {
       kind,
@@ -193,28 +187,29 @@ export function knnVec(
 
 const BACKFILL_BATCH = 200;
 
-export function backfillVecBatch(db: Database.Database): {
-  processed: number;
-  hasMore: boolean;
-} {
+export function backfillVecBatch(db: Database.Database) {
   const textDim = currentVecDim(db, "text") ?? DEFAULT_TEXT_DIM;
   const clipDim = currentVecDim(db, "clip") ?? DEFAULT_CLIP_DIM;
-  const textRows = db
-    .prepare(
-      `SELECT id, embedding FROM saves
+  const textRows = VectorRowsSchema.parse(
+    db
+      .prepare(
+        `SELECT id, embedding FROM saves
        WHERE embedding IS NOT NULL
          AND id NOT IN (SELECT save_id FROM ${TEXT_VEC_TABLE})
        LIMIT ?`,
-    )
-    .all(BACKFILL_BATCH) as Array<{ id: string; embedding: string }>;
-  const clipRows = db
-    .prepare(
-      `SELECT id, clip_embedding AS embedding FROM saves
+      )
+      .all(BACKFILL_BATCH),
+  );
+  const clipRows = VectorRowsSchema.parse(
+    db
+      .prepare(
+        `SELECT id, clip_embedding AS embedding FROM saves
        WHERE clip_embedding IS NOT NULL
          AND id NOT IN (SELECT save_id FROM ${CLIP_VEC_TABLE})
        LIMIT ?`,
-    )
-    .all(BACKFILL_BATCH) as Array<{ id: string; embedding: string }>;
+      )
+      .all(BACKFILL_BATCH),
+  );
 
   let processed = 0;
   for (const row of textRows) {

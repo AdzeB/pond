@@ -1,5 +1,6 @@
+import type { JsonObject, JsonValue } from "@pond/schema/json";
 import { chat, maxIterations, toolDefinition } from "@tanstack/ai";
-import type { z } from "zod";
+import { z } from "zod";
 import type {
   AssistantActivity,
   AssistantSource,
@@ -19,11 +20,17 @@ export type ChatMessage = {
   content: string;
 };
 
+export type ToolResult =
+  | JsonValue
+  | Date
+  | ToolResult[]
+  | { [key: string]: ToolResult | undefined };
+
 export type ToolSpec = {
   name: string;
   description: string;
   schema: z.ZodType;
-  execute: (args: Record<string, unknown>) => Promise<unknown>;
+  execute: (args: JsonObject) => Promise<ToolResult | undefined>;
 };
 
 const SYSTEM = `You are Pond Agent, Cursor for this Library. Read, organize, tag, and explain Saves. Search, grep, and overview gather evidence; they are not the answer. You do not apply edits. The user reviews a diff, then Apply or Undo.
@@ -37,7 +44,7 @@ For edits, call proposeChanges. You cannot mutate the library yourself. proposeC
 Do not narrate tool calls; the interface shows progress.
 Pond has no cloud service of its own. External models use the user's provider. Keep responses concise.`;
 
-interface CompletionInput {
+export interface CompletionInput {
   provider: AgentProviderId;
   model: string;
   apiKey: string | null;
@@ -83,19 +90,37 @@ function runErrorMessage(chunk: {
 }) {
   if (chunk.message?.trim()) return chunk.message;
   if (chunk.error?.message?.trim()) return chunk.error.message;
-  const raw = chunk.rawEvent;
-  if (typeof raw === "string" && raw.trim()) return raw;
-  if (raw && typeof raw === "object") {
-    const body = raw as {
-      message?: unknown;
-      error?: unknown;
-    };
-    if (typeof body.message === "string" && body.message.trim())
-      return body.message;
-    if (typeof body.error === "string" && body.error.trim()) return body.error;
-    if (body.error && typeof body.error === "object") {
-      const inner = (body.error as { message?: unknown }).message;
-      if (typeof inner === "string" && inner.trim()) return inner;
+  const raw = z
+    .union([
+      z.string(),
+      z.object({
+        message: z.string().optional(),
+        error: z
+          .union([z.string(), z.object({ message: z.string().optional() })])
+          .optional(),
+      }),
+    ])
+    .safeParse(chunk.rawEvent);
+  if (raw.success) {
+    const direct = z.string().safeParse(raw.data);
+    if (direct.success && direct.data.trim()) return direct.data;
+    const body = z
+      .object({
+        message: z.string().optional(),
+        error: z
+          .union([z.string(), z.object({ message: z.string().optional() })])
+          .optional(),
+      })
+      .safeParse(raw.data);
+    if (body.success) {
+      if (body.data.message?.trim()) return body.data.message;
+      const text = z.string().safeParse(body.data.error);
+      if (text.success && text.data.trim()) return text.data;
+      const nested = z
+        .object({ message: z.string() })
+        .safeParse(body.data.error);
+      if (nested.success && nested.data.message.trim())
+        return nested.data.message;
     }
   }
   return "The model could not reply.";
@@ -110,24 +135,27 @@ function publish(input: CompletionInput, answer: string): string {
 async function prepareRequiredRetrieval(
   input: CompletionInput,
   plan: AssistantPlan,
-): Promise<PreparedRetrieval | string> {
-  const retrieved = await input.retrieveLibrary({
-    ...(plan.intent === "search" && plan.query ? { query: plan.query } : {}),
-    ...(plan.media.length ? { media: plan.media } : {}),
-    ...(plan.source ? { source: plan.source } : {}),
+): Promise<{ answer: string } | PreparedRetrieval> {
+  const query: Parameters<CompletionInput["retrieveLibrary"]>[0] = {
     limit: 24,
-  });
+  };
+  if (plan.intent === "search" && plan.query) query.query = plan.query;
+  if (plan.media.length) query.media = plan.media;
+  if (plan.source) query.source = plan.source;
+  const retrieved = await input.retrieveLibrary(query);
   input.abortController.signal.throwIfAborted();
   const sources = uniqueSources([...(input.attachments ?? []), ...retrieved]);
   if (!retrieved.length) {
-    return publish(
-      input,
-      plan.intent === "search"
-        ? plan.query
-          ? `I couldn't find any Saves matching “${plan.query}”. Try another term or remove a filter.`
-          : "I couldn't find any Saves matching this filter. Try another term or remove a filter."
-        : "I couldn't find any Saves in this scope.",
-    );
+    return {
+      answer: publish(
+        input,
+        plan.intent === "search"
+          ? plan.query
+            ? `I couldn't find any Saves matching “${plan.query}”. Try another term or remove a filter.`
+            : "I couldn't find any Saves matching this filter. Try another term or remove a filter."
+          : "I couldn't find any Saves in this scope.",
+      ),
+    };
   }
   if (plan.directLookup) {
     const show = input.tools.find((tool) => tool.name === "showSaves");
@@ -141,8 +169,29 @@ async function prepareRequiredRetrieval(
   return { retrieved, sources };
 }
 
+export interface CompletionChunk {
+  type: string;
+  delta?: string;
+  message?: string;
+  error?: { message?: string };
+  rawEvent?: unknown;
+}
+export type CompletionStream = (
+  options: Parameters<typeof chat>[0],
+) => AsyncIterable<CompletionChunk>;
+
+async function* streamCompletion(
+  options: Parameters<typeof chat>[0],
+): AsyncIterable<CompletionChunk> {
+  for await (const chunk of chat({ ...options, stream: true })) {
+    if (chunk.type === "RUN_ERROR" || chunk.type === "TEXT_MESSAGE_CONTENT")
+      yield chunk;
+  }
+}
+
 export async function completeWithTools(
   input: CompletionInput,
+  streamModel: CompletionStream = streamCompletion,
 ): Promise<string> {
   input.abortController.signal.throwIfAborted();
   const latest = conversation(input.messages).at(-1)?.content ?? "";
@@ -154,7 +203,7 @@ export async function completeWithTools(
   let prepared: PreparedRetrieval | undefined;
   if (plan.intent === "search" || plan.intent === "recent") {
     const result = await prepareRequiredRetrieval(input, plan);
-    if (typeof result === "string") return result;
+    if ("answer" in result) return result.answer;
     prepared = result;
   }
   const adapter = await loadAdapter(input);
@@ -168,7 +217,7 @@ export async function completeWithTools(
         inputSchema: spec.schema,
       }).server((args) => {
         input.abortController.signal.throwIfAborted();
-        return spec.execute(args as Record<string, unknown>);
+        return spec.execute(z.record(z.string(), z.json()).parse(args));
       }),
     );
   const sources = uniqueSources([
@@ -197,7 +246,7 @@ export async function completeWithTools(
           : message,
       )
     : history;
-  const stream = chat({
+  const stream = streamModel({
     adapter,
     systemPrompts: [SYSTEM, input.context, evidence(sources, true)],
     messages,

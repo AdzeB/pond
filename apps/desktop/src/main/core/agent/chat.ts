@@ -1,11 +1,13 @@
 import { agentChats } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
+import { z } from "zod";
 import {
   ASSISTANT_MODELS,
   type AssistantChunk,
   type AssistantMetadata,
   type AssistantSend,
   type AssistantSendResult,
+  assistantMessages,
   assistantQuestion,
 } from "../../../shared/assistant";
 import { IPC } from "../../../shared/constants";
@@ -13,7 +15,7 @@ import { getDb } from "../../db";
 import { broadcast } from "../../lib/broadcast";
 import { listFolders } from "../folders";
 import { getPrefs } from "../prefs";
-import { completeWithTools } from "./complete";
+import type { CompletionInput } from "./complete";
 import { libraryContext } from "./context";
 import { keyFor, parseProvider } from "./keys";
 import { appendMessage, recentMessages } from "./persist";
@@ -21,15 +23,36 @@ import { connectionFor } from "./provider-models";
 import type { LibraryScope } from "./tools";
 import { imagesForSaves, visionEnabled } from "./vision";
 
+const chatDependencies = {
+  async conversationExists(id: string) {
+    const db = await getDb();
+    return Boolean(
+      await db.select().from(agentChats).where(eq(agentChats.id, id)).get(),
+    );
+  },
+  getPrefs,
+  broadcast,
+  listFolders,
+  keyFor,
+  async completeWithTools(input: CompletionInput) {
+    const { completeWithTools } = await import("./complete");
+    return completeWithTools(input);
+  },
+  libraryContext,
+  appendMessage,
+  async recentMessages(chatId: string, limit: number) {
+    return assistantMessages.parse(await recentMessages(chatId, limit));
+  },
+  imagesForSaves,
+};
+export type ChatDependencies = typeof chatDependencies;
+
 const active = new Map<
   string,
   { requestId: string; controller: AbortController }
 >();
 
-export function stopMessage(
-  chatId: string,
-  requestId: string,
-): { ok: boolean } {
+export function stopMessage(chatId: string, requestId: string) {
   const run = active.get(chatId);
   if (!run || run.requestId !== requestId) return { ok: false };
   run.controller.abort();
@@ -38,6 +61,7 @@ export function stopMessage(
 
 export async function sendMessage(
   input: AssistantSend,
+  deps: ChatDependencies = chatDependencies,
 ): Promise<AssistantSendResult> {
   const { chatId, requestId, content, provider } = input;
   if (active.has(chatId))
@@ -51,26 +75,19 @@ export async function sendMessage(
       lastActivity = chunk.activity;
     }
     if (!controller.signal.aborted)
-      broadcast(IPC.agentChunk, { chatId, requestId, ...chunk });
+      deps.broadcast(IPC.agentChunk, { chatId, requestId, ...chunk });
   };
   let accepted = false;
   let assembled = "";
   let context: ReturnType<typeof libraryContext> | undefined;
   try {
-    const db = await getDb();
-    if (
-      !(await db
-        .select()
-        .from(agentChats)
-        .where(eq(agentChats.id, chatId))
-        .get())
-    )
+    if (!(await deps.conversationExists(chatId)))
       throw new Error("This conversation no longer exists. Start a new chat.");
-    const prefs = await getPrefs();
+    const prefs = await deps.getPrefs();
     const model = ASSISTANT_MODELS.find((entry) => entry.id === provider);
     const agentProvider = parseProvider(provider);
     if (!model || !agentProvider) throw new Error("Choose a supported model.");
-    const apiKey = await keyFor(agentProvider);
+    const apiKey = await deps.keyFor(agentProvider);
     if (model.needsKey) {
       if (!apiKey || prefs.agent.enabledKeys[provider] === false)
         throw new Error("Add an enabled provider key in Settings.");
@@ -85,7 +102,8 @@ export async function sendMessage(
           : {};
     if (input.scope.kind === "attachments" && !input.attachmentIds.length)
       throw new Error("Attach a Save or change the scope to Library.");
-    const folders = input.scope.kind === "folder" ? await listFolders() : [];
+    const folders =
+      input.scope.kind === "folder" ? await deps.listFolders() : [];
     const folder =
       input.scope.kind === "folder"
         ? folders.find((f) => f.id === scope.folderId)
@@ -95,7 +113,7 @@ export async function sendMessage(
     const scopeLabel =
       folder?.name ??
       (input.scope.kind === "attachments" ? "Attached Saves" : "Library");
-    context = libraryContext({
+    context = deps.libraryContext({
       scope,
       signal: controller.signal,
       onActivity: (activity) => emit({ type: "activity", activity }),
@@ -103,7 +121,7 @@ export async function sendMessage(
       onResults: (results) => emit({ type: "results", results }),
       onSteps: (steps) => emit({ type: "steps", steps }),
     });
-    const previous = await recentMessages(chatId, 23);
+    const previous = await deps.recentMessages(chatId, 23);
     const pendingQuestion = previous.at(-1);
     if (
       input.replyToQuestion &&
@@ -117,15 +135,17 @@ export async function sendMessage(
     const inherited = assistantQuestion.safeParse(
       pendingQuestion?.metadata?.question,
     ).success
-      ? ((pendingQuestion?.metadata?.sources as { id: string }[] | undefined) ??
-        [])
+      ? (pendingQuestion?.metadata?.sources ?? [])
       : [];
     const attachmentIds = [
       ...new Set([...input.attachmentIds, ...inherited.map((save) => save.id)]),
     ];
     const attachmentResults = await Promise.all(
-      attachmentIds.map(
-        async (id) => (await reader?.execute({ id })) as { error?: string },
+      attachmentIds.map(async (id) =>
+        z
+          .object({ error: z.string().optional() })
+          .optional()
+          .parse(await reader?.execute({ id })),
       ),
     );
     for (const result of attachmentResults) {
@@ -146,7 +166,7 @@ export async function sendMessage(
         input.replyToQuestion ??
         (pendingQuestion?.metadata?.question ? pendingQuestion.id : undefined),
     };
-    await appendMessage({
+    await deps.appendMessage({
       chatId,
       role: "user",
       content,
@@ -164,7 +184,7 @@ export async function sendMessage(
       .filter(Boolean)
       .join(" ");
     const images = visionEnabled(provider, prefs.agent.visionModel)
-      ? await imagesForSaves(attachmentIds)
+      ? await deps.imagesForSaves(attachmentIds)
       : [];
     const visionProvider = parseProvider(prefs.agent.visionModel || provider);
     const chatProvider =
@@ -176,7 +196,7 @@ export async function sendMessage(
     const chatModel =
       ASSISTANT_MODELS.find((entry) => entry.id === chatProvider) ?? model;
     const chatKey =
-      chatProvider === agentProvider ? apiKey : await keyFor(chatProvider);
+      chatProvider === agentProvider ? apiKey : await deps.keyFor(chatProvider);
     if (
       chatProvider !== agentProvider &&
       chatModel.needsKey &&
@@ -189,7 +209,7 @@ export async function sendMessage(
       chatModel.model,
     );
     emit({ type: "activity", activity: "thinking" });
-    await completeWithTools({
+    await deps.completeWithTools({
       provider: chatProvider,
       model: connection.modelId,
       apiKey: chatKey,
@@ -197,7 +217,7 @@ export async function sendMessage(
       messages: history.map((row) => {
         const question = assistantQuestion.safeParse(row.metadata?.question);
         return {
-          role: row.role as "user" | "assistant",
+          role: z.enum(["user", "assistant"]).parse(row.role),
           content: question.success
             ? `${row.content}\n${question.data.question}\n${question.data.options.join("; ")}`
             : row.content,
@@ -227,7 +247,7 @@ export async function sendMessage(
       throw new Error(
         "The model returned no reply. Try again or choose another model.",
       );
-    await appendMessage({
+    await deps.appendMessage({
       chatId,
       role: "assistant",
       content: assembled,
@@ -249,7 +269,7 @@ export async function sendMessage(
         ? err.message
         : "Could not reply. Try again.";
     if (accepted)
-      await appendMessage({
+      await deps.appendMessage({
         chatId,
         role: "assistant",
         content: assembled,
@@ -262,7 +282,7 @@ export async function sendMessage(
           error,
         },
       });
-    broadcast(IPC.agentChunk, {
+    deps.broadcast(IPC.agentChunk, {
       chatId,
       requestId,
       type: stopped ? "stopped" : "error",

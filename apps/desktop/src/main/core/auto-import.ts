@@ -2,19 +2,23 @@ import { type FSWatcher, watch } from "node:fs";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { libraryRoot } from "../paths";
 import { createManualSave } from "./manual-import";
 import { getPrefs } from "./prefs";
 
-interface AutoImportLog {
-  entries: Array<{
-    at: number;
-    name: string;
-    mode: "copy" | "move";
-    ok: boolean;
-    id?: string;
-  }>;
-}
+const AutoImportLogSchema = z.object({
+  entries: z.array(
+    z.object({
+      at: z.number(),
+      name: z.string(),
+      mode: z.enum(["copy", "move"]),
+      ok: z.boolean(),
+      id: z.string().optional(),
+    }),
+  ),
+});
+type AutoImportLog = z.infer<typeof AutoImportLogSchema>;
 
 let watcher: FSWatcher | null = null;
 const seen = new Set<string>();
@@ -29,7 +33,9 @@ async function appendLog(
 ): Promise<void> {
   let doc: AutoImportLog = { entries: [] };
   try {
-    doc = JSON.parse(await readFile(logPath(), "utf8")) as AutoImportLog;
+    doc = AutoImportLogSchema.parse(
+      JSON.parse(await readFile(logPath(), "utf8")),
+    );
   } catch {}
   doc.entries = [entry, ...(doc.entries ?? [])].slice(0, 200);
   await mkdir(libraryRoot(), { recursive: true }).catch(() => {});
@@ -38,7 +44,9 @@ async function appendLog(
 
 export async function readAutoImportLog(): Promise<AutoImportLog> {
   try {
-    return JSON.parse(await readFile(logPath(), "utf8")) as AutoImportLog;
+    return AutoImportLogSchema.parse(
+      JSON.parse(await readFile(logPath(), "utf8")),
+    );
   } catch {
     return { entries: [] };
   }
@@ -93,7 +101,7 @@ export async function startAutoImport(): Promise<void> {
   }
 }
 
-export function stopAutoImport(): void {
+function stopAutoImport(): void {
   watcher?.close();
   watcher = null;
   for (const timer of pending.values()) clearTimeout(timer);

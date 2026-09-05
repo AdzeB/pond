@@ -1,3 +1,5 @@
+import type { BrowserValidators } from "../lib/browser-validation";
+import { browserValidationSource } from "../lib/browser-validation-source";
 /// <reference lib="dom" />
 
 import type { MediaType } from "@pond/schema/db";
@@ -21,14 +23,17 @@ export function buildCosmosListExpression(args: ListHarvestArgs): string {
   const fnSrc = `(${inPageCosmosList.toString()})`;
   const enriched = { ...args, scrollDeadlineMs: SCROLL_DEADLINE_MS };
   return `(async () => {
+    ${browserValidationSource}
+    const validators = PondHarvestValidation.browserValidators;
     const args = ${JSON.stringify(enriched)};
-    try { return await ${fnSrc}(args); }
+    try { return await ${fnSrc}(args, validators); }
     catch (e) { return { ok: false, reason: 'timeout', error: String(e) }; }
   })()`;
 }
 
 async function inPageCosmosList(
   args: ListHarvestArgs & { scrollDeadlineMs: number },
+  validators: BrowserValidators,
 ): Promise<ListHarvestResult> {
   if (
     location.pathname.startsWith("/login") ||
@@ -56,13 +61,12 @@ async function inPageCosmosList(
     savedAt?: string;
   }
 
-  // This function is serialised into the page, so zod cannot reach it.
   const isRecord = (value: JsonValue | undefined): value is JsonRecord =>
-    typeof value === "object" && value !== null && !Array.isArray(value);
+    validators.object.safeParse(value).success;
   const asText = (value: JsonValue | undefined): string | undefined =>
-    typeof value === "string" ? value : undefined;
+    validators.text.safeParse(value).data;
   const asNumber = (value: JsonValue | undefined): number | undefined =>
-    typeof value === "number" && Number.isFinite(value) ? value : undefined;
+    validators.number.safeParse(value).data;
 
   const known = new Set(args.knownIds.map(String));
   const collected = new Map<string, CosmosEntry>();
@@ -294,7 +298,8 @@ async function inPageCosmosList(
       }
       for (const key of Object.keys(node)) {
         const child = node[key];
-        if (child !== null && typeof child === "object") stack.push(child);
+        if (child !== undefined && (Array.isArray(child) || isRecord(child)))
+          stack.push(child);
       }
     }
     return { added };

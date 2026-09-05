@@ -1,3 +1,5 @@
+import type { JsonValue } from "@pond/schema/json";
+import { z } from "zod";
 import { KEYCHAIN_AGENT_PREFIX } from "../../../shared/constants";
 import { deleteSecret, getSecret, getSecrets, setSecret } from "../../keychain";
 import { getPrefs, setPrefs } from "../prefs";
@@ -18,9 +20,7 @@ const AGENT_PROVIDERS = [
 export type AgentProviderId = (typeof AGENT_PROVIDERS)[number];
 
 export function parseProvider(value: string): AgentProviderId | null {
-  return (AGENT_PROVIDERS as readonly string[]).includes(value)
-    ? (value as AgentProviderId)
-    : null;
+  return AGENT_PROVIDERS.find((provider) => provider === value) ?? null;
 }
 
 function accountFor(provider: AgentProviderId): string {
@@ -74,7 +74,7 @@ export async function saveKey(
   await setPrefs({
     agent: {
       enabledKeys: { ...prefs.agent.enabledKeys, [provider]: true },
-      ...(prefs.agent.languageModel ? {} : { languageModel: provider }),
+      languageModel: prefs.agent.languageModel || provider,
     },
   });
   return { ok: true };
@@ -181,7 +181,7 @@ async function fetchProviderModels(input: {
   ollamaBaseUrl: string;
   lmstudioBaseUrl: string;
   compatibleBaseUrl: string;
-}): Promise<{ ok: boolean; json?: unknown; error?: string }> {
+}): Promise<{ ok: boolean; json?: JsonValue; error?: string }> {
   const { provider, key } = input;
   try {
     let res: Response;
@@ -235,9 +235,9 @@ async function fetchProviderModels(input: {
         };
       }
     }
-    let json: unknown;
+    let json: JsonValue;
     try {
-      json = await res.json();
+      json = z.json().parse(await res.json());
     } catch {
       json = null;
     }

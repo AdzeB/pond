@@ -2,14 +2,14 @@ import { type SQL, sql } from "drizzle-orm";
 import { saves } from "../../db";
 import { defineField } from "./descriptor";
 
-export type MediaShape =
+export type MediaOrientation =
   | "square"
   | "portrait"
   | "panoramic-portrait"
   | "landscape"
   | "panoramic-landscape";
 
-const SHAPE_PRESETS = [
+const ORIENTATION_PRESETS = [
   { id: "square", label: "Square", value: "square" },
   { id: "landscape", label: "Landscape", value: "landscape" },
   { id: "portrait", label: "Portrait", value: "portrait" },
@@ -45,10 +45,10 @@ const ASPECT_TARGETS = {
 
 const ASPECT_TOLERANCE = 0.06;
 
-export function shapeFromDims(
+export function orientationFromDims(
   width: number | null | undefined,
   height: number | null | undefined,
-): MediaShape | null {
+): MediaOrientation | null {
   if (width == null || height == null || width <= 0 || height <= 0) return null;
   const r = width / height;
   if (r >= 2) return "panoramic-landscape";
@@ -75,7 +75,7 @@ function ratioSql(): SQL {
   return sql`(cast(${saves.width} as real) / cast(${saves.height} as real))`;
 }
 
-function shapeSql(): SQL {
+function orientationSql(): SQL {
   const r = ratioSql();
   return sql`case
     when ${saves.width} is null or ${saves.height} is null
@@ -105,14 +105,14 @@ function aspectSql(): SQL {
   end`;
 }
 
-export const shape = defineField({
+export const orientation = defineField({
   id: "shape",
   type: "enum",
   label: "Shape",
   group: "media",
-  presets: SHAPE_PRESETS,
-  project: (s) => shapeFromDims(s.width, s.height),
-  sqlProjection: () => shapeSql(),
+  presets: ORIENTATION_PRESETS,
+  project: (s) => orientationFromDims(s.width, s.height),
+  sqlProjection: () => orientationSql(),
 });
 
 export const aspect = defineField({

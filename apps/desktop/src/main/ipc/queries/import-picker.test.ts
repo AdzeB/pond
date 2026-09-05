@@ -1,61 +1,55 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { OpenDialogOptions } from "electron";
+import { describe, expect, it } from "vitest";
+import { createImportPicker, ImportKindSchema } from "./import-picker";
 
-const { showOpenDialog, getFocusedWindow } = vi.hoisted(() => ({
-  showOpenDialog: vi.fn(),
-  getFocusedWindow: vi.fn(),
-}));
-
-vi.mock("electron", () => ({
-  BrowserWindow: { getFocusedWindow },
-  dialog: { showOpenDialog },
-}));
-
-import { pickImportPaths } from "./import-picker";
+function fixture(focused: { id: number } | null = null, canceled = false) {
+  const opened: {
+    window: { id: number } | null;
+    options: OpenDialogOptions;
+  }[] = [];
+  const pick = createImportPicker({
+    focusedWindow: () => focused,
+    async open(window, options) {
+      opened.push({ window, options });
+      return { canceled, filePaths: ["/tmp/photo.png"] };
+    },
+  });
+  return { pick, opened };
+}
 
 describe("native import picker", () => {
-  beforeEach(() => {
-    vi.resetAllMocks();
-    showOpenDialog.mockResolvedValue({
-      canceled: false,
-      filePaths: ["/tmp/photo.png"],
-    });
-  });
-
   it("picks multiple files", async () => {
-    expect(await pickImportPaths("files")).toEqual({
-      paths: ["/tmp/photo.png"],
-    });
-    expect(showOpenDialog).toHaveBeenCalledWith(
-      expect.objectContaining({
-        properties: ["openFile", "multiSelections"],
-      }),
-    );
+    const { pick, opened } = fixture();
+    expect(await pick("files")).toEqual({ paths: ["/tmp/photo.png"] });
+    expect(opened).toEqual([
+      {
+        window: null,
+        options: {
+          title: "Import Files",
+          buttonLabel: "Import",
+          properties: ["openFile", "multiSelections"],
+        },
+      },
+    ]);
   });
-
   it("picks multiple folders attached to the focused window", async () => {
-    const win = { id: 1 };
-    getFocusedWindow.mockReturnValue(win);
-    await pickImportPaths("folders");
-    expect(showOpenDialog).toHaveBeenCalledWith(
-      win,
-      expect.objectContaining({
-        properties: ["openDirectory", "multiSelections"],
-      }),
-    );
+    const { pick, opened } = fixture({ id: 1 });
+    await pick("folders");
+    expect(opened).toEqual([
+      {
+        window: { id: 1 },
+        options: {
+          title: "Import Folders",
+          buttonLabel: "Import",
+          properties: ["openDirectory", "multiSelections"],
+        },
+      },
+    ]);
   });
-
   it("treats cancellation as no selection", async () => {
-    showOpenDialog.mockResolvedValue({
-      canceled: true,
-      filePaths: ["/tmp/photo.png"],
-    });
-    expect(await pickImportPaths("files")).toEqual({ paths: [] });
+    expect(await fixture(null, true).pick("files")).toEqual({ paths: [] });
   });
-
-  it("rejects unknown modes without opening a dialog", async () => {
-    await expect(pickImportPaths("anything")).rejects.toThrow(
-      "Invalid import kind",
-    );
-    expect(showOpenDialog).not.toHaveBeenCalled();
+  it("rejects unknown modes at the boundary", () => {
+    expect(ImportKindSchema.safeParse("anything").success).toBe(false);
   });
 });

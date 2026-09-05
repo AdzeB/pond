@@ -773,7 +773,7 @@ export function Assistant({
                     <Menu.Positioner side="top" align="start">
                       <Menu.Popup>
                         <Menu.SectionLabel>Search In</Menu.SectionLabel>
-                        {(["library", "design", "attached"] as Scope[]).map(
+                        {(["library", "design", "attached"] satisfies Scope[]).map(
                           (value) => (
                             <Menu.Item
                               key={value}

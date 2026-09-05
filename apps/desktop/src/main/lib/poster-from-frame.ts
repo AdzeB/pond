@@ -18,7 +18,7 @@ export async function buildFirstFramePoster(
       filename,
       bytes,
       mimeType: frame.mimeType,
-      ...(dims ?? {}),
+      ...dims,
     };
   } finally {
     await frame.cleanup();

@@ -1,5 +1,6 @@
 const { existsSync, readdirSync, rmSync, statSync } = require("node:fs");
 const { join } = require("node:path");
+const { z } = require("zod");
 
 // ffmpeg ships in the bundle (yt-dlp is fetched at runtime into userData,
 // so it is intentionally not bundled). Fail the pack if ffmpeg is missing
@@ -22,7 +23,17 @@ exports.default = async function verifyBinaries(context) {
 const ARCH_NAMES = ["ia32", "x64", "armv7l", "arm64", "universal"];
 
 function normalizeArch(arch) {
-  return typeof arch === "number" ? ARCH_NAMES[arch] : arch;
+  return z
+    .union([
+      z
+        .number()
+        .int()
+        .min(0)
+        .max(4)
+        .transform((index) => ARCH_NAMES[index]),
+      z.enum(ARCH_NAMES),
+    ])
+    .parse(arch);
 }
 
 function pruneOnnxRuntime(resourcesDir, platform, arch) {

@@ -10,9 +10,12 @@ import type { Transaction } from "@pond/schema/tx";
 import { asc, eq, inArray } from "drizzle-orm";
 import { ulid } from "ulid";
 import { getDb } from "../db";
-import { INFO_FILE, type InfoDoc } from "../lib/library-format";
+import { INFO_FILE, StoredInfoDocSchema } from "../lib/library-format";
 import { itemDir } from "../paths";
 import { executeBatch, executeTransaction } from "./executor";
+import { folderIdsForSave } from "./folder-memberships";
+
+export { folderIdsForSave } from "./folder-memberships";
 
 export async function listFolders(): Promise<Folder[]> {
   const db = await getDb();
@@ -107,15 +110,6 @@ function collectDescendants(id: string, all: Folder[]): string[] {
   return ids;
 }
 
-export async function folderIdsForSave(saveId: string): Promise<string[]> {
-  const db = await getDb();
-  const rows = await db
-    .select({ folderId: saveFoldersTable.folderId })
-    .from(saveFoldersTable)
-    .where(eq(saveFoldersTable.saveId, saveId));
-  return rows.map((row) => row.folderId);
-}
-
 async function persistFolderIdsOnInfo(
   saveId: string,
   folderIds: string[],
@@ -123,7 +117,7 @@ async function persistFolderIdsOnInfo(
   const path = join(itemDir(saveId), INFO_FILE);
   try {
     const raw = await readFile(path, "utf8");
-    const info = JSON.parse(raw) as InfoDoc;
+    const info = StoredInfoDocSchema.parse(JSON.parse(raw));
     info.folderIds = folderIds;
     await writeFile(path, JSON.stringify(info, null, 2));
   } catch {
@@ -172,7 +166,7 @@ export async function addSavesToFolder(
     if (existing.some((row) => row.folderId === folderId)) continue;
     await db.insert(saveFoldersTable).values({ saveId, folderId });
   }
-  for (const saveId of [...new Set(saveIds.filter(Boolean))]) {
+  for (const saveId of new Set(saveIds.filter(Boolean))) {
     await persistFolderIdsOnInfo(saveId, await folderIdsForSave(saveId));
   }
   return { ok: true };

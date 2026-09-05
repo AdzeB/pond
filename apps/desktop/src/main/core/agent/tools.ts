@@ -1,8 +1,17 @@
-import { saves, tags } from "@pond/schema/db";
-import type { Query } from "@pond/schema/filters";
+import { type ImageComment, saves, tags } from "@pond/schema/db";
 import { tagsEmpty } from "@pond/schema/filters/fields";
 import { FIELD_IDS } from "@pond/schema/filters/meta";
-import { and, count, desc, eq, isNotNull, isNull, or, sql } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  isNotNull,
+  isNull,
+  or,
+  type SQL,
+  sql,
+} from "drizzle-orm";
 import { z } from "zod";
 import { IPC } from "../../../shared/constants";
 import { getDb } from "../../db";
@@ -34,7 +43,7 @@ export const grepLibraryInput = z.object({
   limit: z.number().int().min(1).max(50).optional(),
 });
 
-const FILTER_FIELD = z.enum(FIELD_IDS as [string, ...string[]]);
+const FILTER_FIELD = z.enum(FIELD_IDS);
 const FILTER_OPERATOR = z.enum([
   "eq",
   "neq",
@@ -65,10 +74,10 @@ const filterValue = z.union([
 const filterPredicate = z.object({
   field: FILTER_FIELD,
   operator: FILTER_OPERATOR,
-  value: filterValue.optional(),
+  value: filterValue.nullable().default(null),
   negate: z.boolean().optional(),
 });
-const filterGroup = z.object({
+export const filterGroup = z.object({
   combinator: z.enum(["and", "or"]),
   not: z.boolean().optional(),
   rules: z.array(
@@ -110,11 +119,79 @@ export const describeSavesInput = z.object({
 
 export type LibraryScope = LibraryRetrievalScope;
 
+const GrepRowsSchema = z.array(
+  z.object({
+    id: z.string(),
+    title: z.string(),
+    description: z.string(),
+    caption: z.string(),
+    ocr: z.string(),
+    transcript: z.string(),
+    notes: z.string(),
+  }),
+);
+export const toolDependencies = {
+  retrieveLibrary,
+  async readRows(condition: SQL | undefined) {
+    const db = await getDb();
+    return await db
+      .select({
+        id: saves.id,
+        title: saves.title,
+        url: saves.url,
+        author: saves.author,
+        source: saves.source,
+        description: saves.description,
+        notes: saves.notes,
+        tags: saves.tags,
+        caption: saves.caption,
+        ocrText: saves.ocrText,
+        transcript: saves.transcript,
+        comments: saves.comments,
+        rating: saves.rating,
+        mediaType: saves.mediaType,
+        width: saves.width,
+        height: saves.height,
+      })
+      .from(saves)
+      .where(condition)
+      .limit(1);
+  },
+  async grepRows(match: string, id: string | undefined, limit: number) {
+    const db = await getDb();
+    const idClause = id ? "AND f.id = ?" : "";
+    const params = id ? [match, id, limit] : [match, limit];
+    return GrepRowsSchema.parse(
+      db.$raw
+        .prepare(
+          `SELECT f.id AS id,
+              snippet(saves_fts, 1, '', '', '…', 16) AS title,
+              snippet(saves_fts, 2, '', '', '…', 24) AS description,
+              snippet(saves_fts, 5, '', '', '…', 24) AS caption,
+              snippet(saves_fts, 6, '', '', '…', 24) AS ocr,
+              snippet(saves_fts, 7, '', '', '…', 24) AS transcript,
+              snippet(saves_fts, 8, '', '', '…', 24) AS notes
+       FROM saves_fts f
+       JOIN saves s ON s.id = f.id
+       WHERE saves_fts MATCH ? AND s.deleted_at IS NULL ${idClause}
+       LIMIT ?`,
+        )
+        .all(...params),
+    );
+  },
+  async admittedIds(condition: SQL | undefined) {
+    const db = await getDb();
+    return await db.select({ id: saves.id }).from(saves).where(condition);
+  },
+  folderIdsForSave,
+};
+
 export async function searchLibrary(
   input: z.infer<typeof searchLibraryInput>,
   scope: LibraryScope = {},
+  deps = toolDependencies,
 ) {
-  const result = await retrieveLibrary(input, scope);
+  const result = await deps.retrieveLibrary(input, scope);
   return { saves: result.saves };
 }
 
@@ -131,42 +208,18 @@ async function sliceTokens(text: string, offset = 0, limit = 2000) {
   };
 }
 
-function commentTexts(raw: unknown): string[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.flatMap((entry) => {
-    if (!entry || typeof entry !== "object") return [];
-    const text = (entry as { text?: unknown }).text;
-    return typeof text === "string" && text.trim() ? [text] : [];
-  });
+function commentTexts(raw: ImageComment[] | null): string[] {
+  return (raw ?? []).map((entry) => entry.text).filter((text) => text.trim());
 }
 
 export async function readSave(
   input: z.infer<typeof readSaveInput>,
   scope: LibraryScope = {},
+  deps = toolDependencies,
 ) {
-  const db = await getDb();
-  const rows = await db
-    .select({
-      id: saves.id,
-      title: saves.title,
-      url: saves.url,
-      author: saves.author,
-      source: saves.source,
-      description: saves.description,
-      notes: saves.notes,
-      tags: saves.tags,
-      caption: saves.caption,
-      ocrText: saves.ocrText,
-      transcript: saves.transcript,
-      comments: saves.comments,
-      rating: saves.rating,
-      mediaType: saves.mediaType,
-      width: saves.width,
-      height: saves.height,
-    })
-    .from(saves)
-    .where(and(eq(saves.id, input.id), ...libraryScopeClauses(scope)))
-    .limit(1);
+  const rows = await deps.readRows(
+    and(eq(saves.id, input.id), ...libraryScopeClauses(scope)),
+  );
   const row = rows[0];
   if (!row) return { error: "Save not found." };
   const comments = commentTexts(row.comments);
@@ -221,7 +274,7 @@ export async function readSave(
       comments,
       rating: row.rating,
       tags: row.tags,
-      folderIds: await folderIdsForSave(row.id),
+      folderIds: await deps.folderIdsForSave(row.id),
       mediaType: row.mediaType,
       width: row.width,
       height: row.height,
@@ -229,61 +282,26 @@ export async function readSave(
   };
 }
 
-export async function grepSave(
-  input: z.infer<typeof grepLibraryInput>,
-  scope: LibraryScope = {},
-) {
-  return grepLibrary(input, scope);
-}
-
 export async function grepLibrary(
   input: z.infer<typeof grepLibraryInput>,
   scope: LibraryScope = {},
+  deps = toolDependencies,
 ) {
   const match = toFtsMatchQuery(input.query);
   if (!match) return { hits: [] };
-  const db = await getDb();
-  const limit = input.limit ?? 20;
-  const idClause = input.id ? "AND f.id = ?" : "";
-  const params = input.id ? [match, input.id, limit] : [match, limit];
-  const rows = db.$raw
-    .prepare(
-      `SELECT f.id AS id,
-              snippet(saves_fts, 1, '', '', '…', 16) AS title,
-              snippet(saves_fts, 2, '', '', '…', 24) AS description,
-              snippet(saves_fts, 5, '', '', '…', 24) AS caption,
-              snippet(saves_fts, 6, '', '', '…', 24) AS ocr,
-              snippet(saves_fts, 7, '', '', '…', 24) AS transcript,
-              snippet(saves_fts, 8, '', '', '…', 24) AS notes
-       FROM saves_fts f
-       JOIN saves s ON s.id = f.id
-       WHERE saves_fts MATCH ? AND s.deleted_at IS NULL ${idClause}
-       LIMIT ?`,
-    )
-    .all(...params) as Array<{
-    id: string;
-    title: string;
-    description: string;
-    caption: string;
-    ocr: string;
-    transcript: string;
-    notes: string;
-  }>;
+  const rows = await deps.grepRows(match, input.id, input.limit ?? 20);
   const admitted = rows.length
     ? new Set(
         (
-          await db
-            .select({ id: saves.id })
-            .from(saves)
-            .where(
-              and(
-                ...libraryScopeClauses(scope),
-                sql`${saves.id} IN (${sql.join(
-                  rows.map((row) => sql`${row.id}`),
-                  sql`, `,
-                )})`,
-              ),
-            )
+          await deps.admittedIds(
+            and(
+              ...libraryScopeClauses(scope),
+              sql`${saves.id} IN (${sql.join(
+                rows.map((row) => sql`${row.id}`),
+                sql`, `,
+              )})`,
+            ),
+          )
         ).map((row) => row.id),
       )
     : new Set<string>();
@@ -385,13 +403,19 @@ export async function libraryOverview() {
   };
 }
 
-export async function applyFilter(input: z.infer<typeof applyFilterInput>) {
-  broadcast(IPC.agentFilter, input.query as Query);
+export async function applyFilter(
+  input: z.infer<typeof applyFilterInput>,
+  emit = broadcast,
+) {
+  emit(IPC.agentFilter, input.query);
   return { ok: true };
 }
 
-export async function setOverlay(input: z.infer<typeof setOverlayInput>) {
-  broadcast(IPC.agentOverlay, input);
+export async function setOverlay(
+  input: z.infer<typeof setOverlayInput>,
+  emit = broadcast,
+) {
+  emit(IPC.agentOverlay, input);
   return { ok: true };
 }
 

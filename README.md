@@ -35,7 +35,7 @@ If native modules fail after an Electron upgrade:
 pnpm --filter @pond/desktop rebuild
 ```
 
-See [`apps/desktop/README.md`](apps/desktop/README.md) for architecture and on-disk layout.
+See [`apps/desktop/README.md`](apps/desktop/README.md) for architecture and on-disk layout. Before contributing, read the [contributor guide](CONTRIBUTING.md), [code standards](docs/contributing/code-standards.md), and [desktop architecture](docs/contributing/architecture.md). Run `pnpm check` and `pnpm build` from the repository root to verify a change.
 
 ## Agent and MCP
 

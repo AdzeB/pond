@@ -3,7 +3,6 @@
 import type { JsonValue } from "@pond/schema/json";
 import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
-import { bindSourceId } from "../source-id";
 import { inPageRedditNormalize, type RedditPostPage } from "./normalize";
 
 export function buildExpression(postId: string): string {
@@ -34,5 +33,3 @@ async function inPageRedditHarvest(
 export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx) {
   return captureFromPageDom(raw, ctx);
 }
-
-export const sourceIdFromUrl = bindSourceId("reddit");

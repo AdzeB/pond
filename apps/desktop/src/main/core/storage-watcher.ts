@@ -4,7 +4,7 @@ import log from "electron-log/main.js";
 import { IPC } from "../../shared/constants";
 import { getPrefs } from "./prefs";
 import { getStorageSnapshot } from "./storage-stats";
-import { cancelAllSyncs } from "./sync";
+import { cancelAllSyncs } from "./sync/sync-status";
 
 type StorageGuardAction = "warn" | "pauseSync" | "pauseVideo";
 type StorageGuardState = "ok" | "warn" | "exceeded";

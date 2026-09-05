@@ -1,3 +1,5 @@
+import type { BrowserValidators } from "../lib/browser-validation";
+import { browserValidationSource } from "../lib/browser-validation-source";
 /// <reference lib="dom" />
 
 import type { MediaType } from "@pond/schema/db";
@@ -22,9 +24,11 @@ export function buildRedditListExpression(args: ListHarvestArgs): string {
   const normSrc = `(${inPageRedditNormalize.toString()})()`;
   const fnSrc = `(${inPageRedditList.toString()})`;
   return `(async () => {
+    ${browserValidationSource}
+    const validators = PondHarvestValidation.browserValidators;
     const norm = ${normSrc};
     const args = ${JSON.stringify(args)};
-    try { return await ${fnSrc}(args, norm); }
+    try { return await ${fnSrc}(args, norm, validators); }
     catch (e) { return { ok: false, reason: 'timeout', error: String(e) }; }
   })()`;
 }
@@ -32,6 +36,7 @@ export function buildRedditListExpression(args: ListHarvestArgs): string {
 async function inPageRedditList(
   args: ListHarvestArgs,
   norm: ReturnType<typeof inPageRedditNormalize>,
+  validators: BrowserValidators,
 ): Promise<ListHarvestResult> {
   if (
     location.pathname.startsWith("/login") ||
@@ -52,11 +57,10 @@ async function inPageRedditList(
     mediaType?: MediaType;
   };
 
-  // This function is serialised into the page, so zod cannot reach it.
   const asText = (value: JsonValue): string | undefined =>
-    typeof value === "string" ? value : undefined;
+    validators.text.safeParse(value).data;
   const asNumber = (value: JsonValue): number | undefined =>
-    typeof value === "number" && Number.isFinite(value) ? value : undefined;
+    validators.number.safeParse(value).data;
 
   const username =
     location.pathname.match(/^\/user\/([^/]+)\/saved/i)?.[1] ??

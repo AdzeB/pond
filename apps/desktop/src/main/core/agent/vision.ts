@@ -3,13 +3,15 @@ import { extname } from "node:path";
 import { ASSISTANT_MODELS } from "../../../shared/assistant";
 import { resolveSaveFilePath } from "../../ipc/helpers";
 
-const MIME: Record<string, string> = {
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".png": "image/png",
-  ".webp": "image/webp",
-  ".gif": "image/gif",
-};
+const MIME = new Map<string, string>(
+  Object.entries({
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+  }),
+);
 
 export function visionEnabled(
   provider: string,
@@ -28,7 +30,7 @@ export async function imagesForSaves(
   for (const id of ids.slice(0, 24)) {
     const target = await resolveSaveFilePath(id, 0);
     if (!target.ok) continue;
-    const mime = MIME[extname(target.path).toLowerCase()];
+    const mime = MIME.get(extname(target.path).toLowerCase());
     if (!mime) continue;
     try {
       images.push({

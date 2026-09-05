@@ -1,8 +1,8 @@
-/**
- * Injected scripts run in the page on every visit to a supported site, so they read payloads
- * structurally instead of bundling zod. The `no-runtime-typeof` findings in this file are the
- * accepted trade for that, and they stay concentrated here.
- */
+import { $ZodNumber, $ZodString, safeParse } from "zod/v4/core";
+
+// Each page hook is a separate bundle; core schemas and pure construction keep unused parsers out.
+export const TextValue = /* @__PURE__ */ new $ZodString({ type: "string" });
+const NumberValue = /* @__PURE__ */ new $ZodNumber({ type: "number" });
 
 export interface JsonRecord {
   [key: string]: JsonValue;
@@ -17,17 +17,17 @@ export type JsonValue =
   | JsonRecord;
 
 export function isRecord(value: JsonValue | undefined): value is JsonRecord {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return value instanceof Object && !Array.isArray(value);
 }
 
 export function asText(value: JsonValue | undefined): string | undefined {
-  return typeof value === "string" ? value : undefined;
+  const parsed = safeParse(TextValue, value);
+  return parsed.success ? parsed.data : undefined;
 }
 
 export function asNumber(value: JsonValue | undefined): number | undefined {
-  return typeof value === "number" && Number.isFinite(value)
-    ? value
-    : undefined;
+  const parsed = safeParse(NumberValue, value);
+  return parsed.success ? parsed.data : undefined;
 }
 
 export function at(

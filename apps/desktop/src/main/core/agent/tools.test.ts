@@ -1,6 +1,9 @@
+import type { JsonValue } from "@pond/schema/json";
 import { convertSchemaToJsonSchema } from "@tanstack/ai";
+import type { SQL } from "drizzle-orm";
 import { SQLiteSyncDialect } from "drizzle-orm/sqlite-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import {
   assistantProposalInput,
   assistantQuestion,
@@ -8,64 +11,77 @@ import {
 } from "../../../shared/assistant";
 import { IPC } from "../../../shared/constants";
 import {
-  applyFilter,
+  applyFilter as apply,
   applyFilterInput,
   citeSavesInput,
   describeSavesInput,
-  grepLibrary,
+  grepLibrary as grep,
   grepLibraryInput,
   libraryOverviewInput,
   listFoldersInput,
   openSaveInput,
-  readSave,
+  setOverlay as overlay,
+  readSave as read,
   readSaveInput,
-  searchLibrary,
+  searchLibrary as search,
   searchLibraryInput,
-  setOverlay,
   setOverlayInput,
+  toolDependencies,
 } from "./tools";
 
-const mock = vi.hoisted(() => ({
-  where: vi.fn(),
-  retrieve: vi.fn().mockResolvedValue({ saves: [], hits: [] }),
-  fts: vi.fn().mockReturnValue([]),
-  admitted: [] as Array<{ id: string }>,
-}));
-vi.mock("../../db", () => ({
-  getDb: async () => ({
-    select: () => ({
-      from: () => ({
-        where: (condition: unknown) => {
-          mock.where(condition);
-          return Object.assign(Promise.resolve(mock.admitted), {
-            limit: async () => [],
-            orderBy: () => ({ limit: async () => [] }),
-          });
-        },
-      }),
-    }),
-    $raw: {
-      prepare: () => ({
-        all: (...args: unknown[]) => mock.fts(...args),
-      }),
-    },
-  }),
-}));
-vi.mock("../../lib/broadcast", () => ({ broadcast: vi.fn() }));
-vi.mock("../library-retrieval", async (original) => ({
-  ...(await original<typeof import("../library-retrieval")>()),
+interface ToolTestState {
+  admitted: Array<{ id: string }>;
+}
+const state: ToolTestState = { admitted: [] };
+const mock = {
+  ...state,
+  where: vi.fn<(condition: SQL | undefined) => void>(),
+  retrieve: vi
+    .fn<typeof toolDependencies.retrieveLibrary>()
+    .mockResolvedValue({ saves: [], hits: [] }),
+  fts: vi.fn<typeof toolDependencies.grepRows>().mockResolvedValue([]),
+  broadcast: vi.fn(),
+};
+const deps = {
+  ...toolDependencies,
   retrieveLibrary: mock.retrieve,
-}));
-vi.mock("../folders", () => ({
-  listFolders: async () => [],
+  readRows: async (condition: SQL | undefined) => {
+    mock.where(condition);
+    return [];
+  },
+  grepRows: mock.fts,
+  admittedIds: async (condition: SQL | undefined) => {
+    mock.where(condition);
+    return mock.admitted;
+  },
   folderIdsForSave: async () => [],
-}));
+};
+const searchLibrary = (
+  input: Parameters<typeof search>[0],
+  scope: Parameters<typeof search>[1] = {},
+) => search(input, scope, deps);
+const readSave = (
+  input: Parameters<typeof read>[0],
+  scope: Parameters<typeof read>[1] = {},
+) => read(input, scope, deps);
+const grepLibrary = (
+  input: Parameters<typeof grep>[0],
+  scope: Parameters<typeof grep>[1] = {},
+) => grep(input, scope, deps);
+const applyFilter = (input: Parameters<typeof apply>[0]) =>
+  apply(input, mock.broadcast);
+const setOverlay = (input: Parameters<typeof overlay>[0]) =>
+  overlay(input, mock.broadcast);
 const dialect = new SQLiteSyncDialect();
-const query = () => dialect.sqlToQuery(mock.where.mock.calls[0]?.[0]);
+const query = () => {
+  const condition = mock.where.mock.calls[0]?.[0];
+  if (!condition) throw new Error("Expected scoped query");
+  return dialect.sqlToQuery(condition);
+};
 beforeEach(() => {
   vi.clearAllMocks();
   mock.admitted = [];
-  mock.fts.mockReturnValue([]);
+  mock.fts.mockResolvedValue([]);
 });
 
 describe("Assistant library boundaries", () => {
@@ -108,7 +124,7 @@ it("accepts a visual probe on search input", () => {
 });
 
 it("returns OCR snippets from library grep", async () => {
-  mock.fts.mockReturnValue([
+  mock.fts.mockResolvedValue([
     {
       id: "save",
       title: "",
@@ -125,43 +141,38 @@ it("returns OCR snippets from library grep", async () => {
   });
 });
 
-function untypedSchemaPaths(schema: unknown, path = "$"): string[] {
-  if (schema === true || schema === false) return [`${path}`];
-  if (!schema || typeof schema !== "object") return [];
-  if (Array.isArray(schema)) {
+function untypedSchemaPaths(schema: JsonValue, path = "$"): string[] {
+  if (schema === true || schema === false) return [path];
+  if (Array.isArray(schema))
     return schema.flatMap((entry, index) =>
       untypedSchemaPaths(entry, `${path}[${index}]`),
     );
-  }
-  const node = schema as Record<string, unknown>;
+  const parsed = z.record(z.string(), z.json()).safeParse(schema);
+  if (!parsed.success) return [];
+  const node = parsed.data;
   const keys = Object.keys(node).filter((key) => key !== "$schema");
   const typed =
-    typeof node.type === "string" ||
+    z.string().safeParse(node.type).success ||
     Array.isArray(node.type) ||
     node.const !== undefined ||
     node.enum !== undefined ||
     node.anyOf !== undefined ||
     node.oneOf !== undefined ||
     node.allOf !== undefined ||
-    typeof node.$ref === "string";
+    z.string().safeParse(node.$ref).success;
   const hits = !typed && keys.length === 0 ? [path] : [];
   for (const [key, value] of Object.entries(node)) {
     if (key === "$schema" || key === "$ref") continue;
-    if (key === "properties" && value && typeof value === "object") {
-      for (const [name, property] of Object.entries(
-        value as Record<string, unknown>,
-      )) {
+    const properties =
+      key === "properties"
+        ? z.record(z.string(), z.json()).safeParse(value)
+        : null;
+    if (properties?.success) {
+      for (const [name, property] of Object.entries(properties.data))
         hits.push(
           ...untypedSchemaPaths(property, `${path}.properties.${name}`),
         );
-      }
-      continue;
-    }
-    if (key === "additionalProperties") {
-      hits.push(...untypedSchemaPaths(value, `${path}.additionalProperties`));
-      continue;
-    }
-    hits.push(...untypedSchemaPaths(value, `${path}.${key}`));
+    } else hits.push(...untypedSchemaPaths(value, `${path}.${key}`));
   }
   return hits;
 }
@@ -185,13 +196,15 @@ it("converts Agent tool inputs to JSON Schema providers can type-check", () => {
   };
   const failures = Object.entries(schemas).flatMap(([name, schema]) => {
     const json = convertSchemaToJsonSchema(schema);
-    return untypedSchemaPaths(json).map((path) => `${name}: ${path}`);
+    return untypedSchemaPaths(z.json().parse(json)).map(
+      (path) => `${name}: ${path}`,
+    );
   });
   expect(failures).toEqual([]);
 });
 
 it("broadcasts applyFilter and setOverlay for the Library grid", async () => {
-  const { broadcast } = await import("../../lib/broadcast");
+  const broadcast = mock.broadcast;
   const query = {
     combinator: "and" as const,
     rules: [

@@ -143,7 +143,7 @@ async function filesForItem(
       filename: videoFilename(index, videoExt),
       bytes: videoBuf,
       mimeType: item.mimeType,
-      ...(videoDims ?? {}),
+      ...videoDims,
     },
   ];
 
@@ -192,7 +192,7 @@ async function resolvePoster(args: {
       filename: posterFilename(args.index, ext),
       bytes: args.platformBytes,
       mimeType: args.platformMimeType ?? "image/jpeg",
-      ...(dims ?? {}),
+      ...dims,
     };
   }
   return buildFirstFramePoster(

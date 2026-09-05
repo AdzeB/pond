@@ -18,7 +18,7 @@ import {
 } from "./query-embeddings";
 import { knnVec, parseJsonVector } from "./vec-index";
 
-export const visualProbe = z.discriminatedUnion("kind", [
+const visualProbe = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("saveId"), id: z.string().min(1) }),
   z.object({
     kind: z.literal("vector"),
@@ -151,32 +151,76 @@ function knnLimit(limit: number): number {
   return Math.min(500, Math.max(limit * 8, 200));
 }
 
+export type RetrievalRecord = Omit<LibraryRetrievalHit, "score" | "channels">;
+export interface RetrievalStore {
+  records(
+    condition: SQL | undefined,
+    recentLimit?: number,
+  ): Promise<RetrievalRecord[]>;
+  admittedIds(condition: SQL | undefined): Promise<Array<{ id: string }>>;
+  lexicalCandidates(
+    match: string,
+    limit: number,
+  ): Array<{ id: string; rank: number }>;
+  neighbors(
+    kind: "text" | "clip",
+    vector: number[],
+    limit: number,
+  ): Array<{ id: string; distance: number }>;
+}
+
+const LexicalCandidatesSchema = z.array(
+  z.object({ id: z.string(), rank: z.number() }),
+);
+
+function retrievalStore(db: Db): RetrievalStore {
+  return {
+    async records(condition, recentLimit) {
+      const query = db.select(projection).from(saves).where(condition);
+      return recentLimit === undefined
+        ? await query
+        : await query.orderBy(desc(saves.savedAt)).limit(recentLimit);
+    },
+    async admittedIds(condition) {
+      return await db.select({ id: saves.id }).from(saves).where(condition);
+    },
+    lexicalCandidates(match, limit) {
+      return LexicalCandidatesSchema.parse(
+        db.$raw
+          .prepare(
+            `SELECT f.id AS id, bm25(saves_fts, 8.0, 3.0, 2.0, 2.0, 2.0, 1.5, 1.5, 1.0, 1.0) AS rank FROM saves_fts f WHERE saves_fts MATCH ? ORDER BY rank LIMIT ?`,
+          )
+          .all(match, limit),
+      );
+    },
+    neighbors: (kind, vector, limit) => knnVec(db.$raw, kind, vector, limit),
+  };
+}
+
 async function denseChannel(
-  db: Db,
+  store: RetrievalStore,
   kind: "text" | "visual",
   vector: VersionedVector,
   clauses: SQL[],
   limit: number,
 ): Promise<string[]> {
-  const ids = knnVec(
-    db.$raw,
-    kind === "text" ? "text" : "clip",
-    vector.vector,
-    knnLimit(limit),
-  ).map((hit) => hit.id);
+  const ids = store
+    .neighbors(
+      kind === "text" ? "text" : "clip",
+      vector.vector,
+      knnLimit(limit),
+    )
+    .map((hit) => hit.id);
   if (!ids.length) return [];
   const modelColumn = kind === "text" ? saves.embeddingModel : saves.clipModel;
-  const rows = await db
-    .select({ id: saves.id })
-    .from(saves)
-    .where(
-      and(...clauses, eq(modelColumn, vector.model), inArray(saves.id, ids)),
-    );
+  const rows = await store.admittedIds(
+    and(...clauses, eq(modelColumn, vector.model), inArray(saves.id, ids)),
+  );
   const admitted = new Set(rows.map((row) => row.id));
   return ids.filter((id) => admitted.has(id));
 }
 
-export async function resolveVisualProbe(
+async function resolveVisualProbe(
   db: Db,
   probe: z.infer<typeof visualProbe> | undefined,
 ): Promise<VersionedVector | undefined> {
@@ -198,8 +242,22 @@ export async function resolveVisualProbe(
   return { model: row.clipModel, vector };
 }
 
-export async function retrieveLibraryWithDb(
+async function retrieveLibraryWithDb(
   db: Db,
+  input: LibraryRetrievalInput,
+  scope: LibraryRetrievalScope = {},
+  queryEmbeddings: QueryEmbeddings = {},
+): Promise<LibraryRetrievalResult> {
+  return retrieveLibraryWithStore(
+    retrievalStore(db),
+    input,
+    scope,
+    queryEmbeddings,
+  );
+}
+
+export async function retrieveLibraryWithStore(
+  store: RetrievalStore,
   input: LibraryRetrievalInput,
   scope: LibraryRetrievalScope = {},
   queryEmbeddings: QueryEmbeddings = {},
@@ -210,12 +268,7 @@ export async function retrieveLibraryWithDb(
   const match = toFtsMatchQuery(query);
   const hasDense = Boolean(queryEmbeddings.text || queryEmbeddings.visual);
   if (!match && !hasDense) {
-    const rows = await db
-      .select(projection)
-      .from(saves)
-      .where(and(...clauses))
-      .orderBy(desc(saves.savedAt))
-      .limit(limit);
+    const rows = await store.records(and(...clauses), limit);
     const hits = rows.map((row, index) => ({
       ...row,
       score: 1 / (index + 1),
@@ -226,31 +279,17 @@ export async function retrieveLibraryWithDb(
 
   const ranked: Array<{ channel: RetrievalChannel; ids: string[] }> = [];
   if (match) {
-    const candidates = db.$raw
-      .prepare(
-        `SELECT f.id AS id, bm25(saves_fts, 8.0, 3.0, 2.0, 2.0, 2.0, 1.5, 1.5, 1.0, 1.0) AS rank
-         FROM saves_fts f
-         WHERE saves_fts MATCH ?
-         ORDER BY rank
-         LIMIT ?`,
-      )
-      .all(match, Math.max(limit * 8, 50)) as Array<{
-      id: string;
-      rank: number;
-    }>;
+    const candidates = store.lexicalCandidates(match, Math.max(limit * 8, 50));
     if (candidates.length) {
-      const rows = await db
-        .select({ id: saves.id })
-        .from(saves)
-        .where(
-          and(
-            ...clauses,
-            inArray(
-              saves.id,
-              candidates.map((row) => row.id),
-            ),
+      const rows = await store.admittedIds(
+        and(
+          ...clauses,
+          inArray(
+            saves.id,
+            candidates.map((row) => row.id),
           ),
-        );
+        ),
+      );
       const admitted = new Set(rows.map((row) => row.id));
       ranked.push({
         channel: "fts",
@@ -263,7 +302,7 @@ export async function retrieveLibraryWithDb(
 
   if (queryEmbeddings.text) {
     const ids = await denseChannel(
-      db,
+      store,
       "text",
       queryEmbeddings.text,
       clauses,
@@ -273,7 +312,7 @@ export async function retrieveLibraryWithDb(
   }
   if (queryEmbeddings.visual) {
     const ids = await denseChannel(
-      db,
+      store,
       "visual",
       queryEmbeddings.visual,
       clauses,
@@ -295,18 +334,15 @@ export async function retrieveLibraryWithDb(
     Math.max(limit * 4, 50),
   );
   if (!fused.length) return { hits: [], saves: [] };
-  const rows = await db
-    .select(projection)
-    .from(saves)
-    .where(
-      and(
-        ...clauses,
-        inArray(
-          saves.id,
-          fused.map((row) => row.id),
-        ),
+  const rows = await store.records(
+    and(
+      ...clauses,
+      inArray(
+        saves.id,
+        fused.map((row) => row.id),
       ),
-    );
+    ),
+  );
   const records = new Map(rows.map((row) => [row.id, row] as const));
   const hits = fused
     .flatMap(({ id, score }) => {

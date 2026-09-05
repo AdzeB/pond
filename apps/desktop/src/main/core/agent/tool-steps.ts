@@ -1,21 +1,25 @@
+import type { JsonObject } from "@pond/schema/json";
+import { z } from "zod";
 import type { AssistantToolStep } from "../../../shared/assistant";
 import { sourceExcerpt } from "../../../shared/assistant-text";
 import type { ToolSpec } from "./complete";
 
-const labels: Record<string, string> = {
-  searchLibrary: "Search library",
-  readSave: "Read Save",
-  grepLibrary: "Grep library",
-  libraryOverview: "Library overview",
-  listFolders: "Read folders",
-  applyFilter: "Apply filter",
-  setOverlay: "Set overlay",
-  citeSaves: "Cite Saves",
-  openSave: "Open Save",
-  findDuplicates: "Find duplicates",
-  describeSaves: "Describe images",
-  proposeChanges: "Prepare changes for review",
-};
+const labels = new Map<string, string>(
+  Object.entries({
+    searchLibrary: "Search library",
+    readSave: "Read Save",
+    grepLibrary: "Grep library",
+    libraryOverview: "Library overview",
+    listFolders: "Read folders",
+    applyFilter: "Apply filter",
+    setOverlay: "Set overlay",
+    citeSaves: "Cite Saves",
+    openSave: "Open Save",
+    findDuplicates: "Find duplicates",
+    describeSaves: "Describe images",
+    proposeChanges: "Prepare changes for review",
+  }),
+);
 
 export function trackTools(
   tools: ToolSpec[],
@@ -32,11 +36,11 @@ export function trackTools(
   return {
     steps: () => steps,
     tools: tools.map((tool) => {
-      const label = labels[tool.name];
+      const label = labels.get(tool.name);
       if (!label) return tool;
       return {
         ...tool,
-        execute: async (args: Record<string, unknown>) => {
+        execute: async (args: JsonObject) => {
           signal.throwIfAborted();
           const id = `step-${steps.length + 1}`;
           const started = Date.now();
@@ -47,9 +51,10 @@ export function trackTools(
               label,
               detail:
                 tool.name === "searchLibrary"
-                  ? typeof args.query === "string"
-                    ? sourceExcerpt(args.query, 150)
-                    : "Recent Saves"
+                  ? sourceExcerpt(
+                      z.string().catch("Recent Saves").parse(args.query),
+                      150,
+                    )
                   : undefined,
               status: "running",
             },

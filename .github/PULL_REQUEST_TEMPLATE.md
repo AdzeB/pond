@@ -29,7 +29,7 @@ Keep PRs focused: one feature or fix per PR.
 - [ ] `apps/desktop` (Electron main / preload / renderer)
 - [ ] `apps/extension` (WXT extension)
 - [ ] `packages/schema` (shared contracts)
-- [ ] `icons/` or other shared assets
+- [ ] `packages/icons` or other shared assets
 - [ ] CI / release / repo plumbing
 
 ## Test plan
@@ -42,7 +42,8 @@ Add manual repro steps for the desktop app or extension where relevant.
 -->
 
 - [ ] `pnpm typecheck` passes
-- [ ] `pnpm lint` passes
+- [ ] `pnpm lint` and `pnpm oxlint` pass
+- [ ] Offline tests pass
 - [ ] Manual testing notes:
 
 ## Checklist

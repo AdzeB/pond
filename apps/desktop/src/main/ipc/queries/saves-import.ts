@@ -10,6 +10,7 @@ import {
   classifyLibraryFile,
   libraryFilename,
 } from "../../../shared/file-format";
+import type { QueryResult } from "../../../shared/query-contracts";
 import { parseNetscapeBookmarks } from "../../core/bookmarks";
 import {
   dryRunEagleLibrary,
@@ -84,7 +85,7 @@ function clipboardFilePaths(): string[] {
   return [...new Set(out)];
 }
 
-export const savesImportQueries: QueryHandlerMap = {
+export const savesImportQueries = {
   "saves.pickImportPaths": query(
     z.object({ kind: z.enum(["files", "folders"]) }),
     (params) => pickImportPaths(params.kind),
@@ -195,7 +196,7 @@ export const savesImportQueries: QueryHandlerMap = {
       width: OptionalNumberParam,
       height: OptionalNumberParam,
     }),
-    async (params) => {
+    async (params): Promise<QueryResult<"saves.createManual">> => {
       const input: Parameters<typeof createManualSave>[0] = {
         title: params.title,
         url: params.url,
@@ -389,4 +390,4 @@ export const savesImportQueries: QueryHandlerMap = {
       return extractPageAssets(url);
     },
   ),
-};
+} satisfies QueryHandlerMap;

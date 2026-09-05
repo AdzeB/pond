@@ -317,15 +317,18 @@ async function readTextBody(path: string, size: number): Promise<string> {
   return buffer.toString("utf8");
 }
 
-async function readImageDimensions(
-  path: string,
-): Promise<{ width?: number; height?: number }> {
+interface ImageDimensions {
+  width?: number;
+  height?: number;
+}
+
+async function readImageDimensions(path: string): Promise<ImageDimensions> {
   try {
     const metadata = await sharp(path, {
       failOn: "none",
       pages: 1,
     }).metadata();
-    const out: { width?: number; height?: number } = {};
+    const out: ImageDimensions = {};
     if (metadata.width) out.width = metadata.width;
     if (metadata.height) out.height = metadata.height;
     return out;

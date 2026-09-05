@@ -268,7 +268,7 @@ export function packMasonry<T extends { aspect?: number }>(
 ): PackedLayout<T> {
   const cols = Math.max(1, Math.floor((containerWidth + gap) / (colMin + gap)));
   const colW = (containerWidth - gap * (cols - 1)) / cols;
-  const heights = new Array<number>(cols).fill(0);
+  const heights = Array.from({ length: cols }, () => 0);
   const items: PackedSave<T>[] = [];
   for (const save of saves) {
     const mediaH = colW / (save.aspect ?? 1);
@@ -313,7 +313,7 @@ export function packColumns<T extends { aspect?: number }>(
   columnCount: number,
 ): T[][] {
   const columns: T[][] = Array.from({ length: columnCount }, () => []);
-  const heights = new Array<number>(columnCount).fill(0);
+  const heights = Array.from({ length: columnCount }, () => 0);
   for (const save of saves) {
     let shortest = 0;
     for (let i = 1; i < columnCount; i += 1) {

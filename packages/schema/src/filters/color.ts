@@ -1,3 +1,6 @@
+import { z } from "zod";
+import type { PredicateValue } from "./types";
+
 export interface Rgb {
   r: number;
   g: number;
@@ -13,33 +16,27 @@ export function parseHex(hex: string): Rgb | null {
 
 export const DEFAULT_COLOR_TOLERANCE = 60;
 
+const ColorMatch = z.union([
+  z.string().transform((hex) => ({ hex, tolerance: DEFAULT_COLOR_TOLERANCE })),
+  z.object({
+    hex: z.string(),
+    tolerance: z
+      .number()
+      .finite()
+      .min(0)
+      .max(150)
+      .default(DEFAULT_COLOR_TOLERANCE),
+  }),
+]);
+
 export function readColorMatch(
-  value: unknown,
+  value: PredicateValue | { hex: string; tolerance?: number } | undefined,
 ): { hex: string; tolerance: number } | null {
-  const raw =
-    typeof value === "string"
-      ? { hex: value, tolerance: DEFAULT_COLOR_TOLERANCE }
-      : value;
-  if (
-    !raw ||
-    typeof raw !== "object" ||
-    !("hex" in raw) ||
-    typeof raw.hex !== "string" ||
-    !parseHex(raw.hex)
-  )
-    return null;
-  const tolerance =
-    "tolerance" in raw ? raw.tolerance : DEFAULT_COLOR_TOLERANCE;
-  if (
-    typeof tolerance !== "number" ||
-    !Number.isFinite(tolerance) ||
-    tolerance < 0 ||
-    tolerance > 150
-  )
-    return null;
+  const parsed = ColorMatch.safeParse(value);
+  if (!parsed.success || !parseHex(parsed.data.hex)) return null;
   return {
-    hex: `#${raw.hex.trim().replace(/^#/, "").toLowerCase()}`,
-    tolerance,
+    hex: `#${parsed.data.hex.trim().replace(/^#/, "").toLowerCase()}`,
+    tolerance: parsed.data.tolerance,
   };
 }
 

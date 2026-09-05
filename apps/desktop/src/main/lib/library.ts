@@ -121,7 +121,7 @@ export async function writeSaveInfo(save: Save): Promise<void> {
     if (f.height) entry.height = f.height;
     return entry;
   });
-  const { folderIdsForSave } = await import("../core/folders");
+  const { folderIdsForSave } = await import("../core/folder-memberships");
   const folderIds = await folderIdsForSave(save.id);
   await writeInfoFiles(
     save.id,
@@ -149,7 +149,7 @@ export async function writeItemFiles(
     sha256: sha256(f.buf),
     size: f.buf.length,
   }));
-  const { folderIdsForSave } = await import("../core/folders");
+  const { folderIdsForSave } = await import("../core/folder-memberships");
   const folderIds = await folderIdsForSave(id);
   await writeInfoFiles(
     id,

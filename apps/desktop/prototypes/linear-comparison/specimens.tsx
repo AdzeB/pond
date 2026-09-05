@@ -915,12 +915,14 @@ export function Specimen({ entry }: { entry: Entry }) {
             {
               id: "name",
               header: "Collection",
+              sortLabel: "Collection",
               cell: (row) => row.name,
               accessor: (row) => row.name,
             },
             {
               id: "count",
               header: "Items",
+              sortLabel: "Items",
               cell: (row) => row.count,
               accessor: (row) => row.count,
               width: "72px",

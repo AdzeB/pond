@@ -1,9 +1,11 @@
 import { sql } from "drizzle-orm";
+import { z } from "zod";
 import { saves } from "../../db";
 import { defineField } from "./descriptor";
 
-function extension(path: unknown): string | null {
-  if (typeof path !== "string") return null;
+const FilePath = z.object({ path: z.string() });
+
+function extension(path: string): string | null {
   const name = path.split(/[\\/]/).at(-1)?.split(/[?#]/, 1)[0] ?? "";
   const dot = name.lastIndexOf(".");
   if (dot <= 0 || dot === name.length - 1) return null;
@@ -18,11 +20,10 @@ export const format = defineField({
   project: (save) => [
     ...new Set(
       (save.files ?? [])
-        .map((file) =>
-          file && typeof file === "object" && "path" in file
-            ? extension(file.path)
-            : null,
-        )
+        .map((file) => {
+          const parsed = FilePath.safeParse(file);
+          return parsed.success ? extension(parsed.data.path) : null;
+        })
         .filter((value): value is string => value !== null),
     ),
   ],

@@ -11,7 +11,8 @@ import { resolveMainOut, resolvePreload } from "./lib/resolve-preload";
 import { resolveTheme } from "./theme";
 import { ensureTray, type TrayHandle } from "./tray";
 
-let mainWindow: BrowserWindow | null = null;
+import { mainWindowState } from "./window-state";
+
 let tray: TrayHandle | null = null;
 let trayRefreshQueued = false;
 let closeToTrayEnabled = false;
@@ -32,7 +33,7 @@ function usableWindowBounds(
 }
 
 export function getMainWindow(): BrowserWindow | null {
-  return mainWindow;
+  return mainWindowState.current;
 }
 
 export function hasTray(): boolean {
@@ -57,7 +58,7 @@ export function queueTrayRefresh(): void {
 }
 
 function navigateMain(route: string): void {
-  mainWindow?.webContents.send(IPC.nav, route);
+  mainWindowState.current?.webContents.send(IPC.nav, route);
 }
 
 interface ShellHint {
@@ -77,7 +78,7 @@ interface ShellHint {
 }
 
 export async function syncShellChrome(): Promise<void> {
-  const win = mainWindow;
+  const win = mainWindowState.current;
   if (!win || win.isDestroyed()) return;
 
   const resolved = await resolveTheme();
@@ -175,7 +176,7 @@ export async function createWindow(): Promise<BrowserWindow> {
     if (!closeToTrayEnabled) return;
     if (!tray) return;
     if (win.isDestroyed()) return;
-    if (mainWindow !== win) return;
+    if (mainWindowState.current !== win) return;
     event.preventDefault();
     win.hide();
     if (process.platform === "darwin") app.dock?.hide();
@@ -259,7 +260,7 @@ export async function createWindow(): Promise<BrowserWindow> {
     await win.loadFile(resolveMainOut("../renderer/index.html"));
   }
 
-  mainWindow = win;
+  mainWindowState.current = win;
   void applyAppIcon(prefs?.window.appIcon);
 
   if (!nativeThemeListenerAttached) {
@@ -273,10 +274,10 @@ export async function createWindow(): Promise<BrowserWindow> {
 }
 
 async function ensureMainWindow(): Promise<BrowserWindow> {
-  if (!mainWindow || mainWindow.isDestroyed()) {
+  if (!mainWindowState.current || mainWindowState.current.isDestroyed()) {
     return createWindow();
   }
-  return mainWindow;
+  return mainWindowState.current;
 }
 
 export async function openLibraryWindow(): Promise<void> {
@@ -291,12 +292,12 @@ export async function handleActivate(): Promise<void> {
   if (BrowserWindow.getAllWindows().length === 0) {
     await createWindow();
   } else {
-    mainWindow?.show();
+    mainWindowState.current?.show();
   }
 }
 
 export function focusedOrMain(): BrowserWindow | null {
-  const target = mainWindow ?? BrowserWindow.getFocusedWindow();
+  const target = mainWindowState.current ?? BrowserWindow.getFocusedWindow();
   if (!target || target.isDestroyed()) return null;
   if (target.isMinimized()) target.restore();
   target.show();

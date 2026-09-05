@@ -89,7 +89,7 @@ function toHistoryRow(row: HistoryRow): DownloadHistoryRow | null {
   };
 }
 
-export const downloadsQueries: QueryHandlerMap = {
+export const downloadsQueries = {
   "pipeline.status": query(z.object({}), () => pipelineSnapshot()),
 
   /** Task rows change state without a sync action, so the downloads view polls for what is in flight. */
@@ -171,4 +171,4 @@ export const downloadsQueries: QueryHandlerMap = {
       };
     },
   ),
-};
+} satisfies QueryHandlerMap;

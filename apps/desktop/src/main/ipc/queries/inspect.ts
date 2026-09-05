@@ -19,7 +19,7 @@ import {
   StringParam,
 } from "./params";
 
-export const inspectQueries: QueryHandlerMap = {
+export const inspectQueries = {
   "preview.pin": query(z.object({ id: StringParam }), async (params) => {
     if (!params.id) return { ok: false };
     await openPreviewWindow(params.id);
@@ -114,4 +114,4 @@ export const inspectQueries: QueryHandlerMap = {
     await startAutoImport();
     return { ok: true, path: result.filePaths[0] };
   },
-};
+} satisfies QueryHandlerMap;

@@ -10,15 +10,21 @@ export async function loadAdapter(input: {
   const key = input.apiKey ?? "";
   if (input.provider === "anthropic") {
     const { createAnthropicChat } = await import("@tanstack/ai-anthropic");
+    // SAFETY: provider catalogs and compatible endpoints accept model IDs beyond the SDK static catalog; the factory forwards this ID unchanged.
     return createAnthropicChat(
-      (input.model || "claude-opus-5") as "claude-sonnet-4-5",
+      (input.model || "claude-opus-5") as Parameters<
+        typeof createAnthropicChat
+      >[0],
       key,
     );
   }
   if (input.provider === "gemini") {
     const { createGeminiChat } = await import("@tanstack/ai-gemini");
+    // SAFETY: provider catalogs and compatible endpoints accept model IDs beyond the SDK static catalog; the factory forwards this ID unchanged.
     return createGeminiChat(
-      (input.model || "gemini-3.1-pro-preview") as "gemini-2.5-flash",
+      (input.model || "gemini-3.1-pro-preview") as Parameters<
+        typeof createGeminiChat
+      >[0],
       key,
     );
   }
@@ -32,8 +38,11 @@ export async function loadAdapter(input: {
   }
   if (input.provider === "lmstudio" || input.provider === "compatible") {
     const { createOpenaiChatCompletions } = await import("@tanstack/ai-openai");
+    // SAFETY: provider catalogs and compatible endpoints accept model IDs beyond the SDK static catalog; the factory forwards this ID unchanged.
     return createOpenaiChatCompletions(
-      (input.model || "gpt-5.6-sol") as "gpt-4.1-mini",
+      (input.model || "gpt-5.6-sol") as Parameters<
+        typeof createOpenaiChatCompletions
+      >[0],
       key || "local",
       {
         baseURL: input.baseUrl,
@@ -42,8 +51,9 @@ export async function loadAdapter(input: {
   }
   if (input.provider === "openai") {
     const { createOpenaiChat } = await import("@tanstack/ai-openai");
+    // SAFETY: provider catalogs and compatible endpoints accept model IDs beyond the SDK static catalog; the factory forwards this ID unchanged.
     return createOpenaiChat(
-      (input.model || "gpt-5.6-sol") as "gpt-4.1-mini",
+      (input.model || "gpt-5.6-sol") as Parameters<typeof createOpenaiChat>[0],
       key,
     );
   }

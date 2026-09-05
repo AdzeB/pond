@@ -134,7 +134,7 @@ export async function executeBatch(
 
   const withBatch = txs.map((tx) => ({
     ...tx,
-    meta: { ...(tx.meta ?? {}), batchId },
+    meta: { ...tx.meta, batchId },
   }));
 
   /** File writes happen outside the transaction; better-sqlite3 cannot await mid-transaction. */
@@ -227,7 +227,7 @@ async function applyToDisk(tx: Transaction): Promise<void> {
           return;
         }
         // SAFETY: `current` is a full row from the DB; the patch only narrows its columns.
-        const merged = { ...current, ...(tx.patch ?? {}) } as Save;
+        const merged = { ...current, ...tx.patch } as Save;
         log.info(
           "[pond executor] healing orphan: rebuilding items dir",
           tx.id,

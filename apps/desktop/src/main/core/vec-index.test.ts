@@ -29,13 +29,15 @@ describe("vec-index knn", () => {
     let Database: typeof import("better-sqlite3");
     try {
       Database = (await import("better-sqlite3")).default;
-    } catch {
+    } catch (error) {
+      if (process.versions.electron) throw error;
       return;
     }
     let db: InstanceType<typeof Database>;
     try {
       db = new Database(":memory:");
-    } catch {
+    } catch (error) {
+      if (process.versions.electron) throw error;
       return;
     }
     expect(loadSqliteVec(db)).toBe(true);
@@ -52,13 +54,15 @@ describe("vec-index knn", () => {
     let Database: typeof import("better-sqlite3");
     try {
       Database = (await import("better-sqlite3")).default;
-    } catch {
+    } catch (error) {
+      if (process.versions.electron) throw error;
       return;
     }
     let db: InstanceType<typeof Database>;
     try {
       db = new Database(":memory:");
-    } catch {
+    } catch (error) {
+      if (process.versions.electron) throw error;
       return;
     }
     expect(loadSqliteVec(db)).toBe(true);

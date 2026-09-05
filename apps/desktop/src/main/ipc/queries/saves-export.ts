@@ -26,7 +26,7 @@ function sanitizeName(s: string): string {
 
 const IdListParams = z.object({ ids: StringListParam });
 
-export const savesExportQueries: QueryHandlerMap = {
+export const savesExportQueries = {
   "saves.exportFile": query(
     z.object({ id: StringParam, fileIndex: FileIndexParam }),
     async (params) => {
@@ -183,4 +183,4 @@ export const savesExportQueries: QueryHandlerMap = {
     await writeFile(picked.filePath, csv, "utf8");
     return { ok: true as const, count: rows.length, path: picked.filePath };
   }),
-};
+} satisfies QueryHandlerMap;

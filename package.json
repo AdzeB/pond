@@ -22,19 +22,22 @@
     "dev": "turbo run dev",
     "dev:desktop": "pnpm --filter @pond/desktop dev",
     "generate": "turbo run generate",
-    "lint": "biome check . --write --unsafe",
+    "lint": "biome ci .",
     "lint:check": "biome ci .",
     "knip": "knip",
     "oxlint": "oxlint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "perf:check": "node scripts/check-performance-budgets.mjs",
-    "new-source": "node ./scripts/new-source.mjs",
     "dist": "turbo run dist",
     "dist:mac": "pnpm --filter @pond/desktop dist:mac",
     "dist:win": "pnpm --filter @pond/desktop dist:win",
     "dist:linux": "pnpm --filter @pond/desktop dist:linux",
-    "prepare": "husky"
+    "prepare": "husky",
+    "lint:fix": "biome check . --write",
+    "format": "biome format . --write",
+    "check": "pnpm lint && pnpm oxlint && pnpm architecture:check && pnpm knip && pnpm typecheck && pnpm test",
+    "architecture:check": "node --test scripts/check-architecture.test.mjs && node scripts/check-architecture.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.3",
@@ -44,6 +47,7 @@
     "@types/node": "catalog:",
     "husky": "^9.1.7",
     "knip": "^6.25.0",
+    "oxc-parser": "0.137.0",
     "oxlint": "1.80.0",
     "turbo": "^2.10.4",
     "typescript": "catalog:"

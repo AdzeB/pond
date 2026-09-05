@@ -1,22 +1,42 @@
-import { BrowserWindow, dialog, type OpenDialogOptions } from "electron";
+import type { OpenDialogOptions, OpenDialogReturnValue } from "electron";
+import { z } from "zod";
+
+export const ImportKindSchema = z.enum(["files", "folders"]);
+type ImportKind = z.infer<typeof ImportKindSchema>;
+
+interface ImportDialog<Window> {
+  focusedWindow: () => Window | null;
+  open: (
+    window: Window | null,
+    options: OpenDialogOptions,
+  ) => Promise<OpenDialogReturnValue>;
+}
+
+export function createImportPicker<Window>(dialog: ImportDialog<Window>) {
+  return async (kind: ImportKind): Promise<{ paths: string[] }> => {
+    const mode = ImportKindSchema.parse(kind);
+    const options: OpenDialogOptions = {
+      title: mode === "folders" ? "Import Folders" : "Import Files",
+      buttonLabel: "Import",
+      properties: [
+        mode === "folders" ? "openDirectory" : "openFile",
+        "multiSelections",
+      ],
+    };
+    const result = await dialog.open(dialog.focusedWindow(), options);
+    return { paths: result.canceled ? [] : result.filePaths };
+  };
+}
 
 export async function pickImportPaths(
-  kind: unknown,
+  kind: ImportKind,
 ): Promise<{ paths: string[] }> {
-  if (kind !== "files" && kind !== "folders") {
-    throw new Error("Invalid import kind");
-  }
-  const win = BrowserWindow.getFocusedWindow();
-  const options: OpenDialogOptions = {
-    title: kind === "folders" ? "Import Folders" : "Import Files",
-    buttonLabel: "Import",
-    properties: [
-      kind === "folders" ? "openDirectory" : "openFile",
-      "multiSelections",
-    ],
-  };
-  const result = win
-    ? await dialog.showOpenDialog(win, options)
-    : await dialog.showOpenDialog(options);
-  return { paths: result.canceled ? [] : result.filePaths };
+  const { BrowserWindow, dialog } = await import("electron");
+  return createImportPicker({
+    focusedWindow: () => BrowserWindow.getFocusedWindow(),
+    open: (window, options) =>
+      window
+        ? dialog.showOpenDialog(window, options)
+        : dialog.showOpenDialog(options),
+  })(kind);
 }

@@ -1,0 +1,259 @@
+import type { ComparatorId } from "@pond/schema/filters/types";
+import type { AskSort } from "@/features/search/lib/nl-query";
+
+export const FILLER = new Set([
+  "show",
+  "me",
+  "all",
+  "my",
+  "the",
+  "a",
+  "an",
+  "find",
+  "get",
+  "give",
+  "see",
+  "view",
+  "display",
+  "list",
+  "search",
+  "of",
+  "that",
+  "i",
+  "have",
+  "having",
+  "anything",
+  "everything",
+  "stuff",
+  "things",
+  "thing",
+  "items",
+  "item",
+  "saves",
+  "save",
+  "saved",
+  "please",
+  "want",
+  "only",
+  "just",
+  "some",
+  "to",
+  "is",
+  "are",
+  "was",
+  "were",
+  "from",
+  "in",
+  "on",
+  "during",
+  "within",
+  "around",
+  "ago",
+  "between",
+]);
+
+export const NEGATORS = new Set([
+  "not",
+  "no",
+  "without",
+  "except",
+  "excluding",
+]);
+
+const ROLLING_RAW: ReadonlyArray<[string, string]> = [
+  ["past 6 months", "-P6M"],
+  ["last 6 months", "-P6M"],
+  ["past 3 months", "-P3M"],
+  ["last 3 months", "-P3M"],
+  ["past three months", "-P3M"],
+  ["past 30 days", "-P1M"],
+  ["last 30 days", "-P1M"],
+  ["past 7 days", "-P1W"],
+  ["last 7 days", "-P1W"],
+  ["past 3 days", "-P3D"],
+  ["last 3 days", "-P3D"],
+  ["past 2 days", "-P2D"],
+  ["last 2 days", "-P2D"],
+  ["past 24 hours", "-P1D"],
+  ["last few days", "-P3D"],
+  ["past week", "-P1W"],
+  ["last week", "-P1W"],
+  ["past month", "-P1M"],
+  ["last month", "-P1M"],
+  ["past year", "-P1Y"],
+  ["last year", "-P1Y"],
+  ["past day", "-P1D"],
+  ["recently", "-P1W"],
+  ["recent", "-P1W"],
+];
+
+export const ROLLING_WINDOWS: ReadonlyArray<[string, string]> = [
+  ...ROLLING_RAW,
+].sort((a, b) => b[0].split(/\s+/).length - a[0].split(/\s+/).length);
+
+export const TYPE_SYNONYMS = new Map<string, string>([
+  ["video", "video"],
+  ["videos", "video"],
+  ["clip", "video"],
+  ["clips", "video"],
+  ["movie", "video"],
+  ["movies", "video"],
+  ["image", "image"],
+  ["images", "image"],
+  ["photo", "image"],
+  ["photos", "image"],
+  ["pic", "image"],
+  ["pics", "image"],
+  ["picture", "image"],
+  ["pictures", "image"],
+  ["gif", "image"],
+  ["gifs", "image"],
+  ["link", "link"],
+  ["links", "link"],
+  ["url", "link"],
+  ["urls", "link"],
+  ["article", "link"],
+  ["articles", "link"],
+  ["website", "link"],
+  ["websites", "link"],
+  ["text", "text"],
+  ["note", "text"],
+  ["notes", "text"],
+]);
+
+export const LIST_SYNONYMS = new Map<string, string>([
+  ["liked", "liked"],
+  ["likes", "liked"],
+  ["upvoted", "liked"],
+  ["upvote", "liked"],
+  ["bookmarked", "saved"],
+  ["bookmarks", "saved"],
+  ["favorites", "saved"],
+  ["favourites", "saved"],
+  ["watch later", "saved"],
+]);
+
+export const ORIENTATION_SYNONYMS = new Map<string, string>([
+  ["square", "square"],
+  ["squares", "square"],
+  ["landscape", "landscape"],
+  ["landscapes", "landscape"],
+  ["horizontal", "landscape"],
+  ["portrait", "portrait"],
+  ["portraits", "portrait"],
+  ["vertical", "portrait"],
+  ["panoramic", "panoramic-landscape"],
+  ["panorama", "panoramic-landscape"],
+  ["banner", "panoramic-landscape"],
+  ["wide banner", "panoramic-landscape"],
+  ["tall portrait", "panoramic-portrait"],
+]);
+
+export const ASPECT_SYNONYMS = new Map<string, string>([
+  ["1:1", "1:1"],
+  ["4:3", "4:3"],
+  ["3:4", "3:4"],
+  ["16:9", "16:9"],
+  ["9:16", "9:16"],
+  ["widescreen", "16:9"],
+  ["story ratio", "9:16"],
+]);
+
+export const SOURCE_SYNONYMS = new Map<string, string>([
+  ["twitter", "x.com"],
+  ["tweet", "x.com"],
+  ["tweets", "x.com"],
+  ["x", "x.com"],
+  ["arena", "are.na"],
+  ["are.na", "are.na"],
+  ["pinterest", "pinterest.com"],
+  ["pin", "pinterest.com"],
+  ["pins", "pinterest.com"],
+  ["instagram", "instagram.com"],
+  ["insta", "instagram.com"],
+  ["ig", "instagram.com"],
+  ["tiktok", "tiktok.com"],
+  ["youtube", "youtube.com"],
+  ["yt", "youtube.com"],
+  ["reddit", "reddit.com"],
+  ["threads", "threads.net"],
+  ["cosmos", "cosmos.so"],
+  ["local", "local"],
+]);
+
+export const NUMBER_WORDS = new Map<string, number>([
+  ["zero", 0],
+  ["one", 1],
+  ["two", 2],
+  ["three", 3],
+  ["four", 4],
+  ["five", 5],
+  ["six", 6],
+  ["seven", 7],
+  ["eight", 8],
+  ["nine", 9],
+  ["ten", 10],
+  ["eleven", 11],
+  ["twelve", 12],
+]);
+
+export const COUNT_PHRASES: ReadonlyArray<[string[], ComparatorId]> = [
+  [["more", "than"], "gt"],
+  [["greater", "than"], "gt"],
+  [["at", "least"], "gte"],
+  [["fewer", "than"], "lt"],
+  [["less", "than"], "lt"],
+  [["at", "most"], "lte"],
+  [["no", "more", "than"], "lte"],
+  [["up", "to"], "lte"],
+  [["over"], "gt"],
+  [["under"], "lt"],
+  [["exactly"], "eq"],
+];
+
+export const MULTI_WORDS = new Set(["multiple", "several", "many"]);
+
+export const DURATION_UNITS = new Map<string, number>([
+  ["s", 1],
+  ["sec", 1],
+  ["secs", 1],
+  ["second", 1],
+  ["seconds", 1],
+  ["m", 60],
+  ["min", 60],
+  ["mins", 60],
+  ["minute", 60],
+  ["minutes", 60],
+  ["h", 3600],
+  ["hr", 3600],
+  ["hrs", 3600],
+  ["hour", 3600],
+  ["hours", 3600],
+]);
+
+export const COMBINED_DURATION_RE =
+  /^(\d+(?:\.\d+)?)(s|secs?|seconds?|m|mins?|minutes?|h|hrs?|hours?)$/;
+
+export const DURATION_PHRASES: ReadonlyArray<[string[], ComparatorId]> = [
+  [["longer", "than"], "gt"],
+  [["shorter", "than"], "lt"],
+  ...COUNT_PHRASES,
+];
+
+export const SORT_WORDS = new Map<string, AskSort>([
+  ["newest", { key: "savedAt", dir: "desc" }],
+  ["latest", { key: "savedAt", dir: "desc" }],
+  ["oldest", { key: "savedAt", dir: "asc" }],
+  ["earliest", { key: "savedAt", dir: "asc" }],
+  ["longest", { key: "duration", dir: "desc" }],
+  ["shortest", { key: "duration", dir: "asc" }],
+]);
+
+export const WITH_WORDS = new Set([
+  "with",
+  "has",
+  "have",
+  "having",
+  "contains",
+]);
+export const WITHOUT_WORDS = new Set(["without", "no", "missing", "lacks"]);

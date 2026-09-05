@@ -3,27 +3,40 @@
 ## General
 
 - **Node** 22 and **pnpm** 11 (see `.nvmrc` and `package.json` engines).
-- **Style**: [Biome](https://biomejs.dev/) — `pnpm exec biome check .` before pushing.
+- **Style**: [Biome](https://biomejs.dev/) handles formatting; `pnpm lint` and `pnpm oxlint` check the repository standards.
 - **Commits**: [Conventional Commits](https://www.conventionalcommits.org/) enforced by commitlint + husky.
-- **Checks**: `pnpm typecheck`, `pnpm test`, `pnpm build` should pass locally; CI runs the same on every PR.
-- **PRs**: Keep scope focused; link issues when relevant. Generated files (`docs/supported-sources.md`, icons) must stay in sync — run `pnpm generate` after descriptor changes.
+- **Checks**: run `pnpm check` and `pnpm build` before opening a PR. CI also checks generated source documentation.
+- **PRs**: Keep scope focused; link issues when relevant. Generated source documentation must stay in sync: run `pnpm generate` after descriptor changes. Icon regeneration has its own [licensed tooling requirements](packages/icons/README.md#regenerating-ui-glyphs).
+
+## Engineering standards
+
+Read [code standards](docs/contributing/code-standards.md) for naming, interfaces, React, types, and tests. Read [desktop architecture](docs/contributing/architecture.md) when adding a feature or changing ownership or process interfaces. Both human and automated contributors use these documents.
+
+`pnpm check` runs lint, custom rules, architecture checks, type checks, and offline tests. Lint commands are read-only; desktop type checking regenerates the route tree. `pnpm build` verifies production bundles and performance budgets. `pnpm lint:fix` applies safe fixes explicitly; `pnpm format` formats files. Pre-commit checks never rewrite your working tree.
+
+Use `pnpm knip` when removing unused code or dependencies. Its findings require checking worker, HTML, gallery, and dynamic entrypoints; it is currently separate from `pnpm check`.
+
+`ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts` runs the native database checks with Electron’s ABI. CI runs this separately from the Node test suite.
+
+After building the desktop, `pnpm --filter @pond/desktop exec electron scripts/smoke-desktop.cjs` verifies visible startup and preload queries using a temporary isolated library. It requires a desktop session. The component galleries build with `pnpm --filter @pond/desktop exec vite build --config components.vite.config.ts`.
+
+Use temporary libraries and fixtures in tests. Never require a contributor's personal library, source accounts, or API keys for a PR check. Keep live source tests separate.
 
 ## Add a source
 
-Pond is designed so that adding a new source (a site Pond can capture saves
-from) is essentially **one extractor file plus one descriptor line**. Almost
-everything else is either derived from the descriptor or forced by the
-TypeScript compiler, so you cannot ship a half-wired source by accident.
+A source is a site Pond can capture saves from. Add its shared descriptor and
+main-process extractor, then update the registries and tests listed below.
+The descriptor supplies common facts; total TypeScript records catch missing
+registrations.
 
 The model is borrowed from [yt-dlp](https://github.com/yt-dlp/yt-dlp): a
 source's URL matching, auth, and extraction logic live together, and embedded
 tests travel with the code.
 
-### TL;DR
+### Workflow
 
 ```bash
-pnpm new-source <id>   # e.g. pnpm new-source vimeo
-# fill in the generated descriptor + extractor
+# Add the descriptor, extractor, and registry entries described below.
 pnpm test              # offline tests
 pnpm generate          # refresh docs/supported-sources.md
 pnpm typecheck         # fix every error the compiler points at
@@ -91,7 +104,7 @@ resolved config; never read `descriptor.sync` directly.
 Add the instance to `EXTRACTORS` in
 `apps/desktop/src/main/core/pipeline/extractors/index.ts`. The record is
 `satisfies Record<ExternalSource, Extractor>`, so a missing source is a compile
-error. (`pnpm new-source` does this for you.)
+error.
 
 ### 4. Fill the compiler-forced registries
 
@@ -100,7 +113,7 @@ list exactly what's missing after you add the source. Fill each:
 
 | File | What to add |
 | --- | --- |
-| `apps/desktop/src/renderer/src/features/sources/registry.ts` | `SOURCE_ICONS` — a brand icon (add the SVG to `@pond/icons` first) |
+| `apps/desktop/src/renderer/src/features/sources/lib/registry.ts` | `SOURCE_LOGOS` — a brand icon (add the SVG to `@pond/icons` first) |
 | `apps/desktop/src/main/core/pipeline/specs.ts` | `CAPTURE_EXPECTATIONS` — required/recommended capture fields |
 | `apps/desktop/src/main/core/refresh/harvest/index.ts` | `REGISTRY` — a `Harvester` (copy the throwing `local` entry if the source has no list sync) |
 | `apps/desktop/src/main/core/refresh/scrape-window/pool.ts` | `PER_SOURCE_CAP` — concurrent scrape-window cap |
@@ -112,7 +125,7 @@ Offline tests (`pnpm test`) run a generic harness over every extractor's
 embedded `tests`: URL routing, `source_id` parsing, and `handleFromPath`
 parsing, plus registry/descriptor totality. They gate PR CI.
 
-Live checks (`pnpm test:live`) hit the network to confirm each sample URL is
+Live checks (`pnpm --filter @pond/desktop test:live`) hit the network to confirm each sample URL is
 still reachable. They are flaky/auth-walled, so they run on a nightly schedule
 (`.github/workflows/sources-live.yml`), not on PRs.
 

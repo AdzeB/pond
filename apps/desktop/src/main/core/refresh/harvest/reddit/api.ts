@@ -101,7 +101,7 @@ export async function fetchRedditAvatar(
   return avatarFromMeJson(about.json);
 }
 
-export async function harvestRedditListingJson(
+async function harvestRedditListingJson(
   args: ListHarvestArgs & { accountKey?: string },
   kind: RedditListingKind,
   partition?: string,
@@ -157,13 +157,6 @@ export async function harvestRedditListingJson(
     `[pond reddit-api] ${kind} json handle=${handle} entries=${entries.length} pages=200`,
   );
   return { ok: true, entries, reachedEnd: false, seen: entries.length };
-}
-
-export async function harvestRedditSavedJson(
-  args: ListHarvestArgs & { accountKey?: string },
-  partition?: string,
-): Promise<ListHarvestResult> {
-  return harvestRedditListingJson(args, "saved", partition);
 }
 
 export async function harvestRedditLists(

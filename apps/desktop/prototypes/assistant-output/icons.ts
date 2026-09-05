@@ -13,5 +13,5 @@ export { IconGridLayoutColsOutline18 as Panel } from "@pond/icons/generated/outl
 export { IconLink2Outline18 as Link } from "@pond/icons/generated/outline/18/IconLink2Outline18";
 export { IconMagnifierOutline18 as Search } from "@pond/icons/generated/outline/18/IconMagnifierOutline18";
 export { IconPlusOutline18 as Plus } from "@pond/icons/generated/outline/18/IconPlusOutline18";
-export { IconTagsOutline18 as Tags } from "@pond/icons/generated/outline/18/IconTagsOutline18";
+;
 export { IconXmarkOutline18 as Close } from "@pond/icons/generated/outline/18/IconXmarkOutline18";

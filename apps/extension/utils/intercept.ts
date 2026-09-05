@@ -3,7 +3,9 @@
  * Patches fetch/XHR/sendBeacon once per page and fans each request out to registered source interceptors.
  */
 
+import { safeParse } from "zod/v4/core";
 import type { PondMessage } from "@/utils/types";
+import { TextValue } from "./json";
 
 const POND_EVENT = "pond:capture";
 
@@ -108,12 +110,13 @@ type InterceptedBody = Document | BodyInit | null | undefined;
 
 async function bodyToText(body: InterceptedBody): Promise<string | null> {
   if (body == null) return null;
-  if (typeof body === "string") return body;
+  const text = safeParse(TextValue, body);
+  if (text.success) return text.data;
   if (body instanceof URLSearchParams) return body.toString();
   if ("FormData" in globalThis && body instanceof FormData) {
     const params = new URLSearchParams();
     body.forEach((value, key) => {
-      params.append(key, typeof value === "string" ? value : "[file]");
+      params.append(key, value instanceof File ? "[file]" : value);
     });
     return params.toString();
   }

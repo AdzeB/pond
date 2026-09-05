@@ -1,7 +1,7 @@
 import { MotionConfig } from "motion/react";
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { ComponentsPage } from "./src/components/dev/components";
+import { ComponentsPage } from "./src/dev/components/components";
 import "./src/styles.css";
 
 function selectedComponent() {

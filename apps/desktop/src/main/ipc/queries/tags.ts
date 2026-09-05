@@ -10,7 +10,7 @@ import {
 const NameParams = z.object({ name: StringParam });
 const RenameParams = z.object({ from: StringParam, to: StringParam });
 
-export const tagsQueries: QueryHandlerMap = {
+export const tagsQueries = {
   async "tags.list"() {
     const { listTags } = await import("../../core/tags");
     return await listTags();
@@ -75,4 +75,4 @@ export const tagsQueries: QueryHandlerMap = {
       return await setSaveTags(params.saveId, params.tags);
     },
   ),
-};
+} satisfies QueryHandlerMap;

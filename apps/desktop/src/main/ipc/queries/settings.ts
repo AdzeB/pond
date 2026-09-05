@@ -61,7 +61,7 @@ const PrefsPatchParamsSchema = z.looseObject({
     .optional(),
 });
 
-export const settingsQueries: QueryHandlerMap = {
+export const settingsQueries = {
   async "settings.get"() {
     const db = await getGlobalDb();
     const rows = await db
@@ -152,4 +152,4 @@ export const settingsQueries: QueryHandlerMap = {
     }
     return { ok: true, prefs: next };
   }),
-};
+} satisfies QueryHandlerMap;

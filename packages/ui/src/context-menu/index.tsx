@@ -74,7 +74,10 @@ function ItemLabel({ className, ...props }: React.ComponentProps<"span">) {
   return <span className={cn(styles["item-label"], className)} {...props} />;
 }
 
-function ItemKeyboard({ className, ...props }: React.ComponentProps<"span">) {
+function ItemKeyboard({
+  className,
+  ...props
+}: React.ComponentProps<typeof Keyboard.Shortcut>) {
   return (
     <Keyboard.Shortcut
       density="flat"

@@ -1,7 +1,7 @@
 /** Generated from Nucleo. Do not edit by hand. */
 import { createIcon } from "../../../lib/create-icon";
 
-const inner = ({ strokeWidth = 1.5 }) => (
+const inner = () => (
   <>
     <path
       d="M10.1709 5.11044L10.6015 4.67971C11.4394 3.84081 11.579 2.52644 10.9277 1.62014C10.5254 1.06054 9.90436 0.708006 9.22466 0.652306C8.54696 0.599606 7.87795 0.841805 7.39555 1.3232L6.88965 1.82913L10.1709 5.11044Z"

@@ -1,3 +1,4 @@
+import { browserValidationSource } from "../lib/browser-validation-source";
 /// <reference lib="dom" />
 
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
@@ -49,9 +50,11 @@ type ListProgressExtra = Omit<
 > & { path?: string };
 
 export function buildInstagramListExpression(args: ListHarvestArgs): string {
-  const normSrc = `(${inPageInstagramNormalize.toString()})()`;
+  const normSrc = `(${inPageInstagramNormalize.toString()})(validators)`;
   const fnSrc = `(${inPageInstagramList.toString()})`;
   return `(async () => {
+    ${browserValidationSource}
+    const validators = PondHarvestValidation.browserValidators;
     const norm = ${normSrc};
     const args = ${JSON.stringify(args)};
     try { return await ${fnSrc}(args, norm); }

@@ -6,7 +6,6 @@ import type {
   SyncAction,
   TaskStatus,
 } from "@pond/schema/db";
-import type { Query } from "@pond/schema/filters/types";
 
 export type WireJson =
   | string
@@ -21,14 +20,7 @@ export interface WireRow {
   readonly [key: string]: WireJson | undefined;
 }
 
-export type WireQueryParams = WireRow;
-
 /** `interface` types get no implicit index signature, so `WireRow` cannot describe these. */
-export interface WireFilterQueryParams {
-  query: Query;
-  sortKey: string;
-  sortDir: string;
-}
 
 export type WirePrefsPatch = { [K in keyof Prefs]?: Partial<Prefs[K]> };
 

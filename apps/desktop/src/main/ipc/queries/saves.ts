@@ -158,7 +158,7 @@ const FtsRowSchema = z.object({ id: z.string(), rank: z.number() });
 const IdParams = z.object({ id: StringParam });
 const FileParams = z.object({ id: StringParam, fileIndex: FileIndexParam });
 
-export const savesQueries: QueryHandlerMap = {
+export const savesQueries = {
   ...savesImportQueries,
   ...savesExportQueries,
 
@@ -729,7 +729,7 @@ export const savesQueries: QueryHandlerMap = {
       return { ok: true, renamed: txs.length };
     },
   ),
-};
+} satisfies QueryHandlerMap;
 
 function sortColumn(sortKey: string): SQLWrapper {
   switch (sortKey) {

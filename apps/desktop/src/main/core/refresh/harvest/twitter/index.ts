@@ -4,7 +4,7 @@ export {
   buildLikesApiExpression,
 } from "./api";
 export { parseBookmarksResponses, type RichTweet } from "./graphql";
-export { adapt, buildExpression, sourceIdFromUrl } from "./item";
+export { adapt, buildExpression } from "./item";
 export {
   type BookmarksEntry,
   type BookmarksHarvestArgs,

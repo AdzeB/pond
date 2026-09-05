@@ -12,6 +12,7 @@ import {
   assistantProposalInput,
   assistantQuestion,
   assistantResultSet,
+  assistantSource,
 } from "../../../shared/assistant";
 import { folderIdsForSave, listFolders } from "../folders";
 import { normalizeTagList } from "../tags";
@@ -41,14 +42,32 @@ import {
   setOverlayInput,
 } from "./tools";
 
-export function libraryContext(input: {
-  scope: LibraryScope;
-  signal: AbortSignal;
-  onActivity: (activity: AssistantActivity) => void;
-  onSources: (sources: AssistantSource[]) => void;
-  onResults?: (results: AssistantResultSet[]) => void;
-  onSteps?: (steps: AssistantToolStep[]) => void;
-}) {
+export const contextDependencies = {
+  folderIdsForSave,
+  listFolders,
+  searchLibrary,
+  readSave,
+  grepLibrary,
+  libraryOverview,
+  applyFilter,
+  setOverlay,
+  citeSaves,
+  openSave,
+  describeSaves,
+  findDuplicateSaves,
+};
+
+export function libraryContext(
+  input: {
+    scope: LibraryScope;
+    signal: AbortSignal;
+    onActivity: (activity: AssistantActivity) => void;
+    onSources: (sources: AssistantSource[]) => void;
+    onResults?: (results: AssistantResultSet[]) => void;
+    onSteps?: (steps: AssistantToolStep[]) => void;
+  },
+  deps = contextDependencies,
+) {
   const sources = new Map<string, AssistantSource>();
   const changes = new Map<string, AssistantChange>();
   let question: AssistantQuestion | undefined;
@@ -83,7 +102,7 @@ export function libraryContext(input: {
   async function retrieve(args: z.infer<typeof searchLibraryInput>) {
     input.signal.throwIfAborted();
     input.onActivity("searching");
-    const result = await searchLibrary(args, input.scope);
+    const result = await deps.searchLibrary(args, input.scope);
     collect(result.saves);
     return result.saves;
   }
@@ -150,9 +169,12 @@ export function libraryContext(input: {
       execute: async (args) => {
         input.signal.throwIfAborted();
         input.onActivity("reading");
-        const result = await readSave(readSaveInput.parse(args), input.scope);
+        const result = await deps.readSave(
+          readSaveInput.parse(args),
+          input.scope,
+        );
         if (result.save && "url" in result.save)
-          collect([result.save as AssistantSource]);
+          collect([assistantSource.parse(result.save)]);
         return result;
       },
     },
@@ -164,7 +186,7 @@ export function libraryContext(input: {
       execute: async (args) => {
         input.signal.throwIfAborted();
         input.onActivity("searching");
-        return grepLibrary(grepLibraryInput.parse(args), input.scope);
+        return deps.grepLibrary(grepLibraryInput.parse(args), input.scope);
       },
     },
     {
@@ -174,7 +196,7 @@ export function libraryContext(input: {
       schema: libraryOverviewInput,
       execute: async () => {
         input.signal.throwIfAborted();
-        return libraryOverview();
+        return deps.libraryOverview();
       },
     },
     {
@@ -182,26 +204,26 @@ export function libraryContext(input: {
       description:
         "Apply a structured Library filter to the grid. Use this to show matching Saves in the Library.",
       schema: applyFilterInput,
-      execute: async (args) => applyFilter(applyFilterInput.parse(args)),
+      execute: async (args) => deps.applyFilter(applyFilterInput.parse(args)),
     },
     {
       name: "setOverlay",
       description:
         "Set the Semantic query and/or Visual Match Save on the Library grid.",
       schema: setOverlayInput,
-      execute: async (args) => setOverlay(setOverlayInput.parse(args)),
+      execute: async (args) => deps.setOverlay(setOverlayInput.parse(args)),
     },
     {
       name: "citeSaves",
       description: "Highlight Saves in the Library grid by ID.",
       schema: citeSavesInput,
-      execute: async (args) => citeSaves(citeSavesInput.parse(args)),
+      execute: async (args) => deps.citeSaves(citeSavesInput.parse(args)),
     },
     {
       name: "openSave",
       description: "Open a Save in the Library.",
       schema: openSaveInput,
-      execute: async (args) => openSave(openSaveInput.parse(args)),
+      execute: async (args) => deps.openSave(openSaveInput.parse(args)),
     },
     {
       name: "findDuplicates",
@@ -209,7 +231,7 @@ export function libraryContext(input: {
       schema: z.object({}),
       execute: async () => {
         input.signal.throwIfAborted();
-        return findDuplicateSaves();
+        return deps.findDuplicateSaves();
       },
     },
     {
@@ -222,11 +244,11 @@ export function libraryContext(input: {
         input.onActivity("reading");
         const parsed = describeSavesInput.parse(args);
         for (const id of parsed.ids) {
-          const result = await readSave({ id }, input.scope);
+          const result = await deps.readSave({ id }, input.scope);
           if (result.save && "url" in result.save)
-            collect([result.save as AssistantSource]);
+            collect([assistantSource.parse(result.save)]);
         }
-        return describeSaves(parsed);
+        return deps.describeSaves(parsed);
       },
     },
     {
@@ -236,7 +258,7 @@ export function libraryContext(input: {
       schema: z.object({}),
       execute: async () => {
         input.signal.throwIfAborted();
-        return (await listFolders()).map(({ id, name }) => ({ id, name }));
+        return (await deps.listFolders()).map(({ id, name }) => ({ id, name }));
       },
     },
     {
@@ -256,10 +278,11 @@ export function libraryContext(input: {
           ),
         ];
         const [folderRows, loaded] = await Promise.all([
-          listFolders(),
+          deps.listFolders(),
           Promise.all(
             saveIds.map(
-              async (id) => [id, await readSave({ id }, input.scope)] as const,
+              async (id) =>
+                [id, await deps.readSave({ id }, input.scope)] as const,
             ),
           ),
         ]);
@@ -275,7 +298,7 @@ export function libraryContext(input: {
         const currentFolders = new Map(
           await Promise.all(
             folderSaveIds.map(
-              async (id) => [id, await folderIdsForSave(id)] as const,
+              async (id) => [id, await deps.folderIdsForSave(id)] as const,
             ),
           ),
         );

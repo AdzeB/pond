@@ -86,7 +86,7 @@ function clampWindow(value: number, ceiling: number, fallback: number): number {
 const LimitParams = z.object({ limit: OptionalNumberParam });
 const DaysParams = z.object({ days: OptionalNumberParam });
 
-export const syncHistoryQueries: QueryHandlerMap = {
+export const syncHistoryQueries = {
   "sync.history": query(
     z.object({
       source: SourceParam,
@@ -213,4 +213,4 @@ export const syncHistoryQueries: QueryHandlerMap = {
 
     return stats;
   }),
-};
+} satisfies QueryHandlerMap;

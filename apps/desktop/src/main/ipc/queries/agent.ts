@@ -5,7 +5,7 @@ import { type QueryHandlerMap, query } from "./params";
 
 const Params = z.looseObject({});
 
-export const agentQueries: QueryHandlerMap = {
+export const agentQueries = {
   "agent.keys": query(Params, async () => {
     const { listKeys } = await import("../../core/agent/keys");
     return await listKeys();
@@ -126,4 +126,4 @@ export const agentQueries: QueryHandlerMap = {
       app: app.getName(),
     };
   }),
-};
+} satisfies QueryHandlerMap;

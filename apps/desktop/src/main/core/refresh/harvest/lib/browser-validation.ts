@@ -1,0 +1,93 @@
+import * as z from "zod/mini";
+import type { InstagramMediaNode } from "../instagram/normalize";
+
+function optional<T extends z.ZodMiniType>(schema: T) {
+  return z.catch(z.optional(schema), undefined);
+}
+const text = optional(z.string());
+const number = optional(z.number());
+const boolean = optional(z.boolean());
+const mediaVersion = z.object({ url: text, width: number, height: number });
+const user = z.object({
+  username: text,
+  full_name: text,
+  profile_pic_url: text,
+  is_verified: boolean,
+});
+const instagramNode: z.ZodMiniType<InstagramMediaNode> = z.lazy(() =>
+  z.object({
+    pk: optional(z.union([z.string(), z.number()])),
+    code: text,
+    media_type: number,
+    taken_at: number,
+    like_count: number,
+    comment_count: number,
+    play_count: number,
+    video_duration: number,
+    is_paid_partnership: boolean,
+    accessibility_caption: text,
+    location: optional(z.object({ name: text })),
+    caption: z.catch(
+      z.nullish(
+        z.union([
+          z.string(),
+          z.pipe(
+            z.object({ text }),
+            z.transform((value) => value.text ?? ""),
+          ),
+        ]),
+      ),
+      null,
+    ),
+    user: optional(user),
+    owner: optional(user),
+    image_versions2: optional(
+      z.object({ candidates: optional(z.array(mediaVersion)) }),
+    ),
+    video_versions: optional(z.array(mediaVersion)),
+    carousel_media: optional(z.array(instagramNode)),
+  }),
+);
+
+const tiktokItem = z.object({
+  id: text,
+  desc: text,
+  description: text,
+  createTime: number,
+  author: optional(
+    z.object({
+      uniqueId: text,
+      nickname: text,
+      avatarThumb: text,
+      verified: boolean,
+    }),
+  ),
+  stats: optional(
+    z.object({
+      diggCount: number,
+      commentCount: number,
+      shareCount: number,
+      playCount: number,
+      collectCount: number,
+    }),
+  ),
+  music: optional(z.object({ title: text })),
+  video: optional(
+    z.object({
+      downloadAddr: text,
+      playAddr: text,
+      cover: text,
+      originCover: text,
+      duration: number,
+    }),
+  ),
+});
+
+export const browserValidators = {
+  text: z.string(),
+  number: z.number(),
+  object: z.looseObject({}),
+  instagramNode,
+  tiktokItem,
+};
+export type BrowserValidators = typeof browserValidators;

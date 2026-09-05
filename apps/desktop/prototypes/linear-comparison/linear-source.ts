@@ -5,7 +5,7 @@ import nativeData from "./public/evidence/linear-native-styles.json";
 export type LinearSample = {
   id: string;
   source: string;
-  metrics: Record<string, string>;
+  metrics: Record<string, string | undefined>;
   computed: Record<string, string>;
   capturedAt: string;
   note?: string;
@@ -24,11 +24,7 @@ export const linearSamples: LinearSample[] = [
             source: nativeData.source,
             capturedAt: nativeData.capturedAt,
             metrics: {
-              ...Object.fromEntries(
-                Object.entries(sample.css).filter(
-                  ([, value]) => typeof value === "string",
-                ),
-              ),
+              ...sample.css,
               background: sample.css.backgroundColor,
             },
             computed: Object.fromEntries(
@@ -82,14 +78,15 @@ export function linearStyle(
         ].includes(key),
     ),
   );
-  return {
+  const result: CSSProperties & { "--linear-source-background"?: string } = {
     ...properties,
     "--linear-source-background": sample.metrics.background,
     backgroundColor:
       "var(--linear-state-background, var(--linear-source-background))",
     padding: sample.metrics.padding,
     boxSizing: "border-box",
-    ...(dimensions !== "fluid" ? { height: sample.metrics.height } : {}),
-    ...(dimensions === "both" ? { width: sample.metrics.width } : {}),
-  } as CSSProperties;
+  };
+  if (dimensions !== "fluid") result.height = sample.metrics.height;
+  if (dimensions === "both") result.width = sample.metrics.width;
+  return result;
 }

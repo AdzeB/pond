@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { parseMode } from "@/lib/save/list";
-import { librarySearchSchema } from "@/lib/search/schemas";
+import { parseMode } from "@/features/saves/lib/list";
+import { librarySearchSchema } from "@/features/search/lib/schemas";
 
 export const Route = createFileRoute("/_library/$mode")({
   validateSearch: librarySearchSchema,

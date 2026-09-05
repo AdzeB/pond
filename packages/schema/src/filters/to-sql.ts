@@ -72,7 +72,7 @@ function compileForField(
   return scalarClause(column, field, operator, raw);
 }
 
-function folderClause(operator: ComparatorId, raw: unknown): SQL | null {
+function folderClause(operator: ComparatorId, raw: PredicateValue): SQL | null {
   if (operator === "empty") return folderExists([]);
   if (!Array.isArray(raw) || raw.length === 0) return null;
   const ids = raw.map((v) => String(v)).filter((v) => v.length > 0);

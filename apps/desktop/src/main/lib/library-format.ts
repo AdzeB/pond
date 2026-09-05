@@ -153,11 +153,9 @@ export function applyPatchToInfo(
   if (patch.siteName !== undefined) next.siteName = patch.siteName ?? null;
   if (patch.notes !== undefined) next.notes = patch.notes ?? null;
   if (patch.tags !== undefined) next.tags = patch.tags ?? [];
-  if (
-    "folderIds" in patch &&
-    Array.isArray((patch as { folderIds?: string[] }).folderIds)
-  ) {
-    next.folderIds = (patch as { folderIds: string[] }).folderIds;
+  if ("folderIds" in patch) {
+    const parsed = z.array(z.string()).safeParse(patch.folderIds);
+    if (parsed.success) next.folderIds = parsed.data;
   }
   if (patch.mediaType !== undefined) next.mediaType = patch.mediaType ?? null;
   if (patch.coverIndex !== undefined) next.coverIndex = patch.coverIndex ?? 0;

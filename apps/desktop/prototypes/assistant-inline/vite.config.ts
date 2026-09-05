@@ -18,5 +18,6 @@ export default defineConfig({
     },
   },
   optimizeDeps: { entries: ["index.html"] },
+  build: { outDir: resolve(import.meta.dirname, "dist"), rollupOptions: { input: resolve(import.meta.dirname, "index.html") } },
   server: { host: "127.0.0.1", port: 4323, strictPort: true },
 });

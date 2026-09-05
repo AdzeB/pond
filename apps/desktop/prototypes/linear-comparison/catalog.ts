@@ -224,7 +224,7 @@ const groups: [string, [string, string, string][]][] = [
   ],
 ];
 
-const comparisons: Record<string, Partial<Entry>> = {
+const comparisons = new Map<string, Partial<Entry>>(Object.entries({
   Input: {
     measure: "input",
     app: "app-priority-search",
@@ -310,9 +310,9 @@ const comparisons: Record<string, Partial<Entry>> = {
     coverageNote:
       "Hover was attempted on the generic create action, but no tooltip surface was captured. Timing, padding, and shortcuts remain unverified.",
   },
-};
+}));
 
-const nativeComparisons: Record<string, Partial<Entry>> = {
+const nativeComparisons = new Map<string, Partial<Entry>>(Object.entries({
   Sidebar: {
     app: "app-sidebar-unselected-label",
     appRelation:
@@ -393,7 +393,7 @@ const nativeComparisons: Record<string, Partial<Entry>> = {
     appRelation:
       "Related compact label-picker trigger from the native composer versus Pond assistant chips. This is a picker trigger, not a selected issue-label badge.",
   },
-};
+}));
 
 export const catalog: Entry[] = groups.flatMap(([group, entries]) =>
   entries.map(([id, folder, description]) => ({
@@ -403,8 +403,8 @@ export const catalog: Entry[] = groups.flatMap(([group, entries]) =>
     description,
     coverageNote:
       "Not inspected in the component-scoped production pass. This is a coverage gap, not evidence that Linear has no equivalent.",
-    ...comparisons[id],
-    ...nativeComparisons[id],
+    ...comparisons.get(id),
+    ...nativeComparisons.get(id),
   })),
 );
 export const categories = groups.map(([group]) => group);

@@ -20,7 +20,7 @@ export async function undo(): Promise<boolean> {
     const reverse = inverse(tx);
     await executeTransaction({
       ...reverse,
-      meta: { ...(reverse.meta ?? {}), actorReason: "undo" },
+      meta: { ...reverse.meta, actorReason: "undo" },
     });
     redoStack.push(tx);
     return true;
@@ -37,7 +37,7 @@ export async function redo(): Promise<boolean> {
   try {
     await executeTransaction({
       ...tx,
-      meta: { ...(tx.meta ?? {}), actorReason: "redo" },
+      meta: { ...tx.meta, actorReason: "redo" },
     });
     undoStack.push(tx);
     return true;

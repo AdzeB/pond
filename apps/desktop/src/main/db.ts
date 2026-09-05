@@ -28,7 +28,7 @@ let cachedPond: Db | null = null;
 let cachedGlobal: Db | null = null;
 let pondDbInflight: Promise<Db> | null = null;
 
-function openSqlite(file: string, vec = false): Database.Database {
+function openSqlite(file: string): Database.Database {
   const sqlite = new Database(file);
   sqlite.pragma("journal_mode = WAL");
   sqlite.pragma("synchronous = NORMAL");
@@ -38,12 +38,6 @@ function openSqlite(file: string, vec = false): Database.Database {
   sqlite.pragma("busy_timeout = 5000");
   sqlite.pragma("cache_size = -65536");
   sqlite.pragma("wal_autocheckpoint = 2000");
-  if (vec) {
-    if (loadSqliteVec(sqlite)) {
-      ensureVecTables(sqlite);
-      ensureVecDeleteTrigger(sqlite);
-    }
-  }
   return sqlite;
 }
 
@@ -81,18 +75,32 @@ async function openPondDb(): Promise<Db> {
   const paths = resolvePaths();
   log.info("[pond db] opening pond index", paths.indexDb);
 
-  const sqlite = openSqlite(paths.indexDb, true);
-  migratePond(sqlite);
+  const sqlite = openSqlite(paths.indexDb);
+  const vectorEnabled = initializePondSchema(sqlite);
   cachedPond = wrap(sqlite);
 
   ensureLibraryMetadata();
 
-  scheduleDataMigrations(sqlite);
+  scheduleDataMigrations(sqlite, vectorEnabled);
 
   return cachedPond;
 }
 
-function scheduleDataMigrations(sqlite: Database.Database): void {
+export function initializePondSchema(
+  sqlite: Database.Database,
+  loadVectorExtension = loadSqliteVec,
+): boolean {
+  const vectorEnabled = loadVectorExtension(sqlite);
+  if (vectorEnabled) ensureVecTables(sqlite);
+  migratePond(sqlite);
+  if (vectorEnabled) ensureVecDeleteTrigger(sqlite);
+  return vectorEnabled;
+}
+
+function scheduleDataMigrations(
+  sqlite: Database.Database,
+  vectorEnabled: boolean,
+): void {
   const runRawSlimBatch = (): void => {
     if (!sqlite.open || cachedPond?.$raw !== sqlite) return;
     try {
@@ -119,11 +127,14 @@ function scheduleDataMigrations(sqlite: Database.Database): void {
       log.warn("[pond db] vec backfill failed", err);
     }
   };
-  setImmediate(runVecBatch);
+  if (vectorEnabled) setImmediate(runVecBatch);
 
   setImmediate(() => {
     void import("./core/library-scope-migration")
-      .then(({ runLibraryScopeMigration }) => runLibraryScopeMigration())
+      .then(({ runLibraryScopeMigration }) => {
+        if (cachedPond?.$raw !== sqlite || !sqlite.open) return;
+        return runLibraryScopeMigration(cachedPond);
+      })
       .catch((err) =>
         log.warn("[pond db] library scope migration failed", err),
       );

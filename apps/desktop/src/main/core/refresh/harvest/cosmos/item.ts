@@ -3,7 +3,6 @@
 import type { JsonValue } from "@pond/schema/json";
 import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
-import { bindSourceId } from "../source-id";
 import { type CosmosElementPage, inPageCosmosNormalize } from "./normalize";
 
 export function buildExpression(elementId: string): string {
@@ -32,5 +31,3 @@ async function inPageCosmosHarvest(
 export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx) {
   return captureFromPageDom(raw, ctx);
 }
-
-export const sourceIdFromUrl = bindSourceId("cosmos");

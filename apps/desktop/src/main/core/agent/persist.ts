@@ -67,13 +67,9 @@ export async function appendMessage(input: {
   const title =
     current[0]?.title ||
     (input.role === "user" ? titleFrom(input.content) : null);
-  await db
-    .update(agentChats)
-    .set({
-      updatedAt: new Date(),
-      ...(title ? { title } : {}),
-    })
-    .where(eq(agentChats.id, input.chatId));
+  const patch: Partial<AgentChat> = { updatedAt: new Date() };
+  if (title) patch.title = title;
+  await db.update(agentChats).set(patch).where(eq(agentChats.id, input.chatId));
 }
 
 function titleFrom(content: string): string | undefined {

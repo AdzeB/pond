@@ -33,7 +33,7 @@ async function frameImage(
 
 const FrameParams = z.object({ src: StringParam, timeSec: NumberParam });
 
-export const videoQueries: QueryHandlerMap = {
+export const videoQueries = {
   "video.copyFrame": query(FrameParams, async (params) => {
     const img = await frameImage(
       resolvePondItemPath(params.src),
@@ -93,4 +93,4 @@ export const videoQueries: QueryHandlerMap = {
       return { ok: true };
     },
   ),
-};
+} satisfies QueryHandlerMap;

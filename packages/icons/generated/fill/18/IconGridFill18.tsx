@@ -1,7 +1,7 @@
 /** Hand-authored layout glyph (Nucleo slot aliased to Cols). */
 import { createIcon } from "../../../lib/create-icon";
 
-const inner = ({ strokeWidth = 1.5 }) => (
+const inner = () => (
   <>
     <rect
       x="2"

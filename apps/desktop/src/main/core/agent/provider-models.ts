@@ -1,3 +1,5 @@
+import type { JsonValue } from "@pond/schema/json";
+import { z } from "zod";
 import {
   chosenModelId,
   displayName,
@@ -13,7 +15,7 @@ const SKIP =
 
 export function modelsFromProviderResponse(
   provider: AgentProviderId,
-  json: unknown,
+  json: JsonValue | undefined,
 ): ProviderModel[] {
   const ids = idsFromResponse(provider, json);
   const seen = new Set<string>();
@@ -36,51 +38,57 @@ export function modelsFromProviderResponse(
 
 function idsFromResponse(
   provider: AgentProviderId,
-  json: unknown,
+  json: JsonValue | undefined,
 ): Array<{ id: string; name: string }> {
-  if (!json || typeof json !== "object") return [];
-  const doc = json as Record<string, unknown>;
+  const stringField = z.string().catch("");
   if (provider === "gemini") {
-    const models = Array.isArray(doc.models) ? doc.models : [];
-    return models.flatMap((entry) => {
-      if (!entry || typeof entry !== "object") return [];
-      const row = entry as {
-        name?: unknown;
-        displayName?: unknown;
-        supportedGenerationMethods?: unknown;
-      };
-      const methods = Array.isArray(row.supportedGenerationMethods)
-        ? row.supportedGenerationMethods
-        : [];
+    const parsed = z
+      .object({
+        models: z
+          .array(
+            z
+              .object({
+                name: stringField,
+                displayName: stringField,
+                supportedGenerationMethods: z.array(z.string()).catch([]),
+              })
+              .nullable()
+              .catch(null),
+          )
+          .catch([]),
+      })
+      .safeParse(json);
+    if (!parsed.success) return [];
+    return parsed.data.models.flatMap((row) => {
+      if (!row) return [];
+      const methods = row.supportedGenerationMethods;
       if (
-        methods.length > 0 &&
+        methods.length &&
         !methods.includes("generateContent") &&
         !methods.includes("generateContentStream")
       )
         return [];
-      const name = typeof row.name === "string" ? row.name : "";
-      const id = name.replace(/^models\//, "");
-      if (!id) return [];
-      return [
-        {
-          id,
-          name: typeof row.displayName === "string" ? row.displayName : "",
-        },
-      ];
+      const id = row.name.replace(/^models\//, "");
+      return id ? [{ id, name: row.displayName }] : [];
     });
   }
-  const data = Array.isArray(doc.data) ? doc.data : [];
-  return data.flatMap((entry) => {
-    if (!entry || typeof entry !== "object") return [];
-    const row = entry as { id?: unknown; display_name?: unknown };
-    if (typeof row.id !== "string" || !row.id) return [];
-    return [
-      {
-        id: row.id,
-        name: typeof row.display_name === "string" ? row.display_name : "",
-      },
-    ];
-  });
+  const parsed = z
+    .object({
+      data: z
+        .array(
+          z
+            .object({ id: stringField, display_name: stringField })
+            .nullable()
+            .catch(null),
+        )
+        .catch([]),
+    })
+    .safeParse(json);
+  return parsed.success
+    ? parsed.data.data.flatMap((row) =>
+        row?.id ? [{ id: row.id, name: row.display_name }] : [],
+      )
+    : [];
 }
 
 function isChatModel(provider: AgentProviderId, id: string): boolean {
@@ -123,7 +131,7 @@ export function connectionFor(
     compatibleBaseUrl?: string;
   },
   catalogFallback: string,
-): { modelId: string; baseUrl?: string } {
+) {
   const modelId = resolveModelId(provider, prefs, catalogFallback);
   if (provider === "ollama")
     return { modelId, baseUrl: prefs.ollamaBaseUrl || undefined };

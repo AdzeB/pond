@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { DEFAULT_SETTINGS_SECTION } from "@/lib/ui/open-settings";
+import { DEFAULT_SETTINGS_SECTION } from "@/features/settings/lib/open-settings";
 
 export const Route = createFileRoute("/_library/settings/")({
   beforeLoad: () => {

@@ -1,0 +1,153 @@
+import { SOURCES, type Source, type WatchKind } from "@pond/schema/db";
+import { useCallback, useEffect, useState } from "react";
+import { z } from "zod";
+import {
+  type SyncAccountStatus,
+  syncMonitor,
+} from "@/features/sources/state/sync-monitor";
+
+export interface WatchRow {
+  id: string;
+  source: Source;
+  handle: string;
+  kind?: WatchKind;
+  label: string | null;
+  avatarUrl?: string | null;
+  via: string | null;
+  addedAt: string;
+  sync: {
+    lastSyncedAt: string | null;
+    lastError: string | null;
+    knownCount: number;
+  };
+  syncing: boolean;
+}
+
+export const WATCHABLE: readonly Source[] = [
+  "arena",
+  "youtube",
+  "tiktok",
+  "instagram",
+  "twitter",
+  "pinterest",
+  "cosmos",
+];
+
+const WATCH_KINDS = new Map<Source, readonly WatchKind[]>([
+  ["arena", ["channel", "user", "group"]],
+  ["youtube", ["channel", "playlist"]],
+  ["twitter", ["user", "list"]],
+  ["pinterest", ["user", "board"]],
+  ["cosmos", ["user", "cluster"]],
+]);
+
+export function watchKindsFor(source: Source): readonly WatchKind[] {
+  return WATCH_KINDS.get(source) ?? ["user"];
+}
+
+export function watchKindLabel(kind: WatchKind | undefined): string {
+  switch (kind) {
+    case "channel":
+      return "channel";
+    case "group":
+      return "group";
+    case "playlist":
+      return "playlist";
+    case "board":
+      return "board";
+    case "cluster":
+      return "cluster";
+    case "list":
+      return "list";
+    default:
+      return "account";
+  }
+}
+
+export const WATCH_NEEDS_SESSION: readonly Source[] = ["instagram", "twitter"];
+
+const WatchesReplySchema = z
+  .object({
+    watches: z
+      .array(
+        z.object({
+          id: z.string(),
+          source: z.enum(SOURCES),
+          handle: z.string().catch(""),
+          kind: z
+            .enum([
+              "channel",
+              "user",
+              "group",
+              "playlist",
+              "board",
+              "cluster",
+              "list",
+            ])
+            .optional()
+            .catch(undefined),
+          label: z.string().nullable().catch(null),
+          avatarUrl: z.string().nullable().optional().catch(null),
+          via: z.string().nullable().catch(null),
+          addedAt: z.string().catch(""),
+          sync: z
+            .object({
+              lastSyncedAt: z.string().nullable().catch(null),
+              lastError: z.string().nullable().catch(null),
+              knownCount: z.number().catch(0),
+            })
+            .catch({ lastSyncedAt: null, lastError: null, knownCount: 0 }),
+          syncing: z.boolean().catch(false),
+        }),
+      )
+      .catch([]),
+  })
+  .catch({ watches: [] });
+
+interface WatchesResult {
+  watches: WatchRow[];
+  loading: boolean;
+  refetch: () => Promise<WatchRow[]>;
+}
+
+export function useWatches(): WatchesResult {
+  const [watches, setWatches] = useState<WatchRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  const refetch = useCallback(async (): Promise<WatchRow[]> => {
+    try {
+      const rows = WatchesReplySchema.parse(
+        await window.pond.query("watches.list", {}),
+      ).watches;
+      setWatches(rows);
+      for (const watch of rows) {
+        const status: Partial<SyncAccountStatus> = {
+          connected: true,
+          lastSyncedAt: watch.sync.lastSyncedAt,
+          lastError: watch.sync.lastError,
+        };
+        if (watch.syncing) status.state = "running";
+        syncMonitor.seed(watch.id, watch.source, status);
+      }
+      return rows;
+    } catch {
+      return [];
+    } finally {
+      setLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    void refetch().then((rows) => {
+      if (rows.some((row) => row.avatarUrl === undefined)) {
+        timer = setTimeout(() => void refetch(), 4000);
+      }
+    });
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [refetch]);
+
+  return { watches, loading: !loaded, refetch };
+}

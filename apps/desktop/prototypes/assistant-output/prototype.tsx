@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { Logo } from "@pond/ui/logo";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -299,7 +300,7 @@ function SaveStrip({ attached, ...actions }: Actions & { attached: number[] }) {
   );
 }
 
-export function VariantInline(props: Actions & { attached: number[] }) {
+function VariantInline(props: Actions & { attached: number[] }) {
   return (
     <div className="inline-output">
       <Prose
@@ -319,7 +320,7 @@ export function VariantInline(props: Actions & { attached: number[] }) {
   );
 }
 
-export function VariantEditorial(props: Actions & { attached: number[] }) {
+function VariantEditorial(props: Actions & { attached: number[] }) {
   return (
     <div className="editorial-output">
       <div className="editorial-intro">
@@ -386,7 +387,7 @@ export function VariantEditorial(props: Actions & { attached: number[] }) {
   );
 }
 
-export function VariantCanvas(props: Actions & { onShowBoard: () => void }) {
+function VariantCanvas(props: Actions & { onShowBoard: () => void }) {
   return (
     <div className="canvas-output">
       <Prose
@@ -536,11 +537,8 @@ function Question({ onContinue }: { onContinue: (text: string) => void }) {
                 event.preventDefault();
                 const next = (index + (event.key === "ArrowDown" ? 1 : 2)) % 3;
                 setChoice(options[next]);
-                (
-                  event.currentTarget.parentElement?.children[
-                    next
-                  ] as HTMLButtonElement
-                )?.focus();
+                const button = event.currentTarget.parentElement?.children[next];
+                if (button instanceof HTMLButtonElement) button.focus();
               }
             }}
           >
@@ -1684,7 +1682,7 @@ export function Prototype() {
           <select
             aria-label="Prototype scenario"
             value={scene}
-            onChange={(event) => switchScene(event.target.value as Scene)}
+            onChange={(event) => switchScene(z.enum(["search", "compare", "organize", "question", "empty"]).parse(event.target.value))}
           >
             <option value="search">Search Results</option>
             <option value="compare">Comparison</option>

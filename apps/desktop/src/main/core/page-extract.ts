@@ -3,17 +3,16 @@ import { tmpdir } from "node:os";
 import { extname, join } from "node:path";
 import { BrowserWindow, net } from "electron";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { createManualSave } from "./manual-import";
 
 const MIN_EDGE = 200;
 const MAX_ASSETS = 40;
 const LOAD_MS = 15_000;
 
-interface PageImage {
-  src: string;
-  width: number;
-  height: number;
-}
+const PageImagesSchema = z
+  .array(z.object({ src: z.string(), width: z.number(), height: z.number() }))
+  .nullable();
 
 export async function extractPageAssets(url: string): Promise<{
   ok: boolean;
@@ -35,17 +34,21 @@ export async function extractPageAssets(url: string): Promise<{
   });
   try {
     await win.loadURL(href, { extraHeaders: "pragma: no-cache\n" });
-    const images = (await Promise.race([
-      win.webContents.executeJavaScript(
-        `([...document.images]).map((img) => ({
+    const images = PageImagesSchema.parse(
+      await Promise.race([
+        win.webContents.executeJavaScript(
+          `([...document.images]).map((img) => ({
           src: img.currentSrc || img.src,
           width: img.naturalWidth,
           height: img.naturalHeight,
         }))`,
-        true,
-      ),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), LOAD_MS)),
-    ])) as PageImage[] | null;
+          true,
+        ),
+        new Promise<null>((resolve) =>
+          setTimeout(() => resolve(null), LOAD_MS),
+        ),
+      ]),
+    );
     if (!images)
       return { ok: false, imported: 0, skipped: 0, error: "timeout" };
     const picked = images

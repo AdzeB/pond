@@ -184,7 +184,7 @@ async function platformPosterFromSave(
     filename: posterFilename(index, ext),
     bytes,
     mimeType: outcome.file.mimeType ?? "image/jpeg",
-    ...(dims ?? {}),
+    ...dims,
   };
 }
 

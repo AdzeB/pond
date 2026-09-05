@@ -42,7 +42,7 @@ export function configureSessionDefaults(): void {
         cb({ responseHeaders: details.responseHeaders });
         return;
       }
-      const headers = { ...(details.responseHeaders ?? {}) };
+      const headers = { ...details.responseHeaders };
       for (const key of Object.keys(headers)) {
         if (key.toLowerCase() === "content-security-policy") {
           delete headers[key];

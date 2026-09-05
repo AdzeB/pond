@@ -95,7 +95,7 @@ export function Prototype() {
           </div>
           <div
             className="surface-wrap"
-            style={{ "--pane-width": `${width}px` } as CSSProperties}
+            style={{ "--pane-width": `${width}px` } satisfies CSSProperties & { "--pane-width": string }}
           >
             <Assistant
               key={`${scenario}-${version}`}

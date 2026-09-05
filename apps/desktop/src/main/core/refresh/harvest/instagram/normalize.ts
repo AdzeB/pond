@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 
 import type { MediaType } from "@pond/schema/db";
+import type { BrowserValidators } from "../lib/browser-validation";
 
 export interface InstagramMediaVersion {
   url?: string;
@@ -77,7 +78,7 @@ export interface InstagramEntry extends InstagramPost {
   savedAt?: string;
 }
 
-export function inPageInstagramNormalize() {
+export function inPageInstagramNormalize(validators: BrowserValidators) {
   const ALPHABET =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
@@ -111,7 +112,7 @@ export function inPageInstagramNormalize() {
     const cands = iv2.candidates || [];
     let best: { url: string; w: number } | null = null;
     for (const c of cands) {
-      if (typeof c?.url !== "string") continue;
+      if (c?.url === undefined) continue;
       const w = Number(c.width) || 0;
       if (!best || w > best.w) best = { url: c.url, w };
     }
@@ -123,7 +124,7 @@ export function inPageInstagramNormalize() {
   ): string | null {
     if (!Array.isArray(versions)) return null;
     for (const v of versions) {
-      if (typeof v?.url === "string") return v.url;
+      if (v?.url !== undefined) return v.url;
     }
     return null;
   }
@@ -132,9 +133,9 @@ export function inPageInstagramNormalize() {
     node: InstagramMediaNode,
     opts?: { savedTimestamp?: number },
   ): InstagramEntry | null {
+    node = validators.instagramNode.parse(node);
     const pk = node.pk != null ? String(node.pk) : null;
-    const code =
-      typeof node.code === "string" ? node.code : pk ? pkToShortcode(pk) : null;
+    const code = node.code ?? (pk ? pkToShortcode(pk) : null);
     if (!code) return null;
 
     const kind = node.media_type === 2 ? "reel" : "p";
@@ -155,38 +156,31 @@ export function inPageInstagramNormalize() {
       meta.authorUrl = `https://www.instagram.com/${user.username}/`;
       if (user.full_name) meta.authorName = user.full_name;
       if (user.profile_pic_url) meta.authorAvatar = user.profile_pic_url;
-      if (typeof user.is_verified === "boolean")
-        meta.verified = user.is_verified;
+      if (user.is_verified !== undefined) meta.verified = user.is_verified;
     }
 
-    if (typeof node.taken_at === "number") {
+    if (node.taken_at !== undefined) {
       meta.publishedAt = new Date(node.taken_at * 1000).toISOString();
     }
 
-    const htmlLang =
-      typeof document !== "undefined"
-        ? document.documentElement.lang?.trim()
-        : null;
+    const htmlLang = globalThis.document?.documentElement.lang?.trim() ?? null;
     if (htmlLang) meta.lang = htmlLang;
 
     const metrics: NonNullable<InstagramMeta["metrics"]> = {};
-    if (typeof node.like_count === "number") metrics.likes = node.like_count;
-    if (typeof node.comment_count === "number")
-      metrics.comments = node.comment_count;
-    if (typeof node.play_count === "number") metrics.plays = node.play_count;
+    if (node.like_count !== undefined) metrics.likes = node.like_count;
+    if (node.comment_count !== undefined) metrics.comments = node.comment_count;
+    if (node.play_count !== undefined) metrics.plays = node.play_count;
     if (Object.keys(metrics).length > 0) meta.metrics = metrics;
 
-    if (typeof node.is_paid_partnership === "boolean")
+    if (node.is_paid_partnership !== undefined)
       meta.isPaidPartnership = node.is_paid_partnership;
     if (node.location?.name) meta.location = node.location.name;
-    if (typeof node.accessibility_caption === "string")
+    if (node.accessibility_caption !== undefined)
       meta.accessibilityCaption = node.accessibility_caption;
-    if (typeof node.video_duration === "number")
+    if (node.video_duration !== undefined)
       meta.videoDurationSec = Math.round(node.video_duration);
 
-    const caption = node.caption;
-    const text =
-      typeof caption === "string" ? caption : (caption?.text ?? null);
+    const text = validators.text.safeParse(node.caption).data ?? null;
     if (text) {
       out.description = text.length > 4000 ? `${text.slice(0, 4000)}…` : text;
       const firstLine = text.split(/\n+/)[0]?.trim() ?? text;
@@ -210,12 +204,9 @@ export function inPageInstagramNormalize() {
 
     if (node.media_type === 8 && Array.isArray(node.carousel_media)) {
       for (const child of node.carousel_media) {
-        const altText =
-          typeof child.accessibility_caption === "string"
-            ? child.accessibility_caption
-            : undefined;
+        const altText = child.accessibility_caption;
         const dur =
-          typeof child.video_duration === "number"
+          child.video_duration !== undefined
             ? Math.round(child.video_duration)
             : undefined;
         if (child.media_type === 2) {

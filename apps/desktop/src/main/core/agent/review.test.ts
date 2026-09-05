@@ -1,59 +1,82 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AssistantChange } from "../../../shared/assistant";
-import { reviewChanges } from "./review";
+import type {
+  AssistantChange,
+  AssistantMetadata,
+} from "../../../shared/assistant";
+import { reviewChanges as review, reviewDependencies } from "./review";
 
-const mock = vi.hoisted(() => ({
-  changes: [] as AssistantChange[],
+interface ReviewTestState {
+  changes: AssistantChange[];
+  title: string;
+  tags: string[];
+  deletedAt: Date | null;
+  folderIds: string[];
+  fail: boolean;
+}
+const state: ReviewTestState = {
+  changes: [],
   title: "Original",
   tags: ["design"],
-  deletedAt: null as Date | null,
+  deletedAt: null,
   folderIds: ["folder"],
-  write: vi.fn(),
-  saveFolders: vi.fn(),
-  setTags: vi.fn().mockResolvedValue({ ok: true }),
-  createFolder: vi.fn().mockResolvedValue({ id: "new-folder" }),
   fail: false,
-}));
-vi.mock("../../db", () => ({
-  getDb: async () => ({
-    select: () => ({
-      from: () => ({
-        where: () => ({
-          get: async () => ({
-            role: "assistant",
-            metadata: { changes: mock.changes },
-            id: "save",
-            title: mock.title,
-            tags: mock.tags,
-            deletedAt: mock.deletedAt,
-          }),
-        }),
-      }),
+};
+const mock = {
+  ...state,
+  write: vi.fn<(typeof reviewDependencies)["executeTransaction"]>(),
+  saveFolders: vi
+    .fn<(typeof reviewDependencies)["setSaveFolders"]>()
+    .mockResolvedValue({ ok: true }),
+  setTags: vi
+    .fn<(typeof reviewDependencies)["setSaveTags"]>()
+    .mockResolvedValue({ ok: true }),
+  createFolder: vi
+    .fn<(typeof reviewDependencies)["createFolder"]>()
+    .mockResolvedValue({
+      id: "new-folder",
+      name: "References",
+      parentId: null,
+      color: null,
+      sortOrder: 0,
+      createdAt: new Date(),
     }),
-    update: () => ({
-      set: ({ metadata }: { metadata: { changes: AssistantChange[] } }) => ({
-        where: async () => {
-          mock.changes = structuredClone(metadata.changes);
-        },
-      }),
-    }),
+};
+const deps = {
+  ...reviewDependencies,
+  message: async () => ({
+    role: "assistant",
+    metadata: { changes: mock.changes },
   }),
-}));
-vi.mock("../executor", () => ({ executeTransaction: mock.write }));
-vi.mock("../folders", () => ({
+  save: async () => ({
+    id: "save",
+    title: mock.title,
+    tags: mock.tags,
+    deletedAt: mock.deletedAt,
+    notes: null,
+    comments: [],
+    rating: null,
+  }),
+  saveMetadata: async (_id: string, metadata: AssistantMetadata) => {
+    mock.changes = structuredClone(metadata.changes ?? []);
+  },
+  executeTransaction: mock.write,
   folderIdsForSave: async () => mock.folderIds,
-  listFolders: async () => [{ id: "folder" }],
+  listFolders: async () => [
+    {
+      id: "folder",
+      name: "Folder",
+      parentId: null,
+      color: null,
+      sortOrder: 0,
+      createdAt: new Date(),
+    },
+  ],
   setSaveFolders: mock.saveFolders,
-  createFolder: mock.createFolder,
-  deleteFolder: vi.fn(),
-  renameFolder: vi.fn(),
-}));
-vi.mock("../tags", () => ({
   setSaveTags: mock.setTags,
-  createTag: vi.fn(),
-  mergeTags: vi.fn(),
-  renameTag: vi.fn(),
-}));
+  createFolder: mock.createFolder,
+};
+const reviewChanges = (input: Parameters<typeof review>[0]) =>
+  review(input, deps);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -73,9 +96,22 @@ beforeEach(() => {
       status: "pending",
     },
   ];
-  mock.write.mockImplementation(async (tx: { patch?: { title?: string } }) => {
+  mock.write.mockImplementation(async (tx) => {
     if (mock.fail) throw new Error("Disk unavailable");
-    if (tx.patch?.title !== undefined) mock.title = tx.patch.title;
+    if (tx.model === "save" && tx.kind === "update" && tx.patch.title != null)
+      mock.title = tx.patch.title;
+    return {
+      id: 1,
+      modelName: tx.model,
+      modelId: tx.id,
+      action: "U",
+      batchId: null,
+      data: null,
+      prevData: null,
+      actor: "agent",
+      actorReason: null,
+      createdAt: new Date(),
+    };
   });
 });
 const input = {

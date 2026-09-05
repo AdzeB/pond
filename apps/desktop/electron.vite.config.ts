@@ -55,7 +55,7 @@ export default defineConfig({
       rollupOptions: {
         input: resolve(__dirname, "src/main/index.ts"),
         /** Native modules resolve their platform .node binaries at runtime; `re2` isn't built here, so external lets url-regex-safe fall back to plain RegExp. */
-        external: ["electron", "better-sqlite3", "sharp", "re2"],
+        external: ["electron", "better-sqlite3", "sqlite-vec", "sharp", "re2"],
       },
     },
   },

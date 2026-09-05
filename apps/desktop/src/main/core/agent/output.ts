@@ -107,13 +107,14 @@ export function boundedSource(
   save: AssistantSource & { tags?: string[] },
   reference: number,
 ) {
-  return {
+  const result = {
     id: save.id,
     reference: `#save-${reference}`,
     title: sourceExcerpt(save.title, 200),
     source: sourceExcerpt(save.source, 50),
     description: sourceExcerpt(save.description),
     notes: sourceExcerpt(save.notes, 400),
-    ...(save.tags ? { tags: save.tags } : {}),
   };
+  if (save.tags) return { ...result, tags: save.tags };
+  return result;
 }

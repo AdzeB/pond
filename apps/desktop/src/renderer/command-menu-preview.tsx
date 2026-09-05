@@ -1,8 +1,8 @@
 import { Logo, Tooltip } from "@pond/ui";
 import { useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { CommandMenuHost } from "./src/components/library/command-menu";
-import { commandMenu } from "./src/stores/command-menu";
+import { CommandMenuHost } from "./src/features/library/components/command-menu/command-menu";
+import { commandMenu } from "./src/features/library/state/command-menu";
 import "./src/styles.css";
 
 if (!window.pond) {

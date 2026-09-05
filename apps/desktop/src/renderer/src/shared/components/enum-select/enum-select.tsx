@@ -1,0 +1,90 @@
+import { Select } from "@pond/ui";
+import { clsx as cn } from "clsx";
+import type { ReactNode } from "react";
+import { z } from "zod";
+import styles from "./enum-select.module.css";
+
+const StringLabelSchema = z.string();
+
+export interface EnumOption<T> {
+  value: T;
+  label: ReactNode;
+}
+
+interface EnumSelectProps<T> {
+  value: T;
+  onValueChange: (value: T) => void;
+  options: readonly EnumOption<T>[];
+  placeholder?: ReactNode;
+  disabled?: boolean;
+  className?: string;
+  align?: "start" | "center" | "end";
+  side?: "top" | "right" | "bottom" | "left";
+  sideOffset?: number;
+  "aria-label"?: string;
+}
+
+function longestStringLabel<T>(options: readonly EnumOption<T>[]): string {
+  let longest = "";
+  for (const option of options) {
+    const label = StringLabelSchema.safeParse(option.label);
+    if (label.success && label.data.length > longest.length)
+      longest = label.data;
+  }
+  return longest;
+}
+
+export function EnumSelect<T>({
+  value,
+  onValueChange,
+  options,
+  placeholder,
+  disabled,
+  className,
+  align,
+  side,
+  sideOffset = 6,
+  "aria-label": ariaLabel,
+}: EnumSelectProps<T>) {
+  const selected = options.find((option) => Object.is(option.value, value));
+  const hasNullOption = options.some((option) => option.value === null);
+  const sizer = longestStringLabel(options);
+
+  return (
+    <Select.Root<T>
+      value={value}
+      disabled={disabled}
+      onValueChange={(next) => {
+        if (next === null && !hasNullOption) return;
+        // SAFETY: the popup only emits values drawn from `options`, and a null
+        // reaches here only when `options` declares a null value.
+        onValueChange(next as T);
+      }}
+    >
+      <Select.Trigger className={className} aria-label={ariaLabel}>
+        <span className={styles.slot}>
+          {sizer ? (
+            <span className={styles.sizer} aria-hidden>
+              {sizer}
+            </span>
+          ) : null}
+          <Select.Value className={cn(sizer && styles.value)}>
+            {selected?.label ?? placeholder}
+          </Select.Value>
+        </span>
+      </Select.Trigger>
+      <Select.Portal>
+        <Select.Positioner sideOffset={sideOffset} align={align} side={side}>
+          <Select.Popup>
+            <Select.Items
+              items={options.map((option) => ({
+                value: option.value,
+                label: option.label,
+              }))}
+            />
+          </Select.Popup>
+        </Select.Positioner>
+      </Select.Portal>
+    </Select.Root>
+  );
+}

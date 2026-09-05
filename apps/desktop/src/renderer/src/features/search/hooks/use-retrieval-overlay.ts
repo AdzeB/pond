@@ -1,0 +1,77 @@
+import { useEffect, useState } from "react";
+import {
+  useSemanticQuery,
+  useVisualProbe,
+  type VisualProbe,
+} from "@/features/library/state/view-store";
+import type { Save } from "@/features/saves/types";
+import { retrieveSaveIds } from "@/features/search/lib/retrieve-client";
+import { usePrefs } from "@/features/settings/state/prefs";
+import { useStableById } from "../../../shared/hooks/use-stable-array";
+
+const LIMIT = 500;
+const SCOPE_CAP = 10_000;
+
+function visualInput(probe: VisualProbe) {
+  return probe.kind === "saveId"
+    ? { kind: "saveId" as const, id: probe.id }
+    : {
+        kind: "vector" as const,
+        model: probe.model,
+        values: probe.values,
+      };
+}
+
+export function useRetrievalOverlay(
+  saves: ReadonlyArray<Save>,
+): ReadonlyArray<Save> {
+  const [ai] = usePrefs("ai");
+  const semanticQuery = useSemanticQuery();
+  const visualProbe = useVisualProbe();
+  const semantic = ai?.semanticSearch === true ? semanticQuery : null;
+  const visual = ai?.enableClip === true ? visualProbe : null;
+  const [ranked, setRanked] = useState<Save[] | null>(null);
+  const [searching, setSearching] = useState(false);
+  const _scopeKey = saves.map((save) => save.id).join("\n");
+
+  useEffect(() => {
+    if (!semantic && !visual) {
+      setRanked(null);
+      setSearching(false);
+      return;
+    }
+    const scoped = saves.slice(0, SCOPE_CAP);
+    const byId = new Map(scoped.map((save) => [save.id, save] as const));
+    setSearching(true);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const ids = await retrieveSaveIds({
+          query: semantic ?? undefined,
+          visual: visual ? visualInput(visual) : undefined,
+          saveIds: scoped.map((save) => save.id),
+          limit: LIMIT,
+        });
+        if (cancelled) return;
+        setRanked(
+          ids.flatMap((id) => {
+            const save = byId.get(id);
+            return save ? [save] : [];
+          }),
+        );
+      } catch (error) {
+        if (!cancelled) console.warn("[pond overlay] retrieval failed", error);
+      } finally {
+        if (!cancelled) setSearching(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [semantic, visual, saves]);
+
+  const settled = useStableById(ranked ?? saves);
+  if (!semantic && !visual) return saves;
+  if (searching && ranked == null) return saves;
+  return settled;
+}

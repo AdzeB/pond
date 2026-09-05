@@ -7,6 +7,7 @@ import {
   unique,
 } from "drizzle-orm/sqlite-core";
 import type { Query } from "./filters/types";
+import type { JsonObject } from "./json";
 import type { ListKind } from "./list-kinds";
 import {
   DEFAULT_IMAGE_DOWNLOAD,
@@ -323,9 +324,7 @@ export const agentMessages = sqliteTable(
       .references(() => agentChats.id, { onDelete: "cascade" }),
     role: text("role").notNull(),
     content: text("content").notNull(),
-    metadata: text("metadata", { mode: "json" }).$type<
-      Record<string, unknown>
-    >(),
+    metadata: text("metadata", { mode: "json" }).$type<JsonObject>(),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(unixepoch() * 1000)`),

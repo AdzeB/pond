@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { AssistantResponse } from "../../src/renderer/src/components/library/agent-pane/assistant-response";
-import { ConversationThread } from "../../src/renderer/src/components/library/agent-pane/conversation-thread";
-import { Question } from "../../src/renderer/src/components/library/agent-pane/question";
-import { ResultSet } from "../../src/renderer/src/components/library/agent-pane/result-set";
-import { ToolActivity } from "../../src/renderer/src/components/library/agent-pane/tool-activity";
+import { AssistantResponse } from "../../src/renderer/src/features/agent/components/pane/assistant-response";
+import { ConversationThread } from "../../src/renderer/src/features/agent/components/pane/conversation-thread";
+import { Question } from "../../src/renderer/src/features/agent/components/pane/question";
+import { ResultSet } from "../../src/renderer/src/features/agent/components/pane/result-set";
+import { ToolActivity } from "../../src/renderer/src/features/agent/components/pane/tool-activity";
 import "../../src/renderer/src/styles.css";
 import "./preview.css";
 

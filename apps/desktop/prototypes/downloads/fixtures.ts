@@ -25,15 +25,15 @@ export type SampleSave = {
   held?: boolean;
 };
 
-export const sourceNames: Record<Source, string> = {
+export const sourceNames = {
   youtube: "YouTube",
   arena: "Are.na",
   cosmos: "Cosmos",
   pinterest: "Pinterest",
   instagram: "Instagram",
-};
+} satisfies Record<Source, string>;
 
-export const sources = Object.keys(sourceNames) as Source[];
+export const sources = ["youtube", "arena", "cosmos", "pinterest", "instagram"] satisfies Source[];
 
 export const variants = [
   {

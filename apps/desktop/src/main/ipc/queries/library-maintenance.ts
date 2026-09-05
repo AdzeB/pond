@@ -1,6 +1,7 @@
 import { basename } from "node:path";
 import { shell } from "electron";
 import log from "electron-log/main.js";
+import type { QueryResult } from "../../../shared/query-contracts";
 import {
   purgeLibrarySubdir,
   verifyLibraryIntegrity,
@@ -9,9 +10,10 @@ import { setPrefs } from "../../core/prefs";
 import { reconcileLibrary } from "../../core/scan";
 import { closeDb } from "../../db";
 import { libraryRoot } from "../../paths";
+import { runtimeControls } from "../../runtime";
 import type { QueryHandlerMap } from "./params";
 
-export const libraryMaintenanceQueries: QueryHandlerMap = {
+export const libraryMaintenanceQueries = {
   async "library.info"() {
     const path = libraryRoot();
     const name = basename(path).replace(/\.(pond|library)$/, "") || "Library";
@@ -69,7 +71,7 @@ export const libraryMaintenanceQueries: QueryHandlerMap = {
     return { ok: true as const };
   },
 
-  async "storage.snapshot"() {
+  async "storage.snapshot"(): Promise<QueryResult<"storage.snapshot">> {
     const { getStorageSnapshot } = await import("../../core/storage-stats");
     return await getStorageSnapshot();
   },
@@ -82,15 +84,14 @@ export const libraryMaintenanceQueries: QueryHandlerMap = {
     return { ok: true as const };
   },
 
-  async "storage.guardState"() {
+  async "storage.guardState"(): Promise<QueryResult<"storage.guardState">> {
     const { getStorageGuardState } = await import("../../core/storage-watcher");
     return getStorageGuardState();
   },
 
   async "api.restart"() {
     try {
-      const { restartHttpServer } = await import("../../index");
-      const result = await restartHttpServer();
+      const result = await runtimeControls.restartHttpServer();
       return { ok: true as const, ...result };
     } catch (err) {
       return {
@@ -120,8 +121,7 @@ export const libraryMaintenanceQueries: QueryHandlerMap = {
 
   async "quickCapture.applyPrefs"() {
     try {
-      const { applyPrefsAtRuntime } = await import("../../index");
-      await applyPrefsAtRuntime();
+      await runtimeControls.applyPrefsAtRuntime();
       return { ok: true as const };
     } catch (err) {
       log.warn("[pond ipc] applyPrefsAtRuntime failed", err);
@@ -134,8 +134,7 @@ export const libraryMaintenanceQueries: QueryHandlerMap = {
 
   async "window.applyPrefs"() {
     try {
-      const { applyWindowPrefsAtRuntime } = await import("../../index");
-      await applyWindowPrefsAtRuntime();
+      await runtimeControls.applyWindowPrefsAtRuntime();
       return { ok: true as const };
     } catch (err) {
       log.warn("[pond ipc] applyWindowPrefsAtRuntime failed", err);
@@ -145,4 +144,4 @@ export const libraryMaintenanceQueries: QueryHandlerMap = {
       };
     }
   },
-};
+} satisfies QueryHandlerMap;

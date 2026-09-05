@@ -1,2 +1,2 @@
-export { adapt, buildExpression, sourceIdFromUrl } from "./item";
+export { adapt, buildExpression } from "./item";
 export { buildPinterestListExpression, pinterestProfileUrl } from "./list";

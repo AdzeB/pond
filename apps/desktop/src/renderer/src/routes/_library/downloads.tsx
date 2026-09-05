@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { DownloadsPage } from "@/components/library/downloads/page";
+import { DownloadsPage } from "@/features/downloads/components/page/page";
 
 export const Route = createFileRoute("/_library/downloads")({
   component: RouteComponent,

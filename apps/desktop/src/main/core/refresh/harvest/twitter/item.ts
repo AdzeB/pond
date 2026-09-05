@@ -5,7 +5,6 @@ import {
   draftFromDomHarvest,
 } from "../../../capture/tweet-draft";
 import { type HarvestAdaptCtx, parsePageBlob } from "../from-page";
-import { bindSourceId } from "../source-id";
 import { harvestSource } from "./item-source";
 import { inPageTwitterNormalize } from "./normalize";
 
@@ -21,8 +20,6 @@ export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx): Capture | null {
     }),
   );
 }
-
-export const sourceIdFromUrl = bindSourceId("twitter");
 
 export function buildExpression(tweetId: string): string {
   const normSrc = `(${inPageTwitterNormalize.toString()})()`;

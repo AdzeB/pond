@@ -1,5 +1,4 @@
 import { parseQueryPlan, type RawQueryPlan } from "@pond/schema/query-plan";
-import { chat } from "@tanstack/ai";
 import { ASSISTANT_MODELS } from "../../../shared/assistant";
 import { loadAdapter } from "../agent/adapter";
 import { keyFor, parseProvider } from "../agent/keys";
@@ -30,6 +29,7 @@ export async function compilePlan(
   });
   if (!adapter) return null;
   const controller = new AbortController();
+  const { chat } = await import("@tanstack/ai");
   const stream = chat({
     adapter,
     systemPrompts: [buildSystemPrompt(ctx)],

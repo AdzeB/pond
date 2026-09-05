@@ -21,7 +21,7 @@ import {
   TrimmedTextParam,
 } from "./params";
 
-export const watchesQueries: QueryHandlerMap = {
+export const watchesQueries = {
   async "watches.list"() {
     fillMissingAvatars();
     const watches = await listWatches();
@@ -109,4 +109,4 @@ export const watchesQueries: QueryHandlerMap = {
       return { ok: true };
     },
   ),
-};
+} satisfies QueryHandlerMap;

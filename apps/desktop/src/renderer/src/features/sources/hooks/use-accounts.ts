@@ -1,0 +1,97 @@
+import { SOURCES, type Source } from "@pond/schema/db";
+import { useCallback, useEffect, useState } from "react";
+import { z } from "zod";
+import {
+  type SyncAccountStatus,
+  syncMonitor,
+} from "@/features/sources/state/sync-monitor";
+
+export interface AccountRow {
+  id: string;
+  source: Source;
+  handle: string | null;
+  label: string | null;
+  avatarUrl?: string | null;
+  addedAt: string;
+  sync: {
+    lastSyncedAt: string | null;
+    lastError: string | null;
+    knownCount: number;
+  };
+  connected: boolean;
+  syncing: boolean;
+}
+
+const AccountsReplySchema = z
+  .object({
+    accounts: z
+      .array(
+        z.object({
+          id: z.string(),
+          source: z.enum(SOURCES),
+          handle: z.string().nullable().catch(null),
+          label: z.string().nullable().catch(null),
+          avatarUrl: z.string().nullable().optional().catch(null),
+          addedAt: z.string().catch(""),
+          sync: z
+            .object({
+              lastSyncedAt: z.string().nullable().catch(null),
+              lastError: z.string().nullable().catch(null),
+              knownCount: z.number().catch(0),
+            })
+            .catch({ lastSyncedAt: null, lastError: null, knownCount: 0 }),
+          connected: z.boolean().catch(false),
+          syncing: z.boolean().catch(false),
+        }),
+      )
+      .catch([]),
+  })
+  .catch({ accounts: [] });
+
+interface AccountsResult {
+  accounts: AccountRow[];
+  loading: boolean;
+  refetch: () => Promise<AccountRow[]>;
+}
+
+export function useAccounts(): AccountsResult {
+  const [accounts, setAccounts] = useState<AccountRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  const refetch = useCallback(async (): Promise<AccountRow[]> => {
+    try {
+      const rows = AccountsReplySchema.parse(
+        await window.pond.query("accounts.list", {}),
+      ).accounts;
+      setAccounts(rows);
+      for (const account of rows) {
+        const status: Partial<SyncAccountStatus> = {
+          connected: account.connected,
+          lastSyncedAt: account.sync.lastSyncedAt,
+          lastError: account.sync.lastError,
+        };
+        if (account.syncing) status.state = "running";
+        syncMonitor.seed(account.id, account.source, status);
+      }
+      return rows;
+    } catch {
+      return [];
+    } finally {
+      setLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    void refetch().then((rows) => {
+      if (rows.some((row) => row.handle && row.avatarUrl === undefined)) {
+        timer = setTimeout(() => void refetch(), 4000);
+      }
+    });
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [refetch]);
+
+  return { accounts, loading: !loaded, refetch };
+}

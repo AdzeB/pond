@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import log from "electron-log/main.js";
+import type { ToolResult } from "./complete";
 import {
   applyFilter,
   applyFilterInput,
@@ -16,7 +17,7 @@ import {
   searchLibraryInput,
 } from "./tools";
 
-function textResult(value: unknown) {
+function textResult(value: ToolResult | undefined) {
   return {
     content: [{ type: "text" as const, text: JSON.stringify(value) }],
   };

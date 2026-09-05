@@ -98,13 +98,13 @@ export const scenes = [
   "empty",
 ] as const;
 export type Scene = (typeof scenes)[number];
-export const prompts: Record<Scene, string> = {
+export const prompts = {
   search: "Find references for a quiet, tactile interior",
   compare: "Compare these references. What should I take from each?",
   organize: "Bring these references together in a folder",
   question: "Help me narrow this down into a direction",
   empty: "",
-};
+} satisfies Record<Scene, string>;
 
 export const comparison = `These point to two directions: **warm and tactile**, or **dark and architectural**. The materials overlap; the light and the furniture change the feeling.
 

@@ -1,4 +1,4 @@
-import type { Source, SourceSyncPrefs, WatchedAccount } from "@pond/schema/db";
+import type { SourceSyncPrefs, WatchedAccount } from "@pond/schema/db";
 import { saves } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
 import { and, count, eq } from "drizzle-orm";
@@ -9,12 +9,7 @@ import { enqueue } from "../pipeline/enqueue";
 import { isSyncBlockedByStorageGuard } from "../storage-watcher";
 import { listAccountsForSource, partitionForAccount } from "../sync/accounts";
 import { emit, inFlight } from "../sync/sync-status";
-import {
-  getWatch,
-  getWatchSync,
-  listWatches,
-  patchWatchSync,
-} from "../sync/watches";
+import { getWatch, getWatchSync, patchWatchSync } from "../sync/watches";
 import { listArenaWatch } from "./arena";
 import { listCosmosWatch } from "./cosmos-scrape";
 import { listPinterestWatch } from "./pinterest-rss";
@@ -29,26 +24,6 @@ interface WatchOptions {
 const WATCH_WATCHDOG_MS = 10 * 60_000;
 
 const FIRST_CHECK_CAP = 30;
-
-export async function watchAll(opts: WatchOptions = {}): Promise<void> {
-  const watches = await listWatches();
-  if (watches.length === 0) return;
-  const bySource = new Map<Source, WatchedAccount[]>();
-  for (const watch of watches) {
-    const list = bySource.get(watch.source) ?? [];
-    list.push(watch);
-    bySource.set(watch.source, list);
-  }
-  await Promise.all(
-    Array.from(bySource.values()).map(async (group) => {
-      for (const watch of group) {
-        await watchNow(watch.id, opts).catch((err) =>
-          log.warn("[pond watch] watchNow threw", watch.id, err),
-        );
-      }
-    }),
-  );
-}
 
 export async function watchNow(
   watchId: string,

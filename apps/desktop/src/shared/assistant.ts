@@ -94,21 +94,18 @@ export const ASSISTANT_MODELS = [
 ] as const;
 
 export type AssistantProvider = (typeof ASSISTANT_MODELS)[number]["id"];
-export const ASSISTANT_PROVIDER_IDS = ASSISTANT_MODELS.map(
-  (model) => model.id,
-) as [AssistantProvider, ...AssistantProvider[]];
-export const assistantProvider = z.enum(ASSISTANT_PROVIDER_IDS);
-export const assistantScope = z.discriminatedUnion("kind", [
+const ASSISTANT_PROVIDER_IDS = ASSISTANT_MODELS.map((model) => model.id);
+const assistantProvider = z.enum(ASSISTANT_PROVIDER_IDS);
+const assistantScope = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("library") }),
   z.object({ kind: z.literal("folder"), id: z.string().min(1) }),
   z.object({ kind: z.literal("attachments") }),
 ]);
-export type AssistantScope = z.infer<typeof assistantScope>;
 
 export const ASSISTANT_CHANGE_CAP = 100;
-export const ASSISTANT_ATTACH_CAP = 200;
+const ASSISTANT_ATTACH_CAP = 200;
 
-export const assistantLibraryAction = z.enum([
+const assistantLibraryAction = z.enum([
   "folderCreate",
   "folderRename",
   "folderDelete",
@@ -130,14 +127,14 @@ export const assistantLibraryAction = z.enum([
   "batchRename",
   "purgeTrash",
 ]);
-export type AssistantLibraryAction = z.infer<typeof assistantLibraryAction>;
+
 export const assistantQuestion = z.object({
   question: z.string().trim().min(1).max(300),
   options: z.array(z.string().trim().min(1).max(160)).min(2).max(4),
 });
 export type AssistantQuestion = z.infer<typeof assistantQuestion>;
 
-export const assistantChangeProposal = z.discriminatedUnion("field", [
+const assistantChangeProposal = z.discriminatedUnion("field", [
   z.object({
     saveId: z.string(),
     field: z.literal("title"),
@@ -315,7 +312,7 @@ export const assistantChange = z.intersection(
       action: assistantLibraryAction,
       before: z.string().nullable(),
       after: z.string(),
-      payload: z.record(z.string(), z.unknown()).optional(),
+      payload: z.record(z.string(), z.json()).optional(),
     }),
   ]),
 );

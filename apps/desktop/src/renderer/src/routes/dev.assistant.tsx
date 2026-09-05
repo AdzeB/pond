@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AssistantLab } from "@/components/dev/assistant";
+import { AssistantLab } from "@/dev/assistant/assistant";
 
 export const Route = createFileRoute("/dev/assistant")({
   component: AssistantLabRoute,

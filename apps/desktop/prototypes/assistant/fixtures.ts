@@ -97,11 +97,11 @@ export type Surface = "page" | "pane";
 export type Theme = "dark" | "light";
 export type Provider = "Ollama" | "Anthropic" | "OpenAI";
 export type Scope = "library" | "design" | "attached";
-export const scopeLabels: Record<Scope, string> = {
+export const scopeLabels = {
   library: "Library",
   design: "Design Folder",
   attached: "Attached Saves",
-};
+} satisfies Record<Scope, string>;
 
 export const saves = [
   {

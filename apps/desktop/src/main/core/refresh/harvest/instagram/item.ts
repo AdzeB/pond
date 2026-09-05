@@ -3,7 +3,6 @@
 import type { JsonValue } from "@pond/schema/json";
 import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
-import { bindSourceId } from "../source-id";
 import {
   type InstagramMedia,
   type InstagramMediaNode,
@@ -166,5 +165,3 @@ async function inPageInstagramHarvest(
 export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx) {
   return captureFromPageDom(raw, ctx);
 }
-
-export const sourceIdFromUrl = bindSourceId("instagram");

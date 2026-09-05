@@ -4,18 +4,14 @@ import { join, resolve as resolvePath } from "node:path";
 import { app, globalShortcut, ipcMain } from "electron";
 import log from "electron-log/main.js";
 import { DEFAULT_APP_ICON } from "../shared/app-icons";
-import {
-  DEFAULT_INGEST_PORT,
-  IPC,
-  type RecentMenuEntry,
-} from "../shared/constants";
+import { IPC, type RecentMenuEntry } from "../shared/constants";
 import { startAutoImport } from "./core/auto-import";
 import { ensureDefaultLibrary } from "./core/ensure-default-library";
 import { registerSyncActionListener } from "./core/executor";
 import { syncLibraryRootMetadata } from "./core/library-ops";
 import { flushGovernor } from "./core/pipeline/rate-governor";
 import { startReconciler } from "./core/pipeline/reconciler-client";
-import { getPrefs, invalidatePrefs } from "./core/prefs";
+import { getPrefs } from "./core/prefs";
 import { disposeHiddenWindow } from "./core/refresh/scrape-window";
 import { disposeRenderCardWindow } from "./core/render-card";
 import {
@@ -36,7 +32,6 @@ import {
 } from "./crons";
 import { getDb } from "./db";
 import { handleDeepLink } from "./deep-link";
-import { type RunningServer, startHttpServer } from "./http/server";
 import { registerIpc } from "./ipc";
 import { ensureIngestToken } from "./keychain";
 import { broadcast } from "./lib/broadcast";
@@ -46,8 +41,8 @@ import { writeNativeHostManifests } from "./native/manifests";
 import { startNativeServer, stopNativeServer } from "./native/server";
 import { libraryRoot, resolvePaths } from "./paths";
 import { registerProtocol, registerScheme } from "./protocol";
+import { runtimeControls } from "./runtime";
 import { configureSessionDefaults } from "./session-config";
-import { setTrayVisible } from "./tray";
 import { registerAutoUpdater } from "./updater";
 import {
   beginQuit,
@@ -95,7 +90,6 @@ log.info("[pond] main starting", {
 
 const wantsMcp = process.argv.includes("--mcp");
 
-let httpServer: RunningServer | null = null;
 let nativeServer: NetServer | null = null;
 let stopMediaWarmer: (() => void) | null = null;
 
@@ -232,11 +226,7 @@ async function postLaunchInit(): Promise<void> {
   void startDeferredMaintenance();
 
   try {
-    const prefs = await getPrefs();
-    httpServer = await startHttpServer(
-      prefs.api.port || DEFAULT_INGEST_PORT,
-      prefs.api.bindAddress,
-    );
+    await runtimeControls.startHttpServer();
   } catch (err) {
     log.error("[pond] http server failed to start", err);
   }
@@ -269,9 +259,9 @@ async function postLaunchInit(): Promise<void> {
   await initTray();
   registerSyncActionListener(() => queueTrayRefresh());
 
-  void applyPrefsAtRuntime().catch((err) =>
-    log.warn("[pond] applyPrefsAtRuntime failed", err),
-  );
+  void runtimeControls
+    .applyPrefsAtRuntime()
+    .catch((err) => log.warn("[pond] applyPrefsAtRuntime failed", err));
 
   subscribeToSyncStatus(broadcastSyncStatus);
 }
@@ -355,48 +345,6 @@ function registerSummonHotkey() {
   if (!ok) log.warn(`[pond] summon hotkey ${summonAccel} not registered`);
 }
 
-export async function applyPrefsAtRuntime() {
-  invalidatePrefs();
-  const prefs = await getPrefs();
-  await setTrayVisible(prefs.quickCapture.menuBarIcon);
-  /** Dev binaries can't register a login item; macOS rejects it. */
-  if (app.isPackaged) {
-    app.setLoginItemSettings({
-      openAtLogin: prefs.quickCapture.launchAtLogin,
-      openAsHidden: true,
-    });
-  }
-  setCloseToTray(prefs.window.closeToTray === true);
-  const { applyAppIcon } = await import("./core/app-icon");
-  await applyAppIcon(prefs.window.appIcon);
-}
-
-export async function applyWindowPrefsAtRuntime() {
-  invalidatePrefs();
-  const prefs = await getPrefs();
-  setCloseToTray(prefs.window.closeToTray === true);
-}
-
-export async function restartHttpServer(): Promise<{
-  port: number;
-  host: string;
-}> {
-  invalidatePrefs();
-  const prefs = await getPrefs();
-  if (httpServer) {
-    try {
-      await httpServer.close();
-    } catch (err) {
-      log.warn("[pond] http close failed", err);
-    }
-  }
-  httpServer = await startHttpServer(
-    prefs.api.port || DEFAULT_INGEST_PORT,
-    prefs.api.bindAddress,
-  );
-  return { port: httpServer.port, host: httpServer.host };
-}
-
 app.on("window-all-closed", () => {
   if (process.platform === "darwin") {
     app.dock?.hide();
@@ -442,7 +390,7 @@ app.on("before-quit", async () => {
     log.warn("[pond] native host close failed", err);
   }
   try {
-    await httpServer?.close();
+    await runtimeControls.closeHttpServer();
   } catch (err) {
     log.warn("[pond] http server close failed", err);
   }

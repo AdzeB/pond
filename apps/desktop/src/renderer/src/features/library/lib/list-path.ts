@@ -1,0 +1,38 @@
+import { parseMode } from "@/features/saves/lib/list";
+import { listBaseFromPath } from "@/features/search/lib/schemas";
+
+let lastListPath = "/";
+let lastListSearch = "";
+
+function isSavePath(pathname: string): boolean {
+  return /^\/save\/[^/]+\/?$/.test(pathname);
+}
+
+function isLibraryListPath(pathname: string): boolean {
+  if (isSavePath(pathname) || pathname === "/assistant") return false;
+  if (pathname.startsWith("/sources")) {
+    return false;
+  }
+  if (pathname.startsWith("/downloads")) return true;
+  return parseMode(listBaseFromPath(pathname)) !== null;
+}
+
+export function rememberListPath(pathname: string, search = ""): void {
+  if (!isLibraryListPath(pathname)) return;
+  lastListPath = listBaseFromPath(pathname);
+  lastListSearch = search;
+}
+
+export function getLastListPath(): string {
+  return lastListPath;
+}
+
+export function getLastListSearch(): string {
+  return lastListSearch;
+}
+
+export function listPathForLocation(pathname: string): string {
+  if (isSavePath(pathname)) return lastListPath;
+  if (isLibraryListPath(pathname)) return listBaseFromPath(pathname);
+  return lastListPath;
+}

@@ -10,7 +10,7 @@ function loadReconciler(): Promise<Reconciler> {
   return reconcilerPromise;
 }
 
-function reportLoadFailure(error: unknown): void {
+function reportLoadFailure(error: Error): void {
   log.error("[pipeline] failed to load reconciler", error);
 }
 

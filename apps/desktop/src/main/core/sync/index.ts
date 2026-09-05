@@ -22,7 +22,6 @@ import { listWatches } from "./watches";
 export { getAccountSync } from "./accounts";
 export { migrateLegacySyncPrefs } from "./migrate-legacy";
 export {
-  cancelAllSyncs,
   cancelSync,
   isSyncing,
   type SyncStatusUpdate,

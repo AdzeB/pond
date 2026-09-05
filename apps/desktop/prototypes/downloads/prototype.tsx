@@ -1,3 +1,4 @@
+import { z } from "zod";
 import {
   IconMediaPauseFill18 as Pause,
   IconMediaPlayFill18 as Play,
@@ -217,7 +218,7 @@ function Empty({ filtered = false }: { filtered?: boolean }) {
   );
 }
 
-export function VariantA({ saves, paused, actions }: ViewProps) {
+function VariantA({ saves, paused, actions }: ViewProps) {
   const [showCompleted, setShowCompleted] = useState(true);
   const active = saves.filter(isActive);
   const failed = saves.filter((s) => s.state === "failed");
@@ -301,7 +302,7 @@ export function VariantA({ saves, paused, actions }: ViewProps) {
   );
 }
 
-export function VariantB({ saves, paused, actions }: ViewProps) {
+function VariantB({ saves, paused, actions }: ViewProps) {
   const available = sources.filter((source) =>
     saves.some((s) => s.source === source),
   );
@@ -462,7 +463,7 @@ export function VariantB({ saves, paused, actions }: ViewProps) {
   );
 }
 
-export function VariantC({ saves, paused, actions }: ViewProps) {
+function VariantC({ saves, paused, actions }: ViewProps) {
   const running = saves.filter(
     (s) => s.state === "downloading" || s.state === "processing",
   );
@@ -963,7 +964,7 @@ function VariantD({ saves, paused, actions }: ViewProps) {
 
 type QuietStatus = "current" | "attention" | "saved";
 
-export function VariantE({
+function VariantE({
   saves,
   paused,
   actions,
@@ -1433,7 +1434,7 @@ export function DownloadsPrototype() {
             Sample
             <select
               value={scenario}
-              onChange={(event) => reset(event.target.value as Scenario)}
+              onChange={(event) => reset(z.enum(["mixed", "processing", "attention", "complete", "empty"]).parse(event.target.value))}
             >
               <option value="mixed">Mixed Activity</option>
               <option value="processing">Processing Files</option>
@@ -1636,7 +1637,7 @@ export function DownloadsPrototype() {
                       aria-label="Filter by Status"
                       value={quietStatus}
                       onChange={(event) =>
-                        setQuietStatus(event.target.value as QuietStatus)
+                        setQuietStatus(z.enum(["current", "attention", "saved"]).parse(event.target.value))
                       }
                     >
                       <option value="current">

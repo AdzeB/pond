@@ -1,63 +1,43 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Save } from "@pond/schema/db";
+import { describe, expect, it } from "vitest";
+import { migrateLibraryScope } from "./library-scope-migration";
 
-const mocks = vi.hoisted(() => ({
-  executeBatch: vi.fn(),
-  getDb: vi.fn(),
-}));
-
-vi.mock("../db", () => ({ getDb: mocks.getDb }));
-vi.mock("./executor", () => ({ executeBatch: mocks.executeBatch }));
-vi.mock("electron-log/main.js", () => ({
-  default: { info: vi.fn(), warn: vi.fn() },
-}));
-
-import { runLibraryScopeMigration } from "./library-scope-migration";
-
-function migrationDb(queryResults: unknown[][]) {
-  let queryIndex = 0;
-  return {
-    select: vi.fn(() => ({
-      from: vi.fn(() => ({
-        where: vi.fn(() => ({
-          all: vi.fn(() => queryResults[queryIndex++] ?? []),
-        })),
-      })),
-    })),
-    update: vi.fn(),
-  };
-}
-
-describe("runLibraryScopeMigration", () => {
-  beforeEach(() => {
-    mocks.executeBatch.mockReset();
-    mocks.getDb.mockReset();
-  });
-
-  it("does not purge valid saves whose media type is file", async () => {
-    mocks.getDb.mockResolvedValue(
-      migrationDb([
-        [
-          {
-            id: "local-archive",
-            source: "local",
-            mediaType: "file",
-            files: [
-              {
-                kind: "file",
-                path: "archive.zip",
-                sha256: "hash",
-                size: 128,
-              },
-            ],
-          },
-        ],
-        [],
-        [],
-      ]),
-    );
-
-    await runLibraryScopeMigration();
-
-    expect(mocks.executeBatch).not.toHaveBeenCalled();
+describe("library scope migration", () => {
+  it("retains file saves while repairing legacy media types and missing site names", () => {
+    const updates: Array<{
+      id: string;
+      patch: Pick<Partial<Save>, "mediaType" | "siteName">;
+    }> = [];
+    migrateLibraryScope({
+      fileSaveIds: () => [{ id: "local-archive" }],
+      mixedSaves: () => [{ id: "legacy-mixed", files: [] }],
+      textSaves: () => [
+        {
+          id: "local-text",
+          source: "local",
+          description: "Keep this note",
+          files: [],
+          rawJson: null,
+        },
+        {
+          id: "web-text",
+          source: "web",
+          description: "An article",
+          files: [],
+          rawJson: null,
+        },
+      ],
+      missingSiteNames: () => [
+        { id: "web-text", url: "https://example.com/article" },
+      ],
+      updateSave: (id, patch) => {
+        updates.push({ id, patch });
+      },
+    });
+    expect(updates).toEqual([
+      { id: "legacy-mixed", patch: { mediaType: "image" } },
+      { id: "web-text", patch: { mediaType: "link" } },
+      { id: "web-text", patch: { siteName: "example.com" } },
+    ]);
   });
 });

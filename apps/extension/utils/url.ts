@@ -1,7 +1,5 @@
 import type { Source } from "@pond/schema/db";
 
-export { hostToSource } from "@pond/schema/sources";
-
 export function cookieDomainsForSource(source: Source): string[] {
   switch (source) {
     case "twitter":
@@ -26,8 +24,4 @@ export function cookieDomainsForSource(source: Source): string[] {
     case "local":
       return [];
   }
-}
-
-export function cookieDomainForSource(source: Source): string | null {
-  return cookieDomainsForSource(source)[0] ?? null;
 }

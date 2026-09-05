@@ -121,7 +121,7 @@ function isSaveMutation(
   const friendly = getHeader("x-fb-friendly-name");
   if (friendly === "usePolarisSaveMediaSaveMutation") return true;
   const root = getHeader("x-root-field-name");
-  if (root && /__save$/.test(root) && !/unsave/i.test(root)) return true;
+  if (root?.endsWith("__save") && !/unsave/i.test(root)) return true;
   if (bodyStr) {
     if (bodyStr.includes("usePolarisSaveMediaSaveMutation")) return true;
     if (
@@ -151,7 +151,7 @@ function isLikeMutation(
   if (/unlike/i.test(friendly)) return false;
   if (/like/i.test(friendly) && /mutation/i.test(friendly)) return true;
   const root = getHeader("x-root-field-name");
-  if (root && /__like$/.test(root) && !/unlike/i.test(root)) return true;
+  if (root?.endsWith("__like") && !/unlike/i.test(root)) return true;
   if (bodyStr) {
     if (/Unlike/i.test(bodyStr) && /usePolarisLikeMediaUnlike/.test(bodyStr)) {
       return false;

@@ -5,9 +5,9 @@ import { walkCaptureMedia } from "@pond/schema/raw";
 import log from "electron-log/main.js";
 import { persistSave } from "../../persist-save";
 import { captureFromSource } from "../../refresh/harvest/capture";
-import { isFreshHarvest } from "../enqueue";
 import { extractorFor, resolveExtractor } from "../extractors";
 import type { Capture, RawJson } from "../extractors/types";
+import { isFreshHarvest } from "../harvest-freshness";
 import { readSave } from "./apply";
 
 interface HarvestPayload {

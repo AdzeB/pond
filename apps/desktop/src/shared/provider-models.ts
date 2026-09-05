@@ -3,10 +3,10 @@ export interface ProviderModel {
   name: string;
 }
 
-const TOKENS: Record<string, string> = {
-  gpt: "GPT",
-  chatgpt: "ChatGPT",
-};
+const TOKENS = new Map([
+  ["gpt", "GPT"],
+  ["chatgpt", "ChatGPT"],
+]);
 
 export function displayName(id: string): string {
   return id
@@ -14,7 +14,7 @@ export function displayName(id: string): string {
     .split(/[-_/]/)
     .filter(Boolean)
     .map((part) => {
-      const token = TOKENS[part.toLowerCase()];
+      const token = TOKENS.get(part.toLowerCase());
       if (token) return token;
       if (/^\d/.test(part)) return part;
       if (part.length <= 2) return part.toUpperCase();

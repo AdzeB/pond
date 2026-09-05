@@ -1,5 +1,5 @@
 import { createRootRoute } from "@tanstack/react-router";
-import { RootShell } from "@/components/shell/root-shell";
+import { RootShell } from "@/app/components/root-shell";
 
 export const Route = createRootRoute({
   component: RootShell,

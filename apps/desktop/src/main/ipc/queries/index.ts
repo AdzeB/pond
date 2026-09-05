@@ -1,4 +1,5 @@
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { IPC } from "../../../shared/constants";
 import { safeHandle } from "../helpers";
 import { accountsQueries } from "./accounts";
@@ -18,7 +19,9 @@ import { tagsQueries } from "./tags";
 import { videoQueries } from "./video";
 import { watchesQueries } from "./watches";
 
-const queryRegistry: QueryHandlerMap = {
+type ContractHandlers = Required<QueryHandlerMap>;
+
+const queryRegistry = {
   ...savesQueries,
   ...downloadsQueries,
   ...settingsQueries,
@@ -34,11 +37,17 @@ const queryRegistry: QueryHandlerMap = {
   ...agentQueries,
   ...accountsQueries,
   ...watchesQueries,
-};
+} satisfies ContractHandlers;
+
+const QueryNameSchema = z.custom<keyof typeof queryRegistry>(
+  (value) => z.enum(Object.keys(queryRegistry)).safeParse(value).success,
+);
 
 export function registerQueryHandler(): void {
   safeHandle(IPC.query, async (event, name: string, raw?: QueryParams) => {
-    const handler = queryRegistry[name];
+    const parsedName = QueryNameSchema.safeParse(name);
+    if (!parsedName.success) throw new Error(`unknown query: ${name}`);
+    const handler = queryRegistry[parsedName.data];
     if (!handler) throw new Error(`unknown query: ${name}`);
     try {
       return await handler(raw, event);

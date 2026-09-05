@@ -88,11 +88,7 @@ async function inPageInstagramLikes(
 
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-  function collect(text: string): {
-    added: number;
-    fresh: number;
-    next: NextPage | null;
-  } {
+  function collect(text: string) {
     let added = 0;
     let fresh = 0;
     for (const match of text.matchAll(ITEM_RE)) {

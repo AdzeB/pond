@@ -1,18 +1,8 @@
 // @vitest-environment jsdom
-import {
-  act,
-  type CSSProperties,
-  type PropsWithChildren,
-  useCallback,
-  useState,
-} from "react";
+import { act, type CSSProperties, useCallback, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Window } from "../../../packages/ui/src/window";
-
-vi.mock("../../../packages/ui/src/tooltip", () => ({
-  Tooltip: ({ children }: PropsWithChildren) => children,
-}));
 
 describe("sidebar resize handle", () => {
   let container: HTMLDivElement;
@@ -31,11 +21,11 @@ describe("sidebar resize handle", () => {
       collapsed();
       setOpen(false);
     }, []);
+    const style: CSSProperties & { "--window-left-track": string } = {
+      "--window-left-track": `${width}px`,
+    };
     return (
-      <Window.Root
-        leftOpen={open}
-        style={{ "--window-left-track": `${width}px` } as CSSProperties}
-      >
+      <Window.Root leftOpen={open} style={style}>
         <Window.Left
           open={open}
           minWidth={220}

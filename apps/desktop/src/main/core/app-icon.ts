@@ -9,6 +9,7 @@ import {
   sortAppIconIds,
 } from "../../shared/app-icons";
 import { resolveMainOut } from "../lib/resolve-preload";
+import { mainWindowState } from "../window-state";
 import { getPrefs } from "./prefs";
 
 const DOCK_CONTENT_SCALE = 0.8;
@@ -125,8 +126,7 @@ export async function applyAppIcon(id?: string): Promise<void> {
   try {
     const image = await dockImage(path);
     if (process.platform !== "darwin") {
-      const { getMainWindow } = await import("../window");
-      const win = getMainWindow();
+      const win = mainWindowState.current;
       if (win && !win.isDestroyed()) win.setIcon(image);
     } else {
       app.dock?.setIcon(image);
