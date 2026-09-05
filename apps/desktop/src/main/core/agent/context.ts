@@ -30,6 +30,7 @@ import {
   grepLibraryInput,
   type LibraryScope,
   libraryOverview,
+  libraryOverviewInput,
   openSave,
   openSaveInput,
   readSave,
@@ -90,7 +91,7 @@ export function libraryContext(input: {
     {
       name: "showSaves",
       description:
-        "Display an inline collection of Saves already found with searchLibrary or readSave. Use this for lookup results; do not repeat the Save list in prose. Only known Save IDs are accepted.",
+        "Display a small inline collection of Saves already found with searchLibrary or readSave. Use this after you have something to say about them; do not dump an exhaustive search list. Do not repeat the Save list in prose. Only known Save IDs are accepted.",
       schema: assistantResultSet,
       execute: async (args) => {
         input.signal.throwIfAborted();
@@ -128,7 +129,7 @@ export function libraryContext(input: {
     {
       name: "searchLibrary",
       description:
-        "Search saved titles, descriptions, authors, tags, captions, OCR, transcripts, notes, and URLs within the user's selected scope. Use media as a filter rather than adding words such as pictures or videos to query. Omit query to list recent Saves.",
+        "Gather Saves from titles, descriptions, authors, tags, captions, OCR, transcripts, notes, and URLs within the selected scope. Use media as a filter rather than adding words such as pictures or videos to query. Omit query to list recent Saves. Then explain or act; call showSaves for a small set to display.",
       schema: searchLibraryInput,
       execute: async (args) => {
         const parsed = searchLibraryInput.parse(args);
@@ -136,16 +137,6 @@ export function libraryContext(input: {
           ...parsed,
           limit: parsed.limit ?? 24,
         });
-        const saveIds = saves
-          .filter((save) => sources.has(save.id))
-          .map((save) => save.id);
-        if (saveIds.length)
-          showResult({
-            title: parsed.query?.trim()
-              ? `Results for “${parsed.query.trim()}”`.slice(0, 120)
-              : "Recent Saves",
-            saveIds,
-          });
         return {
           saves: saves.filter((save) => sources.has(save.id)).map(forModel),
         };
@@ -179,8 +170,8 @@ export function libraryContext(input: {
     {
       name: "libraryOverview",
       description:
-        "Library counts, top folders, tags, sources, and embedding coverage.",
-      schema: z.object({}),
+        "Library counts, coverage, and how many Saves are untagged, untitled, or unfiled. Use this once, then say what to organize first.",
+      schema: libraryOverviewInput,
       execute: async () => {
         input.signal.throwIfAborted();
         return libraryOverview();

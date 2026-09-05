@@ -1,6 +1,6 @@
 import { FilterBar, FilterToggle } from "@/components/library/filter-menu";
 import { SearchChrome } from "@/components/library/search-chrome";
-import { ViewMenu } from "@/components/library/view-menu";
+import { SortMenu, ViewMenu } from "@/components/library/view-menu";
 import { SearchComposer } from "@/components/search/bar";
 
 export function LibraryChrome() {
@@ -9,6 +9,7 @@ export function LibraryChrome() {
       actions={
         <>
           <FilterToggle />
+          <SortMenu />
           <ViewMenu />
         </>
       }

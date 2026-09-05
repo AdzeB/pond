@@ -44,8 +44,10 @@ describe("library layout transition", () => {
     viewport.dataset.libraryGridViewport = "";
     const grid = document.createElement("ul");
     const visible = document.createElement("li");
+    visible.dataset.libraryCard = "";
     visible.dataset.saveId = "visible";
     const offscreen = document.createElement("li");
+    offscreen.dataset.libraryCard = "";
     offscreen.dataset.saveId = "offscreen";
     grid.append(visible, offscreen);
     viewport.append(grid);

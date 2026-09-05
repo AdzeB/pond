@@ -17,6 +17,7 @@ const POPUP_STYLE: PopupStyle = {
 interface SpecContextMenuProps {
   buildItems: () => MenuItemSpec[];
   onOpen?: (eventDetails: OpenChangeDetails) => void;
+  className?: string;
   children: ReactElement;
 }
 
@@ -32,6 +33,7 @@ function isEditableTarget(target: EventTarget | null): boolean {
 export function SpecContextMenu({
   buildItems,
   onOpen,
+  className,
   children,
 }: SpecContextMenuProps) {
   return (
@@ -48,7 +50,7 @@ export function SpecContextMenu({
       <ContextMenu.Trigger render={children} />
       <ContextMenu.Portal>
         <ContextMenu.Positioner style={POPUP_STYLE}>
-          <ContextMenu.Popup>
+          <ContextMenu.Popup className={className}>
             <LazyItems build={buildItems} />
           </ContextMenu.Popup>
         </ContextMenu.Positioner>

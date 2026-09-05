@@ -1,7 +1,8 @@
 import { saves, tags } from "@pond/schema/db";
-import { isEmptyQuery, type Query } from "@pond/schema/filters";
-import { EMPTY_QUERY } from "@pond/schema/filters/types";
-import { and, count, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import type { Query } from "@pond/schema/filters";
+import { tagsEmpty } from "@pond/schema/filters/fields";
+import { FIELD_IDS } from "@pond/schema/filters/meta";
+import { and, count, desc, eq, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { IPC } from "../../../shared/constants";
 import { getDb } from "../../db";
@@ -33,8 +34,57 @@ export const grepLibraryInput = z.object({
   limit: z.number().int().min(1).max(50).optional(),
 });
 
+const FILTER_FIELD = z.enum(FIELD_IDS as [string, ...string[]]);
+const FILTER_OPERATOR = z.enum([
+  "eq",
+  "neq",
+  "in",
+  "nin",
+  "lt",
+  "lte",
+  "gt",
+  "gte",
+  "between",
+  "contains",
+  "startsWith",
+  "endsWith",
+  "some",
+  "every",
+  "none",
+  "exists",
+  "empty",
+  "near",
+]);
+const filterValue = z.union([
+  z.string(),
+  z.number(),
+  z.boolean(),
+  z.array(z.union([z.string(), z.number()])),
+  z.object({ hex: z.string(), tolerance: z.number() }),
+]);
+const filterPredicate = z.object({
+  field: FILTER_FIELD,
+  operator: FILTER_OPERATOR,
+  value: filterValue.optional(),
+  negate: z.boolean().optional(),
+});
+const filterGroup = z.object({
+  combinator: z.enum(["and", "or"]),
+  not: z.boolean().optional(),
+  rules: z.array(
+    z.union([
+      filterPredicate,
+      z.object({
+        combinator: z.enum(["and", "or"]),
+        not: z.boolean().optional(),
+        rules: z.array(filterPredicate),
+      }),
+    ]),
+  ),
+});
+
 export const applyFilterInput = z.object({
-  query: z.unknown(),
+  query: filterGroup,
 });
 
 export const setOverlayInput = z.object({
@@ -254,13 +304,16 @@ export async function grepLibrary(
   };
 }
 
+function countOf(row?: { n?: unknown }) {
+  const value = Number(row?.n ?? 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
 export async function libraryOverview() {
   const db = await getDb();
   const prefs = await getPrefs();
-  const [saveCount] = await db
-    .select({ n: count() })
-    .from(saves)
-    .where(isNull(saves.deletedAt));
+  const active = isNull(saves.deletedAt);
+  const [saveCount] = await db.select({ n: count() }).from(saves).where(active);
   const [trashCount] = await db
     .select({ n: count() })
     .from(saves)
@@ -268,11 +321,29 @@ export async function libraryOverview() {
   const [textCount] = await db
     .select({ n: count() })
     .from(saves)
-    .where(and(isNull(saves.deletedAt), isNotNull(saves.embeddingModel)));
+    .where(and(active, isNotNull(saves.embeddingModel)));
   const [clipCount] = await db
     .select({ n: count() })
     .from(saves)
-    .where(and(isNull(saves.deletedAt), isNotNull(saves.clipModel)));
+    .where(and(active, isNotNull(saves.clipModel)));
+  const [tagCount] = await db.select({ n: count() }).from(tags);
+  const [untaggedCount] = await db
+    .select({ n: count() })
+    .from(saves)
+    .where(and(active, tagsEmpty()));
+  const [untitledCount] = await db
+    .select({ n: count() })
+    .from(saves)
+    .where(and(active, or(isNull(saves.title), eq(saves.title, ""))));
+  const [unfiledCount] = await db
+    .select({ n: count() })
+    .from(saves)
+    .where(
+      and(
+        active,
+        sql`not exists (select 1 from save_folders where save_id = ${saves.id})`,
+      ),
+    );
   const folders = await listFolders();
   const tagRows = await db
     .select({ name: tags.name, usageCount: tags.usageCount })
@@ -282,36 +353,40 @@ export async function libraryOverview() {
   const sources = await db
     .select({ source: saves.source, n: count() })
     .from(saves)
-    .where(isNull(saves.deletedAt))
+    .where(active)
     .groupBy(saves.source)
     .orderBy(desc(count()))
     .limit(12);
   return {
-    saves: saveCount?.n ?? 0,
-    trash: trashCount?.n ?? 0,
+    saves: countOf(saveCount),
+    trash: countOf(trashCount),
     folders: folders.length,
-    tags: tagRows.length,
+    tags: countOf(tagCount),
+    messy: {
+      untagged: countOf(untaggedCount),
+      untitled: countOf(untitledCount),
+      unfiled: countOf(unfiledCount),
+    },
     topFolders: folders.slice(0, 12).map((folder) => ({
       id: folder.id,
       name: folder.name,
     })),
     topTags: tagRows,
-    topSources: sources,
+    topSources: sources.map((row) => ({
+      source: row.source,
+      n: countOf(row),
+    })),
     index: {
       semanticSearch: prefs.ai.semanticSearch === true,
       enableClip: prefs.ai.enableClip === true,
-      textVectors: textCount?.n ?? 0,
-      clipVectors: clipCount?.n ?? 0,
+      textVectors: countOf(textCount),
+      clipVectors: countOf(clipCount),
     },
   };
 }
 
 export async function applyFilter(input: z.infer<typeof applyFilterInput>) {
-  const query = (input.query ?? EMPTY_QUERY) as Query;
-  if (isEmptyQuery(query) && input.query == null) {
-    return { ok: false, error: "Pass a filter query." };
-  }
-  broadcast(IPC.agentFilter, query);
+  broadcast(IPC.agentFilter, input.query as Query);
   return { ok: true };
 }
 

@@ -82,6 +82,7 @@ export type FieldId =
   | "list"
   | "source"
   | "type"
+  | "format"
   | "fileCount"
   | "duration"
   | "shape"

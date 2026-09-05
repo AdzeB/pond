@@ -1,0 +1,3 @@
+.media {
+  height: var(--card-preview-height, var(--grid-min, 130px));
+}

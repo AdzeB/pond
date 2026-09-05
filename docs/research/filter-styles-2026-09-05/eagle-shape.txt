@@ -1,0 +1,21 @@
+The following is a diff from the previous accessibility tree for Window: "Eagle" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 73
++						674 container
++							675 text Horizontal
++							676 text 429
++							677 text Vertical
++							678 text 28
++							679 text Square
++							680 text 29
++							681 text Panoramic Horizontal
++							682 text 1
++							683 text 4:3
++							684 text 277
++							685 text 3:4
++							686 text 4
++							687 text 16:9
++							688 text 56
++							689 text 9:16
++							690 text 2
++							691 text Custom
+The focused UI element is 85 text field (settable)

@@ -18,6 +18,24 @@ describe("library breadcrumb paths", () => {
     ).toEqual([{ label: "Library", path: "/", nav: { kind: "all" } }]);
   });
 
+  it.each([
+    ["/assistant", "Assistant"],
+    ["/sources", "Sources"],
+    ["/tags", "Tags"],
+    ["/downloads", "Downloads"],
+    ["/trash", "Trash"],
+    ["/settings", "Settings"],
+  ] as const)("keeps %s as its own root", (pathname, label) => {
+    expect(
+      buildBreadcrumbs({
+        pathname,
+        listPath: "/",
+        nav: { kind: "folder", id: "child" },
+        folders,
+      }).map((crumb) => crumb.label),
+    ).toEqual([label]);
+  });
+
   it("orders folder parents before children and gives each a destination", () => {
     const crumbs = buildBreadcrumbs({
       pathname: "/",
@@ -34,24 +52,6 @@ describe("library breadcrumb paths", () => {
     expect(crumbs[2]?.nav).toEqual({ kind: "folder", id: "child" });
   });
 
-  it("prioritizes the route over a stale folder selection", () => {
-    for (const [pathname, label] of [
-      ["/sources", "Sources"],
-      ["/tags", "Tags"],
-      ["/trash", "Trash"],
-      ["/downloads", "Downloads"],
-    ]) {
-      expect(
-        buildBreadcrumbs({
-          pathname: pathname ?? "/",
-          listPath: "/",
-          nav: { kind: "folder", id: "child" },
-          folders,
-        }).map((c) => c.label),
-      ).toEqual(["Library", label]);
-    }
-  });
-
   it("nests a settings section under Settings", () => {
     expect(
       buildBreadcrumbs({
@@ -60,7 +60,18 @@ describe("library breadcrumb paths", () => {
         nav: { kind: "folder", id: "child" },
         folders,
       }).map((c) => c.label),
-    ).toEqual(["Library", "Settings", "Models"]);
+    ).toEqual(["Settings", "Models"]);
+  });
+
+  it("nests a source page under Sources", () => {
+    expect(
+      buildBreadcrumbs({
+        pathname: "/source/pinterest",
+        listPath: "/",
+        nav: { kind: "folder", id: "child" },
+        folders,
+      }).map((c) => c.label),
+    ).toEqual(["Sources", "Pinterest"]);
   });
 
   it("includes a save after its containing folder path", () => {
@@ -87,7 +98,7 @@ describe("library breadcrumb paths", () => {
         nav: { kind: "all" },
         folders,
       }).map((c) => c.label),
-    ).toEqual(["Library", "Trash", "Save"]);
+    ).toEqual(["Trash", "Save"]);
   });
 
   it("supports Uncategorized and tag locations", () => {

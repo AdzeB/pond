@@ -16,7 +16,10 @@ vi.mock("@/components/library/filter-menu", () => ({
   FilterToggle: () => null,
   FilterBar: () => null,
 }));
-vi.mock("@/components/library/view-menu", () => ({ ViewMenu: () => null }));
+vi.mock("@/components/library/view-menu", () => ({
+  ViewMenu: () => null,
+  SortMenu: () => null,
+}));
 vi.mock("@/components/search/bar/lib/typeahead", () => ({
   FilterTypeahead: () => null,
 }));

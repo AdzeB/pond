@@ -234,6 +234,6 @@ export function recordAspect(
   schedule();
 }
 
-export function useAspectVersion(): number {
-  return useSelector(versionStore, (v) => v);
+export function useAspectVersion(enabled = true): number {
+  return useSelector(versionStore, (version) => (enabled ? version : 0));
 }

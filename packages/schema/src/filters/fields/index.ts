@@ -10,6 +10,7 @@ import { duration } from "./duration";
 import { fileCount } from "./file-count";
 import { fileSize } from "./file-size";
 import { folder } from "./folder";
+import { format } from "./format";
 import { list } from "./list";
 import { modifiedAt } from "./modified-at";
 import { note } from "./note";
@@ -43,6 +44,7 @@ export const FIELD_DESCRIPTORS = {
   list,
   source,
   type: typeField,
+  format,
   fileCount,
   duration,
   shape,

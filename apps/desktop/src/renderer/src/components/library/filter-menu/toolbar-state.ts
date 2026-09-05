@@ -10,6 +10,29 @@ export const DEFAULT_FILTER_FIELDS: readonly FieldId[] = [
   "color",
   "tags",
   "folder",
+  "shape",
+  "rating",
+  "type",
+  "format",
+  "width",
+  "duration",
+  "fileSize",
+  "comment",
+  "note",
+  "url",
+  "savedAt",
+  "modifiedAt",
+];
+
+export const DEFAULT_FILTER_OVERLAYS: readonly OverlayId[] = [
+  "visual",
+  "semantic",
+];
+
+const STOCK_FILTER_FIELDS_TO_REPLACE: readonly FieldId[] = [
+  "color",
+  "tags",
+  "folder",
   "source",
   "type",
   "shape",
@@ -21,18 +44,53 @@ export const DEFAULT_FILTER_FIELDS: readonly FieldId[] = [
   "modifiedAt",
 ];
 
+const PREVIOUS_DEFAULT_FILTER_FIELDS: readonly FieldId[] = [
+  "color",
+  "tags",
+  "folder",
+  "shape",
+  "rating",
+  "type",
+  "width",
+  "height",
+  "duration",
+  "fileSize",
+  "comment",
+  "note",
+  "url",
+  "savedAt",
+  "modifiedAt",
+];
+
+function sameIds(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((id, i) => id === right[i]);
+}
+
+function parseFields(saved: unknown): FieldId[] | null {
+  if (!Array.isArray(saved)) return null;
+  return [
+    ...new Set(
+      saved.filter(
+        (field): field is FieldId =>
+          typeof field === "string" && Object.hasOwn(FIELD_META, field),
+      ),
+    ),
+  ];
+}
+
 function readPinnedFields(): FieldId[] {
   try {
-    const saved: unknown = JSON.parse(readViewPref("filterFields") ?? "null");
-    if (Array.isArray(saved)) {
-      return [
-        ...new Set(
-          saved.filter(
-            (field): field is FieldId =>
-              typeof field === "string" && Object.hasOwn(FIELD_META, field),
-          ),
-        ),
-      ];
+    const fields = parseFields(
+      JSON.parse(readViewPref("filterFields") ?? "null"),
+    );
+    if (fields) {
+      if (
+        sameIds(fields, STOCK_FILTER_FIELDS_TO_REPLACE) ||
+        sameIds(fields, PREVIOUS_DEFAULT_FILTER_FIELDS)
+      ) {
+        return [...DEFAULT_FILTER_FIELDS];
+      }
+      return fields;
     }
   } catch {}
   return [...DEFAULT_FILTER_FIELDS];
@@ -41,8 +99,12 @@ function readPinnedFields(): FieldId[] {
 function readPinnedOverlays(): OverlayId[] {
   try {
     const saved: unknown = JSON.parse(readViewPref("filterOverlays") ?? "null");
+    const stockPins = sameIds(
+      parseFields(JSON.parse(readViewPref("filterFields") ?? "null")) ?? [],
+      STOCK_FILTER_FIELDS_TO_REPLACE,
+    );
     if (Array.isArray(saved)) {
-      return [
+      const overlays = [
         ...new Set(
           saved.filter(
             (value): value is OverlayId =>
@@ -50,9 +112,13 @@ function readPinnedOverlays(): OverlayId[] {
           ),
         ),
       ];
+      if (overlays.length === 0 && stockPins) {
+        return [...DEFAULT_FILTER_OVERLAYS];
+      }
+      return overlays;
     }
   } catch {}
-  return [];
+  return [...DEFAULT_FILTER_OVERLAYS];
 }
 
 const store = new Store({
@@ -80,9 +146,10 @@ export const filterToolbar = {
   },
   restoreDefaults(): void {
     const pinned = [...DEFAULT_FILTER_FIELDS];
+    const overlays = [...DEFAULT_FILTER_OVERLAYS];
     writeViewPref("filterFields", JSON.stringify(pinned));
-    writeViewPref("filterOverlays", JSON.stringify([]));
-    store.setState((state) => ({ ...state, pinned, overlays: [] }));
+    writeViewPref("filterOverlays", JSON.stringify(overlays));
+    store.setState((state) => ({ ...state, pinned, overlays }));
   },
 };
 

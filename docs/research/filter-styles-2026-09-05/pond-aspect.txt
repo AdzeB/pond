@@ -1,0 +1,13 @@
+The following is a diff from the previous accessibility tree for Window: "Pond" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 771
++									786 menu Aspect, Secondary Actions: Cancel
++										787 container
++											788 is, Value: 1
++											789 is not, Value: 0
++										790 container
++											791 1:1 417, Value: 0
++											792 4:3 393, Value: 0
++											793 3:4 76, Value: 0
++											794 16:9 1066, Value: 0
++											795 9:16 2519, Value: 0
+The focused UI element is 786 menu Aspect, Secondary Actions: Cancel

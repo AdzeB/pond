@@ -44,6 +44,7 @@ export const FIELD_ICONS = {
   list: ListIcon,
   source: LinkIcon,
   type: FileIcon,
+  format: FileIcon,
   fileCount: FilesIcon,
   duration: Timer,
   shape: ShapeIcon,
@@ -71,6 +72,7 @@ export const FIELD_HINTS = {
   list: "liked, saved",
   source: "dribbble.com, instagram.com, local",
   type: "image, video, link, text",
+  format: "jpg, png, mp4, pdf",
   fileCount: "3, >2, 2..5",
   duration: "<30s, <3min",
   shape: "square, landscape, portrait, panoramic-landscape",
@@ -172,7 +174,7 @@ export function describePredicate(predicate: Predicate): PredicateChip {
         ...base,
         label: preset ? preset.label : hex,
         swatch: hex,
-        negated: false,
+        negated: Boolean(predicate.negate),
       };
     }
     case "number": {

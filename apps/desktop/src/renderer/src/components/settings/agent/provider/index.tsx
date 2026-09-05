@@ -1,13 +1,4 @@
 import { IconChevronRightOutline12 as ChevronRight } from "@pond/icons/outline/12";
-import {
-  IconComputerOutline18,
-  IconGlobe2Outline18,
-  IconOrbitSparkleOutline18,
-  IconServerOutline18,
-  IconStarOutline18,
-  IconWandSparkleOutline18,
-} from "@pond/icons/outline/18";
-import type { IconComponent } from "@pond/icons/types";
 import { Accordion, Button, Field, Input, Select, Switch } from "@pond/ui";
 import type { AssistantProvider } from "@shared/assistant";
 import { chosenModelId, displayName } from "@shared/provider-models";
@@ -15,6 +6,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { gentleSpring } from "@/lib/ui/motion";
+import { PROVIDER_ICONS } from "../icons";
 import type { AgentPrefs, KeyRow } from "../types";
 import styles from "./styles.module.css";
 
@@ -23,15 +15,6 @@ const ListedModelsSchema = z.object({
   models: z.array(z.object({ id: z.string(), name: z.string() })),
   error: z.string().optional(),
 });
-
-const ICONS: Record<AssistantProvider, IconComponent> = {
-  anthropic: IconOrbitSparkleOutline18,
-  openai: IconWandSparkleOutline18,
-  gemini: IconStarOutline18,
-  ollama: IconComputerOutline18,
-  lmstudio: IconServerOutline18,
-  compatible: IconGlobe2Outline18,
-};
 
 interface Catalog {
   id: AssistantProvider;
@@ -58,6 +41,7 @@ export function ProviderCard({
   agent,
   onPatchAgent,
   onRefresh,
+  onDismiss,
 }: {
   catalog: Catalog;
   row: KeyRow | undefined;
@@ -66,9 +50,10 @@ export function ProviderCard({
   agent: AgentPrefs;
   onPatchAgent: (patch: Partial<AgentPrefs>) => void;
   onRefresh: () => Promise<void>;
+  onDismiss: () => void;
 }) {
   const reduceMotion = useReducedMotion();
-  const Icon = ICONS[catalog.id];
+  const Icon = PROVIDER_ICONS[catalog.id];
   const connected = Boolean(row?.hasKey);
   const endpointValue = storedEndpoint(catalog, agent);
   const selectedModelId = chosenModelId(catalog.id, agent);
@@ -186,7 +171,13 @@ export function ProviderCard({
     }
   };
 
-  const status = selected ? "In use" : connected ? "Connected" : undefined;
+  const status = selected
+    ? "Language"
+    : agent.visionModel === catalog.id
+      ? "Vision"
+      : connected
+        ? "Connected"
+        : undefined;
 
   return (
     <Accordion.Item
@@ -324,12 +315,24 @@ export function ProviderCard({
                   onClick={() => {
                     void window.pond
                       .query("agent.removeKey", { provider: catalog.id })
-                      .then(() => onRefresh());
+                      .then(() => {
+                        onDismiss();
+                        return onRefresh();
+                      });
                   }}
                 >
                   Remove
                 </Button>
-              ) : null}
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="link"
+                  onClick={onDismiss}
+                >
+                  Cancel
+                </Button>
+              )}
               <span className={styles.spacer} />
               {connected ? (
                 <Switch.Root
@@ -344,16 +347,6 @@ export function ProviderCard({
                       .then(() => onRefresh());
                   }}
                 />
-              ) : null}
-              {connected && !selected ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => onPatchAgent({ languageModel: catalog.id })}
-                >
-                  Use in Agent
-                </Button>
               ) : null}
               {!connected ? (
                 <Button

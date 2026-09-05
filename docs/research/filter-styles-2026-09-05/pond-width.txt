@@ -1,0 +1,17 @@
+The following is a diff from the previous accessibility tree for Window: "Pond" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 771
++									786 menu Width, Secondary Actions: Cancel
++										787 container
++											788 is, Value: 1
++											789 at least, Value: 0
++											790 at most, Value: 0
++											791 is between, Value: 0
++										792 container
++											793 container
++												794 text Minimum
++												795 stepper (settable) Minimum, Placeholder: Min
++											796 container
++												797 text Maximum
++												798 stepper (settable) Maximum, Placeholder: Max
++											799 button (disabled) Apply
+The focused UI element is 795 stepper (settable) Minimum, Placeholder: Min

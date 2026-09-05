@@ -4,8 +4,6 @@ export { clsx as cn } from "clsx";
 export { Accordion } from "./accordion";
 export {
   Attachments,
-  Chip,
-  type ChipTone,
   Conversation,
   Loader,
   Message,
@@ -16,6 +14,7 @@ export {
 export { AlertDialog } from "./alert-dialog";
 export { Button, type ButtonProps } from "./button";
 export { Checkbox } from "./checkbox";
+export { Chip, type ChipTone } from "./chip";
 export { ColorField, ColorPicker } from "./color-field";
 export { Combobox } from "./combobox";
 export { ContextMenu } from "./context-menu";

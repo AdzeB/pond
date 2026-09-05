@@ -26,6 +26,11 @@ export const componentGroups: [string, [string, string, string][]][] = [
         "A single-choice menu using Pond’s shared popup and trigger.",
       ],
       ["Combobox", "combobox", "Searchable selection with an empty state."],
+      [
+        "Chip",
+        "chip",
+        "Filter formulas as field, operator, and value pills. Mention and tag chips use a filled tone.",
+      ],
       ["Checkbox", "checkbox", "Checked, unchecked, and disabled controls."],
       [
         "Switch",
@@ -179,11 +184,6 @@ export const componentGroups: [string, [string, string, string][]][] = [
         "Attachments",
         "ai/attachments",
         "Attachment label, thumbnail slot, and remove action.",
-      ],
-      [
-        "Chip",
-        "ai/chip",
-        "Mention and tag chips with an optional remove action.",
       ],
       [
         "Conversation",

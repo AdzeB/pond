@@ -15,6 +15,7 @@ vi.mock("./tools", async () => {
     setOverlayInput: z.object({}).passthrough(),
     citeSavesInput: z.object({ ids: z.array(z.string()) }),
     openSaveInput: z.object({ id: z.string() }),
+    libraryOverviewInput: z.object({}),
     describeSavesInput: z.object({ ids: z.array(z.string()) }),
     searchLibrary: async () => ({
       saves: [
@@ -61,13 +62,10 @@ it("shows only verified result IDs and streams the same data it persists", async
     ?.execute({ query: "film" });
   await context.retrieve({ query: "film" });
   expect(onSources).toHaveBeenCalledTimes(1);
-  expect(context.results()).toEqual([
-    { title: "Results for “film”", saveIds: ["known"] },
-  ]);
-  expect(onResults).toHaveBeenLastCalledWith(context.results());
+  expect(context.results()).toEqual([]);
   await show.execute({ title: "References", saveIds: ["known", "known"] });
   expect(context.results()).toEqual([
-    { title: "Results for “film”", saveIds: ["known"] },
+    { title: "References", saveIds: ["known"] },
   ]);
   expect(onResults).toHaveBeenLastCalledWith(context.results());
   expect(context.steps()).toMatchObject([

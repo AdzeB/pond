@@ -87,8 +87,8 @@ export function CollectShell() {
         onDrop={(event) => {
           event.preventDefault();
           const paths = [...event.dataTransfer.files]
-            .map((file) => (file as File & { path?: string }).path)
-            .filter((path): path is string => Boolean(path));
+            .map((file) => window.pond.pathForFile(file))
+            .filter(Boolean);
           void ingest(paths);
         }}
       >

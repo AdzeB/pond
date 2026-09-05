@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { BlurHash } from "@/components/save/card/media/blur-hash";
 import { useImageReady } from "@/components/save/card/media/lib/use-image-ready";
-import type { MediaUnit } from "@/lib/media/units";
+import type { MediaPickOptions, MediaUnit } from "@/lib/media/units";
 import { previewThumbUrlFor, thumbUrlFor } from "@/lib/media/url";
 import type { Save } from "@/lib/types";
 import { aspectCoverKey, aspectDimsFor, recordAspect } from "@/stores/aspect";
@@ -10,17 +10,19 @@ import styles from "./styles.module.css";
 export function CardImage({
   save,
   unit,
+  pickOptions,
   width,
   onBroken,
   onReady,
 }: {
   save: Save;
   unit: MediaUnit;
+  pickOptions: MediaPickOptions;
   width?: number;
   onBroken: () => void;
   onReady?: () => void;
 }) {
-  const { w, h } = aspectDimsFor(save, {}, unit);
+  const { w, h } = aspectDimsFor(save, pickOptions, unit);
   const src = unit.requiresGeneratedPreview
     ? previewThumbUrlFor(unit.url, width)
     : thumbUrlFor(unit.url, width);

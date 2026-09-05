@@ -4,9 +4,9 @@ import { defineField } from "./descriptor";
 
 export const url = defineField({
   id: "url",
-  type: "string",
+  type: "optional",
   label: "URL",
   group: "content",
-  project: (s) => s.url.trim().toLowerCase(),
-  sqlProjection: () => sql`lower(${saves.url})`,
+  project: (s) => s.url.trim().toLowerCase() || null,
+  sqlProjection: () => sql`nullif(trim(lower(${saves.url})), '')`,
 });

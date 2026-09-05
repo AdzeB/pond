@@ -1,0 +1,17 @@
+The following is a diff from the previous accessibility tree for Window: "Eagle" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
++						673 container
++							674 search text field (settable) Search...
++							675 text Rule:
++							676 Unlabeled image /ic-logic-any.svg
++							677 Unlabeled image /ic-logic-all.svg
++							678 Unlabeled image /ic-logic-equal.svg
++							679 container
++								680 container Uncategorized
++									681 text Uncategorized
++								682 text 275
++								683 text Database
++								684 text 1
++								685 text Epoch
++								686 text 217
++							687 text Select L-Click Exclude R-Click
+The focused UI element is 674 search text field (settable) Search...

@@ -38,4 +38,32 @@ export const ASSISTANT_ACTIONS = [
   },
 ] as const;
 
+export const AGENT_STARTERS = [
+  {
+    id: "overview",
+    title: "Library Overview",
+    prompt:
+      "Give me an overview of this library. Use libraryOverview, then say what is messy or untagged and what I should organize first.",
+  },
+  {
+    id: "tag",
+    title: "Tag Untagged",
+    prompt:
+      "Find Saves missing tags. Read a sample, then propose tags with proposeChanges so I can review.",
+  },
+  {
+    id: "duplicates",
+    title: "Merge Duplicates",
+    prompt:
+      "Find duplicate Saves and propose merges with proposeChanges so I can review.",
+  },
+  {
+    id: "title",
+    title: "Title Images",
+    prompt:
+      "Find recent images missing titles or tags. Look at them and propose titles and tags with proposeChanges so I can review.",
+  },
+] as const;
+
 export type AssistantAction = (typeof ASSISTANT_ACTIONS)[number]["id"];
+export type AgentStarter = (typeof AGENT_STARTERS)[number]["id"];

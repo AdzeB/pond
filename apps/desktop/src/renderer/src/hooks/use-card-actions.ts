@@ -196,13 +196,18 @@ export function useCardActions(
       })
       .filter(Boolean);
     if (paths.length > 0) {
-      await window.pond.query("saves.importFiles", { paths });
+      await importFilesAndNotify(paths);
       return;
     }
 
-    const urls = asUrlList(
-      dt.getData("text/uri-list") || dt.getData("text/plain"),
-    );
+    const text = dt.getData("text/uri-list") || dt.getData("text/plain");
+    const textPaths = filePathsFromText(text);
+    if (textPaths.length > 0) {
+      await importFilesAndNotify(textPaths);
+      return;
+    }
+
+    const urls = asUrlList(text);
     if (!urls) return;
     await quickAddUrls(urls);
   }, []);

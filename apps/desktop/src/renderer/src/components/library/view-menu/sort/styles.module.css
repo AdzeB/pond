@@ -1,8 +1,11 @@
-.controls {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  min-width: 0;
+.popup {
+  max-height: var(--available-height);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.direction {
+  margin: 4px 6px 2px;
 }
 
 .icon {

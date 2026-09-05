@@ -195,8 +195,8 @@ const groups: [string, [string, string, string][]][] = [
       ],
       [
         "Chip",
-        "ai/chip",
-        "Mention and tag chips with an optional remove action.",
+        "chip",
+        "Filter formulas as field, operator, and value pills. Mention and tag chips use a filled tone.",
       ],
       [
         "Conversation",

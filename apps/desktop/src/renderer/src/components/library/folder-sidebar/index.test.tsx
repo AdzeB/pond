@@ -31,11 +31,24 @@ vi.mock("@/stores/view-store", () => ({
     layout: "waterfall",
   }),
 }));
+const confirm = vi.hoisted(() => vi.fn());
+const pondQuery = vi.hoisted(() => vi.fn());
+const refreshViews = vi.hoisted(() => vi.fn());
+const savedViewList = vi.hoisted(() => ({
+  current: [] as Array<{
+    id: string;
+    name: string;
+    query: { combinator: "and"; rules: [] };
+  }>,
+}));
+
 vi.mock("@/stores/saved-views", () => ({
-  savedViews: { refresh: vi.fn() },
-  useSavedViews: () => [],
+  savedViews: { refresh: refreshViews },
+  promptCreateView: vi.fn(),
+  useSavedViews: () => savedViewList.current,
   useHydrateSavedViews: () => {},
 }));
+vi.mock("@/components/shared/confirm-dialog", () => ({ confirm }));
 vi.mock("@/components/library/new-menu", () => ({ NewMenu: () => null }));
 vi.mock("@/components/library/new-menu/actions", () => ({
   newFolder: vi.fn(),
@@ -48,6 +61,11 @@ describe("folder sidebar", () => {
   beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     libraryChrome.setNav({ kind: "all" });
+    savedViewList.current = [];
+    confirm.mockReset();
+    pondQuery.mockReset();
+    refreshViews.mockReset();
+    window.pond = { query: pondQuery } as unknown as typeof window.pond;
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
@@ -145,5 +163,82 @@ describe("folder sidebar", () => {
     await act(async () => button("Assistant").click());
     expect(button(label).getAttribute("aria-current")).toBeNull();
     expect(button("Assistant").getAttribute("aria-current")).toBe("page");
+  });
+
+  it("keeps Assistant with destinations, not Saved Views", async () => {
+    await mount();
+    const labels = [...host.querySelectorAll("button")].map((node) =>
+      node.textContent?.trim(),
+    );
+    expect(labels.indexOf("Assistant")).toBeGreaterThan(-1);
+    expect(labels.indexOf("Assistant")).toBeLessThan(
+      labels.indexOf("Saved Views"),
+    );
+  });
+
+  async function mountUnreadView() {
+    savedViewList.current = [
+      {
+        id: "view-1",
+        name: "Unread",
+        query: { combinator: "and", rules: [] },
+      },
+    ];
+    pondQuery.mockResolvedValue({ ok: true });
+    refreshViews.mockResolvedValue(undefined);
+    await mount();
+  }
+
+  async function confirmDelete() {
+    const remove = [...document.querySelectorAll('[role="menuitem"]')].find(
+      (node) => node.textContent?.trim() === "Delete",
+    );
+    if (!(remove instanceof HTMLElement)) throw new Error("Missing Delete");
+    await act(async () => remove.click());
+    expect(confirm).toHaveBeenCalledOnce();
+    const options = confirm.mock.calls[0]?.[0] as {
+      title: string;
+      onConfirm: () => Promise<void>;
+    };
+    expect(options.title).toBe("Delete View");
+    await act(async () => {
+      await options.onConfirm();
+    });
+    expect(pondQuery).toHaveBeenCalledWith("savedViews.delete", {
+      id: "view-1",
+    });
+    expect(refreshViews).toHaveBeenCalled();
+  }
+
+  it("deletes a saved view from the hover menu", async () => {
+    await mountUnreadView();
+    const more = host.querySelector('[aria-label="More Actions"]');
+    if (!(more instanceof HTMLElement)) throw new Error("Missing More Actions");
+    await act(async () => more.click());
+    const rename = [...document.querySelectorAll('[role="menuitem"]')].find(
+      (node) => node.textContent?.trim() === "Rename",
+    );
+    const remove = [...document.querySelectorAll('[role="menuitem"]')].find(
+      (node) => node.textContent?.trim() === "Delete",
+    );
+    expect(rename?.querySelector("svg")).not.toBeNull();
+    expect(remove?.querySelector("svg")).not.toBeNull();
+    await confirmDelete();
+  });
+
+  it("deletes a saved view from the context menu", async () => {
+    await mountUnreadView();
+    await act(async () => {
+      button("Unread").dispatchEvent(
+        new MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          button: 2,
+          clientX: 24,
+          clientY: 24,
+        }),
+      );
+    });
+    await confirmDelete();
   });
 });

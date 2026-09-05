@@ -95,7 +95,7 @@ export function ResponseContent({
         <span className={styles["thinking-mark"]}>
           <Logo size={18} />
         </span>
-        Assistant
+        Agent
       </div>
       {message.content && !inferredResult ? (
         <AssistantResponse

@@ -1,13 +1,7 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
-export type DisplayPrefKey =
-  | "name"
-  | "date"
-  | "fileCount"
-  | "source"
-  | "type"
-  | "notes";
+export type DisplayPrefKey = "name" | "date" | "fileCount" | "source" | "type";
 
 export interface DisplayPrefs {
   name: boolean;
@@ -15,7 +9,6 @@ export interface DisplayPrefs {
   fileCount: boolean;
   source: boolean;
   type: boolean;
-  notes: boolean;
 }
 
 const STORAGE_KEYS = {
@@ -24,7 +17,6 @@ const STORAGE_KEYS = {
   fileCount: "pond.display.fileCount",
   source: "pond.display.source",
   type: "pond.display.type",
-  notes: "pond.display.notes",
 } satisfies Record<DisplayPrefKey, string>;
 
 const DISPLAY_DEFAULTS: DisplayPrefs = {
@@ -33,7 +25,6 @@ const DISPLAY_DEFAULTS: DisplayPrefs = {
   fileCount: true,
   source: true,
   type: true,
-  notes: true,
 };
 
 function readKey(key: DisplayPrefKey): boolean {
@@ -54,7 +45,6 @@ function readAll(): DisplayPrefs {
     fileCount: readKey("fileCount"),
     source: readKey("source"),
     type: readKey("type"),
-    notes: readKey("notes"),
   };
 }
 

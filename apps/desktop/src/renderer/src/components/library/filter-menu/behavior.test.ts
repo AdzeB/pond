@@ -7,7 +7,7 @@ import { SQLiteSyncDialect } from "drizzle-orm/sqlite-core";
 import { describe, expect, it } from "vitest";
 import { dedupePredicates } from "@/lib/search/nl-query";
 import { validatePlan } from "@/lib/search/nl-validate";
-import { rangePredicate } from "./custom-filter";
+import { rangePredicate } from "./range";
 import { changeChoiceMode, isChoiceSelected, selectChoice } from "./selection";
 
 const query = (rules: Predicate[]): Query => ({ combinator: "and", rules });
@@ -56,6 +56,50 @@ describe("filter dropdown matching", () => {
         "all",
       ),
     ).toEqual([{ field: "tags", operator: "every", value: ["design"] }]);
+  });
+
+  it("matches exact file formats in memory and SQLite", () => {
+    const db = new DatabaseSync(":memory:");
+    const saves = [
+      {
+        ...base,
+        id: "image",
+        files: [{ path: "/library/photo.JPG" }],
+      },
+      {
+        ...base,
+        id: "mixed",
+        files: [{ path: "/library/design.psd" }, { path: "/library/clip.mp4" }],
+      },
+      { ...base, id: "empty", files: [] },
+    ];
+    const rules: Predicate[] = [
+      { field: "format", operator: "some", value: ["jpg"] },
+      { field: "format", operator: "every", value: ["psd", "mp4"] },
+      { field: "format", operator: "none", value: ["mp4"] },
+      { field: "format", operator: "empty", value: true },
+    ];
+    try {
+      db.exec("create table saves (id text, files text)");
+      const insert = db.prepare("insert into saves values (?, ?)");
+      for (const save of saves) insert.run(save.id, JSON.stringify(save.files));
+      for (const rule of rules) {
+        const filter = query([rule]);
+        const where = buildWhere(filter);
+        if (!where) throw new Error("Missing SQL predicate");
+        const compiled = new SQLiteSyncDialect().sqlToQuery(where);
+        expect(
+          db
+            .prepare(`select id from saves where ${compiled.sql}`)
+            .all(...(compiled.params as SQLInputValue[]))
+            .map((row) => row.id),
+        ).toEqual(
+          saves.filter((save) => matches(filter, save)).map((save) => save.id),
+        );
+      }
+    } finally {
+      db.close();
+    }
   });
 
   it("supports open and exact ranges, duration units, zero, and rejects invalid bounds", () => {
@@ -150,6 +194,40 @@ describe("filter dropdown matching", () => {
     ];
     expect(dedupePredicates([...rows, ...rows])).toEqual(rows);
     expect(validatePlan({ filter: query(rows) }).filter).toEqual(query(rows));
+  });
+
+  it("treats blank URLs as missing in memory and SQLite", () => {
+    const db = new DatabaseSync(":memory:");
+    const saves = [
+      { ...base, id: "linked", url: "https://example.com/Design" },
+      { ...base, id: "blank", url: "   " },
+    ];
+    const rules: Predicate[] = [
+      { field: "url", operator: "exists", value: true },
+      { field: "url", operator: "exists", value: false },
+      { field: "url", operator: "contains", value: "design" },
+    ];
+    try {
+      db.exec("create table saves (id text, url text)");
+      const insert = db.prepare("insert into saves values (?, ?)");
+      for (const save of saves) insert.run(save.id, save.url);
+      for (const rule of rules) {
+        const filter = query([rule]);
+        const where = buildWhere(filter);
+        if (!where) throw new Error("Missing SQL predicate");
+        const compiled = new SQLiteSyncDialect().sqlToQuery(where);
+        expect(
+          db
+            .prepare(`select id from saves where ${compiled.sql}`)
+            .all(...(compiled.params as SQLInputValue[]))
+            .map((row) => row.id),
+        ).toEqual(
+          saves.filter((save) => matches(filter, save)).map((save) => save.id),
+        );
+      }
+    } finally {
+      db.close();
+    }
   });
 
   it("matches content and literal SQL wildcards consistently in memory and SQLite", () => {

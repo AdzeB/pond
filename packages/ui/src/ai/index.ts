@@ -1,5 +1,4 @@
 export { Attachments } from "./attachments";
-export { Chip, type ChipTone } from "./chip";
 export { Conversation } from "./conversation";
 export { Loader } from "./loader";
 export { Message } from "./message";

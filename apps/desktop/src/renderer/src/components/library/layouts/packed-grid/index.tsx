@@ -13,6 +13,10 @@ import {
   type GridLayout,
   LibraryGrid,
 } from "@/components/library/layouts/grid";
+import type {
+  CardLayoutItem,
+  CardLayoutResult,
+} from "@/components/library/layouts/packing";
 import { SaveCard } from "@/components/save/card";
 import { useMultiSelectActive } from "@/components/shared/grid-context";
 import { useLibraryLayoutTransition } from "@/hooks/use-library-layout-transition";
@@ -25,15 +29,14 @@ import {
   ScrollRestorationContext,
 } from "@/hooks/use-scroll-restoration";
 import { findScrollParent } from "@/lib/util/dom";
-import type { PackedItem } from "./uniform-pack";
 import {
   buildVirtualBands,
   indicesForVirtualBands,
   PACKED_GRID_BAND_PX,
 } from "./virtual-bands";
 
-export type { PackedItem, PackResult } from "./uniform-pack";
-export { LIBRARY_ITEM_GAP, packUniform } from "./uniform-pack";
+export type PackedItem = CardLayoutItem;
+export type PackResult = CardLayoutResult;
 
 const END_THRESHOLD_ITEMS = 8;
 const BAND_OVERSCAN = 3;
@@ -357,11 +360,14 @@ export function SavePackedGrid({
         <SaveCard
           key={it.id}
           id={it.id}
-          layout={layout}
-          packedWidth={it.width}
-          packedHeight={it.mediaHeight}
-          packedTop={it.top}
-          packedLeft={it.left}
+          view={layout}
+          slot={{
+            width: it.width,
+            height: it.height,
+            previewHeight: it.mediaHeight,
+            top: it.top,
+            left: it.left,
+          }}
         />
       )}
     />

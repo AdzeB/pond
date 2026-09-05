@@ -5,9 +5,11 @@ import {
 } from "@pond/icons/outline/12";
 import {
   IconAlbum2Outline18,
+  IconClone2Outline18,
   IconDotsOutline18,
   IconFolderOutline18,
   IconListFavsOutline18,
+  IconWandSparkleOutline18,
 } from "@pond/icons/outline/18";
 import * as UI from "@pond/ui";
 import { useState } from "react";
@@ -394,24 +396,66 @@ function AttachmentsDemo() {
 function ChipDemo() {
   const [visible, setVisible] = useState(true);
   return (
-    <div className={styles.row}>
-      <UI.Chip.Root
-        tone="tag"
-        lead={<IconCheckOutline12 />}
-        label="Interface"
-      />
-      {visible ? (
-        <UI.Chip.Root
-          tone="mention"
-          lead={<UI.Logo size={12} />}
-          label="Collection"
-          onRemove={() => setVisible(false)}
-        />
-      ) : (
-        <UI.Button size="xs" variant="ghost" onClick={() => setVisible(true)}>
-          Restore chip
-        </UI.Button>
-      )}
+    <div className={styles.stack}>
+      <UI.Chip.Root>
+        <UI.Chip.Item>
+          <UI.Chip.Icon>
+            <IconWandSparkleOutline18 />
+          </UI.Chip.Icon>
+          <UI.Chip.Label>Semantic</UI.Chip.Label>
+        </UI.Chip.Item>
+        <UI.Chip.Operator tabIndex={-1}>is</UI.Chip.Operator>
+        <UI.Chip.Item kind="value">
+          <UI.Chip.Trigger aria-label="Semantic Filter">
+            <UI.Chip.Label>green boy</UI.Chip.Label>
+          </UI.Chip.Trigger>
+          {visible ? (
+            <UI.Chip.Clear
+              aria-label="Clear Semantic Filter"
+              onClick={() => setVisible(false)}
+            />
+          ) : null}
+        </UI.Chip.Item>
+      </UI.Chip.Root>
+      <UI.Chip.Root>
+        <UI.Chip.Item>
+          <UI.Chip.Icon>
+            <IconClone2Outline18 />
+          </UI.Chip.Icon>
+          <UI.Chip.Label>Files</UI.Chip.Label>
+        </UI.Chip.Item>
+        <UI.Chip.Operator tabIndex={-1}>at least</UI.Chip.Operator>
+        <UI.Chip.Item kind="value">
+          <UI.Chip.Trigger aria-label="Files Filter">
+            <UI.Chip.Label>Multiple Files</UI.Chip.Label>
+          </UI.Chip.Trigger>
+          <UI.Chip.Clear aria-label="Clear Files Filter" />
+        </UI.Chip.Item>
+      </UI.Chip.Root>
+      <div className={styles.row}>
+        <UI.Chip.Item tone="tag">
+          <UI.Chip.Icon>
+            <IconCheckOutline12 />
+          </UI.Chip.Icon>
+          <UI.Chip.Label>Interface</UI.Chip.Label>
+        </UI.Chip.Item>
+        {visible ? (
+          <UI.Chip.Item tone="mention">
+            <UI.Chip.Icon>
+              <UI.Logo size={12} />
+            </UI.Chip.Icon>
+            <UI.Chip.Label>Collection</UI.Chip.Label>
+            <UI.Chip.Clear
+              aria-label="Remove Collection"
+              onClick={() => setVisible(false)}
+            />
+          </UI.Chip.Item>
+        ) : (
+          <UI.Button size="xs" variant="ghost" onClick={() => setVisible(true)}>
+            Restore chip
+          </UI.Button>
+        )}
+      </div>
     </div>
   );
 }

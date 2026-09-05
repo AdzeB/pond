@@ -1,4 +1,4 @@
-import type { PackedItem } from "./uniform-pack";
+import type { CardLayoutItem as PackedItem } from "@/components/library/layouts/packing";
 
 export const PACKED_GRID_BAND_PX = 512;
 

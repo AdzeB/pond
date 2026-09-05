@@ -10,7 +10,6 @@ const TOGGLES: Array<{ key: DisplayPrefKey; label: string }> = [
   { key: "source", label: "Show Source" },
   { key: "type", label: "Show Format" },
   { key: "fileCount", label: "Show File Count" },
-  { key: "notes", label: "Show Notes" },
 ];
 
 export function DisplaySection() {

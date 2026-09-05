@@ -1,0 +1,89 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px;
+  margin: 0;
+  border: 0;
+}
+
+.root :is(input, button):focus-visible {
+  outline-width: 1px;
+}
+
+.palette {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 2px;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.palette > button {
+  width: 100%;
+  min-width: 0;
+}
+
+.palette > button[aria-pressed="true"] {
+  outline: 1px solid var(--ds-focus-outline);
+  outline-offset: -1px;
+}
+
+.swatch {
+  width: 20px;
+  height: 20px;
+  border: var(--ds-border-width) solid var(--ds-gray-a5);
+  border-radius: var(--ds-radius-sm);
+}
+
+.hex {
+  width: 100%;
+}
+
+.field {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  font-size: var(--ds-text-mini);
+  color: var(--ds-gray-11);
+}
+
+.field > :global([data-slot="root"]) {
+  flex: 1 1 auto;
+}
+
+.preview {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: var(--ds-border-width) solid var(--ds-gray-a6);
+  border-radius: var(--ds-radius-sm);
+}
+
+.preview[data-empty] {
+  border-style: dashed;
+}
+
+.control {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--ds-text-mini);
+  color: var(--ds-gray-12);
+}
+
+.tolerance {
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+  width: 100%;
+}
+
+.slider {
+  width: 100%;
+}

@@ -12,7 +12,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setAppRouter } from "@/lib/ui/app-router";
 import { rememberListPath } from "@/lib/ui/list-path";
 import { libraryChrome } from "@/stores/library-chrome";
-import { resetFilters } from "@/stores/view-store";
+import { libraryViewContext } from "@/stores/library-view-context";
+import { resetFilters, useHasActiveSearch } from "@/stores/view-store";
 import { Toolbar } from ".";
 
 vi.mock("@/hooks/use-scroll-fade", () => ({ useScrollFade: () => ({}) }));
@@ -21,7 +22,10 @@ vi.mock("@/hooks/use-saves", () => ({
     id ? { title: "A saved design", url: "https://example.com" } : undefined,
 }));
 vi.mock("@/stores/recents", () => ({ useRecents: () => [] }));
-vi.mock("@/stores/view-store", () => ({ resetFilters: vi.fn() }));
+vi.mock("@/stores/view-store", () => ({
+  resetFilters: vi.fn(),
+  useHasActiveSearch: vi.fn(() => false),
+}));
 vi.mock("@/stores/folders", () => ({
   useFolders: () => [
     { id: "parent", name: "Design", parentId: null },
@@ -37,6 +41,8 @@ describe("breadcrumb toolbar", () => {
   beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.clearAllMocks();
+    vi.mocked(useHasActiveSearch).mockReturnValue(false);
+    libraryViewContext.set([], "library");
     libraryChrome.setNav({ kind: "all" });
     rememberListPath("/");
     host = document.createElement("div");
@@ -61,7 +67,16 @@ describe("breadcrumb toolbar", () => {
 
   async function mount(path = "/") {
     const rootRoute = createRootRoute({ component: Toolbar });
-    const children = ["/", "/save/$saveId", "/sources"].map((path) =>
+    const children = [
+      "/",
+      "/save/$saveId",
+      "/sources",
+      "/assistant",
+      "/tags",
+      "/downloads",
+      "/trash",
+      "/settings",
+    ].map((path) =>
       createRoute({
         getParentRoute: () => rootRoute,
         path,
@@ -80,6 +95,24 @@ describe("breadcrumb toolbar", () => {
     return router;
   }
 
+  it.each([
+    ["/assistant", "Assistant"],
+    ["/sources", "Sources"],
+    ["/tags", "Tags"],
+    ["/downloads", "Downloads"],
+    ["/trash", "Trash"],
+    ["/settings", "Settings"],
+  ] as const)("shows %s as a root location", async (path, label) => {
+    await mount(path);
+    expect(host.querySelector('[aria-current="page"]')?.textContent).toBe(
+      label,
+    );
+    expect(host.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
+    expect(
+      host.querySelector('nav[aria-label="Breadcrumb"]')?.textContent,
+    ).not.toContain("Library");
+  });
+
   it("shows one current location without any tab controls", async () => {
     await mount();
     expect(host.querySelector('nav[aria-label="Breadcrumb"]')).not.toBeNull();
@@ -89,6 +122,21 @@ describe("breadcrumb toolbar", () => {
     expect(host.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
     expect(host.querySelector('[role="tablist"]')).toBeNull();
     expect(host.querySelector('[aria-label="New Tab"]')).toBeNull();
+  });
+
+  it("shows and updates the search result count, including zero", async () => {
+    vi.mocked(useHasActiveSearch).mockReturnValue(true);
+    await mount();
+    expect(
+      host.querySelector('nav[aria-label="Breadcrumb"]')?.textContent,
+    ).toBe("Library/Search results (0)");
+    await act(() => libraryViewContext.set(["one", "two"], "library"));
+    expect(host.querySelector('[aria-current="page"]')?.textContent).toBe(
+      "Search results (2)",
+    );
+    await act(async () => button("Library").click());
+    expect(resetFilters).toHaveBeenCalledOnce();
+    expect(libraryChrome.getState().nav).toEqual({ kind: "all" });
   });
 
   it("navigates to parent folders and clears filters only at Library", async () => {

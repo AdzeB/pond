@@ -1,8 +1,15 @@
 import { FIELD_META } from "@pond/schema/filters/meta";
-import type { Predicate } from "@pond/schema/filters/types";
+import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { describePredicate } from "@/lib/search/fields";
 import type { FilterOption } from "./options";
 import { isFilterSelected } from "./selection";
+
+export function emptyChoiceLabel(field: FieldId): string {
+  if (field === "tags") return "Untagged";
+  if (field === "folder") return "No Folder";
+  if (field === "format") return "No Format";
+  return "No List";
+}
 
 export function filterSummary(
   rules: readonly Predicate[],
@@ -38,12 +45,7 @@ export function filterSummary(
         };
         return `${symbols[rule.operator] ?? ""}${duration(rule.value)}`;
       }
-      if (rule.operator === "empty")
-        return rule.field === "tags"
-          ? "Untagged"
-          : rule.field === "folder"
-            ? "No Folder"
-            : "No List";
+      if (rule.operator === "empty") return emptyChoiceLabel(rule.field);
       if (["enum", "stringArray"].includes(FIELD_META[rule.field].type)) {
         const values = Array.isArray(rule.value) ? rule.value : [rule.value];
         const label = values

@@ -117,17 +117,3 @@ export function boundedSource(
     ...(save.tags ? { tags: save.tags } : {}),
   };
 }
-
-export function searchResults(sources: AssistantSource[], query: string) {
-  const label = (value: string) =>
-    value.replace(/[\\`*{}[\]()<>#!|~]/g, "\\$&");
-  return [
-    `Here ${sources.length === 1 ? "is a Save" : "are Saves"} matching “${label(query)}”:`,
-    sources
-      .map(
-        (save, index) =>
-          `- [${label(sourceExcerpt(save.title, 200) || "Untitled")}](#save-${index + 1})`,
-      )
-      .join("\n"),
-  ].join("\n\n");
-}

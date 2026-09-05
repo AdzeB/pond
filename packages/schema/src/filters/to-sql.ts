@@ -64,6 +64,7 @@ function compileForField(
   if (field === "tags") return jsonArrayClause(saves.tags, operator, raw);
   if (field === "folder") return folderClause(operator, raw);
   if (field === "list") return jsonArrayClause(saves.listKinds, operator, raw);
+  if (field === "format") return fileFormatClause(operator, raw);
 
   const column = FIELD_DESCRIPTORS[field].sqlProjection?.() ?? null;
   if (!column) return null;
@@ -92,6 +93,35 @@ function folderClause(operator: ComparatorId, raw: unknown): SQL | null {
     default:
       return null;
   }
+}
+
+function fileFormatClause(
+  operator: ComparatorId,
+  raw: PredicateValue,
+): SQL | null {
+  if (operator === "empty") return sql`json_array_length(${saves.files}) = 0`;
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const extensions = [
+    ...new Set(
+      raw
+        .map((value) => String(value).toLowerCase().replace(/^\./, ""))
+        .filter((value) => /^[a-z0-9][a-z0-9+_-]*$/.test(value)),
+    ),
+  ];
+  if (extensions.length === 0) return null;
+  const matches = extensions.map(
+    (extension) =>
+      sql`exists (
+        select 1 from json_each(${saves.files})
+        where lower(json_extract(value, '$.path')) like ${`%.${extension}`}
+      )`,
+  );
+  const any = drizzleOr(...matches);
+  if (!any) return null;
+  if (operator === "some") return any;
+  if (operator === "every") return drizzleAnd(...matches) ?? null;
+  if (operator === "none") return sql`not (${any})`;
+  return null;
 }
 
 function jsonArrayClause(

@@ -72,6 +72,53 @@
   padding-inline-start: calc(var(--folder-depth, 0) * var(--folder-indent));
 }
 
+.entry {
+  position: relative;
+  width: 100%;
+}
+
+.more {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: 2px;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-50%);
+  transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
+}
+
+.entry:hover .more,
+.entry:focus-within .more,
+.more:focus-visible,
+.more[data-popup-open] {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+.entry .more:hover,
+.entry .more[data-pressed],
+.entry .more[data-popup-open] {
+  background-color: transparent;
+}
+
+.view-menu {
+  --popup-min-width: 140px;
+}
+
+@media (hover: none) {
+  .more {
+    pointer-events: auto;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .more {
+    transition: none;
+  }
+}
+
 .guide {
   position: absolute;
   inset-block: -1px 0;

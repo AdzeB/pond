@@ -13,7 +13,7 @@ import {
   IconGridLayoutRowsOutline18,
   IconXmarkOutline18,
 } from "@pond/icons/outline/18";
-import { Button, PromptInput, Tooltip } from "@pond/ui";
+import { Button, Empty, PromptInput, Tooltip } from "@pond/ui";
 import { Logo } from "@pond/ui/logo";
 import {
   ASSISTANT_MODELS,
@@ -34,7 +34,12 @@ import {
 import { libraryChrome } from "@/stores/library-chrome";
 import { usePrefs } from "@/stores/prefs";
 import { selection, useSelectionSize } from "@/stores/selection";
-import { ASSISTANT_ACTIONS, type AssistantAction } from "./actions";
+import {
+  AGENT_STARTERS,
+  type AgentStarter,
+  ASSISTANT_ACTIONS,
+  type AssistantAction,
+} from "./actions";
 import { AddMenu } from "./add-menu";
 import { AssistantResponse } from "./assistant-response";
 import {
@@ -131,11 +136,6 @@ function StreamingResponse({ message }: { message: PondRuntimeMessage }) {
           onAttach={attach}
         />
       ))}
-      {sources.length ? (
-        <p className={styles["work-detail"]}>
-          {sources.length} {sources.length === 1 ? "Save found" : "Saves found"}
-        </p>
-      ) : null}
     </article>
   );
 }
@@ -261,6 +261,11 @@ function AgentPaneContent({
     if (selected) assistant.appendDraft(selected.prompt);
     requestAnimationFrame(focus);
   }
+  function start(kind: AgentStarter) {
+    const selected = AGENT_STARTERS.find((entry) => entry.id === kind);
+    if (selected) assistant.appendDraft(selected.prompt);
+    requestAnimationFrame(focus);
+  }
   const messageContext = {
     state,
     provider: provider || ASSISTANT_MODELS[0].id,
@@ -276,7 +281,7 @@ function AgentPaneContent({
         className={styles.assistant}
         data-layout={layout}
         data-reduced-motion={reduceMotion || undefined}
-        aria-label="Assistant"
+        aria-label="Agent"
       >
         <ChatHeader
           chatId={state.chatId}
@@ -308,23 +313,23 @@ function AgentPaneContent({
           ) : null}
           {layout === "pane" ? (
             <>
-              <Tooltip label="Open Assistant Page">
+              <Tooltip label="Open Agent Page">
                 <Button
                   icon
                   size="sm"
                   variant="ghost"
-                  aria-label="Open Assistant Page"
+                  aria-label="Open Agent Page"
                   onClick={() => getAppRouter()?.history.push("/assistant")}
                 >
                   <IconArrowUpRightOutline18 />
                 </Button>
               </Tooltip>
-              <Tooltip label="Close Assistant">
+              <Tooltip label="Close Agent">
                 <Button
                   icon
                   size="sm"
                   variant="ghost"
-                  aria-label="Close Assistant"
+                  aria-label="Close Agent"
                   onClick={() => libraryChrome.setAgentOpen(false)}
                 >
                   <IconXmarkOutline18 />
@@ -338,7 +343,34 @@ function AgentPaneContent({
           data-board-open={Boolean(boardSources?.length)}
         >
           <div className={styles["assistant-body"]} data-empty={empty}>
-            {!empty ? <Conversation loading={state.loading} /> : null}
+            {empty ? (
+              <Empty.Root className={styles.empty}>
+                <Empty.Media>
+                  <Logo size={18} />
+                </Empty.Media>
+                <Empty.Title>Agent</Empty.Title>
+                <Empty.Description>
+                  Tag, title, and file Saves. You review a diff before anything
+                  applies.
+                </Empty.Description>
+                {provider ? (
+                  <Empty.Action className={styles.starters}>
+                    {AGENT_STARTERS.map((entry) => (
+                      <Button
+                        key={entry.id}
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => start(entry.id)}
+                      >
+                        {entry.title}
+                      </Button>
+                    ))}
+                  </Empty.Action>
+                ) : null}
+              </Empty.Root>
+            ) : (
+              <Conversation loading={state.loading} />
+            )}
             <div className={styles["compose-area"]}>
               {!provider ? (
                 <div className={styles.notice} role="status">
@@ -413,8 +445,8 @@ function AgentPaneContent({
                       minRows={2}
                       maxRows={7}
                       maxLength={32000}
-                      aria-label="Message Assistant"
-                      placeholder="Ask anything about your library"
+                      aria-label="Message Agent"
+                      placeholder="Organize, tag, or ask about your Saves"
                       {...suggestions.inputProps}
                       onKeyDown={(event) => {
                         suggestions.onKeyDown(event);

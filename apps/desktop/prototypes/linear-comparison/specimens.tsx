@@ -400,18 +400,23 @@ function ChipDemo() {
   const [visible, setVisible] = useState(true);
   return (
     <div className="sample-row">
-      <UI.Chip.Root
-        tone="tag"
-        lead={<IconCheckOutline12 />}
-        label="Interface"
-      />
+      <UI.Chip.Item tone="tag">
+        <UI.Chip.Icon>
+          <IconCheckOutline12 />
+        </UI.Chip.Icon>
+        <UI.Chip.Label>Interface</UI.Chip.Label>
+      </UI.Chip.Item>
       {visible ? (
-        <UI.Chip.Root
-          tone="mention"
-          lead={<UI.Logo size={12} />}
-          label="Collection"
-          onRemove={() => setVisible(false)}
-        />
+        <UI.Chip.Item tone="mention">
+          <UI.Chip.Icon>
+            <UI.Logo size={12} />
+          </UI.Chip.Icon>
+          <UI.Chip.Label>Collection</UI.Chip.Label>
+          <UI.Chip.Clear
+            aria-label="Remove Collection"
+            onClick={() => setVisible(false)}
+          />
+        </UI.Chip.Item>
       ) : (
         <UI.Button size="xs" variant="ghost" onClick={() => setVisible(true)}>
           Restore chip

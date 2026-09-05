@@ -1,28 +1,26 @@
 import { motion } from "motion/react";
 import { memo, useCallback, useMemo } from "react";
-import { type CardLayout, CardThumb } from "@/components/save/card/media";
+import { useSaveCardModel } from "@/components/save/card/model";
 import { Card } from "@/components/save/card/parts";
+import type {
+  LibraryCardSlot,
+  LibraryCardView,
+} from "@/components/save/card/types";
+import { GridCard } from "@/components/save/card/views/grid";
+import { JustifiedCard } from "@/components/save/card/views/justified";
+import { ListCard } from "@/components/save/card/views/list";
+import { WaterfallCard } from "@/components/save/card/views/waterfall";
 import { SaveContextMenu } from "@/components/save/context-menu";
 import { useLibraryCardCallbacks } from "@/components/shared/grid-context";
-import { useMediaPickOptions } from "@/hooks/use-media-pick-options";
 import { useSave } from "@/hooks/use-saves";
-import { pickCardUnit, pickPrimaryFile } from "@/lib/media/units";
 import { resolveFileIndex } from "@/lib/save/actions";
 import { startNativeDrag } from "@/lib/save/start-drag";
 import type { Save } from "@/lib/types";
-import { formatAbsolute } from "@/lib/util/format";
-import { aspectDimsFor, clampRatio } from "@/stores/aspect";
-import { useDisplayPref } from "@/stores/display-prefs";
 import { useIsAnchor, useIsPrimary, useIsSelected } from "@/stores/selection";
 import { useIsTumbling } from "@/stores/trash-tumble";
 
 interface PackedCardStyle extends React.CSSProperties {
-  "--packed-h": string;
-}
-
-interface MediaAspectStyle extends React.CSSProperties {
-  "--card-aspect"?: string;
-  "--card-aspect-num"?: string;
+  "--card-preview-height": string;
 }
 
 const MotionCardRoot = motion.create(Card.Root);
@@ -39,20 +37,14 @@ function tumbleTarget(id: string) {
 
 interface SaveCardProps {
   id: string;
-  layout: CardLayout;
-  packedWidth?: number;
-  packedHeight?: number;
-  packedTop?: number;
-  packedLeft?: number;
+  view: LibraryCardView;
+  slot: LibraryCardSlot;
 }
 
 export const SaveCard = memo(function SaveCard({
   id,
-  layout,
-  packedWidth,
-  packedHeight,
-  packedTop,
-  packedLeft,
+  view,
+  slot,
 }: SaveCardProps) {
   const { onClick, onAuxClick, onDoubleClick } = useLibraryCardCallbacks();
   const save = useSave(id);
@@ -61,20 +53,18 @@ export const SaveCard = memo(function SaveCard({
   const isAnchor = useIsAnchor(id);
   const tumbling = useIsTumbling(id);
 
-  const liStyle = useMemo<PackedCardStyle | undefined>(() => {
-    if (packedWidth == null || packedHeight == null) return undefined;
+  const style = useMemo<PackedCardStyle>(() => {
     const base: PackedCardStyle = {
-      width: `${packedWidth}px`,
-      "--packed-h": `${packedHeight}px`,
+      width: `${slot.width}px`,
+      height: `${slot.height}px`,
+      "--card-preview-height": `${slot.previewHeight}px`,
     };
-    if (packedTop != null && packedLeft != null) {
-      base.position = "absolute";
-      base.top = 0;
-      base.left = 0;
-      base.transform = `translate3d(${packedLeft}px, ${packedTop}px, 0)`;
-    }
+    base.position = "absolute";
+    base.top = 0;
+    base.left = 0;
+    base.transform = `translate3d(${slot.left}px, ${slot.top}px, 0)`;
     return base;
-  }, [packedWidth, packedHeight, packedTop, packedLeft]);
+  }, [slot]);
 
   const dragFileIndex = save ? resolveFileIndex(save) : null;
   const onDragStart = useCallback(
@@ -108,17 +98,18 @@ export const SaveCard = memo(function SaveCard({
       onAuxClick={onSelectAuxClick}
       onDoubleClick={onSelectDoubleClick}
     >
-      <SaveCardBody save={save} layout={layout} width={packedWidth} />
+      <SaveCardBody save={save} view={view} width={slot.width} />
     </Card.Select>
   );
 
   const rootProps = {
     selected: isPrimary,
     multi: isMulti,
+    "data-library-card": "",
     "data-save-id": id,
-    "data-layout": layout,
+    "data-view": view,
     "data-cursor": isAnchor || undefined,
-    style: liStyle,
+    style,
     draggable: dragFileIndex != null,
     onNativeDragStart: onDragStart,
     children,
@@ -142,42 +133,20 @@ export const SaveCard = memo(function SaveCard({
 
 const SaveCardBody = memo(function SaveCardBody({
   save,
-  layout,
+  view,
   width,
 }: {
   save: Save;
-  layout?: CardLayout;
+  view: LibraryCardView;
   width?: number;
 }) {
-  const pickOpts = useMediaPickOptions();
-  const showName = useDisplayPref("name");
-  const showDate = useDisplayPref("date");
-  const packed = layout === "waterfall" || layout === "justified";
-  const unit = useMemo(() => pickCardUnit(save, pickOpts), [save, pickOpts]);
-  const primary = useMemo(
-    () => pickPrimaryFile(save, pickOpts),
-    [save, pickOpts],
-  );
-  const mediaStyle = useMemo<MediaAspectStyle>(() => {
-    if (packed) return {};
-    const { w, h } = aspectDimsFor(save, pickOpts, unit);
-    const ratio = w && h ? clampRatio(w, h) : 1;
-    return {
-      "--card-aspect": w && h ? `${w} / ${h}` : "1 / 1",
-      "--card-aspect-num": String(ratio),
-    };
-  }, [packed, save, pickOpts, unit]);
-  const dateLabel = useMemo(() => formatAbsolute(save.savedAt), [save.savedAt]);
-  return (
-    <>
-      <Card.Media style={mediaStyle}>
-        <CardThumb save={save} layout={layout} width={width} />
-        <Card.Overlay save={save} primary={primary} />
-      </Card.Media>
-      <Card.Meta
-        title={showName ? (save.title ?? save.url) : undefined}
-        time={showDate ? dateLabel : undefined}
-      />
-    </>
-  );
+  const model = useSaveCardModel(save, view === "grid");
+  if (view === "grid") return <GridCard model={model} width={width} />;
+  if (view === "waterfall") {
+    return <WaterfallCard model={model} width={width} />;
+  }
+  if (view === "justified") {
+    return <JustifiedCard model={model} width={width} />;
+  }
+  return <ListCard model={model} width={width} />;
 });

@@ -1,0 +1,6 @@
+The following is a diff from the previous accessibility tree for Window: "Pond" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
++									784 container Visual Match, Secondary Actions: Cancel
++										785 container
++											786 text Drag or paste image Supports Pond or local images
++											787 button Choose Image
+The focused UI element is 787 button Choose Image

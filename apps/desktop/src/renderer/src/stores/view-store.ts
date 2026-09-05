@@ -89,8 +89,20 @@ export function useViewStore(): ViewStoreState {
   return useSelector(store, (s) => s);
 }
 
+export function getViewState(): ViewStoreState {
+  return store.state;
+}
+
 export function useFilterQuery(): Query {
   return useSelector(store, (s) => s.query);
+}
+
+export function useHasActiveSearch(): boolean {
+  return useSelector(store, (s) =>
+    Boolean(
+      s.q.trim() || s.query.rules.length || s.semanticQuery || s.visualProbe,
+    ),
+  );
 }
 
 export function useLayout(): LayoutValue {

@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Eagle Types × Pond Type</title>
+    <style>
+      :root {
+        --bg: #f4f4f5;
+        --paper: #fff;
+        --ink: #18181b;
+        --muted: #71717a;
+        --line: #e4e4e7;
+        --chip: #f4f4f5;
+        --live: #dcfce7;
+        --live-ink: #14532d;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--ink);
+        background: var(--bg);
+      }
+      header,
+      main {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      header {
+        padding: 36px 24px 8px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 28px;
+      }
+      header p {
+        max-width: 64ch;
+        margin: 0;
+        color: var(--muted);
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 16px;
+      }
+      .pill {
+        padding: 4px 8px;
+        font-size: 12px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+      }
+      main {
+        display: grid;
+        gap: 20px;
+        padding: 20px 24px 72px;
+      }
+      .pair {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      @media (max-width: 860px) {
+        .pair {
+          grid-template-columns: 1fr;
+        }
+      }
+      figure {
+        margin: 0;
+        overflow: hidden;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+      }
+      figure img {
+        display: block;
+        width: 100%;
+        max-height: 560px;
+        object-fit: contain;
+        object-position: top;
+        background: #ececef;
+      }
+      figcaption {
+        padding: 12px 16px 14px;
+        border-top: 1px solid var(--line);
+      }
+      figcaption strong {
+        display: block;
+      }
+      figcaption span {
+        color: var(--muted);
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 168px 1fr;
+        gap: 16px;
+        align-items: start;
+        padding: 16px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+      }
+      .pond {
+        padding: 10px 12px;
+        background: var(--chip);
+        border-radius: 12px;
+      }
+      .pond b {
+        display: block;
+        font-size: 16px;
+      }
+      .pond small {
+        color: var(--muted);
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .ext {
+        padding: 5px 8px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        background: var(--chip);
+        border-radius: 8px;
+      }
+      .ext[data-live] {
+        color: var(--live-ink);
+        background: var(--live);
+      }
+      .legend {
+        font-size: 13px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Eagle Types × Pond Type</h1>
+      <p>
+        Live capture from both apps, 4 Sep 2026. Eagle Types lists extensions
+        that exist in the open library. Pond Type lists eight media families.
+        Green chips are in this Eagle library tonight. Everything else is
+        Eagle’s shipped format catalog, grouped under the Pond family it already
+        maps to.
+      </p>
+      <div class="meta">
+        <span class="pill">Eagle All · 492 items · 13 extensions</span>
+        <span class="pill">Pond · 8 families</span>
+        <span class="pill">Green = present in Eagle tonight</span>
+      </div>
+    </header>
+    <main>
+      <div class="pair">
+        <figure>
+          <img src="eagle-types.png" alt="Eagle Types dropdown with file extensions" />
+          <figcaption>
+            <strong>Eagle · Types</strong>
+            <span>docx gif jpg mp4 png pptx svg ttf txt url wav webp zip</span>
+          </figcaption>
+        </figure>
+        <figure>
+          <img src="pond-type.png" alt="Pond Type submenu with media families" />
+          <figcaption>
+            <strong>Pond · Type</strong>
+            <span>Image Video Audio Document Font File Website Text</span>
+          </figcaption>
+        </figure>
+      </div>
+      <p class="legend">Each Pond family on the left. Eagle extensions it covers on the right.</p>
+      <div class="row">
+        <div class="pond">
+          <b>Image</b>
+          <small>8,007 in Pond</small>
+        </div>
+        <div class="chips">
+          <span class="ext" data-live>gif 1</span>
+          <span class="ext" data-live>jpg 331</span>
+          <span class="ext" data-live>png 143</span>
+          <span class="ext" data-live>svg 2</span>
+          <span class="ext" data-live>webp 2</span>
+          <span class="ext">avif</span><span class="ext">jfif</span><span class="ext">jxl</span><span class="ext">jpe</span><span class="ext">insp</span><span class="ext">tiff</span><span class="ext">tif</span><span class="ext">jpeg</span><span class="ext">bmp</span><span class="ext">icns</span><span class="ext">ico</span><span class="ext">hdr</span><span class="ext">exr</span><span class="ext">hif</span><span class="ext">heic</span><span class="ext">heif</span><span class="ext">tga</span><span class="ext">dds</span><span class="ext">livp</span><span class="ext">base64</span>
+          <span class="ext">arw</span><span class="ext">cr2</span><span class="ext">cr3</span><span class="ext">crw</span><span class="ext">dng</span><span class="ext">raf</span><span class="ext">rw2</span><span class="ext">orf</span><span class="ext">nef</span><span class="ext">nrw</span><span class="ext">raw</span><span class="ext">3fr</span><span class="ext">erf</span><span class="ext">srw</span><span class="ext">sr2</span><span class="ext">pef</span><span class="ext">x3f</span><span class="ext">mrw</span>
+          <span class="ext">psd</span><span class="ext">psdt</span><span class="ext">psb</span><span class="ext">ai</span><span class="ext">ait</span><span class="ext">eps</span><span class="ext">xd</span><span class="ext">clip</span><span class="ext">prd</span><span class="ext">fig</span><span class="ext">sketch</span><span class="ext">af</span><span class="ext">afpub</span><span class="ext">afdesign</span><span class="ext">afphoto</span><span class="ext">cdr</span><span class="ext">skt</span><span class="ext">pxd</span><span class="ext">indd</span><span class="ext">indt</span><span class="ext">idml</span><span class="ext">ps</span>
+        </div>
+      </div>
+      <div class="row">
+        <div class="pond">
+          <b>Video</b>
+          <small>4,608 in Pond</small>
+        </div>
+        <div class="chips">
+          <span class="ext" data-live>mp4 4</span>
+          <span class="ext">afx</span><span class="ext">eva</span><span class="ext">vap</span><span class="ext">360</span><span class="ext">ts</span><span class="ext">3gp</span><span class="ext">mkv</span><span class="ext">mpg</span><span class="ext">mov</span><span class="ext">m4v</span><span class="ext">webm</span><span class="ext">avi</span><span class="ext">mts</span><span class="ext">wmv</span><span class="ext">flv</span><span class="ext">m2ts</span><span class="ext">f4v</span><span class="ext">av1</span><span class="ext">hevc</span><span class="ext">rm</span><span class="ext">rmvb</span><span class="ext">vp8</span><span class="ext">vp9</span><span class="ext">mpeg</span><span class="ext">ogv</span>
+        </div>
+      </div>
+      <div class="row">
+        <div class="pond">
+          <b>Audio</b>
+          <small>5 in Pond</small>
+        </div>
+        <div class="chips">
+          <span class="ext" data-live>wav 1</span>
+          <span class="ext">mp3</span><span class="ext">ogg</span><span class="ext">flac</span><span class="ext">aac</span><span class="ext">m4a</span>
+        </div>
+      </div>
+      <div class="row">
+        <div class="pond">
+          <b>Document</b>
+          <small>6 in Pond</small>
+        </div>
+        <div class="chips">
+          <span class="ext" data-live>docx 1</span>
+          <span class="ext" data-live>pptx 1</span>
+          <span class="ext">pdf</span><span class="ext">key</span><span class="ext">pages</span><span class="ext">number</span><span class="ext">numbers</span><span class="ext">potx</span><span class="ext">ppt</span><span class="ext">doc</span><span class="ext">xls</span><span class="ext">xlsx</span><span class="ext">graffle</span><span class="ext">xmind</span><span class="ext">mindnode</span><span class="ext">eddx</span><span class="ext">emmx</span><span class="ext">epub</span>
+        </div>
+      </div>
+      <div class="row">
+        <div class="pond">
+          <b>Font</b>
+          <small>2 in Pond</small>
+        </div>
+        <div class="chips">
+          <span class="ext" data-live>ttf 1</span>
+          <span class="ext">otf</span><span class="ext">ttc</span><span class="ext">woff</span><span class="ext">woff2</span>
+        </div>
+      </div>
+      <div class="row">
+        <div class="pond">
+          <b>File</b>
+          <small>3 in Pond</small>
+        </div>
+        <div class="chips">
+          <span class="ext" data-live>zip 1</span>
+          <span class="ext">rar</span><span class="ext">7z</span>
+          <span class="ext">c4d</span><span class="ext">blend</span><span class="ext">blender</span><span class="ext">skp</span><span class="ext">dwg</span><span class="ext">glb</span><span class="ext">fbx</span><span class="ext">obj</span><span class="ext">3ds</span><span class="ext">3mf</span><span class="ext">dae</span><span class="ext">ifc</span><span class="ext">ply</span><span class="ext">stl</span>
+          <span class="ext">swf</span>
+        </div>
+      </div>
+      <div class="row">
+        <div class="pond">
+          <b>Website</b>
+          <small>15 in Pond</small>
+        </div>
+        <div class="chips">
+          <span class="ext" data-live>url 2</span>
+          <span class="ext">html</span><span class="ext">mhtml</span><span class="ext">webarchive</span>
+        </div>
+      </div>
+      <div class="row">
+        <div class="pond">
+          <b>Text</b>
+          <small>6 in Pond</small>
+        </div>
+        <div class="chips">
+          <span class="ext" data-live>txt 2</span>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

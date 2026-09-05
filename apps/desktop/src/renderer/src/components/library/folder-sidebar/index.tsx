@@ -1,3 +1,4 @@
+import { IconDotsFill12 } from "@pond/icons/fill/12";
 import { IconChevronDownOutline12 } from "@pond/icons/outline/12";
 import {
   IconAlbum2Outline18,
@@ -10,11 +11,13 @@ import {
   IconGlobeOutline18,
   IconMagnifierOutline18,
   IconMsg2Outline18,
+  IconPencilOutline18,
   IconPlusOutline18,
   IconTagsOutline18,
   IconTrash2Outline18,
   IconVersionsOutline18,
 } from "@pond/icons/outline/18";
+import type { SavedView } from "@pond/schema/db";
 import {
   Button,
   Logo,
@@ -45,6 +48,7 @@ import {
   useLibraryNav,
 } from "@/stores/library-chrome";
 import {
+  promptCreateView,
   savedViews,
   useHydrateSavedViews,
   useSavedViews,
@@ -333,13 +337,13 @@ export function FolderSidebar() {
           active={tagsPage}
           onClick={() => go("/tags")}
         />
-        <SavedViewsSection />
         <Row
           label="Assistant"
           icon={<IconMsg2Outline18 />}
           active={assistantPage}
           onClick={() => go("/assistant")}
         />
+        <SavedViewsSection />
 
         <Sidebar.CollapsibleGroup>
           <Sidebar.GroupHeader>
@@ -457,9 +461,88 @@ export function FolderSidebar() {
   );
 }
 
+function viewMenuItems(view: SavedView): MenuItemSpec[] {
+  return [
+    {
+      label: "Rename",
+      icon: <IconPencilOutline18 />,
+      onClick: () =>
+        prompt({
+          title: "Rename View",
+          confirmLabel: "Save",
+          initialValue: view.name,
+          onConfirm: async (name) => {
+            await window.pond.query("savedViews.rename", {
+              id: view.id,
+              name,
+            });
+            await savedViews.refresh();
+          },
+        }),
+    },
+    {
+      label: "Delete",
+      icon: <IconTrash2Outline18 />,
+      onClick: () =>
+        confirm({
+          title: "Delete View",
+          description: "The view is removed. Your Saves stay.",
+          confirmLabel: "Delete",
+          confirmVariant: "destructive",
+          onConfirm: async () => {
+            await window.pond.query("savedViews.delete", {
+              id: view.id,
+            });
+            await savedViews.refresh();
+          },
+        }),
+    },
+  ];
+}
+
+function SavedViewRow({ view }: { view: SavedView }) {
+  const { activeViewId } = useViewStore();
+  const items = viewMenuItems(view);
+
+  return (
+    <SpecContextMenu buildItems={() => items} className={styles["view-menu"]}>
+      <div className={styles.entry}>
+        <Row
+          label={view.name}
+          icon={<IconVersionsOutline18 />}
+          active={activeViewId === view.id}
+          onClick={() => {
+            applySavedView(view);
+            selectNav({ kind: "all" });
+          }}
+        />
+        <Menu.Root>
+          <Menu.Trigger
+            icon
+            size="xs"
+            variant="ghost"
+            rounding="rounded"
+            className={styles.more}
+            aria-label="More Actions"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <IconDotsFill12 />
+          </Menu.Trigger>
+          <Menu.Portal>
+            <Menu.Positioner align="end" sideOffset={4}>
+              <Menu.Popup className={styles["view-menu"]}>
+                <Menu.Items items={items} />
+              </Menu.Popup>
+            </Menu.Positioner>
+          </Menu.Portal>
+        </Menu.Root>
+      </div>
+    </SpecContextMenu>
+  );
+}
+
 function SavedViewsSection() {
   const views = useSavedViews();
-  const { activeViewId, query, sortKey, sortDir, layout } = useViewStore();
 
   return (
     <Sidebar.CollapsibleGroup>
@@ -472,76 +555,14 @@ function SavedViewsSection() {
           size="sm"
           variant="ghost"
           aria-label="Save Current View"
-          onClick={() =>
-            prompt({
-              title: "Save View",
-              confirmLabel: "Save",
-              initialValue: "Untitled View",
-              onConfirm: async (name) => {
-                await window.pond.query("savedViews.create", {
-                  name,
-                  query: query as never,
-                  sortKey,
-                  sortDir,
-                  layout,
-                });
-                await savedViews.refresh();
-              },
-            })
-          }
+          onClick={promptCreateView}
         >
           <IconPlusOutline18 />
         </Button>
       </Sidebar.GroupHeader>
       <Sidebar.CollapsibleGroupContent>
         {views.map((view) => (
-          <SpecContextMenu
-            key={view.id}
-            buildItems={() => [
-              {
-                label: "Rename",
-                onClick: () =>
-                  prompt({
-                    title: "Rename View",
-                    confirmLabel: "Save",
-                    initialValue: view.name,
-                    onConfirm: async (name) => {
-                      await window.pond.query("savedViews.rename", {
-                        id: view.id,
-                        name,
-                      });
-                      await savedViews.refresh();
-                    },
-                  }),
-              },
-              {
-                label: "Delete",
-                onClick: () =>
-                  confirm({
-                    title: "Delete View",
-                    description: "The view is removed. Your Saves stay.",
-                    confirmLabel: "Delete",
-                    confirmVariant: "destructive",
-                    onConfirm: async () => {
-                      await window.pond.query("savedViews.delete", {
-                        id: view.id,
-                      });
-                      await savedViews.refresh();
-                    },
-                  }),
-              },
-            ]}
-          >
-            <Row
-              label={view.name}
-              icon={<IconVersionsOutline18 />}
-              active={activeViewId === view.id}
-              onClick={() => {
-                applySavedView(view);
-                selectNav({ kind: "all" });
-              }}
-            />
-          </SpecContextMenu>
+          <SavedViewRow key={view.id} view={view} />
         ))}
       </Sidebar.CollapsibleGroupContent>
     </Sidebar.CollapsibleGroup>

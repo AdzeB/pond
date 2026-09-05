@@ -70,6 +70,7 @@ describe("HoverGallery preview scheduling", () => {
         <HoverGallery
           save={save}
           slides={slides}
+          pickOptions={{}}
           active={0}
           seen={new Set([0, 1])}
           onBroken={vi.fn()}

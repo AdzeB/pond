@@ -1,9 +1,9 @@
 import { IconDescendingSortingOutline18 } from "@pond/icons/outline/18";
-import { Button, Select, type SelectItemSpec, Tooltip } from "@pond/ui";
-import { ShortcutKeys } from "@/components/shared/shortcut-keys";
+import { Menu, Toggle, ToggleGroup, Tooltip } from "@pond/ui";
+import { isSortKey } from "@/hooks/use-filtered-saves";
+import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { type SortKey, useView } from "@/hooks/use-view";
-import { toggleSortDir } from "@/stores/view-store";
-import sharedStyles from "../styles.module.css";
+import { libraryHeader } from "@/stores/library-header";
 import styles from "./styles.module.css";
 
 type KeyOption = { value: SortKey; label: string };
@@ -50,58 +50,85 @@ const KEY_GROUPS: Array<{
   },
 ];
 
-const OPTIONS = KEY_GROUPS.flatMap((group) => group.options);
-const ITEMS: SelectItemSpec<SortKey>[] = KEY_GROUPS.map((group) => ({
-  type: "group",
-  label: group.label,
-  items: group.options,
-}));
-
-export function SortSection() {
+export function SortMenu() {
   const { state, actions } = useView();
   const { key, dir } = state.sort;
+  const scrollFade = useScrollFade<HTMLDivElement>();
 
   return (
-    <Select.Root
-      items={OPTIONS}
-      value={key}
-      onValueChange={(value) => {
-        if (value !== null) actions.setSort({ key: value, dir });
+    <Menu.Root
+      onOpenChange={(open) => {
+        if (open) libraryHeader.closePopover();
       }}
     >
-      <div className={sharedStyles.row}>
-        <Select.Label className={sharedStyles.label}>Sort By</Select.Label>
-        <div className={styles.controls}>
-          <Tooltip
-            label="Toggle Sort Direction"
-            shortcut={<ShortcutKeys id="view.sort-dir" />}
-            side="bottom"
-          >
-            <Button
-              icon
-              size="sm"
-              variant="ghost"
-              aria-label={dir === "asc" ? "Ascending" : "Descending"}
-              onClick={() => toggleSortDir()}
+      <Tooltip label="Sort" side="bottom">
+        <Menu.Trigger icon size="sm" variant="ghost" aria-label="Sort">
+          <IconDescendingSortingOutline18
+            className={styles.icon}
+            data-asc={dir === "asc" || undefined}
+          />
+        </Menu.Trigger>
+      </Tooltip>
+      <Menu.Portal>
+        <Menu.Positioner side="bottom" align="end" sideOffset={6}>
+          <Menu.Popup className={styles.popup} {...scrollFade}>
+            <ToggleGroup
+              className={styles.direction}
+              value={[dir]}
+              onValueChange={(value) => {
+                const next = value[0];
+                if (next === "asc" || next === "desc") {
+                  actions.setSort({ key, dir: next });
+                }
+              }}
+              aria-label="Sort Direction"
             >
-              <IconDescendingSortingOutline18
-                className={styles.icon}
-                data-asc={dir === "asc" || undefined}
-              />
-            </Button>
-          </Tooltip>
-          <Select.Trigger size="sm" className={sharedStyles.select}>
-            <Select.Value />
-          </Select.Trigger>
-        </div>
-      </div>
-      <Select.Portal>
-        <Select.Positioner align="end" sideOffset={6}>
-          <Select.Popup>
-            <Select.Items items={ITEMS} />
-          </Select.Popup>
-        </Select.Positioner>
-      </Select.Portal>
-    </Select.Root>
+              <Toggle value="asc" size="sm">
+                Ascending
+              </Toggle>
+              <Toggle value="desc" size="sm">
+                Descending
+              </Toggle>
+            </ToggleGroup>
+            <Menu.Separator />
+            {KEY_GROUPS.map((group) => (
+              <Menu.SubmenuRoot key={group.label}>
+                <Menu.SubmenuTrigger>
+                  <Menu.ItemLabel>{group.label}</Menu.ItemLabel>
+                </Menu.SubmenuTrigger>
+                <Menu.Portal>
+                  <Menu.Positioner
+                    side="inline-end"
+                    align="start"
+                    sideOffset={6}
+                  >
+                    <Menu.Popup>
+                      <Menu.RadioGroup
+                        value={key}
+                        onValueChange={(value) => {
+                          if (isSortKey(value)) {
+                            actions.setSort({ key: value, dir });
+                          }
+                        }}
+                      >
+                        {group.options.map((option) => (
+                          <Menu.RadioItem
+                            key={option.value}
+                            value={option.value}
+                          >
+                            <Menu.RadioItemIndicator />
+                            <Menu.ItemLabel>{option.label}</Menu.ItemLabel>
+                          </Menu.RadioItem>
+                        ))}
+                      </Menu.RadioGroup>
+                    </Menu.Popup>
+                  </Menu.Positioner>
+                </Menu.Portal>
+              </Menu.SubmenuRoot>
+            ))}
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }

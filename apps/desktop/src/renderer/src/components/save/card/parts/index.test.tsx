@@ -2,17 +2,9 @@
 
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import type { Save } from "@/lib/types";
+import { afterEach, describe, expect, it } from "vitest";
+import type { SaveCardOverlayModel } from "@/components/save/card/model";
 import { Card } from ".";
-
-vi.mock("@/hooks/use-media-pick-options", () => ({
-  useMediaPickOptions: () => ({}),
-}));
-
-vi.mock("@/stores/display-prefs", () => ({
-  useDisplayPref: (key: string) => key === "source",
-}));
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -26,46 +18,40 @@ afterEach(() => {
   container = null;
 });
 
-function save(source: Save["source"]): Save {
-  return {
-    id: `${source}-save`,
-    source,
-    sourceId: `${source}-save`,
-    url: "",
-    title: null,
-    description: null,
-    author: null,
-    notes: null,
-    mediaUrl: null,
-    mediaType: null,
-    files: [],
-    tags: [],
-    savedAt: 0,
-    createdAt: 0,
-    deletedAt: null,
-  };
-}
+const emptyOverlay: SaveCardOverlayModel = {
+  type: null,
+  source: null,
+  fileCount: null,
+  hasNote: false,
+};
 
 describe("Save card source badge", () => {
-  it("omits the redundant source badge for local Saves", () => {
+  it("omits a source badge when the model has none", () => {
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
 
     act(() => {
-      root?.render(<Card.Overlay save={save("local")} primary={null} />);
+      root?.render(<Card.Overlay model={emptyOverlay} />);
     });
 
     expect(container.querySelector('[aria-label^="Saved from"]')).toBeNull();
   });
 
-  it("keeps the source badge for non-local Saves", () => {
+  it("renders source details from the presentation model", () => {
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
 
     act(() => {
-      root?.render(<Card.Overlay save={save("web")} primary={null} />);
+      root?.render(
+        <Card.Overlay
+          model={{
+            ...emptyOverlay,
+            source: { label: "Web", logo: null, icon: null },
+          }}
+        />,
+      );
     });
 
     expect(

@@ -1,4 +1,12 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import {
+  lazy,
+  type ReactNode,
+  Suspense,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import type { LibraryCardView } from "@/components/save/card/types";
 import type { RichFilePreviewKind } from "@/lib/media/rich-file-preview";
 import type { SaveFile } from "@/lib/types";
 import styles from "./styles.module.css";
@@ -14,23 +22,34 @@ interface RichFilePreviewProps {
   title: string | null;
   file: SaveFile;
   url: string;
+  view?: LibraryCardView;
 }
 
 export function RichFilePreview(props: RichFilePreviewProps) {
+  let preview: ReactNode;
   switch (props.kind) {
     case "model":
-      return (
-        <Suspense fallback={<PreviewStatus label="Loading model…" />}>
+      preview = (
+        <Suspense fallback={<PreviewStatus label="Loading model" />}>
           <ModelCardPreview url={props.url} path={props.file.path} />
         </Suspense>
       );
+      break;
     case "epub":
-      return <EpubCardPreview url={props.url} title={props.title} />;
+      preview = <EpubCardPreview url={props.url} title={props.title} />;
+      break;
     case "font":
-      return <FontCardPreview url={props.url} saveId={props.saveId} />;
+      preview = <FontCardPreview url={props.url} saveId={props.saveId} />;
+      break;
     case "archive":
-      return <ArchiveCardPreview />;
+      preview = <ArchiveCardPreview />;
+      break;
   }
+  return (
+    <div className={styles.root} data-view={props.view}>
+      {preview}
+    </div>
+  );
 }
 
 function PreviewStatus({ label }: { label: string }) {

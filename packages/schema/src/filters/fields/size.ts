@@ -5,7 +5,7 @@ import { defineField } from "./descriptor";
 export const width = defineField({
   id: "width",
   type: "number",
-  label: "Width",
+  label: "Dimensions",
   group: "media",
   project: (s) => s.width ?? 0,
   sqlProjection: () => sql`${saves.width}`,

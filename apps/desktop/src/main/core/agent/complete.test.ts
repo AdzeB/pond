@@ -128,7 +128,8 @@ it("does not retrieve or list folders for ordinary conversation", async () => {
   expect(mock.chat).toHaveBeenCalledOnce();
 });
 
-it("returns real linked titles for a lookup without inventing summaries", async () => {
+it("retrieves first, then lets the model write instead of a result list", async () => {
+  chatText("Most of these are studio portraits. I can tag them.");
   const search = vi.fn().mockResolvedValue({
     saves: [
       {
@@ -151,13 +152,12 @@ it("returns real linked titles for a lookup without inventing summaries", async 
     media: ["image"],
     limit: 24,
   });
-  expect(answer).toContain("Here are Saves matching “kanye”:");
-  expect(answer).toContain(
-    "- [Kanye \\[portrait\\]\\(https://example.com\\)](#save-1)",
+  expect(answer).toBe("Most of these are studio portraits. I can tag them.");
+  expect(answer).not.toMatch(/matching your search|Here are Saves matching/i);
+  expect(mock.chat).toHaveBeenCalledOnce();
+  expect(mock.chat.mock.calls[0]?.[0].systemPrompts.join("\n")).toContain(
+    "Save ID: one",
   );
-  expect(answer).toContain("- [Kanye at the studio](#save-2)");
-  expect(mock.chat).not.toHaveBeenCalled();
-  expect(input.onText).toHaveBeenCalledExactlyOnceWith(answer);
 });
 
 it("still generates an answer when a lookup also asks for a comparison", async () => {
@@ -191,7 +191,10 @@ it("still generates an answer when a lookup also asks for a comparison", async (
   expect(mock.chat).toHaveBeenCalledOnce();
 });
 
-it("uses inline results without duplicating titles in prose when the UI tool is available", async () => {
+it("shows a few matching Saves, then asks the model to write", async () => {
+  chatText(
+    "This is a lighting study. I can file it with the other film stills.",
+  );
   const show = vi.fn();
   const answer = await completeWithTools({
     ...request(),
@@ -215,12 +218,46 @@ it("uses inline results without duplicating titles in prose when the UI tool is 
     ],
   });
   expect(show).toHaveBeenCalledExactlyOnceWith({
-    title: "Results for “film”",
+    title: "film",
     saveIds: ["one"],
   });
-  expect(answer).toBe("I found 1 Save matching your search.");
+  expect(answer).toBe(
+    "This is a lighting study. I can file it with the other film stills.",
+  );
   expect(answer).not.toContain("A film");
-  expect(mock.chat).not.toHaveBeenCalled();
+  expect(mock.chat).toHaveBeenCalledOnce();
+});
+
+it("surfaces nested provider RUN_ERROR bodies", async () => {
+  mock.chat.mockImplementation(async function* () {
+    yield {
+      type: "RUN_ERROR",
+      rawEvent: {
+        error: {
+          message:
+            "Invalid schema for function 'proposeChanges': schema must have a 'type' key.",
+        },
+      },
+    };
+  });
+  await expect(completeWithTools(request())).rejects.toThrow(
+    /Invalid schema for function 'proposeChanges'/,
+  );
+});
+
+it("surfaces the provider RUN_ERROR message instead of a generic fallback", async () => {
+  mock.chat.mockImplementation(async function* () {
+    yield {
+      type: "RUN_ERROR",
+      message:
+        "Invalid schema for function 'applyFilter': schema must have a 'type' key.",
+    };
+  });
+  const input = request();
+  await expect(completeWithTools(input)).rejects.toThrow(
+    /Invalid schema for function 'applyFilter'/,
+  );
+  expect(input.onText).not.toHaveBeenCalled();
 });
 
 it("does not publish a response after cancellation", async () => {
@@ -384,6 +421,7 @@ it.each([
   "lmstudio",
   "compatible",
 ] as const)("routes the exact terse picture query before the %s provider", async (provider) => {
+  chatText("A studio portrait. I can tag it.");
   const search = vi.fn().mockResolvedValue({
     saves: [
       {
@@ -403,7 +441,7 @@ it.each([
     retrieveLibrary: retrieval(search),
   };
   expect(await completeWithTools(input)).toBe(
-    "I found 1 Save matching your search.",
+    "A studio portrait. I can tag it.",
   );
   expect(search).toHaveBeenCalledExactlyOnceWith({
     query: "kanye",
@@ -411,13 +449,14 @@ it.each([
     limit: 24,
   });
   expect(show).toHaveBeenCalledExactlyOnceWith({
-    title: "Results for “kanye”",
+    title: "kanye",
     saveIds: ["portrait"],
   });
-  expect(mock.chat).not.toHaveBeenCalled();
+  expect(mock.chat).toHaveBeenCalledOnce();
 });
 
 it("routes Kanye tweets through Twitter source retrieval before the model", async () => {
+  chatText("A tweet about the listening party.");
   const search = vi.fn().mockResolvedValue({
     saves: [
       {
@@ -436,12 +475,12 @@ it("routes Kanye tweets through Twitter source retrieval before the model", asyn
     retrieveLibrary: retrieval(search),
   };
   expect(await completeWithTools(input)).toBe(
-    "I found 1 Save matching your search.",
+    "A tweet about the listening party.",
   );
   expect(search).toHaveBeenCalledExactlyOnceWith({
     query: "Kanye",
     source: "twitter",
     limit: 24,
   });
-  expect(mock.chat).not.toHaveBeenCalled();
+  expect(mock.chat).toHaveBeenCalledOnce();
 });

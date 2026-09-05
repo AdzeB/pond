@@ -1,0 +1,12 @@
+The following is a diff from the previous accessibility tree for Window: "Pond" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
++									784 menu Note, Secondary Actions: Cancel
++										785 container
++											786 is, Value: 1
++											787 is not, Value: 0
++										788 With Note, Value: 0
++										789 Without Note, Value: 0
++										790 container
++											791 text Contains Text
++											792 text field (settable) Description: Search Note, Placeholder: Search note…
++											793 button (disabled) Apply
+The focused UI element is 792 text field (settable) Description: Search Note, Placeholder: Search note…

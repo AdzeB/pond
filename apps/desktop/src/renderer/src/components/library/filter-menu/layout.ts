@@ -9,7 +9,12 @@ export type FilterLayout =
   | "color"
   | "content";
 
-const SEARCHABLE_FIELDS = new Set<FieldId>(["folder", "creator", "account"]);
+const SEARCHABLE_FIELDS = new Set<FieldId>([
+  "folder",
+  "format",
+  "creator",
+  "account",
+]);
 
 export function filterLayout(
   field: FieldId,

@@ -42,7 +42,8 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
     {
       component: AgentSection,
       title: "Models",
-      description: "Paste a key, or point at Ollama or LM Studio on this Mac.",
+      description:
+        "Add providers, then pick Language and Vision defaults for Agent.",
       keywords: [
         "ai",
         "agent",
@@ -52,6 +53,9 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
         "ollama",
         "key",
         "provider",
+        "language",
+        "vision",
+        "default",
       ],
     },
   ],

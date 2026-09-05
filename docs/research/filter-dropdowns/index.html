@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pond × Eagle filter dropdowns</title>
+    <style>
+      :root {
+        --bg: #f4f4f5;
+        --paper: #fff;
+        --ink: #18181b;
+        --muted: #71717a;
+        --line: #e4e4e7;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--ink);
+        background: var(--bg);
+      }
+      header,
+      main {
+        max-width: 1280px;
+        margin: 0 auto;
+      }
+      header {
+        padding: 36px 24px 8px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 28px;
+      }
+      header p {
+        max-width: 72ch;
+        margin: 0;
+        color: var(--muted);
+      }
+      .key {
+        display: flex;
+        gap: 16px;
+        margin-top: 16px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      main {
+        display: grid;
+        gap: 28px;
+        padding: 20px 24px 80px;
+      }
+      article {
+        overflow: hidden;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+      }
+      .head {
+        display: flex;
+        gap: 16px;
+        align-items: baseline;
+        justify-content: space-between;
+        padding: 16px 18px 12px;
+        border-bottom: 1px solid var(--line);
+      }
+      .head h2 {
+        margin: 0;
+        font-size: 16px;
+      }
+      .head p {
+        margin: 6px 0 0;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .pair {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+      @media (max-width: 900px) {
+        .pair {
+          grid-template-columns: 1fr;
+        }
+      }
+      figure {
+        min-width: 0;
+        margin: 0;
+      }
+      figure + figure {
+        border-left: 1px solid var(--line);
+      }
+      @media (max-width: 900px) {
+        figure + figure {
+          border-top: 1px solid var(--line);
+          border-left: 0;
+        }
+      }
+      figure img {
+        display: block;
+        width: 100%;
+        max-height: 620px;
+        object-fit: contain;
+        object-position: top left;
+        background: #ececef;
+      }
+      figcaption {
+        padding: 10px 14px 12px;
+        font-size: 12px;
+        color: var(--muted);
+        border-top: 1px solid var(--line);
+      }
+      figcaption strong {
+        color: var(--ink);
+      }
+      .full img {
+        max-height: 720px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Pond × Eagle filter dropdowns</h1>
+      <p>
+        Extracted from live captures. Pond is left, Eagle is right. Matched
+        pairs are one composite. Eagle-only filters show the Eagle popover
+        beside the closest Pond shot, or Eagle alone when Pond has no editor
+        yet.
+      </p>
+      <div class="key">
+        <span>Pond left</span>
+        <span>Eagle right</span>
+        <span>Eagle popovers captured 2026-08-31</span>
+        <span>Pond popovers captured 2026-09-01</span>
+      </div>
+    </header>
+    <main>
+      <article>
+        <div class="head">
+          <div>
+            <h2>Color</h2>
+            <p>
+              Both use a picker, swatches, and hex. Pond adds Color Tolerance.
+              Eagle’s Accuracy slider appears after a color is set.
+            </p>
+          </div>
+        </div>
+        <div class="full">
+          <img
+            src="../filter-audit/pair-color.jpg"
+            alt="Pond Color on the left, Eagle Color on the right"
+          />
+        </div>
+      </article>
+
+      <article>
+        <div class="head">
+          <div>
+            <h2>Visual Match</h2>
+            <p>
+              Eagle drop, paste, Choose Image. Pond has the same shell. No Pond
+              popover capture from the Sept 1 pass.
+            </p>
+          </div>
+        </div>
+        <div class="full">
+          <img
+            src="../assets/eagle-ai-search/visual-match-filter.png"
+            alt="Eagle Visual Match popover"
+          />
+        </div>
+      </article>
+
+      <article>
+        <div class="head">
+          <div>
+            <h2>Semantic</h2>
+            <p>
+              Eagle is a focused textarea. Pond adds Apply and an off-state into
+              Search settings.
+            </p>
+          </div>
+        </div>
+        <div class="full">
+          <img
+            src="../assets/eagle-ai-search/semantic-filter.png"
+            alt="Eagle Semantic popover"
+          />
+        </div>
+      </article>
+
+      <article>
+        <div class="head">
+          <div>
+            <h2>Tags</h2>
+            <p>
+              Eagle two-pane picker, counts, right-click exclude. Pond now has
+              groups plus explicit includes any / all / none.
+            </p>
+          </div>
+        </div>
+        <div class="full">
+          <img
+            src="../filter-audit/pair-tags.jpg"
+            alt="Pond Tags on the left, Eagle Tags on the right"
+          />
+        </div>
+      </article>
+
+      <article>
+        <div class="head">
+          <div>
+            <h2>Folder</h2>
+            <p>
+              Search, checkboxes, counts. Eagle Uncategorized vs Pond No Folder.
+            </p>
+          </div>
+        </div>
+        <div class="full">
+          <img
+            src="../filter-audit/pair-folders.jpg"
+            alt="Pond Folders on the left, Eagle Folder on the right"
+          />
+        </div>
+      </article>
+
+      <article>
+        <div class="head">
+          <div>
+            <h2>Shape</h2>
+            <p>
+              Eagle mixes orientation, ratios, and Custom W:H. Pond is five
+              orientation buckets. Ratios are a separate Aspect filter.
+            </p>
+          </div>
+        </div>
+        <div class="full">
+          <img
+            src="../filter-audit/pair-shape.jpg"
+            alt="Pond Shape on the left, Eagle Shape on the right"
+          />
+        </div>
+      </article>
+
+      <article>
+        <div class="head">
+          <div>
+            <h2>Types vs Type</h2>
+            <p>
+              Different models. Eagle lists extensions. Pond lists media
+              families.
+            </p>
+          </div>
+        </div>
+        <div class="full">
+          <img
+            src="../filter-audit/pair-type.jpg"
+            alt="Pond Type on the left, Eagle Types on the right"
+          />
+        </div>
+      </article>
+
+      <article>
+        <div class="head">
+          <div>
+            <h2>Dimensions vs Aspect</h2>
+            <p>
+              Eagle is live W/H min-max in one popover. Pond Aspect is ratio
+              presets. Width and Height are now separate Pond filters, not in
+              this capture.
+            </p>
+          </div>
+        </div>
+        <div class="pair">
+          <figure>
+            <img
+              src="../filter-audit/pond-aspect-top.jpg"
+              alt="Pond Aspect filter"
+            />
+            <figcaption><strong>Pond</strong> Aspect presets</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="../filter-audit/eagle-dimensions-top.jpg"
+              alt="Eagle Dimensions filter"
+            />
+            <figcaption>
+              <strong>Eagle</strong> Dimensions, W and H bounds
+            </figcaption>
+          </figure>
+        </div>
+      </article>
+
+      <article>
+        <div class="head">
+          <div>
+            <h2>Duration</h2>
+            <p>
+              Eagle: min, max, unit, live. Pond: presets plus min/max plus Apply.
+            </p>
+          </div>
+        </div>
+        <div class="full">
+          <img
+            src="../filter-audit/pair-duration.jpg"
+            alt="Pond Duration on the left, Eagle Duration on the right"
+          />
+        </div>
+      </article>
+
+      <article>
+        <div class="head">
+          <div>
+            <h2>Size</h2>
+            <p>
+              Eagle Size is file bytes with a unit. Pond Files in the pair is
+              attachment count, not the same field. Pond now also has Size.
+            </p>
+          </div>
+        </div>
+        <div class="pair">
+          <figure>
+            <img
+              src="../filter-audit/pond-files-top.jpg"
+              alt="Pond Files filter"
+            />
+            <figcaption>
+              <strong>Pond</strong> Files (count), closest old shot
+            </figcaption>
+          </figure>
+          <figure>
+            <img
+              src="../filter-audit/eagle-size-top.jpg"
+              alt="Eagle Size filter"
+            />
+            <figcaption>
+              <strong>Eagle</strong> Size min/max in KB
+            </figcaption>
+          </figure>
+        </div>
+      </article>
+
+      <article>
+        <div class="head">
+          <div>
+            <h2>Note</h2>
+            <p>Eagle Yes/No plus keywords. Pond With/Without plus contains.</p>
+          </div>
+        </div>
+        <div class="full">
+          <img
+            src="../filter-audit/pair-note.jpg"
+            alt="Pond Note on the left, Eagle Note on the right"
+          />
+        </div>
+      </article>
+
+      <article>
+        <div class="head">
+          <div>
+            <h2>Date Saved vs Date Imported</h2>
+            <p>
+              Same relative-date idea. Eagle includes Yesterday and 365 days,
+              with counts. Pond uses Past 3 days, week, month.
+            </p>
+          </div>
+        </div>
+        <div class="full">
+          <img
+            src="../filter-audit/pair-date-saved.jpg"
+            alt="Pond Date Saved on the left, Eagle Date Imported on the right"
+          />
+        </div>
+      </article>
+
+      <article>
+        <div class="head">
+          <div>
+            <h2>Date Modified</h2>
+            <p>Eagle also groups by month. Pond does not.</p>
+          </div>
+        </div>
+        <div class="full">
+          <img
+            src="../filter-audit/pair-date-modified.jpg"
+            alt="Pond Date Modified on the left, Eagle Date Modified on the right"
+          />
+        </div>
+      </article>
+    </main>
+  </body>
+</html>

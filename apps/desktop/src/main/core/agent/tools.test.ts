@@ -1,13 +1,28 @@
+import { convertSchemaToJsonSchema } from "@tanstack/ai";
 import { SQLiteSyncDialect } from "drizzle-orm/sqlite-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  assistantProposalInput,
+  assistantQuestion,
+  assistantResultSet,
+} from "../../../shared/assistant";
 import { IPC } from "../../../shared/constants";
 import {
   applyFilter,
+  applyFilterInput,
+  citeSavesInput,
+  describeSavesInput,
   grepLibrary,
+  grepLibraryInput,
+  libraryOverviewInput,
+  listFoldersInput,
+  openSaveInput,
   readSave,
+  readSaveInput,
   searchLibrary,
   searchLibraryInput,
   setOverlay,
+  setOverlayInput,
 } from "./tools";
 
 const mock = vi.hoisted(() => ({
@@ -108,6 +123,71 @@ it("returns OCR snippets from library grep", async () => {
   expect(await grepLibrary({ query: "invoice" })).toEqual({
     hits: [{ id: "save", snippets: ["invoice 441"] }],
   });
+});
+
+function untypedSchemaPaths(schema: unknown, path = "$"): string[] {
+  if (schema === true || schema === false) return [`${path}`];
+  if (!schema || typeof schema !== "object") return [];
+  if (Array.isArray(schema)) {
+    return schema.flatMap((entry, index) =>
+      untypedSchemaPaths(entry, `${path}[${index}]`),
+    );
+  }
+  const node = schema as Record<string, unknown>;
+  const keys = Object.keys(node).filter((key) => key !== "$schema");
+  const typed =
+    typeof node.type === "string" ||
+    Array.isArray(node.type) ||
+    node.const !== undefined ||
+    node.enum !== undefined ||
+    node.anyOf !== undefined ||
+    node.oneOf !== undefined ||
+    node.allOf !== undefined ||
+    typeof node.$ref === "string";
+  const hits = !typed && keys.length === 0 ? [path] : [];
+  for (const [key, value] of Object.entries(node)) {
+    if (key === "$schema" || key === "$ref") continue;
+    if (key === "properties" && value && typeof value === "object") {
+      for (const [name, property] of Object.entries(
+        value as Record<string, unknown>,
+      )) {
+        hits.push(
+          ...untypedSchemaPaths(property, `${path}.properties.${name}`),
+        );
+      }
+      continue;
+    }
+    if (key === "additionalProperties") {
+      hits.push(...untypedSchemaPaths(value, `${path}.additionalProperties`));
+      continue;
+    }
+    hits.push(...untypedSchemaPaths(value, `${path}.${key}`));
+  }
+  return hits;
+}
+
+it("converts Agent tool inputs to JSON Schema providers can type-check", () => {
+  const schemas = {
+    showSaves: assistantResultSet,
+    requestQuestion: assistantQuestion,
+    searchLibrary: searchLibraryInput,
+    readSave: readSaveInput,
+    grepLibrary: grepLibraryInput,
+    libraryOverview: libraryOverviewInput,
+    applyFilter: applyFilterInput,
+    setOverlay: setOverlayInput,
+    citeSaves: citeSavesInput,
+    openSave: openSaveInput,
+    findDuplicates: listFoldersInput,
+    describeSaves: describeSavesInput,
+    listFolders: listFoldersInput,
+    proposeChanges: assistantProposalInput,
+  };
+  const failures = Object.entries(schemas).flatMap(([name, schema]) => {
+    const json = convertSchemaToJsonSchema(schema);
+    return untypedSchemaPaths(json).map((path) => `${name}: ${path}`);
+  });
+  expect(failures).toEqual([]);
 });
 
 it("broadcasts applyFilter and setOverlay for the Library grid", async () => {

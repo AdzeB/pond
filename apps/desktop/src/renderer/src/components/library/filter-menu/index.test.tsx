@@ -83,6 +83,34 @@ describe("filter toolbar", () => {
     return match;
   }
 
+  it("pins Eagle's default categories including Visual Match and Semantic", async () => {
+    await render();
+    expect(
+      [...host.querySelectorAll("fieldset button")].map(
+        (node) => node.getAttribute("aria-label") ?? "",
+      ),
+    ).toEqual([
+      "Color",
+      "Visual Match",
+      "Semantic",
+      "Tags",
+      "Folders",
+      "Shape",
+      "Rating",
+      "Type",
+      "Format",
+      "Dimensions",
+      "Duration",
+      "Size",
+      "Comment",
+      "Note",
+      "URL",
+      "Date Saved",
+      "Date Modified",
+      "Customize Filters",
+    ]);
+  });
+
   it("shows categories directly and hides the toolbar without clearing filters", async () => {
     setSearchInput(
       [{ field: "source", operator: "eq", value: "youtube.com" }],
@@ -127,7 +155,12 @@ describe("filter toolbar", () => {
       },
       text: "cats",
     });
-    expect(button("Source")).toBeTruthy();
+    expect(button("Type: Video")).toBeTruthy();
+    expect(
+      [...host.querySelectorAll("button")].some(
+        (node) => node.getAttribute("aria-label") === "Source",
+      ),
+    ).toBe(false);
     await act(async () => button("Clear Filters").click());
     expect(state()).toEqual({
       query: { combinator: "and", rules: [] },

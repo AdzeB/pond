@@ -1,4 +1,13 @@
-import { IconAlbum2Outline18, IconDotsOutline18 } from "@pond/icons/outline/18";
+import {
+  IconAlbum2Outline18,
+  IconDotsOutline18,
+  IconDownloadOutline18,
+  IconGear3Outline18,
+  IconGlobeOutline18,
+  IconMsg2Outline18,
+  IconTagsOutline18,
+  IconTrash2Outline18,
+} from "@pond/icons/outline/18";
 import { Button, Menu } from "@pond/ui";
 import { useRouter, useRouterState } from "@tanstack/react-router";
 import { InspectorToggle } from "@/components/library/agent-toggle";
@@ -14,10 +23,32 @@ import {
   useRightPane,
   useSidebarOpen,
 } from "@/stores/library-chrome";
-import { resetFilters } from "@/stores/view-store";
+import { useViewFilteredCount } from "@/stores/library-view-context";
+import { resetFilters, useHasActiveSearch } from "@/stores/view-store";
 import { type Breadcrumb, buildBreadcrumbs } from "./breadcrumbs";
 import { computeLabel } from "./labels";
 import styles from "./styles.module.css";
+
+const ROOT_ICONS = {
+  "/": IconAlbum2Outline18,
+  "/assistant": IconMsg2Outline18,
+  "/sources": IconGlobeOutline18,
+  "/tags": IconTagsOutline18,
+  "/downloads": IconDownloadOutline18,
+  "/trash": IconTrash2Outline18,
+  "/settings": IconGear3Outline18,
+} as const;
+
+function RootIcon({ path }: { path: string }) {
+  const Icon =
+    ROOT_ICONS[path as keyof typeof ROOT_ICONS] ??
+    (path.startsWith("/settings")
+      ? IconGear3Outline18
+      : path.startsWith("/source/")
+        ? IconGlobeOutline18
+        : IconAlbum2Outline18);
+  return <Icon aria-hidden="true" />;
+}
 
 function Breadcrumbs() {
   const router = useRouter();
@@ -27,12 +58,15 @@ function Breadcrumbs() {
   const nav = useLibraryNav();
   const folders = useFolders();
   const save = useSave(saveIdFromPath(pathname));
+  const hasActiveSearch = useHasActiveSearch();
+  const filteredCount = useViewFilteredCount();
   const crumbs = buildBreadcrumbs({
     pathname,
     listPath: getLastListPath(),
     nav,
     folders,
     saveLabel: computeLabel(pathname, save),
+    searchResultCount: hasActiveSearch ? filteredCount : undefined,
   });
   const hidden = crumbs.length > 3 ? crumbs.slice(1, -2) : [];
 
@@ -103,9 +137,7 @@ function Breadcrumbs() {
                   aria-current="page"
                   title={crumb.label}
                 >
-                  {index === 0 ? (
-                    <IconAlbum2Outline18 aria-hidden="true" />
-                  ) : null}
+                  {index === 0 ? <RootIcon path={crumb.path} /> : null}
                   <span className={styles.label}>{crumb.label}</span>
                 </span>
               ) : (
@@ -117,9 +149,7 @@ function Breadcrumbs() {
                   title={crumb.label}
                   onClick={() => navigate(crumb)}
                 >
-                  {index === 0 ? (
-                    <IconAlbum2Outline18 aria-hidden="true" />
-                  ) : null}
+                  {index === 0 ? <RootIcon path={crumb.path} /> : null}
                   <span className={styles.label}>{crumb.label}</span>
                 </Button>
               )}

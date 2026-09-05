@@ -179,7 +179,49 @@ export const assistantChangeProposal = z.discriminatedUnion("field", [
     field: z.literal("action"),
     action: assistantLibraryAction,
     after: z.string().trim().min(1).max(500),
-    payload: z.record(z.string(), z.unknown()).optional(),
+    payload: z
+      .object({
+        id: z.string().optional(),
+        to: z.string().optional(),
+        from: z.string().optional(),
+        ids: z.array(z.string()).optional(),
+        name: z.string().optional(),
+        parentId: z.string().nullable().optional(),
+        sortKey: z.string().optional(),
+        sortDir: z.string().optional(),
+        layout: z.string().optional(),
+        url: z.string().optional(),
+        keepId: z.string().optional(),
+        directory: z.string().optional(),
+        accountId: z.string().optional(),
+        pattern: z.string().optional(),
+        query: z
+          .object({
+            combinator: z.enum(["and", "or"]),
+            not: z.boolean().optional(),
+            rules: z.array(
+              z.object({
+                field: z.string(),
+                operator: z.string(),
+                value: z
+                  .union([
+                    z.string(),
+                    z.number(),
+                    z.boolean(),
+                    z.array(z.union([z.string(), z.number()])),
+                    z.object({
+                      hex: z.string(),
+                      tolerance: z.number(),
+                    }),
+                  ])
+                  .optional(),
+                negate: z.boolean().optional(),
+              }),
+            ),
+          })
+          .optional(),
+      })
+      .optional(),
     reason: z.string().max(500),
   }),
 ]);

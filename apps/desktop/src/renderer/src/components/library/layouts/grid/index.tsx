@@ -1,8 +1,9 @@
 import { cn } from "@pond/ui";
 import type { ReactNode } from "react";
+import type { LibraryCardView } from "@/components/save/card/types";
 import styles from "./styles.module.css";
 
-type GridLayout = "waterfall" | "grid" | "justified" | "list";
+type GridLayout = LibraryCardView;
 
 interface RootProps extends React.ComponentPropsWithoutRef<"div"> {
   children: ReactNode;

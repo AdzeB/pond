@@ -24,6 +24,16 @@
 .assistant-body[data-empty="true"] {
   overflow-y: auto;
 }
+.assistant-body .empty {
+  flex: 1;
+  max-width: 100%;
+  min-height: 0;
+  padding: 24px 12px 16px;
+}
+.starters {
+  flex-wrap: wrap;
+  max-width: 42ch;
+}
 .compose-area {
   flex-shrink: 0;
   width: min(var(--assistant-content-width), calc(100% - 56px));
@@ -32,7 +42,7 @@
 [data-empty="true"] > .compose-area {
   width: min(var(--assistant-content-width), calc(100% - 64px));
   padding: 0;
-  margin: auto;
+  margin: 0 auto 20px;
 }
 .composer-shell {
   overflow: hidden;
@@ -414,6 +424,15 @@
 .assistant[data-layout="pane"] .assistant-body[data-empty="true"] {
   padding: 12px;
 }
+.assistant[data-layout="pane"] .assistant-body .empty {
+  padding: 8px 4px 12px;
+}
+.assistant[data-layout="page"] .assistant-body[data-empty="true"] {
+  justify-content: center;
+}
+.assistant[data-layout="page"] .assistant-body .empty {
+  flex: 0 0 auto;
+}
 .assistant[data-layout="pane"] [data-empty="true"] > .compose-area {
   width: 100%;
   padding: 0;
@@ -600,17 +619,6 @@
 .user-turn .user-message {
   max-width: 100%;
   margin: 0 0 5px auto;
-}
-.work-detail {
-  padding-left: 32px;
-  font-size: 12px;
-  color: var(--ds-gray-11);
-}
-.work-detail span {
-  display: block;
-  margin-top: 8px;
-  font-size: 11px;
-  color: var(--ds-gray-10);
 }
 .stop-square {
   width: 10px;
@@ -823,9 +831,6 @@
 }
 .assistant[data-layout="pane"] .user-turn {
   max-width: 94%;
-}
-.assistant[data-layout="pane"] .work-detail {
-  padding-left: 0;
 }
 .assistant[data-layout="pane"] .review-header {
   padding: 13px;

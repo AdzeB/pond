@@ -1,4 +1,4 @@
-const CARD_SELECTOR = "[data-save-id]";
+const CARD_SELECTOR = "[data-library-card]";
 const LAYOUT_ANIMATION_ID = "pond-library-layout";
 const LAYOUT_DURATION_MS = 200;
 const SNAPSHOT_MAX_AGE_MS = 500;

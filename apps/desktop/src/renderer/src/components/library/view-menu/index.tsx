@@ -5,9 +5,10 @@ import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { libraryHeader, useViewPopover } from "@/stores/library-header";
 import { DisplaySection } from "./display";
 import { LayoutSection } from "./layout";
-import { SortSection } from "./sort";
 import styles from "./styles.module.css";
 import { ZoomSection } from "./zoom";
+
+export { SortMenu } from "./sort";
 
 export function ViewMenu() {
   const open = useViewPopover() !== null;
@@ -45,8 +46,6 @@ export function ViewMenu() {
           >
             <LayoutSection />
             <ZoomSection />
-            <hr className={styles.separator} />
-            <SortSection />
             <hr className={styles.separator} />
             <DisplaySection />
           </Popover.Popup>

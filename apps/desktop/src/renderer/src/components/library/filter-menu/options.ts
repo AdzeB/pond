@@ -11,8 +11,17 @@ export interface FilterOption {
 
 export const FILTER_GROUPS: readonly (readonly FieldId[])[] = [
   ["tags", "folder", "source", "list"],
-  ["type", "color", "shape", "aspect", "duration", "fileCount", "rating"],
-  ["fileSize", "width", "height"],
+  [
+    "type",
+    "format",
+    "color",
+    "shape",
+    "aspect",
+    "duration",
+    "fileCount",
+    "rating",
+  ],
+  ["fileSize", "width"],
   ["savedAt", "modifiedAt", "publishedAt"],
   ["creator", "account", "note", "caption", "transcript", "comment", "url"],
 ];
@@ -42,17 +51,81 @@ export function choiceOptions(
   }));
 }
 
-export function presetOptions(field: FieldId): FilterOption[] {
-  const meta = FIELD_META[field];
-  if (meta.type === "date") {
-    return DATE_PRESETS.map(({ label, iso }) => ({
+function startOfLocalDay(date: Date): string {
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  ).toISOString();
+}
+
+function endOfLocalDay(date: Date): string {
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate() + 1,
+    0,
+    0,
+    0,
+    -1,
+  ).toISOString();
+}
+
+function calendarDateOptions(field: FieldId): FilterOption[] {
+  const now = new Date();
+  const yesterday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() - 1,
+  );
+  const options: FilterOption[] = [
+    {
+      label: "Today",
+      predicate: {
+        field,
+        operator: "gte",
+        value: startOfLocalDay(now),
+      },
+    },
+    {
+      label: "Yesterday",
+      predicate: {
+        field,
+        operator: "between",
+        value: [startOfLocalDay(yesterday), endOfLocalDay(yesterday)],
+      },
+    },
+    ...DATE_PRESETS.map(({ label, iso }) => ({
       label:
         iso === "-P1D"
           ? "Past 24 Hours"
-          : label.replace(/\b\w/g, (c) => c.toUpperCase()),
-      predicate: { field, operator: "gte", value: iso },
-    }));
+          : label.replace(/\b\w/g, (character) => character.toUpperCase()),
+      predicate: { field, operator: "gte" as const, value: iso },
+    })),
+  ];
+  if (field !== "modifiedAt") return options;
+  const monthFormatter = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+  for (let monthsAgo = 1; monthsAgo <= 6; monthsAgo++) {
+    const start = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() - monthsAgo + 1, 0);
+    options.push({
+      label: monthFormatter.format(start),
+      predicate: {
+        field,
+        operator: "between",
+        value: [startOfLocalDay(start), endOfLocalDay(end)],
+      },
+    });
   }
+  return options;
+}
+
+export function presetOptions(field: FieldId): FilterOption[] {
+  const meta = FIELD_META[field];
+  if (meta.type === "date") return calendarDateOptions(field);
   if (meta.type === "optional") {
     return [
       {
@@ -91,7 +164,7 @@ export function presetOptions(field: FieldId): FilterOption[] {
       },
     }));
   }
-  return (meta.presets ?? []).map(({ id, label, value }) => ({
+  return (meta.presets ?? []).map(({ label, value }) => ({
     label: label.replace(/\b[a-z]/g, (c) => c.toUpperCase()),
     predicate: {
       field,

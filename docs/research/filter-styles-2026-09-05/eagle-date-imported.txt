@@ -1,0 +1,16 @@
+The following is a diff from the previous accessibility tree for Window: "Eagle" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
++						673 container
++							674 text Today
++							675 text 0
++							676 text Yesterday
++							677 text 0
++							678 text Last 7 Days
++							679 text 5
++							680 text Last 30 Days
++							681 text 5
++							682 text Last 90 Days
++							683 text 8
++							684 text Last 365 Days
++							685 text 10
++							686 text Custom Range
+The focused UI element is 117 text field (settable)

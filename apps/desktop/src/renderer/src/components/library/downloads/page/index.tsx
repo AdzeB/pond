@@ -22,7 +22,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { DownloadsEmpty, MatchesEmpty } from "@/components/library/empty";
-import { FilterSelect } from "@/components/library/filter-menu/filter-select";
+import { FilterSelect } from "@/components/library/filter-menu/select";
 import {
   SearchChrome,
   SearchChromeInput,
