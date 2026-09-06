@@ -17,10 +17,11 @@ export function SourcePicker({
           key={source}
           type="button"
           className={styles.cell}
+          aria-label={getSourceDef(source).label}
+          title={getSourceDef(source).label}
           onClick={() => onPick(source)}
         >
-          <BrandTile source={source} size={40} />
-          <span className={styles.name}>{getSourceDef(source).label}</span>
+          <BrandTile source={source} size={48} />
         </button>
       ))}
     </div>

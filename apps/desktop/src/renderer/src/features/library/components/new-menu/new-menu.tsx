@@ -14,9 +14,8 @@ import {
   IconUserPlusOutline18,
   IconVersionsOutline18,
 } from "@pond/icons/outline/18";
-import { Menu, Tooltip } from "@pond/ui";
+import { Dialog, Menu, Tooltip } from "@pond/ui";
 import { type ComponentType, Fragment, useState } from "react";
-import { prompt } from "@/shared/components/prompt-dialog/prompt-dialog";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import {
   importBookmarks,
@@ -85,7 +84,7 @@ export function NewMenu({
         setDialog(id);
         return;
       case "page-assets":
-        prompt({
+        Dialog.prompt({
           title: "Import Page Assets",
           confirmLabel: "Import",
           placeholder: "https://",
@@ -124,13 +123,7 @@ export function NewMenu({
         }}
       >
         <Tooltip label="New" side="bottom">
-          <Menu.Trigger
-            icon
-            size="sm"
-            variant="ghost"
-            rounding="rounded"
-            aria-label="New"
-          >
+          <Menu.Trigger icon size="sm" variant="ghost" aria-label="New">
             <IconPlusOutline18 />
           </Menu.Trigger>
         </Tooltip>

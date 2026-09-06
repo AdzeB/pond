@@ -17,6 +17,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     label: "Appearance",
     group: "general",
   },
+  {
+    id: "schedule",
+    path: "schedule",
+    label: "Fetch Schedule",
+    group: "library",
+  },
   { id: "tags", path: "tags", label: "Tags", group: "library" },
   { id: "trash", path: "trash", label: "Trash", group: "library" },
   { id: "storage", path: "storage", label: "Storage", group: "library" },

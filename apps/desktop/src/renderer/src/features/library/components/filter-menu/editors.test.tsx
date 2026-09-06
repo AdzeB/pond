@@ -272,11 +272,9 @@ describe("filter editors", () => {
     ]);
   });
 
-  it("leads with rating choices and reveals its range on demand", async () => {
+  it("opens rating with a custom range and no star presets", async () => {
     await render("rating");
-    expect(element("menuitemcheckbox", "★★★3 Stars")).toBeTruthy();
-    expect(document.querySelector('input[type="number"]')).toBeNull();
-    await click("menuitemcheckbox", "Custom Range");
+    expect(document.querySelector('[role="menuitemcheckbox"]')).toBeNull();
     expect(document.querySelectorAll('input[type="number"]')).toHaveLength(2);
   });
 
@@ -294,7 +292,7 @@ describe("filter editors", () => {
 
   it("opens custom dates without applying an empty range, and restores the applied dates", async () => {
     await render("savedAt");
-    await click("menuitemcheckbox", "Custom Range");
+    expect(document.querySelector('[role="menuitemcheckbox"]')).toBeNull();
     expect(rows).toEqual([]);
     await fill("From", "2026-08-01");
     await fill("To", "2026-08-31");
@@ -305,13 +303,6 @@ describe("filter editors", () => {
         ...document.querySelectorAll<HTMLInputElement>('input[type="date"]'),
       ].map((input) => input.value),
     ).toEqual(["2026-08-01", "2026-08-31"]);
-  });
-
-  it("distinguishes calendar days from the rolling 24-hour preset", async () => {
-    await render("savedAt");
-    expect(element("menuitemcheckbox", "Today")).toBeTruthy();
-    expect(element("menuitemcheckbox", "Yesterday")).toBeTruthy();
-    expect(element("menuitemcheckbox", "Past 24 Hours")).toBeTruthy();
   });
 
   it("opens color without a selected preset or tolerance until a color is chosen", async () => {

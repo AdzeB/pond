@@ -121,9 +121,9 @@ function MenuDemo() {
 }
 
 function DialogDemo({ alert = false }: { alert?: boolean }) {
-  const D = alert ? UI.AlertDialog : UI.Dialog;
+  const D = UI.Dialog;
   return (
-    <D.Root>
+    <D.Root variant={alert ? "alert" : "dialog"}>
       <D.Trigger render={<UI.Button size="sm" variant="secondary" />}>
         {alert ? "Show confirmation" : "Open dialog"}
       </D.Trigger>
@@ -134,13 +134,15 @@ function DialogDemo({ alert = false }: { alert?: boolean }) {
             <D.Title>
               {alert ? "Remove this reference?" : "Edit collection"}
             </D.Title>
+
+            <D.Close />
+          </D.Header>
+          <D.Content>
             <D.Description>
               {alert
                 ? "This is a local preview. No library data will change."
                 : "Keep related references together."}
             </D.Description>
-          </D.Header>
-          <D.Content>
             <UI.Input.Root>
               <UI.Input.Field
                 aria-label="Collection name"
@@ -169,10 +171,10 @@ function DialogDemo({ alert = false }: { alert?: boolean }) {
   );
 }
 
-function PageDialogDemo() {
+function PagedDialogDemo() {
   const [step, setStep] = useState(0);
   return (
-    <UI.PageDialog.Root
+    <UI.Dialog.Root
       onOpenChange={(open) => {
         if (open) setStep(0);
       }}
@@ -180,22 +182,22 @@ function PageDialogDemo() {
       <UI.Dialog.Trigger render={<UI.Button size="sm" variant="secondary" />}>
         Open page dialog
       </UI.Dialog.Trigger>
-      <UI.PageDialog.Portal>
-        <UI.PageDialog.Backdrop />
-        <UI.PageDialog.Popup pageId={String(step)} depth={step}>
-          <UI.PageDialog.Header>
-            {step > 0 && <UI.PageDialog.Back onClick={() => setStep(0)} />}
-            <UI.PageDialog.Title>
+      <UI.Dialog.Portal>
+        <UI.Dialog.Backdrop />
+        <UI.Dialog.Popup pageId={String(step)} depth={step}>
+          <UI.Dialog.Header>
+            {step > 0 && <UI.Dialog.Back onClick={() => setStep(0)} />}
+            <UI.Dialog.Title>
               {step ? "Review collection" : "New collection"}
-            </UI.PageDialog.Title>
-            <UI.PageDialog.Close />
-          </UI.PageDialog.Header>
-          <UI.PageDialog.Viewport>
-            <UI.PageDialog.Description>
+            </UI.Dialog.Title>
+            <UI.Dialog.Close />
+          </UI.Dialog.Header>
+          <UI.Dialog.Viewport>
+            <UI.Dialog.Description>
               {step
                 ? "Your sample collection is ready. No library data will be changed."
                 : "Give this collection a clear name."}
-            </UI.PageDialog.Description>
+            </UI.Dialog.Description>
             {step === 0 && (
               <UI.Input.Root>
                 <UI.Input.Field
@@ -204,21 +206,21 @@ function PageDialogDemo() {
                 />
               </UI.Input.Root>
             )}
-            <UI.PageDialog.Footer>
+            <UI.Dialog.Footer>
               {step ? (
                 <UI.Dialog.Close render={<UI.Button width="full" />}>
                   Done
                 </UI.Dialog.Close>
               ) : (
-                <UI.PageDialog.Confirm onClick={() => setStep(1)}>
+                <UI.Dialog.Confirm onClick={() => setStep(1)}>
                   Continue
-                </UI.PageDialog.Confirm>
+                </UI.Dialog.Confirm>
               )}
-            </UI.PageDialog.Footer>
-          </UI.PageDialog.Viewport>
-        </UI.PageDialog.Popup>
-      </UI.PageDialog.Portal>
-    </UI.PageDialog.Root>
+            </UI.Dialog.Footer>
+          </UI.Dialog.Viewport>
+        </UI.Dialog.Popup>
+      </UI.Dialog.Portal>
+    </UI.Dialog.Root>
   );
 }
 
@@ -821,11 +823,14 @@ export function ComponentExample({ entry }: { entry: ComponentEntry }) {
         </UI.Tooltip>
       );
     case "Dialog":
-      return <DialogDemo />;
-    case "AlertDialog":
-      return <DialogDemo alert />;
-    case "PageDialog":
-      return <PageDialogDemo />;
+      return (
+        <>
+          <DialogDemo />
+          <DialogDemo alert />
+          <PagedDialogDemo />
+          <CommandDialogDemo />
+        </>
+      );
     case "Drawer":
       return (
         <UI.Drawer.Root>
@@ -1065,4 +1070,38 @@ export function ComponentExample({ entry }: { entry: ComponentEntry }) {
     default:
       return null;
   }
+}
+
+function CommandDialogDemo() {
+  return (
+    <>
+      <UI.Dialog.Host />
+      <UI.Button
+        size="sm"
+        variant="secondary"
+        onClick={() =>
+          UI.Dialog.confirm({
+            title: "Remove reference?",
+            confirmLabel: "Remove",
+            onConfirm: () => {},
+          })
+        }
+      >
+        Confirm command
+      </UI.Button>
+      <UI.Button
+        size="sm"
+        variant="secondary"
+        onClick={() =>
+          UI.Dialog.prompt({
+            title: "Rename reference",
+            confirmLabel: "Rename",
+            onConfirm: () => {},
+          })
+        }
+      >
+        Prompt command
+      </UI.Button>
+    </>
+  );
 }

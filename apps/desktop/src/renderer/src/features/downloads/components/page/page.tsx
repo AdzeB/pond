@@ -8,6 +8,7 @@ import type { Op, Source } from "@pond/schema/db";
 import {
   Button,
   DataTable,
+  Dialog,
   Menu,
   type MenuItemSpec,
   type RenderRowArgs,
@@ -46,7 +47,6 @@ import { useSaves } from "@/features/saves/hooks/use-saves";
 import { refreshSaves } from "@/features/saves/lib/ensure-saves";
 import { openSave } from "@/features/saves/lib/save-nav";
 import { hydrateFullPool } from "@/features/saves/state/bootstrap";
-import { confirm } from "@/shared/components/confirm-dialog/confirm-dialog";
 import {
   SearchChrome,
   SearchChromeInput,
@@ -298,7 +298,7 @@ export function DownloadsPage() {
   );
 
   const cancelAll = () => {
-    confirm({
+    Dialog.confirm({
       title: "Cancel All",
       description:
         "Pond stops every current download. You can retry them later.",

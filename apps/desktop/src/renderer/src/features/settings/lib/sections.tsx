@@ -25,8 +25,33 @@ const McpSection = lazy(() =>
   })),
 );
 
+const ScheduleSection = lazy(() =>
+  import("@/features/settings/components/sections/schedule/schedule").then(
+    (m) => ({ default: m.ScheduleSection }),
+  ),
+);
+
 export const SECTION_CONFIGS = new Map<string, SectionConfig>([
   ["general", generalSection],
+  [
+    "schedule",
+    {
+      component: ScheduleSection,
+      title: "Fetch Schedule",
+      description:
+        "One schedule for all connections and watched accounts. Pond checks for updates while it is running.",
+      keywords: [
+        "sync",
+        "fetch",
+        "schedule",
+        "frequency",
+        "hourly",
+        "daily",
+        "weekly",
+        "sources",
+      ],
+    },
+  ],
   ["appearance", appearanceSection],
   [
     "tags",

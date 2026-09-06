@@ -1,4 +1,5 @@
 import type { MenuItemSpec } from "@pond/ui";
+import { Dialog } from "@pond/ui";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import {
   createContext,
@@ -19,7 +20,6 @@ import {
   type TagGroupMenuActions,
 } from "@/features/tags/components/group-context-menu/group-context-menu";
 import { tagOperations } from "@/features/tags/operations/tag-client";
-import { confirm } from "@/shared/components/confirm-dialog/confirm-dialog";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { SHORTCUTS } from "@/shared/lib/shortcuts";
 import { useTagsTable } from "./context";
@@ -78,7 +78,7 @@ export function TagRowProvider({
 
   function confirmDelete() {
     if (isGroup) {
-      confirm({
+      Dialog.confirm({
         title: "Remove Tag Group",
         description: `"${name}" will be removed. The tags inside it stay in your library; they won't belong to this group anymore.`,
         confirmLabel: "Remove",
@@ -86,7 +86,7 @@ export function TagRowProvider({
       });
       return;
     }
-    confirm({
+    Dialog.confirm({
       title: "Remove Tag",
       description: `"${name}" will be removed from every save. This cannot be undone.`,
       confirmLabel: "Remove",

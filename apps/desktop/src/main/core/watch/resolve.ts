@@ -1,10 +1,12 @@
 import type { Source, WatchKind } from "@pond/schema/db";
 import log from "electron-log/main.js";
+import { type FetchWatchPage, verifyWatchTarget } from "./verify";
 
 export interface WatchTarget {
   kind: WatchKind;
   handle: string;
   display: string;
+  avatarUrl?: string;
 }
 
 const ARENA_PROBE_TIMEOUT_MS = 8_000;
@@ -77,6 +79,18 @@ function target(
 export async function resolveWatchTarget(
   source: Source,
   rawInput: string,
+  fetchPage: FetchWatchPage = fetch,
+): Promise<WatchTarget | null> {
+  const parsed = await parseWatchTarget(source, rawInput, fetchPage);
+  return parsed && source !== "arena"
+    ? verifyWatchTarget(source, parsed, fetchPage)
+    : parsed;
+}
+
+async function parseWatchTarget(
+  source: Source,
+  rawInput: string,
+  fetchPage: FetchWatchPage,
 ): Promise<WatchTarget | null> {
   const input = rawInput.trim();
   if (!input) return null;
@@ -84,7 +98,7 @@ export async function resolveWatchTarget(
 
   switch (source) {
     case "arena":
-      return resolveArena(input, url);
+      return resolveArena(input, url, fetchPage);
     case "youtube":
       return resolveYoutube(input, url);
     case "tiktok":
@@ -105,6 +119,7 @@ export async function resolveWatchTarget(
 async function resolveArena(
   input: string,
   url: URL | null,
+  fetchPage: FetchWatchPage,
 ): Promise<WatchTarget | null> {
   if (url) {
     if (!hostIs(url, "are.na")) return null;
@@ -113,13 +128,13 @@ async function resolveArena(
     if (!first) return null;
     const second = segs[1];
     if (second && !ARENA_USER_TABS.has(second.toLowerCase())) {
-      return target("channel", second, `${first}/${second}`);
+      return probeArena(second, ["channel"], fetchPage);
     }
-    return probeArena(first, ["user", "group", "channel"]);
+    return probeArena(first, ["user", "group", "channel"], fetchPage);
   }
   const slug = cleanHandle(input);
   if (!/^[\w.-]+$/.test(slug)) return null;
-  return probeArena(slug, ["channel", "user", "group"]);
+  return probeArena(slug, ["channel", "user", "group"], fetchPage);
 }
 
 async function probeArena(
@@ -128,6 +143,7 @@ async function probeArena(
     "channel" | "user" | "group",
     ...Array<"channel" | "user" | "group">,
   ],
+  fetchPage: FetchWatchPage,
 ): Promise<WatchTarget | null> {
   const paths = {
     channel: "channels",
@@ -137,7 +153,7 @@ async function probeArena(
 
   for (const kind of order) {
     try {
-      const res = await fetch(
+      const res = await fetchPage(
         `https://api.are.na/v3/${paths[kind]}/${encodeURIComponent(slug)}`,
         {
           credentials: "omit",
@@ -147,11 +163,11 @@ async function probeArena(
       );
       if (res.ok) return target(kind, slug);
       if (res.status !== 404) {
-        return target(order[0], slug);
+        throw new Error("Are.na could not be checked.");
       }
     } catch (err) {
       log.warn("[pond watch:resolve] arena probe failed", slug, err);
-      return target(order[0], slug);
+      throw err;
     }
   }
   return null;

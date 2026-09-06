@@ -1,11 +1,11 @@
 import { normalizeLabelName } from "@pond/schema/label-name";
+import { Dialog } from "@pond/ui";
 import { z } from "zod";
 import { folders } from "@/features/library/state/folders";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { openSave } from "@/features/saves/lib/save-nav";
 import { asUrlList } from "@/features/saves/lib/url-list";
 import { sourceFlow } from "@/features/sources/state/source-flow";
-import { prompt } from "@/shared/components/prompt-dialog/prompt-dialog";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { notify } from "@/shared/lib/toast";
 
@@ -21,7 +21,7 @@ const SaveResultSchema = z.object({
 });
 
 export interface NewActionServices {
-  prompt: typeof prompt;
+  prompt: typeof Dialog.prompt;
   notify: typeof notify;
   openSave: typeof openSave;
   refreshFolders: () => Promise<void>;
@@ -266,13 +266,13 @@ export const {
 
   importLinks,
 } = createNewActions({
-  prompt,
+  prompt: Dialog.prompt,
   notify,
   openSave,
   refreshFolders: () => folders.refresh(),
   openSource: (kind) => {
     libraryChrome.setNav({ kind: "sources" });
     getAppRouter()?.history.push("/sources");
-    sourceFlow.open(kind === "connect" ? "connect-source" : "watch-source");
+    sourceFlow.open(kind === "connect" ? "connect-source" : "watch-target");
   },
 });

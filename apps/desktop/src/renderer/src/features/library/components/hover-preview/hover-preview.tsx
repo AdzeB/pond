@@ -1,4 +1,4 @@
-import { Button } from "@pond/ui";
+import { Button, Dialog } from "@pond/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   selection,
@@ -22,7 +22,6 @@ import { selectOnlySave } from "@/features/saves/lib/select";
 import { startNativeDrag } from "@/features/saves/lib/start-drag";
 import { inspect, useInspect } from "@/features/saves/state/inspect";
 import type { Save } from "@/features/saves/types";
-import { prompt } from "@/shared/components/prompt-dialog/prompt-dialog";
 import styles from "./hover-preview.module.css";
 
 function inEditable(target: EventTarget | null): boolean {
@@ -33,7 +32,7 @@ function inEditable(target: EventTarget | null): boolean {
 }
 
 function placeComment(save: Save, origin: { x: number; y: number }): void {
-  prompt({
+  Dialog.prompt({
     title: "Add Comment",
     confirmLabel: "Add",
     placeholder: "Comment",

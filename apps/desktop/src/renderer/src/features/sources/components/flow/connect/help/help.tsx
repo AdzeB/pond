@@ -1,5 +1,6 @@
-import { PageDialog } from "@pond/ui";
+import { Dialog } from "@pond/ui";
 import { sourceFlow } from "@/features/sources/state/source-flow";
+import detailStyles from "../../detail/detail.module.css";
 import styles from "./help.module.css";
 
 export function ConnectHelpSection() {
@@ -13,8 +14,8 @@ export function ConnectHelpSection() {
         </p>
         <h2>Staying in sync</h2>
         <p>
-          Pond checks the account in the background on your chosen frequency and
-          pulls new saves into your library as they land.
+          Pond checks for new saves using your global schedule. Change it in
+          Settings → Fetch Schedule.
         </p>
         <h2>Your data</h2>
         <p>
@@ -22,11 +23,11 @@ export function ConnectHelpSection() {
           never posts, follows, or likes on your behalf.
         </p>
       </div>
-      <PageDialog.Footer>
-        <PageDialog.Confirm onClick={() => sourceFlow.back()}>
+      <Dialog.Footer className={detailStyles.footer}>
+        <Dialog.Confirm onClick={() => sourceFlow.back()}>
           Got It
-        </PageDialog.Confirm>
-      </PageDialog.Footer>
+        </Dialog.Confirm>
+      </Dialog.Footer>
     </>
   );
 }

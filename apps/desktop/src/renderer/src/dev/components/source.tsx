@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import styles from "./components.module.css";
 
 const files = import.meta.glob<string>(
-  "../../../../../../../packages/ui/src/**/{index.tsx,data-table.tsx,styles.module.css}",
+  "../../../../../../../packages/ui/src/**/{index.tsx,data-table.tsx,dialog.tsx,styles.module.css}",
   { query: "?raw", import: "default" },
 );
 
@@ -11,11 +11,11 @@ export function ComponentSource({ folder }: { folder: string }) {
   const options = [
     {
       label: "Styles",
-      file: `${folder === "dialog" || folder === "alert-dialog" ? "shared/styles/dialog" : folder}/styles.module.css`,
+      file: `${folder}/styles.module.css`,
     },
     {
       label: "Component",
-      file: `${folder}/${folder === "data-table" ? "data-table.tsx" : "index.tsx"}`,
+      file: `${folder}/${folder === "data-table" ? "data-table.tsx" : folder === "dialog" ? "dialog.tsx" : "index.tsx"}`,
     },
   ].filter(({ file }) => files[`../../../../../../../packages/ui/src/${file}`]);
   const [file, setFile] = useState(options[0]?.file ?? "");
@@ -64,7 +64,6 @@ export function ComponentSource({ folder }: { folder: string }) {
             <Button
               key={value}
               size="xs"
-              rounding="rounded"
               variant={file === value ? "tertiary" : "ghost"}
               aria-pressed={file === value}
               onClick={() => setFile(value)}
@@ -74,18 +73,12 @@ export function ComponentSource({ folder }: { folder: string }) {
           ))}
         </div>
         <div className={styles.actions}>
-          <Button
-            size="xs"
-            variant="ghost"
-            rounding="rounded"
-            onClick={() => void copy(path)}
-          >
+          <Button size="xs" variant="ghost" onClick={() => void copy(path)}>
             Copy path
           </Button>
           <Button
             size="xs"
             variant="ghost"
-            rounding="rounded"
             disabled={!source}
             onClick={() => void copy(source)}
           >

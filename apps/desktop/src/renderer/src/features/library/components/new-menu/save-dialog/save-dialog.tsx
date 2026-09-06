@@ -65,6 +65,7 @@ export function SaveDialog({
               <Dialog.Title>
                 {isNote ? "New Note" : "Import from Links"}
               </Dialog.Title>
+              <Dialog.Close disabled={busy} />
             </Dialog.Header>
             <Dialog.Content className={styles.content}>
               <Dialog.Description>

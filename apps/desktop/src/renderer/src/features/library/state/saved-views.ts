@@ -1,4 +1,5 @@
 import type { SavedView } from "@pond/schema/db";
+import { Dialog } from "@pond/ui";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
@@ -6,7 +7,6 @@ import {
   applySavedView,
   getViewState,
 } from "@/features/library/state/view-store";
-import { prompt } from "@/shared/components/prompt-dialog/prompt-dialog";
 
 const store = new Store<{ views: SavedView[]; loaded: boolean }>({
   views: [],
@@ -25,7 +25,7 @@ export const savedViews = {
 
 export function promptCreateView(): void {
   const { query, sortKey, sortDir, layout } = getViewState();
-  prompt({
+  Dialog.prompt({
     title: "Save View",
     confirmLabel: "Save",
     initialValue: "Untitled View",

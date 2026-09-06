@@ -1,3 +1,4 @@
+import { Dialog } from "@pond/ui";
 // @vitest-environment jsdom
 
 import { PrefsSchema } from "@pond/schema";
@@ -14,7 +15,6 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { savedViews } from "@/features/library/state/saved-views";
-import { ConfirmDialogHost } from "@/shared/components/confirm-dialog/confirm-dialog";
 import { setAppRouter } from "@/shared/lib/app-router";
 import { FolderSidebar } from "./folder-sidebar";
 
@@ -92,7 +92,7 @@ describe("folder sidebar", () => {
       root.render(
         <>
           <RouterProvider router={router} />
-          <ConfirmDialogHost />
+          <Dialog.Host />
         </>,
       );
     });

@@ -6,16 +6,15 @@ export type SourceFlowPage =
   | "connect-source"
   | "connect-help"
   | "connect-wait"
-  | "watch-source"
   | "watch-help"
-  | "watch-kind"
   | "watch-target"
   | "account-detail"
   | "account-profile"
-  | "account-sync"
   | "account-maintenance"
+  | "account-options"
   | "watch-detail"
-  | "sync-frequency";
+  | "watch-profile"
+  | "watch-options";
 
 interface SourceFlowState {
   stack: SourceFlowPage[];
@@ -55,8 +54,4 @@ export function useSourceFlowPage(): SourceFlowPage | null {
 
 export function useSourceFlowDepth(): number {
   return useSelector(store, (s) => s.stack.length);
-}
-
-export function useSourceFlowStack(): readonly SourceFlowPage[] {
-  return useSelector(store, (s) => s.stack);
 }

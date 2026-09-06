@@ -243,6 +243,20 @@ const sync = z.object({
     .object({
       enabled: z.boolean().catch(true),
       intervalHours: z.number().min(1).catch(DEFAULT_SYNC_CRON.intervalHours),
+      calendar: z
+        .discriminatedUnion("kind", [
+          z.object({
+            kind: z.literal("daily"),
+            time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+          }),
+          z.object({
+            kind: z.literal("weekly"),
+            time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+            days: z.array(z.number().int().min(0).max(6)).min(1),
+          }),
+        ])
+        .nullable()
+        .optional(),
     })
     .catch({ ...DEFAULT_SYNC_CRON }),
 });

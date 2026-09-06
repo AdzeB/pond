@@ -143,11 +143,11 @@ export function SaveDialog({
           <Dialog.Header>
             <span className="source-eyebrow">SAMPLE SAVE</span>
             <Dialog.Title>{save.title}</Dialog.Title>
-            <Dialog.Description>
+
+          <Dialog.Close /></Dialog.Header>
+          <Dialog.Content><Dialog.Description>
               {save.domain} · {save.kind}
             </Dialog.Description>
-          </Dialog.Header>
-          <Dialog.Content>
             <SaveCover id={id ?? 0} />
             <p>{save.excerpt}</p>
             <dl className="save-metadata">
@@ -222,13 +222,13 @@ export function LibraryDialog({
             <Dialog.Title>
               {kind === "picker" ? "Add context" : "Your saves"}
             </Dialog.Title>
-            <Dialog.Description>
+
+          <Dialog.Close /></Dialog.Header>
+          <Dialog.Content><Dialog.Description>
               {kind === "picker"
                 ? "Choose the Saves to include with your question."
                 : "Inspect the sample library, including any edits you applied."}
             </Dialog.Description>
-          </Dialog.Header>
-          <Dialog.Content>
             <input
               className="library-search"
               aria-label="Search sample Saves"

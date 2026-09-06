@@ -1,6 +1,5 @@
 import { FIELD_META } from "@pond/schema/filters/meta";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
-import { Menu } from "@pond/ui";
 import { useState } from "react";
 import { FIELD_ICONS } from "@/features/search/lib/fields";
 import { FilterChip, FilterPopup } from "../chip/chip";
@@ -11,11 +10,7 @@ import { filterLayout } from "../layout";
 import type { FilterOption } from "../options";
 import { DimensionsFilter } from "../range/dimensions";
 import { CustomFilter, type RangeUnit } from "../range/range";
-import {
-  isFilterSelected,
-  selectedChoiceMode,
-  selectFilter,
-} from "../selection";
+import { selectedChoiceMode, selectFilter } from "../selection";
 import { filterSummary } from "../summary";
 import { type FilterTagGroup, TagChoiceFilter } from "../tags/tags";
 
@@ -105,15 +100,6 @@ function FilterEditor({
   const [rangeUnit, setRangeUnit] = useState<RangeUnit>(
     field === "fileSize" ? "kilobytes" : "seconds",
   );
-  const [customDate, setCustomDate] = useState(
-    !!current &&
-      !options.some((option) => isFilterSelected([current], option.predicate)),
-  );
-  const [customRating, setCustomRating] = useState(
-    field === "rating" &&
-      !!current &&
-      !options.some((option) => isFilterSelected([current], option.predicate)),
-  );
   const apply = (predicate: Predicate) =>
     onChange(selectFilter(rows, predicate, true));
   const clearField = () => onChange(rows.filter((row) => row.field !== field));
@@ -143,7 +129,7 @@ function FilterEditor({
     return <ContentFilter field={field} rows={rows} onChange={onChange} />;
   if (type === "color")
     return <ColorFilter current={current} onApply={apply} />;
-  if (field === "duration" || field === "fileSize")
+  if (type === "number" || type === "date")
     return (
       <CustomFilter
         field={field}
@@ -154,62 +140,5 @@ function FilterEditor({
         onClear={clearField}
       />
     );
-  return (
-    <>
-      {options.map((option) => (
-        <Menu.CheckboxItem
-          key={JSON.stringify(option.predicate)}
-          closeOnClick={false}
-          checked={isFilterSelected(rows, option.predicate)}
-          onCheckedChange={(checked) => {
-            setCustomDate(false);
-            if (field === "rating") setCustomRating(false);
-            onChange(selectFilter(rows, option.predicate, checked));
-          }}
-        >
-          <Menu.CheckboxItemIndicator />
-          <Menu.ItemLabel>
-            {field === "rating" && Number(option.predicate.value) > 0
-              ? "★".repeat(Number(option.predicate.value))
-              : option.label}
-          </Menu.ItemLabel>
-          {field === "rating" && Number(option.predicate.value) > 0 ? (
-            <Menu.SecondaryLabel>{option.label}</Menu.SecondaryLabel>
-          ) : null}
-        </Menu.CheckboxItem>
-      ))}
-      {options.length ? <Menu.Separator /> : null}
-      {type === "date" ? (
-        <Menu.CheckboxItem
-          checked={customDate}
-          closeOnClick={false}
-          onCheckedChange={setCustomDate}
-        >
-          <Menu.CheckboxItemIndicator />
-          <Menu.ItemLabel>Custom Range</Menu.ItemLabel>
-        </Menu.CheckboxItem>
-      ) : null}
-      {field === "rating" ? (
-        <Menu.CheckboxItem
-          checked={customRating}
-          closeOnClick={false}
-          onCheckedChange={setCustomRating}
-        >
-          <Menu.CheckboxItemIndicator />
-          <Menu.ItemLabel>Custom Range</Menu.ItemLabel>
-        </Menu.CheckboxItem>
-      ) : null}
-      {(type === "number" && (field !== "rating" || customRating)) ||
-      customDate ? (
-        <CustomFilter
-          field={field}
-          current={current}
-          initialUnit={rangeUnit}
-          onUnitChange={setRangeUnit}
-          onApply={apply}
-          onClear={clearField}
-        />
-      ) : null}
-    </>
-  );
+  return null;
 }

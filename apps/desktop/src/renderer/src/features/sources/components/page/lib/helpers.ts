@@ -11,14 +11,6 @@ import {
   sourceStatusLabel,
 } from "./filters";
 
-export const FREQUENCY_OPTIONS = [
-  { hours: 1, label: "Every Hour" },
-  { hours: 2, label: "Every 2 Hours" },
-  { hours: 6, label: "Every 6 Hours" },
-  { hours: 12, label: "Every 12 Hours" },
-  { hours: 24, label: "Once a Day" },
-] as const;
-
 export type SourceEntry =
   | { kind: "account"; row: AccountRow }
   | { kind: "watch"; row: WatchRow };

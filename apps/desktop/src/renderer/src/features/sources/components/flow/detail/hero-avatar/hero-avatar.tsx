@@ -9,18 +9,24 @@ export function HeroAvatar({
   avatarUrl,
   size = 52,
   ring = false,
+  badgeSize = 16,
 }: {
   source: Source;
   avatarUrl: string | null | undefined;
   size?: number;
   ring?: boolean;
+  badgeSize?: number;
 }) {
   const [failed, setFailed] = useState(false);
   const { logo } = getSourceDef(source);
   const pfp = avatarUrl && !failed ? avatarUrl : null;
 
   if (!pfp) {
-    const tile = <BrandTile source={source} size={size} />;
+    const tile = (
+      <span className={styles.sourceImage} data-large={size >= 96 || undefined}>
+        <BrandTile source={source} size={size} />
+      </span>
+    );
     if (!ring) return tile;
     return <span className={styles.wavatar}>{tile}</span>;
   }
@@ -36,11 +42,12 @@ export function HeroAvatar({
       />
       {logo ? (
         <img
-          width={16}
-          height={16}
+          width={badgeSize}
+          height={badgeSize}
           src={logo}
           alt=""
           className={styles.badge}
+          data-large={badgeSize >= 32 || undefined}
         />
       ) : null}
     </span>

@@ -429,7 +429,7 @@ export function AssistantLab({ onExit }: { onExit: () => void }) {
     <Tooltip.Provider>
       <div className={styles.root} data-assistant-lab>
         <header className={styles.header}>
-          <Button size="sm" variant="ghost" rounding="rounded" onClick={onExit}>
+          <Button size="sm" variant="ghost" onClick={onExit}>
             <IconChevronLeftOutline12 />
             Library
           </Button>
@@ -456,7 +456,6 @@ export function AssistantLab({ onExit }: { onExit: () => void }) {
             <Button
               size="sm"
               variant="secondary"
-              rounding="rounded"
               onClick={() => window.scrollTo({ top: 0 })}
             >
               Back to top
@@ -756,7 +755,6 @@ export function AssistantLab({ onExit }: { onExit: () => void }) {
               <Button
                 size="xs"
                 variant="ghost"
-                rounding="rounded"
                 onClick={() => setTokens(DEFAULT_TOKENS)}
               >
                 Reset

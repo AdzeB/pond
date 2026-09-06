@@ -74,9 +74,7 @@ const available = catalog.filter(hasReference).length;
 const sourceFiles = (entry: Entry) =>
   pondSources.files.filter(
     (file) =>
-      file.path.startsWith(`packages/ui/src/${entry.folder}/`) ||
-      (["Dialog", "AlertDialog"].includes(entry.id) &&
-        file.path.startsWith("packages/ui/src/shared/styles/dialog/")),
+      file.path.startsWith(`packages/ui/src/${entry.folder}/`),
   );
 
 function collect(element: Element): Measurement {

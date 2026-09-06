@@ -96,7 +96,6 @@ function Breadcrumbs() {
                     icon
                     variant="ghost"
                     size="sm"
-                    rounding="rounded"
                     className={styles.more}
                     aria-label="Show Parent Folders"
                   >
@@ -147,7 +146,6 @@ function Breadcrumbs() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  rounding="rounded"
                   className={styles.crumb}
                   title={crumb.label}
                   onClick={() => navigate(crumb)}

@@ -6,3 +6,8 @@
   flex: none;
   padding-top: 8px;
 }
+
+.header {
+  height: 44px;
+  padding: 4px 0 4px 2px;
+}

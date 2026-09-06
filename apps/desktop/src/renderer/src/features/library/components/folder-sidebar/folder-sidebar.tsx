@@ -20,6 +20,7 @@ import {
 import type { SavedView } from "@pond/schema/db";
 import {
   Button,
+  Dialog,
   Logo,
   Menu,
   type MenuItemSpec,
@@ -54,8 +55,6 @@ import {
   useViewStore,
 } from "@/features/library/state/view-store";
 import { openSettings } from "@/features/settings/lib/open-settings";
-import { confirm } from "@/shared/components/confirm-dialog/confirm-dialog";
-import { prompt } from "@/shared/components/prompt-dialog/prompt-dialog";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys/shortcut-keys";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
@@ -152,16 +151,11 @@ function selectNav(nav: LibraryNav): void {
   else go("/");
 }
 
-export function WorkspaceHeader() {
+function WorkspaceHeader() {
   return (
     <Sidebar.Header className={styles.workspace}>
       <Menu.Root>
-        <Menu.Trigger
-          variant="ghost"
-          size="sm"
-          rounding="rounded"
-          className={styles.identity}
-        >
+        <Menu.Trigger variant="ghost" size="sm" className={styles.identity}>
           <span className={styles.mark} aria-hidden>
             <Logo size={12} />
           </span>
@@ -186,7 +180,6 @@ export function WorkspaceHeader() {
             icon
             size="sm"
             variant="ghost"
-            rounding="rounded"
             aria-label="Search"
             onClick={() => commandMenu.open()}
           >
@@ -378,7 +371,7 @@ export function FolderSidebar() {
                   {
                     label: "Rename",
                     onClick: () =>
-                      prompt({
+                      Dialog.prompt({
                         title: "Rename Folder",
                         confirmLabel: "Save",
                         initialValue: folder.name,
@@ -395,7 +388,7 @@ export function FolderSidebar() {
                   {
                     label: "Delete",
                     onClick: () =>
-                      confirm({
+                      Dialog.confirm({
                         title: "Delete Folder",
                         description:
                           "Saves stay in the library. They move to Uncategorized.",
@@ -473,7 +466,7 @@ function viewMenuItems(view: SavedView): MenuItemSpec[] {
       label: "Rename",
       icon: <IconPencilOutline18 />,
       onClick: () =>
-        prompt({
+        Dialog.prompt({
           title: "Rename View",
           confirmLabel: "Save",
           initialValue: view.name,
@@ -490,7 +483,7 @@ function viewMenuItems(view: SavedView): MenuItemSpec[] {
       label: "Delete",
       icon: <IconTrash2Outline18 />,
       onClick: () =>
-        confirm({
+        Dialog.confirm({
           title: "Delete View",
           description: "The view is removed. Your Saves stay.",
           confirmLabel: "Delete",
@@ -527,7 +520,6 @@ function SavedViewRow({ view }: { view: SavedView }) {
             icon
             size="xs"
             variant="ghost"
-            rounding="rounded"
             className={styles.more}
             aria-label="More Actions"
             onClick={(event) => event.stopPropagation()}

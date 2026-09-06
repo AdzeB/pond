@@ -315,7 +315,7 @@ export function DownloadsLab({ onExit }: { onExit: () => void }) {
     <Tooltip.Provider>
       <div className={styles.root}>
         <header className={styles.header}>
-          <Button size="sm" variant="ghost" rounding="rounded" onClick={onExit}>
+          <Button size="sm" variant="ghost" onClick={onExit}>
             <IconChevronLeftOutline12 />
             Library
           </Button>

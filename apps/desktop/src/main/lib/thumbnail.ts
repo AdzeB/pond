@@ -5,8 +5,12 @@ import { extname, join } from "node:path";
 import log from "electron-log/main.js";
 import sharp, { type Metadata } from "sharp";
 import { canRequestNativeThumbnail } from "../../shared/file-format";
-import { isThumbnailFileExtension } from "../../shared/media-index";
+import {
+  isThumbnailFileExtension,
+  THUMBNAIL_CACHE_VERSION,
+} from "../../shared/media-index";
 import { libraryRoot, thumbnailCacheRoot } from "../paths";
+import { decodeHeicOnMac } from "./heic";
 
 const LEGACY_THUMBS_DIRNAME = "_thumbs";
 const MIN_WIDTH = 32;
@@ -371,7 +375,7 @@ function thumbnailOutput(
   width: number,
 ): string {
   const key = createHash("sha1")
-    .update(`${sourcePath}|${version}|${width}|webp`)
+    .update(`${sourcePath}|${version}|${width}|webp|${THUMBNAIL_CACHE_VERSION}`)
     .digest("hex")
     .slice(0, 20);
   return join(dir, `${key}.webp`);
@@ -384,7 +388,13 @@ async function nativeThumbnailPipeline(
   pipeline: ReturnType<typeof sharp>;
   metadata: Metadata;
 } | null> {
-  /** For a genuine HEIC that bundled sharp cannot decode, ask the OS thumbnail service. */
+  if (
+    process.platform === "darwin" &&
+    NATIVE_RASTER_EXT.has(extname(sourcePath).toLowerCase())
+  ) {
+    const pipeline = sharp(await decodeHeicOnMac(sourcePath, width));
+    return { pipeline, metadata: await pipeline.metadata() };
+  }
   if (process.platform !== "darwin" && process.platform !== "win32") {
     return null;
   }

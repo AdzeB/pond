@@ -8,6 +8,7 @@ interface ConnectFlowState {
   waiting: Source | null;
   connectedBefore: ReadonlySet<string>;
   completed: boolean;
+  failed: boolean;
 }
 
 const store = new Store<ConnectFlowState>({
@@ -15,17 +16,25 @@ const store = new Store<ConnectFlowState>({
   waiting: null,
   connectedBefore: new Set<string>(),
   completed: false,
+  failed: false,
 });
 
 export const connectFlow = {
   start(source: Source, connectedIds: Iterable<string>): void {
-    void window.pond.connectSource(source);
     store.setState(() => ({
       source,
       waiting: source,
       connectedBefore: new Set(connectedIds),
       completed: false,
+      failed: false,
     }));
+    void requestConnection(source);
+  },
+  retry(): void {
+    const source = store.state.source;
+    if (!source) return;
+    store.setState((s) => ({ ...s, failed: false }));
+    void requestConnection(source);
   },
   complete(): void {
     const already = store.state.completed;
@@ -53,4 +62,23 @@ export function useConnectedBefore(): ReadonlySet<string> {
 
 export function useConnectCompleted(): boolean {
   return useSelector(store, (s) => s.completed);
+}
+
+async function requestConnection(source: Source): Promise<void> {
+  try {
+    const result = await window.pond.connectSource(source);
+    if (!result.ok) markFailed(source);
+  } catch {
+    markFailed(source);
+  }
+}
+
+function markFailed(source: Source): void {
+  store.setState((s) =>
+    s.waiting === source && !s.completed ? { ...s, failed: true } : s,
+  );
+}
+
+export function useConnectFailed(): boolean {
+  return useSelector(store, (s) => s.failed);
 }

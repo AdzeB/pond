@@ -1,4 +1,5 @@
 import type { MenuItemSpec } from "@pond/ui";
+import { Dialog } from "@pond/ui";
 import { dockMode } from "@/features/library/state/dock-mode";
 import { folders } from "@/features/library/state/folders";
 import { selection } from "@/features/library/state/selection";
@@ -53,8 +54,6 @@ import { inspect } from "@/features/saves/state/inspect";
 import { pool } from "@/features/saves/state/pool";
 import type { Save, SaveFile } from "@/features/saves/types";
 import { getPrefsSnapshot } from "@/features/settings/state/prefs";
-import { confirm } from "@/shared/components/confirm-dialog/confirm-dialog";
-import { prompt } from "@/shared/components/prompt-dialog/prompt-dialog";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { notify } from "@/shared/lib/toast";
@@ -437,7 +436,7 @@ export function buildSaveMenu(
       label: "Rename Saves",
       hidden: !batch,
       onClick: () =>
-        prompt({
+        Dialog.prompt({
           title: "Rename Saves",
           description: "Use {n} for a number and {title} for the current name.",
           confirmLabel: "Rename",
@@ -482,7 +481,7 @@ export function buildSaveMenu(
             return;
           }
           const extras = group.ids.filter((id) => id !== save.id);
-          confirm({
+          Dialog.confirm({
             title: "Merge Duplicates",
             description: `Keep this Save and move ${extras.length} duplicate${extras.length === 1 ? "" : "s"} to Trash.`,
             confirmLabel: "Merge",

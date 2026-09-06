@@ -33,18 +33,6 @@ export const WATCHABLE: readonly Source[] = [
   "cosmos",
 ];
 
-const WATCH_KINDS = new Map<Source, readonly WatchKind[]>([
-  ["arena", ["channel", "user", "group"]],
-  ["youtube", ["channel", "playlist"]],
-  ["twitter", ["user", "list"]],
-  ["pinterest", ["user", "board"]],
-  ["cosmos", ["user", "cluster"]],
-]);
-
-export function watchKindsFor(source: Source): readonly WatchKind[] {
-  return WATCH_KINDS.get(source) ?? ["user"];
-}
-
 export function watchKindLabel(kind: WatchKind | undefined): string {
   switch (kind) {
     case "channel":

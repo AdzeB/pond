@@ -5,31 +5,12 @@
   height: 108px;
 }
 
-.body[data-state="match"],
-.body[data-state="checking"],
-.body[data-state="none"] {
-  justify-content: flex-start;
-}
-
 .empty {
   display: flex;
   flex-direction: column;
   gap: 8px;
   align-items: center;
   color: var(--ds-gray-8);
-}
-
-.no-match {
-  display: flex;
-  flex: none;
-  align-items: center;
-  height: 44px;
-  padding-inline: 14px;
-  font-size: 13px;
-  font-weight: 450;
-  color: var(--ds-gray-9);
-  background: var(--ds-gray-2);
-  border-radius: var(--ds-radius-lg);
 }
 
 .hint {
@@ -59,4 +40,56 @@
 .error {
   color: var(--ds-orange-11);
   background: var(--ds-orange-3);
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 280px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.skeletons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.skeletonRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 8px;
+}
+
+.skeletonAvatar {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  background: var(--ds-gray-3);
+  border-radius: 50%;
+}
+
+.skeletonText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skeletonName,
+.skeletonHandle {
+  height: 12px;
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-sm);
+}
+
+.skeletonName {
+  width: 55%;
+}
+
+.skeletonHandle {
+  width: 38%;
 }

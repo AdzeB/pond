@@ -4,6 +4,7 @@ import {
   IconImageOutline18 as Images,
   IconBracketsCurlyOutline18 as Mcp,
   IconNodes3Outline18 as Models,
+  IconCalendarOutline18 as Schedule,
   IconMagnifierOutline18 as Search,
   IconServerOutline18 as Storage,
   IconLabelOutline18 as Tags,
@@ -23,6 +24,7 @@ import { SECTION_CONFIGS } from "@/features/settings/lib/sections";
 
 const ICONS = new Map<string, IconComponent>([
   ["general", General],
+  ["schedule", Schedule],
   ["appearance", Appearance],
   ["tags", Tags],
   ["search", Search],

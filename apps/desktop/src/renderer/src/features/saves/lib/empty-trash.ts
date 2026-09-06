@@ -1,7 +1,7 @@
-import { confirm } from "@/shared/components/confirm-dialog/confirm-dialog";
+import { Dialog } from "@pond/ui";
 
 export function confirmEmptyTrash(): void {
-  confirm({
+  Dialog.confirm({
     title: "Empty Trash",
     description:
       "Every save in the trash is deleted forever. This cannot be undone.",

@@ -1,154 +1,129 @@
-import type { WatchKind } from "@pond/schema/db";
-import { PageDialog } from "@pond/ui";
-import type { JSX } from "react";
+import { Dialog } from "@pond/ui";
+import { type JSX, useState } from "react";
 import { ConnectSourceSection } from "@/features/sources/components/flow/connect/connect";
 import { ConnectHelpSection } from "@/features/sources/components/flow/connect/help/help";
 import { ConnectWaitSection } from "@/features/sources/components/flow/connect/wait/wait";
 import {
   AccountDetailSection,
   AccountMaintenanceSection,
+  AccountOptionsSection,
   AccountProfileSection,
-  AccountSyncSection,
 } from "@/features/sources/components/flow/detail/detail";
-import { FrequencySection } from "@/features/sources/components/flow/detail/frequency/frequency";
-import { WatchDetailSection } from "@/features/sources/components/flow/detail/watch/watch";
+import {
+  WatchDetailSection,
+  WatchOptionsSection,
+  WatchProfileSection,
+} from "@/features/sources/components/flow/detail/watch/watch";
 import { SourceNewSection } from "@/features/sources/components/flow/source-new/source-new";
 import { WatchHelpSection } from "@/features/sources/components/flow/watch/help/help";
-import { WatchKindSection } from "@/features/sources/components/flow/watch/kind/kind";
 import { WatchTargetSection } from "@/features/sources/components/flow/watch/target/target";
-import { WatchSourceSection } from "@/features/sources/components/flow/watch/watch";
-import { useAccounts } from "@/features/sources/hooks/use-accounts";
-import {
-  useWatches,
-  watchKindsFor,
-} from "@/features/sources/hooks/use-watches";
+import { useWatches } from "@/features/sources/hooks/use-watches";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import {
   connectFlow,
   useConnectSource,
 } from "@/features/sources/state/connect-flow";
-import {
-  useDetailAccountId,
-  useDetailWatchId,
-} from "@/features/sources/state/source-detail";
+import { useDetailWatchId } from "@/features/sources/state/source-detail";
 import {
   type SourceFlowPage,
   sourceFlow,
   useSourceFlowDepth,
   useSourceFlowPage,
-  useSourceFlowStack,
 } from "@/features/sources/state/source-flow";
-import {
-  useWatchKind,
-  useWatchSource,
-} from "@/features/sources/state/watch-flow";
+import styles from "./flow.module.css";
 
 const HELP = {
+  "source-new": "connect-help",
   "connect-source": "connect-help",
-  "watch-source": "watch-help",
+  "watch-target": "watch-help",
+  "account-detail": "connect-help",
+  "watch-detail": "watch-help",
 } satisfies Partial<Record<SourceFlowPage, SourceFlowPage>>;
-
-const HERO_PAGES = new Set<SourceFlowPage>(["account-detail", "watch-detail"]);
-
-const KIND_TITLES = {
-  user: "Watch an Account",
-  channel: "Watch a Channel",
-  group: "Watch a Group",
-  playlist: "Watch a Playlist",
-  board: "Watch a Board",
-  cluster: "Watch a Cluster",
-  list: "Watch a List",
-} satisfies Record<WatchKind, string>;
 
 const PAGES = {
   "source-new": SourceNewSection,
   "connect-source": ConnectSourceSection,
   "connect-help": ConnectHelpSection,
   "connect-wait": ConnectWaitSection,
-  "watch-source": WatchSourceSection,
   "watch-help": WatchHelpSection,
-  "watch-kind": WatchKindSection,
   "watch-target": WatchTargetSection,
   "account-detail": AccountDetailSection,
   "account-profile": AccountProfileSection,
-  "account-sync": AccountSyncSection,
   "account-maintenance": AccountMaintenanceSection,
+  "account-options": AccountOptionsSection,
   "watch-detail": WatchDetailSection,
-  "sync-frequency": FrequencySection,
+  "watch-profile": WatchProfileSection,
+  "watch-options": WatchOptionsSection,
 } satisfies Record<SourceFlowPage, () => JSX.Element | null>;
 
 function usePageTitle(page: SourceFlowPage): string {
-  const connectSource = useConnectSource();
-  const watchSource = useWatchSource();
-  const watchKind = useWatchKind();
-  const accountId = useDetailAccountId();
+  const connectingSource = useConnectSource();
   const watchId = useDetailWatchId();
-  const { accounts } = useAccounts();
   const { watches } = useWatches();
-  const stack = useSourceFlowStack();
 
   switch (page) {
     case "source-new":
-      return "New Source";
+      return "Add Source";
     case "connect-source":
-      return "Connect a Source";
+      return "Choose Source";
     case "connect-help":
       return "Connecting a Source";
     case "connect-wait":
-      return connectSource
-        ? `Connect ${getSourceDef(connectSource).label}`
-        : "Connect";
-    case "watch-source":
-      return "Watch an Account";
+      return connectingSource
+        ? getSourceDef(connectingSource).label
+        : "Add Connection";
     case "watch-help":
       return "Watching an Account";
-    case "watch-kind":
-      return watchSource
-        ? `Watch on ${getSourceDef(watchSource).label}`
-        : "Watch";
-    case "watch-target": {
-      const source = watchSource ?? "youtube";
-      const kinds = watchKindsFor(source);
-      const kind = watchKind ?? kinds[0] ?? "user";
-      return kinds.length > 1
-        ? KIND_TITLES[kind]
-        : `Watch on ${getSourceDef(source).label}`;
-    }
-    case "account-detail": {
-      const account = accounts.find((a) => a.id === accountId);
-      return account?.label ?? "Account";
-    }
+    case "watch-target":
+      return "Watch Account";
+    case "account-detail":
+      return "Connection Details";
+    case "watch-options":
+    case "account-options":
+      return "Options";
+    case "watch-profile":
     case "account-profile":
       return "Profile";
-    case "account-sync":
-      return "Sync Details";
     case "account-maintenance":
       return "Maintenance";
     case "watch-detail": {
       const watch = watches.find((w) => w.id === watchId);
-      return watch?.label ?? "Watch";
+      return watch ? "Watching" : "Watch";
     }
-    case "sync-frequency":
-      return stack.includes("watch-detail")
-        ? "Check Frequency"
-        : "Sync Frequency";
   }
 }
 
 export function SourceFlowHost() {
-  const page = useSourceFlowPage();
-  const depth = useSourceFlowDepth();
-  const open = page != null;
+  const activePage = useSourceFlowPage();
+  const activeDepth = useSourceFlowDepth();
+  const open = activePage != null;
+  const [presentation, setPresentation] = useState({
+    page: activePage,
+    depth: activeDepth,
+  });
+  // Base UI needs the popup mounted through its exit to release the portal.
+  if (
+    activePage &&
+    (activePage !== presentation.page || activeDepth !== presentation.depth)
+  ) {
+    setPresentation({ page: activePage, depth: activeDepth });
+  }
+  const page = activePage ?? presentation.page;
+  const depth = open ? activeDepth : presentation.depth;
   const title = usePageTitle(page ?? "source-new");
   const help =
-    page === "connect-source" || page === "watch-source"
+    page === "source-new" ||
+    page === "connect-source" ||
+    page === "watch-target" ||
+    page === "account-detail" ||
+    page === "watch-detail"
       ? HELP[page]
       : undefined;
   const canBack = depth > 1;
   const Page = page ? PAGES[page] : null;
 
   return (
-    <PageDialog.Root
+    <Dialog.Root
       open={open}
       onOpenChange={(next) => {
         if (next) return;
@@ -156,27 +131,25 @@ export function SourceFlowHost() {
         connectFlow.clear();
       }}
     >
-      <PageDialog.Portal>
-        <PageDialog.Backdrop />
+      <Dialog.Portal>
+        <Dialog.Backdrop />
         {page && Page ? (
-          <PageDialog.Popup pageId={page} depth={depth}>
-            <PageDialog.Header>
+          <Dialog.Popup className={styles.popup} pageId={page} depth={depth}>
+            <Dialog.Header>
               {canBack ? (
-                <PageDialog.Back onClick={() => sourceFlow.back()} />
+                <Dialog.Back onClick={() => sourceFlow.back()} />
               ) : help ? (
-                <PageDialog.Help onClick={() => sourceFlow.push(help)} />
+                <Dialog.Help onClick={() => sourceFlow.push(help)} />
               ) : null}
-              <PageDialog.Title data-hero={HERO_PAGES.has(page) || undefined}>
-                {title}
-              </PageDialog.Title>
-              <PageDialog.Close />
-            </PageDialog.Header>
-            <PageDialog.Viewport>
+              <Dialog.Title>{title}</Dialog.Title>
+              <Dialog.Close />
+            </Dialog.Header>
+            <Dialog.Viewport>
               <Page />
-            </PageDialog.Viewport>
-          </PageDialog.Popup>
+            </Dialog.Viewport>
+          </Dialog.Popup>
         ) : null}
-      </PageDialog.Portal>
-    </PageDialog.Root>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

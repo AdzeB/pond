@@ -12,7 +12,7 @@ export const componentGroups: [string, [string, string, string][]][] = [
       [
         "Button",
         "button",
-        "Five sizes, seven treatments, and two corner styles. Change props in the playground to compare them.",
+        "Five sizes and seven treatments with rounded corners. Change props in the playground to compare them.",
       ],
       [
         "Input",
@@ -111,16 +111,6 @@ export const componentGroups: [string, [string, string, string][]][] = [
         "Dialog",
         "dialog",
         "Open the dialog to inspect its surface, backdrop, and focus handling.",
-      ],
-      [
-        "AlertDialog",
-        "alert-dialog",
-        "A confirmation dialog using harmless local sample data.",
-      ],
-      [
-        "PageDialog",
-        "page-dialog",
-        "A two-step dialog with animated page transitions.",
       ],
       ["Drawer", "drawer", "A bottom sheet using the shared Drawer component."],
       [

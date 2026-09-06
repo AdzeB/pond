@@ -1,42 +1,29 @@
 .grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   width: 100%;
-  padding: 4px;
 }
-
 .cell {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: center;
+  display: grid;
+  place-items: center;
   min-width: 0;
-  padding: 16px 8px 12px;
-  font: inherit;
+  aspect-ratio: 1;
+  padding: 12px;
   cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
-  background: var(--ds-gray-1);
+  background: var(--ds-gray-2);
   border: 0;
-  border-radius: var(--ds-radius-lg);
+  border-radius: var(--ds-radius-2xl);
   transition: background var(--ds-duration-medium) var(--ds-easing-standard);
 }
-
 .cell:hover {
   background: var(--ds-gray-3);
 }
-
 .cell:focus-visible {
-  outline: 2px solid var(--ds-gray-6);
-  outline-offset: 0;
+  outline: 2px solid var(--ds-accent-9);
+  outline-offset: 2px;
 }
 
-.name {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 13px;
-  font-weight: var(--ds-weight-medium);
-  color: var(--ds-gray-12);
-  white-space: nowrap;
+.cell > span {
+  border-radius: 10px;
 }

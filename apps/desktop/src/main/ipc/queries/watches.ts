@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { acquire } from "../../core/pipeline/rate-governor";
 import { isSyncing } from "../../core/sync";
 import { listAccountsForSource } from "../../core/sync/accounts";
 import { fillMissingAvatars } from "../../core/sync/avatars";
@@ -40,7 +41,17 @@ export const watchesQueries = {
       if (!source || !isWatchableSource(source) || !params.input.trim()) {
         return { ok: false as const };
       }
-      const resolved = await resolveWatchTarget(source, params.input);
+      const resolved = await resolveWatchTarget(
+        source,
+        params.input,
+        async (url, init) => {
+          await acquire(source, {
+            signal: init.signal ?? undefined,
+            maxWaitMs: 4000,
+          });
+          return fetch(url, init);
+        },
+      );
       if (!resolved) return { ok: false as const };
       return { ok: true as const, target: resolved };
     },
@@ -59,7 +70,17 @@ export const watchesQueries = {
       if (!source || !isWatchableSource(source)) {
         return { ok: false as const, reason: "unsupported" as const };
       }
-      const resolved = await resolveWatchTarget(source, input);
+      const resolved = await resolveWatchTarget(
+        source,
+        input,
+        async (url, init) => {
+          await acquire(source, {
+            signal: init.signal ?? undefined,
+            maxWaitMs: 4000,
+          });
+          return fetch(url, init);
+        },
+      );
       if (!resolved) {
         return { ok: false as const, reason: "invalid" as const };
       }

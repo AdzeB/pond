@@ -62,7 +62,6 @@ export function ComponentsPage({
             <Button
               size="sm"
               variant="ghost"
-              rounding="rounded"
               onClick={onExit}
               aria-label="Back to library"
             >
@@ -156,7 +155,6 @@ export function ComponentsPage({
                     <Button
                       size="xs"
                       variant="ghost"
-                      rounding="rounded"
                       onClick={() => setRevision((revision) => revision + 1)}
                     >
                       Reset
@@ -189,7 +187,6 @@ export function ComponentsPage({
                 <Button
                   size="sm"
                   variant="secondary"
-                  rounding="rounded"
                   aria-expanded={showSource}
                   aria-controls="gallery-source"
                   onClick={() => setShowSource((show) => !show)}

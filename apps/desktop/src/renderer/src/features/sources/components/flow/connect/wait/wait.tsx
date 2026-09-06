@@ -1,55 +1,71 @@
-import { IconCircleCheckFill18 as Connected } from "@pond/icons/fill/18";
-import { Button, PageDialog } from "@pond/ui";
+import { IconCheck2Fill12 } from "@pond/icons/fill/12";
+import { IconXmarkOutline12 } from "@pond/icons/outline/12";
+import { Button } from "@pond/ui";
+import { BrandTile } from "@/features/sources/components/sync-monitor-source-tile/sync-monitor-source-tile";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import {
+  connectFlow,
   useConnectCompleted,
+  useConnectFailed,
   useConnectSource,
 } from "@/features/sources/state/connect-flow";
-import { sourceFlow } from "@/features/sources/state/source-flow";
 import styles from "./wait.module.css";
 
 export function ConnectWaitSection() {
   const source = useConnectSource();
   const completed = useConnectCompleted();
-
+  const failed = useConnectFailed();
   if (!source) return null;
-
   const label = getSourceDef(source).label;
 
   return (
     <>
-      <div className={styles.body} data-state={completed ? "done" : "waiting"}>
-        {completed ? <Connected className={styles.mark} /> : null}
-        <div className={styles.copy}>
+      <div className={styles.body}>
+        <div className={styles.avatar}>
+          <div className={styles.image}>
+            <BrandTile source={source} size={96} />
+            <span
+              className={styles.badge}
+              data-state={
+                completed ? "connected" : failed ? "failed" : "waiting"
+              }
+              aria-hidden="true"
+            >
+              <span className={styles.loading}>
+                <span className={styles.spinner} />
+              </span>
+              <IconCheck2Fill12 className={styles.check} />
+              <IconXmarkOutline12 className={styles.cross} strokeWidth={2} />
+            </span>
+          </div>
+        </div>
+        <div className={styles.copy} aria-live="polite">
           <p className={styles.status}>
-            {completed ? "Connected" : `Waiting for ${label} sign-in`}
+            {completed
+              ? "Connected"
+              : failed
+                ? "Connection Unavailable"
+                : "Requesting Connection"}
           </p>
-          {completed ? null : (
-            <p className={styles.hint}>
-              Sign in in your browser. The Pond extension sends the session
-              back.
-            </p>
-          )}
+          <p className={styles.hint}>
+            {completed
+              ? `${label} is connected. Your saved posts will appear in your library.`
+              : failed
+                ? `Couldn't open ${label}. Try opening the sign-in page again.`
+                : `Sign in to ${label} in your browser. The Pond extension sends your session back.`}
+          </p>
         </div>
       </div>
-      <PageDialog.Footer>
-        <PageDialog.Cancel
-          disabled={completed}
-          onClick={() => sourceFlow.close()}
-        />
-        {completed ? (
-          <PageDialog.Confirm disabled>Connected</PageDialog.Confirm>
-        ) : (
-          <Button
-            variant="tertiary"
-            size="md"
-            width="full"
-            onClick={() => void window.pond.connectSource(source)}
-          >
-            Open Again
-          </Button>
-        )}
-      </PageDialog.Footer>
+      {failed && !completed ? (
+        <Button
+          variant="tertiary"
+          width="full"
+          className={styles.retry}
+          onClick={() => connectFlow.retry()}
+        >
+          Try Again
+        </Button>
+      ) : null}
     </>
   );
 }

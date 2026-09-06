@@ -1,25 +1,20 @@
 import { IconTelescopeFill18 as Telescope } from "@pond/icons/fill/18";
 import type { Source, WatchKind } from "@pond/schema/db";
-import { PageDialog } from "@pond/ui";
-import { Calligraph } from "calligraph";
 import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { useAccounts } from "@/features/sources/hooks/use-accounts";
 import {
   WATCH_NEEDS_SESSION,
-  watchKindsFor,
+  WATCHABLE,
 } from "@/features/sources/hooks/use-watches";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import { sourceFlow } from "@/features/sources/state/source-flow";
-import {
-  useWatchKind,
-  useWatchSource,
-  watchFlow,
-} from "@/features/sources/state/watch-flow";
+import { watchFlow } from "@/features/sources/state/watch-flow";
+import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { WatchTargetField } from "../target-field/target-field";
 import { WatchTargetMatch } from "../target-match/target-match";
-import { WatchTargetSkeleton } from "../target-skeleton/target-skeleton";
+import { watchInputSource } from "./input-source";
 import styles from "./target.module.css";
 
 const AddWatchResultSchema = z.object({
@@ -32,6 +27,7 @@ interface WatchTargetMatchData {
   kind?: WatchKind;
   handle: string;
   display: string;
+  avatarUrl?: string;
 }
 
 const ResolveTargetSchema = z.object({
@@ -51,35 +47,10 @@ const ResolveTargetSchema = z.object({
         .optional(),
       handle: z.string(),
       display: z.string(),
+      avatarUrl: z.url().optional(),
     })
     .optional(),
 });
-
-function watchHint(
-  source: Source,
-  kind: WatchKind,
-  viaHandle: string | null,
-): string {
-  if (WATCH_NEEDS_SESSION.includes(source) && !viaHandle) {
-    return `Connect a ${getSourceDef(source).label} account first. Watching here rides your own session.`;
-  }
-  switch (kind) {
-    case "channel":
-      return "Search a handle or paste a link to\nstart watching a channel.";
-    case "group":
-      return "Search a slug or paste a link to\nstart watching a group.";
-    case "playlist":
-      return "Paste a playlist link to\nstart watching it.";
-    case "board":
-      return "Type user/board or paste a link to\nstart watching a board.";
-    case "cluster":
-      return "Type user/cluster or paste a link to\nstart watching a cluster.";
-    case "list":
-      return "Paste a list link to\nstart watching it.";
-    default:
-      return "Search a handle to\nstart watching a public account.";
-  }
-}
 
 function TelescopeSweep() {
   const reduce = useReducedMotion();
@@ -104,77 +75,160 @@ function TelescopeSweep() {
   );
 }
 
+function WatchResults({ children }: { children: ReactNode }) {
+  const scrollFade = useScrollFade<HTMLDivElement>();
+  const reduceMotion = useReducedMotion();
+  return (
+    <motion.div
+      {...scrollFade}
+      className={styles.options}
+      role="group"
+      aria-label="Account to watch"
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: "auto", opacity: 1 }}
+      transition={{ duration: reduceMotion ? 0 : 0.2 }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+type WatchOption =
+  | { source: Source; status: "checking" | "unavailable" | "failed" }
+  | { source: Source; status: "available"; target: WatchTargetMatchData };
+
+interface WatchTargetFormProps {
+  connectedSources: readonly Source[];
+  resolveTarget: (
+    source: Source,
+    input: string,
+  ) => Promise<WatchTargetMatchData | null>;
+  addWatch: (
+    source: Source,
+    input: string,
+  ) => Promise<z.infer<typeof AddWatchResultSchema>>;
+  onAdded: (id: string) => void;
+}
+
+async function resolveTarget(source: Source, input: string) {
+  const result = ResolveTargetSchema.parse(
+    await window.pond.query("watches.resolve", { source, input }),
+  );
+  return result.ok ? (result.target ?? null) : null;
+}
+
+async function addWatch(source: Source, handle: string) {
+  return AddWatchResultSchema.parse(
+    await window.pond.query("watches.add", { source, handle }),
+  );
+}
+
 export function WatchTargetSection() {
   const { accounts } = useAccounts();
-  const picked = useWatchSource();
-  const source = picked ?? "youtube";
-  const kinds = watchKindsFor(source);
-  const pickedKind = useWatchKind();
-  const kind = pickedKind ?? kinds[0] ?? "user";
+  return (
+    <WatchTargetForm
+      connectedSources={accounts
+        .filter((account) => account.connected)
+        .map((account) => account.source)}
+      resolveTarget={resolveTarget}
+      addWatch={addWatch}
+      onAdded={(id) => {
+        watchFlow.added(id);
+        sourceFlow.close();
+      }}
+    />
+  );
+}
+
+export function WatchTargetForm({
+  connectedSources,
+  resolveTarget,
+  addWatch,
+  onAdded,
+}: WatchTargetFormProps) {
   const [handle, setHandle] = useState("");
-  const [resolved, setResolved] = useState<WatchTargetMatchData | null>(null);
-  const [checking, setChecking] = useState(false);
+  const input = handle.trim();
+  const detected = watchInputSource(input);
+  const linkSource = detected.type === "link" ? detected.source : null;
+  const unsupported = detected.type === "unsupported";
+  const [startingSource, setStartingSource] = useState<Source | null>(null);
+  const [lookup, setLookup] = useState<{
+    input: string;
+    options: WatchOption[];
+  }>({ input: "", options: [] });
+  const options = lookup.input === input ? lookup.options : [];
+  const matches = options.filter((option) => option.status === "available");
+  const checking =
+    !!input &&
+    !unsupported &&
+    (lookup.input !== input ||
+      options.some((option) => option.status === "checking"));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const submitting = useRef(false);
   const handleRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     handleRef.current?.focus();
   }, []);
 
-  const viaAccount = accounts.find((a) => a.source === source) ?? null;
-  const needsAccount = WATCH_NEEDS_SESSION.includes(source) && !viaAccount;
-
   useEffect(() => {
-    const input = handle.trim();
-    setResolved(null);
-    if (!input || needsAccount) {
-      setChecking(false);
+    if (!input || unsupported) {
+      setLookup({ input, options: [] });
       return;
     }
-    setChecking(true);
+    const sources = linkSource ? [linkSource] : WATCHABLE;
+    setLookup({
+      input,
+      options: sources.map((source) => ({ source, status: "checking" })),
+    });
     let cancelled = false;
-    const timer = setTimeout(async () => {
-      try {
-        const res = ResolveTargetSchema.parse(
-          await window.pond.query("watches.resolve", { source, input }),
-        );
-        if (!cancelled && res.ok && res.target) setResolved(res.target);
-      } catch {
-      } finally {
-        if (!cancelled) setChecking(false);
-      }
-    }, 250);
+    const timer = setTimeout(() => {
+      void Promise.all(
+        sources.map(async (source): Promise<WatchOption> => {
+          try {
+            const target = await resolveTarget(source, input);
+            return target
+              ? { source, status: "available", target }
+              : { source, status: "unavailable" };
+          } catch {
+            return { source, status: "failed" };
+          }
+        }),
+      ).then((options) => {
+        if (!cancelled) setLookup({ input, options });
+      });
+    }, 500);
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [handle, source, needsAccount]);
+  }, [input, linkSource, unsupported, resolveTarget]);
 
-  const canStart =
-    resolved !== null && handle.trim().length > 0 && !needsAccount && !busy;
-
-  const start = async () => {
-    if (handle.trim().length === 0 || needsAccount || busy) return;
+  const needsAccount = (source: Source) =>
+    WATCH_NEEDS_SESSION.includes(source) && !connectedSources.includes(source);
+  const start = async (source: Source) => {
+    if (
+      needsAccount(source) ||
+      submitting.current ||
+      !matches.some((option) => option.source === source)
+    )
+      return;
+    submitting.current = true;
     setBusy(true);
+    setStartingSource(source);
     setError(null);
     try {
-      const res = AddWatchResultSchema.parse(
-        await window.pond.query("watches.add", {
-          source,
-          handle: handle.trim(),
-        }),
-      );
+      const res = await addWatch(source, input);
       if (res.ok && res.watch) {
-        watchFlow.added(res.watch.id);
-        sourceFlow.close();
+        onAdded(res.watch.id);
         return;
       }
       setError(
         res.reason === "already_watching"
           ? "You're already watching this."
           : res.reason === "needs_account"
-            ? `Connect a ${getSourceDef(source).label} account first.`
+            ? `Connect an account on ${getSourceDef(source).label} first.`
             : res.reason === "invalid"
               ? "Couldn't recognise that handle or link."
               : "Couldn't start watching. Try again.",
@@ -182,73 +236,90 @@ export function WatchTargetSection() {
     } catch {
       setError("Couldn't start watching. Try again.");
     } finally {
+      submitting.current = false;
       setBusy(false);
+      setStartingSource(null);
     }
   };
 
-  const paste = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      if (text.trim()) {
-        setHandle(text.trim());
-        setError(null);
-      }
-    } finally {
-      handleRef.current?.focus();
-    }
+  const changeHandle = (value: string) => {
+    setHandle(value);
+    setError(null);
   };
 
   return (
     <>
       <WatchTargetField
         inputRef={handleRef}
-        kind={kind}
         value={handle}
-        disabled={needsAccount}
+        disabled={busy}
         checking={checking}
-        onChange={(value) => {
-          setHandle(value);
-          setError(null);
-        }}
-        onSubmit={() => void start()}
-        onPaste={() => void paste()}
+        onChange={changeHandle}
       />
-      <div
-        className={styles.body}
-        data-state={
-          error
-            ? "error"
-            : resolved
-              ? "match"
-              : checking
-                ? "checking"
-                : handle.trim() && !needsAccount
-                  ? "none"
-                  : "hint"
-        }
-      >
-        {error ? (
-          <p className={`${styles.chip} ${styles.error}`}>{error}</p>
-        ) : resolved ? (
-          <WatchTargetMatch source={source} match={resolved} />
-        ) : checking ? (
-          <WatchTargetSkeleton />
-        ) : handle.trim() && !needsAccount ? (
-          <div className={styles["no-match"]}>No results found</div>
-        ) : (
+      {input && !unsupported ? (
+        <WatchResults>
+          {matches.map((option) => (
+            <WatchTargetMatch
+              key={option.source}
+              source={option.source}
+              match={option.target}
+              handle={input}
+              disabled={busy || needsAccount(option.source)}
+              status={
+                startingSource === option.source ? "Starting…" : undefined
+              }
+              hint={
+                needsAccount(option.source)
+                  ? `Connect your ${getSourceDef(option.source).label} account in Sources to watch this profile. Pond needs a signed-in account to check for new posts.`
+                  : undefined
+              }
+              onSelect={() => void start(option.source)}
+            />
+          ))}
+          {checking ? (
+            <div
+              className={styles.skeletons}
+              role="status"
+              aria-label="Looking for accounts"
+            >
+              {[0, 1, 2].map((row) => (
+                <div
+                  key={row}
+                  className={styles.skeletonRow}
+                  aria-hidden="true"
+                >
+                  <span className={styles.skeletonAvatar} />
+                  <span className={styles.skeletonText}>
+                    <span className={styles.skeletonName} />
+                    <span className={styles.skeletonHandle} />
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {!checking && matches.length === 0 ? (
+            <p className={styles.hint} role="status">
+              Couldn't find anything. Try another search.
+            </p>
+          ) : null}
+        </WatchResults>
+      ) : (
+        <div className={styles.body}>
           <div className={styles.empty}>
             <TelescopeSweep />
             <p className={styles.hint}>
-              {watchHint(source, kind, viaAccount?.handle ?? null)}
+              {unsupported
+                ? "This link is not supported. Paste a link from a supported platform."
+                : "Paste a link or enter a handle\nto start watching an account."}
             </p>
           </div>
-        )}
-      </div>
-      <PageDialog.Footer>
-        <PageDialog.Confirm disabled={!canStart} onClick={() => void start()}>
-          <Calligraph>{busy ? "Starting" : "Start Watching"}</Calligraph>
-        </PageDialog.Confirm>
-      </PageDialog.Footer>
+        </div>
+      )}
+      {error ? (
+        <p className={`${styles.chip} ${styles.error}`} role="alert">
+          {error}
+        </p>
+      ) : null}
     </>
   );
 }

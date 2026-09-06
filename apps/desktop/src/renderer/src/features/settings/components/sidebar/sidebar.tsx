@@ -1,8 +1,8 @@
-import { Sidebar } from "@pond/ui";
-import { useRouterState } from "@tanstack/react-router";
+import { IconArrowLeftOutline18 } from "@pond/icons/outline/18";
+import { Button, Sidebar } from "@pond/ui";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import Fuse from "fuse.js";
 import { useMemo, useState } from "react";
-import { WorkspaceHeader } from "@/features/library/components/folder-sidebar/folder-sidebar";
 import { openSettings } from "@/features/settings/lib/open-settings";
 import {
   SETTINGS_MASTER_GROUPS,
@@ -23,6 +23,7 @@ interface SectionResult {
 }
 
 export function SettingsSidebar() {
+  const navigate = useNavigate();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
@@ -94,7 +95,16 @@ export function SettingsSidebar() {
       role="navigation"
       aria-label="Settings"
     >
-      <WorkspaceHeader />
+      <Sidebar.Header className={styles.header}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => void navigate({ to: "/", search: {} })}
+        >
+          <IconArrowLeftOutline18 aria-hidden />
+          Exit settings
+        </Button>
+      </Sidebar.Header>
       <div className={styles.search}>
         <Sidebar.Search
           value={query}

@@ -20,7 +20,7 @@ export function Choice<T extends string>({
         if (next !== null) onChange(next);
       }}
     >
-      <Select.Trigger aria-label={label} size="sm" rounding="rounded">
+      <Select.Trigger aria-label={label} size="sm">
         <Select.Value />
       </Select.Trigger>
       <Select.Portal>

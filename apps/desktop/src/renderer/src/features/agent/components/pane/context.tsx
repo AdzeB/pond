@@ -127,11 +127,13 @@ export function ContextPicker({
         <Dialog.Popup className={styles["library-dialog"]}>
           <Dialog.Header>
             <Dialog.Title>Add Context</Dialog.Title>
+
+            <Dialog.Close />
+          </Dialog.Header>
+          <Dialog.Content>
             <Dialog.Description>
               Choose up to 24 Saves to include with your question.
             </Dialog.Description>
-          </Dialog.Header>
-          <Dialog.Content>
             <input
               className={styles["library-search"]}
               aria-label="Search Saves"

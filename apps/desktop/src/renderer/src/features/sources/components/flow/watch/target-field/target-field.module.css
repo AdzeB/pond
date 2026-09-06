@@ -25,40 +25,6 @@
   color: var(--ds-gray-9);
 }
 
-.paste {
-  flex: none;
-  height: 26px;
-  padding-inline: 10px;
-  margin-left: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ds-gray-11);
-  cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
-  background: var(--ds-gray-4);
-  border: 0;
-  border-radius: var(--ds-radius-full);
-  transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    background var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-5);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--ds-gray-6);
-    outline-offset: 0;
-  }
-
-  &:disabled {
-    color: var(--ds-gray-8);
-    cursor: default;
-    background: var(--ds-gray-3);
-  }
-}
-
 .field-spinner {
   flex: none;
   width: 14px;

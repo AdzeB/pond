@@ -574,7 +574,7 @@ export function CommandMenuHost({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Backdrop className={styles.backdrop} />
+        <Dialog.Backdrop />
         <Dialog.Popup className={styles.popup} aria-label="Search Pond">
           <Dialog.Title className={styles.srOnly}>Search Pond</Dialog.Title>
           <div className={styles.search}>

@@ -1,13 +1,11 @@
-import { Button, DataTable } from "@pond/ui";
+import { Button, DataTable, Dialog } from "@pond/ui";
 import type { MutableRefObject } from "react";
 import { tagOperations } from "@/features/tags/operations/tag-client";
-import { confirm } from "@/shared/components/confirm-dialog/confirm-dialog";
-import { prompt } from "@/shared/components/prompt-dialog/prompt-dialog";
 import styles from "./manager.module.css";
 
 function promptBulkMerge(names: string[], onDone: () => void) {
   const count = names.length;
-  prompt({
+  Dialog.prompt({
     title: `Merge ${count} ${count === 1 ? "tag" : "tags"}`,
     description:
       "Every save using the selected tags will be re-tagged with the target, and the originals removed.",
@@ -20,7 +18,7 @@ function promptBulkMerge(names: string[], onDone: () => void) {
 
 function confirmBulkDelete(names: string[], onDone: () => void) {
   const count = names.length;
-  confirm({
+  Dialog.confirm({
     title: `Delete ${count} ${count === 1 ? "tag" : "tags"}`,
     description: "They will be removed from every save. This cannot be undone.",
     confirmLabel: "Delete",

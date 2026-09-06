@@ -1,8 +1,5 @@
-.backdrop {
-  background: var(--ds-black-a1);
-}
-
 .popup {
+  --dialog-offset-y: 0%;
   top: max(64px, 11vh);
   display: flex;
   flex-direction: column;
@@ -13,14 +10,6 @@
   border: 1px solid var(--ds-gray-a4);
   border-radius: 16px;
   box-shadow: var(--ds-shadow-6);
-  transform: translateX(-50%);
-  transform-origin: top center;
-
-  &[data-starting-style],
-  &[data-ending-style] {
-    opacity: 0;
-    transform: translateX(-50%) scale(1.05);
-  }
 }
 
 .srOnly {

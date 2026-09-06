@@ -1,0 +1,18 @@
+.popup {
+  --page-dialog-width: 350px;
+  --page-dialog-header-height: 80px;
+  --page-dialog-chrome-height: 80px;
+  --page-dialog-action-inset: 24px;
+  --page-dialog-content-top: 0px;
+  --page-dialog-gap: 16px;
+
+  border-radius: 24px;
+  box-shadow:
+    0 4px 12px var(--ds-black-a2),
+    0 0 0 1px var(--ds-black-a2);
+
+  > header > button {
+    color: var(--ds-gray-12);
+    background: transparent;
+  }
+}

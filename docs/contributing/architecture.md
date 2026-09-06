@@ -50,3 +50,11 @@ File organization is internal. Routes, stored preference keys, source ids, libra
 Run `pnpm architecture:check` for runtime dependency cycles and process/shared-code boundaries. Type-only imports are excluded from the runtime graph. Run `pnpm check` for the required local code checks and offline tests, then `pnpm build` for bundles and performance budgets. Use `pnpm knip` separately when pruning; check non-TypeScript and dynamic entrypoints before accepting a deletion.
 
 The renderer save pool lives under `features/saves/state/`. Library state owns view preferences, navigation, folders, and saved views. Tag operations live under `features/tags/operations/`; both the library Tags page and settings consume that feature. Shared UI primitives remain in `packages/ui`, independent of desktop stores.
+
+## Dialogs
+
+`@pond/ui` exports one `Dialog` API. `Dialog.Root` selects standard or alert semantics with `variant`; paged popups require both `pageId` and `depth`. Static bodies use `Content`, and paged bodies use `Viewport`. Page context and measurement are internal. Header Close defaults to a circular icon button; `render` supports custom footer dismissal buttons. `Cancel` and `Confirm` are styled actions and do not close a flow automatically.
+
+Application composition mounts one `Dialog.Host`. `Dialog.confirm` and `Dialog.prompt` accept presentation options and completion callbacks; the UI package owns their input, pending, error, and dismissal behavior. Callers own domain operations. Commands return void, preserve payload replacement behavior, and require the host in the same renderer. Custom source flows remain compositional. `createHandle` and `createAlertHandle` support standard and alert roots respectively; `Dialog.Handle` remains the standard handle constructor.
+
+Controlled flows must retain their last popup content while `open` becomes false. Base UI completes portal cleanup from the popup exit lifecycle; removing only Popup immediately can leave an invisible backdrop intercepting clicks. SourceFlowHost retains its last page and depth for this exit.

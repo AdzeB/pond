@@ -1,0 +1,85 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.field {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  font-size: 16px;
+  border-bottom: 1px solid var(--ds-gray-3);
+}
+.field select,
+.field input {
+  min-width: 0;
+  padding: 10px;
+  font: inherit;
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-3);
+  border: 0;
+  border-radius: 8px;
+}
+.field input:focus-visible,
+.field select:focus-visible {
+  outline: 2px solid var(--ds-accent-8);
+  outline-offset: 2px;
+}
+.interval {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.interval input {
+  width: 76px;
+}
+.week {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.week legend {
+  margin-bottom: 14px;
+  font-size: 16px;
+}
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.days > button {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+}
+.zone {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ds-gray-9);
+}
+.summary {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+}
+.summary > span {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ds-gray-9);
+  letter-spacing: 0.08em;
+}
+.summary strong {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+.form > button {
+  min-height: 48px;
+  font-size: 16px;
+  border-radius: 16px;
+}

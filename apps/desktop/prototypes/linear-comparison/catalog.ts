@@ -116,16 +116,6 @@ const groups: [string, [string, string, string][]][] = [
         "dialog",
         "Open the dialog to inspect its surface, backdrop, and focus handling.",
       ],
-      [
-        "AlertDialog",
-        "alert-dialog",
-        "A confirmation dialog using harmless local sample data.",
-      ],
-      [
-        "PageDialog",
-        "page-dialog",
-        "A two-step dialog with animated page transitions.",
-      ],
       ["Drawer", "drawer", "A bottom sheet using the shared Drawer component."],
       [
         "Toast",

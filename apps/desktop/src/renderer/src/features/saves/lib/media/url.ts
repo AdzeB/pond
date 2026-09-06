@@ -1,3 +1,4 @@
+import { THUMBNAIL_CACHE_VERSION } from "@shared/media-index";
 import type { Save, SaveFile } from "@/features/saves/types";
 
 export function buildPondUrl(saveId: string, file: SaveFile): string {
@@ -13,12 +14,12 @@ const THUMB_MAX = 1536;
 export function thumbUrlFor(url: string, cssWidth: number | undefined): string {
   const width = thumbnailWidth(cssWidth);
   if (!width) return url;
-  return `${url}${url.includes("?") ? "&" : "?"}tw=${width}`;
+  return `${url}${url.includes("?") ? "&" : "?"}tw=${width}&tv=${THUMBNAIL_CACHE_VERSION}`;
 }
 
 /** Waits for a renderer-safe WebP when Chromium cannot decode the original. */
 export function previewUrlFor(url: string, width = 2048): string {
-  return `${url}${url.includes("?") ? "&" : "?"}preview=${width}`;
+  return `${url}${url.includes("?") ? "&" : "?"}preview=${width}&tv=${THUMBNAIL_CACHE_VERSION}`;
 }
 
 export function previewThumbUrlFor(

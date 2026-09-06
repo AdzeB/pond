@@ -27,6 +27,7 @@ export function ShortcutsSheetHost() {
         <Dialog.Popup className={styles.popup}>
           <Dialog.Header>
             <Dialog.Title>Keyboard Shortcuts</Dialog.Title>
+            <Dialog.Close />
           </Dialog.Header>
           <Dialog.Content className={styles.content} {...scrollFade}>
             <div className={styles.columns}>

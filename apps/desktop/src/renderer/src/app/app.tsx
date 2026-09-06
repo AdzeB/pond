@@ -1,4 +1,4 @@
-import { Tooltip } from "@pond/ui";
+import { Dialog, Tooltip } from "@pond/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   createMemoryHistory,
@@ -18,8 +18,6 @@ import { UiSounds } from "../features/settings/effects/ui-sounds";
 import { usePrefs } from "../features/settings/state/prefs";
 import { SyncStatusBridge } from "../features/sources/effects/sync-status-bridge";
 import { routeTree } from "../routeTree.gen";
-import { ConfirmDialogHost } from "../shared/components/confirm-dialog/confirm-dialog";
-import { PromptDialogHost } from "../shared/components/prompt-dialog/prompt-dialog";
 import { ToastHost } from "../shared/components/toast-host/toast-host";
 import { setAppRouter } from "../shared/lib/app-router";
 import { pondScopedKey } from "../shared/lib/pond-scope";
@@ -187,8 +185,7 @@ function LibraryApp() {
           <ErrorBoundary>
             <AppContent />
           </ErrorBoundary>
-          <ConfirmDialogHost />
-          <PromptDialogHost />
+          <Dialog.Host />
           <CommandMenuHost />
           <ShortcutsSheetHost />
           <ToastHost />

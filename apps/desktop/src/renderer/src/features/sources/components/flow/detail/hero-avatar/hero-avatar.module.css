@@ -38,3 +38,27 @@
   border-radius: var(--ds-radius-source);
   box-shadow: var(--ds-shadow-2);
 }
+
+.badge[data-large] {
+  right: 0;
+  bottom: 0;
+  padding: 3px;
+  outline-width: 4px;
+  border-radius: 50%;
+}
+
+.sourceImage {
+  display: block;
+}
+
+.sourceImage[data-large] {
+  overflow: hidden;
+  background: var(--ds-gray-1);
+  border-radius: 16px;
+  box-shadow: var(--ds-shadow-2);
+}
+
+.sourceImage[data-large] > span {
+  border-radius: 16px;
+  box-shadow: none;
+}

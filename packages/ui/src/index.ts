@@ -11,7 +11,6 @@ export {
   Shimmer,
   Suggestion,
 } from "./ai";
-export { AlertDialog } from "./alert-dialog";
 export { Button, type ButtonProps } from "./button";
 export { Checkbox } from "./checkbox";
 export { Chip, type ChipTone } from "./chip";
@@ -33,7 +32,6 @@ export { Input } from "./input";
 export { Keyboard } from "./keyboard";
 export { Logo, type LogoProps } from "./logo";
 export { Menu, type MenuItemSpec } from "./menu";
-export { PageDialog, usePageDialog } from "./page-dialog";
 export { Popover } from "./popover";
 export { Select, type SelectItemSpec } from "./select";
 export { Settings } from "./settings";

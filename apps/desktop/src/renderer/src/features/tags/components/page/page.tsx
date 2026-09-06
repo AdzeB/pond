@@ -228,7 +228,6 @@ export function TagsPage() {
                       icon
                       variant="ghost"
                       size="xs"
-                      rounding="rounded"
                       className={styles.groupAdd}
                       aria-label="New Group"
                       onClick={() => startCreate("group")}
@@ -287,7 +286,6 @@ export function TagsPage() {
                           icon
                           variant="ghost"
                           size="xs"
-                          rounding="rounded"
                           aria-label={`Add Tags to ${activeGroupRow.group.name}`}
                         >
                           <IconPlusOutline18 />
