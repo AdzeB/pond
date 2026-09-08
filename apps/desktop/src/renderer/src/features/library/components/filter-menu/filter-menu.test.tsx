@@ -166,11 +166,6 @@ describe("filter toolbar", () => {
         (node) => node.getAttribute("aria-label") === "Source",
       ),
     ).toBe(false);
-    await act(async () => button("Clear Filters").click());
-    expect(state()).toEqual({
-      query: { combinator: "and", rules: [] },
-      text: "cats",
-    });
   });
 
   it("keeps an active category visible when it is unpinned", async () => {
@@ -203,12 +198,12 @@ describe("filter toolbar", () => {
     expect(button("Transcript")).toBeTruthy();
   });
 
-  it("clears a Semantic overlay with Clear Filters", async () => {
+  it("clears a Semantic overlay from its chip", async () => {
     setSemanticQuery("black cat");
     await render();
     expect(button("Filter (1 active)")).toBeTruthy();
     expect(getOverlays().semanticQuery).toBe("black cat");
-    await act(async () => button("Clear Filters").click());
+    await act(async () => button("Clear Semantic Filter").click());
     expect(getOverlays().semanticQuery).toBeNull();
   });
 });

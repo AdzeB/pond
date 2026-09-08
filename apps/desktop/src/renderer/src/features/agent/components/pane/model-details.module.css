@@ -1,0 +1,27 @@
+.popup {
+  --popup-width: min(620px, calc(100vw - 32px));
+  --popup-max-width: 620px;
+}
+.content,
+.models {
+  min-width: 0;
+}
+.models > input {
+  width: 100%;
+}
+.list {
+  max-height: min(320px, 35vh);
+}
+.row {
+  height: auto;
+  min-height: 32px;
+  padding-block: 8px;
+}
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-inline-end: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}

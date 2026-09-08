@@ -17,6 +17,7 @@ export interface RowApi<T> {
   columns: TableColumn<T>[];
   gridTemplate: string;
   selectionEnabled: boolean;
+  selectionCheckboxes: boolean;
   expansionEnabled: boolean;
   toggleRow: (id: string, extend: boolean) => void;
   toggleExpand: (id: string) => void;
@@ -30,6 +31,7 @@ export interface DataTableContextValue<T> {
     toggleRow: (id: string, extend: boolean) => void;
     toggleAll: (next: boolean) => void;
     clearSelection: () => void;
+    replaceSelection: (ids: string[]) => void;
     toggleExpand: (id: string) => void;
     toggleSort: (id: string) => void;
     resizeColumn: (id: string, width: number) => void;
@@ -39,6 +41,7 @@ export interface DataTableContextValue<T> {
     columns: TableColumn<T>[];
     gridTemplate: string;
     selectionEnabled: boolean;
+    selectionCheckboxes: boolean;
     expansionEnabled: boolean;
     rows: TanstackRow<T>[];
     rowCount: number;

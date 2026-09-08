@@ -158,6 +158,8 @@
   max-width: 560px;
   margin-bottom: 18px;
   overflow: hidden;
+  background-clip: padding-box;
+  border: var(--ds-border-elevated);
   border-radius: var(--ds-radius-xl);
   box-shadow: var(--ds-shadow-1);
 }

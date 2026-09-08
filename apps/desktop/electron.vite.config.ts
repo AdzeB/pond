@@ -116,7 +116,7 @@ export default defineConfig({
         "react-dom",
         "react/jsx-runtime",
         "react/jsx-dev-runtime",
-        "@base-ui/react",
+        "@pond/ui > @base-ui/react",
         "@huggingface/transformers",
       ],
     },
@@ -129,15 +129,24 @@ export default defineConfig({
           index: resolve(__dirname, "src/renderer/index.html"),
           capture: resolve(__dirname, "src/renderer/capture.html"),
         },
+        preserveEntrySignatures: false,
         output: {
-          manualChunks(id: string) {
-            if (!id.includes("node_modules")) return;
-            const match = id.match(
-              /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(@[^/]+\/[^/]+|[^/]+)/,
-            );
-            const pkg = match?.[1];
-            if (!pkg) return;
-            return `vendor-${pkg.replace(/^@/, "").replace(/\//g, "-")}`;
+          strictExecutionOrder: true,
+          codeSplitting: {
+            includeDependenciesRecursively: false,
+            groups: [
+              {
+                name(id: string) {
+                  if (!id.includes("node_modules")) return null;
+                  const match = id.match(
+                    /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(@[^/]+\/[^/]+|[^/]+)/,
+                  );
+                  const pkg = match?.[1];
+                  if (!pkg) return null;
+                  return `vendor-${pkg.replace(/^@/, "").replace(/\//g, "-")}`;
+                },
+              },
+            ],
           },
         },
       },

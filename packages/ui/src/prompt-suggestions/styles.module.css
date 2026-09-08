@@ -1,0 +1,44 @@
+.optionIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  color: var(--ds-gray-10);
+}
+
+.modelContent {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  text-align: left;
+}
+
+.rowDescription {
+  font-size: var(--ds-text-small);
+  line-height: 1.45;
+  color: var(--ds-gray-9);
+  overflow-wrap: anywhere;
+}
+
+.suggestions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 4px 16px;
+}
+
+.suggestion {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  height: auto;
+  min-height: 56px;
+  padding: 10px;
+  text-align: left;
+}
+
+.suggestion > svg:last-child {
+  width: 14px;
+  margin-left: auto;
+  color: var(--ds-gray-8);
+}

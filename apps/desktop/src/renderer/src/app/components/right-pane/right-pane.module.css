@@ -18,6 +18,8 @@
   min-height: 0;
   overflow: hidden;
   background: var(--window-background-secondary);
+  background-clip: padding-box;
+  border: var(--ds-border-elevated);
   border-radius: var(--window-radius);
   box-shadow: var(--ds-shadow-1);
 

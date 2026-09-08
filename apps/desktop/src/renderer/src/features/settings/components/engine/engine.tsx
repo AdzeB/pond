@@ -9,7 +9,6 @@ import type {
   SectionConfig,
 } from "@/features/settings/lib/engine-types";
 import { usePrefs } from "@/features/settings/state/prefs";
-import { CollapsibleGroup } from "./collapsible-group/collapsible-group";
 
 export type {
   Binding,
@@ -214,18 +213,6 @@ function Group({
       {group.render ? group.render(binding) : null}
     </>
   );
-
-  if (group.collapsible && group.title) {
-    return (
-      <CollapsibleGroup
-        title={group.title}
-        defaultCollapsed={group.defaultCollapsed}
-        fullWidth={group.fullWidth}
-      >
-        {body}
-      </CollapsibleGroup>
-    );
-  }
 
   return (
     <Settings.Section span={group.fullWidth ? "full" : undefined}>

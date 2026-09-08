@@ -2,7 +2,7 @@
 
 Inspected August 31, 2026. The user clarified that Cosmos, Are.na, and Pinterest should supply saved AI interface inspiration, not their own gallery design. This research supersedes the initial suggestion to imitate their galleries. No production component was changed during this research pass.
 
-The visual board is `apps/desktop/prototypes/assistant-inline/references.html`, available at `http://127.0.0.1:4324/references.html`. Run `python3 -m http.server 4324 --bind 127.0.0.1` from its directory to serve it independently of the app build. It contains seven inspected references, category filters, image enlargement, exact source links, and specific applications to Pond. Images load from their original reference hosts.
+The temporary visual reference board was retired during prototype cleanup. The source findings below remain as historical research.
 
 ## Strongest references
 

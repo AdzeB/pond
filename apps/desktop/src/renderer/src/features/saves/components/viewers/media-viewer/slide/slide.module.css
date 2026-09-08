@@ -33,6 +33,8 @@
   overflow: hidden;
   background: transparent;
   border-radius: var(--ds-radius-md);
+  border: var(--ds-border-elevated);
+  background-clip: padding-box;
   box-shadow: var(--ds-shadow-2);
   animation: coverflow linear both;
   animation-timeline: view(inline);

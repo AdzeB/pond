@@ -1,5 +1,7 @@
 import { SOURCES, type Source } from "@pond/schema/db";
-import { useCallback, useEffect, useState } from "react";
+import { useSelector } from "@tanstack/react-store";
+import { Store } from "@tanstack/store";
+import { useEffect } from "react";
 import { z } from "zod";
 import {
   type SyncAccountStatus,
@@ -48,50 +50,59 @@ const AccountsReplySchema = z
   })
   .catch({ accounts: [] });
 
+interface AccountsState {
+  accounts: AccountRow[];
+  loaded: boolean;
+}
+
+const store = new Store<AccountsState>({
+  accounts: [],
+  loaded: false,
+});
+
 interface AccountsResult {
   accounts: AccountRow[];
   loading: boolean;
   refetch: () => Promise<AccountRow[]>;
 }
 
-export function useAccounts(): AccountsResult {
-  const [accounts, setAccounts] = useState<AccountRow[]>([]);
-  const [loaded, setLoaded] = useState(false);
-
-  const refetch = useCallback(async (): Promise<AccountRow[]> => {
-    try {
-      const rows = AccountsReplySchema.parse(
-        await window.pond.query("accounts.list", {}),
-      ).accounts;
-      setAccounts(rows);
-      for (const account of rows) {
-        const status: Partial<SyncAccountStatus> = {
-          connected: account.connected,
-          lastSyncedAt: account.sync.lastSyncedAt,
-          lastError: account.sync.lastError,
-        };
-        if (account.syncing) status.state = "running";
-        syncMonitor.seed(account.id, account.source, status);
-      }
-      return rows;
-    } catch {
-      return [];
-    } finally {
-      setLoaded(true);
+export async function refetchAccounts(): Promise<AccountRow[]> {
+  try {
+    const rows = AccountsReplySchema.parse(
+      await window.pond.query("accounts.list", {}),
+    ).accounts;
+    store.setState({ accounts: rows, loaded: true });
+    for (const account of rows) {
+      const status: Partial<SyncAccountStatus> = {
+        connected: account.connected,
+        lastSyncedAt: account.sync.lastSyncedAt,
+        lastError: account.sync.lastError,
+      };
+      if (account.syncing) status.state = "running";
+      syncMonitor.seed(account.id, account.source, status);
     }
-  }, []);
+    return rows;
+  } catch {
+    store.setState((s) => ({ ...s, loaded: true }));
+    return [];
+  }
+}
+
+export function useAccounts(): AccountsResult {
+  const accounts = useSelector(store, (s) => s.accounts);
+  const loaded = useSelector(store, (s) => s.loaded);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
-    void refetch().then((rows) => {
+    void refetchAccounts().then((rows) => {
       if (rows.some((row) => row.handle && row.avatarUrl === undefined)) {
-        timer = setTimeout(() => void refetch(), 4000);
+        timer = setTimeout(() => void refetchAccounts(), 4000);
       }
     });
     return () => {
       if (timer) clearTimeout(timer);
     };
-  }, [refetch]);
+  }, []);
 
-  return { accounts, loading: !loaded, refetch };
+  return { accounts, loading: !loaded, refetch: refetchAccounts };
 }

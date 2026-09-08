@@ -2,7 +2,13 @@
 
 import type { Row as TanstackRow } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type ReactNode,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { useDataTable } from "./context";
 import { Row } from "./row";
 import styles from "./styles.module.css";
@@ -74,13 +80,19 @@ export function DataTableBody<T>({
     />
   );
 
+  const rowHeightStyle =
+    // SAFETY: React forwards CSS custom properties to the element style.
+    {
+      "--data-table-row-height": `${rowHeight}px`,
+    } as CSSProperties;
+
   if (height !== undefined) {
     return (
       <div
         ref={parentRef}
         className={styles.body}
         role="rowgroup"
-        style={{ height, overflow: "auto" }}
+        style={{ height, overflow: "auto", ...rowHeightStyle }}
         data-scroll-fade="y"
         data-scrollable={edges}
       >
@@ -98,6 +110,7 @@ export function DataTableBody<T>({
                   top: 0,
                   left: 0,
                   width: "100%",
+                  height: `${vi.size}px`,
                   transform: `translateY(${vi.start}px)`,
                 }}
               >
@@ -112,7 +125,7 @@ export function DataTableBody<T>({
   }
 
   return (
-    <div className={styles.body} role="rowgroup">
+    <div className={styles.body} role="rowgroup" style={rowHeightStyle}>
       {rows.length === 0
         ? (extraRow ?? emptyState)
         : rows.map((row, index) => renderRow(row, index))}

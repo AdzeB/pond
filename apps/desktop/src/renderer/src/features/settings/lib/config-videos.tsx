@@ -55,13 +55,17 @@ export const videosSection = defineCustomSection({
             { value: 10, label: "10\u00A0MB" },
             { value: 25, label: "25\u00A0MB" },
             { value: 50, label: "50\u00A0MB" },
+            { value: 100, label: "100 MB" },
+            { value: 500, label: "500 MB" },
+            { value: 1000, label: "1 GB" },
+            { value: 5000, label: "5 GB" },
             { value: null, label: "Unlimited" },
           ],
         },
       ],
     }),
     group.with(useVideoDownloadBinding, {
-      title: "Codecs",
+      title: "Formats",
       items: [
         {
           control: "select",
@@ -91,7 +95,8 @@ export const videosSection = defineCustomSection({
           control: "select",
           key: "container",
           title: "Container",
-          description: "Best wrapper for the chosen codecs.",
+          description:
+            "Choose the video file format. Auto works for most downloads.",
           options: [
             { value: "auto", label: "Auto" },
             { value: "mp4", label: "MP4" },
@@ -109,10 +114,11 @@ export const videosSection = defineCustomSection({
           control: "select",
           key: "subtitles",
           title: "Subtitles",
-          description: "Sidecar file, or muxed into the video.",
+          description:
+            "Save subtitles as a separate file or include them in the video.",
           options: [
             { value: "off", label: "Off" },
-            { value: "download", label: "Download Sidecar" },
+            { value: "download", label: "Separate File" },
             { value: "embed", label: "Embed in Video" },
           ],
         },
@@ -140,7 +146,7 @@ export const videosSection = defineCustomSection({
       ],
     }),
     group.with(useVideoDownloadBinding, {
-      title: "Embedding",
+      title: "File Details",
       items: [
         {
           control: "switch",

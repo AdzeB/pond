@@ -74,7 +74,6 @@ export function Slide({
           <VideoSlide
             slide={slide}
             active={active}
-            saveId={saveId}
             title={title}
             artist={artist}
             chapters={chapters}
@@ -112,7 +111,6 @@ function VideoSlide({
   active,
   title,
   artist,
-  saveId,
   chapters,
   noteMarkers,
   ratioOverride,
@@ -121,7 +119,6 @@ function VideoSlide({
 }: {
   slide: MediaSlide;
   active: boolean;
-  saveId: string;
   title?: string | null;
   artist?: string | null;
   chapters?: ChapterCue[];
@@ -138,7 +135,6 @@ function VideoSlide({
         poster={slide.posterUrl}
         title={title}
         artist={artist}
-        saveId={saveId}
         active={active}
         width={slide.width}
         height={slide.height}

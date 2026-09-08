@@ -1,5 +1,12 @@
 import { IconFileOutline18, IconXmarkOutline18 } from "@pond/icons/outline/18";
-import { Button, Dialog } from "@pond/ui";
+import {
+  Attachments as AttachmentUI,
+  Button,
+  Checkbox,
+  Dialog,
+  Input,
+  Reveal,
+} from "@pond/ui";
 import { type AssistantSource, assistantSources } from "@shared/assistant";
 import { useEffect, useState } from "react";
 import { z } from "zod";
@@ -40,46 +47,52 @@ export function Attachments({
   onRemove?: (id: string) => void;
   onOpenSave?: (id: string) => void;
 }) {
-  if (!saves.length) return null;
   return (
-    <fieldset
-      className={styles["attachment-list"]}
-      aria-label={onRemove ? "Attached Saves" : "Sent Attachments"}
-    >
-      {saves.map((save) => (
-        <div className={styles["attachment-chip"]} key={save.id}>
-          <button
-            type="button"
-            className={styles["attachment-open"]}
-            onClick={() => onOpenSave(save.id)}
-          >
-            <SaveMark id={save.id} />
-            <span>
-              <strong>{save.title || "Untitled"}</strong>
-              <small>{sourceDomain(save)}</small>
-            </span>
-          </button>
-          {onRemove ? (
-            <button
-              type="button"
-              className={styles["attachment-remove"]}
-              aria-label={`Remove ${save.title || "Save"}`}
-              onClick={() => onRemove(save.id)}
-            >
-              <IconXmarkOutline18 />
-            </button>
-          ) : null}
-        </div>
-      ))}
-    </fieldset>
+    <Reveal visible={saves.length > 0}>
+      <fieldset
+        className={styles["attachment-list"]}
+        aria-label={onRemove ? "Attached Saves" : "Sent Attachments"}
+      >
+        {saves.map((save) => (
+          <AttachmentUI.Root key={save.id}>
+            <AttachmentUI.Item>
+              <Button
+                size="xs"
+                variant="ghost"
+                onClick={() => onOpenSave(save.id)}
+              >
+                <AttachmentUI.Thumb>
+                  <SaveMark id={save.id} />
+                </AttachmentUI.Thumb>
+                <AttachmentUI.Label>
+                  {save.title || "Untitled"}
+                </AttachmentUI.Label>
+              </Button>
+              {onRemove ? (
+                <AttachmentUI.Remove
+                  aria-label={`Remove ${save.title || "Save"}`}
+                  onClick={() => onRemove(save.id)}
+                >
+                  <IconXmarkOutline18 />
+                </AttachmentUI.Remove>
+              ) : null}
+            </AttachmentUI.Item>
+          </AttachmentUI.Root>
+        ))}
+      </fieldset>
+    </Reveal>
   );
 }
 
 export function ContextPicker({
+  open = true,
+  inline = false,
   attached,
   onAdd,
   onClose,
 }: {
+  open?: boolean;
+  inline?: boolean;
   attached: AssistantSource[];
   onAdd: (saves: AssistantSource[]) => void;
   onClose: () => void;
@@ -92,6 +105,11 @@ export function ContextPicker({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
+    if (!open) return;
+    setSelected(new Map(attached.map((save) => [save.id, save])));
+  }, [open, attached]);
+  useEffect(() => {
+    if (!open) return;
     let current = true;
     setLoading(true);
     const timer = setTimeout(() => {
@@ -114,10 +132,93 @@ export function ContextPicker({
       current = false;
       clearTimeout(timer);
     };
-  }, [query]);
+  }, [query, open]);
+  const Body = inline ? "div" : Dialog.Content;
+  const Description = inline ? "p" : Dialog.Description;
+  const Footer = inline ? "div" : Dialog.Footer;
+  const content = (
+    <>
+      <Body data-context-picker-body>
+        <Description>
+          Choose up to 24 Saves to include with your question.
+        </Description>
+        <Input.Root size="sm">
+          <Input.Field
+            aria-label="Search Saves"
+            placeholder="Search saves..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </Input.Root>
+        <div
+          className={styles["library-save-list"]}
+          data-context-picker-list
+          aria-busy={loading}
+        >
+          {loading ? (
+            <p className={styles["library-empty"]} role="status">
+              Searching your library
+            </p>
+          ) : error ? (
+            <p role="alert">{error}</p>
+          ) : rows.length ? (
+            rows.map((save) => (
+              <label
+                className={styles["library-save"]}
+                key={save.id}
+                htmlFor={`context-${save.id}`}
+              >
+                <Checkbox.Root
+                  id={`context-${save.id}`}
+                  checked={selected.has(save.id)}
+                  disabled={!selected.has(save.id) && selected.size >= 24}
+                  onCheckedChange={() =>
+                    setSelected((prev) => {
+                      const next = new Map(prev);
+                      if (next.has(save.id)) next.delete(save.id);
+                      else next.set(save.id, save);
+                      return next;
+                    })
+                  }
+                >
+                  <Checkbox.Indicator />
+                </Checkbox.Root>
+                <SaveMark id={save.id} />
+                <span>
+                  <strong>{save.title || "Untitled"}</strong>
+                  <small>{sourceDomain(save)}</small>
+                </span>
+              </label>
+            ))
+          ) : (
+            <p className={styles["library-empty"]}>
+              No Saves found. Try another search.
+            </p>
+          )}
+        </div>
+      </Body>
+      <Footer data-context-picker-footer>
+        <Button type="button" size="md" variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          size="md"
+          disabled={!selected.size}
+          onClick={() => {
+            onAdd([...selected.values()]);
+            onClose();
+          }}
+        >
+          Add {selected.size || ""} {selected.size === 1 ? "Save" : "Saves"}
+        </Button>
+      </Footer>
+    </>
+  );
+  if (inline) return open ? content : null;
   return (
     <Dialog.Root
-      open
+      open={open}
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
@@ -130,69 +231,7 @@ export function ContextPicker({
 
             <Dialog.Close />
           </Dialog.Header>
-          <Dialog.Content>
-            <Dialog.Description>
-              Choose up to 24 Saves to include with your question.
-            </Dialog.Description>
-            <input
-              className={styles["library-search"]}
-              aria-label="Search Saves"
-              placeholder="Search saves..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <div className={styles["library-save-list"]} aria-busy={loading}>
-              {loading ? (
-                <p className={styles["library-empty"]} role="status">
-                  Searching your library
-                </p>
-              ) : error ? (
-                <p role="alert">{error}</p>
-              ) : rows.length ? (
-                rows.map((save) => (
-                  <label className={styles["library-save"]} key={save.id}>
-                    <input
-                      type="checkbox"
-                      checked={selected.has(save.id)}
-                      disabled={!selected.has(save.id) && selected.size >= 24}
-                      onChange={() =>
-                        setSelected((prev) => {
-                          const next = new Map(prev);
-                          if (next.has(save.id)) next.delete(save.id);
-                          else next.set(save.id, save);
-                          return next;
-                        })
-                      }
-                    />
-                    <SaveMark id={save.id} />
-                    <span>
-                      <strong>{save.title || "Untitled"}</strong>
-                      <small>{sourceDomain(save)}</small>
-                    </span>
-                  </label>
-                ))
-              ) : (
-                <p className={styles["library-empty"]}>
-                  No Saves found. Try another search.
-                </p>
-              )}
-            </div>
-          </Dialog.Content>
-          <Dialog.Footer>
-            <Dialog.Close render={<Button size="md" variant="ghost" />}>
-              Cancel
-            </Dialog.Close>
-            <Button
-              size="md"
-              disabled={!selected.size}
-              onClick={() => {
-                onAdd([...selected.values()]);
-                onClose();
-              }}
-            >
-              Add {selected.size || ""} {selected.size === 1 ? "Save" : "Saves"}
-            </Button>
-          </Dialog.Footer>
+          {content}
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>

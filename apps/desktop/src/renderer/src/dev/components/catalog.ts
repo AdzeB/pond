@@ -7,6 +7,16 @@ export interface ComponentEntry {
 
 export const componentGroups: [string, [string, string, string][]][] = [
   [
+    "Theme",
+    [
+      [
+        "Shadow",
+        "shadow",
+        "Every elevation token on light and dark surfaces. Edit layers, then copy CSS into shadow.css.",
+      ],
+    ],
+  ],
+  [
     "Controls",
     [
       [
@@ -171,9 +181,34 @@ export const componentGroups: [string, [string, string, string][]][] = [
     "Assistant",
     [
       [
+        "Assistant UI",
+        "thread",
+        "Compact runtime-backed chat with a unified composer tray, inline models, context, references, and smooth streaming.",
+      ],
+      [
+        "Assistant Models",
+        "model-picker",
+        "Search and select models with provider and connection details inline.",
+      ],
+      [
+        "Assistant Context",
+        "context-picker",
+        "Select context, remove chips, and browse response references.",
+      ],
+      [
+        "Assistant Review",
+        "approval-card",
+        "Review proposed actions and answer follow-up questions.",
+      ],
+      [
+        "Assistant States",
+        "run-status",
+        "Working, stopped, retryable errors, and code with copy feedback.",
+      ],
+      [
         "Attachments",
-        "ai/attachments",
-        "Attachment label, thumbnail slot, and remove action.",
+        "attachment",
+        "Image and file tiles in the composer, with previews and removable drafts.",
       ],
       [
         "Conversation",

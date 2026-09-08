@@ -44,6 +44,7 @@ export interface DataTableProviderProps<T> {
   getSubRows?: (row: T) => T[] | undefined;
   expandCaret?: boolean;
   onSelectionChange?: (ids: string[]) => void;
+  selectionCheckboxes?: boolean;
   defaultSort?: { id: string; desc: boolean };
   expandedIds?: string[];
   onToggleExpand?: (id: string, next: boolean) => void;
@@ -62,11 +63,12 @@ export function DataTableProvider<T>({
   getSubRows,
   expandCaret = true,
   onSelectionChange,
+  selectionCheckboxes = true,
   defaultSort,
   expandedIds,
   onToggleExpand,
   height,
-  rowHeight = 44,
+  rowHeight = 34,
   overscan = 10,
   renderRow,
   onRowClick,
@@ -193,6 +195,16 @@ export function DataTableProvider<T>({
 
     const clearSelection = () => toggleAll(false);
 
+    const replaceSelection = (ids: string[]) => {
+      const next = new Set<string>();
+      for (const id of ids) {
+        for (const d of withDescendants(id)) next.add(d);
+      }
+      selectionStore.setState(() => ({ selectedIds: next }));
+      anchorRef.current = ids[ids.length - 1] ?? null;
+      commitSelection();
+    };
+
     const toggleExpand = (id: string) => {
       const expandedRecord =
         internalExpanded === true ? null : internalExpanded;
@@ -242,6 +254,7 @@ export function DataTableProvider<T>({
       toggleRow,
       toggleAll,
       clearSelection,
+      replaceSelection,
       toggleExpand,
       toggleSort,
       resizeColumn,
@@ -272,7 +285,7 @@ export function DataTableProvider<T>({
 
   const gridTemplate = useMemo(() => {
     const parts: string[] = [];
-    if (selectionEnabled) parts.push(SELECT_WIDTH);
+    if (selectionEnabled && selectionCheckboxes) parts.push(SELECT_WIDTH);
     if (expansionEnabled) parts.push(CARET_WIDTH);
     for (const col of orderedColumns) {
       const sized = columnSizing[col.id];
@@ -281,7 +294,13 @@ export function DataTableProvider<T>({
       );
     }
     return parts.join(" ");
-  }, [selectionEnabled, expansionEnabled, orderedColumns, columnSizing]);
+  }, [
+    selectionEnabled,
+    selectionCheckboxes,
+    expansionEnabled,
+    orderedColumns,
+    columnSizing,
+  ]);
 
   const rowApi = useMemo<RowApi<T>>(
     () => ({
@@ -289,6 +308,7 @@ export function DataTableProvider<T>({
       columns: orderedColumns,
       gridTemplate,
       selectionEnabled,
+      selectionCheckboxes,
       expansionEnabled,
       toggleRow: actions.toggleRow,
       toggleExpand: actions.toggleExpand,
@@ -300,6 +320,7 @@ export function DataTableProvider<T>({
       orderedColumns,
       gridTemplate,
       selectionEnabled,
+      selectionCheckboxes,
       expansionEnabled,
       actions.toggleRow,
       actions.toggleExpand,
@@ -325,6 +346,7 @@ export function DataTableProvider<T>({
         columns: orderedColumns,
         gridTemplate,
         selectionEnabled,
+        selectionCheckboxes,
         expansionEnabled,
         rows,
         rowCount: orderedIdsRef.current.length,
@@ -341,6 +363,7 @@ export function DataTableProvider<T>({
       orderedColumns,
       gridTemplate,
       selectionEnabled,
+      selectionCheckboxes,
       expansionEnabled,
       rows,
       rowHeight,

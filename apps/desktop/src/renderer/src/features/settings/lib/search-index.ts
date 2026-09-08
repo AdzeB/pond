@@ -72,5 +72,40 @@ function sectionEntries(section: SectionDef): SettingsSearchEntry[] {
   return entries;
 }
 
-export const SETTINGS_SEARCH_INDEX: SettingsSearchEntry[] =
-  SECTIONS.flatMap(sectionEntries);
+export const SETTINGS_SEARCH_INDEX: SettingsSearchEntry[] = SECTIONS.filter(
+  (section) => !section.hidden,
+).flatMap(sectionEntries);
+
+for (const [key, title, description] of [
+  ["location", "Library Location", "Reveal your library in Finder"],
+  ["move", "Move Library", "Copy your library and switch to a new location"],
+  ["backup", "Back Up Library", "Create a backup"],
+  ["open", "Open Library", "Open a library or restore a backup"],
+  ["import", "Import Eagle Library", "Import files, folders and tags"],
+  [
+    "watched-folder",
+    "Watched Folder",
+    "Automatically import files from a folder",
+  ],
+]) {
+  SETTINGS_SEARCH_INDEX.push({
+    id: `storage:${key}`,
+    sectionId: "storage",
+    sectionLabel: "Storage & Backups",
+    path: "storage",
+    itemKey: key,
+    title: title ?? "",
+    description,
+    keywords: [],
+  });
+}
+SETTINGS_SEARCH_INDEX.push({
+  id: "models:mcp",
+  sectionId: "models",
+  sectionLabel: "Integrations",
+  path: "models",
+  itemKey: "mcp",
+  title: "Connect Cursor",
+  description: "MCP configuration for external apps",
+  keywords: ["stdio", "mcp"],
+});

@@ -137,14 +137,14 @@ describe("breadcrumb toolbar", () => {
     expect(host.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
     expect(
       host.querySelector('nav[aria-label="Breadcrumb"]')?.textContent,
-    ).not.toContain("Library");
+    ).not.toContain("All");
   });
 
   it("shows one current location without any tab controls", async () => {
     await mount();
     expect(host.querySelector('nav[aria-label="Breadcrumb"]')).not.toBeNull();
     expect(host.querySelector('[aria-current="page"]')?.textContent).toBe(
-      "Library",
+      "All",
     );
     expect(host.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
     expect(host.querySelector('[role="tablist"]')).toBeNull();
@@ -156,17 +156,17 @@ describe("breadcrumb toolbar", () => {
     await mount();
     expect(
       host.querySelector('nav[aria-label="Breadcrumb"]')?.textContent,
-    ).toBe("Library/Search results (0)");
+    ).toBe("All/Search results (0)");
     await act(() => libraryViewContext.set(["one", "two"], "library"));
     expect(host.querySelector('[aria-current="page"]')?.textContent).toBe(
       "Search results (2)",
     );
-    await act(async () => button("Library").click());
+    await act(async () => button("All").click());
     expect(getViewState().q).toBe("");
     expect(libraryChrome.getState().nav).toEqual({ kind: "all" });
   });
 
-  it("navigates to parent folders and clears filters only at Library", async () => {
+  it("navigates to parent folders and clears filters only at All", async () => {
     applySavedView({ id: "view", query: { combinator: "and", rules: [] } });
     libraryChrome.setNav({ kind: "folder", id: "child" });
     const router = await mount();
@@ -180,7 +180,7 @@ describe("breadcrumb toolbar", () => {
     });
     expect(router.state.location.pathname).toBe("/");
     expect(getViewState().activeViewId).toBe("view");
-    await act(async () => button("Library").click());
+    await act(async () => button("All").click());
     expect(libraryChrome.getState().nav).toEqual({ kind: "all" });
     expect(getViewState().q).toBe("");
     expect(getViewState().activeViewId).toBeNull();
@@ -191,7 +191,7 @@ describe("breadcrumb toolbar", () => {
     expect(host.querySelector('[aria-current="page"]')?.textContent).toBe(
       "A saved design",
     );
-    await act(async () => button("Library").click());
+    await act(async () => button("All").click());
     expect(router.state.location.pathname).toBe("/");
   });
 

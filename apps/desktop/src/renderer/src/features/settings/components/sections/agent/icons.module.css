@@ -1,0 +1,9 @@
+.logo {
+  display: block;
+  flex-shrink: 0;
+  object-fit: cover;
+  background-clip: padding-box;
+  border: var(--ds-border-elevated);
+  border-radius: 22%;
+  box-shadow: var(--ds-shadow-1);
+}

@@ -5,8 +5,6 @@ import { useFolders } from "@/features/library/state/folders";
 import { libraryHeader } from "@/features/library/state/library-header";
 import {
   setSearchInput,
-  setSemanticQuery,
-  setVisualProbe,
   useFilterQuery,
   useSearchText,
   useSemanticQuery,
@@ -125,7 +123,6 @@ export function FilterBarView({
       ? (["semantic"] as const)
       : []),
   ];
-  const overlayActive = Boolean(semantic || visual);
   const chips = [
     ...fields.filter((field) => field === "color"),
     ...shownOverlays,
@@ -200,20 +197,6 @@ export function FilterBarView({
           semanticActive={Boolean(semantic)}
           visualActive={Boolean(visual)}
         />
-        {rows.length > 0 || overlayActive ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            className={styles.reset}
-            onClick={() => {
-              apply([]);
-              setSemanticQuery(null);
-              setVisualProbe(null);
-            }}
-          >
-            Clear Filters
-          </Button>
-        ) : null}
       </div>
     </fieldset>
   );

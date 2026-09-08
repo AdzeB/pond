@@ -1,5 +1,7 @@
 import type { Source, WatchKind } from "@pond/schema/db";
 import log from "electron-log/main.js";
+import { COSMOS_RESERVED_ROOTS } from "../pipeline/extractors/sources/cosmos";
+import { PINTEREST_RESERVED_ROOTS } from "../pipeline/extractors/sources/pinterest";
 import { type FetchWatchPage, verifyWatchTarget } from "./verify";
 
 export interface WatchTarget {
@@ -18,27 +20,6 @@ const ARENA_USER_TABS = new Set([
   "followers",
   "following",
   "all",
-]);
-
-const PINTEREST_RESERVED = new Set([
-  "pin",
-  "search",
-  "ideas",
-  "today",
-  "settings",
-  "business",
-  "news_hub",
-]);
-
-const COSMOS_RESERVED = new Set([
-  "e",
-  "discover",
-  "explore",
-  "library",
-  "login",
-  "signup",
-  "sign-in",
-  "onboarding",
 ]);
 
 function parseUrl(input: string): URL | null {
@@ -247,7 +228,8 @@ function resolvePinterest(input: string, url: URL | null): WatchTarget | null {
     }
     const segs = segmentsOf(url);
     const first = segs[0];
-    if (!first || PINTEREST_RESERVED.has(first.toLowerCase())) return null;
+    if (!first || PINTEREST_RESERVED_ROOTS.has(first.toLowerCase()))
+      return null;
     const board = segs[1];
     if (board && !board.startsWith("_") && board !== "feed.rss") {
       return target("board", `${first}/${board}`);
@@ -268,7 +250,7 @@ function resolveCosmos(input: string, url: URL | null): WatchTarget | null {
     if (!hostIs(url, "cosmos.so")) return null;
     const segs = segmentsOf(url);
     const first = segs[0];
-    if (!first || COSMOS_RESERVED.has(first.toLowerCase())) return null;
+    if (!first || COSMOS_RESERVED_ROOTS.has(first.toLowerCase())) return null;
     return segs[1]
       ? target("cluster", `${first}/${segs[1]}`)
       : target("user", first, `@${first}`);

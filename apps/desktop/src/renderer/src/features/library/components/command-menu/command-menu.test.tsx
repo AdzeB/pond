@@ -82,7 +82,7 @@ describe("command menu", () => {
     expect(document.body.textContent).toContain("Import Files");
     expect(document.body.textContent).toContain("Navigate");
     expect(document.body.textContent).toContain("Library");
-    expect(document.body.textContent).toContain("Keyboard Shortcuts");
+    expect(document.body.textContent).toContain("Open Settings");
     expect(document.body.textContent).toContain("Navigate");
   });
 

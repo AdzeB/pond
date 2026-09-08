@@ -376,6 +376,7 @@ function migratePond(sqlite: Database.Database): void {
 
   addColumnIfMissing(sqlite, "saved_views", "question", "TEXT");
   addColumnIfMissing(sqlite, "agent_messages", "metadata", "TEXT");
+  addColumnIfMissing(sqlite, "agent_chats", "canonical_transcript", "TEXT");
   addColumnIfMissing(sqlite, "tags", "archived", "INTEGER NOT NULL DEFAULT 0");
   addColumnIfMissing(sqlite, "tags", "description", "TEXT");
   addColumnIfMissing(sqlite, "tag_groups", "description", "TEXT");

@@ -12,9 +12,3 @@ const created = createRowSelectionStore<SourceTableRow>(
 );
 
 export const sourcesSelection: RowSelectionStore<SourceTableRow> = created;
-export function useSourcesSelectionSize(): number {
-  return created.useSize();
-}
-export function useSourcesSelectionRows(): readonly SourceTableRow[] {
-  return created.useRows();
-}

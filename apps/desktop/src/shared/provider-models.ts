@@ -11,6 +11,7 @@ const TOKENS = new Map([
 export function displayName(id: string): string {
   return id
     .replace(/^models\//, "")
+    .replace(/^(claude-(?:haiku|opus|sonnet))-(\d+)-(\d+)(?=-|$)/, "$1-$2.$3")
     .split(/[-_/]/)
     .filter(Boolean)
     .map((part) => {
@@ -38,4 +39,15 @@ export function chosenModelId(
   if (provider === "lmstudio") return prefs.lmstudioModelId?.trim() ?? "";
   if (provider === "compatible") return prefs.compatibleModelId?.trim() ?? "";
   return "";
+}
+
+export function modelsForChooser(
+  models: ProviderModel[],
+  visibleIds: string[] | undefined,
+): ProviderModel[] {
+  if (visibleIds === undefined) return models;
+  return [...new Set(visibleIds)].map(
+    (id) =>
+      models.find((model) => model.id === id) ?? { id, name: displayName(id) },
+  );
 }

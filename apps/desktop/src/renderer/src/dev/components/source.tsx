@@ -2,27 +2,66 @@ import { Button } from "@pond/ui";
 import { useEffect, useState } from "react";
 import styles from "./components.module.css";
 
-const files = import.meta.glob<string>(
-  "../../../../../../../packages/ui/src/**/{index.tsx,data-table.tsx,dialog.tsx,styles.module.css}",
+const uiFiles = import.meta.glob<string>(
+  "../../../../../../../packages/ui/src/**/*.{ts,tsx,css}",
+  { query: "?raw", import: "default" },
+);
+const themeFiles = import.meta.glob<string>(
+  "../../../../../../../packages/theme/src/**/*.css",
   { query: "?raw", import: "default" },
 );
 
-export function ComponentSource({ folder }: { folder: string }) {
-  const options = [
-    {
-      label: "Styles",
-      file: `${folder}/styles.module.css`,
-    },
-    {
-      label: "Component",
-      file: `${folder}/${folder === "data-table" ? "data-table.tsx" : folder === "dialog" ? "dialog.tsx" : "index.tsx"}`,
-    },
-  ].filter(({ file }) => files[`../../../../../../../packages/ui/src/${file}`]);
+export function ComponentSource({
+  folder,
+  pkg = "ui",
+}: {
+  folder: string;
+  pkg?: "ui" | "theme";
+}) {
+  const files = pkg === "theme" ? themeFiles : uiFiles;
+  const prefix = `../../../../../../../packages/${pkg}/src/${folder}/`;
+  const options = Object.keys(files)
+    .filter(
+      (path) =>
+        path.startsWith(prefix) &&
+        !path.slice(prefix.length).includes("/") &&
+        !path.includes(".test."),
+    )
+    .map((path) => {
+      const filename = path.slice(prefix.length);
+      const componentName = filename
+        .replace(/\.(module\.css|tsx?|css)$/, "")
+        .split("-")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+      return {
+        order:
+          filename === `${folder.split("/").at(-1)}.tsx` ||
+          filename === "index.tsx"
+            ? 0
+            : filename.endsWith(".css")
+              ? 2
+              : 1,
+        file: `${folder}/${filename}`,
+        label:
+          filename === "styles.module.css"
+            ? "Styles"
+            : filename === "index.ts"
+              ? "Exports"
+              : filename === "index.tsx"
+                ? "Component"
+                : `${componentName}${filename.endsWith(".css") ? " Styles" : ""}`,
+      };
+    })
+    .sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
   const [file, setFile] = useState(options[0]?.file ?? "");
   const [source, setSource] = useState("");
   const [error, setError] = useState(false);
   const [copyStatus, setCopyStatus] = useState("");
-  const path = `packages/ui/src/${file}`;
+  const selectedFile = options.some((option) => option.file === file)
+    ? file
+    : (options[0]?.file ?? "");
+  const path = `packages/${pkg}/src/${selectedFile}`;
 
   useEffect(() => {
     let active = true;
@@ -45,7 +84,7 @@ export function ComponentSource({ folder }: { folder: string }) {
     return () => {
       active = false;
     };
-  }, [path]);
+  }, [files, path]);
 
   async function copy(text: string) {
     try {
@@ -64,8 +103,8 @@ export function ComponentSource({ folder }: { folder: string }) {
             <Button
               key={value}
               size="xs"
-              variant={file === value ? "tertiary" : "ghost"}
-              aria-pressed={file === value}
+              variant={selectedFile === value ? "tertiary" : "ghost"}
+              aria-pressed={selectedFile === value}
               onClick={() => setFile(value)}
             >
               {label}
@@ -94,7 +133,7 @@ export function ComponentSource({ folder }: { folder: string }) {
         <code>
           {error
             ? "Source unavailable. Open the file at the path above."
-            : source || "Loading source…"}
+            : source || "Loading source"}
         </code>
       </pre>
     </section>

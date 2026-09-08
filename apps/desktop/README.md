@@ -11,7 +11,7 @@ Run these commands from `apps/desktop`, or prefix them at the repository root wi
 | Script | What it does |
 |---|---|
 | `pnpm dev` | Launch Electron + Vite renderer in dev mode |
-| `pnpm dev:components` | Open the component gallery without launching Electron |
+| `pnpm dev:components` | Open the component gallery without launching Electron (`/components.html`). Shadow tokens: `/shadows.html`. |
 | `pnpm typecheck` | Regenerate TanStack routes and check main, preload, and renderer types |
 | `pnpm test` | Run offline desktop tests |
 | `pnpm build` | Build main/preload/renderer into `out/` |

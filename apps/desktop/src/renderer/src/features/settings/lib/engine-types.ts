@@ -16,7 +16,7 @@ export interface SettingsValues {
 
 export interface Binding<V = SettingsValues> {
   values: V;
-  patch(delta: Partial<V>): void;
+  patch(delta: Partial<V>): void | Promise<void>;
   loaded: boolean;
 }
 
@@ -94,8 +94,6 @@ export interface GroupConfig {
   title?: ReactNode;
   visible?: (values: SettingsValues) => boolean;
   fullWidth?: boolean;
-  collapsible?: boolean;
-  defaultCollapsed?: boolean;
   items?: Item[];
   render?: (binding: Binding) => ReactNode;
   prefsKey?: keyof Prefs;
@@ -165,8 +163,6 @@ interface TypedGroupInput<V> {
   title?: ReactNode;
   visible?: (values: SettingsValues) => boolean;
   fullWidth?: boolean;
-  collapsible?: boolean;
-  defaultCollapsed?: boolean;
   items?: TypedItem<V>[];
   render?: (binding: Binding) => ReactNode;
 }

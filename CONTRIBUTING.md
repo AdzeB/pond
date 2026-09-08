@@ -6,7 +6,7 @@
 - **Style**: [Biome](https://biomejs.dev/) handles formatting; `pnpm lint` and `pnpm oxlint` check the repository standards.
 - **Commits**: [Conventional Commits](https://www.conventionalcommits.org/) enforced by commitlint + husky.
 - **Checks**: run `pnpm check` and `pnpm build` before opening a PR. CI also checks generated source documentation.
-- **PRs**: Keep scope focused; link issues when relevant. Generated source documentation must stay in sync: run `pnpm generate` after descriptor changes. Icon regeneration has its own [licensed tooling requirements](packages/icons/README.md#regenerating-ui-glyphs).
+- **PRs**: Keep scope focused; link issues when relevant. Generated source documentation must stay in sync: run `pnpm generate` after descriptor changes.
 
 ## Engineering standards
 

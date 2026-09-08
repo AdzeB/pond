@@ -1,4 +1,4 @@
-import type { Source } from "@pond/schema/db";
+import { SOURCES, type Source } from "@pond/schema/db";
 
 export function cookieDomainsForSource(source: Source): string[] {
   switch (source) {
@@ -24,4 +24,18 @@ export function cookieDomainsForSource(source: Source): string[] {
     case "local":
       return [];
   }
+}
+
+export function isCookieSourceUrl(url: string): boolean {
+  let host: string;
+  try {
+    host = new URL(url).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  return SOURCES.some((source) =>
+    cookieDomainsForSource(source).some(
+      (domain) => host === domain || host.endsWith(`.${domain}`),
+    ),
+  );
 }

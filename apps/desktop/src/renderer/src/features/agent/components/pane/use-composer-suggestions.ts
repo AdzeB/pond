@@ -1,4 +1,5 @@
 import { IconFileOutline18 } from "@pond/icons/outline/18";
+import type { IconComponent } from "@pond/icons/types";
 import { type AssistantSource, assistantSources } from "@shared/assistant";
 import {
   type KeyboardEvent,
@@ -15,6 +16,7 @@ import {
 } from "./composer-trigger";
 
 const AssistantSearchSchema = z.object({ saves: assistantSources });
+const fileIcon: IconComponent = IconFileOutline18;
 
 export function useComposerSuggestions({
   value,
@@ -96,7 +98,7 @@ export function useComposerSuggestions({
           id: save.id,
           title: save.title || "Untitled",
           detail: save.source,
-          icon: IconFileOutline18,
+          icon: fileIcon,
           save,
           prompt: save.title || "this Save",
         }))
@@ -121,7 +123,11 @@ export function useComposerSuggestions({
   function choose(id: string) {
     const option = options.find((option) => option.id === id);
     if (!trigger || !option) return;
-    const next = replaceComposerTrigger(value, trigger, option.prompt);
+    const next = replaceComposerTrigger(
+      value,
+      trigger,
+      option.save ? "" : option.prompt,
+    );
     if (option.save) onAttach([option.save]);
     dismiss();
     onChange(next.value);

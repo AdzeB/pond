@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { openShortcutsSheet } from "@/app/components/shortcuts-sheet/shortcuts-sheet";
 import { isLayoutValue } from "@/features/library/lib/view-prefs";
 import { ZOOM_DEFAULT } from "@/features/library/lib/zoom";
 import { commandMenu } from "@/features/library/state/command-menu";
@@ -74,10 +73,6 @@ export function MenuBridge() {
 
         case "view.zoom-reset":
           setZoom(ZOOM_DEFAULT);
-          return;
-
-        case "help.shortcuts":
-          openShortcutsSheet();
           return;
 
         case "library.search":

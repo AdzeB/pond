@@ -1,3 +1,4 @@
+import { unlinkSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { createConnection } from "node:net";
 import { tmpdir } from "node:os";
@@ -71,6 +72,53 @@ describe("native unix server", () => {
         error: "invalid",
       });
       expect(dispatch).not.toHaveBeenCalled();
+    } finally {
+      await stopNativeServer(server);
+    }
+  });
+
+  it("keeps the replacement socket reachable after the previous listener stops", async () => {
+    dir = await mkdtemp(join(tmpdir(), "pond-native-"));
+    const path = join(dir, "native.sock");
+    const first = await startNativeServer({
+      path,
+      dispatch: async () => ({ ok: true as const, data: { n: 1 } }),
+    });
+    const second = await startNativeServer({
+      path,
+      dispatch: async () => ({ ok: true as const, data: { n: 2 } }),
+    });
+    await stopNativeServer(first);
+    await vi.waitFor(
+      async () => {
+        await expect(readFrame(path, { type: "hello" })).resolves.toEqual({
+          ok: true,
+          data: { n: 2 },
+        });
+      },
+      { timeout: 3000, interval: 50 },
+    );
+    await stopNativeServer(second);
+  });
+
+  it("restores the socket file if it disappears while listening", async () => {
+    dir = await mkdtemp(join(tmpdir(), "pond-native-"));
+    const path = join(dir, "native.sock");
+    const server = await startNativeServer({
+      path,
+      dispatch: async () => ({ ok: true as const, data: { app: "pond" } }),
+    });
+    try {
+      unlinkSync(path);
+      await vi.waitFor(
+        async () => {
+          await expect(readFrame(path, { type: "hello" })).resolves.toEqual({
+            ok: true,
+            data: { app: "pond" },
+          });
+        },
+        { timeout: 3000, interval: 100 },
+      );
     } finally {
       await stopNativeServer(server);
     }

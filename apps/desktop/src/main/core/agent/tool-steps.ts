@@ -1,8 +1,7 @@
-import type { JsonObject } from "@pond/schema/json";
+import type { ChatMiddleware } from "@tanstack/ai";
 import { z } from "zod";
 import type { AssistantToolStep } from "../../../shared/assistant";
 import { sourceExcerpt } from "../../../shared/assistant-text";
-import type { ToolSpec } from "./complete";
 
 const labels = new Map<string, string>(
   Object.entries({
@@ -21,8 +20,7 @@ const labels = new Map<string, string>(
   }),
 );
 
-export function trackTools(
-  tools: ToolSpec[],
+export function createToolTracker(
   signal: AbortSignal,
   onSteps?: (steps: AssistantToolStep[]) => void,
 ) {
@@ -33,50 +31,47 @@ export function trackTools(
     );
     onSteps?.(steps);
   };
-  return {
-    steps: () => steps,
-    tools: tools.map((tool) => {
-      const label = labels.get(tool.name);
-      if (!label) return tool;
-      return {
-        ...tool,
-        execute: async (args: JsonObject) => {
-          signal.throwIfAborted();
-          const id = `step-${steps.length + 1}`;
-          const started = Date.now();
-          steps = [
-            ...steps,
-            {
-              id,
-              label,
-              detail:
-                tool.name === "searchLibrary"
-                  ? sourceExcerpt(
-                      z.string().catch("Recent Saves").parse(args.query),
-                      150,
-                    )
-                  : undefined,
-              status: "running",
-            },
-          ];
-          onSteps?.(steps);
-          try {
-            const result = await tool.execute(args);
-            signal.throwIfAborted();
-            update(id, {
-              status: "complete",
-              elapsedMs: Date.now() - started,
-            });
-            return result;
-          } catch (error) {
-            update(id, {
-              status: signal.aborted ? "stopped" : "error",
-              elapsedMs: Date.now() - started,
-            });
-            throw error;
-          }
-        },
-      };
-    }),
+  const finishPending = () => {
+    steps = steps.map((step) =>
+      step.status === "running"
+        ? { ...step, status: signal.aborted ? "stopped" : "error" }
+        : step,
+    );
+    onSteps?.(steps);
   };
+  const middleware: ChatMiddleware = {
+    name: "pond-tool-activity",
+    onBeforeToolCall(_context, info) {
+      signal.throwIfAborted();
+      const label = labels.get(info.toolName);
+      if (!label) return;
+      const args = z
+        .object({ query: z.string().catch("Recent Saves") })
+        .catch({ query: "Recent Saves" })
+        .parse(info.args);
+      steps = [
+        ...steps,
+        {
+          id: info.toolCallId,
+          label,
+          detail:
+            info.toolName === "searchLibrary"
+              ? sourceExcerpt(args.query, 150)
+              : undefined,
+          status: "running",
+        },
+      ];
+      onSteps?.(steps);
+    },
+    onAfterToolCall(_context, info) {
+      update(info.toolCallId, {
+        status: signal.aborted ? "stopped" : info.ok ? "complete" : "error",
+        elapsedMs: info.duration,
+      });
+    },
+    onFinish: finishPending,
+    onAbort: finishPending,
+    onError: finishPending,
+  };
+  return { steps: () => steps, middleware };
 }

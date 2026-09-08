@@ -31,6 +31,11 @@ allowBuilds:
   es5-ext: false
   esbuild: true
   ffmpeg-static: true
+  # Nucleo preinstall calls their license API. The icon modules already ship in dist.
+  nucleo-ui-fill-12: false
+  nucleo-ui-fill-18: false
+  nucleo-ui-outline-12: false
+  nucleo-ui-outline-18: false
   onnxruntime-node: true
   protobufjs: true
   # Native module pulled in transitively by metascraper (via url-regex-safe).

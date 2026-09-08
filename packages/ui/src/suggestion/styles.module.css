@@ -1,0 +1,17 @@
+.label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.muted {
+  font-size: var(--ds-text-small);
+  color: var(--ds-gray-10);
+}
+
+.menuItem {
+  composes: item from "../shared/styles/popup/styles.module.css";
+}
+
+.separator {
+  composes: separator from "../shared/styles/popup/styles.module.css";
+}

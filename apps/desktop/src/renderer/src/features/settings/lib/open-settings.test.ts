@@ -13,7 +13,19 @@ describe("settings hrefs", () => {
 
   it("keeps canonical section paths", () => {
     expect(resolveSettingsSection("models")).toBe("models");
-    expect(settingsHref("mcp")).toBe("/settings/mcp");
+    expect(settingsHref("mcp")).toBe("/settings/models");
+    expect(settingsHref("schedule")).toBe("/settings/videos");
+    expect(settingsHref("harvesting")).toBe("/settings/videos");
+    expect(settingsHref("downloads")).toBe("/settings/videos");
+  });
+
+  it("preserves fields when opening merged pages", () => {
+    expect(settingsHref("images", "setting-images-format")).toBe(
+      "/settings/videos#setting-videos-format",
+    );
+    expect(settingsHref("trash", "setting-trash-autoEmptyDays")).toBe(
+      "/settings/storage#setting-storage-autoEmptyDays",
+    );
   });
 
   it("maps aliases and unknown paths onto real sections", () => {

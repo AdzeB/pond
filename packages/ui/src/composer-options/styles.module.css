@@ -1,0 +1,68 @@
+.optionGroup {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 6px;
+}
+
+.groupLabel {
+  padding: 6px 10px;
+  font-size: var(--ds-text-mini);
+  color: var(--ds-gray-9);
+}
+
+.option {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+  width: 100%;
+  height: auto;
+  min-height: 36px;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.optionIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  color: var(--ds-gray-10);
+}
+
+.optionLabel {
+  flex-shrink: 0;
+}
+
+.optionDescription {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-small);
+  color: var(--ds-gray-9);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.trailing {
+  margin-left: auto;
+  color: var(--ds-gray-9);
+}
+
+@container (width < 420px) {
+  .option {
+    flex-wrap: wrap;
+    row-gap: 3px;
+  }
+  .optionDescription {
+    flex-basis: 100%;
+    margin-left: 28px;
+    white-space: normal;
+  }
+}
+
+.optionGroup,
+.questionOptions,
+fieldset.pickerList {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+}

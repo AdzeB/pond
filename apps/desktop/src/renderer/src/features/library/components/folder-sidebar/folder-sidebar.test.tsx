@@ -22,6 +22,9 @@ const pondQuery = vi.fn(async (name: string) => {
   if (name === "savedViews.list") return savedViewList.current;
   if (name === "accounts.list") return { accounts: [] };
   if (name === "watches.list") return { watches: [] };
+  if (name === "tags.list") return [];
+  if (name === "folders.list") return [];
+  if (name === "folders.memberships") return [];
   if (name === "settings.getPrefs") return PrefsSchema.parse({});
   return { ok: true };
 });
@@ -65,22 +68,35 @@ describe("folder sidebar", () => {
     vi.unstubAllGlobals();
   });
 
+  function rowLabel(node: Element) {
+    return node.textContent?.replace(/[\d,]+$/, "").trim() ?? "";
+  }
+
   function button(label: string) {
     const match = [...host.querySelectorAll("button")].find(
-      (node) => node.textContent?.trim() === label,
+      (node) => rowLabel(node) === label,
     );
     if (!match) throw new Error(`Missing sidebar button: ${label}`);
     return match;
   }
 
+  function iconButton(label: string) {
+    const match = host.querySelector(`[aria-label="${label}"]`);
+    if (!(match instanceof HTMLElement)) {
+      throw new Error(`Missing icon button: ${label}`);
+    }
+    return match;
+  }
+
   async function mount(path = "/") {
     const rootRoute = createRootRoute({ component: FolderSidebar });
-    const children = ["/", "/sources", "/tags", "/assistant"].map((path) =>
-      createRoute({
-        getParentRoute: () => rootRoute,
-        path,
-        component: () => null,
-      }),
+    const children = ["/", "/sources", "/tags", "/assistant", "/untagged"].map(
+      (path) =>
+        createRoute({
+          getParentRoute: () => rootRoute,
+          path,
+          component: () => null,
+        }),
     );
     const router = createRouter({
       routeTree: rootRoute.addChildren(children),
@@ -110,13 +126,32 @@ describe("folder sidebar", () => {
     expect(button("Sources").getAttribute("aria-current")).toBe("page");
   });
 
-  it("does not show Uncategorized in the sidebar", async () => {
+  it("opens Uncategorized from the sidebar", async () => {
+    const router = await mount();
+    await act(async () => button("Uncategorized").click());
+    expect(router.state.location.pathname).toBe("/");
+    expect(libraryChrome.getState().nav).toEqual({ kind: "uncategorized" });
+    expect(button("Uncategorized").getAttribute("aria-current")).toBe("page");
+    expect(button("All").getAttribute("aria-current")).toBeNull();
+  });
+
+  it("opens Untagged from the sidebar", async () => {
+    const router = await mount();
+    await act(async () => button("Untagged").click());
+    expect(router.state.location.pathname).toBe("/untagged");
+    expect(button("Untagged").getAttribute("aria-current")).toBe("page");
+    expect(button("All").getAttribute("aria-current")).toBeNull();
+  });
+
+  it("shows counts on library destinations", async () => {
     await mount();
-    expect(
-      [...host.querySelectorAll("button")].some(
-        (node) => node.textContent?.trim() === "Uncategorized",
-      ),
-    ).toBe(false);
+    expect(button("All").textContent).toContain("0");
+    expect(button("Uncategorized").textContent).toContain("0");
+    expect(button("Untagged").textContent).toContain("0");
+    expect(button("Tags").textContent).toContain("0");
+    expect(button("Trash").textContent).toContain("0");
+    expect(button("Downloads").textContent).toContain("0");
+    expect(button("Sources").textContent).toContain("0");
   });
 
   it("opens Tags from the sidebar with an outline icon", async () => {
@@ -127,16 +162,17 @@ describe("folder sidebar", () => {
     await act(async () => tags.click());
     expect(router.state.location.pathname).toBe("/tags");
     expect(tags.getAttribute("aria-current")).toBe("page");
-    expect(button("Library").getAttribute("aria-current")).toBeNull();
+    expect(button("All").getAttribute("aria-current")).toBeNull();
   });
 
   it.each([
     ["/sources", "Sources"],
     ["/tags", "Tags"],
+    ["/untagged", "Untagged"],
   ])("highlights only %s when opened directly", async (path, label) => {
     await mount(path);
     expect(host.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
-    expect(host.querySelector('[aria-current="page"]')?.textContent).toBe(
+    expect(rowLabel(host.querySelector('[aria-current="page"]') ?? host)).toBe(
       label,
     );
   });
@@ -144,29 +180,71 @@ describe("folder sidebar", () => {
   it.each([
     ["/sources", "Sources"],
     ["/tags", "Tags"],
+    ["/untagged", "Untagged"],
   ])("updates the %s highlight across route history", async (path, label) => {
     const router = await mount(path);
-    await act(async () => button("Library").click());
+    await act(async () => button("All").click());
     expect(router.state.location.pathname).toBe("/");
-    expect(button("Library").getAttribute("aria-current")).toBe("page");
+    expect(button("All").getAttribute("aria-current")).toBe("page");
     await act(async () => router.history.back());
     expect(router.state.location.pathname).toBe(path);
     expect(button(label).getAttribute("aria-current")).toBe("page");
-    expect(button("Library").getAttribute("aria-current")).toBeNull();
-    await act(async () => button("Assistant").click());
+    expect(button("All").getAttribute("aria-current")).toBeNull();
+    await act(async () => iconButton("Assistant").click());
     expect(button(label).getAttribute("aria-current")).toBeNull();
-    expect(button("Assistant").getAttribute("aria-current")).toBe("page");
+    expect(iconButton("Assistant").getAttribute("aria-current")).toBe("page");
   });
 
-  it("keeps Assistant with destinations, not Saved Views", async () => {
+  it("places Assistant between Search and New", async () => {
     await mount();
-    const labels = [...host.querySelectorAll("button")].map((node) =>
-      node.textContent?.trim(),
+    const search = iconButton("Search");
+    const assistant = iconButton("Assistant");
+    const create = iconButton("New");
+    expect(
+      search.compareDocumentPosition(assistant) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      assistant.compareDocumentPosition(create) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("opens Assistant from the header", async () => {
+    const router = await mount();
+    await act(async () => iconButton("Assistant").click());
+    expect(router.state.location.pathname).toBe("/assistant");
+    expect(iconButton("Assistant").getAttribute("aria-current")).toBe("page");
+    expect(button("All").getAttribute("aria-current")).toBeNull();
+  });
+
+  it("groups library destinations before downloads", async () => {
+    await mount();
+    const labels = [...host.querySelectorAll("button")].map(rowLabel);
+    const library = labels.indexOf("All");
+    const uncategorized = labels.indexOf("Uncategorized");
+    const untagged = labels.indexOf("Untagged");
+    const tags = labels.indexOf("Tags");
+    const trash = labels.indexOf("Trash");
+    const downloads = labels.indexOf("Downloads");
+    const sources = labels.indexOf("Sources");
+    expect(library).toBeLessThan(uncategorized);
+    expect(uncategorized).toBeLessThan(untagged);
+    expect(untagged).toBeLessThan(tags);
+    expect(tags).toBeLessThan(trash);
+    expect(trash).toBeLessThan(downloads);
+    expect(downloads).toBeLessThan(sources);
+  });
+
+  it("does not collapse library and downloads groups", async () => {
+    await mount();
+    const toggles = [...host.querySelectorAll("button[aria-expanded]")].map(
+      (node) => node.textContent?.trim(),
     );
-    expect(labels.indexOf("Assistant")).toBeGreaterThan(-1);
-    expect(labels.indexOf("Assistant")).toBeLessThan(
-      labels.indexOf("Saved Views"),
-    );
+    expect(toggles).toContain("Saved Views");
+    expect(toggles).toContain("Folders");
+    expect(toggles).not.toContain("Library");
+    expect(toggles).not.toContain("Downloads");
   });
 
   async function mountUnreadView() {

@@ -11,7 +11,7 @@ import {
   pipelineEvents,
   type SaveIngestEvent,
 } from "@pond/schema/events";
-import { and, desc, eq, inArray, like, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, like, lt, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { pipelineSnapshot } from "../../core/pipeline/reconciler-client";
 import { getDb } from "../../db";
@@ -91,6 +91,21 @@ function toHistoryRow(row: HistoryRow): DownloadHistoryRow | null {
 
 export const downloadsQueries = {
   "pipeline.status": query(z.object({}), () => pipelineSnapshot()),
+
+  /** In-flight and failed saves can sit behind the paged library window. */
+  "downloads.live": query(z.object({}), async () => {
+    const db = await getDb();
+    const rows = await db
+      .select({ id: saves.id })
+      .from(saves)
+      .where(
+        and(
+          isNull(saves.deletedAt),
+          inArray(saves.status, ["ingesting", "failed"]),
+        ),
+      );
+    return rows.map((row) => row.id);
+  }),
 
   /** Task rows change state without a sync action, so the downloads view polls for what is in flight. */
   "pipeline.inflight": query(z.object({}), async () => {

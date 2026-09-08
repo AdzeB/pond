@@ -28,6 +28,8 @@
   outline: none;
   background: var(--ds-gray-1);
   border-radius: 20px;
+  border: var(--ds-border-elevated);
+  background-clip: padding-box;
   box-shadow: var(--ds-shadow-dialog);
   transform: translate(-50%, var(--dialog-offset-y, -50%));
   transform-origin: top center;

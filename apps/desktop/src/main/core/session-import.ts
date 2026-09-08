@@ -5,6 +5,8 @@ import type {
 } from "@pond/schema/session";
 import { session } from "electron";
 import log from "electron-log/main.js";
+import { IPC } from "../../shared/constants";
+import { broadcast } from "../lib/broadcast";
 import { clearPendingSessionSource } from "../pending-session";
 import { extractorFor } from "./pipeline/extractors";
 import {
@@ -89,6 +91,21 @@ export async function importSessionCookies(
       reason: "session_not_authenticated",
     };
   }
+  if (
+    source === "cosmos" &&
+    !resolution.probedHandle &&
+    resolution.kind !== "identity_match"
+  ) {
+    log.info(
+      `[pond session-import] ${source}: cookies present but GraphQL me did not return a user`,
+    );
+    return {
+      ok: false,
+      imported: 0,
+      connected: false,
+      reason: "session_not_authenticated",
+    };
+  }
   const account = resolution.account;
 
   const { written, skipped } = await writePartitionCookies({
@@ -104,7 +121,7 @@ export async function importSessionCookies(
   if (identityKey && account.identityKey !== identityKey) {
     patch.identityKey = identityKey;
   }
-  if (resolution.probedHandle && !account.handle) {
+  if (resolution.probedHandle && resolution.probedHandle !== account.handle) {
     patch.handle = resolution.probedHandle;
   }
   if (source === "reddit") {
@@ -123,6 +140,20 @@ export async function importSessionCookies(
       }
     }
   }
+  if (source === "cosmos") {
+    const { fetchCosmosViewer } = await import("./refresh/harvest/cosmos/api");
+    const viewer = await fetchCosmosViewer(partitionForAccount(account.id));
+    if (viewer) {
+      if (viewer.handle !== account.handle) patch.handle = viewer.handle;
+      if (account.identityKey !== viewer.userId) {
+        patch.identityKey = viewer.userId;
+      }
+      if (viewer.avatarUrl) {
+        patch.avatarUrl = viewer.avatarUrl;
+        patch.avatarCheckedAt = new Date().toISOString();
+      }
+    }
+  }
   if (Object.keys(patch).length > 0) {
     await patchAccount(account.id, patch).catch((err) =>
       log.warn("[pond session-import] identity patch failed", err),
@@ -137,10 +168,16 @@ export async function importSessionCookies(
 
   clearPendingSessionSource(source);
 
+  broadcast(IPC.sessionImported, {
+    source,
+    accountId: account.id,
+  });
+
   return {
     ok: true,
     imported: written,
     connected: true,
+    accountId: account.id,
   };
 }
 

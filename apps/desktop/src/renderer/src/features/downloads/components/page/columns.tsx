@@ -1,10 +1,10 @@
 // biome-ignore-all lint/a11y/useSemanticElements: matches DataTable's ARIA grid structure.
 // biome-ignore-all lint/a11y/useFocusableInteractive: each cell contains a keyboard-focusable control.
-import { IconMediaPauseFill18 } from "@pond/icons/fill/18";
 import {
   IconCheckOutline18,
   IconChevronRightOutline18,
   IconDownloadOutline18,
+  IconMediaPauseOutline18,
   IconTriangleWarningOutline18,
   IconXmarkOutline18,
 } from "@pond/icons/outline/18";
@@ -15,7 +15,7 @@ import {
   Tooltip,
 } from "@pond/ui";
 import { useMutation } from "@tanstack/react-query";
-import { Children, useId, useState } from "react";
+import { useId, useState } from "react";
 import {
   type DownloadRow,
   statusFeed,
@@ -27,10 +27,44 @@ import { openSave } from "@/features/saves/lib/save-nav";
 import { getSourceLabel } from "@/features/saves/lib/source-labels";
 import { getSourceIcon, getSourceLogo } from "@/features/sources/lib/registry";
 import { relativeTimeFromMs } from "@/shared/lib/relative-time";
+import { IconSwap } from "./icon-swap";
 import styles from "./page.module.css";
 
 export const downloadsColumns: TableColumn<DownloadRow>[] = [
-  { id: "time", accessor: (row) => row.ts, cell: () => null },
+  {
+    id: "name",
+    header: "Name",
+    sortLabel: "Name",
+    accessor: (row) => row.name,
+    width: "minmax(220px, 1fr)",
+    cell: () => null,
+  },
+  {
+    id: "status",
+    header: "Status",
+    sortLabel: "Status",
+    accessor: (row) => row.status,
+    width: "180px",
+    cell: () => null,
+  },
+  {
+    id: "source",
+    header: "Source",
+    sortLabel: "Source",
+    accessor: (row) => getSourceLabel(row.source),
+    width: "120px",
+    cell: () => null,
+  },
+  {
+    id: "time",
+    header: "Updated",
+    sortLabel: "Updated",
+    accessor: (row) => row.ts,
+    sort: "number",
+    width: "112px",
+    cell: () => null,
+  },
+  { id: "actions", headerHidden: true, width: "40px", cell: () => null },
 ];
 
 function DownloadThumbnail({ row }: { row: DownloadRow }) {
@@ -62,7 +96,6 @@ function DownloadThumbnail({ row }: { row: DownloadRow }) {
 
 export function DownloadQueueRow({
   row,
-  cells,
   rowProps,
   paused,
 }: RenderRowArgs<DownloadRow> & { paused: boolean }) {
@@ -103,15 +136,33 @@ export function DownloadQueueRow({
   return (
     <div
       {...rowProps}
-      className={styles.row}
-      style={undefined}
+      className={`${rowProps.className} ${styles.row}`}
       data-status={row.status}
       data-moving={running || undefined}
       data-processing={processing || undefined}
       data-paused={stopped || undefined}
     >
-      <div className={styles.rail}>
-        <div className={styles.selection}>{Children.toArray(cells)[0]}</div>
+      <div role="gridcell" className={styles.content}>
+        <button
+          type="button"
+          className={styles.open}
+          aria-label={`Open ${title}`}
+          aria-describedby={`${descriptionId} ${descriptionId}-status`}
+        >
+          <DownloadThumbnail row={row} />
+          <span className={styles.copy} id={descriptionId}>
+            <strong className={styles.title} title={title}>
+              {title}
+            </strong>
+            {attention && row.error ? (
+              <span className={styles.error} title={row.error}>
+                {row.error}
+              </span>
+            ) : null}
+          </span>
+        </button>
+      </div>
+      <div role="gridcell" className={styles.status} title={status}>
         <span className={styles.activity} aria-hidden="true">
           {attention ? (
             <IconTriangleWarningOutline18 />
@@ -120,56 +171,20 @@ export function DownloadQueueRow({
           ) : cancelled ? (
             <IconXmarkOutline18 />
           ) : stopped ? (
-            <IconMediaPauseFill18 />
+            <IconMediaPauseOutline18 />
           ) : (
             <IconDownloadOutline18 />
           )}
-          {cancellable ? (
-            <span className={styles.pixels}>
-              <i />
-              <i />
-              <i />
-              <i />
-              <i />
-              <i />
-              <i />
-              <i />
-              <i />
-            </span>
-          ) : null}
+        </span>
+        <span className={styles.stage} id={`${descriptionId}-status`}>
+          {status}
         </span>
       </div>
-      <div role="gridcell" className={styles.content}>
-        <button
-          type="button"
-          className={styles.open}
-          aria-label={`Open ${title}`}
-          aria-describedby={descriptionId}
-        >
-          <DownloadThumbnail row={row} />
-          <span className={styles.copy} id={descriptionId}>
-            <strong className={styles.title} title={title}>
-              {title}
-            </strong>
-            <span className={styles.meta}>
-              <span className={styles.source}>
-                {getSourceLabel(row.source)}
-              </span>
-              <span aria-hidden="true">·</span>
-              <span className={styles.stage}>{status}</span>
-              {row.status === "complete" ? (
-                <span className={styles.time}>
-                  · {relativeTimeFromMs(row.ts)}
-                </span>
-              ) : null}
-            </span>
-            {attention && row.error ? (
-              <span className={styles.error} title={row.error}>
-                {row.error}
-              </span>
-            ) : null}
-          </span>
-        </button>
+      <div role="gridcell" className={styles.source}>
+        <span className={styles.meta}>{getSourceLabel(row.source)}</span>
+      </div>
+      <div role="gridcell" className={styles.time}>
+        {relativeTimeFromMs(row.ts)}
       </div>
       <div role="gridcell" className={styles.rowAction}>
         <Tooltip label={cancellable ? "Cancel Download" : "View Save"}>
@@ -185,11 +200,13 @@ export function DownloadQueueRow({
               else openSave(row.saveId);
             }}
           >
-            {cancellable ? (
-              <IconXmarkOutline18 />
-            ) : (
-              <IconChevronRightOutline18 />
-            )}
+            <IconSwap id={cancellable ? "cancel" : "view"}>
+              {cancellable ? (
+                <IconXmarkOutline18 />
+              ) : (
+                <IconChevronRightOutline18 />
+              )}
+            </IconSwap>
           </Button>
         </Tooltip>
       </div>

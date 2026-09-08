@@ -90,10 +90,6 @@ function ButtonControl({
   );
 }
 
-function runApply(item: FieldItem) {
-  if (item.apply) setTimeout(item.apply, 50);
-}
-
 function FieldControl({
   item,
   binding,
@@ -101,19 +97,22 @@ function FieldControl({
   item: FieldItem;
   binding: Binding;
 }): ReactNode {
-  const { values, patch } = binding;
+  const { values } = binding;
+  const patch = (delta: Parameters<Binding["patch"]>[0]) => {
+    void Promise.resolve(binding.patch(delta)).then(() => item.apply?.());
+  };
   const current = ControlValueSchema.parse(values[item.key]);
-  const disabled = item.disabled?.(values) ?? false;
+  const disabled = !binding.loaded || (item.disabled?.(values) ?? false);
 
   switch (item.control) {
     case "switch":
       return (
         <Switch.Root
+          aria-label={item.title}
           checked={Boolean(current)}
           disabled={disabled}
           onCheckedChange={(v) => {
             patch({ [item.key]: v });
-            runApply(item);
           }}
         />
       );
@@ -125,7 +124,6 @@ function FieldControl({
           disabled={disabled}
           onValueChange={(next) => {
             patch({ [item.key]: next });
-            runApply(item);
           }}
           options={item.options}
           placeholder={item.placeholder}
@@ -142,7 +140,6 @@ function FieldControl({
           onValueChange={(next) => {
             const n = Array.isArray(next) ? (next[0] ?? item.min) : next;
             patch({ [item.key]: n });
-            runApply(item);
           }}
         >
           <Slider.Control>
@@ -166,7 +163,6 @@ function FieldControl({
                   item.max,
                 );
                 patch({ [item.key]: n });
-                runApply(item);
               }}
               style={{ width: 44, textAlign: "right" }}
             />
@@ -185,7 +181,6 @@ function FieldControl({
           value={toNumber(current, item.fallback ?? item.min)}
           onValueChange={(n) => {
             patch({ [item.key]: n });
-            runApply(item);
           }}
           decrementIcon={<Minus />}
           incrementIcon={<Plus />}
@@ -210,7 +205,6 @@ function FieldControl({
                 item.max,
               );
               patch({ [item.key]: next });
-              runApply(item);
             }}
             style={{ width: item.width ?? 96 }}
           />
@@ -225,7 +219,6 @@ function FieldControl({
           value={HexColorSchema.parse(current)}
           onChange={(hex) => {
             patch({ [item.key]: hex });
-            runApply(item);
           }}
         />
       );

@@ -53,6 +53,7 @@ export function ComponentsPage({
       .includes(filter),
   );
   if (!entry) return null;
+  const isTheme = entry.group === "Theme";
 
   return (
     <Tooltip.Provider>
@@ -132,26 +133,33 @@ export function ComponentsPage({
             </div>
           </aside>
           <main className={styles.main} data-scroll-viewport>
-            <div className={styles.content}>
+            <div className={styles.content} data-wide={isTheme || undefined}>
               <div className={styles.intro}>
                 <span className={styles.eyebrow}>{entry.group}</span>
                 <h1>{entry.id}</h1>
                 <p>{entry.description}</p>
-                <code>packages/ui/src/{entry.folder}/</code>
+                <code>
+                  {isTheme
+                    ? `packages/theme/src/${entry.folder}/`
+                    : `packages/ui/src/${entry.folder}/`}
+                </code>
               </div>
               <section
                 className={styles.preview}
+                data-layout={isTheme ? "tokens" : undefined}
                 aria-label={`${entry.id} preview`}
               >
                 <div className={styles.previewHeader}>
                   <span>Preview</span>
                   <div className={styles.actions}>
-                    <Choice
-                      label="Preview width"
-                      value={width}
-                      values={["Fill", "640 px", "320 px"]}
-                      onChange={setWidth}
-                    />
+                    {isTheme ? null : (
+                      <Choice
+                        label="Preview width"
+                        value={width}
+                        values={["Fill", "640 px", "320 px"]}
+                        onChange={setWidth}
+                      />
+                    )}
                     <Button
                       size="xs"
                       variant="ghost"
@@ -166,7 +174,7 @@ export function ComponentsPage({
                     className={styles.example}
                     style={{
                       width:
-                        width === "Fill"
+                        isTheme || width === "Fill"
                           ? "100%"
                           : width === "640 px"
                             ? 640
@@ -181,8 +189,9 @@ export function ComponentsPage({
               </section>
               <div className={styles.sourceToggle}>
                 <p>
-                  Edit the shared component or its stylesheet to update this
-                  preview and the app.
+                  {isTheme
+                    ? "Copy CSS from the preview, then paste it into the token file."
+                    : "Edit the shared component or its stylesheet to update this preview and the app."}
                 </p>
                 <Button
                   size="sm"
@@ -196,7 +205,11 @@ export function ComponentsPage({
               </div>
               <div id="gallery-source">
                 {showSource && (
-                  <ComponentSource key={entry.id} folder={entry.folder} />
+                  <ComponentSource
+                    key={entry.id}
+                    folder={entry.folder}
+                    pkg={isTheme ? "theme" : "ui"}
+                  />
                 )}
               </div>
             </div>

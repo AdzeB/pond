@@ -1,0 +1,80 @@
+.modelIcon,
+.referenceMedia {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  overflow: hidden;
+  color: var(--ds-gray-10);
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-md);
+}
+
+.referenceMedia > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.modelContent {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  text-align: left;
+}
+
+.modelName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.rowDescription {
+  font-size: var(--ds-text-small);
+  line-height: 1.45;
+  color: var(--ds-gray-9);
+  overflow-wrap: anywhere;
+}
+
+.referenceList {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 6px;
+}
+
+.referenceRow {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.referenceOpen {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  min-width: 0;
+  height: auto;
+  padding: 10px;
+}
+
+.referenceDescription {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  font-size: var(--ds-text-small);
+  line-height: 1.45;
+  color: var(--ds-gray-10);
+}
+
+.pickerEmpty {
+  padding: 24px 12px;
+  font-size: var(--ds-text-small);
+  color: var(--ds-gray-9);
+}

@@ -1,8 +1,8 @@
 import { Button, Settings } from "@pond/ui";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { z } from "zod";
 
-const McpSnippetSchema = z.object({ json: z.string().optional() });
+const McpSnippetSchema = z.object({ json: z.string().min(1) });
 
 export function McpSection() {
   return (
@@ -30,36 +30,51 @@ export function McpSection() {
 }
 
 export function McpCursorRow() {
-  const [snippet, setSnippet] = useState("");
   const [copied, setCopied] = useState(false);
+  const [copying, setCopying] = useState(false);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    void window.pond.query("agent.mcpSnippet", {}).then((res) => {
-      const payload = McpSnippetSchema.parse(res);
-      setSnippet(payload.json ?? "");
-    });
-  }, []);
+  const copyConfig = async () => {
+    setCopying(true);
+    setCopied(false);
+    setError("");
+    try {
+      const payload = McpSnippetSchema.parse(
+        await window.pond.query("agent.mcpSnippet", {}),
+      );
+      const result = await window.pond.query("clipboard.writeText", {
+        text: payload.json,
+      });
+      if (!result.ok) throw new Error("Clipboard write failed");
+      setCopied(true);
+    } catch {
+      setError("Could not copy config. Try again.");
+    } finally {
+      setCopying(false);
+    }
+  };
 
   return (
     <>
       <Settings.ItemDetails>
-        <Settings.ItemTitle>stdio Config</Settings.ItemTitle>
+        <Settings.ItemTitle>Connect Cursor</Settings.ItemTitle>
         <Settings.ItemDescription>
-          Paste this into mcp.json. Cursor talks to Pond over stdio on this Mac.
+          Add this config to Cursor's mcp.json.
         </Settings.ItemDescription>
+        {error && (
+          <Settings.ItemDescription role="alert">
+            {error}
+          </Settings.ItemDescription>
+        )}
       </Settings.ItemDetails>
       <Settings.ItemControl>
         <Button
           size="sm"
           variant="secondary"
-          disabled={!snippet}
-          onClick={() => {
-            void navigator.clipboard.writeText(snippet).then(() => {
-              setCopied(true);
-            });
-          }}
+          disabled={copying}
+          onClick={() => void copyConfig()}
         >
-          {copied ? "Copied" : "Copy Config"}
+          {copying ? "Copying" : copied ? "Copied" : "Copy Config"}
         </Button>
       </Settings.ItemControl>
     </>

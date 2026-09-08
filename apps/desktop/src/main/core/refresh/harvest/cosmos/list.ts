@@ -11,10 +11,6 @@ interface JsonRecord {
 
 type JsonValue = string | number | boolean | null | JsonValue[] | JsonRecord;
 
-export function cosmosProfileUrl(handle: string): string {
-  return `https://www.cosmos.so/${encodeURIComponent(handle)}`;
-}
-
 export const COSMOS_LIST_URL = "https://www.cosmos.so/library";
 
 const SCROLL_DEADLINE_MS = 60_000;

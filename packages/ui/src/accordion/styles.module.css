@@ -1,0 +1,51 @@
+.root {
+  min-width: 0;
+}
+.header {
+  margin: 0;
+}
+.trigger {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 8px 0;
+  font-size: var(--ds-text-mini);
+  color: var(--ds-gray-10);
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+}
+.trigger:hover {
+  color: var(--ds-gray-12);
+}
+.trigger:focus-visible {
+  outline: 2px solid var(--ds-gray-7);
+  outline-offset: 2px;
+  border-radius: var(--ds-radius-sm);
+}
+.trigger > svg:last-child {
+  margin-left: auto;
+  transition: transform var(--ds-duration-medium) var(--ds-easing-standard);
+}
+.trigger[data-panel-open] > svg:last-child {
+  transform: rotate(180deg);
+}
+.panel {
+  height: var(--accordion-panel-height);
+  overflow: hidden;
+  opacity: 1;
+  transition:
+    height var(--ds-duration-medium) var(--ds-easing-snap),
+    opacity var(--ds-duration-medium) var(--ds-easing-standard);
+}
+.panel[data-starting-style],
+.panel[data-ending-style] {
+  height: 0;
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .trigger > svg:last-child {
+    transition: none;
+  }
+}

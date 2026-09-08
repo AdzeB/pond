@@ -18,7 +18,7 @@ import { folderIdsForSave, listFolders } from "../folders";
 import { normalizeTagList } from "../tags";
 import type { ToolSpec } from "./complete";
 import { boundedSource } from "./output";
-import { trackTools } from "./tool-steps";
+import { createToolTracker } from "./tool-steps";
 import {
   applyFilter,
   applyFilterInput,
@@ -91,7 +91,12 @@ export function libraryContext(
   ): "added" | "duplicate" | "limit" {
     const saveIds = [...new Set(result.saveIds)];
     if (
-      results.some((current) => current.saveIds.join(",") === saveIds.join(","))
+      results.some(
+        (current) =>
+          current.title === result.title &&
+          current.saveIds.length === saveIds.length &&
+          current.saveIds.every((id) => saveIds.includes(id)),
+      )
     )
       return "duplicate";
     if (results.length >= 12) return "limit";
@@ -123,8 +128,12 @@ export function libraryContext(
           throw new Error("Up to twelve result groups can be shown per reply.");
         return {
           shown: saveIds.length,
+          references: saveIds.map((id) => ({
+            id,
+            reference: `#save-${[...sources.keys()].indexOf(id) + 1}`,
+          })),
           message:
-            "These Saves are shown inline. Do not repeat their titles in prose.",
+            "These Saves are shown inline. Cite them using these exact global references; their order in this group does not renumber them. Do not repeat their titles in prose.",
         };
       },
     },
@@ -173,8 +182,12 @@ export function libraryContext(
           readSaveInput.parse(args),
           input.scope,
         );
-        if (result.save && "url" in result.save)
-          collect([assistantSource.parse(result.save)]);
+        if (result.save && "url" in result.save) {
+          const save = assistantSource.parse(result.save);
+          collect([save]);
+          if (sources.has(save.id))
+            return { ...result, reference: forModel(save).reference };
+        }
         return result;
       },
     },
@@ -409,7 +422,8 @@ export function libraryContext(
     },
   ];
   return {
-    ...trackTools(tools, input.signal, input.onSteps),
+    ...createToolTracker(input.signal, input.onSteps),
+    tools,
     retrieve,
     results: () => results,
     sources: () => [...sources.values()],

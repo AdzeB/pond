@@ -29,7 +29,7 @@ No new runtime dependency, model service, or automatic library mutation was adde
 - Live Pond: searched for Kanye references; restored the conversation from history; expanded results; verified local thumbnails; preserved a draft when attaching a result; opened the older Cosmos chair Save from its preview; inspected the real assistant side pane and header.
 - Deterministic preview: checked paragraphs, source previews, tables, code copy feedback, task lists, questions, and tool failure states. Checked both 720px and 340px layouts. Narrow tables scroll inside the response without widening the page.
 
-The preview is at `apps/desktop/prototypes/assistant-inline`. Run from `apps/desktop` with `node node_modules/vite/bin/vite.js --config prototypes/assistant-inline/vite.config.ts`. Its clearly labeled synthetic content exercises the production components without writing to the library.
+The isolated preview was retired during prototype cleanup. Use the maintained component gallery (`pnpm --filter @pond/desktop dev:components`) to inspect shared UI components.
 
 ## Follow-up interaction polish
 

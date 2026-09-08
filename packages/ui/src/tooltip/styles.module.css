@@ -17,7 +17,6 @@
 }
 
 .popup {
-  box-shadow: var(--ds-shadow-1);
   max-width: 320px;
   padding: 0;
   font-size: var(--ds-text-micro);
@@ -25,7 +24,10 @@
   text-align: center;
   color: var(--ds-gray-11);
   background: var(--ds-gray-1);
+  border: var(--ds-border-elevated);
   border-radius: var(--ds-radius-md);
+  background-clip: padding-box;
+  box-shadow: var(--ds-shadow-1);
   transition:
     opacity var(--ds-duration-snap) var(--ds-easing-decelerate),
     transform var(--ds-duration-snap) var(--ds-easing-decelerate);

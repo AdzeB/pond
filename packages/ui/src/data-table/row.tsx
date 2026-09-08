@@ -57,7 +57,7 @@ function RowImpl<T>({
   const cellCtx: CellContext = { depth, expanded, canExpand };
 
   const cells: ReactNode[] = [];
-  if (api.selectionEnabled) {
+  if (api.selectionEnabled && api.selectionCheckboxes) {
     cells.push(
       <SelectCell
         key="__select"

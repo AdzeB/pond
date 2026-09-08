@@ -31,6 +31,7 @@ export async function syncTwitter(
   const db = await getDb();
   const baseline = await loadSyncBaseline(account, forceFull);
   const knownIds = baseline.knownIds;
+  await patchAccountSync(accountId, { knownCount: baseline.total });
   const failedRows = await db
     .select({ sourceId: saves.sourceId })
     .from(saves)

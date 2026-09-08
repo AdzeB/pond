@@ -16,6 +16,8 @@
   max-width: 440px;
   padding: 24px;
   background: var(--ds-gray-1);
+  background-clip: padding-box;
+  border: var(--ds-border-elevated);
   border-radius: var(--ds-radius-xl);
   box-shadow: var(--ds-shadow-dialog);
 }

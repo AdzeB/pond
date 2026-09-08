@@ -14,7 +14,7 @@ The **Sync** column shows how a source's saved list is walked (`cursor` /
 | Instagram | `instagram` | `instagram.com` | `^https?:\/\/(?:www\.)?instagram\.com\/(?:p|reels?|tv)\/([A-Za-z0-9_-]+)` | `cursor` |
 | Pinterest | `pinterest` | `pinterest.com`, `pin.it` | `^https?:\/\/(?:[a-z]+\.)?pinterest\.[a-z.]+\/pin\/(\d+)`<br>`^https?:\/\/pin\.it\/([A-Za-z0-9]+)` | `scroll` |
 | Are.na | `arena` | `are.na` | `^https?:\/\/(?:www\.)?are\.na\/block\/(\d+)`<br>`^https?:\/\/(?:www\.)?are\.na\/[^/]+\/[^/]+-(\d+)` | `scroll` |
-| Cosmos | `cosmos` | `cosmos.so` | `^https?:\/\/(?:www\.)?cosmos\.so\/e\/([A-Za-z0-9_-]+)`<br>`^https?:\/\/(?:www\.)?cosmos\.so\/(.+?)\/?$` | `scroll` |
+| Cosmos | `cosmos` | `cosmos.so` | `^https?:\/\/(?:www\.)?cosmos\.so\/e\/([A-Za-z0-9_-]+)`<br>`^https?:\/\/(?:www\.)?cosmos\.so\/(.+?)\/?$` | `cursor` |
 | TikTok | `tiktok` | `tiktok.com` | `^https?:\/\/(?:[a-z]+\.)?tiktok\.com\/[^/]+\/video\/(\d+)`<br>`^https?:\/\/(?:[a-z]+\.)?tiktok\.com\/video\/(\d+)`<br>`^https?:\/\/(?:vm|vt)\.tiktok\.com\/[A-Za-z0-9]+` | `scroll` |
 | YouTube | `youtube` | `youtube.com`, `youtu.be` | `^https?:\/\/(?:www\.|m\.)?youtube\.com\/watch\?[^#]*v=([A-Za-z0-9_-]+)`<br>`^https?:\/\/(?:www\.|m\.)?youtube\.com\/shorts\/([A-Za-z0-9_-]+)`<br>`^https?:\/\/youtu\.be\/([A-Za-z0-9_-]+)` | `scroll` |
 | Reddit | `reddit` | `reddit.com`, `redd.it` | `^https?:\/\/(?:[a-z]+\.)?reddit\.com\/r\/[^/]+\/comments\/([a-z0-9]+)`<br>`^https?:\/\/(?:[a-z]+\.)?reddit\.com\/comments\/([a-z0-9]+)`<br>`^https?:\/\/redd\.it\/([a-z0-9]+)` | `cursor` |

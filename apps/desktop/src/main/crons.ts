@@ -57,6 +57,7 @@ export function registerSyncCron() {
         const rule = JSON.stringify({
           enabled: cron.enabled,
           calendar: cron.calendar,
+          recurrence: cron.recurrence,
         });
         if (calendarRule !== undefined && calendarRule !== rule)
           calendarSince = Date.now();
@@ -74,7 +75,7 @@ export function registerSyncCron() {
           !isSyncScheduleDue(cron, new Date(), lastSyncCronRunAt, calendarSince)
         )
           return;
-        if (!cron.calendar) {
+        if (!cron.calendar && !cron.recurrence) {
           const jitter = Math.floor(Math.random() * SYNC_CRON_JITTER_MS);
           await new Promise((resolve) => setTimeout(resolve, jitter));
         }

@@ -8,6 +8,7 @@ import {
   type SettingsRow,
   type VideoDownloadPrefs,
 } from "@/features/settings/lib/section-types";
+import { notify } from "@/shared/lib/toast";
 
 const VideoDownloadSchema = z.object({
   enabled: z.boolean(),
@@ -68,6 +69,8 @@ type DownloadChannel =
   | "settings.setVideoDownload"
   | "settings.setImageDownload";
 
+let downloadSaveQueue = Promise.resolve();
+
 function useDownloadBinding<K extends DownloadField>(
   field: K,
   channel: DownloadChannel,
@@ -93,26 +96,28 @@ function useDownloadBinding<K extends DownloadField>(
 
   const patch = (delta: Partial<SettingsRow[K]>) => {
     if (!data) return;
-    const previous = data[field];
-    qc.setQueryData<SettingsRow>(["settings", "get"], {
-      ...data,
-      [field]: { ...previous, ...delta },
-    });
     const params: Partial<VideoDownloadPrefs> | Partial<ImageDownloadPrefs> =
       delta;
-    void window.pond
-      .query(channel, params)
-      .then((saved) => {
-        const next = SavedSectionSchema.parse(saved)[field];
-        qc.setQueryData<SettingsRow | undefined>(["settings", "get"], (cur) =>
-          cur ? { ...cur, [field]: next } : cur,
-        );
-      })
-      .catch(() => {
-        qc.setQueryData<SettingsRow | undefined>(["settings", "get"], (cur) =>
-          cur ? { ...cur, [field]: previous } : cur,
-        );
+    const operation = downloadSaveQueue.then(async () => {
+      const saved = await window.pond.query(channel, params);
+      const next = SavedSectionSchema.parse(saved)[field];
+      if (!next) throw new Error("Missing saved download settings");
+      qc.setQueryData<SettingsRow | undefined>(
+        ["settings", "get"],
+        (current) =>
+          current
+            ? { ...current, [field]: { ...current[field], ...next } }
+            : current,
+      );
+    });
+    downloadSaveQueue = operation.catch(() => {
+      notify({
+        id: "download-prefs-error",
+        title: "Couldn’t save download settings",
+        description: "Your previous setting is unchanged. Try again.",
+        timeout: 8000,
       });
+    });
   };
 
   return { values, patch, loaded: Boolean(data) };

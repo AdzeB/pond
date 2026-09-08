@@ -1,0 +1,43 @@
+.threadItem {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+  border-radius: var(--ds-radius-md);
+}
+
+.threadItem[data-active] {
+  background: var(--ds-gray-3);
+}
+
+.historyTitle {
+  flex: 1;
+  justify-content: flex-start;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.menuItem {
+  composes: item from "../shared/styles/popup/styles.module.css";
+}
+
+.separator {
+  composes: separator from "../shared/styles/popup/styles.module.css";
+}
+
+.historyArchive {
+  opacity: 0;
+  transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
+}
+
+.threadItem:is(:hover, :focus-within) .historyArchive {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .messageActions,
+  .activityTrigger svg,
+  .historyArchive {
+    transition: none;
+  }
+}

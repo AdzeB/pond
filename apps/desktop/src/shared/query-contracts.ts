@@ -230,6 +230,7 @@ export interface QueryInputs {
     sources?: Source[];
     ops?: Op[];
   };
+  "downloads.live": EmptyInput;
   "sync.history": { source: Source; accountId?: string; limit?: number };
   "sync.recent": { limit?: number };
   "sync.runs": { days?: number };
@@ -377,6 +378,7 @@ export interface QueryResults extends SystemQueryResults {
   "tagGroups.removeTag": OkResult;
   "pipeline.status": { paused: boolean; inflight: number };
   "pipeline.inflight": string[];
+  "downloads.live": string[];
   "downloads.history": {
     rows: {
       id: number;

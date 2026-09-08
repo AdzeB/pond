@@ -25,7 +25,12 @@ export function settingsHref(section?: string, hash?: string): string {
   lastSection = valid;
   const path = `/settings/${valid}`;
   if (!hash) return path;
-  return `${path}#${hash.replace(/^#/, "")}`;
+  const normalized = hash
+    .replace(/^#/, "")
+    .replace(/^setting-images-/, "setting-videos-")
+    .replace(/^setting-trash-/, "setting-storage-")
+    .replace(/^setting-mcp-.*/, "setting-models-mcp");
+  return `${path}#${normalized}`;
 }
 
 export function openSettings(section?: string, hash?: string): void {

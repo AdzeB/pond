@@ -3,6 +3,7 @@ import type { WirePrefsPatch } from "@shared/wire";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
+import { notify } from "@/shared/lib/toast";
 
 interface PrefsState {
   readonly value: Prefs | null;
@@ -20,29 +21,24 @@ async function load(): Promise<Prefs> {
       await window.pond.query("settings.getPrefs", {}),
     );
     prefsStore.setState(() => ({ value: next }));
-    inflight = null;
     return next;
-  })();
+  })().finally(() => {
+    inflight = null;
+  });
   return inflight;
 }
 
 export function patchPrefsSection<K extends keyof Prefs>(
   section: K,
   delta: Partial<Prefs[K]>,
-): void {
-  const cache = prefsStore.state.value;
-  if (!cache) {
-    void load().then(() => patchPrefsSection(section, delta));
-    return;
-  }
-  const merged: Prefs = {
-    ...cache,
-    [section]: { ...cache[section], ...delta },
-  };
-  prefsStore.setState(() => ({ value: merged }));
-  const message: WirePrefsPatch = { [section]: delta };
-  void window.pond.query("settings.setPrefs", message).catch(() => {
-    prefsStore.setState(() => ({ value: cache }));
+): Promise<void> {
+  return savePrefsSection(section, delta).catch(() => {
+    notify({
+      id: "settings-save-error",
+      title: "Couldn’t save this setting",
+      description: "Your previous setting is unchanged. Try again.",
+      timeout: 8000,
+    });
   });
 }
 
@@ -52,15 +48,22 @@ export function loadPrefs(): Promise<Prefs> {
 
 export function usePrefs<K extends keyof Prefs>(
   section: K,
-): [Prefs[K], (patch: Partial<Prefs[K]>) => void, boolean] {
+): [Prefs[K], (patch: Partial<Prefs[K]>) => Promise<void>, boolean] {
   useEffect(() => {
-    void load();
+    void load().catch(() =>
+      notify({
+        id: "settings-load-error",
+        title: "Couldn’t load settings",
+        description: "Open Settings again to retry.",
+        timeout: 8000,
+      }),
+    );
   }, []);
 
   const value = useSelector(prefsStore, (s) => s.value?.[section] ?? null);
 
   const patch = (delta: Partial<Prefs[K]>) => {
-    patchPrefsSection(section, delta);
+    return patchPrefsSection(section, delta);
   };
 
   // SAFETY: a section is missing only until the first load resolves; the third
@@ -70,11 +73,43 @@ export function usePrefs<K extends keyof Prefs>(
 
 export function usePrefsValue(): Prefs | null {
   useEffect(() => {
-    void load();
+    void load().catch(() =>
+      notify({
+        id: "settings-load-error",
+        title: "Couldn’t load settings",
+        description: "Open Settings again to retry.",
+        timeout: 8000,
+      }),
+    );
   }, []);
   return useSelector(prefsStore, (s) => s.value);
 }
 
 export function getPrefsSnapshot(): Prefs | null {
   return prefsStore.state.value;
+}
+
+let saveQueue = Promise.resolve();
+
+export function savePrefsSection<K extends keyof Prefs>(
+  section: K,
+  delta: Partial<Prefs[K]>,
+): Promise<void> {
+  const operation = saveQueue.then(async () => {
+    await load();
+    const message: WirePrefsPatch = { [section]: delta };
+    await window.pond.query("settings.setPrefs", message);
+    prefsStore.setState((current) =>
+      current.value
+        ? {
+            value: {
+              ...current.value,
+              [section]: { ...current.value[section], ...delta },
+            },
+          }
+        : current,
+    );
+  });
+  saveQueue = operation.catch(() => {});
+  return operation;
 }

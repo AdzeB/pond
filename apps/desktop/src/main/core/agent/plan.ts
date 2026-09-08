@@ -13,6 +13,7 @@ export const assistantPlan = z.object({
   source: z.enum(SOURCES).optional(),
   requiresEvidence: z.boolean(),
   directLookup: z.boolean(),
+  requestedCount: z.number().int().min(1).max(24).optional(),
   edit: z.boolean(),
 });
 
@@ -74,6 +75,33 @@ const FORMAT_SUFFIX =
   /\s+(?:in|as|using|with)\s+(?:one|two|three|four|five|\d+)?\s*(?:short\s+)?(?:sentences?|paragraphs?|bullets?|words?|json|markdown)\b.*$/i;
 const CHAINED_TASK =
   /\s+(?:and|then)\s+(?:summari[sz]e|compare|explain|analy[sz]e|organize|categorize|tag|rename|move)\b.*$/i;
+const PRESENTATION_FOLLOWUP =
+  /[.!?;]\s+(?=(?:show|give|present|display|format|then|only|do not|don't|summari[sz]e|compare|explain|keep)\b)/i;
+const RESULT_COUNT =
+  /\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+(?=(?:(?:recent|latest|newest|saved|[\p{L}-]+)\s+){0,3}(?:saves?|references?|items?|pics?|pictures?|photos?|images?|vids?|videos?|articles?|links?)\b)/iu;
+const COUNT_WORDS = [
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "eight",
+  "nine",
+  "ten",
+];
+
+function subjectRequest(text: string): string {
+  return text.split(PRESENTATION_FOLLOWUP, 1)[0] ?? text;
+}
+
+function resultCount(text: string): number | undefined {
+  const value = text.match(RESULT_COUNT)?.[1]?.toLowerCase();
+  if (!value) return undefined;
+  const count = COUNT_WORDS.indexOf(value) + 1 || Number(value);
+  return count >= 1 && count <= 24 ? count : undefined;
+}
 
 function mediaFor(text: string): MediaType[] {
   const media = new Set<MediaType>();
@@ -107,6 +135,7 @@ function stripNouns(text: string): string {
 
 function literalQuery(text: string): string {
   let query = text.trim().replace(/[?.!,;:]+$/g, "");
+  if (resultCount(query)) query = query.replace(RESULT_COUNT, "");
   const about = query.match(/\babout\s+(.+)$/i)?.[1];
   if (about) query = about;
   query = query
@@ -137,8 +166,10 @@ export function planAssistantTurn(input: PlanInput): AssistantPlan {
   const latest = input.latest.trim();
   if (!latest) return chatPlan();
 
-  const media = mediaFor(latest);
-  const source = sourceFor(latest);
+  const subject = subjectRequest(latest);
+  const media = mediaFor(subject);
+  const source = sourceFor(subject);
+  const requestedCount = resultCount(subject);
   const edit = EDIT_TASK.test(latest);
   const complex = COMPLEX_TASK.test(latest);
   if (ACTION_SIGNAL.test(latest) && !SEARCH_SIGNAL.test(latest)) {
@@ -164,6 +195,7 @@ export function planAssistantTurn(input: PlanInput): AssistantPlan {
       source,
       requiresEvidence: true,
       directLookup: !complex && !edit,
+      requestedCount,
       edit,
     };
   }
@@ -177,7 +209,7 @@ export function planAssistantTurn(input: PlanInput): AssistantPlan {
   const needsSearch = SEARCH_SIGNAL.test(latest) || bareLibraryPhrase;
   if (!needsSearch) return chatPlan();
 
-  const query = literalQuery(latest);
+  const query = literalQuery(subject);
   const hasFilters = Boolean(source) || media.length > 0;
   if ((!query || VAGUE_TARGET.test(query)) && !hasFilters) {
     return {
@@ -197,6 +229,7 @@ export function planAssistantTurn(input: PlanInput): AssistantPlan {
     source,
     requiresEvidence: true,
     directLookup: !complex && !edit,
+    requestedCount,
     edit,
   };
 }

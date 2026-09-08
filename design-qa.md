@@ -131,7 +131,7 @@ final result: passed
 
 ### Follow-up production pass
 
-- Source visual truth: `/Users/raphaelsalaja/Developer/pond/apps/desktop/prototypes/linear-comparison/public/evidence/linear-command-menu-crop-current.png` and `linear-command-menu-search-crop-current.png`.
+- The comparison used captured Linear command-menu states. The temporary comparison app and its captures were retired during prototype cleanup.
 - Implementation screenshots: `/Users/raphaelsalaja/.codex/visualizations/2026/09/02/01a062cd-a0dd-7462-a157-7b08fbc2dec8/pond-command-menu-final-default.png` and `pond-command-menu-final-search.png`.
 - Normalized comparisons: `/Users/raphaelsalaja/.codex/visualizations/2026/09/02/01a062cd-a0dd-7462-a157-7b08fbc2dec8/command-menu-final-default-comparison.png` and `command-menu-final-search-comparison.png`.
 - Viewport and density: 1280 × 720 CSS pixels and a 1280 × 720 browser capture. The default Pond surface is 680 × 450 pixels; the filtered surface is 680 × 230 pixels. The 720 × 450 Linear source was normalized to 680 × 450 for the default comparison.

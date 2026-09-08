@@ -16,6 +16,7 @@ import {
 } from "@pond/icons/outline/18";
 import { Dialog, Menu, Tooltip } from "@pond/ui";
 import { type ComponentType, Fragment, useState } from "react";
+import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import {
   importBookmarks,
@@ -46,6 +47,7 @@ const ICONS = {
   eagle: IconDownloadOutline18,
   connect: IconUserPlusOutline18,
   watch: IconEyeOutline18,
+  "watched-folder": IconFolderOpenOutline18,
 } satisfies Record<NewActionId, ComponentType>;
 
 const IMPORT_IDS: ReadonlySet<NewActionId> = new Set([
@@ -99,6 +101,9 @@ export function NewMenu({
       case "connect":
       case "watch":
         newSource(id);
+        return;
+      case "watched-folder":
+        void runNewAction(pickWatchedFolder);
         return;
       default:
         if (pending) return;

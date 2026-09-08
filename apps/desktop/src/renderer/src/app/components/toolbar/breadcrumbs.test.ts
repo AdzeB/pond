@@ -15,7 +15,7 @@ describe("library breadcrumb paths", () => {
         nav: { kind: "all" },
         folders,
       }),
-    ).toEqual([{ label: "Library", path: "/", nav: { kind: "all" } }]);
+    ).toEqual([{ label: "All", path: "/", nav: { kind: "all" } }]);
   });
 
   it.each([
@@ -43,11 +43,7 @@ describe("library breadcrumb paths", () => {
       nav: { kind: "folder", id: "child" },
       folders,
     });
-    expect(crumbs.map((c) => c.label)).toEqual([
-      "Library",
-      "Design",
-      "Interfaces",
-    ]);
+    expect(crumbs.map((c) => c.label)).toEqual(["All", "Design", "Interfaces"]);
     expect(crumbs[1]?.nav).toEqual({ kind: "folder", id: "parent" });
     expect(crumbs[2]?.nav).toEqual({ kind: "folder", id: "child" });
   });
@@ -60,7 +56,7 @@ describe("library breadcrumb paths", () => {
         nav: { kind: "folder", id: "child" },
         folders,
       }).map((c) => c.label),
-    ).toEqual(["Settings", "Models"]);
+    ).toEqual(["Settings", "Integrations"]);
   });
 
   it("nests a source page under Sources", () => {
@@ -83,7 +79,7 @@ describe("library breadcrumb paths", () => {
       saveLabel: "A saved interface",
     });
     expect(crumbs.map((c) => c.label)).toEqual([
-      "Library",
+      "All",
       "Design",
       "Interfaces",
       "A saved interface",
@@ -109,7 +105,7 @@ describe("library breadcrumb paths", () => {
         nav: { kind: "uncategorized" },
         folders,
       }).map((c) => c.label),
-    ).toEqual(["Library", "Uncategorized"]);
+    ).toEqual(["All", "Uncategorized"]);
     expect(
       buildBreadcrumbs({
         pathname: "/",
@@ -117,7 +113,7 @@ describe("library breadcrumb paths", () => {
         nav: { kind: "tag", name: "Animation" },
         folders,
       }).map((c) => c.label),
-    ).toEqual(["Library", "Animation"]);
+    ).toEqual(["All", "Animation"]);
   });
 
   it("handles missing folders and cyclic ancestry without hanging", () => {
@@ -128,7 +124,7 @@ describe("library breadcrumb paths", () => {
         nav: { kind: "folder", id: "missing" },
         folders,
       }).map((c) => c.label),
-    ).toEqual(["Library", "Folder"]);
+    ).toEqual(["All", "Folder"]);
     const cyclic = folders.map((f) => ({
       ...f,
       parentId: f.id === "parent" ? "child" : "parent",
@@ -140,6 +136,6 @@ describe("library breadcrumb paths", () => {
         nav: { kind: "folder", id: "child" },
         folders: cyclic,
       }).map((c) => c.label),
-    ).toEqual(["Library", "Design", "Interfaces"]);
+    ).toEqual(["All", "Design", "Interfaces"]);
   });
 });

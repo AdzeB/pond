@@ -12,6 +12,8 @@
   height: 32px;
   padding: 0;
   cursor: var(--ds-cursor-interactive, pointer);
+  background-clip: padding-box;
+  border: var(--ds-border-elevated);
   border-radius: var(--ds-radius-md);
   box-shadow: var(--ds-shadow-1);
 

@@ -1,7 +1,13 @@
-import { unlinkSync } from "node:fs";
+import {
+  existsSync,
+  type FSWatcher,
+  statSync,
+  unlinkSync,
+  watch,
+} from "node:fs";
 import { chmod, mkdir } from "node:fs/promises";
 import { createServer, type Server, type Socket } from "node:net";
-import { dirname } from "node:path";
+import { basename, dirname } from "node:path";
 import type { JsonValue } from "@pond/schema/json";
 import type { NativeMessage, NativeResponse } from "@pond/schema/native";
 import log from "electron-log/main.js";
@@ -17,7 +23,15 @@ export interface NativeServerOpts {
   dispatch?: NativeDispatch;
 }
 
-const listenPaths = new WeakMap<Server, string>();
+interface BoundSocket {
+  path: string;
+  ino: number;
+  restore: ReturnType<typeof setInterval>;
+  watcher: FSWatcher;
+  restoring: boolean;
+}
+
+const listenPaths = new WeakMap<Server, BoundSocket>();
 
 function writeFrame(socket: Socket, value: NativeMessage): void {
   socket.end(encodeFrame(value));
@@ -57,6 +71,56 @@ function handleConn(socket: Socket, dispatch: NativeDispatch): void {
   });
 }
 
+function bindPath(server: Server, path: string): void {
+  const ino = statSync(path).ino;
+  const existing = listenPaths.get(server);
+  if (existing) {
+    existing.path = path;
+    existing.ino = ino;
+    existing.restoring = false;
+    return;
+  }
+  const restoreMissing = () => {
+    const bound = listenPaths.get(server);
+    if (!bound || bound.restoring || existsSync(bound.path)) return;
+    log.warn("[pond native] sock missing, restoring", bound.path);
+    restoreSocket(server);
+  };
+  const restore = setInterval(restoreMissing, 1000);
+  restore.unref();
+  const watcher = watch(dirname(path), (_event, filename) => {
+    if (filename && filename !== basename(path)) return;
+    restoreMissing();
+  });
+  watcher.unref?.();
+  listenPaths.set(server, { path, ino, restore, watcher, restoring: false });
+}
+
+/** Recreate the path after Node's unix close() unlinks it, including when an older process exits. */
+function restoreSocket(server: Server): void {
+  const bound = listenPaths.get(server);
+  if (!bound || bound.restoring || !server.listening) return;
+  bound.restoring = true;
+  const path = bound.path;
+  server.close((err) => {
+    if (err) {
+      bound.restoring = false;
+      log.warn("[pond native] restore close failed", err);
+      return;
+    }
+    server.listen(path, () => {
+      void chmod(path, 0o600)
+        .catch((chmodErr) => {
+          log.warn("[pond native] restore chmod failed", chmodErr);
+        })
+        .finally(() => {
+          bindPath(server, path);
+          log.info("[pond native] listening", path);
+        });
+    });
+  });
+}
+
 export async function startNativeServer(
   opts: NativeServerOpts = {},
 ): Promise<Server> {
@@ -74,19 +138,24 @@ export async function startNativeServer(
     server.listen(path, () => resolve());
   });
   await chmod(path, 0o600);
-  listenPaths.set(server, path);
+  bindPath(server, path);
   log.info("[pond native] listening", path);
   return server;
 }
 
 export async function stopNativeServer(server: Server | null): Promise<void> {
   if (!server) return;
-  const path = listenPaths.get(server);
+  const bound = listenPaths.get(server);
+  if (bound) {
+    clearInterval(bound.restore);
+    bound.watcher.close();
+  }
   await new Promise<void>((resolve) => {
     server.close(() => resolve());
   });
-  if (!path) return;
+  if (!bound) return;
   try {
-    unlinkSync(path);
+    /** A newer listener may already own this path after a reload. */
+    if (statSync(bound.path).ino === bound.ino) unlinkSync(bound.path);
   } catch {}
 }

@@ -6,7 +6,7 @@ import log from "electron-log/main.js";
 import { z } from "zod";
 import { createPondBundle } from "../../core/ensure-default-library";
 import { relocateLibrary } from "../../core/library-ops";
-import { invalidatePrefs } from "../../core/prefs";
+import { invalidatePrefs, setPrefs } from "../../core/prefs";
 import { reconcileLibrary } from "../../core/scan";
 import { migrateLegacySyncPrefs } from "../../core/sync";
 import { flushTagsDump, hydrateTagsFromBundle } from "../../core/tags-bundle";
@@ -210,6 +210,15 @@ export const libraryLocationQueries = {
       log.info(
         `[pond library-ops] backed up library → ${destResolved} (${copied} top-level entries)`,
       );
+      await setPrefs({
+        storage: {
+          lastBackup: {
+            path: destResolved,
+            libraryRoot: srcResolved,
+            completedAt: new Date().toISOString(),
+          },
+        },
+      }).catch((error) => log.warn("Could not record backup history", error));
       return { ok: true as const, path: destResolved, copied };
     } catch (err) {
       if (existsSync(destResolved)) {

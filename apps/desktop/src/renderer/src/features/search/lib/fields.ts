@@ -1,6 +1,7 @@
 import {
   IconGridLayoutRowsOutline18 as AspectIcon,
-  IconCalendarOutline18 as Calendar,
+  IconCalendarPenOutline18 as CalendarPen,
+  IconCalendarPlusOutline18 as CalendarPlus,
   IconChatBubbleOutline18 as Caption,
   IconMsg2Outline18 as Comment,
   IconFileOutline18 as FileIcon,
@@ -17,11 +18,11 @@ import {
   IconStarOutline18 as Star,
   IconTagOutline18 as Tag,
   IconStopwatchOutline18 as Timer,
-  IconUploadOutline18 as Upload,
   IconGlobeOutline18 as UrlIcon,
   IconUserOutline18 as User,
   IconImageOutline18 as WidthIcon,
 } from "@pond/icons/outline/18";
+import type { IconComponent } from "@pond/icons/types";
 import { COLOR_PRESETS, readColorMatch } from "@pond/schema/filters/color";
 import { FIELD_META } from "@pond/schema/filters/meta";
 import type {
@@ -29,18 +30,10 @@ import type {
   FieldId,
   Predicate,
 } from "@pond/schema/filters/types";
-import type { ComponentType } from "react";
 import { accountChipLabel } from "@/features/search/lib/account-aliases";
 import { DATE_PRESETS, serializePredicate } from "@/features/search/lib/syntax";
 
-type FieldIcon = ComponentType<{
-  width?: string | number;
-  height?: string | number;
-}>;
-
-const ORIENTATION_FIELD = "shape";
-
-export const FIELD_ICONS = {
+export const FIELD_ICONS: Record<FieldId, IconComponent> = {
   tags: Tag,
   folder: FolderIcon,
   list: ListIcon,
@@ -49,7 +42,7 @@ export const FIELD_ICONS = {
   format: FileIcon,
   fileCount: FilesIcon,
   duration: Timer,
-  [ORIENTATION_FIELD]: OrientationIcon,
+  shape: OrientationIcon,
   aspect: AspectIcon,
   creator: User,
   account: User,
@@ -57,16 +50,16 @@ export const FIELD_ICONS = {
   caption: Caption,
   transcript: Mic,
   color: Palette,
-  savedAt: Upload,
-  publishedAt: Calendar,
-  modifiedAt: Calendar,
+  savedAt: CalendarPlus,
+  publishedAt: CalendarPen,
+  modifiedAt: CalendarPen,
   rating: Star,
   fileSize: SizeIcon,
   width: WidthIcon,
   height: HeightIcon,
   url: UrlIcon,
   comment: Comment,
-} satisfies Record<FieldId, FieldIcon>;
+};
 
 const COMPARATOR_SYMBOL = new Map<ComparatorId, string>([
   ["gt", ">"],
@@ -77,7 +70,7 @@ const COMPARATOR_SYMBOL = new Map<ComparatorId, string>([
 ]);
 
 interface PredicateChip {
-  icon: FieldIcon;
+  icon: IconComponent;
   label: string;
   title: string;
   swatch?: string;

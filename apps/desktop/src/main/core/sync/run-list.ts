@@ -9,7 +9,7 @@ import {
   harvestSourceList,
   harvestYoutubeLikedList,
 } from "../refresh/scrape-window";
-import { inferAccountKey, resolveAccountHandle } from "./account-key";
+import { resolveAccountHandle } from "./account-key";
 import { partitionForAccount } from "./accounts";
 import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
 import {
@@ -41,6 +41,7 @@ export async function syncListSource(
   const partition = partitionForAccount(accountId);
   const baseline = await loadSyncBaseline(account, forceFull);
   const knownIds = baseline.knownIds;
+  await patchAccountSync(accountId, { knownCount: baseline.total });
   log.info(
     `[pond sync:${source}] starting for @${account.handle ?? accountId}; ${baseline.total} items already in library (${baseline.full ? "full" : `incremental, ${knownIds.size}-id window`})`,
   );
@@ -52,12 +53,7 @@ export async function syncListSource(
   });
 
   let accountKey: string | undefined;
-  if (
-    source === "cosmos" ||
-    source === "arena" ||
-    source === "tiktok" ||
-    source === "reddit"
-  ) {
+  if (source === "arena" || source === "tiktok" || source === "reddit") {
     accountKey = (await resolveAccountHandle(account)) ?? undefined;
     if (!accountKey) {
       log.info(`[pond sync:${source}] could not resolve account from session`);
@@ -72,7 +68,9 @@ export async function syncListSource(
       return;
     }
   } else if (source === "pinterest") {
-    accountKey = account.handle ?? ((await inferAccountKey(source)) || "me");
+    accountKey = (await resolveAccountHandle(account)) ?? "me";
+  } else if (source === "cosmos") {
+    accountKey = (await resolveAccountHandle(account)) ?? undefined;
   }
 
   const harvest = await harvestSourceList(

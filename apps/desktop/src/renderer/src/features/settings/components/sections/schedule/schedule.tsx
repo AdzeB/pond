@@ -1,173 +1,257 @@
+import { FetchRecurrenceSchema } from "@pond/schema";
 import { DEFAULT_SYNC_CRON } from "@pond/schema/db";
 import { Button } from "@pond/ui";
-import { describeSyncSchedule, type SyncSchedule } from "@shared/sync-schedule";
-import { useState } from "react";
-import { usePrefs } from "@/features/settings/state/prefs";
+import { nextSyncOccurrence, type SyncSchedule } from "@shared/sync-schedule";
+import { useEffect, useState } from "react";
+import { savePrefsSection, usePrefs } from "@/features/settings/state/prefs";
+import { FetchStatus } from "./fetch-status";
 import styles from "./schedule.module.css";
 
 export function ScheduleSection() {
-  const [sync, patchSync, loaded] = usePrefs("sync");
-  const [saved, setSaved] = useState(false);
+  const [sync, , loaded] = usePrefs("sync");
   if (!loaded) return null;
   return (
-    <div onChange={() => setSaved(false)}>
+    <div className={styles.section}>
       <ScheduleEditor
         initial={sync.cron ?? DEFAULT_SYNC_CRON}
-        onSave={(cron) => {
-          patchSync({ cron });
-          setSaved(true);
-        }}
+        onSave={(cron) => savePrefsSection("sync", { cron })}
       />
-      {saved ? (
-        <p role="status" className={styles.zone}>
-          Schedule saved for all connections and watches.
-        </p>
-      ) : null}
+      <FetchStatus />
     </div>
   );
 }
+
+function localDate(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+const weekdayNames = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+const units = ["hour", "day", "week", "month"] as const;
 
 export function ScheduleEditor({
   initial,
   onSave,
 }: {
   initial: SyncSchedule;
-  onSave: (schedule: SyncSchedule) => void;
+  onSave: (schedule: SyncSchedule) => void | Promise<void>;
 }) {
-  const [mode, setMode] = useState(
-    initial.enabled ? (initial.calendar?.kind ?? "hourly") : "manual",
+  const [enabled, setEnabled] = useState(initial.enabled);
+  const [unit, setUnit] = useState(
+    initial.recurrence?.unit ??
+      (initial.calendar?.kind === "weekly"
+        ? "week"
+        : initial.calendar
+          ? "day"
+          : "hour"),
   );
-  const [hours, setHours] = useState(String(initial.intervalHours));
-  const [time, setTime] = useState(initial.calendar?.time ?? "09:00");
+  const [every, setEvery] = useState(
+    String(
+      initial.recurrence?.every ??
+        (initial.calendar ? 1 : initial.intervalHours),
+    ),
+  );
+  const [startDate, setStartDate] = useState(
+    initial.recurrence?.startDate ?? localDate(new Date()),
+  );
+  const [time, setTime] = useState(
+    initial.recurrence?.time ?? initial.calendar?.time ?? "18:00",
+  );
   const [days, setDays] = useState(
-    initial.calendar?.kind === "weekly"
-      ? initial.calendar.days
-      : [1, 2, 3, 4, 5],
+    initial.recurrence?.days ??
+      (initial.calendar?.kind === "weekly"
+        ? initial.calendar.days
+        : [new Date().getDay()]),
   );
-  const valid =
-    mode === "manual" ||
-    (mode === "hourly"
-      ? Number.isFinite(Number(hours)) && Number(hours) >= 1
-      : /^([01]\d|2[0-3]):[0-5]\d$/.test(time) &&
-        (mode !== "weekly" || days.length > 0));
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">(
+    "idle",
+  );
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  const parsed = FetchRecurrenceSchema.safeParse({
+    startDate,
+    every: Number(every),
+    unit,
+    time,
+    days,
+  });
+  const valid = !enabled || parsed.success;
   const draft: SyncSchedule = {
-    enabled: mode !== "manual",
-    intervalHours: mode === "hourly" ? Number(hours) : initial.intervalHours,
-    calendar:
-      mode === "daily"
-        ? { kind: "daily", time }
-        : mode === "weekly"
-          ? { kind: "weekly", time, days }
-          : null,
+    ...initial,
+    enabled,
+    calendar: null,
+    recurrence: parsed.success ? parsed.data : initial.recurrence,
   };
+  const next = valid ? nextSyncOccurrence(draft, now) : null;
+  const edit = () => setStatus("idle");
   return (
     <form
       className={styles.form}
-      onSubmit={(event) => {
+      onChange={edit}
+      onSubmit={async (event) => {
         event.preventDefault();
-        if (valid) onSave(draft);
+        if (!valid || status === "saving") return;
+        setStatus("saving");
+        try {
+          await onSave(draft);
+          setStatus("saved");
+        } catch {
+          setStatus("error");
+        }
       }}
     >
-      <label className={styles.field}>
-        <span>Repeat</span>
-        <select value={mode} onChange={(event) => setMode(event.target.value)}>
-          <option value="hourly">Hourly</option>
-          <option value="daily">Daily</option>
-          <option value="weekly">Weekly</option>
+      <fieldset className={styles.card} disabled={status === "saving"}>
+        <legend className={styles.srOnly}>Fetch schedule</legend>
+        <select
+          className={styles.trigger}
+          aria-label="Schedule mode"
+          value={enabled ? "scheduled" : "manual"}
+          onChange={(event) => setEnabled(event.target.value === "scheduled")}
+        >
+          <option value="scheduled">Schedule</option>
           <option value="manual">Manual</option>
         </select>
-      </label>
-      {mode === "hourly" ? (
-        <label className={styles.field}>
-          <span>Every</span>
-          <span className={styles.interval}>
-            <input
-              aria-label="Interval in hours"
-              type="number"
-              min="1"
-              step="any"
-              required
-              value={hours}
-              onChange={(event) => setHours(event.target.value)}
-            />
-            <span>hours</span>
-          </span>
-        </label>
-      ) : null}
-      {mode === "weekly" ? (
-        <fieldset className={styles.week}>
-          <legend>On these days</legend>
-          <div className={styles.days}>
-            {[1, 2, 3, 4, 5, 6, 0].map((day) => {
-              const name = [
-                "Sunday",
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-              ][day];
-              return (
-                <Button
-                  key={day}
-                  type="button"
-                  variant={days.includes(day) ? "primary" : "tertiary"}
-                  size="sm"
-                  aria-label={name}
-                  aria-pressed={days.includes(day)}
-                  onClick={() =>
-                    setDays((current) =>
-                      current.includes(day)
-                        ? current.filter((value) => value !== day)
-                        : [...current, day].sort(
-                            (a, b) => ((a + 6) % 7) - ((b + 6) % 7),
-                          ),
-                    )
-                  }
+        {enabled ? (
+          <>
+            <div className={styles.sentence}>
+              <span className={styles.phrase}>
+                Starting{" "}
+                <input
+                  aria-label="Start date"
+                  type="date"
+                  required
+                  value={startDate}
+                  onChange={(event) => setStartDate(event.target.value)}
+                />
+              </span>
+              <span className={styles.phrase}>
+                every{" "}
+                <input
+                  className={styles.interval}
+                  aria-label="Repeat interval"
+                  type="number"
+                  min="1"
+                  max="999"
+                  step="1"
+                  required
+                  value={every}
+                  onChange={(event) => setEvery(event.target.value)}
+                />
+                <select
+                  aria-label="Repeat"
+                  value={unit}
+                  onChange={(event) => {
+                    const selected = units.find(
+                      (value) => value === event.target.value,
+                    );
+                    if (selected) setUnit(selected);
+                  }}
                 >
-                  {name?.slice(0, 1)}
-                </Button>
-              );
-            })}
-          </div>
-        </fieldset>
-      ) : null}
-      {mode === "daily" || mode === "weekly" ? (
-        <>
-          <label className={styles.field}>
-            <span>At</span>
-            <input
-              type="time"
-              required
-              value={time}
-              onChange={(event) => setTime(event.target.value)}
-            />
-          </label>
-          <p className={styles.zone}>
-            Local time · {Intl.DateTimeFormat().resolvedOptions().timeZone}
+                  {units.map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                      {Number(every) === 1 ? "" : "s"}
+                    </option>
+                  ))}
+                </select>
+              </span>
+              {unit !== "hour" ? (
+                <span className={styles.phrase}>
+                  at{" "}
+                  <input
+                    aria-label="Fetch time"
+                    type="time"
+                    required
+                    value={time}
+                    onChange={(event) => setTime(event.target.value)}
+                  />
+                </span>
+              ) : null}
+            </div>
+            {unit === "week" ? (
+              <fieldset className={styles.week}>
+                <legend>On these days</legend>
+                <div className={styles.days}>
+                  {[1, 2, 3, 4, 5, 6, 0].map((day) => (
+                    <Button
+                      key={day}
+                      type="button"
+                      size="sm"
+                      variant={days.includes(day) ? "primary" : "tertiary"}
+                      aria-label={weekdayNames[day]}
+                      aria-pressed={days.includes(day)}
+                      onClick={() => {
+                        edit();
+                        setDays((current) =>
+                          current.includes(day)
+                            ? current.filter((value) => value !== day)
+                            : [...current, day].sort(
+                                (a, b) => ((a + 6) % 7) - ((b + 6) % 7),
+                              ),
+                        );
+                      }}
+                    >
+                      {weekdayNames[day]?.slice(0, 3)}
+                    </Button>
+                  ))}
+                </div>
+              </fieldset>
+            ) : null}
+          </>
+        ) : (
+          <p className={styles.manual}>
+            Fetch updates when you choose Fetch Updates.
           </p>
-        </>
+        )}
+      </fieldset>
+      <p className={styles.zone} aria-live="polite">
+        {!enabled
+          ? "Automatic fetching is off."
+          : next
+            ? `Next fetch: ${next.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}`
+            : "Choose a valid start date and repeat interval."}
+      </p>
+      <p className={styles.zone}>
+        Applies to all connections and watched accounts while Pond is running.
+        Times use {Intl.DateTimeFormat().resolvedOptions().timeZone}.
+      </p>
+      {enabled && unit === "month" && Number(startDate.slice(-2)) > 28 ? (
+        <p className={styles.zone}>Shorter months use their last day.</p>
       ) : null}
-      <div className={styles.summary} aria-live="polite">
-        <span>YOUR SCHEDULE</span>
-        <strong>
-          {valid
-            ? describeSyncSchedule(draft)
-            : mode === "weekly"
-              ? "Choose at least one day"
-              : "Choose a valid interval or time"}
-        </strong>
-      </div>
+      {!valid ? (
+        <p className={styles.error} role="alert">
+          {unit === "week" && !days.length
+            ? "Choose at least one day."
+            : "Choose a valid date, time, and whole number from 1 to 999."}
+        </p>
+      ) : null}
       <Button
         type="submit"
-        size="lg"
+        size="sm"
         variant="secondary"
-        width="full"
-        disabled={!valid}
+        disabled={!valid || status === "saving"}
       >
-        Save Schedule
+        {status === "saving" ? "Saving" : "Save Schedule"}
       </Button>
+      {status === "error" ? (
+        <p className={styles.error} role="alert">
+          Couldn’t save your schedule. Try again.
+        </p>
+      ) : status === "saved" ? (
+        <p className={styles.zone} role="status">
+          Schedule saved.
+        </p>
+      ) : null}
     </form>
   );
 }

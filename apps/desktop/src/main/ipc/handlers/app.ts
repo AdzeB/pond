@@ -63,8 +63,13 @@ export function registerAppHandlers(): void {
   safeHandle(IPC.openExternal, async (_, url: string) => {
     try {
       const parsed = new URL(String(url));
-      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-        throw new Error(`refused to open non-http(s) URL: ${parsed.protocol}`);
+      /** mailto opens Mail. Other non-http schemes are an RCE vector via openExternal. */
+      if (
+        parsed.protocol !== "http:" &&
+        parsed.protocol !== "https:" &&
+        parsed.protocol !== "mailto:"
+      ) {
+        throw new Error(`refused to open URL: ${parsed.protocol}`);
       }
       await shell.openExternal(parsed.toString());
       return { ok: true };

@@ -109,6 +109,15 @@ export async function probeUserHandle(
     const viaApi = await probeRedditHandle(partition ?? PARTITION);
     if (viaApi) return viaApi;
   }
+  if (source === "cosmos") {
+    const { probeCosmosHandle } = await import("../harvest/cosmos/api");
+    return probeCosmosHandle(partition ?? PARTITION);
+  }
+  if (source === "tiktok") {
+    const { probeTiktokHandle } = await import("../harvest/tiktok/api");
+    const viaApi = await probeTiktokHandle(partition ?? PARTITION);
+    if (viaApi) return viaApi;
+  }
   const lease = await leaseWindow(source, { partition });
   try {
     const url = probeUrlForSource(source);
@@ -149,7 +158,7 @@ function probeUrlForSource(source: Source): string {
   if (source === "arena") return "https://www.are.na/";
   if (source === "twitter") return "https://x.com/home";
   if (source === "instagram") return "https://www.instagram.com/";
-  if (source === "pinterest") return "https://www.pinterest.com/";
+  if (source === "pinterest") return "https://www.pinterest.com/me/";
   if (source === "youtube") return "https://www.youtube.com/account";
   if (source === "reddit") return "https://www.reddit.com/";
   if (source === "threads") return "https://www.threads.com/";

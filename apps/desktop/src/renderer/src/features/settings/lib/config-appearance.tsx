@@ -16,27 +16,6 @@ export const appearanceSection = defineCustomSection({
   title: "Appearance",
   description: "App icon, theme, colors, sounds, and accessibility.",
   groups: [
-    group.prefs("window", {
-      title: "App Icon",
-      fullWidth: true,
-      items: [
-        {
-          control: "custom",
-          key: "app-icon",
-          title: "App Icon",
-          keywords: [
-            "dock",
-            "icon",
-            "tint",
-            "aqua",
-            "crayon",
-            "taskbar",
-            "brand",
-          ],
-          render: (b) => <AppIconRow binding={b} />,
-        },
-      ],
-    }),
     group.prefs("preferences", {
       title: "Theme",
       fullWidth: true,
@@ -131,6 +110,27 @@ export const appearanceSection = defineCustomSection({
           key: "pointerCursors",
           title: "Pointer Cursors",
           description: "Use a hand cursor on hover.",
+        },
+      ],
+    }),
+    group.prefs("window", {
+      title: "App Icon",
+      fullWidth: true,
+      items: [
+        {
+          control: "custom",
+          key: "app-icon",
+          title: "App Icon",
+          keywords: [
+            "dock",
+            "icon",
+            "tint",
+            "aqua",
+            "crayon",
+            "taskbar",
+            "brand",
+          ],
+          render: (b) => <AppIconRow binding={b} />,
         },
       ],
     }),

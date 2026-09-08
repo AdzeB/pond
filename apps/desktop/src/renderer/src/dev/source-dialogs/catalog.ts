@@ -1,12 +1,6 @@
 import type { SourceFlowPage } from "@/features/sources/state/source-flow";
 
 export const steps = {
-  "source-new": {
-    title: "Add Source",
-    group: "Connect",
-    description:
-      "Choose between linking saved posts and following a public account.",
-  },
   "connect-source": {
     title: "Choose Source",
     group: "Connect",
@@ -45,7 +39,7 @@ export const steps = {
     description: "Edit the nickname and view the account handle.",
   },
   "account-options": {
-    title: "Options",
+    title: "Disconnect",
     group: "Manage",
     description: "Disconnect the account.",
   },
@@ -60,7 +54,7 @@ export const steps = {
     description: "Edit the watch nickname.",
   },
   "watch-options": {
-    title: "Watch Options",
+    title: "Stop Watching",
     group: "Manage",
     description: "Stop watching the account.",
   },
@@ -77,6 +71,6 @@ export const steps = {
 export function previewStep(value: string | null): SourceFlowPage {
   return (
     Object.keys(steps).find((key): key is SourceFlowPage => key === value) ??
-    "source-new"
+    "connect-source"
   );
 }

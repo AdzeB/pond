@@ -1,5 +1,5 @@
 import { IconArrowUpRightOutline18 } from "@pond/icons/outline/18";
-import { Logo } from "@pond/ui/logo";
+import { Button, Message, Reveal } from "@pond/ui";
 import type {
   AssistantMessage,
   AssistantProvider,
@@ -88,12 +88,6 @@ export function ResponseContent({
       : [];
   return (
     <article className={styles.response}>
-      <div className={styles["response-identity"]}>
-        <span className={styles["thinking-mark"]}>
-          <Logo size={18} />
-        </span>
-        Agent
-      </div>
       {message.content && !inferredResult ? (
         <AssistantResponse
           content={message.content}
@@ -103,77 +97,86 @@ export function ResponseContent({
         />
       ) : null}
       {results.map((result) => (
-        <ResultSet
-          key={`${result.title}-${result.saveIds.join(",")}`}
-          result={result}
-          sources={sources}
-          attachedIds={attachedIds}
-          onOpenSave={openSave}
-          onAttach={attach}
-        />
+        <Reveal key={`${result.title}-${result.saveIds.join(",")}`}>
+          <ResultSet
+            result={result}
+            sources={sources}
+            attachedIds={attachedIds}
+            onOpenSave={openSave}
+            onAttach={attach}
+          />
+        </Reveal>
       ))}
-      {message.metadata?.question ? (
-        <Question
-          question={message.metadata.question}
-          answer={questionAnswer}
-          disabled={questionDisabled}
-          onAnswer={(answer) =>
-            void assistant.answerQuestion(message.id, answer, provider)
-          }
-          onWrite={focus}
-        />
-      ) : null}
-      {message.metadata?.changes?.length ? (
-        <ChangeReview
-          messageId={message.id}
-          changes={message.metadata.changes}
-        />
-      ) : null}
-      {message.metadata?.error ? (
-        <p className={styles["change-error"]} role="alert">
-          {message.metadata.error}
-        </p>
-      ) : null}
-      {message.metadata?.stopped ? (
-        <p className={styles["stopped-label"]}>Response stopped.</p>
-      ) : null}
-      <div className={styles["response-footer"]}>
-        <ToolActivity steps={message.metadata?.steps ?? []} />
-        {sources.length ? (
-          <button
-            type="button"
-            className={styles["references-link"]}
-            onClick={() => assistant.showReferences(message.id)}
-          >
-            {sources.length}{" "}
-            {sources.length === 1 ? "Save consulted" : "Saves consulted"}
-            <IconArrowUpRightOutline18 />
-          </button>
-        ) : null}
-      </div>
-      <div className={styles["response-actions"]}>
-        {message.content || message.metadata?.results?.length ? (
-          <MessageActions
-            text={responseText(message)}
-            disabled={busy}
-            onQuote={() => {
-              if (assistant.quote(responseText(message))) attach(sources);
-            }}
+      <Reveal visible={Boolean(message.metadata?.question)}>
+        {message.metadata?.question ? (
+          <Question
+            question={message.metadata.question}
+            answer={questionAnswer}
+            disabled={questionDisabled}
+            onAnswer={(answer) =>
+              void assistant.answerQuestion(message.id, answer, provider)
+            }
+            onWrite={focus}
           />
         ) : null}
-        {message.metadata?.stopped || message.metadata?.error ? (
-          <button
-            type="button"
+      </Reveal>
+      <Reveal visible={Boolean(message.metadata?.changes?.length)}>
+        {message.metadata?.changes?.length ? (
+          <ChangeReview
+            messageId={message.id}
             disabled={busy}
-            onClick={() => {
-              assistant.appendDraft("Continue from where you stopped.");
-              focus();
-            }}
-          >
-            Continue
-          </button>
+            changes={message.metadata.changes}
+          />
         ) : null}
-      </div>
+      </Reveal>
+      <Reveal visible={Boolean(message.metadata?.error)}>
+        <p className={styles["change-error"]} role="alert">
+          {message.metadata?.error}
+        </p>
+      </Reveal>
+      <Reveal visible={Boolean(message.metadata?.stopped)}>
+        <p className={styles["stopped-label"]}>Response stopped.</p>
+      </Reveal>
+      <Reveal>
+        <div className={styles["response-footer"]}>
+          <ToolActivity steps={message.metadata?.steps ?? []} />
+          {sources.length ? (
+            <Button
+              size="xs"
+              variant="ghost"
+              onClick={() => assistant.showReferences(message.id)}
+            >
+              {sources.length}{" "}
+              {sources.length === 1 ? "Save consulted" : "Saves consulted"}
+              <IconArrowUpRightOutline18 />
+            </Button>
+          ) : null}
+        </div>
+        <Message.Actions>
+          {message.content || message.metadata?.results?.length ? (
+            <MessageActions
+              text={responseText(message)}
+              disabled={busy}
+              onQuote={() => {
+                if (assistant.quote(responseText(message))) attach(sources);
+              }}
+            />
+          ) : null}
+          {message.metadata?.stopped || message.metadata?.error ? (
+            <Button
+              size="xs"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => {
+                assistant.appendDraft("Continue from where you stopped.");
+                focus();
+              }}
+            >
+              Draft a Follow-up
+            </Button>
+          ) : null}
+        </Message.Actions>
+      </Reveal>
     </article>
   );
 }

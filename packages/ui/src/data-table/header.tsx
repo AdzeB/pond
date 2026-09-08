@@ -155,7 +155,7 @@ export function DataTableHeader<T>() {
       className={styles["header-row"]}
       style={{ gridTemplateColumns: meta.gridTemplate }}
     >
-      {meta.selectionEnabled ? (
+      {meta.selectionEnabled && meta.selectionCheckboxes ? (
         <div
           role="columnheader"
           className={styles["select-header"]}

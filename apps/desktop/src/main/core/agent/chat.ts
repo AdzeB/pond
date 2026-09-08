@@ -1,9 +1,12 @@
+import { EventType } from "@ag-ui/core";
 import { agentChats } from "@pond/schema/db";
+import type { StreamChunk } from "@tanstack/ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import {
   ASSISTANT_MODELS,
-  type AssistantChunk,
+  type AssistantActivity,
+  type AssistantEvent,
   type AssistantMetadata,
   type AssistantSend,
   type AssistantSendResult,
@@ -18,9 +21,10 @@ import { getPrefs } from "../prefs";
 import type { CompletionInput } from "./complete";
 import { libraryContext } from "./context";
 import { keyFor, parseProvider } from "./keys";
-import { appendMessage, recentMessages } from "./persist";
+import { appendMessage, listMessages } from "./persist";
 import { connectionFor } from "./provider-models";
 import type { LibraryScope } from "./tools";
+import { loadModelTranscript } from "./transcript";
 import { imagesForSaves, visionEnabled } from "./vision";
 
 const chatDependencies = {
@@ -39,9 +43,10 @@ const chatDependencies = {
     return completeWithTools(input);
   },
   libraryContext,
+  loadModelTranscript,
   appendMessage,
-  async recentMessages(chatId: string, limit: number) {
-    return assistantMessages.parse(await recentMessages(chatId, limit));
+  async listMessages(chatId: string) {
+    return assistantMessages.parse(await listMessages(chatId));
   },
   imagesForSaves,
 };
@@ -68,8 +73,8 @@ export async function sendMessage(
     return { chatId, error: "Wait for the current reply or stop it first." };
   const controller = new AbortController();
   active.set(chatId, { requestId, controller });
-  let lastActivity: AssistantChunk["activity"];
-  const emit = (chunk: Omit<AssistantChunk, "chatId" | "requestId">) => {
+  let lastActivity: AssistantActivity | undefined;
+  const emit = (chunk: Exclude<AssistantEvent, { type: "stream" }>) => {
     if (chunk.type === "activity") {
       if (chunk.activity === lastActivity) return;
       lastActivity = chunk.activity;
@@ -77,6 +82,15 @@ export async function sendMessage(
     if (!controller.signal.aborted)
       deps.broadcast(IPC.agentChunk, { chatId, requestId, ...chunk });
   };
+  const stream = (event: StreamChunk) =>
+    deps.broadcast(IPC.agentChunk, {
+      chatId,
+      requestId,
+      type: "stream",
+      event,
+    });
+  const messageId = `${requestId}:assistant`;
+  stream({ type: EventType.RUN_STARTED, threadId: chatId, runId: requestId });
   let accepted = false;
   let assembled = "";
   let context: ReturnType<typeof libraryContext> | undefined;
@@ -121,7 +135,7 @@ export async function sendMessage(
       onResults: (results) => emit({ type: "results", results }),
       onSteps: (steps) => emit({ type: "steps", steps }),
     });
-    const previous = await deps.recentMessages(chatId, 23);
+    const previous = await deps.listMessages(chatId);
     const pendingQuestion = previous.at(-1);
     if (
       input.replyToQuestion &&
@@ -166,13 +180,19 @@ export async function sendMessage(
         input.replyToQuestion ??
         (pendingQuestion?.metadata?.question ? pendingQuestion.id : undefined),
     };
-    await deps.appendMessage({
+    const canonical = await deps.loadModelTranscript(chatId);
+    const userId = await deps.appendMessage({
       chatId,
       role: "user",
       content,
       metadata: userMetadata,
     });
     accepted = true;
+    stream({
+      type: EventType.TEXT_MESSAGE_START,
+      messageId,
+      role: "assistant",
+    });
     const history = [
       ...previous,
       { role: "user", content, metadata: userMetadata },
@@ -210,8 +230,13 @@ export async function sendMessage(
     );
     emit({ type: "activity", activity: "thinking" });
     await deps.completeWithTools({
+      threadId: chatId,
+      canonicalMessages: [...canonical, { id: userId, role: "user", content }],
       provider: chatProvider,
-      model: connection.modelId,
+      model:
+        images.length > 0 && prefs.agent.visionModel
+          ? prefs.agent.visionModelId?.trim() || connection.modelId
+          : connection.modelId,
       apiKey: chatKey,
       baseUrl: connection.baseUrl,
       messages: history.map((row) => {
@@ -228,13 +253,19 @@ export async function sendMessage(
       attachments,
       images,
       retrieveLibrary: context.retrieve,
+      sources: context.sources,
       onActivity: (activity) => emit({ type: "activity", activity }),
       tools: context.tools,
+      middleware: [context.middleware],
       abortController: controller,
       onText: (text) => {
         controller.signal.throwIfAborted();
         assembled += text;
-        emit({ type: "text", text });
+        stream({
+          type: EventType.TEXT_MESSAGE_CONTENT,
+          messageId,
+          delta: text,
+        });
       },
     });
     controller.signal.throwIfAborted();
@@ -259,7 +290,12 @@ export async function sendMessage(
         steps: context.steps(),
       },
     });
-    emit({ type: "done" });
+    stream({ type: EventType.TEXT_MESSAGE_END, messageId });
+    stream({
+      type: EventType.RUN_FINISHED,
+      threadId: chatId,
+      runId: requestId,
+    });
     return { chatId, accepted };
   } catch (err) {
     const stopped = controller.signal.aborted;
@@ -282,12 +318,21 @@ export async function sendMessage(
           error,
         },
       });
-    deps.broadcast(IPC.agentChunk, {
-      chatId,
-      requestId,
-      type: stopped ? "stopped" : "error",
-      error,
-    });
+    if (stopped) {
+      if (accepted) stream({ type: EventType.TEXT_MESSAGE_END, messageId });
+      stream({
+        type: EventType.RUN_FINISHED,
+        threadId: chatId,
+        runId: requestId,
+      });
+    } else {
+      stream({
+        type: EventType.RUN_ERROR,
+        threadId: chatId,
+        runId: requestId,
+        message: error ?? "Could not reply. Try again.",
+      });
+    }
     return { chatId, accepted, stopped, error };
   } finally {
     active.delete(chatId);

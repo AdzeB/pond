@@ -61,6 +61,11 @@ export const NEW_ACTION_GROUPS = [
         label: "Watch Account",
         keywords: "new source public auto import someone",
       },
+      {
+        id: "watched-folder",
+        label: "Watched Folder",
+        keywords: "directory local files copy auto import",
+      },
     ],
   },
 ] as const;

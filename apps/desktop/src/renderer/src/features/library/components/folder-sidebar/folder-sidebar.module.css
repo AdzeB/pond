@@ -64,6 +64,10 @@
 
 .scroll {
   padding-top: 8px;
+
+  > :first-child {
+    padding-top: 0;
+  }
 }
 
 .trigger {
@@ -146,30 +150,4 @@
   inset-inline-start: 0;
   content: "";
   border-inline-start: 1px solid var(--ds-gray-a5);
-}
-
-.progress {
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  margin-left: auto;
-}
-
-.ring {
-  display: block;
-  animation: spin 0.7s linear infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ring {
-    animation: none;
-  }
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }

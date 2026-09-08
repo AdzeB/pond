@@ -37,7 +37,7 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
     "schedule",
     {
       component: ScheduleSection,
-      title: "Fetch Schedule",
+      title: "Fetching",
       description:
         "One schedule for all connections and watched accounts. Pond checks for updates while it is running.",
       keywords: [
@@ -66,7 +66,7 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
     "models",
     {
       component: AgentSection,
-      title: "Models",
+      title: "Integrations",
       description:
         "Add providers, then pick Language and Vision defaults for Agent.",
       keywords: [
@@ -85,8 +85,51 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
     },
   ],
   ["trash", trashSection],
-  ["storage", storageSection],
-  ["videos", videosSection],
+  [
+    "storage",
+    {
+      ...storageSection,
+      groups: [
+        ...(storageSection.groups ?? []),
+        ...(trashSection.groups ?? []).map((group) => ({
+          ...group,
+          prefsKey: "trash" as const,
+        })),
+      ],
+    },
+  ],
+  [
+    "videos",
+    {
+      ...videosSection,
+      title: "Harvesting",
+      description:
+        "Choose when Pond fetches updates and how new images and videos are saved.",
+      keywords: [
+        "downloads",
+        "fetch",
+        "fetching",
+        "schedule",
+        "sync",
+        "frequency",
+        "hourly",
+        "daily",
+        "weekly",
+        "monthly",
+      ],
+      groups: [
+        { title: "Fetch Schedule", render: () => <ScheduleSection /> },
+        ...(imagesSection.groups ?? []).map((group) => ({
+          ...group,
+          title: group.title === "Format" ? "Images" : "Image Encoding",
+        })),
+        ...(videosSection.groups ?? []).map((group) => ({
+          ...group,
+          title: `Video ${group.title}`,
+        })),
+      ],
+    },
+  ],
   ["images", imagesSection],
   ["search", enrichmentSection],
   [

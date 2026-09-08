@@ -2,20 +2,25 @@ import { IconDotsFill12 } from "@pond/icons/fill/12";
 import { IconChevronDownOutline12 } from "@pond/icons/outline/12";
 import {
   IconAlbum2Outline18,
+  IconArrowDiagonalInOutline18,
   IconArrowRotateClockwiseOutline18,
+  IconBookmarkOutline18,
+  IconBookmarkSlashOutline18,
   IconCode2Outline18,
-  IconCommandOutline18,
   IconDownloadOutline18,
+  IconEnvelopeOutline18,
+  IconFolderBanOutline18,
   IconFolderOutline18,
   IconGear3Outline18,
-  IconGlobeOutline18,
+  IconHashtagOutline18,
   IconMagnifierOutline18,
   IconMsg2Outline18,
   IconPencilOutline18,
   IconPlusOutline18,
-  IconTagsOutline18,
   IconTrash2Outline18,
+  IconTrashXmarkOutline18,
   IconVersionsOutline18,
+  IconWindowDownloadOutline18,
 } from "@pond/icons/outline/18";
 import type { SavedView } from "@pond/schema/db";
 import {
@@ -29,12 +34,15 @@ import {
 } from "@pond/ui";
 import { useRouterState } from "@tanstack/react-router";
 import { type CSSProperties, useMemo } from "react";
-import { openShortcutsSheet } from "@/app/components/shortcuts-sheet/shortcuts-sheet";
 import { useStatusFeed } from "@/features/downloads/lib/status-feed";
 import { newFolder } from "@/features/library/components/new-menu/actions";
 import { NewMenu } from "@/features/library/components/new-menu/new-menu";
 import { commandMenu } from "@/features/library/state/command-menu";
-import { folders, useFolders } from "@/features/library/state/folders";
+import {
+  folders,
+  useFolderMemberships,
+  useFolders,
+} from "@/features/library/state/folders";
 import {
   type LibraryNav,
   libraryChrome,
@@ -54,16 +62,22 @@ import {
   useIncludeSubfolders,
   useViewStore,
 } from "@/features/library/state/view-store";
+import { useSaves } from "@/features/saves/hooks/use-saves";
 import { openSettings } from "@/features/settings/lib/open-settings";
+import { useAccounts } from "@/features/sources/hooks/use-accounts";
+import { useTags } from "@/features/tags/state/tags";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys/shortcut-keys";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
+import { countSidebarSaves, formatCount } from "./counts";
 import styles from "./folder-sidebar.module.css";
 import { flattenFolderTree } from "./tree";
 
-const GITHUB_REPO = "https://github.com/raphaelsalaja/pond";
+const TWITTER = "https://x.com/raphaelsalaja";
+const GITHUB = "https://github.com/raphaelsalaja";
+const EMAIL = "mailto:raphaelsalaja@gmail.com";
 const POND_SITE = "https://pond.app";
 
 function openUrl(url: string): void {
@@ -83,11 +97,6 @@ const WORKSPACE_MENU: MenuItemSpec[] = [
           icon: <IconDownloadOutline18 />,
           onClick: () => getAppRouter()?.history.push("/dev/downloads"),
         },
-        {
-          label: "Assistant Lab",
-          icon: <IconMsg2Outline18 />,
-          onClick: () => getAppRouter()?.history.push("/dev/assistant"),
-        },
         { type: "separator" as const },
       ]
     : []),
@@ -105,23 +114,22 @@ const WORKSPACE_MENU: MenuItemSpec[] = [
   { type: "separator" },
   {
     type: "group",
-    label: "Help",
+    label: "Contact",
     items: [
       {
-        label: "Keyboard Shortcuts",
-        icon: <IconCommandOutline18 />,
-        shortcut: shortcutGlyphs("app.shortcuts"),
-        onClick: () => openShortcutsSheet(),
+        label: "Twitter",
+        icon: <IconHashtagOutline18 />,
+        onClick: () => openUrl(TWITTER),
       },
       {
-        label: "Pond on GitHub",
+        label: "GitHub",
         icon: <IconCode2Outline18 />,
-        onClick: () => openUrl(GITHUB_REPO),
+        onClick: () => openUrl(GITHUB),
       },
       {
-        label: "Report an Issue",
-        icon: <IconMsg2Outline18 />,
-        onClick: () => openUrl(`${GITHUB_REPO}/issues/new`),
+        label: "Email",
+        icon: <IconEnvelopeOutline18 />,
+        onClick: () => openUrl(EMAIL),
       },
     ],
   },
@@ -152,6 +160,10 @@ function selectNav(nav: LibraryNav): void {
 }
 
 function WorkspaceHeader() {
+  const assistantPage = useRouterState({
+    select: (s) => s.location.pathname === "/assistant",
+  });
+
   return (
     <Sidebar.Header className={styles.workspace}>
       <Menu.Root>
@@ -186,6 +198,18 @@ function WorkspaceHeader() {
             <IconMagnifierOutline18 />
           </Button>
         </Tooltip>
+        <Tooltip label="Assistant" side="bottom">
+          <Button
+            icon
+            size="sm"
+            variant="ghost"
+            aria-label="Assistant"
+            aria-current={assistantPage ? "page" : undefined}
+            onClick={() => go("/assistant")}
+          >
+            <IconMsg2Outline18 />
+          </Button>
+        </Tooltip>
         <NewMenu />
       </div>
     </Sidebar.Header>
@@ -196,8 +220,7 @@ function Row({
   label,
   active,
   icon,
-  trailing,
-  busy,
+  count,
   depth = 0,
   onClick,
   onDrop,
@@ -205,8 +228,7 @@ function Row({
   label: string;
   active?: boolean;
   icon?: React.ReactNode;
-  trailing?: React.ReactNode;
-  busy?: boolean;
+  count?: number;
   depth?: number;
   onClick: () => void;
   onDrop?: () => void;
@@ -216,7 +238,6 @@ function Row({
       data-status={active ? "active" : undefined}
       data-depth={depth || undefined}
       aria-current={active ? "page" : undefined}
-      aria-busy={busy || undefined}
       onClick={onClick}
       onDragOver={
         onDrop
@@ -236,38 +257,10 @@ function Row({
     >
       {icon ? <Sidebar.Icon>{icon}</Sidebar.Icon> : null}
       {label}
-      {trailing}
+      {count != null ? (
+        <Sidebar.Count>{formatCount(count)}</Sidebar.Count>
+      ) : null}
     </Sidebar.Item>
-  );
-}
-
-function ProgressMark() {
-  return (
-    <span className={styles.progress} aria-hidden>
-      <svg
-        className={styles.ring}
-        width="18"
-        height="18"
-        viewBox="0 0 18 18"
-        fill="none"
-        aria-hidden="true"
-      >
-        <circle
-          cx="9"
-          cy="9"
-          r="7"
-          stroke="currentColor"
-          strokeOpacity="0.1"
-          strokeWidth="2.5"
-        />
-        <path
-          d="M16 9C16 5.13401 12.866 2 9 2"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-        />
-      </svg>
-    </span>
   );
 }
 
@@ -277,14 +270,25 @@ export function FolderSidebar() {
   const assistantPage = pathname === "/assistant";
   const sourcesPage = pathname === "/sources";
   const tagsPage = pathname === "/tags";
-  const libraryPage = !assistantPage && !sourcesPage && !tagsPage;
+  const untaggedPage = pathname === "/untagged";
+  const libraryPage =
+    !assistantPage && !sourcesPage && !tagsPage && !untaggedPage;
   const folderRows = useFolders();
+  const memberships = useFolderMemberships();
+  const saves = useSaves();
+  const tags = useTags();
+  const { accounts } = useAccounts();
   const includeSubfolders = useIncludeSubfolders();
   const { inProgress } = useStatusFeed();
   const scrollFade = useScrollFade<HTMLDivElement>();
   useHydrateSavedViews();
 
   const nested = useMemo(() => flattenFolderTree(folderRows), [folderRows]);
+  const counts = useMemo(
+    () => countSidebarSaves(saves, memberships),
+    [saves, memberships],
+  );
+  const downloadsCount = inProgress.saving.length + inProgress.running.length;
 
   return (
     <Sidebar.Root
@@ -295,47 +299,71 @@ export function FolderSidebar() {
     >
       <WorkspaceHeader />
       <Sidebar.Scroll className={styles.scroll} {...scrollFade}>
-        <Row
-          label="Library"
-          icon={<IconAlbum2Outline18 />}
-          active={libraryPage && nav.kind === "all"}
-          onClick={() => {
-            resetFilters();
-            selectNav({ kind: "all" });
-          }}
-        />
-        <Row
-          label="Trash"
-          icon={<IconTrash2Outline18 />}
-          active={libraryPage && nav.kind === "trash"}
-          onClick={() => selectNav({ kind: "trash" })}
-        />
-        <Row
-          label="Downloads"
-          icon={<IconDownloadOutline18 />}
-          active={libraryPage && nav.kind === "downloads"}
-          busy={inProgress.busy}
-          trailing={inProgress.busy ? <ProgressMark /> : null}
-          onClick={() => selectNav({ kind: "downloads" })}
-        />
-        <Row
-          label="Sources"
-          icon={<IconGlobeOutline18 />}
-          active={sourcesPage}
-          onClick={() => selectNav({ kind: "sources" })}
-        />
-        <Row
-          label="Tags"
-          icon={<IconTagsOutline18 />}
-          active={tagsPage}
-          onClick={() => go("/tags")}
-        />
-        <Row
-          label="Assistant"
-          icon={<IconMsg2Outline18 />}
-          active={assistantPage}
-          onClick={() => go("/assistant")}
-        />
+        <Sidebar.Group>
+          <Sidebar.GroupLabel>Library</Sidebar.GroupLabel>
+          <Row
+            label="All"
+            icon={<IconAlbum2Outline18 />}
+            count={counts.library}
+            active={libraryPage && nav.kind === "all"}
+            onClick={() => {
+              resetFilters();
+              selectNav({ kind: "all" });
+            }}
+          />
+          <Row
+            label="Uncategorized"
+            icon={<IconFolderBanOutline18 />}
+            count={counts.uncategorized}
+            active={libraryPage && nav.kind === "uncategorized"}
+            onClick={() => {
+              resetFilters();
+              selectNav({ kind: "uncategorized" });
+            }}
+          />
+          <Row
+            label="Untagged"
+            icon={<IconBookmarkSlashOutline18 />}
+            count={counts.untagged}
+            active={untaggedPage}
+            onClick={() => {
+              resetFilters();
+              libraryChrome.setNav({ kind: "all" });
+              go("/untagged");
+            }}
+          />
+          <Row
+            label="Tags"
+            icon={<IconBookmarkOutline18 />}
+            count={tags.length}
+            active={tagsPage}
+            onClick={() => go("/tags")}
+          />
+          <Row
+            label="Trash"
+            icon={<IconTrashXmarkOutline18 />}
+            count={counts.trash}
+            active={libraryPage && nav.kind === "trash"}
+            onClick={() => selectNav({ kind: "trash" })}
+          />
+        </Sidebar.Group>
+        <Sidebar.Group>
+          <Sidebar.GroupLabel>Harvesting</Sidebar.GroupLabel>
+          <Row
+            label="Downloads"
+            icon={<IconWindowDownloadOutline18 />}
+            count={downloadsCount}
+            active={libraryPage && nav.kind === "downloads"}
+            onClick={() => selectNav({ kind: "downloads" })}
+          />
+          <Row
+            label="Sources"
+            icon={<IconArrowDiagonalInOutline18 />}
+            count={accounts.length}
+            active={sourcesPage}
+            onClick={() => selectNav({ kind: "sources" })}
+          />
+        </Sidebar.Group>
         <SavedViewsSection />
 
         <Sidebar.CollapsibleGroup>
@@ -433,6 +461,7 @@ export function FolderSidebar() {
                     label={folder.name}
                     icon={<IconFolderOutline18 />}
                     depth={depth}
+                    count={counts.folders[folder.id] ?? 0}
                     active={
                       libraryPage &&
                       nav.kind === "folder" &&

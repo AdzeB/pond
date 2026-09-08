@@ -1,0 +1,103 @@
+.markdown {
+  min-width: 0;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
+.markdown > :first-child {
+  margin-top: 0;
+}
+
+.markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown p {
+  margin-block: 8px;
+}
+
+.markdown :is(h1, h2, h3, h4, h5, h6) {
+  margin-block: 16px 8px;
+  font-size: inherit;
+  font-weight: var(--ds-weight-semibold);
+}
+
+.markdown :is(pre, table) {
+  max-width: 100%;
+  overflow: auto;
+}
+
+.markdown pre {
+  padding: 12px;
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-md);
+}
+
+.markdown code {
+  font-family: var(--ds-font-mono);
+}
+
+.markdown a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.markdown blockquote,
+.quote {
+  padding-inline: 12px;
+  margin: 0;
+  color: var(--ds-gray-11);
+  border-left: 2px solid var(--ds-gray-6);
+}
+
+.markdown :is(th, td) {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--ds-border-subtle);
+}
+
+.menuItem {
+  composes: item from "../shared/styles/popup/styles.module.css";
+}
+
+.separator {
+  composes: separator from "../shared/styles/popup/styles.module.css";
+}
+
+.markdown :is(strong, b) {
+  font-weight: var(--ds-weight-semibold);
+}
+
+.markdown :is(em, i) {
+  font-style: italic;
+}
+
+.markdown :is(ul, ol) {
+  padding-left: 24px;
+  margin-block: 8px;
+}
+
+.markdown ul {
+  list-style-type: disc;
+}
+
+.markdown ol {
+  list-style-type: decimal;
+}
+
+.markdown li {
+  display: list-item;
+  padding-left: 2px;
+}
+
+.markdown hr {
+  margin-block: 16px;
+  border: 0;
+  border-top: 1px solid var(--ds-border-subtle);
+}
+
+.markdown pre {
+  margin-top: 0;
+  border-radius: 0 0 var(--ds-radius-md) var(--ds-radius-md);
+}

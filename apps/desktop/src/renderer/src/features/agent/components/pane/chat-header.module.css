@@ -9,14 +9,8 @@
 }
 .trigger {
   flex-shrink: 1;
-  gap: 6px;
   min-width: 0;
   max-width: min(420px, 100%);
-  padding: 0 7px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ds-gray-12);
-  border-radius: 6px;
 }
 .trigger span {
   overflow: hidden;
@@ -25,9 +19,6 @@
 }
 .trigger > svg {
   flex-shrink: 0;
-  width: 11px;
-  height: 11px;
-  color: var(--ds-gray-9);
 }
 .actions {
   display: flex;
@@ -35,40 +26,4 @@
   gap: 2px;
   align-items: center;
   margin-left: auto;
-}
-.popup {
-  --popup-width: 320px;
-  --popup-min-width: 0px;
-  padding: 0;
-  border-radius: 10px;
-}
-.search {
-  width: 100%;
-  height: 38px;
-  padding-inline: 12px;
-  font-size: 12px;
-}
-.list {
-  max-height: min(360px, 50vh);
-  padding: 5px;
-}
-.item {
-  gap: 8px;
-  min-height: 32px;
-  padding-inline: 8px;
-  font-size: 12px;
-}
-.item > svg {
-  width: 14px;
-  height: 14px;
-  color: var(--ds-gray-10);
-}
-.current {
-  margin-left: auto;
-  font-size: 10px;
-  color: var(--ds-gray-9);
-}
-.empty {
-  padding: 8px 12px 12px;
-  font-size: 12px;
 }

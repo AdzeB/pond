@@ -447,9 +447,9 @@ it.each([
   expect(sourceFlow.current()).toBeNull();
   expect(document.querySelector(`.${dialogStyles.backdrop}`)).toBeNull();
   expect(document.querySelector("[data-base-ui-inert]")).toBeNull();
-  await act(async () => sourceFlow.open("source-new"));
+  await act(async () => sourceFlow.open("connect-source"));
   expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
-    "Add Source",
+    "Choose Source",
   );
   await act(async () => button("Close").click());
   expect(document.querySelector(`.${dialogStyles.backdrop}`)).toBeNull();

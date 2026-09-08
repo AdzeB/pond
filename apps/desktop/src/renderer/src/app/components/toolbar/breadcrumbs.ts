@@ -84,7 +84,7 @@ export function buildBreadcrumbs({
     return destination;
   }
   const crumbs: Breadcrumb[] = [
-    { label: "Library", path: "/", nav: { kind: "all" } },
+    { label: "All", path: "/", nav: { kind: "all" } },
   ];
   if (base === "/" && nav.kind === "folder") {
     const byId = new Map(folders.map((folder) => [folder.id, folder]));

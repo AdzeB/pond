@@ -42,8 +42,10 @@ const dependencies: ChatDependencies = {
   keyFor: mock.key,
   completeWithTools: mock.complete,
   appendMessage: mock.append,
-  recentMessages: async () => mock.history,
+  listMessages: async () => mock.history,
+  loadModelTranscript: async () => [],
   libraryContext: () => ({
+    middleware: { name: "test-tool-activity" },
     tools: [
       {
         name: "readSave",
@@ -88,7 +90,7 @@ beforeEach(() => {
     modelIds: {},
   };
   mock.key.mockResolvedValue("test-key");
-  mock.append.mockResolvedValue(undefined);
+  mock.append.mockResolvedValue("persisted-user");
   mock.complete.mockImplementation(async (input) => {
     input.onText("Reply");
     return "Reply";
@@ -237,4 +239,33 @@ it("rejects stale or foreign question replies before appending", async () => {
   expect(result.error).toMatch(/no longer awaiting/);
   expect(mock.append).not.toHaveBeenCalled();
   expect(mock.complete).not.toHaveBeenCalled();
+});
+
+it("keeps Language and Vision models independent within the same provider", async () => {
+  mock.prefs.agent = {
+    ...mock.prefs.agent,
+    modelIds: { openai: "language-model" },
+    visionModel: "openai",
+    visionModelId: "vision-model",
+  };
+  await send(request, {
+    ...dependencies,
+    imagesForSaves: async () => [{ mimeType: "image/png", data: "test-image" }],
+  });
+  expect(mock.complete.mock.calls.at(-1)?.[0].model).toBe("vision-model");
+  await sendMessage({ ...request, requestId: "text-request" });
+  expect(mock.complete.mock.calls.at(-1)?.[0].model).toBe("language-model");
+});
+
+it("preserves legacy Vision model fallback", async () => {
+  mock.prefs.agent = {
+    ...mock.prefs.agent,
+    modelIds: { openai: "saved-model" },
+    visionModel: "openai",
+  };
+  await send(request, {
+    ...dependencies,
+    imagesForSaves: async () => [{ mimeType: "image/png", data: "test-image" }],
+  });
+  expect(mock.complete.mock.calls.at(-1)?.[0].model).toBe("saved-model");
 });

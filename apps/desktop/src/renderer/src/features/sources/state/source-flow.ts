@@ -2,7 +2,6 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
 export type SourceFlowPage =
-  | "source-new"
   | "connect-source"
   | "connect-help"
   | "connect-wait"

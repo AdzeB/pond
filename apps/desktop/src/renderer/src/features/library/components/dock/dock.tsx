@@ -18,7 +18,6 @@ import { SelectionCopySection } from "@/features/library/components/dock/selecti
 import { DownloadsSelectionContent } from "@/features/library/components/dock/selection/downloads";
 import { SelectionExportSection } from "@/features/library/components/dock/selection/export";
 import { SelectionRunSection } from "@/features/library/components/dock/selection/run";
-import { SourcesSelectionContent } from "@/features/library/components/dock/selection/sources";
 import { SelectionTagSection } from "@/features/library/components/dock/selection/tag";
 import { dockMode, useDockMode } from "@/features/library/state/dock-mode";
 import {
@@ -30,10 +29,7 @@ import {
   useSelectionSize,
 } from "@/features/library/state/selection";
 import { isAllSelected } from "@/features/saves/lib/selection";
-import {
-  sourcesSelection,
-  useSourcesSelectionSize,
-} from "@/features/sources/state/sources-selection";
+import { sourcesSelection } from "@/features/sources/state/sources-selection";
 import { buildDockMotion } from "@/shared/lib/motion";
 import styles from "./dock.module.css";
 import { useDockActions } from "./lib/actions";
@@ -69,7 +65,6 @@ const closeToNav = () => dockMode.close();
 export function LibraryTray() {
   const librarySelectionSize = useSelectionSize();
   const downloadsSelectionSize = useDownloadsSelectionSize();
-  const sourcesSelectionSize = useSourcesSelectionSize();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const reduceMotion = useReducedMotion();
   const viewMode = useViewMode();
@@ -81,9 +76,7 @@ export function LibraryTray() {
   const isSources = pathname.startsWith("/sources");
   const selectionSize = isDownloads
     ? downloadsSelectionSize
-    : isSources
-      ? sourcesSelectionSize
-      : librarySelectionSize;
+    : librarySelectionSize;
 
   const dockRef = useRef<HTMLDivElement | null>(null);
   const pillRef = useRef<HTMLDivElement | null>(null);
@@ -121,7 +114,7 @@ export function LibraryTray() {
       ? mode
       : "selection";
   const isMenuView = isViewMenu(view);
-  const showSelectionBar = (isDownloads || isSources) && selectionSize > 0;
+  const showSelectionBar = isDownloads && selectionSize > 0;
   const idle = mode === "nav" && !showSelectionBar;
 
   useEffect(() => {
@@ -269,11 +262,7 @@ export function LibraryTray() {
                 <div ref={viewportRef} className={styles.viewport}>
                   <AnimatePresence initial={false}>
                     {view === "selection" ? (
-                      isDownloads ? (
-                        <DownloadsSelectionContent key="downloads-selection" />
-                      ) : isSources ? (
-                        <SourcesSelectionContent key="sources-selection" />
-                      ) : null
+                      <DownloadsSelectionContent key="downloads-selection" />
                     ) : isViewMenu(view) ? (
                       <motion.div
                         key={view}

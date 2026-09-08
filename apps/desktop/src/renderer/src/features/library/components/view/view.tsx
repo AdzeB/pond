@@ -5,12 +5,14 @@ import {
   LibrarySectionEmpty,
   MatchesEmpty,
   TrashEmpty,
+  UncategorizedEmpty,
 } from "@/features/library/components/empty/empty";
 import { HoverPreview } from "@/features/library/components/hover-preview/hover-preview";
 import { LibraryGrid } from "@/features/library/components/layouts/grid/grid";
 import { LayoutSwitcher } from "@/features/library/components/layouts/switcher/switcher";
 import { useGridHotkeys } from "@/features/library/hooks/use-grid-hotkeys";
 import { useLibraryState } from "@/features/library/hooks/use-library-state";
+import { useLibraryNav } from "@/features/library/state/library-chrome";
 import { libraryViewContext } from "@/features/library/state/library-view-context";
 import { resetFilters } from "@/features/library/state/view-store";
 import { useCardActions } from "@/features/saves/hooks/use-card-actions";
@@ -23,6 +25,7 @@ import { loadNextPage } from "@/features/saves/state/bootstrap";
 
 export function LibraryView() {
   const data = useLibraryState();
+  const nav = useLibraryNav();
   const paging = useSavePaging();
   const actions = useCardActions(
     data.filteredIds,
@@ -70,6 +73,8 @@ export function LibraryView() {
           <MatchesEmpty onReset={resetFilters} />
         ) : data.mode !== "library" && data.mode !== "trash" ? (
           <LibrarySectionEmpty mode={data.mode} />
+        ) : nav.kind === "uncategorized" ? (
+          <UncategorizedEmpty />
         ) : (
           <MatchesEmpty onReset={resetFilters} />
         )

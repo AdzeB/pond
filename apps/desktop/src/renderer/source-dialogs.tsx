@@ -5,6 +5,7 @@ import { z } from "zod";
 import { previewStep } from "./src/dev/source-dialogs/catalog";
 import { installFixtures } from "./src/dev/source-dialogs/fixtures";
 import { SourceDialogsPage } from "./src/dev/source-dialogs/page";
+import { SchedulePreview } from "./src/dev/source-dialogs/schedule-preview";
 import { SourceFlowHost } from "./src/features/sources/components/flow/flow";
 import { connectFlow } from "./src/features/sources/state/connect-flow";
 import { sourceDetail } from "./src/features/sources/state/source-detail";
@@ -12,7 +13,8 @@ import { sourceFlow } from "./src/features/sources/state/source-flow";
 import "./src/styles.css";
 
 const params = new URLSearchParams(window.location.search);
-const preview = params.has("preview");
+const schedulePreview = params.get("preview") === "fetch-schedule";
+const preview = !schedulePreview && params.has("preview");
 if (preview) {
   const fixtures = installFixtures(params.get("state") === "failed");
   const step = previewStep(params.get("preview"));
@@ -47,8 +49,7 @@ if (preview) {
     sourceFlow.open("watch-detail");
     if (step !== "watch-detail") sourceFlow.push(step);
   } else {
-    sourceFlow.open("source-new");
-    if (step !== "source-new") sourceFlow.push(step);
+    sourceFlow.open(step);
   }
 }
 const container = document.getElementById("root");
@@ -56,7 +57,9 @@ if (!container) throw new Error("Missing source dialog gallery root.");
 createRoot(container).render(
   <MotionConfig reducedMotion="user">
     <Tooltip.Provider>
-      {preview ? (
+      {schedulePreview ? (
+        <SchedulePreview />
+      ) : preview ? (
         <>
           <SourceFlowHost />
           <Dialog.Host />

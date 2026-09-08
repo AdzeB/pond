@@ -46,14 +46,16 @@ it("follows new content until scrolled away, resumes on request, and resets for 
       frame.scrollTop = 200;
       frame.dispatchEvent(new Event("scroll"));
     });
-    expect(host.querySelector("button")?.textContent).toContain("Latest Reply");
+    expect(
+      host.querySelector('button[aria-label="Latest Reply"]:not([inert])'),
+    ).not.toBeNull();
     height = 1200;
     await render("first", "A longer response has arrived");
     await act(async () => resized());
     expect(frame.scrollTop).toBe(200);
     await act(async () => host.querySelector("button")?.click());
     expect(frame.scrollTop).toBe(1200);
-    expect(host.querySelector("button")).toBeNull();
+    expect(host.querySelector("button:not([inert])")).toBeNull();
     await act(async () => {
       frame.scrollTop = 100;
       frame.dispatchEvent(new Event("scroll"));
@@ -73,7 +75,7 @@ it("follows new content until scrolled away, resumes on request, and resets for 
     });
     await render("second", "Another conversation");
     expect(frame.scrollTop).toBe(1200);
-    expect(host.querySelector("button")).toBeNull();
+    expect(host.querySelector("button:not([inert])")).toBeNull();
   } finally {
     await act(async () => root.unmount());
     host.remove();

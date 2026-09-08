@@ -16,8 +16,6 @@
       "!docs/brand",
       "!.mobbin",
       "!.impeccable",
-      "!prototypes",
-      "!apps/desktop/prototypes",
       "!packages/theme/src/colors/palette.css",
       "!packages/theme/src/colors/scale.css"
     ]
@@ -80,26 +78,6 @@
           },
           "complexity": {
             "noArguments": "off"
-          }
-        }
-      }
-    },
-    {
-      "includes": ["packages/icons/generated/**"],
-      "linter": {
-        "rules": {
-          "correctness": {
-            "noUnusedFunctionParameters": "off"
-          }
-        }
-      }
-    },
-    {
-      "includes": ["packages/icons/lib/**"],
-      "linter": {
-        "rules": {
-          "a11y": {
-            "noSvgWithoutTitle": "off"
           }
         }
       }

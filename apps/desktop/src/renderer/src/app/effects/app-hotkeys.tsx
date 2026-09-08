@@ -13,7 +13,7 @@ import {
   getPrefsSnapshot,
   patchPrefsSection,
 } from "@/features/settings/state/prefs";
-import { sourceFlow } from "@/features/sources/state/source-flow";
+import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { SHORTCUTS } from "@/shared/lib/shortcuts";
 
@@ -161,8 +161,9 @@ export function AppHotkeys() {
     {
       hotkey: SHORTCUTS["sources.new"].keys!,
       callback: () => {
+        libraryChrome.setNav({ kind: "sources" });
         go("/sources");
-        sourceFlow.open("source-new");
+        sourceNewMenu.open();
       },
       options: { ignoreInputs: true },
     },

@@ -1,0 +1,14 @@
+.disclosure {
+  min-width: 0;
+}
+
+.details {
+  padding-bottom: 8px;
+  font-size: var(--ds-text-small);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.detailsPanel[data-reduced-motion="true"] {
+  transition: none;
+}

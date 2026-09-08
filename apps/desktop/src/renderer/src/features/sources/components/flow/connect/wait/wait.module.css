@@ -57,6 +57,8 @@
   height: 28px;
   color: white;
   background: var(--ds-gray-1);
+  background-clip: padding-box;
+  border: var(--ds-border-elevated);
   border-radius: 50%;
   box-shadow: var(--ds-shadow-1);
   transition: background-color var(--ds-duration-medium)

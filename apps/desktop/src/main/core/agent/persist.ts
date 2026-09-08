@@ -3,17 +3,38 @@ import { asc, desc, eq } from "drizzle-orm";
 import { ulid } from "ulid";
 import type { AssistantMetadata } from "../../../shared/assistant";
 import { getDb } from "../../db";
+import { chatTitle } from "./chat-title";
 
-export async function listChats(): Promise<AgentChat[]> {
+export async function listChats(): Promise<
+  Omit<AgentChat, "canonicalTranscript">[]
+> {
   const db = await getDb();
-  return db.select().from(agentChats).orderBy(desc(agentChats.updatedAt));
+  return db
+    .select({
+      id: agentChats.id,
+      title: agentChats.title,
+      createdAt: agentChats.createdAt,
+      updatedAt: agentChats.updatedAt,
+    })
+    .from(agentChats)
+    .orderBy(desc(agentChats.updatedAt));
 }
 
-export async function createChat(): Promise<AgentChat> {
+export async function createChat(): Promise<
+  Omit<AgentChat, "canonicalTranscript">
+> {
   const db = await getDb();
   const id = ulid();
   await db.insert(agentChats).values({ id, title: null });
-  const rows = await db.select().from(agentChats).where(eq(agentChats.id, id));
+  const rows = await db
+    .select({
+      id: agentChats.id,
+      title: agentChats.title,
+      createdAt: agentChats.createdAt,
+      updatedAt: agentChats.updatedAt,
+    })
+    .from(agentChats)
+    .where(eq(agentChats.id, id));
   const created = rows[0];
   if (!created) throw new Error("agent chat create failed");
   return created;
@@ -35,26 +56,16 @@ export async function listMessages(chatId: string) {
     .orderBy(asc(agentMessages.createdAt), asc(agentMessages.id));
 }
 
-export async function recentMessages(chatId: string, limit = 24) {
-  const db = await getDb();
-  const rows = await db
-    .select()
-    .from(agentMessages)
-    .where(eq(agentMessages.chatId, chatId))
-    .orderBy(desc(agentMessages.createdAt), desc(agentMessages.id))
-    .limit(limit);
-  return rows.reverse();
-}
-
 export async function appendMessage(input: {
   chatId: string;
   role: "user" | "assistant";
   content: string;
   metadata?: AssistantMetadata;
-}): Promise<void> {
+}): Promise<string> {
   const db = await getDb();
+  const id = ulid();
   await db.insert(agentMessages).values({
-    id: ulid(),
+    id,
     chatId: input.chatId,
     role: input.role,
     content: input.content,
@@ -66,14 +77,9 @@ export async function appendMessage(input: {
     .where(eq(agentChats.id, input.chatId));
   const title =
     current[0]?.title ||
-    (input.role === "user" ? titleFrom(input.content) : null);
+    (input.role === "user" ? chatTitle(input.content) : null);
   const patch: Partial<AgentChat> = { updatedAt: new Date() };
   if (title) patch.title = title;
   await db.update(agentChats).set(patch).where(eq(agentChats.id, input.chatId));
-}
-
-function titleFrom(content: string): string | undefined {
-  const trimmed = content.trim().replace(/\s+/g, " ");
-  if (!trimmed) return undefined;
-  return trimmed.length > 48 ? `${trimmed.slice(0, 48)}…` : trimmed;
+  return id;
 }

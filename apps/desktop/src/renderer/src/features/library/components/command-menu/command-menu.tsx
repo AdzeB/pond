@@ -2,7 +2,6 @@ import {
   IconAlbum2Outline18,
   IconArrowRotateAnticlockwiseOutline18,
   IconClone2Outline18,
-  IconCommandOutline18,
   IconDownloadOutline18,
   IconEyeOutline18,
   IconFileOutline18,
@@ -34,7 +33,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { openShortcutsSheet } from "@/app/components/shortcuts-sheet/shortcuts-sheet";
 import {
   importClipboard,
   importEagle,
@@ -71,6 +69,8 @@ import type { Save } from "@/features/saves/types";
 import { useSearchResults } from "@/features/search/hooks/use-search-results";
 import { openSettings } from "@/features/settings/lib/open-settings";
 import { usePrefs } from "@/features/settings/state/prefs";
+import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
+import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys/shortcut-keys";
 import { getAppRouter } from "@/shared/lib/app-router";
 import type { ShortcutId } from "@/shared/lib/shortcuts";
@@ -129,12 +129,24 @@ const COMMANDS: readonly CommandSpec[] = [
     run: () => newTag("tag-group"),
   },
   {
+    id: "new-source",
+    group: "Create",
+    label: "New Source",
+    icon: IconGlobeOutline18,
+    keywords: "connect watch folder add account",
+    shortcut: "sources.new",
+    run: () => {
+      libraryChrome.setNav({ kind: "sources" });
+      go("/sources");
+      sourceNewMenu.open();
+    },
+  },
+  {
     id: "connect-source",
     group: "Create",
     label: "Connect a Source",
     icon: IconUserPlusOutline18,
     keywords: "add account sync watch import",
-    shortcut: "sources.new",
     run: () => newSource("connect"),
   },
   {
@@ -144,6 +156,14 @@ const COMMANDS: readonly CommandSpec[] = [
     icon: IconEyeOutline18,
     keywords: "source public account follow import",
     run: () => newSource("watch"),
+  },
+  {
+    id: "watched-folder",
+    group: "Create",
+    label: "Watched Folder",
+    icon: IconFolderOpenOutline18,
+    keywords: "auto import directory files copy local",
+    run: () => void runNewAction(pickWatchedFolder),
   },
   {
     id: "import-files",
@@ -257,16 +277,6 @@ const COMMANDS: readonly CommandSpec[] = [
     keywords: "preferences configuration",
     shortcut: "app.settings",
     run: () => openSettings(),
-  },
-  {
-    id: "shortcuts",
-    group: "App",
-    label: "Keyboard Shortcuts",
-    detail: "See every shortcut",
-    icon: IconCommandOutline18,
-    keywords: "keys hotkeys commands help",
-    shortcut: "app.shortcuts",
-    run: () => openShortcutsSheet(),
   },
 ];
 

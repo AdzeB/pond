@@ -34,6 +34,7 @@ export const IPC = {
   sourceConnect: "pond:source-connect",
   sourceStatus: "pond:source-status",
   sessionPendingClear: "pond:session-pending-clear",
+  sessionImported: "pond:session-imported",
   syncRunNow: "pond:sync-run-now",
   syncStatus: "pond:sync-status",
   syncRunAll: "pond:sync-run-all",
@@ -70,7 +71,6 @@ export type MenuActionId =
   | "view.zoom-out"
   | "view.zoom-reset"
   | "library.search"
-  | "help.shortcuts"
   | "view.layout.waterfall"
   | "view.layout.grid"
   | "view.layout.justified"

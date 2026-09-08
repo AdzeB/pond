@@ -29,6 +29,8 @@
   color: var(--ds-gray-12);
   background: var(--ds-background-1);
   border-radius: var(--ds-radius-xl);
+  border: var(--ds-border-elevated);
+  background-clip: padding-box;
   box-shadow: var(--ds-shadow-3);
   transition:
     opacity var(--ds-duration-medium) var(--ds-easing-standard),

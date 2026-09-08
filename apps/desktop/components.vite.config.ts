@@ -12,15 +12,24 @@ export default defineConfig({
   cacheDir: resolve(directory, "node_modules/.vite-components"),
   plugins: [react()],
   optimizeDeps: {
-    entries: ["components.html", "assistant.html", "source-dialogs.html"],
+    entries: [
+      "components.html",
+      "source-dialogs.html",
+      "provider-settings.html",
+      "shadows.html",
+    ],
   },
   build: {
     outDir: resolve(directory, "out/components"),
     rollupOptions: {
       input: {
         components: resolve(directory, "src/renderer/components.html"),
+        providerSettings: resolve(
+          directory,
+          "src/renderer/provider-settings.html",
+        ),
         sourceDialogs: resolve(directory, "src/renderer/source-dialogs.html"),
-        assistant: resolve(directory, "src/renderer/assistant.html"),
+        shadows: resolve(directory, "src/renderer/shadows.html"),
       },
     },
   },

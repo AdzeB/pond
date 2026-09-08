@@ -85,9 +85,11 @@ export function TagsSection() {
             <Button variant="secondary" onClick={() => startCreate("group")}>
               New Group
             </Button>
-            <Button variant="secondary" onClick={() => startCreate("tag")}>
-              New Tag
-            </Button>
+            {hasList ? (
+              <Button variant="secondary" onClick={() => startCreate("tag")}>
+                New Tag
+              </Button>
+            ) : null}
           </DataTable.Toolbar>
 
           <TagsTableContext value={ctxValue}>

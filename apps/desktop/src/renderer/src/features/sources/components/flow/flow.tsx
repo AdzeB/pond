@@ -14,7 +14,6 @@ import {
   WatchOptionsSection,
   WatchProfileSection,
 } from "@/features/sources/components/flow/detail/watch/watch";
-import { SourceNewSection } from "@/features/sources/components/flow/source-new/source-new";
 import { WatchHelpSection } from "@/features/sources/components/flow/watch/help/help";
 import { WatchTargetSection } from "@/features/sources/components/flow/watch/target/target";
 import { useWatches } from "@/features/sources/hooks/use-watches";
@@ -33,7 +32,6 @@ import {
 import styles from "./flow.module.css";
 
 const HELP = {
-  "source-new": "connect-help",
   "connect-source": "connect-help",
   "watch-target": "watch-help",
   "account-detail": "connect-help",
@@ -41,7 +39,6 @@ const HELP = {
 } satisfies Partial<Record<SourceFlowPage, SourceFlowPage>>;
 
 const PAGES = {
-  "source-new": SourceNewSection,
   "connect-source": ConnectSourceSection,
   "connect-help": ConnectHelpSection,
   "connect-wait": ConnectWaitSection,
@@ -62,8 +59,6 @@ function usePageTitle(page: SourceFlowPage): string {
   const { watches } = useWatches();
 
   switch (page) {
-    case "source-new":
-      return "Add Source";
     case "connect-source":
       return "Choose Source";
     case "connect-help":
@@ -78,9 +73,10 @@ function usePageTitle(page: SourceFlowPage): string {
       return "Watch Account";
     case "account-detail":
       return "Connection Details";
-    case "watch-options":
     case "account-options":
-      return "Options";
+      return "Disconnect";
+    case "watch-options":
+      return "Stop Watching";
     case "watch-profile":
     case "account-profile":
       return "Profile";
@@ -110,9 +106,8 @@ export function SourceFlowHost() {
   }
   const page = activePage ?? presentation.page;
   const depth = open ? activeDepth : presentation.depth;
-  const title = usePageTitle(page ?? "source-new");
+  const title = usePageTitle(page ?? "connect-source");
   const help =
-    page === "source-new" ||
     page === "connect-source" ||
     page === "watch-target" ||
     page === "account-detail" ||

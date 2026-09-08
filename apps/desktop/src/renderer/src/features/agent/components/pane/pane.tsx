@@ -1,39 +1,46 @@
-import {
-  AssistantRuntimeProvider,
-  ComposerPrimitive,
-  MessagePrimitive,
-  ThreadPrimitive,
-  useAui,
-  useAuiState,
-} from "@assistant-ui/react";
 import { IconArrowUpFill18 } from "@pond/icons/fill/18";
+import { IconChevronExpandYOutline12 } from "@pond/icons/outline/12";
 import {
   IconArrowUpRightOutline18,
-  IconChevronDownOutline18,
-  IconGridLayoutRowsOutline18,
+  IconPlusOutline18,
   IconXmarkOutline18,
 } from "@pond/icons/outline/18";
-import { Button, Empty, PromptInput, Tooltip } from "@pond/ui";
+import {
+  Button,
+  ContentRow,
+  Message,
+  PromptInput,
+  Reveal,
+  Tooltip,
+  useTextReveal,
+} from "@pond/ui";
 import { Logo } from "@pond/ui/logo";
 import {
   ASSISTANT_MODELS,
   type AssistantProvider,
   type AssistantSource,
+  type AssistantMessage as DomainMessage,
 } from "@shared/assistant";
-import { chosenModelId } from "@shared/provider-models";
-import { useReducedMotion } from "motion/react";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { chosenModelId, displayName } from "@shared/provider-models";
+import { createChatUI, type MessageProps } from "@tanstack/ai-react/ui";
+import { MotionConfig, motion, useReducedMotion } from "motion/react";
+import { createContext, useContext, useRef, useState } from "react";
 import {
   type AssistantState,
   assistant,
   useAssistant,
 } from "@/features/agent/state/assistant";
+import {
+  fromChatMessage,
+  useAssistantRuntime,
+} from "@/features/agent/state/assistant-runtime";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import {
   selection,
   useSelectionSize,
 } from "@/features/library/state/selection";
 import { openSave } from "@/features/saves/lib/save-nav";
+import { ProviderLogo } from "@/features/settings/components/sections/agent/icons";
 import { openSettings } from "@/features/settings/lib/open-settings";
 import { usePrefs } from "@/features/settings/state/prefs";
 import { getAppRouter } from "@/shared/lib/app-router";
@@ -43,18 +50,17 @@ import {
   ASSISTANT_ACTIONS,
   type AssistantAction,
 } from "./actions";
-import { AddMenu } from "./add-menu";
+import { ComposerActions } from "./add-menu";
 import { AssistantResponse } from "./assistant-response";
-import {
-  type PondRuntimeMessage,
-  usePondAssistantRuntime,
-} from "./assistant-runtime";
 import { ChatHeader } from "./chat-header";
+import { ComposerInput } from "./composer-input";
+import { ComposerScope, ComposerScopeOptions } from "./composer-scope";
 import { ComposerSuggestions } from "./composer-suggestions";
+import { ComposerTray, type ComposerTrayView } from "./composer-tray";
 import { Attachments, ContextPicker } from "./context";
+import { ConversationThread } from "./conversation-thread";
 import { ModelPicker } from "./model-picker";
 import styles from "./pane.module.css";
-import { ReferenceBoard } from "./reference-board";
 import { ResponseContent } from "./response-content";
 import { ResultSet } from "./result-set";
 import { ToolActivity } from "./tool-activity";
@@ -86,42 +92,30 @@ function useAgentMessage() {
   return value;
 }
 
-function usePondMessage() {
-  return useAuiState(
-    // SAFETY: usePondAssistantRuntime writes a PondRuntimeMessage to every message’s custom.pondMessage field.
-    (state) => state.message.metadata.custom.pondMessage as PondRuntimeMessage,
-  );
+interface PondRuntimeMessage extends DomainMessage {
+  streaming?: boolean;
 }
 
-function UserText() {
-  const text = useAuiState((state) =>
-    state.part.type === "text" ? state.part.text : "",
-  );
-  return <div className={styles["user-message"]}>{text}</div>;
-}
-
-function UserMessage() {
-  const message = usePondMessage();
+function UserMessage({ message }: { message: DomainMessage }) {
   return (
-    <MessagePrimitive.Root className={styles["user-turn"]}>
-      <Attachments saves={message.metadata?.attachments ?? []} />
-      <MessagePrimitive.Parts components={{ Text: UserText }} />
-    </MessagePrimitive.Root>
+    <Reveal>
+      <Message.Root from="user" className={styles["user-turn"]}>
+        <Attachments saves={message.metadata?.attachments ?? []} />
+        <Message.Content>
+          <Message.Response>{message.content}</Message.Response>
+        </Message.Content>
+      </Message.Root>
+    </Reveal>
   );
 }
 
 function StreamingResponse({ message }: { message: PondRuntimeMessage }) {
-  const { state, attachedIds, attach } = useAgentMessage();
-  const sources = message.metadata?.sources ?? [];
+  const { state, attach } = useAgentMessage();
+  const streaming = Boolean(message.streaming);
+  const sources = message.metadata?.sources ?? (streaming ? state.sources : []);
+  const steps = streaming ? state.steps : (message.metadata?.steps ?? []);
   return (
     <article className={styles.response} aria-busy="true">
-      <div className={styles["response-identity"]} data-thinking>
-        <span className={styles["thinking-mark"]}>
-          <Logo size={18} />
-        </span>
-        <span role="status">{activityLabel[state.activity]}</span>
-      </div>
-      <ToolActivity steps={message.metadata?.steps ?? []} active />
       {message.content ? (
         <AssistantResponse
           content={message.content}
@@ -130,32 +124,35 @@ function StreamingResponse({ message }: { message: PondRuntimeMessage }) {
           onAttach={attach}
         />
       ) : null}
-      {(message.metadata?.results ?? []).map((result) => (
-        <ResultSet
-          key={`${result.title}-${result.saveIds.join(",")}`}
-          result={result}
-          sources={sources}
-          attachedIds={attachedIds}
-          onOpenSave={openSave}
-          onAttach={attach}
-        />
-      ))}
+      <Reveal>
+        <div className={styles["response-identity"]} data-thinking>
+          <span className={styles["thinking-mark"]}>
+            <Logo size={18} />
+          </span>
+          <span role="status">
+            {streaming ? activityLabel[state.activity] : "Writing a response"}
+          </span>
+        </div>
+      </Reveal>
+      <Reveal visible={Boolean(steps.length)}>
+        <ToolActivity steps={steps} active={streaming} />
+      </Reveal>
     </article>
   );
 }
 
-function AssistantMessage() {
-  const message = usePondMessage();
+function AssistantMessage({ message }: { message: PondRuntimeMessage }) {
   const { state, provider, attachedIds, attach, focus } = useAgentMessage();
-  if (message.streaming) {
-    return (
-      <MessagePrimitive.Root>
-        <StreamingResponse message={message} />
-      </MessagePrimitive.Root>
-    );
+  const finished = Boolean(
+    message.metadata?.stopped || message.metadata?.error,
+  );
+  const streaming = Boolean(message.streaming) && !finished;
+  const reveal = useTextReveal(message.content, streaming, finished);
+  if (streaming || reveal.pending) {
+    return <StreamingResponse message={{ ...message, content: reveal.text }} />;
   }
   return (
-    <MessagePrimitive.Root>
+    <div>
       <ResponseContent
         message={message}
         questionAnswer={
@@ -174,43 +171,59 @@ function AssistantMessage() {
         attach={attach}
         focus={focus}
       />
-    </MessagePrimitive.Root>
+    </div>
   );
 }
+
+function PondMessage({ message }: MessageProps<{ tools: [] }>) {
+  const { state } = useAgentMessage();
+  const pondMessage = fromChatMessage(message, state.chatId ?? "pending");
+  return pondMessage.role === "user" ? (
+    <UserMessage message={pondMessage} />
+  ) : (
+    <AssistantMessage
+      message={{
+        ...pondMessage,
+        streaming: state.busy && message.id === `${state.requestId}:assistant`,
+      }}
+    />
+  );
+}
+
+const ChatUI = createChatUI(
+  { tools: [] },
+  {
+    components: {
+      layout: ({ Messages }) => <Messages />,
+      message: PondMessage,
+    },
+    partsComponents: {},
+  },
+);
 
 function Conversation({ loading }: { loading: boolean }) {
+  const { state } = useAgentMessage();
+  const runtime = ChatUI.useChatContext();
+  const pendingId = `${state.requestId}:assistant`;
   return (
-    <ThreadPrimitive.Root className={styles["thread-frame"]}>
-      <ThreadPrimitive.Viewport
-        className={styles.thread}
-        autoScroll
-        scrollToBottomOnInitialize
-        scrollToBottomOnThreadSwitch
-      >
-        <div className={styles["thread-inner"]}>
-          {loading ? <p role="status">Loading conversation</p> : null}
-          <ThreadPrimitive.Messages
-            components={{ UserMessage, AssistantMessage }}
-          />
-        </div>
-        <ThreadPrimitive.ScrollToBottom
-          className={styles["jump-to-latest"]}
-          aria-label="Jump to latest reply"
-        >
-          <IconChevronDownOutline18 />
-          Latest Reply
-        </ThreadPrimitive.ScrollToBottom>
-      </ThreadPrimitive.Viewport>
-    </ThreadPrimitive.Root>
+    <ConversationThread chatId={state.chatId} requestId={state.requestId}>
+      {loading ? <p role="status">Loading conversation</p> : null}
+      <ChatUI.Messages />
+      {state.busy &&
+      !runtime.messages.some((message) => message.id === pendingId) ? (
+        <StreamingResponse
+          message={{
+            id: pendingId,
+            chatId: state.chatId ?? "pending",
+            role: "assistant",
+            content: "",
+            metadata: null,
+            streaming: true,
+          }}
+        />
+      ) : null}
+    </ConversationThread>
   );
-}
-
-function RuntimeDraftBridge({ draft }: { draft: string }) {
-  const aui = useAui();
-  useEffect(() => {
-    if (aui.composer.getState().text !== draft) aui.composer.setText(draft);
-  }, [aui, draft]);
-  return null;
 }
 
 function AgentPaneContent({
@@ -228,18 +241,23 @@ function AgentPaneContent({
   patchModel: (next: { provider: AssistantProvider; modelId: string }) => void;
   reduceMotion: boolean;
 }) {
-  const aui = useAui();
   const selectedCount = useSelectionSize();
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [trayView, setTrayView] = useState<Exclude<
+    ComposerTrayView,
+    "suggestions"
+  > | null>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const composer = useRef<HTMLDivElement>(null);
   const suggestions = useComposerSuggestions({
     value: state.draft,
     attachments: state.attachments,
     inputRef: input,
-    disabled: state.busy || state.loading || !provider,
-    onChange: assistant.setDraft,
-    onAttach: assistant.attach,
+    disabled: state.loading || !provider,
+    onChange: (value) => {
+      setTrayView(null);
+      assistant.setDraft(value);
+    },
+    onAttach: attach,
   });
   const empty = !state.messages.length && !state.busy && !state.loading;
   const latestReferenceMessage = state.messages.findLast(
@@ -247,17 +265,109 @@ function AgentPaneContent({
       message.role === "assistant" && message.metadata?.sources?.length,
   );
   const references = latestReferenceMessage?.metadata?.sources ?? [];
-  const boardMessage = state.messages.find(
+  const referenceMessage = state.messages.find(
     (message) => message.id === state.referenceMessageId,
   );
-  const boardSources = boardMessage?.metadata?.sources;
+  const referenceSources = referenceMessage?.metadata?.sources;
+  const retainedReferenceSources = useRef<AssistantSource[]>([]);
+  if (referenceSources?.length)
+    retainedReferenceSources.current = referenceSources;
   const attachedIds = state.attachments.map((source) => source.id);
 
+  function openTray(view: Exclude<ComposerTrayView, "suggestions">) {
+    suggestions.dismiss();
+    assistant.closeReferences();
+    setTrayView((current) => (current === view ? null : view));
+  }
+  function closeTray() {
+    assistant.closeReferences();
+    setTrayView(null);
+    suggestions.dismiss();
+  }
+  function renderTray(view: ComposerTrayView) {
+    switch (view) {
+      case "add":
+        return (
+          <ComposerActions
+            referencedCount={references.length}
+            onSaves={() => setTrayView("context")}
+            onReferenced={() => {
+              if (latestReferenceMessage)
+                assistant.showReferences(latestReferenceMessage.id);
+            }}
+            onAction={(kind) => {
+              closeTray();
+              action(kind);
+            }}
+            onModels={() => setTrayView("models")}
+            onScope={() => setTrayView("scope")}
+            modelLabel={modelId ? displayName(modelId) : "Choose a model"}
+            modelsDisabled={state.busy}
+          />
+        );
+      case "references":
+        return (
+          <ResultSet
+            result={{
+              title: "Consulted Saves",
+              saveIds: retainedReferenceSources.current.map(
+                (source) => source.id,
+              ),
+            }}
+            sources={retainedReferenceSources.current}
+            attachedIds={attachedIds}
+            onOpenSave={openSave}
+            onAttach={(sources) => {
+              closeTray();
+              attach(sources);
+            }}
+          />
+        );
+      case "models":
+        return (
+          <ModelPicker
+            inline
+            provider={provider}
+            modelId={modelId}
+            disabled={state.busy}
+            onChange={(next) => {
+              patchModel(next);
+              closeTray();
+            }}
+          />
+        );
+      case "scope":
+        return (
+          <ComposerScopeOptions
+            attachedCount={state.attachments.length}
+            onClose={closeTray}
+          />
+        );
+      case "context":
+        return (
+          <ContextPicker
+            inline
+            attached={state.attachments}
+            onAdd={attach}
+            onClose={closeTray}
+          />
+        );
+      case "suggestions":
+        return (
+          <ComposerSuggestions
+            inline
+            suggestions={suggestions}
+            anchorRef={composer}
+          />
+        );
+    }
+  }
   function focus() {
     input.current?.focus();
   }
   function attach(sources: AssistantSource[]) {
     assistant.attach(sources);
+    assistant.setScope({ kind: "attachments" });
     requestAnimationFrame(focus);
   }
   function action(kind: AssistantAction) {
@@ -280,247 +390,278 @@ function AgentPaneContent({
 
   return (
     <AgentMessageContext.Provider value={messageContext}>
-      <RuntimeDraftBridge draft={state.draft} />
-      <section
-        className={styles.assistant}
-        data-layout={layout}
-        data-reduced-motion={reduceMotion || undefined}
-        aria-label="Agent"
+      <MotionConfig
+        reducedMotion={reduceMotion ? "always" : "never"}
+        transition={{ type: "spring", duration: 0.22, bounce: 0 }}
       >
-        <ChatHeader
-          chatId={state.chatId}
-          chats={state.chats}
-          disabled={state.busy || state.loading}
-          onNewChat={() => {
-            assistant.newChat();
-            aui.composer.setText("");
-            requestAnimationFrame(focus);
-          }}
-          onOpenChat={(id) => void assistant.openChat(id)}
+        <section
+          className={styles.assistant}
+          data-layout={layout}
+          data-reduced-motion={reduceMotion || undefined}
+          aria-label="Agent"
         >
-          {latestReferenceMessage ? (
-            <Tooltip label="References">
-              <Button
-                icon
-                size="sm"
-                variant="ghost"
-                aria-label="References"
-                aria-pressed={Boolean(boardSources?.length)}
-                onClick={() => {
-                  if (boardSources?.length) assistant.closeReferences();
-                  else assistant.showReferences(latestReferenceMessage.id);
-                }}
-              >
-                <IconGridLayoutRowsOutline18 />
-              </Button>
-            </Tooltip>
-          ) : null}
-          {layout === "pane" ? (
-            <>
-              <Tooltip label="Open Agent Page">
-                <Button
-                  icon
-                  size="sm"
-                  variant="ghost"
-                  aria-label="Open Agent Page"
-                  onClick={() => getAppRouter()?.history.push("/assistant")}
-                >
-                  <IconArrowUpRightOutline18 />
-                </Button>
-              </Tooltip>
-              <Tooltip label="Close Agent">
-                <Button
-                  icon
-                  size="sm"
-                  variant="ghost"
-                  aria-label="Close Agent"
-                  onClick={() => libraryChrome.setAgentOpen(false)}
-                >
-                  <IconXmarkOutline18 />
-                </Button>
-              </Tooltip>
-            </>
-          ) : null}
-        </ChatHeader>
-        <div
-          className={styles["assistant-workspace"]}
-          data-board-open={Boolean(boardSources?.length)}
-        >
-          <div className={styles["assistant-body"]} data-empty={empty}>
-            {empty ? (
-              <Empty.Root className={styles.empty}>
-                <Empty.Media>
-                  <Logo size={18} />
-                </Empty.Media>
-                <Empty.Title>Agent</Empty.Title>
-                <Empty.Description>
-                  Tag, title, and file Saves. You review a diff before anything
-                  applies.
-                </Empty.Description>
-                {provider ? (
-                  <Empty.Action className={styles.starters}>
-                    {AGENT_STARTERS.map((entry) => (
-                      <Button
-                        key={entry.id}
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => start(entry.id)}
-                      >
-                        {entry.title}
-                      </Button>
-                    ))}
-                  </Empty.Action>
-                ) : null}
-              </Empty.Root>
-            ) : (
-              <Conversation loading={state.loading} />
-            )}
-            <div className={styles["compose-area"]}>
-              {!provider ? (
-                <div className={styles.notice} role="status">
-                  <div>
-                    <p>Add a provider in Settings before you can send.</p>
-                    <div className={styles["notice-actions"]}>
-                      <Button size="sm" onClick={() => openSettings("models")}>
-                        Open Settings
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+          <ChatHeader
+            chatId={state.chatId}
+            chats={state.chats}
+            disabled={state.busy || state.loading}
+            onNewChat={() => {
+              assistant.newChat();
+              requestAnimationFrame(focus);
+            }}
+            onOpenChat={(id) => void assistant.openChat(id)}
+          >
+            {layout === "pane" ? (
+              <>
+                <Tooltip label="Open Agent Page">
+                  <Button
+                    icon
+                    size="sm"
+                    variant="ghost"
+                    aria-label="Open Agent Page"
+                    onClick={() => getAppRouter()?.history.push("/assistant")}
+                  >
+                    <IconArrowUpRightOutline18 />
+                  </Button>
+                </Tooltip>
+                <Tooltip label="Close Agent">
+                  <Button
+                    icon
+                    size="sm"
+                    variant="ghost"
+                    aria-label="Close Agent"
+                    onClick={() => libraryChrome.setAgentOpen(false)}
+                  >
+                    <IconXmarkOutline18 />
+                  </Button>
+                </Tooltip>
+              </>
+            ) : null}
+          </ChatHeader>
+          <div className={styles["assistant-workspace"]}>
+            <div className={styles["assistant-body"]} data-empty={empty}>
+              {!empty ? (
+                <Conversation
+                  key={state.chatId ?? "new"}
+                  loading={state.loading}
+                />
               ) : null}
-              {state.error ? (
-                <div className={styles.notice} role="alert">
-                  <div>
-                    <p>{state.error}</p>
-                    <div className={styles["notice-actions"]}>
-                      {state.failed ? (
+              <motion.div layout="position" className={styles["compose-area"]}>
+                <Reveal visible={!provider}>
+                  <div className={styles.notice} role="status">
+                    <div>
+                      <p>Add a provider in Settings before you can send.</p>
+                      <div className={styles["notice-actions"]}>
                         <Button
                           size="sm"
-                          onClick={() => void assistant.retry()}
+                          onClick={() => openSettings("models")}
                         >
-                          Retry
+                          Open Settings
                         </Button>
-                      ) : null}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => openSettings("models")}
-                      >
-                        Model Settings
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={assistant.clearError}
-                      >
-                        Dismiss
-                      </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ) : null}
-              <ComposerSuggestions
-                suggestions={suggestions}
-                anchorRef={composer}
-              />
-              <PromptInput.Root ref={composer}>
-                <ComposerPrimitive.Root className={styles["composer-form"]}>
-                  <PromptInput.Body className={styles["composer-body"]}>
-                    {selectedCount ? (
-                      <div className={styles["selection-line"]}>
+                </Reveal>
+                <Reveal visible={Boolean(state.error)}>
+                  <div className={styles.notice} role="alert">
+                    <div>
+                      <p>{state.error}</p>
+                      <div className={styles["notice-actions"]}>
+                        {state.failed ? (
+                          <Button
+                            size="sm"
+                            onClick={() => void assistant.retry()}
+                          >
+                            Retry
+                          </Button>
+                        ) : null}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => openSettings("models")}
+                        >
+                          Model Settings
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={assistant.clearError}
+                        >
+                          Dismiss
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </Reveal>
+                <ComposerTray
+                  view={
+                    referenceSources?.length
+                      ? "references"
+                      : suggestions.open
+                        ? "suggestions"
+                        : trayView
+                  }
+                  anchorRef={composer}
+                  inputRef={input}
+                  onClose={closeTray}
+                  onBack={() => {
+                    assistant.closeReferences();
+                    setTrayView("add");
+                  }}
+                  render={renderTray}
+                />
+                <ComposerScope
+                  scope={state.scope}
+                  attachedCount={state.attachments.length}
+                  open={trayView === "scope"}
+                  onOpen={() => openTray("scope")}
+                />
+                <PromptInput.Root ref={composer}>
+                  <form
+                    className={styles["composer-form"]}
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      if (
+                        provider &&
+                        !state.busy &&
+                        !state.loading &&
+                        state.draft.trim()
+                      )
+                        void assistant.send(provider);
+                    }}
+                  >
+                    <PromptInput.Body className={styles["composer-body"]}>
+                      {selectedCount ? (
+                        <div className={styles["selection-line"]}>
+                          <Button
+                            size="xs"
+                            variant="ghost"
+                            onClick={() => {
+                              assistant.setScope({ kind: "auto" });
+                              void assistant.attachIds([
+                                ...selection.snapshot(),
+                              ]);
+                            }}
+                          >
+                            Attach {selectedCount} Selected
+                          </Button>
+                        </div>
+                      ) : null}
+                      <Attachments
+                        saves={state.attachments}
+                        onRemove={(id) => {
+                          assistant.removeAttachment(id);
+                          if (
+                            state.attachments.length === 1 &&
+                            state.scope.kind === "attachments"
+                          )
+                            assistant.setScope({ kind: "auto" });
+                        }}
+                      />
+                      <ComposerInput
+                        ref={input}
+                        value={state.draft}
+                        disabled={state.loading || !provider}
+                        maxLength={32000}
+                        aria-label="Message Agent"
+                        placeholder={
+                          state.busy
+                            ? "Draft your next message"
+                            : "Ask about your Saves"
+                        }
+                        {...suggestions.inputProps}
+                        onKeyDown={(event) => {
+                          suggestions.onKeyDown(event);
+                        }}
+                      />
+                    </PromptInput.Body>
+                    <PromptInput.Toolbar>
+                      <PromptInput.ToolbarGroup>
+                        <Tooltip label="Add Context or Action">
+                          <Button
+                            icon
+                            size="xs"
+                            variant="ghost"
+                            data-composer-tray-trigger
+                            aria-label="Add Context or Action"
+                            aria-haspopup="dialog"
+                            aria-expanded={trayView === "add"}
+                            onClick={() => openTray("add")}
+                          >
+                            <IconPlusOutline18 />
+                          </Button>
+                        </Tooltip>
                         <Button
                           size="xs"
                           variant="ghost"
-                          onClick={() =>
-                            void assistant.attachIds([...selection.snapshot()])
-                          }
+                          data-composer-tray-trigger
+                          className={styles["model-trigger"]}
+                          disabled={state.busy}
+                          aria-label={`Choose model, ${modelId ? displayName(modelId) : "Choose a model"}`}
+                          aria-haspopup="dialog"
+                          aria-expanded={trayView === "models"}
+                          onClick={() => openTray("models")}
                         >
-                          Attach {selectedCount} Selected
+                          {provider ? (
+                            <ProviderLogo provider={provider} size={16} />
+                          ) : null}
+                          <span className={styles["model-trigger-name"]}>
+                            {modelId ? displayName(modelId) : "Choose a model"}
+                          </span>
+                          <IconChevronExpandYOutline12 />
                         </Button>
-                      </div>
-                    ) : null}
-                    <Attachments
-                      saves={state.attachments}
-                      onRemove={assistant.removeAttachment}
-                    />
-                    <ComposerPrimitive.Input
-                      ref={input}
-                      className={styles["composer-input"]}
-                      minRows={2}
-                      maxRows={7}
-                      maxLength={32000}
-                      aria-label="Message Agent"
-                      placeholder="Organize, tag, or ask about your Saves"
-                      {...suggestions.inputProps}
-                      onKeyDown={(event) => {
-                        suggestions.onKeyDown(event);
-                      }}
-                    />
-                  </PromptInput.Body>
-                  <PromptInput.Toolbar>
-                    <PromptInput.ToolbarGroup>
-                      <AddMenu
-                        referencedCount={references.length}
-                        composerRef={input}
-                        anchorRef={composer}
-                        onSaves={() => setPickerOpen(true)}
-                        onReferenced={() => attach(references)}
-                        onAction={action}
-                      />
-                      <ModelPicker
-                        provider={provider}
-                        modelId={modelId}
-                        disabled={state.busy}
-                        onChange={patchModel}
-                      />
-                    </PromptInput.ToolbarGroup>
-                    {state.busy ? (
-                      <PromptInput.Submit
-                        render={<ComposerPrimitive.Cancel />}
-                        aria-label="Stop Response"
-                      >
-                        <span className={styles["stop-square"]} />
-                      </PromptInput.Submit>
-                    ) : (
-                      <PromptInput.Submit
-                        render={<ComposerPrimitive.Send />}
-                        aria-label="Send Message"
-                      >
-                        <IconArrowUpFill18 />
-                      </PromptInput.Submit>
-                    )}
-                  </PromptInput.Toolbar>
-                </ComposerPrimitive.Root>
-              </PromptInput.Root>
+                      </PromptInput.ToolbarGroup>
+                      <PromptInput.ToolbarGroup>
+                        <Reveal visible={state.busy}>
+                          <Button
+                            size="xs"
+                            variant="ghost"
+                            type="button"
+                            onClick={assistant.stop}
+                            aria-label="Stop Response"
+                          >
+                            Stop
+                          </Button>
+                        </Reveal>
+                        <PromptInput.Submit
+                          type="submit"
+                          disabled={
+                            !provider ||
+                            state.busy ||
+                            state.loading ||
+                            !state.draft.trim()
+                          }
+                          aria-label="Send Message"
+                        >
+                          <IconArrowUpFill18 />
+                        </PromptInput.Submit>
+                      </PromptInput.ToolbarGroup>
+                    </PromptInput.Toolbar>
+                  </form>
+                </PromptInput.Root>
+                <Reveal visible={empty && Boolean(provider)}>
+                  <div className={styles.starters}>
+                    {AGENT_STARTERS.map((entry) => (
+                      <ContentRow.Root key={entry.id}>
+                        <ContentRow.Trigger onClick={() => start(entry.id)}>
+                          <ContentRow.Media>
+                            <entry.icon />
+                          </ContentRow.Media>
+                          <ContentRow.Content>
+                            <ContentRow.Title>{entry.title}</ContentRow.Title>
+                            <ContentRow.Description>
+                              {entry.detail}
+                            </ContentRow.Description>
+                          </ContentRow.Content>
+                        </ContentRow.Trigger>
+                      </ContentRow.Root>
+                    ))}
+                  </div>
+                </Reveal>
+              </motion.div>
             </div>
           </div>
-          {boardSources?.length ? (
-            <ReferenceBoard
-              sources={boardSources}
-              attachedIds={attachedIds}
-              onOpenSave={openSave}
-              onAttach={(sources) => {
-                assistant.closeReferences();
-                attach(sources);
-              }}
-              onClose={() => {
-                assistant.closeReferences();
-                requestAnimationFrame(focus);
-              }}
-            />
-          ) : null}
-        </div>
-        {pickerOpen ? (
-          <ContextPicker
-            attached={state.attachments}
-            onAdd={assistant.attach}
-            onClose={() => {
-              setPickerOpen(false);
-              requestAnimationFrame(focus);
-            }}
-          />
-        ) : null}
-      </section>
+        </section>
+      </MotionConfig>
     </AgentMessageContext.Provider>
   );
 }
@@ -537,10 +678,10 @@ export function AgentPane({ layout = "pane" }: { layout?: "page" | "pane" }) {
     ASSISTANT_MODELS.find((model) => model.id === prefs.languageModel)?.id ??
     "";
   const modelId = provider ? chosenModelId(provider, prefs) : "";
-  const runtime = usePondAssistantRuntime(state, provider);
+  const runtime = useAssistantRuntime();
 
   return (
-    <AssistantRuntimeProvider runtime={runtime}>
+    <ChatUI.Provider chat={runtime}>
       <AgentPaneContent
         layout={layout}
         state={state}
@@ -549,6 +690,7 @@ export function AgentPane({ layout = "pane" }: { layout?: "page" | "pane" }) {
         patchModel={(next) => {
           const update: Partial<typeof prefs> = {
             languageModel: next.provider,
+            visionModel: "",
             modelIds: { ...prefs.modelIds, [next.provider]: next.modelId },
           };
           if (next.provider === "ollama") update.ollamaModelId = next.modelId;
@@ -560,6 +702,6 @@ export function AgentPane({ layout = "pane" }: { layout?: "page" | "pane" }) {
         }}
         reduceMotion={reduceMotion}
       />
-    </AssistantRuntimeProvider>
+    </ChatUI.Provider>
   );
 }

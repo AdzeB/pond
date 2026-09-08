@@ -307,6 +307,7 @@ export const saveFolders = sqliteTable(
 export const agentChats = sqliteTable("agent_chats", {
   id: text("id").primaryKey(),
   title: text("title"),
+  canonicalTranscript: text("canonical_transcript"),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`(unixepoch() * 1000)`),

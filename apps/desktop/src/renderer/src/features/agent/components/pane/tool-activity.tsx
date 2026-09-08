@@ -3,6 +3,7 @@ import {
   IconChevronDownOutline18,
   IconXmarkOutline18,
 } from "@pond/icons/outline/18";
+import { Accordion, Loader } from "@pond/ui";
 import type { AssistantToolStep } from "@shared/assistant";
 import styles from "./tool-activity.module.css";
 
@@ -27,46 +28,52 @@ export function ToolActivity({
           ? "Work stopped"
           : `${steps.length} ${steps.length === 1 ? "step" : "steps"} completed`;
   return (
-    <details className={styles.activity}>
-      <summary>
-        {running && active ? (
-          <span className={styles.spinner} />
-        ) : failed || stopped ? (
-          <IconXmarkOutline18 />
-        ) : (
-          <IconCheckOutline18 />
-        )}
-        <span>{label}</span>
-        <IconChevronDownOutline18 />
-      </summary>
-      <ol aria-label="Assistant activity">
-        {steps.map((step) => (
-          <li key={step.id} data-status={step.status}>
-            <span className={styles.marker}>
-              {step.status === "running" ? (
-                <span className={styles.spinner} />
-              ) : step.status === "complete" ? (
-                <IconCheckOutline18 />
-              ) : (
-                <IconXmarkOutline18 />
-              )}
-            </span>
-            <span className={styles["step-content"]}>
-              <strong>{step.label}</strong>
-              {step.detail ? <span>{step.detail}</span> : null}
-            </span>
-            <span className={styles.duration}>
-              {step.status === "complete"
-                ? `${((step.elapsedMs ?? 0) / 1000).toFixed(1)}s`
-                : step.status === "running"
-                  ? "Running"
-                  : step.status === "stopped"
-                    ? "Stopped"
-                    : "Failed"}
-            </span>
-          </li>
-        ))}
-      </ol>
-    </details>
+    <Accordion.Root className={styles.activity}>
+      <Accordion.Item value="activity">
+        <Accordion.Header>
+          <Accordion.Trigger>
+            {running && active ? (
+              <Loader.Dots />
+            ) : failed || stopped ? (
+              <IconXmarkOutline18 />
+            ) : (
+              <IconCheckOutline18 />
+            )}
+            <span>{label}</span>
+            <IconChevronDownOutline18 />
+          </Accordion.Trigger>
+        </Accordion.Header>
+        <Accordion.Panel>
+          <ol aria-label="Assistant activity">
+            {steps.map((step) => (
+              <li key={step.id} data-status={step.status}>
+                <span className={styles.marker}>
+                  {step.status === "running" ? (
+                    <Loader.Dots />
+                  ) : step.status === "complete" ? (
+                    <IconCheckOutline18 />
+                  ) : (
+                    <IconXmarkOutline18 />
+                  )}
+                </span>
+                <span className={styles["step-content"]}>
+                  <strong>{step.label}</strong>
+                  {step.detail ? <span>{step.detail}</span> : null}
+                </span>
+                <span className={styles.duration}>
+                  {step.status === "complete"
+                    ? `${((step.elapsedMs ?? 0) / 1000).toFixed(1)}s`
+                    : step.status === "running"
+                      ? "Running"
+                      : step.status === "stopped"
+                        ? "Stopped"
+                        : "Failed"}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </Accordion.Panel>
+      </Accordion.Item>
+    </Accordion.Root>
   );
 }

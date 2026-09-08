@@ -22,6 +22,7 @@ describe("new menu actions", () => {
       "eagle",
       "connect",
       "watch",
+      "watched-folder",
     ]);
   });
 
@@ -31,7 +32,7 @@ describe("new menu actions", () => {
 
   it("matches keywords and all search terms", () => {
     expect(ids("text document")).toEqual(["note", "files"]);
-    expect(ids("auto import")).toEqual(["connect", "watch"]);
+    expect(ids("auto import")).toEqual(["connect", "watch", "watched-folder"]);
     expect(ids("paste")).toEqual(["clipboard"]);
     expect(ids("from folder")).toEqual(["folders"]);
     expect(ids("package")).toEqual(["eagle"]);

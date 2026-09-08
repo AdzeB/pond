@@ -80,19 +80,6 @@ function WatchDetail({
 
   const viewItems = () => viewAccountItems(watch.id);
 
-  const confirmStopWatching = () => {
-    Dialog.confirm({
-      title: "Stop Watching",
-      description: `Pond stops checking ${watchName(watch)} for new posts. The ${formatNumber(count)} item${count === 1 ? "" : "s"} already saved stay in your library.`,
-      confirmLabel: "Stop Watching",
-      onConfirm: async () => {
-        await window.pond.query("watches.remove", { watchId: watch.id });
-        onChanged();
-        sourceFlow.close();
-      },
-    });
-  };
-
   if (page === "profile")
     return (
       <div className={styles.rows}>
@@ -108,8 +95,13 @@ function WatchDetail({
   if (page === "options")
     return (
       <DetailOptions
-        onRemove={confirmStopWatching}
         removeLabel="Stop Watching"
+        description={`Pond stops checking ${watchName(watch)} for new posts. The ${formatNumber(count)} item${count === 1 ? "" : "s"} already saved stay in your library.`}
+        onRemove={async () => {
+          await window.pond.query("watches.remove", { watchId: watch.id });
+          onChanged();
+          sourceFlow.close();
+        }}
       />
     );
 

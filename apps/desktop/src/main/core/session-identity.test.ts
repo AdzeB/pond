@@ -36,6 +36,24 @@ describe("identityKeyFromCookies", () => {
     ).toBeNull();
   });
 
+  it("reads uid_tt for tiktok", () => {
+    expect(
+      identityKeyFromCookies("tiktok", [{ name: "uid_tt", value: "71234" }]),
+    ).toBe("71234");
+  });
+
+  it("reads the numeric user id from a cosmos access token", () => {
+    const payload = Buffer.from(JSON.stringify({ userId: 42 })).toString(
+      "base64url",
+    );
+    const token = `eyJhbGciOiJub25lIn0.${payload}.sig`;
+    expect(
+      identityKeyFromCookies("cosmos", [
+        { name: "csms_accessToken", value: token },
+      ]),
+    ).toBe("42");
+  });
+
   it("reads the lid from a logged-in reddit token_v2", () => {
     const payload = Buffer.from(
       JSON.stringify({ sub: "user", lid: "t2_spez" }),

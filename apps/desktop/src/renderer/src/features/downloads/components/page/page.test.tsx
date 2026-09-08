@@ -54,19 +54,6 @@ function setSaves(saves: Save[]) {
     revision: state.revision + 1,
   }));
 }
-const historyRow = {
-  id: 1,
-  saveId: "saved",
-  title: "Previously saved",
-  url: "https://example.com/saved",
-  source: "youtube",
-  outcome: "complete",
-  durationMs: 800,
-  attempts: 1,
-  failedOp: null,
-  error: null,
-  ts: 1,
-};
 let host: HTMLDivElement;
 let root: Root;
 let client: QueryClient;
@@ -95,9 +82,10 @@ beforeEach(() => {
   query.mockImplementation(async (name: string) => {
     if (name === "settings.getPrefs") return {};
     if (name === "pipeline.status") return { paused: false };
-    if (name === "downloads.history")
-      return { rows: [historyRow], nextCursor: null };
+    if (name === "pipeline.inflight") return [];
+    if (name === "downloads.live") return [];
     if (name === "saves.retryFailed") return { ok: true, requeued: 1 };
+    if (name === "saves.getMany") return [];
     throw new Error(`Unexpected query: ${name}`);
   });
   setSaves([
@@ -148,21 +136,29 @@ async function click(selector: string, modifiers = {}) {
     await new Promise((resolve) => setTimeout(resolve, 0));
   });
 }
-async function status(label: string) {
-  await click('[aria-label="Download Status"]');
-  const option = [...document.querySelectorAll('[role="option"]')].find(
-    (node) => node.textContent === label,
-  );
-  if (!option)
-    throw new Error(`Missing status ${label}: ${document.body.textContent}`);
-  await act(async () => {
-    option.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
-    option.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 1 }));
+it("shows live downloads that paging missed without hydrating the whole library", async () => {
+  const queued = save("Old failure", "failed", "failed");
+  setSaves([save("Recent clip", "complete")]);
+  query.mockImplementation(async (name: string, args?: { ids?: string[] }) => {
+    if (name === "settings.getPrefs") return {};
+    if (name === "pipeline.status") return { paused: false };
+    if (name === "pipeline.inflight") return [];
+    if (name === "downloads.live") return [queued.id];
+    if (name === "saves.getMany") {
+      expect(args?.ids).toEqual([queued.id]);
+      return [queued];
+    }
+    if (name === "saves.list") {
+      throw new Error("must not hydrate the full save pool");
+    }
+    throw new Error(`Unexpected query: ${name}`);
   });
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
-}
+  await render();
+  expect(query).toHaveBeenCalledWith("downloads.live", {});
+  expect(query).not.toHaveBeenCalledWith("saves.list", expect.anything());
+  expect(host.textContent).toContain("Old failure");
+  expect(host.querySelector('[aria-label="Open Recent clip"]')).toBeNull();
+});
 
 it("keeps running work active when the queue is paused and scopes retry to visible failures", async () => {
   await render();
@@ -185,38 +181,9 @@ it("keeps running work active when the queue is paused and scopes retry to visib
   expect(primarySelection.get()).toBeNull();
 });
 
-it("loads history through filters, refreshes completed work, and retains filters when collapsed", async () => {
-  await render();
-  expect(query.mock.calls.some(([name]) => name === "downloads.history")).toBe(
-    false,
-  );
-  await click('[aria-label="Filter Downloads"]');
-  await status("Saved");
-  expect(host.textContent).toContain("Previously saved");
-  expect(host.querySelector('[aria-label="Open Running video"]')).toBeNull();
-  query.mockClear();
-  await act(async () =>
-    setSaves([
-      save("Waiting video", "ingesting", "pending"),
-      save("Failed video", "failed", "failed"),
-    ]),
-  );
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
-  expect(query).toHaveBeenCalledWith("downloads.history", expect.any(Object));
-  await status("All Downloads");
-  expect(host.textContent).toContain("Previously saved");
-  expect(host.textContent).toContain("Waiting video");
-  await click('[aria-label="Filter Downloads (Active)"]');
-  expect(host.querySelector("fieldset")?.hidden).toBe(true);
-  expect(
-    host.querySelector('[aria-label="Filter Downloads (Active)"]'),
-  ).not.toBeNull();
-});
-
 it("preserves row selection and prunes completed selections after live updates", async () => {
   await render();
+  expect(host.querySelector('[role="checkbox"]')).toBeNull();
   await click('[aria-label="Open Running video"]', { metaKey: true });
   expect(downloadsSelection.size()).toBe(1);
   expect(primarySelection.get()).toBeNull();
@@ -231,51 +198,20 @@ it("preserves row selection and prunes completed selections after live updates",
   expect(primarySelection.get()).toBe("Failed video");
 });
 
-it("offers a retry when history fails instead of showing an empty result", async () => {
-  const original = query.getMockImplementation();
-  let failHistory = true;
-  query.mockImplementation(async (name: string) => {
-    if (name === "downloads.history" && failHistory) throw new Error("offline");
-    return original?.(name);
-  });
+it("sorts downloads from column headers without selecting or opening a save", async () => {
   await render();
-  await click('[aria-label="Filter Downloads"]');
-  await status("Saved");
-  expect(host.querySelector('[role="alert"]')?.textContent).toContain(
-    "Couldn't load download history",
-  );
-  failHistory = false;
-  await click('[role="alert"] button');
-  expect(host.textContent).toContain("Previously saved");
-});
-
-it("keeps pagination reachable when the first history page is hidden by a live retry", async () => {
-  const original = query.getMockImplementation();
-  const cursor = { ts: 1, id: 1 };
-  query.mockImplementation(async (name: string, args: { cursor?: unknown }) => {
-    if (name !== "downloads.history") return original?.(name);
-    return args.cursor
-      ? { rows: [historyRow], nextCursor: null }
-      : {
-          rows: [{ ...historyRow, saveId: "Running video" }],
-          nextCursor: cursor,
-        };
-  });
-  await render();
-  await click('[aria-label="Filter Downloads"]');
-  await status("Saved");
-  expect(host.textContent).not.toContain("No matches");
-  const load = [...host.querySelectorAll("button")].find(
-    (button) => button.textContent === "Load More",
-  );
-  expect(load).toBeDefined();
-  await act(async () => load?.click());
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
-  expect(query).toHaveBeenCalledWith(
-    "downloads.history",
-    expect.objectContaining({ cursor }),
-  );
-  expect(host.textContent).toContain("Previously saved");
+  await click('[aria-label="Sort by Name"]');
+  expect(
+    [...host.querySelectorAll('button[aria-label^="Open "]')].map((button) =>
+      button.getAttribute("aria-label"),
+    ),
+  ).toEqual(["Open Failed video", "Open Running video", "Open Waiting video"]);
+  await click('[aria-label="Sort by Name"]');
+  expect(
+    [...host.querySelectorAll('button[aria-label^="Open "]')].map((button) =>
+      button.getAttribute("aria-label"),
+    ),
+  ).toEqual(["Open Waiting video", "Open Running video", "Open Failed video"]);
+  expect(downloadsSelection.size()).toBe(0);
+  expect(primarySelection.get()).toBeNull();
 });

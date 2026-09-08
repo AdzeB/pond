@@ -179,9 +179,12 @@
     flex: none;
     min-height: 48px;
     font-size: 16px;
+    border-radius: 16px;
+  }
+
+  > button:not([data-variant="destructive"]) {
     color: var(--ds-gray-12);
     background: var(--ds-gray-2);
-    border-radius: 16px;
   }
 }
 

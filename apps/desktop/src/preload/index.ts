@@ -16,6 +16,7 @@ import { FilterQuery } from "../shared/filter-query";
 import type { QueryClient } from "../shared/query-contracts";
 import type {
   WireJson,
+  WireSessionImported,
   WireSyncAction,
   WireSyncStatusUpdate,
   WireUndoState,
@@ -238,6 +239,13 @@ const api = {
 
   syncCancel(accountId: string): Promise<{ ok: true; running: boolean }> {
     return ipcRenderer.invoke(IPC.syncCancel, accountId);
+  },
+
+  onSessionImported(cb: (payload: WireSessionImported) => void): () => void {
+    const listener = (_: IpcRendererEvent, payload: WireSessionImported) =>
+      cb(payload);
+    ipcRenderer.on(IPC.sessionImported, listener);
+    return () => ipcRenderer.off(IPC.sessionImported, listener);
   },
 
   onSyncStatus(cb: (update: WireSyncStatusUpdate) => void): () => void {

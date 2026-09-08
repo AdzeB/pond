@@ -48,11 +48,12 @@
 .bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 6px;
   align-items: center;
   min-width: 0;
   min-height: 0;
-  padding: 0 12px 10px;
+  padding-inline: 12px;
+  padding-bottom: 8px;
   overflow: hidden;
   transform: translateY(-4px);
   transition: transform var(--ds-duration-medium) var(--ds-easing-decelerate);
@@ -60,9 +61,4 @@
 
 .shell[data-open] .bar {
   transform: translateY(0);
-}
-
-.reset {
-  margin-left: auto;
-  color: var(--ds-gray-10);
 }

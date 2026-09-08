@@ -13,6 +13,8 @@
   inset: 0;
   z-index: 0;
   overflow: hidden;
+  background-clip: padding-box;
+  border: var(--ds-border-elevated);
   border-radius: var(--ds-radius-xs);
   box-shadow: var(--ds-shadow-2);
 }

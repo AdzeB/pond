@@ -10,7 +10,7 @@ export interface SettingsSection {
 }
 
 export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
-  { id: "general", path: "general", label: "Preferences", group: "general" },
+  { id: "general", path: "general", label: "General", group: "general" },
   {
     id: "appearance",
     path: "appearance",
@@ -20,17 +20,40 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   {
     id: "schedule",
     path: "schedule",
-    label: "Fetch Schedule",
+    label: "Fetching",
+    hidden: true,
     group: "library",
   },
-  { id: "tags", path: "tags", label: "Tags", group: "library" },
-  { id: "trash", path: "trash", label: "Trash", group: "library" },
-  { id: "storage", path: "storage", label: "Storage", group: "library" },
-  { id: "search", path: "search", label: "Search", group: "ai" },
-  { id: "models", path: "models", label: "Models", group: "ai" },
-  { id: "mcp", path: "mcp", label: "MCP", group: "ai" },
-  { id: "videos", path: "videos", label: "Videos", group: "capture" },
-  { id: "images", path: "images", label: "Images", group: "capture" },
+  { id: "tags", path: "tags", label: "Tags", hidden: true, group: "library" },
+  {
+    id: "trash",
+    path: "trash",
+    label: "Trash",
+    hidden: true,
+    group: "library",
+  },
+  {
+    id: "storage",
+    path: "storage",
+    label: "Storage & Backups",
+    group: "library",
+  },
+  {
+    id: "search",
+    path: "search",
+    label: "Search & Processing",
+    group: "library",
+  },
+  { id: "models", path: "models", label: "Integrations", group: "general" },
+  { id: "mcp", path: "mcp", label: "MCP", hidden: true, group: "ai" },
+  { id: "videos", path: "videos", label: "Harvesting", group: "library" },
+  {
+    id: "images",
+    path: "images",
+    label: "Images",
+    hidden: true,
+    group: "capture",
+  },
 ];
 
 export const SETTINGS_GROUP_ORDER: readonly SettingsGroup[] = [
@@ -49,6 +72,12 @@ export const SETTINGS_GROUP_LABELS = {
 
 export const SETTINGS_SECTION_ALIASES = {
   downloads: "videos",
+  harvesting: "videos",
+  schedule: "videos",
+  fetching: "videos",
+  images: "videos",
+  trash: "storage",
+  mcp: "models",
   agent: "models",
   ai: "models",
   "ai-models": "models",

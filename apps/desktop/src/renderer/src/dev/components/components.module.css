@@ -124,6 +124,10 @@
   gap: 24px;
   max-width: 1040px;
   margin-inline: auto;
+
+  &[data-wide] {
+    max-width: 1200px;
+  }
 }
 .intro {
   display: flex;
@@ -171,6 +175,13 @@
   min-height: 300px;
   padding: 32px;
 }
+
+.preview[data-layout="tokens"] .stage {
+  display: block;
+  min-height: 0;
+  padding: 16px;
+}
+
 .example {
   flex-shrink: 0;
   min-width: 0;

@@ -1,0 +1,24 @@
+.runStatus {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-block: 8px;
+  font-size: var(--ds-text-small);
+  color: var(--ds-gray-9);
+}
+
+.runStatus > svg {
+  width: 14px;
+  height: 14px;
+}
+
+.stopMark {
+  width: 7px;
+  height: 7px;
+  background: currentColor;
+  border-radius: 2px;
+}
+
+.runStatus[data-reduced-motion="true"] * {
+  animation: none;
+}

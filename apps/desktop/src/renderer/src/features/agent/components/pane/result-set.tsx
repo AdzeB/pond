@@ -1,4 +1,5 @@
 import { IconChevronDownOutline18 } from "@pond/icons/outline/18";
+import { Button, Reveal } from "@pond/ui";
 import type { AssistantResultSet, AssistantSource } from "@shared/assistant";
 import { useId, useState } from "react";
 import styles from "./inline.module.css";
@@ -32,29 +33,29 @@ export function ResultSet({
       <h3 id={heading} className={styles["results-label"]}>
         {result.title}
       </h3>
-      <div
-        className={expanded ? styles["result-grid"] : styles["result-strip"]}
-      >
-        {visible.map((source) => (
-          <SaveReferenceCard
-            key={source.id}
-            source={source}
-            attached={attachedIds.includes(source.id)}
-            onOpenSave={onOpenSave}
-            onAttach={onAttach}
-          />
+      <div>
+        {saves.map((source, index) => (
+          <Reveal key={source.id} visible={expanded || index < 4}>
+            <SaveReferenceCard
+              source={source}
+              attached={attachedIds.includes(source.id)}
+              onOpenSave={onOpenSave}
+              onAttach={onAttach}
+            />
+          </Reveal>
         ))}
       </div>
       {saves.length > 4 ? (
         <div className={styles["results-footer"]}>
-          <button
-            type="button"
+          <Button
+            size="xs"
+            variant="ghost"
             aria-expanded={expanded}
             onClick={() => setExpanded(!expanded)}
           >
             {expanded ? "Show Less" : `View All ${saves.length} Saves`}
             <IconChevronDownOutline18 />
-          </button>
+          </Button>
         </div>
       ) : null}
     </section>

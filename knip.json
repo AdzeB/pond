@@ -12,20 +12,13 @@
         "src/renderer/src/capture.tsx",
         "src/renderer/src/routes/**/*.{ts,tsx}",
         "scripts/*.{mjs,cjs,ts}",
-        "src/renderer/{assistant,components,command-menu-preview,source-dialogs}.tsx",
-        "prototypes/*/main.tsx",
-        "prototypes/*/*.mjs",
+        "src/renderer/{components,command-menu-preview,source-dialogs,provider-settings,shadows}.tsx",
         "src/main/core/media-warm/service.ts",
         "src/main/core/enrichment-sidecar.ts"
       ],
-      "project": [
-        "src/**/*.{ts,tsx}",
-        "scripts/**/*.{mjs,cjs,ts}",
-        "prototypes/**/*.{ts,tsx,mjs}"
-      ],
-      "ignoreDependencies": ["@tanstack/ai-react"],
+      "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{mjs,cjs,ts}"],
       "vite": {
-        "config": ["components.vite.config.ts", "prototypes/*/vite.config.ts"]
+        "config": ["components.vite.config.ts"]
       }
     },
     "apps/website": {
@@ -37,7 +30,11 @@
       "project": ["**/*.{ts,tsx}"]
     },
     "packages/icons": {
-      "entry": ["lib/create-icon.tsx", "scripts/*.mjs"]
+      "entry": [
+        "fill/*/index.ts",
+        "outline/*/index.ts",
+        "social-media/index.ts"
+      ]
     },
     "packages/schema": {
       "entry": ["scripts/*.ts"]

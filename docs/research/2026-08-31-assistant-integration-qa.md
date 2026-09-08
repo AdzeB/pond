@@ -1,6 +1,6 @@
 # Assistant integration verification
 
-The approved design is integrated into the desktop renderer, with `/assistant` as the sidebar destination and the companion pane sharing the conversation, draft, and generation state. The isolated prototype remains separate.
+The approved design is integrated into the desktop renderer, with `/assistant` as the sidebar destination and the companion pane sharing the conversation, draft, and generation state. The isolated prototype was subsequently retired.
 
 ## Verified
 

@@ -8,7 +8,15 @@ function showLibrary(): void {
   }
 }
 
-export function viewAccountItems(accountId: string): void {
-  setSearchInput([{ field: "account", operator: "eq", value: accountId }], "");
+export function viewAccountItems(accountId: string | readonly string[]): void {
+  const ids = Array.isArray(accountId) ? [...accountId] : [accountId];
+  const id = ids[0];
+  if (!id) return;
+  setSearchInput(
+    ids.length === 1
+      ? [{ field: "account", operator: "eq", value: id }]
+      : [{ field: "account", operator: "in", value: ids }],
+    "",
+  );
   showLibrary();
 }

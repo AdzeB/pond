@@ -1,4 +1,4 @@
-import { Button } from "@pond/ui";
+import { Button, Checkbox } from "@pond/ui";
 import type { AssistantChange } from "@shared/assistant";
 import { useState } from "react";
 import { assistant } from "@/features/agent/state/assistant";
@@ -101,8 +101,7 @@ export function ChangeReview({
         {changes.map((change) => (
           <div className={styles["change-item"]} key={change.id}>
             <div className={styles["change-save"]}>
-              <input
-                type="checkbox"
+              <Checkbox.Root
                 aria-label={`Apply ${change.field} change to ${change.title}`}
                 checked={
                   change.status === "applied" ||
@@ -111,7 +110,7 @@ export function ChangeReview({
                 disabled={
                   disabled || change.status !== "pending" || Boolean(working)
                 }
-                onChange={() =>
+                onCheckedChange={() =>
                   setSelected((prev) => {
                     const next = new Set(prev);
                     if (next.has(change.id)) next.delete(change.id);
@@ -119,16 +118,19 @@ export function ChangeReview({
                     return next;
                   })
                 }
-              />
-              <button
-                type="button"
+              >
+                <Checkbox.Indicator />
+              </Checkbox.Root>
+              <Button
+                size="xs"
+                variant="ghost"
                 disabled={disabled || !change.saveId}
                 onClick={() => {
                   if (change.saveId) openSave(change.saveId);
                 }}
               >
                 {change.title}
-              </button>
+              </Button>
             </div>
             <div className={styles["change-field"]}>
               <span>{fieldLabel[change.field] ?? change.field}</span>

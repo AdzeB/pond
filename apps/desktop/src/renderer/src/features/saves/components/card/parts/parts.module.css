@@ -153,6 +153,8 @@
   height: 18px;
   overflow: hidden;
   pointer-events: none;
+  background-clip: padding-box;
+  border: var(--ds-border-elevated);
   border-radius: var(--ds-radius-source);
   box-shadow: var(--ds-shadow-2);
 }
@@ -194,6 +196,7 @@
   font: inherit;
   cursor: var(--ds-cursor-interactive, pointer);
   background: light-dark(rgb(255, 255, 255), rgb(0, 0, 0));
+  background-clip: padding-box;
   border: 1px solid var(--ds-gray-a4);
   border-radius: var(--ds-radius-sm);
   box-shadow: var(--ds-shadow-search);

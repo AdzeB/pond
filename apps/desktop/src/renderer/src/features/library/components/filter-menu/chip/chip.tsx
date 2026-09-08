@@ -54,12 +54,12 @@ export function FilterChip({
         <Button
           icon
           size="xs"
-          variant="ghost"
+          variant="primary"
           className={styles.clear}
           aria-label={clearLabel}
           onClick={onClear}
         >
-          <IconXmarkOutline12 />
+          <IconXmarkOutline12 strokeWidth={2} className={styles.clearIcon} />
         </Button>
       ) : null}
     </div>

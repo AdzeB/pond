@@ -4,17 +4,25 @@ import {
   group,
 } from "@/features/settings/lib/engine-types";
 
+import { notify } from "@/shared/lib/toast";
+
 function runApply(
   channel:
     | "quickCapture.applyPrefs"
     | "window.applyPrefs"
     | "updates.applyPrefs",
 ): void {
-  void window.pond.query(channel, {}).catch(() => {});
+  void window.pond.query(channel, {}).catch(() =>
+    notify({
+      id: "settings-apply-error",
+      title: "Couldn’t apply this setting",
+      description: "Try again or restart Pond.",
+    }),
+  );
 }
 
 export const generalSection = defineCustomSection({
-  title: "Preferences",
+  title: "General",
   description: "Window behavior, menu bar, and updates.",
   groups: [
     group.prefs("window", {
@@ -44,8 +52,8 @@ export const generalSection = defineCustomSection({
         {
           control: "switch",
           key: "launchHidden",
-          title: "Launch Hidden",
-          description: "Start in the tray without a window.",
+          title: "Launch in Background",
+          description: "Start Pond without opening its window.",
           apply: () => runApply("window.applyPrefs"),
         },
       ],
@@ -63,8 +71,8 @@ export const generalSection = defineCustomSection({
         {
           control: "switch",
           key: "closeToTray",
-          title: "Close to Tray",
-          description: "Hide to the tray instead of quitting.",
+          title: "Keep Running When Closed",
+          description: "Fetch with the window closed, until you quit.",
           apply: () => runApply("window.applyPrefs"),
         },
       ],
@@ -76,7 +84,7 @@ export const generalSection = defineCustomSection({
           control: "switch",
           key: "menuBarIcon",
           title: "Menu Bar Icon",
-          description: "Keep Pond in the system tray.",
+          description: "Show Pond in the menu bar.",
           apply: () => runApply("quickCapture.applyPrefs"),
         },
       ],
@@ -94,6 +102,7 @@ export const generalSection = defineCustomSection({
         {
           control: "custom",
           key: "check-now",
+          title: "Check for Updates",
           render: () => <CheckNowRow />,
         },
       ],

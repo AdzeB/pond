@@ -126,7 +126,7 @@ The current working-tree Assistant implementation already exposes `searchLibrary
 
 The send input currently carries a chat ID and text. Explicit attachment IDs and immutable per-message context would be a real product/data-model addition, not only a new chip style. Provider options and a cloud-consent check already exist, but model capability should still be checked independently from whether a provider accepts a key. [P1][P3]
 
-The isolated prototype is simulated. Its sample source excerpts, context choices, and per-message consent demonstration must not be mistaken for implemented production guarantees. [P4]
+The retired prototype simulated source excerpts, context choices, and per-message consent. Those examples were not production guarantees.
 
 ## Recommended design and feature sequence
 
@@ -214,7 +214,6 @@ This would add substance while retaining the cleaner composer. It does not requi
 | [P1] | Pond working-tree chat implementation and exposed tool set |
 | [P2] | Pond working-tree retrieval and grid interaction tools |
 | [P3] | Pond working-tree provider/key configuration |
-| [P4] | Pond prototype README: simulated behavior and scope |
 
 Additional Eagle setup, operation-specific, developer, and security sources are cataloged in the linked appendix.
 
@@ -236,4 +235,3 @@ Additional Eagle setup, operation-specific, developer, and security sources are 
 [P1]: ../../apps/desktop/src/main/core/agent/chat.ts
 [P2]: ../../apps/desktop/src/main/core/agent/tools.ts
 [P3]: ../../apps/desktop/src/main/core/agent/keys.ts
-[P4]: ../../apps/desktop/prototypes/assistant/README.md

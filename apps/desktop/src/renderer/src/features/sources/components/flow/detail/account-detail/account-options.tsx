@@ -1,4 +1,3 @@
-import { Dialog } from "@pond/ui";
 import { accountName } from "@/features/sources/components/page/lib/helpers";
 import { useAccounts } from "@/features/sources/hooks/use-accounts";
 import {
@@ -20,22 +19,17 @@ export function AccountOptionsSection() {
     sourceDetail.changed();
   };
 
-  const confirmDisconnect = () => {
-    Dialog.confirm({
-      title: "Disconnect",
-      description: `Pond signs ${accountName(account)} out and stops its syncing. The ${formatNumber(count)} item${count === 1 ? "" : "s"} already saved stay in your library.`,
-      confirmLabel: "Disconnect",
-      onConfirm: async () => {
+  return (
+    <DetailOptions
+      removeLabel="Disconnect"
+      description={`Pond signs ${accountName(account)} out and stops its syncing. The ${formatNumber(count)} item${count === 1 ? "" : "s"} already saved stay in your library.`}
+      onRemove={async () => {
         await window.pond.query("accounts.disconnect", {
           accountId: account.id,
         });
         onChanged();
         sourceFlow.close();
-      },
-    });
-  };
-
-  return (
-    <DetailOptions onRemove={confirmDisconnect} removeLabel="Disconnect" />
+      }}
+    />
   );
 }

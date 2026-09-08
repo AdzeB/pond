@@ -1,7 +1,7 @@
 import { IconCheckOutline18, IconPlusOutline18 } from "@pond/icons/outline/18";
+import { ContentRow, Tooltip } from "@pond/ui";
 import type { AssistantSource } from "@shared/assistant";
 import { sourceExcerpt } from "@shared/assistant-text";
-import styles from "./inline.module.css";
 import { SourceThumbnail, sourceDomain } from "./save-preview";
 
 export function SaveReferenceCard({
@@ -17,29 +17,35 @@ export function SaveReferenceCard({
 }) {
   const title = sourceExcerpt(source.title, 180) || "Untitled";
   return (
-    <article className={styles["result-card"]}>
-      <button
-        type="button"
-        className={styles["result-open"]}
+    <ContentRow.Root>
+      <ContentRow.Trigger
         onClick={() => onOpenSave(source.id)}
         aria-label={`Open ${title}`}
       >
-        <SourceThumbnail id={source.id} source={source} visual />
-        <span className={styles["result-info"]}>
-          <strong>{title}</strong>
-          <small>{sourceDomain(source)}</small>
-        </span>
-      </button>
-      <button
-        type="button"
-        className={styles["result-add"]}
-        aria-label={`Add ${title} to message`}
-        title={attached ? "Added to Message" : "Add to Message"}
-        disabled={attached}
-        onClick={() => onAttach([source])}
-      >
-        {attached ? <IconCheckOutline18 /> : <IconPlusOutline18 />}
-      </button>
-    </article>
+        <ContentRow.Media size="thumbnail">
+          <SourceThumbnail id={source.id} source={source} />
+        </ContentRow.Media>
+        <ContentRow.Content>
+          <ContentRow.Title>{title}</ContentRow.Title>
+          <ContentRow.Description>
+            {sourceDomain(source)}
+          </ContentRow.Description>
+          {source.notes || source.description ? (
+            <ContentRow.Description>
+              {sourceExcerpt(source.notes || source.description, 140)}
+            </ContentRow.Description>
+          ) : null}
+        </ContentRow.Content>
+      </ContentRow.Trigger>
+      <Tooltip label={attached ? "Added to Message" : "Add to Message"}>
+        <ContentRow.Action
+          aria-label={`Add ${title} to message`}
+          disabled={attached}
+          onClick={() => onAttach([source])}
+        >
+          {attached ? <IconCheckOutline18 /> : <IconPlusOutline18 />}
+        </ContentRow.Action>
+      </Tooltip>
+    </ContentRow.Root>
   );
 }

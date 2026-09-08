@@ -5,7 +5,7 @@ import type { Save } from "@/features/saves/types";
 import { listBaseFromPath } from "@/features/search/lib/schemas";
 
 const ROUTE_LABELS: ReadonlyMap<string, string> = new Map([
-  ["/", "Library"],
+  ["/", "All"],
   ["/sources", "Sources"],
   ["/trash", "Trash"],
   ["/downloads", "Downloads"],
@@ -43,7 +43,7 @@ function labelForPath(path: string): string {
   }
 
   if (clean.length > 1) return titleCase(clean.slice(1));
-  return "Library";
+  return "All";
 }
 
 export function computeLabel(path: string, save: Save | undefined): string {

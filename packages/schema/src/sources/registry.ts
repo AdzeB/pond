@@ -75,7 +75,7 @@ export const SOURCE_DESCRIPTORS = [
       /^https?:\/\/(?:www\.)?cosmos\.so\/e\/([A-Za-z0-9_-]+)/i,
       /^https?:\/\/(?:www\.)?cosmos\.so\/(.+?)\/?$/i,
     ],
-    sync: { strategy: "scroll" },
+    sync: { strategy: "cursor" },
   },
   {
     id: "tiktok",

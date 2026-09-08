@@ -21,6 +21,7 @@ const labels = [
   "Import Eagle Library",
   "Connect a Source",
   "Watch Account",
+  "Watched Folder",
 ];
 
 describe("new menu", () => {

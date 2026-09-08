@@ -1,0 +1,1 @@
+Provider logo tiles are vendored unchanged from @lobehub/icons-static-avatar 1.14.0 (https://github.com/lobehub/lobe-icons), under the accompanying MIT license. These local WebP assets use the same image treatment as source logos.

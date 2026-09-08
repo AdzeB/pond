@@ -52,6 +52,8 @@
   &[data-active] {
     color: var(--ds-gray-12);
     background: var(--ds-gray-1);
+    background-clip: padding-box;
+    border: var(--ds-border-elevated);
     box-shadow: var(--ds-shadow-2);
   }
 }

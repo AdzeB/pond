@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   describeSyncSchedule,
   isSyncScheduleDue,
+  nextSyncOccurrence,
   type SyncSchedule,
 } from "./sync-schedule";
 
@@ -58,4 +59,89 @@ describe("fetch schedules", () => {
     );
     expect(describeSyncSchedule(weekly)).toBe("Mon, Wed at 09:00");
   });
+});
+
+const recurring: SyncSchedule = {
+  enabled: true,
+  intervalHours: 12,
+  recurrence: {
+    startDate: "2026-01-31",
+    every: 1,
+    unit: "month",
+    time: "18:00",
+    days: [1],
+  },
+};
+it("clamps month ends without drifting the following month", () => {
+  expect(nextSyncOccurrence(recurring, new Date(2026, 0, 31, 18))).toEqual(
+    new Date(2026, 1, 28, 18),
+  );
+  expect(nextSyncOccurrence(recurring, new Date(2026, 1, 28, 18))).toEqual(
+    new Date(2026, 2, 31, 18),
+  );
+});
+it("honors a future start and every N months", () => {
+  const rule: SyncSchedule = {
+    ...recurring,
+    recurrence: {
+      startDate: "2026-01-31",
+      every: 3,
+      unit: "month",
+      time: "18:00",
+      days: [1],
+    },
+  };
+  expect(nextSyncOccurrence(rule, new Date(2025, 11, 1))).toEqual(
+    new Date(2026, 0, 31, 18),
+  );
+  expect(nextSyncOccurrence(rule, new Date(2026, 0, 31, 18))).toEqual(
+    new Date(2026, 3, 30, 18),
+  );
+});
+it("anchors alternate weeks and excludes days before the start", () => {
+  const rule: SyncSchedule = {
+    ...recurring,
+    recurrence: {
+      startDate: "2026-09-09",
+      every: 2,
+      unit: "week",
+      time: "09:00",
+      days: [1, 3],
+    },
+  };
+  expect(nextSyncOccurrence(rule, new Date(2026, 8, 7))).toEqual(
+    new Date(2026, 8, 9, 9),
+  );
+  expect(nextSyncOccurrence(rule, new Date(2026, 8, 9, 9))).toEqual(
+    new Date(2026, 8, 21, 9),
+  );
+});
+it("runs missed recurrence once and skips pre-launch occurrences", () => {
+  const after = new Date(2026, 1, 28, 19);
+  expect(
+    isSyncScheduleDue(recurring, after, 0, +new Date(2026, 1, 28, 17)),
+  ).toBe(true);
+  expect(isSyncScheduleDue(recurring, after, +after, 0)).toBe(false);
+  expect(isSyncScheduleDue(recurring, after, 0, +after)).toBe(false);
+  expect(
+    nextSyncOccurrence({ ...recurring, enabled: false }, after),
+  ).toBeNull();
+});
+it("anchors hourly repeats to the start date", () => {
+  const rule: SyncSchedule = {
+    ...recurring,
+    recurrence: {
+      startDate: "2026-09-09",
+      every: 6,
+      unit: "hour",
+      time: "18:00",
+      days: [1],
+    },
+  };
+  expect(nextSyncOccurrence(rule, new Date(2026, 8, 8, 23))).toEqual(
+    new Date(2026, 8, 9),
+  );
+  expect(nextSyncOccurrence(rule, new Date(2026, 8, 9, 6))).toEqual(
+    new Date(2026, 8, 9, 12),
+  );
 });

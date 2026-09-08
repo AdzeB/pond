@@ -1,0 +1,59 @@
+.popup,
+.modal {
+  z-index: 50;
+  padding: 6px;
+  background: var(--ds-gray-1);
+  background-clip: padding-box;
+  border: var(--ds-border-elevated);
+  border-radius: var(--ds-radius-xl);
+  box-shadow: var(--ds-shadow-popover);
+  transform-origin: var(--radix-popover-content-transform-origin);
+  animation: enter var(--ds-duration-snap) var(--ds-easing-decelerate);
+}
+
+.popup[data-state="closed"],
+.modal[data-state="closed"] {
+  animation: leave var(--ds-duration-snap) var(--ds-easing-standard);
+}
+
+.menuItem {
+  composes: item from "../shared/styles/popup/styles.module.css";
+}
+
+.separator {
+  composes: separator from "../shared/styles/popup/styles.module.css";
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .message,
+  .attachment,
+  .popup,
+  .modal {
+    animation: none;
+  }
+}
+
+.message[data-reduced-motion="true"],
+.attachment[data-reduced-motion="true"],
+.popup[data-reduced-motion="true"],
+.modal[data-reduced-motion="true"] {
+  animation: none;
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes leave {
+  to {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}

@@ -11,11 +11,13 @@ export {
   Shimmer,
   Suggestion,
 } from "./ai";
+export { useTextReveal } from "./ai/text-reveal";
 export { Button, type ButtonProps } from "./button";
 export { Checkbox } from "./checkbox";
 export { Chip, type ChipTone } from "./chip";
 export { ColorField, ColorPicker } from "./color-field";
 export { Combobox } from "./combobox";
+export { ContentRow } from "./content-row";
 export { ContextMenu } from "./context-menu";
 export {
   DataTable,
@@ -33,6 +35,7 @@ export { Keyboard } from "./keyboard";
 export { Logo, type LogoProps } from "./logo";
 export { Menu, type MenuItemSpec } from "./menu";
 export { Popover } from "./popover";
+export { Reveal } from "./reveal";
 export { Select, type SelectItemSpec } from "./select";
 export { Settings } from "./settings";
 export { Shell } from "./shell";

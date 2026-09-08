@@ -1,4 +1,5 @@
 import type { Source } from "@pond/schema/db";
+import { cosmosIdentityFromToken } from "../lib/cosmos-token";
 import { redditIdentityFromToken } from "../lib/reddit-token";
 
 interface NamedCookie {
@@ -30,6 +31,12 @@ export function identityKeyFromCookies(
       const token = get("token_v2");
       return token ? redditIdentityFromToken(token) : null;
     }
+    case "cosmos": {
+      const token = get("csms_accessToken");
+      return token ? cosmosIdentityFromToken(token) : null;
+    }
+    case "tiktok":
+      return get("uid_tt");
     default:
       return null;
   }

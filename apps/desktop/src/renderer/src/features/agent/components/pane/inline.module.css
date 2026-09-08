@@ -109,12 +109,10 @@
   container-type: inline-size;
 }
 .results-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  white-space: nowrap;
-  clip-path: inset(50%);
+  margin-bottom: 8px;
+  font-size: var(--ds-text-mini);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-gray-10);
 }
 .result-strip {
   display: grid;

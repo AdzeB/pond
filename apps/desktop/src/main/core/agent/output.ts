@@ -54,27 +54,17 @@ export function evidenceAnswerProblem(
 
 export function conversation(messages: ChatMessage[]) {
   let request = "";
-  return messages
-    .filter(
-      (message): message is ChatMessage & { role: "user" | "assistant" } => {
-        if (message.role === "user") {
-          request = message.content;
-          return true;
-        }
-        return (
-          message.role === "assistant" &&
-          !answerProblem(message.content, request)
-        );
-      },
-    )
-    .slice(-24)
-    .map((message, index, history) => ({
-      ...message,
-      content:
-        index === history.length - 1
-          ? message.content
-          : message.content.slice(-16000),
-    }));
+  return messages.filter(
+    (message): message is ChatMessage & { role: "user" | "assistant" } => {
+      if (message.role === "user") {
+        request = message.content;
+        return true;
+      }
+      return (
+        message.role === "assistant" && !answerProblem(message.content, request)
+      );
+    },
+  );
 }
 
 export function evidence(

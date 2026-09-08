@@ -10,7 +10,7 @@ import { nativeCall } from "@/utils/native";
 import { probe } from "@/utils/probe";
 import { ensureSettings } from "@/utils/settings";
 import type { PondCapturePayload, PushSessionResult } from "@/utils/types";
-import { cookieDomainsForSource } from "@/utils/url";
+import { cookieDomainsForSource, isCookieSourceUrl } from "@/utils/url";
 
 const AUTO_PUSH_COOLDOWN_MS = 60_000;
 const ACTIVE_PROBE_MS = 30_000;
@@ -137,8 +137,23 @@ export default defineBackground(() => {
     }
   });
 
-  chrome.tabs.onActivated.addListener(() => {
-    void maybeAutoPush();
+  chrome.tabs.onActivated.addListener((info) => {
+    void chrome.tabs
+      .get(info.tabId)
+      .then((tab) => {
+        void maybeAutoPush({
+          force: Boolean(tab.url && isCookieSourceUrl(tab.url)),
+        });
+      })
+      .catch(() => {
+        void maybeAutoPush();
+      });
+  });
+
+  chrome.tabs.onUpdated.addListener((_id, change, tab) => {
+    if (change.status !== "complete" || !tab.url) return;
+    if (!isCookieSourceUrl(tab.url)) return;
+    void maybeAutoPush({ force: true });
   });
 
   chrome.alarms.onAlarm.addListener((alarm) => {
@@ -147,7 +162,7 @@ export default defineBackground(() => {
   void readSchedulerState()
     .then((state) => scheduleSessionAlarm(state.pending))
     .catch(() => scheduleSessionAlarm(false))
-    .finally(() => maybeAutoPush());
+    .finally(() => maybeAutoPush({ force: true }));
 
   async function openPondTab(path: string | undefined): Promise<boolean> {
     const target = path ? `pond://${path}` : "pond://";
@@ -194,13 +209,13 @@ export default defineBackground(() => {
     scheduleSessionAlarm(false);
   }
 
-  async function maybeAutoPush(): Promise<void> {
+  async function maybeAutoPush(opts?: { force?: boolean }): Promise<void> {
     if (autoPushInFlight) return;
     autoPushInFlight = true;
     try {
       const now = Date.now();
       const state = await readSchedulerState();
-      if (now < state.nextProbeAt) return;
+      if (!opts?.force && now < state.nextProbeAt) return;
 
       const probeResult = await fetchPendingSource();
       if (probeResult.kind === "idle") {

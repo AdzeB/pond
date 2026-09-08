@@ -8,6 +8,7 @@ import {
   removeAccount,
 } from "../../core/sync/accounts";
 import { fillMissingAvatars } from "../../core/sync/avatars";
+import { countSavesForAccount } from "../../core/sync/sync-baseline";
 import {
   type QueryHandlerMap,
   query,
@@ -20,11 +21,17 @@ export const accountsQueries = {
     fillMissingAvatars();
     const accounts = await listAccounts();
     const rows = await Promise.all(
-      accounts.map(async (account) => ({
-        ...account,
-        connected: await isAccountConnected(account).catch(() => false),
-        syncing: isSyncing(account.id),
-      })),
+      accounts.map(async (account) => {
+        const knownCount = await countSavesForAccount(account).catch(
+          () => account.sync.knownCount,
+        );
+        return {
+          ...account,
+          sync: { ...account.sync, knownCount },
+          connected: await isAccountConnected(account).catch(() => false),
+          syncing: isSyncing(account.id),
+        };
+      }),
     );
     return { accounts: rows };
   },

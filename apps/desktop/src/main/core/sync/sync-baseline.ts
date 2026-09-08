@@ -57,6 +57,18 @@ export async function loadSyncBaseline(
   return { knownIds, total: totalRow?.c ?? knownIds.size, full: false };
 }
 
+export async function countSavesForAccount(
+  account: Pick<ConnectedAccount, "id" | "source">,
+): Promise<number> {
+  const db = await getDb();
+  const totalRow = await db
+    .select({ c: count() })
+    .from(saves)
+    .where(syncBaselineWhere(account))
+    .get();
+  return totalRow?.c ?? 0;
+}
+
 export async function persistWatermark(
   accountId: string,
   opts: { full: boolean; newestId: string | null; total: number },

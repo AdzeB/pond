@@ -350,25 +350,16 @@ export type AssistantActivity =
   | "reading"
   | "writing"
   | "preparing";
-export interface AssistantChunk {
+export type AssistantEvent =
+  | { type: "stream"; event: import("@tanstack/ai").StreamChunk }
+  | { type: "activity"; activity: AssistantActivity }
+  | { type: "sources"; sources: AssistantSource[] }
+  | { type: "results"; results: AssistantResultSet[] }
+  | { type: "steps"; steps: AssistantToolStep[] };
+export type AssistantChunk = AssistantEvent & {
   chatId: string;
   requestId: string;
-  type:
-    | "text"
-    | "done"
-    | "error"
-    | "activity"
-    | "sources"
-    | "stopped"
-    | "results"
-    | "steps";
-  text?: string;
-  error?: string;
-  activity?: AssistantActivity;
-  sources?: AssistantSource[];
-  results?: AssistantResultSet[];
-  steps?: AssistantToolStep[];
-}
+};
 export const assistantSendResult = z.object({
   chatId: z.string(),
   accepted: z.boolean().optional(),

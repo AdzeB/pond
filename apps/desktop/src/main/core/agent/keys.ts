@@ -1,8 +1,11 @@
 import type { JsonValue } from "@pond/schema/json";
 import { z } from "zod";
 import { KEYCHAIN_AGENT_PREFIX } from "../../../shared/constants";
+import { modelsForChooser } from "../../../shared/provider-models";
 import { deleteSecret, getSecret, getSecrets, setSecret } from "../../keychain";
 import { getPrefs, setPrefs } from "../prefs";
+import { isLocalProviderConnected } from "./local-provider-state";
+import { bundledModels, mergeModelCatalogs } from "./model-catalog";
 import {
   modelsFromProviderResponse,
   type ProviderModel,
@@ -46,9 +49,7 @@ export async function listKeys(): Promise<
   const rows = [];
   for (const provider of AGENT_PROVIDERS) {
     const key = secrets[accountFor(provider)];
-    const local =
-      (provider === "ollama" || provider === "lmstudio") &&
-      enabledKeys[provider] === true;
+    const local = isLocalProviderConnected(provider, prefs.agent);
     rows.push({
       provider,
       hasKey: Boolean(key) || local,
@@ -75,6 +76,10 @@ export async function saveKey(
     agent: {
       enabledKeys: { ...prefs.agent.enabledKeys, [provider]: true },
       languageModel: prefs.agent.languageModel || provider,
+      connectedLocalProviders: {
+        ...prefs.agent.connectedLocalProviders,
+        [provider]: provider === "ollama" || provider === "lmstudio",
+      },
     },
   });
   return { ok: true };
@@ -88,6 +93,10 @@ export async function removeKey(
   await setPrefs({
     agent: {
       enabledKeys: { ...prefs.agent.enabledKeys, [provider]: false },
+      connectedLocalProviders: {
+        ...prefs.agent.connectedLocalProviders,
+        [provider]: false,
+      },
     },
   });
   return { ok: true };
@@ -101,6 +110,10 @@ export async function setKeyEnabled(
   await setPrefs({
     agent: {
       enabledKeys: { ...prefs.agent.enabledKeys, [provider]: enabled },
+      connectedLocalProviders: {
+        ...prefs.agent.connectedLocalProviders,
+        [provider]: isLocalProviderConnected(provider, prefs.agent),
+      },
     },
   });
   return { ok: true };
@@ -131,6 +144,10 @@ export async function listProviderModels(
 ): Promise<{ ok: boolean; models: ProviderModel[]; error?: string }> {
   const prefs = await getPrefs();
   const key = (await getSecret(accountFor(provider))) ?? "";
+  const bundled = await bundledModels(provider);
+  if (!key && provider !== "ollama" && provider !== "lmstudio") {
+    return { ok: true, models: bundled };
+  }
   const fetched = await fetchProviderModels({
     provider,
     key,
@@ -138,10 +155,14 @@ export async function listProviderModels(
     lmstudioBaseUrl: prefs.agent.lmstudioBaseUrl,
     compatibleBaseUrl: prefs.agent.compatibleBaseUrl,
   });
-  if (!fetched.ok) return { ok: false, models: [], error: fetched.error };
+  if (!fetched.ok)
+    return { ok: bundled.length > 0, models: bundled, error: fetched.error };
   return {
     ok: true,
-    models: modelsFromProviderResponse(provider, fetched.json),
+    models: mergeModelCatalogs(
+      bundled,
+      modelsFromProviderResponse(provider, fetched.json),
+    ),
   };
 }
 
@@ -153,99 +174,116 @@ export async function listAvailableModels(): Promise<{
     error?: string;
   }>;
 }> {
+  const prefs = await getPrefs();
   const rows = await listKeys();
   const connected = rows.filter((row) => row.hasKey && row.enabled);
   const providers = await Promise.all(
     connected.map(async (row) => {
       const listed = await listProviderModels(row.provider);
-      return { provider: row.provider, ...listed };
+      const models = modelsForChooser(listed.models, [
+        ...listed.models.map((model) => model.id),
+        ...(prefs.agent.customModelIds?.[row.provider] ?? []),
+      ]);
+      return {
+        provider: row.provider,
+        ...listed,
+        models,
+        ok: listed.ok || models.length > 0,
+      };
     }),
   );
   return { providers };
 }
 
-export async function checkProviderKey(input: {
+type ProviderConnection = {
   provider: AgentProviderId;
   key: string;
   ollamaBaseUrl: string;
   lmstudioBaseUrl: string;
   compatibleBaseUrl: string;
-}): Promise<{ ok: boolean; error?: string }> {
-  const fetched = await fetchProviderModels(input);
-  return fetched.ok ? { ok: true } : { ok: false, error: fetched.error };
+};
+
+type ModelDiscoveryResult =
+  | { ok: true; json: JsonValue }
+  | { ok: false; error: string; unsupported?: boolean };
+
+export async function checkProviderKey(
+  input: ProviderConnection,
+  fetcher: typeof fetch = fetch,
+): Promise<{ ok: boolean; error?: string }> {
+  const fetched = await fetchProviderModels(input, fetcher);
+  if (fetched.ok || fetched.unsupported) return { ok: true };
+  return { ok: false, error: fetched.error };
 }
 
-async function fetchProviderModels(input: {
-  provider: AgentProviderId;
-  key: string;
-  ollamaBaseUrl: string;
-  lmstudioBaseUrl: string;
-  compatibleBaseUrl: string;
-}): Promise<{ ok: boolean; json?: JsonValue; error?: string }> {
+async function fetchProviderModels(
+  input: ProviderConnection,
+  fetcher: typeof fetch = fetch,
+): Promise<ModelDiscoveryResult> {
   const { provider, key } = input;
+  const name = label(provider);
+  let url: string;
+  const headers: Record<string, string> = {};
+  if (provider === "anthropic") {
+    url = "https://api.anthropic.com/v1/models";
+    headers["x-api-key"] = key;
+    headers["anthropic-version"] = "2023-06-01";
+  } else if (provider === "gemini") {
+    url = "https://generativelanguage.googleapis.com/v1beta/models";
+    headers["x-goog-api-key"] = key;
+  } else {
+    const base =
+      provider === "ollama"
+        ? input.ollamaBaseUrl
+        : provider === "lmstudio"
+          ? input.lmstudioBaseUrl
+          : provider === "compatible"
+            ? input.compatibleBaseUrl
+            : "https://api.openai.com/v1";
+    if (!base) return { ok: false, error: "Enter an API base URL first." };
+    url = `${base.replace(/\/$/, "")}/models`;
+    if (key) headers.Authorization = `Bearer ${key}`;
+  }
   try {
-    let res: Response;
-    if (provider === "ollama" || provider === "lmstudio") {
-      const base =
-        provider === "ollama" ? input.ollamaBaseUrl : input.lmstudioBaseUrl;
-      res = await fetch(`${base.replace(/\/$/, "")}/models`, {
-        headers: key ? { Authorization: `Bearer ${key}` } : {},
-      });
-      if (!res.ok) {
+    const res = await fetcher(url, {
+      headers,
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
         return {
           ok: false,
-          error: `${label(provider)} did not accept this endpoint.`,
+          error: `${name} rejected this key or its permissions. Check it in Settings.`,
         };
       }
-    } else if (provider === "anthropic") {
-      res = await fetch("https://api.anthropic.com/v1/models", {
-        headers: {
-          "x-api-key": key,
-          "anthropic-version": "2023-06-01",
-        },
-      });
-      if (!res.ok) {
-        return {
-          ok: false,
-          error: "Anthropic rejected this key. Check it in Settings.",
-        };
-      }
-    } else if (provider === "gemini") {
-      res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`,
-      );
-      if (!res.ok) {
-        return {
-          ok: false,
-          error: "Gemini rejected this key. Check it in Settings.",
-        };
-      }
-    } else {
-      const base =
-        provider === "compatible" && input.compatibleBaseUrl
-          ? input.compatibleBaseUrl
-          : "https://api.openai.com/v1";
-      res = await fetch(`${base.replace(/\/$/, "")}/models`, {
-        headers: { Authorization: `Bearer ${key}` },
-      });
-      if (!res.ok) {
-        return {
-          ok: false,
-          error: `${label(provider)} rejected this key. Check it in Settings.`,
-        };
-      }
+      const unsupported =
+        (provider === "compatible" || provider === "lmstudio") &&
+        [404, 405, 501].includes(res.status);
+      return {
+        ok: false,
+        unsupported,
+        error: unsupported
+          ? `${name} does not list models. Add a custom model ID.`
+          : `Could not load models from ${name} (HTTP ${res.status}). Try again later.`,
+      };
     }
-    let json: JsonValue;
     try {
-      json = z.json().parse(await res.json());
+      const json = z.json().parse(await res.json());
+      const schema =
+        provider === "gemini"
+          ? z.object({ models: z.array(z.json()) })
+          : z.object({ data: z.array(z.json()) });
+      if (!schema.safeParse(json).success) {
+        return { ok: false, error: `${name} returned an invalid model list.` };
+      }
+      return { ok: true, json };
     } catch {
-      json = null;
+      return { ok: false, error: `${name} returned an invalid model list.` };
     }
-    return { ok: true, json };
   } catch {
     return {
       ok: false,
-      error: `Could not reach ${label(provider)}. Check the network and try again.`,
+      error: `Could not reach ${name}. Check the network and try again.`,
     };
   }
 }

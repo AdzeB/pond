@@ -1,3 +1,4 @@
+import { Button } from "@pond/ui";
 import type { AssistantQuestion } from "@shared/assistant";
 import { useId } from "react";
 import styles from "./question.module.css";
@@ -26,26 +27,28 @@ export function Question({
       ) : (
         <>
           <div className={styles.options}>
-            {question.options.map((option, index) => (
-              <button
-                type="button"
+            {question.options.map((option) => (
+              <Button
+                size="sm"
+                variant="secondary"
+                className={styles.option}
                 key={option}
                 disabled={disabled}
                 onClick={() => onAnswer(option)}
               >
-                <span aria-hidden>{index + 1}</span>
                 {option}
-              </button>
+              </Button>
             ))}
           </div>
-          <button
-            type="button"
+          <Button
+            size="sm"
+            variant="ghost"
             className={styles.write}
             disabled={disabled}
             onClick={onWrite}
           >
             Write an Answer
-          </button>
+          </Button>
         </>
       )}
     </section>

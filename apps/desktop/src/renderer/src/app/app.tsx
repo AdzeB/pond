@@ -24,7 +24,6 @@ import { pondScopedKey } from "../shared/lib/pond-scope";
 import { BootScreen } from "./components/boot-screen/boot-screen";
 import { ErrorBoundary } from "./components/error-boundary/error-boundary";
 import { ErrorScreen } from "./components/error-screen/error-screen";
-import { ShortcutsSheetHost } from "./components/shortcuts-sheet/shortcuts-sheet";
 import { AgentLibraryBridge } from "./effects/agent-library-bridge";
 import { MenuRecentsBridge } from "./effects/menu-recents-bridge";
 import { CaptureShell } from "./windows/capture-shell/capture-shell";
@@ -187,7 +186,6 @@ function LibraryApp() {
           </ErrorBoundary>
           <Dialog.Host />
           <CommandMenuHost />
-          <ShortcutsSheetHost />
           <ToastHost />
         </Tooltip.Provider>
       </QueryClientProvider>

@@ -278,12 +278,13 @@ function QueueSpecimen({ paused }: { paused: boolean }) {
       getRowId={(row) => row.id}
       onSelectionChange={() => undefined}
       defaultSort={{ id: "time", desc: true }}
-      rowHeight={80}
+      rowHeight={48}
+      selectionCheckboxes={false}
       onRowClick={() => undefined}
       renderRow={(args) => <DownloadQueueRow {...args} paused={paused} />}
     >
       <div className={styles.queue}>
-        <DataTable.Root variant="list" />
+        <DataTable.Root className={downloadStyles.grid} />
       </div>
     </DataTable.Provider>
   );

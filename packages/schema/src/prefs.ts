@@ -233,6 +233,18 @@ const updates = z.object({
   autoInstall: z.boolean().catch(true),
 });
 
+export const FetchRecurrenceSchema = z
+  .object({
+    startDate: z.iso.date(),
+    every: z.number().int().min(1).max(999),
+    unit: z.enum(["hour", "day", "week", "month"]),
+    time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    days: z.array(z.number().int().min(0).max(6)),
+  })
+  .refine((rule) => rule.unit !== "week" || rule.days.length > 0, {
+    message: "Choose at least one weekday",
+  });
+
 const sync = z.object({
   accounts: z.custom<SyncAccounts>().default({}),
   watches: z.custom<SyncWatches>().default({}),
@@ -243,6 +255,7 @@ const sync = z.object({
     .object({
       enabled: z.boolean().catch(true),
       intervalHours: z.number().min(1).catch(DEFAULT_SYNC_CRON.intervalHours),
+      recurrence: FetchRecurrenceSchema.nullable().optional(),
       calendar: z
         .discriminatedUnion("kind", [
           z.object({
@@ -262,6 +275,14 @@ const sync = z.object({
 });
 
 const storage = z.object({
+  lastBackup: z
+    .object({
+      path: z.string(),
+      libraryRoot: z.string(),
+      completedAt: z.string(),
+    })
+    .nullable()
+    .catch(null),
   guardsEnabled: z.boolean().catch(false),
   maxLibraryGb: z.number().nullable().catch(50),
   warnAtPercent: z.number().catch(80),
@@ -281,8 +302,12 @@ const agent = z.object({
   ollamaModelId: z.string().catch("llama3.2"),
   lmstudioModelId: z.string().catch("local"),
   modelIds: z.record(z.string(), z.string()).catch({}),
+  customModelIds: z.record(z.string(), z.array(z.string())).optional(),
+  visibleModelIds: z.record(z.string(), z.array(z.string())).optional(),
   enabledKeys: z.record(z.string(), z.boolean()).catch({}),
+  connectedLocalProviders: z.record(z.string(), z.boolean()).optional(),
   visionModel: z.string().catch(""),
+  visionModelId: z.string().optional(),
 });
 
 const ai = z.object({

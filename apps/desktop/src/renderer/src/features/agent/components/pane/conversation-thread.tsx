@@ -1,4 +1,5 @@
 import { IconChevronDownOutline18 } from "@pond/icons/outline/18";
+import { Conversation } from "@pond/ui";
 import {
   type ReactNode,
   useEffect,
@@ -18,6 +19,7 @@ export function ConversationThread({
   children: ReactNode;
 }) {
   const viewport = useRef<HTMLElement>(null);
+  const content = useRef<HTMLDivElement>(null);
   const following = useRef(true);
   const previousChat = useRef(chatId);
   const previousRequest = useRef(requestId);
@@ -48,6 +50,7 @@ export function ConversationThread({
       }
     });
     observer.observe(frame);
+    if (content.current) observer.observe(content.current);
     return () => observer.disconnect();
   }, []);
 
@@ -66,25 +69,24 @@ export function ConversationThread({
           setDetached(!following.current);
         }}
       >
-        <div className={styles["thread-inner"]}>{children}</div>
+        <div ref={content} className={styles["thread-inner"]}>
+          {children}
+        </div>
       </section>
-      {detached ? (
-        <button
-          type="button"
-          className={styles["jump-to-latest"]}
-          onClick={() => {
-            following.current = true;
-            setDetached(false);
-            if (viewport.current) {
-              viewport.current.scrollTop = viewport.current.scrollHeight;
-              viewport.current.focus({ preventScroll: true });
-            }
-          }}
-        >
-          <IconChevronDownOutline18 />
-          Latest Reply
-        </button>
-      ) : null}
+      <Conversation.ScrollButton
+        aria-label="Latest Reply"
+        inert={!detached}
+        onClick={() => {
+          following.current = true;
+          setDetached(false);
+          if (viewport.current) {
+            viewport.current.scrollTop = viewport.current.scrollHeight;
+            viewport.current.focus({ preventScroll: true });
+          }
+        }}
+      >
+        <IconChevronDownOutline18 />
+      </Conversation.ScrollButton>
     </div>
   );
 }

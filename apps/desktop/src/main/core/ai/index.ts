@@ -4,6 +4,7 @@ import { loadAdapter } from "../agent/adapter";
 import { keyFor, parseProvider } from "../agent/keys";
 import { connectionFor } from "../agent/provider-models";
 import { getPrefs } from "../prefs";
+import { queryOutputSchema } from "./query-output";
 import { buildSystemPrompt } from "./schema-prompt";
 import type { CompileContext } from "./types";
 
@@ -30,32 +31,15 @@ export async function compilePlan(
   if (!adapter) return null;
   const controller = new AbortController();
   const { chat } = await import("@tanstack/ai");
-  const stream = chat({
-    adapter,
-    systemPrompts: [buildSystemPrompt(ctx)],
-    messages: [{ role: "user", content: input }],
-    abortController: controller,
-  });
-  let assembled = "";
   try {
-    for await (const chunk of stream) {
-      if (chunk.type === "TEXT_MESSAGE_CONTENT" && chunk.delta)
-        assembled += chunk.delta;
-    }
-  } catch {
-    return null;
-  }
-  return parseCompiledPlan(assembled);
-}
-
-function parseCompiledPlan(answer: string): RawQueryPlan | null {
-  const start = answer.indexOf("{");
-  const end = answer.lastIndexOf("}");
-  if (start < 0 || end <= start) return null;
-  try {
-    return parseQueryPlan({
-      filter: JSON.parse(answer.slice(start, end + 1)),
+    const filter = await chat({
+      adapter,
+      systemPrompts: [buildSystemPrompt(ctx)],
+      messages: [{ role: "user", content: input }],
+      outputSchema: queryOutputSchema,
+      abortController: controller,
     });
+    return parseQueryPlan({ filter });
   } catch {
     return null;
   }

@@ -1,5 +1,8 @@
 import {
   IconImageOutline18,
+  IconImageSparkle2Outline18,
+  IconImageSparkleOutline18,
+  IconTextToImageOutline18,
   IconWandSparkleOutline18,
 } from "@pond/icons/outline/18";
 import { Button, Input } from "@pond/ui";
@@ -32,7 +35,7 @@ export function SemanticChip() {
   const summary = query ?? "Semantic";
   return (
     <FilterChip
-      icon={<IconWandSparkleOutline18 />}
+      icon={<IconTextToImageOutline18 />}
       label={summary}
       active={active}
       ariaLabel={active ? `Semantic: ${query}` : "Semantic"}
@@ -99,7 +102,7 @@ export function VisualChip() {
   const summary = probe?.label ?? "Visual Match";
   return (
     <FilterChip
-      icon={<IconImageOutline18 />}
+      icon={<IconImageSparkleOutline18 />}
       label={summary}
       active={active}
       ariaLabel={active ? `Visual Match: ${probe?.label}` : "Visual Match"}

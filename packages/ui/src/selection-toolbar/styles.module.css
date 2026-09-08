@@ -1,0 +1,20 @@
+.selection {
+  z-index: 50;
+}
+
+.menuItem {
+  composes: item from "../shared/styles/popup/styles.module.css";
+}
+
+.separator {
+  composes: separator from "../shared/styles/popup/styles.module.css";
+}
+
+.selection {
+  padding: 4px;
+  background: var(--ds-gray-1);
+  background-clip: padding-box;
+  border: var(--ds-border-elevated);
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-popover);
+}

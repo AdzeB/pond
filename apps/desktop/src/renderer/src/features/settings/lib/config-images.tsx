@@ -5,7 +5,6 @@ import {
   type SettingsValues,
 } from "@/features/settings/lib/engine-types";
 
-const imageReencode = (v: SettingsValues) => v.format !== "original";
 const imageQuality = (v: SettingsValues) =>
   (v.format === "jpeg" || v.format === "webp" || v.format === "avif") &&
   !v.lossless;
@@ -38,9 +37,9 @@ export const imagesSection = defineCustomSection({
           control: "select",
           key: "format",
           title: "Format",
-          description: "Convert on save, or keep the original.",
+          description: "Keep the format or convert future downloads.",
           options: [
-            { value: "original", label: "Original" },
+            { value: "original", label: "Same Format" },
             { value: "jpeg", label: "JPEG" },
             { value: "png", label: "PNG" },
             { value: "webp", label: "WebP" },
@@ -50,7 +49,7 @@ export const imagesSection = defineCustomSection({
       ],
     }),
     group.with(useImageDownloadBinding, {
-      title: "Encoding",
+      title: "Advanced encoding",
       items: [
         {
           control: "select",
@@ -86,8 +85,7 @@ export const imagesSection = defineCustomSection({
           control: "switch",
           key: "preserveMetadata",
           title: "Preserve Metadata",
-          description: "Keep EXIF and color profile.",
-          visible: imageReencode,
+          description: "Keep camera, location, and color details.",
         },
       ],
     }),

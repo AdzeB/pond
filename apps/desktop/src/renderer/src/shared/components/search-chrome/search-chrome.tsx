@@ -20,7 +20,7 @@ export function SearchChrome({
     <div className={cn(styles.root, className)}>
       <div className={styles.bar}>
         <span className={styles.mark} aria-hidden="true">
-          <IconMagnifierOutline18 />
+          <IconMagnifierOutline18 size={16} />
         </span>
         <div className={styles.search}>{children}</div>
         {actions ? <div className={styles.actions}>{actions}</div> : null}

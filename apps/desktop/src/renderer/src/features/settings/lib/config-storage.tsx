@@ -1,4 +1,5 @@
 import { LocationRow } from "@/features/settings/components/sections/storage/storage";
+import { StorageSummary } from "@/features/settings/components/sections/storage/storage-summary";
 import {
   defineSection,
   type SettingsValues,
@@ -7,21 +8,22 @@ import {
 const guardsOn = (v: SettingsValues) => v.guardsEnabled === true;
 
 export const storageSection = defineSection("storage", {
-  title: "Storage",
+  title: "Storage & Backups",
   description: "Library location, backups, and disk usage.",
   groups: [
+    { title: "Overview", render: () => <StorageSummary /> },
     {
       title: "Location",
       fullWidth: true,
       render: () => <LocationRow />,
     },
     {
-      title: "Usage Guard",
+      title: "Storage Limits",
       items: [
         {
           control: "switch",
           key: "guardsEnabled",
-          title: "Watch Library Size",
+          title: "Limit Library Size",
           description: "Act when the library grows too large.",
         },
         {
@@ -45,7 +47,7 @@ export const storageSection = defineSection("storage", {
           key: "warnAtPercent",
           title: "Warn At",
           description: "Show a banner at this share of the limit.",
-          visible: guardsOn,
+          visible: (v) => guardsOn(v) && v.maxLibraryGb !== null,
           options: [
             { value: 70, label: "70%" },
             { value: 80, label: "80%" },
@@ -58,24 +60,11 @@ export const storageSection = defineSection("storage", {
           key: "action",
           title: "When the Limit Is Reached",
           description: "What Pond does at the cap.",
-          visible: guardsOn,
+          visible: (v) => guardsOn(v) && v.maxLibraryGb !== null,
           options: [
             { value: "warn", label: "Warn" },
-            { value: "pauseSync", label: "Pause Sync" },
+            { value: "pauseSync", label: "Pause Fetching" },
             { value: "pauseVideo", label: "Pause Video Downloads" },
-          ],
-        },
-        {
-          control: "select",
-          key: "watchIntervalMinutes",
-          title: "Check Interval",
-          description: "How often to re-measure.",
-          visible: guardsOn,
-          options: [
-            { value: 1, label: "Every Minute" },
-            { value: 5, label: "Every 5 Minutes" },
-            { value: 15, label: "Every 15 Minutes" },
-            { value: 30, label: "Every 30 Minutes" },
           ],
         },
       ],

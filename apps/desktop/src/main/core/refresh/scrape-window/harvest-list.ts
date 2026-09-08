@@ -1,16 +1,9 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import { MEDIA_TYPES, type Source } from "@pond/schema/db";
-import { app, type BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { markAtRisk, report } from "../../pipeline/rate-governor";
 import { arenaProfileUrl, buildArenaListExpression } from "../harvest/arena";
-import {
-  buildCosmosListExpression,
-  COSMOS_LIST_URL,
-  cosmosProfileUrl,
-} from "../harvest/cosmos";
+import { buildCosmosListExpression, COSMOS_LIST_URL } from "../harvest/cosmos";
 import {
   buildInstagramLikesExpression,
   buildInstagramListExpression,
@@ -137,6 +130,10 @@ export async function harvestSourceList(
     const { harvestRedditLists } = await import("../harvest/reddit/api");
     return harvestRedditLists(args, opts.partition);
   }
+  if (source === "cosmos") {
+    const { harvestCosmosLibrary } = await import("../harvest/cosmos/api");
+    return harvestCosmosLibrary(args, opts.partition);
+  }
   const target = listUrlForSource(source, args.accountKey);
   if (!target) {
     return { ok: false, reason: "no_match" };
@@ -221,12 +218,6 @@ export async function harvestSourceList(
       return { ok: false, reason: "timeout" };
     }
 
-    if (source === "cosmos" && process.env.POND_DUMP_COSMOS_CAPTURES) {
-      await dumpCosmosCaptures(lease.win).catch((err) =>
-        log.warn("[pond list:cosmos] capture dump failed", err),
-      );
-    }
-
     const parsed = ListResultSchema.parse(raw);
     if (!parsed) {
       return { ok: false, reason: "no_match" };
@@ -306,7 +297,7 @@ function listUrlForSource(
     case "youtube":
       return YOUTUBE_LIST_URLS[0];
     case "cosmos":
-      return accountKey ? cosmosProfileUrl(accountKey) : COSMOS_LIST_URL;
+      return COSMOS_LIST_URL;
     case "arena":
       return accountKey ? arenaProfileUrl(accountKey) : null;
     case "pinterest":
@@ -471,22 +462,4 @@ export async function harvestYoutubeLikedList(
   } finally {
     lease.release();
   }
-}
-
-async function dumpCosmosCaptures(win: BrowserWindow): Promise<void> {
-  const raw = await win.webContents.executeJavaScript(
-    "JSON.stringify(globalThis.__pondCosmosCapturesArchive ?? [])",
-    true,
-  );
-  const captures = StatsTextSchema.parse(raw);
-  if (!captures || captures === "[]") {
-    log.info("[pond list:cosmos] no captures to dump");
-    return;
-  }
-  const dir = join(app.getPath("userData"), "cosmos-captures");
-  await mkdir(dir, { recursive: true });
-  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const path = join(dir, `${stamp}.json`);
-  await writeFile(path, captures, "utf-8");
-  log.info("[pond list:cosmos] dumped captures to", path);
 }

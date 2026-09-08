@@ -7,6 +7,7 @@ import {
   type CompletionStream,
   completeWithTools as complete,
 } from "./complete";
+import { contextDependencies, libraryContext } from "./context";
 
 const mock = { chat: vi.fn<CompletionStream>() };
 const completeWithTools = (input: CompletionInput) =>
@@ -53,6 +54,186 @@ function tool(name: string, execute = vi.fn()) {
 beforeEach(() => {
   mock.chat.mockReset();
   chatText("Hi! How can I help?");
+});
+
+const filmSources: AssistantSource[] = Array.from(
+  { length: 8 },
+  (_, index) => ({
+    id: `film-${index}`,
+    title: `Film ${index}`,
+    source: "arena",
+    url: `https://example.com/film-${index}`,
+  }),
+);
+
+it.each([
+  ["one", 1],
+  ["two", 2],
+  ["three", 3],
+] as const)("honors %s requested references without losing consulted evidence", async (word, count) => {
+  chatText("These references explore lighting.");
+  const show = vi.fn();
+  const retrieveLibrary = vi.fn().mockResolvedValue(filmSources);
+  await completeWithTools({
+    ...request(),
+    messages: [{ role: "user", content: `Find ${word} film references` }],
+    retrieveLibrary,
+    tools: [tool("showSaves", show)],
+  });
+  expect(show).toHaveBeenCalledExactlyOnceWith({
+    title: "film",
+    saveIds: filmSources.slice(0, count).map((save) => save.id),
+  });
+  expect(mock.chat.mock.calls[0]?.[0].systemPrompts?.join("\n")).toContain(
+    "Save ID: film-7",
+  );
+});
+
+it("retrieves both audited alternatives without presentation instructions", async () => {
+  chatText("These references explore lighting.");
+  const retrieveLibrary = vi.fn().mockResolvedValue(filmSources);
+  const show = vi.fn();
+  await completeWithTools({
+    ...request(),
+    messages: [
+      {
+        role: "user",
+        content:
+          "Find three Saves about film or cinematography. Show them as Save results, then give one short sentence about each using only saved information. Only read; do not change anything.",
+      },
+    ],
+    retrieveLibrary,
+    tools: [tool("showSaves", show)],
+  });
+  expect(retrieveLibrary.mock.calls).toEqual([
+    [{ query: "film", limit: 12 }],
+    [{ query: "cinematography", limit: 12 }],
+  ]);
+  expect(show).toHaveBeenCalledExactlyOnceWith({
+    title: "film or cinematography",
+    saveIds: ["film-0", "film-1", "film-2"],
+  });
+});
+
+it("keeps evidence and curated citations in registry order when searches settle out of order", async () => {
+  const rows = filmSources.map((source) => ({
+    ...source,
+    source: "arena" as const,
+    author: null,
+    notes: null,
+    description: null,
+  }));
+  let finishFilm: () => void = () => {};
+  let finishCinema: () => void = () => {};
+  const film = new Promise<{ saves: typeof rows }>((resolve) => {
+    finishFilm = () => resolve({ saves: rows.slice(0, 2) });
+  });
+  const cinema = new Promise<{ saves: typeof rows }>((resolve) => {
+    finishCinema = () => resolve({ saves: rows.slice(2, 4) });
+  });
+  const input = request();
+  const context = libraryContext(
+    {
+      scope: {},
+      signal: input.abortController.signal,
+      onActivity: vi.fn(),
+      onSources: vi.fn(),
+    },
+    {
+      ...contextDependencies,
+      searchLibrary: (args) => (args.query === "film" ? film : cinema),
+    },
+  );
+  mock.chat.mockImplementation(async function* (options) {
+    const evidence = options.systemPrompts?.join("\n");
+    expect(evidence).toContain("[1] Film 2\nSave ID: film-2");
+    expect(evidence).toContain("[3] Film 0\nSave ID: film-0");
+    const show = options.tools?.find((tool) => tool.name === "showSaves");
+    if (!show?.execute) throw new Error("Missing showSaves");
+    await expect(
+      show.execute({ title: "Selected", saveIds: ["film-0", "film-3"] }),
+    ).resolves.toMatchObject({
+      references: [
+        { id: "film-0", reference: "#save-3" },
+        { id: "film-3", reference: "#save-2" },
+      ],
+    });
+    yield {
+      type: "TEXT_MESSAGE_CONTENT",
+      delta: "See [first selection](#save-3) and [second selection](#save-2).",
+    };
+  });
+  const result = completeWithTools({
+    ...input,
+    messages: [
+      {
+        role: "user",
+        content:
+          "Find two Saves about film or cinematography. Summarize why each is relevant.",
+      },
+    ],
+    retrieveLibrary: context.retrieve,
+    sources: context.sources,
+    tools: context.tools,
+  });
+  finishCinema();
+  await cinema;
+  finishFilm();
+  expect(await result).toBe(
+    "See [first selection](#save-3) and [second selection](#save-2).",
+  );
+  expect(context.sources().map((source) => source.id)).toEqual([
+    "film-2",
+    "film-3",
+    "film-0",
+    "film-1",
+  ]);
+  expect(context.results()).toEqual([
+    { title: "Selected", saveIds: ["film-0", "film-3"] },
+  ]);
+});
+
+it("validates citations against evidence added by later tools", async () => {
+  const sources = filmSources.slice(0, 2);
+  mock.chat.mockImplementation(async function* () {
+    sources.push(...filmSources.slice(2, 3));
+    yield {
+      type: "TEXT_MESSAGE_CONTENT",
+      delta: "See [additional evidence](#save-3).",
+    };
+  });
+  const result = await completeWithTools({
+    ...request(),
+    messages: [{ role: "user", content: "Find film references" }],
+    retrieveLibrary: async () => filmSources.slice(0, 2),
+    sources: () => sources,
+  });
+  expect(result).toBe("See [additional evidence](#save-3).");
+});
+
+it("uses model-curated groups without adding an overlapping automatic group", async () => {
+  const show = vi.fn();
+  mock.chat.mockImplementation(async function* (options) {
+    expect(show).not.toHaveBeenCalled();
+    const tool = options.tools?.find((entry) => entry.name === "showSaves");
+    if (!tool?.execute) throw new Error("Missing showSaves");
+    await tool.execute({ title: "Lighting", saveIds: ["film-0", "film-1"] });
+    await tool.execute({ title: "Composition", saveIds: ["film-1", "film-2"] });
+    yield {
+      type: "TEXT_MESSAGE_CONTENT",
+      delta: "These explore lighting and composition.",
+    };
+  });
+  await completeWithTools({
+    ...request(),
+    messages: [{ role: "user", content: "Find my film references" }],
+    retrieveLibrary: async () => filmSources,
+    tools: [tool("showSaves", show)],
+  });
+  expect(show.mock.calls).toEqual([
+    [{ title: "Lighting", saveIds: ["film-0", "film-1"] }],
+    [{ title: "Composition", saveIds: ["film-1", "film-2"] }],
+  ]);
 });
 
 it.each([
@@ -266,6 +447,24 @@ it("does not publish a response after cancellation", async () => {
   expect(input.onText).not.toHaveBeenCalled();
 });
 
+it("explains an Ollama tensor loading failure with a recovery step", async () => {
+  mock.chat.mockImplementation(async function* () {
+    yield {
+      type: "RUN_ERROR",
+      message: 'tensor "blk.0.ffn_down_exps.weight" size overflow',
+    };
+  });
+  const input = {
+    ...request(),
+    provider: "ollama" as const,
+    model: "gpt-oss:20b",
+  };
+  await expect(completeWithTools(input)).rejects.toThrow(
+    "Ollama couldn't load this model. Update it in Ollama or choose another model in Settings.",
+  );
+  expect(input.onText).not.toHaveBeenCalled();
+});
+
 it("keeps contaminated history out of the prompt without changing it", async () => {
   chatText("Hi!");
   const messages = [
@@ -432,6 +631,7 @@ it.each([
   const input = {
     ...request(),
     provider,
+    baseUrl: "http://127.0.0.1:1234/v1",
     messages: [{ role: "user" as const, content: "kanye pics" }],
     tools: [tool("searchLibrary", search), tool("showSaves", show)],
     retrieveLibrary: retrieval(search),

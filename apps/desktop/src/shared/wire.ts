@@ -76,6 +76,11 @@ export type WireSyncState =
   | "auth_required"
   | "paused";
 
+export interface WireSessionImported {
+  source: Source;
+  accountId: string;
+}
+
 export interface WireSyncStatusUpdate {
   accountId: string;
   source: Source;

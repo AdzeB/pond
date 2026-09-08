@@ -12,12 +12,46 @@ import {
   IconWandSparkleOutline18,
 } from "@pond/icons/outline/18";
 import * as UI from "@pond/ui";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
+import { ShadowsGallery } from "../shadows";
 import { ButtonExample } from "./button-example";
 import type { ComponentEntry } from "./catalog";
 import styles from "./examples.module.css";
 
 import sampleVideo from "./sample.webm";
+
+const AssistantExample = lazy(() =>
+  import("./assistant-example").then((module) => ({
+    default: module.AssistantExample,
+  })),
+);
+
+const AssistantModelsExample = lazy(() =>
+  import("./assistant-example").then((module) => ({
+    default: module.AssistantModelsExample,
+  })),
+);
+const AssistantContextExample = lazy(() =>
+  import("./assistant-example").then((module) => ({
+    default: module.AssistantContextExample,
+  })),
+);
+const AssistantReviewExample = lazy(() =>
+  import("./assistant-example").then((module) => ({
+    default: module.AssistantReviewExample,
+  })),
+);
+const AssistantStatesExample = lazy(() =>
+  import("./assistant-example").then((module) => ({
+    default: module.AssistantStatesExample,
+  })),
+);
+
+const AssistantAttachmentsExample = lazy(() =>
+  import("./assistant-attachments-example").then((module) => ({
+    default: module.AssistantAttachmentsExample,
+  })),
+);
 
 const choices = ["Waterfall", "Grid", "List"].map((label) => ({
   value: label,
@@ -371,30 +405,6 @@ function StepperDemo() {
   );
 }
 
-function AttachmentsDemo() {
-  const [visible, setVisible] = useState(true);
-  return visible ? (
-    <UI.Attachments.Root>
-      <UI.Attachments.Item>
-        <UI.Attachments.Thumb>
-          <UI.Logo size={16} />
-        </UI.Attachments.Thumb>
-        <UI.Attachments.Label>Interface details.pdf</UI.Attachments.Label>
-        <UI.Attachments.Remove
-          aria-label="Remove attachment"
-          onClick={() => setVisible(false)}
-        >
-          <IconXmarkOutline12 />
-        </UI.Attachments.Remove>
-      </UI.Attachments.Item>
-    </UI.Attachments.Root>
-  ) : (
-    <UI.Button size="sm" variant="secondary" onClick={() => setVisible(true)}>
-      Restore attachment
-    </UI.Button>
-  );
-}
-
 function ChipDemo() {
   const [visible, setVisible] = useState(true);
   return (
@@ -558,6 +568,68 @@ function TrayCardDemo() {
 
 export function ComponentExample({ entry }: { entry: ComponentEntry }) {
   switch (entry.id) {
+    case "Assistant UI":
+      return (
+        <Suspense
+          fallback={
+            <UI.Loader.Root>
+              <UI.Loader.Dots />
+            </UI.Loader.Root>
+          }
+        >
+          <AssistantExample />
+        </Suspense>
+      );
+    case "Assistant Models":
+      return (
+        <Suspense
+          fallback={
+            <UI.Loader.Root>
+              <UI.Loader.Dots />
+            </UI.Loader.Root>
+          }
+        >
+          <AssistantModelsExample />
+        </Suspense>
+      );
+    case "Assistant Context":
+      return (
+        <Suspense
+          fallback={
+            <UI.Loader.Root>
+              <UI.Loader.Dots />
+            </UI.Loader.Root>
+          }
+        >
+          <AssistantContextExample />
+        </Suspense>
+      );
+    case "Assistant Review":
+      return (
+        <Suspense
+          fallback={
+            <UI.Loader.Root>
+              <UI.Loader.Dots />
+            </UI.Loader.Root>
+          }
+        >
+          <AssistantReviewExample />
+        </Suspense>
+      );
+    case "Assistant States":
+      return (
+        <Suspense
+          fallback={
+            <UI.Loader.Root>
+              <UI.Loader.Dots />
+            </UI.Loader.Root>
+          }
+        >
+          <AssistantStatesExample />
+        </Suspense>
+      );
+    case "Shadow":
+      return <ShadowsGallery />;
     case "Button":
       return <ButtonExample />;
     case "Input":
@@ -1038,7 +1110,17 @@ export function ComponentExample({ entry }: { entry: ComponentEntry }) {
         </UI.Video.Root>
       );
     case "Attachments":
-      return <AttachmentsDemo />;
+      return (
+        <Suspense
+          fallback={
+            <UI.Loader.Root>
+              <UI.Loader.Dots />
+            </UI.Loader.Root>
+          }
+        >
+          <AssistantAttachmentsExample />
+        </Suspense>
+      );
     case "Chip":
       return <ChipDemo />;
     case "Conversation":

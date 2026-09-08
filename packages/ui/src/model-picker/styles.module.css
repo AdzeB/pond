@@ -1,0 +1,59 @@
+.pickerList {
+  max-height: 270px;
+  padding: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.modelRow {
+  gap: 10px;
+  height: auto;
+  min-height: 52px;
+  padding: 8px 12px;
+}
+
+.modelIcon,
+.referenceMedia {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  overflow: hidden;
+  color: var(--ds-gray-10);
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-md);
+}
+
+.modelContent {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  text-align: left;
+}
+
+.modelName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.rowDescription {
+  font-size: var(--ds-text-small);
+  line-height: 1.45;
+  color: var(--ds-gray-9);
+  overflow-wrap: anywhere;
+}
+
+.optionGroup,
+.questionOptions,
+fieldset.pickerList {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+}

@@ -35,19 +35,37 @@ export function remarkSaveCitations({
         }
         const start = child.position?.start.offset;
         const end = child.position?.end.offset;
-        if (
-          start !== undefined &&
-          end !== undefined &&
-          source.slice(start, end).includes("\\[")
-        )
-          return [child];
+        const raw =
+          start !== undefined && end !== undefined
+            ? source.slice(start, end)
+            : child.value;
+        const escaped = new Set<number>();
+        let unescaped = "";
+        let rawCursor = 0;
+        for (const escapedCharacter of raw.matchAll(/\\([!-/:-@[-`{-~])/g)) {
+          unescaped += raw.slice(rawCursor, escapedCharacter.index);
+          escaped.add(unescaped.length);
+          unescaped += escapedCharacter[1];
+          rawCursor = escapedCharacter.index + escapedCharacter[0].length;
+        }
+        unescaped += raw.slice(rawCursor);
+        if (escaped.size && unescaped !== child.value) return [child];
         const parts: MarkdownNode[] = [];
         let cursor = 0;
         for (const match of child.value.matchAll(
-          /\[([1-9]\d*(?:\s*,\s*[1-9]\d*)*)\]/g,
+          /\[([1-9]\d*(?:\s*,\s*[1-9]\d*)*)\]|(?<![\p{L}\p{N}_/#-])#save-([1-9]\d*)(?![\p{L}\p{N}_#-]|\.\d)/gu,
         )) {
-          const references = match[1]?.split(/\s*,\s*/).map(Number) ?? [];
-          if (references.some((reference) => reference > count)) continue;
+          const references = match[2]
+            ? [Number(match[2])]
+            : (match[1]?.split(/\s*,\s*/).map(Number) ?? []);
+          if (
+            references.some((reference) => reference > count) ||
+            [...escaped].some(
+              (offset) =>
+                offset >= match.index && offset < match.index + match[0].length,
+            )
+          )
+            continue;
           parts.push({
             type: "text",
             value: child.value.slice(cursor, match.index),

@@ -132,9 +132,9 @@ export interface SystemQueryResults {
       models: ProviderModel[];
     })[];
   };
-  "agent.chats": AgentChat[];
+  "agent.chats": Omit<AgentChat, "canonicalTranscript">[];
   "agent.messages": AgentMessage[];
-  "agent.newChat": AgentChat;
+  "agent.newChat": Omit<AgentChat, "canonicalTranscript">;
   "agent.deleteChat": OkResult;
   "agent.send": AssistantSendResult;
   "agent.stop": OkResult;

@@ -234,18 +234,15 @@ Thin Base UI wrappers styled with CSS Modules; app-agnostic.
 
 ## `packages/icons` — Icon barrel
 
-Vendors **100** Nucleo UI glyphs (fill + outline families) as committed React
-modules under `generated/`, per Nucleo's open-source terms. Social and brand
-marks live in `social-media/custom/` and are outside the 100-icon budget. See
+Re-exports Nucleo UI React packages (`nucleo-ui-fill-*`, `nucleo-ui-outline-*`)
+plus social and brand marks. See
 [`packages/icons/COPYRIGHT-NOTICE.md`](packages/icons/COPYRIGHT-NOTICE.md).
 
 | Asset | Purpose |
 |---|---|
-| `generated/*` | Vendored Nucleo UI icons (`allowlist.json` enforces the cap) |
-| `social-media/custom/*` | Hand-authored source brand marks (unlimited) |
+| `fill/*`, `outline/*` | Re-exports of Nucleo UI icon packages |
+| `social-media/custom/*` | Hand-authored source brand marks |
 | `brand/` | Pond mark (`icon.svg`) plus Icon Composer colorways in `tints/` |
-
-Dev-only (icon regeneration): `react`, `react-dom` (for `scripts/generate-icons.mjs`).
 
 ## `packages/theme` — Design tokens
 
@@ -340,11 +337,11 @@ and refreshes saves from:
 - [**IBM Plex Mono**](https://www.ibm.com/plex/) — fallback `--ds-font-mono` in
   `@pond/theme` before apps override it.
 - **Chirp** — Twitter/X typeface, bundled for tweet cards only.
-- [**Nucleo**](https://nucleoapp.com/) — up to 100 UI glyphs vendored into
-  `@pond/icons` under the open-source license (see `COPYRIGHT-NOTICE.md`).
+- [**Nucleo**](https://nucleoapp.com/) — UI glyphs via the Nucleo UI React
+  packages, re-exported from `@pond/icons` (see `COPYRIGHT-NOTICE.md`).
 - **Custom brand marks** — Are.na, Cosmos, X, Instagram, TikTok, YouTube,
   Pinterest, Threads, GitHub, Apple, and others in `social-media/custom/`
-  (outside the Nucleo cap). Are.na's marks also referenced
+  (outside the Nucleo packages). Are.na's marks also referenced
   [aredotna/icons](https://github.com/aredotna/icons).
 
 ### Brand / source marks

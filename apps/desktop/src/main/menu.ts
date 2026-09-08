@@ -574,23 +574,19 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
       role: "help",
       submenu: [
         {
-          ...sym("keyboard"),
-          label: "Keyboard Shortcuts",
-          accelerator: "CmdOrCtrl+/",
-          click: sendMenuAction("help.shortcuts"),
-        },
-        { type: "separator" },
-        {
-          ...sym("link"),
-          label: "Pond on GitHub",
-          click: openExternalUrl("https://github.com/raphaelsalaja/pond"),
+          ...sym("at"),
+          label: "Twitter",
+          click: openExternalUrl("https://x.com/raphaelsalaja"),
         },
         {
-          ...sym("exclamationmark.bubble"),
-          label: "Report an Issue",
-          click: openExternalUrl(
-            "https://github.com/raphaelsalaja/pond/issues/new",
-          ),
+          ...sym("chevron.left.forwardslash.chevron.right"),
+          label: "GitHub",
+          click: openExternalUrl("https://github.com/raphaelsalaja"),
+        },
+        {
+          ...sym("envelope"),
+          label: "Email",
+          click: openExternalUrl("mailto:raphaelsalaja@gmail.com"),
         },
         { type: "separator" },
         {

@@ -4,6 +4,5 @@
     "noEmit": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["**/*.ts", "**/*.tsx", "svg.d.ts"],
-  "exclude": ["scripts/**"]
+  "include": ["**/*.ts", "**/*.tsx", "svg.d.ts"]
 }

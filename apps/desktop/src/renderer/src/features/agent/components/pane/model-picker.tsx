@@ -1,32 +1,14 @@
-import {
-  IconChevronDownOutline18,
-  IconMagnifierOutline18,
-} from "@pond/icons/outline/18";
 import { Button, Combobox } from "@pond/ui";
 import { ASSISTANT_MODELS, type AssistantProvider } from "@shared/assistant";
 import { displayName } from "@shared/provider-models";
+import type { QueryResult } from "@shared/query-contracts";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { z } from "zod";
+import { ProviderLogo } from "@/features/settings/components/sections/agent/icons";
 import { openSettings } from "@/features/settings/lib/open-settings";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
+import infoStyles from "./model-details.module.css";
 import styles from "./pane.module.css";
-
-const ListedSchema = z.object({
-  providers: z.array(
-    z.object({
-      provider: z.enum([
-        "anthropic",
-        "openai",
-        "gemini",
-        "ollama",
-        "lmstudio",
-        "compatible",
-      ]),
-      ok: z.boolean(),
-      models: z.array(z.object({ id: z.string(), name: z.string() })),
-    }),
-  ),
-});
 
 type PickerModel = {
   key: string;
@@ -34,24 +16,18 @@ type PickerModel = {
   modelId: string;
   name: string;
   detail: string;
+  connection: string;
   search: string;
-  local: boolean;
 };
 
-function catalogItems(): PickerModel[] {
-  return ASSISTANT_MODELS.map((model) => ({
-    key: model.id,
-    provider: model.id,
-    modelId: model.model,
-    name: model.provider,
-    detail: model.local ? "This Mac" : model.provider,
-    search: `${model.provider} ${model.model}`,
-    local: model.local,
-  }));
-}
+type ModelGroup = {
+  value: string;
+  provider: AssistantProvider;
+  items: PickerModel[];
+};
 
 function liveItems(
-  providers: z.infer<typeof ListedSchema>["providers"],
+  providers: QueryResult<"agent.listAvailableModels">["providers"],
 ): PickerModel[] {
   const items: PickerModel[] = [];
   for (const row of providers) {
@@ -64,37 +40,19 @@ function liveItems(
         modelId: model.id,
         name: model.name,
         detail: catalog.provider,
+        connection:
+          row.provider === "compatible"
+            ? "Custom endpoint"
+            : catalog.local
+              ? "Local"
+              : "Cloud",
         search: `${model.name} ${model.id} ${catalog.provider}`,
-        local: catalog.local,
       });
     }
   }
-  return items;
-}
-
-function withCurrent(
-  items: PickerModel[],
-  provider?: AssistantProvider | "",
-  modelId?: string,
-): PickerModel[] {
-  if (!provider || !modelId) return items;
-  if (
-    items.some((item) => item.provider === provider && item.modelId === modelId)
-  )
-    return items;
-  const catalog = ASSISTANT_MODELS.find((model) => model.id === provider);
-  return [
-    {
-      key: `${provider}:${modelId}`,
-      provider,
-      modelId,
-      name: displayName(modelId),
-      detail: catalog?.provider ?? provider,
-      search: `${modelId} ${catalog?.provider ?? ""}`,
-      local: catalog?.local ?? false,
-    },
-    ...items,
-  ];
+  return items.sort(
+    (a, b) => a.name.localeCompare(b.name) || a.detail.localeCompare(b.detail),
+  );
 }
 
 export function ModelPicker({
@@ -102,27 +60,130 @@ export function ModelPicker({
   modelId,
   onChange,
   disabled,
+  inline = false,
 }: {
   disabled?: boolean;
+  inline?: boolean;
   provider?: AssistantProvider | "";
   modelId?: string;
   onChange: (next: { provider: AssistantProvider; modelId: string }) => void;
 }) {
   const [query, setQuery] = useState("");
-  const [listed, setListed] = useState<PickerModel[]>(catalogItems);
-  const items = withCurrent(listed, provider, modelId);
+  const [open, setOpen] = useState(false);
   const scrollFade = useScrollFade<HTMLDivElement>();
+  const catalog = useQuery({
+    queryKey: ["assistant-models"],
+    queryFn: () => window.pond.query("agent.listAvailableModels", {}),
+    enabled: inline || open,
+    staleTime: 30_000,
+    retry: false,
+  });
+  const items = liveItems(catalog.data?.providers ?? []);
   const selected = items.find(
     (item) => item.provider === provider && item.modelId === modelId,
   );
+  const groups: ModelGroup[] = ASSISTANT_MODELS.flatMap((catalog) => {
+    const models = items.filter((model) => model.provider === catalog.id);
+    return models.length
+      ? [
+          {
+            value: catalog.provider,
+            provider: catalog.id,
+            items: models,
+          },
+        ]
+      : [];
+  });
   const label =
     selected?.name ?? (modelId ? displayName(modelId) : "Choose a model");
 
+  const content = (
+    <div className={infoStyles.content}>
+      <div className={infoStyles.models}>
+        <Combobox.Input
+          aria-label="Search models"
+          placeholder="Search models…"
+          autoFocus
+        />
+        <Combobox.List
+          className={infoStyles.list}
+          aria-label="Models"
+          {...scrollFade}
+        >
+          {(group: ModelGroup) => (
+            <Combobox.Group key={group.value} items={group.items}>
+              <Combobox.GroupLabel className={styles.heading}>
+                <ProviderLogo provider={group.provider} />
+                {group.value}
+              </Combobox.GroupLabel>
+              <Combobox.Collection>
+                {(model: PickerModel) => (
+                  <Combobox.Item
+                    key={model.key}
+                    value={model}
+                    className={infoStyles.row}
+                  >
+                    <Combobox.ItemLabel className={infoStyles.label}>
+                      <span>{model.name}</span>
+                      <Combobox.ItemMeta>
+                        {model.detail} · {model.connection}
+                        {model.name !== model.modelId
+                          ? ` · Model ID: ${model.modelId}`
+                          : ""}
+                      </Combobox.ItemMeta>
+                    </Combobox.ItemLabel>
+                    <Combobox.ItemIndicator />
+                  </Combobox.Item>
+                )}
+              </Combobox.Collection>
+            </Combobox.Group>
+          )}
+        </Combobox.List>
+        {catalog.isPending ? (
+          <Combobox.Empty role="status">Loading models</Combobox.Empty>
+        ) : catalog.isError ||
+          catalog.data?.providers.some((row) => row.error) ? (
+          <div className={styles["model-picker-note"]} role="alert">
+            <span>Some models could not be loaded.</span>
+            <Button
+              size="xs"
+              variant="ghost"
+              onClick={() => void catalog.refetch()}
+            >
+              Retry
+            </Button>
+          </div>
+        ) : null}
+        {!catalog.isPending && !catalog.isError ? (
+          <Combobox.Empty>
+            {items.length
+              ? "No models found. Try another name."
+              : "Connect a provider to see its models."}
+          </Combobox.Empty>
+        ) : null}
+        {!items.length && !catalog.isPending ? (
+          <div className={styles["model-picker-note"]}>
+            <Button
+              size="xs"
+              variant="ghost"
+              onClick={() => openSettings("models")}
+            >
+              Add Provider
+            </Button>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+
   return (
     <Combobox.Root<PickerModel>
+      inline={inline}
+      open={inline || open}
       disabled={disabled}
-      items={items}
-      value={selected}
+      items={groups}
+      value={selected ?? null}
+      isItemEqualToValue={(item, value) => item.key === value.key}
       onValueChange={(model) => {
         if (model)
           onChange({ provider: model.provider, modelId: model.modelId });
@@ -130,80 +191,35 @@ export function ModelPicker({
       itemToStringLabel={(model) => model.search}
       inputValue={query}
       onInputValueChange={setQuery}
-      onOpenChange={(open) => {
+      onOpenChange={(next) => {
+        if (inline) return;
         setQuery("");
-        if (!open) return;
-        void window.pond.query("agent.listAvailableModels", {}).then((res) => {
-          const payload = ListedSchema.safeParse(res);
-          if (!payload.success) return;
-          const next = liveItems(payload.data.providers);
-          setListed(next.length ? next : catalogItems());
-        });
+        setOpen(next);
       }}
       autoHighlight
     >
-      <Combobox.Trigger
-        render={
-          <Button
+      {inline ? (
+        content
+      ) : (
+        <>
+          <Combobox.Trigger
             size="xs"
             variant="ghost"
             className={styles["model-trigger"]}
-          />
-        }
-        aria-label={`Choose model, ${label}`}
-      >
-        <span className={styles["model-trigger-name"]}>{label}</span>
-        <IconChevronDownOutline18 />
-      </Combobox.Trigger>
-      <Combobox.Portal>
-        <Combobox.Positioner side="top" align="start" sideOffset={8}>
-          <Combobox.Popup className={styles["assistant-model-picker"]}>
-            <div className={styles["model-search"]}>
-              <IconMagnifierOutline18 aria-hidden />
-              <Combobox.Input
-                className={styles["model-search-input"]}
-                aria-label="Search models"
-                placeholder="Search models…"
-                autoFocus
-              />
-            </div>
-            <Combobox.List
-              className={styles["model-list"]}
-              aria-label="Models"
-              {...scrollFade}
-            >
-              {(model: PickerModel) => (
-                <Combobox.Item
-                  className={styles["model-row"]}
-                  key={model.key}
-                  value={model}
-                >
-                  <Combobox.ItemLabel className={styles["model-name"]}>
-                    {model.name}
-                  </Combobox.ItemLabel>
-                  <span
-                    className={styles["model-detail"]}
-                    data-local={model.local || undefined}
-                  >
-                    {model.detail}
-                  </span>
-                  <span className={styles["model-check"]}>
-                    <Combobox.ItemIndicator />
-                  </span>
-                </Combobox.Item>
-              )}
-            </Combobox.List>
-            <Combobox.Empty className={styles["model-empty"]}>
-              No models found. Try another name.
-            </Combobox.Empty>
-            <div className={styles["model-picker-note"]}>
-              <button type="button" onClick={() => openSettings("models")}>
-                Manage Models and Keys
-              </button>
-            </div>
-          </Combobox.Popup>
-        </Combobox.Positioner>
-      </Combobox.Portal>
+            aria-label={`Choose model, ${label}`}
+          >
+            {provider ? <ProviderLogo provider={provider} size={16} /> : null}
+            <span className={styles["model-trigger-name"]}>{label}</span>
+          </Combobox.Trigger>
+          <Combobox.Portal>
+            <Combobox.Positioner side="top" align="start" sideOffset={8}>
+              <Combobox.Popup className={infoStyles.popup}>
+                {content}
+              </Combobox.Popup>
+            </Combobox.Positioner>
+          </Combobox.Portal>
+        </>
+      )}
     </Combobox.Root>
   );
 }

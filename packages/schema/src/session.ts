@@ -26,6 +26,7 @@ export const sessionImportResponseSchema = z.object({
   ok: z.boolean(),
   imported: z.number(),
   connected: z.boolean(),
+  accountId: z.string().optional(),
   reason: z.string().optional(),
 });
 export type SessionImportResponse = z.infer<typeof sessionImportResponseSchema>;

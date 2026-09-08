@@ -308,6 +308,7 @@ describe("buildViewerMenu", () => {
     const labels = visibleLabels(
       buildViewerMenu(save, { clipboardEmpty: true, video, fileIndex: 0 }),
     );
+    expect(labels).toContain("Set Cover");
     expect(labels).toContain("Copy Current Frame");
     expect(labels).not.toContain("Copy Image");
     expect(labels).toContain("Copy File");

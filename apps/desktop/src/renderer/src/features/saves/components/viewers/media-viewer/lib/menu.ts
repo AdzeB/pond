@@ -46,7 +46,7 @@ export function buildViewerMenu(
 
   const frameItems: MenuItemSpec[] = [
     {
-      label: "Set as Video Thumbnail",
+      label: "Set Cover",
       onClick: () => void setVideoThumbnail(save.id, video),
     },
     {

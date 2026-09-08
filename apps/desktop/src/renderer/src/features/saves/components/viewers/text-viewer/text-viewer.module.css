@@ -18,6 +18,8 @@
   min-height: min(100%, 28rem);
   padding: 20px;
   background: var(--ds-gray-1);
+  background-clip: padding-box;
+  border: var(--ds-border-elevated);
   border-radius: var(--ds-radius-xs);
   box-shadow: var(--ds-shadow-2);
 }

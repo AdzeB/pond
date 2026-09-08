@@ -96,6 +96,9 @@ export function installFixtures(connectionFailed: boolean) {
     async syncRunNow() {
       return { ok: true };
     },
+    onSessionImported() {
+      return () => {};
+    },
     async syncCancel() {
       return { ok: true, running: false };
     },

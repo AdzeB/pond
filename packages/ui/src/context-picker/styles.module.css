@@ -1,0 +1,96 @@
+.pickerList {
+  max-height: 270px;
+  padding: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.modelIcon,
+.referenceMedia {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  overflow: hidden;
+  color: var(--ds-gray-10);
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-md);
+}
+
+.referenceMedia > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.modelContent {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  text-align: left;
+}
+
+.modelName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.rowDescription {
+  font-size: var(--ds-text-small);
+  line-height: 1.45;
+  color: var(--ds-gray-9);
+  overflow-wrap: anywhere;
+}
+
+.contextPicker {
+  padding: 6px;
+}
+
+.contextRow {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  padding: 8px;
+  text-align: left;
+}
+
+.selectionMark {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: center;
+  width: 18px;
+  color: var(--ds-gray-12);
+}
+
+.pickerEmpty {
+  padding: 24px 12px;
+  font-size: var(--ds-text-small);
+  color: var(--ds-gray-9);
+}
+
+.pickerFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  font-size: var(--ds-text-small);
+  color: var(--ds-gray-9);
+  border-top: 1px solid var(--ds-border-subtle);
+}
+
+.optionGroup,
+.questionOptions,
+fieldset.pickerList {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+}

@@ -1,0 +1,52 @@
+.attachment {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-md);
+  animation: enter var(--ds-duration-medium) var(--ds-easing-decelerate);
+}
+
+.thumbnail {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: var(--ds-radius-sm);
+}
+
+.menuItem {
+  composes: item from "../shared/styles/popup/styles.module.css";
+}
+
+.separator {
+  composes: separator from "../shared/styles/popup/styles.module.css";
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .message,
+  .attachment,
+  .popup,
+  .modal {
+    animation: none;
+  }
+}
+
+.message[data-reduced-motion="true"],
+.attachment[data-reduced-motion="true"],
+.popup[data-reduced-motion="true"],
+.modal[data-reduced-motion="true"] {
+  animation: none;
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

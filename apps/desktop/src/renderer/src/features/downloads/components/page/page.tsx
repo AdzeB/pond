@@ -1,39 +1,27 @@
-import { IconMediaPauseFill18, IconMediaPlayFill18 } from "@pond/icons/fill/18";
 import {
-  IconBarsFilterOutline18,
   IconDotsOutline18,
+  IconMediaPauseOutline18,
+  IconMediaPlayOutline18,
   IconRefreshOutline18,
 } from "@pond/icons/outline/18";
-import type { Op, Source } from "@pond/schema/db";
 import {
   Button,
   DataTable,
   Dialog,
   Menu,
-  type MenuItemSpec,
   type RenderRowArgs,
   Tooltip,
 } from "@pond/ui";
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import {
   type DownloadFilters,
   type DownloadRow,
   defaultDownloadFilters,
-  type HistoryCursor,
-  HistoryPageSchema,
-  historyToDownloadRow,
   matchesDownloadFilters,
-  mergeDownloadRows,
   PipelineStatusSchema,
   projectLiveDownloads,
-  type StatusFilter,
   statusFeed,
 } from "@/features/downloads/lib/status-feed";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
@@ -41,90 +29,50 @@ import {
   DownloadsEmpty,
   MatchesEmpty,
 } from "@/features/library/components/empty/empty";
-import { FilterSelect } from "@/features/library/components/filter-menu/select/select";
 import { TableSelectionSync } from "@/features/library/components/table-selection-sync";
 import { useSaves } from "@/features/saves/hooks/use-saves";
 import { refreshSaves } from "@/features/saves/lib/ensure-saves";
 import { openSave } from "@/features/saves/lib/save-nav";
-import { hydrateFullPool } from "@/features/saves/state/bootstrap";
 import {
   SearchChrome,
   SearchChromeInput,
 } from "@/shared/components/search-chrome/search-chrome";
 import { useClientHeight } from "@/shared/hooks/use-client-height";
-import { toggleInSet } from "@/shared/lib/set";
 import { retryDownloadRows } from "../lib/actions";
-import { SOURCE_OPTIONS, STAGE_OPTIONS } from "../lib/filters";
 import { DownloadQueueRow, downloadsColumns } from "./columns";
+import { IconSwap } from "./icon-swap";
 import styles from "./page.module.css";
 
-const INITIAL_CURSOR: HistoryCursor = null;
+const InflightIdsSchema = z.array(z.string()).catch([]);
 type PipelineStatus = z.infer<typeof PipelineStatusSchema>;
 
-const STATUS_VIEWS = {
-  current: ["in-progress", "failed"],
-  attention: ["failed"],
-  saved: ["complete"],
-  all: [],
-} satisfies Record<string, StatusFilter[]>;
-
-const STATUS_ITEMS = [
-  { value: "current", label: "Current" },
-  { value: "attention", label: "Attention" },
-  { value: "saved", label: "Saved" },
-  { value: "all", label: "All Downloads" },
-] satisfies { value: keyof typeof STATUS_VIEWS; label: string }[];
-
-function FilterMenu({
-  label,
-  items,
-}: {
-  label: string;
-  items: MenuItemSpec[];
-}) {
+function DownloadsMatchesEmpty({ onReset }: { onReset: () => void }) {
   return (
-    <Menu.Root>
-      <Menu.Trigger variant="secondary" size="sm">
-        {label}
-      </Menu.Trigger>
-      <Menu.Portal>
-        <Menu.Positioner align="start" side="bottom">
-          <Menu.Popup className={styles.filterMenu}>
-            <Menu.Items items={items} />
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.Root>
+    <MatchesEmpty
+      actionLabel="Clear Search"
+      description="Try a different title or source."
+      onReset={onReset}
+    />
   );
 }
-
-const InflightIdsSchema = z.array(z.string()).catch([]);
 
 export function DownloadsPage() {
   const saves = useSaves();
   const qc = useQueryClient();
-  /** Saves in flight are the oldest by savedAt, so paged loading never reaches them. */
-  useEffect(() => {
-    void hydrateFullPool().catch((err) => {
-      console.warn("[pond pool] full hydrate for downloads failed", err);
-    });
-  }, []);
-
-  /** A task moving to running writes no sync action, so the rows in flight are re-read on a timer. */
+  /** Live rows can be older than the paged pool; running tasks also skip sync actions. */
   useEffect(() => {
     let stopped = false;
-    const tick = async () => {
+    const hydrate = async (name: "downloads.live" | "pipeline.inflight") => {
       try {
-        const ids = InflightIdsSchema.parse(
-          await window.pond.query("pipeline.inflight", {}),
-        );
+        const ids = InflightIdsSchema.parse(await window.pond.query(name, {}));
         if (!stopped) await refreshSaves(ids);
       } catch (err) {
-        console.warn("[pond downloads] inflight refresh failed", err);
+        console.warn(`[pond downloads] ${name} refresh failed`, err);
       }
     };
-    void tick();
-    const timer = setInterval(tick, 2_000);
+    void hydrate("downloads.live");
+    void hydrate("pipeline.inflight");
+    const timer = setInterval(() => void hydrate("pipeline.inflight"), 2_000);
     return () => {
       stopped = true;
       clearInterval(timer);
@@ -133,72 +81,12 @@ export function DownloadsPage() {
   const [filters, setFilters] = useState<DownloadFilters>(
     defaultDownloadFilters,
   );
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const { ref: tableRef, height: tableHeight } = useClientHeight();
-  const showHistory =
-    filters.statuses.size === 0 || filters.statuses.has("complete");
-  const view =
-    filters.statuses.size === 0
-      ? "all"
-      : filters.statuses.has("complete")
-        ? "saved"
-        : filters.statuses.has("in-progress")
-          ? "current"
-          : "attention";
-  const hasFilters =
-    view !== "current" || filters.sources.size > 0 || filters.ops.size > 0;
 
   const live = useMemo(() => projectLiveDownloads(saves), [saves]);
-  const liveIds = useMemo(() => new Set(live.map((row) => row.saveId)), [live]);
-  const prevLiveIds = useRef(liveIds);
-
-  const historyQuery = useInfiniteQuery({
-    queryKey: [
-      "downloads.history",
-      filters.q,
-      [...filters.sources].sort(),
-      [...filters.ops].sort(),
-    ],
-    enabled: showHistory,
-    queryFn: async ({ pageParam }) =>
-      HistoryPageSchema.parse(
-        await window.pond.query("downloads.history", {
-          cursor: pageParam,
-          limit: 50,
-          q: filters.q.trim() || undefined,
-          sources: filters.sources.size > 0 ? [...filters.sources] : undefined,
-          ops: filters.ops.size > 0 ? [...filters.ops] : undefined,
-        }),
-      ),
-    initialPageParam: INITIAL_CURSOR,
-    getNextPageParam: (last) => last.nextCursor,
-  });
-
-  useEffect(() => {
-    const prev = prevLiveIds.current;
-    prevLiveIds.current = liveIds;
-    if (!showHistory) return;
-    for (const id of prev) {
-      if (!liveIds.has(id)) {
-        void qc.invalidateQueries({ queryKey: ["downloads.history"] });
-        break;
-      }
-    }
-  }, [liveIds, showHistory, qc]);
-
-  const history = useMemo(() => {
-    if (!showHistory) return [];
-    return (historyQuery.data?.pages ?? []).flatMap((page) =>
-      page.rows.map(historyToDownloadRow),
-    );
-  }, [showHistory, historyQuery.data]);
-
   const rows = useMemo(
-    () =>
-      mergeDownloadRows(live, history).filter((row) =>
-        matchesDownloadFilters(row, filters),
-      ),
-    [live, history, filters],
+    () => live.filter((row) => matchesDownloadFilters(row, filters)),
+    [live, filters],
   );
 
   const rowsById = useMemo(() => {
@@ -215,54 +103,13 @@ export function DownloadsPage() {
       ),
   });
   const paused = pipeline.data?.paused === true;
-  const hasDefault = !hasFilters && filters.q.trim() === "";
-  const emptyLibrary = live.length === 0 && !showHistory;
-  const historyPending = showHistory && historyQuery.isPending;
-  const historyError = showHistory && historyQuery.isError;
-  const showPlaceEmpty = emptyLibrary && hasDefault && rows.length === 0;
-  const showMatchesEmpty =
-    rows.length === 0 &&
-    !showPlaceEmpty &&
-    !historyPending &&
-    !historyError &&
-    !(showHistory && historyQuery.hasNextPage);
+  const hasQuery = filters.q.trim() !== "";
+  const showPlaceEmpty = live.length === 0 && !hasQuery && rows.length === 0;
+  const showMatchesEmpty = rows.length === 0 && !showPlaceEmpty;
 
-  const setView = (next: keyof typeof STATUS_VIEWS) => {
-    setFilters((cur) => ({
-      ...cur,
-      statuses: new Set<StatusFilter>(STATUS_VIEWS[next]),
-    }));
-  };
-  const setSource = (id: Source, on: boolean) => {
-    setFilters((cur) => ({
-      ...cur,
-      sources: toggleInSet(cur.sources, id, on),
-    }));
-  };
-  const setOp = (id: Op, on: boolean) => {
-    setFilters((cur) => ({
-      ...cur,
-      ops: toggleInSet(cur.ops, id, on),
-    }));
-  };
-  const resetDownloadFilters = useCallback(() => {
+  const resetDownloadSearch = useCallback(() => {
     setFilters(defaultDownloadFilters());
   }, []);
-
-  const sourceItems: MenuItemSpec[] = SOURCE_OPTIONS.map((opt) => ({
-    type: "checkbox",
-    label: opt.label,
-    checked: filters.sources.has(opt.id),
-    closeOnClick: false,
-    onCheckedChange: (on) => setSource(opt.id, on),
-  }));
-  const stageItems: MenuItemSpec[] = STAGE_OPTIONS.map((opt) => ({
-    type: "checkbox",
-    label: opt.label,
-    checked: filters.ops.has(opt.id),
-    closeOnClick: false,
-    onCheckedChange: (on) => setOp(opt.id, on),
-  }));
 
   const onRowClick = useCallback((row: DownloadRow) => {
     openSave(row.saveId);
@@ -283,7 +130,6 @@ export function DownloadsPage() {
   const failedRows = rows.filter((row) => row.status === "failed");
   const retry = useMutation({
     mutationFn: () => retryDownloadRows(failedRows),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["downloads.history"] }),
     onError: () =>
       statusFeed.error(
         "Retry downloads",
@@ -329,8 +175,11 @@ export function DownloadsPage() {
             .filter((row): row is DownloadRow => row != null),
         );
       }}
-      height={rows.length === 0 || tableHeight < 80 ? undefined : tableHeight}
-      rowHeight={80}
+      height={
+        rows.length === 0 || tableHeight < 88 ? undefined : tableHeight - 40
+      }
+      rowHeight={48}
+      selectionCheckboxes={false}
       onRowClick={onRowClick}
       renderRow={renderRow}
     >
@@ -338,29 +187,6 @@ export function DownloadsPage() {
         <SearchChrome
           actions={
             <>
-              <Tooltip
-                label={filtersOpen ? "Hide Filters" : "Show Filters"}
-                side="bottom"
-              >
-                <Button
-                  icon
-                  size="sm"
-                  variant="ghost"
-                  className={styles.filterTrigger}
-                  aria-label={
-                    hasFilters
-                      ? "Filter Downloads (Active)"
-                      : "Filter Downloads"
-                  }
-                  aria-expanded={filtersOpen}
-                  aria-controls="downloads-filters"
-                  data-active={filtersOpen || hasFilters || undefined}
-                  onClick={() => setFiltersOpen((open) => !open)}
-                >
-                  <IconBarsFilterOutline18 />
-                  {hasFilters ? <span className={styles.filterDot} /> : null}
-                </Button>
-              </Tooltip>
               <Tooltip label="Retry Failed" side="bottom">
                 <Button
                   icon
@@ -390,7 +216,13 @@ export function DownloadsPage() {
                   aria-pressed={paused}
                   onClick={() => pause.mutate()}
                 >
-                  {paused ? <IconMediaPlayFill18 /> : <IconMediaPauseFill18 />}
+                  <IconSwap id={paused ? "play" : "pause"}>
+                    {paused ? (
+                      <IconMediaPlayOutline18 />
+                    ) : (
+                      <IconMediaPauseOutline18 />
+                    )}
+                  </IconSwap>
                 </Button>
               </Tooltip>
               <Menu.Root>
@@ -424,51 +256,6 @@ export function DownloadsPage() {
               </Menu.Root>
             </>
           }
-          below={
-            <fieldset
-              id="downloads-filters"
-              className={styles.filters}
-              aria-label="Download Filters"
-              hidden={!filtersOpen}
-            >
-              <FilterSelect
-                label="Download Status"
-                value={view}
-                items={STATUS_ITEMS}
-                onChange={setView}
-              />
-              <FilterMenu
-                label={
-                  filters.sources.size
-                    ? `Sources (${filters.sources.size})`
-                    : "All Sources"
-                }
-                items={sourceItems}
-              />
-              <FilterMenu
-                label={
-                  filters.ops.size
-                    ? `Stages (${filters.ops.size})`
-                    : "All Stages"
-                }
-                items={stageItems}
-              />
-              {hasFilters ? (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() =>
-                    setFilters((cur) => ({
-                      ...defaultDownloadFilters(),
-                      q: cur.q,
-                    }))
-                  }
-                >
-                  Clear Filters
-                </Button>
-              ) : null}
-            </fieldset>
-          }
         >
           <SearchChromeInput
             value={filters.q}
@@ -488,57 +275,14 @@ export function DownloadsPage() {
           </div>
         ) : showMatchesEmpty ? (
           <div className={styles.empty}>
-            <MatchesEmpty onReset={resetDownloadFilters} />
-          </div>
-        ) : rows.length === 0 && historyError ? (
-          <div className={styles.message} role="alert">
-            Couldn't load download history.
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={historyQuery.isFetching}
-              onClick={() => void historyQuery.refetch()}
-            >
-              Try Again
-            </Button>
-          </div>
-        ) : rows.length === 0 && historyPending ? (
-          <div className={styles.message} role="status">
-            Loading download history
+            <DownloadsMatchesEmpty onReset={resetDownloadSearch} />
           </div>
         ) : (
           <div ref={tableRef} className={styles.table}>
-            <DataTable.Root variant="list">
+            <DataTable.Root className={styles.grid}>
               <DataTable.Empty>
-                {historyPending ? null : (
-                  <MatchesEmpty onReset={resetDownloadFilters} />
-                )}
+                <DownloadsMatchesEmpty onReset={resetDownloadSearch} />
               </DataTable.Empty>
-              {showHistory && (historyQuery.hasNextPage || historyError) ? (
-                <DataTable.ExtraRow>
-                  <div className={styles.more}>
-                    {historyError ? (
-                      <span role="alert">Couldn't load more history.</span>
-                    ) : null}
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      disabled={historyQuery.isFetchingNextPage}
-                      onClick={() =>
-                        void (historyQuery.isFetchNextPageError || !historyError
-                          ? historyQuery.fetchNextPage()
-                          : historyQuery.refetch())
-                      }
-                    >
-                      {historyError
-                        ? "Try Again"
-                        : historyQuery.isFetchingNextPage
-                          ? "Loading"
-                          : "Load More"}
-                    </Button>
-                  </div>
-                </DataTable.ExtraRow>
-              ) : null}
             </DataTable.Root>
           </div>
         )}

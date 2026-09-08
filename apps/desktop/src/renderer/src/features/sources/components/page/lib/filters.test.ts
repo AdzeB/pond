@@ -1,13 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   defaultSourceFilters,
-  describeSourcesFilters,
   type FilterableSource,
-  KIND_OPTIONS,
   matchesSourceFilters,
-  type SourceKind,
-  type SourceStatusId,
-  selectedSummary,
   sourceStatusId,
 } from "./filters";
 
@@ -47,7 +42,7 @@ describe("matchesSourceFilters", () => {
     sourceLabel: "Twitter",
   });
 
-  it("shows every row when no filters are set", () => {
+  it("shows every row when no search is set", () => {
     expect(matchesSourceFilters(raphael, defaultSourceFilters())).toBe(true);
   });
 
@@ -59,46 +54,5 @@ describe("matchesSourceFilters", () => {
     expect(matchesSourceFilters(raphael, filters)).toBe(true);
     filters.q = "missing";
     expect(matchesSourceFilters(raphael, filters)).toBe(false);
-  });
-
-  it("hides rows whose status is not selected", () => {
-    const filters = {
-      ...defaultSourceFilters(),
-      statuses: new Set<SourceStatusId>(["failed"]),
-    };
-    expect(matchesSourceFilters(raphael, filters)).toBe(false);
-    expect(
-      matchesSourceFilters({ ...raphael, statusId: "failed" }, filters),
-    ).toBe(true);
-  });
-
-  it("hides rows whose kind is not selected", () => {
-    const filters = {
-      ...defaultSourceFilters(),
-      kinds: new Set<"watch">(["watch"]),
-    };
-    expect(matchesSourceFilters(raphael, filters)).toBe(false);
-    expect(matchesSourceFilters({ ...raphael, kind: "watch" }, filters)).toBe(
-      true,
-    );
-  });
-});
-
-describe("selectedSummary", () => {
-  it("says All when nothing is selected", () => {
-    expect(selectedSummary(new Set<SourceKind>(), KIND_OPTIONS)).toBe("All");
-  });
-
-  it("lists the selected labels", () => {
-    expect(selectedSummary(new Set(["watch"]), KIND_OPTIONS)).toBe("Watch");
-  });
-});
-
-describe("describeSourcesFilters", () => {
-  it("joins the active query and facets", () => {
-    const filters = defaultSourceFilters();
-    filters.q = "raph";
-    filters.kinds = new Set(["watch"]);
-    expect(describeSourcesFilters(filters)).toBe("raph · Watch");
   });
 });

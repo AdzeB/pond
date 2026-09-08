@@ -61,11 +61,6 @@ export const SHORTCUTS = {
     label: "Settings",
     group: "Navigate",
   },
-  "app.shortcuts": {
-    keys: "Mod+/",
-    label: "Keyboard Shortcuts",
-    group: "Navigate",
-  },
 
   "app.close-window": {
     keys: "Mod+W",
@@ -265,17 +260,6 @@ export const SHORTCUTS = {
 } as const satisfies Record<string, ShortcutDef>;
 
 export type ShortcutId = keyof typeof SHORTCUTS;
-
-export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
-  "Navigate",
-  "View",
-  "Selection",
-  "Saves",
-  "Viewer",
-  "Sources",
-  "Tags",
-  "Library",
-];
 
 const MODIFIER_GLYPH = /[⌘⌃⌥⇧]/u;
 

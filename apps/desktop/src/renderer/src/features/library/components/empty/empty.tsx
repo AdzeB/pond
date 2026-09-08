@@ -7,11 +7,13 @@ import {
 } from "@pond/icons/fill/18";
 import {
   IconClockRotateClockwiseOutline18,
+  IconFolderBanOutline18,
   IconMagnifierOutline18,
 } from "@pond/icons/outline/18";
 import { Button, Empty } from "@pond/ui";
+import { libraryChrome } from "@/features/library/state/library-chrome";
 import type { SaveListMode } from "@/features/saves/lib/list";
-import { sourceFlow } from "@/features/sources/state/source-flow";
+import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
 import { getAppRouter } from "@/shared/lib/app-router";
 import styles from "./empty.module.css";
 
@@ -29,7 +31,11 @@ export function LibraryEmpty() {
         <Button
           variant="primary"
           size="sm"
-          onClick={() => sourceFlow.open("source-new")}
+          onClick={() => {
+            libraryChrome.setNav({ kind: "sources" });
+            getAppRouter()?.history.push("/sources");
+            sourceNewMenu.open();
+          }}
         >
           Add Source
         </Button>
@@ -52,7 +58,7 @@ export function SourcesEmpty() {
         <Button
           variant="primary"
           size="sm"
-          onClick={() => sourceFlow.open("source-new")}
+          onClick={() => sourceNewMenu.open()}
         >
           Add Source
         </Button>
@@ -115,6 +121,32 @@ export function LibraryLoading() {
       </Empty.Media>
       <Empty.Title>Loading library</Empty.Title>
       <Empty.Description>Getting your saves ready.</Empty.Description>
+    </Empty.Root>
+  );
+}
+
+export function UncategorizedEmpty() {
+  return (
+    <Empty.Root role="status" aria-live="polite">
+      <Empty.Media>
+        <IconFolderBanOutline18 />
+      </Empty.Media>
+      <Empty.Title>No uncategorized saves</Empty.Title>
+      <Empty.Description>
+        Saves that aren't in a folder appear here.
+      </Empty.Description>
+      <Empty.Action>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => {
+            libraryChrome.setNav({ kind: "all" });
+            getAppRouter()?.history.push("/");
+          }}
+        >
+          Open Library
+        </Button>
+      </Empty.Action>
     </Empty.Root>
   );
 }

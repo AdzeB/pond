@@ -110,7 +110,10 @@
   width: 8px;
   height: 8px;
   margin-left: 4px;
-  transition: transform var(--ds-duration-snap) var(--ds-easing-standard);
+  opacity: 0;
+  transition:
+    transform var(--ds-duration-snap) var(--ds-easing-standard),
+    opacity var(--ds-duration-fast) var(--ds-easing-standard);
 }
 
 .label {
@@ -130,6 +133,11 @@
 
   &[data-panel-open] .caret {
     transform: rotate(90deg);
+  }
+
+  &:hover .caret,
+  &:focus-visible .caret {
+    opacity: 1;
   }
 }
 
@@ -157,6 +165,22 @@ button.label:hover {
     flex: none;
     width: auto;
     max-width: calc(100% - var(--sidebar-height-md));
+  }
+
+  &:hover .caret {
+    opacity: 1;
+  }
+}
+
+@media (hover: none) {
+  .caret {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caret {
+    transition: none;
   }
 }
 
@@ -222,6 +246,8 @@ button.label:hover {
       height: 16px;
       padding: 0;
       margin-right: 8px;
+      background-clip: padding-box;
+      border: var(--ds-border-elevated);
       border-radius: var(--ds-radius-xs);
       box-shadow: var(--ds-shadow-2);
     }

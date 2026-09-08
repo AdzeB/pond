@@ -3,6 +3,7 @@ import type { AssistantSource } from "@shared/assistant";
 import { act, useRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { ComposerInput } from "./composer-input";
 import { ComposerSuggestions } from "./composer-suggestions";
 import { useComposerSuggestions } from "./use-composer-suggestions";
 
@@ -33,20 +34,21 @@ function Harness() {
     <>
       <ComposerSuggestions suggestions={suggestions} anchorRef={anchorRef} />
       <div ref={anchorRef}>
-        <textarea
-          ref={inputRef}
-          value={value}
-          {...suggestions.inputProps}
-          onKeyDown={(event) => {
-            if (suggestions.onKeyDown(event)) return;
-            if (
-              event.key === "Enter" &&
-              !event.shiftKey &&
-              !event.nativeEvent.isComposing
-            )
-              submit();
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            submit();
           }}
-        />
+        >
+          <ComposerInput
+            ref={inputRef}
+            value={value}
+            {...suggestions.inputProps}
+            onKeyDown={(event) => {
+              suggestions.onKeyDown(event);
+            }}
+          />
+        </form>
       </div>
       <output>{attachments.map((s) => s.title).join(", ")}</output>
       <button type="button">Outside</button>
@@ -151,7 +153,7 @@ it("reopens a dismissed action menu when its trigger is typed again", async () =
   expect(textarea().value).toContain("Summarize the main ideas");
   expect(submit).not.toHaveBeenCalled();
 });
-it("searches and attaches a Save with a readable mention", async () => {
+it("attaches a Save without duplicating its title in the draft", async () => {
   await type("Compare @sus");
   await search();
   expect(query).toHaveBeenCalledWith("agent.searchSaves", {
@@ -159,7 +161,7 @@ it("searches and attaches a Save with a readable mention", async () => {
     limit: 12,
   });
   await press("Enter");
-  expect(textarea().value).toBe("Compare Suspiria ");
+  expect(textarea().value).toBe("Compare ");
   expect(host.querySelector("output")?.textContent).toBe("Suspiria");
   expect(submit).not.toHaveBeenCalled();
   await type("Compare Suspiria @sus");
@@ -207,4 +209,14 @@ it("ignores Enter during input composition and permits Shift+Enter", async () =>
   await press("Enter", { shiftKey: true });
   expect(textarea().value).toBe("/sum");
   expect(submit).not.toHaveBeenCalled();
+});
+
+it("sends on Enter but keeps Shift+Enter and IME confirmation in the composer", async () => {
+  await type("Find a save");
+  await press("Enter", { shiftKey: true });
+  expect(submit).not.toHaveBeenCalled();
+  await press("Enter", { isComposing: true });
+  expect(submit).not.toHaveBeenCalled();
+  await press("Enter");
+  expect(submit).toHaveBeenCalledOnce();
 });

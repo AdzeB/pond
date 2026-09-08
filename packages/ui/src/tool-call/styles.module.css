@@ -1,0 +1,4 @@
+.muted {
+  font-size: var(--ds-text-small);
+  color: var(--ds-gray-10);
+}

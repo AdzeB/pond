@@ -10,6 +10,7 @@ interface ChatOption {
   id: string;
   title: string;
   isNew?: boolean;
+  updatedAt?: Date;
 }
 
 export function ChatHeader({
@@ -21,7 +22,7 @@ export function ChatHeader({
   children,
 }: {
   chatId: string | null;
-  chats: { id: string; title: string | null }[];
+  chats: { id: string; title: string | null; updatedAt?: Date }[];
   disabled: boolean;
   onNewChat: () => void;
   onOpenChat: (id: string) => void;
@@ -30,7 +31,11 @@ export function ChatHeader({
   const [query, setQuery] = useState("");
   const options: ChatOption[] = [
     ...(chatId ? [{ id: "new", title: "New Chat", isNew: true }] : []),
-    ...chats.map((chat) => ({ id: chat.id, title: chat.title || "New Chat" })),
+    ...chats.map((chat) => ({
+      id: chat.id,
+      title: chat.title || "New Chat",
+      updatedAt: chat.updatedAt,
+    })),
   ];
   const current = options.find((chat) => chat.id === chatId) ?? null;
   return (
@@ -61,31 +66,36 @@ export function ChatHeader({
         </Combobox.Trigger>
         <Combobox.Portal>
           <Combobox.Positioner side="bottom" align="start" sideOffset={5}>
-            <Combobox.Popup className={styles.popup}>
+            <Combobox.Popup>
               <Combobox.Input
-                className={styles.search}
                 aria-label="Chat history"
                 placeholder="Search chats…"
                 autoFocus
               />
-              <Combobox.List className={styles.list} aria-label="Chats">
+              <Combobox.List aria-label="Chats">
                 {(chat: ChatOption) => (
-                  <Combobox.Item
-                    key={chat.id}
-                    value={chat}
-                    className={styles.item}
-                  >
+                  <Combobox.Item key={chat.id} value={chat}>
                     {chat.isNew ? (
                       <IconPlusOutline18 aria-hidden="true" />
                     ) : null}
                     <Combobox.ItemLabel>{chat.title}</Combobox.ItemLabel>
-                    {chat.id === chatId ? (
-                      <span className={styles.current}>Current</span>
+                    {chat.updatedAt ? (
+                      <Combobox.ItemMeta>
+                        {new Intl.RelativeTimeFormat(undefined, {
+                          numeric: "auto",
+                          style: "narrow",
+                        }).format(
+                          -Math.floor(
+                            (Date.now() - chat.updatedAt.getTime()) / 86400000,
+                          ),
+                          "day",
+                        )}
+                      </Combobox.ItemMeta>
                     ) : null}
                   </Combobox.Item>
                 )}
               </Combobox.List>
-              <Combobox.Empty className={styles.empty}>
+              <Combobox.Empty>
                 {chats.length ? "No chats found." : "No conversations yet."}
               </Combobox.Empty>
             </Combobox.Popup>

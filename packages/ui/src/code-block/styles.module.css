@@ -1,0 +1,29 @@
+.codeBlock {
+  overflow: hidden;
+  border: 1px solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-lg);
+}
+
+.codeHeader {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px;
+  font-size: var(--ds-text-mini);
+  color: var(--ds-gray-9);
+  background: var(--ds-gray-2);
+}
+
+.codeHeader > button {
+  margin-left: auto;
+}
+
+.codeBlock pre {
+  padding: 14px;
+  margin: 0;
+  overflow-x: auto;
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-text-small);
+  line-height: 1.65;
+  user-select: text;
+}

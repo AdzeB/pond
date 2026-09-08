@@ -1,27 +1,17 @@
 # @pond/icons
 
-Icon barrels for Pond. UI glyphs under `fill/*` and `outline/*` are vendored
-Nucleo SVGs (≤100 unique glyphs). Social and brand marks live under
-`social-media/custom/` and are outside that cap.
+UI glyphs come from the Nucleo UI React packages (`nucleo-ui-fill-*` and
+`nucleo-ui-outline-*`). Import through the size barrels:
 
-The Pond mark lives in `brand/`: `icon.svg` is the vector source, and `tints/`
-holds Icon Composer colorways (one folder per crayon). The desktop app
-defaults to `tints/aqua` for the Dock icon.
+```ts
+import { IconCalendarFill18 } from "@pond/icons/fill/18";
+import { IconXmarkOutline12 } from "@pond/icons/outline/12";
+```
 
-## Regenerating UI glyphs
+Social and brand marks live under `social-media/custom/`. The Pond mark lives
+in `brand/`: `icon.svg` is the vector source, and `tints/` holds Icon Composer
+colorways. The desktop app defaults to `tints/aqua` for the Dock icon.
 
-Requires the `nucleo-ui-*` packages installed temporarily (with a
-`NUCLEO_LICENSE_KEY`):
-
-1. Add the four `nucleo-ui-*` dependencies back to this package.
-2. Run `pnpm install` with the license key available.
-3. Run `pnpm --filter @pond/icons generate:icons`.
-4. Drop the `nucleo-ui-*` dependencies again and reinstall.
-
-`pnpm --filter @pond/icons check:allowlist` runs in CI and fails if the app
-imports a glyph outside `allowlist.json`.
-
-Layout variants `IconGridFill18` and `IconGridLayoutRowsFill18`, and
-`IconArchiveContent2Fill18` (real Nucleo ArchiveContent2, slot aliased to
-ArchivePlus), are hand-authored (see `config/hand-authored.json`) so they
-stay distinct while sharing one Nucleo allowlist slot via `glyph-aliases.json`.
+When you open-source Pond, extract only the glyphs you ship into this package
+and drop the Nucleo dependencies. Until then, import any Nucleo UI icon from
+the barrels.

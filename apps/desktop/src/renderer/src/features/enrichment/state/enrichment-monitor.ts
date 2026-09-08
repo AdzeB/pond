@@ -1,3 +1,4 @@
+import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
 interface EnrichmentStatus {
@@ -17,3 +18,7 @@ export const enrichmentMonitor = {
     store.setState((s) => ({ ...s, ...patch }));
   },
 };
+
+export function useEnrichmentStatus() {
+  return useSelector(store, (state) => state);
+}

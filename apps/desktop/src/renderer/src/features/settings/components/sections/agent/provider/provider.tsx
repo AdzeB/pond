@@ -1,43 +1,27 @@
-import { IconChevronRightOutline12 as ChevronRight } from "@pond/icons/outline/12";
-import { Accordion, Button, Field, Input, Select, Switch } from "@pond/ui";
+import { IconDotsOutline18 } from "@pond/icons/outline/18";
+import { Button, Field, Input, Menu } from "@pond/ui";
 import type { AssistantProvider } from "@shared/assistant";
-import { chosenModelId, displayName } from "@shared/provider-models";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
-import { z } from "zod";
-import { gentleSpring } from "@/shared/lib/motion";
-import { PROVIDER_ICONS } from "../icons";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { ProviderLogo } from "../icons";
 import type { AgentPrefs, KeyRow } from "../types";
 import styles from "./provider.module.css";
 
-const ListedModelsSchema = z.object({
-  ok: z.boolean(),
-  models: z.array(z.object({ id: z.string(), name: z.string() })),
-  error: z.string().optional(),
-});
+type Catalog = { id: AssistantProvider; provider: string; needsKey: boolean };
 
-interface Catalog {
-  id: AssistantProvider;
-  provider: string;
-  needsKey: boolean;
-}
-
-function storedEndpoint(catalog: Catalog, agent: AgentPrefs): string {
-  if (catalog.id === "ollama") return agent.ollamaBaseUrl ?? "";
-  if (catalog.id === "lmstudio") return agent.lmstudioBaseUrl ?? "";
-  if (catalog.id === "compatible") return agent.compatibleBaseUrl ?? "";
-  return "";
-}
-
-function hasEndpoint(id: AssistantProvider): boolean {
-  return id === "ollama" || id === "lmstudio" || id === "compatible";
+function endpointPatch(
+  id: AssistantProvider,
+  value: string,
+): Partial<AgentPrefs> {
+  if (id === "ollama") return { ollamaBaseUrl: value };
+  if (id === "lmstudio") return { lmstudioBaseUrl: value };
+  if (id === "compatible") return { compatibleBaseUrl: value };
+  return {};
 }
 
 export function ProviderCard({
   catalog,
   row,
-  selected,
-  open,
   agent,
   onPatchAgent,
   onRefresh,
@@ -45,324 +29,211 @@ export function ProviderCard({
 }: {
   catalog: Catalog;
   row: KeyRow | undefined;
-  selected: boolean;
-  open: boolean;
   agent: AgentPrefs;
-  onPatchAgent: (patch: Partial<AgentPrefs>) => void;
+  onPatchAgent: (patch: Partial<AgentPrefs>) => void | Promise<void>;
   onRefresh: () => Promise<void>;
   onDismiss: () => void;
 }) {
-  const reduceMotion = useReducedMotion();
-  const Icon = PROVIDER_ICONS[catalog.id];
+  const menuRef = useRef<HTMLButtonElement>(null);
   const connected = Boolean(row?.hasKey);
-  const endpointValue = storedEndpoint(catalog, agent);
-  const selectedModelId = chosenModelId(catalog.id, agent);
+  const endpoint =
+    catalog.id === "ollama"
+      ? agent.ollamaBaseUrl
+      : catalog.id === "lmstudio"
+        ? agent.lmstudioBaseUrl
+        : catalog.id === "compatible"
+          ? agent.compatibleBaseUrl
+          : undefined;
   const [keyDraft, setKeyDraft] = useState("");
-  const [endpointDraft, setEndpointDraft] = useState(endpointValue);
-  const [modelDraft, setModelDraft] = useState(selectedModelId);
+  const [endpointDraft, setEndpointDraft] = useState(endpoint ?? "");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [liveModels, setLiveModels] = useState<
-    Array<{ id: string; name: string }>
-  >([]);
-  const [modelsError, setModelsError] = useState("");
-  const [modelsLoading, setModelsLoading] = useState(false);
-
+  const queryClient = useQueryClient();
   useEffect(() => {
-    setEndpointDraft(endpointValue);
-  }, [endpointValue]);
-
-  useEffect(() => {
-    setModelDraft(selectedModelId);
-  }, [selectedModelId]);
-
-  useEffect(() => {
-    if (!open || !connected) {
-      setLiveModels([]);
-      setModelsError("");
-      setModelsLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setLiveModels([]);
-    setModelsLoading(true);
-    setModelsError("");
-    void window.pond
-      .query("agent.listModels", { provider: catalog.id })
-      .then((res) => {
-        if (cancelled) return;
-        const listed = ListedModelsSchema.parse(res);
-        setLiveModels(listed.ok ? listed.models : []);
-        setModelsError(
-          listed.ok
-            ? ""
-            : (listed.error ??
-                "Could not list models. Check the key and try again."),
-        );
-      })
-      .finally(() => {
-        if (!cancelled) setModelsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [catalog.id, connected, open]);
-
-  const modelItems = useMemo(() => {
-    const items = liveModels.map((model) => ({
-      value: model.id,
-      label: model.name,
-    }));
-    if (
-      selectedModelId &&
-      !items.some((item) => item.value === selectedModelId)
-    ) {
-      items.unshift({
-        value: selectedModelId,
-        label: displayName(selectedModelId),
-      });
-    }
-    return items;
-  }, [liveModels, selectedModelId]);
-
-  const persistModelId = (id: string) => {
-    const modelIds = { ...agent.modelIds, [catalog.id]: id };
-    if (catalog.id === "ollama") onPatchAgent({ modelIds, ollamaModelId: id });
-    else if (catalog.id === "lmstudio")
-      onPatchAgent({ modelIds, lmstudioModelId: id });
-    else if (catalog.id === "compatible")
-      onPatchAgent({ modelIds, compatibleModelId: id });
-    else onPatchAgent({ modelIds });
+    setEndpointDraft(endpoint ?? "");
+  }, [endpoint]);
+  const changed =
+    Boolean(keyDraft.trim()) ||
+    (endpoint !== undefined && endpointDraft.trim() !== endpoint);
+  const refresh = async () => {
+    await onRefresh();
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ["provider-models", catalog.id],
+      }),
+      queryClient.invalidateQueries({ queryKey: ["assistant-models"] }),
+    ]);
   };
-
-  const persistEndpoint = async () => {
-    const next =
-      catalog.id === "ollama"
-        ? { ollamaBaseUrl: endpointDraft }
-        : catalog.id === "lmstudio"
-          ? { lmstudioBaseUrl: endpointDraft }
-          : catalog.id === "compatible"
-            ? { compatibleBaseUrl: endpointDraft }
-            : null;
-    if (!next) return;
-    onPatchAgent(next);
-    await window.pond.query("settings.setPrefs", { agent: next });
-  };
-
   const save = async () => {
+    if (saving) return;
     setSaving(true);
     setError("");
+    let endpointSaved = false;
+    let verified = false;
     try {
-      if (hasEndpoint(catalog.id)) await persistEndpoint();
-      const result = await window.pond.query("agent.saveKey", {
-        provider: catalog.id,
-        key: keyDraft,
-      });
-      if (!result.ok) {
-        setError(
-          result.error ?? "Could not verify this key. Check it and try again.",
-        );
-        return;
+      if (endpoint !== undefined && endpointDraft.trim() !== endpoint) {
+        await onPatchAgent(endpointPatch(catalog.id, endpointDraft.trim()));
+        endpointSaved = true;
       }
+      const result =
+        connected && !keyDraft.trim()
+          ? await window.pond.query("agent.listModels", {
+              provider: catalog.id,
+            })
+          : await window.pond.query("agent.saveKey", {
+              provider: catalog.id,
+              key: keyDraft.trim(),
+            });
+      if (!result.ok || result.error)
+        throw new Error(
+          result.error ||
+            "Could not connect. Check the settings and try again.",
+        );
+      verified = true;
+      if (!agent.languageModel)
+        await onPatchAgent({ languageModel: catalog.id });
       setKeyDraft("");
-      await onRefresh();
+      await refresh();
+      menuRef.current?.focus();
+    } catch (cause) {
+      if (endpointSaved && !verified && endpoint !== undefined) {
+        try {
+          await onPatchAgent(endpointPatch(catalog.id, endpoint));
+        } catch {
+          setError(
+            "Could not restore the previous endpoint. Check the settings and try again.",
+          );
+          return;
+        }
+      }
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Could not save provider. Try again.",
+      );
     } finally {
       setSaving(false);
     }
   };
-
-  const status = selected
-    ? "Language"
-    : agent.visionModel === catalog.id
-      ? "Vision"
-      : connected
-        ? "Connected"
-        : undefined;
-
+  const remove = async () => {
+    if (!connected) {
+      onDismiss();
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const result = await window.pond.query("agent.removeKey", {
+        provider: catalog.id,
+      });
+      if (!result.ok) throw new Error("Could not remove provider. Try again.");
+      await refresh();
+      onDismiss();
+    } catch {
+      setError("Could not remove provider. Try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
   return (
-    <Accordion.Item
-      value={catalog.id}
-      className={styles.card}
-      data-open={open || undefined}
-    >
+    <section className={styles.card} aria-label={catalog.provider}>
       <div className={styles.header}>
-        <Accordion.Header className={styles.heading}>
-          <Accordion.Trigger className={styles.trigger}>
-            <span className={styles.icon} aria-hidden>
-              <Icon />
-            </span>
-            <span className={styles.name}>{catalog.provider}</span>
-            {status ? <span className={styles.status}>{status}</span> : null}
-            <span className={styles.caret} aria-hidden>
-              <ChevronRight />
-            </span>
-          </Accordion.Trigger>
-        </Accordion.Header>
-      </div>
-      <AnimatePresence initial={false}>
-        {open ? (
-          <motion.div
-            className={styles.body}
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={reduceMotion ? { duration: 0 } : gentleSpring}
+        <ProviderLogo provider={catalog.id} size={28} />
+        <div className={styles.details}>
+          <h3 className={styles.name}>{catalog.provider}</h3>
+          <p className={styles.status} role="status">
+            {connected
+              ? row?.enabled
+                ? "Connected"
+                : "Disabled"
+              : "Enter your connection details."}
+          </p>
+        </div>
+        <Menu.Root>
+          <Menu.Trigger
+            ref={menuRef}
+            size="xs"
+            variant="ghost"
+            aria-label={`${catalog.provider} options`}
           >
-            <div className={styles.fields}>
-              {hasEndpoint(catalog.id) ? (
-                <Field.Root>
-                  <Field.Label>API Base</Field.Label>
-                  <Input.Root size="sm" className={styles.control}>
-                    <Input.Field
-                      required
-                      value={endpointDraft}
-                      onChange={(event) => setEndpointDraft(event.target.value)}
-                      onBlur={() => void persistEndpoint()}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") event.currentTarget.blur();
-                      }}
-                    />
-                  </Input.Root>
-                </Field.Root>
-              ) : null}
-              {!connected ? (
-                <Field.Root>
-                  <Field.Label>Key</Field.Label>
-                  <Input.Root size="sm" className={styles.control}>
-                    <Input.Field
-                      type="password"
-                      required={catalog.needsKey}
-                      value={keyDraft}
-                      onChange={(event) => setKeyDraft(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") void save();
-                      }}
-                    />
-                  </Input.Root>
-                  {catalog.needsKey ? null : (
-                    <Field.Description>
-                      Verifies the local endpoint. A key is optional.
-                    </Field.Description>
-                  )}
-                </Field.Root>
-              ) : null}
-              {connected ? (
-                <Field.Root>
-                  <Field.Label>Model</Field.Label>
-                  <Select.Root
-                    value={selectedModelId || undefined}
-                    disabled={modelsLoading || !modelItems.length}
-                    onValueChange={(value) => {
-                      if (!value) return;
-                      const id = String(value);
-                      setModelDraft(id);
-                      persistModelId(id);
-                    }}
-                  >
-                    <Select.Trigger size="sm" className={styles.select}>
-                      <Select.Value>
-                        {(value: string) =>
-                          modelsLoading
-                            ? "Loading models"
-                            : (modelItems.find((item) => item.value === value)
-                                ?.label ??
-                              (value
-                                ? displayName(String(value))
-                                : "Choose a model"))
-                        }
-                      </Select.Value>
-                    </Select.Trigger>
-                    <Select.Portal>
-                      <Select.Positioner sideOffset={6}>
-                        <Select.Popup>
-                          <Select.Items items={modelItems} />
-                        </Select.Popup>
-                      </Select.Positioner>
-                    </Select.Portal>
-                  </Select.Root>
-                  {modelsError ? (
-                    <Field.Description>{modelsError}</Field.Description>
-                  ) : null}
-                </Field.Root>
-              ) : null}
-              {connected ? (
-                <Field.Root>
-                  <Field.Label>Custom Model ID</Field.Label>
-                  <Input.Root size="sm" className={styles.control}>
-                    <Input.Field
-                      value={modelDraft}
-                      onChange={(event) => setModelDraft(event.target.value)}
-                      onBlur={() => persistModelId(modelDraft)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") event.currentTarget.blur();
-                      }}
-                    />
-                  </Input.Root>
-                </Field.Root>
-              ) : null}
-              {error ? (
-                <p className={styles.error} role="alert">
-                  {error}
-                </p>
-              ) : null}
-            </div>
-            <div className={styles.footer}>
-              {connected ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="link"
-                  onClick={() => {
-                    void window.pond
-                      .query("agent.removeKey", { provider: catalog.id })
-                      .then(() => {
-                        onDismiss();
-                        return onRefresh();
-                      });
-                  }}
-                >
-                  Remove
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="link"
-                  onClick={onDismiss}
-                >
-                  Cancel
-                </Button>
-              )}
-              <span className={styles.spacer} />
-              {connected ? (
-                <Switch.Root
-                  checked={row?.enabled ?? true}
-                  aria-label="Enable"
-                  onCheckedChange={(checked) => {
-                    void window.pond
-                      .query("agent.setKeyEnabled", {
-                        provider: catalog.id,
-                        enabled: Boolean(checked),
-                      })
-                      .then(() => onRefresh());
-                  }}
-                />
-              ) : null}
-              {!connected ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="primary"
+            <IconDotsOutline18 />
+          </Menu.Trigger>
+          <Menu.Portal>
+            <Menu.Positioner align="end">
+              <Menu.Popup>
+                <Menu.Item disabled={saving} onClick={() => void remove()}>
+                  {connected ? "Remove Provider" : "Cancel Setup"}
+                </Menu.Item>
+              </Menu.Popup>
+            </Menu.Positioner>
+          </Menu.Portal>
+        </Menu.Root>
+      </div>
+      <form
+        className={styles.body}
+        onSubmit={(event) => {
+          event.preventDefault();
+          void save();
+        }}
+      >
+        <div className={styles.fields}>
+          <Field.Root>
+            <Field.Label>
+              API Key{!catalog.needsKey ? " (Optional)" : ""}
+            </Field.Label>
+            <Input.Root size="sm">
+              <Input.Field
+                type="password"
+                autoComplete="off"
+                required={catalog.needsKey && !connected}
+                disabled={saving}
+                placeholder={
+                  connected ? (row?.masked ?? "Saved key") : "Enter API key"
+                }
+                value={keyDraft}
+                onValueChange={setKeyDraft}
+              />
+            </Input.Root>
+          </Field.Root>
+          {endpoint !== undefined ? (
+            <Field.Root>
+              <Field.Label>API Base URL</Field.Label>
+              <Input.Root size="sm">
+                <Input.Field
+                  required
+                  type="url"
                   disabled={saving}
-                  onClick={() => void save()}
-                >
-                  Save
-                </Button>
-              ) : null}
-            </div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-    </Accordion.Item>
+                  value={endpointDraft}
+                  onValueChange={setEndpointDraft}
+                />
+              </Input.Root>
+            </Field.Root>
+          ) : null}
+        </div>
+        <Button
+          className={styles.save}
+          type="submit"
+          size="sm"
+          disabled={
+            saving ||
+            (connected && !changed) ||
+            (!connected && catalog.needsKey && !keyDraft.trim())
+          }
+        >
+          {saving
+            ? connected
+              ? "Saving"
+              : "Connecting"
+            : connected
+              ? "Save"
+              : "Connect"}
+        </Button>
+      </form>
+      {error ? (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      ) : null}
+    </section>
   );
 }

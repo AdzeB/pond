@@ -2,6 +2,37 @@ import { describe, expect, it } from "vitest";
 import { planAssistantTurn } from "./plan";
 
 describe("planAssistantTurn", () => {
+  it("keeps the audited multi-sentence request out of search terms", () => {
+    expect(
+      planAssistantTurn({
+        latest:
+          "Find three Saves about film or cinematography. Show them as Save results, then give one short sentence about each using only saved information. Only read; do not change anything.",
+        hasSearch: true,
+      }),
+    ).toMatchObject({
+      intent: "search",
+      query: "film or cinematography",
+      requestedCount: 3,
+      media: [],
+    });
+  });
+
+  it.each([
+    ["Find one film reference", "film", 1],
+    ["Show two film Saves", "film", 2],
+    ["Find 3 Saves about architecture", "architecture", 3],
+    ["Find three film references and compare their lighting", "film", 3],
+    ["Find my film references in two sentences", "film", undefined],
+    ["Find 2001: A Space Odyssey", "2001: A Space Odyssey", undefined],
+  ] as const)("separates result counts from subject and formatting: %s", (latest, query, requestedCount) => {
+    expect(planAssistantTurn({ latest, hasSearch: true })).toMatchObject({
+      query,
+    });
+    expect(planAssistantTurn({ latest, hasSearch: true }).requestedCount).toBe(
+      requestedCount,
+    );
+  });
+
   it.each([
     ["kanye pics", "kanye", ["image"]],
     ["Kanye photos", "Kanye", ["image"]],

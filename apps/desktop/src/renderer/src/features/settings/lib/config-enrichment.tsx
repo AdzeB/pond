@@ -8,6 +8,7 @@ import {
   type ModelCatalog,
   WHISPER_CATALOG,
 } from "@/features/enrichment/lib/model-catalogs";
+import { ProcessingStatus } from "@/features/settings/components/sections/processing/processing-status";
 import {
   type Binding,
   defineSection,
@@ -54,9 +55,8 @@ function ModelPickerRow({
 }
 
 export const enrichmentSection = defineSection("ai", {
-  title: "Search",
-  description:
-    "Search by meaning or in plain language, with enrichments on this Mac.",
+  title: "Search & Processing",
+  description: "Choose how Pond searches and processes your library.",
   keywords: [
     "search",
     "semantic",
@@ -67,14 +67,15 @@ export const enrichmentSection = defineSection("ai", {
     "enrichment",
   ],
   groups: [
+    { title: "Overview", render: () => <ProcessingStatus /> },
     {
+      title: "Search",
       items: [
         {
           control: "switch",
           key: "nlCompiler",
-          title: "Natural-Language Search",
-          description:
-            "Turn questions into filters. Uses the Agent model you configured.",
+          title: "Ask in Plain Language",
+          description: "Send search questions to your Agent provider.",
           keywords: ["nlp", "query", "ask", "agent", "natural language"],
         },
         {
@@ -102,7 +103,7 @@ export const enrichmentSection = defineSection("ai", {
       ],
     },
     {
-      title: "Media",
+      title: "Local Processing",
       items: [
         {
           control: "switch",
@@ -144,7 +145,7 @@ export const enrichmentSection = defineSection("ai", {
         {
           control: "switch",
           key: "enableAutoTitle",
-          title: "Auto-Title",
+          title: "Generated Titles",
           description: "Fill empty titles. Never overwrites edits.",
           keywords: ["title", "automatic", "naming"],
           visible: (v) => v.enableCaption === true || v.enableOcr === true,
@@ -160,7 +161,7 @@ export const enrichmentSection = defineSection("ai", {
       ],
     },
     {
-      title: "On-Device Models",
+      title: "Local Models",
       items: [
         {
           control: "custom",

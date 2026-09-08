@@ -1,8 +1,13 @@
+export { IconAnthropic } from "./custom/anthropic";
 export { IconApple } from "./custom/apple";
 export { IconBrandArena } from "./custom/arena";
 export { IconBrandCosmos } from "./custom/cosmos";
 export { IconGithub } from "./custom/github";
+export { IconGoogle } from "./custom/google";
 export { IconBrandInstagram as IconInstagram } from "./custom/instagram";
+export { IconLmStudio } from "./custom/lmstudio";
+export { IconOllama } from "./custom/ollama";
+export { IconOpenAI } from "./custom/openai";
 export { IconBrandPinterest as IconPinterest } from "./custom/pinterest";
 export { IconBrandTikTok as IconTikTok } from "./custom/tiktok";
 export { IconBrandTwitter as IconXTwitter } from "./custom/twitter";

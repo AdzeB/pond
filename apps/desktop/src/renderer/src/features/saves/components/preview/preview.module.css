@@ -19,6 +19,8 @@
   cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
   background: var(--ds-gray-1);
+  background-clip: padding-box;
+  border: var(--ds-border-elevated);
   border-radius: var(--ds-radius-md);
   box-shadow: var(--ds-shadow-2);
   transition: all var(--ds-duration-fast) var(--ds-easing-standard);

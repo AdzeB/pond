@@ -1,8 +1,9 @@
 import { Button, Settings } from "@pond/ui";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { z } from "zod";
 import { playUiSuccess } from "@/features/settings/lib/sounds";
+import { getAppRouter } from "@/shared/lib/app-router";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
 import { prettyPath } from "@/shared/lib/pretty-path";
 import styles from "./storage.module.css";
@@ -74,6 +75,7 @@ function mutationError(error: Error | null, fallback: string): string {
 }
 
 export function LocationRow() {
+  const client = useQueryClient();
   const { data: info } = useQuery({
     queryKey: ["library-info"],
     queryFn: async () =>
@@ -144,6 +146,7 @@ export function LocationRow() {
     },
     onSuccess: (res) => {
       if (!res) return;
+      void client.invalidateQueries({ queryKey: ["storage-backup"] });
       const first =
         "localStorage" in globalThis &&
         localStorage.getItem(FIRST_BACKUP_KEY) !== "1";
@@ -213,7 +216,7 @@ export function LocationRow() {
 
   return (
     <Settings.List>
-      <Settings.Item>
+      <Settings.Item id="setting-storage-location">
         <Settings.ItemDetails>
           <Settings.ItemTitle>Library Location</Settings.ItemTitle>
           {info ? (
@@ -232,7 +235,7 @@ export function LocationRow() {
           </Button>
         </Settings.ItemControl>
       </Settings.Item>
-      <Settings.Item>
+      <Settings.Item id="setting-storage-move">
         <Settings.ItemDetails>
           <Settings.ItemTitle>Move Library</Settings.ItemTitle>
           <Settings.ItemDescription>
@@ -257,9 +260,9 @@ export function LocationRow() {
           </Button>
         </Settings.ItemControl>
       </Settings.Item>
-      <Settings.Item>
+      <Settings.Item id="setting-storage-backup">
         <Settings.ItemDetails>
-          <Settings.ItemTitle>Backup Library</Settings.ItemTitle>
+          <Settings.ItemTitle>Back Up Library</Settings.ItemTitle>
           <Settings.ItemDescription>
             Copy the pond elsewhere. This library stays open.
             <StatusNote
@@ -284,11 +287,11 @@ export function LocationRow() {
           </Button>
         </Settings.ItemControl>
       </Settings.Item>
-      <Settings.Item>
+      <Settings.Item id="setting-storage-open">
         <Settings.ItemDetails>
-          <Settings.ItemTitle>Restore Library</Settings.ItemTitle>
+          <Settings.ItemTitle>Open Library</Settings.ItemTitle>
           <Settings.ItemDescription>
-            Open a `.pond` backup and relaunch.
+            Open another .pond library and relaunch.
             <StatusNote
               error={
                 openExisting.isError
@@ -305,16 +308,15 @@ export function LocationRow() {
             disabled={openExisting.isPending}
             onClick={() => openExisting.mutate()}
           >
-            {openExisting.isPending ? "Opening" : "Restore"}
+            {openExisting.isPending ? "Opening" : "Open"}
           </Button>
         </Settings.ItemControl>
       </Settings.Item>
-      <Settings.Item>
+      <Settings.Item id="setting-storage-import">
         <Settings.ItemDetails>
           <Settings.ItemTitle>Import Eagle Library</Settings.ItemTitle>
           <Settings.ItemDescription>
-            Pond keeps titles, notes, tags, folders, files, ratings, palettes,
-            comments, and video notes. Locked folders are listed, not imported.
+            Import your saves. Locked folders are skipped.
             <StatusNote
               error={
                 importEagle.isError
@@ -347,21 +349,20 @@ export function LocationRow() {
           </Button>
         </Settings.ItemControl>
       </Settings.Item>
-      <Settings.Item>
+      <Settings.Item id="setting-storage-watched-folder">
         <Settings.ItemDetails>
-          <Settings.ItemTitle>Watched Folder</Settings.ItemTitle>
+          <Settings.ItemTitle>Watched folders</Settings.ItemTitle>
           <Settings.ItemDescription>
-            Copy new files into the library. History lives in the library
-            folder.
+            Manage folder imports in Sources.
           </Settings.ItemDescription>
         </Settings.ItemDetails>
         <Settings.ItemControl>
           <Button
             size="sm"
             variant="secondary"
-            onClick={() => void window.pond.query("autoImport.pickFolder", {})}
+            onClick={() => getAppRouter()?.history.push("/sources")}
           >
-            Choose Folder
+            Manage Sources
           </Button>
         </Settings.ItemControl>
       </Settings.Item>

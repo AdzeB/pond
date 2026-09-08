@@ -5,13 +5,13 @@ export const trashSection = defineSection("trash", {
   description: "How deleted saves are kept and cleared.",
   groups: [
     {
-      title: "Auto-Empty",
+      title: "Trash",
       items: [
         {
           control: "select",
           key: "autoEmptyDays",
           title: "Empty Automatically",
-          description: "Permanently delete after this long.",
+          description: "Permanently delete saves after this time in Trash.",
           options: [
             { value: null, label: "Never" },
             { value: 7, label: "After 7 days" },
@@ -19,17 +19,6 @@ export const trashSection = defineSection("trash", {
             { value: 30, label: "After 30 days" },
             { value: 90, label: "After 90 days" },
           ],
-        },
-      ],
-    },
-    {
-      title: "Safety",
-      items: [
-        {
-          control: "switch",
-          key: "confirmBeforeEmpty",
-          title: "Confirm Before Emptying",
-          description: "Ask before emptying the trash.",
         },
       ],
     },

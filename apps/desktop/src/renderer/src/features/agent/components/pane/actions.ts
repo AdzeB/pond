@@ -4,8 +4,22 @@ import {
   IconLink2Outline18,
   IconTagsOutline18,
 } from "@pond/icons/outline/18";
+import type { IconComponent } from "@pond/icons/types";
 
-export const ASSISTANT_ACTIONS = [
+type AgentPrompt<Id extends string> = {
+  id: Id;
+  title: string;
+  detail: string;
+  icon: IconComponent;
+  prompt: string;
+};
+
+export const ASSISTANT_ACTIONS: readonly [
+  AgentPrompt<"summarize">,
+  AgentPrompt<"connect">,
+  AgentPrompt<"organize">,
+  AgentPrompt<"describe">,
+] = [
   {
     id: "summarize",
     title: "Summarize",
@@ -34,36 +48,38 @@ export const ASSISTANT_ACTIONS = [
     detail: "Title and tag from what you see",
     icon: IconImageOutline18,
     prompt:
-      "Look at these Saves and propose titles and tags from the images. Use proposeChanges so I can review.",
+      "Look at these Saves and propose titles and tags from the images. Let me review before applying changes.",
   },
-] as const;
+];
 
-export const AGENT_STARTERS = [
+export const AGENT_STARTERS: readonly [
+  AgentPrompt<"find">,
+  AgentPrompt<"connect">,
+  AgentPrompt<"organize">,
+] = [
   {
-    id: "overview",
-    title: "Library Overview",
-    prompt:
-      "Give me an overview of this library. Use libraryOverview, then say what is messy or untagged and what I should organize first.",
+    id: "find",
+    title: "Find a Reference",
+    detail: "Rediscover something you saved",
+    icon: IconFileOutline18,
+    prompt: "Find three Saves about ",
   },
   {
-    id: "tag",
-    title: "Tag Untagged",
-    prompt:
-      "Find Saves missing tags. Read a sample, then propose tags with proposeChanges so I can review.",
+    id: "connect",
+    title: "Connect Ideas",
+    detail: "Compare themes across your Saves",
+    icon: IconLink2Outline18,
+    prompt: "Compare my recent Saves and explain their shared ideas.",
   },
   {
-    id: "duplicates",
-    title: "Merge Duplicates",
+    id: "organize",
+    title: "Organize Saves",
+    detail: "Review titles, tags, and folders",
+    icon: IconTagsOutline18,
     prompt:
-      "Find duplicate Saves and propose merges with proposeChanges so I can review.",
+      "Find Saves missing tags and suggest how to organize them. Let me review each change.",
   },
-  {
-    id: "title",
-    title: "Title Images",
-    prompt:
-      "Find recent images missing titles or tags. Look at them and propose titles and tags with proposeChanges so I can review.",
-  },
-] as const;
+];
 
 export type AssistantAction = (typeof ASSISTANT_ACTIONS)[number]["id"];
 export type AgentStarter = (typeof AGENT_STARTERS)[number]["id"];
