@@ -356,6 +356,10 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
           click: sendMenuAction("view.inspector.toggle"),
         },
         {
+          label: "Show Navigator",
+          click: sendMenuAction("view.navigator"),
+        },
+        {
           ...sym("circle.lefthalf.filled"),
           label: "Appearance",
           submenu: [

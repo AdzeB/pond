@@ -447,6 +447,13 @@ export function buildSaveMenu(
       },
     },
     {
+      type: "checkbox",
+      label: "Show Navigator",
+      hidden: !opened || deriveTypeKind(targetFile, save) !== "image",
+      checked: inspect.snapshot().showNavigator,
+      onCheckedChange: () => inspect.toggleNavigator(),
+    },
+    {
       label: "Load Subtitles",
       hidden: !isVideo,
       onClick: () => {

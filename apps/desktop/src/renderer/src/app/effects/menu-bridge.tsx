@@ -106,6 +106,10 @@ export function MenuBridge() {
           inspect.toggleGrayscale();
           return;
 
+        case "view.navigator":
+          inspect.toggleNavigator();
+          return;
+
         case "view.pin-preview":
           inspect.pinCurrent();
           return;

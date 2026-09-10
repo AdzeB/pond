@@ -207,4 +207,15 @@ describe("Eagle baseline save menu", () => {
       labels(buildSaveMenu(imageSave("still"), { clipboardEmpty: true })),
     ).not.toContain("Load Subtitles");
   });
+
+  it("exposes Show Navigator on an opened image", () => {
+    expect(
+      labels(
+        buildSaveMenu(imageSave("still"), {
+          clipboardEmpty: true,
+          opened: true,
+        }),
+      ),
+    ).toContain("Show Navigator");
+  });
 });

@@ -5,11 +5,22 @@ import { selection } from "@/features/library/state/selection";
 interface InspectState {
   grayscale: boolean;
   compare: boolean;
+  showNavigator: boolean;
+}
+
+function readNavigator(): boolean {
+  if (!globalThis.window) return false;
+  try {
+    return window.localStorage.getItem("pond.viewer.showNavigator") === "1";
+  } catch {
+    return false;
+  }
 }
 
 const store = new Store<InspectState>({
   grayscale: false,
   compare: false,
+  showNavigator: readNavigator(),
 });
 
 export const inspect = {
@@ -24,6 +35,27 @@ export const inspect = {
   },
   toggleCompare(): void {
     store.setState((state) => ({ ...state, compare: !state.compare }));
+  },
+  setShowNavigator(showNavigator: boolean): void {
+    if (globalThis.window) {
+      try {
+        window.localStorage.setItem(
+          "pond.viewer.showNavigator",
+          showNavigator ? "1" : "0",
+        );
+      } catch {}
+    }
+    store.setState((state) =>
+      state.showNavigator === showNavigator
+        ? state
+        : { ...state, showNavigator },
+    );
+  },
+  toggleNavigator(): void {
+    inspect.setShowNavigator(!store.state.showNavigator);
+  },
+  snapshot(): InspectState {
+    return store.state;
   },
   pinCurrent(): void {
     const id = selection.getAnchor();

@@ -101,4 +101,5 @@ export type MenuActionId =
   | "view.sidebar.toggle"
   | "view.agent.toggle"
   | "view.grayscale"
-  | "view.pin-preview";
+  | "view.pin-preview"
+  | "view.navigator";
