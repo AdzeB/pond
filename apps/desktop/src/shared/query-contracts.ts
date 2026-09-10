@@ -86,6 +86,8 @@ export interface OkResult {
 interface ImportResult extends OkResult {
   imported: number;
   skipped: number;
+  queued?: number;
+  draftId?: string;
 }
 
 export interface QueryInputs {

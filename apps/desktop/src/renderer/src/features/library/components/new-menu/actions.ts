@@ -150,13 +150,13 @@ export function createNewActions({
     const result = await window.pond.query("saves.extractPageAssets", {
       url: href,
     });
-    if (!result.ok && !result.imported) {
+    if (!result.ok && !result.queued && !result.imported) {
       throw new Error("Couldn't extract images from that page. Try again.");
     }
     notify({
       id: "new-import",
-      title: result.imported
-        ? `Saved ${result.imported} image${result.imported === 1 ? "" : "s"}`
+      title: result.queued
+        ? `Opened Collect with ${result.queued} ${result.queued === 1 ? "image" : "images"}`
         : "No images large enough",
       timeout: 5000,
     });

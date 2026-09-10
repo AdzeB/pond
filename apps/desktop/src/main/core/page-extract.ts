@@ -1,10 +1,7 @@
-import { mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { extname, join } from "node:path";
-import { BrowserWindow, net } from "electron";
+import { randomUUID } from "node:crypto";
+import { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
-import { createManualSave } from "./manual-import";
 
 const MIN_EDGE = 200;
 const MAX_ASSETS = 40;
@@ -14,17 +11,57 @@ const PageImagesSchema = z
   .array(z.object({ src: z.string(), width: z.number(), height: z.number() }))
   .nullable();
 
+export function pickPageImages(
+  images: { src: string; width: number; height: number }[],
+  minEdge = MIN_EDGE,
+  maxAssets = MAX_ASSETS,
+) {
+  return images
+    .filter(
+      (img) =>
+        img.width >= minEdge &&
+        img.height >= minEdge &&
+        /^https?:/i.test(img.src),
+    )
+    .slice(0, maxAssets);
+}
+
+export function pageAssetsDraft(input: {
+  id: string;
+  originUrl: string;
+  images: { src: string; width: number; height: number }[];
+}) {
+  return {
+    id: input.id,
+    originUrl: input.originUrl,
+    mode: "collect" as const,
+    metadata: { tags: ["page-asset"], folderIds: [] },
+    items: pickPageImages(input.images).map((img) => ({
+      kind: "asset" as const,
+      url: img.src,
+    })),
+  };
+}
+
 export async function extractPageAssets(url: string): Promise<{
   ok: boolean;
   imported: number;
   skipped: number;
+  queued: number;
+  draftId?: string;
   error?: string;
 }> {
   let href: string;
   try {
     href = new URL(url).toString();
   } catch {
-    return { ok: false, imported: 0, skipped: 0, error: "invalid_url" };
+    return {
+      ok: false,
+      imported: 0,
+      skipped: 0,
+      queued: 0,
+      error: "invalid_url",
+    };
   }
   const win = new BrowserWindow({
     show: false,
@@ -50,40 +87,39 @@ export async function extractPageAssets(url: string): Promise<{
       ]),
     );
     if (!images)
-      return { ok: false, imported: 0, skipped: 0, error: "timeout" };
-    const picked = images
-      .filter(
-        (img) =>
-          img.width >= MIN_EDGE &&
-          img.height >= MIN_EDGE &&
-          /^https?:/i.test(img.src),
-      )
-      .slice(0, MAX_ASSETS);
-    let imported = 0;
-    const dir = await mkdtemp(join(tmpdir(), "pond-page-"));
-    for (const img of picked) {
-      try {
-        const res = await net.fetch(img.src);
-        if (!res.ok) continue;
-        const buf = Buffer.from(await res.arrayBuffer());
-        const ext = extname(new URL(img.src).pathname) || ".jpg";
-        const path = join(dir, `asset-${imported}${ext}`);
-        await writeFile(path, buf);
-        const save = await createManualSave({
-          title: new URL(href).hostname,
-          filePaths: [path],
-          tags: ["page-asset"],
-          url: img.src,
-        });
-        if (save.ok) imported += 1;
-      } catch (err) {
-        log.warn("[pond page-extract] asset failed", img.src, err);
-      }
-    }
-    return { ok: imported > 0, imported, skipped: picked.length - imported };
+      return {
+        ok: false,
+        imported: 0,
+        skipped: 0,
+        queued: 0,
+        error: "timeout",
+      };
+    const draft = pageAssetsDraft({
+      id: randomUUID(),
+      originUrl: href,
+      images,
+    });
+    const skipped = images.length - draft.items.length;
+    if (draft.items.length === 0)
+      return { ok: true, imported: 0, skipped, queued: 0 };
+    const { captures } = await import("./captures");
+    const receipt = await captures.accept(draft);
+    return {
+      ok: true,
+      imported: 0,
+      skipped,
+      queued: draft.items.length,
+      draftId: receipt.id,
+    };
   } catch (err) {
     log.warn("[pond page-extract] failed", href, err);
-    return { ok: false, imported: 0, skipped: 0, error: "extract_failed" };
+    return {
+      ok: false,
+      imported: 0,
+      skipped: 0,
+      queued: 0,
+      error: "extract_failed",
+    };
   } finally {
     if (!win.isDestroyed()) win.destroy();
   }
