@@ -137,6 +137,7 @@ export interface QueryInputs {
     folderIds?: string[];
   };
   "saves.setCustomThumbnail": IdInput;
+  "saves.replaceFile": IdInput;
   "saves.removeCustomThumbnail": IdInput;
   "saves.createManual": {
     title?: string | null;
@@ -355,6 +356,7 @@ export interface QueryResults extends SystemQueryResults {
   "saves.classifyUrl": { source: Source | null };
   "saves.importFiles": OkResult & { ids?: string[] };
   "saves.setCustomThumbnail": OkResult & { canceled?: boolean };
+  "saves.replaceFile": OkResult & { canceled?: boolean; error?: string };
   "saves.removeCustomThumbnail": OkResult;
   "saves.createManual": OkResult & { id?: string; skipped?: boolean };
   "saves.combineImages": OkResult & {

@@ -170,6 +170,21 @@ export const savesImportQueries = {
     },
   ),
 
+  "saves.replaceFile": query(z.object({ id: StringParam }), async (params) => {
+    const win = BrowserWindow.getFocusedWindow() ?? undefined;
+    const options = {
+      properties: ["openFile" as const],
+      message: "Choose a replacement file",
+    };
+    const picked = win
+      ? await dialog.showOpenDialog(win, options)
+      : await dialog.showOpenDialog(options);
+    const path = picked.filePaths[0];
+    if (picked.canceled || !path) return { ok: false, canceled: true };
+    const { replaceSaveFile } = await import("../../core/replace-file");
+    return replaceSaveFile({ id: params.id, sourcePath: path });
+  }),
+
   "saves.removeCustomThumbnail": query(
     z.object({ id: StringParam }),
     async (params) => {

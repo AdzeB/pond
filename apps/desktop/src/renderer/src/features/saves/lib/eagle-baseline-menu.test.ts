@@ -9,8 +9,14 @@ function labels(items: MenuItemSpec[]): string[] {
   return items.flatMap((item) => {
     if (item.type === "separator" || item.type === "custom") return [];
     if ("hidden" in item && item.hidden) return [];
-    if ("label" in item && typeof item.label === "string") return [item.label];
-    return [];
+    const nested =
+      item.type === "submenu" || item.type === "group"
+        ? labels(item.items)
+        : [];
+    if ("label" in item && typeof item.label === "string") {
+      return [item.label, ...nested];
+    }
+    return nested;
   });
 }
 
@@ -111,5 +117,10 @@ describe("Eagle baseline save menu", () => {
   it("hides Combine Images for a single file save", () => {
     const items = buildSaveMenu(fileSave(), { clipboardEmpty: true });
     expect(labels(items)).not.toContain("Combine Images");
+  });
+
+  it("exposes Replace File on a single file save", () => {
+    const items = buildSaveMenu(fileSave(), { clipboardEmpty: true });
+    expect(labels(items)).toContain("Replace File");
   });
 });

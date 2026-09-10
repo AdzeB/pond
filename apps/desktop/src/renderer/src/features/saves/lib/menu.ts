@@ -402,6 +402,23 @@ export function buildSaveMenu(
       },
     },
     {
+      label: "Replace File",
+      hidden: batch || !hasFiles,
+      onClick: () => {
+        void window.pond
+          .query("saves.replaceFile", { id: save.id })
+          .then((result) => {
+            if (result.canceled) return;
+            if (!result.ok) {
+              notify({
+                id: "replace-file",
+                title: result.error ?? "Couldn’t replace this file.",
+              });
+            }
+          });
+      },
+    },
+    {
       label: "Remove Custom Thumbnail",
       hidden: batch || !hasCustomThumbnail,
       onClick: () => {

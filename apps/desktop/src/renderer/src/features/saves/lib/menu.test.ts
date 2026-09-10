@@ -99,6 +99,7 @@ describe("buildSaveMenu", () => {
       "Search",
       "Export",
       "Set Custom Thumbnail",
+      "Replace File",
       "Refresh Details",
       "Move to Trash",
     ]);
