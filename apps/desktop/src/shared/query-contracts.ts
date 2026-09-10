@@ -134,6 +134,7 @@ export interface QueryInputs {
   "saves.activateFont": IdInput;
   "saves.deactivateFont": IdInput;
   "saves.fontStatus": IdInput;
+  "saves.setAudioAnalysis": { id: string; bpm: number };
   "saves.pickImportPaths": { kind: "files" | "folders" };
   "saves.classifyUrl": { url: string };
   "saves.importFiles": {
@@ -368,6 +369,7 @@ export interface QueryResults extends SystemQueryResults {
   "saves.activateFont": OkResult & { path?: string; error?: string };
   "saves.deactivateFont": OkResult & { error?: string };
   "saves.fontStatus": { activated: boolean; path?: string };
+  "saves.setAudioAnalysis": OkResult;
   "saves.classifyUrl": { source: Source | null };
   "saves.importFiles": OkResult & { ids?: string[] };
   "saves.setCustomThumbnail": OkResult & { canceled?: boolean };

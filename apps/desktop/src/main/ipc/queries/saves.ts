@@ -783,6 +783,23 @@ export const savesQueries = {
       return result;
     },
   ),
+
+  "saves.setAudioAnalysis": query(
+    z.object({
+      id: StringParam,
+      bpm: z.number().int().min(1).max(300),
+    }),
+    async ({ id, bpm }) => {
+      const db = await getDb();
+      const [row] = await db.select().from(saves).where(eq(saves.id, id));
+      if (!row) return { ok: false };
+      const files = row.files.map((file, index) =>
+        index === 0 ? { ...file, bpm } : file,
+      );
+      await persistSave(id, { files }, { actorReason: "audio:bpm" });
+      return { ok: true };
+    },
+  ),
 } satisfies QueryHandlerMap;
 
 function sortColumn(sortKey: string): SQLWrapper {

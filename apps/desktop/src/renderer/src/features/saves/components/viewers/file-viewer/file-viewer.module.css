@@ -105,6 +105,12 @@
   width: 100%;
 }
 
+.waveform {
+  width: 100%;
+  height: 64px;
+  color: var(--ds-gray-12);
+}
+
 .heading {
   min-width: 0;
   text-align: center;

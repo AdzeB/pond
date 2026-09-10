@@ -18,6 +18,8 @@ export interface SaveFile {
   mimeType?: string | null;
   width?: number | null;
   height?: number | null;
+  family?: string | null;
+  bpm?: number | null;
 }
 
 export interface Save {

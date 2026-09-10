@@ -18,6 +18,8 @@ import { EpubViewer } from "@/features/saves/components/viewers/epub-viewer/epub
 import { ModelViewer } from "@/features/saves/components/viewers/model-viewer/model-viewer";
 import { SafeWebViewer } from "@/features/saves/components/viewers/safe-web-viewer/safe-web-viewer";
 import { exportFile, openDefaultApp } from "@/features/saves/lib/actions";
+import { estimateBpm } from "@/features/saves/lib/media/audio-bpm";
+import { downsamplePeaks } from "@/features/saves/lib/media/audio-peaks";
 import { storedFileViewerKind } from "@/features/saves/lib/media/file-viewer";
 import { buildPondUrl, previewUrlFor } from "@/features/saves/lib/media/url";
 import type { Save, SaveFile } from "@/features/saves/types";
@@ -202,6 +204,54 @@ function PdfPage({
 }
 
 function AudioViewer(props: ViewerProps & { url: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [bpm, setBpm] = useState<number | null>(props.file.bpm ?? null);
+
+  useEffect(() => {
+    const context = new AudioContext();
+    let active = true;
+    void fetch(props.url)
+      .then((response) => response.arrayBuffer())
+      .then((buffer) => context.decodeAudioData(buffer))
+      .then((audio) => {
+        if (!active) return;
+        const samples = audio.getChannelData(0);
+        const peaks = downsamplePeaks(samples, 120);
+        const canvas = canvasRef.current;
+        const gfx = canvas?.getContext("2d");
+        if (canvas && gfx) {
+          const width = canvas.width;
+          const height = canvas.height;
+          gfx.clearRect(0, 0, width, height);
+          gfx.fillStyle = getComputedStyle(canvas).color;
+          const bar = width / peaks.length;
+          for (let index = 0; index < peaks.length; index += 1) {
+            const magnitude = peaks[index] ?? 0;
+            const barHeight = Math.max(1, magnitude * height);
+            gfx.fillRect(
+              index * bar,
+              (height - barHeight) / 2,
+              Math.max(1, bar - 1),
+              barHeight,
+            );
+          }
+        }
+        const tempo = estimateBpm(samples, audio.sampleRate);
+        if (tempo) {
+          setBpm(tempo);
+          void window.pond.query("saves.setAudioAnalysis", {
+            id: props.save.id,
+            bpm: tempo,
+          });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+      void context.close();
+    };
+  }, [props.save.id, props.url]);
+
   return (
     <div className={styles.root}>
       <div className={styles.audioCard}>
@@ -210,8 +260,16 @@ function AudioViewer(props: ViewerProps & { url: string }) {
           <h1>{props.save.title ?? props.file.path}</h1>
           <p>
             {props.file.path} · {formatBytes(props.file.size)}
+            {bpm ? ` · ${bpm} BPM` : ""}
           </p>
         </div>
+        <canvas
+          ref={canvasRef}
+          className={styles.waveform}
+          width={480}
+          height={64}
+          aria-label="Waveform"
+        />
         {/* biome-ignore lint/a11y/useMediaCaption: imported audio has no guaranteed transcript track. */}
         <audio controls preload="metadata" src={props.url} />
         <FileActions {...props} />
