@@ -64,6 +64,14 @@ import { notify } from "@/shared/lib/toast";
 interface BuildSaveMenuOptions {
   clipboardEmpty: boolean;
   fileIndex?: number | null;
+  openWithApps?: readonly OpenWithApp[];
+}
+
+export interface OpenWithApp {
+  name: string;
+  path: string;
+  icon: string | null;
+  isDefault: boolean;
 }
 
 export function contextMenuSaves(clicked: Save): Save[] {
@@ -101,6 +109,20 @@ function glyph(Icon: ComponentType): ReactElement {
   return createElement(Icon);
 }
 
+function openWith(
+  ids: string[],
+  fileIndex: number | null,
+  application: string,
+): void {
+  void window.pond
+    .query("saves.openWith", {
+      ids,
+      fileIndex: ids.length > 1 ? undefined : (fileIndex ?? undefined),
+      application,
+    })
+    .catch(() => notify({ id: "open-with", title: "Couldn’t open Save" }));
+}
+
 function combinableImageCount(items: readonly Save[]): number {
   return items.filter((item) =>
     item.files.some(
@@ -115,7 +137,7 @@ function combinableImageCount(items: readonly Save[]): number {
 
 export function buildSaveMenu(
   saveOrSaves: Save | readonly Save[],
-  { clipboardEmpty, fileIndex = null }: BuildSaveMenuOptions,
+  { clipboardEmpty, fileIndex = null, openWithApps = [] }: BuildSaveMenuOptions,
 ): MenuItemSpec[] {
   const saves = Array.isArray(saveOrSaves) ? saveOrSaves : [saveOrSaves];
   const save = saves[0];
@@ -414,6 +436,16 @@ export function buildSaveMenu(
       label: "Open",
       hidden: submenuHidden(openItems),
       items: openItems,
+    },
+    {
+      type: "submenu",
+      label: "Open With",
+      hidden: !hasFiles || openWithApps.length === 0,
+      items: openWithApps.map((entry) => ({
+        id: entry.path,
+        label: entry.isDefault ? `${entry.name} (Default)` : entry.name,
+        onClick: () => openWith(ids, fileIndex, entry.path),
+      })),
     },
     { type: "separator" },
     {
