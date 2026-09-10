@@ -17,6 +17,7 @@ import {
   importEagleLibrary,
 } from "../../core/eagle-import";
 import { setSaveFolders } from "../../core/folders";
+import { gifFramePng } from "../../core/gif-thumbnail";
 import { createManualSave } from "../../core/manual-import";
 import { extractPageAssets } from "../../core/page-extract";
 import { persistSave } from "../../core/persist-save";
@@ -25,7 +26,7 @@ import { classifyUrlToSource } from "../../core/pipeline/extractors";
 import { UnsupportedError } from "../../core/pipeline/extractors/errors";
 import { setSaveTags } from "../../core/tags";
 import { walkImportPaths } from "../../core/walk-import-paths";
-import { resolveSaveFilePath } from "../helpers";
+import { resolvePondItemPath, resolveSaveFilePath } from "../helpers";
 import { pickImportPaths } from "./import-picker";
 import {
   FileIndexParam,
@@ -162,6 +163,41 @@ export const savesImportQueries = {
               filename: libraryFilename(path, "custom-thumbnail.png"),
               sourcePath: path,
               mimeType: format.mimeType,
+            },
+          ],
+        },
+      );
+      return { ok: Boolean(updated) };
+    },
+  ),
+
+  "saves.setGifThumbnail": query(
+    z.object({
+      id: StringParam,
+      src: StringParam,
+      frameIndex: z.number().int().min(0),
+    }),
+    async (params) => {
+      const resolved = resolvePondItemPath(params.src);
+      if (
+        !resolved ||
+        resolved.saveId.toLowerCase() !== params.id.toLowerCase()
+      ) {
+        return { ok: false, error: "missing_file" };
+      }
+      const png = await gifFramePng(resolved.path, params.frameIndex);
+      const updated = await persistSave(
+        params.id,
+        {},
+        {
+          actorReason: "user:set-gif-thumbnail",
+          replaceFilesWithKind: "custom_thumbnail",
+          newFiles: [
+            {
+              kind: "custom_thumbnail",
+              filename: "gif-thumb.png",
+              mimeType: "image/png",
+              bytes: png,
             },
           ],
         },

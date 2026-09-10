@@ -163,4 +163,18 @@ describe("Eagle baseline save menu", () => {
     });
     expect(labels(items)).not.toContain("Reset Loop Range");
   });
+
+  it("exposes Set as GIF Thumbnail on an opened GIF", () => {
+    const items = buildSaveMenu(gifSave(), {
+      clipboardEmpty: true,
+      opened: true,
+    });
+    expect(labels(items)).toContain("Set as GIF Thumbnail");
+  });
+
+  it("hides Set as GIF Thumbnail in the gallery", () => {
+    expect(
+      labels(buildSaveMenu(gifSave(), { clipboardEmpty: true })),
+    ).not.toContain("Set as GIF Thumbnail");
+  });
 });

@@ -423,6 +423,32 @@ export function buildSaveMenu(
       },
     },
     {
+      label: "Set as GIF Thumbnail",
+      hidden: !opened || !isGif,
+      onClick: () => {
+        const file = save.files[fileIndex ?? 0] ?? save.files[0];
+        if (!file) return;
+        const src = `pond://${save.id}/${file.path}`;
+        const canvas = document.querySelector<HTMLCanvasElement>(
+          `[data-gif-player] canvas[data-frame]`,
+        );
+        const frameIndex = Number(canvas?.getAttribute("data-frame") ?? 0);
+        void window.pond
+          .query("saves.setGifThumbnail", {
+            id: save.id,
+            src,
+            frameIndex: Number.isFinite(frameIndex) ? frameIndex : 0,
+          })
+          .then((result) => {
+            if (!result.ok)
+              notify({
+                id: "gif-thumb",
+                title: "Couldn't set this GIF frame as the thumbnail.",
+              });
+          });
+      },
+    },
+    {
       label: "Replace File",
       hidden: batch || !hasFiles,
       onClick: () => {
