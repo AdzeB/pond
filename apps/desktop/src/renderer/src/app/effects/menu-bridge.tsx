@@ -29,6 +29,7 @@ import {
 import { confirmEmptyTrash } from "@/features/saves/lib/empty-trash";
 import { closeSave, openSave } from "@/features/saves/lib/save-nav";
 import { trashSelection } from "@/features/saves/lib/selection";
+import { inspect } from "@/features/saves/state/inspect";
 import { pool } from "@/features/saves/state/pool";
 import { usePrefs } from "@/features/settings/state/prefs";
 import { sourceFlow } from "@/features/sources/state/source-flow";
@@ -99,6 +100,14 @@ export function MenuBridge() {
 
         case "view.agent.toggle":
           libraryChrome.toggleAgent();
+          return;
+
+        case "view.grayscale":
+          inspect.toggleGrayscale();
+          return;
+
+        case "view.pin-preview":
+          inspect.pinCurrent();
           return;
 
         case "theme.light":

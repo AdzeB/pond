@@ -134,3 +134,60 @@ The remaining gap is not "rebuild the DAM." It is:
 5. **Trust proof.** Signed-package backup, external-drive, and Eagle-timed browse comparisons remain unverified.
 
 Do not regress harvest, Agent, or the rebuildable-library invariant to look more like Eagle.
+
+## Appendix: app menu reachability (Wave 1)
+
+Status: `pond` = reachable in Pond (app menu, File, Save menu, or equivalent). `later-wave` = first-party Eagle, not this wave. `out` = plugins / Eagle Cloud / skipped locales.
+
+| Eagle key | Eagle label | Status | Pond surface |
+| --- | --- | --- | --- |
+| all | All | pond | Sidebar All, breadcrumbs |
+| allTags | All Tags | pond | Tags page All Tags |
+| alwaysOnTop | Always on Top | pond | Preview window Pin on Top |
+| grayscale | Grayscale | pond | View menu Grayscale Overlay |
+| gridLayout | Waterfall | pond | View menu Waterfall |
+| justifiedLayout | Justified | pond | View menu Justified |
+| next10Frame | Go forward 10 frames | pond | GIF inspector, `viewer.frame-next-ten` |
+| nextFrame | Go forward 1 frame | pond | GIF inspector Next Frame, video FrameControls |
+| opacity | Opacity | pond | Preview window Opacity |
+| openInFinder | Reveal in Finder | pond | File menu Reveal in Finder (`save.reveal`) |
+| openInNewWindow | Open in New Window | pond | Save menu and View menu Pin Preview |
+| openInOthers | Open with Other App | out | Removed Other |
+| openUrl | Open Link in Browser | pond | File menu Open Original URL (`save.open-original`) |
+| openWithDefault | Open With Default App | pond | File menu Open with Default App (`save.open-with-default`) |
+| prev10Frame | Go backward 10 frames | pond | GIF inspector, `viewer.frame-prev-ten` |
+| prevFrame | Go backward 1 frame | pond | GIF inspector Previous Frame, video FrameControls |
+| random | Random | pond | Folder sort Random |
+| scrollPageDown | Scroll Page Down | later-wave | No page-scroll command |
+| scrollPageUp | Scroll Page Up | later-wave | No page-scroll command |
+| scrollToBottom | Scroll to Bottom | pond | Keyboard shortcut Scroll to Bottom (`nav.scroll-bottom`) |
+| scrollToTop | Scroll to Top | pond | Keyboard shortcut Scroll to Top (`nav.scroll-top`) |
+| showNavigator | Navigator | later-wave | Wave 3 viewer |
+| speedDown | Slow Down | later-wave | Wave 3 viewer. Video player has a speed picker. GIF speed is not exposed |
+| speedUp | Speed Up | later-wave | Wave 3 viewer. Video player has a speed picker. GIF speed is not exposed |
+| stepBackward | Step Backward | pond | Viewer Previous Image or Save, preview window Previous |
+| stepForward | Step Forward | pond | Viewer Next Image or Save, preview window Next |
+| toggleAll | Sidebar / Inspector | pond | View menu Toggle Sidebar and Toggle Details |
+| toggleFullscreen | Toggle Full Screen | pond | View menu Full Screen |
+| toggleInspector | Inspector | pond | View menu Toggle Details |
+| toggleListAnnotation | Show Comment | later-wave | Wave 3 list columns |
+| toggleListMetas | Show Item Info | later-wave | Wave 3 list columns |
+| toggleListName | Show Name | pond | Display Options Show Name (gallery overlay, not list columns) |
+| toggleMainNav | Activity Bar | pond | Sidebar and Go menu (Library, Sources, Downloads, Trash) |
+| toggleSidebar | Sidebar | pond | View menu Toggle Sidebar |
+| toggleSubfolder | Show Subfolder Content | pond | Folder context menu Show Subfolder Content |
+| trash | Trash | pond | Sidebar Trash, Go menu Trash |
+| unfiled | Uncategorized | pond | Sidebar Uncategorized |
+| untagged | Untagged | pond | Sidebar Untagged |
+| volumeDecrease | Volume - 5% | later-wave | Wave 3 viewer. Video has a Volume slider, not ±5% |
+| volumeIncrease | Volume + 5% | later-wave | Wave 3 viewer. Video has a Volume slider, not ±5% |
+| zoomActual | Actual Size | pond | Inspector zoom menu Actual Size (`viewer.actual-size`) |
+| zoomFit | Zoom to Fit | pond | Inspector zoom menu Zoom to Fit (`viewer.zoom-fit`) |
+| zoomIn | Zoom In | pond | View menu Zoom In |
+| zoomOut | Zoom Out | pond | View menu Zoom Out |
+| rating>remove | Remove Rating | pond | Clear Rating (`save.rate-0`) |
+| folder>add | Add Folder | pond | Save menu Add to Folders (`save.assign-folders`) |
+| tag>add | Add Tags... | pond | File menu Add Tag (`save.add-tag`) |
+| tag>clear | Clear Tags | pond | Inspector tag field Clear All Tags |
+| tag>copy | Copy Tags | pond | Save menu Copy Tags |
+| tag>paste | Paste Tags | pond | Save menu Paste Tags |

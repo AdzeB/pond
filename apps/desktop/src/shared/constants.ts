@@ -99,4 +99,6 @@ export type MenuActionId =
   | "library.move"
   | "library.connect"
   | "view.sidebar.toggle"
-  | "view.agent.toggle";
+  | "view.agent.toggle"
+  | "view.grayscale"
+  | "view.pin-preview";
