@@ -1,15 +1,25 @@
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { copyFile, mkdir, open, rename, stat, unlink } from "node:fs/promises";
+import {
+  copyFile,
+  mkdir,
+  open,
+  readFile,
+  rename,
+  stat,
+  unlink,
+} from "node:fs/promises";
 import { extname, join } from "node:path";
 import log from "electron-log/main.js";
 import sharp, { type Metadata } from "sharp";
+import { eagleFormatGroup } from "../../shared/eagle-formats";
 import { canRequestNativeThumbnail } from "../../shared/file-format";
 import {
   isThumbnailFileExtension,
   THUMBNAIL_CACHE_VERSION,
 } from "../../shared/media-index";
 import { extractOfficePreview } from "../core/office-preview";
+import { extractRawPreviewJpeg } from "../core/raw-preview";
 import { libraryRoot, thumbnailCacheRoot } from "../paths";
 import { decodeHeicOnMac } from "./heic";
 
@@ -396,9 +406,27 @@ async function nativeThumbnailPipeline(
     const pipeline = sharp(await decodeHeicOnMac(sourcePath, width));
     return { pipeline, metadata: await pipeline.metadata() };
   }
+  const raw = await rawThumbnailPipeline(sourcePath);
+  if (raw) return raw;
   const native = await osNativeThumbnail(sourcePath, width);
   if (native) return native;
   return officeThumbnailPipeline(sourcePath);
+}
+
+async function rawThumbnailPipeline(sourcePath: string): Promise<{
+  pipeline: ReturnType<typeof sharp>;
+  metadata: Metadata;
+} | null> {
+  const extension = extname(sourcePath).toLowerCase().replace(/^\./, "");
+  if (eagleFormatGroup(extension) !== "rawImage") return null;
+  try {
+    const jpeg = extractRawPreviewJpeg(await readFile(sourcePath));
+    if (!jpeg) return null;
+    const pipeline = sharp(jpeg, { failOn: "none" });
+    return { pipeline, metadata: await pipeline.metadata() };
+  } catch {
+    return null;
+  }
 }
 
 async function officeThumbnailPipeline(sourcePath: string): Promise<{
