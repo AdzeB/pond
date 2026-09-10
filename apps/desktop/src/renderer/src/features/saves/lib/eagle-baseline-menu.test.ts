@@ -120,6 +120,24 @@ function webpSave(): Save {
   };
 }
 
+function fontSave(): Save {
+  return {
+    ...fileSave(),
+    id: "font-save",
+    sourceId: "font-save",
+    mediaType: "font",
+    files: [
+      {
+        kind: "font",
+        path: "Family.ttf",
+        mimeType: "font/ttf",
+        sha256: "font",
+        size: 1,
+      },
+    ],
+  };
+}
+
 describe("Eagle baseline save menu", () => {
   /** Wave 2: Combine Images, Share, Pin to Top, Set as Folder Cover, Replace File. */
   /** Wave 3: Thumbnail Background, Show Navigator, Convert to PNG/JPG from WebP. */
@@ -249,5 +267,25 @@ describe("Eagle baseline save menu", () => {
     );
     expect(top).not.toContain("Convert to PNG");
     expect(top).not.toContain("Convert to JPG");
+  });
+
+  it("exposes Activate Font on a font save", () => {
+    expect(
+      labels(buildSaveMenu(fontSave(), { clipboardEmpty: true })),
+    ).toContain("Activate Font");
+    expect(
+      labels(
+        buildSaveMenu(fontSave(), {
+          clipboardEmpty: true,
+          fontActivated: true,
+        }),
+      ),
+    ).toContain("Deactivate Font");
+  });
+
+  it("hides font activation on an image save", () => {
+    expect(
+      labels(buildSaveMenu(imageSave("still"), { clipboardEmpty: true })),
+    ).not.toContain("Activate Font");
   });
 });

@@ -131,6 +131,9 @@ export interface QueryInputs {
   "saves.ensureTextCover": { id: string; force?: boolean };
   "saves.mergeDuplicates": { keepId: string; ids: string[] };
   "saves.batchRename": { ids: string[]; pattern: string };
+  "saves.activateFont": IdInput;
+  "saves.deactivateFont": IdInput;
+  "saves.fontStatus": IdInput;
   "saves.pickImportPaths": { kind: "files" | "folders" };
   "saves.classifyUrl": { url: string };
   "saves.importFiles": {
@@ -362,6 +365,9 @@ export interface QueryResults extends SystemQueryResults {
   "saves.findDuplicates": { groups: { ids: string[] }[] };
   "saves.mergeDuplicates": OkResult & { trashed: number };
   "saves.batchRename": OkResult & { renamed: number };
+  "saves.activateFont": OkResult & { path?: string; error?: string };
+  "saves.deactivateFont": OkResult & { error?: string };
+  "saves.fontStatus": { activated: boolean; path?: string };
   "saves.classifyUrl": { source: Source | null };
   "saves.importFiles": OkResult & { ids?: string[] };
   "saves.setCustomThumbnail": OkResult & { canceled?: boolean };

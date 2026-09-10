@@ -1,4 +1,4 @@
-import { IconImageOutline18 } from "@pond/icons/outline/18";
+import { IconFileOutline18, IconImageOutline18 } from "@pond/icons/outline/18";
 import type { MenuItemSpec } from "@pond/ui";
 import { Dialog } from "@pond/ui";
 import { type ComponentType, createElement, type ReactElement } from "react";
@@ -67,6 +67,7 @@ interface BuildSaveMenuOptions {
   fileIndex?: number | null;
   openWithApps?: readonly OpenWithApp[];
   opened?: boolean;
+  fontActivated?: boolean;
 }
 
 export interface OpenWithApp {
@@ -162,6 +163,7 @@ export function buildSaveMenu(
     fileIndex = null,
     openWithApps = [],
     opened = false,
+    fontActivated = false,
   }: BuildSaveMenuOptions,
 ): MenuItemSpec[] {
   const saves = Array.isArray(saveOrSaves) ? saveOrSaves : [saveOrSaves];
@@ -628,6 +630,17 @@ export function buildSaveMenu(
               title: `Combined ${ids.length} images.${skipped}`,
             });
           });
+      },
+    },
+    {
+      label: fontActivated ? "Deactivate Font" : "Activate Font",
+      icon: glyph(IconFileOutline18),
+      hidden: batch || save.mediaType !== "font",
+      onClick: () => {
+        void window.pond.query(
+          fontActivated ? "saves.deactivateFont" : "saves.activateFont",
+          { id: save.id },
+        );
       },
     },
     {

@@ -21,6 +21,14 @@ import { clipboard, nativeImage } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { executeBatch } from "../../core/executor";
+import {
+  activateFont,
+  clearFontActivation,
+  deactivateFont,
+  pondFontsDir,
+  readFontActivation,
+  writeFontActivation,
+} from "../../core/font-activation";
 import { extractFontFamily, renameWithFamily } from "../../core/font-metadata";
 import { libraryRetrievalInput } from "../../core/library-retrieval";
 import { persistSave } from "../../core/persist-save";
@@ -737,6 +745,42 @@ export const savesQueries = {
       }
       if (txs.length > 0) await executeBatch(txs);
       return { ok: true, renamed: txs.length };
+    },
+  ),
+
+  "saves.fontStatus": query(z.object({ id: StringParam }), ({ id }) => {
+    const path = readFontActivation(id);
+    return path ? { activated: true, path } : { activated: false };
+  }),
+
+  "saves.activateFont": query(z.object({ id: StringParam }), async ({ id }) => {
+    const db = await getDb();
+    const [row] = await db.select().from(saves).where(eq(saves.id, id));
+    const file = row?.files[0];
+    if (!row || !file?.path)
+      return { ok: false, error: "missing_file" as const };
+    const { app } = await import("electron");
+    const result = await activateFont({
+      sourcePath: itemFile(id, file.path),
+      saveId: id,
+      fontsDir: pondFontsDir(app.getPath("home")),
+    });
+    if (result.ok && result.path) writeFontActivation(id, result.path);
+    return result;
+  }),
+
+  "saves.deactivateFont": query(
+    z.object({ id: StringParam }),
+    async ({ id }) => {
+      const installed = readFontActivation(id);
+      if (!installed) return { ok: true };
+      const { app } = await import("electron");
+      const result = await deactivateFont({
+        installedPath: installed,
+        fontsDir: pondFontsDir(app.getPath("home")),
+      });
+      if (result.ok) clearFontActivation(id);
+      return result;
     },
   ),
 } satisfies QueryHandlerMap;

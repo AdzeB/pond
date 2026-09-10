@@ -413,6 +413,7 @@ interface ViewerProps {
 function FileActions({ save, fileIndex }: ViewerProps) {
   return (
     <div className={styles.actions}>
+      {save.mediaType === "font" ? <FontActivate save={save} /> : null}
       <Button
         size="sm"
         variant="secondary"
@@ -428,6 +429,40 @@ function FileActions({ save, fileIndex }: ViewerProps) {
         Export
       </Button>
     </div>
+  );
+}
+
+function FontActivate({ save }: { save: Save }) {
+  const [activated, setActivated] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void window.pond
+      .query("saves.fontStatus", { id: save.id })
+      .then((status) => {
+        if (active) setActivated(status.activated);
+      });
+    return () => {
+      active = false;
+    };
+  }, [save.id]);
+
+  return (
+    <Button
+      size="sm"
+      variant="secondary"
+      onClick={() => {
+        void window.pond
+          .query(activated ? "saves.deactivateFont" : "saves.activateFont", {
+            id: save.id,
+          })
+          .then((result) => {
+            if (result.ok) setActivated(!activated);
+          });
+      }}
+    >
+      {activated ? "Deactivate Font" : "Activate Font"}
+    </Button>
   );
 }
 
