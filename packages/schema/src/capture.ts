@@ -78,6 +78,32 @@ export function parseCaptureTags(value: string): string[] {
     .slice(0, 200);
 }
 
+export interface ElementRegion {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export function regionFromElement(
+  rect: ElementRegion,
+  viewport: { width: number; height: number },
+) {
+  const x = Math.min(viewport.width, Math.max(0, rect.x));
+  const y = Math.min(viewport.height, Math.max(0, rect.y));
+  const width = Math.min(viewport.width - x, Math.max(0, rect.width));
+  const height = Math.min(viewport.height - y, Math.max(0, rect.height));
+  if (width < 1 || height < 1) return null;
+  return {
+    x,
+    y,
+    width,
+    height,
+    viewportWidth: viewport.width,
+    viewportHeight: viewport.height,
+  };
+}
+
 export interface CaptureReceipt {
   id: string;
   library: string;

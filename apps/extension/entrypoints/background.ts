@@ -9,6 +9,7 @@ import {
   captureFullPage,
   cropScreenshot,
   pickBrowserRegion,
+  pickPageElement,
 } from "@/utils/browser-screenshot";
 import { onMessage } from "@/utils/messaging";
 import { nativeCall } from "@/utils/native";
@@ -69,6 +70,7 @@ export default defineBackground(() => {
         ["pond-assets", "Collect images from this page"],
         ["pond-visible", "Save visible page screenshot"],
         ["pond-region", "Save page region screenshot"],
+        ["pond-element", "Save Page Element Screenshot"],
         ["pond-full-page", "Save full page screenshot"],
       ]) {
         if (id && title)
@@ -111,6 +113,7 @@ export default defineBackground(() => {
     if (
       (info.menuItemId === "pond-visible" ||
         info.menuItemId === "pond-region" ||
+        info.menuItemId === "pond-element" ||
         info.menuItemId === "pond-full-page") &&
       tab?.id != null
     ) {
@@ -118,9 +121,11 @@ export default defineBackground(() => {
         tab,
         info.menuItemId === "pond-region"
           ? "region"
-          : info.menuItemId === "pond-full-page"
-            ? "full"
-            : "visible",
+          : info.menuItemId === "pond-element"
+            ? "element"
+            : info.menuItemId === "pond-full-page"
+              ? "full"
+              : "visible",
       ).catch((error) =>
         showCaptureError(
           tab.id,
@@ -493,19 +498,19 @@ export default defineBackground(() => {
 
   async function captureBrowserScreenshot(
     tab: chrome.tabs.Tab,
-    mode: "region" | "visible" | "full",
+    mode: "region" | "element" | "visible" | "full",
   ) {
     if (tab.id == null || tab.windowId == null) return;
-    const region = mode === "region";
-    const selection = region
+    const needsSelection = mode === "region" || mode === "element";
+    const selection = needsSelection
       ? (
           await chrome.scripting.executeScript({
             target: { tabId: tab.id },
-            func: pickBrowserRegion,
+            func: mode === "element" ? pickPageElement : pickBrowserRegion,
           })
         )[0]?.result
       : undefined;
-    if (region && !selection) return;
+    if (needsSelection && !selection) return;
     await new Promise((resolve) => setTimeout(resolve, 100));
     const [current] = await chrome.tabs.query({
       active: true,
