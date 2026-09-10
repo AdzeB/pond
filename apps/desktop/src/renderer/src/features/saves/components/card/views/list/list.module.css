@@ -18,3 +18,12 @@
   min-width: 0;
   text-align: left;
 }
+
+.cell {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-mini);
+  color: var(--ds-gray-11);
+  white-space: nowrap;
+}
