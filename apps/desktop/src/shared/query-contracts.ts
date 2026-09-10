@@ -148,6 +148,7 @@ export interface QueryInputs {
     width?: number;
     height?: number;
   };
+  "saves.combineImages": { ids: string[]; folderId?: string | null };
   "saves.importEagleLibrary": { path: string; dryRun?: boolean };
   "saves.startDrag": { id?: string; ids?: string[]; fileIndex?: number | null };
   "saves.quickAdd": { url?: string; note?: string | null; tags?: string[] };
@@ -356,6 +357,11 @@ export interface QueryResults extends SystemQueryResults {
   "saves.setCustomThumbnail": OkResult & { canceled?: boolean };
   "saves.removeCustomThumbnail": OkResult;
   "saves.createManual": OkResult & { id?: string; skipped?: boolean };
+  "saves.combineImages": OkResult & {
+    id?: string;
+    skipped?: number;
+    error?: string;
+  };
   "saves.importClipboard": OkResult & { ids: string[] };
   "saves.startDrag": OkResult;
   "saves.quickAdd": OkResult & { id?: string; created?: boolean };

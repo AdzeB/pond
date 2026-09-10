@@ -1,7 +1,10 @@
+import { IconImageOutline18 } from "@pond/icons/outline/18";
 import type { MenuItemSpec } from "@pond/ui";
 import { Dialog } from "@pond/ui";
+import { type ComponentType, createElement, type ReactElement } from "react";
 import { dockMode } from "@/features/library/state/dock-mode";
 import { folders } from "@/features/library/state/folders";
+import { libraryChrome } from "@/features/library/state/library-chrome";
 import { selection } from "@/features/library/state/selection";
 import { tumbleToTrash } from "@/features/library/state/trash-tumble";
 import {
@@ -92,6 +95,22 @@ function submenuHidden(items: MenuItemSpec[]): boolean {
       item.type === "custom" ||
       Boolean("hidden" in item && item.hidden),
   );
+}
+
+function glyph(Icon: ComponentType): ReactElement {
+  return createElement(Icon);
+}
+
+function combinableImageCount(items: readonly Save[]): number {
+  return items.filter((item) =>
+    item.files.some(
+      (file) =>
+        file.mimeType === "image/png" ||
+        file.mimeType === "image/jpeg" ||
+        file.mimeType === "image/jpg" ||
+        /\.(png|jpe?g)$/i.test(file.path),
+    ),
+  ).length;
 }
 
 export function buildSaveMenu(
@@ -409,6 +428,36 @@ export function buildSaveMenu(
       label: "Copy",
       hidden: submenuHidden(copyItems),
       items: copyItems,
+    },
+    {
+      label: "Combine Images",
+      icon: glyph(IconImageOutline18),
+      hidden: combinableImageCount(saves) < 2,
+      onClick: () => {
+        const nav = libraryChrome.getState().nav;
+        void window.pond
+          .query("saves.combineImages", {
+            ids,
+            folderId: nav.kind === "folder" ? nav.id : null,
+          })
+          .then((result) => {
+            if (!result.ok) {
+              notify({
+                id: "combine-images",
+                title: result.error ?? "Couldn’t combine these images.",
+              });
+              return;
+            }
+            const skipped =
+              result.skipped && result.skipped > 0
+                ? ` Skipped ${result.skipped} that are not JPG or PNG.`
+                : "";
+            notify({
+              id: "combine-images",
+              title: `Combined ${ids.length} images.${skipped}`,
+            });
+          });
+      },
     },
     {
       label: "Paste Tags",

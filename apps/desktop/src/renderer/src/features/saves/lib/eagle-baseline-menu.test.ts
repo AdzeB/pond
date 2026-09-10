@@ -42,6 +42,24 @@ function fileSave(): Save {
   };
 }
 
+function imageSave(id: string): Save {
+  return {
+    ...fileSave(),
+    id,
+    sourceId: id,
+    mediaType: "image",
+    files: [
+      {
+        kind: "cover",
+        path: `${id}.png`,
+        mimeType: "image/png",
+        sha256: id,
+        size: 1,
+      },
+    ],
+  };
+}
+
 describe("Eagle baseline save menu", () => {
   /** Wave 2: Combine Images, Share, Pin to Top, Set as Folder Cover, Replace File. */
   /** Wave 3: Thumbnail Background, Show Navigator, Convert to PNG/JPG from WebP. */
@@ -81,5 +99,17 @@ describe("Eagle baseline save menu", () => {
     expect(
       openWith && "items" in openWith ? labels(openWith.items) : [],
     ).toEqual(["Preview.app (Default)"]);
+  });
+
+  it("shows Combine Images when two PNG saves are selected", () => {
+    const items = buildSaveMenu([imageSave("one"), imageSave("two")], {
+      clipboardEmpty: true,
+    });
+    expect(labels(items)).toContain("Combine Images");
+  });
+
+  it("hides Combine Images for a single file save", () => {
+    const items = buildSaveMenu(fileSave(), { clipboardEmpty: true });
+    expect(labels(items)).not.toContain("Combine Images");
   });
 });

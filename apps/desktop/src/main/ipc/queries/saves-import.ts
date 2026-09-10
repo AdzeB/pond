@@ -215,6 +215,20 @@ export const savesImportQueries = {
     },
   ),
 
+  "saves.combineImages": query(
+    z.object({
+      ids: StringListParam,
+      folderId: NullableStringParam,
+    }),
+    async (params) => {
+      const { combineImages } = await import("../../core/combine-images");
+      return combineImages({
+        ids: params.ids,
+        folderId: params.folderId || null,
+      });
+    },
+  ),
+
   async "saves.pickEagleLibrary"() {
     const win = BrowserWindow.getFocusedWindow() ?? undefined;
     const opts = {
