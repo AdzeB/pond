@@ -53,6 +53,7 @@ import {
   trashSelection,
 } from "@/features/saves/lib/selection";
 import { selectableTasks } from "@/features/saves/lib/tasks";
+import { viewerMemory } from "@/features/saves/lib/viewer-memory";
 import { inspect } from "@/features/saves/state/inspect";
 import { pool } from "@/features/saves/state/pool";
 import type { Save, SaveFile } from "@/features/saves/types";
@@ -65,6 +66,7 @@ interface BuildSaveMenuOptions {
   clipboardEmpty: boolean;
   fileIndex?: number | null;
   openWithApps?: readonly OpenWithApp[];
+  opened?: boolean;
 }
 
 export interface OpenWithApp {
@@ -137,7 +139,12 @@ function combinableImageCount(items: readonly Save[]): number {
 
 export function buildSaveMenu(
   saveOrSaves: Save | readonly Save[],
-  { clipboardEmpty, fileIndex = null, openWithApps = [] }: BuildSaveMenuOptions,
+  {
+    clipboardEmpty,
+    fileIndex = null,
+    openWithApps = [],
+    opened = false,
+  }: BuildSaveMenuOptions,
 ): MenuItemSpec[] {
   const saves = Array.isArray(saveOrSaves) ? saveOrSaves : [saveOrSaves];
   const save = saves[0];
@@ -153,6 +160,10 @@ export function buildSaveMenu(
   const targetIndex = resolveFileIndex(save, fileIndex);
   const targetFile =
     targetIndex != null ? (save.files[targetIndex] ?? null) : null;
+  const isGif =
+    !batch &&
+    (targetFile?.mimeType === "image/gif" ||
+      /\.gif(?:$|[?#])/i.test(targetFile?.path ?? ""));
   const copyFileLabel =
     !batch && deriveTypeKind(targetFile, save) === "video"
       ? "Copy Video"
@@ -399,6 +410,16 @@ export function buildSaveMenu(
       hidden: batch,
       onClick: () => {
         void window.pond.query("saves.setCustomThumbnail", { id: save.id });
+      },
+    },
+    {
+      label: "Reset Loop Range",
+      hidden: !opened || !isGif,
+      onClick: () => {
+        const file = save.files[fileIndex ?? 0] ?? save.files[0];
+        if (!file) return;
+        const src = `pond://${save.id}/${file.path}`;
+        viewerMemory.setLoop(src, null);
       },
     },
     {

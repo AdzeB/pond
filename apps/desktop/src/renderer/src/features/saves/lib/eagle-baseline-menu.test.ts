@@ -66,6 +66,24 @@ function imageSave(id: string): Save {
   };
 }
 
+function gifSave(): Save {
+  return {
+    ...fileSave(),
+    id: "gif-save",
+    sourceId: "gif-save",
+    mediaType: "image",
+    files: [
+      {
+        kind: "image",
+        path: "loop.gif",
+        mimeType: "image/gif",
+        sha256: "gif",
+        size: 1,
+      },
+    ],
+  };
+}
+
 describe("Eagle baseline save menu", () => {
   /** Wave 2: Combine Images, Share, Pin to Top, Set as Folder Cover, Replace File. */
   /** Wave 3: Thumbnail Background, Show Navigator, Convert to PNG/JPG from WebP. */
@@ -128,5 +146,21 @@ describe("Eagle baseline save menu", () => {
     expect(
       labels(buildSaveMenu(fileSave(), { clipboardEmpty: true })),
     ).toContain("Share");
+  });
+
+  it("exposes Reset Loop Range on an opened GIF", () => {
+    const items = buildSaveMenu(gifSave(), {
+      clipboardEmpty: true,
+      opened: true,
+    });
+    expect(labels(items)).toContain("Reset Loop Range");
+  });
+
+  it("hides Reset Loop Range on a still image", () => {
+    const items = buildSaveMenu(imageSave("still"), {
+      clipboardEmpty: true,
+      opened: true,
+    });
+    expect(labels(items)).not.toContain("Reset Loop Range");
   });
 });
