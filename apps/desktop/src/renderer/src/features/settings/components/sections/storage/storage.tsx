@@ -41,7 +41,13 @@ const EagleImportSchema = z.object({
   failed: z.number(),
   deletedSkipped: z.number().optional(),
   lockedFolders: z
-    .array(z.object({ id: z.string(), name: z.string() }))
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        reason: z.enum(["password", "parent_locked"]),
+      }),
+    )
     .optional(),
   droppedFields: z.array(z.string()).optional(),
   error: z.string().optional(),
@@ -185,7 +191,13 @@ export function LocationRow() {
     onSuccess: (res, mode) => {
       if (!res) return;
       const locked = res.lockedFolders?.length
-        ? `Locked folders skipped: ${res.lockedFolders.map((folder) => folder.name).join(", ")}`
+        ? `Locked folders skipped: ${res.lockedFolders
+            .map((folder) =>
+              folder.reason === "parent_locked"
+                ? `${folder.name} (inside a locked folder)`
+                : folder.name,
+            )
+            .join(", ")}`
         : null;
       const deleted =
         (res.deletedSkipped ?? 0) > 0

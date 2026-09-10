@@ -69,6 +69,7 @@ const EagleItemMetaSchema = z.object({
 export interface EagleLockedFolder {
   id: string;
   name: string;
+  reason: "password" | "parent_locked";
 }
 
 export interface EagleImportResult {
@@ -105,17 +106,21 @@ export function partitionEagleItemFiles(files: readonly string[]) {
 
 export function collectLockedEagleFolders(
   folders: EagleFolder[],
+  parentLocked = false,
 ): EagleLockedFolder[] {
   const out: EagleLockedFolder[] = [];
   for (const folder of folders) {
-    if (folder.password && folder.id) {
+    const lockedHere = Boolean(folder.password);
+    const skipped = lockedHere || parentLocked;
+    if (folder.id && skipped) {
       out.push({
         id: folder.id,
         name: folder.name?.trim() || "Untitled",
+        reason: lockedHere ? "password" : "parent_locked",
       });
     }
     if (folder.children?.length) {
-      out.push(...collectLockedEagleFolders(folder.children));
+      out.push(...collectLockedEagleFolders(folder.children, skipped));
     }
   }
   return out;

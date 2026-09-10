@@ -45,8 +45,24 @@ describe("flattenEagleFolders", () => {
       },
     ];
     expect(collectLockedEagleFolders(folders)).toEqual([
-      { id: "secret", name: "Secret" },
+      { id: "secret", name: "Secret", reason: "password" },
     ]);
+  });
+
+  it("reports nested folders under a locked parent and keeps them out of flatten", () => {
+    const folders = [
+      {
+        id: "vault",
+        name: "Vault",
+        password: "x",
+        children: [{ id: "inner", name: "Inner" }],
+      },
+    ];
+    expect(collectLockedEagleFolders(folders)).toEqual([
+      { id: "vault", name: "Vault", reason: "password" },
+      { id: "inner", name: "Inner", reason: "parent_locked" },
+    ]);
+    expect(flattenEagleFolders(folders)).toEqual([]);
   });
 
   it("preserves Eagle's sibling order", () => {

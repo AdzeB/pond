@@ -453,7 +453,11 @@ export interface QueryResults extends SystemQueryResults {
   "saves.importEagleLibrary": ImportResult & {
     failed: number;
     deletedSkipped: number;
-    lockedFolders: { id: string; name: string }[];
+    lockedFolders: {
+      id: string;
+      name: string;
+      reason: "password" | "parent_locked";
+    }[];
     droppedFields: string[];
   };
   "savedViews.list": SavedView[];
