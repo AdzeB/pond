@@ -21,6 +21,7 @@ import { clipboard, nativeImage } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { executeBatch } from "../../core/executor";
+import { extractFontFamily, renameWithFamily } from "../../core/font-metadata";
 import { libraryRetrievalInput } from "../../core/library-retrieval";
 import { persistSave } from "../../core/persist-save";
 import { retryFailedSaves } from "../../core/pipeline/enqueue";
@@ -29,6 +30,7 @@ import { recordForUndo } from "../../core/undo";
 import { parseJsonVector, upsertVec } from "../../core/vec-index";
 import type { Db } from "../../db";
 import { getDb } from "../../db";
+import { itemFile } from "../../paths";
 import { resolveSaveFilePath } from "../helpers";
 import { type SaveListRow, toWireSaves } from "../wire";
 import {
@@ -711,10 +713,18 @@ export const savesQueries = {
       let n = 0;
       for (const row of rows) {
         n += 1;
-        const title = pattern
-          .replaceAll("{n}", String(n))
-          .replaceAll("{title}", row.title ?? "Untitled")
-          .replaceAll("{id}", row.id);
+        const stored = row.files[0];
+        const family =
+          stored?.family ??
+          (stored?.path
+            ? await extractFontFamily(itemFile(row.id, stored.path))
+            : null);
+        const title = renameWithFamily(pattern, {
+          n,
+          title: row.title ?? "Untitled",
+          id: row.id,
+          family,
+        });
         if (title === row.title) continue;
         txs.push({
           kind: "update",

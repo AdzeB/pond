@@ -75,6 +75,8 @@ export interface SaveFile {
   width?: number | null;
   height?: number | null;
   sourceUrl?: string | null;
+  family?: string | null;
+  bpm?: number | null;
 }
 
 export interface VideoNote {

@@ -20,6 +20,7 @@ import { ulid } from "ulid";
 import { getDb } from "../db";
 import { writeSaveInfo } from "../lib/library";
 import { broadcastSyncAction } from "./executor";
+import { extractFontFamily } from "./font-metadata";
 import { persistSave } from "./persist-save";
 import { normalizeTagList } from "./tags";
 
@@ -254,11 +255,28 @@ export async function createManualSave(
     }
 
     const fileSize = readable.reduce((sum, item) => sum + item.size, 0);
-    await persistSave(
+    const completed = await persistSave(
       id,
       { status: "complete", ingestCompletedAt: new Date(), fileSize },
       { actorReason: "manual:import", newFiles },
     );
+    const font = readable.find((item) => item.format.mediaType === "font");
+    if (completed && font) {
+      const family = await extractFontFamily(font.path);
+      if (family) {
+        const files = completed.files.map((file, index) =>
+          index === 0 ? { ...file, family } : file,
+        );
+        await persistSave(
+          id,
+          {
+            files,
+            ...(!input.title?.trim() ? { title: family } : {}),
+          },
+          { actorReason: "manual:font-family" },
+        );
+      }
+    }
   } else {
     const finalRow = (await db.select().from(saves).where(eq(saves.id, id)))[0];
     if (finalRow) await writeSaveInfo(finalRow);

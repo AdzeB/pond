@@ -6,6 +6,7 @@ import {
   type Save,
   saves,
 } from "@pond/schema/db";
+import type { Transaction } from "@pond/schema/tx";
 import { eq, inArray, isNotNull } from "drizzle-orm";
 import { clipboard, shell } from "electron";
 import { ulid } from "ulid";
@@ -21,6 +22,7 @@ import {
 import { getDb } from "../../db";
 import { resolveSaveFilePath } from "../../ipc/helpers";
 import { toCsv } from "../../lib/csv";
+import { itemFile } from "../../paths";
 import { executeBatch, executeTransaction } from "../executor";
 import {
   createFolder,
@@ -30,6 +32,7 @@ import {
   renameFolder,
   setSaveFolders,
 } from "../folders";
+import { extractFontFamily, renameWithFamily } from "../font-metadata";
 import { enqueue } from "../pipeline/enqueue";
 import { refreshSave } from "../refresh";
 import { archiveSiteForSave } from "../refresh/archive-backfill";
@@ -391,26 +394,32 @@ async function writeAction(
     const db = await getDb();
     const rows = await db.select().from(saves).where(inArray(saves.id, ids));
     let n = 0;
-    await deps.executeBatch(
-      rows.flatMap((row) => {
-        n += 1;
-        const title = pattern
-          .replaceAll("{n}", String(n))
-          .replaceAll("{title}", row.title ?? "Untitled")
-          .replaceAll("{id}", row.id);
-        if (title === row.title) return [];
-        return [
-          {
-            kind: "update" as const,
-            model: "save" as const,
-            id: row.id,
-            patch: { title },
-            before: { title: row.title },
-            meta: { actor: "agent" as const, actorReason: "assistant:rename" },
-          },
-        ];
-      }),
-    );
+    const txs: Transaction[] = [];
+    for (const row of rows) {
+      n += 1;
+      const stored = row.files[0];
+      const family =
+        stored?.family ??
+        (stored?.path
+          ? await extractFontFamily(itemFile(row.id, stored.path))
+          : null);
+      const title = renameWithFamily(pattern, {
+        n,
+        title: row.title ?? "Untitled",
+        id: row.id,
+        family,
+      });
+      if (title === row.title) continue;
+      txs.push({
+        kind: "update" as const,
+        model: "save" as const,
+        id: row.id,
+        patch: { title },
+        before: { title: row.title },
+        meta: { actor: "agent" as const, actorReason: "assistant:rename" },
+      });
+    }
+    await deps.executeBatch(txs);
   } else if (change.action === "purgeTrash") {
     const db = await getDb();
     const rows = await db
