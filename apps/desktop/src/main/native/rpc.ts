@@ -1,3 +1,4 @@
+import type { CaptureReceipt, CaptureWebDraft } from "@pond/schema/capture";
 import type { Source } from "@pond/schema/db";
 import type { JsonValue } from "@pond/schema/json";
 import { type NativeResponse, nativeRequestSchema } from "@pond/schema/native";
@@ -21,8 +22,13 @@ export interface EnqueueResult {
 }
 
 export interface NativePorts {
+  capture?: (
+    draft: CaptureWebDraft,
+    cookies?: ExtensionCookie[],
+  ) => Promise<CaptureReceipt>;
   enqueue: (url: string, opts: EnqueueOpts) => Promise<EnqueueResult>;
   libraryInfo: () => Promise<LibraryInfo>;
+  foldersList?: () => Promise<{ id: string; name: string }[]>;
   sessionPending: () => { source: Source } | null;
   sessionImport: (
     source: Source,
@@ -43,6 +49,9 @@ export async function dispatchNative(
   const req = parsed.data;
   try {
     switch (req.type) {
+      case "capture.accept":
+        if (!ports.capture) return { ok: false, error: "capture_unavailable" };
+        return { ok: true, data: await ports.capture(req.draft, req.cookies) };
       case "hello":
         return {
           ok: true,
@@ -50,6 +59,10 @@ export async function dispatchNative(
         };
       case "library.info":
         return { ok: true, data: await ports.libraryInfo() };
+      case "folders.list":
+        if (!ports.foldersList)
+          return { ok: false, error: "folders_unavailable" };
+        return { ok: true, data: await ports.foldersList() };
       case "session.pending":
         return { ok: true, data: ports.sessionPending() };
       case "enqueue": {

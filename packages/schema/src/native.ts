@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { CaptureWebDraftSchema } from "./capture";
 import { enqueueRequestSchema } from "./ingest";
-import { sessionImportPayloadSchema } from "./session";
+import { extensionCookieSchema, sessionImportPayloadSchema } from "./session";
 
 export const NATIVE_HOST_NAME = "so.pond.host";
 
@@ -9,7 +10,13 @@ export const EXTENSION_ID = "ihciihlcdkopghlpabpmnodncfdboplb";
 
 export const nativeRequestSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("hello") }),
+  z.object({
+    type: z.literal("capture.accept"),
+    draft: CaptureWebDraftSchema,
+    cookies: z.array(extensionCookieSchema).max(500).optional(),
+  }),
   z.object({ type: z.literal("library.info") }),
+  z.object({ type: z.literal("folders.list") }),
   z.object({ type: z.literal("session.pending") }),
   enqueueRequestSchema.extend({ type: z.literal("enqueue") }),
   sessionImportPayloadSchema.extend({ type: z.literal("session.import") }),

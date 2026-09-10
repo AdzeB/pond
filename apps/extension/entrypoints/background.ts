@@ -1,12 +1,18 @@
-import { SOURCES, type Source } from "@pond/schema/db";
-import type { EnqueueRequest } from "@pond/schema/ingest";
+import { parseCaptureTags } from "@pond/schema/capture";
 import {
   type ExtensionCookie,
   sessionImportResponseSchema,
 } from "@pond/schema/session";
+import { SOURCES, type Source } from "@pond/schema/source-ids";
 import { z } from "zod";
+import {
+  captureFullPage,
+  cropScreenshot,
+  pickBrowserRegion,
+} from "@/utils/browser-screenshot";
 import { onMessage } from "@/utils/messaging";
 import { nativeCall } from "@/utils/native";
+import { pickPageAssets } from "@/utils/page-assets";
 import { probe } from "@/utils/probe";
 import { ensureSettings } from "@/utils/settings";
 import type { PondCapturePayload, PushSessionResult } from "@/utils/types";
@@ -59,6 +65,19 @@ export default defineBackground(() => {
         title: "Save to Pond",
         contexts: ["page", "link", "image", "video", "audio"],
       });
+      for (const [id, title] of [
+        ["pond-assets", "Collect images from this page"],
+        ["pond-visible", "Save visible page screenshot"],
+        ["pond-region", "Save page region screenshot"],
+        ["pond-full-page", "Save full page screenshot"],
+      ]) {
+        if (id && title)
+          chrome.contextMenus.create({
+            id,
+            title,
+            contexts: ["page", "image"],
+          });
+      }
     });
   });
 
@@ -83,6 +102,35 @@ export default defineBackground(() => {
   }
 
   chrome.contextMenus.onClicked.addListener((info, tab) => {
+    if (info.menuItemId === "pond-assets" && tab?.id != null) {
+      void capturePageAssets(tab.id).catch(() =>
+        flashBadge(tab.id, "x", "#cc3333"),
+      );
+      return;
+    }
+    if (
+      (info.menuItemId === "pond-visible" ||
+        info.menuItemId === "pond-region" ||
+        info.menuItemId === "pond-full-page") &&
+      tab?.id != null
+    ) {
+      void captureBrowserScreenshot(
+        tab,
+        info.menuItemId === "pond-region"
+          ? "region"
+          : info.menuItemId === "pond-full-page"
+            ? "full"
+            : "visible",
+      ).catch((error) =>
+        showCaptureError(
+          tab.id,
+          error instanceof Error
+            ? error.message
+            : "The capture could not be saved.",
+        ),
+      );
+      return;
+    }
     if (info.menuItemId !== SAVE_MENU_ID) return;
     const url = info.linkUrl || info.srcUrl || info.pageUrl || tab?.url;
     if (!url) {
@@ -384,14 +432,17 @@ export default defineBackground(() => {
       ? await cookiesForUrl(payload.url)
       : [];
 
-    const request: EnqueueRequest & { type: "enqueue" } = {
-      type: "enqueue",
-      url: payload.url,
-    };
-    if (payload.trigger) request.trigger = payload.trigger;
-    if (cookies.length > 0) request.cookies = cookies;
-
-    const result = await nativeCall(request);
+    const result = await nativeCall({
+      type: "capture.accept",
+      draft: {
+        id: crypto.randomUUID(),
+        trigger: payload.trigger,
+        mode: "quick",
+        metadata: { tags: [], folderIds: [] },
+        items: [{ kind: "url", url: payload.url }],
+      },
+      cookies: cookies.length ? cookies : undefined,
+    });
 
     if (!result.ok) {
       console.warn("[pond] enqueue rejected", result.error);
@@ -400,6 +451,118 @@ export default defineBackground(() => {
     }
     flashBadge(tabId, "ok", "#1f9d55");
     return true;
+  }
+
+  async function capturePageAssets(tabId: number) {
+    const listed = await nativeCall({ type: "folders.list" });
+    const folders = listed.ok
+      ? z
+          .array(z.object({ id: z.string(), name: z.string() }))
+          .safeParse(listed.data)
+      : null;
+    const catalog = {
+      folders: folders?.success ? folders.data : [],
+    };
+    const [result] = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: pickPageAssets,
+      args: [catalog],
+    });
+    const picked = result?.result;
+    if (!picked?.urls.length) return;
+    const response = await nativeCall({
+      type: "capture.accept",
+      cookies: await cookiesForUrl(picked.originUrl),
+      draft: {
+        id: crypto.randomUUID(),
+        originUrl: picked.originUrl,
+        mode: picked.collect ? "collect" : "quick",
+        metadata: {
+          tags: parseCaptureTags(picked.tagText),
+          folderIds: picked.folderIds,
+        },
+        items: picked.urls.map((url) => ({ kind: "asset", url })),
+      },
+    });
+    flashBadge(
+      tabId,
+      response.ok ? "ok" : "x",
+      response.ok ? "#1f9d55" : "#cc3333",
+    );
+  }
+
+  async function captureBrowserScreenshot(
+    tab: chrome.tabs.Tab,
+    mode: "region" | "visible" | "full",
+  ) {
+    if (tab.id == null || tab.windowId == null) return;
+    const region = mode === "region";
+    const selection = region
+      ? (
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: pickBrowserRegion,
+          })
+        )[0]?.result
+      : undefined;
+    if (region && !selection) return;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const [current] = await chrome.tabs.query({
+      active: true,
+      windowId: tab.windowId,
+    });
+    if (current?.id !== tab.id)
+      throw new Error("Return to the page to capture it.");
+    const visible =
+      mode === "full"
+        ? await captureFullPage(tab.id, tab.windowId)
+        : await chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" });
+    const dataUrl = selection
+      ? await cropScreenshot(visible, selection)
+      : visible;
+    const [afterCapture] = await chrome.tabs.query({
+      active: true,
+      windowId: tab.windowId,
+    });
+    if (afterCapture?.id !== tab.id)
+      throw new Error("The active page changed. Capture it again.");
+    const response = await nativeCall({
+      type: "capture.accept",
+      draft: {
+        id: crypto.randomUUID(),
+        originUrl: tab.url,
+        mode: "quick",
+        metadata: { tags: ["screenshot"], folderIds: [] },
+        items: [
+          { kind: "image", dataUrl, title: tab.title || "Page screenshot" },
+        ],
+      },
+    });
+    flashBadge(
+      tab.id,
+      response.ok ? "ok" : "x",
+      response.ok ? "#1f9d55" : "#cc3333",
+    );
+  }
+
+  async function showCaptureError(tabId: number | undefined, message: string) {
+    flashBadge(tabId, "x", "#cc3333");
+    if (tabId == null) return;
+    await chrome.scripting
+      .executeScript({
+        target: { tabId },
+        args: [message],
+        func: (text: string) => {
+          const status = document.createElement("div");
+          status.setAttribute("role", "alert");
+          status.textContent = text;
+          status.style.cssText =
+            "position:fixed;bottom:24px;right:24px;max-width:360px;z-index:2147483647;background:#222;color:#fff;padding:16px;border-radius:12px;font:14px system-ui;box-shadow:0 4px 30px #0004";
+          document.documentElement.append(status);
+          setTimeout(() => status.remove(), 8000);
+        },
+      })
+      .catch(() => {});
   }
 
   function flashBadge(tabId: number | undefined, text: string, color: string) {

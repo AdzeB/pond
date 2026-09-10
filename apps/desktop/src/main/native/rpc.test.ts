@@ -80,4 +80,16 @@ describe("dispatchNative", () => {
       dispatchNative({ type: "library.info" }, ports({ libraryInfo })),
     ).resolves.toEqual({ ok: true, data: { name: "Library" } });
   });
+
+  it("returns folders.list from the injected port", async () => {
+    const foldersList = vi
+      .fn()
+      .mockResolvedValue([{ id: "refs", name: "Refs" }]);
+    await expect(
+      dispatchNative({ type: "folders.list" }, ports({ foldersList })),
+    ).resolves.toEqual({
+      ok: true,
+      data: [{ id: "refs", name: "Refs" }],
+    });
+  });
 });
