@@ -464,6 +464,25 @@ export function buildSaveMenu(
         onClick: () => openWith(ids, fileIndex, entry.path),
       })),
     },
+    {
+      label: "Share",
+      hidden: !hasFiles || batch,
+      onClick: () => {
+        void window.pond
+          .query("saves.share", {
+            id: save.id,
+            fileIndex: fileIndex ?? undefined,
+          })
+          .then((result) => {
+            if (!result.ok) {
+              notify({
+                id: "share",
+                title: result.error ?? "Couldn’t share this file.",
+              });
+            }
+          });
+      },
+    },
     { type: "separator" },
     {
       type: "submenu",

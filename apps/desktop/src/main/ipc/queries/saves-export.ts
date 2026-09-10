@@ -2,7 +2,7 @@ import { copyFile, writeFile } from "node:fs/promises";
 import { basename, extname, join } from "node:path";
 import { saves } from "@pond/schema/db";
 import { desc, eq, inArray, isNull } from "drizzle-orm";
-import { dialog } from "electron";
+import { dialog, shell } from "electron";
 import log from "electron-log/main.js";
 import sharp from "sharp";
 import { z } from "zod";
@@ -58,6 +58,32 @@ export const savesExportQueries = {
       } catch (err) {
         log.warn("[pond ipc] saves.exportFile failed", err);
         return { ok: false as const, reason: "internal_error" as const };
+      }
+    },
+  ),
+
+  "saves.share": query(
+    z.object({ id: StringParam, fileIndex: FileIndexParam }),
+    async (params) => {
+      const target = await resolveSaveFilePath(params.id, params.fileIndex);
+      if (!target.ok) {
+        return { ok: false, error: "This save has no file to share." };
+      }
+      /** SAFETY: Electron 42 ships `shell.shareItem` on macOS/Windows; this tree's types omit it. */
+      const shareItem = (
+        shell as typeof shell & {
+          shareItem?: (itemPath: string) => Promise<void>;
+        }
+      ).shareItem;
+      if (!shareItem) {
+        return { ok: false, error: "Share is unavailable on this Mac." };
+      }
+      try {
+        await shareItem(target.path);
+        return { ok: true };
+      } catch (error) {
+        log.warn("[pond ipc] saves.share failed", error);
+        return { ok: false, error: "Couldn’t share this file." };
       }
     },
   ),

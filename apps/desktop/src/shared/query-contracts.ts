@@ -155,6 +155,7 @@ export interface QueryInputs {
   "saves.quickAdd": { url?: string; note?: string | null; tags?: string[] };
   "saves.extractPageAssets": { url: string };
   "saves.exportFile": FileInput;
+  "saves.share": { id: string; fileIndex?: number };
   "saves.exportFiles": IdsInput;
   "saves.exportWebp": IdsInput;
   "saves.exportCsv": IdsInput;
@@ -368,6 +369,7 @@ export interface QueryResults extends SystemQueryResults {
   "saves.startDrag": OkResult;
   "saves.quickAdd": OkResult & { id?: string; created?: boolean };
   "saves.exportFile": OkResult & { path?: string };
+  "saves.share": OkResult & { error?: string };
   "saves.exportFiles": OkResult & { exported?: number; dir?: string };
   "saves.exportWebp": OkResult & { exported?: number; dir?: string };
   "saves.exportCsv": OkResult & { count?: number; path?: string };

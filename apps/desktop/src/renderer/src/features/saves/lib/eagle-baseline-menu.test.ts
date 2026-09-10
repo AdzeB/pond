@@ -123,4 +123,10 @@ describe("Eagle baseline save menu", () => {
     const items = buildSaveMenu(fileSave(), { clipboardEmpty: true });
     expect(labels(items)).toContain("Replace File");
   });
+
+  it("exposes Share when the save has a file", () => {
+    expect(
+      labels(buildSaveMenu(fileSave(), { clipboardEmpty: true })),
+    ).toContain("Share");
+  });
 });
