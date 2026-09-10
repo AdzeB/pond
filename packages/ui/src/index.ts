@@ -60,6 +60,11 @@ export {
 export { Video } from "./video";
 export { useVideo, type VideoContextValue } from "./video/context";
 export {
+  SPEED_OPTIONS,
+  stepPlaybackRate,
+  stepVolume,
+} from "./video/lib";
+export {
   useWindow,
   Window,
   type WindowContextValue,

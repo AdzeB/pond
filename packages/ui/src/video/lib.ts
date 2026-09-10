@@ -1,4 +1,6 @@
-export const SPEED_OPTIONS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as const;
+export const SPEED_OPTIONS = [
+  0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3, 4, 8,
+] as const;
 
 export const FRAME_STEP_SECONDS = 1 / 30;
 
@@ -27,4 +29,29 @@ export function bufferedEnd(video: HTMLVideoElement): number {
     end = Math.max(end, buffered.end(i));
   }
   return end;
+}
+
+export function stepPlaybackRate(rate: number, direction: 1 | -1): number {
+  // biome-ignore lint/complexity/useIndexOf: rate is a number, not a SPEED_OPTIONS member
+  const exact = SPEED_OPTIONS.findIndex((value) => value === rate);
+  if (exact >= 0) {
+    return (
+      SPEED_OPTIONS[
+        Math.max(0, Math.min(SPEED_OPTIONS.length - 1, exact + direction))
+      ] ?? rate
+    );
+  }
+  if (direction > 0) {
+    return (
+      SPEED_OPTIONS.find((value) => value > rate) ??
+      SPEED_OPTIONS.at(-1) ??
+      rate
+    );
+  }
+  const lower = [...SPEED_OPTIONS].reverse().find((value) => value < rate);
+  return lower ?? SPEED_OPTIONS[0] ?? rate;
+}
+
+export function stepVolume(volume: number, delta = 0.05): number {
+  return clamp(Math.round((volume + delta) * 20) / 20, 0, 1);
 }

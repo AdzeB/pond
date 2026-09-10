@@ -1,4 +1,5 @@
-import { useVideo, Video } from "@pond/ui";
+import { stepPlaybackRate, stepVolume, useVideo, Video } from "@pond/ui";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import {
   type ReactEventHandler,
   useCallback,
@@ -50,6 +51,27 @@ function MediaBridge({
   const { state, actions } = useVideo();
   const { seek, seekBy, play, pause } = actions;
   const { currentTime, playing, duration, rate } = state;
+  const videoHotkeys = { enabled: active, ignoreInputs: true };
+  useHotkey(
+    ".",
+    () => actions.setRate(stepPlaybackRate(rate, 1)),
+    videoHotkeys,
+  );
+  useHotkey(
+    ",",
+    () => actions.setRate(stepPlaybackRate(rate, -1)),
+    videoHotkeys,
+  );
+  useHotkey(
+    "Shift+ArrowUp",
+    () => actions.setVolume(stepVolume(state.volume, 0.05)),
+    videoHotkeys,
+  );
+  useHotkey(
+    "Shift+ArrowDown",
+    () => actions.setVolume(stepVolume(state.volume, -0.05)),
+    videoHotkeys,
+  );
 
   useMediaSession(
     { title, artist, artworkUrl },
