@@ -9,6 +9,7 @@ import {
 import { reconcileLibrary } from "./core/scan";
 import { syncAllSources, syncSource } from "./core/sync";
 import { sym } from "./lib/menu-symbol";
+import { LIBRARY_MENU_LABELS } from "./library-menu";
 import { libraryRoot } from "./paths";
 
 interface AppMenuDeps {
@@ -148,7 +149,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         },
         {
           ...sym("books.vertical"),
-          label: "Open Library",
+          label: "Library Window",
           click: () => openLibraryWindow(),
         },
         {
@@ -475,19 +476,30 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
       label: "Library",
       submenu: [
         {
+          ...sym("plus"),
+          label: LIBRARY_MENU_LABELS[0],
+          click: sendMenuAction("library.new"),
+        },
+        {
+          ...sym("books.vertical"),
+          label: LIBRARY_MENU_LABELS[1],
+          click: sendMenuAction("library.open"),
+        },
+        { type: "separator" },
+        {
           ...sym("folder"),
-          label: "Reveal Library in Finder",
+          label: LIBRARY_MENU_LABELS[2],
           click: () => void shell.openPath(libraryRoot()),
         },
         {
           ...sym("folder.badge.gearshape"),
-          label: "Move Library",
+          label: LIBRARY_MENU_LABELS[3],
           click: sendMenuAction("library.move"),
         },
         { type: "separator" },
         {
           ...sym("arrow.clockwise"),
-          label: "Rescan Library",
+          label: LIBRARY_MENU_LABELS[4],
           click: () =>
             void reconcileLibrary().catch((err) =>
               log.warn("[pond menu] rescan failed", err),
@@ -495,7 +507,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         },
         {
           ...sym("checkmark.seal"),
-          label: "Verify Integrity",
+          label: LIBRARY_MENU_LABELS[5],
           click: async () => {
             try {
               const { verifyLibraryIntegrity } = await import(
@@ -509,6 +521,22 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         },
         { type: "separator" },
         {
+          ...sym("externaldrive.badge.plus"),
+          label: LIBRARY_MENU_LABELS[6],
+          click: sendMenuAction("library.backup"),
+        },
+        {
+          ...sym("externaldrive.badge.timemachine"),
+          label: LIBRARY_MENU_LABELS[7],
+          click: sendMenuAction("library.restore"),
+        },
+        {
+          ...sym("arrow.triangle.merge"),
+          label: LIBRARY_MENU_LABELS[8],
+          click: sendMenuAction("library.merge"),
+        },
+        { type: "separator" },
+        {
           ...sym("arrow.triangle.2.circlepath"),
           label: "Sync",
           submenu: sourcesSubmenu(),
@@ -516,13 +544,13 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         { type: "separator" },
         {
           ...sym("trash"),
-          label: "Empty Trash",
+          label: LIBRARY_MENU_LABELS[9],
           accelerator: "CmdOrCtrl+Shift+Backspace",
           click: sendMenuAction("trash.empty"),
         },
         {
           ...sym("arrow.uturn.backward"),
-          label: "Restore All from Trash",
+          label: LIBRARY_MENU_LABELS[10],
           click: sendMenuAction("trash.restore-all"),
         },
       ],

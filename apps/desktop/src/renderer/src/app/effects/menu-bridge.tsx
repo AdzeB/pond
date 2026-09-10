@@ -150,6 +150,37 @@ export function MenuBridge() {
           void window.pond.query("library.move", {});
           return;
 
+        case "library.new":
+          void (async () => {
+            const picked = await window.pond.query("library.pickFolder", {});
+            if (!picked.ok) return;
+            await window.pond.query("library.createAt", {
+              path: picked.path,
+              name: "My Pond",
+            });
+          })();
+          return;
+
+        case "library.open":
+          void (async () => {
+            const picked = await window.pond.query("library.pickExisting", {});
+            if (!picked.ok) return;
+            await window.pond.query("library.switchTo", { path: picked.path });
+          })();
+          return;
+
+        case "library.backup":
+          void window.pond.query("library.backupTo", {});
+          return;
+
+        case "library.restore":
+          void window.pond.query("library.restoreBackup", {});
+          return;
+
+        case "library.merge":
+          void window.pond.query("library.mergeFrom", {});
+          return;
+
         case "save.open-with-default": {
           const save = currentSave();
           if (!save) return;
