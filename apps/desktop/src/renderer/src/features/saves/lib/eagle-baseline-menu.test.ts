@@ -84,6 +84,24 @@ function gifSave(): Save {
   };
 }
 
+function videoSave(): Save {
+  return {
+    ...fileSave(),
+    id: "video-save",
+    sourceId: "video-save",
+    mediaType: "video",
+    files: [
+      {
+        kind: "video",
+        path: "clip.mp4",
+        mimeType: "video/mp4",
+        sha256: "vid",
+        size: 1,
+      },
+    ],
+  };
+}
+
 describe("Eagle baseline save menu", () => {
   /** Wave 2: Combine Images, Share, Pin to Top, Set as Folder Cover, Replace File. */
   /** Wave 3: Thumbnail Background, Show Navigator, Convert to PNG/JPG from WebP. */
@@ -176,5 +194,17 @@ describe("Eagle baseline save menu", () => {
     expect(
       labels(buildSaveMenu(gifSave(), { clipboardEmpty: true })),
     ).not.toContain("Set as GIF Thumbnail");
+  });
+
+  it("exposes Load Subtitles on a video save", () => {
+    expect(
+      labels(buildSaveMenu(videoSave(), { clipboardEmpty: true })),
+    ).toContain("Load Subtitles");
+  });
+
+  it("hides Load Subtitles on a still image", () => {
+    expect(
+      labels(buildSaveMenu(imageSave("still"), { clipboardEmpty: true })),
+    ).not.toContain("Load Subtitles");
   });
 });

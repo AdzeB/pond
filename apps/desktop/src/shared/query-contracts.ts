@@ -142,6 +142,7 @@ export interface QueryInputs {
     src: string;
     frameIndex: number;
   };
+  "saves.loadSubtitles": IdInput;
   "saves.replaceFile": IdInput;
   "saves.removeCustomThumbnail": IdInput;
   "saves.createManual": {
@@ -363,6 +364,7 @@ export interface QueryResults extends SystemQueryResults {
   "saves.importFiles": OkResult & { ids?: string[] };
   "saves.setCustomThumbnail": OkResult & { canceled?: boolean };
   "saves.setGifThumbnail": OkResult & { error?: string };
+  "saves.loadSubtitles": OkResult & { canceled?: boolean; error?: string };
   "saves.replaceFile": OkResult & { canceled?: boolean; error?: string };
   "saves.removeCustomThumbnail": OkResult;
   "saves.createManual": OkResult & { id?: string; skipped?: boolean };

@@ -24,6 +24,7 @@ import { persistSave } from "../../core/persist-save";
 import { enqueue, normalizeUrl } from "../../core/pipeline/enqueue";
 import { classifyUrlToSource } from "../../core/pipeline/extractors";
 import { UnsupportedError } from "../../core/pipeline/extractors/errors";
+import { srtToVtt } from "../../core/subtitles";
 import { setSaveTags } from "../../core/tags";
 import { walkImportPaths } from "../../core/walk-import-paths";
 import { resolvePondItemPath, resolveSaveFilePath } from "../helpers";
@@ -198,6 +199,42 @@ export const savesImportQueries = {
               filename: "gif-thumb.png",
               mimeType: "image/png",
               bytes: png,
+            },
+          ],
+        },
+      );
+      return { ok: Boolean(updated) };
+    },
+  ),
+
+  "saves.loadSubtitles": query(
+    z.object({ id: StringParam }),
+    async (params) => {
+      const win = BrowserWindow.getFocusedWindow() ?? undefined;
+      const options = {
+        properties: ["openFile" as const],
+        message: "Choose a subtitle file",
+        filters: [{ name: "Subtitles", extensions: ["vtt", "srt"] }],
+      };
+      const result = win
+        ? await dialog.showOpenDialog(win, options)
+        : await dialog.showOpenDialog(options);
+      const path = result.filePaths[0];
+      if (result.canceled || !path) return { ok: false, canceled: true };
+      const raw = await readFile(path, "utf8");
+      const vtt = srtToVtt(raw);
+      const updated = await persistSave(
+        params.id,
+        {},
+        {
+          actorReason: "user:load-subtitles",
+          replaceFilesWithKind: "subtitle",
+          newFiles: [
+            {
+              kind: "subtitle",
+              filename: "subtitles.vtt",
+              mimeType: "text/vtt",
+              bytes: Buffer.from(vtt, "utf8"),
             },
           ],
         },

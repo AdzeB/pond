@@ -7,10 +7,12 @@ import {
   useState,
 } from "react";
 import { useMediaSession } from "@/features/saves/hooks/use-media-session";
+import { useSave } from "@/features/saves/hooks/use-saves";
 import {
   type ChapterCue,
   chaptersToVttUrl,
 } from "@/features/saves/lib/media/chapters-vtt";
+import { buildPondUrl } from "@/features/saves/lib/media/url";
 import {
   clearActiveMediaSeek,
   setActiveMediaSeek,
@@ -25,6 +27,7 @@ export interface NoteMarker {
 
 interface VideoPlayerProps {
   src: string;
+  saveId?: string;
   poster?: string;
   title?: string | null;
   artist?: string | null;
@@ -153,6 +156,7 @@ function useChaptersTrackUrl(chapters?: readonly ChapterCue[]): string | null {
 
 export function VideoPlayer({
   src,
+  saveId,
   poster,
   title,
   artist,
@@ -164,7 +168,10 @@ export function VideoPlayer({
   onRatio,
   onError,
 }: VideoPlayerProps) {
+  const save = useSave(saveId);
   const trackUrl = useChaptersTrackUrl(chapters);
+  const subtitle = save?.files.find((file) => file.kind === "subtitle");
+  const subtitleUrl = save && subtitle ? buildPondUrl(save.id, subtitle) : null;
 
   const [ratio, setRatio] = useState<number | null>(
     width && height ? width / height : null,
@@ -204,6 +211,9 @@ export function VideoPlayer({
       >
         {trackUrl ? (
           <track kind="chapters" src={trackUrl} default label="Chapters" />
+        ) : null}
+        {subtitleUrl ? (
+          <track kind="subtitles" src={subtitleUrl} default label="Subtitles" />
         ) : null}
       </Video.Media>
       <EndPoster src={poster} />

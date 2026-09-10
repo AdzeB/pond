@@ -164,10 +164,8 @@ export function buildSaveMenu(
     !batch &&
     (targetFile?.mimeType === "image/gif" ||
       /\.gif(?:$|[?#])/i.test(targetFile?.path ?? ""));
-  const copyFileLabel =
-    !batch && deriveTypeKind(targetFile, save) === "video"
-      ? "Copy Video"
-      : "Copy File";
+  const isVideo = !batch && deriveTypeKind(targetFile, save) === "video";
+  const copyFileLabel = isVideo ? "Copy Video" : "Copy File";
   const archivable = saves.some(
     (s) => Boolean(s.url) && s.source === "web" && !s.deletedAt,
   );
@@ -444,6 +442,21 @@ export function buildSaveMenu(
               notify({
                 id: "gif-thumb",
                 title: "Couldn't set this GIF frame as the thumbnail.",
+              });
+          });
+      },
+    },
+    {
+      label: "Load Subtitles",
+      hidden: !isVideo,
+      onClick: () => {
+        void window.pond
+          .query("saves.loadSubtitles", { id: save.id })
+          .then((result) => {
+            if (!result.ok && !result.canceled)
+              notify({
+                id: "subtitles",
+                title: "Couldn't load subtitles.",
               });
           });
       },
