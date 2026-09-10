@@ -9,6 +9,7 @@ import {
   isThumbnailFileExtension,
   THUMBNAIL_CACHE_VERSION,
 } from "../../shared/media-index";
+import { extractOfficePreview } from "../core/office-preview";
 import { libraryRoot, thumbnailCacheRoot } from "../paths";
 import { decodeHeicOnMac } from "./heic";
 
@@ -395,6 +396,32 @@ async function nativeThumbnailPipeline(
     const pipeline = sharp(await decodeHeicOnMac(sourcePath, width));
     return { pipeline, metadata: await pipeline.metadata() };
   }
+  const native = await osNativeThumbnail(sourcePath, width);
+  if (native) return native;
+  return officeThumbnailPipeline(sourcePath);
+}
+
+async function officeThumbnailPipeline(sourcePath: string): Promise<{
+  pipeline: ReturnType<typeof sharp>;
+  metadata: Metadata;
+} | null> {
+  const preview = await extractOfficePreview(sourcePath);
+  if (!preview) return null;
+  try {
+    const pipeline = sharp(preview, { failOn: "none" });
+    return { pipeline, metadata: await pipeline.metadata() };
+  } catch {
+    return null;
+  }
+}
+
+async function osNativeThumbnail(
+  sourcePath: string,
+  width: number,
+): Promise<{
+  pipeline: ReturnType<typeof sharp>;
+  metadata: Metadata;
+} | null> {
   if (process.platform !== "darwin" && process.platform !== "win32") {
     return null;
   }
