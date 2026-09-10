@@ -137,6 +137,24 @@ function combinableImageCount(items: readonly Save[]): number {
   ).length;
 }
 
+function startWebpConvert(ids: string[], format: "png" | "jpeg") {
+  return window.pond.query("conversion.start", {
+    ids,
+    fileIndex: 0,
+    preset: {
+      id: `webp-${format}`,
+      name: format === "png" ? "PNG" : "JPG",
+      format,
+      width: null,
+      height: null,
+      quality: format === "png" ? 100 : 90,
+      start: 0,
+      duration: 5,
+      fps: 12,
+    },
+  });
+}
+
 export function buildSaveMenu(
   saveOrSaves: Save | readonly Save[],
   {
@@ -164,6 +182,10 @@ export function buildSaveMenu(
     !batch &&
     (targetFile?.mimeType === "image/gif" ||
       /\.gif(?:$|[?#])/i.test(targetFile?.path ?? ""));
+  const isWebp =
+    !batch &&
+    (targetFile?.mimeType === "image/webp" ||
+      /\.webp(?:$|[?#])/i.test(targetFile?.path ?? ""));
   const isVideo = !batch && deriveTypeKind(targetFile, save) === "video";
   const copyFileLabel = isVideo ? "Copy Video" : "Copy File";
   const archivable = saves.some(
@@ -379,6 +401,20 @@ export function buildSaveMenu(
       hidden: !hasFiles,
       onClick: () => {
         void window.pond.query("saves.exportWebp", { ids });
+      },
+    },
+    {
+      label: "Convert to PNG",
+      hidden: !isWebp,
+      onClick: () => {
+        void startWebpConvert(ids, "png");
+      },
+    },
+    {
+      label: "Convert to JPG",
+      hidden: !isWebp,
+      onClick: () => {
+        void startWebpConvert(ids, "jpeg");
       },
     },
     {

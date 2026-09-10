@@ -102,6 +102,24 @@ function videoSave(): Save {
   };
 }
 
+function webpSave(): Save {
+  return {
+    ...fileSave(),
+    id: "webp-save",
+    sourceId: "webp-save",
+    mediaType: "image",
+    files: [
+      {
+        kind: "image",
+        path: "shot.webp",
+        mimeType: "image/webp",
+        sha256: "webp",
+        size: 1,
+      },
+    ],
+  };
+}
+
 describe("Eagle baseline save menu", () => {
   /** Wave 2: Combine Images, Share, Pin to Top, Set as Folder Cover, Replace File. */
   /** Wave 3: Thumbnail Background, Show Navigator, Convert to PNG/JPG from WebP. */
@@ -217,5 +235,19 @@ describe("Eagle baseline save menu", () => {
         }),
       ),
     ).toContain("Show Navigator");
+  });
+
+  it("exposes Convert to PNG and Convert to JPG on a WebP save", () => {
+    const top = labels(buildSaveMenu(webpSave(), { clipboardEmpty: true }));
+    expect(top).toContain("Convert to PNG");
+    expect(top).toContain("Convert to JPG");
+  });
+
+  it("hides WebP convert rows on a PNG save", () => {
+    const top = labels(
+      buildSaveMenu(imageSave("png"), { clipboardEmpty: true }),
+    );
+    expect(top).not.toContain("Convert to PNG");
+    expect(top).not.toContain("Convert to JPG");
   });
 });
