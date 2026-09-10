@@ -101,7 +101,9 @@ export type FieldId =
   | "width"
   | "height"
   | "url"
-  | "comment";
+  | "comment"
+  | "fontFamily"
+  | "bpm";
 
 export interface FieldMeta {
   id: FieldId;

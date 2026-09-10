@@ -19,6 +19,8 @@ export const FILTER_GROUPS: readonly (readonly FieldId[])[] = [
     "shape",
     "aspect",
     "duration",
+    "fontFamily",
+    "bpm",
     "fileCount",
     "rating",
   ],

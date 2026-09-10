@@ -1,5 +1,6 @@
 import type { FieldId } from "../types";
 import { account } from "./account";
+import { bpm } from "./bpm";
 import { caption } from "./caption";
 import { color } from "./color";
 import { comment } from "./comment";
@@ -10,6 +11,7 @@ import { duration } from "./duration";
 import { fileCount } from "./file-count";
 import { fileSize } from "./file-size";
 import { folder } from "./folder";
+import { fontFamily } from "./font-family";
 import { format } from "./format";
 import { list } from "./list";
 import { modifiedAt } from "./modified-at";
@@ -49,6 +51,8 @@ export const FIELD_DESCRIPTORS = {
   format,
   fileCount,
   duration,
+  fontFamily,
+  bpm,
   [orientationFieldId]: orientation,
   aspect,
   creator,

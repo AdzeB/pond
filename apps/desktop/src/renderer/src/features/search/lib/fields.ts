@@ -42,6 +42,8 @@ export const FIELD_ICONS: Record<FieldId, IconComponent> = {
   format: FileIcon,
   fileCount: FilesIcon,
   duration: Timer,
+  fontFamily: FileIcon,
+  bpm: Timer,
   shape: OrientationIcon,
   aspect: AspectIcon,
   creator: User,
