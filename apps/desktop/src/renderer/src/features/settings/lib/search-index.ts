@@ -81,6 +81,7 @@ for (const [key, title, description] of [
   ["move", "Move Library", "Copy your library and switch to a new location"],
   ["backup", "Back Up Library", "Create a backup"],
   ["open", "Open Library", "Open a library or restore a backup"],
+  ["new", "New Library", "Create a library on this Mac"],
   ["import", "Import Eagle Library", "Import files, folders and tags"],
   [
     "watched-folder",

@@ -112,6 +112,23 @@ export function LocationRow() {
     },
   });
 
+  const createLibrary = useMutation({
+    mutationFn: async () => {
+      clearNotes();
+      const picked = PickedLibrarySchema.parse(
+        await window.pond.query("library.pickFolder", {}),
+      );
+      if (!picked.ok) return;
+      const res = ActionResultSchema.parse(
+        await window.pond.query("library.createAt", {
+          path: picked.path,
+          name: "My Pond",
+        }),
+      );
+      if (!res.ok) throw new Error(`Couldn't create library: ${res.reason}`);
+    },
+  });
+
   const move = useMutation({
     mutationFn: async () => {
       clearNotes();
@@ -295,6 +312,34 @@ export function LocationRow() {
             onClick={() => backup.mutate()}
           >
             {backup.isPending ? "Backing up" : "Backup"}
+          </Button>
+        </Settings.ItemControl>
+      </Settings.Item>
+      <Settings.Item id="setting-storage-new">
+        <Settings.ItemDetails>
+          <Settings.ItemTitle>New Library</Settings.ItemTitle>
+          <Settings.ItemDescription>
+            Create a .pond folder on this Mac and switch to it.
+            <StatusNote
+              error={
+                createLibrary.isError
+                  ? mutationError(
+                      createLibrary.error,
+                      "Couldn't create library.",
+                    )
+                  : null
+              }
+            />
+          </Settings.ItemDescription>
+        </Settings.ItemDetails>
+        <Settings.ItemControl>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={createLibrary.isPending}
+            onClick={() => createLibrary.mutate()}
+          >
+            {createLibrary.isPending ? "Creating" : "New"}
           </Button>
         </Settings.ItemControl>
       </Settings.Item>
