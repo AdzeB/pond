@@ -85,7 +85,7 @@ for (const [key, title, description] of [
   [
     "watched-folder",
     "Watched Folder",
-    "Automatically import files from a folder",
+    "Import files that appear in one folder on this Mac.",
   ],
 ]) {
   SETTINGS_SEARCH_INDEX.push({

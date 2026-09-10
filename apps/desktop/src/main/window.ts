@@ -324,6 +324,14 @@ export async function initTray(): Promise<void> {
         await openLibraryWindow();
         navigateMain(`/save/${encodeURIComponent(id)}`);
       },
+      onOpenCollection: () =>
+        void import("./aux-windows").then((m) => m.openCollectionWindow()),
+      onScreenshotDisplay: () =>
+        void import("./core/screenshot").then((m) => m.captureDisplay()),
+      onScreenshotArea: () =>
+        void import("./aux-windows").then((m) => m.openCaptureWindow()),
+      onScreenshotWindow: () =>
+        void import("./core/screenshot").then((m) => m.captureWindow()),
     });
   } catch (err) {
     log.error(

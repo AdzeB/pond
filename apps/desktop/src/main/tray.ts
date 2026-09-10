@@ -13,6 +13,10 @@ export interface TrayOptions {
   onOpenLibrary: () => void | Promise<void>;
   onOpenSettings?: () => void | Promise<void>;
   onOpenSave?: (id: string) => void | Promise<void>;
+  onOpenCollection?: () => void | Promise<void>;
+  onScreenshotDisplay?: () => void | Promise<void>;
+  onScreenshotArea?: () => void | Promise<void>;
+  onScreenshotWindow?: () => void | Promise<void>;
 }
 
 let handle: TrayHandle | null = null;

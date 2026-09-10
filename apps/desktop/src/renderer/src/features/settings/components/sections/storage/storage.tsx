@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { z } from "zod";
 import { playUiSuccess } from "@/features/settings/lib/sounds";
-import { getAppRouter } from "@/shared/lib/app-router";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
 import { prettyPath } from "@/shared/lib/pretty-path";
 import styles from "./storage.module.css";
@@ -346,23 +345,6 @@ export function LocationRow() {
             onClick={() => importEagle.mutate("import")}
           >
             {importEagle.isPending ? "Importing" : "Import"}
-          </Button>
-        </Settings.ItemControl>
-      </Settings.Item>
-      <Settings.Item id="setting-storage-watched-folder">
-        <Settings.ItemDetails>
-          <Settings.ItemTitle>Watched folders</Settings.ItemTitle>
-          <Settings.ItemDescription>
-            Manage folder imports in Sources.
-          </Settings.ItemDescription>
-        </Settings.ItemDetails>
-        <Settings.ItemControl>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => getAppRouter()?.history.push("/sources")}
-          >
-            Manage Sources
           </Button>
         </Settings.ItemControl>
       </Settings.Item>

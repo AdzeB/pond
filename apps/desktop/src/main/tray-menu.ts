@@ -111,6 +111,27 @@ export async function buildMenu(
       click: () => void opts.onOpenLibrary(),
     },
     {
+      ...sym("square.and.arrow.down"),
+      label: "Collection Window",
+      click: () => void opts.onOpenCollection?.(),
+    },
+    {
+      ...sym("camera"),
+      label: "Screenshot Display",
+      click: () => void opts.onScreenshotDisplay?.(),
+    },
+    {
+      ...sym("camera.viewfinder"),
+      label: "Screenshot Area",
+      click: () => void opts.onScreenshotArea?.(),
+    },
+    {
+      ...sym("macwindow"),
+      label: "Screenshot Window",
+      click: () => void opts.onScreenshotWindow?.(),
+    },
+    { type: "separator" },
+    {
       ...sym("gearshape"),
       label: "Settings",
       click: () => void (opts.onOpenSettings ?? opts.onOpenLibrary)(),

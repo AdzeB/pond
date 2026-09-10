@@ -1,3 +1,4 @@
+import { AutoImportSettings } from "@/features/settings/components/sections/storage/auto-import";
 import { LocationRow } from "@/features/settings/components/sections/storage/storage";
 import { StorageSummary } from "@/features/settings/components/sections/storage/storage-summary";
 import {
@@ -16,6 +17,11 @@ export const storageSection = defineSection("storage", {
       title: "Location",
       fullWidth: true,
       render: () => <LocationRow />,
+    },
+    {
+      title: "Auto-Import",
+      fullWidth: true,
+      render: () => <AutoImportSettings />,
     },
     {
       title: "Storage Limits",
