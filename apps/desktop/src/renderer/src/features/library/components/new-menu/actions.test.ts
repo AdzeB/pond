@@ -13,6 +13,7 @@ const {
   importEagle,
   importLinks,
   importPaths,
+  importPondPackage,
   newFolder,
   newSource,
   newTag,
@@ -185,6 +186,26 @@ describe("new menu actions", () => {
         title: "Couldn't complete action",
         description: "That folder doesn't look like an Eagle library.",
         timeout: 5000,
+      }),
+    );
+  });
+
+  it("does not import or notify when a Pond package picker is cancelled", async () => {
+    query.mockResolvedValue({ ok: false, error: "canceled" });
+    await importPondPackage();
+    expect(query).toHaveBeenCalledExactlyOnceWith("saves.importPackage", {});
+    expect(notify).not.toHaveBeenCalled();
+    expect(folders.refresh).not.toHaveBeenCalled();
+  });
+
+  it("refreshes folders after importing a Pond package", async () => {
+    query.mockResolvedValue({ ok: true, imported: 4, skipped: 2 });
+    await importPondPackage();
+    expect(folders.refresh).toHaveBeenCalledOnce();
+    expect(notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Imported 4 Saves",
+        description: "2 skipped",
       }),
     );
   });

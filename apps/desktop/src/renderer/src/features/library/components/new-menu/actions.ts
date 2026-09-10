@@ -187,6 +187,25 @@ export function createNewActions({
     });
   }
 
+  async function importPondPackage(): Promise<void> {
+    const result = await window.pond.query("saves.importPackage", {});
+    if (!result.ok) {
+      if (result.error === "canceled") return;
+      throw new Error(
+        result.error || "Couldn't import the package. Try again.",
+      );
+    }
+    await refreshFolders();
+    notify({
+      id: "new-import",
+      title: result.imported
+        ? `Imported ${result.imported} Save${result.imported === 1 ? "" : "s"}`
+        : "Nothing new to import",
+      description: result.skipped ? `${result.skipped} skipped` : undefined,
+      timeout: 5000,
+    });
+  }
+
   async function createNote(title: string, note: string): Promise<void> {
     if (!title.trim() && !note.trim())
       throw new Error("Add a title or note first.");
@@ -246,6 +265,7 @@ export function createNewActions({
     importBookmarks,
     importPageAssets,
     importEagle,
+    importPondPackage,
     createNote,
     parseImportLinks,
     importLinks,
@@ -262,6 +282,7 @@ export const {
   importBookmarks,
   importPageAssets,
   importEagle,
+  importPondPackage,
   createNote,
 
   importLinks,
