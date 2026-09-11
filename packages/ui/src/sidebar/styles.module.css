@@ -37,7 +37,7 @@
   gap: 1px;
   min-height: 0;
   padding-bottom: 24px;
-  overflow-y: auto;
+  overflow: visible;
 }
 
 .back {
@@ -98,6 +98,8 @@
 }
 
 .group {
+  --ds-focus-offset: -2px;
+
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -189,7 +191,7 @@ button.label:hover {
   flex-direction: column;
   gap: 1px;
   width: 100%;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .item {
@@ -197,7 +199,7 @@ button.label:hover {
   align-items: center;
   width: 100%;
   height: var(--sidebar-height-md);
-  padding: 0 8px;
+  padding: 0 6px;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--ds-text-small);
@@ -255,6 +257,7 @@ button.label:hover {
 }
 
 .count {
+  margin-right: 4px;
   margin-left: auto;
   font-size: var(--ds-text-mini);
   font-weight: var(--ds-weight-medium);

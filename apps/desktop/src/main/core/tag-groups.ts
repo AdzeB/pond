@@ -80,6 +80,7 @@ export async function listGroups(): Promise<TagGroupWithMembers[]> {
 export async function createGroup(input: {
   name: string;
   color?: string | null;
+  description?: string | null;
 }): Promise<{ ok: boolean; id?: string }> {
   const name = input.name.trim();
   if (!name) return { ok: false };
@@ -91,6 +92,7 @@ export async function createGroup(input: {
     id: ulid(),
     name,
     color: input.color ?? null,
+    description: input.description?.trim() || null,
     sortOrder: nextOrder,
     collapsed: false,
   };
@@ -194,6 +196,13 @@ export async function addTagsToGroup(
   const group = await groupByLowerName(db, groupName.trim().toLowerCase());
   if (!group) return { ok: false, affected: 0 };
   const txs: Transaction[] = [];
+  const [last] = await db
+    .select({
+      order: sql<number>`coalesce(max(${tagGroupMembersTable.sortOrder}), -1)`,
+    })
+    .from(tagGroupMembersTable)
+    .where(eq(tagGroupMembersTable.groupId, group.id));
+  let order = (last?.order ?? -1) + 1;
   for (const raw of tagNames) {
     const tag = await tagByLowerName(db, raw.trim().toLowerCase());
     if (!tag) continue;
@@ -210,7 +219,7 @@ export async function addTagsToGroup(
     const data: NewTagGroupMember = {
       tagId: tag.id,
       groupId: group.id,
-      sortOrder: 0,
+      sortOrder: order++,
     };
     txs.push({
       kind: "create",

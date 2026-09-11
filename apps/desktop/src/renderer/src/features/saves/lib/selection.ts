@@ -3,9 +3,10 @@ import { statusFeed } from "@/features/downloads/lib/status-feed";
 import { libraryViewContext } from "@/features/library/state/library-view-context";
 import { selection } from "@/features/library/state/selection";
 import { resolveFileIndex } from "@/features/saves/lib/actions";
+import { ensureSaves } from "@/features/saves/lib/ensure-saves";
 import {
+  bulkMutation,
   purgeSaves,
-  setSaveTags,
   trashSaves,
   untrashSaves,
 } from "@/features/saves/lib/mutate";
@@ -65,11 +66,16 @@ function pluralize(
   return `${n} ${n === 1 ? singular : plural}`;
 }
 
-function resolve(ids: readonly string[]): Save[] {
+async function resolve(ids: readonly string[]): Promise<Save[]> {
+  await ensureSaves(ids);
   const out: Save[] = [];
-  for (const id of ids) {
+  for (const id of new Set(ids)) {
     const save = pool.get(id);
-    if (save) out.push(save);
+    if (!save)
+      throw new Error(
+        "A selected Save is no longer available. Refresh the selection.",
+      );
+    out.push(save);
   }
   return out;
 }
@@ -92,20 +98,17 @@ export function isAllSelected(): boolean {
 }
 
 export function failedIdsIn(ids: readonly string[]): string[] {
-  return resolve(ids)
-    .filter((s) => s.status === "failed")
-    .map((s) => s.id);
+  return ids.filter((id) => pool.get(id)?.status === "failed");
 }
 
 export async function retryFailedSelection(
   ids: readonly string[],
 ): Promise<void> {
-  const failed = failedIdsIn(ids);
-  if (failed.length === 0) return;
+  if (ids.length === 0) return;
   const result = RetryReplySchema.parse(
-    await window.pond.query("saves.retryFailed", { ids: failed }),
+    await window.pond.query("saves.retryFailed", { ids: [...ids] }),
   );
-  if (!result.ok || result.requeued === 0) {
+  if (!result.ok) {
     statusFeed.error("Retry failed items", "Couldn't retry failed items.");
   }
 }
@@ -136,11 +139,7 @@ export async function addTagsToSelection(
 ): Promise<void> {
   const clean = tags.map((t) => t.trim()).filter(Boolean);
   if (clean.length === 0) return;
-  for (const save of resolve(ids)) {
-    const next = mergeUniqueTags(save.tags, clean);
-    if (next.length === save.tags.length) continue;
-    await setSaveTags(save.id, next);
-  }
+  await bulkMutation(ids, { kind: "tags", tags: clean });
 }
 
 export async function copyIdsForSelection(
@@ -158,7 +157,7 @@ export async function copyIdsForSelection(
 export async function copyUrlsForSelection(
   ids: readonly string[],
 ): Promise<SelectionActionResult> {
-  const urls = resolve(ids)
+  const urls = (await resolve(ids))
     .map((s) => s.url)
     .filter((u): u is string => Boolean(u));
   if (urls.length === 0) {
@@ -173,7 +172,9 @@ export async function copyUrlsForSelection(
 export async function copyFilePathsForSelection(
   ids: readonly string[],
 ): Promise<SelectionActionResult> {
-  const saves = resolve(ids).filter((save) => resolveFileIndex(save) != null);
+  const saves = (await resolve(ids)).filter(
+    (save) => resolveFileIndex(save) != null,
+  );
   const paths: string[] = [];
   for (const save of saves) {
     const result = FilePathReplySchema.parse(
@@ -239,7 +240,7 @@ export async function copyFilesForSelection(
   ids: readonly string[],
 ): Promise<void> {
   const files: Array<{ id: string; fileIndex: number }> = [];
-  for (const save of resolve(ids)) {
+  for (const save of await resolve(ids)) {
     const fileIndex = resolveFileIndex(save);
     if (fileIndex == null) continue;
     files.push({ id: save.id, fileIndex });
@@ -258,9 +259,11 @@ export async function copyFilesForSelection(
   });
 }
 
-export function copyTagsForSelection(ids: readonly string[]): void {
+export async function copyTagsForSelection(
+  ids: readonly string[],
+): Promise<void> {
   let tags: string[] = [];
-  for (const save of resolve(ids)) {
+  for (const save of await resolve(ids)) {
     tags = mergeUniqueTags(tags, save.tags);
   }
   if (tags.length === 0) return;
@@ -282,7 +285,7 @@ export async function openDefaultAppForSelection(
 ): Promise<void> {
   let attempted = 0;
   let failed = 0;
-  for (const save of resolve(ids)) {
+  for (const save of await resolve(ids)) {
     const fileIndex = resolveFileIndex(save);
     if (fileIndex == null) continue;
     attempted += 1;
@@ -305,7 +308,7 @@ export async function revealFilesForSelection(
 ): Promise<void> {
   let attempted = 0;
   let failed = 0;
-  for (const save of resolve(ids)) {
+  for (const save of await resolve(ids)) {
     const fileIndex = resolveFileIndex(save);
     if (fileIndex == null) continue;
     attempted += 1;
@@ -326,7 +329,7 @@ export async function revealFilesForSelection(
 export async function openInBrowserForSelection(
   ids: readonly string[],
 ): Promise<void> {
-  for (const save of resolve(ids)) {
+  for (const save of await resolve(ids)) {
     const url = save.url;
     if (!url) continue;
     try {
@@ -345,7 +348,7 @@ export async function reverseImageSearchForSelection(
   const engine = REVERSE_SEARCH_ENGINES.find((e) => e.key === engineKey);
   if (!engine) return;
   let opened = 0;
-  for (const save of resolve(ids)) {
+  for (const save of await resolve(ids)) {
     const result = PublicUrlReplySchema.parse(
       await window.pond.query("saves.publicImageUrl", { id: save.id }),
     );
@@ -364,7 +367,7 @@ export async function reverseImageSearchForSelection(
 export async function refreshDetailsForSelection(
   ids: readonly string[],
 ): Promise<void> {
-  for (const save of resolve(ids)) {
+  for (const save of await resolve(ids)) {
     if (!save.url) continue;
     await window.pond.refreshSave(save.id);
   }
@@ -373,7 +376,7 @@ export async function refreshDetailsForSelection(
 export async function archiveSitesForSelection(
   ids: readonly string[],
 ): Promise<void> {
-  for (const save of resolve(ids)) {
+  for (const save of await resolve(ids)) {
     if (!save.url || save.source !== "web" || save.deletedAt) continue;
     await window.pond.archiveSite(save.id);
   }

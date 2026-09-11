@@ -93,6 +93,7 @@
 }
 
 .chip {
+  --ds-focus-offset: 2px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -106,11 +107,6 @@
   text-decoration: none;
   background: var(--site-chip);
   border-radius: var(--ds-radius-md);
-
-  &:focus-visible {
-    outline: 2px solid var(--ds-accent-9);
-    outline-offset: 2px;
-  }
 }
 
 .chip:has(svg) {

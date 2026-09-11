@@ -28,4 +28,5 @@ export interface SaveLike {
   publishedAt?: string | Date | number | null;
   rating?: number | null;
   comments?: ReadonlyArray<{ text?: string | null }> | null;
+  videoNotes?: ReadonlyArray<{ text?: string | null }> | null;
 }

@@ -4,9 +4,11 @@ type MenuShortcut = string | string[];
 
 interface MenuActionItem {
   type?: "item";
+  id?: string;
   label: ReactNode;
   icon?: ReactNode;
   shortcut?: MenuShortcut;
+  keywords?: string;
   disabled?: boolean;
   hidden?: boolean;
   stale?: boolean;
@@ -22,24 +24,29 @@ interface MenuGroupItem {
   type: "group";
   label?: ReactNode;
   hidden?: boolean;
+  keywords?: string;
   items: MenuItemSpec[];
 }
 
 interface MenuSubmenuItem {
   type: "submenu";
+  id?: string;
   label: ReactNode;
   icon?: ReactNode;
   disabled?: boolean;
   hidden?: boolean;
+  keywords?: string;
   items: MenuItemSpec[];
 }
 
 interface MenuCheckboxItem {
   type: "checkbox";
   label: ReactNode;
+  icon?: ReactNode;
   checked: boolean;
   onCheckedChange?: (checked: boolean) => void;
   shortcut?: MenuShortcut;
+  keywords?: string;
   disabled?: boolean;
   hidden?: boolean;
   closeOnClick?: boolean;
@@ -51,6 +58,7 @@ interface MenuLinkItem {
   href: string;
   icon?: ReactNode;
   shortcut?: MenuShortcut;
+  keywords?: string;
   disabled?: boolean;
   hidden?: boolean;
   onClick?: () => void;
@@ -132,9 +140,16 @@ function pruneSpecs(items: MenuItemSpec[]): MenuItemSpec[] {
   return out;
 }
 
+function specKey(spec: MenuItemSpec, index: number): string | number {
+  if ("id" in spec && spec.id) return spec.id;
+  if (spec.type === "separator") return `sep-${index}`;
+  if ("label" in spec && typeof spec.label === "string") return spec.label;
+  return index;
+}
+
 function renderSpec(
   spec: MenuItemSpec,
-  key: number,
+  key: string | number,
   parts: MenuParts,
 ): ReactNode {
   if (spec.type === "separator") {
@@ -151,7 +166,9 @@ function renderSpec(
         {spec.label != null ? (
           <parts.GroupLabel>{spec.label}</parts.GroupLabel>
         ) : null}
-        {pruneSpecs(spec.items).map((child, i) => renderSpec(child, i, parts))}
+        {pruneSpecs(spec.items).map((child, i) =>
+          renderSpec(child, specKey(child, i), parts),
+        )}
       </parts.Group>
     );
   }
@@ -166,6 +183,9 @@ function renderSpec(
         closeOnClick={spec.closeOnClick}
       >
         <parts.CheckboxItemIndicator />
+        {spec.icon != null ? (
+          <parts.ItemIcon>{spec.icon}</parts.ItemIcon>
+        ) : null}
         <parts.ItemLabel>{spec.label}</parts.ItemLabel>
         {spec.shortcut != null ? (
           <parts.ItemKeyboard>{spec.shortcut}</parts.ItemKeyboard>
@@ -219,7 +239,7 @@ function renderSpec(
           >
             <parts.Popup>
               {pruneSpecs(spec.items).map((child, i) =>
-                renderSpec(child, i, parts),
+                renderSpec(child, specKey(child, i), parts),
               )}
             </parts.Popup>
           </parts.Positioner>
@@ -249,5 +269,7 @@ export function renderMenuSpec(
   items: MenuItemSpec[],
   parts: MenuParts,
 ): ReactNode {
-  return pruneSpecs(items).map((spec, i) => renderSpec(spec, i, parts));
+  return pruneSpecs(items).map((spec, i) =>
+    renderSpec(spec, specKey(spec, i), parts),
+  );
 }

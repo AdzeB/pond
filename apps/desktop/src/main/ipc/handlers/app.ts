@@ -5,7 +5,15 @@ import log from "electron-log/main.js";
 import { IPC } from "../../../shared/constants";
 import { executeBatch, executeTransaction } from "../../core/executor";
 import { currentPondId } from "../../core/prefs-scope";
-import { canRedo, canUndo, recordForUndo, redo, undo } from "../../core/undo";
+import {
+  canRedo,
+  canUndo,
+  recordBatchForUndo,
+  recordForUndo,
+  redo,
+  undo,
+} from "../../core/undo";
+import { hasUserTitle } from "../../core/user-metadata";
 import { resolveSaveFilePath, safeHandle } from "../helpers";
 
 export function registerAppHandlers(): void {
@@ -39,14 +47,29 @@ export function registerAppHandlers(): void {
   });
 
   safeHandle(IPC.tx, async (_, tx: Transaction) => {
+    if (
+      tx.kind === "update" &&
+      tx.model === "save" &&
+      tx.patch.title !== undefined &&
+      !tx.titleLock
+    )
+      tx.titleLock = { before: hasUserTitle(tx.id), after: true };
     const action = await executeTransaction(tx);
     recordForUndo(tx);
     return action;
   });
 
   safeHandle(IPC.txBatch, async (_, txs: Transaction[]) => {
+    for (const tx of txs)
+      if (
+        tx.kind === "update" &&
+        tx.model === "save" &&
+        tx.patch.title !== undefined &&
+        !tx.titleLock
+      )
+        tx.titleLock = { before: hasUserTitle(tx.id), after: true };
     const actions = await executeBatch(txs);
-    for (const tx of txs) recordForUndo(tx);
+    recordBatchForUndo(txs);
     return actions;
   });
 

@@ -57,7 +57,7 @@ export function uniqueIdFromTiktokHtml(html: string): string | null {
   return null;
 }
 
-export function handleFromUniqueId(value: string | undefined): string | null {
+function handleFromUniqueId(value: string | undefined): string | null {
   if (value === undefined) return null;
   const handle = value.replace(/^@/, "").trim();
   if (!/^[A-Za-z0-9._]{2,24}$/.test(handle)) return null;

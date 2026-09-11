@@ -1,12 +1,13 @@
 import {
   IconAlbum2Outline18,
+  IconArrowDiagonalInOutline18,
+  IconBookmarkOutline18,
+  IconBookmarkSlashOutline18,
   IconDotsOutline18,
-  IconDownloadOutline18,
   IconGear3Outline18,
-  IconGlobeOutline18,
-  IconMsg2Outline18,
-  IconTagsOutline18,
-  IconTrash2Outline18,
+  IconMessageSparkleOutline18,
+  IconTrashXmarkOutline18,
+  IconWindowDownloadOutline18,
 } from "@pond/icons/outline/18";
 import { Button, Menu } from "@pond/ui";
 import { useRouter, useRouterState } from "@tanstack/react-router";
@@ -34,11 +35,12 @@ import styles from "./toolbar.module.css";
 
 const ROOT_ICONS = {
   "/": IconAlbum2Outline18,
-  "/assistant": IconMsg2Outline18,
-  "/sources": IconGlobeOutline18,
-  "/tags": IconTagsOutline18,
-  "/downloads": IconDownloadOutline18,
-  "/trash": IconTrash2Outline18,
+  "/assistant": IconMessageSparkleOutline18,
+  "/sources": IconArrowDiagonalInOutline18,
+  "/tags": IconBookmarkOutline18,
+  "/untagged": IconBookmarkSlashOutline18,
+  "/downloads": IconWindowDownloadOutline18,
+  "/trash": IconTrashXmarkOutline18,
   "/settings": IconGear3Outline18,
 } as const;
 
@@ -48,7 +50,7 @@ function RootIcon({ path }: { path: string }) {
     (path.startsWith("/settings")
       ? IconGear3Outline18
       : path.startsWith("/source/")
-        ? IconGlobeOutline18
+        ? IconArrowDiagonalInOutline18
         : IconAlbum2Outline18);
   return <Icon aria-hidden="true" />;
 }

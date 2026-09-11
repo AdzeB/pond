@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { isEditableTarget } from "@/shared/lib/editable-target";
 
 export function UndoRedoBridge() {
   useEffect(() => {
@@ -18,27 +19,3 @@ export function UndoRedoBridge() {
 
   return null;
 }
-
-function isEditableTarget(): boolean {
-  const el = document.activeElement;
-  if (!(el instanceof HTMLElement)) return false;
-  if (el.isContentEditable) return true;
-  if (el instanceof HTMLTextAreaElement) return true;
-  if (el instanceof HTMLInputElement) {
-    return !NON_TEXT_INPUTS.has(el.type.toLowerCase());
-  }
-  return false;
-}
-
-const NON_TEXT_INPUTS = new Set([
-  "button",
-  "checkbox",
-  "color",
-  "file",
-  "hidden",
-  "image",
-  "radio",
-  "range",
-  "reset",
-  "submit",
-]);

@@ -24,7 +24,7 @@ import {
   accountRefsFromSync,
   displayAccountToken,
 } from "@/features/search/lib/account-aliases";
-import { FIELD_ICONS } from "@/features/search/lib/fields";
+import { fieldIcon } from "@/features/search/lib/fields";
 import { usePrefs } from "@/features/settings/state/prefs";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { buildMenu, type MenuItem, triggerFn } from "./suggestions";
@@ -205,7 +205,7 @@ function MenuRow({
   onHover: () => void;
   onSelect: () => void;
 }) {
-  const Icon = FIELD_ICONS[item.field];
+  const Icon = fieldIcon(item.field);
   return (
     <Menu.Row
       id={`typeahead-item-${index}`}

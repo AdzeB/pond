@@ -19,10 +19,6 @@
   scale: 0.98;
 }
 
-.root:focus-visible {
-  outline: 2px solid var(--ds-gray-6);
-}
-
 .root[data-variant="primary"] {
   color: var(--ds-gray-1);
   background:

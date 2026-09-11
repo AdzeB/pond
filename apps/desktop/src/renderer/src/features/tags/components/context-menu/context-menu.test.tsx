@@ -40,12 +40,12 @@ describe("tag context menu", () => {
       "Add to Starred",
       "Remove from Starred",
       "Rename Tag",
-      "Add to Group…",
+      "Add to Group",
       "Reference",
-      "Move to Group…",
+      "Move to Group",
       "Reference",
       "Remove from this Group",
-      "Remove tag",
+      "Remove Tag",
     ]);
     expect(menuLabels).not.toContain("Merge Into");
     expect(menuLabels).not.toContain("Convert to Group");
@@ -70,7 +70,7 @@ describe("tag context menu", () => {
   it("disables move and removal when the tag is not in a group", () => {
     const items = buildTagMenuItems(actions({ inGroup: null }));
 
-    expect(items[7]).toMatchObject({ label: "Move to Group…", disabled: true });
+    expect(items[7]).toMatchObject({ label: "Move to Group", disabled: true });
     expect(items[8]).toMatchObject({
       label: "Remove from this Group",
       disabled: true,

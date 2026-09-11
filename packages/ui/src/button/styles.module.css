@@ -52,13 +52,6 @@
     scale: 0.98;
   }
 
-  &:focus-visible,
-  &[data-demo-state="focus"] {
-    outline-width: 2px;
-    outline-style: solid;
-    outline-offset: 0;
-  }
-
   &:where([data-size="xs"]) {
     --button-height: var(--button-height-xs);
     --button-icon-size: 12px;
@@ -135,11 +128,6 @@
     &[data-demo-state="hover"] {
       opacity: 0.8;
     }
-
-    &:focus-visible,
-    &[data-demo-state="focus"] {
-      outline-color: var(--ds-gray-6);
-    }
   }
 
   &:where([data-variant="secondary"]) {
@@ -154,11 +142,6 @@
       background-color: var(--ds-gray-2);
       box-shadow: var(--ds-shadow-2);
     }
-
-    &:focus-visible,
-    &[data-demo-state="focus"] {
-      outline-color: var(--ds-gray-6);
-    }
   }
 
   &:where([data-variant="tertiary"]) {
@@ -169,11 +152,6 @@
     &[data-demo-state="hover"] {
       color: var(--ds-gray-12);
       background-color: var(--ds-gray-a4);
-    }
-
-    &:focus-visible,
-    &[data-demo-state="focus"] {
-      outline-color: var(--ds-gray-6);
     }
   }
 
@@ -231,6 +209,17 @@
     }
   }
 
+  &:where([data-variant="text"]) {
+    color: var(--ds-gray-11);
+    background-color: transparent;
+
+    &:hover,
+    &[data-pressed],
+    &[data-demo-state="hover"] {
+      color: var(--ds-gray-12);
+    }
+  }
+
   &:where([data-variant="link"]) {
     height: auto;
     aspect-ratio: auto;
@@ -264,13 +253,6 @@
 
     &:active {
       scale: none;
-    }
-
-    &:focus-visible,
-    &[data-demo-state="focus"] {
-      outline-width: 2px;
-      outline-style: solid;
-      outline-color: var(--ds-gray-6);
     }
   }
 }

@@ -9,6 +9,7 @@
 }
 
 .trigger {
+  --ds-focus-offset: 2px;
   display: flex;
   gap: 16px;
   align-items: center;
@@ -29,11 +30,6 @@
 
   &:hover {
     color: var(--ds-gray-11);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--ds-accent-9);
-    outline-offset: 2px;
   }
 }
 

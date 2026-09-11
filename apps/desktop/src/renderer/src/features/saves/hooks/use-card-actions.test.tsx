@@ -52,3 +52,42 @@ it.each([
     await act(async () => root.unmount());
   }
 });
+
+it("starts a dropped link immediately and does not claim it is saved", async () => {
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  const notify = vi.spyOn(toastManager, "add");
+  const query = vi.fn().mockResolvedValue({ ok: true, id: "pasted-save" });
+  vi.stubGlobal("pond", { query });
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  function Harness() {
+    const actions = useCardActions([], "library", "");
+    return (
+      <button type="button" onDrop={actions.onDrop}>
+        Drop
+      </button>
+    );
+  }
+  try {
+    await act(async () => root.render(<Harness />));
+    const event = new Event("drop", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "dataTransfer", {
+      value: {
+        files: [],
+        getData: (type: string) =>
+          type === "text/uri-list" ? "https://example.com/clip" : "",
+      },
+    });
+    await act(async () => {
+      host.firstElementChild?.dispatchEvent(event);
+    });
+    expect(query).toHaveBeenCalledWith("saves.quickAdd", {
+      url: "https://example.com/clip",
+    });
+    expect(notify).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Downloading" }),
+    );
+  } finally {
+    await act(async () => root.unmount());
+  }
+});

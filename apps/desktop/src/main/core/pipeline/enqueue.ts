@@ -33,6 +33,11 @@ import { classifyUrlToSource } from "./extractors";
 import { UnsupportedError } from "./extractors/errors";
 import { listKindsFromTrigger } from "./list-kinds";
 import { stashPageCookies } from "./page-cookies";
+import {
+  isInteractiveTrigger,
+  TaskPayloadSchema,
+  withInteractivePriority,
+} from "./priority";
 import { kickReconciler } from "./reconciler-client";
 import {
   applySeedToExistingSave,
@@ -165,6 +170,9 @@ async function enqueueOne(
       incomingKinds,
       opts.trigger ?? "pipeline:enqueue",
     );
+    if (isInteractiveTrigger(opts.trigger) && current.status === "ingesting") {
+      await promoteInteractiveTasks(current.id);
+    }
     if (opts.seed && current.status === "failed") {
       await resetTasksForSave(
         current.id,
@@ -232,18 +240,23 @@ async function enqueueOne(
   };
   if (opts.seed) Object.assign(insertValues, seedToInsertColumns(opts.seed));
 
+  const interactive = isInteractiveTrigger(opts.trigger);
   const ops = planOps(source);
-  const taskRows: NewTask[] = ops.map((op) => ({
-    id: ulid(),
-    saveId: id,
-    op,
-    status: "pending",
-    attempts: 0,
-    maxAttempts: maxAttemptsFor(op),
-    nextRunAt: now,
-    createdAt: now,
-    updatedAt: now,
-  }));
+  const taskRows: NewTask[] = ops.map((op) => {
+    const row: NewTask = {
+      id: ulid(),
+      saveId: id,
+      op,
+      status: "pending",
+      attempts: 0,
+      maxAttempts: maxAttemptsFor(op),
+      nextRunAt: now,
+      createdAt: now,
+      updatedAt: now,
+    };
+    if (interactive) row.payload = withInteractivePriority();
+    return row;
+  });
 
   /** One transaction so a crash cannot leave a half-ingested save, and one fsync instead of three. */
   const insertedAction = db.transaction((tx) => {
@@ -307,7 +320,28 @@ export async function resetTasksForSave(
     .set({ status: "ingesting", ingestStartedAt: now, ingestCompletedAt: null })
     .where(eq(saves.id, saveId))
     .run();
+  if (isInteractiveTrigger(reason)) await promoteInteractiveTasks(saveId);
   log.info("[pond pipeline:enqueue] reset tasks", { saveId, reason });
+}
+
+async function promoteInteractiveTasks(saveId: string): Promise<void> {
+  const db = await getDb();
+  const now = new Date();
+  const rows = db
+    .select({ id: tasks.id, payload: tasks.payload })
+    .from(tasks)
+    .where(and(eq(tasks.saveId, saveId), eq(tasks.status, "pending")))
+    .all();
+  for (const row of rows) {
+    db.update(tasks)
+      .set({
+        payload: withInteractivePriority(TaskPayloadSchema.parse(row.payload)),
+        nextRunAt: now,
+        updatedAt: now,
+      })
+      .where(eq(tasks.id, row.id))
+      .run();
+  }
 }
 
 export async function retryFailedSaves(
@@ -536,17 +570,22 @@ async function enqueueMany(
       createdAt: now,
     };
     if (c.seed) Object.assign(save, seedToInsertColumns(c.seed));
-    const taskRows: NewTask[] = planOps(c.source).map((op) => ({
-      id: ulid(),
-      saveId: id,
-      op,
-      status: "pending",
-      attempts: 0,
-      maxAttempts: maxAttemptsFor(op),
-      nextRunAt: now,
-      createdAt: now,
-      updatedAt: now,
-    }));
+    const interactive = isInteractiveTrigger(opts.trigger);
+    const taskRows: NewTask[] = planOps(c.source).map((op) => {
+      const row: NewTask = {
+        id: ulid(),
+        saveId: id,
+        op,
+        status: "pending",
+        attempts: 0,
+        maxAttempts: maxAttemptsFor(op),
+        nextRunAt: now,
+        createdAt: now,
+        updatedAt: now,
+      };
+      if (interactive) row.payload = withInteractivePriority();
+      return row;
+    });
     const action: NewSyncAction = {
       modelName: "save",
       modelId: id,

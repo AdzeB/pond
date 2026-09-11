@@ -97,15 +97,27 @@ describe("new menu actions", () => {
 
   it("keeps only failed links for retry, including rejected queries", async () => {
     query
-      .mockResolvedValueOnce({ ok: true })
+      .mockResolvedValueOnce({ ok: true, id: "one" })
       .mockResolvedValueOnce({ ok: false })
       .mockRejectedValueOnce(new Error("offline"));
     expect(
       await importLinks("https://one.test https://two.test https://three.test"),
     ).toEqual(["https://two.test", "https://three.test"]);
     expect(notify).toHaveBeenCalledWith(
-      expect.objectContaining({ title: "Saved to Pond" }),
+      expect.objectContaining({ title: "Downloading" }),
     );
+    expect(openSave).toHaveBeenCalledWith("one");
+  });
+
+  it("opens a single imported link and not a batch", async () => {
+    query
+      .mockResolvedValueOnce({ ok: true, id: "first" })
+      .mockResolvedValueOnce({ ok: true, id: "second" });
+    await importLinks("https://one.test https://two.test");
+    expect(notify).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Downloading 2 links" }),
+    );
+    expect(openSave).not.toHaveBeenCalled();
   });
 
   it("creates and opens a note using the existing save operation", async () => {

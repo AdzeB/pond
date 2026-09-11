@@ -10,6 +10,7 @@ import { enqueueHandler } from "./item-add";
 import { itemGetHandler } from "./item-get";
 import { itemInfoHandler } from "./item-info";
 import { itemThumbHandler } from "./item-thumb";
+import { libraryActionRoutes } from "./library-actions";
 import { libraryInfoHandler } from "./library-info";
 import { sessionImportHandler } from "./session-import";
 import { sessionPendingHandler } from "./session-pending";
@@ -128,6 +129,7 @@ function buildApp(): Hono {
   api.get("/api/v2/item/info", itemInfoHandler);
   api.get("/api/v2/item/thumb", itemThumbHandler);
   api.get("/api/v2/library/info", libraryInfoHandler);
+  api.route("/api/v2/library", libraryActionRoutes());
   api.post("/api/v2/session/import", sessionImportHandler);
   api.get("/api/v2/session/pending", sessionPendingHandler);
 

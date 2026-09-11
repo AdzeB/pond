@@ -16,17 +16,20 @@ import {
   dryRunEagleLibrary,
   importEagleLibrary,
 } from "../../core/eagle-import";
-import { setSaveFolders } from "../../core/folders";
 import { gifFramePng } from "../../core/gif-thumbnail";
+import { importFiles } from "../../core/import-files";
 import { createManualSave } from "../../core/manual-import";
 import { extractPageAssets } from "../../core/page-extract";
 import { persistSave } from "../../core/persist-save";
 import { enqueue, normalizeUrl } from "../../core/pipeline/enqueue";
 import { classifyUrlToSource } from "../../core/pipeline/extractors";
 import { UnsupportedError } from "../../core/pipeline/extractors/errors";
+import { importPondPackage } from "../../core/pond-package";
 import { srtToVtt } from "../../core/subtitles";
 import { setSaveTags } from "../../core/tags";
-import { walkImportPaths } from "../../core/walk-import-paths";
+import { runTransferJob } from "../../core/transfer-jobs";
+import { copySaveSelectionToLibrary } from "../../core/transfer-operations";
+import { libraryRoot } from "../../paths";
 import { resolvePondItemPath, resolveSaveFilePath } from "../helpers";
 import { pickImportPaths } from "./import-picker";
 import {
@@ -44,17 +47,7 @@ async function importFilesImpl(
   tags: string[] = [],
   folderIds: string[] = [],
 ): Promise<{ ok: boolean; ids: string[]; error?: string }> {
-  const files = await walkImportPaths(paths);
-  if (files.length === 0) return { ok: false, ids: [], error: "no_files" };
-  const ids: string[] = [];
-  for (const path of files) {
-    const res = await createManualSave({ filePaths: [path], tags });
-    if (res.ok && res.id) {
-      ids.push(res.id);
-      if (folderIds.length > 0) await setSaveFolders(res.id, folderIds);
-    }
-  }
-  return { ok: ids.length > 0, ids };
+  return importFiles({ paths, tags, folderIds });
 }
 
 /** Finder/Explorer put file refs on the native pasteboard; Chromium's `clipboardData.files` is often empty. */
@@ -88,6 +81,70 @@ function clipboardFilePaths(): string[] {
 }
 
 export const savesImportQueries = {
+  "saves.copyToLibrary": query(
+    z.object({ ids: StringListParam }),
+    async ({ ids }) => {
+      const picked = await dialog.showOpenDialog({
+        title: "Copy to Library",
+        buttonLabel: "Copy",
+        properties: ["openDirectory", "openFile"],
+      });
+      const target = picked.filePaths[0];
+      if (picked.canceled || !target) return { ok: false, error: "canceled" };
+      try {
+        return {
+          ok: true,
+          ...(await runTransferJob(
+            {
+              kind: "copy_library",
+              origin: libraryRoot(),
+              destination: target,
+              ids,
+            },
+            () => copySaveSelectionToLibrary(ids, target),
+          )),
+        };
+      } catch (error) {
+        return {
+          ok: false,
+          error:
+            error instanceof Error ? error.message : "Could not copy Saves.",
+        };
+      }
+    },
+  ),
+
+  async "saves.importPackage"() {
+    const picked = await dialog.showOpenDialog({
+      title: "Import Pond Package",
+      buttonLabel: "Import",
+      properties: ["openDirectory", "openFile"],
+    });
+    if (picked.canceled || !picked.filePaths[0])
+      return { ok: false, error: "canceled" };
+    try {
+      const source = picked.filePaths[0];
+      return {
+        ok: true,
+        ...(await runTransferJob(
+          {
+            kind: "import_package",
+            origin: libraryRoot(),
+            source,
+            destination: libraryRoot(),
+          },
+          () => importPondPackage(source),
+        )),
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error:
+          error instanceof Error ? error.message : "Package import failed.",
+      };
+    }
+  },
+
   "saves.pickImportPaths": query(
     z.object({ kind: z.enum(["files", "folders"]) }),
     (params) => pickImportPaths(params.kind),
@@ -475,7 +532,7 @@ export const savesImportQueries = {
     const failed: string[] = [];
     for (const url of urls) {
       try {
-        await enqueue(url, { trigger: "user:quickAdd" });
+        await enqueue(url, { trigger: "user:importBookmarks" });
         imported += 1;
       } catch {
         failed.push(url);

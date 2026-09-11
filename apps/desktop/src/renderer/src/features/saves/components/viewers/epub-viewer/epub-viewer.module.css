@@ -8,42 +8,6 @@
   background: #f7f3e9;
 }
 
-.toolbar {
-  display: flex;
-  flex: none;
-  gap: 8px;
-  align-items: center;
-  min-height: 48px;
-  padding: 8px 12px;
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-1);
-  border-bottom: 1px solid var(--ds-gray-4);
-}
-
-.toolbar button,
-.toolbar select {
-  min-height: 30px;
-  padding: 0 9px;
-  color: inherit;
-  background: var(--ds-gray-2);
-  border: 1px solid var(--ds-gray-5);
-  border-radius: var(--ds-radius-sm);
-}
-
-.toolbar select {
-  min-width: 10rem;
-  max-width: min(24rem, 35vw);
-}
-
-.toolbar label {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-left: auto;
-  font-size: 12px;
-  color: var(--ds-gray-10);
-}
-
 .reader {
   flex: 1;
   min-width: 0;
@@ -52,9 +16,18 @@
 
 .status {
   position: absolute;
-  inset: 49px 0 0;
+  inset: 0;
   display: grid;
   place-items: center;
   color: #6b6458;
   background: #f7f3e9;
+}
+
+.size {
+  gap: 4px;
+  padding: 2px 8px 2px 2px;
+}
+
+.contents {
+  padding: 2px 4px;
 }

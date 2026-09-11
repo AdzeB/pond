@@ -59,7 +59,7 @@ describe("new source menu", () => {
   async function openMenu() {
     await renderMenu();
     const trigger = [...document.querySelectorAll("button")].find(
-      (el) => el.textContent === "New Source",
+      (el) => el.getAttribute("aria-label") === "New Source",
     );
     if (!trigger) throw new Error("Missing New Source");
     await act(async () => trigger.click());

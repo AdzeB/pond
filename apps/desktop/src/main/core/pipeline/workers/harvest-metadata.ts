@@ -3,6 +3,7 @@ import { domainFromUrl } from "@pond/schema/domain";
 import { majorityMediaType } from "@pond/schema/media-type";
 import { walkCaptureMedia } from "@pond/schema/raw";
 import log from "electron-log/main.js";
+import type { TransferOptions } from "../../../lib/download-transfer";
 import { persistSave } from "../../persist-save";
 import { captureFromSource } from "../../refresh/harvest/capture";
 import { extractorFor, resolveExtractor } from "../extractors";
@@ -17,6 +18,7 @@ interface HarvestPayload {
 export async function runHarvestMetadata(
   saveId: string,
   payload: HarvestPayload = {},
+  ctx: TransferOptions = {},
 ): Promise<void> {
   const save = await readSave(saveId);
   if (!save) return;
@@ -38,6 +40,7 @@ export async function runHarvestMetadata(
           source: save.source,
           sourceId: save.sourceId ?? undefined,
           accountId: save.accountId,
+          reportActivity: ctx.reportActivity,
         });
 
   const rawJson: RawJson = {

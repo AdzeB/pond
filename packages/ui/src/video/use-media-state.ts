@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { bufferedEnd, clamp, FRAME_STEP_SECONDS } from "./lib";
+import { bufferedEnd, clamp, frameStepTime } from "./lib";
 
 interface MediaState {
   playing: boolean;
@@ -63,7 +63,7 @@ export interface MediaStateApi {
   registerVideo: (el: HTMLVideoElement | null) => void;
 }
 
-export function useMediaState(): MediaStateApi {
+export function useMediaState(frameRate?: number | null): MediaStateApi {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null);
@@ -178,11 +178,13 @@ export function useMediaState(): MediaStateApi {
       stepFrame: (delta: number) => {
         const v = videoRef.current;
         if (!v) return;
+        const next = frameStepTime(v.currentTime, delta, frameRate);
+        if (next === null) return;
         if (!v.paused) v.pause();
-        v.currentTime = Math.max(0, v.currentTime + delta * FRAME_STEP_SECONDS);
+        seek(next);
       },
     }),
-    [seek, setVolume],
+    [seek, setVolume, frameRate],
   );
 
   return { state, actions, videoRef, rootRef, registerVideo };

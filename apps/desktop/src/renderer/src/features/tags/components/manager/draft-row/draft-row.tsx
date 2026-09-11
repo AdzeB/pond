@@ -1,40 +1,24 @@
-import { focusInput } from "../lib/helpers";
+import { InlineNameEditor } from "@/shared/components/inline-name-editor";
 import styles from "./draft-row.module.css";
 
 interface DraftRowProps {
   creating: "tag" | "group";
-  draft: string;
-  setDraft: (v: string) => void;
-  onCommit: () => void;
-  onCancel: () => void;
+  onSave: (name: string) => Promise<void>;
+  onFinish: () => void;
 }
 
-export function DraftRow({
-  creating,
-  draft,
-  setDraft,
-  onCommit,
-  onCancel,
-}: DraftRowProps) {
+export function DraftRow({ creating, onSave, onFinish }: DraftRowProps) {
   return (
     <div className={styles["draft-row"]}>
-      <input
-        ref={focusInput}
+      <InlineNameEditor
+        name=""
+        empty="cancel"
         className={styles.input}
-        value={draft}
-        spellCheck={false}
         placeholder={creating === "group" ? "Group name" : "Tag name"}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={onCommit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            onCommit();
-          } else if (e.key === "Escape") {
-            e.preventDefault();
-            onCancel();
-          }
-        }}
+        ariaLabel={creating === "group" ? "Group name" : "Tag name"}
+        errorTitle="Couldn't create. Try again."
+        onSave={onSave}
+        onFinish={onFinish}
       />
     </div>
   );

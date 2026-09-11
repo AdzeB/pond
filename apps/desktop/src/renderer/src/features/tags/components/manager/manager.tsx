@@ -1,4 +1,4 @@
-import { IconTagFill18 } from "@pond/icons/fill/18";
+import { IconBookmarkFill18 } from "@pond/icons/fill/18";
 import { IconMagnifierOutline12 as Magnifier } from "@pond/icons/outline/12";
 import { Accordion, Button, DataTable, Empty, Input, Settings } from "@pond/ui";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -28,8 +28,7 @@ export function TagsSection() {
     total,
   } = useTagsData();
 
-  const { creating, draft, setDraft, startCreate, cancelCreate, commitCreate } =
-    useTagCreation();
+  const { creating, startCreate, cancelCreate, saveCreate } = useTagCreation();
   const clearRef = useRef<() => void>(() => {});
   const ctxValue = useMemo(() => ({ groups: groupOptions }), [groupOptions]);
   const onSelectionChange = useCallback(() => {}, []);
@@ -107,10 +106,8 @@ export function TagsSection() {
                     >
                       <DraftRow
                         creating={creating}
-                        draft={draft}
-                        setDraft={setDraft}
-                        onCommit={() => void commitCreate()}
-                        onCancel={cancelCreate}
+                        onSave={saveCreate}
+                        onFinish={cancelCreate}
                       />
                     </motion.div>
                   ) : null}
@@ -145,7 +142,7 @@ export function TagsSection() {
             ) : total === 0 ? (
               <Empty.Root>
                 <Empty.Media>
-                  <IconTagFill18 />
+                  <IconBookmarkFill18 />
                 </Empty.Media>
                 <Empty.Title>No tags yet</Empty.Title>
                 <Empty.Description>

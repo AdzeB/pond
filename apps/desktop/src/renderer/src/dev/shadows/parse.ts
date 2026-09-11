@@ -105,7 +105,7 @@ export function serializeValue(token: ShadowToken): string {
   return token.layers.map(serializeLayer).join(", ");
 }
 
-export function isRingLayer(layer: ShadowLayer): boolean {
+function isRingLayer(layer: ShadowLayer): boolean {
   return (
     !layer.inset &&
     layer.x === 0 &&

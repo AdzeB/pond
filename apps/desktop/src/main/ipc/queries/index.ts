@@ -3,12 +3,17 @@ import { z } from "zod";
 import { IPC } from "../../../shared/constants";
 import { safeHandle } from "../helpers";
 import { accountsQueries } from "./accounts";
+import { actionQueries } from "./actions";
 import { agentQueries } from "./agent";
 import { aiQueries } from "./ai";
+import { bulkQueries } from "./bulk";
+import { captureQueries } from "./captures";
+import { conversionQueries } from "./conversion";
 import { downloadsQueries } from "./downloads";
 import { foldersQueries } from "./folders";
 import { inspectQueries } from "./inspect";
 import { libraryQueries } from "./library";
+import { openWithQueries } from "./open-with";
 import type { QueryHandlerMap, QueryParams } from "./params";
 import { savedViewsQueries } from "./saved-views";
 import { savesQueries } from "./saves";
@@ -16,12 +21,19 @@ import { settingsQueries } from "./settings";
 import { syncHistoryQueries } from "./sync-history";
 import { tagGroupsQueries } from "./tag-groups";
 import { tagsQueries } from "./tags";
+import { transferJobsQueries } from "./transfer-jobs";
 import { videoQueries } from "./video";
 import { watchesQueries } from "./watches";
 
 type ContractHandlers = Required<QueryHandlerMap>;
 
 const queryRegistry = {
+  ...transferJobsQueries,
+  ...bulkQueries,
+  ...openWithQueries,
+  ...captureQueries,
+  ...conversionQueries,
+  ...actionQueries,
   ...savesQueries,
   ...downloadsQueries,
   ...settingsQueries,

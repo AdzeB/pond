@@ -17,6 +17,7 @@ export const format = defineField({
   type: "stringArray",
   label: "Format",
   group: "media",
+  comparators: ["some", "every", "none", "empty"],
   project: (save) => [
     ...new Set(
       (save.files ?? [])

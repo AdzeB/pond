@@ -6,6 +6,7 @@ import type { Save } from "@/features/saves/types";
 
 interface MutateOpts {
   actorReason?: string;
+  throwOnError?: boolean;
 }
 
 export type SaveEdit = Partial<
@@ -58,7 +59,10 @@ export async function mutateSave(
   opts: MutateOpts = {},
 ): Promise<void> {
   const prev = pool.get(id);
-  if (!prev) return;
+  if (!prev) {
+    if (opts.throwOnError) throw new Error("This save is no longer available.");
+    return;
+  }
   const tx: Transaction = {
     kind: "update",
     model: "save",
@@ -68,11 +72,15 @@ export async function mutateSave(
   };
   const meta = metaFor(opts);
   if (meta) tx.meta = meta;
-  await optimistic(
+  const result = await optimistic(
     () => pool.upsert({ ...prev, ...patch }),
     () => pool.upsert(prev),
     async () => window.pond.tx(tx),
   );
+  if (result === null && opts.throwOnError)
+    throw new Error(
+      "Couldn’t save changes. Your previous version is unchanged.",
+    );
 }
 
 export async function setSaveTags(id: string, tags: string[]): Promise<void> {
@@ -121,78 +129,50 @@ export async function purgeSave(id: string): Promise<void> {
   );
 }
 
+export async function bulkMutation(
+  ids: readonly string[],
+  operation: import("@shared/bulk-contracts").BulkEdit["operation"],
+  opts: MutateOpts = {},
+): Promise<number> {
+  const targets = [...new Set(ids)];
+  if (!targets.length) return 0;
+  const before = targets.flatMap((id) => {
+    const save = pool.get(id);
+    return save ? [save] : [];
+  });
+  for (const save of before) {
+    if (operation.kind === "purge") pool.delete(save.id);
+    else if (operation.kind === "trash")
+      pool.upsert({ ...save, deletedAt: Date.now() });
+    else if (operation.kind === "untrash")
+      pool.upsert({ ...save, deletedAt: null });
+    else if (operation.kind === "rating" && !save.deletedAt)
+      pool.upsert({ ...save, rating: operation.rating || null });
+  }
+  try {
+    const result = await window.pond.query("saves.bulkEdit", {
+      ids: targets,
+      operation,
+      ...opts,
+    });
+    return result.changed;
+  } catch (error) {
+    for (const save of before) pool.upsert(save);
+    throw error;
+  }
+}
 export async function trashSaves(
   ids: readonly string[],
   opts: MutateOpts = {},
 ): Promise<number> {
-  const now = Date.now();
-  const changes: { prev: Save; next: Save; tx: Transaction }[] = [];
-  for (const id of ids) {
-    const prev = pool.get(id);
-    if (!prev) continue;
-    const tx: Transaction = { kind: "trash", model: "save", id };
-    const meta = metaFor(opts);
-    if (meta) tx.meta = meta;
-    changes.push({ prev, next: { ...prev, deletedAt: now }, tx });
-  }
-  if (changes.length === 0) return 0;
-  await optimistic(
-    () => {
-      for (const c of changes) pool.upsert(c.next);
-    },
-    () => {
-      for (const c of changes) pool.upsert(c.prev);
-    },
-    async () => window.pond.batch(changes.map((c) => c.tx)),
-  );
-  return changes.length;
+  return bulkMutation(ids, { kind: "trash" }, opts);
 }
-
 export async function untrashSaves(
   ids: readonly string[],
   opts: MutateOpts = {},
 ): Promise<number> {
-  const changes: { prev: Save; next: Save; tx: Transaction }[] = [];
-  for (const id of ids) {
-    const prev = pool.get(id);
-    if (!prev) continue;
-    const tx: Transaction = { kind: "untrash", model: "save", id };
-    const meta = metaFor(opts);
-    if (meta) tx.meta = meta;
-    changes.push({ prev, next: { ...prev, deletedAt: null }, tx });
-  }
-  if (changes.length === 0) return 0;
-  await optimistic(
-    () => {
-      for (const c of changes) pool.upsert(c.next);
-    },
-    () => {
-      for (const c of changes) pool.upsert(c.prev);
-    },
-    async () => window.pond.batch(changes.map((c) => c.tx)),
-  );
-  return changes.length;
+  return bulkMutation(ids, { kind: "untrash" }, opts);
 }
-
 export async function purgeSaves(ids: readonly string[]): Promise<number> {
-  const changes: { prev: Save; tx: Transaction }[] = [];
-  for (const id of ids) {
-    const prev = pool.get(id);
-    if (!prev) continue;
-    changes.push({
-      prev,
-      tx: { kind: "purge", model: "save", id, before: toNewSave(prev) },
-    });
-  }
-  if (changes.length === 0) return 0;
-  await optimistic(
-    () => {
-      for (const c of changes) pool.delete(c.prev.id);
-    },
-    () => {
-      for (const c of changes) pool.upsert(c.prev);
-    },
-    async () => window.pond.batch(changes.map((c) => c.tx)),
-  );
-  return changes.length;
+  return bulkMutation(ids, { kind: "purge" });
 }

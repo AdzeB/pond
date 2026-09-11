@@ -1,5 +1,11 @@
 import type { Source, VideoDownloadSettings } from "@pond/schema/db";
 
+export const YTDLP_CONCURRENT_FRAGMENTS = 8;
+export const YTDLP_TRANSFER_FLAGS = [
+  "--concurrent-fragments",
+  String(YTDLP_CONCURRENT_FRAGMENTS),
+] as const;
+
 /** yt-dlp format filters; `~=` regex-matches the codec name variants a platform reports. */
 function videoCodecFilter(codec: VideoDownloadSettings["videoCodec"]): string {
   switch (codec) {

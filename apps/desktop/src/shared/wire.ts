@@ -32,6 +32,7 @@ export interface WireTask {
   lastError: string | null;
   nextRunAt: number;
   updatedAt: number;
+  interactive?: boolean;
 }
 
 export type WireSaveRow = Omit<

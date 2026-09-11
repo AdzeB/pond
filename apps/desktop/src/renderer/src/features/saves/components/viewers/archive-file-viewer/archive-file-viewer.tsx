@@ -1,5 +1,8 @@
+import { Input } from "@pond/ui";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
+import { ViewerHud } from "@/features/saves/components/viewers/hud";
+import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { formatBytes } from "@/shared/lib/format";
 import { archiveSafety } from "./archive";
 import styles from "./archive-file-viewer.module.css";
@@ -35,6 +38,7 @@ export function ArchiveFileViewer({
   const [entries, setEntries] = useState<ArchiveEntry[] | null>(null);
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const scrollFade = useScrollFade<HTMLUListElement>();
 
   useEffect(() => {
     if (!path.toLowerCase().endsWith(".zip")) {
@@ -99,24 +103,36 @@ export function ArchiveFileViewer({
 
   return (
     <div className={styles.root}>
-      <div className={styles.toolbar}>
-        <strong>
-          {entries ? `${entries.length.toLocaleString()} files` : "ZIP archive"}
-        </strong>
-        <input
-          type="search"
-          value={query}
-          placeholder="Filter files"
-          aria-label="Filter archive files"
-          onChange={(event) => setQuery(event.target.value)}
-        />
-      </div>
+      <ViewerHud.Root>
+        <ViewerHud.Cluster anchor="top-left">
+          <ViewerHud.Pill className={styles.count}>
+            <ViewerHud.Scale>
+              {entries
+                ? `${entries.length.toLocaleString()} files`
+                : "ZIP archive"}
+            </ViewerHud.Scale>
+          </ViewerHud.Pill>
+        </ViewerHud.Cluster>
+        <ViewerHud.Cluster anchor="top-right">
+          <ViewerHud.Pill className={styles.query}>
+            <Input.Root size="sm" variant="secondary" className={styles.field}>
+              <Input.Field
+                type="search"
+                value={query}
+                placeholder="Filter files…"
+                aria-label="Filter archive files"
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </Input.Root>
+          </ViewerHud.Pill>
+        </ViewerHud.Cluster>
+      </ViewerHud.Root>
       {error ? <div className={styles.status}>{error}</div> : null}
       {!entries && !error ? (
-        <div className={styles.status}>Reading archive directory…</div>
+        <div className={styles.status}>Reading archive directory</div>
       ) : null}
       {entries ? (
-        <ul className={styles.list}>
+        <ul className={styles.list} {...scrollFade}>
           {filtered.map((entry) => (
             <li key={entry.name} className={styles.row}>
               <span>{entry.name}</span>

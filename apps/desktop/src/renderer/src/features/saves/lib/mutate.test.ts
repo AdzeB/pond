@@ -53,3 +53,21 @@ it("restores tag membership when persistence rejects the edit", async () => {
     tags: ["new"],
   });
 });
+
+it("retains cold IDs for trash, restore, and purge beyond the loaded page", async () => {
+  const ids = [
+    "saved",
+    ...Array.from({ length: 300 }, (_, index) => `cold-${index}`),
+  ];
+  const query = vi.fn(async () => ({ changed: ids.length }));
+  vi.stubGlobal("window", { pond: { query } });
+  const { trashSaves, untrashSaves, purgeSaves } = await import("./mutate");
+  expect(await trashSaves(ids)).toBe(ids.length);
+  expect(await untrashSaves(ids)).toBe(ids.length);
+  expect(await purgeSaves(ids)).toBe(ids.length);
+  expect(query.mock.calls).toEqual([
+    ["saves.bulkEdit", { ids, operation: { kind: "trash" } }],
+    ["saves.bulkEdit", { ids, operation: { kind: "untrash" } }],
+    ["saves.bulkEdit", { ids, operation: { kind: "purge" } }],
+  ]);
+});

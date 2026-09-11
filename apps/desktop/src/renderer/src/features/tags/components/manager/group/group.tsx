@@ -1,11 +1,11 @@
 import { IconChevronRightOutline12 as ChevronRight } from "@pond/icons/outline/12";
 import { Accordion } from "@pond/ui";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { InlineNameEditor } from "@/shared/components/inline-name-editor";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
 import { gentleSpring } from "@/shared/lib/motion";
 import { TagItem } from "../item/item";
 import { ActionsCell } from "../lib/cells/cells";
-import { focusInput } from "../lib/helpers";
 import { TagRowProvider, useTagRow } from "../lib/row-context";
 import { TagCheckbox } from "../lib/select";
 import type { TagsRowData } from "../lib/types";
@@ -47,16 +47,8 @@ export function TagGroup({
 }
 
 function GroupHeader() {
-  const {
-    row,
-    rowRef,
-    renaming,
-    renameDraft,
-    setRenameDraft,
-    commitRename,
-    cancelRename,
-    buildMenuItems,
-  } = useTagRow();
+  const { row, rowRef, renaming, saveRename, finishRename, buildMenuItems } =
+    useTagRow();
   if (row.kind !== "group") return null;
   const members = row.children.length;
 
@@ -77,22 +69,12 @@ function GroupHeader() {
             <span className={styles.caret} aria-hidden>
               <ChevronRight />
             </span>
-            <input
-              ref={focusInput}
+            <InlineNameEditor
+              name={row.group.name}
               className={styles.input}
-              value={renameDraft}
-              spellCheck={false}
-              onChange={(e) => setRenameDraft(e.target.value)}
-              onBlur={commitRename}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  commitRename();
-                } else if (e.key === "Escape") {
-                  e.preventDefault();
-                  cancelRename();
-                }
-              }}
+              ariaLabel="Group name"
+              onSave={saveRename}
+              onFinish={finishRename}
             />
           </span>
         ) : (

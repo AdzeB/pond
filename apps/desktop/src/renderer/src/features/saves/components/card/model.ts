@@ -1,4 +1,4 @@
-import type React from "react";
+import type { IconComponent } from "@pond/icons/types";
 import { useMemo } from "react";
 import {
   type DisplayPrefs,
@@ -25,7 +25,7 @@ import type { Save, SaveFile } from "@/features/saves/types";
 import { getSourceIcon, getSourceLogo } from "@/features/sources/lib/registry";
 import { formatAbsolute } from "@/shared/lib/format";
 
-type SourceIcon = React.ComponentType<{ width?: number; height?: number }>;
+type SourceIcon = IconComponent;
 type TypeKind = ReturnType<typeof deriveTypeKind>;
 const PAPER_ASPECT = 8.5 / 11;
 

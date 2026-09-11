@@ -1,23 +1,26 @@
 import {
   IconAlbum2Outline18,
+  IconArrowDiagonalInOutline18,
   IconArrowRotateAnticlockwiseOutline18,
+  IconBookmarkOutline18,
+  IconBookmarkSlashOutline18,
   IconClone2Outline18,
   IconDownloadOutline18,
   IconEyeOutline18,
   IconFileOutline18,
+  IconFolderBanOutline18,
   IconFolderOpenOutline18,
   IconFolderOutline18,
   IconGear3Outline18,
-  IconGlobeOutline18,
   IconImageOutline18,
   IconLink2Outline18,
   IconMagnifierOutline18,
-  IconMsg2Outline18,
-  IconTagsOutline18,
-  IconTrash2Outline18,
+  IconMessageSparkleOutline18,
+  IconTrashXmarkOutline18,
   IconUploadOutline18,
   IconUserPlusOutline18,
   IconVersionsOutline18,
+  IconWindowDownloadOutline18,
 } from "@pond/icons/outline/18";
 import { sourceLabel } from "@pond/schema";
 import { Dialog, Keyboard } from "@pond/ui";
@@ -110,14 +113,16 @@ const COMMANDS: readonly CommandSpec[] = [
     label: "New Folder",
     icon: IconFolderOutline18,
     keywords: "create collection organize directory",
+    shortcut: "library.new-folder",
     run: () => newFolder(),
   },
   {
     id: "new-tag",
     group: "Create",
     label: "New Tag",
-    icon: IconTagsOutline18,
+    icon: IconBookmarkOutline18,
     keywords: "create label organize",
+    shortcut: "library.new-tag",
     run: () => newTag("tag"),
   },
   {
@@ -126,13 +131,14 @@ const COMMANDS: readonly CommandSpec[] = [
     label: "New Tag Group",
     icon: IconVersionsOutline18,
     keywords: "create labels organize",
+    shortcut: "library.new-tag-group",
     run: () => newTag("tag-group"),
   },
   {
     id: "new-source",
     group: "Create",
     label: "New Source",
-    icon: IconGlobeOutline18,
+    icon: IconArrowDiagonalInOutline18,
     keywords: "connect watch folder add account",
     shortcut: "sources.new",
     run: () => {
@@ -171,6 +177,7 @@ const COMMANDS: readonly CommandSpec[] = [
     label: "Import Files",
     icon: IconFileOutline18,
     keywords: "image video audio pdf document media",
+    shortcut: "library.import-files",
     run: () => void runNewAction(() => importPaths("files")),
   },
   {
@@ -179,6 +186,7 @@ const COMMANDS: readonly CommandSpec[] = [
     label: "Import Folders",
     icon: IconFolderOpenOutline18,
     keywords: "directory files media",
+    shortcut: "library.import-folders",
     run: () => void runNewAction(() => importPaths("folders")),
   },
   {
@@ -212,11 +220,37 @@ const COMMANDS: readonly CommandSpec[] = [
     },
   },
   {
+    id: "uncategorized",
+    group: "Navigate",
+    label: "Uncategorized",
+    detail: "Saves that aren't in a folder",
+    icon: IconFolderBanOutline18,
+    keywords: "unfiled inbox no folder",
+    run: () => {
+      resetFilters();
+      libraryChrome.setNav({ kind: "uncategorized" });
+      go("/");
+    },
+  },
+  {
+    id: "untagged",
+    group: "Navigate",
+    label: "Untagged",
+    detail: "Saves without tags",
+    icon: IconBookmarkSlashOutline18,
+    keywords: "no tags labels",
+    run: () => {
+      resetFilters();
+      libraryChrome.setNav({ kind: "all" });
+      go("/untagged");
+    },
+  },
+  {
     id: "sources",
     group: "Navigate",
     label: "Sources",
     detail: "Connected accounts and watches",
-    icon: IconGlobeOutline18,
+    icon: IconArrowDiagonalInOutline18,
     keywords: "accounts connect watches",
     shortcut: "nav.sources",
     run: () => {
@@ -229,7 +263,7 @@ const COMMANDS: readonly CommandSpec[] = [
     group: "Navigate",
     label: "Downloads",
     detail: "Active and recent transfers",
-    icon: IconDownloadOutline18,
+    icon: IconWindowDownloadOutline18,
     keywords: "transfers queue",
     shortcut: "nav.downloads",
     run: () => {
@@ -242,7 +276,7 @@ const COMMANDS: readonly CommandSpec[] = [
     group: "Navigate",
     label: "Tags",
     detail: "Organize your library",
-    icon: IconTagsOutline18,
+    icon: IconBookmarkOutline18,
     keywords: "labels organize",
     run: () => go("/tags"),
   },
@@ -251,7 +285,7 @@ const COMMANDS: readonly CommandSpec[] = [
     group: "Navigate",
     label: "Assistant",
     detail: "Ask your library",
-    icon: IconMsg2Outline18,
+    icon: IconMessageSparkleOutline18,
     keywords: "ask chat ai",
     run: () => go("/assistant"),
   },
@@ -260,7 +294,7 @@ const COMMANDS: readonly CommandSpec[] = [
     group: "Navigate",
     label: "Trash",
     detail: "Recently deleted saves",
-    icon: IconTrash2Outline18,
+    icon: IconTrashXmarkOutline18,
     keywords: "deleted bin",
     shortcut: "nav.trash",
     run: () => {
@@ -430,7 +464,7 @@ export function CommandMenuHost({
               id: "selection:trash",
               group,
               label: "Move to Trash",
-              icon: <IconTrash2Outline18 aria-hidden />,
+              icon: <IconTrashXmarkOutline18 aria-hidden />,
               shortcut: "save.trash",
               run: () => void trashSelection(selected()),
             },

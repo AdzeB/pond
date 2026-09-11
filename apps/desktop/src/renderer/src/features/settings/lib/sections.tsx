@@ -8,6 +8,7 @@ import { mcpSection } from "@/features/settings/lib/config-mcp";
 import { storageSection } from "@/features/settings/lib/config-storage";
 import { trashSection } from "@/features/settings/lib/config-trash";
 import { videosSection } from "@/features/settings/lib/config-videos";
+import { viewerSection } from "@/features/settings/lib/config-viewer";
 
 const TagsSection = lazy(() =>
   import("@/features/tags/components/manager/manager").then((m) => ({
@@ -33,6 +34,7 @@ const ScheduleSection = lazy(() =>
 
 export const SECTION_CONFIGS = new Map<string, SectionConfig>([
   ["general", generalSection],
+  ["viewer", viewerSection],
   [
     "schedule",
     {

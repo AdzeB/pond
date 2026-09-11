@@ -14,6 +14,7 @@ export default defineConfig({
   optimizeDeps: {
     entries: [
       "components.html",
+      "downloads.html",
       "source-dialogs.html",
       "provider-settings.html",
       "shadows.html",
@@ -24,6 +25,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         components: resolve(directory, "src/renderer/components.html"),
+        downloads: resolve(directory, "src/renderer/downloads.html"),
         providerSettings: resolve(
           directory,
           "src/renderer/provider-settings.html",

@@ -3,6 +3,7 @@ import type { SaveFile } from "@pond/schema/db";
 import { type RawJson, walkCaptureMedia } from "@pond/schema/raw";
 import log from "electron-log/main.js";
 import { fetchMediaBatch } from "../../../lib/blob";
+import type { TransferOptions } from "../../../lib/download-transfer";
 import { probeImageDims, processImage } from "../../../lib/image-process";
 import { persistSave } from "../../persist-save";
 import { getImageDownloadPrefs } from "../../prefs";
@@ -10,7 +11,10 @@ import { TransientError } from "../extractors/errors";
 import { readSave, type WriteFileArgs } from "./apply";
 import { fetchSourceIcon } from "./source-icon";
 
-export async function runFetchBlobs(saveId: string): Promise<void> {
+export async function runFetchBlobs(
+  saveId: string,
+  ctx: TransferOptions = {},
+): Promise<void> {
   const save = await readSave(saveId);
   if (!save) return;
 
@@ -43,7 +47,7 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
     ? imagePrefs.maxFileSizeMb * 1024 * 1024
     : null;
 
-  const results = await fetchMediaBatch(missing, { imageMaxBytes });
+  const results = await fetchMediaBatch(missing, { imageMaxBytes, ...ctx });
   const fetched = results.flatMap((r) =>
     r.file ? [{ url: r.url, file: r.file }] : [],
   );
@@ -63,6 +67,8 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
     return;
   }
 
+  ctx.signal?.throwIfAborted();
+  ctx.reportActivity?.({ phase: "processing" });
   const newFiles = await Promise.all(
     fetched.map(async (entry) => {
       const tx = entry.file;
@@ -107,6 +113,8 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
     }),
   );
 
+  ctx.signal?.throwIfAborted();
+  ctx.reportActivity?.({ phase: "saving" });
   await persistSave(
     saveId,
     { fileSize: newFiles[0]?.bytes.byteLength ?? null },

@@ -1,7 +1,7 @@
 import { FIELD_META } from "@pond/schema/filters/meta";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { useState } from "react";
-import { FIELD_ICONS } from "@/features/search/lib/fields";
+import { fieldIcon } from "@/features/search/lib/fields";
 import { FilterChip, FilterPopup } from "../chip/chip";
 import { ChoiceFilter } from "../choice/choice";
 import { ColorFilter } from "../color/color";
@@ -28,7 +28,7 @@ export function FilterCategory({
   onChange: (rows: Predicate[]) => void;
 }) {
   const meta = FIELD_META[field];
-  const Icon = FIELD_ICONS[field];
+  const Icon = fieldIcon(field);
   const categoryFields = new Set<FieldId>(
     field === "width" ? ["width", "height"] : [field],
   );

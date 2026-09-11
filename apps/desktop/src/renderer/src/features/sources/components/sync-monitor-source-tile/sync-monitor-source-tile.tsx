@@ -17,10 +17,10 @@ export function BrandTile({
       style={{ width: size, height: size }}
       aria-hidden
     >
-      {logo ? (
-        <img src={logo} alt="" width={size} height={size} />
-      ) : Icon ? (
+      {Icon ? (
         <Icon width={size} height={size} />
+      ) : logo ? (
+        <img src={logo} alt="" width={size} height={size} />
       ) : null}
     </span>
   );

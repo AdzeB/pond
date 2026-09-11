@@ -1,8 +1,8 @@
 import {
+  IconBookmarkOutline18,
   IconFileOutline18,
   IconImageOutline18,
   IconLink2Outline18,
-  IconTagsOutline18,
 } from "@pond/icons/outline/18";
 import type { IconComponent } from "@pond/icons/types";
 
@@ -38,7 +38,7 @@ export const ASSISTANT_ACTIONS: readonly [
     id: "organize",
     title: "Organize Saves",
     detail: "Review titles, tags, and folders",
-    icon: IconTagsOutline18,
+    icon: IconBookmarkOutline18,
     prompt:
       "Suggest better titles, tags, and folders for these Saves. Let me review the changes before applying them.",
   },
@@ -75,7 +75,7 @@ export const AGENT_STARTERS: readonly [
     id: "organize",
     title: "Organize Saves",
     detail: "Review titles, tags, and folders",
-    icon: IconTagsOutline18,
+    icon: IconBookmarkOutline18,
     prompt:
       "Find Saves missing tags and suggest how to organize them. Let me review each change.",
   },

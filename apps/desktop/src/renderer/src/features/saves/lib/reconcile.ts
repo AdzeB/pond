@@ -74,7 +74,14 @@ export const SavePatchSchema = z.object({
   suggestedTags: Texts,
   suggestedTagsModel: Text,
   videoNotes: z
-    .array(z.object({ id: z.string(), timeSec: z.number(), text: z.string() }))
+    .array(
+      z.object({
+        id: z.string(),
+        timeSec: z.number(),
+        text: z.string(),
+        fileIndex: z.number().int().nonnegative().optional(),
+      }),
+    )
     .nullish()
     .catch(null),
   comments: z
@@ -86,6 +93,7 @@ export const SavePatchSchema = z.object({
         w: z.number(),
         h: z.number(),
         text: z.string(),
+        fileIndex: z.number().int().nonnegative().optional(),
       }),
     )
     .nullish()

@@ -4,6 +4,7 @@
   color: var(--ds-gray-10);
 }
 .activity summary {
+  --ds-focus-offset: 2px;
   display: flex;
   gap: 7px;
   align-items: center;
@@ -11,6 +12,7 @@
   padding-block: 4px;
   cursor: pointer;
   list-style: none;
+  border-radius: var(--ds-radius-xs);
 }
 .activity summary::-webkit-details-marker {
   display: none;
@@ -30,11 +32,6 @@
 }
 .activity summary:hover {
   color: var(--ds-gray-12);
-}
-.activity summary:focus-visible {
-  outline: 2px solid var(--ds-gray-8);
-  outline-offset: 2px;
-  border-radius: 3px;
 }
 .activity ol {
   padding: 4px 0 4px 7px;

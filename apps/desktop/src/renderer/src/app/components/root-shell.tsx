@@ -4,9 +4,11 @@ import { RightPane } from "@/app/components/right-pane/right-pane";
 import { Toolbar } from "@/app/components/toolbar/toolbar";
 import { Tray } from "@/app/components/tray";
 import { AppHotkeys } from "@/app/effects/app-hotkeys";
+import { EditableHotkeyGuard } from "@/app/effects/editable-hotkey-guard";
 import { MenuBridge } from "@/app/effects/menu-bridge";
 import { UndoRedoBridge } from "@/app/effects/undo-redo-bridge";
 import { FolderSidebar } from "@/features/library/components/folder-sidebar/folder-sidebar";
+import { NewMenuDialogHost } from "@/features/library/components/new-menu/new-menu";
 import { AppShell } from "@/features/library/components/workspace-shell/workspace-shell";
 import { SaveHotkeys } from "@/features/saves/effects/save-hotkeys";
 import { openSave, saveIdFromPath } from "@/features/saves/lib/save-nav";
@@ -42,10 +44,12 @@ export function RootShell() {
 
   return (
     <>
+      <EditableHotkeyGuard />
       <UndoRedoBridge />
       <MenuBridge />
       <SaveHotkeys />
       <AppHotkeys />
+      <NewMenuDialogHost />
       <AppShell.Root
         header={<Toolbar />}
         left={isSettings ? <SettingsSidebar /> : <FolderSidebar />}

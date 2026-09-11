@@ -19,6 +19,17 @@ export const folders = {
   snapshot(): Folder[] {
     return store.state.folders;
   },
+  forSave(saveId: string): Folder[] {
+    const ids = store.state.bySave[saveId] ?? [];
+    if (ids.length === 0) return [];
+    const byId = new Map(
+      store.state.folders.map((folder) => [folder.id, folder]),
+    );
+    return ids.flatMap((id) => {
+      const folder = byId.get(id);
+      return folder ? [folder] : [];
+    });
+  },
   async refresh(): Promise<void> {
     const [folderRows, membershipRows] = await Promise.all([
       window.pond.query("folders.list", {}),
@@ -49,5 +60,16 @@ export function useFolderMemberships(): Record<string, string[]> {
 export function useHydrateFolders(): void {
   useEffect(() => {
     void folders.refresh();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const unsubscribe = window.pond.onSyncAction((event) => {
+      if (event.modelName !== "save_folder" && event.modelName !== "folder")
+        return;
+      clearTimeout(timer);
+      timer = setTimeout(() => void folders.refresh(), 16);
+    });
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
   }, []);
 }

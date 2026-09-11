@@ -14,6 +14,8 @@ import { resolvePondId, UNBOUND_POND_ID } from "../lib/pond-identity";
 import { resolvePaths } from "../paths";
 
 const POND_PREF_KEYS = [
+  "folderRules",
+  "folderViews",
   "preferences",
   "sourcesView",
   "sync",
@@ -38,6 +40,8 @@ export interface StoredPrefs {
 }
 
 const APP_PREF_KEYS = [
+  "viewer",
+  "shortcuts",
   "window",
   "quickCapture",
   "autoImport",
@@ -121,6 +125,10 @@ export function normalizeStoredPrefs(stored: StoredPrefsInput): StoredPrefs {
 
 function mergeAll(base: Prefs, patch: DeepPartial<Prefs>): Prefs {
   return PrefsSchema.parse({
+    shortcuts: { ...base.shortcuts, ...patch.shortcuts },
+    viewer: { ...base.viewer, ...patch.viewer },
+    folderViews: { ...base.folderViews, ...patch.folderViews },
+    folderRules: { ...base.folderRules, ...patch.folderRules },
     preferences: { ...base.preferences, ...patch.preferences },
     trash: { ...base.trash, ...patch.trash },
     window: { ...base.window, ...patch.window },

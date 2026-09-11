@@ -1,11 +1,13 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import { resultNavigation } from "@/features/library/state/result-navigation";
 import { selection } from "@/features/library/state/selection";
 
 interface InspectState {
   grayscale: boolean;
   compare: boolean;
   showNavigator: boolean;
+  commentRequest: number;
 }
 
 function readNavigator(): boolean {
@@ -21,6 +23,7 @@ const store = new Store<InspectState>({
   grayscale: false,
   compare: false,
   showNavigator: readNavigator(),
+  commentRequest: 0,
 });
 
 export const inspect = {
@@ -54,13 +57,22 @@ export const inspect = {
   toggleNavigator(): void {
     inspect.setShowNavigator(!store.state.showNavigator);
   },
+  enterComment(): void {
+    store.setState((state) => ({
+      ...state,
+      commentRequest: state.commentRequest + 1,
+    }));
+  },
   snapshot(): InspectState {
     return store.state;
   },
   pinCurrent(): void {
     const id = selection.getAnchor();
     if (!id) return;
-    void window.pond.query("preview.pin", { id });
+    void window.pond.query("preview.pin", {
+      id,
+      navigation: resultNavigation.request() ?? undefined,
+    });
   },
 };
 

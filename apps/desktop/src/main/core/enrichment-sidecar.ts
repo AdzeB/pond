@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { type NewSave, type Save, saves as savesTable } from "@pond/schema/db";
 import { eq, isNotNull, or, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
@@ -79,6 +80,7 @@ const textList = z
 
 const VideoNoteSchema = z.object({
   id: z.string(),
+  fileIndex: z.number().int().nonnegative().optional(),
   timeSec: z.number(),
   text: z.string(),
 });
@@ -107,8 +109,13 @@ const EnrichmentSidecarSchema = z.object({
     .catch(undefined),
 });
 
-export function readEnrichmentSidecar(id: string): EnrichmentFields | null {
-  const file = sidecarPath(id);
+export function readEnrichmentSidecar(
+  id: string,
+  root?: string,
+): EnrichmentFields | null {
+  const file = root
+    ? join(root, "items", `${id}.info`, SIDECAR_FILE)
+    : sidecarPath(id);
   if (!existsSync(file)) return null;
   const read = readBundleJson<EnrichmentFields>(file);
   const parsed = EnrichmentSidecarSchema.safeParse(read?.data);

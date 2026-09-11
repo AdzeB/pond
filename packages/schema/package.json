@@ -44,7 +44,11 @@
     "./filters/color": "./src/filters/color.ts",
     "./label-name": "./src/label-name.ts",
     "./list-kinds": "./src/list-kinds.ts",
-    "./native": "./src/native.ts"
+    "./native": "./src/native.ts",
+    "./capture": "./src/capture.ts",
+    "./folder-rules": "./src/folder-rules.ts",
+    "./folder-presentation": "./src/folder-presentation.ts",
+    "./source-ids": "./src/source-ids.ts"
   },
   "scripts": {
     "generate": "node --experimental-strip-types scripts/generate-supported-sources.ts",

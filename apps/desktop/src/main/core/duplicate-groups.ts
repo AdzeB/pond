@@ -1,0 +1,111 @@
+import type { SaveFile } from "@pond/schema/db";
+import type { QueryResults } from "../../shared/query-contracts";
+
+interface DuplicateGroup {
+  kind: "exact" | "similar";
+  ids: string[];
+}
+interface Row {
+  id: string;
+  files: SaveFile[];
+  phash: string | null;
+}
+interface HashNode {
+  hash: bigint;
+  ids: string[];
+  children: Map<number, HashNode>;
+}
+function distance(a: bigint, b: bigint): number {
+  let bits = a ^ b;
+  let count = 0;
+  while (bits) {
+    bits &= bits - 1n;
+    count++;
+  }
+  return count;
+}
+export function duplicateGroups(
+  rows: readonly Row[],
+): QueryResults["saves.findDuplicates"] {
+  const exact = new Map<string, string[]>();
+  const exactKey = new Map<string, string>();
+  const hashes = new Map<string, string[]>();
+  let visualIndexed = 0;
+  for (const row of rows) {
+    const files = row.files.filter(
+      (file) =>
+        !["custom_thumbnail", "avatar", "source_icon", "poster"].includes(
+          file.kind,
+        ),
+    );
+    if (files.length && files.every((file) => !!file.sha256)) {
+      const key = files
+        .map((file) => file.sha256.toLowerCase())
+        .sort()
+        .join(":");
+      const ids = exact.get(key) ?? [];
+      ids.push(row.id);
+      exact.set(key, ids);
+      exactKey.set(row.id, key);
+    }
+    if (row.phash && /^[a-f0-9]{16}$/i.test(row.phash)) {
+      visualIndexed++;
+      const key = row.phash.toLowerCase();
+      const ids = hashes.get(key) ?? [];
+      ids.push(row.id);
+      hashes.set(key, ids);
+    }
+  }
+  const groups: DuplicateGroup[] = [...exact.values()]
+    .filter((ids) => ids.length > 1)
+    .map((ids) => ({ kind: "exact", ids }));
+  let root: HashNode | null = null;
+  const nodes: HashNode[] = [];
+  for (const [hash, ids] of hashes) {
+    const next: HashNode = {
+      hash: BigInt(`0x${hash}`),
+      ids,
+      children: new Map(),
+    };
+    nodes.push(next);
+    if (!root) {
+      root = next;
+      continue;
+    }
+    let node = root;
+    for (;;) {
+      const d = distance(node.hash, next.hash);
+      const child = node.children.get(d);
+      if (child) node = child;
+      else {
+        node.children.set(d, next);
+        break;
+      }
+    }
+  }
+  const assigned = new Set<string>();
+  for (const anchor of nodes) {
+    const anchorId = anchor.ids.find((id) => !assigned.has(id));
+    if (!anchorId || !root) continue;
+    const related: string[] = [];
+    const stack = [root];
+    while (stack.length) {
+      const node = stack.pop();
+      if (!node) break;
+      const d = distance(anchor.hash, node.hash);
+      if (d <= 6) related.push(...node.ids.filter((id) => !assigned.has(id)));
+      for (const [edge, child] of node.children)
+        if (edge >= d - 6 && edge <= d + 6) stack.push(child);
+    }
+    const firstKey = exactKey.get(anchorId);
+    const onlyExact =
+      !!firstKey && related.every((id) => exactKey.get(id) === firstKey);
+    if (related.length < 2 || onlyExact) continue;
+    for (const id of related) assigned.add(id);
+    groups.push({
+      kind: "similar",
+      ids: [anchorId, ...related.filter((id) => id !== anchorId)],
+    });
+  }
+  return { groups, visualIndexed, total: rows.length };
+}

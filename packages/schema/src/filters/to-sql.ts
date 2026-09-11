@@ -1,4 +1,3 @@
-import { formatQuery, type RuleGroupProcessor } from "@react-querybuilder/core";
 import {
   and as drizzleAnd,
   or as drizzleOr,
@@ -8,8 +7,10 @@ import {
 } from "drizzle-orm";
 import { z } from "zod";
 import { saves } from "../db";
+import { readColorMatch } from "./color";
 import { isoDurationToMillis } from "./duration";
 import { FIELD_DESCRIPTORS } from "./fields";
+import { ASPECT_TOLERANCE, parseAspectRatio } from "./fields/dims";
 import {
   folderExists,
   jsonArrayDistinctCount,
@@ -27,33 +28,29 @@ import type {
 import { isGroup } from "./types";
 
 export function buildWhere(query: Query): SQL | undefined {
-  return formatQuery(query, { ruleGroupProcessor: compileGroup }) ?? undefined;
+  if (query.rules.length === 0 && !query.not) return undefined;
+  return compileClause(query);
 }
 
-const compileGroup: RuleGroupProcessor<SQL | null> = (ruleGroup) => {
-  // SAFETY: formatQuery hands back the same group `buildWhere` passed it, typed as the
-  // library's RuleGroupTypeAny because the processor signature is not parameterised.
-  return compileClause(ruleGroup as Query);
-};
-
-function compileClause(c: Clause): SQL | null {
+function compileClause(c: Clause): SQL {
   if (isGroup(c)) {
-    const parts = c.rules
-      .map((child) => compileClause(child))
-      .filter((p): p is SQL => p !== null);
-    if (parts.length === 0) return null;
-    if (parts.length === 1) return parts[0] ?? null;
+    const parts = c.rules.map(compileClause);
+    if (parts.length === 0) return c.not ? sql`0` : sql`1`;
     const combined =
       c.combinator === "or" ? drizzleOr(...parts) : drizzleAnd(...parts);
-    return combined ?? null;
+    return c.not ? sql`not (${combined})` : (combined ?? sql`1`);
   }
   return compilePredicate(c);
 }
 
-function compilePredicate(p: Predicate): SQL | null {
+function compilePredicate(p: Predicate): SQL {
+  if (!FIELD_DESCRIPTORS[p.field]?.comparators.includes(p.operator)) {
+    throw new Error(`Unsupported filter: ${p.field} ${p.operator}`);
+  }
   const sqlExpr = compileForField(p.field, p.operator, p.value);
-  if (!sqlExpr) return null;
-  return p.negate ? sql`not (${sqlExpr})` : sqlExpr;
+  if (!sqlExpr) throw new Error(`Invalid filter: ${p.field} ${p.operator}`);
+  const boolean = sql`coalesce((${sqlExpr}), 0)`;
+  return p.negate ? sql`not (${boolean})` : boolean;
 }
 
 function compileForField(
@@ -61,6 +58,13 @@ function compileForField(
   operator: ComparatorId,
   raw: PredicateValue,
 ): SQL | null {
+  if (field === "color") {
+    const color = readColorMatch(raw);
+    return color && operator === "near"
+      ? sql`pond_color_near(${saves.dominantColors}, ${color.hex}, ${color.tolerance}) = 1`
+      : null;
+  }
+  if (field === "aspect") return aspectClause(operator, raw);
   if (field === "tags") return jsonArrayClause(saves.tags, operator, raw);
   if (field === "folder") return folderClause(operator, raw);
   if (field === "list") return jsonArrayClause(saves.listKinds, operator, raw);
@@ -74,22 +78,37 @@ function compileForField(
 
 function folderClause(operator: ComparatorId, raw: PredicateValue): SQL | null {
   if (operator === "empty") return folderExists([]);
-  if (!Array.isArray(raw) || raw.length === 0) return null;
-  const ids = raw.map((v) => String(v)).filter((v) => v.length > 0);
-  if (ids.length === 0) return null;
+  if (!Array.isArray(raw)) return null;
+  const ids = [
+    ...new Set(
+      raw.map((v) => String(v).toLowerCase()).filter((v) => v.length > 0),
+    ),
+  ];
+  if (ids.length === 0)
+    return operator === "exact"
+      ? folderExists([])
+      : operator === "some"
+        ? sql`0`
+        : sql`1`;
+  const matches = sql`(
+    select count(distinct lower(folder_id)) from save_folders
+    where save_id = ${saves.id} and lower(folder_id) in (${sql.join(
+      ids.map((id) => sql`${id}`),
+      sql`, `,
+    )})
+  ) = ${ids.length}`;
   switch (operator) {
     case "some":
-      return folderExists(ids);
+      return sql`exists (select 1 from save_folders where save_id = ${saves.id} and lower(folder_id) in (${sql.join(
+        ids.map((id) => sql`${id}`),
+        sql`, `,
+      )}))`;
     case "every":
-      return sql`(
-        select count(distinct folder_id) from save_folders
-        where save_id = ${saves.id} and folder_id in (${sql.join(
-          ids.map((id) => sql`${id}`),
-          sql`, `,
-        )})
-      ) = ${ids.length}`;
+      return matches;
+    case "exact":
+      return sql`${matches} and (select count(distinct lower(folder_id)) from save_folders where save_id = ${saves.id}) = ${ids.length}`;
     case "none":
-      return sql`not ${folderExists(ids)}`;
+      return sql`not (${folderClause("some", ids)})`;
     default:
       return null;
   }
@@ -130,11 +149,19 @@ function jsonArrayClause(
   raw: PredicateValue,
 ): SQL | null {
   if (operator === "empty") return jsonArrayEmpty(column);
-  if (!Array.isArray(raw) || raw.length === 0) return null;
-  const lowered = raw
-    .map((v) => String(v).toLowerCase())
-    .filter((v) => v.length > 0);
-  if (lowered.length === 0) return null;
+  if (!Array.isArray(raw)) return null;
+  const lowered = [
+    ...new Set(
+      raw.map((v) => String(v).toLowerCase()).filter((v) => v.length > 0),
+    ),
+  ];
+  if (lowered.length === 0) {
+    return operator === "exact"
+      ? jsonArrayEmpty(column)
+      : operator === "some"
+        ? sql`0`
+        : sql`1`;
+  }
   const inList = sql.join(
     lowered.map((v) => sql`${v}`),
     sql`, `,
@@ -145,11 +172,30 @@ function jsonArrayClause(
       return jsonArrayExists(column, matchExpr);
     case "every":
       return sql`${jsonArrayDistinctCount(column, matchExpr)} = ${lowered.length}`;
+    case "exact":
+      return sql`${jsonArrayDistinctCount(column, matchExpr)} = ${lowered.length} and ${jsonArrayDistinctCount(column, sql`1`)} = ${lowered.length}`;
     case "none":
       return sql`not ${jsonArrayExists(column, matchExpr)}`;
     default:
       return null;
   }
+}
+
+function aspectClause(operator: ComparatorId, raw: PredicateValue): SQL | null {
+  const values = Array.isArray(raw) ? raw : [raw];
+  const ratios = values.map((value) => {
+    const parsed = z.string().safeParse(value);
+    return parsed.success ? parseAspectRatio(parsed.data) : null;
+  });
+  if (!ratios.length || ratios.some((ratio) => ratio === null)) return null;
+  const comparisons = ratios.map(
+    (ratio) =>
+      sql`abs((cast(${saves.width} as real) / ${saves.height}) - ${ratio}) / ${ratio} <= ${ASPECT_TOLERANCE}`,
+  );
+  const positive = sql`coalesce((${saves.width} > 0 and ${saves.height} > 0 and (${drizzleOr(...comparisons)})), 0)`;
+  return operator === "neq" || operator === "nin"
+    ? sql`not (${positive})`
+    : positive;
 }
 
 function scalarClause(
@@ -270,6 +316,11 @@ function numericValue(field: FieldId, raw: PredicateValue): number | null {
     return Number.isFinite(parsed) ? parsed : null;
   }
   const value = text.data;
+  if (value === "today") {
+    const day = new Date();
+    day.setHours(0, 0, 0, 0);
+    return day.getTime();
+  }
   if (
     value.startsWith("P") ||
     value.startsWith("-P") ||

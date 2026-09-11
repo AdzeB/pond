@@ -5,6 +5,7 @@ import {
 } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { globalShortcutStatus } from "../../core/global-shortcuts";
 import {
   getImageDownloadPrefs,
   getPrefs,
@@ -139,6 +140,9 @@ export const settingsQueries = {
     return { ok: true };
   },
 
+  "settings.globalShortcutStatus"() {
+    return globalShortcutStatus();
+  },
   async "settings.getPrefs"() {
     return await getPrefs();
   },

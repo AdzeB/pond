@@ -3,12 +3,17 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Source } from "@pond/schema/db";
 import type { RawYtdlp } from "@pond/schema/raw";
+import type { ReportDownloadActivity } from "@shared/download-activity";
 import log from "electron-log/main.js";
 import { getVideoDownloadPrefs } from "../prefs";
 import { partitionForIngest } from "../sync/accounts";
 import { binariesAvailable } from "./binaries";
 import { writeNetscapeCookies } from "./cookies";
-import { formatSelector, maxFilesizeArg } from "./yt-dlp-format";
+import {
+  formatSelector,
+  maxFilesizeArg,
+  YTDLP_TRANSFER_FLAGS,
+} from "./yt-dlp-format";
 import {
   pickProducedFiles,
   pickProducedPoster,
@@ -16,12 +21,17 @@ import {
   type SubtitleFile,
 } from "./yt-dlp-output";
 import { runWithTimeout } from "./yt-dlp-process";
+import {
+  createYtdlpProgressReporter,
+  YTDLP_PROGRESS_TEMPLATE,
+} from "./yt-dlp-progress";
 
 interface DownloadVideoArgs {
   url: string;
   source: Source | null;
   accountId?: string | null;
   signal?: AbortSignal;
+  reportActivity?: ReportDownloadActivity;
   /** Quoted/carousel tweets are a yt-dlp playlist; YouTube watch URLs must never expand. */
   allowPlaylist?: boolean;
   expectedCount?: number;
@@ -44,6 +54,8 @@ interface DownloadedVideos {
 
 const HARD_TIMEOUT_MS = 90_000;
 const MAX_PLAYLIST_TIMEOUT_FACTOR = 4;
+/** Matches `TASK_WATCHDOG_MS.fetch_video_ytdlp` so a live transfer is not killed at 90s. */
+const VIDEO_WATCHDOG_MS = 10 * 60_000;
 
 export async function downloadVideo(
   args: DownloadVideoArgs,
@@ -85,7 +97,12 @@ export async function downloadVideo(
     const argv = [
       args.allowPlaylist ? "--yes-playlist" : "--no-playlist",
       "--no-warnings",
-      "--no-progress",
+      "--newline",
+      "--progress",
+      "--progress-delta",
+      "0.5",
+      "--progress-template",
+      `download:${YTDLP_PROGRESS_TEMPLATE}`,
       "--no-part",
       "--restrict-filenames",
       "--write-info-json",
@@ -93,6 +110,7 @@ export async function downloadVideo(
       "30",
       "--retries",
       "3",
+      ...YTDLP_TRANSFER_FLAGS,
       "-f",
       formatSelector(args.source, prefs),
       "--cookies",
@@ -145,11 +163,16 @@ export async function downloadVideo(
         MAX_PLAYLIST_TIMEOUT_FACTOR,
         Math.max(1, args.expectedCount ?? 1),
       );
+    args.reportActivity?.({ phase: "harvesting" });
     const { code, stderr } = await runWithTimeout(
       ytdlp,
       argv,
       timeoutMs,
       args.signal,
+      args.reportActivity
+        ? createYtdlpProgressReporter(args.reportActivity)
+        : undefined,
+      VIDEO_WATCHDOG_MS,
     );
     if (code !== 0) {
       log.warn(
@@ -162,6 +185,7 @@ export async function downloadVideo(
       return null;
     }
 
+    args.reportActivity?.({ phase: "processing" });
     const produced = await pickProducedFiles(outputDir);
     if (produced.length === 0) {
       log.warn("[pond yt-dlp] no output file produced", args.url);

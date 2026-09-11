@@ -18,6 +18,7 @@ function fakeDb(input: {
   rows?: RetrievalRecord[];
 }) {
   const where = vi.fn<(condition: SQL | undefined) => void>();
+  const neighborLimits: number[] = [];
   const rows = input.rows ?? [];
   const db: RetrievalStore = {
     records: async (condition) => {
@@ -29,11 +30,14 @@ function fakeDb(input: {
       return rows.map(({ id }) => ({ id }));
     },
     lexicalCandidates: () => input.candidates ?? [],
-    neighbors: (kind) =>
-      kind === "clip" ? (input.knnClip ?? []) : (input.knnText ?? []),
+    neighbors: (kind, _vector, limit) => {
+      neighborLimits.push(limit);
+      return kind === "clip" ? (input.knnClip ?? []) : (input.knnText ?? []);
+    },
   };
   return {
     db,
+    neighborLimits,
     query: () => {
       const condition = where.mock.calls[0]?.[0];
       if (!condition) throw new Error("Expected a scoped query");
@@ -208,5 +212,16 @@ describe("LibraryRetrievalService", () => {
       { text: { model: "new-model@2", vector: [1, 0] } },
     );
     expect(result.saves).toEqual([]);
+  });
+
+  it("ranks a deeper dense candidate pool than the result window", async () => {
+    const harness = fakeDb({ knnText: [] });
+    await retrieveLibraryWithStore(
+      harness.db,
+      { query: "Kanye", limit: 500 },
+      {},
+      { text: { model: "model@1", vector: [1, 0] } },
+    );
+    expect(harness.neighborLimits).toEqual([4000]);
   });
 });

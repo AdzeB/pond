@@ -1,4 +1,5 @@
 .root {
+  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -7,30 +8,16 @@
   background: var(--ds-gray-1);
 }
 
-.toolbar {
-  display: flex;
-  flex: none;
-  gap: 16px;
-  align-items: center;
-  min-height: 48px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--ds-gray-4);
+.count {
+  padding: 2px 4px;
 }
 
-.toolbar strong {
-  font-size: 13px;
-  color: var(--ds-gray-12);
+.query {
+  padding: 2px 4px;
 }
 
-.toolbar input {
+.field {
   width: min(18rem, 40vw);
-  min-height: 30px;
-  padding: 0 9px;
-  margin-left: auto;
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-2);
-  border: 1px solid var(--ds-gray-5);
-  border-radius: var(--ds-radius-sm);
 }
 
 .status {
@@ -46,7 +33,7 @@
 .list {
   flex: 1;
   min-height: 0;
-  padding: 0;
+  padding: 52px 0 0;
   margin: 0;
   overflow: auto;
   list-style: none;

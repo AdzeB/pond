@@ -5,6 +5,7 @@ import type { CaptureMedia, RawJson, RawYtdlp } from "@pond/schema/raw";
 import { storedAsRawJson } from "@pond/schema/raw-schema";
 import { isVideoFile } from "@shared/media-index";
 import log from "electron-log/main.js";
+import type { TransferOptions } from "../../../lib/download-transfer";
 import { probeImageDims } from "../../../lib/image-process";
 import { buildFirstFramePoster } from "../../../lib/poster-from-frame";
 import {
@@ -23,7 +24,7 @@ import { readSave, type WriteFileArgs } from "./apply";
 
 export async function runFetchVideoYtdlp(
   saveId: string,
-  ctx?: { signal?: AbortSignal },
+  ctx?: TransferOptions,
 ): Promise<void> {
   const save = await readSave(saveId);
   if (!save) return;
@@ -75,6 +76,7 @@ export async function runFetchVideoYtdlp(
     expectedCount: expected,
   };
   if (ctx?.signal) request.signal = ctx.signal;
+  if (ctx?.reportActivity) request.reportActivity = ctx.reportActivity;
   const dl = await downloadVideo(request);
   if (!dl || dl.items.length === 0) {
     throw new TransientError(
@@ -83,6 +85,8 @@ export async function runFetchVideoYtdlp(
   }
 
   try {
+    ctx?.signal?.throwIfAborted();
+    ctx?.reportActivity?.({ phase: "processing" });
     const newFiles: WriteFileArgs[] = [];
 
     for (let i = 0; i < dl.items.length; i++) {
@@ -107,6 +111,8 @@ export async function runFetchVideoYtdlp(
     if (primary?.infoJson) {
       patch.rawJson = mergeYtdlpInfo(save.rawJson, primary.infoJson);
     }
+    ctx?.signal?.throwIfAborted();
+    ctx?.reportActivity?.({ phase: "saving" });
     await persistSave(saveId, patch, {
       actorReason: "pipeline:fetch-video-ytdlp",
       replaceFilesWithKind: ["video", "poster"],

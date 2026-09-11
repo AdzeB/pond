@@ -13,6 +13,7 @@ import {
 } from "@pond/schema/events";
 import { and, desc, eq, inArray, isNull, like, lt, or, sql } from "drizzle-orm";
 import { z } from "zod";
+import { downloadActivity } from "../../core/pipeline/download-activity";
 import { pipelineSnapshot } from "../../core/pipeline/reconciler-client";
 import { getDb } from "../../db";
 import { cursorFor } from "./downloads-page";
@@ -90,6 +91,7 @@ function toHistoryRow(row: HistoryRow): DownloadHistoryRow | null {
 }
 
 export const downloadsQueries = {
+  "downloads.activity": query(z.object({}), () => downloadActivity.snapshot()),
   "pipeline.status": query(z.object({}), () => pipelineSnapshot()),
 
   /** In-flight and failed saves can sit behind the paged library window. */

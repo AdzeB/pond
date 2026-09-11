@@ -1,10 +1,7 @@
+import type { Source } from "@pond/schema/db";
 import type { TableColumn } from "@pond/ui";
 import { useState } from "react";
-import {
-  getSourceDef,
-  getSourceIcon,
-  getSourceLogo,
-} from "@/features/sources/lib/registry";
+import { BrandTile } from "@/features/sources/components/sync-monitor-source-tile/sync-monitor-source-tile";
 import { formatNumber } from "@/shared/lib/format";
 import { relativeTime } from "@/shared/lib/relative-time";
 import type { SourceStatusId } from "./lib/filters";
@@ -17,24 +14,21 @@ function NameMark({ row }: { row: SourceTableRow }) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const pfp =
     row.avatarUrl && row.avatarUrl !== failedUrl ? row.avatarUrl : null;
-  const { logo } = getSourceDef(row.source);
-  const src = pfp ?? logo ?? undefined;
-  const variant = pfp ? "account" : "source";
 
   return (
     <span className={styles.lead}>
-      <span className={styles.art} data-variant={variant}>
-        {src ? (
+      {pfp ? (
+        <span className={styles.art} data-variant="account">
           <img
-            src={src}
+            src={pfp}
             alt=""
             referrerPolicy="no-referrer"
-            onError={() => {
-              if (pfp) setFailedUrl(pfp);
-            }}
+            onError={() => setFailedUrl(pfp)}
           />
-        ) : null}
-      </span>
+        </span>
+      ) : (
+        <BrandTile source={row.source} size={18} />
+      )}
       <span className={styles.name}>{row.name}</span>
       <span className={styles.count}>{formatNumber(row.items)}</span>
     </span>
@@ -115,14 +109,10 @@ function StatusMark({ row }: { row: SourceTableRow }) {
   );
 }
 
-function SourceMark({ source, label }: { source: string; label: string }) {
-  const logo = getSourceLogo(source);
-  const Icon = getSourceIcon(source);
+function SourceMark({ source, label }: { source: Source; label: string }) {
   return (
     <span className={styles.source}>
-      <span className={styles.logo}>
-        {logo ? <img src={logo} alt="" /> : Icon ? <Icon /> : null}
-      </span>
+      <BrandTile source={source} size={18} />
       <span className={styles.meta}>{label}</span>
     </span>
   );
@@ -134,7 +124,7 @@ export const sourcesColumns: TableColumn<SourceTableRow>[] = [
     header: "Name",
     sortLabel: "Name",
     accessor: (row) => row.name,
-    width: "minmax(160px, 1fr)",
+    width: "minmax(0, 1fr)",
     cell: (row) => <NameMark row={row} />,
   },
   {
@@ -142,7 +132,7 @@ export const sourcesColumns: TableColumn<SourceTableRow>[] = [
     header: "Last Synced",
     sortLabel: "Last Synced",
     accessor: (row) => row.lastSyncedMs,
-    width: "120px",
+    width: "minmax(0, 120px)",
     cell: (row) => (
       <span className={styles.metric}>
         {row.lastSyncedAt ? relativeTime(row.lastSyncedAt) : "—"}
@@ -154,7 +144,7 @@ export const sourcesColumns: TableColumn<SourceTableRow>[] = [
     header: "Status",
     sortLabel: "Status",
     accessor: (row) => row.statusLabel,
-    width: "120px",
+    width: "minmax(0, 120px)",
     cell: (row) => <StatusMark row={row} />,
   },
   {
@@ -162,7 +152,7 @@ export const sourcesColumns: TableColumn<SourceTableRow>[] = [
     header: "Source",
     sortLabel: "Source",
     accessor: (row) => row.sourceLabel,
-    width: "140px",
+    width: "minmax(0, 140px)",
     cell: (row) => <SourceMark source={row.source} label={row.sourceLabel} />,
   },
   {
@@ -170,7 +160,7 @@ export const sourcesColumns: TableColumn<SourceTableRow>[] = [
     header: "Type",
     sortLabel: "Type",
     accessor: (row) => row.kindLabel,
-    width: "100px",
+    width: "minmax(0, 100px)",
     cell: (row) => <span className={styles.meta}>{row.kindLabel}</span>,
   },
 ];

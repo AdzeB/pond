@@ -10,12 +10,26 @@ export interface InfoFile {
   path: string;
   sha256: string;
   size: number;
+  sourceUrl?: string;
   mimeType?: string;
   width?: number;
   height?: number;
 }
 
+export type SaveUserData = Pick<
+  Save,
+  | "rating"
+  | "comments"
+  | "videoNotes"
+  | "dominantColors"
+  | "rotate"
+  | "flipX"
+  | "flipY"
+  | "crop"
+>;
+
 export interface InfoDoc {
+  userData?: SaveUserData;
   schema: typeof INFO_SCHEMA;
   id: string;
   source: string;
@@ -43,6 +57,37 @@ export interface InfoDoc {
 const nullableText = z.string().nullable().catch(null);
 
 export const StoredInfoDocSchema = z.object({
+  userData: z
+    .object({
+      rating: z.number().min(0).max(5).nullable(),
+      comments: z.array(
+        z.object({
+          id: z.string(),
+          fileIndex: z.number().int().nonnegative().optional(),
+          x: z.number(),
+          y: z.number(),
+          w: z.number(),
+          h: z.number(),
+          text: z.string(),
+        }),
+      ),
+      videoNotes: z.array(
+        z.object({
+          id: z.string(),
+          fileIndex: z.number().int().nonnegative().optional(),
+          timeSec: z.number(),
+          text: z.string(),
+        }),
+      ),
+      dominantColors: z.array(z.string()),
+      rotate: z.number(),
+      flipX: z.boolean(),
+      flipY: z.boolean(),
+      crop: z
+        .object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() })
+        .nullable(),
+    })
+    .optional(),
   id: z.string().catch(""),
   source: z.string().catch(""),
   sourceId: z.string().catch(""),
@@ -70,6 +115,7 @@ export const StoredInfoDocSchema = z.object({
         path: z.string().catch(""),
         sha256: z.string().catch(""),
         size: z.number().catch(0),
+        sourceUrl: z.string().optional().catch(undefined),
         mimeType: z.string().optional().catch(undefined),
         width: z.number().optional().catch(undefined),
         height: z.number().optional().catch(undefined),
@@ -79,6 +125,19 @@ export const StoredInfoDocSchema = z.object({
 });
 
 export type StoredInfoDoc = z.infer<typeof StoredInfoDocSchema>;
+
+export function infoFilesFromSave(files: Save["files"]): InfoFile[] {
+  return files.map((file) => ({
+    kind: file.kind,
+    path: file.path,
+    sha256: file.sha256,
+    size: file.size,
+    mimeType: file.mimeType ?? undefined,
+    width: file.width ?? undefined,
+    height: file.height ?? undefined,
+    sourceUrl: file.sourceUrl ?? undefined,
+  }));
+}
 
 function toIso(value: Date | null | undefined): string | null {
   return value ? value.toISOString() : null;
@@ -90,6 +149,16 @@ export function infoDocFromSave(
   folderIds: string[] = [],
 ): InfoDoc {
   return {
+    userData: {
+      rating: save.rating ?? null,
+      comments: save.comments ?? [],
+      videoNotes: save.videoNotes ?? [],
+      dominantColors: save.dominantColors ?? [],
+      rotate: save.rotate ?? 0,
+      flipX: save.flipX ?? false,
+      flipY: save.flipY ?? false,
+      crop: save.crop ?? null,
+    },
     schema: INFO_SCHEMA,
     id: save.id,
     source: save.source,
@@ -116,6 +185,15 @@ export function infoDocFromSave(
 }
 
 const EXPORTED_SAVE_FIELDS = [
+  "files",
+  "rating",
+  "comments",
+  "videoNotes",
+  "dominantColors",
+  "rotate",
+  "flipX",
+  "flipY",
+  "crop",
   "url",
   "title",
   "description",
@@ -144,6 +222,41 @@ export function applyPatchToInfo(
   patch: Partial<Save>,
 ): InfoDoc {
   const next: InfoDoc = { schema: INFO_SCHEMA, ...info };
+  const userFields = [
+    "rating",
+    "comments",
+    "videoNotes",
+    "dominantColors",
+    "rotate",
+    "flipX",
+    "flipY",
+    "crop",
+  ] as const;
+  if (userFields.some((key) => patch[key] !== undefined)) {
+    next.userData = {
+      rating: info.userData?.rating ?? null,
+      comments: info.userData?.comments ?? [],
+      videoNotes: info.userData?.videoNotes ?? [],
+      dominantColors: info.userData?.dominantColors ?? [],
+      rotate: info.userData?.rotate ?? 0,
+      flipX: info.userData?.flipX ?? false,
+      flipY: info.userData?.flipY ?? false,
+      crop: info.userData?.crop ?? null,
+    };
+    if (patch.rating !== undefined) next.userData.rating = patch.rating;
+    if (patch.comments !== undefined)
+      next.userData.comments = patch.comments ?? [];
+    if (patch.videoNotes !== undefined)
+      next.userData.videoNotes = patch.videoNotes ?? [];
+    if (patch.dominantColors !== undefined)
+      next.userData.dominantColors = patch.dominantColors ?? [];
+    if (patch.rotate !== undefined) next.userData.rotate = patch.rotate ?? 0;
+    if (patch.flipX !== undefined) next.userData.flipX = patch.flipX ?? false;
+    if (patch.flipY !== undefined) next.userData.flipY = patch.flipY ?? false;
+    if (patch.crop !== undefined) next.userData.crop = patch.crop;
+  }
+
+  if (patch.files !== undefined) next.files = infoFilesFromSave(patch.files);
   if (patch.url !== undefined) next.url = patch.url;
   if (patch.title !== undefined) next.title = patch.title ?? null;
   if (patch.description !== undefined)

@@ -20,12 +20,17 @@ interface CardActions {
 const ImportReplySchema = z
   .object({
     ok: z.boolean().catch(false),
+    id: z.string().optional().catch(undefined),
     ids: z.array(z.string()).optional().catch(undefined),
   })
   .catch({ ok: false });
 
 function pasteSavedTitle(count: number): string {
   return count === 1 ? "Saved to Pond" : `Saved ${count} items to Pond`;
+}
+
+function downloadingTitle(count: number): string {
+  return count === 1 ? "Downloading" : `Downloading ${count} links`;
 }
 
 async function importFilesAndNotify(paths: readonly string[]): Promise<void> {
@@ -42,18 +47,20 @@ async function importFilesAndNotify(paths: readonly string[]): Promise<void> {
 }
 
 async function quickAddUrls(urls: readonly string[]): Promise<void> {
-  let added = 0;
+  const added: Array<string | null> = [];
   for (const url of urls) {
     const result = ImportReplySchema.parse(
       await window.pond.query("saves.quickAdd", { url }),
     );
-    if (result.ok) added += 1;
+    if (result.ok) added.push(result.id ?? null);
   }
-  if (added === 0) return;
+  if (added.length === 0) return;
   notify({
     id: "paste-import",
-    title: pasteSavedTitle(added),
+    title: downloadingTitle(added.length),
   });
+  const id = added.length === 1 ? added[0] : null;
+  if (id) openSave(id);
 }
 
 async function importClipboardAndNotify(): Promise<void> {

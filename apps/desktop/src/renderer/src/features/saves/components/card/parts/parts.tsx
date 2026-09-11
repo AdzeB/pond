@@ -144,7 +144,7 @@ const Overlay = memo(function Overlay({
           {model.source.logo ? (
             <img src={model.source.logo} alt="" width={18} height={18} />
           ) : SourceIcon ? (
-            <SourceIcon />
+            <SourceIcon width={18} height={18} />
           ) : (
             model.source.label
           )}

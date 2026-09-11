@@ -5,6 +5,7 @@
   margin: 0 0 0 -6px;
 }
 .action {
+  --ds-focus-offset: 1px;
   display: inline-flex;
   gap: 5px;
   align-items: center;
@@ -22,10 +23,6 @@
 .action svg {
   width: 13px;
   height: 13px;
-}
-.action:focus-visible {
-  outline: 2px solid var(--ds-gray-8);
-  outline-offset: 1px;
 }
 .copy {
   display: inline-flex;

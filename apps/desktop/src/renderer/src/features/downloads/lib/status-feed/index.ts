@@ -8,11 +8,8 @@ export type {
   StatusFilter,
 } from "./downloads";
 export {
-  defaultDownloadFilters,
   HistoryPageSchema,
   historyToDownloadRow,
-  matchesDownloadFilters,
-  mergeDownloadRows,
   PipelineStatusSchema,
   projectLiveDownloads,
   statusBucket,

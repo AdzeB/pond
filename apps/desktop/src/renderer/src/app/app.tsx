@@ -1,4 +1,5 @@
 import { Dialog, Tooltip } from "@pond/ui";
+import { HotkeysProvider } from "@tanstack/react-hotkeys";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   createMemoryHistory,
@@ -6,7 +7,10 @@ import {
   RouterProvider,
 } from "@tanstack/react-router";
 import { MotionConfig } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { ActionDialogHost } from "@/features/library/components/action-dialog/action-dialog";
+import { ConversionDialogHost } from "@/features/library/components/conversion-dialog/conversion-dialog";
+import { FolderPickerHost } from "@/features/library/components/folder-picker/folder-picker";
 import type { PondApi } from "../../../preload";
 import { ExtensionCaptureToast } from "../features/captures/effects/extension-capture-toast";
 import { EnrichmentSweep } from "../features/enrichment/effects/enrichment-sweep";
@@ -25,10 +29,21 @@ import { BootScreen } from "./components/boot-screen/boot-screen";
 import { ErrorBoundary } from "./components/error-boundary/error-boundary";
 import { ErrorScreen } from "./components/error-screen/error-screen";
 import { AgentLibraryBridge } from "./effects/agent-library-bridge";
+import { EditableHotkeyGuard } from "./effects/editable-hotkey-guard";
 import { MenuRecentsBridge } from "./effects/menu-recents-bridge";
 import { CaptureShell } from "./windows/capture-shell/capture-shell";
 import { CollectShell } from "./windows/collect-shell/collect-shell";
-import { PreviewShell } from "./windows/preview-shell/preview-shell";
+
+const DuplicateReviewHost = lazy(() =>
+  import(
+    "@/features/library/components/duplicate-review/duplicate-review"
+  ).then((module) => ({ default: module.DuplicateReviewHost })),
+);
+const PreviewShell = lazy(() =>
+  import("./windows/preview-shell/preview-shell").then((module) => ({
+    default: module.PreviewShell,
+  })),
+);
 
 declare global {
   interface Window {
@@ -125,8 +140,18 @@ export function App() {
     const id = new URLSearchParams(window.location.search).get("id") ?? "";
     return (
       <MotionConfig reducedMotion="user">
-        <ThemeApplier />
-        <PreviewShell id={id} />
+        <HotkeysProvider
+          defaultOptions={{
+            hotkey: { ignoreInputs: true },
+            hotkeySequence: { ignoreInputs: true },
+          }}
+        >
+          <ThemeApplier />
+          <EditableHotkeyGuard />
+          <Suspense fallback={<div role="status">Loading preview…</div>}>
+            <PreviewShell id={id} />
+          </Suspense>
+        </HotkeysProvider>
       </MotionConfig>
     );
   }
@@ -171,24 +196,37 @@ function LibraryApp() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <QueryClientProvider client={queryClient}>
-        <Tooltip.Provider>
-          <ThemeApplier />
-          <UiSounds />
-          <MenuRecentsBridge />
-          <AgentLibraryBridge />
-          <SyncStatusBridge />
-          <ExtensionCaptureToast />
-          <EnrichmentSweep />
-          <BootScreen />
-          <ErrorBoundary>
-            <AppContent />
-          </ErrorBoundary>
-          <Dialog.Host />
-          <CommandMenuHost />
-          <ToastHost />
-        </Tooltip.Provider>
-      </QueryClientProvider>
+      <HotkeysProvider
+        defaultOptions={{
+          hotkey: { ignoreInputs: true },
+          hotkeySequence: { ignoreInputs: true },
+        }}
+      >
+        <QueryClientProvider client={queryClient}>
+          <Tooltip.Provider>
+            <ThemeApplier />
+            <UiSounds />
+            <MenuRecentsBridge />
+            <AgentLibraryBridge />
+            <SyncStatusBridge />
+            <ExtensionCaptureToast />
+            <EnrichmentSweep />
+            <BootScreen />
+            <ErrorBoundary>
+              <AppContent />
+            </ErrorBoundary>
+            <Dialog.Host />
+            <FolderPickerHost />
+            <ActionDialogHost />
+            <Suspense fallback={null}>
+              <DuplicateReviewHost />
+            </Suspense>
+            <ConversionDialogHost />
+            <CommandMenuHost />
+            <ToastHost />
+          </Tooltip.Provider>
+        </QueryClientProvider>
+      </HotkeysProvider>
     </MotionConfig>
   );
 }

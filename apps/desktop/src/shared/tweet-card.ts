@@ -48,6 +48,23 @@ export interface TweetCardData {
   card?: TweetCardLink;
 }
 
+/** X wraps media and cards as t.co; the native UI hides those tokens. */
+export function stripTwitterShortUrls(text: string): string {
+  return text
+    .replace(/https?:\/\/t\.co\/\S+/gi, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/[^\S\n]{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function visibleTweetText(text: string | undefined): string | undefined {
+  if (!text) return undefined;
+  const next = stripTwitterShortUrls(text);
+  return next.length > 0 ? next : undefined;
+}
+
 function handleFromUrl(url: string): string | undefined {
   try {
     const first = new URL(url).pathname.split("/").filter(Boolean)[0];
@@ -129,7 +146,8 @@ function buildQuoted(quoted: Capture | undefined): TweetCardData | undefined {
   if (quoted.author?.avatarUrl) author.avatarUrl = quoted.author.avatarUrl;
 
   const data: TweetCardData = { author };
-  if (quoted.description) data.text = quoted.description;
+  const quotedText = visibleTweetText(quoted.description);
+  if (quotedText) data.text = quotedText;
   if (quoted.media.length > 0) data.media = mapMedia(quoted.media);
   return data;
 }
@@ -166,7 +184,8 @@ export function buildTweetCardData(
   if (author.verified) cardAuthor.verified = true;
 
   const data: TweetCardData = { author: cardAuthor };
-  if (capture.description) data.text = capture.description;
+  const text = visibleTweetText(capture.description);
+  if (text) data.text = text;
   if (capture.publishedAt) data.publishedAt = capture.publishedAt;
   if (capture.lang) data.lang = capture.lang;
 

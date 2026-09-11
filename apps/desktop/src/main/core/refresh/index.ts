@@ -6,6 +6,7 @@ import { getDb } from "../../db";
 import { itemFile } from "../../paths";
 import { persistSave } from "../persist-save";
 import { resetTasksForSave } from "../pipeline/enqueue";
+import { withInteractivePriority } from "../pipeline/priority";
 import { kickReconciler } from "../pipeline/reconciler-client";
 
 export type RefreshOutcome =
@@ -44,7 +45,7 @@ export async function refreshSave(
 
       db.update(tasks)
         .set({
-          payload: { force: true },
+          payload: withInteractivePriority({ force: true }),
           updatedAt: new Date(),
         })
         .where(and(eq(tasks.saveId, saveId), eq(tasks.op, "harvest_metadata")))
@@ -71,7 +72,7 @@ export async function refreshSave(
     const harvest = db
       .update(tasks)
       .set({
-        payload: { force: true },
+        payload: withInteractivePriority({ force: true }),
         status: "pending",
         attempts: 0,
         lastError: null,

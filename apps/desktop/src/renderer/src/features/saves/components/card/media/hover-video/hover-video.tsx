@@ -4,6 +4,7 @@ import { useImageReady } from "@/features/saves/components/card/media/lib/use-im
 import type { MediaUnit } from "@/features/saves/lib/media/units";
 import { thumbUrlFor } from "@/features/saves/lib/media/url";
 import { aspectCoverKey, recordAspect } from "@/features/saves/state/aspect";
+import { usePrefs } from "@/features/settings/state/prefs";
 import styles from "./hover-video.module.css";
 
 function seekToStart(el: HTMLVideoElement) {
@@ -35,6 +36,8 @@ export function HoverVideo({
   onReady?: () => void;
   hasVideoDims?: boolean;
 }) {
+  const [prefs] = usePrefs("viewer");
+  const hoverEnabled = prefs.hoverVideo !== false;
   const internalRef = useRef<HTMLVideoElement | null>(null);
   const [hoverPrimed, setHoverPrimed] = useState(false);
   const [active, setActive] = useState(false);
@@ -62,17 +65,19 @@ export function HoverVideo({
   const poster = useImageReady(effectivePosterUrl ?? null, reportPosterReady);
 
   useEffect(() => {
-    if (!active || !primed) return;
+    if (!active || !primed || !hoverEnabled) return;
     const el = internalRef.current;
     if (!el) return;
     // Autoplay rejections are expected; older Chromium returns undefined here.
     el.play()?.catch(() => {});
-  }, [active, primed]);
+    return () => el.pause();
+  }, [active, primed, hoverEnabled]);
 
   const onEnter = useCallback(() => {
+    if (!hoverEnabled) return;
     setActive(true);
     setHoverPrimed(true);
-  }, []);
+  }, [hoverEnabled]);
 
   const onLeave = useCallback(() => {
     setActive(false);
@@ -142,6 +147,7 @@ export function HoverVideo({
         onMouseEnter={onEnter}
         onMouseLeave={onLeave}
         onMouseMove={(event) => {
+          if (!hoverEnabled) return;
           const el = internalRef.current;
           if (!el || !Number.isFinite(el.duration) || el.duration <= 0) return;
           const rect = event.currentTarget.getBoundingClientRect();

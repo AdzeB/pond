@@ -8,7 +8,7 @@
   background-clip: padding-box;
   border: var(--ds-border-elevated);
   border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-dialog);
+  box-shadow: var(--ds-shadow-2);
 }
 
 .pill[data-orientation="vertical"] {
@@ -26,7 +26,6 @@
   padding: 0;
   color: var(--ds-gray-9);
   cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
   background: none;
   border: 0;
   border-radius: var(--ds-radius-xl);
@@ -51,8 +50,6 @@
 
   &:focus-visible {
     color: var(--ds-gray-12);
-    outline: 2px solid var(--ds-gray-a8);
-    outline-offset: 0;
   }
 
   &[data-disabled="true"] {

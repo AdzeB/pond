@@ -6,7 +6,19 @@ import { refetchAccounts, useAccounts } from "./use-accounts";
 
 let root: Root;
 let host: HTMLDivElement;
-let payload: { accounts: unknown[] };
+interface AccountsFixture {
+  accounts: Array<{
+    id: string;
+    source: string;
+    handle: string;
+    label: null;
+    addedAt: string;
+    sync: { lastSyncedAt: null; lastError: null; knownCount: number };
+    connected: boolean;
+    syncing: boolean;
+  }>;
+}
+let payload: AccountsFixture;
 
 function View() {
   const { accounts } = useAccounts();

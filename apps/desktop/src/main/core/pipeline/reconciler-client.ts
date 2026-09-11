@@ -44,3 +44,9 @@ export async function cancelAllIngest(): Promise<number> {
 export async function pipelineSnapshot(): Promise<PipelineSnapshot> {
   return (await loadReconciler()).pipelineSnapshot();
 }
+
+export async function pauseAndDrainReconciler(
+  timeoutMs?: number,
+): Promise<boolean> {
+  return (await loadReconciler()).pauseAndDrainReconciler(timeoutMs);
+}

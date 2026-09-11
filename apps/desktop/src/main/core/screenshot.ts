@@ -1,34 +1,40 @@
-import { mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { randomUUID } from "node:crypto";
+import type { Display } from "electron";
 import { desktopCapturer, screen } from "electron";
 import log from "electron-log/main.js";
 import sharp from "sharp";
-import { closeCaptureWindow } from "../aux-windows";
-import { createManualSave } from "./manual-import";
+import {
+  captureWindowBounds,
+  captureWindowLibraryRoot,
+  closeCaptureWindow,
+} from "../aux-windows";
+import { libraryRoot } from "../paths";
+import { captures } from "./captures";
+import { runLibraryTransfer } from "./library-transfers";
+import { cropRectangle } from "./screenshot-geometry";
+import { chooseDisplay, chooseWindow } from "./screenshot-picker";
 
 async function savePng(
   bytes: Buffer,
   title: string,
 ): Promise<{ ok: boolean; id?: string; error?: string }> {
-  const dir = await mkdtemp(join(tmpdir(), "pond-shot-"));
-  const path = join(dir, "screenshot.png");
-  await writeFile(path, bytes);
-  const res = await createManualSave({
-    title,
-    filePaths: [path],
-    tags: ["screenshot"],
+  await captures.accept({
+    id: randomUUID(),
+    mode: "quick",
+    trigger: "screenshot",
+    metadata: { title, tags: ["screenshot"], folderIds: [] },
+    items: [
+      {
+        kind: "image",
+        title,
+        dataUrl: `data:image/png;base64,${bytes.toString("base64")}`,
+      },
+    ],
   });
-  if (!res.ok || !res.id) return { ok: false, error: res.error };
-  return { ok: true, id: res.id };
+  return { ok: true };
 }
 
-async function capturePrimaryPng(): Promise<{
-  bytes: Buffer;
-  scale: number;
-  size: { width: number; height: number };
-} | null> {
-  const display = screen.getPrimaryDisplay();
+async function captureDisplayPng(display: Display) {
   const sources = await desktopCapturer.getSources({
     types: ["screen"],
     thumbnailSize: {
@@ -36,22 +42,24 @@ async function capturePrimaryPng(): Promise<{
       height: Math.round(display.size.height * display.scaleFactor),
     },
   });
-  const source = sources[0];
-  if (!source) return null;
+  const source = sources.find((item) => item.display_id === String(display.id));
+  if (!source || source.thumbnail.isEmpty()) return null;
   return {
     bytes: source.thumbnail.toPNG(),
-    scale: display.scaleFactor,
+    pixels: source.thumbnail.getSize(),
     size: display.size,
   };
 }
 
-export async function captureDisplay(): Promise<{
+async function performCaptureDisplay(): Promise<{
   ok: boolean;
   id?: string;
   error?: string;
 }> {
   try {
-    const shot = await capturePrimaryPng();
+    const display = await chooseDisplay();
+    if (!display) return { ok: false, error: "cancelled" };
+    const shot = await captureDisplayPng(display);
     if (!shot) return { ok: false, error: "no_display" };
     return savePng(shot.bytes, "Screenshot");
   } catch (err) {
@@ -60,24 +68,25 @@ export async function captureDisplay(): Promise<{
   }
 }
 
-export async function captureArea(rect: {
+async function performCaptureArea(rect: {
   x: number;
   y: number;
   width: number;
   height: number;
 }): Promise<{ ok: boolean; id?: string; error?: string }> {
   try {
+    const bounds = captureWindowBounds();
+    if (!bounds || captureWindowLibraryRoot() !== libraryRoot()) {
+      closeCaptureWindow();
+      return { ok: false, error: "capture_expired" };
+    }
+    const display = screen.getDisplayMatching(bounds);
     closeCaptureWindow();
-    const shot = await capturePrimaryPng();
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    const shot = await captureDisplayPng(display);
     if (!shot) return { ok: false, error: "no_display" };
-    const left = Math.max(0, Math.round(rect.x * shot.scale));
-    const top = Math.max(0, Math.round(rect.y * shot.scale));
-    const width = Math.max(1, Math.round(rect.width * shot.scale));
-    const height = Math.max(1, Math.round(rect.height * shot.scale));
-    const cropped = await sharp(shot.bytes)
-      .extract({ left, top, width, height })
-      .png()
-      .toBuffer();
+    const crop = cropRectangle(rect, shot.size, shot.pixels);
+    const cropped = await sharp(shot.bytes).extract(crop).png().toBuffer();
     return savePng(cropped, "Screenshot");
   } catch (err) {
     log.warn("[pond] area screenshot failed", err);
@@ -85,7 +94,7 @@ export async function captureArea(rect: {
   }
 }
 
-export async function captureWindow(): Promise<{
+async function performCaptureWindow(): Promise<{
   ok: boolean;
   id?: string;
   error?: string;
@@ -95,13 +104,21 @@ export async function captureWindow(): Promise<{
       types: ["window"],
       thumbnailSize: { width: 2560, height: 1440 },
     });
-    const source = sources.find(
-      (item) => !/pond/i.test(item.name) && !item.thumbnail.isEmpty(),
-    );
+    const source = await chooseWindow(sources);
     if (!source) return { ok: false, error: "no_window" };
     return savePng(source.thumbnail.toPNG(), source.name || "Screenshot");
   } catch (err) {
     log.warn("[pond] window screenshot failed", err);
     return { ok: false, error: "capture_failed" };
   }
+}
+
+export function captureDisplay() {
+  return runLibraryTransfer(performCaptureDisplay);
+}
+export function captureWindow() {
+  return runLibraryTransfer(performCaptureWindow);
+}
+export function captureArea(rect: Parameters<typeof performCaptureArea>[0]) {
+  return runLibraryTransfer(() => performCaptureArea(rect));
 }

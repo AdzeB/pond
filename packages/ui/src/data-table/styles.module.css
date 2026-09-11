@@ -12,6 +12,8 @@
   box-sizing: border-box;
   display: grid;
   align-items: center;
+  width: 100%;
+  min-width: 0;
   height: var(--data-table-header-height, 28px);
   padding-inline: var(--data-table-inset, 0px);
   border-bottom: var(--data-table-header-border, none);
@@ -112,6 +114,7 @@
   box-sizing: border-box;
   display: grid;
   align-items: center;
+  min-width: 0;
   height: var(--data-table-row-height, 34px);
   margin-inline: var(--data-table-inset, 0px);
   cursor: var(--ds-cursor-interactive, pointer);

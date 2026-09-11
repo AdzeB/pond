@@ -1,148 +1,213 @@
+import { stat } from "node:fs/promises";
+import { join } from "node:path";
 import {
+  folders,
   libraryScan,
-  type SaveFile,
+  type SyncAction,
+  saveFolders,
   saves,
   syncActions,
 } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
-import { getDb } from "../db";
-import { scanLibrary } from "../lib/library";
+import { type Db, getDb } from "../db";
+import { readItemMetadata, scanLibrary } from "../lib/library";
 import { withRawSlim } from "../lib/raw-slim";
+import { libraryRoot } from "../paths";
 import { readEnrichmentSidecar } from "./enrichment-sidecar";
-import { broadcastSyncAction } from "./executor";
+import { broadcastSyncAction, withMutationScope } from "./executor";
+import { runLibraryTransfer } from "./library-transfers";
 
 export async function reconcileLibrary(): Promise<{
   updated: number;
   total: number;
 }> {
-  const db = await getDb();
+  return runLibraryTransfer(async () =>
+    reconcileLibraryIndex({
+      db: await getDb(),
+      root: libraryRoot(),
+      mutate: withMutationScope,
+      changed: broadcastSyncAction,
+    }),
+  );
+}
+
+interface LibraryScanRuntime {
+  db: Db;
+  root: string;
+  mutate<T>(operation: () => Promise<T>): Promise<T>;
+  changed(action: SyncAction): void;
+}
+
+export async function reconcileLibraryIndex(
+  runtime: LibraryScanRuntime,
+): Promise<{
+  updated: number;
+  total: number;
+}> {
+  const { db, root } = runtime;
   let updated = 0;
   let total = 0;
 
-  for await (const { id, mtimeMs, metadata } of scanLibrary()) {
+  for await (const { id, mtimeMs } of scanLibrary(root)) {
     total++;
-    const existing = await db
-      .select()
-      .from(libraryScan)
-      .where(eq(libraryScan.itemId, id));
+    await runtime.mutate(async () => {
+      const existing = await db
+        .select()
+        .from(libraryScan)
+        .where(eq(libraryScan.itemId, id));
 
-    if (existing[0] && existing[0].mtimeMs === mtimeMs) continue;
-    if (!metadata) {
-      await stampScan(db, id, mtimeMs);
-      continue;
-    }
+      if (existing[0] && existing[0].mtimeMs === mtimeMs) return;
+      const metadata = await readItemMetadata(id, root);
+      if (!metadata) {
+        await stampScan(db, id, mtimeMs);
+        return;
+      }
 
-    if (!metadata.source || !metadata.sourceId || !metadata.url) {
-      log.warn("[pond scan] skipping item with incomplete metadata", {
-        id,
-        hasSource: Boolean(metadata.source),
-        hasSourceId: Boolean(metadata.sourceId),
-        hasUrl: Boolean(metadata.url),
-      });
-      await stampScan(db, id, mtimeMs);
-      continue;
-    }
+      if (!metadata.source || !metadata.sourceId || !metadata.url) {
+        log.warn("[pond scan] skipping item with incomplete metadata", {
+          id,
+          hasSource: Boolean(metadata.source),
+          hasSourceId: Boolean(metadata.sourceId),
+          hasUrl: Boolean(metadata.url),
+        });
+        await stampScan(db, id, mtimeMs);
+        return;
+      }
 
-    const files: SaveFile[] = (metadata.files ?? []).map((f) => ({
-      kind: f.kind,
-      path: f.path,
-      sha256: f.sha256,
-      size: f.size,
-    }));
-    const tags = metadata.tags ?? [];
+      const files = metadata.files;
+      const tags = metadata.tags ?? [];
 
-    try {
-      const enrichment = readEnrichmentSidecar(id) ?? {};
-      const insertValues: typeof saves.$inferInsert = {
-        ...enrichment,
-        id,
-        source: metadata.source,
-        sourceId: metadata.sourceId,
-        url: metadata.url,
-        title: metadata.name,
-        description: metadata.pond.description ?? null,
-        author: metadata.pond.author ?? null,
-        notes: metadata.annotation || null,
-        mediaUrl: null,
-        mediaType: metadata.pond.mediaType ?? null,
-        rawJson: metadata.pond.rawSource ?? null,
-        tags,
-        files,
-        coverIndex: metadata.pond.coverIndex ?? 0,
-        width: metadata.width,
-        height: metadata.height,
-        fileSize: metadata.size,
-        deletedAt:
-          metadata.deletedAt != null ? new Date(metadata.deletedAt) : null,
-        savedAt: new Date(metadata.importedAt),
-        createdAt: new Date(metadata.btime),
-      };
-      const updateSet = {
-        ...enrichment,
-        title: metadata.name,
-        description: metadata.pond.description ?? null,
-        author: metadata.pond.author ?? null,
-        notes: metadata.annotation || null,
-        tags,
-        files,
-        width: metadata.width,
-        height: metadata.height,
-        fileSize: metadata.size,
-        deletedAt:
-          metadata.deletedAt != null ? new Date(metadata.deletedAt) : null,
-      };
+      try {
+        const enrichment = readEnrichmentSidecar(id, root) ?? {};
+        const insertValues: typeof saves.$inferInsert = {
+          ...enrichment,
+          ...metadata.pond.userData,
+          id,
+          status: (await originalsPresent(root, id, files))
+            ? "complete"
+            : "failed",
+          source: metadata.source,
+          sourceId: metadata.sourceId,
+          url: metadata.url,
+          title: metadata.name,
+          description: metadata.pond.description ?? null,
+          author: metadata.pond.author ?? null,
+          notes: metadata.annotation || null,
+          mediaUrl: null,
+          mediaType: metadata.pond.mediaType ?? null,
+          rawJson: metadata.pond.rawSource ?? null,
+          tags,
+          files,
+          coverIndex: metadata.pond.coverIndex ?? 0,
+          width: metadata.width,
+          height: metadata.height,
+          fileSize: metadata.size,
+          deletedAt:
+            metadata.deletedAt != null ? new Date(metadata.deletedAt) : null,
+          savedAt: new Date(metadata.importedAt),
+          createdAt: new Date(metadata.btime),
+          publishedAt:
+            metadata.pond.publishedAt != null
+              ? new Date(metadata.pond.publishedAt)
+              : null,
+        };
+        const updateSet = {
+          ...enrichment,
+          ...metadata.pond.userData,
+          title: metadata.name,
+          description: metadata.pond.description ?? null,
+          author: metadata.pond.author ?? null,
+          notes: metadata.annotation || null,
+          tags,
+          files,
+          width: metadata.width,
+          height: metadata.height,
+          fileSize: metadata.size,
+          deletedAt:
+            metadata.deletedAt != null ? new Date(metadata.deletedAt) : null,
+        };
 
-      const prior = await db
-        .select({ id: saves.id })
-        .from(saves)
-        .where(eq(saves.id, id));
-      const wasInsert = prior.length === 0;
+        const prior = await db
+          .select({ id: saves.id })
+          .from(saves)
+          .where(eq(saves.id, id));
+        const wasInsert = prior.length === 0;
 
-      await db
-        .insert(saves)
-        .values(withRawSlim(insertValues))
-        .onConflictDoUpdate({ target: saves.id, set: updateSet })
-        .run();
+        const action = db.transaction((tx) => {
+          tx.insert(saves)
+            .values(withRawSlim(insertValues))
+            .onConflictDoUpdate({ target: saves.id, set: updateSet })
+            .run();
 
-      const inserted = db
-        .insert(syncActions)
-        .values({
-          modelName: "save",
-          modelId: id,
-          action: wasInsert ? "I" : "U",
-          data: wasInsert ? insertValues : updateSet,
-          actor: "system",
-          actorReason: "library-scan",
-        })
-        .returning()
-        .all()[0];
-      if (inserted) broadcastSyncAction(inserted);
-
-      await stampScan(db, id, mtimeMs);
-      updated++;
-    } catch (err) {
-      /** One bad row must not abort reconciliation; stamp it so it isn't retried forever. */
-      log.warn("[pond scan] upsert failed", { id, err });
-      await stampScan(db, id, mtimeMs);
-    }
+          tx.delete(saveFolders).where(eq(saveFolders.saveId, id)).run();
+          for (const folderId of metadata.folders) {
+            if (
+              tx
+                .select({ id: folders.id })
+                .from(folders)
+                .where(eq(folders.id, folderId))
+                .get()
+            ) {
+              tx.insert(saveFolders)
+                .values({ saveId: id, folderId })
+                .onConflictDoNothing()
+                .run();
+            }
+          }
+          const inserted = tx
+            .insert(syncActions)
+            .values({
+              modelName: "save",
+              modelId: id,
+              action: wasInsert ? "I" : "U",
+              data: wasInsert ? insertValues : updateSet,
+              actor: "system",
+              actorReason: "library-scan",
+            })
+            .returning()
+            .all()[0];
+          stampScan(tx, id, mtimeMs);
+          return inserted;
+        });
+        if (action) runtime.changed(action);
+        updated++;
+      } catch (err) {
+        log.warn("[pond scan] upsert failed", { id, err });
+      }
+    });
   }
 
   log.info(`[pond scan] updated=${updated} total=${total}`);
   return { updated, total };
 }
 
-async function stampScan(
-  db: Awaited<ReturnType<typeof getDb>>,
+function stampScan(
+  db: Pick<Awaited<ReturnType<typeof getDb>>, "insert">,
   itemId: string,
   mtimeMs: number,
-): Promise<void> {
-  await db
-    .insert(libraryScan)
+): void {
+  db.insert(libraryScan)
     .values({ itemId, mtimeMs })
     .onConflictDoUpdate({
       target: libraryScan.itemId,
       set: { mtimeMs, scannedAt: new Date() },
     })
     .run();
+}
+
+async function originalsPresent(
+  root: string,
+  id: string,
+  files: Array<{ path: string; size: number }>,
+): Promise<boolean> {
+  for (const file of files) {
+    try {
+      const actual = await stat(join(root, "items", `${id}.info`, file.path));
+      if (!actual.isFile() || actual.size !== file.size) return false;
+    } catch {
+      return false;
+    }
+  }
+  return true;
 }

@@ -17,15 +17,13 @@ import {
   type VideoDownloadSettings,
 } from "./prefs";
 import type { RawJson } from "./raw";
-import { EXTERNAL_SOURCE_IDS } from "./sources/registry";
+import type { Source } from "./source-ids";
 
 export * from "./color";
 export type { ListKind } from "./list-kinds";
 export * from "./prefs";
+export { SOURCES, type Source } from "./source-ids";
 export * from "./theme-presets";
-
-export const SOURCES = [...EXTERNAL_SOURCE_IDS, "web", "local"] as const;
-export type Source = (typeof SOURCES)[number];
 
 export const MEDIA_TYPES = [
   "image",
@@ -80,12 +78,14 @@ export interface SaveFile {
 }
 
 export interface VideoNote {
+  fileIndex?: number;
   id: string;
   timeSec: number;
   text: string;
 }
 
 export interface ImageComment {
+  fileIndex?: number;
   id: string;
   x: number;
   y: number;
@@ -337,9 +337,19 @@ export const agentMessages = sqliteTable(
   }),
 );
 
+export const SAVED_VIEW_KINDS = [
+  "saved_view",
+  "smart_folder",
+  "group",
+] as const;
+
 export const savedViews = sqliteTable("saved_views", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
+  kind: text("kind", { enum: SAVED_VIEW_KINDS })
+    .notNull()
+    .default("saved_view"),
+  parentId: text("parent_id"),
   question: text("question"),
   query: text("query", { mode: "json" })
     .$type<Query>()

@@ -99,7 +99,6 @@
   color: var(--ds-gray-10);
   cursor: default;
   user-select: none;
-  outline: none;
   background: var(--ds-gray-a2);
   border: 1px solid transparent;
   border-radius: var(--ds-radius-md);
@@ -130,11 +129,6 @@
 
   &:active:not([data-lifted]) {
     background: var(--ds-gray-a5);
-  }
-
-  &:focus-visible {
-    outline: 1.5px solid var(--ds-accent-8);
-    outline-offset: 0;
   }
 
   &[data-lifted] {

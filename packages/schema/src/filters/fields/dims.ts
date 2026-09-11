@@ -43,7 +43,16 @@ const ASPECT_TARGETS = {
   "9:16": 9 / 16,
 } satisfies Record<AspectPresetValue, number>;
 
-const ASPECT_TOLERANCE = 0.06;
+export const ASPECT_TOLERANCE = 0.06;
+
+export function parseAspectRatio(value: string): number | null {
+  const parts = /^\s*(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)\s*$/.exec(value);
+  if (!parts) return null;
+  const width = Number(parts[1]);
+  const height = Number(parts[2]);
+  const ratio = width / height;
+  return width > 0 && height > 0 && Number.isFinite(ratio) ? ratio : null;
+}
 
 export function orientationFromDims(
   width: number | null | undefined,

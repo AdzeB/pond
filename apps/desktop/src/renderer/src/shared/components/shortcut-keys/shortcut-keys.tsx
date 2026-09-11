@@ -5,10 +5,12 @@ import {
   type ShortcutId,
   shortcutChord,
   shortcutSequence,
+  useShortcutBindings,
 } from "@/shared/lib/shortcuts";
 import styles from "./shortcut-keys.module.css";
 
 export function ShortcutKeys({ id }: { id: ShortcutId }) {
+  useShortcutBindings();
   const sequence = shortcutSequence(id);
   if (sequence) {
     return (

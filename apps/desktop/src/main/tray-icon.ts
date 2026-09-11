@@ -5,10 +5,19 @@ import { app, type NativeImage, nativeImage } from "electron";
 import log from "electron-log/main.js";
 import { appDataRoot } from "./paths";
 
-const SPINNER_SIZE = 22;
-const SPINNER_DOTS = 8;
+const TRAY_SLOT_PX = 22;
 
 export function loadTrayIcon(): NativeImage {
+  const file = resolveTrayIconFile();
+  if (file) {
+    log.info("[pond tray] loaded icon", { path: file });
+    return templateFromPath(file);
+  }
+  log.warn("[pond tray] no packaged icon found, drawing runtime placeholder");
+  return makePlaceholderIcon();
+}
+
+function resolveTrayIconFile(): string | null {
   const names = ["trayTemplate.png", "tray.png"];
   const roots = [
     process.resourcesPath ?? "",
@@ -18,39 +27,53 @@ export function loadTrayIcon(): NativeImage {
 
   for (const root of roots) {
     for (const name of names) {
-      const p = join(root, name);
-      try {
-        if (!existsSync(p)) continue;
-        const img = nativeImage.createFromPath(p);
-        if (img.isEmpty()) continue;
-        log.info("[pond tray] loaded icon", { path: p });
-        return img;
-      } catch {}
+      const path = join(root, name);
+      if (existsSync(path)) return path;
     }
   }
-  log.warn("[pond tray] no packaged icon found, drawing runtime placeholder");
-  return makePlaceholderIcon();
+  return null;
+}
+
+function templateFromPath(path: string): NativeImage {
+  const img = nativeImage.createFromPath(path);
+  markTemplate(img);
+  return img;
+}
+
+function markTemplate(img: NativeImage): void {
+  if (process.platform === "darwin") img.setTemplateImage(true);
 }
 
 function makePlaceholderIcon(): NativeImage {
+  const png = encodeRgbaPng(
+    TRAY_SLOT_PX,
+    TRAY_SLOT_PX,
+    drawGlyphRgba(TRAY_SLOT_PX),
+  );
+  return placeholderImage(png, "tray.png");
+}
+
+function placeholderImage(png: Buffer, filename: string): NativeImage {
   try {
-    const buf = drawGlyphPng(22);
-    const img = nativeImage.createFromBuffer(buf);
-    if (!img.isEmpty()) return img;
+    const img = nativeImage.createFromBuffer(png);
+    if (!img.isEmpty()) {
+      markTemplate(img);
+      return img;
+    }
   } catch (err) {
     log.warn("[pond tray] placeholder draw failed", err);
   }
   try {
-    const fallback = join(appDataRoot(), "tray.png");
+    const fallback = join(appDataRoot(), filename);
     mkdirSync(appDataRoot(), { recursive: true });
-    writeFileSync(fallback, drawGlyphPng(22));
-    return nativeImage.createFromPath(fallback);
+    writeFileSync(fallback, png);
+    return templateFromPath(fallback);
   } catch {
     return nativeImage.createEmpty();
   }
 }
 
-function drawGlyphPng(size: number): Buffer {
+function drawGlyphRgba(size: number): Buffer {
   const rgba = Buffer.alloc(size * size * 4);
   const padding = Math.round(size * (2 / 22));
   const inner = size - padding * 2;
@@ -82,64 +105,7 @@ function drawGlyphPng(size: number): Buffer {
       }
     }
   }
-  return encodeRgbaPng(size, size, rgba);
-}
-
-let spinnerFrames: NativeImage[] | null = null;
-
-export function getSpinnerFrames(): NativeImage[] {
-  if (spinnerFrames) return spinnerFrames;
-  const frames: NativeImage[] = [];
-  for (let head = 0; head < SPINNER_DOTS; head++) {
-    frames.push(makeSpinnerFrame(SPINNER_SIZE, head));
-  }
-  spinnerFrames = frames;
-  return frames;
-}
-
-function makeSpinnerFrame(size: number, head: number): NativeImage {
-  const rgba = Buffer.alloc(size * size * 4);
-  const cx = size / 2 - 0.5;
-  const cy = size / 2 - 0.5;
-  const ringR = size * 0.22;
-  const dotR = size * 0.07;
-
-  for (let d = 0; d < SPINNER_DOTS; d++) {
-    const angle = (d / SPINNER_DOTS) * Math.PI * 2 - Math.PI / 2;
-    const px = cx + Math.cos(angle) * ringR;
-    const py = cy + Math.sin(angle) * ringR;
-    const rel = (((head - d) % SPINNER_DOTS) + SPINNER_DOTS) % SPINNER_DOTS;
-    const alpha = Math.round(40 + 215 * (1 - rel / SPINNER_DOTS));
-    stampDot(rgba, size, px, py, dotR, alpha);
-  }
-
-  const img = nativeImage.createFromBuffer(encodeRgbaPng(size, size, rgba));
-  if (process.platform === "darwin") img.setTemplateImage(true);
-  return img;
-}
-
-function stampDot(
-  rgba: Buffer,
-  size: number,
-  cx: number,
-  cy: number,
-  r: number,
-  alpha: number,
-): void {
-  const minX = Math.max(0, Math.floor(cx - r));
-  const maxX = Math.min(size - 1, Math.ceil(cx + r));
-  const minY = Math.max(0, Math.floor(cy - r));
-  const maxY = Math.min(size - 1, Math.ceil(cy + r));
-  const r2 = r * r;
-  for (let y = minY; y <= maxY; y++) {
-    for (let x = minX; x <= maxX; x++) {
-      const dx = x - cx;
-      const dy = y - cy;
-      if (dx * dx + dy * dy > r2) continue;
-      const i = (y * size + x) * 4;
-      if (alpha > (rgba[i + 3] ?? 0)) rgba[i + 3] = alpha;
-    }
-  }
+  return rgba;
 }
 
 function encodeRgbaPng(width: number, height: number, rgba: Buffer): Buffer {

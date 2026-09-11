@@ -9,7 +9,10 @@ import { buildWhere, type Query } from "@pond/schema/filters";
 import { and, desc, eq, inArray, isNull, type SQL, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { z } from "zod";
+import type { LibraryQueryRequest } from "../../shared/library-query";
 import { type Db, getDb } from "../db";
+import { compileKeywordWhere, toFtsMatchQuery } from "./keyword-query";
+import { libraryQueryWhere } from "./library-query";
 import {
   encodeQueryEmbeddings,
   type QueryEmbeddings,
@@ -41,6 +44,7 @@ export type LibraryRetrievalInput = z.infer<typeof libraryRetrievalInput>;
 export interface LibraryRetrievalScope {
   saveIds?: string[];
   folderId?: string;
+  libraryQuery?: LibraryQueryRequest;
 }
 
 export type RetrievalChannel = "fts" | "text" | "visual" | "recent";
@@ -69,28 +73,17 @@ export interface LibraryRetrievalResult {
   >;
 }
 
-export function toFtsMatchQuery(
-  query: string,
-  mode: "all" | "any" = "all",
-): string | null {
-  const tokens = query
-    .split(/\s+/)
-    .map((token) =>
-      token.replaceAll('"', "").replaceAll("'", "").replaceAll("*", "").trim(),
-    )
-    .filter(Boolean);
-  if (!tokens.length) return null;
-  return tokens
-    .map((token) => `"${token}"*`)
-    .join(mode === "any" ? " OR " : " AND ");
-}
+export { toFtsMatchQuery } from "./keyword-query";
 
 export function normalizeMedia(media: MediaType[] | undefined): MediaType[] {
   return [...new Set(media ?? [])];
 }
 
 export function libraryScopeClauses(scope: LibraryRetrievalScope): SQL[] {
-  const clauses: SQL[] = [isNull(saves.deletedAt)];
+  const scoped = scope.libraryQuery
+    ? libraryQueryWhere(scope.libraryQuery)
+    : undefined;
+  const clauses: SQL[] = scoped ? [scoped] : [isNull(saves.deletedAt)];
   if (scope.saveIds) clauses.push(inArray(saves.id, scope.saveIds));
   if (scope.folderId) {
     const compiled = buildWhere({
@@ -148,7 +141,7 @@ function publicSaves(
 }
 
 function knnLimit(limit: number): number {
-  return Math.min(500, Math.max(limit * 8, 200));
+  return Math.max(limit * 8, 200);
 }
 
 export type RetrievalRecord = Omit<LibraryRetrievalHit, "score" | "channels">;
@@ -159,13 +152,15 @@ export interface RetrievalStore {
   ): Promise<RetrievalRecord[]>;
   admittedIds(condition: SQL | undefined): Promise<Array<{ id: string }>>;
   lexicalCandidates(
-    match: string,
+    query: string,
     limit: number,
+    condition?: SQL,
   ): Array<{ id: string; rank: number }>;
   neighbors(
     kind: "text" | "clip",
     vector: number[],
     limit: number,
+    condition?: SQL,
   ): Array<{ id: string; distance: number }>;
 }
 
@@ -184,16 +179,51 @@ function retrievalStore(db: Db): RetrievalStore {
     async admittedIds(condition) {
       return await db.select({ id: saves.id }).from(saves).where(condition);
     },
-    lexicalCandidates(match, limit) {
+    lexicalCandidates(query, limit, condition) {
+      let match: string | null = null;
+      try {
+        match = toFtsMatchQuery(query);
+      } catch {
+        compileKeywordWhere(query);
+      }
+      if (!match) {
+        return db
+          .select({ id: saves.id, rank: sql<number>`0` })
+          .from(saves)
+          .where(and(condition, compileKeywordWhere(query)))
+          .orderBy(desc(saves.savedAt))
+          .limit(limit)
+          .all();
+      }
       return LexicalCandidatesSchema.parse(
-        db.$raw
-          .prepare(
-            `SELECT f.id AS id, bm25(saves_fts, 8.0, 3.0, 2.0, 2.0, 2.0, 1.5, 1.5, 1.0, 1.0) AS rank FROM saves_fts f WHERE saves_fts MATCH ? ORDER BY rank LIMIT ?`,
-          )
-          .all(match, limit),
+        db
+          .select({ id: saves.id, rank: sql<number>`bm25(saves_fts)` })
+          .from(sql`saves_fts`)
+          .innerJoin(saves, sql`${saves.id} = saves_fts.id`)
+          .where(and(condition, sql`saves_fts match ${match}`))
+          .orderBy(sql`bm25(saves_fts)`)
+          .limit(limit)
+          .all(),
       );
     },
-    neighbors: (kind, vector, limit) => knnVec(db.$raw, kind, vector, limit),
+    neighbors(kind, vector, limit, condition) {
+      if (!condition) return knnVec(db.$raw, kind, vector, limit);
+      const column = kind === "text" ? saves.embedding : saves.clipEmbedding;
+      const distance = sql<number>`vec_distance_cosine(${column}, ${JSON.stringify(vector)})`;
+      return db
+        .select({ id: saves.id, distance })
+        .from(saves)
+        .where(
+          and(
+            condition,
+            sql`${column} is not null`,
+            sql`json_array_length(${column}) = ${vector.length}`,
+          ),
+        )
+        .orderBy(distance)
+        .limit(limit)
+        .all();
+    },
   };
 }
 
@@ -209,6 +239,13 @@ async function denseChannel(
       kind === "text" ? "text" : "clip",
       vector.vector,
       knnLimit(limit),
+      and(
+        ...clauses,
+        eq(
+          kind === "text" ? saves.embeddingModel : saves.clipModel,
+          vector.model,
+        ),
+      ),
     )
     .map((hit) => hit.id);
   if (!ids.length) return [];
@@ -265,7 +302,7 @@ export async function retrieveLibraryWithStore(
   const limit = input.limit ?? 12;
   const clauses = [...libraryScopeClauses(scope), ...inputClauses(input)];
   const query = input.query?.trim() ?? "";
-  const match = toFtsMatchQuery(query);
+  const match = compileKeywordWhere(query);
   const hasDense = Boolean(queryEmbeddings.text || queryEmbeddings.visual);
   if (!match && !hasDense) {
     const rows = await store.records(and(...clauses), limit);
@@ -279,7 +316,11 @@ export async function retrieveLibraryWithStore(
 
   const ranked: Array<{ channel: RetrievalChannel; ids: string[] }> = [];
   if (match) {
-    const candidates = store.lexicalCandidates(match, Math.max(limit * 8, 50));
+    const candidates = store.lexicalCandidates(
+      query,
+      Math.max(limit * 8, 50),
+      and(...clauses),
+    );
     if (candidates.length) {
       const rows = await store.admittedIds(
         and(

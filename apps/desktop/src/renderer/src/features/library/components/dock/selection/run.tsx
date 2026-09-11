@@ -4,7 +4,7 @@ import {
   IconMagnifierSparkleFill18 as MagnifierSparkle,
   IconArrowRotateClockwiseFill18 as Retry,
   IconScanTextFill18 as ScanText,
-  IconTagFill18 as Tag,
+  IconBookmarkFill18 as Tag,
   IconWaveformLinesFill18 as Waveform,
 } from "@pond/icons/fill/18";
 import { Button, TrayCard } from "@pond/ui";
@@ -16,6 +16,7 @@ import {
   retryFailedSelection,
 } from "@/features/saves/lib/selection";
 import { selectableTasks } from "@/features/saves/lib/tasks";
+import { pool } from "@/features/saves/state/pool";
 import { usePrefsValue } from "@/features/settings/state/prefs";
 import { formatNumber } from "@/shared/lib/format";
 import styles from "./selection.module.css";
@@ -42,7 +43,9 @@ export function SelectionRunSection() {
   const prefs = usePrefsValue();
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
-  const failedCount = failedIdsIn(selection.snapshot()).length;
+  const selected = selection.snapshot();
+  const failedCount = failedIdsIn(selected).length;
+  const incomplete = selected.some((id) => !pool.get(id));
 
   useEffect(() => {
     if (!status) return;
@@ -115,7 +118,7 @@ export function SelectionRunSection() {
             </Button>
           );
         })}
-        {failedCount > 0 ? (
+        {failedCount > 0 || incomplete ? (
           <Button
             variant="ghost"
             size="xl"
@@ -130,8 +133,9 @@ export function SelectionRunSection() {
             <span className={styles.text}>
               <span className={styles.label}>Retry Failed</span>
               <span className={styles.description}>
-                Run {formatNumber(failedCount)} failed item
-                {failedCount === 1 ? "" : "s"} again.
+                {incomplete
+                  ? "Retry failed items in the selection."
+                  : `Run ${formatNumber(failedCount)} failed item${failedCount === 1 ? "" : "s"} again.`}
               </span>
             </span>
           </Button>

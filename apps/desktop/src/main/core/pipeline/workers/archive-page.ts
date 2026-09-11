@@ -4,6 +4,7 @@ import { join } from "node:path";
 import type { WebContents } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
+import type { TransferOptions } from "../../../lib/download-transfer";
 import { itemFile } from "../../../paths";
 import { persistSave } from "../../persist-save";
 import {
@@ -98,7 +99,7 @@ export async function readArchivedMeta(
 export async function runArchivePage(
   saveId: string,
   payload: { scope?: ArchiveScope },
-  ctx: { signal: AbortSignal },
+  ctx: TransferOptions & { signal: AbortSignal },
 ): Promise<void> {
   const scope: ArchiveScope = payload.scope === "site" ? "site" : "page";
   const save = await readSave(saveId);
@@ -139,6 +140,7 @@ export async function runArchivePage(
   const result = await crawlSite(rootUrl, scope, ctx.signal, {
     partition: hasCookies ? pageCookiePartition(saveId) : undefined,
     cookies,
+    reportActivity: ctx.reportActivity,
   });
   if (result.pages.length === 0 || result.warcBytes.byteLength === 0) {
     throw new TransientError("archive_page: no pages captured");
@@ -202,6 +204,7 @@ async function crawlSite(
   opts: {
     partition?: string;
     cookies?: ImportableCookie[] | null;
+    reportActivity?: TransferOptions["reportActivity"];
   } = {},
 ): Promise<CrawlResult> {
   const maxPages = scope === "site" ? ARCHIVE_MAX_PAGES : 1;
@@ -214,7 +217,10 @@ async function crawlSite(
     scope,
     cookies: opts.cookies?.length ?? 0,
   });
-  const leaseOptions: Parameters<typeof leaseWindow>[1] = { signal };
+  const leaseOptions: Parameters<typeof leaseWindow>[1] = {
+    signal,
+    reportActivity: opts.reportActivity,
+  };
   if (opts.partition) leaseOptions.partition = opts.partition;
   const lease = await leaseWindow("web", leaseOptions);
   log.info("[pond pipeline:archive-page] window leased", { ms: elapsed() });

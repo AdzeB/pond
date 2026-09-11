@@ -1,6 +1,9 @@
-import { BrowserWindow } from "electron";
+import { app, BrowserWindow, dialog } from "electron";
 import log from "electron-log/main.js";
 import { IPC } from "../shared/constants";
+import { linkMatchesLibrary } from "../shared/library-links";
+import { readOrCreatePondId } from "./lib/pond-identity";
+import { libraryRoot } from "./paths";
 
 let pendingDeepLink: string | null = null;
 
@@ -17,6 +20,23 @@ export function handleDeepLink(
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== "pond:") return;
+    if (parsed.searchParams.has("library")) {
+      if (!app.isReady()) {
+        void app.whenReady().then(() => handleDeepLink(url, mainWindow));
+        return;
+      }
+      if (!linkMatchesLibrary(parsed, readOrCreatePondId(libraryRoot()))) {
+        void dialog.showMessageBox({
+          type: "info",
+          title: "Open the linked library",
+          message: "This link belongs to another Pond library.",
+          detail:
+            "Open its library from Recent Libraries, then open this link again. The current library has not changed.",
+          buttons: ["OK"],
+        });
+        return;
+      }
+    }
     let route: string | null = null;
     if (parsed.hostname === "" || parsed.hostname === "library") {
       route = "/";

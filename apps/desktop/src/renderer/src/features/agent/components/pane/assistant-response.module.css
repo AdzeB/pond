@@ -151,7 +151,3 @@
 .table :is(th, td) + :is(th, td) {
   border-left: 1px solid var(--ds-gray-4);
 }
-.response :is(a, button, [tabindex]):focus-visible {
-  outline: 2px solid var(--ds-gray-8);
-  outline-offset: 0;
-}

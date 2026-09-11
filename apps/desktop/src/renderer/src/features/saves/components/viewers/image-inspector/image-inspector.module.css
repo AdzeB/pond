@@ -1,0 +1,240 @@
+.root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+}
+.frame {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+.frame[data-commenting] {
+  cursor: crosshair;
+}
+
+.frame[data-commenting] .pin[data-area] {
+  cursor: move;
+}
+.frame[data-background="white"] {
+  background: white;
+}
+.frame[data-background="black"] {
+  background: black;
+}
+.frame[data-background="checkerboard"] {
+  background-color: var(--ds-gray-2);
+  background-image: repeating-conic-gradient(
+    var(--ds-gray-5) 0% 25%,
+    transparent 0% 50%
+  );
+  background-size: 16px 16px;
+}
+.position {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-origin: center;
+  /* Button and shortcut zoom settle; pan, pinch, and wheel stay with the pointer. */
+  transition: transform var(--ds-duration-medium) var(--ds-easing-snap);
+
+  &[data-live] {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .position {
+    transition: none;
+  }
+}
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.actions {
+  gap: 4px;
+  padding: 4px 6px;
+}
+
+.hint {
+  padding-inline: 8px;
+  font-size: var(--ds-text-mini);
+  color: var(--ds-gray-11);
+  white-space: nowrap;
+}
+.selection {
+  position: absolute;
+  pointer-events: none;
+  background: rgb(0 0 0 / 20%);
+  border: 1px solid white;
+}
+
+.selection[data-cropping] {
+  pointer-events: auto;
+  cursor: move;
+}
+
+.handle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  pointer-events: auto;
+  background: white;
+  border: 1px solid var(--ds-gray-12);
+
+  &:focus-visible {
+    outline: 2px solid var(--ds-gray-12);
+    outline-offset: 1px;
+  }
+
+  &[data-handle="n"] {
+    top: 0;
+    left: 50%;
+    cursor: ns-resize;
+    transform: translate(-50%, -50%);
+  }
+
+  &[data-handle="s"] {
+    bottom: 0;
+    left: 50%;
+    cursor: ns-resize;
+    transform: translate(-50%, 50%);
+  }
+
+  &[data-handle="e"] {
+    top: 50%;
+    right: 0;
+    cursor: ew-resize;
+    transform: translate(50%, -50%);
+  }
+
+  &[data-handle="w"] {
+    top: 50%;
+    left: 0;
+    cursor: ew-resize;
+    transform: translate(-50%, -50%);
+  }
+
+  &[data-handle="nw"] {
+    top: 0;
+    left: 0;
+    cursor: nwse-resize;
+    transform: translate(-50%, -50%);
+  }
+
+  &[data-handle="ne"] {
+    top: 0;
+    right: 0;
+    cursor: nesw-resize;
+    transform: translate(50%, -50%);
+  }
+
+  &[data-handle="sw"] {
+    bottom: 0;
+    left: 0;
+    cursor: nesw-resize;
+    transform: translate(-50%, 50%);
+  }
+
+  &[data-handle="se"] {
+    right: 0;
+    bottom: 0;
+    cursor: nwse-resize;
+    transform: translate(50%, 50%);
+  }
+}
+
+.root:fullscreen {
+  padding: 32px;
+  background: var(--ds-gray-1);
+}
+
+.content {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+.annotations {
+  --marker-scale: 1;
+  --marker-rotate: 0;
+  --marker-flip-x: 1;
+  --marker-flip-y: 1;
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.pin {
+  position: absolute;
+  width: 0;
+  height: 0;
+  padding: 0;
+  pointer-events: none;
+  background: transparent;
+  border: 0;
+
+  &[data-area] {
+    pointer-events: auto;
+  }
+}
+.area {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--ds-accent-a3);
+  border-radius: var(--ds-radius-xs);
+  box-shadow: inset 0 0 0 1px var(--ds-accent-8);
+}
+.pin:hover .area,
+.pin[data-active] .area {
+  background: var(--ds-accent-a4);
+}
+.index {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  font-size: var(--ds-text-mini);
+  font-weight: var(--ds-weight-medium);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-1);
+  pointer-events: auto;
+  cursor: pointer;
+  background: var(--ds-accent-9);
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  box-shadow: var(--ds-shadow-2);
+  transform: translate(-50%, -50%) scaleX(var(--marker-flip-x))
+    scaleY(var(--marker-flip-y)) rotate(calc(var(--marker-rotate) * -1deg))
+    scale(var(--marker-scale));
+  transform-origin: center;
+}
+.pin[data-active] .index {
+  outline: 2px solid var(--ds-gray-1);
+  outline-offset: 1px;
+}
+.pin:hover .index,
+.index:focus-visible {
+  background: var(--ds-accent-10);
+}
+.index:focus-visible {
+  outline: 2px solid var(--ds-gray-12);
+  outline-offset: 2px;
+}

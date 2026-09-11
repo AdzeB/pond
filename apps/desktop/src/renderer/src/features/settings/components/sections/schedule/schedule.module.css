@@ -26,6 +26,7 @@
 }
 .card select,
 .card input {
+  --ds-focus-offset: 2px;
   min-width: 0;
   height: 28px;
   padding: 0 8px;
@@ -40,11 +41,6 @@
 .card select:hover,
 .card input:hover {
   border-color: var(--ds-gray-7);
-}
-.card select:focus-visible,
-.card input:focus-visible {
-  outline: 2px solid var(--ds-accent-8);
-  outline-offset: 2px;
 }
 .card .trigger {
   background: var(--ds-gray-1);

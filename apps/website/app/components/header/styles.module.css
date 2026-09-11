@@ -18,15 +18,11 @@
 }
 
 .brand {
+  --ds-focus-offset: 4px;
   display: inline-flex;
   align-items: center;
   text-decoration: none;
   border-radius: var(--ds-radius-xs);
-
-  &:focus-visible {
-    outline: 2px solid var(--ds-accent-9);
-    outline-offset: 4px;
-  }
 }
 
 .nav {
@@ -52,19 +48,15 @@
 }
 
 .link {
+  --ds-focus-offset: 3px;
   font-size: 14px;
   font-weight: 500;
   color: var(--ds-gray-11);
   text-decoration: none;
+  border-radius: var(--ds-radius-xs);
   transition: color 120ms ease;
 
   &:hover {
     color: var(--ds-gray-12);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--ds-accent-9);
-    outline-offset: 3px;
-    border-radius: 3px;
   }
 }

@@ -8,10 +8,6 @@
   border: 0;
 }
 
-.root :is(input, button):focus-visible {
-  outline-width: 1px;
-}
-
 .palette {
   display: grid;
   grid-template-columns: repeat(6, 1fr);

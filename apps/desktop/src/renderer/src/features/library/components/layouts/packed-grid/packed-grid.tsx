@@ -16,6 +16,7 @@ import {
 } from "@/features/library/components/layouts/grid/grid";
 import type { CardLayoutItem } from "@/features/library/components/layouts/packing";
 import { useLibraryLayoutTransition } from "@/features/library/hooks/use-library-layout-transition";
+import { resultNavigation } from "@/features/library/state/result-navigation";
 import { SaveCard } from "@/features/saves/components/card/card";
 import {
   recallScroll,
@@ -247,6 +248,22 @@ export function PackedGrid({
       delete parent.dataset.restoringScroll;
     };
   }, [getScrollElement]);
+
+  useLayoutEffect(
+    () =>
+      resultNavigation.registerReveal((id) => {
+        const item = itemById.get(id);
+        const parent = getScrollElement();
+        if (!item || !parent) return;
+        const top = scrollMargin + item.top;
+        const bottom = top + item.height;
+        if (top < parent.scrollTop) parent.scrollTop = top;
+        else if (bottom > parent.scrollTop + parent.clientHeight)
+          parent.scrollTop = Math.max(0, bottom - parent.clientHeight);
+        resultNavigation.didReveal(id);
+      }),
+    [getScrollElement, itemById, scrollMargin],
+  );
 
   const virtualizer = useVirtualizer({
     count: bands.length,

@@ -24,15 +24,10 @@
   word-break: break-all;
   text-decoration: none;
   cursor: var(--ds-cursor-interactive, pointer);
+  border-radius: var(--ds-radius-xs);
 
   &:hover {
     text-decoration: underline;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--ds-accent-8);
-    outline-offset: 0;
-    border-radius: 2px;
   }
 }
 

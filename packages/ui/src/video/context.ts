@@ -39,6 +39,7 @@ export interface VideoContextValue {
   state: VideoState;
   actions: VideoActions;
   meta: VideoMeta;
+  chrome: boolean;
 }
 
 export const VideoContext = createContext<VideoContextValue | null>(null);

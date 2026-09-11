@@ -159,11 +159,7 @@ function Content({
       >
         <Menu.Popup>
           <Menu.Viewport>
-            <TagMenu
-              appliedKeys={appliedSet}
-              onToggle={(name) => void toggle(name)}
-              allowCreate
-            />
+            <TagMenu appliedKeys={appliedSet} onToggle={toggle} allowCreate />
           </Menu.Viewport>
         </Menu.Popup>
       </Menu.Positioner>

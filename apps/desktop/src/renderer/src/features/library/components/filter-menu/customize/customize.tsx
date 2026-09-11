@@ -8,7 +8,7 @@ import type { FieldId } from "@pond/schema/filters/types";
 import { Menu, Tooltip } from "@pond/ui";
 import { Fragment, useState } from "react";
 import { libraryHeader } from "@/features/library/state/library-header";
-import { FIELD_ICONS } from "@/features/search/lib/fields";
+import { fieldIcon } from "@/features/search/lib/fields";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { FilterPopup } from "../chip/chip";
 import {
@@ -118,7 +118,7 @@ export function CustomizeFilters({
                 <Fragment key={group[0]}>
                   {index > 0 ? <Menu.Separator /> : null}
                   {group.map((field) => {
-                    const Icon = FIELD_ICONS[field];
+                    const Icon = fieldIcon(field);
                     return (
                       <Menu.CheckboxItem
                         key={field}

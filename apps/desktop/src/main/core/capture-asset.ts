@@ -1,0 +1,106 @@
+import { createHash } from "node:crypto";
+import { mkdtemp, open, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, extname, join } from "node:path";
+import type { CaptureMetadata } from "@pond/schema/capture";
+import { saves } from "@pond/schema/db";
+import type { ExtensionCookie } from "@pond/schema/session";
+import { and, eq } from "drizzle-orm";
+import { session } from "electron";
+import mime from "mime-types";
+import { getDb } from "../db";
+import { itemDir } from "../paths";
+import { createManualSave, importedFilesComplete } from "./manual-import";
+import { writePartitionCookies } from "./refresh/scrape-window/session";
+
+export async function captureAsset(input: {
+  url: string;
+  title?: string;
+  originUrl?: string;
+  metadata: CaptureMetadata;
+  cookies?: ExtensionCookie[];
+}): Promise<{ id: string; duplicate: boolean }> {
+  const sourceId = `asset:${createHash("sha256").update(input.url).digest("hex")}`;
+  const db = await getDb();
+  const existing = db
+    .select({ id: saves.id, files: saves.files, status: saves.status })
+    .from(saves)
+    .where(and(eq(saves.source, "web"), eq(saves.sourceId, sourceId)))
+    .get();
+  if (
+    existing &&
+    (await importedFilesComplete(existing, itemDir(existing.id), 1))
+  )
+    return { id: existing.id, duplicate: true };
+  const directory = await mkdtemp(join(tmpdir(), "pond-asset-"));
+  const partition = `pond-asset-${crypto.randomUUID()}`;
+  const isolated = session.fromPartition(partition, { cache: false });
+  try {
+    if (input.cookies?.length)
+      await writePartitionCookies({ partition, cookies: input.cookies });
+    const response = await isolated.fetch(input.url, {
+      signal: AbortSignal.timeout(60_000),
+      headers: input.originUrl ? { Referer: input.originUrl } : undefined,
+    });
+    if (!response.ok)
+      throw new Error(
+        `The image server returned ${response.status}. Open the page and try again.`,
+      );
+    const type = response.headers.get("content-type")?.split(";")[0] ?? "";
+    if (!type.startsWith("image/"))
+      throw new Error(
+        "This image link no longer returns an image. Open the page and select it again.",
+      );
+    const extension = mime.extension(type) || "image";
+    const name =
+      basename(new URL(input.url).pathname)
+        .replace(/[^a-zA-Z0-9_.-]/g, "_")
+        .slice(0, 120) || `image.${extension}`;
+    const file = join(
+      directory,
+      `${basename(name, extname(name))}.${extension}`,
+    );
+    const handle = await open(file, "wx");
+    try {
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("The image server returned no data.");
+      let total = 0;
+      try {
+        while (true) {
+          const next = await reader.read();
+          if (next.done) break;
+          total += next.value.byteLength;
+          if (total > 128 * 1024 * 1024)
+            throw new Error(
+              "This image exceeds the 128 MB capture limit. Download and import the file instead.",
+            );
+          await handle.writeFile(next.value);
+        }
+      } finally {
+        await reader.cancel();
+      }
+    } finally {
+      await handle.close();
+    }
+    const result = await createManualSave({
+      source: "web",
+      sourceId,
+      url: input.originUrl || input.url,
+      title: input.metadata.title || input.title,
+      filePaths: [file],
+      fileSourceUrls: [input.url],
+      tags: input.metadata.tags,
+      note: input.metadata.notes,
+      rating: input.metadata.rating,
+    });
+    if (!result.ok || !result.id)
+      throw new Error(result.error || "The image could not be saved.");
+    return { id: result.id, duplicate: Boolean(result.skipped) };
+  } finally {
+    await Promise.allSettled([
+      isolated.clearStorageData(),
+      isolated.closeAllConnections(),
+      rm(directory, { recursive: true, force: true }),
+    ]);
+  }
+}

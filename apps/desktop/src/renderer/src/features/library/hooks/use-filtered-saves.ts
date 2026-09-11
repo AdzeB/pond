@@ -1,13 +1,9 @@
-import { queryIsFullySqlSupported } from "@pond/schema/filters";
-import { matches } from "@pond/schema/filters/match";
-import { isEmptyQuery, type Query } from "@pond/schema/filters/types";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { z } from "zod";
-import { ensureSaves } from "@/features/saves/lib/ensure-saves";
-import { hydrateFullPool } from "@/features/saves/state/bootstrap";
+import { seededOrderKey } from "@shared/order-key";
 import type { Save } from "@/features/saves/types";
 
 export type SortKey =
+  | "random"
+  | "manual"
   | "savedAt"
   | "createdAt"
   | "publishedAt"
@@ -28,6 +24,8 @@ export type SortKey =
 export type SortDir = "asc" | "desc";
 
 const SORT_KEYS: readonly SortKey[] = [
+  "random",
+  "manual",
   "savedAt",
   "createdAt",
   "publishedAt",
@@ -51,15 +49,6 @@ export function isSortKey(value: string): value is SortKey {
   return SORT_KEYS.some((key) => key === value);
 }
 
-const SqlResultSchema = z
-  .object({ ids: z.array(z.string()).catch([]) })
-  .catch({ ids: [] });
-
-interface FilterOptions {
-  sortKey?: SortKey;
-  sortDir?: SortDir;
-}
-
 export function needsFullPoolHydration(
   empty: boolean,
   useSql: boolean,
@@ -68,87 +57,6 @@ export function needsFullPoolHydration(
 ): boolean {
   const isDefaultOrder = sortKey === "savedAt" && sortDir === "desc";
   return !((empty && isDefaultOrder) || (!empty && useSql));
-}
-
-export function useFilteredSaves(
-  saves: ReadonlyArray<Save>,
-  query: Query | null,
-  opts?: FilterOptions,
-): ReadonlyArray<Save> {
-  const sortKey = opts?.sortKey ?? "savedAt";
-  const sortDir = opts?.sortDir ?? "desc";
-  const empty = !query || isEmptyQuery(query);
-  const useSql = !empty && queryIsFullySqlSupported(query);
-
-  useEffect(() => {
-    if (!needsFullPoolHydration(empty, useSql, sortKey, sortDir)) return;
-    void hydrateFullPool().catch((error) => {
-      console.warn("[pond filters] full hydrate for projection failed", error);
-    });
-  }, [empty, useSql, sortKey, sortDir]);
-
-  const [sqlResult, setSqlResult] = useState<{
-    query: Query;
-    sortKey: SortKey;
-    sortDir: SortDir;
-    ids: string[];
-  } | null>(null);
-
-  useEffect(() => {
-    if (!useSql || !query) {
-      setSqlResult(null);
-      return;
-    }
-    let cancelled = false;
-    void window.pond
-      .query("saves.query", { query, sortKey, sortDir })
-      .then(async (res) => {
-        if (cancelled) return;
-        const { ids } = SqlResultSchema.parse(res);
-        await ensureSaves(ids);
-        if (cancelled) return;
-        setSqlResult({ query, sortKey, sortDir, ids });
-      })
-      .catch(() => {
-        if (!cancelled) setSqlResult(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [useSql, query, sortKey, sortDir]);
-
-  const sqlIds =
-    sqlResult?.query === query &&
-    sqlResult.sortKey === sortKey &&
-    sqlResult.sortDir === sortDir
-      ? sqlResult.ids
-      : null;
-
-  const prevRef = useRef<ReadonlyArray<Save>>(saves);
-
-  const next = useMemo(() => {
-    if (empty || !query) {
-      if (sortKey === "savedAt" && sortDir === "desc") return saves;
-      return sortSaves(saves, sortKey, sortDir);
-    }
-    if (useSql && sqlIds) {
-      return intersectSqlResults(saves, sqlIds);
-    }
-    if (useSql && sqlIds === null) {
-      const filtered = saves.filter((s) => matches(query, s));
-      const preview =
-        sortKey === "savedAt" && sortDir === "desc"
-          ? filtered
-          : sortSaves(filtered, sortKey, sortDir);
-      return preview.length > 0 ? preview : prevRef.current;
-    }
-    const filtered = saves.filter((s) => matches(query, s));
-    if (sortKey === "savedAt" && sortDir === "desc") return filtered;
-    return sortSaves(filtered, sortKey, sortDir);
-  }, [saves, query, sortKey, sortDir, empty, useSql, sqlIds]);
-
-  prevRef.current = next;
-  return next;
 }
 
 export function intersectSqlResults(
@@ -183,6 +91,10 @@ export function sortSaves(
 
 function cmp(a: Save, b: Save, key: SortKey): number {
   switch (key) {
+    case "random":
+      return seededOrderKey(a.id, "pond") - seededOrderKey(b.id, "pond");
+    case "manual":
+      return 0;
     case "savedAt":
       return savedAtMs(a) - savedAtMs(b);
     case "createdAt":

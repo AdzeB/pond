@@ -5,6 +5,7 @@ import {
   patchTouchesEnrichment,
   writeEnrichmentSidecar,
 } from "./enrichment-sidecar";
+import { withMutationScope } from "./executor";
 import { applySavePatch, type WriteFileArgs } from "./pipeline/workers/apply";
 
 interface PersistSaveOptions {
@@ -19,21 +20,23 @@ export async function persistSave(
   patch: Partial<NewSave>,
   opts: PersistSaveOptions,
 ): Promise<Save | null> {
-  const updated = await applySavePatch(id, patch, {
-    actorReason: opts.actorReason,
-    newFiles: opts.newFiles,
-    replaceFilesWithKind: opts.replaceFilesWithKind,
+  return withMutationScope(async () => {
+    const updated = await applySavePatch(id, patch, {
+      actorReason: opts.actorReason,
+      newFiles: opts.newFiles,
+      replaceFilesWithKind: opts.replaceFilesWithKind,
+    });
+    if (!updated) return null;
+
+    const filesChanged =
+      (opts.newFiles?.length ?? 0) > 0 || opts.replaceFilesWithKind != null;
+    if (opts.writeInfo || filesChanged || patchTouchesInfo(patch)) {
+      await writeSaveInfo(updated);
+    }
+    if (patchTouchesEnrichment(patch)) {
+      writeEnrichmentSidecar(updated);
+    }
+
+    return updated;
   });
-  if (!updated) return null;
-
-  const filesChanged =
-    (opts.newFiles?.length ?? 0) > 0 || opts.replaceFilesWithKind != null;
-  if (opts.writeInfo || filesChanged || patchTouchesInfo(patch)) {
-    await writeSaveInfo(updated);
-  }
-  if (patchTouchesEnrichment(patch)) {
-    writeEnrichmentSidecar(updated);
-  }
-
-  return updated;
 }

@@ -1,3 +1,4 @@
+import { IconRefreshFill18 } from "@pond/icons/fill/18";
 import { useEffect, useRef, useState } from "react";
 import {
   AnimationMixer,
@@ -16,6 +17,7 @@ import {
   WebGLRenderer,
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { loadModel } from "./load-model";
 import styles from "./model-viewer.module.css";
 
@@ -146,19 +148,27 @@ export function ModelViewer({ url, path, onUnavailable }: ModelViewerProps) {
   return (
     <div className={styles.root}>
       <div ref={rootRef} className={styles.canvas} />
-      {loading ? <div className={styles.status}>Loading 3D model…</div> : null}
-      <div className={styles.controls}>
-        <button type="button" onClick={() => resetRef.current?.()}>
-          Reset view
-        </button>
-        <button
-          type="button"
-          aria-pressed={gridVisible}
-          onClick={() => setGridVisible((visible) => !visible)}
-        >
-          Grid
-        </button>
-      </div>
+      {loading ? <div className={styles.status}>Loading 3D model</div> : null}
+      <ViewerHud.Root>
+        <ViewerHud.Cluster anchor="top-right">
+          <ViewerHud.Pill role="toolbar" aria-label="View">
+            <ViewerHud.Tool
+              label="Reset View"
+              onClick={() => resetRef.current?.()}
+            >
+              <IconRefreshFill18 />
+            </ViewerHud.Tool>
+            <ViewerHud.Tool
+              icon={false}
+              label="Grid"
+              pressed={gridVisible}
+              onClick={() => setGridVisible((visible) => !visible)}
+            >
+              Grid
+            </ViewerHud.Tool>
+          </ViewerHud.Pill>
+        </ViewerHud.Cluster>
+      </ViewerHud.Root>
     </div>
   );
 }

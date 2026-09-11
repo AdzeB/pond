@@ -5,6 +5,8 @@ import {
   FIT_POSE,
   sliderToActual,
   viewerMemory,
+  viewerWheelIntent,
+  wheelZoomFactor,
   zoomImageAt,
 } from "./viewer-memory";
 
@@ -61,6 +63,98 @@ describe("viewer continuity", () => {
   it("stores a single-frame GIF loop at frame zero", () => {
     viewerMemory.setLoop("pond://gif/loop.gif", [0, 0]);
     expect(viewerMemory.loop("pond://gif/loop.gif")).toEqual([0, 0]);
+  });
+});
+
+describe("viewer wheel intent", () => {
+  it("treats pinch and modifier scroll as zoom regardless of the scrolling pref", () => {
+    expect(
+      viewerWheelIntent({
+        ctrlKey: true,
+        altKey: false,
+        metaKey: false,
+        wheelBehavior: "scroll",
+      }),
+    ).toBe("zoom");
+    expect(
+      viewerWheelIntent({
+        ctrlKey: true,
+        altKey: false,
+        metaKey: false,
+        wheelBehavior: "navigate",
+      }),
+    ).toBe("zoom");
+    expect(
+      viewerWheelIntent({
+        ctrlKey: false,
+        altKey: true,
+        metaKey: false,
+        wheelBehavior: "scroll",
+      }),
+    ).toBe("zoom");
+    expect(
+      viewerWheelIntent({
+        ctrlKey: false,
+        altKey: false,
+        metaKey: true,
+        wheelBehavior: "navigate",
+      }),
+    ).toBe("zoom");
+  });
+
+  it("follows Image Scrolling when the wheel is a two-finger drag", () => {
+    expect(
+      viewerWheelIntent({
+        ctrlKey: false,
+        altKey: false,
+        metaKey: false,
+        wheelBehavior: "scroll",
+      }),
+    ).toBe("pan");
+    expect(
+      viewerWheelIntent({
+        ctrlKey: false,
+        altKey: false,
+        metaKey: false,
+        wheelBehavior: "zoom",
+      }),
+    ).toBe("zoom");
+    expect(
+      viewerWheelIntent({
+        ctrlKey: false,
+        altKey: false,
+        metaKey: false,
+        wheelBehavior: "navigate",
+      }),
+    ).toBe("navigate");
+  });
+});
+
+describe("wheel zoom factor", () => {
+  it("zooms in for a negative pinch delta", () => {
+    expect(wheelZoomFactor(-10, 0, true)).toBeGreaterThan(1);
+    expect(wheelZoomFactor(10, 0, true)).toBeLessThan(1);
+  });
+
+  it("applies a stronger gain to pinch than to mouse-wheel pixels", () => {
+    const pinch = wheelZoomFactor(-10, 0, true);
+    const wheel = wheelZoomFactor(-10, 0, false);
+    expect(pinch).toBeGreaterThan(wheel);
+    expect(wheel).toBeGreaterThan(1);
+  });
+
+  it("keeps applied zoom inside the pose clamp", () => {
+    const factor = wheelZoomFactor(-10_000, 0, true);
+    expect(Number.isFinite(factor)).toBe(true);
+    expect(
+      zoomImageAt(FIT_POSE, FIT_POSE.zoom * factor, { x: 0, y: 0 }).zoom,
+    ).toBe(32);
+    expect(
+      zoomImageAt(FIT_POSE, FIT_POSE.zoom * wheelZoomFactor(10_000, 0, true), {
+        x: 0,
+        y: 0,
+      }).zoom,
+    ).toBe(0.05);
   });
 });
 

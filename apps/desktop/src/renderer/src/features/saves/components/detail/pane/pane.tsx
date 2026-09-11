@@ -1,8 +1,10 @@
 import { IconXmarkOutline18 as Cross } from "@pond/icons/outline/18";
-import { Button, Input, TitleBar, Tooltip } from "@pond/ui";
-import { type ComponentType, useEffect, useState } from "react";
+import type { IconComponent } from "@pond/icons/types";
+import { Button, TitleBar, Tooltip } from "@pond/ui";
+import { useEffect, useState } from "react";
 import { ColorSwatch } from "@/features/library/components/color-swatch/color-swatch";
 import { libraryChrome } from "@/features/library/state/library-chrome";
+import { ImageComments } from "@/features/saves/components/annotations/image-comments";
 import { KebabMenu } from "@/features/saves/components/detail/kebab/kebab";
 import { RatingStars } from "@/features/saves/components/detail/rating/rating";
 import { Section } from "@/features/saves/components/detail/section/section";
@@ -64,6 +66,7 @@ export function SaveInspector({ saveId }: { saveId: string }) {
 
 function AboutSections({ save }: { save: Save }) {
   const { description } = useSaveDetail(save.id);
+  const fileIndex = useSaveViewerFileIndex() ?? 0;
   const displayTitle = save.title?.trim() || save.author?.trim() || "Untitled";
   const local = save.source === "local";
   const [titleDraft, setTitleDraft] = useState(save.title ?? "");
@@ -128,63 +131,8 @@ function AboutSections({ save }: { save: Save }) {
       </div>
 
       {hasVideo ? <VideoNotesSection save={save} /> : null}
-      {(save.comments ?? []).length > 0 ? (
-        <div className={styles.tags}>
-          <span className={styles.label}>Comments</span>
-          <ul>
-            {(save.comments ?? []).map((comment) => (
-              <li key={comment.id}>{comment.text}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-      <CommentComposer save={save} />
+      <ImageComments save={save} fileIndex={fileIndex} />
     </>
-  );
-}
-
-function CommentComposer({ save }: { save: Save }) {
-  const [text, setText] = useState("");
-  return (
-    <div className={styles.tags}>
-      <span className={styles.label}>Add Comment</span>
-      <Input.Root size="sm">
-        <Input.Field
-          value={text}
-          placeholder="Write a comment"
-          onValueChange={setText}
-        />
-      </Input.Root>
-      <Button
-        size="xs"
-        variant="secondary"
-        disabled={!text.trim()}
-        onClick={() => {
-          const next = text.trim();
-          if (!next) return;
-          void mutateSave(
-            save.id,
-            {
-              comments: [
-                ...(save.comments ?? []),
-                {
-                  id: crypto.randomUUID(),
-                  x: 0.46,
-                  y: 0.46,
-                  w: 0.08,
-                  h: 0.08,
-                  text: next,
-                },
-              ],
-            },
-            { actorReason: "inspect:comment" },
-          );
-          setText("");
-        }}
-      >
-        Add
-      </Button>
-    </div>
   );
 }
 
@@ -290,10 +238,7 @@ function PropertyRow({
   row: DetailRow;
   avatarUrl: string | null;
   sourceLogo: string | null;
-  SourceIcon: ComponentType<{
-    width?: number;
-    height?: number;
-  }> | null;
+  SourceIcon: IconComponent | null;
 }) {
   return (
     <div className={styles.row}>

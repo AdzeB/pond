@@ -32,7 +32,7 @@ describe("view menu", () => {
     vi.unstubAllGlobals();
   });
 
-  it("keeps layout options and omits sort and notes", async () => {
+  it("keeps layout, sort, and display options together", async () => {
     await act(async () => root.render(<ViewMenu />));
     await act(async () => {
       document
@@ -41,8 +41,8 @@ describe("view menu", () => {
     });
     const text = document.body.textContent ?? "";
     expect(text).toContain("Layout");
+    expect(text).toContain("Sort By");
     expect(text).toContain("Show Name");
-    expect(text).not.toContain("Sort By");
     expect(text).not.toContain("Show Notes");
   });
 });

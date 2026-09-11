@@ -4,11 +4,21 @@ import { join, resolve as resolvePath } from "node:path";
 import { app, globalShortcut, ipcMain } from "electron";
 import log from "electron-log/main.js";
 import { DEFAULT_APP_ICON } from "../shared/app-icons";
-import { IPC, type RecentMenuEntry } from "../shared/constants";
-import { startAutoImport } from "./core/auto-import";
+import {
+  IPC,
+  type MenuActionId,
+  type RecentMenuEntry,
+} from "../shared/constants";
+import { startAutoImport, stopAutoImport } from "./core/auto-import";
+import { captures } from "./core/captures";
 import { ensureDefaultLibrary } from "./core/ensure-default-library";
 import { registerSyncActionListener } from "./core/executor";
+import {
+  startGlobalShortcuts,
+  summonShortcutTarget,
+} from "./core/global-shortcuts";
 import { syncLibraryRootMetadata } from "./core/library-ops";
+import { stopLibraryTransfers } from "./core/library-transfers";
 import { flushGovernor } from "./core/pipeline/rate-governor";
 import { startReconciler } from "./core/pipeline/reconciler-client";
 import { getPrefs } from "./core/prefs";
@@ -33,6 +43,7 @@ import {
 import { getDb } from "./db";
 import { handleDeepLink } from "./deep-link";
 import { registerIpc } from "./ipc";
+import { waitForLibraryLocationChanges } from "./ipc/queries/library-locations";
 import { ensureIngestToken } from "./keychain";
 import { broadcast } from "./lib/broadcast";
 import { rotateBundleBackups } from "./lib/library-config";
@@ -112,13 +123,13 @@ if (!gotSingleInstanceLock) {
   app.quit();
 }
 
-if (process.defaultApp) {
+if (!process.env.POND_SANDBOX && process.defaultApp) {
   if (process.argv.length >= 2) {
     app.setAsDefaultProtocolClient("pond", process.execPath, [
       resolvePath(process.argv[1] ?? ""),
     ]);
   }
-} else {
+} else if (!process.env.POND_SANDBOX) {
   app.setAsDefaultProtocolClient("pond");
 }
 
@@ -161,6 +172,7 @@ app.whenReady().then(async () => {
 
   registerIpc();
   installAppMenu({
+    shortcuts: (await getPrefs()).shortcuts,
     focusedOrMain,
     openLibraryWindow: () => void openLibraryWindow(),
   });
@@ -205,8 +217,10 @@ app.whenReady().then(async () => {
 });
 
 async function postLaunchInit(): Promise<void> {
-  registerSummonHotkey();
-  registerAutoUpdater();
+  if (!process.env.POND_SANDBOX) {
+    await registerSummonHotkey();
+    registerAutoUpdater();
+  }
 
   try {
     await syncLibraryRootMetadata();
@@ -226,14 +240,16 @@ async function postLaunchInit(): Promise<void> {
   void startDeferredMaintenance();
 
   try {
-    await runtimeControls.startHttpServer();
+    if (!process.env.POND_SANDBOX) await runtimeControls.startHttpServer();
   } catch (err) {
     log.error("[pond] http server failed to start", err);
   }
 
   try {
-    nativeServer = await startNativeServer();
-    writeNativeHostManifests();
+    if (!process.env.POND_SANDBOX) {
+      nativeServer = await startNativeServer();
+      writeNativeHostManifests();
+    }
   } catch (err) {
     log.error("[pond] native host failed to start", err);
   }
@@ -252,6 +268,9 @@ async function postLaunchInit(): Promise<void> {
   void startStorageWatcher().catch((err) =>
     log.warn("[pond] storage watcher failed to start", err),
   );
+  void captures
+    .recover()
+    .catch((error) => log.warn("[pond] capture recovery failed", error));
   void startAutoImport().catch((err) =>
     log.warn("[pond] auto-import failed to start", err),
   );
@@ -335,14 +354,43 @@ function snapshotBundleJsons(): void {
   }
 }
 
-function registerSummonHotkey() {
-  const isMac = process.platform === "darwin";
-  const summonAccel = isMac ? "Command+Shift+L" : "Control+Shift+L";
-  const ok = globalShortcut.register(
-    summonAccel,
-    () => void summonMainWindow(),
+async function registerSummonHotkey() {
+  const run = (action: () => Promise<void>) => () => {
+    void action().catch((error) => log.warn("[pond shortcut]", error));
+  };
+  startGlobalShortcuts(
+    globalShortcut,
+    {
+      "app.summon": run(async () => {
+        const { shortcuts } = await getPrefs();
+        const win = getMainWindow();
+        if (
+          summonShortcutTarget(
+            shortcuts.overrides,
+            Boolean(win && !win.isDestroyed() && win.isFocused()),
+            process.platform === "darwin",
+          ) === "layout"
+        ) {
+          win?.webContents.send(
+            IPC.menuAction,
+            "view.layout.cycle" satisfies MenuActionId,
+          );
+          return;
+        }
+        await summonMainWindow();
+      }),
+      "capture.display": run(async () => {
+        await (await import("./core/screenshot")).captureDisplay();
+      }),
+      "capture.area": run(async () => {
+        await (await import("./aux-windows")).openCaptureWindow();
+      }),
+      "capture.window": run(async () => {
+        await (await import("./core/screenshot")).captureWindow();
+      }),
+    },
+    (await getPrefs()).shortcuts.overrides,
   );
-  if (!ok) log.warn(`[pond] summon hotkey ${summonAccel} not registered`);
 }
 
 app.on("window-all-closed", () => {
@@ -354,10 +402,23 @@ app.on("window-all-closed", () => {
   app.quit();
 });
 
-app.on("before-quit", async () => {
+let quitPrepared = false;
+let quitPreparing = false;
+app.on("before-quit", async (event) => {
+  if (quitPrepared) return;
+  event.preventDefault();
+  if (quitPreparing) return;
+  quitPreparing = true;
   beginQuit();
   stopMediaWarmer?.();
   globalShortcut.unregisterAll();
+  try {
+    await waitForLibraryLocationChanges();
+    await stopAutoImport();
+    await stopLibraryTransfers();
+  } catch (error) {
+    log.warn("[pond] auto import shutdown failed", error);
+  }
   try {
     await flushTagsDump();
   } catch (err) {
@@ -394,4 +455,6 @@ app.on("before-quit", async () => {
   } catch (err) {
     log.warn("[pond] http server close failed", err);
   }
+  quitPrepared = true;
+  app.quit();
 });

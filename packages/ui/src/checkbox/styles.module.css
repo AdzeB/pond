@@ -42,14 +42,6 @@
     background: var(--ds-accent-9);
   }
 
-  &:focus-visible,
-  &[data-demo-state="focus"] {
-    outline-width: 2px;
-    outline-style: solid;
-    outline-color: var(--ds-gray-6);
-    outline-offset: 0;
-  }
-
   &[data-disabled] {
     cursor: not-allowed;
     opacity: 0.5;

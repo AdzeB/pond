@@ -1,0 +1,42 @@
+.popup {
+  --width: 620px;
+}
+.description {
+  padding: 16px 24px;
+  margin: 0;
+  color: var(--ds-gray-10);
+}
+.list {
+  height: min(50vh, 460px);
+  margin: 0 20px;
+  overflow: auto;
+  border-block: 1px solid var(--ds-gray-4);
+}
+.row {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  height: 44px;
+  border-bottom: 1px solid var(--ds-gray-3);
+}
+.name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.position {
+  width: 34px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-9);
+  text-align: right;
+}
+.error {
+  padding: 0 24px;
+  color: var(--ds-red-11);
+}

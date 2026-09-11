@@ -80,8 +80,12 @@ for (const [key, title, description] of [
   ["location", "Library Location", "Reveal your library in Finder"],
   ["move", "Move Library", "Copy your library and switch to a new location"],
   ["backup", "Back Up Library", "Create a backup"],
-  ["open", "Open Library", "Open a library or restore a backup"],
+  ["open", "Open Library", "Open a library"],
   ["new", "New Library", "Create a library on this Mac"],
+  ["recent", "Recent Libraries", "Switch between recent libraries"],
+  ["merge", "Merge Library", "Copy Saves from another library"],
+  ["restore", "Restore Backup", "Verify and restore a backup"],
+  ["package", "Import Pond Package", "Import Saves and folders from a package"],
   ["import", "Import Eagle Library", "Import files, folders and tags"],
   [
     "watched-folder",

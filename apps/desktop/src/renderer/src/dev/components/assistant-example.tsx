@@ -1,12 +1,12 @@
 import {
   IconAlbum2Outline18,
+  IconBookmarkOutline18,
   IconChevronDownOutline18,
   IconClockRotateClockwiseOutline18,
   IconFileOutline18,
   IconImageOutline18,
   IconLink2Outline18,
   IconPlusOutline18,
-  IconTagsOutline18,
   IconWandSparkleOutline18,
 } from "@pond/icons/outline/18";
 import { Button } from "@pond/ui";
@@ -289,7 +289,7 @@ function GalleryComposer({
             Connect Ideas
           </ComposerOptions.Item>
           <ComposerOptions.Item
-            icon={<IconTagsOutline18 />}
+            icon={<IconBookmarkOutline18 />}
             description="Review titles and tags"
             onClick={() => prompt("Help me organize these Saves")}
           >

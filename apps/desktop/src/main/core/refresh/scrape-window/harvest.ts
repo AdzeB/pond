@@ -1,5 +1,6 @@
 import type { Source } from "@pond/schema/db";
 import type { Capture } from "@pond/schema/raw";
+import type { ReportDownloadActivity } from "@shared/download-activity";
 import log from "electron-log/main.js";
 import { partitionForIngest } from "../../sync/accounts";
 import { harvesterFor } from "../harvest";
@@ -24,6 +25,7 @@ interface HarvestArgs {
   source: Source;
   sourceId?: string;
   accountId?: string | null;
+  reportActivity?: ReportDownloadActivity;
 }
 
 interface HarvestResult {
@@ -46,7 +48,11 @@ export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
     }
   }
 
-  const lease = await leaseWindow(args.source, { partition });
+  const lease = await leaseWindow(args.source, {
+    partition,
+    reportActivity: args.reportActivity,
+  });
+  args.reportActivity?.({ phase: "harvesting" });
 
   try {
     const navOk = await navigateWithTimeout(

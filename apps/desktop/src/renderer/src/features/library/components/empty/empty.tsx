@@ -1,13 +1,13 @@
 import {
-  IconArchiveContent2Fill18,
-  IconDownloadFill18,
-  IconGlobeFill18,
-  IconTagFill18,
-  IconTrash2ContentFill18,
+  IconAlbum2Fill18,
+  IconArrowDiagonalInFill18,
+  IconBookmarkSlashFill18,
+  IconFolderBanFill18,
+  IconTrashXmarkFill18,
+  IconWindowDownloadFill18,
 } from "@pond/icons/fill/18";
 import {
   IconClockRotateClockwiseOutline18,
-  IconFolderBanOutline18,
   IconMagnifierOutline18,
 } from "@pond/icons/outline/18";
 import { Button, Empty } from "@pond/ui";
@@ -21,7 +21,7 @@ export function LibraryEmpty() {
   return (
     <Empty.Root>
       <Empty.Media>
-        <IconArchiveContent2Fill18 />
+        <IconAlbum2Fill18 />
       </Empty.Media>
       <Empty.Title>No saves yet</Empty.Title>
       <Empty.Description>
@@ -48,7 +48,7 @@ export function SourcesEmpty() {
   return (
     <Empty.Root>
       <Empty.Media>
-        <IconGlobeFill18 />
+        <IconArrowDiagonalInFill18 />
       </Empty.Media>
       <Empty.Title>No sources yet</Empty.Title>
       <Empty.Description>
@@ -71,7 +71,7 @@ export function DownloadsEmpty() {
   return (
     <Empty.Root>
       <Empty.Media>
-        <IconDownloadFill18 />
+        <IconWindowDownloadFill18 />
       </Empty.Media>
       <Empty.Title>No downloads yet</Empty.Title>
       <Empty.Description>
@@ -94,7 +94,7 @@ export function TrashEmpty() {
   return (
     <Empty.Root>
       <Empty.Media>
-        <IconTrash2ContentFill18 />
+        <IconTrashXmarkFill18 />
       </Empty.Media>
       <Empty.Title>Trash is empty</Empty.Title>
       <Empty.Description>
@@ -129,7 +129,7 @@ export function UncategorizedEmpty() {
   return (
     <Empty.Root role="status" aria-live="polite">
       <Empty.Media>
-        <IconFolderBanOutline18 />
+        <IconFolderBanFill18 />
       </Empty.Media>
       <Empty.Title>No uncategorized saves</Empty.Title>
       <Empty.Description>
@@ -157,7 +157,7 @@ export function LibrarySectionEmpty({ mode }: { mode: LibrarySection }) {
   const content =
     mode === "untagged"
       ? {
-          icon: <IconTagFill18 />,
+          icon: <IconBookmarkSlashFill18 />,
           title: "No untagged saves",
           description: "Saves without tags appear here.",
         }
@@ -168,7 +168,7 @@ export function LibrarySectionEmpty({ mode }: { mode: LibrarySection }) {
             description: "Recently opened saves appear here.",
           }
         : {
-            icon: <IconGlobeFill18 />,
+            icon: <IconArrowDiagonalInFill18 />,
             title: "No saves from this source",
             description: "Saves synced from this source appear here.",
           };

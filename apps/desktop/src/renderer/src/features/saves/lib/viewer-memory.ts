@@ -86,6 +86,41 @@ export function zoomImageAt(
   };
 }
 
+export type ViewerWheelBehavior = "scroll" | "zoom" | "navigate";
+export type ViewerWheelIntent = "zoom" | "pan" | "navigate";
+
+export function viewerWheelIntent(event: {
+  ctrlKey: boolean;
+  altKey: boolean;
+  metaKey: boolean;
+  wheelBehavior: ViewerWheelBehavior;
+}): ViewerWheelIntent {
+  if (event.ctrlKey || event.altKey || event.metaKey) return "zoom";
+  if (event.wheelBehavior === "zoom") return "zoom";
+  if (event.wheelBehavior === "navigate") return "navigate";
+  return "pan";
+}
+
+const PINCH_GAIN = 0.01;
+const WHEEL_GAIN = 0.002;
+const LINE_HEIGHT = 16;
+const PAGE_HEIGHT = 800;
+
+/** Chromium pinch wheel events are small pixel deltas; mouse notches are much larger. */
+export function wheelZoomFactor(
+  deltaY: number,
+  deltaMode: number,
+  pinch: boolean,
+): number {
+  const pixels =
+    deltaMode === 1
+      ? deltaY * LINE_HEIGHT
+      : deltaMode === 2
+        ? deltaY * PAGE_HEIGHT
+        : deltaY;
+  return Math.exp(-pixels * (pinch ? PINCH_GAIN : WHEEL_GAIN));
+}
+
 export const ZOOM_SLIDER_MAX = 100;
 export const ZOOM_SLIDER_MID = 50;
 const ACTUAL_AT_MIN = 0.05;

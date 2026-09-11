@@ -22,6 +22,7 @@ describe("library breadcrumb paths", () => {
     ["/assistant", "Assistant"],
     ["/sources", "Sources"],
     ["/tags", "Tags"],
+    ["/untagged", "Untagged"],
     ["/downloads", "Downloads"],
     ["/trash", "Trash"],
     ["/settings", "Settings"],

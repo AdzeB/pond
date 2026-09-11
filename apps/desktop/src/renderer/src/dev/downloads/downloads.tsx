@@ -11,6 +11,7 @@ import {
   IconMagnifierOutline18,
   IconRefreshOutline18,
 } from "@pond/icons/outline/18";
+import type { Op } from "@pond/schema/db";
 import { Button, DataTable, Logo, Tooltip } from "@pond/ui";
 import { useState } from "react";
 import {
@@ -18,6 +19,12 @@ import {
   downloadsColumns,
 } from "@/features/downloads/components/page/columns";
 import downloadStyles from "@/features/downloads/components/page/page.module.css";
+import {
+  downloadStatusIcon,
+  downloadStatusLabel,
+  isDownloadProcessing,
+  isDownloadStopped,
+} from "@/features/downloads/components/page/status";
 import type { DownloadRow } from "@/features/downloads/lib/status-feed";
 import selectionStyles from "@/features/library/components/dock/selection/selection.module.css";
 import {
@@ -80,6 +87,22 @@ const ROWS: DownloadRow[] = [
     live: true,
   },
   {
+    id: "lab-retrying",
+    saveId: "lab-retrying",
+    name: "A clip that failed and is trying again",
+    url: "https://www.tiktok.com/@example/video/1",
+    source: "tiktok",
+    status: "retrying",
+    stage: "Downloading video",
+    op: "fetch_video_ytdlp",
+    progress: 0.1,
+    attempts: 3,
+    error: "The connection reset before the file finished saving.",
+    ts: NOW - 120_000,
+    durationMs: null,
+    live: true,
+  },
+  {
     id: "lab-blocked",
     saveId: "lab-blocked",
     name: "A reference that is waiting to retry",
@@ -129,6 +152,110 @@ const ROWS: DownloadRow[] = [
   },
 ];
 
+function statusRow(
+  id: string,
+  status: DownloadRow["status"],
+  op: Op | null,
+  stage: string | null,
+  extras: Partial<DownloadRow> = {},
+): DownloadRow {
+  return {
+    id,
+    saveId: id,
+    name: id,
+    url: "https://example.com/status",
+    source: "web",
+    status,
+    stage,
+    op,
+    progress: status === "running" ? 0.4 : null,
+    attempts: 1,
+    error: null,
+    ts: NOW,
+    durationMs: null,
+    live:
+      status === "running" ||
+      status === "pending" ||
+      status === "blocked" ||
+      status === "retrying",
+    ...extras,
+  };
+}
+
+const STATUS_ROWS: { row: DownloadRow; paused?: boolean }[] = [
+  { row: statusRow("reading", "running", "harvest_metadata", "Reading page") },
+  {
+    row: statusRow("tweet", "running", "capture_tweet", "Capturing tweet", {
+      source: "twitter",
+    }),
+  },
+  {
+    row: statusRow("post", "running", "capture_tweet", "Capturing post", {
+      source: "threads",
+    }),
+  },
+  {
+    row: statusRow(
+      "cover",
+      "running",
+      "render_text_cover",
+      "Rendering text cover",
+    ),
+  },
+  {
+    row: statusRow("media", "running", "fetch_blobs", "Downloading media"),
+  },
+  { row: statusRow("archive", "running", "archive_page", "Archiving site") },
+  {
+    row: statusRow(
+      "video",
+      "running",
+      "fetch_video_ytdlp",
+      "Downloading video",
+    ),
+  },
+  { row: statusRow("poster", "running", "ensure_poster", "Making poster") },
+  { row: statusRow("avatar", "running", "fetch_avatar", "Fetching avatar") },
+  { row: statusRow("finalize", "running", "finalize", "Finalizing") },
+  { row: statusRow("downloading", "running", null, null) },
+  { row: statusRow("waiting", "pending", "harvest_metadata", null) },
+  {
+    row: statusRow("paused", "pending", "harvest_metadata", null),
+    paused: true,
+  },
+  {
+    row: statusRow(
+      "retrying",
+      "retrying",
+      "fetch_video_ytdlp",
+      "Downloading video",
+    ),
+  },
+  {
+    row: statusRow(
+      "retry",
+      "blocked",
+      "fetch_video_ytdlp",
+      "Downloading video",
+    ),
+  },
+  {
+    row: statusRow("failed", "failed", "fetch_blobs", "Fetching files", {
+      live: false,
+    }),
+  },
+  {
+    row: statusRow("complete", "complete", "finalize", "Saved", {
+      live: false,
+    }),
+  },
+  {
+    row: statusRow("cancelled", "cancelled", "fetch_blobs", null, {
+      live: false,
+    }),
+  },
+];
+
 const BADGE_SAVE: Save = {
   id: "lab-badge",
   source: "web",
@@ -165,6 +292,7 @@ const FAILED_BADGE_SAVE: Save = {
 };
 
 const SECTIONS = [
+  ["status", "Status"],
   ["chrome", "Toolbar and filters"],
   ["queue", "Queue rows"],
   ["empty", "Empty states"],
@@ -270,6 +398,36 @@ function ToolbarSpecimen({
   );
 }
 
+function StatusSpecimen() {
+  return (
+    <div className={styles.statusList}>
+      {STATUS_ROWS.map(({ row, paused = false }) => {
+        const running = row.status === "running";
+        const Icon = downloadStatusIcon(row, paused);
+        return (
+          <div
+            key={row.id}
+            className={downloadStyles.row}
+            data-status={row.status}
+            data-moving={running || undefined}
+            data-processing={isDownloadProcessing(row) || undefined}
+            data-paused={isDownloadStopped(row, paused) || undefined}
+          >
+            <div className={downloadStyles.status}>
+              <span className={downloadStyles.activity} aria-hidden="true">
+                <Icon />
+              </span>
+              <span className={downloadStyles.stage}>
+                {downloadStatusLabel(row, paused)}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function QueueSpecimen({ paused }: { paused: boolean }) {
   return (
     <DataTable.Provider
@@ -350,6 +508,13 @@ export function DownloadsLab({ onExit }: { onExit: () => void }) {
                   preview the paused queue.
                 </p>
               </div>
+              <Specimen
+                id="status"
+                title="Status"
+                path="downloads/page/status.tsx"
+              >
+                <StatusSpecimen />
+              </Specimen>
               <Specimen
                 id="chrome"
                 title="Toolbar and filters"

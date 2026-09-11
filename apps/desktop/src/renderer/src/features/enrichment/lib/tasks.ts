@@ -3,11 +3,11 @@ import { z } from "zod";
 import { statusFeed } from "@/features/downloads/lib/status-feed";
 import { clearClipEmbeddings } from "@/features/enrichment/state/clip-embedding-store";
 import { clearEmbeddings } from "@/features/enrichment/state/embedding-store";
-import { setSaveTags } from "@/features/saves/lib/mutate";
+import { ensureSaves } from "@/features/saves/lib/ensure-saves";
+import { bulkMutation } from "@/features/saves/lib/mutate";
 import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
 import { getPrefsSnapshot } from "@/features/settings/state/prefs";
-import { mergeUniqueTags } from "@/features/tags/state/tag-clipboard";
 
 const BackfillReplySchema = z.object({
   ok: z.boolean().catch(false),
@@ -48,21 +48,15 @@ function targetSaves(ids: TaskScope): Save[] {
   return live.filter((s) => set.has(s.id));
 }
 
-function scopeNoun(ids: TaskScope): string {
-  return ids && ids.length > 0 ? "selection" : "library";
-}
-
 export async function autoTag(ids?: TaskScope): Promise<TaskResult> {
-  let changed = 0;
-  for (const save of targetSaves(ids)) {
-    const suggested = save.suggestedTags ?? [];
-    if (suggested.length === 0) continue;
-    const current = save.tags ?? [];
-    const next = mergeUniqueTags(current, suggested);
-    if (next.length === current.length) continue;
-    await setSaveTags(save.id, next);
-    changed++;
-  }
+  const targets = ids?.length
+    ? [...ids]
+    : (
+        await window.pond.query("saves.queryIds", {
+          query: { combinator: "and", rules: [] },
+        })
+      ).ids;
+  const changed = await bulkMutation(targets, { kind: "suggested-tags" });
   if (changed > 0) {
     statusFeed.note(`Applied tags to ${changed} ${plural(changed, "item")}`);
   }
@@ -112,13 +106,14 @@ export function runEnrichment(): TaskResult {
   return { ok: true, message: "Enrichment sweep started." };
 }
 
-function reprocessStamped(
+async function reprocessStamped(
   enabled: boolean,
   disabledHint: string,
   clear: (save: Save) => Save | null,
   ids: TaskScope,
-): TaskResult {
+): Promise<TaskResult> {
   if (!enabled) return { ok: false, message: disabledHint };
+  if (ids?.length) await ensureSaves(ids);
   const updated: Save[] = [];
   for (const save of targetSaves(ids)) {
     const next = clear(save);
@@ -139,7 +134,7 @@ function reprocessStamped(
   };
 }
 
-export function recaption(ids?: TaskScope): TaskResult {
+export function recaption(ids?: TaskScope): Promise<TaskResult> {
   return reprocessStamped(
     TASK_ENABLED.caption(getPrefsSnapshot()),
     DISABLED_HINTS.caption,
@@ -148,7 +143,7 @@ export function recaption(ids?: TaskScope): TaskResult {
   );
 }
 
-export function reocr(ids?: TaskScope): TaskResult {
+export function reocr(ids?: TaskScope): Promise<TaskResult> {
   return reprocessStamped(
     TASK_ENABLED.ocr(getPrefsSnapshot()),
     DISABLED_HINTS.ocr,
@@ -157,7 +152,7 @@ export function reocr(ids?: TaskScope): TaskResult {
   );
 }
 
-export function retranscribe(ids?: TaskScope): TaskResult {
+export function retranscribe(ids?: TaskScope): Promise<TaskResult> {
   return reprocessStamped(
     TASK_ENABLED.transcribe(getPrefsSnapshot()),
     DISABLED_HINTS.transcribe,
@@ -166,30 +161,29 @@ export function retranscribe(ids?: TaskScope): TaskResult {
   );
 }
 
-export function reembed(ids?: TaskScope): TaskResult {
-  if (!TASK_ENABLED.reembed(getPrefsSnapshot())) {
+export async function reembed(ids?: TaskScope): Promise<TaskResult> {
+  if (!TASK_ENABLED.reembed(getPrefsSnapshot()))
     return { ok: false, message: DISABLED_HINTS.reembed };
-  }
-  const n = clearEmbeddings(ids && ids.length > 0 ? ids : undefined);
-  kickRescan(ids);
-  const message =
-    n > 0
-      ? `Embedding ${n} ${plural(n, "item")} again in the background`
-      : `No embeddings to rebuild in the ${scopeNoun(ids)} yet.`;
-  statusFeed.note("Semantic Index", message);
-  return { ok: true, message };
+  if (ids?.length) await ensureSaves(ids);
+  clearEmbeddings(ids && ids.length > 0 ? ids : undefined);
+  return reprocessStamped(
+    true,
+    DISABLED_HINTS.reembed,
+    (save) =>
+      save.embeddingModel == null ? null : { ...save, embeddingModel: null },
+    ids,
+  );
 }
 
-export function rebuildVisualIndex(ids?: TaskScope): TaskResult {
-  if (!TASK_ENABLED.clip(getPrefsSnapshot())) {
+export async function rebuildVisualIndex(ids?: TaskScope): Promise<TaskResult> {
+  if (!TASK_ENABLED.clip(getPrefsSnapshot()))
     return { ok: false, message: DISABLED_HINTS.clip };
-  }
-  const n = clearClipEmbeddings(ids && ids.length > 0 ? ids : undefined);
-  kickRescan(ids);
-  const message =
-    n > 0
-      ? `Rebuilding the visual index for ${n} ${plural(n, "item")}`
-      : `No visual index to rebuild in the ${scopeNoun(ids)} yet.`;
-  statusFeed.note("Visual Index", message);
-  return { ok: true, message };
+  if (ids?.length) await ensureSaves(ids);
+  clearClipEmbeddings(ids && ids.length > 0 ? ids : undefined);
+  return reprocessStamped(
+    true,
+    DISABLED_HINTS.clip,
+    (save) => (save.clipModel == null ? null : { ...save, clipModel: null }),
+    ids,
+  );
 }

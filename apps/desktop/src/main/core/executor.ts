@@ -2,6 +2,7 @@ import type { Save, SyncAction, Tag } from "@pond/schema/db";
 import {
   folders as foldersTable,
   savedViews as savedViewsTable,
+  saveFolders as saveFoldersTable,
   saves as savesTable,
   syncActions as syncActionsTable,
   tagGroupMembers as tagGroupMembersTable,
@@ -23,7 +24,16 @@ import {
   writeItemFiles,
 } from "../lib/library";
 import { withRawSlim } from "../lib/raw-slim";
+import { libraryRoot } from "../paths";
+import { BatchRecoveryError, runRecoverableBatch } from "./batch-journal";
+import {
+  replaceFolderMemberships,
+  writeFolderMemberships,
+} from "./folder-transaction";
+import { createMutationQueue } from "./mutation-queue";
+import { writeOrganizationBundle } from "./organization-bundle";
 import { isTagModel, scheduleTagsDump } from "./tags-bundle";
+import { setUserTitleLock } from "./user-metadata";
 
 interface ExecuteOptions {
   silent?: boolean;
@@ -69,65 +79,47 @@ function resolveActor(meta: TxMeta | undefined) {
 const SYNC_ACTIONS_RING = 5000;
 let writesSinceTrim = 0;
 
+const mutationQueue = createMutationQueue();
+const blockedLibraries = new Map<string, Error>();
+export function withMutationScope<T>(operation: () => Promise<T>): Promise<T> {
+  return mutationQueue.run(async () => {
+    const blocked = blockedLibraries.get(libraryRoot());
+    if (blocked) throw blocked;
+    return operation();
+  });
+}
+export async function suspendMutations(): Promise<void> {
+  await mutationQueue.suspend();
+}
+
+export function resumeMutations(): void {
+  mutationQueue.resume();
+}
+
 export async function executeTransaction(
   tx: Transaction,
   opts: ExecuteOptions = {},
 ): Promise<SyncAction> {
-  const db = await getDb();
-  const raw = db.$raw;
-  const batchId = tx.meta?.batchId ?? null;
-
-  await applyToDisk(tx);
-
-  const action = raw.transaction(() => {
-    applyToIndex(db, tx);
-    const inserted = db
-      .insert(syncActionsTable)
-      .values({
-        batchId,
-        modelName: tx.model,
-        modelId: tx.id,
-        action: toActionKind(tx),
-        data: dataForSyncAction(tx),
-        prevData: "before" in tx ? tx.before : null,
-        actor: resolveActor(tx.meta).actor,
-        actorReason: resolveActor(tx.meta).reason,
-      })
-      .returning()
-      .all()[0];
-    if (!inserted) throw new Error("sync_actions insert returned no row");
-    return inserted;
-  })();
-
-  if (isTagModel(tx.model)) scheduleTagsDump();
-
-  writesSinceTrim += 1;
-  if (writesSinceTrim >= 500) {
-    writesSinceTrim = 0;
-    try {
-      raw
-        .prepare(
-          `DELETE FROM sync_actions WHERE actor != 'agent' AND id <= (
-             SELECT id FROM sync_actions WHERE actor != 'agent' ORDER BY id DESC LIMIT 1 OFFSET ?
-           )`,
-        )
-        .run(SYNC_ACTIONS_RING);
-    } catch (err) {
-      log.warn("[pond executor] sync_actions trim failed", err);
-    }
-  }
-
-  if (!opts.silent && !tx.meta?.silent) {
-    broadcastSyncAction(action);
-  }
+  const [action] = await executeBatch([tx], opts);
+  if (!action) throw new Error("The transaction produced no sync action.");
   return action;
 }
 
-export async function executeBatch(
+export function executeBatch(
+  txs: Transaction[],
+  opts: ExecuteOptions = {},
+): Promise<SyncAction[]> {
+  return withMutationScope(() => executeSerializedBatch(txs, opts));
+}
+
+async function executeSerializedBatch(
   txs: Transaction[],
   opts: ExecuteOptions = {},
 ): Promise<SyncAction[]> {
   if (txs.length === 0) return [];
+  const root = libraryRoot();
+  const blocked = blockedLibraries.get(root);
+  if (blocked) throw blocked;
   const batchId = ulid();
   const db = await getDb();
   const raw = db.$raw;
@@ -137,34 +129,59 @@ export async function executeBatch(
     meta: { ...tx.meta, batchId },
   }));
 
-  /** File writes happen outside the transaction; better-sqlite3 cannot await mid-transaction. */
-  for (const tx of withBatch) {
-    await applyToDisk(tx);
-  }
-
-  const actions = raw.transaction(() => {
-    const out: SyncAction[] = [];
-    for (const tx of withBatch) {
-      applyToIndex(db, tx);
-      const inserted = db
-        .insert(syncActionsTable)
-        .values({
-          batchId,
-          modelName: tx.model,
-          modelId: tx.id,
-          action: toActionKind(tx),
-          data: dataForSyncAction(tx),
-          prevData: "before" in tx ? tx.before : null,
-          actor: resolveActor(tx.meta).actor,
-          actorReason: resolveActor(tx.meta).reason,
-        })
-        .returning()
-        .all()[0];
-      if (!inserted) throw new Error("sync_actions insert returned no row");
-      out.push(inserted);
-    }
-    return out;
-  })();
+  const actions = await runRecoverableBatch({
+    root,
+    batchId,
+    transactions: withBatch,
+    async applyDisk(transaction) {
+      if (libraryRoot() !== root)
+        throw new Error("The active library changed during a write.");
+      await applyToDisk(transaction);
+    },
+    afterCleanup: () => {
+      raw
+        .prepare("DELETE FROM mutation_commits WHERE batch_id = ?")
+        .run(batchId);
+    },
+    onCleanupError: (error) =>
+      log.warn("[pond executor] journal cleanup deferred", error),
+    commitIndex: () =>
+      raw.transaction(() => {
+        const out: SyncAction[] = [];
+        for (const tx of withBatch) {
+          applyToIndex(db, tx);
+          const inserted = db
+            .insert(syncActionsTable)
+            .values({
+              batchId,
+              modelName: tx.model,
+              modelId: tx.id,
+              action: toActionKind(tx),
+              data: dataForSyncAction(tx),
+              prevData: "before" in tx ? tx.before : null,
+              actor: resolveActor(tx.meta).actor,
+              actorReason: resolveActor(tx.meta).reason,
+            })
+            .returning()
+            .all()[0];
+          if (!inserted) throw new Error("sync_actions insert returned no row");
+          out.push(inserted);
+        }
+        if (
+          withBatch.some(
+            (tx) => tx.model === "folder" || tx.model === "saved_view",
+          )
+        )
+          writeOrganizationBundle(db, libraryRoot());
+        raw
+          .prepare("INSERT INTO mutation_commits (batch_id) VALUES (?)")
+          .run(batchId);
+        return out;
+      })(),
+  }).catch((error) => {
+    if (error instanceof BatchRecoveryError) blockedLibraries.set(root, error);
+    throw error;
+  });
 
   if (withBatch.some((tx) => isTagModel(tx.model))) scheduleTagsDump();
 
@@ -194,6 +211,10 @@ export async function executeBatch(
 }
 
 async function applyToDisk(tx: Transaction): Promise<void> {
+  if (tx.model === "save_folder") {
+    await writeFolderMemberships(tx.id, tx.patch.folderIds);
+    return;
+  }
   if (tx.model !== "save") return;
   switch (tx.kind) {
     case "create": {
@@ -210,7 +231,10 @@ async function applyToDisk(tx: Transaction): Promise<void> {
         (tx.patch ?? {}) as Partial<Save>,
         tx.files ?? [],
       );
-      if (patched) return;
+      if (patched) {
+        if (tx.titleLock) setUserTitleLock(tx.id, tx.titleLock.after);
+        return;
+      }
 
       if (tx.files && tx.files.length > 0) {
         const db = await getDb();
@@ -224,7 +248,7 @@ async function applyToDisk(tx: Transaction): Promise<void> {
             "[pond executor] update for unknown item (no DB row either)",
             tx.id,
           );
-          return;
+          throw new Error("The Save no longer exists.");
         }
         // SAFETY: `current` is a full row from the DB; the patch only narrows its columns.
         const merged = { ...current, ...tx.patch } as Save;
@@ -234,10 +258,12 @@ async function applyToDisk(tx: Transaction): Promise<void> {
           tx.files.map((f) => f.filename),
         );
         await writeItemFiles(tx.id, merged, tx.files);
+        if (tx.titleLock) setUserTitleLock(tx.id, tx.titleLock.after);
         return;
       }
-      log.warn("[pond executor] update for unknown item", tx.id);
-      return;
+      throw new Error(
+        `Save metadata could not be read for ${tx.id}. Restore its metadata before editing.`,
+      );
     }
     case "delete":
     case "purge":
@@ -256,6 +282,22 @@ function applyToIndex(
   db: Awaited<ReturnType<typeof getDb>>,
   tx: Transaction,
 ): void {
+  if (tx.model === "save_folder") {
+    const current = db
+      .select({ folderId: saveFoldersTable.folderId })
+      .from(saveFoldersTable)
+      .where(eq(saveFoldersTable.saveId, tx.id))
+      .all()
+      .map((row) => row.folderId)
+      .sort();
+    if (
+      JSON.stringify(current) !==
+      JSON.stringify([...new Set(tx.before.folderIds)].sort())
+    )
+      throw new Error("Folder membership changed. Review the operation again.");
+    replaceFolderMemberships(db, tx.id, tx.patch.folderIds);
+    return;
+  }
   if (tx.model === "save") {
     switch (tx.kind) {
       case "create": {
@@ -269,12 +311,26 @@ function applyToIndex(
           .run();
         return;
       }
-      case "update":
+      case "update": {
+        const current = db
+          .select()
+          .from(savesTable)
+          .where(eq(savesTable.id, tx.id))
+          .get();
+        if (!current) throw new Error("The Save no longer exists.");
+        const entries = Object.entries(current);
+        for (const [key, expected] of Object.entries(tx.before)) {
+          if (expected === undefined) continue;
+          const actual = entries.find(([field]) => field === key)?.[1];
+          if (JSON.stringify(actual) !== JSON.stringify(expected))
+            throw new Error("The Save changed. Review the operation again.");
+        }
         db.update(savesTable)
           .set(withRawSlim(tx.patch))
           .where(eq(savesTable.id, tx.id))
           .run();
         return;
+      }
       case "delete":
       case "purge":
         db.delete(savesTable).where(eq(savesTable.id, tx.id)).run();

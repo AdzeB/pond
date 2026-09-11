@@ -11,8 +11,8 @@
 }
 
 .row {
+  --ds-focus-offset: -2px;
   position: relative;
-
   display: flex;
   flex: none;
   gap: 10px;
@@ -30,10 +30,6 @@
 
   &:hover:not([data-disabled]) {
     background: var(--ds-gray-2);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--ds-accent-9);
-    outline-offset: -2px;
   }
   &[data-disabled] {
     cursor: default;

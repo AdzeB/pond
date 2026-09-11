@@ -1,5 +1,7 @@
 "use client";
 
+import "./focus-modality";
+
 export { clsx as cn } from "clsx";
 export { Accordion } from "./accordion";
 export {

@@ -20,22 +20,12 @@
   height: 100%;
   font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-12);
-  outline: none;
-
-  outline-width: 2px;
-  outline-style: solid;
-  outline-color: transparent;
   transition:
     outline var(--ds-duration-medium) var(--ds-easing-standard),
     box-shadow var(--ds-duration-medium) var(--ds-easing-standard);
 
   &::placeholder {
     color: var(--ds-gray-8);
-  }
-
-  &:focus-visible,
-  &[data-demo-state="focus"] {
-    outline-color: var(--ds-accent-6);
   }
 
   &:disabled {

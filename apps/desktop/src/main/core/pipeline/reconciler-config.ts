@@ -1,10 +1,13 @@
 import type { Op, Source, Task, tasks } from "@pond/schema/db";
 import type { JsonValue } from "@pond/schema/json";
+import type { ReportDownloadActivity } from "@shared/download-activity";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 
 export const POLL_INTERVAL_MS = 5_000;
 export const MAX_GLOBAL_INFLIGHT = 4;
+/** Pasted and captured links use their own cap so they are not waiting on background ingest. */
+export const MAX_INTERACTIVE_INFLIGHT = 4;
 export const PER_OP_CONCURRENCY = {
   harvest_metadata: 2,
   capture_tweet: 2,
@@ -40,6 +43,7 @@ export class WorkerWatchdogError extends Error {
 
 interface WorkerContext {
   signal: AbortSignal;
+  reportActivity: ReportDownloadActivity;
 }
 
 type Worker = (
@@ -57,9 +61,9 @@ const ArchivePayloadSchema = z
   .catch({});
 
 export const WORKERS = {
-  harvest_metadata: async (saveId, payload) => {
+  harvest_metadata: async (saveId, payload, ctx) => {
     const { runHarvestMetadata } = await import("./workers/harvest-metadata");
-    await runHarvestMetadata(saveId, HarvestPayloadSchema.parse(payload));
+    await runHarvestMetadata(saveId, HarvestPayloadSchema.parse(payload), ctx);
   },
   capture_tweet: async (saveId) => {
     const [{ runCaptureTweet }, { TransientError }] = await Promise.all([
@@ -77,9 +81,9 @@ export const WORKERS = {
     const { runRenderTextCover } = await import("./workers/render-text-cover");
     await runRenderTextCover(saveId);
   },
-  fetch_blobs: async (saveId) => {
+  fetch_blobs: async (saveId, _payload, ctx) => {
     const { runFetchBlobs } = await import("./workers/fetch-blobs");
-    await runFetchBlobs(saveId);
+    await runFetchBlobs(saveId, ctx);
   },
   archive_page: async (saveId, payload, ctx) => {
     const { runArchivePage } = await import("./workers/archive-page");

@@ -95,10 +95,6 @@
   color: var(--ds-gray-12);
   background: var(--ds-gray-4);
 }
-.navItem:focus-visible {
-  outline: 2px solid var(--ds-accent-8);
-  outline-offset: 0;
-}
 .sidebarFooter {
   padding: 14px 16px;
   font-size: var(--ds-text-micro);

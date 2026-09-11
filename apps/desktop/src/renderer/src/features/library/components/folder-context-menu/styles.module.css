@@ -1,0 +1,25 @@
+.palette {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  height: 32px;
+  padding-inline: 14px 18px;
+  margin: 0;
+  border: 0;
+}
+
+.swatch {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: var(--swatch);
+  border: var(--ds-border-elevated);
+  border-radius: var(--ds-radius-full);
+
+  &[data-selected] {
+    outline: 2px solid var(--ds-gray-12);
+    outline-offset: 2px;
+  }
+}

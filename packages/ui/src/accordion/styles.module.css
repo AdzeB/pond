@@ -5,6 +5,7 @@
   margin: 0;
 }
 .trigger {
+  --ds-focus-offset: 2px;
   display: flex;
   gap: 8px;
   align-items: center;
@@ -14,14 +15,10 @@
   color: var(--ds-gray-10);
   text-align: left;
   cursor: var(--ds-cursor-interactive, pointer);
+  border-radius: var(--ds-radius-sm);
 }
 .trigger:hover {
   color: var(--ds-gray-12);
-}
-.trigger:focus-visible {
-  outline: 2px solid var(--ds-gray-7);
-  outline-offset: 2px;
-  border-radius: var(--ds-radius-sm);
 }
 .trigger > svg:last-child {
   margin-left: auto;

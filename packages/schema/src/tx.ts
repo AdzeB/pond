@@ -25,6 +25,14 @@ export interface TxSaveFile {
 
 export type Transaction =
   | {
+      kind: "update";
+      model: "save_folder";
+      id: string;
+      patch: { folderIds: string[] };
+      before: { folderIds: string[] };
+      meta?: TxMeta;
+    }
+  | {
       kind: "create";
       model: "save";
       id: string;
@@ -38,6 +46,7 @@ export type Transaction =
       id: string;
       patch: Partial<NewSave>;
       before: Partial<NewSave>;
+      titleLock?: { before: boolean; after: boolean };
       files?: TxSaveFile[];
       meta?: TxMeta;
     }
@@ -240,8 +249,20 @@ export function inverse(tx: Transaction): Transaction {
       break;
     case "update":
       switch (tx.model) {
-        case "save":
+        case "save_folder":
           return {
+            kind: "update",
+            model: "save_folder",
+            id: tx.id,
+            patch: tx.before,
+            before: tx.patch,
+            meta: tx.meta,
+          };
+        case "save": {
+          const inverse: Extract<
+            Transaction,
+            { kind: "update"; model: "save" }
+          > = {
             kind: "update",
             model: "save",
             id: tx.id,
@@ -249,6 +270,13 @@ export function inverse(tx: Transaction): Transaction {
             before: tx.patch,
             meta: tx.meta,
           };
+          if (tx.titleLock)
+            inverse.titleLock = {
+              before: tx.titleLock.after,
+              after: tx.titleLock.before,
+            };
+          return inverse;
+        }
         case "tag":
           return {
             kind: "update",

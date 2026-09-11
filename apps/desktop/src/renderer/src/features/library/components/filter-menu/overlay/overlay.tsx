@@ -1,9 +1,7 @@
 import {
   IconImageOutline18,
-  IconImageSparkle2Outline18,
   IconImageSparkleOutline18,
   IconTextToImageOutline18,
-  IconWandSparkleOutline18,
 } from "@pond/icons/outline/18";
 import { Button, Input } from "@pond/ui";
 import { useId, useRef, useState } from "react";

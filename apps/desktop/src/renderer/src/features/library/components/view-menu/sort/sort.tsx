@@ -1,10 +1,19 @@
-import { IconDescendingSortingOutline18 } from "@pond/icons/outline/18";
-import { Menu, Toggle, ToggleGroup, Tooltip } from "@pond/ui";
+import {
+  IconAscendingSortingOutline12,
+  IconDescendingSortingOutline12,
+} from "@pond/icons/outline/12";
+import {
+  Button,
+  Select,
+  type SelectItemSpec,
+  Toggle,
+  ToggleGroup,
+} from "@pond/ui";
 import { isSortKey } from "@/features/library/hooks/use-filtered-saves";
 import { type SortKey, useView } from "@/features/library/hooks/use-view";
-import { libraryHeader } from "@/features/library/state/library-header";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
-import styles from "./sort.module.css";
+import { useLibraryNav } from "@/features/library/state/library-chrome";
+import { shuffleOrder } from "@/features/library/state/view-store";
+import styles from "../view-menu.module.css";
 
 type KeyOption = { value: SortKey; label: string };
 
@@ -12,6 +21,13 @@ const KEY_GROUPS: Array<{
   label: string;
   options: KeyOption[];
 }> = [
+  {
+    label: "Arrange",
+    options: [
+      { value: "random", label: "Random" },
+      { value: "manual", label: "Manual" },
+    ],
+  },
   {
     label: "Date",
     options: [
@@ -29,6 +45,7 @@ const KEY_GROUPS: Array<{
       { value: "source", label: "Source" },
       { value: "tagName", label: "First Tag" },
       { value: "tagCount", label: "Tag Count" },
+      { value: "rating", label: "Rating" },
     ],
   },
   {
@@ -50,28 +67,46 @@ const KEY_GROUPS: Array<{
   },
 ];
 
-export function SortMenu() {
+function labelFor(key: SortKey): string {
+  for (const group of KEY_GROUPS) {
+    const option = group.options.find((item) => item.value === key);
+    if (option) return option.label;
+  }
+  return key;
+}
+
+export function SortSection({ onArrange }: { onArrange?: () => void }) {
+  const nav = useLibraryNav();
+  const items: SelectItemSpec<SortKey>[] = KEY_GROUPS.map((group) => ({
+    type: "group",
+    label: group.label,
+    items: group.options.map((option) => ({
+      ...option,
+      disabled: option.value === "manual" && nav.kind !== "folder",
+    })),
+  }));
   const { state, actions } = useView();
   const { key, dir } = state.sort;
-  const scrollFade = useScrollFade<HTMLDivElement>();
 
   return (
-    <Menu.Root
-      onOpenChange={(open) => {
-        if (open) libraryHeader.closePopover();
-      }}
-    >
-      <Tooltip label="Sort" side="bottom">
-        <Menu.Trigger icon size="sm" variant="ghost" aria-label="Sort">
-          <IconDescendingSortingOutline18
-            className={styles.icon}
-            data-asc={dir === "asc" || undefined}
-          />
-        </Menu.Trigger>
-      </Tooltip>
-      <Menu.Portal>
-        <Menu.Positioner side="bottom" align="end" sideOffset={6}>
-          <Menu.Popup className={styles.popup} {...scrollFade}>
+    <>
+      <Select.Root
+        items={KEY_GROUPS.flatMap((group) => group.options)}
+        value={key}
+        onValueChange={(value) => {
+          if (value && isSortKey(value))
+            actions.setSort({
+              key: value,
+              dir: value === "manual" ? "asc" : dir,
+            });
+        }}
+      >
+        <div className={styles.row}>
+          <Select.Label className={styles.label}>Sort By</Select.Label>
+          <div className={styles.controls}>
+            <Select.Trigger size="sm" className={styles.select}>
+              <Select.Value>{labelFor(key)}</Select.Value>
+            </Select.Trigger>
             <ToggleGroup
               className={styles.direction}
               value={[dir]}
@@ -83,52 +118,36 @@ export function SortMenu() {
               }}
               aria-label="Sort Direction"
             >
-              <Toggle value="asc" size="sm">
-                Ascending
+              <Toggle value="asc" size="sm" aria-label="Ascending">
+                <IconAscendingSortingOutline12 />
               </Toggle>
-              <Toggle value="desc" size="sm">
-                Descending
+              <Toggle value="desc" size="sm" aria-label="Descending">
+                <IconDescendingSortingOutline12 />
               </Toggle>
             </ToggleGroup>
-            <Menu.Separator />
-            {KEY_GROUPS.map((group) => (
-              <Menu.SubmenuRoot key={group.label}>
-                <Menu.SubmenuTrigger>
-                  <Menu.ItemLabel>{group.label}</Menu.ItemLabel>
-                </Menu.SubmenuTrigger>
-                <Menu.Portal>
-                  <Menu.Positioner
-                    side="inline-end"
-                    align="start"
-                    sideOffset={6}
-                  >
-                    <Menu.Popup>
-                      <Menu.RadioGroup
-                        value={key}
-                        onValueChange={(value) => {
-                          if (isSortKey(value)) {
-                            actions.setSort({ key: value, dir });
-                          }
-                        }}
-                      >
-                        {group.options.map((option) => (
-                          <Menu.RadioItem
-                            key={option.value}
-                            value={option.value}
-                          >
-                            <Menu.RadioItemIndicator />
-                            <Menu.ItemLabel>{option.label}</Menu.ItemLabel>
-                          </Menu.RadioItem>
-                        ))}
-                      </Menu.RadioGroup>
-                    </Menu.Popup>
-                  </Menu.Positioner>
-                </Menu.Portal>
-              </Menu.SubmenuRoot>
-            ))}
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.Root>
+          </div>
+        </div>
+        <Select.Portal>
+          <Select.Positioner align="end" sideOffset={6}>
+            <Select.Popup>
+              <Select.Items items={items} />
+            </Select.Popup>
+          </Select.Positioner>
+        </Select.Portal>
+      </Select.Root>
+      {key === "random" ? (
+        <Button size="sm" variant="secondary" onClick={shuffleOrder}>
+          Shuffle Again
+        </Button>
+      ) : null}
+      {nav.kind === "folder" ? (
+        <div className={styles.row}>
+          <span className={styles.label}>Saved for this folder</span>
+          <Button size="sm" variant="secondary" onClick={onArrange}>
+            Arrange Folder
+          </Button>
+        </div>
+      ) : null}
+    </>
   );
 }

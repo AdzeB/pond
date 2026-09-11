@@ -1,4 +1,7 @@
-import { IconFolderOutline18, IconTagsOutline18 } from "@pond/icons/outline/18";
+import {
+  IconBookmarkOutline18,
+  IconFolderOutline18,
+} from "@pond/icons/outline/18";
 import type { Predicate } from "@pond/schema/filters/types";
 import { Menu } from "@pond/ui";
 import { useMemo, useState } from "react";
@@ -112,7 +115,11 @@ export function TagChoiceFilter({
               onClick={() => setScope(item.id)}
             >
               <Menu.ItemIcon>
-                {index < 2 ? <IconTagsOutline18 /> : <IconFolderOutline18 />}
+                {index < 2 ? (
+                  <IconBookmarkOutline18 />
+                ) : (
+                  <IconFolderOutline18 />
+                )}
               </Menu.ItemIcon>
               <Menu.ItemLabel>{item.label}</Menu.ItemLabel>
               <Menu.SecondaryLabel>{item.count}</Menu.SecondaryLabel>

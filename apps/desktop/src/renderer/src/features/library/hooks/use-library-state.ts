@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { listPathForLocation } from "@/features/library/lib/list-path";
 import { primarySelectionStore } from "@/features/library/state/selection";
 import {
-  useFilterQuery,
+  useEffectiveFilterQuery,
   useLayout,
   useSearchText,
 } from "@/features/library/state/view-store";
@@ -28,6 +28,7 @@ interface LibraryState {
   selectedId: string | null;
   viewMode: ViewMode;
   unknown: boolean;
+  paging: ReturnType<typeof useNarrowedSaves>;
 }
 
 export function useLibraryState(): LibraryState {
@@ -36,7 +37,7 @@ export function useLibraryState(): LibraryState {
   const location = useLocation();
   const layout = useLayout();
   const searchText = useSearchText();
-  const filterQuery = useFilterQuery();
+  const filterQuery = useEffectiveFilterQuery();
 
   const parentBase = listPathForLocation(location.pathname);
   const recognized = parseMode(parentBase);
@@ -51,7 +52,8 @@ export function useLibraryState(): LibraryState {
 
   const viewMode: ViewMode = layout;
 
-  const filtered = useNarrowedSaves(mode, sourceFilter);
+  const paging = useNarrowedSaves(mode, sourceFilter);
+  const filtered = paging.filtered;
   const filteredIdsFresh = useMemo(() => filtered.map((r) => r.id), [filtered]);
   const filteredIds = useStableStrings(filteredIdsFresh);
 
@@ -68,5 +70,6 @@ export function useLibraryState(): LibraryState {
     selectedId,
     viewMode,
     unknown,
+    paging,
   };
 }

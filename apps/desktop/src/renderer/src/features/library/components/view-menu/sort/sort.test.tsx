@@ -7,9 +7,9 @@ import {
   restoreDefaults,
   setSort,
 } from "@/features/library/state/view-store";
-import { SortMenu } from "./sort";
+import { SortSection } from "./sort";
 
-describe("sort menu", () => {
+describe("sort section", () => {
   let root: Root;
   let host: HTMLDivElement;
 
@@ -19,6 +19,7 @@ describe("sort menu", () => {
       "ResizeObserver",
       class {
         observe() {}
+        unobserve() {}
         disconnect() {}
       },
     );
@@ -36,27 +37,30 @@ describe("sort menu", () => {
   });
 
   async function render() {
-    await act(async () => root.render(<SortMenu />));
+    await act(async () => root.render(<SortSection />));
   }
 
-  function button(label: string) {
+  function control(label: string) {
     const match = [
       ...document.querySelectorAll<HTMLElement>(
-        "button, [role='menuitem'], [role='menuitemradio']",
+        "button, label, [role='combobox'], [role='option']",
       ),
-    ].find(
-      (node) =>
-        node.getAttribute("aria-label") === label || node.textContent === label,
-    );
-    if (!match) throw new Error(`Missing button ${label}`);
+    ].find((node) => {
+      const text = (node.textContent ?? "").replace(/\s+/g, " ").trim();
+      return node.getAttribute("aria-label") === label || text === label;
+    });
+    if (!match) throw new Error(`Missing control ${label}`);
     return match;
   }
 
-  it("picks a sort key from a category submenu", async () => {
+  it("picks a sort key from the grouped select", async () => {
     await render();
-    await act(async () => button("Sort").click());
-    await act(async () => button("Content").click());
-    await act(async () => button("Title").click());
+    await act(async () => {
+      const trigger = document.querySelector<HTMLElement>("[role='combobox']");
+      if (!trigger) throw new Error(document.body.innerHTML);
+      trigger.click();
+    });
+    await act(async () => control("Title").click());
     expect(getViewState().sortKey).toBe("title");
     expect(getViewState().sortDir).toBe("desc");
   });
@@ -64,8 +68,7 @@ describe("sort menu", () => {
   it("changes sort direction without resetting the key", async () => {
     setSort({ key: "title", dir: "desc" });
     await render();
-    await act(async () => button("Sort").click());
-    await act(async () => button("Ascending").click());
+    await act(async () => control("Ascending").click());
     expect(getViewState().sortKey).toBe("title");
     expect(getViewState().sortDir).toBe("asc");
   });

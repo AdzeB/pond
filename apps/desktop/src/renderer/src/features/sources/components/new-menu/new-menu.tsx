@@ -6,7 +6,6 @@ import {
 } from "@pond/icons/outline/18";
 import { Menu } from "@pond/ui";
 import { useQueryClient } from "@tanstack/react-query";
-import type { ReactNode } from "react";
 import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import {
@@ -15,11 +14,11 @@ import {
 } from "@/features/sources/state/source-new-menu";
 
 export function NewSourceMenu({
-  children = "New Source",
+  children: label = "New Source",
   controlled = false,
   onWatchedFolder,
 }: {
-  children?: ReactNode;
+  children?: string;
   controlled?: boolean;
   onWatchedFolder?: () => void;
 } = {}) {
@@ -49,6 +48,7 @@ export function NewSourceMenu({
         variant="ghost"
         size="sm"
         icon
+        aria-label={label}
         data-sources-new={controlled || undefined}
       >
         <IconPlusFill18 />

@@ -1,6 +1,7 @@
 import type { SyncAccounts } from "@pond/schema/db";
 import { describe, expect, it } from "vitest";
 import {
+  mergeAppSlice,
   mergePondSlice,
   normalizeStoredPrefs,
   splitPrefsPatch,
@@ -87,4 +88,66 @@ describe("mergePondSlice (sync account registry)", () => {
     expect(next.sync.accounts).toEqual({ [account.id]: account });
     expect(next.sync.cron).toEqual({ enabled: false, intervalHours: 12 });
   });
+});
+
+it("persists shortcut and viewer patches while allowing overrides to be reset", () => {
+  const first = mergeAppSlice(
+    {},
+    {
+      shortcuts: { profile: "eagle", overrides: { "save.add-tag": "Alt+T" } },
+      viewer: {},
+    },
+  );
+  expect(first.shortcuts).toEqual({
+    profile: "eagle",
+    overrides: { "save.add-tag": "Alt+T" },
+  });
+  const second = mergeAppSlice(first, { shortcuts: { overrides: {} } });
+  expect(second.shortcuts).toEqual({ profile: "eagle", overrides: {} });
+  expect(
+    splitPrefsPatch({ shortcuts: second.shortcuts }).app.shortcuts,
+  ).toEqual(second.shortcuts);
+});
+
+it("keeps independent folder presentations in the portable library slice", () => {
+  const first = mergePondSlice(
+    {},
+    {
+      folderViews: {
+        a: { layout: "grid", sortKey: "manual", manualOrder: ["two", "one"] },
+      },
+    },
+  );
+  const next = mergePondSlice(first, {
+    folderViews: { b: { layout: "list", randomSeed: "seed-b" } },
+  });
+  expect(next.folderViews.a).toMatchObject({
+    layout: "grid",
+    sortKey: "manual",
+    manualOrder: ["two", "one"],
+  });
+  expect(next.folderViews.b).toMatchObject({
+    layout: "list",
+    randomSeed: "seed-b",
+  });
+  const split = splitPrefsPatch({ folderViews: next.folderViews });
+  expect(split.pond.folderViews).toEqual(next.folderViews);
+  expect(split.app).not.toHaveProperty("folderViews");
+});
+
+it("keeps automatic folder rules portable and isolated to their library", () => {
+  const first = mergePondSlice(
+    {},
+    { folderRules: { a: { automaticTags: ["Work"] } } },
+  );
+  const next = mergePondSlice(first, {
+    folderRules: { b: { automaticTags: ["Print"] } },
+  });
+  expect(next.folderRules).toEqual({
+    a: { automaticTags: ["Work"] },
+    b: { automaticTags: ["Print"] },
+  });
+  const split = splitPrefsPatch({ folderRules: next.folderRules });
+  expect(split.pond.folderRules).toEqual(next.folderRules);
+  expect(split.app).not.toHaveProperty("folderRules");
 });

@@ -105,6 +105,7 @@
 }
 
 .card {
+  --ds-focus-offset: 3px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -131,11 +132,6 @@
 
   &[data-selected] {
     outline: 2px solid var(--ds-accent-8);
-    outline-offset: 3px;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--ds-gray-6);
     outline-offset: 3px;
   }
 }

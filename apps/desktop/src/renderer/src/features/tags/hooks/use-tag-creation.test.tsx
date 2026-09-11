@@ -22,14 +22,11 @@ it("commits each draft once and cancels before blur can create it", async () => 
         <button type="button" onClick={() => creation.startCreate("tag")}>
           Start
         </button>
-        <button type="button" onClick={() => creation.setDraft("Design")}>
-          Fill
-        </button>
         <button
           type="button"
           onClick={() => {
-            void creation.commitCreate();
-            void creation.commitCreate();
+            void creation.saveCreate("Design");
+            void creation.saveCreate("Design");
           }}
         >
           Commit
@@ -38,14 +35,12 @@ it("commits each draft once and cancels before blur can create it", async () => 
           type="button"
           onClick={() => {
             creation.cancelCreate();
-            void creation.commitCreate();
+            void creation.saveCreate("Design");
           }}
         >
           Cancel
         </button>
-        <span>
-          {creation.creating ?? "closed"}:{creation.draft}
-        </span>
+        <span>{creation.creating ?? "closed"}</span>
       </>
     );
   }
@@ -59,16 +54,13 @@ it("commits each draft once and cancels before blur can create it", async () => 
   try {
     await act(async () => root.render(<Harness />));
     await click("Start");
-    await click("Fill");
     await click("Commit");
     expect(created).toEqual([{ kind: "tag", name: "Design" }]);
-    expect(host.querySelector("span")?.textContent).toBe("closed:");
+    expect(host.querySelector("span")?.textContent).toBe("closed");
     await click("Start");
-    await click("Fill");
     await click("Cancel");
     expect(created).toHaveLength(1);
     await click("Start");
-    await click("Fill");
     await click("Commit");
     expect(created).toHaveLength(2);
   } finally {

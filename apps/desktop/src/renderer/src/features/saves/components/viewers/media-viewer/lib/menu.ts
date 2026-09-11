@@ -1,10 +1,16 @@
+import {
+  IconCopyOutline18,
+  IconCoverOutline18,
+  IconFloppyDiskOutline18,
+} from "@pond/icons/outline/18";
 import type { MenuItemSpec } from "@pond/ui";
+import { createElement } from "react";
 import {
   copyVideoFrame,
   saveVideoFrame,
   setVideoThumbnail,
 } from "@/features/saves/lib/media/capture-frame";
-import { buildSaveMenu } from "@/features/saves/lib/menu";
+import { buildSaveMenu, type OpenWithApp } from "@/features/saves/lib/menu";
 import type { Save } from "@/features/saves/types";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 
@@ -12,6 +18,7 @@ interface BuildViewerMenuOptions {
   clipboardEmpty: boolean;
   video: HTMLVideoElement | null;
   fileIndex: number | null;
+  openWithApps?: OpenWithApp[];
 }
 
 export function fileIndexFromSlide(
@@ -39,23 +46,31 @@ function omitCopyImage(items: MenuItemSpec[]): MenuItemSpec[] {
 
 export function buildViewerMenu(
   save: Save,
-  { clipboardEmpty, video, fileIndex }: BuildViewerMenuOptions,
+  { clipboardEmpty, video, fileIndex, openWithApps }: BuildViewerMenuOptions,
 ): MenuItemSpec[] {
-  const base = buildSaveMenu(save, { clipboardEmpty, fileIndex });
+  const base = buildSaveMenu(save, {
+    clipboardEmpty,
+    fileIndex,
+    openWithApps,
+    opened: true,
+  });
   if (!video?.videoWidth) return base;
 
   const frameItems: MenuItemSpec[] = [
     {
       label: "Set Cover",
+      icon: createElement(IconCoverOutline18),
       onClick: () => void setVideoThumbnail(save.id, video),
     },
     {
       label: "Copy Current Frame",
+      icon: createElement(IconCopyOutline18),
       shortcut: shortcutGlyphs("viewer.copy-frame"),
       onClick: () => void copyVideoFrame(video),
     },
     {
       label: "Save Current Frame",
+      icon: createElement(IconFloppyDiskOutline18),
       shortcut: shortcutGlyphs("viewer.save-frame"),
       onClick: () => void saveVideoFrame(video),
     },

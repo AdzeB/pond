@@ -42,16 +42,8 @@
 }
 
 .input {
-  flex: 1;
-  min-width: 0;
   height: 24px;
-  padding: 0;
-  font: inherit;
   font-size: 13px;
-  color: var(--ds-gray-12);
-  outline: none;
-  background: transparent;
-  border: 0;
 }
 
 .action {

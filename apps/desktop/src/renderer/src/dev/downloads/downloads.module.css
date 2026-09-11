@@ -169,6 +169,17 @@
   padding: 0 20px 8px;
 }
 
+.statusList {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 20px 16px;
+}
+
+.statusList > * {
+  display: flex;
+  align-items: center;
+}
+
 .queue [role="gridcell"]:last-child {
   pointer-events: none;
 }

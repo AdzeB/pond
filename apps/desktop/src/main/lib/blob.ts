@@ -2,12 +2,18 @@ import { extname } from "node:path";
 import type { TxSaveFile } from "@pond/schema/tx";
 import log from "electron-log/main.js";
 import pLimit from "p-limit";
+import {
+  DownloadSizeError,
+  fetchDownload,
+  type TransferOptions,
+} from "./download-transfer";
 
 const MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024;
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const DOWNLOAD_TIMEOUT_MS = 30_000;
 
-interface FetchMediaOptions {
+interface FetchMediaOptions extends TransferOptions {
+  fileCount?: number;
   imageMaxBytes?: number | null;
 }
 
@@ -56,52 +62,25 @@ async function fetchMediaToTxFile(
   index = 0,
   options: FetchMediaOptions = {},
 ): Promise<MediaFetchOutcome> {
-  let res: Response;
+  let result: Awaited<ReturnType<typeof fetchDownload>>;
   try {
-    res = await fetch(mediaUrl, {
-      redirect: "follow",
-      signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
+    result = await fetchDownload({
+      url: mediaUrl,
+      fileIndex: index + 1,
+      fileCount: options.fileCount ?? 1,
+      maxBytes: MAX_DOWNLOAD_BYTES,
+      ...options,
     });
-  } catch (err) {
-    log.warn("[pond blob] fetch failed", mediaUrl, err);
-    return { miss: "transient" };
+  } catch (error) {
+    if (options.signal?.aborted) throw error;
+    log.warn("[pond blob] fetch failed", mediaUrl, error);
+    return {
+      miss: error instanceof DownloadSizeError ? "permanent" : "transient",
+    };
   }
-  if (!res.ok) {
-    log.warn("[pond blob] non-2xx", res.status, mediaUrl);
-    return { miss: classifyHttpStatus(res.status) };
-  }
-
+  const { response: res, bytes: buf } = result;
+  if (!buf) return { miss: classifyHttpStatus(res.status) };
   const mime = res.headers.get("content-type")?.split(";")[0]?.trim() ?? null;
-  const isImage = (mime ?? "").startsWith("image/");
-  const imageCap =
-    isImage && options.imageMaxBytes && options.imageMaxBytes > 0
-      ? options.imageMaxBytes
-      : null;
-  const hardCap = imageCap
-    ? Math.min(imageCap, MAX_DOWNLOAD_BYTES)
-    : MAX_DOWNLOAD_BYTES;
-
-  const contentLength = Number(res.headers.get("content-length") ?? 0);
-  if (contentLength > hardCap) {
-    log.warn("[pond blob] too big, skipping", {
-      url: mediaUrl,
-      contentLength,
-      cap: hardCap,
-      reason: imageCap ? "image cap" : "absolute cap",
-    });
-    return { miss: "permanent" };
-  }
-
-  const buf = Buffer.from(await res.arrayBuffer());
-  if (buf.byteLength > hardCap) {
-    log.warn("[pond blob] declared size mismatch, skipping", {
-      url: mediaUrl,
-      bytes: buf.byteLength,
-      cap: hardCap,
-      reason: imageCap ? "image cap" : "absolute cap",
-    });
-    return { miss: "permanent" };
-  }
 
   const ext = extensionFor(mime, mediaUrl);
   const kind = kindFor(mime);
@@ -212,11 +191,15 @@ export async function fetchMediaBatch(
     unique.map((u, i) =>
       limit(async (): Promise<MediaBatchEntry> => {
         try {
-          const outcome = await fetchMediaToTxFile(u, i, options);
+          const outcome = await fetchMediaToTxFile(u, i, {
+            ...options,
+            fileCount: unique.length,
+          });
           return "file" in outcome
             ? { url: u, file: outcome.file }
             : { url: u, file: null, miss: outcome.miss };
         } catch (err) {
+          if (options.signal?.aborted) throw err;
           log.warn("[pond blob] batch fetch failed", u, err);
           return { url: u, file: null, miss: "transient" };
         }

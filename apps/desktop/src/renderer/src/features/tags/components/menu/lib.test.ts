@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildTagNav, filterByNav, partitionRecent } from "./lib";
+import {
+  buildTagNav,
+  filterByNav,
+  partitionPickerTags,
+  partitionRecent,
+} from "./lib";
 
 describe("partitionRecent", () => {
   it("splits by lastUsedAt and sorts recent newest first", () => {
@@ -61,4 +66,17 @@ describe("buildTagNav", () => {
       count: 3,
     });
   });
+});
+
+it("keeps starred tags first without repeating them among recent or other tags", () => {
+  const tags = [
+    { name: "Recent", starred: false, lastUsedAt: 20 },
+    { name: "Favorite", starred: true, lastUsedAt: 10 },
+    { name: "Other", starred: false, lastUsedAt: null },
+    { name: "Always", starred: true, lastUsedAt: null },
+  ];
+  const result = partitionPickerTags(tags);
+  expect(result.starred.map((tag) => tag.name)).toEqual(["Always", "Favorite"]);
+  expect(result.recent.map((tag) => tag.name)).toEqual(["Recent"]);
+  expect(result.others.map((tag) => tag.name)).toEqual(["Other"]);
 });

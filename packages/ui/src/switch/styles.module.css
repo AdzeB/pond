@@ -8,7 +8,6 @@
   height: 14px;
   padding: 2px;
   cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
   background: var(--ds-gray-6);
   border: 0;
   border-radius: var(--ds-radius-full);
@@ -34,12 +33,6 @@
   &[data-checked]:hover,
   &[data-checked][data-demo-state="hover"] {
     background: var(--ds-accent-10);
-  }
-
-  &:focus-visible,
-  &[data-demo-state="focus"] {
-    outline: 2px solid var(--ds-focus-outline);
-    outline-offset: 0;
   }
 
   &:disabled {

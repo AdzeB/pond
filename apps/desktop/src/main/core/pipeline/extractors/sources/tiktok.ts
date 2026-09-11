@@ -3,7 +3,7 @@ import { TerminalError } from "../errors";
 import type { Capture, ExtractInput, Extractor } from "../types";
 import { firstMatch, TIKTOK_PATTERNS } from "../url-patterns";
 
-export const TIKTOK_RESERVED_ROOTS = new Set([
+const TIKTOK_RESERVED_ROOTS = new Set([
   "about",
   "activity",
   "business",

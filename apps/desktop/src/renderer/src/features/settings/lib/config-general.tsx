@@ -1,4 +1,5 @@
 import { CheckNowRow } from "@/features/settings/components/sections/general/general";
+import { ShortcutSettings } from "@/features/settings/components/sections/general/shortcut-settings";
 import {
   defineCustomSection,
   group,
@@ -25,6 +26,19 @@ export const generalSection = defineCustomSection({
   title: "General",
   description: "Window behavior, menu bar, and updates.",
   groups: [
+    group.prefs("shortcuts", {
+      title: "Keyboard Shortcuts",
+      fullWidth: true,
+      items: [
+        {
+          control: "custom",
+          key: "shortcuts",
+          title: "Shortcut Profile",
+          keywords: ["Eagle", "rating", "keys"],
+          render: () => <ShortcutSettings />,
+        },
+      ],
+    }),
     group.prefs("window", {
       title: "Startup",
       items: [

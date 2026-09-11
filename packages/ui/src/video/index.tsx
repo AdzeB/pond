@@ -21,16 +21,19 @@ import { useMediaState } from "./use-media-state";
 
 const ICON = 16;
 
-interface RootProps extends React.ComponentPropsWithoutRef<"div"> {}
+interface RootProps extends React.ComponentPropsWithoutRef<"div"> {
+  frameRate?: number | null;
+  chrome?: boolean;
+}
 
-function Root({ className, children, ...props }: RootProps) {
+function Root({ className, children, frameRate, chrome, ...props }: RootProps) {
   const {
     state,
     actions: mediaActions,
     videoRef,
     rootRef,
     registerVideo,
-  } = useMediaState();
+  } = useMediaState(frameRate);
   const { controlsVisible, showControls } = useAutoHide({
     rootRef,
     videoRef,
@@ -42,13 +45,16 @@ function Root({ className, children, ...props }: RootProps) {
     [mediaActions, showControls],
   );
 
+  const visible = chrome || controlsVisible;
+
   const value = useMemo<VideoContextValue>(
     () => ({
-      state: { ...state, controlsVisible },
+      state: { ...state, controlsVisible: visible },
       actions,
       meta: { videoRef, rootRef, registerVideo },
+      chrome: !!chrome,
     }),
-    [state, controlsVisible, actions, videoRef, rootRef, registerVideo],
+    [state, visible, actions, videoRef, rootRef, registerVideo, chrome],
   );
 
   return (
@@ -79,11 +85,12 @@ function Media({ className, children, ...props }: MediaProps) {
 interface ControlsProps extends React.ComponentPropsWithoutRef<"div"> {}
 
 function Controls({ className, children, ...props }: ControlsProps) {
-  const { state } = useVideo();
+  const { state, chrome } = useVideo();
   return (
     <div
       className={cn(styles.controls, className)}
       data-visible={state.controlsVisible ? "" : undefined}
+      data-chrome={chrome || undefined}
       {...props}
     >
       {children}
@@ -176,11 +183,11 @@ function TimeDisplay({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
-  const { state } = useVideo();
+  const { state, chrome } = useVideo();
   return (
     <div
       className={cn(styles["time-display"], className)}
-      data-visible={state.controlsVisible ? "" : undefined}
+      data-visible={chrome || state.controlsVisible ? "" : undefined}
       {...props}
     >
       <span>{formatTime(state.currentTime)}</span>

@@ -16,7 +16,7 @@ import {
   IconPencilOutline18 as Pencil,
   IconServerOutline18 as SizeIcon,
   IconStarOutline18 as Star,
-  IconTagOutline18 as Tag,
+  IconBookmarkOutline18 as Tag,
   IconStopwatchOutline18 as Timer,
   IconGlobeOutline18 as UrlIcon,
   IconUserOutline18 as User,
@@ -33,7 +33,9 @@ import type {
 import { accountChipLabel } from "@/features/search/lib/account-aliases";
 import { DATE_PRESETS, serializePredicate } from "@/features/search/lib/syntax";
 
-export const FIELD_ICONS: Record<FieldId, IconComponent> = {
+const orientationField = "shape";
+const FIELD_ICONS = {
+  title: Pencil,
   tags: Tag,
   folder: FolderIcon,
   list: ListIcon,
@@ -44,7 +46,7 @@ export const FIELD_ICONS: Record<FieldId, IconComponent> = {
   duration: Timer,
   fontFamily: FileIcon,
   bpm: Timer,
-  shape: OrientationIcon,
+  [orientationField]: OrientationIcon,
   aspect: AspectIcon,
   creator: User,
   account: User,
@@ -61,7 +63,10 @@ export const FIELD_ICONS: Record<FieldId, IconComponent> = {
   height: HeightIcon,
   url: UrlIcon,
   comment: Comment,
-};
+} satisfies Record<FieldId, IconComponent>;
+export function fieldIcon(field: FieldId): IconComponent {
+  return FIELD_ICONS[field];
+}
 
 const COMPARATOR_SYMBOL = new Map<ComparatorId, string>([
   ["gt", ">"],

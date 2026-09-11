@@ -1,21 +1,69 @@
-import { IconFileOutline18, IconImageOutline18 } from "@pond/icons/outline/18";
+import {
+  IconApplicationsOutline18,
+  IconArchiveExportOutline18,
+  IconArchiveOutline18,
+  IconArrowRotateClockwiseOutline18,
+  IconArrowUpRightOutline18,
+  IconBoxArchiveOutline18,
+  IconClipboardOutline18,
+  IconClone2Outline18,
+  IconConversionOutline18,
+  IconCopyIdOutline18,
+  IconCopyOutline18,
+  IconCoverOutline18,
+  IconDotsOutline18,
+  IconFileExportOutline18,
+  IconFileOutline18,
+  IconFolderOpenOutline18,
+  IconFolderOutline18,
+  IconFolderPlusOutline18,
+  IconFolderSendOutline18,
+  IconFoldersOutline18,
+  IconGlobeOutline18,
+  IconGridOutline18,
+  IconImageMinusOutline18,
+  IconImageOutline18,
+  IconImagePlusOutline18,
+  IconLink2Outline18,
+  IconMagicWandOutline18,
+  IconMagnifierOutline18,
+  IconMediaPlayOutline18,
+  IconMergeOutline18,
+  IconOpenInNewWindowOutline18,
+  IconPencilOutline18,
+  IconPinOutline18,
+  IconSlideshowOutline18,
+  IconTableDownloadOutline18,
+  IconTagPlusOutline18,
+  IconTagsOutline18,
+  IconTrash2Outline18,
+  IconTrashXmarkOutline18,
+  IconUndoOutline18,
+} from "@pond/icons/outline/18";
 import type { MenuItemSpec } from "@pond/ui";
-import { Dialog } from "@pond/ui";
 import { type ComponentType, createElement, type ReactElement } from "react";
+import {
+  lastUsedFolderId,
+  rememberFolderDestinations,
+} from "@/features/library/lib/recent-folders";
+import { openActionDialog } from "@/features/library/state/action-dialog";
+import { openConversionDialog } from "@/features/library/state/conversion-dialog";
 import { dockMode } from "@/features/library/state/dock-mode";
+import { openDuplicateReview } from "@/features/library/state/duplicate-review";
+import { openFolderPicker } from "@/features/library/state/folder-picker";
+import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import { folders } from "@/features/library/state/folders";
 import { libraryChrome } from "@/features/library/state/library-chrome";
+import { openPresentation } from "@/features/library/state/presentation";
 import { selection } from "@/features/library/state/selection";
 import { tumbleToTrash } from "@/features/library/state/trash-tumble";
+import { resetFilters } from "@/features/library/state/view-store";
 import {
-  copyableImageIndex,
-  copyFile as copyFileAction,
   copyFilePath,
   copyId,
-  copyImage as copyImageAction,
+  copyPrimaryMedia,
   copyTags as copyTagsAction,
   copyUrl,
-  exportFile as exportFileAction,
   focusPaneTitle,
   openDefaultApp,
   openInBrowser,
@@ -57,7 +105,11 @@ import { viewerMemory } from "@/features/saves/lib/viewer-memory";
 import { inspect } from "@/features/saves/state/inspect";
 import { pool } from "@/features/saves/state/pool";
 import type { Save, SaveFile } from "@/features/saves/types";
-import { getPrefsSnapshot } from "@/features/settings/state/prefs";
+import {
+  getPrefsSnapshot,
+  savePrefsSection,
+} from "@/features/settings/state/prefs";
+import { getAppRouter } from "@/shared/lib/app-router";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { notify } from "@/shared/lib/toast";
@@ -66,7 +118,11 @@ interface BuildSaveMenuOptions {
   clipboardEmpty: boolean;
   fileIndex?: number | null;
   openWithApps?: readonly OpenWithApp[];
+  /** True when this save is already the open viewer. */
   opened?: boolean;
+  folderId?: string | null;
+  pinnedIds?: readonly string[];
+  coverSaveId?: string | null;
   fontActivated?: boolean;
 }
 
@@ -75,6 +131,23 @@ export interface OpenWithApp {
   path: string;
   icon: string | null;
   isDefault: boolean;
+}
+
+const openWithAppsByKind = new Map<string, OpenWithApp[]>();
+
+export function openWithKind(save: Save, fileIndex?: number | null): string {
+  const file =
+    typeof fileIndex === "number" ? save.files[fileIndex] : save.files[0];
+  const mime = file?.mimeType?.trim();
+  if (mime) return mime.toLowerCase();
+  const path = file?.path ?? "";
+  const dot = path.lastIndexOf(".");
+  if (dot >= 0) return path.slice(dot).toLowerCase();
+  return save.mediaType ?? save.id;
+}
+
+export function peekOpenWithApps(kind: string): OpenWithApp[] {
+  return openWithAppsByKind.get(kind) ?? [];
 }
 
 export function contextMenuSaves(clicked: Save): Save[] {
@@ -112,6 +185,31 @@ function glyph(Icon: ComponentType): ReactElement {
   return createElement(Icon);
 }
 
+function combinableImageCount(items: readonly Save[]): number {
+  return items.filter((item) =>
+    item.files.some(
+      (file) =>
+        file.mimeType === "image/png" ||
+        file.mimeType === "image/jpeg" ||
+        file.mimeType === "image/jpg" ||
+        /\.(png|jpe?g)$/i.test(file.path),
+    ),
+  ).length;
+}
+
+function notifyOpenWith(result: {
+  ok: boolean;
+  cancelled?: boolean;
+  error?: string;
+}): void {
+  if (!result.ok && !result.cancelled)
+    notify({
+      id: "open-with",
+      title: "Couldn’t open Save",
+      description: result.error,
+    });
+}
+
 function openWith(
   ids: string[],
   fileIndex: number | null,
@@ -123,19 +221,59 @@ function openWith(
       fileIndex: ids.length > 1 ? undefined : (fileIndex ?? undefined),
       application,
     })
+    .then(notifyOpenWith)
     .catch(() => notify({ id: "open-with", title: "Couldn’t open Save" }));
 }
 
-function combinableImageCount(items: readonly Save[]): number {
-  return items.filter((item) =>
-    item.files.some(
-      (file) =>
-        file.mimeType === "image/png" ||
-        file.mimeType === "image/jpeg" ||
-        file.mimeType === "image/jpg" ||
-        /\.(png|jpe?g)$/i.test(file.path),
-    ),
-  ).length;
+function openWithMenuItems(
+  ids: string[],
+  fileIndex: number | null,
+  apps: readonly OpenWithApp[],
+): MenuItemSpec[] {
+  return apps.map((entry) => ({
+    id: entry.path,
+    label: entry.isDefault ? `${entry.name} (Default)` : entry.name,
+    icon: entry.icon
+      ? createElement("img", {
+          src: entry.icon,
+          alt: "",
+          width: 16,
+          height: 16,
+          draggable: false,
+        })
+      : undefined,
+    onClick: () => openWith(ids, fileIndex, entry.path),
+  }));
+}
+
+function openFolderLocation(folderId: string): void {
+  resetFilters();
+  libraryChrome.setNav({ kind: "folder", id: folderId });
+  getAppRouter()?.history.push("/");
+}
+
+function openAllSaves(): void {
+  resetFilters();
+  libraryChrome.setNav({ kind: "all" });
+  getAppRouter()?.history.push("/");
+}
+
+function fileLocationItems(
+  entries: ReadonlyArray<{ id: string; name: string }>,
+): MenuItemSpec[] {
+  return [
+    {
+      label: "All",
+      icon: glyph(IconGridOutline18),
+      onClick: openAllSaves,
+    },
+    { type: "separator" },
+    ...entries.map((folder) => ({
+      label: folder.name,
+      icon: glyph(IconFolderOutline18),
+      onClick: () => openFolderLocation(folder.id),
+    })),
+  ];
 }
 
 function startWebpConvert(ids: string[], format: "png" | "jpeg") {
@@ -163,20 +301,38 @@ export function buildSaveMenu(
     fileIndex = null,
     openWithApps = [],
     opened = false,
+    folderId,
+    pinnedIds,
+    coverSaveId,
     fontActivated = false,
   }: BuildSaveMenuOptions,
 ): MenuItemSpec[] {
   const saves = Array.isArray(saveOrSaves) ? saveOrSaves : [saveOrSaves];
   const save = saves[0];
   if (!save) return [];
-  const ids = saves.map((s) => s.id);
-  const batch = saves.length > 1;
-  const hasFiles = saves.some((s) => resolveFileIndex(s) != null);
-  const hasTags = saves.some((s) => s.tags.length > 0);
+  const ids =
+    selection.has(save.id) && selection.size() > saves.length
+      ? [...selection.snapshot()]
+      : saves.map((s) => s.id);
+  const batch = ids.length > 1;
+  const nav = libraryChrome.getState().nav;
+  const resolvedFolderId =
+    folderId !== undefined ? folderId : nav.kind === "folder" ? nav.id : null;
+  const folderView = resolvedFolderId
+    ? getPrefsSnapshot()?.folderViews[resolvedFolderId]
+    : undefined;
+  const resolvedPinned = pinnedIds ?? folderView?.pinnedIds ?? [];
+  const resolvedCover =
+    coverSaveId !== undefined ? coverSaveId : (folderView?.coverSaveId ?? null);
+  const inFolder = Boolean(resolvedFolderId);
+  const isPinned = !batch && resolvedPinned.includes(save.id);
+  const isCover = !batch && resolvedCover === save.id;
+  const incomplete = ids.length > saves.length;
+  const hasFiles = incomplete || saves.some((s) => resolveFileIndex(s) != null);
+  const hasTags = incomplete || saves.some((s) => s.tags.length > 0);
   const allTrashed = saves.every((s) => Boolean(s.deletedAt));
-  const hasUrl = saves.some((s) => Boolean(s.url));
-  const hasHttpUrl = saves.some((s) => isHttpUrl(s.url));
-  const hasImage = !batch && copyableImageIndex(save, fileIndex) != null;
+  const hasUrl = incomplete || saves.some((s) => Boolean(s.url));
+  const hasHttpUrl = incomplete || saves.some((s) => isHttpUrl(s.url));
   const targetIndex = resolveFileIndex(save, fileIndex);
   const targetFile =
     targetIndex != null ? (save.files[targetIndex] ?? null) : null;
@@ -189,19 +345,20 @@ export function buildSaveMenu(
     (targetFile?.mimeType === "image/webp" ||
       /\.webp(?:$|[?#])/i.test(targetFile?.path ?? ""));
   const isVideo = !batch && deriveTypeKind(targetFile, save) === "video";
-  const copyFileLabel = isVideo ? "Copy Video" : "Copy File";
-  const archivable = saves.some(
-    (s) => Boolean(s.url) && s.source === "web" && !s.deletedAt,
-  );
+  const copyLabel = isVideo ? "Copy Video" : "Copy";
+  const archivable =
+    incomplete ||
+    saves.some((s) => Boolean(s.url) && s.source === "web" && !s.deletedAt);
   const hasCustomThumbnail =
     !batch &&
     save.files.some((file: SaveFile) => file.kind === "custom_thumbnail");
-  const folderRows = folders.snapshot();
   const canRename = !batch && save.source === "local";
 
   const reverseSearchItems: MenuItemSpec[] = REVERSE_SEARCH_ENGINES.map(
     (engine) => ({
       label: engine.label,
+      icon: glyph(IconMagnifierOutline18),
+      keywords: engine.key === "saucenao" ? "sauce nao anime" : undefined,
       onClick: () => {
         if (batch) {
           void reverseImageSearchForSelection(ids, engine.key);
@@ -216,6 +373,7 @@ export function buildSaveMenu(
     ? [
         {
           label: "Restore from Trash",
+          icon: glyph(IconUndoOutline18),
           shortcut: shortcutGlyphs("save.restore"),
           onClick: () => {
             if (batch) void restoreSelection(ids);
@@ -224,6 +382,7 @@ export function buildSaveMenu(
         },
         {
           label: "Delete Forever",
+          icon: glyph(IconTrash2Outline18),
           shortcut: shortcutGlyphs("save.delete-forever"),
           onClick: () => {
             if (batch) void deleteSelectionForever(ids);
@@ -234,6 +393,7 @@ export function buildSaveMenu(
     : [
         {
           label: "Move to Trash",
+          icon: glyph(IconTrashXmarkOutline18),
           shortcut: shortcutGlyphs("save.trash"),
           onClick: () => {
             if (batch) {
@@ -252,18 +412,21 @@ export function buildSaveMenu(
   const openItems: MenuItemSpec[] = [
     {
       label: "Open Save",
-      hidden: batch,
+      icon: glyph(IconOpenInNewWindowOutline18),
+      hidden: batch || opened,
       shortcut: shortcutGlyphs("grid.open"),
       onClick: () => openSave(save.id),
     },
     {
       label: "Pin Preview",
+      icon: glyph(IconPinOutline18),
       hidden: batch,
       shortcut: shortcutGlyphs("view.pin-preview"),
       onClick: () => inspect.pinCurrent(),
     },
     {
       label: "Open with Default App",
+      icon: glyph(IconArrowUpRightOutline18),
       hidden: !hasFiles,
       shortcut: shortcutGlyphs("save.open"),
       onClick: () => {
@@ -272,7 +435,17 @@ export function buildSaveMenu(
       },
     },
     {
+      type: "submenu",
+      id: `open-with:${openWithApps.some((app) => app.icon) ? "icons" : "names"}`,
+      label: "Open With",
+      icon: glyph(IconApplicationsOutline18),
+      hidden: !hasFiles || openWithApps.length === 0,
+      items: openWithMenuItems(ids, fileIndex, openWithApps),
+    },
+    {
       label: REVEAL_LABEL,
+      icon: glyph(IconFolderOpenOutline18),
+      keywords: "finder explorer",
       hidden: !hasFiles,
       shortcut: shortcutGlyphs("save.reveal"),
       onClick: () => {
@@ -280,9 +453,37 @@ export function buildSaveMenu(
         else void revealFile(save, fileIndex);
       },
     },
+    {
+      label: "Share",
+      icon: glyph(IconFolderSendOutline18),
+      hidden: !hasFiles || batch,
+      onClick: () => {
+        void window.pond
+          .query("saves.share", {
+            id: save.id,
+            fileIndex: fileIndex ?? undefined,
+          })
+          .then((result) => {
+            if (!result.ok) {
+              notify({
+                id: "share",
+                title: result.error ?? "Couldn’t share this file.",
+              });
+            }
+          });
+      },
+    },
+    {
+      type: "submenu",
+      label: "Open File Location",
+      icon: glyph(IconFolderOutline18),
+      hidden: batch || folders.forSave(save.id).length === 0,
+      items: fileLocationItems(folders.forSave(save.id)),
+    },
     batch
       ? {
           label: "Open Original URL",
+          icon: glyph(IconLink2Outline18),
           hidden: !hasHttpUrl,
           shortcut: shortcutGlyphs("save.open-url"),
           onClick: () => void openInBrowserForSelection(ids),
@@ -290,6 +491,7 @@ export function buildSaveMenu(
       : {
           type: "link",
           label: "Open Original URL",
+          icon: glyph(IconLink2Outline18),
           hidden: !hasHttpUrl,
           shortcut: shortcutGlyphs("save.open-url"),
           href: save.url ?? "",
@@ -297,24 +499,54 @@ export function buildSaveMenu(
         },
   ];
 
+  const lastFolderId = lastUsedFolderId();
+  const lastFolder = lastFolderId
+    ? (folders.snapshot().find((folder) => folder.id === lastFolderId) ?? null)
+    : null;
+
   const copyItems: MenuItemSpec[] = [
     {
-      label: "Copy Image",
-      hidden: !hasImage,
-      shortcut: shortcutGlyphs("save.copy-image"),
-      onClick: () => void copyImageAction(save, fileIndex),
-    },
-    {
-      label: copyFileLabel,
+      label: copyLabel,
+      icon: glyph(IconCopyOutline18),
       hidden: !hasFiles,
       shortcut: shortcutGlyphs("save.copy-image"),
       onClick: () => {
         if (batch) void copyFilesForSelection(ids);
-        else void copyFileAction(save, fileIndex);
+        else void copyPrimaryMedia(save, fileIndex);
+      },
+    },
+    {
+      label: "Copy File Path",
+      icon: glyph(IconFileOutline18),
+      hidden: !hasFiles,
+      onClick: () => {
+        if (batch) {
+          void copyFilePathsForSelection(ids).then(notifyCopy);
+          return;
+        }
+        void copyFilePath(save, fileIndex);
+      },
+    },
+    {
+      label: "Copy Pond Link",
+      icon: glyph(IconLink2Outline18),
+      onClick: () => {
+        void window.pond
+          .query("saves.copyInternalLinks", { ids })
+          .then(() =>
+            notify({
+              id: "copy-pond-link",
+              title: ids.length > 1 ? "Pond links copied" : "Pond link copied",
+            }),
+          )
+          .catch(() =>
+            notify({ id: "copy-pond-link", title: "Couldn’t copy Pond link" }),
+          );
       },
     },
     {
       label: "Copy URL",
+      icon: glyph(IconGlobeOutline18),
       hidden: !hasUrl,
       shortcut: shortcutGlyphs("save.copy-url"),
       onClick: () => {
@@ -326,27 +558,8 @@ export function buildSaveMenu(
       },
     },
     {
-      label: "Copy File Path",
-      hidden: !hasFiles,
-      onClick: () => {
-        if (batch) {
-          void copyFilePathsForSelection(ids).then(notifyCopy);
-          return;
-        }
-        void copyFilePath(save, fileIndex);
-      },
-    },
-    {
-      label: "Copy Tags",
-      hidden: !hasTags,
-      shortcut: shortcutGlyphs("save.copy-tags"),
-      onClick: () => {
-        if (batch) copyTagsForSelection(ids);
-        else copyTagsAction(save);
-      },
-    },
-    {
       label: "Copy Save ID",
+      icon: glyph(IconCopyIdOutline18),
       shortcut: shortcutGlyphs("save.copy-id"),
       onClick: () => {
         if (batch) {
@@ -356,11 +569,22 @@ export function buildSaveMenu(
         void copyId(save.id);
       },
     },
+    {
+      label: "Copy Tags",
+      icon: glyph(IconTagsOutline18),
+      hidden: !hasTags,
+      shortcut: shortcutGlyphs("save.copy-tags"),
+      onClick: () => {
+        if (batch) copyTagsForSelection(ids);
+        else copyTagsAction(save);
+      },
+    },
   ];
 
   const addItems: MenuItemSpec[] = [
     {
       label: "Add Tag",
+      icon: glyph(IconTagPlusOutline18),
       shortcut: shortcutGlyphs("save.add-tag"),
       onClick: () => {
         if (batch) {
@@ -371,35 +595,73 @@ export function buildSaveMenu(
       },
     },
     {
-      type: "submenu",
-      label: "Add to Folder",
-      hidden: folderRows.length === 0,
-      items: folderRows.map((folder) => ({
-        label: folder.name,
-        onClick: () => {
-          void window.pond
-            .query("folders.addSaves", {
-              folderId: folder.id,
-              saveIds: ids,
-            })
-            .then(() => folders.refresh());
-        },
-      })),
+      label: "Add to Last Used Folder",
+      icon: glyph(IconFolderPlusOutline18),
+      hidden: !lastFolder,
+      onClick: () => {
+        if (!lastFolder) return;
+        void window.pond
+          .query("folders.addSaves", {
+            folderId: lastFolder.id,
+            saveIds: ids,
+          })
+          .then(() => {
+            rememberFolderDestinations([lastFolder.id]);
+            void folders.refresh();
+          });
+      },
+    },
+    {
+      label: "Add to Folders",
+      icon: glyph(IconFoldersOutline18),
+      onClick: () => openFolderPicker(ids),
+    },
+    {
+      label: "Add to Other Library",
+      icon: glyph(IconFolderSendOutline18),
+      onClick: () => {
+        void window.pond
+          .query("saves.copyToLibrary", { ids })
+          .then((result) => {
+            if (result.ok)
+              notify({
+                id: "library-copy",
+                title: "Saves copied to library",
+                description: `${result.imported ?? 0} copied, ${result.skipped ?? 0} already in this library.`,
+              });
+            else if (result.error !== "canceled")
+              notify({
+                id: "library-copy",
+                title: result.error || "Couldn't copy Saves.",
+              });
+          })
+          .catch(() =>
+            notify({ id: "library-copy", title: "Couldn't copy Saves." }),
+          );
+      },
     },
   ];
 
   const exportItems: MenuItemSpec[] = [
     {
       label: "Export Files",
+      icon: glyph(IconFileExportOutline18),
+      keywords: "files",
       hidden: !hasFiles,
       shortcut: shortcutGlyphs("save.export"),
       onClick: () => {
-        if (batch) void exportSelectionFiles(ids);
-        else void exportFileAction(save, fileIndex);
+        void exportSelectionFiles(ids);
       },
     },
     {
+      label: "Export Converted Files",
+      icon: glyph(IconConversionOutline18),
+      hidden: !hasFiles,
+      onClick: () => openConversionDialog(ids, fileIndex ?? 0),
+    },
+    {
       label: "Export as WebP",
+      icon: glyph(IconImageOutline18),
       hidden: !hasFiles,
       onClick: () => {
         void window.pond.query("saves.exportWebp", { ids });
@@ -420,7 +682,27 @@ export function buildSaveMenu(
       },
     },
     {
+      label: "Export Pond Package",
+      icon: glyph(IconBoxArchiveOutline18),
+      keywords: "package",
+      onClick: () => {
+        void window.pond
+          .query("saves.exportPackage", { ids })
+          .then((result) => {
+            if (!result.ok && result.error !== "canceled")
+              notify({
+                id: "package-export",
+                title: result.error || "Couldn't export package.",
+              });
+            else if (result.ok)
+              notify({ id: "package-export", title: "Pond package exported" });
+          });
+      },
+    },
+    {
       label: "Export to CSV",
+      icon: glyph(IconTableDownloadOutline18),
+      keywords: "csv",
       onClick: () => void exportSelectionCsv(ids),
     },
   ];
@@ -428,21 +710,60 @@ export function buildSaveMenu(
   const prefs = getPrefsSnapshot();
   const runItems: MenuItemSpec[] = selectableTasks().map((task) => ({
     label: task.label,
+    icon: glyph(IconMediaPlayOutline18),
     disabled: task.precondition?.(prefs) != null,
     onClick: () => {
       void Promise.resolve(task.run(ids));
     },
   }));
-  if (failedIdsIn(ids).length > 0) {
+  if (incomplete || failedIdsIn(ids).length > 0) {
     runItems.push({
       label: "Retry Failed",
+      icon: glyph(IconArrowRotateClockwiseOutline18),
       onClick: () => void retryFailedSelection(ids),
     });
   }
 
+  const thumbnailBackground =
+    getPrefsSnapshot()?.viewer?.thumbnailBackground ?? "none";
+  const thumbnailBackgroundItems: MenuItemSpec[] = (
+    [
+      ["none", "None"],
+      ["black", "Black"],
+      ["gray", "Gray"],
+      ["white", "White"],
+      ["grid", "Grid"],
+    ] as const
+  ).map(([value, label]) => ({
+    type: "checkbox",
+    label,
+    checked: thumbnailBackground === value,
+    onCheckedChange: () => {
+      void savePrefsSection("viewer", { thumbnailBackground: value });
+    },
+  }));
+
   const moreItems: MenuItemSpec[] = [
     {
+      label: "Actions",
+      icon: glyph(IconMagicWandOutline18),
+      onClick: () => openActionDialog(ids),
+    },
+    {
+      label: "Find Duplicates",
+      icon: glyph(IconClone2Outline18),
+      hidden: batch,
+      onClick: () => openDuplicateReview(save.id),
+    },
+    {
+      label: "Merge Duplicates",
+      icon: glyph(IconMergeOutline18),
+      hidden: batch,
+      onClick: () => openDuplicateReview(save.id),
+    },
+    {
       label: "Set Custom Thumbnail",
+      icon: glyph(IconImagePlusOutline18),
       hidden: batch,
       onClick: () => {
         void window.pond.query("saves.setCustomThumbnail", { id: save.id });
@@ -508,6 +829,7 @@ export function buildSaveMenu(
     },
     {
       label: "Replace File",
+      icon: glyph(IconFileOutline18),
       hidden: batch || !hasFiles,
       onClick: () => {
         void window.pond
@@ -525,6 +847,7 @@ export function buildSaveMenu(
     },
     {
       label: "Remove Custom Thumbnail",
+      icon: glyph(IconImageMinusOutline18),
       hidden: batch || !hasCustomThumbnail,
       onClick: () => {
         void window.pond.query("saves.removeCustomThumbnail", { id: save.id });
@@ -532,6 +855,7 @@ export function buildSaveMenu(
     },
     {
       label: "Refresh Details",
+      icon: glyph(IconArrowRotateClockwiseOutline18),
       hidden: !hasUrl,
       shortcut: shortcutGlyphs("save.refresh"),
       onClick: () => {
@@ -544,64 +868,56 @@ export function buildSaveMenu(
     },
     {
       label: "Archive Full Site",
+      icon: glyph(IconArchiveOutline18),
       hidden: !archivable,
       onClick: () => {
         if (batch) void archiveSitesForSelection(ids);
         else void window.pond.archiveSite(save.id);
       },
     },
+    {
+      type: "submenu",
+      label: "Thumbnail Background",
+      icon: glyph(IconGridOutline18),
+      hidden: opened || batch,
+      items: thumbnailBackgroundItems,
+    },
   ];
 
   return [
-    {
-      type: "submenu",
-      label: "Open",
-      hidden: submenuHidden(openItems),
-      items: openItems,
-    },
-    {
-      type: "submenu",
-      label: "Open With",
-      hidden: !hasFiles || openWithApps.length === 0,
-      items: openWithApps.map((entry) => ({
-        id: entry.path,
-        label: entry.isDefault ? `${entry.name} (Default)` : entry.name,
-        onClick: () => openWith(ids, fileIndex, entry.path),
-      })),
-    },
-    {
-      label: "Share",
-      hidden: !hasFiles || batch,
-      onClick: () => {
-        void window.pond
-          .query("saves.share", {
-            id: save.id,
-            fileIndex: fileIndex ?? undefined,
-          })
-          .then((result) => {
-            if (!result.ok) {
-              notify({
-                id: "share",
-                title: result.error ?? "Couldn’t share this file.",
-              });
-            }
-          });
-      },
-    },
+    ...openItems,
     { type: "separator" },
     {
       type: "submenu",
       label: "Run",
+      icon: glyph(IconMediaPlayOutline18),
       hidden: allTrashed || submenuHidden(runItems),
       items: runItems,
     },
     { type: "separator" },
+    ...addItems,
     {
       type: "submenu",
-      label: "Copy",
-      hidden: submenuHidden(copyItems),
-      items: copyItems,
+      label: "Export",
+      icon: glyph(IconArchiveExportOutline18),
+      hidden: submenuHidden(exportItems),
+      items: exportItems,
     },
+    { type: "separator" },
+    {
+      label: "Rename",
+      icon: glyph(IconPencilOutline18),
+      hidden: !canRename,
+      shortcut: shortcutGlyphs("save.rename"),
+      onClick: () => focusPaneTitle(),
+    },
+    {
+      label: "Rename Saves",
+      icon: glyph(IconPencilOutline18),
+      hidden: !batch,
+      onClick: () => openActionDialog(ids, "rename"),
+    },
+    ...copyItems,
     {
       label: "Combine Images",
       icon: glyph(IconImageOutline18),
@@ -633,6 +949,29 @@ export function buildSaveMenu(
       },
     },
     {
+      label: isPinned ? "Unpin from Top" : "Pin to Top",
+      icon: glyph(IconPinOutline18),
+      hidden: !inFolder || batch,
+      onClick: () => {
+        if (!resolvedFolderId) return;
+        const next = isPinned
+          ? resolvedPinned.filter((id) => id !== save.id)
+          : [save.id, ...resolvedPinned.filter((id) => id !== save.id)];
+        void saveFolderPresentation(resolvedFolderId, { pinnedIds: [...next] });
+      },
+    },
+    {
+      label: isCover ? "Remove Folder Cover" : "Set as Folder Cover",
+      icon: glyph(IconCoverOutline18),
+      hidden: !inFolder || batch,
+      onClick: () => {
+        if (!resolvedFolderId) return;
+        void saveFolderPresentation(resolvedFolderId, {
+          coverSaveId: isCover ? null : save.id,
+        });
+      },
+    },
+    {
       label: fontActivated ? "Deactivate Font" : "Activate Font",
       icon: glyph(IconFileOutline18),
       hidden: batch || save.mediaType !== "font",
@@ -645,6 +984,7 @@ export function buildSaveMenu(
     },
     {
       label: "Paste Tags",
+      icon: glyph(IconClipboardOutline18),
       disabled: clipboardEmpty,
       shortcut: shortcutGlyphs("save.paste-tags"),
       onClick: () => {
@@ -655,96 +995,69 @@ export function buildSaveMenu(
     { type: "separator" },
     {
       type: "submenu",
-      label: "Add",
-      hidden: submenuHidden(addItems),
-      items: addItems,
-    },
-    {
-      label: "Rename",
-      hidden: !canRename,
-      shortcut: shortcutGlyphs("save.rename"),
-      onClick: () => focusPaneTitle(),
-    },
-    {
-      label: "Rename Saves",
-      hidden: !batch,
-      onClick: () =>
-        Dialog.prompt({
-          title: "Rename Saves",
-          description: "Use {n} for a number and {title} for the current name.",
-          confirmLabel: "Rename",
-          initialValue: "{title} {n}",
-          onConfirm: async (pattern) => {
-            await window.pond.query("saves.batchRename", { ids, pattern });
-          },
-        }),
-    },
-    {
-      label: "Find Duplicates",
-      hidden: batch,
-      onClick: () => {
-        void window.pond.query("saves.findDuplicates", {}).then((raw) => {
-          const groups = raw.groups;
-          const match =
-            groups?.find((group) => group.ids.includes(save.id)) ?? groups?.[0];
-          const count = groups?.length ?? 0;
-          notify({
-            id: "duplicates",
-            title:
-              count === 0
-                ? "No duplicates found"
-                : `Found ${count} duplicate group${count === 1 ? "" : "s"}`,
-          });
-          if (match?.ids[0]) selection.set(match.ids);
-        });
-      },
-    },
-    {
-      label: "Merge Duplicates",
-      hidden: batch,
-      onClick: () => {
-        void window.pond.query("saves.findDuplicates", {}).then((raw) => {
-          const groups = raw.groups;
-          const group = groups?.find((item) => item.ids.includes(save.id));
-          if (!group || group.ids.length < 2) {
-            notify({
-              id: "duplicates",
-              title: "No duplicates found",
-            });
-            return;
-          }
-          const extras = group.ids.filter((id) => id !== save.id);
-          Dialog.confirm({
-            title: "Merge Duplicates",
-            description: `Keep this Save and move ${extras.length} duplicate${extras.length === 1 ? "" : "s"} to Trash.`,
-            confirmLabel: "Merge",
-            onConfirm: async () => {
-              await window.pond.query("saves.mergeDuplicates", {
-                keepId: save.id,
-                ids: group.ids,
-              });
-            },
-          });
-        });
-      },
-    },
-    { type: "separator" },
-    {
-      type: "submenu",
-      label: "Search",
+      label: "Search by Image",
+      icon: glyph(IconMagnifierOutline18),
       hidden: !hasHttpUrl,
       items: reverseSearchItems,
     },
     {
-      type: "submenu",
-      label: "Export",
-      hidden: submenuHidden(exportItems),
-      items: exportItems,
+      label: "Enter Presentation Mode",
+      icon: glyph(IconSlideshowOutline18),
+      hidden: allTrashed,
+      onClick: openPresentation,
     },
-    ...moreItems,
+    { type: "separator" },
+    {
+      type: "submenu",
+      label: "More",
+      icon: glyph(IconDotsOutline18),
+      hidden: submenuHidden(moreItems),
+      items: moreItems,
+    },
     { type: "separator" },
     ...restoreItems,
   ];
+}
+
+/** Names first so Open With can open before every app icon is ready. */
+export async function loadOpenWithApps({
+  ids,
+  fileIndex,
+  kind,
+  onApps,
+}: {
+  ids: string[];
+  fileIndex?: number | null;
+  kind: string;
+  onApps: (apps: OpenWithApp[]) => void;
+}): Promise<void> {
+  const cached = openWithAppsByKind.get(kind);
+  if (cached?.length) onApps(cached);
+  try {
+    const listed = await window.pond.query("saves.listOpenWith", {
+      ids,
+      fileIndex: fileIndex ?? undefined,
+    });
+    const apps = listed.apps ?? [];
+    if (apps.length) {
+      openWithAppsByKind.set(kind, apps);
+      onApps(apps);
+    } else if (!cached?.length) {
+      onApps([]);
+    }
+    if (!apps.some((app) => app.icon == null)) return;
+    const decorated = await window.pond.query("saves.listOpenWith", {
+      ids,
+      fileIndex: fileIndex ?? undefined,
+      includeIcons: true,
+    });
+    const next = decorated.apps ?? apps;
+    if (!next.length) return;
+    openWithAppsByKind.set(kind, next);
+    onApps(next);
+  } catch {
+    if (cached?.length) onApps(cached);
+  }
 }
 
 function notifyCopy(result: { ok: boolean; message: string }): void {

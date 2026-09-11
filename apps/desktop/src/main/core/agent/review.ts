@@ -1,5 +1,3 @@
-import { copyFile, writeFile } from "node:fs/promises";
-import { basename, extname, join } from "node:path";
 import {
   agentMessages,
   type ImageComment,
@@ -24,6 +22,8 @@ import { resolveSaveFilePath } from "../../ipc/helpers";
 import { toCsv } from "../../lib/csv";
 import { itemFile } from "../../paths";
 import { executeBatch, executeTransaction } from "../executor";
+import { writeExportFile } from "../export-files";
+import { exportSavesToDirectory } from "../export-saves";
 import {
   createFolder,
   deleteFolder,
@@ -33,6 +33,11 @@ import {
   setSaveFolders,
 } from "../folders";
 import { extractFontFamily, renameWithFamily } from "../font-metadata";
+import {
+  duplicateMergeReceiptSchema,
+  mergeDuplicateSaves,
+  undoDuplicateMerge,
+} from "../merge-duplicates";
 import { enqueue } from "../pipeline/enqueue";
 import { refreshSave } from "../refresh";
 import { archiveSiteForSave } from "../refresh/archive-backfill";
@@ -112,6 +117,8 @@ export const reviewDependencies = {
   createTag,
   mergeTags,
   renameTag,
+  mergeDuplicateSaves,
+  undoDuplicateMerge,
 };
 type ReviewDependencies = typeof reviewDependencies;
 
@@ -266,6 +273,7 @@ const ActionPayloadSchema = z.object({
   layout: z.string().optional().catch(undefined),
   ids: z.array(z.string()).optional(),
   keepId: z.json().optional(),
+  mergeReceipt: duplicateMergeReceiptSchema.optional(),
   directory: z.json().optional(),
   accountId: z.json().optional(),
   url: z.json().optional(),
@@ -301,14 +309,19 @@ async function writeAction(
         meta: { actor: "agent", actorReason: "assistant:undo" },
       });
     else if (change.action === "mergeDuplicates" && payload.ids !== undefined) {
-      await deps.executeBatch(
-        payload.ids.map((id) => ({
-          kind: "untrash" as const,
-          model: "save" as const,
-          id,
-          meta: { actor: "agent" as const, actorReason: "assistant:undo" },
-        })),
-      );
+      if (payload.mergeReceipt)
+        await deps.undoDuplicateMerge(payload.mergeReceipt);
+      else
+        await deps.executeBatch(
+          payload.ids
+            .filter((id) => id !== payload.keepId)
+            .map((id) => ({
+              kind: "untrash" as const,
+              model: "save" as const,
+              id,
+              meta: { actor: "agent" as const, actorReason: "assistant:undo" },
+            })),
+        );
     } else throw new Error("This action cannot be undone from here.");
     return;
   }
@@ -353,17 +366,14 @@ async function writeAction(
     const result = await enqueue(url, { trigger: "user:quickAdd" });
     if ("id" in result) payload.id = result.id;
   } else if (change.action === "mergeDuplicates") {
-    const keepId = String(payload.keepId ?? "");
-    const ids = payload.ids ?? [];
-    const extras = ids.filter((id) => id && id !== keepId);
-    await deps.executeBatch(
-      extras.map((id) => ({
-        kind: "trash" as const,
-        model: "save" as const,
-        id,
-        meta: { actor: "agent" as const, actorReason: "assistant:merge" },
-      })),
-    );
+    const result = await deps.mergeDuplicateSaves({
+      keepId: String(payload.keepId ?? ""),
+      ids: payload.ids ?? [],
+      meta: { actor: "agent", actorReason: "assistant:merge" },
+    });
+    if (!result.ok || !result.receipt)
+      throw new Error("Could not merge these Saves.");
+    payload.mergeReceipt = result.receipt;
   } else if (change.action === "exportFiles" || change.action === "exportCsv") {
     const directory = String(payload.directory ?? "");
     const ids = payload.ids ?? [];
@@ -441,18 +451,15 @@ async function writeAction(
     .parse(JSON.parse(JSON.stringify(payload)));
 }
 
-function sanitizeName(value: string): string {
-  return value
-    .replace(/[/\\?%*:|"<>]/g, "_")
-    .trim()
-    .slice(0, 120);
-}
-
 async function exportToDirectory(
   ids: string[],
   directory: string,
   csv: boolean,
 ) {
+  if (!csv) {
+    await exportSavesToDirectory(ids, directory);
+    return;
+  }
   const db = await getDb();
   const rows = await db.select().from(saves).where(inArray(saves.id, ids));
   if (csv) {
@@ -464,26 +471,14 @@ async function exportToDirectory(
       "author",
       "notes",
     ] as const;
-    await writeFile(
-      join(directory, "pond-export.csv"),
+    await writeExportFile(
+      directory,
+      "pond-export.csv",
       toCsv(
         rows.map((row) => columns.map((column) => String(row[column] ?? ""))),
         [...columns],
       ),
     );
     return;
-  }
-  const used = new Set<string>();
-  for (const row of rows) {
-    const target = await resolveSaveFilePath(row.id, row.coverIndex ?? 0);
-    if (!target.ok) continue;
-    const ext = extname(target.path);
-    const base =
-      sanitizeName(row.title ?? basename(target.path, ext)) || row.id;
-    let name = `${base}${ext}`;
-    let n = 1;
-    while (used.has(name.toLowerCase())) name = `${base}-${n++}${ext}`;
-    used.add(name.toLowerCase());
-    await copyFile(target.path, join(directory, name));
   }
 }

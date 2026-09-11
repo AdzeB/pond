@@ -23,26 +23,11 @@
 }
 
 .shell {
-  display: grid;
-  visibility: hidden;
-  grid-template-rows: 0fr;
   min-width: 0;
   padding: 0;
   margin: 0;
   overflow: hidden;
   border: 0;
-  opacity: 0;
-  transition:
-    grid-template-rows var(--ds-duration-medium) var(--ds-easing-decelerate),
-    opacity var(--ds-duration-fast) var(--ds-easing-standard),
-    visibility 0s linear var(--ds-duration-medium);
-
-  &[data-open] {
-    visibility: visible;
-    grid-template-rows: 1fr;
-    opacity: 1;
-    transition-delay: 0s;
-  }
 }
 
 .bar {
@@ -51,14 +36,6 @@
   gap: 6px;
   align-items: center;
   min-width: 0;
-  min-height: 0;
   padding-inline: 12px;
   padding-bottom: 8px;
-  overflow: hidden;
-  transform: translateY(-4px);
-  transition: transform var(--ds-duration-medium) var(--ds-easing-decelerate);
-}
-
-.shell[data-open] .bar {
-  transform: translateY(0);
 }

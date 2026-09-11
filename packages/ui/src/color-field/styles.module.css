@@ -16,11 +16,6 @@
   border: var(--ds-border-elevated);
   border-radius: var(--ds-radius-md);
   box-shadow: var(--ds-shadow-1);
-
-  &:focus-visible {
-    outline: 1px solid var(--ds-focus-outline);
-    outline-offset: 0;
-  }
 }
 
 .swatch[data-empty] {
@@ -129,6 +124,5 @@
 
 .saturation-handle[data-focus],
 .hue-handle[data-focus] {
-  outline: 1px solid var(--ds-focus-outline);
-  outline-offset: 0;
+  outline-color: var(--ds-focus-outline);
 }

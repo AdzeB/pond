@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   collectLockedEagleFolders,
   flattenEagleFolders,
+  mapEagleComments,
   partitionEagleItemFiles,
 } from "./eagle-import";
 
@@ -117,5 +118,44 @@ describe("partitionEagleItemFiles", () => {
       mediaFiles: ["thumbnail-concept.psd"],
       thumbnail: "thumbnail-concept.psd_thumbnail.png",
     });
+  });
+});
+
+describe("mapEagleComments", () => {
+  it("converts Eagle pixel rects into Pond image fractions", () => {
+    expect(
+      mapEagleComments(
+        [
+          {
+            id: "face",
+            x: 350,
+            y: 480,
+            width: 380,
+            height: 400,
+            annotation: "Face area",
+          },
+        ],
+        1920,
+        1080,
+      ),
+    ).toEqual([
+      {
+        id: "face",
+        x: 350 / 1920,
+        y: 480 / 1080,
+        w: 380 / 1920,
+        h: 400 / 1080,
+        text: "Face area",
+      },
+    ]);
+  });
+
+  it("keeps already-normalized rects and drops pixel rects without dimensions", () => {
+    expect(
+      mapEagleComments([
+        { id: "kept", x: 0.2, y: 0.1, w: 0.3, h: 0.4, text: "Note" },
+        { id: "pixels", x: 350, y: 480, width: 380, height: 400, text: "Lost" },
+      ]),
+    ).toEqual([{ id: "kept", x: 0.2, y: 0.1, w: 0.3, h: 0.4, text: "Note" }]);
   });
 });

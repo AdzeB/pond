@@ -5,14 +5,27 @@ import type { ImageComment, VideoNote } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { z } from "zod";
+import {
+  EaglePaletteSchema,
+  EagleSmartFolderSchema,
+  EagleTagGroupSchema,
+  eaglePaletteColor,
+  eagleSmartFolderQuery,
+  unsupportedEagleRules,
+} from "./eagle-metadata";
 import { importFolderTree, setSaveFolders } from "./folders";
+import { runLibraryTransfer } from "./library-transfers";
 import { createManualSave, type ManualSaveInput } from "./manual-import";
+import { createView, listViews } from "./saved-views";
+import { addTagsToGroup, createGroup } from "./tag-groups";
+import { createTag, listTags } from "./tags";
 
 interface EagleFolder {
   id?: string;
   name?: string;
   password?: string;
   color?: string;
+  iconColor?: string;
   children?: EagleFolder[];
 }
 
@@ -22,12 +35,16 @@ const EagleFolderSchema: z.ZodType<EagleFolder> = z.lazy(() =>
     name: z.string().optional().catch(undefined),
     password: z.string().optional().catch(undefined),
     color: z.string().optional().catch(undefined),
+    iconColor: z.string().optional().catch(undefined),
     children: z.array(EagleFolderSchema).optional().catch(undefined),
   }),
 );
 
 const EagleLibrarySchema = z.object({
-  folders: z.array(EagleFolderSchema).optional().catch(undefined),
+  folders: z.array(EagleFolderSchema).default([]),
+  smartFolders: z.array(z.json()).default([]),
+  tagsGroups: z.array(EagleTagGroupSchema).default([]),
+  quickAccess: z.array(z.json()).default([]),
 });
 
 const EagleCommentSchema = z.object({
@@ -60,7 +77,9 @@ const EagleItemMetaSchema = z.object({
   height: z.number().optional().catch(undefined),
   isDeleted: z.boolean().optional().catch(undefined),
   star: z.number().optional().catch(undefined),
-  palettes: z.array(z.string()).optional().catch(undefined),
+  palettes: z.array(EaglePaletteSchema).optional().catch(undefined),
+  modificationTime: z.number().optional().catch(undefined),
+  btime: z.number().optional().catch(undefined),
   comments: z.array(EagleCommentSchema).optional().catch(undefined),
   videoMarks: z.array(EagleVideoMarkSchema).optional().catch(undefined),
   notes: z.array(EagleVideoMarkSchema).optional().catch(undefined),
@@ -137,7 +156,7 @@ export function flattenEagleFolders(
       id: folder.id,
       name: folder.name?.trim() || "Untitled",
       parentId,
-      color: folder.color ?? null,
+      color: folder.color ?? folder.iconColor ?? null,
       sortOrder,
     });
     if (folder.children?.length) {
@@ -147,19 +166,40 @@ export function flattenEagleFolders(
   return out;
 }
 
-function mapComments(
+export function mapEagleComments(
   comments: z.infer<typeof EagleCommentSchema>[] | undefined,
+  width?: number,
+  height?: number,
 ): ImageComment[] {
   return (comments ?? [])
     .map((comment) => {
       const text = (comment.text ?? comment.annotation ?? "").trim();
       if (!text) return null;
+      const x = comment.x ?? 0;
+      const y = comment.y ?? 0;
+      const w = comment.w ?? comment.width ?? 0;
+      const h = comment.h ?? comment.height ?? 0;
+      const pixels = [x, y, w, h].some((value) => value > 1);
+      const imageWidth = width ?? 0;
+      const imageHeight = height ?? 0;
+      if (pixels && (imageWidth <= 0 || imageHeight <= 0)) return null;
+      const region = pixels
+        ? {
+            x: x / imageWidth,
+            y: y / imageHeight,
+            w: w / imageWidth,
+            h: h / imageHeight,
+          }
+        : { x, y, w, h };
+      if (
+        ![region.x, region.y, region.w, region.h].every(Number.isFinite) ||
+        region.w <= 0 ||
+        region.h <= 0
+      )
+        return null;
       return {
         id: comment.id || ulid(),
-        x: comment.x ?? 0,
-        y: comment.y ?? 0,
-        w: comment.w ?? comment.width ?? 0,
-        h: comment.h ?? comment.height ?? 0,
+        ...region,
         text,
       } satisfies ImageComment;
     })
@@ -195,8 +235,12 @@ async function readJson<T>(
     }
     return null;
   }
-  const parsed = schema.safeParse(JSON.parse(text));
-  return parsed.success ? parsed.data : null;
+  try {
+    const parsed = schema.safeParse(JSON.parse(text));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
 }
 
 function errnoCode(cause: unknown): string | null {
@@ -227,15 +271,15 @@ async function resolveImagesDir(libraryPath: string): Promise<string | null> {
 async function resolveLibraryMeta(
   libraryPath: string,
   imagesDir: string,
-): Promise<{ folders: EagleFolder[] }> {
+): Promise<z.infer<typeof EagleLibrarySchema>> {
   for (const path of [
     join(libraryPath, "metadata.json"),
     join(imagesDir, "..", "metadata.json"),
   ]) {
     const doc = await readJson(path, EagleLibrarySchema);
-    if (doc?.folders) return { folders: doc.folders };
+    if (doc) return doc;
   }
-  return { folders: [] };
+  return { folders: [], smartFolders: [], tagsGroups: [], quickAccess: [] };
 }
 
 function emptyResult(error?: string): EagleImportResult {
@@ -257,7 +301,7 @@ export async function dryRunEagleLibrary(
   return importEagleLibrary(libraryPath, { dryRun: true });
 }
 
-export async function importEagleLibrary(
+async function importEagle(
   libraryPath: string,
   opts: { dryRun?: boolean } = {},
 ): Promise<EagleImportResult> {
@@ -275,6 +319,87 @@ export async function importEagleLibrary(
   let failed = 0;
   let deletedSkipped = 0;
   const dropped = new Set<string>();
+  if (libraryMeta.quickAccess.length) dropped.add("Quick Access shortcuts");
+  const existingViews = opts.dryRun ? [] : await listViews();
+  const ruleFolders = opts.dryRun
+    ? new Map(
+        flattenEagleFolders(libraryMeta.folders).map((folder) => [
+          folder.id,
+          folder.id,
+        ]),
+      )
+    : mapped;
+  async function importSmartFolders(
+    entries: z.infer<typeof EagleLibrarySchema>["smartFolders"],
+    parentId: string | null = null,
+  ): Promise<void> {
+    for (const raw of entries) {
+      const parsed = EagleSmartFolderSchema.safeParse(raw);
+      if (!parsed.success) {
+        dropped.add("Unrecognized Smart Folder metadata");
+        continue;
+      }
+      const fields = z.record(z.string(), z.json()).parse(raw);
+      for (const field of Object.keys(fields)) {
+        if (!["id", "name", "conditions", "children"].includes(field))
+          dropped.add(`${parsed.data.name}: ${field}`);
+      }
+      const query = eagleSmartFolderQuery(parsed.data, ruleFolders);
+      if (!query) {
+        for (const reason of unsupportedEagleRules(parsed.data, ruleFolders))
+          dropped.add(reason);
+        if (parsed.data.children.length)
+          dropped.add(
+            `Children of unsupported Smart Folder: ${parsed.data.name}`,
+          );
+        continue;
+      }
+      const question = `eagle:${parsed.data.id}`;
+      const kind =
+        parsed.data.children.length || parsed.data.conditions.length === 0
+          ? "group"
+          : "smart_folder";
+      let id = existingViews.find((view) => view.question === question)?.id;
+      if (!opts.dryRun && !id) {
+        const created = await createView({
+          name: parsed.data.name,
+          kind,
+          question,
+          query,
+          parentId,
+        });
+        if (!created.ok || !created.id) {
+          dropped.add(`Smart Folder could not be created: ${parsed.data.name}`);
+          continue;
+        }
+        id = created.id;
+      }
+      await importSmartFolders(parsed.data.children, id ?? null);
+    }
+  }
+  await importSmartFolders(libraryMeta.smartFolders);
+  if (!opts.dryRun) {
+    const knownTags = new Set(
+      (await listTags()).map((tag) => tag.name.toLowerCase()),
+    );
+    for (const group of libraryMeta.tagsGroups) {
+      await createGroup({
+        name: group.name,
+        color: group.color,
+        description: group.description,
+      });
+      for (const name of group.tags) {
+        if (!knownTags.has(name.toLowerCase())) {
+          await createTag({ name });
+          knownTags.add(name.toLowerCase());
+        }
+      }
+      await addTagsToGroup(group.tags, group.name);
+    }
+  }
+  const availableFolderIds = new Set(
+    flattenEagleFolders(libraryMeta.folders).map((folder) => folder.id),
+  );
 
   let entries: Dirent[];
   try {
@@ -318,9 +443,13 @@ export async function importEagleLibrary(
 
     const tags = [...(meta.tags ?? [])];
     const filePaths = mediaFiles.map((name) => join(itemDir, name));
-    const comments = mapComments(meta.comments);
+    const comments = mapEagleComments(meta.comments, meta.width, meta.height);
     const videoNotes = mapVideoNotes(meta.videoMarks ?? meta.notes);
-    const palettes = (meta.palettes ?? []).filter(Boolean);
+    const palettes = (meta.palettes ?? [])
+      .map(eaglePaletteColor)
+      .filter(Boolean);
+    if ((meta.folders ?? []).some((id) => !availableFolderIds.has(id)))
+      dropped.add("Unavailable folder membership");
 
     if (opts.dryRun) {
       imported += 1;
@@ -336,6 +465,10 @@ export async function importEagleLibrary(
         filePaths,
         customThumbnailPath: thumbnail ? join(itemDir, thumbnail) : null,
         sourceId: `eagle:${meta.id}`,
+        savedAt: meta.modificationTime
+          ? new Date(meta.modificationTime)
+          : undefined,
+        createdAt: meta.btime ? new Date(meta.btime) : undefined,
       };
       if (meta.width !== undefined) input.width = meta.width;
       if (meta.height !== undefined) input.height = meta.height;
@@ -374,4 +507,11 @@ export async function importEagleLibrary(
     lockedFolders,
     droppedFields: [...dropped],
   };
+}
+
+export function importEagleLibrary(
+  libraryPath: string,
+  opts: { dryRun?: boolean } = {},
+) {
+  return runLibraryTransfer(() => importEagle(libraryPath, opts));
 }

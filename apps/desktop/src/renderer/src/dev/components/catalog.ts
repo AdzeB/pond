@@ -22,7 +22,7 @@ export const componentGroups: [string, [string, string, string][]][] = [
       [
         "Button",
         "button",
-        "Five sizes and seven treatments with rounded corners. Change props in the playground to compare them.",
+        "Five sizes and eight treatments with rounded corners. Change props in the playground to compare them.",
       ],
       [
         "Input",

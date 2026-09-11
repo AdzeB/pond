@@ -87,9 +87,11 @@ it("marks the wait screen connected when an existing account is reimported", asy
     await Promise.resolve();
   });
   expect(host.textContent).toContain("Requesting Connection");
-  if (!imported) throw new Error("session import listener was not attached");
+  const sessionImported = imported;
+  if (!sessionImported)
+    throw new Error("session import listener was not attached");
   await act(async () => {
-    imported({ source: "twitter", accountId: "acc-twitter" });
+    sessionImported({ source: "twitter", accountId: "acc-twitter" });
   });
   await vi.waitFor(() => {
     expect(host.textContent).toContain("Connected");

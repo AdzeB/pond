@@ -1,6 +1,6 @@
+import { basename } from "node:path";
 import { saves, type Task, tasks } from "@pond/schema/db";
 import { buildWhere, isEmptyQuery } from "@pond/schema/filters";
-import { durationProjection } from "@pond/schema/filters/fields";
 import type { RawJson } from "@pond/schema/raw";
 import type { Transaction } from "@pond/schema/tx";
 import {
@@ -14,12 +14,13 @@ import {
   isNotNull,
   isNull,
   type SQL,
-  type SQLWrapper,
   sql,
 } from "drizzle-orm";
 import { clipboard, nativeImage } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
+import { LibraryQueryRequestSchema as LibraryQueryParams } from "../../../shared/library-query";
+import { duplicateGroups } from "../../core/duplicate-groups";
 import { executeBatch } from "../../core/executor";
 import {
   activateFont,
@@ -30,15 +31,25 @@ import {
   writeFontActivation,
 } from "../../core/font-activation";
 import { extractFontFamily, renameWithFamily } from "../../core/font-metadata";
+import { compileKeywordWhere } from "../../core/keyword-query";
+import {
+  librarySortColumn,
+  queryLibraryIds,
+  queryLibraryPage,
+} from "../../core/library-query";
 import { libraryRetrievalInput } from "../../core/library-retrieval";
+import { mergeDuplicateSaves } from "../../core/merge-duplicates";
 import { persistSave } from "../../core/persist-save";
 import { retryFailedSaves } from "../../core/pipeline/enqueue";
 import { runRenderTextCover } from "../../core/pipeline/workers/render-text-cover";
+import { getPrefs } from "../../core/prefs";
+import { querySidebarCounts } from "../../core/sidebar-counts";
 import { recordForUndo } from "../../core/undo";
+import { hasUserTitle } from "../../core/user-metadata";
 import { parseJsonVector, upsertVec } from "../../core/vec-index";
 import type { Db } from "../../db";
 import { getDb } from "../../db";
-import { itemFile } from "../../paths";
+import { itemFile, resolvePaths } from "../../paths";
 import { resolveSaveFilePath } from "../helpers";
 import { type SaveListRow, toWireSaves } from "../wire";
 import {
@@ -163,12 +174,50 @@ const DerivedPatchSchema = z
   })
   .catch({});
 
-const FtsRowSchema = z.object({ id: z.string(), rank: z.number() });
-
 const IdParams = z.object({ id: StringParam });
 const FileParams = z.object({ id: StringParam, fileIndex: FileIndexParam });
 
 export const savesQueries = {
+  "saves.sidebarCounts": query(z.object({}), async () =>
+    querySidebarCounts(await getDb()),
+  ),
+  "saves.queryPage": query(LibraryQueryParams, async (params) => {
+    const view = params.orderFolderId
+      ? (await getPrefs()).folderViews[params.orderFolderId]
+      : undefined;
+    return queryLibraryPage(
+      await getDb(),
+      basename(resolvePaths().indexDb, ".db"),
+      params,
+      params.sortKey === "manual" ? (view?.manualOrder ?? []) : [],
+      view?.pinnedIds ?? [],
+    );
+  }),
+  "saves.queryIds": query(LibraryQueryParams, async (params) => {
+    const view = params.orderFolderId
+      ? (await getPrefs()).folderViews[params.orderFolderId]
+      : undefined;
+    return queryLibraryIds(
+      await getDb(),
+      basename(resolvePaths().indexDb, ".db"),
+      params,
+      params.sortKey === "manual" ? (view?.manualOrder ?? []) : [],
+      view?.pinnedIds ?? [],
+    );
+  }),
+  "saves.queryCount": query(z.object({ query: QueryParam }), async (params) => {
+    const db = await getDb();
+    const rows = await db
+      .select({ count: count() })
+      .from(saves)
+      .where(
+        and(
+          isNull(saves.deletedAt),
+          params.query ? buildWhere(params.query) : undefined,
+        ),
+      );
+    return { count: rows[0]?.count ?? 0 };
+  }),
   ...savesImportQueries,
   ...savesExportQueries,
 
@@ -277,29 +326,22 @@ export const savesQueries = {
       const q = params.q.trim();
       if (!q) return { ids: [], scores: {} };
       const limit = Math.min(Math.max(1, params.limit || 10_000), 10_000);
-      const match = toFtsMatchQuery(q, params.mode);
-      if (!match) return { ids: [], scores: {} };
       const db = await getDb();
-      const trashClause = params.deletedOnly
-        ? "s.deleted_at IS NOT NULL"
-        : "s.deleted_at IS NULL";
-      const rows = db.$raw
-        .prepare(
-          `SELECT f.id AS id, bm25(saves_fts) AS rank
-         FROM saves_fts f
-         JOIN saves s ON s.id = f.id
-         WHERE saves_fts MATCH ? AND ${trashClause}
-         ORDER BY rank
-         LIMIT ?`,
+      const rows = await db
+        .select({ id: saves.id })
+        .from(saves)
+        .where(
+          and(
+            params.deletedOnly
+              ? isNotNull(saves.deletedAt)
+              : isNull(saves.deletedAt),
+            compileKeywordWhere(q, params.mode),
+          ),
         )
-        .all(match, limit);
-      const scores: Record<string, number> = {};
-      const ids: string[] = [];
-      for (const raw of rows) {
-        const row = FtsRowSchema.parse(raw);
-        ids.push(row.id);
-        scores[row.id] = -row.rank;
-      }
+        .orderBy(desc(saves.savedAt), desc(saves.id))
+        .limit(limit);
+      const ids = rows.map((row) => row.id);
+      const scores = Object.fromEntries(ids.map((id) => [id, 1]));
       return { ids, scores };
     },
   ),
@@ -307,11 +349,12 @@ export const savesQueries = {
   "saves.retrieve": query(
     libraryRetrievalInput.extend({
       saveIds: z.array(z.string()).max(10_000).optional(),
+      libraryQuery: LibraryQueryParams.optional(),
     }),
     async (params) => {
       const { retrieveLibrary } = await import("../../core/library-retrieval");
-      const { saveIds, ...input } = params;
-      return await retrieveLibrary(input, saveIds ? { saveIds } : {});
+      const { saveIds, libraryQuery, ...input } = params;
+      return await retrieveLibrary(input, { saveIds, libraryQuery });
     },
   ),
 
@@ -330,7 +373,7 @@ export const savesQueries = {
         ? isNotNull(saves.deletedAt)
         : isNull(saves.deletedAt);
       const where = compiled ? and(trash, compiled) : trash;
-      const orderCol = sortColumn(params.sortKey);
+      const orderCol = librarySortColumn(params.sortKey);
       const order = params.sortDir === "asc" ? asc(orderCol) : desc(orderCol);
       const limit =
         params.limit != null
@@ -654,7 +697,7 @@ export const savesQueries = {
   }),
 
   "saves.ensureTextCover": query(
-    z.object({ id: StringParam, force: FlagParam }),
+    z.object({ id: StringParam, force: FlagParam.default(false) }),
     async (params) => {
       if (!params.id) return { ok: false as const, captured: 0 };
       const captured = await runRenderTextCover(params.id, {
@@ -675,35 +718,13 @@ export const savesQueries = {
       })
       .from(saves)
       .where(isNull(saves.deletedAt));
-    const byHash = new Map<string, string[]>();
-    for (const row of rows) {
-      const file = row.files?.[0];
-      const key = file?.sha256 || row.phash;
-      if (!key) continue;
-      const list = byHash.get(key) ?? [];
-      list.push(row.id);
-      byHash.set(key, list);
-    }
-    const groups = [...byHash.values()]
-      .filter((ids) => ids.length > 1)
-      .map((ids) => ({ ids }));
-    return { groups };
+    return duplicateGroups(rows);
   },
 
   "saves.mergeDuplicates": query(
     z.object({ keepId: StringParam, ids: StringListParam }),
     async (params) => {
-      const keepId = params.keepId.trim();
-      const extras = params.ids.filter((id) => id && id !== keepId);
-      if (!keepId || extras.length === 0) return { ok: false, trashed: 0 };
-      const txs: Transaction[] = extras.map((id) => ({
-        kind: "trash" as const,
-        model: "save" as const,
-        id,
-        meta: { actor: "user" as const, actorReason: "merge-duplicates" },
-      }));
-      await executeBatch(txs);
-      return { ok: true, trashed: extras.length };
+      return mergeDuplicateSaves(params);
     },
   ),
 
@@ -738,6 +759,7 @@ export const savesQueries = {
           kind: "update",
           model: "save",
           id: row.id,
+          titleLock: { before: hasUserTitle(row.id), after: true },
           patch: { title },
           before: { title: row.title },
           meta: { actor: "user", actorReason: "batch-rename" },
@@ -755,7 +777,7 @@ export const savesQueries = {
 
   "saves.activateFont": query(z.object({ id: StringParam }), async ({ id }) => {
     const db = await getDb();
-    const [row] = await db.select().from(saves).where(eq(saves.id, id));
+    const row = db.select().from(saves).where(eq(saves.id, id)).get();
     const file = row?.files[0];
     if (!row || !file?.path)
       return { ok: false, error: "missing_file" as const };
@@ -801,52 +823,3 @@ export const savesQueries = {
     },
   ),
 } satisfies QueryHandlerMap;
-
-function sortColumn(sortKey: string): SQLWrapper {
-  switch (sortKey) {
-    case "createdAt":
-      return saves.createdAt;
-    case "publishedAt":
-      return saves.publishedAt;
-    case "title":
-      return sql`lower(coalesce(${saves.title}, ''))`;
-    case "tagName":
-      return sql`(select lower(value) from json_each(${saves.tags}) order by lower(value) limit 1)`;
-    case "tagCount":
-      return sql`json_array_length(${saves.tags})`;
-    case "duration":
-      return durationProjection();
-    case "rating":
-      return saves.rating;
-    case "fileCount":
-      return sql`json_array_length(${saves.files})`;
-    case "width":
-      return saves.width;
-    case "height":
-      return saves.height;
-    case "dimensions":
-      return sql`cast(${saves.width} as real) * cast(${saves.height} as real)`;
-    case "aspectRatio":
-      return sql`cast(${saves.width} as real) / nullif(cast(${saves.height} as real), 0)`;
-    case "creator":
-      return sql`lower(coalesce(${saves.author}, ''))`;
-    case "source":
-      return sql`lower(${saves.source})`;
-    case "type":
-      return sql`lower(coalesce(${saves.mediaType}, ''))`;
-    default:
-      return saves.savedAt;
-  }
-}
-
-function toFtsMatchQuery(q: string, mode: "all" | "any"): string | null {
-  const tokens = q
-    .split(/\s+/)
-    .map((t) =>
-      t.replaceAll('"', "").replaceAll("'", "").replaceAll("*", "").trim(),
-    )
-    .filter((t) => t.length > 0);
-  if (tokens.length === 0) return null;
-  const quoted = tokens.map((t) => `"${t}"*`);
-  return quoted.join(mode === "any" ? " OR " : " ");
-}

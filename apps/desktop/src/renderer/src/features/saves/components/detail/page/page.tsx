@@ -23,17 +23,24 @@ import { useSave } from "@/features/saves/hooks/use-saves";
 import { hasArchive } from "@/features/saves/lib/media/archive";
 import { storedFileViewerKind } from "@/features/saves/lib/media/file-viewer";
 import { pickPrimaryFile } from "@/features/saves/lib/media/units";
+import {
+  loadOpenWithApps,
+  type OpenWithApp,
+  openWithKind,
+  peekOpenWithApps,
+} from "@/features/saves/lib/menu";
 import { closeSave, openSave } from "@/features/saves/lib/save-nav";
 import { isTextOnlySave } from "@/features/saves/lib/text";
 import { setSaveViewerFileIndex } from "@/features/saves/state/save-viewer";
 import { tagClipboard } from "@/features/tags/state/tag-clipboard";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
-import { SHORTCUTS } from "@/shared/lib/shortcuts";
+import { useShortcutBindings } from "@/shared/lib/shortcuts";
 import styles from "./page.module.css";
 
 export function SaveDetailPage() {
   const { id } = useParams({ from: "/_library/save/$id" });
   const save = useSave(id);
+  const shortcuts = useShortcutBindings();
   useTrackVisit(id);
 
   useEffect(() => {
@@ -43,6 +50,7 @@ export function SaveDetailPage() {
 
   const stepSave = useCallback(
     (delta: number) => {
+      if (document.querySelector("[data-presentation]")) return;
       const ids = libraryViewContext.filteredIds();
       const idx = ids.indexOf(id);
       if (idx < 0) return;
@@ -58,6 +66,7 @@ export function SaveDetailPage() {
 
   const stepImageOrSave = useCallback(
     (delta: number) => {
+      if (document.querySelector("[data-presentation]")) return;
       if (viewerNav.current?.step(delta)) return;
       stepSave(delta);
     },
@@ -66,28 +75,29 @@ export function SaveDetailPage() {
 
   useHotkeys([
     {
-      hotkey: SHORTCUTS["viewer.step-prev"].keys!,
+      hotkey: shortcuts["viewer.step-prev"].keys!,
       callback: () => stepImageOrSave(-1),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: SHORTCUTS["viewer.step-next"].keys!,
+      hotkey: shortcuts["viewer.step-next"].keys!,
       callback: () => stepImageOrSave(1),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: SHORTCUTS["viewer.prev-save"].keys!,
+      hotkey: shortcuts["viewer.prev-save"].keys!,
       callback: () => stepSave(-1),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: SHORTCUTS["viewer.next-save"].keys!,
+      hotkey: shortcuts["viewer.next-save"].keys!,
       callback: () => stepSave(1),
       options: { ignoreInputs: true },
     },
     {
       hotkey: "Escape",
       callback: () => {
+        if (document.querySelector("[data-presentation]")) return;
         closeSave();
       },
       options: { ignoreInputs: true },
@@ -109,6 +119,7 @@ export function SaveDetailPage() {
 
   const menuVideo = useRef<HTMLVideoElement | null>(null);
   const menuFileIndex = useRef<number | null>(null);
+  const [openWithApps, setOpenWithApps] = useState<OpenWithApp[]>([]);
 
   if (!save) {
     return (
@@ -124,13 +135,18 @@ export function SaveDetailPage() {
   return (
     <AppShell.Content>
       <SpecContextMenu
-        buildItems={() =>
-          buildViewerMenu(save, {
+        search
+        searchLabel="Search save operations"
+        buildItems={() => {
+          const fileIndex = menuFileIndex.current ?? activeFileIndex;
+          const peeked = peekOpenWithApps(openWithKind(save, fileIndex));
+          return buildViewerMenu(save, {
             clipboardEmpty: tagClipboard.get().length === 0,
             video: menuVideo.current,
-            fileIndex: menuFileIndex.current ?? activeFileIndex,
-          })
-        }
+            fileIndex,
+            openWithApps: peeked.length ? peeked : openWithApps,
+          });
+        }}
         onOpen={(eventDetails) => {
           const target = eventDetails.event?.target;
           const slide =
@@ -140,6 +156,12 @@ export function SaveDetailPage() {
           menuVideo.current =
             slide?.querySelector<HTMLVideoElement>("video") ?? null;
           menuFileIndex.current = fileIndexFromSlide(slide) ?? activeFileIndex;
+          void loadOpenWithApps({
+            ids: [save.id],
+            fileIndex: menuFileIndex.current,
+            kind: openWithKind(save, menuFileIndex.current),
+            onApps: setOpenWithApps,
+          });
         }}
       >
         <div className={styles.page}>

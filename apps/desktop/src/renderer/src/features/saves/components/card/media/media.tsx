@@ -21,6 +21,7 @@ import { buildPondUrl } from "@/features/saves/lib/media/url";
 import { mediaTransformStyle } from "@/features/saves/lib/media-transform";
 import { isTextOnlySave, textBodyForSave } from "@/features/saves/lib/text";
 import type { Save, SaveFile } from "@/features/saves/types";
+import { usePrefs } from "@/features/settings/state/prefs";
 import styles from "./media.module.css";
 
 export const CardThumb = memo(function CardThumb({
@@ -75,6 +76,8 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
   unit: MediaUnit | null;
   primary: SaveFile | null;
 }) {
+  const [viewer] = usePrefs("viewer");
+  const thumbnailBackground = viewer.thumbnailBackground ?? "none";
   const richPreview = useMemo(() => {
     if ((save.files ?? []).some((file) => file.kind === "custom_thumbnail")) {
       return null;
@@ -158,6 +161,9 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
     <div
       className={styles.thumb}
       data-view={view}
+      data-thumbnail-bg={
+        thumbnailBackground !== "none" ? thumbnailBackground : undefined
+      }
       data-pending={pending || undefined}
       data-multi-media={slides && !broken ? "true" : undefined}
       aria-busy={pending || undefined}

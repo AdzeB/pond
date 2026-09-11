@@ -28,6 +28,11 @@ export const REVERSE_SEARCH_ENGINES: ReadonlyArray<{
     label: "TinEye",
     url: (u) => `https://www.tineye.com/search?url=${u}`,
   },
+  {
+    key: "saucenao",
+    label: "SauceNAO",
+    url: (u) => `https://saucenao.com/search.php?url=${u}`,
+  },
 ];
 
 const PublicUrlReplySchema = z

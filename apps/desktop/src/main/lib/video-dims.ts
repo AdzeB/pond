@@ -1,12 +1,15 @@
 import { spawn } from "node:child_process";
+import { stat } from "node:fs/promises";
 import log from "electron-log/main.js";
 import { binariesAvailable } from "../core/refresh/binaries";
 
+import { frameRateFromProbe } from "./video-timing";
+
 const HARD_TIMEOUT_MS = 10_000;
 
-export async function probeVideoDims(
+async function probeVideoMetadata(
   videoPath: string,
-): Promise<{ width: number; height: number } | null> {
+): Promise<{ width: number; height: number; frameRate: number | null } | null> {
   const { ffmpeg } = binariesAvailable();
   if (!ffmpeg) {
     log.debug("[pond video-dims] ffmpeg unavailable", videoPath);
@@ -44,7 +47,7 @@ export async function probeVideoDims(
     }
   }
 
-  return { width, height };
+  return { width, height, frameRate: frameRateFromProbe(stderr) };
 }
 
 function runFfmpegProbe(
@@ -84,4 +87,25 @@ function runFfmpegProbe(
       resolve({ code: code ?? -1, stderr });
     });
   });
+}
+
+type VideoMetadata = Awaited<ReturnType<typeof probeVideoMetadata>>;
+const probes = new Map<string, Promise<VideoMetadata>>();
+export async function probeVideoDims(
+  videoPath: string,
+): Promise<VideoMetadata> {
+  const info = await stat(videoPath).catch(() => null);
+  if (!info) return null;
+  const key = `${videoPath}:${info.size}:${info.mtimeMs}`;
+  const existing = probes.get(key);
+  if (existing) return existing;
+  const probe = probeVideoMetadata(videoPath);
+  probes.set(key, probe);
+  if (probes.size > 128) {
+    const oldest = probes.keys().next().value;
+    if (oldest) probes.delete(oldest);
+  }
+  const result = await probe;
+  if (!result) probes.delete(key);
+  return result;
 }

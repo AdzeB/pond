@@ -29,6 +29,51 @@ describe("buildTweetCardData", () => {
     ]);
   });
 
+  it("drops t.co wrappers from tweet text", () => {
+    const data = buildTweetCardData({
+      id: "1",
+      source: "twitter",
+      url: "https://x.com/a/status/1",
+      description:
+        "As a developer with OCPD, this really pisses me off. https://t.co/8BzuJIWrdT",
+      media: [],
+    });
+    expect(data?.text).toBe(
+      "As a developer with OCPD, this really pisses me off.",
+    );
+  });
+
+  it("omits tweet text that is only a t.co wrapper", () => {
+    const data = buildTweetCardData({
+      id: "1",
+      source: "twitter",
+      url: "https://x.com/a/status/1",
+      description: "https://t.co/8BzuJIWrdT",
+      media: [],
+      card: { url: "https://example.com/article", title: "Article" },
+    });
+    expect(data?.text).toBeUndefined();
+    expect(data?.card?.title).toBe("Article");
+  });
+
+  it("drops t.co wrappers from quoted tweet text", () => {
+    const data = buildTweetCardData({
+      id: "1",
+      source: "twitter",
+      url: "https://x.com/a/status/1",
+      description: "quoting this",
+      media: [],
+      quoted: {
+        id: "2",
+        source: "twitter",
+        url: "https://x.com/b/status/2",
+        description: "original thought https://t.co/abcDEF",
+        media: [],
+      },
+    });
+    expect(data?.quoted?.text).toBe("original thought");
+  });
+
   it("keeps http video posters", () => {
     const data = buildTweetCardData({
       id: "1",

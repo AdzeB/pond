@@ -27,5 +27,7 @@
   --ds-text-primary: var(--ds-gray-12);
   --ds-accent-text: var(--ds-accent-11);
 
-  --ds-focus-outline: color-mix(in srgb, var(--ds-accent-9) 20%, transparent);
+  --ds-focus-width: 1px;
+  --ds-focus-offset: 0px;
+  --ds-focus-outline: var(--ds-accent-a6);
 }

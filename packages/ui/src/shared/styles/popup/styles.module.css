@@ -17,7 +17,10 @@
   flex-direction: column;
   min-width: var(--popup-min-width, 200px);
   width: var(--popup-width, var(--anchor-width));
-  max-width: min(var(--popup-max-width, 320px), var(--available-width));
+  max-width: max(
+    var(--popup-min-width, 200px),
+    min(var(--popup-max-width, 320px), var(--available-width))
+  );
   padding-block: 6px;
   outline: none;
   background: var(--ds-gray-1);
@@ -81,6 +84,7 @@
   touch-action: manipulation;
   cursor: default;
   user-select: none;
+  outline: none;
   background: transparent;
   border: 0;
   border-radius: var(--ds-radius-md);
@@ -116,6 +120,10 @@
     &::before {
       opacity: 0;
     }
+
+    .item-icon {
+      color: inherit;
+    }
   }
 
   &[data-stale="true"]::before {
@@ -131,6 +139,14 @@
   width: 16px;
   height: 16px;
   margin-right: 8px;
+  color: var(--ds-gray-9);
+}
+
+.item-icon img {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
 }
 
 .item-label {

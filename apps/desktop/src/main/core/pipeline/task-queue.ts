@@ -14,6 +14,7 @@ import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { getDb } from "../../db";
 import { persistSave } from "../persist-save";
+import { isInteractiveTask } from "./priority";
 import {
   type DueTask,
   isSourceTask,
@@ -56,26 +57,57 @@ export async function pullDueTasks(): Promise<DueTask[]> {
         )`,
       ),
     )
-    .orderBy(desc(saves.createdAt), asc(tasks.nextRunAt))
+    .orderBy(
+      sql`(CASE json_extract(${tasks.payload}, '$.priority') WHEN 'interactive' THEN 0 ELSE 1 END)`,
+      desc(saves.createdAt),
+      asc(tasks.nextRunAt),
+    )
     .limit(60)) satisfies DueTask[];
 
   if (rows.length === 0) return rows;
 
+  const runnable = rows.filter((row) =>
+    isDueTaskRunnable(row, sourcePausedUntil(row.source)),
+  );
+  return scheduleDueTasks(runnable);
+}
+
+/** Interactive harvest still starts; acquire() waits out the source cooldown. */
+export function isDueTaskRunnable(row: DueTask, sourceUntil: number): boolean {
+  if (isInteractiveTask(row)) return true;
+  return !(isSourceTask(row.op) && sourceUntil > 0);
+}
+
+const DISPATCH_BATCH = 20;
+
+export function scheduleDueTasks(rows: readonly DueTask[]): DueTask[] {
+  const interactive: DueTask[] = [];
+  const background: DueTask[] = [];
+  for (const row of rows) {
+    if (isInteractiveTask(row)) interactive.push(row);
+    else background.push(row);
+  }
+  const head = interleaveBySave(interactive, DISPATCH_BATCH);
+  if (head.length >= DISPATCH_BATCH) return head;
+  return [
+    ...head,
+    ...interleaveBySave(background, DISPATCH_BATCH - head.length),
+  ];
+}
+
+function interleaveBySave(rows: readonly DueTask[], limit: number): DueTask[] {
   const buckets = new Map<string, DueTask[]>();
   for (const row of rows) {
-    if (isSourceTask(row.op) && sourcePausedUntil(row.source) > 0) {
-      continue;
-    }
     const bucket = buckets.get(row.saveId);
     if (bucket) bucket.push(row);
     else buckets.set(row.saveId, [row]);
   }
   const interleaved: DueTask[] = [];
   let progress = true;
-  while (progress && interleaved.length < 20) {
+  while (progress && interleaved.length < limit) {
     progress = false;
     for (const bucket of buckets.values()) {
-      if (interleaved.length >= 20) break;
+      if (interleaved.length >= limit) break;
       const next = bucket.shift();
       if (!next) continue;
       interleaved.push(next);

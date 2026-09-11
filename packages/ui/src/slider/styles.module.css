@@ -41,19 +41,18 @@
 .thumb {
   width: 14px;
   height: 14px;
-  outline: none;
   background: var(--ds-gray-1);
   background-clip: padding-box;
   border: var(--ds-border-elevated);
   border-radius: var(--ds-radius-full);
   box-shadow: var(--ds-shadow-2);
 
-  &:focus-visible,
-  &:has(> input:focus-visible) {
-    outline-width: 2px;
-    outline-style: solid;
-    outline-color: var(--ds-gray-6);
-    outline-offset: 0;
+  &:has(> :focus-visible) {
+    outline-color: var(--ds-focus-outline);
+  }
+
+  > input {
+    outline: none;
   }
 }
 

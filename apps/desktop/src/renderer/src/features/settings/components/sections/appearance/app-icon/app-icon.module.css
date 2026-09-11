@@ -17,7 +17,6 @@
   height: 44px;
   padding: 2px;
   cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
   background: transparent;
   border: 2px solid transparent;
   border-radius: var(--ds-radius-app-icon);
@@ -37,11 +36,6 @@
 
   &[data-selected] {
     border-color: var(--tint, var(--ds-gray-12));
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--ds-gray-6);
-    outline-offset: 0;
   }
 }
 

@@ -51,6 +51,7 @@ function writeWidth(key: string, width: number): void {
 }
 
 export type LibraryRightPane = "agent" | "inspector" | null;
+export type LibraryInspectorMode = "save" | "download";
 
 interface ChromeState {
   nav: LibraryNav;
@@ -58,6 +59,7 @@ interface ChromeState {
   agentOpen: boolean;
   rightPane: LibraryRightPane;
   inspectorSaveId: string | null;
+  inspectorMode: LibraryInspectorMode;
   sidebarWidth: number;
   agentWidth: number;
 }
@@ -70,6 +72,7 @@ const store = new Store<ChromeState>({
   agentOpen: initialAgentOpen,
   rightPane: initialAgentOpen ? "agent" : null,
   inspectorSaveId: null,
+  inspectorMode: "save",
   sidebarWidth: readWidth(
     "pond.sidebarWidth",
     SIDEBAR_WIDTH_DEFAULT,
@@ -90,18 +93,39 @@ export const libraryChrome = {
   },
   inspectSave(inspectorSaveId: string | null): void {
     store.setState((s) => {
-      if (s.inspectorSaveId === inspectorSaveId) return s;
+      if (s.inspectorSaveId === inspectorSaveId && s.inspectorMode === "save")
+        return s;
       beginLibraryLayoutTransition();
       return {
         ...s,
         inspectorSaveId,
+        inspectorMode: "save",
         rightPane: inspectorSaveId ? "inspector" : s.agentOpen ? "agent" : null,
+      };
+    });
+  },
+  inspectDownload(inspectorSaveId: string): void {
+    store.setState((s) => {
+      if (
+        s.inspectorSaveId === inspectorSaveId &&
+        s.inspectorMode === "download" &&
+        s.rightPane === "inspector"
+      )
+        return s;
+      beginLibraryLayoutTransition();
+      return {
+        ...s,
+        inspectorSaveId,
+        inspectorMode: "download",
+        rightPane: "inspector",
       };
     });
   },
   setInspectorSaveId(inspectorSaveId: string | null): void {
     store.setState((s) =>
-      s.inspectorSaveId === inspectorSaveId ? s : { ...s, inspectorSaveId },
+      s.inspectorSaveId === inspectorSaveId && s.inspectorMode === "save"
+        ? s
+        : { ...s, inspectorSaveId, inspectorMode: "save" },
     );
   },
   setNav(nav: LibraryNav): void {
@@ -197,6 +221,10 @@ export function useRightPane(): LibraryRightPane {
 
 export function useInspectorSaveId(): string | null {
   return useSelector(store, (s) => s.inspectorSaveId);
+}
+
+export function useInspectorMode(): LibraryInspectorMode {
+  return useSelector(store, (s) => s.inspectorMode);
 }
 
 export function useSidebarWidth(): number {

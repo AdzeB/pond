@@ -1,0 +1,112 @@
+{
+  "date": "2026-09-08T15:59:55.306Z",
+  "kind": "query-engine-only",
+  "hardware": {
+    "cpu": "Apple M4 Max",
+    "cores": 16,
+    "memoryBytes": 51539607552,
+    "platform": "darwin",
+    "release": "25.6.0",
+    "electron": "42.4.0"
+  },
+  "cache": "warm after one priming request",
+  "workload": "synthetic mixed-media metadata; no original decoding, IPC, renderer or debounce; uncontrolled host background workload",
+  "results": [
+    {
+      "size": 1000,
+      "operation": "folder",
+      "p50": 0.4627089999999612,
+      "p95": 0.813165999999967,
+      "samples": 20,
+      "total": 50
+    },
+    {
+      "size": 1000,
+      "operation": "keyword",
+      "p50": 0.6802920000000086,
+      "p95": 0.8562919999999963,
+      "samples": 20,
+      "total": 200
+    },
+    {
+      "size": 1000,
+      "operation": "folder-keyword",
+      "p50": 1.2515419999999722,
+      "p95": 1.2970840000000408,
+      "samples": 20,
+      "total": 50
+    },
+    {
+      "size": 1000,
+      "operation": "file-size-sort",
+      "p50": 0.30708299999997735,
+      "p95": 0.32637499999998454,
+      "samples": 20,
+      "total": 1000
+    },
+    {
+      "size": 10000,
+      "operation": "folder",
+      "p50": 3.526834000000008,
+      "p95": 3.6757089999999835,
+      "samples": 20,
+      "total": 500
+    },
+    {
+      "size": 10000,
+      "operation": "keyword",
+      "p50": 6.025417000000061,
+      "p95": 6.300041000000078,
+      "samples": 20,
+      "total": 2000
+    },
+    {
+      "size": 10000,
+      "operation": "folder-keyword",
+      "p50": 13.179292000000032,
+      "p95": 43.05074999999988,
+      "samples": 20,
+      "total": 500
+    },
+    {
+      "size": 10000,
+      "operation": "file-size-sort",
+      "p50": 1.7563330000000406,
+      "p95": 3.4694580000000315,
+      "samples": 20,
+      "total": 10000
+    },
+    {
+      "size": 100000,
+      "operation": "folder",
+      "p50": 43.62133300000005,
+      "p95": 44.48333299999922,
+      "samples": 20,
+      "total": 5000
+    },
+    {
+      "size": 100000,
+      "operation": "keyword",
+      "p50": 72.06291699999929,
+      "p95": 73.4844579999999,
+      "samples": 20,
+      "total": 20000
+    },
+    {
+      "size": 100000,
+      "operation": "folder-keyword",
+      "p50": 151.10874999999942,
+      "p95": 153.89083299999947,
+      "samples": 20,
+      "total": 5000
+    },
+    {
+      "size": 100000,
+      "operation": "file-size-sort",
+      "p50": 22.384083000000828,
+      "p95": 23.04908400000022,
+      "samples": 20,
+      "total": 100000
+    }
+  ]
+}

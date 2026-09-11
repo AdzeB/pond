@@ -12,7 +12,6 @@
   font-weight: var(--ds-weight-normal);
   color: var(--ds-gray-11);
   cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
   background: none;
   border: 0;
   border-radius: var(--ds-radius-sm);
@@ -37,12 +36,6 @@
   &[data-pressed] {
     color: var(--ds-gray-12);
     background: var(--ds-gray-a4);
-  }
-
-  &:focus-visible,
-  &[data-demo-state="focus"] {
-    outline: 2px solid var(--ds-focus-outline);
-    outline-offset: 0;
   }
 
   &:disabled {

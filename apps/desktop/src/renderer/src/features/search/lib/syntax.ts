@@ -22,7 +22,7 @@ interface DatePreset {
 }
 
 export const DATE_PRESETS: readonly DatePreset[] = [
-  { slug: "today", label: "Today", iso: "-P1D" },
+  { slug: "today", label: "Today", iso: "today" },
   { slug: "past-3-days", label: "Past 3 days", iso: "-P3D" },
   { slug: "past-week", label: "Past week", iso: "-P1W" },
   { slug: "past-month", label: "Past month", iso: "-P1M" },
@@ -36,6 +36,7 @@ interface TokenFieldSpec {
 }
 
 export const TOKEN_FIELDS: readonly TokenFieldSpec[] = [
+  { field: "title", keys: ["name", "title"] },
   { field: "tags", keys: ["tag", "tags"] },
   { field: "folder", keys: ["folder", "folders"] },
   { field: "list", keys: ["list"] },

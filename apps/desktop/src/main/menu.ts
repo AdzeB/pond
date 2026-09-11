@@ -6,8 +6,15 @@ import {
   type MenuActionId,
   type RecentMenuEntry,
 } from "../shared/constants";
+import {
+  resolveShortcuts,
+  type ShortcutId,
+  type ShortcutPreferences,
+} from "../shared/shortcuts";
+import { subscribePrefs } from "./core/prefs";
 import { reconcileLibrary } from "./core/scan";
 import { syncAllSources, syncSource } from "./core/sync";
+import { menuAccelerator } from "./lib/menu-accelerator";
 import { sym } from "./lib/menu-symbol";
 import { LIBRARY_MENU_LABELS } from "./library-menu";
 import { libraryRoot } from "./paths";
@@ -15,12 +22,14 @@ import { libraryRoot } from "./paths";
 interface AppMenuDeps {
   focusedOrMain: () => BrowserWindow | null;
   openLibraryWindow: () => void;
+  shortcuts: ShortcutPreferences;
 }
 
 const RECENTS_MENU_CAP = 12;
 
 let activeDeps: AppMenuDeps | null = null;
 let recentEntries: RecentMenuEntry[] = [];
+let unsubscribePrefs: (() => void) | undefined;
 
 export function setMenuRecents(entries: RecentMenuEntry[]): void {
   recentEntries = entries.slice(0, RECENTS_MENU_CAP);
@@ -29,12 +38,24 @@ export function setMenuRecents(entries: RecentMenuEntry[]): void {
 
 export function installAppMenu(deps: AppMenuDeps): void {
   activeDeps = deps;
+  unsubscribePrefs?.();
+  let shortcutKey = JSON.stringify(deps.shortcuts);
+  unsubscribePrefs = subscribePrefs((prefs) => {
+    if (!activeDeps) return;
+    const nextKey = JSON.stringify(prefs.shortcuts);
+    if (nextKey === shortcutKey) return;
+    shortcutKey = nextKey;
+    activeDeps = { ...activeDeps, shortcuts: prefs.shortcuts };
+    buildAndSetMenu(activeDeps);
+  });
   buildAndSetMenu(deps);
 }
 
 function buildAndSetMenu(deps: AppMenuDeps): void {
   const { focusedOrMain, openLibraryWindow } = deps;
   const isMac = process.platform === "darwin";
+  const bindings = resolveShortcuts(deps.shortcuts);
+  const accelerator = (id: ShortcutId) => menuAccelerator(bindings[id]);
 
   const navTo = (path: string) => () => {
     const target = focusedOrMain();
@@ -81,7 +102,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
       {
         ...sym("arrow.triangle.2.circlepath"),
         label: "Sync All",
-        accelerator: "CmdOrCtrl+Shift+S",
+        accelerator: accelerator("sources.sync-all"),
         registerAccelerator: false,
         click: () => void syncAllSources({ trigger: "manual" }),
       },
@@ -103,7 +124,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
   const settingsItem: Electron.MenuItemConstructorOptions = {
     ...sym("gearshape"),
     label: "Settings",
-    accelerator: "CmdOrCtrl+,",
+    accelerator: accelerator("app.settings"),
     click: navTo("/settings"),
   };
 
@@ -145,7 +166,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
           ...sym("xmark"),
           role: "close",
           label: "Close Window",
-          accelerator: "CmdOrCtrl+W",
+          accelerator: accelerator("app.close-window"),
         },
         {
           ...sym("books.vertical"),
@@ -162,6 +183,8 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         {
           ...sym("camera"),
           label: "Screenshot Display",
+          accelerator: accelerator("capture.display"),
+          registerAccelerator: false,
           click: () => {
             void import("./core/screenshot").then((m) => m.captureDisplay());
           },
@@ -169,6 +192,8 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         {
           ...sym("camera.viewfinder"),
           label: "Screenshot Area",
+          accelerator: accelerator("capture.area"),
+          registerAccelerator: false,
           click: () => {
             void import("./aux-windows").then((m) => m.openCaptureWindow());
           },
@@ -176,6 +201,8 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         {
           ...sym("macwindow"),
           label: "Screenshot Window",
+          accelerator: accelerator("capture.window"),
+          registerAccelerator: false,
           click: () => {
             void import("./core/screenshot").then((m) => m.captureWindow());
           },
@@ -184,35 +211,43 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         {
           ...sym("arrow.up.forward.app"),
           label: "Open with Default App",
-          accelerator: "O",
+          accelerator: accelerator("save.open"),
           registerAccelerator: false,
           click: sendMenuAction("save.open-with-default"),
         },
         {
           ...sym("globe"),
           label: "Open Original URL",
+          accelerator: accelerator("save.open-url"),
+          registerAccelerator: false,
           click: sendMenuAction("save.open-original"),
         },
         {
           ...sym("folder"),
           label: "Reveal in Finder",
+          accelerator: accelerator("save.reveal"),
+          registerAccelerator: false,
           click: sendMenuAction("save.reveal"),
         },
         { type: "separator" },
         {
           ...sym("pencil"),
           label: "Rename",
+          accelerator: accelerator("save.rename"),
+          registerAccelerator: false,
           click: sendMenuAction("save.rename"),
         },
         {
           ...sym("tag"),
           label: "Add Tag",
+          accelerator: accelerator("save.add-tag"),
+          registerAccelerator: false,
           click: sendMenuAction("save.add-tag"),
         },
         {
           ...sym("arrow.clockwise"),
           label: "Refresh Details",
-          accelerator: "R",
+          accelerator: accelerator("save.refresh"),
           registerAccelerator: false,
           click: sendMenuAction("save.refresh"),
         },
@@ -220,7 +255,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         {
           ...sym("trash"),
           label: "Move to Trash",
-          accelerator: "Backspace",
+          accelerator: accelerator("save.trash"),
           registerAccelerator: false,
           click: sendMenuAction("save.trash"),
         },
@@ -232,7 +267,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         {
           ...sym("trash.fill"),
           label: "Delete Forever",
-          accelerator: "CmdOrCtrl+Backspace",
+          accelerator: accelerator("save.delete-forever"),
           registerAccelerator: false,
           click: sendMenuAction("save.delete-forever"),
         },
@@ -276,20 +311,22 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         {
           ...sym("photo.on.rectangle"),
           label: "Copy Image or Video",
-          accelerator: "C",
+          accelerator: accelerator("save.copy-image"),
           registerAccelerator: false,
           click: sendMenuAction("save.copy-media"),
         },
         {
           ...sym("link"),
           label: "Copy URL",
-          accelerator: "CmdOrCtrl+Shift+C",
+          accelerator: accelerator("save.copy-url"),
           registerAccelerator: false,
           click: sendMenuAction("save.copy-url"),
         },
         {
           ...sym("number"),
           label: "Copy Save ID",
+          accelerator: accelerator("save.copy-id"),
+          registerAccelerator: false,
           click: sendMenuAction("save.copy-id"),
         },
         { type: "separator" },
@@ -312,49 +349,71 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         {
           ...sym("rectangle.3.group"),
           label: "Cycle Layout",
-          accelerator: "CmdOrCtrl+Shift+L",
+          accelerator: accelerator("view.layout-cycle"),
           click: sendMenuAction("view.layout.cycle"),
         },
         {
           ...sym("rectangle.stack"),
           label: "Waterfall",
+          accelerator: accelerator("view.layout-waterfall"),
+          registerAccelerator: false,
           click: sendMenuAction("view.layout.waterfall"),
         },
         {
           ...sym("square.grid.2x2"),
           label: "Grid",
+          accelerator: accelerator("view.layout-grid"),
+          registerAccelerator: false,
           click: sendMenuAction("view.layout.grid"),
         },
         {
           ...sym("rectangle.split.3x1"),
           label: "Justified",
+          accelerator: accelerator("view.layout-justified"),
+          registerAccelerator: false,
           click: sendMenuAction("view.layout.justified"),
         },
         {
           ...sym("list.bullet"),
           label: "List",
+          accelerator: accelerator("view.layout-list"),
+          registerAccelerator: false,
           click: sendMenuAction("view.layout.list"),
         },
         { type: "separator" },
         {
           ...sym("sidebar.left"),
           label: "Toggle Sidebar",
-          accelerator: "[",
+          accelerator: accelerator("view.sidebar"),
           registerAccelerator: false,
           click: sendMenuAction("view.sidebar.toggle"),
         },
         {
           ...sym("sidebar.right"),
           label: "Toggle Assistant",
-          accelerator: "]",
+          accelerator: accelerator("view.agent"),
           registerAccelerator: false,
           click: sendMenuAction("view.agent.toggle"),
         },
         {
           ...sym("sidebar.right"),
           label: "Toggle Details",
-          accelerator: "CmdOrCtrl+I",
+          accelerator: accelerator("view.inspector"),
           click: sendMenuAction("view.inspector.toggle"),
+        },
+        {
+          ...sym("circle.lefthalf.filled"),
+          label: "Grayscale Overlay",
+          accelerator: accelerator("view.grayscale"),
+          registerAccelerator: false,
+          click: sendMenuAction("view.grayscale"),
+        },
+        {
+          ...sym("pin"),
+          label: "Pin Preview",
+          accelerator: accelerator("view.pin-preview"),
+          registerAccelerator: false,
+          click: sendMenuAction("view.pin-preview"),
         },
         {
           label: "Show Navigator",
@@ -385,19 +444,19 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         {
           ...sym("plus.magnifyingglass"),
           label: "Zoom In",
-          accelerator: "CmdOrCtrl+=",
+          accelerator: accelerator("view.zoom-in"),
           click: sendMenuAction("view.zoom-in"),
         },
         {
           ...sym("minus.magnifyingglass"),
           label: "Zoom Out",
-          accelerator: "CmdOrCtrl+-",
+          accelerator: accelerator("view.zoom-out"),
           click: sendMenuAction("view.zoom-out"),
         },
         {
           ...sym("1.magnifyingglass"),
           label: "Reset Zoom",
-          accelerator: "CmdOrCtrl+0",
+          accelerator: accelerator("view.zoom-reset"),
           click: sendMenuAction("view.zoom-reset"),
         },
         { type: "separator" },
@@ -413,48 +472,48 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         {
           ...sym("chevron.left"),
           label: "Back",
-          accelerator: "CmdOrCtrl+[",
+          accelerator: accelerator("nav.back"),
           click: sendMenuAction("history.back"),
         },
         {
           ...sym("chevron.right"),
           label: "Forward",
-          accelerator: "CmdOrCtrl+]",
+          accelerator: accelerator("nav.forward"),
           click: sendMenuAction("history.forward"),
         },
         { type: "separator" },
         {
           ...sym("square.grid.2x2"),
           label: "Library",
-          accelerator: "G L",
+          accelerator: accelerator("nav.library"),
           registerAccelerator: false,
           click: navTo("/"),
         },
         {
           ...sym("square.stack.3d.up"),
           label: "Sources",
-          accelerator: "G S",
+          accelerator: accelerator("nav.sources"),
           registerAccelerator: false,
           click: navTo("/sources"),
         },
         {
           ...sym("arrow.down.to.line"),
           label: "Downloads",
-          accelerator: "G D",
+          accelerator: accelerator("nav.downloads"),
           registerAccelerator: false,
           click: navTo("/downloads"),
         },
         {
           ...sym("trash"),
           label: "Trash",
-          accelerator: "G T",
+          accelerator: accelerator("nav.trash"),
           registerAccelerator: false,
           click: navTo("/trash"),
         },
         {
           ...sym("gearshape"),
           label: "Settings",
-          accelerator: "G ,",
+          accelerator: accelerator("nav.settings"),
           registerAccelerator: false,
           click: navTo("/settings"),
         },
@@ -462,7 +521,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         {
           ...sym("magnifyingglass"),
           label: "Search",
-          accelerator: "CmdOrCtrl+K",
+          accelerator: accelerator("library.search"),
           registerAccelerator: false,
           click: sendMenuAction("library.search"),
         },
@@ -545,7 +604,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         {
           ...sym("trash"),
           label: LIBRARY_MENU_LABELS[9],
-          accelerator: "CmdOrCtrl+Shift+Backspace",
+          accelerator: accelerator("trash.empty"),
           click: sendMenuAction("trash.empty"),
         },
         {

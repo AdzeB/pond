@@ -29,6 +29,15 @@ _Avoid_: prefill, stub, partial capture
 **Tag**:
 A label you attach to Saves, optionally in a group.
 
+**Smart Folder**:
+A named set of filters that automatically shows matching Saves.
+
+**Group** (under Smart Folders):
+A container for Smart Folders, Saved Views, and other Groups. Its filters also apply to everything nested inside it.
+
+**Saved View**:
+A named set of filters with a saved layout and sort order.
+
 ### Sources
 
 **Source**:

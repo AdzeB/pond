@@ -1,44 +1,66 @@
-import { Button } from "@pond/ui";
-import {
-  GlobalWorkerOptions,
-  getDocument,
-  type PDFDocumentProxy,
-} from "pdfjs-dist";
+import { Button, Input, Slider } from "@pond/ui";
+import type { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import {
   type CSSProperties,
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
-import { ArchiveFileViewer } from "@/features/saves/components/viewers/archive-file-viewer/archive-file-viewer";
-import { EpubViewer } from "@/features/saves/components/viewers/epub-viewer/epub-viewer";
-import { ModelViewer } from "@/features/saves/components/viewers/model-viewer/model-viewer";
-import { SafeWebViewer } from "@/features/saves/components/viewers/safe-web-viewer/safe-web-viewer";
+import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { exportFile, openDefaultApp } from "@/features/saves/lib/actions";
 import { estimateBpm } from "@/features/saves/lib/media/audio-bpm";
 import { downsamplePeaks } from "@/features/saves/lib/media/audio-peaks";
 import { storedFileViewerKind } from "@/features/saves/lib/media/file-viewer";
 import { buildPondUrl, previewUrlFor } from "@/features/saves/lib/media/url";
 import type { Save, SaveFile } from "@/features/saves/types";
+import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { formatBytes } from "@/shared/lib/format";
 import styles from "./file-viewer.module.css";
+
+const ArchiveFileViewer = lazy(() =>
+  import(
+    "@/features/saves/components/viewers/archive-file-viewer/archive-file-viewer"
+  ).then((module) => ({ default: module.ArchiveFileViewer })),
+);
+
+const EpubViewer = lazy(() =>
+  import("@/features/saves/components/viewers/epub-viewer/epub-viewer").then(
+    (module) => ({ default: module.EpubViewer }),
+  ),
+);
+
+const ModelViewer = lazy(() =>
+  import("@/features/saves/components/viewers/model-viewer/model-viewer").then(
+    (module) => ({ default: module.ModelViewer }),
+  ),
+);
+
+const SafeWebViewer = lazy(() =>
+  import(
+    "@/features/saves/components/viewers/safe-web-viewer/safe-web-viewer"
+  ).then((module) => ({ default: module.SafeWebViewer })),
+);
 
 const DEFAULT_SPECIMEN = "Sphinx of black quartz, judge my vow.";
 const GLYPHS =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n0123456789  !?&@#%()[]{}";
 
-GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+export function StoredFileViewer(props: { save: Save; file: SaveFile }) {
+  return (
+    <Suspense
+      fallback={<div className={styles.previewStatus}>Loading preview…</div>}
+    >
+      <StoredFileContent {...props} />
+    </Suspense>
+  );
+}
 
-export function StoredFileViewer({
-  save,
-  file,
-}: {
-  save: Save;
-  file: SaveFile;
-}) {
+function StoredFileContent({ save, file }: { save: Save; file: SaveFile }) {
   const kind = storedFileViewerKind(file);
   const fileIndex = save.files.indexOf(file);
   const url = buildPondUrl(save.id, file);
@@ -100,12 +122,16 @@ function PdfViewer(props: ViewerProps & { url: string }) {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    const task = getDocument({ url: props.url });
+    let task: PDFDocumentLoadingTask | undefined;
     let active = true;
     setDocument(null);
     setError(false);
-    void task.promise
-      .then((next) => {
+    void import("pdfjs-dist")
+      .then(async (pdf) => {
+        if (!active) return;
+        pdf.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+        task = pdf.getDocument({ url: props.url });
+        const next = await task.promise;
         if (active) setDocument(next);
       })
       .catch(() => {
@@ -113,7 +139,7 @@ function PdfViewer(props: ViewerProps & { url: string }) {
       });
     return () => {
       active = false;
-      void task.destroy();
+      void task?.destroy();
     };
   }, [props.url]);
 
@@ -131,7 +157,7 @@ function PdfViewer(props: ViewerProps & { url: string }) {
     <div className={styles.pdf}>
       <div ref={scrollRef} className={styles.pdfScroll}>
         {!document && !error ? (
-          <div className={styles.pdfStatus}>Loading PDF…</div>
+          <div className={styles.pdfStatus}>Loading PDF</div>
         ) : null}
         {error ? (
           <div className={styles.pdfStatus}>
@@ -282,6 +308,7 @@ function FontViewer(props: ViewerProps & { url: string }) {
   const [specimen, setSpecimen] = useState(DEFAULT_SPECIMEN);
   const [size, setSize] = useState(68);
   const [loaded, setLoaded] = useState(false);
+  const scrollFade = useScrollFade<HTMLDivElement>();
   const family = useMemo(
     () => `pond-preview-${props.save.id.replace(/[^a-zA-Z0-9_-]/g, "")}`,
     [props.save.id],
@@ -314,27 +341,46 @@ function FontViewer(props: ViewerProps & { url: string }) {
 
   return (
     <div className={styles.fontRoot} style={style}>
-      <div className={styles.fontToolbar}>
-        <input
-          value={specimen}
-          aria-label="Font specimen text"
-          onChange={(event) => setSpecimen(event.target.value)}
-        />
-        <label>
-          <span>{size}px</span>
-          <input
-            type="range"
-            min="24"
-            max="144"
-            value={size}
-            aria-label="Font preview size"
-            onChange={(event) => setSize(Number(event.target.value))}
-          />
-        </label>
+      <ViewerHud.Root>
+        <ViewerHud.Cluster anchor="top-left">
+          <ViewerHud.Pill className={styles.query}>
+            <Input.Root size="sm" variant="secondary" className={styles.field}>
+              <Input.Field
+                value={specimen}
+                aria-label="Font specimen text"
+                onChange={(event) => setSpecimen(event.target.value)}
+              />
+            </Input.Root>
+          </ViewerHud.Pill>
+        </ViewerHud.Cluster>
+        <ViewerHud.Cluster anchor="top-right">
+          <ViewerHud.Pill className={styles.size} aria-label="Preview size">
+            <ViewerHud.Scale>{size}px</ViewerHud.Scale>
+            <Slider.Root
+              min={24}
+              max={144}
+              step={1}
+              value={size}
+              onValueChange={(next) => {
+                const value = Array.isArray(next) ? (next[0] ?? 68) : next;
+                setSize(value);
+              }}
+            >
+              <Slider.Control>
+                <Slider.Track>
+                  <Slider.Indicator />
+                  <Slider.Thumb aria-label="Font preview size" />
+                </Slider.Track>
+              </Slider.Control>
+            </Slider.Root>
+          </ViewerHud.Pill>
+        </ViewerHud.Cluster>
+      </ViewerHud.Root>
+      <div className={styles.scroll} {...scrollFade}>
+        <div className={styles.specimen}>{specimen || DEFAULT_SPECIMEN}</div>
+        <pre className={styles.glyphs}>{GLYPHS}</pre>
+        <FileBar {...props} />
       </div>
-      <div className={styles.specimen}>{specimen || DEFAULT_SPECIMEN}</div>
-      <pre className={styles.glyphs}>{GLYPHS}</pre>
-      <FileBar {...props} />
     </div>
   );
 }
@@ -366,7 +412,7 @@ function NativePreviewViewer(props: ViewerProps & { url: string }) {
     <div className={styles.previewRoot}>
       <div className={styles.previewStage} data-loaded={loaded || undefined}>
         {!loaded ? (
-          <div className={styles.previewStatus}>Rendering preview…</div>
+          <div className={styles.previewStatus}>Rendering preview</div>
         ) : null}
         <img
           className={styles.generatedPreview}

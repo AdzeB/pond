@@ -21,6 +21,4 @@ The production build reports existing route-test and mixed static/dynamic import
 
 ## Prototype source
 
-Local archive branch: `codex/prototype-downloads-explorations-2026-08-31`.
-
-The five alternatives and source research remain under `apps/desktop/prototypes/downloads` in that archive. The production page was implemented against the real queue and shared UI components rather than importing the prototype.
+The five alternatives lived on archive branch `codex/prototype-downloads-explorations-2026-08-31`. The production page was implemented against the real queue and shared UI components rather than importing the explorations.

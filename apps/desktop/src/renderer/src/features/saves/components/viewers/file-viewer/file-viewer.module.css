@@ -230,35 +230,29 @@
 .fontRoot {
   position: relative;
   flex-direction: column;
-  overflow: auto;
+  overflow: hidden;
   color: var(--ds-gray-12);
   background: var(--ds-gray-1);
 }
 
-.fontToolbar {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  padding: 12px;
-  border-bottom: 1px solid var(--ds-gray-4);
-}
-
-.fontToolbar > input {
+.scroll {
   flex: 1;
-  min-width: 8rem;
-  padding: 7px 9px;
-  color: inherit;
-  background: var(--ds-gray-2);
-  border: 1px solid var(--ds-gray-5);
-  border-radius: var(--ds-radius-sm);
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
 }
 
-.fontToolbar label {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  font-size: 12px;
-  color: var(--ds-gray-10);
+.query {
+  padding: 2px 4px;
+}
+
+.field {
+  width: min(24rem, 50vw);
+}
+
+.size {
+  gap: 4px;
+  padding: 2px 8px 2px 2px;
 }
 
 .specimen,

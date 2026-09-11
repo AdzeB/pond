@@ -1,5 +1,7 @@
-import { IconDotsFill12 } from "@pond/icons/fill/12";
-import { IconChevronDownOutline12 } from "@pond/icons/outline/12";
+import {
+  IconChevronDownOutline12,
+  IconChevronRightOutline12,
+} from "@pond/icons/outline/12";
 import {
   IconAlbum2Outline18,
   IconArrowDiagonalInOutline18,
@@ -10,22 +12,16 @@ import {
   IconDownloadOutline18,
   IconEnvelopeOutline18,
   IconFolderBanOutline18,
-  IconFolderOutline18,
   IconGear3Outline18,
   IconHashtagOutline18,
   IconMagnifierOutline18,
-  IconMsg2Outline18,
-  IconPencilOutline18,
+  IconMessageSparkleOutline18,
   IconPlusOutline18,
-  IconTrash2Outline18,
   IconTrashXmarkOutline18,
-  IconVersionsOutline18,
   IconWindowDownloadOutline18,
 } from "@pond/icons/outline/18";
-import type { SavedView } from "@pond/schema/db";
 import {
   Button,
-  Dialog,
   Logo,
   Menu,
   type MenuItemSpec,
@@ -33,37 +29,48 @@ import {
   Tooltip,
 } from "@pond/ui";
 import { useRouterState } from "@tanstack/react-router";
-import { type CSSProperties, useMemo } from "react";
-import { useStatusFeed } from "@/features/downloads/lib/status-feed";
-import { newFolder } from "@/features/library/components/new-menu/actions";
-import { NewMenu } from "@/features/library/components/new-menu/new-menu";
-import { commandMenu } from "@/features/library/state/command-menu";
 import {
-  folders,
-  useFolderMemberships,
-  useFolders,
-} from "@/features/library/state/folders";
+  type CSSProperties,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { z } from "zod";
+import { useStatusFeed } from "@/features/downloads/lib/status-feed";
+import {
+  buildFolderMenuItems,
+  confirmRemoveFolder,
+  copyFolderToLibrary,
+  duplicateFolder,
+  exportFolderCsv,
+  exportFolderFiles,
+  exportFolderPackage,
+  FolderContextMenu,
+  folderIdsForExport,
+} from "@/features/library/components/folder-context-menu/folder-context-menu";
+import { NewMenu } from "@/features/library/components/new-menu/new-menu";
+import { SmartFoldersSection } from "@/features/library/components/smart-folders/smart-folders";
+import { useSidebarCounts } from "@/features/library/hooks/use-sidebar-counts";
+import { commandMenu } from "@/features/library/state/command-menu";
+import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
+import { folders, useFolders } from "@/features/library/state/folders";
 import {
   type LibraryNav,
   libraryChrome,
   useLibraryNav,
 } from "@/features/library/state/library-chrome";
-import {
-  promptCreateView,
-  savedViews,
-  useHydrateSavedViews,
-  useSavedViews,
-} from "@/features/library/state/saved-views";
+import { useHydrateSavedViews } from "@/features/library/state/saved-views";
 import { selection } from "@/features/library/state/selection";
 import {
-  applySavedView,
   resetFilters,
   setIncludeSubfolders,
+  setSort,
   useIncludeSubfolders,
   useViewStore,
 } from "@/features/library/state/view-store";
-import { useSaves } from "@/features/saves/hooks/use-saves";
 import { openSettings } from "@/features/settings/lib/open-settings";
+import { usePrefs } from "@/features/settings/state/prefs";
 import { useAccounts } from "@/features/sources/hooks/use-accounts";
 import { useTags } from "@/features/tags/state/tags";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys/shortcut-keys";
@@ -71,8 +78,24 @@ import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-cont
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
-import { countSidebarSaves, formatCount } from "./counts";
+import { notify } from "@/shared/lib/toast";
+import {
+  type FolderTool,
+  FolderToolsDialog,
+} from "../folder-tools/folder-tools";
+import { formatCount } from "./counts";
+import { FolderCover } from "./folder-cover";
+import {
+  FOLDER_DRAG_TYPE,
+  type FolderDropKind,
+  folderDropKind,
+  isFolderDrag,
+  planFolderSidebarDrop,
+} from "./folder-drop";
+import { folderColorCss } from "./folder-icons";
+import { FolderNameEditor } from "./folder-name-editor";
 import styles from "./folder-sidebar.module.css";
+import { buildTrashMenuItems } from "./trash-menu";
 import { flattenFolderTree } from "./tree";
 
 const TWITTER = "https://x.com/raphaelsalaja";
@@ -152,6 +175,7 @@ function go(path: string): void {
 }
 
 function selectNav(nav: LibraryNav): void {
+  if (nav.kind !== "all") resetFilters();
   libraryChrome.setNav(nav);
   if (nav.kind === "trash") go("/trash");
   else if (nav.kind === "downloads") go("/downloads");
@@ -191,7 +215,7 @@ function WorkspaceHeader() {
           <Button
             icon
             size="sm"
-            variant="ghost"
+            variant="text"
             aria-label="Search"
             onClick={() => commandMenu.open()}
           >
@@ -202,12 +226,12 @@ function WorkspaceHeader() {
           <Button
             icon
             size="sm"
-            variant="ghost"
+            variant="text"
             aria-label="Assistant"
             aria-current={assistantPage ? "page" : undefined}
             onClick={() => go("/assistant")}
           >
-            <IconMsg2Outline18 />
+            <IconMessageSparkleOutline18 />
           </Button>
         </Tooltip>
         <NewMenu />
@@ -222,38 +246,42 @@ function Row({
   icon,
   count,
   depth = 0,
+  className,
+  draggable,
   onClick,
   onDrop,
+  onDragOver,
+  onDragLeave,
+  onDragStart,
+  onDragEnd,
 }: {
   label: string;
   active?: boolean;
   icon?: React.ReactNode;
   count?: number;
   depth?: number;
+  className?: string;
+  draggable?: boolean;
   onClick: () => void;
-  onDrop?: () => void;
+  onDrop?: React.DragEventHandler<HTMLElement>;
+  onDragOver?: React.DragEventHandler<HTMLElement>;
+  onDragLeave?: React.DragEventHandler<HTMLElement>;
+  onDragStart?: React.DragEventHandler<HTMLElement>;
+  onDragEnd?: React.DragEventHandler<HTMLElement>;
 }) {
   return (
     <Sidebar.Item
+      className={className}
       data-status={active ? "active" : undefined}
       data-depth={depth || undefined}
+      draggable={draggable}
       aria-current={active ? "page" : undefined}
       onClick={onClick}
-      onDragOver={
-        onDrop
-          ? (e) => {
-              e.preventDefault();
-            }
-          : undefined
-      }
-      onDrop={
-        onDrop
-          ? (e) => {
-              e.preventDefault();
-              onDrop();
-            }
-          : undefined
-      }
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
     >
       {icon ? <Sidebar.Icon>{icon}</Sidebar.Icon> : null}
       {label}
@@ -265,7 +293,39 @@ function Row({
 }
 
 export function FolderSidebar() {
+  const [folderTool, setFolderTool] = useState<FolderTool | null>(null);
+  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+  const [foldersOpen, setFoldersOpen] = useState(true);
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [draggingFolderId, setDraggingFolderId] = useState<string | null>(null);
+  const [folderDrop, setFolderDrop] = useState<{
+    id: string;
+    kind: FolderDropKind;
+  } | null>(null);
+  const draggingFolderIdRef = useRef<string | null>(null);
+  async function createFolder(parentId?: string) {
+    if (creatingFolder) return;
+    setCreatingFolder(true);
+    setFoldersOpen(true);
+    try {
+      const folder = await window.pond.query("folders.create", {
+        name: "Untitled",
+        parentId,
+      });
+      await folders.refresh();
+      setEditingFolderId(folder.id);
+    } catch (error) {
+      notify({
+        id: "create-folder",
+        title: "Couldn't create folder",
+        description: error instanceof Error ? error.message : "Try again.",
+      });
+    } finally {
+      setCreatingFolder(false);
+    }
+  }
   const nav = useLibraryNav();
+  const { activeViewId, sortKey, sortDir } = useViewStore();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const assistantPage = pathname === "/assistant";
   const sourcesPage = pathname === "/sources";
@@ -273,9 +333,8 @@ export function FolderSidebar() {
   const untaggedPage = pathname === "/untagged";
   const libraryPage =
     !assistantPage && !sourcesPage && !tagsPage && !untaggedPage;
+  const [folderViews] = usePrefs("folderViews");
   const folderRows = useFolders();
-  const memberships = useFolderMemberships();
-  const saves = useSaves();
   const tags = useTags();
   const { accounts } = useAccounts();
   const includeSubfolders = useIncludeSubfolders();
@@ -283,11 +342,109 @@ export function FolderSidebar() {
   const scrollFade = useScrollFade<HTMLDivElement>();
   useHydrateSavedViews();
 
-  const nested = useMemo(() => flattenFolderTree(folderRows), [folderRows]);
-  const counts = useMemo(
-    () => countSidebarSaves(saves, memberships),
-    [saves, memberships],
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+    try {
+      return new Set(
+        z
+          .array(z.string())
+          .parse(
+            JSON.parse(localStorage.getItem("pond:collapsed-folders") ?? "[]"),
+          ),
+      );
+    } catch {
+      return new Set();
+    }
+  });
+  const nested = useMemo(
+    () => flattenFolderTree(folderRows, collapsed),
+    [folderRows, collapsed],
   );
+  const parentIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const row of folderRows) {
+      if (row.parentId) ids.add(row.parentId);
+    }
+    return ids;
+  }, [folderRows]);
+  const persistCollapsed = (next: Set<string>) => {
+    try {
+      localStorage.setItem("pond:collapsed-folders", JSON.stringify([...next]));
+    } catch {}
+    return next;
+  };
+  const toggleFolder = (id: string) =>
+    setCollapsed((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return persistCollapsed(next);
+    });
+  const toggleSameLevel = (parentId: string | null, expanded: boolean) =>
+    setCollapsed((previous) => {
+      const next = new Set(previous);
+      for (const row of folderRows) {
+        if (row.parentId !== parentId || !parentIds.has(row.id)) continue;
+        if (expanded) next.add(row.id);
+        else next.delete(row.id);
+      }
+      return persistCollapsed(next);
+    });
+  const toggleAllFolders = () =>
+    setCollapsed((previous) => {
+      const next = new Set(previous);
+      const expand = [...parentIds].some((id) => previous.has(id));
+      for (const id of parentIds) {
+        if (expand) next.delete(id);
+        else next.add(id);
+      }
+      return persistCollapsed(next);
+    });
+  const revealFolder = (id: string) =>
+    setCollapsed((previous) => {
+      if (!previous.has(id)) return previous;
+      const next = new Set(previous);
+      next.delete(id);
+      return persistCollapsed(next);
+    });
+  useEffect(() => {
+    if (folderDrop?.kind !== "into") return;
+    const id = folderDrop.id;
+    const timer = window.setTimeout(() => {
+      setCollapsed((previous) => {
+        if (!previous.has(id)) return previous;
+        const next = new Set(previous);
+        next.delete(id);
+        try {
+          localStorage.setItem(
+            "pond:collapsed-folders",
+            JSON.stringify([...next]),
+          );
+        } catch {}
+        return next;
+      });
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [folderDrop]);
+  const moveDraggedFolder = async (
+    draggedId: string,
+    folder: (typeof folderRows)[number],
+    kind: FolderDropKind,
+  ) => {
+    const move = planFolderSidebarDrop(draggedId, folder, kind, folderRows);
+    if (!move) return;
+    try {
+      await window.pond.query("folders.move", move);
+      await folders.refresh();
+      if (move.parentId) revealFolder(move.parentId);
+    } catch (error) {
+      notify({
+        id: "move-folder",
+        title: "Couldn't move folder",
+        description: error instanceof Error ? error.message : "Try again.",
+      });
+    }
+  };
+  const counts = useSidebarCounts();
   const downloadsCount = inProgress.saving.length + inProgress.running.length;
 
   return (
@@ -296,6 +453,7 @@ export function FolderSidebar() {
       width="full"
       role="navigation"
       aria-label="Library"
+      data-folder-drag={draggingFolderId || undefined}
     >
       <WorkspaceHeader />
       <Sidebar.Scroll className={styles.scroll} {...scrollFade}>
@@ -305,7 +463,7 @@ export function FolderSidebar() {
             label="All"
             icon={<IconAlbum2Outline18 />}
             count={counts.library}
-            active={libraryPage && nav.kind === "all"}
+            active={libraryPage && nav.kind === "all" && !activeViewId}
             onClick={() => {
               resetFilters();
               selectNav({ kind: "all" });
@@ -339,13 +497,15 @@ export function FolderSidebar() {
             active={tagsPage}
             onClick={() => go("/tags")}
           />
-          <Row
-            label="Trash"
-            icon={<IconTrashXmarkOutline18 />}
-            count={counts.trash}
-            active={libraryPage && nav.kind === "trash"}
-            onClick={() => selectNav({ kind: "trash" })}
-          />
+          <SpecContextMenu buildItems={buildTrashMenuItems}>
+            <Row
+              label="Trash"
+              icon={<IconTrashXmarkOutline18 />}
+              count={counts.trash}
+              active={libraryPage && nav.kind === "trash"}
+              onClick={() => selectNav({ kind: "trash" })}
+            />
+          </SpecContextMenu>
         </Sidebar.Group>
         <Sidebar.Group>
           <Sidebar.GroupLabel>Harvesting</Sidebar.GroupLabel>
@@ -364,9 +524,15 @@ export function FolderSidebar() {
             onClick={() => selectNav({ kind: "sources" })}
           />
         </Sidebar.Group>
-        <SavedViewsSection />
+        <SmartFoldersSection
+          active={pathname === "/" && nav.kind === "all"}
+          onSelect={() => selectNav({ kind: "all" })}
+        />
 
-        <Sidebar.CollapsibleGroup>
+        <Sidebar.CollapsibleGroup
+          open={foldersOpen}
+          onOpenChange={setFoldersOpen}
+        >
           <Sidebar.GroupHeader>
             <Sidebar.CollapsibleGroupLabel>
               Folders
@@ -376,222 +542,314 @@ export function FolderSidebar() {
               size="sm"
               variant="ghost"
               aria-label="New Folder"
-              onClick={() => newFolder()}
+              disabled={creatingFolder}
+              onClick={() => void createFolder()}
             >
               <IconPlusOutline18 />
             </Button>
           </Sidebar.GroupHeader>
           <Sidebar.CollapsibleGroupContent>
-            {nested.map(({ folder, depth, guides }) => (
-              <SpecContextMenu
-                key={folder.id}
-                buildItems={() => [
-                  {
-                    label: "New Subfolder",
-                    onClick: () => newFolder(folder.id),
-                  },
-                  {
-                    label: includeSubfolders
-                      ? "Hide Subfolder Contents"
-                      : "Show Subfolder Contents",
-                    onClick: () => setIncludeSubfolders(!includeSubfolders),
-                  },
-                  {
-                    label: "Rename",
-                    onClick: () =>
-                      Dialog.prompt({
-                        title: "Rename Folder",
-                        confirmLabel: "Save",
-                        initialValue: folder.name,
-                        onConfirm: async (name) => {
-                          await window.pond.query("folders.rename", {
-                            id: folder.id,
-                            name,
-                          });
-                          await folders.refresh();
-                        },
-                      }),
-                  },
-                  { type: "separator" },
-                  {
-                    label: "Delete",
-                    onClick: () =>
-                      Dialog.confirm({
-                        title: "Delete Folder",
-                        description:
-                          "Saves stay in the library. They move to Uncategorized.",
-                        confirmLabel: "Delete",
-                        confirmVariant: "destructive",
-                        onConfirm: async () => {
-                          await window.pond.query("folders.delete", {
-                            id: folder.id,
-                          });
-                          await folders.refresh();
-                          if (nav.kind === "folder" && nav.id === folder.id) {
-                            selectNav({ kind: "all" });
-                          }
-                        },
-                      }),
-                  },
-                ]}
-              >
-                <div
-                  className={styles.trigger}
-                  style={
-                    // SAFETY: React forwards CSS custom properties to the element style.
-                    { "--folder-depth": depth } as CSSProperties
+            {nested.map(({ folder, depth }) => {
+              const viewing =
+                libraryPage && nav.kind === "folder" && nav.id === folder.id;
+              const presentation = folderViews[folder.id];
+              const includeThisFolder = viewing
+                ? includeSubfolders
+                : (presentation?.includeSubfolders ?? true);
+              const folderSortKey = viewing
+                ? sortKey
+                : (presentation?.sortKey ?? "savedAt");
+              const exportIds = folderIdsForExport(
+                folder.id,
+                folderRows,
+                includeThisFolder,
+              );
+              const sameLevelHasChildren = folderRows.some(
+                (row) =>
+                  row.parentId === folder.parentId && parentIds.has(row.id),
+              );
+              const colorCss = folderColorCss(folder.color);
+              return (
+                <FolderContextMenu
+                  key={folder.id}
+                  buildItems={() =>
+                    buildFolderMenuItems({
+                      hasChildren: parentIds.has(folder.id),
+                      sameLevelHasChildren,
+                      includeSubfolders: includeThisFolder,
+                      color: folder.color,
+                      sortKey: folderSortKey,
+                      creating: creatingFolder,
+                      onNewFolder: () =>
+                        void createFolder(folder.parentId ?? undefined),
+                      onNewSubfolder: () => void createFolder(folder.id),
+                      onMove: () =>
+                        setFolderTool({
+                          kind: "move",
+                          id: folder.id,
+                          name: folder.name,
+                        }),
+                      onRename: () => setEditingFolderId(folder.id),
+                      onAutoTag: () =>
+                        setFolderTool({
+                          kind: "tags",
+                          id: folder.id,
+                          name: folder.name,
+                        }),
+                      onSort: (key) => {
+                        if (viewing) setSort({ key, dir: sortDir });
+                        else
+                          void saveFolderPresentation(folder.id, {
+                            sortKey: key,
+                          }).catch(() =>
+                            notify({
+                              id: "folder-sort",
+                              title: "Couldn't save folder sort",
+                            }),
+                          );
+                      },
+                      onToggleFolder: () => toggleFolder(folder.id),
+                      onToggleSameLevel: () =>
+                        toggleSameLevel(
+                          folder.parentId,
+                          !collapsed.has(folder.id),
+                        ),
+                      onToggleAll: () => toggleAllFolders(),
+                      onDuplicate: () => {
+                        void duplicateFolder(folder)
+                          .then(async (id) => {
+                            const icon = folderViews[folder.id]?.icon;
+                            if (icon)
+                              await saveFolderPresentation(id, { icon });
+                            await folders.refresh();
+                            setEditingFolderId(id);
+                          })
+                          .catch((error) =>
+                            notify({
+                              id: "folder-duplicate",
+                              title: "Couldn't duplicate folder",
+                              description:
+                                error instanceof Error
+                                  ? error.message
+                                  : "Try again.",
+                            }),
+                          );
+                      },
+                      onExportFiles: () => void exportFolderFiles(exportIds),
+                      onExportCsv: () => void exportFolderCsv(exportIds),
+                      onExportPackage: () =>
+                        void exportFolderPackage(exportIds),
+                      onCopyToLibrary: () =>
+                        void copyFolderToLibrary(exportIds),
+                      onToggleSubfolders: (next) => {
+                        if (viewing) setIncludeSubfolders(next);
+                        else
+                          void saveFolderPresentation(folder.id, {
+                            includeSubfolders: next,
+                          }).catch(() =>
+                            notify({
+                              id: "folder-subfolders",
+                              title: "Couldn't save subfolder setting",
+                            }),
+                          );
+                      },
+                      onChangeIcon: (id) => {
+                        void saveFolderPresentation(folder.id, {
+                          icon: id,
+                        }).catch(() =>
+                          notify({
+                            id: "folder-icon",
+                            title: "Couldn't change folder icon",
+                          }),
+                        );
+                      },
+                      onChangeColor: (color) => {
+                        void window.pond
+                          .query("folders.setColor", { id: folder.id, color })
+                          .then(() => folders.refresh())
+                          .catch(() =>
+                            notify({
+                              id: "folder-color",
+                              title: "Couldn't change folder color",
+                            }),
+                          );
+                      },
+                      onRemove: () =>
+                        confirmRemoveFolder({
+                          id: folder.id,
+                          onRemoved: async () => {
+                            await folders.refresh();
+                            if (nav.kind === "folder" && nav.id === folder.id) {
+                              selectNav({ kind: "all" });
+                            }
+                          },
+                        }),
+                    })
                   }
                 >
-                  {guides.map(({ parentId, continues }, level) =>
-                    continues || level === depth - 1 ? (
-                      <span
-                        key={parentId}
-                        className={styles.guide}
-                        style={
-                          // SAFETY: React forwards CSS custom properties to the element style.
-                          { "--guide-depth": level } as CSSProperties
-                        }
-                        data-branch={level === depth - 1 || undefined}
-                        data-continues={continues || undefined}
-                        aria-hidden="true"
-                      />
-                    ) : null,
-                  )}
-                  <Row
-                    label={folder.name}
-                    icon={<IconFolderOutline18 />}
-                    depth={depth}
-                    count={counts.folders[folder.id] ?? 0}
-                    active={
-                      libraryPage &&
-                      nav.kind === "folder" &&
-                      nav.id === folder.id
+                  <div
+                    className={styles.trigger}
+                    data-drop={
+                      folderDrop?.id === folder.id ? folderDrop.kind : undefined
                     }
-                    onClick={() => selectNav({ kind: "folder", id: folder.id })}
-                    onDrop={() => {
-                      const ids = [...selection.snapshot()];
-                      if (ids.length === 0) return;
-                      void window.pond
-                        .query("folders.addSaves", {
-                          folderId: folder.id,
-                          saveIds: ids,
-                        })
-                        .then(() => folders.refresh());
-                    }}
-                  />
-                </div>
-              </SpecContextMenu>
-            ))}
+                    data-dragging={draggingFolderId === folder.id || undefined}
+                    style={
+                      // SAFETY: React forwards CSS custom properties to the element style.
+                      { "--folder-depth": depth } as CSSProperties
+                    }
+                  >
+                    {parentIds.has(folder.id) ? (
+                      <Button
+                        icon
+                        size="xs"
+                        variant="text"
+                        className={styles.disclosure}
+                        aria-label={`${collapsed.has(folder.id) ? "Expand" : "Collapse"} ${folder.name}`}
+                        aria-expanded={!collapsed.has(folder.id)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          toggleFolder(folder.id);
+                        }}
+                      >
+                        <IconChevronRightOutline12 strokeWidth={2} />
+                      </Button>
+                    ) : null}
+                    {editingFolderId === folder.id ? (
+                      <FolderNameEditor
+                        name={folder.name}
+                        onSave={async (name) => {
+                          const result = await window.pond.query(
+                            "folders.rename",
+                            { id: folder.id, name },
+                          );
+                          if (!result.ok)
+                            throw new Error("Couldn't rename folder");
+                          await folders.refresh();
+                        }}
+                        onFinish={() =>
+                          setEditingFolderId((id) =>
+                            id === folder.id ? null : id,
+                          )
+                        }
+                      />
+                    ) : (
+                      <Row
+                        label={folder.name}
+                        className={styles.row}
+                        icon={
+                          <span
+                            style={colorCss ? { color: colorCss } : undefined}
+                          >
+                            <FolderCover
+                              icon={folderViews[folder.id]?.icon}
+                              coverSaveId={folderViews[folder.id]?.coverSaveId}
+                            />
+                          </span>
+                        }
+                        depth={depth}
+                        count={counts.folders[folder.id] ?? 0}
+                        active={
+                          libraryPage &&
+                          nav.kind === "folder" &&
+                          nav.id === folder.id
+                        }
+                        draggable
+                        onClick={() =>
+                          selectNav({ kind: "folder", id: folder.id })
+                        }
+                        onDragStart={(event) => {
+                          event.dataTransfer.setData(
+                            FOLDER_DRAG_TYPE,
+                            folder.id,
+                          );
+                          event.dataTransfer.effectAllowed = "move";
+                          draggingFolderIdRef.current = folder.id;
+                          setDraggingFolderId(folder.id);
+                        }}
+                        onDragEnd={() => {
+                          draggingFolderIdRef.current = null;
+                          setDraggingFolderId(null);
+                          setFolderDrop(null);
+                        }}
+                        onDragOver={(event) => {
+                          if (isFolderDrag(event.dataTransfer.types)) {
+                            event.preventDefault();
+                            event.dataTransfer.dropEffect = "move";
+                            const draggedId = draggingFolderIdRef.current;
+                            if (!draggedId) return;
+                            const rect =
+                              event.currentTarget.getBoundingClientRect();
+                            const kind = folderDropKind(
+                              event.clientY - rect.top,
+                              rect.height,
+                            );
+                            const allowed = planFolderSidebarDrop(
+                              draggedId,
+                              folder,
+                              kind,
+                              folderRows,
+                            );
+                            setFolderDrop(
+                              allowed ? { id: folder.id, kind } : null,
+                            );
+                            return;
+                          }
+                          if (selection.size() > 0) event.preventDefault();
+                        }}
+                        onDragLeave={(event) => {
+                          const next = event.relatedTarget;
+                          if (
+                            next instanceof Node &&
+                            event.currentTarget.contains(next)
+                          ) {
+                            return;
+                          }
+                          setFolderDrop((current) =>
+                            current?.id === folder.id ? null : current,
+                          );
+                        }}
+                        onDrop={(event) => {
+                          event.preventDefault();
+                          const dragged =
+                            event.dataTransfer.getData(FOLDER_DRAG_TYPE);
+                          draggingFolderIdRef.current = null;
+                          setDraggingFolderId(null);
+                          setFolderDrop(null);
+                          if (dragged) {
+                            const rect =
+                              event.currentTarget.getBoundingClientRect();
+                            const kind = folderDropKind(
+                              event.clientY - rect.top,
+                              rect.height,
+                            );
+                            void moveDraggedFolder(dragged, folder, kind);
+                            return;
+                          }
+                          const ids = [...selection.snapshot()];
+                          if (ids.length === 0) return;
+                          void window.pond
+                            .query("folders.addSaves", {
+                              folderId: folder.id,
+                              saveIds: ids,
+                            })
+                            .then(() => folders.refresh());
+                        }}
+                      />
+                    )}
+                  </div>
+                </FolderContextMenu>
+              );
+            })}
           </Sidebar.CollapsibleGroupContent>
         </Sidebar.CollapsibleGroup>
       </Sidebar.Scroll>
-    </Sidebar.Root>
-  );
-}
-
-function viewMenuItems(view: SavedView): MenuItemSpec[] {
-  return [
-    {
-      label: "Rename",
-      icon: <IconPencilOutline18 />,
-      onClick: () =>
-        Dialog.prompt({
-          title: "Rename View",
-          confirmLabel: "Save",
-          initialValue: view.name,
-          onConfirm: async (name) => {
-            await window.pond.query("savedViews.rename", {
-              id: view.id,
-              name,
-            });
-            await savedViews.refresh();
-          },
-        }),
-    },
-    {
-      label: "Delete",
-      icon: <IconTrash2Outline18 />,
-      onClick: () =>
-        Dialog.confirm({
-          title: "Delete View",
-          description: "The view is removed. Your Saves stay.",
-          confirmLabel: "Delete",
-          confirmVariant: "destructive",
-          onConfirm: async () => {
-            await window.pond.query("savedViews.delete", {
-              id: view.id,
-            });
-            await savedViews.refresh();
-          },
-        }),
-    },
-  ];
-}
-
-function SavedViewRow({ view }: { view: SavedView }) {
-  const { activeViewId } = useViewStore();
-  const items = viewMenuItems(view);
-
-  return (
-    <SpecContextMenu buildItems={() => items} className={styles["view-menu"]}>
-      <div className={styles.entry}>
-        <Row
-          label={view.name}
-          icon={<IconVersionsOutline18 />}
-          active={activeViewId === view.id}
-          onClick={() => {
-            applySavedView(view);
-            selectNav({ kind: "all" });
-          }}
+      {folderTool ? (
+        <FolderToolsDialog
+          tool={folderTool}
+          key={`${folderTool.kind}:${folderTool.id}`}
+          onClose={() => setFolderTool(null)}
         />
-        <Menu.Root>
-          <Menu.Trigger
-            icon
-            size="xs"
-            variant="ghost"
-            className={styles.more}
-            aria-label="More Actions"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <IconDotsFill12 />
-          </Menu.Trigger>
-          <Menu.Portal>
-            <Menu.Positioner align="end" sideOffset={4}>
-              <Menu.Popup className={styles["view-menu"]}>
-                <Menu.Items items={items} />
-              </Menu.Popup>
-            </Menu.Positioner>
-          </Menu.Portal>
-        </Menu.Root>
-      </div>
-    </SpecContextMenu>
-  );
-}
-
-function SavedViewsSection() {
-  const views = useSavedViews();
-
-  return (
-    <Sidebar.CollapsibleGroup>
-      <Sidebar.GroupHeader>
-        <Sidebar.CollapsibleGroupLabel>
-          Saved Views
-        </Sidebar.CollapsibleGroupLabel>
-        <Button
-          icon
-          size="sm"
-          variant="ghost"
-          aria-label="Save Current View"
-          onClick={promptCreateView}
-        >
-          <IconPlusOutline18 />
-        </Button>
-      </Sidebar.GroupHeader>
-      <Sidebar.CollapsibleGroupContent>
-        {views.map((view) => (
-          <SavedViewRow key={view.id} view={view} />
-        ))}
-      </Sidebar.CollapsibleGroupContent>
-    </Sidebar.CollapsibleGroup>
+      ) : null}
+    </Sidebar.Root>
   );
 }

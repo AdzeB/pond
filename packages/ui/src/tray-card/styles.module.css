@@ -56,7 +56,6 @@
   padding: 0;
   color: var(--ds-gray-9);
   cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
   background: var(--ds-gray-2);
   border: 0;
   border-radius: var(--ds-radius-full);
@@ -68,11 +67,6 @@
   &:active {
     color: var(--ds-gray-12);
     background: var(--ds-gray-3);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--ds-gray-6);
-    outline-offset: 0;
   }
 }
 

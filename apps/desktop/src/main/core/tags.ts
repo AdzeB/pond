@@ -1,6 +1,7 @@
 import {
   type NewTag,
   saves as savesTable,
+  type Tag,
   tags as tagsTable,
 } from "@pond/schema/db";
 import { labelKey, normalizeLabelName } from "@pond/schema/label-name";
@@ -273,53 +274,52 @@ export async function setSaveTags(
   const row = rows[0];
   if (!row) return { ok: false };
   const normalized = normalizeTagList(next);
-  await executeTransaction({
-    kind: "update",
-    model: "save",
-    id: saveId,
-    patch: { tags: normalized },
-    before: { tags: row.tags },
-    meta: { actor: "user", actorReason: "save-tags-set" },
-  });
-  for (const name of normalized) {
-    const existing = await tagByLowerName(db, name.toLowerCase());
-    if (existing) continue;
-    const id = ulid();
-    try {
-      await executeTransaction({
-        kind: "create",
-        model: "tag",
-        id,
-        data: { id, name, usageCount: 0 },
-        meta: { actor: "system", actorReason: "tag-autocreate" },
-      });
-    } catch {}
-  }
-  if (normalized.length > 0) {
-    await bumpLastUsedAt(normalized).catch(() => {});
-  }
+  const registry = await prepareTagRegistryUpdates(normalized);
+  await executeBatch([
+    ...registry,
+    {
+      kind: "update",
+      model: "save",
+      id: saveId,
+      patch: { tags: normalized },
+      before: { tags: row.tags },
+      meta: { actor: "user", actorReason: "save-tags-set" },
+    },
+  ]);
   return { ok: true };
 }
 
-async function bumpLastUsedAt(names: string[]): Promise<void> {
-  if (names.length === 0) return;
-  const db = await getDb();
-  const now = new Date();
-  for (const raw of names) {
-    const key = labelKey(raw);
-    if (!key) continue;
-    const row = await tagByLowerName(db, key);
-    if (!row) continue;
-    await executeTransaction(
-      {
+export function planTagRegistryUpdates(
+  names: string[],
+  existing: readonly Pick<Tag, "id" | "name" | "lastUsedAt">[],
+  now = new Date(),
+): Transaction[] {
+  const byName = new Map(existing.map((tag) => [labelKey(tag.name), tag]));
+  return normalizeTagList(names).map((name): Transaction => {
+    const row = byName.get(labelKey(name));
+    if (row)
+      return {
         kind: "update",
         model: "tag",
         id: row.id,
         patch: { lastUsedAt: now },
         before: { lastUsedAt: row.lastUsedAt },
         meta: { actor: "system", actorReason: "tag-bump-last-used" },
-      },
-      { silent: true },
-    );
-  }
+      };
+    const id = ulid();
+    return {
+      kind: "create",
+      model: "tag",
+      id,
+      data: { id, name, usageCount: 0, lastUsedAt: now },
+      meta: { actor: "system", actorReason: "tag-autocreate" },
+    };
+  });
+}
+
+export async function prepareTagRegistryUpdates(
+  names: string[],
+): Promise<Transaction[]> {
+  if (names.length === 0) return [];
+  return planTagRegistryUpdates(names, await listTags());
 }

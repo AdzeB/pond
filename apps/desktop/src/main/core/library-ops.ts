@@ -11,7 +11,7 @@ import {
 import { join, relative } from "node:path";
 import { saves, settings as settingsTable } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
-import { eq, isNotNull } from "drizzle-orm";
+import { eq, isNotNull, isNull } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb, getGlobalDb } from "../db";
 import { readItemMetadata } from "../lib/library";
@@ -22,6 +22,7 @@ import {
 } from "../lib/library-pointer";
 import { libraryRoot, resolvePaths, trashRoot } from "../paths";
 import { executeBatch } from "./executor";
+import { verifyLibraryBackup } from "./library-backup";
 import { recordForUndo } from "./undo";
 
 interface IntegrityReport {
@@ -34,9 +35,9 @@ interface IntegrityReport {
 
 export async function verifyLibraryIntegrity(): Promise<IntegrityReport> {
   const db = await getDb();
-  const indexed = (await db.select({ id: saves.id }).from(saves)).map(
-    (r) => r.id,
-  );
+  const indexed = (
+    await db.select({ id: saves.id }).from(saves).where(isNull(saves.deletedAt))
+  ).map((r) => r.id);
   const indexedSet = new Set(indexed);
 
   const paths = resolvePaths();
@@ -63,6 +64,15 @@ export async function verifyLibraryIntegrity(): Promise<IntegrityReport> {
   }
 
   const missing = indexed.filter((id) => !onDiskSet.has(id));
+
+  try {
+    await verifyLibraryBackup(libraryRoot());
+  } catch (error) {
+    errors.library =
+      error instanceof Error
+        ? error.message
+        : "Library files could not be verified.";
+  }
 
   return {
     orphans,

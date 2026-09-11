@@ -52,7 +52,19 @@
   flex-wrap: wrap;
   gap: 8px;
   justify-content: center;
+  padding: 12px;
   pointer-events: auto;
+}
+
+.popup {
+  --width: 1000px;
+  height: min(86vh, 900px);
+}
+.viewer {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
 }
 
 .crop {

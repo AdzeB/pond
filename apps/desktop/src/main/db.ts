@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import * as schema from "@pond/schema/db";
 import * as eventsSchema from "@pond/schema/events";
+import { colorNear } from "@pond/schema/filters/color";
 import Database from "better-sqlite3";
 import {
   type BetterSQLite3Database,
@@ -8,12 +9,16 @@ import {
 } from "drizzle-orm/better-sqlite3";
 import log from "electron-log/main.js";
 import { z } from "zod";
+import { seededOrderKey } from "../shared/order-key";
+import { recoverBatchJournal } from "./core/batch-journal";
+import { hydrateOrganizationBundle } from "./core/organization-bundle";
 import {
   backfillVecBatch,
   ensureVecDeleteTrigger,
   ensureVecTables,
   loadSqliteVec,
 } from "./core/vec-index";
+import { manualOrderRank } from "./lib/folder-order";
 import { readOrCreatePondId } from "./lib/pond-identity";
 import { backfillRawSlimBatch } from "./lib/raw-slim";
 import { resolvePaths } from "./paths";
@@ -77,7 +82,22 @@ async function openPondDb(): Promise<Db> {
 
   const sqlite = openSqlite(paths.indexDb);
   const vectorEnabled = initializePondSchema(sqlite);
-  cachedPond = wrap(sqlite);
+  const opened = wrap(sqlite);
+  try {
+    await recoverBatchJournal(
+      paths.libraryRoot,
+      (batchId) =>
+        sqlite
+          .prepare("SELECT 1 FROM mutation_commits WHERE batch_id = ?")
+          .get(batchId) != null,
+    );
+    sqlite.exec("DELETE FROM mutation_commits");
+    hydrateOrganizationBundle(opened, paths.libraryRoot);
+  } catch (error) {
+    sqlite.close();
+    throw error;
+  }
+  cachedPond = opened;
 
   ensureLibraryMetadata();
 
@@ -90,9 +110,38 @@ export function initializePondSchema(
   sqlite: Database.Database,
   loadVectorExtension = loadSqliteVec,
 ): boolean {
+  sqlite.function(
+    "pond_color_near",
+    { deterministic: true },
+    (palette, hex, tolerance) => {
+      const color = z.string().safeParse(hex);
+      const distance = z.number().safeParse(tolerance);
+      const encoded = z.string().safeParse(palette);
+      if (!color.success || !distance.success || !encoded.success) return 0;
+      try {
+        const colors = z.array(z.string()).parse(JSON.parse(encoded.data));
+        return colorNear(color.data, colors, distance.data) ? 1 : 0;
+      } catch {
+        return 0;
+      }
+    },
+  );
+  sqlite.function("pond_order_key", { deterministic: true }, (id, seed) =>
+    z.string().safeParse(id).success && z.string().safeParse(seed).success
+      ? seededOrderKey(z.string().parse(id), z.string().parse(seed))
+      : 0,
+  );
+  sqlite.function("pond_manual_rank", { deterministic: true }, (key, id) =>
+    z.string().safeParse(key).success && z.string().safeParse(id).success
+      ? manualOrderRank(z.string().parse(key), z.string().parse(id))
+      : null,
+  );
   const vectorEnabled = loadVectorExtension(sqlite);
   if (vectorEnabled) ensureVecTables(sqlite);
   migratePond(sqlite);
+  sqlite.exec(
+    "CREATE TABLE IF NOT EXISTS mutation_commits (batch_id TEXT PRIMARY KEY)",
+  );
   if (vectorEnabled) ensureVecDeleteTrigger(sqlite);
   return vectorEnabled;
 }
@@ -320,6 +369,8 @@ function migratePond(sqlite: Database.Database): void {
 				CREATE TABLE IF NOT EXISTS saved_views (
 					id TEXT PRIMARY KEY,
 					name TEXT NOT NULL,
+					kind TEXT NOT NULL DEFAULT 'saved_view',
+					parent_id TEXT,
 					question TEXT,
 					query TEXT NOT NULL DEFAULT '{"kind":"and","clauses":[]}',
 					sort_key TEXT NOT NULL DEFAULT 'savedAt',
@@ -375,6 +426,13 @@ function migratePond(sqlite: Database.Database): void {
 			`);
 
   addColumnIfMissing(sqlite, "saved_views", "question", "TEXT");
+  addColumnIfMissing(
+    sqlite,
+    "saved_views",
+    "kind",
+    "TEXT NOT NULL DEFAULT 'saved_view'",
+  );
+  addColumnIfMissing(sqlite, "saved_views", "parent_id", "TEXT");
   addColumnIfMissing(sqlite, "agent_messages", "metadata", "TEXT");
   addColumnIfMissing(sqlite, "agent_chats", "canonical_transcript", "TEXT");
   addColumnIfMissing(sqlite, "tags", "archived", "INTEGER NOT NULL DEFAULT 0");
@@ -437,6 +495,7 @@ const SAVES_FTS_COLUMNS = [
   "transcript",
   "notes",
   "url",
+  "annotations",
 ] as const;
 
 function ensureSavesFts(sqlite: Database.Database): void {
@@ -467,15 +526,17 @@ function ensureSavesFts(sqlite: Database.Database): void {
 					transcript,
 					notes,
 					url,
+					annotations,
 					tokenize = 'porter unicode61'
 				);
 
 				CREATE TRIGGER IF NOT EXISTS saves_ai AFTER INSERT ON saves BEGIN
-					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript, notes, url)
+					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript, notes, url, annotations)
 					VALUES (
 						new.id, new.title, new.description, new.author,
 						COALESCE(replace(replace(replace(new.tags, '[', ''), ']', ''), '"', ''), ''),
-						new.caption, new.ocr_text, new.transcript, new.notes, new.url
+						new.caption, new.ocr_text, new.transcript, new.notes, new.url,
+                        COALESCE((SELECT group_concat(json_extract(value, '$.text'), ' ') FROM json_each(new.comments)), '') || ' ' || COALESCE((SELECT group_concat(json_extract(value, '$.text'), ' ') FROM json_each(new.video_notes)), '')
 					);
 				END;
 
@@ -484,14 +545,15 @@ function ensureSavesFts(sqlite: Database.Database): void {
 				END;
 
 				CREATE TRIGGER IF NOT EXISTS saves_au
-				AFTER UPDATE OF title, description, author, tags, caption, ocr_text, transcript, notes, url
+				AFTER UPDATE OF title, description, author, tags, caption, ocr_text, transcript, notes, url, comments, video_notes
 				ON saves BEGIN
 					DELETE FROM saves_fts WHERE id = old.id;
-					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript, notes, url)
+					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript, notes, url, annotations)
 					VALUES (
 						new.id, new.title, new.description, new.author,
 						COALESCE(replace(replace(replace(new.tags, '[', ''), ']', ''), '"', ''), ''),
-						new.caption, new.ocr_text, new.transcript, new.notes, new.url
+						new.caption, new.ocr_text, new.transcript, new.notes, new.url,
+                        COALESCE((SELECT group_concat(json_extract(value, '$.text'), ' ') FROM json_each(new.comments)), '') || ' ' || COALESCE((SELECT group_concat(json_extract(value, '$.text'), ' ') FROM json_each(new.video_notes)), '')
 					);
 				END;
 			`);
@@ -501,11 +563,12 @@ function ensureSavesFts(sqlite: Database.Database): void {
   );
   if (count.n === 0) {
     sqlite.exec(`
-					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript, notes, url)
+					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript, notes, url, annotations)
 					SELECT
 						id, title, description, author,
 						COALESCE(replace(replace(replace(tags, '[', ''), ']', ''), '"', ''), ''),
-						caption, ocr_text, transcript, notes, url
+						caption, ocr_text, transcript, notes, url,
+                        COALESCE((SELECT group_concat(json_extract(value, '$.text'), ' ') FROM json_each(saves.comments)), '') || ' ' || COALESCE((SELECT group_concat(json_extract(value, '$.text'), ' ') FROM json_each(saves.video_notes)), '')
 					FROM saves;
 				`);
   }

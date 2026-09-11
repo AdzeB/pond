@@ -11,6 +11,7 @@ export interface SettingsSection {
 
 export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   { id: "general", path: "general", label: "General", group: "general" },
+  { id: "viewer", path: "viewer", label: "Viewer", group: "general" },
   {
     id: "appearance",
     path: "appearance",

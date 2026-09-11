@@ -35,3 +35,15 @@ export function useViewMode(): SaveListMode {
 export function useViewFilteredCount(): number {
   return useSelector(store, (s) => s.filteredIds.length);
 }
+
+export function useSavePosition(id: string): {
+  current: number;
+  total: number;
+} {
+  const current = useSelector(store, (s) => {
+    const index = s.filteredIds.indexOf(id);
+    return index < 0 ? 0 : index + 1;
+  });
+  const total = useSelector(store, (s) => s.filteredIds.length);
+  return { current, total };
+}

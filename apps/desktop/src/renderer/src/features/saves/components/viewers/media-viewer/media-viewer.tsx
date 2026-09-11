@@ -12,7 +12,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { NavButtons } from "@/features/saves/components/viewers/media-viewer/controls/controls";
+import { ViewerChrome } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
 import {
   type MediaSlide,
   Slide,
@@ -27,9 +27,10 @@ import {
 } from "@/features/saves/lib/media/chapters-vtt";
 import { buildMediaUnits } from "@/features/saves/lib/media/units";
 import { previewUrlFor } from "@/features/saves/lib/media/url";
+import { openSave } from "@/features/saves/lib/save-nav";
 import type { Save } from "@/features/saves/types";
 import { useResolvedTheme } from "@/features/settings/hooks/use-resolved-theme";
-import { SHORTCUTS } from "@/shared/lib/shortcuts";
+import { useShortcutBindings } from "@/shared/lib/shortcuts";
 import {
   useActiveSlide,
   useCarouselNavigation,
@@ -43,12 +44,14 @@ export interface ViewerNav {
 
 interface MediaViewerProps {
   save: Save;
+  onNavigate?: (id: string) => void;
   onActiveFileIndexChange?: (fileIndex: number | null) => void;
   navRef?: RefObject<ViewerNav | null>;
 }
 
 export function MediaViewer({
   save,
+  onNavigate = openSave,
   onActiveFileIndexChange,
   navRef,
 }: MediaViewerProps) {
@@ -70,6 +73,9 @@ export function MediaViewer({
             src: u.requiresGeneratedPreview ? previewUrlFor(u.url) : u.url,
             fileIndex,
             isVideo: u.isVideo,
+            isAnimation:
+              file?.mimeType === "image/gif" ||
+              /\.gif$/i.test(file?.path ?? ""),
             posterUrl: u.posterUrl,
             width: file?.width ?? save.width ?? undefined,
             height: file?.height ?? save.height ?? undefined,
@@ -101,6 +107,7 @@ export function MediaViewer({
       (save.videoNotes ?? []).map((n) => ({
         id: n.id,
         timeSec: n.timeSec,
+        fileIndex: n.fileIndex,
       })),
     [save.videoNotes],
   );
@@ -127,7 +134,8 @@ export function MediaViewer({
       <Frame>
         <Slide
           slide={only}
-          saveId={save.id}
+          save={save}
+          onNavigate={onNavigate}
           active
           inView
           title={save.title}
@@ -144,6 +152,7 @@ export function MediaViewer({
     <Carousel
       key={save.id}
       save={save}
+      onNavigate={onNavigate}
       slides={slides}
       chapters={slideChapters}
       noteMarkers={noteMarkers}
@@ -156,23 +165,24 @@ export function MediaViewer({
 
 function Frame({
   activeIndex = 0,
-  slideNav = false,
   children,
 }: {
   activeIndex?: number;
-  slideNav?: boolean;
   children: React.ReactNode;
 }) {
+  const shortcuts = useShortcutBindings();
   const ref = useRef<HTMLDivElement>(null);
 
   const activeVideo = () => {
     const slides = ref.current?.querySelectorAll("[data-blossom-slide]");
-    const video = slides?.[activeIndex]?.querySelector("video") ?? null;
+    const video = slides?.length
+      ? slides[activeIndex]?.querySelector("video")
+      : ref.current?.querySelector("video");
     return video?.videoWidth ? video : null;
   };
 
   useHotkey(
-    SHORTCUTS["viewer.copy-frame"].keys!,
+    shortcuts["viewer.copy-frame"].keys!,
     (event) => {
       const video = activeVideo();
       if (!video) return;
@@ -182,7 +192,7 @@ function Frame({
     { preventDefault: false },
   );
   useHotkey(
-    SHORTCUTS["viewer.save-frame"].keys!,
+    shortcuts["viewer.save-frame"].keys!,
     (event) => {
       const video = activeVideo();
       if (!video) return;
@@ -192,7 +202,7 @@ function Frame({
     { preventDefault: false },
   );
   useHotkey(
-    SHORTCUTS["viewer.mute"].keys!,
+    shortcuts["viewer.mute"].keys!,
     (event) => {
       const video = activeVideo();
       if (!video) return;
@@ -202,11 +212,10 @@ function Frame({
     { preventDefault: false, ignoreInputs: true },
   );
   useHotkey(
-    SHORTCUTS["viewer.fullscreen"].keys!,
+    shortcuts["viewer.fullscreen"].keys!,
     (event) => {
-      const video = activeVideo();
       const root = ref.current;
-      if (!video || !root) return;
+      if (!root) return;
       event.preventDefault();
       if (document.fullscreenElement === root) {
         void document.exitFullscreen();
@@ -218,18 +227,15 @@ function Frame({
   );
 
   return (
-    <div
-      ref={ref}
-      className={styles.carousel}
-      data-slide-nav={slideNav || undefined}
-    >
-      {children}
+    <div ref={ref} className={styles.carousel}>
+      <ViewerChrome>{children}</ViewerChrome>
     </div>
   );
 }
 
 function Carousel({
   save,
+  onNavigate,
   slides,
   chapters,
   noteMarkers,
@@ -238,6 +244,7 @@ function Carousel({
   navRef,
 }: {
   save: Save;
+  onNavigate: (id: string) => void;
   slides: MediaSlide[];
   chapters?: ChapterCue[];
   noteMarkers?: readonly { id: string; timeSec: number }[];
@@ -245,6 +252,7 @@ function Carousel({
   onActiveFileIndexChange?: (fileIndex: number | null) => void;
   navRef?: RefObject<ViewerNav | null>;
 }) {
+  const shortcuts = useShortcutBindings();
   const handleRef = useRef<BlossomCarouselHandle>(null);
   const [scroller, setScroller] = useState<HTMLElement | null>(null);
   const active = useActiveSlide(scroller, slides.length);
@@ -252,20 +260,30 @@ function Carousel({
   const { goPrev, goNext, step } = useCarouselNavigation(scroller, ratios);
 
   useHotkey(
-    SHORTCUTS["viewer.prev-slide"].keys!,
+    shortcuts["viewer.prev-slide"].keys!,
     (event) => {
       event.preventDefault();
       goPrev();
     },
-    { preventDefault: false, ignoreInputs: true, conflictBehavior: "allow" },
+    {
+      preventDefault: false,
+      ignoreInputs: true,
+      conflictBehavior: "allow",
+      enabled: !(slides[active]?.isVideo || slides[active]?.isAnimation),
+    },
   );
   useHotkey(
-    SHORTCUTS["viewer.next-slide"].keys!,
+    shortcuts["viewer.next-slide"].keys!,
     (event) => {
       event.preventDefault();
       goNext();
     },
-    { preventDefault: false, ignoreInputs: true, conflictBehavior: "allow" },
+    {
+      preventDefault: false,
+      ignoreInputs: true,
+      conflictBehavior: "allow",
+      enabled: !(slides[active]?.isVideo || slides[active]?.isAnimation),
+    },
   );
 
   useEffect(() => {
@@ -285,7 +303,7 @@ function Carousel({
   }, [navRef, step]);
 
   return (
-    <Frame activeIndex={active} slideNav>
+    <Frame activeIndex={active}>
       <BlossomCarousel
         ref={handleRef}
         className={styles.scroller}
@@ -295,7 +313,8 @@ function Carousel({
           <Slide
             key={s.src}
             slide={s}
-            saveId={save.id}
+            save={save}
+            onNavigate={onNavigate}
             active={i === active}
             inView={Math.abs(i - active) <= 1}
             title={save.title}
@@ -308,7 +327,6 @@ function Carousel({
           />
         ))}
       </BlossomCarousel>
-      <NavButtons onPrev={goPrev} onNext={goNext} />
     </Frame>
   );
 }

@@ -6,6 +6,7 @@
   border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 .trigger {
+  --ds-focus-offset: -2px;
   display: flex;
   flex: 1;
   gap: 12px;
@@ -20,10 +21,6 @@
 }
 .trigger:hover {
   background: var(--ds-gray-a3);
-}
-.trigger:focus-visible {
-  outline: 2px solid var(--ds-gray-7);
-  outline-offset: -2px;
 }
 .media {
   display: flex;

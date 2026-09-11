@@ -2,53 +2,62 @@ import {
   IconFolderFill18 as LocalIcon,
   IconEarthFill18 as WebIcon,
 } from "@pond/icons/fill/18";
+import {
+  IconBrandArena,
+  IconBrandCosmos,
+  IconBrandThreads,
+  IconInstagram,
+  IconPinterest,
+  IconTikTok,
+  IconXTwitter,
+  IconYoutube,
+} from "@pond/icons/social-media";
+import type { IconComponent } from "@pond/icons/types";
 import type { Source } from "@pond/schema/db";
 import { resolveSourceId, sourceLabel } from "@pond/schema/sources";
-import type React from "react";
-import arenaLogo from "@/assets/logos/arena.png";
-import cosmosLogo from "@/assets/logos/cosmos.png";
-import instagramLogo from "@/assets/logos/instagram.png";
-import pinterestLogo from "@/assets/logos/pinterest.png";
 import redditLogo from "@/assets/logos/reddit.png";
-import threadsLogo from "@/assets/logos/threads.png";
-import tiktokLogo from "@/assets/logos/tiktok.png";
-import twitterLogo from "@/assets/logos/twitter.png";
-import youtubeLogo from "@/assets/logos/youtube.png";
-
-type GlyphIcon = React.ComponentType<{ width?: number; height?: number }>;
 
 interface SourceDef {
   source: Source;
   label: string;
   logo: string | null;
-  icon: GlyphIcon | null;
+  icon: IconComponent | null;
 }
 
 const SOURCE_LOGOS = {
-  twitter: twitterLogo,
-  pinterest: pinterestLogo,
-  arena: arenaLogo,
-  instagram: instagramLogo,
-  cosmos: cosmosLogo,
-  tiktok: tiktokLogo,
-  youtube: youtubeLogo,
+  twitter: null,
+  pinterest: null,
+  arena: null,
+  instagram: null,
+  cosmos: null,
+  tiktok: null,
+  youtube: null,
   reddit: redditLogo,
-  threads: threadsLogo,
+  threads: null,
   web: null,
   local: null,
 } satisfies Record<Source, string | null>;
 
-const GLYPH_ICONS = new Map<Source, GlyphIcon>([
-  ["web", WebIcon],
-  ["local", LocalIcon],
-]);
+const SOURCE_ICONS = {
+  twitter: IconXTwitter,
+  pinterest: IconPinterest,
+  arena: IconBrandArena,
+  instagram: IconInstagram,
+  cosmos: IconBrandCosmos,
+  tiktok: IconTikTok,
+  youtube: IconYoutube,
+  reddit: null,
+  threads: IconBrandThreads,
+  web: WebIcon,
+  local: LocalIcon,
+} satisfies Record<Source, IconComponent | null>;
 
 export function getSourceDef(source: Source): SourceDef {
   return {
     source,
     label: sourceLabel(source),
     logo: SOURCE_LOGOS[source],
-    icon: GLYPH_ICONS.get(source) ?? null,
+    icon: SOURCE_ICONS[source],
   };
 }
 
@@ -57,7 +66,7 @@ export function getSourceLogo(source: string): string | null {
   return normalized ? SOURCE_LOGOS[normalized] : null;
 }
 
-export function getSourceIcon(source: string): GlyphIcon | null {
+export function getSourceIcon(source: string): IconComponent | null {
   const normalized = resolveSourceId(source);
-  return normalized ? (GLYPH_ICONS.get(normalized) ?? null) : null;
+  return normalized ? SOURCE_ICONS[normalized] : null;
 }

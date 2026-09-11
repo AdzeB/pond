@@ -10,28 +10,29 @@ export function useTagCreation(
   operations: TagCreationOperations = tagOperations,
 ) {
   const [creating, setCreating] = useState<TagEntity | null>(null);
-  const [draft, setDraft] = useState("");
   const committed = useRef(false);
 
   function cancelCreate() {
     committed.current = true;
-    setDraft("");
     setCreating(null);
   }
 
   function startCreate(kind: TagEntity) {
     committed.current = false;
-    setDraft("");
     setCreating(kind);
   }
 
-  async function commitCreate() {
+  async function saveCreate(name: string) {
     if (!creating || committed.current) return;
-    const kind = creating;
-    const name = draft;
-    cancelCreate();
-    await operations.create(kind, name);
+    committed.current = true;
+    try {
+      await operations.create(creating, name);
+      setCreating(null);
+    } catch (error) {
+      committed.current = false;
+      throw error;
+    }
   }
 
-  return { creating, draft, setDraft, startCreate, cancelCreate, commitCreate };
+  return { creating, startCreate, cancelCreate, saveCreate };
 }

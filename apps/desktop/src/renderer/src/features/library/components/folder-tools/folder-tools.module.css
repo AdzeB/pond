@@ -1,0 +1,50 @@
+.popup {
+  width: min(520px, calc(100vw - 32px));
+  padding: 20px;
+}
+.popup form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  max-height: 280px;
+  overflow: auto;
+}
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-height: 36px;
+}
+.row span {
+  flex: 1;
+}
+.hint {
+  opacity: 0.65;
+}
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.label select,
+.names {
+  width: 100%;
+  padding: 8px;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: var(--ds-border-width) solid var(--ds-border-subtle);
+  border-radius: 8px;
+}
+.names {
+  resize: vertical;
+}
+.footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}

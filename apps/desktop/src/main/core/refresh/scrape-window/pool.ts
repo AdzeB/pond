@@ -1,7 +1,8 @@
 import { SOURCES, type Source } from "@pond/schema/db";
+import type { ReportDownloadActivity } from "@shared/download-activity";
 import { BrowserWindow, session } from "electron";
 import { resolvePreload } from "../../../lib/resolve-preload";
-import { acquire } from "../../pipeline/rate-governor";
+import { acquire, sourcePausedUntil } from "../../pipeline/rate-governor";
 import { PARTITION } from "./constants";
 
 export const GLOBAL_POOL_CAP = 3;
@@ -140,6 +141,7 @@ interface LeaseOptions {
   firstSync?: boolean;
   signal?: AbortSignal;
   partition?: string;
+  reportActivity?: ReportDownloadActivity;
 }
 
 function retargetSlot(slot: PoolSlot, partition: string): void {
@@ -183,6 +185,9 @@ export async function leaseWindow(
   opts: LeaseOptions = {},
 ): Promise<Lease> {
   const partition = opts.partition ?? PARTITION;
+  if (opts.reportActivity && sourcePausedUntil(source) > 0) {
+    opts.reportActivity({ phase: "waiting" });
+  }
   await acquire(source, { firstSync: opts.firstSync, signal: opts.signal });
   if (busyBySource[source] >= PER_SOURCE_CAP[source]) {
     return enqueueWaiter(source, partition, opts.signal);

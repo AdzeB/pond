@@ -1,5 +1,6 @@
 import type { Source } from "@pond/schema/db";
 import type { Capture } from "@pond/schema/raw";
+import type { ReportDownloadActivity } from "@shared/download-activity";
 import {
   AuthRequiredError,
   TerminalError,
@@ -12,6 +13,7 @@ interface CaptureArgs {
   source: Source;
   sourceId?: string;
   accountId?: string | null;
+  reportActivity?: ReportDownloadActivity;
 }
 
 export async function captureFromSource(args: CaptureArgs): Promise<Capture> {

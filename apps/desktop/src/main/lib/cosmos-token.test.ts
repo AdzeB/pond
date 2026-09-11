@@ -1,7 +1,8 @@
+import type { JsonObject } from "@pond/schema/json";
 import { describe, expect, it } from "vitest";
 import { cosmosIdentityFromToken } from "./cosmos-token";
 
-function jwtWith(payload: Record<string, unknown>): string {
+function jwtWith(payload: JsonObject): string {
   const header = Buffer.from(JSON.stringify({ alg: "none" })).toString(
     "base64url",
   );

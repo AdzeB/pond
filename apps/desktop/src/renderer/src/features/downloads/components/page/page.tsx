@@ -1,25 +1,23 @@
 import {
-  IconDotsOutline18,
-  IconMediaPauseOutline18,
-  IconMediaPlayOutline18,
-  IconRefreshOutline18,
-} from "@pond/icons/outline/18";
+  IconArrowRotateClockwiseFill18,
+  IconMediaPauseFill18,
+  IconMediaPlayFill18,
+} from "@pond/icons/fill/18";
+import { IconXmarkOutline18 } from "@pond/icons/outline/18";
+import { Button, Dialog, Tooltip } from "@pond/ui";
 import {
-  Button,
-  DataTable,
-  Dialog,
-  Menu,
-  type RenderRowArgs,
-  Tooltip,
-} from "@pond/ui";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import {
-  type DownloadFilters,
   type DownloadRow,
-  defaultDownloadFilters,
-  matchesDownloadFilters,
+  type HistoryCursor,
+  HistoryPageSchema,
+  historyToDownloadRow,
   PipelineStatusSchema,
   projectLiveDownloads,
   statusFeed,
@@ -29,21 +27,30 @@ import {
   DownloadsEmpty,
   MatchesEmpty,
 } from "@/features/library/components/empty/empty";
-import { TableSelectionSync } from "@/features/library/components/table-selection-sync";
+import {
+  libraryChrome,
+  useInspectorMode,
+  useInspectorSaveId,
+  useRightPane,
+} from "@/features/library/state/library-chrome";
 import { useSaves } from "@/features/saves/hooks/use-saves";
 import { refreshSaves } from "@/features/saves/lib/ensure-saves";
-import { openSave } from "@/features/saves/lib/save-nav";
 import {
   SearchChrome,
   SearchChromeInput,
 } from "@/shared/components/search-chrome/search-chrome";
-import { useClientHeight } from "@/shared/hooks/use-client-height";
+import {
+  useDownloadActivity,
+  useDownloadClock,
+} from "../../hooks/use-download-activity";
 import { retryDownloadRows } from "../lib/actions";
-import { DownloadQueueRow, downloadsColumns } from "./columns";
-import { IconSwap } from "./icon-swap";
+import { TransferJobsPanel } from "../transfers/transfer-jobs";
+import { DownloadsView } from "./downloads-view";
+
 import styles from "./page.module.css";
 
 const InflightIdsSchema = z.array(z.string()).catch([]);
+const initialHistoryCursor: HistoryCursor = null;
 type PipelineStatus = z.infer<typeof PipelineStatusSchema>;
 
 function DownloadsMatchesEmpty({ onReset }: { onReset: () => void }) {
@@ -78,22 +85,59 @@ export function DownloadsPage() {
       clearInterval(timer);
     };
   }, []);
-  const [filters, setFilters] = useState<DownloadFilters>(
-    defaultDownloadFilters,
-  );
-  const { ref: tableRef, height: tableHeight } = useClientHeight();
-
+  const [search, setSearch] = useState("");
+  const activity = useDownloadActivity();
+  const now = useDownloadClock();
+  const inspectorId = useInspectorSaveId();
+  const inspectorMode = useInspectorMode();
+  const rightPane = useRightPane();
   const live = useMemo(() => projectLiveDownloads(saves), [saves]);
-  const rows = useMemo(
-    () => live.filter((row) => matchesDownloadFilters(row, filters)),
-    [live, filters],
-  );
-
-  const rowsById = useMemo(() => {
-    const map = new Map<string, DownloadRow>();
-    for (const row of rows) map.set(row.id, row);
-    return map;
-  }, [rows]);
+  const rows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return live.filter(
+      (row) =>
+        !q ||
+        [row.name, row.url, row.source, row.stage, row.error].some((value) =>
+          value?.toLowerCase().includes(q),
+        ),
+    );
+  }, [live, search]);
+  const history = useInfiniteQuery({
+    queryKey: ["downloads.history", search],
+    initialPageParam: initialHistoryCursor,
+    queryFn: async ({ pageParam }) =>
+      HistoryPageSchema.parse(
+        await window.pond.query("downloads.history", {
+          limit: 50,
+          cursor: pageParam,
+          q: search,
+        }),
+      ),
+    getNextPageParam: (page) => page.nextCursor ?? undefined,
+    refetchInterval: 5_000,
+  });
+  const completed = useMemo(() => {
+    const seen = new Set(live.map((row) => row.saveId));
+    return (history.data?.pages ?? [])
+      .flatMap((page) => page.rows)
+      .flatMap((row) => {
+        if (seen.has(row.saveId)) return [];
+        seen.add(row.saveId);
+        return [historyToDownloadRow(row)];
+      });
+  }, [history.data, live]);
+  useEffect(() => {
+    const available = new Map(
+      [...rows, ...completed].map((row) => [row.id, row]),
+    );
+    downloadsSelection.set(
+      downloadsSelection.snapshot().flatMap((row) => {
+        const current = available.get(row.id);
+        return current ? [current] : [];
+      }),
+    );
+  }, [rows, completed]);
+  useEffect(() => () => downloadsSelection.clear(), []);
 
   const pipeline = useQuery({
     queryKey: ["pipeline.status"],
@@ -103,16 +147,20 @@ export function DownloadsPage() {
       ),
   });
   const paused = pipeline.data?.paused === true;
-  const hasQuery = filters.q.trim() !== "";
+  const hasQuery = search.trim() !== "";
   const showPlaceEmpty = live.length === 0 && !hasQuery && rows.length === 0;
-  const showMatchesEmpty = rows.length === 0 && !showPlaceEmpty;
+  const showMatchesEmpty =
+    rows.length === 0 &&
+    completed.length === 0 &&
+    !history.isPending &&
+    !showPlaceEmpty;
 
   const resetDownloadSearch = useCallback(() => {
-    setFilters(defaultDownloadFilters());
+    setSearch("");
   }, []);
 
   const onRowClick = useCallback((row: DownloadRow) => {
-    openSave(row.saveId);
+    libraryChrome.inspectDownload(row.saveId);
   }, []);
 
   const pause = useMutation({
@@ -136,13 +184,6 @@ export function DownloadsPage() {
         "Couldn't retry these downloads. Try again.",
       ),
   });
-  const renderRow = useCallback(
-    (args: RenderRowArgs<DownloadRow>) => (
-      <DownloadQueueRow {...args} paused={paused} />
-    ),
-    [paused],
-  );
-
   const cancelAll = () => {
     Dialog.confirm({
       title: "Cancel All",
@@ -164,130 +205,106 @@ export function DownloadsPage() {
   };
 
   return (
-    <DataTable.Provider
-      data={rows}
-      columns={downloadsColumns}
-      getRowId={(row) => row.id}
-      onSelectionChange={(ids) => {
-        downloadsSelection.set(
-          ids
-            .map((id) => rowsById.get(id))
-            .filter((row): row is DownloadRow => row != null),
-        );
-      }}
-      height={
-        rows.length === 0 || tableHeight < 88 ? undefined : tableHeight - 40
-      }
-      rowHeight={48}
-      selectionCheckboxes={false}
-      onRowClick={onRowClick}
-      renderRow={renderRow}
-    >
-      <div className={styles.page}>
-        <SearchChrome
-          actions={
-            <>
-              <Tooltip label="Retry Failed" side="bottom">
-                <Button
-                  icon
-                  size="sm"
-                  variant="ghost"
-                  aria-label="Retry Failed"
-                  disabled={failedRows.length === 0 || retry.isPending}
-                  onClick={() => retry.mutate()}
-                >
-                  <IconRefreshOutline18 />
-                </Button>
-              </Tooltip>
-              <Tooltip
-                label={
-                  paused
-                    ? "Resume Queue"
-                    : "Pause Queue. Running downloads will finish."
-                }
-                side="bottom"
+    <div className={styles.page}>
+      <SearchChrome
+        actions={
+          <>
+            <Tooltip
+              label={
+                paused
+                  ? "Resume background downloads"
+                  : "Pause background downloads. Links you add still start."
+              }
+              side="bottom"
+            >
+              <Button
+                icon
+                size="sm"
+                variant="ghost"
+                disabled={!pipeline.data || pause.isPending}
+                onClick={() => pause.mutate()}
+                aria-label={paused ? "Resume Queue" : "Pause Queue"}
               >
-                <Button
-                  icon
-                  size="sm"
-                  variant="ghost"
-                  aria-label={paused ? "Resume Queue" : "Pause Queue"}
-                  disabled={!pipeline.data || pause.isPending}
-                  aria-pressed={paused}
-                  onClick={() => pause.mutate()}
-                >
-                  <IconSwap id={paused ? "play" : "pause"}>
-                    {paused ? (
-                      <IconMediaPlayOutline18 />
-                    ) : (
-                      <IconMediaPauseOutline18 />
-                    )}
-                  </IconSwap>
-                </Button>
-              </Tooltip>
-              <Menu.Root>
-                <Tooltip label="More Actions" side="bottom">
-                  <Menu.Trigger
-                    icon
-                    size="sm"
-                    variant="ghost"
-                    aria-label="More Download Actions"
-                  >
-                    <IconDotsOutline18 />
-                  </Menu.Trigger>
-                </Tooltip>
-                <Menu.Portal>
-                  <Menu.Positioner align="end" side="bottom">
-                    <Menu.Popup>
-                      <Menu.Items
-                        items={[
-                          {
-                            label: "Cancel All",
-                            disabled: !live.some(
-                              (row) => row.status !== "failed",
-                            ),
-                            onClick: cancelAll,
-                          },
-                        ]}
-                      />
-                    </Menu.Popup>
-                  </Menu.Positioner>
-                </Menu.Portal>
-              </Menu.Root>
-            </>
-          }
-        >
-          <SearchChromeInput
-            value={filters.q}
-            onChange={(e) =>
-              setFilters((cur) => ({ ...cur, q: e.target.value }))
-            }
-            spellCheck={false}
-            placeholder="Search downloads…"
-            aria-label="Search Downloads"
-            data-downloads-search=""
-          />
-        </SearchChrome>
+                {paused ? <IconMediaPlayFill18 /> : <IconMediaPauseFill18 />}
+              </Button>
+            </Tooltip>
+            <Tooltip label="Retry Failed" side="bottom">
+              <Button
+                icon
+                size="sm"
+                variant="ghost"
+                aria-label="Retry Failed"
+                disabled={failedRows.length === 0 || retry.isPending}
+                onClick={() => retry.mutate()}
+              >
+                <IconArrowRotateClockwiseFill18 />
+              </Button>
+            </Tooltip>
+            <Tooltip label="Cancel All" side="bottom">
+              <Button
+                icon
+                size="sm"
+                variant="ghost"
+                aria-label="Cancel All"
+                disabled={!live.some((row) => row.status !== "failed")}
+                onClick={cancelAll}
+              >
+                <IconXmarkOutline18 />
+              </Button>
+            </Tooltip>
+          </>
+        }
+      >
+        <SearchChromeInput
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          spellCheck={false}
+          placeholder="Search downloads…"
+          aria-label="Search Downloads"
+          data-downloads-search=""
+        />
+      </SearchChrome>
 
-        {showPlaceEmpty ? (
-          <div className={styles.empty}>
-            <DownloadsEmpty />
-          </div>
-        ) : showMatchesEmpty ? (
-          <div className={styles.empty}>
-            <DownloadsMatchesEmpty onReset={resetDownloadSearch} />
-          </div>
-        ) : (
-          <div ref={tableRef} className={styles.table}>
-            <DataTable.Root className={styles.grid}>
-              <DataTable.Empty>
-                <DownloadsMatchesEmpty onReset={resetDownloadSearch} />
-              </DataTable.Empty>
-            </DataTable.Root>
-          </div>
-        )}
-      </div>
-      <TableSelectionSync selection={downloadsSelection} rowsById={rowsById} />
-    </DataTable.Provider>
+      {activity.isError ? (
+        <p className={styles.activityError} role="status">
+          Live activity is unavailable.{" "}
+          <button type="button" onClick={() => void activity.refetch()}>
+            Try Again
+          </button>
+        </p>
+      ) : null}
+      <TransferJobsPanel search={search} />
+      <DownloadsView
+        rows={rows}
+        completed={completed}
+        activities={activity.data ?? []}
+        paused={paused}
+        now={now}
+        inspectedId={
+          rightPane === "inspector" && inspectorMode === "download"
+            ? inspectorId
+            : null
+        }
+        onInspect={onRowClick}
+        searching={hasQuery}
+        historyLoading={history.isPending}
+        historyError={history.isError}
+        hasMore={history.hasNextPage}
+        loadingMore={history.isFetchingNextPage}
+        onLoadMore={() => void history.fetchNextPage()}
+        onRetryHistory={() => void history.refetch()}
+        empty={
+          showPlaceEmpty ? (
+            <div className={styles.empty}>
+              <DownloadsEmpty />
+            </div>
+          ) : showMatchesEmpty && hasQuery ? (
+            <div className={styles.empty}>
+              <DownloadsMatchesEmpty onReset={resetDownloadSearch} />
+            </div>
+          ) : null
+        }
+      />
+    </div>
   );
 }

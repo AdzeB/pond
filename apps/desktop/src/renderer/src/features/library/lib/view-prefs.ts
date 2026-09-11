@@ -1,4 +1,5 @@
 type ViewPrefKey =
+  | "seed"
   | "view"
   | "sort"
   | "dir"
@@ -10,6 +11,7 @@ type ViewPrefKey =
   | "subfolders";
 
 const STORAGE_KEYS = {
+  seed: "pond.randomSeed",
   view: "pond.view",
   sort: "pond.sort",
   dir: "pond.dir",

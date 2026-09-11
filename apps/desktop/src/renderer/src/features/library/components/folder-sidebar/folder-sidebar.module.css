@@ -1,7 +1,8 @@
 .root {
-  --folder-indent: 24px;
-
-  padding: 0 12px 16px;
+  --folder-indent: 21px;
+  padding-right: 12px;
+  padding-bottom: 16px;
+  padding-left: 18px;
 }
 
 .workspace {
@@ -74,80 +75,114 @@
   position: relative;
   width: 100%;
   padding-inline-start: calc(var(--folder-depth, 0) * var(--folder-indent));
-}
+  overflow: visible;
 
-.entry {
-  position: relative;
-  width: 100%;
-}
+  &[data-drop="before"]::before,
+  &[data-drop="after"]::after {
+    position: absolute;
+    inset-inline-start: calc(
+      var(--folder-depth, 0) *
+      var(--folder-indent) +
+      6px
+    );
+    inset-inline-end: 6px;
+    z-index: 3;
+    height: 2px;
+    pointer-events: none;
+    content: "";
+    background: var(--ds-accent-9);
+    border-radius: 1px;
+  }
 
-.more {
-  position: absolute;
-  inset-block-start: 50%;
-  inset-inline-end: 2px;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0;
-  transform: translateY(-50%);
-  transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
-}
+  &[data-drop="before"]::before {
+    top: -1px;
+  }
 
-.entry:hover .more,
-.entry:focus-within .more,
-.more:focus-visible,
-.more[data-popup-open] {
-  pointer-events: auto;
-  opacity: 1;
-}
+  &[data-drop="after"]::after {
+    bottom: -1px;
+  }
 
-.entry .more:hover,
-.entry .more[data-pressed],
-.entry .more[data-popup-open] {
-  background-color: transparent;
-}
+  &[data-drop="into"] .row {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a4);
+  }
 
-.view-menu {
-  --popup-min-width: 140px;
-}
-
-@media (hover: none) {
-  .more {
-    pointer-events: auto;
-    opacity: 1;
+  &[data-dragging] {
+    opacity: 0.4;
   }
 }
 
+.editor {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: var(--sidebar-height-md);
+  padding: 0 6px;
+  color: var(--ds-gray-12);
+}
+
+.icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  overflow: hidden;
+}
+
+.cover {
+  width: 18px;
+  height: 18px;
+  object-fit: cover;
+  border-radius: var(--ds-radius-sm);
+}
+
+.field {
+  font-size: var(--ds-text-small);
+  line-height: 1;
+}
+
+.disclosure {
+  --ds-focus-offset: -16px;
+  position: absolute;
+  inset-inline-start: calc(
+    var(--folder-depth, 0) *
+    var(--folder-indent) -
+    15px
+  );
+  top: 6px;
+  z-index: 2;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  color: var(--ds-gray-9);
+
+  &:hover {
+    color: var(--ds-gray-11);
+  }
+}
+
+.disclosure svg {
+  width: 8px;
+  transition: transform var(--ds-duration-fast) var(--ds-easing-standard);
+}
+
+.disclosure[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .more {
+  .disclosure svg {
     transition: none;
   }
 }
 
-.guide {
-  position: absolute;
-  inset-block: -1px 0;
-  inset-inline-start: calc(var(--guide-depth) * var(--folder-indent) + 16px);
-  z-index: 1;
-  width: 6px;
+:global([data-reduce-motion]) .disclosure svg {
+  transition: none;
+}
+
+.root[data-folder-drag] .disclosure {
   pointer-events: none;
-}
-
-.guide[data-branch]::before {
-  position: absolute;
-  inset-block-start: 0;
-  inset-inline-start: 0;
-  width: 100%;
-  height: calc(50% + 1px);
-  content: "";
-  border-block-end: 1px solid var(--ds-gray-a5);
-  border-inline-start: 1px solid var(--ds-gray-a5);
-  border-end-start-radius: 6px;
-}
-
-.guide[data-continues]::after {
-  position: absolute;
-  inset-block: 0;
-  inset-inline-start: 0;
-  content: "";
-  border-inline-start: 1px solid var(--ds-gray-a5);
 }

@@ -22,6 +22,7 @@ import { savedAt } from "./saved-at";
 import { height, width } from "./size";
 import { source } from "./source";
 import { tags } from "./tags";
+import { title } from "./title";
 import { transcript } from "./transcript";
 import { typeField } from "./type";
 import { url } from "./url";
@@ -43,6 +44,7 @@ export {
 const orientationFieldId = "shape";
 
 export const FIELD_DESCRIPTORS = {
+  title,
   tags,
   folder,
   list,

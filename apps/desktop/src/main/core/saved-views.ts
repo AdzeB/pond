@@ -10,7 +10,19 @@ import { ulid } from "ulid";
 import { z } from "zod";
 import type { Db } from "../db";
 import { getDb } from "../db";
-import { executeBatch, executeTransaction } from "./executor";
+import { executeBatch } from "./executor";
+
+interface SavedViewRuntime {
+  getDb: () => Promise<Db>;
+  commit: (transactions: Transaction[]) => Promise<void>;
+}
+
+const defaultRuntime: SavedViewRuntime = {
+  getDb,
+  async commit(transactions) {
+    await executeBatch(transactions);
+  },
+};
 
 const StoredQuerySchema = z.custom<Query>(
   (value) => value instanceof Object && !Array.isArray(value),
@@ -20,8 +32,10 @@ function coerceQuery(raw: Query | null): Query {
   return StoredQuerySchema.safeParse(raw).data ?? EMPTY_QUERY;
 }
 
-export async function listViews(): Promise<SavedView[]> {
-  const db = await getDb();
+export async function listViews(
+  runtime: SavedViewRuntime = defaultRuntime,
+): Promise<SavedView[]> {
+  const db = await runtime.getDb();
   const rows = await db
     .select()
     .from(savedViewsTable)
@@ -31,6 +45,8 @@ export async function listViews(): Promise<SavedView[]> {
 
 interface CreateViewInput {
   name: string;
+  kind?: SavedView["kind"];
+  parentId?: string | null;
   question?: string | null;
   query?: Query;
   sortKey?: string;
@@ -40,93 +56,135 @@ interface CreateViewInput {
 
 export async function createView(
   input: CreateViewInput,
+  runtime: SavedViewRuntime = defaultRuntime,
 ): Promise<{ ok: boolean; id?: string }> {
   const name = input.name.trim();
   if (!name) return { ok: false };
-  const db = await getDb();
-  const data: NewSavedView = {
-    id: ulid(),
-    name,
-    question: input.question ?? null,
-    query: input.query ?? EMPTY_QUERY,
-    sortKey: input.sortKey ?? "savedAt",
-    sortDir: input.sortDir ?? "desc",
-    layout: input.layout ?? null,
-    sortOrder: await nextSortOrder(db),
-  };
-  await executeTransaction({
-    kind: "create",
-    model: "saved_view",
-    id: data.id,
-    data,
-    meta: { actor: "user", actorReason: "saved-view-create" },
+  return mutateViews(runtime, async (db) => {
+    if (!(await validParent(db, input.parentId ?? null))) return { ok: false };
+    const data: NewSavedView = {
+      id: ulid(),
+      name,
+      kind: input.kind ?? "saved_view",
+      parentId: input.parentId ?? null,
+      question: input.question ?? null,
+      query: input.query ?? EMPTY_QUERY,
+      sortKey: input.sortKey ?? "savedAt",
+      sortDir: input.sortDir ?? "desc",
+      layout: input.layout ?? null,
+      sortOrder: await nextSortOrder(db),
+    };
+    await runtime.commit([
+      {
+        kind: "create",
+        model: "saved_view",
+        id: data.id,
+        data,
+        meta: { actor: "user", actorReason: "saved-view-create" },
+      },
+    ]);
+    return { ok: true, id: data.id };
   });
-  return { ok: true, id: data.id };
 }
 
 export async function updateView(
   id: string,
-  patch: Partial<NewSavedView>,
+  patch: Partial<Omit<CreateViewInput, "kind">> & { sortOrder?: number },
+  runtime: SavedViewRuntime = defaultRuntime,
 ): Promise<{ ok: boolean }> {
-  const db = await getDb();
-  const row = await viewById(db, id);
-  if (!row) return { ok: false };
-  await executeTransaction({
-    kind: "update",
-    model: "saved_view",
-    id,
-    patch,
-    before: row,
-    meta: { actor: "user", actorReason: "saved-view-update" },
+  return mutateViews(runtime, async (db) => {
+    const row = await viewById(db, id);
+    if (!row) return { ok: false };
+    if (
+      patch.parentId !== undefined &&
+      !(await validParent(db, patch.parentId, id))
+    ) {
+      return { ok: false };
+    }
+    if (patch.name !== undefined) {
+      const name = patch.name.trim();
+      if (!name) return { ok: false };
+      patch = { ...patch, name };
+    }
+    await runtime.commit([
+      {
+        kind: "update",
+        model: "saved_view",
+        id,
+        patch,
+        before: row,
+        meta: { actor: "user", actorReason: "saved-view-update" },
+      },
+    ]);
+    return { ok: true };
   });
-  return { ok: true };
 }
 
 export async function renameView(
   id: string,
   name: string,
+  runtime: SavedViewRuntime = defaultRuntime,
 ): Promise<{ ok: boolean }> {
   const target = name.trim();
   if (!target) return { ok: false };
-  return updateView(id, { name: target });
+  return updateView(id, { name: target }, runtime);
 }
 
-export async function deleteView(id: string): Promise<{ ok: boolean }> {
-  const db = await getDb();
-  const row = await viewById(db, id);
-  if (!row) return { ok: false };
-  await executeTransaction({
-    kind: "delete",
-    model: "saved_view",
-    id,
-    before: row,
-    meta: { actor: "user", actorReason: "saved-view-delete" },
+export async function deleteView(
+  id: string,
+  runtime: SavedViewRuntime = defaultRuntime,
+): Promise<{ ok: boolean }> {
+  return mutateViews(runtime, async (db) => {
+    const row = await viewById(db, id);
+    if (!row) return { ok: false };
+    const children = await db
+      .select()
+      .from(savedViewsTable)
+      .where(eq(savedViewsTable.parentId, id));
+    const transactions: Transaction[] = children.map((child) => ({
+      kind: "update",
+      model: "saved_view",
+      id: child.id,
+      patch: { parentId: row.parentId },
+      before: child,
+      meta: { actor: "user", actorReason: "saved-view-promote" },
+    }));
+    transactions.push({
+      kind: "delete",
+      model: "saved_view",
+      id,
+      before: row,
+      meta: { actor: "user", actorReason: "saved-view-delete" },
+    });
+    await runtime.commit(transactions);
+    return { ok: true };
   });
-  return { ok: true };
 }
 
 export async function reorderViews(
   orderedIds: string[],
+  runtime: SavedViewRuntime = defaultRuntime,
 ): Promise<{ ok: boolean }> {
-  const db = await getDb();
-  const txs: Transaction[] = [];
-  for (let i = 0; i < orderedIds.length; i++) {
-    const id = orderedIds[i];
-    if (!id) continue;
-    const row = await viewById(db, id);
-    if (!row || row.sortOrder === i) continue;
-    txs.push({
-      kind: "update",
-      model: "saved_view",
-      id,
-      patch: { sortOrder: i },
-      before: row,
-      meta: { actor: "user", actorReason: "saved-view-reorder" },
-    });
-  }
-  if (txs.length === 0) return { ok: true };
-  await executeBatch(txs);
-  return { ok: true };
+  return mutateViews(runtime, async (db) => {
+    const txs: Transaction[] = [];
+    for (let i = 0; i < orderedIds.length; i++) {
+      const id = orderedIds[i];
+      if (!id) continue;
+      const row = await viewById(db, id);
+      if (!row || row.sortOrder === i) continue;
+      txs.push({
+        kind: "update",
+        model: "saved_view",
+        id,
+        patch: { sortOrder: i },
+        before: row,
+        meta: { actor: "user", actorReason: "saved-view-reorder" },
+      });
+    }
+    if (txs.length === 0) return { ok: true };
+    await runtime.commit(txs);
+    return { ok: true };
+  });
 }
 
 async function viewById(db: Db, id: string): Promise<SavedView | undefined> {
@@ -144,4 +202,40 @@ async function nextSortOrder(db: Db): Promise<number> {
     })
     .from(savedViewsTable);
   return (rows[0]?.max ?? -1) + 1;
+}
+
+async function validParent(
+  db: Db,
+  parentId: string | null,
+  movingId?: string,
+): Promise<boolean> {
+  const visited = new Set<string>();
+  let ancestorId = parentId;
+  while (ancestorId !== null) {
+    if (ancestorId === movingId || visited.has(ancestorId)) return false;
+    visited.add(ancestorId);
+    const parent = await viewById(db, ancestorId);
+    if (parent?.kind !== "group") return false;
+    ancestorId = parent.parentId;
+  }
+  return true;
+}
+
+const mutationQueues = new WeakMap<Db, Promise<void>>();
+
+async function mutateViews<Result>(
+  runtime: SavedViewRuntime,
+  operation: (db: Db) => Promise<Result>,
+): Promise<Result> {
+  const db = await runtime.getDb();
+  const previous = mutationQueues.get(db) ?? Promise.resolve();
+  const result = previous.then(() => operation(db));
+  mutationQueues.set(
+    db,
+    result.then(
+      () => {},
+      () => {},
+    ),
+  );
+  return result;
 }

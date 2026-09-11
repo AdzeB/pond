@@ -7,8 +7,8 @@ import {
   IconCalendarOutline18 as Schedule,
   IconMagnifierOutline18 as Search,
   IconServerOutline18 as Storage,
-  IconLabelOutline18 as Tags,
-  IconTrash2Outline18 as Trash,
+  IconBookmarkOutline18 as Tags,
+  IconTrashXmarkOutline18 as Trash,
   IconMovieOutline18 as Videos,
 } from "@pond/icons/outline/18";
 import type { IconComponent } from "@pond/icons/types";
@@ -24,6 +24,7 @@ import { SECTION_CONFIGS } from "@/features/settings/lib/sections";
 
 const ICONS = new Map<string, IconComponent>([
   ["general", General],
+  ["viewer", Images],
   ["schedule", Schedule],
   ["appearance", Appearance],
   ["tags", Tags],

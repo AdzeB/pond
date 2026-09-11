@@ -1,7 +1,7 @@
 import { IconDotsFill12 as Dots } from "@pond/icons/fill/12";
 import { Menu } from "@pond/ui";
 import type { MouseEvent } from "react";
-import { focusInput } from "../helpers";
+import { InlineNameEditor } from "@/shared/components/inline-name-editor";
 import { useTagRow } from "../row-context";
 import styles from "./cells.module.css";
 
@@ -10,37 +10,19 @@ function stop(e: MouseEvent) {
 }
 
 export function NameCell({ index = false }: { index?: boolean }) {
-  const {
-    row,
-    renaming,
-    renameDraft,
-    setRenameDraft,
-    commitRename,
-    cancelRename,
-  } = useTagRow();
+  const { row, renaming, saveRename, finishRename } = useTagRow();
   const saves = row.kind === "tag" ? row.saves : 0;
   const name = row.kind === "tag" ? row.tag.name : row.group.name;
 
   return (
     <span className={styles.name} data-index={index || undefined}>
       {renaming ? (
-        <input
-          ref={focusInput}
+        <InlineNameEditor
+          name={name}
           className={styles.input}
-          value={renameDraft}
-          spellCheck={false}
-          onClick={stop}
-          onChange={(e) => setRenameDraft(e.target.value)}
-          onBlur={commitRename}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              commitRename();
-            } else if (e.key === "Escape") {
-              e.preventDefault();
-              cancelRename();
-            }
-          }}
+          ariaLabel={row.kind === "group" ? "Group name" : "Tag name"}
+          onSave={saveRename}
+          onFinish={finishRename}
         />
       ) : (
         <span className={styles.text}>{name}</span>

@@ -57,22 +57,3 @@ function isVisibleInLibrary(save: Save): boolean {
   if ((save.files?.length ?? 0) > 0) return true;
   return save.mediaType === "link" || save.mediaType === "text";
 }
-
-interface ModeSortOptions {
-  mode: SaveListMode;
-  recentsOrder: ReadonlyMap<string, number> | null;
-}
-
-export function applyModeSort(
-  saves: Save[],
-  { mode, recentsOrder }: ModeSortOptions,
-): Save[] {
-  if (mode === "recents" && recentsOrder) {
-    return saves.sort(
-      (a, b) =>
-        (recentsOrder.get(a.id) ?? Infinity) -
-        (recentsOrder.get(b.id) ?? Infinity),
-    );
-  }
-  return saves;
-}

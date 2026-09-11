@@ -11,7 +11,7 @@ import {
   patchAccount,
 } from "./accounts";
 
-export async function inferAccountKey(source: Source): Promise<string | null> {
+async function inferAccountKey(source: Source): Promise<string | null> {
   const db = await getDb();
   const rows = await db
     .select({ url: saves.url, author: saves.author })

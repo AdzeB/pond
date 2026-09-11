@@ -16,6 +16,10 @@ import {
 } from "@pond/icons/outline/18";
 import { Dialog, Menu, Tooltip } from "@pond/ui";
 import { type ComponentType, Fragment, useState } from "react";
+import {
+  newMenuDialog,
+  useNewMenuDialog,
+} from "@/features/library/state/new-menu-dialog";
 import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import {
@@ -66,7 +70,6 @@ export function NewMenu({
 } = {}) {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
-  const [dialog, setDialog] = useState<"note" | "links" | null>(null);
   const [pending, setPending] = useState<NewActionId | null>(null);
   const scrollFade = useScrollFade<HTMLDivElement>();
   const groups = filterNewActions(search);
@@ -83,7 +86,7 @@ export function NewMenu({
         return;
       case "note":
       case "links":
-        setDialog(id);
+        newMenuDialog.open(id);
         return;
       case "page-assets":
         Dialog.prompt({
@@ -119,70 +122,70 @@ export function NewMenu({
   }
 
   return (
-    <>
-      <Menu.Root
-        open={open}
-        onOpenChange={(next) => {
-          setOpen(next);
-          if (next) setSearch("");
-        }}
-      >
-        <Tooltip label="New" side="bottom">
-          <Menu.Trigger icon size="sm" variant="ghost" aria-label="New">
-            <IconPlusOutline18 />
-          </Menu.Trigger>
-        </Tooltip>
-        <Menu.Portal>
-          <Menu.Positioner align="start" side="bottom">
-            <Menu.Popup className={styles.popup}>
-              <Menu.Input
-                autoFocus
-                aria-label="Search Actions"
-                placeholder="Search…"
-                value={search}
-                onValueChange={setSearch}
-              />
-              <div className={styles.options} {...scrollFade}>
-                {groups.map((group, index) => (
-                  <Fragment key={group.label}>
-                    {index > 0 ? <Menu.Separator /> : null}
-                    <Menu.Group>
-                      <Menu.GroupLabel>{group.label}</Menu.GroupLabel>
-                      {group.actions.map((action) => {
-                        const Icon = ICONS[action.id];
-                        return (
-                          <Menu.Item
-                            key={action.id}
-                            disabled={!!pending && IMPORT_IDS.has(action.id)}
-                            onClick={() => select(action.id)}
-                          >
-                            <Menu.ItemIcon>
-                              <Icon />
-                            </Menu.ItemIcon>
-                            <Menu.ItemLabel>
-                              {pending === action.id
-                                ? "Importing"
-                                : action.label}
-                            </Menu.ItemLabel>
-                          </Menu.Item>
-                        );
-                      })}
-                    </Menu.Group>
-                  </Fragment>
-                ))}
-                {groups.length === 0 ? (
-                  <Menu.Item disabled>
-                    <Menu.ItemLabel>No matches</Menu.ItemLabel>
-                  </Menu.Item>
-                ) : null}
-              </div>
-            </Menu.Popup>
-          </Menu.Positioner>
-        </Menu.Portal>
-      </Menu.Root>
-      {dialog ? (
-        <SaveDialog kind={dialog} onClose={() => setDialog(null)} />
-      ) : null}
-    </>
+    <Menu.Root
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) setSearch("");
+      }}
+    >
+      <Tooltip label="New" side="bottom">
+        <Menu.Trigger icon size="sm" variant="ghost" aria-label="New">
+          <IconPlusOutline18 />
+        </Menu.Trigger>
+      </Tooltip>
+      <Menu.Portal>
+        <Menu.Positioner align="start" side="bottom">
+          <Menu.Popup className={styles.popup}>
+            <Menu.Input
+              autoFocus
+              aria-label="Search Actions"
+              placeholder="Search…"
+              value={search}
+              onValueChange={setSearch}
+            />
+            <div className={styles.options} {...scrollFade}>
+              {groups.map((group, index) => (
+                <Fragment key={group.label}>
+                  {index > 0 ? <Menu.Separator /> : null}
+                  <Menu.Group>
+                    <Menu.GroupLabel>{group.label}</Menu.GroupLabel>
+                    {group.actions.map((action) => {
+                      const Icon = ICONS[action.id];
+                      return (
+                        <Menu.Item
+                          key={action.id}
+                          disabled={!!pending && IMPORT_IDS.has(action.id)}
+                          onClick={() => select(action.id)}
+                        >
+                          <Menu.ItemIcon>
+                            <Icon />
+                          </Menu.ItemIcon>
+                          <Menu.ItemLabel>
+                            {pending === action.id ? "Importing" : action.label}
+                          </Menu.ItemLabel>
+                        </Menu.Item>
+                      );
+                    })}
+                  </Menu.Group>
+                </Fragment>
+              ))}
+              {groups.length === 0 ? (
+                <Menu.Item disabled>
+                  <Menu.ItemLabel>No matches</Menu.ItemLabel>
+                </Menu.Item>
+              ) : null}
+            </div>
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
+}
+
+export function NewMenuDialogHost() {
+  const dialog = useNewMenuDialog();
+  return dialog ? (
+    <SaveDialog kind={dialog} onClose={() => newMenuDialog.close()} />
+  ) : null;
 }

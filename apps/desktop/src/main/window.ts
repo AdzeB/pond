@@ -7,6 +7,7 @@ import { attachEditableContextMenu } from "./context-menu";
 import { hardenArchiveWebviews } from "./core/archive-viewer";
 import { getPrefs, setPrefs } from "./core/prefs";
 import { consumePendingDeepLink } from "./deep-link";
+import { lockRendererZoom } from "./lib/lock-renderer-zoom";
 import { resolveMainOut, resolvePreload } from "./lib/resolve-preload";
 import { resolveTheme } from "./theme";
 import { ensureTray, type TrayHandle } from "./tray";
@@ -147,6 +148,7 @@ export async function createWindow(): Promise<BrowserWindow> {
   if (!isMac && appIcon) options.icon = appIcon;
 
   const win = new BrowserWindow(options);
+  lockRendererZoom(win.webContents);
 
   hardenArchiveWebviews(win);
   attachEditableContextMenu(win.webContents);

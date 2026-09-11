@@ -18,8 +18,7 @@
     "apps/desktop/src/renderer/src/generated/**",
     "apps/extension/.output/**",
     "apps/extension/.wxt/**",
-    "apps/website/.next/**",
-    "prototypes/**"
+    "apps/website/.next/**"
   ],
   "jsPlugins": [
     { "name": "anti-slop", "specifier": "./tools/oxlint/anti-slop/index.ts" }

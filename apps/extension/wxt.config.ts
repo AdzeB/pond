@@ -68,6 +68,7 @@ export default defineConfig({
     permissions: [
       "storage",
       "activeTab",
+      "scripting",
       "tabs",
       "cookies",
       "contextMenus",

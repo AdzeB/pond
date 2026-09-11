@@ -1,5 +1,11 @@
+import {
+  IconArrowLeftOutline18,
+  IconArrowRightOutline18,
+} from "@pond/icons/outline/18";
+import { Select, Slider } from "@pond/ui";
 import type { Book, NavItem, Rendition } from "epubjs";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import styles from "./epub-viewer.module.css";
 
 interface EpubViewerProps {
@@ -21,6 +27,7 @@ export function EpubViewer({ url, onUnavailable }: EpubViewerProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const renditionRef = useRef<Rendition | null>(null);
   const [toc, setToc] = useState<Array<NavItem & { depth: number }>>([]);
+  const [chapter, setChapter] = useState<string | null>(null);
   const [fontSize, setFontSize] = useState(100);
   const [ready, setReady] = useState(false);
 
@@ -78,45 +85,92 @@ export function EpubViewer({ url, onUnavailable }: EpubViewerProps) {
     renditionRef.current?.themes.fontSize(`${fontSize}%`);
   }, [fontSize]);
 
+  const chapters = useMemo(
+    () =>
+      toc.map((item) => ({
+        value: item.href,
+        label: `${"\u00a0".repeat(item.depth * 2)}${item.label}`,
+      })),
+    [toc],
+  );
+  const selected = chapters.find((item) => item.value === chapter);
+
   return (
     <div className={styles.root}>
-      <div className={styles.toolbar}>
-        <button type="button" onClick={() => void renditionRef.current?.prev()}>
-          Previous
-        </button>
-        <button type="button" onClick={() => void renditionRef.current?.next()}>
-          Next
-        </button>
-        <select
-          aria-label="Table of contents"
-          defaultValue=""
-          onChange={(event) => {
-            if (event.target.value) {
-              void renditionRef.current?.display(event.target.value);
-            }
-          }}
-        >
-          <option value="">Contents</option>
-          {toc.map((item) => (
-            <option key={`${item.id}-${item.href}`} value={item.href}>
-              {`${"  ".repeat(item.depth)}${item.label}`}
-            </option>
-          ))}
-        </select>
-        <label>
-          <span>{fontSize}%</span>
-          <input
-            type="range"
-            min="75"
-            max="175"
-            value={fontSize}
-            aria-label="Book font size"
-            onChange={(event) => setFontSize(Number(event.target.value))}
-          />
-        </label>
-      </div>
       <div ref={rootRef} className={styles.reader} />
-      {!ready ? <div className={styles.status}>Opening book…</div> : null}
+      {!ready ? <div className={styles.status}>Opening book</div> : null}
+      <ViewerHud.Root>
+        <ViewerHud.Cluster anchor="top-left">
+          <ViewerHud.Pill role="toolbar" aria-label="Pages">
+            <ViewerHud.Tool
+              label="Previous"
+              onClick={() => void renditionRef.current?.prev()}
+            >
+              <IconArrowLeftOutline18 />
+            </ViewerHud.Tool>
+            <ViewerHud.Tool
+              label="Next"
+              onClick={() => void renditionRef.current?.next()}
+            >
+              <IconArrowRightOutline18 />
+            </ViewerHud.Tool>
+          </ViewerHud.Pill>
+        </ViewerHud.Cluster>
+        <ViewerHud.Cluster anchor="top-right">
+          <ViewerHud.Pill className={styles.size} aria-label="Type size">
+            <ViewerHud.Scale>{fontSize}%</ViewerHud.Scale>
+            <Slider.Root
+              min={75}
+              max={175}
+              step={1}
+              value={fontSize}
+              onValueChange={(next) => {
+                const value = Array.isArray(next) ? (next[0] ?? 100) : next;
+                setFontSize(value);
+              }}
+            >
+              <Slider.Control>
+                <Slider.Track>
+                  <Slider.Indicator />
+                  <Slider.Thumb aria-label="Book font size" />
+                </Slider.Track>
+              </Slider.Control>
+            </Slider.Root>
+          </ViewerHud.Pill>
+        </ViewerHud.Cluster>
+        {chapters.length > 0 ? (
+          <ViewerHud.Cluster anchor="bottom-center">
+            <ViewerHud.Pill className={styles.contents}>
+              <Select.Root
+                items={chapters}
+                value={chapter}
+                onValueChange={(next) => {
+                  if (next === null) return;
+                  setChapter(next);
+                  void renditionRef.current?.display(next);
+                }}
+              >
+                <Select.Trigger
+                  size="sm"
+                  variant="ghost"
+                  aria-label="Table of contents"
+                >
+                  <Select.Value placeholder="Contents">
+                    {selected?.label ?? "Contents"}
+                  </Select.Value>
+                </Select.Trigger>
+                <Select.Portal>
+                  <Select.Positioner side="top" sideOffset={8}>
+                    <Select.Popup>
+                      <Select.Items items={chapters} />
+                    </Select.Popup>
+                  </Select.Positioner>
+                </Select.Portal>
+              </Select.Root>
+            </ViewerHud.Pill>
+          </ViewerHud.Cluster>
+        ) : null}
+      </ViewerHud.Root>
     </div>
   );
 }

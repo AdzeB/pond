@@ -40,7 +40,6 @@
   padding: 0;
   color: var(--ds-gray-11);
   cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
   background: var(--ds-gray-3);
   background-clip: padding-box;
   border: var(--ds-border-elevated);
@@ -52,11 +51,6 @@
   &:hover {
     color: var(--ds-gray-12);
     background: var(--ds-gray-4);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--ds-gray-6);
-    outline-offset: 0;
   }
 
   &[inert] {

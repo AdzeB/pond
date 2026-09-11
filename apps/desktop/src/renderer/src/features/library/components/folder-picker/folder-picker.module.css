@@ -1,0 +1,32 @@
+.popup {
+  width: min(480px, calc(100vw - 32px));
+  padding: 20px;
+}
+.popup form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  max-height: 320px;
+  overflow: auto;
+}
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-height: 36px;
+}
+.row span {
+  flex: 1;
+}
+.row small {
+  opacity: 0.6;
+}
+.footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}

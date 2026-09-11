@@ -60,6 +60,7 @@ export type ComparatorId =
   | "endsWith"
   | "some"
   | "every"
+  | "exact"
   | "none"
   | "exists"
   | "empty"
@@ -67,7 +68,7 @@ export type ComparatorId =
 
 export const COMPARATORS_BY_TYPE = {
   string: ["eq", "neq", "in", "nin", "contains", "startsWith", "endsWith"],
-  stringArray: ["some", "every", "none", "empty"],
+  stringArray: ["some", "every", "exact", "none", "empty"],
   enum: ["eq", "neq", "in", "nin"],
   number: ["eq", "neq", "lt", "lte", "gt", "gte", "between"],
   boolean: ["eq"],
@@ -77,6 +78,7 @@ export const COMPARATORS_BY_TYPE = {
 } satisfies Record<FieldTypeId, readonly ComparatorId[]>;
 
 export type FieldId =
+  | "title"
   | "tags"
   | "folder"
   | "list"

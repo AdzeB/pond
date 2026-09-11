@@ -3,7 +3,7 @@ import {
   DEFAULT_LIGHT_THEME,
   themeCssVars,
 } from "@pond/schema/db";
-import sourceCss from "@pond/theme/shadow/shadow.css?raw";
+import sourceCss from "@pond/theme/shadow.css?raw";
 import { Button, Checkbox, Input, Select, Slider } from "@pond/ui";
 import { clsx as cn } from "clsx";
 import { type CSSProperties, useId, useMemo, useState } from "react";
@@ -29,7 +29,7 @@ function themeStyle(scheme: (typeof SCHEMES)[number]): CSSProperties {
   const vars = themeCssVars(theme);
   const bg = `oklch(${vars.bgL} ${vars.bgC} ${vars.bgH})`;
   const fg = `oklch(${vars.fgL} ${vars.fgC} ${vars.fgH})`;
-  /** React forwards CSS custom properties to the element style. */
+  // SAFETY: React forwards these CSS custom properties to the element style.
   return {
     colorScheme: scheme,
     "--ds-bg-l": String(vars.bgL),
@@ -96,7 +96,7 @@ function cardSurface(token: ShadowToken, tokens: ShadowToken[]): CSSProperties {
       ? (ringLayer(token) ?? token.layers[0])
       : (ringLayer(ringToken ?? token) ?? ringToken?.layers[0]);
   const borderColor = ring ? ringBorderColor(ring) : "var(--ds-shadow-ring)";
-  /** Custom properties and border paint are valid inline style keys. */
+  // SAFETY: The object contains valid CSS border and custom-property values.
   return {
     borderWidth: ring?.spread ?? 1,
     borderStyle: "solid",

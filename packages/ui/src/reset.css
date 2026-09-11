@@ -10,7 +10,6 @@
     padding: 0;
     border: 0;
     position: relative;
-    outline: 1px solid color-mix(in srgb, var(--ds-accent-9), transparent 100%);
     color: inherit;
     font-family: inherit;
     font-size: inherit;
@@ -35,6 +34,29 @@
 
   *::-webkit-scrollbar {
     display: none;
+  }
+
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  :focus-visible,
+  [data-demo-state="focus"] {
+    outline: var(--ds-focus-width, 2px) solid var(--ds-focus-outline);
+    outline-offset: var(--ds-focus-offset, 0px);
+  }
+
+  /* Chromium matches :focus-visible on pointer clicks in Electron. */
+  html[data-focus-source="pointer"]
+  :focus-visible:not(
+    :is(
+      input,
+      textarea,
+      select,
+      [contenteditable]:not([contenteditable="false"])
+    )
+  ) {
+    outline-width: 0;
   }
 
   body {
@@ -78,6 +100,15 @@
   input::-webkit-outer-spin-button,
   input::-webkit-inner-spin-button {
     -webkit-appearance: none;
+  }
+
+  input[type="search"]::-webkit-search-decoration,
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-results-button,
+  input[type="search"]::-webkit-search-results-decoration {
+    display: none;
+    -webkit-appearance: none;
+    appearance: none;
   }
 
   input[type="number"] {

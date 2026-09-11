@@ -13,8 +13,30 @@ import type {
 import type { Query } from "@pond/schema/filters/types";
 import type { RawJson } from "@pond/schema/raw";
 import type { z } from "zod";
+import type { ActionQueryInputs, ActionQueryResults } from "./action-contracts";
 import type { assistantSend } from "./assistant";
+import type { BulkQueryInputs, BulkQueryResults } from "./bulk-contracts";
+import type {
+  CaptureQueryInputs,
+  CaptureQueryResults,
+} from "./capture-contracts";
+import type {
+  ConversionQueryInputs,
+  ConversionQueryResults,
+} from "./conversion-contracts";
+import type { DownloadActivity } from "./download-activity";
+import type { GlobalShortcutStatus } from "./global-shortcuts";
+import type {
+  InspectQueryInputs,
+  InspectQueryResults,
+} from "./inspect-contracts";
+import type { LibraryQueryPage, LibraryQueryRequest } from "./library-query";
 import type { SystemQueryResults } from "./query-contracts-system";
+import type { LibrarySidebarCounts } from "./sidebar-counts";
+import type {
+  TransferQueryInputs,
+  TransferQueryResults,
+} from "./transfer-contracts";
 import type { WirePrefsPatch, WireSave } from "./wire";
 
 interface IdInput {
@@ -46,6 +68,8 @@ interface ProviderInput {
 type EmptyInput = Record<string, never>;
 interface SavedViewInput {
   name: string;
+  kind?: SavedView["kind"];
+  parentId?: string | null;
   question?: string | null;
   query?: Query | null;
   sortKey?: string;
@@ -53,6 +77,7 @@ interface SavedViewInput {
   layout?: string | null;
 }
 interface RetrievalInput {
+  libraryQuery?: LibraryQueryRequest;
   query?: string;
   source?: Source;
   folderId?: string;
@@ -90,7 +115,31 @@ interface ImportResult extends OkResult {
   draftId?: string;
 }
 
-export interface QueryInputs {
+export interface QueryInputs
+  extends TransferQueryInputs,
+    BulkQueryInputs,
+    CaptureQueryInputs,
+    ActionQueryInputs,
+    InspectQueryInputs,
+    ConversionQueryInputs {
+  "folders.rules.get": { id: string };
+  "folders.rules.set": { id: string; tags: string[]; applyExisting?: boolean };
+  "folders.createBatch": { names: string[]; parentId?: string | null };
+  "folders.moveBatch": { ids: string[]; parentId: string | null };
+
+  "saves.sidebarCounts": Record<string, never>;
+  "saves.exportPackage": { ids: string[] };
+  "saves.importPackage": EmptyInput;
+  "library.restoreBackup": { source?: string; destination?: string };
+  "folders.move": { id: string; parentId: string | null; beforeId?: string };
+  "folders.assign": {
+    saveIds: string[];
+    addIds: string[];
+    removeIds: string[];
+  };
+  "saves.queryPage": LibraryQueryRequest;
+  "saves.queryIds": LibraryQueryRequest;
+  "saves.queryCount": { query: Query };
   "saves.get": IdInput;
   "saves.list": { limit?: number };
   "saves.listPage": {
@@ -163,6 +212,17 @@ export interface QueryInputs {
   };
   "saves.combineImages": { ids: string[]; folderId?: string | null };
   "saves.importEagleLibrary": { path: string; dryRun?: boolean };
+  "saves.copyInternalLinks": { ids: string[] };
+  "saves.listOpenWith": {
+    ids: string[];
+    fileIndex?: number;
+    includeIcons?: boolean;
+  };
+  "saves.openWith": {
+    ids: string[];
+    fileIndex?: number;
+    application?: string;
+  };
   "saves.startDrag": { id?: string; ids?: string[]; fileIndex?: number | null };
   "saves.quickAdd": { url?: string; note?: string | null; tags?: string[] };
   "saves.extractPageAssets": { url: string };
@@ -175,7 +235,7 @@ export interface QueryInputs {
   "savedViews.rename": { id: string; name: string };
   "savedViews.update": {
     id: string;
-    patch: Partial<SavedViewInput> & { sortOrder?: number };
+    patch: Partial<Omit<SavedViewInput, "kind">> & { sortOrder?: number };
   };
   "savedViews.delete": IdInput;
   "savedViews.reorder": IdsInput;
@@ -185,6 +245,7 @@ export interface QueryInputs {
     color?: string | null;
   };
   "folders.rename": { id: string; name: string };
+  "folders.setColor": { id: string; color: string | null };
   "folders.delete": IdInput;
   "folders.setSaveFolders": { saveId: string; folderIds: string[] };
   "folders.addSaves": { folderId: string; saveIds: string[] };
@@ -227,7 +288,7 @@ export interface QueryInputs {
   "video.saveFrame": FrameInput;
   "video.setThumbnail": FrameInput & { saveId: string };
   "video.copyFilePath": { saveId: string };
-  "preview.pin": IdInput;
+  "preview.pin": { id: string; navigation?: LibraryQueryRequest };
   "capture.area": { x: number; y: number; width: number; height: number };
   "autoImport.set": {
     enabled?: boolean;
@@ -235,6 +296,9 @@ export interface QueryInputs {
     mode?: "copy" | "move";
   };
   "library.createAt": { path: string; name: string };
+  "library.recent": Record<string, never>;
+  "saves.copyToLibrary": { ids: string[] };
+  "library.mergeFrom": { source?: string };
   "library.switchTo": PathInput;
   "library.move": { path?: string };
   "library.backupTo": { path?: string };
@@ -246,6 +310,7 @@ export interface QueryInputs {
     ops?: Op[];
   };
   "downloads.live": EmptyInput;
+  "downloads.activity": EmptyInput;
   "sync.history": { source: Source; accountId?: string; limit?: number };
   "sync.recent": { limit?: number };
   "sync.runs": { days?: number };
@@ -287,6 +352,7 @@ export interface QueryInputs {
   "settings.getOnboarded": EmptyInput;
   "settings.setOnboarded": EmptyInput;
   "settings.getPrefs": EmptyInput;
+  "settings.globalShortcutStatus": EmptyInput;
   "saves.emptyTrash": EmptyInput;
   "saves.restoreAll": EmptyInput;
   "saves.embeddings": EmptyInput;
@@ -332,7 +398,65 @@ export interface QueryInputs {
   "tags.list": EmptyInput;
 }
 
-export interface QueryResults extends SystemQueryResults {
+export interface QueryResults
+  extends TransferQueryResults,
+    BulkQueryResults,
+    CaptureQueryResults,
+    SystemQueryResults,
+    ActionQueryResults,
+    InspectQueryResults,
+    ConversionQueryResults {
+  "folders.rules.get": { tags: string[]; inheritedTags: string[] };
+  "folders.rules.set": { ok: boolean; affected: number };
+  "folders.createBatch": Folder[];
+  "folders.moveBatch": { ok: boolean };
+
+  "saves.sidebarCounts": LibrarySidebarCounts;
+  "library.recent": Array<{
+    path: string;
+    name: string;
+    available: boolean;
+    active: boolean;
+    lastOpened: number;
+  }>;
+  "saves.copyToLibrary": {
+    ok: boolean;
+    path?: string;
+    imported?: number;
+    skipped?: number;
+    error?: string;
+  };
+  "library.mergeFrom": {
+    ok: boolean;
+    path?: string;
+    imported?: number;
+    skipped?: number;
+    error?: string;
+  };
+
+  "saves.exportPackage": {
+    ok: boolean;
+    path?: string;
+    exported?: number;
+    error?: string;
+  };
+  "saves.importPackage": {
+    ok: boolean;
+    imported?: number;
+    skipped?: number;
+    error?: string;
+  };
+  "library.restoreBackup": {
+    ok: boolean;
+    path?: string;
+    copied?: number;
+    reason?: string;
+  };
+  "folders.move": { ok: boolean };
+  "folders.assign": { ok: boolean };
+  "saves.queryPage": LibraryQueryPage;
+  "saves.queryIds": { ids: string[]; revision: number; libraryId: string };
+  "saves.queryCount": { count: number };
   "saves.rawJson": { id: string; rawJson: RawJson | null };
   "saves.emptyTrash": OkResult & { count: number };
   "saves.restoreAll": OkResult & { count: number };
@@ -363,7 +487,11 @@ export interface QueryResults extends SystemQueryResults {
   "saves.backfillColors": OkResult & { updated: number };
   "saves.publicImageUrl": { ok: boolean; url: string | null };
   "saves.ensureTextCover": OkResult & { captured: number };
-  "saves.findDuplicates": { groups: { ids: string[] }[] };
+  "saves.findDuplicates": {
+    groups: { kind: "exact" | "similar"; ids: string[] }[];
+    visualIndexed: number;
+    total: number;
+  };
   "saves.mergeDuplicates": OkResult & { trashed: number };
   "saves.batchRename": OkResult & { renamed: number };
   "saves.activateFont": OkResult & { path?: string; error?: string };
@@ -384,6 +512,16 @@ export interface QueryResults extends SystemQueryResults {
     error?: string;
   };
   "saves.importClipboard": OkResult & { ids: string[] };
+  "saves.copyInternalLinks": OkResult;
+  "saves.listOpenWith": {
+    apps: Array<{
+      name: string;
+      path: string;
+      icon: string | null;
+      isDefault: boolean;
+    }>;
+  };
+  "saves.openWith": { ok: boolean; error?: string; cancelled?: boolean };
   "saves.startDrag": OkResult;
   "saves.quickAdd": OkResult & { id?: string; created?: boolean };
   "saves.exportFile": OkResult & { path?: string };
@@ -407,6 +545,7 @@ export interface QueryResults extends SystemQueryResults {
   "pipeline.status": { paused: boolean; inflight: number };
   "pipeline.inflight": string[];
   "downloads.live": string[];
+  "downloads.activity": DownloadActivity[];
   "downloads.history": {
     rows: {
       id: number;
@@ -469,6 +608,7 @@ export interface QueryResults extends SystemQueryResults {
   "folders.list": Folder[];
   "folders.create": Folder;
   "folders.rename": OkResult;
+  "folders.setColor": OkResult;
   "folders.delete": OkResult;
   "folders.memberships": { saveId: string; folderId: string }[];
   "folders.setSaveFolders": OkResult;
@@ -477,6 +617,7 @@ export interface QueryResults extends SystemQueryResults {
   "tagGroups.create": OkResult;
   "agent.saveKey": OkResult;
   "settings.getPrefs": Prefs;
+  "settings.globalShortcutStatus": GlobalShortcutStatus;
   "settings.setPrefs": { ok: boolean; prefs: Prefs };
 }
 

@@ -119,13 +119,9 @@
   place-items: center;
   width: 18px;
   height: 18px;
-  color: var(--ds-gray-10);
+  color: var(--ds-gray-9);
   background: transparent;
   border: 0;
-}
-
-.item[aria-selected="true"] .icon {
-  color: var(--ds-gray-11);
 }
 
 .icon svg {

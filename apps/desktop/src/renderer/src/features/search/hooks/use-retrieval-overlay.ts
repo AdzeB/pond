@@ -1,9 +1,12 @@
+import type { LibraryQueryRequest } from "@shared/library-query";
 import { useEffect, useState } from "react";
 import {
   useSemanticQuery,
   useVisualProbe,
   type VisualProbe,
 } from "@/features/library/state/view-store";
+import { ensureSaves } from "@/features/saves/lib/ensure-saves";
+import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
 import { retrieveSaveIds } from "@/features/search/lib/retrieve-client";
 import { usePrefs } from "@/features/settings/state/prefs";
@@ -24,6 +27,7 @@ function visualInput(probe: VisualProbe) {
 
 export function useRetrievalOverlay(
   saves: ReadonlyArray<Save>,
+  libraryQuery?: LibraryQueryRequest,
 ): ReadonlyArray<Save> {
   const [ai] = usePrefs("ai");
   const semanticQuery = useSemanticQuery();
@@ -49,13 +53,16 @@ export function useRetrievalOverlay(
         const ids = await retrieveSaveIds({
           query: semantic ?? undefined,
           visual: visual ? visualInput(visual) : undefined,
-          saveIds: scoped.map((save) => save.id),
+          saveIds: libraryQuery ? undefined : scoped.map((save) => save.id),
+          libraryQuery,
           limit: LIMIT,
         });
         if (cancelled) return;
+        await ensureSaves(ids);
+        if (cancelled) return;
         setRanked(
           ids.flatMap((id) => {
-            const save = byId.get(id);
+            const save = libraryQuery ? pool.get(id) : byId.get(id);
             return save ? [save] : [];
           }),
         );
@@ -68,7 +75,7 @@ export function useRetrievalOverlay(
     return () => {
       cancelled = true;
     };
-  }, [semantic, visual, saves]);
+  }, [semantic, visual, saves, libraryQuery]);
 
   const settled = useStableById(ranked ?? saves);
   if (!semantic && !visual) return saves;

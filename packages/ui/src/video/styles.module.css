@@ -49,6 +49,18 @@
   transform: none;
 }
 
+.controls[data-chrome] {
+  position: relative;
+  inset: auto;
+  gap: 8px;
+  padding: 4px 8px;
+  color: var(--ds-gray-12);
+  pointer-events: auto;
+  background: none;
+  opacity: 1;
+  transform: none;
+}
+
 .bar {
   display: flex;
   flex: 0 0 auto;
@@ -263,4 +275,60 @@
 .speed:focus-visible {
   outline: 2px solid var(--ds-white-a10);
   outline-offset: 0;
+}
+
+.controls[data-chrome] .button {
+  color: var(--ds-gray-12);
+
+  &:hover {
+    background: var(--ds-gray-a3);
+  }
+
+  &:focus-visible {
+    outline-color: var(--ds-gray-12);
+  }
+}
+
+.controls[data-chrome] .time,
+.controls[data-chrome] .time-display {
+  color: var(--ds-gray-12);
+}
+
+.controls[data-chrome] .time-display-separator {
+  color: var(--ds-gray-8);
+}
+
+.controls[data-chrome] .track {
+  background: var(--ds-gray-a4);
+}
+
+.controls[data-chrome] .buffer {
+  background: var(--ds-gray-a6);
+}
+
+.controls[data-chrome] .hover-fill {
+  background: var(--ds-gray-a5);
+}
+
+.controls[data-chrome] .indicator,
+.controls[data-chrome] .thumb {
+  background: var(--ds-gray-12);
+}
+
+.controls[data-chrome] .speed {
+  color: var(--ds-gray-12);
+
+  &:hover {
+    background: var(--ds-gray-a3);
+  }
+
+  &:focus-visible {
+    outline-color: var(--ds-gray-12);
+  }
+}
+
+.controls[data-chrome] .preview {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-sm);
 }

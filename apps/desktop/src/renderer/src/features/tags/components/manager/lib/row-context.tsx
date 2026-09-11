@@ -10,7 +10,7 @@ import {
   useState,
 } from "react";
 import { libraryChrome } from "@/features/library/state/library-chrome";
-import { resetFilters } from "@/features/library/state/view-store";
+import { resetFilters, setQuery } from "@/features/library/state/view-store";
 import {
   buildTagMenuItems,
   type TagMenuActions,
@@ -21,7 +21,7 @@ import {
 } from "@/features/tags/components/group-context-menu/group-context-menu";
 import { tagOperations } from "@/features/tags/operations/tag-client";
 import { getAppRouter } from "@/shared/lib/app-router";
-import { SHORTCUTS } from "@/shared/lib/shortcuts";
+import { useShortcutBindings } from "@/shared/lib/shortcuts";
 import { useTagsTable } from "./context";
 import type { TagsRowData } from "./types";
 
@@ -29,11 +29,9 @@ interface TagRowContextValue {
   row: TagsRowData;
   rowRef: RefObject<HTMLDivElement | null>;
   renaming: boolean;
-  renameDraft: string;
-  setRenameDraft: (v: string) => void;
-  commitRename: () => void;
-  cancelRename: () => void;
   startRename: () => void;
+  saveRename: (name: string) => Promise<void>;
+  finishRename: () => void;
   menuItems: MenuItemSpec[];
   buildMenuItems: () => MenuItemSpec[];
 }
@@ -54,27 +52,29 @@ export function TagRowProvider({
   children: ReactNode;
 }) {
   const { groups } = useTagsTable();
+  const shortcuts = useShortcutBindings();
   const isGroup = row.kind === "group";
   const name = isGroup ? row.group.name : row.tag.name;
 
   const [renaming, setRenaming] = useState(false);
-  const [renameDraft, setRenameDraft] = useState(name);
   const rowRef = useRef<HTMLDivElement | null>(null);
 
   function startRename() {
-    setRenameDraft(name);
     setRenaming(true);
   }
 
-  useHotkey(SHORTCUTS["tags.rename"].keys!, () => startRename(), {
+  function finishRename() {
+    setRenaming(false);
+  }
+
+  async function saveRename(next: string) {
+    await tagOperations.rename(isGroup ? "group" : "tag", name, next);
+  }
+
+  useHotkey(shortcuts["tags.rename"].keys!, () => startRename(), {
     target: rowRef,
     enabled: !renaming,
   });
-
-  async function commitRename() {
-    setRenaming(false);
-    await tagOperations.rename(isGroup ? "group" : "tag", name, renameDraft);
-  }
 
   function confirmDelete() {
     if (isGroup) {
@@ -97,7 +97,25 @@ export function TagRowProvider({
   function buildMenuItems(): MenuItemSpec[] {
     if (isGroup) {
       const actions: TagGroupMenuActions = {
+        color: row.group.color,
+        tagCount: row.group.tagNames.length,
+        onFilter: () => {
+          const names = row.group.tagNames;
+          if (names.length === 0) return;
+          resetFilters();
+          setQuery({
+            combinator: "and",
+            rules: [{ field: "tags", operator: "some", value: names }],
+          });
+          libraryChrome.setNav({ kind: "all" });
+          getAppRouter()?.history.push("/");
+        },
         onRename: startRename,
+        onChangeColor: (color) =>
+          void window.pond.query("tagGroups.update", {
+            name,
+            patch: { color },
+          }),
         onRequestDelete: confirmDelete,
       };
       return buildTagGroupMenuItems(actions);
@@ -140,11 +158,9 @@ export function TagRowProvider({
     row,
     rowRef,
     renaming,
-    renameDraft,
-    setRenameDraft,
-    commitRename: () => void commitRename(),
-    cancelRename: () => setRenaming(false),
     startRename,
+    saveRename,
+    finishRename,
     menuItems: buildMenuItems(),
     buildMenuItems,
   };

@@ -3,7 +3,8 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { NewMenu } from "./new-menu";
+import { newMenuDialog } from "@/features/library/state/new-menu-dialog";
+import { NewMenu, NewMenuDialogHost } from "./new-menu";
 
 const newFolder = vi.fn();
 
@@ -44,6 +45,7 @@ describe("new menu", () => {
   });
 
   afterEach(async () => {
+    newMenuDialog.close();
     await act(async () => root.unmount());
     host.remove();
     vi.unstubAllGlobals();
@@ -114,5 +116,13 @@ describe("new menu", () => {
     if (!(item instanceof HTMLElement)) throw new Error("Missing New Folder");
     await act(async () => item.click());
     expect(newFolder).toHaveBeenCalledOnce();
+  });
+
+  it("hosts note and link dialogs from the shared store", async () => {
+    await act(async () => root.render(<NewMenuDialogHost />));
+    await act(async () => newMenuDialog.open("note"));
+    expect(document.body.textContent).toContain("New Note");
+    await act(async () => newMenuDialog.open("links"));
+    expect(document.body.textContent).toContain("Import from Links");
   });
 });

@@ -12,7 +12,7 @@ import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import {
   buildTagNav,
   filterByNav,
-  partitionRecent,
+  partitionPickerTags,
   type TagNavId,
 } from "./lib";
 import styles from "./menu.module.css";
@@ -20,7 +20,7 @@ import styles from "./menu.module.css";
 interface TagMenuProps {
   appliedKeys?: ReadonlySet<string>;
   counts?: ReadonlyMap<string, number>;
-  onToggle: (name: string) => void;
+  onToggle: (name: string) => void | Promise<void>;
   allowCreate?: boolean;
   placeholder?: string;
   emptyLabel?: ReactNode;
@@ -37,6 +37,8 @@ export function TagMenu({
   const tags = useTags();
   const groups = useTagGroups();
   const [q, setQ] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
   const [navId, setNavId] = useState<TagNavId>("all");
   const [pane, setPane] = useState<"nav" | "list">("list");
   const [recentOpen, setRecentOpen] = useState(true);
@@ -99,8 +101,8 @@ export function TagMenu({
     [matching, activeNav, groupedTagIds, groupTagIds],
   );
 
-  const { recent, others } = useMemo(
-    () => partitionRecent(visibleTags),
+  const { starred, recent, others } = useMemo(
+    () => partitionPickerTags(visibleTags),
     [visibleTags],
   );
 
@@ -122,24 +124,38 @@ export function TagMenu({
   }, [allowCreate, q, tagsByLower]);
 
   async function commitCreate() {
-    if (!createInfo) return;
-    if (createInfo.kind === "group") {
-      const { group, label } = createInfo;
-      try {
-        if (!tagsByLower.has(label.toLowerCase())) {
-          await window.pond.query("tags.create", { name: label });
-        }
-        await window.pond.query("tagGroups.create", { name: group });
+    if (!createInfo || creating) return;
+    setCreating(true);
+    setError(null);
+    try {
+      const label = createInfo.label;
+      if (!tagsByLower.has(label.toLowerCase()))
+        await window.pond.query("tags.create", { name: label });
+      if (createInfo.kind === "group") {
+        const group = groups.find(
+          (group) =>
+            group.name.toLowerCase() === createInfo.group.toLowerCase(),
+        );
+        if (!group)
+          await window.pond.query("tagGroups.create", {
+            name: createInfo.group,
+          });
         await window.pond.query("tagGroups.addTags", {
           tags: [label],
-          group,
+          group: group?.name ?? createInfo.group,
         });
-      } catch {}
-      onToggle(label);
-    } else {
-      onToggle(createInfo.label);
+      }
+      await onToggle(label);
+      setQ("");
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Could not create the tag. Try again.",
+      );
+    } finally {
+      setCreating(false);
     }
-    setQ("");
   }
 
   function moveNav(delta: number) {
@@ -184,6 +200,19 @@ export function TagMenu({
     }
   }
 
+  async function toggleTag(name: string) {
+    setError(null);
+    try {
+      await onToggle(name);
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Could not update the tag. Try again.",
+      );
+    }
+  }
+
   function renderRow(tag: TagRow) {
     const applied = appliedKeys?.has(tag.name.toLowerCase()) ?? false;
     const count = counts?.get(tag.name.toLowerCase()) ?? tag.usageCount;
@@ -192,7 +221,7 @@ export function TagMenu({
         key={tag.id}
         closeOnClick={false}
         checked={applied}
-        onCheckedChange={() => onToggle(tag.name)}
+        onCheckedChange={() => void toggleTag(tag.name)}
       >
         <Menu.CheckboxItemIndicator />
         <Menu.ItemLabel>{tag.name}</Menu.ItemLabel>
@@ -212,10 +241,11 @@ export function TagMenu({
     onToggleOpen: () => void,
   ) {
     if (items.length === 0) return null;
-    const showToggle = recent.length > 0 && others.length > 0;
+    const showToggle =
+      [starred, recent, others].filter((items) => items.length > 0).length > 1;
     return (
       <Menu.Group>
-        {showToggle ? (
+        {showToggle && label !== "Starred" ? (
           <button
             type="button"
             className={styles.section}
@@ -242,7 +272,8 @@ export function TagMenu({
   }
 
   const hasRows = visibleTags.length > 0;
-  const bothSections = recent.length > 0 && others.length > 0;
+  const bothSections =
+    starred.length > 0 || (recent.length > 0 && others.length > 0);
 
   return (
     <div className={styles.root} data-nav={showNav ? "" : undefined}>
@@ -302,6 +333,8 @@ export function TagMenu({
         <div className={styles.list} {...listFade}>
           {bothSections ? (
             <>
+              {renderSection("Starred", starred, true, () => {})}
+              {starred.length ? <Menu.Separator /> : null}
               {renderSection("Recently", recent, recentOpen, () =>
                 setRecentOpen((open) => !open),
               )}
@@ -315,7 +348,11 @@ export function TagMenu({
           ) : null}
 
           {createInfo ? (
-            <Menu.Item onClick={() => void commitCreate()}>
+            <Menu.Item
+              closeOnClick={false}
+              disabled={creating}
+              onClick={() => void commitCreate()}
+            >
               <Menu.ItemIcon>
                 <Plus />
               </Menu.ItemIcon>
@@ -331,6 +368,11 @@ export function TagMenu({
             </Menu.Item>
           ) : null}
 
+          {error ? (
+            <div role="alert" className={styles.empty}>
+              {error}
+            </div>
+          ) : null}
           {!hasRows && !createInfo ? (
             <div className={styles.empty}>
               {needle ? "No matches." : emptyLabel}

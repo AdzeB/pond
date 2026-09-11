@@ -2,7 +2,14 @@ export const SPEED_OPTIONS = [
   0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3, 4, 8,
 ] as const;
 
-export const FRAME_STEP_SECONDS = 1 / 30;
+export function frameStepTime(
+  time: number,
+  delta: number,
+  frameRate: number | null | undefined,
+): number | null {
+  if (!frameRate || !Number.isFinite(frameRate) || frameRate <= 0) return null;
+  return Math.max(0, (Math.round(time * frameRate) + delta) / frameRate);
+}
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));

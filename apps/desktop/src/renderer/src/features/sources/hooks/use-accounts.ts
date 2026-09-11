@@ -71,7 +71,7 @@ export async function refetchAccounts(): Promise<AccountRow[]> {
     const rows = AccountsReplySchema.parse(
       await window.pond.query("accounts.list", {}),
     ).accounts;
-    store.setState({ accounts: rows, loaded: true });
+    store.setState(() => ({ accounts: rows, loaded: true }));
     for (const account of rows) {
       const status: Partial<SyncAccountStatus> = {
         connected: account.connected,

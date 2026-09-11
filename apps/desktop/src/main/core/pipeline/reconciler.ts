@@ -6,10 +6,13 @@ import { z } from "zod";
 import { getDb } from "../../db";
 import { commitEvent, startTaskEvent, toErrorInfo } from "../../lib/wide-event";
 import { persistSave } from "../persist-save";
+import { downloadActivity } from "./download-activity";
+import { canDispatchTask, isInteractiveTask } from "./priority";
 import {
   type DueTask,
   isSourceTask,
   MAX_GLOBAL_INFLIGHT,
+  MAX_INTERACTIVE_INFLIGHT,
   metrics,
   ORPHAN_SWEEP_INTERVAL_MS,
   PER_OP_CONCURRENCY,
@@ -52,8 +55,50 @@ const inflightByOp = {
   finalize: 0,
 };
 let inflightGlobal = 0;
+let inflightInteractive = 0;
 const runningTaskIds = new Set<string>();
 const runningTasks = new Map<string, AbortController>();
+const pendingWork = new Set<Promise<unknown>>();
+function track<T>(work: Promise<T>): Promise<T> {
+  const settled = work.then(
+    () => {},
+    () => {},
+  );
+  pendingWork.add(settled);
+  void settled.then(() => pendingWork.delete(settled));
+  return work;
+}
+export async function pauseAndDrainReconciler(
+  timeoutMs = 60_000,
+): Promise<boolean> {
+  const wasPaused = paused;
+  pauseReconciler();
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    await Promise.race([
+      (async () => {
+        while (pendingWork.size) await Promise.all(pendingWork);
+      })(),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () =>
+            reject(
+              new Error(
+                "Background saves are still finishing. Try the library operation again shortly.",
+              ),
+            ),
+          timeoutMs,
+        );
+      }),
+    ]);
+    return wasPaused;
+  } catch (error) {
+    if (!wasPaused) resumeReconciler();
+    throw error;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 export function isReconcilerPaused(): boolean {
   return paused;
@@ -144,18 +189,18 @@ export function startReconciler(): void {
   if (started) return;
   started = true;
   log.info("[pond pipeline:reconciler] starting");
-  void recoverOrphanedRunningTasks().catch((err) =>
+  void track(recoverOrphanedRunningTasks()).catch((err) =>
     log.warn("[pond pipeline:reconciler] stale-running sweep failed", err),
   );
-  void sweepOrphanTasks().catch((err) =>
+  void track(sweepOrphanTasks()).catch((err) =>
     log.warn("[pond pipeline:reconciler] orphan sweep failed", err),
   );
-  void sweepTasklessIngestingSaves().catch((err) =>
+  void track(sweepTasklessIngestingSaves()).catch((err) =>
     log.warn("[pond pipeline:reconciler] taskless sweep failed", err),
   );
   nextOrphanSweepAt = Date.now() + ORPHAN_SWEEP_INTERVAL_MS;
   schedulePoll(POLL_INTERVAL_MS);
-  void tick();
+  void track(tick());
 }
 
 export function kickReconciler(): void {
@@ -164,7 +209,7 @@ export function kickReconciler(): void {
   kickPending = true;
   setImmediate(() => {
     kickPending = false;
-    void tick();
+    void track(tick());
   });
 }
 
@@ -199,46 +244,62 @@ function schedulePoll(ms: number): void {
   if (pollTimer) clearTimeout(pollTimer);
   pollTimer = setTimeout(() => {
     if (!started) return;
-    void tick().finally(() => schedulePoll(POLL_INTERVAL_MS));
+    void track(tick()).finally(() => schedulePoll(POLL_INTERVAL_MS));
   }, ms);
 }
 
 async function tick(): Promise<void> {
   if (!started) return;
-  if (paused) return;
-  if (Date.now() >= nextOrphanSweepAt) {
+  if (!paused && Date.now() >= nextOrphanSweepAt) {
     nextOrphanSweepAt = Date.now() + ORPHAN_SWEEP_INTERVAL_MS;
-    void sweepOrphanTasks().catch((err) =>
+    void track(sweepOrphanTasks()).catch((err) =>
       log.warn("[pond pipeline:reconciler] periodic orphan sweep failed", err),
     );
-    void recoverOrphanedRunningTasks().catch((err) =>
+    void track(recoverOrphanedRunningTasks()).catch((err) =>
       log.warn(
         "[pond pipeline:reconciler] periodic stale-running sweep failed",
         err,
       ),
     );
-    void sweepTasklessIngestingSaves().catch((err) =>
+    void track(sweepTasklessIngestingSaves()).catch((err) =>
       log.warn(
         "[pond pipeline:reconciler] periodic taskless sweep failed",
         err,
       ),
     );
   }
-  if (inflightGlobal >= MAX_GLOBAL_INFLIGHT) return;
+  const backgroundInflight = inflightGlobal - inflightInteractive;
+  const interactiveRoom = inflightInteractive < MAX_INTERACTIVE_INFLIGHT;
+  const backgroundRoom = !paused && backgroundInflight < MAX_GLOBAL_INFLIGHT;
+  if (!interactiveRoom && !backgroundRoom) return;
   const due = await pullDueTasks();
   if (due.length === 0) return;
   for (const task of due) {
-    if (inflightGlobal >= MAX_GLOBAL_INFLIGHT) break;
     if (runningTaskIds.has(task.id)) continue;
-    if (inflightByOp[task.op] >= PER_OP_CONCURRENCY[task.op]) continue;
-    void dispatchTask(task);
+    if (
+      !canDispatchTask({
+        interactive: isInteractiveTask(task),
+        paused,
+        inflightGlobal,
+        inflightInteractive,
+        inflightForOp: inflightByOp[task.op],
+        opCap: PER_OP_CONCURRENCY[task.op],
+        backgroundCap: MAX_GLOBAL_INFLIGHT,
+        interactiveCap: MAX_INTERACTIVE_INFLIGHT,
+      })
+    ) {
+      continue;
+    }
+    void track(dispatchTask(task));
   }
 }
 
 async function dispatchTask(task: DueTask): Promise<void> {
+  const interactive = isInteractiveTask(task);
   runningTaskIds.add(task.id);
   inflightByOp[task.op]++;
   inflightGlobal++;
+  if (interactive) inflightInteractive++;
   metrics.tasksDispatched++;
   const controller = new AbortController();
   runningTasks.set(task.id, controller);
@@ -252,6 +313,9 @@ async function dispatchTask(task: DueTask): Promise<void> {
   });
   await enrichTaskEventWithSave(ev);
   const t0 = Date.now();
+  const activity = downloadActivity.begin(task);
+  const stopActivity = () => activity.finish("failed");
+  controller.signal.addEventListener("abort", stopActivity, { once: true });
   try {
     await markRunning(task);
     const payload = TaskPayloadSchema.parse(task.payload);
@@ -268,33 +332,43 @@ async function dispatchTask(task: DueTask): Promise<void> {
     });
     try {
       await Promise.race([
-        WORKERS[task.op](task.saveId, payload, { signal: controller.signal }),
+        track(
+          WORKERS[task.op](task.saveId, payload, {
+            signal: controller.signal,
+            reportActivity: activity.report,
+          }),
+        ),
         watchdog,
       ]);
     } finally {
       if (watchdogHandle) clearTimeout(watchdogHandle);
     }
+    controller.signal.throwIfAborted();
     await markDone(task);
     metrics.tasksCompleted++;
     if (isSourceTask(task.op)) noteSuccess(task.source);
     await maybeFinalizeSave(task.saveId);
+    activity.finish("completed");
     ev.outcome = "ok";
     ev.attempts = task.attempts + 1;
   } catch (err) {
+    activity.finish("failed");
     const result = await handleFailure(task, err);
     ev.outcome = result.outcome;
     ev.error = toErrorInfo(err);
     ev.nextRunAt = result.nextRunAt;
     ev.attempts = result.recordedAttempts;
   } finally {
+    controller.signal.removeEventListener("abort", stopActivity);
     runningTaskIds.delete(task.id);
     runningTasks.delete(task.id);
     inflightByOp[task.op]--;
     inflightGlobal--;
+    if (interactive) inflightInteractive--;
     ev.durationMs = Date.now() - t0;
     ev.pipeline = { inflight: inflightGlobal, paused };
     ev.gate = gateForSource(task.source);
-    void commitEvent(ev);
+    void track(commitEvent(ev));
     kickReconciler();
   }
 }

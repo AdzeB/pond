@@ -17,7 +17,6 @@
   font-weight: 450;
   color: var(--ds-gray-12);
   cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
   background: var(--ds-gray-1);
   background-clip: padding-box;
   border: var(--ds-border-elevated);
@@ -31,8 +30,6 @@
 }
 
 .tag:focus-visible {
-  outline: 2px solid var(--ds-gray-6);
-  outline-offset: 0;
   border-color: var(--ds-gray-a8);
 }
 

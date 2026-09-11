@@ -60,10 +60,12 @@
   height: 32px;
   padding-inline: 12px;
   padding-bottom: 2px;
-  margin-bottom: 2px;
+  margin-bottom: 6px;
   font-size: var(--ds-text-small);
   font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-12);
+  appearance: none;
+  outline: none;
   border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
 
   &::placeholder {
@@ -72,5 +74,13 @@
 
   &:focus {
     border-bottom: var(--ds-border-width) solid var(--ds-gray-a4);
+  }
+
+  &::-webkit-search-decoration,
+  &::-webkit-search-cancel-button,
+  &::-webkit-search-results-button,
+  &::-webkit-search-results-decoration {
+    display: none;
+    appearance: none;
   }
 }

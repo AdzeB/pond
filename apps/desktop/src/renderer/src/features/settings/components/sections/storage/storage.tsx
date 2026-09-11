@@ -1,7 +1,8 @@
-import { Button, Settings } from "@pond/ui";
+import { Button, Select, Settings } from "@pond/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { z } from "zod";
+import { TransferJobsPanel } from "@/features/downloads/components/transfers/transfer-jobs";
 import { playUiSuccess } from "@/features/settings/lib/sounds";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
 import { prettyPath } from "@/shared/lib/pretty-path";
@@ -87,8 +88,20 @@ export function LocationRow() {
       LibraryInfoSchema.parse(await window.pond.query("library.info", {})),
   });
 
+  const { data: recent = [] } = useQuery({
+    queryKey: ["recent-libraries"],
+    queryFn: () => window.pond.query("library.recent", {}),
+  });
+  const openRecent = useMutation({
+    mutationFn: async (path: string) => {
+      const result = await window.pond.query("library.switchTo", { path });
+      if (!result.ok)
+        throw new Error(result.reason || "Couldn't open library.");
+    },
+  });
+
   const [note, setNote] = useState<{
-    row: "backup" | "import";
+    row: "backup" | "import" | "package" | "merge";
     message: string;
   } | null>(null);
   const [celebrate, setCelebrate] = useState(false);
@@ -184,6 +197,47 @@ export function LocationRow() {
     },
   });
 
+  const restore = useMutation({
+    mutationFn: async () => {
+      clearNotes();
+      const result = BackupResultSchema.parse(
+        await window.pond.query("library.restoreBackup", {}),
+      );
+      if (!result.ok && result.reason !== "cancelled")
+        throw new Error(result.reason);
+    },
+  });
+
+  const importPackage = useMutation({
+    mutationFn: async () => {
+      clearNotes();
+      const result = await window.pond.query("saves.importPackage", {});
+      if (!result.ok) {
+        if (result.error === "canceled") return;
+        throw new Error(result.error || "Couldn't import package.");
+      }
+      setNote({
+        row: "package",
+        message: `Imported ${result.imported ?? 0} Saves. Skipped ${result.skipped ?? 0} existing Saves.`,
+      });
+    },
+  });
+
+  const mergeLibrary = useMutation({
+    mutationFn: async () => {
+      clearNotes();
+      const result = await window.pond.query("library.mergeFrom", {});
+      if (!result.ok) {
+        if (result.error === "canceled") return;
+        throw new Error(result.error || "Couldn't merge library.");
+      }
+      setNote({
+        row: "merge",
+        message: `Imported ${result.imported ?? 0} Saves. Skipped ${result.skipped ?? 0} existing Saves.`,
+      });
+    },
+  });
+
   const importEagle = useMutation({
     mutationFn: async (mode: "import" | "preview") => {
       clearNotes();
@@ -234,6 +288,9 @@ export function LocationRow() {
         deleted,
         res.failed > 0 ? `failed ${res.failed}` : null,
         locked,
+        res.droppedFields?.length
+          ? `Not imported: ${res.droppedFields.join(", ")}`
+          : null,
       ].filter(Boolean);
       setNote({
         row: "import",
@@ -243,169 +300,295 @@ export function LocationRow() {
   });
 
   return (
-    <Settings.List>
-      <Settings.Item id="setting-storage-location">
-        <Settings.ItemDetails>
-          <Settings.ItemTitle>Library Location</Settings.ItemTitle>
-          {info ? (
+    <>
+      <Settings.List>
+        <Settings.Item id="setting-storage-location">
+          <Settings.ItemDetails>
+            <Settings.ItemTitle>Library Location</Settings.ItemTitle>
+            {info ? (
+              <Settings.ItemDescription>
+                {prettyPath(info.path)}
+              </Settings.ItemDescription>
+            ) : null}
+          </Settings.ItemDetails>
+          <Settings.ItemControl>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => void window.pond.query("library.openInFinder", {})}
+            >
+              {REVEAL_LABEL}
+            </Button>
+          </Settings.ItemControl>
+        </Settings.Item>
+        <Settings.Item id="setting-storage-move">
+          <Settings.ItemDetails>
+            <Settings.ItemTitle>Move Library</Settings.ItemTitle>
             <Settings.ItemDescription>
-              {prettyPath(info.path)}
+              Copy to a new folder and switch to it. The original stays.
+              <StatusNote
+                error={
+                  move.isError
+                    ? mutationError(move.error, "Couldn't move library.")
+                    : null
+                }
+              />
             </Settings.ItemDescription>
-          ) : null}
-        </Settings.ItemDetails>
-        <Settings.ItemControl>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => void window.pond.query("library.openInFinder", {})}
-          >
-            {REVEAL_LABEL}
-          </Button>
-        </Settings.ItemControl>
-      </Settings.Item>
-      <Settings.Item id="setting-storage-move">
-        <Settings.ItemDetails>
-          <Settings.ItemTitle>Move Library</Settings.ItemTitle>
-          <Settings.ItemDescription>
-            Copy to a new folder and switch to it. The original stays.
-            <StatusNote
-              error={
-                move.isError
-                  ? mutationError(move.error, "Couldn't move library.")
-                  : null
-              }
-            />
-          </Settings.ItemDescription>
-        </Settings.ItemDetails>
-        <Settings.ItemControl>
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={move.isPending}
-            onClick={() => move.mutate()}
-          >
-            {move.isPending ? "Moving" : "Move"}
-          </Button>
-        </Settings.ItemControl>
-      </Settings.Item>
-      <Settings.Item id="setting-storage-backup">
-        <Settings.ItemDetails>
-          <Settings.ItemTitle>Back Up Library</Settings.ItemTitle>
-          <Settings.ItemDescription>
-            Copy the pond elsewhere. This library stays open.
-            <StatusNote
-              error={
-                backup.isError
-                  ? mutationError(backup.error, "Couldn't back up library.")
-                  : null
-              }
-              status={note?.row === "backup" ? note.message : null}
-              celebrate={celebrate}
-            />
-          </Settings.ItemDescription>
-        </Settings.ItemDetails>
-        <Settings.ItemControl>
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={backup.isPending}
-            onClick={() => backup.mutate()}
-          >
-            {backup.isPending ? "Backing up" : "Backup"}
-          </Button>
-        </Settings.ItemControl>
-      </Settings.Item>
-      <Settings.Item id="setting-storage-new">
-        <Settings.ItemDetails>
-          <Settings.ItemTitle>New Library</Settings.ItemTitle>
-          <Settings.ItemDescription>
-            Create a .pond folder on this Mac and switch to it.
-            <StatusNote
-              error={
-                createLibrary.isError
-                  ? mutationError(
-                      createLibrary.error,
-                      "Couldn't create library.",
-                    )
-                  : null
-              }
-            />
-          </Settings.ItemDescription>
-        </Settings.ItemDetails>
-        <Settings.ItemControl>
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={createLibrary.isPending}
-            onClick={() => createLibrary.mutate()}
-          >
-            {createLibrary.isPending ? "Creating" : "New"}
-          </Button>
-        </Settings.ItemControl>
-      </Settings.Item>
-      <Settings.Item id="setting-storage-open">
-        <Settings.ItemDetails>
-          <Settings.ItemTitle>Open Library</Settings.ItemTitle>
-          <Settings.ItemDescription>
-            Open another .pond library and relaunch.
-            <StatusNote
-              error={
-                openExisting.isError
-                  ? mutationError(openExisting.error, "Couldn't open library.")
-                  : null
-              }
-            />
-          </Settings.ItemDescription>
-        </Settings.ItemDetails>
-        <Settings.ItemControl>
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={openExisting.isPending}
-            onClick={() => openExisting.mutate()}
-          >
-            {openExisting.isPending ? "Opening" : "Open"}
-          </Button>
-        </Settings.ItemControl>
-      </Settings.Item>
-      <Settings.Item id="setting-storage-import">
-        <Settings.ItemDetails>
-          <Settings.ItemTitle>Import Eagle Library</Settings.ItemTitle>
-          <Settings.ItemDescription>
-            Import your saves. Locked folders are skipped.
-            <StatusNote
-              error={
-                importEagle.isError
-                  ? mutationError(
-                      importEagle.error,
-                      "Couldn't import Eagle library.",
-                    )
-                  : null
-              }
-              status={note?.row === "import" ? note.message : null}
-            />
-          </Settings.ItemDescription>
-        </Settings.ItemDetails>
-        <Settings.ItemControl>
-          <Button
-            size="sm"
-            variant="ghost"
-            disabled={importEagle.isPending}
-            onClick={() => importEagle.mutate("preview")}
-          >
-            Preview
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={importEagle.isPending}
-            onClick={() => importEagle.mutate("import")}
-          >
-            {importEagle.isPending ? "Importing" : "Import"}
-          </Button>
-        </Settings.ItemControl>
-      </Settings.Item>
-    </Settings.List>
+          </Settings.ItemDetails>
+          <Settings.ItemControl>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={move.isPending}
+              onClick={() => move.mutate()}
+            >
+              {move.isPending ? "Moving" : "Move"}
+            </Button>
+          </Settings.ItemControl>
+        </Settings.Item>
+        {recent.length > 1 ? (
+          <Settings.Item id="setting-storage-recent">
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Recent Libraries</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Switch to a library you've opened before.
+                <StatusNote error={openRecent.error?.message} />
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Select.Root
+                value={recent.find((entry) => entry.active)?.path ?? ""}
+                disabled={openRecent.isPending}
+                onValueChange={(path) => {
+                  if (path) openRecent.mutate(path);
+                }}
+              >
+                <Select.Trigger aria-label="Recent Libraries">
+                  <Select.Value>
+                    {(path: string) =>
+                      recent.find((entry) => entry.path === path)?.name ??
+                      "Choose Library"
+                    }
+                  </Select.Value>
+                </Select.Trigger>
+                <Select.Portal>
+                  <Select.Positioner sideOffset={6}>
+                    <Select.Popup>
+                      <Select.Items
+                        items={recent.map((entry) => ({
+                          value: entry.path,
+                          label: entry.available
+                            ? entry.name
+                            : `${entry.name} (Unavailable)`,
+                          disabled: !entry.available,
+                        }))}
+                      />
+                    </Select.Popup>
+                  </Select.Positioner>
+                </Select.Portal>
+              </Select.Root>
+            </Settings.ItemControl>
+          </Settings.Item>
+        ) : null}
+        <Settings.Item id="setting-storage-backup">
+          <Settings.ItemDetails>
+            <Settings.ItemTitle>Back Up Library</Settings.ItemTitle>
+            <Settings.ItemDescription>
+              Copy the pond elsewhere. This library stays open.
+              <StatusNote
+                error={
+                  backup.isError
+                    ? mutationError(backup.error, "Couldn't back up library.")
+                    : null
+                }
+                status={note?.row === "backup" ? note.message : null}
+                celebrate={celebrate}
+              />
+            </Settings.ItemDescription>
+          </Settings.ItemDetails>
+          <Settings.ItemControl>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={backup.isPending}
+              onClick={() => backup.mutate()}
+            >
+              {backup.isPending ? "Backing up" : "Backup"}
+            </Button>
+          </Settings.ItemControl>
+        </Settings.Item>
+        <Settings.Item id="setting-storage-restore">
+          <Settings.ItemDetails>
+            <Settings.ItemTitle>Restore Backup</Settings.ItemTitle>
+            <Settings.ItemDescription>
+              Verify a backup and open a restored copy.
+              <StatusNote
+                error={
+                  restore.isError
+                    ? mutationError(restore.error, "Couldn't restore backup.")
+                    : null
+                }
+              />
+            </Settings.ItemDescription>
+          </Settings.ItemDetails>
+          <Settings.ItemControl>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={restore.isPending}
+              onClick={() => restore.mutate()}
+            >
+              {restore.isPending ? "Restoring" : "Restore"}
+            </Button>
+          </Settings.ItemControl>
+        </Settings.Item>
+        <Settings.Item id="setting-storage-package">
+          <Settings.ItemDetails>
+            <Settings.ItemTitle>Import Pond Package</Settings.ItemTitle>
+            <Settings.ItemDescription>
+              Add Saves, original files, and folders from a .pondpack folder.
+              <StatusNote
+                error={
+                  importPackage.isError
+                    ? mutationError(
+                        importPackage.error,
+                        "Couldn't import package.",
+                      )
+                    : null
+                }
+                status={note?.row === "package" ? note.message : null}
+              />
+            </Settings.ItemDescription>
+          </Settings.ItemDetails>
+          <Settings.ItemControl>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={importPackage.isPending}
+              onClick={() => importPackage.mutate()}
+            >
+              {importPackage.isPending ? "Importing" : "Import"}
+            </Button>
+          </Settings.ItemControl>
+        </Settings.Item>
+        <Settings.Item id="setting-storage-merge">
+          <Settings.ItemDetails>
+            <Settings.ItemTitle>Merge Library</Settings.ItemTitle>
+            <Settings.ItemDescription>
+              Copy new Saves and folders from another library.
+              <StatusNote
+                error={mergeLibrary.error?.message}
+                status={note?.row === "merge" ? note.message : null}
+              />
+            </Settings.ItemDescription>
+          </Settings.ItemDetails>
+          <Settings.ItemControl>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={mergeLibrary.isPending}
+              onClick={() => mergeLibrary.mutate()}
+            >
+              {mergeLibrary.isPending ? "Merging" : "Merge"}
+            </Button>
+          </Settings.ItemControl>
+        </Settings.Item>
+        <Settings.Item id="setting-storage-new">
+          <Settings.ItemDetails>
+            <Settings.ItemTitle>New Library</Settings.ItemTitle>
+            <Settings.ItemDescription>
+              Create a .pond folder on this Mac and switch to it.
+              <StatusNote
+                error={
+                  createLibrary.isError
+                    ? mutationError(
+                        createLibrary.error,
+                        "Couldn't create library.",
+                      )
+                    : null
+                }
+              />
+            </Settings.ItemDescription>
+          </Settings.ItemDetails>
+          <Settings.ItemControl>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={createLibrary.isPending}
+              onClick={() => createLibrary.mutate()}
+            >
+              {createLibrary.isPending ? "Creating" : "New"}
+            </Button>
+          </Settings.ItemControl>
+        </Settings.Item>
+        <Settings.Item id="setting-storage-open">
+          <Settings.ItemDetails>
+            <Settings.ItemTitle>Open Library</Settings.ItemTitle>
+            <Settings.ItemDescription>
+              Open another .pond library and relaunch.
+              <StatusNote
+                error={
+                  openExisting.isError
+                    ? mutationError(
+                        openExisting.error,
+                        "Couldn't open library.",
+                      )
+                    : null
+                }
+              />
+            </Settings.ItemDescription>
+          </Settings.ItemDetails>
+          <Settings.ItemControl>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={openExisting.isPending}
+              onClick={() => openExisting.mutate()}
+            >
+              {openExisting.isPending ? "Opening" : "Open"}
+            </Button>
+          </Settings.ItemControl>
+        </Settings.Item>
+        <Settings.Item id="setting-storage-import">
+          <Settings.ItemDetails>
+            <Settings.ItemTitle>Import Eagle Library</Settings.ItemTitle>
+            <Settings.ItemDescription>
+              Import your saves. Locked folders are skipped.
+              <StatusNote
+                error={
+                  importEagle.isError
+                    ? mutationError(
+                        importEagle.error,
+                        "Couldn't import Eagle library.",
+                      )
+                    : null
+                }
+                status={note?.row === "import" ? note.message : null}
+              />
+            </Settings.ItemDescription>
+          </Settings.ItemDetails>
+          <Settings.ItemControl>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={importEagle.isPending}
+              onClick={() => importEagle.mutate("preview")}
+            >
+              Preview
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={importEagle.isPending}
+              onClick={() => importEagle.mutate("import")}
+            >
+              {importEagle.isPending ? "Importing" : "Import"}
+            </Button>
+          </Settings.ItemControl>
+        </Settings.Item>
+      </Settings.List>
+      <TransferJobsPanel />
+    </>
   );
 }
 

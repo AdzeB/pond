@@ -1,4 +1,4 @@
-import { SOURCES, type Source } from "@pond/schema/db";
+import { SOURCES, type Source } from "@pond/schema/source-ids";
 
 export function cookieDomainsForSource(source: Source): string[] {
   switch (source) {

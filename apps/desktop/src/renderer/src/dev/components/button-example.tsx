@@ -10,6 +10,7 @@ const variants = [
   "secondary",
   "tertiary",
   "ghost",
+  "text",
   "accent",
   "destructive",
   "link",

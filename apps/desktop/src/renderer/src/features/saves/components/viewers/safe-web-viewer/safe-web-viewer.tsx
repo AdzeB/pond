@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { ViewerHud } from "@/features/saves/components/viewers/hud";
+import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import styles from "./safe-web-viewer.module.css";
 import { sanitizeOfflineHtml } from "./sanitize";
 
@@ -17,6 +19,7 @@ export function SafeWebViewer({
 }: SafeWebViewerProps) {
   const [source, setSource] = useState<string | null>(null);
   const [mode, setMode] = useState<"rendered" | "source">("rendered");
+  const scrollFade = useScrollFade<HTMLPreElement>();
 
   useEffect(() => {
     if (size > MAX_HTML_BYTES) {
@@ -47,25 +50,37 @@ export function SafeWebViewer({
 
   return (
     <div className={styles.root}>
-      <div className={styles.toolbar}>
-        <button
-          type="button"
-          aria-pressed={mode === "rendered"}
-          onClick={() => setMode("rendered")}
-        >
-          Rendered
-        </button>
-        <button
-          type="button"
-          aria-pressed={mode === "source"}
-          onClick={() => setMode("source")}
-        >
-          Source
-        </button>
-        <span>Scripts, forms, embeds, and network requests are disabled.</span>
-      </div>
+      <ViewerHud.Root>
+        <ViewerHud.Cluster anchor="top-left">
+          <ViewerHud.Pill role="toolbar" aria-label="Preview">
+            <ViewerHud.Tool
+              icon={false}
+              label="Rendered"
+              pressed={mode === "rendered"}
+              onClick={() => setMode("rendered")}
+            >
+              Rendered
+            </ViewerHud.Tool>
+            <ViewerHud.Tool
+              icon={false}
+              label="Source"
+              pressed={mode === "source"}
+              onClick={() => setMode("source")}
+            >
+              Source
+            </ViewerHud.Tool>
+          </ViewerHud.Pill>
+        </ViewerHud.Cluster>
+        <ViewerHud.Cluster anchor="top-right">
+          <ViewerHud.Pill className={styles.hint}>
+            <span>
+              Scripts, forms, embeds, and network requests are disabled.
+            </span>
+          </ViewerHud.Pill>
+        </ViewerHud.Cluster>
+      </ViewerHud.Root>
       {source === null ? (
-        <div className={styles.status}>Reading page…</div>
+        <div className={styles.status}>Reading page</div>
       ) : null}
       {source !== null && mode === "rendered" ? (
         <iframe
@@ -76,7 +91,9 @@ export function SafeWebViewer({
         />
       ) : null}
       {source !== null && mode === "source" ? (
-        <pre className={styles.source}>{source}</pre>
+        <pre className={styles.source} {...scrollFade}>
+          {source}
+        </pre>
       ) : null}
     </div>
   );

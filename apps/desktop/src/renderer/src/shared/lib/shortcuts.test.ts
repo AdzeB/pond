@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { ShortcutDef } from "./shortcuts";
-import { chordGlyphs, SHORTCUTS, shortcutGlyphs } from "./shortcuts";
+import {
+  chordGlyphs,
+  resolveShortcuts,
+  SHORTCUTS,
+  shortcutConflict,
+  shortcutGlyphs,
+} from "./shortcuts";
 
 describe("shortcut registry", () => {
   it("leaves Tab available for keyboard focus navigation", () => {
@@ -50,5 +56,77 @@ describe("shortcutGlyphs", () => {
 
   it("keeps Go to Settings as G then comma", () => {
     expect(shortcutGlyphs("nav.settings")).toEqual(["G", ","]);
+  });
+});
+
+describe("shortcut profiles", () => {
+  it("exposes global capture commands with stable defaults in both profiles", () => {
+    for (const profile of ["pond", "eagle"] as const) {
+      const bindings = resolveShortcuts({
+        profile,
+        overrides: { "capture.area": "Control+Alt+F12" },
+      });
+      expect(bindings["app.summon"].keys).toBe("Mod+Shift+L");
+      expect(bindings["capture.display"].keys).toBe("Mod+Alt+Shift+3");
+      expect(bindings["capture.area"].keys).toBe("Control+Alt+F12");
+      expect(bindings["capture.window"].keys).toBe("Mod+Alt+Shift+5");
+    }
+  });
+
+  it("moves layouts out of rating keys without changing Pond defaults", () => {
+    const eagle = resolveShortcuts({ profile: "eagle", overrides: {} });
+    expect(eagle["save.rate-4"].keys).toBe("4");
+    expect(eagle["save.rate-next-4"].keys).toBe("Shift+4");
+    expect(eagle["view.layout-grid"].keys).toBe("Alt+2");
+    expect(eagle["save.add-tag"].keys).toBe("T");
+    expect(eagle["viewer.comment"].keys).toBe("C");
+    expect(eagle["save.copy-image"].keys).toBe("Mod+C");
+    const pond = resolveShortcuts({ profile: "pond", overrides: {} });
+    expect(pond["view.layout-grid"].keys).toBe("2");
+    expect(pond["save.add-tag"].keys).toBe("A");
+    expect(pond["save.rate-4"].keys).toBe("Alt+4");
+  });
+
+  it("applies valid persisted overrides and ignores invalid old bindings", () => {
+    const bindings = resolveShortcuts({
+      profile: "pond",
+      overrides: {
+        "save.add-tag": "Control+Shift+T",
+        "save.rate-4": "DefinitelyNotAKey",
+      },
+    });
+    expect(bindings["save.add-tag"].keys).toBe("Control+Shift+T");
+    expect(bindings["save.rate-4"].keys).toBe("Alt+4");
+    expect(SHORTCUTS["save.add-tag"].keys).toBe("A");
+  });
+
+  it("keeps library create and import chords unique", () => {
+    const preferences = { profile: "pond" as const, overrides: {} };
+    for (const id of [
+      "library.new-folder",
+      "library.new-tag",
+      "library.new-tag-group",
+      "library.new-note",
+      "library.import-files",
+      "library.import-folders",
+      "library.import-links",
+    ] as const) {
+      expect(shortcutConflict(id, SHORTCUTS[id].keys, preferences)).toBeNull();
+    }
+  });
+
+  it("detects collisions against the effective profile", () => {
+    expect(
+      shortcutConflict("save.add-tag", "4", {
+        profile: "eagle",
+        overrides: {},
+      }),
+    ).toBe("Rate 4 Stars");
+    expect(
+      shortcutConflict("save.add-tag", "T", {
+        profile: "eagle",
+        overrides: {},
+      }),
+    ).toBeNull();
   });
 });

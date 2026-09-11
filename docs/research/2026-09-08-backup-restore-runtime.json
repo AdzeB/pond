@@ -1,0 +1,94 @@
+{
+  "ok": true,
+  "verification": "native Electron Node runtime against actual scanner and organization hydration, fresh in-memory SQLite index",
+  "builtAppIPC": {
+    "backup": {
+      "ok": true,
+      "path": "/tmp/pond-backup-runtime-2RHV4h/Verified Backup.pond",
+      "copied": 45
+    },
+    "mutation": {
+      "changed": 33
+    },
+    "pendingAtBackupRequest": true,
+    "restoreDestination": "/tmp/pond-backup-runtime-2RHV4h/Restored.pond"
+  },
+  "scan": {
+    "updated": 33,
+    "total": 33
+  },
+  "saveCount": 33,
+  "membershipCount": 3,
+  "views": [
+    {
+      "id": "01M20YS3G34VZEPKWHH5QHENHX",
+      "name": "Backup Group",
+      "kind": "group",
+      "parent_id": null,
+      "question": null,
+      "query": "{\"combinator\":\"and\",\"rules\":[]}",
+      "sort_key": "savedAt",
+      "sort_dir": "desc",
+      "layout": null,
+      "sort_order": 0,
+      "created_at": 1788886158000
+    },
+    {
+      "id": "01M20YS3H3QDBDW5FZ22GQSWJM",
+      "name": "Rated",
+      "kind": "smart_folder",
+      "parent_id": "01M20YS3G34VZEPKWHH5QHENHX",
+      "question": null,
+      "query": "{\"combinator\":\"and\",\"rules\":[{\"field\":\"rating\",\"operator\":\"gte\",\"value\":4}]}",
+      "sort_key": "savedAt",
+      "sort_dir": "desc",
+      "layout": null,
+      "sort_order": 1,
+      "created_at": 1788886158000
+    },
+    {
+      "id": "01M20YS3HHCARE0EQE1QRDFVMJ",
+      "name": "Backup View",
+      "kind": "saved_view",
+      "parent_id": "01M20YS3G34VZEPKWHH5QHENHX",
+      "question": null,
+      "query": "{\"combinator\":\"and\",\"rules\":[]}",
+      "sort_key": "title",
+      "sort_dir": "asc",
+      "layout": "grid",
+      "sort_order": 2,
+      "created_at": 1788886158000
+    }
+  ],
+  "dimensions": [[800, 600], [20, 20], [640, 360]],
+  "originals": [
+    {
+      "id": "01M20YS2RA8Q25SJ1ZE3EJ0G7Q",
+      "sha256": "9ac42da0c7c3dcfd7723a5efc637ae722e56822361369b6fbdd51d833e4111b8"
+    },
+    {
+      "id": "01M20YS2RWEHES0PS8YGKRK4TH",
+      "sha256": "5f37485dd04c612fb3f61149fa9ddf7646d0928f251969a674e4a32e13d0d73e"
+    },
+    {
+      "id": "01M20YS2SHDP49EQNHXAXNVY5Z",
+      "sha256": "1fca65bb1d4b2c197135912c3e9c101d4c05184bb7122c85894382b3a2f78100"
+    }
+  ],
+  "annotationKeywordCount": 1,
+  "titleLock": true,
+  "environment": {
+    "date": "2026-09-08",
+    "electron": "42.4.0",
+    "platform": "macOS arm64",
+    "application": "unsigned desktop build from working checkout",
+    "network": "offline",
+    "libraryIsolation": "POND_SANDBOX under /tmp"
+  },
+  "limitations": [
+    "Graphical post-restore verification did not complete: automatic relaunch reached renderer but fixture path assertion failed; corrected manual launches stalled before Electron ready.",
+    "Fresh-index assertions executed through actual scanner and organization hydration in Electron Node mode against an empty in-memory SQLite database.",
+    "Pending mutation was observed from the renderer before backup request; worker admission boundary was not instrumented.",
+    "One 33-save fixture, not destructive power-loss or large-library backup testing."
+  ]
+}

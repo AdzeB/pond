@@ -1,3 +1,4 @@
+import { SAVED_VIEW_KINDS } from "@pond/schema/db";
 import { z } from "zod";
 import {
   NonEmptyTextParam,
@@ -18,6 +19,8 @@ export const savedViewsQueries = {
   "savedViews.create": query(
     z.object({
       name: StringParam,
+      kind: z.enum(SAVED_VIEW_KINDS).optional(),
+      parentId: z.string().nullable().optional(),
       question: NullableStringParam,
       query: QueryParam,
       sortKey: NonEmptyTextParam,
@@ -28,6 +31,8 @@ export const savedViewsQueries = {
       const { createView } = await import("../../core/saved-views");
       return await createView({
         name: params.name,
+        kind: params.kind,
+        parentId: params.parentId,
         question: params.question,
         query: params.query ?? undefined,
         sortKey: params.sortKey ?? undefined,
@@ -51,6 +56,7 @@ export const savedViewsQueries = {
       patch: z
         .object({
           name: z.string().optional(),
+          parentId: z.string().nullable().optional(),
           question: z.string().nullable().optional(),
           query: QueryParam.transform((value) => value ?? undefined).optional(),
           sortKey: z.string().optional(),

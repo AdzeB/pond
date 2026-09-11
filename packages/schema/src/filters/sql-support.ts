@@ -1,4 +1,5 @@
 import { FIELD_DESCRIPTORS } from "./fields";
+import { buildWhere } from "./to-sql";
 import type { Clause, Query } from "./types";
 import { isGroup, isPredicate } from "./types";
 
@@ -6,7 +7,13 @@ export function queryIsFullySqlSupported(
   query: Query | null | undefined,
 ): boolean {
   if (!query) return true;
-  return clauseIsSqlSupported(query);
+  try {
+    if (!clauseIsSqlSupported(query)) return false;
+    buildWhere(query);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function clauseIsSqlSupported(c: Clause): boolean {
@@ -16,6 +23,7 @@ function clauseIsSqlSupported(c: Clause): boolean {
     c.field === "tags" ||
     c.field === "folder" ||
     c.field === "list" ||
+    c.field === "color" ||
     Boolean(FIELD_DESCRIPTORS[c.field].sqlProjection)
   );
 }

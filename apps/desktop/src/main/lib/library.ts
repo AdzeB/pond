@@ -22,6 +22,7 @@ import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import type { TxSaveFile } from "@pond/schema/tx";
 import log from "electron-log/main.js";
 import { itemDir, itemFile, resolvePaths } from "../paths";
+import type { SaveUserData } from "./library-format";
 import {
   applyPatchToInfo,
   INFO_FILE,
@@ -29,6 +30,7 @@ import {
   type InfoDoc,
   type InfoFile,
   infoDocFromSave,
+  infoFilesFromSave,
   SOURCE_FILE,
   type StoredInfoDoc,
   StoredInfoDocSchema,
@@ -52,14 +54,11 @@ interface ItemMetadata {
   importedAt: number;
   isDeleted: boolean;
   deletedAt: number | null;
-  files: Array<{
-    kind: string;
-    path: string;
-    sha256: string;
-    size: number;
-  }>;
+  files: InfoFile[];
   pond: {
     schemaVersion: number;
+    userData?: SaveUserData;
+    publishedAt?: number | null;
     rawSource?: RawJson | null;
     description?: string | null;
     author?: string | null;
@@ -108,19 +107,24 @@ async function writeInfoFiles(
   }
 }
 
+export function mergeWrittenFiles(
+  files: InfoFile[],
+  written: Array<{ filename: string; buf: Buffer }>,
+): InfoFile[] {
+  const entries = new Map(files.map((file) => [file.path, file]));
+  for (const file of written)
+    entries.set(file.filename, {
+      kind: inferKindFromFilename(file.filename),
+      ...entries.get(file.filename),
+      path: file.filename,
+      sha256: sha256(file.buf),
+      size: file.buf.length,
+    });
+  return [...entries.values()];
+}
+
 export async function writeSaveInfo(save: Save): Promise<void> {
-  const manifest: InfoFile[] = (save.files ?? []).map((f) => {
-    const entry: InfoFile = {
-      kind: f.kind,
-      path: f.path,
-      sha256: f.sha256,
-      size: f.size,
-    };
-    if (f.mimeType) entry.mimeType = f.mimeType;
-    if (f.width) entry.width = f.width;
-    if (f.height) entry.height = f.height;
-    return entry;
-  });
+  const manifest = infoFilesFromSave(save.files ?? []);
   const { folderIdsForSave } = await import("../core/folder-memberships");
   const folderIds = await folderIdsForSave(save.id);
   await writeInfoFiles(
@@ -143,12 +147,10 @@ export async function writeItemFiles(
     await writeFile(join(dir, filename), buf);
   }
 
-  const manifest: InfoFile[] = decoded.map((f) => ({
-    kind: inferKindFromFilename(f.filename),
-    path: f.filename,
-    sha256: sha256(f.buf),
-    size: f.buf.length,
-  }));
+  const manifest = mergeWrittenFiles(
+    infoFilesFromSave(save.files ?? []),
+    decoded,
+  );
   const { folderIdsForSave } = await import("../core/folder-memberships");
   const folderIds = await folderIdsForSave(id);
   await writeInfoFiles(
@@ -174,12 +176,7 @@ export async function applyItemPatch(
 
   const next = applyPatchToInfo(current.info, patch);
   if (decoded.length > 0) {
-    next.files = decoded.map((f) => ({
-      kind: inferKindFromFilename(f.filename),
-      path: f.filename,
-      sha256: sha256(f.buf),
-      size: f.buf.length,
-    }));
+    next.files = mergeWrittenFiles(next.files, decoded);
   }
 
   const rawSource =
@@ -190,22 +187,30 @@ export async function applyItemPatch(
 
 export async function readItemMetadata(
   id: string,
+  root?: string,
 ): Promise<ItemMetadata | null> {
-  const infoPath = itemFile(id, INFO_FILE);
+  const infoPath = root
+    ? join(root, "items", `${id}.info`, INFO_FILE)
+    : itemFile(id, INFO_FILE);
   if (!existsSync(infoPath)) return null;
   try {
     const info = StoredInfoDocSchema.parse(
       JSON.parse(await readFile(infoPath, "utf8")),
     );
-    return metadataFromInfo(id, info, await readSourceDoc(id));
+    return metadataFromInfo(id, info, await readSourceDoc(id, root));
   } catch (err) {
     log.warn("[pond library] corrupt info.json", id, err);
     return null;
   }
 }
 
-async function readSourceDoc(id: string): Promise<RawJson | null> {
-  const path = itemFile(id, SOURCE_FILE);
+async function readSourceDoc(
+  id: string,
+  root?: string,
+): Promise<RawJson | null> {
+  const path = root
+    ? join(root, "items", `${id}.info`, SOURCE_FILE)
+    : itemFile(id, SOURCE_FILE);
   if (!existsSync(path)) return null;
   let text: string;
   try {
@@ -244,12 +249,7 @@ function metadataFromInfo(
   info: StoredInfoDoc,
   rawSource: RawJson | null,
 ): ItemMetadata {
-  const files = info.files.map((f) => ({
-    kind: f.kind,
-    path: f.path,
-    sha256: f.sha256,
-    size: f.size,
-  }));
+  const files = info.files;
   const coverFile = files[info.coverIndex] ?? files[0];
   const createdMs = parseTimestamp(info.createdAt);
   const savedMs = parseTimestamp(info.savedAt);
@@ -262,7 +262,7 @@ function metadataFromInfo(
     name: info.title ?? null,
     annotation: info.notes ?? "",
     tags: info.tags,
-    folders: [],
+    folders: info.folderIds,
     ext: files[0]?.path ? extname(files[0].path).slice(1) || null : null,
     size: coverFile?.size ?? null,
     width: info.width,
@@ -275,6 +275,8 @@ function metadataFromInfo(
     files,
     pond: {
       schemaVersion: INFO_SCHEMA,
+      userData: info.userData,
+      publishedAt: parseTimestamp(info.publishedAt),
       rawSource,
       description: info.description ?? null,
       author: info.author ?? null,
@@ -309,26 +311,24 @@ export async function removeItem(id: string): Promise<void> {
   }
 }
 
-export async function* scanLibrary(): AsyncGenerator<{
+export async function* scanLibrary(root?: string): AsyncGenerator<{
   id: string;
   mtimeMs: number;
-  metadata: ItemMetadata | null;
 }> {
-  const paths = resolvePaths();
+  const itemsDir = root ? join(root, "items") : resolvePaths().itemsDir;
   let entries: string[] = [];
   try {
-    entries = await readdir(paths.itemsDir);
+    entries = await readdir(itemsDir);
   } catch {
     return;
   }
   for (const entry of entries) {
     if (!entry.endsWith(".info")) continue;
     const id = entry.slice(0, -".info".length);
-    const dir = join(paths.itemsDir, entry);
+    const dir = join(itemsDir, entry);
     try {
-      const info = await stat(dir);
-      const metadata = await readItemMetadata(id);
-      yield { id, mtimeMs: info.mtimeMs, metadata };
+      const info = await stat(join(dir, INFO_FILE));
+      yield { id, mtimeMs: info.mtimeMs };
     } catch (err) {
       log.warn("[pond library] scan stat failed", id, err);
     }

@@ -13,15 +13,11 @@
 }
 
 .brand {
+  --ds-focus-offset: 4px;
   display: inline-flex;
   padding-bottom: 24px;
   text-decoration: none;
   border-radius: var(--ds-radius-xs);
-
-  &:focus-visible {
-    outline: 2px solid var(--ds-accent-9);
-    outline-offset: 4px;
-  }
 }
 
 .tagline {

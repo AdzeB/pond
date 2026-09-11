@@ -42,6 +42,39 @@ describe("independent Agent and inspector panes", () => {
     expect(libraryChrome.getState().rightPane).toBeNull();
   });
 
+  it("reopens the selected download after closing Details or showing Agent", async () => {
+    const { libraryChrome } = await import("./library-chrome");
+    libraryChrome.inspectDownload("first");
+    expect(libraryChrome.getState()).toMatchObject({
+      rightPane: "inspector",
+      inspectorSaveId: "first",
+      inspectorMode: "download",
+    });
+    libraryChrome.closeRightPane();
+    libraryChrome.inspectDownload("first");
+    expect(libraryChrome.getState().rightPane).toBe("inspector");
+    libraryChrome.toggleAgent();
+    libraryChrome.inspectDownload("first");
+    expect(libraryChrome.getState().rightPane).toBe("inspector");
+  });
+
+  it("restores save details when opening a download's save", async () => {
+    const { libraryChrome } = await import("./library-chrome");
+    libraryChrome.inspectDownload("first");
+    libraryChrome.inspectSave("first");
+    expect(libraryChrome.getState()).toMatchObject({
+      rightPane: "inspector",
+      inspectorSaveId: "first",
+      inspectorMode: "save",
+    });
+    libraryChrome.inspectDownload("first");
+    libraryChrome.setInspectorSaveId("second");
+    expect(libraryChrome.getState()).toMatchObject({
+      inspectorSaveId: "second",
+      inspectorMode: "save",
+    });
+  });
+
   it("swaps Details and Agent without losing the inspected save", async () => {
     const { libraryChrome } = await import("./library-chrome");
     libraryChrome.inspectSave("first");

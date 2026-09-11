@@ -15,7 +15,8 @@ import { ulid } from "ulid";
 import { getDb } from "../../../db";
 import { withRawSlim } from "../../../lib/raw-slim";
 import { itemDir } from "../../../paths";
-import { broadcastSyncAction } from "../../executor";
+import { broadcastSyncAction, withMutationScope } from "../../executor";
+import { hasUserTitle } from "../../user-metadata";
 
 interface WriteFileMetadata {
   kind: SaveFile["kind"];
@@ -58,112 +59,120 @@ export async function applySavePatch(
   patch: Partial<NewSave>,
   opts: ApplyPatchOptions,
 ): Promise<Save | null> {
-  const db = await getDb();
-  const wanted = new Set(["id", "files", ...Object.keys(patch)]);
-  const selection = Object.fromEntries(
-    Object.entries(getTableColumns(saves)).filter(([key]) => wanted.has(key)),
-  );
-  const rows = await db
-    .select(selection)
-    .from(saves)
-    .where(eq(saves.id, saveId));
-  // SAFETY: the selection is built from the saves table's own columns, so every key on
-  // the returned row is a Save key holding that column's value.
-  const current = rows[0] as Partial<Save> | undefined;
-  if (!current) {
-    log.warn("[pond pipeline] applySavePatch: save vanished", saveId);
-    return null;
-  }
+  return withMutationScope(async () => {
+    const db = await getDb();
+    const wanted = new Set(["id", "files", ...Object.keys(patch)]);
+    const selection = Object.fromEntries(
+      Object.entries(getTableColumns(saves)).filter(([key]) => wanted.has(key)),
+    );
+    const rows = await db
+      .select(selection)
+      .from(saves)
+      .where(eq(saves.id, saveId));
+    // SAFETY: the selection is built from the saves table's own columns, so every key on
+    // the returned row is a Save key holding that column's value.
+    const current = rows[0] as Partial<Save> | undefined;
+    if (!current) {
+      log.warn("[pond pipeline] applySavePatch: save vanished", saveId);
+      return null;
+    }
 
-  const replaceKinds =
-    opts.replaceFilesWithKind == null
-      ? null
-      : new Set<SaveFile["kind"]>(
-          Array.isArray(opts.replaceFilesWithKind)
-            ? opts.replaceFilesWithKind
-            : [opts.replaceFilesWithKind],
-        );
-  const written: SaveFile[] = [];
-  if (opts.newFiles && opts.newFiles.length > 0) {
-    const dir = itemDir(saveId);
-    if (!existsSync(dir)) await mkdir(dir, { recursive: true });
-    for (const file of opts.newFiles) {
-      const target = uniqueFilename(
-        file.filename,
-        current.files ?? [],
-        written,
-      );
-      const targetPath = join(dir, target);
-      const details = await persistWriteFile(file, targetPath);
-      if (!details) {
-        log.warn(
-          "[pond pipeline] applySavePatch: empty file skipped",
-          saveId,
+    const replaceKinds =
+      opts.replaceFilesWithKind == null
+        ? null
+        : new Set<SaveFile["kind"]>(
+            Array.isArray(opts.replaceFilesWithKind)
+              ? opts.replaceFilesWithKind
+              : [opts.replaceFilesWithKind],
+          );
+    const written: SaveFile[] = [];
+    if (opts.newFiles && opts.newFiles.length > 0) {
+      const dir = itemDir(saveId);
+      if (!existsSync(dir)) await mkdir(dir, { recursive: true });
+      for (const file of opts.newFiles) {
+        const target = uniqueFilename(
           file.filename,
+          current.files ?? [],
+          written,
         );
-        continue;
+        const targetPath = join(dir, target);
+        const details = await persistWriteFile(file, targetPath);
+        if (!details) {
+          log.warn(
+            "[pond pipeline] applySavePatch: empty file skipped",
+            saveId,
+            file.filename,
+          );
+          continue;
+        }
+        const entry: SaveFile = {
+          kind: file.kind,
+          path: target,
+          sha256: details.sha256,
+          size: details.size,
+        };
+        if (file.mimeType) entry.mimeType = file.mimeType;
+        if (file.width) entry.width = file.width;
+        if (file.height) entry.height = file.height;
+        if (file.sourceUrl) entry.sourceUrl = file.sourceUrl;
+        written.push(entry);
       }
-      const entry: SaveFile = {
-        kind: file.kind,
-        path: target,
-        sha256: details.sha256,
-        size: details.size,
-      };
-      if (file.mimeType) entry.mimeType = file.mimeType;
-      if (file.width) entry.width = file.width;
-      if (file.height) entry.height = file.height;
-      if (file.sourceUrl) entry.sourceUrl = file.sourceUrl;
-      written.push(entry);
     }
-  }
-  const nextFiles =
-    written.length > 0 || replaceKinds
-      ? mergeSaveFiles(current.files ?? [], written, opts.replaceFilesWithKind)
-      : current.files;
+    const nextFiles =
+      written.length > 0 || replaceKinds
+        ? mergeSaveFiles(
+            current.files ?? [],
+            written,
+            opts.replaceFilesWithKind,
+          )
+        : current.files;
 
-  const fullPatch: Partial<NewSave> = { ...patch };
-  if (written.length > 0 || replaceKinds) fullPatch.files = nextFiles;
+    const fullPatch: Partial<NewSave> = { ...patch };
+    if (written.length > 0 || replaceKinds) fullPatch.files = nextFiles;
 
-  db.update(saves)
-    .set(withRawSlim(fullPatch))
-    .where(eq(saves.id, saveId))
-    .run();
-  const updated = (
-    await db.select().from(saves).where(eq(saves.id, saveId))
-  )[0];
-  if (!updated) return null;
+    if (fullPatch.title !== undefined && hasUserTitle(saveId))
+      delete fullPatch.title;
+    db.update(saves)
+      .set(withRawSlim(fullPatch))
+      .where(eq(saves.id, saveId))
+      .run();
+    const updated = (
+      await db.select().from(saves).where(eq(saves.id, saveId))
+    )[0];
+    if (!updated) return null;
 
-  const inserted = db
-    .insert(syncActions)
-    .values({
-      modelName: "save",
-      modelId: saveId,
-      action: "U",
-      data: fullPatch,
-      prevData: pickPrev(current, fullPatch),
-      actor: "system",
-      actorReason: opts.actorReason,
-      batchId: ulid(),
-    })
-    .returning()
-    .all()[0];
-  if (inserted) broadcastSyncAction(inserted);
+    const inserted = db
+      .insert(syncActions)
+      .values({
+        modelName: "save",
+        modelId: saveId,
+        action: "U",
+        data: fullPatch,
+        prevData: pickPrev(current, fullPatch),
+        actor: "system",
+        actorReason: opts.actorReason,
+        batchId: ulid(),
+      })
+      .returning()
+      .all()[0];
+    if (inserted) broadcastSyncAction(inserted);
 
-  if (replaceKinds) {
-    const retainedPaths = new Set((nextFiles ?? []).map((file) => file.path));
-    const dir = resolve(itemDir(saveId));
-    for (const file of current.files ?? []) {
-      if (!replaceKinds.has(file.kind) || retainedPaths.has(file.path))
-        continue;
-      const path = resolve(join(dir, file.path));
-      if (path === dir || !path.startsWith(`${dir}${sep}`)) continue;
-      await rm(path, { force: true }).catch((err) => {
-        log.warn("[pond pipeline] failed to remove replaced file", path, err);
-      });
+    if (replaceKinds) {
+      const retainedPaths = new Set((nextFiles ?? []).map((file) => file.path));
+      const dir = resolve(itemDir(saveId));
+      for (const file of current.files ?? []) {
+        if (!replaceKinds.has(file.kind) || retainedPaths.has(file.path))
+          continue;
+        const path = resolve(join(dir, file.path));
+        if (path === dir || !path.startsWith(`${dir}${sep}`)) continue;
+        await rm(path, { force: true }).catch((err) => {
+          log.warn("[pond pipeline] failed to remove replaced file", path, err);
+        });
+      }
     }
-  }
 
-  return updated;
+    return updated;
+  });
 }
 
 export async function persistWriteFile(

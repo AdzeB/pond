@@ -15,6 +15,8 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import {
+  type LibraryInspectorMode,
+  useInspectorMode,
   useInspectorSaveId,
   useRightPane,
 } from "@/features/library/state/library-chrome";
@@ -29,6 +31,13 @@ const AgentPane = lazy(async () => {
 const SaveInspector = lazy(async () => {
   const module = await import("@/features/saves/components/detail/pane/pane");
   return { default: module.SaveInspector };
+});
+
+const DownloadInspector = lazy(async () => {
+  const module = await import(
+    "@/features/downloads/components/inspector/download-inspector"
+  );
+  return { default: module.DownloadInspector };
 });
 
 function createContentHost() {
@@ -89,6 +98,7 @@ export function RightPane() {
     select: (s) => s.location.pathname === "/assistant",
   });
   const saveId = useInspectorSaveId();
+  const inspectorMode = useInspectorMode();
   const [preferences] = usePrefs("preferences");
   const systemReducedMotion = useReducedMotion();
   const reduceMotion =
@@ -98,10 +108,12 @@ export function RightPane() {
     <RightPaneView
       pane={pane}
       saveId={saveId}
+      inspectorMode={inspectorMode}
       assistantPage={assistantPage}
       reduceMotion={reduceMotion}
       AgentContent={AgentPane}
       InspectorContent={SaveInspector}
+      DownloadInspectorContent={DownloadInspector}
     />
   );
 }
@@ -109,25 +121,33 @@ export function RightPane() {
 interface RightPaneViewProps {
   pane: "agent" | "inspector" | null;
   saveId: string | null;
+  inspectorMode?: LibraryInspectorMode;
   assistantPage: boolean;
   reduceMotion: boolean;
   AgentContent: ComponentType;
   InspectorContent: ComponentType<{ saveId: string }>;
+  DownloadInspectorContent: ComponentType<{ saveId: string }>;
 }
 
 export function RightPaneView({
   pane,
   saveId,
+  inspectorMode = "save",
   assistantPage,
   reduceMotion,
   AgentContent,
   InspectorContent,
+  DownloadInspectorContent,
 }: RightPaneViewProps) {
   const [inspectorId, setInspectorId] = useState(saveId);
+  const [retainedInspectorMode, setRetainedInspectorMode] =
+    useState(inspectorMode);
   const [agentActivated, setAgentActivated] = useState(pane === "agent");
   const [agentHost] = useState(createContentHost);
   const [inspectorHost] = useState(createContentHost);
   if (saveId && saveId !== inspectorId) setInspectorId(saveId);
+  if (saveId && inspectorMode !== retainedInspectorMode)
+    setRetainedInspectorMode(inspectorMode);
   if (pane === "agent" && !agentActivated) setAgentActivated(true);
 
   return (
@@ -143,7 +163,14 @@ export function RightPaneView({
       {createPortal(
         inspectorId ? (
           <Suspense fallback={null}>
-            <InspectorContent key={inspectorId} saveId={inspectorId} />
+            {retainedInspectorMode === "download" ? (
+              <DownloadInspectorContent
+                key={inspectorId}
+                saveId={inspectorId}
+              />
+            ) : (
+              <InspectorContent key={inspectorId} saveId={inspectorId} />
+            )}
           </Suspense>
         ) : null,
         inspectorHost,

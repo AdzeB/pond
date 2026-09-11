@@ -8,13 +8,18 @@ export const comment = defineField({
   label: "Comment",
   group: "content",
   project: (s) =>
-    (s.comments ?? [])
+    [...(s.comments ?? []), ...(s.videoNotes ?? [])]
       .map((entry) => entry.text?.trim() ?? "")
       .filter(Boolean)
       .join(" ")
       .toLowerCase() || null,
-  sqlProjection: () => sql`nullif(
-    lower(coalesce(json_extract(${saves.comments}, '$'), '')),
-    '[]'
+  sqlProjection: () => sql`(
+    select nullif(lower(group_concat(text, ' ')), '') from (
+      select trim(json_extract(value, '$.text')) as text
+      from json_each(${saves.comments})
+      union all
+      select trim(json_extract(value, '$.text')) as text
+      from json_each(${saves.videoNotes})
+    ) where text is not null and text <> ''
   )`,
 });

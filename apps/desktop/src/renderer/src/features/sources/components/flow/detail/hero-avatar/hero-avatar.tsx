@@ -18,7 +18,7 @@ export function HeroAvatar({
   badgeSize?: number;
 }) {
   const [failed, setFailed] = useState(false);
-  const { logo } = getSourceDef(source);
+  const { logo, icon: Icon } = getSourceDef(source);
   const pfp = avatarUrl && !failed ? avatarUrl : null;
 
   if (!pfp) {
@@ -40,15 +40,18 @@ export function HeroAvatar({
         referrerPolicy="no-referrer"
         onError={() => setFailed(true)}
       />
-      {logo ? (
-        <img
-          width={badgeSize}
-          height={badgeSize}
-          src={logo}
-          alt=""
+      {Icon || logo ? (
+        <span
           className={styles.badge}
+          style={{ width: badgeSize, height: badgeSize }}
           data-large={badgeSize >= 32 || undefined}
-        />
+        >
+          {Icon ? (
+            <Icon width={badgeSize} height={badgeSize} />
+          ) : logo ? (
+            <img src={logo} alt="" />
+          ) : null}
+        </span>
       ) : null}
     </span>
   );

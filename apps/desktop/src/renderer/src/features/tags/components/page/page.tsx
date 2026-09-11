@@ -1,9 +1,9 @@
-import { IconTagFill18 } from "@pond/icons/fill/18";
+import { IconBookmarkFill18 } from "@pond/icons/fill/18";
 import {
+  IconBookmarkOutline18,
   IconFolderOutline18,
   IconPlusOutline18,
   IconStarOutline18,
-  IconTagsOutline18,
 } from "@pond/icons/outline/18";
 import { Button, DataTable, Empty, Tooltip } from "@pond/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -75,8 +75,7 @@ export function TagsPage() {
     total,
   } = useTagsData();
   const [scope, setScope] = useState<Scope>("all");
-  const { creating, draft, setDraft, startCreate, cancelCreate, commitCreate } =
-    useTagCreation();
+  const { creating, startCreate, cancelCreate, saveCreate } = useTagCreation();
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const cancelDescriptionRef = useRef(false);
   const clearRef = useRef<() => void>(() => {});
@@ -187,7 +186,7 @@ export function TagsPage() {
                   aria-current={scope === "all" ? "page" : undefined}
                   onClick={() => setScope("all")}
                 >
-                  <IconTagsOutline18 aria-hidden="true" />
+                  <IconBookmarkOutline18 aria-hidden="true" />
                   <span className={styles.navLabel}>All</span>
                   <span className={styles.count}>{total}</span>
                 </button>
@@ -240,10 +239,8 @@ export function TagsPage() {
                   <div className={styles.groupDraft}>
                     <DraftRow
                       creating="group"
-                      draft={draft}
-                      setDraft={setDraft}
-                      onCommit={() => void commitCreate()}
-                      onCancel={cancelCreate}
+                      onSave={saveCreate}
+                      onFinish={cancelCreate}
                     />
                   </div>
                 ) : null}
@@ -330,10 +327,8 @@ export function TagsPage() {
                 <div className={styles.draft}>
                   <DraftRow
                     creating="tag"
-                    draft={draft}
-                    setDraft={setDraft}
-                    onCommit={() => void commitCreate()}
-                    onCancel={cancelCreate}
+                    onSave={saveCreate}
+                    onFinish={cancelCreate}
                   />
                 </div>
               ) : null}
@@ -365,7 +360,7 @@ export function TagsPage() {
               ) : total === 0 && !q ? (
                 <Empty.Root className={styles.empty}>
                   <Empty.Media>
-                    <IconTagFill18 />
+                    <IconBookmarkFill18 />
                   </Empty.Media>
                   <Empty.Title>No tags yet</Empty.Title>
                   <Empty.Description>
@@ -399,7 +394,7 @@ export function TagsPage() {
                     {scope === "starred" ? (
                       <IconStarOutline18 />
                     ) : scope === "ungrouped" ? (
-                      <IconTagFill18 />
+                      <IconBookmarkFill18 />
                     ) : (
                       <IconFolderOutline18 />
                     )}

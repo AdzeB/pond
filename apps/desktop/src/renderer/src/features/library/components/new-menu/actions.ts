@@ -42,6 +42,13 @@ export function createNewActions({
     });
   }
 
+  function reportDownloading(count: number): void {
+    notify({
+      id: "new-import",
+      title: count === 1 ? "Downloading" : `Downloading ${count} links`,
+    });
+  }
+
   async function runNewAction(action: () => Promise<void>): Promise<void> {
     try {
       await action();
@@ -241,17 +248,21 @@ export function createNewActions({
   async function importLinks(text: string): Promise<string[]> {
     const urls = parseImportLinks(text);
     const failed: string[] = [];
+    const added: Array<string | null> = [];
     for (const url of urls) {
       try {
         const result = SaveResultSchema.parse(
           await window.pond.query("saves.quickAdd", { url }),
         );
         if (!result.ok) failed.push(url);
+        else added.push(result.id ?? null);
       } catch {
         failed.push(url);
       }
     }
-    if (urls.length > failed.length) reportSaved(urls.length - failed.length);
+    if (added.length > 0) reportDownloading(added.length);
+    const id = added.length === 1 ? added[0] : null;
+    if (id) openSave(id);
     return failed;
   }
 

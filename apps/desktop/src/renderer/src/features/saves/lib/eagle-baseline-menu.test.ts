@@ -138,10 +138,21 @@ function fontSave(): Save {
   };
 }
 
-describe("Eagle baseline save menu", () => {
-  /** Wave 2: Combine Images, Share, Pin to Top, Set as Folder Cover, Replace File. */
-  /** Wave 3: Thumbnail Background, Show Navigator, Convert to PNG/JPG from WebP. */
+function findSubmenu(
+  items: MenuItemSpec[],
+  label: string,
+): Extract<MenuItemSpec, { type: "submenu" }> | undefined {
+  for (const item of items) {
+    if ("hidden" in item && item.hidden) continue;
+    if (item.type === "submenu" && item.label === label) return item;
+    if ((item.type === "submenu" || item.type === "group") && "items" in item) {
+      const nested = findSubmenu(item.items, label);
+      if (nested) return nested;
+    }
+  }
+}
 
+describe("Eagle baseline save menu", () => {
   it("does not expose plugin or picker rows", () => {
     const items = buildSaveMenu(fileSave(), {
       clipboardEmpty: true,
@@ -200,6 +211,55 @@ describe("Eagle baseline save menu", () => {
     expect(
       labels(buildSaveMenu(fileSave(), { clipboardEmpty: true })),
     ).toContain("Share");
+  });
+
+  it("hides pin and cover outside a folder", () => {
+    const items = buildSaveMenu(fileSave(), { clipboardEmpty: true });
+    expect(labels(items)).not.toContain("Pin to Top");
+    expect(labels(items)).not.toContain("Set as Folder Cover");
+  });
+
+  it("shows Pin to Top and Set as Folder Cover inside a folder", () => {
+    const items = buildSaveMenu(fileSave(), {
+      clipboardEmpty: true,
+      folderId: "landscapes",
+      pinnedIds: [],
+      coverSaveId: null,
+    });
+    expect(labels(items)).toContain("Pin to Top");
+    expect(labels(items)).toContain("Set as Folder Cover");
+  });
+
+  it("toggles pin and cover labels for the active save", () => {
+    const items = buildSaveMenu(fileSave(), {
+      clipboardEmpty: true,
+      folderId: "landscapes",
+      pinnedIds: ["file-save"],
+      coverSaveId: "file-save",
+    });
+    expect(labels(items)).toContain("Unpin from Top");
+    expect(labels(items)).toContain("Remove Folder Cover");
+    expect(labels(items)).not.toContain("Pin to Top");
+  });
+
+  it("exposes Thumbnail Background on the gallery menu only", () => {
+    const gallery = buildSaveMenu(fileSave(), { clipboardEmpty: true });
+    expect(labels(gallery)).toContain("Thumbnail Background");
+    const submenu = findSubmenu(gallery, "Thumbnail Background");
+    expect(
+      submenu
+        ? submenu.items.flatMap((item) =>
+            "label" in item && typeof item.label === "string"
+              ? [item.label]
+              : [],
+          )
+        : [],
+    ).toEqual(["None", "Black", "Gray", "White", "Grid"]);
+    const opened = buildSaveMenu(fileSave(), {
+      clipboardEmpty: true,
+      opened: true,
+    });
+    expect(labels(opened)).not.toContain("Thumbnail Background");
   });
 
   it("exposes Reset Loop Range on an opened GIF", () => {

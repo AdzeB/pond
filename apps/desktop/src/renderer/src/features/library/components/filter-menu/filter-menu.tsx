@@ -1,12 +1,13 @@
 import { IconBarsFilterOutline18 } from "@pond/icons/outline/18";
 import { isPredicate, type Predicate } from "@pond/schema/filters/types";
 import { Button, Tooltip } from "@pond/ui";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { SmartFolderContext } from "@/features/library/components/smart-folders/smart-folders";
 import { useFolders } from "@/features/library/state/folders";
 import { libraryHeader } from "@/features/library/state/library-header";
 import {
-  setSearchInput,
+  updateLocalFilters,
   useFilterQuery,
-  useSearchText,
   useSemanticQuery,
   useVisualProbe,
 } from "@/features/library/state/view-store";
@@ -103,7 +104,6 @@ export function FilterBarView({
 }: FilterBarData) {
   const { open, pinned, overlays } = useFilterToolbar();
   const query = useFilterQuery();
-  const text = useSearchText();
   const semantic = useSemanticQuery();
   const visual = useVisualProbe();
   const rows = query.rules.filter(isPredicate);
@@ -158,46 +158,61 @@ export function FilterBarView({
   };
 
   const apply = (next: Predicate[]) => {
-    setSearchInput(next, text, text);
+    updateLocalFilters(next);
   };
+  const reduceMotion = useReducedMotion();
+  const transition = reduceMotion
+    ? { duration: 0 }
+    : {
+        height: { duration: 0.2, ease: [0.165, 0.84, 0.44, 1] },
+        y: { duration: 0.2, ease: [0.165, 0.84, 0.44, 1] },
+        opacity: { duration: 0.08 },
+      };
 
   return (
-    <fieldset
-      id="library-filter-toolbar"
-      className={styles.shell}
-      aria-label="Library Filters"
-      aria-hidden={!open}
-      data-open={open || undefined}
-      inert={!open}
-    >
-      <div className={styles.bar}>
-        {chips.map((chip) =>
-          chip === "semantic" ? (
-            <SemanticChip key="semantic" />
-          ) : chip === "visual" ? (
-            <VisualChip key="visual" />
-          ) : (
-            <FilterCategory
-              key={chip}
-              field={chip}
-              options={
-                Object.entries(choices).find(
-                  ([field]) => field === chip,
-                )?.[1] ?? presetOptions(chip)
-              }
-              tagGroups={chip === "tags" ? tagGroups : undefined}
-              rows={rows}
-              onChange={apply}
+    <AnimatePresence initial={false}>
+      {open ? (
+        <motion.fieldset
+          key="library-filter-toolbar"
+          id="library-filter-toolbar"
+          className={styles.shell}
+          aria-label="Library Filters"
+          initial={{ height: 0, opacity: 0, y: -4 }}
+          animate={{ height: "auto", opacity: 1, y: 0 }}
+          exit={{ height: 0, opacity: 0, y: -4, pointerEvents: "none" }}
+          transition={transition}
+        >
+          <div className={styles.bar}>
+            <SmartFolderContext />
+            {chips.map((chip) =>
+              chip === "semantic" ? (
+                <SemanticChip key="semantic" />
+              ) : chip === "visual" ? (
+                <VisualChip key="visual" />
+              ) : (
+                <FilterCategory
+                  key={chip}
+                  field={chip}
+                  options={
+                    Object.entries(choices).find(
+                      ([field]) => field === chip,
+                    )?.[1] ?? presetOptions(chip)
+                  }
+                  tagGroups={chip === "tags" ? tagGroups : undefined}
+                  rows={rows}
+                  onChange={apply}
+                />
+              ),
+            )}
+            <CustomizeFilters
+              choices={choices}
+              activeFields={activeFields}
+              semanticActive={Boolean(semantic)}
+              visualActive={Boolean(visual)}
             />
-          ),
-        )}
-        <CustomizeFilters
-          choices={choices}
-          activeFields={activeFields}
-          semanticActive={Boolean(semantic)}
-          visualActive={Boolean(visual)}
-        />
-      </div>
-    </fieldset>
+          </div>
+        </motion.fieldset>
+      ) : null}
+    </AnimatePresence>
   );
 }

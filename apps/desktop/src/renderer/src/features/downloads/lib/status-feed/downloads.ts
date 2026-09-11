@@ -6,6 +6,7 @@ import {
   type Source,
 } from "@pond/schema/db";
 import { INGEST_OUTCOMES } from "@pond/schema/events";
+import type { WireTask } from "@shared/wire";
 import { z } from "zod";
 import type { Save } from "@/features/saves/types";
 import { humanizeError, preferIngestError, stageLabel } from "./queue";
@@ -38,6 +39,7 @@ export const PipelineStatusSchema = z.object({ paused: z.boolean() });
 export type DownloadStatus =
   | "pending"
   | "running"
+  | "retrying"
   | "blocked"
   | "failed"
   | "cancelled"
@@ -60,6 +62,7 @@ export interface DownloadRow {
   ts: number;
   durationMs: number | null;
   live: boolean;
+  interactive?: boolean;
 }
 
 export interface DownloadFilters {
@@ -92,6 +95,12 @@ function wasCancelled(save: Save): boolean {
   );
 }
 
+function isRetryingTask(task: WireTask): boolean {
+  return (
+    task.status === "pending" && (task.attempts > 0 || Boolean(task.lastError))
+  );
+}
+
 function liveStatus(save: Save): DownloadStatus | null {
   if (save.status === "failed") {
     return wasCancelled(save) ? "cancelled" : "failed";
@@ -100,6 +109,8 @@ function liveStatus(save: Save): DownloadStatus | null {
   const tasks = save.tasks ?? [];
   if (tasks.some((t) => t.status === "running")) return "running";
   if (tasks.some((t) => t.status === "blocked")) return "blocked";
+  const next = tasks.find((t) => t.status !== "done");
+  if (next && isRetryingTask(next)) return "retrying";
   return "pending";
 }
 
@@ -118,7 +129,13 @@ function currentOp(save: Save): Op | null {
 function rowError(save: Save): string | null {
   let error: string | null = null;
   for (const t of save.tasks ?? []) {
-    if (t.status !== "failed" && t.status !== "blocked") continue;
+    if (
+      t.status !== "failed" &&
+      t.status !== "blocked" &&
+      !(t.status === "pending" && t.lastError)
+    ) {
+      continue;
+    }
     error = preferIngestError(error, t.lastError);
   }
   return error;
@@ -127,11 +144,12 @@ function rowError(save: Save): string | null {
 /** Thousands of rows queue behind a handful in flight, so the work happening now sorts to the top. */
 const LIVE_ORDER = {
   running: 0,
-  blocked: 1,
-  pending: 2,
-  failed: 3,
-  cancelled: 4,
-  complete: 5,
+  retrying: 1,
+  blocked: 2,
+  pending: 3,
+  failed: 4,
+  cancelled: 5,
+  complete: 6,
 } satisfies Record<DownloadStatus, number>;
 
 export function projectLiveDownloads(saves: readonly Save[]): DownloadRow[] {
@@ -161,6 +179,7 @@ export function projectLiveDownloads(saves: readonly Save[]): DownloadRow[] {
       ts,
       durationMs: null,
       live: true,
+      interactive: tasks.some((t) => t.interactive),
     });
   }
   rows.sort(

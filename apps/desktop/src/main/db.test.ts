@@ -54,6 +54,53 @@ describe.skipIf(!nativeSqliteAvailable())(
       }
     });
 
+    it("preserves legacy saved views as root saved views across migration and reopening", () => {
+      const db = new Database(":memory:");
+      try {
+        db.exec(`CREATE TABLE saved_views (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          query TEXT NOT NULL,
+          sort_key TEXT NOT NULL,
+          sort_dir TEXT NOT NULL,
+          layout TEXT,
+          sort_order INTEGER NOT NULL,
+          created_at INTEGER NOT NULL
+        )`);
+        const query = JSON.stringify({ kind: "and", clauses: [] });
+        db.prepare(
+          "INSERT INTO saved_views VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        ).run("legacy", "Reference", query, "title", "asc", "grid", 4, 1234);
+        const expected = {
+          id: "legacy",
+          name: "Reference",
+          query,
+          sort_key: "title",
+          sort_dir: "asc",
+          layout: "grid",
+          sort_order: 4,
+          created_at: 1234,
+          question: null,
+          kind: "saved_view",
+          parent_id: null,
+        };
+        initializePondSchema(db, () => false);
+        expect(db.prepare("SELECT * FROM saved_views").get()).toEqual(expected);
+        initializePondSchema(db, () => false);
+        expect(db.prepare("SELECT * FROM saved_views").get()).toEqual(expected);
+        db.prepare(
+          "INSERT INTO saved_views (id, name, query, sort_key, sort_dir, sort_order, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        ).run("new", "New", query, "savedAt", "desc", 5, 1235);
+        expect(
+          db
+            .prepare("SELECT kind, parent_id FROM saved_views WHERE id = ?")
+            .get("new"),
+        ).toEqual({ kind: "saved_view", parent_id: null });
+      } finally {
+        db.close();
+      }
+    });
+
     it("opens a usable library without vector tables when the extension is unavailable", () => {
       const db = new Database(":memory:");
       try {

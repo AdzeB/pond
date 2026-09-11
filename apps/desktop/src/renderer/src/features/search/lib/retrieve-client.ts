@@ -1,3 +1,4 @@
+import type { LibraryQueryRequest } from "@shared/library-query";
 import { z } from "zod";
 
 const HitSchema = z.object({
@@ -5,6 +6,7 @@ const HitSchema = z.object({
 });
 
 export async function retrieveSaveIds(input: {
+  libraryQuery?: LibraryQueryRequest;
   query?: string;
   visual?:
     | { kind: "saveId"; id: string }
@@ -15,6 +17,7 @@ export async function retrieveSaveIds(input: {
   const parsed = HitSchema.parse(
     await window.pond.query("saves.retrieve", {
       query: input.query,
+      libraryQuery: input.libraryQuery,
       visual: input.visual,
       saveIds: input.saveIds,
       limit: input.limit ?? 500,

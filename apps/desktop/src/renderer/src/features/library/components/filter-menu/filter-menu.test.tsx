@@ -129,16 +129,10 @@ describe("filter toolbar", () => {
     const before = state();
     await act(async () => toggle.click());
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
-    const toolbar = host.querySelector("fieldset");
-    expect(toolbar?.hasAttribute("data-open")).toBe(false);
-    expect(toolbar?.getAttribute("aria-hidden")).toBe("true");
-    expect(toolbar?.hasAttribute("inert")).toBe(true);
-    expect(button("Source: youtube.com")).toBeTruthy();
     expect(state()).toEqual(before);
     await act(async () => toggle.click());
-    expect(toolbar?.hasAttribute("data-open")).toBe(true);
-    expect(toolbar?.getAttribute("aria-hidden")).toBe("false");
-    expect(toolbar?.hasAttribute("inert")).toBe(false);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(host.querySelector("#library-filter-toolbar")).not.toBeNull();
     expect(button("Source: youtube.com")).toBeTruthy();
   });
 

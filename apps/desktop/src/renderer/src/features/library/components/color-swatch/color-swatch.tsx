@@ -1,19 +1,14 @@
+import {
+  IconCopyOutline18,
+  IconMagnifierOutline18,
+} from "@pond/icons/outline/18";
 import { Menu, type MenuItemSpec } from "@pond/ui";
-import { type CSSProperties, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { setQuery } from "@/features/library/state/view-store";
 import { closeSave } from "@/features/saves/lib/save-nav";
+import { SpecMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
 import { colorCopyFormats } from "@/shared/lib/color";
 import styles from "./color-swatch.module.css";
-
-interface PopupStyle extends CSSProperties {
-  "--popup-width": string;
-  "--popup-min-width": string;
-}
-
-const POPUP_STYLE: PopupStyle = {
-  "--popup-width": "max-content",
-  "--popup-min-width": "200px",
-};
 
 const COPIED_HOLD_MS = 1200;
 
@@ -25,8 +20,35 @@ function findSimilar(hex: string): void {
   closeSave();
 }
 
-export function ColorSwatch({ color }: { color: string }) {
+export function buildColorSwatchMenu(
+  color: string,
+  copyValue: (value: string) => void,
+): MenuItemSpec[] {
   const formats = colorCopyFormats(color);
+  if (!formats) return [];
+  return [
+    {
+      label: "Find Similar Color Items",
+      icon: <IconMagnifierOutline18 />,
+      keywords: "color similar",
+      onClick: () => findSimilar(color),
+    },
+    { type: "separator" },
+    ...formats.primary.map((format) => ({
+      label: `Copy ${format.label}`,
+      icon: <IconCopyOutline18 />,
+      onClick: () => copyValue(format.value),
+    })),
+    { type: "separator" },
+    ...formats.secondary.map((format) => ({
+      label: `Copy ${format.label}`,
+      icon: <IconCopyOutline18 />,
+      onClick: () => copyValue(format.value),
+    })),
+  ];
+}
+
+export function ColorSwatch({ color }: { color: string }) {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -44,27 +66,12 @@ export function ColorSwatch({ color }: { color: string }) {
     }
   };
 
-  const items: MenuItemSpec[] = formats
-    ? [
-        {
-          label: "Find Similar Color Items",
-          onClick: () => findSimilar(color),
-        },
-        { type: "separator" },
-        ...formats.primary.map((f) => ({
-          label: `Copy ${f.label}`,
-          onClick: () => void copyValue(f.value),
-        })),
-        { type: "separator" },
-        ...formats.secondary.map((f) => ({
-          label: `Copy ${f.label}`,
-          onClick: () => void copyValue(f.value),
-        })),
-      ]
-    : [];
-
   return (
-    <Menu.Root>
+    <SpecMenu
+      buildItems={() =>
+        buildColorSwatchMenu(color, (value) => void copyValue(value))
+      }
+    >
       <Menu.Trigger
         render={
           <button
@@ -76,13 +83,6 @@ export function ColorSwatch({ color }: { color: string }) {
           />
         }
       />
-      <Menu.Portal>
-        <Menu.Positioner align="start" side="bottom" style={POPUP_STYLE}>
-          <Menu.Popup>
-            <Menu.Items items={items} />
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.Root>
+    </SpecMenu>
   );
 }

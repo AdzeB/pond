@@ -21,9 +21,10 @@ export function useAutoHide(opts: {
     if (timer.current !== null) window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => {
       const v = videoRef.current;
-      if (v && !v.paused) setControlsVisible(false);
+      if (v && !v.paused && !rootRef.current?.contains(document.activeElement))
+        setControlsVisible(false);
     }, HIDE_DELAY_MS);
-  }, [videoRef]);
+  }, [videoRef, rootRef]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -31,12 +32,16 @@ export function useAutoHide(opts: {
     const onActivity = () => showControls();
     const onLeave = () => {
       if (timer.current !== null) window.clearTimeout(timer.current);
-      setControlsVisible(false);
+      if (!root.contains(document.activeElement)) setControlsVisible(false);
     };
+    root.addEventListener("focusin", onActivity);
+    root.addEventListener("keydown", onActivity);
     root.addEventListener("pointermove", onActivity);
     root.addEventListener("pointerenter", onActivity);
     root.addEventListener("pointerleave", onLeave);
     return () => {
+      root.removeEventListener("focusin", onActivity);
+      root.removeEventListener("keydown", onActivity);
       root.removeEventListener("pointermove", onActivity);
       root.removeEventListener("pointerenter", onActivity);
       root.removeEventListener("pointerleave", onLeave);

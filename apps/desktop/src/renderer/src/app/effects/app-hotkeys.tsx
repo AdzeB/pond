@@ -1,21 +1,34 @@
 import { useHotkeySequences, useHotkeys } from "@tanstack/react-hotkeys";
+import { useEffect } from "react";
+import {
+  importPaths,
+  newFolder,
+  newTag,
+  runNewAction,
+} from "@/features/library/components/new-menu/actions";
 import type { LayoutValue } from "@/features/library/lib/view-prefs";
 import { commandMenu } from "@/features/library/state/command-menu";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { libraryHeader } from "@/features/library/state/library-header";
+import { newMenuDialog } from "@/features/library/state/new-menu-dialog";
 import {
   cycleSortKey,
   setLayout,
   toggleSortDir,
 } from "@/features/library/state/view-store";
+import { inspect } from "@/features/saves/state/inspect";
 import { openSettings } from "@/features/settings/lib/open-settings";
 import {
   getPrefsSnapshot,
   patchPrefsSection,
+  usePrefs,
 } from "@/features/settings/state/prefs";
 import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
 import { getAppRouter } from "@/shared/lib/app-router";
-import { SHORTCUTS } from "@/shared/lib/shortcuts";
+import {
+  configureShortcuts,
+  useShortcutBindings,
+} from "@/shared/lib/shortcuts";
 
 function scrollActiveViewport(position: "top" | "bottom"): void {
   const active = document.activeElement;
@@ -49,26 +62,31 @@ function slideNavActive(): boolean {
 }
 
 export function AppHotkeys() {
+  const [preferences, , loaded] = usePrefs("shortcuts");
+  useEffect(() => {
+    if (loaded) configureShortcuts(preferences);
+  }, [preferences, loaded]);
+  const shortcuts = useShortcutBindings();
   useHotkeySequences(
     [
       {
-        sequence: [...SHORTCUTS["nav.library"].sequence!],
+        sequence: [...shortcuts["nav.library"].sequence!],
         callback: () => go("/"),
       },
       {
-        sequence: [...SHORTCUTS["nav.sources"].sequence!],
+        sequence: [...shortcuts["nav.sources"].sequence!],
         callback: () => go("/sources"),
       },
       {
-        sequence: [...SHORTCUTS["nav.downloads"].sequence!],
+        sequence: [...shortcuts["nav.downloads"].sequence!],
         callback: () => go("/downloads"),
       },
       {
-        sequence: [...SHORTCUTS["nav.trash"].sequence!],
+        sequence: [...shortcuts["nav.trash"].sequence!],
         callback: () => go("/trash"),
       },
       {
-        sequence: [...SHORTCUTS["nav.settings"].sequence!],
+        sequence: [...shortcuts["nav.settings"].sequence!],
         callback: () => openSettings(),
       },
     ],
@@ -77,12 +95,12 @@ export function AppHotkeys() {
 
   useHotkeys([
     {
-      hotkey: SHORTCUTS["library.search"].keys!,
+      hotkey: shortcuts["library.search"].keys!,
       callback: () => commandMenu.toggle(),
       options: { ignoreInputs: false },
     },
     {
-      hotkey: SHORTCUTS["nav.scroll-top"].keys!,
+      hotkey: shortcuts["nav.scroll-top"].keys!,
       callback: (event) => {
         event.preventDefault();
         scrollActiveViewport("top");
@@ -90,7 +108,7 @@ export function AppHotkeys() {
       options: { ignoreInputs: true, preventDefault: false },
     },
     {
-      hotkey: SHORTCUTS["nav.scroll-bottom"].keys!,
+      hotkey: shortcuts["nav.scroll-bottom"].keys!,
       callback: (event) => {
         event.preventDefault();
         scrollActiveViewport("bottom");
@@ -98,27 +116,27 @@ export function AppHotkeys() {
       options: { ignoreInputs: true, preventDefault: false },
     },
     {
-      hotkey: SHORTCUTS["view.layout-waterfall"].keys!,
+      hotkey: shortcuts["view.layout-waterfall"].keys!,
       callback: () => setLayout("waterfall" satisfies LayoutValue),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: SHORTCUTS["view.layout-grid"].keys!,
+      hotkey: shortcuts["view.layout-grid"].keys!,
       callback: () => setLayout("grid"),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: SHORTCUTS["view.layout-justified"].keys!,
+      hotkey: shortcuts["view.layout-justified"].keys!,
       callback: () => setLayout("justified"),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: SHORTCUTS["view.layout-list"].keys!,
+      hotkey: shortcuts["view.layout-list"].keys!,
       callback: () => setLayout("list"),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: SHORTCUTS["view.sidebar"].keys!,
+      hotkey: shortcuts["view.sidebar"].keys!,
       callback: () => {
         if (slideNavActive()) return;
         libraryChrome.toggleSidebar();
@@ -126,7 +144,7 @@ export function AppHotkeys() {
       options: { ignoreInputs: true, conflictBehavior: "allow" },
     },
     {
-      hotkey: SHORTCUTS["view.agent"].keys!,
+      hotkey: shortcuts["view.agent"].keys!,
       callback: () => {
         if (slideNavActive()) return;
         libraryChrome.toggleAgent();
@@ -134,32 +152,42 @@ export function AppHotkeys() {
       options: { ignoreInputs: true, conflictBehavior: "allow" },
     },
     {
-      hotkey: SHORTCUTS["view.options"].keys!,
+      hotkey: shortcuts["view.grayscale"].keys!,
+      callback: () => inspect.toggleGrayscale(),
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: shortcuts["view.pin-preview"].keys!,
+      callback: () => inspect.pinCurrent(),
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: shortcuts["view.options"].keys!,
       callback: () => libraryHeader.togglePopover(),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: SHORTCUTS["view.display"].keys!,
+      hotkey: shortcuts["view.display"].keys!,
       callback: () => libraryHeader.togglePopover(),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: SHORTCUTS["view.sort-dir"].keys!,
+      hotkey: shortcuts["view.sort-dir"].keys!,
       callback: () => toggleSortDir(),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: SHORTCUTS["view.sort-key"].keys!,
+      hotkey: shortcuts["view.sort-key"].keys!,
       callback: () => cycleSortKey(),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: SHORTCUTS["view.theme-cycle"].keys!,
+      hotkey: shortcuts["view.theme-cycle"].keys!,
       callback: () => cycleAppearance(),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: SHORTCUTS["sources.new"].keys!,
+      hotkey: shortcuts["sources.new"].keys!,
       callback: () => {
         libraryChrome.setNav({ kind: "sources" });
         go("/sources");
@@ -168,17 +196,52 @@ export function AppHotkeys() {
       options: { ignoreInputs: true },
     },
     {
-      hotkey: SHORTCUTS["sources.sync-all"].keys!,
+      hotkey: shortcuts["sources.sync-all"].keys!,
       callback: () => {
         void window.pond.syncRunAll();
       },
       options: { ignoreInputs: true },
     },
     {
-      hotkey: SHORTCUTS["library.rescan"].keys!,
+      hotkey: shortcuts["library.rescan"].keys!,
       callback: () => {
         void window.pond.query("library.rescan", {});
       },
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: shortcuts["library.new-folder"].keys!,
+      callback: () => newFolder(),
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: shortcuts["library.new-tag"].keys!,
+      callback: () => newTag("tag"),
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: shortcuts["library.new-tag-group"].keys!,
+      callback: () => newTag("tag-group"),
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: shortcuts["library.new-note"].keys!,
+      callback: () => newMenuDialog.open("note"),
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: shortcuts["library.import-files"].keys!,
+      callback: () => void runNewAction(() => importPaths("files")),
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: shortcuts["library.import-folders"].keys!,
+      callback: () => void runNewAction(() => importPaths("folders")),
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: shortcuts["library.import-links"].keys!,
+      callback: () => newMenuDialog.open("links"),
       options: { ignoreInputs: true },
     },
   ]);

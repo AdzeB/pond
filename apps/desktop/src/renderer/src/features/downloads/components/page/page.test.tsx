@@ -5,6 +5,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
+import { libraryChrome } from "@/features/library/state/library-chrome";
 import { primarySelection } from "@/features/library/state/selection";
 import { savesStore } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
@@ -37,7 +38,7 @@ function save(
           {
             op: "fetch_video_ytdlp",
             status: taskStatus,
-            attempts: 1,
+            attempts: taskStatus === "pending" ? 0 : 1,
             maxAttempts: 5,
             lastError: taskStatus === "failed" ? "Network unavailable" : null,
             nextRunAt: 0,
@@ -78,9 +79,13 @@ beforeEach(() => {
   }));
   vi.clearAllMocks();
   primarySelection.set(null);
+  libraryChrome.inspectSave(null);
+  libraryChrome.closeRightPane();
   Object.assign(window, { pond: { query, pipelinePause, pipelineCancelSave } });
   query.mockImplementation(async (name: string) => {
     if (name === "settings.getPrefs") return {};
+    if (name === "downloads.activity") return [];
+    if (name === "downloads.history") return { rows: [], nextCursor: null };
     if (name === "pipeline.status") return { paused: false };
     if (name === "pipeline.inflight") return [];
     if (name === "downloads.live") return [];
@@ -141,6 +146,8 @@ it("shows live downloads that paging missed without hydrating the whole library"
   setSaves([save("Recent clip", "complete")]);
   query.mockImplementation(async (name: string, args?: { ids?: string[] }) => {
     if (name === "settings.getPrefs") return {};
+    if (name === "downloads.activity") return [];
+    if (name === "downloads.history") return { rows: [], nextCursor: null };
     if (name === "pipeline.status") return { paused: false };
     if (name === "pipeline.inflight") return [];
     if (name === "downloads.live") return [queued.id];
@@ -157,7 +164,7 @@ it("shows live downloads that paging missed without hydrating the whole library"
   expect(query).toHaveBeenCalledWith("downloads.live", {});
   expect(query).not.toHaveBeenCalledWith("saves.list", expect.anything());
   expect(host.textContent).toContain("Old failure");
-  expect(host.querySelector('[aria-label="Open Recent clip"]')).toBeNull();
+  expect(host.querySelector('[aria-label="Inspect Recent clip"]')).toBeNull();
 });
 
 it("keeps running work active when the queue is paused and scopes retry to visible failures", async () => {
@@ -169,6 +176,11 @@ it("keeps running work active when the queue is paused and scopes retry to visib
   expect(
     host.querySelector('[data-status="running"]')?.hasAttribute("data-moving"),
   ).toBe(true);
+  const pausedGroup = [...host.querySelectorAll("button")].find(
+    (button) => button.textContent?.replaceAll(" ", "") === "Paused1",
+  );
+  if (!pausedGroup) throw new Error("Missing paused group");
+  await act(async () => pausedGroup.click());
   expect(host.querySelector('[data-status="pending"]')?.textContent).toContain(
     "Paused",
   );
@@ -184,7 +196,7 @@ it("keeps running work active when the queue is paused and scopes retry to visib
 it("preserves row selection and prunes completed selections after live updates", async () => {
   await render();
   expect(host.querySelector('[role="checkbox"]')).toBeNull();
-  await click('[aria-label="Open Running video"]', { metaKey: true });
+  await click('[aria-label="Inspect Running video"]', { metaKey: true });
   expect(downloadsSelection.size()).toBe(1);
   expect(primarySelection.get()).toBeNull();
   await act(async () =>
@@ -194,24 +206,80 @@ it("preserves row selection and prunes completed selections after live updates",
     ]),
   );
   expect(downloadsSelection.size()).toBe(0);
-  await click('[aria-label="Open Failed video"]');
-  expect(primarySelection.get()).toBe("Failed video");
+  await click('[aria-label="Inspect Failed video"]');
+  expect(primarySelection.get()).toBeNull();
+  expect(libraryChrome.getState()).toMatchObject({
+    inspectorSaveId: "Failed video",
+    inspectorMode: "download",
+    rightPane: "inspector",
+  });
 });
 
-it("sorts downloads from column headers without selecting or opening a save", async () => {
+it("keeps waiting names collapsed and sorts only active work", async () => {
+  setSaves([
+    save("Z clip", "ingesting", "running"),
+    save("A clip", "ingesting", "running"),
+    save("Waiting video", "ingesting", "pending"),
+  ]);
   await render();
+  expect(host.querySelector('[aria-label="Inspect Waiting video"]')).toBeNull();
   await click('[aria-label="Sort by Name"]');
   expect(
-    [...host.querySelectorAll('button[aria-label^="Open "]')].map((button) =>
+    [...host.querySelectorAll('button[aria-label^="Inspect "]')].map((button) =>
       button.getAttribute("aria-label"),
     ),
-  ).toEqual(["Open Failed video", "Open Running video", "Open Waiting video"]);
+  ).toEqual(["Inspect A clip", "Inspect Z clip"]);
   await click('[aria-label="Sort by Name"]');
   expect(
-    [...host.querySelectorAll('button[aria-label^="Open "]')].map((button) =>
+    [...host.querySelectorAll('button[aria-label^="Inspect "]')].map((button) =>
       button.getAttribute("aria-label"),
     ),
-  ).toEqual(["Open Waiting video", "Open Running video", "Open Failed video"]);
+  ).toEqual(["Inspect Z clip", "Inspect A clip"]);
   expect(downloadsSelection.size()).toBe(0);
   expect(primarySelection.get()).toBeNull();
+});
+
+it("opens completed history on demand without filling the active list", async () => {
+  query.mockImplementation(async (name: string) => {
+    if (name === "settings.getPrefs") return {};
+    if (name === "pipeline.status") return { paused: false };
+    if (
+      name === "downloads.activity" ||
+      name === "downloads.live" ||
+      name === "pipeline.inflight"
+    )
+      return [];
+    if (name === "downloads.history")
+      return {
+        rows: [
+          {
+            id: 1,
+            saveId: "done",
+            title: "Saved clip",
+            url: "https://example.com/done",
+            source: "youtube",
+            outcome: "complete",
+            durationMs: 3000,
+            attempts: 1,
+            failedOp: null,
+            error: null,
+            ts: 1000,
+          },
+        ],
+        nextCursor: null,
+      };
+    throw new Error(`Unexpected query: ${name}`);
+  });
+  await render();
+  expect(host.querySelector('[aria-label="Inspect Saved clip"]')).toBeNull();
+  const completed = [...host.querySelectorAll("button")].find(
+    (button) => button.textContent === "Completed1",
+  );
+  if (!completed) throw new Error("Missing completed group");
+  await act(async () => completed.click());
+  await click('[aria-label="Inspect Saved clip"]');
+  expect(libraryChrome.getState()).toMatchObject({
+    inspectorSaveId: "done",
+    inspectorMode: "download",
+  });
 });

@@ -3,6 +3,7 @@ import { colorNear, readColorMatch } from "./color";
 import { isoDurationToMillis } from "./duration";
 import { FIELD_DESCRIPTORS } from "./fields";
 import type { FieldValue } from "./fields/descriptor";
+import { ASPECT_TOLERANCE, parseAspectRatio } from "./fields/dims";
 import type { SaveLike } from "./fields/save-like";
 import type {
   Clause,
@@ -30,7 +31,7 @@ export function matches(query: Query, save: SaveLike): boolean {
 
 function evalClause(c: Clause, s: SaveLike): boolean {
   if (isGroup(c)) {
-    if (c.rules.length === 0) return true;
+    if (c.rules.length === 0) return !c.not;
     const ok =
       c.combinator === "or"
         ? c.rules.some((child) => evalClause(child, s))
@@ -42,6 +43,7 @@ function evalClause(c: Clause, s: SaveLike): boolean {
 }
 
 function evalPredicate(p: Predicate, s: SaveLike): boolean {
+  if (p.field === "aspect") return matchesAspect(p, s);
   const projected = FIELD_DESCRIPTORS[p.field].project(s);
   return runComparator(p.operator, projected, p.value);
 }
@@ -104,6 +106,17 @@ function runComparator(
       return withLists(projected, value, (have, want) =>
         want.every((v) => have.includes(String(v).toLowerCase())),
       );
+    case "exact":
+      return withLists(projected, value, (have, want) => {
+        const actual = new Set(have.map((entry) => entry.toLowerCase()));
+        const expected = new Set(
+          want.map((entry) => String(entry).toLowerCase()),
+        );
+        return (
+          actual.size === expected.size &&
+          [...expected].every((entry) => actual.has(entry))
+        );
+      });
     case "none":
       return withLists(
         projected,
@@ -125,6 +138,28 @@ function runComparator(
         : false;
     }
   }
+}
+
+function matchesAspect(predicate: Predicate, save: SaveLike): boolean {
+  const values = Array.isArray(predicate.value)
+    ? predicate.value
+    : [predicate.value];
+  const targets = values.map((value) => {
+    const text = Text.safeParse(value);
+    return text.success ? parseAspectRatio(text.data) : null;
+  });
+  const ratio = (save.width ?? 0) / (save.height ?? 0);
+  const positive =
+    (save.width ?? 0) > 0 &&
+    (save.height ?? 0) > 0 &&
+    targets.some(
+      (target) =>
+        target !== null &&
+        Math.abs(ratio - target) / target <= ASPECT_TOLERANCE,
+    );
+  return predicate.operator === "neq" || predicate.operator === "nin"
+    ? !positive
+    : positive;
 }
 
 function withText(
@@ -175,6 +210,11 @@ function resolveNumeric(v: PredicateValue): number {
   const text = Timestamp.safeParse(v);
   if (!text.success) return Number.NaN;
   const raw = text.data;
+  if (raw === "today") {
+    const day = new Date();
+    day.setHours(0, 0, 0, 0);
+    return day.getTime();
+  }
   if (raw.startsWith("P") || raw.startsWith("-P") || raw.startsWith("+P")) {
     const ms = isoDurationToMillis(raw);
     if (ms !== null) return Date.now() + ms;

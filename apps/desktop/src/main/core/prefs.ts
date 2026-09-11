@@ -14,6 +14,7 @@ import log from "electron-log/main.js";
 import { z } from "zod";
 import { getGlobalDb } from "../db";
 import { createMemoCache } from "../lib/memo-cache";
+import { prepareGlobalShortcuts } from "./global-shortcuts";
 import {
   currentPondId,
   isUnboundPondId,
@@ -37,6 +38,14 @@ interface SettingsCache {
 }
 
 const settingsCache = createMemoCache<SettingsCache>(fetchSettings);
+const prefsListeners = new Set<(prefs: Prefs) => void>();
+
+export function subscribePrefs(listener: (prefs: Prefs) => void): () => void {
+  prefsListeners.add(listener);
+  return () => {
+    prefsListeners.delete(listener);
+  };
+}
 
 export function invalidatePrefs(): void {
   settingsCache.invalidate();
@@ -146,7 +155,18 @@ export async function getImageDownloadPrefs(): Promise<ImageDownloadSettings> {
   return (await loadSettings()).imageDownload;
 }
 
-export async function setPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
+let prefsQueue = Promise.resolve();
+
+export function setPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
+  const operation = prefsQueue.then(() => applyPrefs(patch));
+  prefsQueue = operation.then(
+    () => {},
+    () => {},
+  );
+  return operation;
+}
+
+async function applyPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
   const pondId = currentPondId();
   const current = await loadSettings();
   const { app, pond } = splitPrefsPatch(patch);
@@ -165,23 +185,37 @@ export async function setPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
   } else {
     const base = readBundlePondPrefs() ?? mergePondSlice({});
     pondSlice = mergePondSlice(base, pond);
-    if (Object.keys(pond).length > 0) {
-      writeBundlePondPrefs(pondSlice);
-    }
   }
 
   if (Object.keys(app).length > 0) {
     stored = { ...stored, app: mergeAppSlice(stored.app, app) };
   }
-  await persistStoredPrefs(stored);
-
   const merged = mergePrefs(stored.app, pondSlice);
+  const shortcutChange = patch.shortcuts
+    ? prepareGlobalShortcuts(merged.shortcuts.overrides)
+    : null;
+  try {
+    if (!isUnboundPondId(pondId) && Object.keys(pond).length > 0)
+      writeBundlePondPrefs(pondSlice);
+    await persistStoredPrefs(stored);
+    shortcutChange?.commit();
+  } catch (error) {
+    shortcutChange?.rollback();
+    throw error;
+  }
   settingsCache.set({
     pondId,
     prefs: merged,
     videoDownload: current.videoDownload,
     imageDownload: current.imageDownload,
   });
+  for (const listener of prefsListeners) {
+    try {
+      listener(merged);
+    } catch (error) {
+      log.warn("[pond prefs] listener failed", error);
+    }
+  }
   return merged;
 }
 

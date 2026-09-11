@@ -31,7 +31,7 @@ function save(partial: Partial<Save> & Pick<Save, "id" | "status">): Save {
 }
 
 describe("projectLiveDownloads", () => {
-  it("projects ingesting as pending, running, or blocked", () => {
+  it("projects ingesting as pending, running, retrying, or blocked", () => {
     const rows = projectLiveDownloads([
       save({
         id: "run",
@@ -59,6 +59,22 @@ describe("projectLiveDownloads", () => {
         ],
       }),
       save({
+        id: "retry",
+        status: "ingesting",
+        title: "Retrying",
+        tasks: [
+          {
+            op: "fetch_blobs",
+            status: "pending",
+            attempts: 3,
+            maxAttempts: 5,
+            lastError: "TransientError: fetch_blobs: connection reset",
+            nextRunAt: 0,
+            updatedAt: 0,
+          },
+        ],
+      }),
+      save({
         id: "block",
         status: "ingesting",
         title: "Blocked",
@@ -80,6 +96,7 @@ describe("projectLiveDownloads", () => {
     ]);
     expect(rows.map((r) => [r.saveId, r.status])).toEqual([
       ["run", "running"],
+      ["retry", "retrying"],
       ["block", "blocked"],
       ["wait", "pending"],
       ["fail", "failed"],
@@ -88,6 +105,31 @@ describe("projectLiveDownloads", () => {
       "Downloading video",
     );
     expect(rows.find((r) => r.saveId === "run")?.progress).toBe(0.5);
+    expect(rows.find((r) => r.saveId === "retry")?.error).toBe(
+      "Connection reset",
+    );
+  });
+
+  it("marks pasted ingest so Pause Queue does not relabel it", () => {
+    const rows = projectLiveDownloads([
+      save({
+        id: "paste",
+        status: "ingesting",
+        tasks: [
+          {
+            op: "harvest_metadata",
+            status: "pending",
+            attempts: 0,
+            maxAttempts: 5,
+            lastError: null,
+            nextRunAt: 0,
+            updatedAt: 0,
+            interactive: true,
+          },
+        ],
+      }),
+    ]);
+    expect(rows[0]?.interactive).toBe(true);
   });
 
   it("puts work in flight above the queue no matter how old it is", () => {

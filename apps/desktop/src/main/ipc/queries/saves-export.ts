@@ -1,13 +1,17 @@
-import { copyFile, writeFile } from "node:fs/promises";
-import { basename, extname, join } from "node:path";
+import { basename, dirname, extname } from "node:path";
 import { saves } from "@pond/schema/db";
 import { desc, eq, inArray, isNull } from "drizzle-orm";
 import { dialog, shell } from "electron";
 import log from "electron-log/main.js";
 import sharp from "sharp";
 import { z } from "zod";
+import { copyExportFile, writeExportFile } from "../../core/export-files";
+import { exportSavesToDirectory } from "../../core/export-saves";
+import { exportPondPackage } from "../../core/pond-package";
+import { runTransferJob } from "../../core/transfer-jobs";
 import { getDb } from "../../db";
 import { toCsv } from "../../lib/csv";
+import { libraryRoot } from "../../paths";
 import { resolveSaveFilePath } from "../helpers";
 import {
   FileIndexParam,
@@ -17,16 +21,37 @@ import {
   StringParam,
 } from "./params";
 
-function sanitizeName(s: string): string {
-  return s
-    .replace(/[/\\?%*:|"<>]/g, "_")
-    .trim()
-    .slice(0, 120);
-}
-
 const IdListParams = z.object({ ids: StringListParam });
 
 export const savesExportQueries = {
+  "saves.exportPackage": query(IdListParams, async ({ ids }) => {
+    const picked = await dialog.showSaveDialog({
+      title: "Export Pond Package",
+      defaultPath: "Saves.pondpack",
+      buttonLabel: "Export",
+    });
+    if (picked.canceled || !picked.filePath)
+      return { ok: false, error: "canceled" };
+    try {
+      const destination = picked.filePath.endsWith(".pondpack")
+        ? picked.filePath
+        : `${picked.filePath}.pondpack`;
+      return {
+        ok: true,
+        ...(await runTransferJob(
+          { kind: "export_package", origin: libraryRoot(), destination, ids },
+          () => exportPondPackage(ids, destination),
+        )),
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error:
+          error instanceof Error ? error.message : "Package export failed.",
+      };
+    }
+  }),
+
   "saves.exportFile": query(
     z.object({ id: StringParam, fileIndex: FileIndexParam }),
     async (params) => {
@@ -53,8 +78,12 @@ export const savesExportQueries = {
         if (result.canceled || !result.filePath) {
           return { ok: false as const, reason: "cancelled" as const };
         }
-        await copyFile(target.path, result.filePath);
-        return { ok: true as const, path: result.filePath };
+        const path = await copyExportFile(
+          target.path,
+          dirname(result.filePath),
+          basename(result.filePath),
+        );
+        return { ok: true as const, path };
       } catch (err) {
         log.warn("[pond ipc] saves.exportFile failed", err);
         return { ok: false as const, reason: "internal_error" as const };
@@ -100,30 +129,10 @@ export const savesExportQueries = {
     }
     const dir = picked.filePaths[0];
 
-    const db = await getDb();
-    const rows = await db.select().from(saves).where(inArray(saves.id, ids));
-
-    const used = new Set<string>();
-    let exported = 0;
-    for (const row of rows) {
-      const preferred = row.coverIndex ?? 0;
-      const fileIndex =
-        row.files[preferred]?.kind !== "custom_thumbnail"
-          ? preferred
-          : row.files.findIndex((file) => file.kind !== "custom_thumbnail");
-      if (fileIndex < 0) continue;
-      const target = await resolveSaveFilePath(row.id, fileIndex);
-      if (!target.ok) continue;
-      const ext = extname(target.path);
-      const base =
-        sanitizeName(row.title ?? basename(target.path, ext)) || row.id;
-      let name = `${base}${ext}`;
-      let n = 1;
-      while (used.has(name.toLowerCase())) name = `${base}-${n++}${ext}`;
-      used.add(name.toLowerCase());
-      await copyFile(target.path, join(dir, name));
-      exported++;
-    }
+    const { exported } = await runTransferJob(
+      { kind: "export_files", origin: libraryRoot(), destination: dir, ids },
+      () => exportSavesToDirectory(ids, dir),
+    );
     return { ok: true as const, exported, dir };
   }),
 
@@ -142,8 +151,8 @@ export const savesExportQueries = {
       const target = await resolveSaveFilePath(id, 0);
       if (!target.ok) continue;
       try {
-        const out = join(dir, `${id}.webp`);
-        await sharp(target.path).webp({ quality: 80 }).toFile(out);
+        const bytes = await sharp(target.path).webp({ quality: 80 }).toBuffer();
+        await writeExportFile(dir, `${id}.webp`, bytes);
         exported += 1;
       } catch (err) {
         log.warn("[pond ipc] exportWebp failed", id, err);
@@ -206,7 +215,11 @@ export const savesExportQueries = {
     if (picked.canceled || !picked.filePath) {
       return { ok: false as const, error: "canceled" };
     }
-    await writeFile(picked.filePath, csv, "utf8");
-    return { ok: true as const, count: rows.length, path: picked.filePath };
+    const path = await writeExportFile(
+      dirname(picked.filePath),
+      basename(picked.filePath),
+      csv,
+    );
+    return { ok: true as const, count: rows.length, path };
   }),
 } satisfies QueryHandlerMap;

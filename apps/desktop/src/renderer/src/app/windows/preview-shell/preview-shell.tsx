@@ -1,150 +1,215 @@
 import { Button } from "@pond/ui";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { CardThumb } from "@/features/saves/components/card/media/media";
-import { useSave } from "@/features/saves/hooks/use-saves";
+import { useHotkey } from "@tanstack/react-hotkeys";
+import { useEffect, useRef, useState } from "react";
+import { resultNavigation } from "@/features/library/state/result-navigation";
+import { StoredFileViewer } from "@/features/saves/components/viewers/file-viewer/file-viewer";
 import {
-  applyInspect,
-  flipPatch,
-  resetTransformPatch,
-  rotatePatch,
-} from "@/features/saves/lib/inspect-actions";
-import { mediaTransformStyle } from "@/features/saves/lib/media-transform";
+  MediaViewer,
+  type ViewerNav,
+} from "@/features/saves/components/viewers/media-viewer/media-viewer";
+import { useSave } from "@/features/saves/hooks/use-saves";
+import { ensureSaves, refreshSaves } from "@/features/saves/lib/ensure-saves";
+import { storedFileViewerKind } from "@/features/saves/lib/media/file-viewer";
+import { pickPrimaryFile } from "@/features/saves/lib/media/units";
 import { normalise } from "@/features/saves/lib/reconcile";
-import { startNativeDrag } from "@/features/saves/lib/start-drag";
 import { pool } from "@/features/saves/state/pool";
-import type { Save } from "@/features/saves/types";
+import { useShortcutBindings } from "@/shared/lib/shortcuts";
 import styles from "./preview-shell.module.css";
 
 export function PreviewShell({ id }: { id: string }) {
-  const [loaded, setLoaded] = useState<Save | null>(null);
-  const live = useSave(id);
-  const save = live ?? loaded;
-  const [zoom, setZoom] = useState(1);
-  const [origin, setOrigin] = useState({ x: 50, y: 50 });
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const rightDrag = useRef<{ x: number; y: number } | null>(null);
-  const leftDrag = useRef<{ x: number; y: number } | null>(null);
-
+  const [currentId, setCurrentId] = useState(id);
+  const current = useRef(id);
+  const nav = useRef<ViewerNav | null>(null);
+  const queue = useRef(Promise.resolve());
+  const shortcuts = useShortcutBindings();
+  const [navigationMessage, setNavigationMessage] = useState<string | null>(
+    null,
+  );
+  const showSave = (next: string) => {
+    current.current = next;
+    setCurrentId(next);
+    setNavigationMessage(null);
+  };
+  const step = (delta: -1 | 1, withinSave = true) => {
+    if (withinSave && nav.current?.step(delta)) return;
+    queue.current = queue.current
+      .then(async () => {
+        const next = await window.pond.query("preview.neighbor", {
+          id: current.current,
+          delta,
+        });
+        if (!next.id) {
+          setNavigationMessage(
+            delta < 0
+              ? "No previous save in this view."
+              : "No next save in this view.",
+          );
+          return;
+        }
+        await ensureSaves([next.id]);
+        showSave(next.id);
+      })
+      .catch(() =>
+        setNavigationMessage("Couldn’t load the next preview. Try again."),
+      );
+  };
+  useHotkey(shortcuts["viewer.step-prev"].keys!, () => step(-1), {
+    ignoreInputs: true,
+  });
+  useHotkey(shortcuts["viewer.step-next"].keys!, () => step(1), {
+    ignoreInputs: true,
+  });
+  useHotkey(shortcuts["viewer.prev-save"].keys!, () => step(-1, false), {
+    ignoreInputs: true,
+  });
+  useHotkey(shortcuts["viewer.next-save"].keys!, () => step(1, false), {
+    ignoreInputs: true,
+  });
   useEffect(() => {
-    void window.pond.query("saves.get", { id }).then((raw) => {
-      const next = normalise(raw);
-      if (!next) return;
-      pool.upsert(next);
-      setLoaded(next);
+    resultNavigation.setSource({
+      ids: [currentId],
+      neighbor: async (id, delta) =>
+        (
+          await window.pond.query("preview.neighbor", {
+            id,
+            delta: delta > 0 ? 1 : -1,
+          })
+        ).id,
     });
-  }, [id]);
-
-  const onWheel = useCallback((event: React.WheelEvent) => {
-    if (!event.altKey && event.buttons !== 2) return;
-    event.preventDefault();
-    const rect = event.currentTarget.getBoundingClientRect();
-    setOrigin({
-      x: ((event.clientX - rect.left) / rect.width) * 100,
-      y: ((event.clientY - rect.top) / rect.height) * 100,
-    });
-    setZoom((value) => Math.min(8, Math.max(1, value - event.deltaY * 0.01)));
+    return () => resultNavigation.setSource({ ids: [] });
+  }, [currentId]);
+  useEffect(
+    () =>
+      window.pond.onSyncAction(() => {
+        void refreshSaves([current.current]).catch(() => {});
+      }),
+    [],
+  );
+  const root = useRef<HTMLDivElement>(null);
+  const [pinned, setPinned] = useState(true);
+  const [opacity, setOpacity] = useState(1);
+  const [error, setError] = useState(false);
+  const save = useSave(currentId);
+  useEffect(() => {
+    void window.pond
+      .query("preview.configure", {})
+      .then((settings) => {
+        if (settings.ok) {
+          setPinned(settings.pinned);
+          setOpacity(settings.opacity);
+        }
+      })
+      .catch(() => {});
   }, []);
-
+  useEffect(() => {
+    current.current = id;
+    setCurrentId(id);
+  }, [id]);
+  useEffect(() => {
+    let active = true;
+    setError(false);
+    void window.pond
+      .query("saves.get", { id: currentId })
+      .then((raw) => {
+        const next = normalise(raw);
+        if (active && next) pool.upsert(next);
+        else if (active) setError(true);
+      })
+      .catch(() => {
+        if (active) setError(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [currentId]);
+  if (error)
+    return (
+      <div className={styles.root}>
+        Couldn’t load this preview. Close it and try again.
+      </div>
+    );
   if (!save) return <div className={styles.root}>Loading preview</div>;
-
+  const file = pickPrimaryFile(save);
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: pan and zoom surface
-    <div
-      className={styles.root}
-      onWheel={onWheel}
-      onContextMenu={(event) => event.preventDefault()}
-      onPointerDown={(event) => {
-        if (event.button === 2) {
-          rightDrag.current = { x: event.clientX, y: event.clientY };
-          return;
-        }
-        if (event.button === 0 && zoom > 1) {
-          leftDrag.current = { x: event.clientX, y: event.clientY };
-        }
-      }}
-      onPointerMove={(event) => {
-        if (rightDrag.current) {
-          const dy = event.clientY - rightDrag.current.y;
-          rightDrag.current = { x: event.clientX, y: event.clientY };
-          setZoom((value) => Math.min(8, Math.max(1, value - dy * 0.01)));
-          return;
-        }
-        if (leftDrag.current) {
-          const start = leftDrag.current;
-          setPan((value) => ({
-            x: value.x + event.clientX - start.x,
-            y: value.y + event.clientY - start.y,
-          }));
-          leftDrag.current = { x: event.clientX, y: event.clientY };
-        }
-      }}
-      onPointerUp={() => {
-        rightDrag.current = null;
-        leftDrag.current = null;
-      }}
-    >
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: native drag from the preview frame */}
-      <div
-        className={styles.frame}
-        style={{
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-          transformOrigin: `${origin.x}% ${origin.y}%`,
-        }}
-        draggable
-        onDragStart={(event) => {
-          event.preventDefault();
-          startNativeDrag(save.id);
-        }}
-      >
-        <div style={mediaTransformStyle(save)} className={styles.media}>
-          <CardThumb save={save} />
-        </div>
+    <div ref={root} className={styles.root}>
+      <div className={styles.title}>{save.title || "Preview"}</div>
+      <div className={styles.viewer}>
+        {file && storedFileViewerKind(file) ? (
+          <StoredFileViewer save={save} file={file} />
+        ) : (
+          <MediaViewer
+            key={save.id}
+            save={save}
+            navRef={nav}
+            onNavigate={showSave}
+          />
+        )}
       </div>
       <div className={styles.tools}>
-        <Button
-          size="xs"
-          variant="secondary"
-          onClick={() =>
-            void applyInspect(save.id, rotatePatch(save, -90), "inspect:rotate")
-          }
-        >
-          Rotate Left
+        <Button size="sm" variant="secondary" onClick={() => step(-1)}>
+          Previous
         </Button>
-        <Button
-          size="xs"
-          variant="secondary"
-          onClick={() =>
-            void applyInspect(save.id, rotatePatch(save, 90), "inspect:rotate")
-          }
-        >
-          Rotate Right
+        <Button size="sm" variant="secondary" onClick={() => step(1)}>
+          Next
         </Button>
+        {navigationMessage ? (
+          <span role="status">{navigationMessage}</span>
+        ) : null}
         <Button
-          size="xs"
+          size="sm"
           variant="secondary"
-          onClick={() =>
-            void applyInspect(save.id, flipPatch(save, "x"), "inspect:flip")
-          }
+          aria-pressed={pinned}
+          onClick={() => {
+            void window.pond
+              .query("preview.configure", { pinned: !pinned })
+              .then((settings) => {
+                if (settings.ok) setPinned(settings.pinned);
+              });
+          }}
         >
-          Flip Horizontal
+          {pinned ? "Unpin" : "Pin on Top"}
         </Button>
+        <label className={styles.opacity}>
+          Opacity{" "}
+          <input
+            type="range"
+            aria-label="Preview Opacity"
+            min={0.2}
+            max={1}
+            step={0.05}
+            value={opacity}
+            onChange={(event) => {
+              const value = Number(event.target.value);
+              setOpacity(value);
+              void window.pond.query("preview.configure", { opacity: value });
+            }}
+          />
+        </label>
         <Button
-          size="xs"
+          size="sm"
           variant="secondary"
-          onClick={() =>
-            void applyInspect(save.id, flipPatch(save, "y"), "inspect:flip")
-          }
+          onClick={() => {
+            const image = root.current?.querySelector("[data-active] img");
+            const video = root.current?.querySelector("[data-active] video");
+            const width =
+              image instanceof HTMLImageElement
+                ? image.naturalWidth
+                : video instanceof HTMLVideoElement
+                  ? video.videoWidth
+                  : save.width;
+            const height =
+              image instanceof HTMLImageElement
+                ? image.naturalHeight
+                : video instanceof HTMLVideoElement
+                  ? video.videoHeight
+                  : save.height;
+            if (width && height)
+              void window.pond.query("preview.configure", {
+                fit: { width, height },
+              });
+          }}
         >
-          Flip Vertical
-        </Button>
-        <Button
-          size="xs"
-          variant="secondary"
-          onClick={() =>
-            void applyInspect(save.id, resetTransformPatch(), "inspect:reset")
-          }
-        >
-          Reset
+          Fit Window to Image
         </Button>
       </div>
     </div>

@@ -1,12 +1,12 @@
 import { open, stat } from "node:fs/promises";
-import { basename } from "node:path";
+import { basename, join } from "node:path";
 import {
   type MediaType,
   type NewSave,
+  type Save,
   type SaveFile,
   type Source,
   saves,
-  syncActions,
 } from "@pond/schema/db";
 import {
   classifyLibraryFile,
@@ -19,10 +19,12 @@ import sharp from "sharp";
 import { ulid } from "ulid";
 import { getDb } from "../db";
 import { writeSaveInfo } from "../lib/library";
-import { broadcastSyncAction } from "./executor";
+import { itemDir } from "../paths";
+import { executeBatch, withMutationScope } from "./executor";
 import { extractFontFamily } from "./font-metadata";
 import { persistSave } from "./persist-save";
-import { normalizeTagList } from "./tags";
+import type { WriteFileArgs } from "./pipeline/workers/apply";
+import { normalizeTagList, prepareTagRegistryUpdates } from "./tags";
 
 const MAX_TEXT_BODY_BYTES = 100_000;
 
@@ -32,10 +34,14 @@ export interface ManualSaveInput {
   note?: string | null;
   tags?: string[];
   filePaths?: string[];
+  fileSourceUrls?: string[];
   /** Optional preview supplied by an external library such as Eagle. */
   customThumbnailPath?: string | null;
   sourceId?: string | null;
   source?: Source;
+  savedAt?: Date;
+  createdAt?: Date;
+  publishedAt?: Date;
   width?: number;
   height?: number;
   rating?: number | null;
@@ -124,8 +130,15 @@ export function storageKindForImport(
 export async function createManualSave(
   input: ManualSaveInput,
 ): Promise<ManualSaveResult> {
+  return withMutationScope(() => importManualSave(input));
+}
+
+async function importManualSave(
+  input: ManualSaveInput,
+): Promise<ManualSaveResult> {
   const db = await getDb();
-  const id = ulid();
+  let id = ulid();
+  let recovering = false;
   const source = input.source ?? "local";
   const overrideId = input.sourceId?.trim() || null;
   const sourceId = overrideId || id;
@@ -133,11 +146,24 @@ export async function createManualSave(
 
   if (overrideId) {
     const existing = db
-      .select({ id: saves.id })
+      .select()
       .from(saves)
       .where(and(eq(saves.source, source), eq(saves.sourceId, sourceId)))
       .all()[0];
-    if (existing) return { ok: true, id: existing.id, skipped: true };
+    if (existing) {
+      if (
+        existing.deletedAt ||
+        !input.filePaths?.length ||
+        (await importedFilesComplete(
+          existing,
+          itemDir(existing.id),
+          input.filePaths.length,
+        ))
+      )
+        return { ok: true, id: existing.id, skipped: true };
+      id = existing.id;
+      recovering = true;
+    }
   }
 
   const note = input.note?.trim() || null;
@@ -187,15 +213,16 @@ export async function createManualSave(
     notes: isTextSave ? null : note,
     mediaType,
     siteName: null,
-    status: "complete",
+    status: hasFiles ? "ingesting" : "complete",
     tags,
     listKinds: ["saved"],
     files: [],
     coverIndex: 0,
     ingestStartedAt: now,
-    ingestCompletedAt: now,
-    savedAt: now,
-    createdAt: now,
+    ingestCompletedAt: hasFiles ? null : now,
+    savedAt: input.savedAt ?? now,
+    createdAt: input.createdAt ?? now,
+    publishedAt: input.publishedAt,
   };
   if (input.width != null) insertValues.width = input.width;
   if (input.height != null) insertValues.height = input.height;
@@ -203,26 +230,25 @@ export async function createManualSave(
   if (input.comments) insertValues.comments = input.comments;
   if (input.videoNotes) insertValues.videoNotes = input.videoNotes;
   if (input.dominantColors) insertValues.dominantColors = input.dominantColors;
-  db.insert(saves).values(insertValues).run();
-
-  const insertedAction = db
-    .insert(syncActions)
-    .values({
-      modelName: "save",
-      modelId: id,
-      action: "I",
-      data: insertValues,
-      actor: "user",
-      actorReason: "manual:create",
-      batchId: ulid(),
-    })
-    .returning()
-    .all()[0];
-  if (insertedAction) broadcastSyncAction(insertedAction);
+  const registry = await prepareTagRegistryUpdates(tags);
+  if (!recovering) {
+    await executeBatch([
+      ...registry,
+      {
+        kind: "create",
+        model: "save",
+        id,
+        data: insertValues,
+        meta: { actor: "user", actorReason: "manual:create" },
+      },
+    ]);
+  } else if (registry.length) {
+    await executeBatch(registry);
+  }
 
   if (hasFiles) {
     let imageIndex = 0;
-    const newFiles = readable.map((item) => {
+    const newFiles: WriteFileArgs[] = readable.map((item) => {
       const kind = storageKindForImport(item.format, imageIndex);
       if (
         item.format.mediaType === "image" &&
@@ -234,6 +260,8 @@ export async function createManualSave(
         kind,
         filename: item.filename,
         sourcePath: item.path,
+        sourceUrl:
+          input.fileSourceUrls?.[input.filePaths?.indexOf(item.path) ?? -1],
         mimeType: item.format.mimeType,
         width: item.width,
         height: item.height,
@@ -258,10 +286,27 @@ export async function createManualSave(
     const completed = await persistSave(
       id,
       { status: "complete", ingestCompletedAt: new Date(), fileSize },
-      { actorReason: "manual:import", newFiles },
+      {
+        actorReason: "manual:import",
+        newFiles,
+        replaceFilesWithKind: recovering
+          ? [...new Set(newFiles.map((file) => file.kind))]
+          : undefined,
+      },
     );
+    if (
+      !completed ||
+      !(await importedFilesComplete(completed, itemDir(id), readable.length))
+    ) {
+      await persistSave(
+        id,
+        { status: "failed", ingestCompletedAt: null },
+        { actorReason: "manual:import-incomplete" },
+      );
+      return { ok: false, id, error: "incomplete_import" };
+    }
     const font = readable.find((item) => item.format.mediaType === "font");
-    if (completed && font) {
+    if (font) {
       const family = await extractFontFamily(font.path);
       if (family) {
         const files = completed.files.map((file, index) =>
@@ -353,4 +398,23 @@ async function readImageDimensions(path: string): Promise<ImageDimensions> {
   } catch {
     return {};
   }
+}
+
+export async function importedFilesComplete(
+  save: Pick<Save, "status" | "files">,
+  directory: string,
+  expected: number,
+): Promise<boolean> {
+  const originals = (save.files ?? []).filter(
+    (file) =>
+      !["custom_thumbnail", "avatar", "source_icon", "poster"].includes(
+        file.kind,
+      ),
+  );
+  if (save.status !== "complete" || originals.length < expected) return false;
+  for (const file of originals) {
+    const actual = await stat(join(directory, file.path)).catch(() => null);
+    if (!actual?.isFile() || actual.size !== file.size) return false;
+  }
+  return true;
 }

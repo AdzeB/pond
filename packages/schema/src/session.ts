@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SOURCES } from "./db";
+import { SOURCES } from "./source-ids";
 
 export const extensionCookieSchema = z.object({
   name: z.string().min(1),

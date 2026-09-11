@@ -9,6 +9,7 @@ import type {
   WireTask,
 } from "@shared/wire";
 import { z } from "zod";
+import { isInteractiveTask } from "../core/pipeline/priority";
 import { slimRawJson } from "../lib/raw-slim";
 
 export type { WireSaveRow as SaveListRow } from "@shared/wire";
@@ -53,6 +54,7 @@ function toWireTask(task: Task): WireTask {
     lastError: task.lastError,
     nextRunAt: toMs(task.nextRunAt) ?? 0,
     updatedAt: toMs(task.updatedAt) ?? 0,
+    interactive: isInteractiveTask(task) || undefined,
   };
 }
 

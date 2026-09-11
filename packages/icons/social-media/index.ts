@@ -9,6 +9,7 @@ export { IconLmStudio } from "./custom/lmstudio";
 export { IconOllama } from "./custom/ollama";
 export { IconOpenAI } from "./custom/openai";
 export { IconBrandPinterest as IconPinterest } from "./custom/pinterest";
+export { IconBrandThreads } from "./custom/threads";
 export { IconBrandTikTok as IconTikTok } from "./custom/tiktok";
 export { IconBrandTwitter as IconXTwitter } from "./custom/twitter";
 export { IconBrandYoutube as IconYoutube } from "./custom/youtube";

@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { FolderPresentationSchema } from "./folder-presentation";
+import { FolderRulesSchema } from "./folder-rules";
 import {
   DEFAULT_APP_ICON,
   DEFAULT_DARK_PRESET_ID,
@@ -22,6 +24,7 @@ import {
   presetDef,
   StoredThemeDefSchema,
 } from "./theme-presets";
+import { ViewerPrefsSchema } from "./viewer-prefs";
 
 export * from "./prefs.types";
 
@@ -337,7 +340,16 @@ const saveRecents = z.object({
   entries: z.array(recentSaveVisit).catch([]),
 });
 
+const shortcuts = z.object({
+  profile: z.enum(["pond", "eagle"]).catch("pond"),
+  overrides: z.record(z.string(), z.string()).catch({}),
+});
+
 const PrefsObject = z.object({
+  folderRules: z.record(z.string(), FolderRulesSchema).catch({}),
+  folderViews: z.record(z.string(), FolderPresentationSchema).catch({}),
+  viewer: ViewerPrefsSchema.catch(ViewerPrefsSchema.parse({})),
+  shortcuts: shortcuts.catch(shortcuts.parse({})),
   preferences: preferences.catch(preferences.parse({})),
   trash: trash.catch(trash.parse({})),
   window: windowSlice.catch(windowSlice.parse({})),

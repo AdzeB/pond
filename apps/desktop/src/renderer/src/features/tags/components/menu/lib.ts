@@ -74,3 +74,12 @@ export function buildTagNav(
   }
   return items;
 }
+
+export function partitionPickerTags<
+  T extends { starred: boolean; lastUsedAt: number | null; name: string },
+>(tags: readonly T[]) {
+  const starred = tags
+    .filter((tag) => tag.starred)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  return { starred, ...partitionRecent(tags.filter((tag) => !tag.starred)) };
+}
