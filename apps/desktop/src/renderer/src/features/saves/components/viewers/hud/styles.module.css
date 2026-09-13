@@ -5,6 +5,28 @@
   pointer-events: none;
 }
 
+.host {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+}
+
+.host > :first-child {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
 .cluster {
   position: absolute;
   display: flex;
@@ -14,6 +36,13 @@
   &[data-anchor="top-left"] {
     top: 0;
     left: 0;
+  }
+
+  &[data-anchor="top-center"] {
+    top: 0;
+    left: 50%;
+    max-width: calc(100% - 8px);
+    transform: translateX(-50%);
   }
 
   &[data-anchor="top-right"] {
@@ -53,7 +82,7 @@
   min-width: 40px;
   height: 32px;
   padding-inline: 6px;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-11);
   white-space: nowrap;

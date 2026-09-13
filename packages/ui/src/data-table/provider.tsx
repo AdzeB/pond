@@ -52,7 +52,8 @@ export interface DataTableProviderProps<T> {
   rowHeight?: number;
   overscan?: number;
   renderRow?: (args: RenderRowArgs<T>) => ReactNode;
-  onRowClick?: (row: T, e: ReactMouseEvent) => void;
+  onRowClick?: (row: T, e?: ReactMouseEvent) => void;
+  selectOnClick?: boolean;
   children: ReactNode;
 }
 
@@ -72,10 +73,12 @@ export function DataTableProvider<T>({
   overscan = 10,
   renderRow,
   onRowClick,
+  selectOnClick,
   children,
 }: DataTableProviderProps<T>) {
   const selectionEnabled = onSelectionChange !== undefined;
   const expansionEnabled = getSubRows !== undefined && expandCaret;
+  const clickSelects = selectOnClick ?? !selectionCheckboxes;
 
   const [selectionStore] = useState(
     () => new Store<SelectionState>({ selectedIds: new Set<string>() }),
@@ -185,11 +188,20 @@ export function DataTableProvider<T>({
       commitSelection();
     };
 
-    const toggleAll = (next: boolean) => {
+    const selectRow = (id: string) => {
       selectionStore.setState(() => ({
-        selectedIds: next ? new Set(orderedIdsRef.current) : new Set<string>(),
+        selectedIds: new Set(withDescendants(id)),
       }));
-      anchorRef.current = null;
+      anchorRef.current = id;
+      commitSelection();
+    };
+
+    const toggleAll = (next: boolean) => {
+      const ids = next ? orderedIdsRef.current : [];
+      selectionStore.setState(() => ({
+        selectedIds: new Set(ids),
+      }));
+      anchorRef.current = ids[0] ?? null;
       commitSelection();
     };
 
@@ -252,6 +264,7 @@ export function DataTableProvider<T>({
 
     return {
       toggleRow,
+      selectRow,
       toggleAll,
       clearSelection,
       replaceSelection,
@@ -309,8 +322,10 @@ export function DataTableProvider<T>({
       gridTemplate,
       selectionEnabled,
       selectionCheckboxes,
+      selectOnClick: clickSelects,
       expansionEnabled,
       toggleRow: actions.toggleRow,
+      selectRow: actions.selectRow,
       toggleExpand: actions.toggleExpand,
       onRowClick,
       renderRow,
@@ -321,8 +336,10 @@ export function DataTableProvider<T>({
       gridTemplate,
       selectionEnabled,
       selectionCheckboxes,
+      clickSelects,
       expansionEnabled,
       actions.toggleRow,
+      actions.selectRow,
       actions.toggleExpand,
       onRowClick,
       renderRow,

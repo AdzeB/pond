@@ -9,7 +9,7 @@ import {
   saves,
   syncActions,
 } from "@pond/schema/db";
-import { eq, getTableColumns } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { getDb } from "../../../db";
@@ -61,17 +61,7 @@ export async function applySavePatch(
 ): Promise<Save | null> {
   return withMutationScope(async () => {
     const db = await getDb();
-    const wanted = new Set(["id", "files", ...Object.keys(patch)]);
-    const selection = Object.fromEntries(
-      Object.entries(getTableColumns(saves)).filter(([key]) => wanted.has(key)),
-    );
-    const rows = await db
-      .select(selection)
-      .from(saves)
-      .where(eq(saves.id, saveId));
-    // SAFETY: the selection is built from the saves table's own columns, so every key on
-    // the returned row is a Save key holding that column's value.
-    const current = rows[0] as Partial<Save> | undefined;
+    const current = await readSave(saveId);
     if (!current) {
       log.warn("[pond pipeline] applySavePatch: save vanished", saveId);
       return null;
@@ -89,12 +79,11 @@ export async function applySavePatch(
     if (opts.newFiles && opts.newFiles.length > 0) {
       const dir = itemDir(saveId);
       if (!existsSync(dir)) await mkdir(dir, { recursive: true });
+      const existingForNames = replaceKinds
+        ? (current.files ?? []).filter((file) => !replaceKinds.has(file.kind))
+        : (current.files ?? []);
       for (const file of opts.newFiles) {
-        const target = uniqueFilename(
-          file.filename,
-          current.files ?? [],
-          written,
-        );
+        const target = uniqueFilename(file.filename, existingForNames, written);
         const targetPath = join(dir, target);
         const details = await persistWriteFile(file, targetPath);
         if (!details) {
@@ -205,10 +194,7 @@ export async function readSave(saveId: string): Promise<Save | null> {
   return rows[0] ?? null;
 }
 
-function pickPrev(
-  current: Partial<Save>,
-  patch: Partial<NewSave>,
-): Partial<Save> {
+function pickPrev(current: Save, patch: Partial<NewSave>): Partial<Save> {
   const keys = new Set(Object.keys(patch));
   return Object.fromEntries(
     Object.entries(current).filter(([key]) => keys.has(key)),

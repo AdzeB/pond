@@ -1,4 +1,3 @@
-/** Wait for pane width to finish moving before packing layout-bound UI. */
 const SETTLE_MS = 64;
 const PANE_PROPERTIES = new Set([
   "--window-left-width",

@@ -195,6 +195,7 @@ function FolderPicker({ ids }: { ids: readonly string[] }) {
                 type="submit"
                 variant="primary"
                 disabled={busy || !Object.keys(changes).length}
+                loading={busy}
               >
                 {busy ? "Saving" : "Apply"}
               </Button>

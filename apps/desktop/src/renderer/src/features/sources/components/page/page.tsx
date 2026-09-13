@@ -163,6 +163,7 @@ export function SourcesPage() {
           )}
         </div>
       </div>
+      <DataTable.Hotkeys />
       <TableSelectionSync selection={sourcesSelection} rowsById={rowsById} />
     </DataTable.Provider>
   );

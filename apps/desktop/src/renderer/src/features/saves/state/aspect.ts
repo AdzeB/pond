@@ -19,11 +19,7 @@ const BURST_WINDOW_MS = 50;
 const SOFT_MIN_DELTA = 0.03;
 const HARD_MIN_DELTA = 0.001;
 
-/**
- * Persisting aspect ratios keeps the masonry from re-packing as dim-less covers lazy-load; stale entries self-correct on next load.
- * @remarks Keyed by pond id: save ids are pond-specific and the cache must not mix ponds.
- */
-const STORAGE_KEY = pondScopedKey("pond:aspects:v4");
+const MASONRY_ASPECT_CACHE_KEY = pondScopedKey("pond:aspects:v4");
 const PERSIST_DEBOUNCE_MS = 800;
 
 const measuredAspects = new Map<string, number>();
@@ -125,7 +121,7 @@ const StoredAspectsSchema = z.record(
 function hydrateFromStorage(): void {
   if (!("localStorage" in globalThis)) return;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(MASONRY_ASPECT_CACHE_KEY);
     if (!raw) return;
     const parsed = StoredAspectsSchema.parse(JSON.parse(raw));
     const entries = Object.entries(parsed).filter(
@@ -144,7 +140,7 @@ const persistSoon = debounce(
     try {
       const obj: Record<string, number> = {};
       for (const [id, ratio] of measuredAspects) obj[id] = ratio;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+      localStorage.setItem(MASONRY_ASPECT_CACHE_KEY, JSON.stringify(obj));
     } catch {}
   },
   { wait: PERSIST_DEBOUNCE_MS },

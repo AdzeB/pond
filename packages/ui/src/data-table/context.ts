@@ -18,10 +18,12 @@ export interface RowApi<T> {
   gridTemplate: string;
   selectionEnabled: boolean;
   selectionCheckboxes: boolean;
+  selectOnClick: boolean;
   expansionEnabled: boolean;
   toggleRow: (id: string, extend: boolean) => void;
+  selectRow: (id: string) => void;
   toggleExpand: (id: string) => void;
-  onRowClick?: (row: T, e: ReactMouseEvent) => void;
+  onRowClick?: (row: T, e?: ReactMouseEvent) => void;
   renderRow?: (args: RenderRowArgs<T>) => ReactNode;
 }
 
@@ -29,6 +31,7 @@ export interface DataTableContextValue<T> {
   selectionStore: Store<SelectionState>;
   actions: {
     toggleRow: (id: string, extend: boolean) => void;
+    selectRow: (id: string) => void;
     toggleAll: (next: boolean) => void;
     clearSelection: () => void;
     replaceSelection: (ids: string[]) => void;

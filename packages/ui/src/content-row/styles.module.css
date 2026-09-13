@@ -50,7 +50,7 @@
 .title {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-medium);
   white-space: nowrap;
 }
@@ -59,7 +59,7 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   -webkit-line-clamp: 2;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-normal);
   line-height: 1.5;
   color: var(--ds-gray-10);

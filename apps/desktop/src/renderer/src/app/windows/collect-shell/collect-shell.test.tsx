@@ -14,7 +14,7 @@ it("imports a dropped file using the preload path resolver", async () => {
   const root = createRoot(host);
   try {
     await act(async () => root.render(<CollectShell />));
-    const target = [...host.querySelectorAll("div")].find(
+    const target = [...host.querySelectorAll("button")].find(
       (node) => node.textContent === "Drop files",
     );
     expect(target).toBeDefined();
@@ -184,41 +184,6 @@ it("loads only one draft at a time and sends its edited metadata before saving",
   } finally {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
-  }
-});
-
-it("shows screenshot failures and keeps cancelled capture quiet", async () => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
-  const query = vi.fn(async (name: string) => {
-    if (name === "capture.display")
-      return { ok: false, error: "capture_failed" };
-    if (name === "capture.window") return { ok: false, error: "cancelled" };
-    if (name === "capture.selectArea")
-      throw new Error("Screen access unavailable");
-    return [];
-  });
-  vi.stubGlobal("pond", { query });
-  const host = document.createElement("div");
-  const root = createRoot(host);
-  const button = (label: string) =>
-    [...host.querySelectorAll("button")].find(
-      (node) => node.textContent === label,
-    );
-  try {
-    await act(async () => root.render(<CollectShell />));
-    await act(async () => button("Screenshot Display")?.click());
-    expect(host.querySelector('[role="alert"]')?.textContent).toContain(
-      "Couldn’t take the screenshot",
-    );
-    await act(async () => button("Screenshot Window")?.click());
-    expect(host.querySelector('[role="alert"]')).toBeNull();
-    await act(async () => button("Screenshot Area")?.click());
-    expect(host.querySelector('[role="alert"]')?.textContent).toContain(
-      "Screen access unavailable",
-    );
-  } finally {
-    await act(async () => root.unmount());
     vi.unstubAllGlobals();
   }
 });

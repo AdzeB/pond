@@ -47,7 +47,7 @@
 
 .heading-title {
   margin: 0;
-  font-size: var(--ds-text-body);
+  font-size: var(--ds-text-lg);
   font-weight: var(--ds-weight-medium);
   line-height: 1.5;
   color: var(--ds-gray-12);
@@ -81,7 +81,7 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-normal);
   color: var(--ds-gray-10);
   white-space: nowrap;
@@ -91,7 +91,7 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-normal);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-12);

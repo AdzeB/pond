@@ -1,29 +1,42 @@
-.codeBlock {
+.code-block {
+  min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--ds-border-subtle);
-  border-radius: var(--ds-radius-lg);
+  background: var(--ds-gray-2);
+  border: var(--ds-border-width) solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-xl);
 }
 
-.codeHeader {
+.code-header {
   display: flex;
   gap: 8px;
   align-items: center;
-  padding: 6px 10px;
-  font-size: var(--ds-text-mini);
+  min-height: 32px;
+  padding: 4px 12px;
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-9);
   background: var(--ds-gray-2);
+  border-radius: var(--ds-radius-xl) var(--ds-radius-xl) 0 0;
 }
 
-.codeHeader > button {
-  margin-left: auto;
-}
-
-.codeBlock pre {
-  padding: 14px;
+.code-block pre {
+  padding: 10px 12px 12px;
   margin: 0;
   overflow-x: auto;
   font-family: var(--ds-font-mono);
-  font-size: var(--ds-text-small);
-  line-height: 1.65;
+  font-size: var(--ds-text-sm);
+  line-height: 1.8;
+  tab-size: 2;
   user-select: text;
+}
+
+.code-header > button {
+  --button-icon-size: 14px;
+  margin-left: auto;
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-normal);
+  color: inherit;
+}
+
+.code-block pre code {
+  font: inherit;
 }

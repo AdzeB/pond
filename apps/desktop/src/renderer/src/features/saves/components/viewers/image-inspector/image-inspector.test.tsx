@@ -73,6 +73,9 @@ it("shows persisted transforms and keeps a cancelled crop draft out of storage",
   expect(
     button("Fit").closest("[data-anchor]")?.getAttribute("data-anchor"),
   ).toBe("bottom-right");
+  expect(
+    button("Zoom In").closest("[data-anchor]")?.getAttribute("data-anchor"),
+  ).toBe("top-center");
   await act(async () => button("Zoom In").click());
   expect(host.textContent).toContain("125%");
   await act(async () => button("Fit").click());

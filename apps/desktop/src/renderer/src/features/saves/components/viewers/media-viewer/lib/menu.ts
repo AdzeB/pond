@@ -1,7 +1,7 @@
 import {
   IconCopyOutline18,
-  IconCoverOutline18,
   IconFloppyDiskOutline18,
+  IconImagePlusOutline18,
 } from "@pond/icons/outline/18";
 import type { MenuItemSpec } from "@pond/ui";
 import { createElement } from "react";
@@ -56,26 +56,51 @@ export function buildViewerMenu(
   });
   if (!video?.videoWidth) return base;
 
-  const frameItems: MenuItemSpec[] = [
-    {
-      label: "Set Cover",
-      icon: createElement(IconCoverOutline18),
-      onClick: () => void setVideoThumbnail(save.id, video),
-    },
-    {
-      label: "Copy Current Frame",
-      icon: createElement(IconCopyOutline18),
-      shortcut: shortcutGlyphs("viewer.copy-frame"),
-      onClick: () => void copyVideoFrame(video),
-    },
-    {
-      label: "Save Current Frame",
-      icon: createElement(IconFloppyDiskOutline18),
-      shortcut: shortcutGlyphs("viewer.save-frame"),
-      onClick: () => void saveVideoFrame(video),
-    },
-    { type: "separator" },
-  ];
-
-  return [...frameItems, ...omitCopyImage(base)];
+  return omitCopyImage(base).map((item): MenuItemSpec => {
+    if (item.type !== "submenu") return item;
+    if (item.label === "Copy") {
+      return {
+        ...item,
+        items: [
+          {
+            label: "Copy Current Frame",
+            icon: createElement(IconCopyOutline18),
+            shortcut: shortcutGlyphs("viewer.copy-frame"),
+            onClick: () => void copyVideoFrame(video),
+          },
+          ...item.items,
+        ],
+      };
+    }
+    if (item.label === "Export") {
+      return {
+        ...item,
+        items: [
+          {
+            label: "Save Current Frame",
+            icon: createElement(IconFloppyDiskOutline18),
+            shortcut: shortcutGlyphs("viewer.save-frame"),
+            onClick: () => void saveVideoFrame(video),
+          },
+          ...item.items,
+        ],
+      };
+    }
+    if (item.label === "Advanced") {
+      return {
+        ...item,
+        items: item.items.map(
+          (action): MenuItemSpec =>
+            "label" in action && action.label === "Set Thumbnail"
+              ? {
+                  label: "Set Thumbnail",
+                  icon: createElement(IconImagePlusOutline18),
+                  onClick: () => void setVideoThumbnail(save.id, video),
+                }
+              : action,
+        ),
+      };
+    }
+    return item;
+  });
 }

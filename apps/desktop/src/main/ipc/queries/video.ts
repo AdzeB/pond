@@ -1,12 +1,12 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { resolve as resolvePath } from "node:path";
+import { readFile, writeFile } from "node:fs/promises";
 import { saves } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
 import { clipboard, dialog, type NativeImage, nativeImage } from "electron";
 import { z } from "zod";
+import { persistSaveThumbnail } from "../../core/save-thumbnail";
 import { getDb } from "../../db";
 import { extractFrameAt } from "../../lib/ffmpeg-frame";
-import { itemDir, itemFile } from "../../paths";
+import { itemFile } from "../../paths";
 import { resolvePondItemPath } from "../helpers";
 import { toWireSave } from "../wire";
 import {
@@ -69,11 +69,12 @@ export const videoQueries = {
       }
       const img = await frameImage(resolved, params.timeSec);
       if (!img) return { ok: false };
-      const thumbDir = resolvePath(itemDir(saveId));
-      await mkdir(thumbDir, { recursive: true });
-      const thumbPath = resolvePath(thumbDir, "thumb.png");
-      await writeFile(thumbPath, img.toPNG());
-      return { ok: true };
+      const ok = await persistSaveThumbnail(
+        saveId,
+        img.toPNG(),
+        "user:set-video-thumbnail",
+      );
+      return { ok };
     },
   ),
 

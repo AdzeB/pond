@@ -76,7 +76,7 @@
 .name {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: 500;
   color: var(--ds-gray-12);
   white-space: nowrap;
@@ -84,7 +84,7 @@
 
 .count {
   flex: none;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: 400;
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-10);
@@ -121,14 +121,14 @@
 .meta {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: 400;
   color: var(--ds-gray-12);
   white-space: nowrap;
 }
 
 .metric {
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-weight: 400;
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-11);

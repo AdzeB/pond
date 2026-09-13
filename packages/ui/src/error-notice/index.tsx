@@ -17,10 +17,10 @@ export function ErrorNotice({
     <Reveal>
       <div className={styles.notice} role="alert">
         <IconTriangleWarningOutline18 />
-        <div className={styles.modelContent}>
-          <span className={styles.modelName}>{title}</span>
+        <div className={styles["model-content"]}>
+          <span className={styles["model-name"]}>{title}</span>
           {children && (
-            <span className={styles.rowDescription}>{children}</span>
+            <span className={styles["row-description"]}>{children}</span>
           )}
         </div>
         {onRetry && (

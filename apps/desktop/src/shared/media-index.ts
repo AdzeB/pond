@@ -65,7 +65,10 @@ export function isStaticThumbnailFile(file: ThumbnailFileLike): boolean {
     return true;
   }
   return (
-    (file.kind === "cover" || file.kind === "poster") &&
+    (file.kind === "cover" ||
+      file.kind === "poster" ||
+      file.kind === "thumbnail" ||
+      file.kind === "image") &&
     (extension === "" || extension === ".")
   );
 }

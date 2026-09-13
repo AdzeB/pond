@@ -45,12 +45,16 @@ function topLevelLabels(items: MenuItemSpec[]): string[] {
   });
 }
 
-function submenuItems(
+function sectionItems(
   items: MenuItemSpec[],
   label: string,
 ): MenuItemSpec[] | null {
   for (const item of items) {
-    if (item.type === "submenu" && item.label === label && !item.hidden) {
+    if (
+      (item.type === "submenu" || item.type === "group") &&
+      item.label === label &&
+      !item.hidden
+    ) {
       return item.items;
     }
   }
@@ -115,63 +119,66 @@ function previewOpenWithApps(): OpenWithApp[] {
 }
 
 describe("buildSaveMenu", () => {
-  it("groups open, organize, copy, search, and more like a Finder-style save menu", () => {
+  it("groups save actions into compact single-word submenus", () => {
     const items = buildSaveMenu(fileSave(), {
       clipboardEmpty: true,
       openWithApps: previewOpenWithApps(),
     });
 
     expect(topLevelLabels(items)).toEqual([
-      "Open Save",
-      "Pin Preview",
-      "Open with Default App",
-      "Open With",
-      REVEAL_LABEL,
-      "Share",
-      "Open Original URL",
-      "Run",
-      "Add Tag",
-      "Add to Folders",
-      "Add to Other Library",
-      "Export",
+      "Open",
+      "Organise",
       "Copy",
-      "Copy File Path",
-      "Copy Pond Link",
-      "Copy URL",
-      "Copy Save ID",
-      "Paste Tags",
-      "Search by Image",
-      "Enter Presentation Mode",
-      "More",
+      "Share",
+      "Export",
+      "Agent",
+      "Advanced",
       "Move to Trash",
     ]);
-    expect(visibleLabels(submenuItems(items, "Run") ?? [])).toEqual([
+    expect(visibleLabels(sectionItems(items, "Agent") ?? [])).toEqual([
       "Apply Suggested Tags",
       "Caption Images",
       "Extract Text",
       "Transcribe Media",
-      "Rebuild Search Index",
-      "Rebuild Visual Index",
     ]);
-    expect(visibleLabels(submenuItems(items, "Open With") ?? [])).toEqual([
+    expect(topLevelLabels(sectionItems(items, "Open") ?? [])).toEqual([
+      "Open Save",
+      "Open with Default App",
       "Preview.app (Default)",
       "Photomator.app",
+      REVEAL_LABEL,
+      "Open Original URL",
+      "Enter Presentation Mode",
     ]);
-    expect(visibleLabels(submenuItems(items, "Search by Image") ?? [])).toEqual(
-      ["Google Lens", "Yandex", "Bing", "TinEye", "SauceNAO"],
-    );
-    expect(visibleLabels(submenuItems(items, "Export") ?? [])).toEqual([
+    expect(
+      visibleLabels(
+        sectionItems(
+          sectionItems(items, "Advanced") ?? [],
+          "Search by Image",
+        ) ?? [],
+      ),
+    ).toEqual(["Google Lens", "Yandex", "Bing", "TinEye", "SauceNAO"]);
+    expect(visibleLabels(sectionItems(items, "Export") ?? [])).toEqual([
       "Export Files",
       "Export Converted Files",
       "Export as WebP",
       "Export Pond Package",
       "Export to CSV",
     ]);
-    expect(visibleLabels(submenuItems(items, "More") ?? [])).toEqual([
+    expect(visibleLabels(sectionItems(items, "Advanced") ?? [])).toEqual([
+      "Copy Save ID",
+      "Rebuild Search Index",
+      "Rebuild Visual Index",
+      "Search by Image",
+      "Google Lens",
+      "Yandex",
+      "Bing",
+      "TinEye",
+      "SauceNAO",
       "Actions",
       "Find Duplicates",
       "Merge Duplicates",
-      "Set Custom Thumbnail",
+      "Set Thumbnail",
       "Replace File",
       "Refresh Details",
       "Thumbnail Background",
@@ -183,12 +190,15 @@ describe("buildSaveMenu", () => {
     ]);
   });
 
-  it("hides Open With until apps are listed", () => {
+  it("keeps opening actions available before apps are listed", () => {
     const items = buildSaveMenu(fileSave(), {
       clipboardEmpty: true,
       openWithApps: [],
     });
-    expect(submenuItems(items, "Open With")).toBeNull();
+    expect(visibleLabels(sectionItems(items, "Open") ?? [])).toContain(
+      "Open with Default App",
+    );
+    expect(visibleLabels(items)).not.toContain("Open With");
   });
 
   it("keys Open With kind from mime type then extension", () => {
@@ -210,16 +220,21 @@ describe("buildSaveMenu", () => {
     ).toBe(".png");
   });
 
-  it("lists Open With apps with the default marked", () => {
+  it("lists apps directly in Open with the default marked", () => {
     const items = buildSaveMenu(fileSave(), {
       clipboardEmpty: true,
       openWithApps: previewOpenWithApps(),
     });
-    expect(visibleLabels(submenuItems(items, "Open With") ?? [])).toEqual([
+    expect(topLevelLabels(sectionItems(items, "Open") ?? [])).toEqual([
+      "Open Save",
+      "Open with Default App",
       "Preview.app (Default)",
       "Photomator.app",
+      REVEAL_LABEL,
+      "Open Original URL",
+      "Enter Presentation Mode",
     ]);
-    const preview = submenuItems(items, "Open With")?.find(
+    const preview = sectionItems(items, "Open")?.find(
       (item) => "label" in item && item.label === "Preview.app (Default)",
     );
     expect(preview && "icon" in preview ? preview.icon : null).toBeTruthy();
@@ -267,7 +282,7 @@ describe("buildSaveMenu", () => {
     });
     expect(
       visibleLabels(buildSaveMenu(save, { clipboardEmpty: true })),
-    ).toContain("Remove Custom Thumbnail");
+    ).toContain("Remove Thumbnail");
   });
 
   it("does not expose a card-only thumbnail as an original file", () => {
@@ -292,7 +307,7 @@ describe("buildSaveMenu", () => {
     expect(labels).not.toContain("Open with Default App");
     expect(labels).not.toContain("Export Files");
     expect(labels).toContain("Export to CSV");
-    expect(labels).toContain("Remove Custom Thumbnail");
+    expect(labels).not.toContain("Remove Thumbnail");
     expect(labels).toContain("Rename");
   });
 
@@ -301,7 +316,7 @@ describe("buildSaveMenu", () => {
       buildSaveMenu(fileSave(), { clipboardEmpty: true, opened: true }),
     );
     expect(labels).not.toContain("Open Save");
-    expect(labels).toContain("Pin Preview");
+    expect(labels).not.toContain("Pin Preview");
   });
 
   it("hides Open Save when several saves are selected", () => {
@@ -318,7 +333,7 @@ describe("buildSaveMenu", () => {
     const items = buildSaveMenu([fileSave(), fileSave({ id: "other" })], {
       clipboardEmpty: true,
     });
-    const assign = items.find(
+    const assign = sectionItems(items, "Organise")?.find(
       (item) => "label" in item && item.label === "Add to Folders",
     );
     if (!assign || !("onClick" in assign))
@@ -328,12 +343,12 @@ describe("buildSaveMenu", () => {
     closeFolderPicker();
   });
 
-  it("hides Run for trashed saves", () => {
+  it("hides Agent for trashed saves", () => {
     expect(
       topLevelLabels(
         buildSaveMenu(fileSave({ deletedAt: 1 }), { clipboardEmpty: true }),
       ),
-    ).not.toContain("Run");
+    ).not.toContain("Agent");
   });
 
   it("shows Rename only for a local save", () => {
@@ -369,8 +384,11 @@ describe("buildSaveMenu", () => {
     await folders.refresh();
     expect(
       visibleLabels(
-        submenuItems(
-          buildSaveMenu(fileSave(), { clipboardEmpty: true }),
+        sectionItems(
+          sectionItems(
+            buildSaveMenu(fileSave(), { clipboardEmpty: true }),
+            "Open",
+          ) ?? [],
           "Open File Location",
         ) ?? [],
       ),
@@ -384,7 +402,10 @@ describe("buildSaveMenu", () => {
       const item = buildSaveMenu(fileSave(), { clipboardEmpty: true }).find(
         (entry) => "label" in entry && entry.label === label,
       );
-      return !item || !("icon" in item) || item.icon == null;
+      return (
+        item?.type !== "group" &&
+        (!item || !("icon" in item) || item.icon == null)
+      );
     });
     expect(missing).toEqual([]);
   });
@@ -421,7 +442,8 @@ describe("buildViewerMenu", () => {
       }),
     );
     expect(labels).not.toContain("Open Save");
-    expect(labels[0]).toBe("Pin Preview");
+    expect(labels[0]).toBe("Open");
+    expect(labels).not.toContain("Pin Preview");
   });
 
   it("drops Copy Image from the Copy submenu when a video frame is available", () => {
@@ -442,7 +464,7 @@ describe("buildViewerMenu", () => {
     const labels = visibleLabels(
       buildViewerMenu(save, { clipboardEmpty: true, video, fileIndex: 0 }),
     );
-    expect(labels).toContain("Set Cover");
+    expect(labels).toContain("Set Thumbnail");
     expect(labels).toContain("Copy Current Frame");
     expect(labels).not.toContain("Copy Image");
     expect(labels).not.toContain("Open Save");

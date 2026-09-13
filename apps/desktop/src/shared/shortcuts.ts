@@ -93,15 +93,10 @@ export const SHORTCUTS = {
   "view.layout-list": { keys: "4", label: "List Layout", group: "View" },
   "view.inspector": { keys: "Mod+I", label: "Toggle Details", group: "View" },
   "view.sidebar": { keys: "[", label: "Toggle Sidebar", group: "View" },
-  "view.agent": { keys: "]", label: "Toggle Assistant", group: "View" },
+  "view.agent": { keys: "]", label: "Toggle Agent", group: "View" },
   "view.grayscale": {
     keys: "Mod+Alt+G",
     label: "Grayscale Overlay",
-    group: "View",
-  },
-  "view.pin-preview": {
-    keys: "Mod+Shift+P",
-    label: "Pin Preview",
     group: "View",
   },
   "view.options": { keys: "V", label: "View Options", group: "View" },
@@ -150,7 +145,6 @@ export const SHORTCUTS = {
     label: "Clear Selection",
     group: "Selection",
   },
-  "selection.run": { keys: "W", label: "Run on Selection", group: "Selection" },
   "selection.export": {
     keys: "X",
     label: "Export Selection",
@@ -276,11 +270,6 @@ export const SHORTCUTS = {
     group: "Viewer",
   },
   "viewer.mute": { keys: "M", label: "Mute", group: "Viewer" },
-  "viewer.fullscreen": {
-    keys: "Mod+Shift+F",
-    label: "Full Screen",
-    group: "Viewer",
-  },
   "viewer.zoom-fit": { keys: "`", label: "Zoom to Fit", group: "Viewer" },
   "viewer.actual-size": {
     keys: "Mod+1",

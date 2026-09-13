@@ -13,15 +13,11 @@ import { Store } from "@tanstack/store";
 import { useEffect } from "react";
 import { z } from "zod";
 import { folders } from "../../library/state/folders";
-import { libraryChrome } from "../../library/state/library-chrome";
 import { getOverlays } from "../../library/state/view-store";
 import {
-  assistantClient,
-  fromChatMessage,
   observeAssistantActivity,
   runAssistant,
-  toChatMessage,
-  useAssistantRuntime,
+  stopAssistant,
 } from "./assistant-runtime";
 
 const ChatsSchema = z.array(
@@ -33,13 +29,10 @@ const ChatsSchema = z.array(
 );
 const ChatSchema = z.object({ id: z.string() });
 
-export type AssistantComposerScope = { kind: "auto" } | AssistantSend["scope"];
-
 interface DraftSnapshot {
   content: string;
   attachments: AssistantSource[];
   provider: AssistantProvider;
-  scope: AssistantComposerScope;
   context: Pick<
     AssistantSend,
     "scope" | "attachmentIds" | "semanticQuery" | "visualSaveId"
@@ -54,7 +47,6 @@ export interface AssistantState {
   messages: AssistantMessage[];
   draft: string;
   attachments: AssistantSource[];
-  scope: AssistantComposerScope;
   busy: boolean;
   loading: boolean;
   requestId: string | null;
@@ -65,16 +57,16 @@ export interface AssistantState {
   error: string | null;
   failed: DraftSnapshot | null;
 }
-type AssistantWorkspace = Omit<AssistantState, "messages" | "busy"> & {
+type AssistantWorkspace = Omit<AssistantState, "busy"> & {
   sending: boolean;
 };
 const store = new Store<AssistantWorkspace>({
   chatId: null,
   chats: [],
   referenceMessageId: null,
+  messages: [],
   draft: "",
   attachments: [],
-  scope: { kind: "auto" },
   sending: false,
   loading: false,
   requestId: null,
@@ -90,14 +82,33 @@ const patch = (value: Partial<AssistantWorkspace>) =>
 let subscribers = 0;
 let historyVersion = 0;
 let cancelledRequest: string | null = null;
-const isBusy = () => store.state.sending || assistantClient.getIsLoading();
-const currentMessages = () =>
-  assistantClient
-    .getMessages()
-    .filter((message) => message.id !== `${store.state.requestId}:assistant`)
-    .map((message) =>
-      fromChatMessage(message, store.state.chatId ?? "pending"),
-    );
+const isBusy = () => store.state.sending;
+const currentMessages = () => store.state.messages;
+const presentationId = (requestId: string) => `${requestId}:assistant`;
+
+function setMessages(messages: AssistantMessage[]) {
+  patch({ messages });
+}
+
+function upsertStream(requestId: string, chatId: string, content: string) {
+  const id = presentationId(requestId);
+  const messages = store.state.messages;
+  const index = messages.findIndex((message) => message.id === id);
+  const next: AssistantMessage = {
+    id,
+    chatId,
+    role: "assistant",
+    content,
+    metadata: null,
+  };
+  setMessages(
+    index >= 0
+      ? messages.map((message, i) =>
+          i === index ? { ...message, content } : message,
+        )
+      : [...messages, next],
+  );
+}
 observeAssistantActivity((chunk) => {
   if (chunk.type === "activity") patch({ activity: chunk.activity });
   if (chunk.type === "sources") patch({ sources: chunk.sources });
@@ -115,22 +126,19 @@ async function refreshMessages(chatId: string, version = historyVersion) {
     await window.pond.query("agent.messages", { chatId }),
   );
   if (store.state.chatId === chatId && version === historyVersion) {
-    const presentationId = `${store.state.requestId}:assistant`;
+    const liveId = store.state.requestId
+      ? presentationId(store.state.requestId)
+      : null;
     const pending =
-      store.state.requestId &&
-      assistantClient
-        .getMessages()
-        .some((message) => message.id === presentationId);
-    assistantClient.setMessagesManually(
+      liveId && store.state.messages.some((message) => message.id === liveId);
+    setMessages(
       messages.map((message, index) =>
-        toChatMessage(
-          message,
-          pending &&
-            index === messages.length - 1 &&
-            message.role === "assistant"
-            ? presentationId
-            : undefined,
-        ),
+        pending &&
+        index === messages.length - 1 &&
+        message.role === "assistant" &&
+        liveId
+          ? { ...message, id: liveId }
+          : message,
       ),
     );
   }
@@ -138,13 +146,13 @@ async function refreshMessages(chatId: string, version = historyVersion) {
 
 type ComposerSnapshot = Pick<
   AssistantWorkspace,
-  "draft" | "attachments" | "scope" | "failed" | "error"
+  "draft" | "attachments" | "failed" | "error"
 >;
 const composers = new Map<string | null, ComposerSnapshot>();
 
 function saveComposer() {
-  const { chatId, draft, attachments, scope, failed, error } = store.state;
-  composers.set(chatId, { draft, attachments, scope, failed, error });
+  const { chatId, draft, attachments, failed, error } = store.state;
+  composers.set(chatId, { draft, attachments, failed, error });
 }
 
 function composerFor(chatId: string | null): ComposerSnapshot {
@@ -152,7 +160,6 @@ function composerFor(chatId: string | null): ComposerSnapshot {
     composers.get(chatId) ?? {
       draft: "",
       attachments: [],
-      scope: { kind: "auto" },
       failed: null,
       error: null,
     }
@@ -162,33 +169,18 @@ function composerFor(chatId: string | null): ComposerSnapshot {
 function snapshotContext(
   attachments: AssistantSource[],
 ): DraftSnapshot["context"] {
-  const attachmentIds = attachments.map((save) => save.id);
-  const nav = libraryChrome.getState().nav;
-  const scope: AssistantSend["scope"] =
-    store.state.scope.kind !== "auto"
-      ? store.state.scope
-      : attachmentIds.length
-        ? { kind: "attachments" }
-        : nav.kind === "folder"
-          ? { kind: "folder", id: nav.id }
-          : { kind: "library" };
-  return { scope, attachmentIds, ...getOverlays() };
+  return {
+    scope: { kind: "library" },
+    attachmentIds: attachments.map((save) => save.id),
+    ...getOverlays(),
+  };
 }
 
-function restoreDraft(
-  sent: DraftSnapshot,
-  scopeAfterSend: AssistantComposerScope,
-) {
-  if (
-    !sent.keepDraft &&
-    !store.state.draft &&
-    !store.state.attachments.length &&
-    store.state.scope === scopeAfterSend
-  )
+function restoreDraft(sent: DraftSnapshot) {
+  if (!sent.keepDraft && !store.state.draft && !store.state.attachments.length)
     patch({
       draft: sent.content,
       attachments: sent.attachments,
-      scope: sent.scope,
     });
 }
 
@@ -202,9 +194,6 @@ export const assistant = {
   },
   closeReferences() {
     patch({ referenceMessageId: null });
-  },
-  setScope(scope: AssistantComposerScope) {
-    patch({ scope });
   },
   setDraft(draft: string) {
     patch({ draft });
@@ -254,15 +243,8 @@ export const assistant = {
     });
   },
   removeAttachment(id: string) {
-    const attachments = store.state.attachments.filter(
-      (save) => save.id !== id,
-    );
     patch({
-      attachments,
-      scope:
-        !attachments.length && store.state.scope.kind === "attachments"
-          ? { kind: "auto" }
-          : store.state.scope,
+      attachments: store.state.attachments.filter((save) => save.id !== id),
     });
   },
   async attachIds(ids: string[]) {
@@ -282,9 +264,9 @@ export const assistant = {
     if (isBusy()) return;
     saveComposer();
     historyVersion++;
-    assistantClient.clear();
     patch({
       chatId: null,
+      messages: [],
       referenceMessageId: null,
       ...composerFor(null),
       sources: [],
@@ -297,9 +279,9 @@ export const assistant = {
     if (isBusy()) return;
     saveComposer();
     const version = ++historyVersion;
-    assistantClient.clear();
     patch({
       chatId,
+      messages: [],
       ...composerFor(chatId),
       referenceMessageId: null,
       sources: [],
@@ -321,7 +303,6 @@ export const assistant = {
     const sent = snapshot ?? {
       content: store.state.draft.trim(),
       attachments: store.state.attachments,
-      scope: store.state.scope,
       context: snapshotContext(store.state.attachments),
       provider,
     };
@@ -346,12 +327,7 @@ export const assistant = {
       patch({
         draft: "",
         attachments: [],
-        scope:
-          store.state.scope.kind === "attachments"
-            ? { kind: "auto" }
-            : store.state.scope,
       });
-    const scopeAfterSend = store.state.scope;
     let chatId = store.state.chatId;
     try {
       if (!chatId) {
@@ -362,13 +338,14 @@ export const assistant = {
         composers.delete(null);
         patch({ chatId });
       }
-      if (cancelledRequest === requestId) {
-        restoreDraft(sent, scopeAfterSend);
+      if (!chatId || cancelledRequest === requestId) {
+        if (cancelledRequest === requestId) restoreDraft(sent);
         return;
       }
+      const threadId = chatId;
       const message: AssistantMessage = {
         id: requestId,
-        chatId,
+        chatId: threadId,
         role: "user",
         content: sent.content,
         metadata: {
@@ -376,9 +353,10 @@ export const assistant = {
           replyToQuestion: sent.replyToQuestion,
         },
       };
+      setMessages([...store.state.messages, message]);
       const result = await runAssistant(
         {
-          chatId,
+          chatId: threadId,
           requestId,
           content: sent.content,
           ...sent.context,
@@ -386,16 +364,15 @@ export const assistant = {
           replyToQuestion: sent.replyToQuestion,
         },
         message.metadata ?? {},
+        (text) => upsertStream(requestId, threadId, text),
       );
       if (!result.accepted) {
-        assistantClient.setMessagesManually(
-          assistantClient
-            .getMessages()
-            .filter(
-              (m) => m.id !== requestId && m.id !== `${requestId}:assistant`,
-            ),
+        setMessages(
+          store.state.messages.filter(
+            (m) => m.id !== requestId && m.id !== presentationId(requestId),
+          ),
         );
-        restoreDraft(sent, scopeAfterSend);
+        restoreDraft(sent);
         patch({
           error:
             result.error ??
@@ -408,7 +385,7 @@ export const assistant = {
       }
       await refreshChats();
     } catch {
-      restoreDraft(sent, scopeAfterSend);
+      restoreDraft(sent);
       patch({
         error:
           "Could not finish the request. Check the conversation before trying again.",
@@ -429,7 +406,6 @@ export const assistant = {
     await assistant.send(provider, {
       content,
       attachments: [],
-      scope: store.state.scope,
       context: snapshotContext([]),
       provider,
       replyToQuestion: messageId,
@@ -438,7 +414,7 @@ export const assistant = {
   },
   stop() {
     cancelledRequest = store.state.requestId;
-    assistantClient.stop();
+    stopAssistant();
   },
   async retry() {
     const sent = store.state.failed;
@@ -454,13 +430,11 @@ export const assistant = {
       changeIds,
       action,
     });
-    assistantClient.setMessagesManually(
+    setMessages(
       currentMessages().map((m) =>
-        toChatMessage(
-          m.id === messageId
-            ? { ...m, metadata: { ...m.metadata, changes: result.changes } }
-            : m,
-        ),
+        m.id === messageId
+          ? { ...m, metadata: { ...m.metadata, changes: result.changes } }
+          : m,
       ),
     );
     await folders.refresh();
@@ -479,10 +453,8 @@ export function useAssistant() {
     };
   }, []);
   const state = useSelector(store, (state) => state);
-  const runtime = useAssistantRuntime();
   return {
     ...state,
-    messages: currentMessages(),
-    busy: state.sending || runtime.isLoading,
+    busy: state.sending,
   };
 }

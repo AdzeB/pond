@@ -8,7 +8,7 @@ import { sourceExcerpt } from "@shared/assistant-text";
 import { useSelector } from "@tanstack/react-store";
 import { useEffect, useMemo, useState } from "react";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
-import { buildMediaUnits } from "@/features/saves/lib/media/units";
+import { pickCardUnit } from "@/features/saves/lib/media/units";
 import { thumbUrlFor } from "@/features/saves/lib/media/url";
 import { savesStore } from "@/features/saves/state/pool";
 import styles from "./inline.module.css";
@@ -38,10 +38,7 @@ export function SourceThumbnail({
   visual?: boolean;
 }) {
   const save = useSelector(savesStore, (state) => state.byId.get(id));
-  const unit = useMemo(() => {
-    const units = save ? buildMediaUnits(save) : [];
-    return units[save?.coverIndex ?? 0] ?? units[0];
-  }, [save]);
+  const unit = useMemo(() => (save ? pickCardUnit(save) : null), [save]);
   const candidate = unit?.isVideo ? unit.posterUrl : unit?.url;
   const src = candidate?.startsWith("pond://")
     ? thumbUrlFor(candidate, 360)

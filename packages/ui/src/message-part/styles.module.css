@@ -12,11 +12,3 @@
   object-fit: contain;
   border-radius: var(--ds-radius-md);
 }
-
-.menuItem {
-  composes: item from "../shared/styles/popup/styles.module.css";
-}
-
-.separator {
-  composes: separator from "../shared/styles/popup/styles.module.css";
-}

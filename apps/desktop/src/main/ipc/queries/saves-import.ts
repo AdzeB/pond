@@ -2,15 +2,18 @@ import { mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { MEDIA_TYPES } from "@pond/schema/db";
 import { BrowserWindow, clipboard, dialog } from "electron";
 import log from "electron-log/main.js";
 import mime from "mime-types";
 import { z } from "zod";
-import {
-  classifyLibraryFile,
-  libraryFilename,
-} from "../../../shared/file-format";
+import { isBlankDocumentKind } from "../../../shared/blank-documents";
+import { classifyLibraryFile } from "../../../shared/file-format";
 import type { QueryResult } from "../../../shared/query-contracts";
+import {
+  listInstalledBlankDocuments,
+  writeBlankDocumentFile,
+} from "../../core/blank-documents";
 import { parseNetscapeBookmarks } from "../../core/bookmarks";
 import {
   dryRunEagleLibrary,
@@ -25,6 +28,12 @@ import { enqueue, normalizeUrl } from "../../core/pipeline/enqueue";
 import { classifyUrlToSource } from "../../core/pipeline/extractors";
 import { UnsupportedError } from "../../core/pipeline/extractors/errors";
 import { importPondPackage } from "../../core/pond-package";
+import {
+  ensureSaveThumbnail,
+  persistSaveThumbnail,
+  renderThumbnailPng,
+  THUMBNAIL_REPLACE_KINDS,
+} from "../../core/save-thumbnail";
 import { srtToVtt } from "../../core/subtitles";
 import { setSaveTags } from "../../core/tags";
 import { runTransferJob } from "../../core/transfer-jobs";
@@ -176,7 +185,7 @@ export const savesImportQueries = {
       const win = BrowserWindow.getFocusedWindow() ?? undefined;
       const options = {
         properties: ["openFile" as const],
-        message: "Choose a custom thumbnail",
+        message: "Choose a thumbnail",
         filters: [
           {
             name: "Images",
@@ -209,21 +218,12 @@ export const savesImportQueries = {
       if (!fileInfo?.isFile() || fileInfo.size === 0) {
         return { ok: false, error: "empty_file" };
       }
-      const updated = await persistSave(
+      const bytes = await renderThumbnailPng(await readFile(path));
+      if (!bytes) return { ok: false, error: "not_an_image" };
+      const updated = await persistSaveThumbnail(
         params.id,
-        {},
-        {
-          actorReason: "user:set-custom-thumbnail",
-          replaceFilesWithKind: "custom_thumbnail",
-          newFiles: [
-            {
-              kind: "custom_thumbnail",
-              filename: libraryFilename(path, "custom-thumbnail.png"),
-              sourcePath: path,
-              mimeType: format.mimeType,
-            },
-          ],
-        },
+        bytes,
+        "user:set-thumbnail",
       );
       return { ok: Boolean(updated) };
     },
@@ -244,21 +244,10 @@ export const savesImportQueries = {
         return { ok: false, error: "missing_file" };
       }
       const png = await gifFramePng(resolved.path, params.frameIndex);
-      const updated = await persistSave(
+      const updated = await persistSaveThumbnail(
         params.id,
-        {},
-        {
-          actorReason: "user:set-gif-thumbnail",
-          replaceFilesWithKind: "custom_thumbnail",
-          newFiles: [
-            {
-              kind: "custom_thumbnail",
-              filename: "gif-thumb.png",
-              mimeType: "image/png",
-              bytes: png,
-            },
-          ],
-        },
+        png,
+        "user:set-gif-thumbnail",
       );
       return { ok: Boolean(updated) };
     },
@@ -322,10 +311,11 @@ export const savesImportQueries = {
         params.id,
         {},
         {
-          actorReason: "user:remove-custom-thumbnail",
-          replaceFilesWithKind: "custom_thumbnail",
+          actorReason: "user:remove-thumbnail",
+          replaceFilesWithKind: THUMBNAIL_REPLACE_KINDS,
         },
       );
+      if (updated) await ensureSaveThumbnail(params.id, updated);
       return { ok: Boolean(updated) };
     },
   ),
@@ -338,6 +328,7 @@ export const savesImportQueries = {
       tags: StringListParam,
       filePaths: StringListParam,
       sourceId: NullableStringParam,
+      mediaType: z.enum(MEDIA_TYPES).nullable().optional(),
       width: OptionalNumberParam,
       height: OptionalNumberParam,
     }),
@@ -349,6 +340,7 @@ export const savesImportQueries = {
         tags: params.tags,
         filePaths: params.filePaths,
         sourceId: params.sourceId,
+        mediaType: params.mediaType,
       };
       if (params.width != null && Number.isFinite(params.width)) {
         input.width = params.width;
@@ -357,6 +349,32 @@ export const savesImportQueries = {
         input.height = params.height;
       }
       return createManualSave(input);
+    },
+  ),
+
+  "saves.listBlankDocuments": query(z.object({}), async () => ({
+    kinds: listInstalledBlankDocuments(),
+  })),
+
+  "saves.createBlankDocument": query(
+    z.object({
+      kind: z.string(),
+      folderId: NullableStringParam,
+    }),
+    async (params): Promise<QueryResult<"saves.createBlankDocument">> => {
+      if (!isBlankDocumentKind(params.kind)) return { ok: false };
+      const path = await writeBlankDocumentFile(params.kind);
+      if (!path) return { ok: false };
+      const created = await createManualSave({
+        title: null,
+        filePaths: [path],
+      });
+      if (!created.ok || !created.id) return { ok: false };
+      if (params.folderId) {
+        const { addSavesToFolder } = await import("../../core/folders");
+        await addSavesToFolder(params.folderId, [created.id]);
+      }
+      return { ok: true, id: created.id };
     },
   ),
 

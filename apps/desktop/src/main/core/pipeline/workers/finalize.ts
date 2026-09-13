@@ -1,4 +1,5 @@
 import { type Save, type Task, tasks } from "@pond/schema/db";
+import { pickCardFile } from "@shared/save-file-names";
 import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../../db";
@@ -66,7 +67,7 @@ export async function runFinalize(saveId: string): Promise<void> {
 
   if (save.mediaType === "image" && (save.dominantColors ?? []).length === 0) {
     const files = save.files ?? [];
-    const cover = files[save.coverIndex ?? 0] ?? files[0];
+    const cover = pickCardFile(files) ?? files[0];
     if (cover) {
       const { extractPalette } = await import("../../../lib/palette");
       const { itemFile } = await import("../../../paths");

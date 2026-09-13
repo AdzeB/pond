@@ -1,9 +1,12 @@
 .message {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
-  margin-block: 12px;
+  margin-block: 8px;
+  font-size: var(--ds-text-md);
+  line-height: 1.625;
+  color: var(--ds-gray-12);
   animation: enter var(--ds-duration-medium) var(--ds-easing-decelerate);
 }
 
@@ -11,7 +14,7 @@
   align-items: flex-end;
 }
 
-.messageBody {
+.message-body {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -19,29 +22,33 @@
   min-width: 0;
 }
 
-.message[data-role="user"] .messageBody {
+.message[data-role="user"] .message-body {
   width: fit-content;
-  max-width: 85%;
-  padding: 10px 14px;
+  max-width: 75%;
+  padding: 8px 12px;
+  line-height: 1.5;
   background: var(--ds-gray-3);
-  border-radius: var(--ds-radius-lg);
+  border-radius: var(--ds-radius-2xl);
 }
 
-.messageActions {
+.message-actions {
   gap: 2px;
   color: var(--ds-gray-9);
 }
 
-.messageActions button {
+.message-actions button {
+  --button-icon-size: 14px;
+  width: 28px;
+  height: 28px;
   color: inherit;
 }
 
-.message[data-role="user"] .messageActions {
+.message[data-role="user"] .message-actions {
   opacity: 0;
   transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
 }
 
-.message[data-role="user"]:is(:hover, :focus-within) .messageActions {
+.message[data-role="user"]:is(:hover, :focus-within) .message-actions {
   opacity: 1;
 }
 
@@ -54,16 +61,8 @@
 }
 
 .muted {
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-10);
-}
-
-.menuItem {
-  composes: item from "../shared/styles/popup/styles.module.css";
-}
-
-.separator {
-  composes: separator from "../shared/styles/popup/styles.module.css";
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -97,26 +96,26 @@
   gap: 8px;
   align-items: center;
   padding-block: 6px;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .messageActions,
-  .activityTrigger svg,
-  .historyArchive {
+  .message-actions,
+  .activity-trigger svg,
+  .history-archive {
     transition: none;
   }
 }
 
 .message[data-role="user"] {
   position: relative;
-  margin-block: 12px 20px;
+  margin-block: 8px 24px;
 }
 
-.message[data-role="user"] > :last-child:not(.messageBody) {
+.message[data-role="user"] > :last-child:not(.message-body) {
   position: absolute;
   right: 0;
-  bottom: -24px;
+  bottom: -28px;
 }
 
 @keyframes enter {

@@ -1,4 +1,5 @@
 import { ContextMenu as Base } from "@base-ui/react/context-menu";
+import { Input as BaseInput } from "@base-ui/react/input";
 import { IconCaretRightFill12 as CaretRight } from "@pond/icons/fill/12";
 import { clsx as cn } from "clsx";
 import { Checkbox } from "../checkbox";
@@ -164,8 +165,30 @@ function SubmenuTrigger({ className, ...props }: Base.SubmenuTrigger.Props) {
   return (
     <Base.SubmenuTrigger className={cn(styles.item, className)} {...props}>
       {props.children}
-      <CaretRight width={6} height={6} style={{ color: "var(--ds-gray-9)" }} />
+      <CaretRight />
     </Base.SubmenuTrigger>
+  );
+}
+
+function Input({ className, onKeyDown, ...props }: BaseInput.Props) {
+  return (
+    <BaseInput
+      type="search"
+      spellCheck={false}
+      className={cn(styles.input, className)}
+      onKeyDown={(event) => {
+        onKeyDown?.(event);
+        if (
+          event.key.length === 1 &&
+          !event.ctrlKey &&
+          !event.metaKey &&
+          !event.altKey
+        ) {
+          event.stopPropagation();
+        }
+      }}
+      {...props}
+    />
   );
 }
 
@@ -216,5 +239,6 @@ export const ContextMenu = {
   CheckboxItemIndicator,
   SubmenuRoot,
   SubmenuTrigger,
+  Input,
   Items,
 };

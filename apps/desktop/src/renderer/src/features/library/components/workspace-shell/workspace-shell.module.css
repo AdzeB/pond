@@ -5,7 +5,7 @@
 }
 
 :global(html[data-platform="mac"]) .shell {
-  --window-chrome-start: 88px;
+  --window-chrome-start: 96px;
 }
 
 .shell[data-slot="window"] [data-slot="left"] > div {
@@ -21,7 +21,6 @@
   overflow-clip-margin: var(--window-inset);
 }
 
-/* Keep the shadow gutter inside the slot's expanded clip. */
 .shell .right-pane[data-slot="right"] > div {
   inset: 0 auto 0 0;
   width: var(--window-right-track);

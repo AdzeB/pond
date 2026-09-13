@@ -94,22 +94,19 @@
   max-width: var(--tab-max-width);
   height: var(--tab-height);
   padding-inline: 8px 4px;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-10);
   cursor: default;
   user-select: none;
   background: var(--ds-gray-a2);
-  border: 1px solid transparent;
   border-radius: var(--ds-radius-md);
-  background-clip: padding-box;
   opacity: 1;
   -webkit-app-region: no-drag;
   transition:
     color var(--ds-duration-fast) var(--ds-easing-standard),
     background var(--ds-duration-fast) var(--ds-easing-standard),
     box-shadow var(--ds-duration-fast) var(--ds-easing-standard),
-    border-color var(--ds-duration-fast) var(--ds-easing-standard),
     opacity var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:hover {
@@ -134,8 +131,6 @@
   &[data-lifted] {
     z-index: 3;
     cursor: grabbing;
-    background-clip: padding-box;
-    border-color: var(--ds-shadow-ring);
     box-shadow: var(--ds-shadow-2);
     transition: none;
   }
@@ -143,8 +138,6 @@
   &[data-active] {
     color: var(--ds-gray-12);
     background: var(--ds-gray-1);
-    background-clip: padding-box;
-    border-color: var(--ds-shadow-ring);
     box-shadow: var(--ds-shadow-1);
 
     &:hover {

@@ -1,12 +1,12 @@
-.pickerList {
+.picker-list {
   max-height: 270px;
   padding: 4px;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 
-.modelIcon,
-.referenceMedia {
+.model-icon,
+.reference-media {
   display: flex;
   flex-shrink: 0;
   align-items: center;
@@ -19,13 +19,13 @@
   border-radius: var(--ds-radius-md);
 }
 
-.referenceMedia > img {
+.reference-media > img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.modelContent {
+.model-content {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -34,7 +34,7 @@
   text-align: left;
 }
 
-.modelName {
+.model-name {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -42,28 +42,30 @@
   white-space: nowrap;
 }
 
-.rowDescription {
-  font-size: var(--ds-text-small);
-  line-height: 1.45;
+.row-description {
+  font-size: var(--ds-text-sm);
+  line-height: 1.5;
   color: var(--ds-gray-9);
   overflow-wrap: anywhere;
 }
 
-.contextPicker {
+.context-picker {
   padding: 6px;
 }
 
-.contextRow {
+.context-row {
   display: flex;
   gap: 10px;
   width: 100%;
   min-width: 0;
   height: auto;
-  padding: 8px;
+  padding: 6px 8px;
+  font-size: var(--ds-text-md);
   text-align: left;
+  border-radius: var(--ds-radius-md);
 }
 
-.selectionMark {
+.selection-mark {
   display: flex;
   flex-shrink: 0;
   justify-content: center;
@@ -71,25 +73,25 @@
   color: var(--ds-gray-12);
 }
 
-.pickerEmpty {
+.picker-empty {
   padding: 24px 12px;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-9);
 }
 
-.pickerFooter {
+.picker-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 8px;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-9);
   border-top: 1px solid var(--ds-border-subtle);
 }
 
-.optionGroup,
-.questionOptions,
-fieldset.pickerList {
+.option-group,
+.question-options,
+fieldset.picker-list {
   min-width: 0;
   margin: 0;
   border: 0;

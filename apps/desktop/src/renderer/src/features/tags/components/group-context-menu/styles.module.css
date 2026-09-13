@@ -3,8 +3,8 @@
   gap: 8px;
   align-items: center;
   min-width: 0;
-  height: 32px;
-  padding-inline: 14px 18px;
+  height: 28px;
+  padding-inline: 12px;
   margin: 0;
   border: 0;
 }
@@ -15,7 +15,7 @@
   padding: 0;
   cursor: var(--ds-cursor-interactive, pointer);
   background: var(--swatch);
-  border: var(--ds-border-elevated);
+  border: var(--ds-border-width) solid var(--ds-border-subtle);
   border-radius: var(--ds-radius-full);
 
   &[data-selected] {

@@ -54,7 +54,7 @@
   flex: 1 1 auto;
   min-width: 0;
   padding: 0;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-normal);
   background: transparent;
   border: 0;

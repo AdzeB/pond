@@ -14,28 +14,20 @@ import {
   IconFolderBanOutline18,
   IconGear3Outline18,
   IconHashtagOutline18,
-  IconMagnifierOutline18,
-  IconMessageSparkleOutline18,
   IconPlusOutline18,
   IconTrashXmarkOutline18,
   IconWindowDownloadOutline18,
 } from "@pond/icons/outline/18";
 import {
   Button,
+  cssVars,
   Logo,
   Menu,
   type MenuItemSpec,
   Sidebar,
-  Tooltip,
 } from "@pond/ui";
 import { useRouterState } from "@tanstack/react-router";
-import {
-  type CSSProperties,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { useStatusFeed } from "@/features/downloads/lib/status-feed";
 import {
@@ -52,7 +44,6 @@ import {
 import { NewMenu } from "@/features/library/components/new-menu/new-menu";
 import { SmartFoldersSection } from "@/features/library/components/smart-folders/smart-folders";
 import { useSidebarCounts } from "@/features/library/hooks/use-sidebar-counts";
-import { commandMenu } from "@/features/library/state/command-menu";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import { folders, useFolders } from "@/features/library/state/folders";
 import {
@@ -73,7 +64,6 @@ import { openSettings } from "@/features/settings/lib/open-settings";
 import { usePrefs } from "@/features/settings/state/prefs";
 import { useAccounts } from "@/features/sources/hooks/use-accounts";
 import { useTags } from "@/features/tags/state/tags";
-import { ShortcutKeys } from "@/shared/components/shortcut-keys/shortcut-keys";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { getAppRouter } from "@/shared/lib/app-router";
@@ -108,21 +98,6 @@ function openUrl(url: string): void {
 }
 
 const WORKSPACE_MENU: MenuItemSpec[] = [
-  ...(import.meta.env.DEV
-    ? [
-        {
-          label: "Components",
-          icon: <IconCode2Outline18 />,
-          onClick: () => getAppRouter()?.history.push("/dev/components"),
-        },
-        {
-          label: "Downloads Lab",
-          icon: <IconDownloadOutline18 />,
-          onClick: () => getAppRouter()?.history.push("/dev/downloads"),
-        },
-        { type: "separator" as const },
-      ]
-    : []),
   {
     label: "Settings",
     icon: <IconGear3Outline18 />,
@@ -184,10 +159,6 @@ function selectNav(nav: LibraryNav): void {
 }
 
 function WorkspaceHeader() {
-  const assistantPage = useRouterState({
-    select: (s) => s.location.pathname === "/assistant",
-  });
-
   return (
     <Sidebar.Header className={styles.workspace}>
       <Menu.Root>
@@ -207,33 +178,6 @@ function WorkspaceHeader() {
         </Menu.Portal>
       </Menu.Root>
       <div className={styles["workspace-actions"]}>
-        <Tooltip
-          label="Search"
-          shortcut={<ShortcutKeys id="library.search" />}
-          side="bottom"
-        >
-          <Button
-            icon
-            size="sm"
-            variant="text"
-            aria-label="Search"
-            onClick={() => commandMenu.open()}
-          >
-            <IconMagnifierOutline18 />
-          </Button>
-        </Tooltip>
-        <Tooltip label="Assistant" side="bottom">
-          <Button
-            icon
-            size="sm"
-            variant="text"
-            aria-label="Assistant"
-            aria-current={assistantPage ? "page" : undefined}
-            onClick={() => go("/assistant")}
-          >
-            <IconMessageSparkleOutline18 />
-          </Button>
-        </Tooltip>
         <NewMenu />
       </div>
     </Sidebar.Header>
@@ -693,10 +637,7 @@ export function FolderSidebar() {
                       folderDrop?.id === folder.id ? folderDrop.kind : undefined
                     }
                     data-dragging={draggingFolderId === folder.id || undefined}
-                    style={
-                      // SAFETY: React forwards CSS custom properties to the element style.
-                      { "--folder-depth": depth } as CSSProperties
-                    }
+                    style={cssVars({ "--folder-depth": depth })}
                   >
                     {parentIds.has(folder.id) ? (
                       <Button

@@ -13,7 +13,7 @@
   gap: 6px;
   width: 100%;
   min-width: 0;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-11);
 
   :global([data-slot="root"]) {
@@ -59,7 +59,7 @@
 
 .label,
 .suffix {
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-10);
 }
 
@@ -69,6 +69,6 @@
 
 .error {
   margin: 0;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   color: var(--ds-red-11);
 }

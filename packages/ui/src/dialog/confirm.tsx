@@ -91,6 +91,7 @@ function ConfirmContent({
           <Button
             variant={options.confirmVariant ?? "destructive"}
             disabled={busy}
+            loading={busy}
             onClick={() => void submit(options.onConfirm)}
           >
             {busy

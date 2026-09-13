@@ -2,13 +2,8 @@
 
 import type { Row as TanstackRow } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import {
-  type CSSProperties,
-  type ReactNode,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
+import { cssVars } from "../css-vars";
 import { useDataTable } from "./context";
 import { Row } from "./row";
 import styles from "./styles.module.css";
@@ -80,11 +75,9 @@ export function DataTableBody<T>({
     />
   );
 
-  const rowHeightStyle =
-    // SAFETY: React forwards CSS custom properties to the element style.
-    {
-      "--data-table-row-height": `${rowHeight}px`,
-    } as CSSProperties;
+  const rowHeightStyle = cssVars({
+    "--data-table-row-height": `${rowHeight}px`,
+  });
 
   if (height !== undefined) {
     return (

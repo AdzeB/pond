@@ -7,7 +7,19 @@ import styles from "./sidebar-toggle.module.css";
 
 const EASE = [0.25, 0.1, 0.25, 1] as const;
 
-function Glyph({ open }: { open: boolean }) {
+function Glyph({ open, side }: { open: boolean; side: "left" | "right" }) {
+  const closed = side === "left" ? 3 : 15;
+  const expanded = side === "left" ? 6.25 : 11.75;
+  const x = open ? expanded : closed;
+  const label =
+    side === "left"
+      ? open
+        ? "Close sidebar"
+        : "Open sidebar"
+      : open
+        ? "Close details"
+        : "Open details";
+
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -18,7 +30,7 @@ function Glyph({ open }: { open: boolean }) {
       className={styles.glyph}
       aria-hidden
     >
-      <title>{open ? "Close sidebar" : "Open sidebar"}</title>
+      <title>{label}</title>
       <rect
         x="1.75"
         y="2.75"
@@ -39,15 +51,22 @@ function Glyph({ open }: { open: boolean }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         initial={false}
-        animate={{ x1: open ? 6.25 : 3, x2: open ? 6.25 : 3 }}
+        animate={{ x1: x, x2: x }}
         transition={{ duration: 0.18, ease: EASE }}
       />
     </svg>
   );
 }
 
-export function SidebarToggle({ open }: { open: boolean }) {
+export function SidebarToggle({
+  open,
+  side = "left",
+}: {
+  open: boolean;
+  side?: "left" | "right";
+}) {
   const [visual, setVisual] = useState(false);
+  const label = side === "left" ? "Toggle Sidebar" : "Toggle Details";
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setVisual(open));
@@ -56,18 +75,24 @@ export function SidebarToggle({ open }: { open: boolean }) {
 
   return (
     <Tooltip
-      label="Toggle Sidebar"
-      shortcut={<ShortcutKeys id="view.sidebar" />}
+      label={label}
+      shortcut={
+        side === "left" ? <ShortcutKeys id="view.sidebar" /> : undefined
+      }
     >
       <Button
         icon
         size="sm"
         variant="ghost"
-        aria-label="Toggle Sidebar"
+        aria-label={label}
         aria-pressed={open}
-        onClick={() => libraryChrome.toggleSidebar()}
+        onClick={() =>
+          side === "left"
+            ? libraryChrome.toggleSidebar()
+            : libraryChrome.toggleRightPane()
+        }
       >
-        <Glyph open={visual} />
+        <Glyph open={visual} side={side} />
       </Button>
     </Tooltip>
   );

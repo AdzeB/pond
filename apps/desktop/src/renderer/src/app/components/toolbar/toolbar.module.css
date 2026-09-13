@@ -17,7 +17,7 @@
 .chrome {
   display: flex;
   flex-shrink: 0;
-  gap: 2px;
+  gap: 8px;
   align-items: center;
   justify-content: space-between;
   width: 100%;
@@ -28,7 +28,7 @@
 }
 
 :global(html[data-platform="mac"]) .chrome {
-  padding-left: 88px;
+  padding-left: 96px;
 }
 
 .main {
@@ -87,7 +87,7 @@
 
 .separator {
   flex: none;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-8);
   user-select: none;
 }
@@ -101,7 +101,7 @@
   min-width: 0;
   height: 28px;
   padding: 0 6px;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-medium);
   line-height: 20px;
   color: var(--ds-gray-10);
@@ -111,7 +111,7 @@
   gap: 6px;
   height: 28px;
   padding: 0 6px;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
 }
 
 .current {

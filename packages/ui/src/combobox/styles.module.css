@@ -24,7 +24,7 @@
 }
 
 .label {
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-11);
 }
@@ -38,9 +38,8 @@
 }
 
 .popup {
+  --ds-popup-width: var(--anchor-width);
   composes: popup from "../shared/styles/popup/styles.module.css";
-  gap: 0;
-  padding-block: 0;
 }
 
 .arrow {
@@ -48,34 +47,13 @@
 }
 
 .input {
-  box-sizing: border-box;
-  height: 36px;
-  padding: 0 14px;
-  margin: 0;
-  font: inherit;
-  font-size: var(--ds-text-small);
-  font-weight: var(--ds-weight-normal);
-  color: var(--ds-gray-12);
-  outline: none;
-  background: transparent;
-  border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
-  border-radius: 0;
-  box-shadow: none;
-
-  &::placeholder {
-    color: var(--ds-gray-9);
-  }
-
-  &:focus-visible {
-    border-bottom-color: var(--ds-focus-outline);
-  }
+  composes: input from "../shared/styles/popup/styles.module.css";
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  max-height: 320px;
-  padding: 6px 0;
+  max-height: min(320px, var(--available-height, 320px));
   overflow-y: auto;
   overscroll-behavior: contain;
   scroll-padding-block: 4px;
@@ -83,7 +61,7 @@
 
 .empty {
   padding: 8px 12px;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-9);
 
   &:empty {
@@ -115,7 +93,7 @@
 }
 
 .item-meta {
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-9);
 }

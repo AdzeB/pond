@@ -1,7 +1,5 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import { resultNavigation } from "@/features/library/state/result-navigation";
-import { selection } from "@/features/library/state/selection";
 
 interface InspectState {
   grayscale: boolean;
@@ -65,14 +63,6 @@ export const inspect = {
   },
   snapshot(): InspectState {
     return store.state;
-  },
-  pinCurrent(): void {
-    const id = selection.getAnchor();
-    if (!id) return;
-    void window.pond.query("preview.pin", {
-      id,
-      navigation: resultNavigation.request() ?? undefined,
-    });
   },
 };
 

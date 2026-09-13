@@ -1,7 +1,7 @@
 import { IconCheckOutline18 } from "@pond/icons/outline/18";
 import { useReducedMotionConfig } from "motion/react";
 import type { ReactNode } from "react";
-import { Loader } from "../ai/loader";
+import { Loader } from "../loader";
 import { Reveal } from "../reveal";
 import styles from "./styles.module.css";
 
@@ -16,7 +16,7 @@ export function RunStatus({
   return (
     <Reveal>
       <div
-        className={styles.runStatus}
+        className={styles["run-status"]}
         role="status"
         data-reduced-motion={reduced || undefined}
       >
@@ -25,7 +25,7 @@ export function RunStatus({
         ) : state === "complete" ? (
           <IconCheckOutline18 />
         ) : (
-          <span className={styles.stopMark} />
+          <span className={styles["stop-mark"]} />
         )}
         <span>{children}</span>
       </div>

@@ -1,8 +1,5 @@
 import { IconChevronDownOutline12 as ChevronDown } from "@pond/icons/outline/12";
-import {
-  IconMagnifierOutline18 as Magnifier,
-  IconPlusOutline18 as Plus,
-} from "@pond/icons/outline/18";
+import { IconPlusOutline18 as Plus } from "@pond/icons/outline/18";
 import { normalizeLabelName } from "@pond/schema/label-name";
 import { Keyboard, Menu } from "@pond/ui";
 import { type KeyboardEvent, type ReactNode, useMemo, useState } from "react";
@@ -277,29 +274,23 @@ export function TagMenu({
 
   return (
     <div className={styles.root} data-nav={showNav ? "" : undefined}>
-      <div className={styles.header}>
-        <span className={styles.magnifier} aria-hidden>
-          <Magnifier />
-        </span>
-        <Menu.Input
-          className={styles.search}
-          value={q}
-          placeholder={placeholder}
-          autoFocus
-          onChange={(event) => {
-            setQ(event.target.value);
-            setPane("list");
-          }}
-          onKeyDown={(event) => {
-            onPaneKeyDown(event);
-            if (event.defaultPrevented) return;
-            if (event.key === "Enter" && createInfo) {
-              event.preventDefault();
-              void commitCreate();
-            }
-          }}
-        />
-      </div>
+      <Menu.Input
+        value={q}
+        placeholder={placeholder}
+        autoFocus
+        onChange={(event) => {
+          setQ(event.target.value);
+          setPane("list");
+        }}
+        onKeyDown={(event) => {
+          onPaneKeyDown(event);
+          if (event.defaultPrevented) return;
+          if (event.key === "Enter" && createInfo) {
+            event.preventDefault();
+            void commitCreate();
+          }
+        }}
+      />
 
       <div className={styles.body}>
         {showNav ? (

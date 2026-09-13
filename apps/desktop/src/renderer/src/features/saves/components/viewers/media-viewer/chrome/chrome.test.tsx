@@ -73,7 +73,7 @@ it("floats image inspector controls over the viewer stage", async () => {
   });
   const frame = host.querySelector("[data-background]");
   const previous = [...host.querySelectorAll("button")].find(
-    (button) => button.getAttribute("aria-label") === "Previous",
+    (button) => button.getAttribute("aria-label") === "Previous Slide",
   );
   const fit = [...host.querySelectorAll("button")].find(
     (button) => button.getAttribute("aria-label") === "Fit",
@@ -82,7 +82,55 @@ it("floats image inspector controls over the viewer stage", async () => {
   expect(previous).toBeUndefined();
   expect(fit).toBeTruthy();
   expect(frame?.contains(fit ?? null)).toBe(false);
+  expect(fit?.closest("[data-blossom-slide]")).toBeNull();
   expect(host.querySelector("[data-viewer-root]")?.contains(fit ?? null)).toBe(
     true,
   );
+});
+
+it("pages gallery files from the center of the inspector hud", async () => {
+  const first = save.files[0];
+  if (!first) throw new Error("Missing fixture file");
+  const gallery: Save = {
+    ...save,
+    id: "gallery-save",
+    files: [
+      first,
+      {
+        ...first,
+        path: "second.jpg",
+        sha256: "fixture-2",
+      },
+    ],
+  };
+  pool.upsert(gallery);
+  await act(async () => {
+    root.render(<MediaViewer save={gallery} />);
+  });
+  const labeled = (label: string) =>
+    [...host.querySelectorAll("button")].find(
+      (button) => button.getAttribute("aria-label") === label,
+    );
+  const previous = labeled("Previous Slide");
+  const next = labeled("Next Slide");
+  const zoom = labeled("Zoom In");
+  const crop = labeled("Crop");
+  expect(host.textContent).toContain("1 / 2");
+  expect(previous?.disabled).toBe(true);
+  expect(next?.disabled).toBe(false);
+  expect(previous?.closest("[data-anchor]")?.getAttribute("data-anchor")).toBe(
+    "bottom-center",
+  );
+  expect(crop?.closest("[data-anchor]")?.getAttribute("data-anchor")).toBe(
+    "bottom-left",
+  );
+  expect(zoom?.closest("[data-anchor]")?.getAttribute("data-anchor")).toBe(
+    "top-center",
+  );
+  expect(host.querySelectorAll("[aria-label='Previous Slide']")).toHaveLength(
+    1,
+  );
+  expect(previous?.closest("[data-blossom-slide]")).toBeNull();
+  expect(crop?.closest("[data-blossom-slide]")).toBeNull();
+  expect(zoom?.closest("[data-blossom-slide]")).toBeNull();
 });

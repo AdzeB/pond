@@ -1,4 +1,5 @@
 import type { Save, SaveFile } from "@pond/schema/db";
+import { pickCardFile } from "@shared/save-file-names";
 import { encode } from "blurhash";
 import sharp from "sharp";
 import { isStaticThumbnailFile } from "../../shared/media-index";
@@ -11,12 +12,12 @@ export function pickBlurhashStill(
   save: Pick<Save, "files" | "coverIndex">,
 ): SaveFile | null {
   const files = save.files ?? [];
-  const cover = files[save.coverIndex ?? 0] ?? null;
+  const card = pickCardFile(files);
   const still =
+    (card && isStaticThumbnailFile(card) ? card : null) ??
     files.find(
       (file) => file.kind === "poster" && isStaticThumbnailFile(file),
     ) ??
-    (cover && isStaticThumbnailFile(cover) ? cover : null) ??
     files.find((file) => isStaticThumbnailFile(file)) ??
     null;
   return still;

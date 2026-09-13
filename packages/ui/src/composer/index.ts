@@ -1,2 +1,2 @@
 export { Composer } from "./composer";
-export { ComposerView, EditComposer } from "./composer-view";
+export { ComposerView } from "./composer-view";

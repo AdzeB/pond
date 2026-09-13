@@ -4,6 +4,7 @@ import {
 } from "@assistant-ui/react-markdown";
 import { clsx as cn } from "clsx";
 import { useReducedMotionConfig } from "motion/react";
+import remarkGfm from "remark-gfm";
 import { CodeHeader } from "../code-block";
 import styles from "./styles.module.css";
 
@@ -13,11 +14,14 @@ export type {
   SyntaxHighlighterProps,
 } from "@assistant-ui/react-markdown";
 
+const defaultRemarkPlugins = [remarkGfm];
+
 export function Markdown({
   className,
   smooth = true,
   skipHtml = true,
   components,
+  remarkPlugins = defaultRemarkPlugins,
   ...props
 }: MarkdownProps) {
   const reduced = useReducedMotionConfig();
@@ -25,6 +29,7 @@ export function Markdown({
     <MarkdownTextPrimitive
       {...props}
       components={{ CodeHeader, ...components }}
+      remarkPlugins={remarkPlugins}
       skipHtml={skipHtml}
       smooth={reduced ? false : smooth}
       className={cn(styles.markdown, className)}

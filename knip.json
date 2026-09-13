@@ -12,14 +12,10 @@
         "src/renderer/src/capture.tsx",
         "src/renderer/src/routes/**/*.{ts,tsx}",
         "scripts/*.{mjs,cjs,ts}",
-        "src/renderer/{components,command-menu-preview,source-dialogs,provider-settings,shadows,downloads}.tsx",
         "src/main/core/media-warm/service.ts",
         "src/main/core/enrichment-sidecar.ts"
       ],
-      "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{mjs,cjs,ts}"],
-      "vite": {
-        "config": ["components.vite.config.ts"]
-      }
+      "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{mjs,cjs,ts}"]
     },
     "apps/website": {
       "entry": ["app/**/*.{ts,tsx}", "next.config.{js,ts,mjs}"],

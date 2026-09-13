@@ -1,3 +1,7 @@
+import {
+  IconArrowLeftOutline18,
+  IconArrowRightOutline18,
+} from "@pond/icons/outline/18";
 import { Button, Tooltip, Tray } from "@pond/ui";
 import { clsx as cn } from "clsx";
 import {
@@ -6,20 +10,62 @@ import {
   type HTMLAttributes,
   type ReactNode,
   use,
+  useState,
 } from "react";
+import { createPortal } from "react-dom";
+import { ShortcutKeys } from "@/shared/components/shortcut-keys/shortcut-keys";
 import styles from "./styles.module.css";
 
 export type ViewerHudAnchor =
   | "top-left"
+  | "top-center"
   | "top-right"
   | "bottom-left"
   | "bottom-center"
   | "bottom-right";
 
+export interface SlidePager {
+  index: number;
+  count: number;
+  onPrev: () => void;
+  onNext: () => void;
+}
+
 const HudTooltipSide = createContext<"top" | "bottom">("top");
+const HudOverlayContext = createContext<HTMLElement | null>(null);
+const SlidePagerContext = createContext<SlidePager | null>(null);
+
+export function HudHost({ children }: { children: ReactNode }) {
+  const [overlay, setOverlay] = useState<HTMLElement | null>(null);
+  return (
+    <HudOverlayContext value={overlay}>
+      <div className={styles.host}>
+        {children}
+        <div className={styles.layer} ref={setOverlay} />
+      </div>
+    </HudOverlayContext>
+  );
+}
+
+export function SlidePagerProvider({
+  value,
+  children,
+}: {
+  value: SlidePager;
+  children: ReactNode;
+}) {
+  return <SlidePagerContext value={value}>{children}</SlidePagerContext>;
+}
+
+export function useSlidePager(): SlidePager | null {
+  return use(SlidePagerContext);
+}
 
 function Root({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn(styles.hud, className)} {...props} />;
+  const overlay = use(HudOverlayContext);
+  const hud = <div className={cn(styles.hud, className)} {...props} />;
+  if (overlay) return createPortal(hud, overlay);
+  return hud;
 }
 
 function Cluster({
@@ -89,10 +135,37 @@ function Tool({
   );
 }
 
+function Pager({ index, count, onPrev, onNext }: SlidePager) {
+  return (
+    <Pill role="toolbar" aria-label="Slides">
+      <Tool
+        label="Previous Slide"
+        shortcut={<ShortcutKeys id="viewer.prev-slide" />}
+        disabled={index <= 0}
+        onClick={onPrev}
+      >
+        <IconArrowLeftOutline18 />
+      </Tool>
+      <Scale>
+        {index + 1} / {count}
+      </Scale>
+      <Tool
+        label="Next Slide"
+        shortcut={<ShortcutKeys id="viewer.next-slide" />}
+        disabled={index >= count - 1}
+        onClick={onNext}
+      >
+        <IconArrowRightOutline18 />
+      </Tool>
+    </Pill>
+  );
+}
+
 export const ViewerHud = {
   Root,
   Cluster,
   Pill,
   Scale,
   Tool,
+  Pager,
 };

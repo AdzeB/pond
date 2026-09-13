@@ -70,8 +70,7 @@ async function listedApps(filePath: string): Promise<OpenWithAppInfo[]> {
   return ranked;
 }
 
-/** 32px source, drawn at 16 CSS px so the bitmap stays sharp on retina. */
-const ICON_PX = 32;
+const ICON_SOURCE_PX = 32;
 
 async function cachedAppIcon(path: string): Promise<string | null> {
   const cached = iconByPath.get(path);
@@ -95,8 +94,8 @@ async function readAppIcon(path: string): Promise<string | null> {
 async function thumbnailIcon(path: string): Promise<string | null> {
   try {
     const image = await nativeImage.createThumbnailFromPath(path, {
-      width: ICON_PX,
-      height: ICON_PX,
+      width: ICON_SOURCE_PX,
+      height: ICON_SOURCE_PX,
     });
     return encodeIcon(image);
   } catch {
@@ -107,8 +106,8 @@ async function thumbnailIcon(path: string): Promise<string | null> {
 function encodeIcon(image: NativeImage): string | null {
   if (image.isEmpty()) return null;
   const sized = image.resize({
-    width: ICON_PX,
-    height: ICON_PX,
+    width: ICON_SOURCE_PX,
+    height: ICON_SOURCE_PX,
     quality: "best",
   });
   if (sized.isEmpty()) return null;

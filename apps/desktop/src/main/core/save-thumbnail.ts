@@ -1,0 +1,117 @@
+import type { Save } from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
+import {
+  hasMediaThumbnail,
+  LEGACY_CUSTOM_THUMBNAIL_KIND,
+  LEGACY_TEXT_COVER_DARK_KIND,
+  LEGACY_TEXT_COVER_LIGHT_KIND,
+  primaryOriginalPath,
+  THUMBNAIL_DARK_KIND,
+  THUMBNAIL_KIND,
+  thumbnailFilename,
+} from "@shared/save-file-names";
+import { eq } from "drizzle-orm";
+import log from "electron-log/main.js";
+import sharp from "sharp";
+import { getDb } from "../db";
+import { itemFile } from "../paths";
+import { persistSave } from "./persist-save";
+import type { WriteFileArgs } from "./pipeline/workers/apply";
+import {
+  renderThumbnailPng,
+  thumbnailSource,
+  writeGeneratedThumbnail,
+} from "./save-thumbnail-file";
+
+export { renderThumbnailPng, writeGeneratedThumbnail };
+
+export function thumbnailWriteArgs(
+  files: ReadonlyArray<{ kind: string; path: string }>,
+  bytes: Buffer,
+  width?: number,
+  height?: number,
+): WriteFileArgs {
+  const primary = primaryOriginalPath(files);
+  const write: WriteFileArgs = {
+    kind: THUMBNAIL_KIND,
+    filename: primary ? thumbnailFilename(primary) : "thumbnail.png",
+    bytes,
+    mimeType: "image/png",
+  };
+  if (width) write.width = width;
+  if (height) write.height = height;
+  return write;
+}
+
+export const THUMBNAIL_REPLACE_KINDS = [
+  THUMBNAIL_KIND,
+  LEGACY_CUSTOM_THUMBNAIL_KIND,
+  LEGACY_TEXT_COVER_LIGHT_KIND,
+  LEGACY_TEXT_COVER_DARK_KIND,
+];
+
+export async function persistSaveThumbnail(
+  saveId: string,
+  bytes: Buffer,
+  actorReason: string,
+): Promise<boolean> {
+  const db = await getDb();
+  const row = db.select().from(saves).where(eq(saves.id, saveId)).all()[0];
+  if (!row) return false;
+  const meta = await sharp(bytes)
+    .metadata()
+    .catch(() => null);
+  const updated = await persistSave(
+    saveId,
+    {},
+    {
+      actorReason,
+      replaceFilesWithKind: THUMBNAIL_REPLACE_KINDS,
+      newFiles: [
+        thumbnailWriteArgs(
+          row.files ?? [],
+          bytes,
+          meta?.width ?? undefined,
+          meta?.height ?? undefined,
+        ),
+      ],
+    },
+  );
+  return Boolean(updated);
+}
+
+export async function ensureSaveThumbnail(
+  saveId: string,
+  save?: Pick<Save, "files"> | null,
+): Promise<void> {
+  const files = save?.files;
+  if (!files?.length) return;
+  if (hasMediaThumbnail(files)) return;
+  const primary = thumbnailSource(files);
+  if (!primary) return;
+  const png = await renderThumbnailPng(itemFile(saveId, primary.path));
+  if (!png) return;
+  const meta = await sharp(png)
+    .metadata()
+    .catch(() => null);
+  try {
+    await persistSave(
+      saveId,
+      {},
+      {
+        actorReason: "pipeline:ensure-thumbnail",
+        replaceFilesWithKind: [THUMBNAIL_KIND, THUMBNAIL_DARK_KIND],
+        newFiles: [
+          thumbnailWriteArgs(
+            files,
+            png,
+            meta?.width ?? undefined,
+            meta?.height ?? undefined,
+          ),
+        ],
+      },
+    );
+  } catch (err) {
+    log.warn("[pond thumbnail] could not write sidecar", saveId, err);
+  }
+}

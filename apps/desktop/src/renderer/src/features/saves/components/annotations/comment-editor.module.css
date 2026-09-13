@@ -3,9 +3,9 @@
 }
 
 .card {
-  --popup-width: 260px;
-  --popup-min-width: 240px;
-  --popup-max-width: 280px;
+  --ds-popup-width: 260px;
+  --ds-popup-min-width: 240px;
+  --ds-popup-max-width: 280px;
   display: grid;
   gap: 8px;
   padding: 10px;
@@ -20,7 +20,7 @@
 .field {
   display: grid;
   gap: 6px;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
 }
 
 .actions {
@@ -44,7 +44,7 @@
   color: var(--ds-gray-12);
   resize: vertical;
   background: var(--ds-gray-1);
-  border: var(--ds-border-elevated);
+  border: var(--ds-border-width) solid var(--ds-border-subtle);
   border-radius: var(--ds-radius-md);
 }
 

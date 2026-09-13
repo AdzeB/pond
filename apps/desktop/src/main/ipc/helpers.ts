@@ -6,6 +6,7 @@ import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { ipcMain } from "electron";
 import log from "electron-log/main.js";
 import { POND_PROTOCOL } from "../../shared/constants";
+import { isAuxiliaryKind } from "../../shared/save-file-names";
 import { getDb } from "../db";
 import { itemFile, itemsRoot } from "../paths";
 import { toWireSave } from "./wire";
@@ -70,7 +71,7 @@ export async function resolveSaveFilePath(
 
     const file = files[fileIndex ?? 0];
     if (!file) return { ok: false, reason: "out_of_range" };
-    if (file.kind === "custom_thumbnail") {
+    if (isAuxiliaryKind(file.kind)) {
       return { ok: false, reason: "auxiliary_file" };
     }
 

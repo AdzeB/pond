@@ -1,6 +1,6 @@
 .root {
   --window-inset: 16px;
-  --window-radius: var(--ds-radius-xl);
+  --window-radius: var(--ds-radius-3xl);
   --window-ring: 1px;
   --window-chrome-start: 12px;
   /* Traffic-light padding plus the four 28px titlebar controls. */
@@ -121,8 +121,6 @@
   flex-direction: column;
   overflow: hidden;
   background: var(--window-background-secondary);
-  background-clip: padding-box;
-  border: var(--ds-border-elevated);
   border-radius: var(--window-radius);
   box-shadow: var(--ds-shadow-1);
   transform: translateX(6px);
@@ -149,8 +147,6 @@
   margin-left: var(--window-inset);
   overflow: hidden;
   background: var(--window-background-secondary);
-  background-clip: padding-box;
-  border: var(--ds-border-elevated);
   border-radius: var(--window-radius);
   box-shadow: var(--ds-shadow-1);
 }

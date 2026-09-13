@@ -1,6 +1,12 @@
 import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useParams } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  type RefObject,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { AppShell } from "@/features/library/components/workspace-shell/workspace-shell";
 import { libraryViewContext } from "@/features/library/state/library-view-context";
 import { useTrackVisit } from "@/features/library/state/recents";
@@ -18,7 +24,7 @@ import {
   MediaViewer,
   type ViewerNav,
 } from "@/features/saves/components/viewers/media-viewer/media-viewer";
-import { TextViewer } from "@/features/saves/components/viewers/text-viewer/text-viewer";
+import { TextViewer } from "@/features/saves/components/viewers/text-viewer";
 import { useSave } from "@/features/saves/hooks/use-saves";
 import { hasArchive } from "@/features/saves/lib/media/archive";
 import { storedFileViewerKind } from "@/features/saves/lib/media/file-viewer";
@@ -32,6 +38,7 @@ import {
 import { closeSave, openSave } from "@/features/saves/lib/save-nav";
 import { isTextOnlySave } from "@/features/saves/lib/text";
 import { setSaveViewerFileIndex } from "@/features/saves/state/save-viewer";
+import type { Save } from "@/features/saves/types";
 import { tagClipboard } from "@/features/tags/state/tag-clipboard";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
 import { useShortcutBindings } from "@/shared/lib/shortcuts";
@@ -104,18 +111,23 @@ export function SaveDetailPage() {
     },
   ]);
 
+  return <SaveDetailSession key={id} save={save} viewerNav={viewerNav} />;
+}
+
+function SaveDetailSession({
+  save,
+  viewerNav,
+}: {
+  save: Save | undefined;
+  viewerNav: RefObject<ViewerNav | null>;
+}) {
   const [activeFileIndex, setActiveFileIndex] = useState<number | null>(null);
   const onActiveFileIndexChange = useCallback((fileIndex: number | null) => {
     setActiveFileIndex(fileIndex);
     setSaveViewerFileIndex(fileIndex);
   }, []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: id is the trigger, not a read
-  useEffect(() => {
-    setActiveFileIndex(null);
-    setSaveViewerFileIndex(null);
-    return () => setSaveViewerFileIndex(null);
-  }, [id]);
+  useEffect(() => () => setSaveViewerFileIndex(null), []);
 
   const menuVideo = useRef<HTMLVideoElement | null>(null);
   const menuFileIndex = useRef<number | null>(null);

@@ -393,7 +393,7 @@ export function SmartFoldersSection({
               </Menu.Trigger>
               <Menu.Portal>
                 <Menu.Positioner align="start" side="bottom">
-                  <Menu.Popup className={styles.menu}>
+                  <Menu.Popup>
                     <Menu.Items items={items()} />
                   </Menu.Popup>
                 </Menu.Positioner>

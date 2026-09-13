@@ -1,3 +1,4 @@
+import { isThumbnailKind } from "@shared/save-file-names";
 import { z } from "zod";
 import { statusFeed } from "@/features/downloads/lib/status-feed";
 import {
@@ -50,10 +51,8 @@ export function resolveFileIndex(
   }
   if (save.files.length === 0) return null;
   const cover = save.coverIndex ?? 0;
-  if (save.files[cover]?.kind !== "custom_thumbnail") return cover;
-  const original = save.files.findIndex(
-    (file) => file.kind !== "custom_thumbnail",
-  );
+  if (!isThumbnailKind(save.files[cover]?.kind ?? "")) return cover;
+  const original = save.files.findIndex((file) => !isThumbnailKind(file.kind));
   return original >= 0 ? original : null;
 }
 

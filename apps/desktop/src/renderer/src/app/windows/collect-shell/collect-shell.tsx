@@ -152,24 +152,6 @@ export function CollectShell() {
       setBusy(false);
     }
   }
-  async function screenshot(
-    query: "capture.display" | "capture.selectArea" | "capture.window",
-  ) {
-    if (pending.current) return;
-    pending.current = true;
-    setBusy(true);
-    setError(null);
-    try {
-      const result = await window.pond.query(query, {});
-      if (!result.ok && result.error !== "cancelled")
-        setError("Couldn’t take the screenshot. Try again.");
-    } catch (reason) {
-      setError(String(reason));
-    } finally {
-      pending.current = false;
-      setBusy(false);
-    }
-  }
   return (
     <div className={styles.root}>
       <h1 className={styles.title}>Collection Window</h1>
@@ -290,7 +272,7 @@ export function CollectShell() {
       </div>
       {draftId ? (
         <div className={styles.actions}>
-          <Button disabled={busy} onClick={() => void submit()}>
+          <Button disabled={busy} loading={busy} onClick={() => void submit()}>
             Save capture
           </Button>
           <Button
@@ -302,8 +284,8 @@ export function CollectShell() {
           </Button>
         </div>
       ) : (
-        /* biome-ignore lint/a11y/noStaticElementInteractions: local file drop target */
-        <div
+        <button
+          type="button"
           className={styles.drop}
           data-busy={busy || undefined}
           onDragOver={(event) => event.preventDefault()}
@@ -317,29 +299,10 @@ export function CollectShell() {
           }}
         >
           {busy ? "Saving" : "Drop files"}
-        </div>
+        </button>
       )}
       {error && <p role="alert">{error}</p>}
       {message && <p role="status">{message}</p>}
-      <div className={styles.actions}>
-        {(
-          [
-            ["capture.display", "Screenshot Display"],
-            ["capture.selectArea", "Screenshot Area"],
-            ["capture.window", "Screenshot Window"],
-          ] as const
-        ).map(([query, label]) => (
-          <Button
-            key={query}
-            size="sm"
-            variant="secondary"
-            disabled={busy}
-            onClick={() => void screenshot(query)}
-          >
-            {label}
-          </Button>
-        ))}
-      </div>
       <section aria-label="Capture queue" style={{ display: "grid", gap: 8 }}>
         {jobs
           .filter((job) => job.state !== "cancelled")

@@ -48,12 +48,12 @@ it("floats playback controls over the video", async () => {
   await act(async () => {
     root.render(<VideoPlayer src="pond://test/clip.mp4" active />);
   });
-  const fullscreen = [...host.querySelectorAll("button")].find(
-    (button) => button.getAttribute("aria-label") === "Full Screen",
+  const loop = [...host.querySelectorAll("button")].find(
+    (button) => button.getAttribute("aria-label") === "Loop",
   );
-  expect(fullscreen).toBeTruthy();
-  expect(
-    fullscreen?.closest("[data-anchor]")?.getAttribute("data-anchor"),
-  ).toBe("top-right");
+  expect(loop).toBeTruthy();
+  expect(loop?.closest("[data-anchor]")?.getAttribute("data-anchor")).toBe(
+    "top-right",
+  );
   expect(host.querySelector("[data-slot='bottom']")).toBeNull();
 });

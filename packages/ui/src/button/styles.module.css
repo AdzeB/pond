@@ -1,24 +1,32 @@
 .root {
   --button-height-xs: 24px;
   --button-padding-xs: 0 8px;
-  --button-font-size-xs: var(--ds-text-micro);
-  --button-radius-xs: var(--ds-radius-sm);
+  --button-font-size-xs: var(--ds-text-xs);
+  --button-radius-xs: var(--ds-radius-full);
   --button-height-sm: 28px;
   --button-padding-sm: 0 10px;
-  --button-font-size-sm: var(--ds-text-mini);
-  --button-radius-sm: var(--ds-radius-md);
+  --button-font-size-sm: var(--ds-text-sm);
+  --button-radius-sm: var(--ds-radius-full);
   --button-height-md: 32px;
   --button-padding-md: 0 12px;
-  --button-font-size-md: var(--ds-text-small);
-  --button-radius-md: var(--ds-radius-md);
+  --button-font-size-md: var(--ds-text-md);
+  --button-radius-md: var(--ds-radius-full);
   --button-height-lg: 36px;
   --button-padding-lg: 0 14px;
-  --button-font-size-lg: 14px;
-  --button-radius-lg: var(--ds-radius-lg);
+  --button-font-size-lg: var(--ds-text-lg);
+  --button-radius-lg: var(--ds-radius-full);
   --button-height-xl: 40px;
   --button-padding-xl: 0 16px;
-  --button-font-size-xl: var(--ds-text-body);
-  --button-radius-xl: var(--ds-radius-xl);
+  --button-font-size-xl: var(--ds-text-lg);
+  --button-radius-xl: var(--ds-radius-full);
+
+  &:where([data-rounding="rounded"]) {
+    --button-radius-xs: var(--ds-radius-sm);
+    --button-radius-sm: var(--ds-radius-md);
+    --button-radius-md: var(--ds-radius-md);
+    --button-radius-lg: var(--ds-radius-lg);
+    --button-radius-xl: var(--ds-radius-xl);
+  }
 }
 
 .root {
@@ -133,8 +141,6 @@
   &:where([data-variant="secondary"]) {
     color: var(--ds-gray-12);
     background-color: var(--ds-gray-1);
-    background-clip: padding-box;
-    border: var(--ds-border-elevated);
     box-shadow: var(--ds-shadow-1);
 
     &:hover,

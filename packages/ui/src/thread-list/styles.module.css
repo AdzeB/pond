@@ -1,13 +1,5 @@
-.threadList {
+.thread-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
-
-.menuItem {
-  composes: item from "../shared/styles/popup/styles.module.css";
-}
-
-.separator {
-  composes: separator from "../shared/styles/popup/styles.module.css";
 }

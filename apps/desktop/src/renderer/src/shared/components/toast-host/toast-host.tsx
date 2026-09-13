@@ -12,11 +12,11 @@ function ToastList() {
             <Toast.Content>
               <Toast.Header>
                 {toast.title ? <Toast.Title>{toast.title}</Toast.Title> : null}
-                <Toast.Close />
+                {toast.description ? (
+                  <Toast.Description>{toast.description}</Toast.Description>
+                ) : null}
               </Toast.Header>
-              {toast.description ? (
-                <Toast.Description>{toast.description}</Toast.Description>
-              ) : null}
+              <Toast.Close />
             </Toast.Content>
           </Toast.Root>
         ))}

@@ -117,6 +117,7 @@ function PromptContent({
               type="submit"
               variant={options.confirmVariant ?? "primary"}
               disabled={busy}
+              loading={busy}
             >
               {options.confirmLabel ?? "Confirm"}
             </Button>

@@ -86,11 +86,6 @@ export function Presentation({ onClose }: { onClose: () => void }) {
       selectOnlySave(id);
       void resultNavigation.reveal(id);
     }
-    if (
-      document.fullscreenElement &&
-      popup.current?.contains(document.fullscreenElement)
-    )
-      void document.exitFullscreen();
     onClose();
   };
   useHotkey(shortcuts["viewer.step-prev"].keys!, () => step(-1), {
@@ -205,16 +200,6 @@ export function Presentation({ onClose }: { onClose: () => void }) {
             </label>
             <Button size="sm" variant="secondary" onClick={() => step(1)}>
               Next
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                if (document.fullscreenElement) void document.exitFullscreen();
-                else void popup.current?.requestFullscreen();
-              }}
-            >
-              Full Screen
             </Button>
           </div>
         </Dialog.Popup>

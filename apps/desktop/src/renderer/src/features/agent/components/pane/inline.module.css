@@ -110,7 +110,7 @@
 }
 .results-label {
   margin-bottom: 8px;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-10);
 }

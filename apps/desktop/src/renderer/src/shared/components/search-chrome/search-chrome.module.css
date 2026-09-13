@@ -34,7 +34,7 @@
   height: 32px;
   padding: 0 4px;
   font: inherit;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-12);
   background: transparent;
   border: 0;

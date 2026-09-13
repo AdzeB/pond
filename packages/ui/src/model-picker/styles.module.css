@@ -1,19 +1,21 @@
-.pickerList {
+.picker-list {
   max-height: 270px;
   padding: 4px;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 
-.modelRow {
+.model-row {
   gap: 10px;
   height: auto;
-  min-height: 52px;
-  padding: 8px 12px;
+  min-height: 44px;
+  padding: 6px 10px;
+  font-size: var(--ds-text-md);
+  border-radius: var(--ds-radius-md);
 }
 
-.modelIcon,
-.referenceMedia {
+.model-icon,
+.reference-media {
   display: flex;
   flex-shrink: 0;
   align-items: center;
@@ -22,11 +24,11 @@
   height: 30px;
   overflow: hidden;
   color: var(--ds-gray-10);
-  background: var(--ds-gray-3);
+  background: transparent;
   border-radius: var(--ds-radius-md);
 }
 
-.modelContent {
+.model-content {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -35,7 +37,7 @@
   text-align: left;
 }
 
-.modelName {
+.model-name {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -43,16 +45,16 @@
   white-space: nowrap;
 }
 
-.rowDescription {
-  font-size: var(--ds-text-small);
-  line-height: 1.45;
+.row-description {
+  font-size: var(--ds-text-sm);
+  line-height: 1.5;
   color: var(--ds-gray-9);
   overflow-wrap: anywhere;
 }
 
-.optionGroup,
-.questionOptions,
-fieldset.pickerList {
+.option-group,
+.question-options,
+fieldset.picker-list {
   min-width: 0;
   margin: 0;
   border: 0;

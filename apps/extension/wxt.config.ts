@@ -26,18 +26,6 @@ export default defineConfig({
       },
     },
   }),
-  hooks: {
-    "entrypoints:found"(wxt, infos) {
-      const strip =
-        wxt.config.command === "build"
-          ? (["gallery", "popup"] as const)
-          : (["popup"] as const);
-      for (const name of strip) {
-        const index = infos.findIndex((info) => info.name === name);
-        if (index >= 0) infos.splice(index, 1);
-      }
-    },
-  },
   manifest: {
     name: "Pond",
     version: "0.0.1",

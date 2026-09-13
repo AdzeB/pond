@@ -24,13 +24,13 @@
 }
 .description {
   margin: 0;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-11);
 }
 .list {
   height: min(45vh, 460px);
   overflow: auto;
-  border: var(--ds-border-elevated);
+  border: var(--ds-border-width) solid var(--ds-border-subtle);
   border-radius: var(--ds-radius-md);
 }
 .candidate {
@@ -41,7 +41,7 @@
   align-items: center;
   height: 140px;
   padding: 12px;
-  border-bottom: var(--ds-border-elevated);
+  border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 .thumb {
   position: relative;
@@ -56,7 +56,7 @@
   flex: 1;
   gap: 6px;
   min-width: 0;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
 }
 .metadata span,
 .metadata strong {
@@ -67,5 +67,5 @@
 .choices {
   display: grid;
   gap: 12px;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
 }

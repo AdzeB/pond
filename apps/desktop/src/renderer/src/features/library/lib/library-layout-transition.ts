@@ -39,7 +39,6 @@ function clearPending(): void {
   pending = null;
 }
 
-/** Capture the currently painted cards before a pane changes the grid width. */
 export function beginLibraryLayoutTransition(): void {
   if (reducedMotion()) {
     clearPending();
@@ -77,7 +76,6 @@ export function beginLibraryLayoutTransition(): void {
   if (pending) root.dataset.layoutTransition = "";
 }
 
-/** Animate mounted cards from the captured pixels to their committed layout. */
 export function completeLibraryLayoutTransition(container: HTMLElement): void {
   const snapshot = pending;
   if (!snapshot) return;

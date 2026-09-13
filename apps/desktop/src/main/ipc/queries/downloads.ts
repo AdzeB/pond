@@ -94,8 +94,7 @@ export const downloadsQueries = {
   "downloads.activity": query(z.object({}), () => downloadActivity.snapshot()),
   "pipeline.status": query(z.object({}), () => pipelineSnapshot()),
 
-  /** In-flight and failed saves can sit behind the paged library window. */
-  "downloads.live": query(z.object({}), async () => {
+  "downloads.ingestingOrFailed": query(z.object({}), async () => {
     const db = await getDb();
     const rows = await db
       .select({ id: saves.id })

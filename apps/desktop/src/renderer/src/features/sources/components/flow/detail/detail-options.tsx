@@ -21,6 +21,7 @@ export function DetailOptions({
           size="lg"
           width="full"
           disabled={busy}
+          loading={busy}
           onClick={() => {
             if (busy) return;
             setBusy(true);

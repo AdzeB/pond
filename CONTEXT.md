@@ -81,3 +81,13 @@ _Avoid_: funnel, activity log, queue (as the product word for the whole thing)
 **Downloads**:
 The page that lists ingest work you can inspect, pause, retry, or cancel: Saves being harvested and files being fetched, plus recent completed ingest.
 _Avoid_: queue, pipeline, jobs, activity log
+
+### Cards and folders
+
+**Thumbnail**:
+The card image stored next to originals as `{filename}_thumbnail.png`. Set Thumbnail replaces that sidecar. Eagle import keeps Eagle's sidecar name and bytes.
+_Avoid_: cover (for the card), custom thumbnail
+
+**Folder Cover**:
+The save chosen to represent a folder in the sidebar.
+_Avoid_: thumbnail (for this)

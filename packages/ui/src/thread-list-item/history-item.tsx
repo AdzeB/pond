@@ -5,12 +5,12 @@ import { ThreadListItem } from "./thread-list-item";
 export function HistoryItem() {
   return (
     <ThreadListItem.Root>
-      <ThreadListItem.Trigger className={styles.historyTitle}>
+      <ThreadListItem.Trigger className={styles["history-title"]}>
         <IconMsg2Outline18 />
         <ThreadListItem.Title fallback="New Chat" />
       </ThreadListItem.Trigger>
       <ThreadListItem.Archive
-        className={styles.historyArchive}
+        className={styles["history-archive"]}
         aria-label="Archive chat"
       >
         Archive

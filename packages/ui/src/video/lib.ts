@@ -39,8 +39,8 @@ export function bufferedEnd(video: HTMLVideoElement): number {
 }
 
 export function stepPlaybackRate(rate: number, direction: 1 | -1): number {
-  // biome-ignore lint/complexity/useIndexOf: rate is a number, not a SPEED_OPTIONS member
-  const exact = SPEED_OPTIONS.findIndex((value) => value === rate);
+  const speeds: readonly number[] = SPEED_OPTIONS;
+  const exact = speeds.indexOf(rate);
   if (exact >= 0) {
     return (
       SPEED_OPTIONS[

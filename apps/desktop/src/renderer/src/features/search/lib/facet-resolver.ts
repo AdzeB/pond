@@ -1,6 +1,6 @@
 import type { Predicate } from "@pond/schema/filters/types";
 import type { NlFacets } from "@/features/search/lib/nl-query";
-import { dot } from "@/shared/lib/vector";
+import { unitCosine } from "@/shared/lib/vector";
 
 type FacetField = "source" | "type" | "tags" | "creator";
 
@@ -92,7 +92,7 @@ export async function resolveFacets(
     let best: VocabEntry | null = null;
     let bestScore = MATCH_THRESHOLD;
     for (const entry of vocab) {
-      const score = dot(wv, entry.vec);
+      const score = unitCosine(wv, entry.vec);
       if (score > bestScore) {
         bestScore = score;
         best = entry;

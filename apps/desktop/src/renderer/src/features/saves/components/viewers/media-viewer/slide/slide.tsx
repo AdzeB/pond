@@ -147,9 +147,10 @@ function VideoSlide({
 function PosterSlide({ slide, saveId }: { slide: MediaSlide; saveId: string }) {
   if (!slide.posterUrl) return <div className={styles["media-shell"]} />;
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: native drag from the poster
-    <div
+    <button
+      type="button"
       className={styles["media-shell"]}
+      aria-label="Drag save"
       draggable
       onDragStart={(event) => {
         event.preventDefault();
@@ -165,7 +166,7 @@ function PosterSlide({ slide, saveId }: { slide: MediaSlide; saveId: string }) {
         width={slide.width}
         height={slide.height}
       />
-    </div>
+    </button>
   );
 }
 

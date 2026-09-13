@@ -16,14 +16,6 @@
   border-radius: var(--ds-radius-sm);
 }
 
-.menuItem {
-  composes: item from "../shared/styles/popup/styles.module.css";
-}
-
-.separator {
-  composes: separator from "../shared/styles/popup/styles.module.css";
-}
-
 @media (prefers-reduced-motion: reduce) {
   .message,
   .attachment,

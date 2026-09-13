@@ -24,11 +24,15 @@ export function PromptSuggestions({
           className={styles.suggestion}
           onClick={() => onSelect(item.id)}
         >
-          {item.icon && <span className={styles.optionIcon}>{item.icon}</span>}
-          <span className={styles.modelContent}>
+          {item.icon && (
+            <span className={styles["option-icon"]}>{item.icon}</span>
+          )}
+          <span className={styles["model-content"]}>
             <span>{item.title}</span>
             {item.description && (
-              <span className={styles.rowDescription}>{item.description}</span>
+              <span className={styles["row-description"]}>
+                {item.description}
+              </span>
             )}
           </span>
           <IconPlusOutline18 />

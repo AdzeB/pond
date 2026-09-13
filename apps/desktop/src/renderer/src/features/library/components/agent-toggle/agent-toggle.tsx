@@ -1,73 +1,25 @@
+import { IconMessageSparkleOutline18 } from "@pond/icons/outline/18";
 import { Button, Tooltip } from "@pond/ui";
-import { motion } from "motion/react";
-import { useEffect, useState } from "react";
-import { libraryChrome } from "@/features/library/state/library-chrome";
+import {
+  libraryChrome,
+  useRightPane,
+} from "@/features/library/state/library-chrome";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys/shortcut-keys";
-import styles from "./agent-toggle.module.css";
 
-const EASE = [0.25, 0.1, 0.25, 1] as const;
-
-function Glyph({ open }: { open: boolean }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 18 18"
-      width={18}
-      height={18}
-      fill="none"
-      className={styles.glyph}
-      aria-hidden
-    >
-      <title>{open ? "Close assistant" : "Open assistant"}</title>
-      <rect
-        x="1.75"
-        y="2.75"
-        width="14.5"
-        height="12.5"
-        rx="2"
-        ry="2"
-        stroke="currentColor"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <motion.line
-        y1="2.75"
-        y2="15.25"
-        stroke="currentColor"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        initial={false}
-        animate={{ x1: open ? 11.75 : 15, x2: open ? 11.75 : 15 }}
-        transition={{ duration: 0.18, ease: EASE }}
-      />
-    </svg>
-  );
-}
-
-export function InspectorToggle({ open }: { open: boolean }) {
-  const [visual, setVisual] = useState(false);
-
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => setVisual(open));
-    return () => cancelAnimationFrame(frame);
-  }, [open]);
+export function AgentToggle() {
+  const open = useRightPane() === "agent";
 
   return (
-    <Tooltip
-      label="Toggle Assistant"
-      shortcut={<ShortcutKeys id="view.agent" />}
-    >
+    <Tooltip label="Agent" shortcut={<ShortcutKeys id="view.agent" />}>
       <Button
         icon
         size="sm"
         variant="ghost"
-        aria-label="Toggle Assistant"
+        aria-label="Agent"
         aria-pressed={open}
-        onClick={() => libraryChrome.toggleRightPane()}
+        onClick={() => libraryChrome.setAgentOpen(true)}
       >
-        <Glyph open={visual} />
+        <IconMessageSparkleOutline18 />
       </Button>
     </Tooltip>
   );

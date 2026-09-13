@@ -38,7 +38,7 @@
   min-height: 30px;
   padding: 0 8px;
   font: inherit;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-11);
   text-align: left;
   cursor: var(--ds-cursor-interactive, pointer);
@@ -73,7 +73,7 @@
 
 .count {
   width: 18px;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-9);
   text-align: center;
@@ -89,7 +89,7 @@
   align-items: center;
   min-height: 28px;
   padding: 0 8px 4px;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-9);
 }
@@ -153,8 +153,6 @@
   max-width: 560px;
   margin-bottom: 18px;
   overflow: hidden;
-  background-clip: padding-box;
-  border: var(--ds-border-elevated);
   border-radius: var(--ds-radius-xl);
   box-shadow: var(--ds-shadow-1);
 }
@@ -177,13 +175,13 @@
   gap: 7px;
   align-items: baseline;
   margin: 0;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-12);
 }
 
 .groupDetailCount {
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-regular);
   color: var(--ds-gray-8);
 }
@@ -194,7 +192,7 @@
   padding: 0;
   margin-top: 1px;
   font: inherit;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-11);
   outline: none;
   background: transparent;
@@ -237,13 +235,13 @@
 
 .letterHeader h2 {
   margin: 0;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-11);
 }
 
 .letterHeader span {
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-8);
 }

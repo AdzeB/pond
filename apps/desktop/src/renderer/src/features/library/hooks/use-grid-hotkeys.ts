@@ -1,6 +1,5 @@
 import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useRef } from "react";
-import { dockMode } from "@/features/library/state/dock-mode";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { resultNavigation } from "@/features/library/state/result-navigation";
 import {
@@ -162,18 +161,6 @@ export function useGridHotkeys(
           ) {
             return;
           }
-          const mode = dockMode.current();
-          if (
-            mode === "selection-run" ||
-            mode === "selection-tag" ||
-            mode === "selection-copy" ||
-            mode === "selection-export" ||
-            mode === "confirm"
-          ) {
-            dockMode.close();
-            return;
-          }
-          if (mode !== "nav") return;
           if (selection.size() === 0 && !selection.getAnchor()) return;
           clearSaveSelection();
           cursorRef.current = null;

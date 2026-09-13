@@ -20,13 +20,13 @@ import {
 import type { RawJson } from "@pond/schema/raw";
 import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import type { TxSaveFile } from "@pond/schema/tx";
+import { inferKindFromFilename } from "@shared/save-file-names";
 import log from "electron-log/main.js";
 import { itemDir, itemFile, resolvePaths } from "../paths";
 import type { SaveUserData } from "./library-format";
 import {
   applyPatchToInfo,
   INFO_FILE,
-  INFO_SCHEMA,
   type InfoDoc,
   type InfoFile,
   infoDocFromSave,
@@ -70,18 +70,6 @@ interface ItemMetadata {
 
 function sha256(bytes: Buffer): string {
   return createHash("sha256").update(bytes).digest("hex");
-}
-
-function inferKindFromFilename(filename: string): string {
-  if (filename.startsWith("poster")) return "poster";
-  if (filename.startsWith("cover")) return "cover";
-  if (filename.startsWith("video")) return "video";
-  if (filename.startsWith("media-")) return "media";
-  if (filename.startsWith("avatar")) return "avatar";
-  if (filename.startsWith("source-icon")) return "source_icon";
-  if (filename === "archive-manifest.json") return "archive_manifest";
-  if (filename.startsWith("archive")) return "archive";
-  return "other";
 }
 
 function decodeFile(file: TxSaveFile) {
@@ -274,7 +262,7 @@ function metadataFromInfo(
     deletedAt: deletedMs,
     files,
     pond: {
-      schemaVersion: INFO_SCHEMA,
+      schemaVersion: info.schema ?? 3,
       userData: info.userData,
       publishedAt: parseTimestamp(info.publishedAt),
       rawSource,

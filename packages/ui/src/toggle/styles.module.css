@@ -8,7 +8,7 @@
   min-width: 28px;
   height: 28px;
   padding: 0 8px;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-normal);
   color: var(--ds-gray-11);
   cursor: var(--ds-cursor-interactive, pointer);
@@ -24,7 +24,7 @@
     min-width: 24px;
     height: 24px;
     padding: 0 6px;
-    font-size: var(--ds-text-mini);
+    font-size: var(--ds-text-sm);
   }
 
   &:hover,

@@ -17,7 +17,6 @@ const CosmosTokenPayloadSchema = z
 
 type CosmosTokenPayload = z.infer<typeof CosmosTokenPayloadSchema>;
 
-/** Numeric user id from a `csms_accessToken` JWT, when the claim is present. */
 export function cosmosIdentityFromToken(value: string): string | null {
   const payload = decodeCosmosToken(value);
   if (!payload) return null;

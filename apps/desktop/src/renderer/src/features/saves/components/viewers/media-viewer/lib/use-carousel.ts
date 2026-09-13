@@ -41,8 +41,7 @@ function centerSlide(
     scroller.scrollTo({ left: scroller.scrollLeft + delta, behavior });
 }
 
-/** A slide must reserve the same box as player and placeholder; otherwise it resizes on every in-view toggle and the active index oscillates. */
-export function useRatioCache() {
+export function useLockedSlideRatio() {
   const [ratios, setRatios] = useState<ReadonlyMap<string, number>>(
     () => new Map(),
   );
@@ -107,17 +106,16 @@ export function useCarouselNavigation(
     centerSlide(scroller, 0, "instant");
   }, [scroller]);
 
-  /** Where the last keypress aimed. Reading the live scroll position instead makes a burst of presses all resolve to the same slide. */
-  const targetRef = useRef<number | null>(null);
+  const aimedIndexRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!scroller) return;
     const settle = () => {
-      if (targetRef.current === centeredIndex(scroller))
-        targetRef.current = null;
+      if (aimedIndexRef.current === centeredIndex(scroller))
+        aimedIndexRef.current = null;
     };
     const release = () => {
-      targetRef.current = null;
+      aimedIndexRef.current = null;
     };
     scroller.addEventListener("scrollend", settle);
     scroller.addEventListener("pointerdown", release, { passive: true });
@@ -133,11 +131,11 @@ export function useCarouselNavigation(
     (delta: number): boolean => {
       if (!scroller) return false;
       const count = slideNodes(scroller).length;
-      const from = targetRef.current ?? centeredIndex(scroller);
+      const from = aimedIndexRef.current ?? centeredIndex(scroller);
       const next = clamp(from + delta, 0, count - 1);
       if (next === from) return false;
       interactedRef.current = true;
-      targetRef.current = next;
+      aimedIndexRef.current = next;
       centerSlide(scroller, next, "smooth");
       return true;
     },

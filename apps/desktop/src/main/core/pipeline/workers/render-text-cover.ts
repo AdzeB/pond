@@ -1,10 +1,16 @@
 import type { SaveFile } from "@pond/schema/db";
 import type { Capture, RawJson } from "@pond/schema/raw";
 import {
+  isAuxiliaryKind,
+  isOriginalImageKind,
+  TEXT_THUMBNAIL_FILE,
+  THUMBNAIL_DARK_FILE,
+  THUMBNAIL_DARK_KIND,
+  THUMBNAIL_KIND,
+} from "@shared/save-file-names";
+import {
   RENDER_TEXT_COVER_VERSION,
-  TEXT_COVER_DARK_KIND,
   TEXT_COVER_KINDS,
-  TEXT_COVER_LIGHT_KIND,
   textBodyFromFields,
   textCoverVersionFromRawJson,
 } from "@shared/text-card";
@@ -21,17 +27,17 @@ function needsTextCover(
   if (!hasProse) return false;
   if (!textBodyFromFields(save.description, save.title)) return false;
   const files = save.files ?? [];
-  return !files.some(
-    (f) =>
-      !TEXT_COVER_KINDS.has(f.kind) &&
-      (f.kind === "image" ||
-        f.kind === "video" ||
-        f.kind === "poster" ||
-        f.kind === "cover" ||
-        f.kind === "media" ||
-        f.mimeType?.startsWith("image/") === true ||
-        f.mimeType?.startsWith("video/") === true),
-  );
+  if (save.mediaType === "video" || save.mediaType === "image") return false;
+  return !files.some((f) => {
+    if (isAuxiliaryKind(f.kind) || TEXT_COVER_KINDS.has(f.kind)) return false;
+    return (
+      isOriginalImageKind(f.kind) ||
+      f.kind === "video" ||
+      f.kind === "poster" ||
+      f.mimeType?.startsWith("image/") === true ||
+      f.mimeType?.startsWith("video/") === true
+    );
+  });
 }
 
 async function writeCover(
@@ -104,8 +110,8 @@ export async function runRenderTextCover(
     textCoverVersionFromRawJson(save.rawJson) >= RENDER_TEXT_COVER_VERSION
   ) {
     const hasBoth =
-      (save.files ?? []).some((f) => f.kind === TEXT_COVER_LIGHT_KIND) &&
-      (save.files ?? []).some((f) => f.kind === TEXT_COVER_DARK_KIND);
+      (save.files ?? []).some((f) => f.kind === THUMBNAIL_KIND) &&
+      (save.files ?? []).some((f) => f.kind === THUMBNAIL_DARK_KIND);
     if (hasBoth) {
       log.debug(
         "[pond pipeline:render-text-cover] up to date, skipping",
@@ -121,13 +127,8 @@ export async function runRenderTextCover(
   const dark = await renderTextCardPng(body, "dark");
   if (!dark) return 0;
 
-  await writeCover(
-    saveId,
-    TEXT_COVER_LIGHT_KIND,
-    "text-cover-light.png",
-    light,
-  );
-  await writeCover(saveId, TEXT_COVER_DARK_KIND, "text-cover-dark.png", dark);
+  await writeCover(saveId, THUMBNAIL_KIND, TEXT_THUMBNAIL_FILE, light);
+  await writeCover(saveId, THUMBNAIL_DARK_KIND, THUMBNAIL_DARK_FILE, dark);
   await stampVersion(save);
 
   log.info("[pond pipeline:render-text-cover] done", { saveId });

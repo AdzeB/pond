@@ -1,6 +1,6 @@
-import { cn, Window } from "@pond/ui";
+import { cn, cssVars, Window } from "@pond/ui";
 import { useRouterState } from "@tanstack/react-router";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import {
   AGENT_WIDTH_DEFAULT,
   AGENT_WIDTH_MAX,
@@ -40,13 +40,10 @@ function Root({ header, children, left, right, className }: RootProps) {
       className={cn(styles.shell, className)}
       leftOpen={leftOpen}
       rightOpen={rightOpen}
-      style={
-        // SAFETY: React forwards these CSS custom properties to the root element.
-        {
-          "--window-left-track": `${sidebarWidth}px`,
-          "--window-right-track": `${agentWidth}px`,
-        } as CSSProperties
-      }
+      style={cssVars({
+        "--window-left-track": `${sidebarWidth}px`,
+        "--window-right-track": `${agentWidth}px`,
+      })}
     >
       <Window.Left
         open={leftOpen}

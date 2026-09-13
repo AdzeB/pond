@@ -11,6 +11,7 @@ import {
 } from "node:fs/promises";
 import { basename, extname, join, relative, resolve, sep } from "node:path";
 import type { Folder, Save } from "@pond/schema/db";
+import { isAuxiliaryKind } from "@shared/save-file-names";
 import { z } from "zod";
 import type { PackageOrganization } from "./package-organization";
 import {
@@ -213,11 +214,7 @@ export async function exportFiles(input: {
       (total, item) =>
         total +
         item.save.files.filter(
-          (file) =>
-            input.includeDerived ||
-            !["custom_thumbnail", "avatar", "source_icon", "poster"].includes(
-              file.kind,
-            ),
+          (file) => input.includeDerived || !isAuxiliaryKind(file.kind),
         ).length *
           Math.max(1, new Set(item.folderIds).size),
       0,
@@ -226,11 +223,7 @@ export async function exportFiles(input: {
   for (const item of input.items) {
     const sourceRoot = await realpath(item.directory);
     const originals = item.save.files.filter(
-      (file) =>
-        input.includeDerived ||
-        !["custom_thumbnail", "avatar", "source_icon", "poster"].includes(
-          file.kind,
-        ),
+      (file) => input.includeDerived || !isAuxiliaryKind(file.kind),
     );
     const destinations = [...new Set(item.folderIds)].map((id) => {
       const parts = paths.get(id);

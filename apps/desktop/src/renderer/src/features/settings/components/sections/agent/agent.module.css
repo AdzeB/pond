@@ -9,12 +9,12 @@
 }
 .sectionHeader h2 {
   margin: 0 0 4px;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-medium);
 }
 .sectionHeader p {
   margin: 0;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-10);
 }
 .providerBody {

@@ -6,10 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { newMenuDialog } from "@/features/library/state/new-menu-dialog";
 import { NewMenu, NewMenuDialogHost } from "./new-menu";
 
-const newFolder = vi.fn();
-
 const labels = [
   "New Folder",
+  "New Smart Folder",
   "New Tag",
   "New Tag Group",
   "New Note",
@@ -20,9 +19,12 @@ const labels = [
   "Import Bookmarks",
   "Import Page Assets",
   "Import Eagle Library",
+  "Import Pond Package",
   "Connect a Source",
   "Watch Account",
-  "Watched Folder",
+  "Pinterest",
+  "Find Duplicates",
+  "Auto Import",
 ];
 
 describe("new menu", () => {
@@ -39,6 +41,9 @@ describe("new menu", () => {
         disconnect() {}
       },
     );
+    vi.stubGlobal("pond", {
+      query: vi.fn(async () => ({ kinds: [] })),
+    });
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
@@ -52,20 +57,17 @@ describe("new menu", () => {
   });
 
   async function openMenu() {
-    await act(async () => root.render(<NewMenu onNewFolder={newFolder} />));
+    await act(async () => root.render(<NewMenu />));
     const trigger = document.querySelector('[aria-label="New"]');
     if (!(trigger instanceof HTMLElement)) throw new Error("Missing New");
     await act(async () => trigger.click());
   }
 
-  it("lists every creation and import action", async () => {
+  it("lists Eagle create and import actions", async () => {
     await openMenu();
     const text = document.body.textContent ?? "";
     for (const label of labels) expect(text).toContain(label);
-    expect(text).toContain("Create");
-    expect(text).toContain("Import");
-    expect(text).toContain("Sources");
-    expect(text).not.toContain("Tabs");
+    expect(text).not.toContain("ArtStation");
     expect(text).not.toContain("New Tab");
   });
 
@@ -102,26 +104,14 @@ describe("new menu", () => {
       Object.getOwnPropertyDescriptor(
         HTMLInputElement.prototype,
         "value",
-      )?.set?.call(search, "photoshop");
+      )?.set?.call(search, "zzzz");
       search.dispatchEvent(new InputEvent("input", { bubbles: true }));
     });
     expect(document.body.textContent).toContain("No matches");
   });
 
-  it("creates a folder without importing", async () => {
-    await openMenu();
-    const item = [...document.querySelectorAll('[role="menuitem"]')].find(
-      (el) => el.textContent?.includes("New Folder"),
-    );
-    if (!(item instanceof HTMLElement)) throw new Error("Missing New Folder");
-    await act(async () => item.click());
-    expect(newFolder).toHaveBeenCalledOnce();
-  });
-
-  it("hosts note and link dialogs from the shared store", async () => {
+  it("hosts the links dialog from the shared store", async () => {
     await act(async () => root.render(<NewMenuDialogHost />));
-    await act(async () => newMenuDialog.open("note"));
-    expect(document.body.textContent).toContain("New Note");
     await act(async () => newMenuDialog.open("links"));
     expect(document.body.textContent).toContain("Import from Links");
   });

@@ -1,12 +1,19 @@
 import { extname } from "node:path";
 import type { SaveFile } from "@pond/schema/db";
 import { type RawJson, walkCaptureMedia } from "@pond/schema/raw";
+import {
+  IMAGE_KIND,
+  inferKindFromFilename,
+  isOriginalImageKind,
+  VIDEO_KIND,
+} from "@shared/save-file-names";
 import log from "electron-log/main.js";
 import { fetchMediaBatch } from "../../../lib/blob";
 import type { TransferOptions } from "../../../lib/download-transfer";
 import { probeImageDims, processImage } from "../../../lib/image-process";
 import { persistSave } from "../../persist-save";
 import { getImageDownloadPrefs } from "../../prefs";
+import { ensureSaveThumbnail } from "../../save-thumbnail";
 import { TransientError } from "../extractors/errors";
 import { readSave, type WriteFileArgs } from "./apply";
 import { fetchSourceIcon } from "./source-icon";
@@ -73,10 +80,8 @@ export async function runFetchBlobs(
     fetched.map(async (entry) => {
       const tx = entry.file;
       const kind: SaveFile["kind"] = tx.filename.startsWith("video")
-        ? "video"
-        : tx.filename.startsWith("cover")
-          ? "cover"
-          : "media";
+        ? VIDEO_KIND
+        : IMAGE_KIND;
       let bytes: Buffer = Buffer.from(tx.bytes);
       let filename = tx.filename;
       let mimeType = tx.mimeType;
@@ -123,6 +128,8 @@ export async function runFetchBlobs(
       newFiles,
     },
   );
+  const saved = await readSave(saveId);
+  await ensureSaveThumbnail(saveId, saved);
   log.info("[pond pipeline:fetch-blobs] wrote", {
     saveId,
     count: newFiles.length,
@@ -166,7 +173,10 @@ function missingMediaUrls(
 ): string[] {
   if (urls.length === 0) return [];
   const mediaFiles = files.filter(
-    (f) => f.kind === "cover" || f.kind === "media" || f.kind === "video",
+    (f) =>
+      isOriginalImageKind(f.kind) ||
+      f.kind === VIDEO_KIND ||
+      inferKindFromFilename(f.path) === VIDEO_KIND,
   );
   const mapped = new Set(
     mediaFiles

@@ -34,7 +34,7 @@
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-12);
   white-space: nowrap;
@@ -44,7 +44,7 @@
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-9);
   white-space: nowrap;

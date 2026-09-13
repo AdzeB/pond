@@ -1,8 +1,4 @@
-import type { LibraryQueryRequest } from "@shared/library-query";
-
 interface ResultSource {
-  request?: LibraryQueryRequest;
-  neighbor?: (id: string, delta: number) => Promise<string | null>;
   key?: string;
   loadedIds?: () => readonly string[];
   ids: readonly string[];
@@ -15,9 +11,6 @@ let reveal: ((id: string) => void) | null = null;
 let pendingReveal: string | null = null;
 
 export const resultNavigation = {
-  request(): LibraryQueryRequest | undefined {
-    return source.request;
-  },
   setSource(next: ResultSource): void {
     if (source.key !== next.key) pendingReveal = null;
     source = next;
@@ -28,7 +21,6 @@ export const resultNavigation = {
     return (await source.allIds?.()) ?? source.ids;
   },
   async next(id: string, delta: number): Promise<string | null> {
-    if (source.neighbor) return source.neighbor(id, delta);
     const loadedIndex = source.ids.indexOf(id);
     const loaded =
       loadedIndex >= 0 ? source.ids[loadedIndex + delta] : undefined;

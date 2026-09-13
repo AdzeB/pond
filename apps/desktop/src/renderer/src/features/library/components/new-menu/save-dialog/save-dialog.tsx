@@ -1,21 +1,13 @@
 import { Button, Dialog, Field, Input } from "@pond/ui";
 import { useRef, useState } from "react";
-import { createNote, importLinks } from "../actions";
+import { importLinks } from "../actions";
 import styles from "./save-dialog.module.css";
 
-export function SaveDialog({
-  kind,
-  onClose,
-}: {
-  kind: "note" | "links";
-  onClose: () => void;
-}) {
-  const [title, setTitle] = useState("");
+export function SaveDialog({ onClose }: { onClose: () => void }) {
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
-  const isNote = kind === "note";
 
   async function submit() {
     if (submitting.current) return;
@@ -23,16 +15,13 @@ export function SaveDialog({
     setBusy(true);
     setError(null);
     try {
-      if (isNote) await createNote(title, text);
-      else {
-        const failed = await importLinks(text);
-        if (failed.length > 0) {
-          setText(failed.join("\n"));
-          setError(
-            `Couldn't import ${failed.length} link${failed.length === 1 ? "" : "s"}. Retry the remaining links.`,
-          );
-          return;
-        }
+      const failed = await importLinks(text);
+      if (failed.length > 0) {
+        setText(failed.join("\n"));
+        setError(
+          `Couldn't import ${failed.length} link${failed.length === 1 ? "" : "s"}. Retry the remaining links.`,
+        );
+        return;
       }
       onClose();
     } catch (reason) {
@@ -62,40 +51,22 @@ export function SaveDialog({
             }}
           >
             <Dialog.Header>
-              <Dialog.Title>
-                {isNote ? "New Note" : "Import from Links"}
-              </Dialog.Title>
+              <Dialog.Title>Import from Links</Dialog.Title>
               <Dialog.Close disabled={busy} />
             </Dialog.Header>
             <Dialog.Content className={styles.content}>
               <Dialog.Description>
-                {isNote
-                  ? "Keep a text note in your library."
-                  : "Add website links, one per line."}
+                Add website links, one per line.
               </Dialog.Description>
-              {isNote ? (
-                <Field.Root>
-                  <Field.Label>Title</Field.Label>
-                  <Input.Root size="sm" className={styles.control}>
-                    <Field.Control
-                      render={<Input.Field />}
-                      value={title}
-                      onValueChange={setTitle}
-                      disabled={busy}
-                      autoFocus
-                    />
-                  </Input.Root>
-                </Field.Root>
-              ) : null}
               <Field.Root>
-                <Field.Label>{isNote ? "Note" : "Links"}</Field.Label>
+                <Field.Label>Links</Field.Label>
                 <Input.Root size="sm" className={styles.control}>
                   <Field.Control
                     render={<Input.Textarea />}
                     value={text}
                     onValueChange={setText}
                     disabled={busy}
-                    autoFocus={!isNote}
+                    autoFocus
                     aria-invalid={!!error}
                     onKeyDown={(event) => {
                       if (
@@ -126,15 +97,10 @@ export function SaveDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={busy || !(text.trim() || (isNote && title.trim()))}
+                disabled={busy || !text.trim()}
+                loading={busy}
               >
-                {busy
-                  ? isNote
-                    ? "Saving"
-                    : "Importing"
-                  : isNote
-                    ? "Save Note"
-                    : "Import"}
+                {busy ? "Importing" : "Import"}
               </Button>
             </Dialog.Footer>
           </form>

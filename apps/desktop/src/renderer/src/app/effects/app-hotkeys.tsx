@@ -1,6 +1,7 @@
 import { useHotkeySequences, useHotkeys } from "@tanstack/react-hotkeys";
 import { useEffect } from "react";
 import {
+  createNote,
   importPaths,
   newFolder,
   newTag,
@@ -157,11 +158,6 @@ export function AppHotkeys() {
       options: { ignoreInputs: true },
     },
     {
-      hotkey: shortcuts["view.pin-preview"].keys!,
-      callback: () => inspect.pinCurrent(),
-      options: { ignoreInputs: true },
-    },
-    {
       hotkey: shortcuts["view.options"].keys!,
       callback: () => libraryHeader.togglePopover(),
       options: { ignoreInputs: true },
@@ -226,7 +222,7 @@ export function AppHotkeys() {
     },
     {
       hotkey: shortcuts["library.new-note"].keys!,
-      callback: () => newMenuDialog.open("note"),
+      callback: () => void runNewAction(createNote),
       options: { ignoreInputs: true },
     },
     {

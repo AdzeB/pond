@@ -207,8 +207,14 @@ export interface QueryInputs
     tags?: string[];
     filePaths?: string[];
     sourceId?: string | null;
+    mediaType?: MediaType | null;
     width?: number;
     height?: number;
+  };
+  "saves.listBlankDocuments": EmptyInput;
+  "saves.createBlankDocument": {
+    kind: import("./blank-documents").BlankDocumentKind;
+    folderId?: string | null;
   };
   "saves.combineImages": { ids: string[]; folderId?: string | null };
   "saves.importEagleLibrary": { path: string; dryRun?: boolean };
@@ -288,8 +294,6 @@ export interface QueryInputs
   "video.saveFrame": FrameInput;
   "video.setThumbnail": FrameInput & { saveId: string };
   "video.copyFilePath": { saveId: string };
-  "preview.pin": { id: string; navigation?: LibraryQueryRequest };
-  "capture.area": { x: number; y: number; width: number; height: number };
   "autoImport.set": {
     enabled?: boolean;
     path?: string;
@@ -309,7 +313,7 @@ export interface QueryInputs
     sources?: Source[];
     ops?: Op[];
   };
-  "downloads.live": EmptyInput;
+  "downloads.ingestingOrFailed": EmptyInput;
   "downloads.activity": EmptyInput;
   "sync.history": { source: Source; accountId?: string; limit?: number };
   "sync.recent": { limit?: number };
@@ -381,11 +385,6 @@ export interface QueryInputs
   "quickCapture.applyPrefs": EmptyInput;
   "window.applyPrefs": EmptyInput;
   "collection.open": EmptyInput;
-  "capture.screenshot": EmptyInput;
-  "capture.display": EmptyInput;
-  "capture.window": EmptyInput;
-  "capture.selectArea": EmptyInput;
-  "capture.cancel": EmptyInput;
   "autoImport.status": EmptyInput;
   "autoImport.pickFolder": EmptyInput;
   "pipeline.status": EmptyInput;
@@ -506,6 +505,10 @@ export interface QueryResults
   "saves.replaceFile": OkResult & { canceled?: boolean; error?: string };
   "saves.removeCustomThumbnail": OkResult;
   "saves.createManual": OkResult & { id?: string; skipped?: boolean };
+  "saves.listBlankDocuments": {
+    kinds: import("./blank-documents").BlankDocumentKind[];
+  };
+  "saves.createBlankDocument": OkResult & { id?: string };
   "saves.combineImages": OkResult & {
     id?: string;
     skipped?: number;
@@ -544,7 +547,7 @@ export interface QueryResults
   "tagGroups.removeTag": OkResult;
   "pipeline.status": { paused: boolean; inflight: number };
   "pipeline.inflight": string[];
-  "downloads.live": string[];
+  "downloads.ingestingOrFailed": string[];
   "downloads.activity": DownloadActivity[];
   "downloads.history": {
     rows: {
@@ -562,14 +565,7 @@ export interface QueryResults
     }[];
     nextCursor: { ts: number; id: number } | null;
   };
-  "preview.pin": OkResult;
   "collection.open": OkResult;
-  "capture.selectArea": OkResult;
-  "capture.cancel": OkResult;
-  "capture.screenshot": OkResult & { id?: string };
-  "capture.display": OkResult & { id?: string };
-  "capture.window": OkResult & { id?: string };
-  "capture.area": OkResult & { id?: string };
   "video.copyFrame": OkResult;
   "video.saveFrame": OkResult & { path?: string };
   "video.setThumbnail": OkResult;

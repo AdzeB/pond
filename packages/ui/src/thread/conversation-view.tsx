@@ -2,7 +2,7 @@ import { AuiIf, useThreadViewport } from "@assistant-ui/react";
 import { IconMsg2Outline18 } from "@pond/icons/outline/18";
 import { useReducedMotionConfig } from "motion/react";
 import type { ComponentProps, ReactNode } from "react";
-import { ComposerView, EditComposer } from "../composer/composer-view";
+import { ComposerView } from "../composer/composer-view";
 import { MessageView } from "../message/message-view";
 import { Reveal } from "../reveal";
 import { SelectionToolbar } from "../selection-toolbar";
@@ -14,7 +14,7 @@ function ScrollToLatest() {
   const reduced = useReducedMotionConfig();
   return (
     <Reveal visible={!isAtBottom}>
-      <div className={styles.scrollAction}>
+      <div className={styles["scroll-action"]}>
         <Thread.ScrollToBottom behavior={reduced ? "instant" : "smooth"}>
           Latest Message
         </Thread.ScrollToBottom>
@@ -47,9 +47,7 @@ export function ConversationView({
         <AuiIf condition={(state) => state.thread.isEmpty}>
           <div className={styles.empty}>{empty}</div>
         </AuiIf>
-        <Thread.Messages
-          components={{ Message: MessageView, EditComposer, ...components }}
-        />
+        <Thread.Messages components={{ Message: MessageView, ...components }} />
         <Thread.ViewportFooter>
           <ScrollToLatest />
           {composer}

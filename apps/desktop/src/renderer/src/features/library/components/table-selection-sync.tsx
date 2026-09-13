@@ -20,12 +20,14 @@ export function TableSelectionSync<T>({
   }, [actions, selection, selectionStore]);
 
   useEffect(() => {
-    const ids = [...selectionStore.state.selectedIds];
-    if (ids.length === 0) return;
+    const selected = [...selectionStore.state.selectedIds];
+    const next = selected.filter((id) => rowsById.has(id));
+    if (next.length !== selected.length) actions.replaceSelection(next);
+    if (next.length === 0) return;
     selection.set(
-      ids.map((id) => rowsById.get(id)).filter((row): row is T => row != null),
+      next.map((id) => rowsById.get(id)).filter((row): row is T => row != null),
     );
-  }, [rowsById, selection, selectionStore]);
+  }, [actions, rowsById, selection, selectionStore]);
 
   return null;
 }

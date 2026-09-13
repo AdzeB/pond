@@ -104,6 +104,7 @@ export function TransferJobsPanel({ search = "" }: { search?: string }) {
                 size="sm"
                 variant="secondary"
                 disabled={action.isPending}
+                loading={action.isPending}
                 onClick={() => action.mutate({ id: job.id, kind: "retry" })}
               >
                 Retry

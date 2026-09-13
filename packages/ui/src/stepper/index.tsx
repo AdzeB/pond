@@ -62,7 +62,6 @@ export function Stepper({
         {decrementIcon}
       </Button>
       <Input.Field
-        data-size="sm"
         type="number"
         min={min}
         max={max}

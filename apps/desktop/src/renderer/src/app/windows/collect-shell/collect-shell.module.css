@@ -39,8 +39,13 @@
   display: grid;
   flex: 1;
   place-items: center;
+  width: 100%;
   min-height: 120px;
+  padding: 0;
+  font: inherit;
   color: var(--ds-gray-11);
+  cursor: pointer;
+  background: transparent;
   -webkit-app-region: no-drag;
   border: 1px dashed var(--ds-gray-6);
   border-radius: var(--ds-radius-lg);

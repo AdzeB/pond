@@ -1,10 +1,10 @@
+import { Dialog } from "@pond/ui";
 import { z } from "zod";
 import {
   type DownloadRow,
   statusFeed,
 } from "@/features/downloads/lib/status-feed";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
-import { openTrayConfirm } from "@/features/library/components/dock/confirm/confirm";
 
 const RetryResultSchema = z.object({ ok: z.boolean(), requeued: z.number() });
 
@@ -34,12 +34,12 @@ async function cancelDownloadRows(rows: readonly DownloadRow[]): Promise<void> {
 export function confirmCancelDownloadRows(rows: readonly DownloadRow[]): void {
   const live = rows.filter((r) => r.live && r.status !== "failed");
   if (live.length === 0) return;
-  openTrayConfirm({
+  Dialog.confirm({
     title: "Cancel Selected",
     description:
       "Pond stops ingesting the selected saves. You can retry them later.",
     confirmLabel: "Cancel Selected",
-    returnTo: null,
+    confirmVariant: "destructive",
     onConfirm: () =>
       cancelDownloadRows(live).then(() => downloadsSelection.clear()),
   });

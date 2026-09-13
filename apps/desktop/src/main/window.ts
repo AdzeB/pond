@@ -131,6 +131,7 @@ export async function createWindow(): Promise<BrowserWindow> {
     minWidth: MIN_WINDOW_WIDTH,
     minHeight: MIN_WINDOW_HEIGHT,
     show: false,
+    fullscreenable: false,
     backgroundColor: themedBackground,
     autoHideMenuBar: true,
     titleBarStyle: isMac ? "hiddenInset" : "default",
@@ -328,12 +329,10 @@ export async function initTray(): Promise<void> {
       },
       onOpenCollection: () =>
         void import("./aux-windows").then((m) => m.openCollectionWindow()),
-      onScreenshotDisplay: () =>
-        void import("./core/screenshot").then((m) => m.captureDisplay()),
-      onScreenshotArea: () =>
-        void import("./aux-windows").then((m) => m.openCaptureWindow()),
-      onScreenshotWindow: () =>
-        void import("./core/screenshot").then((m) => m.captureWindow()),
+      onMenuAction: async (id) => {
+        await openLibraryWindow();
+        mainWindowState.current?.webContents.send(IPC.menuAction, id);
+      },
     });
   } catch (err) {
     log.error(

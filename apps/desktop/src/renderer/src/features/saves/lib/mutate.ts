@@ -46,9 +46,9 @@ function toNewSave(save: Save): NewSave {
 function snapshotBefore(prev: Save, patch: SaveEdit): Partial<NewSave> {
   const previous = toNewSave(prev);
   const before: Partial<NewSave> = {};
-  // SAFETY: `patch` is a `SaveEdit`, so each of its own keys is a column of `NewSave`.
-  for (const key of Object.keys(patch) as Array<keyof NewSave>) {
-    Object.assign(before, { [key]: previous[key] });
+  for (const [key, value] of Object.entries(previous)) {
+    if (!Object.hasOwn(patch, key)) continue;
+    Object.assign(before, { [key]: value });
   }
   return before;
 }

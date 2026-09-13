@@ -1,6 +1,6 @@
 .popup {
-  --popup-width: min(620px, calc(100vw - 32px));
-  --popup-max-width: 620px;
+  --ds-popup-width: min(620px, calc(100vw - 32px));
+  --ds-popup-max-width: 620px;
 }
 .content,
 .models {

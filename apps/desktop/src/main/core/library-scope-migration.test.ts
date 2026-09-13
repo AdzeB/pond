@@ -13,10 +13,18 @@ describe("library scope migration", () => {
       mixedSaves: () => [{ id: "legacy-mixed", files: [] }],
       textSaves: () => [
         {
-          id: "local-text",
+          id: "text-with-thumb",
           source: "local",
           description: "Keep this note",
-          files: [],
+          files: [
+            {
+              kind: "thumbnail",
+              path: "thumbnail.png",
+              mimeType: "image/png",
+              sha256: "x",
+              size: 1,
+            },
+          ],
           rawJson: null,
         },
         {

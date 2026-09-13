@@ -102,7 +102,7 @@
 .title {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: 500;
   line-height: 1.2;
   color: var(--ds-gray-12);
@@ -113,7 +113,7 @@
   display: flex;
   gap: 6px;
   align-items: center;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-11);
 }
 
@@ -154,12 +154,12 @@
 
 .meta {
   display: block;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-11);
 }
 
 .time {
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-11);
   white-space: nowrap;
@@ -168,7 +168,7 @@
 .error {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   line-height: 1.2;
   color: light-dark(var(--ds-orange-11), var(--ds-orange-8));
   white-space: nowrap;
@@ -213,7 +213,7 @@
   gap: 4px;
   align-items: center;
   min-width: 0;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-11);
 }
 .row[data-stalled] .rowStatus {
@@ -248,7 +248,7 @@
   border-radius: 1px;
 }
 .now {
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-11);
   white-space: nowrap;
@@ -263,7 +263,7 @@
   gap: 10px;
   min-height: 56px;
   padding: 12px;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-12);
 }
 .groupTrigger > svg:first-child {
@@ -281,7 +281,7 @@
 .groupEmpty {
   padding: 0 36px 16px;
   margin: 0;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-10);
 }
 .attention {
@@ -293,7 +293,7 @@
   gap: 8px;
   padding: 16px 12px 4px;
   margin: 0;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: 500;
 }
 .attention h2 span {
@@ -304,7 +304,7 @@
   gap: 8px;
   align-items: center;
   padding: 12px;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-11);
 }
 .more {
@@ -315,7 +315,7 @@
 .activityError {
   padding: 8px 24px;
   margin: 0;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-orange-11);
 }
 .activityError button {

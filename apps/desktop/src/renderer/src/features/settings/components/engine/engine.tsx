@@ -25,14 +25,7 @@ const EMPTY_BINDING: Binding = {
 
 function usePrefsBinding(prefsKey: keyof Prefs): Binding {
   const [values, patch, loaded] = usePrefs(prefsKey);
-  // SAFETY: every prefs section is a plain keyed object, and `patch` is the
-  // setter for the very section `values` came from, so the pair stays coherent
-  // once the engine addresses them by string key.
-  return {
-    values: values as Binding["values"],
-    patch: patch as Binding["patch"],
-    loaded,
-  };
+  return { values, patch, loaded };
 }
 
 export function SettingsSectionView({

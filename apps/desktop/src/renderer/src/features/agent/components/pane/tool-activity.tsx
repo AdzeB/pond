@@ -31,7 +31,7 @@ export function ToolActivity({
     <Accordion.Root className={styles.activity}>
       <Accordion.Item value="activity">
         <Accordion.Header>
-          <Accordion.Trigger>
+          <Accordion.Trigger className={styles.trigger}>
             {running && active ? (
               <Loader.Dots />
             ) : failed || stopped ? (

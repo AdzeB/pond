@@ -16,6 +16,7 @@ import {
 } from "@/features/saves/lib/media/units";
 import { pickSourceIconUrl } from "@/features/saves/lib/media/url";
 import { getSourceLabel } from "@/features/saves/lib/source-labels";
+import { displayTitleForSave } from "@/features/saves/lib/text";
 import {
   aspectDimsFor,
   aspectFor,
@@ -78,7 +79,7 @@ export function buildSaveCardModel(
     pickOptions,
     aspect:
       previewAspect === 1 && typeKind === "doc" ? PAPER_ASPECT : previewAspect,
-    title: display.name ? (save.title ?? save.url) : null,
+    title: display.name ? displayTitleForSave(save) : null,
     time: display.date ? formatAbsolute(save.savedAt) : null,
     overlay: {
       type: typeLabel ? { label: typeLabel, kind: typeKind } : null,

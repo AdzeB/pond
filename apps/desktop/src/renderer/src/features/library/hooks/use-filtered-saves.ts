@@ -1,4 +1,5 @@
 import { seededOrderKey } from "@shared/order-key";
+import { pickCardFile } from "@shared/save-file-names";
 import type { Save } from "@/features/saves/types";
 
 export type SortKey =
@@ -184,7 +185,7 @@ function durationFor(s: Save): number | null {
 }
 
 function sizeFor(s: Save): number | null {
-  const cover = s.files?.[s.coverIndex ?? 0];
+  const cover = pickCardFile(s.files ?? []);
   return cover?.size ?? s.fileSize ?? null;
 }
 
@@ -196,11 +197,11 @@ function areaFor(s: Save): number | null {
 }
 
 function widthFor(s: Save): number | null {
-  return s.files?.[s.coverIndex ?? 0]?.width ?? s.width ?? null;
+  return pickCardFile(s.files ?? [])?.width ?? s.width ?? null;
 }
 
 function heightFor(s: Save): number | null {
-  return s.files?.[s.coverIndex ?? 0]?.height ?? s.height ?? null;
+  return pickCardFile(s.files ?? [])?.height ?? s.height ?? null;
 }
 
 function aspectRatioFor(s: Save): number | null {

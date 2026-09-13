@@ -240,6 +240,7 @@ export function ScheduleEditor({
         size="sm"
         variant="secondary"
         disabled={!valid || status === "saving"}
+        loading={status === "saving"}
       >
         {status === "saving" ? "Saving" : "Save Schedule"}
       </Button>

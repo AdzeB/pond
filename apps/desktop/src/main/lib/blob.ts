@@ -1,5 +1,9 @@
 import { extname } from "node:path";
 import type { TxSaveFile } from "@pond/schema/tx";
+import {
+  assignHarvestedFilenames,
+  harvestedFilename,
+} from "@shared/save-file-names";
 import log from "electron-log/main.js";
 import pLimit from "p-limit";
 import {
@@ -50,9 +54,9 @@ function extensionFor(mimeType: string | null, url: string): string {
   return ".bin";
 }
 
-function kindFor(mimeType: string | null): "cover" | "video" | "other" {
+function kindFor(mimeType: string | null): "image" | "video" | "other" {
   if (!mimeType) return "other";
-  if (mimeType.startsWith("image/")) return "cover";
+  if (mimeType.startsWith("image/")) return "image";
   if (mimeType.startsWith("video/")) return "video";
   return "other";
 }
@@ -96,14 +100,12 @@ async function fetchMediaToTxFile(
 }
 
 function nameFor(
-  kind: "cover" | "video" | "other",
+  kind: "image" | "video" | "other",
   ext: string,
   index: number,
 ): string {
-  if (kind === "video") {
-    return index === 0 ? `video${ext}` : `video-${index}${ext}`;
-  }
-  return index === 0 ? `cover${ext}` : `media-${index}${ext}`;
+  if (kind === "video") return harvestedFilename("video", index, ext);
+  return harvestedFilename("image", index, ext);
 }
 
 async function fetchSmallImageToTxFile(
@@ -207,24 +209,9 @@ export async function fetchMediaBatch(
     ),
   );
 
-  return renumberCovers(results);
-}
-
-function renumberCovers(entries: MediaBatchEntry[]): MediaBatchEntry[] {
-  let coverAssigned = false;
-  let mediaIndex = 1;
-  return entries.map((entry) => {
-    if (!entry.file) return entry;
-    const f = entry.file;
-    const ext = extname(f.filename).toLowerCase() || ".bin";
-    if (f.filename.startsWith("video")) return entry;
-    if (!coverAssigned) {
-      coverAssigned = true;
-      return { ...entry, file: { ...f, filename: `cover${ext}` } };
-    }
-    return {
-      ...entry,
-      file: { ...f, filename: `media-${mediaIndex++}${ext}` },
-    };
+  const named = assignHarvestedFilenames(results.map((entry) => entry.file));
+  return results.map((entry, index) => {
+    const file = named[index] ?? null;
+    return file ? { ...entry, file } : entry;
   });
 }

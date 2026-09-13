@@ -328,6 +328,7 @@ function ConversionDialog({
                 disabled={
                   busy || !ConversionPresetSchema.safeParse(preset).success
                 }
+                loading={busy}
                 onClick={() => void start()}
               >
                 {busy ? "Working" : "Choose Folder and Export"}

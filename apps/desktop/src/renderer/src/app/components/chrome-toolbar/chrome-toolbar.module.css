@@ -33,10 +33,3 @@
   max-height: 300px;
   overflow-y: auto;
 }
-
-.item {
-  display: grid;
-  grid-template-columns: 18px 1fr;
-  gap: 8px;
-  align-items: center;
-}

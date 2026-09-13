@@ -57,7 +57,7 @@ export function MessageView({
   return (
     <Reveal>
       <Message.Root {...props}>
-        <div className={styles.messageBody}>
+        <div className={styles["message-body"]}>
           <div className={styles.attachments}>
             <Message.Attachments>
               {() => <AttachmentItem />}

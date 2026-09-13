@@ -123,13 +123,14 @@ export function VisualChip() {
 
 function VisualEditor({ probe }: { probe: VisualProbe | null }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useId();
   const [over, setOver] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: drop and paste target; Choose Image is the control
-    <div
+    <label
       className={styles.drop}
+      htmlFor={inputId}
       data-over={over || undefined}
       onDragOver={(event) => {
         event.preventDefault();
@@ -167,6 +168,7 @@ function VisualEditor({ probe }: { probe: VisualProbe | null }) {
       </p>
       <p className={styles.hint}>Supports Pond or local images</p>
       <input
+        id={inputId}
         ref={inputRef}
         type="file"
         accept="image/*"
@@ -181,12 +183,15 @@ function VisualEditor({ probe }: { probe: VisualProbe | null }) {
         size="sm"
         variant="secondary"
         disabled={busy}
-        onClick={() => inputRef.current?.click()}
+        onClick={(event) => {
+          event.preventDefault();
+          inputRef.current?.click();
+        }}
       >
         {busy ? "Matching" : "Choose Image"}
       </Button>
       {error ? <p className={styles.hint}>{error}</p> : null}
-    </div>
+    </label>
   );
 }
 

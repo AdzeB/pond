@@ -5,7 +5,7 @@ import {
 } from "@/features/enrichment/lib/embeddings";
 import { embeddingFor } from "@/features/enrichment/state/embedding-store";
 import type { Save } from "@/features/saves/types";
-import { dot } from "@/shared/lib/vector";
+import { unitCosine } from "@/shared/lib/vector";
 import type { Enricher } from "../types";
 
 const SUGGESTED_TAGS_VERSION = "suggested-tags@1";
@@ -64,7 +64,7 @@ export const suggestedTagsEnricher: Enricher = {
     const existing = new Set((save.tags ?? []).map((t) => t.toLowerCase()));
     const scored = vocab
       .filter((v) => !existing.has(v.name.toLowerCase()))
-      .map((v) => ({ name: v.name, score: dot(entry.vec, v.vec) }))
+      .map((v) => ({ name: v.name, score: unitCosine(entry.vec, v.vec) }))
       .filter((s) => s.score >= SCORE_THRESHOLD)
       .sort((a, b) => b.score - a.score)
       .slice(0, MAX_SUGGESTIONS)

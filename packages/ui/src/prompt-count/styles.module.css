@@ -1,0 +1,29 @@
+.root {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 5px;
+  align-items: center;
+  height: 24px;
+  padding-inline: 10px;
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-gray-11);
+  white-space: nowrap;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: var(--ds-gray-3);
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  transition:
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-4);
+  }
+}
+
+.count {
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-9);
+}

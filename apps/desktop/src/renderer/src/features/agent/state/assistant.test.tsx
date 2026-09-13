@@ -11,7 +11,6 @@ import { expect, it, vi } from "vitest";
 import { libraryChrome } from "../../library/state/library-chrome";
 import { selection } from "../../library/state/selection";
 import { assistant, useAssistant } from "./assistant";
-import { useAssistantRuntime } from "./assistant-runtime";
 
 it("keeps the composer draft and attachments when answering a question", async () => {
   const question = {
@@ -301,19 +300,16 @@ it("keeps the singleton run across pane unmount and waits for saved metadata aft
   const root = createRoot(host);
   function Probe() {
     const state = useAssistant();
-    const runtime = useAssistantRuntime();
     return (
       <output>
         {JSON.stringify({
           chatId: state.chatId,
           busy: state.busy,
           draft: state.draft,
-          stream: runtime.messages
-            .at(-1)
-            ?.parts.flatMap((part) =>
-              part.type === "text" ? [part.content] : [],
-            )
-            .join(""),
+          stream:
+            state.messages.at(-1)?.role === "assistant"
+              ? state.messages.at(-1)?.content
+              : "",
           messages: state.messages,
         })}
       </output>
@@ -464,7 +460,7 @@ it("cancels before a new chat finishes creating without dispatching a model requ
   }
 });
 
-it("restores each chat's draft, visible attachments, scope, and the unstarted composer", async () => {
+it("restores each chat's draft, visible attachments, and the unstarted composer", async () => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal("pond", {
     query: async () => [],
@@ -479,7 +475,6 @@ it("restores each chat's draft, visible attachments, scope, and the unstarted co
         {JSON.stringify({
           draft: state.draft,
           attachments: state.attachments.map((save) => save.id),
-          scope: state.scope,
         })}
       </output>
     );
@@ -495,27 +490,22 @@ it("restores each chat's draft, visible attachments, scope, and the unstarted co
       root.render(<Probe />);
       assistant.newChat();
       assistant.setDraft("Unstarted draft");
-      assistant.setScope({ kind: "library" });
       await assistant.openChat("composer-first");
       assistant.setDraft("First draft");
       assistant.attach([save]);
-      assistant.setScope({ kind: "attachments" });
       await assistant.openChat("composer-second");
     });
     expect(JSON.parse(host.textContent || "{}")).toEqual({
       draft: "",
       attachments: [],
-      scope: { kind: "auto" },
     });
     await act(async () => {
       assistant.setDraft("Second draft");
-      assistant.setScope({ kind: "folder", id: "architecture" });
       await assistant.openChat("composer-first");
     });
     expect(JSON.parse(host.textContent || "{}")).toEqual({
       draft: "First draft",
       attachments: [save.id],
-      scope: { kind: "attachments" },
     });
     await act(async () => assistant.newChat());
     expect(JSON.parse(host.textContent || "{}").draft).toBe("Unstarted draft");
@@ -523,7 +513,6 @@ it("restores each chat's draft, visible attachments, scope, and the unstarted co
     expect(JSON.parse(host.textContent || "{}")).toEqual({
       draft: "Second draft",
       attachments: [],
-      scope: { kind: "folder", id: "architecture" },
     });
   } finally {
     await act(async () => root.unmount());
@@ -531,7 +520,7 @@ it("restores each chat's draft, visible attachments, scope, and the unstarted co
   }
 });
 
-it("preserves new attachments on failure and retries the original explicit context after navigation", async () => {
+it("preserves new attachments on failure and retries the original attachments after navigation", async () => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   const failed = Promise.withResolvers<AssistantSendResult>();
   const requests: {
@@ -562,7 +551,6 @@ it("preserves new attachments on failure and retries the original explicit conte
         {JSON.stringify({
           draft: state.draft,
           attachments: state.attachments.map((save) => save.id),
-          scope: state.scope,
           failed: !!state.failed,
         })}
       </output>
@@ -582,13 +570,11 @@ it("preserves new attachments on failure and retries the original explicit conte
       await assistant.openChat("retry-context");
       assistant.setDraft("Compare these Saves");
       assistant.attach([original]);
-      assistant.setScope({ kind: "attachments" });
       pending = assistant.send("openai");
     });
     await vi.waitFor(() => expect(requests).toHaveLength(1));
     await act(async () => {
       assistant.attach([next]);
-      assistant.setScope({ kind: "library" });
       failed.resolve({
         chatId: "retry-context",
         accepted: false,
@@ -599,7 +585,6 @@ it("preserves new attachments on failure and retries the original explicit conte
     expect(JSON.parse(host.textContent || "{}")).toEqual({
       draft: "",
       attachments: ["next"],
-      scope: { kind: "library" },
       failed: true,
     });
     await act(async () => {
@@ -610,13 +595,12 @@ it("preserves new attachments on failure and retries the original explicit conte
     });
     expect(requests).toHaveLength(2);
     for (const request of requests) {
-      expect(request.scope).toEqual({ kind: "attachments" });
+      expect(request.scope).toEqual({ kind: "library" });
       expect(request.attachmentIds).toEqual(["original"]);
     }
     expect(JSON.parse(host.textContent || "{}")).toEqual({
       draft: "",
       attachments: ["next"],
-      scope: { kind: "library" },
       failed: false,
     });
   } finally {
@@ -630,7 +614,7 @@ it("preserves new attachments on failure and retries the original explicit conte
   }
 });
 
-it("snapshots folder scope before chat creation and never infers attachments from selection pronouns", async () => {
+it("always searches the entire library and never infers attachments from selection pronouns", async () => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   const created = Promise.withResolvers<{ id: string }>();
   const query = vi.fn(
@@ -660,7 +644,6 @@ it("snapshots folder scope before chat creation and never infers attachments fro
       root.render(<Probe />);
       assistant.newChat();
       assistant.setDraft("Summarize these selected Saves");
-      assistant.setScope({ kind: "auto" });
       selection.set(["invisible-selection"]);
       libraryChrome.setNav({ kind: "folder", id: "original-folder" });
       pending = assistant.send("openai");
@@ -671,7 +654,7 @@ it("snapshots folder scope before chat creation and never infers attachments fro
     expect(query).toHaveBeenCalledWith(
       "agent.send",
       expect.objectContaining({
-        scope: { kind: "folder", id: "original-folder" },
+        scope: { kind: "library" },
         attachmentIds: [],
       }),
     );
@@ -687,7 +670,7 @@ it("snapshots folder scope before chat creation and never infers attachments fro
   }
 });
 
-it("returns the next composer to automatic scope after attached Saves are sent or the last attachment is removed", async () => {
+it("sends attached Saves as context while searching the entire library", async () => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   const response = Promise.withResolvers<AssistantSendResult>();
   const query = vi.fn((name: string) =>
@@ -702,7 +685,6 @@ it("returns the next composer to automatic scope after attached Saves are sent o
       <output>
         {JSON.stringify({
           draft: state.draft,
-          scope: state.scope,
           attachments: state.attachments.map((save) => save.id),
         })}
       </output>
@@ -720,26 +702,21 @@ it("returns the next composer to automatic scope after attached Saves are sent o
       root.render(<Probe />);
       await assistant.openChat("scope-reset");
       assistant.attach([source, { ...source, id: "second-save" }]);
-      assistant.setScope({ kind: "attachments" });
       assistant.removeAttachment("second-save");
     });
-    expect(JSON.parse(host.textContent || "{}").scope).toEqual({
-      kind: "attachments",
-    });
+    expect(JSON.parse(host.textContent || "{}").attachments).toEqual([
+      source.id,
+    ]);
     await act(async () => assistant.removeAttachment(source.id));
-    expect(JSON.parse(host.textContent || "{}").scope).toEqual({
-      kind: "auto",
-    });
+    expect(JSON.parse(host.textContent || "{}").attachments).toEqual([]);
     await act(async () => {
       assistant.attach([source]);
-      assistant.setScope({ kind: "attachments" });
       assistant.setDraft("Summarize this Save");
       pending = assistant.send("openai");
     });
     expect(JSON.parse(host.textContent || "{}")).toEqual({
       draft: "",
       attachments: [],
-      scope: { kind: "auto" },
     });
     await act(async () => {
       response.resolve({
@@ -752,13 +729,12 @@ it("returns the next composer to automatic scope after attached Saves are sent o
     expect(JSON.parse(host.textContent || "{}")).toEqual({
       draft: "Summarize this Save",
       attachments: [source.id],
-      scope: { kind: "attachments" },
     });
     expect(query).toHaveBeenCalledWith(
       "agent.send",
       expect.objectContaining({
         attachmentIds: [source.id],
-        scope: { kind: "attachments" },
+        scope: { kind: "library" },
       }),
     );
   } finally {

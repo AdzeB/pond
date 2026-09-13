@@ -20,6 +20,7 @@ import {
 import { probeVideoDims } from "../../../lib/video-dims";
 import { itemDir } from "../../../paths";
 import { persistSave } from "../../persist-save";
+import { ensureSaveThumbnail } from "../../save-thumbnail";
 import { TransientError } from "../extractors/errors";
 import { readSave } from "./apply";
 
@@ -124,6 +125,8 @@ async function ensurePoster(
   };
   if (replacing) options.replaceFilesWithKind = "poster";
   await persistSave(saveId, {}, options);
+  const latest = await readSave(saveId);
+  await ensureSaveThumbnail(saveId, latest);
   log.info(
     "[pond pipeline:ensure-poster] wrote posters",
     saveId,

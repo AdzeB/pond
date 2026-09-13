@@ -1,28 +1,24 @@
-import { IconFileOutline18, IconXmarkOutline18 } from "@pond/icons/outline/18";
-import {
-  Attachments as AttachmentUI,
-  Button,
-  Checkbox,
-  Dialog,
-  Input,
-  Reveal,
-} from "@pond/ui";
+import { IconFileOutline18 } from "@pond/icons/outline/18";
+import { Button, Checkbox, Dialog, Input } from "@pond/ui";
 import { type AssistantSource, assistantSources } from "@shared/assistant";
+import { motion, useReducedMotionConfig } from "motion/react";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { useSave } from "@/features/saves/hooks/use-saves";
-import { buildMediaUnits } from "@/features/saves/lib/media/units";
+import { pickCardUnit } from "@/features/saves/lib/media/units";
 import { thumbUrlFor } from "@/features/saves/lib/media/url";
 import { openSave } from "@/features/saves/lib/save-nav";
+import { gentleSpring } from "@/shared/lib/motion";
 import styles from "./pane.module.css";
-import { sourceDomain } from "./save-preview";
+import { SaveAttachment } from "./save-attachment";
+import { sourceDomain, useSourceCovers } from "./save-preview";
 
 const AssistantSearchSchema = z.object({ saves: assistantSources });
 
 function SaveMark({ id }: { id: string }) {
   const save = useSave(id);
   const [broken, setBroken] = useState<string | null>(null);
-  const unit = save ? buildMediaUnits(save)[save.coverIndex ?? 0] : undefined;
+  const unit = save ? pickCardUnit(save) : null;
   const candidate = unit?.isVideo ? unit.posterUrl : unit?.url;
   const src = candidate?.startsWith("pond://")
     ? thumbUrlFor(candidate, 80)
@@ -47,40 +43,29 @@ export function Attachments({
   onRemove?: (id: string) => void;
   onOpenSave?: (id: string) => void;
 }) {
+  useSourceCovers(saves.map((save) => save.id));
+  const reduced = useReducedMotionConfig();
+  if (!saves.length) return null;
   return (
-    <Reveal visible={saves.length > 0}>
+    <motion.div
+      layout
+      initial={false}
+      transition={reduced ? { duration: 0 } : gentleSpring}
+    >
       <fieldset
         className={styles["attachment-list"]}
         aria-label={onRemove ? "Attached Saves" : "Sent Attachments"}
       >
         {saves.map((save) => (
-          <AttachmentUI.Root key={save.id}>
-            <AttachmentUI.Item>
-              <Button
-                size="xs"
-                variant="ghost"
-                onClick={() => onOpenSave(save.id)}
-              >
-                <AttachmentUI.Thumb>
-                  <SaveMark id={save.id} />
-                </AttachmentUI.Thumb>
-                <AttachmentUI.Label>
-                  {save.title || "Untitled"}
-                </AttachmentUI.Label>
-              </Button>
-              {onRemove ? (
-                <AttachmentUI.Remove
-                  aria-label={`Remove ${save.title || "Save"}`}
-                  onClick={() => onRemove(save.id)}
-                >
-                  <IconXmarkOutline18 />
-                </AttachmentUI.Remove>
-              ) : null}
-            </AttachmentUI.Item>
-          </AttachmentUI.Root>
+          <SaveAttachment
+            key={save.id}
+            source={save}
+            onOpen={onOpenSave}
+            onRemove={onRemove}
+          />
         ))}
       </fieldset>
-    </Reveal>
+    </motion.div>
   );
 }
 
@@ -170,6 +155,7 @@ export function ContextPicker({
               >
                 <Checkbox.Root
                   id={`context-${save.id}`}
+                  size="sm"
                   checked={selected.has(save.id)}
                   disabled={!selected.has(save.id) && selected.size >= 24}
                   onCheckedChange={() =>

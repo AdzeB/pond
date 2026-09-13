@@ -1,5 +1,11 @@
 .transport-cluster {
+  flex-direction: column;
+  align-items: center;
   width: 100%;
+
+  &[data-pager] {
+    padding-bottom: 44px;
+  }
 }
 
 .transport {

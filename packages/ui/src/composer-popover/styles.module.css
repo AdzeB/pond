@@ -8,26 +8,29 @@
   min-width: 0;
   max-width: none;
   max-height: min(420px, var(--available-height));
+  padding: 4px;
   container-type: inline-size;
   overflow-y: auto;
   overscroll-behavior: contain;
+  font-size: var(--ds-text-md);
+  border-radius: var(--ds-radius-4xl);
 }
 
-.panelViewport {
+.panel-viewport {
   min-width: 0;
   overflow: hidden;
 }
 
-.panelHeader {
+.panel-header {
   display: flex;
   gap: 8px;
   align-items: center;
-  padding: 8px 12px;
-  font-size: var(--ds-text-small);
+  padding: 6px 8px;
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-11);
 }
 
-.panelHeader h2 {
+.panel-header h2 {
   margin: 0;
   font: inherit;
 }

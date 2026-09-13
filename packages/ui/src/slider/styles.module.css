@@ -8,7 +8,7 @@
 }
 
 .label {
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-11);
 }
@@ -42,8 +42,6 @@
   width: 14px;
   height: 14px;
   background: var(--ds-gray-1);
-  background-clip: padding-box;
-  border: var(--ds-border-elevated);
   border-radius: var(--ds-radius-full);
   box-shadow: var(--ds-shadow-2);
 
@@ -58,7 +56,7 @@
 
 .value {
   min-width: 36px;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-11);
   text-align: right;

@@ -38,20 +38,20 @@ export function ModelPicker({
     >
       <Combobox.Input aria-label="Search models" placeholder="Search models…" />
       <Combobox.Empty>No models found</Combobox.Empty>
-      <Combobox.List className={styles.pickerList}>
+      <Combobox.List className={styles["picker-list"]}>
         {(model: AssistantModel) => (
           <Combobox.Item
             key={model.id}
             value={model}
             disabled={model.disabled}
-            className={styles.modelRow}
+            className={styles["model-row"]}
           >
-            <span className={styles.modelIcon}>
+            <span className={styles["model-icon"]}>
               {model.icon ?? <IconFaceRobot2Outline18 />}
             </span>
-            <span className={styles.modelContent}>
-              <span className={styles.modelName}>{model.name}</span>
-              <span className={styles.rowDescription}>
+            <span className={styles["model-content"]}>
+              <span className={styles["model-name"]}>{model.name}</span>
+              <span className={styles["row-description"]}>
                 {model.provider} · {model.connection}
                 {model.description ? ` · ${model.description}` : ""}
               </span>

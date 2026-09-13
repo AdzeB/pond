@@ -27,6 +27,7 @@ export function SelectCell({
     <div className={styles["select-cell"]} role="gridcell" onClick={stop}>
       <Checkbox.Root
         className={styles.check}
+        size="sm"
         checked={selected}
         aria-label={selected ? "Deselect row" : "Select row"}
         onClick={stop}

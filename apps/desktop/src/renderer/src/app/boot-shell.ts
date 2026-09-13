@@ -101,7 +101,6 @@ function paintShell(): void {
   performance.mark("pondAppStart");
 }
 
-/** The React tree dismisses the cover once it paints; this is the escape hatch when it never does. */
 function armBootFailsafe(): void {
   window.setTimeout(() => {
     const el = document.getElementById("boot");

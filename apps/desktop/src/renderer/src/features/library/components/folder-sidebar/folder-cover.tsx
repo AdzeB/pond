@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { FolderIcon } from "@/features/library/components/folder-sidebar/folder-icons";
-import { pickPrimaryFile } from "@/features/saves/lib/media/units";
-import { buildPondUrl, thumbUrlFor } from "@/features/saves/lib/media/url";
+import { pickCardUnit } from "@/features/saves/lib/media/units";
+import { thumbUrlFor } from "@/features/saves/lib/media/url";
+import { normalise } from "@/features/saves/lib/reconcile";
 import type { Save } from "@/features/saves/types";
 import styles from "./folder-sidebar.module.css";
 
 export function folderCoverUrl(save: Save): string | null {
-  const file = pickPrimaryFile(save);
-  if (!file) return null;
-  return thumbUrlFor(buildPondUrl(save.id, file), 36);
+  const unit = pickCardUnit(save);
+  if (!unit) return null;
+  return thumbUrlFor(unit.url, 36);
 }
 
 export function FolderCover({
@@ -26,10 +27,7 @@ export function FolderCover({
     }
     let cancelled = false;
     void window.pond.query("saves.get", { id: coverSaveId }).then((row) => {
-      if (!cancelled) {
-        /** SAFETY: `saves.get` returns the renderer Save wire shape. */
-        setSave(row as Save | null);
-      }
+      if (!cancelled) setSave(normalise(row));
     });
     return () => {
       cancelled = true;

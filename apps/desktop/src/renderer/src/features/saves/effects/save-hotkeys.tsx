@@ -3,7 +3,6 @@ import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useSelector } from "@tanstack/react-store";
 import { useRef } from "react";
 import { openActionDialog } from "@/features/library/state/action-dialog";
-import { dockMode } from "@/features/library/state/dock-mode";
 import { openFolderPicker } from "@/features/library/state/folder-picker";
 import { resultNavigation } from "@/features/library/state/result-navigation";
 import {
@@ -34,6 +33,7 @@ import { rateSaves } from "@/features/saves/lib/rating";
 import { openSave, saveIdFromPath } from "@/features/saves/lib/save-nav";
 import { selectOnlySave } from "@/features/saves/lib/select";
 import {
+  addTagsToSelection,
   copyFilesForSelection,
   copyIdsForSelection,
   copyTagsForSelection,
@@ -228,8 +228,14 @@ export function SaveHotkeys() {
       {
         hotkey: shortcuts["save.add-tag"].keys!,
         callback: () => {
-          if (selection.size() > 1) {
-            dockMode.open("selection-tag");
+          const ids = selection.snapshot();
+          if (ids.length > 1) {
+            Dialog.prompt({
+              title: "Add Tag",
+              confirmLabel: "Add Tag",
+              placeholder: "Tag name",
+              onConfirm: (value) => addTagsToSelection(ids, [value]),
+            });
             return;
           }
           if (!primarySelectionStore.state.id) return;
@@ -271,20 +277,11 @@ export function SaveHotkeys() {
         options: { enabled: hasPrimary, ignoreInputs: true },
       },
       {
-        hotkey: shortcuts["selection.run"].keys!,
-        callback: () => dockMode.open("selection-run"),
-        options: { enabled: hasMulti, ignoreInputs: true },
-      },
-      {
         hotkey: shortcuts["selection.export"].keys!,
-        callback: () => {
-          if (selection.size() > 1) {
-            dockMode.open("selection-export");
-            return;
-          }
-          const save = primarySave();
-          if (save) void exportFile(save);
-        },
+        callback: withSelection(
+          (save) => void exportFile(save),
+          exportSelectionFiles,
+        ),
         options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
       },
       {

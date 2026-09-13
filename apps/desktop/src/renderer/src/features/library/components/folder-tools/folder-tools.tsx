@@ -275,6 +275,7 @@ export function FolderToolsDialog({
                   (tool.kind === "create" && !names.trim()) ||
                   (tool.kind === "move" && !selected.length)
                 }
+                loading={busy}
               >
                 {busy
                   ? "Saving"

@@ -12,7 +12,7 @@ import {
   closeActionDialog,
 } from "@/features/library/state/action-dialog";
 import { folders, useFolders } from "@/features/library/state/folders";
-import { refreshSaves } from "@/features/saves/lib/ensure-saves";
+import { reloadSaves } from "@/features/saves/lib/ensure-saves";
 import styles from "./action-dialog.module.css";
 
 export function ActionDialogHost() {
@@ -156,7 +156,7 @@ function ActionDialog({
         definition,
         expectedToken: preview.token,
       });
-      await refreshSaves(ids);
+      await reloadSaves(ids);
       await folders.refresh();
       closeActionDialog();
     } catch (cause) {
@@ -512,6 +512,7 @@ function ActionDialog({
             <Button
               variant="primary"
               disabled={busy || !preview?.changes.length}
+              loading={busy}
               onClick={() => void run()}
             >
               {busy ? "Working" : "Apply Changes"}

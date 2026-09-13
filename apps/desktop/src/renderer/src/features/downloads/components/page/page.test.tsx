@@ -88,7 +88,7 @@ beforeEach(() => {
     if (name === "downloads.history") return { rows: [], nextCursor: null };
     if (name === "pipeline.status") return { paused: false };
     if (name === "pipeline.inflight") return [];
-    if (name === "downloads.live") return [];
+    if (name === "downloads.ingestingOrFailed") return [];
     if (name === "saves.retryFailed") return { ok: true, requeued: 1 };
     if (name === "saves.getMany") return [];
     throw new Error(`Unexpected query: ${name}`);
@@ -150,7 +150,7 @@ it("shows live downloads that paging missed without hydrating the whole library"
     if (name === "downloads.history") return { rows: [], nextCursor: null };
     if (name === "pipeline.status") return { paused: false };
     if (name === "pipeline.inflight") return [];
-    if (name === "downloads.live") return [queued.id];
+    if (name === "downloads.ingestingOrFailed") return [queued.id];
     if (name === "saves.getMany") {
       expect(args?.ids).toEqual([queued.id]);
       return [queued];
@@ -161,7 +161,7 @@ it("shows live downloads that paging missed without hydrating the whole library"
     throw new Error(`Unexpected query: ${name}`);
   });
   await render();
-  expect(query).toHaveBeenCalledWith("downloads.live", {});
+  expect(query).toHaveBeenCalledWith("downloads.ingestingOrFailed", {});
   expect(query).not.toHaveBeenCalledWith("saves.list", expect.anything());
   expect(host.textContent).toContain("Old failure");
   expect(host.querySelector('[aria-label="Inspect Recent clip"]')).toBeNull();
@@ -245,7 +245,7 @@ it("opens completed history on demand without filling the active list", async ()
     if (name === "pipeline.status") return { paused: false };
     if (
       name === "downloads.activity" ||
-      name === "downloads.live" ||
+      name === "downloads.ingestingOrFailed" ||
       name === "pipeline.inflight"
     )
       return [];

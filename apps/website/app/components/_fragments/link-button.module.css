@@ -5,7 +5,7 @@
   width: fit-content;
   height: 32px;
   padding: 0 12px;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-medium);
   line-height: 1;
   text-wrap: nowrap;

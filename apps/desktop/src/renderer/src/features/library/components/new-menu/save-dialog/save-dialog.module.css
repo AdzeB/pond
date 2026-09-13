@@ -9,6 +9,6 @@
 }
 
 .error {
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-red-11);
 }

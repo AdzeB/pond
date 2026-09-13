@@ -125,6 +125,7 @@ export function CommentEditor({
                   icon
                   size="sm"
                   disabled={busy || !valid}
+                  loading={busy}
                   aria-label={submitLabel}
                   onClick={() => void persist(false)}
                 >
@@ -174,6 +175,7 @@ export function CommentEditor({
             <Button
               size="sm"
               disabled={busy || !valid}
+              loading={busy}
               onClick={() => void persist(false)}
             >
               {submitLabel}

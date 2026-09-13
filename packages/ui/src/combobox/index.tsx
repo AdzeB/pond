@@ -18,9 +18,17 @@ function Label({ className, ...props }: Base.Label.Props) {
 }
 
 type TriggerProps = Base.Trigger.Props &
-  Pick<ButtonProps, "variant" | "size" | "icon">;
+  Pick<ButtonProps, "variant" | "size" | "icon" | "rounding" | "width">;
 
-function Trigger({ className, variant, size, icon, ...props }: TriggerProps) {
+function Trigger({
+  className,
+  variant,
+  size,
+  icon,
+  rounding,
+  width,
+  ...props
+}: TriggerProps) {
   return (
     <Base.Trigger
       render={
@@ -30,12 +38,14 @@ function Trigger({ className, variant, size, icon, ...props }: TriggerProps) {
           <Button
             size={size}
             icon={icon}
+            rounding={rounding}
+            width={width}
             variant={variant ?? "secondary"}
             className={cn(styles.trigger, className)}
           >
             {props.children}
             <Icon>
-              <Expand size={10} />
+              <Expand />
             </Icon>
           </Button>
         )

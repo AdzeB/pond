@@ -4,17 +4,16 @@ import type {
   AssistantEvent,
   AssistantSendResult,
 } from "@shared/assistant";
-import { ChatClient } from "@tanstack/ai-client";
 import { expect, it, vi } from "vitest";
-import { createAssistantConnection } from "./assistant-connection";
+import { runPondTransport } from "./assistant-connection";
 
 const request = {
   chatId: "chat",
   requestId: "request",
   content: "Hello",
   attachmentIds: [],
-  scope: { kind: "library" },
-  provider: "openai",
+  scope: { kind: "library" as const },
+  provider: "openai" as const,
 };
 
 function fixture() {
@@ -24,8 +23,10 @@ function fixture() {
   const activity = vi.fn();
   const stop = vi.fn(async () => {});
   const send = vi.fn(() => response.promise);
-  const client = new ChatClient({
-    connection: createAssistantConnection({
+  const events: string[] = [];
+  const controller = new AbortController();
+  const pending = runPondTransport(
+    {
       send,
       stop,
       onActivity: activity,
@@ -33,24 +34,33 @@ function fixture() {
         receive = listener;
         return unsubscribe;
       },
-    }),
-  });
+    },
+    request,
+    controller.signal,
+    (event) => {
+      if (event.type === EventType.TEXT_MESSAGE_CONTENT && "delta" in event)
+        events.push(String(event.delta));
+      if (event.type === EventType.RUN_ERROR && "message" in event)
+        events.push(String(event.message));
+    },
+  );
   return {
-    client,
+    pending,
     response,
     send,
     stop,
     activity,
     unsubscribe,
+    events,
+    controller,
     emit(chunk: AssistantEvent, requestId = "request") {
       receive({ chatId: "chat", requestId, ...chunk });
     },
   };
 }
 
-it("feeds TanStack events, ignores other requests and removes the IPC listener", async () => {
+it("feeds stream events, ignores other requests and removes the IPC listener", async () => {
   const f = fixture();
-  const pending = f.client.sendMessage("Hello", request);
   await vi.waitFor(() => expect(f.send).toHaveBeenCalledOnce());
   f.emit({
     type: "stream",
@@ -101,37 +111,30 @@ it("feeds TanStack events, ignores other requests and removes the IPC listener",
     event: { type: EventType.RUN_FINISHED, threadId: "chat", runId: "request" },
   });
   f.response.resolve({ chatId: "chat", accepted: true });
-  await pending;
-  expect(f.client.getMessages().at(-1)?.parts).toContainEqual(
-    expect.objectContaining({ type: "text", content: "Hello back" }),
-  );
+  await f.pending;
+  expect(f.events.join("")).toBe("Hello back");
   expect(f.activity).toHaveBeenCalledOnce();
-  expect(f.client.getIsLoading()).toBe(false);
   expect(f.unsubscribe).toHaveBeenCalledOnce();
 });
 
 it("stops only the active main request and waits for its persistence to settle", async () => {
   const f = fixture();
-  const pending = f.client.sendMessage("Hello", request);
   await vi.waitFor(() => expect(f.send).toHaveBeenCalledOnce());
-  f.client.stop();
+  f.controller.abort();
   expect(f.stop).toHaveBeenCalledWith(
     expect.objectContaining({ chatId: "chat", requestId: "request" }),
   );
   expect(f.unsubscribe).not.toHaveBeenCalled();
   f.response.resolve({ chatId: "chat", accepted: true, stopped: true });
-  await pending;
+  await f.pending;
   expect(f.send).toHaveBeenCalledOnce();
   expect(f.unsubscribe).toHaveBeenCalledOnce();
 });
 
-it("surfaces transport failure through the TanStack error state", async () => {
+it("surfaces transport failure after the stream listener is removed", async () => {
   const f = fixture();
-  const pending = f.client.sendMessage("Hello", request);
   await vi.waitFor(() => expect(f.send).toHaveBeenCalledOnce());
   f.response.reject(new Error("IPC disconnected"));
-  await pending;
-  expect(f.client.getError()?.message).toContain("Check the conversation");
-  expect(f.client.getIsLoading()).toBe(false);
+  await expect(f.pending).rejects.toThrow("Check the conversation");
   expect(f.unsubscribe).toHaveBeenCalledOnce();
 });

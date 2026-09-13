@@ -9,12 +9,14 @@ export function AgentHeader({
   ...props
 }: ComponentProps<"header"> & { title: string; subtitle?: string }) {
   return (
-    <header {...props} className={cn(styles.agentHeader, props.className)}>
-      <span className={styles.headerTitle}>
+    <header {...props} className={cn(styles["agent-header"], props.className)}>
+      <span className={styles["header-title"]}>
         {title}
-        {subtitle && <span className={styles.rowDescription}>{subtitle}</span>}
+        {subtitle && (
+          <span className={styles["row-description"]}>{subtitle}</span>
+        )}
       </span>
-      <div className={styles.headerActions}>{children}</div>
+      <div className={styles["header-actions"]}>{children}</div>
     </header>
   );
 }

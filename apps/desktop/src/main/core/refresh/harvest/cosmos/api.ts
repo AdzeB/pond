@@ -16,8 +16,9 @@ const CHROME_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 " +
   "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 
-/** Cosmos GraphQL validates this client name and requires a Bearer access token. */
 const GRAPHQL_URL = "https://api.cosmos.so/graphql";
+/** Cosmos GraphQL validates this client name and requires a Bearer access token. */
+const COSMOS_CLIENT_NAME = "cosmos-web";
 const PAGE_SIZE = 50;
 const MAX_PAGES = 200;
 
@@ -170,7 +171,7 @@ async function cosmosGraphql<T>(
       headers: {
         accept: "application/graphql-response+json,application/json;q=0.9",
         "content-type": "application/json",
-        "x-client-name": "cosmos-web",
+        "x-client-name": COSMOS_CLIENT_NAME,
         origin: "https://www.cosmos.so",
         referer: "https://www.cosmos.so/",
         authorization: `Bearer ${token}`,

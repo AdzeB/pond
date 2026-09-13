@@ -38,7 +38,6 @@ export function inImage(point: { x: number; y: number }) {
   return point.x >= 0 && point.x <= 1 && point.y >= 0 && point.y <= 1;
 }
 
-/** Map a pointer through pan/zoom onto the letterboxed image, in 0–1 image space. */
 export function viewToImagePoint(
   frame: ImageBounds,
   pose: { x: number; y: number; zoom: number },
@@ -108,7 +107,6 @@ function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
-/** Keep a crop inside the unit square after a move or resize. */
 export function nudgeCrop(
   crop: ImageCrop,
   dx: number,
@@ -157,7 +155,6 @@ export function cropContains(
   );
 }
 
-/** Resize one edge or corner of a crop, keeping it inside the image. */
 export function resizeCrop(
   origin: ImageCrop,
   handle: CropHandle,
@@ -184,7 +181,6 @@ export function resizeCrop(
   return { x, y, w, h };
 }
 
-/** Constrain a free crop so width / height matches `ratio`. */
 export function lockCropAspect(crop: ImageCrop, ratio: number): ImageCrop {
   if (!Number.isFinite(ratio) || ratio <= 0) return crop;
   const next =

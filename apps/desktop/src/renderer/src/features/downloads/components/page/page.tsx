@@ -34,7 +34,7 @@ import {
   useRightPane,
 } from "@/features/library/state/library-chrome";
 import { useSaves } from "@/features/saves/hooks/use-saves";
-import { refreshSaves } from "@/features/saves/lib/ensure-saves";
+import { reloadSaves } from "@/features/saves/lib/ensure-saves";
 import {
   SearchChrome,
   SearchChromeInput,
@@ -66,18 +66,19 @@ function DownloadsMatchesEmpty({ onReset }: { onReset: () => void }) {
 export function DownloadsPage() {
   const saves = useSaves();
   const qc = useQueryClient();
-  /** Live rows can be older than the paged pool; running tasks also skip sync actions. */
   useEffect(() => {
     let stopped = false;
-    const hydrate = async (name: "downloads.live" | "pipeline.inflight") => {
+    const hydrate = async (
+      name: "downloads.ingestingOrFailed" | "pipeline.inflight",
+    ) => {
       try {
         const ids = InflightIdsSchema.parse(await window.pond.query(name, {}));
-        if (!stopped) await refreshSaves(ids);
+        if (!stopped) await reloadSaves(ids);
       } catch (err) {
         console.warn(`[pond downloads] ${name} refresh failed`, err);
       }
     };
-    void hydrate("downloads.live");
+    void hydrate("downloads.ingestingOrFailed");
     void hydrate("pipeline.inflight");
     const timer = setInterval(() => void hydrate("pipeline.inflight"), 2_000);
     return () => {
@@ -222,6 +223,7 @@ export function DownloadsPage() {
                 size="sm"
                 variant="ghost"
                 disabled={!pipeline.data || pause.isPending}
+                loading={pause.isPending}
                 onClick={() => pause.mutate()}
                 aria-label={paused ? "Resume Queue" : "Pause Queue"}
               >
@@ -235,6 +237,7 @@ export function DownloadsPage() {
                 variant="ghost"
                 aria-label="Retry Failed"
                 disabled={failedRows.length === 0 || retry.isPending}
+                loading={retry.isPending}
                 onClick={() => retry.mutate()}
               >
                 <IconArrowRotateClockwiseFill18 />

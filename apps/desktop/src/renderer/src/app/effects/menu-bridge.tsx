@@ -1,8 +1,18 @@
 import { useEffect } from "react";
+import {
+  createNote,
+  findDuplicates,
+  importPaths,
+  importPondPackage,
+  newFolder,
+  newSmartFolder,
+  runNewAction,
+} from "@/features/library/components/new-menu/actions";
 import { isLayoutValue } from "@/features/library/lib/view-prefs";
 import { ZOOM_DEFAULT } from "@/features/library/lib/zoom";
 import { commandMenu } from "@/features/library/state/command-menu";
 import { libraryChrome } from "@/features/library/state/library-chrome";
+import { newMenuDialog } from "@/features/library/state/new-menu-dialog";
 import {
   primarySelection,
   selection,
@@ -31,7 +41,9 @@ import { closeSave, openSave } from "@/features/saves/lib/save-nav";
 import { trashSelection } from "@/features/saves/lib/selection";
 import { inspect } from "@/features/saves/state/inspect";
 import { pool } from "@/features/saves/state/pool";
+import { openSettings } from "@/features/settings/lib/open-settings";
 import { usePrefs } from "@/features/settings/state/prefs";
+import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import { getAppRouter } from "@/shared/lib/app-router";
 
@@ -110,10 +122,6 @@ export function MenuBridge() {
           inspect.toggleNavigator();
           return;
 
-        case "view.pin-preview":
-          inspect.pinCurrent();
-          return;
-
         case "theme.light":
           patchPreferences({
             appearance: "light",
@@ -179,6 +187,54 @@ export function MenuBridge() {
 
         case "library.merge":
           void window.pond.query("library.mergeFrom", {});
+          return;
+
+        case "library.new-folder":
+          newFolder();
+          return;
+
+        case "library.new-smart-folder":
+          newSmartFolder();
+          return;
+
+        case "library.new-note":
+          void runNewAction(createNote);
+          return;
+
+        case "library.import-files":
+          void runNewAction(() => importPaths("files"));
+          return;
+
+        case "library.import-folders":
+          void runNewAction(() => importPaths("folders"));
+          return;
+
+        case "library.import-links":
+          newMenuDialog.open("links");
+          return;
+
+        case "library.import-package":
+          void runNewAction(importPondPackage);
+          return;
+
+        case "library.auto-import-folder":
+          void runNewAction(pickWatchedFolder);
+          return;
+
+        case "library.auto-import-settings":
+          openSettings("storage", "setting-storage-watched-folder");
+          return;
+
+        case "library.find-duplicates-all":
+          findDuplicates("all");
+          return;
+
+        case "library.find-duplicates-list":
+          findDuplicates("list");
+          return;
+
+        case "library.find-duplicates-selected":
+          findDuplicates("selected");
           return;
 
         case "save.open-with-default": {

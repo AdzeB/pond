@@ -8,7 +8,7 @@ import {
 } from "@/features/library/state/duplicate-review";
 import { CardThumb } from "@/features/saves/components/card/media/media";
 import { useSave } from "@/features/saves/hooks/use-saves";
-import { ensureSaves, refreshSaves } from "@/features/saves/lib/ensure-saves";
+import { ensureSaves, reloadSaves } from "@/features/saves/lib/ensure-saves";
 import { notify } from "@/shared/lib/toast";
 import styles from "./duplicate-review.module.css";
 
@@ -16,10 +16,20 @@ type Group = { kind: "exact" | "similar"; ids: string[] };
 export function DuplicateReviewHost() {
   const request = useSelector(duplicateReview, (value) => value);
   return request ? (
-    <DuplicateReview key={request.id} saveId={request.saveId} />
+    <DuplicateReview
+      key={request.id}
+      saveId={request.saveId}
+      ids={request.ids}
+    />
   ) : null;
 }
-export function DuplicateReview({ saveId }: { saveId: string }) {
+export function DuplicateReview({
+  saveId,
+  ids,
+}: {
+  saveId: string | null;
+  ids?: string[] | null;
+}) {
   const [groups, setGroups] = useState<Group[]>([]);
   const [kind, setKind] = useState<Group["kind"]>("exact");
   const [index, setIndex] = useState(0);
@@ -33,13 +43,20 @@ export function DuplicateReview({ saveId }: { saveId: string }) {
       .query("saves.findDuplicates", {})
       .then((result) => {
         if (!active) return;
-        setGroups(result.groups);
+        const nextGroups = ids
+          ? result.groups.filter((group) =>
+              group.ids.some((id) => ids.includes(id)),
+            )
+          : result.groups;
+        setGroups(nextGroups);
         setCoverage({ indexed: result.visualIndexed, total: result.total });
-        const match = result.groups.find((group) => group.ids.includes(saveId));
+        const match = saveId
+          ? nextGroups.find((group) => group.ids.includes(saveId))
+          : undefined;
         if (match) {
           setKind(match.kind);
           setIndex(
-            result.groups
+            nextGroups
               .filter((group) => group.kind === match.kind)
               .indexOf(match),
           );
@@ -59,7 +76,7 @@ export function DuplicateReview({ saveId }: { saveId: string }) {
     return () => {
       active = false;
     };
-  }, [saveId]);
+  }, [ids, saveId]);
   const filtered = groups.filter((group) => group.kind === kind);
   const group = filtered[Math.min(index, Math.max(0, filtered.length - 1))];
   return (
@@ -134,7 +151,7 @@ export function DuplicateReview({ saveId }: { saveId: string }) {
                 <GroupReview
                   key={group.ids.join(":")}
                   group={group}
-                  preferredId={saveId}
+                  preferredId={saveId ?? group.ids[0] ?? ""}
                   onBusyChange={setMerging}
                   onMerged={(keepId, selected) =>
                     setGroups((items) =>
@@ -212,7 +229,7 @@ function GroupReview({
       });
       if (!result.ok)
         throw Error(result.error ?? "Couldn’t merge these saves.");
-      await refreshSaves(selected);
+      await reloadSaves(selected);
       notify({
         id: "duplicate-merge",
         title: "Duplicates merged",
@@ -279,6 +296,7 @@ function GroupReview({
         </Button>
         <Button
           disabled={busy || selected.length < 2}
+          loading={busy}
           onClick={() => void merge()}
         >
           Merge Selected

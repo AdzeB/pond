@@ -205,15 +205,8 @@ export function HoverPreview() {
               )
             ) : null}
           </div>
-          <div className={styles.tools}>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => inspect.pinCurrent()}
-            >
-              Pin on Top
-            </Button>
-            {selectedCount >= 2 ? (
+          {selectedCount >= 2 ? (
+            <div className={styles.tools}>
               <Button
                 size="sm"
                 variant="secondary"
@@ -221,8 +214,8 @@ export function HoverPreview() {
               >
                 {compare ? "Close Comparison" : "Compare"}
               </Button>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>

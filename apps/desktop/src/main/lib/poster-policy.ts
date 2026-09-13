@@ -2,6 +2,8 @@ import type { SaveFile, Source } from "@pond/schema/db";
 import type { RawJson } from "@pond/schema/raw";
 import { isVideoFile } from "@shared/media-index";
 
+export { posterFilename, videoFilename } from "@shared/save-file-names";
+
 export type PosterWrite = {
   kind: "poster";
   filename: string;
@@ -47,14 +49,6 @@ export function posterRepairIndexes(files: readonly SaveFile[]): number[] {
 
 export function needsPosterRepair(files: readonly SaveFile[]): boolean {
   return posterRepairIndexes(files).length > 0;
-}
-
-export function posterFilename(index: number, ext: string): string {
-  return index === 0 ? `poster${ext}` : `poster-${index}${ext}`;
-}
-
-export function videoFilename(index: number, ext: string): string {
-  return index === 0 ? `video${ext}` : `video-${index}${ext}`;
 }
 
 export function youtubeThumbnailUrl(

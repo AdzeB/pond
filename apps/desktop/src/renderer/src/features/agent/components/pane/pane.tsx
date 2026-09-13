@@ -1,20 +1,22 @@
-import { IconArrowUpFill18 } from "@pond/icons/fill/18";
 import { IconChevronExpandYOutline12 } from "@pond/icons/outline/12";
 import {
   IconArrowUpRightOutline18,
   IconPlusOutline18,
   IconXmarkOutline18,
 } from "@pond/icons/outline/18";
+import { Button, ContentRow, Reveal, Tooltip, useTextReveal } from "@pond/ui";
 import {
-  Button,
-  ContentRow,
-  Message,
-  PromptInput,
-  Reveal,
-  Tooltip,
-  useTextReveal,
-} from "@pond/ui";
+  type AppendMessage,
+  AssistantRuntimeProvider,
+  useAui,
+  useAuiState,
+  useExternalStoreRuntime,
+} from "@pond/ui/assistant-runtime";
+import { ComposerView } from "@pond/ui/composer";
+import { ComposerPopover } from "@pond/ui/composer-popover";
 import { Logo } from "@pond/ui/logo";
+import { Message } from "@pond/ui/message";
+import { ConversationView } from "@pond/ui/thread";
 import {
   ASSISTANT_MODELS,
   type AssistantProvider,
@@ -22,18 +24,22 @@ import {
   type AssistantMessage as DomainMessage,
 } from "@shared/assistant";
 import { chosenModelId, displayName } from "@shared/provider-models";
-import { createChatUI, type MessageProps } from "@tanstack/ai-react/ui";
 import { MotionConfig, motion, useReducedMotion } from "motion/react";
-import { createContext, useContext, useRef, useState } from "react";
+import {
+  type ComponentProps,
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   type AssistantState,
   assistant,
   useAssistant,
 } from "@/features/agent/state/assistant";
-import {
-  fromChatMessage,
-  useAssistantRuntime,
-} from "@/features/agent/state/assistant-runtime";
+import { toThreadMessage } from "@/features/agent/state/assistant-runtime";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import {
   selection,
@@ -53,12 +59,8 @@ import {
 import { ComposerActions } from "./add-menu";
 import { AssistantResponse } from "./assistant-response";
 import { ChatHeader } from "./chat-header";
-import { ComposerInput } from "./composer-input";
-import { ComposerScope, ComposerScopeOptions } from "./composer-scope";
 import { ComposerSuggestions } from "./composer-suggestions";
-import { ComposerTray, type ComposerTrayView } from "./composer-tray";
 import { Attachments, ContextPicker } from "./context";
-import { ConversationThread } from "./conversation-thread";
 import { ModelPicker } from "./model-picker";
 import styles from "./pane.module.css";
 import { ResponseContent } from "./response-content";
@@ -73,6 +75,16 @@ const activityLabel = {
   writing: "Writing a response",
   preparing: "Preparing changes",
 };
+
+type ComposerPage = "add" | "models" | "references" | "context" | "suggestions";
+
+const composerTitles = {
+  add: undefined,
+  models: "Models",
+  context: "Add Context",
+  references: "Referenced Saves",
+  suggestions: undefined,
+} as const;
 
 interface AgentMessageContextValue {
   state: AssistantState;
@@ -98,14 +110,12 @@ interface PondRuntimeMessage extends DomainMessage {
 
 function UserMessage({ message }: { message: DomainMessage }) {
   return (
-    <Reveal>
-      <Message.Root from="user" className={styles["user-turn"]}>
-        <Attachments saves={message.metadata?.attachments ?? []} />
-        <Message.Content>
-          <Message.Response>{message.content}</Message.Response>
-        </Message.Content>
-      </Message.Root>
-    </Reveal>
+    <Message.Root className={styles["user-turn"]}>
+      <Attachments saves={message.metadata?.attachments ?? []} />
+      <Message.Body className={styles["user-bubble"]}>
+        {message.content}
+      </Message.Body>
+    </Message.Root>
   );
 }
 
@@ -175,54 +185,76 @@ function AssistantMessage({ message }: { message: PondRuntimeMessage }) {
   );
 }
 
-function PondMessage({ message }: MessageProps<{ tools: [] }>) {
+function PondMessage(props: ComponentProps<typeof Message.Root>) {
   const { state } = useAgentMessage();
-  const pondMessage = fromChatMessage(message, state.chatId ?? "pending");
+  const id = useAuiState((thread) => thread.message.id);
+  const role = useAuiState((thread) => thread.message.role);
+  const pondMessage =
+    state.messages.find((message) => message.id === id) ??
+    ({
+      id,
+      chatId: state.chatId ?? "pending",
+      role: role === "user" ? "user" : "assistant",
+      content: "",
+      metadata: null,
+    } satisfies DomainMessage);
   return pondMessage.role === "user" ? (
     <UserMessage message={pondMessage} />
   ) : (
-    <AssistantMessage
-      message={{
-        ...pondMessage,
-        streaming: state.busy && message.id === `${state.requestId}:assistant`,
-      }}
-    />
+    <Message.Root {...props} className={styles["assistant-turn"]}>
+      <AssistantMessage
+        message={{
+          ...pondMessage,
+          streaming: state.busy && id === `${state.requestId}:assistant`,
+        }}
+      />
+    </Message.Root>
   );
 }
 
-const ChatUI = createChatUI(
-  { tools: [] },
-  {
-    components: {
-      layout: ({ Messages }) => <Messages />,
-      message: PondMessage,
-    },
-    partsComponents: {},
-  },
-);
+function ComposerDraftSync({ draft }: { draft: string }) {
+  const aui = useAui();
+  useEffect(() => {
+    if (aui.composer.getState().text === draft) return;
+    aui.composer.setText(draft);
+  }, [aui, draft]);
+  return null;
+}
 
-function Conversation({ loading }: { loading: boolean }) {
-  const { state } = useAgentMessage();
-  const runtime = ChatUI.useChatContext();
-  const pendingId = `${state.requestId}:assistant`;
+function appendText(message: AppendMessage) {
+  return message.content
+    .flatMap((part) => (part.type === "text" ? [part.text] : []))
+    .join("");
+}
+
+function AgentChatRuntime({
+  state,
+  provider,
+  children,
+}: {
+  state: AssistantState;
+  provider: AssistantProvider | "";
+  children: ReactNode;
+}) {
+  const runtime = useExternalStoreRuntime({
+    messages: state.messages,
+    isRunning: state.busy,
+    isLoading: state.loading,
+    isDisabled: state.loading,
+    isSendDisabled: state.busy || !provider,
+    convertMessage: (message) => toThreadMessage(message),
+    onNew: async (message) => {
+      const content = appendText(message).trim();
+      if (!provider || !content) return;
+      assistant.setDraft(content);
+      await assistant.send(provider);
+    },
+    onCancel: async () => assistant.stop(),
+  });
   return (
-    <ConversationThread chatId={state.chatId} requestId={state.requestId}>
-      {loading ? <p role="status">Loading conversation</p> : null}
-      <ChatUI.Messages />
-      {state.busy &&
-      !runtime.messages.some((message) => message.id === pendingId) ? (
-        <StreamingResponse
-          message={{
-            id: pendingId,
-            chatId: state.chatId ?? "pending",
-            role: "assistant",
-            content: "",
-            metadata: null,
-            streaming: true,
-          }}
-        />
-      ) : null}
-    </ConversationThread>
+    <AssistantRuntimeProvider runtime={runtime}>
+      {children}
+    </AssistantRuntimeProvider>
   );
 }
 
@@ -243,7 +275,7 @@ function AgentPaneContent({
 }) {
   const selectedCount = useSelectionSize();
   const [trayView, setTrayView] = useState<Exclude<
-    ComposerTrayView,
+    ComposerPage,
     "suggestions"
   > | null>(null);
   const input = useRef<HTMLTextAreaElement>(null);
@@ -273,8 +305,13 @@ function AgentPaneContent({
   if (referenceSources?.length)
     retainedReferenceSources.current = referenceSources;
   const attachedIds = state.attachments.map((source) => source.id);
+  const composerPage: ComposerPage | null = referenceSources?.length
+    ? "references"
+    : suggestions.open
+      ? "suggestions"
+      : trayView;
 
-  function openTray(view: Exclude<ComposerTrayView, "suggestions">) {
+  function openTray(view: Exclude<ComposerPage, "suggestions">) {
     suggestions.dismiss();
     assistant.closeReferences();
     setTrayView((current) => (current === view ? null : view));
@@ -284,7 +321,7 @@ function AgentPaneContent({
     setTrayView(null);
     suggestions.dismiss();
   }
-  function renderTray(view: ComposerTrayView) {
+  function renderTray(view: ComposerPage) {
     switch (view) {
       case "add":
         return (
@@ -300,7 +337,6 @@ function AgentPaneContent({
               action(kind);
             }}
             onModels={() => setTrayView("models")}
-            onScope={() => setTrayView("scope")}
             modelLabel={modelId ? displayName(modelId) : "Choose a model"}
             modelsDisabled={state.busy}
           />
@@ -336,13 +372,6 @@ function AgentPaneContent({
             }}
           />
         );
-      case "scope":
-        return (
-          <ComposerScopeOptions
-            attachedCount={state.attachments.length}
-            onClose={closeTray}
-          />
-        );
       case "context":
         return (
           <ContextPicker
@@ -367,7 +396,6 @@ function AgentPaneContent({
   }
   function attach(sources: AssistantSource[]) {
     assistant.attach(sources);
-    assistant.setScope({ kind: "attachments" });
     requestAnimationFrame(focus);
   }
   function action(kind: AssistantAction) {
@@ -437,106 +465,180 @@ function AgentPaneContent({
               </>
             ) : null}
           </ChatHeader>
+          <ComposerDraftSync draft={state.draft} />
           <div className={styles["assistant-workspace"]}>
-            <div className={styles["assistant-body"]} data-empty={empty}>
-              {!empty ? (
-                <Conversation
-                  key={state.chatId ?? "new"}
-                  loading={state.loading}
-                />
-              ) : null}
-              <motion.div layout="position" className={styles["compose-area"]}>
-                <Reveal visible={!provider}>
-                  <div className={styles.notice} role="status">
-                    <div>
-                      <p>Add a provider in Settings before you can send.</p>
-                      <div className={styles["notice-actions"]}>
-                        <Button
-                          size="sm"
-                          onClick={() => openSettings("models")}
-                        >
-                          Open Settings
-                        </Button>
+            <ConversationView
+              key={state.chatId ?? "new"}
+              className={styles["assistant-body"]}
+              viewportProps={{ className: styles["chat-viewport"] }}
+              empty={
+                empty ? (
+                  <>
+                    {state.loading ? (
+                      <p role="status">Loading conversation</p>
+                    ) : null}
+                    {provider ? (
+                      <div className={styles.starters}>
+                        {AGENT_STARTERS.map((entry) => (
+                          <ContentRow.Root key={entry.id}>
+                            <ContentRow.Trigger onClick={() => start(entry.id)}>
+                              <ContentRow.Media>
+                                <entry.icon />
+                              </ContentRow.Media>
+                              <ContentRow.Content>
+                                <ContentRow.Title>
+                                  {entry.title}
+                                </ContentRow.Title>
+                                <ContentRow.Description>
+                                  {entry.detail}
+                                </ContentRow.Description>
+                              </ContentRow.Content>
+                            </ContentRow.Trigger>
+                          </ContentRow.Root>
+                        ))}
                       </div>
-                    </div>
-                  </div>
-                </Reveal>
-                <Reveal visible={Boolean(state.error)}>
-                  <div className={styles.notice} role="alert">
-                    <div>
-                      <p>{state.error}</p>
-                      <div className={styles["notice-actions"]}>
-                        {state.failed ? (
+                    ) : null}
+                  </>
+                ) : state.loading ? (
+                  <p role="status">Loading conversation</p>
+                ) : (
+                  "Ask about your Saves"
+                )
+              }
+              components={{ Message: PondMessage }}
+              composer={
+                <motion.div
+                  layout="position"
+                  className={styles["compose-area"]}
+                >
+                  <Reveal visible={!provider}>
+                    <div className={styles.notice} role="status">
+                      <div>
+                        <p>Add a provider in Settings before you can send.</p>
+                        <div className={styles["notice-actions"]}>
                           <Button
                             size="sm"
-                            onClick={() => void assistant.retry()}
+                            onClick={() => openSettings("models")}
                           >
-                            Retry
+                            Open Settings
                           </Button>
-                        ) : null}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => openSettings("models")}
-                        >
-                          Model Settings
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={assistant.clearError}
-                        >
-                          Dismiss
-                        </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Reveal>
-                <ComposerTray
-                  view={
-                    referenceSources?.length
-                      ? "references"
-                      : suggestions.open
-                        ? "suggestions"
-                        : trayView
-                  }
-                  anchorRef={composer}
-                  inputRef={input}
-                  onClose={closeTray}
-                  onBack={() => {
-                    assistant.closeReferences();
-                    setTrayView("add");
-                  }}
-                  render={renderTray}
-                />
-                <ComposerScope
-                  scope={state.scope}
-                  attachedCount={state.attachments.length}
-                  open={trayView === "scope"}
-                  onOpen={() => openTray("scope")}
-                />
-                <PromptInput.Root ref={composer}>
-                  <form
-                    className={styles["composer-form"]}
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      if (
-                        provider &&
-                        !state.busy &&
-                        !state.loading &&
-                        state.draft.trim()
-                      )
-                        void assistant.send(provider);
+                  </Reveal>
+                  <Reveal visible={Boolean(state.error)}>
+                    <div className={styles.notice} role="alert">
+                      <div>
+                        <p>{state.error}</p>
+                        <div className={styles["notice-actions"]}>
+                          {state.failed ? (
+                            <Button
+                              size="sm"
+                              onClick={() => void assistant.retry()}
+                            >
+                              Retry
+                            </Button>
+                          ) : null}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => openSettings("models")}
+                          >
+                            Model Settings
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={assistant.clearError}
+                          >
+                            Dismiss
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </Reveal>
+                  <ComposerPopover
+                    open={Boolean(composerPage)}
+                    page={composerPage ?? "add"}
+                    title={
+                      composerPage ? composerTitles[composerPage] : undefined
+                    }
+                    anchorRef={composer}
+                    inputRef={input}
+                    onOpenChange={(open) => {
+                      if (!open) closeTray();
+                    }}
+                    onBack={() => {
+                      assistant.closeReferences();
+                      setTrayView("add");
                     }}
                   >
-                    <PromptInput.Body className={styles["composer-body"]}>
+                    {composerPage ? renderTray(composerPage) : null}
+                  </ComposerPopover>
+                  <div ref={composer}>
+                    <ComposerView
+                      placeholder={
+                        state.busy
+                          ? "Draft your next message"
+                          : "Ask about your Saves"
+                      }
+                      toolbar={
+                        <>
+                          <Tooltip label="Add Context or Action">
+                            <Button
+                              icon
+                              size="xs"
+                              variant="ghost"
+                              data-composer-options-trigger
+                              aria-label="Add Context or Action"
+                              aria-haspopup="dialog"
+                              aria-expanded={trayView === "add"}
+                              onClick={() => openTray("add")}
+                            >
+                              <IconPlusOutline18 />
+                            </Button>
+                          </Tooltip>
+                          <Button
+                            size="xs"
+                            variant="ghost"
+                            data-composer-options-trigger
+                            className={styles["model-trigger"]}
+                            disabled={state.busy}
+                            aria-label={`Choose model, ${modelId ? displayName(modelId) : "Choose a model"}`}
+                            aria-haspopup="dialog"
+                            aria-expanded={trayView === "models"}
+                            onClick={() => openTray("models")}
+                          >
+                            {provider ? (
+                              <ProviderLogo provider={provider} size={16} />
+                            ) : null}
+                            <span className={styles["model-trigger-name"]}>
+                              {modelId
+                                ? displayName(modelId)
+                                : "Choose a model"}
+                            </span>
+                            <IconChevronExpandYOutline12 />
+                          </Button>
+                        </>
+                      }
+                      inputProps={{
+                        ref: input,
+                        value: state.draft,
+                        disabled: state.loading || !provider,
+                        maxLength: 32000,
+                        "aria-label": "Message Agent",
+                        ...suggestions.inputProps,
+                        onKeyDown: (event) => {
+                          suggestions.onKeyDown(event);
+                        },
+                      }}
+                    >
                       {selectedCount ? (
                         <div className={styles["selection-line"]}>
                           <Button
                             size="xs"
                             variant="ghost"
                             onClick={() => {
-                              assistant.setScope({ kind: "auto" });
                               void assistant.attachIds([
                                 ...selection.snapshot(),
                               ]);
@@ -548,117 +650,13 @@ function AgentPaneContent({
                       ) : null}
                       <Attachments
                         saves={state.attachments}
-                        onRemove={(id) => {
-                          assistant.removeAttachment(id);
-                          if (
-                            state.attachments.length === 1 &&
-                            state.scope.kind === "attachments"
-                          )
-                            assistant.setScope({ kind: "auto" });
-                        }}
+                        onRemove={(id) => assistant.removeAttachment(id)}
                       />
-                      <ComposerInput
-                        ref={input}
-                        value={state.draft}
-                        disabled={state.loading || !provider}
-                        maxLength={32000}
-                        aria-label="Message Agent"
-                        placeholder={
-                          state.busy
-                            ? "Draft your next message"
-                            : "Ask about your Saves"
-                        }
-                        {...suggestions.inputProps}
-                        onKeyDown={(event) => {
-                          suggestions.onKeyDown(event);
-                        }}
-                      />
-                    </PromptInput.Body>
-                    <PromptInput.Toolbar>
-                      <PromptInput.ToolbarGroup>
-                        <Tooltip label="Add Context or Action">
-                          <Button
-                            icon
-                            size="xs"
-                            variant="ghost"
-                            data-composer-tray-trigger
-                            aria-label="Add Context or Action"
-                            aria-haspopup="dialog"
-                            aria-expanded={trayView === "add"}
-                            onClick={() => openTray("add")}
-                          >
-                            <IconPlusOutline18 />
-                          </Button>
-                        </Tooltip>
-                        <Button
-                          size="xs"
-                          variant="ghost"
-                          data-composer-tray-trigger
-                          className={styles["model-trigger"]}
-                          disabled={state.busy}
-                          aria-label={`Choose model, ${modelId ? displayName(modelId) : "Choose a model"}`}
-                          aria-haspopup="dialog"
-                          aria-expanded={trayView === "models"}
-                          onClick={() => openTray("models")}
-                        >
-                          {provider ? (
-                            <ProviderLogo provider={provider} size={16} />
-                          ) : null}
-                          <span className={styles["model-trigger-name"]}>
-                            {modelId ? displayName(modelId) : "Choose a model"}
-                          </span>
-                          <IconChevronExpandYOutline12 />
-                        </Button>
-                      </PromptInput.ToolbarGroup>
-                      <PromptInput.ToolbarGroup>
-                        <Reveal visible={state.busy}>
-                          <Button
-                            size="xs"
-                            variant="ghost"
-                            type="button"
-                            onClick={assistant.stop}
-                            aria-label="Stop Response"
-                          >
-                            Stop
-                          </Button>
-                        </Reveal>
-                        <PromptInput.Submit
-                          type="submit"
-                          disabled={
-                            !provider ||
-                            state.busy ||
-                            state.loading ||
-                            !state.draft.trim()
-                          }
-                          aria-label="Send Message"
-                        >
-                          <IconArrowUpFill18 />
-                        </PromptInput.Submit>
-                      </PromptInput.ToolbarGroup>
-                    </PromptInput.Toolbar>
-                  </form>
-                </PromptInput.Root>
-                <Reveal visible={empty && Boolean(provider)}>
-                  <div className={styles.starters}>
-                    {AGENT_STARTERS.map((entry) => (
-                      <ContentRow.Root key={entry.id}>
-                        <ContentRow.Trigger onClick={() => start(entry.id)}>
-                          <ContentRow.Media>
-                            <entry.icon />
-                          </ContentRow.Media>
-                          <ContentRow.Content>
-                            <ContentRow.Title>{entry.title}</ContentRow.Title>
-                            <ContentRow.Description>
-                              {entry.detail}
-                            </ContentRow.Description>
-                          </ContentRow.Content>
-                        </ContentRow.Trigger>
-                      </ContentRow.Root>
-                    ))}
+                    </ComposerView>
                   </div>
-                </Reveal>
-              </motion.div>
-            </div>
+                </motion.div>
+              }
+            />
           </div>
         </section>
       </MotionConfig>
@@ -678,10 +676,8 @@ export function AgentPane({ layout = "pane" }: { layout?: "page" | "pane" }) {
     ASSISTANT_MODELS.find((model) => model.id === prefs.languageModel)?.id ??
     "";
   const modelId = provider ? chosenModelId(provider, prefs) : "";
-  const runtime = useAssistantRuntime();
-
   return (
-    <ChatUI.Provider chat={runtime}>
+    <AgentChatRuntime state={state} provider={provider}>
       <AgentPaneContent
         layout={layout}
         state={state}
@@ -702,6 +698,6 @@ export function AgentPane({ layout = "pane" }: { layout?: "page" | "pane" }) {
         }}
         reduceMotion={reduceMotion}
       />
-    </ChatUI.Provider>
+    </AgentChatRuntime>
   );
 }

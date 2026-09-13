@@ -13,10 +13,10 @@ it("keeps a rejected OS binding in the recorder and leaves saved preferences unc
     async query(name: string) {
       if (name === "settings.getPrefs") return DEFAULT_PREFS;
       if (name === "settings.globalShortcutStatus")
-        return { enabled: true, errors: ["Capture Window is unavailable."] };
+        return { enabled: true, errors: ["Show Pond is unavailable."] };
       writes.push(name);
       throw new Error(
-        "Capture Area is unavailable. Your shortcuts were not changed.",
+        "Show Pond is unavailable. Your shortcuts were not changed.",
       );
     },
   });
@@ -25,11 +25,11 @@ it("keeps a rejected OS binding in the recorder and leaves saved preferences unc
   const root = createRoot(host);
   try {
     await act(async () => root.render(<ShortcutSettings />));
-    expect(host.textContent).toContain("Capture Window is unavailable.");
+    expect(host.textContent).toContain("Show Pond is unavailable.");
     const control = host.querySelector<HTMLButtonElement>(
-      'button[aria-label="Change Capture Area shortcut"]',
+      'button[aria-label="Change Show Pond shortcut"]',
     );
-    if (!control) throw Error("Missing capture shortcut control");
+    if (!control) throw Error("Missing summon shortcut control");
     await act(async () => control.click());
     await act(async () =>
       control.dispatchEvent(
@@ -46,7 +46,7 @@ it("keeps a rejected OS binding in the recorder and leaves saved preferences unc
     expect(host.textContent).toContain("Your shortcuts were not changed.");
     expect(control.textContent).toBe("Press keys…");
     expect(
-      getPrefsSnapshot()?.shortcuts.overrides["capture.area"],
+      getPrefsSnapshot()?.shortcuts.overrides["app.summon"],
     ).toBeUndefined();
   } finally {
     await act(async () => root.unmount());

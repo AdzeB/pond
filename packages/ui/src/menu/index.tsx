@@ -16,9 +16,17 @@ function Root(props: Base.Root.Props) {
 }
 
 type TriggerProps = Base.Trigger.Props &
-  Pick<ButtonProps, "variant" | "size" | "icon">;
+  Pick<ButtonProps, "variant" | "size" | "icon" | "rounding" | "width">;
 
-function Trigger({ className, variant, size, icon, ...props }: TriggerProps) {
+function Trigger({
+  className,
+  variant,
+  size,
+  icon,
+  rounding,
+  width,
+  ...props
+}: TriggerProps) {
   return (
     <Base.Trigger
       render={
@@ -28,7 +36,9 @@ function Trigger({ className, variant, size, icon, ...props }: TriggerProps) {
           <Button
             size={size}
             icon={icon}
-            variant={variant}
+            rounding={rounding}
+            width={width}
+            variant={variant ?? "secondary"}
             className={cn(styles.trigger, className)}
           />
         )
@@ -242,7 +252,7 @@ function SubmenuTrigger({ className, ...props }: Base.SubmenuTrigger.Props) {
   return (
     <Base.SubmenuTrigger className={cn(styles.item, className)} {...props}>
       {props.children}
-      <CaretRight width={6} height={6} style={{ color: "var(--ds-gray-9)" }} />
+      <CaretRight />
     </Base.SubmenuTrigger>
   );
 }

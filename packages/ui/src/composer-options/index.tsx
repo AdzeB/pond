@@ -11,8 +11,8 @@ function OptionGroup({
   children: ReactNode;
 }) {
   return (
-    <fieldset className={styles.optionGroup}>
-      <legend className={styles.groupLabel}>{label}</legend>
+    <fieldset className={styles["option-group"]}>
+      <legend className={styles["group-label"]}>{label}</legend>
       {children}
     </fieldset>
   );
@@ -37,10 +37,10 @@ function OptionItem({
       className={cn(styles.option, className)}
       {...props}
     >
-      {icon && <span className={styles.optionIcon}>{icon}</span>}
-      <span className={styles.optionLabel}>{children}</span>
+      {icon && <span className={styles["option-icon"]}>{icon}</span>}
+      <span className={styles["option-label"]}>{children}</span>
       {description && (
-        <span className={styles.optionDescription}>{description}</span>
+        <span className={styles["option-description"]}>{description}</span>
       )}
       {trailing && <span className={styles.trailing}>{trailing}</span>}
     </Button>

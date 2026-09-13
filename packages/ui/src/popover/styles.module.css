@@ -7,6 +7,7 @@
 }
 
 .popup {
+  --ds-popup-width: var(--anchor-width);
   composes: popup from "../shared/styles/popup/styles.module.css";
 }
 

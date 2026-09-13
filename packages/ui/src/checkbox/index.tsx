@@ -5,7 +5,7 @@ import styles from "./styles.module.css";
 
 type RootProps = Base.Root.Props & { size?: "sm" | "md" };
 
-function Root({ className, size = "sm", ...props }: RootProps) {
+function Root({ className, size = "md", ...props }: RootProps) {
   return (
     <Base.Root
       data-size={size}

@@ -18,9 +18,6 @@ import { SourceFlowHost } from "@/features/sources/components/flow/flow";
 import { getAppRouter } from "@/shared/lib/app-router";
 
 export function RootShell() {
-  const isComponentGallery = useRouterState({
-    select: (state) => state.location.pathname.startsWith("/dev/"),
-  });
   const isSettings = useRouterState({
     select: (state) => state.location.pathname.startsWith("/settings"),
   });
@@ -39,8 +36,6 @@ export function RootShell() {
       getAppRouter()?.history.push(pathname);
     });
   }, []);
-
-  if (isComponentGallery) return <Outlet />;
 
   return (
     <>

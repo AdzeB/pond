@@ -37,6 +37,24 @@ export function createRuntimeControls(deps: RuntimeDependencies) {
     return { port: httpServer.port, host: httpServer.host };
   }
 
+  async function replaceHttpServer(prefs: Prefs) {
+    if (httpServer) {
+      try {
+        await httpServer.close();
+      } catch (err) {
+        deps.warn(
+          "[pond] http close failed",
+          err instanceof Error ? err : new Error(String(err)),
+        );
+      }
+    }
+    httpServer = await deps.startHttpServer(
+      prefs.api.port || DEFAULT_INGEST_PORT,
+      prefs.api.bindAddress,
+    );
+    return { port: httpServer.port, host: httpServer.host };
+  }
+
   return {
     startHttpServer,
     async closeHttpServer() {
@@ -44,23 +62,8 @@ export function createRuntimeControls(deps: RuntimeDependencies) {
     },
     async restartHttpServer() {
       deps.invalidatePrefs();
-      // Read preferences before closing so a read failure leaves the server running.
       const prefs = await deps.getPrefs();
-      if (httpServer) {
-        try {
-          await httpServer.close();
-        } catch (err) {
-          deps.warn(
-            "[pond] http close failed",
-            err instanceof Error ? err : new Error(String(err)),
-          );
-        }
-      }
-      httpServer = await deps.startHttpServer(
-        prefs.api.port || DEFAULT_INGEST_PORT,
-        prefs.api.bindAddress,
-      );
-      return { port: httpServer.port, host: httpServer.host };
+      return replaceHttpServer(prefs);
     },
     async applyPrefsAtRuntime() {
       deps.invalidatePrefs();

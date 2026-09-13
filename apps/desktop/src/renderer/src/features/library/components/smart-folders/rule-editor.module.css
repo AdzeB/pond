@@ -68,7 +68,7 @@
 }
 .noValue {
   margin: 0;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-10);
 }
 .srOnly {

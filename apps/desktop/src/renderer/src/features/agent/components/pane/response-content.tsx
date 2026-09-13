@@ -1,5 +1,5 @@
 import { IconArrowUpRightOutline18 } from "@pond/icons/outline/18";
-import { Button, Message, Reveal } from "@pond/ui";
+import { Button, Reveal } from "@pond/ui";
 import type {
   AssistantMessage,
   AssistantProvider,
@@ -137,7 +137,7 @@ export function ResponseContent({
       <Reveal visible={Boolean(message.metadata?.stopped)}>
         <p className={styles["stopped-label"]}>Response stopped.</p>
       </Reveal>
-      <Reveal>
+      <div>
         <div className={styles["response-footer"]}>
           <ToolActivity steps={message.metadata?.steps ?? []} />
           {sources.length ? (
@@ -152,7 +152,7 @@ export function ResponseContent({
             </Button>
           ) : null}
         </div>
-        <Message.Actions>
+        <div className={styles["message-actions"]}>
           {message.content || message.metadata?.results?.length ? (
             <MessageActions
               text={responseText(message)}
@@ -175,8 +175,8 @@ export function ResponseContent({
               Draft a Follow-up
             </Button>
           ) : null}
-        </Message.Actions>
-      </Reveal>
+        </div>
+      </div>
     </article>
   );
 }

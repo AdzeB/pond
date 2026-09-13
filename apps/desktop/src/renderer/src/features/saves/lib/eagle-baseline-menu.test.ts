@@ -170,7 +170,7 @@ describe("Eagle baseline save menu", () => {
     expect(top).not.toContain("Plugin");
   });
 
-  it("keeps Open With as apps only", () => {
+  it("lists apps alongside the other opening actions", () => {
     const items = buildSaveMenu(fileSave(), {
       clipboardEmpty: true,
       openWithApps: [
@@ -183,11 +183,18 @@ describe("Eagle baseline save menu", () => {
       ],
     });
     const openWith = items.find(
-      (item) => item.type === "submenu" && item.label === "Open With",
+      (item) => item.type === "submenu" && item.label === "Open",
     );
     expect(
       openWith && "items" in openWith ? labels(openWith.items) : [],
-    ).toEqual(["Preview.app (Default)"]);
+    ).toEqual(
+      expect.arrayContaining([
+        "Preview.app (Default)",
+        "Open with Default App",
+        "Open Original URL",
+      ]),
+    );
+    expect(labels(items)).not.toContain("Open With");
   });
 
   it("shows Combine Images when two PNG saves are selected", () => {

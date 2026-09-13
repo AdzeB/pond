@@ -1,5 +1,6 @@
 import { Tray } from "electron";
 import log from "electron-log/main.js";
+import type { MenuActionId } from "../shared/constants";
 import { loadTrayIcon } from "./tray-icon";
 import { buildMenu, buildTooltip } from "./tray-menu";
 
@@ -14,9 +15,7 @@ export interface TrayOptions {
   onOpenSettings?: () => void | Promise<void>;
   onOpenSave?: (id: string) => void | Promise<void>;
   onOpenCollection?: () => void | Promise<void>;
-  onScreenshotDisplay?: () => void | Promise<void>;
-  onScreenshotArea?: () => void | Promise<void>;
-  onScreenshotWindow?: () => void | Promise<void>;
+  onMenuAction?: (id: MenuActionId) => void | Promise<void>;
 }
 
 let handle: TrayHandle | null = null;

@@ -26,13 +26,11 @@ interface TagPickerContextValue {
 }
 
 interface PopupStyle extends CSSProperties {
-  "--popup-min-width": string;
-  "--popup-width": string;
+  "--ds-popup-min-width": string;
 }
 
 const POPUP_STYLE: PopupStyle = {
-  "--popup-min-width": "max-content",
-  "--popup-width": "max-content",
+  "--ds-popup-min-width": "max-content",
 };
 
 const TagPickerContext = createContext<TagPickerContextValue | null>(null);

@@ -8,6 +8,7 @@ import {
   saves,
   syncActions,
 } from "@pond/schema/db";
+import { isAuxiliaryKind } from "@shared/save-file-names";
 import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { type Db, getDb } from "../db";
@@ -17,6 +18,7 @@ import { libraryRoot } from "../paths";
 import { readEnrichmentSidecar } from "./enrichment-sidecar";
 import { broadcastSyncAction, withMutationScope } from "./executor";
 import { runLibraryTransfer } from "./library-transfers";
+import { migrateSaveFileLayout } from "./save-file-layout-migration";
 
 export async function reconcileLibrary(): Promise<{
   updated: number;
@@ -64,6 +66,19 @@ export async function reconcileLibraryIndex(
         return;
       }
 
+      let stampedAt = mtimeMs;
+      const migrated = await migrateSaveFileLayout(
+        id,
+        metadata.files,
+        metadata.pond.schemaVersion,
+        { root, persist: false },
+      );
+      if (migrated.changed) {
+        metadata.files = migrated.files;
+        metadata.pond.coverIndex = migrated.coverIndex;
+        stampedAt = (await stat(join(root, "items", `${id}.info`))).mtimeMs;
+      }
+
       if (!metadata.source || !metadata.sourceId || !metadata.url) {
         log.warn("[pond scan] skipping item with incomplete metadata", {
           id,
@@ -71,7 +86,7 @@ export async function reconcileLibraryIndex(
           hasSourceId: Boolean(metadata.sourceId),
           hasUrl: Boolean(metadata.url),
         });
-        await stampScan(db, id, mtimeMs);
+        await stampScan(db, id, stampedAt);
         return;
       }
 
@@ -167,7 +182,7 @@ export async function reconcileLibraryIndex(
             })
             .returning()
             .all()[0];
-          stampScan(tx, id, mtimeMs);
+          stampScan(tx, id, stampedAt);
           return inserted;
         });
         if (action) runtime.changed(action);
@@ -199,9 +214,10 @@ function stampScan(
 async function originalsPresent(
   root: string,
   id: string,
-  files: Array<{ path: string; size: number }>,
+  files: Array<{ path: string; size: number; kind: string }>,
 ): Promise<boolean> {
-  for (const file of files) {
+  const originals = files.filter((file) => !isAuxiliaryKind(file.kind));
+  for (const file of originals) {
     try {
       const actual = await stat(join(root, "items", `${id}.info`, file.path));
       if (!actual.isFile() || actual.size !== file.size) return false;

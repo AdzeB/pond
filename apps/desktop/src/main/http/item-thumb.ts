@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { basename, extname } from "node:path";
 import { type SaveFile, saves } from "@pond/schema/db";
+import { pickCardFile } from "@shared/save-file-names";
 import { eq } from "drizzle-orm";
 import type { Context } from "hono";
 import { getDb } from "../db";
@@ -29,7 +30,7 @@ export async function itemThumbHandler(c: Context): Promise<Response> {
   if (!row) return c.json({ status: "error", error: "not found" }, 404);
 
   const list: SaveFile[] = row.files ?? [];
-  const cover = list[row.coverIndex ?? 0] ?? list[0];
+  const cover = pickCardFile(list);
   if (!cover) return c.json({ status: "error", error: "no cover" }, 404);
 
   const type =

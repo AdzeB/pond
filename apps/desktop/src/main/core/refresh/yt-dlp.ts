@@ -5,6 +5,7 @@ import type { Source } from "@pond/schema/db";
 import type { RawYtdlp } from "@pond/schema/raw";
 import type { ReportDownloadActivity } from "@shared/download-activity";
 import log from "electron-log/main.js";
+import { TASK_WATCHDOG_MS } from "../pipeline/task-timeouts";
 import { getVideoDownloadPrefs } from "../prefs";
 import { partitionForIngest } from "../sync/accounts";
 import { binariesAvailable } from "./binaries";
@@ -54,8 +55,7 @@ interface DownloadedVideos {
 
 const HARD_TIMEOUT_MS = 90_000;
 const MAX_PLAYLIST_TIMEOUT_FACTOR = 4;
-/** Matches `TASK_WATCHDOG_MS.fetch_video_ytdlp` so a live transfer is not killed at 90s. */
-const VIDEO_WATCHDOG_MS = 10 * 60_000;
+const VIDEO_WATCHDOG_MS = TASK_WATCHDOG_MS.fetch_video_ytdlp;
 
 export async function downloadVideo(
   args: DownloadVideoArgs,

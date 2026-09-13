@@ -1,16 +1,16 @@
 :root {
-  /* Hairline is a 1px border from this color, with background-clip: padding-box. */
-  --ds-shadow-ring: light-dark(oklch(0 0 0 / 0.06), oklch(1 0 0 / 0.1));
-
   --ds-shadow-1:
+    0 0 0 1px light-dark(oklch(0 0 0 / 0.06), oklch(1 0 0 / 0.1)),
     0 1px 2px -1px light-dark(oklch(0 0 0 / 0.06), oklch(0 0 0 / 0.2)),
-    0 2px 4px -1px light-dark(oklch(0 0 0 / 0.04), oklch(0 0 0 / 0.12));
+    0 2px 4px light-dark(oklch(0 0 0 / 0.04), oklch(0 0 0 / 0.12));
 
   --ds-shadow-2:
+    0 0 0 1px light-dark(oklch(0 0 0 / 0.08), oklch(1 0 0 / 0.14)),
     0 1px 2px -1px light-dark(oklch(0 0 0 / 0.08), oklch(0 0 0 / 0.28)),
-    0 2px 4px -1px light-dark(oklch(0 0 0 / 0.06), oklch(0 0 0 / 0.16));
+    0 2px 4px light-dark(oklch(0 0 0 / 0.06), oklch(0 0 0 / 0.16));
 
   --ds-shadow-3:
+    0 0 0 1px light-dark(oklch(0 0 0 / 0.06), oklch(1 0 0 / 0.1)),
     0 1px 2px -1px light-dark(oklch(0 0 0 / 0.06), oklch(0 0 0 / 0.24)),
     0 6px 18px -1px light-dark(oklch(0 0 0 / 0.02), oklch(0 0 0 / 0.16)),
     0 3px 9px -1px light-dark(oklch(0 0 0 / 0.04), oklch(0 0 0 / 0.1));
@@ -18,11 +18,13 @@
   --ds-shadow-4: var(--ds-shadow-1);
 
   --ds-shadow-5:
+    0 0 0 1px light-dark(oklch(0 0 0 / 0.06), oklch(1 0 0 / 0.1)),
     0 1px 2px -1px light-dark(oklch(0 0 0 / 0.06), oklch(0 0 0 / 0.24)),
     0 9px 48px -1px light-dark(oklch(0 0 0 / 0.08), oklch(0 0 0 / 0.28)),
     0 6px 24px -1px light-dark(oklch(0 0 0 / 0.1), oklch(0 0 0 / 0.18));
 
   --ds-shadow-6:
+    0 0 0 1px light-dark(oklch(0 0 0 / 0.06), oklch(1 0 0 / 0.1)),
     0 1px 2px -1px light-dark(oklch(0 0 0 / 0.06), oklch(0 0 0 / 0.24)),
     0 12px 48px -1px light-dark(oklch(0 0 0 / 0.1), oklch(0 0 0 / 0.34)),
     0 8px 24px -1px light-dark(oklch(0 0 0 / 0.12), oklch(0 0 0 / 0.22));

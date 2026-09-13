@@ -2,34 +2,29 @@ import { EAGLE_SUPPORTED_EXTENSIONS } from "@shared/eagle-formats";
 import { classifyLibraryFile } from "@shared/file-format";
 import { describe, expect, it } from "vitest";
 import {
+  classifyManualSave,
   mediaTypeForImportedFiles,
   storageKindForImport,
 } from "./manual-import";
 
 describe("storageKindForImport", () => {
-  it("keeps the first image as the cover and preserves other file roles", () => {
-    expect(storageKindForImport(classifyLibraryFile("a.heic"), 0)).toBe(
-      "cover",
-    );
-    expect(storageKindForImport(classifyLibraryFile("b.tiff"), 1)).toBe(
-      "media",
-    );
-    expect(storageKindForImport(classifyLibraryFile("song.m4a"), 0)).toBe(
-      "audio",
-    );
-    expect(storageKindForImport(classifyLibraryFile("paper.pdf"), 0)).toBe(
+  it("stores previewable images as image files", () => {
+    expect(storageKindForImport(classifyLibraryFile("a.heic"))).toBe("image");
+    expect(storageKindForImport(classifyLibraryFile("b.tiff"))).toBe("image");
+    expect(storageKindForImport(classifyLibraryFile("song.m4a"))).toBe("audio");
+    expect(storageKindForImport(classifyLibraryFile("paper.pdf"))).toBe(
       "document",
     );
-    expect(storageKindForImport(classifyLibraryFile("face.woff2"), 0)).toBe(
+    expect(storageKindForImport(classifyLibraryFile("face.woff2"))).toBe(
       "font",
     );
-    expect(storageKindForImport(classifyLibraryFile("model.usdz"), 0)).toBe(
+    expect(storageKindForImport(classifyLibraryFile("model.usdz"))).toBe(
       "file",
     );
-    expect(storageKindForImport(classifyLibraryFile("layout.psd"), 0)).toBe(
+    expect(storageKindForImport(classifyLibraryFile("layout.psd"))).toBe(
       "file",
     );
-    expect(storageKindForImport(classifyLibraryFile("negative.cr3"), 0)).toBe(
+    expect(storageKindForImport(classifyLibraryFile("negative.cr3"))).toBe(
       "file",
     );
   });
@@ -38,7 +33,7 @@ describe("storageKindForImport", () => {
     ...EAGLE_SUPPORTED_EXTENSIONS,
   ])("assigns a persistent storage role to Eagle-compatible .%s", (extension) => {
     expect(
-      storageKindForImport(classifyLibraryFile(`asset.${extension}`), 0),
+      storageKindForImport(classifyLibraryFile(`asset.${extension}`)),
     ).toBeTruthy();
   });
 });
@@ -61,5 +56,34 @@ describe("mediaTypeForImportedFiles", () => {
         classifyLibraryFile("cover.tiff"),
       ]),
     ).toBe("image");
+  });
+});
+
+describe("classifyManualSave", () => {
+  it("creates an empty text note when mediaType is text", () => {
+    expect(
+      classifyManualSave({
+        hasFiles: false,
+        hasUrl: false,
+        onlyTextFiles: false,
+        title: null,
+        textBody: null,
+        mediaType: "text",
+        importedType: null,
+      }),
+    ).toEqual({ ok: true, isTextSave: true, mediaType: "text" });
+  });
+
+  it("rejects other empty imports", () => {
+    expect(
+      classifyManualSave({
+        hasFiles: false,
+        hasUrl: false,
+        onlyTextFiles: false,
+        title: null,
+        textBody: null,
+        importedType: null,
+      }),
+    ).toEqual({ ok: false, error: "empty_input" });
   });
 });

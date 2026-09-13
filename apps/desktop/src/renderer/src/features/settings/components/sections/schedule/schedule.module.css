@@ -19,8 +19,6 @@
   padding: 16px;
   margin: 0;
   background: var(--ds-gray-1);
-  background-clip: padding-box;
-  border: var(--ds-border-elevated);
   border-radius: var(--ds-radius-xl);
   box-shadow: var(--ds-shadow-1);
 }
@@ -31,7 +29,7 @@
   height: 28px;
   padding: 0 8px;
   font: inherit;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-12);
   background: var(--ds-gray-2);
   border: 1px solid var(--ds-gray-4);
@@ -50,7 +48,7 @@
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   line-height: 28px;
   color: var(--ds-gray-12);
 }
@@ -65,7 +63,7 @@
 .week legend {
   padding: 0;
   margin-bottom: 8px;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-10);
 }
 .days {
@@ -82,7 +80,7 @@
 .manual,
 .error {
   margin: 0;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   line-height: 1.5;
   color: var(--ds-gray-11);
 }

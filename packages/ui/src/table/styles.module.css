@@ -12,7 +12,7 @@
 
 .header {
   padding: 0 12px;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-medium);
   vertical-align: middle;
   color: var(--ds-gray-11);
@@ -28,6 +28,6 @@
 
 .caption {
   margin-top: 12px;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-10);
 }

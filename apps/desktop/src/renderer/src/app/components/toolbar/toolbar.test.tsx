@@ -71,6 +71,9 @@ describe("breadcrumb toolbar", () => {
     pool.upsert(save);
     libraryViewContext.set([], "library");
     libraryChrome.setNav({ kind: "all" });
+    libraryChrome.setInspectorSaveId(null);
+    libraryChrome.setAgentOpen(false);
+    libraryChrome.closeRightPane();
     rememberListPath("/");
     host = document.createElement("div");
     document.body.append(host);
@@ -227,5 +230,41 @@ describe("breadcrumb toolbar", () => {
     expect(host.querySelector('[aria-current="page"]')?.textContent).toBe(
       "Sources",
     );
+  });
+
+  it("opens Agent from its own control", async () => {
+    await mount();
+    expect(button("Toggle Details").getAttribute("aria-pressed")).not.toBe(
+      "true",
+    );
+    await act(async () => button("Agent").click());
+    expect(libraryChrome.getState().rightPane).toBe("agent");
+    expect(button("Agent").getAttribute("aria-pressed")).toBe("true");
+    expect(button("Toggle Details").getAttribute("aria-pressed")).toBe("true");
+    await act(async () => button("Toggle Details").click());
+    expect(libraryChrome.getState().rightPane).toBeNull();
+  });
+
+  it("closes Details without opening Agent", async () => {
+    libraryChrome.inspectSave("demo");
+    await mount("/save/demo");
+    expect(libraryChrome.getState().rightPane).toBe("inspector");
+    await act(async () => button("Toggle Details").click());
+    expect(libraryChrome.getState().rightPane).toBeNull();
+    expect(libraryChrome.getState().inspectorSaveId).toBe("demo");
+    expect(button("Agent").getAttribute("aria-pressed")).not.toBe("true");
+  });
+
+  it("keeps the right sidebar toggle visible and reopens Details", async () => {
+    libraryChrome.inspectSave("demo");
+    libraryChrome.closeRightPane();
+    await mount("/save/demo");
+    expect(libraryChrome.getState().rightPane).toBeNull();
+    expect(button("Toggle Details").getAttribute("aria-pressed")).not.toBe(
+      "true",
+    );
+    await act(async () => button("Toggle Details").click());
+    expect(libraryChrome.getState().rightPane).toBe("inspector");
+    expect(button("Toggle Details").getAttribute("aria-pressed")).toBe("true");
   });
 });

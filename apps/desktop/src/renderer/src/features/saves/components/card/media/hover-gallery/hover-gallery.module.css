@@ -7,8 +7,6 @@
   height: 100%;
   margin: auto;
   object-fit: contain;
-  background-clip: padding-box;
-  border: var(--ds-border-elevated);
   border-radius: var(--ds-radius-xs);
   box-shadow: var(--ds-shadow-2);
   opacity: 0;

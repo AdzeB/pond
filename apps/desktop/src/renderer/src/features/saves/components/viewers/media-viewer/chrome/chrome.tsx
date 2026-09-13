@@ -1,6 +1,7 @@
 import { Toolbar } from "@pond/ui";
 import { createContext, type ReactNode, use, useState } from "react";
 import { createPortal } from "react-dom";
+import { HudHost } from "@/features/saves/components/viewers/hud";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import styles from "./styles.module.css";
 
@@ -50,7 +51,9 @@ export function ViewerChrome({ children }: { children: ReactNode }) {
             </Toolbar.Row>
           </Toolbar.Root>
         </div>
-        <div className={styles.stage}>{children}</div>
+        <div className={styles.stage}>
+          <HudHost>{children}</HudHost>
+        </div>
         <div className={styles.bottom} {...bottomFade}>
           <div className={styles.tools} ref={setBottom} />
         </div>

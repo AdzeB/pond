@@ -13,6 +13,7 @@ import {
   type LibraryFileFormat,
   libraryFilename,
 } from "@shared/file-format";
+import { isAuxiliaryKind, THUMBNAIL_KIND } from "@shared/save-file-names";
 import { and, eq } from "drizzle-orm";
 import mime from "mime-types";
 import sharp from "sharp";
@@ -24,6 +25,7 @@ import { executeBatch, withMutationScope } from "./executor";
 import { extractFontFamily } from "./font-metadata";
 import { persistSave } from "./persist-save";
 import type { WriteFileArgs } from "./pipeline/workers/apply";
+import { ensureSaveThumbnail } from "./save-thumbnail";
 import { normalizeTagList, prepareTagRegistryUpdates } from "./tags";
 
 const MAX_TEXT_BODY_BYTES = 100_000;
@@ -36,7 +38,7 @@ export interface ManualSaveInput {
   filePaths?: string[];
   fileSourceUrls?: string[];
   /** Optional preview supplied by an external library such as Eagle. */
-  customThumbnailPath?: string | null;
+  thumbnailPath?: string | null;
   sourceId?: string | null;
   source?: Source;
   savedAt?: Date;
@@ -48,6 +50,7 @@ export interface ManualSaveInput {
   comments?: import("@pond/schema/db").ImageComment[];
   videoNotes?: import("@pond/schema/db").VideoNote[];
   dominantColors?: string[];
+  mediaType?: MediaType | null;
 }
 
 interface ManualSaveResult {
@@ -104,14 +107,47 @@ export function mediaTypeForImportedFiles(
   return selected;
 }
 
+export function classifyManualSave(input: {
+  hasFiles: boolean;
+  hasUrl: boolean;
+  onlyTextFiles: boolean;
+  title: string | null;
+  textBody: string | null;
+  mediaType?: MediaType | null;
+  importedType: MediaType | null;
+}):
+  | { ok: false; error: "empty_input" }
+  | { ok: true; isTextSave: boolean; mediaType: MediaType } {
+  const forcedText = input.mediaType === "text";
+  const isTextSave =
+    !input.hasUrl &&
+    (forcedText ||
+      input.onlyTextFiles ||
+      (!input.hasFiles && Boolean(input.textBody)));
+  if (
+    !input.hasFiles &&
+    !input.title &&
+    !input.textBody &&
+    !input.hasUrl &&
+    !forcedText
+  ) {
+    return { ok: false, error: "empty_input" };
+  }
+  return {
+    ok: true,
+    isTextSave,
+    mediaType:
+      input.importedType ?? (isTextSave ? "text" : (input.mediaType ?? "link")),
+  };
+}
+
 export function storageKindForImport(
   format: LibraryFileFormat,
-  imageIndex: number,
 ): SaveFile["kind"] {
   switch (format.mediaType) {
     case "image":
       if (format.previewKind === "generic") return "file";
-      return imageIndex === 0 ? "cover" : "media";
+      return "image";
     case "video":
       return "video";
     case "audio":
@@ -192,16 +228,20 @@ async function importManualSave(
   const onlyTextFiles =
     hasFiles && readable.every((item) => item.format.mediaType === "text");
   const textBody = (importedText || note)?.trim() || null;
-  const isTextSave =
-    !hasUrl && (onlyTextFiles || (!hasFiles && Boolean(textBody)));
+  const classified = classifyManualSave({
+    hasFiles,
+    hasUrl,
+    onlyTextFiles,
+    title,
+    textBody,
+    mediaType: input.mediaType,
+    importedType: mediaTypeForImportedFiles(
+      readable.map((item) => item.format),
+    ),
+  });
+  if (!classified.ok) return { ok: false, error: classified.error };
 
-  if (!hasFiles && !title && !textBody && !hasUrl) {
-    return { ok: false, error: "empty_input" };
-  }
-
-  const mediaType: MediaType =
-    mediaTypeForImportedFiles(readable.map((item) => item.format)) ??
-    (isTextSave ? "text" : "link");
+  const { isTextSave, mediaType } = classified;
 
   const insertValues: NewSave = {
     id,
@@ -247,15 +287,8 @@ async function importManualSave(
   }
 
   if (hasFiles) {
-    let imageIndex = 0;
     const newFiles: WriteFileArgs[] = readable.map((item) => {
-      const kind = storageKindForImport(item.format, imageIndex);
-      if (
-        item.format.mediaType === "image" &&
-        item.format.previewKind !== "generic"
-      ) {
-        imageIndex += 1;
-      }
+      const kind = storageKindForImport(item.format);
       return {
         kind,
         filename: item.filename,
@@ -268,12 +301,12 @@ async function importManualSave(
       };
     });
 
-    const customThumbnail = input.customThumbnailPath
-      ? await inspectCustomThumbnail(input.customThumbnailPath)
+    const customThumbnail = input.thumbnailPath
+      ? await inspectCustomThumbnail(input.thumbnailPath)
       : null;
     if (customThumbnail) {
       newFiles.push({
-        kind: "custom_thumbnail",
+        kind: THUMBNAIL_KIND,
         filename: customThumbnail.filename,
         sourcePath: customThumbnail.path,
         mimeType: customThumbnail.format.mimeType,
@@ -322,6 +355,7 @@ async function importManualSave(
         );
       }
     }
+    await ensureSaveThumbnail(id, completed);
   } else {
     const finalRow = (await db.select().from(saves).where(eq(saves.id, id)))[0];
     if (finalRow) await writeSaveInfo(finalRow);
@@ -406,10 +440,7 @@ export async function importedFilesComplete(
   expected: number,
 ): Promise<boolean> {
   const originals = (save.files ?? []).filter(
-    (file) =>
-      !["custom_thumbnail", "avatar", "source_icon", "poster"].includes(
-        file.kind,
-      ),
+    (file) => !isAuxiliaryKind(file.kind),
   );
   if (save.status !== "complete" || originals.length < expected) return false;
   for (const file of originals) {

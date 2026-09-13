@@ -83,10 +83,10 @@ export function AttachmentItem({ removable = false }: { removable?: boolean }) {
               <img
                 src={src}
                 alt={attachment.name}
-                className={styles.fullImage}
+                className={styles["full-image"]}
               />
             ) : (
-              <div className={styles.fileDetails}>
+              <div className={styles["file-details"]}>
                 <IconFileOutline18 />
                 <span>{attachment.contentType || "File attachment"}</span>
                 {attachment.file && (

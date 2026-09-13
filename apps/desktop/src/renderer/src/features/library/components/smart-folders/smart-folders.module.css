@@ -44,13 +44,13 @@
   height: var(--sidebar-height-md);
   padding: 0 6px;
   overflow: hidden;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-12);
 }
 
 .field {
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   line-height: 1;
 }
 
@@ -75,17 +75,13 @@
   opacity: 1;
 }
 
-.menu {
-  --popup-min-width: 200px;
-}
-
 .context {
   display: flex;
   flex: 1 0 100%;
   gap: 6px;
   align-items: center;
   min-width: 0;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-11);
 }
 

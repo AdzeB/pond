@@ -4,6 +4,7 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "electron-vite";
 import type { Plugin } from "vite";
+import { cssComposesHmr } from "./css-composes-hmr";
 
 const require = createRequire(import.meta.url);
 const reactDir = dirname(require.resolve("react/package.json"));
@@ -18,6 +19,17 @@ const CJS_SHIM = [
 
 interface ChunkInfo {
   fileName: string;
+}
+
+/** Rolldown otherwise parks a vendor export in an app chunk and circular-inits (drizzle-orm `count` in library-retrieval). */
+function vendorChunkName(id: string) {
+  if (!id.includes("node_modules")) return null;
+  const match = id.match(
+    /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(@[^/]+\/[^/]+|[^/]+)/,
+  );
+  const pkg = match?.[1];
+  if (!pkg) return null;
+  return `vendor-${pkg.replace(/^@/, "").replace(/\//g, "-")}`;
 }
 
 const CJS_SHIM_RE =
@@ -56,6 +68,13 @@ export default defineConfig({
         input: resolve(__dirname, "src/main/index.ts"),
         /** Native modules resolve their platform .node binaries at runtime; `re2` isn't built here, so external lets url-regex-safe fall back to plain RegExp. */
         external: ["electron", "better-sqlite3", "sqlite-vec", "sharp", "re2"],
+        output: {
+          format: "es",
+          strictExecutionOrder: true,
+          codeSplitting: {
+            groups: [{ name: vendorChunkName }],
+          },
+        },
       },
     },
   },
@@ -91,6 +110,10 @@ export default defineConfig({
       watch: { usePolling: false },
     },
     plugins: [
+      cssComposesHmr([
+        resolve(__dirname, "../../packages/ui/src"),
+        resolve(__dirname, "../../packages/theme/src"),
+      ]),
       tanstackRouter({
         target: "react",
         autoCodeSplitting: true,
@@ -134,19 +157,7 @@ export default defineConfig({
           strictExecutionOrder: true,
           codeSplitting: {
             includeDependenciesRecursively: false,
-            groups: [
-              {
-                name(id: string) {
-                  if (!id.includes("node_modules")) return null;
-                  const match = id.match(
-                    /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(@[^/]+\/[^/]+|[^/]+)/,
-                  );
-                  const pkg = match?.[1];
-                  if (!pkg) return null;
-                  return `vendor-${pkg.replace(/^@/, "").replace(/\//g, "-")}`;
-                },
-              },
-            ],
+            groups: [{ name: vendorChunkName }],
           },
         },
       },

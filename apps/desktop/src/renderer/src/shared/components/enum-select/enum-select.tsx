@@ -56,9 +56,8 @@ export function EnumSelect<T>({
       disabled={disabled}
       onValueChange={(next) => {
         if (next === null && !hasNullOption) return;
-        // SAFETY: the popup only emits values drawn from `options`, and a null
-        // reaches here only when `options` declares a null value.
-        onValueChange(next as T);
+        const match = options.find((option) => Object.is(option.value, next));
+        if (match) onValueChange(match.value);
       }}
     >
       <Select.Trigger className={className} aria-label={ariaLabel}>

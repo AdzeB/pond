@@ -1,15 +1,87 @@
 .root {
+  --input-min-height: 32px;
+  --input-padding-inline: 12px;
+  --input-padding-start: var(--input-padding-inline);
+  --input-font-size: var(--ds-text-md);
+  --input-radius: var(--ds-radius-md);
+  --input-icon-size: 16px;
+  --input-icon-inset: 8px;
+  --input-icon-padding-start: 28px;
+
   position: relative;
   display: inline-flex;
   align-items: center;
+
+  &:where([data-size="xs"]) {
+    --input-min-height: 24px;
+    --input-padding-inline: 6px;
+    --input-font-size: var(--ds-text-xs);
+    --input-radius: var(--ds-radius-sm);
+    --input-icon-size: 12px;
+    --input-icon-inset: 5px;
+    --input-icon-padding-start: 20px;
+  }
+
+  &:where([data-size="sm"]) {
+    --input-min-height: 28px;
+    --input-padding-inline: 8px;
+    --input-font-size: var(--ds-text-sm);
+    --input-radius: var(--ds-radius-lg);
+    --input-icon-size: 14px;
+    --input-icon-inset: 6px;
+    --input-icon-padding-start: 24px;
+  }
+
+  &:where([data-size="md"]) {
+    --input-min-height: 32px;
+    --input-padding-inline: 12px;
+    --input-font-size: var(--ds-text-md);
+    --input-radius: var(--ds-radius-lg);
+    --input-icon-size: 16px;
+    --input-icon-inset: 8px;
+    --input-icon-padding-start: 28px;
+  }
+
+  &:where([data-size="lg"]) {
+    --input-min-height: 36px;
+    --input-padding-inline: 14px;
+    --input-font-size: var(--ds-text-md);
+    --input-radius: var(--ds-radius-2xl);
+    --input-icon-size: 18px;
+    --input-icon-inset: 10px;
+    --input-icon-padding-start: 34px;
+  }
+
+  &:where([data-size="xl"]) {
+    --input-min-height: 40px;
+    --input-padding-inline: 16px;
+    --input-font-size: var(--ds-text-lg);
+    --input-radius: var(--ds-radius-xl);
+    --input-icon-size: 20px;
+    --input-icon-inset: 12px;
+    --input-icon-padding-start: 38px;
+  }
+
+  &:has(> [data-slot="icon"]) {
+    --input-padding-start: var(--input-icon-padding-start);
+  }
+
+  &:has(> [data-multiline]) {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+  }
 }
 
 .icon {
   position: absolute;
+  inset-inline-start: var(--input-icon-inset);
   z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: var(--input-icon-size);
+  height: var(--input-icon-size);
   color: var(--ds-gray-8);
   pointer-events: none;
 }
@@ -18,8 +90,13 @@
   flex: 1 1 auto;
   width: 100%;
   height: 100%;
+  min-height: var(--input-min-height);
+  padding: 0 var(--input-padding-inline);
+  padding-inline-start: var(--input-padding-start);
+  font-size: var(--input-font-size);
   font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-12);
+  border-radius: var(--input-radius);
   transition:
     outline var(--ds-duration-medium) var(--ds-easing-standard),
     box-shadow var(--ds-duration-medium) var(--ds-easing-standard);
@@ -32,21 +109,29 @@
     cursor: not-allowed;
     opacity: 0.8;
   }
+
+  &[data-multiline] {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    height: auto;
+    min-height: calc(2lh + 16px);
+    padding-block: 8px;
+    line-height: 1.5;
+    resize: vertical;
+  }
 }
 
 .root:where([data-variant="primary"]) > .field {
   background: var(--ds-gray-1);
-  background-clip: padding-box;
-  border: var(--ds-border-elevated);
   box-shadow: var(--ds-shadow-1);
 
-  &:hover,
-  &[data-demo-state="hover"] {
-    box-shadow: var(--ds-shadow-2);
-  }
-
-  &:focus-visible,
-  &[data-demo-state="focus"] {
+  &:is(
+      :hover,
+      :focus-visible,
+      [data-demo-state="hover"],
+      [data-demo-state="focus"]
+    ) {
     box-shadow: var(--ds-shadow-2);
   }
 }
@@ -55,120 +140,16 @@
   background: var(--ds-gray-a2);
   border: var(--ds-border-width) solid var(--ds-border-subtle);
 
-  &:hover,
-  &[data-demo-state="hover"] {
+  &:is(
+      :hover,
+      :focus-visible,
+      [data-demo-state="hover"],
+      [data-demo-state="focus"]
+    ) {
     background: var(--ds-gray-a3);
   }
 
-  &:focus-visible,
-  &[data-demo-state="focus"] {
-    background: var(--ds-gray-a3);
+  &:is(:focus-visible, [data-demo-state="focus"]) {
     border-color: var(--ds-gray-a6);
   }
-}
-
-.root:where([data-size="xs"]) > .field {
-  min-height: 24px;
-  padding: 0 6px;
-  font-size: var(--ds-text-micro);
-  border-radius: var(--ds-radius-sm);
-}
-
-.root:where([data-size="xs"]) > .icon {
-  left: 5px;
-  width: 12px;
-  height: 12px;
-}
-
-.root:where([data-size="xs"]):has([data-slot="icon"]) > [data-slot="field"] {
-  padding-left: 20px;
-}
-
-.root:where([data-size="sm"]) > .field {
-  min-height: 28px;
-  padding: 0 8px;
-  font-size: var(--ds-text-mini);
-  border-radius: var(--ds-radius-sm);
-}
-
-.root:where([data-size="sm"]) > .icon {
-  left: 6px;
-  width: 14px;
-  height: 14px;
-}
-
-.root:where([data-size="sm"]):has([data-slot="icon"]) > [data-slot="field"] {
-  padding-left: 24px;
-}
-
-.root:where([data-size="md"]) > .field {
-  min-height: 32px;
-  padding: 0 12px;
-  font-size: var(--ds-text-small);
-  border-radius: var(--ds-radius-md);
-}
-
-.root:where([data-size="md"]) > .icon {
-  left: 8px;
-  width: 16px;
-  height: 16px;
-}
-
-.root:where([data-size="md"]):has([data-slot="icon"]) > [data-slot="field"] {
-  padding-left: 28px;
-}
-
-.root:where([data-size="lg"]) > .field {
-  min-height: 36px;
-  padding: 0 14px;
-  font-size: var(--ds-text-small);
-  border-radius: var(--ds-radius-lg);
-}
-
-.root:where([data-size="lg"]) > .icon {
-  left: 10px;
-  width: 18px;
-  height: 18px;
-}
-
-.root:where([data-size="lg"]):has([data-slot="icon"]) > [data-slot="field"] {
-  padding-left: 34px;
-}
-
-.root:where([data-size="xl"]) > .field {
-  min-height: 44px;
-  padding: 0 16px;
-  font-size: var(--ds-text-body);
-  border-radius: var(--ds-radius-xl);
-}
-
-.root:where([data-size="xl"]) > .icon {
-  left: 12px;
-  width: 20px;
-  height: 20px;
-}
-
-.root:where([data-size="xl"]):has([data-slot="icon"]) > [data-slot="field"] {
-  padding-left: 38px;
-}
-
-.root:has(> [data-multiline]) {
-  display: flex;
-  align-items: stretch;
-  width: 100%;
-}
-
-.field[data-multiline] {
-  display: block;
-  min-width: 0;
-  max-width: 100%;
-  height: auto;
-  min-height: 2lh;
-  line-height: 1.5;
-  resize: vertical;
-}
-
-.root > .field[data-multiline] {
-  min-height: calc(2lh + 16px);
-  padding-block: 8px;
 }

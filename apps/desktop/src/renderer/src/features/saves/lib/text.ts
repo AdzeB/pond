@@ -1,3 +1,4 @@
+import { isAuxiliaryKind, isOriginalImageKind } from "@shared/save-file-names";
 import {
   arenaBlockClassFromRawJson,
   TEXT_COVER_KINDS,
@@ -11,9 +12,20 @@ export function textBodyForSave(save: Save): string {
   const fromDescription = composeContentDescription(save).trim();
   if (fromDescription) return fromDescription;
   if (save.mediaType?.toLowerCase() === "text") {
-    return textBodyFromFields(null, save.title);
+    return textBodyFromFields(null, save.title) || "Untitled";
   }
   return "";
+}
+
+export function noteBodyForSave(save: Save): string {
+  return save.description?.trim() ?? "";
+}
+
+export function displayTitleForSave(save: Save): string {
+  const title = save.title?.trim();
+  if (title) return title;
+  if (save.mediaType?.toLowerCase() === "text") return "Untitled";
+  return save.url;
 }
 
 export function arenaBlockClass(save: Save): string | null {
@@ -21,13 +33,8 @@ export function arenaBlockClass(save: Save): string | null {
 }
 
 function isMediaFile(file: SaveFile): boolean {
-  if (
-    file.kind === "video" ||
-    file.kind === "poster" ||
-    file.kind === "cover" ||
-    file.kind === "image" ||
-    file.kind === "media"
-  ) {
+  if (isAuxiliaryKind(file.kind)) return false;
+  if (file.kind === "video" || isOriginalImageKind(file.kind)) {
     return true;
   }
   if (file.mimeType?.startsWith("video/") === true) return true;
@@ -43,8 +50,7 @@ export function isTextOnlyAsideFromCover(save: Save): boolean {
   return !(save.files ?? []).some(
     (f) =>
       !TEXT_COVER_KINDS.has(f.kind) &&
-      f.kind !== "avatar" &&
-      f.kind !== "source_icon" &&
+      !isAuxiliaryKind(f.kind) &&
       !isArchiveFile(f) &&
       isMediaFile(f),
   );
@@ -53,6 +59,7 @@ export function isTextOnlyAsideFromCover(save: Save): boolean {
 export function isTextOnlySave(save: Save): boolean {
   if (save.source === "twitter" || save.source === "threads") return false;
   if (hasArchive(save)) return false;
-  if (!textBodyForSave(save)) return false;
-  return isTextOnlyAsideFromCover(save);
+  if (!isTextOnlyAsideFromCover(save)) return false;
+  if (save.mediaType?.toLowerCase() === "text") return true;
+  return Boolean(textBodyForSave(save));
 }

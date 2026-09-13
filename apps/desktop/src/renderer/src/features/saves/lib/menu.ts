@@ -40,7 +40,8 @@ import {
   IconTrashXmarkOutline18,
   IconUndoOutline18,
 } from "@pond/icons/outline/18";
-import type { MenuItemSpec } from "@pond/ui";
+import { Dialog, type MenuItemSpec } from "@pond/ui";
+import { isAuxiliaryKind, isThumbnailKind } from "@shared/save-file-names";
 import { type ComponentType, createElement, type ReactElement } from "react";
 import {
   lastUsedFolderId,
@@ -48,7 +49,6 @@ import {
 } from "@/features/library/lib/recent-folders";
 import { openActionDialog } from "@/features/library/state/action-dialog";
 import { openConversionDialog } from "@/features/library/state/conversion-dialog";
-import { dockMode } from "@/features/library/state/dock-mode";
 import { openDuplicateReview } from "@/features/library/state/duplicate-review";
 import { openFolderPicker } from "@/features/library/state/folder-picker";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
@@ -80,6 +80,7 @@ import {
 } from "@/features/saves/lib/reverse-image-search";
 import { openSave } from "@/features/saves/lib/save-nav";
 import {
+  addTagsToSelection,
   archiveSitesForSelection,
   copyFilePathsForSelection,
   copyFilesForSelection,
@@ -109,6 +110,7 @@ import {
   getPrefsSnapshot,
   savePrefsSection,
 } from "@/features/settings/state/prefs";
+import { peekTags } from "@/features/tags/state/tags";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
@@ -183,6 +185,25 @@ function submenuHidden(items: MenuItemSpec[]): boolean {
 
 function glyph(Icon: ComponentType): ReactElement {
   return createElement(Icon);
+}
+
+function addTagItems(ids: readonly string[]): MenuItemSpec[] {
+  const items: MenuItemSpec[] = peekTags().map((tag) => ({
+    label: tag.name,
+    onClick: () => void addTagsToSelection(ids, [tag.name]),
+  }));
+  items.push({
+    label: "New Tag",
+    onClick: () => {
+      Dialog.prompt({
+        title: "New Tag",
+        confirmLabel: "Add Tag",
+        placeholder: "Tag name",
+        onConfirm: (value) => addTagsToSelection(ids, [value]),
+      });
+    },
+  });
+  return items;
 }
 
 function combinableImageCount(items: readonly Save[]): number {
@@ -351,7 +372,8 @@ export function buildSaveMenu(
     saves.some((s) => Boolean(s.url) && s.source === "web" && !s.deletedAt);
   const hasCustomThumbnail =
     !batch &&
-    save.files.some((file: SaveFile) => file.kind === "custom_thumbnail");
+    save.files.some((file: SaveFile) => isThumbnailKind(file.kind)) &&
+    save.files.some((file: SaveFile) => !isAuxiliaryKind(file.kind));
   const canRename = !batch && save.source === "local";
 
   const reverseSearchItems: MenuItemSpec[] = REVERSE_SEARCH_ENGINES.map(
@@ -418,13 +440,6 @@ export function buildSaveMenu(
       onClick: () => openSave(save.id),
     },
     {
-      label: "Pin Preview",
-      icon: glyph(IconPinOutline18),
-      hidden: batch,
-      shortcut: shortcutGlyphs("view.pin-preview"),
-      onClick: () => inspect.pinCurrent(),
-    },
-    {
       label: "Open with Default App",
       icon: glyph(IconArrowUpRightOutline18),
       hidden: !hasFiles,
@@ -434,14 +449,8 @@ export function buildSaveMenu(
         else void openDefaultApp(save, fileIndex);
       },
     },
-    {
-      type: "submenu",
-      id: `open-with:${openWithApps.some((app) => app.icon) ? "icons" : "names"}`,
-      label: "Open With",
-      icon: glyph(IconApplicationsOutline18),
-      hidden: !hasFiles || openWithApps.length === 0,
-      items: openWithMenuItems(ids, fileIndex, openWithApps),
-    },
+    ...(hasFiles ? openWithMenuItems(ids, fileIndex, openWithApps) : []),
+    { type: "separator" },
     {
       label: REVEAL_LABEL,
       icon: glyph(IconFolderOpenOutline18),
@@ -451,26 +460,6 @@ export function buildSaveMenu(
       onClick: () => {
         if (batch) void revealFilesForSelection(ids);
         else void revealFile(save, fileIndex);
-      },
-    },
-    {
-      label: "Share",
-      icon: glyph(IconFolderSendOutline18),
-      hidden: !hasFiles || batch,
-      onClick: () => {
-        void window.pond
-          .query("saves.share", {
-            id: save.id,
-            fileIndex: fileIndex ?? undefined,
-          })
-          .then((result) => {
-            if (!result.ok) {
-              notify({
-                id: "share",
-                title: result.error ?? "Couldn’t share this file.",
-              });
-            }
-          });
       },
     },
     {
@@ -558,18 +547,6 @@ export function buildSaveMenu(
       },
     },
     {
-      label: "Copy Save ID",
-      icon: glyph(IconCopyIdOutline18),
-      shortcut: shortcutGlyphs("save.copy-id"),
-      onClick: () => {
-        if (batch) {
-          void copyIdsForSelection(ids).then(notifyCopy);
-          return;
-        }
-        void copyId(save.id);
-      },
-    },
-    {
       label: "Copy Tags",
       icon: glyph(IconTagsOutline18),
       hidden: !hasTags,
@@ -586,13 +563,15 @@ export function buildSaveMenu(
       label: "Add Tag",
       icon: glyph(IconTagPlusOutline18),
       shortcut: shortcutGlyphs("save.add-tag"),
-      onClick: () => {
-        if (batch) {
-          dockMode.open("selection-tag");
-          return;
-        }
-        openTagPicker();
-      },
+      hidden: batch,
+      onClick: () => openTagPicker(),
+    },
+    {
+      type: "submenu",
+      label: "Add Tag",
+      icon: glyph(IconTagPlusOutline18),
+      hidden: !batch,
+      items: addTagItems(ids),
     },
     {
       label: "Add to Last Used Folder",
@@ -708,14 +687,24 @@ export function buildSaveMenu(
   ];
 
   const prefs = getPrefsSnapshot();
-  const runItems: MenuItemSpec[] = selectableTasks().map((task) => ({
-    label: task.label,
-    icon: glyph(IconMediaPlayOutline18),
-    disabled: task.precondition?.(prefs) != null,
-    onClick: () => {
-      void Promise.resolve(task.run(ids));
-    },
-  }));
+  const runItems: MenuItemSpec[] = [];
+  const maintenanceItems: MenuItemSpec[] = [];
+  for (const task of selectableTasks()) {
+    const items =
+      task.id === "re-embed" || task.id === "rebuild-visual"
+        ? maintenanceItems
+        : runItems;
+    items.push({
+      label: task.label,
+      icon: glyph(IconMediaPlayOutline18),
+      hidden: allTrashed,
+      keywords: task.keywords.join(" "),
+      disabled: task.precondition?.(prefs) != null,
+      onClick: () => {
+        void Promise.resolve(task.run(ids));
+      },
+    });
+  }
   if (incomplete || failedIdsIn(ids).length > 0) {
     runItems.push({
       label: "Retry Failed",
@@ -753,16 +742,16 @@ export function buildSaveMenu(
       label: "Find Duplicates",
       icon: glyph(IconClone2Outline18),
       hidden: batch,
-      onClick: () => openDuplicateReview(save.id),
+      onClick: () => openDuplicateReview({ saveId: save.id }),
     },
     {
       label: "Merge Duplicates",
       icon: glyph(IconMergeOutline18),
       hidden: batch,
-      onClick: () => openDuplicateReview(save.id),
+      onClick: () => openDuplicateReview({ saveId: save.id }),
     },
     {
-      label: "Set Custom Thumbnail",
+      label: "Set Thumbnail",
       icon: glyph(IconImagePlusOutline18),
       hidden: batch,
       onClick: () => {
@@ -846,7 +835,7 @@ export function buildSaveMenu(
       },
     },
     {
-      label: "Remove Custom Thumbnail",
+      label: "Remove Thumbnail",
       icon: glyph(IconImageMinusOutline18),
       hidden: batch || !hasCustomThumbnail,
       onClick: () => {
@@ -884,26 +873,7 @@ export function buildSaveMenu(
     },
   ];
 
-  return [
-    ...openItems,
-    { type: "separator" },
-    {
-      type: "submenu",
-      label: "Run",
-      icon: glyph(IconMediaPlayOutline18),
-      hidden: allTrashed || submenuHidden(runItems),
-      items: runItems,
-    },
-    { type: "separator" },
-    ...addItems,
-    {
-      type: "submenu",
-      label: "Export",
-      icon: glyph(IconArchiveExportOutline18),
-      hidden: submenuHidden(exportItems),
-      items: exportItems,
-    },
-    { type: "separator" },
+  const organizeItems: MenuItemSpec[] = [
     {
       label: "Rename",
       icon: glyph(IconPencilOutline18),
@@ -917,7 +887,62 @@ export function buildSaveMenu(
       hidden: !batch,
       onClick: () => openActionDialog(ids, "rename"),
     },
-    ...copyItems,
+    ...addItems,
+    {
+      label: "Paste Tags",
+      icon: glyph(IconClipboardOutline18),
+      disabled: clipboardEmpty,
+      shortcut: shortcutGlyphs("save.paste-tags"),
+      onClick: () => {
+        if (batch) void pasteTagsForSelection(ids);
+        else void pasteTagsAction(save);
+      },
+    },
+    {
+      label: isPinned ? "Unpin from Top" : "Pin to Top",
+      icon: glyph(IconPinOutline18),
+      hidden: !inFolder || batch,
+      onClick: () => {
+        if (!resolvedFolderId) return;
+        const next = isPinned
+          ? resolvedPinned.filter((id) => id !== save.id)
+          : [save.id, ...resolvedPinned.filter((id) => id !== save.id)];
+        void saveFolderPresentation(resolvedFolderId, { pinnedIds: [...next] });
+      },
+    },
+    {
+      label: isCover ? "Remove Folder Cover" : "Set as Folder Cover",
+      icon: glyph(IconCoverOutline18),
+      hidden: !inFolder || batch,
+      onClick: () => {
+        if (!resolvedFolderId) return;
+        void saveFolderPresentation(resolvedFolderId, {
+          coverSaveId: isCover ? null : save.id,
+        });
+      },
+    },
+  ];
+  openItems.push({
+    label: "Enter Presentation Mode",
+    icon: glyph(IconSlideshowOutline18),
+    hidden: allTrashed,
+    onClick: openPresentation,
+  });
+  const advancedItems: MenuItemSpec[] = [
+    {
+      label: "Copy Save ID",
+      icon: glyph(IconCopyIdOutline18),
+      shortcut: shortcutGlyphs("save.copy-id"),
+      onClick: () => {
+        if (batch) {
+          void copyIdsForSelection(ids).then(notifyCopy);
+          return;
+        }
+        void copyId(save.id);
+      },
+    },
+    ...maintenanceItems,
+    { type: "separator" },
     {
       label: "Combine Images",
       icon: glyph(IconImageOutline18),
@@ -949,29 +974,6 @@ export function buildSaveMenu(
       },
     },
     {
-      label: isPinned ? "Unpin from Top" : "Pin to Top",
-      icon: glyph(IconPinOutline18),
-      hidden: !inFolder || batch,
-      onClick: () => {
-        if (!resolvedFolderId) return;
-        const next = isPinned
-          ? resolvedPinned.filter((id) => id !== save.id)
-          : [save.id, ...resolvedPinned.filter((id) => id !== save.id)];
-        void saveFolderPresentation(resolvedFolderId, { pinnedIds: [...next] });
-      },
-    },
-    {
-      label: isCover ? "Remove Folder Cover" : "Set as Folder Cover",
-      icon: glyph(IconCoverOutline18),
-      hidden: !inFolder || batch,
-      onClick: () => {
-        if (!resolvedFolderId) return;
-        void saveFolderPresentation(resolvedFolderId, {
-          coverSaveId: isCover ? null : save.id,
-        });
-      },
-    },
-    {
       label: fontActivated ? "Deactivate Font" : "Activate Font",
       icon: glyph(IconFileOutline18),
       hidden: batch || save.mediaType !== "font",
@@ -983,43 +985,84 @@ export function buildSaveMenu(
       },
     },
     {
-      label: "Paste Tags",
-      icon: glyph(IconClipboardOutline18),
-      disabled: clipboardEmpty,
-      shortcut: shortcutGlyphs("save.paste-tags"),
-      onClick: () => {
-        if (batch) void pasteTagsForSelection(ids);
-        else void pasteTagsAction(save);
-      },
-    },
-    { type: "separator" },
-    {
       type: "submenu",
       label: "Search by Image",
       icon: glyph(IconMagnifierOutline18),
       hidden: !hasHttpUrl,
       items: reverseSearchItems,
     },
-    {
-      label: "Enter Presentation Mode",
-      icon: glyph(IconSlideshowOutline18),
-      hidden: allTrashed,
-      onClick: openPresentation,
-    },
-    { type: "separator" },
+    ...moreItems,
+  ];
+
+  return [
     {
       type: "submenu",
-      label: "More",
+      id: `open:${openWithApps.some((app) => app.icon) ? "icons" : "names"}`,
+      label: "Open",
+      icon: glyph(IconApplicationsOutline18),
+      hidden: submenuHidden(openItems),
+      items: openItems,
+    },
+    {
+      type: "submenu",
+      label: "Organise",
+      icon: glyph(IconFoldersOutline18),
+      hidden: submenuHidden(organizeItems),
+      items: organizeItems,
+    },
+    {
+      type: "submenu",
+      label: "Copy",
+      icon: glyph(IconCopyOutline18),
+      hidden: submenuHidden(copyItems),
+      items: copyItems,
+    },
+    {
+      label: "Share",
+      icon: glyph(IconFolderSendOutline18),
+      hidden: !hasFiles || batch,
+      onClick: () => {
+        void window.pond
+          .query("saves.share", {
+            id: save.id,
+            fileIndex: fileIndex ?? undefined,
+          })
+          .then((result) => {
+            if (!result.ok) {
+              notify({
+                id: "share",
+                title: result.error ?? "Couldn’t share this file.",
+              });
+            }
+          });
+      },
+    },
+    {
+      type: "submenu",
+      label: "Export",
+      icon: glyph(IconArchiveExportOutline18),
+      hidden: submenuHidden(exportItems),
+      items: exportItems,
+    },
+    {
+      type: "submenu",
+      label: "Agent",
+      icon: glyph(IconMediaPlayOutline18),
+      hidden: allTrashed || submenuHidden(runItems),
+      items: runItems,
+    },
+    {
+      type: "submenu",
+      label: "Advanced",
       icon: glyph(IconDotsOutline18),
-      hidden: submenuHidden(moreItems),
-      items: moreItems,
+      hidden: submenuHidden(advancedItems),
+      items: advancedItems,
     },
     { type: "separator" },
     ...restoreItems,
   ];
 }
 
-/** Names first so Open With can open before every app icon is ready. */
 export async function loadOpenWithApps({
   ids,
   fileIndex,
@@ -1034,11 +1077,7 @@ export async function loadOpenWithApps({
   const cached = openWithAppsByKind.get(kind);
   if (cached?.length) onApps(cached);
   try {
-    const listed = await window.pond.query("saves.listOpenWith", {
-      ids,
-      fileIndex: fileIndex ?? undefined,
-    });
-    const apps = listed.apps ?? [];
+    const apps = await listOpenWithApps(ids, fileIndex);
     if (apps.length) {
       openWithAppsByKind.set(kind, apps);
       onApps(apps);
@@ -1046,18 +1085,26 @@ export async function loadOpenWithApps({
       onApps([]);
     }
     if (!apps.some((app) => app.icon == null)) return;
-    const decorated = await window.pond.query("saves.listOpenWith", {
-      ids,
-      fileIndex: fileIndex ?? undefined,
-      includeIcons: true,
-    });
-    const next = decorated.apps ?? apps;
+    const next = await listOpenWithApps(ids, fileIndex, true);
     if (!next.length) return;
     openWithAppsByKind.set(kind, next);
     onApps(next);
   } catch {
     if (cached?.length) onApps(cached);
   }
+}
+
+async function listOpenWithApps(
+  ids: string[],
+  fileIndex?: number | null,
+  includeIcons = false,
+): Promise<OpenWithApp[]> {
+  const listed = await window.pond.query("saves.listOpenWith", {
+    ids,
+    fileIndex: fileIndex ?? undefined,
+    includeIcons: includeIcons || undefined,
+  });
+  return listed.apps ?? [];
 }
 
 function notifyCopy(result: { ok: boolean; message: string }): void {

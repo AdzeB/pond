@@ -116,13 +116,19 @@ describe("folder sidebar", () => {
 
   async function mount(path = "/") {
     const rootRoute = createRootRoute({ component: FolderSidebar });
-    const children = ["/", "/sources", "/tags", "/assistant", "/untagged"].map(
-      (path) =>
-        createRoute({
-          getParentRoute: () => rootRoute,
-          path,
-          component: () => null,
-        }),
+    const children = [
+      "/",
+      "/sources",
+      "/tags",
+      "/assistant",
+      "/untagged",
+      "/downloads",
+    ].map((path) =>
+      createRoute({
+        getParentRoute: () => rootRoute,
+        path,
+        component: () => null,
+      }),
     );
     const router = createRouter({
       routeTree: rootRoute.addChildren(children),
@@ -260,32 +266,9 @@ describe("folder sidebar", () => {
     expect(router.state.location.pathname).toBe(path);
     expect(button(label).getAttribute("aria-current")).toBe("page");
     expect(button("All").getAttribute("aria-current")).toBeNull();
-    await act(async () => iconButton("Assistant").click());
+    await act(async () => button("Downloads").click());
     expect(button(label).getAttribute("aria-current")).toBeNull();
-    expect(iconButton("Assistant").getAttribute("aria-current")).toBe("page");
-  });
-
-  it("places Assistant between Search and New", async () => {
-    await mount();
-    const search = iconButton("Search");
-    const assistant = iconButton("Assistant");
-    const create = iconButton("New");
-    expect(
-      search.compareDocumentPosition(assistant) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(
-      assistant.compareDocumentPosition(create) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-  });
-
-  it("opens Assistant from the header", async () => {
-    const router = await mount();
-    await act(async () => iconButton("Assistant").click());
-    expect(router.state.location.pathname).toBe("/assistant");
-    expect(iconButton("Assistant").getAttribute("aria-current")).toBe("page");
-    expect(button("All").getAttribute("aria-current")).toBeNull();
+    expect(button("Downloads").getAttribute("aria-current")).toBe("page");
   });
 
   it("groups library destinations before downloads", async () => {

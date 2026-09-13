@@ -28,27 +28,28 @@ export function ReferenceList({
   addedIds?: readonly string[];
   empty?: string;
 }) {
-  if (!items.length) return <div className={styles.pickerEmpty}>{empty}</div>;
+  if (!items.length)
+    return <div className={styles["picker-empty"]}>{empty}</div>;
   return (
-    <div className={styles.referenceList}>
+    <div className={styles["reference-list"]}>
       {items.map((item) => (
-        <article key={item.id} className={styles.referenceRow}>
+        <article key={item.id} className={styles["reference-row"]}>
           <Button
             variant="ghost"
-            className={styles.referenceOpen}
+            className={styles["reference-open"]}
             aria-label={`Open ${item.title}`}
             onClick={() => onOpen(item)}
           >
-            <span className={styles.referenceMedia}>
+            <span className={styles["reference-media"]}>
               {item.media ?? <IconLink2Outline18 />}
             </span>
-            <span className={styles.modelContent}>
-              <span className={styles.modelName}>{item.title}</span>
+            <span className={styles["model-content"]}>
+              <span className={styles["model-name"]}>{item.title}</span>
               {item.meta && (
-                <span className={styles.rowDescription}>{item.meta}</span>
+                <span className={styles["row-description"]}>{item.meta}</span>
               )}
               {item.description && (
-                <span className={styles.referenceDescription}>
+                <span className={styles["reference-description"]}>
                   {item.description}
                 </span>
               )}

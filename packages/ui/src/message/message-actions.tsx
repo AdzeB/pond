@@ -6,7 +6,6 @@ import {
   IconChevronRightOutline18,
   IconClone2Outline18,
   IconMsg2Outline18,
-  IconPencilOutline18,
 } from "@pond/icons/outline/18";
 import { ActionBar } from "../action-bar";
 import { BranchPicker } from "../branch-picker";
@@ -34,7 +33,7 @@ export function MessageActions() {
   return (
     <Reveal visible={!running}>
       <Tooltip.Provider>
-        <ActionBar.Root className={styles.messageActions}>
+        <ActionBar.Root className={styles["message-actions"]}>
           <ActionHint label={copied ? "Copied" : "Copy"}>
             <ActionBar.Copy
               aria-label="Copy"
@@ -65,16 +64,7 @@ export function MessageActions() {
                 </ActionBar.Reload>
               </ActionHint>
             </>
-          ) : (
-            <ActionHint label="Edit">
-              <ActionBar.Edit
-                aria-label="Edit"
-                render={<Button icon size="xs" variant="ghost" />}
-              >
-                <IconPencilOutline18 />
-              </ActionBar.Edit>
-            </ActionHint>
-          )}
+          ) : null}
           <BranchPicker.Root hideWhenSingleBranch>
             <BranchPicker.Previous
               aria-label="Previous response"

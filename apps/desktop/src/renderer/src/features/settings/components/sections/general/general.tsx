@@ -62,6 +62,7 @@ export function CheckNowRow() {
           variant="secondary"
           onClick={() => void checkNow()}
           disabled={busy}
+          loading={busy}
         >
           {busy ? "Checking" : "Check Now"}
         </Button>

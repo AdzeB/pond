@@ -8,7 +8,7 @@ export type SettingValue =
   | null
   | undefined
   | readonly SettingValue[]
-  | { readonly [key: string]: SettingValue };
+  | object;
 
 export interface SettingsValues {
   [key: string]: SettingValue;

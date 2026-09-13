@@ -463,7 +463,7 @@ async function importEagle(
         note: meta.annotation?.trim() || null,
         tags,
         filePaths,
-        customThumbnailPath: thumbnail ? join(itemDir, thumbnail) : null,
+        thumbnailPath: thumbnail ? join(itemDir, thumbnail) : null,
         sourceId: `eagle:${meta.id}`,
         savedAt: meta.modificationTime
           ? new Date(meta.modificationTime)

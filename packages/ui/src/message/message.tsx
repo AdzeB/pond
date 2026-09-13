@@ -18,7 +18,11 @@ function Root({ className, ...props }: ComponentProps<typeof Base.Root>) {
   );
 }
 
-export const Message = {
+function Body({ className, ...props }: ComponentProps<"div">) {
+  return <div className={cn(styles["message-body"], className)} {...props} />;
+}
+
+const primitives = {
   Root,
   Parts: Base.Parts,
   PartByIndex: Base.PartByIndex,
@@ -33,3 +37,5 @@ export const Message = {
   Unstable_PartsGrouped: Base.Unstable_PartsGrouped,
   Unstable_PartsGroupedByParentId: Base.Unstable_PartsGroupedByParentId,
 } satisfies PrimitiveSurface<typeof Base>;
+
+export const Message = { ...primitives, Body };

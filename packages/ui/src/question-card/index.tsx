@@ -40,52 +40,52 @@ export function QuestionCard({
   return (
     <Reveal>
       <section
-        className={styles.reviewCard}
+        className={styles["review-card"]}
         aria-label={title}
         aria-busy={busy}
       >
-        <div className={styles.cardHeader}>
+        <div className={styles["card-header"]}>
           <span className={styles.eyebrow}>
             {answered ? "Answered" : "Question"}
           </span>
           <h3>{title}</h3>
         </div>
         {answered ? (
-          <p className={styles.cardBody}>
+          <p className={styles["card-body"]}>
             {options.find((option) => option.id === answered)?.label ??
               answered}
           </p>
         ) : (
           <>
             <fieldset
-              className={styles.questionOptions}
+              className={styles["question-options"]}
               aria-label="Choose an answer"
             >
               {options.map((option) => (
                 <Button
                   key={option.id}
                   variant="ghost"
-                  className={styles.questionOption}
+                  className={styles["question-option"]}
                   aria-pressed={value === option.id}
                   disabled={busy}
                   onClick={() => setValue(option.id)}
                 >
-                  <span className={styles.modelContent}>
+                  <span className={styles["model-content"]}>
                     <span>{option.label}</span>
                     {option.description && (
-                      <span className={styles.rowDescription}>
+                      <span className={styles["row-description"]}>
                         {option.description}
                       </span>
                     )}
                   </span>
-                  <span className={styles.selectionMark}>
+                  <span className={styles["selection-mark"]}>
                     {value === option.id && <IconCheckOutline18 />}
                   </span>
                 </Button>
               ))}
             </fieldset>
             {allowFreeform && (
-              <div className={styles.cardBody}>
+              <div className={styles["card-body"]}>
                 <Input.Root size="sm">
                   <Input.Field
                     aria-label="Your answer"
@@ -106,14 +106,15 @@ export function QuestionCard({
               </div>
             )}
             {error && (
-              <div className={styles.inlineError} role="alert">
+              <div className={styles["inline-error"]} role="alert">
                 {error}
               </div>
             )}
-            <div className={styles.cardActions}>
+            <div className={styles["card-actions"]}>
               <Button
                 size="sm"
                 disabled={!value.trim() || busy}
+                loading={busy}
                 onClick={() => void submit()}
               >
                 {busy ? "Sending" : "Continue"}

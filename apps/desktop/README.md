@@ -11,7 +11,6 @@ Run these commands from `apps/desktop`, or prefix them at the repository root wi
 | Script | What it does |
 |---|---|
 | `pnpm dev` | Launch Electron + Vite renderer in dev mode |
-| `pnpm dev:components` | Open the component gallery without launching Electron (`/components.html`). Shadow tokens: `/shadows.html`. |
 | `pnpm typecheck` | Regenerate TanStack routes and check main, preload, and renderer types |
 | `pnpm test` | Run offline desktop tests |
 | `pnpm build` | Build main/preload/renderer into `out/` |
@@ -33,6 +32,6 @@ The per-library index is rebuildable from the library. Global app state and encr
 
 Main owns persistence and background operations under `src/main/core/`. The renderer save pool under `src/renderer/src/features/saves/state/` supports optimistic updates; main commits transactions to the library and database.
 
-Renderer code is grouped into product features. `app` composes windows and features; `shared` holds reusable controls and infrastructure; `dev` contains contributor galleries. TanStack route definitions remain under `routes` and their generated tree stays at the renderer root. Preload exposes the typed desktop query and event contracts.
+Renderer code is grouped into product features. `app` composes windows and features; `shared` holds reusable controls and infrastructure. TanStack route definitions remain under `routes` and their generated tree stays at the renderer root. Preload exposes the typed desktop query and event contracts.
 
 Read the [architecture guide](../../docs/contributing/architecture.md), [code standards](../../docs/contributing/code-standards.md), and [contributor workflow](../../CONTRIBUTING.md) before changing ownership or adding an operation. From the repository root, run `pnpm check` and `pnpm build` before submitting a PR.

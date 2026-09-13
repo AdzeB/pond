@@ -3,17 +3,15 @@ import { saves } from "@pond/schema/db";
 import { domainFromUrl } from "@pond/schema/domain";
 import { majorityMediaType } from "@pond/schema/media-type";
 import type { RawJson } from "@pond/schema/raw";
-import {
-  arenaBlockClassFromRawJson,
-  TEXT_COVER_KINDS,
-} from "@shared/text-card";
+import { isAuxiliaryKind, isOriginalImageKind } from "@shared/save-file-names";
+import { arenaBlockClassFromRawJson } from "@shared/text-card";
 import { eq, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
 import type { Db } from "../db";
+import { migrateLibrarySaveFileLayouts } from "./save-file-layout-migration";
 
 function fileMediaKind(file: SaveFile): "image" | "video" | null {
-  if (TEXT_COVER_KINDS.has(file.kind)) return null;
-  if (file.kind === "avatar" || file.kind === "source_icon") return null;
+  if (isAuxiliaryKind(file.kind)) return null;
   if (
     file.kind === "video" ||
     file.mimeType?.startsWith("video/") === true ||
@@ -22,10 +20,7 @@ function fileMediaKind(file: SaveFile): "image" | "video" | null {
     return "video";
   }
   if (
-    file.kind === "cover" ||
-    file.kind === "media" ||
-    file.kind === "image" ||
-    file.kind === "poster" ||
+    isOriginalImageKind(file.kind) ||
     file.mimeType?.startsWith("image/") === true
   ) {
     return "image";
@@ -93,6 +88,7 @@ export async function runLibraryScopeMigration(db: Db): Promise<void> {
       db.update(saves).set(patch).where(eq(saves.id, id)).run();
     },
   });
+  await migrateLibrarySaveFileLayouts(db);
 }
 
 export function migrateLibraryScope(store: MigrationStore): void {

@@ -7,9 +7,9 @@
   --ds-weight-medium: 500;
   --ds-weight-semibold: 600;
 
-  --ds-text-micro: 11px;
-  --ds-text-mini: 12px;
-  --ds-text-small: 13px;
-  --ds-text-body: 15px;
-  --ds-text-title: 24px;
+  --ds-text-xs: 11px;
+  --ds-text-sm: 12px;
+  --ds-text-md: 13px;
+  --ds-text-lg: 15px;
+  --ds-text-xl: 24px;
 }

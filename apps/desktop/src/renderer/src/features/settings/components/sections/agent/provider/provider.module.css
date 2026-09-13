@@ -17,12 +17,12 @@
 }
 .name {
   margin: 0;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-medium);
 }
 .status {
   margin: 4px 0 0;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-10);
 }
 .body {
@@ -41,7 +41,7 @@
 }
 .error {
   margin: 12px 0 0;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   color: var(--ds-red-11);
 }
 @container (max-width: 460px) {

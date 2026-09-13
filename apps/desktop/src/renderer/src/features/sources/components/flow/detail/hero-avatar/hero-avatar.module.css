@@ -24,8 +24,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background-clip: padding-box;
-  border: var(--ds-border-elevated);
   border-radius: 100%;
   box-shadow: var(--ds-shadow-2);
 }
@@ -37,8 +35,6 @@
   overflow: hidden;
   outline: 2px solid var(--ds-gray-1);
   background: var(--ds-gray-1);
-  background-clip: padding-box;
-  border: var(--ds-border-elevated);
   border-radius: var(--ds-radius-source);
   box-shadow: var(--ds-shadow-2);
 }
@@ -65,8 +61,6 @@
 .sourceImage[data-large] {
   overflow: hidden;
   background: var(--ds-gray-1);
-  background-clip: padding-box;
-  border: var(--ds-border-elevated);
   border-radius: 16px;
   box-shadow: var(--ds-shadow-2);
 }

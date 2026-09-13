@@ -24,7 +24,7 @@
   &[data-size="sm"] {
     width: 14px;
     height: 14px;
-    border-radius: 3px;
+    border-radius: var(--ds-radius-xs);
   }
 
   &[data-checked] {

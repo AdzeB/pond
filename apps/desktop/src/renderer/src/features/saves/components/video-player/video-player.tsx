@@ -1,6 +1,5 @@
 import {
   IconAnimationRepeatFill18,
-  IconMaximizeWindowFill18,
   IconMediaFastBackwardsFill18,
   IconMediaFastForwardFill18,
   IconNotepadFill18,
@@ -23,7 +22,10 @@ import {
   useState,
 } from "react";
 import { VideoNotesSection } from "@/features/saves/components/detail/video-notes/video-notes";
-import { ViewerHud } from "@/features/saves/components/viewers/hud";
+import {
+  useSlidePager,
+  ViewerHud,
+} from "@/features/saves/components/viewers/hud";
 import { useMediaSession } from "@/features/saves/hooks/use-media-session";
 import { useSave } from "@/features/saves/hooks/use-saves";
 import {
@@ -290,6 +292,7 @@ export function VideoPlayer({
   onRatio,
   onError,
 }: VideoPlayerProps) {
+  const pager = useSlidePager();
   const [prefs] = usePrefs("viewer");
   const [notesOpen, setNotesOpen] = useState(false);
   const save = useSave(saveId);
@@ -376,6 +379,7 @@ export function VideoPlayer({
           <ViewerHud.Cluster
             anchor="bottom-center"
             className={styles["transport-cluster"]}
+            data-pager={pager ? true : undefined}
           >
             <ViewerHud.Pill
               className={styles.transport}
@@ -423,21 +427,6 @@ export function VideoPlayer({
                 }}
               >
                 <IconAnimationRepeatFill18 />
-              </ViewerHud.Tool>
-            </ViewerHud.Pill>
-            <ViewerHud.Pill role="toolbar" aria-label="View">
-              <ViewerHud.Tool
-                label="Full Screen"
-                onClick={() => {
-                  const root =
-                    document.querySelector<HTMLElement>("[data-viewer-root]");
-                  if (!root) return;
-                  if (document.fullscreenElement === root)
-                    void document.exitFullscreen();
-                  else void root.requestFullscreen();
-                }}
-              >
-                <IconMaximizeWindowFill18 />
               </ViewerHud.Tool>
             </ViewerHud.Pill>
           </ViewerHud.Cluster>

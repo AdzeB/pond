@@ -304,11 +304,15 @@ export const EAGLE_SUPPORTED_EXTENSIONS: ReadonlySet<string> = new Set([
 export type EagleFormatGroup = keyof typeof EAGLE_FORMAT_GROUPS;
 
 const GROUP_BY_EXTENSION = new Map<string, EagleFormatGroup>();
-for (const [group, extensions] of Object.entries(EAGLE_FORMAT_GROUPS)) {
-  for (const extension of extensions) {
-    // SAFETY: Object.entries iterates the keys of the closed EAGLE_FORMAT_GROUPS registry.
-    GROUP_BY_EXTENSION.set(extension, group as EagleFormatGroup);
+for (const group of Object.keys(EAGLE_FORMAT_GROUPS)) {
+  if (!isEagleFormatGroup(group)) continue;
+  for (const extension of EAGLE_FORMAT_GROUPS[group]) {
+    GROUP_BY_EXTENSION.set(extension, group);
   }
+}
+
+function isEagleFormatGroup(value: string): value is EagleFormatGroup {
+  return Object.hasOwn(EAGLE_FORMAT_GROUPS, value);
 }
 
 export function eagleFormatGroup(extension: string): EagleFormatGroup | null {

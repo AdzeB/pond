@@ -4,7 +4,7 @@ Pond is a local-first desktop app. The library on disk is authoritative; the dat
 
 ## Code map
 
-Renderer code is grouped by product ownership under `features`: library, saves, search, sources, tags, downloads, agent, settings, enrichment, and captures. A feature contains its components, hooks, state, operations, and colocated tests. `app` composes features and windows, `dev` owns development galleries, and `shared` owns reusable controls and infrastructure.
+Renderer code is grouped by product ownership under `features`: library, saves, search, sources, tags, downloads, agent, settings, enrichment, and captures. A feature contains its components, hooks, state, operations, and colocated tests. `app` composes features and windows, and `shared` owns reusable controls and infrastructure.
 
 ```text
 apps/desktop/src/
@@ -15,7 +15,6 @@ apps/desktop/src/
     ├── app/               # Window and feature composition, application effects
     ├── features/          # Product UI, state, operations, hooks, and tests
     ├── shared/            # Reusable renderer controls and infrastructure
-    ├── dev/               # Component, download, and assistant galleries
     └── routes/            # TanStack route definitions
 ```
 
@@ -45,7 +44,7 @@ Define the operation’s input and output in `apps/desktop/src/shared/query-cont
 
 ### Change shared UI
 
-Implement the primitive in the UI package, with its styles and behavior tests. Feature-specific decisions stay in feature components. Update the component gallery so contributors can inspect the public states, keyboard behavior, and reduced-motion behavior.
+Implement the primitive in the UI package, with its styles and behavior tests. Feature-specific decisions stay in feature components.
 
 ### Test an operation
 
@@ -53,15 +52,17 @@ Accept the external capability the operation needs, such as a typed tag client o
 
 ## Compatibility
 
-File organization is internal. Routes, stored preference keys, source ids, library files, and extension messages are compatibility contracts. Preserve them through a refactor. Continue to build the capture renderer, auxiliary windows, galleries, and inference workers; these are entrypoints even when no TypeScript file imports them.
+File organization is internal. Routes, stored preference keys, source ids, library files, and extension messages are compatibility contracts. Preserve them through a refactor. Continue to build the capture renderer, auxiliary windows, and inference workers; these are entrypoints even when no TypeScript file imports them.
 
 ## Verification boundaries
 
 Run `pnpm architecture:check` for runtime dependency cycles and process/shared-code boundaries. Type-only imports are excluded from the runtime graph. Run `pnpm check` for the required local code checks and offline tests, then `pnpm build` for bundles and performance budgets. Use `pnpm knip` separately when pruning; check non-TypeScript and dynamic entrypoints before accepting a deletion.
 
+Save previews stay inside the main window. Detached pinned previews and their `preview.pin`, `preview.configure`, and `preview.neighbor` IPC commands have been removed. Desktop windows and viewers do not expose fullscreen controls.
+
 The renderer save pool lives under `features/saves/state/`. Library state owns view preferences, navigation, folders, and saved views. Tag operations live under `features/tags/operations/`; both the library Tags page and settings consume that feature. Shared UI primitives remain in `packages/ui`, independent of desktop stores.
 
-Assistant UI primitives and chat compositions live in individual top-level `packages/ui/src/<component>/` folders, with colocated styles and public component entrypoints such as `@pond/ui/composer`, `@pond/ui/message`, and `@pond/ui/attachment`. `@pond/ui/assistant-runtime` contains provider hooks, adapters, and runtime types. Runtime-aware components use explicit subpath imports, separate from the root UI barrel, so unrelated screens do not load the chat runtime. Applications supply a runtime and own transport, provider choice, persistence, and tool approval policy. The component gallery uses an offline local adapter; the production Agent continues to use its existing TanStack runtime. Renderer vendor chunks assign modules to their own packages without recursively absorbing dependencies, preventing optional chat code from capturing shared React or positioning utilities into initial bundles.
+Assistant UI primitives and chat compositions live in individual top-level `packages/ui/src/<component>/` folders, with colocated styles and public component entrypoints such as `@pond/ui/composer`, `@pond/ui/message`, and `@pond/ui/attachment`. `@pond/ui/assistant-runtime` contains provider hooks, adapters, and runtime types. Runtime-aware components use explicit subpath imports, separate from the root UI barrel, so unrelated screens do not load the chat runtime. Applications supply a runtime and own transport, provider choice, persistence, and tool approval policy. The production Agent uses its TanStack runtime. Renderer vendor chunks assign modules to their own packages without recursively absorbing dependencies, preventing optional chat code from capturing shared React or positioning utilities into initial bundles.
 
 ## Dialogs
 

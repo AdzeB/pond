@@ -5,13 +5,8 @@ export function configureSessionDefaults(): void {
   const denyAll: Parameters<
     Electron.Session["setPermissionRequestHandler"]
   >[0] = (_wc, _permission, callback) => callback(false);
-  /** The app session denies everything except HTML fullscreen, which the video player needs; requestFullscreen() is gated by this handler in Electron. */
-  session.defaultSession.setPermissionRequestHandler(
-    (_wc, permission, callback) => callback(permission === "fullscreen"),
-  );
-  session.defaultSession.setPermissionCheckHandler(
-    (_wc, permission) => permission === "fullscreen",
-  );
+  session.defaultSession.setPermissionRequestHandler(denyAll);
+  session.defaultSession.setPermissionCheckHandler(() => false);
   try {
     session
       .fromPartition("persist:pond-scrapers")

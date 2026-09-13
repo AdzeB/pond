@@ -21,7 +21,7 @@
 }
 
 .label {
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-11);
 }
@@ -33,23 +33,11 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scroll-padding-block: 24px;
-}
-
-.scroll-arrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 20px;
-  font-size: var(--ds-text-micro);
-  color: var(--ds-gray-11);
-  cursor: default;
-  background: var(--ds-gray-2);
+  scroll-padding-block: 4px;
 }
 
 .positioner {
   composes: positioner from "../shared/styles/popup/styles.module.css";
-  max-height: 128px;
 }
 
 .backdrop {
@@ -57,8 +45,8 @@
 }
 
 .popup {
+  --ds-popup-width: var(--anchor-width);
   composes: popup from "../shared/styles/popup/styles.module.css";
-  width: var(--popup-width, max-content);
   min-width: var(--anchor-width);
 }
 

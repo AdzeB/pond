@@ -1,8 +1,3 @@
-import {
-  BlossomCarousel,
-  type BlossomCarouselHandle,
-} from "@blossom-carousel/react";
-import "@blossom-carousel/react/style.css";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import {
   type RefObject,
@@ -12,6 +7,10 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  SlidePagerProvider,
+  ViewerHud,
+} from "@/features/saves/components/viewers/hud";
 import { ViewerChrome } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
 import {
   type MediaSlide,
@@ -34,7 +33,7 @@ import { useShortcutBindings } from "@/shared/lib/shortcuts";
 import {
   useActiveSlide,
   useCarouselNavigation,
-  useRatioCache,
+  useLockedSlideRatio,
 } from "./lib/use-carousel";
 import styles from "./media-viewer.module.css";
 
@@ -211,20 +210,6 @@ function Frame({
     },
     { preventDefault: false, ignoreInputs: true },
   );
-  useHotkey(
-    shortcuts["viewer.fullscreen"].keys!,
-    (event) => {
-      const root = ref.current;
-      if (!root) return;
-      event.preventDefault();
-      if (document.fullscreenElement === root) {
-        void document.exitFullscreen();
-      } else {
-        void root.requestFullscreen();
-      }
-    },
-    { preventDefault: false, ignoreInputs: true },
-  );
 
   return (
     <div ref={ref} className={styles.carousel}>
@@ -253,10 +238,9 @@ function Carousel({
   navRef?: RefObject<ViewerNav | null>;
 }) {
   const shortcuts = useShortcutBindings();
-  const handleRef = useRef<BlossomCarouselHandle>(null);
-  const [scroller, setScroller] = useState<HTMLElement | null>(null);
+  const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
   const active = useActiveSlide(scroller, slides.length);
-  const { ratios, reportRatio } = useRatioCache();
+  const { ratios, reportRatio } = useLockedSlideRatio();
   const { goPrev, goNext, step } = useCarouselNavigation(scroller, ratios);
 
   useHotkey(
@@ -287,10 +271,6 @@ function Carousel({
   );
 
   useEffect(() => {
-    setScroller(handleRef.current?.element ?? null);
-  }, []);
-
-  useEffect(() => {
     onActiveFileIndexChange?.(slides[active]?.fileIndex ?? null);
   }, [active, slides, onActiveFileIndexChange]);
 
@@ -302,31 +282,41 @@ function Carousel({
     };
   }, [navRef, step]);
 
+  const pager = {
+    index: active,
+    count: slides.length,
+    onPrev: goPrev,
+    onNext: goNext,
+  };
+
   return (
     <Frame activeIndex={active}>
-      <BlossomCarousel
-        ref={handleRef}
-        className={styles.scroller}
-        load="always"
-      >
-        {slides.map((s, i) => (
-          <Slide
-            key={s.src}
-            slide={s}
-            save={save}
-            onNavigate={onNavigate}
-            active={i === active}
-            inView={Math.abs(i - active) <= 1}
-            title={save.title}
-            artist={save.author}
-            chapters={chapters}
-            noteMarkers={noteMarkers}
-            ratio={ratios.get(s.src)}
-            onRatio={reportRatio}
-            onError={() => onError(s.src)}
-          />
-        ))}
-      </BlossomCarousel>
+      <SlidePagerProvider value={pager}>
+        <div ref={setScroller} className={styles.scroller}>
+          {slides.map((s, i) => (
+            <Slide
+              key={s.src}
+              slide={s}
+              save={save}
+              onNavigate={onNavigate}
+              active={i === active}
+              inView={Math.abs(i - active) <= 1}
+              title={save.title}
+              artist={save.author}
+              chapters={chapters}
+              noteMarkers={noteMarkers}
+              ratio={ratios.get(s.src)}
+              onRatio={reportRatio}
+              onError={() => onError(s.src)}
+            />
+          ))}
+        </div>
+        <ViewerHud.Root>
+          <ViewerHud.Cluster anchor="bottom-center">
+            <ViewerHud.Pager {...pager} />
+          </ViewerHud.Cluster>
+        </ViewerHud.Root>
+      </SlidePagerProvider>
     </Frame>
   );
 }

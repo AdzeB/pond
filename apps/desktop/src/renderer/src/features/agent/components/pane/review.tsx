@@ -102,6 +102,7 @@ export function ChangeReview({
           <div className={styles["change-item"]} key={change.id}>
             <div className={styles["change-save"]}>
               <Checkbox.Root
+                size="sm"
                 aria-label={`Apply ${change.field} change to ${change.title}`}
                 checked={
                   change.status === "applied" ||
@@ -173,6 +174,7 @@ export function ChangeReview({
             <Button
               size="sm"
               disabled={disabled || !eligible.length || Boolean(working)}
+              loading={Boolean(working)}
               onClick={() => void run("apply", eligible)}
             >
               Apply {eligible.length || ""}{" "}

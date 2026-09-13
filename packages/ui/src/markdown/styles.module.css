@@ -1,7 +1,9 @@
 .markdown {
   min-width: 0;
-  line-height: 1.6;
+  font-size: var(--ds-text-md);
+  line-height: 1.625;
   overflow-wrap: anywhere;
+  white-space: normal;
   user-select: text;
 }
 
@@ -14,13 +16,34 @@
 }
 
 .markdown p {
-  margin-block: 8px;
+  margin-block: 12px;
 }
 
 .markdown :is(h1, h2, h3, h4, h5, h6) {
-  margin-block: 16px 8px;
   font-size: inherit;
   font-weight: var(--ds-weight-semibold);
+}
+
+.markdown h1 {
+  margin: 0 0 8px;
+  font-size: 1.5em;
+  line-height: 1.3;
+}
+
+.markdown h2 {
+  margin: 12px 0 4px;
+  font-size: 1.25em;
+  line-height: 1.4;
+}
+
+.markdown h3 {
+  margin: 12px 0 4px;
+  font-size: 1.125em;
+  line-height: 1.4;
+}
+
+.markdown :is(h4, h5, h6) {
+  margin: 12px 0 0;
 }
 
 .markdown :is(pre, table) {
@@ -29,13 +52,19 @@
 }
 
 .markdown pre {
-  padding: 12px;
-  background: var(--ds-gray-3);
-  border-radius: var(--ds-radius-md);
+  padding: 10px 12px 12px;
+  margin-block: 0 12px;
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-text-sm);
+  line-height: 1.8;
+  tab-size: 2;
+  background: var(--ds-gray-2);
+  border-radius: 0 0 var(--ds-radius-xl) var(--ds-radius-xl);
 }
 
 .markdown code {
   font-family: var(--ds-font-mono);
+  font-size: var(--ds-text-sm);
 }
 
 .markdown a {
@@ -46,23 +75,32 @@
 
 .markdown blockquote,
 .quote {
-  padding-inline: 12px;
-  margin: 0;
-  color: var(--ds-gray-11);
+  padding-inline: 16px;
+  margin: 0 0 8px;
+  color: var(--ds-gray-12);
+  border: 0;
   border-left: 2px solid var(--ds-gray-6);
 }
 
+.markdown table {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  margin-block: 12px;
+  font-size: var(--ds-text-sm);
+  text-align: start;
+  border-collapse: collapse;
+}
+
 .markdown :is(th, td) {
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--ds-border-subtle);
+  padding: 8px 16px 8px 0;
+  vertical-align: top;
+  text-align: start;
+  border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
-.menuItem {
-  composes: item from "../shared/styles/popup/styles.module.css";
-}
-
-.separator {
-  composes: separator from "../shared/styles/popup/styles.module.css";
+.markdown th {
+  font-weight: var(--ds-weight-semibold);
 }
 
 .markdown :is(strong, b) {
@@ -74,8 +112,9 @@
 }
 
 .markdown :is(ul, ol) {
-  padding-left: 24px;
-  margin-block: 8px;
+  padding-inline-start: 1.5em;
+  margin-block: 0;
+  list-style-position: outside;
 }
 
 .markdown ul {
@@ -88,16 +127,51 @@
 
 .markdown li {
   display: list-item;
-  padding-left: 2px;
+  padding-inline-start: 6px;
+  list-style-type: inherit;
+}
+
+.markdown li + li {
+  margin-top: 0;
+}
+
+.markdown li > p {
+  margin: 0;
+}
+
+.markdown ul ul {
+  list-style-type: circle;
+}
+
+.markdown ul ul ul {
+  list-style-type: square;
+}
+
+.markdown :is(ul, ol) > li::marker {
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-gray-12);
 }
 
 .markdown hr {
   margin-block: 16px;
   border: 0;
-  border-top: 1px solid var(--ds-border-subtle);
+  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
-.markdown pre {
-  margin-top: 0;
-  border-radius: 0 0 var(--ds-radius-md) var(--ds-radius-md);
+.markdown :not(pre) > code {
+  padding: 2px 4px;
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-xs);
+  box-decoration-break: clone;
+}
+
+.markdown pre code {
+  font: inherit;
+}
+
+.markdown img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--ds-radius-xl);
 }

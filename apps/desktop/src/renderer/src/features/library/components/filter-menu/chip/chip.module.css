@@ -4,7 +4,7 @@
   flex: none;
   align-items: center;
   max-width: 100%;
-  border-radius: var(--ds-radius-md);
+  border-radius: var(--ds-radius-full);
 
   &[data-active] {
     background: var(--ds-gray-a3);
@@ -81,42 +81,42 @@
 }
 
 .popup {
-  --popup-min-width: 220px;
-  --popup-max-width: 480px;
+  --ds-popup-min-width: 220px;
+  --ds-popup-max-width: 480px;
   width: min(220px, var(--available-width));
   max-width: var(--available-width);
   max-height: var(--available-height);
   overflow-y: auto;
 
   &[data-layout="searchable"] {
-    --popup-min-width: 300px;
+    --ds-popup-min-width: 300px;
     width: min(320px, var(--available-width));
   }
 
   &[data-layout="tags"] {
-    --popup-min-width: 360px;
+    --ds-popup-min-width: 360px;
     width: min(380px, var(--available-width));
     overflow: hidden;
   }
 
   &[data-layout="range"] {
-    --popup-min-width: 280px;
+    --ds-popup-min-width: 280px;
     width: min(304px, var(--available-width));
   }
 
   &[data-layout="color"] {
-    --popup-min-width: 220px;
+    --ds-popup-min-width: 220px;
     width: min(220px, var(--available-width));
   }
 
   &[data-layout="content"] {
-    --popup-min-width: 300px;
+    --ds-popup-min-width: 300px;
     width: min(320px, var(--available-width));
   }
 }
 
 @media (max-width: 520px) {
   .popup[data-layout="tags"] {
-    --popup-min-width: 300px;
+    --ds-popup-min-width: 300px;
   }
 }

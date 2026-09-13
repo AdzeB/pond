@@ -340,6 +340,7 @@ export function LocationRow() {
               size="sm"
               variant="secondary"
               disabled={move.isPending}
+              loading={move.isPending}
               onClick={() => move.mutate()}
             >
               {move.isPending ? "Moving" : "Move"}
@@ -411,6 +412,7 @@ export function LocationRow() {
               size="sm"
               variant="secondary"
               disabled={backup.isPending}
+              loading={backup.isPending}
               onClick={() => backup.mutate()}
             >
               {backup.isPending ? "Backing up" : "Backup"}
@@ -436,6 +438,7 @@ export function LocationRow() {
               size="sm"
               variant="secondary"
               disabled={restore.isPending}
+              loading={restore.isPending}
               onClick={() => restore.mutate()}
             >
               {restore.isPending ? "Restoring" : "Restore"}
@@ -465,6 +468,7 @@ export function LocationRow() {
               size="sm"
               variant="secondary"
               disabled={importPackage.isPending}
+              loading={importPackage.isPending}
               onClick={() => importPackage.mutate()}
             >
               {importPackage.isPending ? "Importing" : "Import"}
@@ -487,6 +491,7 @@ export function LocationRow() {
               size="sm"
               variant="secondary"
               disabled={mergeLibrary.isPending}
+              loading={mergeLibrary.isPending}
               onClick={() => mergeLibrary.mutate()}
             >
               {mergeLibrary.isPending ? "Merging" : "Merge"}
@@ -515,6 +520,7 @@ export function LocationRow() {
               size="sm"
               variant="secondary"
               disabled={createLibrary.isPending}
+              loading={createLibrary.isPending}
               onClick={() => createLibrary.mutate()}
             >
               {createLibrary.isPending ? "Creating" : "New"}
@@ -543,6 +549,7 @@ export function LocationRow() {
               size="sm"
               variant="secondary"
               disabled={openExisting.isPending}
+              loading={openExisting.isPending}
               onClick={() => openExisting.mutate()}
             >
               {openExisting.isPending ? "Opening" : "Open"}
@@ -580,6 +587,7 @@ export function LocationRow() {
               size="sm"
               variant="secondary"
               disabled={importEagle.isPending}
+              loading={importEagle.isPending}
               onClick={() => importEagle.mutate("import")}
             >
               {importEagle.isPending ? "Importing" : "Import"}

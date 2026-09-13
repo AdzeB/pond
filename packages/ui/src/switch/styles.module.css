@@ -4,8 +4,8 @@
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
-  width: 22px;
-  height: 14px;
+  width: 26px;
+  height: 16px;
   padding: 2px;
   cursor: var(--ds-cursor-interactive, pointer);
   background: var(--ds-gray-6);
@@ -43,8 +43,8 @@
 
 .thumb {
   flex-shrink: 0;
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   background: var(--ds-gray-1);
   border-radius: var(--ds-radius-full);
   transition:
@@ -53,6 +53,6 @@
 
   &[data-checked] {
     background: light-dark(var(--ds-gray-1), var(--ds-gray-12));
-    translate: 8px 0;
+    translate: 10px 0;
   }
 }

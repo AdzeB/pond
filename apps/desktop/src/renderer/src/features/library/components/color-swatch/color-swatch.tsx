@@ -58,12 +58,11 @@ export function ColorSwatch({ color }: { color: string }) {
   }, [copied]);
 
   const copyValue = async (value: string): Promise<void> => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-    } catch {
-      /** Clipboard can reject without focus; nothing to confirm. */
-    }
+    const written = await navigator.clipboard.writeText(value).then(
+      () => true,
+      () => false,
+    );
+    if (written) setCopied(true);
   };
 
   return (

@@ -1,99 +1,146 @@
 .response {
   min-width: 0;
   font-size: inherit;
-  line-height: var(--assistant-line-height, 1.75);
+  line-height: 1.5;
   color: var(--ds-gray-12);
   overflow-wrap: anywhere;
 }
+
 .response > :first-child {
   margin-top: 0;
 }
+
 .response > :last-child {
   margin-bottom: 0;
 }
+
 .response :is(p, ul, ol, pre, blockquote) {
   margin-block: 12px;
 }
+
 .response :is(h1, h2, h3, h4, h5, h6) {
-  margin: 22px 0 8px;
-  font-size: 1.1em;
-  font-weight: 600;
-  line-height: 1.45;
+  font-weight: var(--ds-weight-semibold);
+  line-height: 1.4;
 }
+
+.response h1 {
+  margin: 0 0 8px;
+  font-size: 1.5em;
+}
+
+.response h2 {
+  margin: 12px 0 4px;
+  font-size: 1.25em;
+}
+
+.response h3 {
+  margin: 12px 0 4px;
+  font-size: 1.125em;
+}
+
+.response :is(h4, h5, h6) {
+  margin: 12px 0 0;
+  font-size: 1em;
+}
+
 .response :is(ul, ol) {
-  padding-left: 22px;
+  padding-inline-start: 1.5em;
+  list-style-position: outside;
 }
+
 .response ul {
   list-style: disc;
 }
+
 .response ol {
   list-style: decimal;
 }
+
 .response li {
-  padding-left: 2px;
-  margin-block: 5px;
+  padding-inline-start: 6px;
+  margin-block: 0;
+  list-style: inherit;
 }
+
+.response :is(ul, ol) > li::marker {
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-gray-12);
+}
+
 .response :global(.contains-task-list) {
   padding-left: 0;
   list-style: none;
 }
+
 .response :global(.task-list-item) {
   display: flex;
   gap: 8px;
   align-items: baseline;
 }
+
 .response input[type="checkbox"] {
   accent-color: var(--ds-gray-11);
 }
+
 .response li > p {
-  margin-block: 5px;
+  margin-block: 0;
 }
+
 .response a {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
 .response strong {
-  font-weight: 600;
+  font-weight: var(--ds-weight-semibold);
 }
+
 .response em {
   font-style: italic;
 }
+
 .response blockquote {
-  padding-left: 14px;
-  color: var(--ds-gray-11);
+  padding-inline-start: 16px;
+  color: var(--ds-gray-12);
+  border: 0;
   border-left: 2px solid var(--ds-gray-6);
 }
+
 .response code {
   padding: 2px 4px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.9em;
+  font-family: var(--ds-font-mono);
+  font-size: 0.875em;
   background: var(--ds-gray-3);
-  border-radius: 4px;
+  border-radius: var(--ds-radius-xs);
 }
+
 .response pre {
   padding: 14px;
   overflow: auto;
   white-space: pre;
   background: var(--ds-gray-2);
-  border: 1px solid var(--ds-gray-4);
-  border-radius: 8px;
+  border: 0;
+  border-radius: var(--ds-radius-md);
 }
+
 .code-block {
   margin-block: 16px;
   overflow: hidden;
-  border: 1px solid var(--ds-gray-5);
-  border-radius: 10px;
+  border: var(--ds-border-width) solid var(--ds-gray-5);
+  border-radius: var(--ds-radius-lg);
 }
+
 .code-block figcaption {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 5px 10px 5px 14px;
-  font-size: 11px;
+  font-size: var(--ds-text-xs);
   color: var(--ds-gray-10);
   background: var(--ds-gray-2);
-  border-bottom: 1px solid var(--ds-gray-4);
+  border-bottom: var(--ds-border-width) solid var(--ds-gray-4);
 }
+
 .code-block pre {
   max-height: 400px;
   padding: 14px;
@@ -101,53 +148,51 @@
   border: 0;
   border-radius: 0;
 }
+
 .code-block code {
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
   line-height: 1.7;
 }
+
 .response pre code {
   padding: 0;
   background: none;
 }
+
 .response hr {
   margin-block: 20px;
   border: 0;
-  border-top: 1px solid var(--ds-gray-5);
+  border-top: var(--ds-border-width) solid var(--ds-gray-5);
 }
+
 .table {
   max-width: 100%;
-  margin-block: 16px;
+  margin-block: 8px;
   overflow-x: auto;
-  border: 1px solid var(--ds-gray-5);
-  border-radius: 8px;
 }
+
 .table table {
   width: 100%;
-  min-width: 480px;
-  font-size: 0.95em;
+  font-size: inherit;
   overflow-wrap: normal;
   border-collapse: collapse;
 }
+
 .table :is(th, td) {
-  min-width: 100px;
-  padding: 9px 12px;
+  padding: 6px 12px 6px 0;
   vertical-align: top;
   text-align: left;
+  border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
 }
+
 .table th {
-  font-weight: 500;
-  background: var(--ds-gray-2);
+  font-weight: var(--ds-weight-semibold);
 }
+
 .table :is(th, td)[align="center"] {
   text-align: center;
 }
+
 .table :is(th, td)[align="right"] {
   text-align: right;
-}
-.table tr + tr,
-.table tbody {
-  border-top: 1px solid var(--ds-gray-4);
-}
-.table :is(th, td) + :is(th, td) {
-  border-left: 1px solid var(--ds-gray-4);
 }

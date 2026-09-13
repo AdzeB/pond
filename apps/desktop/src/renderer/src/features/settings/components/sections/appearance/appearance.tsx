@@ -44,11 +44,10 @@ const ThemeValuesSchema = z.object({
 
 function readTheme(binding: Binding) {
   const values = ThemeValuesSchema.parse(binding.values);
-  // SAFETY: these rows are rendered only inside the section bound to
-  // `prefs.preferences`, so the deltas they send are theme keys.
-  const patch = binding.patch as (delta: Partial<ThemePrefs>) => void;
   return {
-    patch,
+    patch: (delta: Partial<ThemePrefs>) => {
+      void binding.patch(delta);
+    },
     appearance: values.appearance ?? DEFAULTS.appearance,
     lightPresetId: values.lightPresetId ?? DEFAULTS.lightPresetId,
     darkPresetId: values.darkPresetId ?? DEFAULTS.darkPresetId,

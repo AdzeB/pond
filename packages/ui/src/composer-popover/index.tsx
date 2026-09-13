@@ -31,17 +31,24 @@ export function ComposerPopover({
   isOpen.current = open;
   if (open) lastPage.current = { page, title, children };
   const displayed = lastPage.current;
+  const stealFocus = displayed.page !== "suggestions";
+  function isComposerTrigger(node: EventTarget | null) {
+    return (
+      node instanceof Element &&
+      Boolean(node.closest("[data-composer-options-trigger]"))
+    );
+  }
   useEffect(() => {
-    if (!open) return;
-    const frame = requestAnimationFrame(() =>
+    if (!open || page === "suggestions") return;
+    const frame = requestAnimationFrame(() => {
       popupRef.current
         ?.querySelector<HTMLElement>(
-          `[data-composer-page] input, [data-composer-page] button:not(:disabled)`,
+          "[data-composer-page] input, [data-composer-page] button:not(:disabled)",
         )
-        ?.focus(),
-    );
+        ?.focus();
+    });
     return () => cancelAnimationFrame(frame);
-  }, [open]);
+  }, [open, page]);
   return (
     <Popover.Root
       open={open}
@@ -49,8 +56,9 @@ export function ComposerPopover({
       onOpenChange={(next, details) => {
         if (
           !next &&
-          details.event.target instanceof Element &&
-          details.event.target.closest("[data-composer-options-trigger]")
+          (isComposerTrigger(details.event.target) ||
+            (details.event instanceof FocusEvent &&
+              isComposerTrigger(details.event.relatedTarget)))
         )
           return;
         onOpenChange(next);
@@ -73,10 +81,11 @@ export function ComposerPopover({
             ref={popupRef}
             className={styles.popup}
             aria-label={displayed.title || "Composer options"}
+            initialFocus={stealFocus ? undefined : false}
             finalFocus={() => inputRef.current}
           >
             {displayed.title && (
-              <div className={styles.panelHeader}>
+              <div className={styles["panel-header"]}>
                 {onBack && (
                   <Button
                     icon
@@ -93,7 +102,7 @@ export function ComposerPopover({
             )}
             <motion.div
               layout
-              className={styles.panelViewport}
+              className={styles["panel-viewport"]}
               transition={
                 reduced
                   ? { duration: 0 }
@@ -105,7 +114,10 @@ export function ComposerPopover({
                   key={displayed.page}
                   data-composer-page
                   onAnimationComplete={() => {
-                    if (isOpen.current)
+                    if (
+                      isOpen.current &&
+                      lastPage.current.page !== "suggestions"
+                    )
                       popupRef.current
                         ?.querySelector<HTMLElement>(
                           "[data-composer-page] input, [data-composer-page] button:not(:disabled)",

@@ -5,8 +5,8 @@
 }
 
 .label {
-  font-size: var(--ds-text-mini);
-  font-weight: var(--ds-weight-medium);
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-normal-plus);
   color: var(--ds-gray-11);
 }
 
@@ -16,13 +16,13 @@
 }
 
 .description {
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-normal);
   color: var(--ds-gray-10);
 }
 
 .error {
-  font-size: var(--ds-text-mini);
-  font-weight: var(--ds-weight-medium);
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-normal-plus);
   color: var(--ds-red-9);
 }

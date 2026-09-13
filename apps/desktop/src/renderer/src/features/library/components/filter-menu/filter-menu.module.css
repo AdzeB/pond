@@ -15,7 +15,7 @@
 .count {
   min-width: 16px;
   padding: 2px 4px;
-  font-size: var(--ds-text-micro);
+  font-size: var(--ds-text-xs);
   font-variant-numeric: tabular-nums;
   text-align: center;
   background: var(--ds-gray-a4);

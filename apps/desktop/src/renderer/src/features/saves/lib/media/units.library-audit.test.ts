@@ -1,5 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { isOriginalImageKind } from "@shared/save-file-names";
 import { describe, expect, it } from "vitest";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
 import type { Save } from "@/features/saves/types";
@@ -35,7 +36,7 @@ describeLibrary("live library media units", () => {
       saveCount += 1;
 
       const files = save.files ?? [];
-      const covers = files.filter((file) => file.kind === "cover");
+      const covers = files.filter((file) => isOriginalImageKind(file.kind));
       const hasVideo = files.some(
         (file) =>
           file.mimeType?.startsWith("video/") ||

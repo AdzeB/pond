@@ -141,8 +141,7 @@ function rowError(save: Save): string | null {
   return error;
 }
 
-/** Thousands of rows queue behind a handful in flight, so the work happening now sorts to the top. */
-const LIVE_ORDER = {
+const DOWNLOAD_STATUS_RANK = {
   running: 0,
   retrying: 1,
   blocked: 2,
@@ -183,7 +182,9 @@ export function projectLiveDownloads(saves: readonly Save[]): DownloadRow[] {
     });
   }
   rows.sort(
-    (a, b) => LIVE_ORDER[a.status] - LIVE_ORDER[b.status] || b.ts - a.ts,
+    (a, b) =>
+      DOWNLOAD_STATUS_RANK[a.status] - DOWNLOAD_STATUS_RANK[b.status] ||
+      b.ts - a.ts,
   );
   return rows;
 }

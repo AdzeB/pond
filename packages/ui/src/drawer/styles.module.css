@@ -30,11 +30,9 @@
   padding: 12px;
   flex-direction: column;
   width: min(360px, calc(100vw - 48px));
-  border-radius: var(--ds-radius-xl);
+  border-radius: var(--ds-radius-3xl);
   color: var(--ds-gray-12);
   background: var(--ds-gray-1);
-  border: var(--ds-border-elevated);
-  background-clip: padding-box;
   box-shadow: var(--ds-shadow-3);
   outline: none;
   pointer-events: auto;
@@ -61,14 +59,14 @@
 
 .title {
   margin: 0;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-semibold);
   color: var(--ds-gray-12);
 }
 
 .description {
   margin: 0;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-normal);
   line-height: 1.5;
   color: var(--ds-gray-11);

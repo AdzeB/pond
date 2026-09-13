@@ -1,4 +1,5 @@
 import type { SaveFile } from "@pond/schema/db";
+import { isAuxiliaryKind } from "@shared/save-file-names";
 import type { QueryResults } from "../../shared/query-contracts";
 
 interface DuplicateGroup {
@@ -32,12 +33,7 @@ export function duplicateGroups(
   const hashes = new Map<string, string[]>();
   let visualIndexed = 0;
   for (const row of rows) {
-    const files = row.files.filter(
-      (file) =>
-        !["custom_thumbnail", "avatar", "source_icon", "poster"].includes(
-          file.kind,
-        ),
-    );
+    const files = row.files.filter((file) => !isAuxiliaryKind(file.kind));
     if (files.length && files.every((file) => !!file.sha256)) {
       const key = files
         .map((file) => file.sha256.toLowerCase())

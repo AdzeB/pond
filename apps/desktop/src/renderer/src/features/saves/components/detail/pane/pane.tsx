@@ -79,7 +79,10 @@ function AboutSections({ save }: { save: Save }) {
   const textOnly = isTextOnlySave(save);
   const showContent = Boolean(description) && !textOnly;
   const showTitle =
-    local || !showContent || !isSameTitleAndContent(displayTitle, description);
+    !textOnly &&
+    (local ||
+      !showContent ||
+      !isSameTitleAndContent(displayTitle, description));
 
   const commitTitle = async () => {
     const next = titleDraft.trim();

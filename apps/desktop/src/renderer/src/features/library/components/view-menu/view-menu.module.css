@@ -1,7 +1,7 @@
 .popup {
-  --popup-width: 340px;
-  --popup-min-width: min(340px, var(--available-width));
-  --popup-max-width: 340px;
+  --ds-popup-width: 340px;
+  --ds-popup-min-width: min(340px, var(--available-width));
+  --ds-popup-max-width: 340px;
 
   gap: 4px;
   max-height: var(--available-height);
@@ -21,7 +21,7 @@
 
 .label {
   flex-shrink: 0;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-normal);
   color: var(--ds-gray-12);
 }

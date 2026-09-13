@@ -4,7 +4,7 @@
   align-items: center;
   height: 24px;
   padding: 0 8px 0 10px;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-10);
   cursor: var(--ds-cursor-interactive, pointer);

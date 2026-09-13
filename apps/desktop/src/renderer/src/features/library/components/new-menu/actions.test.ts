@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  closeDuplicateReview,
+  duplicateReview,
+} from "@/features/library/state/duplicate-review";
+import { libraryViewContext } from "@/features/library/state/library-view-context";
+import { selection } from "@/features/library/state/selection";
 import { createNewActions, type NewActionServices } from "./actions";
 
 const prompt = vi.fn<NewActionServices["prompt"]>();
@@ -7,8 +13,12 @@ const notify = vi.fn<NewActionServices["notify"]>();
 const openSave = vi.fn<NewActionServices["openSave"]>();
 const folders = { refresh: vi.fn(async () => {}) };
 const openSource = vi.fn<NewActionServices["openSource"]>();
+const selectSave = vi.fn<NewActionServices["selectSave"]>();
+const currentFolderId = vi.fn<NewActionServices["currentFolderId"]>(() => null);
 const {
   createNote,
+  createBlankDocument,
+  findDuplicates,
   importClipboard,
   importEagle,
   importLinks,
@@ -25,6 +35,8 @@ const {
   openSave,
   refreshFolders: folders.refresh,
   openSource,
+  selectSave,
+  currentFolderId,
 });
 
 const query = vi.fn();
@@ -33,9 +45,15 @@ describe("new menu actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     query.mockReset();
+    currentFolderId.mockReturnValue(null);
     vi.stubGlobal("window", { pond: { query } });
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    closeDuplicateReview();
+    selection.clear();
+    libraryViewContext.set([], "library");
+  });
 
   it("does not import or notify when a picker is cancelled", async () => {
     query.mockResolvedValue({ paths: [] });
@@ -120,22 +138,71 @@ describe("new menu actions", () => {
     expect(openSave).not.toHaveBeenCalled();
   });
 
-  it("creates and opens a note using the existing save operation", async () => {
+  it("creates an untitled note in the library without opening it", async () => {
     query.mockResolvedValue({ ok: true, id: "note-id" });
-    await createNote(" Title ", " Body\nSecond line ");
+    await createNote();
     expect(query).toHaveBeenCalledWith("saves.createManual", {
-      title: "Title",
-      note: "Body\nSecond line",
+      title: null,
+      note: null,
+      mediaType: "text",
     });
-    expect(openSave).toHaveBeenCalledWith("note-id");
+    expect(openSave).not.toHaveBeenCalled();
+    expect(selectSave).toHaveBeenCalledWith("note-id");
+    expect(notify).not.toHaveBeenCalled();
   });
 
-  it("does not submit an empty note or open a failed save", async () => {
-    await expect(createNote(" ", " ")).rejects.toThrow("Add a title or note");
-    expect(query).not.toHaveBeenCalled();
+  it("assigns a new note to the current folder", async () => {
+    currentFolderId.mockReturnValue("folder-1");
+    query
+      .mockResolvedValueOnce({ ok: true, id: "note-id" })
+      .mockResolvedValueOnce({ ok: true });
+    await createNote();
+    expect(query).toHaveBeenCalledWith("folders.addSaves", {
+      folderId: "folder-1",
+      saveIds: ["note-id"],
+    });
+  });
+
+  it("does not select a failed note", async () => {
     query.mockResolvedValue({ ok: false });
-    await expect(createNote("Title", "")).rejects.toThrow("Couldn't save");
-    expect(openSave).not.toHaveBeenCalled();
+    await expect(createNote()).rejects.toThrow("Couldn't save");
+    expect(selectSave).not.toHaveBeenCalled();
+  });
+
+  it("creates a blank document through the document query", async () => {
+    query.mockResolvedValue({ ok: true, id: "doc-id" });
+    await createBlankDocument("word");
+    expect(query).toHaveBeenCalledWith("saves.createBlankDocument", {
+      kind: "word",
+      folderId: null,
+    });
+    expect(selectSave).toHaveBeenCalledWith("doc-id");
+  });
+
+  it("opens Find Duplicates for the whole library", () => {
+    findDuplicates("all");
+    expect(duplicateReview.state?.saveId).toBeNull();
+    expect(duplicateReview.state?.ids).toBeNull();
+  });
+
+  it("scans the current list for duplicates", () => {
+    libraryViewContext.set(["a", "b"], "library");
+    findDuplicates("list");
+    expect(duplicateReview.state?.ids).toEqual(["a", "b"]);
+  });
+
+  it("scans the current selection for duplicates", () => {
+    selection.set(["one", "two"]);
+    findDuplicates("selected");
+    expect(duplicateReview.state?.ids).toEqual(["one", "two"]);
+  });
+
+  it("asks to select Saves before scanning selected", () => {
+    findDuplicates("selected");
+    expect(notify).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Select Saves first" }),
+    );
+    expect(duplicateReview.state).toBeNull();
   });
 
   it("preserves parent folders and refreshes the sidebar", async () => {

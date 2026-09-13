@@ -12,18 +12,11 @@ function Provider(props: Base.Provider.Props) {
 }
 
 function Trigger<Payload>(props: Base.Trigger.Props<Payload>) {
-  return (
-    <Base.Trigger
-      className={clsx(styles.trigger, props.className)}
-      {...props}
-    />
-  );
+  return <Base.Trigger {...props} />;
 }
 
 function Portal(props: Base.Portal.Props) {
-  return (
-    <Base.Portal className={clsx(styles.portal, props.className)} {...props} />
-  );
+  return <Base.Portal {...props} />;
 }
 
 function Viewport(props: Base.Viewport.Props) {
@@ -53,8 +46,8 @@ function Popup({ className, ...props }: Base.Popup.Props) {
   return <Base.Popup {...props} className={clsx(styles.popup, className)} />;
 }
 
-function Arrow({ className, ...props }: Base.Arrow.Props) {
-  return <Base.Arrow className={clsx(styles.arrow, className)} {...props} />;
+function Arrow(props: Base.Arrow.Props) {
+  return <Base.Arrow {...props} />;
 }
 
 interface TooltipProps {

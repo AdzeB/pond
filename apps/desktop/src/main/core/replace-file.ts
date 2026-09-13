@@ -1,22 +1,16 @@
 import { stat } from "node:fs/promises";
 import { type SaveFile, saves } from "@pond/schema/db";
 import { classifyLibraryFile, libraryFilename } from "@shared/file-format";
+import { isAuxiliaryKind } from "@shared/save-file-names";
 import { eq } from "drizzle-orm";
 import mime from "mime-types";
 import { getDb } from "../db";
 import { persistSave } from "./persist-save";
 
-const AUXILIARY = new Set([
-  "custom_thumbnail",
-  "avatar",
-  "source_icon",
-  "poster",
-]);
-
 export function replacementKind(
   files: readonly Pick<SaveFile, "kind" | "path">[],
 ): string | null {
-  return files.find((file) => !AUXILIARY.has(file.kind))?.kind ?? null;
+  return files.find((file) => !isAuxiliaryKind(file.kind))?.kind ?? null;
 }
 
 export async function replaceSaveFile(input: {

@@ -5,7 +5,7 @@ import {
   IconChevronLeftOutline12,
   IconXmarkOutline12,
 } from "@pond/icons/outline/12";
-import clsx, { clsx as cn } from "clsx";
+import { clsx as cn } from "clsx";
 import {
   AnimatePresence,
   motion,
@@ -346,22 +346,13 @@ function Footer({ className, ...props }: FooterProps) {
   );
 }
 
-const CommonButtonProps: ButtonProps = {
-  size: "lg",
-  width: "full",
-  className: styles.button,
-};
-
-function Cancel({
-  className,
-  children,
-  ...props
-}: ComponentPropsWithoutRef<"button">) {
+function Cancel({ className, children, ...props }: ButtonProps) {
   return (
     <Button
+      size="lg"
+      width="full"
       variant="tertiary"
-      className={clsx(className, CommonButtonProps.className)}
-      {...CommonButtonProps}
+      className={cn(styles.button, className)}
       {...props}
     >
       {children ?? "Cancel"}
@@ -369,16 +360,13 @@ function Cancel({
   );
 }
 
-function Confirm({
-  className,
-  children,
-  ...props
-}: ComponentPropsWithoutRef<"button">) {
+function Confirm({ className, children, ...props }: ButtonProps) {
   return (
     <Button
-      variant="tertiary"
-      className={clsx(className, CommonButtonProps.className)}
-      {...CommonButtonProps}
+      size="lg"
+      width="full"
+      variant="primary"
+      className={cn(styles.button, className)}
       {...props}
     >
       {children ?? "Confirm"}

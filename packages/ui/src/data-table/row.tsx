@@ -49,10 +49,6 @@ function RowImpl<T>({
       s.selectedIds.has(rowId) &&
       (nextId == null || !s.selectedIds.has(nextId)),
   );
-  const selecting = useSelector(
-    api.selectionStore,
-    (s) => s.selectedIds.size > 0,
-  );
 
   const cellCtx: CellContext = { depth, expanded, canExpand };
 
@@ -91,10 +87,11 @@ function RowImpl<T>({
   }
 
   const onClick = (e: ReactMouseEvent) => {
-    if (e.metaKey || e.ctrlKey || e.shiftKey || selecting) {
+    if (e.metaKey || e.ctrlKey || e.shiftKey) {
       if (api.selectionEnabled) api.toggleRow(rowId, e.shiftKey);
       return;
     }
+    if (api.selectionEnabled && api.selectOnClick) api.selectRow(rowId);
     api.onRowClick?.(data, e);
   };
 

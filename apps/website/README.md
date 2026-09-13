@@ -1,21 +1,20 @@
 # @pond/website
 
-Pond's promotional site. A single, static Next.js page that reuses `@pond/ui`
-tokens and `@pond/icons` brand glyphs.
+Pond's promotional site. A Next.js app that reuses `@pond/ui` tokens and
+`@pond/icons` brand glyphs.
 
 ## Scripts
 
 | Script | What it does |
 |---|---|
 | `pnpm dev` | Run the Next dev server on port 3000 |
-| `pnpm build` | Build the static site into `.next/` |
+| `pnpm build` | Build the site into `.next/` |
 | `pnpm start` | Serve the production build |
 | `pnpm typecheck` | Run `tsc --noEmit` |
 
 ## Deploy
 
-Vercel. Static page plus one route handler (`/api/subscribe`) for the
-mailing list. No database, no analytics.
+Vercel. The homepage plus `/api/subscribe` for the mailing list. No database, no analytics.
 
 ## Environment variables
 

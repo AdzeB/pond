@@ -1,10 +1,17 @@
 import { normalizeLabelName } from "@pond/schema/label-name";
 import { Dialog } from "@pond/ui";
+import type { BlankDocumentKind } from "@shared/blank-documents";
 import { z } from "zod";
+import { openDuplicateReview } from "@/features/library/state/duplicate-review";
 import { folders } from "@/features/library/state/folders";
 import { libraryChrome } from "@/features/library/state/library-chrome";
+import { libraryViewContext } from "@/features/library/state/library-view-context";
+import { savedViews } from "@/features/library/state/saved-views";
+import { selection } from "@/features/library/state/selection";
 import { openSave } from "@/features/saves/lib/save-nav";
+import { selectOnlySave } from "@/features/saves/lib/select";
 import { asUrlList } from "@/features/saves/lib/url-list";
+import { connectFlow } from "@/features/sources/state/connect-flow";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { notify } from "@/shared/lib/toast";
@@ -26,6 +33,8 @@ export interface NewActionServices {
   openSave: typeof openSave;
   refreshFolders: () => Promise<void>;
   openSource: (kind: "connect" | "watch") => void;
+  selectSave: (id: string) => void;
+  currentFolderId: () => string | null;
 }
 
 export function createNewActions({
@@ -34,6 +43,8 @@ export function createNewActions({
   openSave,
   refreshFolders,
   openSource,
+  selectSave,
+  currentFolderId,
 }: NewActionServices) {
   function reportSaved(count: number): void {
     notify({
@@ -213,19 +224,86 @@ export function createNewActions({
     });
   }
 
-  async function createNote(title: string, note: string): Promise<void> {
-    if (!title.trim() && !note.trim())
-      throw new Error("Add a title or note first.");
+  async function createNote(): Promise<void> {
     const result = SaveResultSchema.parse(
       await window.pond.query("saves.createManual", {
-        title: title.trim() || null,
-        note: note.trim() || null,
+        title: null,
+        note: null,
+        mediaType: "text",
       }),
     );
     if (!result.ok || !result.id)
       throw new Error("Couldn't save the note. Try again.");
-    reportSaved(1);
-    openSave(result.id);
+    await placeCreatedSave(result.id);
+  }
+
+  async function createBlankDocument(kind: BlankDocumentKind): Promise<void> {
+    const result = SaveResultSchema.parse(
+      await window.pond.query("saves.createBlankDocument", {
+        kind,
+        folderId: currentFolderId(),
+      }),
+    );
+    if (!result.ok || !result.id)
+      throw new Error("Couldn't create the document. Try again.");
+    selectSave(result.id);
+  }
+
+  async function placeCreatedSave(id: string): Promise<void> {
+    const folderId = currentFolderId();
+    if (folderId) {
+      await window.pond.query("folders.addSaves", {
+        folderId,
+        saveIds: [id],
+      });
+    }
+    selectSave(id);
+  }
+
+  function newSmartFolder(): void {
+    prompt({
+      title: "New Smart Folder",
+      confirmLabel: "Create",
+      initialValue: "Untitled",
+      onConfirm: (value) =>
+        runNewAction(async () => {
+          const name = value.trim() || "Untitled";
+          await savedViews.create({ name, kind: "smart_folder" });
+        }),
+    });
+  }
+
+  function findDuplicates(scope: "all" | "list" | "selected"): void {
+    if (scope === "all") {
+      openDuplicateReview({});
+      return;
+    }
+    if (scope === "list") {
+      openDuplicateReview({ ids: [...libraryViewContext.filteredIds()] });
+      return;
+    }
+    const ids = selection.snapshot();
+    if (ids.length === 0) {
+      notify({
+        id: "new-import",
+        title: "Select Saves first",
+        description: "Choose items in the library, then scan selected.",
+      });
+      return;
+    }
+    openDuplicateReview({ ids: [...ids] });
+  }
+
+  function connectPinterest(): void {
+    libraryChrome.setNav({ kind: "sources" });
+    getAppRouter()?.history.push("/sources");
+    void window.pond.query("accounts.list", {}).then((result) => {
+      const connected = (result.accounts ?? [])
+        .filter((account) => account.connected)
+        .map((account) => account.id);
+      connectFlow.start("pinterest", connected);
+      sourceFlow.open("connect-wait");
+    });
   }
 
   function parseImportLinks(text: string): string[] {
@@ -278,6 +356,10 @@ export function createNewActions({
     importEagle,
     importPondPackage,
     createNote,
+    createBlankDocument,
+    newSmartFolder,
+    findDuplicates,
+    connectPinterest,
     parseImportLinks,
     importLinks,
   };
@@ -295,6 +377,10 @@ export const {
   importEagle,
   importPondPackage,
   createNote,
+  createBlankDocument,
+  newSmartFolder,
+  findDuplicates,
+  connectPinterest,
 
   importLinks,
 } = createNewActions({
@@ -306,5 +392,10 @@ export const {
     libraryChrome.setNav({ kind: "sources" });
     getAppRouter()?.history.push("/sources");
     sourceFlow.open(kind === "connect" ? "connect-source" : "watch-target");
+  },
+  selectSave: selectOnlySave,
+  currentFolderId: () => {
+    const nav = libraryChrome.getState().nav;
+    return nav.kind === "folder" ? nav.id : null;
   },
 });

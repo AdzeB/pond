@@ -14,11 +14,11 @@ Read [code standards](docs/contributing/code-standards.md) for naming, interface
 
 `pnpm check` runs lint, custom rules, architecture checks, type checks, and offline tests. Lint commands are read-only; desktop type checking regenerates the route tree. `pnpm build` verifies production bundles and performance budgets. `pnpm lint:fix` applies safe fixes explicitly; `pnpm format` formats files. Pre-commit checks never rewrite your working tree.
 
-Use `pnpm knip` when removing unused code or dependencies. Its findings require checking worker, HTML, gallery, and dynamic entrypoints; it is currently separate from `pnpm check`.
+Use `pnpm knip` when removing unused code or dependencies. Its findings require checking worker, HTML, and dynamic entrypoints; it is currently separate from `pnpm check`.
 
 `ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts` runs the native database checks with Electron’s ABI. CI runs this separately from the Node test suite.
 
-After building the desktop, `pnpm --filter @pond/desktop exec electron scripts/smoke-desktop.cjs` verifies visible startup and preload queries using a temporary isolated library. It requires a desktop session. The component galleries build with `pnpm --filter @pond/desktop exec vite build --config components.vite.config.ts`.
+After building the desktop, `pnpm --filter @pond/desktop exec electron scripts/smoke-desktop.cjs` verifies visible startup and preload queries using a temporary isolated library. It requires a desktop session.
 
 Use temporary libraries and fixtures in tests. Never require a contributor's personal library, source accounts, or API keys for a PR check. Keep live source tests separate.
 

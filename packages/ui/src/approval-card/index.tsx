@@ -43,11 +43,11 @@ export function ApprovalCard({
   return (
     <Reveal>
       <section
-        className={styles.reviewCard}
+        className={styles["review-card"]}
         aria-label={title}
         aria-busy={busy}
       >
-        <div className={styles.cardHeader}>
+        <div className={styles["card-header"]}>
           <span className={styles.eyebrow}>
             {decision === "pending"
               ? "Review"
@@ -58,14 +58,14 @@ export function ApprovalCard({
           <h3>{title}</h3>
           {description && <p>{description}</p>}
         </div>
-        {children && <div className={styles.cardBody}>{children}</div>}
+        {children && <div className={styles["card-body"]}>{children}</div>}
         {error && (
-          <div className={styles.inlineError} role="alert">
+          <div className={styles["inline-error"]} role="alert">
             {error}
           </div>
         )}
         {decision === "pending" && (
-          <div className={styles.cardActions}>
+          <div className={styles["card-actions"]}>
             <Button
               variant="ghost"
               size="sm"
@@ -77,6 +77,7 @@ export function ApprovalCard({
             <Button
               size="sm"
               disabled={busy}
+              loading={busy}
               onClick={() => void respond(onApprove)}
             >
               {busy ? "Saving decision" : approveLabel}

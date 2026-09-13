@@ -38,11 +38,11 @@ describe("usesPlatformPoster", () => {
 });
 
 describe("media filenames", () => {
-  it("uses an unsuffixed name for the first slot", () => {
-    expect(videoFilename(0, ".mp4")).toBe("video.mp4");
-    expect(videoFilename(1, ".mp4")).toBe("video-1.mp4");
-    expect(posterFilename(0, ".jpg")).toBe("poster.jpg");
-    expect(posterFilename(1, ".jpg")).toBe("poster-1.jpg");
+  it("numbers the first slot from 1", () => {
+    expect(videoFilename(0, ".mp4")).toBe("video-1.mp4");
+    expect(videoFilename(1, ".mp4")).toBe("video-2.mp4");
+    expect(posterFilename(0, ".jpg")).toBe("poster-1.jpg");
+    expect(posterFilename(1, ".jpg")).toBe("poster-2.jpg");
   });
 });
 

@@ -1,6 +1,5 @@
 .root {
   display: flex;
-  /* Fill the pane when empty. Shrinking below the grid clips Main's scroll. */
   flex: 1;
   flex-direction: column;
   gap: 24px;

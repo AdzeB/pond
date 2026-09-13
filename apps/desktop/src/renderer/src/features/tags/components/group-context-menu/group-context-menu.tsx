@@ -3,8 +3,7 @@ import {
   IconPencilOutline18,
   IconTrash2Outline18,
 } from "@pond/icons/outline/18";
-import type { MenuItemSpec } from "@pond/ui";
-import type { CSSProperties } from "react";
+import { cssVars, type MenuItemSpec } from "@pond/ui";
 import { FOLDER_SWATCHES } from "@/features/library/components/folder-sidebar/folder-icons";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import styles from "./styles.module.css";
@@ -35,10 +34,7 @@ function ColorSwatches({
           aria-label={swatch.label}
           aria-pressed={swatch.id === color}
           data-selected={swatch.id === color || undefined}
-          style={
-            // SAFETY: React forwards CSS custom properties to the element style.
-            { "--swatch": swatch.css } as CSSProperties
-          }
+          style={cssVars({ "--swatch": swatch.css })}
           onClick={() => onChange(swatch.id)}
         />
       ))}

@@ -12,8 +12,6 @@
   }
 
   &[data-card] {
-    background-clip: padding-box;
-    border: var(--ds-border-elevated);
     border-radius: var(--ds-radius-xl);
     box-shadow: var(--ds-shadow-1);
   }

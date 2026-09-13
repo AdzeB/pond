@@ -226,18 +226,37 @@ describe("expanded library formats", () => {
     });
   });
 
-  it("uses a custom thumbnail only for card selection", () => {
+  it("uses a dedicated thumbnail for card selection", () => {
     const save = makeSave({
       id: "pdf-1",
       source: "local",
       mediaType: "document",
       files: [
         file("document", "paper.pdf", "application/pdf"),
-        file("custom_thumbnail", "chosen.png", "image/png"),
+        file("thumbnail", "paper.pdf_thumbnail.png", "image/png"),
       ],
     });
-    expect(pickCardUnit(save)?.key).toBe("chosen.png");
+    expect(pickCardUnit(save)?.key).toBe("paper.pdf_thumbnail.png");
     expect(buildMediaUnits(save)).toEqual([]);
+  });
+
+  it("does not use a caption text card when the save has a video poster", () => {
+    const save = makeSave({
+      id: "ig-reel",
+      source: "instagram",
+      mediaType: "video",
+      files: [
+        file("thumbnail", "thumbnail.png", "image/png"),
+        file("thumbnail_dark", "thumbnail-dark.png", "image/png"),
+        file("video", "video-1.mp4", "video/mp4"),
+        file("poster", "poster-1.jpg", "image/jpeg"),
+      ],
+    });
+    expect(pickCardUnit(save)).toMatchObject({
+      key: "video-1.mp4",
+      isVideo: true,
+      posterKey: "poster-1.jpg",
+    });
   });
 
   it("requests a native card preview for PDFs without changing content media", () => {

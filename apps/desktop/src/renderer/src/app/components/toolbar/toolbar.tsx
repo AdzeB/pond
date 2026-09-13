@@ -12,7 +12,7 @@ import {
 import { Button, Menu } from "@pond/ui";
 import { useRouter, useRouterState } from "@tanstack/react-router";
 import { ChromeHistoryNav } from "@/app/components/chrome-toolbar/chrome-toolbar";
-import { InspectorToggle } from "@/features/library/components/agent-toggle/agent-toggle";
+import { AgentToggle } from "@/features/library/components/agent-toggle/agent-toggle";
 import { SidebarToggle } from "@/features/library/components/sidebar-toggle/sidebar-toggle";
 import { getLastListPath } from "@/features/library/lib/list-path";
 import { useFolders } from "@/features/library/state/folders";
@@ -182,7 +182,12 @@ export function Toolbar() {
         <Breadcrumbs />
       </div>
       <div className={styles.actions}>
-        {hideInspector ? null : <InspectorToggle open={rightPane !== null} />}
+        {hideInspector ? null : (
+          <>
+            <AgentToggle />
+            <SidebarToggle side="right" open={rightPane !== null} />
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,11 +1,11 @@
-.optionIcon {
+.option-icon {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   color: var(--ds-gray-10);
 }
 
-.modelContent {
+.model-content {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -14,9 +14,9 @@
   text-align: left;
 }
 
-.rowDescription {
-  font-size: var(--ds-text-small);
-  line-height: 1.45;
+.row-description {
+  font-size: var(--ds-text-sm);
+  line-height: 1.5;
   color: var(--ds-gray-9);
   overflow-wrap: anywhere;
 }
@@ -32,9 +32,11 @@
   gap: 10px;
   align-items: center;
   height: auto;
-  min-height: 56px;
-  padding: 10px;
+  min-height: 44px;
+  padding: 8px;
+  font-size: var(--ds-text-md);
   text-align: left;
+  border-radius: var(--ds-radius-lg);
 }
 
 .suggestion > svg:last-child {

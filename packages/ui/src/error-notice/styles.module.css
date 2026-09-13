@@ -1,4 +1,4 @@
-.modelContent {
+.model-content {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -7,7 +7,7 @@
   text-align: left;
 }
 
-.modelName {
+.model-name {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -15,9 +15,9 @@
   white-space: nowrap;
 }
 
-.rowDescription {
-  font-size: var(--ds-text-small);
-  line-height: 1.45;
+.row-description {
+  font-size: var(--ds-text-sm);
+  line-height: 1.5;
   color: var(--ds-gray-9);
   overflow-wrap: anywhere;
 }
@@ -26,9 +26,10 @@
   display: flex;
   gap: 10px;
   align-items: center;
-  padding: 12px;
+  padding: 10px 12px;
+  font-size: var(--ds-text-md);
   background: var(--ds-gray-2);
-  border: 1px solid var(--ds-border-subtle);
+  border: var(--ds-border-width) solid var(--ds-border-subtle);
   border-radius: var(--ds-radius-lg);
 }
 

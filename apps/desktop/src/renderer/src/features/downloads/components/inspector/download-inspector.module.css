@@ -48,7 +48,7 @@
 }
 .title {
   margin: 0 0 4px;
-  font-size: var(--ds-text-body);
+  font-size: var(--ds-text-lg);
   font-weight: var(--ds-weight-medium);
   overflow-wrap: anywhere;
 }
@@ -58,14 +58,14 @@
 }
 .sectionTitle {
   margin: 0 0 20px;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-medium);
 }
 .status {
   display: flex;
   gap: 8px;
   align-items: center;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
 }
 .indicator,
 .eventDot {
@@ -88,7 +88,7 @@
 }
 .detail {
   margin: 0;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   line-height: 1.5;
   color: var(--ds-gray-10);
 }
@@ -112,7 +112,7 @@ p.detail {
   gap: 8px;
   align-items: baseline;
   justify-content: space-between;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-variant-numeric: tabular-nums;
 }
 .progress {
@@ -148,7 +148,7 @@ p.detail {
   gap: 10px;
   align-items: baseline;
   padding: 0 0 20px;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-10);
 }
 .event:last-child {
@@ -195,7 +195,7 @@ p.detail {
   grid-template-columns: minmax(74px, 1fr) minmax(0, 1.6fr);
   gap: 12px;
   margin: 0;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   line-height: 1.5;
 }
 .properties dt {
@@ -211,7 +211,7 @@ p.detail {
 .empty {
   padding: 20px 0;
   margin: 0;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   line-height: 1.5;
   color: var(--ds-gray-10);
   border-top: var(--ds-border-width) solid var(--ds-border-subtle);

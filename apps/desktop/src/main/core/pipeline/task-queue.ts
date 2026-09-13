@@ -66,16 +66,18 @@ export async function pullDueTasks(): Promise<DueTask[]> {
 
   if (rows.length === 0) return rows;
 
-  const runnable = rows.filter((row) =>
-    isDueTaskRunnable(row, sourcePausedUntil(row.source)),
+  const runnable = rows.filter(
+    (row) => !isBlockedBySourceCooldown(row, sourcePausedUntil(row.source)),
   );
   return scheduleDueTasks(runnable);
 }
 
-/** Interactive harvest still starts; acquire() waits out the source cooldown. */
 export function isDueTaskRunnable(row: DueTask, sourceUntil: number): boolean {
-  if (isInteractiveTask(row)) return true;
-  return !(isSourceTask(row.op) && sourceUntil > 0);
+  return !isBlockedBySourceCooldown(row, sourceUntil);
+}
+
+function isBlockedBySourceCooldown(row: DueTask, sourceUntil: number): boolean {
+  return isSourceTask(row.op) && sourceUntil > 0 && !isInteractiveTask(row);
 }
 
 const DISPATCH_BATCH = 20;

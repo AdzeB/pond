@@ -235,7 +235,6 @@ async function exportPackage(ids: readonly string[], destination: string) {
     });
     await readPackage(staging);
     const path = join(parent, basename(destination));
-    // Publishing a directory cannot replace an existing nonempty package.
     checkTransferCancellation();
     await rename(staging, path);
     return { path, exported: result.exported };
@@ -402,7 +401,6 @@ async function importPackage(
             save.files.reduce((total, file) => total + file.size, 0),
           );
         } finally {
-          // A failed metadata commit may have inserted the Save; retain its recoverable originals.
           if (!copied) await rm(destination, { recursive: true, force: true });
         }
       }

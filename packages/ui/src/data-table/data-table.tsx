@@ -1,6 +1,7 @@
 import { DataTableBody } from "./body";
 import { useDataTable } from "./context";
 import { DataTableHeader } from "./header";
+import { DataTableHotkeys } from "./hotkeys";
 import {
   DataTableActionBar,
   DataTableActionBarDivider,
@@ -23,6 +24,7 @@ export const DataTable = {
   Toolbar: DataTableToolbar,
   ActionBar: DataTableActionBar,
   ActionBarDivider: DataTableActionBarDivider,
+  Hotkeys: DataTableHotkeys,
 };
 
 export { useDataTable };

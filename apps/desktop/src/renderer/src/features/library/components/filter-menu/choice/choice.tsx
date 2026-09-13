@@ -77,16 +77,12 @@ export function ChoiceFilter({
   return (
     <>
       {searchable ? (
-        <div className={styles.header}>
-          <div className={styles.search}>
-            <Menu.Input
-              aria-label={`Filter ${meta.label}`}
-              placeholder={`Search ${meta.label.toLowerCase()}…`}
-              value={search}
-              onValueChange={setSearch}
-            />
-          </div>
-        </div>
+        <Menu.Input
+          aria-label={`Filter ${meta.label}`}
+          placeholder={`Search ${meta.label.toLowerCase()}…`}
+          value={search}
+          onValueChange={setSearch}
+        />
       ) : null}
       <div className={styles.options} {...scrollFade}>
         {showEmpty ? (

@@ -20,13 +20,13 @@ export function Details({
       <Accordion.Root defaultValue={defaultOpen ? ["details"] : []}>
         <Accordion.Item value="details" className={styles.disclosure}>
           <Accordion.Header>
-            <Accordion.Trigger>
+            <Accordion.Trigger className={styles.trigger}>
               {title}
               <IconChevronDownOutline12 />
             </Accordion.Trigger>
           </Accordion.Header>
           <Accordion.Panel
-            className={styles.detailsPanel}
+            className={styles["details-panel"]}
             data-reduced-motion={reduced || undefined}
           >
             <div className={styles.details}>{children}</div>

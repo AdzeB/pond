@@ -37,7 +37,7 @@
 }
 
 .name[data-index] .meta {
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-8);
 }
 

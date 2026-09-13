@@ -33,7 +33,7 @@ export function ComposerView({
           </Composer.Attachments>
         </div>
         <Composer.Quote>
-          <span className={styles.quoteText}>
+          <span className={styles["quote-text"]}>
             <Composer.QuoteText />
           </span>
           <Composer.QuoteDismiss
@@ -50,7 +50,7 @@ export function ComposerView({
         />
         <div className={styles.toolbar}>
           <div className={styles.actions}>{toolbar}</div>
-          <div className={styles.sendSlot}>
+          <div className={styles["send-slot"]}>
             <AnimatePresence initial={false} mode="wait">
               <motion.div
                 key={isRunning ? "stop" : "send"}
@@ -68,11 +68,11 @@ export function ComposerView({
                           icon
                           size="sm"
                           variant="secondary"
-                          className={styles.sendButton}
+                          className={styles["send-button"]}
                         />
                       }
                     >
-                      <span className={styles.stopIcon} />
+                      <span className={styles["stop-icon"]} />
                     </Composer.Cancel>
                   </ActionHint>
                 ) : (
@@ -80,7 +80,11 @@ export function ComposerView({
                     <Composer.Send
                       aria-label="Send"
                       render={
-                        <Button icon size="sm" className={styles.sendButton} />
+                        <Button
+                          icon
+                          size="sm"
+                          className={styles["send-button"]}
+                        />
                       }
                     >
                       <IconArrowUpFill18 />
@@ -93,22 +97,5 @@ export function ComposerView({
         </div>
       </Composer.Root>
     </Tooltip.Provider>
-  );
-}
-
-export function EditComposer() {
-  return (
-    <Composer.Root>
-      <Composer.Input aria-label="Edit message" />
-      <div className={styles.toolbar}>
-        <span className={styles.muted}>
-          Starts a new response from this message
-        </span>
-        <div className={styles.actions}>
-          <Composer.Cancel>Cancel</Composer.Cancel>
-          <Composer.Send>Save</Composer.Send>
-        </div>
-      </div>
-    </Composer.Root>
   );
 }

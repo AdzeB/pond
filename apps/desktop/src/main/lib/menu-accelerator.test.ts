@@ -3,7 +3,7 @@ import { resolveShortcuts } from "../../shared/shortcuts";
 import { menuAccelerator } from "./menu-accelerator";
 
 describe("native menu shortcut presentation", () => {
-  it("uses effective overrides for native-owned commands and capture", () => {
+  it("uses effective overrides for native-owned commands", () => {
     const bindings = resolveShortcuts({
       profile: "pond",
       overrides: {
@@ -11,7 +11,7 @@ describe("native menu shortcut presentation", () => {
         "view.inspector": "Alt+I",
         "view.zoom-in": "Mod+ArrowUp",
         "nav.back": "Alt+ArrowLeft",
-        "capture.area": "Control+Alt+F12",
+        "app.summon": "Control+Alt+F12",
       },
     });
     expect(menuAccelerator(bindings["view.layout-cycle"])).toBe(
@@ -22,7 +22,7 @@ describe("native menu shortcut presentation", () => {
       "CommandOrControl+Up",
     );
     expect(menuAccelerator(bindings["nav.back"])).toBe("Alt+Left");
-    expect(menuAccelerator(bindings["capture.area"])).toBe("Control+Alt+F12");
+    expect(menuAccelerator(bindings["app.summon"])).toBe("Control+Alt+F12");
   });
   it("tracks Eagle profile changes and restores defaults after resetting overrides", () => {
     const eagle = resolveShortcuts({ profile: "eagle", overrides: {} });
@@ -35,9 +35,6 @@ describe("native menu shortcut presentation", () => {
     );
     expect(menuAccelerator(pond["view.grayscale"])).toBe(
       "CommandOrControl+Alt+G",
-    );
-    expect(menuAccelerator(pond["view.pin-preview"])).toBe(
-      "CommandOrControl+Shift+P",
     );
     expect(menuAccelerator(pond["nav.library"])).toBe("G L");
     expect(menuAccelerator(pond["save.reveal"])).toBe("F");

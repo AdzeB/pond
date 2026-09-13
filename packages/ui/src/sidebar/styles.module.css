@@ -40,38 +40,13 @@
   overflow: visible;
 }
 
-.back {
-  display: inline-flex;
-  gap: 4px;
-  align-items: center;
-  align-self: flex-start;
-  padding: 4px 6px;
-  font-size: var(--ds-text-small);
-  font-weight: var(--ds-weight-medium);
-  color: var(--ds-gray-11);
-  text-decoration: none;
-  border-radius: var(--ds-radius-md);
-  transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    background var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-a3);
-  }
-
-  & svg {
-    color: var(--ds-gray-9);
-  }
-}
-
 .result {
   display: block;
   max-width: calc(100% - 24px);
   padding: 5px 6px 5px 30px;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-11);
   white-space: nowrap;
   text-decoration: none;
@@ -89,7 +64,7 @@
 
 .empty {
   padding: 8px 6px;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-11);
 }
 
@@ -125,7 +100,7 @@
   width: 100%;
   height: var(--sidebar-height-md);
   padding: 0 8px;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-9);
   border-radius: var(--ds-radius-md);
@@ -202,11 +177,11 @@ button.label:hover {
   padding: 0 6px;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-10);
   white-space: nowrap;
-  border-radius: var(--ds-radius-md);
+  border-radius: var(--ds-radius-lg);
   transition:
     color var(--ds-duration-medium) var(--ds-easing-standard),
     background var(--ds-duration-medium) var(--ds-easing-standard);
@@ -248,8 +223,6 @@ button.label:hover {
       height: 16px;
       padding: 0;
       margin-right: 8px;
-      background-clip: padding-box;
-      border: var(--ds-border-elevated);
       border-radius: var(--ds-radius-xs);
       box-shadow: var(--ds-shadow-2);
     }
@@ -259,7 +232,7 @@ button.label:hover {
 .count {
   margin-right: 4px;
   margin-left: auto;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-medium);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-9);

@@ -20,7 +20,7 @@ export function Activity() {
   return (
     <ChainOfThought.Root className={styles.activity}>
       <ChainOfThought.AccordionTrigger
-        className={styles.activityTrigger}
+        className={styles["activity-trigger"]}
         aria-expanded={expanded}
         aria-controls={regionId}
       >
@@ -36,7 +36,7 @@ export function Activity() {
         <IconChevronDownOutline12 />
       </ChainOfThought.AccordionTrigger>
       <Reveal visible={expanded}>
-        <div id={regionId} className={styles.activityBody}>
+        <div id={regionId} className={styles["activity-body"]}>
           <ChainOfThought.Parts
             components={{ Reasoning, tools: { Fallback: ToolCall } }}
           />

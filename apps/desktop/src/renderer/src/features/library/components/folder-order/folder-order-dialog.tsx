@@ -156,6 +156,7 @@ export function FolderOrderDialog({
             <Button
               variant="primary"
               disabled={busy || !order}
+              loading={busy}
               onClick={() => void save()}
             >
               Save Order

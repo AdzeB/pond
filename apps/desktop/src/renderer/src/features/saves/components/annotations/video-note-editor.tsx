@@ -98,6 +98,7 @@ export function VideoNoteEditor({
             </Button>
             <Button
               disabled={busy || !valid}
+              loading={busy}
               onClick={() => void persist(false)}
             >
               Save Note

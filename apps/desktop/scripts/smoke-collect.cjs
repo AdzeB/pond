@@ -69,20 +69,6 @@ app.on("web-contents-created", (_, contents) => {
           return null;
         }
         const history = await watched();
-        let screenshot = { skipped: true };
-        try {
-          const captured = await q("capture.display");
-          const error = captured?.error ?? "";
-          screenshot =
-            captured?.ok === false &&
-            /cancelled|permission|capture_failed|no_display/i.test(
-              String(error),
-            )
-              ? { skipped: true, error }
-              : captured;
-        } catch (error) {
-          screenshot = { skipped: true, error: String(error) };
-        }
         return {
           inbox,
           accepted,
@@ -91,7 +77,6 @@ app.on("web-contents-created", (_, contents) => {
           save,
           manual,
           history,
-          screenshot,
         };
       })()`);
       assert.equal(result.accepted.state, "draft");
@@ -100,9 +85,6 @@ app.on("web-contents-created", (_, contents) => {
       assert.equal(result.manual.ok, true);
       assert.equal(result.history?.ok, true);
       assert.equal(result.history?.name, "hello.txt");
-      if (result.screenshot && result.screenshot.skipped !== true) {
-        assert.equal(result.screenshot.ok, true);
-      }
       console.log("COLLECT_SMOKE_OK");
       clearTimeout(timer);
       app.quit();

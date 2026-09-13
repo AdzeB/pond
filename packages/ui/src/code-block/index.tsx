@@ -26,7 +26,7 @@ export function CodeHeader({
     }
   }
   return (
-    <div className={styles.codeHeader}>
+    <div className={styles["code-header"]}>
       <span>{language || "Code"}</span>
       <Button
         size="xs"
@@ -50,7 +50,7 @@ export function CodeBlock({
   language?: string;
 }) {
   return (
-    <div className={styles.codeBlock}>
+    <div className={styles["code-block"]}>
       <CodeHeader code={code} language={language} />
       <pre>
         <code>{code}</code>

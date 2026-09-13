@@ -1,4 +1,5 @@
 import { typeLabelForPath } from "@shared/file-format";
+import { isThumbnailKind } from "@shared/save-file-names";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { DownloadingBadge } from "@/features/saves/components/card/media/downloading-badge/downloading-badge";
 import { HoverGallery } from "@/features/saves/components/card/media/hover-gallery/hover-gallery";
@@ -79,7 +80,7 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
   const [viewer] = usePrefs("viewer");
   const thumbnailBackground = viewer.thumbnailBackground ?? "none";
   const richPreview = useMemo(() => {
-    if ((save.files ?? []).some((file) => file.kind === "custom_thumbnail")) {
+    if ((save.files ?? []).some((file) => isThumbnailKind(file.kind))) {
       return null;
     }
     const kind = richFilePreviewKind(primary);

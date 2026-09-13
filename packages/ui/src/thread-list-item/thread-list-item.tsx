@@ -6,7 +6,9 @@ import type { PrimitiveSurface } from "../shared/primitive-surface";
 import styles from "./styles.module.css";
 
 function Root({ className, ...props }: ComponentProps<typeof Base.Root>) {
-  return <Base.Root {...props} className={cn(styles.threadItem, className)} />;
+  return (
+    <Base.Root {...props} className={cn(styles["thread-item"], className)} />
+  );
 }
 
 function Archive({

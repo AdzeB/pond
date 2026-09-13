@@ -10,10 +10,10 @@ import {
 import styles from "./model-picker.module.css";
 
 interface PopupStyle extends CSSProperties {
-  "--popup-width": string;
+  "--ds-popup-width": string;
 }
 
-const POPUP_STYLE: PopupStyle = { "--popup-width": "auto" };
+const POPUP_STYLE: PopupStyle = { "--ds-popup-width": "auto" };
 
 interface Props {
   catalog: ModelCatalog;

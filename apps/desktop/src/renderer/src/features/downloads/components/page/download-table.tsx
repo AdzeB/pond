@@ -67,6 +67,7 @@ export function DownloadTable({
       rowHeight={48}
       height={rows.length > 11 ? 528 : undefined}
       selectionCheckboxes={false}
+      selectOnClick={false}
       onRowClick={onInspect}
       renderRow={renderRow}
       onSelectionChange={(ids) => {

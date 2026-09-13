@@ -16,15 +16,13 @@
   max-width: 440px;
   padding: 24px;
   background: var(--ds-gray-1);
-  background-clip: padding-box;
-  border: var(--ds-border-elevated);
   border-radius: var(--ds-radius-xl);
   box-shadow: var(--ds-shadow-dialog);
 }
 
 .title {
   margin: 0;
-  font-size: var(--ds-text-body);
+  font-size: var(--ds-text-lg);
   font-weight: var(--ds-weight-semibold);
   color: var(--ds-gray-12);
 }

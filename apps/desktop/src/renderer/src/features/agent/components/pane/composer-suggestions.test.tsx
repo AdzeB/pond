@@ -3,7 +3,6 @@ import type { AssistantSource } from "@shared/assistant";
 import { act, useRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { ComposerInput } from "./composer-input";
 import { ComposerSuggestions } from "./composer-suggestions";
 import { useComposerSuggestions } from "./use-composer-suggestions";
 
@@ -40,12 +39,20 @@ function Harness() {
             submit();
           }}
         >
-          <ComposerInput
+          <textarea
             ref={inputRef}
             value={value}
             {...suggestions.inputProps}
             onKeyDown={(event) => {
-              suggestions.onKeyDown(event);
+              if (suggestions.onKeyDown(event)) return;
+              if (
+                event.key !== "Enter" ||
+                event.shiftKey ||
+                event.nativeEvent.isComposing
+              )
+                return;
+              event.preventDefault();
+              event.currentTarget.form?.requestSubmit();
             }}
           />
         </form>

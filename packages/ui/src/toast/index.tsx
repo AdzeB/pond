@@ -15,7 +15,11 @@ function Portal(props: Base.Portal.Props) {
 
 function Viewport({ className, ...props }: Base.Viewport.Props) {
   return (
-    <Base.Viewport className={cn(styles.viewport, className)} {...props} />
+    <Base.Viewport
+      className={cn(styles.viewport, className)}
+      data-slot="toasts"
+      {...props}
+    />
   );
 }
 

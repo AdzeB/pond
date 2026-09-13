@@ -53,7 +53,7 @@
 .notice {
   padding: 12px 16px;
   margin: 0;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-11);
 }
 .error {

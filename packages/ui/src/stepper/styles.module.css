@@ -5,6 +5,11 @@
 }
 
 .input {
+  --input-min-height: 28px;
+  --input-padding-inline: 0;
+  --input-padding-start: 0;
+  --input-font-size: var(--ds-text-sm);
+  --input-radius: var(--ds-radius-lg);
   width: 44px;
   padding: 0;
   font-weight: var(--ds-weight-medium);

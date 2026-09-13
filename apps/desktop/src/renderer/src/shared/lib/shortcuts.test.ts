@@ -60,16 +60,13 @@ describe("shortcutGlyphs", () => {
 });
 
 describe("shortcut profiles", () => {
-  it("exposes global capture commands with stable defaults in both profiles", () => {
+  it("exposes the global summon command with a stable default in both profiles", () => {
     for (const profile of ["pond", "eagle"] as const) {
       const bindings = resolveShortcuts({
         profile,
-        overrides: { "capture.area": "Control+Alt+F12" },
+        overrides: { "app.summon": "Control+Alt+F12" },
       });
-      expect(bindings["app.summon"].keys).toBe("Mod+Shift+L");
-      expect(bindings["capture.display"].keys).toBe("Mod+Alt+Shift+3");
-      expect(bindings["capture.area"].keys).toBe("Control+Alt+F12");
-      expect(bindings["capture.window"].keys).toBe("Mod+Alt+Shift+5");
+      expect(bindings["app.summon"].keys).toBe("Control+Alt+F12");
     }
   });
 

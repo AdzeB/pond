@@ -6,14 +6,6 @@
   padding: 0;
   overflow: hidden;
 }
-.popup:fullscreen {
-  width: 100vw;
-  max-width: none;
-  height: 100dvh;
-  max-height: none;
-  background: var(--ds-gray-1);
-  border-radius: 0;
-}
 .stage {
   display: flex;
   flex: 1;
@@ -29,7 +21,7 @@
   align-items: center;
   justify-content: center;
   padding: 12px;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   border-top: 1px solid var(--ds-gray-4);
 }
 .interval {

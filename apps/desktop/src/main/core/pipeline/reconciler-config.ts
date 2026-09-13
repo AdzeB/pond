@@ -6,7 +6,6 @@ import { z } from "zod";
 
 export const POLL_INTERVAL_MS = 5_000;
 export const MAX_GLOBAL_INFLIGHT = 4;
-/** Pasted and captured links use their own cap so they are not waiting on background ingest. */
 export const MAX_INTERACTIVE_INFLIGHT = 4;
 export const PER_OP_CONCURRENCY = {
   harvest_metadata: 2,
@@ -20,17 +19,7 @@ export const PER_OP_CONCURRENCY = {
   finalize: 3,
 } satisfies Record<Op, number>;
 
-export const TASK_WATCHDOG_MS = {
-  harvest_metadata: 90_000,
-  capture_tweet: 120_000,
-  render_text_cover: 60_000,
-  fetch_blobs: 5 * 60_000,
-  archive_page: 8 * 60_000,
-  fetch_video_ytdlp: 10 * 60_000,
-  ensure_poster: 60_000,
-  fetch_avatar: 60_000,
-  finalize: 30_000,
-};
+export { TASK_WATCHDOG_MS } from "./task-timeouts";
 
 export const ORPHAN_SWEEP_INTERVAL_MS = 60_000;
 

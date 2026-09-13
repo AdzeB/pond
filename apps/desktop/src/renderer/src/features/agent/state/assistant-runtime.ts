@@ -1,3 +1,5 @@
+import { EventType } from "@ag-ui/core";
+import type { ThreadMessageLike } from "@pond/ui/assistant-runtime";
 import type {
   AssistantChunk,
   AssistantMessage,
@@ -6,45 +8,14 @@ import type {
   AssistantSendResult,
 } from "@shared/assistant";
 import { assistantMetadata, assistantSendResult } from "@shared/assistant";
-import { ChatClient, type UIMessage } from "@tanstack/ai-client";
-import type { UseChatReturn } from "@tanstack/ai-react";
-import { useSelector } from "@tanstack/react-store";
-import { Store } from "@tanstack/store";
 import { z } from "zod";
-import { createAssistantConnection } from "./assistant-connection";
+import {
+  type AssistantConnectionPort,
+  runPondTransport,
+} from "./assistant-connection";
 
-const revision = new Store(0);
-const changed = () => revision.setState((value) => value + 1);
 let activity: (chunk: AssistantChunk) => void = () => {};
-let settlement: Promise<AssistantSendResult> | undefined;
-
-export const assistantClient = new ChatClient<[]>({
-  tools: [],
-  queue: "drop",
-  connection: createAssistantConnection({
-    send(input) {
-      settlement = window.pond
-        .query("agent.send", input)
-        .then((result) => assistantSendResult.parse(result));
-      return settlement;
-    },
-    async stop(input) {
-      await window.pond.query("agent.stop", input);
-    },
-    subscribe: (listener) => window.pond.onAgentChunk(listener),
-    onActivity: (chunk) => activity(chunk),
-  }),
-  onMessagesChange: changed,
-  onLoadingChange: changed,
-  onErrorChange: changed,
-  onStatusChange: changed,
-  onSubscriptionChange: changed,
-  onConnectionStatusChange: changed,
-  onSessionGeneratingChange: changed,
-  onQueueChange: changed,
-  onRunIdChange: changed,
-  onInterruptStateChange: changed,
-});
+let abortRun: (() => void) | undefined;
 
 export function observeAssistantActivity(
   listener: (chunk: AssistantChunk) => void,
@@ -52,99 +23,97 @@ export function observeAssistantActivity(
   activity = listener;
 }
 
-export function toChatMessage(
+export function toThreadMessage(
   message: AssistantMessage,
   presentationId = message.id,
-): UIMessage<[]> {
+): ThreadMessageLike {
   return {
     id: presentationId,
     role: message.role === "user" ? "user" : "assistant",
-    parts: [{ type: "text", content: message.content }],
+    content: [{ type: "text", text: message.content }],
     metadata: {
-      pond: message.metadata,
-      chatId: message.chatId,
-      pondMessageId: message.id,
+      custom: {
+        pond: message.metadata,
+        pondMessageId: message.id,
+        chatId: message.chatId,
+      },
     },
   };
 }
 
-export function fromChatMessage(
-  message: UIMessage<[]>,
+export function fromThreadMessage(
+  message: ThreadMessageLike,
   chatId: string,
 ): AssistantMessage {
   const metadata = assistantMetadata
     .nullable()
-    .safeParse(message.metadata?.pond);
+    .safeParse(message.metadata?.custom?.pond);
+  const content =
+    typeof message.content === "string"
+      ? message.content
+      : message.content
+          .flatMap((part) =>
+            part.type === "text" && "text" in part ? [part.text] : [],
+          )
+          .join("");
   return {
     id:
-      z.string().safeParse(message.metadata?.pondMessageId).data ?? message.id,
-    chatId,
-    role: message.role,
-    content: message.parts
-      .flatMap((part) => (part.type === "text" ? [part.content] : []))
-      .join(""),
+      z.string().safeParse(message.metadata?.custom?.pondMessageId).data ??
+      message.id ??
+      "",
+    chatId:
+      z.string().safeParse(message.metadata?.custom?.chatId).data ?? chatId,
+    role: message.role === "user" ? "user" : "assistant",
+    content,
     metadata: metadata.success ? metadata.data : null,
   };
 }
 
-function pendingRequest() {
-  return settlement;
-}
+const defaultPort: AssistantConnectionPort = {
+  send(input) {
+    return window.pond
+      .query("agent.send", input)
+      .then((result) => assistantSendResult.parse(result));
+  },
+  async stop(input) {
+    await window.pond.query("agent.stop", input);
+  },
+  subscribe: (listener) => window.pond.onAgentChunk(listener),
+  onActivity: (chunk) => activity(chunk),
+};
 
 export async function runAssistant(
   input: AssistantSend,
-  metadata: AssistantMetadata,
+  _metadata: AssistantMetadata,
+  onDelta?: (text: string) => void,
+  port: AssistantConnectionPort = defaultPort,
 ): Promise<AssistantSendResult> {
-  settlement = undefined;
-  await assistantClient.sendMessage(
-    {
-      id: input.requestId,
-      content: input.content,
-      metadata: { pond: metadata, chatId: input.chatId },
-    },
-    input,
-  );
-  // Stopping a client must not unlock another send before main has saved the interrupted turn.
-  const result = await pendingRequest();
-  if (!result)
-    throw assistantClient.getError() ?? new Error("The request did not start.");
-  return result;
+  const controller = new AbortController();
+  const stop = () => controller.abort();
+  abortRun = stop;
+  let assembled = "";
+  try {
+    const result = await runPondTransport(
+      port,
+      input,
+      controller.signal,
+      (event) => {
+        if (
+          event.type === EventType.TEXT_MESSAGE_CONTENT &&
+          "delta" in event &&
+          typeof event.delta === "string"
+        ) {
+          assembled += event.delta;
+          onDelta?.(assembled);
+        }
+      },
+    );
+    return result;
+  } finally {
+    if (abortRun === stop) abortRun = undefined;
+  }
 }
 
-export function useAssistantRuntime(): UseChatReturn<[]> {
-  useSelector(revision, (value) => value);
-  const client = assistantClient;
-  const interrupts = client.getInterruptState();
-  return {
-    messages: client.getMessages(),
-    isLoading: client.getIsLoading(),
-    error: client.getError(),
-    status: client.getStatus(),
-    isSubscribed: client.getIsSubscribed(),
-    connectionStatus: client.getConnectionStatus(),
-    sessionGenerating: client.getSessionGenerating(),
-    runId: client.getCurrentRunId(),
-    queue: client.getQueue(),
-    interrupts: interrupts.interrupts,
-    pendingInterrupts: interrupts.pendingInterrupts,
-    interruptErrors: interrupts.interruptErrors,
-    resuming: interrupts.resuming,
-    sendMessage: (content, options) =>
-      client.sendMessage(content, options?.body, options),
-    append: (message) => client.append(message),
-    stop: () => client.stop(),
-    reload: () => client.reload(),
-    clear: () => client.clear(),
-    setMessages: (messages) => client.setMessagesManually(messages),
-    cancelQueued: (id) => client.cancelQueued(id),
-    addToolResult: (result) => client.addToolResult(result),
-    addToolApprovalResponse: (response) =>
-      client.addToolApprovalResponse(response),
-    resolveInterrupts: client.resolveInterrupts.bind(client),
-    cancelInterrupts: () => client.cancelInterrupts(),
-    retryInterrupts: () => client.retryInterrupts(),
-    resumeInterruptsUnsafe: (resume, state) =>
-      client.resumeInterruptsUnsafe(resume, state),
-    resumeInterrupts: (resume, state) => client.resumeInterrupts(resume, state),
-  };
+export function stopAssistant() {
+  abortRun?.();
 }

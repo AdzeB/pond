@@ -44,7 +44,6 @@ export function LibraryView() {
   useEffect(() => {
     libraryViewContext.set(data.filteredIds, data.mode);
     resultNavigation.setSource({
-      request: data.paging.queryRequest,
       key: data.paging.queryKey,
       loadedIds: data.paging.loadedIds,
       ids: data.filteredIds,
@@ -57,7 +56,6 @@ export function LibraryView() {
     data.paging.allIds,
     data.paging.loadMore,
     data.paging.queryKey,
-    data.paging.queryRequest,
     data.paging.loadedIds,
   ]);
 

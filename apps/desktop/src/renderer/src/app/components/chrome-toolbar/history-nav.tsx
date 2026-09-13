@@ -99,12 +99,10 @@ export function ChromeHistoryNav() {
               <Menu.Group>
                 <Menu.GroupLabel>History</Menu.GroupLabel>
                 {historySaves.map((save) => (
-                  <Menu.Item
-                    key={save.id}
-                    className={styles.item}
-                    onClick={() => openSave(save.id)}
-                  >
-                    <HistoryAvatar save={save} title={titleFor(save)} />
+                  <Menu.Item key={save.id} onClick={() => openSave(save.id)}>
+                    <Menu.ItemIcon>
+                      <HistoryAvatar save={save} title={titleFor(save)} />
+                    </Menu.ItemIcon>
                     <Menu.ItemLabel>{titleFor(save)}</Menu.ItemLabel>
                   </Menu.Item>
                 ))}

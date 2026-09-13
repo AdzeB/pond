@@ -15,7 +15,7 @@ export function ContextChip({
   icon?: ReactNode;
 }) {
   return (
-    <span className={styles.contextChip}>
+    <span className={styles["context-chip"]}>
       {icon}
       <span>{children}</span>
       <Button

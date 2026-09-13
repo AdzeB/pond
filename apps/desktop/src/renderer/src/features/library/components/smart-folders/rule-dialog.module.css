@@ -27,16 +27,16 @@
 .nameLabel {
   display: block;
   margin-bottom: 10px;
-  font-size: var(--ds-text-body);
+  font-size: var(--ds-text-lg);
 }
 .description {
   margin: 18px 0 0;
-  font-size: var(--ds-text-body);
+  font-size: var(--ds-text-lg);
   line-height: 1.5;
   color: var(--ds-gray-10);
 }
 .inherited {
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-11);
 }
 .editor {
@@ -54,11 +54,11 @@
 .count {
   flex: 1;
   margin: 0;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-10);
 }
 .error {
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-red-11);
 }
 .srOnly {

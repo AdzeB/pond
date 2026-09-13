@@ -29,9 +29,7 @@ import { BootScreen } from "./components/boot-screen/boot-screen";
 import { ErrorBoundary } from "./components/error-boundary/error-boundary";
 import { ErrorScreen } from "./components/error-screen/error-screen";
 import { AgentLibraryBridge } from "./effects/agent-library-bridge";
-import { EditableHotkeyGuard } from "./effects/editable-hotkey-guard";
 import { MenuRecentsBridge } from "./effects/menu-recents-bridge";
-import { CaptureShell } from "./windows/capture-shell/capture-shell";
 import { CollectShell } from "./windows/collect-shell/collect-shell";
 
 const DuplicateReviewHost = lazy(() =>
@@ -39,12 +37,6 @@ const DuplicateReviewHost = lazy(() =>
     "@/features/library/components/duplicate-review/duplicate-review"
   ).then((module) => ({ default: module.DuplicateReviewHost })),
 );
-const PreviewShell = lazy(() =>
-  import("./windows/preview-shell/preview-shell").then((module) => ({
-    default: module.PreviewShell,
-  })),
-);
-
 declare global {
   interface Window {
     pond: PondApi;
@@ -136,28 +128,6 @@ function AppContent() {
 
 export function App() {
   const shell = new URLSearchParams(window.location.search).get("shell");
-  if (shell === "preview") {
-    const id = new URLSearchParams(window.location.search).get("id") ?? "";
-    return (
-      <MotionConfig reducedMotion="user">
-        <HotkeysProvider
-          defaultOptions={{
-            hotkey: { ignoreInputs: true },
-            hotkeySequence: { ignoreInputs: true },
-          }}
-        >
-          <ThemeApplier />
-          <EditableHotkeyGuard />
-          <Suspense fallback={<div role="status">Loading preview…</div>}>
-            <PreviewShell id={id} />
-          </Suspense>
-        </HotkeysProvider>
-      </MotionConfig>
-    );
-  }
-  if (shell === "capture") {
-    return <CaptureShell />;
-  }
   if (shell === "collect") {
     return (
       <MotionConfig reducedMotion="user">

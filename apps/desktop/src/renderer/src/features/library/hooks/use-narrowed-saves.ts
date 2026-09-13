@@ -20,7 +20,7 @@ import {
   useSortKey,
 } from "@/features/library/state/view-store";
 import { useSaves } from "@/features/saves/hooks/use-saves";
-import { refreshSaves } from "@/features/saves/lib/ensure-saves";
+import { reloadSaves } from "@/features/saves/lib/ensure-saves";
 import type { SaveListMode } from "@/features/saves/lib/list";
 import { descendantFolderIds } from "@/features/saves/lib/nav-filter";
 import type { Save } from "@/features/saves/types";
@@ -99,7 +99,7 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
       {
         page: (request) => window.pond.query("saves.queryPage", request),
         ids: (request) => window.pond.query("saves.queryIds", request),
-        refresh: refreshSaves,
+        refresh: reloadSaves,
       },
       setState,
     ),
@@ -162,7 +162,6 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
     [ranked, filtered, session],
   );
   return {
-    queryRequest: request,
     queryKey: JSON.stringify(request),
     loadedIds: () => session.snapshot().page?.ids ?? [],
     filtered: ranked,

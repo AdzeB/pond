@@ -47,6 +47,7 @@ import { waitForLibraryLocationChanges } from "./ipc/queries/library-locations";
 import { ensureIngestToken } from "./keychain";
 import { broadcast } from "./lib/broadcast";
 import { rotateBundleBackups } from "./lib/library-config";
+import { disableMenuActionImages } from "./lib/menu-action-images";
 import { installAppMenu, setMenuRecents } from "./menu";
 import { writeNativeHostManifests } from "./native/manifests";
 import { startNativeServer, stopNativeServer } from "./native/server";
@@ -71,6 +72,7 @@ import {
 
 /** Force app.name before any menu/dock work; dev falls back to "Electron" otherwise. */
 app.setName("Pond");
+disableMenuActionImages();
 
 if (process.env.POND_SANDBOX) {
   const sandbox = resolvePath(process.env.POND_SANDBOX);
@@ -320,6 +322,12 @@ async function startDeferredMaintenance(): Promise<void> {
     .catch((err) => log.warn("[pond] poster backfill failed", err))
     .then(async () =>
       (
+        await import("./core/refresh/save-file-layout-backfill")
+      ).startSaveFileLayoutBackfill(),
+    )
+    .catch((err) => log.warn("[pond] save file layout backfill failed", err))
+    .then(async () =>
+      (
         await import("./core/refresh/threads-card-backfill")
       ).startThreadsCardBackfill(),
     )
@@ -378,15 +386,6 @@ async function registerSummonHotkey() {
           return;
         }
         await summonMainWindow();
-      }),
-      "capture.display": run(async () => {
-        await (await import("./core/screenshot")).captureDisplay();
-      }),
-      "capture.area": run(async () => {
-        await (await import("./aux-windows")).openCaptureWindow();
-      }),
-      "capture.window": run(async () => {
-        await (await import("./core/screenshot")).captureWindow();
       }),
     },
     (await getPrefs()).shortcuts.overrides,

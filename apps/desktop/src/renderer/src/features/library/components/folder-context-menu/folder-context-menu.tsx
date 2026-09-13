@@ -16,8 +16,8 @@ import {
   IconSortArrowsOutline18,
 } from "@pond/icons/outline/18";
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
-import { Dialog, type MenuItemSpec } from "@pond/ui";
-import type { CSSProperties, ReactElement } from "react";
+import { cssVars, Dialog, type MenuItemSpec } from "@pond/ui";
+import type { ReactElement } from "react";
 import {
   FOLDER_ICONS,
   FOLDER_SWATCHES,
@@ -90,10 +90,7 @@ function ColorSwatches({
           aria-label={swatch.label}
           aria-pressed={swatch.id === color}
           data-selected={swatch.id === color || undefined}
-          style={
-            // SAFETY: React forwards CSS custom properties to the element style.
-            { "--swatch": swatch.css } as CSSProperties
-          }
+          style={cssVars({ "--swatch": swatch.css })}
           onClick={() => onChange(swatch.id)}
         />
       ))}

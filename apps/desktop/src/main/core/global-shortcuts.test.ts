@@ -9,9 +9,6 @@ function fixture() {
   const blocked = new Set<string>();
   const actions = {
     "app.summon": vi.fn(),
-    "capture.display": vi.fn(),
-    "capture.area": vi.fn(),
-    "capture.window": vi.fn(),
   };
   const controller = new GlobalShortcutController(
     {
@@ -34,22 +31,22 @@ function fixture() {
 describe("global shortcut registration", () => {
   it("keeps old dispatch until persisted and can roll back staged bindings", () => {
     const { controller, callbacks, actions } = fixture();
-    const old = "Alt+Command+Shift+4";
-    const change = controller.prepare({ "capture.area": "Meta+Shift+A" });
+    const old = "Command+Shift+L";
+    const change = controller.prepare({ "app.summon": "Meta+Shift+A" });
     callbacks.get("Command+Shift+A")?.();
-    expect(actions["capture.area"]).not.toHaveBeenCalled();
+    expect(actions["app.summon"]).not.toHaveBeenCalled();
     callbacks.get(old)?.();
-    expect(actions["capture.area"]).toHaveBeenCalledOnce();
+    expect(actions["app.summon"]).toHaveBeenCalledOnce();
     change.rollback();
     expect(callbacks.has("Command+Shift+A")).toBe(false);
     expect(callbacks.has(old)).toBe(true);
   });
   it("commits new dispatch and releases the previous binding", () => {
     const { controller, callbacks, actions } = fixture();
-    controller.prepare({ "capture.area": "Meta+Shift+A" }).commit();
+    controller.prepare({ "app.summon": "Meta+Shift+A" }).commit();
     callbacks.get("Command+Shift+A")?.();
-    expect(actions["capture.area"]).toHaveBeenCalledOnce();
-    expect([...callbacks.keys()].some((key) => key.endsWith("+4"))).toBe(false);
+    expect(actions["app.summon"]).toHaveBeenCalledOnce();
+    expect(callbacks.has("Command+Shift+L")).toBe(false);
   });
   it("rolls back a partial registration failure and reports OS conflicts", () => {
     const { controller, callbacks, blocked } = fixture();
@@ -57,48 +54,28 @@ describe("global shortcut registration", () => {
     blocked.add("Command+Shift+A");
     expect(() =>
       controller.prepare({
-        "capture.display": "Meta+Shift+D",
-        "capture.area": "Meta+Shift+A",
+        "app.summon": "Meta+Shift+A",
       }),
     ).toThrow("not changed");
     expect([...callbacks.keys()]).toEqual(previous);
-  });
-  it("supports swaps and rejects duplicate aliases before any OS mutation", () => {
-    const { controller, callbacks, actions } = fixture();
-    controller
-      .prepare({
-        "capture.area": "Mod+Alt+Shift+5",
-        "capture.window": "Mod+Alt+Shift+4",
-      })
-      .commit();
-    callbacks.get("Alt+Command+Shift+5")?.();
-    expect(actions["capture.area"]).toHaveBeenCalledOnce();
-    const before = [...callbacks.keys()];
-    expect(() =>
-      controller.prepare({ "capture.area": "Meta+Shift+L" }),
-    ).toThrow("Show Pond");
-    expect([...callbacks.keys()]).toEqual(before);
   });
   it("reports unavailable startup bindings without claiming they registered", () => {
     const controller = new GlobalShortcutController(
       { register: () => false, unregister() {} },
       {
         "app.summon": vi.fn(),
-        "capture.display": vi.fn(),
-        "capture.area": vi.fn(),
-        "capture.window": vi.fn(),
       },
       true,
     );
     controller.start({});
-    expect(controller.status().errors).toHaveLength(4);
+    expect(controller.status().errors).toHaveLength(1);
   });
-  it("allows another binding to change while preserving an unavailable startup command", () => {
+  it("allows changing a binding that failed at startup", () => {
     const callbacks = new Map<string, () => void>();
     const controller = new GlobalShortcutController(
       {
         register(key, callback) {
-          if (key.endsWith("+5")) return false;
+          if (key.endsWith("+L")) return false;
           callbacks.set(key, callback);
           return true;
         },
@@ -108,22 +85,20 @@ describe("global shortcut registration", () => {
       },
       {
         "app.summon": vi.fn(),
-        "capture.display": vi.fn(),
-        "capture.area": vi.fn(),
-        "capture.window": vi.fn(),
       },
       true,
     );
     controller.start({});
-    controller.prepare({ "capture.area": "Mod+Shift+A" }).commit();
-    expect(callbacks.has("Command+Shift+A")).toBe(true);
     expect(controller.status().errors).toHaveLength(1);
-    expect(controller.status().errors[0]).toContain("Capture Window");
+    expect(controller.status().errors[0]).toContain("Show Pond");
+    controller.prepare({ "app.summon": "Mod+Shift+A" }).commit();
+    expect(callbacks.has("Command+Shift+A")).toBe(true);
+    expect(controller.status().errors).toHaveLength(0);
   });
   it("reports invalid restored global preferences without interrupting app startup", () => {
     const { controller } = fixture();
     expect(() =>
-      controller.start({ "capture.area": "Unrecognized" }),
+      controller.start({ "app.summon": "Unrecognized" }),
     ).not.toThrow();
     expect(controller.status().errors[0]).toContain("modifier");
   });

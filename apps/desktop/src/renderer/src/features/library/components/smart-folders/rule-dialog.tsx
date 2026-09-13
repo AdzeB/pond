@@ -206,6 +206,7 @@ export function RuleDialog(props: RuleDialogProps) {
                 size="lg"
                 variant="primary"
                 disabled={busy || !ready || !name.trim()}
+                loading={busy}
               >
                 {busy ? "Saving" : editing ? "Save" : "Create"}
               </Button>

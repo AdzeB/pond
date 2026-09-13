@@ -219,6 +219,7 @@ export function ProviderCard({
             (connected && !changed) ||
             (!connected && catalog.needsKey && !keyDraft.trim())
           }
+          loading={saving}
         >
           {saving
             ? connected

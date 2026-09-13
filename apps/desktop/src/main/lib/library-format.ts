@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const INFO_FILE = "info.json";
 export const SOURCE_FILE = "source.json";
-export const INFO_SCHEMA = 3 as const;
+export const INFO_SCHEMA = 4 as const;
 
 export interface InfoFile {
   kind: string;
@@ -88,6 +88,7 @@ export const StoredInfoDocSchema = z.object({
         .nullable(),
     })
     .optional(),
+  schema: z.number().int().optional(),
   id: z.string().catch(""),
   source: z.string().catch(""),
   sourceId: z.string().catch(""),
@@ -221,7 +222,7 @@ export function applyPatchToInfo(
   info: StoredInfoDoc,
   patch: Partial<Save>,
 ): InfoDoc {
-  const next: InfoDoc = { schema: INFO_SCHEMA, ...info };
+  const next: InfoDoc = { ...info, schema: INFO_SCHEMA };
   const userFields = [
     "rating",
     "comments",

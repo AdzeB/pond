@@ -118,6 +118,7 @@ export function VideoNotesSection({
             size="xs"
             variant="ghost"
             disabled={busy || !seek || !draft.trim()}
+            loading={busy}
             onClick={() => void addNote()}
           >
             Add

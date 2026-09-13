@@ -88,16 +88,12 @@ export function TagChoiceFilter({
 
   return (
     <div className={styles.root}>
-      <div className={styles.header}>
-        <div className={styles.search}>
-          <Menu.Input
-            aria-label="Filter Tags"
-            placeholder="Search tags…"
-            value={search}
-            onValueChange={setSearch}
-          />
-        </div>
-      </div>
+      <Menu.Input
+        aria-label="Filter Tags"
+        placeholder="Search tags…"
+        value={search}
+        onValueChange={setSearch}
+      />
       <div className={styles.body}>
         <div
           className={styles.nav}

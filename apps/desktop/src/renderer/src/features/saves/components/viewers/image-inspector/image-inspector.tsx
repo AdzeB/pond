@@ -3,7 +3,6 @@ import {
   IconCropFill18,
   IconExpandFill18,
   IconFlipHorizontal2Fill18,
-  IconMaximizeWindowFill18,
   IconMediaFastBackwardsFill18,
   IconMediaFastForwardFill18,
   IconMediaPauseFill18,
@@ -142,13 +141,6 @@ export function ImageInspector({
         y: 0,
       }));
   };
-  const enterFullscreen = () => {
-    const element =
-      frame.current?.closest<HTMLElement>("[data-viewer-root]") ??
-      frame.current?.parentElement;
-    if (document.fullscreenElement) void document.exitFullscreen();
-    else if (element) void element.requestFullscreen();
-  };
   useHotkey(
     shortcuts["viewer.zoom-fit"].keys!,
     () => setPosition(() => FIT_POSE),
@@ -272,6 +264,14 @@ export function ImageInspector({
     setEditingComment(null);
     if (next === "crop") setPosition(() => FIT_POSE);
   };
+  const zoomOut = () =>
+    setPosition((previous) =>
+      zoomImageAt(previous, previous.zoom / 1.25, { x: 0, y: 0 }),
+    );
+  const zoomIn = () =>
+    setPosition((previous) =>
+      zoomImageAt(previous, previous.zoom * 1.25, { x: 0, y: 0 }),
+    );
   useHotkey(shortcuts["viewer.comment"].keys!, () => toggleMode("comment"), {
     enabled: active,
     ignoreInputs: true,
@@ -504,10 +504,11 @@ export function ImageInspector({
       data-active={active || undefined}
       data-gif-player={gif.ready || undefined}
     >
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: image inspection has keyboard buttons for each action */}
       <div
         ref={frame}
         className={styles.frame}
+        role="application"
+        aria-label="Image"
         data-background={prefs.transparentBackground ?? "none"}
         data-commenting={mode === "comment" || undefined}
         onContextMenu={(event) => {
@@ -853,6 +854,7 @@ export function ImageInspector({
                   size="sm"
                   variant="primary"
                   disabled={busy || !draft || draft.w <= 0 || draft.h <= 0}
+                  loading={busy}
                   onClick={applyCrop}
                 >
                   Apply Crop
@@ -963,36 +965,8 @@ export function ImageInspector({
                   </ViewerHud.Tool>
                 </ViewerHud.Pill>
               </ViewerHud.Cluster>
-              <ViewerHud.Cluster anchor="bottom-center">
-                <ViewerHud.Pill role="toolbar" aria-label="Zoom">
-                  <ViewerHud.Tool
-                    label="Zoom Out"
-                    onClick={() =>
-                      setPosition((previous) =>
-                        zoomImageAt(previous, previous.zoom / 1.25, {
-                          x: 0,
-                          y: 0,
-                        }),
-                      )
-                    }
-                  >
-                    <IconMinusFill18 />
-                  </ViewerHud.Tool>
-                  <ViewerHud.Scale>{Math.round(actual * 100)}%</ViewerHud.Scale>
-                  <ViewerHud.Tool
-                    label="Zoom In"
-                    onClick={() =>
-                      setPosition((previous) =>
-                        zoomImageAt(previous, previous.zoom * 1.25, {
-                          x: 0,
-                          y: 0,
-                        }),
-                      )
-                    }
-                  >
-                    <IconPlusFill18 />
-                  </ViewerHud.Tool>
-                </ViewerHud.Pill>
+              <ViewerHud.Cluster anchor="top-center">
+                <ZoomPill actual={actual} onOut={zoomOut} onIn={zoomIn} />
               </ViewerHud.Cluster>
               <ViewerHud.Cluster anchor="bottom-right">
                 <ViewerHud.Pill role="toolbar" aria-label="Size">
@@ -1054,7 +1028,7 @@ export function ImageInspector({
                 </ViewerHud.Pill>
               </ViewerHud.Cluster>
               <ViewerHud.Cluster anchor="top-right">
-                <ViewerHud.Pill role="toolbar" aria-label="Reset">
+                <ViewerHud.Pill role="toolbar" aria-label="View">
                   <ViewerHud.Tool
                     label="Reset"
                     disabled={busy}
@@ -1069,15 +1043,6 @@ export function ImageInspector({
                     }
                   >
                     <IconRefreshFill18 />
-                  </ViewerHud.Tool>
-                </ViewerHud.Pill>
-                <ViewerHud.Pill role="toolbar" aria-label="View">
-                  <ViewerHud.Tool
-                    label="Full Screen"
-                    shortcut={<ShortcutKeys id="viewer.fullscreen" />}
-                    onClick={enterFullscreen}
-                  >
-                    <IconMaximizeWindowFill18 />
                   </ViewerHud.Tool>
                 </ViewerHud.Pill>
               </ViewerHud.Cluster>
@@ -1099,6 +1064,28 @@ const HANDLE_LABEL: Record<CropHandle, string> = {
   sw: "Resize Bottom Left",
   se: "Resize Bottom Right",
 };
+
+function ZoomPill({
+  actual,
+  onOut,
+  onIn,
+}: {
+  actual: number;
+  onOut: () => void;
+  onIn: () => void;
+}) {
+  return (
+    <ViewerHud.Pill role="toolbar" aria-label="Zoom">
+      <ViewerHud.Tool label="Zoom Out" onClick={onOut}>
+        <IconMinusFill18 />
+      </ViewerHud.Tool>
+      <ViewerHud.Scale>{Math.round(actual * 100)}%</ViewerHud.Scale>
+      <ViewerHud.Tool label="Zoom In" onClick={onIn}>
+        <IconPlusFill18 />
+      </ViewerHud.Tool>
+    </ViewerHud.Pill>
+  );
+}
 
 function cropHandleFromTarget(target: EventTarget | null): CropHandle | null {
   if (!(target instanceof Element)) return null;

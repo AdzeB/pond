@@ -31,7 +31,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   font: inherit;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   line-height: 1.5;
   color: var(--ds-gray-12);
   word-break: normal;
@@ -63,7 +63,7 @@
   align-items: center;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: 450;
   line-height: 1.5;
   color: var(--ds-gray-9);
@@ -79,7 +79,7 @@
 
 .thinking {
   flex: none;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-10);
 }
 

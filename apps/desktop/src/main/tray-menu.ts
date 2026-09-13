@@ -1,18 +1,11 @@
-import { existsSync } from "node:fs";
-import { type SaveFile, saves } from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
 import { count, desc, eq, isNull } from "drizzle-orm";
-import {
-  app,
-  Menu,
-  type MenuItemConstructorOptions,
-  type NativeImage,
-  nativeImage,
-} from "electron";
+import { app, Menu, type MenuItemConstructorOptions } from "electron";
 import { syncAllSources } from "./core/sync";
 import { getDb } from "./db";
+import { FILE_MENU_CREATE_LABELS } from "./file-menu";
 import { rotateIngestToken } from "./keychain";
-import { sym } from "./lib/menu-symbol";
-import { itemFile, libraryRoot } from "./paths";
+import { libraryRoot } from "./paths";
 import type { TrayOptions } from "./tray";
 
 const RECENTS_LIMIT = 6;
@@ -61,8 +54,6 @@ export async function buildMenu(
           title: saves.title,
           author: saves.author,
           url: saves.url,
-          files: saves.files,
-          coverIndex: saves.coverIndex,
         })
         .from(saves)
         .where(isNull(saves.deletedAt))
@@ -82,15 +73,10 @@ export async function buildMenu(
       ? `Saving ${ingesting} item${ingesting === 1 ? "" : "s"}`
       : `${libraryName} · ${active} saves`;
 
-  const recentItems: MenuItemConstructorOptions[] = recents.map((r) => {
-    const item: MenuItemConstructorOptions = {
-      label: recentLabel(r),
-      click: () => void opts.onOpenSave?.(r.id),
-    };
-    const icon = loadThumb(r.id, r.files, r.coverIndex);
-    if (icon) item.icon = icon;
-    return item;
-  });
+  const recentItems: MenuItemConstructorOptions[] = recents.map((r) => ({
+    label: recentLabel(r),
+    click: () => void opts.onOpenSave?.(r.id),
+  }));
 
   const template: MenuItemConstructorOptions[] = [
     { label: headerLabel, enabled: false },
@@ -105,39 +91,29 @@ export async function buildMenu(
 
   template.push(
     {
-      ...sym("books.vertical"),
+      label: FILE_MENU_CREATE_LABELS[2],
+      click: () => void opts.onMenuAction?.("library.new-note"),
+    },
+    {
+      label: FILE_MENU_CREATE_LABELS[3],
+      click: () => void opts.onMenuAction?.("library.import-files"),
+    },
+    {
+      label: "Collection Window",
+      click: () => void opts.onOpenCollection?.(),
+    },
+    { type: "separator" },
+    {
       label: "Open Library",
       accelerator: "CommandOrControl+Shift+P",
       click: () => void opts.onOpenLibrary(),
     },
-    {
-      ...sym("square.and.arrow.down"),
-      label: "Collection Window",
-      click: () => void opts.onOpenCollection?.(),
-    },
-    {
-      ...sym("camera"),
-      label: "Screenshot Display",
-      click: () => void opts.onScreenshotDisplay?.(),
-    },
-    {
-      ...sym("camera.viewfinder"),
-      label: "Screenshot Area",
-      click: () => void opts.onScreenshotArea?.(),
-    },
-    {
-      ...sym("macwindow"),
-      label: "Screenshot Window",
-      click: () => void opts.onScreenshotWindow?.(),
-    },
     { type: "separator" },
     {
-      ...sym("gearshape"),
       label: "Settings",
       click: () => void (opts.onOpenSettings ?? opts.onOpenLibrary)(),
     },
     {
-      ...sym("arrow.triangle.2.circlepath"),
       label: "Sync Now",
       click: () => {
         void syncAllSources({ trigger: "manual" });
@@ -145,7 +121,6 @@ export async function buildMenu(
     },
     { type: "separator" },
     {
-      ...sym("arrow.triangle.2.circlepath"),
       label: "Rotate Ingest Token",
       click: async () => {
         await rotateIngestToken();
@@ -154,7 +129,6 @@ export async function buildMenu(
     },
     { type: "separator" },
     {
-      ...sym("power"),
       label: "Launch on Startup",
       type: "checkbox",
       checked: loginItem.openAtLogin,
@@ -169,7 +143,6 @@ export async function buildMenu(
     { type: "separator" },
     { label: `Pond ${app.getVersion()}`, enabled: false },
     {
-      ...sym("power"),
       label: "Quit",
       accelerator: "CommandOrControl+Q",
       role: "quit",
@@ -201,25 +174,6 @@ function hostFromUrl(url: string | null | undefined): string | null {
   if (!url) return null;
   try {
     return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return null;
-  }
-}
-
-function loadThumb(
-  id: string,
-  files: SaveFile[] | null | undefined,
-  coverIndex: number | null | undefined,
-): NativeImage | null {
-  try {
-    const list = files ?? [];
-    const cover = list[coverIndex ?? 0] ?? list[0];
-    if (!cover) return null;
-    const path = itemFile(id, cover.path);
-    if (!existsSync(path)) return null;
-    const img = nativeImage.createFromPath(path);
-    if (img.isEmpty()) return null;
-    return img.resize({ width: 16, height: 16, quality: "good" });
   } catch {
     return null;
   }

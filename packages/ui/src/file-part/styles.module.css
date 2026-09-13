@@ -3,14 +3,16 @@
   gap: 6px;
   align-items: center;
   min-width: 0;
-  padding: 4px 8px;
-  border: 1px solid var(--ds-border-subtle);
+  padding: 6px 10px;
+  font-size: var(--ds-text-sm);
+  background: var(--ds-gray-2);
+  border: var(--ds-border-width) solid var(--ds-border-subtle);
   border-radius: var(--ds-radius-md);
   animation: enter var(--ds-duration-medium) var(--ds-easing-decelerate);
 }
 
 .muted {
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-10);
 }
 

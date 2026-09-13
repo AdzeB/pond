@@ -21,7 +21,7 @@ export function ContextPicker({
       .includes(query.toLowerCase()),
   );
   return (
-    <div className={styles.contextPicker}>
+    <div className={styles["context-picker"]}>
       <Input.Root size="sm">
         <Input.Field
           aria-label="Search context"
@@ -30,13 +30,13 @@ export function ContextPicker({
           onValueChange={setQuery}
         />
       </Input.Root>
-      <fieldset className={styles.pickerList} aria-label="Context">
+      <fieldset className={styles["picker-list"]} aria-label="Context">
         {visible.length ? (
           visible.map((item) => (
             <Button
               key={item.id}
               variant="ghost"
-              className={styles.contextRow}
+              className={styles["context-row"]}
               aria-label={item.title}
               aria-pressed={selectedIds.includes(item.id)}
               onClick={() =>
@@ -47,23 +47,23 @@ export function ContextPicker({
                 )
               }
             >
-              <span className={styles.referenceMedia}>
+              <span className={styles["reference-media"]}>
                 {item.media ?? <IconFileOutline18 />}
               </span>
-              <span className={styles.modelContent}>
-                <span className={styles.modelName}>{item.title}</span>
-                <span className={styles.rowDescription}>{item.meta}</span>
+              <span className={styles["model-content"]}>
+                <span className={styles["model-name"]}>{item.title}</span>
+                <span className={styles["row-description"]}>{item.meta}</span>
               </span>
-              <span className={styles.selectionMark}>
+              <span className={styles["selection-mark"]}>
                 {selectedIds.includes(item.id) && <IconCheckOutline18 />}
               </span>
             </Button>
           ))
         ) : (
-          <div className={styles.pickerEmpty}>No matching Saves</div>
+          <div className={styles["picker-empty"]}>No matching Saves</div>
         )}
       </fieldset>
-      <div className={styles.pickerFooter} aria-live="polite">
+      <div className={styles["picker-footer"]} aria-live="polite">
         {selectedIds.length} selected
         {selectedIds.length > 0 && (
           <Button

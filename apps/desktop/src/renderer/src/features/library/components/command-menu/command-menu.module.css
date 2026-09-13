@@ -7,9 +7,7 @@
   max-height: min(450px, calc(100dvh - 80px));
   overflow: hidden;
   background: var(--ds-gray-1);
-  background-clip: padding-box;
-  border: 1px solid var(--ds-gray-a4);
-  border-radius: 16px;
+  border-radius: var(--ds-radius-3xl);
   box-shadow: var(--ds-shadow-6);
 }
 
@@ -46,7 +44,7 @@
   height: 46px;
   padding: 0;
   font: inherit;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-normal);
   line-height: 1.4;
   color: var(--ds-gray-12);
@@ -84,7 +82,7 @@
 
 .groupLabel {
   padding: 4px 8px;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-9);
 }
@@ -142,7 +140,7 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-medium);
   white-space: nowrap;
 }
@@ -152,7 +150,7 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-9);
   white-space: nowrap;
 }

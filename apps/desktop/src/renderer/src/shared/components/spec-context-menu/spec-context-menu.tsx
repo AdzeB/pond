@@ -1,4 +1,3 @@
-import { IconMagnifierOutline18 } from "@pond/icons/outline/18";
 import { ContextMenu, Menu, type MenuItemSpec } from "@pond/ui";
 import {
   type ComponentProps,
@@ -18,13 +17,12 @@ type RootProps = ComponentProps<typeof ContextMenu.Root>;
 type OpenChangeDetails = Parameters<NonNullable<RootProps["onOpenChange"]>>[1];
 
 interface PopupStyle extends CSSProperties {
-  "--popup-width": string;
-  "--popup-min-width": string;
+  "--ds-popup-width"?: string;
+  "--ds-popup-min-width": string;
 }
 
 const DEFAULT_POPUP_STYLE: PopupStyle = {
-  "--popup-width": "max-content",
-  "--popup-min-width": "180px",
+  "--ds-popup-min-width": "180px",
 };
 
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -40,45 +38,6 @@ export interface SpecMenuChromeProps {
   className?: string;
   minWidth?: string;
   children: ReactElement;
-}
-
-function SearchField({
-  value,
-  label,
-  onChange,
-}: {
-  value: string;
-  label: string;
-  onChange: (value: string) => void;
-}) {
-  const input = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    input.current?.focus();
-  }, []);
-  return (
-    <label className={styles.search}>
-      <IconMagnifierOutline18 aria-hidden="true" />
-      <input
-        ref={input}
-        type="search"
-        value={value}
-        placeholder="Search…"
-        aria-label={label}
-        spellCheck={false}
-        onChange={(event) => onChange(event.target.value)}
-        onKeyDown={(event) => {
-          if (
-            event.key.length === 1 &&
-            !event.ctrlKey &&
-            !event.metaKey &&
-            !event.altKey
-          ) {
-            event.stopPropagation();
-          }
-        }}
-      />
-    </label>
-  );
 }
 
 function EmptyMatch({
@@ -127,8 +86,8 @@ function useMenuBodyHeight<LayoutKey>(
       if (!Number.isFinite(locked) || width > locked) {
         const nextWidth = `${width}px`;
         popup.style.setProperty("--popup-locked-width", nextWidth);
-        popup.style.setProperty("--popup-width", nextWidth);
-        popup.style.setProperty("--popup-min-width", nextWidth);
+        popup.style.setProperty("--ds-popup-width", nextWidth);
+        popup.style.setProperty("--ds-popup-min-width", nextWidth);
       }
     };
 
@@ -198,7 +157,7 @@ export function SpecContextMenu({
   const [query, setQuery] = useState("");
   const items = useFilteredItems(buildItems, query);
   const popupStyle: PopupStyle = minWidth
-    ? { "--popup-width": minWidth, "--popup-min-width": minWidth }
+    ? { "--ds-popup-width": minWidth, "--ds-popup-min-width": minWidth }
     : DEFAULT_POPUP_STYLE;
 
   return (
@@ -223,12 +182,13 @@ export function SpecContextMenu({
           >
             {search ? (
               <>
-                <SearchField
+                <ContextMenu.Input
+                  autoFocus
+                  aria-label={searchLabel}
+                  placeholder="Search…"
                   value={query}
-                  label={searchLabel}
-                  onChange={setQuery}
+                  onValueChange={setQuery}
                 />
-                <ContextMenu.Separator />
                 <SearchResults
                   items={items}
                   Item={ContextMenu.Item}
@@ -286,12 +246,13 @@ export function SpecMenu({
           >
             {search ? (
               <>
-                <SearchField
+                <Menu.Input
+                  autoFocus
+                  aria-label={searchLabel}
+                  placeholder="Search…"
                   value={query}
-                  label={searchLabel}
-                  onChange={setQuery}
+                  onValueChange={setQuery}
                 />
-                <Menu.Separator />
                 <SearchResults
                   items={items}
                   Item={Menu.Item}

@@ -1,4 +1,4 @@
-import { type Prefs, PrefsSchema } from "@pond/schema";
+import { DEFAULT_PREFS, type Prefs, PrefsSchema } from "@pond/schema";
 import type { WirePrefsPatch } from "@shared/wire";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
@@ -66,9 +66,7 @@ export function usePrefs<K extends keyof Prefs>(
     return patchPrefsSection(section, delta);
   };
 
-  // SAFETY: a section is missing only until the first load resolves; the third
-  // tuple element reports that, and callers read its fields with `?.`/`??`.
-  return [value ?? ({} as Prefs[K]), patch, value !== null];
+  return [value ?? DEFAULT_PREFS[section], patch, value !== null];
 }
 
 export function usePrefsValue(): Prefs | null {

@@ -29,16 +29,6 @@ Open Pond once so it can register the native host. Then:
 2. On supported sites, the usual save/bookmark control still sends the item into your library.
 3. Session connect happens in the background when Pond is waiting and you open that site signed in.
 
-## State gallery
-
-With `pnpm --filter @pond/extension dev` running:
-
-```
-http://localhost:3001/entrypoints/gallery/index.html
-```
-
-Or `chrome-extension://<id>/gallery.html`. Gallery is omitted from production `zip` builds.
-
 ## Supported sources
 
 See [`docs/supported-sources.md`](../../docs/supported-sources.md) for the full list.

@@ -16,6 +16,6 @@
   flex-direction: column;
   gap: 6px;
   min-width: 0;
-  font-size: var(--ds-text-mini);
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-11);
 }

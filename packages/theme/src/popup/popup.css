@@ -1,0 +1,5 @@
+:root {
+  --ds-popup-min-width: 200px;
+  --ds-popup-max-width: 320px;
+  --ds-popup-width: max-content;
+}

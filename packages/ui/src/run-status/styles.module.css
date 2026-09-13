@@ -1,24 +1,25 @@
-.runStatus {
+.run-status {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
-  padding-block: 8px;
-  font-size: var(--ds-text-small);
+  width: fit-content;
+  padding-block: 4px;
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-9);
 }
 
-.runStatus > svg {
+.run-status > svg {
   width: 14px;
   height: 14px;
 }
 
-.stopMark {
+.stop-mark {
   width: 7px;
   height: 7px;
   background: currentColor;
   border-radius: 2px;
 }
 
-.runStatus[data-reduced-motion="true"] * {
+.run-status[data-reduced-motion="true"] * {
   animation: none;
 }

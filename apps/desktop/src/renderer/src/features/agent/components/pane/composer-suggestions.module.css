@@ -12,8 +12,6 @@
   overflow: auto;
   color: var(--ds-gray-12);
   background: var(--ds-gray-1);
-  background-clip: padding-box;
-  border: 1px solid var(--ds-gray-5);
   border-radius: 12px;
   box-shadow: var(--ds-shadow-2);
 }

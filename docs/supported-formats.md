@@ -18,16 +18,16 @@ A file tile may appear when macOS Quick Look or the Windows thumbnail provider c
 | JPEG, PNG, GIF, WebP, AVIF, SVG, BMP, ICO | Original file | Image | Image |
 | HEIC, HEIF, JPEG XL, TIFF | Original file | Generated WebP | Generated image preview |
 | MP4, WebM, MOV, M4V, MKV | Original file | Image or video poster | Video player when the codec is available |
-| MP3, WAV, M4A, AAC, FLAC, OGG, Opus | Original file | File tile or custom thumbnail | Audio player when the codec is available |
+| MP3, WAV, M4A, AAC, FLAC, OGG, Opus | Original file | File tile or thumbnail | Audio player when the codec is available |
 | PDF | Original file | First-page system preview | PDF viewer |
 | TTF, OTF, TTC, WOFF, WOFF2 | Original file | System preview or file tile | Editable specimen and glyph preview |
 | TXT, Markdown | Original file | Text tile | Text viewer |
 | PSD, RAW, Office, iWork, and proprietary design files | Original file | Operating-system or Eagle-supplied preview | Full-size generated preview with open/export fallback |
 | GLB, FBX, OBJ, STL, PLY, 3MF, 3DS, DAE | Original file | Operating-system preview or model frame | Interactive 3D orbit viewer with animation playback |
 | EPUB | Original file | Operating-system or EPUB cover preview | Script-disabled reader with contents, paging, and type controls |
-| ZIP | Original file | File tile or custom thumbnail | Bounded, searchable archive directory inspector |
+| ZIP | Original file | File tile or thumbnail | Bounded, searchable archive directory inspector |
 | HTML | Original file | Operating-system preview or file tile | Offline sandboxed rendering plus source view |
-| Other files | Original file | System preview, file tile, or custom thumbnail | Full-size system preview or explicit open/export fallback |
+| Other files | Original file | System preview, file tile, or thumbnail | Full-size system preview or explicit open/export fallback |
 
 Audio and video playback depends on the codecs available to Electron and the operating system. Pond still stores and exports a file when its codec cannot play in the app.
 
@@ -70,18 +70,20 @@ Import copies the source bytes into the Pond library. Pond may sanitize the stor
 
 Generated WebP previews live in Pond's thumbnail cache. Deleting the cache does not affect the original. Pond rebuilds previews when they are needed.
 
-Open, reveal, copy, drag, and export actions target the original file. A custom thumbnail affects the card only.
+Open, reveal, copy, drag, and export actions target the original file. A thumbnail sidecar affects the card only.
 
-## Custom thumbnails
+## Thumbnails
 
-Right-click one save and choose **Set Custom Thumbnail**. Choose an image in any supported image format. Use **Remove Custom Thumbnail** to return to Pond's generated preview or file tile.
+Right-click one save and choose **Set Thumbnail**. Choose an image in any supported image format. Pond writes `{filename}_thumbnail.png` beside the original, the same suffix Eagle uses. Use **Remove Thumbnail** to restore Pond's generated preview or file tile.
+
+**Folder Cover** is separate: it is the save chosen to represent a folder in the sidebar.
 
 ## Eagle library migration
 
 Import an unpacked Eagle `.library` folder to migrate its items. Pond preserves:
 
-- every visible original and multi-file attachment;
-- Eagle's supplied/generated thumbnail independently from the originals;
+- every visible original and multi-file attachment, under Eagle's original names;
+- Eagle's `{filename}_thumbnail.png` sidecar independently from the originals;
 - title, source URL, annotation, tags, width, and height;
 - folder hierarchy, membership, color, and sibling order;
 - stable Eagle source IDs so importing the same library again does not duplicate items.
