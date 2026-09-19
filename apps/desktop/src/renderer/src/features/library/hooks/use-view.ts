@@ -2,12 +2,6 @@ import type { FieldId, Predicate, Query } from "@pond/schema/filters/types";
 import { useMemo } from "react";
 import type { LayoutValue } from "@/features/library/lib/view-prefs";
 import {
-  type DisplayPrefKey,
-  type DisplayPrefs,
-  setDisplayPref,
-  useDisplayPrefs,
-} from "@/features/library/state/display-prefs";
-import {
   addCondition,
   type Combinator,
   removeRow,
@@ -22,6 +16,12 @@ import {
   updateRow,
   useViewStore,
 } from "@/features/library/state/view-store";
+import {
+  type DisplayPrefKey,
+  type DisplayPrefs,
+  setDisplayPref,
+  useDisplayPrefs,
+} from "@/features/saves/state/display-prefs";
 import { isSortKey, type SortDir, type SortKey } from "./use-filtered-saves";
 
 export type { SortKey };

@@ -1,4 +1,5 @@
 import {
+  IconArrowRotateClockwiseOutline18,
   IconClone2Outline18,
   IconDownloadOutline18,
   IconEyeOutline18,
@@ -12,22 +13,26 @@ import {
   IconImageOutline18,
   IconLink2Outline18,
   IconNotepadOutline18,
+  IconShieldCheckOutline18,
   IconTagsOutline18,
   IconUserPlusOutline18,
   IconVersionsOutline18,
 } from "@pond/icons/outline/18";
-import { IconPinterest } from "@pond/icons/social-media";
 import { Dialog, type MenuItemSpec } from "@pond/ui";
 import {
   BLANK_DOCUMENTS,
   type BlankDocumentKind,
 } from "@shared/blank-documents";
+import { Children, isValidElement, type ReactNode } from "react";
 import { newMenuDialog } from "@/features/library/state/new-menu-dialog";
 import { openSettings } from "@/features/settings/lib/open-settings";
+import {
+  connectableSourceItems,
+  watchableSourceItems,
+} from "@/features/sources/lib/create-menu";
 import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import {
-  connectPinterest,
   createBlankDocument,
   createNote,
   findDuplicates,
@@ -41,7 +46,9 @@ import {
   newSmartFolder,
   newSource,
   newTag,
+  rescanLibrary,
   runNewAction,
+  verifyIntegrity,
 } from "./actions";
 
 export function buildNewMenuItems(
@@ -84,6 +91,23 @@ export function buildNewMenuItems(
       keywords: "filter rules saved view",
       onClick: () => newSmartFolder(),
     },
+    {
+      id: "tag",
+      label: "New Tag",
+      icon: <IconTagsOutline18 />,
+      keywords: "label organize",
+      shortcut: shortcutGlyphs("library.new-tag"),
+      onClick: () => newTag("tag"),
+    },
+    {
+      id: "tag-group",
+      label: "New Tag Group",
+      icon: <IconVersionsOutline18 />,
+      keywords: "labels organize",
+      shortcut: shortcutGlyphs("library.new-tag-group"),
+      onClick: () => newTag("tag-group"),
+    },
+    ...documents,
     { type: "separator" },
     {
       id: "files",
@@ -108,90 +132,6 @@ export function buildNewMenuItems(
       keywords: "url website bookmark save",
       shortcut: shortcutGlyphs("library.import-links"),
       onClick: () => newMenuDialog.open("links"),
-    },
-    {
-      id: "pond-package",
-      label: "Import Pond Package",
-      icon: <IconFolderImportOutline18 />,
-      keywords: "archive package migrate",
-      onClick: () => void runNewAction(importPondPackage),
-    },
-    {
-      type: "submenu",
-      id: "auto-import",
-      label: "Auto Import",
-      icon: <IconFolderOpenOutline18 />,
-      keywords: "watched folder settings",
-      items: [
-        {
-          id: "watched-folder",
-          label: "Watched Folder",
-          keywords: "directory local files copy",
-          onClick: () => void runNewAction(pickWatchedFolder),
-        },
-        {
-          id: "auto-import-settings",
-          label: "Auto Import Settings",
-          icon: <IconGear3Outline18 />,
-          keywords: "preferences storage",
-          onClick: () =>
-            openSettings("storage", "setting-storage-watched-folder"),
-        },
-      ],
-    },
-    {
-      type: "submenu",
-      id: "find-duplicates",
-      label: "Find Duplicates",
-      icon: <IconClone2Outline18 />,
-      keywords: "scan similar exact",
-      items: [
-        {
-          id: "duplicates-all",
-          label: "Scan All",
-          keywords: "library",
-          onClick: () => findDuplicates("all"),
-        },
-        {
-          id: "duplicates-list",
-          label: "Current List",
-          keywords: "folder view filter",
-          onClick: () => findDuplicates("list"),
-        },
-        {
-          id: "duplicates-selected",
-          label: "Selected",
-          keywords: "selection",
-          onClick: () => findDuplicates("selected"),
-        },
-      ],
-    },
-    { type: "separator" },
-    ...documents,
-    { type: "separator" },
-    {
-      id: "pinterest",
-      label: "Pinterest",
-      icon: <IconPinterest />,
-      keywords: "source connect harvest",
-      onClick: () => connectPinterest(),
-    },
-    { type: "separator" },
-    {
-      id: "tag",
-      label: "New Tag",
-      icon: <IconTagsOutline18 />,
-      keywords: "label organize",
-      shortcut: shortcutGlyphs("library.new-tag"),
-      onClick: () => newTag("tag"),
-    },
-    {
-      id: "tag-group",
-      label: "New Tag Group",
-      icon: <IconVersionsOutline18 />,
-      keywords: "labels organize",
-      shortcut: shortcutGlyphs("library.new-tag-group"),
-      onClick: () => newTag("tag-group"),
     },
     {
       id: "clipboard",
@@ -222,6 +162,13 @@ export function buildNewMenuItems(
       },
     },
     {
+      id: "pond-package",
+      label: "Import Pond Package",
+      icon: <IconFolderImportOutline18 />,
+      keywords: "archive package migrate",
+      onClick: () => void runNewAction(importPondPackage),
+    },
+    {
       id: "eagle",
       label: "Import Eagle Library",
       icon: <IconDownloadOutline18 />,
@@ -229,18 +176,87 @@ export function buildNewMenuItems(
       onClick: () => void runNewAction(importEagle),
     },
     {
+      type: "submenu",
+      id: "auto-import",
+      label: "Auto Import",
+      icon: <IconFolderOpenOutline18 />,
+      keywords: "watched folder settings",
+      items: [
+        {
+          id: "watched-folder",
+          label: "Watched Folder",
+          keywords: "directory local files copy",
+          onClick: () => void runNewAction(pickWatchedFolder),
+        },
+        {
+          id: "auto-import-settings",
+          label: "Auto Import Settings",
+          icon: <IconGear3Outline18 />,
+          keywords: "preferences storage",
+          onClick: () =>
+            openSettings("harvesting", "setting-harvesting-watched-folder"),
+        },
+      ],
+    },
+    { type: "separator" },
+    {
+      type: "submenu",
       id: "connect",
-      label: "Connect a Source",
+      label: "New Source",
       icon: <IconUserPlusOutline18 />,
-      keywords: "new account sync auto import",
-      onClick: () => newSource("connect"),
+      keywords: "new account sync auto import connect",
+      items: connectableSourceItems((source) => newSource("connect", source)),
     },
     {
+      type: "submenu",
       id: "watch",
-      label: "Watch Account",
+      label: "New Watch",
       icon: <IconEyeOutline18 />,
-      keywords: "new source public auto import someone",
-      onClick: () => newSource("watch"),
+      keywords: "new source public auto import someone watch",
+      items: watchableSourceItems((source) => newSource("watch", source)),
+    },
+    { type: "separator" },
+    {
+      type: "submenu",
+      id: "find-duplicates",
+      label: "Find Duplicates",
+      icon: <IconClone2Outline18 />,
+      keywords: "scan similar exact",
+      items: [
+        {
+          id: "duplicates-all",
+          label: "Scan All",
+          keywords: "library",
+          onClick: () => findDuplicates("all"),
+        },
+        {
+          id: "duplicates-list",
+          label: "Current List",
+          keywords: "folder view filter",
+          onClick: () => findDuplicates("list"),
+        },
+        {
+          id: "duplicates-selected",
+          label: "Selected",
+          keywords: "selection",
+          onClick: () => findDuplicates("selected"),
+        },
+      ],
+    },
+    {
+      id: "rescan",
+      label: "Rescan Library",
+      icon: <IconArrowRotateClockwiseOutline18 />,
+      keywords: "reconcile index files disk",
+      shortcut: shortcutGlyphs("library.rescan"),
+      onClick: () => void runNewAction(rescanLibrary),
+    },
+    {
+      id: "verify",
+      label: "Verify Integrity",
+      icon: <IconShieldCheckOutline18 />,
+      keywords: "check missing orphan files disk",
+      onClick: () => void runNewAction(verifyIntegrity),
     },
   ];
 }
@@ -254,15 +270,26 @@ export function filterMenuItems(
   const out: MenuItemSpec[] = [];
   for (const item of items) {
     if (item.type === "separator" || item.type === "custom") continue;
+    if (item.type === "group") {
+      const children = filterMenuItems(item.items, search);
+      if (children.length > 0) {
+        out.push({ ...item, items: children });
+      } else if (matches(item, terms)) {
+        out.push(item);
+      }
+      continue;
+    }
     if (item.type === "submenu") {
       const children = filterMenuItems(item.items, search);
       if (children.length > 0) {
+        const parentLabel = labelText(item.label);
         out.push(
-          ...children.map((child) =>
-            "label" in child && typeof child.label === "string"
-              ? { ...child, label: `${item.label} · ${child.label}` }
-              : child,
-          ),
+          ...children.map((child) => {
+            const childLabel = "label" in child ? labelText(child.label) : null;
+            return parentLabel && childLabel
+              ? { ...child, label: `${parentLabel} · ${childLabel}` }
+              : child;
+          }),
         );
       } else if (matches(item, terms)) {
         out.push(item);
@@ -274,23 +301,16 @@ export function filterMenuItems(
   return out;
 }
 
+function labelText(label: ReactNode): string | null {
+  const labels = Children.toArray(label);
+  const value = labels.length === 1 ? labels[0] : null;
+  return value != null && !isValidElement(value) ? String(value) : null;
+}
+
 function matches(item: MenuItemSpec, terms: string[]): boolean {
   if (!("label" in item) && !("keywords" in item)) return false;
-  const label =
-    "label" in item && typeof item.label === "string" ? item.label : "";
+  const label = "label" in item ? (labelText(item.label) ?? "") : "";
   const keywords = "keywords" in item ? (item.keywords ?? "") : "";
   const text = `${label} ${keywords}`.toLowerCase();
   return terms.every((term) => text.includes(term));
-}
-
-export function menuLabels(items: MenuItemSpec[]): string[] {
-  return items.flatMap((item) => {
-    if (item.type === "separator" || item.type === "custom") return [];
-    if (item.type === "submenu") {
-      const label = typeof item.label === "string" ? item.label : "";
-      return [label, ...menuLabels(item.items)];
-    }
-    if ("label" in item && typeof item.label === "string") return [item.label];
-    return [];
-  });
 }

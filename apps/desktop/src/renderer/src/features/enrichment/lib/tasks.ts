@@ -25,6 +25,7 @@ export const DISABLED_HINTS = {
   transcribe: "Turn on Transcription in Enrichments first.",
   reembed: "Turn on Semantic Search in Enrichments first.",
   clip: "Turn on Visual Similarity in Enrichments first.",
+  sensitiveContent: "Turn on Sensitive Content in Enrichments first.",
 } as const;
 
 export const TASK_ENABLED = {
@@ -33,6 +34,8 @@ export const TASK_ENABLED = {
   transcribe: (prefs: Prefs | null) => prefs?.ai?.enableTranscript === true,
   reembed: (prefs: Prefs | null) => prefs?.ai?.semanticSearch === true,
   clip: (prefs: Prefs | null) => prefs?.ai?.enableClip === true,
+  sensitiveContent: (prefs: Prefs | null) =>
+    prefs?.ai?.enableSensitiveContent === true,
 } as const;
 
 export type TaskScope = readonly string[] | undefined;
@@ -184,6 +187,18 @@ export async function rebuildVisualIndex(ids?: TaskScope): Promise<TaskResult> {
     true,
     DISABLED_HINTS.clip,
     (save) => (save.clipModel == null ? null : { ...save, clipModel: null }),
+    ids,
+  );
+}
+
+export function reclassifySensitiveContent(
+  ids?: TaskScope,
+): Promise<TaskResult> {
+  return reprocessStamped(
+    TASK_ENABLED.sensitiveContent(getPrefsSnapshot()),
+    DISABLED_HINTS.sensitiveContent,
+    (save) =>
+      save.sensitiveModel == null ? null : { ...save, sensitiveModel: null },
     ids,
   );
 }

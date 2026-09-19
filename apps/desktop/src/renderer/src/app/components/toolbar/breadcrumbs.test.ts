@@ -49,6 +49,28 @@ describe("library breadcrumb paths", () => {
     expect(crumbs[2]?.nav).toEqual({ kind: "folder", id: "child" });
   });
 
+  it("nests Model Context Protocol under Settings", () => {
+    expect(
+      buildBreadcrumbs({
+        pathname: "/settings/mcp",
+        listPath: "/",
+        nav: { kind: "folder", id: "child" },
+        folders,
+      }).map((c) => c.label),
+    ).toEqual(["Settings", "Model Context Protocol"]);
+  });
+
+  it("nests Models under Settings", () => {
+    expect(
+      buildBreadcrumbs({
+        pathname: "/settings/agent-models",
+        listPath: "/",
+        nav: { kind: "folder", id: "child" },
+        folders,
+      }).map((c) => c.label),
+    ).toEqual(["Settings", "Models"]);
+  });
+
   it("nests a settings section under Settings", () => {
     expect(
       buildBreadcrumbs({
@@ -57,7 +79,25 @@ describe("library breadcrumb paths", () => {
         nav: { kind: "folder", id: "child" },
         folders,
       }).map((c) => c.label),
-    ).toEqual(["Settings", "Integrations"]);
+    ).toEqual(["Settings", "Providers"]);
+  });
+
+  it.each([
+    ["/settings/library", "Library"],
+    ["/settings/storage", "Storage"],
+    ["/settings/backups", "Backups"],
+    ["/settings/search", "Search"],
+    ["/settings/processing", "Processing"],
+    ["/settings/harvesting", "Harvesting"],
+  ] as const)("labels the focused section at %s", (pathname, label) => {
+    expect(
+      buildBreadcrumbs({
+        pathname,
+        listPath: "/",
+        nav: { kind: "all" },
+        folders,
+      }).map((crumb) => crumb.label),
+    ).toEqual(["Settings", label]);
   });
 
   it("nests a source page under Sources", () => {

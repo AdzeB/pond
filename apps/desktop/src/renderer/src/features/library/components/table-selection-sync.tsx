@@ -1,8 +1,8 @@
-import { useDataTable } from "@pond/ui";
+import { type DataTableRow, useDataTable } from "@pond/ui";
 import { useEffect } from "react";
 import type { RowSelectionStore } from "@/shared/state/row-selection";
 
-export function TableSelectionSync<T>({
+export function TableSelectionSync<T extends DataTableRow>({
   selection,
   rowsById,
 }: {

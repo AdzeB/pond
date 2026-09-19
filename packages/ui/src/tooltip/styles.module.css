@@ -2,18 +2,6 @@
   width: var(--positioner-width);
   max-width: var(--available-width);
   height: var(--positioner-height);
-
-  transition:
-    top var(--ds-duration-slow) var(--ds-easing-snap),
-    left var(--ds-duration-slow) var(--ds-easing-snap),
-    right var(--ds-duration-slow) var(--ds-easing-snap),
-    bottom var(--ds-duration-slow) var(--ds-easing-snap),
-    transform var(--ds-duration-slow) var(--ds-easing-snap);
-
-  &[data-instant],
-  &:has([data-starting-style]) {
-    transition: none;
-  }
 }
 
 .popup {
@@ -35,6 +23,10 @@
   &[data-ending-style] {
     opacity: 0;
     transform: translateY(2px) scale(0.96);
+  }
+
+  &[data-instant] {
+    transition: none;
   }
 }
 

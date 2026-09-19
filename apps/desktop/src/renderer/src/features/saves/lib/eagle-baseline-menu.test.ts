@@ -1,24 +1,9 @@
-// @vitest-environment jsdom
-
 import type { MenuItemSpec } from "@pond/ui";
 import { describe, expect, it } from "vitest";
+import "@/app/effects/save-library-bridge";
 import type { Save } from "@/features/saves/types";
+import { menuLabels as labels } from "@/shared/test/menu-labels";
 import { buildSaveMenu } from "./menu";
-
-function labels(items: MenuItemSpec[]): string[] {
-  return items.flatMap((item) => {
-    if (item.type === "separator" || item.type === "custom") return [];
-    if ("hidden" in item && item.hidden) return [];
-    const nested =
-      item.type === "submenu" || item.type === "group"
-        ? labels(item.items)
-        : [];
-    if ("label" in item && typeof item.label === "string") {
-      return [item.label, ...nested];
-    }
-    return nested;
-  });
-}
 
 function fileSave(): Save {
   return {
@@ -253,15 +238,13 @@ describe("Eagle baseline save menu", () => {
     const gallery = buildSaveMenu(fileSave(), { clipboardEmpty: true });
     expect(labels(gallery)).toContain("Thumbnail Background");
     const submenu = findSubmenu(gallery, "Thumbnail Background");
-    expect(
-      submenu
-        ? submenu.items.flatMap((item) =>
-            "label" in item && typeof item.label === "string"
-              ? [item.label]
-              : [],
-          )
-        : [],
-    ).toEqual(["None", "Black", "Gray", "White", "Grid"]);
+    expect(submenu ? labels(submenu.items) : []).toEqual([
+      "None",
+      "Black",
+      "Gray",
+      "White",
+      "Grid",
+    ]);
     const opened = buildSaveMenu(fileSave(), {
       clipboardEmpty: true,
       opened: true,

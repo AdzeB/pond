@@ -1,0 +1,76 @@
+.trigger {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  justify-content: start;
+  min-width: 96px;
+  padding-block: 2px;
+  padding-right: 6px;
+  padding-left: 4px;
+  color: var(--ds-gray-12);
+
+  > :last-child {
+    justify-self: end;
+  }
+}
+
+.switcher {
+  --ds-popup-min-width: min(var(--menu-width), calc(100vw - 32px));
+  --ds-popup-width: min(var(--menu-width), calc(100vw - 32px));
+  --ds-popup-max-width: var(--menu-width);
+
+  width: min(var(--menu-width), var(--available-width));
+  max-height: var(--available-height);
+}
+
+.libraries {
+  min-height: 0;
+  max-height: min(320px, calc(var(--available-height) - 124px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.mark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--ds-radius-sm);
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-lg);
+  font-weight: var(--ds-weight-semibold);
+  white-space: nowrap;
+}
+
+.chevron {
+  flex: 0 0 auto;
+  width: 8px;
+  margin-left: 4px;
+  color: var(--ds-gray-9);
+}
+
+.identity {
+  width: 20px;
+  height: 20px;
+  margin-right: 4px;
+  border-radius: var(--ds-radius-xs);
+}
+
+.library-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-gray-12);
+}

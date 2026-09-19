@@ -1,7 +1,8 @@
 .root {
-  --input-min-height: 32px;
+  --input-min-height: var(--ds-size-md);
   --input-padding-inline: 12px;
   --input-padding-start: var(--input-padding-inline);
+  --input-padding-end: var(--input-padding-inline);
   --input-font-size: var(--ds-text-md);
   --input-radius: var(--ds-radius-md);
   --input-icon-size: 16px;
@@ -13,50 +14,50 @@
   align-items: center;
 
   &:where([data-size="xs"]) {
-    --input-min-height: 24px;
-    --input-padding-inline: 6px;
+    --input-min-height: var(--ds-size-xs);
     --input-font-size: var(--ds-text-xs);
     --input-radius: var(--ds-radius-sm);
+    --input-padding-inline: 6px;
     --input-icon-size: 12px;
     --input-icon-inset: 5px;
     --input-icon-padding-start: 20px;
   }
 
   &:where([data-size="sm"]) {
-    --input-min-height: 28px;
-    --input-padding-inline: 8px;
+    --input-min-height: var(--ds-size-sm);
     --input-font-size: var(--ds-text-sm);
-    --input-radius: var(--ds-radius-lg);
+    --input-radius: var(--ds-radius-sm);
+    --input-padding-inline: 8px;
     --input-icon-size: 14px;
     --input-icon-inset: 6px;
     --input-icon-padding-start: 24px;
   }
 
   &:where([data-size="md"]) {
-    --input-min-height: 32px;
-    --input-padding-inline: 12px;
+    --input-min-height: var(--ds-size-md);
     --input-font-size: var(--ds-text-md);
-    --input-radius: var(--ds-radius-lg);
+    --input-radius: var(--ds-radius-md);
+    --input-padding-inline: 12px;
     --input-icon-size: 16px;
     --input-icon-inset: 8px;
     --input-icon-padding-start: 28px;
   }
 
   &:where([data-size="lg"]) {
-    --input-min-height: 36px;
+    --input-min-height: var(--ds-size-lg);
+    --input-font-size: var(--ds-text-lg);
+    --input-radius: var(--ds-radius-lg);
     --input-padding-inline: 14px;
-    --input-font-size: var(--ds-text-md);
-    --input-radius: var(--ds-radius-2xl);
     --input-icon-size: 18px;
     --input-icon-inset: 10px;
     --input-icon-padding-start: 34px;
   }
 
   &:where([data-size="xl"]) {
-    --input-min-height: 40px;
-    --input-padding-inline: 16px;
-    --input-font-size: var(--ds-text-lg);
+    --input-min-height: var(--ds-size-xl);
+    --input-font-size: var(--ds-text-xl);
     --input-radius: var(--ds-radius-xl);
+    --input-padding-inline: 16px;
     --input-icon-size: 20px;
     --input-icon-inset: 12px;
     --input-icon-padding-start: 38px;
@@ -64,6 +65,10 @@
 
   &:has(> [data-slot="icon"]) {
     --input-padding-start: var(--input-icon-padding-start);
+  }
+
+  &:has(> [data-slot="action"]) {
+    --input-padding-end: var(--input-min-height);
   }
 
   &:has(> [data-multiline]) {
@@ -86,13 +91,24 @@
   pointer-events: none;
 }
 
+.action {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--input-min-height);
+  border-inline-start: var(--ds-border-width) solid var(--ds-gray-6);
+}
+
 .field {
   flex: 1 1 auto;
   width: 100%;
   height: 100%;
   min-height: var(--input-min-height);
-  padding: 0 var(--input-padding-inline);
-  padding-inline-start: var(--input-padding-start);
+  padding: 0 var(--input-padding-end) 0 var(--input-padding-start);
   font-size: var(--input-font-size);
   font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-12);
@@ -119,6 +135,10 @@
     padding-block: 8px;
     line-height: 1.5;
     resize: vertical;
+  }
+
+  &[data-multiline][data-padding="comfortable"] {
+    padding: 16px;
   }
 }
 

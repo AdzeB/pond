@@ -2,15 +2,6 @@ import { Dialog } from "@pond/ui";
 import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useSelector } from "@tanstack/react-store";
 import { useRef } from "react";
-import { openActionDialog } from "@/features/library/state/action-dialog";
-import { openFolderPicker } from "@/features/library/state/folder-picker";
-import { resultNavigation } from "@/features/library/state/result-navigation";
-import {
-  primarySelectionStore,
-  selection,
-  useSelectionSize,
-} from "@/features/library/state/selection";
-import { tumbleToTrash } from "@/features/library/state/trash-tumble";
 import {
   copyableImageIndex,
   copyId,
@@ -29,6 +20,7 @@ import {
   untrashSave,
 } from "@/features/saves/lib/actions";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
+import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { rateSaves } from "@/features/saves/lib/rating";
 import { openSave, saveIdFromPath } from "@/features/saves/lib/save-nav";
 import { selectOnlySave } from "@/features/saves/lib/select";
@@ -49,9 +41,20 @@ import {
   trashSelection,
 } from "@/features/saves/lib/selection";
 import { pool } from "@/features/saves/state/pool";
+import { resultNavigation } from "@/features/saves/state/result-navigation";
+import {
+  primarySelectionStore,
+  selection,
+  useSelectionSize,
+} from "@/features/saves/state/selection";
+import { tumbleToTrash } from "@/features/saves/state/trash-tumble";
 import type { Save } from "@/features/saves/types";
 import { getAppRouter } from "@/shared/lib/app-router";
-import { RATING_COMMANDS, useShortcutBindings } from "@/shared/lib/shortcuts";
+import {
+  bindingKeys,
+  RATING_COMMANDS,
+  useShortcutBindings,
+} from "@/shared/lib/shortcuts";
 import { notify } from "@/shared/lib/toast";
 
 function primarySave(): Save | null {
@@ -124,11 +127,11 @@ export function SaveHotkeys() {
   useHotkeys(
     [
       {
-        hotkey: shortcuts["save.assign-folders"].keys!,
+        hotkey: bindingKeys(shortcuts, "save.assign-folders"),
         callback: () => {
           const selected = selection.snapshot();
           const primary = primarySelectionStore.state.id;
-          openFolderPicker(
+          saveLibraryBridge.openFolderPicker(
             selected.length ? selected : primary ? [primary] : [],
           );
         },
@@ -136,26 +139,26 @@ export function SaveHotkeys() {
       },
       ...RATING_COMMANDS.flatMap((command) => [
         {
-          hotkey: shortcuts[command.id].keys!,
+          hotkey: bindingKeys(shortcuts, command.id),
           callback: () => rate(command.rating, false),
           options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
         },
         {
-          hotkey: shortcuts[command.nextId].keys!,
+          hotkey: bindingKeys(shortcuts, command.nextId),
           callback: () => rate(command.rating, true),
           options: { enabled: hasPrimary, ignoreInputs: true },
         },
       ]),
       {
-        hotkey: shortcuts["save.open"].keys!,
+        hotkey: bindingKeys(shortcuts, "save.open"),
         callback: withSelection(
           (save) => void openDefaultApp(save),
           openDefaultAppForSelection,
         ),
-        options: { enabled: hasPrimary },
+        options: { enabled: hasPrimary, ignoreInputs: true },
       },
       {
-        hotkey: shortcuts["save.copy-image"].keys!,
+        hotkey: bindingKeys(shortcuts, "save.copy-image"),
         callback: (event) => {
           const textSelection = window.getSelection();
           if (textSelection && !textSelection.isCollapsed) return;
@@ -177,14 +180,14 @@ export function SaveHotkeys() {
         },
       },
       {
-        hotkey: shortcuts["save.copy-url"].keys!,
+        hotkey: bindingKeys(shortcuts, "save.copy-url"),
         callback: withSelection((save) => {
           if (save.url) void copyUrl(save.url);
         }, copyUrlsForSelection),
         options: { enabled: hasPrimary, ignoreInputs: true },
       },
       {
-        hotkey: shortcuts["save.copy-id"].keys!,
+        hotkey: bindingKeys(shortcuts, "save.copy-id"),
         callback: () => {
           const ids = selection.snapshot();
           if (ids.length > 1) {
@@ -197,12 +200,12 @@ export function SaveHotkeys() {
         options: { enabled: hasPrimary, ignoreInputs: true },
       },
       {
-        hotkey: shortcuts["save.copy-tags"].keys!,
+        hotkey: bindingKeys(shortcuts, "save.copy-tags"),
         callback: withSelection((save) => copyTags(save), copyTagsForSelection),
         options: { enabled: hasPrimary, ignoreInputs: true },
       },
       {
-        hotkey: shortcuts["save.paste-tags"].keys!,
+        hotkey: bindingKeys(shortcuts, "save.paste-tags"),
         callback: withSelection(
           (save) => void pasteTags(save),
           pasteTagsForSelection,
@@ -210,7 +213,7 @@ export function SaveHotkeys() {
         options: { enabled: hasPrimary, ignoreInputs: true },
       },
       {
-        hotkey: shortcuts["save.export"].keys!,
+        hotkey: bindingKeys(shortcuts, "save.export"),
         callback: withSelection(
           (save) => void exportFile(save),
           exportSelectionFiles,
@@ -218,15 +221,15 @@ export function SaveHotkeys() {
         options: { enabled: hasPrimary, ignoreInputs: true },
       },
       {
-        hotkey: shortcuts["save.refresh"].keys!,
+        hotkey: bindingKeys(shortcuts, "save.refresh"),
         callback: withSelection(
           (save) => void refreshSaveMetadata(save),
           refreshDetailsForSelection,
         ),
-        options: { enabled: hasPrimary },
+        options: { enabled: hasPrimary, ignoreInputs: true },
       },
       {
-        hotkey: shortcuts["save.add-tag"].keys!,
+        hotkey: bindingKeys(shortcuts, "save.add-tag"),
         callback: () => {
           const ids = selection.snapshot();
           if (ids.length > 1) {
@@ -244,18 +247,18 @@ export function SaveHotkeys() {
         options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
       },
       {
-        hotkey: shortcuts["save.rename"].keys!,
+        hotkey: bindingKeys(shortcuts, "save.rename"),
         callback: withSelection(
           (save) => {
             if (save.source !== "local") return;
             focusPaneTitle();
           },
-          (ids) => openActionDialog(ids, "rename"),
+          (ids) => saveLibraryBridge.openRename(ids),
         ),
         options: { enabled: hasPrimary, ignoreInputs: true },
       },
       {
-        hotkey: shortcuts["save.open-url"].keys!,
+        hotkey: bindingKeys(shortcuts, "save.open-url"),
         callback: withSelection((save) => {
           if (!save.url) return;
           void window.pond.openExternal(save.url);
@@ -263,7 +266,7 @@ export function SaveHotkeys() {
         options: { enabled: hasPrimary, ignoreInputs: true },
       },
       {
-        hotkey: shortcuts["save.reveal"].keys!,
+        hotkey: bindingKeys(shortcuts, "save.reveal"),
         callback: () => {
           const ids = selection.snapshot();
           if (ids.length > 1) {
@@ -277,7 +280,7 @@ export function SaveHotkeys() {
         options: { enabled: hasPrimary, ignoreInputs: true },
       },
       {
-        hotkey: shortcuts["selection.export"].keys!,
+        hotkey: bindingKeys(shortcuts, "selection.export"),
         callback: withSelection(
           (save) => void exportFile(save),
           exportSelectionFiles,
@@ -285,7 +288,7 @@ export function SaveHotkeys() {
         options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
       },
       {
-        hotkey: shortcuts["save.trash"].keys!,
+        hotkey: bindingKeys(shortcuts, "save.trash"),
         callback: () => {
           const ids = selection.snapshot();
           if (ids.length > 0) {
@@ -297,11 +300,11 @@ export function SaveHotkeys() {
           if (save.deletedAt) void untrashSave(save);
           else void tumbleToTrash([save.id]).then(() => trashSave(save));
         },
-        options: { enabled: hasPrimary || hasMulti },
+        options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
       },
       {
         /** Mod+Backspace is delete-to-line-start in macOS text fields; never purge while typing. */
-        hotkey: shortcuts["save.delete-forever"].keys!,
+        hotkey: bindingKeys(shortcuts, "save.delete-forever"),
         callback: withSelection(
           (save) => void purgeForever(save),
           (ids) =>

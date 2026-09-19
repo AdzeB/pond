@@ -1,10 +1,7 @@
 import type { Source } from "@pond/schema/db";
-import type { Capture, CaptureMedia } from "@pond/schema/raw";
+import type { Capture } from "@pond/schema/raw";
 
 export type { Capture, RawJson } from "@pond/schema/raw";
-
-/** @deprecated Back-compat alias; `CaptureMedia` is the same shape. */
-export type MediaCandidate = CaptureMedia;
 
 export interface ExtractInput {
   url: URL;

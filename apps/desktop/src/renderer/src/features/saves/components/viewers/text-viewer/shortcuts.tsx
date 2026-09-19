@@ -31,14 +31,18 @@ export function NoteShortcuts() {
         if (!isMod(event)) return false;
         const key = event.key.toLowerCase();
         if (event.altKey) {
-          const heading: Record<string, NoteBlock> = {
-            Digit0: "paragraph",
-            Digit1: "h1",
-            Digit2: "h2",
-            Digit3: "h3",
-            Digit4: "h4",
-          };
-          const block = heading[event.code];
+          const block: NoteBlock | null =
+            event.code === "Digit0"
+              ? "paragraph"
+              : event.code === "Digit1"
+                ? "h1"
+                : event.code === "Digit2"
+                  ? "h2"
+                  : event.code === "Digit3"
+                    ? "h3"
+                    : event.code === "Digit4"
+                      ? "h4"
+                      : null;
           if (block) {
             event.preventDefault();
             applyNoteBlock(editor, block);

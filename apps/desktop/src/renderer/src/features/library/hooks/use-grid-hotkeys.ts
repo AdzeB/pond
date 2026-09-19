@@ -1,19 +1,16 @@
 import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useRef } from "react";
 import { libraryChrome } from "@/features/library/state/library-chrome";
-import { resultNavigation } from "@/features/library/state/result-navigation";
-import {
-  primarySelection,
-  selection,
-} from "@/features/library/state/selection";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
 import { openSave, saveIdFromPath } from "@/features/saves/lib/save-nav";
 import {
   clearSaveSelection,
   selectOnlySave,
 } from "@/features/saves/lib/select";
+import { resultNavigation } from "@/features/saves/state/result-navigation";
+import { primarySelection, selection } from "@/features/saves/state/selection";
 import { getAppRouter } from "@/shared/lib/app-router";
-import { useShortcutBindings } from "@/shared/lib/shortcuts";
+import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
 
 function gridFocusFree(): boolean {
   const el = document.activeElement;
@@ -100,32 +97,32 @@ export function useGridHotkeys(
   useHotkeys(
     [
       {
-        hotkey: shortcuts["grid.prev"].keys!,
+        hotkey: bindingKeys(shortcuts, "grid.prev"),
         callback: (event) => enqueueMove(-1, false, event),
         options: { preventDefault: false },
       },
       {
-        hotkey: shortcuts["grid.next"].keys!,
+        hotkey: bindingKeys(shortcuts, "grid.next"),
         callback: (event) => enqueueMove(1, false, event),
         options: { preventDefault: false },
       },
       {
-        hotkey: shortcuts["grid.extend-prev"].keys!,
+        hotkey: bindingKeys(shortcuts, "grid.extend-prev"),
         callback: (event) => enqueueMove(-1, true, event),
         options: { preventDefault: false },
       },
       {
-        hotkey: shortcuts["grid.extend-next"].keys!,
+        hotkey: bindingKeys(shortcuts, "grid.extend-next"),
         callback: (event) => enqueueMove(1, true, event),
         options: { preventDefault: false },
       },
       {
-        hotkey: shortcuts["grid.open"].keys!,
+        hotkey: bindingKeys(shortcuts, "grid.open"),
         callback: open,
         options: { preventDefault: false },
       },
       {
-        hotkey: shortcuts["grid.select-all"].keys!,
+        hotkey: bindingKeys(shortcuts, "grid.select-all"),
         callback: (event) => {
           if (saveRouteOpen()) return;
           if (!gridFocusFree()) return;
@@ -150,7 +147,7 @@ export function useGridHotkeys(
         options: { preventDefault: false },
       },
       {
-        hotkey: shortcuts["grid.clear"].keys!,
+        hotkey: bindingKeys(shortcuts, "grid.clear"),
         callback: (event) => {
           if (event.defaultPrevented) return;
           if (saveRouteOpen()) return;

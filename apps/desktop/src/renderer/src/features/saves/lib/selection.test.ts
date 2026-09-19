@@ -1,6 +1,5 @@
-// @vitest-environment jsdom
 import { afterEach, expect, it, vi } from "vitest";
-import { selection } from "@/features/library/state/selection";
+import { selection } from "@/features/saves/state/selection";
 import { pool } from "../state/pool";
 import { normalise, SavePatchSchema } from "./reconcile";
 import {

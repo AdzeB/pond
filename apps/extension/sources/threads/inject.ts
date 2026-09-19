@@ -135,7 +135,9 @@ function isLikeClick(target: EventTarget | null): boolean {
 
 function mediaIdToShortcode(id: string): string | null {
   try {
-    let n = BigInt(String(id).split("_")[0]);
+    const mediaId = String(id).split("_", 1)[0];
+    if (!mediaId) return null;
+    let n = BigInt(mediaId);
     let s = "";
     while (n > 0n) {
       s = ALPHABET[Number(n & 63n)] + s;

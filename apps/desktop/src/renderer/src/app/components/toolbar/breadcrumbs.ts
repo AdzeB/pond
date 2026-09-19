@@ -46,8 +46,12 @@ function destinationCrumbs(base: string): Breadcrumb[] | null {
   }
   if (base.startsWith("/settings")) {
     const crumbs: Breadcrumb[] = [{ label: "Settings", path: "/settings" }];
-    const section = base.slice("/settings/".length);
-    if (section) crumbs.push({ label: settingsCrumb(section), path: base });
+    const [section] = base.slice("/settings/".length).split("/");
+    if (section)
+      crumbs.push({
+        label: settingsCrumb(section),
+        path: `/settings/${section}`,
+      });
     return crumbs;
   }
   if (base.startsWith("/source/")) {

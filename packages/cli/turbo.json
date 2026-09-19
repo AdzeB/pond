@@ -1,0 +1,21 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": [
+        "$TURBO_EXTENDS$",
+        "package.json",
+        "src/**",
+        "skill/**",
+        "tsconfig.json",
+        "tsup.config.ts"
+      ],
+      "outputs": ["dist/**"]
+    },
+    "pack:check": {
+      "dependsOn": ["build"],
+      "cache": false
+    }
+  }
+}

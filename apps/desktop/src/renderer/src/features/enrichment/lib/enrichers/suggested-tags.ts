@@ -8,9 +8,13 @@ import type { Save } from "@/features/saves/types";
 import { unitCosine } from "@/shared/lib/vector";
 import type { Enricher } from "../types";
 
-const SUGGESTED_TAGS_VERSION = "suggested-tags@1";
+const SUGGESTED_TAGS_VERSION = "suggested-tags@2";
 const SCORE_THRESHOLD = 0.3;
 const MAX_SUGGESTIONS = 5;
+
+function suggestedTagsModelVersion(): string {
+  return `${SUGGESTED_TAGS_VERSION}:${embedModelVersion()}`;
+}
 
 interface VocabEntry {
   name: string;
@@ -54,7 +58,7 @@ export const suggestedTagsEnricher: Enricher = {
     prefs?.ai?.semanticSearch === true,
   eligible(save: Save) {
     if (save.status !== "complete" || save.deletedAt != null) return false;
-    if (save.suggestedTagsModel === SUGGESTED_TAGS_VERSION) return false;
+    if (save.suggestedTagsModel === suggestedTagsModelVersion()) return false;
     return save.embeddingModel === embedModelVersion();
   },
   async run(save: Save) {
@@ -71,7 +75,7 @@ export const suggestedTagsEnricher: Enricher = {
       .map((s) => s.name);
     const fields = {
       suggestedTags: scored,
-      suggestedTagsModel: SUGGESTED_TAGS_VERSION,
+      suggestedTagsModel: suggestedTagsModelVersion(),
     };
     return { derived: fields, optimistic: fields };
   },

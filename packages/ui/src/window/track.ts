@@ -1,4 +1,4 @@
-export function clampTrack(width: number, min: number, max: number): number {
+function clampTrack(width: number, min: number, max: number): number {
   return Math.round(Math.min(max, Math.max(min, width)));
 }
 

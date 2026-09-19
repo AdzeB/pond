@@ -1,7 +1,6 @@
 import type {
   Folder,
   ImageDownloadSettings,
-  MediaType,
   Op,
   Prefs,
   SavedView,
@@ -11,15 +10,10 @@ import type {
   VideoDownloadSettings,
 } from "@pond/schema/db";
 import type { Query } from "@pond/schema/filters/types";
-import type { RawJson } from "@pond/schema/raw";
 import type { z } from "zod";
 import type { ActionQueryInputs, ActionQueryResults } from "./action-contracts";
 import type { assistantSend } from "./assistant";
 import type { BulkQueryInputs, BulkQueryResults } from "./bulk-contracts";
-import type {
-  CaptureQueryInputs,
-  CaptureQueryResults,
-} from "./capture-contracts";
 import type {
   ConversionQueryInputs,
   ConversionQueryResults,
@@ -30,14 +24,38 @@ import type {
   InspectQueryInputs,
   InspectQueryResults,
 } from "./inspect-contracts";
-import type { LibraryQueryPage, LibraryQueryRequest } from "./library-query";
+import type { EmptyInput, OkResult } from "./query-contracts-shared";
 import type { SystemQueryResults } from "./query-contracts-system";
-import type { LibrarySidebarCounts } from "./sidebar-counts";
+import type {
+  SavesClipboardQueryInputs,
+  SavesClipboardQueryResults,
+} from "./saves-clipboard-contracts";
+import type { SavesRetrievalInput } from "./saves-contracts-shared";
+import type {
+  SavesExportQueryInputs,
+  SavesExportQueryResults,
+} from "./saves-export-contracts";
+import type {
+  SavesImportQueryInputs,
+  SavesImportQueryResults,
+} from "./saves-import-contracts";
+import type {
+  SavesMutationQueryInputs,
+  SavesMutationQueryResults,
+} from "./saves-mutation-contracts";
+import type {
+  SavesOpenWithQueryInputs,
+  SavesOpenWithQueryResults,
+} from "./saves-open-with-contracts";
+import type {
+  SavesReadQueryInputs,
+  SavesReadQueryResults,
+} from "./saves-read-contracts";
 import type {
   TransferQueryInputs,
   TransferQueryResults,
 } from "./transfer-contracts";
-import type { WirePrefsPatch, WireSave } from "./wire";
+import type { WirePrefsPatch } from "./wire";
 
 interface IdInput {
   id: string;
@@ -52,9 +70,6 @@ interface RenameInput {
   from: string;
   to: string;
 }
-interface FileInput extends IdInput {
-  fileIndex?: number | null;
-}
 interface FrameInput {
   src: string;
   timeSec: number;
@@ -65,7 +80,6 @@ interface PathInput {
 interface ProviderInput {
   provider: string;
 }
-type EmptyInput = Record<string, never>;
 interface SavedViewInput {
   name: string;
   kind?: SavedView["kind"];
@@ -76,60 +90,26 @@ interface SavedViewInput {
   sortDir?: string;
   layout?: string | null;
 }
-interface RetrievalInput {
-  libraryQuery?: LibraryQueryRequest;
-  query?: string;
-  source?: Source;
-  folderId?: string;
-  media?: MediaType[];
-  limit?: number;
-  saveIds?: string[];
-  visual?:
-    | { kind: "saveId"; id: string }
-    | { kind: "vector"; model: string; values: number[] };
-}
-interface DerivedPatch {
-  caption?: string | null;
-  captionModel?: string | null;
-  ocrText?: string | null;
-  ocrModel?: string | null;
-  transcript?: string | null;
-  transcriptModel?: string | null;
-  clipEmbedding?: number[] | null;
-  clipModel?: string | null;
-  aesthetic?: string[] | null;
-  aestheticModel?: string | null;
-  autoTitleModel?: string | null;
-  suggestedTags?: string[] | null;
-  suggestedTagsModel?: string | null;
-}
-export interface OkResult {
-  ok: boolean;
-  error?: string;
-  reason?: string;
-}
-interface ImportResult extends OkResult {
-  imported: number;
-  skipped: number;
-  queued?: number;
-  draftId?: string;
-}
+
+export type { OkResult } from "./query-contracts-shared";
 
 export interface QueryInputs
   extends TransferQueryInputs,
     BulkQueryInputs,
-    CaptureQueryInputs,
     ActionQueryInputs,
     InspectQueryInputs,
-    ConversionQueryInputs {
+    ConversionQueryInputs,
+    SavesReadQueryInputs,
+    SavesMutationQueryInputs,
+    SavesImportQueryInputs,
+    SavesExportQueryInputs,
+    SavesClipboardQueryInputs,
+    SavesOpenWithQueryInputs {
   "folders.rules.get": { id: string };
   "folders.rules.set": { id: string; tags: string[]; applyExisting?: boolean };
   "folders.createBatch": { names: string[]; parentId?: string | null };
   "folders.moveBatch": { ids: string[]; parentId: string | null };
 
-  "saves.sidebarCounts": Record<string, never>;
-  "saves.exportPackage": { ids: string[] };
-  "saves.importPackage": EmptyInput;
   "library.restoreBackup": { source?: string; destination?: string };
   "folders.move": { id: string; parentId: string | null; beforeId?: string };
   "folders.assign": {
@@ -137,106 +117,6 @@ export interface QueryInputs
     addIds: string[];
     removeIds: string[];
   };
-  "saves.queryPage": LibraryQueryRequest;
-  "saves.queryIds": LibraryQueryRequest;
-  "saves.queryCount": { query: Query };
-  "saves.get": IdInput;
-  "saves.list": { limit?: number };
-  "saves.listPage": {
-    limit?: number;
-    cursor?: { savedAt: number; id: string } | null;
-  };
-  "saves.searchFts": {
-    q: string;
-    limit?: number;
-    deletedOnly?: boolean;
-    mode?: "all" | "any";
-  };
-  "saves.retrieve": RetrievalInput;
-  "saves.query": {
-    query: Query;
-    deletedOnly?: boolean;
-    sortKey?: string;
-    sortDir?: string;
-    limit?: number;
-  };
-  "saves.getMany": IdsInput;
-  "saves.rawJson": IdInput;
-  "saves.retryFailed": { ids?: string[] };
-  "saves.filePath": FileInput;
-  "saves.setPhash": { id: string; phash: string | null };
-  "saves.getEmbedding": IdInput;
-  "saves.setEmbedding": {
-    id: string;
-    embedding: number[] | null;
-    embeddingModel: string | null;
-  };
-  "saves.patchDerived": { id: string; patch: DerivedPatch };
-  "saves.copyImage": FileInput;
-  "saves.copyFile": FileInput;
-  "saves.copyFiles": { files: FileInput[] };
-  "clipboard.writeText": { text: string };
-  "saves.publicImageUrl": IdInput;
-  "saves.ensureTextCover": { id: string; force?: boolean };
-  "saves.mergeDuplicates": { keepId: string; ids: string[] };
-  "saves.batchRename": { ids: string[]; pattern: string };
-  "saves.activateFont": IdInput;
-  "saves.deactivateFont": IdInput;
-  "saves.fontStatus": IdInput;
-  "saves.setAudioAnalysis": { id: string; bpm: number };
-  "saves.pickImportPaths": { kind: "files" | "folders" };
-  "saves.classifyUrl": { url: string };
-  "saves.importFiles": {
-    paths: string[];
-    tags?: string[];
-    folderIds?: string[];
-  };
-  "saves.setCustomThumbnail": IdInput;
-  "saves.setGifThumbnail": {
-    id: string;
-    src: string;
-    frameIndex: number;
-  };
-  "saves.loadSubtitles": IdInput;
-  "saves.replaceFile": IdInput;
-  "saves.removeCustomThumbnail": IdInput;
-  "saves.createManual": {
-    title?: string | null;
-    url?: string | null;
-    note?: string | null;
-    tags?: string[];
-    filePaths?: string[];
-    sourceId?: string | null;
-    mediaType?: MediaType | null;
-    width?: number;
-    height?: number;
-  };
-  "saves.listBlankDocuments": EmptyInput;
-  "saves.createBlankDocument": {
-    kind: import("./blank-documents").BlankDocumentKind;
-    folderId?: string | null;
-  };
-  "saves.combineImages": { ids: string[]; folderId?: string | null };
-  "saves.importEagleLibrary": { path: string; dryRun?: boolean };
-  "saves.copyInternalLinks": { ids: string[] };
-  "saves.listOpenWith": {
-    ids: string[];
-    fileIndex?: number;
-    includeIcons?: boolean;
-  };
-  "saves.openWith": {
-    ids: string[];
-    fileIndex?: number;
-    application?: string;
-  };
-  "saves.startDrag": { id?: string; ids?: string[]; fileIndex?: number | null };
-  "saves.quickAdd": { url?: string; note?: string | null; tags?: string[] };
-  "saves.extractPageAssets": { url: string };
-  "saves.exportFile": FileInput;
-  "saves.share": { id: string; fileIndex?: number };
-  "saves.exportFiles": IdsInput;
-  "saves.exportWebp": IdsInput;
-  "saves.exportCsv": IdsInput;
   "savedViews.create": SavedViewInput;
   "savedViews.rename": { id: string; name: string };
   "savedViews.update": {
@@ -252,7 +132,7 @@ export interface QueryInputs
   };
   "folders.rename": { id: string; name: string };
   "folders.setColor": { id: string; color: string | null };
-  "folders.delete": IdInput;
+  "folders.delete": { id: string; trashContainedSaves?: boolean };
   "folders.setSaveFolders": { saveId: string; folderIds: string[] };
   "folders.addSaves": { folderId: string; saveIds: string[] };
   "tags.create": NameInput;
@@ -290,6 +170,7 @@ export interface QueryInputs
   "watches.add": { source: Source; handle: string; label?: string | null };
   "watches.setLabel": { watchId: string; label: string | null };
   "watches.remove": { watchId: string };
+  "video.sampleFrames": { src: string; maxFrames: number };
   "video.copyFrame": FrameInput;
   "video.saveFrame": FrameInput;
   "video.setThumbnail": FrameInput & { saveId: string };
@@ -300,8 +181,22 @@ export interface QueryInputs
     mode?: "copy" | "move";
   };
   "library.createAt": { path: string; name: string };
+  "library.identity.update": {
+    name?: string;
+    icon?: string | null;
+    accent?: string | null;
+  };
+  "library.identity.pickIcon": EmptyInput;
+  "library.rename": {
+    name: string;
+    icon?: string | null;
+    accent?: string | null;
+  };
   "library.recent": Record<string, never>;
-  "saves.copyToLibrary": { ids: string[] };
+  "library.recent.pickIcon": PathInput;
+  "library.recent.removeIcon": PathInput;
+  "library.recent.reveal": PathInput;
+  "library.recent.remove": PathInput;
   "library.mergeFrom": { source?: string };
   "library.switchTo": PathInput;
   "library.move": { path?: string };
@@ -335,19 +230,19 @@ export interface QueryInputs
   "agent.listModels": ProviderInput;
   "agent.messages": { chatId: string };
   "agent.deleteChat": { chatId: string };
+  "agent.renameChat": { chatId: string; title: string };
+  "agent.exportChat": { chatId: string };
   "agent.send": z.input<typeof assistantSend>;
   "agent.stop": { chatId: string; requestId: string };
-  "agent.searchSaves": RetrievalInput;
+  "agent.searchSaves": SavesRetrievalInput;
   "agent.attachments": IdsInput;
+  "agent.pickAttachments": EmptyInput;
   "agent.review": {
     messageId: string;
     changeIds: string[];
     action: "apply" | "undo" | "dismiss";
   };
   "watches.list": EmptyInput;
-  "saves.pickEagleLibrary": EmptyInput;
-  "saves.importClipboard": EmptyInput;
-  "saves.importBookmarks": EmptyInput;
   "folders.list": EmptyInput;
   "folders.memberships": EmptyInput;
   "settings.get": EmptyInput;
@@ -357,17 +252,12 @@ export interface QueryInputs
   "settings.setOnboarded": EmptyInput;
   "settings.getPrefs": EmptyInput;
   "settings.globalShortcutStatus": EmptyInput;
-  "saves.emptyTrash": EmptyInput;
-  "saves.restoreAll": EmptyInput;
-  "saves.embeddings": EmptyInput;
-  "saves.clipEmbeddings": EmptyInput;
-  "saves.backfillColors": EmptyInput;
-  "saves.findDuplicates": EmptyInput;
   "agent.keys": EmptyInput;
   "agent.listAvailableModels": EmptyInput;
   "agent.chats": EmptyInput;
   "agent.newChat": EmptyInput;
   "agent.mcpSnippet": EmptyInput;
+  "agent.openMcpInstall": { id: "cursor" | "vscode" };
   "library.info": EmptyInput;
   "library.rescan": EmptyInput;
   "library.openInFinder": EmptyInput;
@@ -384,7 +274,6 @@ export interface QueryInputs
   "updates.checkNow": EmptyInput;
   "quickCapture.applyPrefs": EmptyInput;
   "window.applyPrefs": EmptyInput;
-  "collection.open": EmptyInput;
   "autoImport.status": EmptyInput;
   "autoImport.pickFolder": EmptyInput;
   "pipeline.status": EmptyInput;
@@ -400,31 +289,55 @@ export interface QueryInputs
 export interface QueryResults
   extends TransferQueryResults,
     BulkQueryResults,
-    CaptureQueryResults,
     SystemQueryResults,
     ActionQueryResults,
     InspectQueryResults,
-    ConversionQueryResults {
+    ConversionQueryResults,
+    SavesReadQueryResults,
+    SavesMutationQueryResults,
+    SavesImportQueryResults,
+    SavesExportQueryResults,
+    SavesClipboardQueryResults,
+    SavesOpenWithQueryResults {
   "folders.rules.get": { tags: string[]; inheritedTags: string[] };
   "folders.rules.set": { ok: boolean; affected: number };
   "folders.createBatch": Folder[];
   "folders.moveBatch": { ok: boolean };
 
-  "saves.sidebarCounts": LibrarySidebarCounts;
   "library.recent": Array<{
     path: string;
     name: string;
     available: boolean;
     active: boolean;
     lastOpened: number;
+    icon: string | null;
+    accent: string | null;
   }>;
-  "saves.copyToLibrary": {
+  "library.identity.update": {
+    ok: boolean;
+    name?: string;
+    icon?: string | null;
+    accent?: string | null;
+    reason?: string;
+  };
+  "library.identity.pickIcon": {
+    ok: boolean;
+    icon?: string;
+    reason?: string;
+  };
+  "library.rename": {
     ok: boolean;
     path?: string;
-    imported?: number;
-    skipped?: number;
-    error?: string;
+    reason?: string;
   };
+  "library.recent.pickIcon": {
+    ok: boolean;
+    icon?: string;
+    reason?: string;
+  };
+  "library.recent.removeIcon": { ok: boolean };
+  "library.recent.reveal": { ok: boolean; reason?: string };
+  "library.recent.remove": { ok: boolean };
   "library.mergeFrom": {
     ok: boolean;
     path?: string;
@@ -433,18 +346,6 @@ export interface QueryResults
     error?: string;
   };
 
-  "saves.exportPackage": {
-    ok: boolean;
-    path?: string;
-    exported?: number;
-    error?: string;
-  };
-  "saves.importPackage": {
-    ok: boolean;
-    imported?: number;
-    skipped?: number;
-    error?: string;
-  };
   "library.restoreBackup": {
     ok: boolean;
     path?: string;
@@ -453,85 +354,6 @@ export interface QueryResults
   };
   "folders.move": { ok: boolean };
   "folders.assign": { ok: boolean };
-  "saves.queryPage": LibraryQueryPage;
-  "saves.queryIds": { ids: string[]; revision: number; libraryId: string };
-  "saves.queryCount": { count: number };
-  "saves.rawJson": { id: string; rawJson: RawJson | null };
-  "saves.emptyTrash": OkResult & { count: number };
-  "saves.restoreAll": OkResult & { count: number };
-  "saves.retryFailed": OkResult & { requeued: number };
-  "saves.filePath": { ok: true; path: string } | { ok: false; reason: string };
-  "saves.setPhash": OkResult;
-  "saves.embeddings": {
-    id: string;
-    embedding: null;
-    embeddingModel: string | null;
-  }[];
-  "saves.getEmbedding": {
-    id: string;
-    embedding: number[] | null;
-    embeddingModel: string | null;
-  };
-  "saves.setEmbedding": OkResult;
-  "saves.clipEmbeddings": {
-    id: string;
-    clipEmbedding: null;
-    clipModel: string | null;
-  }[];
-  "saves.patchDerived": OkResult;
-  "saves.copyImage": OkResult;
-  "saves.copyFile": OkResult;
-  "saves.copyFiles": OkResult & { copied?: number };
-  "clipboard.writeText": OkResult;
-  "saves.backfillColors": OkResult & { updated: number };
-  "saves.publicImageUrl": { ok: boolean; url: string | null };
-  "saves.ensureTextCover": OkResult & { captured: number };
-  "saves.findDuplicates": {
-    groups: { kind: "exact" | "similar"; ids: string[] }[];
-    visualIndexed: number;
-    total: number;
-  };
-  "saves.mergeDuplicates": OkResult & { trashed: number };
-  "saves.batchRename": OkResult & { renamed: number };
-  "saves.activateFont": OkResult & { path?: string; error?: string };
-  "saves.deactivateFont": OkResult & { error?: string };
-  "saves.fontStatus": { activated: boolean; path?: string };
-  "saves.setAudioAnalysis": OkResult;
-  "saves.classifyUrl": { source: Source | null };
-  "saves.importFiles": OkResult & { ids?: string[] };
-  "saves.setCustomThumbnail": OkResult & { canceled?: boolean };
-  "saves.setGifThumbnail": OkResult & { error?: string };
-  "saves.loadSubtitles": OkResult & { canceled?: boolean; error?: string };
-  "saves.replaceFile": OkResult & { canceled?: boolean; error?: string };
-  "saves.removeCustomThumbnail": OkResult;
-  "saves.createManual": OkResult & { id?: string; skipped?: boolean };
-  "saves.listBlankDocuments": {
-    kinds: import("./blank-documents").BlankDocumentKind[];
-  };
-  "saves.createBlankDocument": OkResult & { id?: string };
-  "saves.combineImages": OkResult & {
-    id?: string;
-    skipped?: number;
-    error?: string;
-  };
-  "saves.importClipboard": OkResult & { ids: string[] };
-  "saves.copyInternalLinks": OkResult;
-  "saves.listOpenWith": {
-    apps: Array<{
-      name: string;
-      path: string;
-      icon: string | null;
-      isDefault: boolean;
-    }>;
-  };
-  "saves.openWith": { ok: boolean; error?: string; cancelled?: boolean };
-  "saves.startDrag": OkResult;
-  "saves.quickAdd": OkResult & { id?: string; created?: boolean };
-  "saves.exportFile": OkResult & { path?: string };
-  "saves.share": OkResult & { error?: string };
-  "saves.exportFiles": OkResult & { exported?: number; dir?: string };
-  "saves.exportWebp": OkResult & { exported?: number; dir?: string };
-  "saves.exportCsv": OkResult & { count?: number; path?: string };
   "tags.list": Tag[];
   "tags.rename": OkResult & { affected: number };
   "tags.merge": OkResult & { affected: number };
@@ -565,36 +387,15 @@ export interface QueryResults
     }[];
     nextCursor: { ts: number; id: number } | null;
   };
-  "collection.open": OkResult;
+  "video.sampleFrames": {
+    ok: boolean;
+    frames: Array<{ bytes: Uint8Array; mimeType: string }>;
+  };
   "video.copyFrame": OkResult;
   "video.saveFrame": OkResult & { path?: string };
   "video.setThumbnail": OkResult;
   "video.copyFilePath": OkResult;
 
-  "saves.get": WireSave | null;
-  "saves.getMany": WireSave[];
-  "saves.list": WireSave[];
-  "saves.listPage": {
-    rows: WireSave[];
-    nextCursor: { savedAt: number; id: string } | null;
-    total: number | null;
-  };
-  "saves.query": { ids: string[] };
-  "saves.searchFts": { ids: string[]; scores: Record<string, number> };
-  "saves.pickImportPaths": { paths: string[] };
-  "saves.pickEagleLibrary": { ok: boolean; path: string | null };
-  "saves.importBookmarks": ImportResult;
-  "saves.extractPageAssets": ImportResult;
-  "saves.importEagleLibrary": ImportResult & {
-    failed: number;
-    deletedSkipped: number;
-    lockedFolders: {
-      id: string;
-      name: string;
-      reason: "password" | "parent_locked";
-    }[];
-    droppedFields: string[];
-  };
   "savedViews.list": SavedView[];
   "savedViews.create": { ok: boolean; id?: string };
   "savedViews.rename": OkResult;

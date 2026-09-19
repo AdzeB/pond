@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import type { Save } from "@/features/saves/types";
 import { folderCoverUrl } from "./folder-cover";

@@ -6,16 +6,15 @@ const PayloadSchema = z.object({
   paths: z.array(z.string()),
 });
 
+type OpenWithPayload = z.infer<typeof PayloadSchema>;
+
 export interface OpenWithAppInfo {
   name: string;
   path: string;
   isDefault: boolean;
 }
 
-export function parseOpenWithPayload(raw: string): {
-  defaultPath: string | null;
-  paths: string[];
-} {
+export function parseOpenWithPayload(raw: string): OpenWithPayload {
   try {
     const parsed = PayloadSchema.safeParse(JSON.parse(raw));
     if (!parsed.success) return { defaultPath: null, paths: [] };
@@ -25,7 +24,7 @@ export function parseOpenWithPayload(raw: string): {
   }
 }
 
-export function appDisplayName(path: string): string {
+function appDisplayName(path: string): string {
   return basename(path);
 }
 

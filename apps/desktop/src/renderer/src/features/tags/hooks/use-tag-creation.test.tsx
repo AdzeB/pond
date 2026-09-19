@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
@@ -6,7 +5,6 @@ import type { TagEntity } from "@/features/tags/operations/tag-operations";
 import { useTagCreation } from "./use-tag-creation";
 
 it("commits each draft once and cancels before blur can create it", async () => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   const created: { kind: TagEntity; name: string }[] = [];
   const host = document.createElement("div");
   const root = createRoot(host);

@@ -5,7 +5,7 @@
 }
 
 .input {
-  --input-min-height: 28px;
+  --input-min-height: var(--ds-size-sm);
   --input-padding-inline: 0;
   --input-padding-start: 0;
   --input-font-size: var(--ds-text-sm);

@@ -52,6 +52,8 @@ export interface Save {
   clipModel?: string | null;
   aesthetic?: string[] | null;
   aestheticModel?: string | null;
+  sensitiveScore?: number | null;
+  sensitiveModel?: string | null;
   autoTitleModel?: string | null;
   suggestedTags?: string[] | null;
   suggestedTagsModel?: string | null;

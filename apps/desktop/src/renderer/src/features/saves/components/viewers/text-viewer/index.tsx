@@ -15,6 +15,7 @@ import {
 import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
+import { stopAppHotkeysFromEditable } from "@/shared/lib/editable-target";
 import { CollapsiblePlugin } from "./collapsible";
 import { DraggableBlockPlugin } from "./draggable-block";
 import { FormatToolbar } from "./format-toolbar";
@@ -80,9 +81,14 @@ function TextViewerSession({ save }: { save: Save }) {
                     {NOTE_BODY_PLACEHOLDER}
                   </div>
                 }
+                onKeyDown={stopAppHotkeysFromEditable}
               />
             ) : (
-              <ContentEditable className={styles.editor} aria-label="Note" />
+              <ContentEditable
+                className={styles.editor}
+                aria-label="Note"
+                onKeyDown={stopAppHotkeysFromEditable}
+              />
             )}
           </div>
         </div>
@@ -157,6 +163,7 @@ function TitleField({
           event.preventDefault();
           editor.focus();
         }
+        stopAppHotkeysFromEditable(event);
       }}
     />
   );

@@ -1,10 +1,10 @@
 import { useCallback, useEffect } from "react";
 import { z } from "zod";
-import { useSelectionSize } from "@/features/library/state/selection";
 import type { SaveListMode } from "@/features/saves/lib/list";
 import { openSave } from "@/features/saves/lib/save-nav";
 import { clearSaveSelection, clickSave } from "@/features/saves/lib/select";
 import { asUrlList, filePathsFromText } from "@/features/saves/lib/url-list";
+import { useSelectionSize } from "@/features/saves/state/selection";
 import { notify } from "@/shared/lib/toast";
 
 interface CardActions {

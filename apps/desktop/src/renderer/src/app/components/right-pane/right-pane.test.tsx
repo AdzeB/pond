@@ -1,16 +1,16 @@
-// @vitest-environment jsdom
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { RightPaneView } from "./right-pane";
+import { RightPaneView } from "./";
 
 interface PaneState {
   pane: "agent" | "inspector" | null;
   saveId: string | null;
-  inspectorMode: "save" | "download";
+  inspectorMode: "save" | "download" | "source";
+  sourceId: string | null;
   reduceMotion: string;
   agentMounts: number;
   agentUnmounts: number;
@@ -19,6 +19,7 @@ const state: PaneState = {
   pane: "agent",
   saveId: null,
   inspectorMode: "save",
+  sourceId: null,
   reduceMotion: "never",
   agentMounts: 0,
   agentUnmounts: 0,
@@ -38,17 +39,22 @@ function InspectorContent({ saveId }: { saveId: string }) {
 function DownloadInspectorContent({ saveId }: { saveId: string }) {
   return <div>Download activity {saveId}</div>;
 }
+function SourceInspectorContent() {
+  return <div>Connection details</div>;
+}
 function RightPane() {
   return (
     <RightPaneView
       pane={state.pane}
       saveId={state.saveId}
       inspectorMode={state.inspectorMode}
+      sourceId={state.sourceId}
       reduceMotion={state.reduceMotion === "always"}
       assistantPage={false}
       AgentContent={AgentContent}
       InspectorContent={InspectorContent}
       DownloadInspectorContent={DownloadInspectorContent}
+      SourceInspectorContent={SourceInspectorContent}
     />
   );
 }
@@ -58,10 +64,10 @@ describe("sliding right panes", () => {
   let root: Root;
 
   beforeEach(() => {
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     state.pane = "agent";
     state.saveId = null;
     state.inspectorMode = "save";
+    state.sourceId = null;
     state.reduceMotion = "never";
     state.agentMounts = 0;
     state.agentUnmounts = 0;
@@ -105,6 +111,17 @@ describe("sliding right panes", () => {
     await act(() => root.render(<RightPane />));
     expect(container.textContent).toContain("Details first");
     expect(container.textContent).not.toContain("Download activity");
+  });
+
+  it("uses the Details slot for connection details", async () => {
+    state.pane = "inspector";
+    state.inspectorMode = "source";
+    state.sourceId = "acc-1";
+    await act(() => root.render(<RightPane />));
+    expect(container.textContent).toContain("Connection details");
+    expect(container.querySelectorAll('[data-pane="inspector"]')).toHaveLength(
+      1,
+    );
   });
 
   it("retains download details during the outgoing pane transition", async () => {
@@ -272,11 +289,11 @@ describe("sliding right panes", () => {
     expect(container.querySelector("[data-pane]")).toBeNull();
   });
 
-  it("styles each pane as its own card instead of a content track", () => {
+  it("keeps the frame shadow outside the clipped sliding panels", () => {
     const css = readFileSync(
       fileURLToPath(import.meta.url).replace(
         /right-pane\.test\.tsx$/,
-        "right-pane.module.css",
+        "styles.module.css",
       ),
       "utf8",
     );
@@ -285,25 +302,28 @@ describe("sliding right panes", () => {
     expect(css).toContain("position: absolute");
     expect(css).toContain("var(--window-background-secondary)");
     expect(css).toContain("var(--window-radius)");
-    expect(css).toContain("var(--ds-shadow-1)");
-    expect(css).toContain("clip-path");
+    expect(css).toMatch(
+      /\.viewport\s*\{[^}]*box-shadow:\s*var\(--ds-shadow-1\);/s,
+    );
+    expect(css).not.toMatch(
+      /\.panel\s*\{[^}]*box-shadow:\s*var\(--ds-shadow-1\);/s,
+    );
+    expect(css).not.toContain("clip-path");
   });
 
-  it("leaves shadow space above and below the sliding cards", () => {
+  it("clips sliding cards to the pane bounds", () => {
     const css = readFileSync(
-      resolve(dirname(fileURLToPath(import.meta.url)), "right-pane.module.css"),
+      resolve(dirname(fileURLToPath(import.meta.url)), "styles.module.css"),
       "utf8",
     );
-    expect(css).toContain(
-      "clip-path: inset(calc(-1 * var(--window-inset, 16px)))",
-    );
+    expect(css).toMatch(/\.viewport\s*\{[^}]*overflow:\s*hidden;/s);
   });
 
   it("keeps the surface at the saved width as the shell slot opens or closes", () => {
     const css = readFileSync(
       resolve(
         dirname(fileURLToPath(import.meta.url)),
-        "../../../features/library/components/workspace-shell/workspace-shell.module.css",
+        "../../../features/library/components/workspace-shell/styles.module.css",
       ),
       "utf8",
     );

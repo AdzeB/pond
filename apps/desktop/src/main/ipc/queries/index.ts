@@ -1,13 +1,16 @@
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { IPC } from "../../../shared/constants";
+import { registerPondOperations } from "../../core/agent/operations";
+import { currentPondId } from "../../core/prefs-scope";
+import { agentControlOperations } from "../agent-controls";
 import { safeHandle } from "../helpers";
 import { accountsQueries } from "./accounts";
 import { actionQueries } from "./actions";
 import { agentQueries } from "./agent";
+import { agentOperationsForQueries } from "./agent-operations";
 import { aiQueries } from "./ai";
 import { bulkQueries } from "./bulk";
-import { captureQueries } from "./captures";
 import { conversionQueries } from "./conversion";
 import { downloadsQueries } from "./downloads";
 import { foldersQueries } from "./folders";
@@ -31,7 +34,6 @@ const queryRegistry = {
   ...transferJobsQueries,
   ...bulkQueries,
   ...openWithQueries,
-  ...captureQueries,
   ...conversionQueries,
   ...actionQueries,
   ...savesQueries,
@@ -55,7 +57,18 @@ const QueryNameSchema = z.custom<keyof typeof queryRegistry>(
   (value) => z.enum(Object.keys(queryRegistry)).safeParse(value).success,
 );
 
+export function pondOperations() {
+  return [
+    ...agentOperationsForQueries(queryRegistry),
+    ...agentControlOperations,
+  ];
+}
+
 export function registerQueryHandler(): void {
+  registerPondOperations({
+    operations: pondOperations(),
+    libraryId: currentPondId,
+  });
   safeHandle(IPC.query, async (event, name: string, raw?: QueryParams) => {
     const parsedName = QueryNameSchema.safeParse(name);
     if (!parsedName.success) throw new Error(`unknown query: ${name}`);

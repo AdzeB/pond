@@ -1,76 +1,83 @@
-import { ThreadPrimitive as Base } from "@assistant-ui/react";
 import { clsx as cn } from "clsx";
-import type { ComponentProps } from "react";
+import {
+  type ComponentPropsWithoutRef,
+  forwardRef,
+  type ReactNode,
+  useEffect,
+  useState,
+} from "react";
 import { Button } from "../button";
-import type { PrimitiveSurface } from "../shared/primitive-surface";
 import styles from "./styles.module.css";
 
-function Root({ className, ...props }: ComponentProps<typeof Base.Root>) {
-  return <Base.Root {...props} className={cn(styles.thread, className)} />;
+function Root({ className, ...props }: ComponentPropsWithoutRef<"div">) {
+  return <div className={cn(styles.thread, className)} {...props} />;
 }
 
-function Viewport({
-  className,
-  ...props
-}: ComponentProps<typeof Base.Viewport>) {
-  return (
-    <Base.Viewport {...props} className={cn(styles.viewport, className)} />
-  );
-}
+const Viewport = forwardRef<HTMLDivElement, ComponentPropsWithoutRef<"div">>(
+  function Viewport({ className, ...props }, ref) {
+    return (
+      <div ref={ref} className={cn(styles.viewport, className)} {...props} />
+    );
+  },
+);
 
 function ViewportFooter({
   className,
   ...props
-}: ComponentProps<typeof Base.ViewportFooter>) {
-  return (
-    <Base.ViewportFooter {...props} className={cn(styles.footer, className)} />
-  );
+}: ComponentPropsWithoutRef<"div">) {
+  return <div className={cn(styles.footer, className)} {...props} />;
 }
 
-function ScrollToBottom({
-  render,
-  asChild,
-  ...props
-}: ComponentProps<typeof Base.ScrollToBottom>) {
-  return (
-    <Base.ScrollToBottom
-      {...props}
-      asChild={asChild}
-      render={
-        render ?? (asChild ? undefined : <Button size="xs" variant="ghost" />)
-      }
-    />
-  );
+function Messages({
+  children,
+  empty,
+}: {
+  children: ReactNode;
+  empty?: ReactNode;
+}) {
+  if (!children || (Array.isArray(children) && children.length === 0))
+    return empty ? <div className={styles.empty}>{empty}</div> : null;
+  return <>{children}</>;
 }
 
-function Suggestion({
-  render,
-  asChild,
-  ...props
-}: ComponentProps<typeof Base.Suggestion>) {
+function ScrollToLatest({ viewport }: { viewport: HTMLElement | null }) {
+  const [clipped, setClipped] = useState(false);
+  useEffect(() => {
+    if (!viewport) return;
+    const update = () => {
+      setClipped(
+        viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight > 24,
+      );
+    };
+    update();
+    viewport.addEventListener("scroll", update);
+    const observer = new ResizeObserver(update);
+    observer.observe(viewport);
+    return () => {
+      viewport.removeEventListener("scroll", update);
+      observer.disconnect();
+    };
+  }, [viewport]);
+  if (!clipped) return null;
   return (
-    <Base.Suggestion
-      {...props}
-      asChild={asChild}
-      render={
-        render ?? (asChild ? undefined : <Button size="xs" variant="ghost" />)
-      }
-    />
+    <div className={styles["scroll-action"]}>
+      <Button
+        size="xs"
+        variant="secondary"
+        onClick={() =>
+          viewport?.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" })
+        }
+      >
+        Latest Message
+      </Button>
+    </div>
   );
 }
 
 export const Thread = {
   Root,
-  Empty: Base.Empty,
-  If: Base.If,
   Viewport,
-  ViewportProvider: Base.ViewportProvider,
   ViewportFooter,
-  Messages: Base.Messages,
-  MessageByIndex: Base.MessageByIndex,
-  Unstable_MessageById: Base.Unstable_MessageById,
-  ScrollToBottom,
-  Suggestion,
-  Suggestions: Base.Suggestions,
-  SuggestionByIndex: Base.SuggestionByIndex,
-} satisfies PrimitiveSurface<typeof Base>;
+  Messages,
+  ScrollToLatest,
+};

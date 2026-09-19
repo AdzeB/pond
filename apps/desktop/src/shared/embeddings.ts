@@ -1,10 +1,13 @@
-export const DEFAULT_TEXT_EMBEDDING_MODEL = "Xenova/all-MiniLM-L6-v2";
-export const DEFAULT_CLIP_MODEL = "Xenova/clip-vit-base-patch32";
+import {
+  onDeviceModelVersion,
+  TEXT_EMBEDDING_MODEL,
+  VISUAL_MODEL,
+} from "./on-device-models";
 
-export function textEmbeddingVersion(modelId: string): string {
-  return `${modelId}@2`;
+export function textEmbeddingVersion(): string {
+  return onDeviceModelVersion(TEXT_EMBEDDING_MODEL, 3);
 }
 
-export function clipEmbeddingVersion(modelId: string): string {
-  return `${modelId}@1`;
+export function clipEmbeddingVersion(): string {
+  return onDeviceModelVersion(VISUAL_MODEL, 2);
 }

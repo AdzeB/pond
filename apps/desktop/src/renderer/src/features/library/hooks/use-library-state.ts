@@ -1,8 +1,6 @@
 import { useLocation } from "@tanstack/react-router";
 import { useSelector } from "@tanstack/react-store";
 import { useMemo } from "react";
-import { listPathForLocation } from "@/features/library/lib/list-path";
-import { primarySelectionStore } from "@/features/library/state/selection";
 import {
   useEffectiveFilterQuery,
   useLayout,
@@ -10,6 +8,8 @@ import {
 } from "@/features/library/state/view-store";
 import type { ViewMode } from "@/features/library/types";
 import { parseMode, type SaveListMode } from "@/features/saves/lib/list";
+import { listPathForLocation } from "@/features/saves/lib/list-path";
+import { primarySelectionStore } from "@/features/saves/state/selection";
 import type { Save } from "@/features/saves/types";
 import { useStableStrings } from "../../../shared/hooks/use-stable-array";
 import { useBootReady, useSaves } from "../../saves/hooks/use-saves";

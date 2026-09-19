@@ -1,9 +1,0 @@
-The following is a diff from the previous accessibility tree for Window: "Eagle" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
-+						673 container
-+							674 container
-+								675 Unlabeled image /ic-search-by-image-empty.svg
-+								676 heading Drag or paste image, Value: 4
-+									677 text Drag or paste image
-+								678 text Supports Eagle or local images Choose Image
-+							679 text field (settable)
-The focused UI element is 679 text field (settable)

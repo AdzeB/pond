@@ -1,8 +1,7 @@
-// @vitest-environment jsdom
 import { act, type ComponentProps } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { WatchTargetForm } from "./target";
+import { WatchTargetForm } from "./";
 
 type FormProps = ComponentProps<typeof WatchTargetForm>;
 let root: Root;
@@ -20,7 +19,6 @@ beforeEach(() => {
       disconnect() {}
     },
   );
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal("matchMedia", () => ({
     matches: true,
     addEventListener() {},
@@ -44,11 +42,16 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-async function render(resolveTarget: FormProps["resolveTarget"]) {
+async function render(
+  resolveTarget: FormProps["resolveTarget"],
+  source: FormProps["source"] = "youtube",
+  connectedSources: FormProps["connectedSources"] = [],
+) {
   await act(async () =>
     root.render(
       <WatchTargetForm
-        connectedSources={[]}
+        source={source}
+        connectedSources={connectedSources}
         resolveTarget={resolveTarget}
         addWatch={addWatch}
         onAdded={onAdded}
@@ -81,7 +84,7 @@ function account(platform: string) {
   return input;
 }
 
-it("shows all platform options for a handle and submits only the user's choice", async () => {
+it("resolves the chosen source and submits only after a click", async () => {
   const resolve = vi.fn<FormProps["resolveTarget"]>(async (_source, input) => ({
     handle: input,
     display: `@${input}`,
@@ -92,8 +95,22 @@ it("shows all platform options for a handle and submits only the user's choice",
   expect(host.querySelector("select")).toBeNull();
   expect(
     host.querySelectorAll("button[aria-label]:not([data-icon])"),
-  ).toHaveLength(7);
+  ).toHaveLength(1);
   expect(addWatch).not.toHaveBeenCalled();
+  await act(async () => account("YouTube").click());
+
+  expect(addWatch).toHaveBeenCalledExactlyOnceWith("youtube", "drumarjohnson");
+  expect(onAdded).toHaveBeenCalledWith("watch-1");
+});
+
+it("blocks Instagram watches until that account is connected", async () => {
+  const resolve = vi.fn<FormProps["resolveTarget"]>(async (_source, input) => ({
+    handle: input,
+    display: `@${input}`,
+    kind: "user",
+  }));
+  await render(resolve, "instagram");
+  await typeInput("drumarjohnson");
   expect(account("Instagram").disabled).toBe(true);
   expect(host.textContent).not.toContain("Connect your Instagram account");
   expect(
@@ -101,10 +118,17 @@ it("shows all platform options for a handle and submits only the user's choice",
       'button[aria-label^="Connect your Instagram account in Sources"]',
     ),
   ).not.toBeNull();
-  await act(async () => account("YouTube").click());
+  expect(addWatch).not.toHaveBeenCalled();
+});
 
-  expect(addWatch).toHaveBeenCalledExactlyOnceWith("youtube", "drumarjohnson");
-  expect(onAdded).toHaveBeenCalledWith("watch-1");
+it("rejects a link from another source", async () => {
+  await render(
+    async () => ({ handle: "alice", display: "@alice" }),
+    "instagram",
+  );
+  await typeInput("https://youtube.com/@alice");
+  expect(host.textContent).toContain("This link isn't from Instagram.");
+  expect(addWatch).not.toHaveBeenCalled();
 });
 
 it("resolves a full link and waits for the user to click before starting", async () => {
@@ -127,17 +151,12 @@ it("resolves a full link and waits for the user to click before starting", async
   );
 });
 
-it("reveals one set of results after every platform finishes", async () => {
+it("waits for the chosen source before showing a result", async () => {
   let finish: () => void = () => {};
   const pending = new Promise<null>((resolve) => {
     finish = () => resolve(null);
   });
-  const resolve: FormProps["resolveTarget"] = (source, input) => {
-    if (source === "arena") return pending;
-    if (source === "cosmos") return Promise.reject(new Error("Unavailable"));
-    return Promise.resolve({ handle: input, display: `@${input}` });
-  };
-  await render(resolve);
+  await render(() => pending);
   await typeInput("alice");
   expect(
     host.querySelectorAll("button[aria-label]:not([data-icon])"),
@@ -145,17 +164,17 @@ it("reveals one set of results after every platform finishes", async () => {
   const loading = host.querySelector(
     '[role="status"][aria-label="Looking for accounts"]',
   );
-  expect(loading?.children).toHaveLength(3);
+  expect(loading?.children).toHaveLength(1);
   expect(host.textContent).not.toContain("Looking for accounts");
   await act(async () => finish());
   expect(
     host.querySelectorAll("button[aria-label]:not([data-icon])"),
-  ).toHaveLength(5);
+  ).toHaveLength(0);
   expect(host.querySelector('[aria-label="Looking for accounts"]')).toBeNull();
-  expect(host.textContent).not.toContain("Are.na");
-  expect(host.textContent).not.toContain("Cosmos");
-  await act(async () => account("YouTube").click());
-  expect(addWatch).toHaveBeenCalledExactlyOnceWith("youtube", "alice");
+  expect(host.textContent).toContain(
+    "Couldn't find anything. Try another search.",
+  );
+  expect(addWatch).not.toHaveBeenCalled();
 });
 
 it("ignores responses for the previous handle", async () => {
@@ -239,7 +258,7 @@ it("prevents duplicate starts and lets the user retry after a failure", async ()
   });
   expect(addWatch).toHaveBeenCalledTimes(1);
   expect(account("YouTube").disabled).toBe(true);
-  expect(host.textContent).toContain("Starting…");
+  expect(host.textContent).toContain("Starting");
   await act(async () => fail(new Error("Unavailable")));
   expect(host.querySelector('[role="alert"]')).not.toBeNull();
   await act(async () => account("YouTube").click());

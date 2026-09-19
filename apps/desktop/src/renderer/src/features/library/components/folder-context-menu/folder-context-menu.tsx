@@ -1,7 +1,7 @@
 import {
   IconArchiveExportOutline18,
   IconBulletListOutline18,
-  IconCopyOutline18,
+  IconClone2Outline18,
   IconEyeOutline18,
   IconFaceSmileOutline18,
   IconFolderBoltOutline18,
@@ -42,8 +42,6 @@ const SORT_OPTIONS: Array<{ value: SortKey; label: string }> = [
   { value: "type", label: "Type" },
   { value: "creator", label: "Creator" },
   { value: "rating", label: "Rating" },
-  { value: "manual", label: "Manual" },
-  { value: "random", label: "Random" },
 ];
 
 export interface FolderMenuActions {
@@ -161,7 +159,7 @@ export function buildFolderMenuItems(a: FolderMenuActions): MenuItemSpec[] {
     { type: "separator" },
     {
       label: "Duplicate",
-      icon: <IconCopyOutline18 />,
+      icon: <IconClone2Outline18 />,
       disabled: a.creating,
       onClick: a.onDuplicate,
     },
@@ -327,11 +325,18 @@ export function confirmRemoveFolder(input: {
 }): void {
   Dialog.confirm({
     title: "Remove Folder",
-    description: "Saves stay in the library. They move to Uncategorized.",
+    description:
+      "Saves stay in the Library and move to Uncategorized unless you select the option below.",
     confirmLabel: "Remove",
     confirmVariant: "destructive",
-    onConfirm: async () => {
-      await window.pond.query("folders.delete", { id: input.id });
+    checkbox: {
+      label: "Move Saves in this folder and its subfolders to Trash",
+    },
+    onConfirm: async ({ checked }) => {
+      await window.pond.query("folders.delete", {
+        id: input.id,
+        trashContainedSaves: checked,
+      });
       await input.onRemoved();
     },
   });

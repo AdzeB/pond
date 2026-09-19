@@ -1,0 +1,20 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.area {
+  min-height: 160px;
+  font-weight: var(--ds-weight-normal);
+  resize: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.error {
+  padding-inline: var(--settings-padding);
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-red-11);
+}

@@ -1,10 +1,10 @@
 import { useMemo } from "react";
-import { LibraryGridProvider } from "@/features/library/components/layouts/context/context";
 import { GridView } from "@/features/library/components/layouts/grid-view/grid-view";
 import { JustifiedView } from "@/features/library/components/layouts/justified/justified";
 import { ListView } from "@/features/library/components/layouts/list-view/list-view";
 import { WaterfallView } from "@/features/library/components/layouts/waterfall/waterfall";
 import type { ViewMode } from "@/features/library/types";
+import { LibraryGridProvider } from "@/features/saves/components/card/context";
 import type { Save } from "@/features/saves/types";
 
 interface LayoutSwitcherProps {

@@ -94,6 +94,7 @@ export type FieldId =
   | "note"
   | "caption"
   | "transcript"
+  | "sensitiveContent"
   | "color"
   | "savedAt"
   | "publishedAt"

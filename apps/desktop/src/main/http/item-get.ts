@@ -1,25 +1,9 @@
 import { SOURCES, saves } from "@pond/schema/db";
 import type { JsonValue } from "@pond/schema/json";
+import { LocalApiItemGetParamsSchema } from "@pond/schema/local-api";
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Context } from "hono";
-import { z } from "zod";
 import { getDb } from "../db";
-
-const ItemGetParamsSchema = z
-  .object({
-    limit: z.union([z.string(), z.number()]).optional().catch(undefined),
-    offset: z.union([z.string(), z.number()]).optional().catch(undefined),
-    includeDeleted: z
-      .union([z.string(), z.boolean()])
-      .optional()
-      .catch(undefined),
-    ids: z
-      .union([z.array(z.coerce.string()), z.string()])
-      .optional()
-      .catch(undefined),
-    source: z.string().optional().catch(undefined),
-  })
-  .catch({});
 
 async function readParams(c: Context): Promise<JsonValue> {
   if (c.req.method !== "POST") {
@@ -33,7 +17,7 @@ async function readParams(c: Context): Promise<JsonValue> {
 }
 
 export async function itemGetHandler(c: Context) {
-  const params = ItemGetParamsSchema.parse(await readParams(c));
+  const params = LocalApiItemGetParamsSchema.parse(await readParams(c));
 
   const db = await getDb();
   const limit = Math.min(Number(params.limit ?? 200), 1000);

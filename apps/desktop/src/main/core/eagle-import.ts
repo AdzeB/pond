@@ -5,6 +5,7 @@ import type { ImageComment, VideoNote } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { z } from "zod";
+import type { EagleImportProgress } from "../../shared/saves-import-contracts";
 import {
   EaglePaletteSchema,
   EagleSmartFolderSchema,
@@ -100,6 +101,13 @@ export interface EagleImportResult {
   lockedFolders: EagleLockedFolder[];
   droppedFields: string[];
   error?: string;
+}
+
+type EagleImportProgressUpdate = Omit<EagleImportProgress, "id">;
+
+interface EagleImportOptions {
+  dryRun?: boolean;
+  onProgress?: (progress: EagleImportProgressUpdate) => void;
 }
 
 export interface FlattenedEagleFolder {
@@ -303,7 +311,7 @@ export async function dryRunEagleLibrary(
 
 async function importEagle(
   libraryPath: string,
-  opts: { dryRun?: boolean } = {},
+  opts: EagleImportOptions = {},
 ): Promise<EagleImportResult> {
   const imagesDir = await resolveImagesDir(libraryPath);
   if (!imagesDir) return emptyResult("not_eagle_library");
@@ -409,92 +417,110 @@ async function importEagle(
     return emptyResult("read_failed");
   }
 
-  for (const entry of entries) {
-    if (!entry.isDirectory() || !entry.name.endsWith(".info")) continue;
-    const itemDir = join(imagesDir, entry.name);
+  const itemEntries = entries.filter(
+    (entry) => entry.isDirectory() && entry.name.endsWith(".info"),
+  );
+  let processed = 0;
+  const reportProgress = () =>
+    opts.onProgress?.({
+      processed,
+      total: itemEntries.length,
+      imported,
+      skipped,
+      failed,
+    });
+  reportProgress();
 
-    const meta = await readJson(
-      join(itemDir, "metadata.json"),
-      EagleItemMetaSchema,
-    );
-    if (!meta?.id) {
-      failed += 1;
-      continue;
-    }
-    if (meta.isDeleted) {
-      deletedSkipped += 1;
-      skipped += 1;
-      continue;
-    }
-
-    let files: string[];
+  for (const entry of itemEntries) {
     try {
-      files = await readdir(itemDir);
-    } catch {
-      failed += 1;
-      continue;
-    }
+      const itemDir = join(imagesDir, entry.name);
 
-    const { mediaFiles, thumbnail } = partitionEagleItemFiles(files);
-    if (mediaFiles.length === 0) {
-      skipped += 1;
-      continue;
-    }
-
-    const tags = [...(meta.tags ?? [])];
-    const filePaths = mediaFiles.map((name) => join(itemDir, name));
-    const comments = mapEagleComments(meta.comments, meta.width, meta.height);
-    const videoNotes = mapVideoNotes(meta.videoMarks ?? meta.notes);
-    const palettes = (meta.palettes ?? [])
-      .map(eaglePaletteColor)
-      .filter(Boolean);
-    if ((meta.folders ?? []).some((id) => !availableFolderIds.has(id)))
-      dropped.add("Unavailable folder membership");
-
-    if (opts.dryRun) {
-      imported += 1;
-      continue;
-    }
-
-    try {
-      const input: ManualSaveInput = {
-        title: meta.name?.trim() || basename(mediaFiles[0] ?? meta.id),
-        url: meta.url?.trim() || null,
-        note: meta.annotation?.trim() || null,
-        tags,
-        filePaths,
-        thumbnailPath: thumbnail ? join(itemDir, thumbnail) : null,
-        sourceId: `eagle:${meta.id}`,
-        savedAt: meta.modificationTime
-          ? new Date(meta.modificationTime)
-          : undefined,
-        createdAt: meta.btime ? new Date(meta.btime) : undefined,
-      };
-      if (meta.width !== undefined) input.width = meta.width;
-      if (meta.height !== undefined) input.height = meta.height;
-      if (meta.star != null && meta.star > 0) input.rating = meta.star;
-      if (comments.length > 0) input.comments = comments;
-      if (videoNotes.length > 0) input.videoNotes = videoNotes;
-      if (palettes.length > 0) input.dominantColors = palettes;
-      const res = await createManualSave(input);
-      if (!res.ok) {
+      const meta = await readJson(
+        join(itemDir, "metadata.json"),
+        EagleItemMetaSchema,
+      );
+      if (!meta?.id) {
         failed += 1;
         continue;
       }
-      const pondFolderIds = (meta.folders ?? [])
-        .map((id) => mapped.get(id))
-        .filter((id): id is string => Boolean(id));
-      if ((meta.folders ?? []).some((id) => !mapped.has(id))) {
-        dropped.add("locked-folder membership");
+      if (meta.isDeleted) {
+        deletedSkipped += 1;
+        skipped += 1;
+        continue;
       }
-      if (res.id && pondFolderIds.length > 0) {
-        await setSaveFolders(res.id, pondFolderIds);
+
+      let files: string[];
+      try {
+        files = await readdir(itemDir);
+      } catch {
+        failed += 1;
+        continue;
       }
-      if (res.skipped) skipped += 1;
-      else imported += 1;
-    } catch (err) {
-      log.warn("[pond eagle] item import failed", meta.id, err);
-      failed += 1;
+
+      const { mediaFiles, thumbnail } = partitionEagleItemFiles(files);
+      if (mediaFiles.length === 0) {
+        skipped += 1;
+        continue;
+      }
+
+      const tags = [...(meta.tags ?? [])];
+      const filePaths = mediaFiles.map((name) => join(itemDir, name));
+      const comments = mapEagleComments(meta.comments, meta.width, meta.height);
+      const videoNotes = mapVideoNotes(meta.videoMarks ?? meta.notes);
+      const palettes = (meta.palettes ?? [])
+        .map(eaglePaletteColor)
+        .filter(Boolean);
+      if ((meta.folders ?? []).some((id) => !availableFolderIds.has(id)))
+        dropped.add("Unavailable folder membership");
+
+      if (opts.dryRun) {
+        imported += 1;
+        continue;
+      }
+
+      try {
+        const input: ManualSaveInput = {
+          title: meta.name?.trim() || basename(mediaFiles[0] ?? meta.id),
+          url: meta.url?.trim() || null,
+          note: meta.annotation?.trim() || null,
+          tags,
+          filePaths,
+          thumbnailPath: thumbnail ? join(itemDir, thumbnail) : null,
+          sourceId: `eagle:${meta.id}`,
+          savedAt: meta.modificationTime
+            ? new Date(meta.modificationTime)
+            : undefined,
+          createdAt: meta.btime ? new Date(meta.btime) : undefined,
+        };
+        if (meta.width !== undefined) input.width = meta.width;
+        if (meta.height !== undefined) input.height = meta.height;
+        if (meta.star != null && meta.star > 0) input.rating = meta.star;
+        if (comments.length > 0) input.comments = comments;
+        if (videoNotes.length > 0) input.videoNotes = videoNotes;
+        if (palettes.length > 0) input.dominantColors = palettes;
+        const res = await createManualSave(input);
+        if (!res.ok) {
+          failed += 1;
+          continue;
+        }
+        const pondFolderIds = (meta.folders ?? [])
+          .map((id) => mapped.get(id))
+          .filter((id): id is string => Boolean(id));
+        if ((meta.folders ?? []).some((id) => !mapped.has(id))) {
+          dropped.add("locked-folder membership");
+        }
+        if (res.id && pondFolderIds.length > 0) {
+          await setSaveFolders(res.id, pondFolderIds);
+        }
+        if (res.skipped) skipped += 1;
+        else imported += 1;
+      } catch (err) {
+        log.warn("[pond eagle] item import failed", meta.id, err);
+        failed += 1;
+      }
+    } finally {
+      processed += 1;
+      reportProgress();
     }
   }
 
@@ -511,7 +537,7 @@ async function importEagle(
 
 export function importEagleLibrary(
   libraryPath: string,
-  opts: { dryRun?: boolean } = {},
+  opts: EagleImportOptions = {},
 ) {
   return runLibraryTransfer(() => importEagle(libraryPath, opts));
 }

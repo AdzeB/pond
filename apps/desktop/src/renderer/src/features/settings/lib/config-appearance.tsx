@@ -1,4 +1,4 @@
-import { AppIconRow } from "@/features/settings/components/sections/appearance/app-icon/app-icon";
+import { AppIconRow } from "@/features/settings/components/sections/appearance/app-icon";
 import {
   AppearanceRow,
   customColorsVisible,

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { checkProviderKey } from "./keys";
+import { checkProviderKey, fetchProviderModels } from "./keys";
 
 const bases = {
   ollamaBaseUrl: "http://127.0.0.1:11434/v1",
   lmstudioBaseUrl: "http://127.0.0.1:1234/v1",
-  compatibleBaseUrl: "http://127.0.0.1:9000/v1",
+  azureResourceName: "pond-openai",
 };
 
 describe("checkProviderKey", () => {
@@ -38,27 +38,29 @@ describe("checkProviderKey", () => {
     expect(result.ok).toBe(true);
   });
 
-  it.each([
-    429, 500, 503,
-  ])("does not call a discovery failure (%i) an invalid key", async (status) => {
-    const result = await checkProviderKey(
-      { provider: "openai", key: "sk-test", ...bases },
-      async () => new Response(null, { status }),
-    );
-    expect(result.ok).toBe(false);
-    expect(result.error).toContain(`HTTP ${status}`);
-    expect(result.error).not.toContain("rejected");
-  });
+  it.each([429, 500, 503])(
+    "does not call a discovery failure (%i) an invalid key",
+    async (status) => {
+      const result = await checkProviderKey(
+        { provider: "openai", key: "sk-test", ...bases },
+        async () => new Response(null, { status }),
+      );
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain(`HTTP ${status}`);
+      expect(result.error).not.toContain("rejected");
+    },
+  );
 
-  it.each([
-    404, 405, 501,
-  ])("allows custom endpoints without model listing (%i)", async (status) => {
-    const result = await checkProviderKey(
-      { provider: "compatible", key: "custom-key", ...bases },
-      async () => new Response(null, { status }),
-    );
-    expect(result).toEqual({ ok: true });
-  });
+  it.each([404, 405, 501])(
+    "allows LM Studio without model listing (%i)",
+    async (status) => {
+      const result = await checkProviderKey(
+        { provider: "lmstudio", key: "", ...bases },
+        async () => new Response(null, { status }),
+      );
+      expect(result).toEqual({ ok: true });
+    },
+  );
 
   it("does not treat a malformed endpoint response as a valid model list", async () => {
     const result = await checkProviderKey(
@@ -71,13 +73,13 @@ describe("checkProviderKey", () => {
     });
   });
 
-  it("does not send a custom key to OpenAI when the custom base is missing", async () => {
+  it("does not discover Azure models without a resource name", async () => {
     const result = await checkProviderKey(
       {
-        provider: "compatible",
-        key: "custom-key",
+        provider: "azure",
+        key: "azure-key",
         ...bases,
-        compatibleBaseUrl: "",
+        azureResourceName: "",
       },
       async () => {
         throw new Error("Must not request another provider");
@@ -85,7 +87,7 @@ describe("checkProviderKey", () => {
     );
     expect(result).toEqual({
       ok: false,
-      error: "Enter an API base URL first.",
+      error: "Enter a resource name first.",
     });
   });
 
@@ -101,5 +103,60 @@ describe("checkProviderKey", () => {
       },
     );
     expect(result.ok).toBe(true);
+  });
+});
+
+describe("complete model discovery", () => {
+  it.each(["gemini", "anthropic"] as const)(
+    "collects every %s page",
+    async (provider) => {
+      const urls: string[] = [];
+      const result = await fetchProviderModels(
+        { provider, key: "test-key", ...bases },
+        async (url) => {
+          urls.push(String(url));
+          const first = urls.length === 1;
+          return Response.json(
+            provider === "gemini"
+              ? {
+                  models: [{ name: first ? "first" : "second" }],
+                  nextPageToken: first ? "next" : undefined,
+                }
+              : {
+                  data: [{ id: first ? "first" : "second" }],
+                  has_more: first,
+                  last_id: first ? "next" : "second",
+                },
+          );
+        },
+      );
+      expect(result).toEqual({
+        ok: true,
+        json:
+          provider === "gemini"
+            ? { models: [{ name: "first" }, { name: "second" }] }
+            : { data: [{ id: "first" }, { id: "second" }] },
+      });
+      expect(urls).toHaveLength(2);
+      expect(urls[1]).toContain(
+        provider === "gemini" ? "pageToken=next" : "after_id=next",
+      );
+    },
+  );
+
+  it("rejects repeated cursors instead of looping forever", async () => {
+    let calls = 0;
+    const result = await fetchProviderModels(
+      { provider: "gemini", key: "test-key", ...bases },
+      async () => {
+        calls++;
+        return Response.json({ models: [], nextPageToken: "same" });
+      },
+    );
+    expect(result).toEqual({
+      ok: false,
+      error: "Google returned an invalid model list.",
+    });
+    expect(calls).toBe(2);
   });
 });

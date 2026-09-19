@@ -1,60 +1,62 @@
 import { lazy } from "react";
 import type { SectionConfig } from "@/features/settings/components/engine/engine";
 import { appearanceSection } from "@/features/settings/lib/config-appearance";
-import { enrichmentSection } from "@/features/settings/lib/config-enrichment";
+import { backupsSection } from "@/features/settings/lib/config-backups";
 import { generalSection } from "@/features/settings/lib/config-general";
-import { imagesSection } from "@/features/settings/lib/config-images";
+import { harvestingSection } from "@/features/settings/lib/config-harvesting";
+import { librarySection } from "@/features/settings/lib/config-library";
 import { mcpSection } from "@/features/settings/lib/config-mcp";
+import { processingSection } from "@/features/settings/lib/config-processing";
+import { searchSection } from "@/features/settings/lib/config-search";
 import { storageSection } from "@/features/settings/lib/config-storage";
-import { trashSection } from "@/features/settings/lib/config-trash";
-import { videosSection } from "@/features/settings/lib/config-videos";
 import { viewerSection } from "@/features/settings/lib/config-viewer";
 
 const TagsSection = lazy(() =>
-  import("@/features/tags/components/manager/manager").then((m) => ({
+  import("@/features/tags/components/manager").then((m) => ({
     default: m.TagsSection,
   })),
 );
 const AgentSection = lazy(() =>
-  import("@/features/settings/components/sections/agent/agent").then((m) => ({
+  import("@/features/settings/components/sections/agent").then((m) => ({
     default: m.AgentSection,
   })),
 );
+const ModelsSection = lazy(() =>
+  import("@/features/settings/components/sections/agent/models").then((m) => ({
+    default: m.ModelsSection,
+  })),
+);
+const PersonalizationSection = lazy(() =>
+  import("@/features/settings/components/sections/agent/personalization").then(
+    (m) => ({
+      default: m.PersonalizationSection,
+    }),
+  ),
+);
 const McpSection = lazy(() =>
-  import("@/features/settings/components/sections/mcp/mcp").then((m) => ({
+  import("@/features/settings/components/sections/mcp").then((m) => ({
     default: m.McpSection,
   })),
 );
-
-const ScheduleSection = lazy(() =>
-  import("@/features/settings/components/sections/schedule/schedule").then(
-    (m) => ({ default: m.ScheduleSection }),
-  ),
+const ShortcutSettings = lazy(() =>
+  import("@/features/shortcuts").then((m) => ({
+    default: m.ShortcutSettings,
+  })),
 );
 
 export const SECTION_CONFIGS = new Map<string, SectionConfig>([
   ["general", generalSection],
   ["viewer", viewerSection],
+  ["appearance", appearanceSection],
   [
-    "schedule",
+    "shortcuts",
     {
-      component: ScheduleSection,
-      title: "Fetching",
-      description:
-        "One schedule for all connections and watched accounts. Pond checks for updates while it is running.",
-      keywords: [
-        "sync",
-        "fetch",
-        "schedule",
-        "frequency",
-        "hourly",
-        "daily",
-        "weekly",
-        "sources",
-      ],
+      component: ShortcutSettings,
+      title: "Hotkeys",
+      keywords: ["hotkeys", "keys", "commands", "Eagle"],
+      width: "wide",
     },
   ],
-  ["appearance", appearanceSection],
   [
     "tags",
     {
@@ -68,9 +70,9 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
     "models",
     {
       component: AgentSection,
-      title: "Integrations",
+      title: "Providers",
       description:
-        "Add providers, then pick Language and Vision defaults for Agent.",
+        "Connect the AI providers Agent uses with your keys or a local host you run.",
       keywords: [
         "ai",
         "agent",
@@ -80,60 +82,54 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
         "ollama",
         "key",
         "provider",
+        "intelligence",
+        "integrations",
         "language",
         "vision",
-        "default",
-      ],
-    },
-  ],
-  ["trash", trashSection],
-  [
-    "storage",
-    {
-      ...storageSection,
-      groups: [
-        ...(storageSection.groups ?? []),
-        ...(trashSection.groups ?? []).map((group) => ({
-          ...group,
-          prefsKey: "trash" as const,
-        })),
       ],
     },
   ],
   [
-    "videos",
+    "agent-models",
     {
-      ...videosSection,
-      title: "Harvesting",
-      description:
-        "Choose when Pond fetches updates and how new images and videos are saved.",
+      component: ModelsSection,
+      title: "Models",
+      description: "Choose which models appear in Agent.",
       keywords: [
-        "downloads",
-        "fetch",
-        "fetching",
-        "schedule",
-        "sync",
-        "frequency",
-        "hourly",
-        "daily",
-        "weekly",
-        "monthly",
-      ],
-      groups: [
-        { title: "Fetch Schedule", render: () => <ScheduleSection /> },
-        ...(imagesSection.groups ?? []).map((group) => ({
-          ...group,
-          title: group.title === "Format" ? "Images" : "Image Encoding",
-        })),
-        ...(videosSection.groups ?? []).map((group) => ({
-          ...group,
-          title: `Video ${group.title}`,
-        })),
+        "ai",
+        "agent",
+        "intelligence",
+        "catalog",
+        "visibility",
+        "models",
+        "pricing",
+        "context",
       ],
     },
   ],
-  ["images", imagesSection],
-  ["search", enrichmentSection],
+  [
+    "personalization",
+    {
+      component: PersonalizationSection,
+      title: "Personalization",
+      description: "Give Agent context about you and how you like replies.",
+      keywords: [
+        "ai",
+        "agent",
+        "intelligence",
+        "personalisation",
+        "profile",
+        "instructions",
+        "responses",
+      ],
+    },
+  ],
+  ["library", librarySection],
+  ["storage", storageSection],
+  ["backups", backupsSection],
+  ["search", searchSection],
+  ["processing", processingSection],
+  ["harvesting", harvestingSection],
   [
     "mcp",
     {

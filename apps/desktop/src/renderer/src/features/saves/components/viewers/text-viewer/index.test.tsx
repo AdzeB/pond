@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { $createHeadingNode } from "@lexical/rich-text";
 import {
   $createParagraphNode,
@@ -54,7 +53,6 @@ describe("text viewer", () => {
   const tx = vi.fn(async () => undefined);
 
   beforeEach(() => {
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.stubGlobal(
       "ResizeObserver",
       class {

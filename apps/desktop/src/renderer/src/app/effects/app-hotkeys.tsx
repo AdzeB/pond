@@ -8,16 +8,23 @@ import {
   runNewAction,
 } from "@/features/library/components/new-menu/actions";
 import type { LayoutValue } from "@/features/library/lib/view-prefs";
+import { ZOOM_DEFAULT } from "@/features/library/lib/zoom";
 import { commandMenu } from "@/features/library/state/command-menu";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { libraryHeader } from "@/features/library/state/library-header";
 import { newMenuDialog } from "@/features/library/state/new-menu-dialog";
 import {
+  adjustZoom,
+  cycleLayout,
   cycleSortKey,
   setLayout,
+  setZoom,
   toggleSortDir,
 } from "@/features/library/state/view-store";
+import { confirmEmptyTrash } from "@/features/saves/lib/empty-trash";
+import { closeSave, openSave } from "@/features/saves/lib/save-nav";
 import { inspect } from "@/features/saves/state/inspect";
+import { primarySelection, selection } from "@/features/saves/state/selection";
 import { openSettings } from "@/features/settings/lib/open-settings";
 import {
   getPrefsSnapshot,
@@ -27,6 +34,8 @@ import {
 import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
 import { getAppRouter } from "@/shared/lib/app-router";
 import {
+  bindingKeys,
+  bindingSequence,
   configureShortcuts,
   useShortcutBindings,
 } from "@/shared/lib/shortcuts";
@@ -71,23 +80,23 @@ export function AppHotkeys() {
   useHotkeySequences(
     [
       {
-        sequence: [...shortcuts["nav.library"].sequence!],
+        sequence: [...bindingSequence(shortcuts, "nav.library")],
         callback: () => go("/"),
       },
       {
-        sequence: [...shortcuts["nav.sources"].sequence!],
+        sequence: [...bindingSequence(shortcuts, "nav.sources")],
         callback: () => go("/sources"),
       },
       {
-        sequence: [...shortcuts["nav.downloads"].sequence!],
+        sequence: [...bindingSequence(shortcuts, "nav.downloads")],
         callback: () => go("/downloads"),
       },
       {
-        sequence: [...shortcuts["nav.trash"].sequence!],
+        sequence: [...bindingSequence(shortcuts, "nav.trash")],
         callback: () => go("/trash"),
       },
       {
-        sequence: [...shortcuts["nav.settings"].sequence!],
+        sequence: [...bindingSequence(shortcuts, "nav.settings")],
         callback: () => openSettings(),
       },
     ],
@@ -96,12 +105,27 @@ export function AppHotkeys() {
 
   useHotkeys([
     {
-      hotkey: shortcuts["library.search"].keys!,
+      hotkey: bindingKeys(shortcuts, "library.search"),
       callback: () => commandMenu.toggle(),
       options: { ignoreInputs: false },
     },
     {
-      hotkey: shortcuts["nav.scroll-top"].keys!,
+      hotkey: bindingKeys(shortcuts, "app.settings"),
+      callback: () => openSettings(),
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: bindingKeys(shortcuts, "nav.back"),
+      callback: () => getAppRouter()?.history.back(),
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: bindingKeys(shortcuts, "nav.forward"),
+      callback: () => getAppRouter()?.history.forward(),
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: bindingKeys(shortcuts, "nav.scroll-top"),
       callback: (event) => {
         event.preventDefault();
         scrollActiveViewport("top");
@@ -109,7 +133,7 @@ export function AppHotkeys() {
       options: { ignoreInputs: true, preventDefault: false },
     },
     {
-      hotkey: shortcuts["nav.scroll-bottom"].keys!,
+      hotkey: bindingKeys(shortcuts, "nav.scroll-bottom"),
       callback: (event) => {
         event.preventDefault();
         scrollActiveViewport("bottom");
@@ -117,27 +141,60 @@ export function AppHotkeys() {
       options: { ignoreInputs: true, preventDefault: false },
     },
     {
-      hotkey: shortcuts["view.layout-waterfall"].keys!,
+      hotkey: bindingKeys(shortcuts, "view.layout-waterfall"),
       callback: () => setLayout("waterfall" satisfies LayoutValue),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: shortcuts["view.layout-grid"].keys!,
+      hotkey: bindingKeys(shortcuts, "view.layout-grid"),
       callback: () => setLayout("grid"),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: shortcuts["view.layout-justified"].keys!,
+      hotkey: bindingKeys(shortcuts, "view.layout-justified"),
       callback: () => setLayout("justified"),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: shortcuts["view.layout-list"].keys!,
+      hotkey: bindingKeys(shortcuts, "view.layout-list"),
       callback: () => setLayout("list"),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: shortcuts["view.sidebar"].keys!,
+      hotkey: bindingKeys(shortcuts, "view.layout-cycle"),
+      callback: () => cycleLayout(),
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: bindingKeys(shortcuts, "view.inspector"),
+      callback: () => {
+        const openId = primarySelection.get();
+        if (openId) {
+          closeSave();
+          return;
+        }
+        const anchor = selection.getAnchor();
+        if (anchor) openSave(anchor);
+      },
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: bindingKeys(shortcuts, "view.zoom-in"),
+      callback: () => adjustZoom(20),
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: bindingKeys(shortcuts, "view.zoom-out"),
+      callback: () => adjustZoom(-20),
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: bindingKeys(shortcuts, "view.zoom-reset"),
+      callback: () => setZoom(ZOOM_DEFAULT),
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: bindingKeys(shortcuts, "view.sidebar"),
       callback: () => {
         if (slideNavActive()) return;
         libraryChrome.toggleSidebar();
@@ -145,7 +202,7 @@ export function AppHotkeys() {
       options: { ignoreInputs: true, conflictBehavior: "allow" },
     },
     {
-      hotkey: shortcuts["view.agent"].keys!,
+      hotkey: bindingKeys(shortcuts, "view.agent"),
       callback: () => {
         if (slideNavActive()) return;
         libraryChrome.toggleAgent();
@@ -153,37 +210,37 @@ export function AppHotkeys() {
       options: { ignoreInputs: true, conflictBehavior: "allow" },
     },
     {
-      hotkey: shortcuts["view.grayscale"].keys!,
+      hotkey: bindingKeys(shortcuts, "view.grayscale"),
       callback: () => inspect.toggleGrayscale(),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: shortcuts["view.options"].keys!,
+      hotkey: bindingKeys(shortcuts, "view.options"),
       callback: () => libraryHeader.togglePopover(),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: shortcuts["view.display"].keys!,
+      hotkey: bindingKeys(shortcuts, "view.display"),
       callback: () => libraryHeader.togglePopover(),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: shortcuts["view.sort-dir"].keys!,
+      hotkey: bindingKeys(shortcuts, "view.sort-dir"),
       callback: () => toggleSortDir(),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: shortcuts["view.sort-key"].keys!,
+      hotkey: bindingKeys(shortcuts, "view.sort-key"),
       callback: () => cycleSortKey(),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: shortcuts["view.theme-cycle"].keys!,
+      hotkey: bindingKeys(shortcuts, "view.theme-cycle"),
       callback: () => cycleAppearance(),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: shortcuts["sources.new"].keys!,
+      hotkey: bindingKeys(shortcuts, "sources.new"),
       callback: () => {
         libraryChrome.setNav({ kind: "sources" });
         go("/sources");
@@ -192,52 +249,57 @@ export function AppHotkeys() {
       options: { ignoreInputs: true },
     },
     {
-      hotkey: shortcuts["sources.sync-all"].keys!,
+      hotkey: bindingKeys(shortcuts, "sources.sync-all"),
       callback: () => {
         void window.pond.syncRunAll();
       },
       options: { ignoreInputs: true },
     },
     {
-      hotkey: shortcuts["library.rescan"].keys!,
+      hotkey: bindingKeys(shortcuts, "library.rescan"),
       callback: () => {
         void window.pond.query("library.rescan", {});
       },
       options: { ignoreInputs: true },
     },
     {
-      hotkey: shortcuts["library.new-folder"].keys!,
+      hotkey: bindingKeys(shortcuts, "library.new-folder"),
       callback: () => newFolder(),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: shortcuts["library.new-tag"].keys!,
+      hotkey: bindingKeys(shortcuts, "library.new-tag"),
       callback: () => newTag("tag"),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: shortcuts["library.new-tag-group"].keys!,
+      hotkey: bindingKeys(shortcuts, "library.new-tag-group"),
       callback: () => newTag("tag-group"),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: shortcuts["library.new-note"].keys!,
+      hotkey: bindingKeys(shortcuts, "library.new-note"),
       callback: () => void runNewAction(createNote),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: shortcuts["library.import-files"].keys!,
+      hotkey: bindingKeys(shortcuts, "library.import-files"),
       callback: () => void runNewAction(() => importPaths("files")),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: shortcuts["library.import-folders"].keys!,
+      hotkey: bindingKeys(shortcuts, "library.import-folders"),
       callback: () => void runNewAction(() => importPaths("folders")),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: shortcuts["library.import-links"].keys!,
+      hotkey: bindingKeys(shortcuts, "library.import-links"),
       callback: () => newMenuDialog.open("links"),
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: bindingKeys(shortcuts, "trash.empty"),
+      callback: () => confirmEmptyTrash(),
       options: { ignoreInputs: true },
     },
   ]);

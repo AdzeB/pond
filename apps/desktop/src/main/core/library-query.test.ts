@@ -74,6 +74,24 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
     expect(result.ids).toEqual(["0001"]);
     expect(result.total).toBe(1);
   });
+  it("excludes every ingesting save from library results", async () => {
+    const { db, sqlite } = setup();
+    sqlite.exec(`
+      update saves set status='ingesting', files='[{"path":"partial.jpg"}]' where id='0001';
+      update saves set status='ingesting', media_type='link' where id='0002';
+      update saves set status='ingesting', media_type='text' where id='0003';
+    `);
+    const request = {
+      query: EMPTY_QUERY,
+      scope: { saveIds: ["0000", "0001", "0002", "0003"] },
+    };
+    expect((await queryLibraryPage(db, "library", request)).ids).toEqual([
+      "0000",
+    ]);
+    expect((await queryLibraryIds(db, "library", request)).ids).toEqual([
+      "0000",
+    ]);
+  });
   it("pages every matching ID with stable ties, nulls last and exact totals", async () => {
     const { db, sqlite } = setup();
     sqlite.exec("update saves set rating=3 where cast(id as integer)%2=0");
@@ -310,6 +328,28 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
       "videomarker",
     ])
       expect(await idsFor(keyword)).toEqual([]);
+  });
+
+  it("filters by canonical source identity from site name and url", async () => {
+    const { db, sqlite } = setup();
+    sqlite
+      .prepare("update saves set source=?, url=?, site_name=? where id=?")
+      .run("twitter", "https://x.com/a/status/1", "x.com", "0001");
+    sqlite
+      .prepare("update saves set source=?, url=?, site_name=? where id=?")
+      .run("web", "https://www.instagram.com/p/abc", "instagram.com", "0002");
+    sqlite
+      .prepare("update saves set source=?, url=?, site_name=? where id=?")
+      .run("twitter", "https://twitter.com/b/status/2", null, "0003");
+    const page = await queryLibraryPage(db, "library", {
+      query: {
+        combinator: "and",
+        rules: [{ field: "source", operator: "eq", value: "x.com" }],
+      },
+      keywords: "reference",
+    });
+    expect(page.ids.sort()).toEqual(["0001", "0003"]);
+    expect(page.total).toBe(2);
   });
 
   it("uses calendar midnight for Today rather than a rolling day", async () => {

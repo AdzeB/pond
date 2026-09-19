@@ -1,6 +1,6 @@
 .root {
   --window-inset: 16px;
-  --window-radius: var(--ds-radius-3xl);
+  --window-radius: var(--ds-radius-xl);
   --window-ring: 1px;
   --window-chrome-start: 12px;
   /* Traffic-light padding plus the four 28px titlebar controls. */

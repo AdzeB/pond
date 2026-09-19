@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { openCollectionWindow } from "../../aux-windows";
 import { readAutoImportLog, startAutoImport } from "../../core/auto-import";
 import { saveCropCopy } from "../../core/crop-copy";
 import { getPrefs, setPrefs } from "../../core/prefs";
@@ -34,11 +33,6 @@ export const inspectQueries = {
       return { frameRate: result?.frameRate ?? null };
     },
   ),
-  async "collection.open"() {
-    await openCollectionWindow();
-    return { ok: true };
-  },
-
   async "autoImport.status"() {
     const prefs = await getPrefs();
     const log = await readAutoImportLog();

@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { FIELD_META } from "@pond/schema/filters/meta";
 import type { Predicate } from "@pond/schema/filters/types";
 import { act, useState } from "react";
@@ -14,7 +13,6 @@ describe("filter editors", () => {
   let host: HTMLDivElement;
   let rows: Predicate[];
   beforeEach(() => {
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.stubGlobal(
       "ResizeObserver",
       class {

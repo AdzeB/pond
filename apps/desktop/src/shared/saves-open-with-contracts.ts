@@ -1,0 +1,28 @@
+import type { OkResult } from "./query-contracts-shared";
+
+export interface SavesOpenWithQueryInputs {
+  "saves.copyInternalLinks": { ids: string[] };
+  "saves.listOpenWith": {
+    ids: string[];
+    fileIndex?: number;
+    includeIcons?: boolean;
+  };
+  "saves.openWith": {
+    ids: string[];
+    fileIndex?: number;
+    application?: string;
+  };
+}
+
+export interface SavesOpenWithQueryResults {
+  "saves.copyInternalLinks": OkResult;
+  "saves.listOpenWith": {
+    apps: Array<{
+      name: string;
+      path: string;
+      icon: string | null;
+      isDefault: boolean;
+    }>;
+  };
+  "saves.openWith": { ok: boolean; error?: string; cancelled?: boolean };
+}

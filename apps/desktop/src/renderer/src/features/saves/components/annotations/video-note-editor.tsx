@@ -5,7 +5,7 @@ import {
   deleteVideoNote,
   saveVideoNote,
 } from "@/features/saves/lib/annotations";
-import styles from "./comment-editor.module.css";
+import styles from "./comment-editor/styles.module.css";
 export function VideoNoteEditor({
   saveId,
   note,

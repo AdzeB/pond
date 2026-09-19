@@ -8,29 +8,9 @@ import { CodeShikiExtension } from "@lexical/code-shiki";
 import {
   buildEditorFromExtensions,
   ClickAfterLastBlockExtension,
-  EditorStateExtension,
-  HorizontalRuleExtension,
   SelectBlockExtension,
   SelectionAlwaysOnDisplayExtension,
-  TabIndentationExtension,
 } from "@lexical/extension";
-import { HistoryExtension } from "@lexical/history";
-import {
-  AutoLinkExtension,
-  autoLinkUrlMatcher,
-  ClickableLinkExtension,
-  LinkExtension,
-} from "@lexical/link";
-import { CheckListExtension, ListExtension } from "@lexical/list";
-import {
-  MdastCommonMarkExtension,
-  MdastExtension,
-  MdastGfmExtension,
-  MdastShortcutsExtension,
-  MdastTableExtension,
-} from "@lexical/mdast";
-import { RichTextExtension } from "@lexical/rich-text";
-import { TableExtension } from "@lexical/table";
 import {
   CLICK_COMMAND,
   COMMAND_PRIORITY_LOW,
@@ -38,6 +18,7 @@ import {
   defineExtension,
   type LexicalEditor,
 } from "lexical";
+import { markdownEditorExtension } from "@/shared/markdown-editor/extension";
 import { COLLAPSE_NODES } from "./collapsible";
 import { FileNode } from "./file-node";
 import { ImageNode } from "./image-node";
@@ -45,7 +26,7 @@ import { $writeMarkdown, pondMdastExtension } from "./markdown";
 import styles from "./styles.module.css";
 import { YouTubeNode } from "./youtube-node";
 
-export const NOTE_THEME = {
+const NOTE_THEME = {
   paragraph: styles.p,
   heading: {
     h1: styles.h1,
@@ -112,20 +93,11 @@ export function createNoteExtension(opts: {
       console.error("[pond note]", error);
     },
     dependencies: [
-      RichTextExtension,
-      configExtension(HistoryExtension, { delay: 400 }),
-      ListExtension,
-      CheckListExtension,
-      LinkExtension,
-      configExtension(AutoLinkExtension, { matchers: [autoLinkUrlMatcher] }),
-      configExtension(ClickableLinkExtension, { disabled: true }),
-      HorizontalRuleExtension,
-      TabIndentationExtension,
+      markdownEditorExtension,
       configExtension(CodeShikiExtension, {
         disabled: Boolean(import.meta.env.VITEST),
       }),
       SelectionAlwaysOnDisplayExtension,
-      EditorStateExtension,
       SelectBlockExtension,
       ClickAfterLastBlockExtension,
       AriaLiveRegionExtension,
@@ -138,12 +110,6 @@ export function createNoteExtension(opts: {
         readOnly: "Read only",
       }),
       FocusManagerExtension,
-      TableExtension,
-      MdastCommonMarkExtension,
-      MdastGfmExtension,
-      MdastTableExtension,
-      MdastExtension,
-      MdastShortcutsExtension,
       pondMdastExtension,
     ],
     register: (editor) => registerOpenExternal(editor),

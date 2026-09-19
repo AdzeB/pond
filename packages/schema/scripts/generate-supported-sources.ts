@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SOURCE_DESCRIPTORS, syncConfigFor } from "../src/sources/registry.ts";
@@ -33,6 +33,16 @@ ${rows}
 library; it has no network extractor.
 `;
 
-mkdirSync(dirname(outPath), { recursive: true });
-writeFileSync(outPath, md);
-console.log(`wrote ${outPath} (${SOURCE_DESCRIPTORS.length} sources)`);
+if (process.argv.includes("--check")) {
+  const existing = readFileSync(outPath, "utf8");
+  if (existing !== md) {
+    throw new Error(
+      "Supported sources documentation is stale. Run pnpm generate.",
+    );
+  }
+  console.log(`verified ${outPath} (${SOURCE_DESCRIPTORS.length} sources)`);
+} else {
+  mkdirSync(dirname(outPath), { recursive: true });
+  writeFileSync(outPath, md);
+  console.log(`wrote ${outPath} (${SOURCE_DESCRIPTORS.length} sources)`);
+}

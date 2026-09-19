@@ -21,6 +21,8 @@ const ENRICHMENT_KEYS = [
   "transcriptModel",
   "aesthetic",
   "aestheticModel",
+  "sensitiveScore",
+  "sensitiveModel",
   "autoTitleModel",
   "suggestedTags",
   "suggestedTagsModel",
@@ -51,6 +53,8 @@ export function writeEnrichmentSidecar(save: Save): void {
   if (save.transcriptModel) data.transcriptModel = save.transcriptModel;
   if (save.aesthetic?.length) data.aesthetic = save.aesthetic;
   if (save.aestheticModel) data.aestheticModel = save.aestheticModel;
+  if (save.sensitiveScore != null) data.sensitiveScore = save.sensitiveScore;
+  if (save.sensitiveModel) data.sensitiveModel = save.sensitiveModel;
   if (save.autoTitleModel) data.autoTitleModel = save.autoTitleModel;
   if (save.suggestedTags?.length) data.suggestedTags = save.suggestedTags;
   if (save.suggestedTagsModel) {
@@ -96,6 +100,8 @@ const EnrichmentSidecarSchema = z.object({
   transcriptModel: text,
   aesthetic: textList,
   aestheticModel: text,
+  sensitiveScore: z.number().min(0).max(1).optional().catch(undefined),
+  sensitiveModel: text,
   autoTitleModel: text,
   suggestedTags: textList,
   suggestedTagsModel: text,
@@ -133,6 +139,10 @@ export function readEnrichmentSidecar(
   if (stored.transcriptModel) out.transcriptModel = stored.transcriptModel;
   if (stored.aesthetic?.length) out.aesthetic = stored.aesthetic;
   if (stored.aestheticModel) out.aestheticModel = stored.aestheticModel;
+  if (stored.sensitiveScore != null) {
+    out.sensitiveScore = stored.sensitiveScore;
+  }
+  if (stored.sensitiveModel) out.sensitiveModel = stored.sensitiveModel;
   if (stored.autoTitleModel) out.autoTitleModel = stored.autoTitleModel;
   if (stored.suggestedTags?.length) out.suggestedTags = stored.suggestedTags;
   if (stored.suggestedTagsModel) {
@@ -158,6 +168,7 @@ export async function backfillEnrichmentSidecars(): Promise<void> {
         isNotNull(savesTable.ocrText),
         isNotNull(savesTable.transcript),
         isNotNull(savesTable.aesthetic),
+        isNotNull(savesTable.sensitiveScore),
         isNotNull(savesTable.autoTitleModel),
         isNotNull(savesTable.suggestedTags),
         sql`json_array_length(${savesTable.videoNotes}) > 0`,

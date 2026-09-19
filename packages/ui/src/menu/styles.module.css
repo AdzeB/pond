@@ -3,6 +3,46 @@
   z-index: 1100;
 }
 
+.item-icon {
+  composes: item-icon from "../shared/styles/popup/styles.module.css";
+}
+
+.item {
+  composes: item from "../shared/styles/popup/styles.module.css";
+
+  &:has(.item-description) {
+    align-items: flex-start;
+    height: auto;
+    min-height: 44px;
+    padding-block: 6px;
+  }
+
+  &:has(.item-description) .item-icon {
+    margin-top: 1px;
+  }
+
+  &[data-icon] {
+    flex: none;
+    justify-content: center;
+    width: 32px;
+    padding: 0;
+
+    &::before {
+      inset: 0 2px;
+    }
+
+    > svg:last-child {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+    }
+  }
+}
+
+.group-label {
+  composes: group-label from "../shared/styles/popup/styles.module.css";
+}
+
 .popup {
   composes: popup from "../shared/styles/popup/styles.module.css";
   max-width: var(--available-width);
@@ -14,20 +54,45 @@
   overflow: clip;
 }
 
+.list {
+  --scroll-fade-size: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: 4px;
+}
+
 .arrow {
   composes: arrow from "../shared/styles/popup/styles.module.css";
 }
 
-.item {
-  composes: item from "../shared/styles/popup/styles.module.css";
-}
-
-.item-icon {
-  composes: item-icon from "../shared/styles/popup/styles.module.css";
-}
-
 .item-label {
   composes: item-label from "../shared/styles/popup/styles.module.css";
+}
+
+.item-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.item-content .item-label {
+  flex: none;
+  padding-inline-end: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-description {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-xs);
+  line-height: 1.35;
+  color: var(--ds-gray-9);
+  white-space: nowrap;
 }
 
 .item-keyboard {
@@ -36,10 +101,6 @@
 
 .indicator {
   composes: indicator from "../shared/styles/popup/styles.module.css";
-}
-
-.group-label {
-  composes: group-label from "../shared/styles/popup/styles.module.css";
 }
 
 .separator {

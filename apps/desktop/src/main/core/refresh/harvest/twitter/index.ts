@@ -1,5 +1,4 @@
 export {
-  type BookmarksApiResult,
   buildBookmarksApiExpression,
   buildLikesApiExpression,
 } from "./api";

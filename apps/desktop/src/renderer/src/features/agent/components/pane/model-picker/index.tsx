@@ -1,0 +1,418 @@
+import { IconCheck2Fill12 } from "@pond/icons/fill/12";
+import { IconChevronDownOutline12 } from "@pond/icons/outline/12";
+import type {
+  AgentContextChoice,
+  AgentModelOptions,
+  AgentReasoning,
+} from "@pond/schema";
+import { Menu } from "@pond/ui";
+import {
+  compactTokens,
+  contextChoiceLabel,
+  contextChoicesFor,
+  reasoningChoicesFor,
+  reasoningLabel,
+  supportsNativeFast,
+} from "@shared/agent-model-options";
+import { ASSISTANT_MODELS, type AssistantProvider } from "@shared/assistant";
+import { displayName, type ProviderModel } from "@shared/provider-models";
+import type { QueryResult } from "@shared/query-contracts";
+import { useQuery } from "@tanstack/react-query";
+import { Fragment, type ReactNode, useState } from "react";
+import { openSettings } from "@/features/settings/lib/open-settings";
+import styles from "./styles.module.css";
+
+type PickerModel = ProviderModel & {
+  key: string;
+  provider: AssistantProvider;
+  providerName: string;
+  search: string;
+};
+
+function liveItems(
+  providers: QueryResult<"agent.listAvailableModels">["providers"],
+): PickerModel[] {
+  const items: PickerModel[] = [];
+  for (const row of providers) {
+    const catalog = ASSISTANT_MODELS.find((model) => model.id === row.provider);
+    if (!catalog || !row.ok || !row.models.length) continue;
+    for (const model of [...row.models].sort((a, b) =>
+      a.name.localeCompare(b.name),
+    )) {
+      if (!catalog.local && !model.description?.trim()) continue;
+      items.push({
+        ...model,
+        key: `${row.provider}:${model.id}`,
+        provider: row.provider,
+        providerName: catalog.provider,
+        search: `${model.name} ${model.id} ${catalog.provider}`,
+      });
+    }
+  }
+  return items;
+}
+
+function Choice({
+  selected,
+  children,
+  onClick,
+}: {
+  selected: boolean;
+  children: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <Menu.Item onClick={onClick}>
+      <Menu.ItemLabel>{children}</Menu.ItemLabel>
+      {selected ? (
+        <Menu.SecondaryLabel className={styles.check} aria-label="Selected">
+          <IconCheck2Fill12 />
+        </Menu.SecondaryLabel>
+      ) : null}
+    </Menu.Item>
+  );
+}
+
+export function ModelPicker({
+  provider,
+  modelId,
+  options,
+  onChange,
+  onOptionsChange,
+  onManageModels = openSettings,
+  disabled,
+}: {
+  disabled?: boolean;
+  provider?: AssistantProvider | "";
+  modelId?: string;
+  options: AgentModelOptions;
+  onChange: (next: { provider: AssistantProvider; modelId: string }) => void;
+  onOptionsChange: (next: AgentModelOptions) => void;
+  onManageModels?: (section: "agent-models" | "models") => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [activeTop, setActiveTop] = useState(0);
+  const catalog = useQuery({
+    queryKey: ["assistant-models"],
+    queryFn: () => window.pond.query("agent.listAvailableModels", {}),
+    enabled: open,
+    staleTime: 30_000,
+    retry: false,
+  });
+  const items = liveItems(catalog.data?.providers ?? []);
+  const selected = items.find(
+    (item) => item.provider === provider && item.id === modelId,
+  );
+  const label =
+    selected?.name ?? (modelId ? displayName(modelId) : "Choose a model");
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleItems = normalizedQuery
+    ? items.filter((item) =>
+        item.search.toLowerCase().includes(normalizedQuery),
+      )
+    : items;
+  const activeModel = visibleItems.find((item) => item.key === activeKey);
+  const modelGroups = [
+    ...visibleItems
+      .reduce(
+        (groups, model) => {
+          const group = groups.get(model.provider);
+          if (group) group.models.push(model);
+          else
+            groups.set(model.provider, {
+              provider: model.provider,
+              name: model.providerName,
+              models: [model],
+            });
+          return groups;
+        },
+        new Map<
+          AssistantProvider,
+          {
+            provider: AssistantProvider;
+            name: string;
+            models: PickerModel[];
+          }
+        >(),
+      )
+      .values(),
+  ];
+  const contextChoices = contextChoicesFor(selected?.contextWindow);
+  const reasoningChoices = reasoningChoicesFor(selected);
+  const fastSupported = supportsNativeFast(provider ?? "", selected);
+  const visibleOptions: AgentModelOptions = {
+    fast: fastSupported && options.fast,
+    context: contextChoices.includes(options.context)
+      ? options.context
+      : "auto",
+    reasoning: reasoningChoices.includes(options.reasoning)
+      ? options.reasoning
+      : "provider-default",
+  };
+  const modelError =
+    catalog.isError || catalog.data?.providers.some((row) => row.error);
+  const emptyMessage = items.length
+    ? "No models found. Try another name."
+    : catalog.data?.providers.length
+      ? "No models shown. Choose models in Settings."
+      : "Connect a provider to see its models.";
+
+  const updateOptions = (patch: Partial<AgentModelOptions>) =>
+    onOptionsChange({ ...visibleOptions, ...patch });
+  const activateModel = (model: PickerModel, target: HTMLElement) => {
+    const popup = target.closest<HTMLElement>(`.${styles.models}`);
+    setActiveKey(model.key);
+    if (popup)
+      setActiveTop(
+        Math.max(
+          0,
+          target.getBoundingClientRect().top -
+            popup.getBoundingClientRect().top,
+        ),
+      );
+  };
+
+  const contextSubmenu = (
+    <Menu.SubmenuRoot>
+      <Menu.SubmenuTrigger
+        className={styles["option-submenu"]}
+        disabled={contextChoices.length < 2}
+      >
+        <Menu.ItemLabel>Context</Menu.ItemLabel>
+        <Menu.SecondaryLabel>
+          {contextChoiceLabel(visibleOptions.context, selected?.contextWindow)}
+        </Menu.SecondaryLabel>
+      </Menu.SubmenuTrigger>
+      <Menu.Portal>
+        <Menu.Positioner
+          side="inline-end"
+          align="start"
+          sideOffset={-2}
+          alignOffset={-4}
+        >
+          <Menu.Popup className={styles.submenu}>
+            {contextChoices.map((choice: AgentContextChoice) => (
+              <Choice
+                key={String(choice)}
+                selected={visibleOptions.context === choice}
+                onClick={() => updateOptions({ context: choice })}
+              >
+                {contextChoiceLabel(choice, selected?.contextWindow)}
+              </Choice>
+            ))}
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.SubmenuRoot>
+  );
+
+  const reasoningSubmenu = (
+    <Menu.SubmenuRoot>
+      <Menu.SubmenuTrigger
+        className={styles["option-submenu"]}
+        disabled={reasoningChoices.length < 2}
+      >
+        <Menu.ItemLabel>Reasoning</Menu.ItemLabel>
+        <Menu.SecondaryLabel>
+          {reasoningLabel(visibleOptions.reasoning)}
+        </Menu.SecondaryLabel>
+      </Menu.SubmenuTrigger>
+      <Menu.Portal>
+        <Menu.Positioner
+          side="inline-end"
+          align="start"
+          sideOffset={-2}
+          alignOffset={-4}
+        >
+          <Menu.Popup className={styles.submenu}>
+            {reasoningChoices.map((reasoning: AgentReasoning) => (
+              <Choice
+                key={reasoning}
+                selected={visibleOptions.reasoning === reasoning}
+                onClick={() => updateOptions({ reasoning })}
+              >
+                {reasoningLabel(reasoning)}
+              </Choice>
+            ))}
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.SubmenuRoot>
+  );
+
+  const modelSubmenu = (
+    <Menu.SubmenuRoot>
+      <Menu.SubmenuTrigger className={styles["option-submenu"]}>
+        <Menu.ItemLabel>Model</Menu.ItemLabel>
+        <Menu.SecondaryLabel>{label}</Menu.SecondaryLabel>
+      </Menu.SubmenuTrigger>
+      <Menu.Portal>
+        <Menu.Positioner
+          side="inline-end"
+          align="start"
+          sideOffset={-2}
+          alignOffset={-4}
+        >
+          <Menu.Popup className={styles.models}>
+            <Menu.Input
+              aria-label="Search models"
+              placeholder="Search models…"
+              value={query}
+              onValueChange={setQuery}
+            />
+            <Menu.List className={styles.list} aria-label="Models">
+              {catalog.isPending ? (
+                <Menu.Item disabled>
+                  <Menu.ItemLabel>Loading models</Menu.ItemLabel>
+                </Menu.Item>
+              ) : modelGroups.length ? (
+                modelGroups.map((group, index) => (
+                  <Fragment key={group.provider}>
+                    {index > 0 ? <Menu.Separator /> : null}
+                    <Menu.Group>
+                      <Menu.GroupLabel>{group.name}</Menu.GroupLabel>
+                      {group.models.map((model) => (
+                        <Menu.Item
+                          key={model.key}
+                          onFocus={(event) =>
+                            activateModel(model, event.currentTarget)
+                          }
+                          onMouseEnter={(event) =>
+                            activateModel(model, event.currentTarget)
+                          }
+                          onClick={() =>
+                            onChange({
+                              provider: model.provider,
+                              modelId: model.id,
+                            })
+                          }
+                        >
+                          <Menu.ItemLabel>{model.name}</Menu.ItemLabel>
+                          {model.key === selected?.key ? (
+                            <span className={styles.check} aria-hidden>
+                              <IconCheck2Fill12 />
+                            </span>
+                          ) : null}
+                        </Menu.Item>
+                      ))}
+                    </Menu.Group>
+                  </Fragment>
+                ))
+              ) : (
+                <Menu.Item disabled>
+                  <Menu.ItemLabel>{emptyMessage}</Menu.ItemLabel>
+                </Menu.Item>
+              )}
+            </Menu.List>
+            {modelError ? (
+              <>
+                <Menu.Separator />
+                <Menu.Item
+                  closeOnClick={false}
+                  onClick={() => catalog.refetch()}
+                >
+                  <Menu.ItemLabel>Retry Loading Models</Menu.ItemLabel>
+                </Menu.Item>
+              </>
+            ) : null}
+            <Menu.Separator />
+            <Menu.Item
+              onClick={() => {
+                setOpen(false);
+                onManageModels(
+                  catalog.data?.providers.length ? "agent-models" : "models",
+                );
+              }}
+            >
+              <Menu.ItemLabel>Manage Models</Menu.ItemLabel>
+            </Menu.Item>
+            {activeModel &&
+            (activeModel.description ||
+              activeModel.contextWindow ||
+              activeModel.maxOutputTokens) ? (
+              <aside
+                className={styles.details}
+                style={{ insetBlockStart: activeTop }}
+                aria-live="polite"
+              >
+                <h3 className={styles.title}>{activeModel.name}</h3>
+                {activeModel.description ? (
+                  <p className={styles.description}>
+                    {activeModel.description}
+                  </p>
+                ) : null}
+                {activeModel.contextWindow || activeModel.maxOutputTokens ? (
+                  <dl className={styles.specs}>
+                    {activeModel.contextWindow ? (
+                      <div>
+                        <dt>Context</dt>
+                        <dd>
+                          {compactTokens(activeModel.contextWindow)} tokens
+                        </dd>
+                      </div>
+                    ) : null}
+                    {activeModel.maxOutputTokens ? (
+                      <div>
+                        <dt>Maximum output</dt>
+                        <dd>
+                          {compactTokens(activeModel.maxOutputTokens)} tokens
+                        </dd>
+                      </div>
+                    ) : null}
+                  </dl>
+                ) : null}
+              </aside>
+            ) : null}
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.SubmenuRoot>
+  );
+
+  return (
+    <Menu.Root
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) {
+          setQuery("");
+          setActiveKey(null);
+          setActiveTop(0);
+        }
+      }}
+    >
+      <Menu.Trigger
+        disabled={disabled}
+        size="xs"
+        variant="ghost"
+        className={styles.trigger}
+        aria-label={`Choose model, ${label}`}
+      >
+        <span className={styles.name}>{label}</span>
+        <IconChevronDownOutline12 className={styles.chevron} aria-hidden />
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Positioner side="top" align="start" sideOffset={8}>
+          <Menu.Popup className={styles.popup}>
+            <Menu.CheckboxItem
+              className={styles.fast}
+              checked={visibleOptions.fast}
+              disabled={!fastSupported}
+              closeOnClick={false}
+              onCheckedChange={(fast) => updateOptions({ fast })}
+            >
+              <Menu.ItemLabel>Fast</Menu.ItemLabel>
+              <Menu.SwitchItemIndicator className={styles.switch} />
+            </Menu.CheckboxItem>
+            {contextSubmenu}
+            {reasoningSubmenu}
+            <Menu.Separator />
+            {modelSubmenu}
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}

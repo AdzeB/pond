@@ -77,11 +77,14 @@ describe("standalone harvest validation", () => {
     ["Cosmos", buildCosmosListExpression(args)],
     ["Reddit", buildRedditListExpression(args)],
     ["Instagram", buildInstagramListExpression(args)],
-  ])("executes %s list expressions without Node imports", async (_name, expression) => {
-    const result = await runInNewContext(expression, {
-      location: { pathname: "/login", href: "https://example.com/login" },
-      document: { querySelector: () => null },
-    });
-    expect(result).toMatchObject({ ok: false, reason: "auth_required" });
-  });
+  ])(
+    "executes %s list expressions without Node imports",
+    async (_name, expression) => {
+      const result = await runInNewContext(expression, {
+        location: { pathname: "/login", href: "https://example.com/login" },
+        document: { querySelector: () => null },
+      });
+      expect(result).toMatchObject({ ok: false, reason: "auth_required" });
+    },
+  );
 });

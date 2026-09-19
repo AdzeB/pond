@@ -1,0 +1,116 @@
+.results {
+  flex: none;
+  height: var(--results-height, auto);
+  max-height: 370px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: 8px;
+
+  &[data-sized] {
+    transition: height var(--ds-duration-medium) var(--ds-easing-snap);
+  }
+}
+
+.content {
+  padding: 6px;
+}
+
+.group + .group {
+  padding-top: 5px;
+  margin-top: 5px;
+  border-top: 1px solid var(--ds-gray-a3);
+}
+
+.group-label {
+  padding: 4px 8px;
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-gray-9);
+}
+
+.item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  min-height: 34px;
+  padding: 5px 8px;
+  color: var(--ds-gray-11);
+  text-align: left;
+  cursor: default;
+  background: transparent;
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  transition:
+    color var(--ds-duration-fast) var(--ds-easing-standard),
+    background var(--ds-duration-fast) var(--ds-easing-standard);
+}
+
+.item[aria-selected="true"],
+.item:hover {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-a3);
+}
+
+.icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  color: var(--ds-gray-9);
+  background: transparent;
+  border: 0;
+}
+
+.copy {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.label {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-medium);
+  white-space: nowrap;
+}
+
+.detail {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-9);
+  white-space: nowrap;
+}
+
+.group:not(:has(.item[id^="save:"])) .detail {
+  display: none;
+}
+
+.shortcut {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  opacity: 0.72;
+}
+
+@media (max-width: 620px) {
+  .detail {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .item,
+  .results[data-sized] {
+    transition: none;
+  }
+}

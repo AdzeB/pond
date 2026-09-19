@@ -14,9 +14,29 @@ Capture from the web requires the Pond extension:
 2. Load unpacked in Chrome (`chrome://extensions` → Developer mode).
 3. Open Pond once so it can register the native host, then click the Pond icon or right-click a page to save.
 
+### Raycast extension
+
+The Raycast extension searches your active Library, saves URLs, opens Saves,
+and switches recent Libraries. See
+[`apps/raycast/README.md`](apps/raycast/README.md) for setup.
+
+### CLI
+
+Install the local automation client from npm:
+
+```bash
+npm install --global @pond/cli
+pond auth authorize --token <token>
+pond doctor
+```
+
+Copy the Local API token from Pond Settings. The CLI launches Pond when needed
+and sends every Library operation through the authenticated loopback service.
+Run `pond --help` for commands and output formats.
+
 ## Development
 
-Requires Node.js 22 (see `.nvmrc`) and pnpm 11.
+Requires Node.js 24 (see `.nvmrc`) and pnpm 11.27.0.
 
 ```bash
 pnpm install
@@ -27,6 +47,19 @@ Extension dev (separate terminal):
 
 ```bash
 pnpm --filter @pond/extension dev
+```
+
+Raycast extension dev (separate terminal):
+
+```bash
+pnpm --dir apps/raycast develop
+```
+
+CLI development:
+
+```bash
+pnpm cli -- --help
+pnpm cli:build
 ```
 
 If native modules fail after an Electron upgrade:
@@ -54,7 +87,7 @@ Cursor, Claude, and other MCP hosts can search the same library. Pond speaks MCP
 }
 ```
 
-Copy the exact command from Settings → Agent. Pond does not host a public MCP URL.
+Copy the exact command from Settings → Model Context Protocol → Advanced. Pond does not host a public MCP URL.
 
 ## Library
 
@@ -92,4 +125,5 @@ adapter authors are expected to respect.
 - [Releasing](RELEASING.md)
 - [Contributing](CONTRIBUTING.md)
 - [Extension](apps/extension/README.md)
+- [Raycast Extension](apps/raycast/README.md)
 - [Supported File Formats](docs/supported-formats.md)

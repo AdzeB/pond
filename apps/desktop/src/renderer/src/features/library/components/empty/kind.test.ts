@@ -1,0 +1,45 @@
+import { describe, expect, it } from "vitest";
+import { libraryEmptyKind } from "./kind";
+
+const library = {
+  mode: "library" as const,
+  navKind: "all" as const,
+  hasActiveSearch: false,
+  hasActiveFilter: false,
+  libraryTotal: 13144,
+};
+
+describe("libraryEmptyKind", () => {
+  it("treats an empty folder as a folder, not a failed search", () => {
+    expect(
+      libraryEmptyKind({
+        ...library,
+        navKind: "folder",
+      }),
+    ).toBe("folder");
+  });
+
+  it("keeps search empty copy when a folder has filters applied", () => {
+    expect(
+      libraryEmptyKind({
+        ...library,
+        navKind: "folder",
+        hasActiveFilter: true,
+      }),
+    ).toBe("matches");
+  });
+
+  it("still invites import when the folder is empty and the library is too", () => {
+    expect(
+      libraryEmptyKind({
+        ...library,
+        navKind: "folder",
+        libraryTotal: 0,
+      }),
+    ).toBe("folder");
+  });
+
+  it("keeps the all-library empty state", () => {
+    expect(libraryEmptyKind({ ...library, libraryTotal: 0 })).toBe("library");
+  });
+});

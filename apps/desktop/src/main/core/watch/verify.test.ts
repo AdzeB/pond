@@ -29,17 +29,17 @@ const profiles: Array<{ source: Source; html: string }> = [
   },
 ];
 
-it.each(profiles)("confirms a real $source profile and uses its name", async ({
-  source,
-  html,
-}) => {
-  const result = await resolveWatchTarget(
-    source,
-    "alice",
-    async () => new Response(html),
-  );
-  expect(result).toMatchObject({ handle: "alice", display: "Alice" });
-});
+it.each(profiles)(
+  "confirms a real $source profile and uses its name",
+  async ({ source, html }) => {
+    const result = await resolveWatchTarget(
+      source,
+      "alice",
+      async () => new Response(html),
+    );
+    expect(result).toMatchObject({ handle: "alice", display: "Alice" });
+  },
+);
 
 it.each(profiles)("hides a missing $source account", async ({ source }) => {
   expect(
@@ -51,20 +51,18 @@ it.each(profiles)("hides a missing $source account", async ({ source }) => {
   ).toBeNull();
 });
 
-it.each(
-  profiles,
-)("does not mistake a different $source profile for the requested one", async ({
-  source,
-  html,
-}) => {
-  expect(
-    await resolveWatchTarget(
-      source,
-      "someone_else",
-      async () => new Response(html),
-    ),
-  ).toBeNull();
-});
+it.each(profiles)(
+  "does not mistake a different $source profile for the requested one",
+  async ({ source, html }) => {
+    expect(
+      await resolveWatchTarget(
+        source,
+        "someone_else",
+        async () => new Response(html),
+      ),
+    ).toBeNull();
+  },
+);
 
 it("rejects TikTok's successful generic page for a missing handle", async () => {
   const html =
@@ -78,17 +76,18 @@ it("rejects TikTok's successful generic page for a missing handle", async () => 
   ).toBeNull();
 });
 
-it.each([
-  200, 403, 429, 503,
-])("reports an unverified or blocked response (%s) as incomplete", async (status) => {
-  await expect(
-    resolveWatchTarget(
-      "instagram",
-      "alice",
-      async () => new Response("<html>Sign in</html>", { status }),
-    ),
-  ).rejects.toThrow();
-});
+it.each([200, 403, 429, 503])(
+  "reports an unverified or blocked response (%s) as incomplete",
+  async (status) => {
+    await expect(
+      resolveWatchTarget(
+        "instagram",
+        "alice",
+        async () => new Response("<html>Sign in</html>", { status }),
+      ),
+    ).rejects.toThrow();
+  },
+);
 
 it("does not turn a timeout into an account", async () => {
   await expect(
@@ -128,15 +127,15 @@ it("uses Pinterest's profile photo instead of its generic share card and removes
   });
 });
 
-it.each([
-  "javascript:alert(1)",
-  "https://example.com/default_open_graph.png",
-])("ignores unsafe or generic profile images: %s", async (avatar) => {
-  const html = `<meta property="og:title" content="Alice (@alice)"><meta property="og:image" content="${avatar}">`;
-  const result = await resolveWatchTarget(
-    "cosmos",
-    "alice",
-    async () => new Response(html),
-  );
-  expect(result).not.toHaveProperty("avatarUrl");
-});
+it.each(["javascript:alert(1)", "https://example.com/default_open_graph.png"])(
+  "ignores unsafe or generic profile images: %s",
+  async (avatar) => {
+    const html = `<meta property="og:title" content="Alice (@alice)"><meta property="og:image" content="${avatar}">`;
+    const result = await resolveWatchTarget(
+      "cosmos",
+      "alice",
+      async () => new Response(html),
+    );
+    expect(result).not.toHaveProperty("avatarUrl");
+  },
+);

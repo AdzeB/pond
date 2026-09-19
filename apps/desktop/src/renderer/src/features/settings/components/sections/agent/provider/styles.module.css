@@ -1,0 +1,36 @@
+.form {
+  display: flex;
+  flex-direction: column;
+}
+.status {
+  display: flex;
+  flex: none;
+  grid-area: description;
+  align-items: center;
+  justify-self: start;
+  color: var(--ds-green-11);
+}
+.setup {
+  grid-column: 1 / -1;
+  min-width: 0;
+  overflow-clip-margin: 8px;
+}
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.input {
+  width: 100%;
+}
+.error {
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-red-11);
+}
+.footer {
+  gap: 8px;
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: var(--ds-border-width) solid var(--ds-gray-6);
+}

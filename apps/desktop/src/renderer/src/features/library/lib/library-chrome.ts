@@ -1,4 +1,4 @@
-import type { DisplayPrefs } from "@/features/library/state/display-prefs";
+import type { DisplayPrefs } from "@/features/saves/state/display-prefs";
 
 const META_GAP_ABOVE = 12;
 const META_LINE_H = 14;

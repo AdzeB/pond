@@ -1,13 +1,9 @@
 import { IconPlusFill18 } from "@pond/icons/fill/18";
-import {
-  IconEyeOutline18,
-  IconFolderOpenOutline18,
-  IconUserPlusOutline18,
-} from "@pond/icons/outline/18";
 import { Menu } from "@pond/ui";
 import { useQueryClient } from "@tanstack/react-query";
+import { startConnect, startWatch } from "@/features/sources/lib/create";
+import { buildSourceNewMenuItems } from "@/features/sources/lib/create-menu";
 import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
-import { sourceFlow } from "@/features/sources/state/source-flow";
 import {
   sourceNewMenu,
   useSourceNewMenuOpen,
@@ -57,23 +53,11 @@ export function NewSourceMenu({
         <Menu.Positioner align="end" side="bottom">
           <Menu.Popup>
             <Menu.Items
-              items={[
-                {
-                  label: "Connect a Source",
-                  icon: <IconUserPlusOutline18 />,
-                  onClick: () => sourceFlow.open("connect-source"),
-                },
-                {
-                  label: "Watch Account",
-                  icon: <IconEyeOutline18 />,
-                  onClick: () => sourceFlow.open("watch-target"),
-                },
-                {
-                  label: "Watched Folder",
-                  icon: <IconFolderOpenOutline18 />,
-                  onClick: chooseWatchedFolder,
-                },
-              ]}
+              items={buildSourceNewMenuItems({
+                onConnect: (source) => void startConnect(source),
+                onWatch: startWatch,
+                onFolder: chooseWatchedFolder,
+              })}
             />
           </Menu.Popup>
         </Menu.Positioner>

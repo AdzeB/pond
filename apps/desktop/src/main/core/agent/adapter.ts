@@ -1,59 +1,101 @@
-import type { AnyTextAdapter } from "@tanstack/ai";
+import type { LanguageModel } from "ai";
+import { assistantCatalog } from "../../../shared/assistant";
 import type { AgentProviderId } from "./keys";
 
-export async function loadAdapter(input: {
+export async function loadModel(input: {
   provider: AgentProviderId;
   model: string;
   apiKey: string | null;
   baseUrl?: string;
-}): Promise<AnyTextAdapter | null> {
+}): Promise<LanguageModel | null> {
   const key = input.apiKey ?? "";
-  const { createModel, extendAdapter } = await import("@tanstack/ai");
+  const modelId = input.model || assistantCatalog(input.provider)?.model || "";
   if (input.provider === "anthropic") {
-    const { createAnthropicChat } = await import("@tanstack/ai-anthropic");
-    const model = input.model || "claude-opus-5";
-    const factory = extendAdapter(createAnthropicChat, [
-      createModel(model, ["text", "image"]),
-    ]);
-    return factory(model, key);
+    const { createAnthropic } = await import("@ai-sdk/anthropic");
+    return createAnthropic({ apiKey: key })(modelId);
   }
   if (input.provider === "gemini") {
-    const { createGeminiChat } = await import("@tanstack/ai-gemini");
-    const model = input.model || "gemini-3.1-pro-preview";
-    const factory = extendAdapter(createGeminiChat, [
-      createModel(model, ["text", "image"]),
-    ]);
-    return factory(model, key);
-  }
-  if (input.provider === "ollama") {
-    const { createOllamaChat } = await import("@tanstack/ai-ollama");
-    const host = (input.baseUrl ?? "http://127.0.0.1:11434").replace(
-      /\/v1\/?$/,
-      "",
-    );
-    return createOllamaChat(input.model || "llama3.2", host);
-  }
-  if (input.provider === "lmstudio" || input.provider === "compatible") {
-    const { openaiCompatibleText } = await import(
-      "@tanstack/ai-openai/compatible"
-    );
-    const baseURL =
-      input.baseUrl?.trim() ||
-      (input.provider === "lmstudio" ? "http://127.0.0.1:1234/v1" : "");
-    if (!baseURL) throw new Error("Configure an API base URL in Settings.");
-    return openaiCompatibleText(input.model || "gpt-5.6-sol", {
-      api: "chat-completions",
-      apiKey: key || "local",
-      baseURL,
-    });
+    const { createGoogleGenerativeAI } = await import("@ai-sdk/google");
+    return createGoogleGenerativeAI({ apiKey: key })(modelId);
   }
   if (input.provider === "openai") {
-    const { createOpenaiChat } = await import("@tanstack/ai-openai");
-    const model = input.model || "gpt-5.6-sol";
-    const factory = extendAdapter(createOpenaiChat, [
-      createModel(model, ["text", "image"]),
-    ]);
-    return factory(model, key);
+    const { createOpenAI } = await import("@ai-sdk/openai");
+    return createOpenAI({ apiKey: key }).chat(modelId);
+  }
+  if (input.provider === "azure") {
+    const { createAzure } = await import("@ai-sdk/azure");
+    const baseURL = input.baseUrl?.trim();
+    if (!baseURL) throw new Error("Enter a resource name in Settings.");
+    return createAzure({ apiKey: key, baseURL })(modelId);
+  }
+  if (input.provider === "xai") {
+    const { createXai } = await import("@ai-sdk/xai");
+    return createXai({ apiKey: key })(modelId);
+  }
+  if (input.provider === "mistral") {
+    const { createMistral } = await import("@ai-sdk/mistral");
+    return createMistral({ apiKey: key })(modelId);
+  }
+  if (input.provider === "groq") {
+    const { createGroq } = await import("@ai-sdk/groq");
+    return createGroq({ apiKey: key })(modelId);
+  }
+  if (input.provider === "cohere") {
+    const { createCohere } = await import("@ai-sdk/cohere");
+    return createCohere({ apiKey: key })(modelId);
+  }
+  if (input.provider === "togetherai") {
+    const { createTogetherAI } = await import("@ai-sdk/togetherai");
+    return createTogetherAI({ apiKey: key })(modelId);
+  }
+  if (input.provider === "fireworks") {
+    const { createFireworks } = await import("@ai-sdk/fireworks");
+    return createFireworks({ apiKey: key })(modelId);
+  }
+  if (input.provider === "deepinfra") {
+    const { createDeepInfra } = await import("@ai-sdk/deepinfra");
+    return createDeepInfra({ apiKey: key })(modelId);
+  }
+  if (input.provider === "cerebras") {
+    const { createCerebras } = await import("@ai-sdk/cerebras");
+    return createCerebras({ apiKey: key })(modelId);
+  }
+  if (input.provider === "perplexity") {
+    const { createPerplexity } = await import("@ai-sdk/perplexity");
+    return createPerplexity({ apiKey: key })(modelId);
+  }
+  if (input.provider === "baseten") {
+    const { createBaseten } = await import("@ai-sdk/baseten");
+    return createBaseten({ apiKey: key })(modelId);
+  }
+  if (input.provider === "deepseek") {
+    const { createDeepSeek } = await import("@ai-sdk/deepseek");
+    return createDeepSeek({ apiKey: key })(modelId);
+  }
+  if (input.provider === "ollama") {
+    const { createOpenAICompatible } = await import(
+      "@ai-sdk/openai-compatible"
+    );
+    const origin = (input.baseUrl ?? "http://127.0.0.1:11434").replace(
+      /\/v1\/?$/i,
+      "",
+    );
+    return createOpenAICompatible({
+      name: "ollama",
+      apiKey: key || "local",
+      baseURL: `${origin.replace(/\/$/, "")}/v1`,
+    })(modelId);
+  }
+  if (input.provider === "lmstudio") {
+    const { createOpenAICompatible } = await import(
+      "@ai-sdk/openai-compatible"
+    );
+    const baseURL = input.baseUrl?.trim() || "http://127.0.0.1:1234/v1";
+    return createOpenAICompatible({
+      name: "lmstudio",
+      apiKey: key || "local",
+      baseURL: baseURL.replace(/\/$/, ""),
+    })(modelId);
   }
   return null;
 }

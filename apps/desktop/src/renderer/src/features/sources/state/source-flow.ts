@@ -2,18 +2,10 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
 export type SourceFlowPage =
-  | "connect-source"
   | "connect-help"
   | "connect-wait"
   | "watch-help"
-  | "watch-target"
-  | "account-detail"
-  | "account-profile"
-  | "account-maintenance"
-  | "account-options"
-  | "watch-detail"
-  | "watch-profile"
-  | "watch-options";
+  | "watch-target";
 
 interface SourceFlowState {
   stack: SourceFlowPage[];

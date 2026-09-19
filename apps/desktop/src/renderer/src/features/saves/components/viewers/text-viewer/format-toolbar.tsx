@@ -8,6 +8,7 @@ import {
   IconBlockquoteOutline18,
   IconBulletListOutline18,
   IconCaretMinimizeOutline18,
+  IconChatBubblePenOutline18,
   IconCheckListOutline18,
   IconCode2Outline18,
   IconCodeOutline18,
@@ -16,7 +17,6 @@ import {
   IconHeading3Outline18,
   IconHeading4Outline18,
   IconLink2Outline18,
-  IconMessageSparkleOutline18,
   IconOrderedListOutline18,
   IconTextBoldOutline18,
   IconTextItalicOutline18,
@@ -41,7 +41,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { libraryChrome } from "@/features/library/state/library-chrome";
+import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { $inCollapsible } from "./collapsible";
 import {
@@ -541,9 +541,9 @@ export function FormatToolbar() {
                   <Toolbar.Separator />
                   <FormatButton
                     label="Agent"
-                    onClick={() => libraryChrome.setAgentOpen(true)}
+                    onClick={() => saveLibraryBridge.setAgentOpen(true)}
                   >
-                    <IconMessageSparkleOutline18 />
+                    <IconChatBubblePenOutline18 />
                   </FormatButton>
                 </Toolbar.Root>
               )}

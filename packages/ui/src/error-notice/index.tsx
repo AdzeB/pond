@@ -8,10 +8,12 @@ export function ErrorNotice({
   title = "Couldn't finish this response",
   children,
   onRetry,
+  actions,
 }: {
   title?: string;
   children?: ReactNode;
   onRetry?: () => void;
+  actions?: ReactNode;
 }) {
   return (
     <Reveal>
@@ -28,6 +30,7 @@ export function ErrorNotice({
             Retry
           </Button>
         )}
+        {actions}
       </div>
     </Reveal>
   );

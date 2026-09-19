@@ -3,21 +3,25 @@ import {
   redirect,
   useRouterState,
 } from "@tanstack/react-router";
-import { SettingsDetail } from "@/features/settings/components/detail/detail";
+import { SettingsDetail } from "@/features/settings/components/detail";
 import {
   rememberSettingsSection,
-  resolveSettingsSection,
+  resolveSettingsLocation,
   settingsHref,
 } from "@/features/settings/lib/open-settings";
 
 export const Route = createFileRoute("/_library/settings/$section")({
   beforeLoad: ({ params, location }) => {
     if (params.section === "tags") throw redirect({ href: "/tags" });
-    const resolved = resolveSettingsSection(params.section);
-    rememberSettingsSection(resolved);
-    if (resolved === params.section) return;
-    const hash = location.hash ? `#${location.hash.replace(/^#/, "")}` : "";
-    throw redirect({ href: settingsHref(resolved, hash) });
+    const currentHash = location.hash?.replace(/^#/, "") || null;
+    const resolved = resolveSettingsLocation(params.section, currentHash ?? "");
+    rememberSettingsSection(resolved.section);
+    if (resolved.section === params.section && resolved.hash === currentHash) {
+      return;
+    }
+    throw redirect({
+      href: settingsHref(resolved.section, resolved.hash ?? undefined),
+    });
   },
   component: SettingsSectionRoute,
 });

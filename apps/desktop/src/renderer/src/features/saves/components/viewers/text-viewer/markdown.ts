@@ -270,16 +270,10 @@ function fileName(href: string): string {
   }
 }
 
-function linkLabel(node: { children?: unknown; alt?: string | null }): string {
-  if (typeof node.alt === "string" && node.alt) return node.alt;
-  const children = node.children;
-  if (!Array.isArray(children)) return "";
-  return children
-    .map((child) =>
-      child && typeof child === "object" && "value" in child
-        ? String(child.value ?? "")
-        : "",
-    )
+function linkLabel(node: MdastParent & { alt?: string | null }): string {
+  if (node.alt) return node.alt;
+  return node.children
+    .map((child) => ("value" in child ? String(child.value ?? "") : ""))
     .join("");
 }
 

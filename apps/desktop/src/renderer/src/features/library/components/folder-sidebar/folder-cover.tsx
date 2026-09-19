@@ -4,7 +4,7 @@ import { pickCardUnit } from "@/features/saves/lib/media/units";
 import { thumbUrlFor } from "@/features/saves/lib/media/url";
 import { normalise } from "@/features/saves/lib/reconcile";
 import type { Save } from "@/features/saves/types";
-import styles from "./folder-sidebar.module.css";
+import styles from "./styles.module.css";
 
 export function folderCoverUrl(save: Save): string | null {
   const unit = pickCardUnit(save);

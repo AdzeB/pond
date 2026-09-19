@@ -1,7 +1,7 @@
 import { IconFolderOutline18 } from "@pond/icons/outline/18";
 import { Sidebar } from "@pond/ui";
 import { InlineNameEditor } from "@/shared/components/inline-name-editor";
-import styles from "./folder-sidebar.module.css";
+import styles from "./styles.module.css";
 
 export function FolderNameEditor({
   name,

@@ -10,24 +10,52 @@ export interface FilterOption {
   swatch?: string;
 }
 
-export const FILTER_GROUPS: readonly (readonly FieldId[])[] = [
-  ["tags", "folder", "source", "list"],
-  [
-    "type",
-    "format",
-    "color",
-    "shape",
-    "aspect",
-    "duration",
-    "fontFamily",
-    "bpm",
-    "fileCount",
-    "rating",
-  ],
-  ["fileSize", "width"],
-  ["savedAt", "modifiedAt", "publishedAt"],
-  ["creator", "account", "note", "caption", "transcript", "comment", "url"],
-];
+export const FILTER_SECTIONS = [
+  {
+    label: "Organize",
+    fields: ["tags", "folder", "source", "list"],
+  },
+  {
+    label: "Media",
+    fields: [
+      "type",
+      "format",
+      "color",
+      "shape",
+      "aspect",
+      "duration",
+      "fontFamily",
+      "bpm",
+      "fileCount",
+      "fileSize",
+      "width",
+    ],
+  },
+  {
+    label: "Details",
+    fields: [
+      "rating",
+      "sensitiveContent",
+      "creator",
+      "account",
+      "note",
+      "caption",
+      "transcript",
+      "comment",
+      "url",
+    ],
+  },
+  {
+    label: "Dates",
+    fields: ["savedAt", "modifiedAt", "publishedAt"],
+  },
+] as const satisfies readonly {
+  label: string;
+  fields: readonly FieldId[];
+}[];
+
+export const FILTER_GROUPS: readonly (readonly FieldId[])[] =
+  FILTER_SECTIONS.map(({ fields }) => fields);
 
 export function fieldMatchesQuery(
   field: FieldId,

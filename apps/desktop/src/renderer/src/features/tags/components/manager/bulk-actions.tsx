@@ -1,7 +1,7 @@
 import { Button, DataTable, Dialog } from "@pond/ui";
 import type { MutableRefObject } from "react";
 import { tagOperations } from "@/features/tags/operations/tag-client";
-import styles from "./manager.module.css";
+import styles from "./styles.module.css";
 
 function promptBulkMerge(names: string[], onDone: () => void) {
   const count = names.length;

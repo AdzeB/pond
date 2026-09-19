@@ -3,7 +3,7 @@ import { extractRawPreviewJpeg } from "./raw-preview";
 
 it("returns the trailing JPEG in a fake RAW container", () => {
   const jpeg = Buffer.from(
-    "ffd8ffe000104a46494600010100000100010000" + "ff".repeat(4096) + "ffd9",
+    `ffd8ffe000104a46494600010100000100010000${"ff".repeat(4096)}ffd9`,
     "hex",
   );
   const container = Buffer.concat([Buffer.from("CFA0"), jpeg]);

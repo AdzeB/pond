@@ -1,0 +1,12 @@
+import type { RawImage } from "@huggingface/transformers";
+import { inferSensitiveContent } from "./inference-client";
+
+export {
+  aggregateSensitiveScores,
+  SENSITIVE_CONTENT_MODEL_VERSION,
+  sensitiveProbabilitiesFromLogits,
+} from "./sensitive-content-contract";
+
+export function classifySensitiveImages(images: RawImage[]): Promise<number[]> {
+  return inferSensitiveContent(images);
+}

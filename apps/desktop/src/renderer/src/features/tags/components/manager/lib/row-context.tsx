@@ -21,7 +21,7 @@ import {
 } from "@/features/tags/components/group-context-menu/group-context-menu";
 import { tagOperations } from "@/features/tags/operations/tag-client";
 import { getAppRouter } from "@/shared/lib/app-router";
-import { useShortcutBindings } from "@/shared/lib/shortcuts";
+import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
 import { useTagsTable } from "./context";
 import type { TagsRowData } from "./types";
 
@@ -71,9 +71,10 @@ export function TagRowProvider({
     await tagOperations.rename(isGroup ? "group" : "tag", name, next);
   }
 
-  useHotkey(shortcuts["tags.rename"].keys!, () => startRename(), {
+  useHotkey(bindingKeys(shortcuts, "tags.rename"), () => startRename(), {
     target: rowRef,
     enabled: !renaming,
+    ignoreInputs: true,
   });
 
   function confirmDelete() {

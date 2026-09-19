@@ -3,6 +3,7 @@ import { autoTitleEnricher } from "./enrichers/auto-title";
 import { captionEnricher } from "./enrichers/caption";
 import { clipEnricher } from "./enrichers/clip";
 import { ocrEnricher } from "./enrichers/ocr";
+import { sensitiveContentEnricher } from "./enrichers/sensitive-content";
 import { suggestedTagsEnricher } from "./enrichers/suggested-tags";
 import { textEmbeddingEnricher } from "./enrichers/text-embedding";
 import { transcriptEnricher } from "./enrichers/transcript";
@@ -14,6 +15,7 @@ export const ENRICHERS: ReadonlyArray<Enricher> = [
   transcriptEnricher,
   clipEnricher,
   aestheticEnricher,
+  sensitiveContentEnricher,
   textEmbeddingEnricher,
   autoTitleEnricher,
   suggestedTagsEnricher,

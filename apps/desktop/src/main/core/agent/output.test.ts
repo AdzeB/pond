@@ -49,15 +49,18 @@ it("still rejects records when the user explicitly asks to stop dumping JSON", (
   ).toBeTruthy();
 });
 
-it("rejects false Library refusals and invented Save references", () => {
-  expect(
-    evidenceAnswerProblem(
-      "I can't provide pictures from your saved library.",
-      2,
-    ),
-  ).toBe("false evidence refusal");
+it("rejects invented Save references", () => {
   expect(evidenceAnswerProblem("See [Film](#save-3).", 2)).toBe(
     "unknown evidence reference",
   );
   expect(evidenceAnswerProblem("See [Film](#save-2).", 2)).toBeNull();
+});
+
+it("does not classify the meaning of the model's prose", () => {
+  expect(
+    evidenceAnswerProblem(
+      "I can't see images clearly enough to compare them.",
+      2,
+    ),
+  ).toBeNull();
 });

@@ -19,7 +19,7 @@ import {
 import { ColorField, Input, Select, Settings, Slider } from "@pond/ui";
 import { z } from "zod";
 import type { Binding } from "@/features/settings/components/engine/engine";
-import { PresetSelect } from "@/features/settings/components/sections/theme/theme";
+import { PresetSelect } from "@/features/settings/components/sections/theme";
 import { clamp as clampNum } from "@/shared/lib/math";
 
 const DEFAULTS = DEFAULT_PREFS.preferences;

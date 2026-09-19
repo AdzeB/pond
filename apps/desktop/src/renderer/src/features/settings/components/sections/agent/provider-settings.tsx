@@ -1,128 +1,243 @@
-import { IconPlusOutline18 } from "@pond/icons/outline/18";
 import { Menu, Settings } from "@pond/ui";
-import { ASSISTANT_MODELS, type AssistantProvider } from "@shared/assistant";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useRef, useState } from "react";
-import { gentleSpring } from "@/shared/lib/motion";
-import styles from "./agent.module.css";
-import { DefaultModels } from "./default-models";
+import {
+  type AssistantCatalog,
+  type AssistantProvider,
+  assistantCatalog,
+  offeredProviders,
+} from "@shared/assistant";
+import { type ReactNode, useState } from "react";
+import { AnimateHeight } from "@/shared/components/animate-height";
 import { ProviderLogo } from "./icons";
-import { ProviderCard } from "./provider/provider";
+import { ProviderConnection } from "./provider";
+import styles from "./styles.module.css";
 import type { AgentPrefs, KeyRow } from "./types";
+
+export const GROUPS = [
+  {
+    kind: "cloud" as const,
+    title: "Cloud Providers",
+    description: "Use your API keys. Requests go directly to each provider.",
+    empty: "No cloud providers",
+  },
+  {
+    kind: "local" as const,
+    title: "Local Providers",
+    description: "Connect to a model server you run.",
+    empty: "No local providers",
+  },
+];
+
+export function isListedProvider(
+  provider: AssistantProvider,
+  agent: AgentPrefs | null | undefined,
+  keys: KeyRow[],
+) {
+  return (
+    Boolean(agent?.addedProviders?.includes(provider)) ||
+    Boolean(keys.find((row) => row.provider === provider)?.hasKey)
+  );
+}
+
+export function addedProvidersWith(
+  added: string[] | undefined,
+  keys: KeyRow[],
+  provider: AssistantProvider,
+) {
+  return [
+    ...new Set([
+      ...(added ?? []).filter((id) => id !== provider),
+      ...keys.filter((row) => row.hasKey).map((row) => row.provider),
+      provider,
+    ]),
+  ];
+}
+
+export function listedCatalog(
+  kind: "cloud" | "local",
+  agent: AgentPrefs | null | undefined,
+  keys: KeyRow[],
+) {
+  const seen = new Set<string>();
+  const listed: AssistantCatalog[] = [];
+  const add = (id: string) => {
+    if (seen.has(id)) return;
+    const entry = assistantCatalog(id);
+    if (!entry) return;
+    if (kind === "local" ? !entry.local : entry.local) return;
+    if (!isListedProvider(entry.id, agent, keys)) return;
+    seen.add(id);
+    listed.push(entry);
+  };
+  for (const id of agent?.addedProviders ?? []) {
+    if (keys.find((row) => row.provider === id)?.hasKey) add(id);
+  }
+  for (const row of keys) {
+    if (row.hasKey) add(row.provider);
+  }
+  for (const id of agent?.addedProviders ?? []) add(id);
+  return listed;
+}
+
+function ProviderList({ children }: { children: ReactNode }) {
+  return (
+    <Settings.List>
+      <AnimateHeight initial={false}>
+        <div className={styles["list-body"]}>{children}</div>
+      </AnimateHeight>
+    </Settings.List>
+  );
+}
+
+function remainingProviders(
+  kind: "cloud" | "local",
+  agent: AgentPrefs,
+  keys: KeyRow[],
+  search: string,
+) {
+  return matchingProviders(
+    offeredProviders(kind).filter(
+      (entry) => !isListedProvider(entry.id, agent, keys),
+    ),
+    search,
+  );
+}
 
 export function ProviderSettings({
   agent,
   keys,
+  onAdd,
   onPatchAgent,
   onRefresh,
 }: {
   agent: AgentPrefs;
   keys: KeyRow[];
-  onPatchAgent: (patch: Partial<AgentPrefs>) => Promise<void>;
+  onAdd: (provider: AssistantProvider) => void;
+  onPatchAgent: (patch: Partial<AgentPrefs>) => void | Promise<void>;
   onRefresh: () => Promise<void>;
 }) {
-  const addRef = useRef<HTMLButtonElement>(null);
-  const [drafts, setDrafts] = useState<AssistantProvider[]>([]);
-  const reduceMotion = useReducedMotion();
-  const transition = reduceMotion ? { duration: 0 } : gentleSpring;
-  const providers = ASSISTANT_MODELS.filter(
-    (catalog) =>
-      drafts.includes(catalog.id) ||
-      keys.some((row) => row.provider === catalog.id && row.hasKey),
-  );
-  const available = ASSISTANT_MODELS.filter(
-    (catalog) => !providers.includes(catalog),
-  );
   return (
     <>
-      <Settings.Section aria-label="Providers">
-        <Settings.List className={styles.providers}>
-          <div className={styles.sectionHeader}>
-            <h2>Providers</h2>
-            <p>Connect the AI providers you want to use.</p>
-          </div>
-          <div className={styles.providerBody}>
-            <AnimatePresence initial={false}>
-              {providers.length === 0 ? (
-                <motion.div
-                  key="empty"
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={transition}
-                  className={styles.providerReveal}
-                >
-                  <Settings.Item>
-                    <Settings.ItemDetails>
-                      <Settings.ItemTitle>
-                        No providers connected
-                      </Settings.ItemTitle>
-                      <Settings.ItemDescription>
-                        Add a provider to choose the models Pond uses.
-                      </Settings.ItemDescription>
-                    </Settings.ItemDetails>
-                  </Settings.Item>
-                </motion.div>
-              ) : (
-                providers.map((catalog) => (
-                  <motion.div
-                    key={catalog.id}
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={transition}
-                    className={styles.providerReveal}
-                  >
-                    <ProviderCard
-                      catalog={catalog}
-                      row={keys.find((row) => row.provider === catalog.id)}
-                      agent={agent}
-                      onPatchAgent={onPatchAgent}
-                      onRefresh={onRefresh}
-                      onDismiss={() => {
-                        setDrafts((current) =>
-                          current.filter((id) => id !== catalog.id),
-                        );
-                        addRef.current?.focus();
-                      }}
-                    />
-                  </motion.div>
+      {GROUPS.map((group) => {
+        const listed = listedCatalog(group.kind, agent, keys);
+        return (
+          <Settings.Section key={group.title} aria-label={group.title}>
+            <Settings.SectionDetails>
+              <Settings.SectionTitle>{group.title}</Settings.SectionTitle>
+              <Settings.SectionAction>
+                <AddProviderMenu
+                  kind={group.kind}
+                  agent={agent}
+                  keys={keys}
+                  onAdd={onAdd}
+                />
+              </Settings.SectionAction>
+            </Settings.SectionDetails>
+            <ProviderList>
+              {listed.length ? (
+                listed.map((entry) => (
+                  <ProviderConnection
+                    key={entry.id}
+                    catalog={entry}
+                    row={keys.find((item) => item.provider === entry.id)}
+                    agent={agent}
+                    onPatchAgent={onPatchAgent}
+                    onRefresh={onRefresh}
+                  />
                 ))
+              ) : (
+                <Settings.Item>
+                  <Settings.ItemDetails>
+                    <Settings.ItemTitle>{group.empty}</Settings.ItemTitle>
+                  </Settings.ItemDetails>
+                </Settings.Item>
               )}
-            </AnimatePresence>
-            <div className={styles.addProvider}>
-              <Menu.Root>
-                <Menu.Trigger
-                  ref={addRef}
-                  size="sm"
-                  variant="secondary"
-                  disabled={!available.length}
-                >
-                  <IconPlusOutline18 /> Add Provider
-                </Menu.Trigger>
-                <Menu.Portal>
-                  <Menu.Positioner align="start">
-                    <Menu.Popup>
-                      {available.map((catalog) => (
-                        <Menu.Item
-                          key={catalog.id}
-                          onClick={() =>
-                            setDrafts((current) => [...current, catalog.id])
-                          }
-                        >
-                          <ProviderLogo provider={catalog.id} />
-                          {catalog.provider}
-                        </Menu.Item>
-                      ))}
-                    </Menu.Popup>
-                  </Menu.Positioner>
-                </Menu.Portal>
-              </Menu.Root>
-            </div>
-          </div>
-        </Settings.List>
-      </Settings.Section>
-      <DefaultModels agent={agent} keys={keys} onPatchAgent={onPatchAgent} />
+            </ProviderList>
+          </Settings.Section>
+        );
+      })}
     </>
+  );
+}
+
+function matchingProviders(
+  providers: ReturnType<typeof offeredProviders>,
+  search: string,
+) {
+  const terms = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (!terms.length) return providers;
+  return providers.filter((entry) => {
+    const text = `${entry.provider} ${entry.id}`.toLowerCase();
+    return terms.every((term) => text.includes(term));
+  });
+}
+
+function AddProviderMenu({
+  kind,
+  agent,
+  keys,
+  onAdd,
+}: {
+  kind: "cloud" | "local";
+  agent: AgentPrefs;
+  keys: KeyRow[];
+  onAdd: (provider: AssistantProvider) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+  const remaining = remainingProviders(kind, agent, keys, "");
+  const providers = remainingProviders(kind, agent, keys, search);
+  if (!remaining.length) return null;
+  return (
+    <Menu.Root
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) setSearch("");
+      }}
+    >
+      <Menu.Trigger
+        size="xs"
+        variant="secondary"
+        aria-label={
+          kind === "local" ? "Add Local Provider" : "Add Cloud Provider"
+        }
+      >
+        Add Provider
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Positioner align="end" sideOffset={8}>
+          <Menu.Popup
+            className={styles["add-popup"]}
+            aria-label={
+              kind === "local" ? "Add Local Provider" : "Add Cloud Provider"
+            }
+          >
+            <Menu.Input
+              autoFocus
+              aria-label="Search Providers"
+              placeholder="Search…"
+              value={search}
+              onValueChange={setSearch}
+            />
+            <Menu.List className={styles["add-options"]}>
+              {providers.length > 0 ? (
+                <Menu.Items
+                  items={providers.map((entry) => ({
+                    id: entry.id,
+                    label: entry.provider,
+                    icon: <ProviderLogo provider={entry.id} />,
+                    onClick: () => onAdd(entry.id),
+                  }))}
+                />
+              ) : (
+                <Menu.Item disabled>
+                  <Menu.ItemLabel>No matches</Menu.ItemLabel>
+                </Menu.Item>
+              )}
+            </Menu.List>
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }

@@ -1,9 +1,4 @@
-import {
-  defineSound,
-  ensureReady,
-  type PlayOptions,
-  type SoundDefinition,
-} from "@web-kits/audio";
+import { ensureReady, type PlayOptions } from "@web-kits/audio";
 import { getPrefsSnapshot } from "@/features/settings/state/prefs";
 import { SOUND_PATCH, type UiSoundName } from "@/shared/lib/sound-packs";
 
@@ -62,24 +57,4 @@ export function playTrashThunk(): void {
 
 export function previewUiSound(): void {
   playUiTap();
-}
-
-export function playUiPreview(name: UiSoundName): void {
-  const spread = name === "success" ? 16 : 28;
-  const opts: PlayOptions = {
-    detune: (Math.random() - 0.5) * spread,
-  };
-  void ensureReady()
-    .then(() => {
-      SOUND_PATCH.play(name, opts);
-    })
-    .catch(() => {});
-}
-
-export function playUiDefinition(definition: SoundDefinition): void {
-  void ensureReady()
-    .then(() => {
-      defineSound(definition)();
-    })
-    .catch(() => {});
 }

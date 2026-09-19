@@ -293,35 +293,75 @@ const storage = z.object({
   watchIntervalMinutes: z.number().catch(5),
 });
 
+export const AgentReasoningSchema = z.enum([
+  "provider-default",
+  "none",
+  "minimal",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+]);
+export type AgentReasoning = z.infer<typeof AgentReasoningSchema>;
+
+export const AgentContextChoiceSchema = z.union([
+  z.literal("auto"),
+  z.number().int().min(4_096).max(2_000_000),
+]);
+export type AgentContextChoice = z.infer<typeof AgentContextChoiceSchema>;
+
+export const AgentModelOptionsSchema = z.object({
+  fast: z.boolean().catch(false),
+  context: AgentContextChoiceSchema.catch("auto"),
+  reasoning: AgentReasoningSchema.catch("provider-default"),
+});
+export type AgentModelOptions = z.infer<typeof AgentModelOptionsSchema>;
+
+export const AgentRunControlsSchema = z.object({
+  fast: z.boolean(),
+  contextTokens: z.number().int().min(4_096).max(2_000_000),
+  reasoning: AgentReasoningSchema,
+});
+export type AgentRunControls = z.infer<typeof AgentRunControlsSchema>;
+
 const agent = z.object({
+  userProfile: z.string().max(8000).optional(),
+  responseInstructions: z.string().max(8000).optional(),
   languageModel: z
     .string()
     .catch("")
     .transform((value) => (value === "minnow" ? "" : value)),
-  compatibleBaseUrl: z.string().catch(""),
+  azureResourceName: z.string().catch(""),
   ollamaBaseUrl: z.string().catch("http://127.0.0.1:11434/v1"),
   lmstudioBaseUrl: z.string().catch("http://127.0.0.1:1234/v1"),
-  compatibleModelId: z.string().catch("gpt-5.6-sol"),
   ollamaModelId: z.string().catch("llama3.2"),
   lmstudioModelId: z.string().catch("local"),
   modelIds: z.record(z.string(), z.string()).catch({}),
+  modelOptions: z.record(z.string(), AgentModelOptionsSchema).catch({}),
   customModelIds: z.record(z.string(), z.array(z.string())).optional(),
   visibleModelIds: z.record(z.string(), z.array(z.string())).optional(),
   enabledKeys: z.record(z.string(), z.boolean()).catch({}),
+  addedProviders: z.array(z.string()).catch([]),
   connectedLocalProviders: z.record(z.string(), z.boolean()).optional(),
   visionModel: z.string().catch(""),
   visionModelId: z.string().optional(),
+  mcpSearch: z.boolean().catch(true),
+  mcpOpen: z.boolean().catch(true),
+  mcpActions: z.boolean().catch(true),
+  mcpExport: z.boolean().catch(true),
 });
 
 const ai = z.object({
   nlCompiler: z.boolean().catch(false),
   semanticSearch: z.boolean().catch(false),
-  embedModelId: z.string().catch("Xenova/all-MiniLM-L6-v2"),
+  embedModelId: z.string().catch(""),
   enableCaption: z.boolean().catch(false),
   enableOcr: z.boolean().catch(false),
   enableTranscript: z.boolean().catch(false),
   enableClip: z.boolean().catch(false),
   enableAesthetic: z.boolean().catch(false),
+  enableSensitiveContent: z.boolean().catch(false),
+  blurSensitiveThumbnails: z.boolean().catch(false),
   enableAutoTitle: z.boolean().catch(false),
   enableSuggestedTags: z.boolean().catch(false),
   captionModelId: z.string().catch(""),

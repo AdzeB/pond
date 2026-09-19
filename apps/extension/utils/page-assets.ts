@@ -5,7 +5,6 @@ export interface PageAssetFolder {
 
 export interface PageAssetSelection {
   urls: string[];
-  collect: boolean;
   originUrl: string;
   title: string;
   tagText: string;
@@ -64,10 +63,6 @@ export async function pickPageAssets(
   const count = document.createElement("span");
   count.className = "count";
   count.setAttribute("aria-live", "polite");
-  const collectLabel = document.createElement("label");
-  const collect = document.createElement("input");
-  collect.type = "checkbox";
-  collectLabel.append(collect, " Categorize in Pond");
   const tagsLabel = document.createElement("label");
   tagsLabel.append("Tags ");
   const tagsInput = document.createElement("input");
@@ -95,7 +90,7 @@ export async function pickPageAssets(
   const save = document.createElement("button");
   save.className = "save";
   save.textContent = "Save Selected";
-  footer.append(count, collectLabel, tagsLabel, folders, save);
+  footer.append(count, tagsLabel, folders, save);
   dialog.append(header, grid, footer);
   shadow.append(dialog);
   for (const name of ["click", "keydown", "keyup", "pointerdown", "pointerup"])
@@ -169,7 +164,6 @@ export async function pickPageAssets(
     save.onclick = () =>
       finish({
         urls: [...selected],
-        collect: collect.checked,
         originUrl: location.href,
         title: document.title,
         tagText: tagsInput.value,

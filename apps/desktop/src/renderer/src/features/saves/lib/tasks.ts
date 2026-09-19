@@ -5,6 +5,7 @@ import {
   DISABLED_HINTS,
   rebuildVisualIndex,
   recaption,
+  reclassifySensitiveContent,
   reembed,
   reocr,
   retranscribe,
@@ -119,6 +120,17 @@ const TASKS: readonly LibraryTask[] = [
     selectable: true,
     precondition: gate("clip"),
     run: rebuildVisualIndex,
+  },
+  {
+    id: "sensitive-content",
+    label: "Check Sensitive Content",
+    description: "Check image and video content again.",
+    action: "Re-run",
+    group: "reprocess",
+    keywords: ["sensitive", "nsfw", "safety"],
+    selectable: true,
+    precondition: gate("sensitiveContent"),
+    run: reclassifySensitiveContent,
   },
 ];
 

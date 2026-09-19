@@ -1,20 +1,31 @@
+import type { EagleImportProgress } from "@shared/saves-import-contracts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   closeDuplicateReview,
   duplicateReview,
 } from "@/features/library/state/duplicate-review";
-import { libraryViewContext } from "@/features/library/state/library-view-context";
-import { selection } from "@/features/library/state/selection";
+import { selection } from "@/features/saves/state/selection";
+import { libraryViewContext } from "@/features/saves/state/view-context";
 import { createNewActions, type NewActionServices } from "./actions";
 
 const prompt = vi.fn<NewActionServices["prompt"]>();
 const notify = vi.fn<NewActionServices["notify"]>();
+const updateNotification = vi.fn<NewActionServices["updateNotification"]>();
 const openSave = vi.fn<NewActionServices["openSave"]>();
 const folders = { refresh: vi.fn(async () => {}) };
 const openSource = vi.fn<NewActionServices["openSource"]>();
 const selectSave = vi.fn<NewActionServices["selectSave"]>();
 const currentFolderId = vi.fn<NewActionServices["currentFolderId"]>(() => null);
+let eagleImportProgress: ((progress: EagleImportProgress) => void) | null =
+  null;
+const unsubscribeEagleImportProgress = vi.fn();
+const onEagleImportProgress = vi.fn<NewActionServices["onEagleImportProgress"]>(
+  (callback) => {
+    eagleImportProgress = callback;
+    return unsubscribeEagleImportProgress;
+  },
+);
 const {
   createNote,
   createBlankDocument,
@@ -28,15 +39,19 @@ const {
   newSource,
   newTag,
   parseImportLinks,
+  rescanLibrary,
   runNewAction,
+  verifyIntegrity,
 } = createNewActions({
   prompt,
   notify,
+  updateNotification,
   openSave,
   refreshFolders: folders.refresh,
   openSource,
   selectSave,
   currentFolderId,
+  onEagleImportProgress,
 });
 
 const query = vi.fn();
@@ -46,6 +61,7 @@ describe("new menu actions", () => {
     vi.clearAllMocks();
     query.mockReset();
     currentFolderId.mockReturnValue(null);
+    eagleImportProgress = null;
     vi.stubGlobal("window", { pond: { query } });
   });
   afterEach(() => {
@@ -229,17 +245,40 @@ describe("new menu actions", () => {
   });
 
   it("opens the correct source setup flow", () => {
-    newSource("connect");
-    expect(openSource).toHaveBeenLastCalledWith("connect");
-    newSource("watch");
-    expect(openSource).toHaveBeenLastCalledWith("watch");
+    newSource("connect", "instagram");
+    expect(openSource).toHaveBeenLastCalledWith("connect", "instagram");
+    newSource("watch", "youtube");
+    expect(openSource).toHaveBeenLastCalledWith("watch", "youtube");
   });
 
   it("refreshes folders after importing Eagle and reports partial results", async () => {
     query
       .mockResolvedValueOnce({ ok: true, path: "/tmp/design.library" })
-      .mockResolvedValueOnce({ ok: true, imported: 2, skipped: 3, failed: 1 });
+      .mockImplementationOnce(async (_name, input) => {
+        eagleImportProgress?.({
+          id: input.progressId,
+          processed: 6,
+          total: 10,
+          imported: 2,
+          skipped: 3,
+          failed: 1,
+        });
+        return { ok: true, imported: 2, skipped: 3, failed: 1 };
+      });
     await importEagle();
+    expect(updateNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Importing Eagle library",
+        description: "6 of 10 items",
+        progress: {
+          label: "Eagle library import progress",
+          detail: "2 imported · 3 skipped · 1 failed",
+          value: 6,
+          max: 10,
+        },
+      }),
+    );
+    expect(unsubscribeEagleImportProgress).toHaveBeenCalledOnce();
     expect(folders.refresh).toHaveBeenCalledOnce();
     expect(notify).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -286,6 +325,63 @@ describe("new menu actions", () => {
         title: "Imported 4 Saves",
         description: "2 skipped",
       }),
+    );
+  });
+
+  it("reports a completed library rescan", async () => {
+    query.mockResolvedValue({ updated: 3, total: 1200 });
+    await rescanLibrary();
+    expect(query).toHaveBeenCalledExactlyOnceWith("library.rescan", {});
+    expect(notify).toHaveBeenLastCalledWith(
+      expect.objectContaining({ title: "Updated 3 of 1200 saves" }),
+    );
+  });
+
+  it("says the library is up to date when rescan changes nothing", async () => {
+    query.mockResolvedValue({ updated: 0, total: 1200 });
+    await rescanLibrary();
+    expect(notify).toHaveBeenLastCalledWith(
+      expect.objectContaining({ title: "Library is up to date" }),
+    );
+  });
+
+  it("reports a healthy integrity check", async () => {
+    query.mockResolvedValue({
+      ok: true,
+      missing: [],
+      orphans: [],
+      errors: {},
+    });
+    await verifyIntegrity();
+    expect(query).toHaveBeenCalledExactlyOnceWith(
+      "library.verifyIntegrity",
+      {},
+    );
+    expect(notify).toHaveBeenLastCalledWith(
+      expect.objectContaining({ title: "Library looks healthy" }),
+    );
+  });
+
+  it("says what failed when files are missing", async () => {
+    query.mockResolvedValue({
+      ok: true,
+      missing: ["a", "b"],
+      orphans: ["c"],
+      errors: {},
+    });
+    await verifyIntegrity();
+    expect(notify).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        title: "2 saves are missing from disk. 1 file isn't in the index",
+        description: "Reveal the Library in Finder to check, or rescan.",
+      }),
+    );
+  });
+
+  it("surfaces a failed integrity check", async () => {
+    query.mockResolvedValue({ ok: false, reason: "internal_error" });
+    await expect(verifyIntegrity()).rejects.toThrow(
+      "Couldn't verify the library. Try again.",
     );
   });
 });

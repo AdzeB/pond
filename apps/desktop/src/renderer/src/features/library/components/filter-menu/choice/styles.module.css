@@ -1,0 +1,14 @@
+.options {
+  max-height: min(320px, calc(var(--available-height) - 72px));
+}
+
+.excluded {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--ds-white-a12);
+  background: var(--ds-red-9);
+  border-radius: var(--ds-radius-xs);
+}

@@ -2,7 +2,12 @@ import type { Save } from "@/features/saves/types";
 
 export function useIsVideoDownloading(save: Save | null | undefined): boolean {
   if (!save) return false;
-  if (save.status === "complete" || save.status === "failed") return false;
+  if (
+    save.status === "complete" ||
+    save.status === "failed" ||
+    save.status === "skipped"
+  )
+    return false;
   if (!hasVideoEvidence(save)) return false;
   const t = (save.tasks ?? []).find((x) => x.op === "fetch_video_ytdlp");
   return t?.status === "running";

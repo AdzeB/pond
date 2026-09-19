@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { act, type CSSProperties, useCallback, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -57,7 +56,6 @@ describe("sidebar resize handle", () => {
   }
 
   beforeEach(async () => {
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     resized.mockClear();
     collapsed.mockClear();
     container = document.createElement("div");
@@ -137,26 +135,26 @@ describe("sidebar resize handle", () => {
     ).toBe("300px");
   });
 
-  it.each([
-    "pointercancel",
-    "lostpointercapture",
-  ])("cancels safely on %s", async (type) => {
-    const handle = element('[data-slot="handle"]');
-    await pointer(handle, "pointerdown", 300);
-    await pointer(handle, "pointermove", 250);
-    await pointer(handle, type, 250);
-    expect(resized).not.toHaveBeenCalled();
-    expect(collapsed).not.toHaveBeenCalled();
-    expect(
-      element('[data-slot="window"]').style.getPropertyValue(
-        "--window-left-track",
-      ),
-    ).toBe("300px");
-    expect(document.body.style.cursor).toBe("");
-    expect(element('[data-slot="window"]').hasAttribute("data-resizing")).toBe(
-      false,
-    );
-  });
+  it.each(["pointercancel", "lostpointercapture"])(
+    "cancels safely on %s",
+    async (type) => {
+      const handle = element('[data-slot="handle"]');
+      await pointer(handle, "pointerdown", 300);
+      await pointer(handle, "pointermove", 250);
+      await pointer(handle, type, 250);
+      expect(resized).not.toHaveBeenCalled();
+      expect(collapsed).not.toHaveBeenCalled();
+      expect(
+        element('[data-slot="window"]').style.getPropertyValue(
+          "--window-left-track",
+        ),
+      ).toBe("300px");
+      expect(document.body.style.cursor).toBe("");
+      expect(
+        element('[data-slot="window"]').hasAttribute("data-resizing"),
+      ).toBe(false);
+    },
+  );
 
   it("still collapses on a click without dragging", async () => {
     const handle = element('[data-slot="handle"]');

@@ -32,7 +32,7 @@ function setup(isPackaged = false) {
     },
     isPackaged,
     setLoginItemSettings(settings) {
-      events.push(`login:${settings.openAtLogin}:${settings.openAsHidden}`);
+      events.push(`login:${settings.openAtLogin}`);
     },
     setCloseToTray(enabled) {
       events.push(`close-to-tray:${enabled}`);
@@ -108,23 +108,23 @@ describe("runtime controls", () => {
     expect(run.events.at(-1)).toMatch(/^start:/);
   });
 
-  it.each([
-    false,
-    true,
-  ])("applies runtime preferences with packaged=%s", async (packaged) => {
-    const run = setup(packaged);
-    await run.controls.applyPrefsAtRuntime();
-    expect(run.events).toEqual([
-      "invalidate",
-      "read",
-      `tray:${DEFAULT_PREFS.quickCapture.menuBarIcon}`,
-      ...(packaged
-        ? [`login:${DEFAULT_PREFS.quickCapture.launchAtLogin}:true`]
-        : []),
-      `close-to-tray:${DEFAULT_PREFS.window.closeToTray === true}`,
-      `icon:${DEFAULT_PREFS.window.appIcon}`,
-    ]);
-  });
+  it.each([false, true])(
+    "applies runtime preferences with packaged=%s",
+    async (packaged) => {
+      const run = setup(packaged);
+      await run.controls.applyPrefsAtRuntime();
+      expect(run.events).toEqual([
+        "invalidate",
+        "read",
+        `tray:${DEFAULT_PREFS.quickCapture.menuBarIcon}`,
+        ...(packaged
+          ? [`login:${DEFAULT_PREFS.quickCapture.launchAtLogin}`]
+          : []),
+        `close-to-tray:${DEFAULT_PREFS.window.closeToTray === true}`,
+        `icon:${DEFAULT_PREFS.window.appIcon}`,
+      ]);
+    },
+  );
 
   it("applies window preferences without applying unrelated runtime settings", async () => {
     const run = setup();

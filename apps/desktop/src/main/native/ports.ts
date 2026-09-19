@@ -1,5 +1,4 @@
 import { app } from "electron";
-import { openCollectionWindow } from "../aux-windows";
 import { attachCaptureCookies, captures } from "../core/captures";
 import { enqueue, libraryInfo, sessionImport, sessionPending } from "../ops";
 import type { NativePorts } from "./rpc";
@@ -8,9 +7,7 @@ export function liveNativePorts(): NativePorts {
   return {
     capture: async (draft, cookies) => {
       if (cookies?.length) attachCaptureCookies(draft.id, cookies);
-      const receipt = await captures.accept(draft);
-      if (receipt.state === "draft") await openCollectionWindow();
-      return receipt;
+      return captures.accept(draft);
     },
     enqueue: (url, opts) => enqueue(url, opts),
     libraryInfo,

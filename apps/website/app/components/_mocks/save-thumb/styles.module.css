@@ -110,6 +110,7 @@
   height: 18px;
   overflow: hidden;
   border-radius: var(--ds-radius-source);
+  corner-shape: var(--ds-corner-icon);
   box-shadow: var(--ds-shadow-2);
 }
 

@@ -1,5 +1,4 @@
 import { PrefsSchema } from "@pond/schema";
-// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -11,7 +10,7 @@ import {
   useFilterQuery,
   useSearchText,
 } from "@/features/library/state/view-store";
-import { FilterBarView, FilterToggle } from "./filter-menu";
+import { FilterBarView, FilterToggle } from "./";
 import { filterToolbar } from "./toolbar-state";
 
 function State() {
@@ -27,7 +26,6 @@ describe("filter toolbar", () => {
   let host: HTMLDivElement;
 
   beforeEach(() => {
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.stubGlobal("pond", { query: async () => PrefsSchema.parse({}) });
     vi.stubGlobal(
       "ResizeObserver",
@@ -116,6 +114,22 @@ describe("filter toolbar", () => {
     ]);
   });
 
+  it("groups filter customization into named sections", async () => {
+    await render();
+    await act(async () => button("Customize Filters").click());
+    const menu = document.querySelector('[role="menu"]');
+    expect(menu?.textContent).toContain("Discovery");
+    expect(menu?.textContent).toContain("Organize");
+    expect(menu?.textContent).toContain("Media");
+    expect(menu?.textContent).toContain("Details");
+    expect(menu?.textContent).toContain("Dates");
+    expect(menu?.textContent).toContain("Reset Filters");
+    const discovery = [...document.querySelectorAll('[role="menuitem"]')].find(
+      (node) => node.textContent === "Discovery",
+    );
+    expect(discovery?.getAttribute("aria-haspopup")).toBe("menu");
+  });
+
   it("shows categories directly and hides the toolbar without clearing filters", async () => {
     setSearchInput(
       [{ field: "source", operator: "eq", value: "youtube.com" }],
@@ -123,9 +137,9 @@ describe("filter toolbar", () => {
       "source:youtube.com cats",
     );
     await render();
-    expect(button("Source: youtube.com").textContent).toBe("youtube.com");
+    expect(button("Source: YouTube").textContent).toBe("YouTube");
     expect(button("Tags")).toBeTruthy();
-    const toggle = button("Filter (1 active)");
+    const toggle = button("Filter");
     const before = state();
     await act(async () => toggle.click());
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
@@ -133,7 +147,22 @@ describe("filter toolbar", () => {
     await act(async () => toggle.click());
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     expect(host.querySelector("#library-filter-toolbar")).not.toBeNull();
-    expect(button("Source: youtube.com")).toBeTruthy();
+    expect(button("Source: YouTube")).toBeTruthy();
+  });
+
+  it("shows source names without changing filter values", async () => {
+    setSearchInput(
+      [{ field: "source", operator: "eq", value: "x.com" }],
+      "",
+      "source:x.com",
+    );
+    await render();
+    const source = button("Source: Twitter");
+    expect(source.textContent).toBe("Twitter");
+
+    expect(state().query.rules).toEqual([
+      { field: "source", operator: "eq", value: "x.com" },
+    ]);
   });
 
   it("clears only the chosen field while keeping text and other filters", async () => {
@@ -195,7 +224,7 @@ describe("filter toolbar", () => {
   it("clears a Semantic overlay from its chip", async () => {
     setSemanticQuery("black cat");
     await render();
-    expect(button("Filter (1 active)")).toBeTruthy();
+    expect(button("Filter")).toBeTruthy();
     expect(getOverlays().semanticQuery).toBe("black cat");
     await act(async () => button("Clear Semantic Filter").click());
     expect(getOverlays().semanticQuery).toBeNull();

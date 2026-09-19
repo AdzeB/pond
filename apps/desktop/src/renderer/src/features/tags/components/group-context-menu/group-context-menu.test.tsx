@@ -1,6 +1,5 @@
-import type { MenuItemSpec } from "@pond/ui";
 import { describe, expect, it, vi } from "vitest";
-import { z } from "zod";
+import { topLevelMenuLabels as labels } from "@/shared/test/menu-labels";
 import {
   buildTagGroupMenuItems,
   type TagGroupMenuActions,
@@ -18,14 +17,6 @@ function actions(
     onRequestDelete: vi.fn(),
     ...overrides,
   };
-}
-
-function labels(items: MenuItemSpec[]): string[] {
-  return items.flatMap((item) => {
-    if (item.type === "separator" || item.type === "custom") return [];
-    const parsed = z.string().safeParse(item.label);
-    return parsed.success ? [parsed.data] : [];
-  });
 }
 
 describe("tag group context menu", () => {

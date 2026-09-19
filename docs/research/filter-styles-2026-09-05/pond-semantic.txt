@@ -1,7 +1,0 @@
-The following is a diff from the previous accessibility tree for Window: "Pond" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
-+									784 container Semantic, Secondary Actions: Cancel
-+										785 container
-+											786 text Describe what you want
-+											787 text field (settable) Description: Semantic query, Placeholder: Describe what you're looking for, e.g. 'black cat'
-+											788 button (disabled) Apply
-The focused UI element is 787 text field (settable) Description: Semantic query, Placeholder: Describe what you're looking for, e.g. 'black cat'

@@ -2,10 +2,14 @@ import {
   type ComponentProps,
   type ReactNode,
   type RefObject,
+  useId,
   useRef,
+  useState,
 } from "react";
 import { Button } from "../button";
+import { Checkbox } from "../checkbox";
 import { DialogParts as Dialog } from "./dialog";
+import styles from "./styles.module.css";
 import { useDialogSubmit } from "./use-dialog-submit";
 
 type ButtonVariant = ComponentProps<typeof Button>["variant"];
@@ -17,7 +21,11 @@ export interface ConfirmOptions {
   cancelLabel?: ReactNode;
   confirmVariant?: ButtonVariant;
   busyLabel?: ReactNode;
-  onConfirm: () => void | Promise<void>;
+  checkbox?: {
+    label: ReactNode;
+    defaultChecked?: boolean;
+  };
+  onConfirm: (result: { checked: boolean }) => void | Promise<void>;
 }
 
 const handle = Dialog.createAlertHandle<
@@ -61,6 +69,10 @@ function ConfirmContent({
   pending: RefObject<boolean>;
 }) {
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const checkboxId = useId();
+  const [checked, setChecked] = useState(
+    options.checkbox?.defaultChecked ?? false,
+  );
   const { busy, error, submit } = useDialogSubmit(pending, () =>
     handle.close(),
   );
@@ -74,6 +86,19 @@ function ConfirmContent({
         <Dialog.Content>
           {options.description ? (
             <Dialog.Description>{options.description}</Dialog.Description>
+          ) : null}
+          {options.checkbox ? (
+            <label className={styles.option} htmlFor={checkboxId}>
+              <Checkbox.Root
+                id={checkboxId}
+                checked={checked}
+                disabled={busy}
+                onCheckedChange={setChecked}
+              >
+                <Checkbox.Indicator />
+              </Checkbox.Root>
+              <span>{options.checkbox.label}</span>
+            </label>
           ) : null}
           {error ? (
             <Dialog.Description role="alert" data-error>
@@ -92,7 +117,7 @@ function ConfirmContent({
             variant={options.confirmVariant ?? "destructive"}
             disabled={busy}
             loading={busy}
-            onClick={() => void submit(options.onConfirm)}
+            onClick={() => void submit(() => options.onConfirm({ checked }))}
           >
             {busy
               ? (options.busyLabel ?? options.confirmLabel ?? "Confirm")

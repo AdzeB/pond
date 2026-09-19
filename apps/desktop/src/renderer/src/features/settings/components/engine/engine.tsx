@@ -1,7 +1,7 @@
 import type { Prefs } from "@pond/schema/db";
 import { Settings } from "@pond/ui";
 import { z } from "zod";
-import { ItemView } from "@/features/settings/components/engine/field-control/field-control";
+import { ItemView } from "@/features/settings/components/engine/field-control";
 import type {
   Binding,
   GroupConfig,

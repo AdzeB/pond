@@ -1,3 +1,4 @@
+import { ulid } from "ulid";
 import { z } from "zod";
 import type {
   AssistantActivity,
@@ -17,6 +18,7 @@ import {
 import { folderIdsForSave, listFolders } from "../folders";
 import { normalizeTagList } from "../tags";
 import type { ToolSpec } from "./complete";
+import { pondOperationTools } from "./operations";
 import { boundedSource } from "./output";
 import { createToolTracker } from "./tool-steps";
 import {
@@ -43,6 +45,7 @@ import {
 } from "./tools";
 
 export const contextDependencies = {
+  pondOperationTools,
   folderIdsForSave,
   listFolders,
   searchLibrary,
@@ -421,10 +424,38 @@ export function libraryContext(
       },
     },
   ];
+  const proposedOperations = new Map<string, string>();
+  tools.push(
+    ...deps.pondOperationTools({
+      signal: input.signal,
+      propose: (request, _description, reason) => {
+        const key = JSON.stringify(request);
+        const existing = proposedOperations.get(key);
+        if (existing) return existing;
+        if (changes.size >= ASSISTANT_CHANGE_CAP)
+          throw new Error("There are too many pending changes in this reply.");
+        const id = ulid();
+        changes.set(id, {
+          id,
+          saveId: "",
+          title: reason,
+          reason: "",
+          status: "pending",
+          field: "action",
+          action: "runOperation",
+          before: null,
+          after: request.operation,
+          payload: request,
+          undoable: false,
+        });
+        proposedOperations.set(key, id);
+        return id;
+      },
+    }),
+  );
   return {
     ...createToolTracker(input.signal, input.onSteps),
     tools,
-    retrieve,
     results: () => results,
     sources: () => [...sources.values()],
     changes: () => [...changes.values()],

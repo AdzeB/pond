@@ -6,17 +6,28 @@ import {
   IconFolderOutline18,
   IconHashtagOutline18,
 } from "@pond/icons/outline/18";
+import type { IconComponent } from "@pond/icons/types";
 
-export const FOLDER_ICONS = [
+export type FolderIconId =
+  | "folder"
+  | "bookmark"
+  | "album"
+  | "tag"
+  | "download"
+  | "code";
+
+export const FOLDER_ICONS: readonly {
+  id: FolderIconId;
+  label: string;
+  Icon: IconComponent;
+}[] = [
   { id: "folder", label: "Folder", Icon: IconFolderOutline18 },
   { id: "bookmark", label: "Bookmark", Icon: IconBookmarkOutline18 },
   { id: "album", label: "Album", Icon: IconAlbum2Outline18 },
   { id: "tag", label: "Tag", Icon: IconHashtagOutline18 },
   { id: "download", label: "Download", Icon: IconDownloadOutline18 },
   { id: "code", label: "Code", Icon: IconCode2Outline18 },
-] as const;
-
-export type FolderIconId = (typeof FOLDER_ICONS)[number]["id"];
+];
 
 export function FolderIcon({ name }: { name?: string }) {
   const Icon =

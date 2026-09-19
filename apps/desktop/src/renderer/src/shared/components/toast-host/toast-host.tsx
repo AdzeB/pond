@@ -1,8 +1,12 @@
 import { Toast } from "@pond/ui";
-import { TOAST_TIMEOUT_MS, toastManager } from "@/shared/lib/toast";
+import {
+  TOAST_TIMEOUT_MS,
+  type ToastData,
+  toastManager,
+} from "@/shared/lib/toast";
 
 function ToastList() {
-  const { toasts } = Toast.useToastManager();
+  const { toasts } = Toast.useToastManager<ToastData>();
 
   return (
     <Toast.Portal>
@@ -14,6 +18,16 @@ function ToastList() {
                 {toast.title ? <Toast.Title>{toast.title}</Toast.Title> : null}
                 {toast.description ? (
                   <Toast.Description>{toast.description}</Toast.Description>
+                ) : null}
+                {toast.data?.progress ? (
+                  <Toast.Progress
+                    aria-label={toast.data.progress.label}
+                    max={toast.data.progress.max}
+                    value={toast.data.progress.value}
+                  />
+                ) : null}
+                {toast.data?.progress?.detail ? (
+                  <Toast.Meta>{toast.data.progress.detail}</Toast.Meta>
                 ) : null}
               </Toast.Header>
               <Toast.Close />

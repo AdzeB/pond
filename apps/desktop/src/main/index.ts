@@ -18,6 +18,7 @@ import {
   summonShortcutTarget,
 } from "./core/global-shortcuts";
 import { syncLibraryRootMetadata } from "./core/library-ops";
+import { runLibraryScopeMigration } from "./core/library-scope-migration";
 import { stopLibraryTransfers } from "./core/library-transfers";
 import { flushGovernor } from "./core/pipeline/rate-governor";
 import { startReconciler } from "./core/pipeline/reconciler-client";
@@ -40,7 +41,7 @@ import {
   registerTrashCron,
   registerYtDlpUpdateCron,
 } from "./crons";
-import { getDb } from "./db";
+import { configureLibraryMigration, getDb } from "./db";
 import { handleDeepLink } from "./deep-link";
 import { registerIpc } from "./ipc";
 import { waitForLibraryLocationChanges } from "./ipc/queries/library-locations";
@@ -100,6 +101,7 @@ log.info("[pond] main starting", {
   version: app.getVersion(),
   platform: process.platform,
 });
+configureLibraryMigration(runLibraryScopeMigration);
 
 const wantsMcp = process.argv.includes("--mcp");
 
@@ -193,9 +195,7 @@ app.whenReady().then(async () => {
       .catch(() => false),
   );
   const launchedHidden =
-    wantsLaunchHidden ||
-    loginItem.wasOpenedAsHidden === true ||
-    loginItem.wasOpenedAtLogin === true;
+    wantsLaunchHidden || loginItem.wasOpenedAtLogin === true;
   if (!launchedHidden) {
     await createWindow();
   }

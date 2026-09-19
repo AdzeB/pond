@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from "react";
+import { Children, Fragment, isValidElement, type ReactNode } from "react";
 
 type MenuShortcut = string | string[];
 
@@ -143,7 +143,11 @@ function pruneSpecs(items: MenuItemSpec[]): MenuItemSpec[] {
 function specKey(spec: MenuItemSpec, index: number): string | number {
   if ("id" in spec && spec.id) return spec.id;
   if (spec.type === "separator") return `sep-${index}`;
-  if ("label" in spec && typeof spec.label === "string") return spec.label;
+  if ("label" in spec) {
+    const labels = Children.toArray(spec.label);
+    const label = labels.length === 1 ? labels[0] : null;
+    if (label != null && !isValidElement(label)) return String(label);
+  }
   return index;
 }
 

@@ -1,0 +1,16 @@
+.values {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+
+.values > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.no-value {
+  margin: 0;
+  font-size: var(--ds-text-md);
+  color: var(--ds-gray-10);
+}

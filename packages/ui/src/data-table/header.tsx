@@ -1,8 +1,4 @@
-// biome-ignore-all lint/a11y/useSemanticElements: custom CSS-grid table uses ARIA grid roles by design.
-// biome-ignore-all lint/a11y/useFocusableInteractive: grid headers use a row-level keyboard model, not per-cell focus.
-// biome-ignore-all lint/a11y/useKeyWithClickEvents: click guards only stop row propagation; keyboard handled at row level.
-// biome-ignore-all lint/a11y/useAriaPropsForRole: the resize separator is a pointer-only affordance.
-
+import type { RowData } from "@tanstack/react-table";
 import {
   type DragEvent as ReactDragEvent,
   type PointerEvent as ReactPointerEvent,
@@ -13,7 +9,7 @@ import { useDataTable } from "./context";
 import styles from "./styles.module.css";
 import type { HeaderContext, TableColumn } from "./types";
 
-function HeaderCell<T>({ column }: { column: TableColumn<T> }) {
+function HeaderCell<T extends RowData>({ column }: { column: TableColumn<T> }) {
   const { actions, meta } = useDataTable<T>();
   const headRef = useRef<HTMLDivElement>(null);
   const sortable = Boolean(column.accessor);
@@ -146,7 +142,7 @@ function HeaderCell<T>({ column }: { column: TableColumn<T> }) {
   );
 }
 
-export function DataTableHeader<T>() {
+export function DataTableHeader<T extends RowData>() {
   const { meta } = useDataTable<T>();
 
   return (

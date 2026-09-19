@@ -1,3 +1,4 @@
+import type { RowData } from "@tanstack/react-table";
 import { useEffect } from "react";
 import { useDataTable } from "./context";
 
@@ -27,7 +28,7 @@ function keepSelectionOnMouseDown(target: EventTarget | null): boolean {
   return row != null && row.closest('[role="rowgroup"]') != null;
 }
 
-export function DataTableHotkeys<T>() {
+export function DataTableHotkeys<T extends RowData>() {
   const { actions, meta, selectionStore } = useDataTable<T>();
 
   useEffect(() => {

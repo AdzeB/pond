@@ -36,6 +36,7 @@ Thumbs.db
 apps/extension/dist
 apps/extension/.output
 apps/extension/.wxt
+apps/raycast/raycast-env.d.ts
 # vercel
 .vercel
 
@@ -43,7 +44,12 @@ apps/extension/.wxt
 .agents
 
 # cursor local config, skills, prototype assets
-.cursor/
+.cursor/*
+!.cursor/hooks.json
+
+# Repository hooks are shared; Codex local state remains private.
+.codex/*
+!.codex/hooks.json
 
 # mobbin UI evidence boards (design-exploration scratch)
 .mobbin/

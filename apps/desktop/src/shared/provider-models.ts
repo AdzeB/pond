@@ -1,6 +1,21 @@
+import type { AgentReasoning } from "@pond/schema";
+
 export interface ProviderModel {
   id: string;
   name: string;
+  contextWindow?: number;
+  catalogId?: string;
+  description?: string;
+  maxOutputTokens?: number;
+  capabilities?: string[];
+  reasoningOptions?: AgentReasoning[];
+  pricing?: {
+    input?: string;
+    output?: string;
+    cachedInput?: string;
+    cacheCreation?: string;
+  };
+  available?: boolean;
 }
 
 const TOKENS = new Map([
@@ -30,14 +45,12 @@ export function chosenModelId(
     modelIds?: Record<string, string>;
     ollamaModelId?: string;
     lmstudioModelId?: string;
-    compatibleModelId?: string;
   },
 ): string {
   const fromMap = prefs.modelIds?.[provider]?.trim();
   if (fromMap) return fromMap;
   if (provider === "ollama") return prefs.ollamaModelId?.trim() ?? "";
   if (provider === "lmstudio") return prefs.lmstudioModelId?.trim() ?? "";
-  if (provider === "compatible") return prefs.compatibleModelId?.trim() ?? "";
   return "";
 }
 

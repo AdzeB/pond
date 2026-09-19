@@ -34,7 +34,6 @@ export function pageAssetsDraft(input: {
   return {
     id: input.id,
     originUrl: input.originUrl,
-    mode: "collect" as const,
     metadata: { tags: ["page-asset"], folderIds: [] },
     items: pickPageImages(input.images).map((img) => ({
       kind: "asset" as const,
@@ -48,7 +47,6 @@ export async function extractPageAssets(url: string): Promise<{
   imported: number;
   skipped: number;
   queued: number;
-  draftId?: string;
   error?: string;
 }> {
   let href: string;
@@ -103,13 +101,12 @@ export async function extractPageAssets(url: string): Promise<{
     if (draft.items.length === 0)
       return { ok: true, imported: 0, skipped, queued: 0 };
     const { captures } = await import("./captures");
-    const receipt = await captures.accept(draft);
+    await captures.accept(draft);
     return {
       ok: true,
       imported: 0,
       skipped,
       queued: draft.items.length,
-      draftId: receipt.id,
     };
   } catch (err) {
     log.warn("[pond page-extract] failed", href, err);

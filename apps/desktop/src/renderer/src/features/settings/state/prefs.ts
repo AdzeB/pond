@@ -16,16 +16,18 @@ let inflight: Promise<Prefs> | null = null;
 async function load(): Promise<Prefs> {
   if (prefsStore.state.value) return prefsStore.state.value;
   if (inflight) return inflight;
-  inflight = (async () => {
-    const next = PrefsSchema.parse(
-      await window.pond.query("settings.getPrefs", {}),
-    );
-    prefsStore.setState(() => ({ value: next }));
-    return next;
-  })().finally(() => {
+  inflight = refreshPrefs().finally(() => {
     inflight = null;
   });
   return inflight;
+}
+
+export async function refreshPrefs(): Promise<Prefs> {
+  const next = PrefsSchema.parse(
+    await window.pond.query("settings.getPrefs", {}),
+  );
+  prefsStore.setState(() => ({ value: next }));
+  return next;
 }
 
 export function patchPrefsSection<K extends keyof Prefs>(
@@ -67,20 +69,6 @@ export function usePrefs<K extends keyof Prefs>(
   };
 
   return [value ?? DEFAULT_PREFS[section], patch, value !== null];
-}
-
-export function usePrefsValue(): Prefs | null {
-  useEffect(() => {
-    void load().catch(() =>
-      notify({
-        id: "settings-load-error",
-        title: "Couldn’t load settings",
-        description: "Open Settings again to retry.",
-        timeout: 8000,
-      }),
-    );
-  }, []);
-  return useSelector(prefsStore, (s) => s.value);
 }
 
 export function getPrefsSnapshot(): Prefs | null {

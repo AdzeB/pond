@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import type { ConversionJob } from "@shared/conversion-contracts";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -7,10 +6,9 @@ import {
   closeConversionDialog,
   openConversionDialog,
 } from "@/features/library/state/conversion-dialog";
-import { ConversionDialogHost } from "./conversion-dialog";
+import { ConversionDialogHost } from "./";
 
 it("shows conversion progress and cancellation while preserving completed output information", async () => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal(
     "ResizeObserver",
     class {

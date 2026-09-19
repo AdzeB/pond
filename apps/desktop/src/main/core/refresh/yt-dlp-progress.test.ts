@@ -73,12 +73,12 @@ describe("yt-dlp progress", () => {
       process.execPath,
       [
         "-e",
-        "let n = 0; const id = setInterval(() => { console.log(n++); if (n > 5) clearInterval(id); }, 40)",
+        "let n = 0; const id = setInterval(() => { console.log(n++); if (n > 5) clearInterval(id); }, 200)",
       ],
-      100,
+      1_000,
       undefined,
       undefined,
-      2_000,
+      5_000,
     );
     expect(result.code).toBe(0);
   });

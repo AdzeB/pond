@@ -1,0 +1,177 @@
+import { Button, Popover, Reveal } from "@pond/ui";
+import type { ReferenceItem } from "@pond/ui/reference-list";
+import type { AssistantSource } from "@shared/assistant";
+import { sourceExcerpt } from "@shared/assistant-text";
+import type { RefObject } from "react";
+import { useState } from "react";
+import { openSave } from "@/features/saves/lib/save-nav";
+import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
+import {
+  SourceThumbnail,
+  sourceDomain,
+  useSourceCovers,
+} from "../save-preview";
+import styles from "./styles.module.css";
+
+function toReferenceItems(
+  ids: string[],
+  sources: AssistantSource[],
+): ReferenceItem[] {
+  const byId = new Map(sources.map((source) => [source.id, source]));
+  return [...new Set(ids)].flatMap((id) => {
+    const source = byId.get(id);
+    if (!source) return [];
+    const excerpt = sourceExcerpt(source.notes || source.description, 140);
+    return [
+      {
+        id: source.id,
+        title: source.title || "Untitled",
+        meta: sourceDomain(source),
+        description: excerpt || undefined,
+        media: <SourceThumbnail id={source.id} source={source} />,
+      },
+    ];
+  });
+}
+
+export function ConsultedSaves({
+  sources,
+  saveIds,
+  attachedIds = [],
+  onOpenSave,
+  onAttach,
+}: {
+  sources: AssistantSource[];
+  saveIds?: string[];
+  attachedIds?: string[];
+  onOpenSave: (id: string) => void;
+  onAttach: (sources: AssistantSource[]) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const scrollFade = useScrollFade<HTMLDivElement>();
+  const items = toReferenceItems(
+    saveIds ?? sources.map((source) => source.id),
+    sources,
+  );
+  useSourceCovers(items.map((item) => item.id));
+  if (!items.length) return null;
+  const renderRow = (item: ReferenceItem) => (
+    <article key={item.id} className={styles.row}>
+      <Popover.Root>
+        <Popover.Trigger
+          render={<Button variant="text" className={styles.open} />}
+          aria-label={`Preview ${item.title}`}
+        >
+          <span className={styles.media}>{item.media}</span>
+          <span className={styles.title} title={item.title}>
+            {item.title}
+          </span>
+          <span className={styles.source}>{item.meta}</span>
+        </Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Positioner side="top" align="start" sideOffset={8}>
+            <Popover.Popup className={styles.preview}>
+              <Popover.Title className={styles["preview-title"]}>
+                {item.title}
+              </Popover.Title>
+              <Popover.Description className={styles.description}>
+                {item.description || "Only the saved title is available."}
+              </Popover.Description>
+              <div className={styles.actions}>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => onOpenSave(item.id)}
+                >
+                  Open Save
+                </Button>
+                <Button
+                  size="sm"
+                  variant="text"
+                  aria-label={`Add ${item.title}`}
+                  disabled={attachedIds.includes(item.id)}
+                  onClick={() => {
+                    const source = sources.find((save) => save.id === item.id);
+                    if (source) onAttach([source]);
+                  }}
+                >
+                  {attachedIds.includes(item.id)
+                    ? "Added to message"
+                    : "Add to message"}
+                </Button>
+              </div>
+            </Popover.Popup>
+          </Popover.Positioner>
+        </Popover.Portal>
+      </Popover.Root>
+    </article>
+  );
+  return (
+    <section className={styles.card} aria-label="Consulted Saves">
+      <div className={styles.rows} {...scrollFade}>
+        {items.slice(0, 3).map(renderRow)}
+        <Reveal visible={expanded}>
+          <div className={styles.more}>{items.slice(3).map(renderRow)}</div>
+        </Reveal>
+      </div>
+      {items.length > 3 ? (
+        <Button
+          size="xs"
+          variant="text"
+          className={styles.expand}
+          aria-expanded={expanded}
+          onClick={() => setExpanded(!expanded)}
+        >
+          {expanded ? "Show less" : `Show ${items.length - 3} more`}
+        </Button>
+      ) : null}
+    </section>
+  );
+}
+
+export function ReferencedSavesPopover({
+  open,
+  sources,
+  attachedIds,
+  anchorRef,
+  onAttach,
+  onClose,
+}: {
+  open: boolean;
+  sources: AssistantSource[];
+  attachedIds: string[];
+  anchorRef: RefObject<HTMLElement | null>;
+  onAttach: (sources: AssistantSource[]) => void;
+  onClose: () => void;
+}) {
+  return (
+    <Popover.Root
+      open={open}
+      modal={false}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <Popover.Portal>
+        <Popover.Positioner
+          anchor={anchorRef}
+          side="top"
+          align="start"
+          sideOffset={8}
+        >
+          <Popover.Popup className={styles.popup} aria-label="Referenced Saves">
+            <ConsultedSaves
+              sources={sources}
+              attachedIds={attachedIds}
+              onOpenSave={openSave}
+              onAttach={(next) => {
+                onAttach(next);
+                onClose();
+              }}
+            />
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+}

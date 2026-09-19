@@ -13,8 +13,6 @@ import * as tiktok from "./tiktok";
 import * as twitter from "./twitter";
 import * as youtube from "./youtube";
 
-export type { HarvestAdaptCtx } from "./from-page";
-
 interface Harvester {
   buildExpression: (sourceId: string) => string;
   adapt: (raw: JsonValue, ctx: HarvestAdaptCtx) => Capture | null;

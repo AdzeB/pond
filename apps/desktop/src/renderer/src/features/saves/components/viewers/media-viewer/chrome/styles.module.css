@@ -8,16 +8,25 @@
   min-height: 0;
 }
 
+.root:not([data-chrome]) {
+  grid-template-areas: "stage";
+  grid-template-rows: minmax(0, 1fr);
+}
+
 .top,
 .bottom {
+  display: flex;
+  align-items: center;
   min-width: 0;
+  height: var(--ds-title-bar-height);
+  min-height: var(--ds-title-bar-height);
+  padding-inline: 8px;
   overflow-x: auto;
   overflow-y: hidden;
 }
 
 .top {
   grid-area: chrome-top;
-  padding: 2px 8px;
   border-bottom: 1px solid var(--ds-gray-a3);
 }
 
@@ -32,7 +41,6 @@
 
 .bottom {
   grid-area: chrome-bottom;
-  padding: 2px 8px;
   border-top: 1px solid var(--ds-gray-a3);
 }
 
@@ -58,15 +66,14 @@
 .tools {
   display: flex;
   flex: 1 1 auto;
-  gap: 2px;
+  gap: 8px;
   align-items: center;
-  justify-content: flex-end;
+  width: 100%;
   min-width: 0;
 }
 
 .bottom .tools {
-  justify-content: stretch;
-  width: 100%;
+  align-items: stretch;
 }
 
 .fallback {

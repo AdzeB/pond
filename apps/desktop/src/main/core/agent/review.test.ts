@@ -226,3 +226,86 @@ describe("reviewed library edits", () => {
     );
   });
 });
+
+describe("Pond operation reviews", () => {
+  function operationChange(): AssistantChange {
+    return {
+      id: "operation",
+      saveId: "",
+      title: "Create a Film Folder",
+      reason: "Organize references",
+      field: "action",
+      action: "runOperation",
+      before: null,
+      after: "folders.create",
+      status: "pending",
+      undoable: false,
+      payload: {
+        operation: "folders.create",
+        arguments: { name: "Film" },
+        libraryId: "library",
+      },
+    };
+  }
+
+  it("applies a persisted operation once and retains its result for follow-up", async () => {
+    mock.changes = [operationChange()];
+    const apply = vi
+      .fn<(typeof reviewDependencies)["applyPondOperation"]>()
+      .mockResolvedValue({ id: "created-folder", name: "Film" });
+    const request = {
+      messageId: "message",
+      changeIds: ["operation"],
+      action: "apply" as const,
+    };
+    await review(request, { ...deps, applyPondOperation: apply });
+    await review(request, { ...deps, applyPondOperation: apply });
+    expect(apply).toHaveBeenCalledExactlyOnceWith({
+      operation: "folders.create",
+      arguments: { name: "Film" },
+      libraryId: "library",
+    });
+    expect(mock.changes[0]).toMatchObject({
+      status: "applied",
+      payload: { result: { id: "created-folder" } },
+    });
+  });
+
+  it("preserves a failed operation as pending and supports dismissal without executing", async () => {
+    mock.changes = [operationChange()];
+    const apply = vi
+      .fn<(typeof reviewDependencies)["applyPondOperation"]>()
+      .mockRejectedValue(new Error("The Library changed."));
+    await review(
+      { messageId: "message", changeIds: ["operation"], action: "apply" },
+      { ...deps, applyPondOperation: apply },
+    );
+    expect(mock.changes[0]).toMatchObject({
+      status: "pending",
+      error: "The Library changed.",
+    });
+    await review(
+      { messageId: "message", changeIds: ["operation"], action: "dismiss" },
+      { ...deps, applyPondOperation: apply },
+    );
+    expect(mock.changes[0]).toMatchObject({ status: "dismissed" });
+    expect(apply).toHaveBeenCalledOnce();
+  });
+
+  it("does not execute malformed stored operation requests", async () => {
+    const change = operationChange();
+    if (change.field !== "action") throw new Error("Expected action fixture");
+    change.payload = { operation: "folders.create", arguments: {} };
+    mock.changes = [change];
+    const apply = vi.fn<(typeof reviewDependencies)["applyPondOperation"]>();
+    await review(
+      { messageId: "message", changeIds: ["operation"], action: "apply" },
+      { ...deps, applyPondOperation: apply },
+    );
+    expect(apply).not.toHaveBeenCalled();
+    expect(mock.changes[0]).toMatchObject({
+      status: "pending",
+      error: expect.any(String),
+    });
+  });
+});

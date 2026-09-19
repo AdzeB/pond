@@ -1,3 +1,6 @@
+import type { ExternalSource } from "@pond/schema/sources";
+import type { BlankDocumentKind } from "./blank-documents";
+
 export const DEFAULT_INGEST_PORT = 41610;
 
 export const DEFAULT_LIBRARY_NAME = "My Pond";
@@ -35,6 +38,7 @@ export const IPC = {
   sourceStatus: "pond:source-status",
   sessionPendingClear: "pond:session-pending-clear",
   sessionImported: "pond:session-imported",
+  eagleImportProgress: "pond:eagle-import-progress",
   syncRunNow: "pond:sync-run-now",
   syncStatus: "pond:sync-status",
   syncRunAll: "pond:sync-run-all",
@@ -52,6 +56,7 @@ export const IPC = {
   archiveBackfillStart: "pond:archive-backfill-start",
   archiveSite: "pond:archive-site",
   agentChunk: "pond:agent-chunk",
+  agentStream: "pond:agent-stream",
   agentFilter: "pond:agent-filter",
   agentCite: "pond:agent-cite",
   agentOverlay: "pond:agent-overlay",
@@ -62,6 +67,12 @@ export interface RecentMenuEntry {
   title: string;
 }
 
+export type BlankDocumentMenuActionId =
+  `library.new-blank-${BlankDocumentKind}`;
+
+export type ConnectSourceMenuActionId = `library.connect-${ExternalSource}`;
+export type WatchSourceMenuActionId = `library.watch-${ExternalSource}`;
+
 export type MenuActionId =
   | "history.back"
   | "history.forward"
@@ -71,6 +82,15 @@ export type MenuActionId =
   | "view.zoom-out"
   | "view.zoom-reset"
   | "library.search"
+  | "nav.library"
+  | "nav.sources"
+  | "nav.downloads"
+  | "nav.tags"
+  | "nav.agent"
+  | "nav.trash"
+  | "nav.uncategorized"
+  | "nav.untagged"
+  | "nav.settings"
   | "view.layout.waterfall"
   | "view.layout.grid"
   | "view.layout.justified"
@@ -106,15 +126,28 @@ export type MenuActionId =
   | "library.new-folder"
   | "library.new-smart-folder"
   | "library.new-note"
+  | "library.new-tag"
+  | "library.new-tag-group"
   | "library.import-files"
   | "library.import-folders"
   | "library.import-links"
+  | "library.import-clipboard"
+  | "library.import-bookmarks"
+  | "library.import-page-assets"
+  | "library.import-eagle"
   | "library.import-package"
+  | "library.watch"
+  | ConnectSourceMenuActionId
+  | WatchSourceMenuActionId
+  | "library.connect-pinterest"
+  | BlankDocumentMenuActionId
   | "library.auto-import-folder"
   | "library.auto-import-settings"
   | "library.find-duplicates-all"
   | "library.find-duplicates-list"
   | "library.find-duplicates-selected"
+  | "library.rescan"
+  | "library.verify-integrity"
   | "view.sidebar.toggle"
   | "view.agent.toggle"
   | "view.grayscale"

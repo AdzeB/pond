@@ -2,7 +2,6 @@ import { existsSync, readdirSync } from "node:fs";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import JSZip from "jszip";
 import {
   BLANK_DOCUMENTS,
   type BlankDocumentKind,
@@ -82,6 +81,7 @@ async function blankDocumentBytes(kind: BlankDocumentKind): Promise<Buffer> {
 }
 
 async function zipFiles(files: Record<string, string>): Promise<Buffer> {
+  const { default: JSZip } = await import("jszip");
   const zip = new JSZip();
   for (const [path, body] of Object.entries(files)) {
     zip.file(path, body);

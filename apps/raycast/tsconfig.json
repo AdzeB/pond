@@ -1,0 +1,8 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node", "react"]
+  },
+  "include": ["src/**/*", "ray-env.d.ts"]
+}

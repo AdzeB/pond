@@ -4,10 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const css = readFileSync(
-  resolve(
-    dirname(fileURLToPath(import.meta.url)),
-    "workspace-shell.module.css",
-  ),
+  resolve(dirname(fileURLToPath(import.meta.url)), "styles.module.css"),
   "utf8",
 );
 
@@ -18,10 +15,9 @@ function declarations(selector: string) {
 }
 
 describe("desktop shell edge motion", () => {
-  it("preserves the shadow gutter while clipping moving right panels", () => {
+  it("lets the right pane shadow paint outside its track", () => {
     const right = declarations('.shell .right-pane[data-slot="right"]');
-    expect(right).toContain("overflow: clip;");
-    expect(right).toContain("overflow-clip-margin: var(--window-inset);");
+    expect(right).toContain("overflow: visible;");
   });
 
   it("gives back the entire sidebar column when closed", () => {

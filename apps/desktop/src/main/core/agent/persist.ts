@@ -40,6 +40,19 @@ export async function createChat(): Promise<
   return created;
 }
 
+export async function renameChat(
+  id: string,
+  title: string,
+): Promise<{ ok: boolean }> {
+  const db = await getDb();
+  const rows = await db
+    .update(agentChats)
+    .set({ title, updatedAt: new Date() })
+    .where(eq(agentChats.id, id))
+    .returning({ id: agentChats.id });
+  return { ok: rows.length > 0 };
+}
+
 export async function deleteChat(id: string): Promise<{ ok: boolean }> {
   const db = await getDb();
   await db.delete(agentMessages).where(eq(agentMessages.chatId, id));

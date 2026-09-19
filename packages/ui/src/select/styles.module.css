@@ -29,6 +29,7 @@
 .list {
   position: relative;
   box-sizing: border-box;
+  min-width: max-content;
   max-height: min(320px, var(--available-height, 320px));
   overflow-x: hidden;
   overflow-y: auto;
@@ -45,9 +46,10 @@
 }
 
 .popup {
-  --ds-popup-width: var(--anchor-width);
+  --ds-popup-width: max-content;
+  --ds-popup-min-width: var(--anchor-width);
+  --ds-popup-max-width: var(--available-width);
   composes: popup from "../shared/styles/popup/styles.module.css";
-  min-width: var(--anchor-width);
 }
 
 .arrow {
@@ -60,10 +62,6 @@
 
 .item-label {
   composes: item-label from "../shared/styles/popup/styles.module.css";
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .indicator {

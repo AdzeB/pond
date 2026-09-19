@@ -14,13 +14,14 @@ function file(extension: string, mimeType?: string): SaveFile {
 }
 
 describe("viewerCapabilityFor", () => {
-  it.each([
-    ...EAGLE_SUPPORTED_EXTENSIONS,
-  ])("routes Eagle-compatible .%s to a detail viewer", (extension) => {
-    const capability = viewerCapabilityFor(file(extension));
-    expect(capability.kind).not.toBe("none");
-    expect(capability.originalActions).toBe(true);
-  });
+  it.each([...EAGLE_SUPPORTED_EXTENSIONS])(
+    "routes Eagle-compatible .%s to a detail viewer",
+    (extension) => {
+      const capability = viewerCapabilityFor(file(extension));
+      expect(capability.kind).not.toBe("none");
+      expect(capability.originalActions).toBe(true);
+    },
+  );
 
   it.each([
     ["psd", "native-preview"],

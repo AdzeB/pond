@@ -4,6 +4,7 @@ import "./focus-modality";
 
 export { clsx as cn } from "clsx";
 export { Accordion } from "./accordion";
+export { Badge } from "./badge";
 export { Button, type ButtonProps } from "./button";
 export { Checkbox } from "./checkbox";
 export { Chip, type ChipTone } from "./chip";
@@ -15,6 +16,7 @@ export { cssVars } from "./css-vars";
 export {
   DataTable,
   type DataTableProviderProps,
+  type DataTableRow,
   type RenderRowArgs,
   type TableColumn,
   useDataTable,
@@ -29,7 +31,6 @@ export { Loader } from "./loader";
 export { Logo, type LogoProps } from "./logo";
 export { Menu, type MenuItemSpec } from "./menu";
 export { Popover } from "./popover";
-export { Suggestion } from "./prompt-count";
 export { Reveal } from "./reveal";
 export { Select, type SelectItemSpec } from "./select";
 export { Settings } from "./settings";
@@ -49,6 +50,7 @@ export { ToggleGroup } from "./toggle-group";
 export { Toolbar } from "./toolbar";
 export { Tooltip } from "./tooltip";
 export { Tray } from "./tray";
+export { useScrollFade } from "./use-scroll-fade";
 export { Video } from "./video";
 export { useVideo, type VideoContextValue } from "./video/context";
 export {

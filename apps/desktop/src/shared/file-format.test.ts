@@ -37,13 +37,16 @@ describe("classifyLibraryFile", () => {
     ["offline.webarchive", "file", "generic", "application/x-webarchive"],
     ["model.usdz", "file", "generic", "model/vnd.usdz+zip"],
     ["archive.unknown", "file", "generic", "application/octet-stream"],
-  ] as const)("classifies %s as %s with a %s preview", (path, mediaType, previewKind, mimeType) => {
-    expect(classifyLibraryFile(path)).toMatchObject({
-      mediaType,
-      previewKind,
-      mimeType,
-    });
-  });
+  ] as const)(
+    "classifies %s as %s with a %s preview",
+    (path, mediaType, previewKind, mimeType) => {
+      expect(classifyLibraryFile(path)).toMatchObject({
+        mediaType,
+        previewKind,
+        mimeType,
+      });
+    },
+  );
 
   it("uses a trustworthy supplied MIME type for an unknown extension", () => {
     expect(classifyLibraryFile("asset.bin", "audio/flac")).toMatchObject({
@@ -53,13 +56,14 @@ describe("classifyLibraryFile", () => {
     });
   });
 
-  it.each([
-    ...EAGLE_SUPPORTED_EXTENSIONS,
-  ])("classifies Eagle-compatible .%s without an opaque MIME fallback", (extension) => {
-    const result = classifyLibraryFile(`asset.${extension}`);
-    expect(result.extension).toBe(extension);
-    expect(result.mimeType).not.toBe("application/octet-stream");
-  });
+  it.each([...EAGLE_SUPPORTED_EXTENSIONS])(
+    "classifies Eagle-compatible .%s without an opaque MIME fallback",
+    (extension) => {
+      const result = classifyLibraryFile(`asset.${extension}`);
+      expect(result.extension).toBe(extension);
+      expect(result.mimeType).not.toBe("application/octet-stream");
+    },
+  );
 });
 
 describe("libraryFilename", () => {
@@ -85,12 +89,10 @@ describe("typeLabelForPath", () => {
 });
 
 describe("native thumbnails", () => {
-  it.each([
-    "recording.mp3",
-    "paper.pdf",
-    "family.woff2",
-    "model.usdz",
-  ])("allows %s to request an OS thumbnail", (path) => {
-    expect(canRequestNativeThumbnail(path)).toBe(true);
-  });
+  it.each(["recording.mp3", "paper.pdf", "family.woff2", "model.usdz"])(
+    "allows %s to request an OS thumbnail",
+    (path) => {
+      expect(canRequestNativeThumbnail(path)).toBe(true);
+    },
+  );
 });

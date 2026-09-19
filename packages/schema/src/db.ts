@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   index,
   integer,
+  real,
   sqliteTable,
   text,
   unique,
@@ -37,9 +38,15 @@ export const MEDIA_TYPES = [
 ] as const;
 export type MediaType = (typeof MEDIA_TYPES)[number];
 
-export const SAVE_STATUSES = ["ingesting", "complete", "failed"] as const;
+export const SAVE_STATUSES = [
+  "ingesting",
+  "complete",
+  "failed",
+  "skipped",
+] as const;
 
 export const CANCEL_REASON = "cancelled by user";
+export const SKIP_REASON = "skipped by user";
 export type SaveStatus = (typeof SAVE_STATUSES)[number];
 
 export const OPS = [
@@ -92,6 +99,7 @@ export interface ImageComment {
   w: number;
   h: number;
   text: string;
+  createdAt?: number;
 }
 
 export interface ImageCrop {
@@ -150,6 +158,8 @@ export const saves = sqliteTable(
     clipModel: text("clip_model"),
     aesthetic: text("aesthetic", { mode: "json" }).$type<string[]>(),
     aestheticModel: text("aesthetic_model"),
+    sensitiveScore: real("sensitive_score"),
+    sensitiveModel: text("sensitive_model"),
     autoTitleModel: text("auto_title_model"),
     suggestedTags: text("suggested_tags", { mode: "json" }).$type<string[]>(),
     suggestedTagsModel: text("suggested_tags_model"),

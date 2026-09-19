@@ -10,8 +10,8 @@ export interface SettingsSection {
 }
 
 export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
-  { id: "general", path: "general", label: "General", group: "general" },
-  { id: "viewer", path: "viewer", label: "Viewer", group: "general" },
+  { id: "general", path: "general", label: "Preferences", group: "general" },
+  { id: "viewer", path: "viewer", label: "Preview", group: "general" },
   {
     id: "appearance",
     path: "appearance",
@@ -19,42 +19,52 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     group: "general",
   },
   {
-    id: "schedule",
-    path: "schedule",
-    label: "Fetching",
-    hidden: true,
-    group: "library",
+    id: "shortcuts",
+    path: "shortcuts",
+    label: "Hotkeys",
+    group: "general",
   },
   { id: "tags", path: "tags", label: "Tags", hidden: true, group: "library" },
   {
-    id: "trash",
-    path: "trash",
-    label: "Trash",
-    hidden: true,
+    id: "library",
+    path: "library",
+    label: "Library",
     group: "library",
   },
   {
     id: "storage",
     path: "storage",
-    label: "Storage & Backups",
+    label: "Storage",
     group: "library",
   },
+  { id: "backups", path: "backups", label: "Backups", group: "library" },
   {
     id: "search",
     path: "search",
-    label: "Search & Processing",
+    label: "Search",
     group: "library",
   },
-  { id: "models", path: "models", label: "Integrations", group: "general" },
-  { id: "mcp", path: "mcp", label: "MCP", hidden: true, group: "ai" },
-  { id: "videos", path: "videos", label: "Harvesting", group: "library" },
   {
-    id: "images",
-    path: "images",
-    label: "Images",
-    hidden: true,
-    group: "capture",
+    id: "processing",
+    path: "processing",
+    label: "Processing",
+    group: "library",
   },
+  {
+    id: "harvesting",
+    path: "harvesting",
+    label: "Harvesting",
+    group: "library",
+  },
+  { id: "models", path: "models", label: "Providers", group: "ai" },
+  { id: "agent-models", path: "agent-models", label: "Models", group: "ai" },
+  {
+    id: "personalization",
+    path: "personalization",
+    label: "Personalization",
+    group: "ai",
+  },
+  { id: "mcp", path: "mcp", label: "Model Context Protocol", group: "ai" },
 ];
 
 export const SETTINGS_GROUP_ORDER: readonly SettingsGroup[] = [
@@ -65,24 +75,29 @@ export const SETTINGS_GROUP_ORDER: readonly SettingsGroup[] = [
 ];
 
 export const SETTINGS_GROUP_LABELS = {
-  general: "General",
-  library: "Library",
-  ai: "AI",
+  general: null,
+  library: "Workspace",
+  ai: "Intelligence",
   capture: "Capture",
-} satisfies Record<SettingsGroup, string>;
+} satisfies Record<SettingsGroup, string | null>;
 
 export const SETTINGS_SECTION_ALIASES = {
-  downloads: "videos",
-  harvesting: "videos",
-  schedule: "videos",
-  fetching: "videos",
-  images: "videos",
-  trash: "storage",
-  mcp: "models",
+  preview: "viewer",
+  hotkeys: "shortcuts",
+  downloads: "harvesting",
+  videos: "harvesting",
+  schedule: "harvesting",
+  fetching: "harvesting",
+  images: "harvesting",
+  trash: "library",
   agent: "models",
+  providers: "models",
+  integrations: "models",
+  intelligence: "models",
+  personalisation: "personalization",
   ai: "models",
-  "ai-models": "models",
+  "ai-models": "agent-models",
   "ai-providers": "models",
-  enrichment: "search",
-  skills: "search",
+  enrichment: "processing",
+  skills: "processing",
 } satisfies Readonly<Record<string, string>>;

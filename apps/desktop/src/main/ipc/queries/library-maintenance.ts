@@ -1,7 +1,11 @@
-import { basename } from "node:path";
 import { shell } from "electron";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import type { QueryResult } from "../../../shared/query-contracts";
+import {
+  readLibraryIdentity,
+  updateLibraryIdentity,
+} from "../../core/library-identity";
 import {
   purgeLibrarySubdir,
   verifyLibraryIntegrity,
@@ -11,14 +15,37 @@ import { reconcileLibrary } from "../../core/scan";
 import { closeDb } from "../../db";
 import { libraryRoot } from "../../paths";
 import { runtimeControls } from "../../runtime";
-import type { QueryHandlerMap } from "./params";
+import { type QueryHandlerMap, query } from "./params";
 
 export const libraryMaintenanceQueries = {
   async "library.info"() {
     const path = libraryRoot();
-    const name = basename(path).replace(/\.(pond|library)$/, "") || "Library";
-    return { path, name };
+    return { path, ...readLibraryIdentity(path) };
   },
+
+  "library.identity.update": query(
+    z.object({
+      name: z.string().optional(),
+      icon: z.string().nullable().optional(),
+      accent: z.string().nullable().optional(),
+    }),
+    (params) => {
+      try {
+        return {
+          ok: true as const,
+          ...updateLibraryIdentity(libraryRoot(), params),
+        };
+      } catch (error) {
+        return {
+          ok: false as const,
+          reason:
+            error instanceof Error
+              ? error.message
+              : "Could not customize the library.",
+        };
+      }
+    },
+  ),
 
   async "library.rescan"() {
     return await reconcileLibrary();

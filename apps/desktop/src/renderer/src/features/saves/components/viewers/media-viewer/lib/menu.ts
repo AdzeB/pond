@@ -1,5 +1,5 @@
 import {
-  IconCopyOutline18,
+  IconClone2Outline18,
   IconFloppyDiskOutline18,
   IconImagePlusOutline18,
 } from "@pond/icons/outline/18";
@@ -64,7 +64,7 @@ export function buildViewerMenu(
         items: [
           {
             label: "Copy Current Frame",
-            icon: createElement(IconCopyOutline18),
+            icon: createElement(IconClone2Outline18),
             shortcut: shortcutGlyphs("viewer.copy-frame"),
             onClick: () => void copyVideoFrame(video),
           },

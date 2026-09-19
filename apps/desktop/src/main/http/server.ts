@@ -12,6 +12,8 @@ import { itemInfoHandler } from "./item-info";
 import { itemThumbHandler } from "./item-thumb";
 import { libraryActionRoutes } from "./library-actions";
 import { libraryInfoHandler } from "./library-info";
+import { libraryLocationRoutes } from "./library-locations";
+import { operationRoutes } from "./operations";
 import { sessionImportHandler } from "./session-import";
 import { sessionPendingHandler } from "./session-pending";
 
@@ -121,6 +123,7 @@ function buildApp(): Hono {
   api.use("/api/v2/enqueue", requireAuth);
   api.use("/api/v2/item/*", requireAuth);
   api.use("/api/v2/library/*", requireAuth);
+  api.use("/api/v2/operations/*", requireAuth);
   api.use("/api/v2/session/*", requireAuth);
 
   api.post("/api/v2/enqueue", enqueueHandler);
@@ -130,6 +133,8 @@ function buildApp(): Hono {
   api.get("/api/v2/item/thumb", itemThumbHandler);
   api.get("/api/v2/library/info", libraryInfoHandler);
   api.route("/api/v2/library", libraryActionRoutes());
+  api.route("/api/v2/library", libraryLocationRoutes());
+  api.route("/api/v2/operations", operationRoutes());
   api.post("/api/v2/session/import", sessionImportHandler);
   api.get("/api/v2/session/pending", sessionPendingHandler);
 

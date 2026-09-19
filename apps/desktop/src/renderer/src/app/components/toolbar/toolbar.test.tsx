@@ -1,5 +1,3 @@
-// @vitest-environment jsdom
-
 import { PrefsSchema } from "@pond/schema";
 import {
   createMemoryHistory,
@@ -11,27 +9,26 @@ import {
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { rememberListPath } from "@/features/library/lib/list-path";
 import { folders } from "@/features/library/state/folders";
 import { libraryChrome } from "@/features/library/state/library-chrome";
-import { libraryViewContext } from "@/features/library/state/library-view-context";
 import {
   applySavedView,
   getViewState,
   resetFilters,
   setSearchInput,
 } from "@/features/library/state/view-store";
+import { rememberListPath } from "@/features/saves/lib/list-path";
 import { normalise } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
+import { libraryViewContext } from "@/features/saves/state/view-context";
 import { setAppRouter } from "@/shared/lib/app-router";
-import { Toolbar } from "./toolbar";
+import { Toolbar } from "./";
 
 describe("breadcrumb toolbar", () => {
   let host: HTMLDivElement;
   let root: Root;
 
   beforeEach(async () => {
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.clearAllMocks();
     vi.stubGlobal(
       "ResizeObserver",

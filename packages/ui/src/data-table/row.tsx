@@ -1,8 +1,5 @@
-// biome-ignore-all lint/a11y/useSemanticElements: custom CSS-grid table uses ARIA grid roles by design.
-// biome-ignore-all lint/a11y/useFocusableInteractive: grid cells use a row-level keyboard model, not per-cell focus.
-// biome-ignore-all lint/a11y/useKeyWithClickEvents: click guards only stop row propagation; keyboard handled at row level.
-
 import { useSelector } from "@tanstack/react-store";
+import type { RowData } from "@tanstack/react-table";
 import {
   memo,
   type MouseEvent as ReactMouseEvent,
@@ -13,7 +10,7 @@ import type { RowApi } from "./context";
 import styles from "./styles.module.css";
 import type { CellContext, RenderRowArgs } from "./types";
 
-interface RowProps<T> {
+interface RowProps<T extends RowData> {
   api: RowApi<T>;
   rowId: string;
   prevId?: string;
@@ -24,7 +21,7 @@ interface RowProps<T> {
   canExpand: boolean;
 }
 
-function RowImpl<T>({
+function RowImpl<T extends RowData>({
   api,
   rowId,
   prevId,

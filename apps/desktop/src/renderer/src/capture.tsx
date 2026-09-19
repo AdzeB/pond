@@ -2,9 +2,9 @@ import type { TextCardData } from "@shared/text-card";
 import type { TweetCardData } from "@shared/tweet-card";
 import { useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
-import { TextCard } from "./features/captures/components/text-card/text-card";
-import { ThreadsCard } from "./features/captures/components/threads/card/card";
-import { TweetCard } from "./features/captures/components/tweet/card/card";
+import { TextCard } from "./features/captures/components/text-card";
+import { ThreadsCard } from "./features/captures/components/threads/card";
+import { TweetCard } from "./features/captures/components/tweet/card";
 import "@pond/theme/radius.css";
 
 const DEFAULT_WIDTH = 550;

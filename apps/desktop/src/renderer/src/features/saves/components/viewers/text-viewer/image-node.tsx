@@ -19,9 +19,8 @@ export type SerializedImageNode = Spread<
 >;
 
 function $convertImage(element: HTMLElement): DOMConversionOutput | null {
-  const img = element as HTMLImageElement;
-  if (!img.src) return null;
-  return { node: $createImageNode({ src: img.src, alt: img.alt }) };
+  if (!(element instanceof HTMLImageElement) || !element.src) return null;
+  return { node: $createImageNode({ src: element.src, alt: element.alt }) };
 }
 
 export class ImageNode extends DecoratorNode<JSX.Element> {

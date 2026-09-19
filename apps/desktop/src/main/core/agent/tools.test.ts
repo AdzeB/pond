@@ -1,5 +1,4 @@
 import type { JsonValue } from "@pond/schema/json";
-import { convertSchemaToJsonSchema } from "@tanstack/ai";
 import type { SQL } from "drizzle-orm";
 import { SQLiteSyncDialect } from "drizzle-orm/sqlite-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -162,7 +161,8 @@ function untypedSchemaPaths(schema: JsonValue, path = "$"): string[] {
     z.string().safeParse(node.$ref).success;
   const hits = !typed && keys.length === 0 ? [path] : [];
   for (const [key, value] of Object.entries(node)) {
-    if (key === "$schema" || key === "$ref") continue;
+    if (key === "$schema" || key === "$ref" || key === "additionalProperties")
+      continue;
     const properties =
       key === "properties"
         ? z.record(z.string(), z.json()).safeParse(value)
@@ -195,7 +195,7 @@ it("converts Agent tool inputs to JSON Schema providers can type-check", () => {
     proposeChanges: assistantProposalInput,
   };
   const failures = Object.entries(schemas).flatMap(([name, schema]) => {
-    const json = convertSchemaToJsonSchema(schema);
+    const json = z.toJSONSchema(schema);
     return untypedSchemaPaths(z.json().parse(json)).map(
       (path) => `${name}: ${path}`,
     );

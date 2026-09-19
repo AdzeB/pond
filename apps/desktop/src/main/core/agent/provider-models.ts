@@ -20,18 +20,16 @@ export function modelsFromProviderResponse(
   const ids = idsFromResponse(provider, json);
   const seen = new Set<string>();
   const models: ProviderModel[] = [];
-  const local =
-    provider === "ollama" ||
-    provider === "lmstudio" ||
-    provider === "compatible";
+  const local = provider === "ollama" || provider === "lmstudio";
   for (const raw of ids) {
     const id = raw.id.trim();
     if (!id || seen.has(id) || !isChatModel(provider, id)) continue;
     seen.add(id);
-    models.push({
+    const model: ProviderModel = {
       id,
       name: raw.name.trim() || (local ? id : displayName(id)),
-    });
+    };
+    models.push(model);
   }
   return models.sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -77,7 +75,10 @@ function idsFromResponse(
       data: z
         .array(
           z
-            .object({ id: stringField, display_name: stringField })
+            .object({
+              id: stringField,
+              display_name: stringField,
+            })
             .nullable()
             .catch(null),
         )
@@ -86,23 +87,26 @@ function idsFromResponse(
     .safeParse(json);
   return parsed.success
     ? parsed.data.data.flatMap((row) =>
-        row?.id ? [{ id: row.id, name: row.display_name }] : [],
+        row?.id
+          ? [
+              {
+                id: row.id,
+                name: row.display_name,
+              },
+            ]
+          : [],
       )
     : [];
 }
 
 function isChatModel(provider: AgentProviderId, id: string): boolean {
   if (SKIP.test(id)) return false;
-  if (
-    provider === "ollama" ||
-    provider === "lmstudio" ||
-    provider === "compatible"
-  )
-    return true;
+  if (provider === "ollama" || provider === "lmstudio") return true;
   const n = id.toLowerCase();
   if (provider === "openai") return /^(gpt-|o[1-9]|chatgpt-)/.test(n);
   if (provider === "anthropic") return n.includes("claude");
   if (provider === "gemini") return n.includes("gemini");
+  if (provider === "deepseek") return n.includes("deepseek");
   return true;
 }
 
@@ -112,7 +116,6 @@ export function resolveModelId(
     modelIds?: Record<string, string>;
     ollamaModelId?: string;
     lmstudioModelId?: string;
-    compatibleModelId?: string;
   },
   catalogFallback: string,
 ): string {
@@ -125,10 +128,9 @@ export function connectionFor(
     modelIds?: Record<string, string>;
     ollamaModelId?: string;
     lmstudioModelId?: string;
-    compatibleModelId?: string;
     ollamaBaseUrl?: string;
     lmstudioBaseUrl?: string;
-    compatibleBaseUrl?: string;
+    azureResourceName?: string;
   },
   catalogFallback: string,
 ) {
@@ -137,7 +139,14 @@ export function connectionFor(
     return { modelId, baseUrl: prefs.ollamaBaseUrl || undefined };
   if (provider === "lmstudio")
     return { modelId, baseUrl: prefs.lmstudioBaseUrl || undefined };
-  if (provider === "compatible")
-    return { modelId, baseUrl: prefs.compatibleBaseUrl || undefined };
+  if (provider === "azure") {
+    const resource = prefs.azureResourceName?.trim();
+    return {
+      modelId,
+      baseUrl: resource
+        ? `https://${resource}.openai.azure.com/openai/v1`
+        : undefined,
+    };
+  }
   return { modelId };
 }

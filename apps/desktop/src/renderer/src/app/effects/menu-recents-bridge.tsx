@@ -1,8 +1,8 @@
 import { useSelector } from "@tanstack/react-store";
 import { useEffect, useMemo } from "react";
-import { useRecents } from "@/features/library/state/recents";
 import { openSave } from "@/features/saves/lib/save-nav";
 import { pool, savesStore } from "@/features/saves/state/pool";
+import { useRecents } from "@/features/saves/state/recents";
 
 interface RecentMenuEntry {
   id: string;

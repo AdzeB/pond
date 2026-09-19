@@ -21,7 +21,7 @@ describe("pickPageImages", () => {
 });
 
 describe("pageAssetsDraft", () => {
-  it("queues collect-mode asset items with the page-asset tag", () => {
+  it("queues asset items with the page-asset tag", () => {
     expect(
       pageAssetsDraft({
         id: "draft-1",
@@ -31,7 +31,6 @@ describe("pageAssetsDraft", () => {
     ).toEqual({
       id: "draft-1",
       originUrl: "https://example.test/gallery",
-      mode: "collect",
       metadata: { tags: ["page-asset"], folderIds: [] },
       items: [{ kind: "asset", url: huge.src }],
     });

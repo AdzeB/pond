@@ -1,11 +1,14 @@
 import {
   type ColumnDef,
+  createExpandedRowModel,
+  createSortedRowModel,
   type ExpandedState,
-  getCoreRowModel,
-  getExpandedRowModel,
-  getSortedRowModel,
+  type RowData,
+  rowExpandingFeature,
+  rowSortingFeature,
   type SortingState,
-  useReactTable,
+  tableFeatures,
+  useTable,
 } from "@tanstack/react-table";
 import { Store } from "@tanstack/store";
 import {
@@ -27,6 +30,13 @@ import type { RenderRowArgs, SortKind, SortValue, TableColumn } from "./types";
 const SELECT_WIDTH = "40px";
 const CARET_WIDTH = "28px";
 
+export const DATA_TABLE_FEATURES = tableFeatures({
+  rowSortingFeature,
+  rowExpandingFeature,
+  sortedRowModel: createSortedRowModel(),
+  expandedRowModel: createExpandedRowModel(),
+});
+
 const collator = new Intl.Collator(undefined, { sensitivity: "base" });
 
 function compareValues(a: SortValue, b: SortValue, sort: SortKind): number {
@@ -37,7 +47,7 @@ function compareValues(a: SortValue, b: SortValue, sort: SortKind): number {
   return an === bn ? 0 : an > bn ? 1 : -1;
 }
 
-export interface DataTableProviderProps<T> {
+export interface DataTableProviderProps<T extends RowData> {
   data: T[];
   columns: TableColumn<T>[];
   getRowId: (row: T) => string;
@@ -57,7 +67,7 @@ export interface DataTableProviderProps<T> {
   children: ReactNode;
 }
 
-export function DataTableProvider<T>({
+export function DataTableProvider<T extends RowData>({
   data,
   columns,
   getRowId,
@@ -98,13 +108,13 @@ export function DataTableProvider<T>({
     return rec;
   }, [expandedIds, internalExpanded]);
 
-  const tanstackColumns = useMemo<ColumnDef<T>[]>(
+  const tanstackColumns = useMemo<ColumnDef<typeof DATA_TABLE_FEATURES, T>[]>(
     () =>
       columns.map((col) => ({
         id: col.id,
         accessorFn: col.accessor ? (row) => col.accessor?.(row) : undefined,
         enableSorting: Boolean(col.accessor),
-        sortingFn: (a, b, id) =>
+        sortFn: (a, b, id) =>
           compareValues(
             a.getValue<SortValue>(id),
             b.getValue<SortValue>(id),
@@ -114,7 +124,8 @@ export function DataTableProvider<T>({
     [columns],
   );
 
-  const table = useReactTable({
+  const table = useTable({
+    features: DATA_TABLE_FEATURES,
     data,
     columns: tanstackColumns,
     state: { sorting, expanded },
@@ -123,9 +134,6 @@ export function DataTableProvider<T>({
     onSortingChange: setSorting,
     onExpandedChange: setInternalExpanded,
     enableSortingRemoval: false,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
   });
 
   const rows = table.getRowModel().rows;

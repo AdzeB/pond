@@ -1,0 +1,38 @@
+.popup {
+  --dialog-offset-y: 0%;
+  top: max(64px, 11vh);
+  display: flex;
+  flex-direction: column;
+  width: min(680px, calc(100vw - 40px));
+  max-height: min(450px, calc(100dvh - 80px));
+  overflow: hidden;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-xl);
+  box-shadow: var(--ds-shadow-6);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+}
+
+@media (max-width: 620px) {
+  .popup {
+    top: 56px;
+    width: calc(100vw - 20px);
+    max-height: calc(100dvh - 72px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popup {
+    transition: none;
+  }
+}

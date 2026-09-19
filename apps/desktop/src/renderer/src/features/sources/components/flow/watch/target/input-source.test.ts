@@ -14,16 +14,14 @@ it.each([
   expect(watchInputSource(input)).toEqual({ type: "link", source });
 });
 
-it.each([
-  "@person",
-  "person.name",
-  "person/board",
-  "",
-])("asks for a platform for %s", (input) =>
-  expect(watchInputSource(input)).toEqual({ type: "handle" }));
+it.each(["@person", "person.name", "person/board", ""])(
+  "asks for a platform for %s",
+  (input) => expect(watchInputSource(input)).toEqual({ type: "handle" }),
+);
 
 it.each([
   "https://example.com/person",
   "https://instagram.com.evil.test/person",
 ])("rejects an unsupported link %s", (input) =>
-  expect(watchInputSource(input)).toEqual({ type: "unsupported" }));
+  expect(watchInputSource(input)).toEqual({ type: "unsupported" }),
+);

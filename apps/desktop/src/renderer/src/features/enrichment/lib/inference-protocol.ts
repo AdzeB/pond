@@ -13,21 +13,29 @@ export type InferenceRequest =
       op: "florence";
       image: SerializedImage;
       task: FlorenceTask;
-      modelId: string;
     }
-  | { id: number; op: "clipImage"; image: SerializedImage; modelId: string }
+  | { id: number; op: "clipImage"; image: SerializedImage }
   | {
       id: number;
       op: "clipAesthetic";
       image: SerializedImage;
       labels: string[];
-      modelId: string;
     }
-  | { id: number; op: "embedText"; text: string; modelId: string }
-  | { id: number; op: "embedTexts"; texts: string[]; modelId: string }
-  | { id: number; op: "transcribe"; audio: Float32Array; modelId: string };
+  | {
+      id: number;
+      op: "sensitiveContent";
+      images: SerializedImage[];
+    }
+  | { id: number; op: "embedText"; text: string }
+  | { id: number; op: "embedTexts"; texts: string[] }
+  | { id: number; op: "transcribe"; audio: Float32Array };
 
-export type InferenceResult = string | Float32Array | Float32Array[] | string[];
+export type InferenceResult =
+  | string
+  | number[]
+  | Float32Array
+  | Float32Array[]
+  | string[];
 
 export type InferenceResponse =
   | { id: number; ok: true; result: InferenceResult }

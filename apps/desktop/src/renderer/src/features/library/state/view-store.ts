@@ -429,12 +429,6 @@ export function activateFolderPresentation(
     randomSeed: presentation?.randomSeed ?? readViewPref("seed") ?? "pond",
   }));
 }
-export function shuffleOrder(): void {
-  const randomSeed = crypto.randomUUID();
-  if (!store.state.presentationFolderId) writeViewPref("seed", randomSeed);
-  store.setState((state) => ({ ...state, randomSeed }));
-  persistPresentation();
-}
 export function useRandomSeed(): string {
   return useSelector(store, (state) => state.randomSeed);
 }

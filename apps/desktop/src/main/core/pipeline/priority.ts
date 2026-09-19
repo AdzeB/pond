@@ -2,7 +2,7 @@ import type { Task } from "@pond/schema/db";
 import type { JsonValue } from "@pond/schema/json";
 import { z } from "zod";
 
-export const INTERACTIVE_PRIORITY = "interactive";
+const INTERACTIVE_PRIORITY = "interactive";
 
 export const TaskPayloadSchema = z
   .looseObject({

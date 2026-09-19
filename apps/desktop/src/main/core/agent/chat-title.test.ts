@@ -2,17 +2,13 @@ import { expect, it } from "vitest";
 import { chatTitle } from "./chat-title";
 
 it.each([
+  ["Reply with hello. No library search needed.", "Reply with hello"],
+  ["Find my film references", "Find my film references"],
   [
-    "Find three Saves about film or cinematography. Show them as Save results, then give one short sentence about each using only saved information. Only read; do not change anything.",
-    "Film or cinematography references",
+    "Organize my saved architecture references",
+    "Organize my saved architecture references",
   ],
-  ["Find my film references and compare their lighting", "Compare film"],
-  [
-    "Summarize my saved references about Suspiria in two sentences.",
-    "Suspiria summary",
-  ],
-  ["Organize my saved architecture references", "Organize architecture"],
-  ["Find recent photos", "Recent Saves"],
+  ["Find recent photos", "Find recent photos"],
   ["Could you compare these?", "Compare these"],
   ["Hi!", "Hi"],
   ["  ", undefined],

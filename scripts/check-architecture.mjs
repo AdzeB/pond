@@ -5,6 +5,7 @@ import { parseSync, Visitor } from "oxc-parser";
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const desktop = join(repository, "apps/desktop/src");
+const workspaceRoots = ["apps", "packages"];
 
 export function runtimeImports(
   source,
@@ -55,7 +56,12 @@ export function runtimeImports(
 
 function sourceFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    if (entry.name === "generated") return [];
+    if (
+      [".next", ".output", "dist", "generated", "node_modules", "out"].includes(
+        entry.name,
+      )
+    )
+      return [];
     const path = join(directory, entry.name);
     if (entry.isDirectory()) return sourceFiles(path);
     return /\.(ts|tsx)$/.test(path) &&
@@ -64,6 +70,59 @@ function sourceFiles(directory) {
       ? [path]
       : [];
   });
+}
+
+function workspacePackages() {
+  return workspaceRoots.flatMap((root) => {
+    const directory = join(repository, root);
+    return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+      if (!entry.isDirectory()) return [];
+      const path = join(directory, entry.name);
+      const manifestPath = join(path, "package.json");
+      if (!existsSync(manifestPath)) return [];
+      return [
+        { path, manifest: JSON.parse(readFileSync(manifestPath, "utf8")) },
+      ];
+    });
+  });
+}
+
+export function declaredWorkspaceDependencyErrors(packages) {
+  const workspaceNames = new Set(
+    packages.map(({ manifest }) => manifest.name).filter(Boolean),
+  );
+  const errors = [];
+  for (const { path, manifest } of packages) {
+    const declared = new Set(
+      Object.keys({
+        ...manifest.dependencies,
+        ...manifest.devDependencies,
+        ...manifest.optionalDependencies,
+        ...manifest.peerDependencies,
+      }),
+    );
+    for (const source of sourceFiles(path)) {
+      const imports = runtimeImports(
+        readFileSync(source, "utf8"),
+        source,
+        true,
+      );
+      for (const specifier of imports) {
+        if (!specifier.startsWith("@")) continue;
+        const dependency = specifier.split("/").slice(0, 2).join("/");
+        if (
+          dependency === manifest.name ||
+          !workspaceNames.has(dependency) ||
+          declared.has(dependency)
+        )
+          continue;
+        errors.push(
+          `${manifest.name} imports undeclared workspace dependency ${dependency}: ${relative(repository, source)}`,
+        );
+      }
+    }
+  }
+  return errors;
 }
 
 function resolveImport(source, specifier) {
@@ -126,10 +185,19 @@ export function dependencyCycles(graph) {
   return cycles;
 }
 
+export function rendererOwnershipError(from, to) {
+  if (
+    from.startsWith("renderer/src/features/saves/") &&
+    to.startsWith("renderer/src/features/library/")
+  )
+    return `Save code depends on Library code: ${from} -> ${to}`;
+  return null;
+}
+
 function main() {
   const files = sourceFiles(desktop);
   const graph = new Map();
-  const errors = [];
+  const errors = declaredWorkspaceDependencyErrors(workspacePackages());
   for (const source of files) {
     const content = readFileSync(source, "utf8");
     const dependencies = runtimeImports(content, source)
@@ -142,6 +210,8 @@ function main() {
       .filter(Boolean);
     for (const target of allDependencies) {
       const to = relative(desktop, target);
+      const ownershipError = rendererOwnershipError(from, to);
+      if (ownershipError) errors.push(ownershipError);
       if (
         from.startsWith("renderer/src/shared/") &&
         /renderer\/src\/(features|app|dev|routes)\//.test(to)

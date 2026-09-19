@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import type { Save } from "@/features/saves/types";
 import {
   defaultDownloadFilters,
+  downloadFiltersActive,
   historyToDownloadRow,
   matchesDownloadFilters,
   mergeDownloadRows,
   projectLiveDownloads,
   type StatusFilter,
+  statusBucket,
 } from "./downloads";
 
 function save(partial: Partial<Save> & Pick<Save, "id" | "status">): Save {
@@ -161,6 +163,14 @@ describe("projectLiveDownloads", () => {
     ]);
     expect(rows).toEqual([]);
   });
+
+  it("projects skipped saves so harvest can leave them alone", () => {
+    const rows = projectLiveDownloads([
+      save({ id: "skip", status: "skipped", title: "Ignored clip" }),
+    ]);
+    expect(rows[0]?.status).toBe("skipped");
+    expect(statusBucket("skipped")).toBe("skipped");
+  });
 });
 
 describe("matchesDownloadFilters", () => {
@@ -170,8 +180,14 @@ describe("matchesDownloadFilters", () => {
   const row = rows[0];
   if (!row) throw new Error("expected a row");
 
-  it("defaults to in progress and failed", () => {
+  it("shows every status when no filters are set", () => {
     expect(matchesDownloadFilters(row, defaultDownloadFilters())).toBe(true);
+    expect(
+      downloadFiltersActive({
+        ...defaultDownloadFilters(),
+        q: "clip",
+      }),
+    ).toBe(false);
   });
 
   it("hides failed when that status is off", () => {
@@ -188,6 +204,31 @@ describe("matchesDownloadFilters", () => {
     expect(matchesDownloadFilters(row, filters)).toBe(true);
     filters.q = "missing";
     expect(matchesDownloadFilters(row, filters)).toBe(false);
+  });
+
+  it("matches a YouTube URL stored as web", () => {
+    const [webRow] = projectLiveDownloads([
+      save({
+        id: "yt",
+        status: "failed",
+        title: "Reel",
+        source: "web",
+        url: "https://www.youtube.com/watch?v=abc",
+      }),
+    ]);
+    if (!webRow) throw new Error("expected a row");
+    expect(
+      matchesDownloadFilters(webRow, {
+        ...defaultDownloadFilters(),
+        sources: new Set(["youtube"]),
+      }),
+    ).toBe(true);
+    expect(
+      matchesDownloadFilters(webRow, {
+        ...defaultDownloadFilters(),
+        sources: new Set(["twitter"]),
+      }),
+    ).toBe(false);
   });
 });
 

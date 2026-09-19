@@ -6,9 +6,9 @@ These standards apply to hand-written repository code. Generated output follows 
 
 Use Pond's domain names from [CONTEXT.md](../../CONTEXT.md). Files and directories use kebab-case; components and types use PascalCase; functions and values use camelCase. Name an operation for what it does: `createTag`, `loadNextPage`, `cancelSync`.
 
-Keep names required by tooling: TanStack route filenames such as `__root.tsx` and `$saveId.tsx`, Next.js `page.tsx` and `layout.tsx`, WXT entrypoints, configuration files, generated `routeTree.gen.ts`, and generated icon component names. Existing shared UI package entrypoints remain stable public imports. These exceptions are not a reason to name new feature implementations `index.tsx`.
+Keep names required by tooling: TanStack route filenames such as `__root.tsx` and `$saveId.tsx`, Next.js `page.tsx` and `layout.tsx`, WXT entrypoints, configuration files, generated `routeTree.gen.ts`, and generated icon component names. Existing shared UI package entrypoints remain stable public imports.
 
-Use descriptive implementation filenames, for example `save-card.tsx`, `save-card.test.tsx`, and `save-card.module.css`. Colocate styles and tests with their implementation. A directory groups a cohesive module; it does not need an index file. Reserve `index.ts` for a deliberate public interface. Export the operations callers need, not internal helpers. Avoid broad feature barrels that eagerly import optional UI or workers.
+A styled component owns a folder with `index.tsx` and `styles.module.css`. Colocate its tests in that folder. CSS-less helpers and domain modules use descriptive kebab-case filenames. A directory groups a cohesive module, and `index.ts` exposes its deliberate public interface. Export the operations callers need, not internal helpers. Avoid broad feature barrels that eagerly import optional UI or workers.
 
 ## Ownership and dependencies
 

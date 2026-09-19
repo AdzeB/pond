@@ -35,6 +35,11 @@ import {
 import { queryLibraryPage } from "../library-query";
 import type { ToolResult } from "./complete";
 import {
+  MCP_ACCESS_OFF,
+  type McpAccessGroup,
+  mcpToolAllowed,
+} from "./mcp-access";
+import {
   applyFilter,
   applyFilterInput,
   grepLibrary,
@@ -62,6 +67,20 @@ function textResult(
   };
 }
 
+function withAccess<Args extends unknown[]>(
+  group: McpAccessGroup,
+  run: (
+    ...args: Args
+  ) => ReturnType<typeof textResult> | Promise<ReturnType<typeof textResult>>,
+) {
+  return async (...args: Args) => {
+    if (!(await mcpToolAllowed(group))) {
+      return textResult({ error: MCP_ACCESS_OFF[group] });
+    }
+    return run(...args);
+  };
+}
+
 export async function startPondMcp(): Promise<void> {
   log.transports.console.level = false;
   const server = new McpServer({
@@ -77,7 +96,7 @@ export async function startPondMcp(): Promise<void> {
       inputSchema: LibraryQueryRequestSchema,
       annotations: { readOnlyHint: true },
     },
-    async (request) =>
+    withAccess("search", async (request) =>
       textResult(
         await queryLibraryPage(
           await getDb(),
@@ -85,6 +104,7 @@ export async function startPondMcp(): Promise<void> {
           request,
         ),
       ),
+    ),
   );
   server.registerTool(
     "search_library",
@@ -93,8 +113,9 @@ export async function startPondMcp(): Promise<void> {
         "Search saves in the local Pond library. Supports visual probes via saveId or a CLIP vector.",
       inputSchema: searchLibraryInput,
     },
-    async (args) =>
+    withAccess("search", async (args) =>
       textResult(await searchLibrary(searchLibraryInput.parse(args))),
+    ),
   );
   server.registerTool(
     "read_save",
@@ -103,7 +124,9 @@ export async function startPondMcp(): Promise<void> {
         "Read stored caption, OCR, transcript, notes, comments, and metadata for one save.",
       inputSchema: readSaveInput,
     },
-    async (args) => textResult(await readSave(readSaveInput.parse(args))),
+    withAccess("search", async (args) =>
+      textResult(await readSave(readSaveInput.parse(args))),
+    ),
   );
   server.registerTool(
     "grep_library",
@@ -112,7 +135,9 @@ export async function startPondMcp(): Promise<void> {
         "Search inside captions, OCR, transcripts, notes, and titles.",
       inputSchema: grepLibraryInput,
     },
-    async (args) => textResult(await grepLibrary(grepLibraryInput.parse(args))),
+    withAccess("search", async (args) =>
+      textResult(await grepLibrary(grepLibraryInput.parse(args))),
+    ),
   );
   server.registerTool(
     "list_folders",
@@ -120,7 +145,7 @@ export async function startPondMcp(): Promise<void> {
       description: "List folders in the Pond library.",
       inputSchema: listFoldersInput,
     },
-    async () => textResult(await listLibraryFolders()),
+    withAccess("search", async () => textResult(await listLibraryFolders())),
   );
   server.registerTool(
     "open_save",
@@ -128,7 +153,9 @@ export async function startPondMcp(): Promise<void> {
       description: "Focus Pond on a save.",
       inputSchema: openSaveInput,
     },
-    async (args) => textResult(await openSave(openSaveInput.parse(args))),
+    withAccess("open", async (args) =>
+      textResult(await openSave(openSaveInput.parse(args))),
+    ),
   );
   server.registerTool(
     "apply_filter",
@@ -136,7 +163,9 @@ export async function startPondMcp(): Promise<void> {
       description: "Apply a structured filter to the Pond Library grid.",
       inputSchema: applyFilterInput,
     },
-    async (args) => textResult(await applyFilter(applyFilterInput.parse(args))),
+    withAccess("open", async (args) =>
+      textResult(await applyFilter(applyFilterInput.parse(args))),
+    ),
   );
 
   server.registerTool(
@@ -147,7 +176,7 @@ export async function startPondMcp(): Promise<void> {
       inputSchema: z.object({}),
       annotations: { readOnlyHint: true },
     },
-    async () => textResult(readActions()),
+    withAccess("actions", async () => textResult(readActions())),
   );
   server.registerTool(
     "save_action",
@@ -156,7 +185,9 @@ export async function startPondMcp(): Promise<void> {
         "Create or update a reusable action definition. Does not modify saves.",
       inputSchema: z.object({ definition: ActionDefinitionSchema }),
     },
-    async ({ definition }) => textResult(saveAction(definition)),
+    withAccess("actions", async ({ definition }) =>
+      textResult(saveAction(definition)),
+    ),
   );
   server.registerTool(
     "delete_action",
@@ -165,10 +196,10 @@ export async function startPondMcp(): Promise<void> {
         "Delete a reusable action definition. Does not modify saves.",
       inputSchema: z.object({ id: z.string().min(1) }),
     },
-    async ({ id }) => {
+    withAccess("actions", async ({ id }) => {
       deleteAction(id);
       return textResult({ ok: true });
-    },
+    }),
   );
   server.registerTool(
     "preview_action",
@@ -178,8 +209,9 @@ export async function startPondMcp(): Promise<void> {
       inputSchema: ActionRequestSchema,
       annotations: { readOnlyHint: true },
     },
-    async ({ definition, ids }) =>
+    withAccess("actions", async ({ definition, ids }) =>
       textResult(await prepareAction(definition, ids)),
+    ),
   );
   server.registerTool(
     "run_action",
@@ -188,8 +220,9 @@ export async function startPondMcp(): Promise<void> {
         "Apply a reviewed action using the exact token from preview_action. Rejects a stale preview. The entire operation can be undone in Pond.",
       inputSchema: ActionRunSchema,
     },
-    async ({ definition, ids, expectedToken }) =>
+    withAccess("actions", async ({ definition, ids, expectedToken }) =>
       textResult({ changed: await runAction(definition, ids, expectedToken) }),
+    ),
   );
 
   server.registerTool(
@@ -199,7 +232,7 @@ export async function startPondMcp(): Promise<void> {
       inputSchema: z.object({}),
       annotations: { readOnlyHint: true },
     },
-    async () => textResult(conversionPresets()),
+    withAccess("export", async () => textResult(conversionPresets())),
   );
   server.registerTool(
     "save_conversion_preset",
@@ -207,7 +240,9 @@ export async function startPondMcp(): Promise<void> {
       description: "Save a reusable conversion preset in the current library.",
       inputSchema: z.object({ preset: ConversionPresetSchema }),
     },
-    async ({ preset }) => textResult(saveConversionPreset(preset)),
+    withAccess("export", async ({ preset }) =>
+      textResult(saveConversionPreset(preset)),
+    ),
   );
   server.registerTool(
     "start_conversion",
@@ -216,7 +251,9 @@ export async function startPondMcp(): Promise<void> {
         "Export converted copies of selected Save files to a chosen directory. Preserves originals and existing output files. Returns a job ID for progress and cancellation.",
       inputSchema: ConversionApiRequestSchema,
     },
-    async (request) => textResult(conversionJobs.start(request)),
+    withAccess("export", async (request) =>
+      textResult(conversionJobs.start(request)),
+    ),
   );
   server.registerTool(
     "conversion_status",
@@ -225,7 +262,9 @@ export async function startPondMcp(): Promise<void> {
       inputSchema: z.object({ id: z.string().min(1) }),
       annotations: { readOnlyHint: true },
     },
-    async ({ id }) => textResult(conversionJobs.status(id)),
+    withAccess("export", async ({ id }) =>
+      textResult(conversionJobs.status(id)),
+    ),
   );
   server.registerTool(
     "cancel_conversion",
@@ -234,7 +273,9 @@ export async function startPondMcp(): Promise<void> {
         "Cancel a running conversion. Completed exports are retained.",
       inputSchema: z.object({ id: z.string().min(1) }),
     },
-    async ({ id }) => textResult(conversionJobs.cancel(id)),
+    withAccess("export", async ({ id }) =>
+      textResult(conversionJobs.cancel(id)),
+    ),
   );
 
   const transport = new StdioServerTransport();

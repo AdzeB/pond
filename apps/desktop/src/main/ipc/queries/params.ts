@@ -1,6 +1,5 @@
 import { SOURCES } from "@pond/schema/db";
-import { FIELD_DESCRIPTORS } from "@pond/schema/filters/fields";
-import { COMPARATORS_BY_TYPE, type Query } from "@pond/schema/filters/types";
+import { type Query, QuerySchema } from "@pond/schema/filters";
 import type { IpcMainInvokeEvent } from "electron";
 import { z } from "zod";
 import type { QueryName, QueryResult } from "../../../shared/query-contracts";
@@ -13,8 +12,9 @@ export function query<Schema extends z.ZodType, Result>(
   schema: Schema,
   run: (params: z.infer<Schema>, event?: IpcMainInvokeEvent) => Result,
 ) {
-  return (raw?: QueryParams, event?: IpcMainInvokeEvent): Result =>
+  const handler = (raw?: QueryParams, event?: IpcMainInvokeEvent): Result =>
     run(schema.parse(QueryParamsSchema.parse(raw)), event);
+  return Object.assign(handler, { inputSchema: schema });
 }
 
 export type QueryHandlerMap = Partial<{
@@ -64,25 +64,7 @@ export const FlagParam = z.coerce.boolean();
 
 export const StringListParam = z.array(z.coerce.string()).catch([]);
 
-const FIELD_IDS = new Set<string>(Object.keys(FIELD_DESCRIPTORS));
-const COMPARATOR_IDS = new Set<string>(
-  Object.values(COMPARATORS_BY_TYPE).flat(),
-);
-
-const ClauseSchema: z.ZodType = z.union([
-  z.looseObject({
-    field: z.string().refine((id) => FIELD_IDS.has(id)),
-    operator: z.string().refine((id) => COMPARATOR_IDS.has(id)),
-  }),
-  z.lazy(() => GroupSchema),
-]);
-
-const GroupSchema: z.ZodType = z.looseObject({
-  combinator: z.enum(["and", "or"]),
-  rules: z.array(ClauseSchema),
-});
-
 export const QueryParam = z
-  .custom<Query>((value) => GroupSchema.safeParse(value).success)
+  .custom<Query>((value) => QuerySchema.safeParse(value).success)
   .nullable()
   .catch(null);

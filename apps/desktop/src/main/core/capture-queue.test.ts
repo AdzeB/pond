@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { CaptureDraft } from "@pond/schema/capture";
@@ -13,7 +13,6 @@ afterEach(async () => {
 });
 const draft = (id = "capture-1"): CaptureDraft => ({
   id,
-  mode: "quick",
   metadata: { tags: ["reference"], folderIds: [] },
   items: [
     { kind: "url", url: "https://example.com/one" },
@@ -94,22 +93,6 @@ describe("durable capture queue", () => {
     expect(calls).toEqual(["capture-1:0", "capture-1:1"]);
     expect((await queue.list())[0]?.state).toBe("complete");
   });
-  it("keeps collect drafts pending until metadata is confirmed", async () => {
-    const tags: string[][] = [];
-    const { queue } = await fixture(async (_item, meta, id) => {
-      tags.push(meta.tags);
-      return { id };
-    });
-    await queue.accept({ ...draft(), mode: "collect" });
-    await queue.idle();
-    expect(tags).toEqual([]);
-    await queue.resume("capture-1", {
-      tags: ["chosen"],
-      folderIds: ["folder"],
-    });
-    await queue.idle();
-    expect(tags).toEqual([["chosen"], ["chosen"]]);
-  });
   it("deduplicates a repeated accepted request and reports source duplicates", async () => {
     let calls = 0;
     const { queue } = await fixture(async () => {
@@ -123,18 +106,36 @@ describe("durable capture queue", () => {
     expect(calls).toBe(2);
     expect((await queue.list())[0]?.duplicateCount).toBe(2);
   });
-  it("never processes accepted work in a different library", async () => {
-    let calls = 0;
-    const { root, ports, queue } = await fixture(async () => {
-      calls++;
-      return { id: "id" };
+  it("recovers legacy pending jobs without waiting for review", async () => {
+    const calls: string[] = [];
+    const { root, queue } = await fixture(async (_item, _meta, id) => {
+      calls.push(id);
+      return { id };
     });
-    await queue.accept({ ...draft(), mode: "collect" });
-    ports.root = () => `${root}-other`;
-    await expect(queue.resume("capture-1")).rejects.toThrow();
-    expect(calls).toBe(0);
-    ports.root = () => root;
-    await expect(queue.draft("../outside")).rejects.toThrow(
+    const directory = join(root, ".capture-queue");
+    await mkdir(directory);
+    await writeFile(
+      join(directory, "capture-1.json"),
+      JSON.stringify({
+        draft: draft(),
+        library: root,
+        state: "draft",
+        completed: 0,
+        saveIds: [],
+        duplicateCount: 0,
+      }),
+    );
+
+    await queue.recover();
+    await queue.idle();
+
+    expect(calls).toEqual(["capture-1:0", "capture-1:1"]);
+    expect((await queue.list())[0]?.state).toBe("complete");
+  });
+  it("rejects invalid capture IDs", async () => {
+    const { queue } = await fixture(async () => ({ id: "id" }));
+
+    await expect(queue.cancel("../outside")).rejects.toThrow(
       "Invalid capture ID",
     );
   });

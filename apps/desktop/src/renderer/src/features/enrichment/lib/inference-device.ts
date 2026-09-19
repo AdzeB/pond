@@ -6,6 +6,7 @@ type InferenceDevice = "webgpu" | "wasm";
 const CoreCountSchema = z.number().catch(4);
 
 let wasmConfigured = false;
+let wasmThreads = 1;
 /** transformers.js/onnxruntime-web default to all logical cores, which pegs the machine on the CPU path; half the cores keeps the UI responsive while still making progress. */
 function capWasmThreads(): void {
   if (wasmConfigured) return;
@@ -16,13 +17,13 @@ function capWasmThreads(): void {
   const isolated = globalThis.crossOriginIsolated === true;
   const hasSAB = "SharedArrayBuffer" in globalThis;
   /** Multi-threaded WASM needs cross-origin isolation AND SharedArrayBuffer; otherwise onnxruntime silently runs single-threaded. */
-  const threads = isolated && hasSAB ? Math.max(1, Math.floor(cores / 2)) : 1;
+  wasmThreads = isolated && hasSAB ? Math.max(1, Math.floor(cores / 2)) : 1;
   try {
     const wasm = env.backends.onnx.wasm;
-    if (wasm) wasm.numThreads = threads;
+    if (wasm) wasm.numThreads = wasmThreads;
   } catch {}
   console.info(
-    `[inference] wasm threads=${threads} (cores=${cores}, crossOriginIsolated=${isolated}, SharedArrayBuffer=${hasSAB})`,
+    `[inference] wasm threads=${wasmThreads} (cores=${cores}, crossOriginIsolated=${isolated}, SharedArrayBuffer=${hasSAB})`,
   );
   if (!isolated) {
     console.warn(
@@ -30,6 +31,11 @@ function capWasmThreads(): void {
         "single-threaded. Check COOP/COEP headers on the renderer.",
     );
   }
+}
+
+export function configuredWasmThreads(): number {
+  capWasmThreads();
+  return wasmThreads;
 }
 
 let devicePromise: Promise<InferenceDevice> | null = null;

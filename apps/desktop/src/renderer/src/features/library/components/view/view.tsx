@@ -1,20 +1,20 @@
 import { useCallback, useEffect } from "react";
 import {
+  FolderEmpty,
   LibraryEmpty,
   LibraryLoading,
   LibrarySectionEmpty,
   MatchesEmpty,
   TrashEmpty,
   UncategorizedEmpty,
-} from "@/features/library/components/empty/empty";
-import { HoverPreview } from "@/features/library/components/hover-preview/hover-preview";
-import { LibraryGrid } from "@/features/library/components/layouts/grid/grid";
+} from "@/features/library/components/empty";
+import { libraryEmptyKind } from "@/features/library/components/empty/kind";
+import { HoverPreview } from "@/features/library/components/hover-preview";
+import { LibraryGrid } from "@/features/library/components/layouts/grid";
 import { LayoutSwitcher } from "@/features/library/components/layouts/switcher/switcher";
 import { useGridHotkeys } from "@/features/library/hooks/use-grid-hotkeys";
 import { useLibraryState } from "@/features/library/hooks/use-library-state";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
-import { libraryViewContext } from "@/features/library/state/library-view-context";
-import { resultNavigation } from "@/features/library/state/result-navigation";
 import { resetFilters } from "@/features/library/state/view-store";
 import { useCardActions } from "@/features/saves/hooks/use-card-actions";
 import { useSavePaging } from "@/features/saves/hooks/use-saves";
@@ -22,8 +22,40 @@ import {
   clearSaveSelection,
   isLibraryBackgroundTarget,
 } from "@/features/saves/lib/select";
+import { resultNavigation } from "@/features/saves/state/result-navigation";
+import { libraryViewContext } from "@/features/saves/state/view-context";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
 import { buildEmptyGalleryMenu } from "./empty-gallery-menu";
+
+function LibraryEmptyState({
+  mode,
+  navKind,
+  hasActiveSearch,
+  hasActiveFilter,
+  libraryTotal,
+}: {
+  mode: ReturnType<typeof useLibraryState>["mode"];
+  navKind: ReturnType<typeof useLibraryNav>["kind"];
+  hasActiveSearch: boolean;
+  hasActiveFilter: boolean;
+  libraryTotal: number;
+}) {
+  const kind = libraryEmptyKind({
+    mode,
+    navKind,
+    hasActiveSearch,
+    hasActiveFilter,
+    libraryTotal,
+  });
+  if (kind === "trash") return <TrashEmpty />;
+  if (kind === "folder") return <FolderEmpty />;
+  if (kind === "library") return <LibraryEmpty />;
+  if (kind === "uncategorized") return <UncategorizedEmpty />;
+  if (kind === "section" && mode !== "library" && mode !== "trash") {
+    return <LibrarySectionEmpty mode={mode} />;
+  }
+  return <MatchesEmpty onReset={resetFilters} />;
+}
 
 export function LibraryView() {
   const data = useLibraryState();
@@ -92,21 +124,13 @@ export function LibraryView() {
           (data.paging.loading && data.filtered.length === 0) ? (
           <LibraryLoading />
         ) : data.filtered.length === 0 ? (
-          data.mode === "trash" &&
-          !data.hasActiveSearch &&
-          !data.hasActiveFilter ? (
-            <TrashEmpty />
-          ) : paging.total === 0 && data.mode !== "trash" ? (
-            <LibraryEmpty />
-          ) : data.hasActiveSearch || data.hasActiveFilter ? (
-            <MatchesEmpty onReset={resetFilters} />
-          ) : data.mode !== "library" && data.mode !== "trash" ? (
-            <LibrarySectionEmpty mode={data.mode} />
-          ) : nav.kind === "uncategorized" ? (
-            <UncategorizedEmpty />
-          ) : (
-            <MatchesEmpty onReset={resetFilters} />
-          )
+          <LibraryEmptyState
+            mode={data.mode}
+            navKind={nav.kind}
+            hasActiveSearch={data.hasActiveSearch}
+            hasActiveFilter={data.hasActiveFilter}
+            libraryTotal={paging.total}
+          />
         ) : (
           <LayoutSwitcher
             viewMode={data.viewMode}

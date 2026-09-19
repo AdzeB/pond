@@ -1,211 +1,229 @@
-// biome-ignore-all lint/a11y/useSemanticElements: matches DataTable's ARIA grid structure.
-// biome-ignore-all lint/a11y/useFocusableInteractive: each cell contains a keyboard-focusable control.
-import {
-  IconChevronRightOutline12,
-  IconXmarkOutline12,
-} from "@pond/icons/outline/12";
-import { IconDownloadOutline18 } from "@pond/icons/outline/18";
-import {
-  Button,
-  type RenderRowArgs,
-  type TableColumn,
-  Tooltip,
-} from "@pond/ui";
+import { sourceLabel } from "@pond/schema/sources";
+import type { RenderRowArgs, TableColumn } from "@pond/ui";
 import type { DownloadActivity } from "@shared/download-activity";
-import { useMutation } from "@tanstack/react-query";
-import { useId, useState } from "react";
-import {
-  type DownloadRow,
-  statusFeed,
-} from "@/features/downloads/lib/status-feed";
-import { useMediaPickOptions } from "@/features/saves/hooks/use-media-pick-options";
-import { useSave } from "@/features/saves/hooks/use-saves";
-import { pickPrimaryUnit } from "@/features/saves/lib/media/units";
-import { openSave } from "@/features/saves/lib/save-nav";
-import { getSourceIcon, getSourceLogo } from "@/features/sources/lib/registry";
+import type { DownloadRow } from "@/features/downloads/lib/status-feed";
+import { BrandTile } from "@/features/sources/components/sync-monitor-source-tile";
 import { relativeTimeFromMs } from "@/shared/lib/relative-time";
 import {
   describeDownloadActivity,
   formatDuration,
 } from "../../lib/download-progress";
-import { IconSwap } from "./icon-swap";
-import styles from "./page.module.css";
+import { downloadBrandSource } from "./brand";
 import {
-  downloadStatusIcon,
+  type DownloadTableStatus,
   downloadStatusLabel,
-  isDownloadAttention,
+  downloadTableStatus,
   isDownloadProcessing,
   isDownloadStopped,
-  isDownloadWaiting,
 } from "./status";
+import styles from "./styles.module.css";
 
-export const downloadsColumns: TableColumn<DownloadRow>[] = [
+export interface DownloadViewRow extends DownloadRow {
+  paused: boolean;
+  activity?: DownloadActivity;
+  now: number;
+  inspected: boolean;
+}
+
+const RING = 100;
+
+function measuredActivity(row: DownloadViewRow) {
+  return row.status === "running" && row.activity?.state === "running"
+    ? describeDownloadActivity(row.activity, row.now)
+    : null;
+}
+
+function StatusGlyph({ status }: { status: DownloadTableStatus }) {
+  const complete = status === "complete";
+  const progress = status === "progress";
+  const failed = status === "failed";
+  const paused = status === "paused";
+  const idle = status === "cancelled" || status === "skipped";
+  return (
+    <svg
+      className={styles.glyph}
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      aria-hidden
+    >
+      <title>{status}</title>
+      <circle
+        cx="8"
+        cy="8"
+        r="6"
+        fill={complete ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeDasharray={idle ? "2 2.5" : undefined}
+        opacity={complete ? 1 : 0.45}
+      />
+      {progress ? (
+        <circle
+          cx="8"
+          cy="8"
+          r="6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeDasharray={`${0.65 * RING} ${RING}`}
+          pathLength={RING}
+          transform="rotate(-90 8 8)"
+        />
+      ) : null}
+      {complete ? (
+        <path
+          d="M5.2 8.2 7 10 10.8 6"
+          fill="none"
+          stroke="var(--ds-gray-1)"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ) : null}
+      {failed ? (
+        <path
+          d="M5.6 5.6 10.4 10.4 M10.4 5.6 5.6 10.4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+        />
+      ) : null}
+      {paused ? (
+        <>
+          <rect x="5.55" y="5.35" width="1.55" height="5.3" rx="0.4" />
+          <rect x="8.9" y="5.35" width="1.55" height="5.3" rx="0.4" />
+        </>
+      ) : null}
+    </svg>
+  );
+}
+
+function NameCell({ row }: { row: DownloadViewRow }) {
+  const title = row.name.trim() || row.url.trim() || "Untitled save";
+  const measured = measuredActivity(row);
+  return (
+    <button
+      type="button"
+      className={styles.open}
+      aria-label={`Inspect ${title}`}
+    >
+      <span className={styles.lead}>
+        <span className={styles.name} title={title}>
+          {title}
+        </span>
+      </span>
+      {measured?.progress != null ? (
+        <progress
+          className={styles.progress}
+          value={measured.progress}
+          max={1}
+          aria-label={`${title} transfer progress`}
+        />
+      ) : null}
+    </button>
+  );
+}
+
+function SourceCell({ row }: { row: DownloadViewRow }) {
+  const source = downloadBrandSource(row.source, row.url);
+  return (
+    <span className={styles.source}>
+      <BrandTile source={source} size={18} />
+      <span className={styles["source-label"]}>{sourceLabel(source)}</span>
+    </span>
+  );
+}
+
+function StatusCell({ row }: { row: DownloadViewRow }) {
+  const status = downloadTableStatus(row, row.paused);
+  return (
+    <span className={styles.status} title={row.error ?? undefined}>
+      <span className={styles.mark} data-status={status}>
+        <StatusGlyph status={status} />
+      </span>
+      <span className={styles["status-label"]}>
+        {downloadStatusLabel(row, row.paused)}
+      </span>
+    </span>
+  );
+}
+
+function TimeCell({ row }: { row: DownloadViewRow }) {
+  const running = row.status === "running";
+  const measured = measuredActivity(row);
+  const elapsed =
+    running && row.activity
+      ? formatDuration(row.now - row.activity.phaseStartedAt)
+      : null;
+  return (
+    <span className={styles.metric}>
+      {measured?.progress != null
+        ? `${Math.round(measured.progress * 100)}%`
+        : ""}
+      {measured?.progress != null && measured.speed ? " · " : ""}
+      {measured?.speed ?? (measured?.progress == null ? elapsed : "")}
+      {!running ? relativeTimeFromMs(row.ts) : null}
+    </span>
+  );
+}
+
+export const downloadsColumns: TableColumn<DownloadViewRow>[] = [
   {
     id: "name",
     header: "Name",
     sortLabel: "Name",
     accessor: (row) => row.name,
-    width: "minmax(160px, 1fr)",
-    cell: () => null,
+    width: "minmax(0, 1fr)",
+    cell: (row) => <NameCell row={row} />,
+  },
+  {
+    id: "source",
+    header: "Source",
+    sortLabel: "Source",
+    accessor: (row) => sourceLabel(downloadBrandSource(row.source, row.url)),
+    width: "minmax(0, 140px)",
+    cell: (row) => <SourceCell row={row} />,
+  },
+  {
+    id: "now",
+    header: "Now",
+    sortLabel: "Now",
+    accessor: (row) => row.ts,
+    width: "minmax(0, 120px)",
+    cell: (row) => <TimeCell row={row} />,
   },
   {
     id: "status",
-    header: "Now",
+    header: "Status",
     sortLabel: "Status",
-    accessor: (row) => row.status,
-    width: "140px",
-    cell: () => null,
+    accessor: (row) => downloadStatusLabel(row, row.paused),
+    width: "minmax(0, 120px)",
+    cell: (row) => <StatusCell row={row} />,
   },
-  { id: "actions", headerHidden: true, width: "40px", cell: () => null },
 ];
-
-function DownloadThumbnail({ row }: { row: DownloadRow }) {
-  const save = useSave(row.saveId);
-  const options = useMediaPickOptions();
-  const [failedUrl, setFailedUrl] = useState<string>();
-  const unit = save ? pickPrimaryUnit(save, options) : null;
-  const url = unit?.isVideo ? unit.posterUrl : unit?.url;
-  const Icon = getSourceIcon(row.source);
-  const logo = getSourceLogo(row.source);
-
-  return (
-    <span className={styles.thumbnail} aria-hidden="true">
-      {url && url !== failedUrl ? (
-        <img
-          src={url}
-          alt=""
-          loading="lazy"
-          onError={() => setFailedUrl(url)}
-        />
-      ) : Icon ? (
-        <Icon />
-      ) : logo ? (
-        <img className={styles.logo} src={logo} alt="" />
-      ) : (
-        <IconDownloadOutline18 />
-      )}
-    </span>
-  );
-}
 
 export function DownloadQueueRow({
   row,
   rowProps,
-  paused,
-  activity,
-  now = Date.now(),
-  inspected = false,
-}: RenderRowArgs<DownloadRow> & {
-  paused: boolean;
-  activity?: DownloadActivity;
-  now?: number;
-  inspected?: boolean;
-}) {
-  const descriptionId = useId();
+  cells,
+}: RenderRowArgs<DownloadViewRow>) {
   const running = row.status === "running";
-  const waiting = isDownloadWaiting(row);
-  const stopped = isDownloadStopped(row, paused);
-  const attention = isDownloadAttention(row);
-  const cancellable = row.live && (running || waiting);
-  const processing = isDownloadProcessing(row);
-  const title = row.name.trim() || row.url.trim() || "Untitled save";
-  const measured =
-    running && activity?.state === "running"
-      ? describeDownloadActivity(activity, now)
-      : null;
-  const status = measured?.label ?? downloadStatusLabel(row, paused);
-  const elapsed =
-    running && activity ? formatDuration(now - activity.phaseStartedAt) : null;
-  const StatusIcon = downloadStatusIcon(row, paused);
-  const cancel = useMutation({
-    mutationFn: () => window.pond.pipelineCancelSave(row.saveId),
-    onError: () =>
-      statusFeed.error(
-        "Cancel download",
-        "Couldn't cancel this download. Try again.",
-      ),
-  });
-
+  const measured = measuredActivity(row);
   return (
     <div
       {...rowProps}
       className={`${rowProps.className} ${styles.row}`}
       data-status={row.status}
-      data-inspected={inspected || undefined}
+      data-inspected={row.inspected || undefined}
       data-stalled={measured?.stalled || undefined}
       data-moving={running || undefined}
-      data-processing={processing || undefined}
-      data-paused={stopped || undefined}
+      data-processing={isDownloadProcessing(row) || undefined}
+      data-paused={isDownloadStopped(row, row.paused) || undefined}
     >
-      <div role="gridcell" className={styles.content}>
-        <button
-          type="button"
-          className={styles.open}
-          aria-label={`Inspect ${title}`}
-          aria-describedby={`${descriptionId} ${descriptionId}-status`}
-        >
-          <DownloadThumbnail row={row} />
-          <span className={styles.copy} id={descriptionId}>
-            <strong className={styles.title} title={title}>
-              {title}
-            </strong>
-            <span className={styles.rowStatus} id={`${descriptionId}-status`}>
-              <span className={styles.activity} aria-hidden="true">
-                <StatusIcon />
-              </span>
-              <span
-                className={attention && row.error ? styles.error : styles.stage}
-                title={row.error ?? undefined}
-              >
-                {attention && row.error ? row.error : status}
-                {!attention && measured?.detail ? ` · ${measured.detail}` : ""}
-              </span>
-            </span>
-            {measured?.progress != null ? (
-              <progress
-                className={styles.progress}
-                value={measured.progress}
-                max={1}
-                aria-label={`${title} transfer progress`}
-              />
-            ) : null}
-          </span>
-        </button>
-      </div>
-      <div role="gridcell" className={styles.status}>
-        <span className={styles.now}>
-          {measured?.progress != null
-            ? `${Math.round(measured.progress * 100)}%`
-            : ""}
-          {measured?.progress != null && measured.speed ? " · " : ""}
-          {measured?.speed ?? (measured?.progress == null ? elapsed : "")}
-          {!running ? relativeTimeFromMs(row.ts) : null}
-        </span>
-      </div>
-      <div role="gridcell" className={styles.rowAction}>
-        <Tooltip label={cancellable ? "Cancel Download" : "View Save"}>
-          <Button
-            icon
-            size="xs"
-            variant="ghost"
-            aria-label={`${cancellable ? "Cancel" : "View"} ${title}`}
-            disabled={cancel.isPending}
-            onClick={(event) => {
-              event.stopPropagation();
-              if (cancellable) cancel.mutate();
-              else openSave(row.saveId);
-            }}
-          >
-            <IconSwap id={cancellable ? "cancel" : "view"}>
-              {cancellable ? (
-                <IconXmarkOutline12 />
-              ) : (
-                <IconChevronRightOutline12 />
-              )}
-            </IconSwap>
-          </Button>
-        </Tooltip>
-      </div>
+      {cells}
     </div>
   );
 }

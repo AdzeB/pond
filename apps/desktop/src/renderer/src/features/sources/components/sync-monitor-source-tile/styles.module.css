@@ -1,0 +1,16 @@
+.brand-tile {
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: var(--ds-radius-source);
+  corner-shape: var(--ds-corner-icon);
+  box-shadow: var(--ds-shadow-2);
+}
+
+.brand-tile svg,
+.brand-tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

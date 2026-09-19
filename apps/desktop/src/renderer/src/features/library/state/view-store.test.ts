@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { matches } from "@pond/schema/filters/match";
 import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -93,24 +92,24 @@ describe("smart folder selection", () => {
     });
   });
 
-  it.each([
-    "smart_folder",
-    "group",
-  ] as const)("preserves presentation for %s", (kind) => {
-    applySavedView({
-      id: "view",
-      kind,
-      query: EMPTY_QUERY,
-      sortKey: "savedAt",
-      sortDir: "desc",
-      layout: "grid",
-    });
-    expect(getViewState()).toMatchObject({
-      sortKey: "title",
-      sortDir: "asc",
-      layout: "list",
-    });
-  });
+  it.each(["smart_folder", "group"] as const)(
+    "preserves presentation for %s",
+    (kind) => {
+      applySavedView({
+        id: "view",
+        kind,
+        query: EMPTY_QUERY,
+        sortKey: "savedAt",
+        sortDir: "desc",
+        layout: "grid",
+      });
+      expect(getViewState()).toMatchObject({
+        sortKey: "title",
+        sortDir: "asc",
+        layout: "list",
+      });
+    },
+  );
 
   it("clears previous text, semantic, and visual searches", () => {
     setSearchDraft("sunsets source:instagram.com");

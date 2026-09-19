@@ -102,7 +102,7 @@ export const downloadsQueries = {
       .where(
         and(
           isNull(saves.deletedAt),
-          inArray(saves.status, ["ingesting", "failed"]),
+          inArray(saves.status, ["ingesting", "failed", "skipped"]),
         ),
       );
     return rows.map((row) => row.id);

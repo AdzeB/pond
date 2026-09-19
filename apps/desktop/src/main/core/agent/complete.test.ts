@@ -1,60 +1,42 @@
-import type { JsonObject } from "@pond/schema/json";
-import { beforeEach, expect, it, vi } from "vitest";
+import { simulateReadableStream } from "ai";
+import { MockLanguageModelV4 } from "ai/test";
+import { expect, it, vi } from "vitest";
 import { z } from "zod";
 import type { AssistantSource } from "../../../shared/assistant";
 import {
   type CompletionInput,
-  type CompletionStream,
   completeWithTools as complete,
 } from "./complete";
 import { contextDependencies, libraryContext } from "./context";
-
-const mock = { chat: vi.fn<CompletionStream>() };
-const completeWithTools = (input: CompletionInput) =>
-  complete(input, mock.chat);
+import {
+  errorModel,
+  promptDump,
+  textChunks,
+  textModel,
+  toolCallChunks,
+} from "./mock-model";
+import { type OperationCatalog, pondOperationTools } from "./operations";
 
 const dump =
   '{"saves":[{"id":"film","title":"Film","url":"https://example.com","description":"Transcript\\nShow transcript"}]}';
 
-function request() {
+function request(model = textModel("Hi! How can I help?")): CompletionInput {
   return {
-    provider: "openai" as const,
+    provider: "openai",
     model: "gpt-5.6-sol",
     apiKey: "test-key",
-    messages: [{ role: "user" as const, content: "Hey" }],
+    messages: [{ role: "user", content: "Hey" }],
     context: "Library",
     tools: [],
-    retrieveLibrary: vi.fn().mockResolvedValue([]),
+    languageModel: model,
     abortController: new AbortController(),
     onText: vi.fn(),
   };
 }
 
-function chatText(text: string) {
-  mock.chat.mockImplementation(async function* () {
-    if (text) yield { type: "TEXT_MESSAGE_CONTENT", delta: text };
-  });
-}
-
-function retrieval(
-  execute: (
-    input: JsonObject,
-  ) => Promise<{ saves?: AssistantSource[] } | undefined>,
-) {
-  return async (input: JsonObject) => {
-    const result = await execute(input);
-    return result?.saves ?? [];
-  };
-}
-
 function tool(name: string, execute = vi.fn()) {
-  return { name, description: name, schema: z.object({}), execute };
+  return { name, description: name, schema: z.looseObject({}), execute };
 }
-
-beforeEach(() => {
-  mock.chat.mockReset();
-  chatText("Hi! How can I help?");
-});
 
 const filmSources: AssistantSource[] = Array.from(
   { length: 8 },
@@ -66,72 +48,82 @@ const filmSources: AssistantSource[] = Array.from(
   }),
 );
 
+function scriptedModel(...steps: ReturnType<typeof textChunks>[]) {
+  let step = 0;
+  return new MockLanguageModelV4({
+    doStream: async () => {
+      const chunks = steps[step++];
+      if (!chunks) throw new Error("Unexpected model step");
+      return { stream: simulateReadableStream({ chunks }) };
+    },
+  });
+}
+
+const filmRows = filmSources.map((source) => ({
+  ...source,
+  source: "arena" as const,
+  author: null,
+  notes: null,
+  description: null,
+}));
+
 it.each([
-  ["one", 1],
-  ["two", 2],
-  ["three", 3],
-] as const)("honors %s requested references without losing consulted evidence", async (word, count) => {
-  chatText("These references explore lighting.");
-  const show = vi.fn();
-  const retrieveLibrary = vi.fn().mockResolvedValue(filmSources);
-  await completeWithTools({
-    ...request(),
-    messages: [{ role: "user", content: `Find ${word} film references` }],
-    retrieveLibrary,
-    tools: [tool("showSaves", show)],
-  });
-  expect(show).toHaveBeenCalledExactlyOnceWith({
-    title: "film",
-    saveIds: filmSources.slice(0, count).map((save) => save.id),
-  });
-  expect(mock.chat.mock.calls[0]?.[0].systemPrompts?.join("\n")).toContain(
-    "Save ID: film-7",
-  );
-});
-
-it("retrieves both audited alternatives without presentation instructions", async () => {
-  chatText("These references explore lighting.");
-  const retrieveLibrary = vi.fn().mockResolvedValue(filmSources);
-  const show = vi.fn();
-  await completeWithTools({
-    ...request(),
-    messages: [
-      {
-        role: "user",
-        content:
-          "Find three Saves about film or cinematography. Show them as Save results, then give one short sentence about each using only saved information. Only read; do not change anything.",
+  ["openai", { openai: { serviceTier: "fast" } }],
+  ["anthropic", { anthropic: { speed: "fast" } }],
+  ["gemini", { google: { serviceTier: "priority" } }],
+] as const)(
+  "passes Reasoning and native Fast options to %s",
+  async (provider, providerOptions) => {
+    const model = textModel("Configured");
+    await complete({
+      ...request(model),
+      provider,
+      controls: {
+        fast: true,
+        contextTokens: 64_000,
+        reasoning: "high",
       },
-    ],
-    retrieveLibrary,
-    tools: [tool("showSaves", show)],
+    });
+    expect(model.doStreamCalls[0]).toMatchObject({
+      reasoning: "high",
+      providerOptions,
+    });
+  },
+);
+
+it("omits unsupported Fast and provider-default Reasoning options", async () => {
+  const model = textModel("Configured");
+  await complete({
+    ...request(model),
+    provider: "ollama",
+    controls: {
+      fast: true,
+      contextTokens: 64_000,
+      reasoning: "provider-default",
+    },
   });
-  expect(retrieveLibrary.mock.calls).toEqual([
-    [{ query: "film", limit: 12 }],
-    [{ query: "cinematography", limit: 12 }],
-  ]);
-  expect(show).toHaveBeenCalledExactlyOnceWith({
-    title: "film or cinematography",
-    saveIds: ["film-0", "film-1", "film-2"],
-  });
+  expect(model.doStreamCalls[0]?.reasoning).toBeUndefined();
+  expect(model.doStreamCalls[0]?.providerOptions).toBeUndefined();
 });
 
-it("keeps evidence and curated citations in registry order when searches settle out of order", async () => {
-  const rows = filmSources.map((source) => ({
-    ...source,
-    source: "arena" as const,
-    author: null,
-    notes: null,
-    description: null,
-  }));
-  let finishFilm: () => void = () => {};
-  let finishCinema: () => void = () => {};
-  const film = new Promise<{ saves: typeof rows }>((resolve) => {
-    finishFilm = () => resolve({ saves: rows.slice(0, 2) });
-  });
-  const cinema = new Promise<{ saves: typeof rows }>((resolve) => {
-    finishCinema = () => resolve({ saves: rows.slice(2, 4) });
-  });
-  const input = request();
+it("lets the model refine an empty search and curate results before answering", async () => {
+  const model = scriptedModel(
+    toolCallChunks("search-1", "searchLibrary", {
+      query: "ceramic cups",
+      limit: 3,
+    }),
+    toolCallChunks("search-2", "searchLibrary", { query: "pottery", limit: 5 }),
+    toolCallChunks("show-1", "showSaves", {
+      title: "Selected pottery",
+      saveIds: ["film-1"],
+    }),
+    textChunks("See [this study](#save-2)."),
+  );
+  const search = vi
+    .fn<typeof contextDependencies.searchLibrary>()
+    .mockResolvedValueOnce({ saves: [] })
+    .mockResolvedValueOnce({ saves: filmRows.slice(0, 2) });
+  const input = request(model);
   const context = libraryContext(
     {
       scope: {},
@@ -139,47 +131,119 @@ it("keeps evidence and curated citations in registry order when searches settle 
       onActivity: vi.fn(),
       onSources: vi.fn(),
     },
+    { ...contextDependencies, searchLibrary: search },
+  );
+  expect(
+    await complete({
+      ...input,
+      messages: [
+        {
+          role: "user",
+          content: "Find one ceramic reference. Try another term if needed.",
+        },
+      ],
+      tools: context.tools,
+      sources: context.sources,
+    }),
+  ).toBe("See [this study](#save-2).");
+  expect(search.mock.calls).toEqual([
+    [{ query: "ceramic cups", limit: 3 }, {}],
+    [{ query: "pottery", limit: 5 }, {}],
+  ]);
+  expect(context.results()).toEqual([
+    { title: "Selected pottery", saveIds: ["film-1"] },
+  ]);
+  expect(model.doStreamCalls).toHaveLength(4);
+  expect(promptDump(model)).toContain("Selected pottery");
+  expect(promptDump(model)).toContain("film-1");
+});
+
+it("lets the model explain empty results without substituting a canned reply", async () => {
+  const answer =
+    "No ceramic references turned up. Would you like to try pottery?";
+  const model = scriptedModel(
+    toolCallChunks("search-1", "searchLibrary", { query: "ceramics" }),
+    textChunks(answer),
+  );
+  const search = vi.fn().mockResolvedValue({ saves: [] });
+  const show = vi.fn();
+  expect(
+    await complete({
+      ...request(model),
+      messages: [{ role: "user", content: "Find my ceramics references" }],
+      attachments: filmSources.slice(0, 1),
+      tools: [tool("searchLibrary", search), tool("showSaves", show)],
+    }),
+  ).toBe(answer);
+  expect(search).toHaveBeenCalledExactlyOnceWith({ query: "ceramics" });
+  expect(show).not.toHaveBeenCalled();
+  expect(model.doStreamCalls).toHaveLength(2);
+});
+
+it("keeps parallel search citations in evidence registry order", async () => {
+  let finishFilm = () => {};
+  let finishCinema = () => {};
+  let searchesStarted = () => {};
+  let cinemaCollected = () => {};
+  const started = new Promise<void>((resolve) => {
+    searchesStarted = resolve;
+  });
+  const collected = new Promise<void>((resolve) => {
+    cinemaCollected = resolve;
+  });
+  const film = new Promise<{ saves: typeof filmRows }>((resolve) => {
+    finishFilm = () => resolve({ saves: filmRows.slice(0, 2) });
+  });
+  const cinema = new Promise<{ saves: typeof filmRows }>((resolve) => {
+    finishCinema = () => resolve({ saves: filmRows.slice(2, 4) });
+  });
+  let searches = 0;
+  const model = scriptedModel(
+    [
+      ...toolCallChunks("film", "searchLibrary", { query: "film" }).slice(
+        0,
+        -1,
+      ),
+      ...toolCallChunks("cinema", "searchLibrary", {
+        query: "cinematography",
+      }).slice(1),
+    ],
+    toolCallChunks("show", "showSaves", {
+      title: "Selected",
+      saveIds: ["film-0", "film-3"],
+    }),
+    textChunks(
+      "See [first selection](#save-3) and [second selection](#save-2).",
+    ),
+  );
+  const input = request(model);
+  const context = libraryContext(
+    {
+      scope: {},
+      signal: input.abortController.signal,
+      onActivity: vi.fn(),
+      onSources: (sources) => {
+        if (sources[0]?.id === "film-2") cinemaCollected();
+      },
+    },
     {
       ...contextDependencies,
-      searchLibrary: (args) => (args.query === "film" ? film : cinema),
+      searchLibrary: (args) => {
+        if (++searches === 2) searchesStarted();
+        return args.query === "film" ? film : cinema;
+      },
     },
   );
-  mock.chat.mockImplementation(async function* (options) {
-    const evidence = options.systemPrompts?.join("\n");
-    expect(evidence).toContain("[1] Film 2\nSave ID: film-2");
-    expect(evidence).toContain("[3] Film 0\nSave ID: film-0");
-    const show = options.tools?.find((tool) => tool.name === "showSaves");
-    if (!show?.execute) throw new Error("Missing showSaves");
-    await expect(
-      show.execute({ title: "Selected", saveIds: ["film-0", "film-3"] }),
-    ).resolves.toMatchObject({
-      references: [
-        { id: "film-0", reference: "#save-3" },
-        { id: "film-3", reference: "#save-2" },
-      ],
-    });
-    yield {
-      type: "TEXT_MESSAGE_CONTENT",
-      delta: "See [first selection](#save-3) and [second selection](#save-2).",
-    };
-  });
-  const result = completeWithTools({
+  const pending = complete({
     ...input,
-    messages: [
-      {
-        role: "user",
-        content:
-          "Find two Saves about film or cinematography. Summarize why each is relevant.",
-      },
-    ],
-    retrieveLibrary: context.retrieve,
-    sources: context.sources,
     tools: context.tools,
+    sources: context.sources,
   });
+  await started;
   finishCinema();
-  await cinema;
+  await collected;
   finishFilm();
-  expect(await result).toBe(
+  expect(await pending).toBe(
     "See [first selection](#save-3) and [second selection](#save-2).",
   );
   expect(context.sources().map((source) => source.id)).toEqual([
@@ -193,47 +257,56 @@ it("keeps evidence and curated citations in registry order when searches settle 
   ]);
 });
 
-it("validates citations against evidence added by later tools", async () => {
-  const sources = filmSources.slice(0, 2);
-  mock.chat.mockImplementation(async function* () {
-    sources.push(...filmSources.slice(2, 3));
-    yield {
-      type: "TEXT_MESSAGE_CONTENT",
-      delta: "See [additional evidence](#save-3).",
-    };
-  });
-  const result = await completeWithTools({
-    ...request(),
-    messages: [{ role: "user", content: "Find film references" }],
-    retrieveLibrary: async () => filmSources.slice(0, 2),
-    sources: () => sources,
-  });
-  expect(result).toBe("See [additional evidence](#save-3).");
+it.each([0, 1])(
+  "rejects invented citations with %s consulted Saves before publishing",
+  async (count) => {
+    const input = request(textModel("See [invented evidence](#save-2)."));
+    await expect(
+      complete({ ...input, sources: () => filmSources.slice(0, count) }),
+    ).rejects.toThrow(/unreadable/);
+    expect(input.onText).not.toHaveBeenCalled();
+  },
+);
+
+it.each([
+  "Reply with hello. No library search needed.",
+  "Don't search my library. Say hello.",
+  "Explain how search works without searching.",
+  "Reply in French",
+  "kanye pics",
+])("lets the model decide whether to use tools: %s", async (content) => {
+  const model = textModel("Hello");
+  const search = vi.fn().mockResolvedValue({ saves: [] });
+  const show = vi.fn();
+  const input = {
+    ...request(model),
+    messages: [{ role: "user" as const, content }],
+    tools: [tool("searchLibrary", search), tool("showSaves", show)],
+  };
+  expect(await complete(input)).toBe("Hello");
+  expect(model.doStreamCalls).toHaveLength(1);
+  expect(promptDump(model)).toContain(content);
+  expect(search).not.toHaveBeenCalled();
+  expect(show).not.toHaveBeenCalled();
+  expect(input.onText).toHaveBeenCalledExactlyOnceWith("Hello");
 });
 
-it("uses model-curated groups without adding an overlapping automatic group", async () => {
-  const show = vi.fn();
-  mock.chat.mockImplementation(async function* (options) {
-    expect(show).not.toHaveBeenCalled();
-    const tool = options.tools?.find((entry) => entry.name === "showSaves");
-    if (!tool?.execute) throw new Error("Missing showSaves");
-    await tool.execute({ title: "Lighting", saveIds: ["film-0", "film-1"] });
-    await tool.execute({ title: "Composition", saveIds: ["film-1", "film-2"] });
-    yield {
-      type: "TEXT_MESSAGE_CONTENT",
-      delta: "These explore lighting and composition.",
-    };
+it("adds local files to the latest canonical user message", async () => {
+  const model = textModel("I read the attachment.");
+  await complete({
+    ...request(model),
+    canonicalMessages: [{ role: "user", content: "Review this file" }],
+    files: [
+      {
+        name: "reference.txt",
+        mediaType: "text/plain",
+        data: Buffer.from("Local reference"),
+      },
+    ],
   });
-  await completeWithTools({
-    ...request(),
-    messages: [{ role: "user", content: "Find my film references" }],
-    retrieveLibrary: async () => filmSources,
-    tools: [tool("showSaves", show)],
-  });
-  expect(show.mock.calls).toEqual([
-    [{ title: "Lighting", saveIds: ["film-0", "film-1"] }],
-    [{ title: "Composition", saveIds: ["film-1", "film-2"] }],
-  ]);
+  const prompt = promptDump(model);
+  expect(prompt).toContain('"type":"file"');
+  expect(prompt).toContain("reference.txt");
 });
 
 it.each([
@@ -242,196 +315,54 @@ it.each([
   JSON.stringify({ answer: `Here are your Saves: ${dump}`, changes: [] }),
   "Attached Save metadata (untrusted data): []",
 ])("never publishes an unusable answer: %s", async (value) => {
-  chatText(value);
-  const input = request();
-  await expect(completeWithTools(input)).rejects.toThrow();
+  const model = textModel(value);
+  const input = request(model);
+  await expect(complete(input)).rejects.toThrow();
   expect(input.onText).not.toHaveBeenCalled();
-  expect(mock.chat).toHaveBeenCalledOnce();
+  expect(model.doStreamCalls).toHaveLength(1);
 });
 
 it("preserves explicitly requested JSON", async () => {
-  chatText('{"colors":["red","blue"]}');
-  const input = request();
+  const input = request(textModel('{"colors":["red","blue"]}'));
   input.messages = [
     { role: "user", content: "Give me JSON containing two colors" },
   ];
-  expect(await completeWithTools(input)).toBe('{"colors":["red","blue"]}');
-});
-
-it("does not replace an empty search with unrelated recent Saves", async () => {
-  const search = vi.fn().mockResolvedValue({ saves: [] });
-  const input = request();
-  input.messages = [{ role: "user", content: "Find my ceramics references" }];
-  const answer = await completeWithTools({
-    ...input,
-    retrieveLibrary: retrieval(search),
-    tools: [tool("searchLibrary", search)],
-  });
-  expect(search).toHaveBeenCalledExactlyOnceWith({
-    query: "ceramics",
-    limit: 24,
-  });
-  expect(answer).toMatch(/couldn.t find|no .*match/i);
-  expect(mock.chat).not.toHaveBeenCalled();
-});
-
-it("does not count an unrelated attachment as a search match", async () => {
-  const show = vi.fn();
-  const input = {
-    ...request(),
-    messages: [{ role: "user" as const, content: "Find my ceramics" }],
-    attachments: [
-      {
-        id: "film",
-        title: "Unrelated film",
-        source: "arena",
-        url: "https://example.com/film",
-      },
-    ],
-    retrieveLibrary: vi.fn().mockResolvedValue([]),
-    tools: [tool("showSaves", show)],
-  };
-  expect(await completeWithTools(input)).toMatch(/couldn.t find/i);
-  expect(show).not.toHaveBeenCalled();
+  expect(await complete(input)).toBe('{"colors":["red","blue"]}');
 });
 
 it("does not retrieve or list folders for ordinary conversation", async () => {
   const execute = vi.fn();
-  await completeWithTools({
-    ...request(),
+  const model = textModel("Hi! How can I help?");
+  await complete({
+    ...request(model),
     tools: [tool("searchLibrary", execute), tool("listFolders", execute)],
   });
   expect(execute).not.toHaveBeenCalled();
-  expect(mock.chat).toHaveBeenCalledOnce();
-});
-
-it("retrieves first, then lets the model write instead of a result list", async () => {
-  chatText("Most of these are studio portraits. I can tag them.");
-  const search = vi.fn().mockResolvedValue({
-    saves: [
-      {
-        id: "one",
-        title: "Kanye [portrait](https://example.com)",
-        source: "arena",
-      },
-      { id: "two", title: "Kanye at the studio", source: "arena" },
-    ],
-  });
-  const input = {
-    ...request(),
-    messages: [{ role: "user" as const, content: "find my kanye pics" }],
-    tools: [tool("searchLibrary", search)],
-    retrieveLibrary: retrieval(search),
-  };
-  const answer = await completeWithTools(input);
-  expect(search).toHaveBeenCalledExactlyOnceWith({
-    query: "kanye",
-    media: ["image"],
-    limit: 24,
-  });
-  expect(answer).toBe("Most of these are studio portraits. I can tag them.");
-  expect(answer).not.toMatch(/matching your search|Here are Saves matching/i);
-  expect(mock.chat).toHaveBeenCalledOnce();
-  expect(mock.chat.mock.calls[0]?.[0].systemPrompts?.join("\n")).toContain(
-    "Save ID: one",
-  );
-});
-
-it("still generates an answer when a lookup also asks for a comparison", async () => {
-  chatText("Both references use vivid lighting.");
-  const answer = await completeWithTools({
-    ...request(),
-    messages: [
-      {
-        role: "user",
-        content: "Find my film references and compare their lighting",
-      },
-    ],
-    tools: [
-      tool(
-        "searchLibrary",
-        vi.fn().mockResolvedValue({
-          saves: [{ id: "one", title: "Film lighting", source: "arena" }],
-        }),
-      ),
-    ],
-    retrieveLibrary: async () => [
-      {
-        id: "one",
-        title: "Film lighting",
-        source: "arena",
-        url: "https://example.com/film",
-      },
-    ],
-  });
-  expect(answer).toBe("Both references use vivid lighting.");
-  expect(mock.chat).toHaveBeenCalledOnce();
-});
-
-it("shows a few matching Saves, then asks the model to write", async () => {
-  chatText(
-    "This is a lighting study. I can file it with the other film stills.",
-  );
-  const show = vi.fn();
-  const answer = await completeWithTools({
-    ...request(),
-    messages: [{ role: "user", content: "Find my film references" }],
-    tools: [
-      tool(
-        "searchLibrary",
-        vi.fn().mockResolvedValue({
-          saves: [{ id: "one", title: "A film", source: "arena" }],
-        }),
-      ),
-      tool("showSaves", show),
-    ],
-    retrieveLibrary: async () => [
-      {
-        id: "one",
-        title: "A film",
-        source: "arena",
-        url: "https://example.com/film",
-      },
-    ],
-  });
-  expect(show).toHaveBeenCalledExactlyOnceWith({
-    title: "film",
-    saveIds: ["one"],
-  });
-  expect(answer).toBe(
-    "This is a lighting study. I can file it with the other film stills.",
-  );
-  expect(answer).not.toContain("A film");
-  expect(mock.chat).toHaveBeenCalledOnce();
+  expect(model.doStreamCalls).toHaveLength(1);
 });
 
 it("surfaces nested provider RUN_ERROR bodies", async () => {
-  mock.chat.mockImplementation(async function* () {
-    yield {
-      type: "RUN_ERROR",
-      rawEvent: {
-        error: {
-          message:
-            "Invalid schema for function 'proposeChanges': schema must have a 'type' key.",
-        },
-      },
-    };
-  });
-  await expect(completeWithTools(request())).rejects.toThrow(
-    /Invalid schema for function 'proposeChanges'/,
-  );
+  await expect(
+    complete(
+      request(
+        errorModel({
+          error: {
+            message:
+              "Invalid schema for function 'proposeChanges': schema must have a 'type' key.",
+          },
+        }),
+      ),
+    ),
+  ).rejects.toThrow(/Invalid schema for function 'proposeChanges'/);
 });
 
 it("surfaces the provider RUN_ERROR message instead of a generic fallback", async () => {
-  mock.chat.mockImplementation(async function* () {
-    yield {
-      type: "RUN_ERROR",
-      message:
-        "Invalid schema for function 'applyFilter': schema must have a 'type' key.",
-    };
-  });
-  const input = request();
-  await expect(completeWithTools(input)).rejects.toThrow(
+  const input = request(
+    errorModel(
+      "Invalid schema for function 'applyFilter': schema must have a 'type' key.",
+    ),
+  );
+  await expect(complete(input)).rejects.toThrow(
     /Invalid schema for function 'applyFilter'/,
   );
   expect(input.onText).not.toHaveBeenCalled();
@@ -439,244 +370,141 @@ it("surfaces the provider RUN_ERROR message instead of a generic fallback", asyn
 
 it("does not publish a response after cancellation", async () => {
   const input = request();
-  mock.chat.mockImplementation(async function* () {
-    input.abortController.abort();
-    yield { type: "TEXT_MESSAGE_CONTENT", delta: "Late reply" };
+  const model = new MockLanguageModelV4({
+    doStream: async () => {
+      input.abortController.abort();
+      return {
+        stream: simulateReadableStream({
+          chunks: textChunks("Late reply"),
+        }),
+      };
+    },
   });
-  await expect(completeWithTools(input)).rejects.toThrow();
+  await expect(complete({ ...input, languageModel: model })).rejects.toThrow();
   expect(input.onText).not.toHaveBeenCalled();
 });
 
 it("explains an Ollama tensor loading failure with a recovery step", async () => {
-  mock.chat.mockImplementation(async function* () {
-    yield {
-      type: "RUN_ERROR",
-      message: 'tensor "blk.0.ffn_down_exps.weight" size overflow',
-    };
-  });
   const input = {
-    ...request(),
+    ...request(errorModel('tensor "blk.0.ffn_down_exps.weight" size overflow')),
     provider: "ollama" as const,
     model: "gpt-oss:20b",
   };
-  await expect(completeWithTools(input)).rejects.toThrow(
+  await expect(complete(input)).rejects.toThrow(
     "Ollama couldn't load this model. Update it in Ollama or choose another model in Settings.",
   );
   expect(input.onText).not.toHaveBeenCalled();
 });
 
 it("keeps contaminated history out of the prompt without changing it", async () => {
-  chatText("Hi!");
+  const model = textModel("Hi!");
   const messages = [
     { role: "assistant" as const, content: dump },
     { role: "user" as const, content: "Hey" },
   ];
-  await completeWithTools({ ...request(), messages });
-  expect(mock.chat.mock.calls[0]?.[0].messages).toEqual([messages[1]]);
+  await complete({ ...request(model), messages });
+  expect(promptDump(model)).not.toContain(dump);
+  expect(promptDump(model)).toContain("Hey");
   expect(messages[0]?.content).toBe(dump);
 });
 
 it("validates external output before publishing any chunk", async () => {
-  mock.chat.mockImplementation(async function* () {
-    yield { type: "TEXT_MESSAGE_CONTENT", delta: "Here are your Saves: " };
-    yield { type: "TEXT_MESSAGE_CONTENT", delta: dump };
-  });
-  const input = request();
-  await expect(completeWithTools(input)).rejects.toThrow(/unreadable/);
+  const input = request(textModel(`Here are your Saves: ${dump}`));
+  await expect(complete(input)).rejects.toThrow(/unreadable/);
   expect(input.onText).not.toHaveBeenCalled();
 });
 
 it("publishes a valid external answer after validation", async () => {
-  mock.chat.mockImplementation(async function* () {
-    yield { type: "TEXT_MESSAGE_CONTENT", delta: "A short " };
-    yield { type: "TEXT_MESSAGE_CONTENT", delta: "answer." };
-  });
-  const input = request();
+  const input = request(textModel("A short answer."));
   const onActivity = vi.fn();
-  expect(await completeWithTools({ ...input, onActivity })).toBe(
-    "A short answer.",
-  );
+  expect(await complete({ ...input, onActivity })).toBe("A short answer.");
   expect(input.onText).toHaveBeenCalledExactlyOnceWith("A short answer.");
   expect(onActivity).toHaveBeenCalledExactlyOnceWith("writing");
 });
 
-it("does not publish a hosted model's false Library refusal after retrieval", async () => {
-  mock.chat.mockImplementation(async function* () {
-    yield {
-      type: "TEXT_MESSAGE_CONTENT",
-      delta: "I can't provide pictures from your saved library.",
-    };
-  });
-  const input = {
-    ...request(),
-    messages: [
-      {
-        role: "user" as const,
-        content: "Summarize my saved Kanye pictures.",
-      },
-    ],
-    tools: [
-      tool(
-        "searchLibrary",
-        vi.fn().mockResolvedValue({
-          saves: [
-            {
-              id: "portrait",
-              title: "Kanye portrait",
-              source: "arena",
-              url: "https://example.com/kanye",
-            },
-          ],
-        }),
-      ),
-    ],
-    retrieveLibrary: async () => [
-      {
-        id: "portrait",
-        title: "Kanye portrait",
-        source: "arena",
-        url: "https://example.com/kanye",
-      },
-    ],
-  };
-  const answer = await completeWithTools(input);
-  expect(answer).toMatch(/found 1 relevant Save/i);
-  expect(answer).not.toMatch(/can't provide pictures/i);
-  expect(input.onText).toHaveBeenCalledExactlyOnceWith(answer);
-});
-
 it("does not search when the edit target is a pronoun", async () => {
   const search = vi.fn();
-  await completeWithTools({
-    ...request(),
+  const model = textModel("Hi! How can I help?");
+  await complete({
+    ...request(model),
     messages: [{ role: "user", content: "Organize it" }],
     tools: [tool("searchLibrary", search), tool("requestQuestion")],
   });
   expect(search).not.toHaveBeenCalled();
-  expect(mock.chat).toHaveBeenCalledOnce();
+  expect(model.doStreamCalls).toHaveLength(1);
 });
 
-it("requires retrieval for an explicit saved-library question", async () => {
-  const input = {
-    ...request(),
-    messages: [
-      {
-        role: "user" as const,
-        content: "Summarize my saved references about Suspiria.",
-      },
-    ],
-    tools: [tool("searchLibrary")],
-  };
-  await expect(completeWithTools(input)).resolves.toMatch(/couldn.t find/i);
-  expect(input.onText).toHaveBeenCalledOnce();
-  expect(mock.chat).not.toHaveBeenCalled();
-});
-
-it("does not add inferred task words to a lexical library search", async () => {
-  const search = vi.fn().mockResolvedValue({ saves: [] });
-  await completeWithTools({
-    ...request(),
-    messages: [
-      {
-        role: "user",
-        content:
-          "Summarize my saved references about Suspiria in two sentences.",
-      },
-    ],
-    tools: [tool("searchLibrary", search)],
-    retrieveLibrary: retrieval(search),
-  });
-  expect(search).toHaveBeenCalledExactlyOnceWith({
-    query: "Suspiria",
-    limit: 24,
-  });
-});
-
-it("does not ask for attachments instead of searching for the user's pictures", async () => {
-  const search = vi.fn().mockResolvedValue({ saves: [] });
-  await completeWithTools({
-    ...request(),
-    messages: [{ role: "user", content: "find my kanye pics" }],
-    tools: [tool("searchLibrary", search)],
-    retrieveLibrary: retrieval(search),
-  });
-  expect(search).toHaveBeenCalledExactlyOnceWith({
-    query: "kanye",
-    media: ["image"],
-    limit: 24,
-  });
-  expect(mock.chat).not.toHaveBeenCalled();
-});
-
-it.each([
-  "openai",
-  "anthropic",
-  "gemini",
-  "ollama",
-  "lmstudio",
-  "compatible",
-] as const)("routes the exact terse picture query before the %s provider", async (provider) => {
-  chatText("A studio portrait. I can tag it.");
-  const search = vi.fn().mockResolvedValue({
-    saves: [
-      {
-        id: "portrait",
-        title: "Kanye portrait",
-        source: "arena",
-        url: "https://example.com/kanye",
-      },
-    ],
-  });
-  const show = vi.fn();
-  const input = {
-    ...request(),
-    provider,
-    baseUrl: "http://127.0.0.1:1234/v1",
-    messages: [{ role: "user" as const, content: "kanye pics" }],
-    tools: [tool("searchLibrary", search), tool("showSaves", show)],
-    retrieveLibrary: retrieval(search),
-  };
-  expect(await completeWithTools(input)).toBe(
-    "A studio portrait. I can tag it.",
+it("discovers app capabilities through the SDK loop and prepares one exact action for review", async () => {
+  const model = scriptedModel(
+    toolCallChunks("discover", "discoverPondOperations", {
+      query: "conversion",
+    }),
+    toolCallChunks("describe", "describePondOperation", {
+      operation: "conversion.start",
+    }),
+    toolCallChunks("run", "runPondOperation", {
+      operation: "conversion.start",
+      arguments: { presetId: "web", ids: ["image"] },
+      reason: "Export the image for the web",
+    }),
+    toolCallChunks("repeat", "runPondOperation", {
+      operation: "conversion.start",
+      arguments: { presetId: "web", ids: ["image"] },
+      reason: "Export the image for the web",
+    }),
+    textChunks("The export is ready for review."),
   );
-  expect(search).toHaveBeenCalledExactlyOnceWith({
-    query: "kanye",
-    media: ["image"],
-    limit: 24,
-  });
-  expect(show).toHaveBeenCalledExactlyOnceWith({
-    title: "kanye",
-    saveIds: ["portrait"],
-  });
-  expect(mock.chat).toHaveBeenCalledOnce();
-});
-
-it("routes Kanye tweets through Twitter source retrieval before the model", async () => {
-  chatText("A tweet about the listening party.");
-  const search = vi.fn().mockResolvedValue({
-    saves: [
+  const execute = vi.fn(async () => ({ jobId: "job" }));
+  const catalog: OperationCatalog = {
+    libraryId: () => "library",
+    operations: [
       {
-        id: "tweet",
-        title: "Kanye tweet",
-        source: "twitter",
-        url: "https://x.com/kanyewest/status/1",
+        name: "conversion.start",
+        description: "Start conversion",
+        access: "review",
+        inputSchema: z.object({
+          presetId: z.string(),
+          ids: z.array(z.string()).min(1),
+        }),
+        execute,
       },
     ],
-  });
-  const show = vi.fn();
-  const input = {
-    ...request(),
-    messages: [{ role: "user" as const, content: "Kanye tweets" }],
-    tools: [tool("searchLibrary", search), tool("showSaves", show)],
-    retrieveLibrary: retrieval(search),
   };
-  expect(await completeWithTools(input)).toBe(
-    "A tweet about the listening party.",
+  const input = request(model);
+  const context = libraryContext(
+    {
+      scope: {},
+      signal: input.abortController.signal,
+      onActivity: vi.fn(),
+      onSources: vi.fn(),
+    },
+    {
+      ...contextDependencies,
+      pondOperationTools: (options) => pondOperationTools(options, catalog),
+    },
   );
-  expect(search).toHaveBeenCalledExactlyOnceWith({
-    query: "Kanye",
-    source: "twitter",
-    limit: 24,
+  expect(
+    await complete({
+      ...input,
+      messages: [
+        {
+          role: "user",
+          content: "Export the selected image with the web preset",
+        },
+      ],
+      tools: context.tools,
+    }),
+  ).toBe("The export is ready for review.");
+  expect(execute).not.toHaveBeenCalled();
+  expect(context.changes()).toHaveLength(1);
+  expect(context.changes()[0]).toMatchObject({
+    title: "Export the image for the web",
+    status: "pending",
+    action: "runOperation",
+    payload: {
+      operation: "conversion.start",
+      arguments: { presetId: "web", ids: ["image"] },
+      libraryId: "library",
+    },
   });
-  expect(mock.chat).toHaveBeenCalledOnce();
 });

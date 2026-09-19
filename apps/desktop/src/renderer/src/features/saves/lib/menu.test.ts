@@ -1,49 +1,27 @@
-// @vitest-environment jsdom
-
 import type { MenuItemSpec } from "@pond/ui";
+import { isValidElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { z } from "zod";
+import "@/app/effects/save-library-bridge";
 import {
   closeFolderPicker,
   folderPickerStore,
 } from "@/features/library/state/folder-picker";
 import { folders } from "@/features/library/state/folders";
-import { selection } from "@/features/library/state/selection";
 import { buildViewerMenu } from "@/features/saves/components/viewers/media-viewer/lib/menu";
 import { pool } from "@/features/saves/state/pool";
+import { selection } from "@/features/saves/state/selection";
 import type { Save } from "@/features/saves/types";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
+import {
+  topLevelMenuLabels as topLevelLabels,
+  menuLabels as visibleLabels,
+} from "@/shared/test/menu-labels";
 import {
   buildSaveMenu,
   contextMenuSaves,
   type OpenWithApp,
   openWithKind,
 } from "./menu";
-
-function visibleLabels(items: MenuItemSpec[]): string[] {
-  return items.flatMap((item) => {
-    if (item.type === "separator" || item.type === "custom") return [];
-    if ("hidden" in item && item.hidden) return [];
-    if (item.type === "submenu" || item.type === "group") {
-      const label =
-        "label" in item ? z.string().array().catch([]).parse([item.label]) : [];
-      return [...label, ...visibleLabels(item.items)];
-    }
-    if ("label" in item)
-      return z.string().array().catch([]).parse([item.label]);
-    return [];
-  });
-}
-
-function topLevelLabels(items: MenuItemSpec[]): string[] {
-  return items.flatMap((item) => {
-    if (item.type === "separator" || item.type === "custom") return [];
-    if ("hidden" in item && item.hidden) return [];
-    if ("label" in item)
-      return z.string().array().catch([]).parse([item.label]);
-    return [];
-  });
-}
 
 function sectionItems(
   items: MenuItemSpec[],
@@ -131,33 +109,43 @@ describe("buildSaveMenu", () => {
       "Copy",
       "Share",
       "Export",
+      "Search by Image",
       "Agent",
       "Advanced",
       "Move to Trash",
     ]);
     expect(visibleLabels(sectionItems(items, "Agent") ?? [])).toEqual([
+      "Add to Chat",
       "Apply Suggested Tags",
       "Caption Images",
       "Extract Text",
       "Transcribe Media",
+      "Check Sensitive Content",
     ]);
     expect(topLevelLabels(sectionItems(items, "Open") ?? [])).toEqual([
-      "Open Save",
-      "Open with Default App",
       "Preview.app (Default)",
       "Photomator.app",
+      "Open Save",
+      "Open with Default App",
       REVEAL_LABEL,
       "Open Original URL",
-      "Enter Presentation Mode",
+    ]);
+    const reverseSearchItems = sectionItems(items, "Search by Image") ?? [];
+    expect(visibleLabels(reverseSearchItems)).toEqual([
+      "Google Lens",
+      "Yandex",
+      "Bing",
+      "TinEye",
+      "SauceNAO",
     ]);
     expect(
-      visibleLabels(
-        sectionItems(
-          sectionItems(items, "Advanced") ?? [],
-          "Search by Image",
-        ) ?? [],
+      reverseSearchItems.every(
+        (item) =>
+          "icon" in item &&
+          isValidElement(item.icon) &&
+          item.icon.type === "img",
       ),
-    ).toEqual(["Google Lens", "Yandex", "Bing", "TinEye", "SauceNAO"]);
+    ).toBe(true);
     expect(visibleLabels(sectionItems(items, "Export") ?? [])).toEqual([
       "Export Files",
       "Export Converted Files",
@@ -169,12 +157,6 @@ describe("buildSaveMenu", () => {
       "Copy Save ID",
       "Rebuild Search Index",
       "Rebuild Visual Index",
-      "Search by Image",
-      "Google Lens",
-      "Yandex",
-      "Bing",
-      "TinEye",
-      "SauceNAO",
       "Actions",
       "Find Duplicates",
       "Merge Duplicates",
@@ -226,13 +208,12 @@ describe("buildSaveMenu", () => {
       openWithApps: previewOpenWithApps(),
     });
     expect(topLevelLabels(sectionItems(items, "Open") ?? [])).toEqual([
-      "Open Save",
-      "Open with Default App",
       "Preview.app (Default)",
       "Photomator.app",
+      "Open Save",
+      "Open with Default App",
       REVEAL_LABEL,
       "Open Original URL",
-      "Enter Presentation Mode",
     ]);
     const preview = sectionItems(items, "Open")?.find(
       (item) => "label" in item && item.label === "Preview.app (Default)",

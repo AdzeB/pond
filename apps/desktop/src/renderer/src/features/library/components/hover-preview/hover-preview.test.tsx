@@ -1,16 +1,14 @@
-// @vitest-environment jsdom
 import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
-import { resultNavigation } from "@/features/library/state/result-navigation";
-import { selection } from "@/features/library/state/selection";
 import { normalise } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
-import { HoverPreview } from "./hover-preview";
+import { resultNavigation } from "@/features/saves/state/result-navigation";
+import { selection } from "@/features/saves/state/selection";
+import { HoverPreview } from "./";
 
 it("hydrates and previews the next logical save beyond loaded grid rows", async () => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   const first = normalise({
     id: "quick-first",
     source: "web",
@@ -56,6 +54,9 @@ it("hydrates and previews the next logical save beyond loaded grid rows", async 
       ),
     );
     expect(document.body.textContent).toContain("First reference");
+    expect(
+      document.querySelector("[data-quick-preview] [aria-label='Close']"),
+    ).toBeNull();
     await act(async () =>
       document.dispatchEvent(
         new KeyboardEvent("keydown", {

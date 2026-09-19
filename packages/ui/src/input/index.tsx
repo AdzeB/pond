@@ -1,6 +1,7 @@
 import { Input as Base } from "@base-ui/react/input";
 import { clsx as cn } from "clsx";
 import { forwardRef } from "react";
+import { stopPageHotkeys } from "../stop-page-hotkeys";
 import styles from "./styles.module.css";
 
 type InputSize = "xs" | "sm" | "md" | "lg" | "xl";
@@ -34,12 +35,26 @@ function Icon({ className, ...props }: React.ComponentProps<"span">) {
   );
 }
 
-function Field({ className, ...props }: Base.Props) {
+function Action({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="action"
+      className={cn(styles.action, className)}
+      {...props}
+    />
+  );
+}
+
+function Field({ className, onKeyDown, ...props }: Base.Props) {
   return (
     <Base
+      {...props}
       data-slot="field"
       className={cn(styles.field, className)}
-      {...props}
+      onKeyDown={(event) => {
+        onKeyDown?.(event);
+        stopPageHotkeys(event);
+      }}
     />
   );
 }
@@ -48,9 +63,18 @@ const Textarea = forwardRef<
   HTMLTextAreaElement,
   React.ComponentProps<"textarea"> & {
     onValueChange?: (value: string) => void;
+    padding?: "default" | "comfortable";
   }
 >(function Textarea(
-  { className, rows = 5, onChange, onValueChange, ...props },
+  {
+    className,
+    rows = 5,
+    onChange,
+    onValueChange,
+    onKeyDown,
+    padding,
+    ...props
+  },
   ref,
 ) {
   return (
@@ -59,14 +83,19 @@ const Textarea = forwardRef<
       ref={ref}
       data-slot="field"
       data-multiline
+      data-padding={padding === "comfortable" ? padding : undefined}
       rows={rows}
       className={cn(styles.field, className)}
       onChange={(event) => {
         onChange?.(event);
         onValueChange?.(event.target.value);
       }}
+      onKeyDown={(event) => {
+        onKeyDown?.(event);
+        stopPageHotkeys(event);
+      }}
     />
   );
 });
 
-export const Input = { Root, Icon, Field, Textarea };
+export const Input = { Root, Icon, Action, Field, Textarea };

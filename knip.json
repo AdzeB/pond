@@ -1,39 +1,40 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "ignoreBinaries": ["iconutil", "cc"],
-  "ignoreDependencies": ["@pond/theme", "ffmpeg-static", "drizzle-kit"],
   "workspaces": {
     "apps/desktop": {
       "entry": [
-        "electron.vite.config.ts",
-        "src/main/index.ts",
-        "src/preload/index.ts",
-        "src/preload/scrape.cjs.ts",
-        "src/renderer/src/capture.tsx",
         "src/renderer/src/routes/**/*.{ts,tsx}",
         "scripts/*.{mjs,cjs,ts}",
         "src/main/core/media-warm/service.ts",
         "src/main/core/enrichment-sidecar.ts"
       ],
-      "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{mjs,cjs,ts}"]
+      "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{mjs,cjs,ts}"],
+      "ignoreDependencies": ["drizzle-kit"]
     },
     "apps/website": {
       "entry": ["app/**/*.{ts,tsx}", "next.config.{js,ts,mjs}"],
-      "project": ["**/*.{ts,tsx}"]
+      "project": ["**/*.{ts,tsx}"],
+      "ignoreDependencies": ["@pond/theme"]
     },
     "apps/extension": {
       "entry": ["entrypoints/**/*.{ts,tsx}", "scripts/*.mjs"],
-      "project": ["**/*.{ts,tsx}"]
+      "project": ["**/*.{ts,tsx}"],
+      "ignoreDependencies": ["@pond/theme"]
     },
+    "apps/raycast": { "project": ["src/**/*.{ts,tsx}"] },
     "packages/icons": {
-      "entry": [
-        "fill/*/index.ts",
-        "outline/*/index.ts",
-        "social-media/index.ts"
-      ]
+      "entry": ["fill/*/index.ts", "outline/*/index.ts"]
     },
     "packages/schema": {
       "entry": ["scripts/*.ts"]
+    },
+    "packages/cli": {
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["tsx"]
+    },
+    "packages/local-api": {
+      "project": ["src/**/*.ts"]
     },
     ".": {
       "entry": ["scripts/*.{mjs,cjs,ts}", "tools/**/*.{ts,mjs}"]

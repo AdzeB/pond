@@ -78,6 +78,7 @@ function ensureWorker(): Worker | null {
 
 const TextSchema = z.string();
 const LabelsSchema = z.array(TextSchema);
+const ScoresSchema = z.array(z.number());
 const VectorSchema = z.instanceof(Float32Array);
 const VectorsSchema = z.array(VectorSchema);
 
@@ -120,96 +121,83 @@ async function viaWorker<T>(
 export function inferFlorence(
   image: RawImage,
   task: FlorenceTask,
-  modelId: string,
 ): Promise<string> {
   return viaWorker(
     () => {
       const img = serializeImage(image);
-      return callWorker(
-        TextSchema,
-        { op: "florence", image: img, task, modelId },
-        [img.data],
-      );
+      return callWorker(TextSchema, { op: "florence", image: img, task }, [
+        img.data,
+      ]);
     },
-    async () =>
-      (await import("./inference-core")).coreFlorence(image, task, modelId),
+    async () => (await import("./inference-core")).coreFlorence(image, task),
   );
 }
 
-export function inferClipImage(
-  image: RawImage,
-  modelId: string,
-): Promise<Float32Array> {
+export function inferClipImage(image: RawImage): Promise<Float32Array> {
   return viaWorker(
     () => {
       const img = serializeImage(image);
-      return callWorker(
-        VectorSchema,
-        { op: "clipImage", image: img, modelId },
-        [img.data],
-      );
+      return callWorker(VectorSchema, { op: "clipImage", image: img }, [
+        img.data,
+      ]);
     },
-    async () =>
-      (await import("./inference-core")).coreClipImage(image, modelId),
+    async () => (await import("./inference-core")).coreClipImage(image),
   );
 }
 
 export function inferClipAesthetic(
   image: RawImage,
   labels: string[],
-  modelId: string,
 ): Promise<string[]> {
   return viaWorker(
     () => {
       const img = serializeImage(image);
       return callWorker(
         LabelsSchema,
-        { op: "clipAesthetic", image: img, labels, modelId },
+        { op: "clipAesthetic", image: img, labels },
         [img.data],
       );
     },
     async () =>
-      (await import("./inference-core")).coreClipAesthetic(
-        image,
-        labels,
-        modelId,
-      ),
+      (await import("./inference-core")).coreClipAesthetic(image, labels),
   );
 }
 
-export function inferEmbedText(
-  text: string,
-  modelId: string,
-): Promise<Float32Array> {
+export function inferSensitiveContent(images: RawImage[]): Promise<number[]> {
   return viaWorker(
-    () => callWorker(VectorSchema, { op: "embedText", text, modelId }, []),
-    async () => (await import("./inference-core")).coreEmbedText(text, modelId),
+    () => {
+      const serialized = images.map(serializeImage);
+      return callWorker(
+        ScoresSchema,
+        { op: "sensitiveContent", images: serialized },
+        serialized.map((image) => image.data),
+      );
+    },
+    async () => (await import("./inference-core")).coreSensitiveContent(images),
   );
 }
 
-export function inferEmbedTexts(
-  texts: string[],
-  modelId: string,
-): Promise<Float32Array[]> {
+export function inferEmbedText(text: string): Promise<Float32Array> {
   return viaWorker(
-    () => callWorker(VectorsSchema, { op: "embedTexts", texts, modelId }, []),
-    async () =>
-      (await import("./inference-core")).coreEmbedTexts(texts, modelId),
+    () => callWorker(VectorSchema, { op: "embedText", text }, []),
+    async () => (await import("./inference-core")).coreEmbedText(text),
   );
 }
 
-export function inferTranscribe(
-  audio: Float32Array,
-  modelId: string,
-): Promise<string> {
+export function inferEmbedTexts(texts: string[]): Promise<Float32Array[]> {
+  return viaWorker(
+    () => callWorker(VectorsSchema, { op: "embedTexts", texts }, []),
+    async () => (await import("./inference-core")).coreEmbedTexts(texts),
+  );
+}
+
+export function inferTranscribe(audio: Float32Array): Promise<string> {
   return viaWorker(
     () => {
       const copy = audio.slice();
-      return callWorker(
-        TextSchema,
-        { op: "transcribe", audio: copy, modelId },
-        [copy.buffer],
-      );
+      return callWorker(TextSchema, { op: "transcribe", audio: copy }, [
+        copy.buffer,
+      ]);
     },
     async () => {
       throw new Error("whisper requires the inference worker");

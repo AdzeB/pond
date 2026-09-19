@@ -9,7 +9,6 @@ import {
   createQuerySession,
   type QuerySessionState,
 } from "@/features/library/state/query-session";
-import { useRecents } from "@/features/library/state/recents";
 import {
   activateFolderPresentation,
   useEffectiveFilterQuery,
@@ -23,6 +22,7 @@ import { useSaves } from "@/features/saves/hooks/use-saves";
 import { reloadSaves } from "@/features/saves/lib/ensure-saves";
 import type { SaveListMode } from "@/features/saves/lib/list";
 import { descendantFolderIds } from "@/features/saves/lib/nav-filter";
+import { useRecents } from "@/features/saves/state/recents";
 import type { Save } from "@/features/saves/types";
 import { useRetrievalOverlay } from "@/features/search/hooks/use-retrieval-overlay";
 import { usePrefs } from "@/features/settings/state/prefs";

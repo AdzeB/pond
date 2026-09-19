@@ -41,7 +41,7 @@ export function AutoImportSettings() {
 
   return (
     <Settings.List>
-      <Settings.Item id="setting-storage-watched-folder">
+      <Settings.Item id="setting-harvesting-watched-folder">
         <Settings.ItemDetails>
           <Settings.ItemTitle>Watched Folder</Settings.ItemTitle>
           <Settings.ItemDescription>

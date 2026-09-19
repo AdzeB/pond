@@ -1,16 +1,13 @@
-// @vitest-environment jsdom
-
 import type { SyncSchedule } from "@shared/sync-schedule";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { ScheduleEditor } from "./schedule";
+import { ScheduleEditor } from "./";
 
 let root: Root;
 let host: HTMLDivElement;
 const save = vi.fn<(schedule: SyncSchedule) => void | Promise<void>>();
 beforeEach(() => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -56,6 +53,8 @@ it("keeps edits as a draft until Save", async () => {
       recurrence: expect.objectContaining({ unit: "day", every: 12 }),
     }),
   );
+  expect(host.textContent).not.toContain("Schedule saved.");
+  expect(host.textContent).not.toContain("Next fetch:");
 });
 it("loads a weekly schedule and prevents saving without weekdays", async () => {
   await render({

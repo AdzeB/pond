@@ -72,6 +72,7 @@ export default defineConfig({
           format: "es",
           strictExecutionOrder: true,
           codeSplitting: {
+            includeDependenciesRecursively: false,
             groups: [{ name: vendorChunkName }],
           },
         },
@@ -108,6 +109,12 @@ export default defineConfig({
       },
       /** chokidar's macOS polling default pins a CPU core even when idle; FS events are reliable here. */
       watch: { usePolling: false },
+      warmup: {
+        clientFiles: [
+          "./src/features/agent/components/pane/pane.tsx",
+          "./src/features/saves/components/viewers/text-viewer/index.tsx",
+        ],
+      },
     },
     plugins: [
       cssComposesHmr([
@@ -132,7 +139,10 @@ export default defineConfig({
         "@pond/ui": resolve(__dirname, "../../packages/ui/src"),
       },
     },
-    /** transformers.js imports `onnxruntime-web` subpaths as bare specifiers; pre-bundling resolves them in dev, mirroring the prod Rollup build. */
+    /**
+     * Pre-bundle deps the crawler misses or discovers after startup (transformers subpaths, lazy Agent/editor).
+     * Otherwise Vite re-optimizes mid-session and the pane's dynamic import 504s as "Failed to fetch".
+     */
     optimizeDeps: {
       include: [
         "react",
@@ -141,6 +151,22 @@ export default defineConfig({
         "react/jsx-dev-runtime",
         "@pond/ui > @base-ui/react",
         "@huggingface/transformers",
+        "@ai-sdk/react",
+        "ai",
+        "lexical",
+        "@lexical/code",
+        "@lexical/link",
+        "@lexical/list",
+        "@lexical/mdast",
+        "@lexical/rich-text",
+        "@lexical/table",
+        "@lexical/utils",
+        "@lexical/react/LexicalComposerContext",
+        "@lexical/react/LexicalContentEditable",
+        "@lexical/react/LexicalExtensionComposer",
+        "@lexical/react/LexicalTypeaheadMenuPlugin",
+        "@lexical/react/useExtensionComponent",
+        "@lexical/react/useExtensionSignalValue",
       ],
     },
     build: {

@@ -1,7 +1,0 @@
-.selection {
-  z-index: 50;
-  padding: 4px;
-  background: var(--ds-gray-1);
-  border-radius: var(--ds-radius-full);
-  box-shadow: var(--ds-shadow-popover);
-}

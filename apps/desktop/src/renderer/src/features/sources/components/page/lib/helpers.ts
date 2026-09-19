@@ -22,18 +22,11 @@ export interface SourceTableRow extends FilterableSource {
   lastSyncedAt: string | null;
   lastSyncedMs: number;
   statusLabel: string;
-  kindLabel: string;
   model: CardModel;
   entry: SourceEntry;
 }
 
-export function accountName(account: AccountRow): string {
-  const suffix = account.label ?? (account.handle ? `@${account.handle}` : "");
-  const label = getSourceDef(account.source).label;
-  return suffix ? `${label} · ${suffix}` : label;
-}
-
-export function watchName(watch: WatchRow): string {
+function watchName(watch: WatchRow): string {
   if (watch.label) return watch.label;
   return watch.kind === "playlist" || watch.kind === "list"
     ? watch.handle
@@ -53,12 +46,6 @@ function typeLabel(entry: SourceEntry): string {
   if (entry.kind === "account") return "Account";
   const kind = watchKindLabel(entry.row.kind);
   return kind.charAt(0).toUpperCase() + kind.slice(1);
-}
-
-export function sourceCanSyncNow(row: SourceTableRow): boolean {
-  const running = row.model.tone === "run";
-  if (row.kind === "account") return row.model.connected && !running;
-  return !running;
 }
 
 export function toSourceTableRow(

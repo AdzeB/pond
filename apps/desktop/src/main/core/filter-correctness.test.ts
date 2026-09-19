@@ -32,6 +32,7 @@ const examples: SaveLike[] = [
     folderIds: ["FolderA"],
     width: 2100,
     height: 900,
+    sensitiveScore: 0.91,
     comments: [{ text: " Nice layout " }],
     videoNotes: [{ text: "Bright opening" }],
     dominantColors: ["#0000ff"],
@@ -45,6 +46,7 @@ const examples: SaveLike[] = [
     folderIds: ["FolderA", "FolderB"],
     width: 1600,
     height: 900,
+    sensitiveScore: 0.55,
     comments: [{ text: "   " }],
   },
   {
@@ -61,7 +63,7 @@ const examples: SaveLike[] = [
 
 function fixture() {
   const db = new Database(":memory:");
-  db.exec(`CREATE TABLE saves (id TEXT, title TEXT, tags TEXT, comments TEXT, video_notes TEXT, width INTEGER, height INTEGER, dominant_colors TEXT);
+  db.exec(`CREATE TABLE saves (id TEXT, title TEXT, tags TEXT, comments TEXT, video_notes TEXT, width INTEGER, height INTEGER, dominant_colors TEXT, sensitive_score REAL);
     CREATE TABLE save_folders (save_id TEXT, folder_id TEXT);
     CREATE VIRTUAL TABLE saves_fts USING fts5(id UNINDEXED, title);`);
   db.function("pond_color_near", (palette, hex, tolerance) =>
@@ -74,7 +76,7 @@ function fixture() {
     ),
   );
   for (const save of examples) {
-    db.prepare("INSERT INTO saves VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run(
+    db.prepare("INSERT INTO saves VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
       save.id,
       save.title,
       JSON.stringify(save.tags),
@@ -83,6 +85,7 @@ function fixture() {
       save.width,
       save.height,
       JSON.stringify(save.dominantColors ?? []),
+      save.sensitiveScore ?? null,
     );
     db.prepare("INSERT INTO saves_fts VALUES (?, ?)").run(save.id, save.title);
     for (const folder of save.folderIds ?? [])
@@ -170,6 +173,26 @@ describe.skipIf(!nativeSqliteAvailable())("filter engine parity", () => {
           field: "color",
           operator: "near",
           value: { hex: "#0000ff", tolerance: 20 },
+        },
+      ],
+    },
+    {
+      combinator: "and",
+      rules: [
+        {
+          field: "sensitiveContent",
+          operator: "eq",
+          value: "likely-sensitive",
+        },
+      ],
+    },
+    {
+      combinator: "and",
+      rules: [
+        {
+          field: "sensitiveContent",
+          operator: "eq",
+          value: "not-checked",
         },
       ],
     },

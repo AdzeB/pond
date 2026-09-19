@@ -11,18 +11,20 @@ export function QuestionCard({
   onAnswer,
   answered,
   allowFreeform = true,
+  disabled = false,
 }: {
   title: string;
   options: { id: string; label: string; description?: string }[];
   onAnswer: (answer: string) => Promise<void>;
   answered?: string;
   allowFreeform?: boolean;
+  disabled?: boolean;
 }) {
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   async function submit() {
-    if (!value.trim() || busy) return;
+    if (!value.trim() || busy || disabled) return;
     setBusy(true);
     setError(null);
     try {
@@ -67,7 +69,7 @@ export function QuestionCard({
                   variant="ghost"
                   className={styles["question-option"]}
                   aria-pressed={value === option.id}
-                  disabled={busy}
+                  disabled={busy || disabled}
                   onClick={() => setValue(option.id)}
                 >
                   <span className={styles["model-content"]}>
@@ -90,7 +92,7 @@ export function QuestionCard({
                   <Input.Field
                     aria-label="Your answer"
                     placeholder="Write an answer"
-                    disabled={busy}
+                    disabled={busy || disabled}
                     value={
                       options.some((option) => option.id === value) ? "" : value
                     }
@@ -113,7 +115,7 @@ export function QuestionCard({
             <div className={styles["card-actions"]}>
               <Button
                 size="sm"
-                disabled={!value.trim() || busy}
+                disabled={!value.trim() || busy || disabled}
                 loading={busy}
                 onClick={() => void submit()}
               >

@@ -1,0 +1,240 @@
+import { type RefObject, useEffect, useRef, useState } from "react";
+import {
+  containImage,
+  viewToImagePoint,
+} from "@/features/saves/lib/image-regions";
+import {
+  actualSizeZoom,
+  FIT_POSE,
+  type ImagePose,
+  poseToActual,
+  type ViewerWheelBehavior,
+  viewerMemory,
+  viewerWheelIntent,
+  wheelZoomFactor,
+  zoomImageAt,
+} from "@/features/saves/lib/viewer-memory";
+import type { InspectorMode } from "./types";
+
+interface ImageViewportOptions {
+  active: boolean;
+  initialRatio: number | null;
+  isDragging: () => boolean;
+  mode: InspectorMode;
+  naturalWidth: number;
+  onNavigate: (delta: number) => void;
+  onRatio: (ratio: number) => void;
+  rememberPosition: boolean;
+  src: string;
+  wheelBehavior: ViewerWheelBehavior;
+}
+
+interface ImageViewport {
+  actual: number;
+  bounds: ReturnType<typeof containImage>;
+  frame: RefObject<HTMLDivElement | null>;
+  image: RefObject<HTMLImageElement | null>;
+  live: boolean;
+  pointFromClient: (
+    clientX: number,
+    clientY: number,
+  ) => { x: number; y: number };
+  pose: ImagePose;
+  ratio: number | null;
+  reportRatio: (ratio: number) => void;
+  setPosition: (
+    update: (previous: ImagePose) => ImagePose,
+    live?: boolean,
+  ) => void;
+  size: { width: number; height: number };
+}
+
+export function useImageViewport({
+  active,
+  initialRatio,
+  isDragging,
+  mode,
+  naturalWidth,
+  onNavigate,
+  onRatio,
+  rememberPosition,
+  src,
+  wheelBehavior,
+}: ImageViewportOptions): ImageViewport {
+  const [pose, setPose] = useState<ImagePose>(() => viewerMemory.image(src));
+  const [live, setLive] = useState(false);
+  const [ratio, setRatio] = useState(initialRatio);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  const frame = useRef<HTMLDivElement>(null);
+  const image = useRef<HTMLImageElement>(null);
+  const latestPose = useRef(pose);
+  const poseFrame = useRef(0);
+
+  const setPosition = (
+    update: (previous: ImagePose) => ImagePose,
+    nextLive = false,
+  ) => {
+    if (poseFrame.current) {
+      cancelAnimationFrame(poseFrame.current);
+      poseFrame.current = 0;
+    }
+    const next = update(latestPose.current);
+    latestPose.current = next;
+    setLive(nextLive);
+    setPose(next);
+  };
+  const queuePose = (update: (previous: ImagePose) => ImagePose) => {
+    latestPose.current = update(latestPose.current);
+    if (poseFrame.current) return;
+    poseFrame.current = requestAnimationFrame(() => {
+      poseFrame.current = 0;
+      setLive(true);
+      setPose(latestPose.current);
+    });
+  };
+
+  useEffect(() => {
+    if (!rememberPosition) return;
+    const timer = window.setTimeout(
+      () => viewerMemory.setImage(src, pose),
+      150,
+    );
+    return () => window.clearTimeout(timer);
+  }, [pose, rememberPosition, src]);
+  useEffect(
+    () => () => {
+      if (rememberPosition) viewerMemory.setImage(src, latestPose.current);
+    },
+    [rememberPosition, src],
+  );
+  useEffect(() => {
+    if (rememberPosition) return;
+    latestPose.current = FIT_POSE;
+    setPose(FIT_POSE);
+  }, [rememberPosition]);
+  useEffect(() => {
+    const element = frame.current;
+    if (!element) return;
+    const measure = () =>
+      setSize({ width: element.clientWidth, height: element.clientHeight });
+    measure();
+    if (!globalThis.ResizeObserver) return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  const wheelState = useRef({
+    active,
+    isDragging,
+    mode,
+    onNavigate,
+    wheelBehavior,
+  });
+  wheelState.current = {
+    active,
+    isDragging,
+    mode,
+    onNavigate,
+    wheelBehavior,
+  };
+  const queuePoseRef = useRef(queuePose);
+  queuePoseRef.current = queuePose;
+
+  useEffect(() => {
+    const element = frame.current;
+    if (!element) return;
+    const onWheel = (event: WheelEvent) => {
+      const state = wheelState.current;
+      if (!state.active || state.mode === "crop") {
+        if (event.ctrlKey) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        return;
+      }
+      const intent = viewerWheelIntent({
+        ctrlKey: event.ctrlKey,
+        altKey: event.altKey,
+        metaKey: event.metaKey,
+        wheelBehavior: state.wheelBehavior,
+      });
+      event.preventDefault();
+      event.stopPropagation();
+      if (intent === "navigate") {
+        if (state.mode === "view") state.onNavigate(event.deltaY > 0 ? 1 : -1);
+        return;
+      }
+      if (intent !== "zoom" && state.isDragging()) return;
+      const rect = element.getBoundingClientRect();
+      if (intent === "zoom") {
+        const factor = wheelZoomFactor(
+          event.deltaY,
+          event.deltaMode,
+          event.ctrlKey,
+        );
+        queuePoseRef.current((previous) =>
+          zoomImageAt(previous, previous.zoom * factor, {
+            x: event.clientX - rect.left - rect.width / 2,
+            y: event.clientY - rect.top - rect.height / 2,
+          }),
+        );
+        return;
+      }
+      queuePoseRef.current((previous) => ({
+        ...previous,
+        x: previous.x - event.deltaX,
+        y: previous.y - event.deltaY,
+      }));
+    };
+    element.addEventListener("wheel", onWheel, {
+      passive: false,
+      capture: true,
+    });
+    return () => {
+      element.removeEventListener("wheel", onWheel, { capture: true });
+      if (poseFrame.current) {
+        cancelAnimationFrame(poseFrame.current);
+        poseFrame.current = 0;
+      }
+    };
+  }, []);
+
+  const reportRatio = (value: number) => {
+    if (!Number.isFinite(value) || value <= 0) return;
+    setRatio(value);
+    onRatio(value);
+  };
+  const pointFromClient = (clientX: number, clientY: number) =>
+    viewToImagePoint(
+      frame.current?.getBoundingClientRect() ?? {
+        left: 0,
+        top: 0,
+        width: 0,
+        height: 0,
+      },
+      latestPose.current,
+      ratio,
+      clientX,
+      clientY,
+    );
+  const bounds = containImage({ left: 0, top: 0, ...size }, ratio);
+  const oneToOne = actualSizeZoom(
+    image.current?.naturalWidth || naturalWidth,
+    size.width,
+  );
+
+  return {
+    actual: poseToActual(pose.zoom, oneToOne),
+    bounds,
+    frame,
+    image,
+    live,
+    pointFromClient,
+    pose,
+    ratio,
+    reportRatio,
+    setPosition,
+    size,
+  };
+}

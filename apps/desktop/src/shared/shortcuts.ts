@@ -11,7 +11,7 @@ type ShortcutGroup =
   | "View"
   | "Selection"
   | "Saves"
-  | "Viewer"
+  | "Preview"
   | "Sources"
   | "Tags"
   | "Library";
@@ -232,51 +232,51 @@ export const SHORTCUTS = {
   "viewer.step-prev": {
     keys: "ArrowLeft",
     label: "Previous Image or Save",
-    group: "Viewer",
+    group: "Preview",
   },
   "viewer.step-next": {
     keys: "ArrowRight",
     label: "Next Image or Save",
-    group: "Viewer",
+    group: "Preview",
   },
   "viewer.prev-save": {
     keys: "Mod+ArrowLeft",
     label: "Previous Save",
-    group: "Viewer",
+    group: "Preview",
   },
   "viewer.next-save": {
     keys: "Mod+ArrowRight",
     label: "Next Save",
-    group: "Viewer",
+    group: "Preview",
   },
   "viewer.copy-frame": {
     keys: "Shift+C",
     label: "Copy Current Frame",
-    group: "Viewer",
+    group: "Preview",
   },
   "viewer.save-frame": {
     keys: "Shift+S",
     label: "Save Current Frame",
-    group: "Viewer",
+    group: "Preview",
   },
   "viewer.prev-slide": {
     keys: "[",
     label: "Previous Slide",
-    group: "Viewer",
+    group: "Preview",
   },
   "viewer.next-slide": {
     keys: "]",
     label: "Next Slide",
-    group: "Viewer",
+    group: "Preview",
   },
-  "viewer.mute": { keys: "M", label: "Mute", group: "Viewer" },
-  "viewer.zoom-fit": { keys: "`", label: "Zoom to Fit", group: "Viewer" },
+  "viewer.mute": { keys: "M", label: "Mute", group: "Preview" },
+  "viewer.zoom-fit": { keys: "`", label: "Zoom to Fit", group: "Preview" },
   "viewer.actual-size": {
     keys: "Mod+1",
     label: "Actual Size",
-    group: "Viewer",
+    group: "Preview",
   },
-  "viewer.comment": { keys: "C", label: "Comment Mode", group: "Viewer" },
+  "viewer.comment": { keys: "C", label: "Comment Mode", group: "Preview" },
 
   "sources.new": { keys: "Mod+N", label: "New Source", group: "Sources" },
   "sources.sync-all": {
@@ -288,49 +288,49 @@ export const SHORTCUTS = {
   "viewer.play-pause": {
     keys: "Space",
     label: "Play or Pause",
-    group: "Viewer",
+    group: "Preview",
   },
-  "viewer.frame-prev": { keys: "[", label: "Previous Frame", group: "Viewer" },
-  "viewer.frame-next": { keys: "]", label: "Next Frame", group: "Viewer" },
+  "viewer.frame-prev": { keys: "[", label: "Previous Frame", group: "Preview" },
+  "viewer.frame-next": { keys: "]", label: "Next Frame", group: "Preview" },
   "viewer.frame-prev-ten": {
     keys: normalizeHotkey("Shift+["),
     label: "Back Ten Frames",
-    group: "Viewer",
+    group: "Preview",
   },
   "viewer.frame-next-ten": {
     keys: normalizeHotkey("Shift+]"),
     label: "Forward Ten Frames",
-    group: "Viewer",
+    group: "Preview",
   },
   "viewer.seek-back": {
     keys: "Shift+ArrowLeft",
     label: "Seek Back",
-    group: "Viewer",
+    group: "Preview",
   },
   "viewer.seek-forward": {
     keys: "Shift+ArrowRight",
     label: "Seek Forward",
-    group: "Viewer",
+    group: "Preview",
   },
   "viewer.speed-up": {
     keys: ".",
     label: "Speed Up",
-    group: "Viewer",
+    group: "Preview",
   },
   "viewer.speed-down": {
     keys: ",",
     label: "Slow Down",
-    group: "Viewer",
+    group: "Preview",
   },
   "viewer.volume-up": {
     keys: "Shift+ArrowUp",
     label: "Volume Up",
-    group: "Viewer",
+    group: "Preview",
   },
   "viewer.volume-down": {
     keys: "Shift+ArrowDown",
     label: "Volume Down",
-    group: "Viewer",
+    group: "Preview",
   },
 
   "save.assign-folders": {

@@ -121,8 +121,8 @@ export function wheelZoomFactor(
   return Math.exp(-pixels * (pinch ? PINCH_GAIN : WHEEL_GAIN));
 }
 
-export const ZOOM_SLIDER_MAX = 100;
-export const ZOOM_SLIDER_MID = 50;
+const ZOOM_SLIDER_MAX = 100;
+const ZOOM_SLIDER_MID = 50;
 const ACTUAL_AT_MIN = 0.05;
 const ACTUAL_AT_MAX = 8;
 
@@ -136,10 +136,6 @@ export function actualSizeZoom(
 
 export function poseToActual(zoom: number, oneToOne: number | null): number {
   return oneToOne && oneToOne > 0 ? zoom / oneToOne : zoom;
-}
-
-export function actualToPose(actual: number, oneToOne: number | null): number {
-  return oneToOne && oneToOne > 0 ? actual * oneToOne : actual;
 }
 
 export function sliderToActual(slider: number): number {

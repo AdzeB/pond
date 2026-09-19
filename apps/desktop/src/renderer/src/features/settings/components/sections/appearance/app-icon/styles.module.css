@@ -1,0 +1,50 @@
+.grid {
+  display: grid;
+  flex: 1;
+  grid-template-rows: repeat(2, 44px);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  width: 44px;
+  height: 44px;
+  padding: 2px;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: var(--ds-radius-app-icon);
+  corner-shape: var(--ds-corner-icon);
+  transition: border-color var(--ds-duration-snap) var(--ds-easing-standard);
+
+  &:hover {
+    border-color: color-mix(
+      in srgb,
+      var(--tint, var(--ds-gray-8)) 50%,
+      transparent
+    );
+  }
+
+  &[data-selected] {
+    border-color: var(--tint, var(--ds-gray-12));
+  }
+}
+
+.cell img {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  object-fit: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell {
+    transition: none;
+  }
+}

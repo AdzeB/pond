@@ -1,26 +1,25 @@
 import { motion } from "motion/react";
 import { memo, useCallback, useMemo } from "react";
-import { useLibraryCardCallbacks } from "@/features/library/components/layouts/context/context";
-import {
-  useIsAnchor,
-  useIsPrimary,
-  useIsSelected,
-} from "@/features/library/state/selection";
-import { useIsTumbling } from "@/features/library/state/trash-tumble";
+import { useLibraryCardCallbacks } from "@/features/saves/components/card/context";
 import { useSaveCardModel } from "@/features/saves/components/card/model";
-import { Card } from "@/features/saves/components/card/parts/parts";
+import { Card } from "@/features/saves/components/card/parts";
 import type {
   LibraryCardSlot,
   LibraryCardView,
 } from "@/features/saves/components/card/types";
-import { GridCard } from "@/features/saves/components/card/views/grid/grid";
-import { JustifiedCard } from "@/features/saves/components/card/views/justified/justified";
-import { ListCard } from "@/features/saves/components/card/views/list/list";
-import { WaterfallCard } from "@/features/saves/components/card/views/waterfall/waterfall";
+import { GridCard } from "@/features/saves/components/card/views/grid";
+import { JustifiedCard } from "@/features/saves/components/card/views/justified";
+import { ListCard } from "@/features/saves/components/card/views/list";
+import { WaterfallCard } from "@/features/saves/components/card/views/waterfall";
 import { SaveContextMenu } from "@/features/saves/components/context-menu/context-menu";
 import { useSave } from "@/features/saves/hooks/use-saves";
-import { resolveFileIndex } from "@/features/saves/lib/actions";
-import { startNativeDrag } from "@/features/saves/lib/start-drag";
+import { beginSaveDrag } from "@/features/saves/lib/start-drag";
+import {
+  useIsAnchor,
+  useIsPrimary,
+  useIsSelected,
+} from "@/features/saves/state/selection";
+import { useIsTumbling } from "@/features/saves/state/trash-tumble";
 import type { Save } from "@/features/saves/types";
 
 interface PackedCardStyle extends React.CSSProperties {
@@ -70,14 +69,11 @@ export const SaveCard = memo(function SaveCard({
     return base;
   }, [slot]);
 
-  const dragFileIndex = save ? resolveFileIndex(save) : null;
   const onDragStart = useCallback(
     (e: React.DragEvent) => {
-      if (dragFileIndex == null) return;
-      e.preventDefault();
-      startNativeDrag(id);
+      beginSaveDrag(id, e.dataTransfer);
     },
-    [id, dragFileIndex],
+    [id],
   );
 
   const onSelectClick = useCallback(
@@ -114,7 +110,7 @@ export const SaveCard = memo(function SaveCard({
     "data-view": view,
     "data-cursor": isAnchor || undefined,
     style,
-    draggable: dragFileIndex != null,
+    draggable: true,
     onNativeDragStart: onDragStart,
     children,
   };

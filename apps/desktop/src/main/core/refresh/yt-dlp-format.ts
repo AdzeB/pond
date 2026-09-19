@@ -1,6 +1,6 @@
 import type { Source, VideoDownloadSettings } from "@pond/schema/db";
 
-export const YTDLP_CONCURRENT_FRAGMENTS = 8;
+const YTDLP_CONCURRENT_FRAGMENTS = 8;
 export const YTDLP_TRANSFER_FLAGS = [
   "--concurrent-fragments",
   String(YTDLP_CONCURRENT_FRAGMENTS),

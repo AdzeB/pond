@@ -1,6 +1,7 @@
 import { parseQueryPlan, type RawQueryPlan } from "@pond/schema/query-plan";
+import { generateText, Output } from "ai";
 import { ASSISTANT_MODELS } from "../../../shared/assistant";
-import { loadAdapter } from "../agent/adapter";
+import { loadModel } from "../agent/adapter";
 import { keyFor, parseProvider } from "../agent/keys";
 import { connectionFor } from "../agent/provider-models";
 import { getPrefs } from "../prefs";
@@ -22,24 +23,23 @@ export async function compilePlan(
   const apiKey = await keyFor(provider);
   if (!model.local && !apiKey) return null;
   const connection = connectionFor(provider, prefs.agent, model.model);
-  const adapter = await loadAdapter({
+  const languageModel = await loadModel({
     provider,
     model: connection.modelId,
     apiKey,
     baseUrl: connection.baseUrl,
   });
-  if (!adapter) return null;
-  const controller = new AbortController();
-  const { chat } = await import("@tanstack/ai");
+  if (!languageModel) return null;
   try {
-    const filter = await chat({
-      adapter,
-      systemPrompts: [buildSystemPrompt(ctx)],
+    const { output } = await generateText({
+      model: languageModel,
+      system: buildSystemPrompt(ctx),
       messages: [{ role: "user", content: input }],
-      outputSchema: queryOutputSchema,
-      abortController: controller,
+      output: Output.object({ schema: queryOutputSchema }),
+      abortSignal: AbortSignal.timeout(20_000),
     });
-    return parseQueryPlan({ filter });
+    if (!output) return null;
+    return parseQueryPlan({ filter: output });
   } catch {
     return null;
   }

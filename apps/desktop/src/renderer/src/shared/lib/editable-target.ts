@@ -51,3 +51,18 @@ export function eventFromEditable(event: KeyboardEvent): boolean {
   if (isEditableTarget(event.target)) return true;
   return event.composedPath().some((node) => isEditableTarget(node));
 }
+
+export function allowAppHotkeyInEditable(event: KeyboardEvent): boolean {
+  if (event.key === "Escape") return true;
+  if (event.altKey || event.shiftKey) return false;
+  if (!(event.metaKey || event.ctrlKey)) return false;
+  return event.key === "k" || event.key === "K";
+}
+
+export function stopAppHotkeysFromEditable(event: {
+  nativeEvent: KeyboardEvent;
+  stopPropagation: () => void;
+}): void {
+  if (allowAppHotkeyInEditable(event.nativeEvent)) return;
+  event.stopPropagation();
+}

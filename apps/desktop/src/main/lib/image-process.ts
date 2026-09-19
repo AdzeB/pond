@@ -1,7 +1,7 @@
 import { extname } from "node:path";
 import type { ImageDownloadSettings, ImageFormat } from "@pond/schema/db";
 import log from "electron-log/main.js";
-import sharp from "sharp";
+import sharp, { type Sharp } from "sharp";
 
 interface ProcessedImage {
   bytes: Buffer;
@@ -109,10 +109,7 @@ function dimsFromMeta(meta: ImageDims): ImageDims {
   return { width, height };
 }
 
-function applyFormat(
-  pipeline: sharp.Sharp,
-  prefs: ImageDownloadSettings,
-): void {
+function applyFormat(pipeline: Sharp, prefs: ImageDownloadSettings): void {
   switch (prefs.format) {
     case "jpeg":
       pipeline.jpeg({ quality: prefs.quality, progressive: prefs.progressive });

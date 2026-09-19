@@ -17,12 +17,19 @@ import {
 } from "@pond/schema/capture";
 import { z } from "zod";
 
-const JobSchema = z.object({
+const JobFields = {
   draft: CaptureDraftSchema.extend({
     items: z.array(CaptureItemSchema).max(500),
   }),
   total: z.number().int().nonnegative().optional(),
   library: z.string(),
+  completed: z.number().int().nonnegative(),
+  saveIds: z.array(z.string()),
+  duplicateCount: z.number().int().nonnegative().default(0),
+  error: z.string().optional(),
+};
+const StoredJobSchema = z.object({
+  ...JobFields,
   state: z.enum([
     "draft",
     "accepted",
@@ -31,12 +38,15 @@ const JobSchema = z.object({
     "failed",
     "cancelled",
   ]),
-  completed: z.number().int().nonnegative(),
-  saveIds: z.array(z.string()),
-  duplicateCount: z.number().int().nonnegative().default(0),
-  error: z.string().optional(),
 });
-type Job = z.infer<typeof JobSchema>;
+type StoredJob = z.infer<typeof StoredJobSchema>;
+type Job = Omit<StoredJob, "state"> & { state: CaptureReceipt["state"] };
+const JobSchema = StoredJobSchema.transform(
+  (job): Job =>
+    job.state === "draft"
+      ? { ...job, state: "accepted" }
+      : { ...job, state: job.state },
+);
 export interface CaptureQueuePorts {
   root(): string;
   process(
@@ -172,7 +182,7 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
           const job: Job = {
             draft,
             library: root,
-            state: draft.mode === "collect" ? "draft" : "accepted",
+            state: "accepted",
             completed: 0,
             saveIds: [],
             duplicateCount: 0,
@@ -191,9 +201,6 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
       for (const entry of entries.filter((name) => name.endsWith(".json")))
         out.push(receipt(await read(root, entry.slice(0, -5))));
       return out;
-    },
-    async draft(id: string): Promise<CaptureDraft> {
-      return (await read(ports.root(), id)).draft;
     },
     async resume(
       id: string,

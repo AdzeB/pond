@@ -1,6 +1,5 @@
 import { readFile } from "node:fs/promises";
 import { extname } from "node:path";
-import JSZip from "jszip";
 
 const OFFICE_EXTENSIONS = new Set([
   ".docx",
@@ -22,6 +21,7 @@ export async function extractOfficePreview(
 ): Promise<Buffer | null> {
   if (!OFFICE_EXTENSIONS.has(extname(path).toLowerCase())) return null;
   try {
+    const { default: JSZip } = await import("jszip");
     const zip = await JSZip.loadAsync(await readFile(path));
     for (const name of THUMBNAIL_PATHS) {
       const entry = zip.file(name);

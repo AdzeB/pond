@@ -11,7 +11,9 @@ import { getDb } from "../db";
 import { itemFile, itemsRoot } from "../paths";
 import { toWireSave } from "./wire";
 
-function isTrustedSender(event: IpcMainInvokeEvent): boolean {
+export function isTrustedSender(event: {
+  senderFrame?: { url: string } | null;
+}): boolean {
   const url = event.senderFrame?.url ?? "";
   if (!url) return false;
   const devUrl = process.env.ELECTRON_RENDERER_URL;
@@ -31,7 +33,7 @@ export function safeHandle<Args extends unknown[], R>(
   handler: (event: IpcMainInvokeEvent, ...args: Args) => R,
   bus: IpcMain = ipcMain,
 ): void {
-  bus.handle(channel, (event, ...args: Args) => {
+  bus.handle(channel, (event: IpcMainInvokeEvent, ...args: Args) => {
     if (!isTrustedSender(event)) {
       log.warn(
         "[pond ipc] rejected untrusted sender",

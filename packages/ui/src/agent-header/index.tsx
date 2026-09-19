@@ -7,15 +7,18 @@ export function AgentHeader({
   subtitle,
   children,
   ...props
-}: ComponentProps<"header"> & { title: string; subtitle?: string }) {
+}: Omit<ComponentProps<"header">, "title"> & {
+  title: React.ReactNode;
+  subtitle?: string;
+}) {
   return (
     <header {...props} className={cn(styles["agent-header"], props.className)}>
-      <span className={styles["header-title"]}>
+      <div className={styles["header-title"]}>
         {title}
         {subtitle && (
           <span className={styles["row-description"]}>{subtitle}</span>
         )}
-      </span>
+      </div>
       <div className={styles["header-actions"]}>{children}</div>
     </header>
   );

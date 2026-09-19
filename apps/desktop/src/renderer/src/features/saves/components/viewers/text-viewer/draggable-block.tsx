@@ -93,10 +93,12 @@ function $moveBlock(
   else target.insertBefore(dragged);
 }
 
-function collapsedMargins(elem: HTMLElement): {
+interface CollapsedMargins {
   top: number;
   bottom: number;
-} {
+}
+
+function collapsedMargins(elem: HTMLElement): CollapsedMargins {
   const style = window.getComputedStyle(elem);
   const prev = elem.previousElementSibling
     ? Number.parseFloat(

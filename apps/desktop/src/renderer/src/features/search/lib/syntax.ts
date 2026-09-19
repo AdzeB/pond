@@ -54,6 +54,7 @@ export const TOKEN_FIELDS: readonly TokenFieldSpec[] = [
   { field: "note", keys: ["note", "notes"] },
   { field: "caption", keys: ["caption", "captions"] },
   { field: "transcript", keys: ["transcript", "transcripts"] },
+  { field: "sensitiveContent", keys: ["sensitive"] },
   { field: "color", keys: ["color", "colour"] },
   { field: "savedAt", keys: ["saved", "savedat"] },
   { field: "publishedAt", keys: ["published", "publishedat"] },

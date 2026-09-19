@@ -1,6 +1,6 @@
 import type { Folder } from "@pond/schema/db";
-import type { LibraryNav } from "@/features/library/state/library-chrome";
 import type { Save } from "@/features/saves/types";
+import type { LibraryNav } from "@/shared/lib/library-nav";
 
 export function descendantFolderIds(
   id: string,

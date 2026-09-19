@@ -1,11 +1,17 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { saves } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
-import { clipboard, dialog, type NativeImage, nativeImage } from "electron";
+import {
+  ClipboardItem,
+  clipboard,
+  dialog,
+  type NativeImage,
+  nativeImage,
+} from "electron";
 import { z } from "zod";
 import { persistSaveThumbnail } from "../../core/save-thumbnail";
 import { getDb } from "../../db";
-import { extractFrameAt } from "../../lib/ffmpeg-frame";
+import { extractFrameAt, extractSampledFrames } from "../../lib/ffmpeg-frame";
 import { itemFile } from "../../paths";
 import { resolvePondItemPath } from "../helpers";
 import { toWireSave } from "../wire";
@@ -32,15 +38,43 @@ async function frameImage(
 }
 
 const FrameParams = z.object({ src: StringParam, timeSec: NumberParam });
+const SampleFramesParams = z.object({
+  src: StringParam,
+  maxFrames: z.number().int().min(3).max(12),
+});
 
 export const videoQueries = {
+  "video.sampleFrames": query(SampleFramesParams, async (params) => {
+    const resolved = resolvePondItemPath(params.src);
+    if (!resolved) return { ok: false, frames: [] };
+    const sampled = await extractSampledFrames(resolved.path, params.maxFrames);
+    if (!sampled) return { ok: false, frames: [] };
+    try {
+      const frames = await Promise.all(
+        sampled.frames.map(async (frame) => ({
+          bytes: Uint8Array.from(await readFile(frame.path)),
+          mimeType: frame.mimeType,
+        })),
+      );
+      return { ok: true, frames };
+    } finally {
+      await sampled.cleanup();
+    }
+  }),
+
   "video.copyFrame": query(FrameParams, async (params) => {
     const img = await frameImage(
       resolvePondItemPath(params.src),
       params.timeSec,
     );
     if (!img) return { ok: false };
-    clipboard.writeImage(img);
+    await clipboard.write([
+      new ClipboardItem({
+        "image/png": new Blob([Uint8Array.from(img.toPNG())], {
+          type: "image/png",
+        }),
+      }),
+    ]);
     return { ok: true };
   }),
 
@@ -90,7 +124,7 @@ export const videoQueries = {
       const wire = toWireSave(save);
       const f = wire.files[0];
       if (!f) return { ok: false };
-      clipboard.writeText(itemFile(saveId, f.path));
+      await clipboard.writeText(itemFile(saveId, f.path));
       return { ok: true };
     },
   ),

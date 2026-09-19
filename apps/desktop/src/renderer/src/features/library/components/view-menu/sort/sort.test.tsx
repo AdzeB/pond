@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -14,7 +13,6 @@ describe("sort section", () => {
   let host: HTMLDivElement;
 
   beforeEach(() => {
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.stubGlobal(
       "ResizeObserver",
       class {
@@ -53,13 +51,19 @@ describe("sort section", () => {
     return match;
   }
 
-  it("picks a sort key from the grouped select", async () => {
+  it("picks a sort key from the select", async () => {
     await render();
     await act(async () => {
       const trigger = document.querySelector<HTMLElement>("[role='combobox']");
       if (!trigger) throw new Error(document.body.innerHTML);
       trigger.click();
     });
+    expect(control("Date Published").textContent).toContain("Date Published");
+    expect(document.body.textContent).not.toContain("Random");
+    expect(document.body.textContent).not.toContain("Manual");
+    expect(
+      control("Date Published").closest("[data-scroll-fade='y']"),
+    ).not.toBeNull();
     await act(async () => control("Title").click());
     expect(getViewState().sortKey).toBe("title");
     expect(getViewState().sortDir).toBe("desc");
@@ -68,7 +72,7 @@ describe("sort section", () => {
   it("changes sort direction without resetting the key", async () => {
     setSort({ key: "title", dir: "desc" });
     await render();
-    await act(async () => control("Ascending").click());
+    await act(async () => control("Toggle Sort Direction").click());
     expect(getViewState().sortKey).toBe("title");
     expect(getViewState().sortDir).toBe("asc");
   });

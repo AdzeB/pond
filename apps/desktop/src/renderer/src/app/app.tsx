@@ -8,13 +8,13 @@ import {
 } from "@tanstack/react-router";
 import { MotionConfig } from "motion/react";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import { ActionDialogHost } from "@/features/library/components/action-dialog/action-dialog";
-import { ConversionDialogHost } from "@/features/library/components/conversion-dialog/conversion-dialog";
-import { FolderPickerHost } from "@/features/library/components/folder-picker/folder-picker";
+import { ActionDialogHost } from "@/features/library/components/action-dialog";
+import { ConversionDialogHost } from "@/features/library/components/conversion-dialog";
+import { FolderPickerHost } from "@/features/library/components/folder-picker";
 import type { PondApi } from "../../../preload";
 import { ExtensionCaptureToast } from "../features/captures/effects/extension-capture-toast";
 import { EnrichmentSweep } from "../features/enrichment/effects/enrichment-sweep";
-import { CommandMenuHost } from "../features/library/components/command-menu/command-menu";
+import { CommandMenuHost } from "../features/library/components/command-menu";
 import { useHydrateFolders } from "../features/library/state/folders";
 import { syncPrimaryFromPath } from "../features/saves/lib/save-nav";
 import { ThemeApplier } from "../features/settings/effects/theme-applier";
@@ -27,15 +27,15 @@ import { setAppRouter } from "../shared/lib/app-router";
 import { pondScopedKey } from "../shared/lib/pond-scope";
 import { BootScreen } from "./components/boot-screen/boot-screen";
 import { ErrorBoundary } from "./components/error-boundary/error-boundary";
-import { ErrorScreen } from "./components/error-screen/error-screen";
+import { ErrorScreen } from "./components/error-screen";
 import { AgentLibraryBridge } from "./effects/agent-library-bridge";
 import { MenuRecentsBridge } from "./effects/menu-recents-bridge";
-import { CollectShell } from "./windows/collect-shell/collect-shell";
+import "./effects/save-library-bridge";
 
 const DuplicateReviewHost = lazy(() =>
-  import(
-    "@/features/library/components/duplicate-review/duplicate-review"
-  ).then((module) => ({ default: module.DuplicateReviewHost })),
+  import("@/features/library/components/duplicate-review").then((module) => ({
+    default: module.DuplicateReviewHost,
+  })),
 );
 declare global {
   interface Window {
@@ -127,15 +127,6 @@ function AppContent() {
 }
 
 export function App() {
-  const shell = new URLSearchParams(window.location.search).get("shell");
-  if (shell === "collect") {
-    return (
-      <MotionConfig reducedMotion="user">
-        <ThemeApplier />
-        <CollectShell />
-      </MotionConfig>
-    );
-  }
   return <LibraryApp />;
 }
 

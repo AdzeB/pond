@@ -1,14 +1,18 @@
 import { DataTable, type RenderRowArgs, useDataTable } from "@pond/ui";
 import type { DownloadActivity } from "@shared/download-activity";
-import { useCallback, useEffect, useMemo } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo } from "react";
 import { downloadActivityForSave } from "../../lib/download-progress";
 import type { DownloadRow } from "../../lib/status-feed";
 import { downloadsSelection } from "../../state/downloads-selection";
-import { DownloadQueueRow, downloadsColumns } from "./columns";
-import styles from "./page.module.css";
+import {
+  DownloadQueueRow,
+  type DownloadViewRow,
+  downloadsColumns,
+} from "./columns";
+import styles from "./styles.module.css";
 
 function SelectionSync({ rowsById }: { rowsById: Map<string, DownloadRow> }) {
-  const { actions, selectionStore } = useDataTable<DownloadRow>();
+  const { actions, selectionStore } = useDataTable<DownloadViewRow>();
   useEffect(() => {
     const sync = () => {
       const ids = downloadsSelection
@@ -33,7 +37,8 @@ export function DownloadTable({
   now,
   inspectedId,
   onInspect,
-  header = false,
+  height,
+  extra,
 }: {
   rows: DownloadRow[];
   paused: boolean;
@@ -41,34 +46,41 @@ export function DownloadTable({
   now: number;
   inspectedId: string | null;
   onInspect: (row: DownloadRow) => void;
-  header?: boolean;
+  height?: number;
+  extra?: ReactNode;
 }) {
+  const viewRows = useMemo<DownloadViewRow[]>(
+    () =>
+      rows.map((row) => ({
+        ...row,
+        paused,
+        activity: downloadActivityForSave(activities, row.saveId),
+        now,
+        inspected: row.saveId === inspectedId,
+      })),
+    [rows, paused, activities, now, inspectedId],
+  );
   const rowsById = useMemo(
     () => new Map(rows.map((row) => [row.id, row])),
     [rows],
   );
   const renderRow = useCallback(
-    (args: RenderRowArgs<DownloadRow>) => (
-      <DownloadQueueRow
-        {...args}
-        paused={paused}
-        activity={downloadActivityForSave(activities, args.row.saveId)}
-        now={now}
-        inspected={args.row.saveId === inspectedId}
-      />
-    ),
-    [paused, activities, now, inspectedId],
+    (args: RenderRowArgs<DownloadViewRow>) => <DownloadQueueRow {...args} />,
+    [],
   );
   return (
     <DataTable.Provider
-      data={rows}
+      data={viewRows}
       columns={downloadsColumns}
       getRowId={(row) => row.id}
       rowHeight={48}
-      height={rows.length > 11 ? 528 : undefined}
+      height={height}
       selectionCheckboxes={false}
       selectOnClick={false}
-      onRowClick={onInspect}
+      onRowClick={(row) => {
+        const current = rowsById.get(row.id);
+        if (current) onInspect(current);
+      }}
       renderRow={renderRow}
       onSelectionChange={(ids) => {
         const other = downloadsSelection
@@ -81,10 +93,9 @@ export function DownloadTable({
         downloadsSelection.set([...other, ...selected]);
       }}
     >
-      <DataTable.Root
-        className={styles.grid}
-        variant={header ? "table" : "list"}
-      />
+      <DataTable.Root className={styles.grid}>
+        {extra ? <DataTable.ExtraRow>{extra}</DataTable.ExtraRow> : null}
+      </DataTable.Root>
       <SelectionSync rowsById={rowsById} />
     </DataTable.Provider>
   );

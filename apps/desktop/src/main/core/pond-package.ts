@@ -77,6 +77,7 @@ const PackageSaveSchema = z.object({
         w: z.number(),
         h: z.number(),
         text: z.string(),
+        createdAt: z.number().optional(),
       }),
     )
     .optional(),

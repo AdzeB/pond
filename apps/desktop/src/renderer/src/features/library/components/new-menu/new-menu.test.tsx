@@ -1,10 +1,9 @@
-// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { newMenuDialog } from "@/features/library/state/new-menu-dialog";
-import { NewMenu, NewMenuDialogHost } from "./new-menu";
+import { NewMenu, NewMenuDialogHost } from "./";
 
 const labels = [
   "New Folder",
@@ -20,11 +19,12 @@ const labels = [
   "Import Page Assets",
   "Import Eagle Library",
   "Import Pond Package",
-  "Connect a Source",
-  "Watch Account",
-  "Pinterest",
+  "New Source",
+  "New Watch",
   "Find Duplicates",
   "Auto Import",
+  "Rescan Library",
+  "Verify Integrity",
 ];
 
 describe("new menu", () => {
@@ -32,7 +32,6 @@ describe("new menu", () => {
   let root: Root;
 
   beforeEach(() => {
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.stubGlobal(
       "ResizeObserver",
       class {
@@ -69,11 +68,14 @@ describe("new menu", () => {
     for (const label of labels) expect(text).toContain(label);
     expect(text).not.toContain("ArtStation");
     expect(text).not.toContain("New Tab");
+    expect(text).not.toContain("Create");
+    expect(text).not.toContain("Connect");
+    expect(text).not.toContain("Tools");
   });
 
   it("uses outline icons for source actions", async () => {
     await openMenu();
-    for (const label of ["Connect a Source", "Watch Account"]) {
+    for (const label of ["New Source", "New Watch"]) {
       const item = [...document.querySelectorAll('[role="menuitem"]')].find(
         (el) => el.textContent?.includes(label),
       );

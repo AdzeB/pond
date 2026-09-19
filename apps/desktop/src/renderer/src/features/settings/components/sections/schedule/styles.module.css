@@ -1,0 +1,120 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+  min-width: 0;
+  padding: 16px;
+  margin: 0;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-xl);
+  box-shadow: var(--ds-shadow-1);
+}
+.card select,
+.card input {
+  --ds-focus-offset: 2px;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: var(--ds-text-md);
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-2);
+  border: 1px solid var(--ds-gray-4);
+  border-radius: var(--ds-radius-md);
+  transition: border-color var(--ds-duration-fast) var(--ds-easing-standard);
+}
+.card select:hover,
+.card input:hover {
+  border-color: var(--ds-gray-7);
+}
+.card .trigger {
+  background: var(--ds-gray-1);
+}
+.sentence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-size: var(--ds-text-md);
+  line-height: 28px;
+  color: var(--ds-gray-12);
+}
+.interval {
+  width: 48px;
+}
+.week {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.week legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-size: var(--ds-text-md);
+  color: var(--ds-gray-10);
+}
+.days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.days > button {
+  min-width: 32px;
+  padding: 0 8px;
+  border-radius: var(--ds-radius-md);
+}
+.zone,
+.manual,
+.error {
+  margin: 0;
+  font-size: var(--ds-text-md);
+  line-height: 1.5;
+  color: var(--ds-gray-11);
+}
+.error {
+  color: var(--ds-red-11);
+}
+.form > button {
+  margin: 4px 16px 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .card select,
+  .card input {
+    transition: none;
+  }
+}
+
+.phrase {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+.card input[type="date"] {
+  width: 124px;
+}
+.card input[type="time"] {
+  width: 104px;
+}
+
+.form > .zone,
+.form > .error {
+  padding-inline: 16px;
+  overflow-wrap: anywhere;
+}

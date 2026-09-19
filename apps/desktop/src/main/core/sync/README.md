@@ -1,27 +1,30 @@
 # `core/sync`
 
-Top-level sync orchestration: turn "import everything I've saved on a source"
-into idempotent enqueues into the URL-first ingest pipeline, safely and
-incrementally.
+Top-level sync orchestration: turn "import everything I've saved through an
+Account or Watch" into idempotent enqueues into the URL-first ingest pipeline,
+safely and incrementally.
 
-`syncSource(source, opts)` is the unit of work; `syncAllSources(opts)` fans out
-across connected sources. Both accept `{ trigger: "manual" | "cron", maxItems?,
-forceFull? }`.
+`syncAccount(accountId, opts)` is the Account unit of work.
+`syncSource(source, opts)` coordinates every Account and Watch for one Source,
+and `syncAllSources(opts)` fans out across connected Sources. They accept
+`{ trigger: "manual" | "cron", maxItems?, forceFull? }`.
 
 ## How a run flows
 
 ```
-syncSource(source)
-  → loadSyncBaseline(source, forceFull)   # full set OR bounded recent window
+syncAccount(accountId)
+  → loadSyncBaseline(account, forceFull)  # full set OR bounded recent window
   → harvestSourceList / harvestTwitterBookmarks  # paced by the governor, early-stops on known ids
   → dedupe vs knownIds → fresh / recovery
   → enqueue(fresh)                        # one chunked, transactional insert path
-  → persistWatermark(source)              # only AFTER a successful enqueue
+  → persistWatermark(accountId)           # only AFTER a successful enqueue
 ```
 
 ### Incremental cursor (watermark)
 
-Per-source state lives in prefs (`SourceSyncPrefs`):
+Per-Account state lives under `prefs.sync.accounts[accountId].sync`
+(`SourceSyncPrefs`). The pre-account `prefs.sync.sources` and
+`prefs.sync.handles` fields remain parseable only for migration.
 
 - `highWaterMark` — most recent source id we've enqueued (lists are newest-first).
 - `lastFullSyncAt` — gates the expensive full-list walk vs the cheap incremental

@@ -6,6 +6,11 @@ import { commitSaveIngestEvent, toErrorInfo } from "../../lib/wide-event";
 import { persistSave } from "../persist-save";
 import { RateLimitedError, TransientError } from "./extractors/errors";
 import {
+  noteTransientFailure,
+  setSourceCooldown,
+  snapshotSourceGate,
+} from "./rate-governor";
+import {
   type DueTask,
   isSourceTask,
   metrics,
@@ -13,11 +18,6 @@ import {
   WorkerWatchdogError,
 } from "./reconciler-config";
 import { classifyError } from "./retry-policy";
-import {
-  noteTransientFailure,
-  setSourceCooldown,
-  snapshotSourceGate,
-} from "./source-gate";
 import { FinalizeIncompleteError } from "./workers/finalize";
 
 export async function enrichTaskEventWithSave(

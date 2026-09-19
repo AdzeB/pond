@@ -83,7 +83,7 @@ export const DEFAULT_SOURCE_SYNC_PREFS: SourceSyncPrefs = {
 
 /**
  * @deprecated Superseded by `SyncAccounts`; kept so pre-multi-account prefs still parse and can be migrated.
- * @see migrateSyncAccounts in the desktop app
+ * @see migrateLegacySyncPrefs in the desktop app
  */
 export type SyncSources = Partial<Record<Source, SourceSyncPrefs>>;
 export type SyncHandles = Partial<Record<Source, string>>;

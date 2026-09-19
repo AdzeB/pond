@@ -422,11 +422,7 @@ export default defineBackground(() => {
   }
 
   function wantsPageCookies(trigger: string | undefined): boolean {
-    return (
-      trigger === "action" ||
-      trigger === "context-menu" ||
-      trigger === "toolbar"
-    );
+    return trigger === "action" || trigger === "context-menu";
   }
 
   async function handleCapture(
@@ -442,7 +438,6 @@ export default defineBackground(() => {
       draft: {
         id: crypto.randomUUID(),
         trigger: payload.trigger,
-        mode: "quick",
         metadata: { tags: [], folderIds: [] },
         items: [{ kind: "url", url: payload.url }],
       },
@@ -481,7 +476,6 @@ export default defineBackground(() => {
       draft: {
         id: crypto.randomUUID(),
         originUrl: picked.originUrl,
-        mode: picked.collect ? "collect" : "quick",
         metadata: {
           tags: parseCaptureTags(picked.tagText),
           folderIds: picked.folderIds,
@@ -536,7 +530,6 @@ export default defineBackground(() => {
       draft: {
         id: crypto.randomUUID(),
         originUrl: tab.url,
-        mode: "quick",
         metadata: { tags: ["screenshot"], folderIds: [] },
         items: [
           { kind: "image", dataUrl, title: tab.title || "Page screenshot" },

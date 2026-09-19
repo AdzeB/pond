@@ -89,7 +89,7 @@ export const BLANK_DOCUMENTS: readonly BlankDocumentDef[] = [
 ];
 
 export function isBlankDocumentKind(value: string): value is BlankDocumentKind {
-  return (BLANK_DOCUMENT_KINDS as readonly string[]).includes(value);
+  return BLANK_DOCUMENT_KINDS.some((kind) => kind === value);
 }
 
 export function blankDocumentDef(

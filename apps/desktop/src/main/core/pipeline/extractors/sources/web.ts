@@ -1,3 +1,4 @@
+import type { CaptureMedia } from "@pond/schema/raw";
 import metascraper from "metascraper";
 import metascraperAuthor from "metascraper-author";
 import metascraperDate from "metascraper-date";
@@ -14,12 +15,7 @@ type WebExtras = {
   faviconUrl?: string;
 };
 
-import type {
-  Capture,
-  ExtractInput,
-  Extractor,
-  MediaCandidate,
-} from "../types";
+import type { Capture, ExtractInput, Extractor } from "../types";
 
 const scrape = metascraper([
   metascraperTitle(),
@@ -60,7 +56,7 @@ export class WebPageExtractor implements Extractor {
 
     const faviconUrl = pickString(meta.logo);
     const coverUrl = pickString(meta.image) ?? faviconUrl;
-    const media: MediaCandidate[] = coverUrl
+    const media: CaptureMedia[] = coverUrl
       ? [{ url: coverUrl, type: "image" }]
       : [];
 

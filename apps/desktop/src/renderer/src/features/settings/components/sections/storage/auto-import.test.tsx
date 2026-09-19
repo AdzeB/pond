@@ -1,11 +1,9 @@
-// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 import { AutoImportSettings } from "./auto-import";
 
 it("hides path controls until Auto-Import is on", async () => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   const query = vi.fn(async (name: string) => {
     if (name === "autoImport.status")
       return { enabled: false, path: "", mode: "copy", history: [] };
@@ -27,7 +25,6 @@ it("hides path controls until Auto-Import is on", async () => {
 });
 
 it("shows copy or move and the watched path when enabled", async () => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   const query = vi.fn(async (name: string) => {
     if (name === "autoImport.status")
       return {

@@ -13,14 +13,11 @@ const appRoot = resolve(__dirname, "..");
 const require = createRequire(resolve(appRoot, "package.json"));
 
 async function main() {
-  try {
-    const electronPath = require("electron");
-    console.log(`[pond] electron binary ok (${electronPath})`);
-  } catch (err) {
-    if (err?.code === "MODULE_NOT_FOUND") return;
-    console.error("[pond] electron binary install failed:", err);
-    process.exitCode = 0;
-  }
+  const electronPath = require("electron");
+  console.log(`[pond] electron binary ok (${electronPath})`);
 }
 
-main();
+main().catch((err) => {
+  console.error("[pond] electron binary install failed:", err);
+  process.exitCode = 1;
+});

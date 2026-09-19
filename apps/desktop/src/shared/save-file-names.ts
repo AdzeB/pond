@@ -3,8 +3,8 @@ export const THUMBNAIL_DARK_KIND = "thumbnail_dark";
 export const IMAGE_KIND = "image";
 export const VIDEO_KIND = "video";
 export const POSTER_KIND = "poster";
-export const AVATAR_KIND = "avatar";
-export const SOURCE_ICON_KIND = "source_icon";
+const AVATAR_KIND = "avatar";
+const SOURCE_ICON_KIND = "source_icon";
 
 export const LEGACY_COVER_KIND = "cover";
 export const LEGACY_MEDIA_KIND = "media";
@@ -12,11 +12,11 @@ export const LEGACY_CUSTOM_THUMBNAIL_KIND = "custom_thumbnail";
 export const LEGACY_TEXT_COVER_LIGHT_KIND = "text_cover_light";
 export const LEGACY_TEXT_COVER_DARK_KIND = "text_cover_dark";
 
-export const THUMBNAIL_SUFFIX = "_thumbnail.png";
+const THUMBNAIL_SUFFIX = "_thumbnail.png";
 export const TEXT_THUMBNAIL_FILE = "thumbnail.png";
 export const THUMBNAIL_DARK_FILE = "thumbnail-dark.png";
 
-export const THUMBNAIL_KINDS: ReadonlySet<string> = new Set([
+const THUMBNAIL_KINDS: ReadonlySet<string> = new Set([
   THUMBNAIL_KIND,
   THUMBNAIL_DARK_KIND,
   LEGACY_CUSTOM_THUMBNAIL_KIND,
@@ -24,7 +24,7 @@ export const THUMBNAIL_KINDS: ReadonlySet<string> = new Set([
   LEGACY_TEXT_COVER_DARK_KIND,
 ]);
 
-export const AUXILIARY_KINDS: ReadonlySet<string> = new Set([
+const AUXILIARY_KINDS: ReadonlySet<string> = new Set([
   ...THUMBNAIL_KINDS,
   AVATAR_KIND,
   SOURCE_ICON_KIND,

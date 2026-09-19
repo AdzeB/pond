@@ -1,6 +1,9 @@
-// @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { eventFromEditable, isEditableTarget } from "./editable-target";
+import {
+  allowAppHotkeyInEditable,
+  eventFromEditable,
+  isEditableTarget,
+} from "./editable-target";
 
 describe("editable target", () => {
   it("treats contenteditable and textbox roles as typing surfaces", () => {
@@ -38,5 +41,19 @@ describe("editable target", () => {
     Object.defineProperty(event, "target", { value: field });
     expect(eventFromEditable(event)).toBe(true);
     field.remove();
+  });
+
+  it("allows Search Pond and Escape in a field", () => {
+    expect(
+      allowAppHotkeyInEditable(new KeyboardEvent("keydown", { key: "Escape" })),
+    ).toBe(true);
+    expect(
+      allowAppHotkeyInEditable(
+        new KeyboardEvent("keydown", { key: "k", metaKey: true }),
+      ),
+    ).toBe(true);
+    expect(
+      allowAppHotkeyInEditable(new KeyboardEvent("keydown", { key: "[" })),
+    ).toBe(false);
   });
 });

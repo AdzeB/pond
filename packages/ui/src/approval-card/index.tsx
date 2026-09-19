@@ -12,6 +12,8 @@ export function ApprovalCard({
   onReject,
   approveLabel = "Approve",
   rejectLabel = "Decline",
+  eyebrow,
+  showActions,
 }: {
   title: string;
   description?: string;
@@ -21,6 +23,8 @@ export function ApprovalCard({
   onReject: () => Promise<void>;
   approveLabel?: string;
   rejectLabel?: string;
+  eyebrow?: string;
+  showActions?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,11 +53,12 @@ export function ApprovalCard({
       >
         <div className={styles["card-header"]}>
           <span className={styles.eyebrow}>
-            {decision === "pending"
-              ? "Review"
-              : decision === "approved"
-                ? "Approved"
-                : "Declined"}
+            {eyebrow ??
+              (decision === "pending"
+                ? "Review"
+                : decision === "approved"
+                  ? "Approved"
+                  : "Declined")}
           </span>
           <h3>{title}</h3>
           {description && <p>{description}</p>}
@@ -64,7 +69,7 @@ export function ApprovalCard({
             {error}
           </div>
         )}
-        {decision === "pending" && (
+        {(showActions ?? decision === "pending") && (
           <div className={styles["card-actions"]}>
             <Button
               variant="ghost"

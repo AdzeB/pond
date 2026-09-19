@@ -1,14 +1,14 @@
 import type { MenuItemSpec } from "@pond/ui";
-import type { ReactNode } from "react";
+import { Children, isValidElement, type ReactNode } from "react";
 
 function labelText(label: ReactNode): string {
-  return typeof label === "string" ? label : "";
+  const labels = Children.toArray(label);
+  const value = labels.length === 1 ? labels[0] : null;
+  return value != null && !isValidElement(value) ? String(value) : "";
 }
 
 function keywordsOf(item: MenuItemSpec): string {
-  return "keywords" in item && typeof item.keywords === "string"
-    ? item.keywords
-    : "";
+  return "keywords" in item ? (item.keywords ?? "") : "";
 }
 
 function haystack(item: MenuItemSpec): string {

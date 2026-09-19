@@ -1,4 +1,5 @@
 import { clsx as cn } from "clsx";
+import { forwardRef } from "react";
 import styles from "./styles.module.css";
 
 interface PageProps extends React.ComponentPropsWithoutRef<"div"> {
@@ -68,17 +69,42 @@ function Section({ className, span, ...props }: SectionProps) {
   );
 }
 
+interface SectionDetailsProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function SectionDetails({ className, ...props }: SectionDetailsProps) {
+  return (
+    <div className={cn(styles["section-details"], className)} {...props} />
+  );
+}
+
 interface SectionTitleProps extends React.ComponentPropsWithoutRef<"h2"> {}
 
 function SectionTitle({ className, ...props }: SectionTitleProps) {
   return <h2 className={cn(styles["section-title"], className)} {...props} />;
 }
 
+interface SectionActionProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function SectionAction({ className, ...props }: SectionActionProps) {
+  return <div className={cn(styles["section-action"], className)} {...props} />;
+}
+
+interface SectionDescriptionProps extends React.ComponentPropsWithoutRef<"p"> {}
+
+function SectionDescription({ className, ...props }: SectionDescriptionProps) {
+  return (
+    <p className={cn(styles["section-description"], className)} {...props} />
+  );
+}
+
 interface ListProps extends React.ComponentPropsWithoutRef<"div"> {}
 
-function List({ className, ...props }: ListProps) {
-  return <div className={cn(styles.list, className)} {...props} />;
-}
+const List = forwardRef<HTMLDivElement, ListProps>(function List(
+  { className, ...props },
+  ref,
+) {
+  return <div ref={ref} className={cn(styles.list, className)} {...props} />;
+});
 
 interface ItemProps extends React.ComponentPropsWithoutRef<"div"> {}
 
@@ -110,31 +136,43 @@ function ItemControl({ className, ...props }: ItemControlProps) {
   return <div className={cn(styles.control, className)} {...props} />;
 }
 
-interface EmptyProps
-  extends Omit<React.ComponentPropsWithoutRef<"div">, "title"> {
-  title: React.ReactNode;
-  description?: React.ReactNode;
-  action?: React.ReactNode;
+interface CardProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
+  { className, ...props },
+  ref,
+) {
+  return <div ref={ref} className={cn(styles.card, className)} {...props} />;
+});
+
+interface CardTitleProps extends React.ComponentPropsWithoutRef<"h3"> {}
+
+function CardTitle({ className, ...props }: CardTitleProps) {
+  return <h3 className={cn(styles["card-title"], className)} {...props} />;
 }
 
-function Empty({
-  title,
-  description,
-  action,
-  className,
-  ...props
-}: EmptyProps) {
-  return (
-    <div className={cn(styles.empty, className)} {...props}>
-      <div className={styles.details}>
-        <h3 className={styles["item-title"]}>{title}</h3>
-        {description ? (
-          <p className={styles["item-description"]}>{description}</p>
-        ) : null}
-      </div>
-      {action ? <div className={styles.control}>{action}</div> : null}
-    </div>
-  );
+interface CardDescriptionProps extends React.ComponentPropsWithoutRef<"p"> {}
+
+function CardDescription({ className, ...props }: CardDescriptionProps) {
+  return <p className={cn(styles["card-description"], className)} {...props} />;
+}
+
+interface CardActionProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function CardAction({ className, ...props }: CardActionProps) {
+  return <div className={cn(styles["card-action"], className)} {...props} />;
+}
+
+interface CardContentProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function CardContent({ className, ...props }: CardContentProps) {
+  return <div className={cn(styles["card-content"], className)} {...props} />;
+}
+
+interface CardFooterProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function CardFooter({ className, ...props }: CardFooterProps) {
+  return <div className={cn(styles["card-footer"], className)} {...props} />;
 }
 
 export const Settings = {
@@ -145,12 +183,20 @@ export const Settings = {
   Description: Description,
   Columns: Columns,
   Section: Section,
+  SectionDetails: SectionDetails,
   SectionTitle: SectionTitle,
+  SectionDescription: SectionDescription,
+  SectionAction: SectionAction,
   List: List,
   Item: Item,
   ItemDetails: ItemDetails,
   ItemTitle: ItemTitle,
   ItemDescription: ItemDescription,
   ItemControl: ItemControl,
-  Empty: Empty,
+  Card: Card,
+  CardTitle: CardTitle,
+  CardDescription: CardDescription,
+  CardAction: CardAction,
+  CardContent: CardContent,
+  CardFooter: CardFooter,
 };

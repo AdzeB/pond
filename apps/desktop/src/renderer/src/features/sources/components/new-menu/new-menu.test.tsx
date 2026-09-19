@@ -1,13 +1,13 @@
-// @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
+import { watchFlow } from "@/features/sources/state/watch-flow";
 import { NewSourceMenu } from "./new-menu";
 
-const labels = ["Connect a Source", "Watch Account", "Watched Folder"];
+const labels = ["New Source", "New Watch", "New Folder"];
 
 describe("new source menu", () => {
   let host: HTMLDivElement;
@@ -15,7 +15,6 @@ describe("new source menu", () => {
   const onWatchedFolder = vi.fn();
 
   beforeEach(() => {
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.stubGlobal(
       "ResizeObserver",
       class {
@@ -24,17 +23,23 @@ describe("new source menu", () => {
         disconnect() {}
       },
     );
+    vi.stubGlobal("pond", {
+      query: vi.fn(async () => ({ accounts: [] })),
+      connectSource: vi.fn(async () => ({ ok: true })),
+    });
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
     sourceFlow.close();
     sourceNewMenu.close();
+    watchFlow.clear();
     onWatchedFolder.mockReset();
   });
 
   afterEach(async () => {
     sourceFlow.close();
     sourceNewMenu.close();
+    watchFlow.clear();
     await act(async () => root.unmount());
     host.remove();
     vi.unstubAllGlobals();
@@ -72,29 +77,10 @@ describe("new source menu", () => {
     expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
 
-  it("opens connect and watch flows without a chooser dialog", async () => {
-    await openMenu();
-    const connect = [...document.querySelectorAll('[role="menuitem"]')].find(
-      (el) => el.textContent?.includes("Connect a Source"),
-    );
-    if (!(connect instanceof HTMLElement)) throw new Error("Missing connect");
-    await act(async () => connect.click());
-    expect(sourceFlow.current()).toBe("connect-source");
-
-    sourceFlow.close();
-    await openMenu();
-    const watch = [...document.querySelectorAll('[role="menuitem"]')].find(
-      (el) => el.textContent?.includes("Watch Account"),
-    );
-    if (!(watch instanceof HTMLElement)) throw new Error("Missing watch");
-    await act(async () => watch.click());
-    expect(sourceFlow.current()).toBe("watch-target");
-  });
-
   it("picks a watched folder from the same menu", async () => {
     await openMenu();
     const item = [...document.querySelectorAll('[role="menuitem"]')].find(
-      (el) => el.textContent?.includes("Watched Folder"),
+      (el) => el.textContent?.includes("New Folder"),
     );
     if (!(item instanceof HTMLElement)) throw new Error("Missing folder");
     await act(async () => item.click());
@@ -104,8 +90,8 @@ describe("new source menu", () => {
 
   it("opens from the new-source shortcut store", async () => {
     await renderMenu(true);
-    expect(document.body.textContent).not.toContain("Watch Account");
+    expect(document.body.textContent).not.toContain("New Watch");
     await act(async () => sourceNewMenu.open());
-    expect(document.body.textContent).toContain("Watch Account");
+    expect(document.body.textContent).toContain("New Watch");
   });
 });

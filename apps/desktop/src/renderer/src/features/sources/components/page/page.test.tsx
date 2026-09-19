@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { Tooltip } from "@pond/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
@@ -8,7 +7,7 @@ import { refetchAccounts } from "@/features/sources/hooks/use-accounts";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import { sourcesFilters } from "@/features/sources/state/sources-filters";
 import { sourcesSelection } from "@/features/sources/state/sources-selection";
-import { SourcesPage } from "./page";
+import { SourcesPage } from "./";
 
 const accounts = [
   account("ig", "instagram", "oluwa.rafa"),
@@ -62,7 +61,6 @@ describe("Sources page selection", () => {
   const query = vi.fn();
 
   beforeEach(() => {
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.stubGlobal(
       "ResizeObserver",
       class {
@@ -245,5 +243,28 @@ describe("Sources page selection", () => {
       );
     });
     expect(selectedIds()).toEqual(["ig"]);
+  });
+
+  it("filters the table from the Source chip", async () => {
+    await render();
+    await act(async () => {
+      document
+        .querySelector<HTMLButtonElement>('[aria-label="Filter"]')
+        ?.click();
+    });
+    await act(async () => {
+      document
+        .querySelector<HTMLButtonElement>('[aria-label="Source"]')
+        ?.click();
+    });
+    const youtube = [
+      ...document.querySelectorAll('[role="menuitemcheckbox"]'),
+    ].find((node) => node.textContent === "YouTube");
+    if (!youtube) throw new Error("Missing YouTube filter");
+    await act(async () => {
+      youtube.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(bodyRows()).toHaveLength(1);
+    expect(rowWith("@pond")).toBeTruthy();
   });
 });

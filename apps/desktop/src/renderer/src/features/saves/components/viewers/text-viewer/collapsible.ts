@@ -84,8 +84,8 @@ export class CollapsibleContainerNode extends ElementNode {
   }
 
   updateDOM(prev: this, dom: HTMLElement): boolean {
-    const details = dom as HTMLDetailsElement;
-    if (prev.__open !== this.__open) details.open = this.__open;
+    if (!(dom instanceof HTMLDetailsElement)) return true;
+    if (prev.__open !== this.__open) dom.open = this.__open;
     return false;
   }
 
@@ -120,9 +120,9 @@ export class CollapsibleContainerNode extends ElementNode {
 }
 
 function $convertDetails(element: HTMLElement): DOMConversionOutput | null {
-  const details = element as HTMLDetailsElement;
+  if (!(element instanceof HTMLDetailsElement)) return null;
   return {
-    node: $createCollapsibleContainerNode(details.open),
+    node: $createCollapsibleContainerNode(element.open),
   };
 }
 

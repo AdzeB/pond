@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -27,7 +26,6 @@ let host: HTMLDivElement;
 const tx = vi.fn(async () => ({ ok: true }));
 const closed = vi.fn();
 beforeEach(() => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal("pond", { tx });
   tx.mockReset();
   tx.mockResolvedValue({ ok: true });

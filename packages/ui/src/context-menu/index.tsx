@@ -5,6 +5,7 @@ import { clsx as cn } from "clsx";
 import { Checkbox } from "../checkbox";
 import { Keyboard } from "../keyboard";
 import { type MenuItemSpec, renderMenuSpec } from "../menu/items";
+import { stopPageHotkeys } from "../stop-page-hotkeys";
 import styles from "./styles.module.css";
 
 function Root(props: Base.Root.Props) {
@@ -178,14 +179,7 @@ function Input({ className, onKeyDown, ...props }: BaseInput.Props) {
       className={cn(styles.input, className)}
       onKeyDown={(event) => {
         onKeyDown?.(event);
-        if (
-          event.key.length === 1 &&
-          !event.ctrlKey &&
-          !event.metaKey &&
-          !event.altKey
-        ) {
-          event.stopPropagation();
-        }
+        stopPageHotkeys(event);
       }}
       {...props}
     />

@@ -1,4 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
+import { sourceIdentity } from "@pond/schema/domain";
 import { buildWhere } from "@pond/schema/filters";
 import { readColorMatch } from "@pond/schema/filters/color";
 import { matches } from "@pond/schema/filters/match";
@@ -8,7 +9,7 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { dedupePredicates } from "@/features/search/lib/nl-query";
 import { validatePlan } from "@/features/search/lib/nl-validate";
-import { rangePredicate } from "./range/range";
+import { rangePredicate } from "./range";
 import { changeChoiceMode, isChoiceSelected, selectChoice } from "./selection";
 
 const SqlValues = z.array(
@@ -108,6 +109,68 @@ describe("filter dropdown matching", () => {
           saves.filter((save) => matches(filter, save)).map((save) => save.id),
         );
       }
+    } finally {
+      db.close();
+    }
+  });
+
+  it("matches canonical source identity in memory and SQLite", () => {
+    const db = new DatabaseSync(":memory:");
+    db.function("pond_source_identity", (siteName, source, url) => {
+      const text = z.string().nullable();
+      return sourceIdentity({
+        siteName: text.safeParse(siteName).data ?? null,
+        source: text.safeParse(source).data ?? null,
+        url: text.safeParse(url).data ?? null,
+      });
+    });
+    const saves = [
+      {
+        ...base,
+        id: "tweet",
+        source: "twitter",
+        siteName: "x.com",
+        url: "https://x.com/a/status/1",
+      },
+      {
+        ...base,
+        id: "alias",
+        source: "twitter",
+        siteName: null,
+        url: "https://twitter.com/b/status/2",
+      },
+      {
+        ...base,
+        id: "instagram",
+        source: "web",
+        siteName: "instagram.com",
+        url: "https://www.instagram.com/p/abc",
+      },
+      { ...base, id: "local", source: "local", siteName: null, url: "" },
+    ];
+    const filter = query([{ field: "source", operator: "eq", value: "x.com" }]);
+    try {
+      db.exec(
+        "create table saves (id text, site_name text, source text, url text)",
+      );
+      const insert = db.prepare("insert into saves values (?, ?, ?, ?)");
+      for (const save of saves)
+        insert.run(save.id, save.siteName, save.source, save.url);
+      const where = buildWhere(filter);
+      if (!where) throw new Error("Missing SQL predicate");
+      const compiled = new SQLiteSyncDialect().sqlToQuery(where);
+      expect(
+        db
+          .prepare(`select id from saves where ${compiled.sql}`)
+          .all(...SqlValues.parse(compiled.params))
+          .map((row) => row.id)
+          .sort(),
+      ).toEqual(
+        saves
+          .filter((save) => matches(filter, save))
+          .map((save) => save.id)
+          .sort(),
+      );
     } finally {
       db.close();
     }

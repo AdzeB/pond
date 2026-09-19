@@ -1,4 +1,4 @@
-import type { Row as TanstackRow } from "@tanstack/react-table";
+import type { RowData, Row as TanstackRow } from "@tanstack/react-table";
 import type { Store } from "@tanstack/store";
 import {
   createContext,
@@ -6,13 +6,14 @@ import {
   type ReactNode,
   use,
 } from "react";
+import type { DATA_TABLE_FEATURES } from "./provider";
 import type { RenderRowArgs, TableColumn } from "./types";
 
 export interface SelectionState {
   selectedIds: Set<string>;
 }
 
-export interface RowApi<T> {
+export interface RowApi<T extends RowData> {
   selectionStore: Store<SelectionState>;
   columns: TableColumn<T>[];
   gridTemplate: string;
@@ -27,7 +28,7 @@ export interface RowApi<T> {
   renderRow?: (args: RenderRowArgs<T>) => ReactNode;
 }
 
-export interface DataTableContextValue<T> {
+export interface DataTableContextValue<T extends RowData> {
   selectionStore: Store<SelectionState>;
   actions: {
     toggleRow: (id: string, extend: boolean) => void;
@@ -46,7 +47,7 @@ export interface DataTableContextValue<T> {
     selectionEnabled: boolean;
     selectionCheckboxes: boolean;
     expansionEnabled: boolean;
-    rows: TanstackRow<T>[];
+    rows: TanstackRow<typeof DATA_TABLE_FEATURES, T>[];
     rowCount: number;
     rowHeight: number;
     height?: number;
@@ -59,7 +60,7 @@ export interface DataTableContextValue<T> {
 // biome-ignore lint/suspicious/noExplicitAny: single shared context, narrowed by useDataTable<T>().
 const DataTableContext = createContext<DataTableContextValue<any> | null>(null);
 
-function useDataTable<T>(): DataTableContextValue<T> {
+function useDataTable<T extends RowData>(): DataTableContextValue<T> {
   const ctx = use(DataTableContext);
   if (!ctx)
     throw new Error("DataTable parts must be used within DataTable.Provider");

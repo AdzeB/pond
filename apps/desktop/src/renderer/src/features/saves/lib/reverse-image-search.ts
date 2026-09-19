@@ -2,11 +2,7 @@ import { z } from "zod";
 import { statusFeed } from "@/features/downloads/lib/status-feed";
 import type { Save } from "@/features/saves/types";
 
-export const REVERSE_SEARCH_ENGINES: ReadonlyArray<{
-  key: string;
-  label: string;
-  url: (encoded: string) => string;
-}> = [
+export const REVERSE_SEARCH_ENGINES = [
   {
     key: "google-lens",
     label: "Google Lens",
@@ -33,7 +29,11 @@ export const REVERSE_SEARCH_ENGINES: ReadonlyArray<{
     label: "SauceNAO",
     url: (u) => `https://saucenao.com/search.php?url=${u}`,
   },
-];
+] as const satisfies ReadonlyArray<{
+  key: string;
+  label: string;
+  url: (encoded: string) => string;
+}>;
 
 const PublicUrlReplySchema = z
   .object({

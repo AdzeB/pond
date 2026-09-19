@@ -1,14 +1,18 @@
 import {
   IconColorPaletteOutline18 as Appearance,
+  IconArchiveOutline18 as Backups,
   IconGear3Outline18 as General,
   IconImageOutline18 as Images,
+  IconFolderOutline18 as Library,
   IconBracketsCurlyOutline18 as Mcp,
-  IconNodes3Outline18 as Models,
-  IconCalendarOutline18 as Schedule,
+  IconCubeOutline18 as Models,
+  IconUserOutline18 as Personalization,
+  IconMagicWandOutline18 as Processing,
+  IconNodes3Outline18 as Providers,
   IconMagnifierOutline18 as Search,
+  IconKeyboard2Outline18 as Shortcuts,
   IconServerOutline18 as Storage,
   IconBookmarkOutline18 as Tags,
-  IconTrashXmarkOutline18 as Trash,
   IconMovieOutline18 as Videos,
 } from "@pond/icons/outline/18";
 import type { IconComponent } from "@pond/icons/types";
@@ -25,16 +29,19 @@ import { SECTION_CONFIGS } from "@/features/settings/lib/sections";
 const ICONS = new Map<string, IconComponent>([
   ["general", General],
   ["viewer", Images],
-  ["schedule", Schedule],
   ["appearance", Appearance],
+  ["shortcuts", Shortcuts],
   ["tags", Tags],
+  ["library", Library],
   ["search", Search],
-  ["models", Models],
+  ["processing", Processing],
+  ["backups", Backups],
+  ["models", Providers],
+  ["agent-models", Models],
+  ["personalization", Personalization],
   ["mcp", Mcp],
-  ["trash", Trash],
   ["storage", Storage],
-  ["videos", Videos],
-  ["images", Images],
+  ["harvesting", Videos],
 ]);
 
 export interface SectionDef extends SettingsSection {
@@ -51,7 +58,13 @@ export const SECTIONS: SectionDef[] = SETTINGS_SECTIONS.map((section) => {
   return { ...section, icon, config };
 });
 
-const BESPOKE_SECTION_IDS = new Set(["tags", "models", "mcp"]);
+const BESPOKE_SECTION_IDS = new Set([
+  "tags",
+  "models",
+  "agent-models",
+  "personalization",
+  "mcp",
+]);
 
 export function isBespokeSection(section: SectionDef): boolean {
   return BESPOKE_SECTION_IDS.has(section.id);
@@ -90,7 +103,7 @@ export function sectionForId(id: string): SectionDef | undefined {
 
 interface SettingsMasterGroup {
   group: SettingsGroup;
-  label: string;
+  label: string | null;
   sections: SectionDef[];
 }
 

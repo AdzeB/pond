@@ -233,7 +233,8 @@ function postIdFromGraphql(body: string | null): string | null {
   const input = graphqlInput(parseJsonRecord(body));
   for (const key of POST_ID_FIELDS) {
     const m = asText(input[key])?.match(POST_ID_RE);
-    if (m) return m[1];
+    const id = m?.[1];
+    if (id) return id;
   }
   const m = body.match(POST_ID_RE);
   return m?.[1] ?? null;

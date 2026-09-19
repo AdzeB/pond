@@ -1,0 +1,24 @@
+{
+  "name": "@pond/local-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Environment-independent client for Pond's authenticated local API.",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pond/schema": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

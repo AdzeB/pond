@@ -1,15 +1,16 @@
-import { MessagePrimitive as Base, useAuiState } from "@assistant-ui/react";
 import { clsx as cn } from "clsx";
 import { useReducedMotionConfig } from "motion/react";
-import type { ComponentProps } from "react";
-import type { PrimitiveSurface } from "../shared/primitive-surface";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import styles from "./styles.module.css";
 
-function Root({ className, ...props }: ComponentProps<typeof Base.Root>) {
-  const role = useAuiState((state) => state.message.role);
+interface RootProps extends ComponentPropsWithoutRef<"article"> {
+  role: "user" | "assistant" | "system";
+}
+
+function Root({ className, role, ...props }: RootProps) {
   const reduced = useReducedMotionConfig();
   return (
-    <Base.Root
+    <article
       {...props}
       data-reduced-motion={reduced || undefined}
       data-role={role}
@@ -18,24 +19,22 @@ function Root({ className, ...props }: ComponentProps<typeof Base.Root>) {
   );
 }
 
-function Body({ className, ...props }: ComponentProps<"div">) {
+function Body({ className, ...props }: ComponentPropsWithoutRef<"div">) {
   return <div className={cn(styles["message-body"], className)} {...props} />;
 }
 
-const primitives = {
-  Root,
-  Parts: Base.Parts,
-  PartByIndex: Base.PartByIndex,
-  Content: Base.Content,
-  If: Base.If,
-  Attachments: Base.Attachments,
-  AttachmentByIndex: Base.AttachmentByIndex,
-  Quote: Base.Quote,
-  Error: Base.Error,
-  GroupedParts: Base.GroupedParts,
-  GenerativeUI: Base.GenerativeUI,
-  Unstable_PartsGrouped: Base.Unstable_PartsGrouped,
-  Unstable_PartsGroupedByParentId: Base.Unstable_PartsGroupedByParentId,
-} satisfies PrimitiveSurface<typeof Base>;
+function Leading({ children }: { children?: ReactNode }) {
+  if (!children) return null;
+  return <div className={styles.leading}>{children}</div>;
+}
 
-export const Message = { ...primitives, Body };
+function Footer({ children }: { children?: ReactNode }) {
+  return children ? children : null;
+}
+
+function Actions({ children }: { children?: ReactNode }) {
+  if (!children) return null;
+  return <div className={styles["message-actions"]}>{children}</div>;
+}
+
+export const Message = { Root, Body, Leading, Footer, Actions };

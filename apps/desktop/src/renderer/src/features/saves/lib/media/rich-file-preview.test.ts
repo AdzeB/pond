@@ -24,12 +24,10 @@ describe("richFilePreviewKind", () => {
     expect(richFilePreviewKind(file(extension))).toBe(expected);
   });
 
-  it.each([
-    "docx",
-    "pdf",
-    "html",
-    "psd",
-  ])("keeps .%s on its existing card renderer", (extension) => {
-    expect(richFilePreviewKind(file(extension))).toBeNull();
-  });
+  it.each(["docx", "pdf", "html", "psd"])(
+    "keeps .%s on its existing card renderer",
+    (extension) => {
+      expect(richFilePreviewKind(file(extension))).toBeNull();
+    },
+  );
 });

@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "node \"$(git rev-parse --show-toplevel)/scripts/reference-capture.mjs\" capture cursor sessionStart",
+        "timeout": 3
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": "node \"$(git rev-parse --show-toplevel)/scripts/reference-capture.mjs\" capture cursor sessionEnd",
+        "timeout": 3
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": "node \"$(git rev-parse --show-toplevel)/scripts/reference-capture.mjs\" capture cursor beforeSubmitPrompt",
+        "timeout": 3
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "node \"$(git rev-parse --show-toplevel)/scripts/reference-capture.mjs\" capture cursor preToolUse",
+        "timeout": 3
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "node \"$(git rev-parse --show-toplevel)/scripts/reference-capture.mjs\" capture cursor postToolUse",
+        "timeout": 3
+      }
+    ],
+    "postToolUseFailure": [
+      {
+        "command": "node \"$(git rev-parse --show-toplevel)/scripts/reference-capture.mjs\" capture cursor postToolUseFailure",
+        "timeout": 3
+      }
+    ],
+    "beforeReadFile": [
+      {
+        "command": "node \"$(git rev-parse --show-toplevel)/scripts/reference-capture.mjs\" capture cursor beforeReadFile",
+        "timeout": 3
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": "node \"$(git rev-parse --show-toplevel)/scripts/reference-capture.mjs\" capture cursor afterFileEdit",
+        "timeout": 3
+      }
+    ],
+    "beforeTabFileRead": [
+      {
+        "command": "node \"$(git rev-parse --show-toplevel)/scripts/reference-capture.mjs\" capture cursor beforeTabFileRead",
+        "timeout": 3
+      }
+    ],
+    "afterTabFileEdit": [
+      {
+        "command": "node \"$(git rev-parse --show-toplevel)/scripts/reference-capture.mjs\" capture cursor afterTabFileEdit",
+        "timeout": 3
+      }
+    ],
+    "subagentStart": [
+      {
+        "command": "node \"$(git rev-parse --show-toplevel)/scripts/reference-capture.mjs\" capture cursor subagentStart",
+        "timeout": 3
+      }
+    ],
+    "subagentStop": [
+      {
+        "command": "node \"$(git rev-parse --show-toplevel)/scripts/reference-capture.mjs\" capture cursor subagentStop",
+        "timeout": 3
+      }
+    ],
+    "preCompact": [
+      {
+        "command": "node \"$(git rev-parse --show-toplevel)/scripts/reference-capture.mjs\" capture cursor preCompact",
+        "timeout": 3
+      }
+    ],
+    "afterAgentResponse": [
+      {
+        "command": "node \"$(git rev-parse --show-toplevel)/scripts/reference-capture.mjs\" capture cursor afterAgentResponse",
+        "timeout": 3
+      }
+    ],
+    "stop": [
+      {
+        "command": "node \"$(git rev-parse --show-toplevel)/scripts/reference-capture.mjs\" capture cursor stop",
+        "timeout": 3
+      }
+    ]
+  }
+}

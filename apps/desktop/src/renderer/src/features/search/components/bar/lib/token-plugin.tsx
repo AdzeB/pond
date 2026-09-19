@@ -14,7 +14,7 @@ import {
   $createFilterTokenNode,
   $isFilterTokenNode,
   FilterTokenNode,
-} from "./token-node/token-node";
+} from "./token-node";
 
 const KEYS = TOKEN_FIELDS.flatMap((spec) => spec.keys);
 

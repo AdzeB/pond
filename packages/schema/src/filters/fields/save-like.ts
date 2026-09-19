@@ -4,6 +4,7 @@ import type { RawJson } from "../../raw";
 export interface SaveLike {
   id: string;
   source: string | null;
+  siteName?: string | null;
   accountId?: string | null;
   url: string;
   title?: string | null;
@@ -16,6 +17,7 @@ export interface SaveLike {
   caption?: string | null;
   ocrText?: string | null;
   transcript?: string | null;
+  sensitiveScore?: number | null;
   mediaType?: string | null;
   files?: ReadonlyArray<unknown> | null;
   width?: number | null;

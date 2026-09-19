@@ -32,7 +32,7 @@ export function CodeHeader({
         size="xs"
         variant="ghost"
         onClick={() => void copy()}
-        aria-label="Copy code"
+        aria-label="Copy Code"
       >
         {copied ? <IconCheckOutline18 /> : <IconClone2Outline18 />}
         {copied ? "Copied" : "Copy"}

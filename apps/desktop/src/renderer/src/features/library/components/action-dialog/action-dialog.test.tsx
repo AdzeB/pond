@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import {
   type ActionPreview,
   type ActionQueryInputs,
@@ -12,7 +11,7 @@ import {
   closeActionDialog,
   openActionDialog,
 } from "@/features/library/state/action-dialog";
-import { ActionDialogHost } from "./action-dialog";
+import { ActionDialogHost } from "./";
 
 let root: Root;
 let host: HTMLDivElement;
@@ -21,7 +20,6 @@ let failRun = false;
 beforeEach(() => {
   requests.length = 0;
   failRun = false;
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal(
     "ResizeObserver",
     class {

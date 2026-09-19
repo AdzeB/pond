@@ -1,25 +1,13 @@
-import { useEffect } from "react";
-import { eventFromEditable } from "@/shared/lib/editable-target";
-
-function allowEscapeInField(event: KeyboardEvent): boolean {
-  return event.key === "Escape";
-}
-
-function allowSearchPondInField(event: KeyboardEvent): boolean {
-  if (event.altKey || event.shiftKey) return false;
-  if (!(event.metaKey || event.ctrlKey)) return false;
-  return event.key === "k" || event.key === "K";
-}
+import { useLayoutEffect } from "react";
+import {
+  allowAppHotkeyInEditable,
+  eventFromEditable,
+} from "@/shared/lib/editable-target";
 
 export function EditableHotkeyGuard() {
-  useEffect(() => {
+  useLayoutEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (
-        allowEscapeInField(event) ||
-        allowSearchPondInField(event) ||
-        !eventFromEditable(event)
-      )
-        return;
+      if (allowAppHotkeyInEditable(event) || !eventFromEditable(event)) return;
       event.stopImmediatePropagation();
     };
     document.addEventListener("keydown", onKey);

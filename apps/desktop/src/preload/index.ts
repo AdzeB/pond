@@ -6,6 +6,7 @@ import {
   ipcRenderer,
   webUtils,
 } from "electron";
+import type { AgentStreamEvent } from "../shared/agent-stream";
 import type { AssistantChunk } from "../shared/assistant";
 import {
   IPC,
@@ -14,6 +15,7 @@ import {
 } from "../shared/constants";
 import { FilterQuery } from "../shared/filter-query";
 import type { QueryClient } from "../shared/query-contracts";
+import type { EagleImportProgress } from "../shared/saves-import-contracts";
 import type {
   WireJson,
   WireSessionImported,
@@ -130,6 +132,15 @@ const api = {
     const listener = (_: IpcRendererEvent, id: string) => cb(id);
     ipcRenderer.on(IPC.menuOpenSave, listener);
     return () => ipcRenderer.off(IPC.menuOpenSave, listener);
+  },
+
+  onEagleImportProgress(
+    cb: (progress: EagleImportProgress) => void,
+  ): () => void {
+    const listener = (_: IpcRendererEvent, progress: EagleImportProgress) =>
+      cb(progress);
+    ipcRenderer.on(IPC.eagleImportProgress, listener);
+    return () => ipcRenderer.off(IPC.eagleImportProgress, listener);
   },
 
   appInfo(): Promise<{
@@ -294,6 +305,47 @@ const api = {
     const listener = (_: IpcRendererEvent, chunk: AssistantChunk) => cb(chunk);
     ipcRenderer.on(IPC.agentChunk, listener);
     return () => ipcRenderer.off(IPC.agentChunk, listener);
+  },
+
+  agentStream(
+    body: WireJson,
+    receive: (event: AgentStreamEvent) => void,
+  ): () => void {
+    const { port1, port2 } = new MessageChannel();
+    let closed = false;
+    const close = () => {
+      if (closed) return;
+      closed = true;
+      port1.onmessage = null;
+      port1.onmessageerror = null;
+      port1.close();
+    };
+    port1.onmessage = (event) => {
+      if (closed) return;
+      const chunk = event.data;
+      if (chunk instanceof Uint8Array) {
+        receive({ type: "data", data: Array.from(chunk) });
+      } else if (chunk instanceof ArrayBuffer) {
+        receive({ type: "data", data: Array.from(new Uint8Array(chunk)) });
+      }
+    };
+    port1.addEventListener("close", () => {
+      if (closed) return;
+      close();
+      receive({ type: "end" });
+    });
+    port1.onmessageerror = () => {
+      close();
+      receive({ type: "error", error: "Could not read this reply." });
+    };
+    try {
+      ipcRenderer.postMessage(IPC.agentStream, body, [port2]);
+    } catch (error) {
+      close();
+      port2.close();
+      throw error;
+    }
+    return close;
   },
 
   onAgentFilter(cb: (query: Query) => void): () => void {

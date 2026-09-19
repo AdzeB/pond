@@ -141,17 +141,26 @@ export async function setFolderColor(
   return { ok: true };
 }
 
-export async function deleteFolder(id: string): Promise<{ ok: boolean }> {
+export async function deleteFolder(
+  id: string,
+  options: { trashContainedSaves?: boolean } = {},
+): Promise<{ ok: boolean }> {
   const all = await listFolders();
   const ids = collectDescendants(id, all);
   const db = await getDb();
   const affected = db
-    .select()
+    .select({
+      saveId: saveFoldersTable.saveId,
+      folderId: saveFoldersTable.folderId,
+      deletedAt: saves.deletedAt,
+    })
     .from(saveFoldersTable)
+    .innerJoin(saves, eq(saveFoldersTable.saveId, saves.id))
     .where(inArray(saveFoldersTable.folderId, ids))
     .all();
   const txs: Transaction[] = [];
-  for (const saveId of new Set(affected.map((row) => row.saveId))) {
+  const affectedSaveIds = new Set(affected.map((row) => row.saveId));
+  for (const saveId of affectedSaveIds) {
     const before = await folderIdsForSave(saveId);
     txs.push({
       kind: "update",
@@ -161,6 +170,18 @@ export async function deleteFolder(id: string): Promise<{ ok: boolean }> {
       before: { folderIds: before },
       meta: { actor: "user", actorReason: "folder-delete" },
     });
+  }
+  if (options.trashContainedSaves) {
+    const liveSaveIds = new Set(
+      affected.filter((row) => !row.deletedAt).map((row) => row.saveId),
+    );
+    for (const saveId of liveSaveIds)
+      txs.push({
+        kind: "trash",
+        model: "save",
+        id: saveId,
+        meta: { actor: "user", actorReason: "folder-delete" },
+      });
   }
   for (const folderId of ids.reverse()) {
     const row = all.find((folder) => folder.id === folderId);

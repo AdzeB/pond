@@ -1,4 +1,24 @@
+import { AgentRunControlsSchema } from "@pond/schema";
 import { z } from "zod";
+
+const chat = {
+  tools: true,
+  structuredOutput: true,
+  vision: true,
+  customModel: false,
+} as const;
+const text = {
+  tools: true,
+  structuredOutput: true,
+  vision: false,
+  customModel: false,
+} as const;
+const host = {
+  tools: true,
+  structuredOutput: false,
+  vision: false,
+  customModel: true,
+} as const;
 
 export const ASSISTANT_MODELS = [
   {
@@ -8,13 +28,10 @@ export const ASSISTANT_MODELS = [
     model: "claude-opus-5",
     local: false,
     needsKey: true,
+    setupUrl: "https://console.anthropic.com/settings/keys",
     quality: "maximum",
-    capabilities: {
-      tools: true,
-      structuredOutput: true,
-      vision: true,
-      customModel: false,
-    },
+    creator: "anthropic",
+    capabilities: chat,
   },
   {
     id: "openai",
@@ -23,13 +40,10 @@ export const ASSISTANT_MODELS = [
     model: "gpt-5.6-sol",
     local: false,
     needsKey: true,
+    setupUrl: "https://platform.openai.com/api-keys",
     quality: "maximum",
-    capabilities: {
-      tools: true,
-      structuredOutput: true,
-      vision: true,
-      customModel: false,
-    },
+    creator: "openai",
+    capabilities: chat,
   },
   {
     id: "gemini",
@@ -38,13 +52,152 @@ export const ASSISTANT_MODELS = [
     model: "gemini-3.1-pro-preview",
     local: false,
     needsKey: true,
+    setupUrl: "https://aistudio.google.com/apikey",
     quality: "maximum",
-    capabilities: {
-      tools: true,
-      structuredOutput: true,
-      vision: true,
-      customModel: false,
-    },
+    creator: "google",
+    capabilities: chat,
+  },
+  {
+    id: "xai",
+    name: "Grok 4.6",
+    provider: "xAI",
+    model: "grok-4.6",
+    local: false,
+    needsKey: true,
+    setupUrl: "https://console.x.ai",
+    quality: "maximum",
+    creator: "xai",
+    capabilities: chat,
+  },
+  {
+    id: "azure",
+    name: "GPT-5.6 Sol",
+    provider: "Azure",
+    model: "gpt-5.6-sol",
+    local: false,
+    needsKey: true,
+    setupUrl: "https://ai.azure.com",
+    quality: "custom",
+    capabilities: { ...chat, customModel: true },
+  },
+  {
+    id: "mistral",
+    name: "Mistral Large",
+    provider: "Mistral",
+    model: "mistral-large-latest",
+    local: false,
+    needsKey: true,
+    setupUrl: "https://console.mistral.ai/api-keys/",
+    quality: "maximum",
+    creator: "mistral",
+    capabilities: chat,
+  },
+  {
+    id: "groq",
+    name: "Llama 3.3 70B",
+    provider: "Groq",
+    model: "llama-3.3-70b-versatile",
+    local: false,
+    needsKey: true,
+    setupUrl: "https://console.groq.com/keys",
+    quality: "maximum",
+    creator: "groq",
+    capabilities: chat,
+  },
+  {
+    id: "cohere",
+    name: "Command A",
+    provider: "Cohere",
+    model: "command-a-03-2025",
+    local: false,
+    needsKey: true,
+    setupUrl: "https://dashboard.cohere.com/api-keys",
+    quality: "maximum",
+    creator: "cohere",
+    capabilities: chat,
+  },
+  {
+    id: "togetherai",
+    name: "Llama 3.3 70B",
+    provider: "Together",
+    model: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+    local: false,
+    needsKey: true,
+    setupUrl: "https://api.together.ai/settings/api-keys",
+    quality: "maximum",
+    creator: "togetherai",
+    capabilities: text,
+  },
+  {
+    id: "fireworks",
+    name: "Llama 3.3 70B",
+    provider: "Fireworks",
+    model: "accounts/fireworks/models/llama-v3p3-70b-instruct",
+    local: false,
+    needsKey: true,
+    setupUrl: "https://app.fireworks.ai/api-keys",
+    quality: "maximum",
+    creator: "fireworks",
+    capabilities: text,
+  },
+  {
+    id: "deepinfra",
+    name: "DeepSeek V3",
+    provider: "DeepInfra",
+    model: "deepseek-ai/DeepSeek-V3",
+    local: false,
+    needsKey: true,
+    setupUrl: "https://deepinfra.com/dash/api_keys",
+    quality: "maximum",
+    creator: "deepinfra",
+    capabilities: text,
+  },
+  {
+    id: "cerebras",
+    name: "GPT OSS 120B",
+    provider: "Cerebras",
+    model: "gpt-oss-120b",
+    local: false,
+    needsKey: true,
+    setupUrl: "https://cloud.cerebras.ai",
+    quality: "maximum",
+    creator: "cerebras",
+    capabilities: text,
+  },
+  {
+    id: "perplexity",
+    name: "Sonar",
+    provider: "Perplexity",
+    model: "sonar",
+    local: false,
+    needsKey: true,
+    setupUrl: "https://console.perplexity.ai",
+    quality: "maximum",
+    creator: "perplexity",
+    capabilities: text,
+  },
+  {
+    id: "baseten",
+    name: "GPT OSS 120B",
+    provider: "Baseten",
+    model: "openai/gpt-oss-120b",
+    local: false,
+    needsKey: true,
+    setupUrl: "https://app.baseten.co",
+    quality: "maximum",
+    capabilities: text,
+  },
+  {
+    id: "deepseek",
+    name: "DeepSeek Chat",
+    provider: "DeepSeek",
+    model: "deepseek-chat",
+    local: false,
+    needsKey: true,
+    setupUrl: "https://platform.deepseek.com/api_keys",
+    quality: "maximum",
+    creator: "deepseek",
+    capabilities: text,
   },
   {
     id: "ollama",
@@ -53,13 +206,9 @@ export const ASSISTANT_MODELS = [
     model: "llama3.2",
     local: true,
     needsKey: false,
+    setupUrl: "https://ollama.com",
     quality: "custom",
-    capabilities: {
-      tools: true,
-      structuredOutput: false,
-      vision: false,
-      customModel: true,
-    },
+    capabilities: host,
   },
   {
     id: "lmstudio",
@@ -68,34 +217,31 @@ export const ASSISTANT_MODELS = [
     model: "local",
     local: true,
     needsKey: false,
+    setupUrl: "https://lmstudio.ai",
     quality: "custom",
-    capabilities: {
-      tools: true,
-      structuredOutput: false,
-      vision: false,
-      customModel: true,
-    },
-  },
-  {
-    id: "compatible",
-    name: "Compatible Model",
-    provider: "Custom Endpoint",
-    model: "gpt-5.6-sol",
-    local: false,
-    needsKey: true,
-    quality: "custom",
-    capabilities: {
-      tools: true,
-      structuredOutput: false,
-      vision: false,
-      customModel: true,
-    },
+    capabilities: host,
   },
 ] as const;
 
 export type AssistantProvider = (typeof ASSISTANT_MODELS)[number]["id"];
+export type AssistantCatalog = (typeof ASSISTANT_MODELS)[number];
 const ASSISTANT_PROVIDER_IDS = ASSISTANT_MODELS.map((model) => model.id);
-const assistantProvider = z.enum(ASSISTANT_PROVIDER_IDS);
+export const assistantProvider = z.enum(ASSISTANT_PROVIDER_IDS);
+
+export function assistantCatalog(id: string): AssistantCatalog | undefined {
+  return ASSISTANT_MODELS.find((model) => model.id === id);
+}
+
+export function offeredProviders(kind: "cloud" | "local") {
+  return ASSISTANT_MODELS.filter((model) =>
+    kind === "local" ? model.local : !model.local,
+  );
+}
+
+export function gatewayCreator(id: AssistantProvider): string | undefined {
+  const catalog = assistantCatalog(id);
+  return catalog && "creator" in catalog ? catalog.creator : undefined;
+}
 const assistantScope = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("library") }),
   z.object({ kind: z.literal("folder"), id: z.string().min(1) }),
@@ -104,6 +250,7 @@ const assistantScope = z.discriminatedUnion("kind", [
 
 export const ASSISTANT_CHANGE_CAP = 100;
 const ASSISTANT_ATTACH_CAP = 200;
+export const ASSISTANT_FILE_ATTACH_CAP = 10;
 
 const assistantLibraryAction = z.enum([
   "folderCreate",
@@ -249,8 +396,14 @@ export const assistantSend = z.object({
     .array(z.string().min(1))
     .max(ASSISTANT_ATTACH_CAP)
     .default([]),
+  fileAttachmentIds: z
+    .array(z.string().min(1))
+    .max(ASSISTANT_FILE_ATTACH_CAP)
+    .default([]),
   scope: assistantScope.default({ kind: "library" }),
   provider: assistantProvider,
+  modelId: z.string().trim().min(1).max(300).optional(),
+  controls: AgentRunControlsSchema.optional(),
   replyToQuestion: z.string().min(1).optional(),
   semanticQuery: z.string().nullable().optional(),
   visualSaveId: z.string().nullable().optional(),
@@ -267,6 +420,14 @@ export const assistantSource = z.object({
 });
 export type AssistantSource = z.infer<typeof assistantSource>;
 
+export const assistantFileAttachment = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  mediaType: z.string().min(1),
+  size: z.number().int().nonnegative(),
+});
+export type AssistantFileAttachment = z.infer<typeof assistantFileAttachment>;
+
 export const assistantChange = z.intersection(
   z.object({
     id: z.string(),
@@ -275,6 +436,7 @@ export const assistantChange = z.intersection(
     reason: z.string(),
     status: z.enum(["pending", "applied", "dismissed", "undone"]),
     error: z.string().optional(),
+    undoable: z.boolean().optional(),
   }),
   z.discriminatedUnion("field", [
     z.object({
@@ -309,7 +471,7 @@ export const assistantChange = z.intersection(
     }),
     z.object({
       field: z.literal("action"),
-      action: assistantLibraryAction,
+      action: assistantLibraryAction.or(z.literal("runOperation")),
       before: z.string().nullable(),
       after: z.string(),
       payload: z.record(z.string(), z.json()).optional(),
@@ -319,7 +481,9 @@ export const assistantChange = z.intersection(
 export type AssistantChange = z.infer<typeof assistantChange>;
 
 export const assistantMetadata = z.object({
+  elapsedMs: z.number().finite().nonnegative().optional(),
   attachments: z.array(assistantSource).optional(),
+  files: z.array(assistantFileAttachment).optional(),
   scope: assistantScope.optional(),
   scopeLabel: z.string().optional(),
   sources: z.array(assistantSource).optional(),
@@ -351,11 +515,26 @@ export type AssistantActivity =
   | "writing"
   | "preparing";
 export type AssistantEvent =
-  | { type: "stream"; event: import("@tanstack/ai").StreamChunk }
   | { type: "activity"; activity: AssistantActivity }
   | { type: "sources"; sources: AssistantSource[] }
   | { type: "results"; results: AssistantResultSet[] }
-  | { type: "steps"; steps: AssistantToolStep[] };
+  | { type: "steps"; steps: AssistantToolStep[] }
+  | { type: "text"; text: string };
+
+export const agentStreamRequest = assistantSend.omit({ content: true }).extend({
+  messages: z
+    .array(
+      z.object({
+        id: z.string(),
+        role: z.enum(["system", "user", "assistant"]),
+        parts: z.array(z.unknown()),
+        metadata: z.unknown().optional(),
+      }),
+    )
+    .min(1)
+    .max(200),
+});
+export type AgentStreamRequest = z.infer<typeof agentStreamRequest>;
 export type AssistantChunk = AssistantEvent & {
   chatId: string;
   requestId: string;

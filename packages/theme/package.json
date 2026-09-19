@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Pond's design tokens: the runtime --ds-* theming engine (colors, motion, radius, shadow, typography, brand, empty, popup) as plain CSS custom properties. App- and framework-agnostic.",
+  "description": "Pond's design tokens: the runtime --ds-* theming engine (colors, motion, radius, size, shadow, typography, brand, empty, popup) as plain CSS custom properties. App- and framework-agnostic.",
   "license": "MIT",
   "author": {
     "name": "Raphael Salaja",
@@ -24,6 +24,7 @@
     "./colors.css": "./src/colors/colors.css",
     "./motion.css": "./src/motion/motion.css",
     "./radius.css": "./src/radius/radius.css",
+    "./size.css": "./src/size/size.css",
     "./shadow.css": "./src/shadow/shadow.css",
     "./typography.css": "./src/typography/typography.css",
     "./brand.css": "./src/brand/brand.css",
@@ -32,6 +33,7 @@
   },
   "scripts": {
     "generate": "node src/colors/gen.ts",
+    "generate:check": "node src/colors/gen.ts --check",
     "typecheck": "tsc --noEmit"
   }
 }

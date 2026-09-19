@@ -1,21 +1,21 @@
 .root {
-  --button-height-xs: 24px;
+  --button-height-xs: var(--ds-size-xs);
   --button-padding-xs: 0 8px;
   --button-font-size-xs: var(--ds-text-xs);
   --button-radius-xs: var(--ds-radius-full);
-  --button-height-sm: 28px;
+  --button-height-sm: var(--ds-size-sm);
   --button-padding-sm: 0 10px;
   --button-font-size-sm: var(--ds-text-sm);
   --button-radius-sm: var(--ds-radius-full);
-  --button-height-md: 32px;
+  --button-height-md: var(--ds-size-md);
   --button-padding-md: 0 12px;
   --button-font-size-md: var(--ds-text-md);
   --button-radius-md: var(--ds-radius-full);
-  --button-height-lg: 36px;
+  --button-height-lg: var(--ds-size-lg);
   --button-padding-lg: 0 14px;
   --button-font-size-lg: var(--ds-text-lg);
   --button-radius-lg: var(--ds-radius-full);
-  --button-height-xl: 40px;
+  --button-height-xl: var(--ds-size-xl);
   --button-padding-xl: 0 16px;
   --button-font-size-xl: var(--ds-text-lg);
   --button-radius-xl: var(--ds-radius-full);
@@ -216,7 +216,7 @@
   }
 
   &:where([data-variant="text"]) {
-    color: var(--ds-gray-11);
+    color: var(--ds-gray-9);
     background-color: transparent;
 
     &:hover,

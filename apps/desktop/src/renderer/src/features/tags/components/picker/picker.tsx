@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import type { Save } from "@/features/saves/types";
-import { TagMenu } from "@/features/tags/components/menu/menu";
+import { TagMenu } from "@/features/tags/components/menu";
 import {
   type TagGroupRow,
   useTagGroups,

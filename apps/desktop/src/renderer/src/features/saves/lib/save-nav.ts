@@ -1,9 +1,9 @@
+import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import {
   getLastListPath,
   rememberListPath,
-} from "@/features/library/lib/list-path";
-import { libraryChrome } from "@/features/library/state/library-chrome";
-import { primarySelection } from "@/features/library/state/selection";
+} from "@/features/saves/lib/list-path";
+import { primarySelection } from "@/features/saves/state/selection";
 import { getAppRouter } from "@/shared/lib/app-router";
 
 export function saveIdFromPath(pathname: string): string | null {
@@ -19,6 +19,7 @@ export function saveIdFromPath(pathname: string): string | null {
 export function openSave(id: string): void {
   const path = `/save/${encodeURIComponent(id)}`;
   primarySelection.set(id);
+  saveLibraryBridge.openSaveDetails(id);
   const router = getAppRouter();
   if (!router) return;
   rememberListPath(
@@ -37,7 +38,7 @@ export function closeSave(): void {
 
 export function syncPrimaryFromPath(pathname: string): void {
   const id = saveIdFromPath(pathname);
-  libraryChrome.inspectSave(id);
+  saveLibraryBridge.inspectSave(id);
   if (primarySelection.get() !== id) primarySelection.set(id);
   rememberListPath(pathname);
 }

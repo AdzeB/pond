@@ -1,6 +1,5 @@
-// biome-ignore-all lint/a11y/useSemanticElements: custom CSS-grid table uses ARIA grid roles by design.
-
 import { useSelector } from "@tanstack/react-store";
+import type { RowData } from "@tanstack/react-table";
 import { clsx as cn } from "clsx";
 import {
   Children,
@@ -20,7 +19,7 @@ interface SlotProps {
 export const DataTableEmpty: FunctionComponent<SlotProps> = () => null;
 export const DataTableExtraRow: FunctionComponent<SlotProps> = () => null;
 
-export function DataTableRoot<T>({
+export function DataTableRoot<T extends RowData>({
   children,
   className,
   variant = "table",
@@ -70,7 +69,7 @@ interface ActionBarSelection {
   clear: () => void;
 }
 
-export function DataTableActionBar<T>({
+export function DataTableActionBar<T extends RowData>({
   children,
   className,
 }: {

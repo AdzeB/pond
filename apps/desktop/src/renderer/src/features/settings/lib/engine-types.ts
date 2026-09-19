@@ -1,14 +1,9 @@
 import type { Prefs } from "@pond/schema/db";
 import type { ComponentType, ReactNode } from "react";
 
-export type SettingValue =
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-  | readonly SettingValue[]
-  | object;
+type ValueOf<T> = T extends T ? T[keyof T] : never;
+
+export type SettingValue = ValueOf<Prefs[keyof Prefs]> | undefined;
 
 export interface SettingsValues {
   [key: string]: SettingValue;

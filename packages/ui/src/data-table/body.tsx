@@ -1,10 +1,9 @@
-// biome-ignore-all lint/a11y/useSemanticElements: custom CSS-grid table uses ARIA grid roles by design.
-
-import type { Row as TanstackRow } from "@tanstack/react-table";
+import type { RowData, Row as TanstackRow } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
 import { cssVars } from "../css-vars";
 import { useDataTable } from "./context";
+import type { DATA_TABLE_FEATURES } from "./provider";
 import { Row } from "./row";
 import styles from "./styles.module.css";
 
@@ -19,7 +18,7 @@ function scrollEdgesOf(element: HTMLDivElement): ScrollEdges {
   return end ? "end" : "";
 }
 
-export function DataTableBody<T>({
+export function DataTableBody<T extends RowData>({
   extraRow,
   emptyState,
 }: {
@@ -61,7 +60,10 @@ export function DataTableBody<T>({
     };
   }, [height]);
 
-  const renderRow = (row: TanstackRow<T>, index: number) => (
+  const renderRow = (
+    row: TanstackRow<typeof DATA_TABLE_FEATURES, T>,
+    index: number,
+  ) => (
     <Row
       key={row.id}
       api={rowApi}

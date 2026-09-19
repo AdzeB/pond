@@ -9,6 +9,7 @@ import { eq, inArray, isNotNull } from "drizzle-orm";
 import { clipboard, shell } from "electron";
 import { ulid } from "ulid";
 import { z } from "zod";
+import { agentOperationRequest } from "../../../shared/agent-operations";
 import type {
   AssistantChange,
   AssistantMetadata,
@@ -44,6 +45,7 @@ import { archiveSiteForSave } from "../refresh/archive-backfill";
 import { createView, listViews, updateView } from "../saved-views";
 import { syncAccount } from "../sync";
 import { createTag, mergeTags, renameTag, setSaveTags } from "../tags";
+import { applyPondOperation, summarizeOperationResult } from "./operations";
 import { filterGroup } from "./tools";
 
 export const reviewInput = z.object({
@@ -77,6 +79,7 @@ function toComments(
     w: existing[index]?.w ?? 1,
     h: existing[index]?.h ?? 1,
     text,
+    createdAt: existing[index]?.createdAt ?? Date.now(),
   }));
 }
 
@@ -119,6 +122,7 @@ export const reviewDependencies = {
   renameTag,
   mergeDuplicateSaves,
   undoDuplicateMerge,
+  applyPondOperation,
 };
 type ReviewDependencies = typeof reviewDependencies;
 
@@ -285,6 +289,14 @@ async function writeAction(
   action: "apply" | "undo",
   deps: ReviewDependencies,
 ) {
+  if (change.action === "runOperation") {
+    if (action === "undo")
+      throw new Error("Use Pond's Undo for this operation.");
+    const request = agentOperationRequest.parse(change.payload);
+    const result = await deps.applyPondOperation(request);
+    change.payload = { ...request, result: summarizeOperationResult(result) };
+    return;
+  }
   const payload = ActionPayloadSchema.parse(change.payload ?? {});
   if (action === "undo") {
     if (change.action === "folderCreate" && payload.id !== undefined)

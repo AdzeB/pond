@@ -323,12 +323,10 @@ export async function initTray(): Promise<void> {
         await openLibraryWindow();
         navigateMain("/settings");
       },
-      onOpenSave: async (id) => {
+      onOpenDownloads: async () => {
         await openLibraryWindow();
-        navigateMain(`/save/${encodeURIComponent(id)}`);
+        navigateMain("/downloads");
       },
-      onOpenCollection: () =>
-        void import("./aux-windows").then((m) => m.openCollectionWindow()),
       onMenuAction: async (id) => {
         await openLibraryWindow();
         mainWindowState.current?.webContents.send(IPC.menuAction, id);

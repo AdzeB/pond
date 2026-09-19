@@ -6,12 +6,30 @@ import log from "electron-log/main.js";
 import { binariesAvailable } from "../core/refresh/binaries";
 
 const HARD_TIMEOUT_MS = 10_000;
+const SAMPLE_TIMEOUT_MS = 30_000;
 
-interface ExtractedFrame {
+export interface ExtractedFrame {
   path: string;
   mimeType: string;
   size: number;
   cleanup: () => Promise<void>;
+}
+
+export interface ExtractedFrames {
+  frames: Array<Omit<ExtractedFrame, "cleanup">>;
+  cleanup: () => Promise<void>;
+}
+
+export function sampleFrameTimestamps(
+  durationSec: number,
+  maxFrames: number,
+): number[] {
+  if (!Number.isFinite(durationSec) || durationSec <= 0) return [];
+  const cap = Math.min(12, Math.max(3, Math.floor(maxFrames)));
+  const count = Math.min(cap, Math.max(3, Math.ceil(durationSec / 30) + 2));
+  return Array.from({ length: count }, (_, index) =>
+    Number((((index + 1) * durationSec) / (count + 1)).toFixed(3)),
+  );
 }
 
 export async function extractFirstFrame(
@@ -30,6 +48,95 @@ export async function extractFrameAt(
   return extractJpeg(videoPath, (outPath) =>
     jpegArgv(videoPath, outPath, ["after", String(seek)]),
   );
+}
+
+export async function extractSampledFrames(
+  videoPath: string,
+  maxFrames = 12,
+): Promise<ExtractedFrames | null> {
+  const { ffmpeg } = binariesAvailable();
+  if (!ffmpeg) {
+    log.debug("[pond ffmpeg-frame] binary unavailable, skipping", videoPath);
+    return null;
+  }
+  const durationSec = await probeDuration(ffmpeg, videoPath);
+  const timestamps = sampleFrameTimestamps(
+    durationSec ?? Number.NaN,
+    maxFrames,
+  );
+  if (timestamps.length === 0) return null;
+
+  let outputDir: string | null = null;
+  let cleanupCalled = false;
+  const cleanup = async () => {
+    if (cleanupCalled) return;
+    cleanupCalled = true;
+    if (outputDir) {
+      try {
+        await rm(outputDir, { recursive: true, force: true });
+      } catch (err) {
+        log.warn("[pond ffmpeg-frame] tmpdir cleanup failed", outputDir, err);
+      }
+    }
+  };
+
+  try {
+    outputDir = await mkdtemp(join(tmpdir(), "pond-frames-"));
+    const paths = timestamps.map((_, index) =>
+      join(outputDir ?? "", `frame-${index}.jpg`),
+    );
+    const inputArgs = timestamps.flatMap((timestamp) => [
+      "-ss",
+      String(timestamp),
+      "-i",
+      videoPath,
+    ]);
+    const outputArgs = paths.flatMap((path, index) => [
+      "-map",
+      `${index}:v:0`,
+      "-frames:v",
+      "1",
+      "-vf",
+      "scale=384:384:force_original_aspect_ratio=increase,crop=384:384",
+      "-q:v",
+      "4",
+      "-f",
+      "image2",
+      "-update",
+      "1",
+      path,
+    ]);
+    const { code, stderr } = await runWithTimeout(
+      ffmpeg,
+      ["-hide_banner", "-loglevel", "error", "-y", ...inputArgs, ...outputArgs],
+      SAMPLE_TIMEOUT_MS,
+    );
+    if (code !== 0) {
+      log.warn(
+        "[pond ffmpeg-frame] sample extraction failed",
+        code,
+        videoPath,
+        stderr.slice(-400),
+      );
+      await cleanup();
+      return null;
+    }
+    const frames = await Promise.all(
+      paths.map(async (path) => {
+        const { size } = await stat(path);
+        return { path, mimeType: "image/jpeg", size };
+      }),
+    );
+    if (frames.some((frame) => frame.size === 0)) {
+      await cleanup();
+      return null;
+    }
+    return { frames, cleanup };
+  } catch (err) {
+    log.warn("[pond ffmpeg-frame] sample extraction error", videoPath, err);
+    await cleanup();
+    return null;
+  }
 }
 
 function jpegArgv(
@@ -125,6 +232,24 @@ async function extractJpeg(
     await cleanup();
     return null;
   }
+}
+
+async function probeDuration(
+  ffmpeg: string,
+  videoPath: string,
+): Promise<number | null> {
+  const { stderr } = await runWithTimeout(
+    ffmpeg,
+    ["-hide_banner", "-i", videoPath, "-t", "0", "-f", "null", "-"],
+    HARD_TIMEOUT_MS,
+  );
+  const match = /Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/.exec(stderr);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const seconds = Number(match[3]);
+  const durationSec = hours * 3600 + minutes * 60 + seconds;
+  return Number.isFinite(durationSec) && durationSec > 0 ? durationSec : null;
 }
 
 interface ProcOutcome {

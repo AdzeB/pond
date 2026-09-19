@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   DEFAULT_SETTINGS_SECTION,
   rememberSettingsSection,
+  resolveSettingsLocation,
   resolveSettingsSection,
   settingsHref,
 } from "./open-settings";
@@ -13,26 +14,62 @@ describe("settings hrefs", () => {
 
   it("keeps canonical section paths", () => {
     expect(resolveSettingsSection("models")).toBe("models");
-    expect(settingsHref("mcp")).toBe("/settings/models");
-    expect(settingsHref("schedule")).toBe("/settings/videos");
-    expect(settingsHref("harvesting")).toBe("/settings/videos");
-    expect(settingsHref("downloads")).toBe("/settings/videos");
+    expect(settingsHref("providers")).toBe("/settings/models");
+    expect(settingsHref("intelligence")).toBe("/settings/models");
+    expect(settingsHref("personalization")).toBe("/settings/personalization");
+    expect(settingsHref("personalisation")).toBe("/settings/personalization");
+    expect(settingsHref("mcp")).toBe("/settings/mcp");
+    expect(settingsHref("models", "setting-models-mcp")).toBe("/settings/mcp");
+    expect(settingsHref("agent-models")).toBe("/settings/agent-models");
+    expect(settingsHref("schedule")).toBe("/settings/harvesting");
+    expect(settingsHref("harvesting")).toBe("/settings/harvesting");
+    expect(settingsHref("downloads")).toBe("/settings/harvesting");
+    expect(settingsHref("shortcuts")).toBe("/settings/shortcuts");
+    expect(settingsHref("hotkeys")).toBe("/settings/shortcuts");
+    expect(settingsHref("preview")).toBe("/settings/viewer");
   });
 
-  it("preserves fields when opening merged pages", () => {
+  it("redirects legacy merged-page fields", () => {
     expect(settingsHref("images", "setting-images-format")).toBe(
-      "/settings/videos#setting-videos-format",
+      "/settings/harvesting#setting-harvesting-format",
     );
     expect(settingsHref("trash", "setting-trash-autoEmptyDays")).toBe(
-      "/settings/storage#setting-storage-autoEmptyDays",
+      "/settings/library#setting-library-autoEmptyDays",
     );
+    expect(settingsHref("storage", "setting-storage-identity")).toBe(
+      "/settings/library#setting-library-identity",
+    );
+    expect(settingsHref("storage", "setting-storage-backup")).toBe(
+      "/settings/backups#setting-backups-backup",
+    );
+    expect(settingsHref("storage", "setting-storage-watched-folder")).toBe(
+      "/settings/harvesting#setting-harvesting-watched-folder",
+    );
+    expect(settingsHref("search", "setting-search-enableClip")).toBe(
+      "/settings/processing#setting-processing-enableClip",
+    );
+  });
+
+  it("resolves direct legacy locations before route rendering", () => {
+    expect(
+      resolveSettingsLocation("videos", "setting-videos-container"),
+    ).toEqual({
+      section: "harvesting",
+      hash: "setting-harvesting-container",
+    });
+    expect(
+      resolveSettingsLocation("search", "setting-search-semanticSearch"),
+    ).toEqual({
+      section: "search",
+      hash: "setting-search-semanticSearch",
+    });
   });
 
   it("maps aliases and unknown paths onto real sections", () => {
     expect(resolveSettingsSection("agent")).toBe("models");
-    expect(resolveSettingsSection("enrichment")).toBe("search");
+    expect(resolveSettingsSection("enrichment")).toBe("processing");
     expect(resolveSettingsSection("nope")).toBe(DEFAULT_SETTINGS_SECTION);
-    expect(settingsHref("ai-models")).toBe("/settings/models");
+    expect(settingsHref("ai-models")).toBe("/settings/agent-models");
   });
 
   it("reopens the last section when none is asked for", () => {

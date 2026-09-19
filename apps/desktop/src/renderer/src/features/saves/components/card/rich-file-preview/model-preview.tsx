@@ -16,7 +16,7 @@ import {
   WebGLRenderer,
 } from "three";
 import { loadModel } from "@/features/saves/components/viewers/model-viewer/load-model";
-import styles from "./rich-file-preview.module.css";
+import styles from "./styles.module.css";
 
 export function ModelCardPreview({ url, path }: { url: string; path: string }) {
   const rootRef = useRef<HTMLDivElement>(null);

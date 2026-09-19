@@ -5,6 +5,7 @@ import {
 } from "@pond/icons/outline/12";
 import { clsx as cn } from "clsx";
 import { Button, type ButtonProps } from "../button";
+import { stopPageHotkeys } from "../stop-page-hotkeys";
 import styles from "./styles.module.css";
 
 function Root<Value, Multiple extends boolean | undefined = false>(
@@ -70,8 +71,17 @@ function Icon({ className, ...props }: Base.Icon.Props) {
   return <Base.Icon className={cn(styles.icon, className)} {...props} />;
 }
 
-function Input({ className, ...props }: Base.Input.Props) {
-  return <Base.Input className={cn(styles.input, className)} {...props} />;
+function Input({ className, onKeyDown, ...props }: Base.Input.Props) {
+  return (
+    <Base.Input
+      {...props}
+      className={cn(styles.input, className)}
+      onKeyDown={(event) => {
+        onKeyDown?.(event);
+        stopPageHotkeys(event);
+      }}
+    />
+  );
 }
 
 function Portal(props: Base.Portal.Props) {

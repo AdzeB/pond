@@ -1,6 +1,5 @@
 import type { ReactElement } from "react";
 import { useState } from "react";
-import { selection } from "@/features/library/state/selection";
 import {
   buildSaveMenu,
   contextMenuSaves,
@@ -10,6 +9,7 @@ import {
   peekOpenWithApps,
 } from "@/features/saves/lib/menu";
 import { selectOnlySave } from "@/features/saves/lib/select";
+import { selection } from "@/features/saves/state/selection";
 import type { Save } from "@/features/saves/types";
 import { tagClipboard } from "@/features/tags/state/tag-clipboard";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";

@@ -80,7 +80,7 @@ mac:
   # Prefer `icon.icon` (Icon Composer) when actool 26+ is available; until then
   # the Default-export icns ships the same mark for Dock / DMG / older macOS.
   icon: icon.icns
-  artifactName: ${productName}-${arch}.${ext}
+  artifactName: ${productName}-${version}-${arch}.${ext}
   target:
     - target: dmg
       arch:

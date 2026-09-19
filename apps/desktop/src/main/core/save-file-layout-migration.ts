@@ -1,28 +1,44 @@
 import { join } from "node:path";
 import type { SaveFile } from "@pond/schema/db";
 import { saves } from "@pond/schema/db";
-import {
-  type LayoutFile,
-  needsSaveFileLayoutMigration,
-} from "@shared/save-file-layout";
+import { needsSaveFileLayoutMigration } from "@shared/save-file-layout";
 import log from "electron-log/main.js";
 import type { Db } from "../db";
+import type { InfoFile } from "../lib/library-format";
 import { itemDir } from "../paths";
 import { persistSave } from "./persist-save";
 import { applySaveFileLayoutOnDisk } from "./save-file-layout-disk";
 
-export interface LayoutMigrationResult<T extends LayoutFile> {
+export interface LayoutMigrationResult<T extends SaveFile> {
   files: T[];
   changed: boolean;
   coverIndex: number;
 }
 
-export async function migrateSaveFileLayout<T extends LayoutFile>(
+export function migrateSaveFileLayout(
   saveId: string,
-  files: T[],
+  files: InfoFile[],
   schema?: number,
   opts?: { root?: string; persist?: boolean },
-): Promise<LayoutMigrationResult<T>> {
+): Promise<LayoutMigrationResult<InfoFile>>;
+export function migrateSaveFileLayout(
+  saveId: string,
+  files: SaveFile[],
+  schema?: number,
+  opts?: { root?: string; persist?: boolean },
+): Promise<LayoutMigrationResult<SaveFile>>;
+export function migrateSaveFileLayout(
+  saveId: string,
+  files: Array<InfoFile | SaveFile>,
+  schema?: number,
+  opts?: { root?: string; persist?: boolean },
+): Promise<LayoutMigrationResult<InfoFile | SaveFile>>;
+export async function migrateSaveFileLayout(
+  saveId: string,
+  files: Array<InfoFile | SaveFile>,
+  schema?: number,
+  opts?: { root?: string; persist?: boolean },
+): Promise<LayoutMigrationResult<InfoFile | SaveFile>> {
   const dir = opts?.root
     ? join(opts.root, "items", `${saveId}.info`)
     : itemDir(saveId);
@@ -34,7 +50,7 @@ export async function migrateSaveFileLayout<T extends LayoutFile>(
       await persistSave(
         saveId,
         {
-          files: result.files as unknown as SaveFile[],
+          files: result.files,
           coverIndex: result.coverIndex,
         },
         { actorReason: "migrate:save-file-layout", writeInfo: true },

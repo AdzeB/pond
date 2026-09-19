@@ -34,12 +34,6 @@ export function evidenceAnswerProblem(
   answer: string,
   evidenceCount: number,
 ): string | null {
-  if (
-    /\b(?:I\s+)?(?:can(?:not|'t)|am unable to|don't)\b.{0,100}\b(?:access|browse|search|provide|see|view)\b.{0,100}\b(?:library|saves?|pictures?|photos?|images?)\b/is.test(
-      answer,
-    )
-  )
-    return "false evidence refusal";
   for (const match of answer.matchAll(/#save-(\d+)/g)) {
     const reference = Number(match[1]);
     if (

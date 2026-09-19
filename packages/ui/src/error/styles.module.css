@@ -1,9 +1,0 @@
-.label {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.error {
-  font-size: var(--ds-text-md);
-  color: var(--ds-red-11);
-}

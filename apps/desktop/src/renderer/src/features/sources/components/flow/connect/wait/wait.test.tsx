@@ -1,10 +1,9 @@
-// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { refetchAccounts } from "@/features/sources/hooks/use-accounts";
 import { connectFlow } from "@/features/sources/state/connect-flow";
-import { ConnectWaitSection } from "./wait";
+import { ConnectWaitSection } from "./";
 
 let root: Root;
 let host: HTMLDivElement;
@@ -40,7 +39,6 @@ function stubPond(
 }
 
 beforeEach(() => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   stubPond();
   host = document.createElement("div");
   document.body.append(host);

@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -35,7 +34,6 @@ function Reload() {
 }
 
 beforeEach(() => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   payload = { accounts: [] };
   vi.stubGlobal("pond", {
     query: async () => payload,

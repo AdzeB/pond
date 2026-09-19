@@ -11,5 +11,6 @@ Nucleo Icons
 
 For more details: <https://nucleoapp.com/license>
 
-Pond currently depends on the Nucleo UI React packages. Social and brand marks
-in `social-media/custom/` are separate assets.
+Pond currently depends on the Nucleo UI React packages. The X, GitHub, and
+Google Chrome glyphs in `social-media/custom/` also come from Nucleo. Other
+social and brand marks in that directory are separate assets.

@@ -1,5 +1,6 @@
-import { IconArrowUpRightOutline18 } from "@pond/icons/outline/18";
-import { Button, Reveal } from "@pond/ui";
+import { ApprovalCard } from "@pond/ui/approval-card";
+import { QuestionCard } from "@pond/ui/question-card";
+import { RunStatus } from "@pond/ui/run-status";
 import type {
   AssistantMessage,
   AssistantProvider,
@@ -8,33 +9,14 @@ import type {
 import { assistant } from "@/features/agent/state/assistant";
 import { openSave } from "@/features/saves/lib/save-nav";
 import { AssistantResponse } from "./assistant-response";
-import { MessageActions } from "./message-actions";
-import styles from "./pane.module.css";
-import { Question } from "./question";
-import { ResultSet } from "./result-set";
+import { ConsultedSaves } from "./consulted-saves";
 import { ChangeReview } from "./review";
-import { ToolActivity } from "./tool-activity";
+import { WorkSummary } from "./work-summary";
 
-function responseText(message: AssistantMessage) {
-  const sources = new Map(
-    (message.metadata?.sources ?? []).map((save) => [save.id, save]),
-  );
-  return [
-    message.content,
-    ...(message.metadata?.results ?? []).map((result) =>
-      [
-        result.title,
-        ...result.saveIds.flatMap((id) =>
-          sources.has(id) ? `- ${sources.get(id)?.title || "Untitled"}` : [],
-        ),
-      ].join("\n"),
-    ),
-  ]
-    .filter(Boolean)
-    .join("\n\n");
-}
-
-function inferredLookupResult(content: string, sources: AssistantSource[]) {
+export function inferredLookupResult(
+  content: string,
+  sources: AssistantSource[],
+) {
   if (sources.length < 2) return null;
   const lines = content
     .trim()
@@ -60,7 +42,7 @@ function inferredLookupResult(content: string, sources: AssistantSource[]) {
   return { title: "References", saveIds } as const;
 }
 
-export function ResponseContent({
+export function ResponseExtras({
   message,
   questionAnswer,
   questionDisabled,
@@ -68,7 +50,7 @@ export function ResponseContent({
   attachedIds,
   busy,
   attach,
-  focus,
+  onAnswer,
 }: {
   message: AssistantMessage;
   questionAnswer?: string;
@@ -77,7 +59,7 @@ export function ResponseContent({
   attachedIds: string[];
   busy: boolean;
   attach: (sources: AssistantSource[]) => void;
-  focus: () => void;
+  onAnswer?: (answer: string) => Promise<void>;
 }) {
   const sources = message.metadata?.sources ?? [];
   const inferredResult = inferredLookupResult(message.content, sources);
@@ -87,8 +69,86 @@ export function ResponseContent({
       ? [inferredResult]
       : [];
   return (
-    <article className={styles.response}>
-      {message.content && !inferredResult ? (
+    <>
+      {results.map((result) => (
+        <ConsultedSaves
+          key={result.title}
+          sources={sources}
+          saveIds={result.saveIds}
+          attachedIds={attachedIds}
+          onOpenSave={openSave}
+          onAttach={attach}
+        />
+      ))}
+      {message.metadata?.question ? (
+        <QuestionCard
+          title={message.metadata.question.question}
+          options={message.metadata.question.options.map((option) => ({
+            id: option,
+            label: option,
+          }))}
+          answered={questionAnswer}
+          allowFreeform={!questionDisabled}
+          disabled={questionDisabled}
+          onAnswer={async (answer) => {
+            if (onAnswer) {
+              await onAnswer(answer);
+              return;
+            }
+            await assistant.answerQuestion(message.id, answer, provider);
+          }}
+        />
+      ) : null}
+      {message.metadata?.changes?.length ? (
+        <ApprovalCard
+          title="Review before applying"
+          eyebrow="Library changes"
+          description={
+            message.metadata.changes.some(
+              (change) =>
+                change.field === "action" && change.action === "purgeTrash",
+            )
+              ? "Empty trash removes Saves forever. Only selected changes will be applied."
+              : "Only selected changes will be applied. You can undo them here."
+          }
+          decision="pending"
+          showActions={false}
+          onApprove={async () => undefined}
+          onReject={async () => undefined}
+        >
+          <ChangeReview
+            messageId={message.id}
+            disabled={busy}
+            changes={message.metadata.changes}
+          />
+        </ApprovalCard>
+      ) : null}
+      {message.metadata?.error ? (
+        <RunStatus state="stopped">{message.metadata.error}</RunStatus>
+      ) : null}
+      {sources.length && !results.length ? (
+        <ConsultedSaves
+          sources={sources}
+          attachedIds={attachedIds}
+          onOpenSave={openSave}
+          onAttach={attach}
+        />
+      ) : null}
+    </>
+  );
+}
+
+export function ResponseContent({
+  message,
+  attach,
+  ...props
+}: Parameters<typeof ResponseExtras>[0]) {
+  const sources = message.metadata?.sources ?? [];
+  const lookup = inferredLookupResult(message.content, sources);
+  return (
+    <>
+      <WorkSummary metadata={message.metadata} />
+      {!lookup ? (
         <AssistantResponse
           content={message.content}
           sources={sources}
@@ -96,87 +156,7 @@ export function ResponseContent({
           onAttach={attach}
         />
       ) : null}
-      {results.map((result) => (
-        <Reveal key={`${result.title}-${result.saveIds.join(",")}`}>
-          <ResultSet
-            result={result}
-            sources={sources}
-            attachedIds={attachedIds}
-            onOpenSave={openSave}
-            onAttach={attach}
-          />
-        </Reveal>
-      ))}
-      <Reveal visible={Boolean(message.metadata?.question)}>
-        {message.metadata?.question ? (
-          <Question
-            question={message.metadata.question}
-            answer={questionAnswer}
-            disabled={questionDisabled}
-            onAnswer={(answer) =>
-              void assistant.answerQuestion(message.id, answer, provider)
-            }
-            onWrite={focus}
-          />
-        ) : null}
-      </Reveal>
-      <Reveal visible={Boolean(message.metadata?.changes?.length)}>
-        {message.metadata?.changes?.length ? (
-          <ChangeReview
-            messageId={message.id}
-            disabled={busy}
-            changes={message.metadata.changes}
-          />
-        ) : null}
-      </Reveal>
-      <Reveal visible={Boolean(message.metadata?.error)}>
-        <p className={styles["change-error"]} role="alert">
-          {message.metadata?.error}
-        </p>
-      </Reveal>
-      <Reveal visible={Boolean(message.metadata?.stopped)}>
-        <p className={styles["stopped-label"]}>Response stopped.</p>
-      </Reveal>
-      <div>
-        <div className={styles["response-footer"]}>
-          <ToolActivity steps={message.metadata?.steps ?? []} />
-          {sources.length ? (
-            <Button
-              size="xs"
-              variant="ghost"
-              onClick={() => assistant.showReferences(message.id)}
-            >
-              {sources.length}{" "}
-              {sources.length === 1 ? "Save consulted" : "Saves consulted"}
-              <IconArrowUpRightOutline18 />
-            </Button>
-          ) : null}
-        </div>
-        <div className={styles["message-actions"]}>
-          {message.content || message.metadata?.results?.length ? (
-            <MessageActions
-              text={responseText(message)}
-              disabled={busy}
-              onQuote={() => {
-                if (assistant.quote(responseText(message))) attach(sources);
-              }}
-            />
-          ) : null}
-          {message.metadata?.stopped || message.metadata?.error ? (
-            <Button
-              size="xs"
-              variant="ghost"
-              disabled={busy}
-              onClick={() => {
-                assistant.appendDraft("Continue from where you stopped.");
-                focus();
-              }}
-            >
-              Draft a Follow-up
-            </Button>
-          ) : null}
-        </div>
-      </div>
-    </article>
+      <ResponseExtras message={message} attach={attach} {...props} />
+    </>
   );
 }

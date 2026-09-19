@@ -1,8 +1,12 @@
 import { Tray } from "electron";
 import log from "electron-log/main.js";
 import type { MenuActionId } from "../shared/constants";
+import { pipelineSnapshot } from "./core/pipeline/reconciler";
 import { loadTrayIcon } from "./tray-icon";
 import { buildMenu, buildTooltip } from "./tray-menu";
+import { trayBadge } from "./tray-status";
+
+const BUSY_POLL_MS = 1_000;
 
 export interface TrayHandle {
   tray: Tray;
@@ -13,14 +17,13 @@ export interface TrayHandle {
 export interface TrayOptions {
   onOpenLibrary: () => void | Promise<void>;
   onOpenSettings?: () => void | Promise<void>;
-  onOpenSave?: (id: string) => void | Promise<void>;
-  onOpenCollection?: () => void | Promise<void>;
-  onMenuAction?: (id: MenuActionId) => void | Promise<void>;
+  onOpenDownloads?: () => void | Promise<void>;
+  onMenuAction: (id: MenuActionId) => void | Promise<void>;
 }
 
 let handle: TrayHandle | null = null;
-
 let lastOpts: TrayOptions | null = null;
+let busyPoll: NodeJS.Timeout | null = null;
 
 export async function setTrayVisible(visible: boolean): Promise<void> {
   if (visible) {
@@ -53,18 +56,18 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
     tray,
     async refresh() {
       try {
-        const { menu, ingesting } = await buildMenu(
-          opts,
-          () => void handle?.refresh(),
-        );
+        const inflight = pipelineSnapshot().inflight;
+        const { menu, ingesting } = await buildMenu(opts, inflight);
         tray.setContextMenu(menu);
         tray.setToolTip(await buildTooltip());
-        setTrayCount(ingesting);
+        setTrayCount(inflight);
+        scheduleBusyPoll(ingesting > 0 || inflight > 0);
       } catch (err) {
         log.warn("[pond tray] refresh failed", err);
       }
     },
     destroy() {
+      clearBusyPoll();
       if (process.platform === "darwin") tray.setTitle("");
       tray.destroy();
       handle = null;
@@ -76,10 +79,25 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
   return instance;
 }
 
-function setTrayCount(ingesting: number): void {
+function setTrayCount(inflight: number): void {
   const tray = handle?.tray;
   if (!tray || process.platform !== "darwin") return;
-  tray.setTitle(ingesting > 0 ? String(ingesting) : "", {
+  tray.setTitle(trayBadge({ inflight }), {
     fontType: "monospacedDigit",
   });
+}
+
+function scheduleBusyPoll(busy: boolean): void {
+  clearBusyPoll();
+  if (!busy) return;
+  busyPoll = setTimeout(() => {
+    busyPoll = null;
+    void handle?.refresh();
+  }, BUSY_POLL_MS);
+}
+
+function clearBusyPoll(): void {
+  if (!busyPoll) return;
+  clearTimeout(busyPoll);
+  busyPoll = null;
 }

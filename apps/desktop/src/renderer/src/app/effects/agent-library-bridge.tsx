@@ -1,11 +1,11 @@
 import { useEffect } from "react";
-import { selection } from "@/features/library/state/selection";
 import {
   setQuery,
   setSemanticQuery,
   setVisualProbe,
 } from "@/features/library/state/view-store";
 import { pool } from "@/features/saves/state/pool";
+import { selection } from "@/features/saves/state/selection";
 
 export function AgentLibraryBridge(): null {
   useEffect(() => {

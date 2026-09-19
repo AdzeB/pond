@@ -1,13 +1,7 @@
 import { $createCodeNode, $isCodeNode } from "@lexical/code";
-import { $createHorizontalRuleNode } from "@lexical/extension";
 import { $createLinkNode, $isLinkNode } from "@lexical/link";
-import { $insertList, $isListItemNode, $isListNode } from "@lexical/list";
-import {
-  $createHeadingNode,
-  $createQuoteNode,
-  $isHeadingNode,
-  $isQuoteNode,
-} from "@lexical/rich-text";
+import { $isListItemNode, $isListNode } from "@lexical/list";
+import { $isHeadingNode, $isQuoteNode } from "@lexical/rich-text";
 import { $setBlocksType } from "@lexical/selection";
 import { $findMatchingParent, $insertNodeToNearestRoot } from "@lexical/utils";
 import { Dialog } from "@pond/ui";
@@ -21,6 +15,7 @@ import {
   createCommand,
   type LexicalEditor,
 } from "lexical";
+import { $applyMarkdownBlock } from "@/shared/markdown-editor/blocks";
 import { $insertCollapsible } from "./collapsible";
 import { $createFileNode } from "./file-node";
 import { $createImageNode } from "./image-node";
@@ -95,29 +90,15 @@ export function $restoreRange(saved: {
 }
 
 export function $applyNoteBlock(block: NoteBlock): void {
-  if (block === "bullet" || block === "number" || block === "check") {
-    $insertList(block);
-    return;
-  }
   if (block === "collapse") {
     $insertCollapsible();
-    return;
+  } else if (block === "diagram") {
+    const selection = $getSelection();
+    if ($isRangeSelection(selection))
+      $setBlocksType(selection, () => $createCodeNode("mermaid"));
+  } else {
+    $applyMarkdownBlock(block);
   }
-  if (block === "hr") {
-    $insertNodeToNearestRoot($createHorizontalRuleNode());
-    return;
-  }
-  const selection = $getSelection();
-  if (!$isRangeSelection(selection)) return;
-  $setBlocksType(selection, () => {
-    if (block === "h1" || block === "h2" || block === "h3" || block === "h4") {
-      return $createHeadingNode(block);
-    }
-    if (block === "quote") return $createQuoteNode();
-    if (block === "code") return $createCodeNode();
-    if (block === "diagram") return $createCodeNode("mermaid");
-    return $createParagraphNode();
-  });
 }
 
 export function applyNoteBlock(editor: LexicalEditor, block: NoteBlock): void {

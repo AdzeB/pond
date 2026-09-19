@@ -1,0 +1,30 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": [
+        "$TURBO_EXTENDS$",
+        "css-composes-hmr.ts",
+        "electron.vite.config.ts",
+        "resources/**",
+        "scripts/prepare-icon-previews.mjs",
+        "tsconfig.node.json",
+        "tsconfig.web.json"
+      ],
+      "outputs": ["out/**", "src/renderer/src/generated/**"]
+    },
+    "dist": {
+      "inputs": [
+        "$TURBO_EXTENDS$",
+        "electron-builder.yml",
+        "resources/**",
+        "scripts/build-native-host.mjs",
+        "scripts/fix-dmg-window.cjs",
+        "scripts/prepare-dmg-background.mjs",
+        "out/**"
+      ],
+      "outputs": ["dist/**", "resources/bin/pond-native-host"]
+    }
+  }
+}

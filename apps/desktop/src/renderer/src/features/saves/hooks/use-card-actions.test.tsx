@@ -1,7 +1,7 @@
-// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
+import "@/app/effects/save-library-bridge";
 import { toastManager } from "@/shared/lib/toast";
 import { useCardActions } from "./use-card-actions";
 
@@ -10,51 +10,51 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-it.each([
-  "native file",
-  "file URI",
-])("imports a dropped %s and confirms the save", async (kind) => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
-  const notify = vi.spyOn(toastManager, "add");
-  const query = vi.fn().mockResolvedValue({ ok: true, ids: ["new-save"] });
-  vi.stubGlobal("pond", { query, pathForFile: () => "/tmp/drop image.png" });
-  const host = document.createElement("div");
-  const root = createRoot(host);
-  function Harness() {
-    const actions = useCardActions([], "library", "");
-    return (
-      <button type="button" onDrop={actions.onDrop}>
-        Drop
-      </button>
-    );
-  }
-  try {
-    await act(async () => root.render(<Harness />));
-    const event = new Event("drop", { bubbles: true, cancelable: true });
-    Object.defineProperty(event, "dataTransfer", {
-      value: {
-        files:
-          kind === "native file" ? [new File(["image"], "drop image.png")] : [],
-        getData: (type: string) =>
-          type === "text/uri-list" ? "file:///tmp/drop%20image.png" : "",
-      },
-    });
-    await act(async () => {
-      host.firstElementChild?.dispatchEvent(event);
-    });
-    expect(query).toHaveBeenCalledWith("saves.importFiles", {
-      paths: ["/tmp/drop image.png"],
-    });
-    expect(notify).toHaveBeenCalledWith(
-      expect.objectContaining({ title: "Saved to Pond" }),
-    );
-  } finally {
-    await act(async () => root.unmount());
-  }
-});
+it.each(["native file", "file URI"])(
+  "imports a dropped %s and confirms the save",
+  async (kind) => {
+    const notify = vi.spyOn(toastManager, "add");
+    const query = vi.fn().mockResolvedValue({ ok: true, ids: ["new-save"] });
+    vi.stubGlobal("pond", { query, pathForFile: () => "/tmp/drop image.png" });
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    function Harness() {
+      const actions = useCardActions([], "library", "");
+      return (
+        <button type="button" onDrop={actions.onDrop}>
+          Drop
+        </button>
+      );
+    }
+    try {
+      await act(async () => root.render(<Harness />));
+      const event = new Event("drop", { bubbles: true, cancelable: true });
+      Object.defineProperty(event, "dataTransfer", {
+        value: {
+          files:
+            kind === "native file"
+              ? [new File(["image"], "drop image.png")]
+              : [],
+          getData: (type: string) =>
+            type === "text/uri-list" ? "file:///tmp/drop%20image.png" : "",
+        },
+      });
+      await act(async () => {
+        host.firstElementChild?.dispatchEvent(event);
+      });
+      expect(query).toHaveBeenCalledWith("saves.importFiles", {
+        paths: ["/tmp/drop image.png"],
+      });
+      expect(notify).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Saved to Pond" }),
+      );
+    } finally {
+      await act(async () => root.unmount());
+    }
+  },
+);
 
 it("starts a dropped link immediately and does not claim it is saved", async () => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   const notify = vi.spyOn(toastManager, "add");
   const query = vi.fn().mockResolvedValue({ ok: true, id: "pasted-save" });
   vi.stubGlobal("pond", { query });

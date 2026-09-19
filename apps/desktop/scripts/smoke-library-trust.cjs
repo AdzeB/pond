@@ -11,7 +11,7 @@ const { tmpdir } = require("node:os");
 const { join } = require("node:path");
 const sandbox = mkdtempSync(join(tmpdir(), "pond-library-trust-"));
 process.env.POND_SANDBOX = sandbox;
-app.on("quit", () => rmSync(sandbox, { recursive: true, force: true }));
+process.once("exit", () => rmSync(sandbox, { recursive: true, force: true }));
 let started = false;
 const timer = setTimeout(() => {
   console.error("LIBRARY_TRUST_SMOKE_FAILED: timed out");
@@ -75,6 +75,7 @@ app.on("web-contents-created", (_, contents) => {
         files: manifest.files.length,
         locked: result.eagle.lockedFolders,
       });
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       app.exit(0);
     } catch (error) {
       clearTimeout(timer);
@@ -82,4 +83,9 @@ app.on("web-contents-created", (_, contents) => {
       app.exit(1);
     }
   });
+});
+import("../out/main/index.js").catch((error) => {
+  clearTimeout(timer);
+  console.error("LIBRARY_TRUST_SMOKE_FAILED", error);
+  app.exit(1);
 });

@@ -70,12 +70,7 @@ export function libraryQueryWhere(request: LibraryQueryRequest) {
   const scope = request.scope ?? {};
   return and(
     scope.deletedOnly ? isNotNull(saves.deletedAt) : isNull(saves.deletedAt),
-    scope.deletedOnly
-      ? undefined
-      : sql`(
-      ${saves.status} = 'complete' or (${saves.status} = 'ingesting' and
-      (json_array_length(${saves.files}) > 0 or ${saves.mediaType} in ('link', 'text')))
-    )`,
+    scope.deletedOnly ? undefined : sql`${saves.status} = 'complete'`,
     buildWhere(request.query),
     request.keywords?.trim()
       ? compileKeywordWhere(request.keywords)

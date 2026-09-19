@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { ShortcutDef } from "./shortcuts";
 import {
+  bindingKeys,
+  bindingSequence,
   chordGlyphs,
   resolveShortcuts,
   SHORTCUTS,
@@ -17,6 +19,23 @@ describe("shortcut registry", () => {
 
     expect(tabShortcuts).toEqual([]);
     expect(SHORTCUTS["view.sidebar"].keys).toBe("[");
+  });
+});
+
+describe("shortcut binding access", () => {
+  it("returns configured key bindings", () => {
+    const bindings = resolveShortcuts({
+      profile: "pond",
+      overrides: { "save.add-tag": "Control+Shift+T" },
+    });
+
+    expect(bindingKeys(bindings, "save.add-tag")).toBe("Control+Shift+T");
+  });
+
+  it("returns configured shortcut sequences", () => {
+    const bindings = resolveShortcuts({ profile: "pond", overrides: {} });
+
+    expect(bindingSequence(bindings, "nav.library")).toEqual(["G", "L"]);
   });
 });
 

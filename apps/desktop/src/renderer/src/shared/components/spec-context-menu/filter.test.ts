@@ -1,19 +1,7 @@
 import type { MenuItemSpec } from "@pond/ui";
 import { describe, expect, it } from "vitest";
-import { z } from "zod";
+import { menuLabels as labels } from "@/shared/test/menu-labels";
 import { filterMenuItems } from "./filter";
-
-function labels(items: MenuItemSpec[]): string[] {
-  return items.flatMap((item) => {
-    if (item.type === "separator" || item.type === "custom") return [];
-    const parsed = z.string().safeParse("label" in item ? item.label : null);
-    const label = parsed.success ? [parsed.data] : [];
-    if (item.type === "group" || item.type === "submenu") {
-      return [...label, ...labels(item.items)];
-    }
-    return label;
-  });
-}
 
 const MENU: MenuItemSpec[] = [
   { label: "Open Save", onClick: () => {} },

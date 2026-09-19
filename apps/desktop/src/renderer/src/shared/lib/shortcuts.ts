@@ -1,5 +1,6 @@
 import {
   resolveShortcuts,
+  type SHORTCUTS,
   type ShortcutBindings,
   type ShortcutDef,
   type ShortcutId,
@@ -19,6 +20,22 @@ export {
   type ShortcutId,
 } from "@shared/shortcuts";
 
+type ShortcutKeyId = {
+  [Id in ShortcutId]: (typeof SHORTCUTS)[Id] extends {
+    readonly keys: string;
+  }
+    ? Id
+    : never;
+}[ShortcutId];
+
+type ShortcutSequenceId = {
+  [Id in ShortcutId]: (typeof SHORTCUTS)[Id] extends {
+    readonly sequence: readonly string[];
+  }
+    ? Id
+    : never;
+}[ShortcutId];
+
 const shortcutPreferences = new Store<ShortcutPreferences>({
   profile: "pond",
   overrides: {},
@@ -31,6 +48,24 @@ export function configureShortcuts(preferences: ShortcutPreferences): void {
 export function useShortcutBindings(): ShortcutBindings {
   const preferences = useSelector(shortcutPreferences, (value) => value);
   return resolveShortcuts(preferences);
+}
+
+export function bindingKeys(
+  bindings: ShortcutBindings,
+  id: ShortcutKeyId,
+): NonNullable<ShortcutDef["keys"]> {
+  const keys = bindings[id].keys;
+  if (!keys) throw new Error(`Shortcut "${id}" has no key binding`);
+  return keys;
+}
+
+export function bindingSequence(
+  bindings: ShortcutBindings,
+  id: ShortcutSequenceId,
+): NonNullable<ShortcutDef["sequence"]> {
+  const sequence = bindings[id].sequence;
+  if (!sequence) throw new Error(`Shortcut "${id}" has no sequence binding`);
+  return sequence;
 }
 
 export function shortcutConflict(

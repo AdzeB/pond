@@ -1,4 +1,4 @@
-import { CANCEL_REASON, saves, tasks } from "@pond/schema/db";
+import { CANCEL_REASON, SKIP_REASON, saves, tasks } from "@pond/schema/db";
 import type { PipelineTaskEvent } from "@pond/schema/events";
 import { and, eq, inArray } from "drizzle-orm";
 import log from "electron-log/main.js";
@@ -8,6 +8,7 @@ import { commitEvent, startTaskEvent, toErrorInfo } from "../../lib/wide-event";
 import { persistSave } from "../persist-save";
 import { downloadActivity } from "./download-activity";
 import { canDispatchTask, isInteractiveTask } from "./priority";
+import { noteSuccess } from "./rate-governor";
 import {
   type DueTask,
   isSourceTask,
@@ -21,7 +22,6 @@ import {
   WORKERS,
   WorkerWatchdogError,
 } from "./reconciler-config";
-import { noteSuccess } from "./source-gate";
 import {
   pullDueTasks,
   sweepOrphanTasks,
@@ -183,6 +183,56 @@ export async function cancelAllIngest(): Promise<number> {
   if (!wasPaused) resumeReconciler();
   log.info("[pond pipeline:reconciler] cancelled all ingest", { cancelled });
   return cancelled;
+}
+
+export async function skipSaves(ids: readonly string[]): Promise<number> {
+  const db = await getDb();
+  let skipped = 0;
+  for (const saveId of ids) {
+    const save = db
+      .select({ status: saves.status, deletedAt: saves.deletedAt })
+      .from(saves)
+      .where(eq(saves.id, saveId))
+      .get();
+    if (!save || save.deletedAt) continue;
+    if (save.status === "skipped" || save.status === "complete") continue;
+
+    const running = db
+      .select({ id: tasks.id })
+      .from(tasks)
+      .where(and(eq(tasks.saveId, saveId), eq(tasks.status, "running")))
+      .all();
+    for (const { id } of running) {
+      const controller = runningTasks.get(id);
+      if (controller) {
+        try {
+          controller.abort();
+        } catch {}
+      }
+    }
+
+    await persistSave(
+      saveId,
+      { status: "skipped" },
+      { actorReason: "user:skip-ingest" },
+    );
+    db.update(tasks)
+      .set({
+        status: "failed",
+        lastError: SKIP_REASON,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(tasks.saveId, saveId),
+          inArray(tasks.status, ["pending", "running", "blocked"]),
+        ),
+      )
+      .run();
+    skipped += 1;
+  }
+  log.info("[pond pipeline:reconciler] skipped saves", { skipped });
+  return skipped;
 }
 
 export function startReconciler(): void {

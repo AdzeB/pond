@@ -13,6 +13,7 @@ import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { type Db, getDb } from "../db";
 import { readItemMetadata, scanLibrary } from "../lib/library";
+import { INFO_FILE } from "../lib/library-format";
 import { withRawSlim } from "../lib/raw-slim";
 import { libraryRoot } from "../paths";
 import { readEnrichmentSidecar } from "./enrichment-sidecar";
@@ -76,7 +77,8 @@ export async function reconcileLibraryIndex(
       if (migrated.changed) {
         metadata.files = migrated.files;
         metadata.pond.coverIndex = migrated.coverIndex;
-        stampedAt = (await stat(join(root, "items", `${id}.info`))).mtimeMs;
+        stampedAt = (await stat(join(root, "items", `${id}.info`, INFO_FILE)))
+          .mtimeMs;
       }
 
       if (!metadata.source || !metadata.sourceId || !metadata.url) {

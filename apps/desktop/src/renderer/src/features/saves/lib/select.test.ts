@@ -1,10 +1,7 @@
-// @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { libraryChrome } from "@/features/library/state/library-chrome";
-import {
-  primarySelection,
-  selection,
-} from "@/features/library/state/selection";
+import "@/app/effects/save-library-bridge";
+import { primarySelection, selection } from "@/features/saves/state/selection";
 import {
   clearSaveSelection,
   clickSave,

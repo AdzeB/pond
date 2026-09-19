@@ -1,4 +1,4 @@
-export const RECENT_FOLDER_DESTINATIONS_KEY = "pond:recent-folder-destinations";
+const RECENT_FOLDER_DESTINATIONS_KEY = "pond:recent-folder-destinations";
 
 export function readRecentFolderIds(): string[] {
   try {

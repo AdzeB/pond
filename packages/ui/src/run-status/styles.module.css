@@ -3,9 +3,32 @@
   gap: 6px;
   align-items: center;
   width: fit-content;
+  max-width: 100%;
   padding-block: 4px;
   font-size: var(--ds-text-sm);
-  color: var(--ds-gray-9);
+  color: var(--ds-gray-10);
+}
+
+.working-label {
+  overflow-wrap: anywhere;
+  background-image: linear-gradient(
+    90deg,
+    var(--ds-gray-10) 40%,
+    color-mix(in srgb, var(--ds-accent-9) 25%, var(--ds-gray-8)) 50%,
+    var(--ds-gray-10) 60%
+  );
+  animation: thinking-sweep calc(var(--ds-duration-medium) * 12) linear infinite;
+}
+
+@keyframes thinking-sweep {
+  from {
+    background-position: 100% 0;
+  }
+
+  40%,
+  to {
+    background-position: -100% 0;
+  }
 }
 
 .run-status > svg {
@@ -22,4 +45,19 @@
 
 .run-status[data-reduced-motion="true"] * {
   animation: none;
+}
+
+.run-status[data-reduced-motion="true"] .working-label,
+:global(html[data-reduce-motion="true"]) .working-label {
+  color: var(--ds-gray-10);
+  background: none;
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce), (forced-colors: active) {
+  .working-label {
+    color: var(--ds-gray-10);
+    background: none;
+    animation: none;
+  }
 }

@@ -5,7 +5,8 @@
   height: 100%;
   min-height: 0;
   font-size: var(--ds-text-md);
-  line-height: 1.5;
+  font-weight: var(--ds-weight-normal);
+  line-height: 24px;
   color: var(--ds-gray-12);
 }
 
@@ -22,7 +23,7 @@
 .viewport > * {
   flex-shrink: 0;
   width: 100%;
-  max-width: 640px;
+  max-width: 712px;
   margin-inline: auto;
 }
 
@@ -30,9 +31,24 @@
   position: sticky;
   bottom: 0;
   z-index: 1;
-  padding-top: 16px;
+  padding-top: 48px;
   margin-top: auto;
-  background: linear-gradient(transparent, var(--ds-gray-1) 16px);
+}
+
+.footer::before {
+  position: absolute;
+  inset: 0 -24px -12px;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+  background: linear-gradient(
+    to bottom,
+    transparent 0,
+    color-mix(in oklab, var(--ds-gray-1) 8%, transparent) 12px,
+    color-mix(in oklab, var(--ds-gray-1) 35%, transparent) 24px,
+    color-mix(in oklab, var(--ds-gray-1) 75%, transparent) 36px,
+    var(--ds-gray-1) 48px
+  );
 }
 
 .empty {

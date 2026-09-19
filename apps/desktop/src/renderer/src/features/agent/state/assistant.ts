@@ -1,5 +1,6 @@
 import type {
   AssistantActivity,
+  AssistantFileAttachment,
   AssistantMessage,
   AssistantProvider,
   AssistantResultSet,
@@ -14,11 +15,8 @@ import { useEffect } from "react";
 import { z } from "zod";
 import { folders } from "../../library/state/folders";
 import { getOverlays } from "../../library/state/view-store";
-import {
-  observeAssistantActivity,
-  runAssistant,
-  stopAssistant,
-} from "./assistant-runtime";
+import { stopAssistant } from "./assistant-runtime";
+import { hydratePondChat, pondChatSession } from "./pond-chat";
 
 const ChatsSchema = z.array(
   z.object({
@@ -32,7 +30,10 @@ const ChatSchema = z.object({ id: z.string() });
 interface DraftSnapshot {
   content: string;
   attachments: AssistantSource[];
+  files: AssistantFileAttachment[];
   provider: AssistantProvider;
+  modelId?: AssistantSend["modelId"];
+  controls?: AssistantSend["controls"];
   context: Pick<
     AssistantSend,
     "scope" | "attachmentIds" | "semanticQuery" | "visualSaveId"
@@ -47,6 +48,7 @@ export interface AssistantState {
   messages: AssistantMessage[];
   draft: string;
   attachments: AssistantSource[];
+  files: AssistantFileAttachment[];
   busy: boolean;
   loading: boolean;
   requestId: string | null;
@@ -67,6 +69,7 @@ const store = new Store<AssistantWorkspace>({
   messages: [],
   draft: "",
   attachments: [],
+  files: [],
   sending: false,
   loading: false,
   requestId: null,
@@ -84,37 +87,10 @@ let historyVersion = 0;
 let cancelledRequest: string | null = null;
 const isBusy = () => store.state.sending;
 const currentMessages = () => store.state.messages;
-const presentationId = (requestId: string) => `${requestId}:assistant`;
 
 function setMessages(messages: AssistantMessage[]) {
   patch({ messages });
 }
-
-function upsertStream(requestId: string, chatId: string, content: string) {
-  const id = presentationId(requestId);
-  const messages = store.state.messages;
-  const index = messages.findIndex((message) => message.id === id);
-  const next: AssistantMessage = {
-    id,
-    chatId,
-    role: "assistant",
-    content,
-    metadata: null,
-  };
-  setMessages(
-    index >= 0
-      ? messages.map((message, i) =>
-          i === index ? { ...message, content } : message,
-        )
-      : [...messages, next],
-  );
-}
-observeAssistantActivity((chunk) => {
-  if (chunk.type === "activity") patch({ activity: chunk.activity });
-  if (chunk.type === "sources") patch({ sources: chunk.sources });
-  if (chunk.type === "results") patch({ results: chunk.results });
-  if (chunk.type === "steps") patch({ steps: chunk.steps });
-});
 
 async function refreshChats() {
   patch({
@@ -126,33 +102,20 @@ async function refreshMessages(chatId: string, version = historyVersion) {
     await window.pond.query("agent.messages", { chatId }),
   );
   if (store.state.chatId === chatId && version === historyVersion) {
-    const liveId = store.state.requestId
-      ? presentationId(store.state.requestId)
-      : null;
-    const pending =
-      liveId && store.state.messages.some((message) => message.id === liveId);
-    setMessages(
-      messages.map((message, index) =>
-        pending &&
-        index === messages.length - 1 &&
-        message.role === "assistant" &&
-        liveId
-          ? { ...message, id: liveId }
-          : message,
-      ),
-    );
+    setMessages(messages);
+    if (!store.state.sending) hydratePondChat(chatId, messages);
   }
 }
 
 type ComposerSnapshot = Pick<
   AssistantWorkspace,
-  "draft" | "attachments" | "failed" | "error"
+  "draft" | "attachments" | "files" | "failed" | "error"
 >;
 const composers = new Map<string | null, ComposerSnapshot>();
 
 function saveComposer() {
-  const { chatId, draft, attachments, failed, error } = store.state;
-  composers.set(chatId, { draft, attachments, failed, error });
+  const { chatId, draft, attachments, files, failed, error } = store.state;
+  composers.set(chatId, { draft, attachments, files, failed, error });
 }
 
 function composerFor(chatId: string | null): ComposerSnapshot {
@@ -160,6 +123,7 @@ function composerFor(chatId: string | null): ComposerSnapshot {
     composers.get(chatId) ?? {
       draft: "",
       attachments: [],
+      files: [],
       failed: null,
       error: null,
     }
@@ -177,10 +141,16 @@ function snapshotContext(
 }
 
 function restoreDraft(sent: DraftSnapshot) {
-  if (!sent.keepDraft && !store.state.draft && !store.state.attachments.length)
+  if (
+    !sent.keepDraft &&
+    !store.state.draft &&
+    !store.state.attachments.length &&
+    !store.state.files.length
+  )
     patch({
       draft: sent.content,
       attachments: sent.attachments,
+      files: sent.files,
     });
 }
 
@@ -247,6 +217,23 @@ export const assistant = {
       attachments: store.state.attachments.filter((save) => save.id !== id),
     });
   },
+  attachFiles(files: AssistantFileAttachment[]) {
+    const merged = [
+      ...new Map(
+        [...store.state.files, ...files].map((file) => [file.id, file]),
+      ).values(),
+    ];
+    patch({
+      files: merged.slice(0, 10),
+      error:
+        merged.length > 10
+          ? "You can attach up to 10 files per message."
+          : null,
+    });
+  },
+  removeFile(id: string) {
+    patch({ files: store.state.files.filter((file) => file.id !== id) });
+  },
   async attachIds(ids: string[]) {
     try {
       assistant.attach(
@@ -275,6 +262,25 @@ export const assistant = {
       loading: false,
     });
   },
+  async renameChat(chatId: string, title: string) {
+    if (isBusy()) throw new Error("Wait for the reply to finish.");
+    const result = await window.pond.query("agent.renameChat", {
+      chatId,
+      title,
+    });
+    if (!result.ok)
+      throw new Error(result.error || "Could not rename this chat.");
+    await refreshChats();
+  },
+  async deleteChat(chatId: string) {
+    if (isBusy()) throw new Error("Wait for the reply to finish.");
+    const result = await window.pond.query("agent.deleteChat", { chatId });
+    if (!result.ok)
+      throw new Error(result.error || "Could not delete this chat.");
+    if (store.state.chatId === chatId) assistant.newChat();
+    composers.delete(chatId);
+    await refreshChats();
+  },
   async openChat(chatId: string) {
     if (isBusy()) return;
     saveComposer();
@@ -298,13 +304,20 @@ export const assistant = {
       if (version === historyVersion) patch({ loading: false });
     }
   },
-  async send(provider: AssistantProvider, snapshot?: DraftSnapshot) {
+  async send(
+    provider: AssistantProvider,
+    run?: Pick<AssistantSend, "modelId" | "controls">,
+    snapshot?: DraftSnapshot,
+  ) {
     if (isBusy() || store.state.loading) return;
     const sent = snapshot ?? {
       content: store.state.draft.trim(),
       attachments: store.state.attachments,
+      files: store.state.files,
       context: snapshotContext(store.state.attachments),
       provider,
+      modelId: run?.modelId,
+      controls: run?.controls,
     };
     if (!sent.content) return;
     const requestId = crypto.randomUUID();
@@ -322,11 +335,13 @@ export const assistant = {
       !snapshot ||
       (!snapshot.keepDraft &&
         store.state.draft === sent.content &&
-        store.state.attachments === sent.attachments)
+        store.state.attachments === sent.attachments &&
+        store.state.files === sent.files)
     )
       patch({
         draft: "",
         attachments: [],
+        files: [],
       });
     let chatId = store.state.chatId;
     try {
@@ -350,75 +365,86 @@ export const assistant = {
         content: sent.content,
         metadata: {
           attachments: sent.attachments,
+          files: sent.files,
           replyToQuestion: sent.replyToQuestion,
         },
       };
-      setMessages([...store.state.messages, message]);
-      const result = await runAssistant(
+      const session = pondChatSession(threadId);
+      await session.sendMessage(
         {
-          chatId: threadId,
-          requestId,
-          content: sent.content,
-          ...sent.context,
-          provider: sent.provider,
-          replyToQuestion: sent.replyToQuestion,
+          text: message.content,
+          metadata: message.metadata,
         },
-        message.metadata ?? {},
-        (text) => upsertStream(requestId, threadId, text),
+        {
+          body: {
+            requestId,
+            provider: sent.provider,
+            modelId: sent.modelId,
+            controls: sent.controls,
+            attachmentIds: sent.context.attachmentIds,
+            fileAttachmentIds: sent.files.map((file) => file.id),
+            scope: sent.context.scope,
+            semanticQuery: sent.context.semanticQuery,
+            visualSaveId: sent.context.visualSaveId,
+            replyToQuestion: sent.replyToQuestion,
+          },
+        },
       );
-      if (!result.accepted) {
-        setMessages(
-          store.state.messages.filter(
-            (m) => m.id !== requestId && m.id !== presentationId(requestId),
-          ),
-        );
+      if (session.error) throw session.error;
+      patch({ error: null });
+    } catch (error) {
+      if (cancelledRequest !== requestId) {
         restoreDraft(sent);
         patch({
           error:
-            result.error ??
-            (result.stopped ? null : "Could not send this message."),
+            error instanceof Error
+              ? error.message
+              : "Could not finish the request. Check the conversation before trying again.",
           failed: sent,
         });
-      } else {
-        await refreshMessages(chatId);
-        patch({ error: null });
       }
-      await refreshChats();
-    } catch {
-      restoreDraft(sent);
-      patch({
-        error:
-          "Could not finish the request. Check the conversation before trying again.",
-        failed: sent,
-      });
-      if (chatId) await refreshMessages(chatId).catch(() => undefined);
     } finally {
       if (cancelledRequest === requestId) cancelledRequest = null;
       patch({ sending: false, requestId: null, sources: [] });
+      await Promise.all([
+        chatId
+          ? refreshMessages(chatId).catch(() => undefined)
+          : Promise.resolve(),
+        refreshChats().catch(() => undefined),
+      ]);
     }
   },
   async answerQuestion(
     messageId: string,
     content: string,
     provider: AssistantProvider,
+    run?: Pick<AssistantSend, "modelId" | "controls">,
   ) {
     if (currentMessages().at(-1)?.id !== messageId) return;
-    await assistant.send(provider, {
+    await assistant.send(provider, run, {
       content,
       attachments: [],
+      files: [],
       context: snapshotContext([]),
       provider,
+      modelId: run?.modelId,
+      controls: run?.controls,
       replyToQuestion: messageId,
       keepDraft: true,
     });
   },
   stop() {
     cancelledRequest = store.state.requestId;
-    stopAssistant();
+    stopAssistant(store.state.chatId, store.state.requestId);
   },
   async retry() {
     const sent = store.state.failed;
-    if (sent) await assistant.send(sent.provider, sent);
+    if (sent)
+      await assistant.send(
+        sent.provider,
+        { modelId: sent.modelId, controls: sent.controls },
+        sent,
+      );
   },
   async review(
     messageId: string,
@@ -430,14 +456,19 @@ export const assistant = {
       changeIds,
       action,
     });
-    setMessages(
-      currentMessages().map((m) =>
-        m.id === messageId
-          ? { ...m, metadata: { ...m.metadata, changes: result.changes } }
-          : m,
-      ),
+    const messages = currentMessages().map((m) =>
+      m.id === messageId
+        ? { ...m, metadata: { ...m.metadata, changes: result.changes } }
+        : m,
     );
+    setMessages(messages);
+    if (store.state.chatId) hydratePondChat(store.state.chatId, messages);
     await folders.refresh();
+  },
+  async refresh() {
+    const chatId = store.state.chatId;
+    if (chatId) await refreshMessages(chatId);
+    await refreshChats();
   },
 };
 
@@ -448,7 +479,14 @@ export function useAssistant() {
         patch({ error: "Could not load recent chats." }),
       );
     }
+    const unsubscribe = window.pond.onAgentChunk((chunk) => {
+      if (chunk.type === "activity") patch({ activity: chunk.activity });
+      if (chunk.type === "sources") patch({ sources: chunk.sources });
+      if (chunk.type === "results") patch({ results: chunk.results });
+      if (chunk.type === "steps") patch({ steps: chunk.steps });
+    });
     return () => {
+      unsubscribe();
       --subscribers;
     };
   }, []);

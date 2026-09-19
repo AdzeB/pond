@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
-import { dependencyCycles, runtimeImports } from "./check-architecture.mjs";
+import {
+  declaredWorkspaceDependencyErrors,
+  dependencyCycles,
+  rendererOwnershipError,
+  runtimeImports,
+} from "./check-architecture.mjs";
 
 test("runtime graph distinguishes type-only imports and preserves lazy dependencies", () => {
   assert.deepEqual(
@@ -38,4 +46,44 @@ test("ownership checks can include type-only imports and exports", () => {
     ),
     ["./owner", "./other"],
   );
+});
+
+test("save features cannot depend on Library features", () => {
+  assert.match(
+    rendererOwnershipError(
+      "renderer/src/features/saves/lib/menu.ts",
+      "renderer/src/features/library/state/folders.ts",
+    ),
+    /Save code depends on Library code/,
+  );
+  assert.equal(
+    rendererOwnershipError(
+      "renderer/src/features/library/components/grid.tsx",
+      "renderer/src/features/saves/components/card.tsx",
+    ),
+    null,
+  );
+});
+
+test("reports imports from undeclared workspace packages", () => {
+  const root = mkdtempSync(join(tmpdir(), "pond-architecture-"));
+  const app = join(root, "app");
+  const shared = join(root, "shared");
+  mkdirSync(join(app, "src"), { recursive: true });
+  mkdirSync(shared, { recursive: true });
+  writeFileSync(join(app, "src/index.ts"), 'import "@pond/shared";\n');
+  const packages = [
+    { path: app, manifest: { name: "@pond/app" } },
+    { path: shared, manifest: { name: "@pond/shared" } },
+  ];
+  try {
+    const errors = declaredWorkspaceDependencyErrors(packages);
+    assert.equal(errors.length, 1);
+    assert.match(
+      errors[0],
+      /@pond\/app imports undeclared workspace dependency @pond\/shared/,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });

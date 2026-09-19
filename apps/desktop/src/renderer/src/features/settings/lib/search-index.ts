@@ -76,41 +76,62 @@ export const SETTINGS_SEARCH_INDEX: SettingsSearchEntry[] = SECTIONS.filter(
   (section) => !section.hidden,
 ).flatMap(sectionEntries);
 
-for (const [key, title, description] of [
-  ["location", "Library Location", "Reveal your library in Finder"],
-  ["move", "Move Library", "Copy your library and switch to a new location"],
-  ["backup", "Back Up Library", "Create a backup"],
-  ["open", "Open Library", "Open a library"],
-  ["new", "New Library", "Create a library on this Mac"],
-  ["recent", "Recent Libraries", "Switch between recent libraries"],
-  ["merge", "Merge Library", "Copy Saves from another library"],
-  ["restore", "Restore Backup", "Verify and restore a backup"],
-  ["package", "Import Pond Package", "Import Saves and folders from a package"],
-  ["import", "Import Eagle Library", "Import files, folders and tags"],
+const MANUAL_ENTRIES = [
+  ["library", "Library", "logo", "Logo", "Choose an image from this Mac"],
+  ["library", "Library", "name", "Name", "Rename the open library"],
   [
+    "library",
+    "Library",
+    "recent",
+    "Recent Libraries",
+    "Switch between recent libraries",
+  ],
+  [
+    "storage",
+    "Storage",
+    "location",
+    "Library Location",
+    "Reveal your library in Finder",
+  ],
+  [
+    "storage",
+    "Storage",
+    "move",
+    "Move Library",
+    "Move your library to a new location",
+  ],
+  ["backups", "Backups", "backup", "Back Up Library", "Create a backup"],
+  [
+    "backups",
+    "Backups",
+    "restore",
+    "Restore Backup",
+    "Verify and restore a backup",
+  ],
+  [
+    "harvesting",
+    "Harvesting",
     "watched-folder",
     "Watched Folder",
     "Import files that appear in one folder on this Mac.",
   ],
-]) {
+] as const;
+
+for (const [
+  sectionId,
+  sectionLabel,
+  key,
+  title,
+  description,
+] of MANUAL_ENTRIES) {
   SETTINGS_SEARCH_INDEX.push({
-    id: `storage:${key}`,
-    sectionId: "storage",
-    sectionLabel: "Storage & Backups",
-    path: "storage",
+    id: `${sectionId}:${key}`,
+    sectionId,
+    sectionLabel,
+    path: sectionId,
     itemKey: key,
-    title: title ?? "",
+    title,
     description,
     keywords: [],
   });
 }
-SETTINGS_SEARCH_INDEX.push({
-  id: "models:mcp",
-  sectionId: "models",
-  sectionLabel: "Integrations",
-  path: "models",
-  itemKey: "mcp",
-  title: "Connect Cursor",
-  description: "MCP configuration for external apps",
-  keywords: ["stdio", "mcp"],
-});

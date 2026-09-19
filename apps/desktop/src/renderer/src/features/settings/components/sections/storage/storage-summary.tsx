@@ -1,4 +1,3 @@
-import { PrefsSchema } from "@pond/schema";
 import { Button, Settings } from "@pond/ui";
 import { useQuery } from "@tanstack/react-query";
 
@@ -6,19 +5,11 @@ const bytes = (value: number) =>
   `${(value / 1024 ** 3).toLocaleString(undefined, { maximumFractionDigits: 2 })} GB`;
 
 export function StorageSummary() {
-  const backup = useQuery({
-    queryKey: ["storage-backup"],
-    queryFn: async () =>
-      PrefsSchema.parse(await window.pond.query("settings.getPrefs", {}))
-        .storage.lastBackup,
-  });
   const query = useQuery({
     queryKey: ["storage-snapshot"],
     queryFn: () => window.pond.query("storage.snapshot", {}),
     refetchInterval: 60_000,
   });
-  const lastBackup =
-    backup.data?.libraryRoot === query.data?.libraryRoot ? backup.data : null;
   return (
     <Settings.List>
       <Settings.Item>
@@ -41,16 +32,6 @@ export function StorageSummary() {
             Refresh
           </Button>
         </Settings.ItemControl>
-      </Settings.Item>
-      <Settings.Item>
-        <Settings.ItemDetails>
-          <Settings.ItemTitle>Last backup</Settings.ItemTitle>
-          <Settings.ItemDescription>
-            {lastBackup
-              ? `${new Date(lastBackup.completedAt).toLocaleString()} · ${lastBackup.path}`
-              : "No backup recorded for this library yet."}
-          </Settings.ItemDescription>
-        </Settings.ItemDetails>
       </Settings.Item>
     </Settings.List>
   );

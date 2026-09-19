@@ -1,11 +1,10 @@
-// @vitest-environment jsdom
 import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 import { normalise } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
-import { DuplicateReview } from "./duplicate-review";
+import { DuplicateReview } from "./";
 
 function row(id: string) {
   return {
@@ -21,7 +20,6 @@ function row(id: string) {
 }
 
 it("lets the user change the keeper, exclude a candidate, and review excluded matches after merging", async () => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal(
     "ResizeObserver",
     class {
@@ -81,7 +79,6 @@ it("lets the user change the keeper, exclude a candidate, and review excluded ma
 });
 
 it("limits groups to the requested ids", async () => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal(
     "ResizeObserver",
     class {

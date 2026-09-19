@@ -1,5 +1,4 @@
-import { AutoImportSettings } from "@/features/settings/components/sections/storage/auto-import";
-import { LocationRow } from "@/features/settings/components/sections/storage/storage";
+import { StorageLocationSettings } from "@/features/settings/components/sections/storage/location";
 import { StorageSummary } from "@/features/settings/components/sections/storage/storage-summary";
 import {
   defineSection,
@@ -9,19 +8,14 @@ import {
 const guardsOn = (v: SettingsValues) => v.guardsEnabled === true;
 
 export const storageSection = defineSection("storage", {
-  title: "Storage & Backups",
-  description: "Library location, backups, and disk usage.",
+  title: "Storage",
+  description: "Manage disk usage, location, and size limits.",
   groups: [
     { title: "Overview", render: () => <StorageSummary /> },
     {
       title: "Location",
       fullWidth: true,
-      render: () => <LocationRow />,
-    },
-    {
-      title: "Auto-Import",
-      fullWidth: true,
-      render: () => <AutoImportSettings />,
+      render: () => <StorageLocationSettings />,
     },
     {
       title: "Storage Limits",

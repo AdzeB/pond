@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -9,7 +8,6 @@ let container: HTMLDivElement;
 const onSave = vi.fn(async (_name: string) => {});
 const onFinish = vi.fn();
 beforeEach(async () => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   onSave.mockReset();
   onFinish.mockReset();
   container = document.createElement("div");

@@ -1,4 +1,4 @@
-// @vitest-environment jsdom
+import { Tooltip } from "@pond/ui";
 import type { DownloadActivity } from "@shared/download-activity";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
@@ -6,7 +6,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { savesStore } from "@/features/saves/state/pool";
-import { DownloadInspector, DownloadInspectorView } from "./download-inspector";
+import { DownloadInspector, DownloadInspectorView } from "./";
 
 const activity: DownloadActivity = {
   taskId: "task-1",
@@ -49,7 +49,6 @@ describe("download details", () => {
   let container: HTMLDivElement;
   let root: Root;
   beforeEach(() => {
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.stubGlobal(
       "ResizeObserver",
       class {
@@ -73,15 +72,16 @@ describe("download details", () => {
     const onRetry = vi.fn();
     await act(() =>
       root.render(
-        <DownloadInspectorView
-          title="Motion studies"
-          activity={next}
-          now={now}
-          error={error}
-          onClose={onClose}
-          onOpenSave={onOpenSave}
-          onRetry={onRetry}
-        />,
+        <Tooltip.Provider>
+          <DownloadInspectorView
+            activity={next}
+            now={now}
+            error={error}
+            onClose={onClose}
+            onOpenSave={onOpenSave}
+            onRetry={onRetry}
+          />
+        </Tooltip.Provider>,
       ),
     );
     return { onClose, onOpenSave, onRetry };
@@ -157,13 +157,11 @@ describe("download details", () => {
     expect(container.textContent).toContain("No recent activity is available");
     await act(() =>
       container
-        .querySelector<HTMLButtonElement>(
-          'button[aria-label="Close download details"]',
-        )
+        .querySelector<HTMLButtonElement>('button[aria-label="Close Details"]')
         ?.click(),
     );
-    const open = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Open Save",
+    const open = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="Open Save"]',
     );
     await act(() => open?.click());
     expect(commands.onClose).toHaveBeenCalledOnce();
@@ -187,7 +185,6 @@ describe("download inspector data", () => {
   let root: Root;
   let client: QueryClient;
   beforeEach(() => {
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.stubGlobal(
       "ResizeObserver",
       class {
@@ -219,7 +216,9 @@ describe("download inspector data", () => {
     await act(() =>
       root.render(
         <QueryClientProvider client={client}>
-          <DownloadInspector saveId="history-save" />
+          <Tooltip.Provider>
+            <DownloadInspector saveId="history-save" />
+          </Tooltip.Provider>
         </QueryClientProvider>,
       ),
     );
@@ -245,10 +244,16 @@ describe("download inspector data", () => {
     await render();
     await act(async () => {
       await vi.waitFor(() =>
-        expect(container.textContent).toContain("Earlier download"),
+        expect(container.textContent).toContain("Completed"),
       );
     });
-    expect(container.textContent).toContain("Saved to your library");
+    expect(container.textContent).toContain("Completed");
+    expect(container.textContent).toContain("Properties");
+    expect(container.textContent).toContain("YouTube");
+    expect(container.textContent).toContain("File");
+    expect(
+      container.querySelector('button[aria-label="Open Save"]'),
+    ).not.toBeNull();
     expect(query).toHaveBeenCalledWith("saves.getMany", {
       ids: ["history-save"],
     });
@@ -293,10 +298,9 @@ describe("download inspector data", () => {
         expect(container.textContent).toContain("Couldn't load this save."),
       );
     });
-    const open = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Open Save",
-    );
-    expect(open?.disabled).toBe(true);
+    expect(
+      container.querySelector('button[aria-label="Open Save"]'),
+    ).toBeNull();
     fail = false;
     const retry = Array.from(container.querySelectorAll("button")).find(
       (button) => button.textContent === "Try Again",
@@ -304,11 +308,14 @@ describe("download inspector data", () => {
     await act(() => retry?.click());
     await act(async () => {
       await vi.waitFor(() =>
-        expect(container.textContent).toContain("Waiting download"),
+        expect(container.textContent).toContain("In Progress"),
       );
     });
-    expect(container.textContent).toContain("Waiting");
+    expect(container.textContent).toContain("In Progress");
     expect(container.textContent).not.toContain("Couldn't load this save.");
+    expect(
+      container.querySelector('button[aria-label="Open Save"]'),
+    ).toBeNull();
   });
 
   it("shows the recorded failure when live measurements are unavailable", async () => {
@@ -343,11 +350,11 @@ describe("download inspector data", () => {
     });
     await render();
     await act(async () => {
-      await vi.waitFor(() =>
-        expect(container.textContent).toContain("Couldn't download"),
-      );
+      await vi.waitFor(() => expect(container.textContent).toContain("Failed"));
     });
     expect(container.textContent).toContain("Network unavailable");
+    expect(container.textContent).toContain("Downloading video");
+    expect(container.textContent).toContain("YouTube");
     expect(container.querySelector("progress")).toBeNull();
   });
 
@@ -382,10 +389,12 @@ describe("download inspector data", () => {
     await render();
     await act(async () => {
       await vi.waitFor(() =>
-        expect(container.textContent).toContain("Waiting"),
+        expect(container.textContent).toContain("In Progress"),
       );
     });
-    expect(container.textContent).toContain("Waiting");
+    expect(container.textContent).toContain("In Progress");
+    expect(container.textContent).toContain("Loading save details");
+    expect(container.textContent).toContain("Properties");
     expect(container.textContent).not.toContain("Stopped");
     expect(container.querySelector("progress")).toBeNull();
   });

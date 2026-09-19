@@ -91,5 +91,3 @@ Import an unpacked Eagle `.library` folder to migrate its items. Pond preserves:
 Deleted items are skipped. Password-protected folders are skipped because Eagle does not expose their contents without unlocking them. The migration result reports imported, skipped, and failed item counts.
 
 Direct `.eaglepack` ingestion is not treated as a full-library migration. EaglePack is a selected-item transfer format with undocumented package internals and does not preserve tag groups even when re-imported into Eagle. For a complete migration, select the original unpacked `.library` folder.
-
-The detailed first-party source audit is in [Eagle format compatibility research](research/2026-09-02-eagle-format-compatibility.md).

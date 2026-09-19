@@ -1,7 +1,7 @@
 import { defineCustomSection, group } from "./engine-types";
 
 export const viewerSection = defineCustomSection({
-  title: "Viewer",
+  title: "Preview",
   description: "Preview controls, image rendering, and playback.",
   groups: [
     group.prefs("viewer", {

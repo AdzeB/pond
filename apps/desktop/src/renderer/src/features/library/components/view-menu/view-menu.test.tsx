@@ -1,16 +1,14 @@
-// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { libraryHeader } from "@/features/library/state/library-header";
-import { ViewMenu } from "./view-menu";
+import { ViewMenu } from "./";
 
 describe("view menu", () => {
   let root: Root;
   let host: HTMLDivElement;
 
   beforeEach(() => {
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.stubGlobal(
       "ResizeObserver",
       class {
@@ -41,8 +39,10 @@ describe("view menu", () => {
     });
     const text = document.body.textContent ?? "";
     expect(text).toContain("Layout");
+    expect(text).toContain("Thumbnail Size");
     expect(text).toContain("Sort By");
     expect(text).toContain("Show Name");
     expect(text).not.toContain("Show Notes");
+    expect(text).not.toContain("Start Presentation");
   });
 });

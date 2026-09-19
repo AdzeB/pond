@@ -1,12 +1,12 @@
 import type { Source } from "@pond/schema/db";
 import type { TableColumn } from "@pond/ui";
 import { useState } from "react";
-import { BrandTile } from "@/features/sources/components/sync-monitor-source-tile/sync-monitor-source-tile";
+import { BrandTile } from "@/features/sources/components/sync-monitor-source-tile";
 import { formatNumber } from "@/shared/lib/format";
 import { relativeTime } from "@/shared/lib/relative-time";
 import type { SourceStatusId } from "./lib/filters";
 import type { SourceTableRow } from "./lib/helpers";
-import styles from "./page.module.css";
+import styles from "./styles.module.css";
 
 const RING = 100;
 

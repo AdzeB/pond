@@ -1,0 +1,103 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "pond",
+  "title": "Pond",
+  "description": "Search and save to your local Pond Library.",
+  "icon": "icon.png",
+  "author": "raphaelsalaja",
+  "platforms": [
+    "macOS"
+  ],
+  "categories": [
+    "Productivity"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raphaelsalaja/pond.git",
+    "directory": "apps/raycast"
+  },
+  "commands": [
+    {
+      "name": "search-library",
+      "title": "Search Library",
+      "subtitle": "Pond",
+      "description": "Find Saves in the active Pond Library.",
+      "mode": "view"
+    },
+    {
+      "name": "save-url",
+      "title": "Save URL",
+      "subtitle": "Pond",
+      "description": "Save a URL to the active Pond Library.",
+      "mode": "view",
+      "arguments": [
+        {
+          "name": "url",
+          "placeholder": "URL",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "save-clipboard",
+      "title": "Save Clipboard URL",
+      "subtitle": "Pond",
+      "description": "Save the URL on your clipboard.",
+      "mode": "no-view"
+    },
+    {
+      "name": "switch-library",
+      "title": "Switch Library",
+      "subtitle": "Pond",
+      "description": "Switch to a recent Pond Library.",
+      "mode": "view"
+    },
+    {
+      "name": "open-library",
+      "title": "Open Library",
+      "subtitle": "Pond",
+      "description": "Open the active Pond Library.",
+      "mode": "no-view"
+    }
+  ],
+  "preferences": [
+    {
+      "name": "baseUrl",
+      "title": "Local API URL",
+      "description": "The local API address configured in Pond.",
+      "type": "textfield",
+      "required": true,
+      "default": "http://127.0.0.1:41610/api/v2"
+    },
+    {
+      "name": "token",
+      "title": "Local API Token",
+      "description": "Copy this token from Pond Settings under General and Raycast.",
+      "type": "password",
+      "required": true,
+      "placeholder": "Paste your Pond token"
+    }
+  ],
+  "scripts": {
+    "build": "ray build",
+    "develop": "ray develop",
+    "fix-lint": "ray lint --fix",
+    "lint": "ray lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pond/local-api": "workspace:*",
+    "@raycast/api": "^2.4.1",
+    "react": "19.0.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^2.2.0",
+    "@types/node": "22.19.17",
+    "@types/react": "19.0.10",
+    "eslint": "^10.10.0",
+    "typescript": "6.0.3"
+  }
+}

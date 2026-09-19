@@ -1,11 +1,9 @@
-// @vitest-environment jsdom
-
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MediaUnit } from "@/features/saves/lib/media/units";
 import type { Save } from "@/features/saves/types";
-import { HoverGallery } from "./hover-gallery";
+import { HoverGallery } from "./";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 

@@ -29,13 +29,14 @@ describe("storageKindForImport", () => {
     );
   });
 
-  it.each([
-    ...EAGLE_SUPPORTED_EXTENSIONS,
-  ])("assigns a persistent storage role to Eagle-compatible .%s", (extension) => {
-    expect(
-      storageKindForImport(classifyLibraryFile(`asset.${extension}`)),
-    ).toBeTruthy();
-  });
+  it.each([...EAGLE_SUPPORTED_EXTENSIONS])(
+    "assigns a persistent storage role to Eagle-compatible .%s",
+    (extension) => {
+      expect(
+        storageKindForImport(classifyLibraryFile(`asset.${extension}`)),
+      ).toBeTruthy();
+    },
+  );
 });
 
 describe("mediaTypeForImportedFiles", () => {

@@ -1,18 +1,12 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { beginLibraryLayoutTransition } from "@/features/library/lib/library-layout-transition";
+import type { LibraryNav } from "@/shared/lib/library-nav";
 
-export type LibraryNav =
-  | { kind: "all" }
-  | { kind: "uncategorized" }
-  | { kind: "folder"; id: string }
-  | { kind: "tag"; name: string }
-  | { kind: "trash" }
-  | { kind: "downloads" }
-  | { kind: "sources" };
+export type { LibraryNav } from "@/shared/lib/library-nav";
 
 export const SIDEBAR_WIDTH_DEFAULT = 220;
-export const SIDEBAR_WIDTH_MIN = 220;
+export const SIDEBAR_WIDTH_MIN = 256;
 export const SIDEBAR_WIDTH_MAX = 420;
 export const AGENT_WIDTH_DEFAULT = 340;
 export const AGENT_WIDTH_MIN = 280;
@@ -51,7 +45,8 @@ function writeWidth(key: string, width: number): void {
 }
 
 export type LibraryRightPane = "agent" | "inspector" | null;
-export type LibraryInspectorMode = "save" | "download";
+export type LibraryInspectorMode = "save" | "download" | "source";
+export type LibraryInspectorSourceKind = "account" | "watch";
 
 interface ChromeState {
   nav: LibraryNav;
@@ -60,8 +55,15 @@ interface ChromeState {
   rightPane: LibraryRightPane;
   inspectorSaveId: string | null;
   inspectorMode: LibraryInspectorMode;
+  inspectorSourceId: string | null;
+  inspectorSourceKind: LibraryInspectorSourceKind | null;
   sidebarWidth: number;
   agentWidth: number;
+}
+
+function hasInspectorTarget(s: ChromeState): boolean {
+  if (s.inspectorMode === "source") return s.inspectorSourceId != null;
+  return s.inspectorSaveId != null;
 }
 
 const initialAgentOpen = readFlag("pond.agent", false);
@@ -73,6 +75,8 @@ const store = new Store<ChromeState>({
   rightPane: initialAgentOpen ? "agent" : null,
   inspectorSaveId: null,
   inspectorMode: "save",
+  inspectorSourceId: null,
+  inspectorSourceKind: null,
   sidebarWidth: readWidth(
     "pond.sidebarWidth",
     SIDEBAR_WIDTH_DEFAULT,
@@ -101,6 +105,23 @@ export const libraryChrome = {
         inspectorSaveId,
         inspectorMode: "save",
         rightPane: inspectorSaveId ? "inspector" : s.agentOpen ? "agent" : null,
+      };
+    });
+  },
+  openSaveDetails(inspectorSaveId: string): void {
+    store.setState((s) => {
+      if (
+        s.inspectorSaveId === inspectorSaveId &&
+        s.inspectorMode === "save" &&
+        s.rightPane === "inspector"
+      )
+        return s;
+      beginLibraryLayoutTransition();
+      return {
+        ...s,
+        inspectorSaveId,
+        inspectorMode: "save",
+        rightPane: "inspector",
       };
     });
   },
@@ -148,7 +169,7 @@ export const libraryChrome = {
     store.setState((s) => {
       const rightPane = agentOpen
         ? "agent"
-        : s.inspectorSaveId
+        : hasInspectorTarget(s)
           ? "inspector"
           : null;
       if (s.agentOpen === agentOpen && s.rightPane === rightPane) return s;
@@ -159,9 +180,43 @@ export const libraryChrome = {
       return { ...s, agentOpen, rightPane };
     });
   },
+  inspectSource(kind: LibraryInspectorSourceKind, id: string): void {
+    store.setState((s) => {
+      if (
+        s.inspectorSourceId === id &&
+        s.inspectorSourceKind === kind &&
+        s.inspectorMode === "source" &&
+        s.rightPane === "inspector"
+      )
+        return s;
+      beginLibraryLayoutTransition();
+      return {
+        ...s,
+        inspectorMode: "source",
+        inspectorSourceId: id,
+        inspectorSourceKind: kind,
+        rightPane: "inspector",
+      };
+    });
+  },
+  clearSourceInspector(): void {
+    store.setState((s) => {
+      if (!s.inspectorSourceId && s.inspectorMode !== "source") return s;
+      const hidingSource =
+        s.rightPane === "inspector" && s.inspectorMode === "source";
+      if (hidingSource) beginLibraryLayoutTransition();
+      return {
+        ...s,
+        inspectorSourceId: null,
+        inspectorSourceKind: null,
+        inspectorMode: s.inspectorMode === "source" ? "save" : s.inspectorMode,
+        rightPane: hidingSource ? (s.agentOpen ? "agent" : null) : s.rightPane,
+      };
+    });
+  },
   toggleInspector(): void {
     store.setState((s) => {
-      if (!s.inspectorSaveId) return s;
+      if (!hasInspectorTarget(s)) return s;
       beginLibraryLayoutTransition();
       return {
         ...s,
@@ -182,7 +237,7 @@ export const libraryChrome = {
   },
   toggleRightPane(): void {
     if (store.state.rightPane !== null) libraryChrome.closeRightPane();
-    else if (store.state.inspectorSaveId) libraryChrome.toggleInspector();
+    else if (hasInspectorTarget(store.state)) libraryChrome.toggleInspector();
     else libraryChrome.setAgentOpen(true);
   },
   setSidebarWidth(sidebarWidth: number): void {
@@ -225,6 +280,14 @@ export function useInspectorSaveId(): string | null {
 
 export function useInspectorMode(): LibraryInspectorMode {
   return useSelector(store, (s) => s.inspectorMode);
+}
+
+export function useInspectorSourceId(): string | null {
+  return useSelector(store, (s) => s.inspectorSourceId);
+}
+
+export function useInspectorSourceKind(): LibraryInspectorSourceKind | null {
+  return useSelector(store, (s) => s.inspectorSourceKind);
 }
 
 export function useSidebarWidth(): number {

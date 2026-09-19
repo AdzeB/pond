@@ -1,0 +1,79 @@
+import { IconLayersOutline18 } from "@pond/icons/outline/18";
+import { Button, Popover, Tooltip } from "@pond/ui";
+import type { AssistantSource } from "@shared/assistant";
+import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
+import { SourceThumbnail, useSourceCovers } from "../save-preview";
+import styles from "./styles.module.css";
+
+export function ChatContext({
+  attached,
+  previous,
+}: {
+  attached: AssistantSource[];
+  previous: AssistantSource[];
+}) {
+  const scrollFade = useScrollFade<HTMLDivElement>();
+  const groups = [
+    { title: "Next Message", saves: attached },
+    { title: "In This Conversation", saves: previous },
+  ];
+  useSourceCovers([...attached, ...previous].map((save) => save.id));
+  return (
+    <Popover.Root>
+      <Tooltip label="Context" side="bottom">
+        <Popover.Trigger
+          render={<Button icon size="sm" variant="ghost" />}
+          aria-label="Context"
+        >
+          <IconLayersOutline18 />
+        </Popover.Trigger>
+      </Tooltip>
+      <Popover.Portal>
+        <Popover.Positioner align="end" sideOffset={6}>
+          <Popover.Popup
+            className={styles.popup}
+            aria-label="Chat Context"
+            {...scrollFade}
+          >
+            <div className={styles.access}>
+              <h3>Library Access</h3>
+              <p>
+                Agent searches your library only when your request needs it.
+              </p>
+            </div>
+            {groups.map((group) =>
+              group.saves.length ? (
+                <section key={group.title} className={styles.group}>
+                  <h3>
+                    {group.title} <span>{group.saves.length}</span>
+                  </h3>
+                  <ul>
+                    {group.saves.map((save) => (
+                      <li key={save.id}>
+                        <span className={styles.media}>
+                          <SourceThumbnail id={save.id} source={save} />
+                        </span>
+                        <span
+                          className={styles.title}
+                          title={save.title || "Untitled"}
+                        >
+                          {save.title || "Untitled"}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null,
+            )}
+            {!attached.length && !previous.length ? (
+              <p className={styles.empty}>
+                No Saves mentioned. Type @, drag a Save onto the composer, or
+                choose Add to Chat.
+              </p>
+            ) : null}
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+}

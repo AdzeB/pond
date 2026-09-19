@@ -23,7 +23,7 @@ export function Button({
   className,
   variant = "primary",
   size = "md",
-  rounding = "pill",
+  rounding = "rounded",
   width = "auto",
   icon,
   loading,

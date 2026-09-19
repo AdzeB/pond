@@ -1,10 +1,8 @@
-// @vitest-environment jsdom
-
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it } from "vitest";
 import type { SaveCardOverlayModel } from "@/features/saves/components/card/model";
-import { Card } from "./parts";
+import { Card } from "./";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 

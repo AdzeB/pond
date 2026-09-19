@@ -1,0 +1,197 @@
+import type { RawImage } from "@huggingface/transformers";
+import * as ort from "onnxruntime-web/webgpu";
+import { configuredWasmThreads, pickDevice } from "./inference-device";
+import {
+  SENSITIVE_CONTENT_MODEL_REVISION,
+  SENSITIVE_CONTENT_MODEL_SHA256,
+  sensitiveProbabilitiesFromLogits,
+} from "./sensitive-content-contract";
+
+const MODEL_URL = `https://huggingface.co/Marqo/nsfw-image-detection-384/resolve/${SENSITIVE_CONTENT_MODEL_REVISION}/onnx/model.onnx`;
+const MODEL_CACHE = "pond-models-v1";
+const INPUT_SIZE = 384;
+const INFERENCE_BATCH_SIZE = 4;
+
+let sessionPromise: Promise<ort.InferenceSession> | null = null;
+
+async function sha256(bytes: ArrayBuffer): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function verifyModel(bytes: ArrayBuffer): Promise<ArrayBuffer> {
+  if ((await sha256(bytes)) !== SENSITIVE_CONTENT_MODEL_SHA256) {
+    throw new Error("Sensitive-content model checksum mismatch");
+  }
+  return bytes;
+}
+
+async function fetchModel(): Promise<ArrayBuffer> {
+  const request = new Request(MODEL_URL, { cache: "force-cache" });
+  let cache: Cache | null = null;
+  try {
+    cache = (await globalThis.caches?.open(MODEL_CACHE)) ?? null;
+  } catch (error) {
+    console.warn("[sensitive-content] model cache unavailable", error);
+  }
+  const cached = await cache?.match(request);
+  if (cached) {
+    const bytes = await cached.arrayBuffer();
+    try {
+      return await verifyModel(bytes);
+    } catch {
+      await cache?.delete(request);
+    }
+  }
+
+  const response = await fetch(request);
+  if (!response.ok) {
+    throw new Error(
+      `Sensitive-content model download failed (${response.status})`,
+    );
+  }
+  const bytes = await verifyModel(await response.arrayBuffer());
+  if (cache) {
+    try {
+      await cache.put(
+        request,
+        new Response(bytes.slice(0), {
+          headers: { "content-type": "application/octet-stream" },
+        }),
+      );
+    } catch (error) {
+      console.warn("[sensitive-content] model cache write failed", error);
+    }
+  }
+  return bytes;
+}
+
+async function createSession(): Promise<ort.InferenceSession> {
+  const bytes = await fetchModel();
+  ort.env.wasm.numThreads = configuredWasmThreads();
+  const device = await pickDevice();
+  const executionProviders: ort.InferenceSession.ExecutionProviderConfig[] =
+    device === "webgpu" ? ["webgpu", "wasm"] : ["wasm"];
+  try {
+    return await ort.InferenceSession.create(bytes, { executionProviders });
+  } catch (error) {
+    if (device !== "webgpu") throw error;
+    console.warn("[sensitive-content] WebGPU build failed; using WASM", error);
+    return ort.InferenceSession.create(bytes, {
+      executionProviders: ["wasm"],
+    });
+  }
+}
+
+function getSession(): Promise<ort.InferenceSession> {
+  if (!sessionPromise) {
+    sessionPromise = createSession();
+    sessionPromise.catch(() => {
+      sessionPromise = null;
+    });
+  }
+  return sessionPromise;
+}
+
+async function centerCrop(image: RawImage): Promise<ImageData> {
+  const rgba = image.rgba();
+  const source = new ImageData(
+    new Uint8ClampedArray(rgba.data),
+    rgba.width,
+    rgba.height,
+  );
+  const bitmap = await createImageBitmap(source);
+  const canvas = new OffscreenCanvas(INPUT_SIZE, INPUT_SIZE);
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Sensitive-content canvas unavailable");
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+  const side = Math.min(bitmap.width, bitmap.height);
+  const sourceX = Math.floor((bitmap.width - side) / 2);
+  const sourceY = Math.floor((bitmap.height - side) / 2);
+  context.drawImage(
+    bitmap,
+    sourceX,
+    sourceY,
+    side,
+    side,
+    0,
+    0,
+    INPUT_SIZE,
+    INPUT_SIZE,
+  );
+  bitmap.close();
+  return context.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE);
+}
+
+async function batchTensor(images: RawImage[]): Promise<ort.Tensor> {
+  const rows = await Promise.all(
+    images.map(async (image) =>
+      ort.Tensor.fromImage(await centerCrop(image), {
+        dataType: "float32",
+        tensorFormat: "RGB",
+        tensorLayout: "NCHW",
+        norm: { mean: 127.5, bias: -127.5 },
+      }),
+    ),
+  );
+  const rowSize = 3 * INPUT_SIZE * INPUT_SIZE;
+  const data = new Float32Array(rows.length * rowSize);
+  for (const [index, row] of rows.entries()) {
+    if (!(row.data instanceof Float32Array)) {
+      throw new Error("Sensitive-content preprocessing returned invalid data");
+    }
+    data.set(row.data, index * rowSize);
+    row.dispose();
+  }
+  return new ort.Tensor("float32", data, [
+    rows.length,
+    3,
+    INPUT_SIZE,
+    INPUT_SIZE,
+  ]);
+}
+
+async function classifyBatch(
+  session: ort.InferenceSession,
+  images: RawImage[],
+): Promise<number[]> {
+  const input = await batchTensor(images);
+  try {
+    const inputName = session.inputNames[0];
+    const outputName = session.outputNames[0];
+    if (!inputName || !outputName) {
+      throw new Error("Sensitive-content model has no input or output");
+    }
+    const outputs = await session.run({ [inputName]: input });
+    const output = outputs[outputName];
+    if (!output) throw new Error("Sensitive-content model returned no logits");
+    try {
+      if (!(output.data instanceof Float32Array)) {
+        throw new Error("Sensitive-content model returned invalid logits");
+      }
+      return sensitiveProbabilitiesFromLogits(output.data);
+    } finally {
+      output.dispose();
+    }
+  } finally {
+    input.dispose();
+  }
+}
+
+export async function runSensitiveModel(images: RawImage[]): Promise<number[]> {
+  if (images.length === 0) return [];
+  const session = await getSession();
+  const scores: number[] = [];
+  for (let index = 0; index < images.length; index += INFERENCE_BATCH_SIZE) {
+    scores.push(
+      ...(await classifyBatch(
+        session,
+        images.slice(index, index + INFERENCE_BATCH_SIZE),
+      )),
+    );
+  }
+  return scores;
+}

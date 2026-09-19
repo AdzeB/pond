@@ -19,6 +19,7 @@ import { note } from "./note";
 import { publishedAt } from "./published-at";
 import { rating } from "./rating";
 import { savedAt } from "./saved-at";
+import { sensitiveContent } from "./sensitive-content";
 import { height, width } from "./size";
 import { source } from "./source";
 import { tags } from "./tags";
@@ -62,6 +63,7 @@ export const FIELD_DESCRIPTORS = {
   note,
   caption,
   transcript,
+  sensitiveContent,
   color,
   savedAt,
   publishedAt,

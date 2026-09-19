@@ -1,4 +1,7 @@
-import { getPrefsSnapshot } from "@/features/settings/state/prefs";
+import {
+  onDeviceModelVersion,
+  TRANSCRIPTION_MODEL,
+} from "@shared/on-device-models";
 import { inferTranscribe } from "./inference-client";
 
 declare global {
@@ -7,19 +10,11 @@ declare global {
   }
 }
 
-const DEFAULT_MODEL_ID = "Xenova/whisper-tiny";
 /** decodeAudioData on a large video has aborted the renderer (Chromium exit 5). */
 export const MAX_TRANSCRIPT_BYTES = 16 * 1024 * 1024;
 
-function modelId(): string {
-  const fromPrefs = getPrefsSnapshot()?.ai?.whisperModelId;
-  return fromPrefs && fromPrefs.trim().length > 0
-    ? fromPrefs
-    : DEFAULT_MODEL_ID;
-}
-
 export function whisperModelVersion(): string {
-  return `${modelId()}@1`;
+  return onDeviceModelVersion(TRANSCRIPTION_MODEL, 2);
 }
 
 async function decodeMono16k(url: string): Promise<Float32Array> {
@@ -57,5 +52,5 @@ async function decodeMono16k(url: string): Promise<Float32Array> {
 
 export async function transcribeAudio(url: string): Promise<string> {
   const audio = await decodeMono16k(url);
-  return inferTranscribe(audio, modelId());
+  return inferTranscribe(audio);
 }

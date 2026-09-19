@@ -1,11 +1,9 @@
-// @vitest-environment jsdom
-
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it } from "vitest";
 import type { SaveCardModel } from "@/features/saves/components/card/model";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
-import { GridCard } from "./grid";
+import { GridCard } from "./";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 

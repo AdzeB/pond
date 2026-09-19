@@ -1,26 +1,41 @@
+import { isSource } from "@pond/schema/sources";
+import { Dialog } from "@pond/ui";
+import { isBlankDocumentKind } from "@shared/blank-documents";
+import { DEFAULT_LIBRARY_NAME } from "@shared/constants";
 import { useEffect } from "react";
 import {
+  createBlankDocument,
   createNote,
   findDuplicates,
+  importBookmarks,
+  importClipboard,
+  importEagle,
+  importPageAssets,
   importPaths,
   importPondPackage,
   newFolder,
   newSmartFolder,
+  newSource,
+  newTag,
+  rescanLibrary,
   runNewAction,
+  verifyIntegrity,
 } from "@/features/library/components/new-menu/actions";
+import {
+  backupLibrary,
+  mergeLibrary,
+  moveLibrary,
+  restoreLibrary,
+} from "@/features/library/lib/library-location";
 import { isLayoutValue } from "@/features/library/lib/view-prefs";
 import { ZOOM_DEFAULT } from "@/features/library/lib/zoom";
 import { commandMenu } from "@/features/library/state/command-menu";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { newMenuDialog } from "@/features/library/state/new-menu-dialog";
 import {
-  primarySelection,
-  selection,
-} from "@/features/library/state/selection";
-import { tumbleToTrash } from "@/features/library/state/trash-tumble";
-import {
   adjustZoom,
   cycleLayout,
+  resetFilters,
   setLayout,
   setZoom,
 } from "@/features/library/state/view-store";
@@ -41,10 +56,13 @@ import { closeSave, openSave } from "@/features/saves/lib/save-nav";
 import { trashSelection } from "@/features/saves/lib/selection";
 import { inspect } from "@/features/saves/state/inspect";
 import { pool } from "@/features/saves/state/pool";
+import { primarySelection, selection } from "@/features/saves/state/selection";
+import { tumbleToTrash } from "@/features/saves/state/trash-tumble";
 import { openSettings } from "@/features/settings/lib/open-settings";
 import { usePrefs } from "@/features/settings/state/prefs";
+import { CONNECTABLE, WATCH_MENU_SOURCES } from "@/features/sources/lib/create";
 import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
-import { sourceFlow } from "@/features/sources/state/source-flow";
+import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
 import { getAppRouter } from "@/shared/lib/app-router";
 
 export function MenuBridge() {
@@ -52,6 +70,27 @@ export function MenuBridge() {
 
   useEffect(() => {
     return window.pond.onMenuAction((id) => {
+      if (id.startsWith("library.new-blank-")) {
+        const kind = id.slice("library.new-blank-".length);
+        if (isBlankDocumentKind(kind)) {
+          void runNewAction(() => createBlankDocument(kind));
+        }
+        return;
+      }
+      if (id.startsWith("library.connect-")) {
+        const source = id.slice("library.connect-".length);
+        if (isSource(source) && CONNECTABLE.includes(source)) {
+          newSource("connect", source);
+        }
+        return;
+      }
+      if (id.startsWith("library.watch-")) {
+        const source = id.slice("library.watch-".length);
+        if (isSource(source) && WATCH_MENU_SOURCES.includes(source)) {
+          newSource("watch", source);
+        }
+        return;
+      }
       switch (id) {
         case "history.back":
           getAppRouter()?.history.back();
@@ -92,6 +131,51 @@ export function MenuBridge() {
           commandMenu.open();
           return;
 
+        case "nav.library":
+          resetFilters();
+          libraryChrome.setNav({ kind: "all" });
+          getAppRouter()?.history.push("/");
+          return;
+
+        case "nav.uncategorized":
+          resetFilters();
+          libraryChrome.setNav({ kind: "uncategorized" });
+          getAppRouter()?.history.push("/");
+          return;
+
+        case "nav.untagged":
+          resetFilters();
+          libraryChrome.setNav({ kind: "all" });
+          getAppRouter()?.history.push("/untagged");
+          return;
+
+        case "nav.sources":
+          libraryChrome.setNav({ kind: "sources" });
+          getAppRouter()?.history.push("/sources");
+          return;
+
+        case "nav.downloads":
+          libraryChrome.setNav({ kind: "downloads" });
+          getAppRouter()?.history.push("/downloads");
+          return;
+
+        case "nav.tags":
+          getAppRouter()?.history.push("/tags");
+          return;
+
+        case "nav.agent":
+          getAppRouter()?.history.push("/assistant");
+          return;
+
+        case "nav.trash":
+          libraryChrome.setNav({ kind: "trash" });
+          getAppRouter()?.history.push("/trash");
+          return;
+
+        case "nav.settings":
+          openSettings();
+          return;
+
         case "view.layout.waterfall":
         case "view.layout.grid":
         case "view.layout.justified":
@@ -102,8 +186,10 @@ export function MenuBridge() {
         }
 
         case "library.connect":
+        case "library.watch":
+          libraryChrome.setNav({ kind: "sources" });
           getAppRouter()?.history.push("/sources");
-          sourceFlow.open("connect-source");
+          sourceNewMenu.open();
           return;
 
         case "view.sidebar.toggle":
@@ -155,16 +241,23 @@ export function MenuBridge() {
           return;
 
         case "library.move":
-          void window.pond.query("library.move", {});
+          Dialog.confirm({
+            title: "Move Library",
+            description:
+              "Pond will verify the new copy before removing the library from its current location.",
+            confirmLabel: "Move Library",
+            busyLabel: "Moving",
+            onConfirm: moveLibrary,
+          });
           return;
 
         case "library.new":
           void (async () => {
             const picked = await window.pond.query("library.pickFolder", {});
-            if (!picked.ok) return;
+            if (!picked.ok || !picked.path) return;
             await window.pond.query("library.createAt", {
               path: picked.path,
-              name: "My Pond",
+              name: DEFAULT_LIBRARY_NAME,
             });
           })();
           return;
@@ -172,21 +265,21 @@ export function MenuBridge() {
         case "library.open":
           void (async () => {
             const picked = await window.pond.query("library.pickExisting", {});
-            if (!picked.ok) return;
+            if (!picked.ok || !picked.path) return;
             await window.pond.query("library.switchTo", { path: picked.path });
           })();
           return;
 
         case "library.backup":
-          void window.pond.query("library.backupTo", {});
+          void backupLibrary();
           return;
 
         case "library.restore":
-          void window.pond.query("library.restoreBackup", {});
+          void restoreLibrary();
           return;
 
         case "library.merge":
-          void window.pond.query("library.mergeFrom", {});
+          void mergeLibrary();
           return;
 
         case "library.new-folder":
@@ -201,6 +294,14 @@ export function MenuBridge() {
           void runNewAction(createNote);
           return;
 
+        case "library.new-tag":
+          newTag("tag");
+          return;
+
+        case "library.new-tag-group":
+          newTag("tag-group");
+          return;
+
         case "library.import-files":
           void runNewAction(() => importPaths("files"));
           return;
@@ -213,6 +314,27 @@ export function MenuBridge() {
           newMenuDialog.open("links");
           return;
 
+        case "library.import-clipboard":
+          void runNewAction(importClipboard);
+          return;
+
+        case "library.import-bookmarks":
+          void runNewAction(importBookmarks);
+          return;
+
+        case "library.import-page-assets":
+          Dialog.prompt({
+            title: "Import Page Assets",
+            confirmLabel: "Import",
+            placeholder: "https://",
+            onConfirm: (url) => void runNewAction(() => importPageAssets(url)),
+          });
+          return;
+
+        case "library.import-eagle":
+          void runNewAction(importEagle);
+          return;
+
         case "library.import-package":
           void runNewAction(importPondPackage);
           return;
@@ -222,7 +344,7 @@ export function MenuBridge() {
           return;
 
         case "library.auto-import-settings":
-          openSettings("storage", "setting-storage-watched-folder");
+          openSettings("harvesting", "setting-harvesting-watched-folder");
           return;
 
         case "library.find-duplicates-all":
@@ -235,6 +357,14 @@ export function MenuBridge() {
 
         case "library.find-duplicates-selected":
           findDuplicates("selected");
+          return;
+
+        case "library.rescan":
+          void runNewAction(rescanLibrary);
+          return;
+
+        case "library.verify-integrity":
+          void runNewAction(verifyIntegrity);
           return;
 
         case "save.open-with-default": {

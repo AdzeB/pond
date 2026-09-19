@@ -1,0 +1,219 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { app, BrowserWindow, dialog } from "electron";
+import log from "electron-log/main.js";
+import { z } from "zod";
+import { IPC } from "../../../shared/constants";
+import { parseNetscapeBookmarks } from "../../core/bookmarks";
+import {
+  dryRunEagleLibrary,
+  importEagleLibrary,
+} from "../../core/eagle-import";
+import { readEagleShortcuts } from "../../core/eagle-shortcuts";
+import { createManualSave } from "../../core/manual-import";
+import { extractPageAssets } from "../../core/page-extract";
+import { persistSave } from "../../core/persist-save";
+import { enqueue, normalizeUrl } from "../../core/pipeline/enqueue";
+import { classifyUrlToSource } from "../../core/pipeline/extractors";
+import { UnsupportedError } from "../../core/pipeline/extractors/errors";
+import { setPrefs } from "../../core/prefs";
+import { setSaveTags } from "../../core/tags";
+import { type QueryHandlerMap, query, StringParam } from "./params";
+import {
+  normalizeQuickAddInput,
+  QuickAddParamsSchema,
+} from "./saves-import-input";
+
+const EAGLE_IMPORT_PROGRESS_INTERVAL_MS = 100;
+
+export const savesImportSourceQueries = {
+  "saves.classifyUrl": query(z.object({ url: StringParam }), (params) => {
+    const url = params.url.trim();
+    if (!url) return { source: null };
+    const { source } = classifyUrlToSource(normalizeUrl(url));
+    return { source };
+  }),
+
+  async "saves.pickEagleLibrary"() {
+    const win = BrowserWindow.getFocusedWindow() ?? undefined;
+    const options = {
+      properties: ["openDirectory" as const],
+      message: "Choose an Eagle library folder",
+    };
+    const result = win
+      ? await dialog.showOpenDialog(win, options)
+      : await dialog.showOpenDialog(options);
+    if (result.canceled || !result.filePaths[0]) {
+      return { ok: false, path: null };
+    }
+    return { ok: true, path: result.filePaths[0] };
+  },
+
+  "saves.importEagleLibrary": query(
+    z.object({
+      path: StringParam,
+      dryRun: z.boolean().optional(),
+      importShortcuts: z.boolean().optional(),
+      progressId: z.string().optional(),
+    }),
+    async (params, event) => {
+      const path = params.path.trim();
+      const discovery = await readEagleShortcuts(
+        join(app.getPath("appData"), "Eagle", "Settings"),
+      );
+      const shortcutSummary = {
+        status: discovery.status,
+        importable: Object.keys(discovery.overrides).length,
+        imported: 0,
+      };
+      if (!path) {
+        return {
+          ok: false,
+          error: "no_path",
+          imported: 0,
+          skipped: 0,
+          failed: 0,
+          deletedSkipped: 0,
+          lockedFolders: [],
+          droppedFields: [],
+          shortcuts: shortcutSummary,
+        };
+      }
+      if (params.dryRun) {
+        return {
+          ...(await dryRunEagleLibrary(path)),
+          shortcuts: shortcutSummary,
+        };
+      }
+      const progressId = params.progressId?.trim();
+      let lastProgressAt = 0;
+      const result = await importEagleLibrary(path, {
+        onProgress:
+          progressId && event
+            ? (progress) => {
+                const now = Date.now();
+                if (
+                  progress.processed > 0 &&
+                  progress.processed < progress.total &&
+                  now - lastProgressAt < EAGLE_IMPORT_PROGRESS_INTERVAL_MS
+                ) {
+                  return;
+                }
+                lastProgressAt = now;
+                if (!event.sender.isDestroyed()) {
+                  event.sender.send(IPC.eagleImportProgress, {
+                    id: progressId,
+                    ...progress,
+                  });
+                }
+              }
+            : undefined,
+      });
+      if (
+        !params.importShortcuts ||
+        !result.ok ||
+        shortcutSummary.importable === 0
+      ) {
+        return { ...result, shortcuts: shortcutSummary };
+      }
+      try {
+        await setPrefs({
+          shortcuts: {
+            profile: "eagle",
+            overrides: discovery.overrides,
+          },
+        });
+        return {
+          ...result,
+          shortcuts: {
+            ...shortcutSummary,
+            imported: shortcutSummary.importable,
+          },
+        };
+      } catch {
+        return {
+          ...result,
+          shortcuts: { ...shortcutSummary, status: "apply_failed" as const },
+        };
+      }
+    },
+  ),
+
+  "saves.quickAdd": query(QuickAddParamsSchema, async (params) => {
+    const { url, note, tags } = normalizeQuickAddInput(params);
+
+    if (!url) {
+      const result = await createManualSave({ title: note, note, tags });
+      return result.ok
+        ? { ok: true, id: result.id }
+        : { ok: false, error: result.error ?? "empty_input" };
+    }
+    try {
+      const result = await enqueue(url, { trigger: "user:quickAdd" });
+      if (tags.length > 0) await setSaveTags(result.id, tags);
+      if (note) {
+        await persistSave(
+          result.id,
+          { notes: note },
+          { actorReason: "user:quickAdd-note" },
+        );
+      }
+      return { ok: true, id: result.id, created: result.created };
+    } catch (error) {
+      if (error instanceof UnsupportedError) {
+        const result = await createManualSave({
+          url,
+          title: note ?? url,
+          note,
+          tags,
+        });
+        return result.ok
+          ? { ok: true, id: result.id }
+          : { ok: false, error: "unsupported_url" };
+      }
+      log.error("[pond ipc] quickAdd failed", error);
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }),
+
+  async "saves.importBookmarks"() {
+    const win = BrowserWindow.getFocusedWindow();
+    const options = {
+      properties: ["openFile" as const],
+      message: "Choose a bookmark HTML file",
+      filters: [{ name: "Bookmarks", extensions: ["html", "htm"] }],
+    };
+    const picked = win
+      ? await dialog.showOpenDialog(win, options)
+      : await dialog.showOpenDialog(options);
+    const path = picked.filePaths[0];
+    if (picked.canceled || !path) {
+      return { ok: false, imported: 0, skipped: 0 };
+    }
+    const html = await readFile(path, "utf8");
+    const urls = parseNetscapeBookmarks(html);
+    let imported = 0;
+    const failed: string[] = [];
+    for (const url of urls) {
+      try {
+        await enqueue(url, { trigger: "user:importBookmarks" });
+        imported += 1;
+      } catch {
+        failed.push(url);
+      }
+    }
+    return { ok: imported > 0, imported, skipped: failed.length };
+  },
+
+  "saves.extractPageAssets": query(
+    z.object({ url: StringParam }),
+    async (params) => {
+      const url = params.url.trim();
+      if (!url) return { ok: false, imported: 0, skipped: 0, error: "empty" };
+      return extractPageAssets(url);
+    },
+  ),
+} satisfies QueryHandlerMap;

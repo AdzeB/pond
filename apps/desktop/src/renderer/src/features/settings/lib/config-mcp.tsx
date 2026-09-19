@@ -4,17 +4,43 @@ import {
 } from "@/features/settings/lib/engine-types";
 
 export const mcpSection = defineCustomSection({
-  title: "MCP",
-  description: "Copy a stdio snippet so Cursor can search this library.",
-  keywords: ["mcp", "cursor", "stdio", "claude", "client"],
+  title: "Model Context Protocol",
+  description:
+    "Let Cursor and Claude search this library over stdio on this Mac.",
+  keywords: [
+    "mcp",
+    "model context protocol",
+    "cursor",
+    "stdio",
+    "claude",
+    "client",
+    "mcp.json",
+    "library",
+    "access",
+    "agents",
+  ],
   groups: [
     group.plain({
       items: [
         {
           control: "custom",
-          key: "cursor",
-          title: "Cursor",
-          keywords: ["cursor", "mcp.json", "stdio"],
+          key: "access",
+          title: "Access",
+          keywords: ["search", "open", "actions", "export"],
+          render: () => null,
+        },
+        {
+          control: "custom",
+          key: "agents",
+          title: "Agents",
+          keywords: ["cursor", "claude", "codex", "gemini", "vscode"],
+          render: () => null,
+        },
+        {
+          control: "custom",
+          key: "advanced",
+          title: "Advanced",
+          keywords: ["config", "command", "binary", "--mcp", "copy"],
           render: () => null,
         },
       ],

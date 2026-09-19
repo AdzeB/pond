@@ -1,15 +1,13 @@
-// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { notify, toastManager } from "@/shared/lib/toast";
+import { notify, toastManager, updateNotification } from "@/shared/lib/toast";
 import { ToastHost } from "./toast-host";
 
 let root: Root;
 let host: HTMLDivElement;
 
 beforeEach(() => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -32,4 +30,49 @@ it("renders toasts at the app root", async () => {
   const viewport = document.body.querySelector("[data-slot='toasts']");
   expect(viewport?.textContent).toContain("Copied to clipboard");
   expect(host.contains(viewport)).toBe(false);
+});
+
+it("renders determinate toast progress", async () => {
+  await act(async () => root.render(<ToastHost />));
+
+  await act(async () => {
+    notify({
+      id: "import",
+      title: "Importing Eagle library",
+      description: "0 of 10 items",
+      progress: {
+        label: "Eagle library import progress",
+        value: 0,
+        max: 10,
+      },
+      timeout: 0,
+    });
+  });
+
+  await act(async () => {
+    updateNotification({
+      id: "import",
+      title: "Importing Eagle library",
+      description: "6 of 10 items",
+      progress: {
+        label: "Eagle library import progress",
+        detail: "4 imported · 1 skipped · 1 failed",
+        value: 6,
+        max: 10,
+      },
+      timeout: 0,
+    });
+  });
+
+  const progress = document.body.querySelector<HTMLProgressElement>(
+    'progress[aria-label="Eagle library import progress"]',
+  );
+  expect(progress?.closest("[data-slot='toasts']")?.textContent).toContain(
+    "6 of 10 items",
+  );
+  expect(progress?.closest("[data-slot='toasts']")?.textContent).toContain(
+    "4 imported · 1 skipped · 1 failed",
+  );
+  expect(progress?.value).toBe(6);
+  expect(progress?.max).toBe(10);
 });

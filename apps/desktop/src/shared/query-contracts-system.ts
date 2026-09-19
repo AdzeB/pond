@@ -13,6 +13,7 @@ import type { SyncRunEvent } from "@pond/schema/events";
 import type { RawQueryPlan } from "@pond/schema/query-plan";
 import type {
   AssistantChange,
+  AssistantFileAttachment,
   AssistantProvider,
   AssistantSendResult,
 } from "./assistant";
@@ -136,10 +137,15 @@ export interface SystemQueryResults {
   "agent.messages": AgentMessage[];
   "agent.newChat": Omit<AgentChat, "canonicalTranscript">;
   "agent.deleteChat": OkResult;
+  "agent.renameChat": OkResult;
+  "agent.exportChat": OkResult;
   "agent.send": AssistantSendResult;
   "agent.stop": OkResult;
   "agent.searchSaves": { saves: RetrievalSave[] };
   "agent.attachments": Attachment[];
+  "agent.pickAttachments":
+    | { ok: true; files: AssistantFileAttachment[] }
+    | { ok: false; files: []; error: string };
   "agent.review": { changes: AssistantChange[] };
   "agent.mcpSnippet": {
     command: string;
@@ -147,6 +153,7 @@ export interface SystemQueryResults {
     json: string;
     app: string;
   };
+  "agent.openMcpInstall": OkResult;
   "ai.compilePlan": { plan: RawQueryPlan | null };
   "saves.retrieve": { hits: RetrievalHit[]; saves: RetrievalSave[] };
   "sync.history": { runs: SyncRun[] };
@@ -194,7 +201,12 @@ export interface SystemQueryResults {
   };
   "autoImport.set": OkResult;
   "autoImport.pickFolder": { ok: boolean; path: string | null };
-  "library.info": { path: string; name: string };
+  "library.info": {
+    path: string;
+    name: string;
+    icon: string | null;
+    accent: string | null;
+  };
   "library.rescan": { updated: number; total: number };
   "library.openInFinder": OkResult;
   "library.verifyIntegrity": OkResult & {
@@ -208,7 +220,10 @@ export interface SystemQueryResults {
   "library.pickExisting": PathResult;
   "library.pickFolder": PathResult;
   "library.switchTo": PathResult & { mode?: "adopt" | "copy" };
-  "library.move": PathResult;
+  "library.move": PathResult & {
+    sourceRemoved?: boolean;
+    cleanupPath?: string;
+  };
   "library.backupTo": PathResult & { copied?: number };
   "reset.preferences": OkResult;
   "reset.clearVideoCache": OkResult & { removed: number };

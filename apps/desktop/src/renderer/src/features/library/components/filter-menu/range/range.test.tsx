@@ -1,15 +1,13 @@
-// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CustomFilter } from "./range";
+import { CustomFilter } from "./";
 
 describe("custom filter controls", () => {
   let root: Root;
   let host: HTMLDivElement;
 
   beforeEach(() => {
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);

@@ -1,15 +1,17 @@
 import type {
-  CLIPTextModelWithProjection,
   FeatureExtractionPipeline,
   PreTrainedTokenizer,
+  SiglipTextModel,
 } from "@huggingface/transformers";
 import type { MediaType, Prefs } from "@pond/schema/db";
 import {
   clipEmbeddingVersion,
-  DEFAULT_CLIP_MODEL,
-  DEFAULT_TEXT_EMBEDDING_MODEL,
   textEmbeddingVersion,
 } from "../../shared/embeddings";
+import {
+  TEXT_EMBEDDING_MODEL,
+  VISUAL_MODEL,
+} from "../../shared/on-device-models";
 import { getPrefs } from "./prefs";
 
 export interface VersionedVector {
@@ -27,7 +29,7 @@ interface Disposable {
 }
 interface ClipTextBundle {
   tokenizer: PreTrainedTokenizer;
-  model: CLIPTextModelWithProjection;
+  model: SiglipTextModel;
   dispose(): Promise<void>;
 }
 const textCache = new Map<string, Promise<FeatureExtractionPipeline>>();
@@ -68,26 +70,32 @@ function normalize(vector: ArrayLike<number>): number[] {
   return Array.from(vector, (value) => value / divisor);
 }
 
-async function textExtractor(
-  modelId: string,
-): Promise<FeatureExtractionPipeline> {
-  return memo(textCache, modelId, async () => {
+async function textExtractor(): Promise<FeatureExtractionPipeline> {
+  return memo(textCache, TEXT_EMBEDDING_MODEL.revision, async () => {
     const transformers = await import("@huggingface/transformers");
     transformers.env.allowLocalModels = false;
-    return transformers.pipeline("feature-extraction", modelId, {
-      device: "wasm",
-      dtype: "q8",
-    });
+    return transformers.pipeline(
+      "feature-extraction",
+      TEXT_EMBEDDING_MODEL.id,
+      {
+        revision: TEXT_EMBEDDING_MODEL.revision,
+        device: "wasm",
+        dtype: "q8",
+      },
+    );
   });
 }
 
-async function clipTextBundle(modelId: string): Promise<ClipTextBundle> {
-  return memo(clipCache, modelId, async () => {
+async function clipTextBundle(): Promise<ClipTextBundle> {
+  return memo(clipCache, VISUAL_MODEL.revision, async () => {
     const transformers = await import("@huggingface/transformers");
     transformers.env.allowLocalModels = false;
     const [tokenizer, model] = await Promise.all([
-      transformers.AutoTokenizer.from_pretrained(modelId),
-      transformers.CLIPTextModelWithProjection.from_pretrained(modelId, {
+      transformers.AutoTokenizer.from_pretrained(VISUAL_MODEL.id, {
+        revision: VISUAL_MODEL.revision,
+      }),
+      transformers.SiglipTextModel.from_pretrained(VISUAL_MODEL.id, {
+        revision: VISUAL_MODEL.revision,
         device: "wasm",
         dtype: "q8",
       }),
@@ -149,15 +157,13 @@ export async function encodeQueryEmbeddings(
   const resolvedPrefs = prefs ?? (await getPrefs());
   const text = resolvedPrefs.ai.semanticSearch
     ? (async (): Promise<VersionedVector> => {
-        const modelId =
-          resolvedPrefs.ai.embedModelId.trim() || DEFAULT_TEXT_EMBEDDING_MODEL;
-        const extractor = await textExtractor(modelId);
+        const extractor = await textExtractor();
         const output = await extractor(trimmed, {
           pooling: "mean",
           normalize: true,
         });
         return {
-          model: textEmbeddingVersion(modelId),
+          model: textEmbeddingVersion(),
           vector: normalize(Array.from(output.data, Number)),
         };
       })()
@@ -165,17 +171,15 @@ export async function encodeQueryEmbeddings(
   const visual =
     resolvedPrefs.ai.enableClip && (!media.length || media.includes("image"))
       ? (async (): Promise<VersionedVector> => {
-          const modelId =
-            resolvedPrefs.ai.clipModelId.trim() || DEFAULT_CLIP_MODEL;
-          const bundle = await clipTextBundle(modelId);
+          const bundle = await clipTextBundle();
           const inputs = bundle.tokenizer([trimmed], {
-            padding: true,
+            padding: "max_length",
             truncation: true,
           });
           const output = await bundle.model(inputs);
           return {
-            model: clipEmbeddingVersion(modelId),
-            vector: normalize(Array.from(output.text_embeds.data, Number)),
+            model: clipEmbeddingVersion(),
+            vector: normalize(Array.from(output.pooler_output.data, Number)),
           };
         })()
       : undefined;

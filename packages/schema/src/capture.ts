@@ -55,7 +55,6 @@ const DraftFields = {
   id: z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/),
   originUrl: WebUrl.optional(),
   trigger: z.string().max(64).optional(),
-  mode: z.enum(["quick", "collect"]).default("quick"),
   metadata: CaptureMetadataSchema.default({ tags: [], folderIds: [] }),
 };
 export const CaptureDraftSchema = z.object({
@@ -107,13 +106,7 @@ export function regionFromElement(
 export interface CaptureReceipt {
   id: string;
   library: string;
-  state:
-    | "draft"
-    | "accepted"
-    | "processing"
-    | "complete"
-    | "failed"
-    | "cancelled";
+  state: "accepted" | "processing" | "complete" | "failed" | "cancelled";
   completed: number;
   total: number;
   error?: string;

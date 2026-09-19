@@ -1,15 +1,13 @@
-// @vitest-environment jsdom
 import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { VideoPlayer } from "./video-player";
+import { VideoPlayer } from "./";
 
 let host: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal(
     "ResizeObserver",
     class {
@@ -44,7 +42,7 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-it("floats playback controls over the video", async () => {
+it("places playback controls in the bottom toolbar", async () => {
   await act(async () => {
     root.render(<VideoPlayer src="pond://test/clip.mp4" active />);
   });
@@ -52,8 +50,8 @@ it("floats playback controls over the video", async () => {
     (button) => button.getAttribute("aria-label") === "Loop",
   );
   expect(loop).toBeTruthy();
-  expect(loop?.closest("[data-anchor]")?.getAttribute("data-anchor")).toBe(
-    "top-right",
+  expect(loop?.closest("[data-slot]")?.getAttribute("data-slot")).toBe(
+    "bottom",
   );
-  expect(host.querySelector("[data-slot='bottom']")).toBeNull();
+  expect(host.querySelector("[data-anchor]")).toBeNull();
 });

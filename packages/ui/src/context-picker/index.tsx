@@ -3,34 +3,50 @@ import { useState } from "react";
 import { Button } from "../button";
 import { Input } from "../input";
 import type { ReferenceItem } from "../reference-list";
+import { useScrollFade } from "../use-scroll-fade";
 import styles from "./styles.module.css";
 
 export function ContextPicker({
   items,
   selectedIds,
   onSelectedIdsChange,
+  query,
+  onQueryChange,
 }: {
   items: ReferenceItem[];
   selectedIds: readonly string[];
   onSelectedIdsChange: (ids: string[]) => void;
+  query?: string;
+  onQueryChange?: (query: string) => void;
 }) {
-  const [query, setQuery] = useState("");
-  const visible = items.filter((item) =>
-    `${item.title} ${item.meta ?? ""}`
-      .toLowerCase()
-      .includes(query.toLowerCase()),
-  );
+  const [localQuery, setLocalQuery] = useState("");
+  const scrollFade = useScrollFade<HTMLFieldSetElement>();
+  const value = query ?? localQuery;
+  const visible = onQueryChange
+    ? items
+    : items.filter((item) =>
+        `${item.title} ${item.meta ?? ""}`
+          .toLowerCase()
+          .includes(value.toLowerCase()),
+      );
   return (
     <div className={styles["context-picker"]}>
       <Input.Root size="sm">
         <Input.Field
           aria-label="Search context"
           placeholder="Search your Saves…"
-          value={query}
-          onValueChange={setQuery}
+          value={value}
+          onValueChange={(next) => {
+            setLocalQuery(next);
+            onQueryChange?.(next);
+          }}
         />
       </Input.Root>
-      <fieldset className={styles["picker-list"]} aria-label="Context">
+      <fieldset
+        className={styles["picker-list"]}
+        aria-label="Context"
+        {...scrollFade}
+      >
         {visible.length ? (
           visible.map((item) => (
             <Button

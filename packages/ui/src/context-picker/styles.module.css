@@ -63,6 +63,10 @@
   font-size: var(--ds-text-md);
   text-align: left;
   border-radius: var(--ds-radius-md);
+
+  &[aria-pressed="true"] {
+    background: var(--ds-gray-a3);
+  }
 }
 
 .selection-mark {
@@ -70,7 +74,7 @@
   flex-shrink: 0;
   justify-content: center;
   width: 18px;
-  color: var(--ds-gray-12);
+  color: var(--ds-accent-11);
 }
 
 .picker-empty {

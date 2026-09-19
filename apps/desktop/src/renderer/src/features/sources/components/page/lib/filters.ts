@@ -12,6 +12,9 @@ export type SourceStatusId =
 
 export interface SourceFilters {
   q: string;
+  statuses: ReadonlySet<SourceStatusId>;
+  sources: ReadonlySet<Source>;
+  types: ReadonlySet<string>;
 }
 
 export interface FilterableSource {
@@ -20,20 +23,37 @@ export interface FilterableSource {
   source: Source;
   sourceLabel: string;
   kind: SourceKind;
+  kindLabel: string;
   statusId: SourceStatusId;
 }
 
 export function defaultSourceFilters(): SourceFilters {
-  return { q: "" };
+  return {
+    q: "",
+    statuses: new Set(),
+    sources: new Set(),
+    types: new Set(),
+  };
 }
 
-const STATUS_OPTIONS: readonly { id: SourceStatusId; label: string }[] = [
+export const SOURCE_STATUS_OPTIONS: readonly {
+  id: SourceStatusId;
+  label: string;
+}[] = [
   { id: "active", label: "Active" },
   { id: "syncing", label: "Syncing" },
   { id: "failed", label: "Failed" },
   { id: "paused", label: "Paused" },
   { id: "offline", label: "Offline" },
 ];
+
+export function sourceFiltersActive(filters: SourceFilters): boolean {
+  return (
+    filters.statuses.size > 0 ||
+    filters.sources.size > 0 ||
+    filters.types.size > 0
+  );
+}
 
 export function sourceStatusId(
   tone: CardModel["tone"],
@@ -47,13 +67,22 @@ export function sourceStatusId(
 }
 
 export function sourceStatusLabel(id: SourceStatusId): string {
-  return STATUS_OPTIONS.find((opt) => opt.id === id)?.label ?? id;
+  return SOURCE_STATUS_OPTIONS.find((opt) => opt.id === id)?.label ?? id;
 }
 
 export function matchesSourceFilters(
   row: FilterableSource,
   filters: SourceFilters,
 ): boolean {
+  if (filters.statuses.size > 0 && !filters.statuses.has(row.statusId)) {
+    return false;
+  }
+  if (filters.sources.size > 0 && !filters.sources.has(row.source)) {
+    return false;
+  }
+  if (filters.types.size > 0 && !filters.types.has(row.kindLabel)) {
+    return false;
+  }
   const q = filters.q.trim().toLowerCase();
   if (!q) return true;
   const hay = [row.name, row.handle, row.sourceLabel]

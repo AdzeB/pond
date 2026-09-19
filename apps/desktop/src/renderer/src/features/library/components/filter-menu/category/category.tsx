@@ -2,17 +2,17 @@ import { FIELD_META } from "@pond/schema/filters/meta";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { useState } from "react";
 import { fieldIcon } from "@/features/search/lib/fields";
-import { FilterChip, FilterPopup } from "../chip/chip";
-import { ChoiceFilter } from "../choice/choice";
-import { ColorFilter } from "../color/color";
-import { ContentFilter } from "../content/content";
+import { FilterChip, FilterPopup } from "../chip";
+import { ChoiceFilter } from "../choice";
+import { ColorFilter } from "../color";
+import { ContentFilter } from "../content";
 import { filterLayout } from "../layout";
 import type { FilterOption } from "../options";
+import { CustomFilter, type RangeUnit } from "../range";
 import { DimensionsFilter } from "../range/dimensions";
-import { CustomFilter, type RangeUnit } from "../range/range";
 import { selectedChoiceMode, selectFilter } from "../selection";
 import { filterSummary } from "../summary";
-import { type FilterTagGroup, TagChoiceFilter } from "../tags/tags";
+import { type FilterTagGroup, TagChoiceFilter } from "../tags";
 
 export function FilterCategory({
   field,

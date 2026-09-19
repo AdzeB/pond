@@ -6,9 +6,13 @@ export async function saveImageComment(
   comment: ImageComment,
 ): Promise<void> {
   const comments = pool.get(saveId)?.comments ?? [];
-  const next = comments.some((item) => item.id === comment.id)
-    ? comments.map((item) => (item.id === comment.id ? comment : item))
-    : [...comments, comment];
+  const exists = comments.some((item) => item.id === comment.id);
+  const nextComment = exists
+    ? comment
+    : { ...comment, createdAt: comment.createdAt ?? Date.now() };
+  const next = exists
+    ? comments.map((item) => (item.id === comment.id ? nextComment : item))
+    : [...comments, nextComment];
   await mutateSave(
     saveId,
     { comments: next },

@@ -17,15 +17,11 @@ import { getDb } from "../db";
 import { itemFile } from "../paths";
 import { persistSave } from "./persist-save";
 import type { WriteFileArgs } from "./pipeline/workers/apply";
-import {
-  renderThumbnailPng,
-  thumbnailSource,
-  writeGeneratedThumbnail,
-} from "./save-thumbnail-file";
+import { renderThumbnailPng, thumbnailSource } from "./save-thumbnail-file";
 
-export { renderThumbnailPng, writeGeneratedThumbnail };
+export { renderThumbnailPng };
 
-export function thumbnailWriteArgs(
+function thumbnailWriteArgs(
   files: ReadonlyArray<{ kind: string; path: string }>,
   bytes: Buffer,
   width?: number,

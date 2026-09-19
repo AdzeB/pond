@@ -1,7 +1,7 @@
 import { Select } from "@pond/ui";
 import { useView } from "@/features/library/hooks/use-view";
 import { nearestZoomIndex, ZOOM_STEPS } from "@/features/library/lib/zoom";
-import styles from "../view-menu.module.css";
+import styles from "../styles.module.css";
 
 const options = [...ZOOM_STEPS];
 

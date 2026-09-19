@@ -1,0 +1,81 @@
+.root {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+}
+
+.header {
+  flex-shrink: 0;
+  padding: 8px;
+  overflow: visible;
+  border-bottom: 1px solid var(--ds-gray-a3);
+  -webkit-app-region: no-drag;
+}
+
+.label {
+  font-size: var(--ds-text-md);
+}
+
+.actions {
+  gap: 4px;
+}
+
+.scroll {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0;
+  min-height: 0;
+  padding: 8px 20px 20px;
+  overflow: visible;
+}
+
+.about {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0 16px;
+}
+
+.tags {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+  padding-bottom: 16px;
+}
+
+.field-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-normal);
+  color: var(--ds-gray-10);
+  white-space: nowrap;
+}
+
+.heading-title {
+  margin: 0;
+  font-size: var(--ds-text-lg);
+  font-weight: var(--ds-weight-medium);
+  line-height: 1.5;
+  color: var(--ds-gray-12);
+  overflow-wrap: anywhere;
+}
+
+.heading-input {
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: transparent;
+  border: none;
+  border-radius: var(--ds-radius-xs);
+}

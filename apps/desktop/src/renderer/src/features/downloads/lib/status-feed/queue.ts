@@ -17,7 +17,7 @@ export interface QueueRow {
   error: string | null;
 }
 
-export const STAGE_LABELS = {
+const STAGE_LABELS = {
   harvest_metadata: "Reading page",
   capture_tweet: "Capturing tweet",
   render_text_cover: "Rendering text cover",

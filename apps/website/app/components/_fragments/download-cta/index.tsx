@@ -4,7 +4,7 @@ import {
   POND_VERSION,
   RELEASES_PAGE,
 } from "@/lib/release";
-import { LinkButton } from "../link-button";
+import { LinkButton } from "..";
 import styles from "./styles.module.css";
 
 interface DownloadCtaProps {

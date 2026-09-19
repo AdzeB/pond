@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { type CompileFacets, compilePlan } from "../../core/ai";
+import type { CompileFacets } from "../../core/ai";
 import { type QueryHandlerMap, query, StringParam } from "./params";
 
 const facetList = (cap: number) =>
@@ -26,6 +26,7 @@ export const aiQueries = {
     async (params) => {
       const input = params.input.slice(0, 500);
       if (!input.trim()) return { plan: null };
+      const { compilePlan } = await import("../../core/ai");
       const plan = await compilePlan(input, { facets: params.facets });
       return { plan };
     },

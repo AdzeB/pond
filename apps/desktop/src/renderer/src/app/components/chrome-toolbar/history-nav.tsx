@@ -7,15 +7,15 @@ import { Button, Menu } from "@pond/ui";
 import { useRouter } from "@tanstack/react-router";
 import { useSelector } from "@tanstack/react-store";
 import { useEffect, useMemo, useState } from "react";
-import { useRecents } from "@/features/library/state/recents";
 import { pickAuthorAvatarUrl } from "@/features/saves/lib/media/url";
 import { pickAuthorColor } from "@/features/saves/lib/presentation";
 import { openSave } from "@/features/saves/lib/save-nav";
 import { pool, savesStore } from "@/features/saves/state/pool";
+import { useRecents } from "@/features/saves/state/recents";
 import type { Save } from "@/features/saves/types";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { initials } from "@/shared/lib/initials";
-import styles from "./chrome-toolbar.module.css";
+import styles from "./styles.module.css";
 
 function titleFor(save: Save): string {
   const trimmed = save.title?.trim();

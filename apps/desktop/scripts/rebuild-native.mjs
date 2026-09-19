@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { rebuild } from "@electron/rebuild";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const appRoot = resolve(__dirname, "..");
@@ -18,33 +18,16 @@ async function electronVersion() {
   return pkg.version;
 }
 
-function run(cmd, args, opts) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(cmd, args, { stdio: "inherit", ...opts });
-    child.on("exit", (code) =>
-      code === 0 ? resolve() : reject(new Error(`exit ${code}`)),
-    );
-    child.on("error", reject);
-  });
-}
-
 async function main() {
   const version = await electronVersion();
   console.log(`[pond] rebuilding native modules for electron ${version}`);
 
-  await run(
-    "pnpm",
-    [
-      "exec",
-      "electron-rebuild",
-      "--version",
-      version,
-      "--only",
-      "better-sqlite3",
-      "--force",
-    ],
-    { cwd: appRoot },
-  );
+  await rebuild({
+    buildPath: appRoot,
+    electronVersion: version,
+    onlyModules: ["better-sqlite3"],
+    force: true,
+  });
 
   console.log("[pond] native rebuild ok");
 }

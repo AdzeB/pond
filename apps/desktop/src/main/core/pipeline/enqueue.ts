@@ -1,54 +1,53 @@
-import {
-  CANCEL_REASON,
-  type ListKind,
-  type NewSave,
-  type NewSyncAction,
-  type NewTask,
-  type Source,
-  type SyncAction,
-  saves,
-  syncActions,
-  tasks,
-} from "@pond/schema/db";
-import { domainFromUrl } from "@pond/schema/domain";
-import { listKindsEqual, mergeListKinds } from "@pond/schema/list-kinds";
-import {
-  and,
-  eq,
-  exists,
-  inArray,
-  isNull,
-  ne,
-  notExists,
-  or,
-  sql,
-} from "drizzle-orm";
+import type { Source } from "@pond/schema/db";
+import { mergeListKinds } from "@pond/schema/list-kinds";
 import log from "electron-log/main.js";
-import { ulid } from "ulid";
-import { getDb } from "../../db";
 import { broadcastSyncAction } from "../executor";
-import { persistSave } from "../persist-save";
 import type { ImportableCookie } from "../refresh/scrape-window/session";
+import {
+  type EnqueueCandidate,
+  type EnqueueItem,
+  type EnqueueOptions,
+  enqueueCandidateKey,
+  normalizeEnqueueItems,
+  normalizeUrl,
+} from "./enqueue-input";
+import {
+  createEnqueueBundle,
+  openEnqueuePersistence,
+  persistMergedListKinds,
+} from "./enqueue-persistence";
+import {
+  promoteInteractiveSaveTasks,
+  rependArchiveForCookies,
+  resetTasksForSave,
+} from "./enqueue-scheduling";
 import { classifyUrlToSource } from "./extractors";
 import { UnsupportedError } from "./extractors/errors";
+import {
+  harvestShouldIgnoreSave,
+  harvestShouldReseedFailedSave,
+} from "./harvest-policy";
 import { listKindsFromTrigger } from "./list-kinds";
 import { stashPageCookies } from "./page-cookies";
-import {
-  isInteractiveTrigger,
-  TaskPayloadSchema,
-  withInteractivePriority,
-} from "./priority";
+import { isInteractiveTrigger } from "./priority";
 import { kickReconciler } from "./reconciler-client";
 import {
   applySeedToExistingSave,
-  type EnqueueSeed,
   mergeSeedIntoExistingSave,
   persistEnrichment,
   rependFetchAvatar,
-  seedToInsertColumns,
 } from "./seed";
-import { maxAttemptsFor, planOps } from "./specs";
 import { sourceIdFromUrl } from "./url";
+
+export {
+  type EnqueueItem,
+  type EnqueueOptions,
+  normalizeUrl,
+} from "./enqueue-input";
+export {
+  resetTasksForSave,
+  retryFailedSaves,
+} from "./enqueue-scheduling";
 
 function stashWebCookiesThenKick(
   saveId: string,
@@ -61,37 +60,6 @@ function stashWebCookiesThenKick(
   kickReconciler();
 }
 
-async function rependArchiveForCookies(saveId: string): Promise<void> {
-  const db = await getDb();
-  const now = new Date();
-  db.update(tasks)
-    .set({
-      status: "pending",
-      attempts: 0,
-      lastError: null,
-      nextRunAt: now,
-      updatedAt: now,
-    })
-    .where(
-      and(
-        eq(tasks.saveId, saveId),
-        inArray(tasks.op, ["archive_page", "finalize"]),
-      ),
-    )
-    .run();
-  await persistSave(
-    saveId,
-    { status: "ingesting", ingestStartedAt: now, ingestCompletedAt: null },
-    { actorReason: "pipeline:enqueue:page-cookies" },
-  );
-}
-
-export interface EnqueueItem {
-  url: string;
-  seed?: EnqueueSeed;
-  listKinds?: ListKind[];
-}
-
 export interface EnqueueOneResult {
   id: string;
   created: boolean;
@@ -102,15 +70,6 @@ export interface EnqueueManyResult {
   created: number;
   existing: number;
   failed: number;
-}
-
-export interface EnqueueOptions {
-  trigger?: string;
-  force?: boolean;
-  seed?: EnqueueSeed;
-  accountId?: string | null;
-  cookies?: ImportableCookie[];
-  listKinds?: ListKind[];
 }
 
 function isItemList(
@@ -152,12 +111,8 @@ async function enqueueOne(
     );
   }
 
-  const db = await getDb();
-  const existing = await db
-    .select()
-    .from(saves)
-    .where(and(eq(saves.source, source), eq(saves.sourceId, sourceId)));
-  const current = existing[0];
+  const persistence = await openEnqueuePersistence();
+  const current = await persistence.loadExistingSave(source, sourceId);
   const incomingKinds = mergeListKinds(
     opts.listKinds,
     listKindsFromTrigger(opts.trigger),
@@ -170,10 +125,20 @@ async function enqueueOne(
       incomingKinds,
       opts.trigger ?? "pipeline:enqueue",
     );
-    if (isInteractiveTrigger(opts.trigger) && current.status === "ingesting") {
-      await promoteInteractiveTasks(current.id);
+    if (harvestShouldIgnoreSave(current)) {
+      stashWebCookiesThenKick(current.id, source, opts.cookies);
+      log.info("[pond pipeline:enqueue] existing save", {
+        id: current.id,
+        source,
+        trigger: opts.trigger,
+        ignored: current.status,
+      });
+      return { id: current.id, created: false };
     }
-    if (opts.seed && current.status === "failed") {
+    if (isInteractiveTrigger(opts.trigger) && current.status === "ingesting") {
+      await promoteInteractiveSaveTasks(current.id);
+    }
+    if (opts.seed && harvestShouldReseedFailedSave(current, true)) {
       await resetTasksForSave(
         current.id,
         opts.trigger ?? "enqueue:reseed-failed",
@@ -220,321 +185,76 @@ async function enqueueOne(
     return { id: current.id, created: false };
   }
 
-  const id = ulid();
   const now = new Date();
-  const insertValues: NewSave = {
-    id,
+  const candidate: EnqueueCandidate = {
+    url: normalizedUrl,
     source,
     sourceId,
-    accountId: opts.accountId ?? null,
-    url: normalizedUrl,
-    siteName: domainFromUrl(normalizedUrl),
-    status: "ingesting",
-    ingestStartedAt: now,
-    tags: [],
     listKinds: incomingKinds,
-    files: [],
-    coverIndex: 0,
-    savedAt: now,
-    createdAt: now,
   };
-  if (opts.seed) Object.assign(insertValues, seedToInsertColumns(opts.seed));
-
-  const interactive = isInteractiveTrigger(opts.trigger);
-  const ops = planOps(source);
-  const taskRows: NewTask[] = ops.map((op) => {
-    const row: NewTask = {
-      id: ulid(),
-      saveId: id,
-      op,
-      status: "pending",
-      attempts: 0,
-      maxAttempts: maxAttemptsFor(op),
-      nextRunAt: now,
-      createdAt: now,
-      updatedAt: now,
-    };
-    if (interactive) row.payload = withInteractivePriority();
-    return row;
-  });
-
-  /** One transaction so a crash cannot leave a half-ingested save, and one fsync instead of three. */
-  const insertedAction = db.transaction((tx) => {
-    tx.insert(saves).values(insertValues).run();
-    tx.insert(tasks).values(taskRows).run();
-    return tx
-      .insert(syncActions)
-      .values({
-        modelName: "save",
-        modelId: id,
-        action: "I",
-        data: insertValues,
-        actor: opts.trigger?.startsWith("user:") ? "user" : "system",
-        actorReason: opts.trigger ?? "pipeline:enqueue",
-        batchId: ulid(),
-      })
-      .returning()
-      .all()[0];
-  });
+  if (opts.seed) candidate.seed = opts.seed;
+  const bundle = createEnqueueBundle(
+    candidate,
+    opts,
+    now,
+    opts.trigger ?? "pipeline:enqueue",
+  );
+  const insertedAction = persistence.insertBundle(bundle);
   if (insertedAction) broadcastSyncAction(insertedAction);
 
   log.info("[pond pipeline:enqueue] created save", {
-    id,
+    id: bundle.save.id,
     source,
     sourceId,
     trigger: opts.trigger,
   });
-  stashWebCookiesThenKick(id, source, opts.cookies);
-  return { id, created: true };
-}
-
-async function persistMergedListKinds(
-  saveId: string,
-  current: ListKind[] | null | undefined,
-  incoming: ListKind[],
-  reason: string,
-): Promise<void> {
-  if (incoming.length === 0) return;
-  const merged = mergeListKinds(current, incoming);
-  if (listKindsEqual(current, merged)) return;
-  await persistSave(saveId, { listKinds: merged }, { actorReason: reason });
-}
-
-export async function resetTasksForSave(
-  saveId: string,
-  reason: string,
-): Promise<void> {
-  const db = await getDb();
-  const now = new Date();
-  db.update(tasks)
-    .set({
-      status: "pending",
-      attempts: 0,
-      lastError: null,
-      nextRunAt: now,
-      updatedAt: now,
-    })
-    .where(eq(tasks.saveId, saveId))
-    .run();
-  db.update(saves)
-    .set({ status: "ingesting", ingestStartedAt: now, ingestCompletedAt: null })
-    .where(eq(saves.id, saveId))
-    .run();
-  if (isInteractiveTrigger(reason)) await promoteInteractiveTasks(saveId);
-  log.info("[pond pipeline:enqueue] reset tasks", { saveId, reason });
-}
-
-async function promoteInteractiveTasks(saveId: string): Promise<void> {
-  const db = await getDb();
-  const now = new Date();
-  const rows = db
-    .select({ id: tasks.id, payload: tasks.payload })
-    .from(tasks)
-    .where(and(eq(tasks.saveId, saveId), eq(tasks.status, "pending")))
-    .all();
-  for (const row of rows) {
-    db.update(tasks)
-      .set({
-        payload: withInteractivePriority(TaskPayloadSchema.parse(row.payload)),
-        nextRunAt: now,
-        updatedAt: now,
-      })
-      .where(eq(tasks.id, row.id))
-      .run();
-  }
-}
-
-export async function retryFailedSaves(
-  ids?: readonly string[],
-): Promise<number> {
-  const db = await getDb();
-  const scoped = ids != null && ids.length > 0;
-  const rows = scoped
-    ? db
-        .select({ id: saves.id })
-        .from(saves)
-        .where(and(eq(saves.status, "failed"), inArray(saves.id, [...ids])))
-        .all()
-    : db
-        .select({ id: saves.id })
-        .from(saves)
-        .where(
-          and(
-            eq(saves.status, "failed"),
-            isNull(saves.deletedAt),
-            or(
-              notExists(
-                db
-                  .select({ one: sql`1` })
-                  .from(tasks)
-                  .where(
-                    and(
-                      eq(tasks.saveId, saves.id),
-                      eq(tasks.lastError, CANCEL_REASON),
-                    ),
-                  ),
-              ),
-              exists(
-                db
-                  .select({ one: sql`1` })
-                  .from(tasks)
-                  .where(
-                    and(
-                      eq(tasks.saveId, saves.id),
-                      inArray(tasks.status, ["failed", "blocked"]),
-                      or(
-                        isNull(tasks.lastError),
-                        ne(tasks.lastError, CANCEL_REASON),
-                      ),
-                    ),
-                  ),
-              ),
-            ),
-          ),
-        )
-        .all();
-  if (rows.length === 0) return 0;
-
-  const now = new Date();
-  for (const { id } of rows) {
-    db.update(tasks)
-      .set({
-        status: "pending",
-        attempts: 0,
-        lastError: null,
-        nextRunAt: now,
-        updatedAt: now,
-      })
-      .where(and(eq(tasks.saveId, id), eq(tasks.status, "failed")))
-      .run();
-    await persistSave(
-      id,
-      { status: "ingesting", ingestStartedAt: now, ingestCompletedAt: null },
-      { actorReason: "pipeline:retry-failed" },
-    );
-  }
-
-  log.info("[pond pipeline:enqueue] retry failed saves", {
-    requeued: rows.length,
-    scoped,
-  });
-  kickReconciler();
-  return rows.length;
-}
-
-export function normalizeUrl(rawUrl: string): string {
-  try {
-    const u = new URL(rawUrl);
-    u.hash = "";
-    for (const key of Array.from(u.searchParams.keys())) {
-      if (
-        key.startsWith("utm_") ||
-        key === "fbclid" ||
-        key === "igshid" ||
-        key === "si"
-      ) {
-        u.searchParams.delete(key);
-      }
-    }
-    return u.toString();
-  } catch {
-    return rawUrl;
-  }
+  stashWebCookiesThenKick(bundle.save.id, source, opts.cookies);
+  return { id: bundle.save.id, created: true };
 }
 
 const BULK_INSERT_CHUNK = 100;
-
-function chunk<T>(rows: T[], size: number): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < rows.length; i += size) out.push(rows.slice(i, i + size));
-  return out;
-}
 
 async function enqueueMany(
   items: readonly EnqueueItem[],
   opts: EnqueueOptions = {},
 ): Promise<EnqueueManyResult> {
-  const db = await getDb();
+  const persistence = await openEnqueuePersistence();
   const result: EnqueueManyResult = { created: 0, existing: 0, failed: 0 };
-
-  interface Candidate {
-    url: string;
-    source: Source;
-    sourceId: string;
-    seed?: EnqueueSeed;
-    listKinds: ListKind[];
-  }
-  const candidates: Candidate[] = [];
-  const byKey = new Map<string, Candidate>();
-  for (const item of items) {
-    const url = normalizeUrl(item.url);
-    const { source } = classifyUrlToSource(url);
-    if (!source) {
-      result.failed += 1;
-      continue;
-    }
-    const sourceId = sourceIdFromUrl(source, url);
-    if (!sourceId) {
-      result.failed += 1;
-      continue;
-    }
-    const kinds = mergeListKinds(
-      item.listKinds,
-      listKindsFromTrigger(opts.trigger),
-    );
-    const key = `${source}\u0000${sourceId}`;
-    const prev = byKey.get(key);
-    if (prev) {
-      prev.listKinds = mergeListKinds(prev.listKinds, kinds);
-      continue;
-    }
-    const candidate: Candidate = { url, source, sourceId, listKinds: kinds };
-    if (item.seed) candidate.seed = item.seed;
-    byKey.set(key, candidate);
-    candidates.push(candidate);
-  }
+  const normalized = normalizeEnqueueItems(items, opts.trigger);
+  const { candidates } = normalized;
+  result.failed = normalized.failed;
   if (candidates.length === 0) return result;
 
-  const bySource = new Map<Source, Candidate[]>();
-  for (const c of candidates) {
-    const list = bySource.get(c.source) ?? [];
-    list.push(c);
-    bySource.set(c.source, list);
-  }
-  const existingKeys = new Set<string>();
-  for (const [source, group] of bySource) {
-    const ids = group.map((c) => c.sourceId);
-    for (const idChunk of chunk(ids, 400)) {
-      const rows = db
-        .select({ sourceId: saves.sourceId })
-        .from(saves)
-        .where(and(eq(saves.source, source), inArray(saves.sourceId, idChunk)))
-        .all();
-      for (const r of rows) existingKeys.add(`${source}\u0000${r.sourceId}`);
+  const existingKeys = await persistence.loadExistingCandidateKeys(candidates);
+
+  const fresh: EnqueueCandidate[] = [];
+  const existing: EnqueueCandidate[] = [];
+  for (const candidate of candidates) {
+    if (existingKeys.has(enqueueCandidateKey(candidate))) {
+      existing.push(candidate);
+    } else {
+      fresh.push(candidate);
     }
   }
 
-  const fresh: Candidate[] = [];
-  const existing: Candidate[] = [];
-  for (const c of candidates) {
-    if (existingKeys.has(`${c.source}\u0000${c.sourceId}`)) existing.push(c);
-    else fresh.push(c);
-  }
-
-  for (const c of existing) {
+  for (const candidate of existing) {
     try {
       const one: EnqueueOptions = {
         trigger: opts.trigger,
         force: opts.force,
         accountId: opts.accountId,
-        listKinds: c.listKinds,
+        listKinds: candidate.listKinds,
       };
-      if (c.seed) one.seed = c.seed;
-      await enqueueOne(c.url, one);
+      if (candidate.seed) one.seed = candidate.seed;
+      await enqueueOne(candidate.url, one);
       result.existing += 1;
     } catch (err) {
       result.failed += 1;
-      log.warn("[pond pipeline:enqueue] many existing item failed", c.url, err);
+      log.warn(
+        "[pond pipeline:enqueue] many existing item failed",
+        candidate.url,
+        err,
+      );
     }
   }
 
@@ -544,78 +264,14 @@ async function enqueueMany(
   }
 
   const now = new Date();
-  const actorOf = (): "user" | "system" =>
-    opts.trigger?.startsWith("user:") ? "user" : "system";
-  interface Bundle {
-    save: NewSave;
-    tasks: NewTask[];
-    action: NewSyncAction;
-  }
-  const bundles: Bundle[] = fresh.map((c) => {
-    const id = ulid();
-    const save: NewSave = {
-      id,
-      source: c.source,
-      sourceId: c.sourceId,
-      accountId: opts.accountId ?? null,
-      url: c.url,
-      siteName: domainFromUrl(c.url),
-      status: "ingesting",
-      ingestStartedAt: now,
-      tags: [],
-      listKinds: c.listKinds,
-      files: [],
-      coverIndex: 0,
-      savedAt: now,
-      createdAt: now,
-    };
-    if (c.seed) Object.assign(save, seedToInsertColumns(c.seed));
-    const interactive = isInteractiveTrigger(opts.trigger);
-    const taskRows: NewTask[] = planOps(c.source).map((op) => {
-      const row: NewTask = {
-        id: ulid(),
-        saveId: id,
-        op,
-        status: "pending",
-        attempts: 0,
-        maxAttempts: maxAttemptsFor(op),
-        nextRunAt: now,
-        createdAt: now,
-        updatedAt: now,
-      };
-      if (interactive) row.payload = withInteractivePriority();
-      return row;
-    });
-    const action: NewSyncAction = {
-      modelName: "save",
-      modelId: id,
-      action: "I",
-      data: save,
-      actor: actorOf(),
-      actorReason: opts.trigger ?? "pipeline:enqueue:many",
-      batchId: ulid(),
-    };
-    return { save, tasks: taskRows, action };
-  });
-
-  const insertedActions: SyncAction[] = [];
-  for (const group of chunk(bundles, BULK_INSERT_CHUNK)) {
-    const groupActions = db.transaction((tx) => {
-      tx.insert(saves)
-        .values(group.map((b) => b.save))
-        .run();
-      tx.insert(tasks)
-        .values(group.flatMap((b) => b.tasks))
-        .run();
-      return tx
-        .insert(syncActions)
-        .values(group.map((b) => b.action))
-        .returning()
-        .all();
-    });
-    insertedActions.push(...groupActions);
-    await new Promise<void>((resolve) => setImmediate(resolve));
-  }
+  const actorReason = opts.trigger ?? "pipeline:enqueue:many";
+  const bundles = fresh.map((candidate) =>
+    createEnqueueBundle(candidate, opts, now, actorReason),
+  );
+  const insertedActions = await persistence.insertBundles(
+    bundles,
+    BULK_INSERT_CHUNK,
+  );
 
   result.created = fresh.length;
   for (const action of insertedActions) broadcastSyncAction(action);

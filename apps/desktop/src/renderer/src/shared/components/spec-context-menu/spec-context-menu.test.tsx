@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { Menu } from "@pond/ui";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -10,7 +9,6 @@ describe("spec menu search", () => {
   let root: Root;
 
   beforeEach(() => {
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
       callback(0);
       return 1;

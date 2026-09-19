@@ -1,7 +1,5 @@
 import { z } from "zod";
 import { statusFeed } from "@/features/downloads/lib/status-feed";
-import { libraryViewContext } from "@/features/library/state/library-view-context";
-import { selection } from "@/features/library/state/selection";
 import { resolveFileIndex } from "@/features/saves/lib/actions";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
 import {
@@ -12,6 +10,7 @@ import {
 } from "@/features/saves/lib/mutate";
 import { REVERSE_SEARCH_ENGINES } from "@/features/saves/lib/reverse-image-search";
 import { pool } from "@/features/saves/state/pool";
+import { selection } from "@/features/saves/state/selection";
 import type { Save } from "@/features/saves/types";
 import {
   mergeUniqueTags,
@@ -90,11 +89,6 @@ async function writeClipboard(text: string): Promise<boolean> {
   } catch {
     return false;
   }
-}
-
-export function isAllSelected(): boolean {
-  const all = libraryViewContext.filteredIds();
-  return all.length > 0 && selection.size() >= all.length;
 }
 
 export function failedIdsIn(ids: readonly string[]): string[] {

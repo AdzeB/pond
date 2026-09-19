@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { readdir, readFile, rename, writeFile } from "node:fs/promises";
+import { readFile, rename, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import type { SaveFile } from "@pond/schema/db";
 import {
@@ -9,10 +9,10 @@ import {
   planSaveFileLayout,
 } from "@shared/save-file-layout";
 import { thumbnailFileIndex } from "@shared/save-file-names";
-import pLimit from "p-limit";
 import {
   INFO_FILE,
   INFO_SCHEMA,
+  type InfoFile,
   infoFilesFromSave,
   StoredInfoDocSchema,
 } from "../lib/library-format";
@@ -27,11 +27,26 @@ export interface LayoutDiskResult<T extends LayoutFile> {
 const MEDIA_SLOT = /^media-(\d+)(\.[^.]+)$/i;
 const SHIFT_TMP = ".pond-shift";
 
-export async function applySaveFileLayoutOnDisk<T extends LayoutFile>(
+export function applySaveFileLayoutOnDisk(
   dir: string,
-  files: T[],
+  files: InfoFile[],
   schema?: number,
-): Promise<LayoutDiskResult<T>> {
+): Promise<LayoutDiskResult<InfoFile>>;
+export function applySaveFileLayoutOnDisk(
+  dir: string,
+  files: SaveFile[],
+  schema?: number,
+): Promise<LayoutDiskResult<SaveFile>>;
+export function applySaveFileLayoutOnDisk(
+  dir: string,
+  files: Array<InfoFile | SaveFile>,
+  schema?: number,
+): Promise<LayoutDiskResult<InfoFile | SaveFile>>;
+export async function applySaveFileLayoutOnDisk(
+  dir: string,
+  files: Array<InfoFile | SaveFile>,
+  schema?: number,
+): Promise<LayoutDiskResult<InfoFile | SaveFile>> {
   const repaired = await repairShiftedMedia(dir, files);
   const present = repaired.files.filter((file) =>
     existsSync(join(dir, basename(file.path))),
@@ -55,11 +70,14 @@ export async function applySaveFileLayoutOnDisk<T extends LayoutFile>(
   let nextFiles = plan.files;
   if (plan.needsGeneratedThumbnail) {
     const generated = await writeGeneratedThumbnail(nextFiles, dir);
-    if (generated) nextFiles = [...nextFiles, generated as unknown as T];
+    if (generated) {
+      const [thumbnail] = infoFilesFromSave([generated]);
+      if (thumbnail) nextFiles = [...nextFiles, thumbnail];
+    }
   }
 
   const nextCover = thumbnailFileIndex(nextFiles);
-  await rewriteInfo(dir, nextFiles as unknown as SaveFile[], nextCover);
+  await rewriteInfo(dir, nextFiles, nextCover);
   return { files: nextFiles, changed: true, coverIndex: nextCover };
 }
 
@@ -117,64 +135,6 @@ async function repairShiftedMedia<T extends LayoutFile>(
     }),
     changed: true,
   };
-}
-
-export interface LayoutBackfillStats {
-  visited: number;
-  migrated: number;
-  skipped: number;
-  failed: number;
-}
-
-export async function backfillSaveFileLayoutsAtRoot(
-  root: string,
-  opts?: {
-    concurrency?: number;
-    onProgress?: (stats: LayoutBackfillStats, id: string) => void;
-  },
-): Promise<LayoutBackfillStats> {
-  const itemsDir = join(root, "items");
-  const entries = await readdir(itemsDir);
-  const ids = entries
-    .filter((entry) => entry.endsWith(".info"))
-    .map((entry) => entry.slice(0, -".info".length));
-  const limit = pLimit(opts?.concurrency ?? 2);
-  const stats: LayoutBackfillStats = {
-    visited: 0,
-    migrated: 0,
-    skipped: 0,
-    failed: 0,
-  };
-
-  await Promise.all(
-    ids.map((id) =>
-      limit(async () => {
-        stats.visited += 1;
-        try {
-          const dir = join(itemsDir, `${id}.info`);
-          const parsed = StoredInfoDocSchema.safeParse(
-            JSON.parse(await readFile(join(dir, INFO_FILE), "utf8")),
-          );
-          if (!parsed.success) {
-            stats.failed += 1;
-            return;
-          }
-          const result = await applySaveFileLayoutOnDisk(
-            dir,
-            parsed.data.files,
-            parsed.data.schema,
-          );
-          if (result.changed) stats.migrated += 1;
-          else stats.skipped += 1;
-          opts?.onProgress?.(stats, id);
-        } catch {
-          stats.failed += 1;
-        }
-      }),
-    ),
-  );
-
-  return stats;
 }
 
 async function rewriteInfo(

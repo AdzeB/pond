@@ -6,8 +6,8 @@ import {
 } from "@/features/library/components/layouts/packing";
 import { useGridMin } from "@/features/library/hooks/use-grid-min";
 import { chromeHeightFor } from "@/features/library/lib/library-chrome";
-import { useDisplayPrefs } from "@/features/library/state/display-prefs";
 import { useGridWidth } from "@/features/library/state/shell-state";
+import { useDisplayPrefs } from "@/features/saves/state/display-prefs";
 import type { Save } from "@/features/saves/types";
 
 interface GridViewProps {

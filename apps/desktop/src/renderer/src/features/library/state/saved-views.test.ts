@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import type { SavedView } from "@pond/schema/db";
 import { matches } from "@pond/schema/filters/match";
 import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";

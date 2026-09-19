@@ -1,5 +1,5 @@
 import { CheckNowRow } from "@/features/settings/components/sections/general/general";
-import { ShortcutSettings } from "@/features/settings/components/sections/general/shortcut-settings";
+import { RaycastRow } from "@/features/settings/components/sections/general/raycast";
 import {
   defineCustomSection,
   group,
@@ -23,22 +23,9 @@ function runApply(
 }
 
 export const generalSection = defineCustomSection({
-  title: "General",
+  title: "Preferences",
   description: "Window behavior, menu bar, and updates.",
   groups: [
-    group.prefs("shortcuts", {
-      title: "Keyboard Shortcuts",
-      fullWidth: true,
-      items: [
-        {
-          control: "custom",
-          key: "shortcuts",
-          title: "Shortcut Profile",
-          keywords: ["Eagle", "rating", "keys"],
-          render: () => <ShortcutSettings />,
-        },
-      ],
-    }),
     group.prefs("window", {
       title: "Startup",
       items: [
@@ -100,6 +87,18 @@ export const generalSection = defineCustomSection({
           title: "Menu Bar Icon",
           description: "Show Pond in the menu bar.",
           apply: () => runApply("quickCapture.applyPrefs"),
+        },
+      ],
+    }),
+    group.plain({
+      title: "Integrations",
+      items: [
+        {
+          control: "custom",
+          key: "raycast",
+          title: "Raycast",
+          keywords: ["extension", "local API", "token"],
+          render: () => <RaycastRow />,
         },
       ],
     }),

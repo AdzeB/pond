@@ -15,13 +15,13 @@ import { ulid } from "ulid";
 import { getDb } from "../../db";
 import { persistSave } from "../persist-save";
 import { isInteractiveTask } from "./priority";
+import { sourcePausedUntil } from "./rate-governor";
 import {
   type DueTask,
   isSourceTask,
   opOrderCase,
   opOrderCaseRaw,
 } from "./reconciler-config";
-import { sourcePausedUntil } from "./source-gate";
 import { maxAttemptsFor, planOps } from "./specs";
 
 export async function pullDueTasks(): Promise<DueTask[]> {

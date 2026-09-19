@@ -1,5 +1,6 @@
 import { saves } from "@pond/schema/db";
 import { count, isNull } from "drizzle-orm";
+import { readLibraryIdentity } from "../core/library-identity";
 import { getDb } from "../db";
 import { libraryRoot } from "../paths";
 import { resolveTheme } from "../theme";
@@ -19,11 +20,7 @@ export async function libraryInfo(): Promise<LibraryInfo> {
     .where(isNull(saves.deletedAt));
   return {
     path: libraryRoot(),
-    name:
-      libraryRoot()
-        .split("/")
-        .pop()
-        ?.replace(/\.(pond|library)$/, "") ?? "Library",
+    name: readLibraryIdentity(libraryRoot()).name,
     counts: {
       active: Number(total?.n ?? 0),
     },

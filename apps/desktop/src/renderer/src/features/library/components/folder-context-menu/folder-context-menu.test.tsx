@@ -1,6 +1,5 @@
-import type { MenuItemSpec } from "@pond/ui";
 import { describe, expect, it, vi } from "vitest";
-import { z } from "zod";
+import { menuLabels as labels } from "@/shared/test/menu-labels";
 import {
   buildFolderMenuItems,
   type FolderMenuActions,
@@ -38,18 +37,6 @@ function actions(
   };
 }
 
-function labels(items: MenuItemSpec[]): string[] {
-  return items.flatMap((item) => {
-    if (item.type === "separator" || item.type === "custom") return [];
-    const parsed = z.string().safeParse(item.label);
-    const label = parsed.success ? [parsed.data] : [];
-    if (item.type === "group" || item.type === "submenu") {
-      return [...label, ...labels(item.items)];
-    }
-    return label;
-  });
-}
-
 describe("folder context menu", () => {
   it("matches Eagle folder operations Pond supports", () => {
     const menuLabels = labels(buildFolderMenuItems(actions()));
@@ -68,8 +55,6 @@ describe("folder context menu", () => {
       "Type",
       "Creator",
       "Rating",
-      "Manual",
-      "Random",
       "Expand/Collapse Folder",
       "Expand/Collapse Same Level Folders",
       "Expand/Collapse All Folders",

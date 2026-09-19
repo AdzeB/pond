@@ -16,10 +16,7 @@ interface RuntimeDependencies {
   ): Promise<RuntimeServer>;
   setTrayVisible(visible: boolean): Promise<void>;
   isPackaged: boolean;
-  setLoginItemSettings(settings: {
-    openAtLogin: boolean;
-    openAsHidden: boolean;
-  }): void;
+  setLoginItemSettings(settings: { openAtLogin: boolean }): void;
   setCloseToTray(enabled: boolean): void;
   applyAppIcon(icon: Prefs["window"]["appIcon"]): Promise<void>;
   warn(message: string, error: Error): void;
@@ -69,11 +66,9 @@ export function createRuntimeControls(deps: RuntimeDependencies) {
       deps.invalidatePrefs();
       const prefs = await deps.getPrefs();
       await deps.setTrayVisible(prefs.quickCapture.menuBarIcon);
-      // Dev binaries cannot register a macOS login item.
       if (deps.isPackaged) {
         deps.setLoginItemSettings({
           openAtLogin: prefs.quickCapture.launchAtLogin,
-          openAsHidden: true,
         });
       }
       deps.setCloseToTray(prefs.window.closeToTray === true);

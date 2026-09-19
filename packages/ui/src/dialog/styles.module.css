@@ -27,7 +27,7 @@
   color: var(--ds-gray-12);
   outline: none;
   background: var(--ds-gray-1);
-  border-radius: var(--ds-radius-4xl);
+  border-radius: var(--ds-radius-xl);
   box-shadow: var(--ds-shadow-dialog);
   transform: translate(-50%, var(--dialog-offset-y, -50%));
   transform-origin: top center;
@@ -171,6 +171,14 @@
   font-weight: var(--ds-weight-normal);
   line-height: 22px;
   color: var(--ds-gray-11);
+}
+
+.option {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: var(--ds-text-md);
+  color: var(--ds-gray-12);
 }
 
 .footer {

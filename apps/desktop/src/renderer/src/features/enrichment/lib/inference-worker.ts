@@ -6,6 +6,7 @@ import {
   coreEmbedText,
   coreEmbedTexts,
   coreFlorence,
+  coreSensitiveContent,
   coreTranscribe,
 } from "./inference-core";
 import type {
@@ -32,37 +33,34 @@ async function handle(
   switch (req.op) {
     case "florence":
       return {
-        result: await coreFlorence(
-          toRawImage(req.image),
-          req.task,
-          req.modelId,
-        ),
+        result: await coreFlorence(toRawImage(req.image), req.task),
         transfer: [],
       };
     case "clipImage": {
-      const vec = await coreClipImage(toRawImage(req.image), req.modelId);
+      const vec = await coreClipImage(toRawImage(req.image));
       return { result: vec, transfer: [vec.buffer] };
     }
     case "clipAesthetic":
       return {
-        result: await coreClipAesthetic(
-          toRawImage(req.image),
-          req.labels,
-          req.modelId,
-        ),
+        result: await coreClipAesthetic(toRawImage(req.image), req.labels),
+        transfer: [],
+      };
+    case "sensitiveContent":
+      return {
+        result: await coreSensitiveContent(req.images.map(toRawImage)),
         transfer: [],
       };
     case "embedText": {
-      const vec = await coreEmbedText(req.text, req.modelId);
+      const vec = await coreEmbedText(req.text);
       return { result: vec, transfer: [vec.buffer] };
     }
     case "embedTexts": {
-      const vecs = await coreEmbedTexts(req.texts, req.modelId);
+      const vecs = await coreEmbedTexts(req.texts);
       return { result: vecs, transfer: vecs.map((v) => v.buffer) };
     }
     case "transcribe":
       return {
-        result: await coreTranscribe(req.audio, req.modelId),
+        result: await coreTranscribe(req.audio),
         transfer: [],
       };
   }

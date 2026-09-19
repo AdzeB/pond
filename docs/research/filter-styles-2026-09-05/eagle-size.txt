@@ -1,8 +1,0 @@
-The following is a diff from the previous accessibility tree for Window: "Eagle" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
-+						673 container
-+							674 text field (settable) Min
-+							675 text -
-+							676 text field (settable) Max
-+							677 pop up button KB
-+								678 (selected) KB
-The focused UI element is 674 text field (settable) Min

@@ -1,9 +1,16 @@
 import type { ImagePose } from "@/features/saves/lib/viewer-memory";
 
+export interface ViewportFraction {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export function viewportFraction(
   pose: ImagePose,
   stage: { width: number; height: number },
-): { x: number; y: number; width: number; height: number } {
+): ViewportFraction {
   const width = Math.min(1, 1 / pose.zoom);
   const height = Math.min(1, 1 / pose.zoom);
   const x = 0.5 - width / 2 - pose.x / (stage.width * pose.zoom);

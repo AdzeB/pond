@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { PrefsSchema } from "@pond/schema";
 import { HotkeysProvider } from "@tanstack/react-hotkeys";
 import { act } from "react";
@@ -13,6 +12,7 @@ import {
   libraryHeader,
   useViewPopover,
 } from "@/features/library/state/library-header";
+import { getViewState } from "@/features/library/state/view-store";
 import { AppHotkeys } from "./app-hotkeys";
 import { EditableHotkeyGuard } from "./editable-hotkey-guard";
 
@@ -47,7 +47,6 @@ describe("app hotkeys in text fields", () => {
   let root: Root;
 
   beforeEach(() => {
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.stubGlobal("pond", {
       query: async (name: string) =>
         name === "settings.getPrefs" ? PrefsSchema.parse({}) : [],
@@ -138,5 +137,25 @@ describe("app hotkeys in text fields", () => {
       );
     });
     expect(attr("search")).toBe("open");
+  });
+
+  it("does not cycle layout while typing in an input", async () => {
+    const input = document.createElement("input");
+    await mount(input);
+    const layout = getViewState().layout;
+    const mac = navigator.platform.toLowerCase().includes("mac");
+    await act(async () => {
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "l",
+          metaKey: mac,
+          ctrlKey: !mac,
+          shiftKey: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
+    expect(getViewState().layout).toBe(layout);
   });
 });

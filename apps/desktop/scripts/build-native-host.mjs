@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -19,12 +19,10 @@ mkdirSync(outDir, { recursive: true });
 
 const result = spawnSync("cc", ["-O2", "-o", out, src], { stdio: "inherit" });
 if (result.error || result.status !== 0) {
-  if (!existsSync(out)) {
-    console.warn(
-      "[pond] native host compile failed; context-menu capture needs it",
-    );
-  }
-  process.exit(0);
+  console.error(
+    "[pond] native host compile failed; context-menu capture requires it",
+  );
+  process.exit(1);
 }
 
 console.log(`[pond] native host ok (${out})`);

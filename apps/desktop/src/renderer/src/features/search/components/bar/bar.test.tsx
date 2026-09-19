@@ -1,5 +1,3 @@
-// @vitest-environment jsdom
-
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { PrefsSchema } from "@pond/schema";
 import type { LexicalEditor } from "lexical";
@@ -12,8 +10,8 @@ import {
   useFilterQuery,
   useSearchInput,
 } from "@/features/library/state/view-store";
-import type { SearchComposerProps } from "./bar";
-import { SearchComposer } from "./bar";
+import type { SearchComposerProps } from "./";
+import { SearchComposer } from "./";
 import { $writeSearchString } from "./lib/editor-state";
 
 interface SearchHarness {
@@ -48,7 +46,6 @@ describe("search editor synchronization", () => {
   let host: HTMLDivElement;
 
   beforeEach(() => {
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.stubGlobal(
       "ResizeObserver",
       class {

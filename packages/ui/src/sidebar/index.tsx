@@ -1,7 +1,6 @@
 import { Button } from "@base-ui/react/button";
 import { IconCaretRightFill12 as CaretRight } from "@pond/icons/fill/12";
 import { IconMagnifierOutline18 as Magnifier } from "@pond/icons/outline/18";
-import { Link, type LinkProps } from "@tanstack/react-router";
 import { clsx as cn } from "clsx";
 import { type HTMLMotionProps, motion } from "motion/react";
 import {
@@ -40,12 +39,6 @@ interface ItemProps extends Button.Props {}
 
 function Item({ className, ...props }: ItemProps) {
   return <Button className={cn(styles.item, className)} {...props} />;
-}
-
-interface AnchorProps extends LinkProps {}
-
-function Anchor({ ...props }: AnchorProps) {
-  return <Link className={styles.item} {...props} />;
 }
 
 interface ResultButtonProps extends Button.Props {}
@@ -121,12 +114,6 @@ function Search({ ...props }: SearchProps) {
       <Input.Field {...props} />
     </Input.Root>
   );
-}
-
-interface ResultProps extends LinkProps {}
-
-function Result({ ...props }: ResultProps) {
-  return <Link className={styles.result} {...props} />;
 }
 
 interface EmptyProps extends React.ComponentPropsWithoutRef<"p"> {}
@@ -253,8 +240,6 @@ export const Sidebar = {
   Item,
   Icon,
   Count,
-  Anchor,
-  Result,
   ResultButton,
   Empty,
   Footer,

@@ -1,60 +1,76 @@
-import { chat } from "@tanstack/ai";
-import { openaiCompatibleText } from "@tanstack/ai-openai/compatible";
+import type { ModelMessage } from "ai";
 import { expect, it } from "vitest";
-import { z } from "zod";
-import { type ChatMessage, completeWithTools } from "./complete";
+import {
+  budgetMessages,
+  type ChatMessage,
+  completeWithTools,
+} from "./complete";
+import { promptDump, textModel } from "./mock-model";
 
 it("compacts the model request while retaining the complete input history", async () => {
-  let requestMessages: Array<{ content: string }> = [];
-  const adapter = openaiCompatibleText("offline-fixture", {
-    apiKey: "offline-key",
-    baseURL: "http://fixture.invalid/v1",
-    fetch: async (_url, options) => {
-      const body = z.string().parse(options?.body);
-      requestMessages = z
-        .object({
-          messages: z.array(z.object({ content: z.string() })),
-        })
-        .parse(JSON.parse(body)).messages;
-      return new Response(
-        `data: ${JSON.stringify({
-          id: "reply",
-          choices: [
-            { index: 0, delta: { content: "Hello" }, finish_reason: "stop" },
-          ],
-        })}\n\ndata: [DONE]\n\n`,
-        {
-          headers: { "Content-Type": "text/event-stream" },
-        },
-      );
-    },
-  });
+  const model = textModel("Hello");
   const messages: ChatMessage[] = Array.from({ length: 60 }, (_, index) => ({
     role: index % 2 === 0 ? "user" : "assistant",
     content: `${index}: ${"Earlier discussion. ".repeat(300)}`,
   }));
   messages.push({ role: "user", content: "Hello" });
   const original = structuredClone(messages);
-  await completeWithTools(
-    {
+  await completeWithTools({
+    provider: "openai",
+    model: "offline-fixture",
+    apiKey: "offline-key",
+    messages,
+    context: "Library",
+    controls: {
+      fast: false,
+      contextTokens: 16_000,
+      reasoning: "provider-default",
+    },
+    tools: [],
+    languageModel: model,
+    abortController: new AbortController(),
+    onText: () => {},
+  });
+  const prompt = promptDump(model);
+  expect(model.doStreamCalls.length).toBeGreaterThan(0);
+  expect(JSON.stringify(model.doStreamCalls[0]?.prompt).length).toBeLessThan(
+    JSON.stringify(messages).length,
+  );
+  expect(prompt).toContain("Hello");
+  expect(messages).toEqual(original);
+});
+
+it("removes oldest whole turns and always keeps the current turn", () => {
+  const messages: ModelMessage[] = [
+    { role: "user", content: `Old question ${"x".repeat(100)}` },
+    { role: "assistant", content: `Old answer ${"y".repeat(100)}` },
+    { role: "user", content: "Current question" },
+  ];
+  const kept = budgetMessages(messages, 100, 10, (value) =>
+    Array.from(value, (character) => character.codePointAt(0) ?? 0),
+  );
+  expect(kept).toEqual([{ role: "user", content: "Current question" }]);
+});
+
+it("rejects a request when instructions and the current turn exceed Context", async () => {
+  const model = textModel("Unused");
+  await expect(
+    completeWithTools({
       provider: "openai",
       model: "offline-fixture",
       apiKey: "offline-key",
-      messages,
-      context: "Library",
+      messages: [{ role: "user", content: "Keep this turn" }],
+      context: "Library evidence ".repeat(10_000),
+      controls: {
+        fast: false,
+        contextTokens: 4_096,
+        reasoning: "provider-default",
+      },
       tools: [],
-      retrieveLibrary: async () => [],
+      languageModel: model,
       abortController: new AbortController(),
       onText: () => {},
-    },
-    async function* (options) {
-      for await (const chunk of chat({ ...options, adapter, stream: true })) {
-        if (chunk.type === "TEXT_MESSAGE_CONTENT" || chunk.type === "RUN_ERROR")
-          yield chunk;
-      }
-    },
-  );
-  expect(requestMessages.length).toBeLessThan(messages.length);
-  expect(requestMessages.at(-1)?.content).toBe("Hello");
-  expect(messages).toEqual(original);
+    }),
+  ).rejects.toThrow("selected Context is too small");
+  expect(model.doStreamCalls).toHaveLength(0);
 });

@@ -30,7 +30,7 @@
   padding: 12px;
   flex-direction: column;
   width: min(360px, calc(100vw - 48px));
-  border-radius: var(--ds-radius-3xl);
+  border-radius: var(--ds-radius-xl);
   color: var(--ds-gray-12);
   background: var(--ds-gray-1);
   box-shadow: var(--ds-shadow-3);

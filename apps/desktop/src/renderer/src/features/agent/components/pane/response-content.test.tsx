@@ -1,12 +1,9 @@
-// @vitest-environment jsdom
-
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterAll, afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ResponseContent } from "./response-content";
 
 beforeEach(() => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal("pond", { query: async () => [] });
 });
 afterAll(() => vi.unstubAllGlobals());
@@ -45,12 +42,11 @@ it("renders a citation-only lookup as visual Saves instead of numbered prose", a
         attachedIds={[]}
         busy={false}
         attach={vi.fn()}
-        focus={vi.fn()}
       />,
     ),
   );
   expect(
-    host.querySelectorAll('[aria-label^="Open CRM reference"]'),
+    host.querySelectorAll('[aria-label^="Preview CRM reference"]'),
   ).toHaveLength(3);
   expect(host.textContent).not.toContain("A resizable sidebar");
   expect(host.textContent).toContain("CRM reference 1");

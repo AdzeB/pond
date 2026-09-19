@@ -1,40 +1,110 @@
 {
-  "$schema": "https://v2-9-8.turborepo.dev/schema.json",
+  "$schema": "https://turborepo.com/schema.json",
   "ui": "tui",
-  "globalDependencies": ["tsconfig.base.json", "pnpm-workspace.yaml", ".env"],
+  "globalDependencies": ["tsconfig.base.json", "pnpm-workspace.yaml"],
   "tasks": {
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
     "generate": {
       "cache": false
     },
+    "generate:check": {
+      "dependsOn": ["^generate:check"],
+      "outputs": []
+    },
     "build": {
-      "dependsOn": ["^build", "^generate"],
+      "dependsOn": ["transit", "generate:check"],
       "inputs": [
-        "src/**",
-        "public/**",
-        "entrypoints/**",
-        "sources/**",
-        "utils/**",
-        "scripts/**",
-        "package.json",
-        "tsconfig.json",
-        "electron.vite.config.ts",
-        "electron-builder.yml",
-        "wxt.config.ts"
+        "$TURBO_DEFAULT$",
+        "!README.md",
+        "!**/*.test.ts",
+        "!**/*.test.tsx",
+        "!**/*.bench.test.ts",
+        "!scripts/smoke-*.cjs",
+        "!scripts/gallery-performance-*.cjs",
+        "!scripts/bench-*.mjs"
       ],
-      "outputs": ["out/**", ".output/**"]
+      "outputs": []
     },
     "dev": {
-      "dependsOn": ["^generate"],
       "cache": false,
       "persistent": true
     },
     "typecheck": {
-      "dependsOn": ["^build", "^generate"],
-      "inputs": ["src/**", "tsconfig.json"],
+      "dependsOn": ["transit", "generate:check"],
+      "inputs": ["$TURBO_DEFAULT$"],
       "outputs": []
     },
     "test": {
-      "inputs": ["src/**", "test/**", "vitest.config.ts"],
+      "dependsOn": ["transit", "generate:check"],
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": []
+    },
+    "//#lint:repo": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "apps/**",
+        "packages/**",
+        "scripts/**",
+        "tools/**"
+      ],
+      "outputs": []
+    },
+    "//#oxlint:repo": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "apps/**",
+        "packages/**",
+        "scripts/**",
+        "tools/**",
+        ".oxlintrc.json"
+      ],
+      "outputs": []
+    },
+    "//#knip:repo": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "apps/**",
+        "packages/**",
+        "scripts/**",
+        "tools/**",
+        "knip.json"
+      ],
+      "outputs": []
+    },
+    "//#references:check:repo": {
+      "inputs": [
+        "docs/references/**",
+        "references.md",
+        "scripts/check-references.mjs",
+        "scripts/check-references.test.mjs",
+        "scripts/reference-capture.mjs",
+        "scripts/reference-capture.test.mjs"
+      ],
+      "outputs": []
+    },
+    "//#architecture:check:repo": {
+      "inputs": [
+        "apps/desktop/src/**",
+        "packages/**",
+        "scripts/check-architecture.mjs",
+        "scripts/check-architecture.test.mjs"
+      ],
+      "outputs": []
+    },
+    "//#perf:check:repo": {
+      "dependsOn": [
+        "@pond/desktop#build",
+        "@pond/extension#build",
+        "@pond/website#build"
+      ],
+      "inputs": [
+        "apps/desktop/out/**",
+        "apps/extension/.output/**",
+        "apps/website/.next/**",
+        "scripts/check-performance-budgets.mjs"
+      ],
       "outputs": []
     },
     "db:generate": {
@@ -42,12 +112,7 @@
     },
     "dist": {
       "dependsOn": ["build"],
-      "inputs": [
-        "out/**",
-        "electron-builder.yml",
-        "resources/**",
-        "package.json"
-      ],
+      "inputs": ["$TURBO_DEFAULT$", "out/**"],
       "outputs": ["dist/**"]
     }
   }

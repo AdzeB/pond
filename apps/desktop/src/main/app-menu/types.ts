@@ -1,0 +1,29 @@
+import type { MenuItemConstructorOptions } from "electron";
+import type { MenuActionId } from "../../shared/constants";
+import type { ShortcutId } from "../../shared/shortcuts";
+
+export type AppMenuItem = MenuItemConstructorOptions;
+
+export interface AppMenuContext {
+  accelerator: (id: ShortcutId) => string | undefined;
+  appName: string;
+  edit: {
+    copy: () => void;
+    cut: () => void;
+    paste: () => void;
+    redo: () => void;
+    selectAll: () => void;
+    undo: () => void;
+  };
+  isMac: boolean;
+  isPackaged: boolean;
+  navTo: (path: string) => () => void;
+  openExternalUrl: (url: string) => () => void;
+  openLibraryWindow: () => void;
+  openRecent: (id: string) => () => void;
+  rescanLibrary: () => void;
+  revealLibrary: () => void;
+  sendMenuAction: (id: MenuActionId) => () => void;
+  showLogs: () => void;
+  verifyLibrary: () => void;
+}

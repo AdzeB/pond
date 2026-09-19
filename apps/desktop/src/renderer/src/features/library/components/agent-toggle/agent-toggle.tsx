@@ -1,10 +1,10 @@
-import { IconMessageSparkleOutline18 } from "@pond/icons/outline/18";
+import { IconChatBubblePenOutline18 } from "@pond/icons/outline/18";
 import { Button, Tooltip } from "@pond/ui";
 import {
   libraryChrome,
   useRightPane,
 } from "@/features/library/state/library-chrome";
-import { ShortcutKeys } from "@/shared/components/shortcut-keys/shortcut-keys";
+import { ShortcutKeys } from "@/shared/components/shortcut-keys";
 
 export function AgentToggle() {
   const open = useRightPane() === "agent";
@@ -19,7 +19,7 @@ export function AgentToggle() {
         aria-pressed={open}
         onClick={() => libraryChrome.setAgentOpen(true)}
       >
-        <IconMessageSparkleOutline18 />
+        <IconChatBubblePenOutline18 />
       </Button>
     </Tooltip>
   );

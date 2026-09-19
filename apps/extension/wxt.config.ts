@@ -21,7 +21,6 @@ export default defineConfig({
   vite: () => ({
     resolve: {
       alias: {
-        "@pond/icons": resolve(__dirname, "../../packages/icons"),
         "@pond/ui": resolve(__dirname, "../../packages/ui/src"),
       },
     },

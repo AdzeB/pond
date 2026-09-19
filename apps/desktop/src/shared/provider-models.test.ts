@@ -1,5 +1,21 @@
 import { expect, it } from "vitest";
-import { displayName } from "./provider-models";
+import { displayName, modelsForChooser } from "./provider-models";
+
+it("keeps the full catalog separate from picker visibility and preserves custom IDs", () => {
+  const models = [
+    { id: "first", name: "First" },
+    { id: "second", name: "Second" },
+  ];
+  expect(modelsForChooser(models, undefined)).toEqual(models);
+  expect(modelsForChooser(models, [])).toEqual([]);
+  expect(
+    modelsForChooser(models, ["second", "custom-model", "second"]),
+  ).toEqual([
+    { id: "second", name: "Second" },
+    { id: "custom-model", name: "Custom Model" },
+  ]);
+  expect(models).toHaveLength(2);
+});
 
 it.each([
   ["claude-sonnet-4-6", "Claude Sonnet 4.6"],

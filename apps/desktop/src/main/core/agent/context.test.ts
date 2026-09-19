@@ -1,8 +1,9 @@
-import { chat, maxIterations, toolDefinition } from "@tanstack/ai";
-import { openaiCompatibleText } from "@tanstack/ai-openai/compatible";
+import { isStepCount, simulateReadableStream, ToolLoopAgent, tool } from "ai";
+import { MockLanguageModelV4 } from "ai/test";
 import { expect, it, vi } from "vitest";
 import { z } from "zod";
 import { contextDependencies, libraryContext } from "./context";
+import { textChunks, toolCallChunks } from "./mock-model";
 
 const dependencies = {
   ...contextDependencies,
@@ -47,58 +48,39 @@ it("shows only verified result IDs and streams the same data it persists", async
   const search = context.tools.find((tool) => tool.name === "searchLibrary");
   if (!search) throw new Error("Missing searchLibrary tool");
   let calls = 0;
-  const adapter = openaiCompatibleText("offline-fixture", {
-    apiKey: "offline-key",
-    baseURL: "http://fixture.invalid/v1",
-    fetch: async () => {
+  const model = new MockLanguageModelV4({
+    doStream: async () => {
       const first = calls++ === 0;
-      return new Response(
-        `data: ${JSON.stringify({
-          id: "result",
-          choices: [
-            {
-              index: 0,
-              delta: first
-                ? {
-                    tool_calls: [
-                      {
-                        index: 0,
-                        id: "search-1",
-                        type: "function",
-                        function: {
-                          name: "searchLibrary",
-                          arguments: '{"query":"film"}',
-                        },
-                      },
-                    ],
-                  }
-                : { content: "Found" },
-              finish_reason: first ? "tool_calls" : "stop",
-            },
-          ],
-        })}\n\ndata: [DONE]\n\n`,
-        { headers: { "Content-Type": "text/event-stream" } },
-      );
+      return {
+        stream: simulateReadableStream({
+          chunks: first
+            ? toolCallChunks("search-1", "searchLibrary", { query: "film" })
+            : textChunks("Found"),
+        }),
+      };
     },
   });
-  for await (const _chunk of chat({
-    adapter,
-    messages: [{ role: "user", content: "Search film" }],
-    tools: [
-      toolDefinition({
-        name: search.name,
+  const agent = new ToolLoopAgent({
+    model,
+    tools: {
+      searchLibrary: tool({
         description: search.description,
         inputSchema: search.schema,
-      }).server((args) =>
-        search.execute(z.record(z.string(), z.json()).parse(args)),
-      ),
-    ],
-    middleware: [context.middleware],
-    agentLoopStrategy: maxIterations(2),
-  })) {
-    // Drive the same middleware lifecycle as a real provider call.
-  }
-  await context.retrieve({ query: "film" });
+        execute: (args) =>
+          search.execute(z.record(z.string(), z.json()).parse(args)),
+      }),
+    },
+    stopWhen: isStepCount(2),
+  });
+  const result = await agent.stream({
+    messages: [{ role: "user", content: "Search film" }],
+    onToolExecutionStart: context.onToolExecutionStart,
+    onToolExecutionEnd: context.onToolExecutionEnd,
+  });
+  await result.text;
+  await context.tools
+    .find((tool) => tool.name === "searchLibrary")
+    ?.execute({ query: "film" });
   expect(onSources).toHaveBeenCalledTimes(1);
   expect(context.results()).toEqual([]);
   await show.execute({ title: "References", saveIds: ["known", "known"] });
@@ -136,7 +118,9 @@ it("keeps distinct curated groups and deduplicates repeats regardless of order",
       }),
     },
   );
-  await context.retrieve({ query: "film" });
+  await context.tools
+    .find((tool) => tool.name === "searchLibrary")
+    ?.execute({ query: "film" });
   const show = context.tools.find((tool) => tool.name === "showSaves");
   if (!show) throw new Error("Missing showSaves");
   await show.execute({ title: "Lighting", saveIds: ["one", "two"] });

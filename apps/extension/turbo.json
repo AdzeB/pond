@@ -1,0 +1,28 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": [
+        "$TURBO_EXTENDS$",
+        "entrypoints/**",
+        "public/**",
+        "sources/**",
+        "utils/**",
+        "wxt.config.ts",
+        "tsconfig.json"
+      ],
+      "outputs": [".output/**"]
+    },
+    "typecheck": {
+      "inputs": [
+        "$TURBO_EXTENDS$",
+        "entrypoints/**",
+        "sources/**",
+        "utils/**",
+        "wxt.config.ts",
+        "tsconfig.json"
+      ]
+    }
+  }
+}

@@ -1,26 +1,22 @@
 import type { MenuItemSpec } from "@pond/ui";
 import { afterEach, describe, expect, it } from "vitest";
-import { z } from "zod";
 import type { CardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
 import type { AccountRow } from "@/features/sources/hooks/use-accounts";
 import type { WatchRow } from "@/features/sources/hooks/use-watches";
 import { sourcesSelection } from "@/features/sources/state/sources-selection";
+import { menuLabels as visibleLabels } from "@/shared/test/menu-labels";
 import { toSourceTableRow } from "./helpers";
 import { buildSourceMenu, contextMenuSources } from "./menu";
 
-function visibleLabels(items: MenuItemSpec[]): string[] {
-  return items.flatMap((item) => {
-    if (item.type === "separator" || item.type === "custom") return [];
-    if ("hidden" in item && item.hidden) return [];
+function findItem(items: MenuItemSpec[], label: string): MenuItemSpec | null {
+  for (const item of items) {
+    if ("label" in item && item.label === label) return item;
     if (item.type === "submenu" || item.type === "group") {
-      const label =
-        "label" in item ? z.string().array().catch([]).parse([item.label]) : [];
-      return [...label, ...visibleLabels(item.items)];
+      const child = findItem(item.items, label);
+      if (child) return child;
     }
-    if ("label" in item)
-      return z.string().array().catch([]).parse([item.label]);
-    return [];
-  });
+  }
+  return null;
 }
 
 const ready: CardModel = {
@@ -95,38 +91,48 @@ describe("contextMenuSources", () => {
 describe("buildSourceMenu", () => {
   it("shows account actions for a single account", () => {
     expect(visibleLabels(buildSourceMenu(account("acc")))).toEqual([
-      "Sync Now",
-      "View Items in Library",
-      "Backfill",
-      "Refresh Metadata",
-      "Download Full Quality",
+      "Open Instagram Profile",
+      "Show Saved Items",
+      "Copy Profile Link",
+      "Copy Username",
+      "Copy Connection ID",
+      "Fetch New Saves",
+      "Fetch Older Saves",
+      "Fetch Save Details",
+      "Fetch Original Media",
+      "Sign In Again",
+      "Disconnect Instagram",
     ]);
   });
 
-  it("shows Check Now for a watched source", () => {
+  it("shows complete collection actions for a watched source", () => {
     expect(visibleLabels(buildSourceMenu(watch("watch")))).toEqual([
-      "Check Now",
-      "View Items in Library",
+      "Open Twitter List",
+      "Show Saved Items",
+      "Copy List Link",
+      "Copy List ID",
+      "Copy Connection ID",
+      "Fetch New Saves",
+      "Stop Watching",
     ]);
   });
 
-  it("keeps Sync Now for a mixed selection and drops account-only actions", () => {
+  it("keeps only safe actions for a mixed selection", () => {
     expect(
       visibleLabels(buildSourceMenu([account("acc"), watch("watch")])),
-    ).toEqual(["Sync Now", "View Items in Library"]);
+    ).toEqual(["Show Saved Items", "Fetch New Saves"]);
   });
 
-  it("shows Check Now for a watched-only selection", () => {
+  it("keeps only safe actions for a watched-only selection", () => {
     expect(
       visibleLabels(buildSourceMenu([watch("one"), watch("two")])),
-    ).toEqual(["Check Now", "View Items in Library"]);
+    ).toEqual(["Show Saved Items", "Fetch New Saves"]);
   });
 
-  it("disables Sync Now when none of the selection can sync", () => {
+  it("disables Fetch New Saves when none of the selection can sync", () => {
     const row = toSourceTableRow(account("busy").entry, running);
-    expect(buildSourceMenu(row)[0]).toMatchObject({
-      label: "Sync Now",
-      disabled: true,
-    });
+    expect(
+      findItem(buildSourceMenu([row, row]), "Fetch New Saves"),
+    ).toMatchObject({ label: "Fetch New Saves", disabled: true });
   });
 });

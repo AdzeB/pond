@@ -1,13 +1,11 @@
-// @vitest-environment jsdom
-
 import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { commandMenu } from "@/features/library/state/command-menu";
-import { selection } from "@/features/library/state/selection";
 import { normalise } from "@/features/saves/lib/reconcile";
-import { CommandMenuHost } from "./command-menu";
+import { selection } from "@/features/saves/state/selection";
+import { CommandMenuHost } from "./";
 
 const openSave = vi.fn();
 function useResults(query: string) {
@@ -28,7 +26,6 @@ describe("command menu", () => {
   let root: Root;
 
   beforeEach(() => {
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.stubGlobal("pond", { query: async () => PrefsSchema.parse({}) });
     vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
       callback(0);
@@ -91,6 +88,7 @@ describe("command menu", () => {
     await open();
 
     expect(document.body.textContent).toContain("1 Selected");
+    expect(document.body.textContent).toContain("Add to Chat");
     expect(document.body.textContent).toContain("Export Selection");
     expect(document.body.textContent).toContain("Move to Trash");
   });

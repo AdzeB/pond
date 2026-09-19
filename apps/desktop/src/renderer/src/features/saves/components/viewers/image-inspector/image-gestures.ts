@@ -1,0 +1,223 @@
+import type { ImageCrop } from "@pond/schema/db";
+import type {
+  Dispatch,
+  PointerEventHandler,
+  RefObject,
+  SetStateAction,
+} from "react";
+import {
+  type CropHandle,
+  clampImagePoint,
+  commentFromGesture,
+  cropContains,
+  inImage,
+  isAreaComment,
+  lockCropAspect,
+  nudgeCrop,
+  resizeCrop,
+} from "@/features/saves/lib/image-regions";
+import {
+  type ImagePose,
+  zoomImageAt,
+} from "@/features/saves/lib/viewer-memory";
+import { cropHandleFromTarget } from "./crop-handles";
+import type { InspectorMode } from "./types";
+
+export interface ImageDrag {
+  button: number;
+  x: number;
+  y: number;
+  startX: number;
+  startY: number;
+  cropX: number;
+  cropY: number;
+  crop?: ImageCrop;
+  handle?: CropHandle;
+}
+
+interface ImageGestureOptions {
+  active: boolean;
+  draft: ImageCrop | null;
+  drag: RefObject<ImageDrag | null>;
+  editingComment: boolean;
+  gestureMoved: RefObject<boolean>;
+  mode: InspectorMode;
+  onComment: (region: ImageCrop) => void;
+  onNavigate: (delta: number) => void;
+  pointFromClient: (
+    clientX: number,
+    clientY: number,
+  ) => { x: number; y: number };
+  poseZoom: number;
+  ratio: number | null;
+  setDraft: Dispatch<SetStateAction<ImageCrop | null>>;
+  setPosition: (
+    update: (previous: ImagePose) => ImagePose,
+    live?: boolean,
+  ) => void;
+}
+
+interface ImageGestures {
+  onContextMenu: PointerEventHandler<HTMLDivElement>;
+  onPointerCancel: PointerEventHandler<HTMLDivElement>;
+  onPointerDown: PointerEventHandler<HTMLDivElement>;
+  onPointerMove: PointerEventHandler<HTMLDivElement>;
+  onPointerUp: PointerEventHandler<HTMLDivElement>;
+}
+
+export function createImageGestures({
+  active,
+  draft,
+  drag,
+  editingComment,
+  gestureMoved,
+  mode,
+  onComment,
+  onNavigate,
+  pointFromClient,
+  poseZoom,
+  ratio,
+  setDraft,
+  setPosition,
+}: ImageGestureOptions): ImageGestures {
+  return {
+    onContextMenu: (event) => {
+      if (gestureMoved.current) event.preventDefault();
+    },
+    onPointerDown: (event) => {
+      if (!active) return;
+      const handle = cropHandleFromTarget(event.target);
+      if (
+        event.target instanceof Element &&
+        event.target.closest("button") &&
+        !handle
+      )
+        return;
+      if (mode !== "view" && event.button !== 0) return;
+      if (event.button !== 0 && event.button !== 2) return;
+      if (event.button === 0 && mode === "view" && poseZoom <= 1) return;
+      const raw = pointFromClient(event.clientX, event.clientY);
+      const point = clampImagePoint(raw);
+      const moving =
+        (mode === "crop" ||
+          (mode === "comment" && !!draft && isAreaComment(draft))) &&
+        !handle &&
+        !!draft &&
+        cropContains(draft, point);
+      if (editingComment && mode === "comment" && !handle && !moving) return;
+      if (mode !== "view" && !handle && !moving && !inImage(raw)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      gestureMoved.current = false;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      drag.current = {
+        button: event.button,
+        x: event.clientX,
+        y: event.clientY,
+        startX: event.clientX,
+        startY: event.clientY,
+        cropX: point.x,
+        cropY: point.y,
+        crop: handle || moving ? (draft ?? undefined) : undefined,
+        handle: handle ?? undefined,
+      };
+    },
+    onPointerMove: (event) => {
+      const origin = drag.current;
+      if (!origin) return;
+      event.stopPropagation();
+      const dx = event.clientX - origin.x;
+      const dy = event.clientY - origin.y;
+      if (origin.button === 2) {
+        if (
+          Math.abs(event.clientX - origin.startX) +
+            Math.abs(event.clientY - origin.startY) >
+          4
+        )
+          gestureMoved.current = true;
+        if (
+          Math.abs(event.clientY - origin.startY) >
+          Math.abs(event.clientX - origin.startX)
+        )
+          setPosition(
+            (previous) =>
+              zoomImageAt(previous, previous.zoom * Math.exp(-dy * 0.01), {
+                x: 0,
+                y: 0,
+              }),
+            true,
+          );
+      } else if (mode !== "view") {
+        const point = clampImagePoint(
+          pointFromClient(event.clientX, event.clientY),
+        );
+        if (origin.handle && origin.crop) {
+          const next = resizeCrop(origin.crop, origin.handle, point);
+          setDraft(
+            event.shiftKey && ratio ? lockCropAspect(next, ratio) : next,
+          );
+        } else if (origin.crop) {
+          setDraft(
+            nudgeCrop(
+              origin.crop,
+              point.x - origin.cropX,
+              point.y - origin.cropY,
+            ),
+          );
+        } else {
+          const next = {
+            x: Math.min(point.x, origin.cropX),
+            y: Math.min(point.y, origin.cropY),
+            w: Math.abs(point.x - origin.cropX),
+            h: Math.abs(point.y - origin.cropY),
+          };
+          setDraft(
+            mode === "crop" && event.shiftKey && ratio
+              ? lockCropAspect(next, ratio)
+              : next,
+          );
+        }
+      } else
+        setPosition(
+          (previous) => ({
+            ...previous,
+            x: previous.x + dx,
+            y: previous.y + dy,
+          }),
+          true,
+        );
+      origin.x = event.clientX;
+      origin.y = event.clientY;
+    },
+    onPointerUp: (event) => {
+      const origin = drag.current;
+      if (
+        origin?.button === 2 &&
+        Math.abs(event.clientX - origin.startX) > 80 &&
+        Math.abs(event.clientX - origin.startX) >
+          Math.abs(event.clientY - origin.startY)
+      )
+        onNavigate(event.clientX > origin.startX ? -1 : 1);
+      if (
+        mode === "comment" &&
+        origin?.button === 0 &&
+        !origin.handle &&
+        !origin.crop &&
+        !editingComment
+      )
+        onComment(
+          commentFromGesture(
+            { x: origin.cropX, y: origin.cropY },
+            clampImagePoint(pointFromClient(event.clientX, event.clientY)),
+          ),
+        );
+      drag.current = null;
+      event.stopPropagation();
+      if (event.currentTarget.hasPointerCapture(event.pointerId))
+        event.currentTarget.releasePointerCapture(event.pointerId);
+    },
+    onPointerCancel: () => {
+      drag.current = null;
+    },
+  };
+}

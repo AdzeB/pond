@@ -1,20 +1,17 @@
-import { libraryChrome } from "@/features/library/state/library-chrome";
-import {
-  primarySelection,
-  selection,
-} from "@/features/library/state/selection";
+import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
+import { primarySelection, selection } from "@/features/saves/state/selection";
 
 export function selectOnlySave(id: string): void {
   selection.set([id]);
   selection.setAnchor(id);
   primarySelection.set(id);
-  libraryChrome.setInspectorSaveId(id);
+  saveLibraryBridge.setInspectorSaveId(id);
 }
 
 function rememberSave(id: string): void {
   selection.setAnchor(id);
   primarySelection.set(id);
-  libraryChrome.setInspectorSaveId(id);
+  saveLibraryBridge.setInspectorSaveId(id);
 }
 
 export function clearSaveSelection(): void {
@@ -40,7 +37,7 @@ export function clickSave(
       selection.snapshot()[0] ??
       null;
     primarySelection.set(fallback);
-    if (fallback) libraryChrome.setInspectorSaveId(fallback);
+    if (fallback) saveLibraryBridge.setInspectorSaveId(fallback);
     return;
   }
 
@@ -49,7 +46,7 @@ export function clickSave(
     selection.setRange(filteredIds, anchor, id);
     selection.setAnchor(anchor);
     primarySelection.set(id);
-    libraryChrome.setInspectorSaveId(id);
+    saveLibraryBridge.setInspectorSaveId(id);
     return;
   }
 

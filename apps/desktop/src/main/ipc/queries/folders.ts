@@ -104,10 +104,18 @@ export const foldersQueries = {
       return await setFolderColor(params.id, params.color);
     },
   ),
-  "folders.delete": query(z.object({ id: StringParam }), async (params) => {
-    const { deleteFolder } = await import("../../core/folders");
-    return await deleteFolder(params.id);
-  }),
+  "folders.delete": query(
+    z.object({
+      id: StringParam,
+      trashContainedSaves: z.boolean().optional(),
+    }),
+    async (params) => {
+      const { deleteFolder } = await import("../../core/folders");
+      return await deleteFolder(params.id, {
+        trashContainedSaves: params.trashContainedSaves,
+      });
+    },
+  ),
   "folders.memberships": query(z.object({}), async () => {
     const { memberships } = await import("../../core/folders");
     return await memberships();

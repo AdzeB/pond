@@ -1,0 +1,29 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "env": ["NODE_ENV", "VERCEL_ENV"],
+      "inputs": [
+        "$TURBO_EXTENDS$",
+        "app/**",
+        "lib/**",
+        "public/**",
+        "next.config.ts",
+        "next-env.d.ts",
+        "tsconfig.json"
+      ],
+      "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**"]
+    },
+    "typecheck": {
+      "inputs": [
+        "$TURBO_EXTENDS$",
+        "app/**",
+        "lib/**",
+        "next.config.ts",
+        "next-env.d.ts",
+        "tsconfig.json"
+      ]
+    }
+  }
+}

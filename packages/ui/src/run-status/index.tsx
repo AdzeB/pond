@@ -1,8 +1,8 @@
 import { IconCheckOutline18 } from "@pond/icons/outline/18";
 import { useReducedMotionConfig } from "motion/react";
 import type { ReactNode } from "react";
-import { Loader } from "../loader";
 import { Reveal } from "../reveal";
+import { Shimmer } from "../shimmer";
 import styles from "./styles.module.css";
 
 export function RunStatus({
@@ -20,14 +20,18 @@ export function RunStatus({
         role="status"
         data-reduced-motion={reduced || undefined}
       >
-        {state === "working" ? (
-          <Loader.Dots />
-        ) : state === "complete" ? (
+        {state === "complete" ? (
           <IconCheckOutline18 />
-        ) : (
+        ) : state === "stopped" ? (
           <span className={styles["stop-mark"]} />
+        ) : null}
+        {state === "working" ? (
+          <Shimmer.Root className={styles["working-label"]}>
+            {children}
+          </Shimmer.Root>
+        ) : (
+          <span>{children}</span>
         )}
-        <span>{children}</span>
       </div>
     </Reveal>
   );

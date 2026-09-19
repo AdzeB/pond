@@ -74,6 +74,18 @@
   padding: 2px;
 }
 
+.tools {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  min-width: 0;
+}
+
+.pager {
+  flex: 0 0 auto;
+  order: -1;
+}
+
 .scale {
   display: inline-flex;
   align-items: center;

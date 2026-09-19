@@ -1,0 +1,33 @@
+.search {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--ds-gray-a4);
+}
+
+.magnifier {
+  width: 18px;
+  height: 18px;
+  color: var(--ds-gray-9);
+}
+
+.input {
+  min-width: 0;
+  height: 46px;
+  padding: 0;
+  font: inherit;
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-normal);
+  line-height: 1.4;
+  color: var(--ds-gray-12);
+  outline: none;
+  background: transparent;
+  border: 0;
+}
+
+.input::placeholder {
+  color: var(--ds-gray-9);
+}

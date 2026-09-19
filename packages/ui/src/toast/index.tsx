@@ -25,12 +25,15 @@ function Viewport({ className, ...props }: Base.Viewport.Props) {
 
 function Root({ className, toast, ...props }: Base.Root.Props) {
   const updateKey = toast.updateKey ?? 0;
+  const hasProgress = Boolean(toast.data?.progress);
+  const pulse = updateKey > 0 && !hasProgress;
   return (
     <Base.Root
       toast={toast}
       swipeDirection={["down", "left", "right"]}
       className={cn(styles.root, className)}
-      data-pulse={updateKey > 0 ? (updateKey % 2 === 0 ? "a" : "b") : undefined}
+      data-pulse={pulse ? (updateKey % 2 === 0 ? "a" : "b") : undefined}
+      data-progress={hasProgress || undefined}
       {...props}
     />
   );
@@ -57,6 +60,17 @@ function Description({ className, ...props }: Base.Description.Props) {
   );
 }
 
+function Progress({
+  className,
+  ...props
+}: ComponentPropsWithoutRef<"progress">) {
+  return <progress className={cn(styles.progress, className)} {...props} />;
+}
+
+function Meta({ className, ...props }: ComponentPropsWithoutRef<"span">) {
+  return <span className={cn(styles.meta, className)} {...props} />;
+}
+
 function Close({ className, ...props }: Base.Close.Props) {
   return (
     <Base.Close
@@ -80,6 +94,8 @@ export const Toast = {
   Header,
   Title,
   Description,
+  Progress,
+  Meta,
   Close,
   createToastManager: Base.createToastManager,
   useToastManager: Base.useToastManager,

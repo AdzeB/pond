@@ -394,7 +394,6 @@ type TypeKind =
 export function deriveTypeKind(file: SaveFile | null, save: Save): TypeKind {
   if (save.source === "web") return "link";
   if (file && TEXT_COVER_KINDS.has(file.kind)) return "text";
-  if (file && isOriginalImageKind(file.kind)) return "image";
 
   if (file) {
     const format = classifyLibraryFile(file.path, file.mimeType);
@@ -404,6 +403,7 @@ export function deriveTypeKind(file: SaveFile | null, save: Save): TypeKind {
     if (format.mediaType === "font") return "font";
     if (format.mediaType === "document") return "doc";
     if (format.mediaType === "text") return "text";
+    if (isOriginalImageKind(file.kind)) return "image";
   }
 
   const media = save.mediaType?.toLowerCase();

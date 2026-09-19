@@ -1,0 +1,75 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-inline-size: 0;
+  width: 100%;
+  padding: 8px;
+  padding-inline: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-11);
+
+  :global([data-slot="root"]) {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+
+.row > :global([data-slot="root"]) {
+  flex: 1 1 0;
+}
+
+.row[data-date] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.unit {
+  width: 88px;
+  min-width: 88px;
+}
+
+.separator {
+  flex: none;
+  color: var(--ds-gray-9);
+}
+
+.dimension {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto minmax(0, 1fr) auto;
+  gap: 4px;
+  align-items: center;
+}
+
+.label,
+.suffix {
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-10);
+}
+
+.suffix {
+  min-width: 16px;
+}
+
+.error {
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-red-11);
+}

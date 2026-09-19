@@ -62,6 +62,11 @@ it("preserves escaped citation text as literal Markdown", () => {
   expect(html).not.toContain('title="Open A film"');
   expect(html).toContain("[1]");
 });
+it("renders Save mentions as chips instead of links", () => {
+  const html = render("[A film](pond-save:verified)");
+  expect(html).toContain("A film");
+  expect(html).not.toMatch(/href="pond-save:/);
+});
 it("does not execute HTML, load remote images, or link unsafe schemes", () => {
   const html = render(
     '<script>alert(1)</script>\n\n<img src="https://tracker.test">\n\n![tracking](https://tracker.test/pixel) [bad](javascript:alert) [file](file:///etc/passwd) [app](pond://save/private) [safe](https://example.com)',
@@ -81,4 +86,8 @@ it.each([
   "#save-0",
   "#save-1evil",
 ])("blocks unsafe or unverifiable URLs: %s", (url) =>
-  expect(safeResponseUrl(url)).toBe(""));
+  expect(safeResponseUrl(url)).toBe(""),
+);
+it("keeps Save mention hrefs so chips can render", () => {
+  expect(safeResponseUrl("pond-save:verified")).toBe("pond-save:verified");
+});

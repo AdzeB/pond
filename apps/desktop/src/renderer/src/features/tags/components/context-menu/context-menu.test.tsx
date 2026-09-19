@@ -1,6 +1,5 @@
-import type { MenuItemSpec } from "@pond/ui";
 import { describe, expect, it, vi } from "vitest";
-import { z } from "zod";
+import { menuLabels as labels } from "@/shared/test/menu-labels";
 import { buildTagMenuItems, type TagMenuActions } from "./context-menu";
 
 function actions(overrides: Partial<TagMenuActions> = {}): TagMenuActions {
@@ -17,18 +16,6 @@ function actions(overrides: Partial<TagMenuActions> = {}): TagMenuActions {
     onRemove: vi.fn(),
     ...overrides,
   };
-}
-
-function labels(items: MenuItemSpec[]): string[] {
-  return items.flatMap((item) => {
-    if (item.type === "separator" || item.type === "custom") return [];
-    const parsed = z.string().safeParse(item.label);
-    const label = parsed.success ? [parsed.data] : [];
-    if (item.type === "group" || item.type === "submenu") {
-      return [...label, ...labels(item.items)];
-    }
-    return label;
-  });
 }
 
 describe("tag context menu", () => {

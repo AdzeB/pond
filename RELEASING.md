@@ -4,6 +4,8 @@ Pond ships via **GitHub Releases**: unsigned macOS `.dmg` files (arm64 + x64), `
 
 ## Version bump
 
+The desktop app, browser extension, and website release metadata ship in lockstep with the `vX.Y.Z` GitHub tag. The release workflow rejects a tag when any value below differs. `@pond/cli` is published independently to npm from `packages/cli/package.json`; a desktop release does not require a CLI bump, and a CLI release does not change the desktop, extension, or website version. Other private workspace package versions are not Pond release inputs.
+
 Update the version string in all of these before tagging:
 
 | File | Field |
@@ -27,25 +29,43 @@ git push origin v0.0.1
 Pushing a tag matching `v*` triggers [`.github/workflows/release.yml`](.github/workflows/release.yml), which:
 
 1. Runs lint, typecheck, tests, and build
-2. Packages macOS DMGs with `electron-builder --publish always`
+2. Packages the existing Electron/Vite output as macOS DMGs and publishes them
 3. Builds the extension zip and uploads it as `pond-extension-<version>.zip`
+4. Updates [`Casks/pond.rb`](Casks/pond.rb) with the release version and DMG checksums
 
 Release tag format must be `vX.Y.Z` (e.g. `v0.0.1`).
 
 Artifact names (used by the website download links):
 
-- `Pond-arm64.dmg`
-- `Pond-x64.dmg`
+- `Pond-<version>-arm64.dmg`
+- `Pond-<version>-x64.dmg`
 - `pond-extension-<version>.zip`
+
+## Homebrew
+
+The repository contains a tap-compatible cask at
+[`Casks/pond.rb`](Casks/pond.rb). After the repository becomes public, install
+it with:
+
+```bash
+brew tap raphaelsalaja/pond https://github.com/raphaelsalaja/pond
+brew install --cask raphaelsalaja/pond/pond
+```
+
+The release workflow updates the version and checksums on `main` after both
+macOS artifacts are available.
 
 ## Local packaging (without publish)
 
 ```bash
 pnpm install
-pnpm --filter @pond/desktop dist:mac
+pnpm dist:mac
 ```
 
 Artifacts land in `apps/desktop/dist/`.
+
+The root command builds the desktop once, then packages `out/**`. Desktop
+`dist:*` scripts consume an existing build and do not run Electron/Vite again.
 
 Extension zip:
 
@@ -53,11 +73,26 @@ Extension zip:
 pnpm --filter @pond/extension zip
 ```
 
+## CLI publishing
+
+The `@pond/cli` npm package has an independent release policy from the desktop
+app. Before publishing it, run:
+
+```bash
+pnpm --filter @pond/cli build
+pnpm --filter @pond/cli test
+pnpm --filter @pond/cli pack:check
+```
+
+Confirm the tarball contains `dist`, `README.md`, and `skill`, and that the
+published `pond --version` matches `packages/cli/package.json`.
+
 ## Smoke test checklist
 
 Run these before announcing a release:
 
-- [ ] GitHub Release contains arm64 + x64 `.dmg`, `latest-mac.yml`, and `pond-extension-X.Y.Z.zip`
+- [ ] GitHub Release contains versioned arm64 + x64 `.dmg`, `latest-mac.yml`, and `pond-extension-X.Y.Z.zip`
+- [ ] `Casks/pond.rb` contains the release version and DMG checksums
 - [ ] Fresh Mac: download arm64 DMG → right-click → **Open** → app launches (unsigned build)
 - [ ] Website Download buttons hit the new artifacts
 - [ ] Open Pond once so it registers the native host

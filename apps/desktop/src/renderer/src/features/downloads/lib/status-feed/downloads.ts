@@ -6,6 +6,7 @@ import {
   type Source,
 } from "@pond/schema/db";
 import { INGEST_OUTCOMES } from "@pond/schema/events";
+import { hostToSource } from "@pond/schema/sources";
 import type { WireTask } from "@shared/wire";
 import { z } from "zod";
 import type { Save } from "@/features/saves/types";
@@ -43,9 +44,15 @@ export type DownloadStatus =
   | "blocked"
   | "failed"
   | "cancelled"
+  | "skipped"
   | "complete";
 
-export type StatusFilter = "in-progress" | "failed" | "cancelled" | "complete";
+export type StatusFilter =
+  | "in-progress"
+  | "failed"
+  | "cancelled"
+  | "skipped"
+  | "complete";
 
 export interface DownloadRow {
   id: string;
@@ -68,22 +75,30 @@ export interface DownloadRow {
 export interface DownloadFilters {
   statuses: ReadonlySet<StatusFilter>;
   sources: ReadonlySet<Source>;
-  ops: ReadonlySet<Op>;
   q: string;
 }
 
-const DEFAULT_STATUSES: ReadonlySet<StatusFilter> = new Set([
-  "in-progress",
-  "failed",
-]);
+export const STATUS_FILTER_OPTIONS: readonly {
+  id: StatusFilter;
+  label: string;
+}[] = [
+  { id: "in-progress", label: "In Progress" },
+  { id: "failed", label: "Failed" },
+  { id: "cancelled", label: "Cancelled" },
+  { id: "skipped", label: "Skipped" },
+  { id: "complete", label: "Completed" },
+];
 
 export function defaultDownloadFilters(): DownloadFilters {
   return {
-    statuses: new Set(DEFAULT_STATUSES),
+    statuses: new Set(),
     sources: new Set(),
-    ops: new Set(),
     q: "",
   };
+}
+
+export function downloadFiltersActive(filters: DownloadFilters): boolean {
+  return filters.statuses.size > 0 || filters.sources.size > 0;
 }
 
 function wasCancelled(save: Save): boolean {
@@ -102,6 +117,7 @@ function isRetryingTask(task: WireTask): boolean {
 }
 
 function liveStatus(save: Save): DownloadStatus | null {
+  if (save.status === "skipped") return "skipped";
   if (save.status === "failed") {
     return wasCancelled(save) ? "cancelled" : "failed";
   }
@@ -148,7 +164,8 @@ const DOWNLOAD_STATUS_RANK = {
   pending: 3,
   failed: 4,
   cancelled: 5,
-  complete: 6,
+  skipped: 6,
+  complete: 7,
 } satisfies Record<DownloadStatus, number>;
 
 export function projectLiveDownloads(saves: readonly Save[]): DownloadRow[] {
@@ -190,10 +207,15 @@ export function projectLiveDownloads(saves: readonly Save[]): DownloadRow[] {
 }
 
 export function statusBucket(status: DownloadStatus): StatusFilter {
-  if (status === "failed") return "failed";
+  if (status === "failed" || status === "blocked") return "failed";
   if (status === "cancelled") return "cancelled";
+  if (status === "skipped") return "skipped";
   if (status === "complete") return "complete";
   return "in-progress";
+}
+
+export function downloadRowSource(row: DownloadRow): Source {
+  return hostToSource(row.url) ?? row.source;
 }
 
 export function matchesDownloadFilters(
@@ -206,10 +228,10 @@ export function matchesDownloadFilters(
   ) {
     return false;
   }
-  if (filters.sources.size > 0 && !filters.sources.has(row.source)) {
-    return false;
-  }
-  if (filters.ops.size > 0 && (row.op == null || !filters.ops.has(row.op))) {
+  if (
+    filters.sources.size > 0 &&
+    !filters.sources.has(downloadRowSource(row))
+  ) {
     return false;
   }
   const q = filters.q.trim().toLowerCase();

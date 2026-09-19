@@ -1,0 +1,27 @@
+.trigger {
+  flex: none;
+
+  &[data-active] {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a3);
+  }
+}
+
+.shell {
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 0;
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  padding-inline: 12px;
+  padding-bottom: 8px;
+  overflow: visible;
+}

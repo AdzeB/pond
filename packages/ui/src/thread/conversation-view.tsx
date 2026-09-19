@@ -1,55 +1,36 @@
-import { AuiIf, useThreadViewport } from "@assistant-ui/react";
-import { IconMsg2Outline18 } from "@pond/icons/outline/18";
-import { useReducedMotionConfig } from "motion/react";
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps, ReactNode, RefObject } from "react";
+import { useCallback, useState } from "react";
 import { ComposerView } from "../composer/composer-view";
-import { MessageView } from "../message/message-view";
-import { Reveal } from "../reveal";
-import { SelectionToolbar } from "../selection-toolbar";
-import styles from "./styles.module.css";
 import { Thread } from "./thread";
 
-function ScrollToLatest() {
-  const isAtBottom = useThreadViewport((state) => state.isAtBottom);
-  const reduced = useReducedMotionConfig();
-  return (
-    <Reveal visible={!isAtBottom}>
-      <div className={styles["scroll-action"]}>
-        <Thread.ScrollToBottom behavior={reduced ? "instant" : "smooth"}>
-          Latest Message
-        </Thread.ScrollToBottom>
-      </div>
-    </Reveal>
-  );
-}
-
 export function ConversationView({
-  empty = "Ask about your Saves",
+  empty,
   composer = <ComposerView />,
-  components,
+  children,
   viewportProps,
   ...props
 }: ComponentProps<typeof Thread.Root> & {
   empty?: ReactNode;
   composer?: ReactNode;
-  components?: ComponentProps<typeof Thread.Messages>["components"];
-  viewportProps?: ComponentProps<typeof Thread.Viewport>;
+  viewportProps?: ComponentProps<typeof Thread.Viewport> & {
+    ref?: RefObject<HTMLDivElement | null>;
+  };
 }) {
+  const [viewport, setViewport] = useState<HTMLDivElement | null>(null);
+  const { ref: viewportRef, ...restViewport } = viewportProps ?? {};
+  const setViewportRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      setViewport(node);
+      if (viewportRef) viewportRef.current = node;
+    },
+    [viewportRef],
+  );
   return (
     <Thread.Root {...props}>
-      <SelectionToolbar.Root>
-        <SelectionToolbar.Quote>
-          <IconMsg2Outline18 />
-          Quote
-        </SelectionToolbar.Quote>
-      </SelectionToolbar.Root>
-      <Thread.Viewport {...viewportProps}>
-        <AuiIf condition={(state) => state.thread.isEmpty}>
-          <div className={styles.empty}>{empty}</div>
-        </AuiIf>
-        <Thread.Messages components={{ Message: MessageView, ...components }} />
+      <Thread.Viewport {...restViewport} ref={setViewportRef}>
+        <Thread.Messages empty={empty}>{children}</Thread.Messages>
         <Thread.ViewportFooter>
-          <ScrollToLatest />
+          <Thread.ScrollToLatest viewport={viewport} />
           {composer}
         </Thread.ViewportFooter>
       </Thread.Viewport>

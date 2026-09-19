@@ -8,6 +8,6 @@ describe("visionEnabled", () => {
   });
   it("falls back to the chat provider", () => {
     expect(visionEnabled("anthropic", undefined)).toBe(true);
-    expect(visionEnabled("compatible", undefined)).toBe(false);
+    expect(visionEnabled("ollama", undefined)).toBe(false);
   });
 });

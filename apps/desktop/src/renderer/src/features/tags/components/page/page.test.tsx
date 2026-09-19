@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import {
   createMemoryHistory,
   createRootRoute,
@@ -11,7 +10,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TagGroupRow } from "@/features/tags/state/tag-groups";
 import type { TagRow } from "@/features/tags/state/tags";
-import { TagsPage } from "./page";
+import { TagsPage } from "./";
 
 const fixtures = {
   tags: ["Animation", "Typography"].map((name, index) => ({
@@ -48,7 +47,6 @@ describe("library Tags page", () => {
   });
 
   beforeEach(() => {
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.stubGlobal("scrollTo", vi.fn());
     vi.stubGlobal("pond", { query, onSyncAction: () => () => {} });
     vi.stubGlobal(

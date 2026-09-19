@@ -1,3 +1,4 @@
+import { registerAgentStream } from "./handlers/agent-stream";
 import { registerAppHandlers } from "./handlers/app";
 import { registerPipelineHandlers } from "./handlers/pipeline";
 import { registerRefreshHandlers } from "./handlers/refresh";
@@ -10,4 +11,5 @@ export function registerIpc(): void {
   registerRefreshHandlers();
   registerSyncHandlers();
   registerQueryHandler();
+  registerAgentStream();
 }

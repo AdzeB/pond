@@ -1,0 +1,51 @@
+{
+  "name": "@pond/cli",
+  "version": "0.1.0",
+  "description": "Command-line access to your local Pond Library.",
+  "type": "module",
+  "bin": {
+    "pond": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "skill"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "Raphael Salaja",
+    "url": "https://github.com/raphaelsalaja"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raphaelsalaja/pond.git",
+    "directory": "packages/cli"
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm build",
+    "pack:check": "node scripts/smoke-pack.mjs",
+    "smoke:pack": "pnpm build && node scripts/smoke-pack.mjs"
+  },
+  "dependencies": {
+    "commander": "^15.0.0",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@pond/local-api": "workspace:*",
+    "@types/node": "catalog:",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.13",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -122,16 +122,16 @@ describe("sortSaves", () => {
 });
 
 describe("queryIsFullySqlSupported", () => {
-  it("keeps source filters in memory instead of compiling them to an empty SQL condition", () => {
+  it("compiles source filters to SQL", () => {
     expect(
       queryIsFullySqlSupported({
         combinator: "and",
         rules: [{ field: "source", operator: "eq", value: "instagram.com" }],
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
-  it("rejects mixed queries when any nested predicate is client-only", () => {
+  it("compiles mixed queries that include a source predicate", () => {
     expect(
       queryIsFullySqlSupported({
         combinator: "and",
@@ -145,7 +145,7 @@ describe("queryIsFullySqlSupported", () => {
           },
         ],
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("allows projected fields and the special tags projection", () => {

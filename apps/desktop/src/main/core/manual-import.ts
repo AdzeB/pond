@@ -345,14 +345,10 @@ async function importManualSave(
         const files = completed.files.map((file, index) =>
           index === 0 ? { ...file, family } : file,
         );
-        await persistSave(
-          id,
-          {
-            files,
-            ...(!input.title?.trim() ? { title: family } : {}),
-          },
-          { actorReason: "manual:font-family" },
-        );
+        const patch = input.title?.trim()
+          ? { files }
+          : { files, title: family };
+        await persistSave(id, patch, { actorReason: "manual:font-family" });
       }
     }
     await ensureSaveThumbnail(id, completed);

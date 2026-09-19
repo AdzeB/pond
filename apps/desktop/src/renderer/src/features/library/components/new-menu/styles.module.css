@@ -1,0 +1,4 @@
+.popup {
+  --ds-popup-min-width: 272px;
+  max-height: var(--available-height);
+}

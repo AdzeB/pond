@@ -1,9 +1,8 @@
-// @vitest-environment jsdom
 import { Dialog } from "@pond/ui";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { SourceFlowHost } from "@/features/sources/components/flow/flow";
+import { SourceFlowHost } from "@/features/sources/components/flow";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import dialogStyles from "../../../../../../../packages/ui/src/dialog/styles.module.css";
 
@@ -16,7 +15,6 @@ const observers: {
 }[] = [];
 
 beforeEach(() => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal(
     "ResizeObserver",
     class {
@@ -170,6 +168,27 @@ it("focuses the safe confirmation action before a destructive action", async () 
       new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
   );
   expect(document.activeElement).toBe(button("Cancel"));
+});
+
+it("passes the confirmation checkbox value to the action", async () => {
+  const onConfirm = vi.fn();
+  await act(async () => root.render(<Dialog.Host />));
+  await act(async () =>
+    Dialog.confirm({
+      title: "Remove Folder",
+      confirmLabel: "Remove",
+      checkbox: { label: "Move Saves to Trash" },
+      onConfirm,
+    }),
+  );
+  const checkbox = document.querySelector('[role="checkbox"]');
+  if (!(checkbox instanceof HTMLElement))
+    throw new Error("Missing confirmation checkbox");
+  expect(checkbox.getAttribute("aria-checked")).toBe("false");
+  await act(async () => checkbox.click());
+  expect(checkbox.getAttribute("aria-checked")).toBe("true");
+  await act(async () => button("Remove").click());
+  expect(onConfirm).toHaveBeenCalledWith({ checked: true });
 });
 
 it("preserves prompt values after failure and supports retry", async () => {
@@ -428,29 +447,28 @@ it("supports command defaults through the shared host", async () => {
   expect(onConfirm).toHaveBeenLastCalledWith("");
 });
 
-it.each([
-  "close",
-  "escape",
-  "back",
-] as const)("releases the source overlay after %s clears its page stack", async (dismiss) => {
-  await act(async () => root.render(<SourceFlowHost />));
-  await act(async () => sourceFlow.open("connect-source"));
-  expect(document.querySelector('[role="dialog"]')).not.toBeNull();
-  await act(async () => {
-    if (dismiss === "close") button("Close").click();
-    else if (dismiss === "back") sourceFlow.back();
-    else
-      document.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
-      );
-  });
-  expect(sourceFlow.current()).toBeNull();
-  expect(document.querySelector(`.${dialogStyles.backdrop}`)).toBeNull();
-  expect(document.querySelector("[data-base-ui-inert]")).toBeNull();
-  await act(async () => sourceFlow.open("connect-source"));
-  expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
-    "Choose Source",
-  );
-  await act(async () => button("Close").click());
-  expect(document.querySelector(`.${dialogStyles.backdrop}`)).toBeNull();
-});
+it.each(["close", "escape", "back"] as const)(
+  "releases the source overlay after %s clears its page stack",
+  async (dismiss) => {
+    await act(async () => root.render(<SourceFlowHost />));
+    await act(async () => sourceFlow.open("connect-help"));
+    expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+    await act(async () => {
+      if (dismiss === "close") button("Close").click();
+      else if (dismiss === "back") sourceFlow.back();
+      else
+        document.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+        );
+    });
+    expect(sourceFlow.current()).toBeNull();
+    expect(document.querySelector(`.${dialogStyles.backdrop}`)).toBeNull();
+    expect(document.querySelector("[data-base-ui-inert]")).toBeNull();
+    await act(async () => sourceFlow.open("connect-help"));
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
+      "Connecting a Source",
+    );
+    await act(async () => button("Close").click());
+    expect(document.querySelector(`.${dialogStyles.backdrop}`)).toBeNull();
+  },
+);

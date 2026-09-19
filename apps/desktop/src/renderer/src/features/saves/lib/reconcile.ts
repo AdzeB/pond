@@ -94,6 +94,7 @@ export const SavePatchSchema = z.object({
         h: z.number(),
         text: z.string(),
         fileIndex: z.number().int().nonnegative().optional(),
+        createdAt: z.number().optional(),
       }),
     )
     .nullish()

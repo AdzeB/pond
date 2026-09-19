@@ -1,20 +1,21 @@
-// @vitest-environment jsdom
 import { Tooltip } from "@pond/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { downloadsFilters } from "@/features/downloads/state/downloads-filters";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
 import { libraryChrome } from "@/features/library/state/library-chrome";
-import { primarySelection } from "@/features/library/state/selection";
 import { savesStore } from "@/features/saves/state/pool";
+import { primarySelection } from "@/features/saves/state/selection";
 import type { Save } from "@/features/saves/types";
-import { DownloadsPage } from "./page";
+import { DownloadsPage } from "./";
 
 function save(
   id: string,
   status: Save["status"],
   taskStatus?: "running" | "pending" | "failed",
+  extras: Partial<Save> = {},
 ): Save {
   return {
     id,
@@ -46,6 +47,7 @@ function save(
           },
         ]
       : [],
+    ...extras,
   };
 }
 function setSaves(saves: Save[]) {
@@ -63,7 +65,6 @@ const pipelinePause = vi.fn(async (paused: boolean) => ({ ok: true, paused }));
 const pipelineCancelSave = vi.fn(async () => ({ ok: true, cancelled: true }));
 
 beforeEach(() => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal(
     "ResizeObserver",
     class {
@@ -78,6 +79,7 @@ beforeEach(() => {
     removeEventListener() {},
   }));
   vi.clearAllMocks();
+  downloadsFilters.reset();
   primarySelection.set(null);
   libraryChrome.inspectSave(null);
   libraryChrome.closeRightPane();
@@ -109,6 +111,7 @@ afterEach(async () => {
   await act(async () => {
     root.unmount();
     downloadsSelection.clear();
+    downloadsFilters.reset();
     setSaves([]);
   });
   client.clear();
@@ -176,11 +179,6 @@ it("keeps running work active when the queue is paused and scopes retry to visib
   expect(
     host.querySelector('[data-status="running"]')?.hasAttribute("data-moving"),
   ).toBe(true);
-  const pausedGroup = [...host.querySelectorAll("button")].find(
-    (button) => button.textContent?.replaceAll(" ", "") === "Paused1",
-  );
-  if (!pausedGroup) throw new Error("Missing paused group");
-  await act(async () => pausedGroup.click());
   expect(host.querySelector('[data-status="pending"]')?.textContent).toContain(
     "Paused",
   );
@@ -188,8 +186,10 @@ it("keeps running work active when the queue is paused and scopes retry to visib
   expect(query).toHaveBeenCalledWith("saves.retryFailed", {
     ids: ["Failed video"],
   });
-  await click('[aria-label="Cancel Running video"]');
-  expect(pipelineCancelSave).toHaveBeenCalledWith("Running video");
+  expect(
+    host.querySelector('[aria-label="Actions for Running video"]'),
+  ).toBeNull();
+  expect(document.querySelector('[role="menuitem"]')).toBeNull();
   expect(primarySelection.get()).toBeNull();
 });
 
@@ -215,31 +215,34 @@ it("preserves row selection and prunes completed selections after live updates",
   });
 });
 
-it("keeps waiting names collapsed and sorts only active work", async () => {
+it("lists waiting and completed rows in the same table", async () => {
   setSaves([
     save("Z clip", "ingesting", "running"),
     save("A clip", "ingesting", "running"),
     save("Waiting video", "ingesting", "pending"),
   ]);
   await render();
-  expect(host.querySelector('[aria-label="Inspect Waiting video"]')).toBeNull();
+  expect(host.querySelector('[role="tablist"]')).toBeNull();
+  expect(
+    host.querySelector('[aria-label="Inspect Waiting video"]'),
+  ).not.toBeNull();
   await click('[aria-label="Sort by Name"]');
   expect(
     [...host.querySelectorAll('button[aria-label^="Inspect "]')].map((button) =>
       button.getAttribute("aria-label"),
     ),
-  ).toEqual(["Inspect A clip", "Inspect Z clip"]);
+  ).toEqual(["Inspect A clip", "Inspect Waiting video", "Inspect Z clip"]);
   await click('[aria-label="Sort by Name"]');
   expect(
     [...host.querySelectorAll('button[aria-label^="Inspect "]')].map((button) =>
       button.getAttribute("aria-label"),
     ),
-  ).toEqual(["Inspect Z clip", "Inspect A clip"]);
+  ).toEqual(["Inspect Z clip", "Inspect Waiting video", "Inspect A clip"]);
   expect(downloadsSelection.size()).toBe(0);
   expect(primarySelection.get()).toBeNull();
 });
 
-it("opens completed history on demand without filling the active list", async () => {
+it("shows completed history in the table without opening a group", async () => {
   query.mockImplementation(async (name: string) => {
     if (name === "settings.getPrefs") return {};
     if (name === "pipeline.status") return { paused: false };
@@ -271,15 +274,75 @@ it("opens completed history on demand without filling the active list", async ()
     throw new Error(`Unexpected query: ${name}`);
   });
   await render();
-  expect(host.querySelector('[aria-label="Inspect Saved clip"]')).toBeNull();
-  const completed = [...host.querySelectorAll("button")].find(
-    (button) => button.textContent === "Completed1",
-  );
-  if (!completed) throw new Error("Missing completed group");
-  await act(async () => completed.click());
   await click('[aria-label="Inspect Saved clip"]');
   expect(libraryChrome.getState()).toMatchObject({
     inspectorSaveId: "done",
     inspectorMode: "download",
   });
+});
+
+it("keeps status out of the name and shows the normalized source", async () => {
+  setSaves([
+    save("Clip", "ingesting", "pending"),
+    save("Failed video", "failed", "failed", {
+      source: "web",
+      url: "https://www.youtube.com/",
+      title: "https://www.youtube.com/",
+    }),
+  ]);
+  await render();
+  expect(host.querySelector('[aria-label="Sort by Status"]')).not.toBeNull();
+  expect(host.querySelector('[aria-label="Sort by Source"]')).not.toBeNull();
+  expect(
+    host.querySelector('[aria-label="Inspect Clip"]')?.textContent,
+  ).not.toContain("In Progress");
+  expect(
+    host.querySelector('[aria-label="Inspect https://www.youtube.com/"]')
+      ?.textContent,
+  ).not.toContain("Failed");
+  expect(host.querySelector('[data-status="pending"]')?.textContent).toContain(
+    "In Progress",
+  );
+  expect(host.querySelector('[data-status="failed"]')?.textContent).toContain(
+    "Failed",
+  );
+  const youtubeRow = host
+    .querySelector('[aria-label="Inspect https://www.youtube.com/"]')
+    ?.closest('[role="row"]');
+  expect(youtubeRow?.textContent).toContain("YouTube");
+});
+
+it("keeps media previews out of the name column", async () => {
+  setSaves([
+    save("Image file", "failed", undefined, { mediaType: "image" }),
+    save("Video file", "ingesting", "running", { mediaType: "video" }),
+  ]);
+  await render();
+  const image = host.querySelector('[aria-label="Inspect Image file"]');
+  const video = host.querySelector('[aria-label="Inspect Video file"]');
+  expect(image?.querySelector("svg")).toBeNull();
+  expect(video?.querySelector("svg")).toBeNull();
+  expect(image?.querySelector("img")).toBeNull();
+  expect(video?.querySelector("img")).toBeNull();
+});
+
+it("filters the table from the Status chip", async () => {
+  await render();
+  await click('[aria-label="Filter"]');
+  await click('[aria-label="Status"]');
+  const failed = [
+    ...document.querySelectorAll('[role="menuitemcheckbox"]'),
+  ].find((node) => node.textContent === "Failed");
+  if (!failed) throw new Error("Missing Failed filter");
+  await act(async () => {
+    failed.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  expect(
+    host.querySelector('[aria-label="Inspect Failed video"]'),
+  ).not.toBeNull();
+  expect(host.querySelector('[aria-label="Inspect Running video"]')).toBeNull();
+  expect(host.querySelector('[aria-label="Inspect Waiting video"]')).toBeNull();
 });

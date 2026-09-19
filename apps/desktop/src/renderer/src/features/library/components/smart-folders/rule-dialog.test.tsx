@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -20,7 +19,6 @@ describe("smart folder rule dialog", () => {
   let root: Root;
   let host: HTMLDivElement;
   beforeEach(() => {
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.stubGlobal(
       "ResizeObserver",
       class {

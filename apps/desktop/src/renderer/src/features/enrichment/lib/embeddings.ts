@@ -1,30 +1,19 @@
-import {
-  DEFAULT_TEXT_EMBEDDING_MODEL,
-  textEmbeddingVersion,
-} from "@shared/embeddings";
+import { textEmbeddingVersion } from "@shared/embeddings";
 import {
   inferEmbedText,
   inferEmbedTexts,
 } from "@/features/enrichment/lib/inference-client";
-import { getPrefsSnapshot } from "@/features/settings/state/prefs";
-
-function embedModelId(): string {
-  const fromPrefs = getPrefsSnapshot()?.ai?.embedModelId;
-  return fromPrefs && fromPrefs.trim().length > 0
-    ? fromPrefs
-    : DEFAULT_TEXT_EMBEDDING_MODEL;
-}
 
 export function embedModelVersion(): string {
-  return textEmbeddingVersion(embedModelId());
+  return textEmbeddingVersion();
 }
 
 export function embedText(text: string): Promise<Float32Array> {
-  return inferEmbedText(text, embedModelId());
+  return inferEmbedText(text);
 }
 
 export function embedTexts(texts: string[]): Promise<Float32Array[]> {
-  return inferEmbedTexts(texts, embedModelId());
+  return inferEmbedTexts(texts);
 }
 
 export function saveEmbeddingText(save: {

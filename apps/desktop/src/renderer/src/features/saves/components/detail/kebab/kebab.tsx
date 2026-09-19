@@ -34,6 +34,7 @@ export function KebabMenu({
           clipboardEmpty,
           fileIndex,
           openWithApps: peeked.length ? peeked : openWithApps,
+          opened: true,
         });
       }}
       onOpen={() => {
@@ -46,7 +47,7 @@ export function KebabMenu({
         });
       }}
     >
-      <Menu.Trigger variant="ghost" size="xs" icon aria-label="Save Actions">
+      <Menu.Trigger variant="ghost" size="sm" icon aria-label="Save Actions">
         <Ellipsis />
       </Menu.Trigger>
     </SpecMenu>

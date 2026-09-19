@@ -1,21 +1,30 @@
 import { app, dialog } from "electron";
 import log from "electron-log/main.js";
-import electronUpdaterPkg from "electron-updater";
 import { getPrefs } from "./core/prefs";
-
-const { autoUpdater } = electronUpdaterPkg;
 
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
 let wired = false;
 
-export function registerAutoUpdater() {
+async function loadAutoUpdater() {
+  const { default: electronUpdaterPkg } = await import("electron-updater");
+  return electronUpdaterPkg.autoUpdater;
+}
+
+export function registerAutoUpdater(): void {
   if (wired) return;
   if (!app.isPackaged) {
     log.info("[pond updater] skipped (dev build)");
     return;
   }
   wired = true;
+  void wireAutoUpdater().catch((error) => {
+    wired = false;
+    log.warn("[pond updater] setup failed", error);
+  });
+}
 
+async function wireAutoUpdater(): Promise<void> {
+  const autoUpdater = await loadAutoUpdater();
   autoUpdater.logger = log;
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
@@ -64,6 +73,7 @@ export function registerAutoUpdater() {
 
 export async function applyUpdaterPrefs(): Promise<void> {
   if (!app.isPackaged) return;
+  const autoUpdater = await loadAutoUpdater();
   const prefs = await getPrefs();
   autoUpdater.allowPrerelease = false;
   autoUpdater.channel = "stable";
@@ -79,6 +89,7 @@ export async function checkForUpdatesNow(): Promise<{
     return { ok: false, reason: "dev_build" };
   }
   try {
+    const autoUpdater = await loadAutoUpdater();
     const result = await autoUpdater.checkForUpdates();
     return {
       ok: true,

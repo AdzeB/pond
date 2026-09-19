@@ -136,23 +136,3 @@ export function themeCssVars(def: ThemeDef): ThemeCssVars {
     isDark: bg.l < fg.l,
   };
 }
-
-/** @deprecated Use themeCssVars. */
-export type ThemeEngineVars = ThemeCssVars & {
-  baseL: number;
-  baseC: number;
-  baseH: number;
-  fgDir: 1 | -1;
-};
-
-/** @deprecated Use themeCssVars. */
-export function themeEngineVars(def: ThemeDef): ThemeEngineVars {
-  const v = themeCssVars(def);
-  return {
-    ...v,
-    baseL: v.bgL,
-    baseC: v.bgC,
-    baseH: v.bgH,
-    fgDir: v.isDark ? 1 : -1,
-  };
-}

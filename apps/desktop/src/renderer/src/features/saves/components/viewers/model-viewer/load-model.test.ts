@@ -16,13 +16,10 @@ describe("modelLoaderKind", () => {
     expect(modelLoaderKind(`MODEL.${extension.toUpperCase()}`)).toBe(loader);
   });
 
-  it.each([
-    "ifc",
-    "dwg",
-    "c4d",
-    "blend",
-    "skp",
-  ])("keeps .%s on the generated-preview fallback", (extension) => {
-    expect(modelLoaderKind(extension)).toBeNull();
-  });
+  it.each(["ifc", "dwg", "c4d", "blend", "skp"])(
+    "keeps .%s on the generated-preview fallback",
+    (extension) => {
+      expect(modelLoaderKind(extension)).toBeNull();
+    },
+  );
 });

@@ -2,23 +2,35 @@
 
 ## General
 
-- **Node** 22 and **pnpm** 11 (see `.nvmrc` and `package.json` engines).
+- **Node** 24 and **pnpm** 11.27.0 (see `.nvmrc` and `package.json`).
 - **Style**: [Biome](https://biomejs.dev/) handles formatting; `pnpm lint` and `pnpm oxlint` check the repository standards.
 - **Commits**: [Conventional Commits](https://www.conventionalcommits.org/) enforced by commitlint + husky.
-- **Checks**: run `pnpm check` and `pnpm build` before opening a PR. CI also checks generated source documentation.
+- **Checks**: run `pnpm check` and `pnpm build` before opening a PR. CI also verifies generated source documentation.
 - **PRs**: Keep scope focused; link issues when relevant. Generated source documentation must stay in sync: run `pnpm generate` after descriptor changes.
 
 ## Engineering standards
 
+When a change uses an external source, follow the [references standard](docs/contributing/references-standard.md). Add a bibliography entry and connect it in the [influence index](docs/references/influences.md) or [inventory](docs/references/inventory.md).
+
 Read [code standards](docs/contributing/code-standards.md) for naming, interfaces, React, types, and tests. Read [desktop architecture](docs/contributing/architecture.md) when adding a feature or changing ownership or process interfaces. Both human and automated contributors use these documents.
 
-`pnpm check` runs lint, custom rules, architecture checks, type checks, and offline tests. Lint commands are read-only; desktop type checking regenerates the route tree. `pnpm build` verifies production bundles and performance budgets. `pnpm lint:fix` applies safe fixes explicitly; `pnpm format` formats files. Pre-commit checks never rewrite your working tree.
+Turborepo owns the build, typecheck, test, generation-check, and repository verification graphs. A transit task makes source-first package changes invalidate consuming apps without serializing unrelated work. Package-level `turbo.json` files define framework inputs and reusable outputs.
 
-Use `pnpm knip` when removing unused code or dependencies. Its findings require checking worker, HTML, and dynamic entrypoints; it is currently separate from `pnpm check`.
+`pnpm check` runs Biome, Oxlint, Knip, architecture checks, reference validation, non-mutating generated-file checks, type checks, and offline tests in one cacheable graph. `pnpm references:check` and `pnpm architecture:check` run focused root tasks. Source metadata verification and client integration smoke checks stay separate from offline validation. `pnpm build` verifies production bundles and performance budgets. `pnpm lint:fix` applies safe fixes explicitly; `pnpm format` formats files. Pre-commit checks never rewrite your working tree.
+
+Run `pnpm generate` only when you intend to update tracked generated files. Run `pnpm generate:check` to verify them without writing. CI runs both the non-mutating checks and a generated diff gate.
+
+CI can share task artifacts through Vercel Remote Cache. Configure a Turborepo CLI OIDC policy for the repository and set the `TURBO_TEAM` GitHub Actions variable. Workflows skip remote authentication when the variable is absent.
+
+Use `pnpm knip` when removing unused code or dependencies. Check worker, HTML, generated, and dynamic entrypoints before accepting a deletion.
 
 `ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts` runs the native database checks with Electron’s ABI. CI runs this separately from the Node test suite.
 
-After building the desktop, `pnpm --filter @pond/desktop exec electron scripts/smoke-desktop.cjs` verifies visible startup and preload queries using a temporary isolated library. It requires a desktop session.
+After building the desktop, `pnpm --filter @pond/desktop exec electron scripts/smoke-desktop.cjs` verifies visible startup and preload queries using a temporary isolated library. It requires a desktop session. `pnpm --filter @pond/desktop exec electron scripts/smoke-agent-stream.cjs` verifies reply streaming, completion, and cancellation through the real isolated preload bridge with offline fixtures and no provider credentials. `pnpm --filter @pond/desktop exec electron scripts/smoke-agent-operations.cjs` checks capability registration, persisted review, replay prevention, and Undo using a temporary isolated Library.
+
+The desktop package also retains focused manual checks outside `pnpm check`. Run `pnpm --filter @pond/desktop smoke:folder-tags` for folder rules, Undo, import recovery, and transfers. Run `pnpm --filter @pond/desktop smoke:library-trust` for backup manifests and locked Eagle folders. These checks require a built desktop and a desktop session. Run `pnpm --filter @pond/desktop smoke:sensitive-content` to download the pinned on-device model, verify its checksum, and exercise one inference without Electron.
+
+The manual benchmarks are retained for measurements that should not gate every PR. Run `pnpm --filter @pond/desktop perf:db [scale...]` to benchmark synthetic SQLite libraries. Run `pnpm --filter @pond/desktop perf:gallery -- --sizes 1000,10000,100000` to measure launch, queries, search, and scrolling against generated galleries. The gallery check requires a built desktop and writes its report to a temporary directory unless you pass `--output`.
 
 Use temporary libraries and fixtures in tests. Never require a contributor's personal library, source accounts, or API keys for a PR check. Keep live source tests separate.
 

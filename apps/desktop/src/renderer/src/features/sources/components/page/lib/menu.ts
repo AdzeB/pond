@@ -1,8 +1,12 @@
 import type { MenuItemSpec } from "@pond/ui";
-import { viewAccountItems } from "@/features/search/lib/open-search";
+import {
+  accountMenuTarget,
+  buildSourceActionMenu,
+  type SourceMenuOptions,
+  watchMenuTarget,
+} from "@/features/sources/lib/source-menu";
 import { sourcesSelection } from "@/features/sources/state/sources-selection";
-import { buildAccountMenu } from "./account-menu";
-import { type SourceTableRow, sourceCanSyncNow } from "./helpers";
+import type { SourceTableRow } from "./helpers";
 
 export function contextMenuSources(clicked: SourceTableRow): SourceTableRow[] {
   const selected = sourcesSelection.snapshot();
@@ -12,42 +16,17 @@ export function contextMenuSources(clicked: SourceTableRow): SourceTableRow[] {
   return [clicked];
 }
 
-function syncLabel(rows: readonly SourceTableRow[]): string {
-  return rows.every((row) => row.kind === "watch") ? "Check Now" : "Sync Now";
-}
-
 export function buildSourceMenu(
   rowOrRows: SourceTableRow | readonly SourceTableRow[],
+  options: SourceMenuOptions = {},
 ): MenuItemSpec[] {
   const rows = Array.isArray(rowOrRows) ? rowOrRows : [rowOrRows];
-  const row = rows[0];
-  if (!row) return [];
-  const batch = rows.length > 1;
-  const ids = rows.map((item) => item.id);
-
-  const items: MenuItemSpec[] = [
-    {
-      label: syncLabel(rows),
-      disabled: !rows.some(sourceCanSyncNow),
-      onClick: () => {
-        for (const item of rows) {
-          if (!sourceCanSyncNow(item)) continue;
-          void window.pond.syncRunNow(item.id);
-        }
-      },
-    },
-    {
-      label: "View Items in Library",
-      onClick: () => viewAccountItems(ids),
-    },
-  ];
-
-  if (!batch && row.entry.kind === "account") {
-    items.push(
-      { type: "separator" },
-      ...buildAccountMenu(row.entry.row, row.model),
-    );
-  }
-
-  return items;
+  return buildSourceActionMenu(
+    rows.map((row) =>
+      row.entry.kind === "account"
+        ? accountMenuTarget(row.entry.row, row.model)
+        : watchMenuTarget(row.entry.row, row.model),
+    ),
+    options,
+  );
 }

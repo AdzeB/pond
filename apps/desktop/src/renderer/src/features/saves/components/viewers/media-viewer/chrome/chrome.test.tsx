@@ -1,12 +1,11 @@
-// @vitest-environment jsdom
 import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { libraryViewContext } from "@/features/library/state/library-view-context";
 import { pool } from "@/features/saves/state/pool";
+import { libraryViewContext } from "@/features/saves/state/view-context";
 import type { Save } from "@/features/saves/types";
-import { MediaViewer } from "../media-viewer";
+import { MediaViewer } from "..";
 
 const save: Save = {
   id: "chrome-save",
@@ -40,7 +39,6 @@ let host: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal(
     "ResizeObserver",
     class {
@@ -67,7 +65,7 @@ afterEach(async () => {
   libraryViewContext.set([], "library");
 });
 
-it("floats image inspector controls over the viewer stage", async () => {
+it("places image inspector controls in the top toolbar", async () => {
   await act(async () => {
     root.render(<MediaViewer save={save} />);
   });
@@ -83,12 +81,26 @@ it("floats image inspector controls over the viewer stage", async () => {
   expect(fit).toBeTruthy();
   expect(frame?.contains(fit ?? null)).toBe(false);
   expect(fit?.closest("[data-blossom-slide]")).toBeNull();
+  expect(fit?.closest("[data-slot]")?.getAttribute("data-slot")).toBe("top");
   expect(host.querySelector("[data-viewer-root]")?.contains(fit ?? null)).toBe(
     true,
   );
 });
 
-it("pages gallery files from the center of the inspector hud", async () => {
+it("shows only media when controls are disabled", async () => {
+  await act(async () => {
+    root.render(<MediaViewer save={save} showControls={false} />);
+  });
+
+  expect(host.querySelector("[aria-label='Image']")).toBeTruthy();
+  expect(host.querySelector("[data-slot]")).toBeNull();
+  expect(host.querySelector("[aria-label='Fit']")).toBeNull();
+  expect(
+    host.querySelector("[data-viewer-root]")?.hasAttribute("data-chrome"),
+  ).toBe(false);
+});
+
+it("places gallery paging and image controls in the top toolbar", async () => {
   const first = save.files[0];
   if (!first) throw new Error("Missing fixture file");
   const gallery: Save = {
@@ -118,15 +130,11 @@ it("pages gallery files from the center of the inspector hud", async () => {
   expect(host.textContent).toContain("1 / 2");
   expect(previous?.disabled).toBe(true);
   expect(next?.disabled).toBe(false);
-  expect(previous?.closest("[data-anchor]")?.getAttribute("data-anchor")).toBe(
-    "bottom-center",
+  expect(previous?.closest("[data-slot]")?.getAttribute("data-slot")).toBe(
+    "top",
   );
-  expect(crop?.closest("[data-anchor]")?.getAttribute("data-anchor")).toBe(
-    "bottom-left",
-  );
-  expect(zoom?.closest("[data-anchor]")?.getAttribute("data-anchor")).toBe(
-    "top-center",
-  );
+  expect(crop?.closest("[data-slot]")?.getAttribute("data-slot")).toBe("top");
+  expect(zoom?.closest("[data-slot]")?.getAttribute("data-slot")).toBe("top");
   expect(host.querySelectorAll("[aria-label='Previous Slide']")).toHaveLength(
     1,
   );

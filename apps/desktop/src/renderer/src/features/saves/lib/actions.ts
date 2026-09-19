@@ -178,7 +178,7 @@ export async function copyFilePath(
   });
 }
 
-export async function copyFile(
+async function copyFile(
   save: Save,
   preferredIndex?: number | null,
 ): Promise<void> {
@@ -240,7 +240,7 @@ function isCopyableImageFile(file: SaveFile): boolean {
   );
 }
 
-export async function copyImage(
+async function copyImage(
   save: Save,
   preferredIndex?: number | null,
 ): Promise<void> {

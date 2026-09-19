@@ -10,6 +10,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -27,26 +31,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Set up Turborepo Remote Cache
+        if: ${{ vars.TURBO_TEAM != '' }}
+        uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
+        with:
+          team: ${{ vars.TURBO_TEAM }}
+
       - name: Generated files are up to date
         run: pnpm generate && git diff --exit-code
 
-      - name: Lint
-        run: pnpm lint
-
-      - name: Custom code standards
-        run: pnpm oxlint
-
-      - name: Architecture
-        run: pnpm architecture:check
-
-      - name: Unused code and dependencies
-        run: pnpm knip
-
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Test
-        run: pnpm test
+      - name: Verify workspace
+        run: pnpm check
 
       - name: Native database tests
         run: ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts

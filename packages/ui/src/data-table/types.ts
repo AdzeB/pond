@@ -1,3 +1,4 @@
+import type { RowData } from "@tanstack/react-table";
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 
 type ColumnAlign = "start" | "center" | "end";
@@ -15,7 +16,7 @@ export interface HeaderContext {
   sorted: false | "asc" | "desc";
 }
 
-export interface TableColumn<T> {
+export interface TableColumn<T extends RowData> {
   id: string;
   header?: ReactNode | ((ctx: HeaderContext) => ReactNode);
   sortLabel?: string;
@@ -30,7 +31,7 @@ export interface TableColumn<T> {
   headerHidden?: boolean;
 }
 
-export interface RenderRowArgs<T> {
+export interface RenderRowArgs<T extends RowData> {
   row: T;
   rowId: string;
   depth: number;

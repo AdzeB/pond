@@ -1,9 +1,5 @@
 import type { IconComponent } from "@pond/icons/types";
 import { useMemo } from "react";
-import {
-  type DisplayPrefs,
-  useDisplayPrefs,
-} from "@/features/library/state/display-prefs";
 import { useMediaPickOptions } from "@/features/saves/hooks/use-media-pick-options";
 import {
   buildMediaUnits,
@@ -22,6 +18,10 @@ import {
   aspectFor,
   useAspectVersion,
 } from "@/features/saves/state/aspect";
+import {
+  type DisplayPrefs,
+  useDisplayPrefs,
+} from "@/features/saves/state/display-prefs";
 import type { Save, SaveFile } from "@/features/saves/types";
 import { getSourceIcon, getSourceLogo } from "@/features/sources/lib/registry";
 import { formatAbsolute } from "@/shared/lib/format";

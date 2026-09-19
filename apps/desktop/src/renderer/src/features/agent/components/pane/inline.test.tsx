@@ -1,13 +1,10 @@
-// @vitest-environment jsdom
-
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterAll, afterEach, beforeEach, expect, it, vi } from "vitest";
 import { AssistantResponse } from "./assistant-response";
-import { ResultSet } from "./result-set";
+import { ConsultedSaves } from "./consulted-saves";
 
 beforeEach(() => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal("pond", { query: async () => [] });
 });
 afterAll(() => vi.unstubAllGlobals());
@@ -32,36 +29,46 @@ it("expands verified results and adds the actual Save to the composer without op
   const onOpenSave = vi.fn();
   await act(async () =>
     root.render(
-      <ResultSet
-        result={{
-          title: "References",
-          saveIds: ["unknown", "save-0", ...sources.map((source) => source.id)],
-        }}
+      <ConsultedSaves
+        saveIds={["unknown", "save-0", ...sources.map((source) => source.id)]}
         sources={sources}
         onAttach={onAttach}
         onOpenSave={onOpenSave}
       />,
     ),
   );
-  expect(host.querySelectorAll("article")).toHaveLength(4);
+  expect(host.querySelectorAll("article")).toHaveLength(3);
   expect(host.textContent).not.toContain("unknown");
-  const show = [...host.querySelectorAll("button")].find(
-    (button) => button.textContent === "View All 6 Saves",
+  const show = host.querySelector<HTMLButtonElement>(
+    'section[aria-label="Consulted Saves"] > button[aria-expanded="false"]',
   );
   await act(async () => show?.click());
   expect(host.querySelectorAll("article")).toHaveLength(6);
   await act(async () =>
     host
-      .querySelector<HTMLButtonElement>(
-        '[aria-label="Add Reference 1 to message"]',
-      )
+      .querySelector<HTMLButtonElement>('[aria-label="Preview Reference 1"]')
+      ?.click(),
+  );
+  await act(async () =>
+    document
+      .querySelector<HTMLButtonElement>('[aria-label="Add Reference 1"]')
       ?.click(),
   );
   expect(onAttach).toHaveBeenCalledExactlyOnceWith([sources[0]]);
   expect(onOpenSave).not.toHaveBeenCalled();
   await act(async () =>
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+    ),
+  );
+  await act(async () =>
     host
-      .querySelector<HTMLButtonElement>('[aria-label="Open Reference 6"]')
+      .querySelector<HTMLButtonElement>('[aria-label="Preview Reference 6"]')
+      ?.click(),
+  );
+  await act(async () =>
+    [...document.querySelectorAll("button")]
+      .find((button) => button.textContent === "Open Save")
       ?.click(),
   );
   expect(onOpenSave).toHaveBeenCalledExactlyOnceWith("save-5");
@@ -82,7 +89,7 @@ it("copies the exact fenced code and does not render it as executable HTML", asy
     ),
   );
   expect(host.querySelector("script")).toBeNull();
-  expect(host.querySelector("figcaption")?.textContent).toContain("html");
+  expect(host.textContent).toContain("html");
   await act(async () =>
     host.querySelector<HTMLButtonElement>('[aria-label="Copy Code"]')?.click(),
   );
@@ -131,8 +138,8 @@ it("keeps numbered citations compact and opens the corresponding Save", async ()
 it("uses a bounded text fallback instead of fetching a remote image", async () => {
   await act(async () =>
     root.render(
-      <ResultSet
-        result={{ title: "Notes", saveIds: ["note"] }}
+      <ConsultedSaves
+        saveIds={["note"]}
         sources={[
           {
             id: "note",
@@ -150,6 +157,12 @@ it("uses a bounded text fallback instead of fetching a remote image", async () =
     ),
   );
   expect(host.querySelector("img")).toBeNull();
-  expect(host.textContent).toContain("A note with texture.");
-  expect(host.textContent?.length).toBeLessThan(260);
+  await act(async () =>
+    host
+      .querySelector<HTMLButtonElement>('[aria-label="Preview Notes"]')
+      ?.click(),
+  );
+  const preview = document.querySelector('[role="dialog"]');
+  expect(preview?.textContent).toContain("A note with texture.");
+  expect(preview?.textContent?.length).toBeLessThan(260);
 });

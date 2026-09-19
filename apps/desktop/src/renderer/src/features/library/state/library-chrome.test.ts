@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("independent Agent and inspector panes", () => {
@@ -16,10 +15,10 @@ describe("independent Agent and inspector panes", () => {
   it("raises old sidebar widths to the tab-safe minimum", async () => {
     localStorage.setItem("pond.sidebarWidth", "180");
     const { libraryChrome } = await import("./library-chrome");
-    expect(libraryChrome.getState().sidebarWidth).toBe(220);
+    expect(libraryChrome.getState().sidebarWidth).toBe(256);
     libraryChrome.setSidebarWidth(200);
-    expect(libraryChrome.getState().sidebarWidth).toBe(220);
-    expect(localStorage.getItem("pond.sidebarWidth")).toBe("220");
+    expect(libraryChrome.getState().sidebarWidth).toBe(256);
+    expect(localStorage.getItem("pond.sidebarWidth")).toBe("256");
   });
 
   it("preserves the saved sidebar width through closing and reopening", async () => {
@@ -92,6 +91,11 @@ describe("independent Agent and inspector panes", () => {
     libraryChrome.toggleAgent();
     libraryChrome.inspectSave("first");
     expect(libraryChrome.getState().rightPane).toBe("agent");
+    libraryChrome.openSaveDetails("first");
+    expect(libraryChrome.getState().rightPane).toBe("inspector");
+    libraryChrome.closeRightPane();
+    libraryChrome.openSaveDetails("first");
+    expect(libraryChrome.getState().rightPane).toBe("inspector");
     libraryChrome.inspectSave("second");
     expect(libraryChrome.getState().rightPane).toBe("inspector");
     expect(libraryChrome.getState().inspectorSaveId).toBe("second");
@@ -151,5 +155,39 @@ describe("independent Agent and inspector panes", () => {
     expect(libraryChrome.getState().rightPane).toBeNull();
     libraryChrome.toggleRightPane();
     expect(libraryChrome.getState().rightPane).toBe("inspector");
+  });
+
+  it("opens connection details in the inspector slot", async () => {
+    const { libraryChrome } = await import("./library-chrome");
+    libraryChrome.inspectSource("account", "acc-1");
+    expect(libraryChrome.getState()).toMatchObject({
+      rightPane: "inspector",
+      inspectorMode: "source",
+      inspectorSourceId: "acc-1",
+      inspectorSourceKind: "account",
+    });
+    libraryChrome.closeRightPane();
+    libraryChrome.inspectSource("account", "acc-1");
+    expect(libraryChrome.getState().rightPane).toBe("inspector");
+  });
+
+  it("restores connection details after Agent and clears them on disconnect", async () => {
+    const { libraryChrome } = await import("./library-chrome");
+    libraryChrome.inspectSource("watch", "watch-1");
+    libraryChrome.toggleAgent();
+    expect(libraryChrome.getState().rightPane).toBe("agent");
+    expect(libraryChrome.getState().inspectorSourceId).toBe("watch-1");
+    libraryChrome.toggleAgent();
+    expect(libraryChrome.getState()).toMatchObject({
+      rightPane: "inspector",
+      inspectorMode: "source",
+    });
+    libraryChrome.clearSourceInspector();
+    expect(libraryChrome.getState()).toMatchObject({
+      rightPane: null,
+      inspectorSourceId: null,
+      inspectorSourceKind: null,
+      inspectorMode: "save",
+    });
   });
 });

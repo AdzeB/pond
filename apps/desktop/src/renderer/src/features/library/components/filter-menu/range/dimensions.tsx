@@ -3,8 +3,8 @@ import { Input } from "@pond/ui";
 import { useState } from "react";
 import { stopMenuKeys } from "../menu-keys";
 import { useFilterDraft } from "../use-filter-draft";
-import { rangeBounds, rangePredicate } from "./range";
-import styles from "./range.module.css";
+import { rangeBounds, rangePredicate } from "./";
+import styles from "./styles.module.css";
 
 function numberText(value: PredicateValue | undefined): string {
   return value === "" ? "" : String(value);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DisplayPrefs } from "@/features/library/state/display-prefs";
+import type { DisplayPrefs } from "@/features/saves/state/display-prefs";
 import type { Save } from "@/features/saves/types";
 import { buildSaveCardModel } from "./model";
 

@@ -41,6 +41,10 @@ export async function cancelAllIngest(): Promise<number> {
   return (await loadReconciler()).cancelAllIngest();
 }
 
+export async function skipSaves(ids: readonly string[]): Promise<number> {
+  return (await loadReconciler()).skipSaves(ids);
+}
+
 export async function pipelineSnapshot(): Promise<PipelineSnapshot> {
   return (await loadReconciler()).pipelineSnapshot();
 }

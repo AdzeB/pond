@@ -1,12 +1,14 @@
 import { Input as BaseInput } from "@base-ui/react/input";
 import { Menu as Base } from "@base-ui/react/menu";
-import { IconCaretRightFill12 as CaretRight } from "@pond/icons/fill/12";
+import { IconChevronRightFill12 as CaretRight } from "@pond/icons/fill/12";
 import { clsx as cn } from "clsx";
-import { forwardRef } from "react";
+import { forwardRef, useImperativeHandle } from "react";
 import { Button, type ButtonProps } from "../button";
 import { Checkbox } from "../checkbox";
 import { Keyboard } from "../keyboard";
+import { stopPageHotkeys } from "../stop-page-hotkeys";
 import { Switch } from "../switch";
+import { useScrollFade } from "../use-scroll-fade";
 import { type MenuItemSpec, renderMenuSpec } from "./items";
 
 import styles from "./styles.module.css";
@@ -103,6 +105,27 @@ function Viewport({ className, ...props }: Base.Viewport.Props) {
   );
 }
 
+const List = forwardRef<HTMLDivElement, React.ComponentPropsWithoutRef<"div">>(
+  function List({ className, ...props }, forwardedRef) {
+    const scrollFade = useScrollFade<HTMLDivElement>();
+    useImperativeHandle(forwardedRef, () => {
+      const element = scrollFade.ref.current;
+      if (!element) throw new Error("Menu list did not mount");
+      return element;
+    });
+
+    return (
+      <div
+        ref={scrollFade.ref}
+        className={cn(styles.list, className)}
+        {...props}
+        data-scroll-fade={scrollFade["data-scroll-fade"]}
+        data-scrollable={scrollFade["data-scrollable"] || undefined}
+      />
+    );
+  },
+);
+
 function Arrow({ className, ...props }: Base.Arrow.Props) {
   return <Base.Arrow className={cn(styles.arrow, className)} {...props} />;
 }
@@ -137,6 +160,19 @@ function ItemIcon({ className, ...props }: React.ComponentProps<"span">) {
 
 function ItemLabel({ className, ...props }: React.ComponentProps<"span">) {
   return <span className={cn(styles["item-label"], className)} {...props} />;
+}
+
+function ItemContent({ className, ...props }: React.ComponentProps<"span">) {
+  return <span className={cn(styles["item-content"], className)} {...props} />;
+}
+
+function ItemDescription({
+  className,
+  ...props
+}: React.ComponentProps<"span">) {
+  return (
+    <span className={cn(styles["item-description"], className)} {...props} />
+  );
 }
 
 function ItemKeyboard({
@@ -248,11 +284,19 @@ function SubmenuRoot(props: Base.SubmenuRoot.Props) {
   return <Base.SubmenuRoot {...props} />;
 }
 
-function SubmenuTrigger({ className, ...props }: Base.SubmenuTrigger.Props) {
+type SubmenuTriggerProps = Base.SubmenuTrigger.Props & {
+  icon?: boolean;
+};
+
+function SubmenuTrigger({ className, icon, ...props }: SubmenuTriggerProps) {
   return (
-    <Base.SubmenuTrigger className={cn(styles.item, className)} {...props}>
+    <Base.SubmenuTrigger
+      className={cn(styles.item, className)}
+      data-icon={icon || undefined}
+      {...props}
+    >
       {props.children}
-      <CaretRight />
+      {icon ? null : <CaretRight />}
     </Base.SubmenuTrigger>
   );
 }
@@ -295,14 +339,7 @@ function Input({ className, onKeyDown, ...props }: BaseInput.Props) {
       className={cn(styles.input, className)}
       onKeyDown={(event) => {
         onKeyDown?.(event);
-        if (
-          event.key.length === 1 &&
-          !event.ctrlKey &&
-          !event.metaKey &&
-          !event.altKey
-        ) {
-          event.stopPropagation();
-        }
+        stopPageHotkeys(event);
       }}
       {...props}
     />
@@ -317,12 +354,15 @@ export const Menu = {
   Popup,
   Surface,
   Viewport,
+  List,
   Arrow,
   Item,
   Row,
   LinkItem,
   ItemIcon,
   ItemLabel,
+  ItemContent,
+  ItemDescription,
   ItemKeyboard,
   Input,
   SecondaryLabel,

@@ -5,7 +5,7 @@ const { tmpdir } = require("node:os");
 const { join } = require("node:path");
 const sandbox = mkdtempSync(join(tmpdir(), "pond-cleanup-smoke-"));
 process.env.POND_SANDBOX = sandbox;
-app.on("quit", () => rmSync(sandbox, { recursive: true, force: true }));
+process.once("exit", () => rmSync(sandbox, { recursive: true, force: true }));
 let complete = false;
 const timer = setTimeout(() => {
   console.error("SMOKE_FAILED: renderer did not become ready");
@@ -48,8 +48,8 @@ app.on("web-contents-created", (_, contents) => {
           tags: state.tags.length,
         }),
       );
-      app.quit();
-      setTimeout(() => app.exit(0), 1000);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      app.exit(0);
     } catch (error) {
       clearTimeout(timer);
       console.error("SMOKE_FAILED", error);

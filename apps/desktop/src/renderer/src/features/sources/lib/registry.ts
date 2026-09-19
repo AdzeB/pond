@@ -14,7 +14,11 @@ import {
 } from "@pond/icons/social-media";
 import type { IconComponent } from "@pond/icons/types";
 import type { Source } from "@pond/schema/db";
-import { resolveSourceId, sourceLabel } from "@pond/schema/sources";
+import {
+  hostToSource,
+  resolveSourceId,
+  sourceLabel,
+} from "@pond/schema/sources";
 import redditLogo from "@/assets/logos/reddit.png";
 
 interface SourceDef {
@@ -59,6 +63,13 @@ export function getSourceDef(source: Source): SourceDef {
     logo: SOURCE_LOGOS[source],
     icon: SOURCE_ICONS[source],
   };
+}
+
+export function getSourceDefForIdentity(identity: string): SourceDef | null {
+  const source =
+    resolveSourceId(identity) ??
+    hostToSource(identity.includes("://") ? identity : `https://${identity}`);
+  return source ? getSourceDef(source) : null;
 }
 
 export function getSourceLogo(source: string): string | null {
