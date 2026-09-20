@@ -1,0 +1,108 @@
+{
+  "capturedAt": "2026-09-20T10:18:00.000Z",
+  "eagle": {
+    "version": "4.0.0",
+    "platform": "darwin"
+  },
+  "redaction": {
+    "personalLibraryDataIncluded": false,
+    "method": "Generated solid-color media, example.com URLs, and audit-only metadata were imported into a dedicated Eagle folder before export."
+  },
+  "source": {
+    "folder": "Pond Parity Audit",
+    "items": [
+      {
+        "name": "Pond Parity Blue",
+        "extension": "png",
+        "sha256": "229a2be3b309478f1785c7ff627690a472236db75889f76c78d3239fe83d6a36"
+      },
+      {
+        "name": "Pond Parity Orange",
+        "extension": "jpg",
+        "sha256": "c79a3dd3726f715a0d65d68edf48b85e74078af4a588735614e9d155eb5ff1b9"
+      },
+      {
+        "name": "Pond Parity Green",
+        "extension": "png",
+        "sha256": "3b3d9ceaec4cffbbd36c85471f1e2929946d7868b5d01b43ac95e791beeb8259"
+      },
+      {
+        "name": "Pond Custom Thumbnail",
+        "extension": "png",
+        "sha256": "d5f1601832dbef5b187f35e6fb678a58443503532e8ab1a81dbd69a17eb7e608"
+      }
+    ]
+  },
+  "exports": [
+    {
+      "file": "samples/pond-parity-nested.eaglepack",
+      "kind": "nested-folder",
+      "bytes": 10423,
+      "sha256": "31977e739369ed070e4eab9364d167635349f7a16ecfdf745bb50c563d1175bc",
+      "entries": [
+        "pack.json",
+        "MU9O0KATZXGHQ.info/Pond Parity Green_thumbnail.png",
+        "MU9O0KATZXGHQ.info/Pond Parity Green.png",
+        "MU9O0KATZXGHQ.info/metadata.json",
+        "MU9NQE65ONJAV.info/Pond Parity Orange.jpg",
+        "MU9NQE65ONJAV.info/metadata.json",
+        "MU9NQE64Z72IT.info/metadata.json",
+        "MU9NQE64Z72IT.info/Pond Parity Blue.png"
+      ]
+    },
+    {
+      "file": "samples/pond-parity-custom-thumbnail.eaglepack",
+      "kind": "selection-with-custom-thumbnail",
+      "bytes": 4784,
+      "sha256": "84f6ce1a9ddbc804d5ad35e8478abb81c035046183718c9b3a7cf0e26fd2d137",
+      "entries": [
+        "pack.json",
+        "MU9O0KATZXGHQ.info/Pond Parity Green.png",
+        "MU9O0KATZXGHQ.info/Pond Parity Green_thumbnail.png",
+        "MU9O0KATZXGHQ.info/metadata.json"
+      ]
+    }
+  ],
+  "observations": {
+    "container": "ZIP with store compression",
+    "manifest": "pack.json",
+    "itemDirectoryPattern": "{itemId}.info",
+    "folderExportIncludesFolder": true,
+    "selectionExportIncludesFolder": false,
+    "selectionExportClearsFolders": true,
+    "nestedFolderMembershipPreserved": true,
+    "customThumbnailNamingPattern": "{itemName}_thumbnail.png",
+    "metadataJsonAddsFields": ["lastModified"],
+    "imageFields": [
+      "id",
+      "name",
+      "size",
+      "btime",
+      "mtime",
+      "ext",
+      "tags",
+      "folders",
+      "isDeleted",
+      "url",
+      "annotation",
+      "modificationTime",
+      "star",
+      "height",
+      "width",
+      "noThumbnail",
+      "palettes"
+    ],
+    "folderFields": [
+      "id",
+      "name",
+      "description",
+      "children",
+      "modificationTime",
+      "tags",
+      "extendTags",
+      "pinyin",
+      "password",
+      "passwordTips"
+    ]
+  }
+}

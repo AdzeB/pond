@@ -27,10 +27,9 @@ them.
 - `locked-eagle-folders`: Eagle password markers and inherited exclusion
 - `preferences`: flat, version 2, version 3, and Library-bundle preference forms
 - `deep-links`: Library-bound and legacy Pond Save links
-- `eaglepack`: characterization requirements for the undocumented transfer
-  container
+- `eaglepack`: Eagle 4.0.0 folder and custom-thumbnail transfer packages
 
-The Eaglepack descriptor is intentionally incomplete. Do not implement a parser
-from filenames or assumptions in that file. Capture at least two exports from a
-supported Eagle release, compare their container structure, redact private
-metadata, and record checksums and observed fields before changing its status.
+The Eaglepack samples contain generated media and audit-only metadata. The
+characterization records checksums, entry names, observed fields, and redaction
+steps. Eagle writes one root `folder` object for folder exports; compatibility
+tests must preserve that singular container shape and its nested children.

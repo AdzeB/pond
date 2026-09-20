@@ -6,6 +6,8 @@ record explains how those sources contributed to the product. Follow the
 
 - [Influence index](influences.md): sources connected to decisions and artifacts.
 - [Dependency inventory](inventory.md): dependencies, tools, models, and assets.
+- [Eagle 4 desktop parity audit](eagle-4-desktop-parity-audit.md): September 2026 runtime, UI, compatibility, and code comparison.
+- [Eagle 4 desktop surface inventory](eagle-4-desktop-surface-inventory.md): complete renderer-level screen, menu, option, viewer, and state catalog.
 - [On-device model defaults](on-device-model-defaults.md): September 2026 model recommendations and rollout requirements.
 
 ## Local capture

@@ -47,6 +47,11 @@ Eagle's first-party support pages define compatibility baselines and future
 acceptance criteria. A citation in this section records the documented behavior;
 it does not claim that Pond implements it.
 
+The [Eagle 4 desktop parity audit](eagle-4-desktop-parity-audit.md) and
+[surface inventory](eagle-4-desktop-surface-inventory.md) supplement those pages
+with static inspection of the installed Eagle 4.0.0 app, generated media
+workflows, neutral Eaglepack exports, and Pond implementation evidence.
+
 Library transfer and collection planning use Eagle's cross-Library copy and
 Eaglepack behavior
 ([Eagle, n.d.-b](../../references.md#en-eagle-cool-support-article-adding-files-to-other-libraries);
