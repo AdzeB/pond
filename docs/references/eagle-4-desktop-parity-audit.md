@@ -37,12 +37,12 @@ The original non-plugin candidate set contains 38 features:
 - 1 goes beyond Eagle's documented guarantees
 - 0 remain wholly missing
 
-The first comparison found 21 additional product differences outside that
-candidate set. The closure pass expanded coverage to about 95 first-party
-surfaces and at least 47 distinct non-matrix differences. Visual-only
-differences are recorded separately. The old feature picker is stale. It
-predates the security, browsing, conversion, localization, screenshot, and
-organization work in `ad665308`.
+The first comparison found 21 additional product surfaces outside that candidate
+set. The closure pass expanded coverage to about 95 first-party surfaces and at
+least 47 distinct non-matrix surfaces. Their corrected Pond statuses appear
+below. Visual-only differences are recorded separately. The old feature picker
+is stale. It predates the security, browsing, conversion, localization,
+screenshot, and organization work in `ad665308`.
 
 The companion
 [surface inventory](eagle-4-desktop-surface-inventory.md) catalogs 18
@@ -148,7 +148,7 @@ maintenance utilities added these findings.
 
 ### Missing
 
-- Copy an image as Base64.
+- Copy an item's name, thumbnail, or image bytes as Base64.
 - Filter folders and Saved Views in the sidebar.
 - Auto-select newly imported items.
 - Convert IPTC keywords into tags during import.
@@ -157,9 +157,11 @@ maintenance utilities added these findings.
 - Configure an application proxy.
 - Route Space to macOS Quick Look.
 - Select a display color-space mode.
-- Export a debug report and browse error logs from Help.
-- Import directly from ArtStation, Pinterest, and Huaban.
-- Offer an Eagle-style local HTTP API.
+- Show first-run onboarding.
+- Keep unified Notification Center history.
+- Run an auto-advancing slideshow.
+- Include folders in Quick Search results.
+- Import directly from ArtStation, Pixave, and Inboard.
 
 ### Partial
 
@@ -175,37 +177,36 @@ maintenance utilities added these findings.
 - Switch gallery thumbnails between Fit and Fill.
 - Match Eagle's menu-bar quick-capture surface.
 - Match the full interactive depth of Eagle's saved-page and HTML viewer.
+- Export a bundled debug report: Pond can reveal raw logs.
+- Save filters independently: Pond stores them through Saved Views.
+- Match Smart Folder rules that depend on camera and EXIF metadata.
+- Convert WebP in place: Pond's general conversion flow exports copies.
+- Centralize import-error retry, clear, and copy actions.
+- Match Eagle's dedicated GIF-only frame-viewer surface.
 
 ### Intentional
 
 Pond uses the browser extension and capture queue instead of Eagle's dedicated
-desktop Collect window.
+desktop Collect window. Pinterest is a connected source instead of a one-time
+competitor-library importer.
 
-### Closure-pass additions
+### Closure-pass parity confirmations
 
-The exhaustive screen and option inventory also records:
+The exhaustive pass also confirmed that Pond already covers:
 
-- saved filters
-- deeper Smart Folder rule building and live counts
-- the complete duplicate merge-review workspace
-- WebP batch conversion
+- exact and similar duplicate review with survivor selection
+- starred tags and Tag Groups
+- subfolder covers and content browsing
+- video hover preview
+- BPM filtering
+- batch URL import
 - replace file in place
-- Pixave and batch-link import
-- import error retry, clear, and copy actions
-- the saved-page browser toolbar
-- welcome onboarding
-- the mouse-wheel first-run dialog
-- Notification Center history
-- the Community sidebar destination
-- starred tags and tag-group merge
-- subfolder cover and list controls
-- shape and orientation, BPM, comments, and bookmark filters
-- video hover preview and Fit or Fill preferences
-- the GIF frame-viewer toggle
-- automatic Screenshot tags
-- Library reload and cache clearing
-- merge tags and clear-history dialogs
-- the hidden metadata repair command
+- extension validation
+- Auto Import
+- an authenticated loopback HTTP API and copyable token
+
+The local API lacks a visible token-rotation control, but its authenticated
+server and client behavior reach parity with Eagle's Developer token surface.
 
 Visual and placement differences do not block the same task. Eagle swaps detail
 content in place while Pond can use an overlay, uses a dedicated progress window

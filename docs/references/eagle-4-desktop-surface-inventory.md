@@ -394,37 +394,53 @@ The 121 state strings cover:
 - update availability
 - Rosetta and platform-specific warnings
 
-## Additional gaps outside the original matrix
+## Additional mappings outside the original matrix
 
-The closure pass adds these reportable surfaces:
+### Confirmed parity
 
-- saved filters
-- deeper Smart Folder rule building
-- full duplicate merge-review flow
-- WebP batch conversion
+- exact and similar duplicate review with merge controls
+- starred tags and Tag Groups
+- subfolder covers and content browsing
+- video hover preview
+- BPM filtering
+- batch URL import
 - replace file in place
-- Pixave import
-- batch link import
-- import error retry, clear, and copy actions
-- saved-page browser toolbar
-- welcome onboarding
-- mouse-wheel first-run dialog
-- Notification Center history
+- file-extension validation
+- Auto Import
+- authenticated loopback HTTP API and Developer token
+
+### Partial
+
+- saved filters, represented through Saved Views
+- Smart Folder rules without camera or EXIF fields
+- WebP conversion that exports copies instead of replacing originals
+- import-error actions split across dialogs, Downloads, and transfers
+- saved-page browser toolbar and web capture
+- debug support that reveals logs without bundling a report
+- GIF controls embedded in the image inspector
+- Library reload, cache, and repair tools
+- Notification history split across transient and workflow-specific surfaces
+
+### Missing
+
+- copy item name, thumbnail, and Base64
+- first-run onboarding
+- mouse-wheel first-run guidance
+- unified Notification Center history
 - Community sidebar destination
-- starred tags and tag-group merge
-- subfolder cover and list chrome
-- shape and orientation filter
-- BPM filter
-- comments filter
-- bookmark type filter
-- video hover-preview preference
-- video Fit or Fill preference
-- GIF frame-viewer toggle
-- screenshot automatic tagging
-- Library reload and clear cache
-- merge tags dialog
-- clear Library and tag history
-- hardcoded metadata repair command
+- auto-advancing slideshow
+- folder results in Quick Search
+- camera and EXIF filter surfaces
+- direct ArtStation, Pixave, and Inboard import
+- application proxy settings
+- display color-space controls
+
+### Intentional or not applicable
+
+- Pinterest is a connected source instead of a one-time importer.
+- The dedicated Collect window maps to Pond's extension and capture queue.
+- Registration, trial, device management, and license recovery do not apply to
+  Pond's open-source distribution.
 
 ## Closure statement
 
