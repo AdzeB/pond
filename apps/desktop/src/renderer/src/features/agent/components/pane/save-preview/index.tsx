@@ -141,7 +141,7 @@ export function SavePreview({
   );
 }
 
-export function SavePreviewContent({
+function SavePreviewContent({
   source,
   onOpenSave,
   onAttach,

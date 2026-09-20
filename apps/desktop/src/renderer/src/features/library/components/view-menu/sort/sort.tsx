@@ -6,10 +6,14 @@ import { Button, Select } from "@pond/ui";
 import { isSortKey } from "@/features/library/hooks/use-filtered-saves";
 import { type SortKey, useView } from "@/features/library/hooks/use-view";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
-import { toggleSortDir } from "@/features/library/state/view-store";
+import {
+  reseedRandomSort,
+  toggleSortDir,
+} from "@/features/library/state/view-store";
 import styles from "../styles.module.css";
 
 const KEY_OPTIONS: Array<{ value: SortKey; label: string }> = [
+  { value: "random", label: "Random" },
   { value: "savedAt", label: "Date Saved" },
   { value: "createdAt", label: "Date Added" },
   { value: "publishedAt", label: "Date Published" },
@@ -77,6 +81,14 @@ export function SortSection({ onArrange }: { onArrange?: () => void }) {
           </Select.Positioner>
         </Select.Portal>
       </Select.Root>
+      {key === "random" ? (
+        <div className={styles.row}>
+          <span className={styles.label}>Random Order</span>
+          <Button size="sm" variant="secondary" onClick={reseedRandomSort}>
+            Reshuffle
+          </Button>
+        </div>
+      ) : null}
       {nav.kind === "folder" ? (
         <div className={styles.row}>
           <span className={styles.label}>Saved for this folder</span>

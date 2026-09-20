@@ -1,0 +1,22 @@
+.popup {
+  width: min(440px, calc(100vw - 32px));
+}
+
+.file {
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+  color: var(--ds-gray-11);
+  background: var(--ds-gray-2);
+  border-radius: var(--ds-radius-md);
+
+  & strong {
+    color: var(--ds-gray-12);
+  }
+}
+
+.apply {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}

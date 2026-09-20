@@ -4,7 +4,11 @@ import { join } from "node:path";
 import { saveFolders, saves } from "@pond/schema/db";
 import { labelKey } from "@pond/schema/label-name";
 import type { Transaction } from "@pond/schema/tx";
+import { applyRenameTemplate } from "@shared/rename-template";
+import { resolveShortcuts, type ShortcutPreferences } from "@shared/shortcuts";
+import { normalizeHotkey, validateHotkey } from "@tanstack/hotkeys";
 import { and, inArray, isNull } from "drizzle-orm";
+import { ulid } from "ulid";
 import { z } from "zod";
 import {
   type ActionChange,
@@ -39,14 +43,51 @@ export function readActions(
 export function saveAction(
   definition: ActionDefinition,
   root = resolvePaths().libraryRoot,
+  preferences: ShortcutPreferences = { profile: "pond", overrides: {} },
 ): ActionDefinition {
-  const parsed = ActionDefinitionSchema.parse(definition);
+  const parsed = normalizeActionDefinition(definition);
   const definitions = readActions(root);
+  const reserved = Object.values(resolveShortcuts(preferences)).find(
+    (shortcut) =>
+      "keys" in shortcut &&
+      shortcut.keys &&
+      parsed.shortcut &&
+      normalizeHotkey(shortcut.keys) === parsed.shortcut,
+  );
+  if (reserved)
+    throw new Error(`This shortcut is already assigned to ${reserved.label}.`);
+  const conflict = definitions.find(
+    (item) =>
+      item.id !== parsed.id &&
+      item.shortcut &&
+      parsed.shortcut &&
+      normalizeHotkey(item.shortcut) === parsed.shortcut,
+  );
+  if (conflict)
+    throw new Error(`This shortcut is already assigned to ${conflict.name}.`);
   const index = definitions.findIndex((item) => item.id === parsed.id);
   if (index < 0) definitions.push(parsed);
   else definitions[index] = parsed;
   writeBundleJson(join(root, "actions.json"), definitions);
   return parsed;
+}
+export function duplicateAction(
+  id: string,
+  root = resolvePaths().libraryRoot,
+): ActionDefinition {
+  const source = readActions(root).find((item) => item.id === id);
+  if (!source) throw new Error("The Action no longer exists.");
+  const duplicate = normalizeActionDefinition({
+    ...source,
+    id: ulid(),
+    name: `${source.name} Copy`,
+    shortcut: null,
+  });
+  writeBundleJson(join(root, "actions.json"), [
+    ...readActions(root),
+    duplicate,
+  ]);
+  return duplicate;
 }
 export function deleteAction(
   id: string,
@@ -103,16 +144,16 @@ export function previewAction(
               : step.text;
           break;
         case "rename": {
-          const number = String(step.start + index).padStart(step.padding, "0");
-          after.title = step.pattern.replace(
-            /\{(n|title|id)\}/g,
-            (_, token: string) =>
-              token === "n"
-                ? number
-                : token === "id"
-                  ? row.id
-                  : (after.title ?? "Untitled"),
-          );
+          after.title = applyRenameTemplate(step.pattern, {
+            index,
+            start: step.start,
+            padding: step.padding,
+            title: after.title ?? "Untitled",
+            id: row.id,
+            tags: after.tags,
+            original: before.title,
+            replacement: step.replacement,
+          });
           break;
         }
       }
@@ -124,6 +165,17 @@ export function previewAction(
     .update(JSON.stringify({ definition, rows }))
     .digest("hex");
   return { token, changes, unchanged: rows.length - changes.length };
+}
+
+function normalizeActionDefinition(
+  definition: ActionDefinition,
+): ActionDefinition {
+  const parsed = ActionDefinitionSchema.parse(definition);
+  if (!parsed.shortcut) return parsed;
+  const validation = validateHotkey(parsed.shortcut);
+  if (!validation.valid || validation.warnings.length > 0)
+    throw new Error("Enter a valid Action shortcut.");
+  return { ...parsed, shortcut: normalizeHotkey(parsed.shortcut) };
 }
 
 export interface ActionRuntime {

@@ -144,6 +144,7 @@ describe("library Tags page", () => {
     if (!(description instanceof HTMLInputElement)) {
       throw new Error("Missing group description");
     }
+    await act(async () => description.focus());
     await fill(description, "Changed");
     await act(async () => {
       description.dispatchEvent(
@@ -154,6 +155,17 @@ describe("library Tags page", () => {
       "tagGroups.update",
       expect.anything(),
     );
+    await act(async () => description.focus());
+    await fill(description, "Updated");
+    await act(async () => {
+      description.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
+    });
+    expect(query).toHaveBeenCalledWith("tagGroups.update", {
+      name: "Design",
+      patch: { description: "Updated" },
+    });
   });
 
   it("selects a tag only with Shift-click and shows no checkbox", async () => {

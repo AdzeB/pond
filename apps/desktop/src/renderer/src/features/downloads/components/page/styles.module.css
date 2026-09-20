@@ -216,11 +216,6 @@
   color: var(--ds-orange-11);
 }
 
-.activityError button {
-  color: inherit;
-  text-decoration: underline;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .progress::-webkit-progress-value {
     transition: none;

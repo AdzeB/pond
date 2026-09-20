@@ -1,6 +1,9 @@
 import { Input as BaseInput } from "@base-ui/react/input";
 import { Menu as Base } from "@base-ui/react/menu";
-import { IconChevronRightFill12 as CaretRight } from "@pond/icons/fill/12";
+import {
+  IconChevronRightFill12 as CaretRight,
+  IconCheck2Fill12,
+} from "@pond/icons/fill/12";
 import { clsx as cn } from "clsx";
 import { forwardRef, useImperativeHandle } from "react";
 import { Button, type ButtonProps } from "../button";
@@ -107,7 +110,7 @@ function Viewport({ className, ...props }: Base.Viewport.Props) {
 
 const List = forwardRef<HTMLDivElement, React.ComponentPropsWithoutRef<"div">>(
   function List({ className, ...props }, forwardedRef) {
-    const scrollFade = useScrollFade<HTMLDivElement>();
+    const scrollFade = useScrollFade<HTMLDivElement>("y");
     useImperativeHandle(forwardedRef, () => {
       const element = scrollFade.ref.current;
       if (!element) throw new Error("Menu list did not mount");
@@ -132,12 +135,19 @@ function Arrow({ className, ...props }: Base.Arrow.Props) {
 
 type ItemProps = Base.Item.Props & {
   stale?: boolean;
+  variant?: "default" | "destructive";
 };
 
-function Item({ className, stale = false, ...props }: ItemProps) {
+function Item({
+  className,
+  stale = false,
+  variant = "default",
+  ...props
+}: ItemProps) {
   return (
     <Base.Item
       data-stale={stale}
+      data-variant={variant}
       className={cn(styles.item, className)}
       {...props}
     />
@@ -257,8 +267,23 @@ function SwitchItemIndicator({
 function CheckboxItemIndicator({
   className,
   keepMounted = true,
+  variant = "checkbox",
   ...props
-}: Base.CheckboxItemIndicator.Props) {
+}: Base.CheckboxItemIndicator.Props & {
+  variant?: "checkbox" | "check";
+}) {
+  if (variant === "check") {
+    return (
+      <Base.CheckboxItemIndicator
+        keepMounted={keepMounted}
+        className={cn(styles["check-indicator"], className)}
+        {...props}
+      >
+        <IconCheck2Fill12 aria-hidden />
+      </Base.CheckboxItemIndicator>
+    );
+  }
+
   return (
     <Base.CheckboxItemIndicator
       keepMounted={keepMounted}

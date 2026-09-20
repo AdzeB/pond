@@ -1,5 +1,7 @@
-import { Button, Dialog, Input } from "@pond/ui";
+import { Button, Checkbox, Dialog, Input, Select, Slider } from "@pond/ui";
 import {
+  type ConversionCapability,
+  type ConversionFormat,
   type ConversionJob,
   type ConversionPreset,
   ConversionPresetSchema,
@@ -43,14 +45,24 @@ function ConversionDialog({
     }),
   );
   const [presets, setPresets] = useState<ConversionPreset[]>([]);
+  const [capabilities, setCapabilities] = useState<ConversionCapability[]>([]);
   const [job, setJob] = useState<ConversionJob | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const running = job?.status === "running";
+  const selectedCapability = capabilities.find(
+    (capability) => capability.format === preset.format,
+  );
+  const timed = selectedCapability?.category !== "image";
   useEffect(() => {
-    void window.pond
-      .query("conversion.presets", {})
-      .then(setPresets)
+    void Promise.all([
+      window.pond.query("conversion.presets", {}),
+      window.pond.query("conversion.capabilities", {}),
+    ])
+      .then(([storedPresets, supportedFormats]) => {
+        setPresets(storedPresets);
+        setCapabilities(supportedFormats);
+      })
       .catch((cause) =>
         setError(
           cause instanceof Error ? cause.message : "Could not load presets.",
@@ -144,155 +156,199 @@ function ConversionDialog({
           </Dialog.Header>
           <Dialog.Description>{`Export copies from ${ids.length} ${ids.length === 1 ? "save" : "saves"}. Existing files keep their names and converted files receive a new name if needed.`}</Dialog.Description>
           <fieldset disabled={busy || running} className={styles.fields}>
-            <label>
-              Preset
-              <select
-                value={
-                  presets.some((item) => item.id === preset.id) ? preset.id : ""
-                }
-                onChange={(event) => {
-                  const selected = presets.find(
-                    (item) => item.id === event.target.value,
-                  );
-                  setPreset(selected ?? { ...preset, id: crypto.randomUUID() });
-                }}
-              >
-                <option value="">Custom</option>
-                {presets.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <SelectField
+              label="Preset"
+              value={
+                presets.some((item) => item.id === preset.id) ? preset.id : ""
+              }
+              items={[
+                { value: "", label: "Custom" },
+                ...presets.map((item) => ({
+                  value: item.id,
+                  label: item.name,
+                })),
+              ]}
+              onChange={(id) => {
+                const selected = presets.find((item) => item.id === id);
+                setPreset(selected ?? { ...preset, id: crypto.randomUUID() });
+              }}
+            />
             <label htmlFor={`${fieldId}-name`}>
               Preset Name
-              <Input.Field
-                id={`${fieldId}-name`}
-                value={preset.name}
-                onValueChange={(name) => setPreset({ ...preset, name })}
-              />
+              <Input.Root>
+                <Input.Field
+                  id={`${fieldId}-name`}
+                  value={preset.name}
+                  onValueChange={(name) => setPreset({ ...preset, name })}
+                />
+              </Input.Root>
             </label>
-            <label>
-              Format
-              <select
-                value={preset.format}
-                onChange={(event) => {
-                  const format = (["jpeg", "png", "webp", "gif"] as const).find(
-                    (value) => value === event.target.value,
-                  );
-                  if (format) setPreset({ ...preset, format });
-                }}
-              >
-                {["webp", "jpeg", "png", "gif"].map((format) => (
-                  <option key={format} value={format}>
-                    {format === "gif" ? "Video to GIF" : format.toUpperCase()}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <SelectField
+              label="Format"
+              value={preset.format}
+              items={capabilities.map((capability) => ({
+                value: capability.format,
+                label: `${formatLabel(capability.format)}${
+                  capability.available ? "" : " (Unavailable)"
+                }`,
+                disabled: !capability.available,
+              }))}
+              onChange={(format) => {
+                const capability = capabilities.find(
+                  (value) => value.format === format,
+                );
+                if (capability)
+                  setPreset({
+                    ...preset,
+                    format: capability.format,
+                    lossless: capability.supportsLossless
+                      ? preset.lossless
+                      : false,
+                  });
+              }}
+            />
             <div className={styles.row}>
-              <label>
+              <label htmlFor={`${fieldId}-width`}>
                 Maximum Width
-                <input
-                  type="number"
-                  min={1}
-                  max={8192}
-                  placeholder={preset.format === "gif" ? "640" : "Original"}
-                  value={preset.width ?? ""}
-                  onChange={(event) =>
-                    setPreset({
-                      ...preset,
-                      width: event.target.value
-                        ? event.target.valueAsNumber
-                        : null,
-                    })
-                  }
-                />
-              </label>
-              <label>
-                Maximum Height
-                <input
-                  type="number"
-                  min={1}
-                  max={8192}
-                  placeholder="Original"
-                  value={preset.height ?? ""}
-                  onChange={(event) =>
-                    setPreset({
-                      ...preset,
-                      height: event.target.value
-                        ? event.target.valueAsNumber
-                        : null,
-                    })
-                  }
-                />
-              </label>
-            </div>
-            {preset.format === "gif" ? (
-              <div className={styles.row}>
-                <label>
-                  Start (Seconds)
-                  <input
-                    type="number"
-                    min={0}
-                    max={86400}
-                    value={preset.start}
-                    onChange={(event) =>
-                      setPreset({
-                        ...preset,
-                        start: event.target.valueAsNumber,
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  Duration (Seconds)
-                  <input
-                    type="number"
-                    min={0.1}
-                    max={60}
-                    step={0.1}
-                    value={preset.duration}
-                    onChange={(event) =>
-                      setPreset({
-                        ...preset,
-                        duration: event.target.valueAsNumber,
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  Frames per Second
-                  <input
+                <Input.Root>
+                  <Input.Field
+                    id={`${fieldId}-width`}
                     type="number"
                     min={1}
-                    max={30}
-                    value={preset.fps}
+                    max={8192}
+                    placeholder={preset.format === "gif" ? "640" : "Original"}
+                    value={preset.width ?? ""}
                     onChange={(event) =>
-                      setPreset({ ...preset, fps: event.target.valueAsNumber })
+                      setPreset({
+                        ...preset,
+                        width: event.target.value
+                          ? event.target.valueAsNumber
+                          : null,
+                      })
                     }
                   />
+                </Input.Root>
+              </label>
+              <label htmlFor={`${fieldId}-height`}>
+                Maximum Height
+                <Input.Root>
+                  <Input.Field
+                    id={`${fieldId}-height`}
+                    type="number"
+                    min={1}
+                    max={8192}
+                    placeholder="Original"
+                    value={preset.height ?? ""}
+                    onChange={(event) =>
+                      setPreset({
+                        ...preset,
+                        height: event.target.value
+                          ? event.target.valueAsNumber
+                          : null,
+                      })
+                    }
+                  />
+                </Input.Root>
+              </label>
+            </div>
+            {timed ? (
+              <div className={styles.row}>
+                <label htmlFor={`${fieldId}-start`}>
+                  Start (Seconds)
+                  <Input.Root>
+                    <Input.Field
+                      id={`${fieldId}-start`}
+                      type="number"
+                      min={0}
+                      max={86400}
+                      value={preset.start}
+                      onChange={(event) =>
+                        setPreset({
+                          ...preset,
+                          start: event.target.valueAsNumber,
+                        })
+                      }
+                    />
+                  </Input.Root>
+                </label>
+                <label htmlFor={`${fieldId}-duration`}>
+                  Duration (Seconds)
+                  <Input.Root>
+                    <Input.Field
+                      id={`${fieldId}-duration`}
+                      type="number"
+                      min={0.1}
+                      max={3600}
+                      step={0.1}
+                      value={preset.duration}
+                      onChange={(event) =>
+                        setPreset({
+                          ...preset,
+                          duration: event.target.valueAsNumber,
+                        })
+                      }
+                    />
+                  </Input.Root>
+                </label>
+                <label htmlFor={`${fieldId}-fps`}>
+                  Frames per Second
+                  <Input.Root>
+                    <Input.Field
+                      id={`${fieldId}-fps`}
+                      type="number"
+                      min={1}
+                      max={120}
+                      value={preset.fps}
+                      onChange={(event) =>
+                        setPreset({
+                          ...preset,
+                          fps: event.target.valueAsNumber,
+                        })
+                      }
+                    />
+                  </Input.Root>
                 </label>
               </div>
-            ) : (
-              <label>
-                Quality
-                <input
-                  type="range"
-                  min={1}
-                  max={100}
-                  value={preset.quality}
-                  onChange={(event) =>
-                    setPreset({
-                      ...preset,
-                      quality: event.target.valueAsNumber,
-                    })
+            ) : null}
+            <Slider.Root
+              className={styles.slider}
+              min={1}
+              max={100}
+              value={preset.quality}
+              disabled={busy || running}
+              onValueChange={(quality) =>
+                setPreset({
+                  ...preset,
+                  quality: Array.isArray(quality)
+                    ? (quality[0] ?? preset.quality)
+                    : quality,
+                })
+              }
+            >
+              <Slider.Label>Quality</Slider.Label>
+              <Slider.Control>
+                <Slider.Track>
+                  <Slider.Indicator />
+                  <Slider.Thumb />
+                </Slider.Track>
+              </Slider.Control>
+              <Slider.Value />
+            </Slider.Root>
+            {selectedCapability?.supportsLossless ? (
+              <div className={styles.check}>
+                <Checkbox.Root
+                  id={`${fieldId}-lossless`}
+                  checked={preset.lossless}
+                  disabled={busy || running}
+                  onCheckedChange={(lossless) =>
+                    setPreset({ ...preset, lossless })
                   }
-                />
-                <output>{preset.quality}</output>
-              </label>
-            )}
+                >
+                  <Checkbox.Indicator />
+                </Checkbox.Root>
+                <label htmlFor={`${fieldId}-lossless`}>Lossless</label>
+              </div>
+            ) : null}
             <Button onClick={() => void save()}>Save Preset</Button>
           </fieldset>
           {job ? (
@@ -307,7 +363,7 @@ function ConversionDialog({
                       : "Export Failed"}
                 : {job.completed} of {job.total} files.
               </p>
-              <progress value={job.completed} max={job.total} />
+              <progress value={job.progress} max={1} />
               <p>{job.directory}</p>
               {job.error && job.status === "failed" ? (
                 <p role="alert">{job.error}</p>
@@ -338,5 +394,58 @@ function ConversionDialog({
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
+  );
+}
+
+function formatLabel(format: ConversionFormat): string {
+  switch (format) {
+    case "animated-webp":
+      return "Animated WebP";
+    case "apng":
+      return "Animated PNG";
+    case "jpeg":
+      return "JPG";
+    default:
+      return format.toUpperCase();
+  }
+}
+
+function SelectField<Value extends string>({
+  label,
+  value,
+  items,
+  onChange,
+}: {
+  label: string;
+  value: Value;
+  items: {
+    value: Value;
+    label: string;
+    disabled?: boolean;
+  }[];
+  onChange: (value: Value) => void;
+}) {
+  return (
+    <Select.Root
+      value={value}
+      items={items}
+      onValueChange={(next) => {
+        if (next !== null) onChange(next);
+      }}
+    >
+      <div className={styles.field}>
+        <Select.Label>{label}</Select.Label>
+        <Select.Trigger width="full">
+          <Select.Value />
+        </Select.Trigger>
+      </div>
+      <Select.Portal>
+        <Select.Positioner>
+          <Select.Popup>
+            <Select.Items items={items} />
+          </Select.Popup>
+        </Select.Positioner>
+      </Select.Portal>
+    </Select.Root>
   );
 }

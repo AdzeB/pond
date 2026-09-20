@@ -1,0 +1,27 @@
+.popup {
+  --width: 380px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-gray-11);
+}
+
+.hint,
+.error {
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  line-height: 20px;
+}
+
+.hint {
+  color: var(--ds-gray-10);
+}
+
+.error {
+  color: var(--ds-red-11);
+}

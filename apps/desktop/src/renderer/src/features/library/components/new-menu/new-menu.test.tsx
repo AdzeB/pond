@@ -11,12 +11,14 @@ const labels = [
   "New Tag",
   "New Tag Group",
   "New Note",
+  "Capture Screenshot",
   "Import Files",
   "Import Folders",
   "Import from Links",
   "Import from Clipboard",
   "Import Bookmarks",
   "Import Page Assets",
+  "Import Eagle Package",
   "Import Eagle Library",
   "Import Pond Package",
   "New Source",
@@ -41,7 +43,11 @@ describe("new menu", () => {
       },
     );
     vi.stubGlobal("pond", {
-      query: vi.fn(async () => ({ kinds: [] })),
+      query: vi.fn(async (name: string) =>
+        name === "saves.desktopScreenshotSources"
+          ? { sources: [] }
+          : { kinds: [] },
+      ),
     });
     host = document.createElement("div");
     document.body.append(host);
@@ -116,5 +122,28 @@ describe("new menu", () => {
     await act(async () => root.render(<NewMenuDialogHost />));
     await act(async () => newMenuDialog.open("links"));
     expect(document.body.textContent).toContain("Import from Links");
+    const links = document.querySelector("textarea");
+    if (!links) throw new Error("Missing links field");
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        HTMLTextAreaElement.prototype,
+        "value",
+      )?.set?.call(links, "https://example.test");
+      links.dispatchEvent(new InputEvent("input", { bubbles: true }));
+    });
+    await act(async () => newMenuDialog.close());
+    await act(async () => newMenuDialog.open("links"));
+    expect(document.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
+      "https://example.test",
+    );
+  });
+
+  it("hosts the screenshot source picker from the shared store", async () => {
+    await act(async () => root.render(<NewMenuDialogHost />));
+    await act(async () => newMenuDialog.open("screenshot"));
+    expect(document.body.textContent).toContain("Capture Screenshot");
+    expect(document.body.textContent).toContain(
+      "Choose a screen or window to save as an image.",
+    );
   });
 });

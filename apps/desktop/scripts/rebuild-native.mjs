@@ -25,7 +25,7 @@ async function main() {
   await rebuild({
     buildPath: appRoot,
     electronVersion: version,
-    onlyModules: ["better-sqlite3"],
+    onlyModules: ["better-sqlite3-multiple-ciphers"],
     force: true,
   });
 

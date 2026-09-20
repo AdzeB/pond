@@ -39,6 +39,7 @@ import {
   importBookmarks,
   importClipboard,
   importEagle,
+  importEaglePackage,
   importPageAssets,
   importPaths,
   importPondPackage,
@@ -108,6 +109,13 @@ export function buildNewMenuItems(
       onClick: () => newTag("tag-group"),
     },
     ...documents,
+    {
+      id: "screenshot",
+      label: "Capture Screenshot",
+      icon: <IconImageOutline18 />,
+      keywords: "screen window desktop image",
+      onClick: () => newMenuDialog.open("screenshot"),
+    },
     { type: "separator" },
     {
       id: "files",
@@ -160,6 +168,13 @@ export function buildNewMenuItems(
           onConfirm: (url) => void runNewAction(() => importPageAssets(url)),
         });
       },
+    },
+    {
+      id: "eagle-package",
+      label: "Import Eagle Package",
+      icon: <IconFolderImportOutline18 />,
+      keywords: "eagle archive package migrate",
+      onClick: () => void runNewAction(importEaglePackage),
     },
     {
       id: "pond-package",

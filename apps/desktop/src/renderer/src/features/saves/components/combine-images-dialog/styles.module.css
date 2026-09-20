@@ -1,0 +1,34 @@
+.popup {
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(760px, calc(100vh - 48px));
+}
+
+.scroll {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.fields {
+  display: grid;
+  gap: 16px;
+  padding: 2px 0;
+
+  & label,
+  & .select {
+    display: grid;
+    gap: 6px;
+    color: var(--ds-gray-11);
+  }
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}

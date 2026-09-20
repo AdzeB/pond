@@ -1,14 +1,6 @@
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import {
-  copyFile,
-  mkdir,
-  open,
-  readFile,
-  rename,
-  stat,
-  unlink,
-} from "node:fs/promises";
+import { mkdir, stat } from "node:fs/promises";
 import { extname, join } from "node:path";
 import log from "electron-log/main.js";
 import sharp, { type Metadata } from "sharp";
@@ -20,6 +12,14 @@ import {
 } from "../../shared/media-index";
 import { extractOfficePreview } from "../core/office-preview";
 import { extractRawPreviewJpeg } from "../core/raw-preview";
+import {
+  isEncryptedLibraryMedia,
+  libraryMediaMetadata,
+  readLibraryMedia,
+  readLibraryMediaRange,
+  withDecryptedLibraryMediaPath,
+  writeLibraryMedia,
+} from "../core/security/library-media-storage";
 import { libraryRoot, thumbnailCacheRoot } from "../paths";
 import { decodeHeicOnMac } from "./heic";
 
@@ -240,14 +240,16 @@ async function promoteLegacyThumbnail(
   dir: string,
 ): Promise<string | null> {
   if (existsSync(out)) return out;
-  const tmp = `${out}.${process.pid}.${Date.now()}.tmp`;
   try {
     await mkdir(dir, { recursive: true });
-    await copyFile(legacyOut, tmp);
-    await rename(tmp, out);
+    const bytes = await readLibraryMedia(legacyOut);
+    try {
+      await writeLibraryMedia(out, bytes);
+    } finally {
+      bytes.fill(0);
+    }
     return out;
   } catch (err) {
-    await unlink(tmp).catch(() => {});
     if (existsSync(legacyOut)) {
       log.warn("[pond thumbnail] local promotion failed", legacyOut, err);
       return legacyOut;
@@ -299,13 +301,16 @@ async function generateMany(
       await mkdir(dir, { recursive: true });
       for (const { out, width } of missing) {
         try {
-          const tmp = `${out}.${process.pid}.${Date.now()}.tmp`;
-          await pipeline
+          const bytes = await pipeline
             .clone()
             .resize({ width, fit: "inside", withoutEnlargement: true })
             .webp({ quality: WEBP_QUALITY })
-            .toFile(tmp);
-          await rename(tmp, out);
+            .toBuffer();
+          try {
+            await writeLibraryMedia(out, bytes);
+          } finally {
+            bytes.fill(0);
+          }
           results.set(out, out);
         } catch (err) {
           log.warn("[pond thumbnail] width failed", sourcePath, width, err);
@@ -327,6 +332,11 @@ async function thumbnailPipeline(
   pipeline: ReturnType<typeof sharp>;
   metadata: Metadata;
 } | null> {
+  if (await isEncryptedLibraryMedia(sourcePath)) {
+    return withDecryptedLibraryMediaPath(sourcePath, (path) =>
+      thumbnailPipeline(path, width, kind),
+    );
+  }
   if (kind === "native") {
     return nativeThumbnailPipeline(sourcePath, width);
   }
@@ -372,8 +382,11 @@ async function resolveVersion(
 ): Promise<string | null> {
   if (version) return version;
   try {
-    const source = await stat(sourcePath);
-    return `${Math.round(source.mtimeMs)}-${source.size}`;
+    const [source, media] = await Promise.all([
+      stat(sourcePath),
+      libraryMediaMetadata(sourcePath),
+    ]);
+    return `${Math.round(source.mtimeMs)}-${media.originalSize}`;
   } catch {
     return null;
   }
@@ -420,7 +433,7 @@ async function rawThumbnailPipeline(sourcePath: string): Promise<{
   const extension = extname(sourcePath).toLowerCase().replace(/^\./, "");
   if (eagleFormatGroup(extension) !== "rawImage") return null;
   try {
-    const jpeg = extractRawPreviewJpeg(await readFile(sourcePath));
+    const jpeg = extractRawPreviewJpeg(await readLibraryMedia(sourcePath));
     if (!jpeg) return null;
     const pipeline = sharp(jpeg, { failOn: "none" });
     return { pipeline, metadata: await pipeline.metadata() };
@@ -467,14 +480,16 @@ async function osNativeThumbnail(
 }
 
 async function readFileHeader(sourcePath: string): Promise<Buffer> {
-  const handle = await open(sourcePath, "r");
-  try {
-    const header = Buffer.alloc(12);
-    const { bytesRead } = await handle.read(header, 0, header.length, 0);
-    return header.subarray(0, bytesRead);
-  } finally {
-    await handle.close();
+  const { originalSize } = await libraryMediaMetadata(sourcePath);
+  const chunks: Buffer[] = [];
+  for await (const chunk of readLibraryMediaRange({
+    path: sourcePath,
+    start: 0,
+    endExclusive: Math.min(originalSize, 12),
+  })) {
+    chunks.push(chunk);
   }
+  return Buffer.concat(chunks);
 }
 
 function sanitizeSegment(value: string): string {

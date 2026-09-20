@@ -15,6 +15,10 @@ import {
 } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { z } from "zod";
+import {
+  decodeLibraryFile,
+  isEncryptedLibraryFile,
+} from "./security/library-file-storage";
 
 const MANIFEST = "pond-backup-manifest.json";
 const BackupEntrySchema = z.object({
@@ -91,7 +95,11 @@ async function validateReferences(root: string, files: readonly BackupEntry[]) {
       "This is not a complete Pond library: metadata.json is missing.",
     );
   for (const name of ["metadata.json", "settings.json", "tags.json"]) {
-    if (indexed.has(name)) JSON.parse(await readFile(join(root, name), "utf8"));
+    if (indexed.has(name)) {
+      const path = join(root, name);
+      const stored = await readFile(path);
+      JSON.parse(decodeLibraryFile(path, stored).toString("utf8"));
+    }
   }
   for (const entry of files) {
     if (
@@ -100,8 +108,11 @@ async function validateReferences(root: string, files: readonly BackupEntry[]) {
       )
     )
       continue;
+    const infoPath = join(root, entry.path);
+    const storedInfo = await readFile(infoPath);
+    const encryptedInfo = isEncryptedLibraryFile(storedInfo);
     const item = ItemFilesSchema.parse(
-      JSON.parse(await readFile(join(root, entry.path), "utf8")),
+      JSON.parse(decodeLibraryFile(infoPath, storedInfo).toString("utf8")),
     );
     const directory = dirname(entry.path);
     for (const file of item.files) {
@@ -111,8 +122,9 @@ async function validateReferences(root: string, files: readonly BackupEntry[]) {
       const original = indexed.get(relative(root, path).split(sep).join("/"));
       if (
         !original ||
-        original.size !== file.size ||
-        (file.sha256 && original.sha256 !== file.sha256)
+        (!encryptedInfo &&
+          (original.size !== file.size ||
+            (file.sha256 && original.sha256 !== file.sha256)))
       )
         throw new Error(
           `An original is missing or damaged in Save ${item.id}: ${file.path}`,

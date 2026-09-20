@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
+    <title>Preview</title>
+  </head>
+  <body>
+    <main id="preview" aria-label="Image preview">
+      <img id="image" alt="" draggable="false" />
+    </main>
+    <nav aria-label="Preview Controls">
+      <button id="previous" type="button">Previous</button>
+      <button id="next" type="button">Next</button>
+      <button id="rotate" type="button">Rotate</button>
+      <button id="mirror" type="button">Mirror</button>
+      <button id="grayscale" type="button">Grayscale</button>
+      <button id="size" type="button">Actual Size</button>
+      <button id="opacity" type="button">Opacity</button>
+      <button id="pin" type="button">Keep on Top</button>
+      <button id="close" type="button">Close</button>
+    </nav>
+    <script type="module" src="/src/preview.ts"></script>
+  </body>
+</html>

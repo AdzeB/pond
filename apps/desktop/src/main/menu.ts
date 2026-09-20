@@ -1,3 +1,4 @@
+import type { Locale } from "@pond/schema";
 import type { BrowserWindow } from "electron";
 import type { RecentMenuEntry } from "../shared/constants";
 import type { ShortcutPreferences } from "../shared/shortcuts";
@@ -9,6 +10,7 @@ interface AppMenuDeps {
   focusedOrMain: () => BrowserWindow | null;
   openLibraryWindow: () => void;
   shortcuts: ShortcutPreferences;
+  locale: Locale;
 }
 
 const RECENTS_MENU_CAP = 12;
@@ -26,13 +28,20 @@ export function installAppMenu(deps: AppMenuDeps): void {
   disableMenuActionImages();
   activeDeps = deps;
   unsubscribePrefs?.();
-  let shortcutKey = JSON.stringify(deps.shortcuts);
+  let menuKey = JSON.stringify([deps.shortcuts, deps.locale]);
   unsubscribePrefs = subscribePrefs((prefs) => {
     if (!activeDeps) return;
-    const nextKey = JSON.stringify(prefs.shortcuts);
-    if (nextKey === shortcutKey) return;
-    shortcutKey = nextKey;
-    activeDeps = { ...activeDeps, shortcuts: prefs.shortcuts };
+    const nextKey = JSON.stringify([
+      prefs.shortcuts,
+      prefs.localization.locale,
+    ]);
+    if (nextKey === menuKey) return;
+    menuKey = nextKey;
+    activeDeps = {
+      ...activeDeps,
+      shortcuts: prefs.shortcuts,
+      locale: prefs.localization.locale,
+    };
     buildAndSetMenu(activeDeps);
   });
   buildAndSetMenu(deps);

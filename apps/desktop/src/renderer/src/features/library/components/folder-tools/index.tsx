@@ -1,5 +1,5 @@
-import { Button, Dialog, Input } from "@pond/ui";
-import { useEffect, useMemo, useState } from "react";
+import { Button, Checkbox, Dialog, Input, Select } from "@pond/ui";
+import { useEffect, useId, useMemo, useState } from "react";
 import { folders, useFolders } from "@/features/library/state/folders";
 import { useTags } from "@/features/tags/state/tags";
 import styles from "./styles.module.css";
@@ -16,6 +16,7 @@ export function FolderToolsDialog({
   tool: FolderTool;
   onClose: () => void;
 }) {
+  const controlId = useId();
   const all = useFolders();
   const registry = useTags();
   const [search, setSearch] = useState("");
@@ -164,16 +165,21 @@ export function FolderToolsDialog({
                     .filter((name) =>
                       name.toLowerCase().includes(search.toLowerCase()),
                     )
-                    .map((name) => (
-                      <label key={name} className={styles.row}>
-                        <input
-                          type="checkbox"
+                    .map((name, index) => (
+                      <div key={name} className={styles.row}>
+                        <Checkbox.Root
+                          id={`${controlId}-tag-${index}`}
+                          aria-label={name}
                           disabled={busy || loading}
                           checked={selected.includes(name)}
-                          onChange={() => toggle(name)}
-                        />
-                        <span>{name}</span>
-                      </label>
+                          onCheckedChange={() => toggle(name)}
+                        >
+                          <Checkbox.Indicator />
+                        </Checkbox.Root>
+                        <label htmlFor={`${controlId}-tag-${index}`}>
+                          {name}
+                        </label>
+                      </div>
                     ))}
                 </div>
                 {search.trim() &&
@@ -191,45 +197,72 @@ export function FolderToolsDialog({
                     Add “{search.trim()}”
                   </Button>
                 ) : null}
-                <label className={styles.row}>
-                  <input
-                    type="checkbox"
+                <div className={styles.row}>
+                  <Checkbox.Root
+                    id={`${controlId}-existing`}
+                    aria-label="Apply to Saves already in this folder and its subfolders"
                     checked={applyExisting}
-                    onChange={(event) => setApplyExisting(event.target.checked)}
+                    onCheckedChange={setApplyExisting}
                     disabled={busy || loading}
-                  />
-                  <span>
+                  >
+                    <Checkbox.Indicator />
+                  </Checkbox.Root>
+                  <label htmlFor={`${controlId}-existing`}>
                     Apply to Saves already in this folder and its subfolders
-                  </span>
-                </label>
+                  </label>
+                </div>
               </>
             ) : (
               <>
-                <label className={styles.label}>
-                  Destination
-                  <select
-                    aria-label="Destination folder"
-                    value={parent}
-                    onChange={(event) => setParent(event.target.value)}
-                    disabled={busy}
-                  >
-                    <option value="">Folders</option>
-                    {folderOptions.map((folder) => (
-                      <option key={folder.id} value={folder.id}>
-                        {folder.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <Select.Root
+                  value={parent}
+                  items={[
+                    { value: "", label: "Folders" },
+                    ...folderOptions.map((folder) => ({
+                      value: folder.id,
+                      label: folder.name,
+                    })),
+                  ]}
+                  disabled={busy}
+                  onValueChange={(value) => {
+                    if (value !== null) setParent(value);
+                  }}
+                >
+                  <div className={styles.label}>
+                    <Select.Label>Destination</Select.Label>
+                    <Select.Trigger
+                      width="full"
+                      aria-label="Destination folder"
+                    >
+                      <Select.Value />
+                    </Select.Trigger>
+                  </div>
+                  <Select.Portal>
+                    <Select.Positioner>
+                      <Select.Popup>
+                        <Select.Items
+                          items={[
+                            { value: "", label: "Folders" },
+                            ...folderOptions.map((folder) => ({
+                              value: folder.id,
+                              label: folder.name,
+                            })),
+                          ]}
+                        />
+                      </Select.Popup>
+                    </Select.Positioner>
+                  </Select.Portal>
+                </Select.Root>
                 {tool.kind === "create" ? (
-                  <textarea
-                    className={styles.names}
-                    aria-label="Folder names, one per line"
-                    rows={8}
-                    value={names}
-                    onChange={(event) => setNames(event.target.value)}
-                    disabled={busy}
-                  />
+                  <Input.Root className={styles.names}>
+                    <Input.Textarea
+                      aria-label="Folder names, one per line"
+                      rows={8}
+                      value={names}
+                      onValueChange={setNames}
+                      disabled={busy}
+                    />
+                  </Input.Root>
                 ) : (
                   <>
                     <Input.Root>
@@ -246,16 +279,21 @@ export function FolderToolsDialog({
                             .toLowerCase()
                             .includes(search.toLowerCase()),
                         )
-                        .map((folder) => (
-                          <label key={folder.id} className={styles.row}>
-                            <input
-                              type="checkbox"
+                        .map((folder, index) => (
+                          <div key={folder.id} className={styles.row}>
+                            <Checkbox.Root
+                              id={`${controlId}-folder-${index}`}
+                              aria-label={folder.name}
                               checked={selected.includes(folder.id)}
-                              onChange={() => toggle(folder.id)}
+                              onCheckedChange={() => toggle(folder.id)}
                               disabled={busy}
-                            />
-                            <span>{folder.name}</span>
-                          </label>
+                            >
+                              <Checkbox.Indicator />
+                            </Checkbox.Root>
+                            <label htmlFor={`${controlId}-folder-${index}`}>
+                              {folder.name}
+                            </label>
+                          </div>
                         ))}
                     </div>
                   </>

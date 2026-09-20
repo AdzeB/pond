@@ -49,6 +49,9 @@ const JobSchema = StoredJobSchema.transform(
 );
 export interface CaptureQueuePorts {
   root(): string;
+  canProcess?: () => boolean;
+  readStored?: (path: string) => Promise<string>;
+  writeStored?: (path: string, value: string) => Promise<void>;
   process(
     item: CaptureDraft["items"][number],
     metadata: CaptureMetadata,
@@ -56,6 +59,7 @@ export interface CaptureQueuePorts {
     originUrl?: string,
     trigger?: string,
   ): Promise<{ id: string; duplicate?: boolean }>;
+  onComplete?: (receipt: CaptureReceipt) => void | Promise<void>;
   transfer<T>(operation: () => Promise<T>): Promise<T>;
 }
 
@@ -78,15 +82,21 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
     await mkdir(directory(job.library), { recursive: true });
     const target = path(job.library, job.draft.id);
     const tmp = `${target}.tmp`;
-    await writeFile(tmp, JSON.stringify(job));
+    const value = JSON.stringify(job);
+    if (Buffer.byteLength(value) > 128 * 1024 * 1024)
+      throw new Error("This capture exceeds the locked queue limit.");
+    if (ports.writeStored) await ports.writeStored(tmp, value);
+    else await writeFile(tmp, value);
     await rename(tmp, target);
   }
   async function read(root: string, id: string): Promise<Job> {
     if (!/^[a-zA-Z0-9_-]{1,100}$/.test(id))
       throw new Error("Invalid capture ID.");
-    const result = JobSchema.parse(
-      JSON.parse(await readFile(path(root, id), "utf8")),
-    );
+    const target = path(root, id);
+    const value = ports.readStored
+      ? await ports.readStored(target)
+      : await readFile(target, "utf8");
+    const result = JobSchema.parse(JSON.parse(value));
     if (result.library !== root || result.draft.id !== id)
       throw new Error("This capture belongs to another library.");
     return result;
@@ -102,6 +112,7 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
     duplicateCount: job.duplicateCount,
   });
   function run(job: Job) {
+    if (ports.canProcess && !ports.canProcess()) return;
     const key = path(job.library, job.draft.id);
     if (active.has(key)) return;
     const work = serial
@@ -150,6 +161,11 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
             job.error = error instanceof Error ? error.message : String(error);
           }
           await persist(job);
+          if (job.state === "complete" && ports.onComplete) {
+            try {
+              await ports.onComplete(receipt(job));
+            } catch {}
+          }
         }),
       )
       .catch(async (error) => {
@@ -244,6 +260,14 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
             await this.cancel(job.id);
           else await this.resume(job.id);
         }
+    },
+    async securePending(): Promise<void> {
+      const root = ports.root();
+      const entries = await readdir(directory(root)).catch((): string[] => []);
+      for (const entry of entries.filter((name) => name.endsWith(".json"))) {
+        const job = await read(root, entry.slice(0, -5));
+        await persist(job);
+      }
     },
     async idle(): Promise<void> {
       await serial;

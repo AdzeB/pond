@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { withDecryptedLibraryMediaPath } from "../core/security/library-media-storage";
 
 interface Bucket {
   count: number;
@@ -17,16 +18,20 @@ interface Swatch {
 }
 
 export async function extractPalette(
-  path: string,
+  input: string | Buffer,
   count = 5,
 ): Promise<string[]> {
   try {
     const size = 64;
-    const { data, info } = await sharp(path)
-      .resize(size, size, { fit: "inside" })
-      .removeAlpha()
-      .raw()
-      .toBuffer({ resolveWithObject: true });
+    const read = (source: string | Buffer) =>
+      sharp(source)
+        .resize(size, size, { fit: "inside" })
+        .removeAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+    const { data, info } = Buffer.isBuffer(input)
+      ? await read(input)
+      : await withDecryptedLibraryMediaPath(input, read);
 
     const channels = info.channels;
     const buckets = new Map<string, Bucket>();

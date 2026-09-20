@@ -3,7 +3,7 @@ import {
   IconFileOutline18,
   IconImageOutline18,
 } from "@pond/icons/outline/18";
-import type { MenuItemSpec } from "@pond/ui";
+import { Dialog, type MenuItemSpec } from "@pond/ui";
 import { createElement } from "react";
 import bingLogo from "@/assets/logos/reverse-search/bing.png";
 import googleLensLogo from "@/assets/logos/reverse-search/google-lens.svg";
@@ -20,6 +20,7 @@ import {
   copyIdsForSelection,
   reverseImageSearchForSelection,
 } from "@/features/saves/lib/selection";
+import { openCombineImagesDialog } from "@/features/saves/state/combine-images-dialog";
 import type { Save } from "@/features/saves/types";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { notify } from "@/shared/lib/toast";
@@ -99,28 +100,30 @@ export function buildAdvancedItems(
       hidden: combinableImageCount(saves) < 2,
       onClick: () => {
         const nav = saveLibraryBridge.getNav();
-        void window.pond
-          .query("saves.combineImages", {
-            ids,
-            folderId: nav.kind === "folder" ? nav.id : null,
-          })
-          .then((result) => {
-            if (!result.ok) {
-              notify({
-                id: "combine-images",
-                title: result.error ?? "Couldn’t combine these images.",
-              });
-              return;
-            }
-            const skipped =
-              result.skipped && result.skipped > 0
-                ? ` Skipped ${result.skipped} that are not JPG or PNG.`
-                : "";
-            notify({
-              id: "combine-images",
-              title: `Combined ${ids.length} images.${skipped}`,
+        openCombineImagesDialog(ids, nav.kind === "folder" ? nav.id : null);
+      },
+    },
+    {
+      label: "Change File Extension",
+      icon: glyph(IconFileOutline18),
+      hidden: !saves.some((item) => item.files.length > 0),
+      onClick: () => {
+        Dialog.prompt({
+          title: "Change File Extension",
+          confirmLabel: "Change Extension",
+          placeholder: "png",
+          onConfirm: async (extension) => {
+            const result = await window.pond.query("saves.batchEditExtension", {
+              ids,
+              extension,
             });
-          });
+            notify({
+              id: "batch-extension",
+              title: "File Extensions Changed",
+              description: `${result.changedFiles} files changed. Use Undo to reverse this action.`,
+            });
+          },
+        });
       },
     },
     {

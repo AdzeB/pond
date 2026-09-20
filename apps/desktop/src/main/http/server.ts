@@ -5,6 +5,7 @@ import log from "electron-log/main.js";
 import { Hono } from "hono";
 import { DEFAULT_INGEST_PORT } from "../../shared/constants";
 import { getPrefs } from "../core/prefs";
+import { assertLibraryUnlocked } from "../core/security/app-lock-runtime";
 import { getIngestToken } from "../keychain";
 import { enqueueHandler } from "./item-add";
 import { itemGetHandler } from "./item-get";
@@ -125,6 +126,14 @@ function buildApp(): Hono {
   api.use("/api/v2/library/*", requireAuth);
   api.use("/api/v2/operations/*", requireAuth);
   api.use("/api/v2/session/*", requireAuth);
+  api.use("/api/v2/*", async (c, next) => {
+    try {
+      assertLibraryUnlocked();
+    } catch {
+      return c.json({ status: "error", error: "library_locked" }, 423);
+    }
+    await next();
+  });
 
   api.post("/api/v2/enqueue", enqueueHandler);
   api.post("/api/v2/item/get", itemGetHandler);

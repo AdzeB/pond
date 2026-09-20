@@ -7,7 +7,35 @@ import ffmpegPath from "ffmpeg-static";
 import sharp from "sharp";
 import { expect, it } from "vitest";
 import { ConversionPresetSchema } from "../../shared/conversion-contracts";
-import { convertMedia } from "./convert-media";
+import { buildFfmpegConversionArguments, convertMedia } from "./convert-media";
+
+it("builds codec-specific JXL and ICO adapter arguments", () => {
+  const jxl = buildFfmpegConversionArguments(
+    ConversionPresetSchema.parse({
+      id: "jxl",
+      name: "JXL",
+      format: "jxl",
+      lossless: true,
+    }),
+    "source.png",
+    "output.jxl",
+  );
+  expect(jxl).toEqual(
+    expect.arrayContaining(["-c:v", "libjxl", "-distance", "0"]),
+  );
+  const ico = buildFfmpegConversionArguments(
+    ConversionPresetSchema.parse({
+      id: "ico",
+      name: "ICO",
+      format: "ico",
+      width: 64,
+      height: 64,
+    }),
+    "source.png",
+    "output.ico",
+  );
+  expect(ico).toEqual(expect.arrayContaining(["-c:v", "png", "-f", "ico"]));
+});
 
 it("resizes and converts copies with collision-safe names while preserving the original", async () => {
   const directory = await mkdtemp(join(tmpdir(), "pond-convert-test-"));
@@ -91,6 +119,88 @@ it.skipIf(!ffmpegPath)(
       expect(metadata.width).toBe(40);
       expect(metadata.pageHeight).toBe(20);
       expect(metadata.pages).toBe(5);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  },
+);
+
+it.skipIf(!ffmpegPath)(
+  "exports installed professional still-image formats through FFmpeg",
+  async () => {
+    const ffmpeg = ffmpegPath;
+    if (!ffmpeg) throw new Error("FFmpeg unavailable");
+    const directory = await mkdtemp(join(tmpdir(), "pond-pro-format-test-"));
+    try {
+      const source = join(directory, "source.png");
+      await sharp({
+        create: {
+          width: 32,
+          height: 16,
+          channels: 4,
+          background: { r: 10, g: 20, b: 30, alpha: 1 },
+        },
+      })
+        .png()
+        .toFile(source);
+      for (const format of ["exr", "hdr", "tga", "bmp", "ico"] as const) {
+        const output = await convertMedia({
+          source,
+          ffmpegPath: ffmpeg,
+          directory,
+          preset: ConversionPresetSchema.parse({
+            id: format,
+            name: format.toUpperCase(),
+            format,
+          }),
+          signal: new AbortController().signal,
+        });
+        await promisify(execFile)(ffmpeg, [
+          "-hide_banner",
+          "-loglevel",
+          "error",
+          "-i",
+          output,
+          "-f",
+          "null",
+          "-",
+        ]);
+        expect((await readFile(output)).byteLength).toBeGreaterThan(0);
+      }
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  },
+);
+
+it.skipIf(!ffmpegPath)(
+  "rejects professional formats that fail runtime validation",
+  async () => {
+    const ffmpeg = ffmpegPath;
+    if (!ffmpeg) throw new Error("FFmpeg unavailable");
+    const directory = await mkdtemp(join(tmpdir(), "pond-pro-gate-test-"));
+    try {
+      const source = join(directory, "source.png");
+      await sharp({
+        create: { width: 2, height: 2, channels: 3, background: "red" },
+      })
+        .png()
+        .toFile(source);
+      for (const format of ["jxl", "heic", "heif"] as const) {
+        await expect(
+          convertMedia({
+            source,
+            ffmpegPath: ffmpeg,
+            directory,
+            preset: ConversionPresetSchema.parse({
+              id: format,
+              name: format.toUpperCase(),
+              format,
+            }),
+            signal: new AbortController().signal,
+          }),
+        ).rejects.toThrow(/Sharp/);
+      }
     } finally {
       await rm(directory, { recursive: true, force: true });
     }

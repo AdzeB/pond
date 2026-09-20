@@ -90,6 +90,36 @@ it("restores disk metadata when the SQLite transaction rejects", async () => {
   ).rejects.toThrow("index failure");
   expect(await readFile(info("a"), "utf8")).toBe("original-a");
 });
+it("restores replaced image bytes when a compression batch cannot commit", async () => {
+  const { root } = await fixture();
+  const image = join(root, "items", "a.info", "image.jpg");
+  const transaction: Transaction = {
+    kind: "update",
+    model: "save",
+    id: "a",
+    patch: { files: [] },
+    before: { files: [] },
+    files: [{ filename: "image.jpg", bytes: new Uint8Array([1]) }],
+    beforeFiles: [{ filename: "image.jpg", bytes: new Uint8Array([2]) }],
+  };
+  await expect(
+    runRecoverableBatch({
+      root,
+      batchId: "compression-failure",
+      transactions: [transaction],
+      async applyDisk() {
+        await writeFile(image, "compressed");
+      },
+      commitIndex() {
+        throw new Error("index failure");
+      },
+      onCleanupError(error) {
+        throw error;
+      },
+    }),
+  ).rejects.toThrow("index failure");
+  expect(await readFile(image, "utf8")).toBe("original-image-a");
+});
 it("recovers an interrupted uncommitted batch on restart and retains a committed batch", async () => {
   const { root, transactions, info } = await fixture();
   await prepareBatchJournal(root, "interrupted", transactions);

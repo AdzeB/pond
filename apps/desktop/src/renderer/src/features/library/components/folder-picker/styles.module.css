@@ -19,7 +19,7 @@
   align-items: center;
   min-height: 36px;
 }
-.row span {
+.row label {
   flex: 1;
 }
 .row small {

@@ -14,7 +14,11 @@ it.each(["native file", "file URI"])(
   "imports a dropped %s and confirms the save",
   async (kind) => {
     const notify = vi.spyOn(toastManager, "add");
-    const query = vi.fn().mockResolvedValue({ ok: true, ids: ["new-save"] });
+    const query = vi.fn(async (operation: string) =>
+      operation === "saves.reviewImportDuplicates"
+        ? { candidates: [] }
+        : { ok: true, ids: ["new-save"] },
+    );
     vi.stubGlobal("pond", { query, pathForFile: () => "/tmp/drop image.png" });
     const host = document.createElement("div");
     const root = createRoot(host);

@@ -19,6 +19,8 @@ import type {
   ConversionQueryResults,
 } from "./conversion-contracts";
 import type { DownloadActivity } from "./download-activity";
+import type { FeedbackEvent } from "./feedback";
+import type { FolderQueryInputs, FolderQueryResults } from "./folder-contracts";
 import type { GlobalShortcutStatus } from "./global-shortcuts";
 import type {
   InspectQueryInputs,
@@ -51,6 +53,10 @@ import type {
   SavesReadQueryInputs,
   SavesReadQueryResults,
 } from "./saves-read-contracts";
+import type {
+  SecurityQueryInputs,
+  SecurityQueryResults,
+} from "./security-contracts";
 import type {
   TransferQueryInputs,
   TransferQueryResults,
@@ -97,6 +103,7 @@ export interface QueryInputs
   extends TransferQueryInputs,
     BulkQueryInputs,
     ActionQueryInputs,
+    FolderQueryInputs,
     InspectQueryInputs,
     ConversionQueryInputs,
     SavesReadQueryInputs,
@@ -104,7 +111,8 @@ export interface QueryInputs
     SavesImportQueryInputs,
     SavesExportQueryInputs,
     SavesClipboardQueryInputs,
-    SavesOpenWithQueryInputs {
+    SavesOpenWithQueryInputs,
+    SecurityQueryInputs {
   "folders.rules.get": { id: string };
   "folders.rules.set": { id: string; tags: string[]; applyExisting?: boolean };
   "folders.createBatch": { names: string[]; parentId?: string | null };
@@ -119,6 +127,7 @@ export interface QueryInputs
   };
   "savedViews.create": SavedViewInput;
   "savedViews.rename": { id: string; name: string };
+  "savedViews.renameBatch": { ids: string[]; pattern: string };
   "savedViews.update": {
     id: string;
     patch: Partial<Omit<SavedViewInput, "kind">> & { sortOrder?: number };
@@ -131,6 +140,7 @@ export interface QueryInputs
     color?: string | null;
   };
   "folders.rename": { id: string; name: string };
+  "folders.renameBatch": { ids: string[]; pattern: string };
   "folders.setColor": { id: string; color: string | null };
   "folders.delete": { id: string; trashContainedSaves?: boolean };
   "folders.setSaveFolders": { saveId: string; folderIds: string[] };
@@ -163,6 +173,8 @@ export interface QueryInputs
   "settings.setVideoDownload": Partial<VideoDownloadSettings>;
   "settings.setImageDownload": Partial<ImageDownloadSettings>;
   "settings.setPrefs": WirePrefsPatch;
+  "feedback.emit": { event: FeedbackEvent };
+  "notifications.openSettings": EmptyInput;
   "accounts.setHandle": { accountId: string; handle: string | null };
   "accounts.setLabel": { accountId: string; label: string | null };
   "accounts.disconnect": { accountId: string };
@@ -291,6 +303,7 @@ export interface QueryResults
     BulkQueryResults,
     SystemQueryResults,
     ActionQueryResults,
+    FolderQueryResults,
     InspectQueryResults,
     ConversionQueryResults,
     SavesReadQueryResults,
@@ -298,7 +311,8 @@ export interface QueryResults
     SavesImportQueryResults,
     SavesExportQueryResults,
     SavesClipboardQueryResults,
-    SavesOpenWithQueryResults {
+    SavesOpenWithQueryResults,
+    SecurityQueryResults {
   "folders.rules.get": { tags: string[]; inheritedTags: string[] };
   "folders.rules.set": { ok: boolean; affected: number };
   "folders.createBatch": Folder[];
@@ -399,12 +413,14 @@ export interface QueryResults
   "savedViews.list": SavedView[];
   "savedViews.create": { ok: boolean; id?: string };
   "savedViews.rename": OkResult;
+  "savedViews.renameBatch": OkResult & { renamed: number };
   "savedViews.update": OkResult;
   "savedViews.delete": OkResult;
   "savedViews.reorder": OkResult;
   "folders.list": Folder[];
   "folders.create": Folder;
   "folders.rename": OkResult;
+  "folders.renameBatch": OkResult & { renamed: number };
   "folders.setColor": OkResult;
   "folders.delete": OkResult;
   "folders.memberships": { saveId: string; folderId: string }[];
@@ -416,6 +432,8 @@ export interface QueryResults
   "settings.getPrefs": Prefs;
   "settings.globalShortcutStatus": GlobalShortcutStatus;
   "settings.setPrefs": { ok: boolean; prefs: Prefs };
+  "feedback.emit": OkResult;
+  "notifications.openSettings": OkResult;
 }
 
 export type QueryName = keyof QueryInputs;

@@ -86,8 +86,14 @@ jobs:
       - name: Verify workspace
         run: pnpm check
 
+      - name: Security and migration release gates
+        run: pnpm --filter @pond/desktop test:release-security
+
       - name: Build workspace
         run: pnpm build
+
+      - name: Desktop end-to-end smoke
+        run: pnpm --filter @pond/desktop smoke:desktop
 
       - name: Package macOS app and publish release
         env:

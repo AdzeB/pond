@@ -1,5 +1,7 @@
+import { basename, extname } from "node:path";
 import { saves } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
+import { applyRenameTemplate } from "@shared/rename-template";
 import { eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { executeBatch } from "../../core/executor";
@@ -13,6 +15,7 @@ import {
 } from "../../core/font-activation";
 import { extractFontFamily, renameWithFamily } from "../../core/font-metadata";
 import { persistSave } from "../../core/persist-save";
+import { withDecryptedLibraryMediaPath } from "../../core/security/library-media-storage";
 import { hasUserTitle } from "../../core/user-metadata";
 import { getDb } from "../../db";
 import { itemFile } from "../../paths";
@@ -34,21 +37,37 @@ export const savesFontQueries = {
         .select()
         .from(saves)
         .where(inArray(saves.id, params.ids));
+      const byId = new Map(rows.map((row) => [row.id, row]));
       const txs: Transaction[] = [];
-      let n = 0;
-      for (const row of rows) {
-        n += 1;
+      for (const [index, id] of [...new Set(params.ids)].entries()) {
+        const row = byId.get(id);
+        if (!row) continue;
         const stored = row.files[0];
         const family =
           stored?.family ??
           (stored?.path
-            ? await extractFontFamily(itemFile(row.id, stored.path))
+            ? await withDecryptedLibraryMediaPath(
+                itemFile(row.id, stored.path),
+                extractFontFamily,
+              )
             : null);
-        const title = renameWithFamily(pattern, {
-          n,
+        const fallback = renameWithFamily("{family}", {
+          n: index + 1,
           title: row.title ?? "Untitled",
           id: row.id,
           family,
+        });
+        const original = stored?.path
+          ? basename(stored.path, extname(stored.path))
+          : (row.title ?? "Untitled");
+        const title = applyRenameTemplate(pattern, {
+          index,
+          title: row.title ?? "Untitled",
+          id: row.id,
+          family: fallback,
+          date: row.savedAt,
+          tags: row.tags,
+          original,
         });
         if (title === row.title) continue;
         txs.push({
@@ -83,7 +102,14 @@ export const savesFontQueries = {
       saveId: id,
       fontsDir: pondFontsDir(app.getPath("home")),
     });
-    if (result.ok && result.path) writeFontActivation(id, result.path);
+    if (result.ok && result.path) {
+      writeFontActivation(id, result.path);
+      await persistSave(
+        id,
+        { fontActivated: true },
+        { actorReason: "font:activate" },
+      );
+    }
     return result;
   }),
 
@@ -97,7 +123,14 @@ export const savesFontQueries = {
         installedPath: installed,
         fontsDir: pondFontsDir(app.getPath("home")),
       });
-      if (result.ok) clearFontActivation(id);
+      if (result.ok) {
+        clearFontActivation(id);
+        await persistSave(
+          id,
+          { fontActivated: false },
+          { actorReason: "font:deactivate" },
+        );
+      }
       return result;
     },
   ),

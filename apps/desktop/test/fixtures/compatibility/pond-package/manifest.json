@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "pond-package-v1",
+  "kind": "pond-package",
+  "baseline": {
+    "extension": ".pondpack",
+    "container": "directory",
+    "manifestPath": "pond-export.json",
+    "packageVersion": 1,
+    "requiredSections": ["saves", "folders", "exportedFiles"],
+    "optionalSections": ["organization"]
+  },
+  "compatibilityAssertions": [
+    "Validate every original before creating folders or Saves.",
+    "Reject duplicate identities, unsafe paths, and invalid folder ancestry.",
+    "Preserve nested folder membership and supported organization metadata.",
+    "Continue reading plaintext version 1 packages after encrypted packages ship."
+  ]
+}

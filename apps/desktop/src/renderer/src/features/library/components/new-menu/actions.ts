@@ -2,7 +2,10 @@ import type { Source } from "@pond/schema/db";
 import { normalizeLabelName } from "@pond/schema/label-name";
 import { Dialog } from "@pond/ui";
 import type { BlankDocumentKind } from "@shared/blank-documents";
-import type { EagleImportProgress } from "@shared/saves-import-contracts";
+import type {
+  EagleImportProgress,
+  SavesImportQueryInputs,
+} from "@shared/saves-import-contracts";
 import { z } from "zod";
 import { openDuplicateReview } from "@/features/library/state/duplicate-review";
 import { folders } from "@/features/library/state/folders";
@@ -11,8 +14,10 @@ import { savedViews } from "@/features/library/state/saved-views";
 import { openSave } from "@/features/saves/lib/save-nav";
 import { selectOnlySave } from "@/features/saves/lib/select";
 import { asUrlList } from "@/features/saves/lib/url-list";
+import { importFilesWithDuplicateReview } from "@/features/saves/state/duplicate-import-review";
 import { selection } from "@/features/saves/state/selection";
 import { libraryViewContext } from "@/features/saves/state/view-context";
+import { emitFeedback } from "@/features/settings/lib/sounds";
 import { startConnect, startWatch } from "@/features/sources/lib/create";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { notify, updateNotification } from "@/shared/lib/toast";
@@ -130,7 +135,7 @@ export function createNewActions({
     });
     if (picked.paths.length === 0) return;
     const result = SaveResultSchema.parse(
-      await window.pond.query("saves.importFiles", { paths: picked.paths }),
+      await importFilesWithDuplicateReview({ paths: picked.paths }),
     );
     if (!result.ok || !result.ids?.length) {
       throw new Error(
@@ -240,12 +245,45 @@ export function createNewActions({
     });
   }
 
-  async function importPondPackage(): Promise<void> {
-    const result = await window.pond.query("saves.importPackage", {});
+  async function importPondPackage(password?: string): Promise<void> {
+    const result = await window.pond.query("saves.importPackage", { password });
+    if (!result.ok) {
+      if (result.error === "canceled") return;
+      if (!password && result.error?.includes("requires a password")) {
+        Dialog.prompt({
+          title: "Unlock Pond Package",
+          description:
+            "Enter the password used when this package was exported.",
+          inputType: "password",
+          autoComplete: "current-password",
+          confirmLabel: "Import",
+          onConfirm: async (nextPassword) => {
+            await importPondPackage(nextPassword);
+          },
+        });
+        return;
+      }
+      throw new Error(
+        result.error || "Couldn't import the package. Try again.",
+      );
+    }
+    await refreshFolders();
+    notify({
+      id: "new-import",
+      title: result.imported
+        ? `Imported ${result.imported} Save${result.imported === 1 ? "" : "s"}`
+        : "Nothing new to import",
+      description: result.skipped ? `${result.skipped} skipped` : undefined,
+      timeout: 5000,
+    });
+  }
+
+  async function importEaglePackage(): Promise<void> {
+    const result = await window.pond.query("saves.importEaglePackage", {});
     if (!result.ok) {
       if (result.error === "canceled") return;
       throw new Error(
-        result.error || "Couldn't import the package. Try again.",
+        result.error || "Couldn't import the Eagle package. Try again.",
       );
     }
     await refreshFolders();
@@ -270,6 +308,35 @@ export function createNewActions({
     if (!result.ok || !result.id)
       throw new Error("Couldn't save the note. Try again.");
     await placeCreatedSave(result.id);
+  }
+
+  async function captureScreenshot(
+    sourceId: string,
+    options: Omit<
+      SavesImportQueryInputs["saves.captureDesktopScreenshot"],
+      "sourceId" | "folderId"
+    > = {},
+  ): Promise<void> {
+    const result = await window.pond.query("saves.captureDesktopScreenshot", {
+      sourceId,
+      folderId: currentFolderId(),
+      ...options,
+    });
+    if (!result.ok || !result.id) {
+      if (result.error === "source_not_found") {
+        throw new Error(
+          "That screen or window is no longer available. Choose it again.",
+        );
+      }
+      if (result.error === "capture_unavailable") {
+        throw new Error(
+          "Pond couldn't capture that source. Check Screen Recording access and try again.",
+        );
+      }
+      throw new Error("Pond couldn't save the screenshot. Try again.");
+    }
+    selectSave(result.id);
+    emitFeedback("screenshot");
   }
 
   async function createBlankDocument(kind: BlankDocumentKind): Promise<void> {
@@ -428,8 +495,10 @@ export function createNewActions({
     importBookmarks,
     importPageAssets,
     importEagle,
+    importEaglePackage,
     importPondPackage,
     createNote,
+    captureScreenshot,
     createBlankDocument,
     newSmartFolder,
     findDuplicates,
@@ -450,8 +519,10 @@ export const {
   importBookmarks,
   importPageAssets,
   importEagle,
+  importEaglePackage,
   importPondPackage,
   createNote,
+  captureScreenshot,
   createBlankDocument,
   newSmartFolder,
   findDuplicates,

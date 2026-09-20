@@ -44,3 +44,17 @@ it("reports malformed request JSON as a client error", async () => {
     error: "Invalid JSON.",
   });
 });
+
+it("validates explicit image compression mode and quality inputs", async () => {
+  const response = await libraryActionRoutes().request("/conversion/compress", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      ids: ["save"],
+      mode: "quality",
+      quality: 101,
+    }),
+  });
+  expect(response.status).toBe(400);
+  expect(await response.text()).toContain("quality");
+});

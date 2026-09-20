@@ -2,15 +2,26 @@ import { app, BrowserWindow, dialog } from "electron";
 import log from "electron-log/main.js";
 import { IPC } from "../shared/constants";
 import { linkMatchesLibrary } from "../shared/library-links";
+import { librarySecurityStatus } from "./core/security/app-lock-runtime";
 import { readOrCreatePondId } from "./lib/pond-identity";
 import { libraryRoot } from "./paths";
 
 let pendingDeepLink: string | null = null;
 
 export function consumePendingDeepLink(): string | null {
+  if (librarySecurityStatus().state === "locked") return null;
   const route = pendingDeepLink;
   pendingDeepLink = null;
   return route;
+}
+
+export function flushPendingDeepLink(): void {
+  const route = consumePendingDeepLink();
+  if (!route) return;
+  const target =
+    BrowserWindow.getFocusedWindow() ??
+    BrowserWindow.getAllWindows().find((window) => !window.isDestroyed());
+  target?.webContents.send(IPC.nav, route);
 }
 
 export function handleDeepLink(
@@ -43,6 +54,12 @@ export function handleDeepLink(
     } else if (parsed.hostname === "item") {
       const id = parsed.pathname.replace(/^\//, "");
       if (id) route = `/save/${encodeURIComponent(id)}`;
+    } else if (parsed.hostname === "folder") {
+      const id = parsed.pathname.replace(/^\//, "");
+      if (id) route = `/?folder=${encodeURIComponent(id)}`;
+    } else if (parsed.hostname === "view") {
+      const id = parsed.pathname.replace(/^\//, "");
+      if (id) route = `/?view=${encodeURIComponent(id)}`;
     } else if (parsed.hostname === "search") {
       const q = parsed.searchParams.get("q") ?? "";
       route = `/?q=${encodeURIComponent(q)}`;
@@ -69,6 +86,10 @@ export function handleDeepLink(
     if (target.isMinimized()) target.restore();
     target.show();
     target.focus();
+    if (librarySecurityStatus().state === "locked") {
+      pendingDeepLink = route;
+      return;
+    }
     target.webContents.send(IPC.nav, route);
   } catch (err) {
     log.warn("[pond deep-link] parse failed", url, err);

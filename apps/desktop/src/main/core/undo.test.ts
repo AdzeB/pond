@@ -76,3 +76,33 @@ it("does not carry in-flight undo history into another library", async () => {
   expect(history.canUndo()).toBe(false);
   expect(history.canRedo()).toBe(false);
 });
+
+it("swaps replacement bytes when undoing and redoing file compression", async () => {
+  const committed: Transaction[][] = [];
+  const history = createUndoHistory(async (transactions) => {
+    committed.push(transactions);
+  });
+  const original = new Uint8Array([1, 2, 3]);
+  const compressed = new Uint8Array([4, 5]);
+  history.record([
+    {
+      kind: "update",
+      model: "save",
+      id: "image",
+      before: { files: [] },
+      patch: { files: [] },
+      files: [{ filename: "image.png", bytes: compressed }],
+      beforeFiles: [{ filename: "image.png", bytes: original }],
+    },
+  ]);
+  expect(await history.undo()).toBe(true);
+  expect(committed[0]?.[0]).toMatchObject({
+    files: [{ filename: "image.png", bytes: original }],
+    beforeFiles: [{ filename: "image.png", bytes: compressed }],
+  });
+  expect(await history.redo()).toBe(true);
+  expect(committed[1]?.[0]).toMatchObject({
+    files: [{ filename: "image.png", bytes: compressed }],
+    beforeFiles: [{ filename: "image.png", bytes: original }],
+  });
+});

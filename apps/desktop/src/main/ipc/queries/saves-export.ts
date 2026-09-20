@@ -6,8 +6,16 @@ import log from "electron-log/main.js";
 import sharp from "sharp";
 import { z } from "zod";
 import { copyExportFile, writeExportFile } from "../../core/export-files";
-import { exportSavesToDirectory } from "../../core/export-saves";
+import {
+  exportSavesToDirectory,
+  exportSavesToEaglePackage,
+} from "../../core/export-saves";
 import { exportPondPackage } from "../../core/pond-package";
+import { librarySecurityStatus } from "../../core/security/app-lock-runtime";
+import {
+  materializeLibraryMediaForExternalUse,
+  withDecryptedLibraryMediaPath,
+} from "../../core/security/library-media-storage";
 import { runTransferJob } from "../../core/transfer-jobs";
 import { getDb } from "../../db";
 import { toCsv } from "../../lib/csv";
@@ -22,35 +30,79 @@ import {
 } from "./params";
 
 const IdListParams = z.object({ ids: StringListParam });
+const PackageExportParams = IdListParams.extend({
+  password: z.string().min(8).max(1_024).optional(),
+});
 
 export const savesExportQueries = {
-  "saves.exportPackage": query(IdListParams, async ({ ids }) => {
+  "saves.exportEaglePackage": query(IdListParams, async ({ ids }) => {
     const picked = await dialog.showSaveDialog({
-      title: "Export Pond Package",
-      defaultPath: "Saves.pondpack",
+      title: "Export Eagle Package",
+      defaultPath: "Saves.eaglepack",
       buttonLabel: "Export",
     });
     if (picked.canceled || !picked.filePath)
       return { ok: false, error: "canceled" };
     try {
-      const destination = picked.filePath.endsWith(".pondpack")
+      const destination = picked.filePath.endsWith(".eaglepack")
         ? picked.filePath
-        : `${picked.filePath}.pondpack`;
+        : `${picked.filePath}.eaglepack`;
       return {
         ok: true,
         ...(await runTransferJob(
-          { kind: "export_package", origin: libraryRoot(), destination, ids },
-          () => exportPondPackage(ids, destination),
+          {
+            kind: "export_eagle_package",
+            origin: libraryRoot(),
+            destination,
+            ids,
+          },
+          () => exportSavesToEaglePackage(ids, destination),
         )),
       };
     } catch (error) {
       return {
         ok: false,
         error:
-          error instanceof Error ? error.message : "Package export failed.",
+          error instanceof Error
+            ? error.message
+            : "Eagle package export failed.",
       };
     }
   }),
+
+  "saves.exportPackage": query(
+    PackageExportParams,
+    async ({ ids, password }) => {
+      if (librarySecurityStatus().configured && !password) {
+        return { ok: false, error: "password_required" };
+      }
+      const picked = await dialog.showSaveDialog({
+        title: "Export Pond Package",
+        defaultPath: "Saves.pondpack",
+        buttonLabel: "Export",
+      });
+      if (picked.canceled || !picked.filePath)
+        return { ok: false, error: "canceled" };
+      try {
+        const destination = picked.filePath.endsWith(".pondpack")
+          ? picked.filePath
+          : `${picked.filePath}.pondpack`;
+        return {
+          ok: true,
+          ...(await runTransferJob(
+            { kind: "export_package", origin: libraryRoot(), destination, ids },
+            () => exportPondPackage(ids, destination, password),
+          )),
+        };
+      } catch (error) {
+        return {
+          ok: false,
+          error:
+            error instanceof Error ? error.message : "Package export failed.",
+        };
+      }
+    },
+  ),
 
   "saves.exportFile": query(
     z.object({ id: StringParam, fileIndex: FileIndexParam }),
@@ -108,7 +160,9 @@ export const savesExportQueries = {
         return { ok: false, error: "Share is unavailable on this Mac." };
       }
       try {
-        await shareItem(target.path);
+        await shareItem(
+          await materializeLibraryMediaForExternalUse(target.path),
+        );
         return { ok: true };
       } catch (error) {
         log.warn("[pond ipc] saves.share failed", error);
@@ -151,7 +205,10 @@ export const savesExportQueries = {
       const target = await resolveSaveFilePath(id, 0);
       if (!target.ok) continue;
       try {
-        const bytes = await sharp(target.path).webp({ quality: 80 }).toBuffer();
+        const bytes = await withDecryptedLibraryMediaPath(
+          target.path,
+          (source) => sharp(source).webp({ quality: 80 }).toBuffer(),
+        );
         await writeExportFile(dir, `${id}.webp`, bytes);
         exported += 1;
       } catch (err) {

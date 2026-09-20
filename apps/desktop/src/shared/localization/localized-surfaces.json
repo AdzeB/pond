@@ -1,0 +1,13 @@
+[
+  "../../packages/schema/src/prefs.ts",
+  "../../packages/schema/src/settings.ts",
+  "src/main",
+  "src/main/core/feedback.ts",
+  "src/renderer/src/app/components/lock-screen",
+  "src/renderer/src/features/settings",
+  "src/renderer/preview.html",
+  "src/renderer/src/preview.ts",
+  "src/shared/blank-documents.ts",
+  "src/main/file-menu.ts",
+  "src/shared/shortcuts.ts"
+]

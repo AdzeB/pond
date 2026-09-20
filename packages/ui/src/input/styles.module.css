@@ -126,6 +126,10 @@
     opacity: 0.8;
   }
 
+  &[aria-invalid="true"] {
+    color: var(--ds-red-11);
+  }
+
   &[data-multiline] {
     display: block;
     min-width: 0;
@@ -172,4 +176,11 @@
   &:is(:focus-visible, [data-demo-state="focus"]) {
     border-color: var(--ds-gray-a6);
   }
+}
+
+.root:where([data-variant="borderless"]) > .field {
+  --ds-focus-outline: transparent;
+
+  font-weight: var(--ds-weight-normal);
+  background: transparent;
 }

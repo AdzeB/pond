@@ -1,8 +1,19 @@
 import { z } from "zod";
 
+const ViewerActionSchema = z.enum([
+  "none",
+  "open",
+  "preview",
+  "presentation",
+  "detached",
+]);
 export const ViewerPrefsSchema = z.object({
   spaceBehavior: z.enum(["toggle", "hold"]).catch("toggle"),
+  spaceAction: ViewerActionSchema.catch("preview"),
+  doubleClickAction: ViewerActionSchema.catch("open"),
+  middleClickAction: ViewerActionSchema.catch("open"),
   wheelBehavior: z.enum(["scroll", "zoom", "navigate"]).catch("scroll"),
+  defaultImageSize: z.enum(["fit", "actual"]).catch("fit"),
   rememberImagePosition: z.boolean().catch(true),
   imageRendering: z.enum(["smooth", "pixelated"]).catch("smooth"),
   transparentBackground: z
@@ -11,9 +22,15 @@ export const ViewerPrefsSchema = z.object({
   thumbnailBackground: z
     .enum(["none", "black", "gray", "white", "grid"])
     .catch("none"),
+  thumbnailBehavior: z.enum(["still", "scrub"]).catch("scrub"),
+  thumbnailSpeed: z.enum(["slow", "normal", "fast"]).catch("normal"),
+  thumbnailQuality: z.enum(["fast", "balanced", "quality"]).catch("balanced"),
+  hoverZoom: z.boolean().catch(false),
+  gifAutoplay: z.boolean().catch(true),
   autoplayVideo: z.boolean().catch(true),
   hoverVideo: z.boolean().catch(true),
   rememberPlayback: z.boolean().catch(true),
   loopShortVideos: z.boolean().catch(true),
   stretchVideo: z.boolean().catch(false),
+  videoWheelBehavior: z.enum(["none", "progress", "volume"]).catch("progress"),
 });

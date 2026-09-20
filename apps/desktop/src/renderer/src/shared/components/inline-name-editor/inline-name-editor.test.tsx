@@ -35,9 +35,11 @@ function field() {
   if (!input) throw new Error("Missing inline name editor");
   return input;
 }
-async function press(key: string) {
+async function press(key: string, isComposing = false) {
   await act(() =>
-    field().dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true })),
+    field().dispatchEvent(
+      new KeyboardEvent("keydown", { key, bubbles: true, isComposing }),
+    ),
   );
 }
 it("focuses and selects the current name", () => {
@@ -64,6 +66,12 @@ it("keeps the current name on Escape", async () => {
   await act(() => field().blur());
   expect(onSave).not.toHaveBeenCalled();
   expect(onFinish).toHaveBeenCalledOnce();
+});
+it("does not commit Enter while text is composing", async () => {
+  field().value = "旅行";
+  await press("Enter", true);
+  expect(onSave).not.toHaveBeenCalled();
+  expect(onFinish).not.toHaveBeenCalled();
 });
 it("keeps the existing name when the input is empty", async () => {
   field().value = "   ";

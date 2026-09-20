@@ -80,6 +80,28 @@ describe("hierarchy-preserving file import", () => {
     expect(files[0]?.folderIds).toEqual([]);
   });
 
+  it("reuses reviewed duplicates without creating another Save", async () => {
+    const { tree, files, runtime } = await fixture();
+    const path = join(tree, "reference.png");
+    files.push({
+      id: "existing-save",
+      filePaths: [],
+      tags: [],
+      folderIds: [],
+    });
+    const result = await importFiles(
+      {
+        paths: [path],
+        folderIds: ["destination"],
+        useExisting: { [path]: "existing-save" },
+      },
+      runtime,
+    );
+    expect(result).toMatchObject({ ok: true, ids: ["existing-save"] });
+    expect(files).toHaveLength(1);
+    expect(files[0]?.folderIds).toEqual(["destination"]);
+  });
+
   it("continues readable files and reports failed paths without false success counts", async () => {
     const { tree, root, runtime } = await fixture();
     const missing = join(root, "missing.png");

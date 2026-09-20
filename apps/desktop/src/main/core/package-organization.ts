@@ -1,4 +1,3 @@
-import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { savedViews, tagGroupMembers, tagGroups, tags } from "@pond/schema/db";
 import { isGroup, type Query } from "@pond/schema/filters/types";
@@ -9,6 +8,7 @@ import { ulid } from "ulid";
 import { z } from "zod";
 import { LibraryFilterSchema } from "../../shared/library-query";
 import { getDb } from "../db";
+import { readBundleJson } from "../lib/library-config";
 import { executeBatch, withMutationScope } from "./executor";
 import { OrganizationBundleSchema } from "./organization-bundle";
 import { getPrefs, setPrefs } from "./prefs";
@@ -54,24 +54,14 @@ export async function readPackageOrganization(
   views: PackageOrganization["views"],
   folderIds?: readonly string[],
 ): Promise<PackageOrganization> {
-  const text = await readFile(join(root, "tags.json"), "utf8").catch(
-    (error: NodeJS.ErrnoException) => {
-      if (error.code === "ENOENT") return null;
-      throw error;
-    },
-  );
-  const tagData = text
+  const tagsBundle = readBundleJson<unknown>(join(root, "tags.json"));
+  const tagData = tagsBundle
     ? z
         .object({ data: PackageOrganizationSchema.omit({ views: true }) })
-        .parse(JSON.parse(text)).data
+        .parse(tagsBundle).data
     : {};
-  const settings = await readFile(join(root, "settings.json"), "utf8").catch(
-    (error: NodeJS.ErrnoException) => {
-      if (error.code === "ENOENT") return null;
-      throw error;
-    },
-  );
-  const preferences = settings
+  const settingsBundle = readBundleJson<unknown>(join(root, "settings.json"));
+  const preferences = settingsBundle
     ? z
         .object({
           data: z.object({
@@ -81,7 +71,7 @@ export async function readPackageOrganization(
               .default({}),
           }),
         })
-        .parse(JSON.parse(settings)).data
+        .parse(settingsBundle).data
     : { folderRules: {}, folderViews: {} };
   return PackageOrganizationSchema.parse({
     views,

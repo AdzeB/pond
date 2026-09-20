@@ -19,6 +19,45 @@ export const viewerSection = defineCustomSection({
         },
         {
           control: "select",
+          key: "spaceAction",
+          title: "Space Action",
+          description: "Choose what Space opens for the selected Save.",
+          options: [
+            { value: "preview", label: "Quick Preview" },
+            { value: "presentation", label: "Presentation" },
+            { value: "detached", label: "Detached Window" },
+            { value: "open", label: "Save Details" },
+            { value: "none", label: "Do Nothing" },
+          ],
+        },
+        {
+          control: "select",
+          key: "doubleClickAction",
+          title: "Double-Click Action",
+          description: "Choose what opens when you double-click a Save.",
+          options: [
+            { value: "open", label: "Save Details" },
+            { value: "preview", label: "Quick Preview" },
+            { value: "presentation", label: "Presentation" },
+            { value: "detached", label: "Detached Window" },
+            { value: "none", label: "Do Nothing" },
+          ],
+        },
+        {
+          control: "select",
+          key: "middleClickAction",
+          title: "Middle-Click Action",
+          description: "Choose what opens when you middle-click a Save.",
+          options: [
+            { value: "open", label: "Save Details" },
+            { value: "preview", label: "Quick Preview" },
+            { value: "presentation", label: "Presentation" },
+            { value: "detached", label: "Detached Window" },
+            { value: "none", label: "Do Nothing" },
+          ],
+        },
+        {
+          control: "select",
           key: "wheelBehavior",
           title: "Image Scrolling",
           description: "Pinch and Alt-scroll always zoom at the pointer.",
@@ -33,6 +72,16 @@ export const viewerSection = defineCustomSection({
     group.prefs("viewer", {
       title: "Images",
       items: [
+        {
+          control: "select",
+          key: "defaultImageSize",
+          title: "Default Image Size",
+          description: "Open images fitted to the viewer or at actual size.",
+          options: [
+            { value: "fit", label: "Fit" },
+            { value: "actual", label: "Actual Size" },
+          ],
+        },
         {
           control: "switch",
           key: "rememberImagePosition",
@@ -67,6 +116,51 @@ export const viewerSection = defineCustomSection({
     group.prefs("viewer", {
       title: "Gallery",
       items: [
+        {
+          control: "select",
+          key: "thumbnailBehavior",
+          title: "Thumbnail Behavior",
+          description: "Keep the cover still or scrub gallery images on hover.",
+          options: [
+            { value: "still", label: "Still" },
+            { value: "scrub", label: "Scrub on Hover" },
+          ],
+        },
+        {
+          control: "select",
+          key: "thumbnailSpeed",
+          title: "Thumbnail Scrub Speed",
+          description: "Control how quickly pointer movement advances images.",
+          options: [
+            { value: "slow", label: "Slow" },
+            { value: "normal", label: "Normal" },
+            { value: "fast", label: "Fast" },
+          ],
+        },
+        {
+          control: "select",
+          key: "thumbnailQuality",
+          title: "Thumbnail Quality",
+          description:
+            "Upgrade enlarged cards to original media in Quality mode.",
+          options: [
+            { value: "fast", label: "Fast" },
+            { value: "balanced", label: "Balanced" },
+            { value: "quality", label: "Quality" },
+          ],
+        },
+        {
+          control: "switch",
+          key: "gifAutoplay",
+          title: "Autoplay GIFs",
+          description: "Play GIFs while their viewer is active.",
+        },
+        {
+          control: "switch",
+          key: "hoverZoom",
+          title: "Hover Zoom",
+          description: "Magnify thumbnail details around the pointer.",
+        },
         {
           control: "select",
           key: "thumbnailBackground",
@@ -115,6 +209,17 @@ export const viewerSection = defineCustomSection({
           key: "stretchVideo",
           title: "Stretch Video to Fit",
           description: "Fill the viewer even when the aspect ratio differs.",
+        },
+        {
+          control: "select",
+          key: "videoWheelBehavior",
+          title: "Video Scrolling",
+          description: "Use the wheel to seek, change volume, or do nothing.",
+          options: [
+            { value: "progress", label: "Seek Video" },
+            { value: "volume", label: "Change Volume" },
+            { value: "none", label: "Do Nothing" },
+          ],
         },
       ],
     }),

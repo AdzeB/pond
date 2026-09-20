@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { BlurHash } from "@/features/saves/components/card/media/blur-hash";
 import { useImageReady } from "@/features/saves/components/card/media/lib/use-image-ready";
+import { useQualityImage } from "@/features/saves/hooks/use-quality-image";
 import type {
   MediaPickOptions,
   MediaUnit,
@@ -15,6 +16,7 @@ import {
   recordAspect,
 } from "@/features/saves/state/aspect";
 import type { Save } from "@/features/saves/types";
+import { usePrefs } from "@/features/settings/state/prefs";
 import styles from "./styles.module.css";
 
 export function HoverGallery({
@@ -77,12 +79,21 @@ function GallerySlide({
   onReady?: () => void;
 }) {
   const [failed, setFailed] = useState(false);
+  const [viewer] = usePrefs("viewer");
   const dims = primary ? aspectDimsFor(save, pickOptions, unit) : null;
   const w = dims?.w ?? undefined;
   const h = dims?.h ?? undefined;
-  const src = unit.requiresGeneratedPreview
+  const thumbnail = unit.requiresGeneratedPreview
     ? previewThumbUrlFor(unit.url, width)
     : thumbUrlFor(unit.url, width);
+  const src = useQualityImage(
+    thumbnail,
+    unit.url,
+    active &&
+      viewer.thumbnailQuality === "quality" &&
+      (width ?? 0) >= 384 &&
+      !unit.requiresGeneratedPreview,
+  );
   const reportReady = useCallback(
     (image: HTMLImageElement) => {
       if (!primary) return;

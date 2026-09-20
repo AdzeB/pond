@@ -57,7 +57,7 @@ it("lets the user change the keeper, exclude a candidate, and review excluded ma
     expect(radios).toHaveLength(3);
     await act(async () => radios[1]?.click());
     const checks = [
-      ...document.querySelectorAll<HTMLInputElement>("input[type=checkbox]"),
+      ...document.querySelectorAll<HTMLElement>('[role="checkbox"]'),
     ];
     await act(async () => checks[2]?.click());
     const merge = [...document.querySelectorAll("button")].find(

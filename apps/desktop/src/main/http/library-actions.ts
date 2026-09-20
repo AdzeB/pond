@@ -9,8 +9,10 @@ import {
 import {
   ConversionApiRequestSchema,
   ConversionPresetSchema,
+  ImageCompressionRequestSchema,
 } from "../../shared/conversion-contracts";
 import { LibraryQueryRequestSchema } from "../../shared/library-query";
+import { conversionCapabilities } from "../core/conversion-capabilities";
 import {
   conversionJobs,
   conversionPresets,
@@ -29,6 +31,9 @@ import { resolvePaths } from "../paths";
 
 export function libraryActionRoutes() {
   const routes = new Hono();
+  routes.get("/conversion/capabilities", async (c) =>
+    c.json({ status: "success", data: await conversionCapabilities() }),
+  );
   routes.get("/conversion/presets", (c) =>
     c.json({ status: "success", data: conversionPresets() }),
   );
@@ -48,6 +53,15 @@ export function libraryActionRoutes() {
     return c.json({
       status: "success",
       data: conversionJobs.start(parsed.data),
+    });
+  });
+  routes.post("/conversion/compress", async (c) => {
+    const parsed = ImageCompressionRequestSchema.safeParse(await c.req.json());
+    if (!parsed.success)
+      return c.json({ status: "error", error: parsed.error.message }, 400);
+    return c.json({
+      status: "success",
+      data: conversionJobs.startCompression(parsed.data),
     });
   });
   routes.get("/conversion/:id", (c) =>

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { RenameReplacementSchema } from "./rename-template";
 
 const Name = z.string().trim().min(1).max(500);
 export const ActionStepSchema = z.intersection(
@@ -22,6 +23,7 @@ export const ActionStepSchema = z.intersection(
       pattern: Name,
       start: z.number().int().min(0).default(1),
       padding: z.number().int().min(1).max(12).default(1),
+      replacement: RenameReplacementSchema.nullable().optional(),
     }),
     z.object({
       kind: z.literal("notes"),
@@ -34,6 +36,7 @@ export const ActionStepSchema = z.intersection(
 export const ActionDefinitionSchema = z.object({
   id: z.string().min(1).max(100),
   name: Name,
+  shortcut: z.string().trim().min(1).max(100).nullable().optional(),
   steps: z.array(ActionStepSchema).min(1).max(50),
 });
 export type ActionDefinition = z.infer<typeof ActionDefinitionSchema>;
@@ -65,6 +68,7 @@ export interface ActionPreview {
 export interface ActionQueryInputs {
   "actions.list": Record<string, never>;
   "actions.save": { definition: ActionDefinition };
+  "actions.duplicate": { id: string };
   "actions.delete": { id: string };
   "actions.preview": z.infer<typeof ActionRequestSchema>;
   "actions.run": z.infer<typeof ActionRunSchema>;
@@ -72,6 +76,7 @@ export interface ActionQueryInputs {
 export interface ActionQueryResults {
   "actions.list": ActionDefinition[];
   "actions.save": ActionDefinition;
+  "actions.duplicate": ActionDefinition;
   "actions.delete": { ok: true };
   "actions.preview": ActionPreview;
   "actions.run": { changed: number };

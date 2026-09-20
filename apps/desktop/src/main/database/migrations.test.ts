@@ -35,4 +35,24 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
       db.close();
     }
   });
+
+  it("creates folder metadata separately from folder rows", () => {
+    const db = new Database(":memory:");
+    try {
+      migratePond(db);
+      const columns = db
+        .prepare("pragma table_info(folder_metadata)")
+        .all()
+        .map((row) => z.object({ name: z.string() }).parse(row).name);
+      expect(columns).toEqual(["folder_id", "description", "external_link"]);
+      const folderColumns = db
+        .prepare("pragma table_info(folders)")
+        .all()
+        .map((row) => z.object({ name: z.string() }).parse(row).name);
+      expect(folderColumns).not.toContain("description");
+      expect(folderColumns).not.toContain("external_link");
+    } finally {
+      db.close();
+    }
+  });
 });

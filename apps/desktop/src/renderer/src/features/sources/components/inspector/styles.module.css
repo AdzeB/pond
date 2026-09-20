@@ -68,21 +68,12 @@
   color: var(--ds-gray-12);
   text-align: left;
   white-space: nowrap;
-  appearance: none;
+}
+
+.name-field {
+  font-weight: var(--ds-weight-medium);
+  text-align: left;
   cursor: text;
-  outline: none;
-  background: transparent;
-  border: 0;
-  border-radius: var(--ds-radius-xs);
-}
-
-.name::placeholder {
-  color: var(--ds-gray-12);
-  opacity: 1;
-}
-
-.name:focus::placeholder {
-  color: var(--ds-gray-9);
 }
 
 .handle {

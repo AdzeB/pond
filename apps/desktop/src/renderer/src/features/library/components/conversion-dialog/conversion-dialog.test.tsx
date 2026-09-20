@@ -19,11 +19,18 @@ it("shows conversion progress and cancellation while preserving completed output
   );
   const job: ConversionJob = {
     id: "job",
+    kind: "export",
     status: "running",
     completed: 1,
     total: 2,
+    progress: 0.5,
+    currentId: "b",
     directory: "/export",
     outputs: ["/export/one.webp"],
+    changed: 1,
+    skipped: 0,
+    bytesBefore: 0,
+    bytesAfter: 0,
     error: null,
   };
   const calls: string[] = [];
@@ -31,6 +38,19 @@ it("shows conversion progress and cancellation while preserving completed output
     query: async (name: string) => {
       calls.push(name);
       if (name === "conversion.presets") return [];
+      if (name === "conversion.capabilities")
+        return [
+          {
+            format: "webp",
+            category: "image",
+            adapter: "sharp",
+            extension: "webp",
+            mimeType: "image/webp",
+            available: true,
+            unavailableReason: null,
+            supportsLossless: true,
+          },
+        ];
       if (name === "conversion.start" || name === "conversion.status")
         return job;
       if (name === "conversion.cancel") return { ...job, status: "cancelled" };
@@ -52,8 +72,18 @@ it("shows conversion progress and cancellation while preserving completed output
       openConversionDialog(["a", "b"]);
       root.render(<ConversionDialogHost />);
     });
+    const lossless = document.querySelector('[role="checkbox"]');
+    if (!(lossless instanceof HTMLElement))
+      throw new Error("Missing lossless checkbox");
+    expect(lossless.getAttribute("aria-checked")).toBe("false");
+    await act(async () => lossless.click());
+    expect(lossless.getAttribute("aria-checked")).toBe("true");
+    expect(document.querySelector('input[type="range"]')).toHaveProperty(
+      "value",
+      "85",
+    );
     await act(async () => button("Choose Folder and Export").click());
-    expect(document.querySelector("progress")?.value).toBe(1);
+    expect(document.querySelector("progress")?.value).toBe(0.5);
     expect(document.body.textContent).toContain("Exporting: 1 of 2 files.");
     await act(async () => button("Cancel Export").click());
     expect(document.body.textContent).toContain("Export Cancelled");

@@ -77,9 +77,52 @@ export function buildTagNav(
 
 export function partitionPickerTags<
   T extends { starred: boolean; lastUsedAt: number | null; name: string },
->(tags: readonly T[]) {
+>(tags: readonly T[], recommendedNames: ReadonlySet<string> = new Set()) {
   const starred = tags
     .filter((tag) => tag.starred)
     .sort((a, b) => a.name.localeCompare(b.name));
-  return { starred, ...partitionRecent(tags.filter((tag) => !tag.starred)) };
+  const recommended = tags
+    .filter(
+      (tag) =>
+        !tag.starred && recommendedNames.has(tag.name.trim().toLowerCase()),
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const reserved = new Set(
+    [...starred, ...recommended].map((tag) => tag.name.trim().toLowerCase()),
+  );
+  return {
+    starred,
+    recommended,
+    ...partitionRecent(
+      tags.filter((tag) => !reserved.has(tag.name.trim().toLowerCase())),
+    ),
+  };
+}
+
+export function parseTagBatch(input: string): string[] {
+  const tags: string[] = [];
+  let value = "";
+  let quoted = false;
+  const push = () => {
+    const cleaned = value.trim();
+    value = "";
+    if (
+      cleaned &&
+      !tags.some((tag) => tag.toLowerCase() === cleaned.toLowerCase())
+    )
+      tags.push(cleaned);
+  };
+  for (const character of input) {
+    if (character === '"') {
+      quoted = !quoted;
+      continue;
+    }
+    if (!quoted && [",", "\n"].includes(character)) {
+      push();
+      continue;
+    }
+    value += character;
+  }
+  push();
+  return tags;
 }

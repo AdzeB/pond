@@ -33,17 +33,21 @@ interface HudProps {
   canCrop: boolean;
   grayscale: boolean;
   mode: InspectorMode;
+  transformMode: "preview" | "file";
   onActualSize: () => void;
   onApplyCrop: () => void;
   onCancelCrop: () => void;
+  onDetach: () => void;
   onFit: () => void;
   onFlip: () => void;
   onReset: () => void;
   onRotate: () => void;
+  onPresent: () => void;
   onSaveCrop: () => void;
   onToggleComment: () => void;
   onToggleCrop: () => void;
   onToggleGrayscale: () => void;
+  onTransformModeChange: (mode: "preview" | "file") => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
 }
@@ -55,17 +59,21 @@ function Hud({
   canCrop,
   grayscale,
   mode,
+  transformMode,
   onActualSize,
   onApplyCrop,
   onCancelCrop,
+  onDetach,
   onFit,
   onFlip,
   onReset,
   onRotate,
+  onPresent,
   onSaveCrop,
   onToggleComment,
   onToggleCrop,
   onToggleGrayscale,
+  onTransformModeChange,
   onZoomIn,
   onZoomOut,
 }: HudProps) {
@@ -132,6 +140,23 @@ function Hud({
         aria-label="Image"
       >
         <div className={styles.start}>
+          <Button
+            size="sm"
+            variant={transformMode === "preview" ? "secondary" : "ghost"}
+            aria-pressed={transformMode === "preview"}
+            onClick={() => onTransformModeChange("preview")}
+          >
+            Preview Only
+          </Button>
+          <Button
+            size="sm"
+            variant={transformMode === "file" ? "secondary" : "ghost"}
+            aria-pressed={transformMode === "file"}
+            onClick={() => onTransformModeChange("file")}
+          >
+            Apply to File
+          </Button>
+          <Tray.Separator />
           <ViewerHud.Tool label="Crop" onClick={onToggleCrop}>
             <IconCropFill18 />
           </ViewerHud.Tool>
@@ -162,6 +187,13 @@ function Hud({
           <ZoomPill actual={actual} onOut={onZoomOut} onIn={onZoomIn} />
         </div>
         <div className={styles.end}>
+          <Button size="sm" variant="ghost" onClick={onPresent}>
+            Present
+          </Button>
+          <Button size="sm" variant="ghost" onClick={onDetach}>
+            Detach
+          </Button>
+          <Tray.Separator />
           <ViewerHud.Tool
             label="Actual Size"
             shortcut={<ShortcutKeys id="viewer.actual-size" />}

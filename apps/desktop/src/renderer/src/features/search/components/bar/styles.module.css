@@ -89,3 +89,10 @@
   font-size: 13px;
   color: var(--ds-gray-10);
 }
+
+.recent {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: min(420px, 100%);
+}

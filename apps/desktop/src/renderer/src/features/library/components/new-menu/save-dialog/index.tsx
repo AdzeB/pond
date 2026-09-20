@@ -3,7 +3,13 @@ import { useRef, useState } from "react";
 import { importLinks } from "../actions";
 import styles from "./styles.module.css";
 
-export function SaveDialog({ onClose }: { onClose: () => void }) {
+export function SaveDialog({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -36,7 +42,7 @@ export function SaveDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog.Root
-      open
+      open={open}
       onOpenChange={(open) => {
         if (!open && !submitting.current) onClose();
       }}

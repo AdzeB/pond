@@ -6,17 +6,23 @@ import {
 } from "../../../shared/action-contracts";
 import {
   deleteAction,
+  duplicateAction,
   prepareAction,
   readActions,
   runAction,
   saveAction,
 } from "../../core/library-actions";
+import { getPrefs } from "../../core/prefs";
 import { query } from "./params";
 export const actionQueries = {
   "actions.list": query(z.object({}), () => readActions()),
   "actions.save": query(
     z.object({ definition: ActionDefinitionSchema }),
-    ({ definition }) => saveAction(definition),
+    async ({ definition }) =>
+      saveAction(definition, undefined, (await getPrefs()).shortcuts),
+  ),
+  "actions.duplicate": query(z.object({ id: z.string().min(1) }), ({ id }) =>
+    duplicateAction(id),
   ),
   "actions.delete": query(z.object({ id: z.string().min(1) }), ({ id }) => {
     deleteAction(id);

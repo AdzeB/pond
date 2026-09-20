@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "eagle-library-unpacked",
+  "kind": "eagle-library",
+  "baseline": {
+    "container": "directory",
+    "libraryMetadataCandidates": [
+      "metadata.json",
+      "<name>.library/metadata.json"
+    ],
+    "imagesCandidates": ["images", "<name>.library/images"],
+    "saveDirectoryPattern": "images/<id>.info",
+    "saveMetadataPath": "images/<id>.info/metadata.json",
+    "thumbnailSuffix": "_thumbnail.png"
+  },
+  "compatibilityAssertions": [
+    "Import visible originals and keep Eagle thumbnails as derived sidecars.",
+    "Preserve nested folder order, supported Smart Folders, Tag Groups, and annotations.",
+    "Report unsupported and dropped metadata instead of silently claiming parity.",
+    "Do not mutate the source Eagle Library."
+  ]
+}

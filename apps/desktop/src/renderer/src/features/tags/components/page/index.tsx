@@ -1,11 +1,12 @@
 import { IconBookmarkFill18 } from "@pond/icons/fill/18";
 import {
-  IconBookmarkOutline18,
-  IconFolderOutline18,
-  IconPlusOutline18,
-  IconStarOutline18,
-} from "@pond/icons/outline/18";
-import { Button, DataTable, Empty, Tooltip } from "@pond/ui";
+  IconBookmarkOutline12,
+  IconFolderOutline12,
+  IconPlusOutline12,
+  IconStarOutline12,
+} from "@pond/icons/outline/12";
+import { IconFolderOutline18, IconStarOutline18 } from "@pond/icons/outline/18";
+import { Button, DataTable, Empty, Input, Sidebar, Tooltip } from "@pond/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MatchesEmpty } from "@/features/library/components/empty";
 import { TagsBulkActionBar } from "@/features/tags/components/manager/bulk-actions";
@@ -79,6 +80,7 @@ export function TagsPage() {
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const cancelDescriptionRef = useRef(false);
   const clearRef = useRef<() => void>(() => {});
+  const sidebarFade = useScrollFade<HTMLDivElement>();
   const scrollFade = useScrollFade<HTMLDivElement>();
   const contextValue = useMemo(
     () => ({ groups: groupOptions }),
@@ -178,91 +180,111 @@ export function TagsPage() {
         <TagsTableContext value={contextValue}>
           <div className={styles.workspace}>
             <aside className={styles.sidebar} aria-label="Tag Collections">
-              <nav className={styles.navigation}>
-                <button
-                  type="button"
-                  className={styles.navItem}
-                  data-active={scope === "all" || undefined}
-                  aria-current={scope === "all" ? "page" : undefined}
-                  onClick={() => setScope("all")}
-                >
-                  <IconBookmarkOutline18 aria-hidden="true" />
-                  <span className={styles.navLabel}>All</span>
-                  <span className={styles.count}>{total}</span>
-                </button>
-                <button
-                  type="button"
-                  className={styles.navItem}
-                  data-active={scope === "ungrouped" || undefined}
-                  aria-current={scope === "ungrouped" ? "page" : undefined}
-                  onClick={() => setScope("ungrouped")}
-                >
-                  <IconFolderOutline18 aria-hidden="true" />
-                  <span className={styles.navLabel}>Uncategorized</span>
-                  <span className={styles.count}>{ungroupedTotal}</span>
-                </button>
-                <button
-                  type="button"
-                  className={styles.navItem}
-                  data-active={scope === "starred" || undefined}
-                  aria-current={scope === "starred" ? "page" : undefined}
-                  onClick={() => setScope("starred")}
-                >
-                  <IconStarOutline18 aria-hidden="true" />
-                  <span className={styles.navLabel}>Starred</span>
-                  {starredTotal > 0 ? (
-                    <span className={styles.count}>{starredTotal}</span>
-                  ) : null}
-                </button>
-              </nav>
-
-              <div className={styles.groupBlock}>
-                <div className={styles.groupHeading}>
-                  <div className={styles.groupMeta}>
-                    <span>Groups</span>
-                    <span>{groupSummaries.length}</span>
-                  </div>
-                  <Tooltip label="New Group" side="right">
-                    <Button
-                      icon
-                      variant="ghost"
-                      size="xs"
-                      className={styles.groupAdd}
-                      aria-label="New Group"
-                      onClick={() => startCreate("group")}
-                    >
-                      <IconPlusOutline18 />
-                    </Button>
-                  </Tooltip>
-                </div>
-                {creating === "group" ? (
-                  <div className={styles.groupDraft}>
-                    <DraftRow
-                      creating="group"
-                      onSave={saveCreate}
-                      onFinish={cancelCreate}
-                    />
-                  </div>
-                ) : null}
-                {groupSummaries.length > 0 ? (
-                  <nav className={styles.navigation} aria-label="Tag Groups">
-                    {groupSummaries.map((group) => (
-                      <button
-                        key={group.id}
+              <Sidebar.Root width="full">
+                <Sidebar.Scroll {...sidebarFade}>
+                  <nav>
+                    <Sidebar.Group className={styles["scope-group"]}>
+                      <Sidebar.Item
                         type="button"
-                        className={styles.navItem}
-                        data-active={scope === group.id || undefined}
-                        aria-current={scope === group.id ? "page" : undefined}
-                        onClick={() => setScope(group.id)}
+                        data-status={scope === "all" ? "active" : undefined}
+                        aria-current={scope === "all" ? "page" : undefined}
+                        onClick={() => setScope("all")}
                       >
-                        <IconFolderOutline18 aria-hidden="true" />
-                        <span className={styles.navLabel}>{group.name}</span>
-                        <span className={styles.count}>{group.count}</span>
-                      </button>
-                    ))}
+                        <Sidebar.Icon>
+                          <IconBookmarkOutline12 aria-hidden="true" />
+                        </Sidebar.Icon>
+                        All
+                        <Sidebar.Count>{total}</Sidebar.Count>
+                      </Sidebar.Item>
+                      <Sidebar.Item
+                        type="button"
+                        data-status={
+                          scope === "ungrouped" ? "active" : undefined
+                        }
+                        aria-current={
+                          scope === "ungrouped" ? "page" : undefined
+                        }
+                        onClick={() => setScope("ungrouped")}
+                      >
+                        <Sidebar.Icon>
+                          <IconFolderOutline12 aria-hidden="true" />
+                        </Sidebar.Icon>
+                        Uncategorized
+                        <Sidebar.Count>{ungroupedTotal}</Sidebar.Count>
+                      </Sidebar.Item>
+                      <Sidebar.Item
+                        type="button"
+                        data-status={scope === "starred" ? "active" : undefined}
+                        aria-current={scope === "starred" ? "page" : undefined}
+                        onClick={() => setScope("starred")}
+                      >
+                        <Sidebar.Icon>
+                          <IconStarOutline12 aria-hidden="true" />
+                        </Sidebar.Icon>
+                        Starred
+                        {starredTotal > 0 ? (
+                          <Sidebar.Count>{starredTotal}</Sidebar.Count>
+                        ) : null}
+                      </Sidebar.Item>
+                    </Sidebar.Group>
                   </nav>
-                ) : null}
-              </div>
+
+                  <Sidebar.Group>
+                    <Sidebar.GroupHeader>
+                      <Sidebar.GroupLabel>
+                        Groups
+                        <Sidebar.Count>{groupSummaries.length}</Sidebar.Count>
+                      </Sidebar.GroupLabel>
+                      <Tooltip label="New Group" side="right">
+                        <Button
+                          icon
+                          variant="ghost"
+                          size="xs"
+                          aria-label="New Group"
+                          onClick={() => startCreate("group")}
+                        >
+                          <IconPlusOutline12 />
+                        </Button>
+                      </Tooltip>
+                    </Sidebar.GroupHeader>
+                    {creating === "group" ? (
+                      <div className={styles.groupDraft}>
+                        <DraftRow
+                          creating="group"
+                          onSave={saveCreate}
+                          onFinish={cancelCreate}
+                        />
+                      </div>
+                    ) : null}
+                    {groupSummaries.length > 0 ? (
+                      <nav
+                        className={styles["group-navigation"]}
+                        aria-label="Tag Groups"
+                      >
+                        {groupSummaries.map((group) => (
+                          <Sidebar.Item
+                            key={group.id}
+                            type="button"
+                            data-status={
+                              scope === group.id ? "active" : undefined
+                            }
+                            aria-current={
+                              scope === group.id ? "page" : undefined
+                            }
+                            onClick={() => setScope(group.id)}
+                          >
+                            <Sidebar.Icon>
+                              <IconFolderOutline12 aria-hidden="true" />
+                            </Sidebar.Icon>
+                            {group.name}
+                            <Sidebar.Count>{group.count}</Sidebar.Count>
+                          </Sidebar.Item>
+                        ))}
+                      </nav>
+                    ) : null}
+                  </Sidebar.Group>
+                </Sidebar.Scroll>
+              </Sidebar.Root>
             </aside>
 
             <main className={styles.main} {...scrollFade}>
@@ -285,41 +307,46 @@ export function TagsPage() {
                           size="xs"
                           aria-label={`Add Tags to ${activeGroupRow.group.name}`}
                         >
-                          <IconPlusOutline18 />
+                          <IconPlusOutline12 />
                         </TagPicker.Trigger>
                       </Tooltip>
                       <TagPicker.Content align="start" />
                     </TagPicker.Root>
                   </div>
-                  <input
+                  <Input.Root
                     className={styles.groupDescription}
-                    value={descriptionDraft}
-                    placeholder="Add a description…"
-                    aria-label={`${activeGroupRow.group.name} description`}
-                    onChange={(event) =>
-                      setDescriptionDraft(event.target.value)
-                    }
-                    onFocus={() => {
-                      cancelDescriptionRef.current = false;
-                    }}
-                    onBlur={() => {
-                      if (cancelDescriptionRef.current) {
+                    size="xs"
+                    variant="borderless"
+                  >
+                    <Input.Field
+                      value={descriptionDraft}
+                      placeholder="Add a description…"
+                      aria-label={`${activeGroupRow.group.name} description`}
+                      onChange={(event) =>
+                        setDescriptionDraft(event.target.value)
+                      }
+                      onFocus={() => {
                         cancelDescriptionRef.current = false;
-                        return;
-                      }
-                      commitGroupDescription();
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") event.currentTarget.blur();
-                      if (event.key === "Escape") {
-                        cancelDescriptionRef.current = true;
-                        setDescriptionDraft(
-                          activeGroupRow.group.description ?? "",
-                        );
-                        event.currentTarget.blur();
-                      }
-                    }}
-                  />
+                      }}
+                      onBlur={() => {
+                        if (cancelDescriptionRef.current) {
+                          cancelDescriptionRef.current = false;
+                          return;
+                        }
+                        commitGroupDescription();
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") event.currentTarget.blur();
+                        if (event.key === "Escape") {
+                          cancelDescriptionRef.current = true;
+                          setDescriptionDraft(
+                            activeGroupRow.group.description ?? "",
+                          );
+                          event.currentTarget.blur();
+                        }
+                      }}
+                    />
+                  </Input.Root>
                 </section>
               ) : null}
 

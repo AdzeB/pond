@@ -12,17 +12,31 @@ const SecretMapSchema = z.record(z.string(), z.string());
 
 type SecretMap = z.infer<typeof SecretMapSchema>;
 
-function secretsPath(): string {
-  return join(app.getPath("userData"), SECRETS_FILE);
+export interface KeychainPort {
+  userDataPath: () => string;
+  encryptionAvailable: () => boolean;
+  protect: (value: string) => Buffer;
+  unprotect: (value: Buffer) => string;
+}
+
+const electronKeychainPort: KeychainPort = {
+  userDataPath: () => app.getPath("userData"),
+  encryptionAvailable: () => safeStorage.isEncryptionAvailable(),
+  protect: (value) => safeStorage.encryptString(value),
+  unprotect: (value) => safeStorage.decryptString(value),
+};
+
+function secretsPath(port: KeychainPort): string {
+  return join(port.userDataPath(), SECRETS_FILE);
 }
 
 function entryKey(service: string, account: string): string {
   return `${service}:${account}`;
 }
 
-async function readAll(): Promise<SecretMap> {
+async function readAll(port: KeychainPort): Promise<SecretMap> {
   try {
-    const buf = await readFile(secretsPath(), "utf8");
+    const buf = await readFile(secretsPath(port), "utf8");
     const parsed = SecretMapSchema.safeParse(JSON.parse(buf));
     return parsed.success ? parsed.data : {};
   } catch (cause) {
@@ -34,13 +48,13 @@ async function readAll(): Promise<SecretMap> {
   }
 }
 
-async function writeAll(map: SecretMap): Promise<void> {
-  await writeFile(secretsPath(), JSON.stringify(map), { mode: 0o600 });
+async function writeAll(port: KeychainPort, map: SecretMap): Promise<void> {
+  await writeFile(secretsPath(port), JSON.stringify(map), { mode: 0o600 });
 }
 
-function encrypt(plain: string): string {
-  if (safeStorage.isEncryptionAvailable()) {
-    return `enc:${safeStorage.encryptString(plain).toString("base64")}`;
+function encrypt(port: KeychainPort, plain: string): string {
+  if (port.encryptionAvailable()) {
+    return `enc:${port.protect(plain).toString("base64")}`;
   }
   /** No keychain backend (Linux/first-run); tag the value so reads don't decrypt plaintext. */
   log.warn(
@@ -49,11 +63,18 @@ function encrypt(plain: string): string {
   return `raw:${Buffer.from(plain, "utf8").toString("base64")}`;
 }
 
-function decrypt(value: string): string | null {
+function encryptSecurely(port: KeychainPort, plain: string): string {
+  if (!port.encryptionAvailable()) {
+    throw new Error("Secure key storage is unavailable.");
+  }
+  return `enc:${port.protect(plain).toString("base64")}`;
+}
+
+function decrypt(port: KeychainPort, value: string): string | null {
   try {
     if (value.startsWith("enc:")) {
-      if (!safeStorage.isEncryptionAvailable()) return null;
-      return safeStorage.decryptString(Buffer.from(value.slice(4), "base64"));
+      if (!port.encryptionAvailable()) return null;
+      return port.unprotect(Buffer.from(value.slice(4), "base64"));
     }
     if (value.startsWith("raw:")) {
       return Buffer.from(value.slice(4), "base64").toString("utf8");
@@ -65,53 +86,139 @@ function decrypt(value: string): string | null {
   }
 }
 
-export async function getSecret(account: string): Promise<string | null> {
-  const all = await getSecrets([account]);
-  return all[account] ?? null;
-}
-
-export async function getSecrets(
-  accounts: string[],
-): Promise<Record<string, string | null>> {
-  const all = await readAll();
-  const out: Record<string, string | null> = {};
-  for (const account of accounts) {
-    const value = all[entryKey(KEYCHAIN_SERVICE, account)];
-    out[account] = value ? decrypt(value) : null;
+export function createKeychain(port: KeychainPort) {
+  async function getSecret(account: string): Promise<string | null> {
+    const all = await getSecrets([account]);
+    return all[account] ?? null;
   }
-  return out;
+
+  async function getSecrets(
+    accounts: string[],
+  ): Promise<Record<string, string | null>> {
+    const all = await readAll(port);
+    const out: Record<string, string | null> = {};
+    for (const account of accounts) {
+      const value = all[entryKey(KEYCHAIN_SERVICE, account)];
+      out[account] = value ? decrypt(port, value) : null;
+    }
+    return out;
+  }
+
+  async function setSecret(account: string, plain: string): Promise<void> {
+    const all = await readAll(port);
+    all[entryKey(KEYCHAIN_SERVICE, account)] = encrypt(port, plain);
+    await writeAll(port, all);
+  }
+
+  async function getSecureSecret(account: string): Promise<string | null> {
+    const all = await readAll(port);
+    const value = all[entryKey(KEYCHAIN_SERVICE, account)];
+    if (!value) return null;
+    if (!value.startsWith("enc:")) {
+      throw new Error(
+        "Secure secret is not protected by the operating system.",
+      );
+    }
+    const decrypted = decrypt(port, value);
+    if (decrypted === null) {
+      throw new Error("Secure secret could not be decrypted.");
+    }
+    return decrypted;
+  }
+
+  async function getSecureSecretBytes(
+    account: string,
+    byteLength: number,
+  ): Promise<Buffer | null> {
+    const existing = await getSecureSecret(account);
+    if (!existing) return null;
+    const decoded = Buffer.from(existing, "base64");
+    if (decoded.byteLength !== byteLength) {
+      decoded.fill(0);
+      throw new Error("Stored secure secret has an invalid length.");
+    }
+    return decoded;
+  }
+
+  async function setSecureSecret(
+    account: string,
+    plain: string,
+  ): Promise<void> {
+    const all = await readAll(port);
+    all[entryKey(KEYCHAIN_SERVICE, account)] = encryptSecurely(port, plain);
+    await writeAll(port, all);
+  }
+
+  async function ensureSecureSecretBytes(
+    account: string,
+    byteLength: number,
+  ): Promise<Buffer> {
+    const existing = await getSecureSecretBytes(account, byteLength);
+    if (existing) {
+      return existing;
+    }
+    const created = randomBytes(byteLength);
+    try {
+      await setSecureSecret(account, created.toString("base64"));
+      return Buffer.from(created);
+    } finally {
+      created.fill(0);
+    }
+  }
+
+  async function deleteSecret(account: string): Promise<void> {
+    const all = await readAll(port);
+    delete all[entryKey(KEYCHAIN_SERVICE, account)];
+    await writeAll(port, all);
+  }
+
+  async function getIngestToken(): Promise<string | null> {
+    return getSecret(KEYCHAIN_INGEST_TOKEN);
+  }
+
+  async function setIngestToken(token: string): Promise<void> {
+    await setSecret(KEYCHAIN_INGEST_TOKEN, token);
+  }
+
+  async function ensureIngestToken(): Promise<string> {
+    const existing = await getIngestToken();
+    if (existing) return existing;
+    const token = randomBytes(24).toString("hex");
+    await setIngestToken(token);
+    return token;
+  }
+
+  async function rotateIngestToken(): Promise<string> {
+    const token = randomBytes(24).toString("hex");
+    await setIngestToken(token);
+    return token;
+  }
+
+  return {
+    deleteSecret,
+    ensureIngestToken,
+    ensureSecureSecretBytes,
+    getIngestToken,
+    getSecret,
+    getSecrets,
+    getSecureSecret,
+    getSecureSecretBytes,
+    rotateIngestToken,
+    setSecret,
+    setSecureSecret,
+  };
 }
 
-export async function setSecret(account: string, plain: string): Promise<void> {
-  const all = await readAll();
-  all[entryKey(KEYCHAIN_SERVICE, account)] = encrypt(plain);
-  await writeAll(all);
-}
-
-export async function deleteSecret(account: string): Promise<void> {
-  const all = await readAll();
-  delete all[entryKey(KEYCHAIN_SERVICE, account)];
-  await writeAll(all);
-}
-
-export async function getIngestToken(): Promise<string | null> {
-  return getSecret(KEYCHAIN_INGEST_TOKEN);
-}
-
-async function setIngestToken(token: string): Promise<void> {
-  await setSecret(KEYCHAIN_INGEST_TOKEN, token);
-}
-
-export async function ensureIngestToken(): Promise<string> {
-  const existing = await getIngestToken();
-  if (existing) return existing;
-  const token = randomBytes(24).toString("hex");
-  await setIngestToken(token);
-  return token;
-}
-
-export async function rotateIngestToken(): Promise<string> {
-  const token = randomBytes(24).toString("hex");
-  await setIngestToken(token);
-  return token;
-}
+export const {
+  deleteSecret,
+  ensureIngestToken,
+  ensureSecureSecretBytes,
+  getIngestToken,
+  getSecret,
+  getSecrets,
+  getSecureSecret,
+  getSecureSecretBytes,
+  rotateIngestToken,
+  setSecret,
+  setSecureSecret,
+} = createKeychain(electronKeychainPort);

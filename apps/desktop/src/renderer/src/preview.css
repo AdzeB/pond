@@ -1,0 +1,77 @@
+@import "@pond/ui/reset.css";
+@import "@pond/theme/theme.css";
+
+html,
+body,
+#preview {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-1);
+}
+
+#preview {
+  display: grid;
+  place-items: center;
+  overflow: auto;
+}
+
+#image {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transition:
+    transform var(--ds-duration-fast) var(--ds-easing-standard),
+    filter var(--ds-duration-fast) var(--ds-easing-standard);
+}
+
+#image[data-size="actual"] {
+  max-width: none;
+  max-height: none;
+}
+
+nav {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  left: 12px;
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  padding: 6px;
+  background: var(--ds-gray-a9);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow-3);
+  transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
+}
+
+nav:not(:hover, :focus-within) {
+  opacity: 0.35;
+}
+
+button {
+  padding: 6px 10px;
+  color: var(--ds-gray-12);
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: var(--ds-gray-a3);
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+}
+
+button:hover,
+button[aria-pressed="true"] {
+  background: var(--ds-gray-a5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #image,
+  nav {
+    transition: none;
+  }
+}

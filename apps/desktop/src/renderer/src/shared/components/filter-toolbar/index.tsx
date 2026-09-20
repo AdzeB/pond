@@ -1,0 +1,77 @@
+import { IconBarsFilterOutline18 } from "@pond/icons/outline/18";
+import { Button, Tooltip } from "@pond/ui";
+import { clsx as cn } from "clsx";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import type { ComponentProps, ReactNode } from "react";
+import { gentleSpring } from "@/shared/lib/motion";
+import styles from "./styles.module.css";
+
+export interface ToggleProps
+  extends Omit<ComponentProps<typeof Button>, "children" | "onClick"> {
+  open: boolean;
+  active?: boolean;
+  controlsId: string;
+  onToggle: () => void;
+}
+
+function Toggle({
+  open,
+  active,
+  controlsId,
+  onToggle,
+  className,
+  ...props
+}: ToggleProps) {
+  return (
+    <Tooltip label={open ? "Hide Filters" : "Show Filters"} side="bottom">
+      <Button
+        icon
+        size="sm"
+        variant="ghost"
+        className={cn(styles.toggle, className)}
+        data-active={open || active || undefined}
+        aria-label="Filter"
+        aria-expanded={open}
+        aria-controls={controlsId}
+        onClick={onToggle}
+        {...props}
+      >
+        <IconBarsFilterOutline18 />
+      </Button>
+    </Tooltip>
+  );
+}
+
+export interface BarProps
+  extends Omit<ComponentProps<typeof motion.fieldset>, "children" | "id"> {
+  open: boolean;
+  id: string;
+  label: string;
+  children: ReactNode;
+}
+
+function Bar({ open, id, label, children, className, ...props }: BarProps) {
+  const reduceMotion = useReducedMotion();
+  const transition = reduceMotion ? { duration: 0 } : gentleSpring;
+  return (
+    <AnimatePresence initial={false}>
+      {open ? (
+        <motion.fieldset
+          key={id}
+          id={id}
+          className={cn(styles.shell, className)}
+          aria-label={label}
+          initial={{ height: 0, opacity: 0, y: -4 }}
+          animate={{ height: "auto", opacity: 1, y: 0 }}
+          exit={{ height: 0, opacity: 0, y: -4, pointerEvents: "none" }}
+          transition={transition}
+          {...props}
+        >
+          <div className={styles.bar}>{children}</div>
+        </motion.fieldset>
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
+export const FilterToolbar = { Toggle, Bar };

@@ -16,4 +16,31 @@
     color: var(--ds-green-11);
     background: var(--ds-green-3);
   }
+
+  &[data-tone="inverted"] {
+    color: var(--ds-white-a12);
+    background: var(--ds-gray-12);
+  }
+
+  &[data-tone="negative"] {
+    color: var(--ds-white-a12);
+    background: var(--ds-red-9);
+  }
+}
+
+.dot {
+  display: inline-block;
+  flex: none;
+  width: 6px;
+  height: 6px;
+  background: var(--ds-gray-9);
+  border-radius: var(--ds-radius-full);
+
+  &[data-tone="positive"] {
+    background: var(--ds-green-9);
+  }
+
+  &[data-tone="negative"] {
+    background: var(--ds-red-9);
+  }
 }

@@ -69,7 +69,7 @@ class ComposerOption extends MenuOption {
     super(key);
   }
 }
-export const COMPOSER_FORMATTING: ComposerFormattingOption[] = [
+const COMPOSER_FORMATTING: ComposerFormattingOption[] = [
   {
     key: "bullet",
     label: "Bulleted List",

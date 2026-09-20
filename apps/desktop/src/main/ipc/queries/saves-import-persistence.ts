@@ -3,6 +3,7 @@ import { BrowserWindow, dialog } from "electron";
 import mime from "mime-types";
 import { z } from "zod";
 import { isBlankDocumentKind } from "../../../shared/blank-documents";
+import { CombineImagesOptionsSchema } from "../../../shared/combine-images-contracts";
 import { classifyLibraryFile } from "../../../shared/file-format";
 import type { QueryResult } from "../../../shared/query-contracts";
 import {
@@ -18,6 +19,7 @@ import {
   renderThumbnailPng,
   THUMBNAIL_REPLACE_KINDS,
 } from "../../core/save-thumbnail";
+import { readLibraryMedia } from "../../core/security/library-media-storage";
 import { srtToVtt } from "../../core/subtitles";
 import { resolvePondItemPath } from "../helpers";
 import {
@@ -97,7 +99,10 @@ export const savesImportPersistenceQueries = {
       ) {
         return { ok: false, error: "missing_file" };
       }
-      const png = await gifFramePng(resolved.path, params.frameIndex);
+      const png = await gifFramePng(
+        await readLibraryMedia(resolved.path),
+        params.frameIndex,
+      );
       const updated = await persistSaveThumbnail(
         params.id,
         png,
@@ -210,12 +215,31 @@ export const savesImportPersistenceQueries = {
     z.object({
       ids: StringListParam,
       folderId: NullableStringParam,
+      options: CombineImagesOptionsSchema.partial().optional(),
     }),
     async (params) => {
       const { combineImages } = await import("../../core/combine-images");
+      const options = CombineImagesOptionsSchema.parse(params.options ?? {});
+      if (options.output === "export" && !options.outputPath) {
+        const extension = options.format === "jpeg" ? "jpg" : options.format;
+        const picked = await dialog.showSaveDialog({
+          title: "Export Combined Image",
+          defaultPath: `Combined Images.${extension}`,
+          filters: [
+            {
+              name: options.format.toUpperCase(),
+              extensions: [extension],
+            },
+          ],
+        });
+        if (picked.canceled || !picked.filePath)
+          return { ok: false, error: "canceled" };
+        options.outputPath = picked.filePath;
+      }
       return combineImages({
         ids: params.ids,
         folderId: params.folderId || null,
+        options,
       });
     },
   ),

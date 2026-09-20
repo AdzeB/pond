@@ -15,15 +15,12 @@
   display: grid;
   gap: 6px;
 }
-.editor select,
-.editor textarea,
-.editor input[type="number"] {
-  padding: 8px;
-  font: inherit;
-  color: inherit;
-  background: var(--ds-gray-2);
-  border: 1px solid var(--ds-gray-5);
-  border-radius: 6px;
+.editor label > [data-slot="root"] {
+  width: 100%;
+}
+.field {
+  display: grid;
+  gap: 6px;
 }
 .step {
   display: grid;

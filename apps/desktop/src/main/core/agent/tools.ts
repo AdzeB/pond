@@ -25,6 +25,7 @@ import {
   toFtsMatchQuery,
 } from "../library-retrieval";
 import { getPrefs } from "../prefs";
+import { lockedFolderIds, saveIsLocked } from "../security/folder-passwords";
 
 export const searchLibraryInput = libraryRetrievalInput;
 
@@ -217,8 +218,10 @@ export async function readSave(
   scope: LibraryScope = {},
   deps = toolDependencies,
 ) {
+  const hidden =
+    deps === toolDependencies ? [...(await lockedFolderIds())] : [];
   const rows = await deps.readRows(
-    and(eq(saves.id, input.id), ...libraryScopeClauses(scope)),
+    and(eq(saves.id, input.id), ...libraryScopeClauses(scope, hidden)),
   );
   const row = rows[0];
   if (!row) return { error: "Save not found." };
@@ -287,6 +290,8 @@ export async function grepLibrary(
   scope: LibraryScope = {},
   deps = toolDependencies,
 ) {
+  const hidden =
+    deps === toolDependencies ? [...(await lockedFolderIds())] : [];
   const match = toFtsMatchQuery(input.query);
   if (!match) return { hits: [] };
   const rows = await deps.grepRows(match, input.id, input.limit ?? 20);
@@ -295,7 +300,7 @@ export async function grepLibrary(
         (
           await deps.admittedIds(
             and(
-              ...libraryScopeClauses(scope),
+              ...libraryScopeClauses(scope, hidden),
               sql`${saves.id} IN (${sql.join(
                 rows.map((row) => sql`${row.id}`),
                 sql`, `,
@@ -330,12 +335,14 @@ function countOf(row?: { n?: unknown }) {
 export async function libraryOverview() {
   const db = await getDb();
   const prefs = await getPrefs();
-  const active = isNull(saves.deletedAt);
+  const hidden = [...(await lockedFolderIds())];
+  const visible = libraryScopeClauses({}, hidden);
+  const active = and(isNull(saves.deletedAt), ...visible);
   const [saveCount] = await db.select({ n: count() }).from(saves).where(active);
   const [trashCount] = await db
     .select({ n: count() })
     .from(saves)
-    .where(isNotNull(saves.deletedAt));
+    .where(and(isNotNull(saves.deletedAt), ...visible));
   const [textCount] = await db
     .select({ n: count() })
     .from(saves)
@@ -362,7 +369,10 @@ export async function libraryOverview() {
         sql`not exists (select 1 from save_folders where save_id = ${saves.id})`,
       ),
     );
-  const folders = await listFolders();
+  const hiddenSet = new Set(hidden);
+  const folders = (await listFolders()).filter(
+    (folder) => !hiddenSet.has(folder.id),
+  );
   const tagRows = await db
     .select({ name: tags.name, usageCount: tags.usageCount })
     .from(tags)
@@ -420,12 +430,19 @@ export async function setOverlay(
 }
 
 export async function citeSaves(input: z.infer<typeof citeSavesInput>) {
+  for (const id of input.ids) {
+    if (await saveIsLocked(id))
+      return { error: "A selected Save is in a locked folder." };
+  }
   broadcast(IPC.agentCite, input.ids);
   return { ok: true, ids: input.ids };
 }
 
 export async function listLibraryFolders() {
-  const folders = await listFolders();
+  const hidden = await lockedFolderIds();
+  const folders = (await listFolders()).filter(
+    (folder) => !hidden.has(folder.id),
+  );
   return {
     folders: folders.map((folder) => ({
       id: folder.id,
@@ -436,11 +453,16 @@ export async function listLibraryFolders() {
 }
 
 export async function openSave(input: z.infer<typeof openSaveInput>) {
+  if (await saveIsLocked(input.id)) return { error: "Save not found." };
   broadcast(IPC.nav, `/save/${input.id}`);
   return { ok: true };
 }
 
 export async function describeSaves(input: z.infer<typeof describeSavesInput>) {
+  for (const id of input.ids) {
+    if (await saveIsLocked(id))
+      return { error: "A selected Save is in a locked folder." };
+  }
   const { visionEnabled, imagesForSaves } = await import("./vision");
   const prefs = await getPrefs();
   if (!visionEnabled(prefs.agent.languageModel, prefs.agent.visionModel)) {

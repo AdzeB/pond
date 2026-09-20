@@ -23,7 +23,12 @@ const runtime: FileImportRuntime = {
 };
 
 async function importPaths(
-  input: { paths: readonly string[]; tags?: string[]; folderIds?: string[] },
+  input: {
+    paths: readonly string[];
+    tags?: string[];
+    folderIds?: string[];
+    useExisting?: Readonly<Record<string, string>>;
+  },
   dependencies: FileImportRuntime = runtime,
 ) {
   const ids: string[] = [];
@@ -49,15 +54,28 @@ async function importPaths(
             await visit(join(path, entry.name), folder.id);
         }
       } else if (details.isFile() && details.size > 0) {
+        const assigned = [
+          ...new Set([...folderIds, ...(parentId ? [parentId] : [])]),
+        ];
+        const existingId = input.useExisting?.[absolute];
+        if (existingId) {
+          if (assigned.length > 0) {
+            const result = await dependencies.assignFolders(
+              existingId,
+              assigned,
+            );
+            if (!result.ok)
+              throw new Error("Existing file folders could not be assigned.");
+          }
+          ids.push(existingId);
+          return;
+        }
         const imported = await dependencies.importFile({
           filePaths: [path],
           tags,
         });
         if (!imported.ok || !imported.id)
           throw new Error("File import did not complete.");
-        const assigned = [
-          ...new Set([...folderIds, ...(parentId ? [parentId] : [])]),
-        ];
         if (assigned.length > 0) {
           const result = await dependencies.assignFolders(
             imported.id,
@@ -76,11 +94,16 @@ async function importPaths(
   for (const path of input.paths) await visit(path, folderIds[0] ?? null);
   if (ids.length === 0)
     return { ok: false, ids, failedPaths, error: "no_files" };
-  return { ok: true, ids, failedPaths };
+  return { ok: true, ids: [...new Set(ids)], failedPaths };
 }
 
 export function importFiles(
-  input: { paths: readonly string[]; tags?: string[]; folderIds?: string[] },
+  input: {
+    paths: readonly string[];
+    tags?: string[];
+    folderIds?: string[];
+    useExisting?: Readonly<Record<string, string>>;
+  },
   dependencies: FileImportRuntime = runtime,
 ) {
   return runLibraryTransfer(() => importPaths(input, dependencies));

@@ -1,21 +1,12 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { dialog } from "electron";
-import { afterEach, expect, it, vi } from "vitest";
-import {
-  loadLocalAttachments,
-  pickLocalAttachments,
-} from "./local-attachments";
-
-vi.mock("electron", () => ({
-  dialog: { showOpenDialog: vi.fn() },
-}));
+import { afterEach, expect, it } from "vitest";
+import { createLocalAttachmentService } from "./local-attachments";
 
 const roots: string[] = [];
 
 afterEach(async () => {
-  vi.clearAllMocks();
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
   );
@@ -26,12 +17,14 @@ it("registers selected files without importing them into the library", async () 
   roots.push(root);
   const path = join(root, "reference.txt");
   await writeFile(path, "Local reference");
-  vi.mocked(dialog.showOpenDialog).mockResolvedValue({
-    canceled: false,
-    filePaths: [path],
+  const attachments = createLocalAttachmentService({
+    pickFiles: async () => ({
+      canceled: false,
+      filePaths: [path],
+    }),
   });
 
-  const picked = await pickLocalAttachments();
+  const picked = await attachments.pickLocalAttachments();
   expect(picked.ok).toBe(true);
   if (!picked.ok) throw new Error(picked.error);
   expect(picked.files).toEqual([
@@ -43,6 +36,8 @@ it("registers selected files without importing them into the library", async () 
   ]);
   expect(picked.files[0]).not.toHaveProperty("path");
 
-  const loaded = await loadLocalAttachments([picked.files[0]?.id ?? ""]);
+  const loaded = await attachments.loadLocalAttachments([
+    picked.files[0]?.id ?? "",
+  ]);
   expect(loaded[0]?.data.toString("utf8")).toBe("Local reference");
 });

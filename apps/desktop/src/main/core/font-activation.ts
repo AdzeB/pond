@@ -1,8 +1,10 @@
 import { existsSync, rmSync } from "node:fs";
 import { copyFile, mkdir, rm } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
+import type Database from "better-sqlite3";
 import { readBundleJson, writeBundleJson } from "../lib/library-config";
 import { itemDir } from "../paths";
+import { withDecryptedLibraryMediaPath } from "./security/library-media-storage";
 
 export async function activateFont(input: {
   sourcePath: string;
@@ -14,7 +16,9 @@ export async function activateFont(input: {
   const dest = join(pondDir, `${input.saveId}${extension}`);
   try {
     await mkdir(pondDir, { recursive: true });
-    await copyFile(input.sourcePath, dest);
+    await withDecryptedLibraryMediaPath(input.sourcePath, (path) =>
+      copyFile(path, dest),
+    );
     return { ok: true, path: dest };
   } catch (error) {
     return {
@@ -67,4 +71,24 @@ export function writeFontActivation(id: string, path: string): void {
 
 export function clearFontActivation(id: string): void {
   if (existsSync(sidecarPath(id))) rmSync(sidecarPath(id), { force: true });
+}
+
+export function backfillFontActivationIndex(
+  db: Database.Database,
+  activationFor: (id: string) => string | null = readFontActivation,
+): number {
+  const rows = db
+    .prepare<[], { id: string }>(
+      "SELECT id FROM saves WHERE media_type = 'font' AND COALESCE(font_activated, 0) = 0",
+    )
+    .all();
+  const update = db.prepare("UPDATE saves SET font_activated = 1 WHERE id = ?");
+  let updated = 0;
+  db.transaction(() => {
+    for (const row of rows) {
+      if (!activationFor(row.id)) continue;
+      updated += update.run(row.id).changes;
+    }
+  })();
+  return updated;
 }

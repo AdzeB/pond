@@ -37,6 +37,18 @@
       margin: 0;
     }
   }
+
+  &[data-variant="destructive"] {
+    color: var(--ds-red-11);
+
+    &::before {
+      background: var(--ds-red-3);
+    }
+
+    &[data-disabled] {
+      color: var(--ds-gray-8);
+    }
+  }
 }
 
 .group-label {
@@ -58,6 +70,7 @@
   --scroll-fade-size: 10px;
   flex: 1 1 auto;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   scroll-padding-block: 4px;
@@ -103,6 +116,21 @@
   composes: indicator from "../shared/styles/popup/styles.module.css";
 }
 
+.check-indicator {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  margin-left: auto;
+  color: var(--ds-gray-11);
+
+  &[data-unchecked] {
+    visibility: hidden;
+  }
+}
+
 .separator {
   composes: separator from "../shared/styles/popup/styles.module.css";
 }
@@ -116,4 +144,9 @@
 
 .input {
   composes: input from "../shared/styles/popup/styles.module.css";
+}
+
+.item[data-variant="destructive"] .item-icon,
+.item[data-variant="destructive"] .item-keyboard {
+  color: inherit;
 }

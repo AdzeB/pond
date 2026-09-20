@@ -67,6 +67,7 @@ export function buildTagGroupMenuItems(a: TagGroupMenuActions): MenuItemSpec[] {
     {
       label: "Remove",
       icon: <IconTrash2Outline18 />,
+      variant: "destructive",
       onClick: a.onRequestDelete,
     },
   ];

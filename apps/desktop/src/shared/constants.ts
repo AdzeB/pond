@@ -13,6 +13,12 @@ export const KEYCHAIN_INGEST_TOKEN = "ingest-token";
 
 export const KEYCHAIN_AGENT_PREFIX = "agent";
 
+export const KEYCHAIN_DATABASE_GLOBAL = "database:global";
+
+export const KEYCHAIN_DATABASE_LIBRARY_PREFIX = "database:library";
+
+export const KEYCHAIN_LIBRARY_MASTER_KEY_PREFIX = "library:master";
+
 export const POND_PROTOCOL = "pond";
 
 export const IPC = {
@@ -60,6 +66,13 @@ export const IPC = {
   agentFilter: "pond:agent-filter",
   agentCite: "pond:agent-cite",
   agentOverlay: "pond:agent-overlay",
+  securityState: "pond:security-state",
+  previewOpen: "pond:preview-open",
+  previewConfigure: "pond:preview-configure",
+  previewNavigate: "pond:preview-navigate",
+  previewNeighborRequest: "pond:preview-neighbor-request",
+  previewClose: "pond:preview-close",
+  previewState: "pond:preview-state",
 } as const;
 
 export interface RecentMenuEntry {
@@ -98,6 +111,7 @@ export type MenuActionId =
   | "theme.light"
   | "theme.dark"
   | "theme.system"
+  | "security.lock"
   | "refresh.all"
   | "refresh.cancel"
   | "save.reveal"
@@ -126,6 +140,7 @@ export type MenuActionId =
   | "library.new-folder"
   | "library.new-smart-folder"
   | "library.new-note"
+  | "library.capture-screenshot"
   | "library.new-tag"
   | "library.new-tag-group"
   | "library.import-files"

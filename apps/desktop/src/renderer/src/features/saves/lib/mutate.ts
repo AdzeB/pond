@@ -3,6 +3,7 @@ import type { Transaction, TxMeta } from "@pond/schema/tx";
 import { optimistic } from "@/features/saves/lib/optimistic";
 import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
+import { emitFeedback } from "@/features/settings/lib/sounds";
 
 interface MutateOpts {
   actorReason?: string;
@@ -101,6 +102,7 @@ export async function trashSave(id: string): Promise<void> {
     () => pool.upsert(prev),
     async () => window.pond.tx({ kind: "trash", model: "save", id }),
   );
+  emitFeedback("saveDeletion");
 }
 
 export async function untrashSave(id: string): Promise<void> {
@@ -127,6 +129,7 @@ export async function purgeSave(id: string): Promise<void> {
         before: toNewSave(prev),
       }),
   );
+  emitFeedback("saveDeletion");
 }
 
 export async function bulkMutation(
@@ -155,6 +158,12 @@ export async function bulkMutation(
       operation,
       ...opts,
     });
+    if (
+      result.changed > 0 &&
+      (operation.kind === "trash" || operation.kind === "purge")
+    ) {
+      emitFeedback("saveDeletion");
+    }
     return result.changed;
   } catch (error) {
     for (const save of before) pool.upsert(save);

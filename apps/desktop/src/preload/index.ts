@@ -14,6 +14,13 @@ import {
   type RecentMenuEntry,
 } from "../shared/constants";
 import { FilterQuery } from "../shared/filter-query";
+import type {
+  PreviewNeighborRequest,
+  PreviewWindowConfigure,
+  PreviewWindowNavigate,
+  PreviewWindowOpen,
+  PreviewWindowOpenResult,
+} from "../shared/preview-window-contracts";
 import type { QueryClient } from "../shared/query-contracts";
 import type { EagleImportProgress } from "../shared/saves-import-contracts";
 import type {
@@ -84,6 +91,33 @@ const api = {
 
   query,
 
+  openPreviewWindow(
+    input: PreviewWindowOpen,
+  ): Promise<PreviewWindowOpenResult> {
+    return ipcRenderer.invoke(IPC.previewOpen, input);
+  },
+
+  configurePreviewWindow(input: PreviewWindowConfigure): Promise<void> {
+    return ipcRenderer.invoke(IPC.previewConfigure, input);
+  },
+
+  navigatePreviewWindow(input: PreviewWindowNavigate): Promise<void> {
+    return ipcRenderer.invoke(IPC.previewNavigate, input);
+  },
+
+  closePreviewWindow(windowId: number): Promise<void> {
+    return ipcRenderer.invoke(IPC.previewClose, windowId);
+  },
+
+  onPreviewNeighborRequested(
+    callback: (request: PreviewNeighborRequest) => void,
+  ): () => void {
+    const listener = (_: IpcRendererEvent, request: PreviewNeighborRequest) =>
+      callback(request);
+    ipcRenderer.on(IPC.previewNeighborRequest, listener);
+    return () => ipcRenderer.off(IPC.previewNeighborRequest, listener);
+  },
+
   rendererReady(): void {
     ipcRenderer.send(IPC.rendererReady);
   },
@@ -104,6 +138,12 @@ const api = {
     const listener = (_: IpcRendererEvent, path: string) => cb(path);
     ipcRenderer.on(IPC.nav, listener);
     return () => ipcRenderer.off(IPC.nav, listener);
+  },
+
+  onSecurityStateChanged(cb: () => void): () => void {
+    const listener = () => cb();
+    ipcRenderer.on(IPC.securityState, listener);
+    return () => ipcRenderer.off(IPC.securityState, listener);
   },
 
   onEditUndoRequested(cb: () => void): () => void {

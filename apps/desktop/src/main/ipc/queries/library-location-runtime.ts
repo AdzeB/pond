@@ -12,6 +12,7 @@ import {
   setReconcilerPaused,
 } from "../../core/pipeline/reconciler-client";
 import { invalidatePrefs } from "../../core/prefs";
+import { closePreviewWindows } from "../../core/preview-windows";
 import { reconcileLibrary } from "../../core/scan";
 import { migrateLegacySyncPrefs } from "../../core/sync";
 import { flushTagsDump, hydrateTagsFromBundle } from "../../core/tags-bundle";
@@ -115,6 +116,7 @@ async function softRepointInDev(): Promise<void> {
     log.warn("[pond library-ops] dev re-point reconcile failed", err);
   }
   await resumeLibraryWork();
+  closePreviewWindows();
   for (const win of BrowserWindow.getAllWindows()) {
     if (!win.isDestroyed()) win.webContents.reload();
   }

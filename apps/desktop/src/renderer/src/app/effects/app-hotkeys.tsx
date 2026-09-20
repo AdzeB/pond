@@ -1,5 +1,7 @@
+import type { ActionDefinition } from "@shared/action-contracts";
+import { normalizeHotkey } from "@tanstack/hotkeys";
 import { useHotkeySequences, useHotkeys } from "@tanstack/react-hotkeys";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   createNote,
   importPaths,
@@ -22,6 +24,7 @@ import {
   toggleSortDir,
 } from "@/features/library/state/view-store";
 import { confirmEmptyTrash } from "@/features/saves/lib/empty-trash";
+import { reloadSaves } from "@/features/saves/lib/ensure-saves";
 import { closeSave, openSave } from "@/features/saves/lib/save-nav";
 import { inspect } from "@/features/saves/state/inspect";
 import { primarySelection, selection } from "@/features/saves/state/selection";
@@ -39,6 +42,7 @@ import {
   configureShortcuts,
   useShortcutBindings,
 } from "@/shared/lib/shortcuts";
+import { notify } from "@/shared/lib/toast";
 
 function scrollActiveViewport(position: "top" | "bottom"): void {
   const active = document.activeElement;
@@ -71,11 +75,50 @@ function slideNavActive(): boolean {
   return document.querySelector("[data-slide-nav]") != null;
 }
 
+async function runShortcutAction(definition: ActionDefinition): Promise<void> {
+  const ids = selection.snapshot();
+  if (ids.length === 0) return;
+  try {
+    const preview = await window.pond.query("actions.preview", {
+      ids: [...ids],
+      definition,
+    });
+    if (preview.changes.length === 0) return;
+    await window.pond.query("actions.run", {
+      ids: [...ids],
+      definition,
+      expectedToken: preview.token,
+    });
+    await reloadSaves(ids);
+    notify({
+      id: `action-shortcut-${definition.id}`,
+      title: `${definition.name} Applied`,
+      description: `${preview.changes.length} saves changed.`,
+    });
+  } catch (cause) {
+    notify({
+      id: `action-shortcut-${definition.id}`,
+      title: `Couldn’t Apply ${definition.name}`,
+      description:
+        cause instanceof Error ? cause.message : "Review the Action and retry.",
+    });
+  }
+}
+
 export function AppHotkeys() {
+  const [actions, setActions] = useState<ActionDefinition[]>([]);
   const [preferences, , loaded] = usePrefs("shortcuts");
   useEffect(() => {
     if (loaded) configureShortcuts(preferences);
   }, [preferences, loaded]);
+  useEffect(() => {
+    const refresh = () => {
+      void window.pond.query("actions.list", {}).then(setActions);
+    };
+    refresh();
+    window.addEventListener("pond:actions-changed", refresh);
+    return () => window.removeEventListener("pond:actions-changed", refresh);
+  }, []);
   const shortcuts = useShortcutBindings();
   useHotkeySequences(
     [
@@ -112,6 +155,13 @@ export function AppHotkeys() {
     {
       hotkey: bindingKeys(shortcuts, "app.settings"),
       callback: () => openSettings(),
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: bindingKeys(shortcuts, "app.lock"),
+      callback: () => {
+        void window.pond.query("security.lockNow", {});
+      },
       options: { ignoreInputs: true },
     },
     {
@@ -283,6 +333,11 @@ export function AppHotkeys() {
       options: { ignoreInputs: true },
     },
     {
+      hotkey: bindingKeys(shortcuts, "library.capture-screenshot"),
+      callback: () => newMenuDialog.open("screenshot"),
+      options: { ignoreInputs: true },
+    },
+    {
       hotkey: bindingKeys(shortcuts, "library.import-files"),
       callback: () => void runNewAction(() => importPaths("files")),
       options: { ignoreInputs: true },
@@ -302,6 +357,17 @@ export function AppHotkeys() {
       callback: () => confirmEmptyTrash(),
       options: { ignoreInputs: true },
     },
+    ...actions.flatMap((definition) =>
+      definition.shortcut
+        ? [
+            {
+              hotkey: normalizeHotkey(definition.shortcut),
+              callback: () => void runShortcutAction(definition),
+              options: { ignoreInputs: true },
+            },
+          ]
+        : [],
+    ),
   ]);
 
   return null;

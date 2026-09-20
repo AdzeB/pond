@@ -1,7 +1,7 @@
-import { Button, Dialog } from "@pond/ui";
+import { Button, Checkbox, Dialog, Input } from "@pond/ui";
 import { useSelector } from "@tanstack/react-store";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   closeDuplicateReview,
   duplicateReview,
@@ -37,10 +37,12 @@ export function DuplicateReview({
   const [merging, setMerging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [coverage, setCoverage] = useState({ indexed: 0, total: 0 });
+  const [visualDistance, setVisualDistance] = useState(6);
+  const visualDistanceId = useId();
   useEffect(() => {
     let active = true;
     void window.pond
-      .query("saves.findDuplicates", {})
+      .query("saves.findDuplicates", { visualDistance })
       .then((result) => {
         if (!active) return;
         const nextGroups = ids
@@ -76,7 +78,7 @@ export function DuplicateReview({
     return () => {
       active = false;
     };
-  }, [ids, saveId]);
+  }, [ids, saveId, visualDistance]);
   const filtered = groups.filter((group) => group.kind === kind);
   const group = filtered[Math.min(index, Math.max(0, filtered.length - 1))];
   return (
@@ -117,14 +119,34 @@ export function DuplicateReview({
                 : "These images may look alike. Compare them before merging."}
             </p>
             {kind === "similar" ? (
-              <p className={styles.description}>
-                Visual comparison covers {coverage.indexed.toLocaleString()} of{" "}
-                {coverage.total.toLocaleString()} saves.
-              </p>
+              <>
+                <label htmlFor={visualDistanceId}>
+                  Visual Difference
+                  <Input.Root>
+                    <Input.Field
+                      id={visualDistanceId}
+                      type="number"
+                      min={0}
+                      max={64}
+                      value={visualDistance}
+                      onValueChange={(value) =>
+                        setVisualDistance(
+                          Math.max(0, Math.min(64, Number(value) || 0)),
+                        )
+                      }
+                    />
+                  </Input.Root>
+                </label>
+                <p className={styles.description}>
+                  Visual comparison covers {coverage.indexed.toLocaleString()}{" "}
+                  of {coverage.total.toLocaleString()} saves. A higher value
+                  includes less similar images.
+                </p>
+              </>
             ) : null}
             {error ? <p role="alert">{error}</p> : null}
             {loading ? (
-              <p role="status">Finding duplicates…</p>
+              <p role="status">Finding duplicates</p>
             ) : group ? (
               <>
                 <div className={styles.navigation}>
@@ -323,6 +345,7 @@ function Candidate({
   onInclude: (checked: boolean) => void;
 }) {
   const save = useSave(id);
+  const includeId = useId();
   return (
     <div
       className={styles.candidate}
@@ -357,13 +380,16 @@ function Candidate({
           />{" "}
           Keep
         </label>
-        <label>
-          <input
-            type="checkbox"
+        <label htmlFor={includeId}>
+          <Checkbox.Root
+            id={includeId}
+            aria-label={`Include ${save?.title || "Untitled"}`}
             checked={included}
             disabled={disabled || keep}
-            onChange={(event) => onInclude(event.target.checked)}
-          />{" "}
+            onCheckedChange={onInclude}
+          >
+            <Checkbox.Indicator />
+          </Checkbox.Root>{" "}
           Include
         </label>
       </div>

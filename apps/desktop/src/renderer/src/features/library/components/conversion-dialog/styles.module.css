@@ -11,26 +11,27 @@
   margin: 16px 0;
   border: 0;
 }
-.fields label {
+.fields > label,
+.field {
   display: grid;
   flex: 1;
   gap: 6px;
   min-width: 0;
 }
-.fields select,
-.fields input[type="number"] {
-  box-sizing: border-box;
+.fields > label > [data-slot="root"] {
   width: 100%;
-  padding: 8px;
-  font: inherit;
-  color: inherit;
-  background: var(--ds-gray-2);
-  border: 1px solid var(--ds-gray-5);
-  border-radius: 6px;
 }
 .row {
   display: flex;
   gap: 10px;
+}
+.slider {
+  width: 100%;
+}
+.check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 .popup p {
   font-size: 12px;

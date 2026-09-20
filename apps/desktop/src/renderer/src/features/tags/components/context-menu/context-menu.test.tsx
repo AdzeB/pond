@@ -36,6 +36,11 @@ describe("tag context menu", () => {
     ]);
     expect(menuLabels).not.toContain("Merge Into");
     expect(menuLabels).not.toContain("Convert to Group");
+    expect(
+      buildTagMenuItems(actions()).find(
+        (item) => "label" in item && item.label === "Remove Tag",
+      ),
+    ).toMatchObject({ variant: "destructive" });
   });
 
   it("shows both starred actions and disables the inapplicable one", () => {

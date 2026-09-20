@@ -16,6 +16,7 @@ export interface SavesMutationQueryInputs {
   "saves.ensureTextCover": { id: string; force?: boolean };
   "saves.mergeDuplicates": { keepId: string; ids: string[] };
   "saves.batchRename": { ids: string[]; pattern: string };
+  "saves.batchEditExtension": { ids: string[]; extension: string };
   "saves.activateFont": SavesIdInput;
   "saves.deactivateFont": SavesIdInput;
   "saves.setAudioAnalysis": { id: string; bpm: number };
@@ -29,7 +30,7 @@ export interface SavesMutationQueryInputs {
   "saves.replaceFile": SavesIdInput;
   "saves.removeCustomThumbnail": SavesIdInput;
   "saves.backfillColors": EmptyInput;
-  "saves.findDuplicates": EmptyInput;
+  "saves.findDuplicates": { visualDistance?: number };
 }
 
 export interface SavesMutationQueryResults {
@@ -43,6 +44,11 @@ export interface SavesMutationQueryResults {
   "saves.ensureTextCover": OkResult & { captured: number };
   "saves.mergeDuplicates": OkResult & { trashed: number };
   "saves.batchRename": OkResult & { renamed: number };
+  "saves.batchEditExtension": OkResult & {
+    changed: number;
+    changedFiles: number;
+    skipped: number;
+  };
   "saves.activateFont": OkResult & { path?: string; error?: string };
   "saves.deactivateFont": OkResult & { error?: string };
   "saves.setAudioAnalysis": OkResult;
@@ -55,6 +61,7 @@ export interface SavesMutationQueryResults {
   "saves.findDuplicates": {
     groups: { kind: "exact" | "similar"; ids: string[] }[];
     visualIndexed: number;
+    visualDistance: number;
     total: number;
   };
 }

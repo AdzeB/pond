@@ -1,4 +1,5 @@
 import type { ImageComment, ImageCrop } from "@pond/schema/db";
+import { Dialog } from "@pond/ui";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { CommentEditor } from "@/features/saves/components/annotations/comment-editor";
 import { useGifPlayer } from "@/features/saves/hooks/use-gif-player";
@@ -63,6 +64,9 @@ export function ImageInspector({
     file?.mimeType === "image/gif" ||
     /\.gif(?:$|[?#])/i.test(file?.path ?? src);
   const [mode, setMode] = useState<InspectorMode>("view");
+  const [transformMode, setTransformMode] = useState<"preview" | "file">(
+    "preview",
+  );
   const [editingComment, setEditingComment] = useState<{
     comment: ImageComment;
     creating: boolean;
@@ -74,7 +78,12 @@ export function ImageInspector({
   const lastNavigate = useRef(0);
   const gestureMoved = useRef(false);
   const pending = useRef(false);
-  const gif = useGifPlayer(src, isGif, active && mode === "view");
+  const gif = useGifPlayer(
+    src,
+    isGif,
+    active && mode === "view",
+    prefs.gifAutoplay !== false,
+  );
 
   const navigate = (delta: number) => {
     if (!onNavigate || Date.now() - lastNavigate.current < 200) return;
@@ -88,6 +97,7 @@ export function ImageInspector({
   };
   const viewport = useImageViewport({
     active,
+    defaultSize: prefs.defaultImageSize,
     initialRatio:
       file?.width && file.height
         ? file.width / file.height
@@ -126,6 +136,42 @@ export function ImageInspector({
     setDraft(null);
     setEditingComment(null);
     if (next === "crop") viewport.setPosition(() => FIT_POSE);
+  };
+  const applyToFile = (
+    transform: {
+      rotate?: 0 | 90 | 180 | 270;
+      flipX?: boolean;
+      flipY?: boolean;
+      crop?: ImageCrop | null;
+    },
+    onApplied?: () => void,
+  ) => {
+    Dialog.confirm({
+      title: "Apply Transform to File",
+      description:
+        "Pond replaces the original image. You can use Undo to restore it.",
+      confirmLabel: "Apply to File",
+      onConfirm: () =>
+        run(async () => {
+          await window.pond.query("saves.applyImageTransform", {
+            id: save.id,
+            fileIndex,
+            ...transform,
+          });
+          onApplied?.();
+        }),
+    });
+  };
+  const openWindow = (kind: "presentation" | "detached") => {
+    void window.pond
+      .openPreviewWindow({ saveId: save.id, fileIndex, kind })
+      .catch((error) =>
+        notify({
+          id: "preview-window",
+          title: "Couldn’t open this image",
+          description: error instanceof Error ? error.message : "Try again.",
+        }),
+      );
   };
   const actualSize = () => {
     const one = actualSizeZoom(
@@ -168,6 +214,13 @@ export function ImageInspector({
 
   const applyCrop = () => {
     if (!draft) return;
+    if (transformMode === "file") {
+      applyToFile({ crop: draft }, () => {
+        setDraft(null);
+        setMode("view");
+      });
+      return;
+    }
     void run(async () => {
       await applyInspect(save.id, cropPatch(draft), "inspect:crop");
       setDraft(null);
@@ -382,32 +435,40 @@ export function ImageInspector({
         canCrop={!!draft && draft.w > 0 && draft.h > 0}
         grayscale={grayscale}
         mode={mode}
+        transformMode={transformMode}
         onActualSize={actualSize}
         onApplyCrop={applyCrop}
         onCancelCrop={() => {
           setMode("view");
           setDraft(null);
         }}
+        onDetach={() => openWindow("detached")}
         onFit={() => viewport.setPosition(() => FIT_POSE)}
         onFlip={() =>
-          void run(() =>
-            applyInspect(save.id, flipPatch(save, "x"), "inspect:flip"),
-          )
+          transformMode === "file"
+            ? applyToFile({ flipX: true })
+            : void run(() =>
+                applyInspect(save.id, flipPatch(save, "x"), "inspect:flip"),
+              )
         }
         onReset={() =>
           void run(() =>
             applyInspect(save.id, resetTransformPatch(), "inspect:reset"),
           )
         }
+        onPresent={() => openWindow("presentation")}
         onRotate={() =>
-          void run(() =>
-            applyInspect(save.id, rotatePatch(save, 90), "inspect:rotate"),
-          )
+          transformMode === "file"
+            ? applyToFile({ rotate: 90 })
+            : void run(() =>
+                applyInspect(save.id, rotatePatch(save, 90), "inspect:rotate"),
+              )
         }
         onSaveCrop={saveCrop}
         onToggleComment={() => toggleMode("comment")}
         onToggleCrop={() => toggleMode("crop")}
         onToggleGrayscale={() => inspect.toggleGrayscale()}
+        onTransformModeChange={setTransformMode}
         onZoomIn={zoomIn}
         onZoomOut={zoomOut}
       />

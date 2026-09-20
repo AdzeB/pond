@@ -13,6 +13,7 @@ import {
   ConversionApiRequestSchema,
   ConversionPresetSchema,
   type ConversionQueryResults,
+  ImageCompressionRequestSchema,
 } from "../../../shared/conversion-contracts";
 import {
   type LibraryQueryPage,
@@ -20,6 +21,7 @@ import {
 } from "../../../shared/library-query";
 import { getDb } from "../../db";
 import { resolvePaths } from "../../paths";
+import { conversionCapabilities } from "../conversion-capabilities";
 import {
   conversionJobs,
   conversionPresets,
@@ -33,6 +35,8 @@ import {
   saveAction,
 } from "../library-actions";
 import { queryLibraryPage } from "../library-query";
+import { assertLibraryUnlocked } from "../security/app-lock-runtime";
+import { lockedFolderIds } from "../security/folder-passwords";
 import type { ToolResult } from "./complete";
 import {
   MCP_ACCESS_OFF,
@@ -74,6 +78,7 @@ function withAccess<Args extends unknown[]>(
   ) => ReturnType<typeof textResult> | Promise<ReturnType<typeof textResult>>,
 ) {
   return async (...args: Args) => {
+    assertLibraryUnlocked();
     if (!(await mcpToolAllowed(group))) {
       return textResult({ error: MCP_ACCESS_OFF[group] });
     }
@@ -102,6 +107,9 @@ export async function startPondMcp(): Promise<void> {
           await getDb(),
           basename(resolvePaths().indexDb, ".db"),
           request,
+          [],
+          [],
+          [...(await lockedFolderIds())],
         ),
       ),
     ),
@@ -226,6 +234,18 @@ export async function startPondMcp(): Promise<void> {
   );
 
   server.registerTool(
+    "list_conversion_capabilities",
+    {
+      description:
+        "List image, animation, and video conversion formats available in this Pond build.",
+      inputSchema: z.object({}),
+      annotations: { readOnlyHint: true },
+    },
+    withAccess("export", async () =>
+      textResult(await conversionCapabilities()),
+    ),
+  );
+  server.registerTool(
     "list_conversion_presets",
     {
       description: "List portable image and video-to-GIF export presets.",
@@ -253,6 +273,17 @@ export async function startPondMcp(): Promise<void> {
     },
     withAccess("export", async (request) =>
       textResult(conversionJobs.start(request)),
+    ),
+  );
+  server.registerTool(
+    "compress_images",
+    {
+      description:
+        "Compress selected existing image files in one recoverable batch. Replaces originals, regenerates metadata and derived images, and records Undo.",
+      inputSchema: ImageCompressionRequestSchema,
+    },
+    withAccess("export", async (request) =>
+      textResult(conversionJobs.startCompression(request)),
     ),
   );
   server.registerTool(

@@ -2,8 +2,10 @@ import { z } from "zod";
 
 export const TransferRequestSchema = z.object({
   kind: z.enum([
+    "export_eagle_package",
     "export_files",
     "export_package",
+    "import_eagle_package",
     "import_package",
     "copy_library",
     "merge_library",

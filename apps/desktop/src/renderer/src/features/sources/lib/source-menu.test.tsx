@@ -133,6 +133,15 @@ describe("buildSourceActionMenu", () => {
     ]);
   });
 
+  it("marks connection removal as destructive", () => {
+    expect(
+      findItem(buildSourceActionMenu(account()), "Disconnect Instagram"),
+    ).toMatchObject({ variant: "destructive" });
+    expect(
+      findItem(buildSourceActionMenu(watch()), "Stop Watching"),
+    ).toMatchObject({ variant: "destructive" });
+  });
+
   it("opens profiles and copies profile details through Pond bridges", async () => {
     const items = buildSourceActionMenu(account());
     const open = findItem(items, "Open Instagram Profile");

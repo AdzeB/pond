@@ -62,15 +62,16 @@ export function VideoNoteEditor({
           </Dialog.Header>
           <div className={styles.body}>
             <label htmlFor={id}>Note</label>
-            <textarea
-              ref={textInput}
-              id={id}
-              value={text}
-              className={styles.text}
-              rows={4}
-              disabled={busy}
-              onChange={(event) => setText(event.target.value)}
-            />
+            <Input.Root>
+              <Input.Textarea
+                ref={textInput}
+                id={id}
+                value={text}
+                rows={4}
+                disabled={busy}
+                onValueChange={setText}
+              />
+            </Input.Root>
             <label htmlFor={`${id}-time`}>Time in seconds</label>
             <Input.Root size="sm">
               <Input.Field

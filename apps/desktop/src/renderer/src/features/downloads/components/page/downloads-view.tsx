@@ -29,7 +29,7 @@ export function DownloadsView(props: DownloadsViewProps) {
   const extra = props.historyError ? (
     <div className={styles.message} role="alert">
       Couldn't load download history.
-      <Button size="sm" variant="ghost" onClick={props.onRetryHistory}>
+      <Button size="sm" variant="text" onClick={props.onRetryHistory}>
         Try Again
       </Button>
     </div>

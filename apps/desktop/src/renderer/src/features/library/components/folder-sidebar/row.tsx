@@ -10,6 +10,7 @@ export function Row({
   className,
   draggable,
   onClick,
+  onDoubleClick,
   onDrop,
   onDragOver,
   onDragLeave,
@@ -24,6 +25,7 @@ export function Row({
   className?: string;
   draggable?: boolean;
   onClick: () => void;
+  onDoubleClick?: React.MouseEventHandler<HTMLElement>;
   onDrop?: React.DragEventHandler<HTMLElement>;
   onDragOver?: React.DragEventHandler<HTMLElement>;
   onDragLeave?: React.DragEventHandler<HTMLElement>;
@@ -38,6 +40,7 @@ export function Row({
       draggable={draggable}
       aria-current={active ? "page" : undefined}
       onClick={onClick}
+      onDoubleClick={onDoubleClick}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onDragOver={onDragOver}

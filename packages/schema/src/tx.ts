@@ -47,7 +47,9 @@ export type Transaction =
       patch: Partial<NewSave>;
       before: Partial<NewSave>;
       titleLock?: { before: boolean; after: boolean };
+      fileRenames?: Array<{ from: string; to: string }>;
       files?: TxSaveFile[];
+      beforeFiles?: TxSaveFile[];
       meta?: TxMeta;
     }
   | {
@@ -275,6 +277,13 @@ export function inverse(tx: Transaction): Transaction {
               before: tx.titleLock.after,
               after: tx.titleLock.before,
             };
+          if (tx.beforeFiles) inverse.files = tx.beforeFiles;
+          if (tx.files) inverse.beforeFiles = tx.files;
+          if (tx.fileRenames)
+            inverse.fileRenames = tx.fileRenames.map(({ from, to }) => ({
+              from: to,
+              to: from,
+            }));
           return inverse;
         }
         case "tag":

@@ -1,3 +1,4 @@
+import { Input } from "@pond/ui";
 import { clsx as cn } from "clsx";
 import { useEffect, useRef, useState } from "react";
 import styles from "./styles.module.css";
@@ -50,31 +51,33 @@ export function InlineNameEditor({
   }
 
   return (
-    <input
-      ref={input}
-      className={cn(styles.input, className)}
-      defaultValue={name}
-      placeholder={placeholder}
-      spellCheck={false}
-      autoComplete="off"
-      aria-label={ariaLabel}
-      aria-invalid={error || undefined}
-      title={error ? errorTitle : undefined}
-      onClick={(event) => event.stopPropagation()}
-      onChange={() => setError(false)}
-      onBlur={() => void commit()}
-      onKeyDown={(event) => {
-        event.stopPropagation();
-        if (event.nativeEvent.isComposing) return;
-        if (event.key === "Enter") {
-          event.preventDefault();
-          void commit();
-        } else if (event.key === "Escape") {
-          event.preventDefault();
-          settled.current = true;
-          onFinish();
-        }
-      }}
-    />
+    <Input.Root className={styles.root} size="sm" variant="borderless">
+      <Input.Field
+        ref={input}
+        className={cn(styles.input, className)}
+        defaultValue={name}
+        placeholder={placeholder}
+        spellCheck={false}
+        autoComplete="off"
+        aria-label={ariaLabel}
+        aria-invalid={error || undefined}
+        title={error ? errorTitle : undefined}
+        onClick={(event) => event.stopPropagation()}
+        onChange={() => setError(false)}
+        onBlur={() => void commit()}
+        onKeyDown={(event) => {
+          event.stopPropagation();
+          if (event.nativeEvent.isComposing) return;
+          if (event.key === "Enter") {
+            event.preventDefault();
+            void commit();
+          } else if (event.key === "Escape") {
+            event.preventDefault();
+            settled.current = true;
+            onFinish();
+          }
+        }}
+      />
+    </Input.Root>
   );
 }

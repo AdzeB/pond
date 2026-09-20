@@ -91,6 +91,7 @@ describe("folder sidebar saved views", () => {
     await act(async () => more.click());
     expect(harness.menuItem("Rename").querySelector("svg")).not.toBeNull();
     expect(harness.menuItem("Delete").querySelector("svg")).not.toBeNull();
+    expect(harness.menuItem("Delete").dataset.variant).toBe("destructive");
     await confirmDelete();
   });
 

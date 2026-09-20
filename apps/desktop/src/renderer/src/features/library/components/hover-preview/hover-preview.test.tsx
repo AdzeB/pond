@@ -33,7 +33,10 @@ it("hydrates and previews the next logical save beyond loaded grid rows", async 
           },
         ],
   );
-  vi.stubGlobal("pond", { query });
+  vi.stubGlobal("pond", {
+    query,
+    onPreviewNeighborRequested: () => () => {},
+  });
   selection.setAnchor(first.id);
   resultNavigation.setSource({
     ids: [first.id],

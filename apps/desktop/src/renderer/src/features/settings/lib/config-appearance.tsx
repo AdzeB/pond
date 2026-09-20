@@ -6,11 +6,11 @@ import {
   ThemeContrastRow,
   ThemePresetRow,
 } from "@/features/settings/components/sections/appearance/appearance";
+import { SoundPreferences } from "@/features/settings/components/sections/general/feedback";
 import {
   defineCustomSection,
   group,
 } from "@/features/settings/lib/engine-types";
-import { previewUiSound } from "@/features/settings/lib/sounds";
 
 export const appearanceSection = defineCustomSection({
   title: "Appearance",
@@ -161,14 +161,10 @@ export const appearanceSection = defineCustomSection({
       title: "Sounds",
       items: [
         {
-          control: "switch",
-          key: "soundsEnabled",
-          title: "Interface Sounds",
-          description: "Play feedback for clicks and toggles.",
+          control: "custom",
+          key: "sounds",
           keywords: ["audio", "click", "feedback", "sfx", "mute", "silence"],
-          apply: () => {
-            previewUiSound();
-          },
+          render: () => <SoundPreferences />,
         },
       ],
     }),

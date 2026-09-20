@@ -4,6 +4,7 @@ import { encode } from "blurhash";
 import sharp from "sharp";
 import { isStaticThumbnailFile } from "../../shared/media-index";
 import { persistSave } from "../core/persist-save";
+import { withDecryptedLibraryMediaPath } from "../core/security/library-media-storage";
 import { itemFile } from "../paths";
 
 const ENCODE_SIZE = 32;
@@ -23,14 +24,20 @@ export function pickBlurhashStill(
   return still;
 }
 
-export async function encodeBlurhash(path: string): Promise<string | null> {
+export async function encodeBlurhash(
+  input: string | Buffer,
+): Promise<string | null> {
   try {
-    const { data, info } = await sharp(path, { failOn: "none", pages: 1 })
-      .rotate()
-      .ensureAlpha()
-      .resize(ENCODE_SIZE, ENCODE_SIZE, { fit: "inside" })
-      .raw()
-      .toBuffer({ resolveWithObject: true });
+    const decodePixels = (source: string | Buffer) =>
+      sharp(source, { failOn: "none", pages: 1 })
+        .rotate()
+        .ensureAlpha()
+        .resize(ENCODE_SIZE, ENCODE_SIZE, { fit: "inside" })
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+    const { data, info } = Buffer.isBuffer(input)
+      ? await decodePixels(input)
+      : await withDecryptedLibraryMediaPath(input, decodePixels);
     if (info.channels !== 4 || info.width < 1 || info.height < 1) return null;
     return encode(
       new Uint8ClampedArray(data.buffer, data.byteOffset, data.byteLength),

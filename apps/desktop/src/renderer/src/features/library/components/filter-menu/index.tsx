@@ -1,7 +1,4 @@
-import { IconBarsFilterOutline18 } from "@pond/icons/outline/18";
 import { isPredicate, type Predicate } from "@pond/schema/filters/types";
-import { Button, Tooltip } from "@pond/ui";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useFolders } from "@/features/library/state/folders";
 import { libraryHeader } from "@/features/library/state/library-header";
 import {
@@ -18,12 +15,12 @@ import {
 import { usePrefs } from "@/features/settings/state/prefs";
 import { useTagGroups } from "@/features/tags/state/tag-groups";
 import { useTags } from "@/features/tags/state/tags";
+import { FilterToolbar } from "@/shared/components/filter-toolbar";
 import { FilterCategory } from "./category/category";
 import { CustomizeFilters } from "./customize";
 import { choiceOptions, type FilterOption, presetOptions } from "./options";
 import { SemanticChip, VisualChip } from "./overlay";
 import { sourceOptions } from "./source-options";
-import styles from "./styles.module.css";
 import {
   filterToolbar,
   type OverlayId,
@@ -46,24 +43,15 @@ export function FilterToggle() {
   const active =
     query.rules.some(isPredicate) || Boolean(semantic) || Boolean(visual);
   return (
-    <Tooltip label={open ? "Hide Filters" : "Show Filters"} side="bottom">
-      <Button
-        icon
-        size="sm"
-        variant="ghost"
-        className={styles.trigger}
-        data-active={open || active || undefined}
-        aria-label="Filter"
-        aria-expanded={open}
-        aria-controls="library-filter-toolbar"
-        onClick={() => {
-          libraryHeader.closePopover();
-          filterToolbar.setOpen(!open);
-        }}
-      >
-        <IconBarsFilterOutline18 />
-      </Button>
-    </Tooltip>
+    <FilterToolbar.Toggle
+      open={open}
+      active={active}
+      controlsId="library-filter-toolbar"
+      onToggle={() => {
+        libraryHeader.closePopover();
+        filterToolbar.setOpen(!open);
+      }}
+    />
   );
 }
 
@@ -161,58 +149,38 @@ export function FilterBarView({
   const apply = (next: Predicate[]) => {
     updateLocalFilters(next);
   };
-  const reduceMotion = useReducedMotion();
-  const transition = reduceMotion
-    ? { duration: 0 }
-    : {
-        height: { duration: 0.2, ease: [0.165, 0.84, 0.44, 1] },
-        y: { duration: 0.2, ease: [0.165, 0.84, 0.44, 1] },
-        opacity: { duration: 0.08 },
-      };
 
   return (
-    <AnimatePresence initial={false}>
-      {open ? (
-        <motion.fieldset
-          key="library-filter-toolbar"
-          id="library-filter-toolbar"
-          className={styles.shell}
-          aria-label="Library Filters"
-          initial={{ height: 0, opacity: 0, y: -4 }}
-          animate={{ height: "auto", opacity: 1, y: 0 }}
-          exit={{ height: 0, opacity: 0, y: -4, pointerEvents: "none" }}
-          transition={transition}
-        >
-          <div className={styles.bar}>
-            {chips.map((chip) =>
-              chip === "semantic" ? (
-                <SemanticChip key="semantic" />
-              ) : chip === "visual" ? (
-                <VisualChip key="visual" />
-              ) : (
-                <FilterCategory
-                  key={chip}
-                  field={chip}
-                  options={
-                    Object.entries(choices).find(
-                      ([field]) => field === chip,
-                    )?.[1] ?? presetOptions(chip)
-                  }
-                  tagGroups={chip === "tags" ? tagGroups : undefined}
-                  rows={rows}
-                  onChange={apply}
-                />
-              ),
-            )}
-            <CustomizeFilters
-              choices={choices}
-              activeFields={activeFields}
-              semanticActive={Boolean(semantic)}
-              visualActive={Boolean(visual)}
-            />
-          </div>
-        </motion.fieldset>
-      ) : null}
-    </AnimatePresence>
+    <FilterToolbar.Bar
+      open={open}
+      id="library-filter-toolbar"
+      label="Library Filters"
+    >
+      {chips.map((chip) =>
+        chip === "semantic" ? (
+          <SemanticChip key="semantic" />
+        ) : chip === "visual" ? (
+          <VisualChip key="visual" />
+        ) : (
+          <FilterCategory
+            key={chip}
+            field={chip}
+            options={
+              Object.entries(choices).find(([field]) => field === chip)?.[1] ??
+              presetOptions(chip)
+            }
+            tagGroups={chip === "tags" ? tagGroups : undefined}
+            rows={rows}
+            onChange={apply}
+          />
+        ),
+      )}
+      <CustomizeFilters
+        choices={choices}
+        activeFields={activeFields}
+        semanticActive={Boolean(semantic)}
+        visualActive={Boolean(visual)}
+      />
+    </FilterToolbar.Bar>
   );
 }

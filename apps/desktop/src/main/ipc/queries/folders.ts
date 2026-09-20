@@ -79,6 +79,89 @@ export const foldersQueries = {
     const { listFolders } = await import("../../core/folders");
     return await listFolders();
   }),
+  "folders.summaries": query(
+    z.object({ parentId: StringParam }),
+    async ({ parentId }) => {
+      const { folderSummaries } = await import("../../core/folder-summaries");
+      return folderSummaries(parentId);
+    },
+  ),
+  "folders.metadata.get": query(
+    z.object({ folderId: StringParam }),
+    async ({ folderId }) => {
+      const { getFolderMetadata } = await import("../../core/folder-metadata");
+      return getFolderMetadata(folderId);
+    },
+  ),
+  "folders.metadata.set": query(
+    z.object({
+      folderId: StringParam,
+      description: z.string().max(4000).nullable(),
+      externalLink: z.string().max(2048).nullable(),
+    }),
+    async ({ folderId, description, externalLink }) => {
+      const { setFolderMetadata } = await import("../../core/folder-metadata");
+      return setFolderMetadata(folderId, { description, externalLink });
+    },
+  ),
+  "folders.security.set": query(
+    z.object({
+      folderId: StringParam,
+      password: StringParam,
+      currentPassword: z.string().optional(),
+      hint: z.string().nullable().optional(),
+      lockChildren: z.boolean().optional(),
+    }),
+    async (params) => {
+      const { setFolderPassword } = await import(
+        "../../core/security/folder-passwords"
+      );
+      return setFolderPassword(params);
+    },
+  ),
+  "folders.security.remove": query(
+    z.object({ folderId: StringParam, password: z.string().optional() }),
+    async ({ folderId, password }) => {
+      const { removeFolderPassword } = await import(
+        "../../core/security/folder-passwords"
+      );
+      return removeFolderPassword(folderId, password);
+    },
+  ),
+  "folders.security.unlock": query(
+    z.object({ folderId: StringParam, password: StringParam }),
+    async ({ folderId, password }) => {
+      const { unlockFolder } = await import(
+        "../../core/security/folder-passwords"
+      );
+      return unlockFolder(folderId, password);
+    },
+  ),
+  "folders.security.lock": query(
+    z.object({ folderId: StringParam }),
+    async ({ folderId }) => {
+      const { lockFolder } = await import(
+        "../../core/security/folder-passwords"
+      );
+      lockFolder(folderId);
+      return { ok: true as const };
+    },
+  ),
+  "folders.security.status": query(
+    z.object({ folderId: StringParam }),
+    async ({ folderId }) => {
+      const { folderSecurityStatus } = await import(
+        "../../core/security/folder-passwords"
+      );
+      return folderSecurityStatus(folderId);
+    },
+  ),
+  "folders.security.list": query(z.object({}), async () => {
+    const { folderSecurityList } = await import(
+      "../../core/security/folder-passwords"
+    );
+    return folderSecurityList();
+  }),
   "folders.create": query(
     z.object({
       name: StringParam,
@@ -95,6 +178,13 @@ export const foldersQueries = {
     async (params) => {
       const { renameFolder } = await import("../../core/folders");
       return await renameFolder(params.id, params.name);
+    },
+  ),
+  "folders.renameBatch": query(
+    z.object({ ids: StringListParam, pattern: StringParam }),
+    async (params) => {
+      const { renameFoldersBatch } = await import("../../core/folders");
+      return renameFoldersBatch(params);
     },
   ),
   "folders.setColor": query(

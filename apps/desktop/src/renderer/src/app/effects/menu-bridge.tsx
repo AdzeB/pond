@@ -176,6 +176,10 @@ export function MenuBridge() {
           openSettings();
           return;
 
+        case "security.lock":
+          void window.pond.query("security.lockNow", {});
+          return;
+
         case "view.layout.waterfall":
         case "view.layout.grid":
         case "view.layout.justified":
@@ -292,6 +296,10 @@ export function MenuBridge() {
 
         case "library.new-note":
           void runNewAction(createNote);
+          return;
+
+        case "library.capture-screenshot":
+          newMenuDialog.open("screenshot");
           return;
 
         case "library.new-tag":

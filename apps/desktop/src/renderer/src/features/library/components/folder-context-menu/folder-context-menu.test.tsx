@@ -12,26 +12,24 @@ function actions(
     hasChildren: true,
     sameLevelHasChildren: true,
     includeSubfolders: true,
-    color: null,
-    sortKey: "savedAt",
     creating: false,
     onNewFolder: vi.fn(),
     onNewSubfolder: vi.fn(),
     onMove: vi.fn(),
     onRename: vi.fn(),
+    onBatchRename: vi.fn(),
     onAutoTag: vi.fn(),
-    onSort: vi.fn(),
     onToggleFolder: vi.fn(),
     onToggleSameLevel: vi.fn(),
     onToggleAll: vi.fn(),
     onDuplicate: vi.fn(),
     onExportFiles: vi.fn(),
     onExportCsv: vi.fn(),
+    onExportEaglePackage: vi.fn(),
     onExportPackage: vi.fn(),
     onCopyToLibrary: vi.fn(),
     onToggleSubfolders: vi.fn(),
-    onChangeIcon: vi.fn(),
-    onChangeColor: vi.fn(),
+    onCustomize: vi.fn(),
     onRemove: vi.fn(),
     ...overrides,
   };
@@ -46,15 +44,8 @@ describe("folder context menu", () => {
       "New Subfolder",
       "Move Folder",
       "Rename",
+      "Batch Rename Folders",
       "Set Auto-Tag",
-      "Sort By",
-      "Date Saved",
-      "Date Added",
-      "Date Published",
-      "Title",
-      "Type",
-      "Creator",
-      "Rating",
       "Expand/Collapse Folder",
       "Expand/Collapse Same Level Folders",
       "Expand/Collapse All Folders",
@@ -62,16 +53,12 @@ describe("folder context menu", () => {
       "Export",
       "Export Files",
       "Export to CSV",
+      "Export Eagle Package",
       "Export Pond Package",
       "Add to Other Library",
+      "Copy Folder Link",
       "Show Subfolder Content",
-      "Change Icon",
-      "Folder",
-      "Bookmark",
-      "Album",
-      "Tag",
-      "Download",
-      "Code",
+      "Customize Folder",
       "Remove Folder",
     ]);
     expect(menuLabels).not.toContain("Password");
@@ -108,6 +95,7 @@ describe("folder context menu", () => {
       expect.arrayContaining([
         expect.objectContaining({
           label: "Show Subfolder Content",
+          indicator: "check",
           checked: false,
         }),
       ]),
@@ -116,7 +104,31 @@ describe("folder context menu", () => {
       expect.arrayContaining([
         expect.objectContaining({
           label: "Show Subfolder Content",
+          indicator: "check",
           checked: true,
+        }),
+      ]),
+    );
+  });
+
+  it("opens folder customization", () => {
+    const onCustomize = vi.fn();
+    const item = buildFolderMenuItems(actions({ onCustomize })).find(
+      (candidate) =>
+        "label" in candidate && candidate.label === "Customize Folder",
+    );
+    if (!item || !("onClick" in item))
+      throw new Error("Missing customize action");
+    item.onClick?.();
+    expect(onCustomize).toHaveBeenCalledOnce();
+  });
+
+  it("marks remove folder as destructive", () => {
+    expect(buildFolderMenuItems(actions())).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          label: "Remove Folder",
+          variant: "destructive",
         }),
       ]),
     );

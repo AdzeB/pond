@@ -42,6 +42,18 @@ const DerivedPatchSchema = z
   .catch({});
 
 export const savesMutationQueries = {
+  "saves.batchEditExtension": query(
+    z.object({
+      ids: z.array(StringParam).min(1).max(100_000),
+      extension: z.string().trim().min(1).max(16),
+    }),
+    async (params) => {
+      const { batchEditExtensions } = await import(
+        "../../core/batch-extensions"
+      );
+      return batchEditExtensions(params);
+    },
+  ),
   async "saves.emptyTrash"() {
     const db = await getDb();
     const rows = await db
@@ -201,19 +213,26 @@ export const savesMutationQueries = {
     },
   ),
 
-  async "saves.findDuplicates"() {
-    const db = await getDb();
-    const rows = await db
-      .select({
-        id: saves.id,
-        title: saves.title,
-        phash: saves.phash,
-        files: saves.files,
-      })
-      .from(saves)
-      .where(isNull(saves.deletedAt));
-    return duplicateGroups(rows);
-  },
+  "saves.findDuplicates": query(
+    z.object({
+      visualDistance: z.number().int().min(0).max(64).optional(),
+    }),
+    async (params) => {
+      const db = await getDb();
+      const rows = await db
+        .select({
+          id: saves.id,
+          title: saves.title,
+          phash: saves.phash,
+          files: saves.files,
+        })
+        .from(saves)
+        .where(isNull(saves.deletedAt));
+      return duplicateGroups(rows, {
+        visualDistance: params.visualDistance,
+      });
+    },
+  ),
 
   "saves.mergeDuplicates": query(
     z.object({ keepId: StringParam, ids: StringListParam }),

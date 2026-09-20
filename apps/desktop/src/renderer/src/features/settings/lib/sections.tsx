@@ -43,6 +43,11 @@ const ShortcutSettings = lazy(() =>
     default: m.ShortcutSettings,
   })),
 );
+const SecuritySettings = lazy(() =>
+  import("@/features/settings/components/sections/security").then((m) => ({
+    default: m.SecuritySettings,
+  })),
+);
 
 export const SECTION_CONFIGS = new Map<string, SectionConfig>([
   ["general", generalSection],
@@ -126,6 +131,16 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
   ],
   ["library", librarySection],
   ["storage", storageSection],
+  [
+    "security",
+    {
+      component: SecuritySettings,
+      title: "Security",
+      description:
+        "Encrypt this Library and control when Pond requires authorization.",
+      keywords: ["password", "encryption", "lock", "recovery", "idle", "sleep"],
+    },
+  ],
   ["backups", backupsSection],
   ["search", searchSection],
   ["processing", processingSection],

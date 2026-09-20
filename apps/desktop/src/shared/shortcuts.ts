@@ -74,6 +74,11 @@ export const SHORTCUTS = {
     label: "Close Window",
     group: "Navigate",
   },
+  "app.lock": {
+    keys: "Mod+Alt+L",
+    label: "Lock Pond",
+    group: "Library",
+  },
 
   "view.zoom-in": { keys: "Mod+=", label: "Zoom In", group: "View" },
   "view.zoom-out": { keys: "Mod+-", label: "Zoom Out", group: "View" },
@@ -364,6 +369,11 @@ export const SHORTCUTS = {
   "library.new-note": {
     keys: "Mod+Alt+N",
     label: "New Note",
+    group: "Library",
+  },
+  "library.capture-screenshot": {
+    keys: "Mod+Shift+5",
+    label: "Capture Screenshot",
     group: "Library",
   },
   "library.import-files": {

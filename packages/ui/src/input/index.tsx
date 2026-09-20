@@ -5,7 +5,7 @@ import { stopPageHotkeys } from "../stop-page-hotkeys";
 import styles from "./styles.module.css";
 
 type InputSize = "xs" | "sm" | "md" | "lg" | "xl";
-type InputVariant = "primary" | "secondary";
+type InputVariant = "primary" | "secondary" | "borderless";
 
 function Root({
   className,
@@ -45,10 +45,14 @@ function Action({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-function Field({ className, onKeyDown, ...props }: Base.Props) {
+const Field = forwardRef<HTMLInputElement, Base.Props>(function Field(
+  { className, onKeyDown, ...props },
+  ref,
+) {
   return (
     <Base
       {...props}
+      ref={ref}
       data-slot="field"
       className={cn(styles.field, className)}
       onKeyDown={(event) => {
@@ -57,7 +61,7 @@ function Field({ className, onKeyDown, ...props }: Base.Props) {
       }}
     />
   );
-}
+});
 
 const Textarea = forwardRef<
   HTMLTextAreaElement,

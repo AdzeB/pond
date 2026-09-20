@@ -357,9 +357,14 @@ export function DownloadsPage() {
       {activity.isError ? (
         <p className={styles.activityError} role="status">
           Live activity is unavailable.{" "}
-          <button type="button" onClick={() => void activity.refetch()}>
+          <Button
+            type="button"
+            size="xs"
+            variant="text"
+            onClick={() => void activity.refetch()}
+          >
             Try Again
-          </button>
+          </Button>
         </p>
       ) : null}
       <TransferJobsPanel search={filters.q} />

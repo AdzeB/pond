@@ -85,6 +85,7 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve(__dirname, "src/preload/index.ts"),
+          preview: resolve(__dirname, "src/preload/preview.ts"),
           scrape: resolve(__dirname, "src/preload/scrape.cjs.ts"),
         },
         external: ["electron"],
@@ -111,7 +112,7 @@ export default defineConfig({
       watch: { usePolling: false },
       warmup: {
         clientFiles: [
-          "./src/features/agent/components/pane/pane.tsx",
+          "./src/features/agent/components/pane/index.tsx",
           "./src/features/saves/components/viewers/text-viewer/index.tsx",
         ],
       },
@@ -177,6 +178,7 @@ export default defineConfig({
         input: {
           index: resolve(__dirname, "src/renderer/index.html"),
           capture: resolve(__dirname, "src/renderer/capture.html"),
+          preview: resolve(__dirname, "src/renderer/preview.html"),
         },
         preserveEntrySignatures: false,
         output: {

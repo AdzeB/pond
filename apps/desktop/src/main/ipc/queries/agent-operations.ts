@@ -36,6 +36,10 @@ const descriptions = new Map<string, string>(
       "Run a reusable Action using the exact expectedToken from actions.preview. Rejects stale previews and records the changes for Undo.",
     "conversion.start":
       "Export converted image or video-to-GIF copies using a preset. Opens a native export directory picker; originals are retained. Returns a job ID for progress and cancellation.",
+    "conversion.capabilities":
+      "List conversion formats and the codecs available in this Pond build.",
+    "conversion.compress":
+      "Compress selected existing image files in one recoverable batch. Replaces originals, regenerates derived data, and records the operation for Undo.",
     "library.switchTo":
       "Switch the active Library to a selected path. This ends work in the current Library.",
     "library.createAt":

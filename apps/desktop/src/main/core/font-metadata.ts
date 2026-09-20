@@ -1,8 +1,8 @@
-import { readFile } from "node:fs/promises";
+import { readLibraryMedia } from "./security/library-media-storage";
 
 export async function extractFontFamily(path: string): Promise<string | null> {
   try {
-    return familyFromOpenType(await readFile(path));
+    return familyFromOpenType(await readLibraryMedia(path));
   } catch {
     return null;
   }

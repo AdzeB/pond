@@ -12,6 +12,15 @@ export function filterChipLabel(
   return `${name}: ${selected.length}`;
 }
 
+export function filterChipSummary(
+  name: string,
+  selected: readonly string[],
+): string {
+  if (selected.length === 0) return name;
+  if (selected.length <= 2) return selected.join(", ");
+  return String(selected.length);
+}
+
 export function uniqueFilterOptions<T extends string>(
   items: readonly FilterOption<T>[],
 ): FilterOption<T>[] {

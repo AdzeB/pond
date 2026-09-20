@@ -3,7 +3,9 @@ import { z } from "zod";
 import {
   ConversionPresetSchema,
   ConversionRequestSchema,
+  ImageCompressionRequestSchema,
 } from "../../../shared/conversion-contracts";
+import { conversionCapabilities } from "../../core/conversion-capabilities";
 import {
   conversionJobs,
   conversionPresets,
@@ -14,6 +16,9 @@ import { query } from "./params";
 
 const Id = z.object({ id: z.string().min(1) });
 export const conversionQueries = {
+  "conversion.capabilities": query(z.object({}), () =>
+    conversionCapabilities(),
+  ),
   "conversion.presets": query(z.object({}), () => conversionPresets()),
   "conversion.savePreset": query(
     z.object({ preset: ConversionPresetSchema }),
@@ -33,6 +38,9 @@ export const conversionQueries = {
       ? null
       : conversionJobs.start({ ...request, directory });
   }),
+  "conversion.compress": query(ImageCompressionRequestSchema, (request) =>
+    conversionJobs.startCompression(request),
+  ),
   "conversion.status": query(Id, ({ id }) => conversionJobs.status(id)),
   "conversion.cancel": query(Id, ({ id }) => conversionJobs.cancel(id)),
 };

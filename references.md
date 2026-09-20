@@ -203,33 +203,257 @@ Drizzle Team. (n.d.-a). *Drizzle Kit overview*. [Source](https://orm.drizzle.tea
 
 Drizzle Team. (n.d.-b). *Drizzle ORM*. [Source](https://orm.drizzle.team/)
 
+<a id="en-eagle-cool-support-article-action"></a>
+
+Eagle. (n.d.-a). *Action*. [Source](https://en.eagle.cool/support/article/action)
+
+<a id="en-eagle-cool-support-article-adding-files-to-other-libraries"></a>
+
+Eagle. (n.d.-b). *Adding files to other libraries*. [Source](https://en.eagle.cool/support/article/adding-files-to-other-libraries)
+
+<a id="en-eagle-cool-support-article-adjust-default-image-size"></a>
+
+Eagle. (n.d.-c). *Adjust Default Image Size*. [Source](https://en.eagle.cool/support/article/adjust-default-image-size)
+
+<a id="en-eagle-cool-support-article-adjust-default-screenshot-format-and-quality"></a>
+
+Eagle. (n.d.-d). *Adjust Default Screenshot Format and Quality*. [Source](https://en.eagle.cool/support/article/adjust-default-screenshot-format-and-quality)
+
+<a id="en-eagle-cool-support-article-adjust-files-displayed-in-sidebar"></a>
+
+Eagle. (n.d.-e). *Adjust Files Displayed in Sidebar*. [Source](https://en.eagle.cool/support/article/adjust-files-displayed-in-sidebar)
+
+<a id="en-eagle-cool-support-article-adjust-interface-zoom-level"></a>
+
+Eagle. (n.d.-f). *Adjust Interface Zoom Level*. [Source](https://en.eagle.cool/support/article/adjust-interface-zoom-level)
+
+<a id="en-eagle-cool-support-article-adjust-item-double-click"></a>
+
+Eagle. (n.d.-g). *Adjust Item Double-click*. [Source](https://en.eagle.cool/support/article/adjust-item-double-click)
+
+<a id="en-eagle-cool-support-article-adjust-mouse-wheel-button-behavior"></a>
+
+Eagle. (n.d.-h). *Adjust Mouse Wheel Button Behavior*. [Source](https://en.eagle.cool/support/article/adjust-mouse-wheel-button-behavior)
+
+<a id="en-eagle-cool-support-article-adjust-mouse-wheel-vertical-scrolling-behavior"></a>
+
+Eagle. (n.d.-i). *Adjust Mouse Wheel Vertical Scrolling Behavior*. [Source](https://en.eagle.cool/support/article/adjust-mouse-wheel-vertical-scrolling-behavior)
+
+<a id="en-eagle-cool-support-article-adjust-sidebar-double-click-default-behavior"></a>
+
+Eagle. (n.d.-j). *Adjust Sidebar Double-Click Default Behavior*. [Source](https://en.eagle.cool/support/article/adjust-sidebar-double-click-default-behavior)
+
+<a id="en-eagle-cool-support-article-adjust-spacebar-default-behavior"></a>
+
+Eagle. (n.d.-k). *Adjust Spacebar Default Behavior*. [Source](https://en.eagle.cool/support/article/adjust-spacebar-default-behavior)
+
+<a id="en-eagle-cool-support-article-batch-create-tags"></a>
+
+Eagle. (n.d.-l). *Batch-create Tags*. [Source](https://en.eagle.cool/support/article/batch-create-tags)
+
+<a id="en-eagle-cool-support-article-batch-rename"></a>
+
+Eagle. (n.d.-m). *Batch rename*. [Source](https://en.eagle.cool/support/article/batch-rename)
+
+<a id="en-eagle-cool-support-article-batch-renaming-folders-smart-folders"></a>
+
+Eagle. (n.d.-n). *Batch-rename folders / smart-folders*. [Source](https://en.eagle.cool/support/article/batch-renaming-folders-smart-folders)
+
 <a id="en-eagle-cool-support-article-cannot-find-application-support"></a>
 
-Eagle. (n.d.-a). *Cannot find the ~/Library/Application Support/Eagle folder on macOS, how to reset the software?* [Source](https://en.eagle.cool/support/article/cannot-find-the-library-application-support-eagle-folder-on-macos-how-to-reset-the-software)
+Eagle. (n.d.-o). *Cannot find the ~/Library/Application Support/Eagle folder on macOS, how to reset the software?*. [Source](https://en.eagle.cool/support/article/cannot-find-the-library-application-support-eagle-folder-on-macos-how-to-reset-the-software)
+
+<a id="en-eagle-cool-support-article-capturing-screenshots"></a>
+
+Eagle. (n.d.-p). *Capturing screenshots*. [Source](https://en.eagle.cool/support/article/capturing-screenshots)
+
+<a id="en-eagle-cool-support-article-change-interface-display-language"></a>
+
+Eagle. (n.d.-q). *Change Interface Display Language*. [Source](https://en.eagle.cool/support/article/change-interface-display-language)
+
+<a id="en-eagle-cool-support-article-collect-window"></a>
+
+Eagle. (n.d.-r). *Collect Window*. [Source](https://en.eagle.cool/support/article/collect-window)
+
+<a id="en-eagle-cool-support-article-combine-images"></a>
+
+Eagle. (n.d.-s). *Combine Images*. [Source](https://en.eagle.cool/support/article/combine-images)
+
+<a id="en-eagle-cool-support-article-copy-link"></a>
+
+Eagle. (n.d.-t). *Copy link*. [Source](https://en.eagle.cool/support/article/copy-link)
+
+<a id="en-eagle-cool-support-article-create-tag-shortcut"></a>
+
+Eagle. (n.d.-u). *Create Tag Shortcut*. [Source](https://en.eagle.cool/support/article/create-tag-shortcut)
+
+<a id="en-eagle-cool-support-article-customize-eagle-screenshot-shortcut"></a>
+
+Eagle. (n.d.-v). *Customize Eagle Screenshot Shortcut*. [Source](https://en.eagle.cool/support/article/customize-eagle-screenshot-shortcut)
 
 <a id="eagle-cool-support-article-customize-shortcuts"></a>
 
-Eagle. (n.d.-b). *Customize shortcuts*. [Source](https://eagle.cool/support/article/customize-shortcuts)
+Eagle. (n.d.-w). *Customize shortcuts*. [Source](https://eagle.cool/support/article/customize-shortcuts)
 
 <a id="eagle-cool-support-desktop-search"></a>
 
-Eagle. (n.d.-c). *Desktop search*. [Source](https://eagle.cool/support/desktop/search)
+Eagle. (n.d.-x). *Desktop search*. [Source](https://eagle.cool/support/desktop/search)
 
 <a id="eagle-cool-support-article-detail-mode"></a>
 
-Eagle. (n.d.-d). *Detail mode*. [Source](https://eagle.cool/support/article/detail-mode)
+Eagle. (n.d.-y). *Detail mode*. [Source](https://eagle.cool/support/article/detail-mode)
+
+<a id="en-eagle-cool-support-article-disable-automatically-add-style-tags"></a>
+
+Eagle. (n.d.-z). *Disable Automatically add style tags*. [Source](https://en.eagle.cool/support/article/disable-automatically-add-style-tags)
+
+<a id="en-eagle-cool-support-article-disable-mouse-hover-zoom"></a>
+
+Eagle. (n.d.-aa). *Disable Mouse Hover Zoom*. [Source](https://en.eagle.cool/support/article/disable-mouse-hover-zoom)
+
+<a id="en-eagle-cool-support-article-disable-notification-on-auto-import"></a>
+
+Eagle. (n.d.-ab). *Disable Notification on Auto-Import*. [Source](https://en.eagle.cool/support/article/disable-notification-on-auto-import)
+
+<a id="en-eagle-cool-support-article-disable-notification-on-browser-extension-collection-completion"></a>
+
+Eagle. (n.d.-ac). *Disable Notification on Browser Extension Collection Completion*. [Source](https://en.eagle.cool/support/article/disable-notification-on-browser-extension-collection-completion)
+
+<a id="en-eagle-cool-support-article-disable-notify-me-when-importing-duplicates"></a>
+
+Eagle. (n.d.-ad). *Disable Notify me when importing duplicates*. [Source](https://en.eagle.cool/support/article/disable-notify-me-when-importing-duplicates)
 
 <a id="eagle-cool"></a>
 
-Eagle. (n.d.-e). *Eagle*. [Source](https://eagle.cool/)
+Eagle. (n.d.-ae). *Eagle*. [Source](https://eagle.cool/)
+
+<a id="en-eagle-cool-support-article-edit-file-extensions"></a>
+
+Eagle. (n.d.-af). *Edit File Extensions*. [Source](https://en.eagle.cool/support/article/edit-file-extensions)
+
+<a id="en-eagle-cool-support-article-enable-also-copy-the-screenshot-to-clipboard"></a>
+
+Eagle. (n.d.-ag). *Enable Also copy the screenshot to clipboard*. [Source](https://en.eagle.cool/support/article/enable-also-copy-the-screenshot-to-clipboard)
+
+<a id="en-eagle-cool-support-article-enable-ask-where-to-save-when-saving-a-screenshot"></a>
+
+Eagle. (n.d.-ah). *Enable Ask where to save when saving a screenshot*. [Source](https://en.eagle.cool/support/article/enable-ask-where-to-save-when-saving-a-screenshot)
+
+<a id="en-eagle-cool-support-article-enable-autoplay-gifs-high-cpu-usage"></a>
+
+Eagle. (n.d.-ai). *Enable Autoplay GIFs (High CPU usage)*. [Source](https://en.eagle.cool/support/article/enable-autoplay-gifs-high-cpu-usage)
+
+<a id="en-eagle-cool-support-article-finding-activated-fonts"></a>
+
+Eagle. (n.d.-aj). *Enable filtering for "Installed Fonts" to help you quickly find the font files you need*. [Source](https://en.eagle.cool/support/article/finding-activated-fonts)
+
+<a id="en-eagle-cool-support-article-enable-sound-effects"></a>
+
+Eagle. (n.d.-ak). *Enable Sound Effects*. [Source](https://en.eagle.cool/support/article/enable-sound-effects)
+
+<a id="en-eagle-cool-support-article-enable-touch-id-for-quick-unlock-of-application-lock-and-folder-passwords"></a>
+
+Eagle. (n.d.-al). *Enable Touch ID for Quick Unlock of Application Lock and Folder Passwords*. [Source](https://en.eagle.cool/support/article/enable-touch-id-for-quick-unlock-of-application-lock-and-folder-passwords)
+
+<a id="en-eagle-cool-support-article-export-images-with-specified-size-or-format"></a>
+
+Eagle. (n.d.-am). *Export in specified format / dimension*. [Source](https://en.eagle.cool/support/article/export-images-with-specified-size-or-format)
+
+<a id="en-eagle-cool-support-article-finding-similar-duplicate-images"></a>
+
+Eagle. (n.d.-an). *Finding similar duplicate images*. [Source](https://en.eagle.cool/support/article/finding-similar-duplicate-images)
+
+<a id="en-eagle-cool-support-article-horizontal-flip-image"></a>
+
+Eagle. (n.d.-ao). *Flip image horizontally*. [Source](https://en.eagle.cool/support/article/horizontal-flip-image)
+
+<a id="en-eagle-cool-support-article-hide-sidebar-display-counts"></a>
+
+Eagle. (n.d.-ap). *Hide Sidebar Display Counts*. [Source](https://en.eagle.cool/support/article/hide-sidebar-display-counts)
+
+<a id="en-eagle-cool-support-article-how-to-display-subfolder-covers-in-parent-folders"></a>
+
+Eagle. (n.d.-aq). *How to display and customize subfolder covers in parent folders?*. [Source](https://en.eagle.cool/support/article/how-to-display-subfolder-covers-in-parent-folders)
+
+<a id="en-eagle-cool-support-article-how-to-install-plugins"></a>
+
+Eagle. (n.d.-ar). *How to install plugins?*. [Source](https://en.eagle.cool/support/article/how-to-install-plugins)
+
+<a id="en-eagle-cool-support-article-how-to-set-up-plugin-shortcuts"></a>
+
+Eagle. (n.d.-as). *How to set up plugin shortcuts?*. [Source](https://en.eagle.cool/support/article/how-to-set-up-plugin-shortcuts)
+
+<a id="en-eagle-cool-support-article-how-to-uninstall-plugins"></a>
+
+Eagle. (n.d.-at). *How to uninstall plugins?*. [Source](https://en.eagle.cool/support/article/how-to-uninstall-plugins)
+
+<a id="en-eagle-cool-support-article-image-compression-without-loss"></a>
+
+Eagle. (n.d.-au). *Image compression without loss*. [Source](https://en.eagle.cool/support/article/image-compression-without-loss)
+
+<a id="en-eagle-cool-support-article-import-exporting-eaglepacks"></a>
+
+Eagle. (n.d.-av). *Import / Exporting Eaglepacks*. [Source](https://en.eagle.cool/support/article/import-exporting-eaglepacks)
+
+<a id="en-eagle-cool-support-article-open-in-new-window"></a>
+
+Eagle. (n.d.-aw). *Open in new window*. [Source](https://en.eagle.cool/support/article/open-in-new-window)
 
 <a id="en-eagle-cool-support-article-organizing-tags"></a>
 
-Eagle. (n.d.-f). *Organizing tags*. [Source](https://en.eagle.cool/support/article/organizing-tags)
+Eagle. (n.d.-ax). *Organizing tags*. [Source](https://en.eagle.cool/support/article/organizing-tags)
+
+<a id="en-eagle-cool-support-article-password-lock"></a>
+
+Eagle. (n.d.-ay). *Password Lock*. [Source](https://en.eagle.cool/support/article/password-lock)
+
+<a id="en-eagle-cool-support-article-presentation-mode"></a>
+
+Eagle. (n.d.-az). *Presentation Mode*. [Source](https://en.eagle.cool/support/article/presentation-mode)
+
+<a id="en-eagle-cool-support-article-quick-access"></a>
+
+Eagle. (n.d.-ba). *Quick Access*. [Source](https://en.eagle.cool/support/article/quick-access)
+
+<a id="en-eagle-cool-support-article-random-mode"></a>
+
+Eagle. (n.d.-bb). *Random mode*. [Source](https://en.eagle.cool/support/article/random-mode)
+
+<a id="en-eagle-cool-support-article-rotate-image"></a>
+
+Eagle. (n.d.-bc). *Rotate Image*. [Source](https://en.eagle.cool/support/article/rotate-image)
+
+<a id="en-eagle-cool-support-article-save-audio-files"></a>
+
+Eagle. (n.d.-bd). *Save audio files*. [Source](https://en.eagle.cool/support/article/save-audio-files)
+
+<a id="en-eagle-cool-support-article-saving-fonts"></a>
+
+Eagle. (n.d.-be). *Saving fonts*. [Source](https://en.eagle.cool/support/article/saving-fonts)
+
+<a id="en-eagle-cool-support-article-search-by-keywords"></a>
+
+Eagle. (n.d.-bf). *Search by keywords*. [Source](https://en.eagle.cool/support/article/search-by-keywords)
+
+<a id="en-eagle-cool-support-article-set-folder-passwords"></a>
+
+Eagle. (n.d.-bg). *Set folder passwords*. [Source](https://en.eagle.cool/support/article/set-folder-passwords)
+
+<a id="en-eagle-cool-support-article-show-subfolder-contents"></a>
+
+Eagle. (n.d.-bh). *Show subfolder contents*. [Source](https://en.eagle.cool/support/article/show-subfolder-contents)
 
 <a id="en-eagle-cool-support-article-tags"></a>
 
-Eagle. (n.d.-g). *Tags*. [Source](https://en.eagle.cool/support/article/tags)
+Eagle. (n.d.-bi). *Tags*. [Source](https://en.eagle.cool/support/article/tags)
+
+<a id="en-eagle-cool-support-article-video-player"></a>
+
+Eagle. (n.d.-bj). *Video player*. [Source](https://en.eagle.cool/support/article/video-player)
+
+<a id="en-eagle-cool-support-article-thumbnail-performance-quality-settings"></a>
+
+Eagle. (n.d.-bk). *What's the difference between "Speed" and "Quality" settings for thumbnail arrangement?*. [Source](https://en.eagle.cool/support/article/thumbnail-performance-quality-settings)
 
 <a id="electronjs-org-docs-latest-breaking-changes"></a>
 
@@ -386,6 +610,10 @@ jsdom. (n.d.). *jsdom* [Source code]. GitHub. [Source](https://github.com/jsdom/
 <a id="github-com-jshttp-mime-types"></a>
 
 jshttp. (n.d.). *mime-types* [Source code]. GitHub. [Source](https://github.com/jshttp/mime-types)
+
+<a id="kerekes-2026-eaglepack-importer"></a>
+
+Kerekes, S. (2026). *EaglePack Importer* (Revision bb70ab32ebdb684ec98bb8f15e0d37b90bb7433d) [Computer software]. GitHub. [Source](https://github.com/Stef4678/eaglepack-importer/tree/bb70ab32ebdb684ec98bb8f15e0d37b90bb7433d)
 
 <a id="knip-dev"></a>
 

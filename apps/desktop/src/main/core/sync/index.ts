@@ -3,6 +3,10 @@ import type { SyncRunEvent } from "@pond/schema/events";
 import log from "electron-log/main.js";
 import { commitEvent, startSyncEvent, toErrorInfo } from "../../lib/wide-event";
 import { isAccountConnected } from "../refresh/scrape-window";
+import {
+  assertLibraryUnlocked,
+  librarySecurityStatus,
+} from "../security/app-lock-runtime";
 import { isSyncBlockedByStorageGuard } from "../storage-watcher";
 import { watchNow } from "../watch/run";
 import { ensureAccountHandle } from "./account-key";
@@ -65,6 +69,7 @@ function isSyncableSource(source: Source): boolean {
 }
 
 export async function syncAllSources(opts: SyncOptions = {}): Promise<void> {
+  assertLibraryUnlocked();
   const accounts = (await listAccounts()).filter((a) =>
     isSyncableSource(a.source),
   );
@@ -98,6 +103,7 @@ export async function syncSource(
   source: Source,
   opts: SyncOptions = {},
 ): Promise<void> {
+  assertLibraryUnlocked();
   const accounts = await listAccountsForSource(source);
   for (const account of accounts) {
     await syncAccount(account.id, opts).catch((err) =>
@@ -125,6 +131,7 @@ export async function syncAccount(
   accountId: string,
   opts: SyncOptions = {},
 ): Promise<void> {
+  assertLibraryUnlocked();
   const account = await getAccount(accountId);
   if (!account) {
     log.warn("[pond sync] unknown account, skipping", accountId);
@@ -258,6 +265,7 @@ export async function syncAccount(
 }
 
 export async function recoverInterruptedSyncs(): Promise<string[]> {
+  if (librarySecurityStatus().state === "locked") return [];
   const recovered: string[] = [];
   for (const account of await listAccounts()) {
     const cfg = await getAccountSync(account.id);

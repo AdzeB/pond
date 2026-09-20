@@ -1,5 +1,4 @@
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
 import { extname } from "node:path";
 import type { Save, SaveFile } from "@pond/schema/db";
 import type { Capture, CaptureMedia } from "@pond/schema/raw";
@@ -7,6 +6,7 @@ import type { TxSaveFile } from "@pond/schema/tx";
 import sharp from "sharp";
 import { fetchAvatarToTxFile } from "../../../lib/blob";
 import { itemFile } from "../../../paths";
+import { readLibraryMedia } from "../../security/library-media-storage";
 
 export interface InlinedAvatars {
   capture: Capture;
@@ -224,7 +224,7 @@ async function readSaveFileBytes(
   const path = itemFile(save.id, file.path);
   if (!existsSync(path)) return null;
   try {
-    const bytes = await readFile(path);
+    const bytes = await readLibraryMedia(path);
     return {
       bytes,
       mime: file.mimeType || mimeFromExt(extname(file.path)),

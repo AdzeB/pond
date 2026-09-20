@@ -7,7 +7,7 @@ import {
   IconTagsOutline18,
   IconTrash2Outline18,
 } from "@pond/icons/outline/18";
-import { Dialog, type MenuItemSpec } from "@pond/ui";
+import { Chip, Dialog, type MenuItemSpec } from "@pond/ui";
 import { useCallback, useRef, useState } from "react";
 import { copyTags, pasteTags } from "@/features/saves/lib/actions";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
@@ -90,6 +90,7 @@ export function buildEmptyTagFieldMenu(save: Save): MenuItemSpec[] {
     {
       label: "Clear All Tags",
       icon: <IconTrash2Outline18 />,
+      variant: "destructive",
       hidden: save.tags.length === 0,
       onClick: () => void setSaveTags(save.id, []),
     },
@@ -142,14 +143,13 @@ export function TagsEditor({
               key={tag}
               buildItems={() => buildTagPillMenu(save, tag, remove)}
             >
-              <button
-                type="button"
-                className={styles.tag}
+              <Chip.Action
+                tone="applied"
                 data-tag=""
                 onClick={() => setOpen(true)}
               >
-                <span className={styles.label}>{tag}</span>
-              </button>
+                <Chip.Label>{tag}</Chip.Label>
+              </Chip.Action>
             </SpecContextMenu>
           ))}
           {children}

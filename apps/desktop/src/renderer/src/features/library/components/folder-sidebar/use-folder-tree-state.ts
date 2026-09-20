@@ -1,10 +1,14 @@
 import type { Folder } from "@pond/schema/db";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { z } from "zod";
-import { flattenFolderTree } from "./tree";
+import { type FolderListSort, flattenFolderTree, sortFolderRows } from "./tree";
 import type { FolderDropState } from "./use-folder-drag-drop";
 
 const COLLAPSED_FOLDERS_KEY = "pond:collapsed-folders";
+const FOLDER_LIST_SORT_KEY = "pond:folder-list-sort";
+const FolderListSortSchema = z
+  .enum(["manual", "createdAt", "title"])
+  .catch("manual");
 
 function loadCollapsedFolders(): Set<string> {
   try {
@@ -25,11 +29,27 @@ function persistCollapsedFolders(next: Set<string>): Set<string> {
   return next;
 }
 
+function loadFolderListSort(): FolderListSort {
+  return FolderListSortSchema.parse(localStorage.getItem(FOLDER_LIST_SORT_KEY));
+}
+
+function persistFolderListSort(next: FolderListSort): FolderListSort {
+  try {
+    localStorage.setItem(FOLDER_LIST_SORT_KEY, next);
+  } catch {}
+  return next;
+}
+
 export function useFolderTreeState(folderRows: Folder[]) {
   const [collapsed, setCollapsed] = useState(loadCollapsedFolders);
+  const [sort, setSortState] = useState(loadFolderListSort);
+  const sortedRows = useMemo(
+    () => sortFolderRows(folderRows, sort),
+    [folderRows, sort],
+  );
   const nested = useMemo(
-    () => flattenFolderTree(folderRows, collapsed),
-    [folderRows, collapsed],
+    () => flattenFolderTree(sortedRows, collapsed),
+    [sortedRows, collapsed],
   );
   const parentIds = useMemo(() => {
     const ids = new Set<string>();
@@ -81,11 +101,17 @@ export function useFolderTreeState(folderRows: Folder[]) {
     });
   }
 
+  function setSort(next: FolderListSort): void {
+    setSortState(persistFolderListSort(next));
+  }
+
   return {
     collapsed,
     nested,
     parentIds,
     revealFolder,
+    setSort,
+    sort,
     toggleAllFolders,
     toggleFolder,
     toggleSameLevel,

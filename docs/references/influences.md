@@ -41,6 +41,118 @@ Google's premium Priority PayGo semantics
 native-tier mappings and unavailable states. Pond enables Fast only when the
 catalog also declares model support.
 
+## Eagle parity baselines
+
+Eagle's first-party support pages define compatibility baselines and future
+acceptance criteria. A citation in this section records the documented behavior;
+it does not claim that Pond implements it.
+
+Library transfer and collection planning use Eagle's cross-Library copy and
+Eaglepack behavior
+([Eagle, n.d.-b](../../references.md#en-eagle-cool-support-article-adding-files-to-other-libraries);
+[Eagle, n.d.-av](../../references.md#en-eagle-cool-support-article-import-exporting-eaglepacks)),
+collection metadata
+([Eagle, n.d.-r](../../references.md#en-eagle-cool-support-article-collect-window)),
+font and audio workspaces
+([Eagle, n.d.-be](../../references.md#en-eagle-cool-support-article-saving-fonts);
+[Eagle, n.d.-z](../../references.md#en-eagle-cool-support-article-disable-automatically-add-style-tags);
+[Eagle, n.d.-bd](../../references.md#en-eagle-cool-support-article-save-audio-files)),
+and desktop screenshot behavior
+([Eagle, n.d.-p](../../references.md#en-eagle-cool-support-article-capturing-screenshots);
+[Eagle, n.d.-d](../../references.md#en-eagle-cool-support-article-adjust-default-screenshot-format-and-quality);
+[Eagle, n.d.-v](../../references.md#en-eagle-cool-support-article-customize-eagle-screenshot-shortcut);
+[Eagle, n.d.-ah](../../references.md#en-eagle-cool-support-article-enable-ask-where-to-save-when-saving-a-screenshot);
+[Eagle, n.d.-ag](../../references.md#en-eagle-cool-support-article-enable-also-copy-the-screenshot-to-clipboard)).
+These pages determine which metadata, controls, and platform flows parity work
+must preserve.
+
+Eaglepack archive layout and synthetic compatibility cases use
+[Kerekes (2026)](../../references.md#kerekes-2026-eaglepack-importer) as
+reverse-engineered format evidence. Pond's parser is an independent
+implementation and does not copy the MIT-licensed importer code.
+
+Organization planning uses Eagle's tag picker and batch operations
+([Eagle, n.d.-bi](../../references.md#en-eagle-cool-support-article-tags);
+[Eagle, n.d.-l](../../references.md#en-eagle-cool-support-article-batch-create-tags);
+[Eagle, n.d.-n](../../references.md#en-eagle-cool-support-article-batch-renaming-folders-smart-folders);
+[Eagle, n.d.-m](../../references.md#en-eagle-cool-support-article-batch-rename)),
+Actions and shortcuts
+([Eagle, n.d.-a](../../references.md#en-eagle-cool-support-article-action);
+[Eagle, n.d.-u](../../references.md#en-eagle-cool-support-article-create-tag-shortcut)),
+duplicate review
+([Eagle, n.d.-an](../../references.md#en-eagle-cool-support-article-finding-similar-duplicate-images)),
+image composition
+([Eagle, n.d.-s](../../references.md#en-eagle-cool-support-article-combine-images)),
+and extension editing
+([Eagle, n.d.-af](../../references.md#en-eagle-cool-support-article-edit-file-extensions)).
+Subfolder browsing uses the documented parent-folder covers and descendant
+visibility behavior
+([Eagle, n.d.-aq](../../references.md#en-eagle-cool-support-article-how-to-display-subfolder-covers-in-parent-folders);
+[Eagle, n.d.-bh](../../references.md#en-eagle-cool-support-article-show-subfolder-contents)).
+
+Security architecture uses the folder lock, application lock, and Touch ID
+descriptions
+([Eagle, n.d.-bg](../../references.md#en-eagle-cool-support-article-set-folder-passwords);
+[Eagle, n.d.-ay](../../references.md#en-eagle-cool-support-article-password-lock);
+[Eagle, n.d.-al](../../references.md#en-eagle-cool-support-article-enable-touch-id-for-quick-unlock-of-application-lock-and-folder-passwords)).
+They define interaction parity only. Pond's planned encryption scope and
+generated Recovery Key go beyond the guarantees stated by those pages.
+
+Search planning uses keyword scopes and recent searches
+([Eagle, n.d.-bf](../../references.md#en-eagle-cool-support-article-search-by-keywords))
+and activated-font filtering
+([Eagle, n.d.-aj](../../references.md#en-eagle-cool-support-article-finding-activated-fonts)).
+Browse planning uses presentation and detached-window behavior
+([Eagle, n.d.-az](../../references.md#en-eagle-cool-support-article-presentation-mode);
+[Eagle, n.d.-aw](../../references.md#en-eagle-cool-support-article-open-in-new-window)),
+random browsing
+([Eagle, n.d.-bb](../../references.md#en-eagle-cool-support-article-random-mode)),
+video controls
+([Eagle, n.d.-bj](../../references.md#en-eagle-cool-support-article-video-player);
+[Eagle, n.d.-i](../../references.md#en-eagle-cool-support-article-adjust-mouse-wheel-vertical-scrolling-behavior)),
+original-file transforms
+([Eagle, n.d.-bc](../../references.md#en-eagle-cool-support-article-rotate-image);
+[Eagle, n.d.-ao](../../references.md#en-eagle-cool-support-article-horizontal-flip-image)),
+GIF playback
+([Eagle, n.d.-ai](../../references.md#en-eagle-cool-support-article-enable-autoplay-gifs-high-cpu-usage)),
+default image sizing
+([Eagle, n.d.-c](../../references.md#en-eagle-cool-support-article-adjust-default-image-size)),
+and thumbnail quality
+([Eagle, n.d.-bk](../../references.md#en-eagle-cool-support-article-thumbnail-performance-quality-settings)).
+These pages informed the planned reversals recorded in the desktop architecture
+without changing current runtime behavior.
+
+Import and export planning uses Eagle's conversion matrix, existing-image
+compression, and object links
+([Eagle, n.d.-am](../../references.md#en-eagle-cool-support-article-export-images-with-specified-size-or-format);
+[Eagle, n.d.-au](../../references.md#en-eagle-cool-support-article-image-compression-without-loss);
+[Eagle, n.d.-t](../../references.md#en-eagle-cool-support-article-copy-link)).
+Preference planning uses Quick Access, language, interface zoom, sidebar, input,
+sound, notification, and duplicate-import behavior
+([Eagle, n.d.-ba](../../references.md#en-eagle-cool-support-article-quick-access);
+[Eagle, n.d.-q](../../references.md#en-eagle-cool-support-article-change-interface-display-language);
+[Eagle, n.d.-f](../../references.md#en-eagle-cool-support-article-adjust-interface-zoom-level);
+[Eagle, n.d.-j](../../references.md#en-eagle-cool-support-article-adjust-sidebar-double-click-default-behavior);
+[Eagle, n.d.-ap](../../references.md#en-eagle-cool-support-article-hide-sidebar-display-counts);
+[Eagle, n.d.-e](../../references.md#en-eagle-cool-support-article-adjust-files-displayed-in-sidebar);
+[Eagle, n.d.-g](../../references.md#en-eagle-cool-support-article-adjust-item-double-click);
+[Eagle, n.d.-h](../../references.md#en-eagle-cool-support-article-adjust-mouse-wheel-button-behavior);
+[Eagle, n.d.-k](../../references.md#en-eagle-cool-support-article-adjust-spacebar-default-behavior);
+[Eagle, n.d.-aa](../../references.md#en-eagle-cool-support-article-disable-mouse-hover-zoom);
+[Eagle, n.d.-ak](../../references.md#en-eagle-cool-support-article-enable-sound-effects);
+[Eagle, n.d.-ac](../../references.md#en-eagle-cool-support-article-disable-notification-on-browser-extension-collection-completion);
+[Eagle, n.d.-ab](../../references.md#en-eagle-cool-support-article-disable-notification-on-auto-import);
+[Eagle, n.d.-ad](../../references.md#en-eagle-cool-support-article-disable-notify-me-when-importing-duplicates)).
+The language page records research provenance only; this foundation change does
+not add localization.
+
+Plugin planning uses Eagle's install, uninstall, and shortcut pages
+([Eagle, n.d.-ar](../../references.md#en-eagle-cool-support-article-how-to-install-plugins);
+[Eagle, n.d.-at](../../references.md#en-eagle-cool-support-article-how-to-uninstall-plugins);
+[Eagle, n.d.-as](../../references.md#en-eagle-cool-support-article-how-to-set-up-plugin-shortcuts)).
+Pond retains its local API, MCP, CLI, Raycast, and browser-extension surfaces
+instead of treating these citations as a commitment to a plugin marketplace.
+
 ## On-device enrichment
 
 Sensitive-content enrichment uses Marqo’s binary image classifier and pinned
@@ -113,14 +225,14 @@ Companies, people, files, and codebases Pond learned from.
 - **Apple** ([Apple, n.d.-a](../../references.md#developer-apple-com-design-human-interface-guidelines)) —
   HIG, Icon Composer ([Apple, n.d.-b](../../references.md#developer-apple-com-icon-composer)), and liquid-glass
   window chrome.
-- **Eagle** ([Eagle, n.d.-e](../../references.md#eagle-cool)) — local-first media library.
-  Tags ([Eagle, n.d.-g](../../references.md#en-eagle-cool-support-article-tags)),
-  organizing tags ([Eagle, n.d.-f](../../references.md#en-eagle-cool-support-article-organizing-tags)),
-  detail mode ([Eagle, n.d.-d](../../references.md#eagle-cool-support-article-detail-mode)), and
-  desktop search ([Eagle, n.d.-c](../../references.md#eagle-cool-support-desktop-search)).
-  Shortcut customization ([Eagle, n.d.-b](../../references.md#eagle-cool-support-article-customize-shortcuts))
+- **Eagle** ([Eagle, n.d.-ae](../../references.md#eagle-cool)) — local-first media library.
+  Tags ([Eagle, n.d.-bi](../../references.md#en-eagle-cool-support-article-tags)),
+  organizing tags ([Eagle, n.d.-ax](../../references.md#en-eagle-cool-support-article-organizing-tags)),
+  detail mode ([Eagle, n.d.-y](../../references.md#eagle-cool-support-article-detail-mode)), and
+  desktop search ([Eagle, n.d.-x](../../references.md#eagle-cool-support-desktop-search)).
+  Shortcut customization ([Eagle, n.d.-w](../../references.md#eagle-cool-support-article-customize-shortcuts))
   and the macOS app-data location
-  ([Eagle, n.d.-a](../../references.md#en-eagle-cool-support-article-cannot-find-application-support))
+  ([Eagle, n.d.-o](../../references.md#en-eagle-cool-support-article-cannot-find-application-support))
   informed the local Eagle shortcut importer.
 - **PandaDoc** ([Mobbin, n.d.-k](../../references.md#mobbin-pandadoc-bulk-import-progress)) —
   its completed-item count and per-item processing state informed the Eagle import progress toast.

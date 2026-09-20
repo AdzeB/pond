@@ -27,11 +27,13 @@ const onEagleImportProgress = vi.fn<NewActionServices["onEagleImportProgress"]>(
   },
 );
 const {
+  captureScreenshot,
   createNote,
   createBlankDocument,
   findDuplicates,
   importClipboard,
   importEagle,
+  importEaglePackage,
   importLinks,
   importPaths,
   importPondPackage,
@@ -83,6 +85,7 @@ describe("new menu actions", () => {
   it("imports selected paths through the existing importer", async () => {
     query
       .mockResolvedValueOnce({ paths: ["/tmp/images"] })
+      .mockResolvedValueOnce({ candidates: [] })
       .mockResolvedValueOnce({ ok: true, ids: ["one", "two"] });
     await importPaths("folders");
     expect(query).toHaveBeenLastCalledWith("saves.importFiles", {
@@ -96,6 +99,7 @@ describe("new menu actions", () => {
   it("reports unsupported file selections without claiming success", async () => {
     query
       .mockResolvedValueOnce({ paths: ["/tmp/unsupported"] })
+      .mockResolvedValueOnce({ candidates: [] })
       .mockResolvedValueOnce({ ok: false });
     await expect(importPaths("files")).rejects.toThrow(
       "No files were imported",
@@ -165,6 +169,25 @@ describe("new menu actions", () => {
     expect(openSave).not.toHaveBeenCalled();
     expect(selectSave).toHaveBeenCalledWith("note-id");
     expect(notify).not.toHaveBeenCalled();
+  });
+
+  it("captures the selected desktop source into the current folder", async () => {
+    currentFolderId.mockReturnValue("folder-1");
+    query.mockResolvedValue({ ok: true, id: "screenshot-id" });
+    await captureScreenshot("window:8:0");
+    expect(query).toHaveBeenCalledWith("saves.captureDesktopScreenshot", {
+      sourceId: "window:8:0",
+      folderId: "folder-1",
+    });
+    expect(selectSave).toHaveBeenCalledWith("screenshot-id");
+  });
+
+  it("reports when a selected desktop source disappears", async () => {
+    query.mockResolvedValue({ ok: false, error: "source_not_found" });
+    await expect(captureScreenshot("window:8:0")).rejects.toThrow(
+      "no longer available",
+    );
+    expect(selectSave).not.toHaveBeenCalled();
   });
 
   it("assigns a new note to the current folder", async () => {
@@ -324,6 +347,22 @@ describe("new menu actions", () => {
       expect.objectContaining({
         title: "Imported 4 Saves",
         description: "2 skipped",
+      }),
+    );
+  });
+
+  it("refreshes folders after importing an Eagle package", async () => {
+    query.mockResolvedValue({ ok: true, imported: 3, skipped: 1 });
+    await importEaglePackage();
+    expect(query).toHaveBeenCalledExactlyOnceWith(
+      "saves.importEaglePackage",
+      {},
+    );
+    expect(folders.refresh).toHaveBeenCalledOnce();
+    expect(notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Imported 3 Saves",
+        description: "1 skipped",
       }),
     );
   });

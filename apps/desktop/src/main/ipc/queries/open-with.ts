@@ -11,6 +11,7 @@ import {
 import { z } from "zod";
 import { libraryItemLink } from "../../../shared/library-links";
 import { runLibraryTransfer } from "../../core/library-transfers";
+import { materializeLibraryMediaForExternalUse } from "../../core/security/library-media-storage";
 import {
   type OpenWithAppInfo,
   openWithListingKey,
@@ -38,7 +39,7 @@ async function resolveFiles(
         ok: false,
         error: "A selected Save has no available original file.",
       };
-    files.push(target.path);
+    files.push(await materializeLibraryMediaForExternalUse(target.path));
   }
   return { ok: true, files };
 }
@@ -161,7 +162,8 @@ export const openWithQueries = {
       const target = await resolveSaveFilePath(ids[0] ?? "", fileIndex);
       if (!target.ok) return { apps: [] };
       try {
-        const ranked = await listedApps(target.path);
+        const file = await materializeLibraryMediaForExternalUse(target.path);
+        const ranked = await listedApps(file);
         const apps = await Promise.all(
           ranked.map(async (entry) => ({
             ...entry,

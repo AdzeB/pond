@@ -4,7 +4,7 @@ import "./focus-modality";
 
 export { clsx as cn } from "clsx";
 export { Accordion } from "./accordion";
-export { Badge } from "./badge";
+export { Badge, type BadgeTone } from "./badge";
 export { Button, type ButtonProps } from "./button";
 export { Checkbox } from "./checkbox";
 export { Chip, type ChipTone } from "./chip";

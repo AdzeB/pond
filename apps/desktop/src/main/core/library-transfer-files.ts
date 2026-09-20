@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import {
   open,
   readdir,
@@ -28,6 +27,11 @@ import {
   readPackageOrganization,
 } from "./package-organization";
 import { importPondPackage } from "./pond-package";
+import {
+  decodeLibraryFile,
+  encodeLibraryFile,
+  readLibraryFileSync,
+} from "./security/library-file-storage";
 
 const OrganizationEnvelope = z.object({ data: OrganizationBundleSchema });
 const EnrichmentEnvelope = z.object({
@@ -40,12 +44,17 @@ const EnrichmentEnvelope = z.object({
     transcriptModel: z.string().nullable().optional(),
   }),
 });
+
+function readLibraryText(path: string): string {
+  return readLibraryFileSync(path).toString("utf8");
+}
 const TransferLock = z.object({ pid: z.number().int(), host: z.string() });
 
 async function readOrganization(root: string) {
-  const text = await readFile(join(root, "organization.json"), "utf8").catch(
-    () => null,
-  );
+  const path = join(root, "organization.json");
+  const text = await readFile(path)
+    .then((value) => decodeLibraryFile(path, value).toString("utf8"))
+    .catch(() => null);
   if (!text)
     throw new Error("Open this library in Pond once before transferring it.");
   return { text, data: OrganizationEnvelope.parse(JSON.parse(text)).data };
@@ -58,8 +67,13 @@ async function readItems(root: string, includeTrash = false) {
     }).catch(() => [])) {
       if (!entry.isDirectory() || !entry.name.endsWith(".info")) continue;
       const directory = join(root, bucket, entry.name);
+      const infoPath = join(directory, "info.json");
       const info = StoredInfoDocSchema.parse(
-        JSON.parse(await readFile(join(directory, "info.json"), "utf8")),
+        JSON.parse(
+          decodeLibraryFile(infoPath, await readFile(infoPath)).toString(
+            "utf8",
+          ),
+        ),
       );
       items.push({ directory, info });
     }
@@ -166,22 +180,21 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
             mapped.set(folder.id, match.id);
           }
           if (
-            readFileSync(join(root, "organization.json"), "utf8") !==
+            readLibraryText(join(root, "organization.json")) !==
             expectedOrganization
           )
             throw new Error(
               "The destination library changed during transfer. Try again after its edits finish.",
             );
           writeBundleJson(join(root, "organization.json"), organization.data);
-          expectedOrganization = readFileSync(
+          expectedOrganization = readLibraryText(
             join(root, "organization.json"),
-            "utf8",
           );
           return mapped;
         },
         async organization(incoming, folderIds, saveIds) {
           if (
-            readFileSync(join(root, "organization.json"), "utf8") !==
+            readLibraryText(join(root, "organization.json")) !==
             expectedOrganization
           )
             throw new Error(
@@ -201,17 +214,18 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
           tagCatalog = merged;
           organization.data.views = merged.views;
           writeBundleJson(join(root, "organization.json"), organization.data);
-          expectedOrganization = readFileSync(
+          expectedOrganization = readLibraryText(
             join(root, "organization.json"),
-            "utf8",
           );
           const settingsFile = join(root, "settings.json");
-          const settingsText = await readFile(settingsFile, "utf8").catch(
-            (error: NodeJS.ErrnoException) => {
+          const settingsText = await readFile(settingsFile)
+            .then((value) =>
+              decodeLibraryFile(settingsFile, value).toString("utf8"),
+            )
+            .catch((error: NodeJS.ErrnoException) => {
               if (error.code === "ENOENT") return null;
               throw error;
-            },
-          );
+            });
           const settings = settingsText
             ? z
                 .object({ data: z.record(z.string(), z.json()) })
@@ -230,7 +244,7 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
         },
         async commit(id, save, folderIds) {
           if (
-            readFileSync(join(root, "organization.json"), "utf8") !==
+            readLibraryText(join(root, "organization.json")) !==
             expectedOrganization
           )
             throw new Error("The destination library changed during transfer.");
@@ -277,12 +291,14 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
             },
           };
           const directory = join(root, "items", `${id}.info`);
-          if (save.rawJson)
+          if (save.rawJson) {
+            const sourcePath = join(directory, "source.json");
             await writeFile(
-              join(directory, "source.json"),
-              JSON.stringify(save.rawJson),
+              sourcePath,
+              encodeLibraryFile(sourcePath, JSON.stringify(save.rawJson)),
               { flag: "wx" },
             );
+          }
           writeBundleJson(join(directory, "enrichment.json"), {
             caption: save.caption,
             captionModel: save.captionModel,
@@ -293,9 +309,10 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
             videoNotes: save.videoNotes,
             dominantColors: save.dominantColors,
           });
+          const infoPath = join(directory, "info.json");
           await writeFile(
-            join(directory, "info.json"),
-            JSON.stringify(info, null, 2),
+            infoPath,
+            encodeLibraryFile(infoPath, JSON.stringify(info, null, 2)),
             { flag: "wx" },
           );
           const knownTags = new Set(
@@ -343,13 +360,16 @@ export function packageLibrary(libraryPath: string, destination: string) {
     const items: ExportItem[] = [];
     for (const { directory, info } of await readItems(root)) {
       if (info.deletedAt) continue;
-      const raw = await readFile(join(directory, "source.json"), "utf8").catch(
-        () => null,
-      );
-      const enrichmentText = await readFile(
-        join(directory, "enrichment.json"),
-        "utf8",
-      ).catch(() => null);
+      const sourcePath = join(directory, "source.json");
+      const raw = await readFile(sourcePath)
+        .then((value) => decodeLibraryFile(sourcePath, value).toString("utf8"))
+        .catch(() => null);
+      const enrichmentPath = join(directory, "enrichment.json");
+      const enrichmentText = await readFile(enrichmentPath)
+        .then((value) =>
+          decodeLibraryFile(enrichmentPath, value).toString("utf8"),
+        )
+        .catch(() => null);
       const enrichment = enrichmentText
         ? EnrichmentEnvelope.parse(JSON.parse(enrichmentText)).data
         : {};

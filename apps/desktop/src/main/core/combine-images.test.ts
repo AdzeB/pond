@@ -5,12 +5,41 @@ import sharp from "sharp";
 import { expect, it } from "vitest";
 import { isCombinableImage, joinRasterImages } from "./combine-images";
 
-it("accepts only jpeg and png", () => {
+it("accepts raster formats supported by the composition pipeline", () => {
   expect(isCombinableImage("image/png", "a.png")).toBe(true);
   expect(isCombinableImage("image/jpeg", "a.jpg")).toBe(true);
-  expect(isCombinableImage("image/webp", "a.webp")).toBe(false);
-  expect(isCombinableImage("image/gif", "a.gif")).toBe(false);
+  expect(isCombinableImage("image/webp", "a.webp")).toBe(true);
+  expect(isCombinableImage("image/gif", "a.gif")).toBe(true);
   expect(isCombinableImage("image/vnd.adobe.photoshop", "a.psd")).toBe(false);
+});
+
+it("supports vertical reverse composition, dimensions, spacing, margins, and webp output", async () => {
+  const first = await sharp({
+    create: { width: 10, height: 20, channels: 4, background: "red" },
+  })
+    .png()
+    .toBuffer();
+  const second = await sharp({
+    create: { width: 20, height: 10, channels: 4, background: "blue" },
+  })
+    .png()
+    .toBuffer();
+  const combined = await joinRasterImages([first, second], {
+    direction: "vertical",
+    order: "reverse",
+    alignment: "end",
+    width: 20,
+    height: 20,
+    spacing: 3,
+    margin: 2,
+    radius: 2,
+    background: "#ffffff",
+    opacity: 0.75,
+    format: "webp",
+    quality: 80,
+  });
+  const meta = await sharp(combined).metadata();
+  expect([meta.width, meta.height, meta.format]).toEqual([24, 47, "webp"]);
 });
 
 it("joins images left to right at the tallest height without touching originals", async () => {

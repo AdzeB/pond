@@ -21,11 +21,13 @@ function actions(
 
 describe("tag group context menu", () => {
   it("filters first, then rename, then remove last", () => {
-    expect(labels(buildTagGroupMenuItems(actions()))).toEqual([
+    const items = buildTagGroupMenuItems(actions());
+    expect(labels(items)).toEqual([
       "Filter Items with the Tag(s)",
       "Rename",
       "Remove",
     ]);
+    expect(items.at(-1)).toMatchObject({ variant: "destructive" });
   });
 
   it("disables filter when the group has no tags", () => {

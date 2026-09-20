@@ -1,8 +1,11 @@
 import { dialog } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
+import { reviewImportDuplicates } from "../../core/duplicate-import";
+import { importEaglePackage } from "../../core/eagle-package";
 import { importFiles } from "../../core/import-files";
 import { importPondPackage } from "../../core/pond-package";
+import { materializeLibraryMediaForExternalUse } from "../../core/security/library-media-storage";
 import { runTransferJob } from "../../core/transfer-jobs";
 import { copySaveSelectionToLibrary } from "../../core/transfer-operations";
 import { libraryRoot } from "../../paths";
@@ -17,6 +20,45 @@ import {
 } from "./params";
 
 export const savesImportTransferQueries = {
+  "saves.reviewImportDuplicates": query(
+    z.object({ paths: StringListParam }),
+    async ({ paths }) => ({
+      candidates: await reviewImportDuplicates(paths),
+    }),
+  ),
+  async "saves.importEaglePackage"() {
+    const picked = await dialog.showOpenDialog({
+      title: "Import Eagle Package",
+      buttonLabel: "Import",
+      properties: ["openDirectory", "openFile"],
+    });
+    if (picked.canceled || !picked.filePaths[0])
+      return { ok: false, error: "canceled" };
+    try {
+      const source = picked.filePaths[0];
+      return {
+        ok: true,
+        ...(await runTransferJob(
+          {
+            kind: "import_eagle_package",
+            origin: libraryRoot(),
+            source,
+            destination: libraryRoot(),
+          },
+          () => importEaglePackage(source),
+        )),
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Eagle package import failed.",
+      };
+    }
+  },
+
   "saves.copyToLibrary": query(
     z.object({ ids: StringListParam }),
     async ({ ids }) => {
@@ -50,37 +92,40 @@ export const savesImportTransferQueries = {
     },
   ),
 
-  async "saves.importPackage"() {
-    const picked = await dialog.showOpenDialog({
-      title: "Import Pond Package",
-      buttonLabel: "Import",
-      properties: ["openDirectory", "openFile"],
-    });
-    if (picked.canceled || !picked.filePaths[0]) {
-      return { ok: false, error: "canceled" };
-    }
-    try {
-      const source = picked.filePaths[0];
-      return {
-        ok: true,
-        ...(await runTransferJob(
-          {
-            kind: "import_package",
-            origin: libraryRoot(),
-            source,
-            destination: libraryRoot(),
-          },
-          () => importPondPackage(source),
-        )),
-      };
-    } catch (error) {
-      return {
-        ok: false,
-        error:
-          error instanceof Error ? error.message : "Package import failed.",
-      };
-    }
-  },
+  "saves.importPackage": query(
+    z.object({ password: z.string().max(1_024).optional() }),
+    async ({ password }) => {
+      const picked = await dialog.showOpenDialog({
+        title: "Import Pond Package",
+        buttonLabel: "Import",
+        properties: ["openDirectory", "openFile"],
+      });
+      if (picked.canceled || !picked.filePaths[0]) {
+        return { ok: false, error: "canceled" };
+      }
+      try {
+        const source = picked.filePaths[0];
+        return {
+          ok: true,
+          ...(await runTransferJob(
+            {
+              kind: "import_package",
+              origin: libraryRoot(),
+              source,
+              destination: libraryRoot(),
+            },
+            () => importPondPackage(source, password),
+          )),
+        };
+      } catch (error) {
+        return {
+          ok: false,
+          error:
+            error instanceof Error ? error.message : "Package import failed.",
+        };
+      }
+    },
+  ),
 
   "saves.pickImportPaths": query(
     z.object({ kind: z.enum(["files", "folders"]) }),
@@ -92,14 +137,37 @@ export const savesImportTransferQueries = {
       paths: StringListParam,
       tags: StringListParam,
       folderIds: StringListParam,
+      duplicatePolicy: z
+        .enum(["use-existing", "keep-both"])
+        .optional()
+        .default("keep-both"),
+      duplicateDecisions: z
+        .record(z.string(), z.enum(["use-existing", "keep-both"]))
+        .optional()
+        .default({}),
     }),
     async (params) => {
       const paths = params.paths.filter(Boolean);
       if (paths.length === 0) return { ok: false, error: "no_files" };
+      const candidates =
+        params.duplicatePolicy === "use-existing" ||
+        Object.values(params.duplicateDecisions).includes("use-existing")
+          ? await reviewImportDuplicates(paths)
+          : [];
+      const useExisting = Object.fromEntries(
+        candidates.flatMap((candidate) => {
+          const choice =
+            params.duplicateDecisions[candidate.path] ?? params.duplicatePolicy;
+          return choice === "use-existing"
+            ? [[candidate.path, candidate.existingId]]
+            : [];
+        }),
+      );
       return importFiles({
         paths,
         tags: params.tags,
         folderIds: params.folderIds,
+        useExisting,
       });
     },
   ),
@@ -120,7 +188,8 @@ export const savesImportTransferQueries = {
       const files: string[] = [];
       for (const id of ids) {
         const target = await resolveSaveFilePath(id, params.fileIndex);
-        if (target.ok) files.push(target.path);
+        if (target.ok)
+          files.push(await materializeLibraryMediaForExternalUse(target.path));
       }
       if (files.length === 0) return { ok: false };
       try {

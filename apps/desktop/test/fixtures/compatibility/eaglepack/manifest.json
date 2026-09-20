@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "eaglepack-characterization",
+  "kind": "eaglepack",
+  "baseline": {
+    "extension": ".eaglepack",
+    "status": "characterization-required",
+    "knownBehavior": [
+      "Eagle exports selected items as a transfer package.",
+      "Eagle documents preservation of folder hierarchy and tags.",
+      "Eagle does not preserve Tag Groups when the package is imported."
+    ],
+    "unknowns": [
+      "container signature and compression",
+      "manifest filenames and versions",
+      "path encoding and traversal rules",
+      "checksum and duplicate identity behavior",
+      "multi-file item and thumbnail representation"
+    ],
+    "requiredSamples": [
+      "one item with one original",
+      "nested folders with repeated tags",
+      "one item with multiple files and a custom thumbnail"
+    ]
+  },
+  "compatibilityAssertions": [
+    "Do not treat an Eaglepack as a complete Eagle Library.",
+    "Do not implement a parser until reproducible samples answer every listed unknown.",
+    "Record Eagle version, platform, sample checksum, and redaction steps with each sample.",
+    "Keep live or personal Eagle exports out of the repository."
+  ]
+}

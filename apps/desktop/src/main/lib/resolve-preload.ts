@@ -9,7 +9,9 @@ function mainOutDir(): string {
  * electron-vite emits preload to `out/preload/` while main code may run from
  * `out/main/` or `out/main/chunks/`; pick the path that exists.
  */
-export function resolvePreload(name: "index.cjs" | "scrape.cjs"): string {
+export function resolvePreload(
+  name: "index.cjs" | "preview.cjs" | "scrape.cjs",
+): string {
   const path = join(mainOutDir(), "../preload", name);
   if (!existsSync(path)) {
     const fallback = join(__dirname, "../preload", name);

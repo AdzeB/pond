@@ -24,6 +24,23 @@ describe("keyword grammar", () => {
     );
   });
 
+  it("scopes indexed fields and routes folder fields through the library query", () => {
+    expect(toFtsMatchQuery('title:"cat food" tags:design creator:ada')).toBe(
+      'title : "cat food" AND tag_names : "design"* AND author : "ada"*',
+    );
+    expect(() => toFtsMatchQuery("folder:reference")).toThrow(
+      "full-library keyword query",
+    );
+    const where = compileKeywordWhere(
+      'folder:"Reference Images" folder-description:client',
+    );
+    if (!where) throw new Error("Expected folder keyword predicates");
+    const compiled = new SQLiteSyncDialect().sqlToQuery(where);
+    expect(compiled.sql).toContain("save_folders");
+    expect(compiled.sql).toContain("folders");
+    expect(compiled.params).toEqual(["%reference images%", "%client%"]);
+  });
+
   it("supports negative-only searches through a SQL complement", () => {
     const where = compileKeywordWhere('-"cat food"');
     if (!where) throw new Error("Expected a keyword predicate");

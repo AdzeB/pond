@@ -18,6 +18,7 @@ import type { InspectorMode } from "./types";
 
 interface ImageViewportOptions {
   active: boolean;
+  defaultSize: "fit" | "actual";
   initialRatio: number | null;
   isDragging: () => boolean;
   mode: InspectorMode;
@@ -51,6 +52,7 @@ interface ImageViewport {
 
 export function useImageViewport({
   active,
+  defaultSize,
   initialRatio,
   isDragging,
   mode,
@@ -69,6 +71,7 @@ export function useImageViewport({
   const image = useRef<HTMLImageElement>(null);
   const latestPose = useRef(pose);
   const poseFrame = useRef(0);
+  const appliedDefault = useRef(false);
 
   const setPosition = (
     update: (previous: ImagePose) => ImagePose,
@@ -112,6 +115,23 @@ export function useImageViewport({
     latestPose.current = FIT_POSE;
     setPose(FIT_POSE);
   }, [rememberPosition]);
+  useEffect(() => {
+    if (
+      appliedDefault.current ||
+      defaultSize !== "actual" ||
+      (rememberPosition && viewerMemory.hasImage(src))
+    )
+      return;
+    const zoom = actualSizeZoom(
+      image.current?.naturalWidth || naturalWidth,
+      size.width,
+    );
+    if (!zoom) return;
+    appliedDefault.current = true;
+    const next = { zoom: Math.min(32, zoom), x: 0, y: 0 };
+    latestPose.current = next;
+    setPose(next);
+  }, [defaultSize, naturalWidth, rememberPosition, size.width, src]);
   useEffect(() => {
     const element = frame.current;
     if (!element) return;

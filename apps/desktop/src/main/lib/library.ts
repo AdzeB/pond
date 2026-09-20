@@ -22,6 +22,11 @@ import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import type { TxSaveFile } from "@pond/schema/tx";
 import { inferKindFromFilename } from "@shared/save-file-names";
 import log from "electron-log/main.js";
+import {
+  decodeLibraryFile,
+  encodeLibraryFile,
+} from "../core/security/library-file-storage";
+import { writeLibraryMedia } from "../core/security/library-media-storage";
 import { itemDir, itemFile, resolvePaths } from "../paths";
 import type { SaveUserData } from "./library-format";
 import {
@@ -86,12 +91,19 @@ async function writeInfoFiles(
 ): Promise<void> {
   const dir = itemDir(id);
   await mkdir(dir, { recursive: true });
-  await writeFile(join(dir, INFO_FILE), JSON.stringify(info, null, 2));
+  const infoPath = join(dir, INFO_FILE);
+  await writeFile(
+    infoPath,
+    encodeLibraryFile(infoPath, JSON.stringify(info, null, 2)),
+  );
   const sourcePath = join(dir, SOURCE_FILE);
   if (rawSource == null) {
     await unlink(sourcePath).catch(() => {});
   } else {
-    await writeFile(sourcePath, JSON.stringify(rawSource, null, 2));
+    await writeFile(
+      sourcePath,
+      encodeLibraryFile(sourcePath, JSON.stringify(rawSource, null, 2)),
+    );
   }
 }
 
@@ -132,7 +144,7 @@ export async function writeItemFiles(
 
   const decoded = files.map(decodeFile);
   for (const { filename, buf } of decoded) {
-    await writeFile(join(dir, filename), buf);
+    await writeLibraryMedia(join(dir, filename), buf);
   }
 
   const manifest = mergeWrittenFiles(
@@ -159,7 +171,7 @@ export async function applyItemPatch(
 
   const decoded = files.map(decodeFile);
   for (const { filename, buf } of decoded) {
-    await writeFile(join(itemDir(id), filename), buf);
+    await writeLibraryMedia(join(itemDir(id), filename), buf);
   }
 
   const next = applyPatchToInfo(current.info, patch);
@@ -183,7 +195,9 @@ export async function readItemMetadata(
   if (!existsSync(infoPath)) return null;
   try {
     const info = StoredInfoDocSchema.parse(
-      JSON.parse(await readFile(infoPath, "utf8")),
+      JSON.parse(
+        decodeLibraryFile(infoPath, await readFile(infoPath)).toString("utf8"),
+      ),
     );
     return metadataFromInfo(id, info, await readSourceDoc(id, root));
   } catch (err) {
@@ -202,7 +216,7 @@ async function readSourceDoc(
   if (!existsSync(path)) return null;
   let text: string;
   try {
-    text = await readFile(path, "utf8");
+    text = decodeLibraryFile(path, await readFile(path)).toString("utf8");
   } catch {
     return null;
   }
@@ -223,7 +237,9 @@ async function readInfoForEdit(
   if (!existsSync(infoPath)) return null;
   try {
     const info = StoredInfoDocSchema.parse(
-      JSON.parse(await readFile(infoPath, "utf8")),
+      JSON.parse(
+        decodeLibraryFile(infoPath, await readFile(infoPath)).toString("utf8"),
+      ),
     );
     return { info, rawSource: await readSourceDoc(id) };
   } catch (err) {

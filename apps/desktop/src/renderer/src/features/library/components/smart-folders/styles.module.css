@@ -93,6 +93,11 @@
   opacity: 1;
 }
 
+.row:hover .item:not([data-status="active"]) {
+  color: var(--ds-gray-11);
+  background: var(--ds-gray-a3);
+}
+
 @keyframes appear {
   from {
     opacity: 0;

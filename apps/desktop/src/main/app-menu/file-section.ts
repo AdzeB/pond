@@ -27,6 +27,12 @@ export function buildFileSection(context: AppMenuContext): AppMenuItem {
         registerAccelerator: false,
         click: sendMenuAction("library.new-note"),
       },
+      {
+        label: "Capture Screenshot",
+        accelerator: accelerator("library.capture-screenshot"),
+        registerAccelerator: false,
+        click: sendMenuAction("library.capture-screenshot"),
+      },
       { type: "separator" },
       {
         label: FILE_MENU_CREATE_LABELS[3],

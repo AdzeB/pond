@@ -1,4 +1,4 @@
-import { Button, Dialog, Input } from "@pond/ui";
+import { Button, Dialog, Input, Select } from "@pond/ui";
 import type {
   ActionDefinition,
   ActionPreview,
@@ -13,6 +13,7 @@ import {
 } from "@/features/library/state/action-dialog";
 import { folders, useFolders } from "@/features/library/state/folders";
 import { reloadSaves } from "@/features/saves/lib/ensure-saves";
+import { parseTagBatch } from "@/features/tags/components/menu/lib";
 import styles from "./styles.module.css";
 
 export function ActionDialogHost() {
@@ -55,6 +56,16 @@ const STEP_LABELS = {
   "add-tags": "Add Tags",
   "remove-tags": "Remove Tags",
 } satisfies Record<ActionStep["kind"], string>;
+const STEP_KINDS: ActionStep["kind"][] = [
+  "add-folders",
+  "remove-folders",
+  "rename",
+  "rating",
+  "notes",
+  "add-tags",
+  "remove-tags",
+];
+
 function ActionDialog({
   ids,
   mode,
@@ -174,6 +185,7 @@ function ActionDialog({
     try {
       await window.pond.query("actions.save", { definition });
       setSaved(await window.pond.query("actions.list", {}));
+      window.dispatchEvent(new Event("pond:actions-changed"));
       setMessage("Action saved.");
     } catch (cause) {
       setError(
@@ -189,11 +201,33 @@ function ActionDialog({
     try {
       await window.pond.query("actions.delete", { id: definition.id });
       setSaved(await window.pond.query("actions.list", {}));
+      window.dispatchEvent(new Event("pond:actions-changed"));
       change({ ...definition, id: crypto.randomUUID() });
       setMessage("Action deleted.");
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "Could not delete the action.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function duplicate() {
+    setBusy(true);
+    setError(null);
+    try {
+      const copy = await window.pond.query("actions.duplicate", {
+        id: definition.id,
+      });
+      setSaved(await window.pond.query("actions.list", {}));
+      window.dispatchEvent(new Event("pond:actions-changed"));
+      change(copy);
+      setMessage("Action duplicated.");
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Could not duplicate the action.",
       );
     } finally {
       setBusy(false);
@@ -219,211 +253,248 @@ function ActionDialog({
           <fieldset disabled={busy} className={styles.editor}>
             {mode === "actions" ? (
               <>
-                <label>
-                  Saved Action
-                  <select
-                    value={
-                      saved.some((item) => item.id === definition.id)
-                        ? definition.id
-                        : ""
-                    }
-                    onChange={(event) => {
-                      const found = saved.find(
-                        (item) => item.id === event.target.value,
-                      );
-                      change(
-                        found ?? {
-                          id: crypto.randomUUID(),
-                          name: "New Action",
-                          steps: [newStep("add-tags")],
-                        },
-                      );
-                    }}
-                  >
-                    <option value="">New Action</option>
-                    {saved.map((item) => (
-                      <option value={item.id} key={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <SelectField
+                  label="Saved Action"
+                  value={
+                    saved.some((item) => item.id === definition.id)
+                      ? definition.id
+                      : ""
+                  }
+                  items={[
+                    { value: "", label: "New Action" },
+                    ...saved.map((item) => ({
+                      value: item.id,
+                      label: item.name,
+                    })),
+                  ]}
+                  onChange={(id) => {
+                    const found = saved.find((item) => item.id === id);
+                    change(
+                      found ?? {
+                        id: crypto.randomUUID(),
+                        name: "New Action",
+                        steps: [newStep("add-tags")],
+                      },
+                    );
+                  }}
+                />
                 <label htmlFor={`${fieldId}-name`}>
                   Action Name
-                  <Input.Field
-                    id={`${fieldId}-name`}
-                    value={definition.name}
-                    onValueChange={(name) => change({ ...definition, name })}
-                  />
+                  <Input.Root>
+                    <Input.Field
+                      id={`${fieldId}-name`}
+                      value={definition.name}
+                      onValueChange={(name) => change({ ...definition, name })}
+                    />
+                  </Input.Root>
+                </label>
+                <label htmlFor={`${fieldId}-shortcut`}>
+                  Shortcut
+                  <Input.Root>
+                    <Input.Field
+                      id={`${fieldId}-shortcut`}
+                      placeholder="Mod+Shift+1"
+                      value={definition.shortcut ?? ""}
+                      onValueChange={(shortcut) =>
+                        change({
+                          ...definition,
+                          shortcut: shortcut.trim() || null,
+                        })
+                      }
+                    />
+                  </Input.Root>
                 </label>
               </>
             ) : null}
             {definition.steps.map((step, index) => (
               <div className={styles.step} key={step.id}>
-                <label>
-                  {`Step ${index + 1}`}
-                  <select
-                    value={step.kind}
-                    disabled={mode === "rename"}
-                    onChange={(event) => {
-                      const replacement = [
-                        newStep("add-folders"),
-                        newStep("remove-folders"),
-                        newStep("add-tags"),
-                        newStep("remove-tags"),
-                        newStep("rating"),
-                        newStep("rename"),
-                        newStep("notes"),
-                      ].find((item) => item.kind === event.target.value);
-                      if (replacement) stepAt(index, replacement);
-                    }}
-                  >
-                    {Object.entries(STEP_LABELS).map(([kind, label]) => (
-                      <option key={kind} value={kind}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <SelectField
+                  label={`Step ${index + 1}`}
+                  value={step.kind}
+                  disabled={mode === "rename"}
+                  items={STEP_KINDS.map((kind) => ({
+                    value: kind,
+                    label: STEP_LABELS[kind],
+                  }))}
+                  onChange={(kind) => {
+                    const replacement = [
+                      newStep("add-folders"),
+                      newStep("remove-folders"),
+                      newStep("add-tags"),
+                      newStep("remove-tags"),
+                      newStep("rating"),
+                      newStep("rename"),
+                      newStep("notes"),
+                    ].find((item) => item.kind === kind);
+                    if (replacement) stepAt(index, replacement);
+                  }}
+                />
                 {step.kind === "add-folders" ||
                 step.kind === "remove-folders" ? (
-                  <label>
-                    Folders
-                    <select
-                      multiple
-                      value={step.folderIds}
-                      onChange={(event) =>
-                        stepAt(index, {
-                          ...step,
-                          folderIds: Array.from(
-                            event.target.selectedOptions,
-                            (option) => option.value,
-                          ),
-                        })
-                      }
-                    >
-                      {folderRows.map((folder) => (
-                        <option key={folder.id} value={folder.id}>
-                          {folder.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <MultiSelectField
+                    label="Folders"
+                    value={step.folderIds}
+                    items={folderRows.map((folder) => ({
+                      value: folder.id,
+                      label: folder.name,
+                    }))}
+                    onChange={(folderIds) =>
+                      stepAt(index, { ...step, folderIds })
+                    }
+                  />
                 ) : null}
                 {step.kind === "add-tags" || step.kind === "remove-tags" ? (
                   <label htmlFor={`${fieldId}-${step.id}-tags`}>
                     Tags
-                    <Input.Field
-                      id={`${fieldId}-${step.id}-tags`}
-                      placeholder="Separate tags with commas"
-                      value={step.tags.join(", ")}
-                      onValueChange={(text) =>
-                        stepAt(index, {
-                          ...step,
-                          tags: text.split(",").map((tag) => tag.trim()),
-                        })
-                      }
-                    />
+                    <Input.Root>
+                      <Input.Field
+                        id={`${fieldId}-${step.id}-tags`}
+                        placeholder="Separate tags with commas"
+                        value={step.tags.join(", ")}
+                        onValueChange={(text) =>
+                          stepAt(index, {
+                            ...step,
+                            tags: parseTagBatch(text),
+                          })
+                        }
+                      />
+                    </Input.Root>
                   </label>
                 ) : null}
                 {step.kind === "rating" ? (
-                  <label>
-                    Rating
-                    <select
-                      value={step.rating}
-                      onChange={(event) =>
-                        stepAt(index, {
-                          ...step,
-                          rating: Number(event.target.value),
-                        })
-                      }
-                    >
-                      {[0, 1, 2, 3, 4, 5].map((value) => (
-                        <option key={value} value={value}>
-                          {value ? `${value} Stars` : "No Rating"}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <SelectField
+                    label="Rating"
+                    value={String(step.rating)}
+                    items={[0, 1, 2, 3, 4, 5].map((value) => ({
+                      value: String(value),
+                      label: value ? `${value} Stars` : "No Rating",
+                    }))}
+                    onChange={(rating) =>
+                      stepAt(index, { ...step, rating: Number(rating) })
+                    }
+                  />
                 ) : null}
                 {step.kind === "rename" ? (
                   <>
                     <label htmlFor={`${fieldId}-${step.id}-pattern`}>
                       Name Pattern
-                      <Input.Field
-                        id={`${fieldId}-${step.id}-pattern`}
-                        value={step.pattern}
-                        onValueChange={(pattern) =>
-                          stepAt(index, { ...step, pattern })
-                        }
-                      />
+                      <Input.Root>
+                        <Input.Field
+                          id={`${fieldId}-${step.id}-pattern`}
+                          value={step.pattern}
+                          onValueChange={(pattern) =>
+                            stepAt(index, { ...step, pattern })
+                          }
+                        />
+                      </Input.Root>
                     </label>
                     <p>
-                      Use {"{title}"} for the current name, {"{n}"} for a
-                      number, and {"{id}"} for the save ID. Numbering follows
-                      the selection order.
+                      Use {"{title}"}, {"{n}"}, {"{date}"}, {"{tags}"},{" "}
+                      {"{original}"}, or {"{id}"}. Add digits inside a number
+                      token, such as {"{n:3}"}.
                     </p>
+                    <label htmlFor={`${fieldId}-${step.id}-find`}>
+                      Find Pattern
+                      <Input.Root>
+                        <Input.Field
+                          id={`${fieldId}-${step.id}-find`}
+                          value={step.replacement?.find ?? ""}
+                          onValueChange={(find) =>
+                            stepAt(index, {
+                              ...step,
+                              replacement: find
+                                ? {
+                                    find,
+                                    replace: step.replacement?.replace ?? "",
+                                    flags: step.replacement?.flags ?? "g",
+                                  }
+                                : null,
+                            })
+                          }
+                        />
+                      </Input.Root>
+                    </label>
+                    <label htmlFor={`${fieldId}-${step.id}-replace`}>
+                      Replace With
+                      <Input.Root>
+                        <Input.Field
+                          id={`${fieldId}-${step.id}-replace`}
+                          value={step.replacement?.replace ?? ""}
+                          disabled={!step.replacement}
+                          onValueChange={(replace) =>
+                            stepAt(index, {
+                              ...step,
+                              replacement: step.replacement
+                                ? { ...step.replacement, replace }
+                                : null,
+                            })
+                          }
+                        />
+                      </Input.Root>
+                    </label>
                     <div className={styles.numbers}>
-                      <label>
+                      <label htmlFor={`${fieldId}-${step.id}-start`}>
                         Start
-                        <input
-                          type="number"
-                          min={0}
-                          value={step.start}
-                          onChange={(event) =>
-                            stepAt(index, {
-                              ...step,
-                              start: event.target.valueAsNumber,
-                            })
-                          }
-                        />
+                        <Input.Root>
+                          <Input.Field
+                            id={`${fieldId}-${step.id}-start`}
+                            type="number"
+                            min={0}
+                            value={step.start}
+                            onChange={(event) =>
+                              stepAt(index, {
+                                ...step,
+                                start: event.target.valueAsNumber,
+                              })
+                            }
+                          />
+                        </Input.Root>
                       </label>
-                      <label>
+                      <label htmlFor={`${fieldId}-${step.id}-padding`}>
                         Digits
-                        <input
-                          type="number"
-                          min={1}
-                          max={12}
-                          value={step.padding}
-                          onChange={(event) =>
-                            stepAt(index, {
-                              ...step,
-                              padding: event.target.valueAsNumber,
-                            })
-                          }
-                        />
+                        <Input.Root>
+                          <Input.Field
+                            id={`${fieldId}-${step.id}-padding`}
+                            type="number"
+                            min={1}
+                            max={12}
+                            value={step.padding}
+                            onChange={(event) =>
+                              stepAt(index, {
+                                ...step,
+                                padding: event.target.valueAsNumber,
+                              })
+                            }
+                          />
+                        </Input.Root>
                       </label>
                     </div>
                   </>
                 ) : null}
                 {step.kind === "notes" ? (
                   <>
-                    <label>
-                      Mode
-                      <select
-                        value={step.mode}
-                        onChange={(event) =>
-                          stepAt(index, {
-                            ...step,
-                            mode:
-                              event.target.value === "append"
-                                ? "append"
-                                : "replace",
-                          })
-                        }
-                      >
-                        <option value="append">Append</option>
-                        <option value="replace">Replace</option>
-                      </select>
-                    </label>
-                    <label>
+                    <SelectField
+                      label="Mode"
+                      value={step.mode}
+                      items={[
+                        { value: "append", label: "Append" },
+                        { value: "replace", label: "Replace" },
+                      ]}
+                      onChange={(nextMode) =>
+                        stepAt(index, { ...step, mode: nextMode })
+                      }
+                    />
+                    <label htmlFor={`${fieldId}-${step.id}-notes`}>
                       Notes
-                      <textarea
-                        value={step.text}
-                        onChange={(event) =>
-                          stepAt(index, { ...step, text: event.target.value })
-                        }
-                      />
+                      <Input.Root>
+                        <Input.Textarea
+                          id={`${fieldId}-${step.id}-notes`}
+                          value={step.text}
+                          onValueChange={(text) =>
+                            stepAt(index, { ...step, text })
+                          }
+                        />
+                      </Input.Root>
                     </label>
                   </>
                 ) : null}
@@ -458,7 +529,12 @@ function ActionDialog({
                 </Button>
                 <Button onClick={() => void save()}>Save Action</Button>
                 {saved.some((item) => item.id === definition.id) ? (
-                  <Button onClick={() => void remove()}>Delete Action</Button>
+                  <>
+                    <Button onClick={() => void duplicate()}>
+                      Duplicate Action
+                    </Button>
+                    <Button onClick={() => void remove()}>Delete Action</Button>
+                  </>
                 ) : null}
               </div>
             ) : null}
@@ -521,5 +597,74 @@ function ActionDialog({
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
+  );
+}
+
+function SelectField<Value extends string>({
+  label,
+  value,
+  items,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  value: Value;
+  items: { value: Value; label: string }[];
+  disabled?: boolean;
+  onChange: (value: Value) => void;
+}) {
+  return (
+    <Select.Root
+      value={value}
+      items={items}
+      disabled={disabled}
+      onValueChange={(next) => {
+        if (next !== null) onChange(next);
+      }}
+    >
+      <div className={styles.field}>
+        <Select.Label>{label}</Select.Label>
+        <Select.Trigger width="full">
+          <Select.Value />
+        </Select.Trigger>
+      </div>
+      <Select.Portal>
+        <Select.Positioner>
+          <Select.Popup>
+            <Select.Items items={items} />
+          </Select.Popup>
+        </Select.Positioner>
+      </Select.Portal>
+    </Select.Root>
+  );
+}
+
+function MultiSelectField({
+  label,
+  value,
+  items,
+  onChange,
+}: {
+  label: string;
+  value: string[];
+  items: { value: string; label: string }[];
+  onChange: (value: string[]) => void;
+}) {
+  return (
+    <Select.Root multiple value={value} items={items} onValueChange={onChange}>
+      <div className={styles.field}>
+        <Select.Label>{label}</Select.Label>
+        <Select.Trigger width="full">
+          <Select.Value placeholder="Choose Folders" />
+        </Select.Trigger>
+      </div>
+      <Select.Portal>
+        <Select.Positioner>
+          <Select.Popup>
+            <Select.Items items={items} />
+          </Select.Popup>
+        </Select.Positioner>
+      </Select.Portal>
+    </Select.Root>
   );
 }

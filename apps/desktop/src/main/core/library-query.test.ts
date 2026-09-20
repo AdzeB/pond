@@ -5,6 +5,7 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
 import { initializePondSchema } from "../db";
+import { queryFolderSummaries } from "./folder-summaries";
 import { queryLibraryIds, queryLibraryPage } from "./library-query";
 import { querySidebarCounts } from "./sidebar-counts";
 
@@ -59,6 +60,63 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
       trash: 1,
       folders: { all: 1199 },
     });
+  });
+  it("counts distinct saves across each folder subtree", () => {
+    const { db, sqlite } = setup();
+    sqlite.exec(`
+      insert into folders(id,name,parent_id) values
+        ('root','Root',null),
+        ('child','Child','root'),
+        ('leaf','Leaf','child'),
+        ('empty','Empty',null);
+      insert into save_folders(save_id,folder_id) values
+        ('0001','root'),
+        ('0002','child'),
+        ('0003','root'),
+        ('0003','child'),
+        ('0004','leaf'),
+        ('0005','child');
+      update saves set deleted_at=1 where id='0005';
+    `);
+    expect(querySidebarCounts(db).folders).toEqual({
+      root: 4,
+      child: 3,
+      leaf: 1,
+    });
+  });
+  it("summarizes direct child folders and picks the newest visual cover", async () => {
+    const { db, sqlite } = setup();
+    sqlite.exec(`
+      insert into folders(id,name,parent_id,sort_order) values
+        ('root','Root',null,0),
+        ('first','First','root',0),
+        ('second','Second','root',1),
+        ('nested','Nested','first',0);
+      insert into save_folders(save_id,folder_id) values
+        ('0001','first'),
+        ('0002','first'),
+        ('0003','first'),
+        ('0004','first');
+      update saves set media_type='image' where id='0001';
+      update saves set media_type='video' where id='0002';
+      update saves set media_type='image', deleted_at=1 where id='0003';
+      update saves set media_type='image', status='ingesting' where id='0004';
+    `);
+
+    expect(await queryFolderSummaries(db, "root")).toEqual([
+      {
+        id: "first",
+        directSaveCount: 2,
+        childFolderCount: 1,
+        automaticCoverSaveId: "0002",
+      },
+      {
+        id: "second",
+        directSaveCount: 0,
+        childFolderCount: 0,
+        automaticCoverSaveId: null,
+      },
+    ]);
   });
   it("applies folder and keyword scope before limiting global hits", async () => {
     const { db, sqlite } = setup();

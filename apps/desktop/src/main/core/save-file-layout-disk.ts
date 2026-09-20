@@ -17,6 +17,11 @@ import {
   StoredInfoDocSchema,
 } from "../lib/library-format";
 import { writeGeneratedThumbnail } from "./save-thumbnail-file";
+import {
+  decodeLibraryFile,
+  encodeLibraryFile,
+} from "./security/library-file-storage";
+import { readLibraryMedia } from "./security/library-media-storage";
 
 export interface LayoutDiskResult<T extends LayoutFile> {
   files: T[];
@@ -101,7 +106,7 @@ async function repairShiftedMedia<T extends LayoutFile>(
   if (!existsSync(secondPath)) return { files, changed: false };
   if (first.sha256) {
     const actual = createHash("sha256")
-      .update(await readFile(secondPath))
+      .update(await readLibraryMedia(secondPath))
       .digest("hex");
     if (actual !== first.sha256) return { files, changed: false };
   }
@@ -145,7 +150,9 @@ async function rewriteInfo(
   const infoPath = join(dir, INFO_FILE);
   if (!existsSync(infoPath)) return;
   const parsed = StoredInfoDocSchema.safeParse(
-    JSON.parse(await readFile(infoPath, "utf8")),
+    JSON.parse(
+      decodeLibraryFile(infoPath, await readFile(infoPath)).toString("utf8"),
+    ),
   );
   if (!parsed.success) return;
   const next = {
@@ -154,5 +161,8 @@ async function rewriteInfo(
     coverIndex,
     files: infoFilesFromSave(files),
   };
-  await writeFile(infoPath, JSON.stringify(next, null, 2));
+  await writeFile(
+    infoPath,
+    encodeLibraryFile(infoPath, JSON.stringify(next, null, 2)),
+  );
 }

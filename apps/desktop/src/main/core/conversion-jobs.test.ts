@@ -31,6 +31,9 @@ it("cancels a running conversion and never starts the remaining selection", asyn
       );
       return "unused";
     },
+    async compress() {
+      return { changed: 0, skipped: 0, bytesBefore: 0, bytesAfter: 0 };
+    },
   });
   const job = jobs.start({
     ids: ["a", "b"],
@@ -61,6 +64,9 @@ it("reports completed outputs separately from a failed file", async () => {
       }
       return `${source}.webp`;
     },
+    async compress() {
+      return { changed: 0, skipped: 0, bytesBefore: 0, bytesAfter: 0 };
+    },
   });
   const job = jobs.start({
     ids: ["good", "bad", "never"],
@@ -69,12 +75,52 @@ it("reports completed outputs separately from a failed file", async () => {
     directory: "/output",
   });
   await done.promise;
-  await Promise.resolve();
-  await Promise.resolve();
+  await expect.poll(() => jobs.status(job.id)?.status).toBe("failed");
   expect(jobs.status(job.id)).toMatchObject({
     status: "failed",
     completed: 1,
     outputs: ["good.webp"],
     error: "Unsupported file",
+  });
+});
+
+it("reports transactional compression progress and byte savings", async () => {
+  const finished = Promise.withResolvers<void>();
+  const jobs = createConversionJobs({
+    scope: () => "fixture",
+    async resolve(id) {
+      return id;
+    },
+    async convert({ source }) {
+      return source;
+    },
+    async compress({ onProgress }) {
+      onProgress?.(1, 2);
+      onProgress?.(2, 2);
+      finished.resolve();
+      return {
+        changed: 2,
+        skipped: 0,
+        bytesBefore: 1_000,
+        bytesAfter: 600,
+      };
+    },
+  });
+  const job = jobs.startCompression({
+    ids: ["a", "b"],
+    fileIndex: 0,
+    mode: "quality",
+    quality: 75,
+  });
+  await finished.promise;
+  await Promise.resolve();
+  expect(jobs.status(job.id)).toMatchObject({
+    kind: "compression",
+    status: "complete",
+    completed: 2,
+    total: 2,
+    progress: 1,
+    bytesBefore: 1_000,
+    bytesAfter: 600,
   });
 });

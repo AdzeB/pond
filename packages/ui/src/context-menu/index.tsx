@@ -1,6 +1,9 @@
 import { ContextMenu as Base } from "@base-ui/react/context-menu";
 import { Input as BaseInput } from "@base-ui/react/input";
-import { IconCaretRightFill12 as CaretRight } from "@pond/icons/fill/12";
+import {
+  IconCaretRightFill12 as CaretRight,
+  IconCheck2Fill12,
+} from "@pond/icons/fill/12";
 import { clsx as cn } from "clsx";
 import { Checkbox } from "../checkbox";
 import { Keyboard } from "../keyboard";
@@ -135,8 +138,23 @@ function CheckboxItem({ className, ...props }: Base.CheckboxItem.Props) {
 function CheckboxItemIndicator({
   className,
   keepMounted = true,
+  variant = "checkbox",
   ...props
-}: Base.CheckboxItemIndicator.Props) {
+}: Base.CheckboxItemIndicator.Props & {
+  variant?: "checkbox" | "check";
+}) {
+  if (variant === "check") {
+    return (
+      <Base.CheckboxItemIndicator
+        keepMounted={keepMounted}
+        className={cn(styles["check-indicator"], className)}
+        {...props}
+      >
+        <IconCheck2Fill12 aria-hidden />
+      </Base.CheckboxItemIndicator>
+    );
+  }
+
   return (
     <Base.CheckboxItemIndicator
       keepMounted={keepMounted}

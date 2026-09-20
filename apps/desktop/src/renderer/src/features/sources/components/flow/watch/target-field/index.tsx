@@ -1,3 +1,4 @@
+import { Input } from "@pond/ui";
 import type { RefObject } from "react";
 import styles from "./styles.module.css";
 
@@ -15,8 +16,8 @@ export function WatchTargetField({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className={styles.field}>
-      <input
+    <Input.Root className={styles.field} size="lg" variant="secondary">
+      <Input.Field
         ref={inputRef}
         type="text"
         aria-label="Link or handle"
@@ -25,7 +26,11 @@ export function WatchTargetField({
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
       />
-      {checking ? <span className={styles["field-spinner"]} /> : null}
-    </div>
+      {checking ? (
+        <Input.Action>
+          <span className={styles["field-spinner"]} />
+        </Input.Action>
+      ) : null}
+    </Input.Root>
   );
 }

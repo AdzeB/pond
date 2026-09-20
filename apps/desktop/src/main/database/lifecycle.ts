@@ -1,13 +1,28 @@
 import { existsSync } from "node:fs";
+import { join } from "node:path";
 import type Database from "better-sqlite3";
 import log from "electron-log/main.js";
+import {
+  KEYCHAIN_DATABASE_GLOBAL,
+  KEYCHAIN_DATABASE_LIBRARY_PREFIX,
+} from "../../shared/constants";
 import { recoverBatchJournal } from "../core/batch-journal";
+import { backfillFontActivationIndex } from "../core/font-activation";
 import { hydrateOrganizationBundle } from "../core/organization-bundle";
+import {
+  clearLibraryKey,
+  deriveLibrarySubkey,
+  libraryKeyInstalled,
+  loadLibraryKeyFromSecureStorage,
+} from "../core/security/library-key-runtime";
+import { LIBRARY_SECURITY_MANIFEST_FILENAME } from "../core/security/library-security-manifest";
 import { backfillVecBatch } from "../core/vec-index";
+import { ensureSecureSecretBytes } from "../keychain";
 import { readOrCreatePondId } from "../lib/pond-identity";
 import { backfillRawSlimBatch } from "../lib/raw-slim";
 import { resolvePaths } from "../paths";
 import { type Db, openSqlite, wrapSqlite } from "./client";
+import { DATABASE_KEY_BYTES } from "./encrypted-sqlite";
 import { migrateGlobal } from "./migrations";
 import { initializePondSchema } from "./pond-schema";
 
@@ -26,7 +41,10 @@ export async function getGlobalDb(): Promise<Db> {
   if (cachedGlobal) return cachedGlobal;
   const paths = resolvePaths();
   log.info("[pond db] opening global", paths.globalDb);
-  const sqlite = openSqlite(paths.globalDb);
+  const sqlite = await openSqliteWithKey(
+    paths.globalDb,
+    KEYCHAIN_DATABASE_GLOBAL,
+  );
   migrateGlobal(sqlite);
   cachedGlobal = wrapSqlite(sqlite);
   return cachedGlobal;
@@ -48,10 +66,33 @@ async function openPondDb(): Promise<Db> {
   const paths = resolvePaths();
   log.info("[pond db] opening pond index", paths.indexDb);
 
-  const sqlite = openSqlite(paths.indexDb);
-  const vectorEnabled = initializePondSchema(sqlite);
-  const opened = wrapSqlite(sqlite);
+  const pondId = readOrCreatePondId(paths.libraryRoot);
+  const securityManifest = join(
+    paths.libraryRoot,
+    LIBRARY_SECURITY_MANIFEST_FILENAME,
+  );
+  let sqlite: Database.Database;
+  if (existsSync(securityManifest)) {
+    if (!libraryKeyInstalled(pondId)) {
+      throw new Error("The Library is locked.");
+    }
+    const databaseKey = deriveLibrarySubkey("database:index");
+    try {
+      sqlite = openSqlite(paths.indexDb, databaseKey);
+    } finally {
+      databaseKey.fill(0);
+    }
+  } else {
+    sqlite = await openLegacyLibrarySqlite(paths.indexDb, pondId, [
+      paths.libraryRoot,
+      paths.thumbnailCache,
+    ]);
+  }
+  let vectorEnabled: boolean;
+  let opened: Db;
   try {
+    vectorEnabled = initializePondSchema(sqlite);
+    opened = wrapSqlite(sqlite);
     await recoverBatchJournal(
       paths.libraryRoot,
       (batchId) =>
@@ -63,6 +104,7 @@ async function openPondDb(): Promise<Db> {
     hydrateOrganizationBundle(opened, paths.libraryRoot);
   } catch (error) {
     sqlite.close();
+    clearLibraryKey();
     throw error;
   }
   cachedPond = opened;
@@ -92,6 +134,17 @@ function scheduleDataMigrations(
   };
   setImmediate(runRawSlimBatch);
 
+  setImmediate(() => {
+    if (!sqlite.open || cachedPond?.$raw !== sqlite) return;
+    try {
+      const updated = backfillFontActivationIndex(sqlite);
+      if (updated > 0)
+        log.info("[pond db] font activation backfill", { updated });
+    } catch (err) {
+      log.warn("[pond db] font activation backfill failed", err);
+    }
+  });
+
   const runVecBatch = (): void => {
     if (!sqlite.open || cachedPond?.$raw !== sqlite) return;
     try {
@@ -118,13 +171,15 @@ function scheduleDataMigrations(
 }
 
 export function closeDb(): void {
-  if (!cachedPond) return;
-  try {
-    cachedPond.$raw.close();
-  } catch (err) {
-    log.warn("[pond db] close failed", err);
+  if (cachedPond) {
+    try {
+      cachedPond.$raw.close();
+    } catch (err) {
+      log.warn("[pond db] close failed", err);
+    }
+    cachedPond = null;
   }
-  cachedPond = null;
+  clearLibraryKey();
 }
 
 function ensureLibraryMetadata(): void {
@@ -132,4 +187,48 @@ function ensureLibraryMetadata(): void {
   if (!existsSync(paths.libraryRoot)) return;
   if (existsSync(paths.libraryMetadata)) return;
   readOrCreatePondId(paths.libraryRoot);
+}
+
+async function openSqliteWithKey(
+  file: string,
+  account: string,
+): Promise<Database.Database> {
+  const key = await ensureSecureSecretBytes(account, DATABASE_KEY_BYTES);
+  try {
+    return openSqlite(file, key);
+  } finally {
+    key.fill(0);
+  }
+}
+
+async function openLegacyLibrarySqlite(
+  file: string,
+  pondId: string,
+  roots: string[],
+): Promise<Database.Database> {
+  let legacyError: Error;
+  try {
+    return await openSqliteWithKey(
+      file,
+      `${KEYCHAIN_DATABASE_LIBRARY_PREFIX}:${pondId}`,
+    );
+  } catch (error) {
+    legacyError =
+      error instanceof Error ? error : new Error("The index could not open.");
+  }
+
+  try {
+    await loadLibraryKeyFromSecureStorage(pondId, roots);
+    const databaseKey = deriveLibrarySubkey("database:index");
+    try {
+      const sqlite = openSqlite(file, databaseKey);
+      log.warn("[pond db] recovered index with the Library master key");
+      return sqlite;
+    } finally {
+      databaseKey.fill(0);
+    }
+  } catch {
+    clearLibraryKey();
+    throw legacyError;
+  }
 }

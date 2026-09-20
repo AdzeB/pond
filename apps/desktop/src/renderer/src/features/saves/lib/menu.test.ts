@@ -97,6 +97,29 @@ function previewOpenWithApps(): OpenWithApp[] {
 }
 
 describe("buildSaveMenu", () => {
+  it("offers lossless and quality compression for supported images", () => {
+    const save = fileSave({
+      mediaType: "image",
+      files: [
+        {
+          kind: "image",
+          path: "image.png",
+          mimeType: "image/png",
+          sha256: "png",
+          size: 100,
+        },
+      ],
+    });
+    const items = buildSaveMenu(save, { clipboardEmpty: true });
+    const exports = sectionItems(items, "Export") ?? [];
+    const compression = sectionItems(exports, "Compress Images");
+    expect(topLevelLabels(exports)).toContain("Compress Images");
+    expect(topLevelLabels(compression ?? [])).toEqual([
+      "Lossless",
+      "Quality 85",
+    ]);
+  });
+
   it("groups save actions into compact single-word submenus", () => {
     const items = buildSaveMenu(fileSave(), {
       clipboardEmpty: true,
@@ -150,6 +173,7 @@ describe("buildSaveMenu", () => {
       "Export Files",
       "Export Converted Files",
       "Export as WebP",
+      "Export Eagle Package",
       "Export Pond Package",
       "Export to CSV",
     ]);
@@ -157,6 +181,7 @@ describe("buildSaveMenu", () => {
       "Copy Save ID",
       "Rebuild Search Index",
       "Rebuild Visual Index",
+      "Change File Extension",
       "Actions",
       "Find Duplicates",
       "Merge Duplicates",
@@ -246,6 +271,24 @@ describe("buildSaveMenu", () => {
     );
   });
 
+  it("marks trash actions as destructive", () => {
+    const liveItems = buildSaveMenu(fileSave(), { clipboardEmpty: true });
+    expect(
+      liveItems.find(
+        (item) => "label" in item && item.label === "Move to Trash",
+      ),
+    ).toMatchObject({ variant: "destructive" });
+
+    const trashedItems = buildSaveMenu(fileSave({ deletedAt: 1 }), {
+      clipboardEmpty: true,
+    });
+    expect(
+      trashedItems.find(
+        (item) => "label" in item && item.label === "Delete Forever",
+      ),
+    ).toMatchObject({ variant: "destructive" });
+  });
+
   it("offers removal only when a custom thumbnail exists", () => {
     const save = fileSave({
       source: "local",
@@ -261,9 +304,13 @@ describe("buildSaveMenu", () => {
         },
       ],
     });
+    const items = buildSaveMenu(save, { clipboardEmpty: true });
+    expect(visibleLabels(items)).toContain("Remove Thumbnail");
     expect(
-      visibleLabels(buildSaveMenu(save, { clipboardEmpty: true })),
-    ).toContain("Remove Thumbnail");
+      sectionItems(items, "Advanced")?.find(
+        (item) => "label" in item && item.label === "Remove Thumbnail",
+      ),
+    ).toMatchObject({ variant: "destructive" });
   });
 
   it("does not expose a card-only thumbnail as an original file", () => {
@@ -450,5 +497,62 @@ describe("buildViewerMenu", () => {
     expect(labels).not.toContain("Copy Image");
     expect(labels).not.toContain("Open Save");
     expect(labels).toContain("Copy");
+  });
+
+  it("converts the WebP file selected in the viewer", () => {
+    const query = vi.fn(async () => ({ id: "job" }));
+    vi.stubGlobal("pond", { query });
+    const save = fileSave({
+      mediaType: "image",
+      files: [
+        {
+          kind: "image",
+          path: "cover.png",
+          mimeType: "image/png",
+          sha256: "png",
+          size: 1,
+        },
+        {
+          kind: "image",
+          path: "alternate.webp",
+          mimeType: "image/webp",
+          sha256: "webp",
+          size: 1,
+        },
+      ],
+    });
+    const exports =
+      sectionItems(
+        buildViewerMenu(save, {
+          clipboardEmpty: true,
+          video: null,
+          fileIndex: 1,
+        }),
+        "Export",
+      ) ?? [];
+    for (const label of ["Convert to PNG", "Convert to JPG"]) {
+      const action = exports.find(
+        (item) => "label" in item && item.label === label,
+      );
+      if (!action || !("onClick" in action))
+        throw new Error(`Missing ${label}`);
+      action.onClick?.();
+    }
+    expect(query).toHaveBeenNthCalledWith(
+      1,
+      "conversion.start",
+      expect.objectContaining({
+        fileIndex: 1,
+        preset: expect.objectContaining({ format: "png" }),
+      }),
+    );
+    expect(query).toHaveBeenNthCalledWith(
+      2,
+      "conversion.start",
+      expect.objectContaining({
+        fileIndex: 1,
+        preset: expect.objectContaining({ format: "jpeg" }),
+      }),
+    );
   });
 });

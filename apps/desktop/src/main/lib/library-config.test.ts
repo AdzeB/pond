@@ -1,7 +1,18 @@
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+  clearLibraryKey,
+  installLibraryKey,
+} from "../core/security/library-key-runtime";
 import {
   readBundleJson,
   rotateBundleBackups,
@@ -15,6 +26,11 @@ beforeEach(() => {
   mkdirSync(root, { recursive: true });
 });
 
+afterEach(() => {
+  clearLibraryKey();
+  rmSync(root, { recursive: true, force: true });
+});
+
 describe("writeBundleJson / readBundleJson", () => {
   it("round-trips data through the versioned envelope", () => {
     const file = join(root, "settings.json");
@@ -24,6 +40,18 @@ describe("writeBundleJson / readBundleJson", () => {
     );
     expect(read?.data.sync.sources.twitter).toBe(true);
     expect(read?.updatedAt).toBeGreaterThan(0);
+  });
+
+  it("encrypts bundle bytes while the Library key is installed", () => {
+    installLibraryKey("library-id", Buffer.alloc(32, 7), root);
+    const file = join(root, "settings.json");
+
+    writeBundleJson(file, { private: "value" });
+
+    expect(readFileSync(file, "utf8")).not.toContain("private");
+    expect(readBundleJson<{ private: string }>(file)?.data.private).toBe(
+      "value",
+    );
   });
 
   it("returns null for a missing file", () => {

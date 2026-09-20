@@ -3,7 +3,6 @@ import {
   existsSync,
   mkdirSync,
   readdirSync,
-  readFileSync,
   renameSync,
   rmSync,
   writeFileSync,
@@ -11,6 +10,10 @@ import {
 import { basename, dirname, join } from "node:path";
 import log from "electron-log/main.js";
 import { z } from "zod";
+import {
+  encodeLibraryFile,
+  readLibraryFileSync,
+} from "../core/security/library-file-storage";
 
 const BUNDLE_JSON_SCHEMA = 1;
 
@@ -33,7 +36,7 @@ export function writeBundleJson<T>(file: string, data: T): void {
   };
   mkdirSync(dirname(file), { recursive: true });
   const tmp = join(dirname(file), `.${basename(file)}.tmp`);
-  writeFileSync(tmp, JSON.stringify(body, null, 2));
+  writeFileSync(tmp, encodeLibraryFile(file, JSON.stringify(body, null, 2)));
   renameSync(tmp, file);
 }
 
@@ -65,7 +68,7 @@ const EnvelopeSchema = z.object({
 function parseEnvelope<T>(file: string): BundleJsonRead<T> | null {
   try {
     const parsed = EnvelopeSchema.safeParse(
-      JSON.parse(readFileSync(file, "utf-8")),
+      JSON.parse(readLibraryFileSync(file).toString("utf8")),
     );
     if (!parsed.success || parsed.data.data === undefined) return null;
     // SAFETY: `T` is what the caller wrote through `writeBundleJson`, and every reader

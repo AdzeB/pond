@@ -1,10 +1,11 @@
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
 import { basename, extname } from "node:path";
 import { type SaveFile, saves } from "@pond/schema/db";
 import { pickCardFile } from "@shared/save-file-names";
 import { eq } from "drizzle-orm";
 import type { Context } from "hono";
+import { saveIsLocked } from "../core/security/folder-passwords";
+import { readLibraryMedia } from "../core/security/library-media-storage";
 import { getDb } from "../db";
 import { itemFile } from "../paths";
 
@@ -20,6 +21,8 @@ const IMAGE_TYPES = new Map([
 export async function itemThumbHandler(c: Context): Promise<Response> {
   const id = c.req.query("id");
   if (!id) return c.json({ status: "error", error: "missing id" }, 400);
+  if (await saveIsLocked(id))
+    return c.json({ status: "error", error: "not found" }, 404);
 
   const db = await getDb();
   const [row] = await db
@@ -45,8 +48,8 @@ export async function itemThumbHandler(c: Context): Promise<Response> {
     return c.json({ status: "error", error: "no cover" }, 404);
   }
 
-  const bytes = await readFile(path);
-  return c.body(bytes, 200, {
+  const bytes = await readLibraryMedia(path);
+  return c.body(Uint8Array.from(bytes), 200, {
     "content-type": type,
     "cache-control": "private, max-age=300",
   });

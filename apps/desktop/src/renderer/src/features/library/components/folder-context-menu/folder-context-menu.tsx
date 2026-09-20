@@ -13,87 +13,44 @@ import {
   IconFoldersOutline18,
   IconFolderTreeOutline18,
   IconFolderXmarkOutline18,
-  IconSortArrowsOutline18,
 } from "@pond/icons/outline/18";
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
-import { cssVars, Dialog, type MenuItemSpec } from "@pond/ui";
+import { Dialog, type MenuItemSpec } from "@pond/ui";
 import type { ReactElement } from "react";
-import {
-  FOLDER_ICONS,
-  FOLDER_SWATCHES,
-  type FolderIconId,
-} from "@/features/library/components/folder-sidebar/folder-icons";
 import { descendantFolderIds } from "@/features/library/components/folder-sidebar/tree";
-import type { SortKey } from "@/features/library/hooks/use-filtered-saves";
 import {
   exportSelectionCsv,
   exportSelectionFiles,
 } from "@/features/saves/lib/selection";
+import { emitFeedback } from "@/features/settings/lib/sounds";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { notify } from "@/shared/lib/toast";
-import styles from "./styles.module.css";
-
-const SORT_OPTIONS: Array<{ value: SortKey; label: string }> = [
-  { value: "savedAt", label: "Date Saved" },
-  { value: "createdAt", label: "Date Added" },
-  { value: "publishedAt", label: "Date Published" },
-  { value: "title", label: "Title" },
-  { value: "type", label: "Type" },
-  { value: "creator", label: "Creator" },
-  { value: "rating", label: "Rating" },
-];
 
 export interface FolderMenuActions {
   hasChildren: boolean;
   sameLevelHasChildren: boolean;
   includeSubfolders: boolean;
-  color: string | null;
-  sortKey: string;
   creating: boolean;
   onNewFolder: () => void;
   onNewSubfolder: () => void;
   onMove: () => void;
   onRename: () => void;
+  onBatchRename?: () => void;
   onAutoTag: () => void;
-  onSort: (key: SortKey) => void;
   onToggleFolder: () => void;
   onToggleSameLevel: () => void;
   onToggleAll: () => void;
   onDuplicate: () => void;
   onExportFiles: () => void;
   onExportCsv: () => void;
+  onExportEaglePackage: () => void;
   onExportPackage: () => void;
   onCopyToLibrary: () => void;
+  onCopyLink?: () => void;
   onToggleSubfolders: (next: boolean) => void;
-  onChangeIcon: (id: FolderIconId) => void;
-  onChangeColor: (color: string | null) => void;
+  onCustomize: () => void;
   onRemove: () => void;
-}
-
-function ColorSwatches({
-  color,
-  onChange,
-}: {
-  color: string | null;
-  onChange: (color: string | null) => void;
-}) {
-  return (
-    <fieldset className={styles.palette} aria-label="Folder Color">
-      {FOLDER_SWATCHES.map((swatch) => (
-        <button
-          key={swatch.label}
-          type="button"
-          className={styles.swatch}
-          aria-label={swatch.label}
-          aria-pressed={swatch.id === color}
-          data-selected={swatch.id === color || undefined}
-          style={cssVars({ "--swatch": swatch.css })}
-          onClick={() => onChange(swatch.id)}
-        />
-      ))}
-    </fieldset>
-  );
 }
 
 export function buildFolderMenuItems(a: FolderMenuActions): MenuItemSpec[] {
@@ -123,20 +80,14 @@ export function buildFolderMenuItems(a: FolderMenuActions): MenuItemSpec[] {
       onClick: a.onRename,
     },
     {
+      label: "Batch Rename Folders",
+      icon: <IconFolderPenOutline18 />,
+      onClick: a.onBatchRename,
+    },
+    {
       label: "Set Auto-Tag",
       icon: <IconFolderBoltOutline18 />,
       onClick: a.onAutoTag,
-    },
-    {
-      type: "submenu",
-      label: "Sort By",
-      icon: <IconSortArrowsOutline18 />,
-      items: SORT_OPTIONS.map((option) => ({
-        type: "checkbox" as const,
-        label: option.label,
-        checked: a.sortKey === option.value,
-        onCheckedChange: () => a.onSort(option.value),
-      })),
     },
     { type: "separator" },
     {
@@ -172,6 +123,11 @@ export function buildFolderMenuItems(a: FolderMenuActions): MenuItemSpec[] {
         { label: "Export Files", keywords: "files", onClick: a.onExportFiles },
         { label: "Export to CSV", keywords: "csv", onClick: a.onExportCsv },
         {
+          label: "Export Eagle Package",
+          keywords: "eagle package",
+          onClick: a.onExportEaglePackage,
+        },
+        {
           label: "Export Pond Package",
           keywords: "package",
           onClick: a.onExportPackage,
@@ -183,35 +139,31 @@ export function buildFolderMenuItems(a: FolderMenuActions): MenuItemSpec[] {
       icon: <IconFolderImportOutline18 />,
       onClick: a.onCopyToLibrary,
     },
+    {
+      label: "Copy Folder Link",
+      onClick: a.onCopyLink,
+      disabled: !a.onCopyLink,
+    },
     { type: "separator" },
     {
       type: "checkbox",
       label: "Show Subfolder Content",
       icon: <IconEyeOutline18 />,
+      indicator: "check",
       checked: a.includeSubfolders,
       onCheckedChange: a.onToggleSubfolders,
     },
     { type: "separator" },
     {
-      type: "submenu",
-      label: "Change Icon",
+      label: "Customize Folder",
       icon: <IconFaceSmileOutline18 />,
-      items: FOLDER_ICONS.map(({ id, label, Icon }) => ({
-        label,
-        icon: <Icon />,
-        onClick: () => a.onChangeIcon(id),
-      })),
-    },
-    {
-      type: "custom",
-      render: () => (
-        <ColorSwatches color={a.color} onChange={a.onChangeColor} />
-      ),
+      onClick: a.onCustomize,
     },
     { type: "separator" },
     {
       label: "Remove Folder",
       icon: <IconFolderXmarkOutline18 />,
+      variant: "destructive",
       onClick: a.onRemove,
     },
   ];
@@ -288,6 +240,42 @@ export async function exportFolderCsv(folderIds: string[]): Promise<void> {
 export async function exportFolderPackage(folderIds: string[]): Promise<void> {
   await withFolderSaves(folderIds, async (ids) => {
     const result = await window.pond.query("saves.exportPackage", { ids });
+    if (!result.ok && result.error === "password_required") {
+      Dialog.prompt({
+        title: "Protect Pond Package",
+        description:
+          "Enter a password for this export. Pond will show a separate recovery key after export.",
+        inputType: "password",
+        autoComplete: "new-password",
+        confirmLabel: "Export",
+        onConfirm: async (password) => {
+          if (password.length < 8)
+            throw new Error("Use at least 8 characters.");
+          const protectedResult = await window.pond.query(
+            "saves.exportPackage",
+            { ids, password },
+          );
+          if (!protectedResult.ok)
+            throw new Error(
+              protectedResult.error || "Couldn't export package.",
+            );
+          if (protectedResult.recoveryKey) {
+            Dialog.confirm({
+              title: "Package Recovery Key",
+              description: protectedResult.recoveryKey,
+              confirmLabel: "Copy Recovery Key",
+              cancelLabel: "Done",
+              onConfirm: async () => {
+                await window.pond.query("clipboard.writeText", {
+                  text: protectedResult.recoveryKey ?? "",
+                });
+              },
+            });
+          }
+        },
+      });
+      return;
+    }
     if (!result.ok && result.error !== "canceled")
       notify({
         id: "folder-export",
@@ -295,6 +283,21 @@ export async function exportFolderPackage(folderIds: string[]): Promise<void> {
       });
     else if (result.ok)
       notify({ id: "folder-export", title: "Pond package exported" });
+  });
+}
+
+export async function exportFolderEaglePackage(
+  folderIds: string[],
+): Promise<void> {
+  await withFolderSaves(folderIds, async (ids) => {
+    const result = await window.pond.query("saves.exportEaglePackage", { ids });
+    if (!result.ok && result.error !== "canceled")
+      notify({
+        id: "folder-export",
+        title: result.error || "Couldn't export Eagle package.",
+      });
+    else if (result.ok)
+      notify({ id: "folder-export", title: "Eagle package exported" });
   });
 }
 
@@ -337,6 +340,7 @@ export function confirmRemoveFolder(input: {
         id: input.id,
         trashContainedSaves: checked,
       });
+      emitFeedback("folderDeletion");
       await input.onRemoved();
     },
   });

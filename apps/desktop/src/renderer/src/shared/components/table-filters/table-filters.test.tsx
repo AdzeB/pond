@@ -81,7 +81,7 @@ it("reveals chips and keeps a chosen filter after the menu closes", async () => 
   await act(async () =>
     failed.dispatchEvent(new MouseEvent("click", { bubbles: true })),
   );
-  expect(button("Status: Failed")).toBeTruthy();
+  expect(button("Status: Failed").textContent).toBe("Failed");
   await act(async () => button("Filter").click());
   expect(button("Filter").getAttribute("aria-expanded")).toBe("false");
   expect(button("Filter").hasAttribute("data-active")).toBe(true);

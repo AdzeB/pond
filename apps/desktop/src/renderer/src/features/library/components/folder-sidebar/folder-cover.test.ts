@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { folderCoverUrl } from "@/features/library/lib/folder-cover";
 import type { Save } from "@/features/saves/types";
-import { folderCoverUrl } from "./folder-cover";
 
 function coverSave(): Save {
   return {

@@ -26,6 +26,8 @@ import {
 } from "../../core/library-query";
 import { libraryRetrievalInput } from "../../core/library-retrieval";
 import { getPrefs } from "../../core/prefs";
+import { lockedFolderIds } from "../../core/security/folder-passwords";
+import { materializeLibraryMediaForExternalUse } from "../../core/security/library-media-storage";
 import { querySidebarCounts } from "../../core/sidebar-counts";
 import type { Db } from "../../db";
 import { getDb } from "../../db";
@@ -104,36 +106,48 @@ const {
 const IdParams = z.object({ id: StringParam });
 const FileParams = z.object({ id: StringParam, fileIndex: FileIndexParam });
 
+function excludesLockedFolders(hiddenFolderIds: readonly string[]) {
+  return hiddenFolderIds.length > 0
+    ? sql`not exists (select 1 from save_folders locked_sf where locked_sf.save_id = ${saves.id} and locked_sf.folder_id in (select value from json_each(${JSON.stringify(hiddenFolderIds)})))`
+    : undefined;
+}
+
 export const savesReadQueries = {
-  "saves.sidebarCounts": query(z.object({}), async () =>
-    querySidebarCounts(await getDb()),
-  ),
+  "saves.sidebarCounts": query(z.object({}), async () => {
+    const [db, hidden] = await Promise.all([getDb(), lockedFolderIds()]);
+    return querySidebarCounts(db, [...hidden]);
+  }),
   "saves.queryPage": query(LibraryQueryParams, async (params) => {
     const view = params.orderFolderId
       ? (await getPrefs()).folderViews[params.orderFolderId]
       : undefined;
+    const hidden = [...(await lockedFolderIds())];
     return queryLibraryPage(
       await getDb(),
       basename(resolvePaths().indexDb, ".db"),
       params,
       params.sortKey === "manual" ? (view?.manualOrder ?? []) : [],
       view?.pinnedIds ?? [],
+      hidden,
     );
   }),
   "saves.queryIds": query(LibraryQueryParams, async (params) => {
     const view = params.orderFolderId
       ? (await getPrefs()).folderViews[params.orderFolderId]
       : undefined;
+    const hidden = [...(await lockedFolderIds())];
     return queryLibraryIds(
       await getDb(),
       basename(resolvePaths().indexDb, ".db"),
       params,
       params.sortKey === "manual" ? (view?.manualOrder ?? []) : [],
       view?.pinnedIds ?? [],
+      hidden,
     );
   }),
   "saves.queryCount": query(z.object({ query: QueryParam }), async (params) => {
     const db = await getDb();
+    const hidden = [...(await lockedFolderIds())];
     const rows = await db
       .select({ count: count() })
       .from(saves)
@@ -141,6 +155,7 @@ export const savesReadQueries = {
         and(
           isNull(saves.deletedAt),
           params.query ? buildWhere(params.query) : undefined,
+          excludesLockedFolders(hidden),
         ),
       );
     return { count: rows[0]?.count ?? 0 };
@@ -148,10 +163,11 @@ export const savesReadQueries = {
   "saves.get": query(z.object({ id: StringParam }), async (params) => {
     if (!params.id) return null;
     const db = await getDb();
+    const hidden = [...(await lockedFolderIds())];
     const rows = await db
       .select(SAVE_LIST_COLUMNS)
       .from(saves)
-      .where(eq(saves.id, params.id));
+      .where(and(eq(saves.id, params.id), excludesLockedFolders(hidden)));
     const row = rows[0];
     if (!row) return null;
     const grouped = await loadTasksFor(db, [row.id]);
@@ -163,9 +179,11 @@ export const savesReadQueries = {
     z.object({ limit: OptionalNumberParam }),
     async (params) => {
       const db = await getDb();
+      const hidden = [...(await lockedFolderIds())];
       const baseQuery = db
         .select(SAVE_LIST_COLUMNS)
         .from(saves)
+        .where(excludesLockedFolders(hidden))
         .orderBy(desc(saves.savedAt));
       const rows =
         params.limit != null
@@ -351,7 +369,13 @@ export const savesReadQueries = {
 
   "saves.filePath": query(FileParams, async (params) => {
     if (!params.id) return { ok: false as const, reason: "not_found" as const };
-    return resolveSaveFilePath(params.id, params.fileIndex);
+    const result = await resolveSaveFilePath(params.id, params.fileIndex);
+    return result.ok
+      ? {
+          ok: true as const,
+          path: await materializeLibraryMediaForExternalUse(result.path),
+        }
+      : result;
   }),
 
   async "saves.embeddings"() {

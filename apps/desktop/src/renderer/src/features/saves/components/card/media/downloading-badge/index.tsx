@@ -1,3 +1,4 @@
+import { Badge } from "@pond/ui";
 import type { Save } from "@/features/saves/types";
 import styles from "./styles.module.css";
 
@@ -12,26 +13,28 @@ export function DownloadingBadge({
     const lastError =
       save.tasks?.find((t) => t.status === "failed")?.lastError ?? "Failed";
     return (
-      <span
-        className={styles.failed}
+      <Badge
+        tone="negative"
+        className={styles.badge}
         role="status"
         aria-label="Ingest failed"
         title={lastError}
       >
         Failed
-      </span>
+      </Badge>
     );
   }
   if (!isDownloading) return null;
   return (
-    <span
-      className={styles.downloading}
+    <Badge
+      tone="inverted"
+      className={styles.badge}
       role="status"
       aria-label="Downloading video"
       title="Downloading video"
     >
-      <span className={styles.dot} aria-hidden="true" />
+      <Badge.Dot tone="positive" className={styles.dot} />
       Downloading
-    </span>
+    </Badge>
   );
 }

@@ -2,11 +2,13 @@ import { clsx as cn } from "clsx";
 import type { ComponentPropsWithoutRef } from "react";
 import styles from "./styles.module.css";
 
-interface BadgeProps extends ComponentPropsWithoutRef<"span"> {
-  tone?: "neutral" | "positive";
+export type BadgeTone = "neutral" | "positive" | "inverted" | "negative";
+
+interface RootProps extends ComponentPropsWithoutRef<"span"> {
+  tone?: BadgeTone;
 }
 
-export function Badge({ className, tone = "neutral", ...props }: BadgeProps) {
+function Root({ className, tone = "neutral", ...props }: RootProps) {
   return (
     <span
       className={cn(styles.badge, className)}
@@ -15,3 +17,20 @@ export function Badge({ className, tone = "neutral", ...props }: BadgeProps) {
     />
   );
 }
+
+interface DotProps extends ComponentPropsWithoutRef<"span"> {
+  tone?: Extract<BadgeTone, "neutral" | "positive" | "negative">;
+}
+
+function Dot({ className, tone = "neutral", ...props }: DotProps) {
+  return (
+    <span
+      className={cn(styles.dot, className)}
+      data-tone={tone === "neutral" ? undefined : tone}
+      aria-hidden
+      {...props}
+    />
+  );
+}
+
+export const Badge = Object.assign(Root, { Root, Dot });

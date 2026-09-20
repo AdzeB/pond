@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildTagNav,
   filterByNav,
+  parseTagBatch,
   partitionPickerTags,
   partitionRecent,
 } from "./lib";
@@ -79,4 +80,25 @@ it("keeps starred tags first without repeating them among recent or other tags",
   expect(result.starred.map((tag) => tag.name)).toEqual(["Always", "Favorite"]);
   expect(result.recent.map((tag) => tag.name)).toEqual(["Recent"]);
   expect(result.others.map((tag) => tag.name)).toEqual(["Other"]);
+});
+
+it("separates recommended tags without repeating starred tags", () => {
+  const tags = [
+    { name: "Favorite", starred: true, lastUsedAt: null },
+    { name: "Suggested", starred: false, lastUsedAt: 20 },
+    { name: "Other", starred: false, lastUsedAt: null },
+  ];
+  const result = partitionPickerTags(tags, new Set(["suggested", "favorite"]));
+  expect(result.starred.map((tag) => tag.name)).toEqual(["Favorite"]);
+  expect(result.recommended.map((tag) => tag.name)).toEqual(["Suggested"]);
+  expect(result.recent).toEqual([]);
+  expect(result.others.map((tag) => tag.name)).toEqual(["Other"]);
+});
+
+it("parses comma and newline batches with quoted commas and case-insensitive deduplication", () => {
+  expect(parseTagBatch('Design, "Type, Foundry"\nPhoto, design')).toEqual([
+    "Design",
+    "Type, Foundry",
+    "Photo",
+  ]);
 });

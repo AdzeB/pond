@@ -13,12 +13,14 @@ describe("new menu spec", () => {
       "New Note",
       "Photoshop Document",
       "Word Document",
+      "Capture Screenshot",
       "Import Files",
       "Import Folders",
       "Import from Links",
       "Import from Clipboard",
       "Import Bookmarks",
       "Import Page Assets",
+      "Import Eagle Package",
       "Import Pond Package",
       "Import Eagle Library",
       "Auto Import",
@@ -75,6 +77,6 @@ describe("new menu spec", () => {
 
   it("keeps group children when searching a leaf", () => {
     const labels = menuLabels(filterMenuItems(buildNewMenuItems([]), "eagle"));
-    expect(labels).toEqual(["Import Eagle Library"]);
+    expect(labels).toEqual(["Import Eagle Package", "Import Eagle Library"]);
   });
 });

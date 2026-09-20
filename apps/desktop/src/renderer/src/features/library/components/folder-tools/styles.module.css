@@ -19,7 +19,8 @@
   align-items: center;
   min-height: 36px;
 }
-.row span {
+.row > label,
+.row > span {
   flex: 1;
 }
 .hint {
@@ -30,18 +31,8 @@
   flex-direction: column;
   gap: 8px;
 }
-.label select,
 .names {
   width: 100%;
-  padding: 8px;
-  font: inherit;
-  color: inherit;
-  background: transparent;
-  border: var(--ds-border-width) solid var(--ds-border-subtle);
-  border-radius: 8px;
-}
-.names {
-  resize: vertical;
 }
 .footer {
   display: flex;

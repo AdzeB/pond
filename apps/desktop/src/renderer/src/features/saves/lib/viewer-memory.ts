@@ -48,6 +48,10 @@ function set(key: string, patch: ViewerMemory) {
 }
 
 export const viewerMemory = {
+  hasImage(key: string): boolean {
+    load();
+    return entries.get(key)?.image !== undefined;
+  },
   image(key: string): ImagePose {
     load();
     return entries.get(key)?.image ?? FIT_POSE;

@@ -43,7 +43,7 @@ describe.skipIf(!available())("portable organization", () => {
     roots.push(root);
     const source = db();
     source.$raw.exec(
-      "insert into folders(id,parent_id,name,sort_order) values ('parent',null,'Project',2),('child','parent','References',5); insert into saved_views(id,name,kind,parent_id,query,layout) values ('group','Blue','group',null,'{\"combinator\":\"and\",\"not\":true,\"rules\":[]}',null),('view','Grid','saved_view','group','{\"combinator\":\"or\",\"rules\":[]}','grid')",
+      "insert into folders(id,parent_id,name,sort_order) values ('parent',null,'Project',2),('child','parent','References',5); insert into folder_metadata(folder_id,description,external_link) values ('parent','Current project','https://example.com/project'); insert into saved_views(id,name,kind,parent_id,query,layout) values ('group','Blue','group',null,'{\"combinator\":\"and\",\"not\":true,\"rules\":[]}',null),('view','Grid','saved_view','group','{\"combinator\":\"or\",\"rules\":[]}','grid')",
     );
     writeOrganizationBundle(source, root);
     const fresh = db();
@@ -55,6 +55,15 @@ describe.skipIf(!available())("portable organization", () => {
       fresh.$raw.prepare("select * from saved_views order by id").all(),
     ).toEqual(
       source.$raw.prepare("select * from saved_views order by id").all(),
+    );
+    expect(
+      fresh.$raw
+        .prepare("select * from folder_metadata order by folder_id")
+        .all(),
+    ).toEqual(
+      source.$raw
+        .prepare("select * from folder_metadata order by folder_id")
+        .all(),
     );
   });
   it("removes organization deleted in the portable bundle when reopening an existing index", () => {

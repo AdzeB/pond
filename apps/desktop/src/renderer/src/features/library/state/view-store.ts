@@ -433,6 +433,13 @@ export function useRandomSeed(): string {
   return useSelector(store, (state) => state.randomSeed);
 }
 
+export function reseedRandomSort(): void {
+  const randomSeed = crypto.randomUUID();
+  if (!store.state.presentationFolderId) writeViewPref("seed", randomSeed);
+  store.setState((state) => ({ ...state, randomSeed }));
+  persistPresentation();
+}
+
 export function setLayout(layout: LayoutValue): void {
   if (!store.state.presentationFolderId) writeViewPref("view", layout);
   store.setState((s) => ({ ...s, layout }));

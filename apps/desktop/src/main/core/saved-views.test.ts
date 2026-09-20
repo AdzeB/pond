@@ -7,7 +7,13 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
 import { initializePondSchema } from "../db";
-import { createView, deleteView, listViews, updateView } from "./saved-views";
+import {
+  createView,
+  deleteView,
+  listViews,
+  renameViewsBatch,
+  updateView,
+} from "./saved-views";
 
 function nativeSqliteAvailable(): boolean {
   try {
@@ -151,6 +157,22 @@ describe.skipIf(!nativeSqliteAvailable())("saved view hierarchy", () => {
         sortDir: "asc",
         layout: "grid",
       }),
+    ]);
+  });
+
+  it("batch renames Smart Folders and Groups in selection order", async () => {
+    const { runtime, create } = setup();
+    const group = await create({ name: "Branding", kind: "group" });
+    const smartFolder = await create({ name: "Images", kind: "smart_folder" });
+    expect(
+      await renameViewsBatch(
+        { ids: [smartFolder, group], pattern: "{n:2} {original}" },
+        runtime,
+      ),
+    ).toEqual({ ok: true, renamed: 2 });
+    expect(await listViews(runtime)).toEqual([
+      expect.objectContaining({ id: group, name: "02 Branding" }),
+      expect.objectContaining({ id: smartFolder, name: "01 Images" }),
     ]);
   });
 

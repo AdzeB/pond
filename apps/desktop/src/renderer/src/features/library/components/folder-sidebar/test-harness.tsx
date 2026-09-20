@@ -1,6 +1,7 @@
 import { PrefsSchema } from "@pond/schema";
 import type { Folder, SavedView } from "@pond/schema/db";
 import { Dialog } from "@pond/ui";
+import type { LibrarySidebarCounts } from "@shared/sidebar-counts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   createMemoryHistory,
@@ -28,18 +29,32 @@ interface FolderFixtures {
   current: Folder[];
 }
 
+function emptySidebarCounts(): LibrarySidebarCounts {
+  return {
+    library: 0,
+    uncategorized: 0,
+    untagged: 0,
+    trash: 0,
+    folders: {},
+  };
+}
+
 export const savedViewList: SavedViewFixtures = { current: [] };
 export const folderList: FolderFixtures = { current: [] };
+export const sidebarCounts = {
+  current: emptySidebarCounts(),
+};
 
 export const pondQuery = vi.fn(async (name: string) => {
-  if (name === "saves.sidebarCounts")
-    return { library: 0, uncategorized: 0, untagged: 0, trash: 0, folders: {} };
+  if (name === "saves.sidebarCounts") return sidebarCounts.current;
   if (name === "savedViews.list") return savedViewList.current;
   if (name === "accounts.list") return { accounts: [] };
   if (name === "watches.list") return { watches: [] };
   if (name === "tags.list") return [];
   if (name === "folders.list") return folderList.current;
   if (name === "folders.memberships") return [];
+  if (name === "folders.metadata.get")
+    return { folderId: "folder", description: null, externalLink: null };
   if (name === "library.info")
     return { path: "/tmp/My Pond.pond", name: "My Pond" };
   if (name === "library.recent") return [];
@@ -127,6 +142,9 @@ export function createFolderSidebarHarness() {
       resetFilters();
       savedViewList.current = [];
       folderList.current = [];
+      sidebarCounts.current = emptySidebarCounts();
+      localStorage.removeItem("pond:collapsed-folders");
+      localStorage.removeItem("pond:folder-list-sort");
       pondQuery.mockClear();
       vi.stubGlobal(
         "ResizeObserver",
@@ -175,9 +193,11 @@ export function createFolderSidebarHarness() {
       return match;
     },
     menuItem(label: string): HTMLElement {
-      const node = [...document.querySelectorAll('[role="menuitem"]')].find(
-        (item) => item.textContent?.trim() === label,
-      );
+      const node = [
+        ...document.querySelectorAll(
+          '[role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]',
+        ),
+      ].find((item) => item.textContent?.trim() === label);
       if (!(node instanceof HTMLElement))
         throw new Error(`Missing menu item: ${label}`);
       return node;

@@ -74,11 +74,29 @@ Active compatibility stays with the boundary that reads the old representation:
 
 Do not remove a compatibility path based on age alone. Preference readers and migrations can be removed only after the minimum supported direct-upgrade version already writes the replacement representation, every supported startup and Library-switch path has an idempotent migration test, and fixtures no longer contain the legacy keys. Disk-format readers and repairs have a stronger gate because a Library can remain unopened across releases: remove them only when every supported open and import path requires a portable completion marker written inside the Library, or when Pond ships a preflight converter that preserves an untouched backup and reports unsupported schemas before mutation. Record the oldest supported preference and Library schema in release notes when either cutoff changes.
 
+## Planned encryption and parity decisions
+
+The following decisions define future compatibility work. They do not describe capabilities in the current build.
+
+An encrypted Library uses a random per-Library master key owned by the main process. A password and a generated Recovery Key wrap that key independently with versioned derivation parameters. Recovery never depends on an Eagle license key, a Pond account, or a Pond-operated service. Passwords, Recovery Keys, and unwrapped keys are never stored in the Library. Only the minimum Library identity and encryption-version metadata needed to identify and unlock a Library remains readable before unlock.
+
+Encryption covers originals, Save metadata, organization data, chats, settings, indexes, thumbnails, backups, and portable packages. Large media uses authenticated chunked storage so range reads do not require whole-file decryption. Every privileged boundary, including IPC, the `pond://` protocol, loopback HTTP, MCP, Agent tools, native messaging, imports, exports, sync, and background processing, must pass through one main-owned lock gate. No adapter may infer access from renderer state.
+
+Plaintext migration is interruption-safe and starts by creating an untouched, verified backup. A portable journal records each migration step and supports resume or rollback. The encrypted format is not committed until Library files, the index, derived media, settings, and organization data verify together. Until that migration and its recovery checks ship, existing plaintext Libraries, backups, indexes, and packages remain the supported format.
+
+Three earlier product constraints are reversed for future parity:
+
+- Save previews may open in presentation and detached always-on-top windows. Main remains the sole owner of file access and authorization, and auxiliary windows receive only scoped capabilities for the active unlocked Library.
+- Image rotation and horizontal flip may explicitly replace supported originals. Preview metadata remains the default non-destructive path; destructive transforms require confirmation and run through the executor journal so failure recovery and Undo cover the original bytes and index update together.
+- Interface zoom may be configured from 50 to 200 percent. Media zoom remains a separate viewer state so trackpad and pointer gestures cannot accidentally change the application scale.
+
+Compatibility fixtures under `apps/desktop/test/fixtures/compatibility` freeze the plaintext and external representations that these changes must continue to read. Security, window, transform, and zoom implementations must add behavior tests against those baselines before changing a serialized format.
+
 ## Verification boundaries
 
 Run `pnpm architecture:check` for runtime dependency cycles and process/shared-code boundaries. Type-only imports are excluded from the runtime graph. Run `pnpm check` for the required local code checks and offline tests, then `pnpm build` for bundles and performance budgets. Use `pnpm knip` separately when pruning; check non-TypeScript and dynamic entrypoints before accepting a deletion.
 
-Save previews stay inside the main window. Detached pinned previews and their `preview.pin`, `preview.configure`, and `preview.neighbor` IPC commands have been removed. Desktop windows and viewers do not expose fullscreen controls.
+Save previews can open in app-owned presentation and detached always-on-top windows. A dedicated sandboxed preload exposes only typed preview state, configuration, neighbor navigation, close, and lock-lifecycle capabilities. Main validates the Save and image before creating a window, closes auxiliary windows during Library transitions and shutdown, and the renderer closes them when lock state changes. The older `preview.pin`, `preview.configure`, and `preview.neighbor` command names remain removed rather than becoming an undocumented compatibility surface.
 
 The renderer save pool lives under `features/saves/state/`. Library state owns navigation, folders, and saved views. Library may compose Saves, but Save modules cannot import Library modules. App-level bridges expose the narrow Library actions needed by Save menus and inspectors. Tag operations live under `features/tags/operations/`; both the library Tags page and settings consume that feature. Shared UI primitives remain in `packages/ui`, independent of desktop stores.
 

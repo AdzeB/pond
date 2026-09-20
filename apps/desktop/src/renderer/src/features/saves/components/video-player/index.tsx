@@ -1,8 +1,10 @@
 import {
   IconAnimationRepeatFill18,
+  IconFlipHorizontal2Fill18,
   IconMediaFastBackwardsFill18,
   IconMediaFastForwardFill18,
   IconNotepadFill18,
+  IconRotateImageClockwiseFill18,
 } from "@pond/icons/fill/18";
 import {
   Button,
@@ -39,6 +41,7 @@ import {
 } from "@/features/saves/state/active-media";
 import { usePrefs } from "@/features/settings/state/prefs";
 import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
+import { videoScaleForRotation } from "./geometry";
 import styles from "./styles.module.css";
 
 export interface NoteMarker {
@@ -241,6 +244,34 @@ function EndPoster({ src }: { src?: string }) {
   );
 }
 
+function WheelBridge() {
+  const [prefs] = usePrefs("viewer");
+  const { actions, meta, state } = useVideo();
+  const volume = useRef(state.volume);
+  volume.current = state.volume;
+
+  useEffect(() => {
+    const video = meta.videoRef.current;
+    if (!video || prefs.videoWheelBehavior === "none") return;
+    const onWheel = (event: WheelEvent) => {
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const direction = event.deltaY > 0 ? -1 : 1;
+      if (prefs.videoWheelBehavior === "volume") {
+        actions.setVolume(stepVolume(volume.current, direction * 0.05));
+      } else {
+        actions.seekBy(-direction * 5);
+      }
+      actions.showControls();
+    };
+    video.addEventListener("wheel", onWheel, { passive: false });
+    return () => video.removeEventListener("wheel", onWheel);
+  }, [actions, meta.videoRef, prefs.videoWheelBehavior]);
+
+  return null;
+}
+
 function NoteMarkers({ markers }: { markers: readonly NoteMarker[] }) {
   const { state, actions } = useVideo();
   if (markers.length === 0 || state.duration <= 0) return null;
@@ -281,6 +312,69 @@ function useChaptersTrackUrl(chapters?: readonly ChapterCue[]): string | null {
     };
   }, [chapters]);
   return url;
+}
+
+function VideoSurface({
+  src,
+  trackUrl,
+  subtitleUrl,
+  rotation,
+  mirrored,
+  ratio,
+  stretch,
+  onError,
+  onLoadedMetadata,
+}: {
+  src: string;
+  trackUrl: string | null;
+  subtitleUrl: string | null;
+  rotation: number;
+  mirrored: boolean;
+  ratio: number | null;
+  stretch: boolean;
+  onError?: () => void;
+  onLoadedMetadata: ReactEventHandler<HTMLVideoElement>;
+}) {
+  const { meta } = useVideo();
+  const [viewerSize, setViewerSize] = useState({ width: 0, height: 0 });
+  useEffect(() => {
+    const root = meta.rootRef.current;
+    if (!root) return;
+    const update = () =>
+      setViewerSize({ width: root.clientWidth, height: root.clientHeight });
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, [meta.rootRef]);
+  const scale = videoScaleForRotation(
+    viewerSize.width,
+    viewerSize.height,
+    stretch && viewerSize.height > 0
+      ? viewerSize.width / viewerSize.height
+      : ratio,
+    rotation,
+  );
+  return (
+    <Video.Media
+      className={styles.media}
+      src={src}
+      preload="metadata"
+      onError={onError}
+      onLoadedMetadata={onLoadedMetadata}
+      style={{
+        objectFit: stretch ? "fill" : "contain",
+        transform: `scale(${scale}) rotate(${rotation}deg) scaleX(${mirrored ? -1 : 1})`,
+      }}
+    >
+      {trackUrl ? (
+        <track kind="chapters" src={trackUrl} default label="Chapters" />
+      ) : null}
+      {subtitleUrl ? (
+        <track kind="subtitles" src={subtitleUrl} default label="Subtitles" />
+      ) : null}
+    </Video.Media>
+  );
 }
 
 export function VideoPlayer({
@@ -329,6 +423,8 @@ export function VideoPlayer({
   };
 
   const [looped, setLooped] = useState(false);
+  const [rotation, setRotation] = useState(0);
+  const [mirrored, setMirrored] = useState(false);
 
   const [ratio, setRatio] = useState<number | null>(
     width && height ? width / height : null,
@@ -364,20 +460,18 @@ export function VideoPlayer({
         loopRange={loopRange}
         looped={looped}
       />
-      <Video.Media
+      <WheelBridge />
+      <VideoSurface
         src={src}
-        preload="metadata"
+        trackUrl={trackUrl}
+        subtitleUrl={subtitleUrl}
+        rotation={rotation}
+        mirrored={mirrored}
+        ratio={ratio}
+        stretch={prefs.stretchVideo}
         onError={onError}
         onLoadedMetadata={onLoadedMetadata}
-        style={{ objectFit: prefs.stretchVideo ? "fill" : "contain" }}
-      >
-        {trackUrl ? (
-          <track kind="chapters" src={trackUrl} default label="Chapters" />
-        ) : null}
-        {subtitleUrl ? (
-          <track kind="subtitles" src={subtitleUrl} default label="Subtitles" />
-        ) : null}
-      </Video.Media>
+      />
       <EndPoster src={poster} />
       {active ? (
         <ChromePortal slot="bottom">
@@ -412,6 +506,19 @@ export function VideoPlayer({
                   </ViewerHud.Tool>
                 ) : null}
                 <Video.SpeedSelect />
+                <ViewerHud.Tool
+                  label="Rotate Video"
+                  onClick={() => setRotation((value) => (value + 90) % 360)}
+                >
+                  <IconRotateImageClockwiseFill18 />
+                </ViewerHud.Tool>
+                <ViewerHud.Tool
+                  label="Mirror Video"
+                  pressed={mirrored}
+                  onClick={() => setMirrored((value) => !value)}
+                >
+                  <IconFlipHorizontal2Fill18 />
+                </ViewerHud.Tool>
                 <ViewerHud.Tool
                   label="Loop"
                   pressed={looped || !!loopRange}

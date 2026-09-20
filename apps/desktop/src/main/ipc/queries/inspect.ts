@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { readAutoImportLog, startAutoImport } from "../../core/auto-import";
 import { saveCropCopy } from "../../core/crop-copy";
+import { applyImageTransformToFile } from "../../core/image-transform";
 import { getPrefs, setPrefs } from "../../core/prefs";
+import { withDecryptedLibraryMediaPath } from "../../core/security/library-media-storage";
 import { probeVideoDims } from "../../lib/video-dims";
 import { resolveSaveFilePath } from "../helpers";
 import { type QueryHandlerMap, query } from "./params";
@@ -29,9 +31,33 @@ export const inspectQueries = {
     async (params) => {
       const target = await resolveSaveFilePath(params.id, params.fileIndex);
       if (!target.ok) return { frameRate: null };
-      const result = await probeVideoDims(target.path);
+      const result = await withDecryptedLibraryMediaPath(
+        target.path,
+        probeVideoDims,
+      );
       return { frameRate: result?.frameRate ?? null };
     },
+  ),
+  "saves.applyImageTransform": query(
+    z.object({
+      id: z.string().min(1),
+      fileIndex: z.number().int().nonnegative(),
+      rotate: z
+        .union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)])
+        .optional(),
+      flipX: z.boolean().optional(),
+      flipY: z.boolean().optional(),
+      crop: z
+        .object({
+          x: z.number().min(0).max(1),
+          y: z.number().min(0).max(1),
+          w: z.number().positive().max(1),
+          h: z.number().positive().max(1),
+        })
+        .nullable()
+        .optional(),
+    }),
+    applyImageTransformToFile,
   ),
   async "autoImport.status"() {
     const prefs = await getPrefs();

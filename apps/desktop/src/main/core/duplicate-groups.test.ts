@@ -28,7 +28,18 @@ it("separates nearby perceptual hashes from exact byte matches without grouping 
   ]);
   expect(result.groups).toEqual([{ kind: "similar", ids: ["one", "near"] }]);
   expect(result.visualIndexed).toBe(3);
+  expect(result.visualDistance).toBe(6);
   expect(result.total).toBe(4);
+});
+it("recomputes visual groups at the requested threshold", () => {
+  const rows = [
+    { id: "one", files: [file("a")], phash: "0000000000000000" },
+    { id: "four-away", files: [file("b")], phash: "000000000000000f" },
+  ];
+  expect(duplicateGroups(rows, { visualDistance: 3 }).groups).toEqual([]);
+  expect(duplicateGroups(rows, { visualDistance: 4 }).groups).toEqual([
+    { kind: "similar", ids: ["one", "four-away"] },
+  ]);
 });
 it("does not duplicate exact groups in the similar review", () => {
   expect(

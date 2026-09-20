@@ -5,6 +5,7 @@ import log from "electron-log/main.js";
 import { IPC } from "../../../shared/constants";
 import { executeBatch, executeTransaction } from "../../core/executor";
 import { currentPondId } from "../../core/prefs-scope";
+import { materializeLibraryMediaForExternalUse } from "../../core/security/library-media-storage";
 import {
   canRedo,
   canUndo,
@@ -105,14 +106,18 @@ export function registerAppHandlers(): void {
   safeHandle(IPC.revealSave, async (_, id: string, fileIndex?: number) => {
     const target = await resolveSaveFilePath(id, fileIndex);
     if (!target.ok) return target;
-    shell.showItemInFolder(target.path);
+    shell.showItemInFolder(
+      await materializeLibraryMediaForExternalUse(target.path),
+    );
     return { ok: true as const };
   });
 
   safeHandle(IPC.openSaveFile, async (_, id: string, fileIndex?: number) => {
     const target = await resolveSaveFilePath(id, fileIndex);
     if (!target.ok) return target;
-    const err = await shell.openPath(target.path);
+    const err = await shell.openPath(
+      await materializeLibraryMediaForExternalUse(target.path),
+    );
     if (err) {
       log.warn("[pond ipc] openSaveFile failed", err);
       return { ok: false as const, reason: err };

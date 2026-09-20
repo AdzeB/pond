@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { FolderPresentationSchema } from "./folder-presentation";
 import { FolderRulesSchema } from "./folder-rules";
+import { LocaleSchema } from "./locales";
 import {
   DEFAULT_APP_ICON,
   DEFAULT_DARK_PRESET_ID,
@@ -176,6 +177,65 @@ const preferences = z.preprocess(
   }),
 );
 
+const sidebar = z.object({
+  showCounts: z.boolean().catch(true),
+  doubleClickBehavior: z.enum(["open", "expand-collapse"]).catch("open"),
+  destinations: z
+    .object({
+      all: z.boolean().catch(true),
+      uncategorized: z.boolean().catch(true),
+      untagged: z.boolean().catch(true),
+      tags: z.boolean().catch(true),
+      trash: z.boolean().catch(true),
+      downloads: z.boolean().catch(true),
+      sources: z.boolean().catch(true),
+    })
+    .catch({
+      all: true,
+      uncategorized: true,
+      untagged: true,
+      tags: true,
+      trash: true,
+      downloads: true,
+      sources: true,
+    }),
+});
+
+const feedback = z.object({
+  sounds: z
+    .object({
+      interface: z.boolean().catch(true),
+      saveDeletion: z.boolean().catch(true),
+      folderDeletion: z.boolean().catch(true),
+      screenshot: z.boolean().catch(true),
+      extensionCapture: z.boolean().catch(true),
+      autoImport: z.boolean().catch(true),
+    })
+    .catch({
+      interface: true,
+      saveDeletion: true,
+      folderDeletion: true,
+      screenshot: true,
+      extensionCapture: true,
+      autoImport: true,
+    }),
+  notifications: z
+    .object({
+      saveDeletion: z.boolean().catch(false),
+      folderDeletion: z.boolean().catch(false),
+      screenshot: z.boolean().catch(false),
+      extensionCapture: z.boolean().catch(true),
+      autoImport: z.boolean().catch(true),
+    })
+    .catch({
+      saveDeletion: false,
+      folderDeletion: false,
+      screenshot: false,
+      extensionCapture: true,
+      autoImport: true,
+    }),
+});
+
 const trash = z.object({
   autoEmptyDays: z.number().nullable().catch(null),
   confirmBeforeEmpty: z.boolean().catch(true),
@@ -190,6 +250,7 @@ const windowSlice = z.object({
     .enum(["continue", "library", "sources", "trash", "settings"])
     .catch("continue"),
   appIcon: z.string().min(1).catch(DEFAULT_APP_ICON),
+  interfaceZoom: z.number().int().min(50).max(200).catch(100),
 });
 
 const autoImport = z.object({
@@ -234,6 +295,17 @@ const api = z.object({
 
 const updates = z.object({
   autoInstall: z.boolean().catch(true),
+});
+
+const localization = z.object({
+  locale: LocaleSchema,
+});
+
+const security = z.object({
+  lockOnLaunch: z.boolean().catch(true),
+  lockOnSleep: z.boolean().catch(true),
+  idleMinutes: z.number().int().min(0).max(240).catch(15),
+  biometricUnlock: z.boolean().catch(false),
 });
 
 export const FetchRecurrenceSchema = z
@@ -391,6 +463,8 @@ const PrefsObject = z.object({
   viewer: ViewerPrefsSchema.catch(ViewerPrefsSchema.parse({})),
   shortcuts: shortcuts.catch(shortcuts.parse({})),
   preferences: preferences.catch(preferences.parse({})),
+  sidebar: sidebar.catch(sidebar.parse({})),
+  feedback: feedback.catch(feedback.parse({})),
   trash: trash.catch(trash.parse({})),
   window: windowSlice.catch(windowSlice.parse({})),
   quickCapture: quickCapture.catch(quickCapture.parse({})),
@@ -400,6 +474,8 @@ const PrefsObject = z.object({
   sourcesView: sourcesView.catch(sourcesView.parse({})),
   api: api.catch(api.parse({})),
   updates: updates.catch(updates.parse({})),
+  localization: localization.catch(localization.parse({})),
+  security: security.catch(security.parse({})),
   sync: sync.catch(sync.parse({})),
   storage: storage.catch(storage.parse({})),
   ai: ai.catch(ai.parse({})),

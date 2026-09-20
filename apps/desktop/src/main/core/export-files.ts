@@ -1,19 +1,13 @@
 import { createHash } from "node:crypto";
-import { constants, createReadStream } from "node:fs";
-import {
-  copyFile,
-  mkdir,
-  readdir,
-  readFile,
-  realpath,
-  stat,
-  writeFile,
-} from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { mkdir, readdir, realpath, stat, writeFile } from "node:fs/promises";
 import { basename, extname, join, relative, resolve, sep } from "node:path";
 import type { Folder, Save } from "@pond/schema/db";
 import { isAuxiliaryKind } from "@shared/save-file-names";
 import { z } from "zod";
+import { readBundleJson } from "../lib/library-config";
 import type { PackageOrganization } from "./package-organization";
+import { exportLibraryMedia } from "./security/library-media-storage";
 import {
   checkTransferCancellation,
   recordTransferCopy,
@@ -134,7 +128,7 @@ export async function copyExportFile(
   filename: string,
 ) {
   return reserveOutput(directory, filename, (path) =>
-    copyFile(source, path, constants.COPYFILE_EXCL),
+    exportLibraryMedia(source, path),
   );
 }
 
@@ -345,16 +339,11 @@ export async function exportFiles(input: {
 }
 
 async function hasUserTitle(directory: string): Promise<boolean> {
-  const text = await readFile(join(directory, "user-title.json"), "utf8").catch(
-    (error: NodeJS.ErrnoException) => {
-      if (error.code === "ENOENT") return null;
-      throw error;
-    },
+  const value = readBundleJson<{ locked: boolean }>(
+    join(directory, "user-title.json"),
   );
-  return text
-    ? z
-        .object({ data: z.object({ locked: z.boolean() }) })
-        .parse(JSON.parse(text)).data.locked
+  return value
+    ? z.object({ locked: z.boolean() }).parse(value.data).locked
     : false;
 }
 

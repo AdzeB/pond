@@ -45,8 +45,12 @@ const APP_PREF_KEYS = [
   "window",
   "quickCapture",
   "autoImport",
+  "sidebar",
+  "feedback",
   "api",
   "updates",
+  "localization",
+  "security",
   "agent",
 ] as const satisfies readonly AppPrefKey[];
 
@@ -134,11 +138,30 @@ function mergeAll(base: Prefs, patch: DeepPartial<Prefs>): Prefs {
     window: { ...base.window, ...patch.window },
     quickCapture: { ...base.quickCapture, ...patch.quickCapture },
     autoImport: { ...base.autoImport, ...patch.autoImport },
+    sidebar: {
+      ...base.sidebar,
+      ...patch.sidebar,
+      destinations: {
+        ...base.sidebar.destinations,
+        ...patch.sidebar?.destinations,
+      },
+    },
+    feedback: {
+      ...base.feedback,
+      ...patch.feedback,
+      sounds: { ...base.feedback.sounds, ...patch.feedback?.sounds },
+      notifications: {
+        ...base.feedback.notifications,
+        ...patch.feedback?.notifications,
+      },
+    },
     tagPicker: { ...base.tagPicker, ...patch.tagPicker },
     allTags: { ...base.allTags, ...patch.allTags },
     sourcesView: { ...base.sourcesView, ...patch.sourcesView },
     api: { ...base.api, ...patch.api },
     updates: { ...base.updates, ...patch.updates },
+    localization: { ...base.localization, ...patch.localization },
+    security: { ...base.security, ...patch.security },
     sync: { ...base.sync, ...patch.sync },
     storage: { ...base.storage, ...patch.storage },
     ai: { ...base.ai, ...patch.ai },

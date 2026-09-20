@@ -1,42 +1,15 @@
-.downloading {
+.badge {
   position: absolute;
   top: 6px;
   right: 6px;
   z-index: 2;
-  display: inline-flex;
   gap: 5px;
-  align-items: center;
-  padding: 3px 8px 3px 7px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--ds-white-a12);
   pointer-events: none;
-  background: var(--ds-gray-12);
-  border-radius: var(--ds-radius-full);
-}
-
-.failed {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 8px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--ds-white-a12);
-  background: var(--ds-red-9);
-  border-radius: var(--ds-radius-full);
 }
 
 .dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  background: var(--ds-green-9);
-  border-radius: var(--ds-radius-full);
-  animation: download-pulse 1.4s ease-in-out infinite;
+  animation: download-pulse calc(var(--ds-duration-slow) * 4)
+    var(--ds-easing-standard) infinite;
 }
 
 @keyframes download-pulse {

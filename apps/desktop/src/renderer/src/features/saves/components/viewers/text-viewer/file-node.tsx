@@ -1,4 +1,5 @@
 import { IconPaperclipOutline12 } from "@pond/icons/outline/12";
+import { Chip } from "@pond/ui";
 import {
   $applyNodeReplacement,
   DecoratorNode,
@@ -73,17 +74,18 @@ export class FileNode extends DecoratorNode<JSX.Element> {
 
   decorate(): JSX.Element {
     return (
-      <a
-        className={styles.chip}
+      <Chip.Link
         href={this.__href}
         onClick={(event) => {
           event.preventDefault();
           void window.pond.openExternal(this.__href);
         }}
       >
-        <IconPaperclipOutline12 />
-        {this.__name}
-      </a>
+        <Chip.Icon>
+          <IconPaperclipOutline12 />
+        </Chip.Icon>
+        <Chip.Label>{this.__name}</Chip.Label>
+      </Chip.Link>
     );
   }
 }

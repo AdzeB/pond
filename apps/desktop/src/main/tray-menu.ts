@@ -38,7 +38,10 @@ export async function buildMenu(
   opts: TrayOptions,
   inflight: number,
 ): Promise<{ menu: Menu; ingesting: number }> {
-  const status = await loadTrayStatus(inflight);
+  const [status, prefs] = await Promise.all([
+    loadTrayStatus(inflight),
+    getPrefs().catch(() => null),
+  ]);
   const template = buildTrayTemplate(
     status,
     {
@@ -49,7 +52,8 @@ export async function buildMenu(
     },
     {
       version: app.getVersion(),
-      accelerators: await loadTrayAccelerators(),
+      locale: prefs?.localization.locale,
+      accelerators: await loadTrayAccelerators(prefs?.shortcuts),
       blankDocuments: loadTrayBlankDocuments(),
     },
   );
@@ -78,14 +82,16 @@ async function loadTrayStatus(inflight: number): Promise<TrayStatusInput> {
   };
 }
 
-async function loadTrayAccelerators(): Promise<TrayAccelerators> {
-  const prefs = await getPrefs().catch(() => null);
+async function loadTrayAccelerators(
+  shortcuts?: Awaited<ReturnType<typeof getPrefs>>["shortcuts"],
+): Promise<TrayAccelerators> {
   const bindings = resolveShortcuts(
-    prefs?.shortcuts ?? { profile: "pond", overrides: {} },
+    shortcuts ?? { profile: "pond", overrides: {} },
   );
   return {
     newFolder: menuAccelerator(bindings["library.new-folder"]),
     newNote: menuAccelerator(bindings["library.new-note"]),
+    captureScreenshot: menuAccelerator(bindings["library.capture-screenshot"]),
     newTag: menuAccelerator(bindings["library.new-tag"]),
     newTagGroup: menuAccelerator(bindings["library.new-tag-group"]),
     importFiles: menuAccelerator(bindings["library.import-files"]),

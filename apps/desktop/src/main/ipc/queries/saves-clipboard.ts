@@ -2,6 +2,10 @@ import { pathToFileURL } from "node:url";
 import { ClipboardItem, clipboard, nativeImage } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
+import {
+  materializeLibraryMediaForExternalUse,
+  readLibraryMedia,
+} from "../../core/security/library-media-storage";
 import { resolveSaveFilePath } from "../helpers";
 import {
   FileIndexParam,
@@ -30,7 +34,9 @@ export const savesClipboardQueries = {
     const target = await resolveSaveFilePath(params.id, params.fileIndex);
     if (!target.ok) return target;
     try {
-      const image = nativeImage.createFromPath(target.path);
+      const image = nativeImage.createFromBuffer(
+        await readLibraryMedia(target.path),
+      );
       if (image.isEmpty())
         return { ok: false as const, reason: "missing" as const };
       await clipboard.write([
@@ -52,7 +58,9 @@ export const savesClipboardQueries = {
     const target = await resolveSaveFilePath(params.id, params.fileIndex);
     if (!target.ok) return target;
     try {
-      await writeFileRefsToClipboard([target.path]);
+      await writeFileRefsToClipboard([
+        await materializeLibraryMediaForExternalUse(target.path),
+      ]);
       return { ok: true as const };
     } catch (error) {
       log.warn("[pond ipc] saves.copyFile failed", error);
@@ -71,7 +79,8 @@ export const savesClipboardQueries = {
       for (const entry of params.files) {
         if (!entry.id) continue;
         const target = await resolveSaveFilePath(entry.id, entry.fileIndex);
-        if (target.ok) paths.push(target.path);
+        if (target.ok)
+          paths.push(await materializeLibraryMediaForExternalUse(target.path));
       }
       if (paths.length === 0)
         return { ok: false as const, reason: "missing" as const };

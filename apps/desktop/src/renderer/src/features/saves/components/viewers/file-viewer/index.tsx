@@ -1,4 +1,4 @@
-import { Button, Input, Slider } from "@pond/ui";
+import { Button, Input, Select, Slider } from "@pond/ui";
 import type { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import {
@@ -20,6 +20,7 @@ import { buildPondUrl, previewUrlFor } from "@/features/saves/lib/media/url";
 import type { Save, SaveFile } from "@/features/saves/types";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { formatBytes } from "@/shared/lib/format";
+import { addPdfRenderWindow } from "./pdf-render-window";
 import styles from "./styles.module.css";
 
 const ArchiveFileViewer = lazy(() =>
@@ -53,7 +54,7 @@ const GLYPHS =
 export function StoredFileViewer(props: { save: Save; file: SaveFile }) {
   return (
     <Suspense
-      fallback={<div className={styles.previewStatus}>Loading preview…</div>}
+      fallback={<div className={styles.previewStatus}>Loading preview</div>}
     >
       <StoredFileContent {...props} />
     </Suspense>
@@ -118,6 +119,7 @@ function StoredFileContent({ save, file }: { save: Save; file: SaveFile }) {
 function PdfViewer(props: ViewerProps & { url: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [document, setDocument] = useState<PDFDocumentProxy | null>(null);
+  const [pagesToRender, setPagesToRender] = useState<Set<number>>(new Set());
   const [width, setWidth] = useState(800);
   const [error, setError] = useState(false);
 
@@ -132,7 +134,10 @@ function PdfViewer(props: ViewerProps & { url: string }) {
         pdf.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
         task = pdf.getDocument({ url: props.url });
         const next = await task.promise;
-        if (active) setDocument(next);
+        if (active) {
+          setDocument(next);
+          setPagesToRender(addPdfRenderWindow(new Set(), 1, next.numPages));
+        }
       })
       .catch(() => {
         if (active) setError(true);
@@ -142,6 +147,16 @@ function PdfViewer(props: ViewerProps & { url: string }) {
       void task?.destroy();
     };
   }, [props.url]);
+
+  const schedulePage = useCallback(
+    (pageNumber: number) => {
+      if (!document) return;
+      setPagesToRender((current) =>
+        addPdfRenderWindow(current, pageNumber, document.numPages),
+      );
+    },
+    [document],
+  );
 
   useEffect(() => {
     const root = scrollRef.current;
@@ -174,6 +189,9 @@ function PdfViewer(props: ViewerProps & { url: string }) {
                 document={document}
                 pageNumber={pageNumber}
                 width={width}
+                render={pagesToRender.has(pageNumber)}
+                scrollRoot={scrollRef.current}
+                onNear={schedulePage}
               />
             ))
           : null}
@@ -187,14 +205,35 @@ function PdfPage({
   document,
   pageNumber,
   width,
+  render,
+  scrollRoot,
+  onNear,
 }: {
   document: PDFDocumentProxy;
   pageNumber: number;
   width: number;
+  render: boolean;
+  scrollRoot: HTMLDivElement | null;
+  onNear: (pageNumber: number) => void;
 }) {
+  const figureRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    const figure = figureRef.current;
+    if (render || !figure || !scrollRoot) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) onNear(pageNumber);
+      },
+      { root: scrollRoot, rootMargin: "100% 0px" },
+    );
+    observer.observe(figure);
+    return () => observer.disconnect();
+  }, [onNear, pageNumber, render, scrollRoot]);
+
+  useEffect(() => {
+    if (!render) return;
     let active = true;
     let renderTask: ReturnType<
       Awaited<ReturnType<typeof document.getPage>>["render"]
@@ -219,11 +258,19 @@ function PdfPage({
       active = false;
       renderTask?.cancel();
     };
-  }, [document, pageNumber, width]);
+  }, [document, pageNumber, render, width]);
 
   return (
-    <figure className={styles.pdfPage} aria-label={`Page ${pageNumber}`}>
-      <canvas ref={canvasRef} />
+    <figure
+      ref={figureRef}
+      className={styles.pdfPage}
+      aria-label={`Page ${pageNumber}`}
+      style={{
+        width,
+        minHeight: Math.round((width * 11) / 8.5),
+      }}
+    >
+      {render ? <canvas ref={canvasRef} /> : null}
       <figcaption>{pageNumber}</figcaption>
     </figure>
   );
@@ -231,7 +278,15 @@ function PdfPage({
 
 function AudioViewer(props: ViewerProps & { url: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const hoverStartedRef = useRef(false);
   const [bpm, setBpm] = useState<number | null>(props.file.bpm ?? null);
+  const [playing, setPlaying] = useState(false);
+  const [loop, setLoop] = useState(false);
+  const [speed, setSpeed] = useState("1");
+  const [volume, setVolume] = useState(1);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
 
   useEffect(() => {
     const context = new AudioContext();
@@ -295,19 +350,133 @@ function AudioViewer(props: ViewerProps & { url: string }) {
           width={480}
           height={64}
           aria-label="Waveform"
+          onClick={(event) => {
+            const audio = audioRef.current;
+            if (!audio?.duration) return;
+            const rect = event.currentTarget.getBoundingClientRect();
+            audio.currentTime =
+              ((event.clientX - rect.left) / rect.width) * audio.duration;
+          }}
+          onMouseEnter={() => {
+            const audio = audioRef.current;
+            if (audio?.paused) {
+              hoverStartedRef.current = true;
+              void audio.play();
+            }
+          }}
+          onMouseLeave={() => {
+            const audio = audioRef.current;
+            if (audio && hoverStartedRef.current) {
+              hoverStartedRef.current = false;
+              audio.pause();
+            }
+          }}
         />
         {/* biome-ignore lint/a11y/useMediaCaption: imported audio has no guaranteed transcript track. */}
-        <audio controls preload="metadata" src={props.url} />
+        <audio
+          ref={audioRef}
+          preload="metadata"
+          src={props.url}
+          loop={loop}
+          onLoadedMetadata={(event) =>
+            setDuration(event.currentTarget.duration || 0)
+          }
+          onTimeUpdate={(event) =>
+            setCurrentTime(event.currentTarget.currentTime)
+          }
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+          onEnded={() => setPlaying(false)}
+        />
+        <div className={styles.audioControls}>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              const audio = audioRef.current;
+              if (!audio) return;
+              if (audio.paused) void audio.play();
+              else audio.pause();
+            }}
+          >
+            {playing ? "Pause" : "Play"}
+          </Button>
+          <Button
+            size="sm"
+            variant={loop ? "tertiary" : "secondary"}
+            aria-pressed={loop}
+            onClick={() => setLoop((value) => !value)}
+          >
+            Loop
+          </Button>
+          <span className={styles.time}>
+            {formatAudioTime(currentTime)} / {formatAudioTime(duration)}
+          </span>
+          <Select.Root
+            value={speed}
+            onValueChange={(value) => {
+              if (value === null) return;
+              setSpeed(value);
+              if (audioRef.current)
+                audioRef.current.playbackRate = Number(value);
+            }}
+          >
+            <Select.Trigger aria-label="Playback Speed">
+              <Select.Value>{(value: string) => `${value}×`}</Select.Value>
+            </Select.Trigger>
+            <Select.Portal>
+              <Select.Positioner sideOffset={6}>
+                <Select.Popup>
+                  <Select.Items
+                    items={["0.5", "0.75", "1", "1.25", "1.5", "2"].map(
+                      (value) => ({ value, label: `${value}×` }),
+                    )}
+                  />
+                </Select.Popup>
+              </Select.Positioner>
+            </Select.Portal>
+          </Select.Root>
+          <Slider.Root
+            aria-label="Audio Volume"
+            min={0}
+            max={1}
+            step={0.05}
+            value={volume}
+            onValueChange={(value) => {
+              const next = Array.isArray(value) ? (value[0] ?? 1) : value;
+              setVolume(next);
+              if (audioRef.current) audioRef.current.volume = next;
+            }}
+          >
+            <Slider.Control>
+              <Slider.Track>
+                <Slider.Indicator />
+                <Slider.Thumb />
+              </Slider.Track>
+            </Slider.Control>
+          </Slider.Root>
+        </div>
         <FileActions {...props} />
       </div>
     </div>
   );
 }
 
+function formatAudioTime(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return "0:00";
+  const minutes = Math.floor(value / 60);
+  const seconds = Math.floor(value % 60);
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 function FontViewer(props: ViewerProps & { url: string }) {
   const [specimen, setSpecimen] = useState(DEFAULT_SPECIMEN);
   const [size, setSize] = useState(68);
   const [loaded, setLoaded] = useState(false);
+  const [mode, setMode] = useState<"specimen" | "waterfall" | "characters">(
+    "specimen",
+  );
+  const [background, setBackground] = useState<"light" | "dark">("light");
   const scrollFade = useScrollFade<HTMLDivElement>();
   const family = useMemo(
     () => `pond-preview-${props.save.id.replace(/[^a-zA-Z0-9_-]/g, "")}`,
@@ -332,15 +501,15 @@ function FontViewer(props: ViewerProps & { url: string }) {
   }, [family, props.url]);
 
   const style: CSSProperties & {
-    "--pond-preview-font": string;
-    "--pond-preview-size": string;
+    "--preview-font": string;
+    "--preview-size": string;
   } = {
-    "--pond-preview-font": loaded ? JSON.stringify(family) : "inherit",
-    "--pond-preview-size": `${size}px`,
+    "--preview-font": loaded ? JSON.stringify(family) : "inherit",
+    "--preview-size": `${size}px`,
   };
 
   return (
-    <div className={styles.fontRoot} style={style}>
+    <div className={styles.fontRoot} style={style} data-background={background}>
       <ViewerHud.Root>
         <ViewerHud.Cluster anchor="top-left">
           <ViewerHud.Pill className={styles.query}>
@@ -354,6 +523,34 @@ function FontViewer(props: ViewerProps & { url: string }) {
           </ViewerHud.Pill>
         </ViewerHud.Cluster>
         <ViewerHud.Cluster anchor="top-right">
+          <ViewerHud.Pill>
+            {(["specimen", "waterfall", "characters"] as const).map((value) => (
+              <Button
+                key={value}
+                size="xs"
+                variant={mode === value ? "tertiary" : "ghost"}
+                aria-pressed={mode === value}
+                onClick={() => setMode(value)}
+              >
+                {value === "specimen"
+                  ? "Specimen"
+                  : value === "waterfall"
+                    ? "Waterfall"
+                    : "Characters"}
+              </Button>
+            ))}
+          </ViewerHud.Pill>
+          <ViewerHud.Pill>
+            <Button
+              size="xs"
+              variant="ghost"
+              onClick={() =>
+                setBackground((value) => (value === "light" ? "dark" : "light"))
+              }
+            >
+              {background === "light" ? "Dark Background" : "Light Background"}
+            </Button>
+          </ViewerHud.Pill>
           <ViewerHud.Pill className={styles.size} aria-label="Preview size">
             <ViewerHud.Scale>{size}px</ViewerHud.Scale>
             <Slider.Root
@@ -377,8 +574,36 @@ function FontViewer(props: ViewerProps & { url: string }) {
         </ViewerHud.Cluster>
       </ViewerHud.Root>
       <div className={styles.scroll} {...scrollFade}>
-        <div className={styles.specimen}>{specimen || DEFAULT_SPECIMEN}</div>
-        <pre className={styles.glyphs}>{GLYPHS}</pre>
+        {mode === "specimen" ? (
+          <div className={styles.specimen}>{specimen || DEFAULT_SPECIMEN}</div>
+        ) : null}
+        {mode === "waterfall" ? (
+          <div className={styles.waterfall}>
+            {[18, 24, 32, 48, 64, 96, 128].map((previewSize) => (
+              <div key={previewSize} style={{ fontSize: previewSize }}>
+                <span>{previewSize}</span>
+                {specimen || DEFAULT_SPECIMEN}
+              </div>
+            ))}
+          </div>
+        ) : null}
+        {mode === "characters" ? (
+          <pre className={styles.glyphs}>{GLYPHS}</pre>
+        ) : null}
+        <dl className={styles.fontMetadata}>
+          <div>
+            <dt>File</dt>
+            <dd>{props.file.path}</dd>
+          </div>
+          <div>
+            <dt>Family</dt>
+            <dd>{props.file.family ?? props.save.title ?? "Unknown"}</dd>
+          </div>
+          <div>
+            <dt>Size</dt>
+            <dd>{formatBytes(props.file.size)}</dd>
+          </div>
+        </dl>
         <FileBar {...props} />
       </div>
     </div>

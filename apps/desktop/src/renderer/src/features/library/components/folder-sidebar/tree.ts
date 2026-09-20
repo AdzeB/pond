@@ -17,6 +17,23 @@ export function descendantFolderIds(
   return ids;
 }
 
+export type FolderListSort = "manual" | "createdAt" | "title";
+
+export function sortFolderRows<
+  T extends { name: string; sortOrder: number; createdAt: Date },
+>(folders: T[], sort: FolderListSort): T[] {
+  if (sort === "manual") return folders;
+  return folders.toSorted((a, b) => {
+    if (sort === "createdAt") {
+      return (
+        b.createdAt.getTime() - a.createdAt.getTime() ||
+        a.name.localeCompare(b.name)
+      );
+    }
+    return a.name.localeCompare(b.name);
+  });
+}
+
 export function flattenFolderTree<
   T extends { id: string; parentId: string | null },
 >(

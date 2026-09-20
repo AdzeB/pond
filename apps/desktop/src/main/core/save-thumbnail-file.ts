@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto";
-import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { SaveFile } from "@pond/schema/db";
 import {
@@ -12,6 +11,10 @@ import {
   thumbnailFilename,
 } from "@shared/save-file-names";
 import sharp from "sharp";
+import {
+  withDecryptedLibraryMediaPath,
+  writeLibraryMedia,
+} from "./security/library-media-storage";
 
 const MAX_EDGE = 1024;
 
@@ -51,14 +54,18 @@ export async function writeGeneratedThumbnail(
   if (hasMediaThumbnail(files)) return null;
   const primary = thumbnailSource(files);
   if (!primary) return null;
-  const png = await renderThumbnailPng(join(directory, primary.path));
+  const source = join(directory, primary.path);
+  const png = await withDecryptedLibraryMediaPath(
+    source,
+    renderThumbnailPng,
+  ).catch(() => null);
   if (!png) return null;
   const meta = await sharp(png)
     .metadata()
     .catch(() => null);
   const original = primaryOriginalPath(files);
   const filename = original ? thumbnailFilename(original) : "thumbnail.png";
-  await writeFile(join(directory, filename), png);
+  await writeLibraryMedia(join(directory, filename), png);
   return {
     kind: THUMBNAIL_KIND,
     path: filename,

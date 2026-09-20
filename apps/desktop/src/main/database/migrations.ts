@@ -148,6 +148,19 @@ export function migratePond(sqlite: Database.Database): void {
 				);
 				CREATE INDEX IF NOT EXISTS folders_parent_idx ON folders(parent_id, sort_order);
 
+				CREATE TABLE IF NOT EXISTS folder_metadata (
+					folder_id TEXT PRIMARY KEY REFERENCES folders(id) ON DELETE CASCADE,
+					description TEXT,
+					external_link TEXT
+				);
+
+				CREATE TABLE IF NOT EXISTS folder_security (
+					folder_id TEXT PRIMARY KEY REFERENCES folders(id) ON DELETE CASCADE,
+					password_verifier TEXT NOT NULL,
+					password_hint TEXT,
+					lock_children INTEGER NOT NULL DEFAULT 1
+				);
+
 				CREATE TABLE IF NOT EXISTS save_folders (
 					save_id TEXT NOT NULL REFERENCES saves(id) ON DELETE CASCADE,
 					folder_id TEXT NOT NULL REFERENCES folders(id) ON DELETE CASCADE,
@@ -271,6 +284,12 @@ export function migratePond(sqlite: Database.Database): void {
   addColumnIfMissing(sqlite, "saves", "suggested_tags_model", "TEXT");
   addColumnIfMissing(sqlite, "saves", "account_id", "TEXT");
   addColumnIfMissing(sqlite, "saves", "blurhash", "TEXT");
+  addColumnIfMissing(
+    sqlite,
+    "saves",
+    "font_activated",
+    "INTEGER NOT NULL DEFAULT 0",
+  );
   addColumnIfMissing(sqlite, "saves", "comments", "TEXT NOT NULL DEFAULT '[]'");
   addColumnIfMissing(sqlite, "saves", "rating", "INTEGER");
   addColumnIfMissing(sqlite, "saves", "rotate", "INTEGER NOT NULL DEFAULT 0");

@@ -1,7 +1,7 @@
-import { readFile } from "node:fs/promises";
 import { extname } from "node:path";
 import { ASSISTANT_MODELS } from "../../../shared/assistant";
 import { resolveSaveFilePath } from "../../ipc/helpers";
+import { readLibraryMedia } from "../security/library-media-storage";
 
 const MIME = new Map<string, string>(
   Object.entries({
@@ -35,7 +35,7 @@ export async function imagesForSaves(
     try {
       images.push({
         mimeType: mime,
-        data: (await readFile(target.path)).toString("base64"),
+        data: (await readLibraryMedia(target.path)).toString("base64"),
       });
     } catch {}
   }

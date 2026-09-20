@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import type { Save } from "@/features/saves/types";
+import { usePrefs } from "@/features/settings/state/prefs";
 import { TagMenu } from "@/features/tags/components/menu";
 import {
   type TagGroupRow,
@@ -91,6 +92,7 @@ function Content({
   const { target } = useTagPickerContext();
   const tags = useTags();
   const groups = useTagGroups();
+  const [preferences] = usePrefs("tagPicker");
 
   const liveGroup = useMemo(() => {
     if (target.kind !== "group") return null;
@@ -157,7 +159,20 @@ function Content({
       >
         <Menu.Popup>
           <Menu.Viewport>
-            <TagMenu appliedKeys={appliedSet} onToggle={toggle} allowCreate />
+            <TagMenu
+              appliedKeys={appliedSet}
+              onToggle={toggle}
+              allowCreate
+              recommendedNames={
+                target.kind === "save" ? (target.save.suggestedTags ?? []) : []
+              }
+              layout={preferences.layout}
+              gridSize={preferences.gridSize}
+              showStarred={preferences.showStarred}
+              showRecently={preferences.showRecently}
+              showRecommended={preferences.showRecommended}
+              showCounts={preferences.showCounts}
+            />
           </Menu.Viewport>
         </Menu.Popup>
       </Menu.Positioner>

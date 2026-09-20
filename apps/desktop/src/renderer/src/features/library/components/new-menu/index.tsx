@@ -9,7 +9,9 @@ import {
   newMenuDialog,
   useNewMenuDialog,
 } from "@/features/library/state/new-menu-dialog";
+import { useRetainedDialogPayload } from "@/shared/hooks/use-retained-dialog-payload";
 import { SaveDialog } from "./save-dialog";
+import { ScreenshotDialog } from "./screenshot-dialog";
 import { buildNewMenuItems, filterMenuItems } from "./spec";
 import styles from "./styles.module.css";
 
@@ -64,8 +66,26 @@ export function NewMenu() {
 
 export function NewMenuDialogHost() {
   const dialog = useNewMenuDialog();
+  const presentation = useRetainedDialogPayload(dialog);
   useEffect(() => {
     void blankDocuments.refresh();
   }, []);
-  return dialog ? <SaveDialog onClose={() => newMenuDialog.close()} /> : null;
+  const kind = presentation.payload;
+  if (kind === "links") {
+    return (
+      <SaveDialog
+        open={presentation.open}
+        onClose={() => newMenuDialog.close()}
+      />
+    );
+  }
+  if (kind === "screenshot") {
+    return (
+      <ScreenshotDialog
+        open={presentation.open}
+        onClose={() => newMenuDialog.close()}
+      />
+    );
+  }
+  return null;
 }

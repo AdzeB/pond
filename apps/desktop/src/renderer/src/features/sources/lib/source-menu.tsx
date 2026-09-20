@@ -331,6 +331,7 @@ function connectionItems(
     label:
       target.type === "account" ? `Disconnect ${sourceLabel}` : "Stop Watching",
     icon: <IconTrash2Outline18 />,
+    variant: "destructive",
     onClick: () =>
       confirmRemove(target, options.onChanged ?? sourceDetail.changed),
   });

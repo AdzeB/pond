@@ -1,4 +1,3 @@
-import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { NewSave, SaveFile, Source } from "@pond/schema/db";
 import type { RawJson } from "@pond/schema/raw";
@@ -21,6 +20,10 @@ import { probeVideoDims } from "../../../lib/video-dims";
 import { itemDir } from "../../../paths";
 import { persistSave } from "../../persist-save";
 import { ensureSaveThumbnail } from "../../save-thumbnail";
+import {
+  readLibraryMedia,
+  withDecryptedLibraryMediaPath,
+} from "../../security/library-media-storage";
 import { TransientError } from "../extractors/errors";
 import { readSave } from "./apply";
 
@@ -143,7 +146,10 @@ async function hydrateVideoDims(
       if (!isVideoFile(file) || hasMediaDims(file)) {
         return { file, changed: false };
       }
-      const dims = await probeVideoDims(join(itemDir(saveId), file.path));
+      const dims = await withDecryptedLibraryMediaPath(
+        join(itemDir(saveId), file.path),
+        probeVideoDims,
+      );
       if (!dims) return { file, changed: false };
       return { file: { ...file, ...dims }, changed: true };
     }),
@@ -166,7 +172,9 @@ async function producePoster(args: {
     if (platform) return platform;
   }
   const videoPath = join(itemDir(args.saveId), args.video.path);
-  return buildFirstFramePoster(videoPath, posterFilename(args.index, ".jpg"));
+  return withDecryptedLibraryMediaPath(videoPath, (source) =>
+    buildFirstFramePoster(source, posterFilename(args.index, ".jpg")),
+  );
 }
 
 async function platformPosterFromSave(
@@ -198,7 +206,7 @@ async function readExistingPoster(
 ): Promise<PosterWrite | null> {
   if (!poster) return null;
   try {
-    const bytes = await readFile(join(itemDir(saveId), poster.path));
+    const bytes = await readLibraryMedia(join(itemDir(saveId), poster.path));
     if (bytes.byteLength === 0) return null;
     const ext = poster.path.includes(".")
       ? `.${poster.path.split(".").pop()}`

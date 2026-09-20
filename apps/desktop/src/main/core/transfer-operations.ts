@@ -4,7 +4,11 @@ import { join } from "node:path";
 import log from "electron-log/main.js";
 import type { TransferRequest } from "../../shared/transfer-contracts";
 import { libraryRoot } from "../paths";
-import { exportSavesToDirectory } from "./export-saves";
+import { importEaglePackage } from "./eagle-package";
+import {
+  exportSavesToDirectory,
+  exportSavesToEaglePackage,
+} from "./export-saves";
 import { copyPackageToLibrary, packageLibrary } from "./library-transfer-files";
 import { runLibraryTransfer } from "./library-transfers";
 import { exportPondPackage, importPondPackage } from "./pond-package";
@@ -44,12 +48,16 @@ async function executeRequest(request: TransferRequest) {
   if ((await realpath(request.origin)) !== (await realpath(libraryRoot())))
     throw new Error("Open the original library before retrying this transfer.");
   switch (request.kind) {
+    case "export_eagle_package":
+      return exportSavesToEaglePackage(request.ids ?? [], request.destination);
     case "export_files":
       return exportSavesToDirectory(request.ids ?? [], request.destination);
     case "export_package":
       return exportPondPackage(request.ids ?? [], request.destination);
     case "copy_library":
       return copySaveSelectionToLibrary(request.ids ?? [], request.destination);
+    case "import_eagle_package":
+      return importEaglePackage(request.source || request.destination);
     case "import_package":
       return importPondPackage(request.source || request.destination);
     case "merge_library":

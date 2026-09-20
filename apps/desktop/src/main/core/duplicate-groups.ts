@@ -27,7 +27,12 @@ function distance(a: bigint, b: bigint): number {
 }
 export function duplicateGroups(
   rows: readonly Row[],
+  options: { visualDistance?: number } = {},
 ): QueryResults["saves.findDuplicates"] {
+  const visualDistance = Math.max(
+    0,
+    Math.min(64, Math.round(options.visualDistance ?? 6)),
+  );
   const exact = new Map<string, string[]>();
   const exactKey = new Map<string, string>();
   const hashes = new Map<string, string[]>();
@@ -89,9 +94,11 @@ export function duplicateGroups(
       const node = stack.pop();
       if (!node) break;
       const d = distance(anchor.hash, node.hash);
-      if (d <= 6) related.push(...node.ids.filter((id) => !assigned.has(id)));
+      if (d <= visualDistance)
+        related.push(...node.ids.filter((id) => !assigned.has(id)));
       for (const [edge, child] of node.children)
-        if (edge >= d - 6 && edge <= d + 6) stack.push(child);
+        if (edge >= d - visualDistance && edge <= d + visualDistance)
+          stack.push(child);
     }
     const firstKey = exactKey.get(anchorId);
     const onlyExact =
@@ -103,5 +110,5 @@ export function duplicateGroups(
       ids: [anchorId, ...related.filter((id) => id !== anchorId)],
     });
   }
-  return { groups, visualIndexed, total: rows.length };
+  return { groups, visualIndexed, total: rows.length, visualDistance };
 }

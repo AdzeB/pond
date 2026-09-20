@@ -4,8 +4,10 @@ import log from "electron-log/main.js";
 import { z } from "zod";
 import { libraryRoot } from "../paths";
 import { createAutoImportWorker } from "./auto-import-worker";
+import { emitFeedback } from "./feedback";
 import { createManualSave } from "./manual-import";
 import { getPrefs } from "./prefs";
+import { librarySecurityStatus } from "./security/app-lock-runtime";
 
 const AutoImportLogSchema = z.object({
   entries: z.array(
@@ -68,6 +70,8 @@ export async function startAutoImport(): Promise<void> {
     checkpointPath: join(root, "auto-import-checkpoints.json"),
     mode: cfg.mode,
     async ingest(input) {
+      if (librarySecurityStatus().state === "locked")
+        throw new Error("The Library is locked.");
       if (resolve(libraryRoot()) !== root)
         throw new Error("The import library changed.");
       return createManualSave({
@@ -88,6 +92,11 @@ export async function startAutoImport(): Promise<void> {
       ].slice(0, 200);
       await mkdir(root, { recursive: true });
       await writeFile(logPath(root), JSON.stringify(history, null, 2));
+      if (entry.ok) {
+        await emitFeedback("autoImport").catch((error) =>
+          log.warn("[pond auto-import] feedback failed", error),
+        );
+      }
     },
   });
   if (current !== generation) {
@@ -98,6 +107,7 @@ export async function startAutoImport(): Promise<void> {
   let scanning = false;
   const tick = async () => {
     if (scanning || current !== generation) return;
+    if (librarySecurityStatus().state === "locked") return;
     scanning = true;
     try {
       await next.scan();

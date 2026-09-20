@@ -36,19 +36,3 @@
   align-items: center;
   justify-content: space-between;
 }
-
-.text {
-  width: 100%;
-  padding: 8px;
-  font: inherit;
-  color: var(--ds-gray-12);
-  resize: vertical;
-  background: var(--ds-gray-1);
-  border: var(--ds-border-width) solid var(--ds-border-subtle);
-  border-radius: var(--ds-radius-md);
-}
-
-.text:focus-visible {
-  outline: 2px solid var(--ds-accent-8);
-  outline-offset: 2px;
-}

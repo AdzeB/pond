@@ -7,6 +7,7 @@ import type { ActionDefinition } from "../../shared/action-contracts";
 import {
   type ActionRuntime,
   deleteAction,
+  duplicateAction,
   prepareAction,
   previewAction,
   readActions,
@@ -112,6 +113,64 @@ describe("library actions", () => {
     expect(readActions(root)).toEqual([]);
     writeFileSync(join(root, "actions.json"), "broken");
     expect(() => saveAction(rename, root)).toThrow("could not be read");
+  });
+  it("duplicates actions without copying shortcuts and rejects shortcut conflicts", () => {
+    const root = mkdtempSync(join(tmpdir(), "pond-actions-"));
+    roots.push(root);
+    const first = saveAction({ ...rename, shortcut: "Mod+Shift+1" }, root);
+    const duplicate = duplicateAction(first.id, root);
+    expect(duplicate).toMatchObject({
+      name: "Sequence Copy",
+      shortcut: null,
+      steps: first.steps,
+    });
+    expect(duplicate.id).not.toBe(first.id);
+    expect(() =>
+      saveAction(
+        {
+          ...rename,
+          id: "conflict",
+          name: "Conflict",
+          shortcut: "mod+shift+1",
+        },
+        root,
+      ),
+    ).toThrow("already assigned");
+    expect(() =>
+      saveAction(
+        {
+          ...rename,
+          id: "custom-conflict",
+          name: "Custom Conflict",
+          shortcut: "Control+Alt+K",
+        },
+        root,
+        {
+          profile: "pond",
+          overrides: { "save.add-tag": "Control+Alt+K" },
+        },
+      ),
+    ).toThrow("already assigned to Add Tag");
+  });
+  it("expands date, tags, original title, and inline sequence padding", () => {
+    const preview = previewAction(
+      {
+        ...rename,
+        steps: [
+          {
+            kind: "rename",
+            pattern: "{n:4} {tags} {original}",
+            start: 2,
+            padding: 1,
+          },
+        ],
+      },
+      rows,
+    );
+    expect(preview.changes.map((change) => change.after.title)).toEqual([
+      "0002 old First {n}",
+      "0003  Second",
+    ]);
   });
 });
 

@@ -75,6 +75,8 @@ describe("command menu", () => {
   it("opens with navigation and actions", async () => {
     const input = await open();
     expect(input).not.toBeNull();
+    expect(document.activeElement).toBe(input);
+    expect(input?.getAttribute("role")).toBe("combobox");
     expect(document.body.textContent).toContain("Create");
     expect(document.body.textContent).toContain("Import Files");
     expect(document.body.textContent).toContain("Navigate");

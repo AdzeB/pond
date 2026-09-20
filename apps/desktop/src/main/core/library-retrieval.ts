@@ -19,6 +19,7 @@ import {
   reciprocalRankFusion,
   type VersionedVector,
 } from "./query-embeddings";
+import { lockedFolderIds } from "./security/folder-passwords";
 import { knnVec, parseJsonVector } from "./vec-index";
 
 const visualProbe = z.discriminatedUnion("kind", [
@@ -79,7 +80,10 @@ export function normalizeMedia(media: MediaType[] | undefined): MediaType[] {
   return [...new Set(media ?? [])];
 }
 
-export function libraryScopeClauses(scope: LibraryRetrievalScope): SQL[] {
+export function libraryScopeClauses(
+  scope: LibraryRetrievalScope,
+  hiddenFolderIds: readonly string[] = [],
+): SQL[] {
   const scoped = scope.libraryQuery
     ? libraryQueryWhere(scope.libraryQuery)
     : undefined;
@@ -91,6 +95,11 @@ export function libraryScopeClauses(scope: LibraryRetrievalScope): SQL[] {
       rules: [{ field: "folder", operator: "some", value: [scope.folderId] }],
     });
     if (compiled) clauses.push(compiled);
+  }
+  if (hiddenFolderIds.length > 0) {
+    clauses.push(
+      sql`not exists (select 1 from save_folders locked_sf where locked_sf.save_id = ${saves.id} and locked_sf.folder_id in (select value from json_each(${JSON.stringify(hiddenFolderIds)})))`,
+    );
   }
   return clauses;
 }
@@ -284,12 +293,14 @@ async function retrieveLibraryWithDb(
   input: LibraryRetrievalInput,
   scope: LibraryRetrievalScope = {},
   queryEmbeddings: QueryEmbeddings = {},
+  hiddenFolderIds: readonly string[] = [],
 ): Promise<LibraryRetrievalResult> {
   return retrieveLibraryWithStore(
     retrievalStore(db),
     input,
     scope,
     queryEmbeddings,
+    hiddenFolderIds,
   );
 }
 
@@ -298,9 +309,13 @@ export async function retrieveLibraryWithStore(
   input: LibraryRetrievalInput,
   scope: LibraryRetrievalScope = {},
   queryEmbeddings: QueryEmbeddings = {},
+  hiddenFolderIds: readonly string[] = [],
 ): Promise<LibraryRetrievalResult> {
   const limit = input.limit ?? 12;
-  const clauses = [...libraryScopeClauses(scope), ...inputClauses(input)];
+  const clauses = [
+    ...libraryScopeClauses(scope, hiddenFolderIds),
+    ...inputClauses(input),
+  ];
   const query = input.query?.trim() ?? "";
   const match = compileKeywordWhere(query);
   const hasDense = Boolean(queryEmbeddings.text || queryEmbeddings.visual);
@@ -428,7 +443,14 @@ export async function retrieveLibrary(
       error: error instanceof Error ? error.message : "unknown error",
     });
   }
-  const result = await retrieveLibraryWithDb(db, input, scope, embeddings);
+  const hidden = [...(await lockedFolderIds())];
+  const result = await retrieveLibraryWithDb(
+    db,
+    input,
+    scope,
+    embeddings,
+    hidden,
+  );
   log.info("[pond retrieval] complete", {
     queryLength: input.query?.trim().length ?? 0,
     media: normalizeMedia(input.media),

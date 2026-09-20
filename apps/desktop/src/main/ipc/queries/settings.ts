@@ -5,6 +5,11 @@ import {
 } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { FEEDBACK_EVENTS } from "../../../shared/feedback";
+import {
+  emitRendererFeedback,
+  openNotificationSettings,
+} from "../../core/feedback";
 import { globalShortcutStatus } from "../../core/global-shortcuts";
 import {
   getImageDownloadPrefs,
@@ -16,7 +21,8 @@ import {
 } from "../../core/prefs";
 import { getGlobalDb } from "../../db";
 import { getIngestToken, rotateIngestToken } from "../../keychain";
-import { syncShellChrome } from "../../window";
+import { setMainLocale } from "../../localization-runtime";
+import { queueTrayRefresh, syncShellChrome } from "../../window";
 import { type QueryHandlerMap, query } from "./params";
 
 const VideoDownloadPatchSchema = z.object({
@@ -150,10 +156,26 @@ export const settingsQueries = {
   "settings.setPrefs": query(PrefsPatchParamsSchema, async (params) => {
     const next = await setPrefs(params);
     if ("preferences" in params) await syncShellChrome();
+    if ("localization" in params) {
+      setMainLocale(next.localization.locale);
+      queueTrayRefresh();
+    }
     if (params.window && "appIcon" in params.window) {
       const { applyAppIcon } = await import("../../core/app-icon");
       await applyAppIcon(params.window.appIcon);
     }
     return { ok: true, prefs: next };
   }),
+
+  "feedback.emit": query(
+    z.object({ event: z.enum(FEEDBACK_EVENTS) }),
+    async ({ event }) => {
+      await emitRendererFeedback(event);
+      return { ok: true as const };
+    },
+  ),
+
+  "notifications.openSettings": query(z.object({}), async () => ({
+    ok: await openNotificationSettings(),
+  })),
 } satisfies QueryHandlerMap;

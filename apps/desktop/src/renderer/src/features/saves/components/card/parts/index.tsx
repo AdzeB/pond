@@ -157,7 +157,7 @@ const Overlay = memo(function Overlay({
       ) : null}
       {model.hasNote ? (
         <Note aria-label="Has a note" title="Has a note">
-          <NotebookPen size={11} />
+          <NotebookPen />
         </Note>
       ) : null}
     </div>

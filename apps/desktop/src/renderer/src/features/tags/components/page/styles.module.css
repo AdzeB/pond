@@ -18,87 +18,16 @@
 .sidebar {
   min-width: 0;
   padding: 12px 10px;
-  overflow: auto;
   background: transparent;
   border-right: 1px solid var(--ds-gray-a3);
 }
 
-.navigation {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.scope-group {
+  padding-top: 0;
 }
 
-.navItem {
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) 18px;
-  gap: 8px;
-  align-items: center;
+.group-navigation {
   width: 100%;
-  min-height: 30px;
-  padding: 0 8px;
-  font: inherit;
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-11);
-  text-align: left;
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: transparent;
-  border: 0;
-  border-radius: var(--ds-radius-md);
-}
-
-.navItem:hover {
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-a2);
-}
-
-.navItem[data-active] {
-  font-weight: var(--ds-weight-medium);
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-a3);
-}
-
-.navItem svg {
-  width: 16px;
-  height: 16px;
-  color: var(--ds-gray-9);
-}
-
-.navLabel {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.count {
-  width: 18px;
-  font-size: var(--ds-text-sm);
-  font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-9);
-  text-align: center;
-}
-
-.groupBlock {
-  margin-top: 22px;
-}
-
-.groupHeading {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 18px;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 8px 4px;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-medium);
-  color: var(--ds-gray-9);
-}
-
-.groupMeta {
-  display: flex;
-  gap: 6px;
-  align-items: baseline;
-  min-width: 0;
 }
 
 .groupDraft {
@@ -131,14 +60,6 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.groupAdd {
-  width: 18px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0;
-  color: var(--ds-gray-9);
 }
 
 .main {
@@ -189,22 +110,7 @@
 .groupDescription {
   width: 100%;
   height: 24px;
-  padding: 0;
   margin-top: 1px;
-  font: inherit;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-11);
-  outline: none;
-  background: transparent;
-  border: 0;
-}
-
-.groupDescription::placeholder {
-  color: var(--ds-gray-8);
-}
-
-.groupDescription:focus-visible {
-  box-shadow: inset 0 -1px var(--ds-gray-a6);
 }
 
 .groupTags {

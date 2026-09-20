@@ -1,4 +1,8 @@
 import { describe, expect, it } from "vitest";
+import {
+  createCopyTranslator,
+  createTranslator,
+} from "../../shared/localization";
 import { buildGoSection, buildHistorySection } from "./navigation-sections";
 import {
   buildApplicationSections,
@@ -37,6 +41,8 @@ function createContext({
     revealLibrary: noOp,
     sendMenuAction: () => noOp,
     showLogs: noOp,
+    translate: createTranslator("en"),
+    translateCopy: createCopyTranslator("en"),
     verifyLibrary: noOp,
   };
 }

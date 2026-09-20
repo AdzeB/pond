@@ -91,6 +91,15 @@ function targetsFor(
           inside(directory, path);
           add(path, "file");
         }
+      if ("fileRenames" in tx)
+        for (const file of tx.fileRenames ?? []) {
+          const source = join(directory, file.from);
+          const destination = join(directory, file.to);
+          inside(directory, source);
+          inside(directory, destination);
+          add(source, "file");
+          add(destination, "file");
+        }
     }
   }
   return [...targets.values()].filter(

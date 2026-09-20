@@ -36,6 +36,7 @@ export function buildTrashItems({
         {
           label: "Delete Forever",
           icon: glyph(IconTrash2Outline18),
+          variant: "destructive",
           shortcut: shortcutGlyphs("save.delete-forever"),
           onClick: () => {
             if (batch) void deleteSelectionForever(ids);
@@ -47,6 +48,7 @@ export function buildTrashItems({
         {
           label: "Move to Trash",
           icon: glyph(IconTrashXmarkOutline18),
+          variant: "destructive",
           shortcut: shortcutGlyphs("save.trash"),
           onClick: () => {
             if (batch) {

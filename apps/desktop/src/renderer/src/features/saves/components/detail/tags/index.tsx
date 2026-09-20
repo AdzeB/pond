@@ -1,10 +1,10 @@
 import { IconPlusOutline12 as Plus } from "@pond/icons/outline/12";
+import { Chip } from "@pond/ui";
 import { useMemo } from "react";
 import { TagsEditor } from "@/features/saves/components/preview";
 import { setSaveTags } from "@/features/saves/lib/mutate";
 import type { Save } from "@/features/saves/types";
 import { mergeUniqueTags } from "@/features/tags/state/tag-clipboard";
-import styles from "./styles.module.css";
 
 export function SaveTags({ save }: { save: Save }) {
   const existing = useMemo(
@@ -25,16 +25,17 @@ export function SaveTags({ save }: { save: Save }) {
       addLabel={save.tags.length === 0 ? "Add Tag" : undefined}
     >
       {suggested.map((tag) => (
-        <button
+        <Chip.Action
           key={tag}
-          type="button"
-          className={styles.add}
+          tone="suggested"
           aria-label={`Add tag ${tag}`}
           onClick={() => void addTag(tag)}
         >
-          {tag}
-          <Plus className={styles.icon} />
-        </button>
+          <Chip.Label>{tag}</Chip.Label>
+          <Chip.Icon>
+            <Plus />
+          </Chip.Icon>
+        </Chip.Action>
       ))}
     </TagsEditor>
   );

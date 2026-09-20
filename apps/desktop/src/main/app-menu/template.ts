@@ -19,16 +19,32 @@ export function buildAppMenuTemplate(
 ): AppMenuItem[] {
   const settingsItem = buildSettingsItem(context);
 
-  return [
-    ...buildApplicationSections(context, settingsItem),
-    buildFileSection(context),
-    buildEditSection(context, settingsItem),
-    buildViewSection(context),
-    buildGoSection(context),
-    buildHistorySection(context, recentEntries),
-    buildLibrarySection(context),
-    buildWindowSection(context),
-    ...buildDeveloperSections(context),
-    buildHelpSection(context),
-  ];
+  return localizeMenuItems(
+    [
+      ...buildApplicationSections(context, settingsItem),
+      buildFileSection(context),
+      buildEditSection(context, settingsItem),
+      buildViewSection(context),
+      buildGoSection(context),
+      buildHistorySection(context, recentEntries),
+      buildLibrarySection(context),
+      buildWindowSection(context),
+      ...buildDeveloperSections(context),
+      buildHelpSection(context),
+    ],
+    context.translateCopy,
+  );
+}
+
+function localizeMenuItems(
+  items: AppMenuItem[],
+  translateCopy: (copy: string) => string,
+): AppMenuItem[] {
+  for (const item of items) {
+    if (item.label) item.label = translateCopy(item.label);
+    if (Array.isArray(item.submenu)) {
+      localizeMenuItems(item.submenu, translateCopy);
+    }
+  }
+  return items;
 }

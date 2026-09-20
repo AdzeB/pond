@@ -20,6 +20,8 @@ export interface PromptOptions {
   cancelLabel?: ReactNode;
   confirmVariant?: ButtonVariant;
   placeholder?: string;
+  inputType?: "text" | "password";
+  autoComplete?: string;
   initialValue?: string;
   onConfirm: (value: string) => void | Promise<void>;
 }
@@ -96,6 +98,8 @@ function PromptContent({
                 }
                 value={value}
                 onValueChange={setValue}
+                type={options.inputType}
+                autoComplete={options.autoComplete}
                 placeholder={options.placeholder}
                 disabled={busy}
                 autoFocus

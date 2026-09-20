@@ -5,9 +5,15 @@ Pond is a **local-first** application. Your library, index, and preferences live
 ## What stays on your machine
 
 - **Library**: `~/Pond/My Pond.pond/` (or a location you choose). This is the source of truth for your saves.
-- **App state**: `~/Library/Application Support/pond/` (SQLite index, preferences, logs).
-- **Secrets**: The ingest token for the optional loopback HTTP API is stored via Electron `safeStorage` (macOS Keychain, Windows DPAPI).
+- **App state**: `~/Library/Application Support/pond/` stores global preferences and logs. Each Library owns its search index and portable settings.
+- **Secrets**: The ingest token and wrapped Library keys use Electron `safeStorage` through macOS Keychain or Windows DPAPI.
 - **Pipeline logs**: Diagnostic events are written locally to SQLite and `electron-log` files. They are not sent to Pond or any third party.
+
+## Library Encryption
+
+When you enable Library Encryption, Pond encrypts Library files, thumbnails, portable metadata, backups, and the search index at rest. Your password and generated recovery key can unlock the Library. Pond does not receive either secret.
+
+Pond keeps the unlocked key in the main process. Locking clears that key and denies Library access through local automation interfaces. Opening, sharing, dragging, or activating a file in another app may create a permission-restricted temporary plaintext copy on your Mac.
 
 ## Browser extension
 

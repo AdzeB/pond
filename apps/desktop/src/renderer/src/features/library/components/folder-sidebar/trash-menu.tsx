@@ -5,20 +5,22 @@ import {
 import type { MenuItemSpec } from "@pond/ui";
 import { confirmEmptyTrash } from "@/features/saves/lib/empty-trash";
 
-export function buildTrashMenuItems(): MenuItemSpec[] {
+export function buildTrashMenuItems(hasItems: boolean): MenuItemSpec[] {
   return [
-    {
-      label: "Restore All",
-      icon: <IconArrowRotateClockwiseOutline18 />,
-      onClick: () => {
-        void window.pond.query("saves.restoreAll", {});
-      },
-    },
-    { type: "separator" },
     {
       label: "Empty Trash",
       icon: <IconTrashXmarkOutline18 />,
+      variant: "destructive",
+      disabled: !hasItems,
       onClick: confirmEmptyTrash,
+    },
+    {
+      label: "Restore All Items",
+      icon: <IconArrowRotateClockwiseOutline18 />,
+      disabled: !hasItems,
+      onClick: () => {
+        void window.pond.query("saves.restoreAll", {});
+      },
     },
   ];
 }

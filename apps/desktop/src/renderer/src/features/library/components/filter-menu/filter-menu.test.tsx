@@ -112,6 +112,7 @@ describe("filter toolbar", () => {
       "Date Modified",
       "Customize Filters",
     ]);
+    expect(button("Color").querySelector("[data-spectrum]")).not.toBeNull();
   });
 
   it("groups filter customization into named sections", async () => {
@@ -163,6 +164,24 @@ describe("filter toolbar", () => {
     expect(state().query.rules).toEqual([
       { field: "source", operator: "eq", value: "x.com" },
     ]);
+  });
+
+  it("shows the selected color as the chip icon instead of its hex value", async () => {
+    setSearchInput(
+      [
+        {
+          field: "color",
+          operator: "near",
+          value: { hex: "#0091ff", tolerance: 60 },
+        },
+      ],
+      "",
+    );
+    await render();
+    const color = button("Color: Blue");
+    expect(color.textContent).toBe("Color");
+    expect(color.querySelector('[data-swatch="#0091ff"]')).not.toBeNull();
+    expect(color.querySelector("[data-spectrum]")).toBeNull();
   });
 
   it("clears only the chosen field while keeping text and other filters", async () => {

@@ -1,0 +1,294 @@
+import { createHash } from "node:crypto";
+import { extname, join } from "node:path";
+import { type Save, type SaveFile, saves } from "@pond/schema/db";
+import type { Transaction, TxSaveFile } from "@pond/schema/tx";
+import { THUMBNAIL_KIND } from "@shared/save-file-names";
+import { inArray } from "drizzle-orm";
+import sharp from "sharp";
+import type { ImageCompressionRequest } from "../../shared/conversion-contracts";
+import { getDb } from "../db";
+import { encodeBlurhash } from "../lib/blurhash";
+import { extractPalette } from "../lib/palette";
+import { resolvePaths } from "../paths";
+import { executeBatch } from "./executor";
+import { renderThumbnailPng } from "./save-thumbnail-file";
+import { readLibraryMedia } from "./security/library-media-storage";
+import { recordBatchForUndo } from "./undo";
+
+type CompressionSave = Pick<
+  Save,
+  "id" | "files" | "width" | "height" | "dominantColors" | "blurhash"
+>;
+
+export interface CompressionCandidate {
+  save: CompressionSave;
+  file: SaveFile;
+  source: Buffer;
+  thumbnail: { file: SaveFile; source: Buffer } | null;
+}
+
+export interface CompressionRuntime {
+  load(
+    ids: readonly string[],
+    fileIndex: number,
+    signal: AbortSignal,
+  ): Promise<CompressionCandidate[]>;
+  commit(transactions: Transaction[]): Promise<void>;
+  recordUndo(transactions: Transaction[]): void;
+}
+
+export interface ImageCompressionResult {
+  changed: number;
+  skipped: number;
+  bytesBefore: number;
+  bytesAfter: number;
+}
+
+const runtime: CompressionRuntime = {
+  async load(ids, fileIndex, signal) {
+    const root = resolvePaths().libraryRoot;
+    const db = await getDb();
+    const rows = db
+      .select()
+      .from(saves)
+      .where(inArray(saves.id, [...ids]))
+      .all();
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    const candidates: CompressionCandidate[] = [];
+    for (const id of ids) {
+      signal.throwIfAborted();
+      if (resolvePaths().libraryRoot !== root)
+        throw new Error(
+          "The active library changed. Start the compression again.",
+        );
+      const save = byId.get(id);
+      const file = save?.files?.[fileIndex];
+      if (!save || !file) continue;
+      const thumbnail = save.files?.find(
+        (entry) => entry.kind === THUMBNAIL_KIND,
+      );
+      candidates.push({
+        save,
+        file,
+        source: await readLibraryMedia(
+          join(root, "items", `${id}.info`, file.path),
+        ),
+        thumbnail: thumbnail
+          ? {
+              file: thumbnail,
+              source: await readLibraryMedia(
+                join(root, "items", `${id}.info`, thumbnail.path),
+              ),
+            }
+          : null,
+      });
+    }
+    return candidates;
+  },
+  async commit(transactions) {
+    await executeBatch(transactions);
+  },
+  recordUndo: recordBatchForUndo,
+};
+
+export async function compressExistingImages(
+  input: ImageCompressionRequest & {
+    signal: AbortSignal;
+    onProgress?: (completed: number, total: number) => void;
+    assertActive?: () => void;
+  },
+  operations: CompressionRuntime = runtime,
+): Promise<ImageCompressionResult> {
+  const ids = [...new Set(input.ids)];
+  const candidates = await operations.load(ids, input.fileIndex, input.signal);
+  const transactions: Transaction[] = [];
+  let bytesBefore = 0;
+  let bytesAfter = 0;
+  let skipped = ids.length - candidates.length;
+  for (const [index, candidate] of candidates.entries()) {
+    input.signal.throwIfAborted();
+    input.assertActive?.();
+    const compressed = await encodeCompressedImage(
+      candidate.source,
+      candidate.file.path,
+      input.mode,
+      input.quality,
+    );
+    if (!compressed || compressed.length >= candidate.source.length) {
+      skipped += 1;
+      input.onProgress?.(index + 1, ids.length);
+      continue;
+    }
+    const transaction = await compressionTransaction(candidate, compressed);
+    transactions.push(transaction);
+    bytesBefore += candidate.source.length;
+    bytesAfter += compressed.length;
+    input.onProgress?.(index + 1, ids.length);
+  }
+  input.signal.throwIfAborted();
+  input.assertActive?.();
+  if (transactions.length > 0) {
+    await operations.commit(transactions);
+    operations.recordUndo(transactions);
+  }
+  return {
+    changed: transactions.length,
+    skipped,
+    bytesBefore,
+    bytesAfter,
+  };
+}
+
+export async function encodeCompressedImage(
+  source: Buffer,
+  path: string,
+  mode: ImageCompressionRequest["mode"],
+  quality: number,
+): Promise<Buffer | null> {
+  const extension = extname(path).slice(1).toLowerCase();
+  if (extension === "svg") {
+    if (mode !== "lossless") return null;
+    return optimizeSvg(source);
+  }
+  const image = sharp(source, {
+    animated: extension === "gif" || extension === "webp",
+    failOn: "warning",
+    limitInputPixels: 100_000_000,
+  }).rotate();
+  switch (extension) {
+    case "jpg":
+    case "jpeg":
+    case "jpe":
+    case "jfif":
+      if (mode === "lossless") return null;
+      return image.jpeg({ quality, mozjpeg: true }).toBuffer();
+    case "png":
+      return image
+        .png(
+          mode === "lossless"
+            ? { compressionLevel: 9 }
+            : {
+                compressionLevel: 9,
+                palette: true,
+                quality,
+              },
+        )
+        .toBuffer();
+    case "webp":
+      return image
+        .webp({ quality, lossless: mode === "lossless", effort: 6 })
+        .toBuffer();
+    case "gif":
+      if (!sharp.format.gif.output)
+        throw new Error("Sharp cannot compress GIF files in this build.");
+      return image
+        .gif(
+          mode === "lossless"
+            ? { effort: 10, reuse: true }
+            : {
+                effort: 10,
+                colours: Math.max(2, Math.round((quality / 100) * 254) + 2),
+              },
+        )
+        .toBuffer();
+    default:
+      return null;
+  }
+}
+
+async function compressionTransaction(
+  candidate: CompressionCandidate,
+  compressed: Buffer,
+): Promise<Transaction> {
+  const metadata = await sharp(compressed, {
+    animated: candidate.file.path.toLowerCase().endsWith(".gif"),
+  }).metadata();
+  const updatedFile: SaveFile = {
+    ...candidate.file,
+    sha256: digest(compressed),
+    size: compressed.length,
+    width: metadata.width ?? candidate.file.width,
+    height: metadata.pageHeight ?? metadata.height ?? candidate.file.height,
+  };
+  const files = (candidate.save.files ?? []).map((file) =>
+    file.path === candidate.file.path ? updatedFile : file,
+  );
+  const writes: TxSaveFile[] = [
+    { filename: candidate.file.path, bytes: compressed },
+  ];
+  const beforeFiles: TxSaveFile[] = [
+    { filename: candidate.file.path, bytes: candidate.source },
+  ];
+  let thumbnailBytes: Buffer | null = null;
+  if (candidate.thumbnail) {
+    thumbnailBytes = await renderThumbnailPng(compressed);
+    if (thumbnailBytes) {
+      const thumbnailMetadata = await sharp(thumbnailBytes).metadata();
+      const updatedThumbnail: SaveFile = {
+        ...candidate.thumbnail.file,
+        sha256: digest(thumbnailBytes),
+        size: thumbnailBytes.length,
+        mimeType: "image/png",
+        width: thumbnailMetadata.width ?? null,
+        height: thumbnailMetadata.height ?? null,
+      };
+      const thumbnailIndex = files.findIndex(
+        (file) => file.path === candidate.thumbnail?.file.path,
+      );
+      if (thumbnailIndex >= 0) files[thumbnailIndex] = updatedThumbnail;
+      writes.push({
+        filename: candidate.thumbnail.file.path,
+        bytes: thumbnailBytes,
+      });
+      beforeFiles.push({
+        filename: candidate.thumbnail.file.path,
+        bytes: candidate.thumbnail.source,
+      });
+    }
+  }
+  const palette = await extractPalette(compressed);
+  const blurhash = thumbnailBytes
+    ? await encodeBlurhash(thumbnailBytes)
+    : await encodeBlurhash(compressed);
+  const patch = {
+    files,
+    width: metadata.width ?? candidate.save.width,
+    height: metadata.pageHeight ?? metadata.height ?? candidate.save.height,
+    dominantColors:
+      palette.length > 0 ? palette : candidate.save.dominantColors,
+    blurhash: blurhash ?? candidate.save.blurhash,
+  };
+  return {
+    kind: "update",
+    model: "save",
+    id: candidate.save.id,
+    before: {
+      files: candidate.save.files,
+      width: candidate.save.width,
+      height: candidate.save.height,
+      dominantColors: candidate.save.dominantColors,
+      blurhash: candidate.save.blurhash,
+    },
+    patch,
+    files: writes,
+    beforeFiles,
+    meta: {
+      actor: "user",
+      actorReason: "image:compress",
+    },
+  };
+}
+
+function digest(bytes: Buffer): string {
+  return createHash("sha256").update(bytes).digest("hex");
+}
+
+function optimizeSvg(source: Buffer): Buffer {
+  const optimized = source
+    .toString("utf8")
+    .replace(/^\uFEFF/, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/\r\n?/g, "\n")
+    .trim();
+  return Buffer.from(optimized);
+}

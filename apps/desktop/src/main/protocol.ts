@@ -1,4 +1,4 @@
-import { createReadStream, existsSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { stat } from "node:fs/promises";
 import { extname, join, normalize, resolve } from "node:path";
 import { Readable } from "node:stream";
@@ -6,6 +6,12 @@ import { app, net, protocol } from "electron";
 import log from "electron-log/main.js";
 import mime from "mime-types";
 import { POND_PROTOCOL } from "../shared/constants";
+import { assertLibraryUnlocked } from "./core/security/app-lock-runtime";
+import { saveIsLocked } from "./core/security/folder-passwords";
+import {
+  libraryMediaMetadata,
+  readLibraryMediaRange,
+} from "./core/security/library-media-storage";
 import {
   clampThumbWidth,
   ensureThumbnailInBackground,
@@ -64,6 +70,18 @@ export function registerProtocol() {
       if (!host || !file) {
         return new Response("bad request", { status: 400 });
       }
+      try {
+        assertLibraryUnlocked();
+      } catch {
+        return new Response("Library locked", { status: 423 });
+      }
+      if (
+        host !== META_HOST &&
+        host !== REPLAY_HOST &&
+        (await saveIsLocked(host))
+      ) {
+        return new Response("not found", { status: 404 });
+      }
 
       const { resolved, prefix } = resolveTarget(host, file);
       if (!resolved.startsWith(prefix)) {
@@ -110,7 +128,7 @@ export function registerProtocol() {
         return new Response("not found", { status: 404 });
       }
 
-      const total = info.size;
+      const total = (await libraryMediaMetadata(target)).originalSize;
       const ext = extname(target).toLowerCase();
       const contentType = mime.contentType(ext) || "application/octet-stream";
 
@@ -180,8 +198,22 @@ export function registerProtocol() {
 }
 
 function fileBody(path: string, range?: { start: number; end: number }) {
-  // SAFETY: `Readable.toWeb` is typed `ReadableStream<any>`; a file stream yields byte chunks.
-  return Readable.toWeb(createReadStream(path, range)) as ReadableStream<
+  const bounded = range
+    ? readLibraryMediaRange({
+        path,
+        start: range.start,
+        endExclusive: range.end + 1,
+      })
+    : (async function* () {
+        const metadata = await libraryMediaMetadata(path);
+        yield* readLibraryMediaRange({
+          path,
+          start: 0,
+          endExclusive: metadata.originalSize,
+        });
+      })();
+  /** SAFETY: `bounded` yields only byte buffers, while `Readable.toWeb` omits that specialization. */
+  return Readable.toWeb(Readable.from(bounded)) as ReadableStream<
     Uint8Array<ArrayBufferLike>
   >;
 }

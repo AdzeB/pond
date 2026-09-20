@@ -146,6 +146,9 @@ export const saves = sqliteTable(
     fileSize: integer("file_size"),
     phash: text("phash"),
     blurhash: text("blurhash"),
+    fontActivated: integer("font_activated", { mode: "boolean" })
+      .notNull()
+      .default(false),
     embedding: text("embedding", { mode: "json" }).$type<number[]>(),
     embeddingModel: text("embedding_model"),
     caption: text("caption"),
@@ -288,6 +291,16 @@ export const tagGroupMembers = sqliteTable(
   }),
 );
 
+export interface FolderPasswordVerifier {
+  algorithm: "scrypt";
+  version: 1;
+  salt: string;
+  hash: string;
+  N: number;
+  r: number;
+  p: number;
+}
+
 export const folders = sqliteTable("folders", {
   id: text("id").primaryKey(),
   parentId: text("parent_id"),
@@ -297,6 +310,27 @@ export const folders = sqliteTable("folders", {
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`(unixepoch() * 1000)`),
+});
+
+export const folderMetadata = sqliteTable("folder_metadata", {
+  folderId: text("folder_id")
+    .primaryKey()
+    .references(() => folders.id, { onDelete: "cascade" }),
+  description: text("description"),
+  externalLink: text("external_link"),
+});
+
+export const folderSecurity = sqliteTable("folder_security", {
+  folderId: text("folder_id")
+    .primaryKey()
+    .references(() => folders.id, { onDelete: "cascade" }),
+  passwordVerifier: text("password_verifier", { mode: "json" })
+    .$type<FolderPasswordVerifier>()
+    .notNull(),
+  passwordHint: text("password_hint"),
+  lockChildren: integer("lock_children", { mode: "boolean" })
+    .notNull()
+    .default(true),
 });
 
 export const saveFolders = sqliteTable(
@@ -472,6 +506,8 @@ export type SavedView = typeof savedViews.$inferSelect;
 export type NewSavedView = typeof savedViews.$inferInsert;
 export type Folder = typeof folders.$inferSelect;
 export type NewFolder = typeof folders.$inferInsert;
+export type FolderMetadata = typeof folderMetadata.$inferSelect;
+export type NewFolderMetadata = typeof folderMetadata.$inferInsert;
 export type SaveFolder = typeof saveFolders.$inferSelect;
 export type NewSaveFolder = typeof saveFolders.$inferInsert;
 export type AgentChat = typeof agentChats.$inferSelect;

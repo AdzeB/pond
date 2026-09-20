@@ -1,6 +1,6 @@
-import { Button, Dialog, Input } from "@pond/ui";
+import { Button, Checkbox, Dialog, Input } from "@pond/ui";
 import { useSelector } from "@tanstack/react-store";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import {
   readRecentFolderIds,
   rememberFolderDestinations,
@@ -21,6 +21,7 @@ export function FolderPickerHost() {
   return ids.length ? <FolderPicker ids={ids} key={ids.join("\n")} /> : null;
 }
 function FolderPicker({ ids }: { ids: readonly string[] }) {
+  const controlId = useId();
   const rows = useFolders();
   const memberships = useFolderMemberships();
   const [search, setSearch] = useState("");
@@ -130,7 +131,7 @@ function FolderPicker({ ids }: { ids: readonly string[] }) {
               />
             </Input.Root>
             <div className={styles.list}>
-              {matches.map((folder) => {
+              {matches.map((folder, index) => {
                 const assigned = ids.filter((id) =>
                   (memberships[id] ?? []).includes(folder.id),
                 ).length;
@@ -140,24 +141,27 @@ function FolderPicker({ ids }: { ids: readonly string[] }) {
                   assigned > 0 &&
                   assigned < ids.length;
                 return (
-                  <label key={folder.id} className={styles.row}>
-                    <input
-                      type="checkbox"
+                  <div key={folder.id} className={styles.row}>
+                    <Checkbox.Root
+                      id={`${controlId}-folder-${index}`}
+                      aria-label={folder.label}
                       checked={checked}
-                      ref={(element) => {
-                        if (element) element.indeterminate = mixed;
-                      }}
+                      indeterminate={mixed}
                       disabled={busy}
-                      onChange={(event) =>
+                      onCheckedChange={(next) =>
                         setChanges((prev) => ({
                           ...prev,
-                          [folder.id]: event.target.checked,
+                          [folder.id]: next,
                         }))
                       }
-                    />
-                    <span>{folder.label}</span>
+                    >
+                      <Checkbox.Indicator />
+                    </Checkbox.Root>
+                    <label htmlFor={`${controlId}-folder-${index}`}>
+                      {folder.label}
+                    </label>
                     {recent.includes(folder.id) ? <small>Recent</small> : null}
-                  </label>
+                  </div>
                 );
               })}
             </div>

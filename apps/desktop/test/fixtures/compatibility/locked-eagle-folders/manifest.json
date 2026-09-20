@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "eagle-library-locked-folders",
+  "kind": "locked-eagle-folders",
+  "baseline": {
+    "folderTree": [
+      {
+        "id": "visible",
+        "name": "Visible",
+        "children": []
+      },
+      {
+        "id": "locked",
+        "name": "Locked",
+        "password": "fixture-lock-marker",
+        "children": [
+          {
+            "id": "locked-child",
+            "name": "Locked Child",
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "compatibilityAssertions": [
+    "Report the locked folder with reason password.",
+    "Report its descendant with reason parent_locked.",
+    "Exclude both folders and their memberships from import.",
+    "Treat the marker as opaque Eagle metadata, not as a reusable credential."
+  ]
+}

@@ -1,35 +1,11 @@
 .field {
-  display: flex;
-  gap: 2px;
-  align-items: center;
   width: 100%;
-  height: 44px;
-  padding-inline: 12px 8px;
-  background: var(--ds-gray-2);
-  border-radius: var(--ds-radius-lg);
-}
-
-.field input {
-  flex: 1;
-  min-width: 0;
-  padding: 0;
-  font: inherit;
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-12);
-  outline: none;
-  background: none;
-  border: 0;
-}
-
-.field input::placeholder {
-  color: var(--ds-gray-9);
 }
 
 .field-spinner {
   flex: none;
   width: 14px;
   height: 14px;
-  margin-right: 4px;
   border: 2px solid var(--ds-gray-a4);
   border-top-color: var(--ds-accent-9);
   border-radius: 50%;

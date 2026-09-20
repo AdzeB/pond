@@ -6,7 +6,8 @@ import {
   saves,
 } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
-import { asc, eq, inArray, isNull } from "drizzle-orm";
+import { applyRenameTemplate } from "@shared/rename-template";
+import { asc, eq, inArray, isNull, notInArray } from "drizzle-orm";
 import { ulid } from "ulid";
 import { getDb } from "../db";
 import {
@@ -18,6 +19,7 @@ import { folderIdsForSave } from "./folder-memberships";
 import { planFolderBatchMove, planFolderMove } from "./folder-move";
 import { inheritedFolderTags, planFolderAssignment } from "./folder-tags";
 import { getPrefs, setPrefs } from "./prefs";
+import { lockedFolderIds } from "./security/folder-passwords";
 import { normalizeTagList, prepareTagRegistryUpdates } from "./tags";
 import { recordBatchForUndo } from "./undo";
 
@@ -119,6 +121,44 @@ export async function renameFolder(
   return { ok: true };
 }
 
+export async function renameFoldersBatch(input: {
+  ids: string[];
+  pattern: string;
+}): Promise<{ ok: boolean; renamed: number }> {
+  const ids = [...new Set(input.ids.filter(Boolean))];
+  const pattern = input.pattern.trim();
+  if (!pattern || ids.length === 0) return { ok: false, renamed: 0 };
+  const db = await getDb();
+  const rows = await db
+    .select()
+    .from(foldersTable)
+    .where(inArray(foldersTable.id, ids));
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const transactions: Transaction[] = [];
+  for (const [index, id] of ids.entries()) {
+    const row = byId.get(id);
+    if (!row) continue;
+    const name = applyRenameTemplate(pattern, {
+      index,
+      title: row.name,
+      original: row.name,
+      id: row.id,
+    });
+    if (!name || name === row.name) continue;
+    transactions.push({
+      kind: "update",
+      model: "folder",
+      id,
+      patch: { name },
+      before: { name: row.name },
+      meta: { actor: "user", actorReason: "folder-batch-rename" },
+    });
+  }
+  await executeBatch(transactions);
+  recordBatchForUndo(transactions);
+  return { ok: true, renamed: transactions.length };
+}
+
 export async function setFolderColor(
   id: string,
   color: string | null,
@@ -216,12 +256,18 @@ export async function memberships(): Promise<
   Array<{ saveId: string; folderId: string }>
 > {
   const db = await getDb();
+  const hidden = [...(await lockedFolderIds())];
   return db
     .select({
       saveId: saveFoldersTable.saveId,
       folderId: saveFoldersTable.folderId,
     })
-    .from(saveFoldersTable);
+    .from(saveFoldersTable)
+    .where(
+      hidden.length > 0
+        ? notInArray(saveFoldersTable.folderId, hidden)
+        : undefined,
+    );
 }
 
 export async function assignSaveFolders(

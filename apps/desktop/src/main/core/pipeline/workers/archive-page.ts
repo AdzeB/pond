@@ -17,6 +17,7 @@ import {
   writePartitionCookies,
 } from "../../refresh/scrape-window/session";
 import { sleep } from "../../refresh/scrape-window/util";
+import { readLibraryMedia } from "../../security/library-media-storage";
 import { TransientError } from "../extractors/errors";
 import {
   dropPageCookies,
@@ -82,10 +83,9 @@ export async function readArchivedMeta(
   saveId: string,
 ): Promise<{ scope: ArchiveScope; version: number }> {
   try {
-    const raw = await readFile(
-      itemFile(saveId, ARCHIVE_MANIFEST_FILENAME),
-      "utf8",
-    );
+    const raw = (
+      await readLibraryMedia(itemFile(saveId, ARCHIVE_MANIFEST_FILENAME))
+    ).toString("utf8");
     const manifest = StoredArchiveManifestSchema.parse(JSON.parse(raw));
     return {
       scope: manifest.scope === "page" ? "page" : "site",

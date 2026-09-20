@@ -43,6 +43,10 @@ import { enqueue } from "../pipeline/enqueue";
 import { refreshSave } from "../refresh";
 import { archiveSiteForSave } from "../refresh/archive-backfill";
 import { createView, listViews, updateView } from "../saved-views";
+import {
+  materializeLibraryMediaForExternalUse,
+  withDecryptedLibraryMediaPath,
+} from "../security/library-media-storage";
 import { syncAccount } from "../sync";
 import { createTag, mergeTags, renameTag, setSaveTags } from "../tags";
 import { applyPondOperation, summarizeOperationResult } from "./operations";
@@ -409,7 +413,9 @@ async function writeAction(
   } else if (change.action === "reveal") {
     const target = await resolveSaveFilePath(change.saveId, 0);
     if (!target.ok) throw new Error("Could not reveal this Save.");
-    shell.showItemInFolder(target.path);
+    shell.showItemInFolder(
+      await materializeLibraryMediaForExternalUse(target.path),
+    );
   } else if (change.action === "batchRename") {
     const pattern = String(payload.pattern ?? "");
     const ids = payload.ids ?? [];
@@ -423,7 +429,10 @@ async function writeAction(
       const family =
         stored?.family ??
         (stored?.path
-          ? await extractFontFamily(itemFile(row.id, stored.path))
+          ? await withDecryptedLibraryMediaPath(
+              itemFile(row.id, stored.path),
+              extractFontFamily,
+            )
           : null);
       const title = renameWithFamily(pattern, {
         n,

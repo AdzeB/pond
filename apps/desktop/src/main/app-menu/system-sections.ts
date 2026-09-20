@@ -2,7 +2,7 @@ import type { AppMenuContext, AppMenuItem } from "./types";
 
 export function buildSettingsItem(context: AppMenuContext): AppMenuItem {
   return {
-    label: "Settings",
+    label: context.translate("main.settings"),
     accelerator: context.accelerator("app.settings"),
     registerAccelerator: false,
     click: context.navTo("/settings"),
@@ -21,15 +21,22 @@ export function buildApplicationSections(
       submenu: [
         {
           role: "about",
-          label: `About ${context.appName}`,
+          label: context.translate("main.about", {
+            appName: context.appName,
+          }),
         },
         { type: "separator" },
         {
-          label: "Check for Updates",
+          label: context.translate("main.checkUpdates"),
           click: context.navTo("/settings/general"),
         },
         { type: "separator" },
         settingsItem,
+        {
+          label: context.translate("main.lock"),
+          accelerator: context.accelerator("app.lock"),
+          click: context.sendMenuAction("security.lock"),
+        },
         { type: "separator" },
         { role: "services" },
         { type: "separator" },
@@ -45,7 +52,7 @@ export function buildApplicationSections(
 
 export function buildWindowSection(context: AppMenuContext): AppMenuItem {
   return {
-    label: "Window",
+    label: context.translate("main.window"),
     submenu: [
       { role: "minimize" },
       { role: "zoom" },
@@ -61,7 +68,7 @@ export function buildDeveloperSections(context: AppMenuContext): AppMenuItem[] {
 
   return [
     {
-      label: "Developer",
+      label: context.translate("main.developer"),
       submenu: [
         { role: "reload" },
         { role: "forceReload" },
@@ -73,24 +80,24 @@ export function buildDeveloperSections(context: AppMenuContext): AppMenuItem[] {
 
 export function buildHelpSection(context: AppMenuContext): AppMenuItem {
   return {
-    label: "Help",
+    label: context.translate("main.help"),
     role: "help",
     submenu: [
       {
-        label: "Twitter",
+        label: context.translate("main.twitter"),
         click: context.openExternalUrl("https://x.com/raphaelsalaja"),
       },
       {
-        label: "GitHub",
+        label: context.translate("main.github"),
         click: context.openExternalUrl("https://github.com/raphaelsalaja"),
       },
       {
-        label: "Email",
+        label: context.translate("main.email"),
         click: context.openExternalUrl("mailto:raphaelsalaja@gmail.com"),
       },
       { type: "separator" },
       {
-        label: "Show Logs in Finder",
+        label: context.translate("main.showLogs"),
         click: context.showLogs,
       },
     ],

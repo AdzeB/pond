@@ -6,7 +6,7 @@ import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
 import { IconCircleXmarkFill18 } from "@pond/icons/fill/18";
-import { Button, Loader, Tooltip } from "@pond/ui";
+import { Button, Loader, Menu, Tooltip } from "@pond/ui";
 import {
   $createTextNode,
   $getRoot,
@@ -42,6 +42,11 @@ import {
   flattenPredicates,
 } from "@/features/search/lib/nl-query";
 import { parseSearchInput } from "@/features/search/lib/syntax";
+import {
+  recordRecentSearch,
+  removeRecentSearch,
+  useRecentSearches,
+} from "@/features/search/state/recent-searches";
 import { useTags } from "@/features/tags/state/tags";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { stopAppHotkeysFromEditable } from "@/shared/lib/editable-target";
@@ -93,6 +98,7 @@ function SearchField({
   const searchNonce = useSearchNonce();
   const hostRef = useRef<HTMLDivElement>(null);
   const [typeaheadOpen, setTypeaheadOpen] = useState(false);
+  const [focused, setFocused] = useState(false);
   const [status, setStatus] = useState<"idle" | "thinking" | "error">("idle");
   const compileRef = useRef(compile);
   compileRef.current = compile;
@@ -102,6 +108,7 @@ function SearchField({
   typeaheadOpenRef.current = typeaheadOpen;
   const runRef = useRef(0);
   const scrollFade = useScrollFade<HTMLDivElement>();
+  const recentSearches = useRecentSearches();
 
   const tagNames = useMemo(() => tags.map((t) => t.name), [tags]);
 
@@ -163,6 +170,7 @@ function SearchField({
       raw = $readSearchString();
     });
     if (!raw) return;
+    recordRecentSearch(raw);
     const parsed = parseSearchInput(raw);
     if (!parsed.text.trim()) {
       setSearchDraft(raw, true);
@@ -249,7 +257,15 @@ function SearchField({
   };
 
   return (
-    <div ref={hostRef} className={styles.wrap}>
+    <div
+      ref={hostRef}
+      className={styles.wrap}
+      onFocusCapture={() => setFocused(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget))
+          setFocused(false);
+      }}
+    >
       <div className={styles.bar}>
         <div className={styles.editor}>
           <PlainTextPlugin
@@ -302,6 +318,40 @@ function SearchField({
           </Tooltip>
         ) : null}
       </div>
+      {focused && !hasText && recentSearches.length > 0 ? (
+        <Menu.Surface className={styles.recent}>
+          <Menu.SectionLabel>Recent Searches</Menu.SectionLabel>
+          <Menu.List role="listbox" aria-label="Recent Searches">
+            {recentSearches.map((query) => (
+              <Menu.Row
+                key={query}
+                role="option"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  setSearchDraft(query, true);
+                  editor.update(() => $writeSearchString(query), {
+                    tag: "search-store-sync",
+                  });
+                }}
+              >
+                <Menu.ItemLabel>{query}</Menu.ItemLabel>
+                <Button
+                  icon
+                  size="xs"
+                  variant="ghost"
+                  aria-label={`Remove ${query}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    removeRecentSearch(query);
+                  }}
+                >
+                  <IconCircleXmarkFill18 />
+                </Button>
+              </Menu.Row>
+            ))}
+          </Menu.List>
+        </Menu.Surface>
+      ) : null}
       {status === "error" ? (
         <div className={styles.status}>
           <span role="status">

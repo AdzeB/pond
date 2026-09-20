@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { createReadStream, existsSync } from "node:fs";
-import { copyFile, mkdir, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, rm, stat } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
 import {
   type NewSave,
@@ -16,6 +16,10 @@ import { getDb } from "../../../db";
 import { withRawSlim } from "../../../lib/raw-slim";
 import { itemDir } from "../../../paths";
 import { broadcastSyncAction, withMutationScope } from "../../executor";
+import {
+  encryptLibraryMediaFile,
+  writeLibraryMedia,
+} from "../../security/library-media-storage";
 import { hasUserTitle } from "../../user-metadata";
 
 interface WriteFileMetadata {
@@ -170,21 +174,21 @@ export async function persistWriteFile(
 ): Promise<{ sha256: string; size: number } | null> {
   if (file.bytes) {
     if (file.bytes.byteLength === 0) return null;
-    await writeFile(targetPath, file.bytes);
+    await writeLibraryMedia(targetPath, file.bytes);
     return {
       sha256: createHash("sha256").update(file.bytes).digest("hex"),
       size: file.bytes.byteLength,
     };
   }
 
-  await copyFile(file.sourcePath, targetPath);
-  const { size } = await stat(targetPath);
+  const { size } = await stat(file.sourcePath);
   if (size === 0) {
-    await rm(targetPath, { force: true });
     return null;
   }
   const hash = createHash("sha256");
-  for await (const chunk of createReadStream(targetPath)) hash.update(chunk);
+  for await (const chunk of createReadStream(file.sourcePath))
+    hash.update(chunk);
+  await encryptLibraryMediaFile(file.sourcePath, targetPath);
   return { sha256: hash.digest("hex"), size };
 }
 

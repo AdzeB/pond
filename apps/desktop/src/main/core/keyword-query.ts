@@ -1,14 +1,46 @@
-import { saves } from "@pond/schema/db";
+import { folderMetadata, folders, saveFolders, saves } from "@pond/schema/db";
 import { type SQL, sql } from "drizzle-orm";
 
+type KeywordScope =
+  | "title"
+  | "description"
+  | "creator"
+  | "tags"
+  | "notes"
+  | "url"
+  | "folder"
+  | "folder-description";
+type IndexedKeywordScope = Exclude<
+  KeywordScope,
+  "folder" | "folder-description"
+>;
 type Keyword =
-  | { kind: "term"; value: string; phrase: boolean }
+  | {
+      kind: "term";
+      value: string;
+      phrase: boolean;
+      scope?: KeywordScope;
+    }
   | { kind: "not"; child: Keyword }
   | { kind: "and" | "or"; left: Keyword; right: Keyword };
 
 type Token =
-  | { kind: "term"; value: string; phrase: boolean }
+  | Extract<Keyword, { kind: "term" }>
   | { kind: "and" | "or" | "not" | "open" | "close" };
+
+const SCOPES = new Set<string>([
+  "title",
+  "description",
+  "creator",
+  "tags",
+  "notes",
+  "url",
+  "folder",
+  "folder-description",
+]);
+function isKeywordScope(value: string): value is KeywordScope {
+  return SCOPES.has(value);
+}
 
 function tokenize(query: string): Token[] {
   if (query.length > 4096) throw new Error("Search is too long.");
@@ -32,7 +64,11 @@ function tokenize(query: string): Token[] {
       offset += 2;
       continue;
     }
-    const phrase = char === '"';
+    const scoped = query.slice(offset).match(/^([\p{L}-]+):/u);
+    const rawScope = scoped?.[1]?.toLowerCase();
+    const scope = rawScope && isKeywordScope(rawScope) ? rawScope : undefined;
+    if (scope) offset += scoped?.[0].length ?? 0;
+    const phrase = query[offset] === '"';
     if (phrase) offset += 1;
     let value = "";
     while (offset < query.length) {
@@ -62,7 +98,7 @@ function tokenize(query: string): Token[] {
     } else {
       value = value.replaceAll("*", "").trim();
       if (/[\p{L}\p{N}]/u.test(value))
-        tokens.push({ kind: "term", value, phrase });
+        tokens.push({ kind: "term", value, phrase, scope });
     }
     if (tokens.length > 128) throw new Error("Search has too many conditions.");
   }
@@ -124,7 +160,22 @@ function parse(query: string, mode: "all" | "any"): Keyword | null {
 }
 
 function termQuery(term: Extract<Keyword, { kind: "term" }>): string {
-  return `"${term.value.replaceAll('"', '""')}"${term.phrase ? "" : "*"}`;
+  const value = `"${term.value.replaceAll('"', '""')}"${term.phrase ? "" : "*"}`;
+  const columns = {
+    title: "title",
+    description: "description",
+    creator: "author",
+    tags: "tag_names",
+    notes: "notes",
+    url: "url",
+  } satisfies Record<IndexedKeywordScope, string>;
+  if (
+    !term.scope ||
+    term.scope === "folder" ||
+    term.scope === "folder-description"
+  )
+    return value;
+  return `${columns[term.scope]} : ${value}`;
 }
 
 export function compileKeywordWhere(
@@ -133,8 +184,21 @@ export function compileKeywordWhere(
 ): SQL | undefined {
   const tree = parse(query, mode);
   function compile(node: Keyword): SQL {
-    if (node.kind === "term")
+    if (node.kind === "term") {
+      if (node.scope === "folder" || node.scope === "folder-description") {
+        const column =
+          node.scope === "folder" ? folders.name : folderMetadata.description;
+        const value = `%${node.value.toLowerCase()}%`;
+        return sql`exists (
+          select 1 from ${saveFolders}
+          inner join ${folders} on ${folders.id} = ${saveFolders.folderId}
+          left join ${folderMetadata} on ${folderMetadata.folderId} = ${folders.id}
+          where ${saveFolders.saveId} = ${saves.id}
+            and lower(coalesce(${column}, '')) like ${value}
+        )`;
+      }
       return sql`${saves.id} in (select id from saves_fts where saves_fts match ${termQuery(node)})`;
+    }
     if (node.kind === "not") return sql`not (${compile(node.child)})`;
     return node.kind === "and"
       ? sql`(${compile(node.left)}) and (${compile(node.right)})`
@@ -170,6 +234,14 @@ export function toFtsMatchQuery(
 ): string | null {
   const tree = parse(query, mode);
   if (!tree) return null;
+  const hasFolderScope = (node: Keyword): boolean =>
+    node.kind === "term"
+      ? node.scope === "folder" || node.scope === "folder-description"
+      : node.kind === "not"
+        ? hasFolderScope(node.child)
+        : hasFolderScope(node.left) || hasFolderScope(node.right);
+  if (hasFolderScope(tree))
+    throw new Error("Folder fields require the full-library keyword query.");
   const branches = alternatives(tree).map((branch) => {
     const include = branch
       .filter((literal) => !literal.negative)

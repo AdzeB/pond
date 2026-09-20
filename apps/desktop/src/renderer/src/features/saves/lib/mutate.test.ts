@@ -67,7 +67,9 @@ it("retains cold IDs for trash, restore, and purge beyond the loaded page", asyn
   expect(await purgeSaves(ids)).toBe(ids.length);
   expect(query.mock.calls).toEqual([
     ["saves.bulkEdit", { ids, operation: { kind: "trash" } }],
+    ["feedback.emit", { event: "saveDeletion" }],
     ["saves.bulkEdit", { ids, operation: { kind: "untrash" } }],
     ["saves.bulkEdit", { ids, operation: { kind: "purge" } }],
+    ["feedback.emit", { event: "saveDeletion" }],
   ]);
 });

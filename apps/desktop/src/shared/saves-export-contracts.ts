@@ -2,7 +2,8 @@ import type { OkResult } from "./query-contracts-shared";
 import type { SavesFileInput, SavesIdsInput } from "./saves-contracts-shared";
 
 export interface SavesExportQueryInputs {
-  "saves.exportPackage": SavesIdsInput;
+  "saves.exportEaglePackage": SavesIdsInput;
+  "saves.exportPackage": SavesIdsInput & { password?: string };
   "saves.exportFile": SavesFileInput;
   "saves.share": { id: string; fileIndex?: number };
   "saves.exportFiles": SavesIdsInput;
@@ -11,10 +12,17 @@ export interface SavesExportQueryInputs {
 }
 
 export interface SavesExportQueryResults {
+  "saves.exportEaglePackage": {
+    ok: boolean;
+    path?: string;
+    exported?: number;
+    error?: string;
+  };
   "saves.exportPackage": {
     ok: boolean;
     path?: string;
     exported?: number;
+    recoveryKey?: string;
     error?: string;
   };
   "saves.exportFile": OkResult & { path?: string };

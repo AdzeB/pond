@@ -25,40 +25,45 @@ function edgesOf(element: HTMLElement, axis: ScrollAxis): ScrollEdges {
   return end ? "end" : "";
 }
 
-export function useScrollFade<T extends HTMLElement>() {
+export function useScrollFade<T extends HTMLElement>(fixedAxis?: ScrollAxis) {
   const ref = useRef<T>(null);
-  const [axis, setAxis] = useState<ScrollAxis>("y");
+  const [axis, setAxis] = useState<ScrollAxis>(fixedAxis ?? "y");
   const [edges, setEdges] = useState<ScrollEdges>("");
 
   const update = useCallback(() => {
     const element = ref.current;
     if (!element) return;
-    const nextAxis = axisOf(element);
+    const nextAxis = fixedAxis ?? axisOf(element);
     const nextEdges = edgesOf(element, nextAxis);
     setAxis((current) => (current === nextAxis ? current : nextAxis));
     setEdges((current) => (current === nextEdges ? current : nextEdges));
-  }, []);
+  }, [fixedAxis]);
 
   useLayoutEffect(() => {
     const element = ref.current;
     if (!element) return;
 
-    const resizeObserver = new ResizeObserver(update);
+    const ResizeObserverConstructor = globalThis.ResizeObserver;
+    const resizeObserver = ResizeObserverConstructor
+      ? new ResizeObserverConstructor(update)
+      : null;
     const observeLayout = () => {
-      resizeObserver.disconnect();
-      resizeObserver.observe(element);
-      for (const child of element.children) resizeObserver.observe(child);
+      resizeObserver?.disconnect();
+      resizeObserver?.observe(element);
+      for (const child of element.children) resizeObserver?.observe(child);
       update();
     };
     const mutationObserver = new MutationObserver(observeLayout);
 
     observeLayout();
     element.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update, { passive: true });
     mutationObserver.observe(element, { childList: true, subtree: true });
 
     return () => {
       element.removeEventListener("scroll", update);
-      resizeObserver.disconnect();
+      window.removeEventListener("resize", update);
+      resizeObserver?.disconnect();
       mutationObserver.disconnect();
     };
   }, [update]);

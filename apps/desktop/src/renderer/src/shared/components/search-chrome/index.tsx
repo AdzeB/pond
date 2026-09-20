@@ -1,6 +1,10 @@
-import { IconMagnifierOutline18 } from "@pond/icons/outline/18";
-import { cn } from "@pond/ui";
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import { IconMagnifierOutline12 } from "@pond/icons/outline/12";
+import { cn, Input } from "@pond/ui";
+import {
+  type ComponentPropsWithoutRef,
+  forwardRef,
+  type ReactNode,
+} from "react";
 import styles from "./styles.module.css";
 
 interface SearchChromeProps {
@@ -20,7 +24,7 @@ export function SearchChrome({
     <div className={cn(styles.root, className)}>
       <div className={styles.bar}>
         <span className={styles.mark} aria-hidden="true">
-          <IconMagnifierOutline18 size={16} />
+          <IconMagnifierOutline12 />
         </span>
         <div className={styles.search}>{children}</div>
         {actions ? <div className={styles.actions}>{actions}</div> : null}
@@ -30,9 +34,17 @@ export function SearchChrome({
   );
 }
 
-export function SearchChromeInput({
-  className,
-  ...props
-}: ComponentPropsWithoutRef<"input">) {
-  return <input className={cn(styles.input, className)} {...props} />;
-}
+export const SearchChromeInput = forwardRef<
+  HTMLInputElement,
+  ComponentPropsWithoutRef<typeof Input.Field>
+>(function SearchChromeInput({ className, ...props }, ref) {
+  return (
+    <Input.Root
+      className={cn(styles.input, className)}
+      size="md"
+      variant="borderless"
+    >
+      <Input.Field ref={ref} {...props} />
+    </Input.Root>
+  );
+});

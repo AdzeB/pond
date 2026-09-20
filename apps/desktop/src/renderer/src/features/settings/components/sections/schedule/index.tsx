@@ -1,6 +1,6 @@
 import { FetchRecurrenceSchema } from "@pond/schema";
 import { DEFAULT_SYNC_CRON } from "@pond/schema/db";
-import { Button } from "@pond/ui";
+import { Button, Input, Select, Toggle, ToggleGroup } from "@pond/ui";
 import type { SyncSchedule } from "@shared/sync-schedule";
 import { useState } from "react";
 import { savePrefsSection, usePrefs } from "@/features/settings/state/prefs";
@@ -100,99 +100,104 @@ export function ScheduleEditor({
     >
       <fieldset className={styles.card} disabled={status === "saving"}>
         <legend className={styles.srOnly}>Fetch schedule</legend>
-        <select
-          className={styles.trigger}
-          aria-label="Schedule mode"
+        <ScheduleSelect
+          label="Schedule mode"
           value={enabled ? "scheduled" : "manual"}
-          onChange={(event) => setEnabled(event.target.value === "scheduled")}
-        >
-          <option value="scheduled">Schedule</option>
-          <option value="manual">Manual</option>
-        </select>
+          items={[
+            { value: "scheduled", label: "Schedule" },
+            { value: "manual", label: "Manual" },
+          ]}
+          onChange={(value) => {
+            edit();
+            setEnabled(value === "scheduled");
+          }}
+        />
         {enabled ? (
           <>
             <div className={styles.sentence}>
               <span className={styles.phrase}>
                 Starting{" "}
-                <input
-                  aria-label="Start date"
-                  type="date"
-                  required
-                  value={startDate}
-                  onChange={(event) => setStartDate(event.target.value)}
-                />
+                <Input.Root size="sm" className={styles.date}>
+                  <Input.Field
+                    aria-label="Start date"
+                    type="date"
+                    required
+                    value={startDate}
+                    onChange={(event) => setStartDate(event.target.value)}
+                  />
+                </Input.Root>
               </span>
               <span className={styles.phrase}>
                 every{" "}
-                <input
-                  className={styles.interval}
-                  aria-label="Repeat interval"
-                  type="number"
-                  min="1"
-                  max="999"
-                  step="1"
-                  required
-                  value={every}
-                  onChange={(event) => setEvery(event.target.value)}
-                />
-                <select
-                  aria-label="Repeat"
+                <Input.Root size="sm" className={styles.interval}>
+                  <Input.Field
+                    aria-label="Repeat interval"
+                    type="number"
+                    min="1"
+                    max="999"
+                    step="1"
+                    required
+                    value={every}
+                    onChange={(event) => setEvery(event.target.value)}
+                  />
+                </Input.Root>
+                <ScheduleSelect
+                  label="Repeat"
                   value={unit}
-                  onChange={(event) => {
-                    const selected = units.find(
-                      (value) => value === event.target.value,
-                    );
-                    if (selected) setUnit(selected);
+                  items={units.map((value) => ({
+                    value,
+                    label: Number(every) === 1 ? value : `${value}s`,
+                  }))}
+                  onChange={(selected) => {
+                    edit();
+                    setUnit(selected);
                   }}
-                >
-                  {units.map((value) => (
-                    <option key={value} value={value}>
-                      {value}
-                      {Number(every) === 1 ? "" : "s"}
-                    </option>
-                  ))}
-                </select>
+                />
               </span>
               {unit !== "hour" ? (
                 <span className={styles.phrase}>
                   at{" "}
-                  <input
-                    aria-label="Fetch time"
-                    type="time"
-                    required
-                    value={time}
-                    onChange={(event) => setTime(event.target.value)}
-                  />
+                  <Input.Root size="sm" className={styles.time}>
+                    <Input.Field
+                      aria-label="Fetch time"
+                      type="time"
+                      required
+                      value={time}
+                      onChange={(event) => setTime(event.target.value)}
+                    />
+                  </Input.Root>
                 </span>
               ) : null}
             </div>
             {unit === "week" ? (
               <fieldset className={styles.week}>
                 <legend>On these days</legend>
-                <div className={styles.days}>
+                <ToggleGroup
+                  multiple
+                  className={styles.days}
+                  aria-label="Days of week"
+                  value={days.map(String)}
+                  onValueChange={(values) => {
+                    edit();
+                    setDays(
+                      values
+                        .map(Number)
+                        .sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7)),
+                    );
+                  }}
+                >
                   {[1, 2, 3, 4, 5, 6, 0].map((day) => (
-                    <Button
+                    <Toggle
                       key={day}
                       type="button"
                       size="sm"
-                      variant={days.includes(day) ? "primary" : "tertiary"}
+                      value={String(day)}
                       aria-label={weekdayNames[day]}
-                      aria-pressed={days.includes(day)}
-                      onClick={() => {
-                        edit();
-                        setDays((current) =>
-                          current.includes(day)
-                            ? current.filter((value) => value !== day)
-                            : [...current, day].sort(
-                                (a, b) => ((a + 6) % 7) - ((b + 6) % 7),
-                              ),
-                        );
-                      }}
                     >
                       {weekdayNames[day]?.slice(0, 3)}
-                    </Button>
+                    </Toggle>
                   ))}
-                </div>
+                </ToggleGroup>
               </fieldset>
             ) : null}
           </>
@@ -227,5 +232,38 @@ export function ScheduleEditor({
         </p>
       ) : null}
     </form>
+  );
+}
+
+function ScheduleSelect<Value extends string>({
+  label,
+  value,
+  items,
+  onChange,
+}: {
+  label: string;
+  value: Value;
+  items: { value: Value; label: string }[];
+  onChange: (value: Value) => void;
+}) {
+  return (
+    <Select.Root
+      value={value}
+      items={items}
+      onValueChange={(next) => {
+        if (next !== null) onChange(next);
+      }}
+    >
+      <Select.Trigger size="sm" aria-label={label}>
+        <Select.Value />
+      </Select.Trigger>
+      <Select.Portal>
+        <Select.Positioner>
+          <Select.Popup>
+            <Select.Items items={items} />
+          </Select.Popup>
+        </Select.Positioner>
+      </Select.Portal>
+    </Select.Root>
   );
 }

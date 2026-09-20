@@ -4,7 +4,10 @@ import type { SaveListMode } from "@/features/saves/lib/list";
 import { openSave } from "@/features/saves/lib/save-nav";
 import { clearSaveSelection, clickSave } from "@/features/saves/lib/select";
 import { asUrlList, filePathsFromText } from "@/features/saves/lib/url-list";
+import { runViewerAction } from "@/features/saves/lib/viewer-actions";
+import { importFilesWithDuplicateReview } from "@/features/saves/state/duplicate-import-review";
 import { useSelectionSize } from "@/features/saves/state/selection";
+import { usePrefs } from "@/features/settings/state/prefs";
 import { notify } from "@/shared/lib/toast";
 
 interface CardActions {
@@ -35,7 +38,7 @@ function downloadingTitle(count: number): string {
 
 async function importFilesAndNotify(paths: readonly string[]): Promise<void> {
   const result = ImportReplySchema.parse(
-    await window.pond.query("saves.importFiles", { paths: [...paths] }),
+    await importFilesWithDuplicateReview({ paths: [...paths] }),
   );
   if (!result.ok) return;
   const count = result.ids?.length ?? paths.length;
@@ -80,18 +83,25 @@ export function useCardActions(
   mode: SaveListMode,
   sourceFilter: string,
 ): CardActions {
+  const [viewer] = usePrefs("viewer");
   const selectionSize = useSelectionSize();
   const multiSelectActive = selectionSize > 0;
 
-  const focus = useCallback((id: string) => {
-    openSave(id);
-  }, []);
+  const focus = useCallback(
+    (id: string) => {
+      runViewerAction(id, viewer.doubleClickAction);
+    },
+    [viewer.doubleClickAction],
+  );
 
-  const handleCardAuxClick = useCallback((id: string, e: React.MouseEvent) => {
-    if (e.button !== 1) return;
-    e.preventDefault();
-    openSave(id);
-  }, []);
+  const handleCardAuxClick = useCallback(
+    (id: string, e: React.MouseEvent) => {
+      if (e.button !== 1) return;
+      e.preventDefault();
+      runViewerAction(id, viewer.middleClickAction);
+    },
+    [viewer.middleClickAction],
+  );
 
   const handleCardClick = useCallback(
     (id: string, e: React.MouseEvent) => {

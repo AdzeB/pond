@@ -33,10 +33,12 @@ describe("inspector tag menus", () => {
   });
 
   it("clears tags from the empty field menu", () => {
-    expect(labels(buildEmptyTagFieldMenu(save))).toEqual([
+    const items = buildEmptyTagFieldMenu(save);
+    expect(labels(items)).toEqual([
       "Copy Tags",
       "Paste Tags",
       "Clear All Tags",
     ]);
+    expect(items.at(-1)).toMatchObject({ variant: "destructive" });
   });
 });

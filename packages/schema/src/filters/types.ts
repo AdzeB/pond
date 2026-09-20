@@ -106,6 +106,7 @@ export type FieldId =
   | "url"
   | "comment"
   | "fontFamily"
+  | "fontActivated"
   | "bpm";
 
 export interface FieldMeta {

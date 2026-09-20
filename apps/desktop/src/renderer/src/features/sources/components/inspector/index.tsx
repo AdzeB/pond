@@ -1,7 +1,7 @@
 import { IconDotsFill18 as Ellipsis } from "@pond/icons/fill/18";
 import { IconXmarkOutline18 as Cross } from "@pond/icons/outline/18";
 import type { Source } from "@pond/schema/db";
-import { Button, Menu, type MenuItemSpec, TitleBar } from "@pond/ui";
+import { Button, Input, Menu, type MenuItemSpec, TitleBar } from "@pond/ui";
 import { useEffect, useId, useRef, useState } from "react";
 import {
   libraryChrome,
@@ -474,21 +474,23 @@ function IdentityName({
   };
   return (
     <>
-      <input
-        id={id}
-        className={styles.name}
-        defaultValue={nickname}
-        aria-label="Nickname"
-        placeholder={placeholder}
-        disabled={status === "saving"}
-        aria-invalid={status === "error"}
-        aria-describedby={status === "error" ? `${id}-status` : undefined}
-        onChange={() => setStatus("idle")}
-        onBlur={(event) => void save(event.currentTarget.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") event.currentTarget.blur();
-        }}
-      />
+      <Input.Root className={styles.name} size="lg" variant="borderless">
+        <Input.Field
+          id={id}
+          className={styles["name-field"]}
+          defaultValue={nickname}
+          aria-label="Nickname"
+          placeholder={placeholder}
+          disabled={status === "saving"}
+          aria-invalid={status === "error"}
+          aria-describedby={status === "error" ? `${id}-status` : undefined}
+          onChange={() => setStatus("idle")}
+          onBlur={(event) => void save(event.currentTarget.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") event.currentTarget.blur();
+          }}
+        />
+      </Input.Root>
       {status === "error" ? (
         <p id={`${id}-status`} className={styles["field-status"]} role="alert">
           Couldn't save. Focus the field and press Enter to try again.

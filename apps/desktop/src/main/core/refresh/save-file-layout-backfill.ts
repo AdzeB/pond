@@ -11,6 +11,7 @@ import { INFO_FILE, StoredInfoDocSchema } from "../../lib/library-format";
 import { itemDir, resolvePaths } from "../../paths";
 import { currentPondId } from "../prefs-scope";
 import { migrateSaveFileLayout } from "../save-file-layout-migration";
+import { decodeLibraryFile } from "../security/library-file-storage";
 
 const MIGRATION_ID = "save-file-layout-v4";
 const MAX_INFLIGHT = 2;
@@ -22,8 +23,11 @@ function markerPath(): string {
 
 async function readStoredSchema(saveId: string): Promise<number | undefined> {
   try {
+    const path = join(itemDir(saveId), INFO_FILE);
     const parsed = StoredInfoDocSchema.safeParse(
-      JSON.parse(await readFile(join(itemDir(saveId), INFO_FILE), "utf8")),
+      JSON.parse(
+        decodeLibraryFile(path, await readFile(path)).toString("utf8"),
+      ),
     );
     return parsed.success ? parsed.data.schema : undefined;
   } catch {

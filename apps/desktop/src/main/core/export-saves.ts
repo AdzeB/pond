@@ -7,13 +7,13 @@ import {
 import { inArray } from "drizzle-orm";
 import { getDb } from "../db";
 import { itemDir } from "../paths";
+import { exportEaglePackage } from "./eagle-package";
 import { exportFiles } from "./export-files";
 import { runLibraryTransfer } from "./library-transfers";
 import { getPrefs } from "./prefs";
 
-async function exportSaves(
+async function exportSelection(
   ids: readonly string[],
-  directory: string,
   options: { includeDerived?: boolean } = {},
 ) {
   const unique = [...new Set(ids.filter(Boolean))];
@@ -46,8 +46,7 @@ async function exportSaves(
   const registry = options.includeDerived
     ? await db.select().from(tagsTable)
     : [];
-  return exportFiles({
-    directory,
+  return {
     includeDerived: options.includeDerived,
     organization: options.includeDerived
       ? {
@@ -81,6 +80,17 @@ async function exportSaves(
         .filter((membership) => membership.saveId === save.id)
         .map((membership) => membership.folderId),
     })),
+  };
+}
+
+async function exportSaves(
+  ids: readonly string[],
+  directory: string,
+  options: { includeDerived?: boolean } = {},
+) {
+  return exportFiles({
+    directory,
+    ...(await exportSelection(ids, options)),
   });
 }
 
@@ -90,4 +100,17 @@ export function exportSavesToDirectory(
   options: { includeDerived?: boolean } = {},
 ) {
   return runLibraryTransfer(() => exportSaves(ids, directory, options));
+}
+
+export function exportSavesToEaglePackage(
+  ids: readonly string[],
+  destination: string,
+) {
+  return runLibraryTransfer(async () => {
+    const selection = await exportSelection(ids);
+    return exportEaglePackage(
+      { items: selection.items, folders: selection.folders },
+      destination,
+    );
+  });
 }

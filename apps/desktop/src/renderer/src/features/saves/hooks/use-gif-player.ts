@@ -23,12 +23,17 @@ declare global {
   }
 }
 
-export function useGifPlayer(src: string, enabled: boolean, active: boolean) {
+export function useGifPlayer(
+  src: string,
+  enabled: boolean,
+  active: boolean,
+  autoplay = true,
+) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [decoder, setDecoder] = useState<BrowserImageDecoder | null>(null);
   const [frameCount, setFrameCount] = useState(0);
   const [frameIndex, setFrameIndex] = useState(0);
-  const [playing, setPlaying] = useState(true);
+  const [playing, setPlaying] = useState(autoplay);
   const [error, setError] = useState(false);
   const [rate, setRate] = useState(1);
   const [loop, setLoop] = useState<[number, number] | null>(() =>
@@ -37,6 +42,9 @@ export function useGifPlayer(src: string, enabled: boolean, active: boolean) {
   useEffect(() => {
     setLoop(viewerMemory.loop(src));
   }, [src]);
+  useEffect(() => {
+    setPlaying(autoplay);
+  }, [autoplay]);
   useEffect(() => {
     if (!enabled || !window.ImageDecoder) return;
     const abort = new AbortController();

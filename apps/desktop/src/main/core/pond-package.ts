@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
-import { constants, createReadStream } from "node:fs";
+import { existsSync } from "node:fs";
 import {
-  copyFile,
   mkdir,
   mkdtemp,
   readFile,
@@ -38,6 +37,16 @@ import {
   validatePackageOrganization,
 } from "./package-organization";
 import { readSave } from "./pipeline/workers/apply";
+import {
+  encryptLibraryMediaFile,
+  libraryMediaMetadata,
+  readLibraryMediaRange,
+} from "./security/library-media-storage";
+import {
+  decryptPondPackageDirectoryWithPassword,
+  POND_PACKAGE_SECURITY_MANIFEST_FILENAME,
+  protectPondPackageDirectory,
+} from "./security/pond-package-directory";
 import { prepareTagRegistryUpdates } from "./tags";
 import {
   checkTransferCancellation,
@@ -149,6 +158,9 @@ interface PackageImportRuntime {
   directory: (id: string) => string;
   commit: (id: string, save: PackageSave, folderIds: string[]) => Promise<void>;
 }
+const PackageImportRuntimeSchema = z.custom<PackageImportRuntime>(
+  (value) => value instanceof Object,
+);
 const runtime: PackageImportRuntime = {
   organization: importPackageOrganization,
   folders: (nodes) => withMutationScope(() => importFolderTree(nodes, true)),
@@ -227,7 +239,11 @@ const runtime: PackageImportRuntime = {
   },
 };
 
-async function exportPackage(ids: readonly string[], destination: string) {
+async function exportPackage(
+  ids: readonly string[],
+  destination: string,
+  password?: string,
+) {
   const parent = await realpath(dirname(resolve(destination)));
   const staging = await mkdtemp(join(parent, ".pond-package-"));
   try {
@@ -237,6 +253,19 @@ async function exportPackage(ids: readonly string[], destination: string) {
     await readPackage(staging);
     const path = join(parent, basename(destination));
     checkTransferCancellation();
+    if (password) {
+      const protectedPackage = await protectPondPackageDirectory({
+        sourceDirectory: staging,
+        packageDirectory: path,
+        password,
+      });
+      await rm(staging, { recursive: true, force: true });
+      return {
+        path,
+        exported: result.exported,
+        recoveryKey: protectedPackage.recoveryKey,
+      };
+    }
     await rename(staging, path);
     return { path, exported: result.exported };
   } catch (error) {
@@ -248,7 +277,12 @@ async function exportPackage(ids: readonly string[], destination: string) {
 async function hashFile(path: string) {
   const hash = createHash("sha256");
   let size = 0;
-  for await (const bytes of createReadStream(path)) {
+  const metadata = await libraryMediaMetadata(path);
+  for await (const bytes of readLibraryMediaRange({
+    path,
+    start: 0,
+    endExclusive: metadata.originalSize,
+  })) {
     checkTransferCancellation();
     hash.update(bytes);
     size += bytes.length;
@@ -380,7 +414,7 @@ async function importPackage(
             if (!source) throw new Error("A package original is missing.");
             const target = resolve(destination, file.path);
             await mkdir(dirname(target), { recursive: true });
-            await copyFile(source, target, constants.COPYFILE_EXCL);
+            await encryptLibraryMediaFile(source, target);
             const copiedFile = await hashFile(target);
             if (
               copiedFile.size !== file.size ||
@@ -426,12 +460,43 @@ async function importPackage(
   }
 }
 
-export function exportPondPackage(ids: readonly string[], destination: string) {
-  return runLibraryTransfer(() => exportPackage(ids, destination));
+export function exportPondPackage(
+  ids: readonly string[],
+  destination: string,
+  password?: string,
+) {
+  return runLibraryTransfer(() => exportPackage(ids, destination, password));
 }
 export function importPondPackage(
   directory: string,
+  passwordOrDependencies?: string | PackageImportRuntime,
   dependencies: PackageImportRuntime = runtime,
 ) {
-  return runLibraryTransfer(() => importPackage(directory, dependencies));
+  const parsedPassword = z.string().safeParse(passwordOrDependencies);
+  const parsedDependencies = PackageImportRuntimeSchema.safeParse(
+    passwordOrDependencies,
+  );
+  const password = parsedPassword.success ? parsedPassword.data : undefined;
+  const selectedDependencies = parsedDependencies.success
+    ? parsedDependencies.data
+    : dependencies;
+  return runLibraryTransfer(async () => {
+    if (!existsSync(join(directory, POND_PACKAGE_SECURITY_MANIFEST_FILENAME))) {
+      return importPackage(directory, selectedDependencies);
+    }
+    if (!password) throw new Error("This Pond package requires a password.");
+    const staging = await mkdtemp(
+      join(dirname(resolve(directory)), ".pond-import-"),
+    );
+    try {
+      await decryptPondPackageDirectoryWithPassword({
+        packageDirectory: directory,
+        stagingDirectory: staging,
+        password,
+      });
+      return await importPackage(staging, selectedDependencies);
+    } finally {
+      await rm(staging, { recursive: true, force: true });
+    }
+  });
 }

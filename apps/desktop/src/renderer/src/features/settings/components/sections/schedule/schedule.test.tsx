@@ -23,17 +23,18 @@ async function render(initial: SyncSchedule) {
     root.render(<ScheduleEditor initial={initial} onSave={save} />),
   );
 }
-async function choose(value: string) {
-  const select = host.querySelector<HTMLSelectElement>(
-    value === "manual"
-      ? 'select[aria-label="Schedule mode"]'
-      : 'select[aria-label="Repeat"]',
+async function choose(label: string, optionLabel: string) {
+  const trigger = host.querySelector<HTMLButtonElement>(
+    `button[aria-label="${label}"]`,
   );
-  if (!select) throw new Error("Missing repeat selector");
-  await act(async () => {
-    select.value = value;
-    select.dispatchEvent(new Event("change", { bubbles: true }));
-  });
+  if (!trigger) throw new Error(`Missing ${label} selector`);
+  await act(async () => trigger.click());
+  const option = [...document.querySelectorAll('[role="option"]')].find(
+    (item) => item.textContent === optionLabel,
+  );
+  if (!(option instanceof HTMLElement))
+    throw new Error(`Missing ${optionLabel} option`);
+  await act(async () => option.click());
 }
 async function submit() {
   await act(async () =>
@@ -44,7 +45,7 @@ async function submit() {
 }
 it("keeps edits as a draft until Save", async () => {
   await render({ enabled: true, intervalHours: 12 });
-  await choose("day");
+  await choose("Repeat", "days");
   expect(save).not.toHaveBeenCalled();
   await submit();
   expect(save).toHaveBeenCalledWith(
@@ -83,7 +84,7 @@ it("saves manual mode without a calendar rule", async () => {
     intervalHours: 6,
     calendar: { kind: "daily", time: "09:00" },
   });
-  await choose("manual");
+  await choose("Schedule mode", "Manual");
   await submit();
   expect(save).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -117,15 +118,8 @@ it("retains monthly settings when switching manual off again", async () => {
       days: [3],
     },
   });
-  await choose("manual");
-  const mode = host.querySelector<HTMLSelectElement>(
-    'select[aria-label="Schedule mode"]',
-  );
-  if (!mode) throw new Error("Missing schedule mode");
-  await act(async () => {
-    mode.value = "scheduled";
-    mode.dispatchEvent(new Event("change", { bubbles: true }));
-  });
+  await choose("Schedule mode", "Manual");
+  await choose("Schedule mode", "Schedule");
   await submit();
   expect(save).toHaveBeenCalledWith(
     expect.objectContaining({

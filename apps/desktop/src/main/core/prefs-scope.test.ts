@@ -18,6 +18,34 @@ describe("splitPrefsPatch", () => {
     expect(pond).toEqual({ preferences: { lightPresetId: "mint" } });
     expect(app).toEqual({ window: { restorePosition: false } });
   });
+
+  it("keeps the locale in the app slice", () => {
+    const { app, pond } = splitPrefsPatch({
+      localization: { locale: "ja" },
+    });
+    expect(app).toEqual({ localization: { locale: "ja" } });
+    expect(pond).toEqual({});
+  });
+
+  it("keeps feedback and sidebar behavior in the app slice", () => {
+    const { app, pond } = splitPrefsPatch({
+      window: { interfaceZoom: 150 },
+      sidebar: { showCounts: false },
+      feedback: {
+        sounds: { screenshot: false },
+        notifications: { autoImport: false },
+      },
+    });
+    expect(app).toMatchObject({
+      window: { interfaceZoom: 150 },
+      sidebar: { showCounts: false },
+      feedback: {
+        sounds: { screenshot: false },
+        notifications: { autoImport: false },
+      },
+    });
+    expect(pond).toEqual({});
+  });
 });
 
 describe("normalizeStoredPrefs", () => {
@@ -150,4 +178,36 @@ it("keeps automatic folder rules portable and isolated to their library", () => 
   const split = splitPrefsPatch({ folderRules: next.folderRules });
   expect(split.pond.folderRules).toEqual(next.folderRules);
   expect(split.app).not.toHaveProperty("folderRules");
+});
+
+it("deep-merges app feedback and sidebar destination preferences", () => {
+  const next = mergeAppSlice(
+    {
+      feedback: {
+        sounds: { screenshot: false },
+        notifications: { autoImport: false },
+      },
+      sidebar: { destinations: { trash: false } },
+    },
+    {
+      feedback: {
+        sounds: { folderDeletion: false },
+        notifications: { extensionCapture: false },
+      },
+      sidebar: { destinations: { sources: false } },
+    },
+  );
+
+  expect(next.feedback.sounds).toMatchObject({
+    screenshot: false,
+    folderDeletion: false,
+  });
+  expect(next.feedback.notifications).toMatchObject({
+    autoImport: false,
+    extensionCapture: false,
+  });
+  expect(next.sidebar.destinations).toMatchObject({
+    trash: false,
+    sources: false,
+  });
 });

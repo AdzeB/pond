@@ -4,6 +4,7 @@ import {
   IconBarsFilterOutline18,
   IconFolderSearchOutline18,
   IconGridOutline18,
+  IconLink2Outline18,
   IconPencilOutline18,
   IconPlusOutline18,
   IconTrash2Outline18,
@@ -19,6 +20,7 @@ import {
   type MenuItemSpec,
   Sidebar,
 } from "@pond/ui";
+import { librarySavedViewLink } from "@shared/library-links";
 import { useSelector } from "@tanstack/react-store";
 import { useId, useMemo, useState } from "react";
 import { filterToolbar } from "@/features/library/components/filter-menu/toolbar-state";
@@ -28,6 +30,7 @@ import {
   inheritedQueryFor,
 } from "@/features/library/lib/smart-folders";
 import { useFolders } from "@/features/library/state/folders";
+import { openOrganizationRenameDialog } from "@/features/library/state/organization-rename-dialog";
 import {
   savedViews,
   useSavedViews,
@@ -166,6 +169,22 @@ function entryItems({
       onClick: onRename,
     },
     {
+      label: "Batch Rename Smart Folders",
+      icon: <IconPencilOutline18 />,
+      onClick: () => openOrganizationRenameDialog("saved-views", view.id),
+    },
+    {
+      label: "Copy Link",
+      icon: <IconLink2Outline18 />,
+      onClick: () => {
+        void window.pond
+          .query("clipboard.writeText", {
+            text: librarySavedViewLink(window.pond.pondId(), view.id),
+          })
+          .then(() => notify({ id: "saved-view-link", title: "Link copied" }));
+      },
+    },
+    {
       type: "submenu",
       label: "Move to Group",
       icon: <IconGridOutline18 />,
@@ -187,6 +206,7 @@ function entryItems({
     {
       label: "Delete",
       icon: <IconTrash2Outline18 />,
+      variant: "destructive",
       onClick: () =>
         Dialog.confirm({
           title: `Delete ${label}`,

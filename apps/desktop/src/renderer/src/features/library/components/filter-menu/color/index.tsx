@@ -73,13 +73,9 @@ export function ColorFilter({
             aria-label={label}
             aria-pressed={!!match && preset.toLowerCase() === match.hex}
             title={label}
+            style={{ backgroundColor: preset }}
             onClick={() => apply(preset)}
-          >
-            <span
-              className={styles.swatch}
-              style={{ backgroundColor: preset }}
-            />
-          </Button>
+          />
         ))}
       </fieldset>
       <form
@@ -91,12 +87,6 @@ export function ColorFilter({
         }}
       >
         <label className={styles.field} htmlFor={hexId}>
-          <span
-            className={styles.preview}
-            data-empty={!match || undefined}
-            style={match ? { backgroundColor: match.hex } : undefined}
-            aria-hidden
-          />
           <Input.Root size="sm">
             <Input.Field
               id={hexId}
@@ -119,7 +109,6 @@ export function ColorFilter({
       </form>
       {match ? (
         <Slider.Root
-          className={styles.tolerance}
           min={0}
           max={150}
           step={1}
@@ -129,11 +118,8 @@ export function ColorFilter({
             if (next.success) apply(hex, next.data);
           }}
         >
-          <div className={styles.control}>
-            <Slider.Label>Tolerance</Slider.Label>
-            <Slider.Value />
-          </div>
-          <Slider.Control className={styles.slider}>
+          <Slider.Label>Tolerance:</Slider.Label>
+          <Slider.Control>
             <Slider.Track>
               <Slider.Indicator />
               <Slider.Thumb aria-label="Color Tolerance" />

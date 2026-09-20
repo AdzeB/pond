@@ -60,6 +60,8 @@ allowBuilds:
   # funding output only, nothing needs building.
   "@fortawesome/fontawesome-free": false
   better-sqlite3: false
+  # v13 ships N-API prebuilds; desktop postinstall verifies the aliased module.
+  better-sqlite3-multiple-ciphers: false
   core-js: false
   electron: true
   electron-winstaller: true

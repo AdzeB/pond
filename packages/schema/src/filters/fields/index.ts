@@ -11,6 +11,7 @@ import { duration } from "./duration";
 import { fileCount } from "./file-count";
 import { fileSize } from "./file-size";
 import { folder } from "./folder";
+import { fontActivated } from "./font-activated";
 import { fontFamily } from "./font-family";
 import { format } from "./format";
 import { list } from "./list";
@@ -55,6 +56,7 @@ export const FIELD_DESCRIPTORS = {
   fileCount,
   duration,
   fontFamily,
+  fontActivated,
   bpm,
   [orientationFieldId]: orientation,
   aspect,

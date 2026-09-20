@@ -5,9 +5,13 @@ import { z } from "zod";
 import type { LibrarySidebarCounts } from "../../shared/sidebar-counts";
 import type { Db } from "../db";
 import { libraryQueryWhere } from "./library-query";
-export function querySidebarCounts(db: Db): LibrarySidebarCounts {
+
+export function querySidebarCounts(
+  db: Db,
+  hiddenFolderIds: readonly string[] = [],
+): LibrarySidebarCounts {
   return db.$raw.transaction(() => {
-    const live = libraryQueryWhere({ query: EMPTY_QUERY });
+    const live = libraryQueryWhere({ query: EMPTY_QUERY }, hiddenFolderIds);
     const rows = db
       .select({
         library: count(),
@@ -21,7 +25,19 @@ export function querySidebarCounts(db: Db): LibrarySidebarCounts {
       .array(z.object({ id: z.string(), n: z.number() }))
       .parse(
         db.all(
-          sql`select save_folders.folder_id as id,count(*) as n from save_folders join saves on saves.id=save_folders.save_id where ${live} group by save_folders.folder_id`,
+          sql`with recursive folder_tree(root_id,folder_id) as (
+            select id,id from folders
+            union
+            select folder_tree.root_id,folders.id
+            from folder_tree
+            join folders on folders.parent_id=folder_tree.folder_id
+          )
+          select folder_tree.root_id as id,count(distinct save_folders.save_id) as n
+          from folder_tree
+          join save_folders on save_folders.folder_id=folder_tree.folder_id
+          join saves on saves.id=save_folders.save_id
+          where ${live}
+          group by folder_tree.root_id`,
         ),
       );
     return {

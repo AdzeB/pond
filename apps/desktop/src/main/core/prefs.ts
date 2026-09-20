@@ -82,7 +82,15 @@ async function resolvePondSlice(
 ): Promise<DeepPartial<PondPrefs>> {
   if (isUnboundPondId(pondId)) return stored.pending ?? {};
 
-  const bundle = readBundlePondPrefs();
+  let bundle: DeepPartial<PondPrefs> | null = null;
+  try {
+    bundle = readBundlePondPrefs();
+  } catch (error) {
+    log.debug("[pond prefs] Library preferences unavailable while locked", {
+      error: error instanceof Error ? error.message : "unknown error",
+    });
+    return stored.pending ?? {};
+  }
   if (bundle) return bundle;
 
   const seed = mergePondSlice(stored.pending ?? {});

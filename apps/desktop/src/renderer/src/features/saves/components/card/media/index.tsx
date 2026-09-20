@@ -134,10 +134,29 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!slides) return;
       const rect = e.currentTarget.getBoundingClientRect();
       if (rect.width === 0) return;
-      const ratio = (e.clientX - rect.left) / rect.width;
+      const pointerRatio = Math.min(
+        1,
+        Math.max(0, (e.clientX - rect.left) / rect.width),
+      );
+      if (viewer.hoverZoom) {
+        e.currentTarget.style.setProperty(
+          "--hover-origin-x",
+          `${pointerRatio * 100}%`,
+        );
+        e.currentTarget.style.setProperty(
+          "--hover-origin-y",
+          `${Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height)) * 100}%`,
+        );
+      }
+      if (!slides || viewer.thumbnailBehavior === "still") return;
+      const ratio =
+        viewer.thumbnailSpeed === "slow"
+          ? pointerRatio ** 1.6
+          : viewer.thumbnailSpeed === "fast"
+            ? pointerRatio ** 0.65
+            : pointerRatio;
       const i = Math.min(
         slides.length - 1,
         Math.max(0, Math.floor(ratio * slides.length)),
@@ -145,10 +164,17 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
       setActive((prev) => (prev === i ? prev : i));
       setSeen((prev) => (prev.has(i) ? prev : new Set(prev).add(i)));
     },
-    [slides],
+    [slides, viewer.hoverZoom, viewer.thumbnailBehavior, viewer.thumbnailSpeed],
   );
 
-  const onPointerLeave = useCallback(() => setActive(0), []);
+  const onPointerLeave = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      setActive(0);
+      event.currentTarget.style.removeProperty("--hover-origin-x");
+      event.currentTarget.style.removeProperty("--hover-origin-y");
+    },
+    [],
+  );
 
   const pickedSrc = unit?.url ?? null;
   const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
@@ -174,6 +200,7 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
       data-pending={pending || undefined}
       data-multi-media={slides && !broken ? "true" : undefined}
       data-sensitive={blurSensitive || undefined}
+      data-hover-zoom={viewer.hoverZoom || undefined}
       aria-busy={pending || undefined}
       style={mediaTransformStyle(save)}
       onPointerMove={onPointerMove}

@@ -7,6 +7,7 @@ interface MenuActionItem {
   id?: string;
   label: ReactNode;
   icon?: ReactNode;
+  variant?: "default" | "destructive";
   shortcut?: MenuShortcut;
   keywords?: string;
   disabled?: boolean;
@@ -43,6 +44,7 @@ interface MenuCheckboxItem {
   type: "checkbox";
   label: ReactNode;
   icon?: ReactNode;
+  indicator?: "checkbox" | "check";
   checked: boolean;
   onCheckedChange?: (checked: boolean) => void;
   shortcut?: MenuShortcut;
@@ -82,6 +84,7 @@ interface MenuParts {
   Item: React.ComponentType<{
     disabled?: boolean;
     stale?: boolean;
+    variant?: "default" | "destructive";
     closeOnClick?: boolean;
     onClick?: () => void;
     children?: ReactNode;
@@ -96,7 +99,10 @@ interface MenuParts {
     closeOnClick?: boolean;
     children?: ReactNode;
   }>;
-  CheckboxItemIndicator: React.ComponentType<{ children?: ReactNode }>;
+  CheckboxItemIndicator: React.ComponentType<{
+    children?: ReactNode;
+    variant?: "checkbox" | "check";
+  }>;
   LinkItem: React.ComponentType<{
     href?: string;
     disabled?: boolean;
@@ -186,13 +192,16 @@ function renderSpec(
         disabled={spec.disabled}
         closeOnClick={spec.closeOnClick}
       >
-        <parts.CheckboxItemIndicator />
+        {spec.indicator !== "check" ? <parts.CheckboxItemIndicator /> : null}
         {spec.icon != null ? (
           <parts.ItemIcon>{spec.icon}</parts.ItemIcon>
         ) : null}
         <parts.ItemLabel>{spec.label}</parts.ItemLabel>
         {spec.shortcut != null ? (
           <parts.ItemKeyboard>{spec.shortcut}</parts.ItemKeyboard>
+        ) : null}
+        {spec.indicator === "check" ? (
+          <parts.CheckboxItemIndicator variant="check" />
         ) : null}
       </parts.CheckboxItem>
     );
@@ -257,6 +266,7 @@ function renderSpec(
       key={key}
       disabled={spec.disabled}
       stale={spec.stale}
+      variant={spec.variant}
       closeOnClick={spec.closeOnClick}
       onClick={spec.onClick}
     >

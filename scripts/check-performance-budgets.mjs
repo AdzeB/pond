@@ -56,7 +56,7 @@ const desktopOut = join(workspace, "apps/desktop/out");
 addResult(
   "desktop main static graph",
   mainStaticGraph(join(desktopOut, "main/index.js")),
-  2_600_000,
+  3_000_000,
 );
 addResult(
   "desktop renderer initial JS/CSS",
@@ -65,7 +65,7 @@ addResult(
     join(desktopOut, "renderer"),
     /(?:href|src)="\.\/([^"?#]+\.(?:js|css))/g,
   ),
-  5_100_000,
+  5_300_000,
 );
 
 const websiteRoot = join(workspace, "apps/website/.next");

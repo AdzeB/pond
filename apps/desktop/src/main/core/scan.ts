@@ -20,6 +20,7 @@ import { readEnrichmentSidecar } from "./enrichment-sidecar";
 import { broadcastSyncAction, withMutationScope } from "./executor";
 import { runLibraryTransfer } from "./library-transfers";
 import { migrateSaveFileLayout } from "./save-file-layout-migration";
+import { libraryMediaMetadata } from "./security/library-media-storage";
 
 export async function reconcileLibrary(): Promise<{
   updated: number;
@@ -221,8 +222,10 @@ async function originalsPresent(
   const originals = files.filter((file) => !isAuxiliaryKind(file.kind));
   for (const file of originals) {
     try {
-      const actual = await stat(join(root, "items", `${id}.info`, file.path));
-      if (!actual.isFile() || actual.size !== file.size) return false;
+      const actual = await libraryMediaMetadata(
+        join(root, "items", `${id}.info`, file.path),
+      );
+      if (actual.originalSize !== file.size) return false;
     } catch {
       return false;
     }

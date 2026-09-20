@@ -1,3 +1,4 @@
+import type { FeedbackEvent } from "@shared/feedback";
 import { ensureReady, type PlayOptions } from "@web-kits/audio";
 import { getPrefsSnapshot } from "@/features/settings/state/prefs";
 import { SOUND_PATCH, type UiSoundName } from "@/shared/lib/sound-packs";
@@ -9,16 +10,22 @@ const RAPID_MS = 110;
 const lastPlayed = new Map<SoundKind, number>();
 
 function reduceMotion(): boolean {
-  return document.documentElement.getAttribute("data-reduce-motion") === "true";
+  if (!("document" in globalThis)) return false;
+  return (
+    globalThis.document.documentElement.getAttribute("data-reduce-motion") ===
+    "true"
+  );
 }
 
-function soundsEnabled(): boolean {
-  return getPrefsSnapshot()?.preferences.soundsEnabled !== false;
+function soundsEnabled(interfaceSound: boolean): boolean {
+  const prefs = getPrefsSnapshot();
+  if (prefs?.preferences.soundsEnabled === false) return false;
+  return !interfaceSound || prefs?.feedback.sounds.interface !== false;
 }
 
-function play(kind: SoundKind, name: UiSoundName): void {
+function play(kind: SoundKind, name: UiSoundName, interfaceSound = true): void {
   if (reduceMotion()) return;
-  if (!soundsEnabled()) return;
+  if (!soundsEnabled(interfaceSound)) return;
   const now = performance.now();
   const prev = lastPlayed.get(kind) ?? 0;
   if (now - prev < RATE_MS) return;
@@ -51,10 +58,18 @@ export function playUiSuccess(): void {
   play("success", "success");
 }
 
-export function playTrashThunk(): void {
-  play("trash", "trash");
+function playTrashThunk(): void {
+  play("trash", "trash", false);
 }
 
-export function previewUiSound(): void {
-  playUiTap();
+export function emitFeedback(event: FeedbackEvent): void {
+  const prefs = getPrefsSnapshot();
+  if (prefs?.feedback.sounds[event] !== false) {
+    if (event === "saveDeletion" || event === "folderDeletion") {
+      playTrashThunk();
+    } else {
+      play("success", "success", false);
+    }
+  }
+  void window.pond.query("feedback.emit", { event }).catch(() => {});
 }

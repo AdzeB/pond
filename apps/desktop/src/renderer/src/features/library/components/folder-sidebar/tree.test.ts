@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { descendantFolderIds, flattenFolderTree } from "./tree";
+import { descendantFolderIds, flattenFolderTree, sortFolderRows } from "./tree";
 
 describe("folder tree", () => {
   it("keeps root folders at depth 0", () => {
@@ -76,5 +76,37 @@ describe("folder tree", () => {
         { id: "other", parentId: null },
       ]),
     ).toEqual(["root", "child", "nested"]);
+  });
+
+  it("sorts folder rows by title or newest date while preserving custom order", () => {
+    const rows = [
+      {
+        id: "z",
+        name: "Zulu",
+        parentId: null,
+        sortOrder: 0,
+        createdAt: new Date("2025-01-01"),
+      },
+      {
+        id: "a",
+        name: "Alpha",
+        parentId: null,
+        sortOrder: 1,
+        createdAt: new Date("2026-01-01"),
+      },
+    ];
+
+    expect(sortFolderRows(rows, "manual").map((row) => row.id)).toEqual([
+      "z",
+      "a",
+    ]);
+    expect(sortFolderRows(rows, "title").map((row) => row.id)).toEqual([
+      "a",
+      "z",
+    ]);
+    expect(sortFolderRows(rows, "createdAt").map((row) => row.id)).toEqual([
+      "a",
+      "z",
+    ]);
   });
 });

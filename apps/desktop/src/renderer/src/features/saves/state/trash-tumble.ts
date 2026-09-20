@@ -1,6 +1,5 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import { playTrashThunk } from "@/features/settings/lib/sounds";
 
 const store = new Store<{ ids: ReadonlySet<string> }>({
   ids: new Set<string>(),
@@ -20,7 +19,6 @@ export async function tumbleToTrash(ids: readonly string[]): Promise<void> {
     for (const id of ids) next.add(id);
     return { ids: next };
   });
-  playTrashThunk();
   await new Promise((resolve) => setTimeout(resolve, TUMBLE_MS));
   setTimeout(() => {
     store.setState((s) => {

@@ -1,5 +1,7 @@
+import { readColorMatch } from "@pond/schema/filters/color";
 import { FIELD_META } from "@pond/schema/filters/meta";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
+import { Chip } from "@pond/ui";
 import { useState } from "react";
 import { fieldIcon } from "@/features/search/lib/fields";
 import { FilterChip, FilterPopup } from "../chip";
@@ -34,6 +36,10 @@ export function FilterCategory({
   );
   const activeRules = rows.filter((row) => categoryFields.has(row.field));
   const active = activeRules.length > 0;
+  const selectedColor =
+    field === "color"
+      ? (readColorMatch(activeRules[0]?.value)?.hex ?? undefined)
+      : undefined;
   const summary =
     field === "width"
       ? activeRules
@@ -57,8 +63,10 @@ export function FilterCategory({
   };
   return (
     <FilterChip
-      icon={<Icon />}
-      label={summary || meta.label}
+      icon={
+        field === "color" ? <Chip.Swatch color={selectedColor} /> : <Icon />
+      }
+      label={selectedColor ? meta.label : summary || meta.label}
       title={label}
       active={active}
       ariaLabel={label}

@@ -5,16 +5,19 @@ import {
 } from "@pond/schema/db";
 import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
 import type { Transaction } from "@pond/schema/tx";
-import { asc, eq, sql } from "drizzle-orm";
+import { applyRenameTemplate } from "@shared/rename-template";
+import { asc, eq, inArray, sql } from "drizzle-orm";
 import { ulid } from "ulid";
 import { z } from "zod";
 import type { Db } from "../db";
 import { getDb } from "../db";
 import { executeBatch } from "./executor";
+import { recordBatchForUndo } from "./undo";
 
 interface SavedViewRuntime {
   getDb: () => Promise<Db>;
   commit: (transactions: Transaction[]) => Promise<void>;
+  recordUndo?: (transactions: Transaction[]) => void;
 }
 
 const defaultRuntime: SavedViewRuntime = {
@@ -22,6 +25,7 @@ const defaultRuntime: SavedViewRuntime = {
   async commit(transactions) {
     await executeBatch(transactions);
   },
+  recordUndo: recordBatchForUndo,
 };
 
 const StoredQuerySchema = z.custom<Query>(
@@ -128,6 +132,46 @@ export async function renameView(
   const target = name.trim();
   if (!target) return { ok: false };
   return updateView(id, { name: target }, runtime);
+}
+
+export async function renameViewsBatch(
+  input: { ids: string[]; pattern: string },
+  runtime: SavedViewRuntime = defaultRuntime,
+): Promise<{ ok: boolean; renamed: number }> {
+  const ids = [...new Set(input.ids.filter(Boolean))];
+  const pattern = input.pattern.trim();
+  if (!pattern || ids.length === 0) return { ok: false, renamed: 0 };
+  return mutateViews(runtime, async (db) => {
+    const rows = await db
+      .select()
+      .from(savedViewsTable)
+      .where(inArray(savedViewsTable.id, ids));
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    const transactions: Transaction[] = [];
+    for (const [index, id] of ids.entries()) {
+      const row = byId.get(id);
+      if (!row) continue;
+      const name = applyRenameTemplate(pattern, {
+        index,
+        title: row.name,
+        original: row.name,
+        id: row.id,
+        date: row.createdAt,
+      });
+      if (!name || name === row.name) continue;
+      transactions.push({
+        kind: "update",
+        model: "saved_view",
+        id,
+        patch: { name },
+        before: { name: row.name },
+        meta: { actor: "user", actorReason: "saved-view-batch-rename" },
+      });
+    }
+    await runtime.commit(transactions);
+    runtime.recordUndo?.(transactions);
+    return { ok: true, renamed: transactions.length };
+  });
 }
 
 export async function deleteView(

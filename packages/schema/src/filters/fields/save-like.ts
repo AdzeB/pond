@@ -19,6 +19,7 @@ export interface SaveLike {
   transcript?: string | null;
   sensitiveScore?: number | null;
   mediaType?: string | null;
+  fontActivated?: boolean;
   files?: ReadonlyArray<unknown> | null;
   width?: number | null;
   height?: number | null;

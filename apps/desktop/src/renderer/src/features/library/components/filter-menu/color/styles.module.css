@@ -19,20 +19,15 @@
 }
 
 .palette > button {
-  width: 100%;
   min-width: 0;
+  aspect-ratio: 1 / 1;
+  border: var(--ds-border-width) solid var(--ds-gray-a5);
+  border-radius: var(--ds-radius-sm);
 }
 
 .palette > button[aria-pressed="true"] {
   outline: 1px solid var(--ds-focus-outline);
   outline-offset: -1px;
-}
-
-.swatch {
-  width: 20px;
-  height: 20px;
-  border: var(--ds-border-width) solid var(--ds-gray-a5);
-  border-radius: var(--ds-radius-sm);
 }
 
 .hex {
@@ -50,36 +45,4 @@
 
 .field > :global([data-slot="root"]) {
   flex: 1 1 auto;
-}
-
-.preview {
-  flex: none;
-  width: 16px;
-  height: 16px;
-  border: var(--ds-border-width) solid var(--ds-gray-a6);
-  border-radius: var(--ds-radius-sm);
-}
-
-.preview[data-empty] {
-  border-style: dashed;
-}
-
-.control {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: space-between;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-12);
-}
-
-.tolerance {
-  flex-direction: column;
-  gap: 6px;
-  align-items: stretch;
-  width: 100%;
-}
-
-.slider {
-  width: 100%;
 }

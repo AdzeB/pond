@@ -167,6 +167,7 @@ export function buildDetailItems({
     {
       label: "Remove Thumbnail",
       icon: glyph(IconImageMinusOutline18),
+      variant: "destructive",
       hidden: batch || !hasCustomThumbnail,
       onClick: () => {
         void window.pond.query("saves.removeCustomThumbnail", { id: save.id });

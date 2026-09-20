@@ -1,7 +1,7 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
-export type NewMenuDialog = "links";
+export type NewMenuDialog = "links" | "screenshot";
 
 const store = new Store<NewMenuDialog | null>(null);
 

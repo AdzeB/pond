@@ -66,7 +66,10 @@ export function librarySortColumn(
   }
 }
 
-export function libraryQueryWhere(request: LibraryQueryRequest) {
+export function libraryQueryWhere(
+  request: LibraryQueryRequest,
+  hiddenFolderIds: readonly string[] = [],
+) {
   const scope = request.scope ?? {};
   return and(
     scope.deletedOnly ? isNotNull(saves.deletedAt) : isNull(saves.deletedAt),
@@ -90,6 +93,9 @@ export function libraryQueryWhere(request: LibraryQueryRequest) {
       : undefined,
     scope.saveIds
       ? sql`${saves.id} in (select value from json_each(${JSON.stringify(scope.saveIds)}))`
+      : undefined,
+    hiddenFolderIds.length > 0
+      ? sql`not exists (select 1 from save_folders locked_sf where locked_sf.save_id = ${saves.id} and locked_sf.folder_id in (select value from json_each(${JSON.stringify(hiddenFolderIds)})))`
       : undefined,
   );
 }
@@ -119,12 +125,18 @@ function revisionOf(db: Db): number {
   ).revision;
 }
 
+interface LibraryPageRow {
+  id: string;
+  value: string | number | null;
+}
+
 export async function queryLibraryPage(
   db: Db,
   libraryId: string,
   request: LibraryQueryRequest,
   manualOrder: readonly string[] = [],
   pinnedIds: readonly string[] = [],
+  hiddenFolderIds: readonly string[] = [],
 ): Promise<LibraryQueryPage> {
   if (request.libraryId && request.libraryId !== libraryId)
     throw new Error("The active library changed. Run the search again.");
@@ -146,30 +158,33 @@ export async function queryLibraryPage(
     );
   }
   const ascending = request.sortDir === "asc";
-  const where = libraryQueryWhere(request);
+  const where = libraryQueryWhere(request, hiddenFolderIds);
   const after = !cursor
     ? undefined
     : cursor.value === null
       ? and(isNull(column), sql`${saves.id} < ${cursor.id}`)
       : sql`(${column} is null or ${ascending ? sql`${column} > ${cursor.value}` : sql`${column} < ${cursor.value}`} or (${column} = ${cursor.value} and ${saves.id} < ${cursor.id}))`;
   const limit = Math.min(500, Math.max(1, request.limit ?? 250));
-  const result = db.$raw.transaction(() => {
-    const total =
-      db.select({ count: count() }).from(saves).where(where).get()?.count ?? 0;
-    const rows = db
-      .select({ id: saves.id, value: sql<string | number | null>`${column}` })
-      .from(saves)
-      .where(and(where, after))
-      .orderBy(
-        asc(pinRank),
-        asc(sql`${column} is null`),
-        ascending ? asc(column) : desc(column),
-        desc(saves.id),
-      )
-      .limit(limit + 1)
-      .all();
-    return { total, rows };
-  })();
+  const result: { total: number; rows: LibraryPageRow[] } = db.$raw.transaction(
+    () => {
+      const total =
+        db.select({ count: count() }).from(saves).where(where).get()?.count ??
+        0;
+      const rows = db
+        .select({ id: saves.id, value: sql<string | number | null>`${column}` })
+        .from(saves)
+        .where(and(where, after))
+        .orderBy(
+          asc(pinRank),
+          asc(sql`${column} is null`),
+          ascending ? asc(column) : desc(column),
+          desc(saves.id),
+        )
+        .limit(limit + 1)
+        .all();
+      return { total, rows };
+    },
+  )();
   const page = result.rows.slice(0, limit);
   const last = page.at(-1);
   return {
@@ -196,6 +211,7 @@ export async function queryLibraryIds(
   request: LibraryQueryRequest,
   manualOrder: readonly string[] = [],
   pinnedIds: readonly string[] = [],
+  hiddenFolderIds: readonly string[] = [],
 ) {
   if (request.libraryId && request.libraryId !== libraryId)
     throw new Error("The active library changed. Run the search again.");
@@ -203,7 +219,7 @@ export async function queryLibraryIds(
   const rows = await db
     .select({ id: saves.id })
     .from(saves)
-    .where(libraryQueryWhere(request))
+    .where(libraryQueryWhere(request, hiddenFolderIds))
     .orderBy(
       asc(pinRank),
       asc(sql`${column} is null`),

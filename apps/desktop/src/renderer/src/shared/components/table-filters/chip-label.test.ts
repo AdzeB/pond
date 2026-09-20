@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { filterChipLabel, uniqueFilterOptions } from "./chip-label";
+import {
+  filterChipLabel,
+  filterChipSummary,
+  uniqueFilterOptions,
+} from "./chip-label";
 
 describe("filterChipLabel", () => {
   it("keeps the category name when nothing is selected", () => {
@@ -16,6 +20,19 @@ describe("filterChipLabel", () => {
   it("counts three or more selected values", () => {
     expect(filterChipLabel("Source", ["YouTube", "Instagram", "X"])).toBe(
       "Source: 3",
+    );
+  });
+});
+
+describe("filterChipSummary", () => {
+  it("omits the category name from selected values", () => {
+    expect(filterChipSummary("Status", [])).toBe("Status");
+    expect(filterChipSummary("Status", ["Failed"])).toBe("Failed");
+    expect(filterChipSummary("Status", ["Failed", "Completed"])).toBe(
+      "Failed, Completed",
+    );
+    expect(filterChipSummary("Source", ["YouTube", "Instagram", "X"])).toBe(
+      "3",
     );
   });
 });

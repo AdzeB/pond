@@ -90,6 +90,7 @@ export function buildTagMenuItems(a: TagMenuActions): MenuItemSpec[] {
     {
       label: "Remove Tag",
       icon: <Trash />,
+      variant: "destructive",
       onClick: a.onRemove,
     },
   ];

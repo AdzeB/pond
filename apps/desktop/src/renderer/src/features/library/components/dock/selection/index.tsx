@@ -3,6 +3,7 @@ import {
   IconRefreshFill18 as Retry,
   IconMediaPauseFill18 as Stop,
 } from "@pond/icons/fill/18";
+import { Button } from "@pond/ui";
 import {
   confirmCancelDownloadRows,
   retryDownloadRows,
@@ -18,8 +19,10 @@ export function DownloadsSelectionContent() {
 
   return (
     <div className={styles.tiles}>
-      <button
+      <Button
         type="button"
+        size="sm"
+        variant="tertiary"
         className={styles.tile}
         onClick={() =>
           void retryDownloadRows(rows).then((did) => {
@@ -29,25 +32,28 @@ export function DownloadsSelectionContent() {
       >
         <Retry />
         <span>Retry</span>
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
+        size="sm"
+        variant="destructive"
         className={styles.tile}
-        data-danger
         onClick={() => confirmCancelDownloadRows(rows)}
       >
         <Stop />
         <span>Cancel</span>
-      </button>
+      </Button>
       <div className={styles.separator} />
-      <button
+      <Button
         type="button"
+        size="sm"
+        variant="tertiary"
         className={styles.tile}
         onClick={() => downloadsSelection.clear()}
       >
         <Clear />
         <span>Clear</span>
-      </button>
+      </Button>
     </div>
   );
 }

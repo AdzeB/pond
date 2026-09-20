@@ -1,16 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { FolderIcon } from "@/features/library/components/folder-sidebar/folder-icons";
-import { pickCardUnit } from "@/features/saves/lib/media/units";
-import { thumbUrlFor } from "@/features/saves/lib/media/url";
+import { folderCoverUrl } from "@/features/library/lib/folder-cover";
 import { normalise } from "@/features/saves/lib/reconcile";
 import type { Save } from "@/features/saves/types";
 import styles from "./styles.module.css";
-
-export function folderCoverUrl(save: Save): string | null {
-  const unit = pickCardUnit(save);
-  if (!unit) return null;
-  return thumbUrlFor(unit.url, 36);
-}
 
 export function FolderCover({
   icon,

@@ -13,4 +13,5 @@ export const FolderPresentationSchema = z.object({
   manualOrder: z.array(z.string()).catch([]),
   pinnedIds: z.array(z.string()).catch([]),
   coverSaveId: z.string().nullable().catch(null),
+  quickAccess: z.boolean().optional(),
 });

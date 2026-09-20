@@ -18,6 +18,7 @@ import { itemFile } from "../paths";
 import { persistSave } from "./persist-save";
 import type { WriteFileArgs } from "./pipeline/workers/apply";
 import { renderThumbnailPng, thumbnailSource } from "./save-thumbnail-file";
+import { withDecryptedLibraryMediaPath } from "./security/library-media-storage";
 
 export { renderThumbnailPng };
 
@@ -85,7 +86,10 @@ export async function ensureSaveThumbnail(
   if (hasMediaThumbnail(files)) return;
   const primary = thumbnailSource(files);
   if (!primary) return;
-  const png = await renderThumbnailPng(itemFile(saveId, primary.path));
+  const png = await withDecryptedLibraryMediaPath(
+    itemFile(saveId, primary.path),
+    renderThumbnailPng,
+  );
   if (!png) return;
   const meta = await sharp(png)
     .metadata()

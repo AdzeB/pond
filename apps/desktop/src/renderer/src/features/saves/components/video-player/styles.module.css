@@ -3,6 +3,10 @@
   min-width: 0;
 }
 
+.media {
+  transition: transform var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
 .controls {
   flex: 1;
   width: 100%;

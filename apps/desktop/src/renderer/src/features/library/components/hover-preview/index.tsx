@@ -1,6 +1,6 @@
 import { Button, Dialog } from "@pond/ui";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CardThumb } from "@/features/saves/components/card/media";
 import { StoredFileViewer } from "@/features/saves/components/viewers/file-viewer";
 import {
@@ -13,7 +13,12 @@ import { storedFileViewerKind } from "@/features/saves/lib/media/file-viewer";
 import { pickPrimaryFile } from "@/features/saves/lib/media/units";
 import { saveIdFromPath } from "@/features/saves/lib/save-nav";
 import { selectOnlySave } from "@/features/saves/lib/select";
+import {
+  imageFileIndex,
+  runViewerAction,
+} from "@/features/saves/lib/viewer-actions";
 import { inspect, useInspect } from "@/features/saves/state/inspect";
+import { onQuickPreviewRequest } from "@/features/saves/state/quick-preview";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import {
   selection,
@@ -48,7 +53,8 @@ export function HoverPreview() {
     (event) => {
       if (event.repeat || isEditableTarget(event.target)) return;
       if (saveIdFromPath(getAppRouter()?.state.location.pathname ?? "")) return;
-      if (!selection.getAnchor()) return;
+      const selected = selection.getAnchor();
+      if (!selected) return;
       if (
         open &&
         document.querySelector(
@@ -64,6 +70,10 @@ export function HoverPreview() {
         return;
       event.preventDefault();
       heldKey.current = event.code;
+      if (prefs.spaceAction !== "preview") {
+        runViewerAction(selected, prefs.spaceAction);
+        return;
+      }
       setOpen((previous) =>
         prefs.spaceBehavior === "hold" ? true : !previous,
       );
@@ -71,10 +81,42 @@ export function HoverPreview() {
     { preventDefault: false, ignoreInputs: true },
   );
 
-  const showSave = async (id: string) => {
+  const showSave = useCallback(async (id: string) => {
     await ensureSaves([id]);
     selectOnlySave(id);
-  };
+  }, []);
+  useEffect(
+    () =>
+      onQuickPreviewRequest((saveId) => {
+        void showSave(saveId).then(() => setOpen(true));
+      }),
+    [showSave],
+  );
+  useEffect(
+    () =>
+      window.pond.onPreviewNeighborRequested((request) => {
+        void (async () => {
+          if (request.windowId === null) return;
+          let current = request.saveId;
+          for (let checked = 0; checked < 50; checked++) {
+            const saveId = await resultNavigation.next(current, request.delta);
+            if (!saveId) return;
+            await ensureSaves([saveId]);
+            const fileIndex = imageFileIndex(saveId);
+            if (fileIndex !== null) {
+              await window.pond.navigatePreviewWindow({
+                windowId: request.windowId,
+                saveId,
+                fileIndex,
+              });
+              return;
+            }
+            current = saveId;
+          }
+        })().catch(() => {});
+      }),
+    [],
+  );
   const step = (delta: number, withinSave: boolean) => {
     if (withinSave && viewerNav.current?.step(delta)) return;
     navigation.current = navigation.current
@@ -117,12 +159,17 @@ export function HoverPreview() {
     };
     const up = (event: KeyboardEvent) => {
       if (event.key.toLowerCase() === "z") setHoverId(null);
-      if (event.code === heldKey.current && prefs.spaceBehavior === "hold")
+      if (
+        event.code === heldKey.current &&
+        prefs.spaceAction === "preview" &&
+        prefs.spaceBehavior === "hold"
+      )
         setOpen(false);
     };
     const blur = () => {
       setHoverId(null);
-      if (prefs.spaceBehavior === "hold") setOpen(false);
+      if (prefs.spaceAction === "preview" && prefs.spaceBehavior === "hold")
+        setOpen(false);
     };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
@@ -132,7 +179,7 @@ export function HoverPreview() {
       window.removeEventListener("keyup", up);
       window.removeEventListener("blur", blur);
     };
-  }, [open, prefs.spaceBehavior]);
+  }, [open, prefs.spaceAction, prefs.spaceBehavior]);
 
   if (!save && !compare) return null;
   if (!open && !compare && save)

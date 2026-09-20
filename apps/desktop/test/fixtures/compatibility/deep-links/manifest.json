@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "pond-save-deep-links",
+  "kind": "deep-links",
+  "baseline": {
+    "representations": [
+      {
+        "id": "library-bound-save",
+        "url": "pond://item/save-fixture?library=library-fixture",
+        "expectedLibrary": "library-fixture",
+        "expectedSave": "save-fixture"
+      },
+      {
+        "id": "legacy-unbound-save",
+        "url": "pond://item/legacy-save",
+        "expectedLibrary": null,
+        "expectedSave": "legacy-save"
+      }
+    ],
+    "unimplementedKinds": ["folder", "smart-folder"]
+  },
+  "compatibilityAssertions": [
+    "Open a Library-bound Save only in its matching Library.",
+    "Continue accepting legacy Save links without a Library parameter.",
+    "Encode object identities independently from the Library query parameter.",
+    "Add folder and Smart Folder cases before shipping those link kinds."
+  ]
+}

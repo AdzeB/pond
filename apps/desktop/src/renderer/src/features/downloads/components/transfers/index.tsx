@@ -5,8 +5,10 @@ import { useState } from "react";
 import styles from "./styles.module.css";
 
 const labels = {
+  export_eagle_package: "Export Eagle Package",
   export_files: "Export Files",
   export_package: "Export Pond Package",
+  import_eagle_package: "Import Eagle Package",
   import_package: "Import Pond Package",
   copy_library: "Copy to Library",
   merge_library: "Merge Library",

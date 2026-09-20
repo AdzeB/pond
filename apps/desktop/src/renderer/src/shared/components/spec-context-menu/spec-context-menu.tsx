@@ -119,7 +119,7 @@ function SearchResults({
   ItemLabel: typeof ContextMenu.ItemLabel;
   Items: typeof ContextMenu.Items;
 }) {
-  const scrollFade = useScrollFade<HTMLDivElement>();
+  const scrollFade = useScrollFade<HTMLDivElement>("y");
   const { contentRef, sized, style } = useMenuBodyHeight(scrollFade.ref, items);
 
   return (

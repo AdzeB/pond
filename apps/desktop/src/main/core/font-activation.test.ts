@@ -1,8 +1,13 @@
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import Database from "better-sqlite3";
 import { expect, it } from "vitest";
-import { activateFont, deactivateFont } from "./font-activation";
+import {
+  activateFont,
+  backfillFontActivationIndex,
+  deactivateFont,
+} from "./font-activation";
 
 it("installs a font into the Pond fonts directory and removes it", async () => {
   const root = await mkdtemp(join(tmpdir(), "pond-fonts-"));
@@ -23,6 +28,39 @@ it("installs a font into the Pond fonts directory and removes it", async () => {
   });
   expect(deactivated.ok).toBe(true);
   await expect(readFile(activated.path ?? "")).rejects.toThrow();
+});
+
+it("backfills indexed activation from existing sidecars", () => {
+  const db = new Database(":memory:");
+  db.exec(
+    "CREATE TABLE saves (id TEXT PRIMARY KEY, media_type TEXT, font_activated INTEGER)",
+  );
+  db.prepare(
+    "INSERT INTO saves (id, media_type, font_activated) VALUES (?, ?, ?)",
+  ).run("active-font", "font", 0);
+  db.prepare(
+    "INSERT INTO saves (id, media_type, font_activated) VALUES (?, ?, ?)",
+  ).run("inactive-font", "font", 0);
+  db.prepare(
+    "INSERT INTO saves (id, media_type, font_activated) VALUES (?, ?, ?)",
+  ).run("image", "image", 0);
+
+  expect(
+    backfillFontActivationIndex(db, (id) =>
+      id === "active-font" ? "/fonts/active.ttf" : null,
+    ),
+  ).toBe(1);
+  expect(
+    db
+      .prepare("SELECT font_activated FROM saves WHERE id = ?")
+      .get("active-font"),
+  ).toEqual({ font_activated: 1 });
+  expect(
+    db
+      .prepare("SELECT font_activated FROM saves WHERE id = ?")
+      .get("inactive-font"),
+  ).toEqual({ font_activated: 0 });
+  db.close();
 });
 
 it("refuses to delete a file outside the Pond fonts directory", async () => {

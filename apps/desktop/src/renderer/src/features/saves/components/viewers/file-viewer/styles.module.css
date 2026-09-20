@@ -60,7 +60,7 @@
   object-fit: contain;
   box-shadow: var(--ds-shadow-4);
   opacity: 0;
-  transition: opacity 140ms ease;
+  transition: opacity var(--ds-duration-snap) var(--ds-easing-standard);
 }
 
 .previewStage[data-loaded] .generatedPreview {
@@ -72,7 +72,7 @@
   inset: 0;
   display: grid;
   place-items: center;
-  font-size: 13px;
+  font-size: var(--ds-text-md);
   color: var(--ds-gray-10);
 }
 
@@ -105,6 +105,25 @@
   width: 100%;
   height: 64px;
   color: var(--ds-gray-12);
+  cursor: crosshair;
+}
+
+.audioControls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.audioControls > :last-child {
+  width: 120px;
+  margin-left: auto;
+}
+
+.time {
+  min-width: 84px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-10);
 }
 
 .heading {
@@ -116,13 +135,13 @@
   margin: 0 0 6px;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 18px;
+  font-size: var(--ds-text-lg);
   color: var(--ds-gray-12);
 }
 
 .heading p {
   margin: 4px 0 0;
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-10);
   word-break: break-word;
 }
@@ -133,10 +152,9 @@
   width: 104px;
   height: 128px;
   padding: 16px;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-semibold);
   color: var(--ds-gray-11);
-  letter-spacing: 0.08em;
   background: var(--ds-gray-2);
   border-radius: var(--ds-radius-md);
   box-shadow: var(--ds-shadow-2);
@@ -175,13 +193,12 @@
   display: block;
   max-width: 100%;
   height: auto;
-  background: white;
   box-shadow: var(--ds-shadow-4);
 }
 
 .pdfPage figcaption {
   padding-top: 8px;
-  font-size: 11px;
+  font-size: var(--ds-text-xs);
   color: var(--ds-gray-10);
 }
 
@@ -201,10 +218,10 @@
   align-items: center;
   min-height: 48px;
   padding: 8px 12px;
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-10);
   background: var(--ds-gray-1);
-  border-top: 1px solid var(--ds-gray-4);
+  border-top: var(--ds-border-width) solid var(--ds-gray-4);
 }
 
 .fileBar > :first-child {
@@ -225,6 +242,11 @@
   overflow: hidden;
   color: var(--ds-gray-12);
   background: var(--ds-gray-1);
+
+  &[data-background="dark"] {
+    color: var(--ds-gray-1);
+    background: var(--ds-gray-12);
+  }
 }
 
 .scroll {
@@ -248,13 +270,14 @@
 }
 
 .specimen,
-.glyphs {
-  font-family: var(--pond-preview-font);
+.glyphs,
+.waterfall {
+  font-family: var(--preview-font);
 }
 
 .specimen {
   padding: 56px;
-  font-size: var(--pond-preview-size);
+  font-size: var(--preview-size);
   line-height: 1.08;
   overflow-wrap: anywhere;
 }
@@ -265,5 +288,50 @@
   font-size: 32px;
   line-height: 1.5;
   white-space: pre-wrap;
-  border-top: 1px solid var(--ds-gray-4);
+  border-top: var(--ds-border-width) solid var(--ds-gray-4);
+}
+
+.waterfall {
+  display: grid;
+  gap: 24px;
+  padding: 56px;
+  overflow: hidden;
+  line-height: 1.1;
+}
+
+.waterfall > div {
+  display: flex;
+  gap: 20px;
+  align-items: baseline;
+  min-width: max-content;
+}
+
+.waterfall span {
+  width: 32px;
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-xs);
+  color: var(--ds-gray-9);
+}
+
+.fontMetadata {
+  display: grid;
+  gap: 8px;
+  padding: 24px 56px;
+  margin: 0;
+  border-top: var(--ds-border-width) solid var(--ds-gray-4);
+}
+
+.fontMetadata > div {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.fontMetadata dt {
+  color: var(--ds-gray-9);
+}
+
+.fontMetadata dd {
+  margin: 0;
+  overflow-wrap: anywhere;
 }

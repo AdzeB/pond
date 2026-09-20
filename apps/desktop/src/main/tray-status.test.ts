@@ -107,6 +107,7 @@ describe("buildTrayTemplate", () => {
       "New Folder",
       "New Smart Folder",
       "New Note",
+      "Capture Screenshot",
       "Word Document",
       "New Tag",
       "New Tag Group",
@@ -148,6 +149,23 @@ describe("buildTrayTemplate", () => {
 
     expect(actions.onOpenLibrary).toHaveBeenCalledOnce();
     expect(actions.onOpenSettings).toHaveBeenCalledOnce();
+  });
+
+  it("uses the selected locale for foundational menu copy", () => {
+    const labels = labelsOf(
+      buildTrayTemplate({ ...library, ingesting: 0, inflight: 0 }, actions, {
+        version: "0.0.1",
+        locale: "zh-TW",
+      }),
+    );
+
+    expect(labels).toContain("開啟 Pond");
+    expect(labels).toContain("設定");
+    expect(labels).toContain("結束");
+    expect(labels).toContain("Pond · 1200 個儲存項目");
+    expect(traySavingLabel({ ingesting: 3, inflight: 1 }, "zh-TW")).toBe(
+      "正在儲存第 1 個，共 3 個",
+    );
   });
 
   it("dispatches create and search from the menu rows", () => {

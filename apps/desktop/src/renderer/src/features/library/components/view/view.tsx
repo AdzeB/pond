@@ -1,3 +1,4 @@
+import { Button } from "@pond/ui";
 import { useCallback, useEffect } from "react";
 import {
   FolderEmpty,
@@ -9,11 +10,13 @@ import {
   UncategorizedEmpty,
 } from "@/features/library/components/empty";
 import { libraryEmptyKind } from "@/features/library/components/empty/kind";
+import { FolderBrowser } from "@/features/library/components/folder-browser";
 import { HoverPreview } from "@/features/library/components/hover-preview";
 import { LibraryGrid } from "@/features/library/components/layouts/grid";
 import { LayoutSwitcher } from "@/features/library/components/layouts/switcher/switcher";
 import { useGridHotkeys } from "@/features/library/hooks/use-grid-hotkeys";
 import { useLibraryState } from "@/features/library/hooks/use-library-state";
+import { useFolders } from "@/features/library/state/folders";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
 import { resetFilters } from "@/features/library/state/view-store";
 import { useCardActions } from "@/features/saves/hooks/use-card-actions";
@@ -60,6 +63,7 @@ function LibraryEmptyState({
 export function LibraryView() {
   const data = useLibraryState();
   const nav = useLibraryNav();
+  const folders = useFolders();
   const paging = useSavePaging();
   const actions = useCardActions(
     data.filteredIds,
@@ -69,6 +73,10 @@ export function LibraryView() {
   useGridHotkeys(data.filteredIds, data.paging.allIds);
 
   const canLoadAnotherPage = data.paging.hasMore && !data.paging.loading;
+  const hasChildFolders =
+    nav.kind === "folder" &&
+    folders.some((folder) => folder.parentId === nav.id);
+  const filtering = data.hasActiveSearch || data.hasActiveFilter;
   const onEndReached = useCallback(() => {
     void data.paging.loadMore();
   }, [data.paging.loadMore]);
@@ -116,14 +124,19 @@ export function LibraryView() {
         {data.paging.error ? (
           <div role="alert">
             {data.paging.error}{" "}
-            <button type="button" onClick={() => void data.paging.retry()}>
-              Try again
-            </button>
+            <Button
+              type="button"
+              size="xs"
+              variant="text"
+              onClick={() => void data.paging.retry()}
+            >
+              Try Again
+            </Button>
           </div>
         ) : !data.bootReady ||
           (data.paging.loading && data.filtered.length === 0) ? (
           <LibraryLoading />
-        ) : data.filtered.length === 0 ? (
+        ) : data.filtered.length === 0 && (!hasChildFolders || filtering) ? (
           <LibraryEmptyState
             mode={data.mode}
             navKind={nav.kind}
@@ -131,6 +144,20 @@ export function LibraryView() {
             hasActiveFilter={data.hasActiveFilter}
             libraryTotal={paging.total}
           />
+        ) : nav.kind === "folder" ? (
+          <FolderBrowser parentId={nav.id} contentCount={data.paging.total}>
+            {data.filtered.length > 0 ? (
+              <LayoutSwitcher
+                viewMode={data.viewMode}
+                saves={data.filtered}
+                multiSelectActive={actions.multiSelectActive}
+                onClick={actions.handleCardClick}
+                onAuxClick={actions.handleCardAuxClick}
+                onDoubleClick={actions.focus}
+                onEndReached={canLoadAnotherPage ? onEndReached : undefined}
+              />
+            ) : null}
+          </FolderBrowser>
         ) : (
           <LayoutSwitcher
             viewMode={data.viewMode}

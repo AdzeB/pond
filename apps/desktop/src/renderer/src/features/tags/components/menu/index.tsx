@@ -9,6 +9,7 @@ import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import {
   buildTagNav,
   filterByNav,
+  parseTagBatch,
   partitionPickerTags,
   type TagNavId,
 } from "./lib";
@@ -21,6 +22,13 @@ interface TagMenuProps {
   allowCreate?: boolean;
   placeholder?: string;
   emptyLabel?: ReactNode;
+  recommendedNames?: readonly string[];
+  layout?: "list" | "grid";
+  gridSize?: "sm" | "md" | "lg";
+  showStarred?: boolean;
+  showRecently?: boolean;
+  showRecommended?: boolean;
+  showCounts?: boolean;
 }
 
 export function TagMenu({
@@ -30,6 +38,13 @@ export function TagMenu({
   allowCreate = false,
   placeholder = "Search…",
   emptyLabel = "No tags yet.",
+  recommendedNames = [],
+  layout = "list",
+  gridSize = "md",
+  showStarred = true,
+  showRecently = true,
+  showRecommended = true,
+  showCounts = true,
 }: TagMenuProps) {
   const tags = useTags();
   const groups = useTagGroups();
@@ -98,15 +113,34 @@ export function TagMenu({
     [matching, activeNav, groupedTagIds, groupTagIds],
   );
 
-  const { starred, recent, others } = useMemo(
-    () => partitionPickerTags(visibleTags),
-    [visibleTags],
+  const recommendedSet = useMemo(
+    () => new Set(recommendedNames.map((name) => name.trim().toLowerCase())),
+    [recommendedNames],
   );
+  const sections = useMemo(() => {
+    const partitioned = partitionPickerTags(visibleTags, recommendedSet);
+    const others = [
+      ...(showStarred ? [] : partitioned.starred),
+      ...(showRecommended ? [] : partitioned.recommended),
+      ...(showRecently ? [] : partitioned.recent),
+      ...partitioned.others,
+    ].sort((a, b) => a.name.localeCompare(b.name));
+    return {
+      starred: showStarred ? partitioned.starred : [],
+      recommended: showRecommended ? partitioned.recommended : [],
+      recent: showRecently ? partitioned.recent : [],
+      others,
+    };
+  }, [recommendedSet, showRecently, showRecommended, showStarred, visibleTags]);
+  const { starred, recommended, recent, others } = sections;
 
   const createInfo = useMemo(() => {
     if (!allowCreate) return null;
     const raw = q.trim();
     if (!raw) return null;
+    const batch = parseTagBatch(raw).map(normalizeLabelName).filter(Boolean);
+    if (batch.length > 1)
+      return { kind: "batch" as const, labels: batch, label: batch.join(", ") };
     const slash = raw.indexOf("/");
     if (slash >= 0) {
       const group = normalizeLabelName(raw.slice(0, slash));
@@ -126,6 +160,16 @@ export function TagMenu({
     setError(null);
     try {
       const label = createInfo.label;
+      if (createInfo.kind === "batch") {
+        for (const item of createInfo.labels) {
+          const lower = item.toLowerCase();
+          if (!tagsByLower.has(lower))
+            await window.pond.query("tags.create", { name: item });
+          if (!appliedKeys?.has(lower)) await onToggle(item);
+        }
+        setQ("");
+        return;
+      }
       if (!tagsByLower.has(label.toLowerCase()))
         await window.pond.query("tags.create", { name: label });
       if (createInfo.kind === "group") {
@@ -222,7 +266,7 @@ export function TagMenu({
       >
         <Menu.CheckboxItemIndicator />
         <Menu.ItemLabel>{tag.name}</Menu.ItemLabel>
-        {count > 0 ? (
+        {showCounts && count > 0 ? (
           <Menu.SecondaryLabel className={styles.count}>
             {count}
           </Menu.SecondaryLabel>
@@ -239,12 +283,12 @@ export function TagMenu({
   ) {
     if (items.length === 0) return null;
     const showToggle =
-      [starred, recent, others].filter((items) => items.length > 0).length > 1;
+      [starred, recommended, recent, others].filter((items) => items.length > 0)
+        .length > 1;
     return (
       <Menu.Group>
         {showToggle && label !== "Starred" ? (
-          <button
-            type="button"
+          <Menu.Row
             className={styles.section}
             data-collapsed={open ? undefined : ""}
             onMouseDown={(event) => event.preventDefault()}
@@ -257,7 +301,7 @@ export function TagMenu({
               {label} ({items.length})
             </span>
             <ChevronDown />
-          </button>
+          </Menu.Row>
         ) : (
           <Menu.GroupLabel>
             {label} ({items.length})
@@ -270,10 +314,16 @@ export function TagMenu({
 
   const hasRows = visibleTags.length > 0;
   const bothSections =
-    starred.length > 0 || (recent.length > 0 && others.length > 0);
+    [starred, recommended, recent, others].filter((items) => items.length > 0)
+      .length > 1;
 
   return (
-    <div className={styles.root} data-nav={showNav ? "" : undefined}>
+    <div
+      className={styles.root}
+      data-nav={showNav ? "" : undefined}
+      data-layout={layout}
+      data-grid-size={gridSize}
+    >
       <Menu.Input
         value={q}
         placeholder={placeholder}
@@ -313,9 +363,11 @@ export function TagMenu({
                 }}
               >
                 <Menu.ItemLabel>{item.label}</Menu.ItemLabel>
-                <Menu.SecondaryLabel className={styles.count}>
-                  {item.count}
-                </Menu.SecondaryLabel>
+                {showCounts ? (
+                  <Menu.SecondaryLabel className={styles.count}>
+                    {item.count}
+                  </Menu.SecondaryLabel>
+                ) : null}
               </Menu.Row>
             ))}
           </div>
@@ -326,6 +378,8 @@ export function TagMenu({
             <>
               {renderSection("Starred", starred, true, () => {})}
               {starred.length ? <Menu.Separator /> : null}
+              {renderSection("Recommended", recommended, true, () => {})}
+              {recommended.length ? <Menu.Separator /> : null}
               {renderSection("Recently", recent, recentOpen, () =>
                 setRecentOpen((open) => !open),
               )}
@@ -352,6 +406,8 @@ export function TagMenu({
                   <>
                     Create "{createInfo.label}" in group "{createInfo.group}"
                   </>
+                ) : createInfo.kind === "batch" ? (
+                  <>Add {createInfo.labels.length} Tags</>
                 ) : (
                   <>Create "{createInfo.label}"</>
                 )}

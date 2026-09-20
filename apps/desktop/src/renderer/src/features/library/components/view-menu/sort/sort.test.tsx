@@ -59,7 +59,7 @@ describe("sort section", () => {
       trigger.click();
     });
     expect(control("Date Published").textContent).toContain("Date Published");
-    expect(document.body.textContent).not.toContain("Random");
+    expect(document.body.textContent).toContain("Random");
     expect(document.body.textContent).not.toContain("Manual");
     expect(
       control("Date Published").closest("[data-scroll-fade='y']"),
@@ -75,5 +75,14 @@ describe("sort section", () => {
     await act(async () => control("Toggle Sort Direction").click());
     expect(getViewState().sortKey).toBe("title");
     expect(getViewState().sortDir).toBe("asc");
+  });
+
+  it("creates a new stable seed when random order is reshuffled", async () => {
+    setSort({ key: "random", dir: "asc" });
+    const before = getViewState().randomSeed;
+    await render();
+    await act(async () => control("Reshuffle").click());
+    expect(getViewState().randomSeed).not.toBe(before);
+    expect(getViewState().sortKey).toBe("random");
   });
 });

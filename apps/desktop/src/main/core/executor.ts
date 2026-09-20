@@ -1,3 +1,5 @@
+import { lstat, rename } from "node:fs/promises";
+import { join } from "node:path";
 import type { Save, SyncAction, Tag } from "@pond/schema/db";
 import {
   folders as foldersTable,
@@ -24,7 +26,7 @@ import {
   writeItemFiles,
 } from "../lib/library";
 import { withRawSlim } from "../lib/raw-slim";
-import { libraryRoot } from "../paths";
+import { itemDir, libraryRoot } from "../paths";
 import { BatchRecoveryError, runRecoverableBatch } from "./batch-journal";
 import {
   replaceFolderMemberships,
@@ -224,6 +226,25 @@ async function applyToDisk(tx: Transaction): Promise<void> {
       return;
     }
     case "update": {
+      for (const file of tx.fileRenames ?? []) {
+        const source = joinItemFile(tx.id, file.from);
+        const destination = joinItemFile(tx.id, file.to);
+        const destinationExists = await lstat(destination).then(
+          () => true,
+          (error: NodeJS.ErrnoException) => {
+            if (
+              error instanceof Error &&
+              "code" in error &&
+              error.code === "ENOENT"
+            )
+              return false;
+            throw error;
+          },
+        );
+        if (destinationExists)
+          throw new Error(`A file named ${file.to} already exists.`);
+        await rename(source, destination);
+      }
       // SAFETY: `Partial<NewSave>` and `Partial<Save>` differ only in the timestamp columns'
       // nullability, and `applyItemPatch` writes them straight back out.
       const patched = await applyItemPatch(
@@ -276,6 +297,18 @@ async function applyToDisk(tx: Transaction): Promise<void> {
       await setItemDeleted(tx.id, null);
       return;
   }
+}
+
+function joinItemFile(id: string, filename: string): string {
+  if (
+    !filename ||
+    filename.includes("/") ||
+    filename.includes("\\") ||
+    filename === "." ||
+    filename === ".."
+  )
+    throw new Error("Invalid Save filename.");
+  return join(itemDir(id), filename);
 }
 
 function applyToIndex(

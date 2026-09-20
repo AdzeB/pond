@@ -26,6 +26,7 @@ import { extractFontFamily } from "./font-metadata";
 import { persistSave } from "./persist-save";
 import type { WriteFileArgs } from "./pipeline/workers/apply";
 import { ensureSaveThumbnail } from "./save-thumbnail";
+import { libraryMediaMetadata } from "./security/library-media-storage";
 import { normalizeTagList, prepareTagRegistryUpdates } from "./tags";
 
 const MAX_TEXT_BODY_BYTES = 100_000;
@@ -36,6 +37,7 @@ export interface ManualSaveInput {
   note?: string | null;
   tags?: string[];
   filePaths?: string[];
+  memoryFiles?: ManualSaveMemoryFile[];
   fileSourceUrls?: string[];
   /** Optional preview supplied by an external library such as Eagle. */
   thumbnailPath?: string | null;
@@ -53,7 +55,13 @@ export interface ManualSaveInput {
   mediaType?: MediaType | null;
 }
 
-interface ManualSaveResult {
+export interface ManualSaveMemoryFile {
+  bytes: Buffer;
+  filename: string;
+  mimeType: string;
+}
+
+export interface ManualSaveResult {
   ok: boolean;
   id?: string;
   error?: string;
@@ -61,10 +69,10 @@ interface ManualSaveResult {
 }
 
 interface ReadableImport {
-  path: string;
   filename: string;
   size: number;
   format: LibraryFileFormat;
+  source: { path: string } | { bytes: Buffer };
   body?: string;
   width?: number;
   height?: number;
@@ -179,6 +187,8 @@ async function importManualSave(
   const overrideId = input.sourceId?.trim() || null;
   const sourceId = overrideId || id;
   const now = new Date();
+  const requestedFileCount =
+    (input.filePaths?.length ?? 0) + (input.memoryFiles?.length ?? 0);
 
   if (overrideId) {
     const existing = db
@@ -189,11 +199,11 @@ async function importManualSave(
     if (existing) {
       if (
         existing.deletedAt ||
-        !input.filePaths?.length ||
+        requestedFileCount === 0 ||
         (await importedFilesComplete(
           existing,
           itemDir(existing.id),
-          input.filePaths.length,
+          requestedFileCount,
         ))
       )
         return { ok: true, id: existing.id, skipped: true };
@@ -204,9 +214,12 @@ async function importManualSave(
 
   const note = input.note?.trim() || null;
   const tags = normalizeTagList(input.tags ?? []);
-  const readable = await inspectImportPaths(input.filePaths ?? []);
+  const readable = [
+    ...(await inspectImportPaths(input.filePaths ?? [])),
+    ...(await inspectMemoryFiles(input.memoryFiles ?? [])),
+  ];
 
-  if ((input.filePaths?.length ?? 0) > 0 && readable.length === 0) {
+  if (requestedFileCount > 0 && readable.length === 0) {
     return { ok: false, error: "no_readable_files", skipped: true };
   }
 
@@ -289,30 +302,40 @@ async function importManualSave(
   if (hasFiles) {
     const newFiles: WriteFileArgs[] = readable.map((item) => {
       const kind = storageKindForImport(item.format);
-      return {
+      const metadata = {
         kind,
         filename: item.filename,
-        sourcePath: item.path,
         sourceUrl:
-          input.fileSourceUrls?.[input.filePaths?.indexOf(item.path) ?? -1],
+          "path" in item.source
+            ? input.fileSourceUrls?.[
+                input.filePaths?.indexOf(item.source.path) ?? -1
+              ]
+            : undefined,
         mimeType: item.format.mimeType,
         width: item.width,
         height: item.height,
       };
+      return "path" in item.source
+        ? { ...metadata, sourcePath: item.source.path }
+        : { ...metadata, bytes: item.source.bytes };
     });
 
     const customThumbnail = input.thumbnailPath
       ? await inspectCustomThumbnail(input.thumbnailPath)
       : null;
     if (customThumbnail) {
-      newFiles.push({
+      const metadata = {
         kind: THUMBNAIL_KIND,
         filename: customThumbnail.filename,
-        sourcePath: customThumbnail.path,
         mimeType: customThumbnail.format.mimeType,
         width: customThumbnail.width,
         height: customThumbnail.height,
-      });
+      };
+      newFiles.push(
+        "path" in customThumbnail.source
+          ? { ...metadata, sourcePath: customThumbnail.source.path }
+          : { ...metadata, bytes: customThumbnail.source.bytes },
+      );
     }
 
     const fileSize = readable.reduce((sum, item) => sum + item.size, 0);
@@ -339,8 +362,8 @@ async function importManualSave(
       return { ok: false, id, error: "incomplete_import" };
     }
     const font = readable.find((item) => item.format.mediaType === "font");
-    if (font) {
-      const family = await extractFontFamily(font.path);
+    if (font && "path" in font.source) {
+      const family = await extractFontFamily(font.source.path);
       if (family) {
         const files = completed.files.map((file, index) =>
           index === 0 ? { ...file, family } : file,
@@ -371,10 +394,10 @@ async function inspectImportPaths(
       const detectedMime = mime.lookup(path) || null;
       const format = classifyLibraryFile(path, detectedMime);
       const item: ReadableImport = {
-        path,
         filename: libraryFilename(path),
         size: info.size,
         format,
+        source: { path },
       };
       if (format.mediaType === "text") {
         item.body = await readTextBody(path, info.size);
@@ -386,6 +409,29 @@ async function inspectImportPaths(
       }
       out.push(item);
     } catch {}
+  }
+  return out;
+}
+
+async function inspectMemoryFiles(
+  files: readonly ManualSaveMemoryFile[],
+): Promise<ReadableImport[]> {
+  const out: ReadableImport[] = [];
+  for (const file of files) {
+    if (file.bytes.byteLength === 0) continue;
+    const format = classifyLibraryFile(file.filename, file.mimeType);
+    const item: ReadableImport = {
+      filename: libraryFilename(file.filename),
+      size: file.bytes.byteLength,
+      format,
+      source: { bytes: file.bytes },
+    };
+    if (format.mediaType === "image") {
+      const dimensions = await readImageDimensions(file.bytes);
+      if (dimensions.width) item.width = dimensions.width;
+      if (dimensions.height) item.height = dimensions.height;
+    }
+    out.push(item);
   }
   return out;
 }
@@ -415,9 +461,11 @@ interface ImageDimensions {
   height?: number;
 }
 
-async function readImageDimensions(path: string): Promise<ImageDimensions> {
+async function readImageDimensions(
+  source: string | Buffer,
+): Promise<ImageDimensions> {
   try {
-    const metadata = await sharp(path, {
+    const metadata = await sharp(source, {
       failOn: "none",
       pages: 1,
     }).metadata();
@@ -440,8 +488,10 @@ export async function importedFilesComplete(
   );
   if (save.status !== "complete" || originals.length < expected) return false;
   for (const file of originals) {
-    const actual = await stat(join(directory, file.path)).catch(() => null);
-    if (!actual?.isFile() || actual.size !== file.size) return false;
+    const actual = await libraryMediaMetadata(join(directory, file.path)).catch(
+      () => null,
+    );
+    if (!actual || actual.originalSize !== file.size) return false;
   }
   return true;
 }

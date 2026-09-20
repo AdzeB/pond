@@ -10,6 +10,10 @@ import {
 } from "electron";
 import { z } from "zod";
 import { persistSaveThumbnail } from "../../core/save-thumbnail";
+import {
+  materializeLibraryMediaForExternalUse,
+  withDecryptedLibraryMediaPath,
+} from "../../core/security/library-media-storage";
 import { getDb } from "../../db";
 import { extractFrameAt, extractSampledFrames } from "../../lib/ffmpeg-frame";
 import { itemFile } from "../../paths";
@@ -27,7 +31,9 @@ async function frameImage(
   timeSec: number,
 ): Promise<NativeImage | null> {
   if (!resolved) return null;
-  const frame = await extractFrameAt(resolved.path, timeSec);
+  const frame = await withDecryptedLibraryMediaPath(resolved.path, (path) =>
+    extractFrameAt(path, timeSec),
+  );
   if (!frame) return null;
   try {
     const img = nativeImage.createFromBuffer(await readFile(frame.path));
@@ -47,7 +53,9 @@ export const videoQueries = {
   "video.sampleFrames": query(SampleFramesParams, async (params) => {
     const resolved = resolvePondItemPath(params.src);
     if (!resolved) return { ok: false, frames: [] };
-    const sampled = await extractSampledFrames(resolved.path, params.maxFrames);
+    const sampled = await withDecryptedLibraryMediaPath(resolved.path, (path) =>
+      extractSampledFrames(path, params.maxFrames),
+    );
     if (!sampled) return { ok: false, frames: [] };
     try {
       const frames = await Promise.all(
@@ -124,7 +132,9 @@ export const videoQueries = {
       const wire = toWireSave(save);
       const f = wire.files[0];
       if (!f) return { ok: false };
-      await clipboard.writeText(itemFile(saveId, f.path));
+      await clipboard.writeText(
+        await materializeLibraryMediaForExternalUse(itemFile(saveId, f.path)),
+      );
       return { ok: true };
     },
   ),

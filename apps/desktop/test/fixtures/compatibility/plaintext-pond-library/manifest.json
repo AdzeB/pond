@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "plaintext-pond-library-v4",
+  "kind": "pond-library",
+  "baseline": {
+    "encrypted": false,
+    "infoSchema": 4,
+    "libraryFiles": ["metadata.json", "settings.json", "tags.json"],
+    "saveFiles": [
+      "items/save-fixture.info/info.json",
+      "items/save-fixture.info/original.txt"
+    ],
+    "indexLocation": "app-data/indexes/<library-id>.db",
+    "thumbnailLocation": "app-data/pond-cache/thumbs/<library-id>"
+  },
+  "compatibilityAssertions": [
+    "Open the Library without requiring encryption metadata.",
+    "Preserve original bytes and Save identity during encryption migration.",
+    "Create an untouched verified backup before committing a new disk format.",
+    "Keep the external index and thumbnail cache rebuildable from Library data."
+  ]
+}

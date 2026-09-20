@@ -23,8 +23,14 @@ import { stopLibraryTransfers } from "./core/library-transfers";
 import { flushGovernor } from "./core/pipeline/rate-governor";
 import { startReconciler } from "./core/pipeline/reconciler-client";
 import { getPrefs } from "./core/prefs";
+import { closePreviewWindows } from "./core/preview-windows";
 import { disposeHiddenWindow } from "./core/refresh/scrape-window";
 import { disposeRenderCardWindow } from "./core/render-card";
+import {
+  librarySecurityStatus,
+  restoreLibraryUnlock,
+} from "./core/security/app-lock-runtime";
+import { configureLockLifecycle } from "./core/security/lock-lifecycle";
 import {
   startStorageWatcher,
   stopStorageWatcher,
@@ -49,6 +55,7 @@ import { ensureIngestToken } from "./keychain";
 import { broadcast } from "./lib/broadcast";
 import { rotateBundleBackups } from "./lib/library-config";
 import { disableMenuActionImages } from "./lib/menu-action-images";
+import { setMainLocale } from "./localization-runtime";
 import { installAppMenu, setMenuRecents } from "./menu";
 import { writeNativeHostManifests } from "./native/manifests";
 import { startNativeServer, stopNativeServer } from "./native/server";
@@ -168,15 +175,26 @@ app.whenReady().then(async () => {
   registerProtocol();
 
   if (wantsMcp) {
-    await Promise.all([ensureIngestToken(), getDb()]);
+    await ensureIngestToken();
     const { startPondMcp } = await import("./core/agent/mcp");
     await startPondMcp();
     return;
   }
 
   registerIpc();
+  configureLockLifecycle();
+  const menuPrefs = await getPrefs();
+  setMainLocale(menuPrefs.localization.locale);
+  if (librarySecurityStatus().configured && !menuPrefs.security.lockOnLaunch) {
+    const restored = await restoreLibraryUnlock();
+    if (restored.ok) {
+      const { captures } = await import("./core/captures");
+      void captures.recover();
+    }
+  }
   installAppMenu({
-    shortcuts: (await getPrefs()).shortcuts,
+    shortcuts: menuPrefs.shortcuts,
+    locale: menuPrefs.localization.locale,
     focusedOrMain,
     openLibraryWindow: () => void openLibraryWindow(),
   });
@@ -443,6 +461,7 @@ app.on("before-quit", async (event) => {
   } catch (err) {
     log.warn("[pond] render-card window dispose failed", err);
   }
+  closePreviewWindows();
   try {
     await stopNativeServer(nativeServer);
     nativeServer = null;

@@ -49,6 +49,13 @@ export const savedViewsQueries = {
       return await renameView(params.id, params.name);
     },
   ),
+  "savedViews.renameBatch": query(
+    z.object({ ids: StringListParam, pattern: StringParam }),
+    async (params) => {
+      const { renameViewsBatch } = await import("../../core/saved-views");
+      return renameViewsBatch(params);
+    },
+  ),
 
   "savedViews.update": query(
     z.object({
