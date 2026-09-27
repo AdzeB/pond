@@ -11,16 +11,26 @@ import {
   lazy,
   Suspense,
   useCallback,
+  useEffect,
+  useRef,
   useState,
 } from "react";
 import { createPortal } from "react-dom";
 import {
+  useFolderMemberships,
+  useFolders,
+} from "@/features/library/state/folders";
+import {
   type LibraryInspectorMode,
+  libraryChrome,
   useInspectorMode,
   useInspectorSaveId,
   useInspectorSourceId,
+  useInspectorTab,
   useRightPane,
 } from "@/features/library/state/library-chrome";
+import type { SaveInspectorProps } from "@/features/saves/components/detail/pane";
+import { useSelectedSaveIds } from "@/features/saves/state/selection";
 import { usePrefs } from "@/features/settings/state/prefs";
 import styles from "./styles.module.css";
 
@@ -102,7 +112,33 @@ export function RightPane() {
     select: (s) => s.location.pathname === "/assistant",
   });
   const saveId = useInspectorSaveId();
+  const selectedIds = useSelectedSaveIds();
+  const viewerOpen = useRouterState({
+    select: (s) => s.location.pathname.startsWith("/save/"),
+  });
+  const saveIds =
+    viewerOpen || !selectedIds.length ? (saveId ? [saveId] : []) : selectedIds;
+  const memberships = useFolderMemberships();
+  const allFolders = useFolders();
+  const folderCounts = allFolders.map((folder) => ({
+    id: folder.id,
+    name: folder.name,
+    parentId: folder.parentId,
+    count: saveIds.filter((id) => memberships[id]?.includes(folder.id)).length,
+  }));
   const inspectorMode = useInspectorMode();
+  const inspectorTab = useInspectorTab();
+  const hadSelection = useRef(selectedIds.length > 0);
+  useEffect(() => {
+    if (
+      hadSelection.current &&
+      !selectedIds.length &&
+      !viewerOpen &&
+      inspectorMode === "save"
+    )
+      libraryChrome.inspectSave(null);
+    hadSelection.current = selectedIds.length > 0;
+  }, [selectedIds.length, viewerOpen, inspectorMode]);
   const sourceId = useInspectorSourceId();
   const [preferences] = usePrefs("preferences");
   const systemReducedMotion = useReducedMotion();
@@ -113,7 +149,10 @@ export function RightPane() {
     <RightPaneView
       pane={pane}
       saveId={saveId}
+      saveIds={saveIds}
+      folders={folderCounts}
       inspectorMode={inspectorMode}
+      inspectorTab={inspectorTab}
       sourceId={sourceId}
       assistantPage={assistantPage}
       reduceMotion={reduceMotion}
@@ -128,12 +167,15 @@ export function RightPane() {
 interface RightPaneViewProps {
   pane: "agent" | "inspector" | null;
   saveId: string | null;
+  saveIds?: readonly string[];
+  folders?: SaveInspectorProps["folders"];
   inspectorMode?: LibraryInspectorMode;
+  inspectorTab?: SaveInspectorProps["tab"];
   sourceId?: string | null;
   assistantPage: boolean;
   reduceMotion: boolean;
   AgentContent: ComponentType;
-  InspectorContent: ComponentType<{ saveId: string }>;
+  InspectorContent: ComponentType<SaveInspectorProps>;
   DownloadInspectorContent: ComponentType<{ saveId: string }>;
   SourceInspectorContent: ComponentType;
 }
@@ -141,7 +183,10 @@ interface RightPaneViewProps {
 export function RightPaneView({
   pane,
   saveId,
+  saveIds,
+  folders,
   inspectorMode = "save",
+  inspectorTab = "organize",
   sourceId = null,
   assistantPage,
   reduceMotion,
@@ -185,7 +230,12 @@ export function RightPaneView({
                 saveId={inspectorId}
               />
             ) : (
-              <InspectorContent key={inspectorId} saveId={inspectorId} />
+              <InspectorContent
+                saveId={inspectorId}
+                saveIds={saveIds}
+                folders={folders}
+                tab={inspectorTab}
+              />
             )}
           </Suspense>
         ) : null,

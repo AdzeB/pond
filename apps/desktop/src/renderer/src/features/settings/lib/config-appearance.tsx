@@ -164,6 +164,7 @@ export const appearanceSection = defineCustomSection({
           control: "custom",
           key: "sounds",
           keywords: ["audio", "click", "feedback", "sfx", "mute", "silence"],
+          standalone: true,
           render: () => <SoundPreferences />,
         },
       ],

@@ -3,7 +3,7 @@ import { useId } from "react";
 import { useView } from "@/features/library/hooks/use-view";
 import type { DisplayPrefKey } from "@/features/saves/state/display-prefs";
 import {
-  type ListColumnKey,
+  LIST_COLUMN_OPTIONS,
   setListColumn,
   useListColumns,
 } from "@/features/saves/state/list-columns";
@@ -17,17 +17,6 @@ const TOGGLES: Array<{ key: DisplayPrefKey; label: string }> = [
   { key: "fileCount", label: "Show File Count" },
 ];
 
-const LIST_TOGGLES: Array<{ key: ListColumnKey; label: string }> = [
-  { key: "name", label: "Show Name" },
-  { key: "tags", label: "Show Tags" },
-  { key: "dimensions", label: "Show Dimensions" },
-  { key: "rating", label: "Show Rating" },
-  { key: "extension", label: "Show Extension" },
-  { key: "fileSize", label: "Show File Size" },
-  { key: "dateAdded", label: "Show Date Added" },
-  { key: "annotation", label: "Show Annotation" },
-];
-
 export function DisplaySection() {
   const { state, actions } = useView();
   const listColumns = useListColumns();
@@ -37,9 +26,9 @@ export function DisplaySection() {
   return (
     <div className={styles.rows}>
       {list
-        ? LIST_TOGGLES.map(({ key, label }) => (
+        ? LIST_COLUMN_OPTIONS.map(({ key, label }) => (
             <label key={key} htmlFor={`${id}-${key}`} className={styles.row}>
-              <span className={styles.label}>{label}</span>
+              <span className={styles.label}>Show {label}</span>
               <Switch.Root
                 id={`${id}-${key}`}
                 checked={listColumns[key]}

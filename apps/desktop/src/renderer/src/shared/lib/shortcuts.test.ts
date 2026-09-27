@@ -20,6 +20,12 @@ describe("shortcut registry", () => {
     expect(tabShortcuts).toEqual([]);
     expect(SHORTCUTS["view.sidebar"].keys).toBe("[");
   });
+
+  it("uses the same labels as save actions", () => {
+    expect(SHORTCUTS["save.open-url"].label).toBe("Open Original in Browser");
+    expect(SHORTCUTS["save.add-tag"].label).toBe("Add Tags");
+    expect(SHORTCUTS["save.refresh"].label).toBe("Refresh from Source");
+  });
 });
 
 describe("shortcut binding access", () => {

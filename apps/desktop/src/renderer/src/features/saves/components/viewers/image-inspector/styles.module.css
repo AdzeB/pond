@@ -69,3 +69,12 @@
   height: 100%;
   object-fit: contain;
 }
+
+.instructions {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: inset(50%);
+}

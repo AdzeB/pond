@@ -1,6 +1,13 @@
+import { useSelector } from "@tanstack/react-store";
 import type { RowData, Row as TanstackRow } from "@tanstack/react-table";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
+import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
+import {
+  type ReactNode,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { cssVars } from "../css-vars";
 import { useDataTable } from "./context";
 import type { DATA_TABLE_FEATURES } from "./provider";
@@ -21,13 +28,17 @@ function scrollEdgesOf(element: HTMLDivElement): ScrollEdges {
 export function DataTableBody<T extends RowData>({
   extraRow,
   emptyState,
+  rowOffset = 1,
 }: {
   extraRow?: ReactNode;
   emptyState?: ReactNode;
+  rowOffset?: number;
 }) {
-  const { meta } = useDataTable<T>();
+  const { meta, selectionStore } = useDataTable<T>();
   const { rows, rowApi, height, rowHeight, overscan } = meta;
 
+  const cursorId = useSelector(selectionStore, (s) => s.cursorId);
+  const cursorIndex = rows.findIndex((row) => row.id === cursorId);
   const parentRef = useRef<HTMLDivElement>(null);
   const [edges, setEdges] = useState<ScrollEdges>("");
   const virtualizer = useVirtualizer({
@@ -35,8 +46,40 @@ export function DataTableBody<T extends RowData>({
     getScrollElement: () => parentRef.current,
     estimateSize: () => rowHeight,
     overscan,
+    rangeExtractor: (range) => {
+      const indexes = defaultRangeExtractor(range);
+      if (cursorIndex >= 0 && !indexes.includes(cursorIndex))
+        indexes.push(cursorIndex);
+      return indexes.sort((a, b) => a - b);
+    },
     enabled: height !== undefined,
   });
+
+  const revealRow = useCallback(
+    (id: string) => {
+      const index = rows.findIndex((row) => row.id === id);
+      if (index < 0) return;
+      if (height !== undefined)
+        virtualizer.scrollToIndex(index, { align: "auto" });
+      else
+        document
+          .getElementById(meta.rowElementId(id))
+          ?.scrollIntoView?.({ block: "nearest" });
+    },
+    [rows, height, meta.rowElementId, virtualizer],
+  );
+
+  useLayoutEffect(() => {
+    meta.revealRow.current = revealRow;
+    return () => {
+      if (meta.revealRow.current === revealRow) meta.revealRow.current = null;
+    };
+  }, [meta.revealRow, revealRow]);
+
+  useLayoutEffect(() => {
+    if (cursorId && document.activeElement === meta.gridRef.current)
+      revealRow(cursorId);
+  }, [cursorId, meta.gridRef, revealRow]);
 
   useLayoutEffect(() => {
     if (height === undefined) return;
@@ -68,6 +111,7 @@ export function DataTableBody<T extends RowData>({
       key={row.id}
       api={rowApi}
       rowId={row.id}
+      rowIndex={index + rowOffset + 1}
       prevId={rows[index - 1]?.id}
       nextId={rows[index + 1]?.id}
       data={row.original}

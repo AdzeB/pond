@@ -1,9 +1,11 @@
 import {
   IconArchiveExportOutline18,
+  IconBoxArchiveOutline18,
   IconBulletListOutline18,
   IconClone2Outline18,
   IconEyeOutline18,
   IconFaceSmileOutline18,
+  IconFileExportOutline18,
   IconFolderBoltOutline18,
   IconFolderDotsOutline18,
   IconFolderImportOutline18,
@@ -13,6 +15,9 @@ import {
   IconFoldersOutline18,
   IconFolderTreeOutline18,
   IconFolderXmarkOutline18,
+  IconLink2Outline18,
+  IconRenameOutline18,
+  IconTableDownloadOutline18,
 } from "@pond/icons/outline/18";
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import { Dialog, type MenuItemSpec } from "@pond/ui";
@@ -81,7 +86,7 @@ export function buildFolderMenuItems(a: FolderMenuActions): MenuItemSpec[] {
     },
     {
       label: "Batch Rename Folders",
-      icon: <IconFolderPenOutline18 />,
+      icon: <IconRenameOutline18 />,
       onClick: a.onBatchRename,
     },
     {
@@ -118,17 +123,29 @@ export function buildFolderMenuItems(a: FolderMenuActions): MenuItemSpec[] {
     {
       type: "submenu",
       label: "Export",
-      icon: <IconArchiveExportOutline18 />,
+      icon: <IconFileExportOutline18 />,
       items: [
-        { label: "Export Files", keywords: "files", onClick: a.onExportFiles },
-        { label: "Export to CSV", keywords: "csv", onClick: a.onExportCsv },
+        {
+          label: "Export Files",
+          icon: <IconFileExportOutline18 />,
+          keywords: "files",
+          onClick: a.onExportFiles,
+        },
+        {
+          label: "Export to CSV",
+          icon: <IconTableDownloadOutline18 />,
+          keywords: "csv",
+          onClick: a.onExportCsv,
+        },
         {
           label: "Export Eagle Package",
+          icon: <IconBoxArchiveOutline18 />,
           keywords: "eagle package",
           onClick: a.onExportEaglePackage,
         },
         {
           label: "Export Pond Package",
+          icon: <IconArchiveExportOutline18 />,
           keywords: "package",
           onClick: a.onExportPackage,
         },
@@ -141,6 +158,7 @@ export function buildFolderMenuItems(a: FolderMenuActions): MenuItemSpec[] {
     },
     {
       label: "Copy Folder Link",
+      icon: <IconLink2Outline18 />,
       onClick: a.onCopyLink,
       disabled: !a.onCopyLink,
     },
@@ -240,42 +258,6 @@ export async function exportFolderCsv(folderIds: string[]): Promise<void> {
 export async function exportFolderPackage(folderIds: string[]): Promise<void> {
   await withFolderSaves(folderIds, async (ids) => {
     const result = await window.pond.query("saves.exportPackage", { ids });
-    if (!result.ok && result.error === "password_required") {
-      Dialog.prompt({
-        title: "Protect Pond Package",
-        description:
-          "Enter a password for this export. Pond will show a separate recovery key after export.",
-        inputType: "password",
-        autoComplete: "new-password",
-        confirmLabel: "Export",
-        onConfirm: async (password) => {
-          if (password.length < 8)
-            throw new Error("Use at least 8 characters.");
-          const protectedResult = await window.pond.query(
-            "saves.exportPackage",
-            { ids, password },
-          );
-          if (!protectedResult.ok)
-            throw new Error(
-              protectedResult.error || "Couldn't export package.",
-            );
-          if (protectedResult.recoveryKey) {
-            Dialog.confirm({
-              title: "Package Recovery Key",
-              description: protectedResult.recoveryKey,
-              confirmLabel: "Copy Recovery Key",
-              cancelLabel: "Done",
-              onConfirm: async () => {
-                await window.pond.query("clipboard.writeText", {
-                  text: protectedResult.recoveryKey ?? "",
-                });
-              },
-            });
-          }
-        },
-      });
-      return;
-    }
     if (!result.ok && result.error !== "canceled")
       notify({
         id: "folder-export",

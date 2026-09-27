@@ -16,6 +16,7 @@ import { LibraryGrid } from "@/features/library/components/layouts/grid";
 import { LayoutSwitcher } from "@/features/library/components/layouts/switcher/switcher";
 import { useGridHotkeys } from "@/features/library/hooks/use-grid-hotkeys";
 import { useLibraryState } from "@/features/library/hooks/use-library-state";
+import { useRectangleSelection } from "@/features/library/hooks/use-rectangle-selection";
 import { useFolders } from "@/features/library/state/folders";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
 import { resetFilters } from "@/features/library/state/view-store";
@@ -62,6 +63,7 @@ function LibraryEmptyState({
 
 export function LibraryView() {
   const data = useLibraryState();
+  const marquee = useRectangleSelection();
   const nav = useLibraryNav();
   const folders = useFolders();
   const paging = useSavePaging();
@@ -70,7 +72,7 @@ export function LibraryView() {
     data.mode,
     data.sourceFilter,
   );
-  useGridHotkeys(data.filteredIds, data.paging.allIds);
+  useGridHotkeys(data.filteredIds);
 
   const canLoadAnotherPage = data.paging.hasMore && !data.paging.loading;
   const hasChildFolders =
@@ -85,6 +87,7 @@ export function LibraryView() {
     libraryViewContext.set(data.filteredIds, data.mode);
     resultNavigation.setSource({
       key: data.paging.queryKey,
+      total: data.paging.total,
       loadedIds: data.paging.loadedIds,
       ids: data.filteredIds,
       allIds: data.paging.allIds,
@@ -96,6 +99,7 @@ export function LibraryView() {
     data.paging.allIds,
     data.paging.loadMore,
     data.paging.queryKey,
+    data.paging.total,
     data.paging.loadedIds,
   ]);
 
@@ -112,8 +116,9 @@ export function LibraryView() {
     >
       <LibraryGrid.Root
         data-library-grid=""
+        onPointerDown={marquee.onPointerDown}
         onMouseDown={(event) => {
-          if (event.button !== 0) return;
+          if (event.defaultPrevented || event.button !== 0) return;
           if (event.metaKey || event.ctrlKey || event.shiftKey) return;
           if (!isLibraryBackgroundTarget(event.target)) return;
           clearSaveSelection();
@@ -169,6 +174,20 @@ export function LibraryView() {
             onEndReached={canLoadAnotherPage ? onEndReached : undefined}
           />
         )}
+        {marquee.rectangle ? (
+          <div
+            aria-hidden="true"
+            style={{
+              position: "fixed",
+              pointerEvents: "none",
+              zIndex: 10,
+              border: "1px solid var(--ds-accent-9)",
+              background:
+                "color-mix(in srgb, var(--ds-accent-9) 15%, transparent)",
+              ...marquee.rectangle,
+            }}
+          />
+        ) : null}
         <HoverPreview />
       </LibraryGrid.Root>
     </SpecContextMenu>

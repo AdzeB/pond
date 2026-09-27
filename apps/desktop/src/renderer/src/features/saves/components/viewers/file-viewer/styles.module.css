@@ -14,59 +14,6 @@
   background: var(--ds-gray-2);
 }
 
-.previewStage {
-  position: relative;
-  display: grid;
-  flex: 1;
-  place-items: center;
-  min-width: 0;
-  min-height: 0;
-  padding: 24px;
-  overflow: auto;
-  background-color: var(--ds-gray-3);
-  background-image:
-    linear-gradient(
-      45deg,
-      color-mix(in srgb, var(--ds-gray-6) 30%, transparent) 25%,
-      transparent 25%
-    ),
-    linear-gradient(
-      -45deg,
-      color-mix(in srgb, var(--ds-gray-6) 30%, transparent) 25%,
-      transparent 25%
-    ),
-    linear-gradient(
-      45deg,
-      transparent 75%,
-      color-mix(in srgb, var(--ds-gray-6) 30%, transparent) 75%
-    ),
-    linear-gradient(
-      -45deg,
-      transparent 75%,
-      color-mix(in srgb, var(--ds-gray-6) 30%, transparent) 75%
-    );
-  background-position:
-    0 0,
-    0 8px,
-    8px -8px,
-    -8px 0;
-  background-size: 16px 16px;
-}
-
-.generatedPreview {
-  display: block;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  box-shadow: var(--ds-shadow-4);
-  opacity: 0;
-  transition: opacity var(--ds-duration-snap) var(--ds-easing-standard);
-}
-
-.previewStage[data-loaded] .generatedPreview {
-  opacity: 1;
-}
-
 .previewStatus {
   position: absolute;
   inset: 0;
@@ -94,7 +41,7 @@
   padding: 32px;
   background: var(--ds-gray-1);
   border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-3);
+  box-shadow: var(--ds-shadow-md);
 }
 
 .audioCard audio {
@@ -108,16 +55,25 @@
   cursor: crosshair;
 }
 
-.audioControls {
+.audioTransport {
   display: flex;
-  gap: 8px;
+  gap: 2px;
   align-items: center;
   width: 100%;
+  min-width: 0;
 }
 
-.audioControls > :last-child {
-  width: 120px;
-  margin-left: auto;
+.audioProgress {
+  flex: 1 1 160px;
+  min-width: 80px;
+  margin-inline: 6px;
+}
+
+.audioVolume {
+  flex: 0 1 104px;
+  width: 104px;
+  min-width: 64px;
+  margin-inline: 4px;
 }
 
 .time {
@@ -153,11 +109,11 @@
   height: 128px;
   padding: 16px;
   font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-semibold);
+  font-weight: var(--ds-weight-xl);
   color: var(--ds-gray-11);
   background: var(--ds-gray-2);
   border-radius: var(--ds-radius-md);
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-sm);
 }
 
 .actions {
@@ -173,11 +129,85 @@
   background: var(--ds-gray-3);
 }
 
+.pdfBody {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
 .pdfScroll {
   flex: 1;
+  min-width: 0;
   min-height: 0;
   padding: 24px;
   overflow: auto;
+}
+
+.pdfThumbnails {
+  display: flex;
+  flex: 0 0 132px;
+  flex-direction: column;
+  gap: 10px;
+  width: 132px;
+  min-height: 0;
+  padding: 10px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--ds-gray-2);
+  border-right: var(--ds-border-width) solid var(--ds-gray-4);
+  animation: pdf-rail-in var(--ds-duration-snap) var(--ds-easing-standard);
+}
+
+.pdfThumbnail {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  width: 112px;
+  padding: 7px;
+  font: inherit;
+  color: var(--ds-gray-10);
+  cursor: pointer;
+  background: transparent;
+  border: var(--ds-border-width) solid transparent;
+  border-radius: var(--ds-radius-md);
+}
+
+.pdfThumbnail:hover {
+  background: var(--ds-gray-a3);
+}
+
+.pdfThumbnail:focus-visible {
+  outline: 2px solid var(--ds-focus-ring);
+  outline-offset: -2px;
+}
+
+.pdfThumbnail[data-active] {
+  color: var(--ds-gray-12);
+  background: var(--ds-accent-a3);
+  border-color: var(--ds-accent-a7);
+}
+
+.pdfThumbnail canvas,
+.pdfThumbnail > span {
+  display: block;
+  width: 96px;
+  min-height: 124px;
+  background: white;
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.pdfThumbnail strong {
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-lg);
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes pdf-rail-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
 }
 
 .pdfPage {
@@ -193,7 +223,7 @@
   display: block;
   max-width: 100%;
   height: auto;
-  box-shadow: var(--ds-shadow-4);
+  box-shadow: var(--ds-shadow-lg);
 }
 
 .pdfPage figcaption {
@@ -211,29 +241,60 @@
   text-align: center;
 }
 
-.fileBar {
+.pdfSearch {
   display: flex;
-  flex: none;
-  gap: 12px;
+  gap: 2px;
   align-items: center;
-  min-height: 48px;
-  padding: 8px 12px;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-10);
-  background: var(--ds-gray-1);
-  border-top: var(--ds-border-width) solid var(--ds-gray-4);
+  min-width: 0;
 }
 
-.fileBar > :first-child {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--ds-gray-12);
+.pdfSearchCount {
+  padding-inline: 6px;
+  font-size: var(--ds-text-xs);
+  color: var(--ds-gray-9);
   white-space: nowrap;
 }
 
-.fileBar .actions {
-  margin-left: auto;
+.pdfSearch {
+  width: 220px;
+  margin-inline: 2px 6px;
+  animation: pdf-search-in var(--ds-duration-snap) var(--ds-easing-standard);
+}
+
+.pdfSearch > :first-child {
+  flex: 1;
+  min-width: 96px;
+}
+
+.pdfPageEntry {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--ds-gray-10);
+  white-space: nowrap;
+}
+
+.pdfPageEntry > :first-child {
+  width: 48px;
+}
+
+.pdfPageEntry input {
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+@keyframes pdf-search-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pdfThumbnails,
+  .pdfSearch {
+    animation: none;
+  }
 }
 
 .fontRoot {
@@ -256,16 +317,14 @@
   overflow: auto;
 }
 
-.query {
-  padding: 2px 4px;
-}
-
 .field {
-  width: min(24rem, 50vw);
+  width: min(24rem, 50cqw);
 }
 
 .size {
+  display: flex;
   gap: 4px;
+  align-items: center;
   padding: 2px 8px 2px 2px;
 }
 
@@ -334,4 +393,8 @@
 .fontMetadata dd {
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.fontInfoActions {
+  padding: 0 56px 40px;
 }

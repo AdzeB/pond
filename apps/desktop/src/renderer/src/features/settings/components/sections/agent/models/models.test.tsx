@@ -1,5 +1,6 @@
 import { DEFAULT_PREFS } from "@pond/schema";
 import { Tooltip } from "@pond/ui";
+import { ASSISTANT_MODELS } from "@shared/assistant";
 import { modelsForChooser } from "@shared/provider-models";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, type ReactNode, useState } from "react";
@@ -7,24 +8,29 @@ import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ModelCatalogTable, ModelsSection } from "./index";
 
+const connectedProviders = ASSISTANT_MODELS.map((entry) => ({
+  provider: entry.id,
+  hasKey: true,
+  enabled: true,
+  masked: null,
+}));
+
 function wrap(node: ReactNode) {
   return <Tooltip.Provider>{node}</Tooltip.Provider>;
 }
 
 function renderWithQuery(host: HTMLDivElement, node: ReactNode) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   const root = createRoot(host);
   return {
     root,
-    render: () =>
+    client,
+    render: (content = node) =>
       root.render(
-        <QueryClientProvider
-          client={
-            new QueryClient({
-              defaultOptions: { queries: { retry: false } },
-            })
-          }
-        >
-          {wrap(node)}
+        <QueryClientProvider client={client}>
+          {wrap(content)}
         </QueryClientProvider>,
       ),
   };
@@ -85,8 +91,15 @@ it("persists visibility, preserves it after rejection, and restores all models",
     expect(host.textContent).toContain("$2/M");
     expect(host.textContent).toContain("$8/M");
     expect(
-      [...host.querySelectorAll("th")].map((header) => header.textContent),
-    ).toEqual(["Model", "Provider", "Input", "Output", "Context", ""]);
+      [...host.querySelectorAll("thead th")].map(
+        (header) => header.textContent,
+      ),
+    ).toEqual(["Model", "Input", "Output", "Context", ""]);
+    expect(
+      [...host.querySelectorAll("h2 button")].map((header) =>
+        header.getAttribute("aria-label"),
+      ),
+    ).toEqual(["OpenAI"]);
     expect(host.querySelector("th[aria-label='Show']")).not.toBeNull();
     expect(
       host.querySelector('[aria-label="Input $2 per million tokens"]'),
@@ -128,11 +141,12 @@ it("persists visibility, preserves it after rejection, and restores all models",
   }
 });
 
-it("keeps disconnected catalog previews out of visibility changes", async () => {
+it("explains unavailable selection and opens provider settings", async () => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
   let saves = 0;
+  let openedProviders = false;
   try {
     await act(async () =>
       root.render(
@@ -151,11 +165,21 @@ it("keeps disconnected catalog previews out of visibility changes", async () => 
             onSave={async () => {
               saves++;
             }}
+            onOpenProviders={() => {
+              openedProviders = true;
+            }}
           />,
         ),
       ),
     );
-    expect(host.textContent).not.toContain("Connect this provider");
+    expect(host.textContent).toContain(
+      "Check the provider connection to select models.",
+    );
+    const openProviders = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Open Providers",
+    );
+    await act(async () => openProviders?.click());
+    expect(openedProviders).toBe(true);
     const checkbox = host.querySelector<HTMLButtonElement>('[role="checkbox"]');
     expect(checkbox).not.toBeNull();
     expect(checkbox?.getAttribute("aria-checked")).toBe("false");
@@ -171,7 +195,7 @@ it("keeps disconnected catalog previews out of visibility changes", async () => 
   }
 });
 
-it("filters the catalog by provider name", async () => {
+it("collapses providers independently and reveals search matches", async () => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -202,6 +226,26 @@ it("filters the catalog by provider name", async () => {
     );
     expect(host.textContent).toContain("GPT-4.1");
     expect(host.textContent).toContain("Claude Sonnet 4");
+    expect(
+      [...host.querySelectorAll("h2 button")].map((header) =>
+        header.getAttribute("aria-label"),
+      ),
+    ).toEqual(["OpenAI", "Anthropic"]);
+    const anthropic = host.querySelector<HTMLButtonElement>(
+      'h2 button[aria-label="Anthropic"]',
+    );
+    if (!anthropic) throw new Error("Missing provider toggle");
+    expect(anthropic.getAttribute("aria-expanded")).toBe("true");
+    await act(async () => anthropic.click());
+    expect(anthropic.getAttribute("aria-expanded")).toBe("false");
+    await vi.waitFor(() => {
+      expect(host.textContent).not.toContain("Claude Sonnet 4");
+    });
+    expect(host.textContent).toContain("GPT-4.1");
+    await act(async () => anthropic.click());
+    expect(anthropic.getAttribute("aria-expanded")).toBe("true");
+    expect(host.textContent).toContain("Claude Sonnet 4");
+    await act(async () => anthropic.click());
     const search = host.querySelector('[aria-label="Search models"]');
     if (!(search instanceof HTMLInputElement))
       throw new Error("Missing search field");
@@ -215,6 +259,11 @@ it("filters the catalog by provider name", async () => {
     });
     expect(host.textContent).toContain("Claude Sonnet 4");
     expect(host.textContent).not.toContain("GPT-4.1");
+    expect(
+      [...host.querySelectorAll("h2 button")].map((header) =>
+        header.getAttribute("aria-label"),
+      ),
+    ).toEqual(["Anthropic"]);
   } finally {
     await act(async () => root.unmount());
     host.remove();
@@ -252,6 +301,7 @@ it("shows a retryable unavailable state when the catalog fails to load", async (
   vi.stubGlobal("pond", {
     query: async (name: string) => {
       if (name === "settings.getPrefs") return DEFAULT_PREFS;
+      if (name === "agent.keys") return connectedProviders;
       if (name === "agent.listModels") {
         listCalls++;
         throw new Error("offline");
@@ -287,6 +337,7 @@ it("keeps loaded models when some providers fail", async () => {
   vi.stubGlobal("pond", {
     query: async (name: string, params?: { provider?: string }) => {
       if (name === "settings.getPrefs") return DEFAULT_PREFS;
+      if (name === "agent.keys") return connectedProviders;
       if (name === "agent.listModels") {
         if (params?.provider === "openai") {
           return {
@@ -319,6 +370,232 @@ it("keeps loaded models when some providers fail", async () => {
     expect(host.textContent).not.toContain("Models unavailable");
   } finally {
     await act(async () => root.unmount());
+    host.remove();
+  }
+});
+
+it("shows ready providers while another provider is still loading", async () => {
+  const slow = Promise.withResolvers<{ ok: true; models: [] }>();
+  vi.stubGlobal("pond", {
+    query: async (name: string, params?: { provider?: string }) => {
+      if (name === "settings.getPrefs") return DEFAULT_PREFS;
+      if (name === "agent.keys") return connectedProviders;
+      if (name === "agent.listModels") {
+        if (params?.provider === "lmstudio") return slow.promise;
+        return {
+          ok: true,
+          models:
+            params?.provider === "openai"
+              ? [{ id: "gpt-4.1", name: "GPT-4.1" }]
+              : [],
+        };
+      }
+      throw new Error(`Unexpected query: ${name}`);
+    },
+  });
+  const host = document.createElement("div");
+  document.body.append(host);
+  const { root, render, client } = renderWithQuery(host, <ModelsSection />);
+  try {
+    await act(async () => render());
+    await vi.waitFor(() => expect(host.textContent).toContain("GPT-4.1"));
+    expect(
+      host.querySelector('button[aria-label="Loading models"]'),
+    ).not.toBeNull();
+    await act(async () => slow.resolve({ ok: true, models: [] }));
+    await vi.waitFor(() =>
+      expect(host.querySelector('button[aria-label="Refresh"]')).not.toBeNull(),
+    );
+  } finally {
+    slow.resolve({ ok: true, models: [] });
+    await act(async () => root.unmount());
+    client.clear();
+    host.remove();
+  }
+});
+
+it("keeps cached models across page visits and refreshes stale data in place", async () => {
+  let calls = 0;
+  let waiting = false;
+  let offline = false;
+  const refresh = Promise.withResolvers<{
+    ok: true;
+    models: { id: string; name: string }[];
+  }>();
+  vi.stubGlobal("pond", {
+    query: async (name: string, params?: { provider?: string }) => {
+      if (name === "settings.getPrefs") return DEFAULT_PREFS;
+      if (name === "agent.keys") return connectedProviders;
+      if (name === "agent.listModels") {
+        calls++;
+        if (offline) throw new Error("offline");
+        if (waiting && params?.provider === "openai") return refresh.promise;
+        return {
+          ok: true,
+          models:
+            params?.provider === "openai"
+              ? [{ id: "gpt-4.1", name: "GPT-4.1" }]
+              : [],
+        };
+      }
+      throw new Error(`Unexpected query: ${name}`);
+    },
+  });
+  const host = document.createElement("div");
+  document.body.append(host);
+  const { root, render, client } = renderWithQuery(host, <ModelsSection />);
+  try {
+    await act(async () => render());
+    await vi.waitFor(() => expect(host.textContent).toContain("GPT-4.1"));
+    const initialCalls = calls;
+    vi.useFakeTimers();
+    await act(async () => render(null));
+    await act(async () => vi.advanceTimersByTimeAsync(6 * 60_000));
+    await act(async () => render());
+    expect(host.textContent).toContain("GPT-4.1");
+    expect(calls).toBe(initialCalls);
+    await act(async () => render(null));
+    waiting = true;
+    await act(async () => vi.advanceTimersByTimeAsync(10 * 60_000));
+    await act(async () => render());
+    expect(calls).toBeGreaterThan(initialCalls);
+    expect(host.textContent).toContain("GPT-4.1");
+    expect(
+      host.querySelector('[aria-label="Loading models"][aria-busy="true"]'),
+    ).toBeNull();
+    await act(async () => {
+      refresh.resolve({
+        ok: true,
+        models: [{ id: "gpt-new", name: "New model" }],
+      });
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(host.textContent).toContain("New model");
+    expect(host.textContent).not.toContain("GPT-4.1");
+    waiting = false;
+    const beforeInvalidation = calls;
+    await act(async () => {
+      await client.invalidateQueries({ queryKey: ["all-provider-models"] });
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(calls).toBeGreaterThan(beforeInvalidation);
+    expect(host.textContent).toContain("GPT-4.1");
+    offline = true;
+    const refreshButton = host.querySelector<HTMLButtonElement>(
+      'button[aria-label="Refresh"]',
+    );
+    if (!refreshButton) throw new Error("Missing refresh button");
+    await act(async () => {
+      refreshButton.click();
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(host.textContent).toContain("GPT-4.1");
+    expect(host.textContent).toContain(
+      "Some providers could not load models. Try again.",
+    );
+    expect(host.textContent).not.toContain("Models unavailable");
+  } finally {
+    refresh.resolve({ ok: true, models: [] });
+    await act(async () => root.unmount());
+    client.clear();
+    vi.useRealTimers();
+    host.remove();
+  }
+});
+
+it("shows an accessible loading placeholder only before the first catalog arrives", async () => {
+  const ready = Promise.withResolvers<void>();
+  vi.stubGlobal("pond", {
+    query: async (name: string) => {
+      if (name === "settings.getPrefs") return DEFAULT_PREFS;
+      if (name === "agent.keys") return connectedProviders;
+      if (name === "agent.listModels") {
+        await ready.promise;
+        return { ok: true, models: [] };
+      }
+      throw new Error(`Unexpected query: ${name}`);
+    },
+  });
+  const host = document.createElement("div");
+  document.body.append(host);
+  const { root, render, client } = renderWithQuery(host, <ModelsSection />);
+  try {
+    await act(async () => render());
+    expect(
+      host.querySelector('[aria-label="Loading models"][aria-busy="true"]'),
+    ).not.toBeNull();
+    expect(host.querySelector('[role="status"]')?.textContent).toBe(
+      "Loading models",
+    );
+    expect(host.querySelector('[role="checkbox"]')).toBeNull();
+    await act(async () => ready.resolve());
+    await vi.waitFor(() =>
+      expect(host.textContent).toContain("Connect a provider first."),
+    );
+    expect(host.querySelector('[aria-busy="true"]')).toBeNull();
+  } finally {
+    ready.resolve();
+    await act(async () => root.unmount());
+    client.clear();
+    host.remove();
+  }
+});
+
+it("only requests connected enabled providers and hides disconnected cached models", async () => {
+  let connections = [
+    { provider: "openai", hasKey: true, enabled: true, masked: null },
+    { provider: "anthropic", hasKey: false, enabled: true, masked: null },
+    { provider: "lmstudio", hasKey: false, enabled: true, masked: null },
+    { provider: "gemini", hasKey: true, enabled: false, masked: null },
+  ];
+  const requested: string[] = [];
+  vi.stubGlobal("pond", {
+    query: async (name: string, params?: { provider?: string }) => {
+      if (name === "settings.getPrefs") return DEFAULT_PREFS;
+      if (name === "agent.keys") return connections;
+      if (name === "agent.listModels" && params?.provider) {
+        requested.push(params.provider);
+        return { ok: true, models: [{ id: "live-model", name: "Live model" }] };
+      }
+      throw new Error(`Unexpected query: ${name}`);
+    },
+  });
+  const host = document.createElement("div");
+  document.body.append(host);
+  const { root, render, client } = renderWithQuery(host, <ModelsSection />);
+  client.setQueryData(["all-provider-models", "anthropic"], {
+    ok: true,
+    models: [{ id: "old-model", name: "Cached disconnected model" }],
+  });
+  try {
+    await act(async () => render());
+    await vi.waitFor(() => expect(host.textContent).toContain("Live model"));
+    expect(requested).toEqual(["openai"]);
+    expect(host.textContent).not.toContain("Cached disconnected model");
+    expect(host.textContent).not.toContain("LM Studio");
+    expect(host.textContent).not.toContain("Google");
+    connections = [];
+    await act(async () =>
+      client.invalidateQueries({ queryKey: ["agent-provider-connections"] }),
+    );
+    await vi.waitFor(() =>
+      expect(host.textContent).toContain("Connect a provider first."),
+    );
+    expect(host.textContent).not.toContain("Live model");
+    expect(host.textContent).not.toContain("Models unavailable");
+    expect(requested).toEqual(["openai"]);
+    connections = [
+      { provider: "ollama", hasKey: true, enabled: true, masked: null },
+    ];
+    await act(async () =>
+      client.invalidateQueries({ queryKey: ["agent-provider-connections"] }),
+    );
+    await vi.waitFor(() => expect(host.textContent).toContain("Ollama"));
+    expect(host.textContent).toContain("Live model");
+    expect(requested).toEqual(["openai", "ollama"]);
+  } finally {
+    await act(async () => root.unmount());
+    client.clear();
     host.remove();
   }
 });

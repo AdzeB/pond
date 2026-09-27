@@ -76,7 +76,7 @@ export function libraryQueryWhere(
     scope.deletedOnly ? undefined : sql`${saves.status} = 'complete'`,
     buildWhere(request.query),
     request.keywords?.trim()
-      ? compileKeywordWhere(request.keywords)
+      ? compileKeywordWhere(request.keywords, "all", request.keywordScopes)
       : undefined,
     scope.source
       ? sql`lower(${saves.source}) = ${scope.source.toLowerCase()}`

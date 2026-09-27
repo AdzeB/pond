@@ -24,7 +24,7 @@ function save(partial: Partial<Save>): Save {
     tasks: [
       {
         op: "fetch_video_ytdlp",
-        status: "failed",
+        status: "dead",
         attempts: 1,
         maxAttempts: 5,
         lastError: "Network unavailable",
@@ -43,7 +43,7 @@ describe("downloadInspectorDetails", () => {
       {
         id: "fetch_video_ytdlp-0",
         label: "Downloading video",
-        status: "failed",
+        status: "dead",
         statusLabel: "Stopped",
         error: "Network unavailable",
         current: false,

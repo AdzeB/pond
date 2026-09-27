@@ -13,7 +13,7 @@
 
   &[data-card] {
     border-radius: var(--ds-radius-xl);
-    box-shadow: var(--ds-shadow-1);
+    box-shadow: var(--ds-shadow-xs);
   }
 
   &[data-index] {

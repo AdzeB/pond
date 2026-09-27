@@ -138,7 +138,7 @@ describe("Sources page selection", () => {
 
   async function press(key: string, init?: KeyboardEventInit) {
     await act(async () => {
-      document.dispatchEvent(
+      (document.activeElement ?? document).dispatchEvent(
         new KeyboardEvent("keydown", {
           key,
           bubbles: true,
@@ -179,6 +179,11 @@ describe("Sources page selection", () => {
 
   it("selects every visible source with Cmd+A and clears with Escape", async () => {
     await render();
+    const grid = host.querySelector<HTMLElement>(
+      '[role="grid"][aria-label="Sources"]',
+    );
+    if (!grid) throw new Error("Missing Sources grid");
+    await act(() => grid.focus());
     await press("a", { metaKey: true });
     expect(selectedIds()).toEqual(["ig", "tw", "yt"]);
     expect(selectedRows()).toHaveLength(3);
@@ -188,7 +193,7 @@ describe("Sources page selection", () => {
     expect(selectedRows()).toHaveLength(0);
   });
 
-  it("clears the selection when clicking outside the list", async () => {
+  it("preserves selection when focus moves outside the list", async () => {
     await render();
     await click(rowWith("@oluwa.rafa"));
     expect(selectedIds()).toEqual(["ig"]);
@@ -201,9 +206,11 @@ describe("Sources page selection", () => {
       search.dispatchEvent(
         new MouseEvent("mousedown", { bubbles: true, cancelable: true }),
       );
+      search.focus();
     });
-    expect(selectedIds()).toEqual([]);
-    expect(selectedRows()).toHaveLength(0);
+    await press("Escape");
+    expect(selectedIds()).toEqual(["ig"]);
+    expect(selectedRows()).toHaveLength(1);
   });
 
   it("keeps the selection when clicking a column header", async () => {

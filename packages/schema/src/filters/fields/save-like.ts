@@ -24,6 +24,13 @@ export interface SaveLike {
   width?: number | null;
   height?: number | null;
   fileSize?: number | null;
+  cameraMake?: string | null;
+  cameraModel?: string | null;
+  lensModel?: string | null;
+  focalLength?: number | null;
+  aperture?: number | null;
+  iso?: number | null;
+  takenAt?: string | Date | number | null;
   dominantColors?: string[];
   rawJson?: RawJson | null;
   savedAt?: string | Date | number | null;

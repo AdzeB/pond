@@ -1,17 +1,10 @@
-import { Tray } from "@pond/ui";
 import { useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
-import {
-  downloadsSelection,
-  useDownloadsSelectionSize,
-} from "@/features/downloads/state/downloads-selection";
-import { DownloadsSelectionContent } from "@/features/library/components/dock/selection";
+import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
 import { selection } from "@/features/saves/state/selection";
 import { sourcesSelection } from "@/features/sources/state/sources-selection";
-import styles from "./styles.module.css";
 
 export function LibraryTray() {
-  const downloadsSelectionSize = useDownloadsSelectionSize();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isDownloads = pathname.startsWith("/downloads");
   const isSources = pathname.startsWith("/sources");
@@ -29,17 +22,5 @@ export function LibraryTray() {
     }
   }, [isDownloads, isSources]);
 
-  if (!isDownloads || downloadsSelectionSize === 0) return null;
-
-  return (
-    <div className={styles.dock}>
-      <div className={styles.shell}>
-        <div className={styles.hit}>
-          <Tray.Pill className={styles.pill}>
-            <DownloadsSelectionContent />
-          </Tray.Pill>
-        </div>
-      </div>
-    </div>
-  );
+  return null;
 }

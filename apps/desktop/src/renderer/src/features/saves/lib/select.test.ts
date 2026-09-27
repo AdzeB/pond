@@ -34,7 +34,7 @@ describe("clickSave", () => {
     expect(selection.getAnchor()).toBe("a");
     expect(primarySelection.get()).toBe("a");
     expect(libraryChrome.getState().inspectorSaveId).toBe("a");
-    expect(libraryChrome.getState().rightPane).toBeNull();
+    expect(libraryChrome.getState().rightPane).toBe("inspector");
   });
 
   it("replaces the previous selection on a plain click", () => {
@@ -64,14 +64,14 @@ describe("clickSave", () => {
 });
 
 describe("clearSaveSelection", () => {
-  it("clears the selection and primary without closing Details", () => {
+  it("clears the selection and closes Details", () => {
     libraryChrome.inspectSave("a");
     selectOnlySave("a");
     clearSaveSelection();
     expect(selection.size()).toBe(0);
     expect(primarySelection.get()).toBeNull();
-    expect(libraryChrome.getState().inspectorSaveId).toBe("a");
-    expect(libraryChrome.getState().rightPane).toBe("inspector");
+    expect(libraryChrome.getState().inspectorSaveId).toBeNull();
+    expect(libraryChrome.getState().rightPane).toBeNull();
   });
 });
 

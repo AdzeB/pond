@@ -1,0 +1,30 @@
+.header {
+  display: flex;
+  flex: none;
+  gap: 10px;
+  align-items: center;
+  min-height: 28px;
+  padding-inline: 0;
+  color: var(--ds-gray-10);
+}
+
+.preview {
+  flex: none;
+  width: 48px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-xs);
+  white-space: nowrap;
+}
+
+.cell {
+  flex: 1 1 0;
+  justify-content: flex-start;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-xs);
+  color: var(--ds-gray-10);
+  text-align: left;
+  white-space: nowrap;
+}

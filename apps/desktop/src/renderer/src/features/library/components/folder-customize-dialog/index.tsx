@@ -1,4 +1,4 @@
-import { Button, cssVars, Dialog, Field, Input, Switch } from "@pond/ui";
+import { Button, cssVars, Dialog, Field, Input } from "@pond/ui";
 import { useEffect, useState } from "react";
 import {
   FOLDER_ICONS,
@@ -34,18 +34,12 @@ export function FolderCustomizeDialog({
   const [initialExternalLink, setInitialExternalLink] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [protectedFolder, setProtectedFolder] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [password, setPassword] = useState("");
-  const [hint, setHint] = useState("");
-  const [lockChildren, setLockChildren] = useState(true);
   const scrollFade = useScrollFade<HTMLDivElement>();
   const changed =
     icon !== initialIcon ||
     color !== folder.color ||
     description !== initialDescription ||
-    externalLink !== initialExternalLink ||
-    password.length > 0;
+    externalLink !== initialExternalLink;
 
   useEffect(() => {
     void window.pond
@@ -57,13 +51,6 @@ export function FolderCustomizeDialog({
         setInitialDescription(nextDescription);
         setExternalLink(nextExternalLink);
         setInitialExternalLink(nextExternalLink);
-      });
-    void window.pond
-      .query("folders.security.status", { folderId: folder.id })
-      .then((status) => {
-        setProtectedFolder(status.protected);
-        setHint(status.hint ?? "");
-        setLockChildren(status.lockChildren);
       });
   }, [folder.id]);
 
@@ -87,7 +74,7 @@ export function FolderCustomizeDialog({
       const metadataChanged =
         description !== initialDescription ||
         externalLink !== initialExternalLink;
-      const [, , metadataResult, securityResult] = await Promise.all([
+      const [, , metadataResult] = await Promise.all([
         icon !== initialIcon
           ? saveFolderPresentation(folder.id, { icon })
           : Promise.resolve(),
@@ -101,18 +88,8 @@ export function FolderCustomizeDialog({
               externalLink: nextExternalLink || null,
             })
           : Promise.resolve({ ok: true }),
-        password
-          ? window.pond.query("folders.security.set", {
-              folderId: folder.id,
-              password,
-              currentPassword: currentPassword || undefined,
-              hint: hint || null,
-              lockChildren,
-            })
-          : Promise.resolve({ ok: true }),
       ]);
       if (!metadataResult.ok) throw new Error("Folder details were rejected.");
-      if (!securityResult.ok) throw new Error("Folder password was rejected.");
       await folders.refresh();
       onClose();
     } catch {
@@ -219,101 +196,6 @@ export function FolderCustomizeDialog({
                   ))}
                 </div>
               </fieldset>
-              <fieldset className={styles.section} disabled={busy}>
-                <legend className={styles.legend}>Password</legend>
-                <p className={styles.description}>
-                  Require a password before Pond shows this folder's Saves.
-                </p>
-                {protectedFolder ? (
-                  <label className={styles.field} htmlFor="current-password">
-                    <span>Current Password</span>
-                    <Input.Root>
-                      <Input.Field
-                        id="current-password"
-                        type="password"
-                        autoComplete="current-password"
-                        value={currentPassword}
-                        onChange={(event) =>
-                          setCurrentPassword(event.target.value)
-                        }
-                      />
-                    </Input.Root>
-                  </label>
-                ) : null}
-                <label className={styles.field} htmlFor="folder-password">
-                  <span>{protectedFolder ? "New Password" : "Password"}</span>
-                  <Input.Root>
-                    <Input.Field
-                      id="folder-password"
-                      type="password"
-                      autoComplete="new-password"
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                    />
-                  </Input.Root>
-                </label>
-                <label className={styles.field} htmlFor="password-hint">
-                  <span>Password Hint</span>
-                  <Input.Root>
-                    <Input.Field
-                      id="password-hint"
-                      value={hint}
-                      disabled={!password}
-                      onChange={(event) => setHint(event.target.value)}
-                    />
-                  </Input.Root>
-                </label>
-                {!password ? (
-                  <p className={styles.description}>
-                    Enter {protectedFolder ? "a new password" : "a password"} to
-                    set the hint or subfolder protection.
-                  </p>
-                ) : null}
-                <div className={styles.toggle}>
-                  <span>Protect Subfolders</span>
-                  <Switch.Root
-                    aria-label="Protect Subfolders"
-                    checked={lockChildren}
-                    disabled={!password}
-                    onCheckedChange={setLockChildren}
-                  />
-                </div>
-                {protectedFolder ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="destructive"
-                    disabled={!currentPassword}
-                    onClick={() => {
-                      setBusy(true);
-                      setError(null);
-                      void window.pond
-                        .query("folders.security.remove", {
-                          folderId: folder.id,
-                          password: currentPassword,
-                        })
-                        .then((result) => {
-                          if (!result.ok)
-                            throw new Error("Password didn't match.");
-                          setProtectedFolder(false);
-                          setCurrentPassword("");
-                          setPassword("");
-                          setHint("");
-                          setLockChildren(true);
-                          void folders.refresh();
-                        })
-                        .catch(() =>
-                          setError(
-                            "Pond couldn't remove the password. Check the current password and try again.",
-                          ),
-                        )
-                        .finally(() => setBusy(false));
-                    }}
-                  >
-                    Remove Password
-                  </Button>
-                ) : null}
-              </fieldset>
               {error ? (
                 <p className={styles.error} role="alert">
                   {error}
@@ -321,7 +203,6 @@ export function FolderCustomizeDialog({
               ) : null}
             </Dialog.Content>
             <Dialog.Footer>
-              <Dialog.Cancel type="button" disabled={busy} onClick={onClose} />
               <Dialog.Confirm type="submit" loading={busy} disabled={!changed}>
                 Save
               </Dialog.Confirm>

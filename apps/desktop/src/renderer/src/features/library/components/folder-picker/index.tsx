@@ -1,7 +1,8 @@
 import { Button, Checkbox, Dialog, Input } from "@pond/ui";
 import { useSelector } from "@tanstack/react-store";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
+  forgetRecentFolder,
   readRecentFolderIds,
   rememberFolderDestinations,
 } from "@/features/library/lib/recent-folders";
@@ -14,6 +15,8 @@ import {
   useFolderMemberships,
   useFolders,
 } from "@/features/library/state/folders";
+import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
+import { buildFolderPickerRowItems } from "./row-menu";
 import styles from "./styles.module.css";
 
 export function FolderPickerHost() {
@@ -24,9 +27,13 @@ function FolderPicker({ ids }: { ids: readonly string[] }) {
   const controlId = useId();
   const rows = useFolders();
   const memberships = useFolderMemberships();
+  const list = useRef<HTMLDivElement>(null);
+  const searchField = useRef<HTMLInputElement>(null);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [scope, setScope] = useState<"all" | "recent" | "selected">("all");
   const [search, setSearch] = useState("");
   const [changes, setChanges] = useState<Record<string, boolean>>({});
-  const [recent] = useState(readRecentFolderIds);
+  const [recent, setRecent] = useState(readRecentFolderIds);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -47,6 +54,14 @@ function FolderPicker({ ids }: { ids: readonly string[] }) {
     };
     return rows
       .map((folder) => ({ ...folder, label: path(folder.id) }))
+      .filter(
+        (folder) =>
+          scope === "all" ||
+          (scope === "recent"
+            ? recent.includes(folder.id)
+            : (changes[folder.id] ??
+              ids.some((id) => memberships[id]?.includes(folder.id)))),
+      )
       .filter((folder) =>
         folder.label.toLowerCase().includes(search.toLowerCase()),
       )
@@ -55,8 +70,9 @@ function FolderPicker({ ids }: { ids: readonly string[] }) {
           (recent.includes(b.id) ? 1 : 0) - (recent.includes(a.id) ? 1 : 0) ||
           a.label.localeCompare(b.label),
       );
-  }, [rows, search, recent]);
+  }, [rows, search, recent, scope, changes, ids, memberships]);
   async function apply(next = changes) {
+    if (busy || !Object.keys(next).length) return;
     setBusy(true);
     setError(null);
     try {
@@ -79,7 +95,7 @@ function FolderPicker({ ids }: { ids: readonly string[] }) {
     }
   }
   async function create() {
-    if (!search.trim()) return;
+    if (busy || !search.trim()) return;
     setBusy(true);
     setError(null);
     try {
@@ -96,6 +112,63 @@ function FolderPicker({ ids }: { ids: readonly string[] }) {
     } finally {
       setBusy(false);
     }
+  }
+  function promptCreate(parentId: string | null) {
+    if (busy) return;
+    Dialog.prompt({
+      title: parentId ? "New Subfolder" : "New Folder",
+      placeholder: "Folder name",
+      confirmLabel: "Create",
+      onConfirm: async (name) => {
+        const trimmed = name.trim();
+        if (!trimmed) throw new Error("Enter a folder name.");
+        await window.pond.query("folders.create", {
+          name: trimmed,
+          parentId,
+        });
+        await folders.refresh();
+      },
+    });
+  }
+  function navigate(event: React.KeyboardEvent, fromSearch = false) {
+    if (event.nativeEvent.isComposing || busy) return;
+    if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault();
+      void apply();
+      return;
+    }
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    if (fromSearch && (event.key === "Home" || event.key === "End")) return;
+    event.preventDefault();
+    const current = fromSearch
+      ? -1
+      : matches.findIndex((folder) => folder.id === cursor);
+    if (current === 0 && event.key === "ArrowUp") {
+      searchField.current?.focus();
+      return;
+    }
+    const index =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? matches.length - 1
+          : fromSearch && event.key === "ArrowUp"
+            ? matches.length - 1
+            : Math.max(
+                0,
+                Math.min(
+                  matches.length - 1,
+                  current + (event.key === "ArrowUp" ? -1 : 1),
+                ),
+              );
+    const folder = matches[index];
+    if (!folder) return;
+    setCursor(folder.id);
+    const control = list.current?.querySelector<HTMLElement>(
+      `[data-folder-index="${index}"]`,
+    );
+    control?.focus();
+    control?.scrollIntoView?.({ block: "nearest" });
   }
   return (
     <Dialog.Root
@@ -124,13 +197,33 @@ function FolderPicker({ ids }: { ids: readonly string[] }) {
             </Dialog.Description>
             <Input.Root>
               <Input.Field
+                ref={searchField}
+                onKeyDown={(event) => navigate(event, true)}
                 autoFocus
                 aria-label="Search folders"
                 value={search}
                 onValueChange={setSearch}
               />
             </Input.Root>
-            <div className={styles.list}>
+            <fieldset className={styles.scopes} aria-label="Show folders">
+              {(["all", "recent", "selected"] as const).map((value) => (
+                <Button
+                  key={value}
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  aria-pressed={scope === value}
+                  onClick={() => setScope(value)}
+                >
+                  {value === "all"
+                    ? "All"
+                    : value === "recent"
+                      ? "Recent"
+                      : "Selected"}
+                </Button>
+              ))}
+            </fieldset>
+            <div ref={list} className={styles.list}>
               {matches.map((folder, index) => {
                 const assigned = ids.filter((id) =>
                   (memberships[id] ?? []).includes(folder.id),
@@ -141,27 +234,50 @@ function FolderPicker({ ids }: { ids: readonly string[] }) {
                   assigned > 0 &&
                   assigned < ids.length;
                 return (
-                  <div key={folder.id} className={styles.row}>
-                    <Checkbox.Root
-                      id={`${controlId}-folder-${index}`}
-                      aria-label={folder.label}
-                      checked={checked}
-                      indeterminate={mixed}
-                      disabled={busy}
-                      onCheckedChange={(next) =>
-                        setChanges((prev) => ({
-                          ...prev,
-                          [folder.id]: next,
-                        }))
-                      }
-                    >
-                      <Checkbox.Indicator />
-                    </Checkbox.Root>
-                    <label htmlFor={`${controlId}-folder-${index}`}>
-                      {folder.label}
-                    </label>
-                    {recent.includes(folder.id) ? <small>Recent</small> : null}
-                  </div>
+                  <SpecContextMenu
+                    key={folder.id}
+                    buildItems={() =>
+                      buildFolderPickerRowItems({
+                        recent: recent.includes(folder.id),
+                        onCreateSubfolder: () => promptCreate(folder.id),
+                        onCreateBelow: () => promptCreate(folder.parentId),
+                        onRemoveRecent: () => {
+                          forgetRecentFolder(folder.id);
+                          setRecent(readRecentFolderIds());
+                        },
+                      })
+                    }
+                  >
+                    <div className={styles.row}>
+                      <Checkbox.Root
+                        id={`${controlId}-folder-${index}`}
+                        data-folder-index={index}
+                        onKeyDown={(event) => navigate(event)}
+                        tabIndex={
+                          (cursor ?? matches[0]?.id) === folder.id ? 0 : -1
+                        }
+                        onFocus={() => setCursor(folder.id)}
+                        aria-label={folder.label}
+                        checked={checked}
+                        indeterminate={mixed}
+                        disabled={busy}
+                        onCheckedChange={(next) =>
+                          setChanges((prev) => ({
+                            ...prev,
+                            [folder.id]: next,
+                          }))
+                        }
+                      >
+                        <Checkbox.Indicator />
+                      </Checkbox.Root>
+                      <label htmlFor={`${controlId}-folder-${index}`}>
+                        {folder.label}
+                      </label>
+                      {recent.includes(folder.id) ? (
+                        <small>Recent</small>
+                      ) : null}
+                    </div>
+                  </SpecContextMenu>
                 );
               })}
             </div>
@@ -202,9 +318,6 @@ function FolderPicker({ ids }: { ids: readonly string[] }) {
                 loading={busy}
               >
                 {busy ? "Saving" : "Apply"}
-              </Button>
-              <Button type="button" disabled={busy} onClick={closeFolderPicker}>
-                Cancel
               </Button>
             </div>
           </form>

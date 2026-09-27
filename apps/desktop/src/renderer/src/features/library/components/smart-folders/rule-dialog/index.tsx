@@ -210,14 +210,6 @@ export function RuleDialog(props: RuleDialogProps) {
               >
                 {busy ? "Saving" : editing ? "Save" : "Create"}
               </Button>
-              <Button
-                variant="secondary"
-                size="lg"
-                disabled={busy}
-                onClick={onClose}
-              >
-                Cancel
-              </Button>
             </div>
           </form>
         </Dialog.Popup>

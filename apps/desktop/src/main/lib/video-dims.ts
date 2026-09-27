@@ -5,7 +5,7 @@ import { binariesAvailable } from "../core/refresh/binaries";
 import {
   isEncryptedLibraryMedia,
   withDecryptedLibraryMediaPath,
-} from "../core/security/library-media-storage";
+} from "../core/storage/library-media-storage";
 
 import { frameRateFromProbe } from "./video-timing";
 

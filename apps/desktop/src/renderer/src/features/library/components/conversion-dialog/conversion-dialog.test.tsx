@@ -8,6 +8,48 @@ import {
 } from "@/features/library/state/conversion-dialog";
 import { ConversionDialogHost } from "./";
 
+it("opens the consolidated export dialog on original files without conversion fields", async () => {
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  try {
+    await act(async () => {
+      openConversionDialog(["a"], 0, "files");
+      root.render(<ConversionDialogHost />);
+    });
+    await vi.waitFor(
+      async () => {
+        await act(async () => {});
+        expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+      },
+      { timeout: 5000 },
+    );
+    expect(document.body.textContent).toContain("Export Type");
+    expect(document.body.textContent).toContain("Original Files");
+    expect(document.body.textContent).toContain(
+      "Export the original files without changing their format.",
+    );
+    expect(document.body.textContent).not.toContain("Preset Name");
+    expect(document.body.textContent).not.toContain("Quality");
+    expect(document.body.textContent).toContain("Choose Location and Export");
+  } finally {
+    await act(() => {
+      closeConversionDialog();
+      root.unmount();
+    });
+    host.remove();
+    vi.unstubAllGlobals();
+  }
+});
+
 it("shows conversion progress and cancellation while preserving completed output information", async () => {
   vi.stubGlobal(
     "ResizeObserver",
@@ -72,6 +114,13 @@ it("shows conversion progress and cancellation while preserving completed output
       openConversionDialog(["a", "b"]);
       root.render(<ConversionDialogHost />);
     });
+    await vi.waitFor(
+      async () => {
+        await act(async () => {});
+        expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+      },
+      { timeout: 5000 },
+    );
     const lossless = document.querySelector('[role="checkbox"]');
     if (!(lossless instanceof HTMLElement))
       throw new Error("Missing lossless checkbox");
@@ -82,7 +131,9 @@ it("shows conversion progress and cancellation while preserving completed output
       "value",
       "85",
     );
-    await act(async () => button("Choose Folder and Export").click());
+    expect(document.body.textContent).toContain("Export Type");
+    expect(document.body.textContent).toContain("Converted Files");
+    await act(async () => button("Choose Location and Export").click());
     expect(document.querySelector("progress")?.value).toBe(0.5);
     expect(document.body.textContent).toContain("Exporting: 1 of 2 files.");
     await act(async () => button("Cancel Export").click());

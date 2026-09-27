@@ -7,8 +7,14 @@
   margin: auto;
   object-fit: contain;
   border-radius: var(--ds-radius-xs);
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-sm);
   opacity: 0;
+
+  &[data-fit="fill"] {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 }
 
 .media[data-loaded="true"] {

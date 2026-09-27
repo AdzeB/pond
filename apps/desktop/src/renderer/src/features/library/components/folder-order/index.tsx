@@ -1,7 +1,28 @@
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  useDndContext,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { IconGripDotsVerticalOutline12 } from "@pond/icons/outline/12";
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import { Button, Dialog } from "@pond/ui";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useReducedMotionConfig } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import {
   folderPresentationSnapshot,
@@ -9,6 +30,11 @@ import {
 } from "@/features/library/state/view-store";
 import { useSave } from "@/features/saves/hooks/use-saves";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
+import {
+  createSortableAnnouncements,
+  SORTABLE_DROP_ANIMATION,
+  SORTABLE_SCREEN_READER_INSTRUCTIONS,
+} from "@/shared/lib/dnd-kit";
 import { moveOrderedItem } from "./order";
 import styles from "./styles.module.css";
 
@@ -24,6 +50,15 @@ export function FolderOrderDialog({
   const [order, setOrder] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [keyboardDrag, setKeyboardDrag] = useState(false);
+  const reduceMotion = useReducedMotionConfig();
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
   const scroll = useRef<HTMLDivElement>(null);
   const pending = useRef(false);
   useEffect(() => {
@@ -117,31 +152,77 @@ export function FolderOrderDialog({
             ) : order.length === 0 ? (
               <p>This folder is empty.</p>
             ) : (
-              <ol
-                aria-label="Folder Save Order"
-                style={{
-                  height: virtual.getTotalSize(),
-                  position: "relative",
-                  listStyle: "none",
-                  margin: 0,
-                  padding: 0,
+              <DndContext
+                accessibility={{
+                  announcements: createSortableAnnouncements(
+                    order,
+                    (id) => `Save ${order.indexOf(String(id)) + 1}`,
+                  ),
+                  screenReaderInstructions: SORTABLE_SCREEN_READER_INSTRUCTIONS,
+                }}
+                collisionDetection={closestCenter}
+                modifiers={[restrictToVerticalAxis]}
+                sensors={sensors}
+                onDragStart={({ active, activatorEvent }) => {
+                  setActiveId(String(active.id));
+                  setKeyboardDrag(activatorEvent.type.startsWith("key"));
+                }}
+                onDragCancel={() => {
+                  setActiveId(null);
+                  setKeyboardDrag(false);
+                }}
+                onDragEnd={({ active, over }: DragEndEvent) => {
+                  setActiveId(null);
+                  setKeyboardDrag(false);
+                  if (!over || active.id === over.id) return;
+                  const destination = order.indexOf(String(over.id));
+                  if (destination >= 0) move(String(active.id), destination);
                 }}
               >
-                {visible.map((item) => {
-                  const id = order[item.index];
-                  return id ? (
-                    <OrderRow
-                      key={id}
-                      id={id}
-                      index={item.index}
-                      count={order.length}
-                      top={item.start}
-                      disabled={busy}
-                      onMove={move}
-                    />
-                  ) : null;
-                })}
-              </ol>
+                <SortableContext
+                  items={order}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <ol
+                    aria-label="Folder Save Order"
+                    style={{
+                      height: virtual.getTotalSize(),
+                      position: "relative",
+                      listStyle: "none",
+                      margin: 0,
+                      padding: 0,
+                    }}
+                  >
+                    {visible.map((item) => {
+                      const id = order[item.index];
+                      return id ? (
+                        <OrderRow
+                          key={id}
+                          id={id}
+                          index={item.index}
+                          count={order.length}
+                          top={item.start}
+                          disabled={busy}
+                          onMove={move}
+                        />
+                      ) : null;
+                    })}
+                  </ol>
+                </SortableContext>
+                {createPortal(
+                  <DragOverlay
+                    dropAnimation={
+                      reduceMotion || keyboardDrag
+                        ? null
+                        : SORTABLE_DROP_ANIMATION
+                    }
+                    modifiers={[restrictToVerticalAxis]}
+                  >
+                    {activeId ? <OrderOverlay id={activeId} /> : null}
+                  </DragOverlay>,
+                  document.body,
+                )}
+              </DndContext>
             )}
           </div>
           {error ? (
@@ -150,9 +231,6 @@ export function FolderOrderDialog({
             </p>
           ) : null}
           <Dialog.Footer>
-            <Button variant="secondary" disabled={busy} onClick={onClose}>
-              Cancel
-            </Button>
             <Button
               variant="primary"
               disabled={busy || !order}
@@ -183,33 +261,41 @@ function OrderRow({
   onMove: (id: string, destination: number) => void;
 }) {
   const save = useSave(id);
+  const reduceMotion = useReducedMotionConfig();
+  const { activatorEvent } = useDndContext();
+  const keyboardDrag = activatorEvent?.type.startsWith("key") ?? false;
+  const {
+    attributes,
+    isDragging,
+    listeners,
+    setActivatorNodeRef,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id, disabled });
   return (
     <li
       aria-posinset={index + 1}
       aria-setsize={count}
       className={styles.row}
-      style={{ transform: `translateY(${top}px)` }}
-      draggable={!disabled}
-      onDragStart={(event) =>
-        event.dataTransfer.setData("application/x-pond-folder-order", id)
-      }
-      onDragOver={(event) => {
-        if (
-          !disabled &&
-          event.dataTransfer.types.includes("application/x-pond-folder-order")
-        )
-          event.preventDefault();
-      }}
-      onDrop={(event) => {
-        const dragged = event.dataTransfer.getData(
-          "application/x-pond-folder-order",
-        );
-        if (dragged && !disabled) {
-          event.preventDefault();
-          onMove(dragged, index);
-        }
+      data-dragging={isDragging || undefined}
+      ref={setNodeRef}
+      style={{
+        transform: `translate3d(${transform?.x ?? 0}px, ${top + (transform?.y ?? 0)}px, 0) scaleX(${transform?.scaleX ?? 1}) scaleY(${transform?.scaleY ?? 1})`,
+        transition: reduceMotion || keyboardDrag ? "none" : transition,
       }}
     >
+      <button
+        {...attributes}
+        {...listeners}
+        type="button"
+        className={styles.handle}
+        ref={setActivatorNodeRef}
+        aria-label={`Move ${save?.title || "Save"}`}
+        disabled={disabled}
+      >
+        <IconGripDotsVerticalOutline12 />
+      </button>
       <span className={styles.position}>{index + 1}</span>
       <span className={styles.name}>{save?.title || "Untitled"}</span>
       <Button
@@ -231,5 +317,17 @@ function OrderRow({
         ↓
       </Button>
     </li>
+  );
+}
+
+function OrderOverlay({ id }: { id: string }) {
+  const save = useSave(id);
+  return (
+    <div className={styles.row} data-overlay>
+      <span className={styles.handle} aria-hidden>
+        <IconGripDotsVerticalOutline12 />
+      </span>
+      <span className={styles.name}>{save?.title || "Untitled"}</span>
+    </div>
   );
 }

@@ -8,7 +8,7 @@ export async function flushPortableMetadata(): Promise<void> {
   const { readFile } = await import("node:fs/promises");
   const { StoredInfoDocSchema } = await import("../lib/library-format");
   const { writeSaveInfo } = await import("../lib/library");
-  const { decodeLibraryFile } = await import("./security/library-file-storage");
+  const { decodeLibraryFile } = await import("./storage/library-file-storage");
   const db = await getDb();
   const root = libraryRoot();
   writeOrganizationBundle(db, root);

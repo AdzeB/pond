@@ -1,6 +1,14 @@
+import { createElement } from "react";
+import { createRoot } from "react-dom/client";
 import type { PondPreviewApi } from "../../preload/preview";
 import { createCopyTranslator } from "../../shared/localization";
 import type { PreviewWindowState } from "../../shared/preview-window-contracts";
+import "./app/boot-shell";
+import {
+  type PreviewControlActions,
+  PreviewControls,
+} from "./preview-controls";
+import { createPreviewMedia } from "./preview-media";
 import "./preview.css";
 
 declare global {
@@ -11,9 +19,19 @@ declare global {
 
 const image = document.querySelector<HTMLImageElement>("#image");
 const preview = document.querySelector<HTMLElement>("#preview");
-if (!image || !preview) throw new Error("Preview surface is missing.");
+const video = document.querySelector<HTMLVideoElement>("#video");
+const error = document.querySelector<HTMLElement>("#media-error");
+const retry = document.querySelector<HTMLButtonElement>("#retry");
+const previewUi = document.querySelector<HTMLElement>("#preview-ui");
+if (!image || !preview || !video || !error || !retry || !previewUi)
+  throw new Error("Preview surface is missing.");
+
+const media = createPreviewMedia({ image, video, error, retry });
+const uiRoot = createRoot(previewUi);
 
 let state: PreviewWindowState | null = null;
+let slideshow = false;
+let slideshowTimer: ReturnType<typeof setInterval> | null = null;
 
 const NEXT_ROTATION = {
   0: 90,
@@ -25,30 +43,33 @@ const NEXT_ROTATION = {
   PreviewWindowState["rotation"]
 >;
 
+const staticText = [
+  ...document.querySelectorAll<HTMLElement>("body *"),
+].flatMap((element) =>
+  [...element.childNodes].flatMap((node) =>
+    node instanceof Text && node.data.trim()
+      ? [{ node, source: node.data }]
+      : [],
+  ),
+);
+const staticLabels = [
+  ...document.querySelectorAll<HTMLElement>("body *"),
+].flatMap((element) =>
+  (["aria-label", "title"] as const).flatMap((attribute) => {
+    const source = element.getAttribute(attribute);
+    return source ? [{ element, attribute, source }] : [];
+  }),
+);
+
 function localizePreview(locale: PreviewWindowState["locale"]): void {
   const translate = createCopyTranslator(locale);
   document.documentElement.lang = locale;
-  for (const element of document.querySelectorAll<HTMLElement>("body *")) {
-    for (const node of element.childNodes) {
-      if (!(node instanceof Text)) continue;
-      const copy = node.data.trim();
-      if (!copy) continue;
-      const localized = translate(copy);
-      if (localized !== copy) node.data = node.data.replace(copy, localized);
-    }
-    for (const attribute of ["aria-label", "title"] as const) {
-      const copy = element.getAttribute(attribute);
-      if (!copy) continue;
-      const localized = translate(copy);
-      if (localized !== copy) element.setAttribute(attribute, localized);
-    }
+  for (const { node, source } of staticText) {
+    node.data = source.replace(source.trim(), translate(source.trim()));
   }
-}
-
-function button(id: string, action: () => void): void {
-  document
-    .querySelector<HTMLButtonElement>(`#${id}`)
-    ?.addEventListener("click", action);
+  for (const { element, attribute, source } of staticLabels) {
+    element.setAttribute(attribute, translate(source));
+  }
 }
 
 function configure(
@@ -58,75 +79,119 @@ function configure(
   void window.pondPreview.configure({ windowId: state.windowId, ...patch });
 }
 
-window.pondPreview.onState((next) => {
+function requestNeighbor(delta: -1 | 1): void {
+  if (!state) return;
+  void window.pondPreview.requestNeighbor({
+    windowId: state.windowId,
+    saveId: state.saveId,
+    delta,
+    kind: state.kind,
+  });
+}
+
+function runFileAction(action: "open" | "export"): void {
+  if (!state) return;
+  void window.pondPreview.fileAction({ windowId: state.windowId, action });
+}
+
+const actions: PreviewControlActions = {
+  close: () => {
+    if (state) void window.pondPreview.close(state.windowId);
+  },
+  cycleOpacity: () => {
+    if (!state) return;
+    configure({ opacity: state.opacity <= 0.4 ? 1 : state.opacity - 0.2 });
+  },
+  next: () => requestNeighbor(1),
+  openOriginal: () => runFileAction("open"),
+  previous: () => requestNeighbor(-1),
+  toggleFullscreen: () => configure({ fullscreen: !state?.fullscreen }),
+  toggleGrayscale: () => configure({ grayscale: !state?.grayscale }),
+  toggleMirror: () => configure({ mirrored: !state?.mirrored }),
+  togglePin: () => configure({ alwaysOnTop: !state?.alwaysOnTop }),
+  toggleSize: () => {
+    if (state?.mediaType === "video") {
+      configure({ size: state.size === "fill" ? "fit" : "fill" });
+      return;
+    }
+    configure({ zoom: state?.zoom === null ? 1 : null });
+  },
+  toggleSlideshow: () => {
+    slideshow = !slideshow;
+    refreshSlideshow();
+  },
+  rotate: () => {
+    if (state?.mediaType !== "image") return;
+    configure({ rotation: NEXT_ROTATION[state.rotation] });
+  },
+  exportOriginal: () => runFileAction("export"),
+};
+
+function renderPreviewUi(): void {
+  if (!state) return;
+  uiRoot.render(createElement(PreviewControls, { actions, slideshow, state }));
+}
+
+function refreshImageSize(): void {
+  if (!state || !image) return;
+  image.dataset.size = state.zoom === null ? "fit" : "actual";
+  image.style.width =
+    state.zoom !== null && image.naturalWidth
+      ? `${image.naturalWidth * state.zoom}px`
+      : "";
+  image.style.height = "auto";
+}
+
+function refreshVideoSize(): void {
+  if (!state || !video) return;
+  video.dataset.size = state.size === "fill" ? "fill" : "fit";
+}
+
+function refreshSlideshow(): void {
+  if (slideshowTimer) clearInterval(slideshowTimer);
+  slideshowTimer = null;
+  if (slideshow && state?.kind === "presentation" && !document.hidden) {
+    slideshowTimer = setInterval(() => requestNeighbor(1), 5000);
+  }
+  renderPreviewUi();
+}
+
+const unsubscribe = window.pondPreview.onState((next) => {
   state = next;
   localizePreview(next.locale);
-  document.title = next.title;
-  image.src = next.url;
-  image.alt = next.title;
+  const title = `${next.title} — Pond`;
+  document.title = title;
+  media.show(next);
+  preview.dataset.mediaType = next.mediaType;
+  document.body.dataset.mediaType = next.mediaType;
+  document.body.dataset.reduceMotion = next.reduceMotion;
   image.style.transform = `rotate(${next.rotation}deg) scaleX(${next.mirrored ? -1 : 1})`;
   image.style.filter = next.grayscale ? "grayscale(1)" : "";
-  image.dataset.size = next.size;
-  document
-    .querySelector("#grayscale")
-    ?.setAttribute("aria-pressed", String(next.grayscale));
-  document
-    .querySelector("#mirror")
-    ?.setAttribute("aria-pressed", String(next.mirrored));
-  document
-    .querySelector("#pin")
-    ?.setAttribute("aria-pressed", String(next.alwaysOnTop));
-  const size = document.querySelector("#size");
-  if (size) size.textContent = next.size === "fit" ? "Actual Size" : "Fit";
+  refreshImageSize();
+  refreshVideoSize();
+  refreshSlideshow();
 });
-window.pondPreview.onSecurityStateChanged(() => {
-  if (state) void window.pondPreview.close(state.windowId);
-});
-
-button("rotate", () => {
-  if (!state) return;
-  configure({ rotation: NEXT_ROTATION[state.rotation] });
-});
-button("previous", () => {
-  if (state)
-    void window.pondPreview.requestNeighbor({
-      windowId: state.windowId,
-      saveId: state.saveId,
-      delta: -1,
-    });
-});
-button("next", () => {
-  if (state)
-    void window.pondPreview.requestNeighbor({
-      windowId: state.windowId,
-      saveId: state.saveId,
-      delta: 1,
-    });
-});
-button("mirror", () => configure({ mirrored: !state?.mirrored }));
-button("grayscale", () => configure({ grayscale: !state?.grayscale }));
-button("size", () =>
-  configure({ size: state?.size === "actual" ? "fit" : "actual" }),
-);
-button("opacity", () => {
-  if (!state) return;
-  configure({ opacity: state.opacity <= 0.4 ? 1 : state.opacity - 0.2 });
-});
-button("pin", () => configure({ alwaysOnTop: !state?.alwaysOnTop }));
-button("close", () => {
-  if (state) void window.pondPreview.close(state.windowId);
-});
+document.addEventListener("visibilitychange", refreshSlideshow);
+image.addEventListener("load", refreshImageSize);
 
 window.addEventListener("keydown", (event) => {
-  if (state && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
-    void window.pondPreview.requestNeighbor({
-      windowId: state.windowId,
-      saveId: state.saveId,
-      delta: event.key === "ArrowLeft" ? -1 : 1,
-    });
+  if (
+    state?.mediaType === "image" &&
+    (event.key === "ArrowLeft" || event.key === "ArrowRight")
+  ) {
+    event.preventDefault();
+    requestNeighbor(event.key === "ArrowLeft" ? -1 : 1);
     return;
   }
-  if (event.key === "Escape" && state) {
-    void window.pondPreview.close(state.windowId);
+  if (event.key === "Escape" && state && !document.fullscreenElement) {
+    if (state.fullscreen) configure({ fullscreen: false });
+    else void window.pondPreview.close(state.windowId);
   }
+});
+
+window.addEventListener("beforeunload", () => {
+  unsubscribe();
+  if (slideshowTimer) clearInterval(slideshowTimer);
+  media.dispose();
+  uiRoot.unmount();
 });

@@ -1,0 +1,468 @@
+{
+  "source": {
+    "application": "Eagle",
+    "version": "4.0.0",
+    "platform": "macOS",
+    "evidence": [
+      "i18n/en.js",
+      "app/app.bundle.js",
+      "app/index.html",
+      "app/js/fix-utils.js",
+      "app/js/preview-window.js"
+    ]
+  },
+  "excluded": [
+    {
+      "id": "collect-window",
+      "reason": "Pond uses extension and capture-queue workflows."
+    },
+    {
+      "id": "community",
+      "reason": "Pond is local-first and does not provide a hosted Community feed."
+    },
+    {
+      "id": "licensing",
+      "reason": "Pond does not use Eagle registration or device licensing."
+    },
+    {
+      "id": "plugins",
+      "reason": "Plugin-provided Actions and injected context-menu rows are outside first-party parity."
+    }
+  ],
+  "surfaces": [
+    {
+      "id": "native.application",
+      "commands": [
+        "About Pond",
+        "Check for Updates",
+        "Color Space",
+        "Lock Now",
+        "Settings",
+        "Hide",
+        "Hide Others",
+        "Quit"
+      ]
+    },
+    {
+      "id": "native.library",
+      "commands": [
+        "Create Library",
+        "Switch Library",
+        "Clear History",
+        "Empty Cache and Reload",
+        "Merge Library"
+      ]
+    },
+    {
+      "id": "native.file",
+      "commands": [
+        "New Folder",
+        "New Smart Folder",
+        "New Group",
+        "Import Folders",
+        "Import Links",
+        "Import Eagle Package",
+        "Import from Other Services",
+        "Auto Import",
+        "Find Duplicated Files",
+        "Export to Computer",
+        "Export Eagle Package",
+        "Export in Specified Format or Dimension",
+        "Export to CSV"
+      ]
+    },
+    {
+      "id": "native.edit",
+      "commands": [
+        "Undo",
+        "Redo",
+        "Cut",
+        "Copy",
+        "Paste",
+        "Select All",
+        "Rename",
+        "Move to Trash",
+        "Remove from Current Folder",
+        "Copy Link",
+        "Copy Pond Link",
+        "Copy Name",
+        "Copy File Path",
+        "Copy Thumbnail",
+        "Copy Base64",
+        "Custom Thumbnail from File",
+        "Custom Thumbnail from Clipboard",
+        "Reset Custom Thumbnail",
+        "Refresh Thumbnail",
+        "Edit Folder",
+        "Move Folder",
+        "Edit Image"
+      ]
+    },
+    {
+      "id": "native.find",
+      "commands": [
+        "Search",
+        "Search All",
+        "Go to Folder",
+        "Add to Folders",
+        "Add to Last Used Folder",
+        "Filter Sidebar Items",
+        "Toggle Filter",
+        "Reset Filter",
+        "Search by Image"
+      ]
+    },
+    {
+      "id": "native.organize",
+      "commands": [
+        "Remove Rating",
+        "Add Folder",
+        "Add Tags",
+        "Clear Tags",
+        "Copy Tags",
+        "Paste Tags"
+      ]
+    },
+    {
+      "id": "native.view",
+      "commands": [
+        "All",
+        "Tags",
+        "Uncategorized",
+        "Untagged",
+        "Recently Used",
+        "Random",
+        "Trash",
+        "Waterfall",
+        "Grid",
+        "Justified",
+        "List",
+        "Always on Top",
+        "Opacity",
+        "Navigator",
+        "Sidebar",
+        "Details",
+        "Show Subfolder Content",
+        "Show Name",
+        "Full Screen",
+        "Actual Size",
+        "Zoom to Fit",
+        "Zoom In",
+        "Zoom Out"
+      ]
+    },
+    {
+      "id": "native.window",
+      "commands": ["Minimize", "Close Window", "Toggle Full Screen"]
+    },
+    {
+      "id": "native.help",
+      "commands": [
+        "Help Center",
+        "Show Tutorial",
+        "Shortcuts",
+        "Install Extensions",
+        "Export Debug Report",
+        "Error Logs",
+        "Feedback",
+        "Privacy",
+        "Change Logs",
+        "Roadmap"
+      ]
+    },
+    {
+      "id": "sidebar.visibility",
+      "commands": [
+        "All",
+        "Uncategorized",
+        "Untagged",
+        "Recently Used",
+        "Random",
+        "Tags",
+        "Downloads",
+        "Sources"
+      ]
+    },
+    {
+      "id": "sidebar.recent",
+      "commands": ["Clear History"]
+    },
+    {
+      "id": "sidebar.trash",
+      "commands": ["Empty Trash", "Restore All Items"]
+    },
+    {
+      "id": "sidebar.quick-access",
+      "commands": ["Remove from Quick Access"]
+    },
+    {
+      "id": "sidebar.folder",
+      "commands": [
+        "New Folder",
+        "New Subfolder",
+        "Move Folder",
+        "Quick Access",
+        "Rename",
+        "Copy Link",
+        "Set Auto-Tag",
+        "Password",
+        "Sort By",
+        "Expand or Collapse",
+        "Duplicate",
+        "Export",
+        "Add to Other Library",
+        "Show Subfolder Content",
+        "Change Icon",
+        "Change Color",
+        "Remove Folder"
+      ]
+    },
+    {
+      "id": "sidebar.smart-folder",
+      "commands": [
+        "New Smart Folder",
+        "New Group",
+        "Rename",
+        "Edit Filters",
+        "Duplicate",
+        "Copy Link",
+        "Refresh",
+        "Quick Access",
+        "Export",
+        "Add to Other Library",
+        "Change Icon",
+        "Change Color",
+        "Delete"
+      ]
+    },
+    {
+      "id": "sidebar.breadcrumb",
+      "commands": [
+        "Go to Ancestor",
+        "Rename",
+        "Set Auto-Tag",
+        "Password",
+        "Export",
+        "Remove Folder"
+      ]
+    },
+    {
+      "id": "sidebar.disclosure",
+      "commands": [
+        "Expand or Collapse",
+        "Expand or Collapse Same Level",
+        "Expand or Collapse All"
+      ]
+    },
+    {
+      "id": "sidebar.panes",
+      "commands": ["Toggle All", "Toggle Sidebar", "Toggle Details"]
+    },
+    {
+      "id": "save.item",
+      "commands": [
+        "Open",
+        "Organize",
+        "Copy",
+        "Share",
+        "Export",
+        "Search by Image",
+        "Pin to Top",
+        "Set as Folder Cover",
+        "Rename",
+        "Combine Images",
+        "Presentation Mode",
+        "Thumbnail Background",
+        "Replace File",
+        "Move to Trash"
+      ]
+    },
+    {
+      "id": "save.export-shortcut",
+      "commands": [
+        "Export Files",
+        "Export Eagle Package",
+        "Export Converted Files",
+        "Export to CSV"
+      ]
+    },
+    {
+      "id": "save.color",
+      "commands": [
+        "Find Similar Color Items",
+        "Copy Color",
+        "Set As Primary Color"
+      ]
+    },
+    {
+      "id": "viewer.gif",
+      "commands": ["Set as GIF Thumbnail", "Reset Loop Range"]
+    },
+    {
+      "id": "viewer.zoom",
+      "commands": ["Actual Size", "Zoom to Fit", "5% through 800%"]
+    },
+    {
+      "id": "search.scope",
+      "commands": [
+        "Name",
+        "Folder Name",
+        "Folder Description",
+        "Extension",
+        "Tags",
+        "URL",
+        "Comment",
+        "Note"
+      ]
+    },
+    {
+      "id": "filter.customize",
+      "commands": [
+        "Visual Match",
+        "Semantic",
+        "Color",
+        "Tags",
+        "Folder",
+        "Shape",
+        "Rating",
+        "Type",
+        "Date Added",
+        "Date Modified",
+        "Dimensions",
+        "Duration",
+        "Size",
+        "Comment",
+        "Note",
+        "URL",
+        "Font",
+        "BPM",
+        "Camera"
+      ]
+    },
+    {
+      "id": "tags.tag",
+      "commands": [
+        "Filter Items with Tags",
+        "Add to Starred",
+        "Remove from Starred",
+        "Rename",
+        "Add to Group",
+        "Move to Group",
+        "Remove from Group",
+        "Merge Tags",
+        "Remove Tag"
+      ]
+    },
+    {
+      "id": "tags.group",
+      "commands": [
+        "Filter Items with Tags",
+        "Rename",
+        "Add to Other Library",
+        "Change Color",
+        "Create Group",
+        "Remove Group"
+      ]
+    },
+    {
+      "id": "tags.sort",
+      "commands": [
+        "A to Z",
+        "Z to A",
+        "Count High to Low",
+        "Count Low to High",
+        "Group by Alphabet",
+        "Group by Groups"
+      ]
+    },
+    {
+      "id": "list.columns",
+      "commands": [
+        "Tags",
+        "Dimensions",
+        "Rating",
+        "Extension",
+        "File Size",
+        "Date Added"
+      ]
+    },
+    {
+      "id": "navigation.history",
+      "commands": [
+        "Recent Folders",
+        "Recent Smart Folders",
+        "Recent Tags",
+        "Clear History"
+      ]
+    },
+    {
+      "id": "library.repair",
+      "commands": [
+        "Fix Thumbnails",
+        "Fix Invalid File Names",
+        "Clear Invalid Content",
+        "Repair Damaged Save Metadata"
+      ]
+    },
+    {
+      "id": "view.layout",
+      "commands": [
+        "Layout",
+        "Fit or Fill",
+        "Thumbnail Quality",
+        "Sort By",
+        "Display Fields",
+        "Refresh"
+      ]
+    },
+    {
+      "id": "picker.folder",
+      "commands": ["New Subfolder", "New Folder Below", "Remove from Recent"]
+    },
+    {
+      "id": "picker.tag",
+      "commands": [
+        "Search",
+        "Groups",
+        "Starred",
+        "Recommended",
+        "Recently Used",
+        "Create Tag",
+        "Create Group"
+      ]
+    },
+    {
+      "id": "preview.context",
+      "commands": [
+        "Open with Default App",
+        "Reveal in Finder",
+        "Copy",
+        "Grayscale",
+        "Rotate",
+        "Flip",
+        "GIF Thumbnail",
+        "Copy Current Frame",
+        "Save Current Frame",
+        "Opacity",
+        "Zoom Ratio",
+        "Actual Size",
+        "Zoom to Fit"
+      ]
+    },
+    {
+      "id": "system.editable-context",
+      "commands": [
+        "Spelling Suggestions",
+        "Add to Dictionary",
+        "Cut",
+        "Copy",
+        "Paste",
+        "Select All"
+      ]
+    },
+    {
+      "id": "system.saved-page-context",
+      "commands": ["Copy", "Copy Link", "Copy Image", "Open Link in Browser"]
+    }
+  ]
+}

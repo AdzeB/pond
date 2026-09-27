@@ -1,17 +1,6 @@
 import { useHotkey } from "@tanstack/react-hotkeys";
-import {
-  type RefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { ViewerHud } from "@/features/saves/components/viewers/hud";
-import {
-  ChromePortal,
-  ViewerChrome,
-} from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
+import { ViewerChrome } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
 import {
   type MediaSlide,
   Slide,
@@ -25,7 +14,6 @@ import {
   chaptersForSave,
 } from "@/features/saves/lib/media/chapters-vtt";
 import { buildMediaUnits } from "@/features/saves/lib/media/units";
-import { previewUrlFor } from "@/features/saves/lib/media/url";
 import { openSave } from "@/features/saves/lib/save-nav";
 import type { Save } from "@/features/saves/types";
 import { useResolvedTheme } from "@/features/settings/hooks/use-resolved-theme";
@@ -47,6 +35,15 @@ interface MediaViewerProps {
   onActiveFileIndexChange?: (fileIndex: number | null) => void;
   navRef?: RefObject<ViewerNav | null>;
   showControls?: boolean;
+}
+
+function slideIdentity(slide: MediaSlide): string {
+  const provider = slide.isVideo
+    ? "video"
+    : slide.generated
+      ? "generated"
+      : "direct";
+  return `${slide.src}:${provider}`;
 }
 
 export function MediaViewer({
@@ -71,9 +68,10 @@ export function MediaViewer({
         const file = save.files[fileIndex];
         return [
           {
-            src: u.requiresGeneratedPreview ? previewUrlFor(u.url) : u.url,
+            src: u.url,
             fileIndex,
             isVideo: u.isVideo,
+            generated: u.requiresGeneratedPreview,
             isAnimation:
               file?.mimeType === "image/gif" ||
               /\.gif$/i.test(file?.path ?? ""),
@@ -86,22 +84,7 @@ export function MediaViewer({
     [save, theme],
   );
 
-  const [broken, setBroken] = useState<ReadonlySet<string>>(
-    () => new Set<string>(),
-  );
-  const markBroken = useCallback((src: string) => {
-    setBroken((prev) => {
-      if (prev.has(src)) return prev;
-      const next = new Set(prev);
-      next.add(src);
-      return next;
-    });
-  }, []);
-
-  const slides = useMemo(
-    () => allSlides.filter((s) => !broken.has(s.src)),
-    [allSlides, broken],
-  );
+  const slides = allSlides;
   const slideChapters = singleVideo ? chapters : undefined;
   const noteMarkers = useMemo(
     () =>
@@ -132,8 +115,9 @@ export function MediaViewer({
     const only = slides[0];
     if (!only) return null;
     return (
-      <Frame showControls={showControls}>
+      <MediaViewerFrame showControls={showControls}>
         <Slide
+          key={slideIdentity(only)}
           slide={only}
           save={save}
           onNavigate={onNavigate}
@@ -143,9 +127,8 @@ export function MediaViewer({
           artist={save.author}
           chapters={slideChapters}
           noteMarkers={noteMarkers}
-          onError={() => markBroken(only.src)}
         />
-      </Frame>
+      </MediaViewerFrame>
     );
   }
 
@@ -157,7 +140,6 @@ export function MediaViewer({
       slides={slides}
       chapters={slideChapters}
       noteMarkers={noteMarkers}
-      onError={markBroken}
       onActiveFileIndexChange={onActiveFileIndexChange}
       navRef={navRef}
       showControls={showControls}
@@ -165,7 +147,7 @@ export function MediaViewer({
   );
 }
 
-function Frame({
+export function MediaViewerFrame({
   activeIndex = 0,
   children,
   showControls,
@@ -229,7 +211,6 @@ function Carousel({
   slides,
   chapters,
   noteMarkers,
-  onError,
   onActiveFileIndexChange,
   navRef,
   showControls,
@@ -239,7 +220,6 @@ function Carousel({
   slides: MediaSlide[];
   chapters?: ChapterCue[];
   noteMarkers?: readonly { id: string; timeSec: number }[];
-  onError: (src: string) => void;
   onActiveFileIndexChange?: (fileIndex: number | null) => void;
   navRef?: RefObject<ViewerNav | null>;
   showControls: boolean;
@@ -289,19 +269,12 @@ function Carousel({
     };
   }, [navRef, step]);
 
-  const pager = {
-    index: active,
-    count: slides.length,
-    onPrev: goPrev,
-    onNext: goNext,
-  };
-
   return (
-    <Frame activeIndex={active} showControls={showControls}>
+    <MediaViewerFrame activeIndex={active} showControls={showControls}>
       <div ref={setScroller} className={styles.scroller}>
         {slides.map((s, i) => (
           <Slide
-            key={s.src}
+            key={slideIdentity(s)}
             slide={s}
             save={save}
             onNavigate={onNavigate}
@@ -313,13 +286,15 @@ function Carousel({
             noteMarkers={noteMarkers}
             ratio={ratios.get(s.src)}
             onRatio={reportRatio}
-            onError={() => onError(s.src)}
+            slideNavigation={{
+              index: active,
+              count: slides.length,
+              onPrevious: goPrev,
+              onNext: goNext,
+            }}
           />
         ))}
       </div>
-      <ChromePortal slot="top">
-        <ViewerHud.Pager {...pager} />
-      </ChromePortal>
-    </Frame>
+    </MediaViewerFrame>
   );
 }

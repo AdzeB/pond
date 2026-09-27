@@ -24,7 +24,7 @@
 .group-label {
   padding: 4px 8px;
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   color: var(--ds-gray-9);
 }
 
@@ -77,7 +77,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   white-space: nowrap;
 }
 
@@ -91,7 +91,7 @@
   white-space: nowrap;
 }
 
-.group:not(:has(.item[id^="save:"])) .detail {
+.group:not(:has(.item:is([id^="save:"], [id^="recent:"]))) .detail {
   display: none;
 }
 

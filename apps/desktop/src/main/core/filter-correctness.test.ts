@@ -63,7 +63,9 @@ const examples: SaveLike[] = [
 
 function fixture() {
   const db = new Database(":memory:");
-  db.exec(`CREATE TABLE saves (id TEXT, title TEXT, tags TEXT, comments TEXT, video_notes TEXT, width INTEGER, height INTEGER, dominant_colors TEXT, sensitive_score REAL);
+  db.exec(`CREATE TABLE saves (id TEXT, title TEXT, tags TEXT, comments TEXT, video_notes TEXT, width INTEGER, height INTEGER, dominant_colors TEXT, sensitive_score REAL, files TEXT);
+    CREATE TABLE folders (id TEXT PRIMARY KEY, name TEXT);
+    CREATE TABLE folder_metadata (folder_id TEXT PRIMARY KEY, description TEXT);
     CREATE TABLE save_folders (save_id TEXT, folder_id TEXT);
     CREATE VIRTUAL TABLE saves_fts USING fts5(id UNINDEXED, title);`);
   db.function("pond_color_near", (palette, hex, tolerance) =>
@@ -75,8 +77,10 @@ function fixture() {
       ),
     ),
   );
+  db.prepare("INSERT INTO folders VALUES (?, ?)").run("FolderA", "Folder A");
+  db.prepare("INSERT INTO folders VALUES (?, ?)").run("FolderB", "Folder B");
   for (const save of examples) {
-    db.prepare("INSERT INTO saves VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
+    db.prepare("INSERT INTO saves VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
       save.id,
       save.title,
       JSON.stringify(save.tags),
@@ -86,6 +90,7 @@ function fixture() {
       save.height,
       JSON.stringify(save.dominantColors ?? []),
       save.sensitiveScore ?? null,
+      "[]",
     );
     db.prepare("INSERT INTO saves_fts VALUES (?, ?)").run(save.id, save.title);
     for (const folder of save.folderIds ?? [])

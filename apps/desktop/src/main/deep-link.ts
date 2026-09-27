@@ -1,33 +1,23 @@
-import { app, BrowserWindow, dialog } from "electron";
+import { app, type BrowserWindow, dialog } from "electron";
 import log from "electron-log/main.js";
 import { IPC } from "../shared/constants";
 import { linkMatchesLibrary } from "../shared/library-links";
-import { librarySecurityStatus } from "./core/security/app-lock-runtime";
+import { openSettingsWindow } from "./core/settings-window";
 import { readOrCreatePondId } from "./lib/pond-identity";
 import { libraryRoot } from "./paths";
 
 let pendingDeepLink: string | null = null;
 
 export function consumePendingDeepLink(): string | null {
-  if (librarySecurityStatus().state === "locked") return null;
   const route = pendingDeepLink;
   pendingDeepLink = null;
   return route;
 }
 
-export function flushPendingDeepLink(): void {
-  const route = consumePendingDeepLink();
-  if (!route) return;
-  const target =
-    BrowserWindow.getFocusedWindow() ??
-    BrowserWindow.getAllWindows().find((window) => !window.isDestroyed());
-  target?.webContents.send(IPC.nav, route);
-}
-
 export function handleDeepLink(
   url: string,
   mainWindow: BrowserWindow | null,
-): void {
+): "settings" | "library" | undefined {
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== "pond:") return;
@@ -68,29 +58,38 @@ export function handleDeepLink(
       route = `/?capture=1${target ? `&url=${encodeURIComponent(target)}` : ""}`;
     } else if (parsed.hostname === "settings") {
       const sub = parsed.pathname.replace(/^\//, "").replace(/\/+$/, "");
-      route = sub ? `/settings/${sub}` : "/settings";
+      if (sub === "tags") {
+        route = "/tags";
+      } else {
+        void app
+          .whenReady()
+          .then(() =>
+            openSettingsWindow({
+              section: sub || undefined,
+              hash: parsed.hash.replace(/^#/, "") || undefined,
+            }),
+          )
+          .catch((error) =>
+            log.warn("[pond deep-link] Settings could not open", error),
+          );
+        return "settings";
+      }
     }
     if (!route) {
       log.info("[pond deep-link] ignored", url);
       return;
     }
     log.info("[pond deep-link] route", route);
-    const target =
-      mainWindow && !mainWindow.isDestroyed()
-        ? mainWindow
-        : (BrowserWindow.getAllWindows().find((w) => !w.isDestroyed()) ?? null);
+    const target = mainWindow && !mainWindow.isDestroyed() ? mainWindow : null;
     if (!target) {
       pendingDeepLink = route;
-      return;
+      return "library";
     }
     if (target.isMinimized()) target.restore();
     target.show();
     target.focus();
-    if (librarySecurityStatus().state === "locked") {
-      pendingDeepLink = route;
-      return;
-    }
     target.webContents.send(IPC.nav, route);
+    return "library";
   } catch (err) {
     log.warn("[pond deep-link] parse failed", url, err);
   }

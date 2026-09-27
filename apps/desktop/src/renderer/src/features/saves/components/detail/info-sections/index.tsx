@@ -1,6 +1,6 @@
 import type { IconComponent } from "@pond/icons/types";
 import { Button, Tooltip } from "@pond/ui";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { ColorSwatch } from "@/features/saves/components/detail/color-swatch";
 import { Section } from "@/features/saves/components/detail/section";
 import { useSaveDetail } from "@/features/saves/hooks/use-save-detail";
@@ -12,6 +12,7 @@ import {
 import { pickAuthorColor } from "@/features/saves/lib/presentation";
 import type { Save } from "@/features/saves/types";
 import { sourceDetail } from "@/features/sources/state/source-detail";
+import { getAppRouter } from "@/shared/lib/app-router";
 import { initials } from "@/shared/lib/initials";
 import styles from "./styles.module.css";
 
@@ -21,12 +22,20 @@ interface SaveInfoSectionsProps {
   save: Save;
   pending?: boolean;
   hideActivity?: boolean;
+  hideCoreProperties?: boolean;
+  mergeFileAndDatesIntoProperties?: boolean;
+  propertiesLead?: ReactNode;
+  sourceLead?: ReactNode;
 }
 
 export function SaveInfoSections({
   save,
   pending,
   hideActivity,
+  hideCoreProperties,
+  mergeFileAndDatesIntoProperties,
+  propertiesLead,
+  sourceLead,
 }: SaveInfoSectionsProps) {
   const {
     rows,
@@ -35,9 +44,29 @@ export function SaveInfoSections({
     sourceLogo,
     sourceIcon: SourceIcon,
   } = useSaveDetail(save.id);
-  const groups = groupDetailRows(rows).filter(
-    (group) => !hideActivity || group.title !== "Activity",
-  );
+  const coreIds = new Set(["type", "dimensions", "size"]);
+  const grouped = groupDetailRows(
+    hideCoreProperties ? rows.filter((row) => !coreIds.has(row.id)) : rows,
+  )
+    .filter((group) => !hideActivity || group.title !== "Activity")
+    .map((group) =>
+      hideCoreProperties && group.title === "Properties"
+        ? { ...group, title: "Source" }
+        : group,
+    );
+  const mergedPropertyRows = mergeFileAndDatesIntoProperties
+    ? grouped
+        .filter((group) => group.title === "File" || group.title === "Dates")
+        .flatMap((group) => group.rows)
+    : [];
+  const groups = mergeFileAndDatesIntoProperties
+    ? [
+        { title: "Properties", rows: mergedPropertyRows },
+        ...grouped.filter(
+          (group) => group.title !== "File" && group.title !== "Dates",
+        ),
+      ]
+    : grouped;
   const renderedTitles = new Set(groups.map((group) => group.title));
 
   return (
@@ -51,11 +80,20 @@ export function SaveInfoSections({
         <InfoSection
           key={group.title}
           group={group}
-          colors={colors}
+          colors={hideCoreProperties ? [] : colors}
+          primaryColor={save.primaryColor ?? null}
+          saveId={save.id}
           avatarUrl={avatarUrl}
           sourceLogo={sourceLogo}
           SourceIcon={SourceIcon}
           placeholders={pending ? placeholderCount(group) : 0}
+          lead={
+            group.title === "Properties"
+              ? propertiesLead
+              : group.title === "Source"
+                ? sourceLead
+                : undefined
+          }
         />
       ))}
       {pending && !renderedTitles.has("Properties") ? (
@@ -67,10 +105,16 @@ export function SaveInfoSections({
       {pending && !renderedTitles.has("Dates") ? (
         <SkeletonSection title="Dates" rows={2} defaultOpen={false} />
       ) : null}
-      {!renderedTitles.has("Properties") && colors.length > 0 ? (
+      {!hideCoreProperties &&
+      !renderedTitles.has("Properties") &&
+      colors.length > 0 ? (
         <Section title="Properties">
           <div className={styles.rows}>
-            <PropertyColors colors={colors} />
+            <PropertyColors
+              colors={hideCoreProperties ? [] : colors}
+              primaryColor={save.primaryColor ?? null}
+              saveId={save.id}
+            />
           </div>
         </Section>
       ) : null}
@@ -100,24 +144,41 @@ function placeholderCount(group: DetailGroup): number {
 function InfoSection({
   group,
   colors,
+  primaryColor,
+  saveId,
   avatarUrl,
   sourceLogo,
   SourceIcon,
   placeholders,
+  lead,
 }: {
   group: DetailGroup;
   colors: string[];
+  primaryColor: string | null;
+  saveId: string;
   avatarUrl: string | null;
   sourceLogo: string | null;
   SourceIcon: IconComponent | null;
   placeholders: number;
+  lead?: ReactNode;
 }) {
   return (
     <Section
       title={group.title}
-      defaultOpen={group.title !== "File" && group.title !== "Dates"}
+      defaultOpen={
+        group.title !== "File" &&
+        group.title !== "Dates" &&
+        group.title !== "Source"
+      }
+      empty={
+        !lead &&
+        group.rows.length === 0 &&
+        colors.length === 0 &&
+        placeholders === 0
+      }
     >
       <div className={styles.rows}>
+        {lead}
         {group.rows.map((row) => (
           <PropertyRow
             key={row.id}
@@ -128,7 +189,11 @@ function InfoSection({
           />
         ))}
         {group.title === "Properties" ? (
-          <PropertyColors colors={colors} />
+          <PropertyColors
+            colors={colors}
+            primaryColor={primaryColor}
+            saveId={saveId}
+          />
         ) : null}
         {SKELETON_ROWS.slice(0, placeholders).map((row, index) => (
           <SkeletonRow key={row} index={index} />
@@ -167,14 +232,27 @@ function SkeletonRow({ index }: { index: number }) {
   );
 }
 
-function PropertyColors({ colors }: { colors: string[] }) {
+function PropertyColors({
+  colors,
+  primaryColor,
+  saveId,
+}: {
+  colors: string[];
+  primaryColor: string | null;
+  saveId: string;
+}) {
   if (colors.length === 0) return null;
   return (
     <div className={styles.row}>
       <span className={styles.label}>Colors</span>
       <div className={styles.colors}>
         {colors.map((color) => (
-          <ColorSwatch key={color} color={color} />
+          <ColorSwatch
+            key={color}
+            color={color}
+            primaryColor={primaryColor}
+            saveId={saveId}
+          />
         ))}
       </div>
     </div>
@@ -259,6 +337,7 @@ function PropertyRow({
             onClick={() => {
               const id = row.accountId;
               if (!id) return;
+              getAppRouter()?.history.push("/sources");
               if (row.watch) sourceDetail.openWatch(id);
               else sourceDetail.openAccount(id);
             }}

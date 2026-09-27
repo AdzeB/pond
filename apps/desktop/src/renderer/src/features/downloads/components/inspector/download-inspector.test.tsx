@@ -1,7 +1,7 @@
 import { Tooltip } from "@pond/ui";
 import type { DownloadActivity } from "@shared/download-activity";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act } from "react";
+import { act, type ComponentProps } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { libraryChrome } from "@/features/library/state/library-chrome";
@@ -66,7 +66,12 @@ describe("download details", () => {
     container.remove();
     vi.unstubAllGlobals();
   });
-  async function render(next?: DownloadActivity, now = 5_000, error = false) {
+  async function render(
+    next?: DownloadActivity,
+    now = 5_000,
+    error = false,
+    attempts: ComponentProps<typeof DownloadInspectorView>["attempts"] = [],
+  ) {
     const onClose = vi.fn();
     const onOpenSave = vi.fn();
     const onRetry = vi.fn();
@@ -75,6 +80,7 @@ describe("download details", () => {
         <Tooltip.Provider>
           <DownloadInspectorView
             activity={next}
+            attempts={attempts}
             now={now}
             error={error}
             onClose={onClose}
@@ -178,6 +184,39 @@ describe("download details", () => {
     await act(() => retry?.click());
     expect(commands.onRetry).toHaveBeenCalledOnce();
   });
+
+  it("shows persisted task attempts and source gate transitions", async () => {
+    await render(undefined, 5_000, false, [
+      {
+        id: 1,
+        ts: 1_000,
+        kind: "pipeline.task.attempt",
+        op: "fetch_video_ytdlp",
+        outcome: "dead",
+        durationMs: 700,
+        attempts: 5,
+        errorName: "TransientError",
+        errorMessage: "Network unavailable",
+        payload: {},
+      },
+      {
+        id: 2,
+        ts: 2_000,
+        kind: "pipeline.source-gate.transition",
+        op: null,
+        outcome: "open",
+        durationMs: null,
+        attempts: null,
+        errorName: null,
+        errorMessage: null,
+        payload: {},
+      },
+    ]);
+    expect(container.textContent).toContain("Attempt History");
+    expect(container.textContent).toContain("fetch_video_ytdlp: dead");
+    expect(container.textContent).toContain("Source gate: open");
+    expect(container.textContent).toContain("Network unavailable");
+  });
 });
 
 describe("download inspector data", () => {
@@ -226,6 +265,7 @@ describe("download inspector data", () => {
   it("hydrates an older completed save and stops activity polling when Details closes", async () => {
     const query = vi.fn(async (name: string) => {
       if (name === "settings.getPrefs") return {};
+      if (name === "queue.attempts") return [];
       if (name === "downloads.activity") return [];
       if (name === "saves.getMany")
         return [
@@ -274,6 +314,7 @@ describe("download inspector data", () => {
     vi.stubGlobal("pond", {
       query: async (name: string) => {
         if (name === "settings.getPrefs") return {};
+        if (name === "queue.attempts") return [];
         if (name === "downloads.activity") return [];
         if (name === "saves.getMany") {
           if (fail) throw new Error("Library unavailable");
@@ -308,10 +349,10 @@ describe("download inspector data", () => {
     await act(() => retry?.click());
     await act(async () => {
       await vi.waitFor(() =>
-        expect(container.textContent).toContain("In Progress"),
+        expect(container.textContent).toContain("Waiting"),
       );
     });
-    expect(container.textContent).toContain("In Progress");
+    expect(container.textContent).toContain("Waiting");
     expect(container.textContent).not.toContain("Couldn't load this save.");
     expect(
       container.querySelector('button[aria-label="Open Save"]'),
@@ -322,6 +363,7 @@ describe("download inspector data", () => {
     vi.stubGlobal("pond", {
       query: async (name: string) => {
         if (name === "settings.getPrefs") return {};
+        if (name === "queue.attempts") return [];
         if (name === "downloads.activity") return [];
         if (name === "saves.getMany")
           return [
@@ -335,7 +377,7 @@ describe("download inspector data", () => {
               tasks: [
                 {
                   op: "fetch_video_ytdlp",
-                  status: "failed",
+                  status: "dead",
                   attempts: 1,
                   maxAttempts: 5,
                   lastError: "Network unavailable",
@@ -350,7 +392,9 @@ describe("download inspector data", () => {
     });
     await render();
     await act(async () => {
-      await vi.waitFor(() => expect(container.textContent).toContain("Failed"));
+      await vi.waitFor(() =>
+        expect(container.textContent).toContain("Stopped"),
+      );
     });
     expect(container.textContent).toContain("Network unavailable");
     expect(container.textContent).toContain("Downloading video");
@@ -362,6 +406,7 @@ describe("download inspector data", () => {
     vi.stubGlobal("pond", {
       query: async (name: string) => {
         if (name === "settings.getPrefs") return {};
+        if (name === "queue.attempts") return [];
         if (name === "downloads.activity")
           return [
             {
@@ -389,10 +434,10 @@ describe("download inspector data", () => {
     await render();
     await act(async () => {
       await vi.waitFor(() =>
-        expect(container.textContent).toContain("In Progress"),
+        expect(container.textContent).toContain("Waiting"),
       );
     });
-    expect(container.textContent).toContain("In Progress");
+    expect(container.textContent).toContain("Waiting");
     expect(container.textContent).toContain("Loading save details");
     expect(container.textContent).toContain("Properties");
     expect(container.textContent).not.toContain("Stopped");

@@ -30,7 +30,6 @@ interface TrayTemplateItem {
 
 export interface TrayTemplateActions {
   onOpenDownloads?: () => void | Promise<void>;
-  onOpenLibrary: () => void | Promise<void>;
   onOpenSettings: () => void | Promise<void>;
   onMenuAction: (id: MenuActionId) => void | Promise<void>;
 }
@@ -45,7 +44,6 @@ export interface TrayAccelerators {
   importFolders?: string;
   importLinks?: string;
   rescan?: string;
-  openLibrary?: string;
   search?: string;
   sources?: string;
   downloads?: string;
@@ -141,12 +139,6 @@ export function buildTrayTemplate(
   template.push(
     { type: "separator" },
     {
-      label: translate("main.openPond"),
-      accelerator: accelerators.openLibrary,
-      registerAccelerator: false,
-      click: () => void actions.onOpenLibrary(),
-    },
-    {
       label: "New",
       submenu: [
         run(
@@ -155,9 +147,10 @@ export function buildTrayTemplate(
           accelerators.newFolder,
         ),
         run(FILE_MENU_CREATE_LABELS[1], "library.new-smart-folder"),
+        run(FILE_MENU_CREATE_LABELS[2], "library.new-smart-folder-group"),
         { type: "separator" },
         run(
-          FILE_MENU_CREATE_LABELS[2],
+          FILE_MENU_CREATE_LABELS[3],
           "library.new-note",
           accelerators.newNote,
         ),
@@ -178,17 +171,17 @@ export function buildTrayTemplate(
       label: "Import",
       submenu: [
         run(
-          FILE_MENU_CREATE_LABELS[3],
+          FILE_MENU_CREATE_LABELS[4],
           "library.import-files",
           accelerators.importFiles,
         ),
         run(
-          FILE_MENU_CREATE_LABELS[4],
+          FILE_MENU_CREATE_LABELS[5],
           "library.import-folders",
           accelerators.importFolders,
         ),
         run(
-          FILE_MENU_CREATE_LABELS[5],
+          FILE_MENU_CREATE_LABELS[6],
           "library.import-links",
           accelerators.importLinks,
         ),
@@ -197,17 +190,13 @@ export function buildTrayTemplate(
         run("Import Bookmarks", "library.import-bookmarks"),
         run("Import Page Assets", "library.import-page-assets"),
         { type: "separator" },
-        run(FILE_MENU_CREATE_LABELS[6], "library.import-package"),
-        run("Import Eagle Library", "library.import-eagle"),
+        run(FILE_MENU_CREATE_LABELS[7], "library.import-eagle"),
+        run(FILE_MENU_CREATE_LABELS[8], "library.import-package"),
         { type: "separator" },
         {
           label: "Auto Import",
           submenu: [
             run(FILE_MENU_AUTO_IMPORT_LABELS[0], "library.auto-import-folder"),
-            run(
-              FILE_MENU_AUTO_IMPORT_LABELS[1],
-              "library.auto-import-settings",
-            ),
           ],
         },
       ],
@@ -249,7 +238,7 @@ export function buildTrayTemplate(
       ],
     },
     {
-      label: "Go To",
+      label: "Navigate",
       submenu: [
         run("Library", "nav.library"),
         run("Search", "library.search", accelerators.search),
@@ -261,14 +250,14 @@ export function buildTrayTemplate(
         run("Trash", "nav.trash", accelerators.trash),
         run("Uncategorized", "nav.uncategorized"),
         run("Untagged", "nav.untagged"),
+        { type: "separator" },
+        {
+          label: translate("main.settings"),
+          accelerator: accelerators.settings,
+          registerAccelerator: false,
+          click: () => void actions.onOpenSettings(),
+        },
       ],
-    },
-    { type: "separator" },
-    {
-      label: translate("main.settings"),
-      accelerator: accelerators.settings,
-      registerAccelerator: false,
-      click: () => void actions.onOpenSettings(),
     },
     { type: "separator" },
     {

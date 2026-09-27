@@ -42,7 +42,7 @@ import {
 } from "./folders";
 import { runLibraryTransfer } from "./library-transfers";
 import { createManualSave, type ManualSaveInput } from "./manual-import";
-import { exportLibraryMedia } from "./security/library-media-storage";
+import { exportLibraryMedia } from "./storage/library-media-storage";
 import {
   checkTransferCancellation,
   transferPhase,
@@ -163,6 +163,7 @@ type EagleItem = z.infer<typeof EagleItemSchema>;
 
 const EaglePackSchema = z.object({
   images: z.array(EagleItemSchema).default([]),
+  folder: EagleFolderSchema.optional().catch(undefined),
   folders: z.array(EagleFolderSchema).optional().catch(undefined),
 });
 
@@ -678,7 +679,9 @@ async function parsePackage(
   if (metadataById.size === 0)
     throw new Error("The selected source is not an Eagle package.");
 
-  let folderNodes = flattenFolders(pack?.folders ?? []);
+  let folderNodes = flattenFolders(
+    pack?.folder ? [pack.folder] : (pack?.folders ?? []),
+  );
   if (folderNodes.length === 0) {
     const libraryHeaders = files.filter(
       (file) =>
@@ -880,6 +883,9 @@ async function exportDirectory(
   if (input.items.length === 0) throw new Error("Select Saves to export.");
   const folders = input.folders ?? [];
   const folderIds = new Set(folders.map((folder) => folder.id));
+  const roots = nestedFolders(folders);
+  if (roots.length > 1)
+    throw new Error("An Eagle package can contain only one root folder.");
   const ids = new Set<string>();
   const metadata: EagleItem[] = [];
   let exported = 0;
@@ -931,13 +937,12 @@ async function exportDirectory(
     );
     await transferProgress(item.save.title ?? item.save.id);
   }
+  const pack = roots[0]
+    ? { images: metadata, folder: roots[0] }
+    : { images: metadata };
   await writeFile(
     join(root, "pack.json"),
-    `${JSON.stringify(
-      { images: metadata, folders: nestedFolders(folders) },
-      null,
-      2,
-    )}\n`,
+    `${JSON.stringify(pack, null, 2)}\n`,
     { flag: "wx", mode: 0o600 },
   );
   return { exported };

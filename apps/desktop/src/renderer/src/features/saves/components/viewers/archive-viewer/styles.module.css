@@ -14,7 +14,7 @@
   overflow: hidden;
   background: var(--ds-gray-2);
   border-radius: var(--ds-radius-md);
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-sm);
 }
 
 .webview {

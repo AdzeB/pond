@@ -2,21 +2,23 @@ import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 
 export function selectOnlySave(id: string): void {
+  selection.setCursor(id);
   selection.set([id]);
   selection.setAnchor(id);
   primarySelection.set(id);
-  saveLibraryBridge.setInspectorSaveId(id);
+  saveLibraryBridge.openSaveDetails(id);
 }
 
 function rememberSave(id: string): void {
   selection.setAnchor(id);
   primarySelection.set(id);
-  saveLibraryBridge.setInspectorSaveId(id);
+  saveLibraryBridge.openSaveDetails(id);
 }
 
 export function clearSaveSelection(): void {
   selection.clear();
   primarySelection.set(null);
+  saveLibraryBridge.inspectSave(null);
 }
 
 export function clickSave(
@@ -24,6 +26,7 @@ export function clickSave(
   keys: { meta: boolean; shift: boolean },
   filteredIds: ReadonlyArray<string>,
 ): void {
+  selection.setCursor(id);
   if (keys.meta) {
     selection.toggle(id);
     if (selection.has(id)) {
@@ -37,7 +40,8 @@ export function clickSave(
       selection.snapshot()[0] ??
       null;
     primarySelection.set(fallback);
-    if (fallback) saveLibraryBridge.setInspectorSaveId(fallback);
+    if (fallback) saveLibraryBridge.openSaveDetails(fallback);
+    else saveLibraryBridge.inspectSave(null);
     return;
   }
 
@@ -46,7 +50,7 @@ export function clickSave(
     selection.setRange(filteredIds, anchor, id);
     selection.setAnchor(anchor);
     primarySelection.set(id);
-    saveLibraryBridge.setInspectorSaveId(id);
+    saveLibraryBridge.openSaveDetails(id);
     return;
   }
 

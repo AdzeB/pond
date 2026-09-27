@@ -123,19 +123,19 @@
   z-index: 1;
   display: grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-1);
+  color: white;
   pointer-events: auto;
   cursor: pointer;
-  background: var(--ds-accent-9);
-  border: 0;
+  background: var(--ds-accent-3);
+  border: 2px solid var(--ds-accent-9);
   border-radius: var(--ds-radius-full);
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-sm);
   transform: translate(-50%, -50%) scaleX(var(--marker-flip-x))
     scaleY(var(--marker-flip-y)) rotate(calc(var(--marker-rotate) * -1deg))
     scale(var(--marker-scale));
@@ -144,7 +144,7 @@
   &:focus-visible {
     outline: 2px solid var(--ds-gray-12);
     outline-offset: 2px;
-    background: var(--ds-accent-10);
+    background: var(--ds-accent-4);
   }
 }
 
@@ -155,9 +155,9 @@
 
 .pin[data-active] .index {
   outline: 2px solid var(--ds-gray-1);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 
 .pin:hover .index {
-  background: var(--ds-accent-10);
+  background: var(--ds-accent-4);
 }

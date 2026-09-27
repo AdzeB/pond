@@ -19,6 +19,8 @@ export interface SaveFile {
   width?: number | null;
   height?: number | null;
   family?: string | null;
+  subfamily?: string | null;
+  fontWeight?: number | null;
   bpm?: number | null;
 }
 
@@ -39,6 +41,19 @@ export interface Save {
   width?: number | null;
   height?: number | null;
   fileSize?: number | null;
+  container?: string | null;
+  videoCodec?: string | null;
+  audioCodec?: string | null;
+  bitrate?: number | null;
+  colorSpace?: string | null;
+  cameraMake?: string | null;
+  cameraModel?: string | null;
+  lensModel?: string | null;
+  focalLength?: number | null;
+  aperture?: number | null;
+  exposureTime?: string | null;
+  iso?: number | null;
+  takenAt?: number | null;
   phash?: string | null;
   blurhash?: string | null;
   caption?: string | null;
@@ -65,6 +80,7 @@ export interface Save {
   flipY?: boolean;
   crop?: ImageCrop | null;
   dominantColors?: string[];
+  primaryColor?: string | null;
   tags: string[];
   folderIds?: string[];
   listKinds?: ListKind[];

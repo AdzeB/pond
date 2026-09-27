@@ -1,0 +1,75 @@
+.root {
+  width: min(360px, var(--available-width));
+  min-width: min(360px, var(--available-width));
+  max-height: min(620px, var(--available-height));
+}
+
+.list {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 4px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.row {
+  position: relative;
+  padding-inline-start: calc(20px + var(--folder-depth) * 48px);
+}
+
+.row[data-nested]::before {
+  inset-inline-start: calc(6px + var(--folder-depth) * 48px);
+}
+
+.guideline {
+  position: absolute;
+  inset-block: 0;
+  left: calc(33px + (var(--folder-depth) - 1) * 48px);
+  display: none;
+  width: 1px;
+  background: var(--ds-gray-a5);
+}
+
+.row[data-nested] .guideline {
+  display: block;
+}
+
+.folderIcon {
+  color: var(--ds-gray-10);
+}
+
+.parent {
+  flex: 0 1 40%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.expand {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-inline-start: 4px;
+  color: var(--ds-gray-10);
+  border-radius: var(--ds-radius-xs);
+}
+
+.expand:hover {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-a4);
+}
+
+.expand svg {
+  width: 12px;
+  height: 12px;
+  transition: transform var(--ds-duration-fast) var(--ds-easing-standard);
+}
+
+.expand[data-expanded] svg {
+  transform: rotate(90deg);
+}

@@ -65,7 +65,7 @@
   overflow: hidden;
   background: var(--ds-gray-3);
   border-radius: 100%;
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-sm);
 }
 
 .art img {

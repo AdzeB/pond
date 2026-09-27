@@ -118,7 +118,7 @@ adapter authors are expected to respect.
 
 ## Documentation
 
-- [References](references.md)
+- [References](docs/provenance/generated/REFERENCES.md)
 - [License](LICENSE)
 - [Privacy](PRIVACY.md)
 - [Security](SECURITY.md)

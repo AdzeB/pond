@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import JSZip from "jszip";
 import { afterEach, describe, expect, it } from "vitest";
+import { z } from "zod";
 import {
   type EaglePackageExportInput,
   type EaglePackageImportRuntime,
@@ -130,7 +131,10 @@ function fakeRuntime(options: { failId?: string } = {}) {
   return { runtime, imported, rolledBack, folders };
 }
 
-async function directoryFixture(items = ["one"]) {
+async function directoryFixture(
+  items = ["one"],
+  options: { legacyFolders?: boolean } = {},
+) {
   const root = await temporaryRoot("directory");
   const packageRoot = join(root, "Selection.eaglepack");
   await mkdir(packageRoot);
@@ -148,13 +152,23 @@ async function directoryFixture(items = ["one"]) {
     join(packageRoot, "pack.json"),
     JSON.stringify({
       images,
-      folders: [
-        {
-          id: "parent",
-          name: "Design",
-          children: [{ id: "child", name: "Posters", children: [] }],
-        },
-      ],
+      ...(options.legacyFolders
+        ? {
+            folders: [
+              {
+                id: "parent",
+                name: "Design",
+                children: [{ id: "child", name: "Posters", children: [] }],
+              },
+            ],
+          }
+        : {
+            folder: {
+              id: "parent",
+              name: "Design",
+              children: [{ id: "child", name: "Posters", children: [] }],
+            },
+          }),
     }),
   );
   for (const item of images) {
@@ -176,6 +190,18 @@ describe("Eagle package transfer", () => {
     const destination = join(fixture.root, "Selection.eaglepack");
     const exported = await exportEaglePackage(fixture.input, destination);
     expect(exported).toEqual({ path: destination, exported: 2 });
+    const archive = await JSZip.loadAsync(await readFile(destination));
+    const packFile = archive.file("pack.json");
+    if (!packFile) throw new Error("Missing pack.json");
+    const pack = z
+      .object({
+        folder: z.object({ id: z.string(), name: z.string() }).optional(),
+        folders: z.unknown().optional(),
+      })
+      .passthrough()
+      .parse(JSON.parse(await packFile.async("string")));
+    expect(pack.folder).toMatchObject({ id: "parent", name: "Design" });
+    expect(pack).not.toHaveProperty("folders");
 
     const target = fakeRuntime();
     await expect(
@@ -206,6 +232,15 @@ describe("Eagle package transfer", () => {
       folderIds: ["mapped-child"],
       tags: ["Reference"],
     });
+  });
+
+  it("continues to import Pond packages that used the legacy folders array", async () => {
+    const fixture = await directoryFixture(["one"], { legacyFolders: true });
+    const target = fakeRuntime();
+    await expect(
+      importEaglePackage(fixture.packageRoot, target.runtime),
+    ).resolves.toEqual({ imported: 1, skipped: 0 });
+    expect(target.folders).toEqual([["Design", "Posters"]]);
   });
 
   it("rejects directory symlinks before importing anything", async () => {

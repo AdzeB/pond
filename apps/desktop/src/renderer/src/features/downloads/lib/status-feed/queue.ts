@@ -61,7 +61,7 @@ function toRow(save: Save): QueueRow | null {
   for (const t of tasks) {
     if (t.status === "done") done += 1;
     else if (t.status === "running") stage = stageLabel(t.op, save.source);
-    else if (t.status === "failed") {
+    else if (t.status === "dead" || t.status === "blocked") {
       stage ??= stageLabel(t.op, save.source);
       error = preferIngestError(error, t.lastError);
     }

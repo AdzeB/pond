@@ -22,6 +22,8 @@ interface EnumSelectProps<T> {
   side?: "top" | "right" | "bottom" | "left";
   sideOffset?: number;
   "aria-label"?: string;
+  "aria-labelledby"?: string;
+  "aria-describedby"?: string;
 }
 
 function longestStringLabel<T>(options: readonly EnumOption<T>[]): string {
@@ -45,6 +47,8 @@ export function EnumSelect<T>({
   side,
   sideOffset = 6,
   "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
+  "aria-describedby": ariaDescribedBy,
 }: EnumSelectProps<T>) {
   const selected = options.find((option) => Object.is(option.value, value));
   const hasNullOption = options.some((option) => option.value === null);
@@ -60,7 +64,12 @@ export function EnumSelect<T>({
         if (match) onValueChange(match.value);
       }}
     >
-      <Select.Trigger className={className} aria-label={ariaLabel}>
+      <Select.Trigger
+        className={className}
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
+      >
         <span className={styles.slot}>
           {sizer ? (
             <span className={styles.sizer} aria-hidden>

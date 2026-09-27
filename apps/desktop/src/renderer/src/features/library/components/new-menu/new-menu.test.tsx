@@ -72,7 +72,7 @@ describe("new menu", () => {
     await openMenu();
     const text = document.body.textContent ?? "";
     for (const label of labels) expect(text).toContain(label);
-    expect(text).not.toContain("ArtStation");
+    expect(text).toContain("Import Legacy Library");
     expect(text).not.toContain("New Tab");
     expect(text).not.toContain("Create");
     expect(text).not.toContain("Connect");
@@ -120,7 +120,7 @@ describe("new menu", () => {
 
   it("hosts the links dialog from the shared store", async () => {
     await act(async () => root.render(<NewMenuDialogHost />));
-    await act(async () => newMenuDialog.open("links"));
+    await act(async () => newMenuDialog.open({ kind: "links" }));
     expect(document.body.textContent).toContain("Import from Links");
     const links = document.querySelector("textarea");
     if (!links) throw new Error("Missing links field");
@@ -132,7 +132,7 @@ describe("new menu", () => {
       links.dispatchEvent(new InputEvent("input", { bubbles: true }));
     });
     await act(async () => newMenuDialog.close());
-    await act(async () => newMenuDialog.open("links"));
+    await act(async () => newMenuDialog.open({ kind: "links" }));
     expect(document.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
       "https://example.test",
     );
@@ -140,7 +140,7 @@ describe("new menu", () => {
 
   it("hosts the screenshot source picker from the shared store", async () => {
     await act(async () => root.render(<NewMenuDialogHost />));
-    await act(async () => newMenuDialog.open("screenshot"));
+    await act(async () => newMenuDialog.open({ kind: "screenshot" }));
     expect(document.body.textContent).toContain("Capture Screenshot");
     expect(document.body.textContent).toContain(
       "Choose a screen or window to save as an image.",

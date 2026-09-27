@@ -1,14 +1,13 @@
 import { sourceLabel } from "@pond/schema/sources";
 import type { RenderRowArgs, TableColumn } from "@pond/ui";
 import type { DownloadActivity } from "@shared/download-activity";
+import { useDownloadClock } from "@/features/downloads/hooks/use-download-activity";
 import type { DownloadRow } from "@/features/downloads/lib/status-feed";
 import { BrandTile } from "@/features/sources/components/sync-monitor-source-tile";
 import { relativeTimeFromMs } from "@/shared/lib/relative-time";
-import {
-  describeDownloadActivity,
-  formatDuration,
-} from "../../lib/download-progress";
+import { describeDownloadActivity } from "../../lib/download-progress";
 import { downloadBrandSource } from "./brand";
+import { DownloadContextMenu } from "./context-menu";
 import {
   type DownloadTableStatus,
   downloadStatusLabel,
@@ -21,15 +20,13 @@ import styles from "./styles.module.css";
 export interface DownloadViewRow extends DownloadRow {
   paused: boolean;
   activity?: DownloadActivity;
-  now: number;
-  inspected: boolean;
 }
 
 const RING = 100;
 
-function measuredActivity(row: DownloadViewRow) {
+function measuredActivity(row: DownloadViewRow, now: number) {
   return row.status === "running" && row.activity?.state === "running"
-    ? describeDownloadActivity(row.activity, row.now)
+    ? describeDownloadActivity(row.activity, now)
     : null;
 }
 
@@ -103,7 +100,6 @@ function StatusGlyph({ status }: { status: DownloadTableStatus }) {
 
 function NameCell({ row }: { row: DownloadViewRow }) {
   const title = row.name.trim() || row.url.trim() || "Untitled save";
-  const measured = measuredActivity(row);
   return (
     <button
       type="button"
@@ -115,14 +111,6 @@ function NameCell({ row }: { row: DownloadViewRow }) {
           {title}
         </span>
       </span>
-      {measured?.progress != null ? (
-        <progress
-          className={styles.progress}
-          value={measured.progress}
-          max={1}
-          aria-label={`${title} transfer progress`}
-        />
-      ) : null}
     </button>
   );
 }
@@ -139,33 +127,80 @@ function SourceCell({ row }: { row: DownloadViewRow }) {
 
 function StatusCell({ row }: { row: DownloadViewRow }) {
   const status = downloadTableStatus(row, row.paused);
+  const label = downloadStatusLabel(row, row.paused);
   return (
-    <span className={styles.status} title={row.error ?? undefined}>
+    <span className={styles.status}>
       <span className={styles.mark} data-status={status}>
         <StatusGlyph status={status} />
       </span>
-      <span className={styles["status-label"]}>
-        {downloadStatusLabel(row, row.paused)}
-      </span>
+      <span className={styles["status-label"]}>{label}</span>
     </span>
   );
 }
 
-function TimeCell({ row }: { row: DownloadViewRow }) {
-  const running = row.status === "running";
-  const measured = measuredActivity(row);
-  const elapsed =
-    running && row.activity
-      ? formatDuration(row.now - row.activity.phaseStartedAt)
-      : null;
+function ProgressRing({ value }: { value: number }) {
   return (
-    <span className={styles.metric}>
-      {measured?.progress != null
-        ? `${Math.round(measured.progress * 100)}%`
-        : ""}
-      {measured?.progress != null && measured.speed ? " · " : ""}
-      {measured?.speed ?? (measured?.progress == null ? elapsed : "")}
-      {!running ? relativeTimeFromMs(row.ts) : null}
+    <svg
+      className={styles["progress-ring"]}
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      aria-hidden
+    >
+      <circle
+        className={styles["progress-ring-track"]}
+        cx="8"
+        cy="8"
+        r="6"
+        fill="none"
+        strokeWidth="2"
+      />
+      <circle
+        className={styles["progress-ring-value"]}
+        cx="8"
+        cy="8"
+        r="6"
+        fill="none"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeDasharray={`${value * RING} ${RING}`}
+        pathLength={RING}
+        transform="rotate(-90 8 8)"
+      />
+    </svg>
+  );
+}
+
+function ProgressCell({ row }: { row: DownloadViewRow }) {
+  const running = row.status === "running";
+  const now = useDownloadClock(running && row.activity?.state === "running");
+  const measured = measuredActivity(row, now);
+  const rawProgress =
+    measured?.progress ??
+    (running ? row.progress : row.status === "complete" ? 1 : 0) ??
+    0;
+  const progress = Math.max(0, Math.min(1, rawProgress));
+  const percentage = Math.round(progress * 100);
+  const title = row.name.trim() || row.url.trim() || "Untitled save";
+  return (
+    <span
+      className={styles["progress-cell"]}
+      role="progressbar"
+      aria-label={`${title} transfer progress`}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={percentage}
+    >
+      <ProgressRing value={progress} />
+      <span className={styles.metric}>{percentage}%</span>
+    </span>
+  );
+}
+
+function AddedCell({ row }: { row: DownloadViewRow }) {
+  return (
+    <span className={`${styles.metric} ${styles.added}`}>
+      {relativeTimeFromMs(row.ts)}
     </span>
   );
 }
@@ -176,7 +211,7 @@ export const downloadsColumns: TableColumn<DownloadViewRow>[] = [
     header: "Name",
     sortLabel: "Name",
     accessor: (row) => row.name,
-    width: "minmax(0, 1fr)",
+    width: "minmax(0, 2fr)",
     cell: (row) => <NameCell row={row} />,
   },
   {
@@ -184,24 +219,33 @@ export const downloadsColumns: TableColumn<DownloadViewRow>[] = [
     header: "Source",
     sortLabel: "Source",
     accessor: (row) => sourceLabel(downloadBrandSource(row.source, row.url)),
-    width: "minmax(0, 140px)",
+    width: "minmax(0, 0.7fr)",
     cell: (row) => <SourceCell row={row} />,
   },
   {
-    id: "now",
-    header: "Now",
-    sortLabel: "Now",
-    accessor: (row) => row.ts,
-    width: "minmax(0, 120px)",
-    cell: (row) => <TimeCell row={row} />,
+    id: "stage",
+    header: "Stage",
+    sortLabel: "Stage",
+    accessor: (row) => downloadStatusLabel(row, row.paused),
+    width: "minmax(0, 1.25fr)",
+    cell: (row) => <StatusCell row={row} />,
   },
   {
-    id: "status",
-    header: "Status",
-    sortLabel: "Status",
-    accessor: (row) => downloadStatusLabel(row, row.paused),
-    width: "minmax(0, 120px)",
-    cell: (row) => <StatusCell row={row} />,
+    id: "progress",
+    header: "Progress",
+    sortLabel: "Progress",
+    accessor: (row) =>
+      measuredActivity(row, Date.now())?.progress ?? row.progress ?? -1,
+    width: "minmax(0, 0.8fr)",
+    cell: (row) => <ProgressCell row={row} />,
+  },
+  {
+    id: "added",
+    header: "Added",
+    sortLabel: "Added",
+    accessor: (row) => row.ts,
+    width: "140px",
+    cell: (row) => <AddedCell row={row} />,
   },
 ];
 
@@ -211,19 +255,21 @@ export function DownloadQueueRow({
   cells,
 }: RenderRowArgs<DownloadViewRow>) {
   const running = row.status === "running";
-  const measured = measuredActivity(row);
+  const now = useDownloadClock(running && row.activity?.state === "running");
+  const measured = measuredActivity(row, now);
   return (
-    <div
-      {...rowProps}
-      className={`${rowProps.className} ${styles.row}`}
-      data-status={row.status}
-      data-inspected={row.inspected || undefined}
-      data-stalled={measured?.stalled || undefined}
-      data-moving={running || undefined}
-      data-processing={isDownloadProcessing(row) || undefined}
-      data-paused={isDownloadStopped(row, row.paused) || undefined}
-    >
-      {cells}
-    </div>
+    <DownloadContextMenu row={row}>
+      <div
+        {...rowProps}
+        className={`${rowProps.className} ${styles.row}`}
+        data-status={row.status}
+        data-stalled={measured?.stalled || undefined}
+        data-moving={running || undefined}
+        data-processing={isDownloadProcessing(row) || undefined}
+        data-paused={isDownloadStopped(row, row.paused) || undefined}
+      >
+        {cells}
+      </div>
+    </DownloadContextMenu>
   );
 }

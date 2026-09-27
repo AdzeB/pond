@@ -43,7 +43,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--ds-text-lg);
-  font-weight: var(--ds-weight-semibold);
+  font-weight: var(--ds-weight-xl);
   white-space: nowrap;
 }
 
@@ -71,6 +71,6 @@
 .label {
   display: inline-flex;
   align-items: center;
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   color: var(--ds-gray-12);
 }

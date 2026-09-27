@@ -5,6 +5,12 @@
   gap: 12px;
   align-items: center;
   contain: layout;
+  transition: opacity var(--ds-duration-snap) var(--ds-easing-standard);
+}
+
+:global(body[data-save-dragging]) .item[data-multi],
+:global(body[data-save-dragging="1"]) .item[data-selected] {
+  opacity: 0.72;
 }
 
 .select {
@@ -159,7 +165,7 @@
   pointer-events: none;
   border-radius: var(--ds-radius-source);
   corner-shape: var(--ds-corner-icon);
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-sm);
 }
 
 .source img,
@@ -203,7 +209,7 @@
   cursor: var(--ds-cursor-interactive, pointer);
   background: light-dark(rgb(255, 255, 255), rgb(0, 0, 0));
   border-radius: var(--ds-radius-sm);
-  box-shadow: var(--ds-shadow-search);
+  box-shadow: var(--ds-shadow-sm);
   opacity: 0;
   transition:
     opacity var(--ds-duration-snap) var(--ds-easing-standard),

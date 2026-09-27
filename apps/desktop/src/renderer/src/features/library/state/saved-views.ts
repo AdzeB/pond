@@ -118,6 +118,26 @@ export const savedViews = {
     if (!result.ok) throw new Error("Could not update this smart folder item.");
     await savedViews.refresh();
   },
+  async duplicate(id: string): Promise<SavedView> {
+    const view = store.state.views.find((entry) => entry.id === id);
+    if (!view) throw new Error("This smart folder item no longer exists.");
+    const result = await window.pond.query("savedViews.create", {
+      name: `${view.name} Copy`,
+      kind: view.kind,
+      parentId: view.parentId,
+      question: view.question,
+      query: view.query,
+      sortKey: view.sortKey,
+      sortDir: view.sortDir,
+      layout: view.layout,
+    });
+    if (!result.ok || !result.id)
+      throw new Error("Could not duplicate this smart folder item.");
+    await savedViews.refresh();
+    const copy = store.state.views.find((entry) => entry.id === result.id);
+    if (!copy) throw new Error("The duplicate could not be loaded.");
+    return copy;
+  },
   async edit(id: string, name: string, query: Query): Promise<void> {
     const active = getViewState().activeViewId === id;
     const result = await window.pond.query("savedViews.update", {

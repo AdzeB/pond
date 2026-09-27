@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { pool } from "../state/pool";
-import { mutateSave, setSaveTags } from "./mutate";
+import { bulkMutation, mutateSave, setSaveTags } from "./mutate";
 import { normalise, SavePatchSchema } from "./reconcile";
 
 beforeEach(() => {
@@ -72,4 +72,22 @@ it("retains cold IDs for trash, restore, and purge beyond the loaded page", asyn
     ["saves.bulkEdit", { ids, operation: { kind: "purge" } }],
     ["feedback.emit", { event: "saveDeletion" }],
   ]);
+});
+
+it("clears loaded tags optimistically for a replace operation", async () => {
+  const pending = Promise.withResolvers<{ changed: number }>();
+  const query = vi.fn(() => pending.promise);
+  vi.stubGlobal("window", { pond: { query } });
+  const edit = bulkMutation(["saved"], {
+    kind: "tags",
+    tags: [],
+    mode: "replace",
+  });
+  expect(pool.get("saved")?.tags).toEqual([]);
+  pending.resolve({ changed: 1 });
+  await edit;
+  expect(query).toHaveBeenCalledWith("saves.bulkEdit", {
+    ids: ["saved"],
+    operation: { kind: "tags", tags: [], mode: "replace" },
+  });
 });

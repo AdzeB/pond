@@ -1,5 +1,4 @@
 import {
-  IconChevronRightOutline12 as Chevron,
   IconCodeOutline12 as Code,
   IconCircleInfoOutline12 as Info,
 } from "@pond/icons/outline/12";
@@ -14,6 +13,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { z } from "zod";
+import vscode from "@/assets/logos/agents/vscode.svg";
 import anthropic from "@/assets/logos/providers/anthropic.webp";
 import google from "@/assets/logos/providers/google.webp";
 import openai from "@/assets/logos/providers/openai.webp";
@@ -34,6 +34,7 @@ const HOST_LOGOS = {
   "claude-desktop": anthropic,
   codex: openai,
   "gemini-cli": google,
+  vscode,
 } satisfies Partial<Record<McpHostId, string>>;
 
 const ACCESS = [
@@ -48,19 +49,11 @@ const ACCESS = [
     description: "Reveal a save in the Pond window",
   },
   {
-    key: "mcpActions",
-    title: "Run Actions",
-    description: "Preview and run library Actions",
-  },
-  {
     key: "mcpExport",
     title: "Export Files",
     description: "Convert copies. Originals stay in the library.",
   },
 ] as const;
-
-const FEATURED = MCP_HOST_CATALOG.filter((host) => host.featured);
-const EXTRA = MCP_HOST_CATALOG.filter((host) => !host.featured);
 
 export function McpSection() {
   const snippet = useQuery({
@@ -81,7 +74,6 @@ export function McpSection() {
       </Settings.Header>
       <AccessSection />
       <AgentsSection snippet={snippet.data} />
-      <AdvancedSection snippet={snippet.data} />
     </Settings.Page>
   );
 }
@@ -117,84 +109,17 @@ function AccessSection() {
 }
 
 function AgentsSection({ snippet }: { snippet?: PondSnippet }) {
-  const [more, setMore] = useState(false);
   return (
     <Settings.Section>
       <Settings.SectionTitle>Agents</Settings.SectionTitle>
       <Settings.List>
-        {FEATURED.map((host) => (
+        {MCP_HOST_CATALOG.map((host) => (
           <HostRow key={host.id} host={host} snippet={snippet} />
         ))}
-        <Settings.Item
-          className={styles.disclosure}
-          role="button"
-          tabIndex={0}
-          aria-expanded={more}
-          onClick={() => setMore((value) => !value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              setMore((value) => !value);
-            }
-          }}
-        >
-          <Settings.ItemDetails>
-            <Settings.ItemTitle>More Agents</Settings.ItemTitle>
-            <Settings.ItemDescription>
-              Claude Desktop, VS Code, Any MCP client
-            </Settings.ItemDescription>
-          </Settings.ItemDetails>
-          <Settings.ItemControl>
-            <Chevron className={styles.chevron} data-open={more || undefined} />
-          </Settings.ItemControl>
-        </Settings.Item>
-        {more
-          ? EXTRA.map((host) => (
-              <HostRow key={host.id} host={host} snippet={snippet} />
-            ))
-          : null}
       </Settings.List>
       <p className={styles.note}>
         Agents run on this Mac and read the library over stdio.
       </p>
-    </Settings.Section>
-  );
-}
-
-function AdvancedSection({ snippet }: { snippet?: PondSnippet }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <Settings.Section>
-      <Settings.List>
-        <Settings.Item
-          className={styles.disclosure}
-          role="button"
-          tabIndex={0}
-          aria-expanded={open}
-          onClick={() => setOpen((value) => !value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              setOpen((value) => !value);
-            }
-          }}
-        >
-          <Settings.ItemDetails>
-            <Settings.ItemTitle>Advanced</Settings.ItemTitle>
-            <Settings.ItemDescription>
-              Command line tool, server test
-            </Settings.ItemDescription>
-          </Settings.ItemDetails>
-          <Settings.ItemControl>
-            <Chevron className={styles.chevron} data-open={open || undefined} />
-          </Settings.ItemControl>
-        </Settings.Item>
-        {open && snippet ? (
-          <div className={styles.expanded}>
-            <McpSnippet json={snippet.json} />
-          </div>
-        ) : null}
-      </Settings.List>
     </Settings.Section>
   );
 }
@@ -223,7 +148,13 @@ function HostLogo({ id }: { id: McpHostId }) {
   const src = Object.entries(HOST_LOGOS).find(([hostId]) => hostId === id)?.[1];
   if (src) {
     return (
-      <img src={src} alt="" width={20} height={20} className={styles.logo} />
+      <img
+        src={src}
+        alt=""
+        width={20}
+        height={20}
+        className={id === "vscode" ? styles.brandLogo : styles.logo}
+      />
     );
   }
   return (
@@ -376,57 +307,5 @@ function JsonBlock({ json }: { json: string }) {
         {copying ? "Copying" : copied ? "Copied" : "Copy"}
       </Button>
     </>
-  );
-}
-
-export function McpSnippet({ json }: { json: string }) {
-  const [copied, setCopied] = useState(false);
-  const [copying, setCopying] = useState(false);
-  const [error, setError] = useState("");
-  const scrollFade = useScrollFade<HTMLPreElement>();
-
-  const copyConfig = async () => {
-    setCopying(true);
-    setCopied(false);
-    setError("");
-    try {
-      const result = await window.pond.query("clipboard.writeText", {
-        text: json,
-      });
-      if (!result.ok) throw new Error("Clipboard write failed");
-      setCopied(true);
-    } catch {
-      setError("Could not copy config. Try again.");
-    } finally {
-      setCopying(false);
-    }
-  };
-
-  return (
-    <div className={styles.snippet}>
-      <div className={styles.toolbar}>
-        <span className={styles.language}>JSON</span>
-        <Button
-          size="xs"
-          variant="ghost"
-          disabled={copying}
-          onClick={() => void copyConfig()}
-        >
-          {copying ? "Copying" : copied ? "Copied" : "Copy Config"}
-        </Button>
-      </div>
-      <pre className={styles.advanced} {...scrollFade}>
-        <code>{json}</code>
-      </pre>
-      <p className={styles.caption}>
-        This command is the Pond binary on this Mac. Pond does not host an MCP
-        URL.
-      </p>
-      {error ? (
-        <p className={styles.error} role="alert">
-          {error}
-        </p>
-      ) : null}
-    </div>
   );
 }

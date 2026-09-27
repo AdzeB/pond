@@ -9,6 +9,18 @@ describe("folder sidebar navigation", () => {
   beforeEach(() => harness.setup());
   afterEach(() => harness.cleanup());
 
+  it("opens the full Assistant page from the sidebar", async () => {
+    const router = await harness.mount();
+    const assistant = harness.button("Assistant");
+    expect(assistant.querySelector('[stroke="currentColor"]')).not.toBeNull();
+    await act(async () => assistant.click());
+    expect(router.state.location.pathname).toBe("/assistant");
+    expect(harness.button("Assistant").getAttribute("aria-current")).toBe(
+      "page",
+    );
+    expect(harness.button("All").getAttribute("aria-current")).toBeNull();
+  });
+
   it("opens Sources from the sidebar with an outline icon", async () => {
     const router = await harness.mount();
     const sources = harness.button("Sources");
@@ -110,13 +122,15 @@ describe("folder sidebar navigation", () => {
     );
     const library = labels.indexOf("All");
     const uncategorized = labels.indexOf("Uncategorized");
+    const assistant = labels.indexOf("Assistant");
     const untagged = labels.indexOf("Untagged");
     const tags = labels.indexOf("Tags");
     const trash = labels.indexOf("Trash");
     const downloads = labels.indexOf("Downloads");
     const sources = labels.indexOf("Sources");
     expect(library).toBeLessThan(uncategorized);
-    expect(uncategorized).toBeLessThan(untagged);
+    expect(uncategorized).toBeLessThan(assistant);
+    expect(assistant).toBeLessThan(untagged);
     expect(untagged).toBeLessThan(tags);
     expect(tags).toBeLessThan(trash);
     expect(trash).toBeLessThan(downloads);

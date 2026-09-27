@@ -1,0 +1,28 @@
+POND VIEWER SYSTEM
+
+An icon-first workspace for focused viewing.
+
+This synthetic document exists only for local visual QA. It verifies that PDF pages remain sharp, centered, scrollable, searchable, and easy to navigate while the shared viewer chrome stays calm and compact.
+
+Key controls
+
+- Page thumbnails
+- Search across pages
+- Previous and next page
+- Zoom in and out
+- Fit width and fit page
+- Rotate clockwise
+- Open in the default application
+- Export the original file
+
+
+SECOND PAGE
+
+The toolbar uses Pond's own components and visual tokens. Familiar actions use icons with accessible names and tooltips. Ambiguous actions retain text labels or live inside focused menus.
+
+The sidebar appears from its trigger, persistent controls stay in place, and reduced-motion preferences avoid animated reveals.
+
+
+THIRD PAGE
+
+The viewer preserves Pond's continuous reading model while adding the specialist tools expected from a desktop PDF workspace.

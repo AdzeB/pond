@@ -6,6 +6,7 @@ interface MenuActionItem {
   type?: "item";
   id?: string;
   label: ReactNode;
+  breadcrumb?: ReactNode[];
   icon?: ReactNode;
   variant?: "default" | "destructive";
   shortcut?: MenuShortcut;
@@ -43,6 +44,7 @@ interface MenuSubmenuItem {
 interface MenuCheckboxItem {
   type: "checkbox";
   label: ReactNode;
+  breadcrumb?: ReactNode[];
   icon?: ReactNode;
   indicator?: "checkbox" | "check";
   checked: boolean;
@@ -57,6 +59,7 @@ interface MenuCheckboxItem {
 interface MenuLinkItem {
   type: "link";
   label: ReactNode;
+  breadcrumb?: ReactNode[];
   href: string;
   icon?: ReactNode;
   shortcut?: MenuShortcut;
@@ -146,15 +149,53 @@ function pruneSpecs(items: MenuItemSpec[]): MenuItemSpec[] {
   return out;
 }
 
+function keyText(value: ReactNode): string | null {
+  const values = Children.toArray(value);
+  const text = values.length === 1 ? values[0] : null;
+  return text != null && !isValidElement(text) ? String(text) : null;
+}
+
 function specKey(spec: MenuItemSpec, index: number): string | number {
   if ("id" in spec && spec.id) return spec.id;
   if (spec.type === "separator") return `sep-${index}`;
-  if ("label" in spec) {
-    const labels = Children.toArray(spec.label);
-    const label = labels.length === 1 ? labels[0] : null;
-    if (label != null && !isValidElement(label)) return String(label);
+  if (!("label" in spec)) return index;
+
+  const label = keyText(spec.label);
+  if (label == null) return index;
+  if (!("breadcrumb" in spec) || !spec.breadcrumb?.length) return label;
+
+  const breadcrumb = spec.breadcrumb.map(keyText);
+  if (breadcrumb.some((segment) => segment == null)) return index;
+  return [...breadcrumb, label].join(" › ");
+}
+
+function renderItemLabel(
+  spec: MenuActionItem | MenuCheckboxItem | MenuLinkItem,
+  parts: MenuParts,
+) {
+  if (!spec.breadcrumb?.length) {
+    return <parts.ItemLabel>{spec.label}</parts.ItemLabel>;
   }
-  return index;
+
+  const occurrences = new Map<string, number>();
+  return (
+    <parts.ItemLabel>
+      {spec.breadcrumb.map((segment) => {
+        const text = keyText(segment) ?? "segment";
+        const occurrence = occurrences.get(text) ?? 0;
+        occurrences.set(text, occurrence + 1);
+        return (
+          <Fragment key={`${text}-${occurrence}`}>
+            <span data-menu-breadcrumb="">{segment}</span>
+            <span aria-hidden data-menu-breadcrumb-separator="">
+              ›
+            </span>
+          </Fragment>
+        );
+      })}
+      <span data-menu-breadcrumb-current="">{spec.label}</span>
+    </parts.ItemLabel>
+  );
 }
 
 function renderSpec(
@@ -184,6 +225,7 @@ function renderSpec(
   }
 
   if (spec.type === "checkbox") {
+    const indicator = spec.indicator ?? "check";
     return (
       <parts.CheckboxItem
         key={key}
@@ -192,15 +234,15 @@ function renderSpec(
         disabled={spec.disabled}
         closeOnClick={spec.closeOnClick}
       >
-        {spec.indicator !== "check" ? <parts.CheckboxItemIndicator /> : null}
+        {indicator === "checkbox" ? <parts.CheckboxItemIndicator /> : null}
         {spec.icon != null ? (
           <parts.ItemIcon>{spec.icon}</parts.ItemIcon>
         ) : null}
-        <parts.ItemLabel>{spec.label}</parts.ItemLabel>
+        {renderItemLabel(spec, parts)}
         {spec.shortcut != null ? (
           <parts.ItemKeyboard>{spec.shortcut}</parts.ItemKeyboard>
         ) : null}
-        {spec.indicator === "check" ? (
+        {indicator === "check" ? (
           <parts.CheckboxItemIndicator variant="check" />
         ) : null}
       </parts.CheckboxItem>
@@ -226,7 +268,7 @@ function renderSpec(
         {spec.icon != null ? (
           <parts.ItemIcon>{spec.icon}</parts.ItemIcon>
         ) : null}
-        <parts.ItemLabel>{spec.label}</parts.ItemLabel>
+        {renderItemLabel(spec, parts)}
         {spec.shortcut != null ? (
           <parts.ItemKeyboard>{spec.shortcut}</parts.ItemKeyboard>
         ) : null}
@@ -271,7 +313,7 @@ function renderSpec(
       onClick={spec.onClick}
     >
       {spec.icon != null ? <parts.ItemIcon>{spec.icon}</parts.ItemIcon> : null}
-      <parts.ItemLabel>{spec.label}</parts.ItemLabel>
+      {renderItemLabel(spec, parts)}
       {spec.shortcut != null ? (
         <parts.ItemKeyboard>{spec.shortcut}</parts.ItemKeyboard>
       ) : null}

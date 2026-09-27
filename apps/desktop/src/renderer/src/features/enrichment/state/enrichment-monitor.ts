@@ -14,6 +14,8 @@ const store = new Store<EnrichmentStatus>({
 });
 
 export const enrichmentMonitor = {
+  snapshot: () => store.state,
+  subscribe: (listener: () => void) => store.subscribe(listener),
   set(patch: Partial<EnrichmentStatus>): void {
     store.setState((s) => ({ ...s, ...patch }));
   },

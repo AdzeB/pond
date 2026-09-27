@@ -1,5 +1,7 @@
 import { contextBridge, type IpcRendererEvent, ipcRenderer } from "electron";
 import type {
+  PreviewFileAction,
+  PreviewFileActionResult,
   PreviewNeighborRequest,
   PreviewWindowConfigure,
   PreviewWindowState,
@@ -8,9 +10,9 @@ import type {
 const IPC = {
   previewConfigure: "pond:preview-configure",
   previewNeighborRequest: "pond:preview-neighbor-request",
+  previewFileAction: "pond:preview-file-action",
   previewClose: "pond:preview-close",
   previewState: "pond:preview-state",
-  securityState: "pond:security-state",
 } as const;
 
 const api = {
@@ -23,16 +25,14 @@ const api = {
   requestNeighbor(input: PreviewNeighborRequest): Promise<void> {
     return ipcRenderer.invoke(IPC.previewNeighborRequest, input);
   },
+  fileAction(input: PreviewFileAction): Promise<PreviewFileActionResult> {
+    return ipcRenderer.invoke(IPC.previewFileAction, input);
+  },
   onState(callback: (state: PreviewWindowState) => void): () => void {
     const listener = (_event: IpcRendererEvent, state: PreviewWindowState) =>
       callback(state);
     ipcRenderer.on(IPC.previewState, listener);
     return () => ipcRenderer.off(IPC.previewState, listener);
-  },
-  onSecurityStateChanged(callback: () => void): () => void {
-    const listener = () => callback();
-    ipcRenderer.on(IPC.securityState, listener);
-    return () => ipcRenderer.off(IPC.securityState, listener);
   },
 };
 

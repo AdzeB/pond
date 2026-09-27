@@ -51,7 +51,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   white-space: nowrap;
 }
 .description {
@@ -60,7 +60,7 @@
   overflow: hidden;
   -webkit-line-clamp: 2;
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-normal);
+  font-weight: var(--ds-weight-md);
   line-height: 1.5;
   color: var(--ds-gray-10);
 }

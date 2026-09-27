@@ -34,8 +34,6 @@ export function DownloadTable({
   rows,
   paused,
   activities,
-  now,
-  inspectedId,
   onInspect,
   height,
   extra,
@@ -43,8 +41,6 @@ export function DownloadTable({
   rows: DownloadRow[];
   paused: boolean;
   activities: readonly DownloadActivity[];
-  now: number;
-  inspectedId: string | null;
   onInspect: (row: DownloadRow) => void;
   height?: number;
   extra?: ReactNode;
@@ -55,10 +51,8 @@ export function DownloadTable({
         ...row,
         paused,
         activity: downloadActivityForSave(activities, row.saveId),
-        now,
-        inspected: row.saveId === inspectedId,
       })),
-    [rows, paused, activities, now, inspectedId],
+    [rows, paused, activities],
   );
   const rowsById = useMemo(
     () => new Map(rows.map((row) => [row.id, row])),
@@ -76,7 +70,7 @@ export function DownloadTable({
       rowHeight={48}
       height={height}
       selectionCheckboxes={false}
-      selectOnClick={false}
+      selectOnClick
       onRowClick={(row) => {
         const current = rowsById.get(row.id);
         if (current) onInspect(current);
@@ -93,7 +87,8 @@ export function DownloadTable({
         downloadsSelection.set([...other, ...selected]);
       }}
     >
-      <DataTable.Root className={styles.grid}>
+      <DataTable.Hotkeys />
+      <DataTable.Root className={styles.grid} aria-label="Downloads">
         {extra ? <DataTable.ExtraRow>{extra}</DataTable.ExtraRow> : null}
       </DataTable.Root>
       <SelectionSync rowsById={rowsById} />

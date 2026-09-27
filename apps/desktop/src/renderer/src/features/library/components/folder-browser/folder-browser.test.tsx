@@ -28,7 +28,6 @@ const folderRows = [
 describe("folder browser", () => {
   let host: HTMLDivElement;
   let root: Root;
-  let locked = false;
   const query = vi.fn(async (name: string) => {
     if (name === "folders.list") return folderRows;
     if (name === "folders.memberships") return [];
@@ -39,24 +38,15 @@ describe("folder browser", () => {
           id: "child",
           directSaveCount: 2,
           childFolderCount: 1,
-          automaticCoverSaveId: null,
+          previewSaveIds: ["preview-a", "preview-b", "preview-c"],
         },
       ];
     }
     if (name === "saves.getMany") return [];
-    if (name === "folders.security.status")
-      return {
-        locked,
-        protected: locked,
-        hint: locked ? "A clue" : null,
-        lockChildren: true,
-        unlockFolderId: locked ? "child" : null,
-      };
     return null;
   });
 
   beforeEach(async () => {
-    locked = false;
     vi.stubGlobal("pond", {
       query,
       onSyncAction: vi.fn(() => () => {}),
@@ -88,6 +78,9 @@ describe("folder browser", () => {
     expect(host.textContent).toContain("Subfolders (1)");
     expect(host.textContent).toContain("Contents (3)");
     expect(host.textContent).toContain("Save grid");
+    expect(query).toHaveBeenCalledWith("saves.getMany", {
+      ids: ["preview-a", "preview-b", "preview-c"],
+    });
   });
 
   it("opens a child folder with the keyboard-accessible card button", async () => {
@@ -107,13 +100,9 @@ describe("folder browser", () => {
       kind: "folder",
       id: "child",
     });
-    expect(query).toHaveBeenCalledWith("folders.security.status", {
-      folderId: "child",
-    });
   });
 
-  it("checks current protection before every folder entry", async () => {
-    locked = true;
+  it("opens subfolder operations from a real context-menu event", async () => {
     await act(async () => {
       root.render(<FolderBrowser parentId="root" contentCount={0} />);
     });
@@ -125,8 +114,30 @@ describe("folder browser", () => {
       return candidate;
     });
     if (!button) throw new Error("Missing folder card");
-    await act(async () => button.click());
-    expect(document.body.textContent).toContain("Unlock Folder");
-    expect(document.body.textContent).toContain("Hint: A clue");
+    await act(async () => {
+      button.dispatchEvent(
+        new MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          button: 2,
+          clientX: 24,
+          clientY: 24,
+        }),
+      );
+    });
+    for (const label of [
+      "Open Folder",
+      "Quick Access",
+      "Icon",
+      "Color",
+      "Sort By",
+      "Customize Folder",
+    ]) {
+      expect(
+        [...document.querySelectorAll('[role^="menuitem"]')].some(
+          (item) => item.textContent?.trim() === label,
+        ),
+      ).toBe(true);
+    }
   });
 });

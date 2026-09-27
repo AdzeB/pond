@@ -30,6 +30,21 @@ export function SettingsSidebar() {
   const activeSection = pathname.startsWith("/settings/")
     ? pathname.slice("/settings/".length).split("/")[0]
     : null;
+  return (
+    <SettingsSidebarView
+      activeSection={activeSection ?? null}
+      onExit={() => void navigate({ to: "/", search: {} })}
+    />
+  );
+}
+
+export function SettingsSidebarView({
+  activeSection,
+  onExit,
+}: {
+  activeSection: string | null;
+  onExit?: () => void;
+}) {
   const [query, setQuery] = useState("");
   const needle = query.trim();
   const scrollFade = useScrollFade<HTMLDivElement>();
@@ -96,17 +111,16 @@ export function SettingsSidebar() {
       aria-label="Settings"
     >
       <Sidebar.Header className={styles.header}>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => void navigate({ to: "/", search: {} })}
-        >
-          <IconArrowLeftOutline18 aria-hidden />
-          Exit settings
-        </Button>
+        {onExit ? (
+          <Button variant="ghost" size="sm" onClick={onExit}>
+            <IconArrowLeftOutline18 aria-hidden />
+            Exit settings
+          </Button>
+        ) : null}
       </Sidebar.Header>
       <div className={styles.search}>
         <Sidebar.Search
+          aria-label="Search settings"
           value={query}
           onChange={(value) => setQuery(value.target.value)}
           placeholder="Search…"

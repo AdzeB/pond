@@ -36,3 +36,31 @@ it("hides New Chat when the pane only has Open and Close", async () => {
   expect(host.querySelector('[aria-label="Open Agent Page"]')).toBeTruthy();
   expect(host.querySelector('[aria-label="Close Agent"]')).toBeTruthy();
 });
+
+it("renders the chat title as text and puts history in the header actions", async () => {
+  await act(async () =>
+    root.render(
+      <ChatHeader
+        chatId="research"
+        chats={[{ id: "research", title: "Research" }]}
+        disabled={false}
+        onOpenChat={() => {}}
+      />,
+    ),
+  );
+
+  const title = host.querySelector('[data-slot="pane-header-title"]');
+  const history = host.querySelector('[aria-label="Chat History"]');
+
+  expect(title?.textContent).toBe("Research");
+  expect(title?.querySelector("button")).toBeNull();
+  expect(history).toBeTruthy();
+  expect(history?.closest('[data-slot="pane-header-actions"]')).toBeTruthy();
+
+  await act(async () =>
+    history?.dispatchEvent(new MouseEvent("click", { bubbles: true })),
+  );
+  expect(
+    document.body.querySelector('input[aria-label="Chat history"]'),
+  ).toBeTruthy();
+});

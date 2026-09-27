@@ -108,13 +108,6 @@ const MANUAL_ENTRIES = [
     "Restore Backup",
     "Verify and restore a backup",
   ],
-  [
-    "harvesting",
-    "Harvesting",
-    "watched-folder",
-    "Watched Folder",
-    "Import files that appear in one folder on this Mac.",
-  ],
 ] as const;
 
 for (const [

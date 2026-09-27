@@ -2,6 +2,7 @@ import {
   FILE_MENU_AUTO_IMPORT_LABELS,
   FILE_MENU_CREATE_LABELS,
   FILE_MENU_DUPLICATES_LABELS,
+  FILE_MENU_EXPORT_LABELS,
 } from "../file-menu";
 import type { AppMenuContext, AppMenuItem } from "./types";
 
@@ -23,37 +24,62 @@ export function buildFileSection(context: AppMenuContext): AppMenuItem {
       },
       {
         label: FILE_MENU_CREATE_LABELS[2],
+        click: sendMenuAction("library.new-smart-folder-group"),
+      },
+      {
+        label: FILE_MENU_CREATE_LABELS[3],
         accelerator: accelerator("library.new-note"),
         registerAccelerator: false,
         click: sendMenuAction("library.new-note"),
       },
       {
         label: "Capture Screenshot",
-        accelerator: accelerator("library.capture-screenshot"),
-        registerAccelerator: false,
-        click: sendMenuAction("library.capture-screenshot"),
+        submenu: [
+          {
+            label: "Capture Area",
+            accelerator: accelerator("capture.area"),
+            registerAccelerator: false,
+            click: sendMenuAction("capture.area"),
+          },
+          {
+            label: "Capture Window",
+            accelerator: accelerator("capture.window"),
+            registerAccelerator: false,
+            click: sendMenuAction("capture.window"),
+          },
+          {
+            label: "Capture Full Screen",
+            accelerator: accelerator("capture.screen"),
+            registerAccelerator: false,
+            click: sendMenuAction("capture.screen"),
+          },
+        ],
       },
       { type: "separator" },
       {
-        label: FILE_MENU_CREATE_LABELS[3],
+        label: FILE_MENU_CREATE_LABELS[4],
         accelerator: accelerator("library.import-files"),
         registerAccelerator: false,
         click: sendMenuAction("library.import-files"),
       },
       {
-        label: FILE_MENU_CREATE_LABELS[4],
+        label: FILE_MENU_CREATE_LABELS[5],
         accelerator: accelerator("library.import-folders"),
         registerAccelerator: false,
         click: sendMenuAction("library.import-folders"),
       },
       {
-        label: FILE_MENU_CREATE_LABELS[5],
+        label: FILE_MENU_CREATE_LABELS[6],
         accelerator: accelerator("library.import-links"),
         registerAccelerator: false,
         click: sendMenuAction("library.import-links"),
       },
       {
-        label: FILE_MENU_CREATE_LABELS[6],
+        label: FILE_MENU_CREATE_LABELS[7],
+        click: sendMenuAction("library.import-eagle"),
+      },
+      {
+        label: FILE_MENU_CREATE_LABELS[8],
         click: sendMenuAction("library.import-package"),
       },
       {
@@ -62,10 +88,6 @@ export function buildFileSection(context: AppMenuContext): AppMenuItem {
           {
             label: FILE_MENU_AUTO_IMPORT_LABELS[0],
             click: sendMenuAction("library.auto-import-folder"),
-          },
-          {
-            label: FILE_MENU_AUTO_IMPORT_LABELS[1],
-            click: sendMenuAction("library.auto-import-settings"),
           },
         ],
       },
@@ -86,6 +108,34 @@ export function buildFileSection(context: AppMenuContext): AppMenuItem {
           },
         ],
       },
+      {
+        label: "Export",
+        submenu: [
+          {
+            label: FILE_MENU_EXPORT_LABELS[0],
+            accelerator: accelerator("save.export"),
+            registerAccelerator: false,
+            click: sendMenuAction("save.export-files"),
+          },
+          {
+            label: FILE_MENU_EXPORT_LABELS[1],
+            click: sendMenuAction("save.export-converted"),
+          },
+          { type: "separator" },
+          {
+            label: FILE_MENU_EXPORT_LABELS[2],
+            click: sendMenuAction("save.export-eagle-package"),
+          },
+          {
+            label: FILE_MENU_EXPORT_LABELS[3],
+            click: sendMenuAction("save.export-pond-package"),
+          },
+          {
+            label: FILE_MENU_EXPORT_LABELS[4],
+            click: sendMenuAction("save.export-csv"),
+          },
+        ],
+      },
       { type: "separator" },
       {
         label: "Library Window",
@@ -99,7 +149,7 @@ export function buildFileSection(context: AppMenuContext): AppMenuItem {
         click: sendMenuAction("save.open-with-default"),
       },
       {
-        label: "Open Original URL",
+        label: "Open Original in Browser",
         accelerator: accelerator("save.open-url"),
         registerAccelerator: false,
         click: sendMenuAction("save.open-original"),
@@ -118,13 +168,13 @@ export function buildFileSection(context: AppMenuContext): AppMenuItem {
         click: sendMenuAction("save.rename"),
       },
       {
-        label: "Add Tag",
+        label: "Add Tags",
         accelerator: accelerator("save.add-tag"),
         registerAccelerator: false,
         click: sendMenuAction("save.add-tag"),
       },
       {
-        label: "Refresh Details",
+        label: "Refresh from Source",
         accelerator: accelerator("save.refresh"),
         registerAccelerator: false,
         click: sendMenuAction("save.refresh"),

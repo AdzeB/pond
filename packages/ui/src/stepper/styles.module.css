@@ -12,7 +12,7 @@
   --input-radius: var(--ds-radius-lg);
   width: 44px;
   padding: 0;
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   font-variant-numeric: tabular-nums;
   text-align: center;
   background: transparent;

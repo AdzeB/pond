@@ -98,6 +98,15 @@ export async function copyId(id: string): Promise<void> {
   });
 }
 
+export async function copyName(save: Save): Promise<void> {
+  const fallback = save.files[0]?.path.split(/[/\\]/).at(-1) ?? save.id;
+  await writeClipboardText(save.title?.trim() || fallback);
+  notify({
+    id: "copy-name",
+    title: "Name copied to clipboard",
+  });
+}
+
 export function focusPaneTitle(): void {
   let tries = 0;
   const tick = () => {
@@ -210,7 +219,7 @@ export async function refreshSaveMetadata(save: Save): Promise<void> {
   if (!save.url) return;
   notify({
     id: "refresh-details",
-    title: "Refreshing details",
+    title: "Refreshing from source",
   });
   await window.pond.refreshSave(save.id);
 }
@@ -265,6 +274,36 @@ export async function copyPrimaryMedia(
     return;
   }
   await copyFile(save, preferredIndex);
+}
+
+export async function copyThumbnail(save: Save): Promise<void> {
+  const result = OkSchema.parse(
+    await window.pond.query("saves.copyThumbnail", { id: save.id }),
+  );
+  if (!result.ok) return;
+  notify({
+    id: "copy-thumbnail",
+    title: "Thumbnail copied to clipboard",
+  });
+}
+
+export async function copyBase64(
+  save: Save,
+  preferredIndex?: number | null,
+): Promise<void> {
+  const fileIndex = resolveFileIndex(save, preferredIndex);
+  if (fileIndex == null) return;
+  const result = OkSchema.parse(
+    await window.pond.query("saves.copyBase64", {
+      id: save.id,
+      fileIndex,
+    }),
+  );
+  if (!result.ok) return;
+  notify({
+    id: "copy-base64",
+    title: "Base64 copied to clipboard",
+  });
 }
 
 export function copyTags(save: Save): void {

@@ -30,3 +30,11 @@
   gap: 8px;
   justify-content: flex-end;
 }
+
+.scopes {
+  display: flex;
+  gap: 4px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}

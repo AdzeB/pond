@@ -4,29 +4,3 @@
   color: var(--ds-gray-9);
   overflow-wrap: anywhere;
 }
-
-.agent-header {
-  display: flex;
-  flex-shrink: 0;
-  gap: 8px;
-  align-items: center;
-  justify-content: space-between;
-  height: 48px;
-  min-height: 48px;
-  padding: 8px;
-  border-bottom: 1px solid var(--ds-gray-a3);
-}
-
-.header-title {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  min-width: 0;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-medium);
-}
-
-.header-actions {
-  display: flex;
-  gap: 4px;
-}

@@ -26,7 +26,7 @@ export async function runFinalize(saveId: string): Promise<void> {
     const harvestRow = taskRows.find((t) => t.op === "harvest_metadata");
     const harvestExhausted =
       !harvestRow ||
-      harvestRow.status === "failed" ||
+      harvestRow.status === "dead" ||
       harvestRow.attempts >= harvestRow.maxAttempts;
 
     if (!harvestExhausted) {

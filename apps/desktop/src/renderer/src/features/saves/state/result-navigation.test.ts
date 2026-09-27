@@ -14,6 +14,13 @@ it("uses loaded neighbors and resolves the full query only at a page boundary", 
   expect(await resultNavigation.next("a", -1)).toBeNull();
 });
 
+it("reports the current result position against the full result count", () => {
+  resultNavigation.setSource({ ids: ["a", "b"], total: 493 });
+  expect(resultNavigation.indexOf("a")).toBe(0);
+  expect(resultNavigation.indexOf("b")).toBe(1);
+  expect(resultNavigation.total()).toBe(493);
+});
+
 it("loads an unloaded result and retries reveal when virtual geometry arrives", async () => {
   const loadMore = vi.fn(async () => {});
   resultNavigation.setSource({ ids: ["a"], loadMore });

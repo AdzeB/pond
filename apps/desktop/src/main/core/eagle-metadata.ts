@@ -126,14 +126,46 @@ function mapRule(
         }
       : null;
   }
+  if (["cameraMake", "cameraModel", "lensModel"].includes(rule.property)) {
+    const field = z
+      .enum(["cameraMake", "cameraModel", "lensModel"])
+      .parse(rule.property);
+    const value = z.string().trim().min(1).safeParse(rule.value);
+    const method = z
+      .enum(["equal", "contain", "uncontain"])
+      .safeParse(rule.method);
+    if (!value.success || !method.success) return null;
+    return {
+      field,
+      operator: method.data === "equal" ? "eq" : "contains",
+      value: value.data,
+      negate: method.data === "uncontain",
+    };
+  }
   const numbers = z.array(z.number()).safeParse(rule.value);
   if (
-    ["width", "height", "fileSize", "duration"].includes(rule.property) &&
+    [
+      "width",
+      "height",
+      "fileSize",
+      "duration",
+      "focalLength",
+      "aperture",
+      "iso",
+    ].includes(rule.property) &&
     numbers.success &&
     numbers.data[0] != null
   ) {
     const field = z
-      .enum(["width", "height", "fileSize", "duration"])
+      .enum([
+        "width",
+        "height",
+        "fileSize",
+        "duration",
+        "focalLength",
+        "aperture",
+        "iso",
+      ])
       .parse(rule.property);
     const operators = {
       "=": "eq",
@@ -175,21 +207,26 @@ function mapRule(
     };
   }
   if (
-    rule.property === "createTime" &&
+    (rule.property === "createTime" || rule.property === "dateTimeOriginal") &&
     numbers.success &&
     numbers.data[0] != null
   ) {
     const first = numbers.data[0];
     if (rule.method === "within" && Number.isInteger(first) && first > 0)
-      return { field: "savedAt", operator: "gte", value: `-P${first}D` };
+      return {
+        field: rule.property === "dateTimeOriginal" ? "takenAt" : "savedAt",
+        operator: "gte",
+        value: `-P${first}D`,
+      };
     const second = numbers.data[1];
+    const field = rule.property === "dateTimeOriginal" ? "takenAt" : "savedAt";
     if (rule.method === "after")
-      return { field: "savedAt", operator: "gte", value: first };
+      return { field, operator: "gte", value: first };
     if (rule.method === "before")
-      return { field: "savedAt", operator: "lte", value: first + 86400000 };
+      return { field, operator: "lte", value: first + 86400000 };
     if (rule.method === "between" && second != null)
       return {
-        field: "savedAt",
+        field,
         operator: "between",
         value: [first, second + 86400000],
       };

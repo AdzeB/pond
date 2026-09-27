@@ -31,7 +31,7 @@ async function clipboardFilePaths(): Promise<string[]> {
   return normalizeClipboardFilePaths(uriLists.join("\n"), plainText);
 }
 
-async function clipboardImage() {
+export async function readClipboardImage() {
   const items = await clipboard.read();
   for (const type of ["image/png", "image/jpeg"]) {
     const item = items.find((candidate) => candidate.types.includes(type));
@@ -53,7 +53,7 @@ export const savesImportClipboardQueries = {
       return importFiles({ paths: filePaths, tags: [], folderIds: [] });
     }
 
-    const image = await clipboardImage();
+    const image = await readClipboardImage();
     if (image.isEmpty()) {
       return { ok: false, error: "empty_clipboard", ids: [] };
     }

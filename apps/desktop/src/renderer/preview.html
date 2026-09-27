@@ -6,23 +6,19 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
     />
-    <title>Preview</title>
+    <title>Preview — Pond</title>
   </head>
   <body>
-    <main id="preview" aria-label="Image preview">
-      <img id="image" alt="" draggable="false" />
+    <div id="preview-ui"></div>
+    <main id="preview" aria-label="Media preview">
+      <img id="image" alt="" draggable="false" hidden />
+      <!-- biome-ignore lint/a11y/useMediaCaption: This preview plays user-owned video files; the Save file contract does not provide an associated caption track. -->
+      <video id="video" controls playsinline preload="metadata" hidden></video>
+      <div id="media-error" role="alert" hidden>
+        <p>This preview could not be rendered. You can still open or export the original.</p>
+        <button id="retry" type="button">Try Again</button>
+      </div>
     </main>
-    <nav aria-label="Preview Controls">
-      <button id="previous" type="button">Previous</button>
-      <button id="next" type="button">Next</button>
-      <button id="rotate" type="button">Rotate</button>
-      <button id="mirror" type="button">Mirror</button>
-      <button id="grayscale" type="button">Grayscale</button>
-      <button id="size" type="button">Actual Size</button>
-      <button id="opacity" type="button">Opacity</button>
-      <button id="pin" type="button">Keep on Top</button>
-      <button id="close" type="button">Close</button>
-    </nav>
     <script type="module" src="/src/preview.ts"></script>
   </body>
 </html>

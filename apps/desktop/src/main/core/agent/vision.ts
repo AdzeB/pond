@@ -1,7 +1,7 @@
 import { extname } from "node:path";
 import { ASSISTANT_MODELS } from "../../../shared/assistant";
 import { resolveSaveFilePath } from "../../ipc/helpers";
-import { readLibraryMedia } from "../security/library-media-storage";
+import { readLibraryMedia } from "../storage/library-media-storage";
 
 const MIME = new Map<string, string>(
   Object.entries({

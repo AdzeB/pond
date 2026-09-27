@@ -21,7 +21,7 @@ describe("storedFileViewerKind", () => {
       "native-preview",
     ],
     ["scene.glb", "model/gltf-binary", "model"],
-    ["movie.mpeg", "video/mpeg", "native-preview"],
+    ["movie.mpeg", "video/mpeg", null],
     ["photo.heic", "image/heic", null],
     ["movie.mp4", "video/mp4", null],
   ])("routes %s to %s", (path, mimeType, expected) => {

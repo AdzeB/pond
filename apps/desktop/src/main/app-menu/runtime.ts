@@ -12,6 +12,7 @@ import {
   type ShortcutPreferences,
 } from "../../shared/shortcuts";
 import { reconcileLibrary } from "../core/scan";
+import { openSettingsWindow } from "../core/settings-window";
 import { menuAccelerator } from "../lib/menu-accelerator";
 import { libraryRoot } from "../paths";
 import type { AppMenuContext } from "./types";
@@ -36,10 +37,35 @@ function withFocusedWebContents(
 export function createAppMenuContext(deps: AppMenuRuntimeDeps): AppMenuContext {
   const bindings = resolveShortcuts(deps.shortcuts);
   const accelerator = (id: ShortcutId) => menuAccelerator(bindings[id]);
-  const navTo = (path: string) => () => {
+  const navTo = (path: string) => async () => {
+    if (path === "/settings" || path.startsWith("/settings/")) {
+      await openSettingsWindow({
+        section: path.slice("/settings/".length) || undefined,
+      });
+      return;
+    }
+    await deps.openLibraryWindow();
     deps.focusedOrMain()?.webContents.send(IPC.nav, path);
   };
-  const sendMenuAction = (id: MenuActionId) => () => {
+  const sendMenuAction = (id: MenuActionId) => async () => {
+    if (
+      id === "capture.area" ||
+      id === "capture.window" ||
+      id === "capture.screen"
+    ) {
+      const { beginScreenshot } = await import("../core/screenshot-window");
+      const mode =
+        id === "capture.area"
+          ? "area"
+          : id === "capture.window"
+            ? "window"
+            : "screen";
+      await beginScreenshot(mode).catch((error) =>
+        log.warn("[pond menu] capture failed", error),
+      );
+      return;
+    }
+    await deps.openLibraryWindow();
     deps.focusedOrMain()?.webContents.send(IPC.menuAction, id);
   };
 
@@ -74,6 +100,9 @@ export function createAppMenuContext(deps: AppMenuRuntimeDeps): AppMenuContext {
       void reconcileLibrary().catch((error) =>
         log.warn("[pond menu] rescan failed", error),
       );
+    },
+    reloadLibrary: () => {
+      deps.focusedOrMain()?.webContents.reload();
     },
     revealLibrary: () => {
       void shell.openPath(libraryRoot());

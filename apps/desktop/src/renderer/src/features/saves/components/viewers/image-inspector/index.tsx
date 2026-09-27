@@ -1,28 +1,35 @@
 import type { ImageComment, ImageCrop } from "@pond/schema/db";
-import { Dialog } from "@pond/ui";
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type ReactNode,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { CommentEditor } from "@/features/saves/components/annotations/comment-editor";
+import type { ViewerNavigation } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import { useGifPlayer } from "@/features/saves/hooks/use-gif-player";
 import {
   applyInspect,
   cropPatch,
   flipPatch,
-  resetTransformPatch,
   rotatePatch,
 } from "@/features/saves/lib/inspect-actions";
 import { mediaTransformStyle } from "@/features/saves/lib/media-transform";
 import { beginSaveDrag } from "@/features/saves/lib/start-drag";
+import { FIT_POSE, zoomImageAt } from "@/features/saves/lib/viewer-memory";
+import { useInspect } from "@/features/saves/state/inspect";
 import {
-  actualSizeZoom,
-  FIT_POSE,
-  zoomImageAt,
-} from "@/features/saves/lib/viewer-memory";
-import { inspect, useInspect } from "@/features/saves/state/inspect";
-import { resultNavigation } from "@/features/saves/state/result-navigation";
+  resultNavigation,
+  useResultIndex,
+  useResultTotal,
+} from "@/features/saves/state/result-navigation";
 import type { Save } from "@/features/saves/types";
 import { usePrefs } from "@/features/settings/state/prefs";
 import { notify } from "@/shared/lib/toast";
 import { ImageControls } from "./controls";
+import { GifContextMenu } from "./gif-menu";
 import { createImageGestures, type ImageDrag } from "./image-gestures";
 import { Navigator } from "./navigator";
 import { ImageOverlay } from "./overlay";
@@ -46,6 +53,9 @@ interface ImageInspectorProps {
   onRatio: (ratio: number) => void;
   onError: () => void;
   onNavigate?: (id: string) => void;
+  edits?: "full" | "none";
+  endActions?: ReactNode;
+  slideNavigation?: ViewerNavigation;
 }
 
 export function ImageInspector({
@@ -56,17 +66,21 @@ export function ImageInspector({
   onRatio,
   onError,
   onNavigate,
+  edits = "full",
+  endActions,
+  slideNavigation,
 }: ImageInspectorProps) {
   const [prefs] = usePrefs("viewer");
+  const itemIndex = useResultIndex(save.id);
+  const itemTotal = useResultTotal();
+  const instructionsId = useId();
   const { grayscale, showNavigator, commentRequest } = useInspect();
   const file = save.files[fileIndex];
   const isGif =
     file?.mimeType === "image/gif" ||
     /\.gif(?:$|[?#])/i.test(file?.path ?? src);
   const [mode, setMode] = useState<InspectorMode>("view");
-  const [transformMode, setTransformMode] = useState<"preview" | "file">(
-    "preview",
-  );
+  const [gifFramesOpen, setGifFramesOpen] = useState(false);
   const [editingComment, setEditingComment] = useState<{
     comment: ImageComment;
     creating: boolean;
@@ -76,6 +90,7 @@ export function ImageInspector({
   const [busy, setBusy] = useState(false);
   const drag = useRef<ImageDrag | null>(null);
   const lastNavigate = useRef(0);
+  const lastCommentRequest = useRef(0);
   const gestureMoved = useRef(false);
   const pending = useRef(false);
   const gif = useGifPlayer(
@@ -84,7 +99,6 @@ export function ImageInspector({
     active && mode === "view",
     prefs.gifAutoplay !== false,
   );
-
   const navigate = (delta: number) => {
     if (!onNavigate || Date.now() - lastNavigate.current < 200) return;
     lastNavigate.current = Date.now();
@@ -137,47 +151,8 @@ export function ImageInspector({
     setEditingComment(null);
     if (next === "crop") viewport.setPosition(() => FIT_POSE);
   };
-  const applyToFile = (
-    transform: {
-      rotate?: 0 | 90 | 180 | 270;
-      flipX?: boolean;
-      flipY?: boolean;
-      crop?: ImageCrop | null;
-    },
-    onApplied?: () => void,
-  ) => {
-    Dialog.confirm({
-      title: "Apply Transform to File",
-      description:
-        "Pond replaces the original image. You can use Undo to restore it.",
-      confirmLabel: "Apply to File",
-      onConfirm: () =>
-        run(async () => {
-          await window.pond.query("saves.applyImageTransform", {
-            id: save.id,
-            fileIndex,
-            ...transform,
-          });
-          onApplied?.();
-        }),
-    });
-  };
-  const openWindow = (kind: "presentation" | "detached") => {
-    void window.pond
-      .openPreviewWindow({ saveId: save.id, fileIndex, kind })
-      .catch((error) =>
-        notify({
-          id: "preview-window",
-          title: "Couldn’t open this image",
-          description: error instanceof Error ? error.message : "Try again.",
-        }),
-      );
-  };
   const actualSize = () => {
-    const one = actualSizeZoom(
-      viewport.image.current?.naturalWidth ?? 0,
-      viewport.frame.current?.clientWidth ?? 0,
-    );
+    const one = viewport.oneToOne;
     if (one)
       viewport.setPosition(() => ({
         zoom: Math.min(32, one),
@@ -193,34 +168,59 @@ export function ImageInspector({
     viewport.setPosition((previous) =>
       zoomImageAt(previous, previous.zoom * 1.25, { x: 0, y: 0 }),
     );
+  const setZoomRatio = (ratio: number) => {
+    const one = viewport.oneToOne;
+    if (!one) return;
+    viewport.setPosition((previous) =>
+      zoomImageAt(previous, Math.min(32, ratio * one), { x: 0, y: 0 }),
+    );
+  };
+  const setGifThumbnail = () => {
+    void window.pond
+      .query("saves.setGifThumbnail", {
+        id: save.id,
+        src,
+        frameIndex: gif.frameIndex,
+      })
+      .then((result) => {
+        if (!result.ok)
+          notify({
+            id: "gif-thumb",
+            title: "Couldn't set this GIF frame as the thumbnail.",
+          });
+      });
+  };
 
   useEffect(() => {
-    if (!active || commentRequest === 0) return;
-    setMode("comment");
-    setDraft(null);
-    setEditingComment(null);
-  }, [active, commentRequest]);
-  useEffect(() => {
-    if (!active || mode !== "comment" || editingComment) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      setMode("view");
+    if (
+      !active ||
+      !commentRequest ||
+      commentRequest.saveId !== save.id ||
+      commentRequest.fileIndex !== fileIndex ||
+      commentRequest.revision <= lastCommentRequest.current
+    )
+      return;
+    lastCommentRequest.current = commentRequest.revision;
+    if (commentRequest.commentId === null) {
+      setMode("comment");
       setDraft(null);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [active, editingComment, mode]);
+      setEditingComment(null);
+      return;
+    }
+    const comment = (save.comments ?? []).find(
+      (candidate) =>
+        candidate.id === commentRequest.commentId &&
+        candidate.resolvedAt == null,
+    );
+    if (!comment) return;
+    setMode("view");
+    setPinEl(null);
+    setDraft({ x: comment.x, y: comment.y, w: comment.w, h: comment.h });
+    setEditingComment({ comment, creating: false });
+  }, [active, commentRequest, fileIndex, save.comments, save.id]);
 
   const applyCrop = () => {
     if (!draft) return;
-    if (transformMode === "file") {
-      applyToFile({ crop: draft }, () => {
-        setDraft(null);
-        setMode("view");
-      });
-      return;
-    }
     void run(async () => {
       await applyInspect(save.id, cropPatch(draft), "inspect:crop");
       setDraft(null);
@@ -228,7 +228,7 @@ export function ImageInspector({
     });
   };
   useCropKeyboard({
-    active,
+    active: active && edits === "full",
     draft,
     frame: viewport.frame,
     mode,
@@ -254,7 +254,8 @@ export function ImageInspector({
   };
 
   const placedComments = (save.comments ?? []).filter(
-    (comment) => (comment.fileIndex ?? 0) === fileIndex,
+    (comment) =>
+      comment.resolvedAt == null && (comment.fileIndex ?? 0) === fileIndex,
   );
   const overlayComments: ImageComment[] = (() => {
     if (mode !== "comment" || !draft) return placedComments;
@@ -285,6 +286,23 @@ export function ImageInspector({
     "--marker-flip-x": save.flipX ? -1 : 1,
     "--marker-flip-y": save.flipY ? -1 : 1,
   } satisfies AnnotationStyle;
+  const createComment = (region: ImageCrop) => {
+    setDraft(region);
+    setEditingComment({
+      creating: true,
+      comment: {
+        id: crypto.randomUUID(),
+        ...region,
+        text: "",
+        fileIndex,
+        createdAt: Date.now(),
+      },
+    });
+  };
+  useEffect(() => {
+    if (active && mode !== "view" && !editingComment)
+      viewport.frame.current?.focus();
+  }, [active, mode, editingComment, viewport.frame]);
   const gestures = createImageGestures({
     active,
     draft,
@@ -292,19 +310,7 @@ export function ImageInspector({
     editingComment: editingComment !== null,
     gestureMoved,
     mode,
-    onComment: (region) => {
-      setDraft(region);
-      setEditingComment({
-        creating: true,
-        comment: {
-          id: crypto.randomUUID(),
-          ...region,
-          text: "",
-          fileIndex,
-          createdAt: Date.now(),
-        },
-      });
-    },
+    onComment: createComment,
     onNavigate: navigate,
     pointFromClient: viewport.pointFromClient,
     poseZoom: viewport.pose.zoom,
@@ -319,11 +325,88 @@ export function ImageInspector({
       data-active={active || undefined}
       data-gif-player={gif.ready || undefined}
     >
+      <span id={instructionsId} className={styles.instructions}>
+        {mode === "comment"
+          ? "Comment placement. Arrow keys move, Alt and arrow keys resize, Shift increases the step. Enter adds a comment. Escape cancels."
+          : mode === "crop"
+            ? "Crop. Arrow keys move the selection, Control or Command and arrow keys resize, Shift increases the step. Enter applies the crop. Escape cancels."
+            : "Arrow keys pan. Plus and minus zoom."}
+      </span>
       <div
         ref={viewport.frame}
         className={styles.frame}
         role="application"
         aria-label="Image"
+        aria-describedby={instructionsId}
+        tabIndex={active ? 0 : -1}
+        onKeyDown={(event) => {
+          if (
+            event.target !== event.currentTarget ||
+            event.nativeEvent.isComposing
+          )
+            return;
+          const direction = {
+            ArrowLeft: [-1, 0],
+            ArrowRight: [1, 0],
+            ArrowUp: [0, -1],
+            ArrowDown: [0, 1],
+          }[event.key];
+          if (mode === "comment" && !editingComment) {
+            if (event.key === "Escape") {
+              event.preventDefault();
+              event.stopPropagation();
+              setMode("view");
+              setDraft(null);
+            } else if (event.key === "Enter") {
+              event.preventDefault();
+              event.stopPropagation();
+              createComment(draft ?? { x: 0.49, y: 0.49, w: 0.02, h: 0.02 });
+            } else if (direction) {
+              event.preventDefault();
+              event.stopPropagation();
+              const step = event.shiftKey ? 0.1 : 0.01;
+              setDraft((previous) => {
+                const region = previous ?? {
+                  x: 0.49,
+                  y: 0.49,
+                  w: 0.02,
+                  h: 0.02,
+                };
+                const dx = (direction[0] ?? 0) * step;
+                const dy = (direction[1] ?? 0) * step;
+                return event.altKey
+                  ? {
+                      ...region,
+                      w: Math.max(0.01, Math.min(1 - region.x, region.w + dx)),
+                      h: Math.max(0.01, Math.min(1 - region.y, region.h + dy)),
+                    }
+                  : {
+                      ...region,
+                      x: Math.max(0, Math.min(1 - region.w, region.x + dx)),
+                      y: Math.max(0, Math.min(1 - region.h, region.y + dy)),
+                    };
+              });
+            }
+          } else if (
+            mode === "view" &&
+            (direction || ["+", "=", "-"].includes(event.key))
+          ) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (direction)
+              viewport.setPosition((previous) => ({
+                ...previous,
+                x:
+                  previous.x -
+                  (direction[0] ?? 0) * (event.shiftKey ? 100 : 20),
+                y:
+                  previous.y -
+                  (direction[1] ?? 0) * (event.shiftKey ? 100 : 20),
+              }));
+            else if (event.key === "-") zoomOut();
+            else zoomIn();
+          }
+        }}
         data-background={prefs.transparentBackground ?? "none"}
         data-commenting={mode === "comment" || undefined}
         {...gestures}
@@ -352,8 +435,9 @@ export function ImageInspector({
               ref={(element) => {
                 viewport.image.current = element;
                 if (element?.complete && element.naturalWidth)
-                  viewport.reportRatio(
-                    element.naturalWidth / element.naturalHeight,
+                  viewport.reportImage(
+                    element.naturalWidth,
+                    element.naturalHeight,
                   );
               }}
               src={src}
@@ -367,21 +451,30 @@ export function ImageInspector({
                 beginSaveDrag(save.id, event.dataTransfer);
               }}
               onLoad={(event) =>
-                viewport.reportRatio(
-                  event.currentTarget.naturalWidth /
-                    event.currentTarget.naturalHeight,
+                viewport.reportImage(
+                  event.currentTarget.naturalWidth,
+                  event.currentTarget.naturalHeight,
                 )
               }
               onError={onError}
             />
             {isGif ? (
-              <canvas
-                ref={gif.canvas}
-                className={styles.image}
-                data-frame={gif.frameIndex}
-                style={{ ...imageStyle, display: gif.ready ? "block" : "none" }}
-                aria-label={`${save.title || "GIF"}, frame ${gif.frameIndex + 1}`}
-              />
+              <GifContextMenu
+                hasLoop={gif.loop !== null}
+                onResetLoop={gif.resetLoop}
+                onSetThumbnail={setGifThumbnail}
+              >
+                <canvas
+                  ref={gif.canvas}
+                  className={styles.image}
+                  data-frame={gif.frameIndex}
+                  style={{
+                    ...imageStyle,
+                    display: gif.ready ? "block" : "none",
+                  }}
+                  aria-label={`${save.title || "GIF"}, frame ${gif.frameIndex + 1}`}
+                />
+              </GifContextMenu>
             ) : null}
             <ImageOverlay
               active={active}
@@ -407,6 +500,7 @@ export function ImageInspector({
           <Navigator
             src={src}
             pose={viewport.pose}
+            bounds={viewport.bounds}
             stage={{
               width: viewport.frame.current?.clientWidth ?? 1,
               height: viewport.frame.current?.clientHeight ?? 1,
@@ -433,46 +527,44 @@ export function ImageInspector({
         active={active}
         busy={busy}
         canCrop={!!draft && draft.w > 0 && draft.h > 0}
-        grayscale={grayscale}
         mode={mode}
-        transformMode={transformMode}
+        edits={edits}
+        endActions={endActions}
+        slideNavigation={slideNavigation}
+        itemIndex={itemIndex}
+        itemTotal={itemTotal}
+        isGif={isGif}
+        gifFramesOpen={gifFramesOpen}
         onActualSize={actualSize}
         onApplyCrop={applyCrop}
         onCancelCrop={() => {
           setMode("view");
           setDraft(null);
         }}
-        onDetach={() => openWindow("detached")}
         onFit={() => viewport.setPosition(() => FIT_POSE)}
         onFlip={() =>
-          transformMode === "file"
-            ? applyToFile({ flipX: true })
-            : void run(() =>
-                applyInspect(save.id, flipPatch(save, "x"), "inspect:flip"),
-              )
-        }
-        onReset={() =>
           void run(() =>
-            applyInspect(save.id, resetTransformPatch(), "inspect:reset"),
+            applyInspect(save.id, flipPatch(save, "x"), "inspect:flip"),
           )
         }
-        onPresent={() => openWindow("presentation")}
         onRotate={() =>
-          transformMode === "file"
-            ? applyToFile({ rotate: 90 })
-            : void run(() =>
-                applyInspect(save.id, rotatePatch(save, 90), "inspect:rotate"),
-              )
+          void run(() =>
+            applyInspect(save.id, rotatePatch(save, 90), "inspect:rotate"),
+          )
         }
         onSaveCrop={saveCrop}
         onToggleComment={() => toggleMode("comment")}
         onToggleCrop={() => toggleMode("crop")}
-        onToggleGrayscale={() => inspect.toggleGrayscale()}
-        onTransformModeChange={setTransformMode}
+        onToggleGifFrames={() => setGifFramesOpen((value) => !value)}
         onZoomIn={zoomIn}
         onZoomOut={zoomOut}
+        onZoomRatio={setZoomRatio}
       />
-      <ImageControls.Gif active={active} gif={gif} mode={mode} />
+      <ImageControls.Gif
+        active={active && gifFramesOpen}
+        gif={gif}
+        mode={mode}
+      />
     </div>
   );
 }

@@ -3,6 +3,29 @@
   padding-right: 12px;
 }
 
+.destination-sortable {
+  position: relative;
+  width: 100%;
+  touch-action: none;
+}
+
+.destination-sortable[data-dragging] {
+  z-index: 2;
+  opacity: 0;
+}
+
+.destination-overlay {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.destination-overlay > button,
+.folder-overlay > button {
+  height: 100%;
+}
+
 .workspace {
   gap: 4px;
   height: 44px;
@@ -31,6 +54,7 @@
   width: 100%;
   padding-inline-start: calc(var(--folder-depth, 0) * var(--folder-indent));
   overflow: visible;
+  touch-action: none;
 
   &[data-drop="before"]::before,
   &[data-drop="after"]::after {
@@ -62,9 +86,22 @@
     background: var(--ds-gray-a4);
   }
 
-  &[data-dragging] {
-    opacity: 0.4;
+  &[data-save-drop] .row {
+    color: var(--ds-accent-12);
+    background: var(--ds-accent-a3);
+    box-shadow: inset 0 0 0 1px var(--ds-accent-a7);
   }
+
+  &[data-dragging] {
+    opacity: 0;
+  }
+}
+
+.folder-overlay {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.55;
 }
 
 .editor {
@@ -94,7 +131,28 @@
   border-radius: var(--ds-radius-sm);
 }
 
+.count-dot {
+  display: block;
+  width: 6px;
+  height: 6px;
+  background: currentcolor;
+  border-radius: var(--ds-radius-full);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+}
+
 .field {
+  padding-inline: 0;
   font-size: var(--ds-text-md);
   line-height: 1;
 }
@@ -129,11 +187,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .destination-sortable,
   .disclosure svg {
     transition: none;
   }
 }
 
+:global([data-reduce-motion]) .destination-sortable,
 :global([data-reduce-motion]) .disclosure svg {
   transition: none;
 }

@@ -1,4 +1,5 @@
-import { shell } from "electron";
+import { writeFile } from "node:fs/promises";
+import { app, BrowserWindow, dialog, session, shell } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import type { QueryResult } from "../../../shared/query-contracts";
@@ -10,7 +11,7 @@ import {
   purgeLibrarySubdir,
   verifyLibraryIntegrity,
 } from "../../core/library-ops";
-import { setPrefs } from "../../core/prefs";
+import { getPrefs, invalidatePrefs, setPrefs } from "../../core/prefs";
 import { reconcileLibrary } from "../../core/scan";
 import { closeDb } from "../../db";
 import { libraryRoot } from "../../paths";
@@ -55,6 +56,19 @@ export const libraryMaintenanceQueries = {
     const err = await shell.openPath(libraryRoot());
     if (err) return { ok: false as const, reason: err };
     return { ok: true as const };
+  },
+
+  async "library.exportDebugReport"() {
+    const picked = await dialog.showSaveDialog({
+      title: "Export Debug Report",
+      defaultPath: `Pond Debug Report ${new Date().toISOString().slice(0, 10)}.zip`,
+      filters: [{ name: "ZIP Archive", extensions: ["zip"] }],
+    });
+    if (picked.canceled || !picked.filePath)
+      return { ok: false as const, canceled: true as const };
+    const { createDebugReport } = await import("../../core/debug-report");
+    await writeFile(picked.filePath, await createDebugReport());
+    return { ok: true as const, path: picked.filePath };
   },
 
   async "library.verifyIntegrity"() {
@@ -170,5 +184,22 @@ export const libraryMaintenanceQueries = {
         reason: err instanceof Error ? err.message : "internal_error",
       };
     }
+  },
+
+  async "system.applyPrefs"() {
+    invalidatePrefs();
+    const prefs = (await getPrefs()).system;
+    await session.defaultSession.setProxy(
+      prefs.proxyMode === "manual" && prefs.proxyUrl
+        ? { mode: "fixed_servers", proxyRules: prefs.proxyUrl }
+        : { mode: prefs.proxyMode === "direct" ? "direct" : "system" },
+    );
+    if (process.platform === "darwin") {
+      for (const window of BrowserWindow.getAllWindows()) {
+        window.setVibrancy(prefs.vibrancy ? "sidebar" : null);
+      }
+      if (prefs.dockVisibility === "always") await app.dock?.show();
+    }
+    return { ok: true as const, restartRequired: true };
   },
 } satisfies QueryHandlerMap;

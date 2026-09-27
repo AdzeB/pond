@@ -6,7 +6,9 @@ import {
   IconFoldersOutline18,
   IconPencilOutline18,
   IconPinOutline18,
+  IconRenameOutline18,
   IconTagPlusOutline18,
+  IconTagsOutline18,
 } from "@pond/icons/outline/18";
 import { Dialog, type MenuItemSpec } from "@pond/ui";
 import {
@@ -14,6 +16,10 @@ import {
   openTagPicker,
   pasteTags,
 } from "@/features/saves/lib/actions";
+import {
+  assignSavesToFolder,
+  notifyUndoableFolderChange,
+} from "@/features/saves/lib/folder-actions";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import {
   addTagsToSelection,
@@ -28,10 +34,12 @@ import type { SaveMenuContext } from "./types";
 function addTagItems(ids: readonly string[]): MenuItemSpec[] {
   const items: MenuItemSpec[] = peekTags().map((tag) => ({
     label: tag.name,
+    icon: glyph(IconTagsOutline18),
     onClick: () => void addTagsToSelection(ids, [tag.name]),
   }));
   items.push({
     label: "New Tag",
+    icon: glyph(IconTagPlusOutline18),
     onClick: () => {
       Dialog.prompt({
         title: "New Tag",
@@ -54,7 +62,7 @@ function buildAddItems(ids: string[], batch: boolean): MenuItemSpec[] {
 
   return [
     {
-      label: "Add Tag",
+      label: "Add Tags",
       icon: glyph(IconTagPlusOutline18),
       shortcut: shortcutGlyphs("save.add-tag"),
       hidden: batch,
@@ -62,32 +70,60 @@ function buildAddItems(ids: string[], batch: boolean): MenuItemSpec[] {
     },
     {
       type: "submenu",
-      label: "Add Tag",
+      label: "Add Tags",
       icon: glyph(IconTagPlusOutline18),
       hidden: !batch,
       items: addTagItems(ids),
     },
     {
-      label: "Add to Last Used Folder",
+      label: lastFolder
+        ? `Add to "${lastFolder.name}"`
+        : "Add to Last Used Folder",
       icon: glyph(IconFolderPlusOutline18),
       hidden: !lastFolder,
+      shortcut: shortcutGlyphs("save.add-to-last-folder"),
       onClick: () => {
-        if (!lastFolder) return;
-        void window.pond
-          .query("folders.addSaves", {
-            folderId: lastFolder.id,
-            saveIds: ids,
-          })
-          .then(() => {
-            saveLibraryBridge.rememberFolderDestinations([lastFolder.id]);
-            void saveLibraryBridge.refreshFolders();
-          });
+        if (lastFolder) void assignSavesToFolder(ids, lastFolder);
       },
     },
     {
       label: "Add to Folders",
       icon: glyph(IconFoldersOutline18),
       onClick: () => saveLibraryBridge.openFolderPicker(ids),
+    },
+    {
+      label: `New Folder with ${ids.length} Saves`,
+      icon: glyph(IconFolderPlusOutline18),
+      hidden: !batch,
+      onClick: () => {
+        Dialog.prompt({
+          title: `New Folder with ${ids.length} Saves`,
+          confirmLabel: "Create Folder",
+          placeholder: "Folder name",
+          onConfirm: async (name) => {
+            try {
+              const folder = await window.pond.query(
+                "folders.createWithSaves",
+                { name, parentId: null, saveIds: ids },
+              );
+              saveLibraryBridge.rememberFolderDestinations([folder.id]);
+              await saveLibraryBridge.refreshFolders();
+              notifyUndoableFolderChange(
+                "create-folder-with-saves",
+                `Created "${folder.name}" with ${ids.length} saves`,
+              );
+            } catch (error) {
+              notify({
+                id: "create-folder-with-saves",
+                title: "Couldn't create folder",
+                description:
+                  error instanceof Error ? error.message : "Try again.",
+              });
+              throw error;
+            }
+          },
+        });
+      },
     },
     {
       label: "Add to Other Library",
@@ -105,18 +141,25 @@ function buildAddItems(ids: string[], batch: boolean): MenuItemSpec[] {
             else if (result.error !== "canceled")
               notify({
                 id: "library-copy",
-                title: result.error || "Couldn't copy Saves.",
+                title: result.error || "Couldn't copy saves",
               });
           })
           .catch(() =>
-            notify({ id: "library-copy", title: "Couldn't copy Saves." }),
+            notify({ id: "library-copy", title: "Couldn't copy saves" }),
           );
       },
     },
   ];
 }
 
-export function buildOrganizeItems(context: SaveMenuContext): MenuItemSpec[] {
+export interface OrganizeMenuItems {
+  destinations: MenuItemSpec[];
+  editing: MenuItemSpec[];
+}
+
+export function buildOrganizeItems(
+  context: SaveMenuContext,
+): OrganizeMenuItems {
   const {
     save,
     ids,
@@ -129,55 +172,57 @@ export function buildOrganizeItems(context: SaveMenuContext): MenuItemSpec[] {
     resolvedPinned,
   } = context;
 
-  return [
-    {
-      label: "Rename",
-      icon: glyph(IconPencilOutline18),
-      hidden: !context.canRename,
-      shortcut: shortcutGlyphs("save.rename"),
-      onClick: () => focusPaneTitle(),
-    },
-    {
-      label: "Rename Saves",
-      icon: glyph(IconPencilOutline18),
-      hidden: !batch,
-      onClick: () => saveLibraryBridge.openRename(ids),
-    },
-    ...buildAddItems(ids, batch),
-    {
-      label: "Paste Tags",
-      icon: glyph(IconClipboardOutline18),
-      disabled: clipboardEmpty,
-      shortcut: shortcutGlyphs("save.paste-tags"),
-      onClick: () => {
-        if (batch) void pasteTagsForSelection(ids);
-        else void pasteTags(save);
+  return {
+    destinations: buildAddItems(ids, batch),
+    editing: [
+      {
+        label: "Rename",
+        icon: glyph(IconPencilOutline18),
+        hidden: !context.canRename,
+        shortcut: shortcutGlyphs("save.rename"),
+        onClick: () => focusPaneTitle(),
       },
-    },
-    {
-      label: isPinned ? "Unpin from Top" : "Pin to Top",
-      icon: glyph(IconPinOutline18),
-      hidden: !inFolder || batch,
-      onClick: () => {
-        if (!resolvedFolderId) return;
-        const next = isPinned
-          ? resolvedPinned.filter((id) => id !== save.id)
-          : [save.id, ...resolvedPinned.filter((id) => id !== save.id)];
-        void saveLibraryBridge.saveFolderPresentation(resolvedFolderId, {
-          pinnedIds: [...next],
-        });
+      {
+        label: "Rename Saves",
+        icon: glyph(IconRenameOutline18),
+        hidden: !batch,
+        onClick: () => saveLibraryBridge.openRename(ids),
       },
-    },
-    {
-      label: isCover ? "Remove Folder Cover" : "Set as Folder Cover",
-      icon: glyph(IconCoverOutline18),
-      hidden: !inFolder || batch,
-      onClick: () => {
-        if (!resolvedFolderId) return;
-        void saveLibraryBridge.saveFolderPresentation(resolvedFolderId, {
-          coverSaveId: isCover ? null : save.id,
-        });
+      {
+        label: "Paste Tags",
+        icon: glyph(IconClipboardOutline18),
+        disabled: clipboardEmpty,
+        shortcut: shortcutGlyphs("save.paste-tags"),
+        onClick: () => {
+          if (batch) void pasteTagsForSelection(ids);
+          else void pasteTags(save);
+        },
       },
-    },
-  ];
+      {
+        label: isPinned ? "Unpin from Top" : "Pin to Top",
+        icon: glyph(IconPinOutline18),
+        hidden: !inFolder || batch,
+        onClick: () => {
+          if (!resolvedFolderId) return;
+          const next = isPinned
+            ? resolvedPinned.filter((id) => id !== save.id)
+            : [save.id, ...resolvedPinned.filter((id) => id !== save.id)];
+          void saveLibraryBridge.saveFolderPresentation(resolvedFolderId, {
+            pinnedIds: [...next],
+          });
+        },
+      },
+      {
+        label: isCover ? "Remove Folder Cover" : "Set as Folder Cover",
+        icon: glyph(IconCoverOutline18),
+        hidden: !inFolder || batch,
+        onClick: () => {
+          if (!resolvedFolderId) return;
+          void saveLibraryBridge.saveFolderPresentation(resolvedFolderId, {
+            coverSaveId: isCover ? null : save.id,
+          });
+        },
+      },
+    ],
+  };
 }

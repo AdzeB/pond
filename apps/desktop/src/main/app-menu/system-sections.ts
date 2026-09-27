@@ -32,11 +32,6 @@ export function buildApplicationSections(
         },
         { type: "separator" },
         settingsItem,
-        {
-          label: context.translate("main.lock"),
-          accelerator: context.accelerator("app.lock"),
-          click: context.sendMenuAction("security.lock"),
-        },
         { type: "separator" },
         { role: "services" },
         { type: "separator" },
@@ -56,9 +51,11 @@ export function buildWindowSection(context: AppMenuContext): AppMenuItem {
     submenu: [
       { role: "minimize" },
       { role: "zoom" },
+      { role: "close" },
+      { role: "togglefullscreen" },
       ...(context.isMac
         ? ([{ type: "separator" }, { role: "front" }] satisfies AppMenuItem[])
-        : ([{ role: "close" }] satisfies AppMenuItem[])),
+        : []),
     ],
   };
 }
@@ -84,12 +81,31 @@ export function buildHelpSection(context: AppMenuContext): AppMenuItem {
     role: "help",
     submenu: [
       {
-        label: context.translate("main.twitter"),
-        click: context.openExternalUrl("https://x.com/raphaelsalaja"),
+        label: "Help Center",
+        click: context.openExternalUrl(
+          "https://github.com/raphaelsalaja/pond#readme",
+        ),
       },
       {
-        label: context.translate("main.github"),
-        click: context.openExternalUrl("https://github.com/raphaelsalaja"),
+        label: "Keyboard Shortcuts",
+        click: context.sendMenuAction("help.shortcuts"),
+      },
+      {
+        label: "Export Debug Report",
+        click: context.sendMenuAction("help.export-debug-report"),
+      },
+      { type: "separator" },
+      {
+        label: "Report an Issue",
+        click: context.openExternalUrl(
+          "https://github.com/raphaelsalaja/pond/issues",
+        ),
+      },
+      {
+        label: "Release Notes",
+        click: context.openExternalUrl(
+          "https://github.com/raphaelsalaja/pond/releases",
+        ),
       },
       {
         label: context.translate("main.email"),

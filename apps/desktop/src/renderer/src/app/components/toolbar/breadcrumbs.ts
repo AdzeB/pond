@@ -37,6 +37,8 @@ function destinationCrumbs(base: string): Breadcrumb[] | null {
       return [{ label: "Tags", path: base }];
     case "/untagged":
       return [{ label: "Untagged", path: base }];
+    case "/recents":
+      return [{ label: "Recently Used", path: base, nav: { kind: "recents" } }];
     case "/downloads":
       return [{ label: "Downloads", path: base, nav: { kind: "downloads" } }];
     case "/trash":
@@ -113,6 +115,8 @@ export function buildBreadcrumbs({
     crumbs.push({ label: "Uncategorized", path: "/", nav });
   } else if (base === "/" && nav.kind === "tag") {
     crumbs.push({ label: nav.name, path: "/", nav });
+  } else if (base === "/" && nav.kind === "random") {
+    crumbs[0] = { label: "Random", path: "/", nav };
   }
   if (searchCrumb) crumbs.push(searchCrumb);
   if (isSave) crumbs.push({ label: saveLabel || "Save", path: pathname });

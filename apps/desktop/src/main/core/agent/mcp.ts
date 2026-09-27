@@ -4,12 +4,6 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import log from "electron-log/main.js";
 import { z } from "zod";
 import {
-  ActionDefinitionSchema,
-  type ActionQueryResults,
-  ActionRequestSchema,
-  ActionRunSchema,
-} from "../../../shared/action-contracts";
-import {
   ConversionApiRequestSchema,
   ConversionPresetSchema,
   type ConversionQueryResults,
@@ -27,16 +21,7 @@ import {
   conversionPresets,
   saveConversionPreset,
 } from "../conversion-jobs";
-import {
-  deleteAction,
-  prepareAction,
-  readActions,
-  runAction,
-  saveAction,
-} from "../library-actions";
 import { queryLibraryPage } from "../library-query";
-import { assertLibraryUnlocked } from "../security/app-lock-runtime";
-import { lockedFolderIds } from "../security/folder-passwords";
 import type { ToolResult } from "./complete";
 import {
   MCP_ACCESS_OFF,
@@ -62,7 +47,6 @@ function textResult(
   value:
     | ToolResult
     | LibraryQueryPage
-    | ActionQueryResults[keyof ActionQueryResults]
     | ConversionQueryResults[keyof ConversionQueryResults]
     | undefined,
 ) {
@@ -78,7 +62,6 @@ function withAccess<Args extends unknown[]>(
   ) => ReturnType<typeof textResult> | Promise<ReturnType<typeof textResult>>,
 ) {
   return async (...args: Args) => {
-    assertLibraryUnlocked();
     if (!(await mcpToolAllowed(group))) {
       return textResult({ error: MCP_ACCESS_OFF[group] });
     }
@@ -107,9 +90,6 @@ export async function startPondMcp(): Promise<void> {
           await getDb(),
           basename(resolvePaths().indexDb, ".db"),
           request,
-          [],
-          [],
-          [...(await lockedFolderIds())],
         ),
       ),
     ),
@@ -173,63 +153,6 @@ export async function startPondMcp(): Promise<void> {
     },
     withAccess("open", async (args) =>
       textResult(await applyFilter(applyFilterInput.parse(args))),
-    ),
-  );
-
-  server.registerTool(
-    "list_actions",
-    {
-      description:
-        "List reusable deterministic actions stored in this Pond library.",
-      inputSchema: z.object({}),
-      annotations: { readOnlyHint: true },
-    },
-    withAccess("actions", async () => textResult(readActions())),
-  );
-  server.registerTool(
-    "save_action",
-    {
-      description:
-        "Create or update a reusable action definition. Does not modify saves.",
-      inputSchema: z.object({ definition: ActionDefinitionSchema }),
-    },
-    withAccess("actions", async ({ definition }) =>
-      textResult(saveAction(definition)),
-    ),
-  );
-  server.registerTool(
-    "delete_action",
-    {
-      description:
-        "Delete a reusable action definition. Does not modify saves.",
-      inputSchema: z.object({ id: z.string().min(1) }),
-    },
-    withAccess("actions", async ({ id }) => {
-      deleteAction(id);
-      return textResult({ ok: true });
-    }),
-  );
-  server.registerTool(
-    "preview_action",
-    {
-      description:
-        "Preview ordered changes to selected saves. Return this preview for user review before run_action. No saves are modified.",
-      inputSchema: ActionRequestSchema,
-      annotations: { readOnlyHint: true },
-    },
-    withAccess("actions", async ({ definition, ids }) =>
-      textResult(await prepareAction(definition, ids)),
-    ),
-  );
-  server.registerTool(
-    "run_action",
-    {
-      description:
-        "Apply a reviewed action using the exact token from preview_action. Rejects a stale preview. The entire operation can be undone in Pond.",
-      inputSchema: ActionRunSchema,
-    },
-    withAccess("actions", async ({ definition, ids, expectedToken }) =>
-      textResult({ changed: await runAction(definition, ids, expectedToken) }),
     ),
   );
 

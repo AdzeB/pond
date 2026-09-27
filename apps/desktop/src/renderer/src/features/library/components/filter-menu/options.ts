@@ -25,7 +25,14 @@ export const FILTER_SECTIONS = [
       "aspect",
       "duration",
       "fontFamily",
+      "fontActivated",
       "bpm",
+      "cameraMake",
+      "cameraModel",
+      "lensModel",
+      "focalLength",
+      "aperture",
+      "iso",
       "fileCount",
       "fileSize",
       "width",
@@ -47,7 +54,7 @@ export const FILTER_SECTIONS = [
   },
   {
     label: "Dates",
-    fields: ["savedAt", "modifiedAt", "publishedAt"],
+    fields: ["savedAt", "modifiedAt", "publishedAt", "takenAt"],
   },
 ] as const satisfies readonly {
   label: string;

@@ -1,4 +1,4 @@
-import type { Predicate } from "@pond/schema/filters/types";
+import type { Predicate, Query } from "@pond/schema/filters/types";
 import { describe, expect, it, vi } from "vitest";
 import { type AskPorts, compileAsk } from "@/features/search/lib/compile-ask";
 import { EMPTY_FACETS, type NlFacets } from "@/features/search/lib/nl-query";
@@ -17,7 +17,7 @@ function ports(overrides: Partial<AskPorts> = {}): AskPorts {
 }
 
 describe("compileAsk", () => {
-  it("A: deterministic predicates and leftover words", async () => {
+  it("extracts local filters and leaves keywords", async () => {
     const result = await compileAsk("sunset photos", facets, ports());
     expect(result.plan.filter.rules).toContainEqual({
       field: "type",
@@ -27,7 +27,7 @@ describe("compileAsk", () => {
     expect(result.residual).toBe("sunset");
   });
 
-  it("A+B: embedding facets consume residual", async () => {
+  it("resolves remaining keywords to semantic facets", async () => {
     const resolveFacets = vi.fn(async () => ({
       predicates: [
         {
@@ -53,73 +53,35 @@ describe("compileAsk", () => {
     expect(resolveFacets).toHaveBeenCalledWith("sunset", facets);
   });
 
-  it("A+C: a compiled plan merges Stage A rules", async () => {
-    const compilePlan = vi.fn(async () => ({
-      filter: {
-        combinator: "and" as const,
-        rules: [
-          {
-            field: "source",
-            operator: "eq",
-            value: "twitter",
-          } satisfies Predicate,
-        ],
-      },
-    }));
-    const result = await compileAsk("photos", facets, ports({ compilePlan }));
-    expect(result.plan.filter.rules).toEqual(
-      expect.arrayContaining([
-        { field: "type", operator: "eq", value: "image" },
-        { field: "source", operator: "eq", value: "twitter" },
-      ]),
-    );
-    expect(compilePlan).toHaveBeenCalled();
-  });
-
   it("repairEmpty drops the last predicate until something matches", async () => {
-    const compilePlan = vi.fn(async () => ({
-      filter: {
-        combinator: "and" as const,
-        rules: [
-          { field: "type", operator: "eq", value: "image" } satisfies Predicate,
-          {
-            field: "source",
-            operator: "eq",
-            value: "twitter",
-          } satisfies Predicate,
-        ],
-      },
-    }));
-    const countMatches = vi.fn((query: { rules: unknown[] }) =>
+    const countMatches = vi.fn((query: Query) =>
       query.rules.length === 1 ? 1 : 0,
     );
     const result = await compileAsk(
-      "photos",
+      "photos from twitter",
       facets,
-      ports({ compilePlan, countMatches }),
+      ports({ countMatches }),
     );
     expect(result.plan.filter.rules).toEqual([
-      { field: "type", operator: "eq", value: "image" },
+      { field: "source", operator: "eq", value: "x.com" },
     ]);
   });
 
-  it("a missing or failing B/C port degrades to Stage A", async () => {
+  it("a failing embedding resolver preserves local filters", async () => {
+    const resolveFacets = vi.fn(async () => {
+      throw new Error("embed failed");
+    });
     const result = await compileAsk(
-      "photos",
+      "sunset photos",
       facets,
-      ports({
-        resolveFacets: async () => {
-          throw new Error("embed failed");
-        },
-        compilePlan: async () => {
-          throw new Error("model failed");
-        },
-      }),
+      ports({ resolveFacets }),
     );
     expect(result.plan.filter.rules).toContainEqual({
       field: "type",
       operator: "eq",
       value: "image",
     });
+    expect(result.residual).toBe("sunset");
+    expect(resolveFacets).toHaveBeenCalledWith("sunset", facets);
   });
 });

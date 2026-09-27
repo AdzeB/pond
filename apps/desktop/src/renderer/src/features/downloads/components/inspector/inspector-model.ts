@@ -26,8 +26,11 @@ export interface DownloadInspectorDetails {
 function taskStatusLabel(status: TaskStatus, retrying: boolean): string {
   if (status === "running") return "Now";
   if (status === "done") return "Done";
-  if (status === "pending") return retrying ? "Trying again" : "Waiting";
-  if (status === "blocked") return "Waiting to retry";
+  if (status === "pending") return "Waiting";
+  if (status === "deferred") return retrying ? "Trying again" : "Parked";
+  if (status === "blocked") return "Authentication required";
+  if (status === "cancelled") return "Cancelled";
+  if (status === "dead") return "Stopped";
   return "Stopped";
 }
 
@@ -37,7 +40,7 @@ export function downloadInspectorDetails(
 ): DownloadInspectorDetails {
   const tasks = save.tasks ?? [];
   const currentIndex = tasks.findIndex(
-    (task) => task.status === "running" || task.status === "failed",
+    (task) => task.status === "running" || task.status === "dead",
   );
   const mapped: DownloadInspectorTask[] = tasks.map((task, index) => ({
     id: `${task.op}-${index}`,
@@ -45,8 +48,7 @@ export function downloadInspectorDetails(
     status: task.status,
     statusLabel: taskStatusLabel(
       task.status,
-      task.status === "pending" &&
-        (task.attempts > 0 || Boolean(task.lastError)),
+      task.status === "deferred" && task.deferredReason === "retry_backoff",
     ),
     error:
       task.lastError && task.status !== "done"
@@ -83,7 +85,9 @@ export function downloadInspectorDetails(
   }
   const retryAt = tasks.find(
     (task) =>
-      (task.status === "blocked" || task.status === "pending") &&
+      (task.status === "blocked" ||
+        task.status === "pending" ||
+        task.status === "deferred") &&
       task.nextRunAt > now,
   )?.nextRunAt;
   if (retryAt) {

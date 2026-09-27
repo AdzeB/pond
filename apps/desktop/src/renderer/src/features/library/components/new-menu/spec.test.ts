@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { menuLabels } from "@/shared/test/menu-labels";
+import { menuLabels, menuLabelsWithoutIcons } from "@/shared/test/menu-labels";
 import { buildNewMenuItems, filterMenuItems } from "./spec";
 
 describe("new menu spec", () => {
+  it("gives every searchable action an icon", () => {
+    expect(menuLabelsWithoutIcons(buildNewMenuItems(["word"]))).toEqual([]);
+  });
+
   it("orders create, import, connect, then tools", () => {
     const labels = menuLabels(buildNewMenuItems(["photoshop", "word"]));
     expect(labels).toEqual([
@@ -23,9 +27,13 @@ describe("new menu spec", () => {
       "Import Eagle Package",
       "Import Pond Package",
       "Import Eagle Library",
+      "Import Legacy Library",
+      "Import ArtStation Export",
+      "Import Huaban Export",
+      "Import Pixave Export",
+      "Import Inboard Export",
       "Auto Import",
       "Watched Folder",
-      "Auto Import Settings",
       "New Source",
       "Twitter",
       "Instagram",
@@ -50,8 +58,14 @@ describe("new menu spec", () => {
       "Selected",
       "Rescan Library",
       "Verify Integrity",
+      "Repair Library",
+      "Repair Thumbnails",
+      "Repair Physical File Names",
+      "Repair Invalid Content",
+      "Repair Save Metadata",
+      "Export Debug Report",
     ]);
-    expect(labels.join(" ")).not.toContain("ArtStation");
+    expect(labels.join(" ")).toContain("ArtStation");
     expect(labels.join(" ")).not.toContain("…");
     expect(labels).not.toContain("Create");
     expect(labels).not.toContain("Import");

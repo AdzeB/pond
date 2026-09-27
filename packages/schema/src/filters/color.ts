@@ -60,16 +60,16 @@ export function colorNear(
 }
 
 export const COLOR_PRESETS: ReadonlyArray<{ label: string; hex: string }> = [
-  { label: "Red", hex: "#e5484d" },
-  { label: "Orange", hex: "#f76b15" },
-  { label: "Yellow", hex: "#ffe629" },
-  { label: "Green", hex: "#30a46c" },
-  { label: "Teal", hex: "#12a594" },
-  { label: "Blue", hex: "#0091ff" },
-  { label: "Purple", hex: "#8e4ec6" },
-  { label: "Pink", hex: "#e93d82" },
-  { label: "Brown", hex: "#ad7f58" },
-  { label: "Gray", hex: "#8d8d8d" },
-  { label: "Black", hex: "#1a1a1a" },
-  { label: "White", hex: "#fafafa" },
+  { label: "Black", hex: "#111111" },
+  { label: "White", hex: "#ffffff" },
+  { label: "Gray", hex: "#9e9e9e" },
+  { label: "Brown", hex: "#a48057" },
+  { label: "Pink", hex: "#fc85b3" },
+  { label: "Red", hex: "#ff2727" },
+  { label: "Orange", hex: "#ffa34b" },
+  { label: "Yellow", hex: "#ffd534" },
+  { label: "Green", hex: "#47c595" },
+  { label: "Teal", hex: "#51c4c4" },
+  { label: "Blue", hex: "#2b76e7" },
+  { label: "Purple", hex: "#6d50ed" },
 ];

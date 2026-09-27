@@ -1,0 +1,7 @@
+.rows {
+  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
+}
+
+.rows > :not(:last-child) {
+  border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
+}

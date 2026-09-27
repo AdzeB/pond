@@ -1,0 +1,79 @@
+{
+  "password": "correct horse battery staple",
+  "recoveryKey": "POND-RK1-3VNAR-DT78Z-68ENJ-NYGJT-BSB0G-NQ9W2-85YR5-EAZSR-XK3QV-2WS19-A8JYH-130",
+  "masterKey": "+NgxPj9io2mrop/36wfOI6n8rUKuGq15+5lL7w0f42E=",
+  "manifest": {
+    "format": "pond-package-security",
+    "version": 1,
+    "security": {
+      "format": "pond-library-security",
+      "version": 1,
+      "libraryId": "pond-package:5a34ca79-1c80-4fde-87fd-f0cfd8a7ed89",
+      "keyVersion": 1,
+      "wrapping": {
+        "password": {
+          "kdf": {
+            "algorithm": "scrypt",
+            "version": 1,
+            "salt": "TZ+mImJSGNRElUg7Kkj5MA==",
+            "N": 16384,
+            "r": 8,
+            "p": 1,
+            "keyBytes": 32
+          },
+          "cipher": {
+            "algorithm": "aes-256-gcm",
+            "nonce": "mO0SrUPHaBfgBWV2",
+            "ciphertext": "D/AT+uTNcLLg9veDq6AN/+tr6owlF7wmez62yo5YNJo=",
+            "tag": "upGKA+Qq+ZzTUUf+TZFMWg=="
+          }
+        },
+        "recoveryKey": {
+          "kdf": {
+            "algorithm": "scrypt",
+            "version": 1,
+            "salt": "lm+99Rz7uKnTygwGMUdB+g==",
+            "N": 16384,
+            "r": 8,
+            "p": 1,
+            "keyBytes": 32
+          },
+          "cipher": {
+            "algorithm": "aes-256-gcm",
+            "nonce": "5JpFHSbFbOpBIho2",
+            "ciphertext": "xC/h1sn/EWesUjwyOZJij2hiQrgb8sUrVSvt/sD8d9U=",
+            "tag": "gxDGUCxHTCpgyJsmSxIx/w=="
+          }
+        }
+      }
+    },
+    "inventory": {
+      "algorithm": "hmac-sha256",
+      "files": [
+        {
+          "path": "empty.txt",
+          "plaintextSize": 0
+        },
+        {
+          "path": "media/large.bin",
+          "plaintextSize": 36
+        },
+        {
+          "path": "pond-export.json",
+          "plaintextSize": 39
+        }
+      ],
+      "tag": "4yCqg63fzI/uocsy62TGoeXaebu/sbEyhfPlr4UCAMg="
+    }
+  },
+  "plaintext": {
+    "empty.txt": "",
+    "media/large.bin": "0123456789abcdefghijklmnopqrstuvwxyz",
+    "pond-export.json": "{\"version\":1,\"title\":\"Private package\"}"
+  },
+  "files": {
+    "empty.txt": "UE9OREZJTEUAAQA4AQwQAAAAAAgAAAAAAAAAAAAAAABw3ElDOZGtjil6QkiH8WXolRqbZHB6fDg=",
+    "media/large.bin": "UE9OREZJTEUAAQA4AQwQAAAAAAgAAAAAAAAAJAAAAAWFWQnVu7rMDGYxgcdCFt17Otr+7U/fee/1iq92naV+2JaIwozFF7iwcNMlxpfj3ockpVoMXKHenHYwBipOnCoIuU7PzyCrTNhXiNOUwoUOumUyPEa1XXUtGn0v4m0B287p8lSsQEFWeEexFCs6iZAHave8PR/5GUPYjbNQ6feYz9LjFtBF5q5Syr8IQQ==",
+    "pond-export.json": "UE9OREZJTEUAAQA4AQwQAAAAAAgAAAAAAAAAJwAAAAUmO7U8KJiOZlNG+znv+alhBysdWoJm5AYUTbv6qwFWWWUttIguvI3YUOAM48beIiz0ZMk4uvifoNEdIv0pCdBUwzgX90qe6PloIasZ0hAPTBvlcQtbs0EqMF4uxnedy/1W7Ee951Nugtc1NOJz0HWvO4qaYzXDziE5F+skWCOoNKYJCZJDA0mplUJgPDE8qQ=="
+  }
+}

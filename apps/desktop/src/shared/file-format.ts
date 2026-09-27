@@ -41,6 +41,17 @@ const NATIVE_IMAGES = new Map<string, string>([
   ["tiff", "image/tiff"],
 ]);
 
+const DESTRUCTIVELY_EDITABLE_IMAGE_EXTENSIONS = new Set([
+  "avif",
+  "gif",
+  "jpeg",
+  "jpg",
+  "png",
+  "tif",
+  "tiff",
+  "webp",
+]);
+
 const VIDEOS = new Map<string, string>([
   ["mp4", "video/mp4"],
   ["webm", "video/webm"],
@@ -75,15 +86,35 @@ const TEXT = new Map<string, string>([
   ["txt", "text/plain"],
   ["md", "text/markdown"],
   ["markdown", "text/markdown"],
+  ["css", "text/css"],
+  ["java", "text/x-java-source"],
+  ["js", "text/javascript"],
+  ["py", "text/x-python"],
+  ["rs", "text/x-rust"],
+  ["sql", "application/sql"],
+  ["ts", "text/typescript"],
+  ["json", "application/json"],
+  ["jsonl", "application/x-ndjson"],
+  ["csv", "text/csv"],
+  ["yaml", "application/yaml"],
+  ["yml", "application/yaml"],
+  ["xml", "application/xml"],
 ]);
 
 const GENERIC_MIME = new Map<string, string>([
+  ["3dm", "model/vnd.rhino"],
+  ["amf", "application/x-amf"],
+  ["gltf", "model/gltf+json"],
+  ["usdc", "model/vnd.usd"],
   ["usdz", "model/vnd.usdz+zip"],
+  ["vtk", "model/vnd.vtk"],
   ["zip", "application/zip"],
   ["rar", "application/vnd.rar"],
   ["7z", "application/x-7z-compressed"],
-  ["json", "application/json"],
-  ["csv", "text/csv"],
+  ["lottie", "application/zip+dotlottie"],
+  ["livp", "application/zip+live-photo"],
+  ["pag", "application/x-pag"],
+  ["svga", "application/x-svga"],
 ]);
 
 const EAGLE_MIME = new Map<string, string>([
@@ -180,6 +211,10 @@ function extensionFor(path: string): string {
     : "";
 }
 
+export function canDestructivelyEditImage(path: string): boolean {
+  return DESTRUCTIVELY_EDITABLE_IMAGE_EXTENSIONS.has(extensionFor(path));
+}
+
 function format(
   extension: string,
   mediaType: MediaType,
@@ -194,6 +229,15 @@ export function classifyLibraryFile(
   suppliedMimeType?: string | null,
 ): LibraryFileFormat {
   const extension = extensionFor(path);
+  const supplied = suppliedMimeType?.split(";", 1)[0]?.trim().toLowerCase();
+
+  // `.ts` is ambiguous: it is both TypeScript and an MPEG transport stream.
+  // Importers inspect the file header and persist this MIME type so later
+  // classification can retain the content-based decision.
+  if (extension === "ts" && supplied === "video/mp2t") {
+    return format(extension, "video", supplied, "video");
+  }
+
   const directImage = DIRECT_IMAGES.get(extension);
   if (directImage)
     return format(extension, "image", directImage, "direct-image");
@@ -241,7 +285,6 @@ export function classifyLibraryFile(
     }
   }
 
-  const supplied = suppliedMimeType?.split(";", 1)[0]?.trim().toLowerCase();
   if (supplied?.startsWith("image/")) {
     return format(extension, "image", supplied, "native-image");
   }
@@ -267,6 +310,34 @@ export function classifyLibraryFile(
     supplied || GENERIC_MIME.get(extension) || "application/octet-stream",
     "generic",
   );
+}
+
+export function isMpegTransportStreamHeader(header: Uint8Array): boolean {
+  const packetSize = 188;
+  const lastOffset = Math.min(packetSize, header.byteLength);
+  for (let offset = 0; offset < lastOffset; offset += 1) {
+    if (
+      header[offset] === 0x47 &&
+      header[offset + packetSize] === 0x47 &&
+      header[offset + packetSize * 2] === 0x47
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function classifyLibraryFileFromHeader(
+  path: string,
+  suppliedMimeType: string | null | undefined,
+  header: Uint8Array,
+): LibraryFileFormat {
+  if (extensionFor(path) === "ts") {
+    return isMpegTransportStreamHeader(header)
+      ? format("ts", "video", "video/mp2t", "video")
+      : format("ts", "text", "text/typescript", "text");
+  }
+  return classifyLibraryFile(path, suppliedMimeType);
 }
 
 export function libraryFilename(path: string, fallback = "file.bin"): string {

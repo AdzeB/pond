@@ -25,7 +25,6 @@ it("describes the production catalog without loading credentials or executing op
     "pipeline.setPaused",
     "sources.connect",
     "navigation.library.open",
-    "actions.run",
     "history.undo",
     "agent.send",
   ]) {

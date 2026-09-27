@@ -3,12 +3,19 @@ import {
   createCopyTranslator,
   createTranslator,
 } from "../../shared/localization";
+import { buildEditSection } from "./edit-section";
+import { buildFileSection } from "./file-section";
+import { buildFindSection } from "./find-section";
 import { buildGoSection, buildHistorySection } from "./navigation-sections";
+import { buildOrganizeSection } from "./organize-section";
 import {
   buildApplicationSections,
   buildDeveloperSections,
+  buildHelpSection,
   buildSettingsItem,
+  buildWindowSection,
 } from "./system-sections";
+import { buildAppMenuTemplate } from "./template";
 import type { AppMenuContext } from "./types";
 
 function createContext({
@@ -38,6 +45,7 @@ function createContext({
     openLibraryWindow: noOp,
     openRecent: () => noOp,
     rescanLibrary: noOp,
+    reloadLibrary: noOp,
     revealLibrary: noOp,
     sendMenuAction: () => noOp,
     showLogs: noOp,
@@ -101,7 +109,106 @@ describe("app menu sections", () => {
       buildHistorySection(context, [{ id: "save-1", title: "First Save" }]),
     ).toMatchObject({
       label: "History",
-      submenu: [{ label: "First Save" }],
+      submenu: [
+        { label: "First Save" },
+        { type: "separator" },
+        { label: "Clear History" },
+      ],
     });
+  });
+
+  it("orders first-party native menu sections", () => {
+    const context = createContext({ isMac: true, isPackaged: true });
+    const template = buildAppMenuTemplate(context, []);
+    expect(template.map((item) => item.label)).toEqual([
+      "Pond",
+      "File",
+      "Edit",
+      "Find",
+      "Organize",
+      "View",
+      "Go",
+      "History",
+      "Library",
+      "Window",
+      "Help",
+    ]);
+  });
+
+  it("backfills Window and Help commands", () => {
+    const context = createContext({ isMac: true, isPackaged: true });
+    expect(buildWindowSection(context).submenu).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ role: "togglefullscreen" }),
+      ]),
+    );
+    expect(buildHelpSection(context).submenu).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: "Keyboard Shortcuts" }),
+        expect.objectContaining({ label: "Export Debug Report" }),
+        expect.objectContaining({ label: "Report an Issue" }),
+      ]),
+    );
+  });
+
+  it("dispatches native Find, Organize, File, and Edit actions", () => {
+    const context = createContext({ isMac: true, isPackaged: true });
+    const actions: string[] = [];
+    context.sendMenuAction = (id) => {
+      actions.push(id);
+      return () => undefined;
+    };
+    const settingsItem = buildSettingsItem(context);
+    buildFileSection(context);
+    buildEditSection(context, settingsItem);
+    buildFindSection(context);
+    buildOrganizeSection(context);
+
+    expect(actions).toEqual(
+      expect.arrayContaining([
+        "library.new-smart-folder-group",
+        "library.import-eagle",
+        "save.export-files",
+        "save.export-converted",
+        "save.export-eagle-package",
+        "save.export-pond-package",
+        "save.export-csv",
+        "selection.select-all",
+        "selection.clear",
+        "selection.invert",
+        "save.copy-name",
+        "save.copy-file-path",
+        "save.copy-pond-link",
+        "save.remove-current-folder",
+        "find.search",
+        "find.search-all",
+        "find.go-to-folder",
+        "find.filters.toggle",
+        "find.filters.reset",
+        "find.visual-search",
+        "organize.rating.0",
+        "organize.rating.5",
+        "organize.clear-tags",
+        "organize.copy-tags",
+        "organize.paste-tags",
+      ]),
+    );
+  });
+
+  it("uses the save action language in native menus", () => {
+    const context = createContext({ isMac: true, isPackaged: true });
+    const file = buildFileSection(context).submenu ?? [];
+    const organize = buildOrganizeSection(context).submenu ?? [];
+
+    expect(file).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: "Open Original in Browser" }),
+        expect.objectContaining({ label: "Add Tags" }),
+        expect.objectContaining({ label: "Refresh from Source" }),
+      ]),
+    );
+    expect(organize).toEqual(
+      expect.arrayContaining([expect.objectContaining({ label: "Add Tags" })]),
+    );
   });
 });

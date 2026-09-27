@@ -15,6 +15,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
   useCallback,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -91,7 +92,19 @@ export function DataTableProvider<T extends RowData>({
   const clickSelects = selectOnClick ?? !selectionCheckboxes;
 
   const [selectionStore] = useState(
-    () => new Store<SelectionState>({ selectedIds: new Set<string>() }),
+    () =>
+      new Store<SelectionState>({
+        selectedIds: new Set<string>(),
+        cursorId: null,
+      }),
+  );
+
+  const gridRef = useRef<HTMLDivElement>(null);
+  const revealRow = useRef<((id: string) => void) | null>(null);
+  const gridId = useId();
+  const rowElementId = useCallback(
+    (id: string) => `${gridId}-row-${encodeURIComponent(id)}`,
+    [gridId],
   );
 
   const [sorting, setSorting] = useState<SortingState>(
@@ -169,6 +182,11 @@ export function DataTableProvider<T extends RowData>({
       ...(rowChildrenRef.current.get(id) ?? []),
     ];
 
+    const focusRow = (id: string) => {
+      selectionStore.setState((s) => ({ ...s, cursorId: id }));
+      gridRef.current?.focus({ preventScroll: true });
+    };
+
     const toggleRow = (id: string, extend: boolean) => {
       selectionStore.setState((s) => {
         const next = new Set(s.selectedIds);
@@ -178,10 +196,11 @@ export function DataTableProvider<T extends RowData>({
           const to = ids.indexOf(id);
           if (from >= 0 && to >= 0) {
             const [lo, hi] = from <= to ? [from, to] : [to, from];
+            next.clear();
             for (const rowId of ids.slice(lo, hi + 1)) {
               for (const d of withDescendants(rowId)) next.add(d);
             }
-            return { selectedIds: next };
+            return { selectedIds: next, cursorId: id };
           }
         }
         const targets = withDescendants(id);
@@ -191,7 +210,7 @@ export function DataTableProvider<T extends RowData>({
           for (const d of targets) next.add(d);
         }
         anchorRef.current = id;
-        return { selectedIds: next };
+        return { selectedIds: next, cursorId: id };
       });
       commitSelection();
     };
@@ -199,6 +218,7 @@ export function DataTableProvider<T extends RowData>({
     const selectRow = (id: string) => {
       selectionStore.setState(() => ({
         selectedIds: new Set(withDescendants(id)),
+        cursorId: id,
       }));
       anchorRef.current = id;
       commitSelection();
@@ -206,8 +226,9 @@ export function DataTableProvider<T extends RowData>({
 
     const toggleAll = (next: boolean) => {
       const ids = next ? orderedIdsRef.current : [];
-      selectionStore.setState(() => ({
+      selectionStore.setState((s) => ({
         selectedIds: new Set(ids),
+        cursorId: s.cursorId ?? ids[0] ?? null,
       }));
       anchorRef.current = ids[0] ?? null;
       commitSelection();
@@ -220,7 +241,10 @@ export function DataTableProvider<T extends RowData>({
       for (const id of ids) {
         for (const d of withDescendants(id)) next.add(d);
       }
-      selectionStore.setState(() => ({ selectedIds: next }));
+      selectionStore.setState(() => ({
+        selectedIds: next,
+        cursorId: ids.at(-1) ?? null,
+      }));
       anchorRef.current = ids[ids.length - 1] ?? null;
       commitSelection();
     };
@@ -271,6 +295,7 @@ export function DataTableProvider<T extends RowData>({
     };
 
     return {
+      focusRow,
       toggleRow,
       selectRow,
       toggleAll,
@@ -326,6 +351,9 @@ export function DataTableProvider<T extends RowData>({
   const rowApi = useMemo<RowApi<T>>(
     () => ({
       selectionStore,
+      gridRef,
+      rowElementId,
+      focusRow: actions.focusRow,
       columns: orderedColumns,
       gridTemplate,
       selectionEnabled,
@@ -340,6 +368,8 @@ export function DataTableProvider<T extends RowData>({
     }),
     [
       selectionStore,
+      rowElementId,
+      actions.focusRow,
       orderedColumns,
       gridTemplate,
       selectionEnabled,
@@ -368,6 +398,9 @@ export function DataTableProvider<T extends RowData>({
       selectionStore,
       actions,
       meta: {
+        gridRef,
+        revealRow,
+        rowElementId,
         columns: orderedColumns,
         gridTemplate,
         selectionEnabled,
@@ -385,6 +418,7 @@ export function DataTableProvider<T extends RowData>({
     [
       selectionStore,
       actions,
+      rowElementId,
       orderedColumns,
       gridTemplate,
       selectionEnabled,

@@ -1,17 +1,31 @@
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, join } from "node:path";
 import { saves } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
+import { classifyLibraryFile } from "@shared/file-format";
+import { decodeTextBytes } from "@shared/text-encoding";
 import { eq, isNotNull, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { duplicateGroups } from "../../core/duplicate-groups";
 import { executeBatch } from "../../core/executor";
+import { extractImageMetadata } from "../../core/image-metadata";
+import { extractMediaMetadata } from "../../core/media-metadata";
 import { mergeDuplicateSaves } from "../../core/merge-duplicates";
 import { persistSave } from "../../core/persist-save";
 import { retryFailedSaves } from "../../core/pipeline/enqueue";
 import { skipSaves } from "../../core/pipeline/reconciler-client";
+import { runEnsurePoster } from "../../core/pipeline/workers/ensure-poster";
 import { runRenderTextCover } from "../../core/pipeline/workers/render-text-cover";
+import { replaceSaveFile } from "../../core/replace-file";
+import {
+  readLibraryMedia,
+  withDecryptedLibraryMediaPath,
+} from "../../core/storage/library-media-storage";
 import { recordForUndo } from "../../core/undo";
 import { parseJsonVector, upsertVec } from "../../core/vec-index";
 import { getDb } from "../../db";
+import { itemFile } from "../../paths";
 import {
   FlagParam,
   NullableStringParam,
@@ -40,6 +54,80 @@ const DerivedPatchSchema = z
     suggestedTagsModel: z.string().nullable().optional(),
   })
   .catch({});
+
+async function analyzeSaveColors(
+  row: typeof saves.$inferSelect,
+  force: boolean,
+): Promise<boolean> {
+  const { extractPalette } = await import("../../lib/palette");
+  const { encodeBlurhash, pickBlurhashStill } = await import(
+    "../../lib/blurhash"
+  );
+  const { encodePhash } = await import("../../lib/phash");
+  const { itemFile } = await import("../../paths");
+  const still = pickBlurhashStill(row);
+  if (!still) return false;
+  const needsColors =
+    row.mediaType === "image" &&
+    (force || (row.dominantColors ?? []).length === 0);
+  const needsHash = force || !row.blurhash;
+  const needsPerceptualHash =
+    row.mediaType === "image" && (force || !row.phash);
+  if (!needsColors && !needsHash && !needsPerceptualHash) return false;
+  const patch = await withDecryptedLibraryMediaPath(
+    itemFile(row.id, still.path),
+    async (path): Promise<Parameters<typeof persistSave>[1]> => {
+      const next: Parameters<typeof persistSave>[1] = {};
+      if (needsColors) {
+        const colors = await extractPalette(path);
+        if (colors.length > 0) next.dominantColors = colors;
+      }
+      if (needsHash) {
+        const hash = await encodeBlurhash(path);
+        if (hash) next.blurhash = hash;
+      }
+      if (needsPerceptualHash) {
+        const hash = await encodePhash(path);
+        if (hash) next.phash = hash;
+      }
+      return next;
+    },
+  );
+  if (Object.keys(patch).length === 0) return false;
+  await persistSave(row.id, patch, {
+    actorReason: force ? "color:reanalyze" : "color:backfill",
+  });
+  return true;
+}
+
+async function analyzeSaveMetadata(
+  row: typeof saves.$inferSelect,
+  force: boolean,
+): Promise<boolean> {
+  const file = row.files.find((entry) => {
+    const mediaType = classifyLibraryFile(entry.path, entry.mimeType).mediaType;
+    return ["image", "video", "audio"].includes(mediaType);
+  });
+  if (!file) return false;
+  const mediaType = classifyLibraryFile(file.path, file.mimeType).mediaType;
+  if (!force && row.metadataVersion === 1) return false;
+  const metadata = await withDecryptedLibraryMediaPath(
+    itemFile(row.id, file.path),
+    (path) =>
+      mediaType === "image"
+        ? extractImageMetadata(path)
+        : extractMediaMetadata(path),
+  );
+  if (Object.keys(metadata).length === 0) return false;
+  await persistSave(
+    row.id,
+    { ...metadata, metadataVersion: 1 },
+    {
+      actorReason: force ? "metadata:reanalyze" : "metadata:backfill",
+    },
+  );
+  return true;
+}
 
 export const savesMutationQueries = {
   "saves.batchEditExtension": query(
@@ -168,39 +256,97 @@ export const savesMutationQueries = {
   ),
 
   async "saves.backfillColors"() {
-    const { extractPalette } = await import("../../lib/palette");
-    const { encodeBlurhash, pickBlurhashStill } = await import(
-      "../../lib/blurhash"
-    );
-    const { itemFile } = await import("../../paths");
-
     const db = await getDb();
     const rows = await db.select().from(saves);
 
     let updated = 0;
-    for (const row of rows) {
-      const still = pickBlurhashStill(row);
-      const needsColors =
-        row.mediaType === "image" && (row.dominantColors ?? []).length === 0;
-      const needsHash = !row.blurhash && still !== null;
-      if (!needsColors && !needsHash) continue;
-      if (!still) continue;
-      const path = itemFile(row.id, still.path);
-      const patch: Parameters<typeof persistSave>[1] = {};
-      if (needsColors) {
-        const colors = await extractPalette(path);
-        if (colors.length > 0) patch.dominantColors = colors;
-      }
-      if (needsHash) {
-        const hash = await encodeBlurhash(path);
-        if (hash) patch.blurhash = hash;
-      }
-      if (Object.keys(patch).length === 0) continue;
-      await persistSave(row.id, patch, { actorReason: "color:backfill" });
-      updated++;
-    }
+    for (const row of rows) if (await analyzeSaveColors(row, false)) updated++;
     return { ok: true, updated };
   },
+
+  async "saves.backfillMetadata"() {
+    const db = await getDb();
+    const rows = await db.select().from(saves);
+    let updated = 0;
+    for (const row of rows)
+      if (await analyzeSaveMetadata(row, false)) updated++;
+    return { ok: true, updated };
+  },
+
+  "saves.reanalyzeColors": query(
+    z.object({ id: StringParam }),
+    async ({ id }) => {
+      const db = await getDb();
+      const row = db.select().from(saves).where(eq(saves.id, id)).get();
+      if (!row) return { ok: false, updated: false };
+      const updated = await analyzeSaveColors(row, true);
+      return { ok: updated, updated };
+    },
+  ),
+
+  "saves.setPrimaryColor": query(
+    z.object({
+      id: StringParam,
+      color: z
+        .string()
+        .regex(/^#[0-9a-f]{6}$/i)
+        .nullable(),
+    }),
+    async ({ id, color }) => {
+      const db = await getDb();
+      const row = db.select().from(saves).where(eq(saves.id, id)).get();
+      if (!row) return { ok: false as const };
+      const primaryColor = color?.toLowerCase() ?? null;
+      if (
+        primaryColor &&
+        !(row.dominantColors ?? []).some(
+          (candidate) => candidate.toLowerCase() === primaryColor,
+        )
+      )
+        return { ok: false as const };
+      await persistSave(
+        id,
+        { primaryColor },
+        { actorReason: "color:set-primary" },
+      );
+      return { ok: true as const };
+    },
+  ),
+
+  "saves.convertTextEncoding": query(
+    z.object({ id: StringParam, fileIndex: z.number().int().nonnegative() }),
+    async ({ id, fileIndex }) => {
+      const db = await getDb();
+      const row = db.select().from(saves).where(eq(saves.id, id)).get();
+      const file = row?.files[fileIndex];
+      if (
+        !file ||
+        classifyLibraryFile(file.path, file.mimeType).mediaType !== "text"
+      )
+        return { ok: false, updated: false };
+      const bytes = await readLibraryMedia(itemFile(id, file.path));
+      const decoded = decodeTextBytes(bytes);
+      if (decoded.encoding === "utf-8" && !decoded.hadBom)
+        return { ok: true, updated: false };
+      const directory = await mkdtemp(join(tmpdir(), "pond-text-"));
+      const path = join(directory, basename(file.path));
+      try {
+        await writeFile(path, decoded.text, "utf8");
+        const result = await replaceSaveFile({ id, sourcePath: path });
+        return { ok: result.ok, updated: result.ok };
+      } finally {
+        await rm(directory, { recursive: true, force: true });
+      }
+    },
+  ),
+
+  "saves.regeneratePoster": query(
+    z.object({ id: StringParam }),
+    async ({ id }) => {
+      await runEnsurePoster(id, { force: true });
+      return { ok: true };
+    },
+  ),
 
   "saves.ensureTextCover": query(
     z.object({ id: StringParam, force: FlagParam.default(false) }),

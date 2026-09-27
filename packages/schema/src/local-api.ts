@@ -34,10 +34,25 @@ export const LocalApiCursorSchema = z.object({
   sortSignature: z.string().optional(),
 });
 
+export const KeywordSearchScopeSchema = z.enum([
+  "title",
+  "description",
+  "creator",
+  "tags",
+  "notes",
+  "url",
+  "folder",
+  "folder-description",
+  "extension",
+  "annotation",
+]);
+export type KeywordSearchScope = z.infer<typeof KeywordSearchScopeSchema>;
+
 export const LocalApiLibraryQueryRequestSchema = z.object({
   libraryId: z.string().optional(),
   query: QuerySchema.default(EMPTY_QUERY),
   keywords: z.string().max(4096).optional(),
+  keywordScopes: z.array(KeywordSearchScopeSchema).min(1).optional(),
   scope: z
     .object({
       deletedOnly: z.boolean().optional(),

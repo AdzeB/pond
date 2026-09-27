@@ -29,10 +29,23 @@ export const REVERSE_SEARCH_ENGINES = [
     label: "SauceNAO",
     url: (u) => `https://saucenao.com/search.php?url=${u}`,
   },
+  {
+    key: "baidu",
+    label: "Baidu",
+    url: (_u) => "https://graph.baidu.com/pcpage/index",
+    usesImageUrl: false,
+  },
+  {
+    key: "sogou",
+    label: "Sogou",
+    url: (_u) => "https://pic.sogou.com/ris",
+    usesImageUrl: false,
+  },
 ] as const satisfies ReadonlyArray<{
   key: string;
   label: string;
   url: (encoded: string) => string;
+  usesImageUrl?: boolean;
 }>;
 
 const PublicUrlReplySchema = z
@@ -48,6 +61,10 @@ export async function reverseImageSearch(
 ): Promise<void> {
   const engine = REVERSE_SEARCH_ENGINES.find((e) => e.key === engineKey);
   if (!engine) return;
+  if ("usesImageUrl" in engine && !engine.usesImageUrl) {
+    await window.pond.openExternal(engine.url(""));
+    return;
+  }
   const result = PublicUrlReplySchema.parse(
     await window.pond.query("saves.publicImageUrl", { id: save.id }),
   );

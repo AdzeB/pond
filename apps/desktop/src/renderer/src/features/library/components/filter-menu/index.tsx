@@ -1,10 +1,19 @@
+import {
+  IconBookmarkOutline18,
+  IconFilterOffOutline18,
+} from "@pond/icons/outline/18";
 import { isPredicate, type Predicate } from "@pond/schema/filters/types";
+import { Button, Dialog, Tooltip } from "@pond/ui";
 import { useFolders } from "@/features/library/state/folders";
 import { libraryHeader } from "@/features/library/state/library-header";
+import { savedViews } from "@/features/library/state/saved-views";
 import {
+  setSemanticQuery,
+  setVisualProbe,
   updateLocalFilters,
   useFilterQuery,
   useSemanticQuery,
+  useViewStore,
   useVisualProbe,
 } from "@/features/library/state/view-store";
 import { useNlFacets } from "@/features/search/hooks/use-nl-query";
@@ -16,6 +25,7 @@ import { usePrefs } from "@/features/settings/state/prefs";
 import { useTagGroups } from "@/features/tags/state/tag-groups";
 import { useTags } from "@/features/tags/state/tags";
 import { FilterToolbar } from "@/shared/components/filter-toolbar";
+import { notify } from "@/shared/lib/toast";
 import { FilterCategory } from "./category/category";
 import { CustomizeFilters } from "./customize";
 import { choiceOptions, type FilterOption, presetOptions } from "./options";
@@ -44,6 +54,7 @@ export function FilterToggle() {
     query.rules.some(isPredicate) || Boolean(semantic) || Boolean(visual);
   return (
     <FilterToolbar.Toggle
+      variant="ghost"
       open={open}
       active={active}
       controlsId="library-filter-toolbar"
@@ -91,6 +102,7 @@ export function FilterBarView({
   const query = useFilterQuery();
   const semantic = useSemanticQuery();
   const visual = useVisualProbe();
+  const activeViewId = useViewStore().activeViewId;
   const rows = query.rules.filter(isPredicate);
   const activeFields = rows.map((row) =>
     row.field === "height" ? "width" : row.field,
@@ -149,12 +161,87 @@ export function FilterBarView({
   const apply = (next: Predicate[]) => {
     updateLocalFilters(next);
   };
+  const hasActiveFilters =
+    rows.length > 0 || Boolean(semantic) || Boolean(visual);
 
   return (
     <FilterToolbar.Bar
       open={open}
       id="library-filter-toolbar"
       label="Library Filters"
+      actions={
+        <>
+          <CustomizeFilters
+            choices={choices}
+            activeFields={activeFields}
+            semanticActive={Boolean(semantic)}
+            visualActive={Boolean(visual)}
+          />
+          {activeViewId ? (
+            <Tooltip label="Update View" side="bottom">
+              <Button
+                icon
+                size="sm"
+                variant="ghost"
+                aria-label="Update View"
+                onClick={() =>
+                  void savedViews.updateCurrent(activeViewId).catch((error) =>
+                    notify({
+                      id: "save-filter-view",
+                      title: "Couldn’t Update Saved View",
+                      description:
+                        error instanceof Error ? error.message : "Try again.",
+                    }),
+                  )
+                }
+              >
+                <IconBookmarkOutline18 />
+              </Button>
+            </Tooltip>
+          ) : (
+            <Tooltip label="Save" side="bottom">
+              <Button
+                icon
+                size="sm"
+                variant="ghost"
+                aria-label="Save"
+                onClick={() =>
+                  Dialog.prompt({
+                    title: "Save View",
+                    placeholder: "View name",
+                    confirmLabel: "Save View",
+                    onConfirm: async (name) => {
+                      if (!name.trim()) throw new Error("Enter a name.");
+                      await savedViews.create({
+                        kind: "saved_view",
+                        name: name.trim(),
+                      });
+                    },
+                  })
+                }
+              >
+                <IconBookmarkOutline18 />
+              </Button>
+            </Tooltip>
+          )}
+          <Tooltip label="Clear Filters" side="bottom">
+            <Button
+              icon
+              size="sm"
+              variant="ghost"
+              aria-label="Clear Filters"
+              disabled={!hasActiveFilters}
+              onClick={() => {
+                updateLocalFilters([]);
+                setSemanticQuery(null);
+                setVisualProbe(null);
+              }}
+            >
+              <IconFilterOffOutline18 />
+            </Button>
+          </Tooltip>
+        </>
+      }
     >
       {chips.map((chip) =>
         chip === "semantic" ? (
@@ -175,12 +262,6 @@ export function FilterBarView({
           />
         ),
       )}
-      <CustomizeFilters
-        choices={choices}
-        activeFields={activeFields}
-        semanticActive={Boolean(semantic)}
-        visualActive={Boolean(visual)}
-      />
     </FilterToolbar.Bar>
   );
 }

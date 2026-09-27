@@ -140,31 +140,41 @@
 
 .preview {
   position: absolute;
-  bottom: calc(100% + 6px);
-  display: flex;
+  bottom: calc(100% + 8px);
+  z-index: 4;
+  display: grid;
   gap: 4px;
-  padding: 3px 6px;
+  justify-items: center;
+  padding: 0;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   color: var(--ds-white-a12);
   white-space: nowrap;
   pointer-events: none;
+}
+
+.preview-media {
+  display: block;
+}
+
+.preview-time {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 7px;
+  color: var(--ds-white-a12);
+  background: rgb(0 0 0 / 0.72);
+  border-radius: var(--ds-radius-sm);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.preview-line {
+  position: absolute;
+  top: 100%;
+  width: 1px;
+  height: 32px;
+  background: currentColor;
   transform: translateX(-50%);
-
-  :last-child {
-    color: var(--ds-white-a8);
-  }
-
-  &::after {
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 50%;
-    width: 1px;
-    height: 24px;
-    content: "";
-    background: var(--ds-white-a12);
-    transform: translateX(-50%);
-  }
 }
 
 .control {
@@ -289,6 +299,22 @@
   }
 }
 
+.controls[data-chrome] .bar {
+  gap: 2px;
+  height: 24px;
+}
+
+.controls[data-chrome] .button {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--ds-radius-sm);
+}
+
+.controls[data-chrome] .button > svg {
+  width: 18px;
+  height: 18px;
+}
+
 .controls[data-chrome] .time,
 .controls[data-chrome] .time-display {
   color: var(--ds-gray-12);
@@ -316,7 +342,12 @@
 }
 
 .controls[data-chrome] .speed {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: var(--ds-text-xs);
   color: var(--ds-gray-12);
+  border-radius: var(--ds-radius-sm);
 
   &:hover {
     background: var(--ds-gray-a3);
@@ -327,8 +358,8 @@
   }
 }
 
-.controls[data-chrome] .preview {
+.controls[data-chrome] .preview-time {
   color: var(--ds-gray-12);
   background: var(--ds-gray-1);
-  border-radius: var(--ds-radius-sm);
+  border: 1px solid var(--ds-gray-a5);
 }

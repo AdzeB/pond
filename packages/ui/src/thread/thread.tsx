@@ -1,4 +1,5 @@
 import { clsx as cn } from "clsx";
+import { useReducedMotionConfig } from "motion/react";
 import {
   type ComponentPropsWithoutRef,
   forwardRef,
@@ -41,6 +42,7 @@ function Messages({
 }
 
 function ScrollToLatest({ viewport }: { viewport: HTMLElement | null }) {
+  const reduceMotion = useReducedMotionConfig();
   const [clipped, setClipped] = useState(false);
   useEffect(() => {
     if (!viewport) return;
@@ -65,7 +67,10 @@ function ScrollToLatest({ viewport }: { viewport: HTMLElement | null }) {
         size="xs"
         variant="secondary"
         onClick={() =>
-          viewport?.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" })
+          viewport?.scrollTo({
+            top: viewport.scrollHeight,
+            behavior: reduceMotion ? "instant" : "smooth",
+          })
         }
       >
         Latest Message

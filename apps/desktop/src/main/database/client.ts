@@ -1,11 +1,10 @@
 import * as schema from "@pond/schema/db";
 import * as eventsSchema from "@pond/schema/events";
-import type Database from "better-sqlite3";
+import Database from "better-sqlite3";
 import {
   type BetterSQLite3Database,
   drizzle,
 } from "drizzle-orm/better-sqlite3";
-import { openEncryptedSqlite } from "./encrypted-sqlite";
 
 const combinedSchema = { ...schema, ...eventsSchema };
 
@@ -13,8 +12,8 @@ export type Db = BetterSQLite3Database<typeof combinedSchema> & {
   $raw: Database.Database;
 };
 
-export function openSqlite(file: string, key: Uint8Array): Database.Database {
-  const sqlite = openEncryptedSqlite(file, key);
+export function openSqlite(file: string): Database.Database {
+  const sqlite = new Database(file);
   sqlite.pragma("journal_mode = WAL");
   sqlite.pragma("synchronous = NORMAL");
   sqlite.pragma("foreign_keys = ON");

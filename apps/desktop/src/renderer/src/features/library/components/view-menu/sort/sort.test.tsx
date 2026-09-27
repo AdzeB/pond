@@ -72,6 +72,13 @@ describe("sort section", () => {
   it("changes sort direction without resetting the key", async () => {
     setSort({ key: "title", dir: "desc" });
     await render();
+    const controls = document.querySelectorAll<HTMLElement>(
+      "[aria-label='Toggle Sort Direction'], [role='combobox']",
+    );
+    expect(controls[0]?.getAttribute("aria-label")).toBe(
+      "Toggle Sort Direction",
+    );
+    expect(controls[1]?.getAttribute("role")).toBe("combobox");
     await act(async () => control("Toggle Sort Direction").click());
     expect(getViewState().sortKey).toBe("title");
     expect(getViewState().sortDir).toBe("asc");

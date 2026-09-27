@@ -1,7 +1,8 @@
 import { Input } from "@pond/ui";
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
+import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { formatBytes } from "@/shared/lib/format";
 import { archiveSafety } from "./archive";
@@ -12,6 +13,8 @@ interface ArchiveFileViewerProps {
   path: string;
   size: number;
   onUnavailable: () => void;
+  toolbarStart?: ReactNode;
+  toolbarEnd?: ReactNode;
 }
 
 interface ArchiveEntry {
@@ -34,6 +37,8 @@ export function ArchiveFileViewer({
   path,
   size,
   onUnavailable,
+  toolbarStart,
+  toolbarEnd,
 }: ArchiveFileViewerProps) {
   const [entries, setEntries] = useState<ArchiveEntry[] | null>(null);
   const [query, setQuery] = useState("");
@@ -41,7 +46,7 @@ export function ArchiveFileViewer({
   const scrollFade = useScrollFade<HTMLUListElement>();
 
   useEffect(() => {
-    if (!path.toLowerCase().endsWith(".zip")) {
+    if (!/\.(zip|lottie|livp)$/i.test(path)) {
       onUnavailable();
       return;
     }
@@ -85,7 +90,7 @@ export function ArchiveFileViewer({
       .catch((reason: Error) => {
         if (!alive) return;
         setError(
-          `This ZIP could not be inspected: ${
+          `This archive could not be inspected: ${
             reason instanceof Error ? reason.message : "unknown error"
           }`,
         );
@@ -103,18 +108,20 @@ export function ArchiveFileViewer({
 
   return (
     <div className={styles.root}>
-      <ViewerHud.Root>
-        <ViewerHud.Cluster anchor="top-left">
-          <ViewerHud.Pill className={styles.count}>
-            <ViewerHud.Scale>
-              {entries
-                ? `${entries.length.toLocaleString()} files`
-                : "ZIP archive"}
-            </ViewerHud.Scale>
-          </ViewerHud.Pill>
-        </ViewerHud.Cluster>
-        <ViewerHud.Cluster anchor="top-right">
-          <ViewerHud.Pill className={styles.query}>
+      <ChromePortal slot="top">
+        <ViewerHud.Bar
+          label="Archive"
+          start={
+            <>
+              {toolbarStart}
+              <ViewerHud.Scale>
+                {entries
+                  ? `${entries.length.toLocaleString()} files`
+                  : "ZIP archive"}
+              </ViewerHud.Scale>
+            </>
+          }
+          center={
             <Input.Root size="sm" variant="secondary" className={styles.field}>
               <Input.Field
                 type="search"
@@ -124,9 +131,10 @@ export function ArchiveFileViewer({
                 onChange={(event) => setQuery(event.target.value)}
               />
             </Input.Root>
-          </ViewerHud.Pill>
-        </ViewerHud.Cluster>
-      </ViewerHud.Root>
+          }
+          end={toolbarEnd}
+        />
+      </ChromePortal>
       {error ? <div className={styles.status}>{error}</div> : null}
       {!entries && !error ? (
         <div className={styles.status}>Reading archive directory</div>

@@ -54,6 +54,7 @@ import { ChatHeader } from "./chat-header";
 import { ReferencedSavesPopover } from "./consulted-saves";
 import { FileAttachments } from "./file-attachments";
 import { ModelPicker } from "./model-picker";
+import { ResponseAnnouncement } from "./response-announcement";
 import { inferredLookupResult, ResponseExtras } from "./response-content";
 import styles from "./styles.module.css";
 import { WorkSummary } from "./work-summary";
@@ -183,6 +184,7 @@ function AgentPaneContent({
 }) {
   const [dropping, setDropping] = useState(false);
   const input = useRef<ComposerEditorHandle>(null);
+  const latestResponse = useRef<HTMLElement>(null);
   const composer = useRef<HTMLDivElement>(null);
   const chat = pondChatSession(state.chatId ?? "draft");
   const { messages, status, error: chatError } = useChat({ chat });
@@ -199,6 +201,22 @@ function AgentPaneContent({
   const lastAssistantId = [...messages]
     .reverse()
     .find((message) => message.role === "assistant")?.id;
+
+  const lastResponse = messages.find(
+    (message) => message.id === lastAssistantId,
+  );
+  const lastMetadata = lastResponse
+    ? fromUIMessage(lastResponse, state.chatId ?? "pending").metadata
+    : undefined;
+  const questionAnswered = state.messages.some(
+    (message) => message.metadata?.replyToQuestion === lastAssistantId,
+  );
+  const requiredAction =
+    lastMetadata?.question && !questionAnswered
+      ? "Agent needs your answer. Read the latest response to continue."
+      : lastMetadata?.changes?.length
+        ? "Agent changes are ready for review. Read the latest response to continue."
+        : undefined;
 
   function focus() {
     input.current?.focus();
@@ -314,6 +332,22 @@ function AgentPaneContent({
             }
             composer={
               <div className={styles["compose-area"]}>
+                <ResponseAnnouncement
+                  key={state.chatId ?? "draft"}
+                  running={running}
+                  responseId={lastAssistantId}
+                  requiredAction={requiredAction}
+                  error={
+                    state.error ?? chatError?.message ?? lastMetadata?.error
+                  }
+                  onRead={() => {
+                    latestResponse.current?.focus({ preventScroll: true });
+                    latestResponse.current?.scrollIntoView({
+                      block: "start",
+                      behavior: "instant",
+                    });
+                  }}
+                />
                 <div className={styles.notices}>
                   {!provider ? (
                     <ErrorNotice
@@ -462,21 +496,33 @@ function AgentPaneContent({
             }
           >
             {messages.map((message) => (
-              <AgentMessage
+              <article
                 key={message.id}
-                message={message}
-                state={state}
-                provider={provider || ASSISTANT_MODELS[0].id}
-                attachedIds={attachedIds}
-                attach={attach}
-                streaming={
-                  status === "streaming" &&
-                  message.role === "assistant" &&
-                  message.id === messages.at(-1)?.id
+                ref={
+                  message.id === lastAssistantId ? latestResponse : undefined
                 }
-                latest={message.id === lastAssistantId}
-                onAnswer={answerQuestion}
-              />
+                tabIndex={-1}
+                aria-label={
+                  message.role === "assistant"
+                    ? "Agent response"
+                    : "Your message"
+                }
+              >
+                <AgentMessage
+                  message={message}
+                  state={state}
+                  provider={provider || ASSISTANT_MODELS[0].id}
+                  attachedIds={attachedIds}
+                  attach={attach}
+                  streaming={
+                    status === "streaming" &&
+                    message.role === "assistant" &&
+                    message.id === messages.at(-1)?.id
+                  }
+                  latest={message.id === lastAssistantId}
+                  onAnswer={answerQuestion}
+                />
+              </article>
             ))}
           </ConversationView>
         </div>

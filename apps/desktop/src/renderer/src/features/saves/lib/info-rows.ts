@@ -134,6 +134,78 @@ export function collectInfoRows(save: Save): PaneRow[] {
     });
   }
 
+  if (save.container) {
+    out.push({ id: "container", label: "Container", value: save.container });
+  }
+  if (save.videoCodec) {
+    out.push({
+      id: "videoCodec",
+      label: "Video Codec",
+      value: save.videoCodec,
+    });
+  }
+  if (save.audioCodec) {
+    out.push({
+      id: "audioCodec",
+      label: "Audio Codec",
+      value: save.audioCodec,
+    });
+  }
+  if (save.bitrate) {
+    out.push({
+      id: "bitrate",
+      label: "Bitrate",
+      value: `${Math.round(save.bitrate / 1000)} kbps`,
+    });
+  }
+  if (save.colorSpace) {
+    out.push({
+      id: "colorSpace",
+      label: "Color Space",
+      value: save.colorSpace,
+    });
+  }
+  if (save.cameraMake) {
+    out.push({ id: "cameraMake", label: "Make", value: save.cameraMake });
+  }
+  if (save.cameraModel) {
+    out.push({ id: "cameraModel", label: "Camera", value: save.cameraModel });
+  }
+  if (save.lensModel) {
+    out.push({ id: "lensModel", label: "Lens", value: save.lensModel });
+  }
+  if (save.focalLength) {
+    out.push({
+      id: "focalLength",
+      label: "Focal Length",
+      value: `${save.focalLength} mm`,
+    });
+  }
+  if (save.aperture) {
+    out.push({
+      id: "aperture",
+      label: "Aperture",
+      value: `ƒ/${save.aperture}`,
+    });
+  }
+  if (save.exposureTime) {
+    out.push({
+      id: "exposureTime",
+      label: "Exposure",
+      value: `${save.exposureTime} s`,
+    });
+  }
+  if (save.iso) {
+    out.push({ id: "iso", label: "ISO", value: String(save.iso) });
+  }
+  if (save.takenAt) {
+    out.push({
+      id: "taken",
+      label: "Taken",
+      value: formatTimestampLine(save.takenAt),
+    });
+  }
+
   if (capture?.publishedAt) {
     out.push({
       id: "published",

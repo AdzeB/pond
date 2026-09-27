@@ -19,14 +19,6 @@ beforeEach(() => {
     query: vi.fn(async (name: string) => {
       if (name === "folders.metadata.get")
         return { description: null, externalLink: null };
-      if (name === "folders.security.status")
-        return {
-          locked: false,
-          protected: true,
-          hint: "Existing hint",
-          lockChildren: true,
-          unlockFolderId: null,
-        };
       return { ok: true };
     }),
   });
@@ -41,7 +33,7 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-it("requires a new password before editing password settings", async () => {
+it("shows folder details and presentation controls", async () => {
   await act(async () => {
     root.render(
       <FolderCustomizeDialog
@@ -50,28 +42,9 @@ it("requires a new password before editing password settings", async () => {
       />,
     );
   });
-  await vi.waitFor(() =>
-    expect(
-      document.querySelector<HTMLInputElement>("#password-hint")?.value,
-    ).toBe("Existing hint"),
-  );
-  const password = document.querySelector<HTMLInputElement>("#folder-password");
-  const hint = document.querySelector<HTMLInputElement>("#password-hint");
-  const protect = document.querySelector<HTMLElement>(
-    '[aria-label="Protect Subfolders"]',
-  );
-  expect(hint?.disabled).toBe(true);
-  expect(protect?.hasAttribute("data-disabled")).toBe(true);
-  expect(document.body.textContent).toContain(
-    "Enter a new password to set the hint or subfolder protection.",
-  );
-  if (!password) throw new Error("Missing password field");
-  await act(async () => {
-    Object.getOwnPropertyDescriptor(
-      HTMLInputElement.prototype,
-      "value",
-    )?.set?.call(password, "replacement");
-    password.dispatchEvent(new Event("input", { bubbles: true }));
-  });
-  expect(hint?.disabled).toBe(false);
+  expect(document.body.textContent).toContain("Description");
+  expect(document.body.textContent).toContain("External Link");
+  expect(document.body.textContent).toContain("Icon");
+  expect(document.body.textContent).toContain("Color");
+  expect(document.querySelector('input[type="password"]')).toBeNull();
 });

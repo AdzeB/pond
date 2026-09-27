@@ -64,13 +64,13 @@
   pointer-events: none;
   background: var(--ds-gray-1);
   border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-popover);
+  box-shadow: var(--ds-shadow-menu);
 }
 
 .title {
   margin: 0;
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-semibold);
+  font-weight: var(--ds-weight-xl);
 }
 
 .description {

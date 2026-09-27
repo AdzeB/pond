@@ -11,7 +11,7 @@
 - **Visual embeddings and style labels:** `onnx-community/siglip2-base-patch16-224-ONNX`, revision `ba1f3b0843f24bc5417d38e19c37b287d719b2f4`, using q8.
 - **Audio and video transcription:** `onnx-community/whisper-base`, revision `1846881b6b3a3024392c1eea3ad983695bc23925`, retaining fp16 on WebGPU and q8 on WASM.
 
-MPNet replaces MiniLM without changing Pond's symmetric mean-pooling contract, which also powers suggested tags. The model is Apache-2.0 licensed and produces stronger 768-dimensional English sentence embeddings at a higher recurring cost ([Sentence Transformers, n.d.](../../references.md#sentence-transformers-all-mpnet-base-v2); [Xenova, n.d.-b](../../references.md#xenova-all-mpnet-base-v2)). EmbeddingGemma remains the stronger multilingual retrieval candidate, but its asymmetric prompts do not match suggested-tag comparisons and its Gemma terms require product review.
+MPNet replaces MiniLM without changing Pond's symmetric mean-pooling contract, which also powers suggested tags. The model is Apache-2.0 licensed and produces stronger 768-dimensional English sentence embeddings at a higher recurring cost ([Sentence Transformers, n.d.](../provenance/generated/REFERENCES.md#sentence-transformers-all-mpnet-base-v2); [Xenova, n.d.-b](../provenance/generated/REFERENCES.md#xenova-all-mpnet-base-v2)). EmbeddingGemma remains the stronger multilingual retrieval candidate, but its asymmetric prompts do not match suggested-tag comparisons and its Gemma terms require product review.
 
 ## Capability recommendation
 
@@ -32,7 +32,7 @@ The candidate had to meet all of these requirements:
 4. The model fits a recurring desktop enrichment task on consumer Mac hardware. A larger model needed a material capability gain, not only a higher benchmark score.
 5. The model's documented pooling, prompting, normalization, and task controls can be represented explicitly in Pond's model contract.
 
-Transformers.js 4.3.0 accepts a `revision` option for pipelines, tokenizers, processors, and models. It maps `dtype: "q8"` to `_quantized.onnx` artifacts. Its feature-extraction pipeline supports mean, CLS, and last-token pooling, but it only selects `last_hidden_state`, `logits`, or `token_embeddings`. It does not select a model-specific `sentence_embedding` output. Its SigLIP zero-shot pipeline uses max-length text padding and independent sigmoid scores instead of CLIP's softmax scores ([Hugging Face, 2026](../../references.md#huggingface-transformers-4-3-0)).
+Transformers.js 4.3.0 accepts a `revision` option for pipelines, tokenizers, processors, and models. It maps `dtype: "q8"` to `_quantized.onnx` artifacts. Its feature-extraction pipeline supports mean, CLS, and last-token pooling, but it only selects `last_hidden_state`, `logits`, or `token_embeddings`. It does not select a model-specific `sentence_embedding` output. Its SigLIP zero-shot pipeline uses max-length text padding and independent sigmoid scores instead of CLIP's softmax scores ([Hugging Face, 2026](../provenance/generated/REFERENCES.md#huggingface-transformers-4-3-0)).
 
 ## Text embeddings
 
@@ -40,9 +40,9 @@ Transformers.js 4.3.0 accepts a `revision` option for pipelines, tokenizers, pro
 
 `onnx-community/embeddinggemma-300m-ONNX` at `5090578d9565bb06545b4552f76e6bc2c93e4a66`.
 
-EmbeddingGemma is a 300M-parameter, on-device-focused text embedding model trained for more than 100 spoken languages. It accepts up to 2,048 tokens and emits a 768-dimensional embedding that can be truncated to 512, 256, or 128 dimensions and renormalized. The official card reports MTEB v2 task means of 61.15 multilingual and 69.67 English at 768 dimensions. Its q8 checkpoint reports 60.93 multilingual and 69.49 English, so quantization retains nearly all reported quality ([Google DeepMind, 2025](../../references.md#google-embeddinggemma-300m)).
+EmbeddingGemma is a 300M-parameter, on-device-focused text embedding model trained for more than 100 spoken languages. It accepts up to 2,048 tokens and emits a 768-dimensional embedding that can be truncated to 512, 256, or 128 dimensions and renormalized. The official card reports MTEB v2 task means of 61.15 multilingual and 69.67 English at 768 dimensions. Its q8 checkpoint reports 60.93 multilingual and 69.49 English, so quantization retains nearly all reported quality ([Google DeepMind, 2025](../provenance/generated/REFERENCES.md#google-embeddinggemma-300m)).
 
-The exact Transformers.js repository is ungated and declares `gemma3_text`, `feature-extraction`, and Transformers.js metadata. It exposes `onnx/model_quantized.onnx` plus `onnx/model_quantized.onnx_data`, totaling about 295 MiB. It also exposes a q4 pair totaling about 188 MiB. Transformers.js 4.3.0 registers `gemma3_text`, so no library upgrade is required ([ONNX Community, n.d.-a](../../references.md#onnx-community-embeddinggemma-300m-onnx)).
+The exact Transformers.js repository is ungated and declares `gemma3_text`, `feature-extraction`, and Transformers.js metadata. It exposes `onnx/model_quantized.onnx` plus `onnx/model_quantized.onnx_data`, totaling about 295 MiB. It also exposes a q4 pair totaling about 188 MiB. Transformers.js 4.3.0 registers `gemma3_text`, so no library upgrade is required ([ONNX Community, n.d.-a](../provenance/generated/REFERENCES.md#onnx-community-embeddinggemma-300m-onnx)).
 
 ### Required preprocessing
 
@@ -53,14 +53,14 @@ Use asymmetric retrieval prompts:
 
 Use the ONNX graph's `sentence_embedding` output. Do not run the generic feature-extraction pipeline with Pond's current mean pooling. Normalize after any Matryoshka truncation. Apply the same dimension to indexed saves and queries.
 
-Pond concatenates title, description, notes, author, and tags, slices the result to 2,000 characters, then mean-pools every model. The query path also mean-pools without a query prompt. That behavior is correct for the previous `Xenova/all-MiniLM-L6-v2` model and the selected MPNet replacement, but it bypasses EmbeddingGemma's exported sentence head and retrieval prompts ([Xenova, n.d.-a](../../references.md#xenova-all-minilm-l6-v2); [Sentence Transformers, n.d.](../../references.md#sentence-transformers-all-mpnet-base-v2)).
+Pond concatenates title, description, notes, author, and tags, slices the result to 2,000 characters, then mean-pools every model. The query path also mean-pools without a query prompt. That behavior is correct for the previous `Xenova/all-MiniLM-L6-v2` model and the selected MPNet replacement, but it bypasses EmbeddingGemma's exported sentence head and retrieval prompts ([Xenova, n.d.-a](../provenance/generated/REFERENCES.md#xenova-all-minilm-l6-v2); [Sentence Transformers, n.d.](../provenance/generated/REFERENCES.md#sentence-transformers-all-mpnet-base-v2)).
 
 ### Tradeoffs
 
 - The gain is multilingual coverage, longer context, stronger reported retrieval quality, and optional Matryoshka dimensions.
 - The q8 artifact is roughly thirteen times the current MiniLM q8 artifact. It will increase first-run download, cold start, memory, and full-library reindex time.
 - The model uses the Gemma license. The official Google repository is gated for license acknowledgement even though the ONNX Community repository is currently ungated. Product and legal review must confirm that Pond's download flow and notices satisfy the Gemma terms.
-- `Xenova/bge-small-en-v1.5` remains the best low-footprint English alternative in the current catalog. Its q8 file is about 32 MiB, its official MTEB average is 62.17, and its documented pooling is the first token, not mean pooling. Short-query retrieval also calls for a query instruction while passages remain unprefixed ([BAAI, 2023](../../references.md#baai-bge-small-en-v1-5)).
+- `Xenova/bge-small-en-v1.5` remains the best low-footprint English alternative in the current catalog. Its q8 file is about 32 MiB, its official MTEB average is 62.17, and its documented pooling is the first token, not mean pooling. Short-query retrieval also calls for a query instruction while passages remain unprefixed ([BAAI, 2023](../provenance/generated/REFERENCES.md#baai-bge-small-en-v1-5)).
 
 ### Required runtime changes
 
@@ -77,9 +77,9 @@ Pond concatenates title, description, notes, author, and tags, slices the result
 
 Retain `onnx-community/Florence-2-base-ft` and pin revision `e88a44eaf3791a35eae0c5a47b3dbcd36e67eb6f`.
 
-Florence-2-base-ft has 0.23B parameters and directly supports `<CAPTION>`, `<DETAILED_CAPTION>`, `<MORE_DETAILED_CAPTION>`, `<OCR>`, and `<OCR_WITH_REGION>`. Microsoft's reported fine-tuned results include 140.0 COCO caption CIDEr, 143.9 TextCaps CIDEr, and 63.6 TextVQA accuracy. The large fine-tuned model improves those results to 143.3, 151.1, and 73.5, but grows to 0.77B parameters. Base is the better recurring desktop default ([Microsoft, 2024](../../references.md#microsoft-florence-2-base-ft); [Xiao et al., 2023](../../references.md#xiao-2023-florence-2)).
+Florence-2-base-ft has 0.23B parameters and directly supports `<CAPTION>`, `<DETAILED_CAPTION>`, `<MORE_DETAILED_CAPTION>`, `<OCR>`, and `<OCR_WITH_REGION>`. Microsoft's reported fine-tuned results include 140.0 COCO caption CIDEr, 143.9 TextCaps CIDEr, and 63.6 TextVQA accuracy. The large fine-tuned model improves those results to 143.3, 151.1, and 73.5, but grows to 0.77B parameters. Base is the better recurring desktop default ([Microsoft, 2024](../provenance/generated/REFERENCES.md#microsoft-florence-2-base-ft); [Xiao et al., 2023](../provenance/generated/REFERENCES.md#xiao-2023-florence-2)).
 
-The selected repository declares Transformers.js and contains q8, q4, fp16, and full-precision variants for the token embedding, vision encoder, encoder, and merged decoder. The q8 components loaded by the WASM profile total about 262 MiB. Pond's current WebGPU mix of fp16 token, vision, and encoder components plus a q4 merged decoder totals about 395 MiB. The catalog's approximate 270 MB size describes the q8 profile, not the current WebGPU download ([ONNX Community, n.d.-b](../../references.md#onnx-community-florence-2-base-ft)).
+The selected repository declares Transformers.js and contains q8, q4, fp16, and full-precision variants for the token embedding, vision encoder, encoder, and merged decoder. The q8 components loaded by the WASM profile total about 262 MiB. Pond's current WebGPU mix of fp16 token, vision, and encoder components plus a q4 merged decoder totals about 395 MiB. The catalog's approximate 270 MB size describes the q8 profile, not the current WebGPU download ([ONNX Community, n.d.-b](../provenance/generated/REFERENCES.md#onnx-community-florence-2-base-ft)).
 
 ### Tradeoffs
 
@@ -98,11 +98,11 @@ No architecture change is required. Pond already uses `Florence2ForConditionalGe
 
 `onnx-community/siglip2-base-patch16-224-ONNX` at `ba1f3b0843f24bc5417d38e19c37b287d719b2f4`.
 
-SigLIP 2 improves over its SigLIP counterparts at all reported model scales for zero-shot classification, image-text retrieval, and transferred visual representations. It also adds multilingual understanding, online data curation, and debiasing work. The ViT-B scale is the smallest released scale in the paper and is a better desktop tradeoff than the L, So400m, or 1B vision towers ([Google, 2025](../../references.md#google-siglip2-base-patch16-224); [Tschannen et al., 2025](../../references.md#tschannen-2025-siglip-2)).
+SigLIP 2 improves over its SigLIP counterparts at all reported model scales for zero-shot classification, image-text retrieval, and transferred visual representations. It also adds multilingual understanding, online data curation, and debiasing work. The ViT-B scale is the smallest released scale in the paper and is a better desktop tradeoff than the L, So400m, or 1B vision towers ([Google, 2025](../provenance/generated/REFERENCES.md#google-siglip2-base-patch16-224); [Tschannen et al., 2025](../provenance/generated/REFERENCES.md#tschannen-2025-siglip-2)).
 
-The exact ONNX repository declares Transformers.js and `model_type: "siglip"`. It provides a q8 full model of about 360 MiB, a q8 vision model of about 90 MiB, and a q8 text model of about 270 MiB. Transformers.js 4.3.0 includes `SiglipModel`, `SiglipVisionModel`, and `SiglipTextModel`, and its zero-shot image pipeline has SigLIP-specific padding and sigmoid handling ([ONNX Community, n.d.-c](../../references.md#onnx-community-siglip2-base-patch16-224-onnx); [Hugging Face, 2026](../../references.md#huggingface-transformers-4-3-0)).
+The exact ONNX repository declares Transformers.js and `model_type: "siglip"`. It provides a q8 full model of about 360 MiB, a q8 vision model of about 90 MiB, and a q8 text model of about 270 MiB. Transformers.js 4.3.0 includes `SiglipModel`, `SiglipVisionModel`, and `SiglipTextModel`, and its zero-shot image pipeline has SigLIP-specific padding and sigmoid handling ([ONNX Community, n.d.-c](../provenance/generated/REFERENCES.md#onnx-community-siglip2-base-patch16-224-onnx); [Hugging Face, 2026](../provenance/generated/REFERENCES.md#huggingface-transformers-4-3-0)).
 
-The current `Xenova/clip-vit-base-patch32` full q8 artifact is about 147 MiB and produces 512-dimensional vectors. It remains faster and smaller, but its official card limits intended language use to English and documents known weaknesses in fine-grained classification and counting. SigLIP 2 is a material capability upgrade for a mixed-language visual library, not only a larger checkpoint ([OpenAI, 2021](../../references.md#openai-clip-vit-base-patch32)).
+The current `Xenova/clip-vit-base-patch32` full q8 artifact is about 147 MiB and produces 512-dimensional vectors. It remains faster and smaller, but its official card limits intended language use to English and documents known weaknesses in fine-grained classification and counting. SigLIP 2 is a material capability upgrade for a mixed-language visual library, not only a larger checkpoint ([OpenAI, 2021](../provenance/generated/REFERENCES.md#openai-clip-vit-base-patch32)).
 
 ### Required preprocessing
 
@@ -133,9 +133,9 @@ The current `Xenova/clip-vit-base-patch32` full q8 artifact is about 147 MiB and
 
 `onnx-community/whisper-base` at `1846881b6b3a3024392c1eea3ad983695bc23925`.
 
-Whisper Base is a 74M-parameter multilingual checkpoint. Its official model card reports 5.01 WER on LibriSpeech test-clean and 12.85 on test-other. The current 39M Whisper Tiny card reports 7.54 and 17.15 respectively. Small improves English results further, but rises to 244M parameters. Base is the better default for long-running audio and video work where Tiny's error rate is visible and Small's recurring cost is harder to justify ([OpenAI, 2022a](../../references.md#openai-whisper-base); [OpenAI, 2022b](../../references.md#openai-whisper-tiny)).
+Whisper Base is a 74M-parameter multilingual checkpoint. Its official model card reports 5.01 WER on LibriSpeech test-clean and 12.85 on test-other. The current 39M Whisper Tiny card reports 7.54 and 17.15 respectively. Small improves English results further, but rises to 244M parameters. Base is the better default for long-running audio and video work where Tiny's error rate is visible and Small's recurring cost is harder to justify ([OpenAI, 2022a](../provenance/generated/REFERENCES.md#openai-whisper-base); [OpenAI, 2022b](../provenance/generated/REFERENCES.md#openai-whisper-tiny)).
 
-The exact ONNX repository declares the Transformers.js ASR pipeline and includes q8 merged-decoder and encoder artifacts totaling about 73 MiB. It also includes fp16 components for WebGPU. Transformers.js 4.3.0 supports Whisper, 30-second chunking, overlap stride, language control, and explicit transcription versus translation. It does not implement Whisper language detection: an omitted language warns and defaults to English ([ONNX Community, n.d.-d](../../references.md#onnx-community-whisper-base); [Hugging Face, 2026](../../references.md#huggingface-transformers-4-3-0)).
+The exact ONNX repository declares the Transformers.js ASR pipeline and includes q8 merged-decoder and encoder artifacts totaling about 73 MiB. It also includes fp16 components for WebGPU. Transformers.js 4.3.0 supports Whisper, 30-second chunking, overlap stride, language control, and explicit transcription versus translation. It does not implement Whisper language detection: an omitted language warns and defaults to English ([ONNX Community, n.d.-d](../provenance/generated/REFERENCES.md#onnx-community-whisper-base); [Hugging Face, 2026](../provenance/generated/REFERENCES.md#huggingface-transformers-4-3-0)).
 
 ### Tradeoffs
 

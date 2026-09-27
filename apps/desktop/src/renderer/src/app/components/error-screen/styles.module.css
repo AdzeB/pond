@@ -17,13 +17,13 @@
   padding: 24px;
   background: var(--ds-gray-1);
   border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-dialog);
+  box-shadow: var(--ds-shadow-modal);
 }
 
 .title {
   margin: 0;
   font-size: var(--ds-text-lg);
-  font-weight: var(--ds-weight-semibold);
+  font-weight: var(--ds-weight-xl);
   color: var(--ds-gray-12);
 }
 

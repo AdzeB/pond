@@ -9,6 +9,9 @@ function fixture() {
   const blocked = new Set<string>();
   const actions = {
     "app.summon": vi.fn(),
+    "capture.area": vi.fn(),
+    "capture.window": vi.fn(),
+    "capture.screen": vi.fn(),
   };
   const controller = new GlobalShortcutController(
     {
@@ -24,11 +27,22 @@ function fixture() {
     actions,
     true,
   );
-  controller.start({});
+  controller.start({}, false);
   return { controller, callbacks, blocked, actions };
 }
 
 describe("global shortcut registration", () => {
+  it("enables capture shortcuts, accepts an unbound mode, and disables them without removing Show Pond", () => {
+    const { controller, callbacks, actions } = fixture();
+    controller.prepare({ "capture.window": "Mod+Alt+W" }, true).commit();
+    callbacks.get("Alt+Command+E")?.();
+    callbacks.get("Alt+Command+W")?.();
+    expect(actions["capture.area"]).toHaveBeenCalledOnce();
+    expect(actions["capture.window"]).toHaveBeenCalledOnce();
+    expect(callbacks.size).toBe(3);
+    controller.prepare({ "capture.window": "Mod+Alt+W" }, false).commit();
+    expect([...callbacks.keys()]).toEqual(["Command+Shift+L"]);
+  });
   it("keeps old dispatch until persisted and can roll back staged bindings", () => {
     const { controller, callbacks, actions } = fixture();
     const old = "Command+Shift+L";
@@ -64,10 +78,13 @@ describe("global shortcut registration", () => {
       { register: () => false, unregister() {} },
       {
         "app.summon": vi.fn(),
+        "capture.area": vi.fn(),
+        "capture.window": vi.fn(),
+        "capture.screen": vi.fn(),
       },
       true,
     );
-    controller.start({});
+    controller.start({}, false);
     expect(controller.status().errors).toHaveLength(1);
   });
   it("allows changing a binding that failed at startup", () => {
@@ -85,13 +102,16 @@ describe("global shortcut registration", () => {
       },
       {
         "app.summon": vi.fn(),
+        "capture.area": vi.fn(),
+        "capture.window": vi.fn(),
+        "capture.screen": vi.fn(),
       },
       true,
     );
-    controller.start({});
+    controller.start({}, false);
     expect(controller.status().errors).toHaveLength(1);
     expect(controller.status().errors[0]).toContain("Show Pond");
-    controller.prepare({ "app.summon": "Mod+Shift+A" }).commit();
+    controller.prepare({ "app.summon": "Mod+Shift+A" }, false).commit();
     expect(callbacks.has("Command+Shift+A")).toBe(true);
     expect(controller.status().errors).toHaveLength(0);
   });
@@ -105,15 +125,15 @@ describe("global shortcut registration", () => {
 });
 
 describe("summon shortcut context", () => {
-  it("routes the shared default to layout only in the focused main window", () => {
-    expect(summonShortcutTarget({}, true, true)).toBe("layout");
+  it("routes the shared default through the renderer in the focused main window", () => {
+    expect(summonShortcutTarget({}, true, true)).toBe("renderer");
     expect(summonShortcutTarget({}, false, true)).toBe("summon");
-    expect(summonShortcutTarget({}, true, false)).toBe("layout");
+    expect(summonShortcutTarget({}, true, false)).toBe("renderer");
   });
   it("compares actual native accelerator aliases and preserves different overrides", () => {
     expect(
       summonShortcutTarget({ "view.layout-cycle": "Shift+Meta+L" }, true, true),
-    ).toBe("layout");
+    ).toBe("renderer");
     expect(
       summonShortcutTarget(
         { "view.layout-cycle": "Shift+Control+L" },
@@ -133,6 +153,6 @@ describe("summon shortcut context", () => {
         true,
         true,
       ),
-    ).toBe("layout");
+    ).toBe("renderer");
   });
 });

@@ -1,10 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
-import { menuLabels as labels } from "@/shared/test/menu-labels";
+import {
+  menuLabels as labels,
+  menuLabelsWithoutIcons,
+} from "@/shared/test/menu-labels";
 import { buildTagMenuItems, type TagMenuActions } from "./context-menu";
 
 function actions(overrides: Partial<TagMenuActions> = {}): TagMenuActions {
   return {
     groups: ["Design", "Reference"],
+    mergeTargets: ["Inspiration", "Motion"],
     inGroup: "Design",
     starred: false,
     onFilter: vi.fn(),
@@ -12,6 +16,7 @@ function actions(overrides: Partial<TagMenuActions> = {}): TagMenuActions {
     onAddToGroup: vi.fn(),
     onMoveToGroup: vi.fn(),
     onRemoveFromGroup: vi.fn(),
+    onMerge: vi.fn(),
     onRename: vi.fn(),
     onRemove: vi.fn(),
     ...overrides,
@@ -19,7 +24,11 @@ function actions(overrides: Partial<TagMenuActions> = {}): TagMenuActions {
 }
 
 describe("tag context menu", () => {
-  it("matches the Eagle tag operations without merge or conversion", () => {
+  it("gives every searchable action an icon", () => {
+    expect(menuLabelsWithoutIcons(buildTagMenuItems(actions()))).toEqual([]);
+  });
+
+  it("matches the Eagle tag operations with merge targets", () => {
     const menuLabels = labels(buildTagMenuItems(actions()));
 
     expect(menuLabels).toEqual([
@@ -27,6 +36,9 @@ describe("tag context menu", () => {
       "Add to Starred",
       "Remove from Starred",
       "Rename Tag",
+      "Merge Into",
+      "Inspiration",
+      "Motion",
       "Add to Group",
       "Reference",
       "Move to Group",
@@ -34,7 +46,6 @@ describe("tag context menu", () => {
       "Remove from this Group",
       "Remove Tag",
     ]);
-    expect(menuLabels).not.toContain("Merge Into");
     expect(menuLabels).not.toContain("Convert to Group");
     expect(
       buildTagMenuItems(actions()).find(
@@ -62,10 +73,29 @@ describe("tag context menu", () => {
   it("disables move and removal when the tag is not in a group", () => {
     const items = buildTagMenuItems(actions({ inGroup: null }));
 
-    expect(items[7]).toMatchObject({ label: "Move to Group", disabled: true });
-    expect(items[8]).toMatchObject({
+    expect(
+      items.find((item) => "label" in item && item.label === "Move to Group"),
+    ).toMatchObject({ disabled: true });
+    expect(
+      items.find(
+        (item) => "label" in item && item.label === "Remove from this Group",
+      ),
+    ).toMatchObject({
       label: "Remove from this Group",
       disabled: true,
     });
+  });
+
+  it("runs the selected merge command", () => {
+    const onMerge = vi.fn();
+    const merge = buildTagMenuItems(actions({ onMerge })).find(
+      (item) => item.type === "submenu" && item.label === "Merge Into",
+    );
+    if (merge?.type !== "submenu") throw new Error("Missing merge menu");
+    const target = merge.items[0];
+    if (!target || target.type === "separator" || target.type === "submenu")
+      throw new Error("Missing merge target");
+    if ("onClick" in target) target.onClick?.();
+    expect(onMerge).toHaveBeenCalledWith("Inspiration");
   });
 });

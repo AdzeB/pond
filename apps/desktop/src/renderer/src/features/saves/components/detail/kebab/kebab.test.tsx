@@ -62,7 +62,7 @@ describe("KebabMenu", () => {
     vi.unstubAllGlobals();
   });
 
-  it("hides Open Save in an open save detail", async () => {
+  it("shows the focused detail actions", async () => {
     await act(async () => root.render(<KebabMenu save={save} />));
     const trigger = document.querySelector('[aria-label="Save Actions"]');
     if (!(trigger instanceof HTMLElement)) throw new Error("Missing trigger");
@@ -71,17 +71,12 @@ describe("KebabMenu", () => {
       trigger.click();
       await Promise.resolve();
     });
-    const open = Array.from(
-      document.querySelectorAll('[role="menuitem"]'),
-    ).find((item) => item.textContent?.startsWith("Open"));
-    if (!(open instanceof HTMLElement)) throw new Error("Missing Open menu");
-
-    await act(async () => {
-      open.click();
-      await Promise.resolve();
-    });
-
     expect(document.body.textContent).not.toContain("Open Save");
-    expect(document.body.textContent).toContain("Open with Default App");
+    expect(document.body.textContent).toContain("Open With");
+    expect(document.body.textContent).toContain("Replace File");
+    expect(document.body.textContent).toContain("Copy");
+    expect(document.body.textContent).not.toContain("Add Tags");
+    expect(document.body.textContent).not.toContain("Add to Folders");
+    expect(document.body.textContent).not.toContain("Rename");
   });
 });

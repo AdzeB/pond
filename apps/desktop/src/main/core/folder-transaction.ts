@@ -8,7 +8,7 @@ import { itemDir } from "../paths";
 import {
   decodeLibraryFile,
   encodeLibraryFile,
-} from "./security/library-file-storage";
+} from "./storage/library-file-storage";
 
 export async function writeFolderMemberships(
   saveId: string,

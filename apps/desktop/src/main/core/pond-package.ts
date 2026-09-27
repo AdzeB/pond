@@ -29,6 +29,10 @@ import { writeEnrichmentSidecar } from "./enrichment-sidecar";
 import { executeBatch, withMutationScope } from "./executor";
 import { exportSavesToDirectory } from "./export-saves";
 import { importFolderTree, setSaveFolders } from "./folders";
+import {
+  decryptPondPackageDirectoryWithPassword,
+  POND_PACKAGE_SECURITY_MANIFEST_FILENAME,
+} from "./legacy-encryption/pond-package-directory";
 import { runLibraryTransfer } from "./library-transfers";
 import {
   importPackageOrganization,
@@ -38,15 +42,10 @@ import {
 } from "./package-organization";
 import { readSave } from "./pipeline/workers/apply";
 import {
-  encryptLibraryMediaFile,
+  copyLibraryMediaFile,
   libraryMediaMetadata,
   readLibraryMediaRange,
-} from "./security/library-media-storage";
-import {
-  decryptPondPackageDirectoryWithPassword,
-  POND_PACKAGE_SECURITY_MANIFEST_FILENAME,
-  protectPondPackageDirectory,
-} from "./security/pond-package-directory";
+} from "./storage/library-media-storage";
 import { prepareTagRegistryUpdates } from "./tags";
 import {
   checkTransferCancellation,
@@ -87,6 +86,16 @@ const PackageSaveSchema = z.object({
         h: z.number(),
         text: z.string(),
         createdAt: z.number().optional(),
+        replies: z
+          .array(
+            z.object({
+              id: z.string(),
+              text: z.string(),
+              createdAt: z.number().optional(),
+            }),
+          )
+          .optional(),
+        resolvedAt: z.number().optional(),
       }),
     )
     .optional(),
@@ -101,6 +110,7 @@ const PackageSaveSchema = z.object({
     )
     .optional(),
   dominantColors: z.array(z.string()).optional(),
+  primaryColor: z.string().nullable().optional(),
   width: z.number().nullable().optional(),
   height: z.number().nullable().optional(),
   coverIndex: z.number().optional(),
@@ -204,6 +214,7 @@ const runtime: PackageImportRuntime = {
         comments: save.comments,
         videoNotes: save.videoNotes,
         dominantColors: save.dominantColors,
+        primaryColor: save.primaryColor,
         width: save.width,
         height: save.height,
         mediaType: save.mediaType,
@@ -239,11 +250,7 @@ const runtime: PackageImportRuntime = {
   },
 };
 
-async function exportPackage(
-  ids: readonly string[],
-  destination: string,
-  password?: string,
-) {
+async function exportPackage(ids: readonly string[], destination: string) {
   const parent = await realpath(dirname(resolve(destination)));
   const staging = await mkdtemp(join(parent, ".pond-package-"));
   try {
@@ -253,19 +260,6 @@ async function exportPackage(
     await readPackage(staging);
     const path = join(parent, basename(destination));
     checkTransferCancellation();
-    if (password) {
-      const protectedPackage = await protectPondPackageDirectory({
-        sourceDirectory: staging,
-        packageDirectory: path,
-        password,
-      });
-      await rm(staging, { recursive: true, force: true });
-      return {
-        path,
-        exported: result.exported,
-        recoveryKey: protectedPackage.recoveryKey,
-      };
-    }
     await rename(staging, path);
     return { path, exported: result.exported };
   } catch (error) {
@@ -414,7 +408,7 @@ async function importPackage(
             if (!source) throw new Error("A package original is missing.");
             const target = resolve(destination, file.path);
             await mkdir(dirname(target), { recursive: true });
-            await encryptLibraryMediaFile(source, target);
+            await copyLibraryMediaFile(source, target);
             const copiedFile = await hashFile(target);
             if (
               copiedFile.size !== file.size ||
@@ -460,12 +454,8 @@ async function importPackage(
   }
 }
 
-export function exportPondPackage(
-  ids: readonly string[],
-  destination: string,
-  password?: string,
-) {
-  return runLibraryTransfer(() => exportPackage(ids, destination, password));
+export function exportPondPackage(ids: readonly string[], destination: string) {
+  return runLibraryTransfer(() => exportPackage(ids, destination));
 }
 export function importPondPackage(
   directory: string,

@@ -111,8 +111,15 @@ describe("filter toolbar", () => {
       "Date Saved",
       "Date Modified",
       "Customize Filters",
+      "Save",
+      "Clear Filters",
     ]);
     expect(button("Color").querySelector("[data-spectrum]")).not.toBeNull();
+    for (const label of ["Customize Filters", "Save", "Clear Filters"]) {
+      expect(button(label).querySelector("svg")).not.toBeNull();
+    }
+    expect(button("Save").textContent).toBe("");
+    expect(button("Clear Filters").textContent).toBe("");
   });
 
   it("groups filter customization into named sections", async () => {
@@ -172,7 +179,7 @@ describe("filter toolbar", () => {
         {
           field: "color",
           operator: "near",
-          value: { hex: "#0091ff", tolerance: 60 },
+          value: { hex: "#2b76e7", tolerance: 60 },
         },
       ],
       "",
@@ -180,7 +187,7 @@ describe("filter toolbar", () => {
     await render();
     const color = button("Color: Blue");
     expect(color.textContent).toBe("Color");
-    expect(color.querySelector('[data-swatch="#0091ff"]')).not.toBeNull();
+    expect(color.querySelector('[data-swatch="#2b76e7"]')).not.toBeNull();
     expect(color.querySelector("[data-spectrum]")).toBeNull();
   });
 
@@ -208,6 +215,26 @@ describe("filter toolbar", () => {
         (node) => node.getAttribute("aria-label") === "Source",
       ),
     ).toBe(false);
+  });
+
+  it("clears all toolbar filters while keeping search text", async () => {
+    setSearchInput(
+      [
+        { field: "type", operator: "eq", value: "video" },
+        { field: "source", operator: "eq", value: "youtube.com" },
+      ],
+      "cats",
+      "type:video source:youtube.com cats",
+    );
+    setSemanticQuery("black cat");
+    await render();
+    await act(async () => button("Clear Filters").click());
+    expect(state()).toEqual({
+      query: { combinator: "and", rules: [] },
+      text: "cats",
+    });
+    expect(getOverlays().semanticQuery).toBeNull();
+    expect(button("Clear Filters").disabled).toBe(true);
   });
 
   it("keeps an active category visible when it is unpinned", async () => {

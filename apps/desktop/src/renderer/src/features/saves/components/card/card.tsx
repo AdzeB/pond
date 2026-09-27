@@ -1,5 +1,6 @@
+import { classifyLibraryFile } from "@shared/file-format";
 import { motion } from "motion/react";
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { useLibraryCardCallbacks } from "@/features/saves/components/card/context";
 import { useSaveCardModel } from "@/features/saves/components/card/model";
 import { Card } from "@/features/saves/components/card/parts";
@@ -13,9 +14,10 @@ import { ListCard } from "@/features/saves/components/card/views/list";
 import { WaterfallCard } from "@/features/saves/components/card/views/waterfall";
 import { SaveContextMenu } from "@/features/saves/components/context-menu/context-menu";
 import { useSave } from "@/features/saves/hooks/use-saves";
-import { beginSaveDrag } from "@/features/saves/lib/start-drag";
+import { buildPondUrl } from "@/features/saves/lib/media/url";
+import { beginSaveDrag, endSaveDrag } from "@/features/saves/lib/start-drag";
 import {
-  useIsAnchor,
+  useIsCursor,
   useIsPrimary,
   useIsSelected,
 } from "@/features/saves/state/selection";
@@ -42,19 +44,56 @@ interface SaveCardProps {
   id: string;
   view: LibraryCardView;
   slot: LibraryCardSlot;
+  position?: number;
+  total?: number;
 }
 
 export const SaveCard = memo(function SaveCard({
   id,
   view,
   slot,
+  position,
+  total,
 }: SaveCardProps) {
   const { onClick, onAuxClick, onDoubleClick } = useLibraryCardCallbacks();
   const save = useSave(id);
   const isMulti = useIsSelected(id);
   const isPrimary = useIsPrimary(id);
-  const isAnchor = useIsAnchor(id);
+  const isCursor = useIsCursor(id);
   const tumbling = useIsTumbling(id);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrl = useMemo(() => {
+    const file = save?.files.find(
+      (entry) =>
+        classifyLibraryFile(entry.path, entry.mimeType).mediaType === "audio",
+    );
+    return save && file ? buildPondUrl(save.id, file) : null;
+  }, [save]);
+  useEffect(
+    () => () => {
+      audioRef.current?.pause();
+      audioRef.current = null;
+    },
+    [],
+  );
+  const startAudioPreview = useCallback(() => {
+    if (!audioUrl) return;
+    const audio = audioRef.current ?? new Audio();
+    if (audio.dataset.previewUrl !== audioUrl) {
+      audio.src = audioUrl;
+      audio.dataset.previewUrl = audioUrl;
+    }
+    audio.preload = "metadata";
+    audio.volume = 0.7;
+    audioRef.current = audio;
+    void audio.play().catch(() => undefined);
+  }, [audioUrl]);
+  const stopAudioPreview = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
+  }, []);
 
   const style = useMemo<PackedCardStyle>(() => {
     const base: PackedCardStyle = {
@@ -77,7 +116,12 @@ export const SaveCard = memo(function SaveCard({
   );
 
   const onSelectClick = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => onClick(id, e),
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      onClick(id, e);
+      e.currentTarget
+        .closest<HTMLElement>("[data-save-collection]")
+        ?.focus({ preventScroll: true });
+    },
     [onClick, id],
   );
   const onSelectAuxClick = useCallback(
@@ -93,7 +137,12 @@ export const SaveCard = memo(function SaveCard({
 
   const children = (
     <Card.Select
-      aria-pressed={isMulti || isPrimary}
+      id={`save-option-${id}`}
+      role="option"
+      aria-selected={isMulti}
+      aria-posinset={position}
+      aria-setsize={total}
+      tabIndex={-1}
       onClick={onSelectClick}
       onAuxClick={onSelectAuxClick}
       onDoubleClick={onSelectDoubleClick}
@@ -103,15 +152,19 @@ export const SaveCard = memo(function SaveCard({
   );
 
   const rootProps = {
+    role: "presentation",
     selected: isPrimary,
     multi: isMulti,
     "data-library-card": "",
     "data-save-id": id,
     "data-view": view,
-    "data-cursor": isAnchor || undefined,
+    "data-cursor": isCursor || undefined,
     style,
     draggable: true,
     onNativeDragStart: onDragStart,
+    onNativeDragEnd: endSaveDrag,
+    onMouseEnter: startAudioPreview,
+    onMouseLeave: stopAudioPreview,
     children,
   };
 

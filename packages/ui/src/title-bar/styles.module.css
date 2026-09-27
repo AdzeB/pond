@@ -35,7 +35,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   color: var(--ds-gray-12);
   white-space: nowrap;
 }

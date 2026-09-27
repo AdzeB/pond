@@ -16,10 +16,14 @@ export interface SaveLibraryBridge {
   resetFilters(): void;
   openFolderPicker(ids: readonly string[]): void;
   openRename(ids: readonly string[]): void;
-  openActions(ids: readonly string[]): void;
-  openConversion(ids: readonly string[], fileIndex: number): void;
+  openConversion(
+    ids: readonly string[],
+    fileIndex: number,
+    mode?: "files" | "converted",
+  ): void;
   openDuplicateReview(saveId: string): void;
   findSimilarColor(color: string): void;
+  setVisualProbe(input: { id: string; label: string }): void;
   foldersForSave(id: string): readonly SaveFolderReference[];
   foldersSnapshot(): readonly SaveFolderReference[];
   lastUsedFolderId(): string | null;
@@ -46,10 +50,10 @@ let current: SaveLibraryBridge = {
   resetFilters: unavailable,
   openFolderPicker: unavailable,
   openRename: unavailable,
-  openActions: unavailable,
   openConversion: unavailable,
   openDuplicateReview: unavailable,
   findSimilarColor: unavailable,
+  setVisualProbe: unavailable,
   foldersForSave: unavailable,
   foldersSnapshot: unavailable,
   lastUsedFolderId: unavailable,
@@ -73,10 +77,11 @@ export const saveLibraryBridge: SaveLibraryBridge = {
   resetFilters: () => current.resetFilters(),
   openFolderPicker: (ids) => current.openFolderPicker(ids),
   openRename: (ids) => current.openRename(ids),
-  openActions: (ids) => current.openActions(ids),
-  openConversion: (ids, fileIndex) => current.openConversion(ids, fileIndex),
+  openConversion: (ids, fileIndex, mode) =>
+    current.openConversion(ids, fileIndex, mode),
   openDuplicateReview: (saveId) => current.openDuplicateReview(saveId),
   findSimilarColor: (color) => current.findSimilarColor(color),
+  setVisualProbe: (input) => current.setVisualProbe(input),
   foldersForSave: (id) => current.foldersForSave(id),
   foldersSnapshot: () => current.foldersSnapshot(),
   lastUsedFolderId: () => current.lastUsedFolderId(),

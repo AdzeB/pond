@@ -23,15 +23,29 @@ import { ensureSaveThumbnail } from "../../save-thumbnail";
 import {
   readLibraryMedia,
   withDecryptedLibraryMediaPath,
-} from "../../security/library-media-storage";
+} from "../../storage/library-media-storage";
 import { TransientError } from "../extractors/errors";
+import { QueueWorkerPosterResultSchema } from "../worker-contract";
+import { runQueueWorkerJob } from "../worker-host";
 import { readSave } from "./apply";
 
 const posterInflight = new Map<string, Promise<void>>();
 
+interface PosterWorkerContext {
+  signal: AbortSignal;
+  leaseToken: string;
+  cancellationFence: number;
+}
+
+interface EnsurePosterOptions {
+  force?: boolean;
+  forcePlatform?: boolean;
+  worker?: PosterWorkerContext;
+}
+
 export function runEnsurePoster(
   saveId: string,
-  opts: { forcePlatform?: boolean } = {},
+  opts: EnsurePosterOptions = {},
 ): Promise<void> {
   const existing = posterInflight.get(saveId);
   if (existing) return existing;
@@ -44,7 +58,7 @@ export function runEnsurePoster(
 
 async function ensurePoster(
   saveId: string,
-  opts: { forcePlatform?: boolean } = {},
+  opts: EnsurePosterOptions = {},
 ): Promise<void> {
   const save = await readSave(saveId);
   if (!save) return;
@@ -72,7 +86,7 @@ async function ensurePoster(
     Boolean(opts.forcePlatform) &&
     usesPlatformPoster(save.source) &&
     youtubeThumbnailUrl(save.rawJson) != null;
-  if (!forcePlatform && !needsPosterRepair(files)) {
+  if (!opts.force && !forcePlatform && !needsPosterRepair(files)) {
     log.debug(
       "[pond pipeline:ensure-poster] posters already satisfy policy",
       saveId,
@@ -82,7 +96,7 @@ async function ensurePoster(
 
   const { videos, posters } = videoPosterSlots(files);
   const repairIndexes = new Set(
-    forcePlatform
+    opts.force || forcePlatform
       ? videos.map((_, index) => index)
       : posterRepairIndexes(files),
   );
@@ -111,6 +125,7 @@ async function ensurePoster(
       index,
       source: save.source,
       rawJson: save.rawJson,
+      worker: opts.worker,
     });
     if (!produced) {
       throw new TransientError(
@@ -166,15 +181,30 @@ async function producePoster(args: {
   index: number;
   source: Source | null;
   rawJson: RawJson | null;
+  worker?: PosterWorkerContext;
 }): Promise<PosterWrite | null> {
   if (usesPlatformPoster(args.source)) {
     const platform = await platformPosterFromSave(args.rawJson, args.index);
     if (platform) return platform;
   }
   const videoPath = join(itemDir(args.saveId), args.video.path);
-  return withDecryptedLibraryMediaPath(videoPath, (source) =>
-    buildFirstFramePoster(source, posterFilename(args.index, ".jpg")),
-  );
+  return withDecryptedLibraryMediaPath(videoPath, async (source) => {
+    const filename = posterFilename(args.index, ".jpg");
+    if (!args.worker) return buildFirstFramePoster(source, filename);
+    const result = QueueWorkerPosterResultSchema.nullable().parse(
+      await runQueueWorkerJob(
+        {
+          operation: "build_poster",
+          sourcePath: source,
+          filename,
+          leaseToken: args.worker.leaseToken,
+          cancellationFence: args.worker.cancellationFence,
+        },
+        { signal: args.worker.signal },
+      ),
+    );
+    return result ? { ...result, bytes: Buffer.from(result.bytes) } : null;
+  });
 }
 
 async function platformPosterFromSave(

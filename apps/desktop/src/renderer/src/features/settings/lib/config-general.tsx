@@ -4,6 +4,7 @@ import { CheckNowRow } from "@/features/settings/components/sections/general/gen
 import { LanguageRow } from "@/features/settings/components/sections/general/language";
 import { RaycastRow } from "@/features/settings/components/sections/general/raycast";
 import { SidebarPreferences } from "@/features/settings/components/sections/general/sidebar";
+import { SystemPreferences } from "@/features/settings/components/sections/general/system-preferences";
 import {
   defineCustomSection,
   group,
@@ -14,6 +15,7 @@ import { notify } from "@/shared/lib/toast";
 function runApply(
   channel:
     | "quickCapture.applyPrefs"
+    | "system.applyPrefs"
     | "window.applyPrefs"
     | "updates.applyPrefs",
 ): void {
@@ -74,6 +76,67 @@ export const generalSection = defineCustomSection({
         },
       ],
     }),
+    group.prefs("system", {
+      title: "System",
+      items: [
+        {
+          control: "select",
+          key: "proxyMode",
+          title: "Proxy",
+          description:
+            "Choose how Pond’s main-process requests reach the network.",
+          options: [
+            { value: "system", label: "System Settings" },
+            { value: "direct", label: "Direct" },
+            { value: "manual", label: "Manual" },
+          ],
+          apply: () => runApply("system.applyPrefs"),
+        },
+        {
+          control: "custom",
+          key: "proxy-url",
+          title: "Manual Proxy",
+          render: () => <SystemPreferences />,
+        },
+        {
+          control: "select",
+          key: "displayColorSpace",
+          title: "Display Color Space",
+          description:
+            "Choose the color space Pond requests for viewer surfaces.",
+          options: [
+            { value: "auto", label: "Automatic" },
+            { value: "srgb", label: "sRGB" },
+            { value: "display-p3", label: "Display P3" },
+          ],
+        },
+        {
+          control: "switch",
+          key: "hardwareAcceleration",
+          title: "Hardware Acceleration",
+          description: "Use the GPU after you restart Pond.",
+          apply: () => runApply("system.applyPrefs"),
+        },
+        {
+          control: "switch",
+          key: "vibrancy",
+          title: "Window Vibrancy",
+          description: "Use the macOS vibrancy effect when available.",
+          apply: () => runApply("system.applyPrefs"),
+        },
+        {
+          control: "select",
+          key: "dockVisibility",
+          title: "Dock Visibility",
+          description: "Keep Pond in the Dock or hide it with closed windows.",
+          options: [
+            { value: "automatic", label: "Automatic" },
+            { value: "always", label: "Always Visible" },
+          ],
+          apply: () => runApply("system.applyPrefs"),
+        },
+      ],
+    }),
     group.prefs("window", {
       title: "Window",
       items: [
@@ -104,14 +167,81 @@ export const generalSection = defineCustomSection({
       ],
     }),
     group.plain({
-      title: "Sidebar",
       items: [
         {
           control: "custom",
           key: "sidebar",
           title: "Sidebar",
           keywords: ["destinations", "counts", "double-click"],
+          standalone: true,
           render: () => <SidebarPreferences />,
+        },
+      ],
+    }),
+    group.prefs("preferences", {
+      title: "Imports",
+      items: [
+        {
+          control: "switch",
+          key: "autoSelectAfterImport",
+          title: "Select After Import",
+          description: "Select the newest Save after a manual import.",
+        },
+      ],
+    }),
+    group.prefs("tagPicker", {
+      title: "Tag Picker",
+      items: [
+        {
+          control: "select",
+          key: "layout",
+          title: "Layout",
+          description: "Choose a list or grid when you add tags to Saves.",
+          options: [
+            { value: "list", label: "List" },
+            { value: "grid", label: "Grid" },
+          ],
+        },
+        {
+          control: "select",
+          key: "gridSize",
+          title: "Grid Size",
+          description: "Set the density of tags in the grid layout.",
+          options: [
+            { value: "sm", label: "Small" },
+            { value: "md", label: "Medium" },
+            { value: "lg", label: "Large" },
+          ],
+        },
+        {
+          control: "switch",
+          key: "showStarred",
+          title: "Starred Tags",
+          description: "Show starred tags in their own section.",
+        },
+        {
+          control: "switch",
+          key: "showRecently",
+          title: "Recent Tags",
+          description: "Show tags you used recently.",
+        },
+        {
+          control: "switch",
+          key: "showRecommended",
+          title: "Recommended Tags",
+          description: "Show local tag recommendations for the selected Saves.",
+        },
+        {
+          control: "switch",
+          key: "showCounts",
+          title: "Tag Counts",
+          description: "Show how many Saves use each tag.",
+        },
+        {
+          control: "switch",
+          key: "pinned",
+          title: "Keep Tag Picker Open",
+          description: "Keep the picker visible while you tag multiple Saves.",
         },
       ],
     }),
@@ -123,6 +253,7 @@ export const generalSection = defineCustomSection({
           key: "notifications",
           title: "Notifications",
           keywords: ["alerts", "extension", "auto import", "screenshots"],
+          standalone: true,
           render: () => <NotificationPreferences />,
         },
       ],

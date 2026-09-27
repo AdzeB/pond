@@ -10,7 +10,6 @@ import {
   IconMagicWandOutline18 as Processing,
   IconNodes3Outline18 as Providers,
   IconMagnifierOutline18 as Search,
-  IconLockPasswordOutline18 as Security,
   IconKeyboard2Outline18 as Shortcuts,
   IconServerOutline18 as Storage,
   IconBookmarkOutline18 as Tags,
@@ -42,8 +41,8 @@ const ICONS = new Map<string, IconComponent>([
   ["personalization", Personalization],
   ["mcp", Mcp],
   ["storage", Storage],
-  ["security", Security],
   ["harvesting", Videos],
+  ["screenshots", Images],
 ]);
 
 export interface SectionDef extends SettingsSection {
@@ -66,7 +65,6 @@ const BESPOKE_SECTION_IDS = new Set([
   "agent-models",
   "personalization",
   "mcp",
-  "security",
 ]);
 
 export function isBespokeSection(section: SectionDef): boolean {

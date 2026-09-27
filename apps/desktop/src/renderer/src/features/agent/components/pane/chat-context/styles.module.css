@@ -14,7 +14,7 @@
 .group h3 {
   margin: 0;
   font-size: inherit;
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
 }
 .access p,
 .empty {
@@ -52,7 +52,7 @@
   height: 24px;
   overflow: hidden;
   border-radius: 5px;
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-sm);
 }
 .media img {
   width: 100%;

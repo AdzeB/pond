@@ -3,7 +3,6 @@ import type { JsonValue } from "@pond/schema/json";
 import { LocalApiItemGetParamsSchema } from "@pond/schema/local-api";
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Context } from "hono";
-import { lockedFolderIds } from "../core/security/folder-passwords";
 import { getDb } from "../db";
 
 async function readParams(c: Context): Promise<JsonValue> {
@@ -27,13 +26,7 @@ export async function itemGetHandler(c: Context) {
     params.includeDeleted === "true" || params.includeDeleted === true;
 
   const filters = [];
-  const hiddenFolders = [...(await lockedFolderIds())];
   if (!includeDeleted) filters.push(isNull(saves.deletedAt));
-  if (hiddenFolders.length > 0) {
-    filters.push(
-      sql`not exists (select 1 from save_folders locked_sf where locked_sf.save_id = ${saves.id} and locked_sf.folder_id in (select value from json_each(${JSON.stringify(hiddenFolders)})))`,
-    );
-  }
 
   const ids = Array.isArray(params.ids)
     ? params.ids

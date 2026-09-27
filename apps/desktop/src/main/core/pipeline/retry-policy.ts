@@ -1,4 +1,4 @@
-import type { TaskStatus } from "@pond/schema/db";
+import type { TaskDeferredReason, TaskStatus } from "@pond/schema/db";
 import {
   AuthRequiredError,
   ExtractorError,
@@ -14,6 +14,7 @@ interface RetryDecision {
   nextRunAt: Date;
   recordAttempt: boolean;
   lastError: string;
+  deferredReason: TaskDeferredReason | null;
 }
 
 const BACKOFF_SCHEDULE_MS = [
@@ -48,31 +49,35 @@ export function classifyError(
       nextRunAt: new Date(now + 24 * 60 * 60_000),
       recordAttempt: false,
       lastError,
+      deferredReason: null,
     };
   }
   if (cause instanceof RateLimitedError) {
     const ms = (cause.retryAfterSec ?? 60) * 1000;
     return {
-      status: "pending",
+      status: "deferred",
       nextRunAt: new Date(now + ms),
       recordAttempt: false,
       lastError,
+      deferredReason: "source_budget",
     };
   }
   if (cause instanceof GeoRestrictedError) {
     return {
-      status: "failed",
+      status: "dead",
       nextRunAt: new Date(now + 24 * 60 * 60_000),
       recordAttempt: true,
       lastError,
+      deferredReason: null,
     };
   }
   if (cause instanceof UnsupportedError || cause instanceof TerminalError) {
     return {
-      status: "failed",
+      status: "dead",
       nextRunAt: new Date(now + 24 * 60 * 60_000),
       recordAttempt: true,
       lastError,
+      deferredReason: null,
     };
   }
   const isTransient =
@@ -81,23 +86,26 @@ export function classifyError(
     const nextAttempts = ctx.attempts + 1;
     if (nextAttempts >= ctx.maxAttempts) {
       return {
-        status: "failed",
+        status: "dead",
         nextRunAt: new Date(now + 60 * 60_000),
         recordAttempt: true,
         lastError,
+        deferredReason: null,
       };
     }
     return {
-      status: "pending",
+      status: "deferred",
       nextRunAt: new Date(now + backoffFor(nextAttempts)),
       recordAttempt: true,
       lastError,
+      deferredReason: "retry_backoff",
     };
   }
   return {
-    status: "failed",
+    status: "dead",
     nextRunAt: new Date(now + 24 * 60 * 60_000),
     recordAttempt: true,
     lastError,
+    deferredReason: null,
   };
 }

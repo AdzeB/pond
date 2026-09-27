@@ -20,7 +20,7 @@ import { readEnrichmentSidecar } from "./enrichment-sidecar";
 import { broadcastSyncAction, withMutationScope } from "./executor";
 import { runLibraryTransfer } from "./library-transfers";
 import { migrateSaveFileLayout } from "./save-file-layout-migration";
-import { libraryMediaMetadata } from "./security/library-media-storage";
+import { libraryMediaMetadata } from "./storage/library-media-storage";
 
 export async function reconcileLibrary(): Promise<{
   updated: number;

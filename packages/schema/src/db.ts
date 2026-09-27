@@ -64,12 +64,53 @@ export type Op = (typeof OPS)[number];
 
 export const TASK_STATUSES = [
   "pending",
+  "deferred",
   "running",
   "done",
-  "failed",
   "blocked",
+  "dead",
+  "cancelled",
 ] as const;
 export type TaskStatus = (typeof TASK_STATUSES)[number];
+
+export const TASK_DEFERRED_REASONS = [
+  "retry_backoff",
+  "source_budget",
+  "breaker_open",
+  "source_paused",
+  "queue_paused",
+  "worker_capacity",
+] as const;
+export type TaskDeferredReason = (typeof TASK_DEFERRED_REASONS)[number];
+
+export const QUEUE_GENERATION_KINDS = ["retry", "sync", "refresh"] as const;
+export type QueueGenerationKind = (typeof QUEUE_GENERATION_KINDS)[number];
+
+export const QUEUE_GENERATION_STATUSES = [
+  "active",
+  "paused",
+  "cancelling",
+  "cancelled",
+  "done",
+] as const;
+export type QueueGenerationStatus = (typeof QUEUE_GENERATION_STATUSES)[number];
+
+export const SOURCE_GATE_STATES = [
+  "closed",
+  "open",
+  "half_open",
+  "paused",
+] as const;
+export type SourceGateState = (typeof SOURCE_GATE_STATES)[number];
+
+export const SOURCE_GATE_REASONS = [
+  "rate_limit",
+  "transient_failures",
+  "at_risk",
+  "manual",
+  "global_pause",
+] as const;
+export type SourceGateReason = (typeof SOURCE_GATE_REASONS)[number];
 
 export interface SaveFile {
   kind: string;
@@ -81,6 +122,8 @@ export interface SaveFile {
   height?: number | null;
   sourceUrl?: string | null;
   family?: string | null;
+  subfamily?: string | null;
+  fontWeight?: number | null;
   bpm?: number | null;
 }
 
@@ -89,6 +132,12 @@ export interface VideoNote {
   id: string;
   timeSec: number;
   text: string;
+}
+
+export interface ImageCommentReply {
+  id: string;
+  text: string;
+  createdAt?: number;
 }
 
 export interface ImageComment {
@@ -100,6 +149,8 @@ export interface ImageComment {
   h: number;
   text: string;
   createdAt?: number;
+  replies?: ImageCommentReply[];
+  resolvedAt?: number;
 }
 
 export interface ImageCrop {
@@ -144,6 +195,20 @@ export const saves = sqliteTable(
     width: integer("width"),
     height: integer("height"),
     fileSize: integer("file_size"),
+    container: text("container"),
+    videoCodec: text("video_codec"),
+    audioCodec: text("audio_codec"),
+    bitrate: integer("bitrate"),
+    colorSpace: text("color_space"),
+    cameraMake: text("camera_make"),
+    cameraModel: text("camera_model"),
+    lensModel: text("lens_model"),
+    focalLength: real("focal_length"),
+    aperture: real("aperture"),
+    exposureTime: text("exposure_time"),
+    iso: integer("iso"),
+    takenAt: integer("taken_at", { mode: "timestamp_ms" }),
+    metadataVersion: integer("metadata_version"),
     phash: text("phash"),
     blurhash: text("blurhash"),
     fontActivated: integer("font_activated", { mode: "boolean" })
@@ -183,6 +248,7 @@ export const saves = sqliteTable(
       .$type<string[]>()
       .notNull()
       .default(sql`'[]'`),
+    primaryColor: text("primary_color"),
     status: text("status")
       .$type<SaveStatus>()
       .notNull()
@@ -215,6 +281,85 @@ export const saves = sqliteTable(
   }),
 );
 
+export const queueGenerations = sqliteTable(
+  "queue_generations",
+  {
+    id: text("id").primaryKey(),
+    kind: text("kind").$type<QueueGenerationKind>().notNull(),
+    status: text("status")
+      .$type<QueueGenerationStatus>()
+      .notNull()
+      .default(sql`'active'`),
+    source: text("source").$type<Source>(),
+    scope: text("scope", { mode: "json" }).$type<JsonObject>(),
+    cancellationFence: integer("cancellation_fence").notNull().default(0),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+    completedAt: integer("completed_at", { mode: "timestamp_ms" }),
+  },
+  (t) => ({
+    statusCreatedIdx: index("queue_generations_status_created_idx").on(
+      t.status,
+      t.createdAt,
+    ),
+    sourceStatusIdx: index("queue_generations_source_status_idx").on(
+      t.source,
+      t.status,
+    ),
+  }),
+);
+
+export const sourceGates = sqliteTable("source_gates", {
+  source: text("source").$type<Source>().primaryKey(),
+  state: text("state")
+    .$type<SourceGateState>()
+    .notNull()
+    .default(sql`'closed'`),
+  reason: text("reason").$type<SourceGateReason>(),
+  retryAt: integer("retry_at", { mode: "timestamp_ms" }),
+  probeLeaseToken: text("probe_lease_token"),
+  probeLeaseExpiresAt: integer("probe_lease_expires_at", {
+    mode: "timestamp_ms",
+  }),
+  failureCount: integer("failure_count").notNull().default(0),
+  failureWindowStartedAt: integer("failure_window_started_at", {
+    mode: "timestamp_ms",
+  }),
+  version: integer("version").notNull().default(0),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
+});
+
+export const sourceRequestLedger = sqliteTable(
+  "source_request_ledger",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    source: text("source").$type<Source>().notNull(),
+    requestedAt: integer("requested_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+    permits: integer("permits").notNull().default(1),
+    taskId: text("task_id"),
+    generationId: text("generation_id").references(() => queueGenerations.id, {
+      onDelete: "set null",
+    }),
+  },
+  (t) => ({
+    sourceRequestedIdx: index("source_request_ledger_source_requested_idx").on(
+      t.source,
+      t.requestedAt,
+    ),
+    generationIdx: index("source_request_ledger_generation_idx").on(
+      t.generationId,
+    ),
+  }),
+);
+
 export const tasks = sqliteTable(
   "tasks",
   {
@@ -222,6 +367,7 @@ export const tasks = sqliteTable(
     saveId: text("save_id")
       .notNull()
       .references(() => saves.id, { onDelete: "cascade" }),
+    source: text("source").$type<Source>().notNull(),
     op: text("op").$type<Op>().notNull(),
     status: text("status")
       .$type<TaskStatus>()
@@ -229,6 +375,18 @@ export const tasks = sqliteTable(
       .default(sql`'pending'`),
     attempts: integer("attempts").notNull().default(0),
     maxAttempts: integer("max_attempts").notNull().default(5),
+    generationId: text("generation_id").references(() => queueGenerations.id, {
+      onDelete: "set null",
+    }),
+    cancellationFence: integer("cancellation_fence").notNull().default(0),
+    deferredReason: text("deferred_reason").$type<TaskDeferredReason>(),
+    leaseOwner: text("lease_owner"),
+    leaseToken: text("lease_token"),
+    leaseExpiresAt: integer("lease_expires_at", { mode: "timestamp_ms" }),
+    heartbeatAt: integer("heartbeat_at", { mode: "timestamp_ms" }),
+    startedAt: integer("started_at", { mode: "timestamp_ms" }),
+    failedAt: integer("failed_at", { mode: "timestamp_ms" }),
+    completedAt: integer("completed_at", { mode: "timestamp_ms" }),
     nextRunAt: integer("next_run_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(unixepoch() * 1000)`),
@@ -245,6 +403,17 @@ export const tasks = sqliteTable(
     saveOpUnique: unique("tasks_save_op_unique").on(t.saveId, t.op),
     nextRunIdx: index("tasks_next_run_idx").on(t.status, t.nextRunAt),
     saveIdx: index("tasks_save_idx").on(t.saveId),
+    sourceOpIdx: index("tasks_source_op_idx").on(
+      t.source,
+      t.op,
+      t.status,
+      t.nextRunAt,
+    ),
+    generationIdx: index("tasks_generation_idx").on(t.generationId, t.status),
+    leaseRecoveryIdx: index("tasks_lease_recovery_idx").on(
+      t.status,
+      t.leaseExpiresAt,
+    ),
   }),
 );
 
@@ -520,5 +689,11 @@ export type TransactionRow = typeof transactionsLog.$inferSelect;
 export type LibraryScanRow = typeof libraryScan.$inferSelect;
 export type Settings = typeof settings.$inferSelect;
 export type NewSettings = typeof settings.$inferInsert;
+export type QueueGeneration = typeof queueGenerations.$inferSelect;
+export type NewQueueGeneration = typeof queueGenerations.$inferInsert;
+export type SourceGate = typeof sourceGates.$inferSelect;
+export type NewSourceGate = typeof sourceGates.$inferInsert;
+export type SourceRequest = typeof sourceRequestLedger.$inferSelect;
+export type NewSourceRequest = typeof sourceRequestLedger.$inferInsert;
 export type Task = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;

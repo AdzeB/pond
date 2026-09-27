@@ -17,7 +17,8 @@ describe("empty gallery menu", () => {
     expect(labels).toContain("Rescan Library");
     expect(labels).toContain("Verify Integrity");
     expect(labels).toContain("Pinterest");
-    expect(labels.join(" ")).not.toContain("ArtStation");
+    expect(labels.join(" ")).toContain("ArtStation");
+    expect(labels.join(" ")).toContain("Huaban");
     expect(labels.join(" ")).not.toContain("Plugin");
     expect(labels.join(" ")).not.toContain("…");
   });

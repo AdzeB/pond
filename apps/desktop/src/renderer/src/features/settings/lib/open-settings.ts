@@ -72,8 +72,11 @@ export function resolveSettingsLocation(
   } else if (normalized === "setting-storage-autoEmptyDays") {
     normalized = "setting-library-autoEmptyDays";
     valid = "library";
-  } else if (normalized === "setting-storage-watched-folder") {
-    normalized = "setting-harvesting-watched-folder";
+  } else if (
+    normalized === "setting-storage-watched-folder" ||
+    normalized === "setting-harvesting-watched-folder"
+  ) {
+    normalized = null;
     valid = "harvesting";
   } else if (normalized.startsWith("setting-storage-")) {
     const key = normalized.slice("setting-storage-".length);
@@ -103,5 +106,18 @@ export function settingsHref(section?: string, hash?: string): string {
 }
 
 export function openSettings(section?: string, hash?: string): void {
-  getAppRouter()?.history.push(settingsHref(section, hash));
+  const href = settingsHref(section, hash);
+  if (window.pond?.openSettingsWindow) {
+    const resolved = resolveSettingsLocation(section, hash);
+    void window.pond.openSettingsWindow(
+      section === undefined && hash === undefined
+        ? {}
+        : {
+            section: resolved.section,
+            hash: resolved.hash ?? undefined,
+          },
+    );
+    return;
+  }
+  getAppRouter()?.history.push(href);
 }

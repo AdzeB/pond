@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-const TOKEN = /\{(n|title|id|family|date|tags|original)(?::(\d{1,2}))?\}/g;
+const TOKEN =
+  /\{(n|title|id|family|date|tags|original)(?::([a-z]+|\d{1,2}))?\}/g;
 
 export const RenameReplacementSchema = z.object({
   find: z.string().min(1).max(500),
@@ -24,11 +25,25 @@ export interface RenameTemplateValues {
   replacement?: z.input<typeof RenameReplacementSchema> | null;
 }
 
-function formattedDate(value: RenameTemplateValues["date"]): string {
+function formattedDate(
+  value: RenameTemplateValues["date"],
+  format?: string,
+): string {
   const date = value == null ? new Date() : new Date(value);
-  return Number.isNaN(date.getTime())
-    ? ""
-    : date.toISOString().slice(0, "YYYY-MM-DD".length);
+  if (Number.isNaN(date.getTime())) return "";
+  const iso = date.toISOString();
+  switch (format) {
+    case "compact":
+      return iso.slice(0, 10).replaceAll("-", "");
+    case "year":
+      return iso.slice(0, 4);
+    case "month":
+      return iso.slice(0, 7);
+    case "timestamp":
+      return `${iso.slice(0, 10).replaceAll("-", "")}-${iso.slice(11, 19).replaceAll(":", "")}`;
+    default:
+      return iso.slice(0, "YYYY-MM-DD".length);
+  }
 }
 
 function replaceSource(
@@ -52,7 +67,7 @@ export function applyRenameTemplate(
       switch (token) {
         case "n":
           return String(sequence).padStart(
-            tokenPadding
+            tokenPadding && /^\d+$/.test(tokenPadding)
               ? Number.parseInt(tokenPadding, 10)
               : (values.padding ?? 1),
             "0",
@@ -64,7 +79,7 @@ export function applyRenameTemplate(
         case "family":
           return values.family?.trim() || title;
         case "date":
-          return formattedDate(values.date);
+          return formattedDate(values.date, tokenPadding);
         case "tags":
           return values.tags?.join(", ") ?? "";
         case "original":

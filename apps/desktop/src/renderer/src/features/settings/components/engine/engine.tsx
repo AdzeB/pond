@@ -1,9 +1,11 @@
 import type { Prefs } from "@pond/schema/db";
 import { Settings } from "@pond/ui";
+import type { ReactNode } from "react";
 import { z } from "zod";
 import { ItemView } from "@/features/settings/components/engine/field-control";
 import type {
   Binding,
+  CustomItem,
   GroupConfig,
   Item,
   SectionConfig,
@@ -189,31 +191,124 @@ function Group({
 
   if (group.render === undefined && items.length === 0) return null;
 
-  const body = (
-    <>
-      {items.length > 0 ? (
-        <Settings.List>
-          {items.map((item) => (
-            <ItemRow
-              key={item.key}
-              item={item}
-              groupBinding={binding}
-              sectionId={sectionId}
-            />
-          ))}
-        </Settings.List>
-      ) : null}
-      {group.render ? group.render(binding) : null}
-    </>
-  );
-
   return (
     <Settings.Section span={group.fullWidth ? "full" : undefined}>
       {group.title ? (
         <Settings.SectionTitle>{group.title}</Settings.SectionTitle>
       ) : null}
-      {body}
+      {items.length > 0 ? (
+        <GroupItems items={items} binding={binding} sectionId={sectionId} />
+      ) : null}
+      {group.render ? group.render(binding) : null}
     </Settings.Section>
+  );
+}
+
+function GroupItems({
+  items,
+  binding,
+  sectionId,
+}: {
+  items: Item[];
+  binding: Binding;
+  sectionId?: string;
+}) {
+  const content: ReactNode[] = [];
+  let rows: Item[] = [];
+
+  const flushRows = () => {
+    if (rows.length === 0) return;
+    const segment = rows;
+    rows = [];
+    content.push(
+      <Settings.List key={`rows-${segment[0]?.key}`}>
+        {segment.map((item) => (
+          <ItemRow
+            key={item.key}
+            item={item}
+            groupBinding={binding}
+            sectionId={sectionId}
+          />
+        ))}
+      </Settings.List>,
+    );
+  };
+
+  for (const item of items) {
+    if (item.control !== "custom" || !item.standalone) {
+      rows.push(item);
+      continue;
+    }
+    flushRows();
+    content.push(
+      <StandaloneItem
+        key={item.key}
+        item={item}
+        groupBinding={binding}
+        sectionId={sectionId}
+      />,
+    );
+  }
+  flushRows();
+
+  return content;
+}
+
+function StandaloneItem({
+  item,
+  groupBinding,
+  sectionId,
+}: {
+  item: CustomItem;
+  groupBinding: Binding;
+  sectionId?: string;
+}) {
+  if (item.prefsKey)
+    return (
+      <StandaloneItemWithBinding
+        item={item}
+        prefsKey={item.prefsKey}
+        sectionId={sectionId}
+      />
+    );
+  return (
+    <StandaloneItemShell
+      item={item}
+      binding={groupBinding}
+      sectionId={sectionId}
+    />
+  );
+}
+
+function StandaloneItemWithBinding({
+  item,
+  prefsKey,
+  sectionId,
+}: {
+  item: CustomItem;
+  prefsKey: NonNullable<CustomItem["prefsKey"]>;
+  sectionId?: string;
+}) {
+  const binding = usePrefsBinding(prefsKey);
+  if (item.visible && !item.visible(binding.values)) return null;
+  return (
+    <StandaloneItemShell item={item} binding={binding} sectionId={sectionId} />
+  );
+}
+
+function StandaloneItemShell({
+  item,
+  binding,
+  sectionId,
+}: {
+  item: CustomItem;
+  binding: Binding;
+  sectionId?: string;
+}) {
+  return (
+    <div id={sectionId ? `setting-${sectionId}-${item.key}` : undefined}>
+      {item.render(binding)}
+    </div>
   );
 }
 

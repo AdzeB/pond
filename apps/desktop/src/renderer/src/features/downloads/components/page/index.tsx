@@ -1,17 +1,10 @@
+import { IconMediaPauseFill18, IconMediaPlayFill18 } from "@pond/icons/fill/18";
 import {
-  IconArrowRotateClockwiseFill18,
-  IconMediaPauseFill18,
-  IconMediaPlayFill18,
-} from "@pond/icons/fill/18";
-import {
-  IconBanOutline18,
   IconCircleCheckOutline18,
   IconLink2Outline18,
-  IconTrashXmarkOutline18,
-  IconXmarkOutline18,
 } from "@pond/icons/outline/18";
 import { sourceLabel } from "@pond/schema/sources";
-import { Button, Dialog, Tooltip } from "@pond/ui";
+import { Button, Tooltip } from "@pond/ui";
 import {
   useInfiniteQuery,
   useMutation,
@@ -22,7 +15,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import {
   type DownloadRow,
-  downloadFiltersActive,
   downloadRowSource,
   type HistoryCursor,
   HistoryPageSchema,
@@ -31,16 +23,14 @@ import {
   PipelineStatusSchema,
   projectLiveDownloads,
   STATUS_FILTER_OPTIONS,
+  type StatusFilter,
   statusFeed,
 } from "@/features/downloads/lib/status-feed";
 import {
   downloadsFilters,
   useDownloadsFilters,
 } from "@/features/downloads/state/downloads-filters";
-import {
-  downloadsSelection,
-  useDownloadsSelectionRows,
-} from "@/features/downloads/state/downloads-selection";
+import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
 import {
   DownloadsEmpty,
   MatchesEmpty,
@@ -63,19 +53,10 @@ import {
   TableFilterToggle,
 } from "@/shared/components/table-filters";
 import { uniqueFilterOptions } from "@/shared/components/table-filters/chip-label";
-import {
-  useDownloadActivity,
-  useDownloadClock,
-} from "../../hooks/use-download-activity";
-import {
-  canSkipDownload,
-  canTrashDownload,
-  confirmSkipDownloadRows,
-  confirmTrashDownloadRows,
-  retryDownloadRows,
-} from "../lib/actions";
+import { useDownloadActivity } from "../../hooks/use-download-activity";
 import { TransferJobsPanel } from "../transfers";
 import { DownloadsView } from "./downloads-view";
+import { hydrateLiveDownloadSaves } from "./hydrate-live-saves";
 
 import styles from "./styles.module.css";
 
@@ -97,7 +78,12 @@ export function DownloadsPage() {
     ) => {
       try {
         const ids = InflightIdsSchema.parse(await window.pond.query(name, {}));
-        if (!stopped) await reloadSaves(ids);
+        if (stopped) return;
+        if (name === "downloads.ingestingOrFailed") {
+          await hydrateLiveDownloadSaves(ids, () => stopped);
+          return;
+        }
+        await reloadSaves(ids);
       } catch (err) {
         console.warn(`[pond downloads] ${name} refresh failed`, err);
       }
@@ -113,7 +99,6 @@ export function DownloadsPage() {
   const filters = useDownloadsFilters();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const activity = useDownloadActivity();
-  const now = useDownloadClock();
   const inspectorId = useInspectorSaveId();
   const inspectorMode = useInspectorMode();
   const rightPane = useRightPane();
@@ -137,18 +122,32 @@ export function DownloadsPage() {
     return (history.data?.pages ?? [])
       .flatMap((page) => page.rows)
       .flatMap((row) => {
+        if (row.source === "local") return [];
         if (seen.has(row.saveId)) return [];
         seen.add(row.saveId);
         return [historyToDownloadRow(row)];
       });
   }, [history.data, live]);
+  const statuslessFilters = useMemo(
+    () => ({ ...filters, statuses: new Set<StatusFilter>() }),
+    [filters],
+  );
+  const scopedLive = useMemo(
+    () => live.filter((row) => matchesDownloadFilters(row, statuslessFilters)),
+    [live, statuslessFilters],
+  );
+  const scopedCompleted = useMemo(
+    () =>
+      completed.filter((row) => matchesDownloadFilters(row, statuslessFilters)),
+    [completed, statuslessFilters],
+  );
   const rows = useMemo(
-    () => live.filter((row) => matchesDownloadFilters(row, filters)),
-    [live, filters],
+    () => scopedLive.filter((row) => matchesDownloadFilters(row, filters)),
+    [scopedLive, filters],
   );
   const visibleCompleted = useMemo(
-    () => completed.filter((row) => matchesDownloadFilters(row, filters)),
-    [completed, filters],
+    () => scopedCompleted.filter((row) => matchesDownloadFilters(row, filters)),
+    [scopedCompleted, filters],
   );
   const sourceOptions = useMemo(
     () =>
@@ -171,6 +170,17 @@ export function DownloadsPage() {
       }),
     );
   }, [rows, visibleCompleted]);
+  useEffect(() => {
+    if (rightPane !== "inspector") return;
+    const visible = [...rows, ...visibleCompleted];
+    const inspectedVisible =
+      inspectorMode === "download" &&
+      inspectorId != null &&
+      visible.some((row) => row.saveId === inspectorId);
+    if (inspectedVisible) return;
+    const first = visible[0];
+    if (first) libraryChrome.inspectDownload(first.saveId);
+  }, [rows, visibleCompleted, rightPane, inspectorMode, inspectorId]);
   useEffect(() => () => downloadsSelection.clear(), []);
 
   const pipeline = useQuery({
@@ -181,7 +191,8 @@ export function DownloadsPage() {
       ),
   });
   const paused = pipeline.data?.paused === true;
-  const tableFiltersActive = downloadFiltersActive(filters);
+  const tableFiltersActive =
+    filters.sources.size > 0 || filters.statuses.size > 0;
   const filtering = filters.q.trim() !== "" || tableFiltersActive;
   const showPlaceEmpty =
     live.length === 0 && completed.length === 0 && !filtering;
@@ -207,38 +218,6 @@ export function DownloadsPage() {
         "Couldn't change the queue. Try again.",
       ),
   });
-  const selected = useDownloadsSelectionRows();
-  const skippable = selected.filter(canSkipDownload);
-  const trashable = selected.filter(canTrashDownload);
-  const failedRows = rows.filter((row) => row.status === "failed");
-  const retry = useMutation({
-    mutationFn: () => retryDownloadRows(failedRows),
-    onError: () =>
-      statusFeed.error(
-        "Retry downloads",
-        "Couldn't retry these downloads. Try again.",
-      ),
-  });
-  const cancelAll = () => {
-    Dialog.confirm({
-      title: "Cancel All",
-      description:
-        "Pond stops every current download. You can retry them later.",
-      confirmLabel: "Cancel All",
-      confirmVariant: "destructive",
-      onConfirm: async () => {
-        try {
-          await window.pond.pipelineCancelAll();
-        } catch {
-          statusFeed.error(
-            "Cancel downloads",
-            "Couldn't cancel these downloads. Try again.",
-          );
-        }
-      },
-    });
-  };
-
   return (
     <div className={styles.page}>
       <SearchChrome
@@ -268,55 +247,6 @@ export function DownloadsPage() {
                 aria-label={paused ? "Resume Queue" : "Pause Queue"}
               >
                 {paused ? <IconMediaPlayFill18 /> : <IconMediaPauseFill18 />}
-              </Button>
-            </Tooltip>
-            <Tooltip label="Retry Failed" side="bottom">
-              <Button
-                icon
-                size="sm"
-                variant="ghost"
-                aria-label="Retry Failed"
-                disabled={failedRows.length === 0 || retry.isPending}
-                loading={retry.isPending}
-                onClick={() => retry.mutate()}
-              >
-                <IconArrowRotateClockwiseFill18 />
-              </Button>
-            </Tooltip>
-            <Tooltip label="Skip Selected" side="bottom">
-              <Button
-                icon
-                size="sm"
-                variant="ghost"
-                aria-label="Skip Selected"
-                disabled={skippable.length === 0}
-                onClick={() => confirmSkipDownloadRows(skippable)}
-              >
-                <IconBanOutline18 />
-              </Button>
-            </Tooltip>
-            <Tooltip label="Move to Trash" side="bottom">
-              <Button
-                icon
-                size="sm"
-                variant="ghost"
-                aria-label="Move to Trash"
-                disabled={trashable.length === 0}
-                onClick={() => confirmTrashDownloadRows(trashable)}
-              >
-                <IconTrashXmarkOutline18 />
-              </Button>
-            </Tooltip>
-            <Tooltip label="Cancel All" side="bottom">
-              <Button
-                icon
-                size="sm"
-                variant="ghost"
-                aria-label="Cancel All"
-                disabled={!live.some((row) => row.status !== "failed")}
-                onClick={cancelAll}
-              >
-                <IconXmarkOutline18 />
               </Button>
             </Tooltip>
           </>
@@ -373,12 +303,6 @@ export function DownloadsPage() {
         completed={visibleCompleted}
         activities={activity.data ?? []}
         paused={paused}
-        now={now}
-        inspectedId={
-          rightPane === "inspector" && inspectorMode === "download"
-            ? inspectorId
-            : null
-        }
         onInspect={onRowClick}
         historyLoading={history.isPending}
         historyError={history.isError}

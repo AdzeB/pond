@@ -25,6 +25,11 @@ import {
   schedulePersist,
 } from "./rate-governor-state";
 import { type HeaderBag, parseRateSignal } from "./rate-headers";
+import {
+  noteDurableSourceFailure,
+  recordSourceRequest,
+  transitionSourceGate,
+} from "./source-admission";
 
 /**
  * The one pacing authority for every platform request: acquire() blocks until a source is safe to hit, report() adapts to the response; better to sync slowly than to risk a user's account.
@@ -80,12 +85,23 @@ export function setSourceCooldown(source: Source, ms: number): void {
   if (until <= prev) return;
   cooldownUntil.set(source, until);
   log.info("[pond governor] cooldown set", { source, ms });
+  void transitionSourceGate({
+    source,
+    state: "open",
+    reason: "rate_limit",
+    retryAt: until,
+  });
   schedulePersist(true);
 }
 
 export function noteTransientFailure(source: Source): void {
   loadState();
   const t = now();
+  void noteDurableSourceFailure(source, {
+    threshold: BREAKER_THRESHOLD,
+    windowMs: BREAKER_WINDOW_MS,
+    openMs: BREAKER_TRIP_MS,
+  });
   const entry = breakerCounters.get(source);
   if (!entry || t - entry.firstAt > BREAKER_WINDOW_MS) {
     breakerCounters.set(source, { count: 1, firstAt: t });
@@ -110,12 +126,27 @@ export function noteSuccess(source: Source): void {
   if (m > MULTIPLIER_MIN) {
     multiplier.set(source, Math.max(MULTIPLIER_MIN, m - MULTIPLIER_DECREASE));
   }
+  if (!manualPaused.has(source) && !atRisk.has(source)) {
+    void transitionSourceGate({
+      source,
+      state: "closed",
+      reason: null,
+      retryAt: null,
+      resetFailures: true,
+    });
+  }
 }
 
 export function markAtRisk(source: Source, kind: AtRiskKind, note = ""): void {
   loadState();
   atRisk.set(source, { source, kind, since: now(), note });
   log.warn("[pond governor] source marked at-risk", { source, kind, note });
+  void transitionSourceGate({
+    source,
+    state: "open",
+    reason: "at_risk",
+    retryAt: now() + AT_RISK_PARK_MS,
+  });
   schedulePersist(true);
 }
 
@@ -126,6 +157,24 @@ export function resumeSource(source: Source): void {
   atRisk.delete(source);
   breakerCounters.delete(source);
   multiplier.set(source, MULTIPLIER_MIN);
+  void transitionSourceGate({
+    source,
+    state: "closed",
+    reason: null,
+    retryAt: null,
+    resetFailures: true,
+  });
+  schedulePersist(true);
+}
+
+export function pauseSource(source: Source): void {
+  manualPaused.add(source);
+  void transitionSourceGate({
+    source,
+    state: "paused",
+    reason: "manual",
+    retryAt: null,
+  });
   schedulePersist(true);
 }
 
@@ -241,6 +290,18 @@ export async function acquire(
   if (spacingWait > 0) {
     if (now() + spacingWait > deadline) throw new GovernorAbortError();
     await wait(spacingWait, opts.signal);
+  }
+
+  for (;;) {
+    const admission = await recordSourceRequest(source);
+    if (admission.admitted) break;
+    const remaining = deadline - now();
+    if (remaining <= 0) throw new GovernorAbortError();
+    const gateWait =
+      admission.nextRunAt >= Number.MAX_SAFE_INTEGER
+        ? Math.min(2_000, remaining)
+        : Math.min(Math.max(50, admission.nextRunAt - now()), 5_000, remaining);
+    await wait(gateWait, opts.signal);
   }
 
   const t = now();

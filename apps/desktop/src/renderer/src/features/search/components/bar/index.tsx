@@ -47,13 +47,16 @@ import {
   removeRecentSearch,
   useRecentSearches,
 } from "@/features/search/state/recent-searches";
+import { usePrefs } from "@/features/settings/state/prefs";
 import { useTags } from "@/features/tags/state/tags";
+import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { stopAppHotkeysFromEditable } from "@/shared/lib/editable-target";
 import { $readSearchString, $writeSearchString } from "./lib/editor-state";
 import { FilterTokenNode } from "./lib/token-node";
 import { FilterTokenPlugin } from "./lib/token-plugin";
 import { FilterTypeahead } from "./lib/typeahead";
+import { buildSearchScopeItems } from "./search-scope-menu";
 import styles from "./styles.module.css";
 
 export interface SearchComposerProps {
@@ -109,6 +112,7 @@ function SearchField({
   const runRef = useRef(0);
   const scrollFade = useScrollFade<HTMLDivElement>();
   const recentSearches = useRecentSearches();
+  const [searchPrefs, patchSearchPrefs] = usePrefs("search");
 
   const tagNames = useMemo(() => tags.map((t) => t.name), [tags]);
 
@@ -266,58 +270,67 @@ function SearchField({
           setFocused(false);
       }}
     >
-      <div className={styles.bar}>
-        <div className={styles.editor}>
-          <PlainTextPlugin
-            contentEditable={
-              <ContentEditable
-                className={styles.input}
-                spellCheck={false}
-                ariaLabel="Search"
-                aria-busy={status === "thinking"}
-                data-library-search=""
-                {...scrollFade}
-                onKeyDown={stopAppHotkeysFromEditable}
-              />
-            }
-            placeholder={
-              <span className={styles.placeholder}>Search your library…</span>
-            }
-            ErrorBoundary={LexicalErrorBoundary}
-          />
-          <HistoryPlugin />
-          {searchNonce > 0 ? <AutoFocusPlugin /> : null}
-          <FilterTokenPlugin />
-          <FilterTypeahead
-            hostRef={hostRef}
-            onOpenChange={setTypeaheadOpen}
-            tags={tagNames}
-            sources={facets.sources}
-            creators={facets.creators}
-          />
+      <SpecContextMenu
+        buildItems={() =>
+          buildSearchScopeItems({
+            scopes: searchPrefs.scopes,
+            onChange: (scopes) => void patchSearchPrefs({ scopes }),
+          })
+        }
+      >
+        <div className={styles.bar}>
+          <div className={styles.editor}>
+            <PlainTextPlugin
+              contentEditable={
+                <ContentEditable
+                  className={styles.input}
+                  spellCheck={false}
+                  ariaLabel="Search"
+                  aria-busy={status === "thinking"}
+                  data-library-search=""
+                  {...scrollFade}
+                  onKeyDown={stopAppHotkeysFromEditable}
+                />
+              }
+              placeholder={
+                <span className={styles.placeholder}>Search your library…</span>
+              }
+              ErrorBoundary={LexicalErrorBoundary}
+            />
+            <HistoryPlugin />
+            {searchNonce > 0 ? <AutoFocusPlugin /> : null}
+            <FilterTokenPlugin />
+            <FilterTypeahead
+              hostRef={hostRef}
+              onOpenChange={setTypeaheadOpen}
+              tags={tagNames}
+              sources={facets.sources}
+              creators={facets.creators}
+            />
+          </div>
+          {status === "thinking" ? (
+            <Loader.Root className={styles.thinking}>
+              <Loader.Dots />
+              Finding filters
+            </Loader.Root>
+          ) : null}
+          {hasText ? (
+            <Tooltip label="Clear Search" side="bottom">
+              <Button
+                icon
+                size="xs"
+                variant="ghost"
+                className={styles.clear}
+                aria-label="Clear Search"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={clearField}
+              >
+                <IconCircleXmarkFill18 />
+              </Button>
+            </Tooltip>
+          ) : null}
         </div>
-        {status === "thinking" ? (
-          <Loader.Root className={styles.thinking}>
-            <Loader.Dots />
-            Finding filters
-          </Loader.Root>
-        ) : null}
-        {hasText ? (
-          <Tooltip label="Clear Search" side="bottom">
-            <Button
-              icon
-              size="xs"
-              variant="ghost"
-              className={styles.clear}
-              aria-label="Clear Search"
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={clearField}
-            >
-              <IconCircleXmarkFill18 />
-            </Button>
-          </Tooltip>
-        ) : null}
-      </div>
+      </SpecContextMenu>
       {focused && !hasText && recentSearches.length > 0 ? (
         <Menu.Surface className={styles.recent}>
           <Menu.SectionLabel>Recent Searches</Menu.SectionLabel>

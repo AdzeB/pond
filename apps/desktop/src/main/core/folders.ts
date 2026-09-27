@@ -7,7 +7,7 @@ import {
 } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
 import { applyRenameTemplate } from "@shared/rename-template";
-import { asc, eq, inArray, isNull, notInArray } from "drizzle-orm";
+import { asc, eq, inArray, isNull } from "drizzle-orm";
 import { ulid } from "ulid";
 import { getDb } from "../db";
 import {
@@ -19,11 +19,35 @@ import { folderIdsForSave } from "./folder-memberships";
 import { planFolderBatchMove, planFolderMove } from "./folder-move";
 import { inheritedFolderTags, planFolderAssignment } from "./folder-tags";
 import { getPrefs, setPrefs } from "./prefs";
-import { lockedFolderIds } from "./security/folder-passwords";
 import { normalizeTagList, prepareTagRegistryUpdates } from "./tags";
 import { recordBatchForUndo } from "./undo";
 
 export { folderIdsForSave } from "./folder-memberships";
+
+export interface CreateFolderWithSavesRuntime {
+  run<T>(operation: () => Promise<T>): Promise<T>;
+  listFolders(): Promise<Folder[]>;
+  folderIdsForSave(saveId: string): Promise<string[]>;
+  planAssignments(
+    assignments: Array<{ saveId: string; folderIds: string[] }>,
+    rows: Folder[],
+  ): Promise<Transaction[]>;
+  execute: typeof executeBatch;
+  recordUndo(transactions: Transaction[]): void;
+  createId(): string;
+  now(): Date;
+}
+
+const defaultCreateFolderWithSavesRuntime: CreateFolderWithSavesRuntime = {
+  run: withMutationScope,
+  listFolders,
+  folderIdsForSave,
+  planAssignments: folderAssignmentTransactions,
+  execute: executeBatch,
+  recordUndo: recordBatchForUndo,
+  createId: ulid,
+  now: () => new Date(),
+};
 
 export async function listFolders(): Promise<Folder[]> {
   const db = await getDb();
@@ -45,6 +69,64 @@ export async function createFolder(input: {
   });
   if (!created) throw new Error("Could not create folder.");
   return created;
+}
+
+export async function createFolderWithSaves(
+  input: {
+    name: string;
+    parentId?: string | null;
+    saveIds: string[];
+  },
+  runtime: CreateFolderWithSavesRuntime = defaultCreateFolderWithSavesRuntime,
+): Promise<Folder> {
+  return runtime.run(async () => {
+    const name = input.name.trim();
+    if (!name) throw new Error("Enter a folder name.");
+    const saveIds = [...new Set(input.saveIds.filter(Boolean))];
+    if (saveIds.length === 0) throw new Error("Select at least one Save.");
+    const rows = await runtime.listFolders();
+    const parentId = input.parentId ?? null;
+    if (parentId && !rows.some((row) => row.id === parentId))
+      throw new Error("Destination folder no longer exists.");
+    const sortOrder =
+      Math.max(
+        -1,
+        ...rows
+          .filter((row) => row.parentId === parentId)
+          .map((row) => row.sortOrder),
+      ) + 1;
+    const folder: Folder = {
+      id: runtime.createId(),
+      parentId,
+      name,
+      color: null,
+      sortOrder,
+      createdAt: runtime.now(),
+    };
+    const assignments = await Promise.all(
+      saveIds.map(async (saveId) => ({
+        saveId,
+        folderIds: [
+          ...new Set([...(await runtime.folderIdsForSave(saveId)), folder.id]),
+        ],
+      })),
+    );
+    const transactions: Transaction[] = [
+      {
+        kind: "create",
+        model: "folder",
+        id: folder.id,
+        data: folder,
+        meta: { actor: "user", actorReason: "folder-create-with-saves" },
+      },
+      ...(await runtime.planAssignments(assignments, [...rows, folder])),
+    ];
+    await runtime.execute(transactions);
+    runtime.recordUndo(
+      transactions.filter((transaction) => transaction.model !== "tag"),
+    );
+    return folder;
+  });
 }
 
 export async function createFoldersBatch(input: {
@@ -256,18 +338,12 @@ export async function memberships(): Promise<
   Array<{ saveId: string; folderId: string }>
 > {
   const db = await getDb();
-  const hidden = [...(await lockedFolderIds())];
   return db
     .select({
       saveId: saveFoldersTable.saveId,
       folderId: saveFoldersTable.folderId,
     })
-    .from(saveFoldersTable)
-    .where(
-      hidden.length > 0
-        ? notInArray(saveFoldersTable.folderId, hidden)
-        : undefined,
-    );
+    .from(saveFoldersTable);
 }
 
 export async function assignSaveFolders(
@@ -496,10 +572,16 @@ export function moveFolder(input: {
 export async function moveFoldersBatch(input: {
   ids: string[];
   parentId: string | null;
+  beforeId?: string;
 }): Promise<{ ok: boolean }> {
   return withMutationScope(async () => {
     const rows = await listFolders();
-    const changes = planFolderBatchMove(rows, input.ids, input.parentId);
+    const changes = planFolderBatchMove(
+      rows,
+      input.ids,
+      input.parentId,
+      input.beforeId,
+    );
     return commitFolderMoves(rows, changes);
   });
 }

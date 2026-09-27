@@ -35,7 +35,12 @@ export function DataTableHotkeys<T extends RowData>() {
     if (!meta.selectionEnabled) return;
 
     const onMouseDown = (event: MouseEvent) => {
-      if (event.button !== 0) return;
+      if (
+        event.button !== 0 ||
+        !(event.target instanceof Node) ||
+        !meta.gridRef.current?.contains(event.target)
+      )
+        return;
       if (event.metaKey || event.ctrlKey || event.shiftKey) return;
       if (selectionStore.state.selectedIds.size === 0) return;
       if (keepSelectionOnMouseDown(event.target)) return;
@@ -43,7 +48,13 @@ export function DataTableHotkeys<T extends RowData>() {
     };
 
     const onKey = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || eventFromEditable(event) || overlayOpen()) {
+      if (
+        event.defaultPrevented ||
+        event.isComposing ||
+        eventFromEditable(event) ||
+        overlayOpen() ||
+        document.activeElement !== meta.gridRef.current
+      ) {
         return;
       }
 
@@ -51,10 +62,8 @@ export function DataTableHotkeys<T extends RowData>() {
       if (ids.length === 0) return;
 
       const selected = selectionStore.state.selectedIds;
-      let cursor: string | null = null;
-      for (const id of ids) {
-        if (selected.has(id)) cursor = id;
-      }
+      const current = selectionStore.state.cursorId;
+      const cursor = current && ids.includes(current) ? current : null;
 
       const cmd = event.metaKey || event.ctrlKey;
       if (cmd && event.key.toLowerCase() === "a" && !event.shiftKey) {
@@ -80,20 +89,53 @@ export function DataTableHotkeys<T extends RowData>() {
         return;
       }
 
-      if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+      if (event.key === " ") {
+        const id = cursor ?? ids[0];
+        if (!id) return;
+        event.preventDefault();
+        actions.toggleRow(id, event.shiftKey);
+        return;
+      }
 
-      const delta = event.key === "ArrowDown" ? 1 : -1;
+      if (
+        !["ArrowDown", "ArrowUp", "Home", "End", "PageDown", "PageUp"].includes(
+          event.key,
+        )
+      )
+        return;
+
+      const page = Math.max(
+        1,
+        Math.floor(
+          (meta.height ??
+            meta.gridRef.current?.clientHeight ??
+            meta.rowHeight) / meta.rowHeight,
+        ),
+      );
+      const delta =
+        event.key === "PageDown"
+          ? page
+          : event.key === "PageUp"
+            ? -page
+            : event.key === "ArrowDown"
+              ? 1
+              : -1;
       const from = cursor ? ids.indexOf(cursor) : -1;
       const nextIdx =
-        from < 0
-          ? delta > 0
-            ? 0
-            : ids.length - 1
-          : Math.min(ids.length - 1, Math.max(0, from + delta));
+        event.key === "Home"
+          ? 0
+          : event.key === "End"
+            ? ids.length - 1
+            : from < 0
+              ? delta > 0
+                ? 0
+                : ids.length - 1
+              : Math.min(ids.length - 1, Math.max(0, from + delta));
       const next = ids[nextIdx];
       if (!next) return;
       event.preventDefault();
-      if (event.shiftKey) actions.toggleRow(next, true);
+      if (cmd && !event.shiftKey) actions.focusRow(next);
+      else if (event.shiftKey) actions.toggleRow(next, true);
       else actions.selectRow(next);
     };
 

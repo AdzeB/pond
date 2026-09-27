@@ -1,4 +1,3 @@
-import { IconMagnifierOutline12 } from "@pond/icons/outline/12";
 import { cn, Input } from "@pond/ui";
 import {
   type ComponentPropsWithoutRef,
@@ -23,9 +22,6 @@ export function SearchChrome({
   return (
     <div className={cn(styles.root, className)}>
       <div className={styles.bar}>
-        <span className={styles.mark} aria-hidden="true">
-          <IconMagnifierOutline12 />
-        </span>
         <div className={styles.search}>{children}</div>
         {actions ? <div className={styles.actions}>{actions}</div> : null}
       </div>
@@ -44,7 +40,7 @@ export const SearchChromeInput = forwardRef<
       size="md"
       variant="borderless"
     >
-      <Input.Field ref={ref} {...props} />
+      <Input.Field ref={ref} className={styles.field} {...props} />
     </Input.Root>
   );
 });

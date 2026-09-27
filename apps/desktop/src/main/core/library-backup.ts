@@ -18,7 +18,7 @@ import { z } from "zod";
 import {
   decodeLibraryFile,
   isEncryptedLibraryFile,
-} from "./security/library-file-storage";
+} from "./storage/library-file-storage";
 
 const MANIFEST = "pond-backup-manifest.json";
 const BackupEntrySchema = z.object({

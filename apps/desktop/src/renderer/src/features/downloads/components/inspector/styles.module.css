@@ -11,21 +11,6 @@
   color: var(--ds-gray-12);
 }
 
-.header {
-  flex-shrink: 0;
-  padding: 8px 8px 8px 16px;
-  border-bottom: 1px solid var(--ds-gray-a3);
-  -webkit-app-region: no-drag;
-}
-
-.label {
-  font-size: var(--ds-text-md);
-}
-
-.actions {
-  gap: 4px;
-}
-
 .scroll {
   display: flex;
   flex: 1 1 auto;
@@ -33,7 +18,7 @@
   gap: 0;
   min-width: 0;
   min-height: 0;
-  padding: 8px 20px 20px;
+  padding-block: 8px 20px;
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -46,7 +31,7 @@
 .section-title {
   margin: 0 0 8px;
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   color: var(--ds-gray-11);
 }
 
@@ -211,7 +196,7 @@ p.detail {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-normal);
+  font-weight: var(--ds-weight-md);
   color: var(--ds-gray-10);
   white-space: nowrap;
 }
@@ -222,7 +207,7 @@ p.detail {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-normal);
+  font-weight: var(--ds-weight-md);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-12);
   text-align: right;

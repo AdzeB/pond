@@ -11,6 +11,10 @@ export interface ToastProgress {
 
 export interface ToastData {
   progress?: ToastProgress;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
 export const toastManager = Toast.createToastManager<ToastData>();
@@ -20,6 +24,7 @@ interface NotifyOptions {
   title: string;
   description?: string;
   progress?: ToastProgress;
+  action?: ToastData["action"];
   timeout?: number;
 }
 
@@ -27,18 +32,28 @@ function toastOptions(
   options: NotifyOptions,
 ): Parameters<typeof toastManager.add>[0] {
   const toast: Parameters<typeof toastManager.add>[0] = {
-    data: {},
+    data: {
+      progress: options.progress,
+      action: options.action,
+    },
     id: options.id,
     title: options.title,
   };
   if (options.description != null) toast.description = options.description;
-  if (options.progress != null) toast.data = { progress: options.progress };
   if (options.timeout != null) toast.timeout = options.timeout;
   return toast;
 }
 
 export function notify(options: NotifyOptions): void {
   toastManager.add(toastOptions(options));
+  window.dispatchEvent(
+    new CustomEvent("pond:notification", {
+      detail: {
+        title: options.title,
+        description: options.description,
+      },
+    }),
+  );
 }
 
 export function updateNotification(options: NotifyOptions): void {

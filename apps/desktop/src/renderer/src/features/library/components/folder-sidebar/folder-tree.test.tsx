@@ -1,6 +1,9 @@
 import { act } from "react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import { folders } from "@/features/library/state/folders";
+import { libraryChrome } from "@/features/library/state/library-chrome";
+import { getViewState } from "@/features/library/state/view-store";
 import {
   createFolderSidebarHarness,
   folder,
@@ -14,6 +17,92 @@ describe("folder sidebar tree", () => {
 
   beforeEach(() => harness.setup());
   afterEach(() => harness.cleanup());
+
+  it("selects folder ranges, browses their union, and preserves a batch context menu", async () => {
+    folderList.current = [folder("Alpha"), folder("Beta"), folder("Charlie")];
+    await folders.refresh();
+    await harness.mount();
+    await act(async () => harness.button("Alpha").click());
+    await act(async () =>
+      harness
+        .button("Charlie")
+        .dispatchEvent(
+          new MouseEvent("click", { bubbles: true, shiftKey: true }),
+        ),
+    );
+    expect(
+      [
+        ...harness.host.querySelectorAll(
+          '[role="treeitem"][aria-selected="true"]',
+        ),
+      ].map((row) => row.getAttribute("data-tree-id")),
+    ).toEqual(["Alpha", "Beta", "Charlie"]);
+    expect(
+      harness.host.querySelectorAll('[role="treeitem"][aria-current="page"]'),
+    ).toHaveLength(0);
+    expect(getViewState().query.rules).toEqual([
+      {
+        field: "folder",
+        operator: "some",
+        value: ["Alpha", "Beta", "Charlie"],
+      },
+    ]);
+    await act(async () =>
+      harness.button("Beta").dispatchEvent(
+        new MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          button: 2,
+        }),
+      ),
+    );
+    expect(harness.menuItem("Move 3 Folders")).toBeDefined();
+    expect(harness.menuItem("Batch Rename Folders")).toBeDefined();
+  });
+
+  it("supports ranges and bulk context operations in Quick Access", async () => {
+    folderList.current = [folder("Quick Alpha"), folder("Quick Beta")];
+    await folders.refresh();
+    await saveFolderPresentation("Quick Alpha", { quickAccess: true });
+    await saveFolderPresentation("Quick Beta", { quickAccess: true });
+    await harness.mount();
+    await act(async () => harness.button("Quick Alpha").click());
+    await act(async () =>
+      harness
+        .button("Quick Beta")
+        .dispatchEvent(
+          new MouseEvent("click", { bubbles: true, shiftKey: true }),
+        ),
+    );
+    const quickTree = harness.host.querySelector(
+      '[role="tree"][aria-label="Quick Access"]',
+    );
+    expect(quickTree?.querySelectorAll('[aria-selected="true"]')).toHaveLength(
+      2,
+    );
+    await act(async () =>
+      harness.button("Quick Alpha").dispatchEvent(
+        new MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          button: 2,
+        }),
+      ),
+    );
+    expect(harness.menuItem("Open 2 Selected Items")).toBeDefined();
+  });
+
+  it("keeps collapsed folder content out of the keyboard tree", async () => {
+    folderList.current = [folder("Alpha")];
+    await folders.refresh();
+    await harness.mount();
+    await act(async () => harness.button("Folders").click());
+    const tree = harness.host.querySelector(
+      '[role="tree"][aria-label="Folders"]',
+    );
+    expect(tree?.hasAttribute("inert")).toBe(true);
+    expect(tree?.getAttribute("aria-hidden")).toBe("true");
+  });
 
   it("opens a searchable folder context menu with Eagle operations", async () => {
     folderList.current = [folder("Shots")];
@@ -49,10 +138,199 @@ describe("folder sidebar tree", () => {
     }
     expect(items.some((item) => item === "Delete")).toBe(false);
     expect(document.body.textContent).toContain("Quick Access");
-    expect(items.some((item) => item.includes("Sort By"))).toBe(false);
+    expect(items.some((item) => item.includes("Sort By"))).toBe(true);
+    expect(items.some((item) => item.includes("Customize Folder"))).toBe(true);
+    expect(items.some((item) => item.includes("Icon"))).toBe(true);
+    expect(items.some((item) => item.includes("Color"))).toBe(true);
     expect(
       document.querySelector('[aria-label="Search folder operations"]'),
     ).not.toBeNull();
+  });
+
+  it("opens the shared visibility menu from a built-in row", async () => {
+    await harness.mount();
+    await act(async () => {
+      harness.button("All").dispatchEvent(
+        new MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          button: 2,
+          clientX: 24,
+          clientY: 24,
+        }),
+      );
+    });
+    for (const label of ["Visibility", "Badge", "Customize Sidebar"]) {
+      expect(harness.menuItem(label)).toBeDefined();
+    }
+  });
+
+  it("opens sidebar customization from the Library label", async () => {
+    await harness.mount();
+    const label = [...harness.host.querySelectorAll("*")].find(
+      (node) => node.children.length === 0 && node.textContent === "Library",
+    );
+    if (!(label instanceof HTMLElement))
+      throw new Error("Missing Library label");
+    await act(async () => {
+      label.dispatchEvent(
+        new MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          button: 2,
+          clientX: 24,
+          clientY: 24,
+        }),
+      );
+    });
+    await act(async () => harness.menuItem("Customize Sidebar").click());
+    const dialog = document.querySelector('[role="dialog"]');
+    expect(dialog?.textContent).toContain("Customize Sidebar");
+    expect(dialog?.textContent).toContain("All");
+  });
+
+  it("makes visible built-in destinations directly sortable", async () => {
+    await harness.mount();
+    expect(
+      [...harness.host.querySelectorAll("[data-sidebar-sortable]")].map((row) =>
+        row.getAttribute("data-sidebar-sortable"),
+      ),
+    ).toEqual([
+      "all",
+      "uncategorized",
+      "assistant",
+      "untagged",
+      "recentlyUsed",
+      "tags",
+      "random",
+      "trash",
+      "downloads",
+      "sources",
+    ]);
+  });
+
+  it("hands a dropped sidebar row to its new layout without snap-back motion", async () => {
+    await harness.mount();
+    const rows = [
+      ...harness.host.querySelectorAll<HTMLElement>("[data-sidebar-sortable]"),
+    ];
+    for (const row of rows) {
+      vi.spyOn(row, "getBoundingClientRect").mockImplementation(() => {
+        const currentRows = [
+          ...harness.host.querySelectorAll<HTMLElement>(
+            "[data-sidebar-sortable]",
+          ),
+        ];
+        const index = currentRows.indexOf(row);
+        return DOMRect.fromRect({
+          x: 0,
+          y: index * 40,
+          width: 260,
+          height: 40,
+        });
+      });
+    }
+    const all = harness.button("All");
+    const allRow = all.closest<HTMLElement>("[data-sidebar-sortable]");
+    expect(allRow).not.toBeNull();
+    const transitions: string[] = [];
+    const observer = new MutationObserver(() => {
+      transitions.push(allRow?.style.transition ?? "");
+    });
+    observer.observe(allRow as HTMLElement, {
+      attributes: true,
+      attributeFilter: ["style"],
+    });
+
+    const pointer = (type: string, clientY: number) => {
+      const event = new MouseEvent(type, {
+        bubbles: true,
+        button: 0,
+        cancelable: true,
+        clientX: 20,
+        clientY,
+      });
+      Object.defineProperties(event, {
+        isPrimary: { value: true },
+        pointerId: { value: 1 },
+        pointerType: { value: "mouse" },
+      });
+      return event;
+    };
+
+    await act(async () => {
+      all.dispatchEvent(pointer("pointerdown", 20));
+    });
+    await act(async () => {
+      document.dispatchEvent(pointer("pointermove", 30));
+    });
+    expect(allRow?.hasAttribute("data-dragging")).toBe(true);
+    await act(async () => {
+      document.dispatchEvent(pointer("pointermove", 180));
+    });
+    expect(allRow?.style.transform).toContain("120");
+    await act(async () => {
+      document.dispatchEvent(pointer("pointerup", 180));
+    });
+    observer.disconnect();
+
+    expect(
+      [...harness.host.querySelectorAll("[data-sidebar-sortable]")].map((row) =>
+        row.getAttribute("data-sidebar-sortable"),
+      ),
+    ).toEqual([
+      "uncategorized",
+      "assistant",
+      "untagged",
+      "all",
+      "recentlyUsed",
+      "tags",
+      "random",
+      "trash",
+      "downloads",
+      "sources",
+    ]);
+    expect(transitions).toContain("transform 0ms linear");
+  });
+
+  it("opens Quick Access folder operations from its row", async () => {
+    folderList.current = [folder("Shots")];
+    await folders.refresh();
+    await saveFolderPresentation("Shots", {
+      quickAccess: true,
+      quickAccessOrder: 0,
+    });
+    await harness.mount();
+    const rows = [...harness.host.querySelectorAll("button")].filter(
+      (button) => button.textContent?.replace(/[\d,]+$/, "").trim() === "Shots",
+    );
+    const quickRow = rows[0];
+    if (!quickRow) throw new Error("Missing Quick Access folder");
+    await act(async () => {
+      quickRow.dispatchEvent(
+        new MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          button: 2,
+          clientX: 24,
+          clientY: 24,
+        }),
+      );
+    });
+    expect(harness.menuItem("Remove from Quick Access")).toBeDefined();
+    expect(harness.menuItem("Move Up")).toBeDefined();
+    expect(harness.menuItem("Move Down")).toBeDefined();
+    await saveFolderPresentation("Shots", { quickAccess: false });
+  });
+
+  it("opens Recently Used and Random destinations", async () => {
+    const router = await harness.mount();
+    await act(async () => harness.button("Recently Used").click());
+    expect(router.state.location.pathname).toBe("/recents");
+    expect(libraryChrome.getState().nav).toEqual({ kind: "recents" });
+    await act(async () => harness.button("Random").click());
+    expect(router.state.location.pathname).toBe("/");
+    expect(libraryChrome.getState().nav).toEqual({ kind: "random" });
   });
 
   it("opens folder customization in a dialog", async () => {
@@ -222,6 +500,25 @@ describe("folder sidebar tree", () => {
     expect(() => harness.button("Receipts")).toThrow(
       "Missing sidebar button: Receipts",
     );
+  });
+
+  it("opens folder operations from the disclosure button", async () => {
+    folderList.current = [folder("Travel"), folder("Tickets", "Travel")];
+    await folders.refresh();
+    await harness.mount();
+    await act(async () => {
+      harness.iconButton("Collapse Travel").dispatchEvent(
+        new MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          button: 2,
+          clientX: 24,
+          clientY: 24,
+        }),
+      );
+    });
+    expect(harness.menuItem("Customize Folder")).toBeDefined();
+    expect(harness.menuItem("Sort By")).toBeDefined();
   });
 
   it("shows positive counts only at visible folder branch boundaries", async () => {

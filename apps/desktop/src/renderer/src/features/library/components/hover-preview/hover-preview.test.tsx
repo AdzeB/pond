@@ -37,16 +37,20 @@ it("hydrates and previews the next logical save beyond loaded grid rows", async 
     query,
     onPreviewNeighborRequested: () => () => {},
   });
-  selection.setAnchor(first.id);
+  selection.setAnchor("range-start");
+  selection.setCursor(first.id);
   resultNavigation.setSource({
     ids: [first.id],
     allIds: async () => [first.id, "quick-next"],
   });
   const host = document.createElement("div");
+  host.setAttribute("data-save-collection", "");
+  host.tabIndex = 0;
   document.body.append(host);
   const root = createRoot(host);
   try {
     await act(async () => root.render(<HoverPreview />));
+    host.focus();
     await act(async () =>
       document.dispatchEvent(
         new KeyboardEvent("keydown", {
@@ -77,6 +81,7 @@ it("hydrates and previews the next logical save beyond loaded grid rows", async 
   } finally {
     await act(async () => root.unmount());
     resultNavigation.setSource({ ids: [] });
+    selection.clear();
     host.remove();
     vi.unstubAllGlobals();
   }

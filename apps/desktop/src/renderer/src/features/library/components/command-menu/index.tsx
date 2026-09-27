@@ -67,6 +67,8 @@ export function CommandMenuHost({
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
+    if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229)
+      return;
     if (event.key === "ArrowDown") {
       event.preventDefault();
       setActiveIndex((index) => (index + 1) % Math.max(entries.length, 1));

@@ -15,7 +15,6 @@ describe("settings search index", () => {
     expect(entry("library:name").path).toBe("library");
     expect(entry("storage:location").path).toBe("storage");
     expect(entry("backups:backup").path).toBe("backups");
-    expect(entry("harvesting:watched-folder").path).toBe("harvesting");
   });
 
   it("omits actions owned by application menus", () => {
@@ -25,6 +24,7 @@ describe("settings search index", () => {
       "library:merge",
       "library:package",
       "library:import",
+      "harvesting:watched-folder",
     ]) {
       expect(
         SETTINGS_SEARCH_INDEX.some((candidate) => candidate.id === id),

@@ -17,12 +17,51 @@
 
 .bar {
   display: flex;
-  flex-wrap: wrap;
   gap: 6px;
   align-items: center;
   min-width: 0;
-  padding-inline: 12px;
+  padding-inline-start: var(--filter-toolbar-inline-start, 12px);
+  padding-inline-end: var(--filter-toolbar-inline-end, 12px);
   padding-top: 4px;
   padding-bottom: 8px;
+}
+
+.filters-viewport {
+  flex: 1;
+  min-width: 0;
   overflow: visible;
+}
+
+.filters {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+  height: 34px;
+  margin-block: -3px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.filters > * {
+  flex: none;
+}
+
+.filters::after {
+  flex: none;
+  width: 4px;
+  height: 1px;
+  content: "";
+}
+
+.filters::-webkit-scrollbar {
+  display: none;
+}
+
+.actions {
+  display: flex;
+  flex: none;
+  gap: 4px;
+  align-items: center;
 }

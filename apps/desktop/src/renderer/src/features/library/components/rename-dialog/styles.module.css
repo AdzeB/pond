@@ -1,0 +1,32 @@
+.popup {
+  width: min(520px, calc(100vw - 40px));
+  padding: 20px;
+}
+
+.editor {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  margin: 16px 0;
+  border: 0;
+}
+
+.editor label {
+  display: grid;
+  gap: 6px;
+}
+
+.editor label > [data-slot="root"] {
+  width: 100%;
+}
+
+.editor p {
+  margin: 0;
+  font-size: 12px;
+}
+
+.footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}

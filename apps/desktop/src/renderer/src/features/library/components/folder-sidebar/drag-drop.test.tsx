@@ -1,7 +1,13 @@
 import { act } from "react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { folders } from "@/features/library/state/folders";
+import {
+  beginSaveDrag,
+  draggingSaveIds,
+  SAVE_DRAG_TYPE,
+} from "@/features/saves/lib/start-drag";
 import { selection } from "@/features/saves/state/selection";
+import { toastManager } from "@/shared/lib/toast";
 import {
   createFolderSidebarHarness,
   fireDrag,
@@ -11,39 +17,74 @@ import {
   pondQuery,
 } from "./test-harness";
 
+function pointer(type: string, clientY: number): MouseEvent {
+  const event = new MouseEvent(type, {
+    bubbles: true,
+    button: 0,
+    cancelable: true,
+    clientX: 20,
+    clientY,
+  });
+  Object.defineProperties(event, {
+    isPrimary: { value: true },
+    pointerId: { value: 1 },
+    pointerType: { value: "mouse" },
+  });
+  return event;
+}
+
 describe("folder sidebar drag and drop", () => {
   const harness = createFolderSidebarHarness();
 
   beforeEach(() => harness.setup());
-  afterEach(() => harness.cleanup());
+  afterEach(async () => {
+    toastManager.close();
+    vi.restoreAllMocks();
+    await harness.cleanup();
+  });
 
-  it("nests a dragged folder inside the drop target", async () => {
+  it("nests a folder with the dnd-kit organization path", async () => {
     folderList.current = [folder("Travel"), folder("Shots")];
     await folders.refresh();
     await harness.mount();
-    const transfer = folderTransfer();
+    const rows = [
+      ...harness.host.querySelectorAll<HTMLElement>("[data-folder-sortable]"),
+    ];
+    rows.forEach((row, index) => {
+      vi.spyOn(row, "getBoundingClientRect").mockReturnValue(
+        DOMRect.fromRect({ x: 0, y: index * 40, width: 220, height: 40 }),
+      );
+    });
     await act(async () => {
-      fireDrag(harness.button("Shots"), "dragstart", transfer);
-      fireDrag(harness.button("Travel"), "drop", transfer);
+      harness.button("Shots").dispatchEvent(pointer("pointerdown", 60));
     });
-    expect(transfer.getData("application/x-pond-folder")).toBe("Shots");
-    expect(pondQuery).toHaveBeenCalledWith("folders.move", {
-      id: "Shots",
-      parentId: "Travel",
+    await act(async () => {
+      document.dispatchEvent(pointer("pointermove", 50));
     });
+    await act(async () => {
+      document.dispatchEvent(pointer("pointermove", 20));
+    });
+    await act(async () => {
+      document.dispatchEvent(pointer("pointerup", 20));
+    });
+    await vi.waitFor(() =>
+      expect(pondQuery).toHaveBeenCalledWith("folders.move", {
+        id: "Shots",
+        parentId: "Travel",
+      }),
+    );
     expect(pondQuery).not.toHaveBeenCalledWith(
       "folders.addSaves",
       expect.anything(),
     );
   });
 
-  it("does not move a folder into its descendant", async () => {
+  it("ignores legacy native folder payloads", async () => {
     folderList.current = [folder("Travel"), folder("Tickets", "Travel")];
     await folders.refresh();
     await harness.mount();
     const transfer = folderTransfer("Travel");
     await act(async () => {
-      fireDrag(harness.button("Travel"), "dragstart", transfer);
       fireDrag(harness.button("Tickets"), "drop", transfer);
     });
     expect(
@@ -55,9 +96,11 @@ describe("folder sidebar drag and drop", () => {
     folderList.current = [folder("Travel")];
     await folders.refresh();
     selection.set(["save-1"]);
+    const transfer = folderTransfer();
+    transfer.setData(SAVE_DRAG_TYPE, "save-1");
     await harness.mount();
     await act(async () => {
-      fireDrag(harness.button("Travel"), "drop", folderTransfer());
+      fireDrag(harness.button("Travel"), "drop", transfer);
     });
     expect(pondQuery).toHaveBeenCalledWith("folders.addSaves", {
       folderId: "Travel",
@@ -65,7 +108,66 @@ describe("folder sidebar drag and drop", () => {
     });
   });
 
-  it("does not file selected saves while rearranging folders", async () => {
+  it("uses the immutable drag payload and shows the destination action", async () => {
+    folderList.current = [folder("Travel")];
+    await folders.refresh();
+    selection.set(["drag-a", "drag-b"]);
+    const transfer = folderTransfer();
+    beginSaveDrag("drag-a", transfer);
+    selection.set(["changed-after-start"]);
+    const notify = vi.spyOn(toastManager, "add");
+    await harness.mount();
+    const target = harness.button("Travel");
+
+    await act(async () => {
+      fireDrag(target, "dragover", transfer);
+    });
+    expect(target.textContent).toContain("Add 2 Saves");
+    expect(transfer.dropEffect).toBe("copy");
+
+    await act(async () => {
+      fireDrag(target, "drop", transfer);
+    });
+    await vi.waitFor(() =>
+      expect(pondQuery).toHaveBeenCalledWith("folders.addSaves", {
+        folderId: "Travel",
+        saveIds: ["drag-a", "drag-b"],
+      }),
+    );
+    await vi.waitFor(() =>
+      expect(notify).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Added 2 Saves to "Travel"',
+        }),
+      ),
+    );
+    expect(draggingSaveIds()).toEqual([]);
+  });
+
+  it("reports a failed Save assignment", async () => {
+    folderList.current = [folder("Travel")];
+    await folders.refresh();
+    const transfer = folderTransfer();
+    transfer.setData(SAVE_DRAG_TYPE, "save-1");
+    const notify = vi.spyOn(toastManager, "add");
+    await harness.mount();
+    pondQuery.mockRejectedValueOnce(new Error("Disk unavailable"));
+
+    await act(async () => {
+      fireDrag(harness.button("Travel"), "drop", transfer);
+    });
+
+    await vi.waitFor(() =>
+      expect(notify).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Couldn't add Save to folder",
+          description: "Disk unavailable",
+        }),
+      ),
+    );
+  });
+
+  it("does not mistake a legacy folder payload for a Save drop", async () => {
     folderList.current = [folder("Travel"), folder("Shots")];
     await folders.refresh();
     selection.set(["save-1"]);
@@ -73,10 +175,9 @@ describe("folder sidebar drag and drop", () => {
     await act(async () => {
       fireDrag(harness.button("Travel"), "drop", folderTransfer("Shots"));
     });
-    expect(pondQuery).toHaveBeenCalledWith("folders.move", {
-      id: "Shots",
-      parentId: "Travel",
-    });
+    expect(
+      pondQuery.mock.calls.filter((call) => call[0] === "folders.move"),
+    ).toEqual([]);
     expect(pondQuery).not.toHaveBeenCalledWith(
       "folders.addSaves",
       expect.anything(),

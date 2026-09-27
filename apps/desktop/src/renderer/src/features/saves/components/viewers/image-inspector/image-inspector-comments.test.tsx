@@ -1,5 +1,6 @@
 import { act } from "react";
 import { expect, it, vi } from "vitest";
+import { inspect } from "@/features/saves/state/inspect";
 import { pool } from "@/features/saves/state/pool";
 import {
   commentSave,
@@ -143,6 +144,7 @@ it("anchors the comment editor to the selected region", async () => {
   const pin = inspector.host.querySelector("[data-area] button");
   if (!(region instanceof HTMLElement) || !(pin instanceof HTMLElement))
     throw new Error("Missing comment region");
+  expect(pin.textContent).toBe("1");
   vi.spyOn(region, "getBoundingClientRect").mockReturnValue(
     new DOMRect(40, 80, 200, 160),
   );
@@ -154,4 +156,55 @@ it("anchors the comment editor to the selected region", async () => {
   if (!(positioner instanceof HTMLElement))
     throw new Error("Missing comment editor");
   expect(positioner.style.getPropertyValue("--anchor-width")).toBe("200px");
+});
+
+it("opens a requested comment at its image annotation", async () => {
+  const source = commentSave("comment-request", [
+    {
+      id: "requested",
+      x: 0.2,
+      y: 0.1,
+      w: 0.4,
+      h: 0.5,
+      text: "Requested note",
+      fileIndex: 0,
+    },
+  ]);
+  await inspector.render(source, "pond://test/request.jpg");
+  await act(async () => inspect.openComment(source.id, 0, "requested"));
+
+  expect(document.body.textContent).toContain("Requested note");
+  expect(
+    document.querySelector<HTMLTextAreaElement>('textarea[placeholder="Reply"]')
+      ?.value,
+  ).toBe("");
+  expect(document.querySelector("[data-type='popover']")).not.toBeNull();
+});
+
+it("places and resizes a comment with only the keyboard", async () => {
+  const source = commentSave("comment-keyboard");
+  await inspector.render(source);
+  const frame = inspector.prepareFrame();
+  await act(async () => inspector.button("Comment").click());
+  expect(document.activeElement).toBe(frame);
+  for (const options of [
+    { key: "ArrowRight", shiftKey: true },
+    { key: "ArrowDown" },
+    { key: "ArrowRight", altKey: true, shiftKey: true },
+    { key: "Enter" },
+  ])
+    await act(async () =>
+      frame.dispatchEvent(
+        new KeyboardEvent("keydown", { ...options, bubbles: true }),
+      ),
+    );
+  await inspector.submitComment("Keyboard region");
+  expect(pool.get(source.id)?.comments?.[0]).toMatchObject({
+    text: "Keyboard region",
+    x: 0.59,
+    y: 0.5,
+    h: 0.02,
+  });
+  expect(pool.get(source.id)?.comments?.[0]?.w).toBeCloseTo(0.12);
+  expect(document.activeElement).toBe(frame);
 });

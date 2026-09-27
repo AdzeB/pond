@@ -26,7 +26,7 @@
   height: 100%;
   object-fit: cover;
   border-radius: 100%;
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-sm);
 }
 
 .badge {
@@ -38,7 +38,7 @@
   background: var(--ds-gray-1);
   border-radius: var(--ds-radius-source);
   corner-shape: var(--ds-corner-icon);
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-sm);
 }
 
 .badge svg,
@@ -64,7 +64,7 @@
   overflow: hidden;
   background: var(--ds-gray-1);
   border-radius: 16px;
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-sm);
 }
 
 .sourceImage[data-large] > span {

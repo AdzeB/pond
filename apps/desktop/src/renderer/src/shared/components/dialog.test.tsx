@@ -109,18 +109,17 @@ it("renders prompt inputs inside their styled root with an accessible name", asy
   expect(input?.parentElement?.dataset.slot).toBe("root");
   expect(input?.getAttribute("aria-labelledby")).toBeTruthy();
   expect(input?.value).toBe("Ideas");
+  expect(document.body.textContent).not.toContain("Cancel");
 });
 
-it("uses large-sized page dialog actions", async () => {
+it("uses large-sized page dialog confirmation actions", async () => {
   await act(async () =>
     root.render(
       <Dialog.Footer>
-        <Dialog.Cancel />
         <Dialog.Confirm />
       </Dialog.Footer>,
     ),
   );
-  expect(button("Cancel").dataset.size).toBe("lg");
   expect(button("Confirm").dataset.size).toBe("lg");
 });
 
@@ -149,12 +148,12 @@ it("keeps a prompt open and blocks duplicate submissions while saving", async ()
   expect(
     document.querySelector('[role="dialog"]')?.hasAttribute("data-open"),
   ).toBe(true);
-  expect(button("Cancel").disabled).toBe(true);
+  expect(button("Close").disabled).toBe(true);
   await act(async () => finish());
   expect(document.querySelector('[role="dialog"][data-open]')).toBeNull();
 });
 
-it("focuses the safe confirmation action before a destructive action", async () => {
+it("focuses the safe close action before a destructive action", async () => {
   await act(async () => root.render(<Dialog.Host />));
   await act(async () =>
     Dialog.confirm({
@@ -167,7 +166,8 @@ it("focuses the safe confirmation action before a destructive action", async () 
     async () =>
       new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
   );
-  expect(document.activeElement).toBe(button("Cancel"));
+  expect(document.activeElement).toBe(button("Close"));
+  expect(document.body.textContent).not.toContain("Cancel");
 });
 
 it("passes the confirmation checkbox value to the action", async () => {
@@ -226,7 +226,7 @@ it("resets a prompt when it is reopened with another payload", async () => {
       onConfirm: vi.fn(),
     }),
   );
-  await act(async () => button("Cancel").click());
+  await act(async () => button("Close").click());
   await act(async () =>
     Dialog.prompt({
       title: "Rename Folder",
@@ -292,7 +292,7 @@ it("blocks duplicate confirmations and Escape while an action is pending", async
   expect(
     document.querySelector('[role="alertdialog"][data-open]'),
   ).not.toBeNull();
-  expect(button("Cancel").disabled).toBe(true);
+  expect(button("Close").disabled).toBe(true);
   await act(async () => finish());
   expect(document.querySelector('[role="alertdialog"][data-open]')).toBeNull();
 });
@@ -330,6 +330,12 @@ it("keeps measuring the active page after the outgoing page unmounts", async () 
     (target) => target.textContent === "Page 1",
   );
   if (!page) throw new Error("Missing active page observer");
+  const header = document.querySelector('[role="dialog"] header');
+  if (!header) throw new Error("Missing dialog header");
+  Object.defineProperty(header, "offsetHeight", {
+    configurable: true,
+    value: 64,
+  });
   Object.defineProperty(page, "offsetHeight", {
     configurable: true,
     value: 300,

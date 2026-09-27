@@ -25,8 +25,8 @@ import log from "electron-log/main.js";
 import {
   decodeLibraryFile,
   encodeLibraryFile,
-} from "../core/security/library-file-storage";
-import { writeLibraryMedia } from "../core/security/library-media-storage";
+} from "../core/storage/library-file-storage";
+import { writeLibraryMedia } from "../core/storage/library-media-storage";
 import { itemDir, itemFile, resolvePaths } from "../paths";
 import type { SaveUserData } from "./library-format";
 import {

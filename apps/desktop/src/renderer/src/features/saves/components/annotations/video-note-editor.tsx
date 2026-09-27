@@ -39,7 +39,9 @@ export function VideoNoteEditor({
       onClose();
     } catch (reason) {
       setError(
-        reason instanceof Error ? reason.message : "Couldn’t save this note.",
+        reason instanceof Error
+          ? reason.message
+          : "Couldn’t save this comment.",
       );
     } finally {
       pending.current = false;
@@ -57,11 +59,11 @@ export function VideoNoteEditor({
         <Dialog.Backdrop />
         <Dialog.Popup className={styles.popup} initialFocus={textInput}>
           <Dialog.Header>
-            <Dialog.Title>Edit Video Note</Dialog.Title>
+            <Dialog.Title>Edit Comment</Dialog.Title>
             <Dialog.Close disabled={busy} />
           </Dialog.Header>
           <div className={styles.body}>
-            <label htmlFor={id}>Note</label>
+            <label htmlFor={id}>Comment</label>
             <Input.Root>
               <Input.Textarea
                 ref={textInput}
@@ -92,17 +94,14 @@ export function VideoNoteEditor({
               disabled={busy}
               onClick={() => void persist(true)}
             >
-              Delete Note
-            </Button>
-            <Button variant="secondary" disabled={busy} onClick={onClose}>
-              Cancel
+              Delete Comment
             </Button>
             <Button
               disabled={busy || !valid}
               loading={busy}
               onClick={() => void persist(false)}
             >
-              Save Note
+              Save Comment
             </Button>
           </Dialog.Footer>
         </Dialog.Popup>

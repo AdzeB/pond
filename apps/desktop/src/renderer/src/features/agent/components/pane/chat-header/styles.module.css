@@ -1,17 +1,3 @@
-.trigger {
-  flex-shrink: 1;
-  min-width: 0;
-  max-width: min(420px, 100%);
-}
-.trigger span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.trigger > svg {
-  flex-shrink: 0;
-}
-
 .popup {
   width: min(380px, calc(100vw - 32px));
   max-width: var(--available-width);
@@ -46,7 +32,7 @@
 .group-label {
   padding: 8px 16px 6px;
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   color: var(--ds-gray-10);
 }
 

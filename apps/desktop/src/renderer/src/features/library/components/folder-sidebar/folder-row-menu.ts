@@ -1,5 +1,18 @@
+import {
+  IconArrowDownOutline18,
+  IconArrowUpOutline18,
+  IconCalendarDateOutline18,
+  IconCalendarPlusOutline18,
+  IconColorPaletteOutline18,
+  IconDiceOutline18,
+  IconQuickAccessOutline18,
+  IconShapesOutline18,
+  IconSortAlphaAscendingOutline18,
+  IconSortArrowsOutline18,
+} from "@pond/icons/outline/18";
 import type { Folder } from "@pond/schema/db";
 import { libraryFolderLink } from "@shared/library-links";
+import { createElement } from "react";
 import {
   buildFolderMenuItems,
   confirmRemoveFolder,
@@ -15,9 +28,16 @@ import { saveFolderPresentation } from "@/features/library/state/folder-presenta
 import { folders } from "@/features/library/state/folders";
 import type { LibraryNav } from "@/features/library/state/library-chrome";
 import { openOrganizationRenameDialog } from "@/features/library/state/organization-rename-dialog";
-import { setIncludeSubfolders } from "@/features/library/state/view-store";
+import {
+  setIncludeSubfolders,
+  setSort,
+} from "@/features/library/state/view-store";
 import { notify } from "@/shared/lib/toast";
-import type { FolderIconId } from "./folder-icons";
+import {
+  FOLDER_ICONS,
+  FOLDER_SWATCHES,
+  type FolderIconId,
+} from "./folder-icons";
 import { selectLibraryNav } from "./navigation";
 
 interface FolderRowMenuInput {
@@ -26,12 +46,15 @@ interface FolderRowMenuInput {
   exportIds: string[];
   folder: Folder;
   folderIcon?: FolderIconId;
+  folderSortDir: "asc" | "desc";
+  folderSortKey: string;
   hasChildren: boolean;
   includeSubfolders: boolean;
   quickAccess?: boolean;
   nav: LibraryNav;
   sameLevelHasChildren: boolean;
   viewing: boolean;
+  quickAccessFolderIds: string[];
   onCreateFolder: (parentId?: string) => void;
   onCustomize: () => void;
   onOpenTool: (tool: FolderTool) => void;
@@ -39,6 +62,55 @@ interface FolderRowMenuInput {
   onToggleAll: () => void;
   onToggleFolder: () => void;
   onToggleSameLevel: (expanded: boolean) => void;
+}
+
+async function moveQuickAccess(
+  folderId: string,
+  folderIds: string[],
+  offset: -1 | 1,
+): Promise<void> {
+  const current = folderIds.indexOf(folderId);
+  const target = current + offset;
+  if (current < 0 || target < 0 || target >= folderIds.length) return;
+  const ordered = [...folderIds];
+  const [moved] = ordered.splice(current, 1);
+  if (!moved) return;
+  ordered.splice(target, 0, moved);
+  await Promise.all(
+    ordered.map((id, quickAccessOrder) =>
+      saveFolderPresentation(id, { quickAccessOrder }),
+    ),
+  );
+}
+
+export function buildQuickAccessFolderMenuItems(input: {
+  folder: Folder;
+  folderIds: string[];
+  onOpen: () => void;
+}) {
+  const index = input.folderIds.indexOf(input.folder.id);
+  return [
+    { label: "Open Folder", onClick: input.onOpen },
+    {
+      label: "Remove from Quick Access",
+      onClick: () =>
+        void saveFolderPresentation(input.folder.id, {
+          quickAccess: false,
+          quickAccessOrder: undefined,
+        }),
+    },
+    { type: "separator" as const },
+    {
+      label: "Move Up",
+      disabled: index <= 0,
+      onClick: () => void moveQuickAccess(input.folder.id, input.folderIds, -1),
+    },
+    {
+      label: "Move Down",
+      disabled: index < 0 || index >= input.folderIds.length - 1,
+      onClick: () => void moveQuickAccess(input.folder.id, input.folderIds, 1),
+    },
+  ];
 }
 
 export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
@@ -120,18 +192,117 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
   const customizeIndex = items.findIndex(
     (item) => "label" in item && item.label === "Customize Folder",
   );
-  items.splice(Math.max(0, customizeIndex), 0, {
-    type: "checkbox",
-    label: "Quick Access",
-    checked: input.quickAccess ?? false,
-    onCheckedChange: (quickAccess) => {
-      void saveFolderPresentation(folder.id, { quickAccess }).catch(() =>
-        notify({
-          id: "folder-quick-access",
-          title: "Couldn't update Quick Access",
-        }),
-      );
+  const quickIndex = input.quickAccessFolderIds.indexOf(folder.id);
+  items.splice(
+    Math.max(0, customizeIndex),
+    0,
+    {
+      type: "submenu",
+      label: "Icon",
+      icon: createElement(IconShapesOutline18),
+      items: FOLDER_ICONS.map((option) => ({
+        type: "checkbox",
+        label: option.label,
+        icon: createElement(option.Icon),
+        checked: (input.folderIcon ?? "folder") === option.id,
+        onCheckedChange: () =>
+          void saveFolderPresentation(folder.id, { icon: option.id }),
+      })),
     },
-  });
+    {
+      type: "submenu",
+      label: "Color",
+      icon: createElement(IconColorPaletteOutline18),
+      items: FOLDER_SWATCHES.map((option) => ({
+        type: "checkbox",
+        label: option.label,
+        icon: createElement("span", {
+          "aria-hidden": true,
+          style: {
+            width: 14,
+            height: 14,
+            border: "1px solid currentColor",
+            borderRadius: "50%",
+            background: option.css,
+          },
+        }),
+        checked: folder.color === option.id,
+        onCheckedChange: () => {
+          void window.pond
+            .query("folders.setColor", { id: folder.id, color: option.id })
+            .then(() => folders.refresh())
+            .catch(() =>
+              notify({
+                id: "folder-color",
+                title: "Couldn't update folder color",
+              }),
+            );
+        },
+      })),
+    },
+    {
+      type: "submenu",
+      label: "Sort By",
+      icon: createElement(IconSortArrowsOutline18),
+      items: (
+        [
+          ["savedAt", "Date Saved", IconCalendarDateOutline18],
+          ["createdAt", "Date Added", IconCalendarPlusOutline18],
+          ["title", "Title", IconSortAlphaAscendingOutline18],
+          ["type", "Type", IconShapesOutline18],
+          ["random", "Random", IconDiceOutline18],
+        ] as const
+      ).map(([key, label, Icon]) => ({
+        type: "checkbox",
+        label,
+        icon: createElement(Icon),
+        checked: input.folderSortKey === key,
+        onCheckedChange: () => {
+          if (input.viewing) setSort({ key, dir: input.folderSortDir });
+          else
+            void saveFolderPresentation(folder.id, {
+              sortKey: key,
+              sortDir: input.folderSortDir,
+            });
+        },
+      })),
+    },
+    {
+      type: "checkbox",
+      label: "Quick Access",
+      icon: createElement(IconQuickAccessOutline18),
+      checked: input.quickAccess ?? false,
+      onCheckedChange: (quickAccess) => {
+        void saveFolderPresentation(folder.id, {
+          quickAccess,
+          quickAccessOrder: quickAccess
+            ? input.quickAccessFolderIds.length
+            : undefined,
+        }).catch(() =>
+          notify({
+            id: "folder-quick-access",
+            title: "Couldn't update Quick Access",
+          }),
+        );
+      },
+    },
+    {
+      label: "Move Up in Quick Access",
+      icon: createElement(IconArrowUpOutline18),
+      hidden: !input.quickAccess || quickIndex <= 0,
+      onClick: () =>
+        void moveQuickAccess(folder.id, input.quickAccessFolderIds, -1),
+    },
+    {
+      label: "Move Down in Quick Access",
+      icon: createElement(IconArrowDownOutline18),
+      hidden:
+        !input.quickAccess ||
+        quickIndex < 0 ||
+        quickIndex >= input.quickAccessFolderIds.length - 1,
+      onClick: () =>
+        void moveQuickAccess(folder.id, input.quickAccessFolderIds, 1),
+    },
+  );
   return items;
 }

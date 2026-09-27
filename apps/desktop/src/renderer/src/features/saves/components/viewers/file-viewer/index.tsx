@@ -1,9 +1,34 @@
-import { Button, Input, Select, Slider } from "@pond/ui";
+import {
+  IconAnimationRepeatOutline18,
+  IconArrowLeftOutline18,
+  IconArrowRightOutline18,
+  IconArrowsExpandOutline18,
+  IconCircleInfoOutline18,
+  IconDarkLightOutline18,
+  IconFullScreenOutline18,
+  IconKeyboardOutline18,
+  IconMagnifierOutline18,
+  IconMediaPauseOutline18,
+  IconMediaPlayOutline18,
+  IconMinusOutline18,
+  IconPlusOutline18,
+  IconPrintOutline18,
+  IconResizeXOutline18,
+  IconRotateImageClockwiseOutline18,
+  IconSidebarLeftOutline18,
+  IconTextAOutline18,
+  IconTypeScaleOutline18,
+  IconTypographyOutline18,
+  IconVolumeOffOutline18,
+  IconVolumeOutline18,
+} from "@pond/icons/outline/18";
+import { Button, Dialog, Input, Select, Slider } from "@pond/ui";
 import type { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import {
   type CSSProperties,
   lazy,
+  type ReactNode,
   Suspense,
   useCallback,
   useEffect,
@@ -11,16 +36,35 @@ import {
   useRef,
   useState,
 } from "react";
+import { GeneratedRasterViewer } from "@/features/saves/components/viewers/generated-raster-viewer";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
-import { exportFile, openDefaultApp } from "@/features/saves/lib/actions";
+import {
+  ChromePortal,
+  ViewerChrome,
+} from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+import { OriginalFileActions } from "@/features/saves/components/viewers/original-file-actions";
+import { ViewerFallback } from "@/features/saves/components/viewers/viewer-fallback";
+import { ViewerResultCount } from "@/features/saves/components/viewers/viewer-result-count";
+import {
+  type ViewerNavigation,
+  ViewerNavigationControls,
+  ViewerToolbarGroups,
+} from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import { estimateBpm } from "@/features/saves/lib/media/audio-bpm";
 import { downsamplePeaks } from "@/features/saves/lib/media/audio-peaks";
-import { storedFileViewerKind } from "@/features/saves/lib/media/file-viewer";
-import { buildPondUrl, previewUrlFor } from "@/features/saves/lib/media/url";
+import {
+  type StoredFileViewerKind,
+  storedFileViewerKind,
+} from "@/features/saves/lib/media/file-viewer";
+import { buildPondUrl } from "@/features/saves/lib/media/url";
 import type { Save, SaveFile } from "@/features/saves/types";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { formatBytes } from "@/shared/lib/format";
-import { addPdfRenderWindow } from "./pdf-render-window";
+import {
+  addPdfRenderWindow,
+  pdfPageWidth,
+  stepPdfZoom,
+} from "./pdf-render-window";
 import styles from "./styles.module.css";
 
 const ArchiveFileViewer = lazy(() =>
@@ -41,87 +85,127 @@ const ModelViewer = lazy(() =>
   })),
 );
 
+const LivePhotoViewer = lazy(() =>
+  import("@/features/saves/components/viewers/live-photo-viewer").then(
+    (module) => ({ default: module.LivePhotoViewer }),
+  ),
+);
+
 const SafeWebViewer = lazy(() =>
   import("@/features/saves/components/viewers/safe-web-viewer").then(
     (module) => ({ default: module.SafeWebViewer }),
   ),
 );
 
+const TextFileViewer = lazy(() =>
+  import("@/features/saves/components/viewers/text-file-viewer").then(
+    (module) => ({ default: module.TextFileViewer }),
+  ),
+);
+
 const DEFAULT_SPECIMEN = "Sphinx of black quartz, judge my vow.";
 const GLYPHS =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n0123456789  !?&@#%()[]{}";
+const SYMBOLS =
+  "© ® ™ § ¶ † ‡ • … ‰ ′ ″ ‹ › « »\n$ ¢ £ € ¥ ₩ ₹ ₽ ₿\n+ − × ÷ = ≠ ≈ < > ≤ ≥ ± ∞ √ ∑ ∏ ∫ ∂ ∆\n← ↑ → ↓ ↔ ↕ ⇐ ⇑ ⇒ ⇓ ⇔";
 
-export function StoredFileViewer(props: { save: Save; file: SaveFile }) {
+const FONT_MODES = [
+  { value: "specimen", label: "Specimen", Icon: IconTypographyOutline18 },
+  { value: "waterfall", label: "Waterfall", Icon: IconTypeScaleOutline18 },
+  { value: "characters", label: "Characters", Icon: IconTextAOutline18 },
+  { value: "symbols", label: "Symbols", Icon: IconKeyboardOutline18 },
+  { value: "information", label: "Information", Icon: IconCircleInfoOutline18 },
+] as const;
+
+type FontMode = (typeof FONT_MODES)[number]["value"];
+
+export function StoredFileViewer({
+  save,
+  file,
+  showControls = true,
+}: {
+  save: Save;
+  file: SaveFile;
+  showControls?: boolean;
+}) {
   return (
-    <Suspense
-      fallback={<div className={styles.previewStatus}>Loading preview</div>}
-    >
-      <StoredFileContent {...props} />
-    </Suspense>
+    <ViewerChrome enabled={showControls}>
+      <Suspense
+        fallback={<div className={styles.previewStatus}>Loading preview</div>}
+      >
+        <StoredFileContent
+          key={`${save.id}:${file.path}:${file.sha256}`}
+          save={save}
+          file={file}
+          fileIndex={save.files.indexOf(file)}
+          active
+        />
+      </Suspense>
+    </ViewerChrome>
   );
 }
 
-function StoredFileContent({ save, file }: { save: Save; file: SaveFile }) {
-  const kind = storedFileViewerKind(file);
-  const fileIndex = save.files.indexOf(file);
-  const url = buildPondUrl(save.id, file);
+interface StoredFileContentProps {
+  save: Save;
+  file: SaveFile;
+  fileIndex: number;
+  url?: string;
+  active?: boolean;
+  navigation?: ViewerNavigation;
+  viewerKind?: StoredFileViewerKind;
+}
 
-  if (kind === "pdf")
-    return (
-      <PdfViewer save={save} file={file} url={url} fileIndex={fileIndex} />
-    );
-  if (kind === "audio")
-    return (
-      <AudioViewer save={save} file={file} url={url} fileIndex={fileIndex} />
-    );
-  if (kind === "font")
-    return (
-      <FontViewer save={save} file={file} url={url} fileIndex={fileIndex} />
-    );
+export function StoredFileContent({
+  save,
+  file,
+  fileIndex,
+  url = buildPondUrl(save.id, file),
+  active = true,
+  navigation,
+  viewerKind,
+}: StoredFileContentProps) {
+  const kind = viewerKind ?? storedFileViewerKind(file);
+  const props = { save, file, fileIndex, active, navigation };
+
+  if (kind === "pdf") return <PdfViewer {...props} url={url} />;
+  if (kind === "audio") return <AudioViewer {...props} url={url} />;
+  if (kind === "font") return <FontViewer {...props} url={url} />;
+  if (kind === "text") return <TextFileViewer {...props} url={url} />;
   if (kind === "native-preview")
-    return (
-      <NativePreviewViewer
-        save={save}
-        file={file}
-        url={url}
-        fileIndex={fileIndex}
-      />
-    );
-  if (kind === "model")
-    return (
-      <ModelFileViewer
-        save={save}
-        file={file}
-        url={url}
-        fileIndex={fileIndex}
-      />
-    );
-  if (kind === "epub")
-    return (
-      <EpubFileViewer save={save} file={file} url={url} fileIndex={fileIndex} />
-    );
-  if (kind === "archive")
-    return (
-      <ArchiveViewer save={save} file={file} url={url} fileIndex={fileIndex} />
-    );
-  if (kind === "safe-web")
-    return (
-      <SafeWebFileViewer
-        save={save}
-        file={file}
-        url={url}
-        fileIndex={fileIndex}
-      />
-    );
-  return <GenericFileViewer save={save} file={file} fileIndex={fileIndex} />;
+    return <NativePreviewViewer {...props} url={url} />;
+  if (kind === "model") return <ModelFileViewer {...props} url={url} />;
+  if (kind === "epub") return <EpubFileViewer {...props} url={url} />;
+  if (kind === "live-photo")
+    return <LivePhotoFileViewer {...props} url={url} />;
+  if (kind === "archive") return <ArchiveViewer {...props} url={url} />;
+  if (kind === "safe-web") return <SafeWebFileViewer {...props} url={url} />;
+  return <GenericFileViewer {...props} />;
 }
 
 function PdfViewer(props: ViewerProps & { url: string }) {
+  const bodyRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const searchRunRef = useRef(0);
+  const scrollFrameRef = useRef<number | null>(null);
   const [document, setDocument] = useState<PDFDocumentProxy | null>(null);
   const [pagesToRender, setPagesToRender] = useState<Set<number>>(new Set());
-  const [width, setWidth] = useState(800);
+  const [viewport, setViewport] = useState({ width: 800, height: 600 });
+  const [pageAspectRatio, setPageAspectRatio] = useState(8.5 / 11);
+  const [fitMode, setFitMode] = useState<"width" | "page" | null>("width");
+  const [zoom, setZoom] = useState(1);
+  const [rotation, setRotation] = useState(0);
+  const [thumbnailsOpen, setThumbnailsOpen] = useState(false);
+  const [thumbnailRoot, setThumbnailRoot] = useState<HTMLElement | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<number[]>([]);
+  const [searchResultIndex, setSearchResultIndex] = useState(0);
+  const [pageEntry, setPageEntry] = useState("1");
   const [error, setError] = useState(false);
+
+  useEffect(() => setPageEntry(String(currentPage)), [currentPage]);
 
   useEffect(() => {
     let task: PDFDocumentLoadingTask | undefined;
@@ -137,6 +221,11 @@ function PdfViewer(props: ViewerProps & { url: string }) {
         if (active) {
           setDocument(next);
           setPagesToRender(addPdfRenderWindow(new Set(), 1, next.numPages));
+          const firstPage = await next.getPage(1);
+          if (active) {
+            const firstViewport = firstPage.getViewport({ scale: 1 });
+            setPageAspectRatio(firstViewport.width / firstViewport.height);
+          }
         }
       })
       .catch(() => {
@@ -159,44 +248,347 @@ function PdfViewer(props: ViewerProps & { url: string }) {
   );
 
   useEffect(() => {
-    const root = scrollRef.current;
+    const root = bodyRef.current;
     if (!root) return;
-    const update = () => setWidth(Math.max(240, root.clientWidth - 48));
+    const update = () =>
+      setViewport({ width: root.clientWidth, height: root.clientHeight });
     update();
     const observer = new ResizeObserver(update);
     observer.observe(root);
     return () => observer.disconnect();
   }, []);
 
+  useEffect(
+    () => () => {
+      searchRunRef.current += 1;
+      if (scrollFrameRef.current !== null)
+        cancelAnimationFrame(scrollFrameRef.current);
+    },
+    [],
+  );
+
+  const width = pdfPageWidth({
+    containerWidth: viewport.width,
+    containerHeight: viewport.height,
+    pageAspectRatio:
+      rotation % 180 === 0 ? pageAspectRatio : 1 / pageAspectRatio,
+    thumbnailsOpen,
+    fitMode,
+    zoom,
+  });
+
+  const goToPage = useCallback(
+    (pageNumber: number) => {
+      if (!document) return;
+      const page = Math.min(document.numPages, Math.max(1, pageNumber));
+      setCurrentPage(page);
+      setPagesToRender((current) =>
+        addPdfRenderWindow(current, page, document.numPages),
+      );
+      const target = scrollRef.current?.querySelector<HTMLElement>(
+        `[data-pdf-page="${page}"]`,
+      );
+      const reduceMotion = globalThis.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      target?.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start",
+      });
+    },
+    [document],
+  );
+
+  const syncCurrentPage = useCallback(() => {
+    if (scrollFrameRef.current !== null) return;
+    scrollFrameRef.current = requestAnimationFrame(() => {
+      scrollFrameRef.current = null;
+      const root = scrollRef.current;
+      if (!root) return;
+      const rootTop = root.getBoundingClientRect().top;
+      let nearestPage = currentPage;
+      let nearestDistance = Number.POSITIVE_INFINITY;
+      for (const page of root.querySelectorAll<HTMLElement>(
+        "[data-pdf-page]",
+      )) {
+        const pageNumber = Number(page.dataset.pdfPage);
+        const distance = Math.abs(
+          page.getBoundingClientRect().top - rootTop - 24,
+        );
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestPage = pageNumber;
+        }
+      }
+      if (Number.isFinite(nearestPage)) setCurrentPage(nearestPage);
+    });
+  }, [currentPage]);
+
+  const runSearch = useCallback(async () => {
+    const query = searchQuery.trim().toLocaleLowerCase();
+    if (!document || !query) {
+      setSearchResults([]);
+      setSearchResultIndex(0);
+      return;
+    }
+    const run = searchRunRef.current + 1;
+    searchRunRef.current = run;
+    setSearching(true);
+    try {
+      const matches: number[] = [];
+      for (
+        let pageNumber = 1;
+        pageNumber <= document.numPages;
+        pageNumber += 1
+      ) {
+        const page = await document.getPage(pageNumber);
+        const content = await page.getTextContent();
+        const text = content.items
+          .map((item) => ("str" in item ? item.str : ""))
+          .join(" ")
+          .toLocaleLowerCase();
+        if (text.includes(query)) matches.push(pageNumber);
+        if (searchRunRef.current !== run) return;
+      }
+      setSearchResults(matches);
+      setSearchResultIndex(0);
+      const first = matches[0];
+      if (first) goToPage(first);
+    } catch {
+      if (searchRunRef.current === run) {
+        setSearchResults([]);
+        setSearchResultIndex(0);
+      }
+    } finally {
+      if (searchRunRef.current === run) setSearching(false);
+    }
+  }, [document, goToPage, searchQuery]);
+
+  const stepSearchResult = useCallback(
+    (direction: -1 | 1) => {
+      if (!searchResults.length) return;
+      const next =
+        (searchResultIndex + direction + searchResults.length) %
+        searchResults.length;
+      setSearchResultIndex(next);
+      const page = searchResults[next];
+      if (page) goToPage(page);
+    },
+    [goToPage, searchResultIndex, searchResults],
+  );
+
   return (
     <div className={styles.pdf}>
-      <div ref={scrollRef} className={styles.pdfScroll}>
-        {!document && !error ? (
-          <div className={styles.pdfStatus}>Loading PDF</div>
-        ) : null}
-        {error ? (
-          <div className={styles.pdfStatus}>
-            This PDF could not be rendered. You can still open or export it.
-          </div>
-        ) : null}
-        {document
-          ? Array.from(
+      <div ref={bodyRef} className={styles.pdfBody}>
+        {document && thumbnailsOpen ? (
+          <nav
+            ref={setThumbnailRoot}
+            className={styles.pdfThumbnails}
+            aria-label="Page thumbnails"
+          >
+            {Array.from(
               { length: document.numPages },
               (_, pageIndex) => pageIndex + 1,
             ).map((pageNumber) => (
-              <PdfPage
+              <PdfThumbnail
                 key={pageNumber}
                 document={document}
                 pageNumber={pageNumber}
-                width={width}
-                render={pagesToRender.has(pageNumber)}
-                scrollRoot={scrollRef.current}
-                onNear={schedulePage}
+                rotation={rotation}
+                root={thumbnailRoot}
+                active={pageNumber === currentPage}
+                onSelect={goToPage}
               />
-            ))
-          : null}
+            ))}
+          </nav>
+        ) : null}
+        <div
+          ref={scrollRef}
+          className={styles.pdfScroll}
+          onScroll={syncCurrentPage}
+        >
+          {!document && !error ? (
+            <div className={styles.pdfStatus}>Loading PDF</div>
+          ) : null}
+          {error ? (
+            <div className={styles.pdfStatus}>
+              This PDF could not be rendered. You can still open or export it.
+            </div>
+          ) : null}
+          {document
+            ? Array.from(
+                { length: document.numPages },
+                (_, pageIndex) => pageIndex + 1,
+              ).map((pageNumber) => (
+                <PdfPage
+                  key={pageNumber}
+                  document={document}
+                  pageNumber={pageNumber}
+                  width={width}
+                  rotation={rotation}
+                  render={pagesToRender.has(pageNumber)}
+                  scrollRoot={scrollRef.current}
+                  onNear={schedulePage}
+                />
+              ))
+            : null}
+        </div>
       </div>
-      <FileBar {...props} />
+      <FileBar {...props} label="PDF">
+        <ViewerHud.Tool
+          label="Page Thumbnails"
+          pressed={thumbnailsOpen}
+          disabled={!document}
+          onClick={() => setThumbnailsOpen((value) => !value)}
+        >
+          <IconSidebarLeftOutline18 />
+        </ViewerHud.Tool>
+        <ViewerHud.Tool
+          label="Search Document"
+          pressed={searchOpen}
+          disabled={!document}
+          onClick={() => setSearchOpen((value) => !value)}
+        >
+          <IconMagnifierOutline18 />
+        </ViewerHud.Tool>
+        {searchOpen ? (
+          <form
+            className={styles.pdfSearch}
+            onSubmit={(event) => {
+              event.preventDefault();
+              void runSearch();
+            }}
+          >
+            <Input.Root size="sm" variant="secondary">
+              <Input.Field
+                autoFocus
+                value={searchQuery}
+                aria-label="Search PDF"
+                placeholder="Find"
+                onChange={(event) => setSearchQuery(event.target.value)}
+              />
+            </Input.Root>
+            <span className={styles.pdfSearchCount} aria-live="polite">
+              {searching
+                ? "Searching"
+                : searchResults.length
+                  ? `${searchResultIndex + 1} / ${searchResults.length}`
+                  : searchQuery
+                    ? "No results"
+                    : ""}
+            </span>
+            <ViewerHud.Tool
+              label="Previous Result"
+              disabled={!searchResults.length}
+              onClick={() => stepSearchResult(-1)}
+            >
+              <IconArrowLeftOutline18 />
+            </ViewerHud.Tool>
+            <ViewerHud.Tool
+              label="Next Result"
+              disabled={!searchResults.length}
+              onClick={() => stepSearchResult(1)}
+            >
+              <IconArrowRightOutline18 />
+            </ViewerHud.Tool>
+          </form>
+        ) : null}
+        <ViewerHud.Tool
+          label="Previous Page"
+          disabled={!document || currentPage <= 1}
+          onClick={() => goToPage(currentPage - 1)}
+        >
+          <IconArrowLeftOutline18 />
+        </ViewerHud.Tool>
+        <form
+          className={styles.pdfPageEntry}
+          onSubmit={(event) => {
+            event.preventDefault();
+            const next = Number.parseInt(pageEntry, 10);
+            if (Number.isFinite(next)) goToPage(next);
+          }}
+        >
+          <Input.Root size="sm" variant="secondary">
+            <Input.Field
+              inputMode="numeric"
+              pattern="[0-9]*"
+              aria-label="Page number"
+              value={pageEntry}
+              onChange={(event) => setPageEntry(event.target.value)}
+              onBlur={() => {
+                const next = Number.parseInt(pageEntry, 10);
+                if (Number.isFinite(next)) goToPage(next);
+                else setPageEntry(String(currentPage));
+              }}
+            />
+          </Input.Root>
+          <span aria-hidden>/ {document?.numPages ?? 0}</span>
+        </form>
+        <ViewerHud.Tool
+          label="Next Page"
+          disabled={!document || currentPage >= document.numPages}
+          onClick={() => goToPage(currentPage + 1)}
+        >
+          <IconArrowRightOutline18 />
+        </ViewerHud.Tool>
+        <ViewerHud.Tool
+          label="Zoom Out"
+          disabled={!document}
+          onClick={() => {
+            setFitMode(null);
+            setZoom((value) => stepPdfZoom(value, -1));
+          }}
+        >
+          <IconMinusOutline18 />
+        </ViewerHud.Tool>
+        <ViewerHud.Scale>{Math.round(zoom * 100)}%</ViewerHud.Scale>
+        <ViewerHud.Tool
+          label="Zoom In"
+          disabled={!document}
+          onClick={() => {
+            setFitMode(null);
+            setZoom((value) => stepPdfZoom(value, 1));
+          }}
+        >
+          <IconPlusOutline18 />
+        </ViewerHud.Tool>
+        <ViewerHud.Tool
+          label="Fit Width"
+          pressed={fitMode === "width"}
+          disabled={!document}
+          onClick={() => {
+            setFitMode("width");
+            setZoom(1);
+          }}
+        >
+          <IconResizeXOutline18 />
+        </ViewerHud.Tool>
+        <ViewerHud.Tool
+          label="Fit Page"
+          pressed={fitMode === "page"}
+          disabled={!document}
+          onClick={() => {
+            setFitMode("page");
+            setZoom(1);
+          }}
+        >
+          <IconArrowsExpandOutline18 />
+        </ViewerHud.Tool>
+        <ViewerHud.Tool
+          label="Rotate Clockwise"
+          disabled={!document}
+          onClick={() => setRotation((value) => (value + 90) % 360)}
+        >
+          <IconRotateImageClockwiseOutline18 />
+        </ViewerHud.Tool>
+        <ViewerHud.Tool
+          label="Print"
+          disabled={!document}
+          onClick={() => printPdf(props.url)}
+        >
+          <IconPrintOutline18 />
+        </ViewerHud.Tool>
+      </FileBar>
     </div>
   );
 }
@@ -205,6 +597,7 @@ function PdfPage({
   document,
   pageNumber,
   width,
+  rotation,
   render,
   scrollRoot,
   onNear,
@@ -212,6 +605,7 @@ function PdfPage({
   document: PDFDocumentProxy;
   pageNumber: number;
   width: number;
+  rotation: number;
   render: boolean;
   scrollRoot: HTMLDivElement | null;
   onNear: (pageNumber: number) => void;
@@ -240,10 +634,13 @@ function PdfPage({
     > | null = null;
     void document.getPage(pageNumber).then((page) => {
       if (!active || !canvasRef.current) return;
-      const base = page.getViewport({ scale: 1 });
+      const base = page.getViewport({ scale: 1, rotation });
       const cssScale = Math.min(2, width / base.width);
       const pixelRatio = Math.min(globalThis.devicePixelRatio || 1, 2);
-      const viewport = page.getViewport({ scale: cssScale * pixelRatio });
+      const viewport = page.getViewport({
+        scale: cssScale * pixelRatio,
+        rotation,
+      });
       const canvas = canvasRef.current;
       const context = canvas.getContext("2d");
       if (!context) return;
@@ -258,16 +655,19 @@ function PdfPage({
       active = false;
       renderTask?.cancel();
     };
-  }, [document, pageNumber, render, width]);
+  }, [document, pageNumber, render, rotation, width]);
 
   return (
     <figure
       ref={figureRef}
       className={styles.pdfPage}
       aria-label={`Page ${pageNumber}`}
+      data-pdf-page={pageNumber}
       style={{
         width,
-        minHeight: Math.round((width * 11) / 8.5),
+        minHeight: Math.round(
+          width * (rotation % 180 === 0 ? 11 / 8.5 : 8.5 / 11),
+        ),
       }}
     >
       {render ? <canvas ref={canvasRef} /> : null}
@@ -276,7 +676,86 @@ function PdfPage({
   );
 }
 
+function PdfThumbnail({
+  document,
+  pageNumber,
+  rotation,
+  root,
+  active,
+  onSelect,
+}: {
+  document: PDFDocumentProxy;
+  pageNumber: number;
+  rotation: number;
+  root: HTMLElement | null;
+  active: boolean;
+  onSelect: (pageNumber: number) => void;
+}) {
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [visible, setVisible] = useState(pageNumber <= 3);
+
+  useEffect(() => {
+    const button = buttonRef.current;
+    if (visible || !button || !root) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) setVisible(true);
+      },
+      { root, rootMargin: "100% 0px" },
+    );
+    observer.observe(button);
+    return () => observer.disconnect();
+  }, [root, visible]);
+
+  useEffect(() => {
+    if (!visible) return;
+    let activeRender = true;
+    let renderTask: ReturnType<
+      Awaited<ReturnType<typeof document.getPage>>["render"]
+    > | null = null;
+    void document.getPage(pageNumber).then((page) => {
+      if (!activeRender || !canvasRef.current) return;
+      const base = page.getViewport({ scale: 1, rotation });
+      const pixelRatio = Math.min(globalThis.devicePixelRatio || 1, 2);
+      const viewport = page.getViewport({
+        scale: (96 / base.width) * pixelRatio,
+        rotation,
+      });
+      const canvas = canvasRef.current;
+      const context = canvas.getContext("2d");
+      if (!context) return;
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      canvas.style.width = "96px";
+      canvas.style.height = `${Math.round(viewport.height / pixelRatio)}px`;
+      renderTask = page.render({ canvas, canvasContext: context, viewport });
+      void renderTask.promise.catch(() => {});
+    });
+    return () => {
+      activeRender = false;
+      renderTask?.cancel();
+    };
+  }, [document, pageNumber, rotation, visible]);
+
+  return (
+    <button
+      ref={buttonRef}
+      type="button"
+      className={styles.pdfThumbnail}
+      data-active={active || undefined}
+      aria-label={`Go to page ${pageNumber}`}
+      aria-current={active ? "page" : undefined}
+      onClick={() => onSelect(pageNumber)}
+    >
+      {visible ? <canvas ref={canvasRef} /> : <span aria-hidden />}
+      <strong>{pageNumber}</strong>
+    </button>
+  );
+}
+
 function AudioViewer(props: ViewerProps & { url: string }) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const hoverStartedRef = useRef(false);
@@ -285,8 +764,10 @@ function AudioViewer(props: ViewerProps & { url: string }) {
   const [loop, setLoop] = useState(false);
   const [speed, setSpeed] = useState("1");
   const [volume, setVolume] = useState(1);
+  const [muted, setMuted] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const context = new AudioContext();
@@ -333,8 +814,19 @@ function AudioViewer(props: ViewerProps & { url: string }) {
     };
   }, [props.save.id, props.url]);
 
+  if (failed) {
+    return (
+      <ViewerFallback
+        {...props}
+        reason="decode"
+        active={props.active}
+        slideNavigation={props.navigation}
+      />
+    );
+  }
+
   return (
-    <div className={styles.root}>
+    <div ref={rootRef} className={styles.root}>
       <div className={styles.audioCard}>
         <FileMark file={props.file} />
         <div className={styles.heading}>
@@ -372,12 +864,12 @@ function AudioViewer(props: ViewerProps & { url: string }) {
             }
           }}
         />
-        {/* biome-ignore lint/a11y/useMediaCaption: imported audio has no guaranteed transcript track. */}
         <audio
           ref={audioRef}
           preload="metadata"
           src={props.url}
           loop={loop}
+          muted={muted}
           onLoadedMetadata={(event) =>
             setDuration(event.currentTarget.duration || 0)
           }
@@ -387,11 +879,19 @@ function AudioViewer(props: ViewerProps & { url: string }) {
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
           onEnded={() => setPlaying(false)}
+          onError={() => setFailed(true)}
         />
-        <div className={styles.audioControls}>
-          <Button
-            size="sm"
-            variant="secondary"
+      </div>
+      <FileBar {...props} />
+      <ChromePortal slot="bottom">
+        <ViewerHud.Tools
+          tooltipSide="top"
+          className={styles.audioTransport}
+          role="toolbar"
+          aria-label="Audio playback"
+        >
+          <ViewerHud.Tool
+            label={playing ? "Pause" : "Play"}
             onClick={() => {
               const audio = audioRef.current;
               if (!audio) return;
@@ -399,19 +899,41 @@ function AudioViewer(props: ViewerProps & { url: string }) {
               else audio.pause();
             }}
           >
-            {playing ? "Pause" : "Play"}
-          </Button>
-          <Button
-            size="sm"
-            variant={loop ? "tertiary" : "secondary"}
-            aria-pressed={loop}
-            onClick={() => setLoop((value) => !value)}
+            {playing ? <IconMediaPauseOutline18 /> : <IconMediaPlayOutline18 />}
+          </ViewerHud.Tool>
+          <ViewerHud.Tool
+            label={muted || volume === 0 ? "Unmute" : "Mute"}
+            onClick={() => setMuted((value) => !value)}
           >
-            Loop
-          </Button>
-          <span className={styles.time}>
+            {muted || volume === 0 ? (
+              <IconVolumeOffOutline18 />
+            ) : (
+              <IconVolumeOutline18 />
+            )}
+          </ViewerHud.Tool>
+          <ViewerHud.Scale>
             {formatAudioTime(currentTime)} / {formatAudioTime(duration)}
-          </span>
+          </ViewerHud.Scale>
+          <Slider.Root
+            className={styles.audioProgress}
+            aria-label="Audio Position"
+            min={0}
+            max={Math.max(duration, 0.01)}
+            step={0.01}
+            value={currentTime}
+            onValueChange={(value) => {
+              const next = Array.isArray(value) ? (value[0] ?? 0) : value;
+              setCurrentTime(next);
+              if (audioRef.current) audioRef.current.currentTime = next;
+            }}
+          >
+            <Slider.Control>
+              <Slider.Track>
+                <Slider.Indicator />
+                <Slider.Thumb />
+              </Slider.Track>
+            </Slider.Control>
+          </Slider.Root>
           <Select.Root
             value={speed}
             onValueChange={(value) => {
@@ -421,7 +943,11 @@ function AudioViewer(props: ViewerProps & { url: string }) {
                 audioRef.current.playbackRate = Number(value);
             }}
           >
-            <Select.Trigger aria-label="Playback Speed">
+            <Select.Trigger
+              size="xs"
+              variant="ghost"
+              aria-label="Playback Speed"
+            >
               <Select.Value>{(value: string) => `${value}×`}</Select.Value>
             </Select.Trigger>
             <Select.Portal>
@@ -437,6 +963,7 @@ function AudioViewer(props: ViewerProps & { url: string }) {
             </Select.Portal>
           </Select.Root>
           <Slider.Root
+            className={styles.audioVolume}
             aria-label="Audio Volume"
             min={0}
             max={1}
@@ -445,6 +972,7 @@ function AudioViewer(props: ViewerProps & { url: string }) {
             onValueChange={(value) => {
               const next = Array.isArray(value) ? (value[0] ?? 1) : value;
               setVolume(next);
+              setMuted(false);
               if (audioRef.current) audioRef.current.volume = next;
             }}
           >
@@ -455,9 +983,26 @@ function AudioViewer(props: ViewerProps & { url: string }) {
               </Slider.Track>
             </Slider.Control>
           </Slider.Root>
-        </div>
-        <FileActions {...props} />
-      </div>
+          <ViewerHud.Tool
+            label="Loop"
+            pressed={loop}
+            onClick={() => setLoop((value) => !value)}
+          >
+            <IconAnimationRepeatOutline18 />
+          </ViewerHud.Tool>
+          <ViewerHud.Tool
+            label="Full Screen"
+            onClick={() => {
+              const root = rootRef.current;
+              if (!root) return;
+              if (document.fullscreenElement) void document.exitFullscreen();
+              else void root.requestFullscreen();
+            }}
+          >
+            <IconFullScreenOutline18 />
+          </ViewerHud.Tool>
+        </ViewerHud.Tools>
+      </ChromePortal>
     </div>
   );
 }
@@ -473,9 +1018,8 @@ function FontViewer(props: ViewerProps & { url: string }) {
   const [specimen, setSpecimen] = useState(DEFAULT_SPECIMEN);
   const [size, setSize] = useState(68);
   const [loaded, setLoaded] = useState(false);
-  const [mode, setMode] = useState<"specimen" | "waterfall" | "characters">(
-    "specimen",
-  );
+  const [failed, setFailed] = useState(false);
+  const [mode, setMode] = useState<FontMode>("specimen");
   const [background, setBackground] = useState<"light" | "dark">("light");
   const scrollFade = useScrollFade<HTMLDivElement>();
   const family = useMemo(
@@ -485,6 +1029,7 @@ function FontViewer(props: ViewerProps & { url: string }) {
 
   useEffect(() => {
     let active = true;
+    setFailed(false);
     const face = new FontFace(family, `url(${JSON.stringify(props.url)})`);
     void face
       .load()
@@ -493,12 +1038,27 @@ function FontViewer(props: ViewerProps & { url: string }) {
         document.fonts.add(font);
         setLoaded(true);
       })
-      .catch(() => setLoaded(false));
+      .catch(() => {
+        if (!active) return;
+        setLoaded(false);
+        setFailed(true);
+      });
     return () => {
       active = false;
       document.fonts.delete(face);
     };
   }, [family, props.url]);
+
+  if (failed) {
+    return (
+      <ViewerFallback
+        {...props}
+        reason="decode"
+        active={props.active}
+        slideNavigation={props.navigation}
+      />
+    );
+  }
 
   const style: CSSProperties & {
     "--preview-font": string;
@@ -510,69 +1070,81 @@ function FontViewer(props: ViewerProps & { url: string }) {
 
   return (
     <div className={styles.fontRoot} style={style} data-background={background}>
-      <ViewerHud.Root>
-        <ViewerHud.Cluster anchor="top-left">
-          <ViewerHud.Pill className={styles.query}>
-            <Input.Root size="sm" variant="secondary" className={styles.field}>
-              <Input.Field
-                value={specimen}
-                aria-label="Font specimen text"
-                onChange={(event) => setSpecimen(event.target.value)}
-              />
-            </Input.Root>
-          </ViewerHud.Pill>
-        </ViewerHud.Cluster>
-        <ViewerHud.Cluster anchor="top-right">
-          <ViewerHud.Pill>
-            {(["specimen", "waterfall", "characters"] as const).map((value) => (
-              <Button
-                key={value}
-                size="xs"
-                variant={mode === value ? "tertiary" : "ghost"}
-                aria-pressed={mode === value}
-                onClick={() => setMode(value)}
+      <ChromePortal slot="top">
+        <ViewerHud.Bar
+          label="Font"
+          start={<ViewerResultCount saveId={props.save.id} />}
+          center={
+            <>
+              <Input.Root
+                size="sm"
+                variant="secondary"
+                className={styles.field}
               >
-                {value === "specimen"
-                  ? "Specimen"
-                  : value === "waterfall"
-                    ? "Waterfall"
-                    : "Characters"}
-              </Button>
-            ))}
-          </ViewerHud.Pill>
-          <ViewerHud.Pill>
-            <Button
-              size="xs"
-              variant="ghost"
-              onClick={() =>
-                setBackground((value) => (value === "light" ? "dark" : "light"))
+                <Input.Field
+                  value={specimen}
+                  aria-label="Font specimen text"
+                  onChange={(event) => setSpecimen(event.target.value)}
+                />
+              </Input.Root>
+              <div className={styles.size}>
+                <ViewerHud.Scale>{size}px</ViewerHud.Scale>
+                <Slider.Root
+                  min={24}
+                  max={144}
+                  step={1}
+                  value={size}
+                  onValueChange={(next) => {
+                    const value = Array.isArray(next) ? (next[0] ?? 68) : next;
+                    setSize(value);
+                  }}
+                >
+                  <Slider.Control>
+                    <Slider.Track>
+                      <Slider.Indicator />
+                      <Slider.Thumb aria-label="Font preview size" />
+                    </Slider.Track>
+                  </Slider.Control>
+                </Slider.Root>
+              </div>
+            </>
+          }
+          end={
+            <ViewerToolbarGroups
+              actions={<FileActions {...props} />}
+              view={
+                <>
+                  {FONT_MODES.map(({ value, label, Icon }) => (
+                    <ViewerHud.Tool
+                      key={value}
+                      label={label}
+                      pressed={mode === value}
+                      onClick={() => setMode(value)}
+                    >
+                      <Icon />
+                    </ViewerHud.Tool>
+                  ))}
+                  <ViewerHud.Tool
+                    label={
+                      background === "light"
+                        ? "Use Dark Background"
+                        : "Use Light Background"
+                    }
+                    onClick={() =>
+                      setBackground((value) =>
+                        value === "light" ? "dark" : "light",
+                      )
+                    }
+                  >
+                    <IconDarkLightOutline18 />
+                  </ViewerHud.Tool>
+                </>
               }
-            >
-              {background === "light" ? "Dark Background" : "Light Background"}
-            </Button>
-          </ViewerHud.Pill>
-          <ViewerHud.Pill className={styles.size} aria-label="Preview size">
-            <ViewerHud.Scale>{size}px</ViewerHud.Scale>
-            <Slider.Root
-              min={24}
-              max={144}
-              step={1}
-              value={size}
-              onValueChange={(next) => {
-                const value = Array.isArray(next) ? (next[0] ?? 68) : next;
-                setSize(value);
-              }}
-            >
-              <Slider.Control>
-                <Slider.Track>
-                  <Slider.Indicator />
-                  <Slider.Thumb aria-label="Font preview size" />
-                </Slider.Track>
-              </Slider.Control>
-            </Slider.Root>
-          </ViewerHud.Pill>
-        </ViewerHud.Cluster>
-      </ViewerHud.Root>
+              navigation={navigationControls(props.navigation)}
+            />
+          }
+        />
+      </ChromePortal>
       <div className={styles.scroll} {...scrollFade}>
         {mode === "specimen" ? (
           <div className={styles.specimen}>{specimen || DEFAULT_SPECIMEN}</div>
@@ -590,66 +1162,126 @@ function FontViewer(props: ViewerProps & { url: string }) {
         {mode === "characters" ? (
           <pre className={styles.glyphs}>{GLYPHS}</pre>
         ) : null}
-        <dl className={styles.fontMetadata}>
-          <div>
-            <dt>File</dt>
-            <dd>{props.file.path}</dd>
-          </div>
-          <div>
-            <dt>Family</dt>
-            <dd>{props.file.family ?? props.save.title ?? "Unknown"}</dd>
-          </div>
-          <div>
-            <dt>Size</dt>
-            <dd>{formatBytes(props.file.size)}</dd>
-          </div>
-        </dl>
-        <FileBar {...props} />
+        {mode === "symbols" ? (
+          <pre className={styles.glyphs}>{SYMBOLS}</pre>
+        ) : null}
+        {mode === "information" ? (
+          <>
+            <dl className={styles.fontMetadata}>
+              <div>
+                <dt>File</dt>
+                <dd>{props.file.path}</dd>
+              </div>
+              <div>
+                <dt>Family</dt>
+                <dd>{props.file.family ?? props.save.title ?? "Unknown"}</dd>
+              </div>
+              {props.file.subfamily ? (
+                <div>
+                  <dt>Style</dt>
+                  <dd>{props.file.subfamily}</dd>
+                </div>
+              ) : null}
+              {props.file.fontWeight ? (
+                <div>
+                  <dt>Weight</dt>
+                  <dd>{props.file.fontWeight}</dd>
+                </div>
+              ) : null}
+              <div>
+                <dt>Size</dt>
+                <dd>{formatBytes(props.file.size)}</dd>
+              </div>
+            </dl>
+            <div className={styles.fontInfoActions}>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() =>
+                  Dialog.prompt({
+                    title: "Rename Font",
+                    initialValue: props.save.title ?? props.file.family ?? "",
+                    confirmLabel: "Rename",
+                    onConfirm: async (name) => {
+                      if (!name.trim()) throw new Error("Enter a name.");
+                      const result = await window.pond.query(
+                        "saves.batchRename",
+                        {
+                          ids: [props.save.id],
+                          pattern: name.trim(),
+                        },
+                      );
+                      if (!result.ok)
+                        throw new Error("Could not rename this font.");
+                    },
+                  })
+                }
+              >
+                Rename Font
+              </Button>
+            </div>
+          </>
+        ) : null}
       </div>
     </div>
   );
 }
 
-function GenericFileViewer(props: ViewerProps) {
+function GenericFileViewer({
+  message,
+  ...props
+}: ViewerProps & { message?: string }) {
   return (
     <div className={styles.root}>
-      <GenericFileCard {...props} />
+      <GenericFileCard {...props} message={message} />
+      <FileBar {...props} />
     </div>
   );
 }
 
 function NativePreviewViewer(props: ViewerProps & { url: string }) {
-  const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
 
   if (failed) {
     return (
-      <div className={styles.root}>
-        <GenericFileCard
-          {...props}
-          message="No preview provider is installed for this format."
-        />
-      </div>
+      <ViewerFallback
+        {...props}
+        reason="preview"
+        active={props.active}
+        slideNavigation={props.navigation}
+      />
     );
   }
 
   return (
     <div className={styles.previewRoot}>
-      <div className={styles.previewStage} data-loaded={loaded || undefined}>
-        {!loaded ? (
-          <div className={styles.previewStatus}>Rendering preview</div>
-        ) : null}
-        <img
-          className={styles.generatedPreview}
-          src={previewUrlFor(props.url)}
-          alt={props.save.title ?? props.file.path}
-          onLoad={() => setLoaded(true)}
-          onError={() => setFailed(true)}
-        />
-      </div>
-      <FileBar {...props} />
+      <GeneratedRasterViewer
+        save={props.save}
+        fileIndex={props.fileIndex}
+        url={props.url}
+        active={props.active ?? true}
+        slideNavigation={props.navigation}
+        onError={() => setFailed(true)}
+      />
     </div>
   );
+}
+
+function printPdf(url: string): void {
+  const frame = document.createElement("iframe");
+  frame.hidden = true;
+  frame.src = url;
+  frame.title = "Print PDF";
+  frame.addEventListener(
+    "load",
+    () => {
+      frame.contentWindow?.focus();
+      frame.contentWindow?.print();
+      window.setTimeout(() => frame.remove(), 1_000);
+    },
+    { once: true },
+  );
+  document.body.append(frame);
 }
 
 function ModelFileViewer(props: ViewerProps & { url: string }) {
@@ -662,8 +1294,9 @@ function ModelFileViewer(props: ViewerProps & { url: string }) {
         url={props.url}
         path={props.file.path}
         onUnavailable={onUnavailable}
+        toolbarStart={<ViewerResultCount saveId={props.save.id} />}
+        toolbarEnd={<FileToolbarEnd {...props} />}
       />
-      <FileBar {...props} />
     </div>
   );
 }
@@ -674,8 +1307,13 @@ function EpubFileViewer(props: ViewerProps & { url: string }) {
   if (unavailable) return <NativePreviewViewer {...props} />;
   return (
     <div className={styles.previewRoot}>
-      <EpubViewer url={props.url} onUnavailable={onUnavailable} />
-      <FileBar {...props} />
+      <EpubViewer
+        url={props.url}
+        onUnavailable={onUnavailable}
+        toolbarStart={<ViewerResultCount saveId={props.save.id} />}
+        toolbarEnd={<FileActions {...props} />}
+        toolbarNavigation={navigationControls(props.navigation)}
+      />
     </div>
   );
 }
@@ -691,8 +1329,25 @@ function ArchiveViewer(props: ViewerProps & { url: string }) {
         path={props.file.path}
         size={props.file.size}
         onUnavailable={onUnavailable}
+        toolbarStart={<ViewerResultCount saveId={props.save.id} />}
+        toolbarEnd={<FileToolbarEnd {...props} />}
       />
-      <FileBar {...props} />
+    </div>
+  );
+}
+
+function LivePhotoFileViewer(props: ViewerProps & { url: string }) {
+  const [unavailable, setUnavailable] = useState(false);
+  const onUnavailable = useCallback(() => setUnavailable(true), []);
+  if (unavailable) return <NativePreviewViewer {...props} />;
+  return (
+    <div className={styles.previewRoot}>
+      <LivePhotoViewer
+        url={props.url}
+        onUnavailable={onUnavailable}
+        toolbarStart={<ViewerResultCount saveId={props.save.id} />}
+        toolbarEnd={<FileToolbarEnd {...props} />}
+      />
     </div>
   );
 }
@@ -705,10 +1360,12 @@ function SafeWebFileViewer(props: ViewerProps & { url: string }) {
     <div className={styles.previewRoot}>
       <SafeWebViewer
         url={props.url}
+        path={props.file.path}
         size={props.file.size}
         onUnavailable={onUnavailable}
+        toolbarStart={<ViewerResultCount saveId={props.save.id} />}
+        toolbarEnd={<FileToolbarEnd {...props} />}
       />
-      <FileBar {...props} />
     </div>
   );
 }
@@ -728,7 +1385,6 @@ function GenericFileCard({
         </p>
         {message ? <p>{message}</p> : null}
       </div>
-      <FileActions {...props} />
     </div>
   );
 }
@@ -737,28 +1393,8 @@ interface ViewerProps {
   save: Save;
   file: SaveFile;
   fileIndex: number;
-}
-
-function FileActions({ save, fileIndex }: ViewerProps) {
-  return (
-    <div className={styles.actions}>
-      {save.mediaType === "font" ? <FontActivate save={save} /> : null}
-      <Button
-        size="sm"
-        variant="secondary"
-        onClick={() => void openDefaultApp(save, fileIndex)}
-      >
-        Open in Default App
-      </Button>
-      <Button
-        size="sm"
-        variant="secondary"
-        onClick={() => void exportFile(save, fileIndex)}
-      >
-        Export
-      </Button>
-    </div>
-  );
+  active?: boolean;
+  navigation?: ViewerNavigation;
 }
 
 function FontActivate({ save }: { save: Save }) {
@@ -777,9 +1413,9 @@ function FontActivate({ save }: { save: Save }) {
   }, [save.id]);
 
   return (
-    <Button
-      size="sm"
-      variant="secondary"
+    <ViewerHud.Tool
+      label={activated ? "Deactivate Font" : "Activate Font"}
+      pressed={activated}
       onClick={() => {
         void window.pond
           .query(activated ? "saves.deactivateFont" : "saves.activateFont", {
@@ -790,18 +1426,56 @@ function FontActivate({ save }: { save: Save }) {
           });
       }}
     >
-      {activated ? "Deactivate Font" : "Activate Font"}
-    </Button>
+      <IconTypographyOutline18 />
+    </ViewerHud.Tool>
   );
 }
 
-function FileBar(props: ViewerProps) {
+function FileBar({
+  children,
+  label = "File viewer",
+  ...props
+}: ViewerProps & { children?: ReactNode; label?: string }) {
   return (
-    <div className={styles.fileBar}>
-      <span>{props.file.path}</span>
-      <span>{formatBytes(props.file.size)}</span>
-      <FileActions {...props} />
-    </div>
+    <ChromePortal slot="top">
+      <ViewerHud.Bar
+        label={label}
+        start={<ViewerResultCount saveId={props.save.id} />}
+        end={
+          <ViewerToolbarGroups
+            actions={<FileActions {...props} />}
+            view={children}
+            navigation={navigationControls(props.navigation)}
+          />
+        }
+      />
+    </ChromePortal>
+  );
+}
+
+function FileToolbarEnd(props: ViewerProps) {
+  return (
+    <ViewerToolbarGroups
+      actions={<FileActions {...props} />}
+      navigation={navigationControls(props.navigation)}
+    />
+  );
+}
+
+function navigationControls(navigation?: ViewerNavigation): ReactNode {
+  return navigation && navigation.count > 1 ? (
+    <ViewerNavigationControls navigation={navigation} />
+  ) : null;
+}
+
+function FileActions(props: ViewerProps) {
+  return (
+    <>
+      {props.save.mediaType === "font" ? (
+        <FontActivate save={props.save} />
+      ) : null}
+      <OriginalFileActions save={props.save} fileIndex={props.fileIndex} />
+    </>
   );
 }
 

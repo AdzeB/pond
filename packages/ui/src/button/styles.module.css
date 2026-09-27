@@ -35,7 +35,7 @@
   align-items: center;
   justify-content: center;
   height: var(--button-height);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   line-height: 1;
   text-wrap: nowrap;
   user-select: none;
@@ -132,6 +132,12 @@
       linear-gradient(var(--ds-white-a2) 0%, var(--ds-white-a1) 100%),
       var(--ds-gray-12);
 
+    &:where([data-icon]) {
+      background:
+        linear-gradient(var(--ds-white-a2) 0%, var(--ds-white-a1) 100%),
+        var(--ds-gray-11);
+    }
+
     &:hover,
     &[data-demo-state="hover"] {
       opacity: 0.8;
@@ -141,12 +147,12 @@
   &:where([data-variant="secondary"]) {
     color: var(--ds-gray-12);
     background-color: var(--ds-gray-1);
-    box-shadow: var(--ds-shadow-1);
+    box-shadow: var(--ds-shadow-xs);
 
     &:hover,
     &[data-demo-state="hover"] {
       background-color: var(--ds-gray-2);
-      box-shadow: var(--ds-shadow-2);
+      box-shadow: var(--ds-shadow-sm);
     }
   }
 

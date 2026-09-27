@@ -10,6 +10,7 @@ interface RootProps extends React.ComponentPropsWithRef<"li"> {
   dimmed?: boolean;
   /** Native dragstart under a non-colliding name: Motion wrappers consume `onDragStart` as their pan-gesture prop. */
   onNativeDragStart?: React.DragEventHandler<HTMLLIElement>;
+  onNativeDragEnd?: React.DragEventHandler<HTMLLIElement>;
 }
 
 function Root({
@@ -18,6 +19,7 @@ function Root({
   dimmed,
   className,
   onNativeDragStart,
+  onNativeDragEnd,
   ...props
 }: RootProps) {
   return (
@@ -27,6 +29,7 @@ function Root({
       data-multi={multi ? "true" : undefined}
       data-dimmed={dimmed ? "true" : undefined}
       onDragStart={onNativeDragStart}
+      onDragEnd={onNativeDragEnd}
       {...props}
     />
   );

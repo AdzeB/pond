@@ -22,6 +22,20 @@ export interface ListColumns {
   annotation: boolean;
 }
 
+export const LIST_COLUMN_OPTIONS: ReadonlyArray<{
+  key: ListColumnKey;
+  label: string;
+}> = [
+  { key: "name", label: "Name" },
+  { key: "tags", label: "Tags" },
+  { key: "dimensions", label: "Dimensions" },
+  { key: "rating", label: "Rating" },
+  { key: "extension", label: "Extension" },
+  { key: "fileSize", label: "File Size" },
+  { key: "dateAdded", label: "Date Added" },
+  { key: "annotation", label: "Annotation" },
+];
+
 export const LIST_COLUMN_DEFAULTS: ListColumns = {
   name: true,
   dateAdded: true,

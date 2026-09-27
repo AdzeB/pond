@@ -98,7 +98,6 @@ const viewCommands = [
   "view.zoom-reset",
   "view.sidebar.toggle",
   "view.grayscale",
-  "view.navigator",
 ] as const satisfies readonly MenuActionId[];
 
 export const agentControlOperations: PondOperation[] = [

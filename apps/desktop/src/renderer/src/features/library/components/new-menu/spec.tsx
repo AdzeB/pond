@@ -1,18 +1,31 @@
 import {
+  IconArchiveDownloadOutline18,
   IconArrowRotateClockwiseOutline18,
+  IconBoxArchiveDownloadOutline18,
+  IconBulletListOutline18,
+  IconCameraOutline18,
+  IconCheckboxCheckedOutline18,
   IconClone2Outline18,
   IconDownloadOutline18,
   IconEyeOutline18,
+  IconFileAlertOutline18,
   IconFileOutline18,
+  IconFileSettingsOutline18,
+  IconFiles2Outline18,
   IconFolderImportOutline18,
   IconFolderOpenOutline18,
   IconFolderOutline18,
+  IconFolderRefreshOutline18,
   IconFolderSearchOutline18,
-  IconGear3Outline18,
   IconGlobeOutline18,
   IconImageOutline18,
+  IconImageSparkleOutline18,
   IconLink2Outline18,
   IconNotepadOutline18,
+  IconRenameOutline18,
+  IconReportFileOutline18,
+  IconScanOutline18,
+  IconSettingsWrenchOutline18,
   IconShieldCheckOutline18,
   IconTagsOutline18,
   IconUserPlusOutline18,
@@ -24,8 +37,8 @@ import {
   type BlankDocumentKind,
 } from "@shared/blank-documents";
 import { Children, isValidElement, type ReactNode } from "react";
+import { launchScreenshotTool } from "@/features/library/lib/launch-screenshot";
 import { newMenuDialog } from "@/features/library/state/new-menu-dialog";
-import { openSettings } from "@/features/settings/lib/open-settings";
 import {
   connectableSourceItems,
   watchableSourceItems,
@@ -35,11 +48,13 @@ import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import {
   createBlankDocument,
   createNote,
+  exportDebugReport,
   findDuplicates,
   importBookmarks,
   importClipboard,
   importEagle,
   importEaglePackage,
+  importLegacyLibrary,
   importPageAssets,
   importPaths,
   importPondPackage,
@@ -112,9 +127,9 @@ export function buildNewMenuItems(
     {
       id: "screenshot",
       label: "Capture Screenshot",
-      icon: <IconImageOutline18 />,
+      icon: <IconCameraOutline18 />,
       keywords: "screen window desktop image",
-      onClick: () => newMenuDialog.open("screenshot"),
+      onClick: () => void launchScreenshotTool(),
     },
     { type: "separator" },
     {
@@ -139,7 +154,7 @@ export function buildNewMenuItems(
       icon: <IconLink2Outline18 />,
       keywords: "url website bookmark save",
       shortcut: shortcutGlyphs("library.import-links"),
-      onClick: () => newMenuDialog.open("links"),
+      onClick: () => newMenuDialog.open({ kind: "links" }),
     },
     {
       id: "clipboard",
@@ -158,7 +173,7 @@ export function buildNewMenuItems(
     {
       id: "page-assets",
       label: "Import Page Assets",
-      icon: <IconImageOutline18 />,
+      icon: <IconImageSparkleOutline18 />,
       keywords: "extract images website scrape batch",
       onClick: () => {
         Dialog.prompt({
@@ -172,14 +187,14 @@ export function buildNewMenuItems(
     {
       id: "eagle-package",
       label: "Import Eagle Package",
-      icon: <IconFolderImportOutline18 />,
+      icon: <IconBoxArchiveDownloadOutline18 />,
       keywords: "eagle archive package migrate",
       onClick: () => void runNewAction(importEaglePackage),
     },
     {
       id: "pond-package",
       label: "Import Pond Package",
-      icon: <IconFolderImportOutline18 />,
+      icon: <IconArchiveDownloadOutline18 />,
       keywords: "archive package migrate",
       onClick: () => void runNewAction(importPondPackage),
     },
@@ -192,24 +207,32 @@ export function buildNewMenuItems(
     },
     {
       type: "submenu",
+      id: "legacy-library",
+      label: "Import Legacy Library",
+      icon: <IconFolderImportOutline18 />,
+      keywords: "artstation huaban pixave inboard migrate export",
+      items: (["ArtStation", "Huaban", "Pixave", "Inboard"] as const).map(
+        (source) => ({
+          id: `legacy-${source.toLowerCase()}`,
+          label: `Import ${source} Export`,
+          icon: <IconFolderImportOutline18 />,
+          onClick: () => void runNewAction(() => importLegacyLibrary(source)),
+        }),
+      ),
+    },
+    {
+      type: "submenu",
       id: "auto-import",
       label: "Auto Import",
-      icon: <IconFolderOpenOutline18 />,
-      keywords: "watched folder settings",
+      icon: <IconFolderRefreshOutline18 />,
+      keywords: "watched folder",
       items: [
         {
           id: "watched-folder",
           label: "Watched Folder",
+          icon: <IconFolderRefreshOutline18 />,
           keywords: "directory local files copy",
           onClick: () => void runNewAction(pickWatchedFolder),
-        },
-        {
-          id: "auto-import-settings",
-          label: "Auto Import Settings",
-          icon: <IconGear3Outline18 />,
-          keywords: "preferences storage",
-          onClick: () =>
-            openSettings("harvesting", "setting-harvesting-watched-folder"),
         },
       ],
     },
@@ -235,24 +258,27 @@ export function buildNewMenuItems(
       type: "submenu",
       id: "find-duplicates",
       label: "Find Duplicates",
-      icon: <IconClone2Outline18 />,
+      icon: <IconFiles2Outline18 />,
       keywords: "scan similar exact",
       items: [
         {
           id: "duplicates-all",
           label: "Scan All",
+          icon: <IconScanOutline18 />,
           keywords: "library",
           onClick: () => findDuplicates("all"),
         },
         {
           id: "duplicates-list",
           label: "Current List",
+          icon: <IconBulletListOutline18 />,
           keywords: "folder view filter",
           onClick: () => findDuplicates("list"),
         },
         {
           id: "duplicates-selected",
           label: "Selected",
+          icon: <IconCheckboxCheckedOutline18 />,
           keywords: "selection",
           onClick: () => findDuplicates("selected"),
         },
@@ -272,6 +298,62 @@ export function buildNewMenuItems(
       icon: <IconShieldCheckOutline18 />,
       keywords: "check missing orphan files disk",
       onClick: () => void runNewAction(verifyIntegrity),
+    },
+    {
+      type: "submenu",
+      id: "repair-library",
+      label: "Repair Library",
+      icon: <IconSettingsWrenchOutline18 />,
+      keywords: "fix maintenance metadata filenames thumbnails content",
+      items: [
+        {
+          id: "repair-thumbnails",
+          label: "Repair Thumbnails",
+          icon: <IconImageOutline18 />,
+          onClick: () =>
+            newMenuDialog.open({
+              kind: "repair",
+              repair: "thumbnails",
+            }),
+        },
+        {
+          id: "repair-physical-file-names",
+          label: "Repair Physical File Names",
+          icon: <IconRenameOutline18 />,
+          onClick: () =>
+            newMenuDialog.open({
+              kind: "repair",
+              repair: "physical-file-names",
+            }),
+        },
+        {
+          id: "repair-invalid-content",
+          label: "Repair Invalid Content",
+          icon: <IconFileAlertOutline18 />,
+          onClick: () =>
+            newMenuDialog.open({
+              kind: "repair",
+              repair: "invalid-content",
+            }),
+        },
+        {
+          id: "repair-save-metadata",
+          label: "Repair Save Metadata",
+          icon: <IconFileSettingsOutline18 />,
+          onClick: () =>
+            newMenuDialog.open({
+              kind: "repair",
+              repair: "save-metadata",
+            }),
+        },
+      ],
+    },
+    {
+      id: "debug-report",
+      label: "Export Debug Report",
+      icon: <IconReportFileOutline18 />,
+      keywords: "diagnostics support privacy redacted",
+      onClick: () => void runNewAction(exportDebugReport),
     },
   ];
 }

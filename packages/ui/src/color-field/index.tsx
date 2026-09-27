@@ -51,6 +51,7 @@ interface ColorFieldProps {
   value: string;
   onChange: (hex: string) => void;
   "aria-label": string;
+  "aria-describedby"?: string;
   normalize?: (input: string) => string | null;
   className?: string;
 }
@@ -59,6 +60,7 @@ export function ColorField({
   value,
   onChange,
   "aria-label": ariaLabel,
+  "aria-describedby": ariaDescribedBy,
   normalize = defaultNormalize,
   className,
 }: ColorFieldProps) {
@@ -82,6 +84,7 @@ export function ColorField({
         <Popover.Trigger
           type="button"
           aria-label={`${ariaLabel} picker`}
+          aria-describedby={ariaDescribedBy}
           className={styles.swatch}
           data-empty={!normalized || undefined}
           style={normalized ? { background: normalized } : undefined}
@@ -102,6 +105,7 @@ export function ColorField({
         <Input.Field
           className={styles.hex}
           aria-label={`${ariaLabel} hex`}
+          aria-describedby={ariaDescribedBy}
           spellCheck={false}
           autoCapitalize="off"
           autoCorrect="off"
@@ -186,9 +190,13 @@ export function ColorPicker({
 function ColorArea({
   width,
   height = AREA_SIZE,
+  className,
+  thumbClassName,
 }: {
   width?: number;
   height?: number;
+  className?: string;
+  thumbClassName?: string;
 }) {
   const { color, ariaLabel, onChange } = usePicker();
   const inputXRef = useRef<HTMLInputElement>(null);
@@ -217,7 +225,7 @@ function ColorArea({
     <div
       ref={containerRef}
       {...colorAreaProps}
-      className={styles.saturation}
+      className={cn(styles.saturation, className)}
       style={{
         ...colorAreaProps.style,
         width: width ? `${width}px` : "100%",
@@ -226,7 +234,7 @@ function ColorArea({
     >
       <div
         {...thumbProps}
-        className={styles["saturation-handle"]}
+        className={cn(styles["saturation-handle"], thumbClassName)}
         data-focus={isFocusVisible || undefined}
         style={thumbProps.style}
       >
@@ -242,9 +250,15 @@ function ColorArea({
 function HueSlider({
   height = AREA_SIZE,
   width = TRACK_WIDTH,
+  orientation = "vertical",
+  className,
+  thumbClassName,
 }: {
   height?: number;
   width?: number;
+  orientation?: "horizontal" | "vertical";
+  className?: string;
+  thumbClassName?: string;
 }) {
   const { color, ariaLabel, onChange } = usePicker();
   const { locale } = useLocale();
@@ -255,16 +269,16 @@ function HueSlider({
     value: color,
     onChange,
     channel: "hue",
-    orientation: "vertical",
+    orientation,
     locale,
   });
 
   const { isFocusVisible, focusProps } = useFocusRing();
-  const { trackProps, thumbProps, inputProps } = useColorSlider(
+  const { trackProps, thumbProps, inputProps, labelProps } = useColorSlider(
     {
       "aria-label": `${ariaLabel} hue`,
       channel: "hue",
-      orientation: "vertical",
+      orientation,
       trackRef,
       inputRef,
     },
@@ -275,14 +289,20 @@ function HueSlider({
     <div
       {...trackProps}
       ref={trackRef}
-      className={styles.hue}
+      className={cn(styles.hue, className)}
       style={{ ...trackProps.style, width, height }}
     >
+      <VisuallyHidden>
+        <span {...labelProps}>{ariaLabel} hue</span>
+      </VisuallyHidden>
       <div
         {...thumbProps}
-        className={styles["hue-handle"]}
+        className={cn(styles["hue-handle"], thumbClassName)}
         data-focus={isFocusVisible || undefined}
-        style={{ ...thumbProps.style, left: "50%" }}
+        style={{
+          ...thumbProps.style,
+          ...(orientation === "vertical" ? { left: "50%" } : { top: "50%" }),
+        }}
       >
         <VisuallyHidden>
           <input ref={inputRef} {...inputProps} {...focusProps} />

@@ -26,7 +26,10 @@ let host: HTMLDivElement;
 const tx = vi.fn(async () => ({ ok: true }));
 const closed = vi.fn();
 beforeEach(() => {
-  vi.stubGlobal("pond", { tx });
+  vi.stubGlobal("pond", {
+    tx,
+    appInfo: async () => ({ username: "Raphael Salaja" }),
+  });
   tx.mockReset();
   tx.mockResolvedValue({ ok: true });
   closed.mockClear();
@@ -54,7 +57,8 @@ afterEach(async () => {
 });
 function button(text: string) {
   const button = [...document.querySelectorAll("button")].find(
-    (button) => button.textContent === text,
+    (button) =>
+      button.textContent === text || button.getAttribute("aria-label") === text,
   );
   if (!button) throw Error(`Missing ${text}`);
   return button;
@@ -76,7 +80,7 @@ async function fill(
     element.dispatchEvent(new Event("change", { bubbles: true }));
   });
 }
-it("cancels a region edit without persisting it", async () => {
+it("closes a region edit without persisting it", async () => {
   await act(async () =>
     root.render(
       <CommentEditor
@@ -89,7 +93,7 @@ it("cancels a region edit without persisting it", async () => {
   const text = document.querySelector("textarea");
   if (!text) throw Error("Missing editor");
   await fill(text, "Discarded text");
-  await act(async () => button("Cancel").click());
+  await act(async () => button("Close").click());
   expect(tx).not.toHaveBeenCalled();
   expect(closed).toHaveBeenCalledOnce();
   expect(pool.get("annotation-fixture")?.comments?.[0]).toEqual(comment);
@@ -152,7 +156,77 @@ it("keeps the draft open and rolls back when persistence fails", async () => {
   );
   expect(pool.get("annotation-fixture")?.comments?.[0]).toEqual(comment);
 });
-it("updates video-note text and exact time while preserving its attachment and undo", async () => {
+it("keeps the thread open when adding a reply", async () => {
+  const anchor = document.createElement("button");
+  document.body.append(anchor);
+  await act(async () =>
+    root.render(
+      <CommentEditor
+        saveId="annotation-fixture"
+        comment={comment}
+        anchor={anchor}
+        onClose={closed}
+      />,
+    ),
+  );
+  const reply = document.querySelector<HTMLTextAreaElement>(
+    'textarea[placeholder="Reply"]',
+  );
+  if (!reply) throw Error("Missing reply composer");
+  expect(document.body.textContent).not.toContain("Raphael Salaja");
+  await fill(reply, "Ready to ship");
+  await act(async () => button("Send Reply").click());
+  expect(tx).toHaveBeenCalledWith(
+    expect.objectContaining({
+      patch: {
+        comments: [
+          {
+            ...comment,
+            replies: [
+              {
+                id: expect.any(String),
+                text: "Ready to ship",
+                createdAt: expect.any(Number),
+              },
+            ],
+          },
+          { ...comment, id: "other", fileIndex: 0 },
+        ],
+      },
+    }),
+  );
+  expect(document.body.textContent).toContain("Ready to ship");
+  expect(closed).not.toHaveBeenCalled();
+  anchor.remove();
+});
+it("soft-resolves a comment thread", async () => {
+  const anchor = document.createElement("button");
+  document.body.append(anchor);
+  await act(async () =>
+    root.render(
+      <CommentEditor
+        saveId="annotation-fixture"
+        comment={comment}
+        anchor={anchor}
+        onClose={closed}
+      />,
+    ),
+  );
+  await act(async () => button("Resolve Comment").click());
+  expect(tx).toHaveBeenCalledWith(
+    expect.objectContaining({
+      patch: {
+        comments: [
+          { ...comment, resolvedAt: expect.any(Number) },
+          { ...comment, id: "other", fileIndex: 0 },
+        ],
+      },
+    }),
+  );
+  expect(closed).toHaveBeenCalledOnce();
+  anchor.remove();
+});
+it("updates video-comment text and exact time while preserving its attachment and undo", async () => {
   await act(async () =>
     root.render(
       <VideoNoteEditor
@@ -167,7 +241,7 @@ it("updates video-note text and exact time while preserving its attachment and u
   if (!text || !time) throw Error("Missing fields");
   await fill(text, "Edited moment");
   await fill(time, "3.125");
-  await act(async () => button("Save Note").click());
+  await act(async () => button("Save Comment").click());
   expect(tx).toHaveBeenCalledWith(
     expect.objectContaining({
       patch: {

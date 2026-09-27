@@ -7,7 +7,7 @@
   height: 100%;
   background-color: var(--ds-gray-2);
   border-radius: var(--ds-radius-xs);
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-sm);
   isolation: isolate;
 
   &[data-thumbnail-bg="black"] {
@@ -100,7 +100,7 @@
   letter-spacing: 0.08em;
   background: var(--ds-gray-1);
   border-radius: var(--ds-radius-sm);
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-sm);
 }
 
 .text-preview {
@@ -115,7 +115,7 @@
   padding: 10px;
   background: var(--ds-gray-1);
   border-radius: inherit;
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-sm);
 }
 
 .text-preview-body {

@@ -46,6 +46,18 @@
     outline-offset: var(--ds-focus-offset, 0px);
   }
 
+  /* Composite widgets render focus on their active child or interaction state. */
+  :where(
+    [role="application"],
+    [role="grid"],
+    [role="listbox"],
+    [role="separator"],
+    [role="tree"],
+    [tabindex="-1"]
+  ):focus-visible {
+    outline: none;
+  }
+
   /* Chromium matches :focus-visible on pointer clicks in Electron. */
   html[data-focus-source="pointer"]
   :focus-visible:not(

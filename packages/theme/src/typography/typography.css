@@ -3,9 +3,13 @@
     "IBM Plex Mono", ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
     monospace;
 
-  --ds-weight-normal: 450;
-  --ds-weight-medium: 500;
-  --ds-weight-semibold: 600;
+  --ds-weight-xs: 300;
+  --ds-weight-sm: 350;
+  --ds-weight-md: 400;
+  --ds-weight-lg: 450;
+  --ds-weight-xl: 500;
+  --ds-weight-xxl: 550;
+  --ds-weight-xxxl: 600;
 
   --ds-text-xs: 11px;
   --ds-text-sm: 12px;

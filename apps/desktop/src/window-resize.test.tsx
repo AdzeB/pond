@@ -29,6 +29,7 @@ describe("sidebar resize handle", () => {
           open={open}
           minWidth={220}
           maxWidth={420}
+          width={width}
           onResize={resize}
           onCollapse={collapse}
         >
@@ -84,6 +85,43 @@ describe("sidebar resize handle", () => {
     document.body.style.userSelect = "";
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+  });
+
+  it("resizes with the keyboard, reports current width and returns focus on collapse", async () => {
+    const handle = element('[data-slot="handle"]');
+    handle.focus();
+    expect(document.activeElement).toBe(handle);
+    expect(handle.getAttribute("aria-valuenow")).toBe("300");
+    const key = async (key: string, shiftKey = false) => {
+      await act(() =>
+        handle.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key,
+            shiftKey,
+            bubbles: true,
+            cancelable: true,
+          }),
+        ),
+      );
+    };
+    await key("ArrowRight");
+    expect(resized).toHaveBeenLastCalledWith(310);
+    expect(handle.getAttribute("aria-valuenow")).toBe("310");
+    await key("ArrowLeft", true);
+    expect(resized).toHaveBeenLastCalledWith(270);
+    await key("Home");
+    expect(handle.getAttribute("aria-valuenow")).toBe("220");
+    await key("ArrowLeft");
+    expect(resized).toHaveBeenLastCalledWith(220);
+    await key("End");
+    expect(handle.getAttribute("aria-valuenow")).toBe("420");
+    await key("Enter");
+    expect(collapsed).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe(element('[data-slot="center"]'));
+    await act(() => element("button").click());
+    expect(element('[data-slot="handle"]').getAttribute("aria-valuenow")).toBe(
+      "420",
+    );
   });
 
   it("commits a normal resize above the minimum", async () => {

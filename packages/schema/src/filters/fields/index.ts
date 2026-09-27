@@ -1,6 +1,15 @@
 import type { FieldId } from "../types";
 import { account } from "./account";
 import { bpm } from "./bpm";
+import {
+  aperture,
+  cameraMake,
+  cameraModel,
+  focalLength,
+  iso,
+  lensModel,
+  takenAt,
+} from "./camera";
 import { caption } from "./caption";
 import { color } from "./color";
 import { comment } from "./comment";
@@ -58,6 +67,12 @@ export const FIELD_DESCRIPTORS = {
   fontFamily,
   fontActivated,
   bpm,
+  cameraMake,
+  cameraModel,
+  lensModel,
+  focalLength,
+  aperture,
+  iso,
   [orientationFieldId]: orientation,
   aspect,
   creator,
@@ -69,6 +84,7 @@ export const FIELD_DESCRIPTORS = {
   color,
   savedAt,
   publishedAt,
+  takenAt,
   modifiedAt,
   rating,
   fileSize,

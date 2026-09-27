@@ -142,6 +142,7 @@ async function enqueueOne(
       await resetTasksForSave(
         current.id,
         opts.trigger ?? "enqueue:reseed-failed",
+        opts.generationId,
       );
       await applySeedToExistingSave(current.id, opts.seed);
       stashWebCookiesThenKick(current.id, source, opts.cookies);
@@ -153,7 +154,11 @@ async function enqueueOne(
       return { id: current.id, created: false, reseeded: true };
     }
     if (opts.force) {
-      await resetTasksForSave(current.id, opts.trigger ?? "enqueue:force");
+      await resetTasksForSave(
+        current.id,
+        opts.trigger ?? "enqueue:force",
+        opts.generationId,
+      );
     } else if (opts.seed) {
       const merge = mergeSeedIntoExistingSave(current, opts.seed);
       if (merge.changed) {

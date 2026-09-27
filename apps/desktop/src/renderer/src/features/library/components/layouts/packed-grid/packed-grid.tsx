@@ -17,7 +17,14 @@ import type { CardLayoutItem } from "@/features/library/components/layouts/packi
 import { useLibraryLayoutTransition } from "@/features/library/hooks/use-library-layout-transition";
 import { SaveCard } from "@/features/saves/components/card/card";
 import { useMultiSelectActive } from "@/features/saves/components/card/context";
-import { resultNavigation } from "@/features/saves/state/result-navigation";
+import {
+  resultNavigation,
+  useResultTotal,
+} from "@/features/saves/state/result-navigation";
+import {
+  selection,
+  useSelectionCursor,
+} from "@/features/saves/state/selection";
 import {
   recallScroll,
   recallScrollAnchor,
@@ -109,6 +116,19 @@ export function PackedGrid({
   onRunwayChange,
 }: PackedGridProps) {
   const ref = useRef<HTMLUListElement>(null);
+  const cursor = useSelectionCursor();
+  const activeId = items.some((item) => item.id === cursor)
+    ? cursor
+    : items[0]?.id;
+  useLayoutEffect(() => resultNavigation.setLayout(items), [items]);
+  useLayoutEffect(() => {
+    if (
+      document.activeElement === ref.current &&
+      activeId &&
+      cursor !== activeId
+    )
+      selection.setCursor(activeId);
+  }, [activeId, cursor]);
   useLibraryLayoutTransition(ref, items);
   const restoration = useContext(ScrollRestorationContext);
   const restorationKey = restoration?.key ?? null;
@@ -260,6 +280,8 @@ export function PackedGrid({
         if (top < parent.scrollTop) parent.scrollTop = top;
         else if (bottom > parent.scrollTop + parent.clientHeight)
           parent.scrollTop = Math.max(0, bottom - parent.clientHeight);
+        if (resultNavigation.shouldFocus())
+          ref.current?.focus({ preventScroll: true });
         resultNavigation.didReveal(id);
       }),
     [getScrollElement, itemById, scrollMargin],
@@ -305,10 +327,17 @@ export function PackedGrid({
     initialRect: INITIAL_VIEWPORT_RECT,
   });
   const virtualBandIndexes = virtualizer.getVirtualIndexes();
-  const visible = useMemo(
+  const mountedIndexes = useMemo(
     () => indicesForVirtualBands(bands, virtualBandIndexes),
     [bands, virtualBandIndexes],
   );
+  const visible = useMemo(() => {
+    const indexes = mountedIndexes;
+    const activeIndex = items.findIndex((item) => item.id === activeId);
+    return activeIndex >= 0 && !indexes.includes(activeIndex)
+      ? [...indexes, activeIndex].sort((a, b) => a - b)
+      : indexes;
+  }, [activeId, items, mountedIndexes]);
   const runway = useMemo(() => {
     if (!onRunwayChange) return [];
     const mounted = new Set(visible);
@@ -325,14 +354,14 @@ export function PackedGrid({
 
   useEffect(() => {
     const nearEnd =
-      (visible.at(-1) ?? -1) >= items.length - END_THRESHOLD_ITEMS;
+      (mountedIndexes.at(-1) ?? -1) >= items.length - END_THRESHOLD_ITEMS;
     if (!nearEnd) {
       endReached.current = false;
     } else if (!endReached.current && onEndReached) {
       endReached.current = true;
       onEndReached?.();
     }
-  }, [visible, items.length, onEndReached]);
+  }, [mountedIndexes, items.length, onEndReached]);
 
   return (
     <LibraryGrid.Grid
@@ -340,6 +369,41 @@ export function PackedGrid({
       layout={layout}
       multiSelect={multiSelectActive}
       style={style}
+      role="listbox"
+      aria-label="Saves"
+      aria-description="Arrow keys select Saves. Shift extends the selection. Option or Alt with arrows moves focus without changing selection; Shift+Space toggles the focused Save. Enter opens; Space previews."
+      aria-multiselectable="true"
+      aria-activedescendant={activeId ? `save-option-${activeId}` : undefined}
+      data-save-collection=""
+      tabIndex={0}
+      onFocus={(event) => {
+        if (event.target !== event.currentTarget) return;
+        const cursor = selection.getCursor();
+        const next = cursor && itemById.has(cursor) ? cursor : items[0]?.id;
+        if (!next) return;
+        if (cursor !== next) selection.setCursor(next);
+        void resultNavigation.reveal(next);
+      }}
+      onKeyDown={(event) => {
+        if (
+          event.key !== "ContextMenu" &&
+          !(event.shiftKey && event.key === "F10")
+        )
+          return;
+        const option = activeId
+          ? document.getElementById(`save-option-${activeId}`)
+          : null;
+        if (!option) return;
+        event.preventDefault();
+        const rect = option.getBoundingClientRect();
+        option.dispatchEvent(
+          new MouseEvent("contextmenu", {
+            bubbles: true,
+            clientX: rect.left + rect.width / 2,
+            clientY: rect.top + rect.height / 2,
+          }),
+        );
+      }}
     >
       {visible.map((i) => {
         const it = items[i];
@@ -363,6 +427,11 @@ export function SavePackedGrid({
   totalHeight,
   onEndReached,
 }: SavePackedGridProps) {
+  const total = useResultTotal();
+  const positions = useMemo(
+    () => new Map(items.map((item, index) => [item.id, index + 1])),
+    [items],
+  );
   return (
     <PackedGrid
       layout={layout}
@@ -374,6 +443,8 @@ export function SavePackedGrid({
           key={it.id}
           id={it.id}
           view={layout}
+          position={positions.get(it.id)}
+          total={Math.max(items.length, total)}
           slot={{
             width: it.width,
             height: it.height,

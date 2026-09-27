@@ -23,6 +23,7 @@ export interface AppMenuContext {
   openLibraryWindow: () => void;
   openRecent: (id: string) => () => void;
   rescanLibrary: () => void;
+  reloadLibrary: () => void;
   revealLibrary: () => void;
   sendMenuAction: (id: MenuActionId) => () => void;
   showLogs: () => void;

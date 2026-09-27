@@ -20,6 +20,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Validate provenance with the public action
+        uses: raphaelsalaja/provenance@b369c8b4ecfb2766c4d34c4b60e737d7af9186b9 # v0.1.2
+        with:
+          file: provenance.yaml
+
       - uses: pnpm/action-setup@v6
 
       - uses: actions/setup-node@v6
@@ -86,8 +91,6 @@ jobs:
       - name: Verify workspace
         run: pnpm check
 
-      - name: Security and migration release gates
-        run: pnpm --filter @pond/desktop test:release-security
 
       - name: Build workspace
         run: pnpm build

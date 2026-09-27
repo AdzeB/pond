@@ -18,7 +18,6 @@ export interface ConfirmOptions {
   title: ReactNode;
   description?: ReactNode;
   confirmLabel?: ReactNode;
-  cancelLabel?: ReactNode;
   confirmVariant?: ButtonVariant;
   busyLabel?: ReactNode;
   checkbox?: {
@@ -82,6 +81,7 @@ function ConfirmContent({
       <Dialog.Popup initialFocus={cancelRef} aria-busy={busy}>
         <Dialog.Header>
           <Dialog.Title>{options.title}</Dialog.Title>
+          <Dialog.Close ref={cancelRef} disabled={busy} />
         </Dialog.Header>
         <Dialog.Content>
           {options.description ? (
@@ -107,12 +107,6 @@ function ConfirmContent({
           ) : null}
         </Dialog.Content>
         <Dialog.Footer>
-          <Dialog.Close
-            ref={cancelRef}
-            render={<Button variant="secondary" disabled={busy} />}
-          >
-            {options.cancelLabel ?? "Cancel"}
-          </Dialog.Close>
           <Button
             variant={options.confirmVariant ?? "destructive"}
             disabled={busy}

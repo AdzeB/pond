@@ -1,57 +1,64 @@
+import type { SidebarBadgeStyle } from "@pond/schema";
 import { Sidebar } from "@pond/ui";
+import { forwardRef } from "react";
 import { formatCount } from "./counts";
+import styles from "./styles.module.css";
 
-export function Row({
-  label,
-  active,
-  icon,
-  count,
-  depth = 0,
-  className,
-  draggable,
-  onClick,
-  onDoubleClick,
-  onDrop,
-  onDragOver,
-  onDragLeave,
-  onDragStart,
-  onDragEnd,
-}: {
+interface RowProps
+  extends Omit<
+    React.ComponentPropsWithoutRef<typeof Sidebar.Item>,
+    "children"
+  > {
   label: string;
   active?: boolean;
   icon?: React.ReactNode;
   count?: number;
+  badgeStyle?: SidebarBadgeStyle;
   depth?: number;
-  className?: string;
-  draggable?: boolean;
-  onClick: () => void;
-  onDoubleClick?: React.MouseEventHandler<HTMLElement>;
-  onDrop?: React.DragEventHandler<HTMLElement>;
-  onDragOver?: React.DragEventHandler<HTMLElement>;
-  onDragLeave?: React.DragEventHandler<HTMLElement>;
-  onDragStart?: React.DragEventHandler<HTMLElement>;
-  onDragEnd?: React.DragEventHandler<HTMLElement>;
-}) {
+  status?: React.ReactNode;
+}
+
+export const Row = forwardRef<HTMLButtonElement, RowProps>(function Row(
+  {
+    label,
+    active,
+    icon,
+    count,
+    badgeStyle = "count",
+    depth = 0,
+    status,
+    ...props
+  },
+  ref,
+) {
   return (
     <Sidebar.Item
-      className={className}
       data-status={active ? "active" : undefined}
       data-depth={depth || undefined}
-      draggable={draggable}
       aria-current={active ? "page" : undefined}
-      onClick={onClick}
-      onDoubleClick={onDoubleClick}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
+      ref={ref}
+      {...props}
     >
       {icon ? <Sidebar.Icon>{icon}</Sidebar.Icon> : null}
       {label}
-      {count != null ? (
-        <Sidebar.Count>{formatCount(count)}</Sidebar.Count>
+      {status != null ? (
+        <Sidebar.Count>{status}</Sidebar.Count>
+      ) : count != null && badgeStyle !== "none" ? (
+        <Sidebar.Count>
+          {badgeStyle === "dot" ? (
+            count > 0 ? (
+              <>
+                <span className={styles["count-dot"]} aria-hidden />
+                <span className={styles["visually-hidden"]}>
+                  {formatCount(count)}
+                </span>
+              </>
+            ) : null
+          ) : (
+            formatCount(count)
+          )}
+        </Sidebar.Count>
       ) : null}
     </Sidebar.Item>
   );
-}
+});

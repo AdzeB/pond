@@ -1,5 +1,5 @@
 import sharp from "sharp";
-import { withDecryptedLibraryMediaPath } from "../core/security/library-media-storage";
+import { withDecryptedLibraryMediaPath } from "../core/storage/library-media-storage";
 
 interface Bucket {
   count: number;

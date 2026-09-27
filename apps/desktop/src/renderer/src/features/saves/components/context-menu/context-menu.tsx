@@ -25,6 +25,7 @@ export function SaveContextMenu({ save, children }: SaveContextMenuProps) {
     <SpecContextMenu
       search
       searchLabel="Search save operations"
+      minWidth="280px"
       onOpen={() => {
         if (!selection.has(save.id)) selectOnlySave(save.id);
         const targets = contextMenuSaves(save);

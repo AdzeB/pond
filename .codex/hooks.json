@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/scripts/reference-capture.mjs\" capture codex SessionStart",
+            "command": "node \"$(git rev-parse --set-toplevel)/scripts/reference-capture.mjs\" capture codex SessionStart",
             "timeout": 3
           }
         ]

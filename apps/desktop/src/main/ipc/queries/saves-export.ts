@@ -1,7 +1,7 @@
 import { basename, dirname, extname } from "node:path";
 import { saves } from "@pond/schema/db";
 import { desc, eq, inArray, isNull } from "drizzle-orm";
-import { dialog, shell } from "electron";
+import { BrowserWindow, dialog } from "electron";
 import log from "electron-log/main.js";
 import sharp from "sharp";
 import { z } from "zod";
@@ -11,14 +11,14 @@ import {
   exportSavesToEaglePackage,
 } from "../../core/export-saves";
 import { exportPondPackage } from "../../core/pond-package";
-import { librarySecurityStatus } from "../../core/security/app-lock-runtime";
 import {
   materializeLibraryMediaForExternalUse,
   withDecryptedLibraryMediaPath,
-} from "../../core/security/library-media-storage";
+} from "../../core/storage/library-media-storage";
 import { runTransferJob } from "../../core/transfer-jobs";
 import { getDb } from "../../db";
 import { toCsv } from "../../lib/csv";
+import { showNativeShareMenu } from "../../lib/native-share";
 import { libraryRoot } from "../../paths";
 import { resolveSaveFilePath } from "../helpers";
 import {
@@ -30,9 +30,6 @@ import {
 } from "./params";
 
 const IdListParams = z.object({ ids: StringListParam });
-const PackageExportParams = IdListParams.extend({
-  password: z.string().min(8).max(1_024).optional(),
-});
 
 export const savesExportQueries = {
   "saves.exportEaglePackage": query(IdListParams, async ({ ids }) => {
@@ -70,39 +67,33 @@ export const savesExportQueries = {
     }
   }),
 
-  "saves.exportPackage": query(
-    PackageExportParams,
-    async ({ ids, password }) => {
-      if (librarySecurityStatus().configured && !password) {
-        return { ok: false, error: "password_required" };
-      }
-      const picked = await dialog.showSaveDialog({
-        title: "Export Pond Package",
-        defaultPath: "Saves.pondpack",
-        buttonLabel: "Export",
-      });
-      if (picked.canceled || !picked.filePath)
-        return { ok: false, error: "canceled" };
-      try {
-        const destination = picked.filePath.endsWith(".pondpack")
-          ? picked.filePath
-          : `${picked.filePath}.pondpack`;
-        return {
-          ok: true,
-          ...(await runTransferJob(
-            { kind: "export_package", origin: libraryRoot(), destination, ids },
-            () => exportPondPackage(ids, destination, password),
-          )),
-        };
-      } catch (error) {
-        return {
-          ok: false,
-          error:
-            error instanceof Error ? error.message : "Package export failed.",
-        };
-      }
-    },
-  ),
+  "saves.exportPackage": query(IdListParams, async ({ ids }) => {
+    const picked = await dialog.showSaveDialog({
+      title: "Export Pond Package",
+      defaultPath: "Saves.pondpack",
+      buttonLabel: "Export",
+    });
+    if (picked.canceled || !picked.filePath)
+      return { ok: false, error: "canceled" };
+    try {
+      const destination = picked.filePath.endsWith(".pondpack")
+        ? picked.filePath
+        : `${picked.filePath}.pondpack`;
+      return {
+        ok: true,
+        ...(await runTransferJob(
+          { kind: "export_package", origin: libraryRoot(), destination, ids },
+          () => exportPondPackage(ids, destination),
+        )),
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error:
+          error instanceof Error ? error.message : "Package export failed.",
+      };
+    }
+  }),
 
   "saves.exportFile": query(
     z.object({ id: StringParam, fileIndex: FileIndexParam }),
@@ -145,23 +136,21 @@ export const savesExportQueries = {
 
   "saves.share": query(
     z.object({ id: StringParam, fileIndex: FileIndexParam }),
-    async (params) => {
+    async (params, event) => {
       const target = await resolveSaveFilePath(params.id, params.fileIndex);
       if (!target.ok) {
         return { ok: false, error: "This save has no file to share." };
       }
-      /** SAFETY: Electron 42 ships `shell.shareItem` on macOS/Windows; this tree's types omit it. */
-      const shareItem = (
-        shell as typeof shell & {
-          shareItem?: (itemPath: string) => Promise<void>;
-        }
-      ).shareItem;
-      if (!shareItem) {
+      if (process.platform !== "darwin") {
         return { ok: false, error: "Share is unavailable on this Mac." };
       }
       try {
-        await shareItem(
+        const parentWindow = event
+          ? BrowserWindow.fromWebContents(event.sender)
+          : null;
+        showNativeShareMenu(
           await materializeLibraryMediaForExternalUse(target.path),
+          parentWindow ?? undefined,
         );
         return { ok: true };
       } catch (error) {

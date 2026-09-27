@@ -11,6 +11,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { folders } from "@/features/library/state/folders";
 import { libraryChrome } from "@/features/library/state/library-chrome";
+import { navigationHistory } from "@/features/library/state/navigation-history";
 import {
   applySavedView,
   getViewState,
@@ -67,6 +68,7 @@ describe("breadcrumb toolbar", () => {
     if (!save) throw new Error("Invalid save fixture");
     pool.upsert(save);
     libraryViewContext.set([], "library");
+    navigationHistory.clear();
     libraryChrome.setNav({ kind: "all" });
     libraryChrome.setInspectorSaveId(null);
     libraryChrome.setAgentOpen(false);
@@ -101,6 +103,7 @@ describe("breadcrumb toolbar", () => {
       "/assistant",
       "/tags",
       "/untagged",
+      "/recents",
       "/downloads",
       "/trash",
       "/settings",
@@ -128,6 +131,7 @@ describe("breadcrumb toolbar", () => {
     ["/sources", "Sources"],
     ["/tags", "Tags"],
     ["/untagged", "Untagged"],
+    ["/recents", "Recently Used"],
     ["/downloads", "Downloads"],
     ["/trash", "Trash"],
     ["/settings", "Settings"],
@@ -151,6 +155,7 @@ describe("breadcrumb toolbar", () => {
     expect(host.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
     expect(host.querySelector('[role="tablist"]')).toBeNull();
     expect(host.querySelector('[aria-label="New Tab"]')).toBeNull();
+    expect(host.querySelector('[aria-label="History"]')).toBeNull();
   });
 
   it("shows and updates the search result count, including zero", async () => {
@@ -211,6 +216,59 @@ describe("breadcrumb toolbar", () => {
       kind: "folder",
       id: "parent",
     });
+  });
+
+  it("opens folder operations from a breadcrumb context-menu event", async () => {
+    libraryChrome.setNav({ kind: "folder", id: "child" });
+    await mount();
+    const crumb = host.querySelector('[aria-current="page"]');
+    if (!(crumb instanceof HTMLElement))
+      throw new Error("Missing current folder breadcrumb");
+    await act(async () => {
+      crumb.dispatchEvent(
+        new MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          button: 2,
+          clientX: 24,
+          clientY: 24,
+        }),
+      );
+    });
+    for (const label of [
+      "Open Folder",
+      "Quick Access",
+      "Icon",
+      "Color",
+      "Sort By",
+      "Customize Folder",
+    ]) {
+      expect(
+        [...document.querySelectorAll('[role^="menuitem"]')].some(
+          (item) => item.textContent?.trim() === label,
+        ),
+      ).toBe(true);
+    }
+  });
+
+  it("opens pane controls from the sidebar toggle context menu", async () => {
+    await mount();
+    await act(async () => {
+      button("Toggle Sidebar").dispatchEvent(
+        new MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          button: 2,
+          clientX: 24,
+          clientY: 24,
+        }),
+      );
+    });
+    expect(
+      [...document.querySelectorAll('[role="menuitemcheckbox"]')].map((item) =>
+        item.textContent?.trim(),
+      ),
+    ).toEqual(["Sidebar", "Agent", "Details"]);
   });
 
   it("updates back and forward controls using the single router history", async () => {

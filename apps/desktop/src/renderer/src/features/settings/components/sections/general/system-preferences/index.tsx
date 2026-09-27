@@ -1,0 +1,30 @@
+import { Input } from "@pond/ui";
+import { useId, useState } from "react";
+import { savePrefsSection, usePrefs } from "@/features/settings/state/prefs";
+import styles from "./styles.module.css";
+
+export function SystemPreferences() {
+  const id = useId();
+  const [prefs] = usePrefs("system");
+  const [proxyUrl, setProxyUrl] = useState(prefs.proxyUrl);
+  if (prefs.proxyMode !== "manual") return null;
+  return (
+    <label className={styles.field} htmlFor={id}>
+      Proxy URL
+      <Input.Root>
+        <Input.Field
+          id={id}
+          value={proxyUrl}
+          placeholder="http://127.0.0.1:8080"
+          onValueChange={setProxyUrl}
+          onBlur={() => {
+            void savePrefsSection("system", { proxyUrl }).then(() =>
+              window.pond.query("system.applyPrefs", {}),
+            );
+          }}
+        />
+      </Input.Root>
+      <span>Use an HTTP or SOCKS proxy for Pond’s main-process requests.</span>
+    </label>
+  );
+}

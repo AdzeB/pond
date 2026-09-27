@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  allowAppHotkeyInEditable,
   eventFromEditable,
   isEditableTarget,
+  stopAppHotkeysFromEditable,
 } from "./editable-target";
 
 describe("editable target", () => {
@@ -43,17 +43,13 @@ describe("editable target", () => {
     field.remove();
   });
 
-  it("allows Search Pond and Escape in a field", () => {
-    expect(
-      allowAppHotkeyInEditable(new KeyboardEvent("keydown", { key: "Escape" })),
-    ).toBe(true);
-    expect(
-      allowAppHotkeyInEditable(
-        new KeyboardEvent("keydown", { key: "k", metaKey: true }),
-      ),
-    ).toBe(true);
-    expect(
-      allowAppHotkeyInEditable(new KeyboardEvent("keydown", { key: "[" })),
-    ).toBe(false);
+  it("stops every app hotkey from an editable surface", () => {
+    let stopped = 0;
+    stopAppHotkeysFromEditable({
+      stopPropagation: () => {
+        stopped += 1;
+      },
+    });
+    expect(stopped).toBe(1);
   });
 });

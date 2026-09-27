@@ -5,7 +5,12 @@ interface InspectState {
   grayscale: boolean;
   compare: boolean;
   showNavigator: boolean;
-  commentRequest: number;
+  commentRequest: {
+    commentId: string | null;
+    fileIndex: number;
+    revision: number;
+    saveId: string;
+  } | null;
 }
 
 function readNavigator(): boolean {
@@ -21,8 +26,24 @@ const store = new Store<InspectState>({
   grayscale: false,
   compare: false,
   showNavigator: readNavigator(),
-  commentRequest: 0,
+  commentRequest: null,
 });
+
+function requestComment(
+  saveId: string,
+  fileIndex: number,
+  commentId: string | null,
+): void {
+  store.setState((state) => ({
+    ...state,
+    commentRequest: {
+      commentId,
+      fileIndex,
+      revision: (state.commentRequest?.revision ?? 0) + 1,
+      saveId,
+    },
+  }));
+}
 
 export const inspect = {
   toggleGrayscale(): void {
@@ -55,11 +76,11 @@ export const inspect = {
   toggleNavigator(): void {
     inspect.setShowNavigator(!store.state.showNavigator);
   },
-  enterComment(): void {
-    store.setState((state) => ({
-      ...state,
-      commentRequest: state.commentRequest + 1,
-    }));
+  enterComment(saveId: string, fileIndex: number): void {
+    requestComment(saveId, fileIndex, null);
+  },
+  openComment(saveId: string, fileIndex: number, commentId: string): void {
+    requestComment(saveId, fileIndex, commentId);
   },
   snapshot(): InspectState {
     return store.state;

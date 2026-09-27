@@ -1,13 +1,10 @@
 import { useLayoutEffect } from "react";
-import {
-  allowAppHotkeyInEditable,
-  eventFromEditable,
-} from "@/shared/lib/editable-target";
+import { eventFromEditable } from "@/shared/lib/editable-target";
 
 export function EditableHotkeyGuard() {
   useLayoutEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (allowAppHotkeyInEditable(event) || !eventFromEditable(event)) return;
+      if (!eventFromEditable(event)) return;
       event.stopImmediatePropagation();
     };
     document.addEventListener("keydown", onKey);

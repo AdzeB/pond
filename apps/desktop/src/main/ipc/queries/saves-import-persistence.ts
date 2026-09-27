@@ -1,4 +1,7 @@
-import { readFile, stat } from "node:fs/promises";
+import { readFile, stat, writeFile } from "node:fs/promises";
+import { basename, extname } from "node:path";
+import { saves } from "@pond/schema/db";
+import { eq } from "drizzle-orm";
 import { BrowserWindow, dialog } from "electron";
 import mime from "mime-types";
 import { z } from "zod";
@@ -19,8 +22,10 @@ import {
   renderThumbnailPng,
   THUMBNAIL_REPLACE_KINDS,
 } from "../../core/save-thumbnail";
-import { readLibraryMedia } from "../../core/security/library-media-storage";
+import { readLibraryMedia } from "../../core/storage/library-media-storage";
 import { srtToVtt } from "../../core/subtitles";
+import { getDb } from "../../db";
+import { itemFile } from "../../paths";
 import { resolvePondItemPath } from "../helpers";
 import {
   NullableStringParam,
@@ -29,10 +34,15 @@ import {
   StringListParam,
   StringParam,
 } from "./params";
+import { readClipboardImage } from "./saves-import-clipboard";
 import {
   CreateManualParamsSchema,
   normalizeManualSaveInput,
 } from "./saves-import-input";
+
+const LottieAnimationSchema = z
+  .object({ layers: z.array(z.unknown()) })
+  .passthrough();
 
 export const savesImportPersistenceQueries = {
   "saves.setCustomThumbnail": query(
@@ -80,6 +90,22 @@ export const savesImportPersistenceQueries = {
         params.id,
         bytes,
         "user:set-thumbnail",
+      );
+      return { ok: Boolean(updated) };
+    },
+  ),
+
+  "saves.setThumbnailFromClipboard": query(
+    z.object({ id: StringParam }),
+    async ({ id }) => {
+      const image = await readClipboardImage();
+      if (image.isEmpty()) return { ok: false, error: "clipboard_empty" };
+      const bytes = await renderThumbnailPng(image.toPNG());
+      if (!bytes) return { ok: false, error: "not_an_image" };
+      const updated = await persistSaveThumbnail(
+        id,
+        bytes,
+        "user:set-thumbnail-from-clipboard",
       );
       return { ok: Boolean(updated) };
     },
@@ -162,6 +188,60 @@ export const savesImportPersistenceQueries = {
     const { replaceSaveFile } = await import("../../core/replace-file");
     return replaceSaveFile({ id: params.id, sourcePath: path });
   }),
+
+  "saves.exportDotLottie": query(
+    z.object({ id: StringParam, fileIndex: z.number().int().nonnegative() }),
+    async ({ id, fileIndex }) => {
+      const db = await getDb();
+      const row = db.select().from(saves).where(eq(saves.id, id)).get();
+      const file = row?.files[fileIndex];
+      if (!row || !file || !/\.json$/i.test(file.path))
+        return { ok: false, error: "Choose a Lottie JSON file." };
+      const bytes = await readLibraryMedia(itemFile(id, file.path));
+      let source: unknown;
+      try {
+        source = JSON.parse(bytes.toString("utf8"));
+      } catch {
+        return { ok: false, error: "This file does not contain valid JSON." };
+      }
+      const animation = LottieAnimationSchema.safeParse(source);
+      if (!animation.success)
+        return {
+          ok: false,
+          error: "This JSON file is not a Lottie animation.",
+        };
+      const defaultName = `${basename(
+        row.title?.trim() || file.path,
+        extname(row.title?.trim() || file.path),
+      )}.lottie`;
+      const picked = await dialog.showSaveDialog({
+        title: "Export dotLottie",
+        defaultPath: defaultName,
+        filters: [{ name: "dotLottie", extensions: ["lottie"] }],
+      });
+      if (picked.canceled || !picked.filePath)
+        return { ok: false, canceled: true };
+      const { default: JSZip } = await import("jszip");
+      const archive = new JSZip();
+      archive.file(
+        "manifest.json",
+        JSON.stringify({
+          version: "1.0",
+          generator: "Pond",
+          animations: [{ id: "animation", loop: true, speed: 1 }],
+        }),
+      );
+      archive.file("animations/animation.json", JSON.stringify(animation.data));
+      await writeFile(
+        picked.filePath,
+        await archive.generateAsync({
+          type: "nodebuffer",
+          compression: "DEFLATE",
+        }),
+      );
+      return { ok: true };
+    },
+  ),
 
   "saves.removeCustomThumbnail": query(
     z.object({ id: StringParam }),

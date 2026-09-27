@@ -71,11 +71,37 @@
     --input-padding-end: var(--input-min-height);
   }
 
+  &:has(> .affix) {
+    overflow: hidden;
+    border-radius: var(--input-radius);
+    transition:
+      background var(--ds-duration-medium) var(--ds-easing-standard),
+      border-color var(--ds-duration-medium) var(--ds-easing-standard),
+      box-shadow var(--ds-duration-medium) var(--ds-easing-standard);
+  }
+
   &:has(> [data-multiline]) {
     display: flex;
     align-items: stretch;
     width: 100%;
   }
+}
+
+.affix {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--input-min-height);
+  padding-inline: var(--input-padding-inline);
+  font-size: var(--input-font-size);
+  font-weight: var(--ds-weight-lg);
+  color: var(--ds-gray-10);
+  user-select: none;
+}
+
+.affix:has(> button:only-child) {
+  padding-inline: 0;
 }
 
 .icon {
@@ -110,12 +136,10 @@
   min-height: var(--input-min-height);
   padding: 0 var(--input-padding-end) 0 var(--input-padding-start);
   font-size: var(--input-font-size);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   color: var(--ds-gray-12);
   border-radius: var(--input-radius);
-  transition:
-    outline var(--ds-duration-medium) var(--ds-easing-standard),
-    box-shadow var(--ds-duration-medium) var(--ds-easing-standard);
+  transition: box-shadow var(--ds-duration-medium) var(--ds-easing-standard);
 
   &::placeholder {
     color: var(--ds-gray-8);
@@ -138,7 +162,7 @@
     min-height: calc(2lh + 16px);
     padding-block: 8px;
     line-height: 1.5;
-    resize: vertical;
+    resize: none;
   }
 
   &[data-multiline][data-padding="comfortable"] {
@@ -148,7 +172,7 @@
 
 .root:where([data-variant="primary"]) > .field {
   background: var(--ds-gray-1);
-  box-shadow: var(--ds-shadow-1);
+  box-shadow: var(--ds-shadow-xs);
 
   &:is(
       :hover,
@@ -156,7 +180,7 @@
       [data-demo-state="hover"],
       [data-demo-state="focus"]
     ) {
-    box-shadow: var(--ds-shadow-2);
+    box-shadow: var(--ds-shadow-sm);
   }
 }
 
@@ -181,6 +205,56 @@
 .root:where([data-variant="borderless"]) > .field {
   --ds-focus-outline: transparent;
 
-  font-weight: var(--ds-weight-normal);
+  font-weight: var(--ds-weight-md);
   background: transparent;
+}
+
+.root:has(> .affix) > .field {
+  min-width: 0;
+  outline: none;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.root:where([data-variant="primary"]):has(> .affix) {
+  background: var(--ds-gray-1);
+  box-shadow: var(--ds-shadow-xs);
+
+  &:is(
+      :hover,
+      :focus-within,
+      [data-demo-state="hover"],
+      [data-demo-state="focus"]
+    ) {
+    box-shadow: var(--ds-shadow-sm);
+  }
+}
+
+.root:where([data-variant="secondary"]):has(> .affix) {
+  background: var(--ds-gray-a2);
+  border: var(--ds-border-width) solid var(--ds-border-subtle);
+
+  &:is(
+      :hover,
+      :focus-within,
+      [data-demo-state="hover"],
+      [data-demo-state="focus"]
+    ) {
+    background: var(--ds-gray-a3);
+  }
+
+  &:is(:focus-within, [data-demo-state="focus"]) {
+    border-color: var(--ds-gray-a6);
+  }
+}
+
+.root:has(> .affix):focus-within {
+  outline: var(--ds-focus-width, 2px) solid var(--ds-focus-outline);
+  outline-offset: var(--ds-focus-offset, 0);
+}
+
+.root:has(> .affix) > .affix :focus-visible {
+  outline: none;
 }

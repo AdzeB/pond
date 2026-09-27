@@ -1,7 +1,3 @@
-import {
-  IconArrowLeftOutline18,
-  IconArrowRightOutline18,
-} from "@pond/icons/outline/18";
 import { Button, Tooltip, Tray } from "@pond/ui";
 import { clsx as cn } from "clsx";
 import {
@@ -13,7 +9,6 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { ShortcutKeys } from "@/shared/components/shortcut-keys";
 import styles from "./styles.module.css";
 
 export type ViewerHudAnchor =
@@ -24,20 +19,22 @@ export type ViewerHudAnchor =
   | "bottom-center"
   | "bottom-right";
 
-export interface SlidePager {
-  index: number;
-  count: number;
-  onPrev: () => void;
-  onNext: () => void;
-}
-
 const HudTooltipSide = createContext<"top" | "bottom">("top");
-const HudOverlayContext = createContext<HTMLElement | null>(null);
+const HudOverlayContext = createContext<{
+  enabled: boolean;
+  overlay: HTMLElement | null;
+} | null>(null);
 
-export function HudHost({ children }: { children: ReactNode }) {
+export function HudHost({
+  children,
+  enabled = true,
+}: {
+  children: ReactNode;
+  enabled?: boolean;
+}) {
   const [overlay, setOverlay] = useState<HTMLElement | null>(null);
   return (
-    <HudOverlayContext value={overlay}>
+    <HudOverlayContext value={{ enabled, overlay }}>
       <div className={styles.host}>
         {children}
         <div className={styles.layer} ref={setOverlay} />
@@ -47,9 +44,10 @@ export function HudHost({ children }: { children: ReactNode }) {
 }
 
 function Root({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  const overlay = use(HudOverlayContext);
+  const host = use(HudOverlayContext);
+  if (host?.enabled === false) return null;
   const hud = <div className={cn(styles.hud, className)} {...props} />;
-  if (overlay) return createPortal(hud, overlay);
+  if (host?.overlay) return createPortal(hud, host.overlay);
   return hud;
 }
 
@@ -81,22 +79,66 @@ function Scale({ className, ...props }: HTMLAttributes<HTMLSpanElement>) {
   return <span className={cn(styles.scale, className)} {...props} />;
 }
 
+function Bar({
+  label,
+  start,
+  center,
+  end,
+  collapseCenter = false,
+  className,
+  ...props
+}: Omit<HTMLAttributes<HTMLDivElement>, "children"> & {
+  label: string;
+  start?: ReactNode;
+  center?: ReactNode;
+  end?: ReactNode;
+  collapseCenter?: boolean;
+}) {
+  return (
+    <Tools
+      tooltipSide="bottom"
+      className={cn(styles.bar, className)}
+      data-collapse-center={collapseCenter || undefined}
+      role="toolbar"
+      aria-label={label}
+      {...props}
+    >
+      <div className={styles.barStart} data-viewer-bar-slot="start">
+        {start}
+      </div>
+      <div className={styles.barCenter} data-viewer-bar-slot="center">
+        {center}
+      </div>
+      <div className={styles.barEnd} data-viewer-bar-slot="end">
+        {end}
+      </div>
+    </Tools>
+  );
+}
+
 function Tools({
   tooltipSide,
+  layout = "inline",
   className,
   ...props
 }: HTMLAttributes<HTMLDivElement> & {
   tooltipSide: "top" | "bottom";
+  layout?: "inline" | "contents";
 }) {
   return (
     <HudTooltipSide value={tooltipSide}>
-      <div className={cn(styles.tools, className)} {...props} />
+      <div
+        className={cn(styles.tools, className)}
+        data-layout={layout}
+        {...props}
+      />
     </HudTooltipSide>
   );
 }
 
 function Tool({
   className,
+  demoState,
   icon = true,
   label,
   shortcut,
@@ -106,6 +148,7 @@ function Tool({
   children,
 }: {
   className?: string;
+  demoState?: "hover" | "focus";
   icon?: boolean;
   label: string;
   shortcut?: ReactNode;
@@ -119,8 +162,10 @@ function Tool({
     <Tooltip label={label} shortcut={shortcut} side={side}>
       <Button
         className={className}
+        data-demo-state={demoState}
         icon={icon}
-        size="md"
+        rounding="rounded"
+        size="sm"
         variant="ghost"
         aria-label={label}
         aria-pressed={pressed || undefined}
@@ -134,43 +179,12 @@ function Tool({
   );
 }
 
-function Pager({ index, count, onPrev, onNext }: SlidePager) {
-  return (
-    <Tools
-      tooltipSide="bottom"
-      className={styles.pager}
-      role="toolbar"
-      aria-label="Slides"
-    >
-      <Tool
-        label="Previous Slide"
-        shortcut={<ShortcutKeys id="viewer.prev-slide" />}
-        disabled={index <= 0}
-        onClick={onPrev}
-      >
-        <IconArrowLeftOutline18 />
-      </Tool>
-      <Scale>
-        {index + 1} / {count}
-      </Scale>
-      <Tool
-        label="Next Slide"
-        shortcut={<ShortcutKeys id="viewer.next-slide" />}
-        disabled={index >= count - 1}
-        onClick={onNext}
-      >
-        <IconArrowRightOutline18 />
-      </Tool>
-    </Tools>
-  );
-}
-
 export const ViewerHud = {
   Root,
   Cluster,
   Pill,
   Scale,
+  Bar,
   Tools,
   Tool,
-  Pager,
 };

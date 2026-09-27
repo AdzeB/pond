@@ -146,7 +146,7 @@ describe("smart folder rule dialog", () => {
     expect(document.body.textContent).toContain("Found 7 saves");
   });
 
-  it("adds nested rule groups, retains edits on save failure, and cancels without saving", async () => {
+  it("adds nested rule groups, retains edits on save failure, and closes without saving", async () => {
     let attempts = 0;
     let closed = false;
     await render({
@@ -171,7 +171,7 @@ describe("smart folder rule dialog", () => {
       "Disk unavailable",
     );
     expect(closed).toBe(false);
-    await act(async () => button("Cancel").click());
+    await act(async () => button("Close").click());
     expect(attempts).toBe(1);
     expect(closed).toBe(true);
   });

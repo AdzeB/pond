@@ -45,9 +45,25 @@ describe("keyword grammar", () => {
     const where = compileKeywordWhere('-"cat food"');
     if (!where) throw new Error("Expected a keyword predicate");
     const compiled = new SQLiteSyncDialect().sqlToQuery(where);
-    expect(compiled.params).toEqual(['"cat food"']);
+    expect(compiled.params).toEqual([
+      '"cat food"',
+      "%cat food%",
+      "%cat food%",
+      "%.cat food%",
+    ]);
     expect(compiled.sql).toContain("not (");
     expect(compiled.sql).toContain("select id from saves_fts");
+  });
+
+  it("limits unscoped terms to the selected fields", () => {
+    const where = compileKeywordWhere("reference", "all", [
+      "title",
+      "extension",
+    ]);
+    if (!where) throw new Error("Expected scoped keyword predicates");
+    const compiled = new SQLiteSyncDialect().sqlToQuery(where);
+    expect(compiled.sql).toContain("json_each");
+    expect(compiled.params).toEqual(['title : "reference"*', "%.reference%"]);
   });
 
   it("rejects incomplete logic and caps adversarial complexity", () => {

@@ -1,3 +1,4 @@
+import { sourceLabel } from "@pond/schema/sources";
 import type { DownloadRow } from "@/features/downloads/lib/status-feed";
 
 export type DownloadTableStatus =
@@ -19,7 +20,8 @@ const STATUS_LABELS = {
 
 function isDownloadWaiting(row: DownloadRow): boolean {
   return (
-    row.status === "pending" ||
+    row.status === "waiting" ||
+    row.status === "parked" ||
     row.status === "blocked" ||
     row.status === "retrying"
   );
@@ -42,7 +44,12 @@ export function downloadTableStatus(
   paused: boolean,
 ): DownloadTableStatus {
   if (row.status === "complete") return "complete";
-  if (row.status === "failed" || row.status === "blocked") return "failed";
+  if (
+    row.status === "failed" ||
+    row.status === "blocked" ||
+    row.status === "dead"
+  )
+    return "failed";
   if (row.status === "cancelled") return "cancelled";
   if (row.status === "skipped") return "skipped";
   if (isDownloadStopped(row, paused)) return "paused";
@@ -50,5 +57,21 @@ export function downloadTableStatus(
 }
 
 export function downloadStatusLabel(row: DownloadRow, paused: boolean): string {
+  if (isDownloadStopped(row, paused)) return "Paused";
+  if (row.status === "waiting") return "Waiting";
+  if (row.status === "parked") return `Waiting for ${sourceLabel(row.source)}`;
+  if (row.status === "retrying") {
+    if (row.nextRunAt == null) return "Retrying";
+    const seconds = Math.max(
+      0,
+      Math.ceil((row.nextRunAt - Date.now()) / 1_000),
+    );
+    if (seconds < 60) return `Retrying in ${seconds}s`;
+    const minutes = Math.ceil(seconds / 60);
+    if (minutes < 60) return `Retrying in ${minutes}m`;
+    return `Retrying in ${Math.ceil(minutes / 60)}h`;
+  }
+  if (row.status === "dead")
+    return `Stopped after ${row.attempts} attempt${row.attempts === 1 ? "" : "s"}`;
   return STATUS_LABELS[downloadTableStatus(row, paused)];
 }

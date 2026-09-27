@@ -54,9 +54,6 @@ export function SortSection({ onArrange }: { onArrange?: () => void }) {
         <div className={styles.row}>
           <Select.Label className={styles.label}>Sort By</Select.Label>
           <div className={styles.controls}>
-            <Select.Trigger size="sm" className={styles.select}>
-              <Select.Value>{labelFor(key)}</Select.Value>
-            </Select.Trigger>
             <Button
               icon
               size="sm"
@@ -71,6 +68,9 @@ export function SortSection({ onArrange }: { onArrange?: () => void }) {
                 <IconDescendingSortingOutline18 />
               )}
             </Button>
+            <Select.Trigger size="sm" className={styles.select}>
+              <Select.Value>{labelFor(key)}</Select.Value>
+            </Select.Trigger>
           </div>
         </div>
         <Select.Portal>

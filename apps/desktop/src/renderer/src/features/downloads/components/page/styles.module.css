@@ -51,11 +51,6 @@
   --activity-color: light-dark(var(--ds-green-11), var(--ds-green-8));
 }
 
-.grid .row[data-inspected] {
-  background: var(--ds-accent-a3);
-  border-radius: var(--ds-radius-md);
-}
-
 .open {
   --ds-focus-offset: 2px;
   display: flex;
@@ -87,7 +82,7 @@
 
 .source {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
   min-width: 0;
 }
@@ -154,6 +149,12 @@
   white-space: nowrap;
 }
 
+.added {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .grid {
   --data-table-inset: 8px;
   --data-table-header-height: 40px;
@@ -162,36 +163,27 @@
   min-width: 0;
 }
 
-.progress {
-  position: absolute;
-  right: 8px;
-  bottom: 0;
-  left: 8px;
+.progress-cell {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.progress-ring {
   display: block;
-  width: auto;
-  height: 2px;
-  margin: 0;
-  overflow: hidden;
-  appearance: none;
-  background: var(--ds-gray-a4);
-  border: none;
-  border-radius: 1px;
+  flex: none;
+  color: var(--ds-accent-10);
 }
 
-.progress::-webkit-progress-bar {
-  background: var(--ds-gray-a4);
-  border-radius: 1px;
+.progress-ring-track {
+  stroke: var(--ds-gray-a5);
 }
 
-.progress::-webkit-progress-value {
-  background: var(--ds-blue-9);
-  border-radius: 1px;
-  transition: width var(--ds-duration-medium) var(--ds-easing-standard);
-}
-
-.progress::-moz-progress-bar {
-  background: var(--ds-blue-9);
-  border-radius: 1px;
+.progress-ring-value {
+  stroke: currentColor;
+  transition: stroke-dasharray var(--ds-duration-medium)
+    var(--ds-easing-standard);
 }
 
 .message {
@@ -217,11 +209,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .progress::-webkit-progress-value {
+  .progress-ring-value {
     transition: none;
   }
 }
 
-:global([data-reduce-motion="true"]) .progress::-webkit-progress-value {
+:global([data-reduce-motion="true"]) .progress-ring-value {
   transition: none;
 }

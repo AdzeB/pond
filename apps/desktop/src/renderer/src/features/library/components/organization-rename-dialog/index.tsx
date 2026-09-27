@@ -23,7 +23,7 @@ export function OrganizationRenameDialogHost() {
       key={presentation.payload.id}
       open={presentation.open}
       kind={presentation.payload.kind}
-      initialId={presentation.payload.initialId}
+      initialIds={presentation.payload.initialIds}
     />
   ) : null;
 }
@@ -31,11 +31,11 @@ export function OrganizationRenameDialogHost() {
 function OrganizationRenameDialog({
   open,
   kind,
-  initialId,
+  initialIds,
 }: {
   open: boolean;
   kind: OrganizationRenameKind;
-  initialId?: string;
+  initialIds?: string[];
 }) {
   const folderRows = useFolders();
   const viewRows = useSavedViews();
@@ -47,9 +47,7 @@ function OrganizationRenameDialog({
       })),
     [folderRows, kind, viewRows],
   );
-  const [selected, setSelected] = useState(
-    () => new Set(initialId ? [initialId] : []),
-  );
+  const [selected, setSelected] = useState(() => new Set(initialIds ?? []));
   const [pattern, setPattern] = useState("{n:2} {title}");
   const [busy, setBusy] = useState(false);
   const templateId = useId();
@@ -113,7 +111,9 @@ function OrganizationRenameDialog({
             />
           </label>
           <p className={styles.help}>
-            Tokens: {"{n}"}, {"{title}"}, {"{id}"}, {"{date}"}, {"{original}"}
+            Tokens: {"{n}"}, {"{title}"}, {"{id}"}, {"{date}"},{" "}
+            {"{date:compact}"}, {"{date:month}"}, {"{date:year}"},{" "}
+            {"{date:timestamp}"}, {"{original}"}
           </p>
           <div className={styles.actions}>
             <Button
@@ -153,9 +153,6 @@ function OrganizationRenameDialog({
             ))}
           </div>
           <Dialog.Footer>
-            <Button variant="secondary" onClick={closeOrganizationRenameDialog}>
-              Cancel
-            </Button>
             <Button
               disabled={busy || selected.size === 0 || !pattern.trim()}
               onClick={() => void rename()}

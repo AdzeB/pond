@@ -5,7 +5,7 @@
   overflow: hidden;
   border-radius: var(--ds-radius-source);
   corner-shape: var(--ds-corner-icon);
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-sm);
 }
 
 .brand-tile svg,

@@ -1,31 +1,45 @@
+import { folders } from "@/features/library/state/folders";
 import { libraryChrome } from "@/features/library/state/library-chrome";
-import { resetFilters } from "@/features/library/state/view-store";
+import { resetFilters, setQuery } from "@/features/library/state/view-store";
+import { descendantFolderIds } from "@/features/saves/lib/nav-filter";
 import { getAppRouter } from "@/shared/lib/app-router";
 
-export interface FolderUnlockRequest {
-  hint: string | null;
-  targetId: string;
-  unlockId: string;
+export function enterFolder(folderId: string): void {
+  resetFilters();
+  libraryChrome.setNav({ kind: "folder", id: folderId });
+  getAppRouter()?.history.push("/");
 }
 
-export async function enterFolder(
-  folderId: string,
-  onUnlockRequired: (request: FolderUnlockRequest) => void,
-): Promise<void> {
-  const status = await window.pond.query("folders.security.status", {
-    folderId,
-  });
-  if (!status.locked) {
+export function enterFolders(ids: string[], includeSubfolders: boolean): void {
+  if (ids.length === 0) {
     resetFilters();
-    libraryChrome.setNav({ kind: "folder", id: folderId });
+    libraryChrome.setNav({ kind: "all" });
     getAppRouter()?.history.push("/");
     return;
   }
-  if (status.unlockFolderId) {
-    onUnlockRequired({
-      hint: status.hint,
-      targetId: folderId,
-      unlockId: status.unlockFolderId,
-    });
+  if (ids.length === 1 && ids[0]) {
+    enterFolder(ids[0]);
+    return;
   }
+  resetFilters();
+  libraryChrome.setNav({ kind: "all" });
+  setQuery({
+    combinator: "and",
+    rules: [
+      {
+        field: "folder",
+        operator: "some",
+        value: [
+          ...new Set(
+            ids.flatMap((id) =>
+              includeSubfolders
+                ? [...descendantFolderIds(id, folders.snapshot())]
+                : [id],
+            ),
+          ),
+        ],
+      },
+    ],
+  });
+  getAppRouter()?.history.push("/");
 }

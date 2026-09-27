@@ -1,6 +1,7 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { beginLibraryLayoutTransition } from "@/features/library/lib/library-layout-transition";
+import { navigationHistory } from "@/features/library/state/navigation-history";
 import type { LibraryNav } from "@/shared/lib/library-nav";
 
 export type { LibraryNav } from "@/shared/lib/library-nav";
@@ -46,6 +47,7 @@ function writeWidth(key: string, width: number): void {
 
 export type LibraryRightPane = "agent" | "inspector" | null;
 export type LibraryInspectorMode = "save" | "download" | "source";
+export type SaveInspectorTab = "organize" | "info" | "comments";
 export type LibraryInspectorSourceKind = "account" | "watch";
 
 interface ChromeState {
@@ -55,6 +57,7 @@ interface ChromeState {
   rightPane: LibraryRightPane;
   inspectorSaveId: string | null;
   inspectorMode: LibraryInspectorMode;
+  inspectorTab: SaveInspectorTab;
   inspectorSourceId: string | null;
   inspectorSourceKind: LibraryInspectorSourceKind | null;
   sidebarWidth: number;
@@ -75,6 +78,7 @@ const store = new Store<ChromeState>({
   rightPane: initialAgentOpen ? "agent" : null,
   inspectorSaveId: null,
   inspectorMode: "save",
+  inspectorTab: "organize",
   inspectorSourceId: null,
   inspectorSourceKind: null,
   sidebarWidth: readWidth(
@@ -104,15 +108,21 @@ export const libraryChrome = {
         ...s,
         inspectorSaveId,
         inspectorMode: "save",
+        inspectorTab:
+          inspectorSaveId === s.inspectorSaveId ? s.inspectorTab : "organize",
         rightPane: inspectorSaveId ? "inspector" : s.agentOpen ? "agent" : null,
       };
     });
   },
-  openSaveDetails(inspectorSaveId: string): void {
+  openSaveDetails(
+    inspectorSaveId: string,
+    inspectorTab: SaveInspectorTab = "organize",
+  ): void {
     store.setState((s) => {
       if (
         s.inspectorSaveId === inspectorSaveId &&
         s.inspectorMode === "save" &&
+        s.inspectorTab === inspectorTab &&
         s.rightPane === "inspector"
       )
         return s;
@@ -121,9 +131,15 @@ export const libraryChrome = {
         ...s,
         inspectorSaveId,
         inspectorMode: "save",
+        inspectorTab,
         rightPane: "inspector",
       };
     });
+  },
+  setInspectorTab(inspectorTab: SaveInspectorTab): void {
+    store.setState((s) =>
+      s.inspectorTab === inspectorTab ? s : { ...s, inspectorTab },
+    );
   },
   inspectDownload(inspectorSaveId: string): void {
     store.setState((s) => {
@@ -150,6 +166,7 @@ export const libraryChrome = {
     );
   },
   setNav(nav: LibraryNav): void {
+    navigationHistory.record(nav);
     store.setState((s) => ({ ...s, nav }));
   },
   toggleSidebar(): void {
@@ -280,6 +297,10 @@ export function useInspectorSaveId(): string | null {
 
 export function useInspectorMode(): LibraryInspectorMode {
   return useSelector(store, (s) => s.inspectorMode);
+}
+
+export function useInspectorTab(): SaveInspectorTab {
+  return useSelector(store, (s) => s.inspectorTab);
 }
 
 export function useInspectorSourceId(): string | null {

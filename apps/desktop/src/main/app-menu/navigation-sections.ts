@@ -70,9 +70,16 @@ export function buildHistorySection(
     submenu:
       recentEntries.length === 0
         ? [{ label: "No Recent Items", enabled: false }]
-        : recentEntries.map((entry) => ({
-            label: entry.title,
-            click: context.openRecent(entry.id),
-          })),
+        : [
+            ...recentEntries.map((entry) => ({
+              label: entry.title,
+              click: context.openRecent(entry.id),
+            })),
+            { type: "separator" },
+            {
+              label: "Clear History",
+              click: context.sendMenuAction("history.clear"),
+            },
+          ],
   };
 }

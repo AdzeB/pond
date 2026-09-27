@@ -2,6 +2,7 @@ import { createContext, use } from "react";
 
 interface TagsTableValue {
   groups: string[];
+  tags: string[];
 }
 
 export const TagsTableContext = createContext<TagsTableValue | null>(null);

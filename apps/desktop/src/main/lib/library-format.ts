@@ -22,6 +22,7 @@ export type SaveUserData = Pick<
   | "comments"
   | "videoNotes"
   | "dominantColors"
+  | "primaryColor"
   | "rotate"
   | "flipX"
   | "flipY"
@@ -70,6 +71,16 @@ export const StoredInfoDocSchema = z.object({
           h: z.number(),
           text: z.string(),
           createdAt: z.number().optional(),
+          replies: z
+            .array(
+              z.object({
+                id: z.string(),
+                text: z.string(),
+                createdAt: z.number().optional(),
+              }),
+            )
+            .optional(),
+          resolvedAt: z.number().optional(),
         }),
       ),
       videoNotes: z.array(
@@ -81,6 +92,11 @@ export const StoredInfoDocSchema = z.object({
         }),
       ),
       dominantColors: z.array(z.string()),
+      primaryColor: z
+        .string()
+        .nullish()
+        .catch(null)
+        .transform((value) => value ?? null),
       rotate: z.number(),
       flipX: z.boolean(),
       flipY: z.boolean(),
@@ -156,6 +172,7 @@ export function infoDocFromSave(
       comments: save.comments ?? [],
       videoNotes: save.videoNotes ?? [],
       dominantColors: save.dominantColors ?? [],
+      primaryColor: save.primaryColor ?? null,
       rotate: save.rotate ?? 0,
       flipX: save.flipX ?? false,
       flipY: save.flipY ?? false,
@@ -192,6 +209,7 @@ const EXPORTED_SAVE_FIELDS = [
   "comments",
   "videoNotes",
   "dominantColors",
+  "primaryColor",
   "rotate",
   "flipX",
   "flipY",
@@ -229,6 +247,7 @@ export function applyPatchToInfo(
     "comments",
     "videoNotes",
     "dominantColors",
+    "primaryColor",
     "rotate",
     "flipX",
     "flipY",
@@ -240,6 +259,7 @@ export function applyPatchToInfo(
       comments: info.userData?.comments ?? [],
       videoNotes: info.userData?.videoNotes ?? [],
       dominantColors: info.userData?.dominantColors ?? [],
+      primaryColor: info.userData?.primaryColor ?? null,
       rotate: info.userData?.rotate ?? 0,
       flipX: info.userData?.flipX ?? false,
       flipY: info.userData?.flipY ?? false,
@@ -252,6 +272,8 @@ export function applyPatchToInfo(
       next.userData.videoNotes = patch.videoNotes ?? [];
     if (patch.dominantColors !== undefined)
       next.userData.dominantColors = patch.dominantColors ?? [];
+    if (patch.primaryColor !== undefined)
+      next.userData.primaryColor = patch.primaryColor;
     if (patch.rotate !== undefined) next.userData.rotate = patch.rotate ?? 0;
     if (patch.flipX !== undefined) next.userData.flipX = patch.flipX ?? false;
     if (patch.flipY !== undefined) next.userData.flipY = patch.flipY ?? false;

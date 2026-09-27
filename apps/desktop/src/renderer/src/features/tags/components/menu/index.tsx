@@ -1,193 +1,262 @@
 import { IconChevronDownOutline12 as ChevronDown } from "@pond/icons/outline/12";
 import { IconPlusOutline18 as Plus } from "@pond/icons/outline/18";
 import { normalizeLabelName } from "@pond/schema/label-name";
-import { Keyboard, Menu } from "@pond/ui";
-import { type KeyboardEvent, type ReactNode, useMemo, useState } from "react";
-import { useTagGroups } from "@/features/tags/state/tag-groups";
-import { type TagRow, useTags } from "@/features/tags/state/tags";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import {
-  buildTagNav,
-  filterByNav,
-  parseTagBatch,
-  partitionPickerTags,
-  type TagNavId,
-} from "./lib";
+  PickerPanel,
+  type PickerSelectionState,
+  usePickerCursor,
+} from "@pond/ui";
+import { type ReactNode, useMemo, useState } from "react";
+import {
+  type TagGroupRow,
+  useTagGroups,
+} from "@/features/tags/state/tag-groups";
+import { type TagRow, useTags } from "@/features/tags/state/tags";
+import { parseTagBatch, partitionPickerTags } from "./lib";
 import styles from "./styles.module.css";
 
 interface TagMenuProps {
   appliedKeys?: ReadonlySet<string>;
+  mixedKeys?: ReadonlySet<string>;
   counts?: ReadonlyMap<string, number>;
   onToggle: (name: string) => void | Promise<void>;
   allowCreate?: boolean;
   placeholder?: string;
   emptyLabel?: ReactNode;
   recommendedNames?: readonly string[];
-  layout?: "list" | "grid";
   gridSize?: "sm" | "md" | "lg";
   showStarred?: boolean;
   showRecently?: boolean;
   showRecommended?: boolean;
   showCounts?: boolean;
+  pinned?: boolean;
 }
 
-export function TagMenu({
+export interface TagMenuViewProps extends TagMenuProps {
+  tags: readonly TagRow[];
+  groups: readonly TagGroupRow[];
+}
+
+type CreateInfo =
+  | { kind: "batch"; labels: string[]; label: string }
+  | { kind: "group"; group: string; label: string }
+  | { kind: "plain"; label: string };
+
+type TagPickerRow =
+  | { id: string; kind: "tag"; tag: TagRow }
+  | { id: string; kind: "create"; create: CreateInfo };
+
+interface TagSection {
+  id: string;
+  label: string;
+  items: TagRow[];
+  open: boolean;
+  collapsible: boolean;
+  toggle(): void;
+}
+
+function rowId(row: TagPickerRow) {
+  return row.id;
+}
+
+function gridColumns(size: "sm" | "md" | "lg") {
+  if (size === "sm") return 3;
+  if (size === "md") return 2;
+  return 1;
+}
+
+export function TagMenu(props: TagMenuProps) {
+  const tags = useTags();
+  const groups = useTagGroups();
+  return <TagMenuView {...props} tags={tags} groups={groups} />;
+}
+
+export function TagMenuView({
+  tags,
+  groups,
   appliedKeys,
+  mixedKeys,
   counts,
   onToggle,
   allowCreate = false,
   placeholder = "Search…",
   emptyLabel = "No tags yet.",
   recommendedNames = [],
-  layout = "list",
   gridSize = "md",
   showStarred = true,
   showRecently = true,
   showRecommended = true,
   showCounts = true,
-}: TagMenuProps) {
-  const tags = useTags();
-  const groups = useTagGroups();
-  const [q, setQ] = useState("");
+  pinned = false,
+}: TagMenuViewProps) {
+  const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [navId, setNavId] = useState<TagNavId>("all");
-  const [pane, setPane] = useState<"nav" | "list">("list");
   const [recentOpen, setRecentOpen] = useState(true);
   const [othersOpen, setOthersOpen] = useState(true);
-  const navFade = useScrollFade<HTMLDivElement>();
-  const listFade = useScrollFade<HTMLDivElement>();
 
-  const needle = q.trim().toLowerCase();
-
+  const needle = query.trim().toLowerCase();
   const tagsByLower = useMemo(() => {
     const map = new Map<string, TagRow>();
     for (const tag of tags) map.set(tag.name.toLowerCase(), tag);
     return map;
   }, [tags]);
-
-  const groupedTagIds = useMemo(() => {
-    const set = new Set<string>();
-    for (const group of groups) for (const id of group.tagIds) set.add(id);
-    return set;
-  }, [groups]);
-
-  const groupTagIds = useMemo(() => {
-    const map = new Map<string, ReadonlySet<string>>();
-    for (const group of groups) map.set(group.id, new Set(group.tagIds));
-    return map;
-  }, [groups]);
-
   const matching = useMemo(
     () =>
       needle
-        ? tags.filter((tag) => tag.name.toLowerCase().includes(needle))
+        ? tags.filter((tag) => {
+            if (tag.name.toLowerCase().includes(needle)) return true;
+            return groups.some(
+              (group) =>
+                group.name.toLowerCase().includes(needle) &&
+                group.tagIds.includes(tag.id),
+            );
+          })
         : tags,
-    [tags, needle],
+    [groups, needle, tags],
   );
-
-  const matchingIds = useMemo(
-    () => new Set(matching.map((tag) => tag.id)),
-    [matching],
-  );
-
-  const navItems = useMemo(() => {
-    const visibleGroups = groups
-      .map((group) => ({
-        id: group.id,
-        name: group.name,
-        count: group.tagIds.filter((id) => matchingIds.has(id)).length,
-      }))
-      .filter((group) => (needle ? group.count > 0 : true));
-    const uncategorizedCount = matching.filter(
-      (tag) => !groupedTagIds.has(tag.id),
-    ).length;
-    return buildTagNav(matching.length, visibleGroups, uncategorizedCount);
-  }, [groups, matching, matchingIds, groupedTagIds, needle]);
-
-  const showNav = groups.length > 0;
-  const activeNav = navItems.some((item) => item.id === navId) ? navId : "all";
-
-  const visibleTags = useMemo(
-    () => filterByNav(matching, activeNav, groupedTagIds, groupTagIds),
-    [matching, activeNav, groupedTagIds, groupTagIds],
-  );
-
+  const visibleTags = matching;
   const recommendedSet = useMemo(
     () => new Set(recommendedNames.map((name) => name.trim().toLowerCase())),
     [recommendedNames],
   );
-  const sections = useMemo(() => {
-    const partitioned = partitionPickerTags(visibleTags, recommendedSet);
-    const others = [
-      ...(showStarred ? [] : partitioned.starred),
-      ...(showRecommended ? [] : partitioned.recommended),
-      ...(showRecently ? [] : partitioned.recent),
-      ...partitioned.others,
-    ].sort((a, b) => a.name.localeCompare(b.name));
+  const partitioned = useMemo(() => {
+    const result = partitionPickerTags(visibleTags, recommendedSet);
     return {
-      starred: showStarred ? partitioned.starred : [],
-      recommended: showRecommended ? partitioned.recommended : [],
-      recent: showRecently ? partitioned.recent : [],
-      others,
+      ...result,
+      others: [
+        ...(showStarred ? [] : result.starred),
+        ...(showRecommended ? [] : result.recommended),
+        ...(showRecently ? [] : result.recent),
+        ...result.others,
+      ].toSorted((a, b) => a.name.localeCompare(b.name)),
     };
   }, [recommendedSet, showRecently, showRecommended, showStarred, visibleTags]);
-  const { starred, recommended, recent, others } = sections;
+  const visibleSectionCount = [
+    showStarred ? partitioned.starred : [],
+    showRecommended ? partitioned.recommended : [],
+    showRecently ? partitioned.recent : [],
+    partitioned.others,
+  ].filter((items) => items.length > 0).length;
+  const sections = useMemo<TagSection[]>(
+    () => [
+      {
+        id: "starred",
+        label: "Starred",
+        items: showStarred ? partitioned.starred : [],
+        open: true,
+        collapsible: false,
+        toggle: () => {},
+      },
+      {
+        id: "recommended",
+        label: "Recommended",
+        items: showRecommended ? partitioned.recommended : [],
+        open: true,
+        collapsible: false,
+        toggle: () => {},
+      },
+      {
+        id: "recent",
+        label: "Recently",
+        items: showRecently ? partitioned.recent : [],
+        open: recentOpen,
+        collapsible: visibleSectionCount > 1,
+        toggle: () => setRecentOpen((open) => !open),
+      },
+      {
+        id: "others",
+        label: "Others",
+        items: partitioned.others,
+        open: othersOpen,
+        collapsible: visibleSectionCount > 1,
+        toggle: () => setOthersOpen((open) => !open),
+      },
+    ],
+    [
+      othersOpen,
+      partitioned,
+      recentOpen,
+      showRecently,
+      showRecommended,
+      showStarred,
+      visibleSectionCount,
+    ],
+  );
 
-  const createInfo = useMemo(() => {
+  const createInfo = useMemo<CreateInfo | null>(() => {
     if (!allowCreate) return null;
-    const raw = q.trim();
+    const raw = query.trim();
     if (!raw) return null;
     const batch = parseTagBatch(raw).map(normalizeLabelName).filter(Boolean);
     if (batch.length > 1)
-      return { kind: "batch" as const, labels: batch, label: batch.join(", ") };
+      return { kind: "batch", labels: batch, label: batch.join(", ") };
     const slash = raw.indexOf("/");
     if (slash >= 0) {
       const group = normalizeLabelName(raw.slice(0, slash));
       const label = normalizeLabelName(raw.slice(slash + 1));
       if (!group || !label) return null;
-      return { kind: "group" as const, group, label };
+      return { kind: "group", group, label };
     }
     const label = normalizeLabelName(raw);
-    if (!label) return null;
-    if (tagsByLower.has(label.toLowerCase())) return null;
-    return { kind: "plain" as const, label };
-  }, [allowCreate, q, tagsByLower]);
+    if (!label || tagsByLower.has(label.toLowerCase())) return null;
+    return { kind: "plain", label };
+  }, [allowCreate, query, tagsByLower]);
 
-  async function commitCreate() {
-    if (!createInfo || creating) return;
+  const rows = useMemo<TagPickerRow[]>(() => {
+    const tagRows = sections.flatMap((section) =>
+      section.open
+        ? section.items.map((tag) => ({
+            id: `tag-${tag.id}`,
+            kind: "tag" as const,
+            tag,
+          }))
+        : [],
+    );
+    return createInfo
+      ? [
+          {
+            id: `create-${createInfo.label}`,
+            kind: "create",
+            create: createInfo,
+          },
+          ...tagRows,
+        ]
+      : tagRows;
+  }, [createInfo, sections]);
+
+  async function commitCreate(info: CreateInfo) {
+    if (creating) return;
     setCreating(true);
     setError(null);
     try {
-      const label = createInfo.label;
-      if (createInfo.kind === "batch") {
-        for (const item of createInfo.labels) {
+      const label = info.label;
+      if (info.kind === "batch") {
+        for (const item of info.labels) {
           const lower = item.toLowerCase();
           if (!tagsByLower.has(lower))
             await window.pond.query("tags.create", { name: item });
           if (!appliedKeys?.has(lower)) await onToggle(item);
         }
-        setQ("");
+        setQuery("");
         return;
       }
       if (!tagsByLower.has(label.toLowerCase()))
         await window.pond.query("tags.create", { name: label });
-      if (createInfo.kind === "group") {
+      if (info.kind === "group") {
         const group = groups.find(
-          (group) =>
-            group.name.toLowerCase() === createInfo.group.toLowerCase(),
+          (candidate) =>
+            candidate.name.toLowerCase() === info.group.toLowerCase(),
         );
         if (!group)
-          await window.pond.query("tagGroups.create", {
-            name: createInfo.group,
-          });
+          await window.pond.query("tagGroups.create", { name: info.group });
         await window.pond.query("tagGroups.addTags", {
           tags: [label],
-          group: group?.name ?? createInfo.group,
+          group: group?.name ?? info.group,
         });
       }
       await onToggle(label);
-      setQ("");
+      setQuery("");
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -196,48 +265,6 @@ export function TagMenu({
       );
     } finally {
       setCreating(false);
-    }
-  }
-
-  function moveNav(delta: number) {
-    const index = navItems.findIndex((item) => item.id === activeNav);
-    const next =
-      navItems[Math.max(0, Math.min(navItems.length - 1, index + delta))];
-    if (next) setNavId(next.id);
-  }
-
-  function onPaneKeyDown(event: KeyboardEvent<HTMLElement>) {
-    if (event.key === "Tab" && showNav) {
-      event.preventDefault();
-      event.stopPropagation();
-      setPane((current) => (current === "nav" ? "list" : "nav"));
-      return;
-    }
-    if (!showNav) return;
-    if (pane === "nav") {
-      if (event.key === "ArrowDown") {
-        event.preventDefault();
-        event.stopPropagation();
-        moveNav(1);
-        return;
-      }
-      if (event.key === "ArrowUp") {
-        event.preventDefault();
-        event.stopPropagation();
-        moveNav(-1);
-        return;
-      }
-      if (event.key === "ArrowRight" || event.key === "Enter") {
-        event.preventDefault();
-        event.stopPropagation();
-        setPane("list");
-      }
-      return;
-    }
-    if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      event.stopPropagation();
-      setPane("nav");
     }
   }
 
@@ -254,202 +281,139 @@ export function TagMenu({
     }
   }
 
-  function renderRow(tag: TagRow) {
+  function activate(row: TagPickerRow) {
+    if (row.kind === "create") void commitCreate(row.create);
+    else void toggleTag(row.tag.name);
+  }
+
+  const cursor = usePickerCursor({
+    items: rows,
+    getId: rowId,
+    columns: gridColumns(gridSize),
+    onActivate: activate,
+  });
+
+  function renderTag(tag: TagRow) {
+    const row: TagPickerRow = { id: `tag-${tag.id}`, kind: "tag", tag };
     const applied = appliedKeys?.has(tag.name.toLowerCase()) ?? false;
+    const mixed = mixedKeys?.has(tag.name.toLowerCase()) ?? false;
+    const selection: PickerSelectionState = mixed
+      ? "mixed"
+      : applied
+        ? "checked"
+        : "unchecked";
     const count = counts?.get(tag.name.toLowerCase()) ?? tag.usageCount;
     return (
-      <Menu.CheckboxItem
+      <PickerPanel.Item
+        {...cursor.getItemProps(row)}
         key={tag.id}
-        closeOnClick={false}
-        checked={applied}
-        onCheckedChange={() => void toggleTag(tag.name)}
+        role="option"
+        aria-label={mixed ? `${tag.name}, some selected` : tag.name}
+        aria-selected={applied}
+        selected={selection}
       >
-        <Menu.CheckboxItemIndicator />
-        <Menu.ItemLabel>{tag.name}</Menu.ItemLabel>
+        <PickerPanel.SelectionIndicator state={selection} />
+        <PickerPanel.ItemLabel title={tag.name}>
+          {tag.name}
+        </PickerPanel.ItemLabel>
         {showCounts && count > 0 ? (
-          <Menu.SecondaryLabel className={styles.count}>
+          <PickerPanel.ItemMeta className={styles.count}>
             {count}
-          </Menu.SecondaryLabel>
+          </PickerPanel.ItemMeta>
         ) : null}
-      </Menu.CheckboxItem>
+      </PickerPanel.Item>
     );
   }
-
-  function renderSection(
-    label: string,
-    items: TagRow[],
-    open: boolean,
-    onToggleOpen: () => void,
-  ) {
-    if (items.length === 0) return null;
-    const showToggle =
-      [starred, recommended, recent, others].filter((items) => items.length > 0)
-        .length > 1;
-    return (
-      <Menu.Group>
-        {showToggle && label !== "Starred" ? (
-          <Menu.Row
-            className={styles.section}
-            data-collapsed={open ? undefined : ""}
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleOpen();
-            }}
-          >
-            <span>
-              {label} ({items.length})
-            </span>
-            <ChevronDown />
-          </Menu.Row>
-        ) : (
-          <Menu.GroupLabel>
-            {label} ({items.length})
-          </Menu.GroupLabel>
-        )}
-        {open ? items.map(renderRow) : null}
-      </Menu.Group>
-    );
-  }
-
-  const hasRows = visibleTags.length > 0;
-  const bothSections =
-    [starred, recommended, recent, others].filter((items) => items.length > 0)
-      .length > 1;
 
   return (
-    <div
+    <PickerPanel.Surface
       className={styles.root}
-      data-nav={showNav ? "" : undefined}
-      data-layout={layout}
+      data-layout="grid"
       data-grid-size={gridSize}
+      data-pinned={pinned ? "" : undefined}
     >
-      <Menu.Input
-        value={q}
-        placeholder={placeholder}
-        autoFocus
-        onChange={(event) => {
-          setQ(event.target.value);
-          setPane("list");
-        }}
-        onKeyDown={(event) => {
-          onPaneKeyDown(event);
-          if (event.defaultPrevented) return;
-          if (event.key === "Enter" && createInfo) {
-            event.preventDefault();
-            void commitCreate();
-          }
-        }}
-      />
+      <PickerPanel.Header>
+        <PickerPanel.Search
+          {...cursor.inputProps}
+          aria-label="Search Tags"
+          value={query}
+          placeholder={placeholder}
+          autoFocus
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      </PickerPanel.Header>
 
-      <div className={styles.body}>
-        {showNav ? (
-          <div
-            className={styles.nav}
-            role="radiogroup"
-            aria-label="Tag group"
-            {...navFade}
+      <PickerPanel.Collection
+        id={cursor.collectionId}
+        className={styles.list}
+        role="listbox"
+        aria-label="Tags"
+        aria-multiselectable="true"
+      >
+        {createInfo ? (
+          <PickerPanel.Item
+            {...cursor.getItemProps({
+              id: `create-${createInfo.label}`,
+              kind: "create",
+              create: createInfo,
+            })}
+            role="option"
+            selected="unchecked"
+            data-create=""
           >
-            {navItems.map((item) => (
-              <Menu.Row
-                key={item.id}
-                role="radio"
-                highlighted={item.id === activeNav}
-                aria-checked={item.id === activeNav}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => {
-                  setNavId(item.id);
-                  setPane("list");
-                }}
-              >
-                <Menu.ItemLabel>{item.label}</Menu.ItemLabel>
-                {showCounts ? (
-                  <Menu.SecondaryLabel className={styles.count}>
-                    {item.count}
-                  </Menu.SecondaryLabel>
-                ) : null}
-              </Menu.Row>
-            ))}
-          </div>
+            <PickerPanel.ItemIcon>
+              <Plus />
+            </PickerPanel.ItemIcon>
+            <PickerPanel.ItemLabel title={createInfo.label}>
+              {createInfo.kind === "group"
+                ? `Create “${createInfo.label}” in “${createInfo.group}”`
+                : createInfo.kind === "batch"
+                  ? `Add ${createInfo.labels.length} Tags`
+                  : `Create “${createInfo.label}”`}
+            </PickerPanel.ItemLabel>
+          </PickerPanel.Item>
         ) : null}
 
-        <div className={styles.list} {...listFade}>
-          {bothSections ? (
-            <>
-              {renderSection("Starred", starred, true, () => {})}
-              {starred.length ? <Menu.Separator /> : null}
-              {renderSection("Recommended", recommended, true, () => {})}
-              {recommended.length ? <Menu.Separator /> : null}
-              {renderSection("Recently", recent, recentOpen, () =>
-                setRecentOpen((open) => !open),
-              )}
-              {others.length > 0 && recentOpen ? <Menu.Separator /> : null}
-              {renderSection("Others", others, othersOpen, () =>
-                setOthersOpen((open) => !open),
-              )}
-            </>
-          ) : hasRows ? (
-            <Menu.Group>{visibleTags.map(renderRow)}</Menu.Group>
-          ) : null}
-
-          {createInfo ? (
-            <Menu.Item
-              closeOnClick={false}
-              disabled={creating}
-              onClick={() => void commitCreate()}
+        {sections.map((section) =>
+          section.items.length ? (
+            <PickerPanel.Group
+              key={section.id}
+              className={styles.tagGroup}
+              role="group"
+              aria-label={`${section.label}, ${section.items.length}`}
             >
-              <Menu.ItemIcon>
-                <Plus />
-              </Menu.ItemIcon>
-              <Menu.ItemLabel>
-                {createInfo.kind === "group" ? (
-                  <>
-                    Create "{createInfo.label}" in group "{createInfo.group}"
-                  </>
-                ) : createInfo.kind === "batch" ? (
-                  <>Add {createInfo.labels.length} Tags</>
-                ) : (
-                  <>Create "{createInfo.label}"</>
-                )}
-              </Menu.ItemLabel>
-            </Menu.Item>
-          ) : null}
+              {section.collapsible ? (
+                <PickerPanel.SectionButton
+                  className={styles.section}
+                  aria-expanded={section.open}
+                  tabIndex={-1}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={section.toggle}
+                >
+                  <span>
+                    {section.label} ({section.items.length})
+                  </span>
+                  <ChevronDown aria-hidden="true" />
+                </PickerPanel.SectionButton>
+              ) : (
+                <PickerPanel.GroupLabel>
+                  {section.label} ({section.items.length})
+                </PickerPanel.GroupLabel>
+              )}
+              {section.open ? section.items.map(renderTag) : null}
+            </PickerPanel.Group>
+          ) : null,
+        )}
 
-          {error ? (
-            <div role="alert" className={styles.empty}>
-              {error}
-            </div>
-          ) : null}
-          {!hasRows && !createInfo ? (
-            <div className={styles.empty}>
-              {needle ? "No matches." : emptyLabel}
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      <div className={styles.footer}>
-        {showNav ? (
-          <span className={styles.hint}>
-            Switch
-            <Keyboard.Key>Tab</Keyboard.Key>
-          </span>
+        {error ? (
+          <PickerPanel.Empty role="alert">{error}</PickerPanel.Empty>
         ) : null}
-        <span className={styles.hint}>
-          Move
-          <Keyboard.Cluster
-            keys={showNav ? ["↑", "↓", "←", "→"] : ["↑", "↓"]}
-          />
-        </span>
-        <span className={styles.hint}>
-          Select
-          <Keyboard.Key>⏎</Keyboard.Key>
-        </span>
-        <span className={styles.close}>
-          Close
-          <Keyboard.Key>Esc</Keyboard.Key>
-        </span>
-      </div>
-    </div>
+        {!visibleTags.length && !createInfo ? (
+          <PickerPanel.Empty>
+            {needle ? "No matches." : emptyLabel}
+          </PickerPanel.Empty>
+        ) : null}
+      </PickerPanel.Collection>
+    </PickerPanel.Surface>
   );
 }

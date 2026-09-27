@@ -30,10 +30,6 @@ const descriptions = new Map<string, string>(
       "Permanently delete every Save in Trash. Cannot be undone.",
     "folders.rules.set":
       "Set inherited tags for a Folder and optionally apply them to existing Saves.",
-    "actions.preview":
-      "Preview a reusable Action on selected Saves and get its exact validation token. Does not apply changes.",
-    "actions.run":
-      "Run a reusable Action using the exact expectedToken from actions.preview. Rejects stale previews and records the changes for Undo.",
     "conversion.start":
       "Export converted image or video-to-GIF copies using a preset. Opens a native export directory picker; originals are retained. Returns a job ID for progress and cancellation.",
     "conversion.capabilities":

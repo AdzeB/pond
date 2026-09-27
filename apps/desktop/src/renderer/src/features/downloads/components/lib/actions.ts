@@ -18,6 +18,10 @@ export function canTrashDownload(row: DownloadRow): boolean {
   return row.live && row.status !== "complete";
 }
 
+export function canCancelDownload(row: DownloadRow): boolean {
+  return row.live && row.status !== "failed";
+}
+
 export async function retryDownloadRows(
   rows: readonly DownloadRow[],
 ): Promise<boolean> {
@@ -34,7 +38,7 @@ export async function retryDownloadRows(
 }
 
 async function cancelDownloadRows(rows: readonly DownloadRow[]): Promise<void> {
-  const live = rows.filter((r) => r.live && r.status !== "failed");
+  const live = rows.filter(canCancelDownload);
   if (live.length === 0) return;
   await Promise.all(
     live.map((row) => window.pond.pipelineCancelSave(row.saveId)),
@@ -42,7 +46,7 @@ async function cancelDownloadRows(rows: readonly DownloadRow[]): Promise<void> {
 }
 
 export function confirmCancelDownloadRows(rows: readonly DownloadRow[]): void {
-  const live = rows.filter((r) => r.live && r.status !== "failed");
+  const live = rows.filter(canCancelDownload);
   if (live.length === 0) return;
   Dialog.confirm({
     title: "Cancel Selected",

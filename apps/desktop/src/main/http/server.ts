@@ -5,13 +5,12 @@ import log from "electron-log/main.js";
 import { Hono } from "hono";
 import { DEFAULT_INGEST_PORT } from "../../shared/constants";
 import { getPrefs } from "../core/prefs";
-import { assertLibraryUnlocked } from "../core/security/app-lock-runtime";
 import { getIngestToken } from "../keychain";
 import { enqueueHandler } from "./item-add";
 import { itemGetHandler } from "./item-get";
 import { itemInfoHandler } from "./item-info";
 import { itemThumbHandler } from "./item-thumb";
-import { libraryActionRoutes } from "./library-actions";
+import { libraryRoutes } from "./library";
 import { libraryInfoHandler } from "./library-info";
 import { libraryLocationRoutes } from "./library-locations";
 import { operationRoutes } from "./operations";
@@ -126,14 +125,6 @@ function buildApp(): Hono {
   api.use("/api/v2/library/*", requireAuth);
   api.use("/api/v2/operations/*", requireAuth);
   api.use("/api/v2/session/*", requireAuth);
-  api.use("/api/v2/*", async (c, next) => {
-    try {
-      assertLibraryUnlocked();
-    } catch {
-      return c.json({ status: "error", error: "library_locked" }, 423);
-    }
-    await next();
-  });
 
   api.post("/api/v2/enqueue", enqueueHandler);
   api.post("/api/v2/item/get", itemGetHandler);
@@ -141,7 +132,7 @@ function buildApp(): Hono {
   api.get("/api/v2/item/info", itemInfoHandler);
   api.get("/api/v2/item/thumb", itemThumbHandler);
   api.get("/api/v2/library/info", libraryInfoHandler);
-  api.route("/api/v2/library", libraryActionRoutes());
+  api.route("/api/v2/library", libraryRoutes());
   api.route("/api/v2/library", libraryLocationRoutes());
   api.route("/api/v2/operations", operationRoutes());
   api.post("/api/v2/session/import", sessionImportHandler);

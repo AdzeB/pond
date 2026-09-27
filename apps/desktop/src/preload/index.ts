@@ -1,3 +1,4 @@
+import type { Prefs } from "@pond/schema";
 import type { Query } from "@pond/schema/filters/types";
 import type { Transaction } from "@pond/schema/tx";
 import {
@@ -24,12 +25,35 @@ import type {
 import type { QueryClient } from "../shared/query-contracts";
 import type { EagleImportProgress } from "../shared/saves-import-contracts";
 import type {
+  SettingsProcessingStatus,
+  SettingsWindowLocation,
+} from "../shared/settings-window-contracts";
+import type { ShortcutId } from "../shared/shortcuts";
+
+import type {
   WireJson,
   WireSessionImported,
   WireSyncAction,
   WireSyncStatusUpdate,
   WireUndoState,
 } from "../shared/wire";
+import { createNavigationMailbox } from "./navigation";
+
+const navigation = createNavigationMailbox();
+ipcRenderer.on(IPC.nav, (_: IpcRendererEvent, path: string) =>
+  navigation.receive(path),
+);
+
+const SETTINGS_WINDOW_IPC = {
+  open: "pond:settings-window-open",
+  location: "pond:settings-window-location",
+  ready: "pond:settings-window-ready",
+  close: "pond:settings-window-close",
+  processingReady: "pond:settings-processing-ready",
+  processingCheck: "pond:settings-processing-check",
+  processingStatus: "pond:settings-processing-status",
+  prefsChanged: "pond:prefs-changed",
+} as const;
 
 const query: QueryClient = (name, ...args) =>
   ipcRenderer.invoke(IPC.query, name, args[0]);
@@ -62,6 +86,26 @@ export interface StorageGuardStatusWire {
 let cachedPondId: string | null = null;
 
 const api = {
+  processingReady(): Promise<void> {
+    return ipcRenderer.invoke(SETTINGS_WINDOW_IPC.processingReady);
+  },
+  sendProcessingStatus(status: SettingsProcessingStatus): Promise<void> {
+    return ipcRenderer.invoke(SETTINGS_WINDOW_IPC.processingStatus, status);
+  },
+  onProcessingCheck(callback: () => void): () => void {
+    const listener = () => callback();
+    ipcRenderer.on(SETTINGS_WINDOW_IPC.processingCheck, listener);
+    return () => ipcRenderer.off(SETTINGS_WINDOW_IPC.processingCheck, listener);
+  },
+  openSettingsWindow(input: SettingsWindowLocation = {}): Promise<void> {
+    return ipcRenderer.invoke(SETTINGS_WINDOW_IPC.open, input);
+  },
+  onPrefsChanged(callback: (prefs: Prefs) => void): () => void {
+    const listener = (_event: IpcRendererEvent, prefs: Prefs) =>
+      callback(prefs);
+    ipcRenderer.on(SETTINGS_WINDOW_IPC.prefsChanged, listener);
+    return () => ipcRenderer.off(SETTINGS_WINDOW_IPC.prefsChanged, listener);
+  },
   tx(tx: Transaction): Promise<void> {
     return ipcRenderer.invoke(IPC.tx, tx);
   },
@@ -135,15 +179,7 @@ const api = {
   },
 
   onNavigate(cb: (path: string) => void): () => void {
-    const listener = (_: IpcRendererEvent, path: string) => cb(path);
-    ipcRenderer.on(IPC.nav, listener);
-    return () => ipcRenderer.off(IPC.nav, listener);
-  },
-
-  onSecurityStateChanged(cb: () => void): () => void {
-    const listener = () => cb();
-    ipcRenderer.on(IPC.securityState, listener);
-    return () => ipcRenderer.off(IPC.securityState, listener);
+    return navigation.subscribe(cb);
   },
 
   onEditUndoRequested(cb: () => void): () => void {
@@ -162,6 +198,12 @@ const api = {
     const listener = (_: IpcRendererEvent, id: MenuActionId) => cb(id);
     ipcRenderer.on(IPC.menuAction, listener);
     return () => ipcRenderer.off(IPC.menuAction, listener);
+  },
+
+  onShortcutAction(cb: (id: ShortcutId) => void): () => void {
+    const listener = (_: IpcRendererEvent, id: ShortcutId) => cb(id);
+    ipcRenderer.on(IPC.shortcutAction, listener);
+    return () => ipcRenderer.off(IPC.shortcutAction, listener);
   },
 
   sendMenuRecents(entries: RecentMenuEntry[]): void {

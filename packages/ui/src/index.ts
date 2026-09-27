@@ -30,6 +30,12 @@ export { Keyboard } from "./keyboard";
 export { Loader } from "./loader";
 export { Logo, type LogoProps } from "./logo";
 export { Menu, type MenuItemSpec } from "./menu";
+export { PaneBody, PaneHeader } from "./pane-header";
+export {
+  PickerPanel,
+  type PickerSelectionState,
+  usePickerCursor,
+} from "./picker-panel";
 export { Popover } from "./popover";
 export { Reveal } from "./reveal";
 export { Select, type SelectItemSpec } from "./select";
@@ -42,6 +48,7 @@ export { Stepper } from "./stepper";
 export { Switch } from "./switch";
 export { Tab } from "./tab";
 export { Table } from "./table";
+export { type TabProps as TabsTabProps, Tabs } from "./tabs";
 export { useTextReveal } from "./text-reveal";
 export { TitleBar } from "./title-bar";
 export { Toast } from "./toast";

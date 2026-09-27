@@ -8,7 +8,7 @@ import { getDb } from "../db";
 import { resolveSaveFilePath } from "../ipc/helpers";
 import { cropImage } from "../lib/crop-image";
 import { createManualSave } from "./manual-import";
-import { withDecryptedLibraryMediaPath } from "./security/library-media-storage";
+import { withDecryptedLibraryMediaPath } from "./storage/library-media-storage";
 
 export async function saveCropCopy(input: {
   id: string;

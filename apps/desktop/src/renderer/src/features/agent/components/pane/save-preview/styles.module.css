@@ -37,7 +37,7 @@
   background: var(--ds-gray-1);
   border: var(--ds-border-width) solid var(--ds-gray-5);
   border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-popover);
+  box-shadow: var(--ds-shadow-menu);
 }
 .preview-heading {
   display: flex;
@@ -109,7 +109,7 @@
 .results-label {
   margin-bottom: 8px;
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   color: var(--ds-gray-10);
 }
 .result-strip {

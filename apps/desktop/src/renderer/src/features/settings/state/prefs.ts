@@ -11,9 +11,21 @@ interface PrefsState {
 
 const prefsStore = new Store<PrefsState>({ value: null });
 
+let subscribed = false;
+let prefsRevision = 0;
+function subscribeToPrefs(): void {
+  if (subscribed || !window.pond.onPrefsChanged) return;
+  subscribed = true;
+  window.pond.onPrefsChanged((prefs) => {
+    prefsRevision += 1;
+    prefsStore.setState(() => ({ value: PrefsSchema.parse(prefs) }));
+  });
+}
+
 let inflight: Promise<Prefs> | null = null;
 
 async function load(): Promise<Prefs> {
+  subscribeToPrefs();
   if (prefsStore.state.value) return prefsStore.state.value;
   if (inflight) return inflight;
   inflight = refreshPrefs().finally(() => {
@@ -22,12 +34,13 @@ async function load(): Promise<Prefs> {
   return inflight;
 }
 
-export async function refreshPrefs(): Promise<Prefs> {
+async function refreshPrefs(): Promise<Prefs> {
+  const revision = prefsRevision;
   const next = PrefsSchema.parse(
     await window.pond.query("settings.getPrefs", {}),
   );
-  prefsStore.setState(() => ({ value: next }));
-  return next;
+  if (revision === prefsRevision) prefsStore.setState(() => ({ value: next }));
+  return prefsStore.state.value ?? next;
 }
 
 export function patchPrefsSection<K extends keyof Prefs>(
@@ -84,17 +97,10 @@ export function savePrefsSection<K extends keyof Prefs>(
   const operation = saveQueue.then(async () => {
     await load();
     const message: WirePrefsPatch = { [section]: delta };
-    await window.pond.query("settings.setPrefs", message);
-    prefsStore.setState((current) =>
-      current.value
-        ? {
-            value: {
-              ...current.value,
-              [section]: { ...current.value[section], ...delta },
-            },
-          }
-        : current,
-    );
+    const revision = prefsRevision;
+    const result = await window.pond.query("settings.setPrefs", message);
+    if (revision === prefsRevision)
+      prefsStore.setState(() => ({ value: PrefsSchema.parse(result.prefs) }));
   });
   saveQueue = operation.catch(() => {});
   return operation;

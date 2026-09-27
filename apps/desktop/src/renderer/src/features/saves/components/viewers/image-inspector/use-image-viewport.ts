@@ -4,7 +4,6 @@ import {
   viewToImagePoint,
 } from "@/features/saves/lib/image-regions";
 import {
-  actualSizeZoom,
   FIT_POSE,
   type ImagePose,
   poseToActual,
@@ -36,18 +35,27 @@ interface ImageViewport {
   frame: RefObject<HTMLDivElement | null>;
   image: RefObject<HTMLImageElement | null>;
   live: boolean;
+  oneToOne: number | null;
   pointFromClient: (
     clientX: number,
     clientY: number,
   ) => { x: number; y: number };
   pose: ImagePose;
   ratio: number | null;
-  reportRatio: (ratio: number) => void;
+  reportImage: (width: number, height: number) => void;
   setPosition: (
     update: (previous: ImagePose) => ImagePose,
     live?: boolean,
   ) => void;
   size: { width: number; height: number };
+}
+
+export function actualScale(input: {
+  naturalWidth: number;
+  fittedWidth: number;
+}): number {
+  if (input.naturalWidth <= 0 || input.fittedWidth <= 0) return 1;
+  return input.naturalWidth / input.fittedWidth;
 }
 
 export function useImageViewport({
@@ -66,12 +74,24 @@ export function useImageViewport({
   const [pose, setPose] = useState<ImagePose>(() => viewerMemory.image(src));
   const [live, setLive] = useState(false);
   const [ratio, setRatio] = useState(initialRatio);
+  const [decoded, setDecoded] = useState({ src, width: 0 });
   const [size, setSize] = useState({ width: 0, height: 0 });
   const frame = useRef<HTMLDivElement>(null);
   const image = useRef<HTMLImageElement>(null);
   const latestPose = useRef(pose);
   const poseFrame = useRef(0);
-  const appliedDefault = useRef(false);
+  const defaultAppliedFor = useRef<string | null>(null);
+  const bounds = containImage({ left: 0, top: 0, ...size }, ratio);
+  const hasDecodedImage = decoded.src === src && decoded.width > 0;
+  const renderedNaturalWidth =
+    (hasDecodedImage ? decoded.width : 0) || naturalWidth;
+  const oneToOne =
+    renderedNaturalWidth > 0 && bounds.width > 0
+      ? actualScale({
+          naturalWidth: renderedNaturalWidth,
+          fittedWidth: bounds.width,
+        })
+      : null;
 
   const setPosition = (
     update: (previous: ImagePose) => ImagePose,
@@ -117,21 +137,17 @@ export function useImageViewport({
   }, [rememberPosition]);
   useEffect(() => {
     if (
-      appliedDefault.current ||
+      defaultAppliedFor.current === src ||
       defaultSize !== "actual" ||
       (rememberPosition && viewerMemory.hasImage(src))
     )
       return;
-    const zoom = actualSizeZoom(
-      image.current?.naturalWidth || naturalWidth,
-      size.width,
-    );
-    if (!zoom) return;
-    appliedDefault.current = true;
-    const next = { zoom: Math.min(32, zoom), x: 0, y: 0 };
+    if (!(hasDecodedImage && oneToOne)) return;
+    defaultAppliedFor.current = src;
+    const next = { zoom: Math.min(32, oneToOne), x: 0, y: 0 };
     latestPose.current = next;
     setPose(next);
-  }, [defaultSize, naturalWidth, rememberPosition, size.width, src]);
+  }, [defaultSize, hasDecodedImage, oneToOne, rememberPosition, src]);
   useEffect(() => {
     const element = frame.current;
     if (!element) return;
@@ -220,10 +236,15 @@ export function useImageViewport({
     };
   }, []);
 
-  const reportRatio = (value: number) => {
-    if (!Number.isFinite(value) || value <= 0) return;
-    setRatio(value);
-    onRatio(value);
+  const reportImage = (width: number, height: number) => {
+    if (!(Number.isFinite(width) && Number.isFinite(height))) return;
+    if (width <= 0 || height <= 0) return;
+    setDecoded((current) =>
+      current.src === src && current.width === width ? current : { src, width },
+    );
+    const nextRatio = width / height;
+    setRatio(nextRatio);
+    onRatio(nextRatio);
   };
   const pointFromClient = (clientX: number, clientY: number) =>
     viewToImagePoint(
@@ -238,22 +259,17 @@ export function useImageViewport({
       clientX,
       clientY,
     );
-  const bounds = containImage({ left: 0, top: 0, ...size }, ratio);
-  const oneToOne = actualSizeZoom(
-    image.current?.naturalWidth || naturalWidth,
-    size.width,
-  );
-
   return {
     actual: poseToActual(pose.zoom, oneToOne),
     bounds,
     frame,
     image,
     live,
+    oneToOne,
     pointFromClient,
     pose,
     ratio,
-    reportRatio,
+    reportImage,
     setPosition,
     size,
   };

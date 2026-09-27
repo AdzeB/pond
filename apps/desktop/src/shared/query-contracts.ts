@@ -11,7 +11,6 @@ import type {
 } from "@pond/schema/db";
 import type { Query } from "@pond/schema/filters/types";
 import type { z } from "zod";
-import type { ActionQueryInputs, ActionQueryResults } from "./action-contracts";
 import type { assistantSend } from "./assistant";
 import type { BulkQueryInputs, BulkQueryResults } from "./bulk-contracts";
 import type {
@@ -26,8 +25,13 @@ import type {
   InspectQueryInputs,
   InspectQueryResults,
 } from "./inspect-contracts";
+import type {
+  LibraryRepairQueryInputs,
+  LibraryRepairQueryResults,
+} from "./library-repair-contracts";
 import type { EmptyInput, OkResult } from "./query-contracts-shared";
 import type { SystemQueryResults } from "./query-contracts-system";
+import type { QueueQueryInputs, QueueQueryResults } from "./queue-contracts";
 import type {
   SavesClipboardQueryInputs,
   SavesClipboardQueryResults,
@@ -53,10 +57,7 @@ import type {
   SavesReadQueryInputs,
   SavesReadQueryResults,
 } from "./saves-read-contracts";
-import type {
-  SecurityQueryInputs,
-  SecurityQueryResults,
-} from "./security-contracts";
+import type { ScreenshotMode, ScreenshotSaveInput } from "./screenshot-capture";
 import type {
   TransferQueryInputs,
   TransferQueryResults,
@@ -102,7 +103,6 @@ export type { OkResult } from "./query-contracts-shared";
 export interface QueryInputs
   extends TransferQueryInputs,
     BulkQueryInputs,
-    ActionQueryInputs,
     FolderQueryInputs,
     InspectQueryInputs,
     ConversionQueryInputs,
@@ -112,11 +112,21 @@ export interface QueryInputs
     SavesExportQueryInputs,
     SavesClipboardQueryInputs,
     SavesOpenWithQueryInputs,
-    SecurityQueryInputs {
+    QueueQueryInputs,
+    LibraryRepairQueryInputs {
   "folders.rules.get": { id: string };
   "folders.rules.set": { id: string; tags: string[]; applyExisting?: boolean };
   "folders.createBatch": { names: string[]; parentId?: string | null };
-  "folders.moveBatch": { ids: string[]; parentId: string | null };
+  "folders.createWithSaves": {
+    name: string;
+    parentId?: string | null;
+    saveIds: string[];
+  };
+  "folders.moveBatch": {
+    ids: string[];
+    parentId: string | null;
+    beforeId?: string;
+  };
 
   "library.restoreBackup": { source?: string; destination?: string };
   "folders.move": { id: string; parentId: string | null; beforeId?: string };
@@ -183,6 +193,7 @@ export interface QueryInputs
   "watches.setLabel": { watchId: string; label: string | null };
   "watches.remove": { watchId: string };
   "video.sampleFrames": { src: string; maxFrames: number };
+  "video.preparePreview": { src: string };
   "video.copyFrame": FrameInput;
   "video.saveFrame": FrameInput;
   "video.setThumbnail": FrameInput & { saveId: string };
@@ -192,6 +203,7 @@ export interface QueryInputs
     path?: string;
     mode?: "copy" | "move";
   };
+  "screenshots.set": Partial<Prefs["screenshots"]>;
   "library.createAt": { path: string; name: string };
   "library.identity.update": {
     name?: string;
@@ -226,15 +238,6 @@ export interface QueryInputs
   "sync.recent": { limit?: number };
   "sync.runs": { days?: number };
   "sync.stats": { days?: number };
-  "ai.compilePlan": {
-    input: string;
-    facets: {
-      sources: string[];
-      types: string[];
-      tags: string[];
-      creators: string[];
-    };
-  };
   "agent.saveKey": ProviderInput & { key: string };
   "agent.removeKey": ProviderInput;
   "agent.setKeyEnabled": ProviderInput & { enabled: boolean };
@@ -273,6 +276,7 @@ export interface QueryInputs
   "library.info": EmptyInput;
   "library.rescan": EmptyInput;
   "library.openInFinder": EmptyInput;
+  "library.exportDebugReport": EmptyInput;
   "library.verifyIntegrity": EmptyInput;
   "reset.preferences": EmptyInput;
   "reset.clearVideoCache": EmptyInput;
@@ -286,8 +290,15 @@ export interface QueryInputs
   "updates.checkNow": EmptyInput;
   "quickCapture.applyPrefs": EmptyInput;
   "window.applyPrefs": EmptyInput;
+  "system.applyPrefs": EmptyInput;
   "autoImport.status": EmptyInput;
   "autoImport.pickFolder": EmptyInput;
+  "screenshots.status": EmptyInput;
+  "screenshots.pickFolder": EmptyInput;
+  "screenshots.launch": EmptyInput;
+  "screenshots.capture": { mode: ScreenshotMode };
+  "screenshots.finish": ScreenshotSaveInput;
+  "screenshots.discard": { token: string };
   "pipeline.status": EmptyInput;
   "pipeline.inflight": EmptyInput;
   "savedViews.list": EmptyInput;
@@ -302,7 +313,6 @@ export interface QueryResults
   extends TransferQueryResults,
     BulkQueryResults,
     SystemQueryResults,
-    ActionQueryResults,
     FolderQueryResults,
     InspectQueryResults,
     ConversionQueryResults,
@@ -312,10 +322,12 @@ export interface QueryResults
     SavesExportQueryResults,
     SavesClipboardQueryResults,
     SavesOpenWithQueryResults,
-    SecurityQueryResults {
+    QueueQueryResults,
+    LibraryRepairQueryResults {
   "folders.rules.get": { tags: string[]; inheritedTags: string[] };
   "folders.rules.set": { ok: boolean; affected: number };
   "folders.createBatch": Folder[];
+  "folders.createWithSaves": Folder;
   "folders.moveBatch": { ok: boolean };
 
   "library.recent": Array<{
@@ -404,6 +416,11 @@ export interface QueryResults
   "video.sampleFrames": {
     ok: boolean;
     frames: Array<{ bytes: Uint8Array; mimeType: string }>;
+  };
+  "video.preparePreview": {
+    ok: boolean;
+    url?: string;
+    error?: string;
   };
   "video.copyFrame": OkResult;
   "video.saveFrame": OkResult & { path?: string };

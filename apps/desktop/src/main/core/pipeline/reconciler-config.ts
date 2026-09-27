@@ -1,11 +1,11 @@
-import type { Op, Source, Task, tasks } from "@pond/schema/db";
+import type { Op, Source, Task } from "@pond/schema/db";
 import type { JsonValue } from "@pond/schema/json";
 import type { ReportDownloadActivity } from "@shared/download-activity";
-import { sql } from "drizzle-orm";
 import { z } from "zod";
 
 export const POLL_INTERVAL_MS = 5_000;
 export const MAX_GLOBAL_INFLIGHT = 4;
+export const MAX_BACKGROUND_INFLIGHT = 3;
 export const MAX_INTERACTIVE_INFLIGHT = 4;
 export const PER_OP_CONCURRENCY = {
   harvest_metadata: 2,
@@ -33,6 +33,8 @@ export class WorkerWatchdogError extends Error {
 interface WorkerContext {
   signal: AbortSignal;
   reportActivity: ReportDownloadActivity;
+  leaseToken: string;
+  cancellationFence: number;
 }
 
 type Worker = (
@@ -82,9 +84,9 @@ export const WORKERS = {
     const { runFetchVideoYtdlp } = await import("./workers/fetch-video-ytdlp");
     await runFetchVideoYtdlp(saveId, ctx);
   },
-  ensure_poster: async (saveId) => {
+  ensure_poster: async (saveId, _payload, ctx) => {
     const { runEnsurePoster } = await import("./workers/ensure-poster");
-    await runEnsurePoster(saveId);
+    await runEnsurePoster(saveId, { worker: ctx });
   },
   fetch_avatar: async (saveId) => {
     const { runFetchAvatar } = await import("./workers/fetch-avatar");
@@ -121,32 +123,4 @@ export function isSourceTask(op: Op): boolean {
   return (
     op === "harvest_metadata" || op === "capture_tweet" || op === "archive_page"
   );
-}
-
-export function opOrderCase(opCol: typeof tasks.op) {
-  return sql`(CASE ${opCol}
-    WHEN 'harvest_metadata' THEN 0
-    WHEN 'capture_tweet' THEN 1
-    WHEN 'render_text_cover' THEN 2
-    WHEN 'fetch_blobs' THEN 3
-    WHEN 'archive_page' THEN 4
-    WHEN 'fetch_video_ytdlp' THEN 5
-    WHEN 'ensure_poster' THEN 6
-    WHEN 'fetch_avatar' THEN 7
-    WHEN 'finalize' THEN 8
-  END)`;
-}
-
-export function opOrderCaseRaw(rawCol: string) {
-  return sql.raw(`(CASE ${rawCol}
-    WHEN 'harvest_metadata' THEN 0
-    WHEN 'capture_tweet' THEN 1
-    WHEN 'render_text_cover' THEN 2
-    WHEN 'fetch_blobs' THEN 3
-    WHEN 'archive_page' THEN 4
-    WHEN 'fetch_video_ytdlp' THEN 5
-    WHEN 'ensure_poster' THEN 6
-    WHEN 'fetch_avatar' THEN 7
-    WHEN 'finalize' THEN 8
-  END)`);
 }

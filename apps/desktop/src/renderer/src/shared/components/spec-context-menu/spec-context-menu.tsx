@@ -185,7 +185,7 @@ export function SpecContextMenu({
                 <ContextMenu.Input
                   autoFocus
                   aria-label={searchLabel}
-                  placeholder="Search…"
+                  placeholder="Filter…"
                   value={query}
                   onValueChange={setQuery}
                 />
@@ -213,6 +213,7 @@ interface SpecMenuProps {
   onOpen?: () => void;
   className?: string;
   align?: "start" | "center" | "end";
+  minWidth?: string;
   children: ReactElement;
 }
 
@@ -223,10 +224,14 @@ export function SpecMenu({
   onOpen,
   className,
   align = "start",
+  minWidth,
   children,
 }: SpecMenuProps) {
   const [query, setQuery] = useState("");
   const items = useFilteredItems(buildItems, query);
+  const popupStyle: PopupStyle = minWidth
+    ? { "--ds-popup-width": minWidth, "--ds-popup-min-width": minWidth }
+    : DEFAULT_POPUP_STYLE;
 
   return (
     <Menu.Root
@@ -240,7 +245,7 @@ export function SpecMenu({
     >
       {children}
       <Menu.Portal>
-        <Menu.Positioner align={align} sideOffset={6}>
+        <Menu.Positioner align={align} sideOffset={6} style={popupStyle}>
           <Menu.Popup
             className={className ?? (search ? styles.popup : undefined)}
           >
@@ -249,7 +254,7 @@ export function SpecMenu({
                 <Menu.Input
                   autoFocus
                   aria-label={searchLabel}
-                  placeholder="Search…"
+                  placeholder="Filter…"
                   value={query}
                   onValueChange={setQuery}
                 />

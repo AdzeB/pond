@@ -74,7 +74,7 @@ Open, reveal, copy, drag, and export actions target the original file. A thumbna
 
 ## Thumbnails
 
-Right-click one save and choose **Set Thumbnail**. Choose an image in any supported image format. Pond writes `{filename}_thumbnail.png` beside the original, the same suffix Eagle uses. Use **Remove Thumbnail** to restore Pond's generated preview or file tile.
+Right-click one save and choose **Set Thumbnail from File**. Choose an image in any supported image format. Pond writes `{filename}_thumbnail.png` beside the original, the same suffix Eagle uses. Use **Reset Thumbnail** to restore Pond's generated preview or file tile.
 
 **Folder Cover** is separate: it is the save chosen to represent a folder in the sidebar.
 

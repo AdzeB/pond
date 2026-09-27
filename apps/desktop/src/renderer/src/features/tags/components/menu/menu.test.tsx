@@ -1,4 +1,4 @@
-import { Menu } from "@pond/ui";
+import { PickerPanel } from "@pond/ui";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
@@ -40,7 +40,20 @@ it("keeps an inline tag draft after a failed create and applies it only after re
           },
         ];
       }
-      if (name === "tagGroups.list") return [];
+      if (name === "tagGroups.list") {
+        return [
+          {
+            id: "work",
+            name: "Work",
+            description: null,
+            color: null,
+            sortOrder: 0,
+            collapsed: false,
+            tagIds: ["recent"],
+            tagNames: ["Recent Tag"],
+          },
+        ];
+      }
       if (name === "tags.create") {
         if (fail) throw new Error("Library unavailable");
         created.push(input.name ?? "");
@@ -56,22 +69,20 @@ it("keeps an inline tag draft after a failed create and applies it only after re
   try {
     await act(async () =>
       root.render(
-        <Menu.Root open>
-          <Menu.Portal>
-            <Menu.Positioner>
-              <Menu.Popup>
-                <Menu.Viewport>
-                  <TagMenu
-                    allowCreate
-                    onToggle={(name) => {
-                      applied.push(name);
-                    }}
-                  />
-                </Menu.Viewport>
-              </Menu.Popup>
-            </Menu.Positioner>
-          </Menu.Portal>
-        </Menu.Root>,
+        <PickerPanel.Root open>
+          <PickerPanel.Portal>
+            <PickerPanel.Positioner>
+              <PickerPanel.Popup>
+                <TagMenu
+                  allowCreate
+                  onToggle={(name) => {
+                    applied.push(name);
+                  }}
+                />
+              </PickerPanel.Popup>
+            </PickerPanel.Positioner>
+          </PickerPanel.Portal>
+        </PickerPanel.Root>,
       ),
     );
     const others = Array.from(document.querySelectorAll("button")).find(
@@ -79,14 +90,26 @@ it("keeps an inline tag draft after a failed create and applies it only after re
     );
     if (!others) throw new Error("Missing collapsible section");
     expect(document.body.textContent).toContain("Other Tag");
+    expect(document.querySelector('[role="radiogroup"]')).toBeNull();
+    expect(document.querySelector('[data-layout="grid"]')).not.toBeNull();
+    expect(document.querySelector('[aria-label="Use grid layout"]')).toBeNull();
+    expect(document.querySelector("kbd")).toBeNull();
     await act(async () => others.click());
     expect(document.body.textContent).not.toContain("Other Tag");
-    expect(document.querySelector('[role="menu"]')).not.toBeNull();
+    expect(document.querySelector('[role="listbox"]')).not.toBeNull();
     await act(async () => others.click());
     expect(document.body.textContent).toContain("Other Tag");
 
     const input = document.querySelector("input");
     if (!input) throw new Error("Missing tag search");
+    const initialActive = input.getAttribute("aria-activedescendant");
+    await act(async () =>
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
+      ),
+    );
+    expect(input.getAttribute("aria-activedescendant")).not.toBe(initialActive);
+    expect(document.activeElement).toBe(input);
     await act(async () => {
       Object.getOwnPropertyDescriptor(
         HTMLInputElement.prototype,

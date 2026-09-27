@@ -15,6 +15,7 @@ import { z } from "zod";
 import { getGlobalDb } from "../db";
 import { createMemoCache } from "../lib/memo-cache";
 import { prepareGlobalShortcuts } from "./global-shortcuts";
+import { prepareLegacyLibraryRead } from "./legacy-encryption/library-access";
 import {
   currentPondId,
   isUnboundPondId,
@@ -52,6 +53,7 @@ export function invalidatePrefs(): void {
 }
 
 async function fetchSettings(): Promise<SettingsCache> {
+  await prepareLegacyLibraryRead();
   const pondId = currentPondId();
   const db = await getGlobalDb();
   const rows = await db
@@ -86,7 +88,7 @@ async function resolvePondSlice(
   try {
     bundle = readBundlePondPrefs();
   } catch (error) {
-    log.debug("[pond prefs] Library preferences unavailable while locked", {
+    log.debug("[pond prefs] Legacy Library preferences unavailable", {
       error: error instanceof Error ? error.message : "unknown error",
     });
     return stored.pending ?? {};
@@ -199,9 +201,13 @@ async function applyPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
     stored = { ...stored, app: mergeAppSlice(stored.app, app) };
   }
   const merged = mergePrefs(stored.app, pondSlice);
-  const shortcutChange = patch.shortcuts
-    ? prepareGlobalShortcuts(merged.shortcuts.overrides)
-    : null;
+  const shortcutChange =
+    patch.shortcuts || patch.screenshots?.shortcutsEnabled !== undefined
+      ? prepareGlobalShortcuts(
+          merged.shortcuts.overrides,
+          merged.screenshots.shortcutsEnabled,
+        )
+      : null;
   try {
     if (!isUnboundPondId(pondId) && Object.keys(pond).length > 0)
       writeBundlePondPrefs(pondSlice);

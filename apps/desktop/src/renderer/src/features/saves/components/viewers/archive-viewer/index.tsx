@@ -1,4 +1,14 @@
+import {
+  IconArrowLeftOutline18,
+  IconArrowRightOutline18,
+} from "@pond/icons/outline/18";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ViewerHud } from "@/features/saves/components/viewers/hud";
+import {
+  ChromePortal,
+  ViewerChrome,
+} from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+import { ViewerResultCount } from "@/features/saves/components/viewers/viewer-result-count";
 import {
   type ArchiveManifest,
   archiveUrlKey,
@@ -22,7 +32,11 @@ export function SaveArchiveViewer({ save }: { save: Save }) {
   }, [save]);
 
   if (!manifest || manifest.pages.length === 0) return null;
-  return <ArchiveFrame key={save.id} save={save} manifest={manifest} />;
+  return (
+    <ViewerChrome>
+      <ArchiveFrame key={save.id} save={save} manifest={manifest} />
+    </ViewerChrome>
+  );
 }
 
 function ArchiveFrame({
@@ -79,6 +93,32 @@ function ArchiveFrame({
 
   return (
     <div className={styles.root}>
+      <ChromePortal slot="top">
+        <ViewerHud.Bar
+          label="Web archive"
+          start={<ViewerResultCount saveId={save.id} />}
+          end={
+            manifest.pages.length > 1 ? (
+              <>
+                <ViewerHud.Tool
+                  label="Previous Page"
+                  disabled={pageIndex <= 0}
+                  onClick={() => setPageIndex((index) => index - 1)}
+                >
+                  <IconArrowLeftOutline18 />
+                </ViewerHud.Tool>
+                <ViewerHud.Tool
+                  label="Next Page"
+                  disabled={pageIndex >= manifest.pages.length - 1}
+                  onClick={() => setPageIndex((index) => index + 1)}
+                >
+                  <IconArrowRightOutline18 />
+                </ViewerHud.Tool>
+              </>
+            ) : null
+          }
+        />
+      </ChromePortal>
       <div className={styles.frame}>
         <webview ref={attachWebview} src={src} className={styles.webview} />
       </div>

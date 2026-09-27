@@ -22,6 +22,10 @@ import {
   verifyIntegrity,
 } from "@/features/library/components/new-menu/actions";
 import {
+  captureScreenshot,
+  launchScreenshotTool,
+} from "@/features/library/lib/launch-screenshot";
+import {
   backupLibrary,
   mergeLibrary,
   moveLibrary,
@@ -64,12 +68,15 @@ import { CONNECTABLE, WATCH_MENU_SOURCES } from "@/features/sources/lib/create";
 import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
 import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
 import { getAppRouter } from "@/shared/lib/app-router";
+import { handleNativeMenuAction } from "./native-menu-actions";
 
 export function MenuBridge() {
   const [, patchPreferences] = usePrefs("preferences");
+  const [, patchSaveRecents] = usePrefs("saveRecents");
 
   useEffect(() => {
     return window.pond.onMenuAction((id) => {
+      if (handleNativeMenuAction(id)) return;
       if (id.startsWith("library.new-blank-")) {
         const kind = id.slice("library.new-blank-".length);
         if (isBlankDocumentKind(kind)) {
@@ -98,6 +105,10 @@ export function MenuBridge() {
 
         case "history.forward":
           getAppRouter()?.history.forward();
+          return;
+
+        case "history.clear":
+          patchSaveRecents({ entries: [] });
           return;
 
         case "view.inspector.toggle": {
@@ -176,10 +187,6 @@ export function MenuBridge() {
           openSettings();
           return;
 
-        case "security.lock":
-          void window.pond.query("security.lockNow", {});
-          return;
-
         case "view.layout.waterfall":
         case "view.layout.grid":
         case "view.layout.justified":
@@ -206,10 +213,6 @@ export function MenuBridge() {
 
         case "view.grayscale":
           inspect.toggleGrayscale();
-          return;
-
-        case "view.navigator":
-          inspect.toggleNavigator();
           return;
 
         case "theme.light":
@@ -298,8 +301,17 @@ export function MenuBridge() {
           void runNewAction(createNote);
           return;
 
+        case "capture.area":
+          void captureScreenshot("area");
+          return;
+        case "capture.window":
+          void captureScreenshot("window");
+          return;
+        case "capture.screen":
+          void captureScreenshot("screen");
+          return;
         case "library.capture-screenshot":
-          newMenuDialog.open("screenshot");
+          void launchScreenshotTool();
           return;
 
         case "library.new-tag":
@@ -319,7 +331,7 @@ export function MenuBridge() {
           return;
 
         case "library.import-links":
-          newMenuDialog.open("links");
+          newMenuDialog.open({ kind: "links" });
           return;
 
         case "library.import-clipboard":
@@ -349,10 +361,6 @@ export function MenuBridge() {
 
         case "library.auto-import-folder":
           void runNewAction(pickWatchedFolder);
-          return;
-
-        case "library.auto-import-settings":
-          openSettings("harvesting", "setting-harvesting-watched-folder");
           return;
 
         case "library.find-duplicates-all":
@@ -476,7 +484,7 @@ export function MenuBridge() {
         }
       }
     });
-  }, [patchPreferences]);
+  }, [patchPreferences, patchSaveRecents]);
 
   return null;
 }

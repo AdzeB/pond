@@ -96,11 +96,13 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
         ('0001','first'),
         ('0002','first'),
         ('0003','first'),
-        ('0004','first');
+        ('0004','first'),
+        ('0005','nested');
       update saves set media_type='image' where id='0001';
       update saves set media_type='video' where id='0002';
       update saves set media_type='image', deleted_at=1 where id='0003';
       update saves set media_type='image', status='ingesting' where id='0004';
+      update saves set media_type='image' where id='0005';
     `);
 
     expect(await queryFolderSummaries(db, "root")).toEqual([
@@ -108,13 +110,13 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
         id: "first",
         directSaveCount: 2,
         childFolderCount: 1,
-        automaticCoverSaveId: "0002",
+        previewSaveIds: ["0005", "0002", "0001"],
       },
       {
         id: "second",
         directSaveCount: 0,
         childFolderCount: 0,
-        automaticCoverSaveId: null,
+        previewSaveIds: [],
       },
     ]);
   });

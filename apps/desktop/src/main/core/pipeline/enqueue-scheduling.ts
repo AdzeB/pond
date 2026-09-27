@@ -1,21 +1,5 @@
-import {
-  CANCEL_REASON,
-  type NewTask,
-  type Source,
-  saves,
-  tasks,
-} from "@pond/schema/db";
-import {
-  and,
-  eq,
-  exists,
-  inArray,
-  isNull,
-  ne,
-  notExists,
-  or,
-  sql,
-} from "drizzle-orm";
+import { type NewTask, type Source, saves, tasks } from "@pond/schema/db";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { getDb } from "../../db";
@@ -25,6 +9,10 @@ import {
   TaskPayloadSchema,
   withInteractivePriority,
 } from "./priority";
+import {
+  createRetryGeneration,
+  type RetryGenerationResult,
+} from "./queue-generations";
 import { kickReconciler } from "./reconciler-client";
 import { maxAttemptsFor, planOps } from "./specs";
 
@@ -34,13 +22,16 @@ export function createPendingTasks(
   now: Date,
   trigger: string | undefined,
   createId: () => string = ulid,
+  generationId?: string | null,
 ): NewTask[] {
   const interactive = isInteractiveTrigger(trigger);
   return planOps(source).map((op) => {
     const row: NewTask = {
       id: createId(),
       saveId,
+      source,
       op,
+      generationId: generationId ?? null,
       status: "pending",
       attempts: 0,
       maxAttempts: maxAttemptsFor(op),
@@ -107,6 +98,7 @@ export async function rependArchiveForCookies(saveId: string): Promise<void> {
 export async function resetTasksForSave(
   saveId: string,
   reason: string,
+  generationId?: string | null,
 ): Promise<void> {
   const db = await getDb();
   const now = new Date();
@@ -114,6 +106,16 @@ export async function resetTasksForSave(
     .set({
       status: "pending",
       attempts: 0,
+      generationId: generationId ?? null,
+      cancellationFence: sql`${tasks.cancellationFence} + 1`,
+      deferredReason: null,
+      leaseOwner: null,
+      leaseToken: null,
+      leaseExpiresAt: null,
+      heartbeatAt: null,
+      startedAt: null,
+      failedAt: null,
+      completedAt: null,
       lastError: null,
       nextRunAt: now,
       updatedAt: now,
@@ -131,77 +133,19 @@ export async function resetTasksForSave(
 export async function retryFailedSaves(
   ids?: readonly string[],
 ): Promise<number> {
-  const db = await getDb();
-  const scoped = ids != null && ids.length > 0;
-  const rows = scoped
-    ? db
-        .select({ id: saves.id })
-        .from(saves)
-        .where(and(eq(saves.status, "failed"), inArray(saves.id, [...ids])))
-        .all()
-    : db
-        .select({ id: saves.id })
-        .from(saves)
-        .where(
-          and(
-            eq(saves.status, "failed"),
-            isNull(saves.deletedAt),
-            or(
-              notExists(
-                db
-                  .select({ one: sql`1` })
-                  .from(tasks)
-                  .where(
-                    and(
-                      eq(tasks.saveId, saves.id),
-                      eq(tasks.lastError, CANCEL_REASON),
-                    ),
-                  ),
-              ),
-              exists(
-                db
-                  .select({ one: sql`1` })
-                  .from(tasks)
-                  .where(
-                    and(
-                      eq(tasks.saveId, saves.id),
-                      inArray(tasks.status, ["failed", "blocked"]),
-                      or(
-                        isNull(tasks.lastError),
-                        ne(tasks.lastError, CANCEL_REASON),
-                      ),
-                    ),
-                  ),
-              ),
-            ),
-          ),
-        )
-        .all();
-  if (rows.length === 0) return 0;
+  const result = await retryFailedSavesGeneration(ids);
+  return result.queued;
+}
 
-  const now = new Date();
-  for (const { id } of rows) {
-    db.update(tasks)
-      .set({
-        status: "pending",
-        attempts: 0,
-        lastError: null,
-        nextRunAt: now,
-        updatedAt: now,
-      })
-      .where(and(eq(tasks.saveId, id), eq(tasks.status, "failed")))
-      .run();
-    await persistSave(
-      id,
-      { status: "ingesting", ingestStartedAt: now, ingestCompletedAt: null },
-      { actorReason: "pipeline:retry-failed" },
-    );
-  }
-
-  log.info("[pond pipeline:enqueue] retry failed saves", {
-    requeued: rows.length,
-    scoped,
+async function retryFailedSavesGeneration(
+  ids?: readonly string[],
+): Promise<RetryGenerationResult> {
+  const result = await createRetryGeneration(ids);
+  log.info("[pond pipeline:enqueue] retry failed generation", {
+    generationId: result.generationId,
+    requeued: result.queued,
+    scoped: ids != null && ids.length > 0,
   });
-  kickReconciler();
-  return rows.length;
+  if (result.queued > 0) kickReconciler();
+  return result;
 }

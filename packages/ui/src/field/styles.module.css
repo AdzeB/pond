@@ -17,7 +17,7 @@
 
 .description {
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-normal);
+  font-weight: var(--ds-weight-md);
   color: var(--ds-gray-10);
 }
 

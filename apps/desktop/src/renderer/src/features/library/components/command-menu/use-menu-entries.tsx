@@ -9,14 +9,21 @@ import {
   IconTrashXmarkOutline18,
   IconUploadOutline18,
 } from "@pond/icons/outline/18";
+import { useSelector } from "@tanstack/react-store";
 import { useMemo } from "react";
 import { addSavesToChat } from "@/features/agent/lib/add-to-chat";
+import { selectLibraryNav } from "@/features/library/components/folder-sidebar/navigation";
 import { newFolder } from "@/features/library/components/new-menu/actions";
+import { useFolders } from "@/features/library/state/folders";
 import {
   libraryChrome,
   useLibraryNav,
 } from "@/features/library/state/library-chrome";
 import { libraryHeader } from "@/features/library/state/library-header";
+import {
+  savedViews,
+  useSavedViews,
+} from "@/features/library/state/saved-views";
 import {
   resetFilters,
   setSearchInput,
@@ -26,6 +33,8 @@ import {
   restoreSelection,
   trashSelection,
 } from "@/features/saves/lib/selection";
+import { pool, savesStore } from "@/features/saves/state/pool";
+import { useRecents } from "@/features/saves/state/recents";
 import { selection, useSelectionSize } from "@/features/saves/state/selection";
 import type { Save } from "@/features/saves/types";
 import { navigateTo } from "./commands";
@@ -56,6 +65,10 @@ export function useMenuEntries({
 }): MenuEntriesResult {
   const nav = useLibraryNav();
   const selectionSize = useSelectionSize();
+  const folders = useFolders();
+  const views = useSavedViews();
+  const recents = useRecents();
+  const savesRevision = useSelector(savesStore, (state) => state.revision);
 
   const commandEntries = useMemo<MenuEntry[]>(
     () =>
@@ -145,6 +158,60 @@ export function useMenuEntries({
     }));
   }, [deferredQuery, searchResults, onOpenSave]);
 
+  const recentEntries = useMemo<MenuEntry[]>(() => {
+    void savesRevision;
+    if (query.trim()) return [];
+    return recents
+      .map((entry) => pool.get(entry.saveId))
+      .filter((save): save is Save => Boolean(save))
+      .slice(0, 5)
+      .map((save) => ({
+        id: `recent:${save.id}`,
+        group: "Recent",
+        label: saveLabel(save),
+        detail: saveDetail(save),
+        icon: <SaveIcon save={save} />,
+        run: () => onOpenSave(save.id),
+      }));
+  }, [onOpenSave, query, recents, savesRevision]);
+
+  const folderEntries = useMemo<MenuEntry[]>(() => {
+    const value = deferredQuery.toLocaleLowerCase();
+    if (!value) return [];
+    return folders
+      .filter((folder) => folder.name.toLocaleLowerCase().includes(value))
+      .slice(0, 5)
+      .map((folder) => ({
+        id: `folder:${folder.id}`,
+        group: "Folders",
+        label: folder.name,
+        icon: <IconFolderOutline18 aria-hidden />,
+        run: () => selectLibraryNav({ kind: "folder", id: folder.id }),
+      }));
+  }, [deferredQuery, folders]);
+
+  const viewEntries = useMemo<MenuEntry[]>(() => {
+    const value = deferredQuery.toLocaleLowerCase();
+    if (!value) return [];
+    return views
+      .filter(
+        (view) =>
+          view.kind !== "group" &&
+          view.name.toLocaleLowerCase().includes(value),
+      )
+      .slice(0, 5)
+      .map((view) => ({
+        id: `view:${view.id}`,
+        group: "Saved Views",
+        label: view.name,
+        icon: <IconMagnifierOutline18 aria-hidden />,
+        run: () => {
+          selectLibraryNav({ kind: "all" });
+          savedViews.select(view.id);
+        },
+      }));
+  }, [deferredQuery, views]);
+
   const searchEntry = useMemo<MenuEntry | null>(() => {
     const value = query.trim();
     if (!value) return null;
@@ -168,10 +235,21 @@ export function useMenuEntries({
     () => [
       ...contextEntries,
       ...(searchEntry ? [searchEntry] : []),
+      ...recentEntries,
       ...commandEntries,
+      ...folderEntries,
+      ...viewEntries,
       ...saveEntries,
     ],
-    [commandEntries, contextEntries, saveEntries, searchEntry],
+    [
+      commandEntries,
+      contextEntries,
+      folderEntries,
+      recentEntries,
+      saveEntries,
+      searchEntry,
+      viewEntries,
+    ],
   );
 
   const groups = useMemo(() => {
@@ -184,10 +262,13 @@ export function useMenuEntries({
           "Import",
           "Navigate",
           "App",
+          "Folders",
+          "Saved Views",
           "Saves",
         ]
       : [
           ...(contextualGroup ? [contextualGroup] : []),
+          "Recent",
           "Create",
           "Import",
           "Navigate",

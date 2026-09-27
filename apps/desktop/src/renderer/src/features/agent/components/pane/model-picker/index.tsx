@@ -18,7 +18,7 @@ import { ASSISTANT_MODELS, type AssistantProvider } from "@shared/assistant";
 import { displayName, type ProviderModel } from "@shared/provider-models";
 import type { QueryResult } from "@shared/query-contracts";
 import { useQuery } from "@tanstack/react-query";
-import { Fragment, type ReactNode, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { openSettings } from "@/features/settings/lib/open-settings";
 import styles from "./styles.module.css";
 
@@ -105,40 +105,33 @@ export function ModelPicker({
   const selected = items.find(
     (item) => item.provider === provider && item.id === modelId,
   );
-  const label =
-    selected?.name ?? (modelId ? displayName(modelId) : "Choose a model");
-  const normalizedQuery = query.trim().toLowerCase();
-  const visibleItems = normalizedQuery
-    ? items.filter((item) =>
-        item.search.toLowerCase().includes(normalizedQuery),
-      )
-    : items;
-  const activeModel = visibleItems.find((item) => item.key === activeKey);
-  const modelGroups = [
-    ...visibleItems
-      .reduce(
-        (groups, model) => {
-          const group = groups.get(model.provider);
-          if (group) group.models.push(model);
-          else
-            groups.set(model.provider, {
-              provider: model.provider,
-              name: model.providerName,
-              models: [model],
-            });
-          return groups;
-        },
-        new Map<
-          AssistantProvider,
-          {
-            provider: AssistantProvider;
-            name: string;
-            models: PickerModel[];
-          }
-        >(),
-      )
+  const selectedProvider = ASSISTANT_MODELS.find(
+    (entry) => entry.id === provider,
+  );
+  const providerChoices = [
+    ...items
+      .reduce((choices, item) => {
+        if (!choices.has(item.provider)) {
+          choices.set(item.provider, {
+            id: item.provider,
+            name: item.providerName,
+          });
+        }
+        return choices;
+      }, new Map<AssistantProvider, { id: AssistantProvider; name: string }>())
       .values(),
   ];
+  const label =
+    selected?.name ?? (modelId ? displayName(modelId) : "Choose a model");
+  const providerLabel = selectedProvider?.provider ?? "Choose a provider";
+  const normalizedQuery = query.trim().toLowerCase();
+  const providerItems = items.filter((item) => item.provider === provider);
+  const visibleItems = normalizedQuery
+    ? providerItems.filter((item) =>
+        item.search.toLowerCase().includes(normalizedQuery),
+      )
+    : providerItems;
+  const activeModel = visibleItems.find((item) => item.key === activeKey);
   const contextChoices = contextChoicesFor(selected?.contextWindow);
   const reasoningChoices = reasoningChoicesFor(selected);
   const fastSupported = supportsNativeFast(provider ?? "", selected);
@@ -153,7 +146,7 @@ export function ModelPicker({
   };
   const modelError =
     catalog.isError || catalog.data?.providers.some((row) => row.error);
-  const emptyMessage = items.length
+  const emptyMessage = providerItems.length
     ? "No models found. Try another name."
     : catalog.data?.providers.length
       ? "No models shown. Choose models in Settings."
@@ -242,6 +235,62 @@ export function ModelPicker({
     </Menu.SubmenuRoot>
   );
 
+  const providerSubmenu = (
+    <Menu.SubmenuRoot>
+      <Menu.SubmenuTrigger className={styles["option-submenu"]}>
+        <Menu.ItemLabel>Provider</Menu.ItemLabel>
+        <Menu.SecondaryLabel>{providerLabel}</Menu.SecondaryLabel>
+      </Menu.SubmenuTrigger>
+      <Menu.Portal>
+        <Menu.Positioner
+          side="inline-end"
+          align="start"
+          sideOffset={-2}
+          alignOffset={-4}
+        >
+          <Menu.Popup className={styles.submenu}>
+            {catalog.isPending ? (
+              <Menu.Item disabled>
+                <Menu.ItemLabel>Loading providers</Menu.ItemLabel>
+              </Menu.Item>
+            ) : providerChoices.length ? (
+              providerChoices.map((choice) => {
+                const providerCatalog = ASSISTANT_MODELS.find(
+                  (entry) => entry.id === choice.id,
+                );
+                const nextModel =
+                  items.find(
+                    (item) =>
+                      item.provider === choice.id &&
+                      item.id === providerCatalog?.model,
+                  ) ?? items.find((item) => item.provider === choice.id);
+                return (
+                  <Choice
+                    key={choice.id}
+                    selected={choice.id === provider}
+                    onClick={() => {
+                      if (choice.id === provider || !nextModel) return;
+                      onChange({
+                        provider: choice.id,
+                        modelId: nextModel.id,
+                      });
+                    }}
+                  >
+                    {choice.name}
+                  </Choice>
+                );
+              })
+            ) : (
+              <Menu.Item disabled>
+                <Menu.ItemLabel>Connect a provider to continue</Menu.ItemLabel>
+              </Menu.Item>
+            )}
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.SubmenuRoot>
+  );
+
   const modelSubmenu = (
     <Menu.SubmenuRoot>
       <Menu.SubmenuTrigger className={styles["option-submenu"]}>
@@ -267,38 +316,30 @@ export function ModelPicker({
                 <Menu.Item disabled>
                   <Menu.ItemLabel>Loading models</Menu.ItemLabel>
                 </Menu.Item>
-              ) : modelGroups.length ? (
-                modelGroups.map((group, index) => (
-                  <Fragment key={group.provider}>
-                    {index > 0 ? <Menu.Separator /> : null}
-                    <Menu.Group>
-                      <Menu.GroupLabel>{group.name}</Menu.GroupLabel>
-                      {group.models.map((model) => (
-                        <Menu.Item
-                          key={model.key}
-                          onFocus={(event) =>
-                            activateModel(model, event.currentTarget)
-                          }
-                          onMouseEnter={(event) =>
-                            activateModel(model, event.currentTarget)
-                          }
-                          onClick={() =>
-                            onChange({
-                              provider: model.provider,
-                              modelId: model.id,
-                            })
-                          }
-                        >
-                          <Menu.ItemLabel>{model.name}</Menu.ItemLabel>
-                          {model.key === selected?.key ? (
-                            <span className={styles.check} aria-hidden>
-                              <IconCheck2Fill12 />
-                            </span>
-                          ) : null}
-                        </Menu.Item>
-                      ))}
-                    </Menu.Group>
-                  </Fragment>
+              ) : visibleItems.length ? (
+                visibleItems.map((model) => (
+                  <Menu.Item
+                    key={model.key}
+                    onFocus={(event) =>
+                      activateModel(model, event.currentTarget)
+                    }
+                    onMouseEnter={(event) =>
+                      activateModel(model, event.currentTarget)
+                    }
+                    onClick={() =>
+                      onChange({
+                        provider: model.provider,
+                        modelId: model.id,
+                      })
+                    }
+                  >
+                    <Menu.ItemLabel>{model.name}</Menu.ItemLabel>
+                    {model.key === selected?.key ? (
+                      <span className={styles.check} aria-hidden>
+                        <IconCheck2Fill12 />
+                      </span>
+                    ) : null}
+                  </Menu.Item>
                 ))
               ) : (
                 <Menu.Item disabled>
@@ -409,6 +450,7 @@ export function ModelPicker({
             {contextSubmenu}
             {reasoningSubmenu}
             <Menu.Separator />
+            {providerSubmenu}
             {modelSubmenu}
           </Menu.Popup>
         </Menu.Positioner>

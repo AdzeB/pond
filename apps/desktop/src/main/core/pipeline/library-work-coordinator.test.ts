@@ -1,0 +1,71 @@
+import { expect, it, vi } from "vitest";
+import {
+  createLibraryWorkCoordinator,
+  type LibraryWorkOperations,
+} from "./library-work-coordinator";
+
+function setup(wasPaused: boolean) {
+  const order: string[] = [];
+  const asyncStep = (name: string) =>
+    vi.fn(async () => {
+      order.push(name);
+    });
+  const syncStep = (name: string) =>
+    vi.fn(() => {
+      order.push(name);
+    });
+  const operations: LibraryWorkOperations = {
+    stopAutoImport: asyncStep("stop-auto-import"),
+    stopScreenshotIntake: asyncStep("stop-screenshot-intake"),
+    stopLibraryTransfers: asyncStep("stop-transfers"),
+    pauseAndDrainReconciler: vi.fn(async () => {
+      order.push("pause-and-drain");
+      return wasPaused;
+    }),
+    suspendMutations: asyncStep("suspend-mutations"),
+    resumeMutations: syncStep("resume-mutations"),
+    resumeLibraryTransfers: syncStep("resume-transfers"),
+    setReconcilerPaused: vi.fn(async () => {
+      order.push("resume-reconciler");
+      return false;
+    }),
+    startAutoImport: asyncStep("start-auto-import"),
+    startScreenshotIntake: asyncStep("start-screenshot-intake"),
+    warn: vi.fn(),
+  };
+  return {
+    coordinator: createLibraryWorkCoordinator(operations),
+    operations,
+    order,
+  };
+}
+
+it("drains queue work before a Library switch and restores admission afterward", async () => {
+  const { coordinator, operations, order } = setup(false);
+
+  await coordinator.suspend();
+  await coordinator.resume();
+
+  expect(order).toEqual([
+    "stop-auto-import",
+    "stop-screenshot-intake",
+    "stop-transfers",
+    "pause-and-drain",
+    "suspend-mutations",
+    "resume-mutations",
+    "resume-transfers",
+    "resume-reconciler",
+    "start-auto-import",
+    "start-screenshot-intake",
+  ]);
+  expect(operations.setReconcilerPaused).toHaveBeenCalledWith(false);
+});
+
+it("preserves a queue that was already paused before a Library switch", async () => {
+  const { coordinator, operations } = setup(true);
+
+  await coordinator.suspend();
+  await coordinator.resume();
+
+  expect(operations.setReconcilerPaused).not.toHaveBeenCalled();
+});

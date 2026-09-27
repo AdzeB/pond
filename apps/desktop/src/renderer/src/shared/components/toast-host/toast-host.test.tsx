@@ -76,3 +76,24 @@ it("renders determinate toast progress", async () => {
   expect(progress?.value).toBe(6);
   expect(progress?.max).toBe(10);
 });
+
+it("renders and invokes a toast action", async () => {
+  const onClick = vi.fn();
+  await act(async () => root.render(<ToastHost />));
+
+  await act(async () => {
+    notify({
+      id: "folder-assignment",
+      title: 'Added 3 Saves to "Research"',
+      action: { label: "Undo", onClick },
+      timeout: 0,
+    });
+  });
+
+  const action = [...document.body.querySelectorAll("button")].find(
+    (button) => button.textContent === "Undo",
+  );
+  expect(action).toBeInstanceOf(HTMLButtonElement);
+  await act(async () => action?.click());
+  expect(onClick).toHaveBeenCalledOnce();
+});

@@ -30,15 +30,23 @@ describe("filterMenuItems", () => {
     expect(filterMenuItems(MENU, "   ")).toBe(MENU);
   });
 
-  it("flattens nested Export to CSV under Export", () => {
+  it("renders a submenu match as one breadcrumb row", () => {
     const result = filterMenuItems(MENU, "csv");
-    expect(labels(result)).toEqual(["Export", "Export to CSV"]);
-    expect(result[0]).toMatchObject({ type: "group", label: "Export" });
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      label: "Export to CSV",
+      breadcrumb: ["Export"],
+    });
+    expect(result[0]?.type).not.toBe("group");
   });
 
   it("drops separators, hidden rows, and disabled rows", () => {
     const result = filterMenuItems(MENU, "export");
-    expect(labels(result)).toEqual(["Export", "Export Files", "Export to CSV"]);
+    expect(labels(result)).toEqual(["Export Files", "Export to CSV"]);
+    expect(result).toEqual([
+      expect.objectContaining({ breadcrumb: ["Export"] }),
+      expect.objectContaining({ breadcrumb: ["Export"] }),
+    ]);
     expect(result.some((item) => item.type === "separator")).toBe(false);
   });
 

@@ -1,21 +1,19 @@
 import { folders, saveFolders, saves } from "@pond/schema/db";
-import { and, count, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, count, eq, inArray, isNull, sql } from "drizzle-orm";
+import { z } from "zod";
 import type { FolderSummary } from "../../shared/folder-contracts";
 import type { Db } from "../database/client";
 import { getDb } from "../db";
-import { lockedFolderIds } from "./security/folder-passwords";
 
 export async function folderSummaries(
   parentId: string,
 ): Promise<FolderSummary[]> {
-  const [db, hidden] = await Promise.all([getDb(), lockedFolderIds()]);
-  return queryFolderSummaries(db, parentId, hidden);
+  return queryFolderSummaries(await getDb(), parentId);
 }
 
 export async function queryFolderSummaries(
   db: Db,
   parentId: string,
-  hiddenFolderIds: ReadonlySet<string> = new Set(),
 ): Promise<FolderSummary[]> {
   const children = await db
     .select({ id: folders.id })
@@ -46,38 +44,53 @@ export async function queryFolderSummaries(
       .from(folders)
       .where(inArray(folders.parentId, ids))
       .groupBy(folders.parentId),
-    db
-      .select({ id: saves.id, folderId: saveFolders.folderId })
-      .from(saveFolders)
-      .innerJoin(saves, eq(saveFolders.saveId, saves.id))
-      .where(
-        and(
-          inArray(saveFolders.folderId, ids),
-          isNull(saves.deletedAt),
-          eq(saves.status, "complete"),
-          inArray(saves.mediaType, ["image", "video"]),
-        ),
-      )
-      .orderBy(desc(saves.savedAt), desc(saves.id)),
+    z.array(z.object({ id: z.string(), saveId: z.string() })).parse(
+      db.all(
+        sql`with recursive folder_tree(root_id,folder_id) as (
+              select id,id from folders where parent_id=${parentId}
+              union all
+              select folder_tree.root_id,folders.id
+              from folder_tree
+              join folders on folders.parent_id=folder_tree.folder_id
+            ),
+            candidates(root_id,save_id,saved_at) as (
+              select folder_tree.root_id,saves.id,saves.saved_at
+              from folder_tree
+              join save_folders on save_folders.folder_id=folder_tree.folder_id
+              join saves on saves.id=save_folders.save_id
+              where saves.deleted_at is null
+                and saves.status='complete'
+              group by folder_tree.root_id,saves.id,saves.saved_at
+            ),
+            ranked(root_id,save_id,rank) as (
+              select root_id,save_id,row_number() over (
+                partition by root_id order by saved_at desc,save_id desc
+              )
+              from candidates
+            )
+            select root_id as id,save_id as saveId
+            from ranked
+            where rank<=3
+            order by root_id,rank`,
+      ),
+    ),
   ]);
 
   const saveCountById = new Map(saveCounts.map((row) => [row.id, row.value]));
   const childCountById = new Map(
     childCounts.flatMap((row) => (row.id ? [[row.id, row.value]] : [])),
   );
-  const coverById = new Map<string, string>();
+  const coversById = new Map<string, string[]>();
   for (const row of coverCandidates) {
-    if (!coverById.has(row.folderId)) coverById.set(row.folderId, row.id);
+    const ids = coversById.get(row.id) ?? [];
+    ids.push(row.saveId);
+    coversById.set(row.id, ids);
   }
 
   return children.map((folder) => ({
     id: folder.id,
-    directSaveCount: hiddenFolderIds.has(folder.id)
-      ? 0
-      : (saveCountById.get(folder.id) ?? 0),
+    directSaveCount: saveCountById.get(folder.id) ?? 0,
     childFolderCount: childCountById.get(folder.id) ?? 0,
-    automaticCoverSaveId: hiddenFolderIds.has(folder.id)
-      ? null
-      : (coverById.get(folder.id) ?? null),
+    previewSaveIds: coversById.get(folder.id) ?? [],
   }));
 }

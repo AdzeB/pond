@@ -123,6 +123,7 @@ function GallerySlide({
         width={w}
         height={h}
         className={styles.slide}
+        data-fit={viewer.galleryFit}
         data-active={active && !failed ? "true" : undefined}
         data-loaded={!save.blurhash || ready.loaded ? "true" : "false"}
         onLoad={ready.onLoad}

@@ -10,7 +10,6 @@ import type {
   WatchedAccount,
 } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
-import type { RawQueryPlan } from "@pond/schema/query-plan";
 import type {
   AssistantChange,
   AssistantFileAttachment,
@@ -18,6 +17,7 @@ import type {
   AssistantSendResult,
 } from "./assistant";
 import type { ProviderModel } from "./provider-models";
+import type { ScreenshotCaptureResult } from "./screenshot-capture";
 
 interface OkResult {
   ok: boolean;
@@ -154,7 +154,6 @@ export interface SystemQueryResults {
     app: string;
   };
   "agent.openMcpInstall": OkResult;
-  "ai.compilePlan": { plan: RawQueryPlan | null };
   "saves.retrieve": { hits: RetrievalHit[]; saves: RetrievalSave[] };
   "sync.history": { runs: SyncRun[] };
   "sync.recent": { runs: SyncRun[] };
@@ -201,6 +200,32 @@ export interface SystemQueryResults {
   };
   "autoImport.set": OkResult;
   "autoImport.pickFolder": { ok: boolean; path: string | null };
+  "screenshots.status": Prefs["screenshots"] & {
+    tools: {
+      id: Prefs["screenshots"]["tool"];
+      label: string;
+      installed: boolean;
+    }[];
+    history: {
+      at: number;
+      ruleId: string;
+      name: string;
+      mode: "copy" | "move";
+      ok: boolean;
+      autoSelect: boolean;
+      id?: string;
+    }[];
+  };
+  "screenshots.capture": ScreenshotCaptureResult;
+  "screenshots.finish": { id: string };
+  "screenshots.discard": OkResult;
+  "screenshots.set": OkResult;
+  "screenshots.pickFolder": { ok: boolean; path: string | null };
+  "screenshots.launch": OkResult & {
+    used: Prefs["screenshots"]["tool"];
+    fallback: boolean;
+    openPondCapture: boolean;
+  };
   "library.info": {
     path: string;
     name: string;
@@ -209,6 +234,10 @@ export interface SystemQueryResults {
   };
   "library.rescan": { updated: number; total: number };
   "library.openInFinder": OkResult;
+  "library.exportDebugReport": OkResult & {
+    canceled?: boolean;
+    path?: string;
+  };
   "library.verifyIntegrity": OkResult & {
     orphans?: string[];
     missing?: string[];
@@ -259,4 +288,5 @@ export interface SystemQueryResults {
   "updates.checkNow": OkResult & { version?: string };
   "quickCapture.applyPrefs": OkResult;
   "window.applyPrefs": OkResult;
+  "system.applyPrefs": OkResult & { restartRequired?: boolean };
 }

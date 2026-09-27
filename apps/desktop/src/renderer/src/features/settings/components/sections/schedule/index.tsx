@@ -1,9 +1,10 @@
 import { FetchRecurrenceSchema } from "@pond/schema";
 import { DEFAULT_SYNC_CRON } from "@pond/schema/db";
-import { Button, Input, Select, Toggle, ToggleGroup } from "@pond/ui";
+import { Input, Select, Settings, Switch, Toggle, ToggleGroup } from "@pond/ui";
 import type { SyncSchedule } from "@shared/sync-schedule";
-import { useState } from "react";
+import { useId, useRef, useState } from "react";
 import { savePrefsSection, usePrefs } from "@/features/settings/state/prefs";
+import { AnimateHeight } from "@/shared/components/animate-height";
 import styles from "./styles.module.css";
 
 export function ScheduleSection() {
@@ -39,33 +40,31 @@ export function ScheduleEditor({
   initial: SyncSchedule;
   onSave: (schedule: SyncSchedule) => void | Promise<void>;
 }) {
-  const [enabled, setEnabled] = useState(initial.enabled);
-  const [unit, setUnit] = useState(
-    initial.recurrence?.unit ??
+  const scheduleId = useId();
+  const [draft, setDraft] = useState(() => ({
+    enabled: initial.enabled,
+    unit:
+      initial.recurrence?.unit ??
       (initial.calendar?.kind === "weekly"
         ? "week"
         : initial.calendar
           ? "day"
-          : "hour"),
-  );
-  const [every, setEvery] = useState(
-    String(
+          : ("hour" as const)),
+    every: String(
       initial.recurrence?.every ??
         (initial.calendar ? 1 : initial.intervalHours),
     ),
-  );
-  const [startDate, setStartDate] = useState(
-    initial.recurrence?.startDate ?? localDate(new Date()),
-  );
-  const [time, setTime] = useState(
-    initial.recurrence?.time ?? initial.calendar?.time ?? "18:00",
-  );
-  const [days, setDays] = useState(
-    initial.recurrence?.days ??
+    startDate: initial.recurrence?.startDate ?? localDate(new Date()),
+    time: initial.recurrence?.time ?? initial.calendar?.time ?? "18:00",
+    days:
+      initial.recurrence?.days ??
       (initial.calendar?.kind === "weekly"
         ? initial.calendar.days
         : [new Date().getDay()]),
-  );
+  }));
+  const { enabled, unit, every, startDate, time, days } = draft;
+  const pendingSave = useRef(Promise.resolve());
+  const revision = useRef(0);
   const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
   const parsed = FetchRecurrenceSchema.safeParse({
     startDate,
@@ -75,138 +74,152 @@ export function ScheduleEditor({
     days,
   });
   const valid = !enabled || parsed.success;
-  const draft: SyncSchedule = {
-    ...initial,
-    enabled,
-    calendar: null,
-    recurrence: parsed.success ? parsed.data : initial.recurrence,
+  const edit = (patch: Partial<typeof draft>) => {
+    const next = { ...draft, ...patch };
+    setDraft(next);
+    const currentRevision = ++revision.current;
+    const recurrence = FetchRecurrenceSchema.safeParse({
+      ...next,
+      every: Number(next.every),
+    });
+    if (next.enabled && !recurrence.success) {
+      setStatus("idle");
+      return;
+    }
+    const schedule: SyncSchedule = {
+      ...initial,
+      enabled: next.enabled,
+      calendar: null,
+      recurrence: recurrence.success ? recurrence.data : initial.recurrence,
+    };
+    setStatus("saving");
+    pendingSave.current = pendingSave.current
+      .then(() => onSave(schedule))
+      .then(() => {
+        if (revision.current === currentRevision) setStatus("idle");
+      })
+      .catch(() => {
+        if (revision.current === currentRevision) setStatus("error");
+      });
   };
-  const edit = () => setStatus("idle");
   return (
-    <form
-      className={styles.form}
-      onChange={edit}
-      onSubmit={async (event) => {
-        event.preventDefault();
-        if (!valid || status === "saving") return;
-        setStatus("saving");
-        try {
-          await onSave(draft);
-          setStatus("idle");
-        } catch {
-          setStatus("error");
-        }
-      }}
-    >
-      <fieldset className={styles.card} disabled={status === "saving"}>
-        <legend className={styles.srOnly}>Fetch schedule</legend>
-        <ScheduleSelect
-          label="Schedule mode"
-          value={enabled ? "scheduled" : "manual"}
-          items={[
-            { value: "scheduled", label: "Schedule" },
-            { value: "manual", label: "Manual" },
-          ]}
-          onChange={(value) => {
-            edit();
-            setEnabled(value === "scheduled");
-          }}
-        />
-        {enabled ? (
-          <>
-            <div className={styles.sentence}>
-              <span className={styles.phrase}>
-                Starting{" "}
-                <Input.Root size="sm" className={styles.date}>
-                  <Input.Field
-                    aria-label="Start date"
-                    type="date"
-                    required
-                    value={startDate}
-                    onChange={(event) => setStartDate(event.target.value)}
-                  />
-                </Input.Root>
-              </span>
-              <span className={styles.phrase}>
-                every{" "}
-                <Input.Root size="sm" className={styles.interval}>
-                  <Input.Field
-                    aria-label="Repeat interval"
-                    type="number"
-                    min="1"
-                    max="999"
-                    step="1"
-                    required
-                    value={every}
-                    onChange={(event) => setEvery(event.target.value)}
-                  />
-                </Input.Root>
-                <ScheduleSelect
-                  label="Repeat"
-                  value={unit}
-                  items={units.map((value) => ({
-                    value,
-                    label: Number(every) === 1 ? value : `${value}s`,
-                  }))}
-                  onChange={(selected) => {
-                    edit();
-                    setUnit(selected);
-                  }}
-                />
-              </span>
-              {unit !== "hour" ? (
+    <div className={styles.editor}>
+      <Settings.List>
+        <AnimateHeight initial={false}>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle id={`${scheduleId}-title`}>
+                Use a Schedule
+              </Settings.ItemTitle>
+              <Settings.ItemDescription id={`${scheduleId}-description`}>
+                Fetch updates automatically at the times you choose.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Switch.Root
+                aria-labelledby={`${scheduleId}-title`}
+                aria-describedby={`${scheduleId}-description`}
+                aria-controls={enabled ? scheduleId : undefined}
+                checked={enabled}
+                onCheckedChange={(checked) => {
+                  edit({ enabled: checked });
+                }}
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
+          {enabled ? (
+            <fieldset id={scheduleId} className={styles.picker}>
+              <legend className={styles.srOnly}>Fetch schedule</legend>
+              <div className={styles.sentence}>
                 <span className={styles.phrase}>
-                  at{" "}
-                  <Input.Root size="sm" className={styles.time}>
+                  Starting{" "}
+                  <Input.Root size="sm" className={styles.date}>
                     <Input.Field
-                      aria-label="Fetch time"
-                      type="time"
+                      aria-label="Start date"
+                      type="date"
                       required
-                      value={time}
-                      onChange={(event) => setTime(event.target.value)}
+                      value={startDate}
+                      onChange={(event) =>
+                        edit({ startDate: event.target.value })
+                      }
                     />
                   </Input.Root>
                 </span>
+                <span className={styles.phrase}>
+                  every{" "}
+                  <Input.Root size="sm" className={styles.interval}>
+                    <Input.Field
+                      aria-label="Repeat interval"
+                      type="number"
+                      min="1"
+                      max="999"
+                      step="1"
+                      required
+                      value={every}
+                      onChange={(event) => edit({ every: event.target.value })}
+                    />
+                  </Input.Root>
+                  <ScheduleSelect
+                    label="Repeat"
+                    value={unit}
+                    items={units.map((value) => ({
+                      value,
+                      label: Number(every) === 1 ? value : `${value}s`,
+                    }))}
+                    onChange={(selected) => {
+                      edit({ unit: selected });
+                    }}
+                  />
+                </span>
+                {unit !== "hour" ? (
+                  <span className={styles.phrase}>
+                    at{" "}
+                    <Input.Root size="sm" className={styles.time}>
+                      <Input.Field
+                        aria-label="Fetch time"
+                        type="time"
+                        required
+                        value={time}
+                        onChange={(event) => edit({ time: event.target.value })}
+                      />
+                    </Input.Root>
+                  </span>
+                ) : null}
+              </div>
+              {unit === "week" ? (
+                <fieldset className={styles.week}>
+                  <legend>On these days</legend>
+                  <ToggleGroup
+                    multiple
+                    className={styles.days}
+                    aria-label="Days of week"
+                    value={days.map(String)}
+                    onValueChange={(values) => {
+                      edit({
+                        days: values
+                          .map(Number)
+                          .sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7)),
+                      });
+                    }}
+                  >
+                    {[1, 2, 3, 4, 5, 6, 0].map((day) => (
+                      <Toggle
+                        key={day}
+                        type="button"
+                        size="sm"
+                        value={String(day)}
+                        aria-label={weekdayNames[day]}
+                      >
+                        {weekdayNames[day]?.slice(0, 3)}
+                      </Toggle>
+                    ))}
+                  </ToggleGroup>
+                </fieldset>
               ) : null}
-            </div>
-            {unit === "week" ? (
-              <fieldset className={styles.week}>
-                <legend>On these days</legend>
-                <ToggleGroup
-                  multiple
-                  className={styles.days}
-                  aria-label="Days of week"
-                  value={days.map(String)}
-                  onValueChange={(values) => {
-                    edit();
-                    setDays(
-                      values
-                        .map(Number)
-                        .sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7)),
-                    );
-                  }}
-                >
-                  {[1, 2, 3, 4, 5, 6, 0].map((day) => (
-                    <Toggle
-                      key={day}
-                      type="button"
-                      size="sm"
-                      value={String(day)}
-                      aria-label={weekdayNames[day]}
-                    >
-                      {weekdayNames[day]?.slice(0, 3)}
-                    </Toggle>
-                  ))}
-                </ToggleGroup>
-              </fieldset>
-            ) : null}
-          </>
-        ) : (
-          <p className={styles.manual}>
-            Fetch updates when you choose Fetch Updates.
-          </p>
-        )}
-      </fieldset>
+            </fieldset>
+          ) : null}
+        </AnimateHeight>
+      </Settings.List>
       {enabled && unit === "month" && Number(startDate.slice(-2)) > 28 ? (
         <p className={styles.zone}>Shorter months use their last day.</p>
       ) : null}
@@ -217,21 +230,12 @@ export function ScheduleEditor({
             : "Choose a valid date, time, and whole number from 1 to 999."}
         </p>
       ) : null}
-      <Button
-        type="submit"
-        size="sm"
-        variant="secondary"
-        disabled={!valid || status === "saving"}
-        loading={status === "saving"}
-      >
-        {status === "saving" ? "Saving" : "Save Schedule"}
-      </Button>
       {status === "error" ? (
         <p className={styles.error} role="alert">
-          Couldn’t save your schedule. Try again.
+          Couldn’t save your schedule. Change a setting to try again.
         </p>
       ) : null}
-    </form>
+    </div>
   );
 }
 

@@ -81,11 +81,6 @@ describe("registerCommands", () => {
       "conversions start",
       "conversions status",
       "conversions cancel",
-      "actions",
-      "actions list",
-      "actions get",
-      "actions preview",
-      "actions run",
       "duplicates",
       "duplicates list",
       "duplicates merge",
@@ -155,7 +150,7 @@ describe("registerCommands", () => {
 
 describe("completionScript", () => {
   const commands =
-    "status doctor version completion config auth libraries saves folders tags sources sync downloads conversions actions agent mcp skill library trash schema";
+    "status doctor version completion config auth libraries saves folders tags sources sync downloads conversions agent mcp skill library trash schema";
 
   it("returns fish completions", () => {
     expect(completionScript("fish")).toBe(

@@ -1,12 +1,5 @@
-import { Menu } from "@pond/ui";
-import {
-  type CSSProperties,
-  createContext,
-  use,
-  useCallback,
-  useMemo,
-  useState,
-} from "react";
+import { type ButtonProps, PickerPanel } from "@pond/ui";
+import { createContext, use, useCallback, useMemo, useState } from "react";
 import type { Save } from "@/features/saves/types";
 import { usePrefs } from "@/features/settings/state/prefs";
 import { TagMenu } from "@/features/tags/components/menu";
@@ -24,15 +17,8 @@ type TagPickerTarget =
 
 interface TagPickerContextValue {
   target: TagPickerTarget;
+  preferences: ReturnType<typeof usePrefs<"tagPicker">>[0];
 }
-
-interface PopupStyle extends CSSProperties {
-  "--ds-popup-min-width": string;
-}
-
-const POPUP_STYLE: PopupStyle = {
-  "--ds-popup-min-width": "max-content",
-};
 
 const TagPickerContext = createContext<TagPickerContextValue | null>(null);
 
@@ -58,6 +44,7 @@ function Root({
   children,
 }: RootProps) {
   const [internalOpen, setInternalOpen] = useState(false);
+  const [preferences] = usePrefs("tagPicker");
   const open = controlledOpen ?? internalOpen;
 
   const setOpen = (next: boolean) => {
@@ -66,15 +53,31 @@ function Root({
   };
 
   return (
-    <TagPickerContext.Provider value={{ target }}>
-      <Menu.Root open={open} onOpenChange={setOpen}>
+    <TagPickerContext.Provider value={{ target, preferences }}>
+      <PickerPanel.Root
+        open={open}
+        onOpenChange={(next, details) => {
+          if (
+            !next &&
+            preferences.pinned &&
+            (details.reason === "outside-press" ||
+              details.reason === "focus-out")
+          ) {
+            details.cancel();
+            return;
+          }
+          setOpen(next);
+        }}
+      >
         {children}
-      </Menu.Root>
+      </PickerPanel.Root>
     </TagPickerContext.Provider>
   );
 }
 
-const Trigger = Menu.Trigger;
+function Trigger(props: ButtonProps) {
+  return <PickerPanel.Trigger {...props} />;
+}
 
 interface ContentProps {
   anchor?: PopoverAnchor;
@@ -89,10 +92,9 @@ function Content({
   align = "start",
   sideOffset = 6,
 }: ContentProps) {
-  const { target } = useTagPickerContext();
+  const { target, preferences } = useTagPickerContext();
   const tags = useTags();
   const groups = useTagGroups();
-  const [preferences] = usePrefs("tagPicker");
 
   const liveGroup = useMemo(() => {
     if (target.kind !== "group") return null;
@@ -148,35 +150,32 @@ function Content({
   );
 
   return (
-    <Menu.Portal>
-      <Menu.Positioner
+    <PickerPanel.Portal>
+      <PickerPanel.Positioner
         anchor={anchor}
         side={side}
         align={align}
         sideOffset={sideOffset}
         collisionPadding={{ top: 48 }}
-        style={POPUP_STYLE}
       >
-        <Menu.Popup>
-          <Menu.Viewport>
-            <TagMenu
-              appliedKeys={appliedSet}
-              onToggle={toggle}
-              allowCreate
-              recommendedNames={
-                target.kind === "save" ? (target.save.suggestedTags ?? []) : []
-              }
-              layout={preferences.layout}
-              gridSize={preferences.gridSize}
-              showStarred={preferences.showStarred}
-              showRecently={preferences.showRecently}
-              showRecommended={preferences.showRecommended}
-              showCounts={preferences.showCounts}
-            />
-          </Menu.Viewport>
-        </Menu.Popup>
-      </Menu.Positioner>
-    </Menu.Portal>
+        <PickerPanel.Popup>
+          <TagMenu
+            appliedKeys={appliedSet}
+            onToggle={toggle}
+            allowCreate
+            recommendedNames={
+              target.kind === "save" ? (target.save.suggestedTags ?? []) : []
+            }
+            gridSize={preferences.gridSize}
+            showStarred={preferences.showStarred}
+            showRecently={preferences.showRecently}
+            showRecommended={preferences.showRecommended}
+            showCounts={preferences.showCounts}
+            pinned={preferences.pinned}
+          />
+        </PickerPanel.Popup>
+      </PickerPanel.Positioner>
+    </PickerPanel.Portal>
   );
 }
 

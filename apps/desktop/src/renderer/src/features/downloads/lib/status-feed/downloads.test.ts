@@ -33,7 +33,7 @@ function save(partial: Partial<Save> & Pick<Save, "id" | "status">): Save {
 }
 
 describe("projectLiveDownloads", () => {
-  it("projects ingesting as pending, running, retrying, or blocked", () => {
+  it("projects ingesting as waiting, running, retrying, or blocked", () => {
     const rows = projectLiveDownloads([
       save({
         id: "run",
@@ -67,7 +67,8 @@ describe("projectLiveDownloads", () => {
         tasks: [
           {
             op: "fetch_blobs",
-            status: "pending",
+            status: "deferred",
+            deferredReason: "retry_backoff",
             attempts: 3,
             maxAttempts: 5,
             lastError: "TransientError: fetch_blobs: connection reset",
@@ -99,8 +100,8 @@ describe("projectLiveDownloads", () => {
     expect(rows.map((r) => [r.saveId, r.status])).toEqual([
       ["run", "running"],
       ["retry", "retrying"],
+      ["wait", "waiting"],
       ["block", "blocked"],
-      ["wait", "pending"],
       ["fail", "failed"],
     ]);
     expect(rows.find((r) => r.saveId === "run")?.stage).toBe(
@@ -164,6 +165,13 @@ describe("projectLiveDownloads", () => {
     expect(rows).toEqual([]);
   });
 
+  it("skips local imports", () => {
+    const rows = projectLiveDownloads([
+      save({ id: "local", source: "local", status: "failed" }),
+    ]);
+    expect(rows).toEqual([]);
+  });
+
   it("projects skipped saves so harvest can leave them alone", () => {
     const rows = projectLiveDownloads([
       save({ id: "skip", status: "skipped", title: "Ignored clip" }),
@@ -193,7 +201,7 @@ describe("matchesDownloadFilters", () => {
   it("hides failed when that status is off", () => {
     const filters = {
       ...defaultDownloadFilters(),
-      statuses: new Set<StatusFilter>(["in-progress"]),
+      statuses: new Set<StatusFilter>(["active"]),
     };
     expect(matchesDownloadFilters(row, filters)).toBe(false);
   });

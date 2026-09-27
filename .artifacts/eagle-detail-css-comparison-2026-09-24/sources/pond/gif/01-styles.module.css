@@ -1,0 +1,112 @@
+.root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+}
+
+.frame {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;
+
+  &[data-commenting] {
+    cursor: crosshair;
+  }
+
+  &[data-background="white"] {
+    background: white;
+  }
+
+  &[data-background="black"] {
+    background: black;
+  }
+
+  &[data-background="checkerboard"] {
+    background-color: var(--ds-gray-2);
+    background-image: repeating-conic-gradient(
+      var(--ds-gray-5) 0% 25%,
+      transparent 0% 50%
+    );
+    background-size: 16px 16px;
+  }
+}
+
+.position {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-origin: center;
+  transition: transform var(--ds-duration-medium) var(--ds-easing-snap);
+
+  &[data-live] {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .position {
+    transition: none;
+  }
+}
+
+.content {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.histogram {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  z-index: 4;
+  width: 220px;
+  height: 112px;
+  padding: 10px;
+  pointer-events: none;
+  background: var(--ds-gray-a10);
+  border: 1px solid var(--ds-gray-a6);
+  border-radius: var(--ds-radius-lg);
+
+  polyline {
+    fill: none;
+    stroke-width: 1.5;
+    vector-effect: non-scaling-stroke;
+
+    &[data-channel="red"] {
+      stroke: var(--ds-red-9);
+    }
+
+    &[data-channel="green"] {
+      stroke: var(--ds-green-9);
+    }
+
+    &[data-channel="blue"] {
+      stroke: var(--ds-blue-9);
+    }
+  }
+}
+
+.instructions {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: inset(50%);
+}

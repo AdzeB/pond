@@ -1,105 +1,65 @@
 .root {
-  display: flex;
-  flex-direction: column;
-  width: 280px;
-  max-height: 420px;
+  width: min(440px, var(--available-width));
+  max-height: min(620px, var(--available-height));
 }
 
-.root[data-nav] {
-  width: 440px;
+.root[data-pinned] {
+  box-shadow: inset 0 0 0 1px var(--ds-accent-a6);
 }
 
-.body {
+.list {
+  --scroll-fade-size: 16px;
+}
+
+.list {
+  min-height: 120px;
+}
+
+.tagGroup {
+  display: block;
+}
+
+.root[data-layout="grid"] .tagGroup {
   display: grid;
-  flex: 1 1 auto;
-  grid-template-columns: 1fr;
-  min-height: 0;
-}
-
-.root[data-nav] .body {
-  grid-template-columns: 148px 1fr;
-}
-
-.root[data-layout="grid"] {
-  width: 360px;
+  grid-template-columns: repeat(var(--tag-grid-columns), minmax(0, 1fr));
+  gap: 2px 0;
 }
 
 .root[data-layout="grid"][data-grid-size="sm"] {
   --tag-grid-columns: 3;
+  width: min(500px, var(--available-width));
 }
 
 .root[data-layout="grid"][data-grid-size="md"] {
   --tag-grid-columns: 2;
+  width: min(440px, var(--available-width));
 }
 
 .root[data-layout="grid"][data-grid-size="lg"] {
   --tag-grid-columns: 1;
+  width: min(360px, var(--available-width));
 }
 
-.root[data-layout="grid"] .list :global([role="group"]) {
-  display: grid;
-  grid-template-columns: repeat(var(--tag-grid-columns), minmax(0, 1fr));
-}
-
-.root[data-layout="grid"] .list :global([role="group"]) > :first-child {
+.root[data-layout="grid"] .tagGroup > :first-child {
   grid-column: 1 / -1;
 }
 
-.nav,
-.list {
-  --scroll-fade-size: 16px;
-  min-height: 0;
-  padding-block: 4px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-.nav {
-  border-inline-end: 1px solid var(--ds-gray-a3);
+.root[data-layout="grid"] .tagGroup > [role="option"] {
+  margin-inline: 2px;
 }
 
 .count {
   flex-shrink: 0;
-  padding-inline-start: 8px;
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-11);
+  padding-inline-start: 6px;
 }
 
 .section svg {
+  flex: none;
+  width: 12px;
+  height: 12px;
   transition: transform var(--ds-duration-fast) var(--ds-easing-standard);
 }
 
-.section[data-collapsed] svg {
+.section[aria-expanded="false"] svg {
   transform: rotate(-90deg);
-}
-
-.empty {
-  padding: 12px 10px;
-  font-size: 12px;
-  color: var(--ds-gray-11);
-  text-align: center;
-}
-
-.footer {
-  display: flex;
-  flex-shrink: 0;
-  gap: 12px;
-  align-items: center;
-  padding: 6px 10px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--ds-gray-10);
-  border-top: 1px solid var(--ds-gray-a3);
-}
-
-.hint,
-.close {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.close {
-  margin-inline-start: auto;
 }

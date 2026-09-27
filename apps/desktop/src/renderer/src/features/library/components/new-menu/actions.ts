@@ -18,6 +18,7 @@ import { importFilesWithDuplicateReview } from "@/features/saves/state/duplicate
 import { selection } from "@/features/saves/state/selection";
 import { libraryViewContext } from "@/features/saves/state/view-context";
 import { emitFeedback } from "@/features/settings/lib/sounds";
+import { getPrefsSnapshot } from "@/features/settings/state/prefs";
 import { startConnect, startWatch } from "@/features/sources/lib/create";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { notify, updateNotification } from "@/shared/lib/toast";
@@ -143,6 +144,27 @@ export function createNewActions({
       );
     }
     reportSaved(result.ids.length);
+    const imported = result.ids.at(-1);
+    if (getPrefsSnapshot()?.preferences.autoSelectAfterImport && imported)
+      selectOnlySave(imported);
+  }
+
+  async function importLegacyLibrary(
+    source: "ArtStation" | "Huaban" | "Pixave" | "Inboard",
+  ): Promise<void> {
+    const picked = await window.pond.query("saves.pickImportPaths", {
+      kind: "folders",
+    });
+    if (picked.paths.length === 0) return;
+    const result = SaveResultSchema.parse(
+      await importFilesWithDuplicateReview({ paths: picked.paths }),
+    );
+    if (!result.ok || !result.ids?.length) {
+      throw new Error(
+        `No files were imported from the ${source} export. Choose its exported media folder.`,
+      );
+    }
+    reportSaved(result.ids.length);
   }
 
   async function importClipboard(): Promise<void> {
@@ -155,6 +177,9 @@ export function createNewActions({
       );
     }
     reportSaved(result.ids.length);
+    const imported = result.ids.at(-1);
+    if (getPrefsSnapshot()?.preferences.autoSelectAfterImport && imported)
+      selectOnlySave(imported);
   }
 
   async function importBookmarks(): Promise<void> {
@@ -447,6 +472,14 @@ export function createNewActions({
     });
   }
 
+  async function exportDebugReport(): Promise<void> {
+    const result = await window.pond.query("library.exportDebugReport", {});
+    if (!result.ok && !result.canceled)
+      throw new Error("Couldn’t export the debug report.");
+    if (result.ok)
+      notify({ id: "debug-report", title: "Debug Report Exported" });
+  }
+
   function parseImportLinks(text: string): string[] {
     const urls = asUrlList(text);
     if (
@@ -491,6 +524,7 @@ export function createNewActions({
     newTag,
     newSource,
     importPaths,
+    importLegacyLibrary,
     importClipboard,
     importBookmarks,
     importPageAssets,
@@ -504,6 +538,7 @@ export function createNewActions({
     findDuplicates,
     rescanLibrary,
     verifyIntegrity,
+    exportDebugReport,
     parseImportLinks,
     importLinks,
   };
@@ -515,6 +550,7 @@ export const {
   newTag,
   newSource,
   importPaths,
+  importLegacyLibrary,
   importClipboard,
   importBookmarks,
   importPageAssets,
@@ -528,6 +564,7 @@ export const {
   findDuplicates,
   rescanLibrary,
   verifyIntegrity,
+  exportDebugReport,
 
   importLinks,
 } = createNewActions({

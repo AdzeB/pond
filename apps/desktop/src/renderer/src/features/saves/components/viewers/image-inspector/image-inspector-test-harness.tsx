@@ -57,7 +57,11 @@ export function setupImageInspectorTest() {
   const tx = vi.fn(async () => ({ ok: true }));
 
   beforeEach(() => {
-    vi.stubGlobal("pond", { query: async () => PrefsSchema.parse({}), tx });
+    vi.stubGlobal("pond", {
+      query: async () => PrefsSchema.parse({}),
+      tx,
+      appInfo: async () => ({ username: "Raphael Salaja" }),
+    });
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);

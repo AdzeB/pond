@@ -13,7 +13,7 @@ import { z } from "zod";
 import {
   encodeLibraryFile,
   readLibraryFileSync,
-} from "../core/security/library-file-storage";
+} from "../core/storage/library-file-storage";
 
 const BUNDLE_JSON_SCHEMA = 1;
 
@@ -66,10 +66,10 @@ const EnvelopeSchema = z.object({
 });
 
 function parseEnvelope<T>(file: string): BundleJsonRead<T> | null {
+  if (!existsSync(file)) return null;
+  const contents = readLibraryFileSync(file).toString("utf8");
   try {
-    const parsed = EnvelopeSchema.safeParse(
-      JSON.parse(readLibraryFileSync(file).toString("utf8")),
-    );
+    const parsed = EnvelopeSchema.safeParse(JSON.parse(contents));
     if (!parsed.success || parsed.data.data === undefined) return null;
     // SAFETY: `T` is what the caller wrote through `writeBundleJson`, and every reader
     // re-validates the payload with its own schema before using it.

@@ -11,6 +11,7 @@ import {
   setLayout,
   setQuery,
   setSearchDraft,
+  setSearchScope,
   setSemanticQuery,
   setSort,
   setVisualProbe,
@@ -38,8 +39,20 @@ function effectiveQuery(): Query {
 describe("smart folder selection", () => {
   beforeEach(() => {
     resetFilters();
+    setSearchScope("all");
     setSort({ key: "title", dir: "asc" });
     setLayout("list");
+  });
+
+  it("tracks native menu search scope independently from the query", () => {
+    setSearchDraft("reference");
+    setSearchScope("current");
+    expect(getViewState()).toMatchObject({
+      q: "reference",
+      searchScope: "current",
+    });
+    setSearchScope("all");
+    expect(getViewState().searchScope).toBe("all");
   });
 
   it("ANDs parent alternatives with editable child conditions", () => {

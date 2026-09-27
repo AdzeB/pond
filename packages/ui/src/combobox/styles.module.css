@@ -25,7 +25,7 @@
 
 .label {
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   color: var(--ds-gray-11);
 }
 

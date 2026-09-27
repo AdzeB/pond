@@ -1,3 +1,8 @@
+.bare {
+  display: grid;
+  gap: 8px;
+}
+
 .list {
   display: flex;
   flex-direction: column;
@@ -6,18 +11,23 @@
 
 .row {
   display: flex;
-  gap: 8px;
-  align-items: flex-start;
+  gap: 6px;
+  align-items: center;
+  min-height: 42px;
+  padding: 7px 8px;
+  background: var(--ds-gray-a3);
+  border-radius: var(--ds-radius-sm);
 }
 
 .time {
   flex: 0 0 auto;
   padding: 0;
   font: inherit;
-  font-size: 12px;
-  font-weight: var(--ds-weight-medium);
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-md);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-accent-11);
+  color: var(--ds-gray-10);
   cursor: var(--ds-cursor-interactive, pointer);
   background: none;
   border: 0;
@@ -30,7 +40,7 @@
 .text {
   flex: 1 1 auto;
   min-width: 0;
-  font-size: 12.5px;
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-12);
   word-break: break-word;
 }
@@ -55,7 +65,7 @@
   min-width: 0;
   padding: 0;
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-normal);
+  font-weight: var(--ds-weight-md);
   background: transparent;
   border: 0;
 

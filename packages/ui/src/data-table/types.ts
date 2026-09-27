@@ -42,6 +42,9 @@ export interface RenderRowArgs<T extends RowData> {
   onToggleExpand: () => void;
   rowProps: {
     role: "row";
+    id: string;
+    "aria-rowindex": number;
+    "data-cursor"?: "";
     className: string;
     style: React.CSSProperties;
     onClick: (e: ReactMouseEvent) => void;

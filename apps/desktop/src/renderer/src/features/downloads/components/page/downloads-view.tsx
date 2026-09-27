@@ -6,13 +6,13 @@ import { type DownloadRow, mergeDownloadRows } from "../../lib/status-feed";
 import { DownloadTable } from "./download-table";
 import styles from "./styles.module.css";
 
+const PRE_MEASUREMENT_ROW_LIMIT = 50;
+
 export interface DownloadsViewProps {
   rows: DownloadRow[];
   completed: DownloadRow[];
   activities: readonly DownloadActivity[];
   paused: boolean;
-  now: number;
-  inspectedId: string | null;
   onInspect: (row: DownloadRow) => void;
   historyLoading: boolean;
   historyError: boolean;
@@ -26,6 +26,10 @@ export interface DownloadsViewProps {
 export function DownloadsView(props: DownloadsViewProps) {
   const rows = mergeDownloadRows(props.rows, props.completed);
   const { ref, height } = useClientHeight();
+  const tableMeasured = height > 88;
+  const tableRows = tableMeasured
+    ? rows
+    : rows.slice(0, PRE_MEASUREMENT_ROW_LIMIT);
   const extra = props.historyError ? (
     <div className={styles.message} role="alert">
       Couldn't load download history.
@@ -56,13 +60,11 @@ export function DownloadsView(props: DownloadsViewProps) {
     <div className={styles.content}>
       <div ref={ref} className={styles.table}>
         <DownloadTable
-          rows={rows}
+          rows={tableRows}
           paused={props.paused}
           activities={props.activities}
-          now={props.now}
-          inspectedId={props.inspectedId}
           onInspect={props.onInspect}
-          height={height > 88 ? height - 40 : undefined}
+          height={tableMeasured ? height - 40 : undefined}
           extra={extra}
         />
       </div>

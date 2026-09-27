@@ -17,6 +17,7 @@ export interface EnqueueOptions {
   force?: boolean;
   seed?: EnqueueSeed;
   accountId?: string | null;
+  generationId?: string | null;
   cookies?: ImportableCookie[];
   listKinds?: ListKind[];
 }

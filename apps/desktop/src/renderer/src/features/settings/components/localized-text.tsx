@@ -14,7 +14,7 @@ export function LocalizedText({ message, values }: LocalizedTextProps) {
   return <>{useTranslate()(message, values)}</>;
 }
 
-export function useTranslate() {
-  const [localization] = usePrefs("localization");
-  return createTranslator(localization.locale);
+function useTranslate() {
+  const [prefs] = usePrefs("localization");
+  return createTranslator(prefs.locale);
 }

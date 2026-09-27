@@ -18,7 +18,7 @@ import { itemFile } from "../paths";
 import { persistSave } from "./persist-save";
 import type { WriteFileArgs } from "./pipeline/workers/apply";
 import { renderThumbnailPng, thumbnailSource } from "./save-thumbnail-file";
-import { withDecryptedLibraryMediaPath } from "./security/library-media-storage";
+import { withDecryptedLibraryMediaPath } from "./storage/library-media-storage";
 
 export { renderThumbnailPng };
 

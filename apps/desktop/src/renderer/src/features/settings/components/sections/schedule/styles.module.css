@@ -1,21 +1,19 @@
-.form {
+.editor {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  align-items: flex-start;
 }
-.card {
+.picker {
   display: flex;
   flex-direction: column;
   gap: 12px;
   align-items: flex-start;
   width: 100%;
   min-width: 0;
-  padding: 16px;
+  padding: var(--settings-padding);
   margin: 0;
-  background: var(--ds-gray-1);
-  border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-1);
+  border: 0;
+  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 .sentence {
   display: flex;
@@ -50,7 +48,6 @@
   flex-wrap: wrap;
 }
 .zone,
-.manual,
 .error {
   margin: 0;
   font-size: var(--ds-text-md);
@@ -59,9 +56,6 @@
 }
 .error {
   color: var(--ds-red-11);
-}
-.form > button {
-  margin: 4px 16px 0;
 }
 
 .phrase {
@@ -78,8 +72,8 @@
   white-space: nowrap;
   clip-path: inset(50%);
 }
-.form > .zone,
-.form > .error {
+.editor > .zone,
+.editor > .error {
   padding-inline: 16px;
   overflow-wrap: anywhere;
 }

@@ -6,18 +6,12 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const catalogDir = join(root, "src/shared/localization/catalogs");
 const locales = ["en", "es", "de", "ru", "zh-TW", "zh-CN", "ja", "ko"];
-const sourcePaths = [
-  "../../packages/schema/src/prefs.ts",
-  "../../packages/schema/src/settings.ts",
-  "src/main",
-  "src/renderer/src/app/components/lock-screen",
-  "src/renderer/src/features/settings",
-  "src/renderer/preview.html",
-  "src/renderer/src/preview.ts",
-  "src/shared/blank-documents.ts",
-  "src/main/file-menu.ts",
-  "src/shared/shortcuts.ts",
-];
+const sourcePaths = JSON.parse(
+  await readFile(
+    join(root, "src/shared/localization/localized-surfaces.json"),
+    "utf8",
+  ),
+);
 
 const catalogs = new Map();
 for (const locale of locales) {

@@ -1,0 +1,30 @@
+.root {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: var(--ds-gray-1);
+}
+
+.scroll {
+  min-height: 0;
+  overflow: auto;
+
+  pre {
+    min-width: min-content;
+    min-height: 100%;
+    padding: 24px;
+    margin: 0;
+    font-family: var(--ds-font-mono);
+    line-height: 1.55;
+    color: var(--ds-gray-12);
+    tab-size: 2;
+    white-space: pre-wrap;
+  }
+}
+
+.status {
+  padding: 24px;
+  color: var(--ds-gray-11);
+}

@@ -17,9 +17,9 @@ import { withRawSlim } from "../../../lib/raw-slim";
 import { itemDir } from "../../../paths";
 import { broadcastSyncAction, withMutationScope } from "../../executor";
 import {
-  encryptLibraryMediaFile,
+  copyLibraryMediaFile,
   writeLibraryMedia,
-} from "../../security/library-media-storage";
+} from "../../storage/library-media-storage";
 import { hasUserTitle } from "../../user-metadata";
 
 interface WriteFileMetadata {
@@ -188,7 +188,7 @@ export async function persistWriteFile(
   const hash = createHash("sha256");
   for await (const chunk of createReadStream(file.sourcePath))
     hash.update(chunk);
-  await encryptLibraryMediaFile(file.sourcePath, targetPath);
+  await copyLibraryMediaFile(file.sourcePath, targetPath);
   return { sha256: hash.digest("hex"), size };
 }
 

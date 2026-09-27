@@ -28,6 +28,47 @@
   padding: 0 12px;
 }
 
+.header[data-dragging] {
+  z-index: 2;
+  opacity: 0.45;
+}
+
+.header[data-overlay] {
+  width: 100%;
+  pointer-events: none;
+  background: var(--ds-gray-3);
+  border: 1px solid var(--ds-gray-6);
+  border-radius: var(--ds-radius-sm);
+  box-shadow: var(--ds-shadow-md);
+}
+
+.column-drag-handle {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 22px;
+  padding: 0;
+  margin-inline-start: -6px;
+  color: var(--ds-gray-8);
+  touch-action: none;
+  cursor: grab;
+  background: transparent;
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+}
+
+.column-drag-handle:hover,
+.column-drag-handle:focus-visible {
+  color: var(--ds-gray-11);
+  background: var(--ds-gray-a3);
+}
+
+.column-drag-handle:active {
+  cursor: grabbing;
+}
+
 .resize-handle {
   position: absolute;
   top: 0;
@@ -65,7 +106,7 @@
 
 .header-static {
   font-size: var(--ds-text-sm);
-  font-weight: var(--data-table-header-weight, var(--ds-weight-medium));
+  font-weight: var(--data-table-header-weight, var(--ds-weight-lg));
   color: var(--ds-gray-11);
 }
 
@@ -83,7 +124,7 @@
   align-items: center;
   padding: 0;
   font-size: var(--ds-text-sm);
-  font-weight: var(--data-table-header-weight, var(--ds-weight-medium));
+  font-weight: var(--data-table-header-weight, var(--ds-weight-lg));
   color: var(--ds-gray-11);
   text-align: left;
   cursor: var(--ds-cursor-interactive, pointer);
@@ -202,7 +243,7 @@
   padding: 7px 8px 7px 14px;
   background: var(--ds-gray-1);
   border-radius: var(--ds-radius-full, 999px);
-  box-shadow: var(--ds-shadow-3);
+  box-shadow: var(--ds-shadow-md);
   transform: translateX(calc(-50% + var(--data-table-action-bar-offset, 0px)));
   animation: data-table-action-bar-in var(--ds-duration-fast, 0.16s) ease;
 }
@@ -245,4 +286,13 @@
     padding-inline: var(--data-table-inset, 0px);
     transition: none;
   }
+
+  .header {
+    transition: none;
+  }
+}
+
+.container:focus-visible [data-cursor] {
+  outline: 2px solid var(--ds-gray-a8);
+  outline-offset: -2px;
 }

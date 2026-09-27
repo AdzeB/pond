@@ -1,0 +1,86 @@
+.root {
+  display: grid;
+  grid-template-areas: "chrome-top" "stage" "chrome-bottom";
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+}
+
+.root:not([data-chrome]) {
+  grid-template-areas: "stage";
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.top,
+.bottom {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: var(--ds-title-bar-height);
+  min-height: var(--ds-title-bar-height);
+  padding-inline: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.top {
+  grid-area: chrome-top;
+  border-bottom: 1px solid var(--ds-gray-a3);
+}
+
+.top:has(.tools:empty) {
+  display: none;
+}
+
+.toolbar {
+  gap: 0;
+  align-items: stretch;
+}
+
+.bottom {
+  grid-area: chrome-bottom;
+  border-top: 1px solid var(--ds-gray-a3);
+}
+
+.bottom:has(.tools:empty) {
+  display: none;
+}
+
+.stage {
+  display: grid;
+  grid-area: stage;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.stage > * {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+}
+
+.tools {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.bottom .tools {
+  align-items: stretch;
+}
+
+.fallback {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}

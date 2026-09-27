@@ -9,7 +9,7 @@
   height: 28px;
   padding: 0 8px;
   font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-normal);
+  font-weight: var(--ds-weight-md);
   color: var(--ds-gray-11);
   cursor: var(--ds-cursor-interactive, pointer);
   background: none;
@@ -56,7 +56,7 @@
   }
 
   &[data-pressed] {
-    font-weight: var(--ds-weight-medium);
+    font-weight: var(--ds-weight-lg);
     color: var(--ds-gray-12);
     background: none;
   }

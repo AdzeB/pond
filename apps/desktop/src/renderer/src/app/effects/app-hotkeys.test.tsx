@@ -13,6 +13,7 @@ import {
   useViewPopover,
 } from "@/features/library/state/library-header";
 import { getViewState } from "@/features/library/state/view-store";
+import type { ShortcutId } from "../../../../shared/shortcuts";
 import { AppHotkeys } from "./app-hotkeys";
 import { EditableHotkeyGuard } from "./editable-hotkey-guard";
 
@@ -45,11 +46,18 @@ function attr(name: string): string {
 describe("app hotkeys in text fields", () => {
   let host: HTMLDivElement;
   let root: Root;
+  let shortcutAction: ((id: ShortcutId) => void) | undefined;
 
   beforeEach(() => {
     vi.stubGlobal("pond", {
       query: async (name: string) =>
         name === "settings.getPrefs" ? PrefsSchema.parse({}) : [],
+      onShortcutAction: (callback: (id: ShortcutId) => void) => {
+        shortcutAction = callback;
+        return () => {
+          shortcutAction = undefined;
+        };
+      },
       syncRunAll: async () => {},
     });
     host = document.createElement("div");
@@ -121,7 +129,7 @@ describe("app hotkeys in text fields", () => {
     expect(libraryChrome.getState().sidebarOpen).toBe(open);
   });
 
-  it("still opens search from a field", async () => {
+  it("does not open search from a field", async () => {
     const input = document.createElement("input");
     await mount(input);
     const mac = navigator.platform.toLowerCase().includes("mac");
@@ -136,7 +144,7 @@ describe("app hotkeys in text fields", () => {
         }),
       );
     });
-    expect(attr("search")).toBe("open");
+    expect(attr("search")).toBe("closed");
   });
 
   it("does not cycle layout while typing in an input", async () => {
@@ -157,5 +165,20 @@ describe("app hotkeys in text fields", () => {
       );
     });
     expect(getViewState().layout).toBe(layout);
+  });
+
+  it("does not run a global shortcut command while typing in an input", async () => {
+    const input = document.createElement("input");
+    await mount(input);
+    const layout = getViewState().layout;
+    await act(async () => shortcutAction?.("view.layout-cycle"));
+    expect(getViewState().layout).toBe(layout);
+  });
+
+  it("runs a global shortcut command outside an input", async () => {
+    await mount();
+    const layout = getViewState().layout;
+    await act(async () => shortcutAction?.("view.layout-cycle"));
+    expect(getViewState().layout).not.toBe(layout);
   });
 });

@@ -5,6 +5,7 @@ import { type RateProfile, syncConfigFor } from "@pond/schema/sources";
 import { app } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
+import { getDb } from "../../db";
 
 type PausedReason = "cooldown" | "breaker" | "at_risk" | "manual";
 
@@ -94,6 +95,84 @@ function statePath(): string {
   return join(app.getPath("userData"), "rate-governor.json");
 }
 
+const LEGACY_IMPORT_KEY = "rate-governor-json-imported";
+
+export async function migrateLegacyGovernorState(): Promise<void> {
+  const db = await getDb();
+  const alreadyImported = db.$raw
+    .prepare("SELECT 1 FROM queue_metadata WHERE key = ?")
+    .get(LEGACY_IMPORT_KEY);
+  if (alreadyImported) return;
+  let parsed: z.infer<typeof PersistedStateSchema> | null = null;
+  try {
+    parsed = PersistedStateSchema.parse(
+      JSON.parse(readFileSync(statePath(), "utf-8")),
+    );
+  } catch {}
+  const at = now();
+  db.$raw
+    .transaction(() => {
+      if (parsed) {
+        for (const source of SOURCES) {
+          const atRiskState = parsed.atRisk[source];
+          const cooldown = parsed.cooldownUntil[source] ?? 0;
+          const breaker = parsed.breakerUntil[source] ?? 0;
+          const riskUntil = atRiskState
+            ? atRiskState.since + AT_RISK_PARK_MS
+            : 0;
+          const retryAt = Math.max(cooldown, breaker, riskUntil);
+          const paused = parsed.allPausedUntil > at;
+          const reason = paused
+            ? "global_pause"
+            : riskUntil === retryAt && retryAt > at
+              ? "at_risk"
+              : cooldown === retryAt && retryAt > at
+                ? "rate_limit"
+                : retryAt > at
+                  ? "transient_failures"
+                  : null;
+          if (paused || retryAt > at) {
+            db.$raw
+              .prepare(
+                `INSERT INTO source_gates (
+                  source, state, reason, retry_at, version, updated_at
+                ) VALUES (?, ?, ?, ?, 1, ?)
+                ON CONFLICT(source) DO NOTHING`,
+              )
+              .run(
+                source,
+                paused ? "paused" : "open",
+                reason,
+                paused ? null : retryAt,
+                at,
+              );
+          }
+          const requests = (parsed.requestLog[source] ?? []).filter(
+            (requestedAt) => requestedAt >= at - 24 * 60 * 60_000,
+          );
+          const insert = db.$raw.prepare(
+            `INSERT INTO source_request_ledger (
+              source, requested_at, permits
+            ) VALUES (?, ?, 1)`,
+          );
+          for (const requestedAt of requests) {
+            insert.run(source, requestedAt);
+          }
+        }
+      }
+      db.$raw
+        .prepare(
+          `INSERT INTO queue_metadata (key, value, updated_at)
+          VALUES (?, '1', ?)`,
+        )
+        .run(LEGACY_IMPORT_KEY, at);
+    })
+    .immediate();
+  log.info("[pond governor] imported legacy state", {
+    found: parsed != null,
+  });
+}
+
 export function loadState(): void {
   if (loaded) return;
   loaded = true;
@@ -168,11 +247,57 @@ function writeState(): void {
 
 export function pauseAll(): void {
   allPaused = true;
+  const at = now();
+  void getDb().then((db) => {
+    const upsert = db.$raw.prepare(
+      `INSERT INTO source_gates (
+        source, state, reason, version, updated_at
+      ) VALUES (?, 'paused', 'global_pause', 1, ?)
+      ON CONFLICT(source) DO UPDATE SET
+        state = 'paused',
+        reason = 'global_pause',
+        retry_at = NULL,
+        probe_lease_token = NULL,
+        probe_lease_expires_at = NULL,
+        version = source_gates.version + 1,
+        updated_at = excluded.updated_at`,
+    );
+    db.$raw
+      .transaction(() => {
+        for (const source of SOURCES) upsert.run(source, at);
+      })
+      .immediate();
+  });
   schedulePersist(true);
 }
 
 export function resumeAll(): void {
   allPaused = false;
+  void getDb().then((db) => {
+    const at = now();
+    db.$raw
+      .prepare(
+        `UPDATE source_gates
+        SET
+          state = 'closed',
+          reason = NULL,
+          version = version + 1,
+          updated_at = ?
+        WHERE state = 'paused' AND reason = 'global_pause'`,
+      )
+      .run(at);
+    db.$raw
+      .prepare(
+        `UPDATE tasks
+        SET
+          status = 'pending',
+          deferred_reason = NULL,
+          next_run_at = ?,
+          updated_at = ?
+        WHERE status = 'deferred' AND deferred_reason = 'queue_paused'`,
+      )
+      .run(at, at);
+  });
   schedulePersist(true);
 }
 

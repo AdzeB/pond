@@ -1,8 +1,19 @@
 import { IconDotsFill18 as Ellipsis } from "@pond/icons/fill/18";
-import { IconXmarkOutline18 as Cross } from "@pond/icons/outline/18";
+import {
+  IconXmarkOutline18 as Cross,
+  IconDownloadOutline18,
+} from "@pond/icons/outline/18";
 import type { Source } from "@pond/schema/db";
-import { Button, Input, Menu, type MenuItemSpec, TitleBar } from "@pond/ui";
+import {
+  Button,
+  Input,
+  Menu,
+  type MenuItemSpec,
+  PaneBody,
+  PaneHeader,
+} from "@pond/ui";
 import { useEffect, useId, useRef, useState } from "react";
+import { downloadsFilters } from "@/features/downloads/state/downloads-filters";
 import {
   libraryChrome,
   useInspectorSourceId,
@@ -37,6 +48,7 @@ import {
 } from "@/features/sources/state/sync-monitor";
 import { SpecMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
+import { getAppRouter } from "@/shared/lib/app-router";
 import { formatNumber, formatTimestampLine } from "@/shared/lib/format";
 import styles from "./styles.module.css";
 
@@ -96,6 +108,7 @@ function AccountInspector({ id }: { id: string }) {
       onFetch={() => void window.pond.syncRunNow(account.id)}
       onCancel={() => void window.pond.syncCancel(account.id)}
       onSignIn={() => startSourceSignIn(account.source, accounts)}
+      onOpenDownloads={() => openDownloads(account.source)}
       onClose={libraryChrome.closeRightPane}
       onNicknameSave={async (value) => {
         await saveAccountNickname(account, value);
@@ -146,6 +159,7 @@ function WatchInspector({ id }: { id: string }) {
       onFetch={() => void window.pond.syncRunNow(watch.id)}
       onCancel={() => void window.pond.syncCancel(watch.id)}
       onSignIn={() => startSourceSignIn(watch.source, accounts)}
+      onOpenDownloads={() => openDownloads(watch.source)}
       onClose={libraryChrome.closeRightPane}
       onNicknameSave={async (value) => {
         await saveWatchNickname(watch, value);
@@ -244,6 +258,14 @@ async function saveWatchNickname(
   });
 }
 
+function openDownloads(source: Source): void {
+  downloadsFilters.setQ("");
+  downloadsFilters.setStatuses(new Set());
+  downloadsFilters.setSources(new Set([source]));
+  libraryChrome.closeRightPane();
+  getAppRouter()?.history.push("/downloads");
+}
+
 export interface SourceInspectorViewProps {
   handle?: string | null;
   source?: Source;
@@ -258,6 +280,7 @@ export interface SourceInspectorViewProps {
   onFetch?: () => void;
   onCancel?: () => void;
   onSignIn?: () => void;
+  onOpenDownloads?: () => void;
   onClose: () => void;
   onNicknameSave?: (value: string) => Promise<void>;
 }
@@ -276,6 +299,7 @@ export function SourceInspectorView({
   onFetch,
   onCancel,
   onSignIn,
+  onOpenDownloads,
   onClose,
   onNicknameSave,
 }: SourceInspectorViewProps) {
@@ -291,38 +315,31 @@ export function SourceInspectorView({
     : undefined;
   return (
     <div className={styles.root}>
-      <TitleBar.Root className={styles.header}>
-        <TitleBar.Start>
-          <TitleBar.Label className={styles["header-label"]}>
-            Details
-          </TitleBar.Label>
-        </TitleBar.Start>
-        <TitleBar.End className={styles["header-actions"]}>
-          {menuItems.length > 0 ? (
-            <SpecMenu align="end" buildItems={() => menuItems}>
-              <Menu.Trigger
-                variant="ghost"
-                size="sm"
-                icon
-                aria-label="Source Actions"
-              >
-                <Ellipsis />
-              </Menu.Trigger>
-            </SpecMenu>
-          ) : null}
-          <Button
-            type="button"
-            icon
-            size="sm"
-            variant="ghost"
-            aria-label="Close Details"
-            onClick={onClose}
-          >
-            <Cross />
-          </Button>
-        </TitleBar.End>
-      </TitleBar.Root>
-      <div className={styles.scroll} {...scrollFade}>
+      <PaneHeader title="Details">
+        {menuItems.length > 0 ? (
+          <SpecMenu align="end" buildItems={() => menuItems}>
+            <Menu.Trigger
+              variant="ghost"
+              size="sm"
+              icon
+              aria-label="Source Actions"
+            >
+              <Ellipsis />
+            </Menu.Trigger>
+          </SpecMenu>
+        ) : null}
+        <Button
+          type="button"
+          icon
+          size="sm"
+          variant="ghost"
+          aria-label="Close Details"
+          onClick={onClose}
+        >
+          <Cross />
+        </Button>
+      </PaneHeader>
+      <PaneBody className={styles.scroll} {...scrollFade}>
         {loading ? (
           <p className={styles.empty} role="status">
             Loading source details
@@ -357,6 +374,17 @@ export function SourceInspectorView({
                 ) : null}
               </div>
             </div>
+            {onOpenDownloads ? (
+              <Button
+                size="xs"
+                variant="secondary"
+                className={styles["downloads-link"]}
+                onClick={onOpenDownloads}
+              >
+                <IconDownloadOutline18 />
+                View Downloads
+              </Button>
+            ) : null}
             {properties.length > 0 ? (
               <Section title="Properties">
                 <dl className={styles.rows}>
@@ -398,7 +426,7 @@ export function SourceInspectorView({
             ) : null}
           </>
         )}
-      </div>
+      </PaneBody>
     </div>
   );
 }

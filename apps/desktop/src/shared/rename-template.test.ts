@@ -33,6 +33,20 @@ describe("applyRenameTemplate", () => {
     ).toBe("003 Photo_2026_Photo");
   });
 
+  it("supports compact, year, month, and timestamp date formats", () => {
+    expect(
+      applyRenameTemplate(
+        "{date:compact} {date:year} {date:month} {date:timestamp}",
+        {
+          index: 0,
+          title: "Current",
+          id: "save-1",
+          date: "2026-09-19T08:30:45Z",
+        },
+      ),
+    ).toBe("20260919 2026 2026-09 20260919-083045");
+  });
+
   it("keeps unknown tokens literal and rejects invalid regex flags", () => {
     expect(
       applyRenameTemplate("{title} {unknown}", {

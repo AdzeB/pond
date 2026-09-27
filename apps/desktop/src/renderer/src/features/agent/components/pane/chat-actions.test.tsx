@@ -79,9 +79,6 @@ it("requires confirmation before deleting and supports cancellation", async () =
     "permanently deletes",
   );
   expect(query).not.toHaveBeenCalled();
-  const cancel = [
-    ...document.querySelectorAll<HTMLButtonElement>("button"),
-  ].find((button) => button.textContent === "Cancel");
-  await act(async () => cancel?.click());
+  await act(async () => item("Close")?.click());
   expect(query).not.toHaveBeenCalled();
 });

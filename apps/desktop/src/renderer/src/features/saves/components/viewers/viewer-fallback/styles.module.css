@@ -1,0 +1,38 @@
+.root {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 48px;
+  overflow: auto;
+  background: var(--ds-gray-2);
+}
+
+.card {
+  width: min(100%, 34rem);
+  padding: 32px;
+  text-align: center;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow-md);
+}
+
+.card h2 {
+  margin: 0;
+  font-size: var(--ds-text-lg);
+  color: var(--ds-gray-12);
+}
+
+.card p {
+  margin: 8px 0 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-10);
+}
+
+.card .path {
+  font-family: var(--ds-font-mono);
+  color: var(--ds-gray-11);
+  overflow-wrap: anywhere;
+}

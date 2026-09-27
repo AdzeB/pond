@@ -8,8 +8,12 @@
   margin: auto;
   object-fit: contain;
   border-radius: var(--ds-radius-xs);
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-sm);
   opacity: 0;
+
+  &[data-fit="fill"] {
+    object-fit: cover;
+  }
 }
 
 .slide[data-active][data-loaded="true"] {

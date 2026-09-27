@@ -107,7 +107,14 @@ export type FieldId =
   | "comment"
   | "fontFamily"
   | "fontActivated"
-  | "bpm";
+  | "bpm"
+  | "cameraMake"
+  | "cameraModel"
+  | "lensModel"
+  | "focalLength"
+  | "aperture"
+  | "iso"
+  | "takenAt";
 
 export interface FieldMeta {
   id: FieldId;

@@ -1,4 +1,4 @@
-import { Button, Settings } from "@pond/ui";
+import { Button, Dialog, Settings } from "@pond/ui";
 import { useState } from "react";
 
 export function RaycastRow() {
@@ -29,6 +29,31 @@ export function RaycastRow() {
     }
   }
 
+  async function rotateToken() {
+    setBusy(true);
+    setCopied(false);
+    setError(null);
+    try {
+      const { token } = await window.pond.query(
+        "settings.rotateIngestToken",
+        {},
+      );
+      const result = await window.pond.query("clipboard.writeText", {
+        text: token,
+      });
+      if (!result.ok) throw new Error("Pond could not copy the new token.");
+      setCopied(true);
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "Pond could not rotate the token.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <>
       <Settings.ItemDetails>
@@ -53,6 +78,22 @@ export function RaycastRow() {
           onClick={() => void copyToken()}
         >
           {busy ? "Copying" : copied ? "Copied" : "Copy Token"}
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={busy}
+          onClick={() =>
+            Dialog.confirm({
+              title: "Rotate Local API Token",
+              description:
+                "Existing local integrations stop working until you give them the new token.",
+              confirmLabel: "Rotate Token",
+              onConfirm: rotateToken,
+            })
+          }
+        >
+          Rotate Token
         </Button>
       </Settings.ItemControl>
     </>

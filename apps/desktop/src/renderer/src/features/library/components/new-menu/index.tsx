@@ -10,6 +10,8 @@ import {
   useNewMenuDialog,
 } from "@/features/library/state/new-menu-dialog";
 import { useRetainedDialogPayload } from "@/shared/hooks/use-retained-dialog-payload";
+import { LibraryRepairDialog } from "../repair-dialog";
+import { ScreenshotOrganizeDialog } from "../screenshot-organize";
 import { SaveDialog } from "./save-dialog";
 import { ScreenshotDialog } from "./screenshot-dialog";
 import { buildNewMenuItems, filterMenuItems } from "./spec";
@@ -71,7 +73,17 @@ export function NewMenuDialogHost() {
     void blankDocuments.refresh();
   }, []);
   const kind = presentation.payload;
-  if (kind === "links") {
+  if (kind?.kind === "screenshot-organize") {
+    return (
+      <ScreenshotOrganizeDialog
+        key={kind.draft.token}
+        draft={kind.draft}
+        open={presentation.open}
+        onClose={() => newMenuDialog.close()}
+      />
+    );
+  }
+  if (kind?.kind === "links") {
     return (
       <SaveDialog
         open={presentation.open}
@@ -79,9 +91,18 @@ export function NewMenuDialogHost() {
       />
     );
   }
-  if (kind === "screenshot") {
+  if (kind?.kind === "screenshot") {
     return (
       <ScreenshotDialog
+        open={presentation.open}
+        onClose={() => newMenuDialog.close()}
+      />
+    );
+  }
+  if (kind?.kind === "repair") {
+    return (
+      <LibraryRepairDialog
+        kind={kind.repair}
         open={presentation.open}
         onClose={() => newMenuDialog.close()}
       />

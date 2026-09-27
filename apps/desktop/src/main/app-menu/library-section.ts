@@ -32,19 +32,23 @@ export function buildLibrarySection(context: AppMenuContext): AppMenuItem {
       },
       {
         label: LIBRARY_MENU_LABELS[5],
+        click: context.reloadLibrary,
+      },
+      {
+        label: LIBRARY_MENU_LABELS[6],
         click: context.verifyLibrary,
       },
       { type: "separator" },
       {
-        label: LIBRARY_MENU_LABELS[6],
+        label: LIBRARY_MENU_LABELS[7],
         click: sendMenuAction("library.backup"),
       },
       {
-        label: LIBRARY_MENU_LABELS[7],
+        label: LIBRARY_MENU_LABELS[8],
         click: sendMenuAction("library.restore"),
       },
       {
-        label: LIBRARY_MENU_LABELS[8],
+        label: LIBRARY_MENU_LABELS[9],
         click: sendMenuAction("library.merge"),
       },
       { type: "separator" },
@@ -54,14 +58,19 @@ export function buildLibrarySection(context: AppMenuContext): AppMenuItem {
       },
       { type: "separator" },
       {
-        label: LIBRARY_MENU_LABELS[9],
+        label: LIBRARY_MENU_LABELS[10],
         accelerator: accelerator("trash.empty"),
         registerAccelerator: false,
         click: sendMenuAction("trash.empty"),
       },
       {
-        label: LIBRARY_MENU_LABELS[10],
+        label: LIBRARY_MENU_LABELS[11],
         click: sendMenuAction("trash.restore-all"),
+      },
+      { type: "separator" },
+      {
+        label: LIBRARY_MENU_LABELS[12],
+        click: sendMenuAction("history.clear"),
       },
     ],
   };

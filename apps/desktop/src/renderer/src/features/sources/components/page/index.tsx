@@ -219,7 +219,7 @@ export function SourcesPage() {
             </div>
           ) : (
             <div ref={tableRef} className={styles.table}>
-              <DataTable.Root className={styles.grid}>
+              <DataTable.Root className={styles.grid} aria-label="Sources">
                 <DataTable.Empty>
                   {loaded ? <SourcesMatchesEmpty /> : null}
                 </DataTable.Empty>

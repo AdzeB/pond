@@ -67,6 +67,31 @@ it("uses quality mode for JPEG and refuses to label it lossless", async () => {
   });
 });
 
+it("converts image bytes to WebP for in-place replacement", async () => {
+  const source = await sharp({
+    create: {
+      width: 40,
+      height: 20,
+      channels: 3,
+      background: "red",
+    },
+  })
+    .png()
+    .toBuffer();
+  const converted = await encodeCompressedImage(
+    source,
+    "image.png",
+    "webp",
+    85,
+  );
+  if (!converted) throw new Error("Expected converted WebP bytes.");
+  expect(await sharp(converted).metadata()).toMatchObject({
+    width: 40,
+    height: 20,
+    format: "webp",
+  });
+});
+
 it("losslessly removes SVG comments and leaves quality mode unsupported", async () => {
   const source = Buffer.from(
     '<?xml version="1.0"?>\r\n<!-- metadata --><svg xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1"/></svg>\r\n',

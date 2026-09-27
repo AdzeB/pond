@@ -13,6 +13,7 @@ import type { CellContext, RenderRowArgs } from "./types";
 interface RowProps<T extends RowData> {
   api: RowApi<T>;
   rowId: string;
+  rowIndex: number;
   prevId?: string;
   nextId?: string;
   data: T;
@@ -24,6 +25,7 @@ interface RowProps<T extends RowData> {
 function RowImpl<T extends RowData>({
   api,
   rowId,
+  rowIndex,
   prevId,
   nextId,
   data,
@@ -31,6 +33,7 @@ function RowImpl<T extends RowData>({
   expanded,
   canExpand,
 }: RowProps<T>) {
+  const cursor = useSelector(api.selectionStore, (s) => s.cursorId === rowId);
   const selected = useSelector(api.selectionStore, (s) =>
     s.selectedIds.has(rowId),
   );
@@ -84,6 +87,13 @@ function RowImpl<T extends RowData>({
   }
 
   const onClick = (e: ReactMouseEvent) => {
+    if (
+      !(e.target instanceof Element) ||
+      !e.target.closest(
+        "button, input, select, textarea, a, [contenteditable=true]",
+      )
+    )
+      api.focusRow(rowId);
     if (e.metaKey || e.ctrlKey || e.shiftKey) {
       if (api.selectionEnabled) api.toggleRow(rowId, e.shiftKey);
       return;
@@ -94,6 +104,9 @@ function RowImpl<T extends RowData>({
 
   const rowProps: RenderRowArgs<T>["rowProps"] = {
     role: "row",
+    id: api.rowElementId(rowId),
+    "aria-rowindex": rowIndex,
+    "data-cursor": cursor ? "" : undefined,
     className: styles.row ?? "",
     style: { gridTemplateColumns: api.gridTemplate },
     onClick,

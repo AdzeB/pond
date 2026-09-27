@@ -30,6 +30,7 @@ export function toWireSave(
     createdAt: toMs(row.createdAt) ?? 0,
     deletedAt: toMs(row.deletedAt),
     publishedAt: toMs(row.publishedAt),
+    takenAt: toMs(row.takenAt),
     ingestStartedAt: toMs(row.ingestStartedAt),
     ingestCompletedAt: toMs(row.ingestCompletedAt),
   };
@@ -51,8 +52,13 @@ function toWireTask(task: Task): WireTask {
     status: task.status,
     attempts: task.attempts,
     maxAttempts: task.maxAttempts,
+    generationId: task.generationId,
+    deferredReason: task.deferredReason,
     lastError: task.lastError,
     nextRunAt: toMs(task.nextRunAt) ?? 0,
+    leaseExpiresAt: toMs(task.leaseExpiresAt),
+    failedAt: toMs(task.failedAt),
+    completedAt: toMs(task.completedAt),
     updatedAt: toMs(task.updatedAt) ?? 0,
     interactive: isInteractiveTask(task) || undefined,
   };

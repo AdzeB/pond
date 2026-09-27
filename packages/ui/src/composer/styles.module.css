@@ -4,12 +4,12 @@
   gap: 8px;
   padding: 12px;
   font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-normal);
+  font-weight: var(--ds-weight-md);
   line-height: 24px;
   color: var(--ds-gray-12);
   background: light-dark(var(--ds-gray-1), var(--ds-gray-2));
   border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-sm);
 }
 
 .input {
@@ -117,7 +117,7 @@
   --button-icon-size: 14px;
   height: 24px;
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-normal);
+  font-weight: var(--ds-weight-md);
   color: var(--ds-gray-10);
   border-radius: var(--ds-radius-full);
 }

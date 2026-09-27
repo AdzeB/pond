@@ -1,15 +1,19 @@
 import {
+  IconApplicationsOutline18,
   IconArrowUpRightOutline18,
   IconFolderOpenOutline18,
   IconFolderOutline18,
   IconGridOutline18,
   IconLink2Outline18,
   IconOpenInNewWindowOutline18,
+  IconWindowShareOutline18,
 } from "@pond/icons/outline/18";
 import type { MenuItemSpec } from "@pond/ui";
+import { previewMediaType } from "@shared/preview-window-contracts";
 import {
   openDefaultApp,
   openInBrowser,
+  resolveFileIndex,
   revealFile,
 } from "@/features/saves/lib/actions";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
@@ -20,6 +24,7 @@ import {
   openInBrowserForSelection,
   revealFilesForSelection,
 } from "@/features/saves/lib/selection";
+import { openReferenceWindow } from "@/features/saves/lib/viewer-actions";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
@@ -65,15 +70,28 @@ export function buildOpenItems({
   fileIndex,
   openWithApps,
   hasHttpUrl,
+  targetFile,
 }: SaveMenuContext): MenuItemSpec[] {
+  const openWithItems = hasFiles
+    ? openWithMenuItems(ids, fileIndex, openWithApps)
+    : [];
+
   return [
-    ...(hasFiles ? openWithMenuItems(ids, fileIndex, openWithApps) : []),
     {
       label: "Open Save",
-      icon: glyph(IconOpenInNewWindowOutline18),
+      icon: glyph(IconWindowShareOutline18),
       hidden: batch || opened,
       shortcut: shortcutGlyphs("grid.open"),
       onClick: () => openSave(save.id),
+    },
+    {
+      label: "Open in New Window",
+      icon: glyph(IconOpenInNewWindowOutline18),
+      hidden: batch || !targetFile || previewMediaType(targetFile) === null,
+      onClick: () => {
+        const index = resolveFileIndex(save, fileIndex);
+        if (index !== null) openReferenceWindow(save.id, index);
+      },
     },
     {
       label: "Open with Default App",
@@ -84,6 +102,13 @@ export function buildOpenItems({
         if (batch) void openDefaultAppForSelection(ids);
         else void openDefaultApp(save, fileIndex);
       },
+    },
+    {
+      type: "submenu",
+      label: "Open With",
+      icon: glyph(IconApplicationsOutline18),
+      hidden: openWithItems.length === 0,
+      items: openWithItems,
     },
     { type: "separator" },
     {
@@ -99,14 +124,14 @@ export function buildOpenItems({
     },
     {
       type: "submenu",
-      label: "Open File Location",
+      label: "Navigate to Folder",
       icon: glyph(IconFolderOutline18),
       hidden: batch || saveLibraryBridge.foldersForSave(save.id).length === 0,
       items: fileLocationItems(saveLibraryBridge.foldersForSave(save.id)),
     },
     batch
       ? {
-          label: "Open Original URL",
+          label: "Open Original in Browser",
           icon: glyph(IconLink2Outline18),
           hidden: !hasHttpUrl,
           shortcut: shortcutGlyphs("save.open-url"),
@@ -114,7 +139,7 @@ export function buildOpenItems({
         }
       : {
           type: "link",
-          label: "Open Original URL",
+          label: "Open Original in Browser",
           icon: glyph(IconLink2Outline18),
           hidden: !hasHttpUrl,
           shortcut: shortcutGlyphs("save.open-url"),

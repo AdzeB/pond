@@ -1,0 +1,296 @@
+div.ov_color_circle {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  margin-bottom: -2px;
+  background: #ffffff;
+  border: 1px solid #000000;
+  border-radius: 10px;
+}
+
+div.header {
+  overflow: auto;
+}
+
+div.title {
+  padding: 6px 10px;
+  overflow: auto;
+}
+
+div.title div.title_left {
+  float: left;
+}
+
+div.title img.logo_image {
+  float: left;
+  height: 40px;
+}
+
+div.title svg.logo_image {
+  float: left;
+  width: 190px;
+  height: 40px;
+}
+
+div.title div.logo_text {
+  float: left;
+  padding: 9px;
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--ov_foreground_color);
+}
+
+div.title div.title_right {
+  float: right;
+}
+
+div.title_right a {
+  float: left;
+  display: block;
+  padding: 11px 5px;
+  color: var(--ov_foreground_color);
+  text-decoration: none;
+}
+
+div.toolbar {
+  background: var(--ov_toolbar_background_color);
+}
+
+div.intro {
+  display: none;
+  padding: 10px;
+  margin: 10px;
+  overflow: auto;
+  text-align: center;
+  border: 2px dashed var(--ov_border_color);
+}
+
+div.intro svg.intro_logo {
+  display: inline;
+  width: 140px;
+  max-width: 80%;
+  height: 140px;
+}
+
+div.intro div.intro_section {
+  margin: 50px 0px;
+  font-size: 21px;
+}
+
+div.intro div.intro_big_text {
+  font-size: 30px;
+  line-height: 50px;
+}
+
+div.main {
+  display: none;
+  overflow: hidden;
+}
+
+div.main_file_name {
+  margin: 10px auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  white-space: nowrap;
+}
+
+div.main_navigator {
+  float: left;
+  width: 280px;
+  margin: 10px 0px 10px 0px;
+  overflow: none;
+}
+
+div.main_splitter {
+  float: left;
+  width: 10px;
+  overflow: none;
+  cursor: col-resize;
+}
+
+div.main_viewer {
+  float: left;
+}
+
+div.main_sidebar {
+  float: right;
+  width: 280px;
+  margin: 10px 0px 10px 0px;
+  overflow: none;
+}
+
+div.main_viewer canvas {
+  display: block;
+  margin: 10px 0px 10px 0px;
+  outline: none;
+  border: 1px solid var(--ov_border_color);
+}
+
+div.ov_toolbar {
+  overflow: auto;
+  user-select: none;
+}
+
+div.ov_toolbar div.ov_toolbar_button {
+  float: left;
+  padding: 10px;
+  cursor: pointer;
+}
+
+div.ov_toolbar div.ov_toolbar_button.selected {
+  background: var(--ov_toolbar_selected_color);
+}
+
+div.ov_toolbar div.ov_toolbar_separator {
+  float: left;
+  width: 1px;
+  height: 28px;
+  margin: 5px 8px;
+  background: var(--ov_toolbar_separator_color);
+}
+
+div.pcr-app {
+  color: var(--ov_dialog_foreground_color);
+  background: var(--ov_dialog_background_color);
+}
+
+div.pcr-app input.pcr-result {
+  color: var(--ov_foreground_color) !important;
+  background: var(--ov_background_color) !important;
+}
+
+div.ov_property_table {
+  overflow: auto;
+}
+
+div.ov_property_table_custom {
+  padding-top: 8px;
+  margin-top: 8px;
+  border-top: 1px solid var(--ov_border_color);
+}
+
+div.ov_property_table div.ov_property_table_row {
+  overflow: auto;
+}
+
+div.ov_property_table div.ov_property_table_row.group {
+  padding: 4px 0px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+div.ov_property_table div.ov_property_table_row.ingroup {
+  margin-left: 15px;
+}
+
+div.ov_property_table div.ov_property_table_cell {
+  box-sizing: border-box;
+  padding: 4px 0px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+div.ov_property_table div.ov_property_table_name {
+  float: left;
+  width: 49%;
+  padding-right: 2%;
+}
+
+div.ov_property_table div.ov_property_table_value {
+  float: left;
+  width: 49%;
+  text-align: left;
+}
+
+div.ov_property_table div.ov_property_table_button {
+  color: var(--ov_button_color);
+  cursor: pointer;
+}
+
+div.ov_bottom_floating_panel {
+  position: absolute;
+  bottom: 0px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 30px;
+  background: var(--ov_background_color);
+  border-top: 1px solid var(--ov_border_color);
+}
+
+div.ov_bottom_floating_panel div.ov_floating_panel_text {
+  float: left;
+  padding: 3px;
+  margin-bottom: 10px;
+}
+
+div.ov_bottom_floating_panel div.ov_floating_panel_button {
+  float: right;
+  width: 120px;
+}
+
+div.ov_measure_panel {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  padding: 6px 15px;
+  border-radius: 30px;
+}
+
+div.ov_measure_panel div.ov_svg_icon {
+  margin-bottom: 2px;
+  color: inherit;
+}
+
+div.ov_measure_panel div.ov_measure_value {
+  float: left;
+  margin-right: 10px;
+}
+
+@media (hover) {
+  div.title_right div.header_button:hover {
+    color: var(--ov_button_color);
+  }
+
+  div.ov_toolbar div.ov_toolbar_button:hover {
+    background: var(--ov_hover_color);
+  }
+}
+
+@media only screen and (max-width: 800px) {
+  div.intro div.intro_section {
+    font-size: 18px;
+    line-height: 20px;
+  }
+
+  div.intro div.intro_big_text {
+    font-size: 23px;
+    line-height: 30px;
+  }
+
+  div.main_viewer canvas {
+    margin: 0px;
+    border: 0px;
+  }
+
+  div.ov_dialog {
+    max-width: 80%;
+  }
+
+  div.ov_progress {
+    max-width: 80%;
+  }
+
+  div.ov_bottom_floating_panel {
+    padding: 10px;
+  }
+}
+
+@media only screen and (max-height: 700px) {
+  div.intro div.intro_section {
+    margin: 18px 0px;
+  }
+}

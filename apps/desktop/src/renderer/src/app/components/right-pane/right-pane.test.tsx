@@ -289,7 +289,7 @@ describe("sliding right panes", () => {
     expect(container.querySelector("[data-pane]")).toBeNull();
   });
 
-  it("keeps the frame shadow outside the clipped sliding panels", () => {
+  it("moves the frame shadow with each sliding panel", () => {
     const css = readFileSync(
       fileURLToPath(import.meta.url).replace(
         /right-pane\.test\.tsx$/,
@@ -302,11 +302,11 @@ describe("sliding right panes", () => {
     expect(css).toContain("position: absolute");
     expect(css).toContain("var(--window-background-secondary)");
     expect(css).toContain("var(--window-radius)");
-    expect(css).toMatch(
-      /\.viewport\s*\{[^}]*box-shadow:\s*var\(--ds-shadow-1\);/s,
-    );
     expect(css).not.toMatch(
-      /\.panel\s*\{[^}]*box-shadow:\s*var\(--ds-shadow-1\);/s,
+      /\.viewport\s*\{[^}]*box-shadow:\s*var\(--ds-shadow-xs\);/s,
+    );
+    expect(css).toMatch(
+      /\.panel\s*\{[^}]*box-shadow:\s*var\(--ds-shadow-xs\);/s,
     );
     expect(css).not.toContain("clip-path");
   });
@@ -316,7 +316,10 @@ describe("sliding right panes", () => {
       resolve(dirname(fileURLToPath(import.meta.url)), "styles.module.css"),
       "utf8",
     );
-    expect(css).toMatch(/\.viewport\s*\{[^}]*overflow:\s*hidden;/s);
+    expect(css).toMatch(/\.viewport\s*\{[^}]*overflow:\s*clip;/s);
+    expect(css).toMatch(
+      /\.viewport\s*\{[^}]*overflow-clip-margin:\s*var\(--window-inset,\s*8px\);/s,
+    );
   });
 
   it("keeps the surface at the saved width as the shell slot opens or closes", () => {

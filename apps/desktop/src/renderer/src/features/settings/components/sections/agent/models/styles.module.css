@@ -1,11 +1,47 @@
 .section {
   gap: 16px;
 }
+.refresh {
+  flex: none;
+  min-width: 72px;
+}
 .root {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
   min-width: 0;
+}
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.group-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+}
+.panel {
+  margin-inline: -2px;
+}
+.panel > :last-child {
+  margin: 4px 2px 2px;
+}
+.connection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px 8px;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-10);
+}
+.count {
+  font-size: var(--ds-text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-9);
 }
 .toolbar {
   display: flex;
@@ -23,19 +59,15 @@
   table-layout: fixed;
   border-collapse: collapse;
 }
-.table th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
+.table thead th {
   padding: 8px 12px;
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   color: var(--ds-gray-10);
   white-space: nowrap;
-  background: var(--ds-gray-1);
 }
 .table td {
-  padding: 8px 12px;
+  padding: 10px 12px;
   vertical-align: middle;
   border-top: var(--ds-border-width) solid var(--ds-border-subtle);
 }
@@ -46,7 +78,7 @@
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -56,12 +88,9 @@
   align-items: center;
   min-width: 0;
   overflow: hidden;
-}
-.provider-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-lg);
+  color: var(--ds-gray-12);
   white-space: nowrap;
 }
 .metric,
@@ -70,6 +99,7 @@
   font-size: var(--ds-text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-10);
+  text-align: right;
   white-space: nowrap;
 }
 .hint {
@@ -77,12 +107,15 @@
   font: inherit;
   color: inherit;
   text-align: inherit;
-  text-decoration: underline dotted;
-  text-decoration-color: var(--ds-gray-7);
-  text-underline-offset: 2px;
   cursor: default;
   background: none;
   border: 0;
+}
+.hint:hover,
+.hint:focus-visible {
+  color: var(--ds-gray-12);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
 }
 .context {
   width: 7rem;

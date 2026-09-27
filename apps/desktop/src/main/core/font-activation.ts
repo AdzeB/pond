@@ -4,7 +4,7 @@ import { extname, join, resolve, sep } from "node:path";
 import type Database from "better-sqlite3";
 import { readBundleJson, writeBundleJson } from "../lib/library-config";
 import { itemDir } from "../paths";
-import { withDecryptedLibraryMediaPath } from "./security/library-media-storage";
+import { withDecryptedLibraryMediaPath } from "./storage/library-media-storage";
 
 export async function activateFont(input: {
   sourcePath: string;
