@@ -211,4 +211,63 @@ describe("app menu sections", () => {
       expect.arrayContaining([expect.objectContaining({ label: "Add Tags" })]),
     );
   });
+
+  it("groups File actions like the tray menu without navigation", () => {
+    const context = createContext({ isMac: true, isPackaged: true });
+    const file = buildFileSection(context).submenu;
+    if (!Array.isArray(file)) throw new Error("Missing File submenu");
+    const newMenu = file.find((item) => item.label === "New");
+    const importMenu = file.find((item) => item.label === "Import");
+    const sourcesMenu = file.find((item) => item.label === "Sources");
+    const libraryMenu = file.find((item) => item.label === "Library");
+
+    expect(newMenu).toMatchObject({
+      submenu: [
+        { label: "New Folder" },
+        { label: "New Smart Folder" },
+        { label: "New Smart Folder Group" },
+        { label: "New Watched Folder" },
+        { type: "separator" },
+        { label: "New Note" },
+        { label: "Capture Screenshot" },
+        { type: "separator" },
+        { label: "New Tag" },
+        { label: "New Tag Group" },
+      ],
+    });
+    expect(importMenu).toMatchObject({
+      submenu: [
+        { label: "Import Files" },
+        { label: "Import Folders" },
+        { label: "Import from Links" },
+        { label: "Import from Clipboard" },
+        { type: "separator" },
+        { label: "Import Bookmarks" },
+        { label: "Import Page Assets" },
+        { type: "separator" },
+        { label: "Import Eagle Library" },
+        { label: "Import Pond Package" },
+      ],
+    });
+    expect(sourcesMenu).toMatchObject({
+      submenu: [{ label: "New Source" }, { label: "New Watch" }],
+    });
+    expect(libraryMenu).toMatchObject({
+      submenu: [
+        { label: "Find Duplicates" },
+        { type: "separator" },
+        { label: "Rescan Library" },
+        { label: "Verify Integrity" },
+      ],
+    });
+    expect(file).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ label: "Navigate" })]),
+    );
+    expect(file).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: "New Folder" }),
+        expect.objectContaining({ label: "Import Files" }),
+      ]),
+    );
+  });
 });

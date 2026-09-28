@@ -42,6 +42,12 @@ function Item({ className, ...props }: ItemProps) {
   return <Button className={cn(styles.item, className)} {...props} />;
 }
 
+interface ItemLabelProps extends React.ComponentPropsWithoutRef<"span"> {}
+
+function ItemLabel({ className, ...props }: ItemLabelProps) {
+  return <span className={cn(styles["item-label"], className)} {...props} />;
+}
+
 interface ResultButtonProps extends Button.Props {}
 
 function ResultButton({ ...props }: ResultButtonProps) {
@@ -251,6 +257,7 @@ export const Sidebar = {
   Scroll,
   Search,
   Item,
+  ItemLabel,
   Icon,
   Count,
   ResultButton,

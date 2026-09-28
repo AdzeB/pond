@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { menuLabels, menuLabelsWithoutIcons } from "@/shared/test/menu-labels";
+import {
+  menuLabels,
+  menuLabelsWithoutIcons,
+  topLevelMenuLabels,
+} from "@/shared/test/menu-labels";
 import { buildNewMenuItems, filterMenuItems } from "./spec";
 
 describe("new menu spec", () => {
@@ -10,14 +14,17 @@ describe("new menu spec", () => {
   it("orders create, import, connect, then tools", () => {
     const labels = menuLabels(buildNewMenuItems(["photoshop", "word"]));
     expect(labels).toEqual([
+      "New",
       "New Folder",
       "New Smart Folder",
+      "New Watched Folder",
       "New Tag",
       "New Tag Group",
       "New Note",
       "Photoshop Document",
       "Word Document",
       "Capture Screenshot",
+      "Import",
       "Import Files",
       "Import Folders",
       "Import from Links",
@@ -32,8 +39,7 @@ describe("new menu spec", () => {
       "Import Huaban Export",
       "Import Pixave Export",
       "Import Inboard Export",
-      "Auto Import",
-      "Watched Folder",
+      "Sources",
       "New Source",
       "Twitter",
       "Instagram",
@@ -52,6 +58,7 @@ describe("new menu spec", () => {
       "Cosmos",
       "TikTok",
       "YouTube",
+      "Library",
       "Find Duplicates",
       "Scan All",
       "Current List",
@@ -68,12 +75,14 @@ describe("new menu spec", () => {
     expect(labels.join(" ")).toContain("ArtStation");
     expect(labels.join(" ")).not.toContain("…");
     expect(labels).not.toContain("Create");
-    expect(labels).not.toContain("Import");
     expect(labels).not.toContain("Connect");
     expect(labels).not.toContain("Tools");
-    expect(
-      buildNewMenuItems(["word"]).filter((item) => item.type === "separator"),
-    ).toHaveLength(3);
+    expect(topLevelMenuLabels(buildNewMenuItems(["word"]))).toEqual([
+      "New",
+      "Import",
+      "Sources",
+      "Library",
+    ]);
   });
 
   it("hides document types that are not installed", () => {
@@ -86,11 +95,14 @@ describe("new menu spec", () => {
     const labels = menuLabels(
       filterMenuItems(buildNewMenuItems(["word"]), "scan all"),
     );
-    expect(labels).toEqual(["Find Duplicates · Scan All"]);
+    expect(labels).toEqual(["Library · Find Duplicates · Scan All"]);
   });
 
   it("keeps group children when searching a leaf", () => {
     const labels = menuLabels(filterMenuItems(buildNewMenuItems([]), "eagle"));
-    expect(labels).toEqual(["Import Eagle Package", "Import Eagle Library"]);
+    expect(labels).toEqual([
+      "Import · Import Eagle Package",
+      "Import · Import Eagle Library",
+    ]);
   });
 });

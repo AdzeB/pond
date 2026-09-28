@@ -6,6 +6,7 @@ import {
 } from "@/features/downloads/lib/status-feed";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
 import { trashSaves } from "@/features/saves/lib/mutate";
+import { notify } from "@/shared/lib/toast";
 
 const RetryResultSchema = z.object({ ok: z.boolean(), requeued: z.number() });
 const SkipResultSchema = z.object({ ok: z.boolean(), skipped: z.number() });
@@ -93,7 +94,9 @@ export function confirmSkipDownloadRows(rows: readonly DownloadRow[]): void {
   });
 }
 
-async function trashDownloadRows(rows: readonly DownloadRow[]): Promise<void> {
+async function moveDownloadRowsToTrash(
+  rows: readonly DownloadRow[],
+): Promise<void> {
   const ids = [
     ...new Set(rows.filter(canTrashDownload).map((row) => row.saveId)),
   ];
@@ -101,23 +104,36 @@ async function trashDownloadRows(rows: readonly DownloadRow[]): Promise<void> {
   await trashSaves(ids);
 }
 
-export function confirmTrashDownloadRows(rows: readonly DownloadRow[]): void {
+export function trashDownloadRows(rows: readonly DownloadRow[]): void {
   const trashable = rows.filter(canTrashDownload);
   if (trashable.length === 0) return;
-  Dialog.confirm({
-    title: trashable.length === 1 ? "Move to Trash" : "Move Selected to Trash",
-    description:
-      "These saves leave Downloads and go to Trash. Harvest will not try them again.",
-    confirmLabel: "Move to Trash",
-    confirmVariant: "destructive",
-    onConfirm: () =>
-      trashDownloadRows(trashable)
-        .then(() => downloadsSelection.clear())
-        .catch(() =>
-          statusFeed.error(
-            "Move to Trash",
-            "Couldn't move these downloads to Trash. Try again.",
-          ),
-        ),
-  });
+  void moveDownloadRowsToTrash(trashable)
+    .then(() => {
+      downloadsSelection.clear();
+      notify({
+        id: "trash-downloads",
+        title:
+          trashable.length === 1
+            ? "Moved download to Trash"
+            : `Moved ${trashable.length} downloads to Trash`,
+        action: {
+          label: "Undo",
+          onClick: () => {
+            void window.pond.undo().then((result) => {
+              if (!result.ok)
+                statusFeed.error(
+                  "Undo move to Trash",
+                  "Couldn't restore these downloads. Try again.",
+                );
+            });
+          },
+        },
+      });
+    })
+    .catch(() =>
+      statusFeed.error(
+        "Move to Trash",
+        "Couldn't move these downloads to Trash. Try again.",
+      ),
+    );
 }

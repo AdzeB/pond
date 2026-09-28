@@ -8,9 +8,8 @@ import {
   IconPinOutline18,
   IconRenameOutline18,
   IconTagPlusOutline18,
-  IconTagsOutline18,
 } from "@pond/icons/outline/18";
-import { Dialog, type MenuItemSpec } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import {
   focusPaneTitle,
   openTagPicker,
@@ -21,36 +20,11 @@ import {
   notifyUndoableFolderChange,
 } from "@/features/saves/lib/folder-actions";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
-import {
-  addTagsToSelection,
-  pasteTagsForSelection,
-} from "@/features/saves/lib/selection";
-import { peekTags } from "@/features/tags/state/tags";
+import { pasteTagsForSelection } from "@/features/saves/lib/selection";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { notify } from "@/shared/lib/toast";
 import { glyph } from "./shared";
 import type { SaveMenuContext } from "./types";
-
-function addTagItems(ids: readonly string[]): MenuItemSpec[] {
-  const items: MenuItemSpec[] = peekTags().map((tag) => ({
-    label: tag.name,
-    icon: glyph(IconTagsOutline18),
-    onClick: () => void addTagsToSelection(ids, [tag.name]),
-  }));
-  items.push({
-    label: "New Tag",
-    icon: glyph(IconTagPlusOutline18),
-    onClick: () => {
-      Dialog.prompt({
-        title: "New Tag",
-        confirmLabel: "Add Tag",
-        placeholder: "Tag name",
-        onConfirm: (value) => addTagsToSelection(ids, [value]),
-      });
-    },
-  });
-  return items;
-}
 
 function buildAddItems(ids: string[], batch: boolean): MenuItemSpec[] {
   const lastFolderId = saveLibraryBridge.lastUsedFolderId();
@@ -65,15 +39,7 @@ function buildAddItems(ids: string[], batch: boolean): MenuItemSpec[] {
       label: "Add Tags",
       icon: glyph(IconTagPlusOutline18),
       shortcut: shortcutGlyphs("save.add-tag"),
-      hidden: batch,
       onClick: () => openTagPicker(),
-    },
-    {
-      type: "submenu",
-      label: "Add Tags",
-      icon: glyph(IconTagPlusOutline18),
-      hidden: !batch,
-      items: addTagItems(ids),
     },
     {
       label: lastFolder
@@ -96,33 +62,29 @@ function buildAddItems(ids: string[], batch: boolean): MenuItemSpec[] {
       icon: glyph(IconFolderPlusOutline18),
       hidden: !batch,
       onClick: () => {
-        Dialog.prompt({
-          title: `New Folder with ${ids.length} Saves`,
-          confirmLabel: "Create Folder",
-          placeholder: "Folder name",
-          onConfirm: async (name) => {
-            try {
-              const folder = await window.pond.query(
-                "folders.createWithSaves",
-                { name, parentId: null, saveIds: ids },
-              );
-              saveLibraryBridge.rememberFolderDestinations([folder.id]);
-              await saveLibraryBridge.refreshFolders();
-              notifyUndoableFolderChange(
-                "create-folder-with-saves",
-                `Created "${folder.name}" with ${ids.length} saves`,
-              );
-            } catch (error) {
-              notify({
-                id: "create-folder-with-saves",
-                title: "Couldn't create folder",
-                description:
-                  error instanceof Error ? error.message : "Try again.",
-              });
-              throw error;
-            }
-          },
-        });
+        void (async () => {
+          try {
+            const folder = await window.pond.query("folders.createWithSaves", {
+              name: "Untitled",
+              parentId: null,
+              saveIds: ids,
+            });
+            saveLibraryBridge.rememberFolderDestinations([folder.id]);
+            await saveLibraryBridge.refreshFolders();
+            saveLibraryBridge.startEditingFolder(folder.id);
+            notifyUndoableFolderChange(
+              "create-folder-with-saves",
+              `Created "${folder.name}" with ${ids.length} saves`,
+            );
+          } catch (error) {
+            notify({
+              id: "create-folder-with-saves",
+              title: "Couldn't create folder",
+              description:
+                error instanceof Error ? error.message : "Try again.",
+            });
+          }
+        })();
       },
     },
     {

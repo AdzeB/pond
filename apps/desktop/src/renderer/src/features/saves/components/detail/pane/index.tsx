@@ -328,6 +328,7 @@ export function SaveInspector({
                           variant="ghost"
                           size="xs"
                           aria-label="Add Tag"
+                          data-tag-add=""
                         />
                       }
                     >

@@ -45,5 +45,6 @@ registerSaveLibraryBridge({
   lastUsedFolderId,
   rememberFolderDestinations,
   refreshFolders: () => folders.refresh(),
+  startEditingFolder: (id) => folders.startEditing(id),
   saveFolderPresentation,
 });

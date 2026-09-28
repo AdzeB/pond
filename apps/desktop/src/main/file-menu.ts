@@ -1,8 +1,12 @@
-export const FILE_MENU_CREATE_LABELS = [
+export const FILE_MENU_NEW_LABELS = [
   "New Folder",
   "New Smart Folder",
   "New Smart Folder Group",
+  "New Watched Folder",
   "New Note",
+] as const;
+
+export const FILE_MENU_IMPORT_LABELS = [
   "Import Files",
   "Import Folders",
   "Import from Links",

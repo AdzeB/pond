@@ -398,3 +398,7 @@
 .fontInfoActions {
   padding: 0 56px 40px;
 }
+
+.fontNameEditor {
+  max-width: 320px;
+}

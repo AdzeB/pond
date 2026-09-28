@@ -18,6 +18,19 @@ describe("folder sidebar tree", () => {
   beforeEach(() => harness.setup());
   afterEach(() => harness.cleanup());
 
+  it("starts inline naming from the shared folder state", async () => {
+    folderList.current = [folder("Untitled")];
+    await folders.refresh();
+    await harness.mount();
+    await act(async () => folders.startEditing("Untitled"));
+    const input = harness.host.querySelector<HTMLInputElement>(
+      'input[aria-label="Folder name"]',
+    );
+    expect(input?.value).toBe("Untitled");
+    expect(input?.selectionStart).toBe(0);
+    expect(input?.selectionEnd).toBe("Untitled".length);
+  });
+
   it("selects folder ranges, browses their union, and preserves a batch context menu", async () => {
     folderList.current = [folder("Alpha"), folder("Beta"), folder("Charlie")];
     await folders.refresh();

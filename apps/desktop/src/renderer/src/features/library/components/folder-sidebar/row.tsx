@@ -40,7 +40,7 @@ export const Row = forwardRef<HTMLButtonElement, RowProps>(function Row(
       {...props}
     >
       {icon ? <Sidebar.Icon>{icon}</Sidebar.Icon> : null}
-      {label}
+      <Sidebar.ItemLabel>{label}</Sidebar.ItemLabel>
       {status != null ? (
         <Sidebar.Count>{status}</Sidebar.Count>
       ) : count != null && badgeStyle !== "none" ? (

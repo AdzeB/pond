@@ -87,15 +87,6 @@ export function FilterTypeahead({
   const onSelect = useCallback(
     (option: FilterOption, node: TextNode | null, close: () => void) => {
       const item = option.item;
-      if (item.kind === "field") {
-        editor.update(() => {
-          if (node) {
-            node.setTextContent(item.token);
-            node.selectEnd();
-          }
-        });
-        return;
-      }
       editor.update(() => {
         if (!node) return;
         const replacement = $createTextNode(`${item.token} `);

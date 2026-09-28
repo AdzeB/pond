@@ -7,6 +7,7 @@ import { ChatActions } from "./chat-actions";
 let host: HTMLDivElement;
 let root: Root;
 const query = vi.fn(async () => ({ ok: true }));
+const onRename = vi.fn();
 beforeEach(() => {
   vi.stubGlobal("pond", { query });
   query.mockClear();
@@ -27,6 +28,7 @@ async function render(disabled = false, chatId: string | null = "chat") {
           chatId={chatId}
           title="Notes"
           disabled={disabled}
+          onRename={onRename}
           messages={
             chatId
               ? [
@@ -46,6 +48,12 @@ async function render(disabled = false, chatId: string | null = "chat") {
     ),
   );
 }
+it("starts inline renaming without opening a prompt", async () => {
+  await render();
+  await act(async () => item("Rename Chat")?.click());
+  expect(onRename).toHaveBeenCalledOnce();
+  expect(document.querySelector('[role="dialog"]')).toBeNull();
+});
 function item(label: string) {
   return [
     ...document.querySelectorAll<HTMLButtonElement>("button[aria-label]"),

@@ -92,7 +92,7 @@ export const COMMANDS: readonly CommandSpec[] = [
   {
     id: "watched-folder",
     group: "Create",
-    label: "Watched Folder",
+    label: "New Watched Folder",
     icon: IconFolderOpenOutline18,
     keywords: "auto import directory files copy local",
     run: () => void runNewAction(pickWatchedFolder),

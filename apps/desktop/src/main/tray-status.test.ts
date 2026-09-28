@@ -114,6 +114,9 @@ describe("buildTrayTemplate", () => {
     expect(labelsOf(findByLabel(template, "Import")?.submenu ?? [])).toContain(
       "Import Eagle Library",
     );
+    expect(labelsOf(findByLabel(template, "Import")?.submenu ?? [])).toContain(
+      "Auto Import",
+    );
     expect(labelsOf(findByLabel(template, "Sources")?.submenu ?? [])).toContain(
       "New Watch",
     );
@@ -147,7 +150,6 @@ describe("buildTrayTemplate", () => {
     findByLabel(template, "Navigate")
       ?.submenu?.find((item) => item.label === "Settings")
       ?.click?.();
-
     expect(actions.onOpenLibrary).not.toHaveBeenCalled();
     expect(actions.onOpenSettings).toHaveBeenCalledOnce();
   });

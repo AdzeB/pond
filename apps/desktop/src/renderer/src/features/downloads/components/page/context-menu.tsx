@@ -15,8 +15,8 @@ import {
   canTrashDownload,
   confirmCancelDownloadRows,
   confirmSkipDownloadRows,
-  confirmTrashDownloadRows,
   retryDownloadRows,
+  trashDownloadRows,
 } from "@/features/downloads/components/lib/actions";
 import type { DownloadRow } from "@/features/downloads/lib/status-feed";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
@@ -64,7 +64,7 @@ export function buildDownloadMenuItems(
       icon: <IconTrashXmarkOutline18 />,
       variant: "destructive",
       disabled: !trashable,
-      onClick: () => confirmTrashDownloadRows(rows),
+      onClick: () => trashDownloadRows(rows),
     },
     { type: "separator" },
     {

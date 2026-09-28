@@ -1,6 +1,6 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { closeFolderPicker, openFolderPicker } from "../../state/folder-picker";
 import { folders } from "../../state/folders";
 import {
@@ -79,4 +79,53 @@ it("applies staged destinations with Command Enter and ignores IME arrow events"
     addIds: ["Beta"],
     removeIds: [],
   });
+});
+
+it("creates a subfolder immediately and names it inline", async () => {
+  pondQuery.mockImplementation(async (name, rawInput) => {
+    const input = rawInput as
+      | { id?: string; name?: string; parentId?: string | null }
+      | undefined;
+    if (name === "folders.create") {
+      const created = folder("child", input?.parentId ?? null);
+      created.name = input?.name ?? "Untitled";
+      folderList.current.push(created);
+      return created as never;
+    }
+    if (name === "folders.rename") {
+      const created = folderList.current.find((row) => row.id === input?.id);
+      if (created && input?.name) created.name = input.name;
+      return { ok: true } as never;
+    }
+    if (name === "folders.list") return folderList.current as never;
+    if (name === "folders.memberships") return [] as never;
+    return { ok: true } as never;
+  });
+  const label = [...document.querySelectorAll("label")].find(
+    (node) => node.textContent === "Alpha",
+  );
+  if (!(label?.parentElement instanceof HTMLDivElement))
+    throw new Error("Missing Alpha row");
+
+  await act(async () =>
+    label.parentElement?.dispatchEvent(
+      new MouseEvent("contextmenu", { bubbles: true, cancelable: true }),
+    ),
+  );
+  const create = [
+    ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+  ].find((node) => node.textContent === "New Subfolder");
+  if (!create) throw new Error("Missing New Subfolder action");
+  await act(async () => create.click());
+
+  await vi.waitFor(() =>
+    expect(pondQuery).toHaveBeenCalledWith("folders.create", {
+      name: "Untitled",
+      parentId: "Alpha",
+    }),
+  );
+  expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+  expect(
+    document.querySelector('input[aria-label="Folder name"]'),
+  ).not.toBeNull();
 });

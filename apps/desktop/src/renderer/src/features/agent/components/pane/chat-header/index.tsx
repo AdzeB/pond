@@ -5,6 +5,8 @@ import {
 import { Button, Combobox, Tooltip } from "@pond/ui";
 import { AgentHeader } from "@pond/ui/agent-header";
 import { type ReactNode, useState } from "react";
+import { assistant } from "@/features/agent/state/assistant";
+import { InlineNameEditor } from "@/shared/components/inline-name-editor";
 import {
   type ChatHistoryGroup,
   chatHistoryGroups,
@@ -24,6 +26,8 @@ export function ChatHeader({
   disabled,
   onNewChat,
   onOpenChat,
+  renaming = false,
+  onFinishRenaming,
   children,
   actions,
 }: {
@@ -32,6 +36,8 @@ export function ChatHeader({
   disabled: boolean;
   onNewChat?: () => void;
   onOpenChat: (id: string) => void;
+  renaming?: boolean;
+  onFinishRenaming?: () => void;
   children?: ReactNode;
   actions?: ReactNode;
 }) {
@@ -45,7 +51,26 @@ export function ChatHeader({
   const now = new Date();
   const groups = chatHistoryGroups(options, now);
   return (
-    <AgentHeader title={current?.title ?? "New Chat"}>
+    <AgentHeader
+      title={
+        renaming && chatId ? (
+          <InlineNameEditor
+            name={current?.title ?? "New Chat"}
+            className={styles.editor}
+            ariaLabel="Chat name"
+            errorTitle="Enter a name between 1 and 120 characters."
+            onSave={async (name) => {
+              if (name.length > 120)
+                throw new Error("Chat names can be at most 120 characters.");
+              await assistant.renameChat(chatId, name);
+            }}
+            onFinish={() => onFinishRenaming?.()}
+          />
+        ) : (
+          (current?.title ?? "New Chat")
+        )
+      }
+    >
       {actions}
       <Combobox.Root<ChatOption>
         items={groups}

@@ -1,8 +1,10 @@
+import { EXTERNAL_SOURCE_IDS, sourceLabel } from "@pond/schema/sources";
+import { isWatchableSource } from "../core/watch/types";
 import {
-  FILE_MENU_AUTO_IMPORT_LABELS,
-  FILE_MENU_CREATE_LABELS,
   FILE_MENU_DUPLICATES_LABELS,
   FILE_MENU_EXPORT_LABELS,
+  FILE_MENU_IMPORT_LABELS,
+  FILE_MENU_NEW_LABELS,
 } from "../file-menu";
 import type { AppMenuContext, AppMenuItem } from "./types";
 
@@ -13,98 +15,167 @@ export function buildFileSection(context: AppMenuContext): AppMenuItem {
     label: "File",
     submenu: [
       {
-        label: FILE_MENU_CREATE_LABELS[0],
-        accelerator: accelerator("library.new-folder"),
-        registerAccelerator: false,
-        click: sendMenuAction("library.new-folder"),
-      },
-      {
-        label: FILE_MENU_CREATE_LABELS[1],
-        click: sendMenuAction("library.new-smart-folder"),
-      },
-      {
-        label: FILE_MENU_CREATE_LABELS[2],
-        click: sendMenuAction("library.new-smart-folder-group"),
-      },
-      {
-        label: FILE_MENU_CREATE_LABELS[3],
-        accelerator: accelerator("library.new-note"),
-        registerAccelerator: false,
-        click: sendMenuAction("library.new-note"),
-      },
-      {
-        label: "Capture Screenshot",
+        label: "New",
         submenu: [
           {
-            label: "Capture Area",
-            accelerator: accelerator("capture.area"),
+            label: FILE_MENU_NEW_LABELS[0],
+            accelerator: accelerator("library.new-folder"),
             registerAccelerator: false,
-            click: sendMenuAction("capture.area"),
+            click: sendMenuAction("library.new-folder"),
           },
           {
-            label: "Capture Window",
-            accelerator: accelerator("capture.window"),
-            registerAccelerator: false,
-            click: sendMenuAction("capture.window"),
+            label: FILE_MENU_NEW_LABELS[1],
+            click: sendMenuAction("library.new-smart-folder"),
           },
           {
-            label: "Capture Full Screen",
-            accelerator: accelerator("capture.screen"),
-            registerAccelerator: false,
-            click: sendMenuAction("capture.screen"),
+            label: FILE_MENU_NEW_LABELS[2],
+            click: sendMenuAction("library.new-smart-folder-group"),
           },
-        ],
-      },
-      { type: "separator" },
-      {
-        label: FILE_MENU_CREATE_LABELS[4],
-        accelerator: accelerator("library.import-files"),
-        registerAccelerator: false,
-        click: sendMenuAction("library.import-files"),
-      },
-      {
-        label: FILE_MENU_CREATE_LABELS[5],
-        accelerator: accelerator("library.import-folders"),
-        registerAccelerator: false,
-        click: sendMenuAction("library.import-folders"),
-      },
-      {
-        label: FILE_MENU_CREATE_LABELS[6],
-        accelerator: accelerator("library.import-links"),
-        registerAccelerator: false,
-        click: sendMenuAction("library.import-links"),
-      },
-      {
-        label: FILE_MENU_CREATE_LABELS[7],
-        click: sendMenuAction("library.import-eagle"),
-      },
-      {
-        label: FILE_MENU_CREATE_LABELS[8],
-        click: sendMenuAction("library.import-package"),
-      },
-      {
-        label: "Auto Import",
-        submenu: [
           {
-            label: FILE_MENU_AUTO_IMPORT_LABELS[0],
+            label: FILE_MENU_NEW_LABELS[3],
             click: sendMenuAction("library.auto-import-folder"),
           },
+          { type: "separator" },
+          {
+            label: FILE_MENU_NEW_LABELS[4],
+            accelerator: accelerator("library.new-note"),
+            registerAccelerator: false,
+            click: sendMenuAction("library.new-note"),
+          },
+          {
+            label: "Capture Screenshot",
+            submenu: [
+              {
+                label: "Capture Area",
+                accelerator: accelerator("capture.area"),
+                registerAccelerator: false,
+                click: sendMenuAction("capture.area"),
+              },
+              {
+                label: "Capture Window",
+                accelerator: accelerator("capture.window"),
+                registerAccelerator: false,
+                click: sendMenuAction("capture.window"),
+              },
+              {
+                label: "Capture Full Screen",
+                accelerator: accelerator("capture.screen"),
+                registerAccelerator: false,
+                click: sendMenuAction("capture.screen"),
+              },
+            ],
+          },
+          { type: "separator" },
+          {
+            label: "New Tag",
+            accelerator: accelerator("library.new-tag"),
+            registerAccelerator: false,
+            click: sendMenuAction("library.new-tag"),
+          },
+          {
+            label: "New Tag Group",
+            accelerator: accelerator("library.new-tag-group"),
+            registerAccelerator: false,
+            click: sendMenuAction("library.new-tag-group"),
+          },
         ],
       },
       {
-        label: "Find Duplicates",
+        label: "Import",
         submenu: [
           {
-            label: FILE_MENU_DUPLICATES_LABELS[0],
-            click: sendMenuAction("library.find-duplicates-all"),
+            label: FILE_MENU_IMPORT_LABELS[0],
+            accelerator: accelerator("library.import-files"),
+            registerAccelerator: false,
+            click: sendMenuAction("library.import-files"),
           },
           {
-            label: FILE_MENU_DUPLICATES_LABELS[1],
-            click: sendMenuAction("library.find-duplicates-list"),
+            label: FILE_MENU_IMPORT_LABELS[1],
+            accelerator: accelerator("library.import-folders"),
+            registerAccelerator: false,
+            click: sendMenuAction("library.import-folders"),
           },
           {
-            label: FILE_MENU_DUPLICATES_LABELS[2],
-            click: sendMenuAction("library.find-duplicates-selected"),
+            label: FILE_MENU_IMPORT_LABELS[2],
+            accelerator: accelerator("library.import-links"),
+            registerAccelerator: false,
+            click: sendMenuAction("library.import-links"),
+          },
+          {
+            label: "Import from Clipboard",
+            click: sendMenuAction("library.import-clipboard"),
+          },
+          { type: "separator" },
+          {
+            label: "Import Bookmarks",
+            click: sendMenuAction("library.import-bookmarks"),
+          },
+          {
+            label: "Import Page Assets",
+            click: sendMenuAction("library.import-page-assets"),
+          },
+          { type: "separator" },
+          {
+            label: FILE_MENU_IMPORT_LABELS[3],
+            click: sendMenuAction("library.import-eagle"),
+          },
+          {
+            label: FILE_MENU_IMPORT_LABELS[4],
+            click: sendMenuAction("library.import-package"),
+          },
+        ],
+      },
+      {
+        label: "Sources",
+        submenu: [
+          {
+            label: "New Source",
+            submenu: EXTERNAL_SOURCE_IDS.map((source) => ({
+              label: sourceLabel(source),
+              click: sendMenuAction(`library.connect-${source}`),
+            })),
+          },
+          {
+            label: "New Watch",
+            submenu: EXTERNAL_SOURCE_IDS.filter(isWatchableSource).map(
+              (source) => ({
+                label: sourceLabel(source),
+                click: sendMenuAction(`library.watch-${source}`),
+              }),
+            ),
+          },
+        ],
+      },
+      {
+        label: "Library",
+        submenu: [
+          {
+            label: "Find Duplicates",
+            submenu: [
+              {
+                label: FILE_MENU_DUPLICATES_LABELS[0],
+                click: sendMenuAction("library.find-duplicates-all"),
+              },
+              {
+                label: FILE_MENU_DUPLICATES_LABELS[1],
+                click: sendMenuAction("library.find-duplicates-list"),
+              },
+              {
+                label: FILE_MENU_DUPLICATES_LABELS[2],
+                click: sendMenuAction("library.find-duplicates-selected"),
+              },
+            ],
+          },
+          { type: "separator" },
+          {
+            label: "Rescan Library",
+            accelerator: accelerator("library.rescan"),
+            registerAccelerator: false,
+            click: context.rescanLibrary,
+          },
+          {
+            label: "Verify Integrity",
+            click: context.verifyLibrary,
           },
         ],
       },

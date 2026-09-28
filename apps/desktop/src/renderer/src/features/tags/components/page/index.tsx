@@ -19,6 +19,7 @@ import type { TagsRowData } from "@/features/tags/components/manager/lib/types";
 import { TagPicker } from "@/features/tags/components/picker/picker";
 import { useTagCreation } from "@/features/tags/hooks/use-tag-creation";
 import { useTagsData } from "@/features/tags/hooks/use-tag-manager";
+import { useTagCreationRequest } from "@/features/tags/state/creation";
 import {
   SearchChrome,
   SearchChromeInput,
@@ -85,9 +86,22 @@ export function TagsPage() {
   const [allTags, patchAllTags] = usePrefs("allTags");
   const [scope, setScope] = useState<Scope>("all");
   const { creating, startCreate, cancelCreate, saveCreate } = useTagCreation();
+  const creationRequest = useTagCreationRequest();
+  const handledCreationRequest = useRef(0);
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const cancelDescriptionRef = useRef(false);
   const clearRef = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    if (
+      creationRequest.token === 0 ||
+      creationRequest.token === handledCreationRequest.current
+    )
+      return;
+    handledCreationRequest.current = creationRequest.token;
+    setScope(creationRequest.kind === "group" ? "all" : "ungrouped");
+    startCreate(creationRequest.kind);
+  }, [creationRequest, startCreate]);
   const sidebarFade = useScrollFade<HTMLDivElement>();
   const scrollFade = useScrollFade<HTMLDivElement>();
   const contextValue = useMemo(
@@ -244,7 +258,7 @@ export function TagsPage() {
                         <Sidebar.Icon>
                           <IconBookmarkOutline12 aria-hidden="true" />
                         </Sidebar.Icon>
-                        All
+                        <Sidebar.ItemLabel>All</Sidebar.ItemLabel>
                         <Sidebar.Count>{total}</Sidebar.Count>
                       </Sidebar.Item>
                       <Sidebar.Item
@@ -260,7 +274,7 @@ export function TagsPage() {
                         <Sidebar.Icon>
                           <IconFolderOutline12 aria-hidden="true" />
                         </Sidebar.Icon>
-                        Uncategorized
+                        <Sidebar.ItemLabel>Uncategorized</Sidebar.ItemLabel>
                         <Sidebar.Count>{ungroupedTotal}</Sidebar.Count>
                       </Sidebar.Item>
                       <Sidebar.Item
@@ -272,7 +286,7 @@ export function TagsPage() {
                         <Sidebar.Icon>
                           <IconStarOutline12 aria-hidden="true" />
                         </Sidebar.Icon>
-                        Starred
+                        <Sidebar.ItemLabel>Starred</Sidebar.ItemLabel>
                         {starredTotal > 0 ? (
                           <Sidebar.Count>{starredTotal}</Sidebar.Count>
                         ) : null}
@@ -327,7 +341,7 @@ export function TagsPage() {
                             <Sidebar.Icon>
                               <IconFolderOutline12 aria-hidden="true" />
                             </Sidebar.Icon>
-                            {group.name}
+                            <Sidebar.ItemLabel>{group.name}</Sidebar.ItemLabel>
                             <Sidebar.Count>{group.count}</Sidebar.Count>
                           </Sidebar.Item>
                         ))}

@@ -6,12 +6,14 @@ import { useEffect } from "react";
 interface FoldersState {
   folders: Folder[];
   bySave: Record<string, string[]>;
+  editingId: string | null;
   loaded: boolean;
 }
 
 const store = new Store<FoldersState>({
   folders: [],
   bySave: {},
+  editingId: null,
   loaded: false,
 });
 
@@ -30,6 +32,15 @@ export const folders = {
       return folder ? [folder] : [];
     });
   },
+  startEditing(id: string): void {
+    store.setState((state) => ({ ...state, editingId: id }));
+  },
+  finishEditing(id?: string): void {
+    store.setState((state) => ({
+      ...state,
+      editingId: id == null || state.editingId === id ? null : state.editingId,
+    }));
+  },
   async refresh(): Promise<void> {
     const [folderRows, membershipRows] = await Promise.all([
       window.pond.query("folders.list", {}),
@@ -41,9 +52,14 @@ export const folders = {
       list.push(row.folderId);
       bySave[row.saveId] = list;
     }
-    store.setState(() => ({
+    store.setState((state) => ({
       folders: folderRows ?? [],
       bySave,
+      editingId:
+        state.editingId &&
+        (folderRows ?? []).some((folder) => folder.id === state.editingId)
+          ? state.editingId
+          : null,
       loaded: true,
     }));
   },
@@ -55,6 +71,10 @@ export function useFolders(): Folder[] {
 
 export function useFolderMemberships(): Record<string, string[]> {
   return useSelector(store, (s) => s.bySave);
+}
+
+export function useEditingFolderId(): string | null {
+  return useSelector(store, (s) => s.editingId);
 }
 
 export function useHydrateFolders(): void {

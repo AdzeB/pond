@@ -22,6 +22,10 @@
 .row label {
   flex: 1;
 }
+.editor {
+  flex: 1;
+  min-width: 0;
+}
 .row small {
   opacity: 0.6;
 }

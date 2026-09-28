@@ -183,6 +183,7 @@ function AgentPaneContent({
   reduceMotion: boolean;
 }) {
   const [dropping, setDropping] = useState(false);
+  const [renamingChat, setRenamingChat] = useState(false);
   const input = useRef<ComposerEditorHandle>(null);
   const latestResponse = useRef<HTMLElement>(null);
   const composer = useRef<HTMLDivElement>(null);
@@ -276,6 +277,7 @@ function AgentPaneContent({
                   }
                   messages={state.messages}
                   disabled={running || state.loading}
+                  onRename={() => setRenamingChat(true)}
                 />
               </>
             ) : undefined
@@ -283,6 +285,8 @@ function AgentPaneContent({
           chatId={state.chatId}
           chats={state.chats}
           disabled={running || state.loading}
+          renaming={renamingChat}
+          onFinishRenaming={() => setRenamingChat(false)}
           onNewChat={
             layout === "page"
               ? () => {

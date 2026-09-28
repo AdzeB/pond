@@ -22,7 +22,7 @@ import {
   IconVolumeOffOutline18,
   IconVolumeOutline18,
 } from "@pond/icons/outline/18";
-import { Button, Dialog, Input, Select, Slider } from "@pond/ui";
+import { Button, Input, Select, Slider } from "@pond/ui";
 import type { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import {
@@ -58,6 +58,7 @@ import {
 } from "@/features/saves/lib/media/file-viewer";
 import { buildPondUrl } from "@/features/saves/lib/media/url";
 import type { Save, SaveFile } from "@/features/saves/types";
+import { InlineNameEditor } from "@/shared/components/inline-name-editor";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { formatBytes } from "@/shared/lib/format";
 import {
@@ -1021,6 +1022,7 @@ function FontViewer(props: ViewerProps & { url: string }) {
   const [failed, setFailed] = useState(false);
   const [mode, setMode] = useState<FontMode>("specimen");
   const [background, setBackground] = useState<"light" | "dark">("light");
+  const [renaming, setRenaming] = useState(false);
   const scrollFade = useScrollFade<HTMLDivElement>();
   const family = useMemo(
     () => `pond-preview-${props.save.id.replace(/[^a-zA-Z0-9_-]/g, "")}`,
@@ -1194,31 +1196,31 @@ function FontViewer(props: ViewerProps & { url: string }) {
               </div>
             </dl>
             <div className={styles.fontInfoActions}>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() =>
-                  Dialog.prompt({
-                    title: "Rename Font",
-                    initialValue: props.save.title ?? props.file.family ?? "",
-                    confirmLabel: "Rename",
-                    onConfirm: async (name) => {
-                      if (!name.trim()) throw new Error("Enter a name.");
-                      const result = await window.pond.query(
-                        "saves.batchRename",
-                        {
-                          ids: [props.save.id],
-                          pattern: name.trim(),
-                        },
-                      );
-                      if (!result.ok)
-                        throw new Error("Could not rename this font.");
-                    },
-                  })
-                }
-              >
-                Rename Font
-              </Button>
+              {renaming ? (
+                <InlineNameEditor
+                  name={props.save.title ?? props.file.family ?? "Untitled"}
+                  className={styles.fontNameEditor}
+                  ariaLabel="Font name"
+                  errorTitle="Could not rename this font."
+                  onSave={async (name) => {
+                    const result = await window.pond.query(
+                      "saves.batchRename",
+                      { ids: [props.save.id], pattern: name },
+                    );
+                    if (!result.ok)
+                      throw new Error("Could not rename this font.");
+                  }}
+                  onFinish={() => setRenaming(false)}
+                />
+              ) : (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setRenaming(true)}
+                >
+                  Rename Font
+                </Button>
+              )}
             </div>
           </>
         ) : null}

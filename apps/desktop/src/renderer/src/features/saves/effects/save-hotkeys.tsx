@@ -27,7 +27,6 @@ import { rateSaves } from "@/features/saves/lib/rating";
 import { openSave, saveIdFromPath } from "@/features/saves/lib/save-nav";
 import { selectOnlySave } from "@/features/saves/lib/select";
 import {
-  addTagsToSelection,
   copyFilesForSelection,
   copyIdsForSelection,
   copyTagsForSelection,
@@ -245,16 +244,7 @@ export function SaveHotkeys() {
         hotkey: bindingKeys(shortcuts, "save.add-tag"),
         callback: () => {
           const ids = selection.snapshot();
-          if (ids.length > 1) {
-            Dialog.prompt({
-              title: "Add Tag",
-              confirmLabel: "Add Tag",
-              placeholder: "Tag name",
-              onConfirm: (value) => addTagsToSelection(ids, [value]),
-            });
-            return;
-          }
-          if (!primarySelectionStore.state.id) return;
+          if (ids.length === 0 && !primarySelectionStore.state.id) return;
           openTagPicker();
         },
         options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },

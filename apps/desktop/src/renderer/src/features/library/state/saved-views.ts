@@ -18,8 +18,23 @@ import {
 } from "@/features/library/state/view-store";
 import { descendantFolderIds } from "@/features/saves/lib/nav-filter";
 
-const store = new Store<{ views: SavedView[]; loaded: boolean }>({
+export interface SavedViewEditorRequest {
+  token: number;
+  kind: "smart_folder" | "group";
+  parentId: string | null;
+}
+
+interface SavedViewsState {
+  views: SavedView[];
+  editingId: string | null;
+  editorRequest: SavedViewEditorRequest;
+  loaded: boolean;
+}
+
+const store = new Store<SavedViewsState>({
   views: [],
+  editingId: null,
+  editorRequest: { token: 0, kind: "smart_folder", parentId: null },
   loaded: false,
 });
 
@@ -58,9 +73,40 @@ export const savedViews = {
   snapshot(): SavedView[] {
     return store.state.views;
   },
+  startEditing(id: string): void {
+    store.setState((state) => ({ ...state, editingId: id }));
+  },
+  finishEditing(id?: string): void {
+    store.setState((state) => ({
+      ...state,
+      editingId: id == null || state.editingId === id ? null : state.editingId,
+    }));
+  },
+  openEditor(input: {
+    kind: "smart_folder" | "group";
+    parentId?: string | null;
+  }): void {
+    store.setState((state) => ({
+      ...state,
+      editorRequest: {
+        token: state.editorRequest.token + 1,
+        kind: input.kind,
+        parentId: input.parentId ?? null,
+      },
+    }));
+  },
   async refresh(): Promise<void> {
     const views = await window.pond.query("savedViews.list", {});
-    store.setState(() => ({ views: views ?? [], loaded: true }));
+    store.setState((state) => ({
+      ...state,
+      views: views ?? [],
+      editingId:
+        state.editingId &&
+        (views ?? []).some((view) => view.id === state.editingId)
+          ? state.editingId
+          : null,
+      loaded: true,
+    }));
     const { activeViewId } = getViewState();
     if (!activeViewId) return;
     const active = store.state.views.find((view) => view.id === activeViewId);
@@ -170,6 +216,14 @@ export const savedViews = {
 
 export function useSavedViews(): SavedView[] {
   return useSelector(store, (s) => s.views);
+}
+
+export function useEditingSavedViewId(): string | null {
+  return useSelector(store, (s) => s.editingId);
+}
+
+export function useSavedViewEditorRequest(): SavedViewEditorRequest {
+  return useSelector(store, (s) => s.editorRequest);
 }
 
 export function useHydrateSavedViews(): void {

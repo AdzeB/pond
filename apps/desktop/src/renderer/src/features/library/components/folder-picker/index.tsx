@@ -15,6 +15,7 @@ import {
   useFolderMemberships,
   useFolders,
 } from "@/features/library/state/folders";
+import { InlineNameEditor } from "@/shared/components/inline-name-editor";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
 import { buildFolderPickerRowItems } from "./row-menu";
 import styles from "./styles.module.css";
@@ -36,6 +37,7 @@ function FolderPicker({ ids }: { ids: readonly string[] }) {
   const [recent, setRecent] = useState(readRecentFolderIds);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   useEffect(() => {
     void folders.refresh();
   }, []);
@@ -113,22 +115,28 @@ function FolderPicker({ ids }: { ids: readonly string[] }) {
       setBusy(false);
     }
   }
-  function promptCreate(parentId: string | null) {
+  async function createUntitled(parentId: string | null) {
     if (busy) return;
-    Dialog.prompt({
-      title: parentId ? "New Subfolder" : "New Folder",
-      placeholder: "Folder name",
-      confirmLabel: "Create",
-      onConfirm: async (name) => {
-        const trimmed = name.trim();
-        if (!trimmed) throw new Error("Enter a folder name.");
-        await window.pond.query("folders.create", {
-          name: trimmed,
-          parentId,
-        });
-        await folders.refresh();
-      },
-    });
+    setBusy(true);
+    setError(null);
+    try {
+      const folder = await window.pond.query("folders.create", {
+        name: "Untitled",
+        parentId,
+      });
+      await folders.refresh();
+      setChanges((previous) => ({ ...previous, [folder.id]: true }));
+      setSearch("");
+      setScope("all");
+      setCursor(folder.id);
+      setEditingId(folder.id);
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Could not create folder.",
+      );
+    } finally {
+      setBusy(false);
+    }
   }
   function navigate(event: React.KeyboardEvent, fromSearch = false) {
     if (event.nativeEvent.isComposing || busy) return;
@@ -239,8 +247,9 @@ function FolderPicker({ ids }: { ids: readonly string[] }) {
                     buildItems={() =>
                       buildFolderPickerRowItems({
                         recent: recent.includes(folder.id),
-                        onCreateSubfolder: () => promptCreate(folder.id),
-                        onCreateBelow: () => promptCreate(folder.parentId),
+                        onCreateSubfolder: () => void createUntitled(folder.id),
+                        onCreateBelow: () =>
+                          void createUntitled(folder.parentId),
                         onRemoveRecent: () => {
                           forgetRecentFolder(folder.id);
                           setRecent(readRecentFolderIds());
@@ -270,9 +279,28 @@ function FolderPicker({ ids }: { ids: readonly string[] }) {
                       >
                         <Checkbox.Indicator />
                       </Checkbox.Root>
-                      <label htmlFor={`${controlId}-folder-${index}`}>
-                        {folder.label}
-                      </label>
+                      {editingId === folder.id ? (
+                        <InlineNameEditor
+                          name={folder.name}
+                          className={styles.editor}
+                          ariaLabel="Folder name"
+                          errorTitle="Couldn't rename folder. Try again."
+                          onSave={async (name) => {
+                            const result = await window.pond.query(
+                              "folders.rename",
+                              { id: folder.id, name },
+                            );
+                            if (!result.ok)
+                              throw new Error("Couldn't rename folder.");
+                            await folders.refresh();
+                          }}
+                          onFinish={() => setEditingId(null)}
+                        />
+                      ) : (
+                        <label htmlFor={`${controlId}-folder-${index}`}>
+                          {folder.label}
+                        </label>
+                      )}
                       {recent.includes(folder.id) ? (
                         <small>Recent</small>
                       ) : null}

@@ -21,3 +21,16 @@ describe("sidebar scroll viewport", () => {
     expect(scroll).not.toContain("overflow: visible;");
   });
 });
+
+describe("sidebar item labels", () => {
+  it("truncates labels without shrinking icons or counts", () => {
+    const label = declarations(".item-label");
+    expect(label).toContain("flex: 1;");
+    expect(label).toContain("min-width: 0;");
+    expect(label).toContain("overflow: hidden;");
+    expect(label).toContain("text-overflow: ellipsis;");
+    expect(label).toContain("white-space: nowrap;");
+
+    expect(declarations(".count")).toContain("flex: none;");
+  });
+});

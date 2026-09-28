@@ -5,29 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { newMenuDialog } from "@/features/library/state/new-menu-dialog";
 import { NewMenu, NewMenuDialogHost } from "./";
 
-const labels = [
-  "New Folder",
-  "New Smart Folder",
-  "New Tag",
-  "New Tag Group",
-  "New Note",
-  "Capture Screenshot",
-  "Import Files",
-  "Import Folders",
-  "Import from Links",
-  "Import from Clipboard",
-  "Import Bookmarks",
-  "Import Page Assets",
-  "Import Eagle Package",
-  "Import Eagle Library",
-  "Import Pond Package",
-  "New Source",
-  "New Watch",
-  "Find Duplicates",
-  "Auto Import",
-  "Rescan Library",
-  "Verify Integrity",
-];
+const labels = ["New", "Import", "Sources", "Library"];
 
 describe("new menu", () => {
   let host: HTMLDivElement;
@@ -68,28 +46,28 @@ describe("new menu", () => {
     await act(async () => trigger.click());
   }
 
-  it("lists Eagle create and import actions", async () => {
+  it("groups actions into task submenus", async () => {
     await openMenu();
     const text = document.body.textContent ?? "";
     for (const label of labels) expect(text).toContain(label);
-    expect(text).toContain("Import Legacy Library");
+    expect(text).not.toContain("New Folder");
+    expect(text).not.toContain("Import Files");
+    expect(text).not.toContain("Navigate");
     expect(text).not.toContain("New Tab");
     expect(text).not.toContain("Create");
     expect(text).not.toContain("Connect");
     expect(text).not.toContain("Tools");
   });
 
-  it("uses outline icons for source actions", async () => {
+  it("uses an outline icon for the Sources submenu", async () => {
     await openMenu();
-    for (const label of ["New Source", "New Watch"]) {
-      const item = [...document.querySelectorAll('[role="menuitem"]')].find(
-        (el) => el.textContent?.includes(label),
-      );
-      const icon = item?.querySelector("svg");
-      expect(icon).toBeTruthy();
-      expect(icon?.querySelector('[stroke="currentColor"]')).toBeTruthy();
-      expect(icon?.querySelector('[fill="currentColor"]')).toBeNull();
-    }
+    const item = [...document.querySelectorAll('[role="menuitem"]')].find(
+      (el) => el.textContent?.includes("Sources"),
+    );
+    const icon = item?.querySelector("svg");
+    expect(icon).toBeTruthy();
+    expect(icon?.querySelector('[stroke="currentColor"]')).toBeTruthy();
+    expect(icon?.querySelector('[fill="currentColor"]')).toBeNull();
   });
 
   it("filters by search and reports no matches", async () => {

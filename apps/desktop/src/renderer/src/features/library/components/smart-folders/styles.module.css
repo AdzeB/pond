@@ -71,12 +71,6 @@
   line-height: 1;
 }
 
-.name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .colorSwatch {
   box-sizing: border-box;
   display: block;

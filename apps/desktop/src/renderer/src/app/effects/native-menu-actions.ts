@@ -1,6 +1,5 @@
 import { FIELD_IDS } from "@pond/schema/filters/meta";
 import type { FieldId } from "@pond/schema/filters/types";
-import { Dialog } from "@pond/ui";
 import type { MenuActionId } from "@shared/constants";
 import { filterToolbar } from "@/features/library/components/filter-menu/toolbar-state";
 import {
@@ -26,7 +25,6 @@ import { rateSaves } from "@/features/saves/lib/rating";
 import { REVERSE_SEARCH_ENGINES } from "@/features/saves/lib/reverse-image-search";
 import { selectResults } from "@/features/saves/lib/select-results";
 import {
-  addTagsToSelection,
   clearTagsForSelection,
   copyFilePathsForSelection,
   copyFilesForSelection,
@@ -147,31 +145,11 @@ function openSearch(scope: "all" | "current"): void {
 function addTag(): void {
   const ids = requireSelection();
   if (ids.length === 0) return;
-  if (ids.length === 1) {
-    openTagPicker();
-    return;
-  }
-  Dialog.prompt({
-    title: "Add Tag",
-    confirmLabel: "Add Tag",
-    placeholder: "Tag name",
-    onConfirm: (value) => addTagsToSelection(ids, [value]),
-  });
+  openTagPicker();
 }
 
 function createSmartFolderGroup(): void {
-  Dialog.prompt({
-    title: "New Smart Folder Group",
-    confirmLabel: "Create",
-    initialValue: "Untitled",
-    onConfirm: (value) =>
-      runNewAction(async () => {
-        await savedViews.create({
-          kind: "group",
-          name: value.trim() || "Untitled",
-        });
-      }),
-  });
+  savedViews.openEditor({ kind: "group" });
 }
 
 function findField(id: MenuActionId): FieldId | null {

@@ -1,3 +1,7 @@
+.editor {
+  min-width: 0;
+}
+
 .popup {
   width: min(380px, calc(100vw - 32px));
   max-width: var(--available-width);

@@ -98,7 +98,7 @@ export function SettingsSidebarView({
         <Sidebar.Icon>
           <section.icon />
         </Sidebar.Icon>
-        {section.label}
+        <Sidebar.ItemLabel>{section.label}</Sidebar.ItemLabel>
       </Sidebar.Item>
     );
   };

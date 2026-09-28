@@ -27,7 +27,7 @@ import {
 import type { Folder } from "@pond/schema/db";
 import { Button, Dialog, type MenuItemSpec, Sidebar } from "@pond/ui";
 import { useReducedMotionConfig } from "motion/react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   enterFolder,
@@ -45,7 +45,7 @@ import { useOrganizationTree } from "../../hooks/use-organization-tree";
 import { useSidebarCounts } from "../../hooks/use-sidebar-counts";
 import { combineQueries, inheritedQueryFor } from "../../lib/smart-folders";
 import { saveFolderPresentation } from "../../state/folder-presentation";
-import { folders } from "../../state/folders";
+import { folders, useEditingFolderId } from "../../state/folders";
 import type { LibraryNav } from "../../state/library-chrome";
 import { openOrganizationRenameDialog } from "../../state/organization-rename-dialog";
 import { saveSavedViewPresentation } from "../../state/saved-view-presentation";
@@ -139,7 +139,7 @@ export function FolderTree({ folderRows, libraryPage, nav }: FolderTreeProps) {
   const [customizingFolderId, setCustomizingFolderId] = useState<string | null>(
     null,
   );
-  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+  const editingFolderId = useEditingFolderId();
   const [foldersOpen, setFoldersOpen] = useState(true);
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [folderViews] = usePrefs("folderViews");
@@ -187,6 +187,10 @@ export function FolderTree({ folderRows, libraryPage, nav }: FolderTreeProps) {
   const activeFolderCount = activeFolder
     ? (counts.folders[activeFolder.id] ?? 0)
     : 0;
+
+  useEffect(() => {
+    if (editingFolderId) setFoldersOpen(true);
+  }, [editingFolderId]);
 
   function previewFolderDrop({ active, over }: DragOverEvent): void {
     if (!over) {
@@ -348,7 +352,7 @@ export function FolderTree({ folderRows, libraryPage, nav }: FolderTreeProps) {
         parentId,
       });
       await folders.refresh();
-      setEditingFolderId(folder.id);
+      folders.startEditing(folder.id);
     } catch (error) {
       notify({
         id: "create-folder",
@@ -740,11 +744,9 @@ export function FolderTree({ folderRows, libraryPage, nav }: FolderTreeProps) {
                     coverSaveId={presentation?.coverSaveId}
                     onCreateFolder={(parentId) => void createFolder(parentId)}
                     onCustomize={() => setCustomizingFolderId(folder.id)}
-                    onFinishEditing={() =>
-                      setEditingFolderId((id) => (id === folder.id ? null : id))
-                    }
+                    onFinishEditing={() => folders.finishEditing(folder.id)}
                     onOpenTool={setFolderTool}
-                    onStartEditing={setEditingFolderId}
+                    onStartEditing={folders.startEditing}
                     onToggleAll={tree.toggleAllFolders}
                     onToggleFolder={() => tree.toggleFolder(folder.id)}
                     doubleClickBehavior={sidebar.doubleClickBehavior}

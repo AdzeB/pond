@@ -81,7 +81,7 @@ const nativeFlows = {
   "library.import-page-assets": "Import page assets",
   "library.import-eagle": "Import an Eagle library",
   "library.import-package": "Import a package",
-  "library.auto-import-folder": "Choose an automatic import folder",
+  "library.auto-import-folder": "Create a watched folder",
   "library.find-duplicates-all": "Inspect duplicate Saves",
 } satisfies Partial<Record<MenuActionId, string>>;
 const viewCommands = [

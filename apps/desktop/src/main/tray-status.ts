@@ -6,8 +6,9 @@ import { createCopyTranslator, createTranslator } from "../shared/localization";
 import { isWatchableSource } from "./core/watch/types";
 import {
   FILE_MENU_AUTO_IMPORT_LABELS,
-  FILE_MENU_CREATE_LABELS,
   FILE_MENU_DUPLICATES_LABELS,
+  FILE_MENU_IMPORT_LABELS,
+  FILE_MENU_NEW_LABELS,
 } from "./file-menu";
 
 export interface TrayStatusInput {
@@ -142,18 +143,14 @@ export function buildTrayTemplate(
       label: "New",
       submenu: [
         run(
-          FILE_MENU_CREATE_LABELS[0],
+          FILE_MENU_NEW_LABELS[0],
           "library.new-folder",
           accelerators.newFolder,
         ),
-        run(FILE_MENU_CREATE_LABELS[1], "library.new-smart-folder"),
-        run(FILE_MENU_CREATE_LABELS[2], "library.new-smart-folder-group"),
+        run(FILE_MENU_NEW_LABELS[1], "library.new-smart-folder"),
+        run(FILE_MENU_NEW_LABELS[2], "library.new-smart-folder-group"),
         { type: "separator" },
-        run(
-          FILE_MENU_CREATE_LABELS[3],
-          "library.new-note",
-          accelerators.newNote,
-        ),
+        run(FILE_MENU_NEW_LABELS[4], "library.new-note", accelerators.newNote),
         run(
           "Capture Screenshot",
           "library.capture-screenshot",
@@ -171,17 +168,17 @@ export function buildTrayTemplate(
       label: "Import",
       submenu: [
         run(
-          FILE_MENU_CREATE_LABELS[4],
+          FILE_MENU_IMPORT_LABELS[0],
           "library.import-files",
           accelerators.importFiles,
         ),
         run(
-          FILE_MENU_CREATE_LABELS[5],
+          FILE_MENU_IMPORT_LABELS[1],
           "library.import-folders",
           accelerators.importFolders,
         ),
         run(
-          FILE_MENU_CREATE_LABELS[6],
+          FILE_MENU_IMPORT_LABELS[2],
           "library.import-links",
           accelerators.importLinks,
         ),
@@ -190,8 +187,8 @@ export function buildTrayTemplate(
         run("Import Bookmarks", "library.import-bookmarks"),
         run("Import Page Assets", "library.import-page-assets"),
         { type: "separator" },
-        run(FILE_MENU_CREATE_LABELS[7], "library.import-eagle"),
-        run(FILE_MENU_CREATE_LABELS[8], "library.import-package"),
+        run(FILE_MENU_IMPORT_LABELS[3], "library.import-eagle"),
+        run(FILE_MENU_IMPORT_LABELS[4], "library.import-package"),
         { type: "separator" },
         {
           label: "Auto Import",

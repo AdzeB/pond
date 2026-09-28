@@ -29,6 +29,7 @@ export interface SaveLibraryBridge {
   lastUsedFolderId(): string | null;
   rememberFolderDestinations(ids: string[]): void;
   refreshFolders(): Promise<void>;
+  startEditingFolder(id: string): void;
   saveFolderPresentation(
     folderId: string,
     patch: { pinnedIds?: string[]; coverSaveId?: string | null },
@@ -59,6 +60,7 @@ let current: SaveLibraryBridge = {
   lastUsedFolderId: unavailable,
   rememberFolderDestinations: unavailable,
   refreshFolders: unavailable,
+  startEditingFolder: unavailable,
   saveFolderPresentation: unavailable,
 };
 
@@ -87,6 +89,7 @@ export const saveLibraryBridge: SaveLibraryBridge = {
   lastUsedFolderId: () => current.lastUsedFolderId(),
   rememberFolderDestinations: (ids) => current.rememberFolderDestinations(ids),
   refreshFolders: () => current.refreshFolders(),
+  startEditingFolder: (id) => current.startEditingFolder(id),
   saveFolderPresentation: (folderId, patch) =>
     current.saveFolderPresentation(folderId, patch),
 };

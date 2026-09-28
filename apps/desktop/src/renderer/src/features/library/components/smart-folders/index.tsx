@@ -36,7 +36,7 @@ import {
 } from "@pond/ui";
 import { librarySavedViewLink } from "@shared/library-links";
 import { useSelector } from "@tanstack/react-store";
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { filterToolbar } from "@/features/library/components/filter-menu/toolbar-state";
 import {
   combineQueries,
@@ -49,6 +49,8 @@ import { openOrganizationRenameDialog } from "@/features/library/state/organizat
 import { saveSavedViewPresentation } from "@/features/library/state/saved-view-presentation";
 import {
   savedViews,
+  useEditingSavedViewId,
+  useSavedViewEditorRequest,
   useSavedViews,
 } from "@/features/library/state/saved-views";
 import { useViewStore } from "@/features/library/state/view-store";
@@ -685,7 +687,7 @@ function SmartFolderEntry({
                   )}
                 </span>
               </Sidebar.Icon>
-              <span className={styles.name}>{view.name}</span>
+              <Sidebar.ItemLabel>{view.name}</Sidebar.ItemLabel>
             </Sidebar.Item>
           )}
           {renaming ? null : (
@@ -751,7 +753,24 @@ export function SmartFoldersSection({
   const [presentations] = usePrefs("savedViewViews");
   const [open, setOpen] = useState(true);
   const [editor, setEditor] = useState<EditorRequest | null>(null);
-  const [editingViewId, setEditingViewId] = useState<string | null>(null);
+  const editingViewId = useEditingSavedViewId();
+  const editorRequest = useSavedViewEditorRequest();
+  const handledEditorRequest = useRef(0);
+  useEffect(() => {
+    if (
+      editorRequest.token === 0 ||
+      editorRequest.token === handledEditorRequest.current
+    )
+      return;
+    handledEditorRequest.current = editorRequest.token;
+    setOpen(true);
+    setEditor({
+      mode: "create",
+      kind: editorRequest.kind,
+      parentId: editorRequest.parentId,
+      onSaved: onSelect,
+    });
+  }, [editorRequest, onSelect]);
   const childrenByParent = useMemo(() => {
     const groups = new Set(
       views.filter((view) => view.kind === "group").map((view) => view.id),
@@ -803,7 +822,7 @@ export function SmartFoldersSection({
         onSelect();
       },
       setEditor,
-      setEditingViewId,
+      savedViews.startEditing,
     );
 
   return (
@@ -861,8 +880,8 @@ export function SmartFoldersSection({
               onSelect={onSelect}
               depth={0}
               editingViewId={editingViewId}
-              onFinishRenaming={() => setEditingViewId(null)}
-              onStartRenaming={setEditingViewId}
+              onFinishRenaming={() => savedViews.finishEditing()}
+              onStartRenaming={savedViews.startEditing}
               openEditor={setEditor}
               presentations={presentations}
               quickAccessIds={quickAccessIds}

@@ -1,5 +1,4 @@
 import type { Source } from "@pond/schema/db";
-import { normalizeLabelName } from "@pond/schema/label-name";
 import { Dialog } from "@pond/ui";
 import type { BlankDocumentKind } from "@shared/blank-documents";
 import type {
@@ -20,13 +19,9 @@ import { libraryViewContext } from "@/features/saves/state/view-context";
 import { emitFeedback } from "@/features/settings/lib/sounds";
 import { getPrefsSnapshot } from "@/features/settings/state/prefs";
 import { startConnect, startWatch } from "@/features/sources/lib/create";
+import { tagCreation } from "@/features/tags/state/creation";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { notify, updateNotification } from "@/shared/lib/toast";
-
-interface CreateFolderInput {
-  name: string;
-  parentId?: string;
-}
 
 const SaveResultSchema = z.object({
   ok: z.boolean(),
@@ -35,11 +30,13 @@ const SaveResultSchema = z.object({
 });
 
 export interface NewActionServices {
-  prompt: typeof Dialog.prompt;
   notify: typeof notify;
   updateNotification: typeof updateNotification;
   openSave: typeof openSave;
   refreshFolders: () => Promise<void>;
+  startEditingFolder: (id: string) => void;
+  openTagCreation: (kind: "tag" | "group") => void;
+  openSavedViewEditor: (kind: "smart_folder" | "group") => void;
   openSource: (kind: "connect" | "watch", source: Source) => void;
   selectSave: (id: string) => void;
   currentFolderId: () => string | null;
@@ -49,11 +46,13 @@ export interface NewActionServices {
 }
 
 export function createNewActions({
-  prompt,
   notify,
   updateNotification,
   openSave,
   refreshFolders,
+  startEditingFolder,
+  openTagCreation,
+  openSavedViewEditor,
   openSource,
   selectSave,
   currentFolderId,
@@ -86,44 +85,19 @@ export function createNewActions({
     }
   }
 
-  function newFolder(parentId?: string): void {
-    prompt({
-      title: parentId ? "New Subfolder" : "New Folder",
-      confirmLabel: "Create",
-      placeholder: "Name",
-      onConfirm: (value) =>
-        runNewAction(async () => {
-          const name = value.trim();
-          if (!name) return;
-          const input: CreateFolderInput = { name };
-          if (parentId) input.parentId = parentId;
-          await window.pond.query("folders.create", input);
-          await refreshFolders();
-        }),
+  function newFolder(parentId?: string): Promise<void> {
+    return runNewAction(async () => {
+      const input = parentId
+        ? { name: "Untitled", parentId }
+        : { name: "Untitled" };
+      const folder = await window.pond.query("folders.create", input);
+      await refreshFolders();
+      startEditingFolder(folder.id);
     });
   }
 
   function newTag(kind: "tag" | "tag-group"): void {
-    prompt({
-      title: kind === "tag" ? "New Tag" : "New Tag Group",
-      confirmLabel: "Create",
-      placeholder: "Name",
-      onConfirm: (value) =>
-        runNewAction(async () => {
-          const name = normalizeLabelName(value);
-          if (!name) return;
-          const result = await window.pond.query(
-            kind === "tag" ? "tags.create" : "tagGroups.create",
-            { name },
-          );
-          if (!result.ok)
-            throw new Error("Couldn't create the tag. Try another name.");
-          notify({
-            id: "new-tag",
-            title: kind === "tag" ? "Tag created" : "Tag group created",
-          });
-        }),
-    });
+    openTagCreation(kind === "tag" ? "tag" : "group");
   }
 
   function newSource(kind: "connect" | "watch", source: Source): void {
@@ -388,16 +362,7 @@ export function createNewActions({
   }
 
   function newSmartFolder(): void {
-    prompt({
-      title: "New Smart Folder",
-      confirmLabel: "Create",
-      initialValue: "Untitled",
-      onConfirm: (value) =>
-        runNewAction(async () => {
-          const name = value.trim() || "Untitled";
-          await savedViews.create({ name, kind: "smart_folder" });
-        }),
-    });
+    openSavedViewEditor("smart_folder");
   }
 
   function findDuplicates(scope: "all" | "list" | "selected"): void {
@@ -568,11 +533,16 @@ export const {
 
   importLinks,
 } = createNewActions({
-  prompt: Dialog.prompt,
   notify,
   updateNotification,
   openSave,
   refreshFolders: () => folders.refresh(),
+  startEditingFolder: (id) => folders.startEditing(id),
+  openTagCreation: (kind) => {
+    getAppRouter()?.history.push("/tags");
+    tagCreation.request(kind);
+  },
+  openSavedViewEditor: (kind) => savedViews.openEditor({ kind }),
   openSource: (kind, source) => {
     libraryChrome.setNav({ kind: "sources" });
     getAppRouter()?.history.push("/sources");

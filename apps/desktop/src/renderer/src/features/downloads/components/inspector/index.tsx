@@ -18,7 +18,7 @@ import {
   canSkipDownload,
   canTrashDownload,
   confirmSkipDownloadRows,
-  confirmTrashDownloadRows,
+  trashDownloadRows,
 } from "@/features/downloads/components/lib/actions";
 import { downloadStatusLabel } from "@/features/downloads/components/page/status";
 import {
@@ -150,7 +150,7 @@ export function DownloadInspector({ saveId }: { saveId: string }) {
       }
       onTrash={
         row && canTrashDownload(row)
-          ? () => confirmTrashDownloadRows([row])
+          ? () => trashDownloadRows([row])
           : undefined
       }
       onCopyError={

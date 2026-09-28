@@ -64,3 +64,34 @@ it("renders the chat title as text and puts history in the header actions", asyn
     document.body.querySelector('input[aria-label="Chat history"]'),
   ).toBeTruthy();
 });
+
+it("renders the rename field in the title location", async () => {
+  const onFinishRenaming = vi.fn();
+  await act(async () =>
+    root.render(
+      <ChatHeader
+        chatId="research"
+        chats={[{ id: "research", title: "Research" }]}
+        disabled={false}
+        renaming
+        onFinishRenaming={onFinishRenaming}
+        onOpenChat={() => {}}
+      />,
+    ),
+  );
+
+  const input = host.querySelector<HTMLInputElement>(
+    'input[aria-label="Chat name"]',
+  );
+  expect(input?.value).toBe("Research");
+  await act(async () =>
+    input?.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        bubbles: true,
+        cancelable: true,
+        key: "Escape",
+      }),
+    ),
+  );
+  expect(onFinishRenaming).toHaveBeenCalledOnce();
+});

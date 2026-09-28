@@ -98,6 +98,7 @@ beforeEach(async () => {
     lastUsedFolderId: () => null,
     rememberFolderDestinations: () => {},
     refreshFolders: async () => {},
+    startEditingFolder: () => {},
     saveFolderPresentation: async () => {},
   });
   host = document.createElement("div");

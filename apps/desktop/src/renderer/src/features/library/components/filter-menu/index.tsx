@@ -3,7 +3,7 @@ import {
   IconFilterOffOutline18,
 } from "@pond/icons/outline/18";
 import { isPredicate, type Predicate } from "@pond/schema/filters/types";
-import { Button, Dialog, Tooltip } from "@pond/ui";
+import { Button, Tooltip } from "@pond/ui";
 import { useFolders } from "@/features/library/state/folders";
 import { libraryHeader } from "@/features/library/state/library-header";
 import { savedViews } from "@/features/library/state/saved-views";
@@ -206,18 +206,17 @@ export function FilterBarView({
                 variant="ghost"
                 aria-label="Save"
                 onClick={() =>
-                  Dialog.prompt({
-                    title: "Save View",
-                    placeholder: "View name",
-                    confirmLabel: "Save View",
-                    onConfirm: async (name) => {
-                      if (!name.trim()) throw new Error("Enter a name.");
-                      await savedViews.create({
-                        kind: "saved_view",
-                        name: name.trim(),
-                      });
-                    },
-                  })
+                  void savedViews
+                    .create({ kind: "saved_view", name: "Untitled" })
+                    .then((view) => savedViews.startEditing(view.id))
+                    .catch((error) =>
+                      notify({
+                        id: "save-filter-view",
+                        title: "Couldn’t Save View",
+                        description:
+                          error instanceof Error ? error.message : "Try again.",
+                      }),
+                    )
                 }
               >
                 <IconBookmarkOutline18 />

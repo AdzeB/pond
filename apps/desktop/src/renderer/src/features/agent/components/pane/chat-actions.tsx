@@ -15,11 +15,13 @@ export function ChatActions({
   title,
   messages,
   disabled,
+  onRename,
 }: {
   chatId: string | null;
   title: string | null;
   messages: AssistantMessage[];
   disabled: boolean;
+  onRename: () => void;
 }) {
   async function transfer(kind: "copy" | "export") {
     if (!chatId) return;
@@ -59,20 +61,7 @@ export function ChatActions({
           variant="ghost"
           aria-label="Rename Chat"
           disabled={disabled || !chatId}
-          onClick={() => {
-            if (!chatId) return;
-            Dialog.prompt({
-              title: "Rename Chat",
-              initialValue: title || "New Chat",
-              confirmLabel: "Rename",
-              onConfirm: async (value) => {
-                const next = value.trim();
-                if (!next || next.length > 120)
-                  throw new Error("Enter a name between 1 and 120 characters.");
-                await assistant.renameChat(chatId, next);
-              },
-            });
-          }}
+          onClick={onRename}
         >
           <IconPencilOutline18 />
         </Button>
