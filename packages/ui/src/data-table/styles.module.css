@@ -42,33 +42,6 @@
   box-shadow: var(--ds-shadow-md);
 }
 
-.column-drag-handle {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 22px;
-  padding: 0;
-  margin-inline-start: -6px;
-  color: var(--ds-gray-8);
-  touch-action: none;
-  cursor: grab;
-  background: transparent;
-  border: 0;
-  border-radius: var(--ds-radius-sm);
-}
-
-.column-drag-handle:hover,
-.column-drag-handle:focus-visible {
-  color: var(--ds-gray-11);
-  background: var(--ds-gray-a3);
-}
-
-.column-drag-handle:active {
-  cursor: grabbing;
-}
-
 .resize-handle {
   position: absolute;
   top: 0;
@@ -148,6 +121,7 @@
 }
 
 .body {
+  width: 100%;
   min-width: 0;
 }
 
@@ -155,9 +129,10 @@
   box-sizing: border-box;
   display: grid;
   align-items: center;
+  width: 100%;
   min-width: 0;
   height: var(--data-table-row-height, 34px);
-  margin-inline: var(--data-table-inset, 0px);
+  padding-inline: var(--data-table-inset, 0px);
   cursor: var(--ds-cursor-interactive, pointer);
   border-radius: var(--ds-radius-md);
   transition: background var(--ds-duration-fast, 0.12s) ease;

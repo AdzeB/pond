@@ -9,9 +9,3 @@ const created = createRowSelectionStore<DownloadRow>(
 );
 
 export const downloadsSelection: RowSelectionStore<DownloadRow> = created;
-export function useDownloadsSelectionSize(): number {
-  return created.useSize();
-}
-export function useDownloadsSelectionRows(): readonly DownloadRow[] {
-  return created.useRows();
-}

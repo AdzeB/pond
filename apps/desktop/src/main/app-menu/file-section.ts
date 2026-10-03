@@ -42,29 +42,6 @@ export function buildFileSection(context: AppMenuContext): AppMenuItem {
             registerAccelerator: false,
             click: sendMenuAction("library.new-note"),
           },
-          {
-            label: "Capture Screenshot",
-            submenu: [
-              {
-                label: "Capture Area",
-                accelerator: accelerator("capture.area"),
-                registerAccelerator: false,
-                click: sendMenuAction("capture.area"),
-              },
-              {
-                label: "Capture Window",
-                accelerator: accelerator("capture.window"),
-                registerAccelerator: false,
-                click: sendMenuAction("capture.window"),
-              },
-              {
-                label: "Capture Full Screen",
-                accelerator: accelerator("capture.screen"),
-                registerAccelerator: false,
-                click: sendMenuAction("capture.screen"),
-              },
-            ],
-          },
           { type: "separator" },
           {
             label: "New Tag",
@@ -77,6 +54,29 @@ export function buildFileSection(context: AppMenuContext): AppMenuItem {
             accelerator: accelerator("library.new-tag-group"),
             registerAccelerator: false,
             click: sendMenuAction("library.new-tag-group"),
+          },
+        ],
+      },
+      {
+        label: "Capture",
+        submenu: [
+          {
+            label: "Capture Area",
+            accelerator: accelerator("capture.area"),
+            registerAccelerator: false,
+            click: sendMenuAction("capture.area"),
+          },
+          {
+            label: "Capture Window",
+            accelerator: accelerator("capture.window"),
+            registerAccelerator: false,
+            click: sendMenuAction("capture.window"),
+          },
+          {
+            label: "Capture Full Screen",
+            accelerator: accelerator("capture.screen"),
+            registerAccelerator: false,
+            click: sendMenuAction("capture.screen"),
           },
         ],
       },

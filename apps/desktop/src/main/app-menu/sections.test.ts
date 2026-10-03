@@ -217,6 +217,7 @@ describe("app menu sections", () => {
     const file = buildFileSection(context).submenu;
     if (!Array.isArray(file)) throw new Error("Missing File submenu");
     const newMenu = file.find((item) => item.label === "New");
+    const captureMenu = file.find((item) => item.label === "Capture");
     const importMenu = file.find((item) => item.label === "Import");
     const sourcesMenu = file.find((item) => item.label === "Sources");
     const libraryMenu = file.find((item) => item.label === "Library");
@@ -229,10 +230,16 @@ describe("app menu sections", () => {
         { label: "New Watched Folder" },
         { type: "separator" },
         { label: "New Note" },
-        { label: "Capture Screenshot" },
         { type: "separator" },
         { label: "New Tag" },
         { label: "New Tag Group" },
+      ],
+    });
+    expect(captureMenu).toMatchObject({
+      submenu: [
+        { label: "Capture Area" },
+        { label: "Capture Window" },
+        { label: "Capture Full Screen" },
       ],
     });
     expect(importMenu).toMatchObject({

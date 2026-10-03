@@ -97,7 +97,8 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
         ('0002','first'),
         ('0003','first'),
         ('0004','first'),
-        ('0005','nested');
+        ('0005','nested'),
+        ('0006','first');
       update saves set media_type='image' where id='0001';
       update saves set media_type='video' where id='0002';
       update saves set media_type='image', deleted_at=1 where id='0003';
@@ -108,9 +109,9 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
     expect(await queryFolderSummaries(db, "root")).toEqual([
       {
         id: "first",
-        directSaveCount: 2,
+        directSaveCount: 3,
         childFolderCount: 1,
-        previewSaveIds: ["0005", "0002", "0001"],
+        previewSaveIds: ["0006", "0005", "0002", "0001"],
       },
       {
         id: "second",

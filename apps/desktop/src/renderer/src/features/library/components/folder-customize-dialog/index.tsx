@@ -1,4 +1,4 @@
-import { Button, cssVars, Dialog, Field, Input } from "@pond/ui";
+import { Button, Chip, Dialog, Field, Input } from "@pond/ui";
 import { useEffect, useState } from "react";
 import {
   FOLDER_ICONS,
@@ -186,11 +186,7 @@ export function FolderCustomizeDialog({
                       aria-pressed={color === swatch.id}
                       onClick={() => setColor(swatch.id)}
                     >
-                      <span
-                        className={styles.swatch}
-                        style={cssVars({ "--swatch": swatch.css })}
-                        aria-hidden
-                      />
+                      <Chip.Swatch color={swatch.css} />
                       {swatch.label}
                     </Button>
                   ))}

@@ -1,6 +1,11 @@
-import { IconPlusOutline18, IconXmarkOutline18 } from "@pond/icons/outline/18";
+import {
+  IconCircleInfoOutline18,
+  IconMessageOutline18,
+  IconPlusOutline18,
+  IconSlidersOutline18,
+  IconXmarkOutline18,
+} from "@pond/icons/outline/18";
 import { Button, PaneBody, PaneHeader, PickerPanel, Tabs } from "@pond/ui";
-import { typeLabelForPath } from "@shared/file-format";
 import { useEffect, useMemo, useState } from "react";
 import {
   libraryChrome,
@@ -19,26 +24,26 @@ import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import {
   buildMediaUnits,
   deriveTypeLabel,
-  type MediaUnit,
-  pickCardUnit,
   pickPrimaryFile,
 } from "@/features/saves/lib/media/units";
-import { previewThumbUrlFor } from "@/features/saves/lib/media/url";
 import { bulkMutation, mutateSave } from "@/features/saves/lib/mutate";
 import { pool } from "@/features/saves/state/pool";
 import { useSaveViewerFileIndex } from "@/features/saves/state/save-viewer";
 import type { Save } from "@/features/saves/types";
 import { usePrefs } from "@/features/settings/state/prefs";
 import { TagMenu } from "@/features/tags/components/menu";
+import { PropertyList } from "@/shared/components/property-list";
 import { useStableStrings } from "@/shared/hooks/use-stable-array";
 import { formatBytes } from "@/shared/lib/format";
+import { AssignmentChip } from "./chip";
+import { SavePreviews } from "./previews";
 import styles from "./styles.module.css";
 import { type InspectorDrafts, InspectorTextField } from "./text-field";
 
 const INSPECTOR_TABS = [
-  { id: "organize", label: "Organise" },
-  { id: "info", label: "Properties" },
-  { id: "comments", label: "Comments" },
+  { id: "organize", label: "Organise", Icon: IconSlidersOutline18 },
+  { id: "info", label: "Properties", Icon: IconCircleInfoOutline18 },
+  { id: "comments", label: "Comments", Icon: IconMessageOutline18 },
 ] as const;
 
 export interface SaveInspectorProps {
@@ -103,7 +108,6 @@ export function SaveInspector({
   });
   const complete = saves.length === ids.length;
   const single = ids.length === 1 ? saves[0] : undefined;
-  const previews = buildPreviewEntries(saves);
   const folderEntries = useMemo(() => folderOptions(folders), [folders]);
 
   useEffect(() => setActiveTab(tab), [tab]);
@@ -215,10 +219,21 @@ export function SaveInspector({
     >
       <PaneHeader
         title={
-          <Tabs.List aria-label="Save details" activateOnFocus>
-            {INSPECTOR_TABS.map((tab) => (
-              <Tabs.Tab key={tab.id} value={tab.id}>
-                {tab.label}
+          <Tabs.List
+            aria-label="Save details"
+            activateOnFocus
+            className={styles.tabsList}
+          >
+            {INSPECTOR_TABS.map(({ id, label, Icon }) => (
+              <Tabs.Tab
+                aria-label={label}
+                className={styles.tab}
+                key={id}
+                title={label}
+                value={id}
+              >
+                <Icon aria-hidden="true" className={styles.tabIcon} />
+                <span className={styles.tabLabel}>{label}</span>
               </Tabs.Tab>
             ))}
           </Tabs.List>
@@ -336,31 +351,20 @@ export function SaveInspector({
                     </PickerPanel.Trigger>
                   }
                 >
-                  <div className={styles.chips}>
+                  <AssignmentChip.List>
                     {[...tagCounts].map(([key, tag]) => (
-                      <span
-                        className={styles.chip}
+                      <AssignmentChip.Item
                         key={key}
-                        data-mixed={tag.count !== ids.length || undefined}
-                      >
-                        <span>
-                          {tag.name}
-                          {tag.count !== ids.length
-                            ? ` (${tag.count}/${ids.length})`
-                            : ""}
-                        </span>
-                        <button
-                          type="button"
-                          aria-label={`Remove tag ${tag.name}`}
-                          onClick={() =>
-                            void run(() => changeTag(tag.name, true))
-                          }
-                        >
-                          <IconXmarkOutline18 />
-                        </button>
-                      </span>
+                        label={tag.name}
+                        count={tag.count}
+                        total={ids.length}
+                        removeLabel={`Remove tag ${tag.name}`}
+                        onRemove={() =>
+                          void run(() => changeTag(tag.name, true))
+                        }
+                      />
                     ))}
-                  </div>
+                  </AssignmentChip.List>
                 </Section>
                 <PickerPanel.Portal>
                   <PickerPanel.Positioner side="left" align="start">
@@ -408,31 +412,22 @@ export function SaveInspector({
                     </PickerPanel.Trigger>
                   }
                 >
-                  <div className={styles.chips}>
+                  <AssignmentChip.List>
                     {folderEntries
                       .filter((folder) => folder.count > 0)
                       .map((folder) => (
-                        <span
+                        <AssignmentChip.Item
                           key={folder.id}
-                          className={styles.chip}
-                          data-mixed={folder.count !== ids.length || undefined}
-                        >
-                          {folder.path}
-                          {folder.count !== ids.length
-                            ? ` (${folder.count}/${ids.length})`
-                            : ""}
-                          <button
-                            type="button"
-                            aria-label={`Remove folder ${folder.path}`}
-                            onClick={() =>
-                              void run(() => assignFolder(folder.id, false))
-                            }
-                          >
-                            <IconXmarkOutline18 />
-                          </button>
-                        </span>
+                          label={folder.path}
+                          count={folder.count}
+                          total={ids.length}
+                          removeLabel={`Remove folder ${folder.path}`}
+                          onRemove={() =>
+                            void run(() => assignFolder(folder.id, false))
+                          }
+                        />
                       ))}
-                  </div>
+                  </AssignmentChip.List>
                 </Section>
                 <PickerPanel.Portal>
                   <PickerPanel.Positioner side="left" align="start">
@@ -466,14 +461,7 @@ export function SaveInspector({
               </Section>
             </Tabs.Panel>
             <Tabs.Panel value="info">
-              <div
-                className={styles.previews}
-                data-multiple={ids.length > 1 || undefined}
-              >
-                {previews.map(({ save, url }) => (
-                  <Preview key={save.id} save={save} url={url} />
-                ))}
-              </div>
+              <SavePreviews saves={saves} />
               {!single ? (
                 <p className={styles.count}>
                   <strong>{ids.length}</strong> items selected
@@ -485,8 +473,8 @@ export function SaveInspector({
                   hideCoreProperties
                   mergeFileAndDatesIntoProperties
                   sourceLead={
-                    <div className={styles.sourceUrlRow}>
-                      <span>URL</span>
+                    <PropertyList.Row>
+                      <PropertyList.Label>URL</PropertyList.Label>
                       <InspectorTextField
                         className={styles.sourceUrlEditor}
                         drafts={drafts}
@@ -507,35 +495,79 @@ export function SaveInspector({
                           );
                         }}
                       />
-                    </div>
+                    </PropertyList.Row>
                   }
                   propertiesLead={
-                    <dl className={styles.properties}>
+                    <PropertyList.Root>
                       {single.width && single.height ? (
-                        <>
-                          <dt>Dimensions</dt>
-                          <dd>
+                        <PropertyList.Row>
+                          <PropertyList.Label>Dimensions</PropertyList.Label>
+                          <PropertyList.Value>
                             {single.width} × {single.height}
-                          </dd>
-                        </>
+                          </PropertyList.Value>
+                        </PropertyList.Row>
                       ) : null}
-                      <dt>Size</dt>
-                      <dd>
+                      <PropertyList.Row>
+                        <PropertyList.Label>Size</PropertyList.Label>
+                        <PropertyList.Value>
+                          {formatBytes(
+                            single.fileSize ??
+                              single.files.reduce(
+                                (sum, file) => sum + file.size,
+                                0,
+                              ),
+                          )}
+                        </PropertyList.Value>
+                      </PropertyList.Row>
+                      <PropertyList.Row>
+                        <PropertyList.Label>Type</PropertyList.Label>
+                        <PropertyList.Value>
+                          {deriveTypeLabel(pickPrimaryFile(single), single) ??
+                            "File"}
+                        </PropertyList.Value>
+                      </PropertyList.Row>
+                      <PropertyList.Row>
+                        <PropertyList.Label>Rating</PropertyList.Label>
+                        <div className={styles.rating}>
+                          <RatingStars
+                            value={rating}
+                            onChange={(next) =>
+                              void run(async () => {
+                                await bulkMutation([...ids], {
+                                  kind: "rating",
+                                  rating: next,
+                                });
+                              })
+                            }
+                          />
+                        </div>
+                      </PropertyList.Row>
+                    </PropertyList.Root>
+                  }
+                />
+              ) : (
+                <Section title="Properties">
+                  <PropertyList.Root>
+                    <PropertyList.Row>
+                      <PropertyList.Label>Size</PropertyList.Label>
+                      <PropertyList.Value>
                         {formatBytes(
-                          single.fileSize ??
-                            single.files.reduce(
-                              (sum, file) => sum + file.size,
-                              0,
-                            ),
+                          saves.reduce(
+                            (total, save) =>
+                              total +
+                              (save.fileSize ??
+                                save.files.reduce(
+                                  (sum, file) => sum + file.size,
+                                  0,
+                                )),
+                            0,
+                          ),
                         )}
-                      </dd>
-                      <dt>Type</dt>
-                      <dd>
-                        {deriveTypeLabel(pickPrimaryFile(single), single) ??
-                          "File"}
-                      </dd>
-                      <dt>Rating</dt>
-                      <dd className={styles.rating}>
+                      </PropertyList.Value>
+                    </PropertyList.Row>
+                    <PropertyList.Row>
+                      <PropertyList.Label>Rating</PropertyList.Label>
+                      <div className={styles.rating}>
                         <RatingStars
                           value={rating}
                           onChange={(next) =>
@@ -547,46 +579,12 @@ export function SaveInspector({
                             })
                           }
                         />
-                      </dd>
-                    </dl>
-                  }
-                />
-              ) : (
-                <Section title="Properties">
-                  <dl className={styles.properties}>
-                    <dt>Size</dt>
-                    <dd>
-                      {formatBytes(
-                        saves.reduce(
-                          (total, save) =>
-                            total +
-                            (save.fileSize ??
-                              save.files.reduce(
-                                (sum, file) => sum + file.size,
-                                0,
-                              )),
-                          0,
-                        ),
-                      )}
-                    </dd>
-                    <dt>Rating</dt>
-                    <dd className={styles.rating}>
-                      <RatingStars
-                        value={rating}
-                        onChange={(next) =>
-                          void run(async () => {
-                            await bulkMutation([...ids], {
-                              kind: "rating",
-                              rating: next,
-                            });
-                          })
-                        }
-                      />
-                      {rating === null ? (
-                        <span className={styles.muted}>Multiple ratings</span>
-                      ) : null}
-                    </dd>
-                  </dl>
+                        {rating === null ? (
+                          <span className={styles.muted}>Multiple ratings</span>
+                        ) : null}
+                      </div>
+                    </PropertyList.Row>
+                  </PropertyList.Root>
                 </Section>
               )}
             </Tabs.Panel>
@@ -603,51 +601,6 @@ export function SaveInspector({
         ) : null}
       </PaneBody>
     </Tabs.Root>
-  );
-}
-
-function inspectorFormat(save: Save): string {
-  const file = pickPrimaryFile(save);
-  return (
-    (file ? typeLabelForPath(file.path) : null) ??
-    deriveTypeLabel(file, save) ??
-    "File"
-  );
-}
-
-function previewUrl(unit: MediaUnit | null): string | null {
-  if (!unit) return null;
-  if (unit.isVideo) return unit.posterUrl ?? null;
-  return unit.requiresGeneratedPreview
-    ? previewThumbUrlFor(unit.url, 560)
-    : unit.url;
-}
-
-function buildPreviewEntries(saves: readonly Save[]) {
-  const entries = saves.map((save) => ({
-    save,
-    url: previewUrl(pickCardUnit(save)),
-  }));
-  const withImages = entries.filter((entry) => entry.url !== null);
-  return (withImages.length > 0 ? withImages : entries).slice(0, 4);
-}
-
-function Preview({ save, url }: { save: Save; url: string | null }) {
-  const [failed, setFailed] = useState<string | null>(null);
-  return (
-    <figure className={styles.preview}>
-      {url && failed !== url ? (
-        <img
-          src={url}
-          alt={save.title || "Save preview"}
-          draggable={false}
-          onError={() => setFailed(url)}
-        />
-      ) : (
-        <span className={styles.placeholder}>{save.title || "No preview"}</span>
-      )}
-      <figcaption>{inspectorFormat(save)}</figcaption>
-    </figure>
   );
 }
 

@@ -83,6 +83,60 @@ describe("query session", () => {
     response.resolve({ ids: ["one"] });
     expect(await selection).toBeNull();
   });
+  it("keeps the current results while only the keywords change", async () => {
+    const session = createQuerySession(
+      {
+        page: async (request) =>
+          page(request.keywords ? ["match"] : ["a", "b"]),
+        ids: async () => ({ ids: [] }),
+        refresh: async () => {},
+      },
+      () => {},
+    );
+    session.setRequest({ query: EMPTY_QUERY });
+    await session.load();
+    session.setRequest({ query: EMPTY_QUERY, keywords: "fall" });
+    expect(session.snapshot()).toMatchObject({
+      loading: true,
+      page: { ids: ["a", "b"] },
+    });
+    await session.load();
+    expect(session.snapshot().page?.ids).toEqual(["match"]);
+  });
+  it("clears the results when the scope changes", async () => {
+    const session = createQuerySession(
+      {
+        page: async () => page(["a"]),
+        ids: async () => ({ ids: [] }),
+        refresh: async () => {},
+      },
+      () => {},
+    );
+    session.setRequest({ query: EMPTY_QUERY });
+    await session.load();
+    session.setRequest({ query: EMPTY_QUERY, scope: { deletedOnly: true } });
+    expect(session.snapshot().page).toBeNull();
+  });
+  it("does not stretch a new search to the previous result count", async () => {
+    let calls = 0;
+    const session = createQuerySession(
+      {
+        page: async () => {
+          calls++;
+          return calls === 1 ? page(["a", "b", "c"]) : page(["x"], true);
+        },
+        ids: async () => ({ ids: [] }),
+        refresh: async () => {},
+      },
+      () => {},
+    );
+    session.setRequest({ query: EMPTY_QUERY });
+    await session.load();
+    session.setRequest({ query: EMPTY_QUERY, keywords: "x" });
+    await session.load();
+    expect(calls).toBe(2);
+    expect(session.snapshot().page?.ids).toEqual(["x"]);
+  });
   it("surfaces a failed search instead of claiming there are no matches", async () => {
     const session = createQuerySession(
       {

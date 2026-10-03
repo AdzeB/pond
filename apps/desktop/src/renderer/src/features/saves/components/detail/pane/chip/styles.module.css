@@ -1,0 +1,28 @@
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.item {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  padding: 2px 2px 2px 8px;
+  font-size: var(--ds-text-xs);
+  overflow-wrap: anywhere;
+  border-radius: var(--ds-radius-sm);
+  box-shadow: var(--ds-shadow-xs);
+
+  &[data-mixed] {
+    border: 1px dashed var(--ds-gray-a7);
+  }
+}
+
+.label {
+  min-width: 0;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

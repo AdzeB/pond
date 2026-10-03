@@ -95,7 +95,8 @@ it("writes a UIMessage SSE round-trip for validated text and Pond data parts", a
   const send = vi.fn<StreamTurnDependencies["sendMessage"]>(
     async (_input, _deps, onEvent) => {
       onEvent?.({ type: "activity", activity: "searching" });
-      onEvent?.({ type: "text", text: "A lighting study." });
+      onEvent?.({ type: "text", text: "A " });
+      onEvent?.({ type: "text", text: "lighting study." });
       return { chatId: "chat", accepted: true };
     },
   );
@@ -131,7 +132,11 @@ it("writes a UIMessage SSE round-trip for validated text and Pond data parts", a
   );
   expect(response.headers.get("x-vercel-ai-ui-message-stream")).toBe("v1");
   const body = await response.text();
-  expect(body).toContain("A lighting study.");
+  expect(body).toContain('"delta":"A "');
+  expect(body).toContain('"delta":"lighting study."');
+  expect(body.match(/"type":"text-start"/g)).toHaveLength(1);
+  expect(body.match(/"type":"text-delta"/g)).toHaveLength(2);
+  expect(body.match(/"type":"text-end"/g)).toHaveLength(1);
   expect(body).toContain("data-pond-question");
   expect(body).toContain('"type":"message-metadata"');
   expect(body).toContain('"elapsedMs":90000');

@@ -12,13 +12,9 @@ import {
   IconNotepadOutline18,
   IconResizeXOutline18,
   IconRotateImageClockwiseOutline18,
-  IconVolumeOffOutline18,
-  IconVolumeOutline18,
 } from "@pond/icons/outline/18";
 import {
-  Button,
   Dialog,
-  Input,
   stepPlaybackRate,
   stepVolume,
   useVideo,
@@ -59,8 +55,13 @@ import type { Save } from "@/features/saves/types";
 import { usePrefs } from "@/features/settings/state/prefs";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys";
 import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
+import { EndPoster } from "./end-poster";
 import { videoScaleForRotation } from "./geometry";
+import { LoopControls } from "./loop-controls";
+import { NoteMarkers } from "./markers";
 import styles from "./styles.module.css";
+import { TimelinePreview } from "./timeline-preview";
+import { VolumeControl } from "./volume";
 
 export interface NoteMarker {
   fileIndex?: number;
@@ -261,14 +262,6 @@ function MediaBridge({
   return null;
 }
 
-function EndPoster({ src }: { src?: string }) {
-  const { state } = useVideo();
-  if (!src || !state.ended) return null;
-  return (
-    <img src={src} alt="" className={styles["end-poster"]} draggable={false} />
-  );
-}
-
 function WheelBridge() {
   const [prefs] = usePrefs("viewer");
   const { actions, meta, state } = useVideo();
@@ -295,35 +288,6 @@ function WheelBridge() {
   }, [actions, meta.videoRef, prefs.videoWheelBehavior]);
 
   return null;
-}
-
-function NoteMarkers({ markers }: { markers: readonly NoteMarker[] }) {
-  const { state, actions } = useVideo();
-  if (markers.length === 0 || state.duration <= 0) return null;
-  return (
-    <div className={styles.markers} aria-hidden>
-      {markers.map((marker) => {
-        const pct = Math.min(
-          100,
-          Math.max(0, (marker.timeSec / state.duration) * 100),
-        );
-        return (
-          <button
-            key={marker.id}
-            type="button"
-            className={styles.marker}
-            style={{ left: `${pct}%` }}
-            tabIndex={-1}
-            onClick={(e) => {
-              e.stopPropagation();
-              actions.seek(marker.timeSec);
-              actions.play();
-            }}
-          />
-        );
-      })}
-    </div>
-  );
 }
 
 function useChaptersTrackUrl(chapters?: readonly ChapterCue[]): string | null {
@@ -639,51 +603,6 @@ function PauseIcon() {
   );
 }
 
-function MuteButton() {
-  const { state, actions } = useVideo();
-  const muted = state.muted || state.volume === 0;
-  return (
-    <ViewerHud.Tool
-      label={muted ? "Unmute" : "Mute"}
-      shortcut={<ShortcutKeys id="viewer.mute" />}
-      onClick={actions.toggleMute}
-    >
-      {muted ? <IconVolumeOffOutline18 /> : <IconVolumeOutline18 />}
-    </ViewerHud.Tool>
-  );
-}
-
-function VolumeControl() {
-  return (
-    <div className={styles.volumeControl} data-video-volume-control>
-      <MuteButton />
-      <div className={styles.volumePopover} data-video-volume-popover>
-        <VolumeSlider />
-      </div>
-    </div>
-  );
-}
-
-function VolumeSlider() {
-  const { state, actions } = useVideo();
-  return (
-    <input
-      type="range"
-      className={styles.volume}
-      aria-label="Video Volume"
-      min={0}
-      max={1}
-      step={0.05}
-      value={state.volume}
-      onChange={(event) => {
-        const next = Number(event.currentTarget.value);
-        if (state.muted && next > 0) actions.toggleMute();
-        actions.setVolume(next);
-      }}
-    />
-  );
-}
-
 function FullscreenButton() {
   const { state, actions } = useVideo();
   if (!state.fullscreenSupported) return null;
@@ -694,51 +613,6 @@ function FullscreenButton() {
     >
       <IconFullScreenOutline18 />
     </ViewerHud.Tool>
-  );
-}
-
-function TimelinePreview({
-  src,
-  time,
-  ratio,
-}: {
-  src: string;
-  time: number;
-  ratio: number | null;
-}) {
-  const preview = useRef<HTMLVideoElement>(null);
-  const [ready, setReady] = useState(false);
-
-  const seek = useCallback(
-    (video: HTMLVideoElement) => {
-      if (!Number.isFinite(video.duration) || video.duration <= 0) return;
-      setReady(false);
-      video.currentTime = Math.min(time, Math.max(0, video.duration - 0.001));
-    },
-    [time],
-  );
-
-  useEffect(() => {
-    const video = preview.current;
-    if (!video || video.readyState < HTMLMediaElement.HAVE_METADATA) return;
-    const request = requestAnimationFrame(() => seek(video));
-    return () => cancelAnimationFrame(request);
-  }, [seek]);
-
-  return (
-    <video
-      ref={preview}
-      src={src}
-      className={styles.timelinePreview}
-      style={{ aspectRatio: ratio ?? undefined }}
-      preload="metadata"
-      muted
-      playsInline
-      aria-hidden
-      data-ready={ready || undefined}
-      onLoadedMetadata={(event) => seek(event.currentTarget)}
-      onSeeked={() => setReady(true)}
-    />
   );
 }
 
@@ -871,94 +745,5 @@ function SeekControls() {
         <IconCaretRightToLineOutline18 />
       </ViewerHud.Tool>
     </>
-  );
-}
-
-function LoopControls({
-  range,
-  onChange,
-}: {
-  range: [number, number] | null;
-  onChange: (range: [number, number] | null) => void;
-}) {
-  const { state, actions } = useVideo();
-  const [start, setStart] = useState(range?.[0] ?? 0);
-  const [end, setEnd] = useState(range?.[1] ?? 0);
-  const valid =
-    Number.isFinite(start) &&
-    Number.isFinite(end) &&
-    start >= 0 &&
-    end > start &&
-    end <= state.duration;
-  return (
-    <Video.Row className={styles.loop}>
-      <Input.Root>
-        <Input.Field
-          aria-label="Loop Start in Seconds"
-          type="number"
-          min={0}
-          max={state.duration}
-          step={0.001}
-          value={start}
-          onChange={(event) => {
-            setStart(Number(event.target.value));
-            onChange(null);
-          }}
-        />
-      </Input.Root>
-      <Button
-        size="sm"
-        variant="ghost"
-        className={styles.controlButton}
-        onClick={() => {
-          setStart(state.currentTime);
-          onChange(null);
-        }}
-      >
-        Set Start
-      </Button>
-      <Input.Root>
-        <Input.Field
-          aria-label="Loop End in Seconds"
-          type="number"
-          min={0}
-          max={state.duration}
-          step={0.001}
-          value={end}
-          onChange={(event) => {
-            setEnd(Number(event.target.value));
-            onChange(null);
-          }}
-        />
-      </Input.Root>
-      <Button
-        size="sm"
-        variant="ghost"
-        className={styles.controlButton}
-        onClick={() => {
-          setEnd(state.currentTime);
-          onChange(null);
-        }}
-      >
-        Set End
-      </Button>
-      <Button
-        size="sm"
-        variant="ghost"
-        className={styles.controlButton}
-        disabled={!range && !valid}
-        aria-pressed={!!range}
-        onClick={() => {
-          if (range) onChange(null);
-          else {
-            onChange([start, end]);
-            actions.seek(start);
-            actions.play();
-          }
-        }}
-      >
-        {range ? "Stop Loop" : "Loop Range"}
-      </Button>
-    </Video.Row>
   );
 }

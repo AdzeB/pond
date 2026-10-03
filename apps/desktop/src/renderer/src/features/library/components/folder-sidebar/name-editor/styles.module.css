@@ -1,0 +1,25 @@
+.editor {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: var(--sidebar-height-md);
+  padding: 0 6px;
+  color: var(--ds-gray-12);
+}
+
+.icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  overflow: hidden;
+}
+
+.field {
+  padding-inline: 0;
+  font-size: var(--ds-text-md);
+  line-height: 1;
+}

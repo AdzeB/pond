@@ -10,10 +10,6 @@ export function flipPatch(save: Save, axis: "x" | "y"): SaveEdit {
   return axis === "x" ? { flipX: !save.flipX } : { flipY: !save.flipY };
 }
 
-export function resetTransformPatch(): SaveEdit {
-  return { rotate: 0, flipX: false, flipY: false, crop: null };
-}
-
 export function cropPatch(crop: ImageCrop): SaveEdit {
   return { crop };
 }

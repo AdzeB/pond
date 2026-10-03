@@ -1,0 +1,28 @@
+.handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  color: var(--ds-gray-8);
+  cursor: grab;
+  user-select: none;
+  opacity: 0;
+  will-change: transform;
+
+  &:active {
+    cursor: grabbing;
+    scale: 1;
+  }
+}
+
+.drop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2px;
+  pointer-events: none;
+  background: var(--ds-accent-9);
+  border-radius: 1px;
+  opacity: 0;
+  will-change: transform;
+}

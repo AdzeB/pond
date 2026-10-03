@@ -17,5 +17,6 @@
 }
 
 .select {
-  width: var(--view-menu-select-width, 100px);
+  width: var(--view-menu-select-width, 148px);
+  white-space: nowrap;
 }

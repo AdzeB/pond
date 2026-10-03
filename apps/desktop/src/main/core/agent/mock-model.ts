@@ -25,11 +25,14 @@ type MockChunk =
       usage: typeof usage;
     };
 
-export function textChunks(text: string): MockChunk[] {
+export function textChunks(text: string | string[]): MockChunk[] {
+  const deltas = Array.isArray(text) ? text : [text];
   return [
     { type: "stream-start", warnings: [] },
     { type: "text-start", id: "text-1" },
-    { type: "text-delta", id: "text-1", delta: text },
+    ...deltas.map(
+      (delta): MockChunk => ({ type: "text-delta", id: "text-1", delta }),
+    ),
     { type: "text-end", id: "text-1" },
     {
       type: "finish",
@@ -60,7 +63,7 @@ export function toolCallChunks(
   ];
 }
 
-export function textModel(text: string) {
+export function textModel(text: string | string[]) {
   return new MockLanguageModelV4({
     doStream: {
       stream: simulateReadableStream({ chunks: textChunks(text) }),

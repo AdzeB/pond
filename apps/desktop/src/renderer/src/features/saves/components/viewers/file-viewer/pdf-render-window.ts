@@ -11,9 +11,9 @@ export function addPdfRenderWindow(
   return next;
 }
 
-export const PDF_ZOOM_MIN = 0.5;
-export const PDF_ZOOM_MAX = 2.5;
-export const PDF_ZOOM_STEP = 0.1;
+const PDF_ZOOM_MIN = 0.5;
+const PDF_ZOOM_MAX = 2.5;
+const PDF_ZOOM_STEP = 0.1;
 
 export function clampPdfZoom(value: number): number {
   return Math.min(PDF_ZOOM_MAX, Math.max(PDF_ZOOM_MIN, value));

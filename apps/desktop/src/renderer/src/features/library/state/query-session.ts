@@ -12,12 +12,17 @@ interface Runtime {
   ids(request: LibraryQueryRequest): Promise<{ ids: string[] }>;
   refresh(ids: readonly string[]): Promise<void>;
 }
+function scopeKey({ keywords: _, ...rest }: LibraryQueryRequest): string {
+  return JSON.stringify(rest);
+}
+
 export function createQuerySession(
   runtime: Runtime,
   emit: (state: QuerySessionState) => void,
 ) {
   let request: LibraryQueryRequest | null = null;
   let key = "";
+  let pageKey = "";
   let sequence = 0;
   let active = false;
   let state: QuerySessionState = { page: null, loading: true, error: null };
@@ -31,7 +36,7 @@ export function createQuerySession(
     const capturedKey = key;
     const ticket = ++sequence;
     active = true;
-    const previous = state.page;
+    const previous = pageKey === capturedKey ? state.page : null;
     update({ loading: true, error: null });
     const current = () => ticket === sequence && capturedKey === key;
     try {
@@ -54,6 +59,7 @@ export function createQuerySession(
       }
       await runtime.refresh(result.ids);
       if (!current()) return;
+      pageKey = capturedKey;
       update({
         page: {
           ...result,
@@ -88,11 +94,13 @@ export function createQuerySession(
     setRequest(next: LibraryQueryRequest) {
       const nextKey = JSON.stringify(next);
       if (nextKey === key) return;
+      /** Typing only changes keywords, so current results stay up until the debounced search replaces them. */
+      const retyped = request !== null && scopeKey(request) === scopeKey(next);
       request = next;
       key = nextKey;
       sequence++;
       active = false;
-      update({ page: null, loading: true, error: null });
+      update({ page: retyped ? state.page : null, loading: true, error: null });
     },
     load,
     async allIds() {

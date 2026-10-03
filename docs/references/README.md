@@ -1,7 +1,7 @@
 # Research record
 
-Pond records external sources and their relationships in the root
-[`provenance.yaml`](../../provenance.yaml). Read the generated
+Pond records external sources and their relationships under
+[`.provenance/sources/`](../../.provenance/sources). Read the generated
 [reference catalog](../provenance/generated/REFERENCES.md), [influence index](../provenance/generated/INFLUENCES.md),
 or [PROV JSON-LD graph](../provenance/generated/provenance.prov.jsonld) for human- and
 machine-readable views.
@@ -20,5 +20,5 @@ The former bibliography, influence index, inventory, and workflow notes are
 preserved under [`docs/provenance/migration/`](../provenance/migration/) only to
 make the migration auditable. Repository hooks still collect private,
 gitignored candidate evidence for manual review, but they never create public
-records automatically. Add all new public provenance directly to
-`provenance.yaml`.
+records automatically. Add all new public provenance under
+`.provenance/sources/`.

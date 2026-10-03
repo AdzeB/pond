@@ -72,6 +72,7 @@ export async function streamAgentTurn(
     originalMessages: validated.data,
     execute: async ({ writer }) => {
       writer.write({ type: "start" });
+      let textOpen = false;
       const onEvent = (event: AssistantEvent) => {
         if (event.type === "activity") {
           writer.write({
@@ -93,15 +94,18 @@ export async function streamAgentTurn(
           writer.write({ type: "data-pond-steps", data: event.steps });
           return;
         }
-        writer.write({ type: "text-start", id: "text-1" });
+        if (!textOpen) {
+          writer.write({ type: "text-start", id: "text-1" });
+          textOpen = true;
+        }
         writer.write({ type: "text-delta", id: "text-1", delta: event.text });
-        writer.write({ type: "text-end", id: "text-1" });
       };
       const result = await deps.sendMessage(
         { ...input, content },
         deps.chat,
         onEvent,
       );
+      if (textOpen) writer.write({ type: "text-end", id: "text-1" });
       const rows =
         result.accepted === false ? [] : await deps.listMessages(result.chatId);
       const last = rows.at(-1);

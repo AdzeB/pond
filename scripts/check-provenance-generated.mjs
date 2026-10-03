@@ -13,7 +13,7 @@ const generated = join(repository, "docs/provenance/generated");
 try {
   const result = spawnSync(
     process.execPath,
-    [cliPath, "generate", "provenance.yaml", "--output-dir", output],
+    [cliPath, "generate", ".provenance", "--output-dir", output],
     { cwd: repository, encoding: "utf8" },
   );
   assert.equal(result.status, 0, result.stderr || result.stdout);

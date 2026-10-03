@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900">
+  <rect width="900" height="900" fill="#132436"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="24">
+    <path d="M90 710h160l94-94V300l118-118h338" stroke="#f4b942"/>
+    <path d="M112 154h176l112 112v312l136 136h248" stroke="#ef675f"/>
+    <path d="M132 810V638l128-128h370l118-118V92" stroke="#64c7a6"/>
+    <path d="M82 430h180l94 94h146l132-132h184" stroke="#75a9ee"/>
+  </g>
+  <g fill="#132436" stroke="#f7f4e9" stroke-width="10">
+    <circle cx="250" cy="710" r="17"/>
+    <circle cx="344" cy="616" r="17"/>
+    <circle cx="400" cy="266" r="17"/>
+    <circle cx="462" cy="182" r="17"/>
+    <circle cx="288" cy="154" r="17"/>
+    <circle cx="400" cy="266" r="17"/>
+    <circle cx="400" cy="578" r="17"/>
+    <circle cx="536" cy="714" r="17"/>
+    <circle cx="260" cy="510" r="17"/>
+    <circle cx="630" cy="510" r="17"/>
+    <circle cx="748" cy="392" r="17"/>
+    <circle cx="356" cy="524" r="17"/>
+    <circle cx="502" cy="524" r="17"/>
+    <circle cx="634" cy="392" r="17"/>
+  </g>
+  <g fill="#f7f4e9" font-family="Arial, sans-serif">
+    <text x="72" y="84" font-size="34" font-weight="700">CITY NETWORK</text>
+    <text x="74" y="116" font-size="15">WEEKDAY CONNECTIONS</text>
+    <text x="72" y="860" font-size="14">DIAGRAM 08 / CENTRAL DISTRICT</text>
+  </g>
+</svg>

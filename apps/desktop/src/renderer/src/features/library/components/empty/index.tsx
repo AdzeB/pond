@@ -12,6 +12,7 @@ import {
   IconMagnifierOutline18,
 } from "@pond/icons/outline/18";
 import { Button, Empty } from "@pond/ui";
+import { openHarvester } from "@/features/library/lib/open-harvester";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import type { SaveListMode } from "@/features/saves/lib/list";
 import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
@@ -32,11 +33,12 @@ export function LibraryEmpty() {
         <Button
           variant="primary"
           size="sm"
-          onClick={() => {
-            libraryChrome.setNav({ kind: "sources" });
-            getAppRouter()?.history.push("/sources");
-            sourceNewMenu.open();
-          }}
+          onClick={() =>
+            openHarvester({
+              section: "sources",
+              intent: { type: "new-source" },
+            })
+          }
         >
           New Source
         </Button>
@@ -45,16 +47,26 @@ export function LibraryEmpty() {
   );
 }
 
-export function SourcesEmpty() {
+export function SourcesEmpty({ scope }: { scope?: "account" | "watch" }) {
+  const title =
+    scope === "account"
+      ? "No accounts yet"
+      : scope === "watch"
+        ? "No watches yet"
+        : "No sources yet";
+  const description =
+    scope === "account"
+      ? "Connect an account to keep Pond in sync."
+      : scope === "watch"
+        ? "Watch a public page to keep Pond in sync."
+        : "Connect an account or watch a public one to keep Pond in sync.";
   return (
     <Empty.Root>
       <Empty.Media>
         <IconArrowDiagonalInFill18 />
       </Empty.Media>
-      <Empty.Title>No sources yet</Empty.Title>
-      <Empty.Description>
-        Connect an account or watch a public one to keep Pond in sync.
-      </Empty.Description>
+      <Empty.Title>{title}</Empty.Title>
+      <Empty.Description>{description}</Empty.Description>
       <Empty.Action>
         <Button
           variant="primary"

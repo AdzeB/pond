@@ -1,5 +1,5 @@
 import { act } from "react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { createFolderSidebarHarness } from "./test-harness";
 
@@ -21,15 +21,10 @@ describe("folder sidebar navigation", () => {
     expect(harness.button("All").getAttribute("aria-current")).toBeNull();
   });
 
-  it("opens Sources from the sidebar with an outline icon", async () => {
-    const router = await harness.mount();
-    const sources = harness.button("Sources");
-    expect(sources.querySelector('[stroke="currentColor"]')).not.toBeNull();
-    expect(sources.querySelector('[fill="currentColor"]')).toBeNull();
-    await act(async () => sources.click());
-    expect(router.state.location.pathname).toBe("/sources");
-    expect(libraryChrome.getState().nav).toEqual({ kind: "sources" });
-    expect(harness.button("Sources").getAttribute("aria-current")).toBe("page");
+  it("opens Harvester from the workspace header", async () => {
+    await harness.mount();
+    await act(async () => harness.iconButton("Harvester").click());
+    expect(vi.mocked(window.pond.openHarvesterWindow)).toHaveBeenCalledOnce();
   });
 
   it("opens Uncategorized from the sidebar", async () => {
@@ -55,15 +50,7 @@ describe("folder sidebar navigation", () => {
 
   it("shows counts on library destinations", async () => {
     await harness.mount();
-    for (const label of [
-      "All",
-      "Uncategorized",
-      "Untagged",
-      "Tags",
-      "Trash",
-      "Downloads",
-      "Sources",
-    ]) {
+    for (const label of ["All", "Uncategorized", "Untagged", "Tags", "Trash"]) {
       expect(harness.button(label).textContent).toContain("0");
     }
   });
@@ -80,7 +67,6 @@ describe("folder sidebar navigation", () => {
   });
 
   it.each([
-    ["/sources", "Sources"],
     ["/tags", "Tags"],
     ["/untagged", "Untagged"],
   ])("highlights only %s when opened directly", async (path, label) => {
@@ -96,7 +82,6 @@ describe("folder sidebar navigation", () => {
   });
 
   it.each([
-    ["/sources", "Sources"],
     ["/tags", "Tags"],
     ["/untagged", "Untagged"],
   ])("updates the %s highlight across route history", async (path, label) => {
@@ -108,14 +93,14 @@ describe("folder sidebar navigation", () => {
     expect(router.state.location.pathname).toBe(path);
     expect(harness.button(label).getAttribute("aria-current")).toBe("page");
     expect(harness.button("All").getAttribute("aria-current")).toBeNull();
-    await act(async () => harness.button("Downloads").click());
+    await act(async () => harness.button("Uncategorized").click());
     expect(harness.button(label).getAttribute("aria-current")).toBeNull();
-    expect(harness.button("Downloads").getAttribute("aria-current")).toBe(
+    expect(harness.button("Uncategorized").getAttribute("aria-current")).toBe(
       "page",
     );
   });
 
-  it("groups library destinations before downloads", async () => {
+  it("groups library destinations", async () => {
     await harness.mount();
     const labels = [...harness.host.querySelectorAll("button")].map(
       harness.rowLabel,
@@ -126,15 +111,13 @@ describe("folder sidebar navigation", () => {
     const untagged = labels.indexOf("Untagged");
     const tags = labels.indexOf("Tags");
     const trash = labels.indexOf("Trash");
-    const downloads = labels.indexOf("Downloads");
-    const sources = labels.indexOf("Sources");
     expect(library).toBeLessThan(uncategorized);
     expect(uncategorized).toBeLessThan(assistant);
     expect(assistant).toBeLessThan(untagged);
     expect(untagged).toBeLessThan(tags);
     expect(tags).toBeLessThan(trash);
-    expect(trash).toBeLessThan(downloads);
-    expect(downloads).toBeLessThan(sources);
+    expect(labels).not.toContain("Downloads");
+    expect(labels).not.toContain("Sources");
   });
 
   it("does not collapse library and downloads groups", async () => {

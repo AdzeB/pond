@@ -1,4 +1,3 @@
-import { Button } from "@pond/ui";
 import { useEffect, useRef, useState } from "react";
 import styles from "./styles.module.css";
 
@@ -7,7 +6,6 @@ interface ResponseAnnouncementProps {
   responseId?: string;
   requiredAction?: string;
   error?: string | null;
-  onRead: () => void;
 }
 
 export function ResponseAnnouncement({
@@ -15,7 +13,6 @@ export function ResponseAnnouncement({
   responseId,
   requiredAction,
   error,
-  onRead,
 }: ResponseAnnouncementProps) {
   const previous = useRef({ running, responseId, requiredAction, error });
   const [announcement, setAnnouncement] = useState("");
@@ -41,25 +38,13 @@ export function ResponseAnnouncement({
       setAnnouncement("Agent response complete.");
   }, [running, responseId, requiredAction, error]);
   return (
-    <>
-      <span
-        className={styles.announcement}
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {announcement}
-      </span>
-      {responseId ? (
-        <Button
-          className={styles.link}
-          size="sm"
-          variant="ghost"
-          onClick={onRead}
-        >
-          Read latest response
-        </Button>
-      ) : null}
-    </>
+    <span
+      className={styles.announcement}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {announcement}
+    </span>
   );
 }

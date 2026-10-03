@@ -1,4 +1,3 @@
-import { IconCircleCheckFill18 } from "@pond/icons/fill/18";
 import { useDataTable } from "@pond/ui";
 import { useSelector } from "@tanstack/react-store";
 import { TagContextMenu } from "@/features/tags/components/context-menu/context-menu";
@@ -59,16 +58,9 @@ function ItemRow({ variant }: { variant: "row" | "card" | "index" }) {
           }
         }}
       >
-        {variant === "index" ? (
-          <span className={styles.indexSelector}>
-            <IconCircleCheckFill18
-              className={styles.indexMarker}
-              aria-hidden="true"
-            />
-          </span>
-        ) : (
+        {variant !== "index" ? (
           <TagCheckbox rowId={row.id} name={row.tag.name} />
-        )}
+        ) : null}
         <NameCell index={variant === "index"} />
         <ActionsCell />
       </div>

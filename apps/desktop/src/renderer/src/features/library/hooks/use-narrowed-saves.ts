@@ -29,6 +29,9 @@ import { keywordScopesFromPrefs } from "@/features/search/components/bar/search-
 import { useRetrievalOverlay } from "@/features/search/hooks/use-retrieval-overlay";
 import { usePrefs } from "@/features/settings/state/prefs";
 
+/** Long enough to span a pause between keystrokes, so results swap once typing stops. */
+const KEYWORD_DEBOUNCE_MS = 250;
+
 export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
   const saves = useSaves();
   const recents = useRecents();
@@ -120,7 +123,7 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
       () => {
         void session.load();
       },
-      request.keywords?.trim() ? 100 : 0,
+      request.keywords?.trim() ? KEYWORD_DEBOUNCE_MS : 0,
     );
     return () => {
       clearTimeout(timer);

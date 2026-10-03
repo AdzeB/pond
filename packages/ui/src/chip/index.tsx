@@ -142,6 +142,7 @@ interface FilterProps
   title?: string;
   active?: boolean;
   ariaLabel: string;
+  variant?: ButtonProps["variant"];
   clearLabel?: string;
   onClear?: () => void;
   onOpenChange?: ComponentProps<typeof Menu.Root>["onOpenChange"];
@@ -154,6 +155,7 @@ function Filter({
   title,
   active,
   ariaLabel,
+  variant = "ghost",
   clearLabel,
   onClear,
   onOpenChange,
@@ -166,7 +168,7 @@ function Filter({
       <Menu.Root onOpenChange={onOpenChange}>
         <Menu.Trigger
           size="sm"
-          variant="ghost"
+          variant={variant}
           className={styles["filter-trigger"]}
           data-active={active || undefined}
           aria-label={ariaLabel}

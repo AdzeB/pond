@@ -1,7 +1,8 @@
 # Provenance standard
 
-[`provenance.yaml`](../../provenance.yaml) is Pond's authoritative record of
+[`.provenance/sources/`](../../.provenance/sources) is Pond's authoritative record of
 external sources and their relationships to project artifacts and decisions.
+Each thing or person has a `source.md`. Pages from that entity are links.
 The generated [reference catalog](../provenance/generated/REFERENCES.md),
 [influence index](../provenance/generated/INFLUENCES.md), and
 [PROV JSON-LD graph](../provenance/generated/provenance.prov.jsonld) are review surfaces. Never
@@ -11,9 +12,10 @@ edit generated artifacts directly.
 
 When an external source affects a change:
 
-1. Add or update its stable lowercase kebab-case entry in `sources`.
-2. Add a relationship naming the source, relationship type, affected targets,
-   and the concrete contribution.
+1. Add or update the entity folder under `.provenance/sources/`. Use
+   `companies`, `people`, `products`, or `standards`.
+2. Add an `influenced` entry naming the relationship type, affected targets,
+   and a one-sentence contribution.
 3. Record usage terms honestly. Use `unknown` when they were not verified; a
    citation does not grant reuse rights.
 4. Add evidence when a file, issue, pull request, commit, or release supports
@@ -40,16 +42,16 @@ legal compliance.
 `pnpm provenance:generate` deterministically writes the three public artifacts
 under `docs/provenance/generated/`. `pnpm provenance:generated:check` performs the same
 generation in a temporary directory and fails when committed output is stale.
-CI also validates `provenance.yaml` through the repository's public Provenance
+CI also validates `.provenance/` through the repository's public Provenance
 GitHub Action.
 
 Detailed research notes may remain in `docs/references/`, but source identity,
-terms, affected targets, and contribution claims belong in `provenance.yaml`.
+terms, affected targets, and contribution claims belong in `source.md`.
 The pre-migration records are retained under `docs/provenance/migration/` as
 historical evidence only.
 
 Repository hooks may collect private, gitignored evidence under
 `.tmp/references/`. This capture is an intake aid, not a second provenance
-record, and it never updates `provenance.yaml` automatically. Review it with
+record, and it never updates `.provenance/` automatically. Review it with
 `pnpm provenance:capture:status` and `pnpm provenance:capture:summary`; never
 commit raw prompts, tool responses, credentials, or private inputs.

@@ -1,6 +1,5 @@
 import { ApprovalCard } from "@pond/ui/approval-card";
 import { QuestionCard } from "@pond/ui/question-card";
-import { RunStatus } from "@pond/ui/run-status";
 import type {
   AssistantMessage,
   AssistantProvider,
@@ -10,6 +9,7 @@ import { assistant } from "@/features/agent/state/assistant";
 import { openSave } from "@/features/saves/lib/save-nav";
 import { AssistantResponse } from "./assistant-response";
 import { ConsultedSaves } from "./consulted-saves";
+import { ResponseError } from "./response-error";
 import { ChangeReview } from "./review";
 import { WorkSummary } from "./work-summary";
 
@@ -124,7 +124,7 @@ export function ResponseExtras({
         </ApprovalCard>
       ) : null}
       {message.metadata?.error ? (
-        <RunStatus state="stopped">{message.metadata.error}</RunStatus>
+        <ResponseError error={message.metadata.error} />
       ) : null}
       {sources.length && !results.length ? (
         <ConsultedSaves
@@ -153,7 +153,6 @@ export function ResponseContent({
           content={message.content}
           sources={sources}
           onOpenSave={openSave}
-          onAttach={attach}
         />
       ) : null}
       <ResponseExtras message={message} attach={attach} {...props} />

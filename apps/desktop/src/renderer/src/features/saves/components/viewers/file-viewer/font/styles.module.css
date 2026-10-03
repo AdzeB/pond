@@ -1,0 +1,109 @@
+.fontRoot {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-1);
+
+  &[data-background="dark"] {
+    color: var(--ds-gray-1);
+    background: var(--ds-gray-12);
+  }
+}
+
+.scroll {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.field {
+  width: min(24rem, 50cqw);
+}
+
+.size {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 2px 8px 2px 2px;
+}
+
+.specimen,
+.glyphs,
+.waterfall {
+  font-family: var(--preview-font);
+}
+
+.specimen {
+  padding: 56px;
+  font-size: var(--preview-size);
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+.glyphs {
+  padding: 32px 56px 56px;
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  border-top: var(--ds-border-width) solid var(--ds-gray-4);
+}
+
+.waterfall {
+  display: grid;
+  gap: 24px;
+  padding: 56px;
+  overflow: hidden;
+  line-height: 1.1;
+}
+
+.waterfall > div {
+  display: flex;
+  gap: 20px;
+  align-items: baseline;
+  min-width: max-content;
+}
+
+.waterfall span {
+  width: 32px;
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-xs);
+  color: var(--ds-gray-9);
+}
+
+.fontMetadata {
+  display: grid;
+  gap: 8px;
+  padding: 24px 56px;
+  margin: 0;
+  border-top: var(--ds-border-width) solid var(--ds-gray-4);
+}
+
+.fontMetadata > div {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.fontMetadata dt {
+  color: var(--ds-gray-9);
+}
+
+.fontMetadata dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.fontInfoActions {
+  padding: 0 56px 40px;
+}
+
+.fontNameEditor {
+  max-width: 320px;
+}

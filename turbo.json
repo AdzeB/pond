@@ -76,7 +76,7 @@
     },
     "//#provenance:check:repo": {
       "inputs": [
-        "provenance.yaml",
+        ".provenance/**",
         "package.json",
         "pnpm-lock.yaml",
         "scripts/reference-capture.mjs",

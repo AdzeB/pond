@@ -12,7 +12,8 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { z } from "zod";
+import type { z } from "zod";
+import { useLiveDownloadHydration } from "@/features/downloads/hooks/use-live-download-hydration";
 import {
   type DownloadRow,
   downloadRowSource,
@@ -42,7 +43,6 @@ import {
   useRightPane,
 } from "@/features/library/state/library-chrome";
 import { useSaves } from "@/features/saves/hooks/use-saves";
-import { reloadSaves } from "@/features/saves/lib/ensure-saves";
 import {
   SearchChrome,
   SearchChromeInput,
@@ -55,12 +55,10 @@ import {
 import { uniqueFilterOptions } from "@/shared/components/table-filters/chip-label";
 import { useDownloadActivity } from "../../hooks/use-download-activity";
 import { TransferJobsPanel } from "../transfers";
-import { DownloadsView } from "./downloads-view";
-import { hydrateLiveDownloadSaves } from "./hydrate-live-saves";
-
+import { DownloadOptionsMenu } from "./options";
 import styles from "./styles.module.css";
+import { DownloadsView } from "./view";
 
-const InflightIdsSchema = z.array(z.string()).catch([]);
 const initialHistoryCursor: HistoryCursor = null;
 type PipelineStatus = z.infer<typeof PipelineStatusSchema>;
 
@@ -71,31 +69,7 @@ function DownloadsMatchesEmpty({ onReset }: { onReset: () => void }) {
 export function DownloadsPage() {
   const saves = useSaves();
   const qc = useQueryClient();
-  useEffect(() => {
-    let stopped = false;
-    const hydrate = async (
-      name: "downloads.ingestingOrFailed" | "pipeline.inflight",
-    ) => {
-      try {
-        const ids = InflightIdsSchema.parse(await window.pond.query(name, {}));
-        if (stopped) return;
-        if (name === "downloads.ingestingOrFailed") {
-          await hydrateLiveDownloadSaves(ids, () => stopped);
-          return;
-        }
-        await reloadSaves(ids);
-      } catch (err) {
-        console.warn(`[pond downloads] ${name} refresh failed`, err);
-      }
-    };
-    void hydrate("downloads.ingestingOrFailed");
-    void hydrate("pipeline.inflight");
-    const timer = setInterval(() => void hydrate("pipeline.inflight"), 2_000);
-    return () => {
-      stopped = true;
-      clearInterval(timer);
-    };
-  }, []);
+  useLiveDownloadHydration();
   const filters = useDownloadsFilters();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const activity = useDownloadActivity();
@@ -218,72 +192,75 @@ export function DownloadsPage() {
         "Couldn't change the queue. Try again.",
       ),
   });
+  const toolbar = (
+    <SearchChrome
+      actions={
+        <>
+          <DownloadOptionsMenu />
+          <TableFilterToggle
+            open={filtersOpen}
+            active={tableFiltersActive}
+            controlsId="downloads-filter-toolbar"
+            onToggle={() => setFiltersOpen((open) => !open)}
+          />
+          <Tooltip
+            label={
+              paused
+                ? "Resume background downloads"
+                : "Pause background downloads. Links you add still start."
+            }
+            side="bottom"
+          >
+            <Button
+              icon
+              size="sm"
+              variant="ghost"
+              disabled={!pipeline.data || pause.isPending}
+              loading={pause.isPending}
+              onClick={() => pause.mutate()}
+              aria-label={paused ? "Resume Queue" : "Pause Queue"}
+            >
+              {paused ? <IconMediaPlayFill18 /> : <IconMediaPauseFill18 />}
+            </Button>
+          </Tooltip>
+        </>
+      }
+      below={
+        <TableFilterBar
+          open={filtersOpen}
+          id="downloads-filter-toolbar"
+          label="Download Filters"
+        >
+          <TableFilterChip
+            name="Status"
+            icon={<IconCircleCheckOutline18 />}
+            options={STATUS_FILTER_OPTIONS}
+            selected={filters.statuses}
+            onChange={downloadsFilters.setStatuses}
+          />
+          <TableFilterChip
+            name="Source"
+            icon={<IconLink2Outline18 />}
+            options={sourceOptions}
+            selected={filters.sources}
+            onChange={downloadsFilters.setSources}
+          />
+        </TableFilterBar>
+      }
+    >
+      <SearchChromeInput
+        value={filters.q}
+        onChange={(e) => downloadsFilters.setQ(e.target.value)}
+        spellCheck={false}
+        placeholder="Search downloads…"
+        aria-label="Search Downloads"
+        data-downloads-search=""
+      />
+    </SearchChrome>
+  );
   return (
     <div className={styles.page}>
-      <SearchChrome
-        actions={
-          <>
-            <TableFilterToggle
-              open={filtersOpen}
-              active={tableFiltersActive}
-              controlsId="downloads-filter-toolbar"
-              onToggle={() => setFiltersOpen((open) => !open)}
-            />
-            <Tooltip
-              label={
-                paused
-                  ? "Resume background downloads"
-                  : "Pause background downloads. Links you add still start."
-              }
-              side="bottom"
-            >
-              <Button
-                icon
-                size="sm"
-                variant="ghost"
-                disabled={!pipeline.data || pause.isPending}
-                loading={pause.isPending}
-                onClick={() => pause.mutate()}
-                aria-label={paused ? "Resume Queue" : "Pause Queue"}
-              >
-                {paused ? <IconMediaPlayFill18 /> : <IconMediaPauseFill18 />}
-              </Button>
-            </Tooltip>
-          </>
-        }
-        below={
-          <TableFilterBar
-            open={filtersOpen}
-            id="downloads-filter-toolbar"
-            label="Download Filters"
-          >
-            <TableFilterChip
-              name="Status"
-              icon={<IconCircleCheckOutline18 />}
-              options={STATUS_FILTER_OPTIONS}
-              selected={filters.statuses}
-              onChange={downloadsFilters.setStatuses}
-            />
-            <TableFilterChip
-              name="Source"
-              icon={<IconLink2Outline18 />}
-              options={sourceOptions}
-              selected={filters.sources}
-              onChange={downloadsFilters.setSources}
-            />
-          </TableFilterBar>
-        }
-      >
-        <SearchChromeInput
-          value={filters.q}
-          onChange={(e) => downloadsFilters.setQ(e.target.value)}
-          spellCheck={false}
-          placeholder="Search downloads…"
-          aria-label="Search Downloads"
-          data-downloads-search=""
-        />
-      </SearchChrome>
-
+      {toolbar}
       {activity.isError ? (
         <p className={styles.activityError} role="status">
           Live activity is unavailable.{" "}

@@ -68,9 +68,11 @@ function Glyph({ open, side }: { open: boolean; side: "left" | "right" }) {
 export function SidebarToggle({
   open,
   side = "left",
+  onToggle,
 }: {
   open: boolean;
   side?: "left" | "right";
+  onToggle?: () => void;
 }) {
   const [visual, setVisual] = useState(false);
   const label = side === "left" ? "Toggle Sidebar" : "Toggle Details";
@@ -85,58 +87,71 @@ export function SidebarToggle({
     return () => cancelAnimationFrame(frame);
   }, [open]);
 
+  const button = (
+    <Button
+      icon
+      size="sm"
+      variant="ghost"
+      aria-label={label}
+      aria-pressed={open}
+      onClick={() => {
+        if (onToggle) {
+          onToggle();
+          return;
+        }
+        if (side === "left") libraryChrome.toggleSidebar();
+        else libraryChrome.toggleRightPane();
+      }}
+    >
+      <Glyph open={visual} side={side} />
+    </Button>
+  );
+
   return (
     <Tooltip
       label={label}
       shortcut={
-        side === "left" ? <ShortcutKeys id="view.sidebar" /> : undefined
+        side === "left" && !onToggle ? (
+          <ShortcutKeys id="view.sidebar" />
+        ) : undefined
       }
     >
-      <SpecContextMenu
-        buildItems={() => [
-          {
-            type: "checkbox",
-            label: "Sidebar",
-            checked: sidebarOpen,
-            onCheckedChange: (checked) => {
-              if (checked !== sidebarOpen) libraryChrome.toggleSidebar();
+      {onToggle ? (
+        button
+      ) : (
+        <SpecContextMenu
+          buildItems={() => [
+            {
+              type: "checkbox",
+              label: "Sidebar",
+              checked: sidebarOpen,
+              onCheckedChange: (checked) => {
+                if (checked !== sidebarOpen) libraryChrome.toggleSidebar();
+              },
             },
-          },
-          {
-            type: "checkbox",
-            label: "Agent",
-            checked: rightPane === "agent",
-            onCheckedChange: (checked) => libraryChrome.setAgentOpen(checked),
-          },
-          {
-            type: "checkbox",
-            label: "Details",
-            checked: rightPane === "inspector",
-            disabled: !canInspect,
-            onCheckedChange: (checked) => {
-              if (checked && rightPane !== "inspector")
-                libraryChrome.toggleInspector();
-              else if (!checked && rightPane === "inspector")
-                libraryChrome.closeRightPane();
+            {
+              type: "checkbox",
+              label: "Agent",
+              checked: rightPane === "agent",
+              onCheckedChange: (checked) => libraryChrome.setAgentOpen(checked),
             },
-          },
-        ]}
-      >
-        <Button
-          icon
-          size="sm"
-          variant="ghost"
-          aria-label={label}
-          aria-pressed={open}
-          onClick={() =>
-            side === "left"
-              ? libraryChrome.toggleSidebar()
-              : libraryChrome.toggleRightPane()
-          }
+            {
+              type: "checkbox",
+              label: "Details",
+              checked: rightPane === "inspector",
+              disabled: !canInspect,
+              onCheckedChange: (checked) => {
+                if (checked && rightPane !== "inspector")
+                  libraryChrome.toggleInspector();
+                else if (!checked && rightPane === "inspector")
+                  libraryChrome.closeRightPane();
+              },
+            },
+          ]}
         >
-          <Glyph open={visual} side={side} />
-        </Button>
-      </SpecContextMenu>
+          {button}
+        </SpecContextMenu>
+      )}
     </Tooltip>
   );
 }

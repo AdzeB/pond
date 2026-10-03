@@ -5,6 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { refetchAccounts } from "@/features/sources/hooks/use-accounts";
 import { sourceFlow } from "@/features/sources/state/source-flow";
+import { sourcesColumnsLayout } from "@/features/sources/state/sources-columns";
 import { sourcesFilters } from "@/features/sources/state/sources-filters";
 import { sourcesSelection } from "@/features/sources/state/sources-selection";
 import { SourcesPage } from "./";
@@ -90,6 +91,7 @@ describe("Sources page selection", () => {
       },
     });
     sourcesSelection.clear();
+    sourcesColumnsLayout.reset();
     sourcesFilters.reset();
     sourceFlow.close();
   });
@@ -102,6 +104,7 @@ describe("Sources page selection", () => {
     });
     await refetchAccounts();
     sourcesSelection.clear();
+    sourcesColumnsLayout.reset();
     sourcesFilters.reset();
     sourceFlow.close();
     await act(async () => root.unmount());

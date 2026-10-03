@@ -59,13 +59,20 @@ function FolderCard({
   const previewOne = useSave(previewIds[previewOffset]);
   const previewTwo = useSave(previewIds[previewOffset + 1]);
   const previewThree = useSave(previewIds[previewOffset + 2]);
-  const previews = [customCover, previewOne, previewTwo, previewThree]
+  const previewFour = useSave(previewIds[previewOffset + 3]);
+  const previews = [
+    customCover,
+    previewOne,
+    previewTwo,
+    previewThree,
+    previewFour,
+  ]
     .flatMap((save) => {
       if (!save) return [];
       const src = folderCoverUrl(save, 360);
       return src ? [{ id: save.id, src }] : [];
     })
-    .slice(0, 3);
+    .slice(0, 4);
   const directSaveCount = summary?.directSaveCount ?? 0;
   const childFolderCount = summary?.childFolderCount ?? 0;
   const metadata =
@@ -170,12 +177,8 @@ function FolderCard({
         >
           <span className={styles.cover}>
             {previews.length > 0 ? (
-              previews.map((preview, index) => (
-                <span
-                  className={styles.preview}
-                  data-depth={index}
-                  key={preview.id}
-                >
+              previews.map((preview) => (
+                <span className={styles.preview} key={preview.id}>
                   <img src={preview.src} alt="" />
                 </span>
               ))

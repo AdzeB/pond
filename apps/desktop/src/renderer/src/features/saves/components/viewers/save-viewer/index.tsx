@@ -65,7 +65,7 @@ function mediaSlideFor(save: Save, item: ViewerItem): MediaSlide {
   };
 }
 
-export function ViewerItemContent({
+function ViewerItemContent({
   save,
   item,
   active,

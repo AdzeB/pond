@@ -57,7 +57,10 @@
 }
 
 .scroll-action {
+  position: absolute;
+  top: 18px;
+  left: 50%;
   display: flex;
   justify-content: center;
-  padding-bottom: 6px;
+  transform: translateX(-50%);
 }

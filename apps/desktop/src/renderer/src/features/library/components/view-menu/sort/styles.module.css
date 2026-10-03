@@ -1,0 +1,18 @@
+.controls {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  align-items: center;
+  width: auto;
+  min-width: 0;
+
+  .select {
+    flex: none;
+    width: var(--view-menu-select-width);
+    min-width: var(--view-menu-select-width);
+  }
+}
+
+.direction {
+  flex: none;
+}

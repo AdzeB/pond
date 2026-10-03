@@ -1,10 +1,11 @@
 import {
   IconClone2Outline18,
+  IconDotsOutline18,
   IconDownloadOutline18,
   IconPencilOutline18,
   IconTrash2Outline18,
 } from "@pond/icons/outline/18";
-import { Button, Dialog, Tooltip } from "@pond/ui";
+import { Dialog, Menu, Tooltip } from "@pond/ui";
 import type { AssistantMessage } from "@shared/assistant";
 import { conversationMarkdown } from "@shared/conversation-markdown";
 import { notify } from "@/shared/lib/toast";
@@ -53,64 +54,63 @@ export function ChatActions({
     }
   }
   return (
-    <>
-      <Tooltip label="Rename Chat" side="bottom">
-        <Button
+    <Menu.Root>
+      <Tooltip label="Chat Actions" side="bottom">
+        <Menu.Trigger
           icon
           size="sm"
           variant="ghost"
-          aria-label="Rename Chat"
-          disabled={disabled || !chatId}
-          onClick={onRename}
+          aria-label="Chat Actions"
+          disabled={disabled || (!chatId && !messages.length)}
         >
-          <IconPencilOutline18 />
-        </Button>
+          <IconDotsOutline18 />
+        </Menu.Trigger>
       </Tooltip>
-      <Tooltip label="Copy Conversation" side="bottom">
-        <Button
-          icon
-          size="sm"
-          variant="ghost"
-          aria-label="Copy Conversation"
-          disabled={disabled || !messages.length}
-          onClick={() => void transfer("copy")}
-        >
-          <IconClone2Outline18 />
-        </Button>
-      </Tooltip>
-      <Tooltip label="Export Markdown" side="bottom">
-        <Button
-          icon
-          size="sm"
-          variant="ghost"
-          aria-label="Export Markdown"
-          disabled={disabled || !messages.length}
-          onClick={() => void transfer("export")}
-        >
-          <IconDownloadOutline18 />
-        </Button>
-      </Tooltip>
-      <Tooltip label="Delete Chat" side="bottom">
-        <Button
-          icon
-          size="sm"
-          variant="ghost"
-          aria-label="Delete Chat"
-          disabled={disabled || !chatId}
-          onClick={() => {
-            if (!chatId) return;
-            Dialog.confirm({
-              title: "Delete Chat",
-              description:
-                "This permanently deletes the conversation. Your Saves stay in your library.",
-              confirmLabel: "Delete Chat",
-              onConfirm: () => assistant.deleteChat(chatId),
-            });
-          }}
-        >
-          <IconTrash2Outline18 />
-        </Button>
-      </Tooltip>
-    </>
+      <Menu.Portal>
+        <Menu.Positioner side="bottom" align="end">
+          <Menu.Popup>
+            <Menu.Items
+              items={[
+                {
+                  label: "Rename Chat",
+                  icon: <IconPencilOutline18 />,
+                  disabled: disabled || !chatId,
+                  onClick: onRename,
+                },
+                {
+                  label: "Copy Conversation",
+                  icon: <IconClone2Outline18 />,
+                  disabled: disabled || !messages.length,
+                  onClick: () => void transfer("copy"),
+                },
+                {
+                  label: "Export Markdown",
+                  icon: <IconDownloadOutline18 />,
+                  disabled: disabled || !messages.length,
+                  onClick: () => void transfer("export"),
+                },
+                { type: "separator" },
+                {
+                  label: "Delete Chat",
+                  icon: <IconTrash2Outline18 />,
+                  variant: "destructive",
+                  disabled: disabled || !chatId,
+                  onClick: () => {
+                    if (!chatId) return;
+                    Dialog.confirm({
+                      title: "Delete Chat",
+                      description:
+                        "This permanently deletes the conversation. Your Saves stay in your library.",
+                      confirmLabel: "Delete Chat",
+                      onConfirm: () => assistant.deleteChat(chatId),
+                    });
+                  },
+                },
+              ]}
+            />
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }

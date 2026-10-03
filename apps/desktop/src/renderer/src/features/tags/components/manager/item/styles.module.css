@@ -32,19 +32,3 @@
     background: var(--ds-accent-a2);
   }
 }
-
-.indexSelector {
-  position: relative;
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-}
-
-.indexMarker {
-  width: 6px;
-  height: 6px;
-  color: var(--ds-gray-7);
-}

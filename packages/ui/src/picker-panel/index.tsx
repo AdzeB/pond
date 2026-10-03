@@ -4,7 +4,6 @@ import {
   type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
-  type ReactNode,
   type Ref,
   useEffect,
   useId,
@@ -411,5 +410,3 @@ export const PickerPanel = {
   Footer,
   Hint,
 };
-
-export type PickerPanelChildren = ReactNode;

@@ -1,8 +1,8 @@
 import { $convertFromMarkdownString } from "@lexical/mdast";
 import { defineExtension } from "lexical";
 import { markdownEditorExtension } from "@/shared/markdown-editor/extension";
-import { composerMdastExtension, SaveMentionNode } from "./mention-node";
-import styles from "./styles.module.css";
+import { composerMdastExtension, SaveMentionNode } from "./mention";
+import styles from "./theme/styles.module.css";
 
 export function createComposerExtension(markdown: string, editable: boolean) {
   return defineExtension({

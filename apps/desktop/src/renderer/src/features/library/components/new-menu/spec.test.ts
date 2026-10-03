@@ -1,3 +1,4 @@
+import { isValidElement } from "react";
 import { describe, expect, it } from "vitest";
 import {
   menuLabels,
@@ -23,6 +24,7 @@ describe("new menu spec", () => {
       "New Note",
       "Photoshop Document",
       "Word Document",
+      "Capture",
       "Capture Screenshot",
       "Import",
       "Import Files",
@@ -79,6 +81,7 @@ describe("new menu spec", () => {
     expect(labels).not.toContain("Tools");
     expect(topLevelMenuLabels(buildNewMenuItems(["word"]))).toEqual([
       "New",
+      "Capture",
       "Import",
       "Sources",
       "Library",
@@ -89,6 +92,24 @@ describe("new menu spec", () => {
     expect(menuLabels(buildNewMenuItems([])).join(" ")).not.toContain(
       "Photoshop",
     );
+  });
+
+  it("uses the installed application's native icon for document actions", () => {
+    const [newMenu] = buildNewMenuItems(["excel"], {
+      excel: "data:image/png;base64,excel",
+    });
+    if (newMenu?.type !== "submenu") throw new Error("Missing New submenu");
+    const excel = newMenu.items.find(
+      (item) => "id" in item && item.id === "excel",
+    );
+    if (!excel || !("icon" in excel) || !isValidElement(excel.icon)) {
+      throw new Error("Missing Excel icon");
+    }
+    expect(excel.icon.type).toBe("img");
+    expect(excel.icon.props).toMatchObject({
+      alt: "",
+      src: "data:image/png;base64,excel",
+    });
   });
 
   it("filters nested actions by search", () => {

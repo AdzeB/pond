@@ -1,6 +1,6 @@
 import { FIELD_IDS } from "@pond/schema/filters/meta";
 import type { FieldId } from "@pond/schema/filters/types";
-import type { MenuActionId } from "@shared/constants";
+import type { MenuActionId, MenuActionSource } from "@shared/constants";
 import { filterToolbar } from "@/features/library/components/filter-menu/toolbar-state";
 import {
   exportDebugReport,
@@ -41,6 +41,7 @@ import { pool } from "@/features/saves/state/pool";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 import { openSettings } from "@/features/settings/lib/open-settings";
 import { getAppRouter } from "@/shared/lib/app-router";
+import { isEditableTarget } from "@/shared/lib/editable-target";
 import { notify } from "@/shared/lib/toast";
 
 function selectedIds(): string[] {
@@ -172,7 +173,15 @@ function ratingValue(id: MenuActionId): number | null {
   return Number.isInteger(value) && value >= 0 && value <= 5 ? value : null;
 }
 
-export function handleNativeMenuAction(id: MenuActionId): boolean {
+export function shouldIgnoreMenuAction(source: MenuActionSource): boolean {
+  return source === "accelerator" && isEditableTarget();
+}
+
+export function handleNativeMenuAction(
+  id: MenuActionId,
+  source: MenuActionSource = "menu",
+): boolean {
+  if (shouldIgnoreMenuAction(source)) return true;
   const field = findField(id);
   if (field) {
     openFilter(field);

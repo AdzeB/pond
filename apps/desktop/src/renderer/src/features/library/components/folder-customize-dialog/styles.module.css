@@ -36,15 +36,6 @@
   justify-content: flex-start;
 }
 
-.swatch {
-  flex: none;
-  width: 18px;
-  height: 18px;
-  background: var(--swatch);
-  border: var(--ds-border-width) solid var(--ds-border-subtle);
-  border-radius: var(--ds-radius-full);
-}
-
 .error {
   margin: 0;
   font-size: var(--ds-text-sm);

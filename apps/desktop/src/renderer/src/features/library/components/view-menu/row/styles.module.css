@@ -1,0 +1,21 @@
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 36px;
+}
+
+.label {
+  flex-shrink: 0;
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-md);
+  color: var(--ds-gray-12);
+}
+
+.select {
+  flex: 0 0 auto;
+  width: var(--view-menu-select-width);
+  white-space: nowrap;
+}

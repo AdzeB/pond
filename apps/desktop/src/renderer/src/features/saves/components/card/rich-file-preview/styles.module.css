@@ -4,219 +4,23 @@
   height: 100%;
 }
 
-.status,
-.model,
-.epub,
-.font,
-.archive {
+.status {
   position: absolute;
   inset: 0;
   z-index: 0;
-  overflow: hidden;
-  border-radius: var(--ds-radius-xs);
-  box-shadow: var(--ds-shadow-sm);
-}
-
-.status {
   display: grid;
   place-items: center;
+  overflow: hidden;
   color: var(--ds-gray-10);
   background: var(--ds-gray-2);
+  border-radius: var(--ds-radius-xs);
+  box-shadow: var(--ds-shadow-sm);
 }
 
 .status span {
   font-size: 11px;
 }
 
-.model {
-  color: rgb(226 232 240);
-  background: #20252d;
-}
-
-.modelCanvas,
-.modelCanvas canvas {
-  width: 100%;
-  height: 100%;
-}
-
-.model > span {
-  position: absolute;
-  right: 8px;
-  bottom: 8px;
-  font-size: 10px;
-  color: rgb(226 232 240 / 70%);
-}
-
-.modelFallback {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  gap: 6px;
-  align-content: center;
-  justify-items: center;
-  background:
-    linear-gradient(rgb(255 255 255 / 6%) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 6%) 1px, transparent 1px), #20252d;
-  background-size: 22px 22px;
-}
-
-.modelFallback strong {
-  font-size: clamp(26px, 20cqw, 52px);
-  letter-spacing: -0.08em;
-}
-
-.modelFallback span {
-  font-size: 10px;
-  color: rgb(226 232 240 / 65%);
-}
-
-.epub {
-  display: grid;
-  place-items: center;
-  padding: 8%;
-  background:
-    radial-gradient(circle at 50% 20%, rgb(255 255 255 / 90%), transparent 46%),
-    light-dark(#e8e0d2, #26231f);
-}
-
-.epub img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  filter: drop-shadow(0 8px 14px rgb(0 0 0 / 24%));
-}
-
-.bookFallback {
-  display: flex;
-  flex-direction: column;
-  width: min(78%, 150px);
-  min-height: 72%;
-  padding: 14% 12%;
-  color: #4a2c1a;
-  background: #f2c36b;
-  border: 1px solid rgb(89 48 20 / 24%);
-  border-radius: 3px 9px 9px 3px;
-  box-shadow:
-    -5px 0 0 #bc7d35,
-    0 10px 20px rgb(0 0 0 / 22%);
-}
-
-.bookFallback span {
-  font-size: 9px;
-  font-weight: 750;
-  letter-spacing: 0.12em;
-}
-
-.bookFallback strong {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  margin-top: 10%;
-  overflow: hidden;
-  -webkit-line-clamp: 4;
-  font-family: ui-serif, Georgia, serif;
-  font-size: clamp(13px, 10cqw, 20px);
-  line-height: 1.08;
-}
-
-.bookFallback i {
-  width: 34%;
-  height: 2px;
-  margin-top: auto;
-  background: currentColor;
-  opacity: 0.45;
-}
-
-.font {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 8%;
-  container-type: inline-size;
-  color: light-dark(#171717, #f5f5f5);
-  text-align: center;
-  background:
-    radial-gradient(circle at 50% 25%, var(--ds-gray-1), transparent 55%),
-    var(--ds-gray-3);
-}
-
-.font span {
-  max-width: 96%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-family: var(--pond-card-font), ui-serif, Georgia, serif;
-  font-size: clamp(16px, 18cqw, 36px);
-  font-weight: 400;
-  line-height: 1.08;
-  white-space: nowrap;
-}
-
-.font span + span {
-  margin-top: 7%;
-}
-
-.archive {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ds-gray-9);
-  background: var(--ds-gray-2);
-}
-
-.archiveIcon {
-  width: clamp(36px, 32cqw, 58px);
-  overflow: visible;
-  filter: drop-shadow(0 1px 1px light-dark(#0002, #0005));
-}
-
-.archivePage {
-  fill: var(--ds-gray-1);
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linejoin: round;
-}
-
-.archiveFold {
-  fill: var(--ds-gray-3);
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linejoin: round;
-}
-
-.archiveZip {
-  fill: var(--ds-gray-8);
-}
-
-.archivePull {
-  fill: var(--ds-gray-3);
-  stroke: var(--ds-gray-8);
-  stroke-width: 2;
-  stroke-linejoin: round;
-}
-
-.root[data-view="list"] .font span:not(:first-child),
-.root[data-view="list"] .bookFallback strong,
-.root[data-view="list"] .bookFallback i {
-  display: none;
-}
-
-.root[data-view="list"] .font span {
-  font-size: 13px;
-}
-
-.root[data-view="list"] .status,
-.root[data-view="list"] .model,
-.root[data-view="list"] .epub,
-.root[data-view="list"] .font,
-.root[data-view="list"] .archive {
+.root[data-view="list"] .status {
   border-radius: var(--ds-radius-sm);
-}
-
-.root[data-view="list"] .archiveIcon {
-  width: 28px;
-}
-
-.root[data-view="list"] .bookFallback {
-  min-height: 70%;
-  padding: 18% 12%;
 }

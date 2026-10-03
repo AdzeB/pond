@@ -4,7 +4,7 @@ Before changing code, read [CONTRIBUTING.md](CONTRIBUTING.md) and [code standard
 
 For module moves, state ownership, or main/preload/renderer interfaces, read [desktop architecture](docs/contributing/architecture.md). For domain naming, read [CONTEXT.md](CONTEXT.md). For UI behavior, read [design principles](apps/desktop/src/renderer/src/PRINCIPLES.md).
 
-When you use an external source, follow the [Provenance standard](docs/contributing/references-standard.md): update `provenance.yaml`, state the source-to-target relationship precisely, and regenerate the public views.
+When you use an external source, follow the [Provenance standard](docs/contributing/references-standard.md): update the entity under `.provenance/sources/`, state the source-to-target relationship precisely, and regenerate the public views.
 
 ## Shared development runtime
 

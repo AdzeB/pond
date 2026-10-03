@@ -25,7 +25,9 @@ export interface AppMenuContext {
   rescanLibrary: () => void;
   reloadLibrary: () => void;
   revealLibrary: () => void;
-  sendMenuAction: (id: MenuActionId) => () => void;
+  sendMenuAction: (
+    id: MenuActionId,
+  ) => NonNullable<MenuItemConstructorOptions["click"]>;
   showLogs: () => void;
   translate: Translate;
   translateCopy: TranslateCopy;

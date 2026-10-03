@@ -94,6 +94,7 @@ describe("buildTrayTemplate", () => {
       "Pond · 1200 saves",
       "Saving 4 of 248 items",
       "New",
+      "Capture",
       "Import",
       "Sources",
       "Library",
@@ -106,10 +107,12 @@ describe("buildTrayTemplate", () => {
       "New Smart Folder",
       "New Smart Folder Group",
       "New Note",
-      "Capture Screenshot",
       "Word Document",
       "New Tag",
       "New Tag Group",
+    ]);
+    expect(labelsOf(findByLabel(template, "Capture")?.submenu ?? [])).toEqual([
+      "Capture Screenshot",
     ]);
     expect(labelsOf(findByLabel(template, "Import")?.submenu ?? [])).toContain(
       "Import Eagle Library",
@@ -182,6 +185,7 @@ describe("buildTrayTemplate", () => {
       },
     );
     findByLabel(template, "New Folder")?.click?.();
+    findByLabel(template, "Capture Screenshot")?.click?.();
     findByLabel(template, "Word Document")?.click?.();
     findByLabel(template, "New Watch")
       ?.submenu?.find((item) => item.label === "YouTube")
@@ -193,6 +197,9 @@ describe("buildTrayTemplate", () => {
       ?.submenu?.find((item) => item.label === "Sources")
       ?.click?.();
     expect(actions.onMenuAction).toHaveBeenCalledWith("library.new-folder");
+    expect(actions.onMenuAction).toHaveBeenCalledWith(
+      "library.capture-screenshot",
+    );
     expect(actions.onMenuAction).toHaveBeenCalledWith("library.new-blank-word");
     expect(actions.onMenuAction).toHaveBeenCalledWith("library.watch-youtube");
     expect(actions.onMenuAction).toHaveBeenCalledWith("library.search");

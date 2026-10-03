@@ -14,6 +14,7 @@ import {
   startGlobalShortcuts,
   summonShortcutTarget,
 } from "./core/global-shortcuts";
+import { registerHarvesterWindowIpc } from "./core/harvester-window";
 import { syncLibraryRootMetadata } from "./core/library-ops";
 import { runLibraryScopeMigration } from "./core/library-scope-migration";
 import { stopLibraryTransfers } from "./core/library-transfers";
@@ -196,6 +197,7 @@ app.whenReady().then(async () => {
   registerIpc();
   registerScreenshotWindowIpc({ openLibraryWindow });
   registerSettingsWindowIpc({ openLibraryWindow });
+  registerHarvesterWindowIpc();
   const menuPrefs = await getPrefs();
   setMainLocale(menuPrefs.localization.locale);
   installAppMenu({

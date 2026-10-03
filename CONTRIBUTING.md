@@ -10,7 +10,7 @@
 
 ## Engineering standards
 
-When a change uses an external source, follow the [Provenance standard](docs/contributing/references-standard.md). Add the source and its relationship to the affected target in `provenance.yaml`, then run `pnpm provenance:generate`.
+When a change uses an external source, follow the [Provenance standard](docs/contributing/references-standard.md). Add the thing or person under `.provenance/sources/`, then run `pnpm provenance:generate`.
 
 Read [code standards](docs/contributing/code-standards.md) for naming, interfaces, React, types, and tests. Read [desktop architecture](docs/contributing/architecture.md) when adding a feature or changing ownership or process interfaces. Both human and automated contributors use these documents.
 

@@ -29,7 +29,6 @@ export function ChatHeader({
   renaming = false,
   onFinishRenaming,
   children,
-  actions,
 }: {
   chatId: string | null;
   chats: { id: string; title: string | null; updatedAt?: Date }[];
@@ -39,7 +38,6 @@ export function ChatHeader({
   renaming?: boolean;
   onFinishRenaming?: () => void;
   children?: ReactNode;
-  actions?: ReactNode;
 }) {
   const [query, setQuery] = useState("");
   const options: ChatOption[] = chats.map((chat) => ({
@@ -71,7 +69,6 @@ export function ChatHeader({
         )
       }
     >
-      {actions}
       <Combobox.Root<ChatOption>
         items={groups}
         value={current}

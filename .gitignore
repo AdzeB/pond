@@ -82,3 +82,7 @@ apps/desktop/src/renderer/src/generated/
 .stylelintcache
 .pnpm-store/
 .tmp/
+
+# Launch video: only the final cut is tracked.
+brag-output/*
+!brag-output/brag.mp4

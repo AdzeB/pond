@@ -31,6 +31,7 @@ import {
   moveLibrary,
   restoreLibrary,
 } from "@/features/library/lib/library-location";
+import { openHarvester } from "@/features/library/lib/open-harvester";
 import { isLayoutValue } from "@/features/library/lib/view-prefs";
 import { ZOOM_DEFAULT } from "@/features/library/lib/zoom";
 import { commandMenu } from "@/features/library/state/command-menu";
@@ -66,7 +67,6 @@ import { openSettings } from "@/features/settings/lib/open-settings";
 import { usePrefs } from "@/features/settings/state/prefs";
 import { CONNECTABLE, WATCH_MENU_SOURCES } from "@/features/sources/lib/create";
 import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
-import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { handleNativeMenuAction } from "./native-menu-actions";
 
@@ -75,8 +75,8 @@ export function MenuBridge() {
   const [, patchSaveRecents] = usePrefs("saveRecents");
 
   useEffect(() => {
-    return window.pond.onMenuAction((id) => {
-      if (handleNativeMenuAction(id)) return;
+    return window.pond.onMenuAction(({ id, source }) => {
+      if (handleNativeMenuAction(id, source)) return;
       if (id.startsWith("library.new-blank-")) {
         const kind = id.slice("library.new-blank-".length);
         if (isBlankDocumentKind(kind)) {
@@ -161,13 +161,11 @@ export function MenuBridge() {
           return;
 
         case "nav.sources":
-          libraryChrome.setNav({ kind: "sources" });
-          getAppRouter()?.history.push("/sources");
+          openHarvester({ section: "sources" });
           return;
 
         case "nav.downloads":
-          libraryChrome.setNav({ kind: "downloads" });
-          getAppRouter()?.history.push("/downloads");
+          openHarvester({ section: "downloads" });
           return;
 
         case "nav.tags":
@@ -198,9 +196,10 @@ export function MenuBridge() {
 
         case "library.connect":
         case "library.watch":
-          libraryChrome.setNav({ kind: "sources" });
-          getAppRouter()?.history.push("/sources");
-          sourceNewMenu.open();
+          openHarvester({
+            section: "sources",
+            intent: { type: "new-source" },
+          });
           return;
 
         case "view.sidebar.toggle":

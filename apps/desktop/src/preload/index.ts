@@ -11,10 +11,14 @@ import type { AgentStreamEvent } from "../shared/agent-stream";
 import type { AssistantChunk } from "../shared/assistant";
 import {
   IPC,
-  type MenuActionId,
+  type MenuActionEvent,
   type RecentMenuEntry,
 } from "../shared/constants";
 import { FilterQuery } from "../shared/filter-query";
+import {
+  HARVESTER_WINDOW_IPC,
+  type HarvesterWindowLocation,
+} from "../shared/harvester-window-contracts";
 import type {
   PreviewNeighborRequest,
   PreviewWindowConfigure,
@@ -99,6 +103,28 @@ const api = {
   },
   openSettingsWindow(input: SettingsWindowLocation = {}): Promise<void> {
     return ipcRenderer.invoke(SETTINGS_WINDOW_IPC.open, input);
+  },
+  openHarvesterWindow(input: HarvesterWindowLocation = {}): Promise<void> {
+    return ipcRenderer.invoke(HARVESTER_WINDOW_IPC.open, input);
+  },
+  harvesterReady(): Promise<HarvesterWindowLocation> {
+    return ipcRenderer.invoke(HARVESTER_WINDOW_IPC.ready);
+  },
+  harvesterClose(): Promise<void> {
+    return ipcRenderer.invoke(HARVESTER_WINDOW_IPC.close);
+  },
+  onHarvesterLocation(
+    callback: (location: HarvesterWindowLocation) => void,
+  ): () => void {
+    const listener = (
+      _event: IpcRendererEvent,
+      next: HarvesterWindowLocation,
+    ) => callback(next);
+    ipcRenderer.on(HARVESTER_WINDOW_IPC.location, listener);
+    return () => ipcRenderer.off(HARVESTER_WINDOW_IPC.location, listener);
+  },
+  harvesterAck(nonce: number): Promise<void> {
+    return ipcRenderer.invoke(HARVESTER_WINDOW_IPC.ack, nonce);
   },
   onPrefsChanged(callback: (prefs: Prefs) => void): () => void {
     const listener = (_event: IpcRendererEvent, prefs: Prefs) =>
@@ -194,8 +220,9 @@ const api = {
     return () => ipcRenderer.off(IPC.editRedoRequested, listener);
   },
 
-  onMenuAction(cb: (id: MenuActionId) => void): () => void {
-    const listener = (_: IpcRendererEvent, id: MenuActionId) => cb(id);
+  onMenuAction(cb: (action: MenuActionEvent) => void): () => void {
+    const listener = (_: IpcRendererEvent, action: MenuActionEvent) =>
+      cb(action);
     ipcRenderer.on(IPC.menuAction, listener);
     return () => ipcRenderer.off(IPC.menuAction, listener);
   },

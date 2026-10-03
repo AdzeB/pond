@@ -1,0 +1,81 @@
+.root {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  overflow: auto;
+  background: var(--ds-gray-2);
+}
+
+.audioCard {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: center;
+  width: min(100%, 34rem);
+  padding: 32px;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow-md);
+}
+
+.audioCard audio {
+  width: 100%;
+}
+
+.waveform {
+  width: 100%;
+  height: 64px;
+  color: var(--ds-gray-12);
+  cursor: crosshair;
+}
+
+.audioTransport {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.audioProgress {
+  flex: 1 1 160px;
+  min-width: 80px;
+  margin-inline: 6px;
+}
+
+.audioVolume {
+  flex: 0 1 104px;
+  width: 104px;
+  min-width: 64px;
+  margin-inline: 4px;
+}
+
+.time {
+  min-width: 84px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-10);
+}
+
+.heading {
+  min-width: 0;
+  text-align: center;
+}
+
+.heading h1 {
+  margin: 0 0 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-lg);
+  color: var(--ds-gray-12);
+}
+
+.heading p {
+  margin: 4px 0 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-10);
+  word-break: break-word;
+}

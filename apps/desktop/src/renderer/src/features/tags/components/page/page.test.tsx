@@ -176,6 +176,7 @@ describe("library Tags page", () => {
     if (!(row instanceof HTMLDivElement)) throw new Error("Missing tag row");
 
     expect(checkbox).toBeNull();
+    expect(row.firstElementChild?.textContent).toContain("Animation");
     await act(async () => row.click());
     expect(row.getAttribute("aria-selected")).toBe("false");
 

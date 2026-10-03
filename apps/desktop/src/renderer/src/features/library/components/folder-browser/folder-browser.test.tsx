@@ -36,9 +36,9 @@ describe("folder browser", () => {
       return [
         {
           id: "child",
-          directSaveCount: 2,
+          directSaveCount: 3,
           childFolderCount: 1,
-          previewSaveIds: ["preview-a", "preview-b", "preview-c"],
+          previewSaveIds: ["preview-a", "preview-b", "preview-c", "preview-d"],
         },
       ];
     }
@@ -73,13 +73,13 @@ describe("folder browser", () => {
       );
     });
     await vi.waitFor(() =>
-      expect(host.textContent).toContain("2 items · 1 subfolder"),
+      expect(host.textContent).toContain("3 items · 1 subfolder"),
     );
     expect(host.textContent).toContain("Subfolders (1)");
     expect(host.textContent).toContain("Contents (3)");
     expect(host.textContent).toContain("Save grid");
     expect(query).toHaveBeenCalledWith("saves.getMany", {
-      ids: ["preview-a", "preview-b", "preview-c"],
+      ids: ["preview-a", "preview-b", "preview-c", "preview-d"],
     });
   });
 

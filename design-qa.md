@@ -887,3 +887,156 @@ final result: passed
 **Final Result**
 
 final result: blocked
+
+---
+
+# Document app logo menu QA — September 28
+
+- Source visual truth path: `/var/folders/sm/p05lq2nn4jd15ydyprjbt0b40000gn/T/codex-clipboard-a2530277-3f72-40f0-8da4-9a4b92644c27.png`
+- Implementation screenshot path: `/Users/raphaelsalaja/Developer/pond/.artifacts/new-menu-document-logos.png`
+- Reference pixels: 506 × 628
+- Implementation pixels: 1000 × 616 at 2× density (500 × 308 CSS px)
+- State: Pond in light appearance with the `+` menu and its `New` submenu open
+- Installed-app state: Microsoft Excel is the only supported document application installed in the test environment, so it is the only branded document action shown
+
+**Full-view Comparison Evidence**
+
+The implementation preserves Pond's existing menu structure, typography, spacing, action names, and interaction model. Like the reference, the document action is identified by a crisp, full-color application logo at the leading edge of the row. The menus differ in overall content because the target is the branded-logo treatment rather than a complete Eagle menu clone.
+
+**Focused Region Comparison Evidence**
+
+The capture is already focused on the complete changed surface. The Excel row shows a 22 × 22 CSS px application logo with correct aspect ratio, no visible blur or clipping, and alignment consistent with Pond's other menu icons. The decorative image does not change the accessible action label.
+
+**Findings**
+
+- P0: none.
+- P1: none.
+- P2: none.
+- P3: an installed application version may use a newer logo than Eagle's historical reference. This is intentional because Pond reflects the user's installed application.
+
+**Required Fidelity Surfaces**
+
+- Typography: unchanged from Pond's menu system; the label remains `Excel Document`.
+- Spacing and geometry: the existing row height and leading-icon slot are preserved.
+- Color: the current installed application's full-color bundle icon replaces the monochrome document glyph.
+- Image quality: the macOS ICNS resource is converted to PNG and resized by Electron for a sharp Retina result.
+- Copy: unchanged.
+- Fallback: the generic document icon remains when an application logo cannot be resolved.
+
+**Primary Interactions Tested**
+
+- Opened the `+` menu and its `New` submenu.
+- Confirmed the installed document action carries a `data:image/png` icon source.
+- Waited for image decoding before capture.
+- Confirmed the menu remains actionable in the isolated Electron smoke test.
+
+**Comparison History**
+
+- Iteration 1: the system file-icon API produced a washed-out icon that did not match the recognizable branded-logo treatment.
+- Iteration 2: the implementation reads the installed application's bundle icon, converts ICNS to PNG, and displays the full-color logo. The focused UI smoke test passed.
+
+**Final Result**
+
+final result: passed
+
+---
+
+# Tag index marker removal QA — September 28
+
+- Source visual truth path: `/var/folders/sm/p05lq2nn4jd15ydyprjbt0b40000gn/T/codex-clipboard-0868b0bd-cc7d-4c5f-88ae-3f16f59d72bc.png`
+- Implementation screenshot path: `/Users/raphaelsalaja/Developer/pond/.artifacts/tags-without-dots.png`
+- Focused implementation crop: `/Users/raphaelsalaja/Developer/pond/.artifacts/tags-without-dots-focus.png`
+- Reference pixels: 274 × 428
+- Full implementation pixels: 1544 × 1320 at 2× density (772 × 660 CSS px)
+- Focused implementation pixels: 274 × 428, cropped at the implementation's native 2× density to match the source dimensions
+- State: light-theme Tags index with alphabetic sections and unselected tag rows
+
+**Findings**
+
+- P0: none.
+- P1: none.
+- P2: none.
+- P3: none for the requested marker removal.
+
+**Required Fidelity Surfaces**
+
+- Typography: tag names, letter headings, counts, weights, and line heights are unchanged.
+- Spacing and layout rhythm: removing the marker also removes its reserved slot, leaving tag names cleanly aligned beneath their section headings without an empty gutter.
+- Colors and visual tokens: existing text, count, divider, hover, focus, and selection tokens are unchanged.
+- Image quality and asset fidelity: no raster assets are involved; the unnecessary icon asset is no longer rendered.
+- Copy and content: tag names, counts, and headings are unchanged.
+
+**Full-view Comparison Evidence**
+
+The full Tags main-region capture shows five alphabetic groups with no marker preceding any tag name. Dividers, three-column grid behavior, section rhythm, and available whitespace remain intact.
+
+**Focused Region Comparison Evidence**
+
+The source and 274 × 428 implementation crop were opened together at equal pixel dimensions. The two visible gray circular markers in the source are absent in the implementation, while the A/B headings, counts, tag labels, and divider positions retain the same visual hierarchy.
+
+**Primary Interactions Tested**
+
+- Navigated from the Library sidebar to Tags in an isolated Electron run.
+- Confirmed the first tag row's first rendered child is its name rather than a marker.
+- Confirmed the row remains unselected and contains its name and actions.
+- Verified Shift-click selection behavior in the focused component test.
+- Checked the isolated renderer for error-level console messages; none were reported.
+
+**Comparison History**
+
+- Iteration 1: the requested marker was removed and both full-view and equal-size focused captures showed no actionable P0, P1, or P2 visual differences for the requested scope.
+
+**Final Result**
+
+final result: passed
+
+---
+
+# Scroll-aware latest-response control QA — September 28
+
+- Source visual truth path: `/var/folders/sm/p05lq2nn4jd15ydyprjbt0b40000gn/T/codex-clipboard-7c0b1dac-b89d-4fdf-9bb0-d8520e7a1d43.png`
+- Implementation screenshot path: `/Users/raphaelsalaja/Developer/pond/.artifacts/agent-latest-response-control.png`
+- Reference pixels: 1164 × 546
+- Implementation pixels: 1520 × 524 at 2× density (760 × 262 CSS px)
+- State: light-theme Agent conversation scrolled away from the bottom, with the composer visible and the isolated fixture's provider notice hidden
+
+**Findings**
+
+- P0: none.
+- P1: none.
+- P2: none.
+- P3: none for the requested control treatment and visibility behavior.
+
+**Required Fidelity Surfaces**
+
+- Typography: the persistent text label is removed; the control uses the requested compact `arrow-down-to-line` icon.
+- Spacing and geometry: the 24 × 24 CSS-pixel circular control is horizontally centered above the composer and absolutely positioned so it does not move the composer or create a seam.
+- Color: the control uses Pond's existing secondary button surface, border, foreground, hover, and focus tokens.
+- Image quality: the down-to-line symbol is rendered from Pond's vector icon set and remains sharp at Retina density.
+- Copy and accessibility: no visible copy remains; `Read latest response` is retained as the accessible label, and completion announcements remain in the visually hidden live region.
+
+**Full-view Comparison Evidence**
+
+The source and implementation screenshots were opened together at original resolution. Both show an unobtrusive circular control centered immediately above the composer while the conversation is away from the bottom. Per the follow-up direction, Pond uses the more explicit down-to-line icon instead of the source's ellipsis while preserving the reference interaction pattern and Pond's existing visual tokens.
+
+**Focused Region Comparison Evidence**
+
+The implementation capture isolates the lower conversation and composer region. It confirms that no visible `Read latest response` text remains, the down-to-line icon is centered independently of the composer layout, and the composer border and shadow remain continuous beneath it.
+
+**Primary Interactions Tested**
+
+- Confirmed the control is absent while the thread is at the bottom.
+- Confirmed it appears when the thread is more than 24 pixels from the bottom.
+- Activated the control and confirmed the thread scrolls to its full height and the control disappears again.
+- Confirmed completed responses and action/error summaries continue to reach the screen-reader live region.
+- Checked the isolated renderer for error-level console messages; none were reported.
+
+**Comparison History**
+
+- Iteration 1: the completed-response action was a persistent visible text button in document flow, which shifted the composer and diverged from the reference.
+- Iteration 2: the visible text action was removed, the existing scroll-state affordance became a centered icon-only ellipsis, and the visual and interaction checks passed.
+- Iteration 3: the ellipsis was replaced with the requested UI-family `arrow-down-to-line` icon; the refreshed visual capture and interaction smoke test passed.
+
+**Final Result**
+
+final result: passed

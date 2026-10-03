@@ -24,11 +24,11 @@ import {
   newTag,
   runNewAction,
 } from "@/features/library/components/new-menu/actions";
+import { openHarvester } from "@/features/library/lib/open-harvester";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { resetFilters } from "@/features/library/state/view-store";
 import { openSettings } from "@/features/settings/lib/open-settings";
 import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
-import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
 import { getAppRouter } from "@/shared/lib/app-router";
 import type { CommandSpec } from "./types";
 
@@ -71,11 +71,11 @@ export const COMMANDS: readonly CommandSpec[] = [
     icon: IconArrowDiagonalInOutline18,
     keywords: "connect watch folder add account",
     shortcut: "sources.new",
-    run: () => {
-      libraryChrome.setNav({ kind: "sources" });
-      navigateTo("/sources");
-      sourceNewMenu.open();
-    },
+    run: () =>
+      openHarvester({
+        section: "sources",
+        intent: { type: "new-source" },
+      }),
   },
   {
     id: "new-watch",
@@ -83,11 +83,11 @@ export const COMMANDS: readonly CommandSpec[] = [
     label: "New Watch",
     icon: IconEyeOutline18,
     keywords: "source public account follow import watch",
-    run: () => {
-      libraryChrome.setNav({ kind: "sources" });
-      navigateTo("/sources");
-      sourceNewMenu.open();
-    },
+    run: () =>
+      openHarvester({
+        section: "sources",
+        intent: { type: "new-source" },
+      }),
   },
   {
     id: "watched-folder",
@@ -179,10 +179,7 @@ export const COMMANDS: readonly CommandSpec[] = [
     icon: IconArrowDiagonalInOutline18,
     keywords: "accounts connect watches",
     shortcut: "nav.sources",
-    run: () => {
-      libraryChrome.setNav({ kind: "sources" });
-      navigateTo("/sources");
-    },
+    run: () => openHarvester({ section: "sources" }),
   },
   {
     id: "downloads",
@@ -192,10 +189,7 @@ export const COMMANDS: readonly CommandSpec[] = [
     icon: IconWindowDownloadOutline18,
     keywords: "transfers queue",
     shortcut: "nav.downloads",
-    run: () => {
-      libraryChrome.setNav({ kind: "downloads" });
-      navigateTo("/downloads");
-    },
+    run: () => openHarvester({ section: "downloads" }),
   },
   {
     id: "tags",

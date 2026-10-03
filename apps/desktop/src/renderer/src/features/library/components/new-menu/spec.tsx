@@ -34,6 +34,7 @@ import {
 import { Dialog, type MenuItemSpec } from "@pond/ui";
 import {
   BLANK_DOCUMENTS,
+  type BlankDocumentIcons,
   type BlankDocumentKind,
 } from "@shared/blank-documents";
 import { Children, isValidElement, type ReactNode } from "react";
@@ -67,8 +68,11 @@ import {
   verifyIntegrity,
 } from "./actions";
 
+const DOCUMENT_LOGO_STYLE = { width: 22, height: 22 } as const;
+
 export function buildNewMenuItems(
   installedDocuments: readonly BlankDocumentKind[] = [],
+  documentIcons: BlankDocumentIcons = {},
 ): MenuItemSpec[] {
   const installed = new Set(installedDocuments);
   const documents: MenuItemSpec[] = [
@@ -84,7 +88,15 @@ export function buildNewMenuItems(
       (item) => ({
         id: item.kind,
         label: item.label,
-        icon: <IconFileOutline18 />,
+        icon: documentIcons[item.kind] ? (
+          <img
+            src={documentIcons[item.kind]}
+            alt=""
+            style={DOCUMENT_LOGO_STYLE}
+          />
+        ) : (
+          <IconFileOutline18 />
+        ),
         keywords: `${item.label} document blank template`,
         onClick: () => void runNewAction(() => createBlankDocument(item.kind)),
       }),
@@ -97,7 +109,7 @@ export function buildNewMenuItems(
       id: "new",
       label: "New",
       icon: <IconFolderOutline18 />,
-      keywords: "create folder tag document screenshot",
+      keywords: "create folder tag document",
       items: [
         {
           id: "folder",
@@ -138,6 +150,15 @@ export function buildNewMenuItems(
           onClick: () => newTag("tag-group"),
         },
         ...documents,
+      ],
+    },
+    {
+      type: "submenu",
+      id: "capture",
+      label: "Capture",
+      icon: <IconCameraOutline18 />,
+      keywords: "screenshot screen window desktop image",
+      items: [
         {
           id: "screenshot",
           label: "Capture Screenshot",

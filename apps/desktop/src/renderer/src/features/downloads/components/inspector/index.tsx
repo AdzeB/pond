@@ -47,6 +47,7 @@ import { useSave } from "@/features/saves/hooks/use-saves";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
 import { openSave } from "@/features/saves/lib/save-nav";
 import { pool } from "@/features/saves/state/pool";
+import { PropertyList } from "@/shared/components/property-list";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import {
   type DownloadInspectorProperty,
@@ -524,7 +525,7 @@ function RequestDetails({
       {multiple ? (
         <h4 className={styles["section-title"]}>File {transfer.fileIndex}</h4>
       ) : null}
-      <dl className={styles.rows}>
+      <PropertyList.Root>
         <Property label="Method" value={request.method} />
         <Property label="Host" value={request.host} />
         {request.status != null ? (
@@ -545,17 +546,17 @@ function RequestDetails({
             value={formatTiming(request.firstByteMs)}
           />
         ) : null}
-      </dl>
+      </PropertyList.Root>
     </div>
   );
 }
 
 function Property({ label, value }: { label: string; value: string }) {
   return (
-    <div className={styles.row}>
-      <dt className={styles["property-label"]}>{label}</dt>
-      <dd className={styles.value}>{value}</dd>
-    </div>
+    <PropertyList.Row>
+      <PropertyList.Label>{label}</PropertyList.Label>
+      <PropertyList.Value>{value}</PropertyList.Value>
+    </PropertyList.Row>
   );
 }
 
@@ -566,7 +567,7 @@ function ActivityProperties({
 }) {
   if (properties.length === 0) return null;
   return (
-    <dl className={styles["activity-properties"]}>
+    <PropertyList.Root className={styles["activity-properties"]}>
       {properties.map((property) => (
         <Property
           key={property.label}
@@ -574,6 +575,6 @@ function ActivityProperties({
           value={property.value}
         />
       ))}
-    </dl>
+    </PropertyList.Root>
   );
 }

@@ -1,0 +1,34 @@
+.merge {
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  line-height: 1.4;
+  color: var(--ds-gray-11);
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.command {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding: 4px 4px 4px 10px;
+  background: var(--ds-gray-2);
+  border-radius: var(--ds-radius-md);
+}
+
+.value {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--ds-font-mono);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+}

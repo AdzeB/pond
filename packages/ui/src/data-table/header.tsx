@@ -18,7 +18,6 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { IconGripDotsVerticalOutline12 } from "@pond/icons/outline/12";
 import type { RowData } from "@tanstack/react-table";
 import { useReducedMotionConfig } from "motion/react";
 import {
@@ -39,8 +38,7 @@ const COLUMN_DROP_ANIMATION = {
 };
 
 const COLUMN_SCREEN_READER_INSTRUCTIONS: ScreenReaderInstructions = {
-  draggable:
-    "To pick up a column, press Space on its move handle. Use the left and right arrow keys to move it. Press Space again to drop it, or Escape to cancel.",
+  draggable: "To move a column, drag its name left or right.",
 };
 
 function headerContent<T extends RowData>(
@@ -77,6 +75,7 @@ function SortCaret({ sorted }: { sorted: "asc" | "desc" }) {
 function HeaderCell<T extends RowData>({ column }: { column: TableColumn<T> }) {
   const { actions, meta } = useDataTable<T>();
   const headRef = useRef<HTMLDivElement>(null);
+  const dragOrigin = useRef<{ x: number; y: number } | null>(null);
   const reduceMotion = useReducedMotionConfig();
   const { activatorEvent } = useDndContext();
   const keyboardDrag = activatorEvent?.type.startsWith("key") ?? false;
@@ -84,7 +83,6 @@ function HeaderCell<T extends RowData>({ column }: { column: TableColumn<T> }) {
   const sorted = meta.getSorted(column.id);
   const content = headerContent(column, sorted);
   const {
-    attributes,
     isDragging,
     listeners,
     setActivatorNodeRef,
@@ -126,27 +124,22 @@ function HeaderCell<T extends RowData>({ column }: { column: TableColumn<T> }) {
     />
   ) : null;
 
-  const moveHandle = column.reorderable ? (
-    <button
-      {...attributes}
-      {...listeners}
-      type="button"
-      className={styles["column-drag-handle"]}
-      ref={setActivatorNodeRef}
-      aria-label={`Move ${column.sortLabel ?? column.id} column`}
-      onClick={stop}
-    >
-      <IconGripDotsVerticalOutline12 />
-    </button>
-  ) : null;
-
   return (
     <div
       ref={(node) => {
         headRef.current = node;
         setNodeRef(node);
+        if (column.reorderable) setActivatorNodeRef(node);
       }}
       role="columnheader"
+      onPointerDown={
+        column.reorderable
+          ? (event) => {
+              dragOrigin.current = { x: event.clientX, y: event.clientY };
+              listeners?.onPointerDown?.(event);
+            }
+          : undefined
+      }
       className={styles.header}
       data-align={column.align}
       data-dragging={isDragging || undefined}
@@ -156,14 +149,22 @@ function HeaderCell<T extends RowData>({ column }: { column: TableColumn<T> }) {
         transition: reduceMotion || keyboardDrag ? "none" : transition,
       }}
     >
-      {column.headerHidden ? null : moveHandle}
       {column.headerHidden ? null : sortable ? (
         <button
           type="button"
           className={styles["sort-button"]}
           data-active={sorted ? true : undefined}
           aria-label={`Sort by ${column.sortLabel ?? column.id}`}
-          onClick={() => actions.toggleSort(column.id)}
+          onClick={(event) => {
+            const origin = dragOrigin.current;
+            dragOrigin.current = null;
+            if (
+              origin &&
+              Math.hypot(event.clientX - origin.x, event.clientY - origin.y) > 3
+            )
+              return;
+            actions.toggleSort(column.id);
+          }}
         >
           {content}
           {sorted ? <SortCaret sorted={sorted} /> : null}
@@ -190,9 +191,6 @@ function HeaderOverlay<T extends RowData>({
       data-overlay
       aria-hidden
     >
-      <span className={styles["column-drag-handle"]}>
-        <IconGripDotsVerticalOutline12 />
-      </span>
       <span className={styles["header-static"]}>
         {headerContent(column, sorted)}
       </span>

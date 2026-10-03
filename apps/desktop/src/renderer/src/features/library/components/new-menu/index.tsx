@@ -3,7 +3,7 @@ import { Menu, Tooltip } from "@pond/ui";
 import { useEffect, useState } from "react";
 import {
   blankDocuments,
-  useBlankDocumentKinds,
+  useBlankDocuments,
 } from "@/features/library/state/blank-documents";
 import {
   newMenuDialog,
@@ -20,8 +20,11 @@ import styles from "./styles.module.css";
 export function NewMenu() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
-  const installed = useBlankDocumentKinds();
-  const items = filterMenuItems(buildNewMenuItems(installed), search);
+  const documents = useBlankDocuments();
+  const items = filterMenuItems(
+    buildNewMenuItems(documents.kinds, documents.icons),
+    search,
+  );
 
   useEffect(() => {
     if (open) void blankDocuments.refresh();

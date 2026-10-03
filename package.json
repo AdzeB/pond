@@ -47,10 +47,10 @@
     "format": "biome format . --write",
     "check": "node --test scripts/run-dev-singleton.test.mjs && pnpm provenance:generated:check && turbo run lint:repo oxlint:repo provenance:check:repo architecture:check:repo knip:repo generate:check typecheck test",
     "provenance:check": "turbo run provenance:check:repo",
-    "provenance:check:repo": "node --test scripts/reference-capture.test.mjs && node scripts/run-provenance.mjs check provenance.yaml",
+    "provenance:check:repo": "node --test scripts/reference-capture.test.mjs && node scripts/run-provenance.mjs check .provenance",
     "provenance:capture:summary": "node scripts/reference-capture.mjs summary",
     "provenance:capture:status": "node scripts/reference-capture.mjs status",
-    "provenance:generate": "node scripts/run-provenance.mjs generate provenance.yaml --output-dir docs/provenance/generated",
+    "provenance:generate": "node scripts/run-provenance.mjs generate .provenance --output-dir docs/provenance/generated",
     "provenance:generated:check": "node scripts/check-provenance-generated.mjs",
     "architecture:check": "turbo run architecture:check:repo",
     "architecture:check:repo": "node --test scripts/check-architecture.test.mjs && node scripts/check-architecture.mjs"
@@ -65,7 +65,7 @@
     "knip": "^6.35.1",
     "oxc-parser": "0.150.0",
     "oxlint": "1.83.0",
-    "provenance-specification": "https://github.com/raphaelsalaja/provenance/releases/download/v0.1.2/provenance-specification-0.1.2.tgz",
+    "@web-kits/provenance": "https://github.com/raphaelsalaja/provenance/releases/download/v0.3.0/web-kits-provenance-0.3.0.tgz",
     "turbo": "^2.10.13",
     "typescript": "catalog:"
   },

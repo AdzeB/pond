@@ -18,10 +18,6 @@ export const SIDEBAR_DESTINATION_GROUPS = [
       "trash",
     ],
   },
-  {
-    label: "Harvesting",
-    destinations: ["downloads", "sources"],
-  },
 ] as const satisfies readonly {
   label: string;
   destinations: readonly SidebarDestination[];

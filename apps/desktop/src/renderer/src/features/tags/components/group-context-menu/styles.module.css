@@ -10,12 +10,11 @@
 }
 
 .swatch {
-  width: 14px;
-  height: 14px;
+  display: grid;
   padding: 0;
   cursor: var(--ds-cursor-interactive, pointer);
-  background: var(--swatch);
-  border: var(--ds-border-width) solid var(--ds-border-subtle);
+  background: none;
+  border: 0;
   border-radius: var(--ds-radius-full);
 
   &[data-selected] {

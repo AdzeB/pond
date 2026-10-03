@@ -109,10 +109,6 @@ function ensureSubscribed(): void {
   });
 }
 
-export function peekTags(): ReadonlyArray<TagRow> {
-  return tagsStore.state.rows;
-}
-
 export function useTags(): ReadonlyArray<TagRow> {
   useEffect(() => {
     ensureSubscribed();

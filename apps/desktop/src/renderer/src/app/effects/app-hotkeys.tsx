@@ -8,6 +8,7 @@ import {
   runNewAction,
 } from "@/features/library/components/new-menu/actions";
 import { launchScreenshotTool } from "@/features/library/lib/launch-screenshot";
+import { openHarvester } from "@/features/library/lib/open-harvester";
 import type { LayoutValue } from "@/features/library/lib/view-prefs";
 import { ZOOM_DEFAULT } from "@/features/library/lib/zoom";
 import { commandMenu } from "@/features/library/state/command-menu";
@@ -40,7 +41,6 @@ import {
   patchPrefsSection,
   usePrefs,
 } from "@/features/settings/state/prefs";
-import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { isEditableTarget } from "@/shared/lib/editable-target";
 import {
@@ -106,11 +106,11 @@ export function AppHotkeys() {
       },
       {
         sequence: [...bindingSequence(shortcuts, "nav.sources")],
-        callback: () => go("/sources"),
+        callback: () => openHarvester({ section: "sources" }),
       },
       {
         sequence: [...bindingSequence(shortcuts, "nav.downloads")],
-        callback: () => go("/downloads"),
+        callback: () => openHarvester({ section: "downloads" }),
       },
       {
         sequence: [...bindingSequence(shortcuts, "nav.trash")],
@@ -275,11 +275,11 @@ export function AppHotkeys() {
       },
       {
         hotkey: bindingKeys(shortcuts, "sources.new"),
-        callback: () => {
-          libraryChrome.setNav({ kind: "sources" });
-          go("/sources");
-          sourceNewMenu.open();
-        },
+        callback: () =>
+          openHarvester({
+            section: "sources",
+            intent: { type: "new-source" },
+          }),
         options: { ignoreInputs: true },
       },
       {

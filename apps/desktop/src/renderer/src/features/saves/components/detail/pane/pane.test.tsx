@@ -236,6 +236,12 @@ it("shows editable identity fields and places the URL in Source", async () => {
     "Properties",
     "Comments",
   ]);
+  expect(tabs.map((tab) => tab.getAttribute("aria-label"))).toEqual([
+    "Organise",
+    "Properties",
+    "Comments",
+  ]);
+  expect(tabs.every((tab) => tab.querySelector("svg"))).toBe(true);
   expect(tabs[0]?.getAttribute("aria-selected")).toBe("true");
   await act(async () =>
     tabs[0]?.dispatchEvent(

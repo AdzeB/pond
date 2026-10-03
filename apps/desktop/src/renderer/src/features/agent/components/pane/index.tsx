@@ -4,7 +4,7 @@ import {
   IconXmarkOutline18,
 } from "@pond/icons/outline/18";
 import type { AgentModelOptions } from "@pond/schema";
-import { Button, Tooltip } from "@pond/ui";
+import { Button, Tooltip, useTextReveal } from "@pond/ui";
 import { ComposerView } from "@pond/ui/composer";
 import { ErrorNotice } from "@pond/ui/error-notice";
 import { MessageActions, MessageView } from "@pond/ui/message";
@@ -51,6 +51,7 @@ import { AttachFilesButton } from "./attach-files";
 import { ChatActions } from "./chat-actions";
 import { ChatContext } from "./chat-context";
 import { ChatHeader } from "./chat-header";
+import { useRememberedChatScroll } from "./chat-scroll";
 import { ReferencedSavesPopover } from "./consulted-saves";
 import { FileAttachments } from "./file-attachments";
 import { ModelPicker } from "./model-picker";
@@ -59,7 +60,7 @@ import { inferredLookupResult, ResponseExtras } from "./response-content";
 import styles from "./styles.module.css";
 import { WorkSummary } from "./work-summary";
 
-function AgentMessage({
+export function AgentMessage({
   message,
   state,
   provider,
@@ -80,6 +81,17 @@ function AgentMessage({
 }) {
   const domain = fromUIMessage(message, state.chatId ?? "pending");
   const text = messageText(message);
+  const finished = Boolean(domain.metadata?.stopped || domain.metadata?.error);
+  const reveal = useTextReveal(
+    text,
+    message.role === "assistant" && streaming,
+    finished,
+  );
+  const responseText = message.role === "assistant" ? reveal.text : text;
+  const settled = !streaming && !reveal.pending;
+  const animatedResponse = useRef(false);
+  if (message.role === "assistant" && (streaming || reveal.pending))
+    animatedResponse.current = true;
   const steps = partData(message, "pond-steps") ?? state.steps;
   const activity =
     partData(message, "pond-activity")?.activity ?? state.activity;
@@ -112,7 +124,7 @@ function AgentMessage({
       animateEntrance={streaming}
       role={message.role === "user" ? "user" : "assistant"}
       footer={
-        message.role === "assistant" ? (
+        message.role === "assistant" && settled ? (
           <ResponseExtras
             message={extras}
             questionAnswer={
@@ -130,7 +142,7 @@ function AgentMessage({
         ) : null
       }
       actions={
-        message.role === "assistant" && !text ? null : (
+        message.role === "assistant" && (!text || !settled) ? null : (
           <MessageActions
             text={text}
             onQuote={() => {
@@ -142,18 +154,21 @@ function AgentMessage({
       }
     >
       {message.role === "assistant" ? (
-        <WorkSummary metadata={extras.metadata} streaming={streaming} />
+        <WorkSummary
+          metadata={extras.metadata}
+          streaming={streaming && !text}
+        />
       ) : null}
       {message.role === "user" ? (
         <FileAttachments files={domain.metadata?.files ?? []} />
       ) : null}
       {message.role === "assistant" &&
-      inferredLookupResult(text, sources) ? null : text ? (
+      inferredLookupResult(text, sources) ? null : responseText ? (
         <AssistantResponse
-          content={text}
+          content={responseText}
+          streaming={animatedResponse.current}
           sources={message.role === "user" ? (attachments ?? []) : sources}
           onOpenSave={openSave}
-          onAttach={message.role === "user" ? undefined : attach}
         />
       ) : null}
       {showActivity ? (
@@ -185,10 +200,10 @@ function AgentPaneContent({
   const [dropping, setDropping] = useState(false);
   const [renamingChat, setRenamingChat] = useState(false);
   const input = useRef<ComposerEditorHandle>(null);
-  const latestResponse = useRef<HTMLElement>(null);
   const composer = useRef<HTMLDivElement>(null);
   const chat = pondChatSession(state.chatId ?? "draft");
   const { messages, status, error: chatError } = useChat({ chat });
+  const viewportRef = useRememberedChatScroll(state.chatId ?? "draft");
   const running =
     status === "submitted" || status === "streaming" || state.busy;
   const referenceMessage = state.messages.find(
@@ -199,6 +214,13 @@ function AgentPaneContent({
   if (referenceSources?.length)
     retainedReferenceSources.current = referenceSources;
   const attachedIds = state.attachments.map((source) => source.id);
+  const conversationSources = [
+    ...new Map(
+      state.messages
+        .flatMap((message) => message.metadata?.attachments ?? [])
+        .map((save) => [save.id, save]),
+    ).values(),
+  ];
   const lastAssistantId = [...messages]
     .reverse()
     .find((message) => message.role === "assistant")?.id;
@@ -254,34 +276,6 @@ function AgentPaneContent({
         aria-label="Agent"
       >
         <ChatHeader
-          actions={
-            layout === "page" ? (
-              <>
-                <ChatContext
-                  attached={state.attachments}
-                  previous={[
-                    ...new Map(
-                      state.messages
-                        .flatMap(
-                          (message) => message.metadata?.attachments ?? [],
-                        )
-                        .map((save) => [save.id, save]),
-                    ).values(),
-                  ]}
-                />
-                <ChatActions
-                  chatId={state.chatId}
-                  title={
-                    state.chats.find((chat) => chat.id === state.chatId)
-                      ?.title ?? null
-                  }
-                  messages={state.messages}
-                  disabled={running || state.loading}
-                  onRename={() => setRenamingChat(true)}
-                />
-              </>
-            ) : undefined
-          }
           chatId={state.chatId}
           chats={state.chats}
           disabled={running || state.loading}
@@ -297,7 +291,18 @@ function AgentPaneContent({
           }
           onOpenChat={(id) => void assistant.openChat(id)}
         >
-          {layout === "pane" ? (
+          {layout === "page" ? (
+            <ChatActions
+              chatId={state.chatId}
+              title={
+                state.chats.find((chat) => chat.id === state.chatId)?.title ??
+                null
+              }
+              messages={state.messages}
+              disabled={running || state.loading}
+              onRename={() => setRenamingChat(true)}
+            />
+          ) : (
             <>
               <Tooltip label="Open Agent Page" side="bottom">
                 <Button
@@ -322,7 +327,7 @@ function AgentPaneContent({
                 </Button>
               </Tooltip>
             </>
-          ) : null}
+          )}
         </ChatHeader>
         <div className={styles["assistant-workspace"]}>
           <ConversationView
@@ -330,6 +335,7 @@ function AgentPaneContent({
             className={styles["assistant-body"]}
             viewportProps={{
               className: styles["chat-viewport"],
+              ref: viewportRef,
             }}
             empty={
               state.loading ? <p role="status">Loading conversation</p> : null
@@ -344,13 +350,6 @@ function AgentPaneContent({
                   error={
                     state.error ?? chatError?.message ?? lastMetadata?.error
                   }
-                  onRead={() => {
-                    latestResponse.current?.focus({ preventScroll: true });
-                    latestResponse.current?.scrollIntoView({
-                      block: "start",
-                      behavior: "instant",
-                    });
-                  }}
                 />
                 <div className={styles.notices}>
                   {!provider ? (
@@ -455,6 +454,10 @@ function AgentPaneContent({
                             requestAnimationFrame(focus);
                           }}
                         />
+                        <ChatContext
+                          attached={state.attachments}
+                          previous={conversationSources}
+                        />
                         <ModelPicker
                           provider={provider}
                           modelId={modelId}
@@ -502,10 +505,6 @@ function AgentPaneContent({
             {messages.map((message) => (
               <article
                 key={message.id}
-                ref={
-                  message.id === lastAssistantId ? latestResponse : undefined
-                }
-                tabIndex={-1}
                 aria-label={
                   message.role === "assistant"
                     ? "Agent response"

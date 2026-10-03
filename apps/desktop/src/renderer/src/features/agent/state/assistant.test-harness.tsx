@@ -8,7 +8,8 @@ import { type AssistantState, useAssistant } from "./assistant";
 
 export interface StreamReply {
   error?: string;
-  text?: string;
+  text?: string | string[];
+  waitForTextChunk?: () => Promise<void>;
 }
 
 export function agentStreamBridge(
@@ -29,13 +30,21 @@ export function agentStreamBridge(
               writer.write({ type: "error", errorText: result.error });
               return;
             }
-            if (result.text) {
+            const text = Array.isArray(result.text)
+              ? result.text
+              : result.text
+                ? [result.text]
+                : [];
+            if (text.length) {
               writer.write({ type: "text-start", id: "text" });
-              writer.write({
-                type: "text-delta",
-                id: "text",
-                delta: result.text,
-              });
+              for (let index = 0; index < text.length; index++) {
+                writer.write({
+                  type: "text-delta",
+                  id: "text",
+                  delta: text[index] ?? "",
+                });
+                if (index < text.length - 1) await result.waitForTextChunk?.();
+              }
               writer.write({ type: "text-end", id: "text" });
             }
             writer.write({ type: "finish", finishReason: "stop" });

@@ -1,15 +1,23 @@
 .rows {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
 .row {
-  composes: row from "../styles.module.css";
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 28px;
   cursor: var(--ds-cursor-interactive, pointer);
 }
 
 .label {
-  composes: label from "../styles.module.css";
   flex: 1;
+  min-width: 0;
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-md);
+  color: var(--ds-gray-12);
 }

@@ -151,17 +151,22 @@ export function buildTrayTemplate(
         run(FILE_MENU_NEW_LABELS[2], "library.new-smart-folder-group"),
         { type: "separator" },
         run(FILE_MENU_NEW_LABELS[4], "library.new-note", accelerators.newNote),
-        run(
-          "Capture Screenshot",
-          "library.capture-screenshot",
-          accelerators.captureScreenshot,
-        ),
         ...(options.blankDocuments ?? []).map((doc) =>
           run(doc.label, `library.new-blank-${doc.kind}`),
         ),
         { type: "separator" },
         run("New Tag", "library.new-tag", accelerators.newTag),
         run("New Tag Group", "library.new-tag-group", accelerators.newTagGroup),
+      ],
+    },
+    {
+      label: "Capture",
+      submenu: [
+        run(
+          "Capture Screenshot",
+          "library.capture-screenshot",
+          accelerators.captureScreenshot,
+        ),
       ],
     },
     {

@@ -174,6 +174,7 @@ export function createFolderSidebarHarness() {
         onSyncAction: () => () => {},
         onSaveUpdated: () => () => {},
         onSyncStatus: () => () => {},
+        openHarvesterWindow: vi.fn(),
       });
       await folders.refresh();
       await savedViews.refresh();

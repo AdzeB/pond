@@ -215,3 +215,10 @@ export type MenuActionId =
   | "view.subfolders.toggle"
   | "help.shortcuts"
   | "help.export-debug-report";
+
+export type MenuActionSource = "accelerator" | "menu" | "automation";
+
+export interface MenuActionEvent {
+  id: MenuActionId;
+  source: MenuActionSource;
+}

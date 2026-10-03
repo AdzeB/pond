@@ -15,6 +15,11 @@ export interface AppDirReader {
   entries: (path: string) => string[];
 }
 
+export interface InstalledBlankDocumentApp {
+  kind: BlankDocumentKind;
+  path: string;
+}
+
 const defaultReader: AppDirReader = {
   exists: existsSync,
   entries: (path) => {
@@ -29,12 +34,23 @@ const defaultReader: AppDirReader = {
 export function listInstalledBlankDocuments(
   reader: AppDirReader = defaultReader,
 ): BlankDocumentKind[] {
-  const names = APP_DIRS.flatMap((dir) =>
-    reader.exists(dir) ? reader.entries(dir) : [],
+  return listInstalledBlankDocumentApps(reader).map((item) => item.kind);
+}
+
+export function listInstalledBlankDocumentApps(
+  reader: AppDirReader = defaultReader,
+): InstalledBlankDocumentApp[] {
+  const apps = APP_DIRS.flatMap((dir) =>
+    reader.exists(dir)
+      ? reader.entries(dir).map((name) => ({ name, path: join(dir, name) }))
+      : [],
   );
-  return BLANK_DOCUMENTS.filter((item) => names.some(item.matchApp)).map(
-    (item) => item.kind,
-  );
+  return BLANK_DOCUMENTS.flatMap((document) => {
+    const installed = apps.find((candidate) =>
+      document.matchApp(candidate.name),
+    );
+    return installed ? [{ kind: document.kind, path: installed.path }] : [];
+  });
 }
 
 export async function writeBlankDocumentFile(

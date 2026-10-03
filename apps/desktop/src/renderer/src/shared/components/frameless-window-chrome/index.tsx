@@ -3,14 +3,19 @@ import { Button } from "@pond/ui";
 import styles from "./styles.module.css";
 
 export function FramelessWindowChrome({
+  align = "card",
   closeLabel,
   onClose,
 }: {
+  align?: "card" | "title";
   closeLabel: string;
   onClose(): void;
 }) {
   return (
-    <div className={styles.chrome}>
+    <div
+      className={styles.chrome}
+      data-align={align === "title" ? "title" : undefined}
+    >
       <Button
         className={styles.close}
         type="button"

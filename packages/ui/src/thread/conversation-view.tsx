@@ -1,4 +1,4 @@
-import type { ComponentProps, ReactNode, RefObject } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { useCallback, useState } from "react";
 import { ComposerView } from "../composer/composer-view";
 import { Thread } from "./thread";
@@ -12,8 +12,8 @@ export function ConversationView({
 }: ComponentProps<typeof Thread.Root> & {
   empty?: ReactNode;
   composer?: ReactNode;
-  viewportProps?: ComponentProps<typeof Thread.Viewport> & {
-    ref?: RefObject<HTMLDivElement | null>;
+  viewportProps?: Omit<ComponentProps<typeof Thread.Viewport>, "ref"> & {
+    ref?: (node: HTMLDivElement | null) => void;
   };
 }) {
   const [viewport, setViewport] = useState<HTMLDivElement | null>(null);
@@ -21,7 +21,7 @@ export function ConversationView({
   const setViewportRef = useCallback(
     (node: HTMLDivElement | null) => {
       setViewport(node);
-      if (viewportRef) viewportRef.current = node;
+      viewportRef?.(node);
     },
     [viewportRef],
   );

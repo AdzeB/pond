@@ -1,0 +1,9 @@
+.popup {
+  --width: 320px;
+}
+
+.body {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+}

@@ -6,7 +6,9 @@ import { syncAllSources, syncSource } from "./core/sync";
 
 interface SourcesMenuOptions {
   accelerator: (id: ShortcutId) => string | undefined;
-  sendMenuAction: (id: MenuActionId) => () => void;
+  sendMenuAction: (
+    id: MenuActionId,
+  ) => NonNullable<Electron.MenuItemConstructorOptions["click"]>;
 }
 
 export function sourcesSubmenu({

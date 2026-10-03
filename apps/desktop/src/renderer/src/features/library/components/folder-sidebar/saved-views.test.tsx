@@ -312,7 +312,7 @@ describe("folder sidebar saved views", () => {
   it("leaves the smart folder scope when navigating to another destination", async () => {
     await mountUnreadView();
     await act(async () => harness.button("Unread").click());
-    await act(async () => harness.button("Sources").click());
+    await act(async () => harness.button("Untagged").click());
     expect(getViewState().activeViewId).toBeNull();
     expect(harness.button("Unread").getAttribute("aria-current")).toBeNull();
   });

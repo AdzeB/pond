@@ -5,6 +5,7 @@ import { DEFAULT_APP_ICON } from "../shared/app-icons";
 import { IPC } from "../shared/constants";
 import { attachEditableContextMenu } from "./context-menu";
 import { hardenArchiveWebviews } from "./core/archive-viewer";
+import { openHarvesterWindow } from "./core/harvester-window";
 import { getPrefs, setPrefs } from "./core/prefs";
 import { openSettingsWindow } from "./core/settings-window";
 import { consumePendingDeepLink } from "./deep-link";
@@ -57,10 +58,6 @@ export function queueTrayRefresh(): void {
     trayRefreshQueued = false;
     void tray?.refresh();
   }, 150);
-}
-
-function navigateMain(route: string): void {
-  mainWindowState.current?.webContents.send(IPC.nav, route);
 }
 
 interface ShellHint {
@@ -332,10 +329,7 @@ export async function initTray(): Promise<void> {
     tray = await ensureTray({
       onOpenLibrary: openLibraryWindow,
       onOpenSettings: () => openSettingsWindow(),
-      onOpenDownloads: async () => {
-        await openLibraryWindow();
-        navigateMain("/downloads");
-      },
+      onOpenDownloads: () => openHarvesterWindow({ section: "downloads" }),
       onMenuAction: async (id) => {
         if (id === "library.capture-screenshot") {
           const { launchScreenshotTool } = await import(
@@ -353,7 +347,10 @@ export async function initTray(): Promise<void> {
           return;
         }
         await openLibraryWindow();
-        mainWindowState.current?.webContents.send(IPC.menuAction, id);
+        mainWindowState.current?.webContents.send(IPC.menuAction, {
+          id,
+          source: "menu",
+        });
       },
     });
   } catch (err) {

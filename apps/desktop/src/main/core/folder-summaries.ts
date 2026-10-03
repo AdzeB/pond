@@ -70,7 +70,7 @@ export async function queryFolderSummaries(
             )
             select root_id as id,save_id as saveId
             from ranked
-            where rank<=3
+            where rank<=4
             order by root_id,rank`,
       ),
     ),

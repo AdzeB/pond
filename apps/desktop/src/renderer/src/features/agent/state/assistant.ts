@@ -97,10 +97,13 @@ async function refreshChats() {
     chats: ChatsSchema.parse(await window.pond.query("agent.chats", {})),
   });
 }
-async function refreshMessages(chatId: string, version = historyVersion) {
-  const messages = assistantMessages.parse(
+async function loadMessages(chatId: string) {
+  return assistantMessages.parse(
     await window.pond.query("agent.messages", { chatId }),
   );
+}
+async function refreshMessages(chatId: string, version = historyVersion) {
+  const messages = await loadMessages(chatId);
   if (store.state.chatId === chatId && version === historyVersion) {
     setMessages(messages);
     if (!store.state.sending) hydratePondChat(chatId, messages);
@@ -285,23 +288,27 @@ export const assistant = {
     if (isBusy()) return;
     saveComposer();
     const version = ++historyVersion;
-    patch({
-      chatId,
-      messages: [],
-      ...composerFor(chatId),
-      referenceMessageId: null,
-      sources: [],
-      results: [],
-      steps: [],
-      loading: true,
-    });
+    patch({ loading: true });
     try {
-      await refreshMessages(chatId);
+      const messages = await loadMessages(chatId);
+      if (version !== historyVersion) return;
+      hydratePondChat(chatId, messages);
+      patch({
+        chatId,
+        messages,
+        ...composerFor(chatId),
+        referenceMessageId: null,
+        sources: [],
+        results: [],
+        steps: [],
+        loading: false,
+      });
     } catch {
       if (version === historyVersion)
-        patch({ error: "Could not load this conversation. Try again." });
-    } finally {
-      if (version === historyVersion) patch({ loading: false });
+        patch({
+          error: "Could not load this conversation. Try again.",
+          loading: false,
+        });
     }
   },
   async send(

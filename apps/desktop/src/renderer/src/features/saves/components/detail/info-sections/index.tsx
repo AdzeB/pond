@@ -1,6 +1,7 @@
 import type { IconComponent } from "@pond/icons/types";
 import { Button, Tooltip } from "@pond/ui";
 import { type ReactNode, useState } from "react";
+import { openHarvester } from "@/features/library/lib/open-harvester";
 import { ColorSwatch } from "@/features/saves/components/detail/color-swatch";
 import { Section } from "@/features/saves/components/detail/section";
 import { useSaveDetail } from "@/features/saves/hooks/use-save-detail";
@@ -11,8 +12,7 @@ import {
 } from "@/features/saves/lib/detail";
 import { pickAuthorColor } from "@/features/saves/lib/presentation";
 import type { Save } from "@/features/saves/types";
-import { sourceDetail } from "@/features/sources/state/source-detail";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { PropertyList } from "@/shared/components/property-list";
 import { initials } from "@/shared/lib/initials";
 import styles from "./styles.module.css";
 
@@ -109,13 +109,13 @@ export function SaveInfoSections({
       !renderedTitles.has("Properties") &&
       colors.length > 0 ? (
         <Section title="Properties">
-          <div className={styles.rows}>
+          <PropertyList.Root>
             <PropertyColors
               colors={hideCoreProperties ? [] : colors}
               primaryColor={save.primaryColor ?? null}
               saveId={save.id}
             />
-          </div>
+          </PropertyList.Root>
         </Section>
       ) : null}
     </>
@@ -177,7 +177,7 @@ function InfoSection({
         placeholders === 0
       }
     >
-      <div className={styles.rows}>
+      <PropertyList.Root>
         {lead}
         {group.rows.map((row) => (
           <PropertyRow
@@ -198,7 +198,7 @@ function InfoSection({
         {SKELETON_ROWS.slice(0, placeholders).map((row, index) => (
           <SkeletonRow key={row} index={index} />
         ))}
-      </div>
+      </PropertyList.Root>
     </Section>
   );
 }
@@ -214,21 +214,21 @@ function SkeletonSection({
 }) {
   return (
     <Section title={title} defaultOpen={defaultOpen}>
-      <div className={styles.rows} aria-hidden="true">
+      <PropertyList.Root aria-hidden="true">
         {SKELETON_ROWS.slice(0, rows).map((row, index) => (
           <SkeletonRow key={row} index={index} />
         ))}
-      </div>
+      </PropertyList.Root>
     </Section>
   );
 }
 
 function SkeletonRow({ index }: { index: number }) {
   return (
-    <div className={styles.row} aria-hidden="true">
+    <PropertyList.Row aria-hidden="true">
       <span className={styles["skeleton-label"]} />
       <span className={styles["skeleton-value"]} data-width={(index % 3) + 1} />
-    </div>
+    </PropertyList.Row>
   );
 }
 
@@ -243,8 +243,8 @@ function PropertyColors({
 }) {
   if (colors.length === 0) return null;
   return (
-    <div className={styles.row}>
-      <span className={styles.label}>Colors</span>
+    <PropertyList.Row>
+      <PropertyList.Label>Colors</PropertyList.Label>
       <div className={styles.colors}>
         {colors.map((color) => (
           <ColorSwatch
@@ -255,7 +255,7 @@ function PropertyColors({
           />
         ))}
       </div>
-    </div>
+    </PropertyList.Row>
   );
 }
 
@@ -302,8 +302,8 @@ function PropertyRow({
   SourceIcon: IconComponent | null;
 }) {
   return (
-    <div className={styles.row}>
-      <span className={styles.label}>{row.label}</span>
+    <PropertyList.Row>
+      <PropertyList.Label>{row.label}</PropertyList.Label>
       {row.kind === "author" ? (
         row.href ? (
           <Tooltip label="Open in browser" side="left">
@@ -318,13 +318,13 @@ function PropertyRow({
               }}
             >
               <AuthorAvatar name={row.value} avatarUrl={avatarUrl} />
-              <span className={styles.value}>{row.value}</span>
+              <PropertyList.Value>{row.value}</PropertyList.Value>
             </Button>
           </Tooltip>
         ) : (
           <span className={styles["row-inline"]}>
             <AuthorAvatar name={row.value} avatarUrl={avatarUrl} />
-            <span className={styles.value}>{row.value}</span>
+            <PropertyList.Value>{row.value}</PropertyList.Value>
           </span>
         )
       ) : row.kind === "account" && row.accountId ? (
@@ -337,13 +337,16 @@ function PropertyRow({
             onClick={() => {
               const id = row.accountId;
               if (!id) return;
-              getAppRouter()?.history.push("/sources");
-              if (row.watch) sourceDetail.openWatch(id);
-              else sourceDetail.openAccount(id);
+              openHarvester({
+                section: "sources",
+                intent: row.watch
+                  ? { type: "inspect-watch", id }
+                  : { type: "inspect-account", id },
+              });
             }}
           >
             <AuthorAvatar name={row.value} avatarUrl={row.avatarUrl ?? null} />
-            <span className={styles.value}>{row.value}</span>
+            <PropertyList.Value>{row.value}</PropertyList.Value>
           </Button>
         </Tooltip>
       ) : row.kind === "platform" ? (
@@ -357,13 +360,11 @@ function PropertyRow({
               <SourceIcon width={16} height={16} />
             </span>
           ) : null}
-          <span className={styles.value}>{row.value}</span>
+          <PropertyList.Value>{row.value}</PropertyList.Value>
         </span>
       ) : (
-        <span className={styles.value} title={row.value}>
-          {row.value}
-        </span>
+        <PropertyList.Value title={row.value}>{row.value}</PropertyList.Value>
       )}
-    </div>
+    </PropertyList.Row>
   );
 }

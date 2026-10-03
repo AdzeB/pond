@@ -4,6 +4,68 @@ import { expect, it, vi } from "vitest";
 import { assistant } from "./assistant";
 import { createAssistantHarness } from "./assistant.test-harness";
 
+it("keeps the current conversation visible until the next chat is ready", async () => {
+  const next = Promise.withResolvers<AssistantMessage[]>();
+  vi.stubGlobal("pond", {
+    query: (name: string, args: { chatId?: string }) => {
+      if (name !== "agent.messages") return Promise.resolve([]);
+      if (args.chatId === "current")
+        return Promise.resolve([
+          {
+            id: "current-message",
+            chatId: "current",
+            role: "assistant",
+            content: "Keep this conversation visible",
+            metadata: null,
+          },
+        ] satisfies AssistantMessage[]);
+      return next.promise;
+    },
+    onAgentChunk: () => () => {},
+  });
+  assistant.newChat();
+  const harness = createAssistantHarness((state) => ({
+    chatId: state.chatId,
+    loading: state.loading,
+    messages: state.messages.map((message) => message.content),
+  }));
+  await harness.mount();
+  try {
+    await act(async () => assistant.openChat("current"));
+    let switching: Promise<void> = Promise.resolve();
+    await act(async () => {
+      switching = assistant.openChat("next");
+    });
+    expect(JSON.parse(harness.host.textContent || "{}")).toEqual({
+      chatId: "current",
+      loading: true,
+      messages: ["Keep this conversation visible"],
+    });
+    await act(async () => {
+      next.resolve([
+        {
+          id: "next-message",
+          chatId: "next",
+          role: "assistant",
+          content: "The next conversation",
+          metadata: null,
+        },
+      ]);
+      await switching;
+    });
+    expect(JSON.parse(harness.host.textContent || "{}")).toEqual({
+      chatId: "next",
+      loading: false,
+      messages: ["The next conversation"],
+    });
+  } finally {
+    next.resolve([]);
+    await harness.unmount();
+    assistant.newChat();
+    vi.unstubAllGlobals();
+  }
+});
+
 it("ignores old history that arrives after switching chats", async () => {
   const first = Promise.withResolvers<AssistantMessage[]>();
   const second = Promise.withResolvers<AssistantMessage[]>();

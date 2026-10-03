@@ -6,7 +6,7 @@ import {
   restoreDefaults,
   setSort,
 } from "@/features/library/state/view-store";
-import { SortSection } from "./sort";
+import { SortSection } from "./";
 
 describe("sort section", () => {
   let root: Root;

@@ -1,5 +1,4 @@
 import { IconStarFill18 } from "@pond/icons/fill/18";
-import { IconStarOutline18 } from "@pond/icons/outline/18";
 import { Button } from "@pond/ui";
 import styles from "./styles.module.css";
 
@@ -26,14 +25,14 @@ export function RatingStars({
             key={star}
             icon
             size="xs"
-            variant="ghost"
+            variant="text"
             aria-label={`${star} ${star === 1 ? "Star" : "Stars"}`}
             aria-pressed={star === value}
             data-active={filled || undefined}
             className={styles.star}
             onClick={() => onChange(value === star ? 0 : star)}
           >
-            {filled ? <IconStarFill18 /> : <IconStarOutline18 />}
+            <IconStarFill18 />
           </Button>
         );
       })}

@@ -140,7 +140,7 @@ export const agentControlOperations: PondOperation[] = [
     "read",
     z.object({ command: z.enum(viewCommands) }),
     async ({ command }) => {
-      broadcast(IPC.menuAction, command);
+      broadcast(IPC.menuAction, { id: command, source: "automation" });
       return { dispatched: true, command };
     },
   ),
@@ -151,7 +151,7 @@ export const agentControlOperations: PondOperation[] = [
       "read",
       empty,
       async () => {
-        broadcast(IPC.menuAction, command);
+        broadcast(IPC.menuAction, { id: command, source: "automation" });
         return { dispatched: true, awaitingUser: true };
       },
     ),

@@ -5,6 +5,8 @@ import type { AssistantMetadata } from "@shared/assistant";
 import { useReducedMotionConfig } from "motion/react";
 import styles from "./styles.module.css";
 
+const LONG_RUNNING_REPLY_MS = 30_000;
+
 export function formatWorkDuration(elapsedMs: number): string {
   const seconds = Math.max(1, Math.floor(elapsedMs / 1000));
   const hours = Math.floor(seconds / 3600);
@@ -32,14 +34,15 @@ export function WorkSummary({
 }) {
   const reduced = useReducedMotionConfig();
   const steps = metadata?.steps ?? [];
-  if (streaming || (metadata?.elapsedMs === undefined && !steps.length))
-    return null;
+  const longRunning = (metadata?.elapsedMs ?? 0) >= LONG_RUNNING_REPLY_MS;
+  const hasOutcome = Boolean(metadata?.stopped || metadata?.error);
+  if (streaming || (!longRunning && !steps.length && !hasOutcome)) return null;
   const title =
-    metadata?.elapsedMs === undefined
-      ? "Activity"
-      : `Worked for ${formatWorkDuration(metadata.elapsedMs)}`;
+    longRunning && metadata?.elapsedMs !== undefined
+      ? `Worked for ${formatWorkDuration(metadata.elapsedMs)}`
+      : "Activity";
   return (
-    <Reveal>
+    <Reveal initial={false}>
       <Accordion.Root className={styles.root}>
         <Accordion.Item value="work">
           <Accordion.Header className={styles.header}>

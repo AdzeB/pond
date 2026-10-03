@@ -28,6 +28,7 @@ import type { SavedView } from "@pond/schema/db";
 import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
 import {
   Button,
+  Chip,
   cssVars,
   Dialog,
   Menu,
@@ -328,13 +329,7 @@ function entryItems({
       items: FOLDER_SWATCHES.map((option) => ({
         type: "checkbox",
         label: option.label,
-        icon: (
-          <span
-            aria-hidden
-            className={styles.colorSwatch}
-            style={{ backgroundColor: option.css }}
-          />
-        ),
+        icon: <Chip.Swatch color={option.css} />,
         checked: (presentation.color ?? null) === option.id,
         onCheckedChange: () =>
           void saveSavedViewPresentation(view.id, { color: option.id }),

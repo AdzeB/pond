@@ -1,10 +1,11 @@
-import { IconXmarkOutline12 } from "@pond/icons/outline/12";
-import { IconPlusOutline18, IconStarOutline18 } from "@pond/icons/outline/18";
+import { IconPlusOutline18 } from "@pond/icons/outline/18";
 import { Button, Input, Menu } from "@pond/ui";
 import type { ScreenshotDraft } from "@shared/screenshot-capture";
 import { useState } from "react";
+import { RatingStars } from "@/features/saves/components/detail/rating";
 import { TagMenu } from "@/features/tags/components/menu";
 import styles from "./styles.module.css";
+import { ScreenshotTags } from "./tags";
 
 export interface ScreenshotDetails {
   title: string;
@@ -46,29 +47,10 @@ export function ScreenshotDetailsFields({
           {draft.width} × {draft.height}
         </figcaption>
       </figure>
-      <fieldset className={styles.rating} aria-label="Screenshot rating">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Button
-            key={star}
-            type="button"
-            icon
-            size="xs"
-            variant="ghost"
-            aria-label={`${star} ${star === 1 ? "Star" : "Stars"}`}
-            aria-pressed={value.rating === star}
-            data-active={star <= value.rating || undefined}
-            className={styles.star}
-            onClick={() =>
-              onChange((current) => ({
-                ...current,
-                rating: current.rating === star ? 0 : star,
-              }))
-            }
-          >
-            <IconStarOutline18 />
-          </Button>
-        ))}
-      </fieldset>
+      <RatingStars
+        value={value.rating || null}
+        onChange={(rating) => onChange((current) => ({ ...current, rating }))}
+      />
       <Input.Root size="sm" variant="secondary">
         <Input.Field
           aria-label="Screenshot Title"
@@ -92,19 +74,7 @@ export function ScreenshotDetailsFields({
           maxLength={8192}
         />
       </Input.Root>
-      <section className={styles.tags} aria-label="Screenshot tags">
-        {value.tags.map((tag) => (
-          <span key={tag} className={styles.tag}>
-            <span title={tag}>{tag}</span>
-            <button
-              type="button"
-              aria-label={`Remove tag ${tag}`}
-              onClick={() => toggleTag(tag)}
-            >
-              <IconXmarkOutline12 />
-            </button>
-          </span>
-        ))}
+      <ScreenshotTags tags={value.tags} onRemove={toggleTag}>
         <Menu.Root open={tagsOpen && !disabled} onOpenChange={setTagsOpen}>
           <Menu.Trigger
             render={
@@ -135,7 +105,7 @@ export function ScreenshotDetailsFields({
             </Menu.Positioner>
           </Menu.Portal>
         </Menu.Root>
-      </section>
+      </ScreenshotTags>
     </fieldset>
   );
 }

@@ -10,13 +10,17 @@
 }
 
 .name {
+  margin-left: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: normal;
   white-space: nowrap;
 }
 
 .chevron {
   flex: 0 0 auto;
+  width: 8px;
+  margin-left: 2px;
   color: var(--ds-gray-9);
 }
 

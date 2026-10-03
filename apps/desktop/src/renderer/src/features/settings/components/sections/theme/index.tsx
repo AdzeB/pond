@@ -1,5 +1,6 @@
 import { CUSTOM_PRESET_ID, type ThemeDef } from "@pond/schema/db";
 import { Select, type SelectItemSpec } from "@pond/ui";
+import { ThemeChip } from "./chip";
 import styles from "./styles.module.css";
 
 interface PresetSelectProps {
@@ -59,18 +60,6 @@ export function PresetSelect({
         </Select.Positioner>
       </Select.Portal>
     </Select.Root>
-  );
-}
-
-function ThemeChip({ def }: { def: ThemeDef }) {
-  return (
-    <span
-      aria-hidden
-      className={styles.chip}
-      style={{ background: def.background, color: def.accent }}
-    >
-      Aa
-    </span>
   );
 }
 

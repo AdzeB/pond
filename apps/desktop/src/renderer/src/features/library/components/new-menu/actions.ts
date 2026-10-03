@@ -6,6 +6,7 @@ import type {
   SavesImportQueryInputs,
 } from "@shared/saves-import-contracts";
 import { z } from "zod";
+import { openHarvester } from "@/features/library/lib/open-harvester";
 import { openDuplicateReview } from "@/features/library/state/duplicate-review";
 import { folders } from "@/features/library/state/folders";
 import { libraryChrome } from "@/features/library/state/library-chrome";
@@ -18,7 +19,6 @@ import { selection } from "@/features/saves/state/selection";
 import { libraryViewContext } from "@/features/saves/state/view-context";
 import { emitFeedback } from "@/features/settings/lib/sounds";
 import { getPrefsSnapshot } from "@/features/settings/state/prefs";
-import { startConnect, startWatch } from "@/features/sources/lib/create";
 import { tagCreation } from "@/features/tags/state/creation";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { notify, updateNotification } from "@/shared/lib/toast";
@@ -544,10 +544,10 @@ export const {
   },
   openSavedViewEditor: (kind) => savedViews.openEditor({ kind }),
   openSource: (kind, source) => {
-    libraryChrome.setNav({ kind: "sources" });
-    getAppRouter()?.history.push("/sources");
-    if (kind === "connect") void startConnect(source);
-    else startWatch(source);
+    openHarvester({
+      section: "sources",
+      intent: { type: kind, source },
+    });
   },
   selectSave: selectOnlySave,
   currentFolderId: () => {

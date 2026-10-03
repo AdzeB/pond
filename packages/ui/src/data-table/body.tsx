@@ -136,7 +136,11 @@ export function DataTableBody<T extends RowData>({
         data-scrollable={edges}
       >
         <div
-          style={{ height: virtualizer.getTotalSize(), position: "relative" }}
+          style={{
+            height: virtualizer.getTotalSize(),
+            position: "relative",
+            width: "100%",
+          }}
         >
           {virtualizer.getVirtualItems().map((vi) => {
             const row = rows[vi.index];
@@ -147,8 +151,8 @@ export function DataTableBody<T extends RowData>({
                 style={{
                   position: "absolute",
                   top: 0,
+                  right: 0,
                   left: 0,
-                  width: "100%",
                   height: `${vi.size}px`,
                   transform: `translateY(${vi.start}px)`,
                 }}

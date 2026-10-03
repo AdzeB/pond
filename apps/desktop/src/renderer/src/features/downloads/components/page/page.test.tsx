@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { downloadsColumnsLayout } from "@/features/downloads/state/downloads-columns";
 import { downloadsFilters } from "@/features/downloads/state/downloads-filters";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
 import { libraryChrome } from "@/features/library/state/library-chrome";
@@ -81,6 +82,7 @@ beforeEach(() => {
   }));
   vi.clearAllMocks();
   downloadsFilters.reset();
+  downloadsColumnsLayout.reset();
   primarySelection.set(null);
   libraryChrome.inspectSave(null);
   libraryChrome.closeRightPane();
@@ -389,7 +391,7 @@ it("keeps status out of the name and shows the normalized source", async () => {
     }),
   ]);
   await render();
-  expect(host.querySelector('[aria-label="Sort by Stage"]')).not.toBeNull();
+  expect(host.querySelector('[aria-label="Sort by Status"]')).not.toBeNull();
   expect(host.querySelector('[aria-label="Sort by Source"]')).not.toBeNull();
   expect(
     host.querySelector('[aria-label="Inspect Clip"]')?.textContent,
@@ -425,7 +427,6 @@ it("keeps media previews out of the name column", async () => {
 it("filters active, waiting, and failed work from the filter toolbar", async () => {
   await render();
   await clickButton("Filter");
-  expect(document.getElementById("downloads-filter-toolbar")).not.toBeNull();
   await clickButton("Status");
   await clickFilterOption("Waiting");
   expect(

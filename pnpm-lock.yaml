@@ -102,6 +102,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.5
+      '@web-kits/provenance':
+        specifier: https://github.com/raphaelsalaja/provenance/releases/download/v0.3.0/web-kits-provenance-0.3.0.tgz
+        version: https://github.com/raphaelsalaja/provenance/releases/download/v0.3.0/web-kits-provenance-0.3.0.tgz
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -114,9 +117,6 @@ importers:
       oxlint:
         specifier: 1.83.0
         version: 1.83.0
-      provenance-specification:
-        specifier: https://github.com/raphaelsalaja/provenance/releases/download/v0.1.2/provenance-specification-0.1.2.tgz
-        version: https://github.com/raphaelsalaja/provenance/releases/download/v0.1.2/provenance-specification-0.1.2.tgz
       turbo:
         specifier: ^2.10.13
         version: 2.10.13
@@ -4041,6 +4041,12 @@ packages:
       react:
         optional: true
 
+  '@web-kits/provenance@https://github.com/raphaelsalaja/provenance/releases/download/v0.3.0/web-kits-provenance-0.3.0.tgz':
+    resolution: {integrity: sha512-vvMZvCem3mZgWtkcaXaQHOlqsfRdWLPy6Rx+TKo2rDsNHsd8FkSpfscpap+116bAdcAd3cCMeG936soKjCk/Hg==, tarball: https://github.com/raphaelsalaja/provenance/releases/download/v0.3.0/web-kits-provenance-0.3.0.tgz}
+    version: 0.3.0
+    engines: {node: '>=24'}
+    hasBin: true
+
   '@webext-core/fake-browser@2.0.1':
     resolution: {integrity: sha512-4x5z1z8F0KU8ShF4ForXJ8qnA8oZTy7HYjI91Mbpdzp3H3hU9HR6TNPUxfWtSpFz2FwgEircuJKQg0qFIn6RLg==}
 
@@ -6934,12 +6940,6 @@ packages:
   protobufjs@7.6.6:
     resolution: {integrity: sha512-dYDWdjSl5RNb7SgPxGQcRU+GtvP7s2fpkrY0r432PcOIaZ0/rBcxEZnQN67iJhFuQiVw754JDoPruPCNdGsbjg==}
     engines: {node: '>=12.0.0'}
-
-  provenance-specification@https://github.com/raphaelsalaja/provenance/releases/download/v0.1.2/provenance-specification-0.1.2.tgz:
-    resolution: {integrity: sha512-50FyQlg593MAPTnfpw6wjQsr7xtRsvAVnzHgg8YxxU94OQQhLTtsASIJq5mMyRCi8lwcOFnDg+qxAkIFxpsfnA==, tarball: https://github.com/raphaelsalaja/provenance/releases/download/v0.1.2/provenance-specification-0.1.2.tgz}
-    version: 0.1.2
-    engines: {node: '>=24'}
-    hasBin: true
 
   proxy-addr@2.0.7:
     resolution: {integrity: sha512-llQsMLSUDUPT44jdrU/O37qlnifitDP+ZwrmmZcoSKyLKvtZxpyV0n2/bD/N4tBAAZ/gJEdZU7KMraoK1+XYAg==}
@@ -11115,6 +11115,11 @@ snapshots:
     optionalDependencies:
       react: 19.3.0
 
+  '@web-kits/provenance@https://github.com/raphaelsalaja/provenance/releases/download/v0.3.0/web-kits-provenance-0.3.0.tgz':
+    dependencies:
+      ajv: 8.20.0
+      yaml: 2.9.0
+
   '@webext-core/fake-browser@2.0.1':
     dependencies:
       '@wxt-dev/browser': 0.1.40
@@ -14429,11 +14434,6 @@ snapshots:
       '@protobufjs/utf8': 1.1.1
       '@types/node': 22.19.17
       long: 5.3.2
-
-  provenance-specification@https://github.com/raphaelsalaja/provenance/releases/download/v0.1.2/provenance-specification-0.1.2.tgz:
-    dependencies:
-      ajv: 8.20.0
-      yaml: 2.9.0
 
   proxy-addr@2.0.7:
     dependencies:

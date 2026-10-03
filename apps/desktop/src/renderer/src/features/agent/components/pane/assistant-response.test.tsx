@@ -1,11 +1,14 @@
+import { act } from "react";
+import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it, vi } from "vitest";
 import { AssistantResponse, safeResponseUrl } from "./assistant-response";
 
-const render = (content: string) =>
+const render = (content: string, streaming = false) =>
   renderToStaticMarkup(
     <AssistantResponse
       content={content}
+      streaming={streaming}
       sources={[
         {
           id: "verified",
@@ -17,6 +20,35 @@ const render = (content: string) =>
       onOpenSave={vi.fn()}
     />,
   );
+
+it("wraps streaming prose by word without changing saved responses", () => {
+  const streaming = render("A **clear** answer.", true);
+  expect(streaming.match(/data-streaming-word=""/g)).toHaveLength(3);
+  expect(streaming).toMatch(
+    /<strong><span[^>]*data-streaming-word=""[^>]*>clear<\/span><\/strong>/,
+  );
+  expect(render("A **clear** answer.")).not.toContain("data-streaming-word");
+});
+
+it("keeps existing streaming word elements mounted as text is appended", async () => {
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  const onOpenSave = vi.fn();
+  const response = (content: string) => (
+    <AssistantResponse content={content} streaming onOpenSave={onOpenSave} />
+  );
+  await act(async () => root.render(response("A clear")));
+  const before = host.querySelectorAll("[data-streaming-word]");
+  const first = before[0];
+  const second = before[1];
+  await act(async () => root.render(response("A clear answer")));
+  const after = host.querySelectorAll("[data-streaming-word]");
+  expect(after).toHaveLength(3);
+  expect(after[0]).toBe(first);
+  expect(after[1]).toBe(second);
+  await act(async () => root.unmount());
+});
+
 it("renders semantic paragraphs, lists, tables, quotes and code", () => {
   const html = render(
     "A **clear** answer.\n\n- First\n- Second\n\n| Film | Light |\n| --- | --- |\n| A | Red |\n\n> Quoted\n\n```js\nconst x = 1;\n```",

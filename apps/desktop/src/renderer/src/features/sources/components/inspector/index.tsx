@@ -14,6 +14,7 @@ import {
 } from "@pond/ui";
 import { useEffect, useId, useRef, useState } from "react";
 import { downloadsFilters } from "@/features/downloads/state/downloads-filters";
+import { openHarvester } from "@/features/library/lib/open-harvester";
 import {
   libraryChrome,
   useInspectorSourceId,
@@ -46,9 +47,9 @@ import {
   type SyncSourceStatus,
   useSyncByAccount,
 } from "@/features/sources/state/sync-monitor";
+import { PropertyList } from "@/shared/components/property-list";
 import { SpecMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
-import { getAppRouter } from "@/shared/lib/app-router";
 import { formatNumber, formatTimestampLine } from "@/shared/lib/format";
 import styles from "./styles.module.css";
 
@@ -263,7 +264,7 @@ function openDownloads(source: Source): void {
   downloadsFilters.setStatuses(new Set());
   downloadsFilters.setSources(new Set([source]));
   libraryChrome.closeRightPane();
-  getAppRouter()?.history.push("/downloads");
+  openHarvester({ section: "downloads" });
 }
 
 export interface SourceInspectorViewProps {
@@ -387,14 +388,14 @@ export function SourceInspectorView({
             ) : null}
             {properties.length > 0 ? (
               <Section title="Properties">
-                <dl className={styles.rows}>
+                <PropertyList.Root>
                   {properties.map((property) => (
-                    <div className={styles.row} key={property.label}>
-                      <dt className={styles.label}>{property.label}</dt>
-                      <dd className={styles.value}>{property.value}</dd>
-                    </div>
+                    <PropertyList.Row key={property.label}>
+                      <PropertyList.Label>{property.label}</PropertyList.Label>
+                      <PropertyList.Value>{property.value}</PropertyList.Value>
+                    </PropertyList.Row>
                   ))}
-                </dl>
+                </PropertyList.Root>
               </Section>
             ) : null}
             {model ? (

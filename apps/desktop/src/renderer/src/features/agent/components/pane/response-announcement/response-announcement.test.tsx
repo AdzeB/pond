@@ -1,22 +1,18 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
 import { ResponseAnnouncement } from "./";
 
-it("announces response boundaries and provides an explicit reading action without moving focus", async () => {
+it("announces response boundaries without adding a persistent visual control", async () => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
-  const read = vi.fn();
   const render = async (props: {
     running: boolean;
     responseId?: string;
     requiredAction?: string;
     error?: string;
-  }) =>
-    act(async () =>
-      root.render(<ResponseAnnouncement {...props} onRead={read} />),
-    );
+  }) => act(async () => root.render(<ResponseAnnouncement {...props} />));
   try {
     await render({ running: false, responseId: "old" });
     expect(host.querySelector('[role="status"]')?.textContent).toBe("");
@@ -26,9 +22,8 @@ it("announces response boundaries and provides an explicit reading action withou
     expect(host.querySelector('[role="status"]')?.textContent).toBe(
       "Agent response complete.",
     );
+    expect(host.querySelector("button")).toBeNull();
     expect(document.activeElement).toBe(document.body);
-    await act(async () => host.querySelector("button")?.click());
-    expect(read).toHaveBeenCalledOnce();
     await render({
       running: false,
       responseId: "new",

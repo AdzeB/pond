@@ -78,6 +78,45 @@ it("retains historical activity without inventing elapsed time", async () => {
   expect(host.querySelector("button")).toBeNull();
 });
 
+it("hides the summary for a short reply without activity", async () => {
+  await act(async () =>
+    root.render(<WorkSummary metadata={{ elapsedMs: 29_999 }} />),
+  );
+  expect(host.querySelector("button")).toBeNull();
+});
+
+it("shows elapsed time after a reply takes 30 seconds", async () => {
+  await act(async () =>
+    root.render(<WorkSummary metadata={{ elapsedMs: 30_000 }} />),
+  );
+  expect(host.querySelector("button")?.textContent).toBe("Worked for 30s");
+});
+
+it("does not grow into place when an existing summary first mounts", async () => {
+  await act(async () =>
+    root.render(<WorkSummary metadata={{ elapsedMs: 30_000 }} />),
+  );
+  const reveal = host.firstElementChild;
+  if (!(reveal instanceof HTMLElement)) throw new Error("Missing work summary");
+  expect(reveal.style.height).not.toBe("0px");
+});
+
+it("keeps short tool activity without emphasizing its duration", async () => {
+  await act(async () =>
+    root.render(
+      <WorkSummary
+        metadata={{
+          elapsedMs: 2_000,
+          steps: [
+            { id: "search", label: "Search library", status: "complete" },
+          ],
+        }}
+      />,
+    ),
+  );
+  expect(host.querySelector("button")?.textContent).toBe("Activity");
+});
+
 it("waits for completion and describes stopped runs without claiming a reply", async () => {
   const metadata = { elapsedMs: 2000, stopped: true };
   await act(async () =>
@@ -85,6 +124,7 @@ it("waits for completion and describes stopped runs without claiming a reply", a
   );
   expect(host.querySelector("button")).toBeNull();
   await act(async () => root.render(<WorkSummary metadata={metadata} />));
+  expect(host.querySelector("button")?.textContent).toBe("Activity");
   await act(async () => host.querySelector("button")?.click());
   expect(host.textContent).toContain("Stopped before completing the reply.");
 });
