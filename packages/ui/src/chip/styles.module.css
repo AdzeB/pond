@@ -28,7 +28,7 @@
     height: 22px;
     padding-inline: 7px;
     font-size: var(--ds-text-sm);
-    font-weight: var(--ds-weight-medium);
+    font-weight: var(--ds-weight-lg);
     background: var(--ds-gray-a3);
     border: 0;
     border-radius: var(--ds-radius-full);
@@ -55,7 +55,7 @@
   height: 24px;
   font-family: inherit;
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   cursor: var(--ds-cursor-interactive, pointer);
 }
 
@@ -66,7 +66,7 @@
     background: var(--ds-gray-1);
     border: 0;
     border-radius: var(--ds-radius-md);
-    box-shadow: var(--ds-shadow-2);
+    box-shadow: var(--ds-shadow-sm);
     transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
 
     &:hover {
@@ -120,7 +120,7 @@
 .operator {
   padding-inline: 4px;
   font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-normal);
+  font-weight: var(--ds-weight-md);
   color: var(--ds-gray-10);
 
   &[tabindex="-1"] {
@@ -133,7 +133,7 @@
   height: auto;
   padding: 0;
   font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-normal);
+  font-weight: var(--ds-weight-md);
 }
 
 .clear {

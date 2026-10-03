@@ -26,6 +26,22 @@ function confirmBulkDelete(names: string[], onDone: () => void) {
   });
 }
 
+function promptBulkGroup(names: string[], onDone: () => void) {
+  Dialog.prompt({
+    title: "Create Tag Group",
+    description: "Create a group containing the selected tags.",
+    confirmLabel: "Create Group",
+    placeholder: "Group name",
+    onConfirm: async (value) => {
+      const group = value.trim();
+      if (!group) throw new Error("Enter a group name.");
+      await tagOperations.create("group", group);
+      await window.pond.query("tagGroups.addTags", { tags: names, group });
+      onDone();
+    },
+  });
+}
+
 export function TagsBulkActionBar({
   namesFromIds,
   clearRef,
@@ -51,6 +67,16 @@ export function TagsBulkActionBar({
               }}
             >
               Merge
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                clearRef.current = selection.clear;
+                promptBulkGroup(names, () => clearRef.current());
+              }}
+            >
+              Group
             </Button>
             <Button
               size="sm"

@@ -1,5 +1,4 @@
 import { existsSync } from "node:fs";
-import { join } from "node:path";
 import type Database from "better-sqlite3";
 import log from "electron-log/main.js";
 import {
@@ -8,22 +7,22 @@ import {
 } from "../../shared/constants";
 import { recoverBatchJournal } from "../core/batch-journal";
 import { backfillFontActivationIndex } from "../core/font-activation";
-import { hydrateOrganizationBundle } from "../core/organization-bundle";
+import { prepareLegacyLibraryRead } from "../core/legacy-encryption/library-access";
 import {
   clearLibraryKey,
   deriveLibrarySubkey,
   libraryKeyInstalled,
   loadLibraryKeyFromSecureStorage,
-} from "../core/security/library-key-runtime";
-import { LIBRARY_SECURITY_MANIFEST_FILENAME } from "../core/security/library-security-manifest";
+} from "../core/legacy-encryption/library-key-runtime";
+import { hydrateOrganizationBundle } from "../core/organization-bundle";
 import { backfillVecBatch } from "../core/vec-index";
-import { ensureSecureSecretBytes } from "../keychain";
+import { getSecureSecretBytes } from "../keychain";
 import { readOrCreatePondId } from "../lib/pond-identity";
 import { backfillRawSlimBatch } from "../lib/raw-slim";
 import { resolvePaths } from "../paths";
 import { type Db, openSqlite, wrapSqlite } from "./client";
-import { DATABASE_KEY_BYTES } from "./encrypted-sqlite";
 import { migrateGlobal } from "./migrations";
+import { convertLegacyDatabaseWithKeyCandidates } from "./plaintext-sqlite";
 import { initializePondSchema } from "./pond-schema";
 
 let cachedPond: Db | null = null;
@@ -67,27 +66,11 @@ async function openPondDb(): Promise<Db> {
   log.info("[pond db] opening pond index", paths.indexDb);
 
   const pondId = readOrCreatePondId(paths.libraryRoot);
-  const securityManifest = join(
+  await prepareLegacyLibraryRead();
+  const sqlite = await openLegacyLibrarySqlite(paths.indexDb, pondId, [
     paths.libraryRoot,
-    LIBRARY_SECURITY_MANIFEST_FILENAME,
-  );
-  let sqlite: Database.Database;
-  if (existsSync(securityManifest)) {
-    if (!libraryKeyInstalled(pondId)) {
-      throw new Error("The Library is locked.");
-    }
-    const databaseKey = deriveLibrarySubkey("database:index");
-    try {
-      sqlite = openSqlite(paths.indexDb, databaseKey);
-    } finally {
-      databaseKey.fill(0);
-    }
-  } else {
-    sqlite = await openLegacyLibrarySqlite(paths.indexDb, pondId, [
-      paths.libraryRoot,
-      paths.thumbnailCache,
-    ]);
-  }
+    paths.thumbnailCache,
+  ]);
   let vectorEnabled: boolean;
   let opened: Db;
   try {
@@ -193,12 +176,18 @@ async function openSqliteWithKey(
   file: string,
   account: string,
 ): Promise<Database.Database> {
-  const key = await ensureSecureSecretBytes(account, DATABASE_KEY_BYTES);
-  try {
-    return openSqlite(file, key);
-  } finally {
-    key.fill(0);
-  }
+  const backup = await convertLegacyDatabaseWithKeyCandidates(file, [
+    async () => {
+      const key = await getSecureSecretBytes(account, 32);
+      if (!key)
+        throw new Error(
+          "The existing database key is unavailable. No files were changed.",
+        );
+      return key;
+    },
+  ]);
+  if (backup) log.info("[pond db] converted legacy database", { file, backup });
+  return openSqlite(file);
 }
 
 async function openLegacyLibrarySqlite(
@@ -206,29 +195,30 @@ async function openLegacyLibrarySqlite(
   pondId: string,
   roots: string[],
 ): Promise<Database.Database> {
-  let legacyError: Error;
   try {
-    return await openSqliteWithKey(
-      file,
-      `${KEYCHAIN_DATABASE_LIBRARY_PREFIX}:${pondId}`,
-    );
+    const backup = await convertLegacyDatabaseWithKeyCandidates(file, [
+      async () => {
+        const key = await getSecureSecretBytes(
+          `${KEYCHAIN_DATABASE_LIBRARY_PREFIX}:${pondId}`,
+          32,
+        );
+        if (!key)
+          throw new Error(
+            "The existing database key is unavailable. No files were changed.",
+          );
+        return key;
+      },
+      async () => {
+        if (!libraryKeyInstalled(pondId))
+          await loadLibraryKeyFromSecureStorage(pondId, roots);
+        return deriveLibrarySubkey("database:index");
+      },
+    ]);
+    if (backup)
+      log.info("[pond db] converted legacy database", { file, backup });
+    return openSqlite(file);
   } catch (error) {
-    legacyError =
-      error instanceof Error ? error : new Error("The index could not open.");
-  }
-
-  try {
-    await loadLibraryKeyFromSecureStorage(pondId, roots);
-    const databaseKey = deriveLibrarySubkey("database:index");
-    try {
-      const sqlite = openSqlite(file, databaseKey);
-      log.warn("[pond db] recovered index with the Library master key");
-      return sqlite;
-    } finally {
-      databaseKey.fill(0);
-    }
-  } catch {
     clearLibraryKey();
-    throw legacyError;
+    throw error;
   }
 }

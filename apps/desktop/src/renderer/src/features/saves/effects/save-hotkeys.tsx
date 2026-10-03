@@ -20,12 +20,13 @@ import {
   untrashSave,
 } from "@/features/saves/lib/actions";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
+import { addSavesToLastUsedFolder } from "@/features/saves/lib/folder-actions";
+import { saveOwnsKeyboard } from "@/features/saves/lib/keyboard-owner";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { rateSaves } from "@/features/saves/lib/rating";
 import { openSave, saveIdFromPath } from "@/features/saves/lib/save-nav";
 import { selectOnlySave } from "@/features/saves/lib/select";
 import {
-  addTagsToSelection,
   copyFilesForSelection,
   copyIdsForSelection,
   copyTagsForSelection,
@@ -137,6 +138,17 @@ export function SaveHotkeys() {
         },
         options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
       },
+      {
+        hotkey: bindingKeys(shortcuts, "save.add-to-last-folder"),
+        callback: () => {
+          const selected = selection.snapshot();
+          const primary = primarySelectionStore.state.id;
+          void addSavesToLastUsedFolder(
+            selected.length ? selected : primary ? [primary] : [],
+          );
+        },
+        options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
+      },
       ...RATING_COMMANDS.flatMap((command) => [
         {
           hotkey: bindingKeys(shortcuts, command.id),
@@ -159,7 +171,7 @@ export function SaveHotkeys() {
       },
       {
         hotkey: bindingKeys(shortcuts, "save.copy-image"),
-        callback: (event) => {
+        callback: (event: KeyboardEvent) => {
           const textSelection = window.getSelection();
           if (textSelection && !textSelection.isCollapsed) return;
           const ids = selection.snapshot();
@@ -232,16 +244,7 @@ export function SaveHotkeys() {
         hotkey: bindingKeys(shortcuts, "save.add-tag"),
         callback: () => {
           const ids = selection.snapshot();
-          if (ids.length > 1) {
-            Dialog.prompt({
-              title: "Add Tag",
-              confirmLabel: "Add Tag",
-              placeholder: "Tag name",
-              onConfirm: (value) => addTagsToSelection(ids, [value]),
-            });
-            return;
-          }
-          if (!primarySelectionStore.state.id) return;
+          if (ids.length === 0 && !primarySelectionStore.state.id) return;
           openTagPicker();
         },
         options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
@@ -317,7 +320,19 @@ export function SaveHotkeys() {
         ),
         options: { enabled: hasPrimary, ignoreInputs: true },
       },
-    ],
+    ].map((binding) => ({
+      ...binding,
+      callback: (event: KeyboardEvent) => {
+        if (!saveOwnsKeyboard(event)) return;
+        if (
+          !("preventDefault" in binding.options) ||
+          binding.options.preventDefault !== false
+        )
+          event.preventDefault();
+        binding.callback(event);
+      },
+      options: { ...binding.options, preventDefault: false },
+    })),
     { ignoreInputs: true },
   );
 

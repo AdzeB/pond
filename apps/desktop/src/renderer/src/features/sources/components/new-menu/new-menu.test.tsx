@@ -67,6 +67,7 @@ describe("new source menu", () => {
       (el) => el.getAttribute("aria-label") === "New Source",
     );
     if (!trigger) throw new Error("Missing New Source");
+    expect(trigger.getAttribute("data-variant")).toBe("ghost");
     await act(async () => trigger.click());
   }
 

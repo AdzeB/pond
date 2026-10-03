@@ -11,7 +11,7 @@ import { INFO_FILE, StoredInfoDocSchema } from "../../lib/library-format";
 import { itemDir, resolvePaths } from "../../paths";
 import { currentPondId } from "../prefs-scope";
 import { migrateSaveFileLayout } from "../save-file-layout-migration";
-import { decodeLibraryFile } from "../security/library-file-storage";
+import { decodeLibraryFile } from "../storage/library-file-storage";
 
 const MIGRATION_ID = "save-file-layout-v4";
 const MAX_INFLIGHT = 2;

@@ -2,6 +2,7 @@ import type { Prefs } from "@pond/schema/db";
 import {
   autoTag,
   backfillColors,
+  backfillMetadata,
   DISABLED_HINTS,
   rebuildVisualIndex,
   recaption,
@@ -65,6 +66,16 @@ const TASKS: readonly LibraryTask[] = [
     keywords: ["colors", "colours", "palette"],
     selectable: false,
     run: backfillColors,
+  },
+  {
+    id: "backfill-metadata",
+    label: "Extract Media Metadata",
+    description: "Fill missing camera, EXIF, and media details.",
+    action: "Run",
+    group: "enrichment",
+    keywords: ["camera", "exif", "codec", "metadata"],
+    selectable: false,
+    run: backfillMetadata,
   },
   {
     id: "caption",

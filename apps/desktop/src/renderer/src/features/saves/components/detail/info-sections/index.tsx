@@ -1,6 +1,7 @@
 import type { IconComponent } from "@pond/icons/types";
 import { Button, Tooltip } from "@pond/ui";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
+import { openHarvester } from "@/features/library/lib/open-harvester";
 import { ColorSwatch } from "@/features/saves/components/detail/color-swatch";
 import { Section } from "@/features/saves/components/detail/section";
 import { useSaveDetail } from "@/features/saves/hooks/use-save-detail";
@@ -11,7 +12,7 @@ import {
 } from "@/features/saves/lib/detail";
 import { pickAuthorColor } from "@/features/saves/lib/presentation";
 import type { Save } from "@/features/saves/types";
-import { sourceDetail } from "@/features/sources/state/source-detail";
+import { PropertyList } from "@/shared/components/property-list";
 import { initials } from "@/shared/lib/initials";
 import styles from "./styles.module.css";
 
@@ -21,12 +22,20 @@ interface SaveInfoSectionsProps {
   save: Save;
   pending?: boolean;
   hideActivity?: boolean;
+  hideCoreProperties?: boolean;
+  mergeFileAndDatesIntoProperties?: boolean;
+  propertiesLead?: ReactNode;
+  sourceLead?: ReactNode;
 }
 
 export function SaveInfoSections({
   save,
   pending,
   hideActivity,
+  hideCoreProperties,
+  mergeFileAndDatesIntoProperties,
+  propertiesLead,
+  sourceLead,
 }: SaveInfoSectionsProps) {
   const {
     rows,
@@ -35,9 +44,29 @@ export function SaveInfoSections({
     sourceLogo,
     sourceIcon: SourceIcon,
   } = useSaveDetail(save.id);
-  const groups = groupDetailRows(rows).filter(
-    (group) => !hideActivity || group.title !== "Activity",
-  );
+  const coreIds = new Set(["type", "dimensions", "size"]);
+  const grouped = groupDetailRows(
+    hideCoreProperties ? rows.filter((row) => !coreIds.has(row.id)) : rows,
+  )
+    .filter((group) => !hideActivity || group.title !== "Activity")
+    .map((group) =>
+      hideCoreProperties && group.title === "Properties"
+        ? { ...group, title: "Source" }
+        : group,
+    );
+  const mergedPropertyRows = mergeFileAndDatesIntoProperties
+    ? grouped
+        .filter((group) => group.title === "File" || group.title === "Dates")
+        .flatMap((group) => group.rows)
+    : [];
+  const groups = mergeFileAndDatesIntoProperties
+    ? [
+        { title: "Properties", rows: mergedPropertyRows },
+        ...grouped.filter(
+          (group) => group.title !== "File" && group.title !== "Dates",
+        ),
+      ]
+    : grouped;
   const renderedTitles = new Set(groups.map((group) => group.title));
 
   return (
@@ -51,11 +80,20 @@ export function SaveInfoSections({
         <InfoSection
           key={group.title}
           group={group}
-          colors={colors}
+          colors={hideCoreProperties ? [] : colors}
+          primaryColor={save.primaryColor ?? null}
+          saveId={save.id}
           avatarUrl={avatarUrl}
           sourceLogo={sourceLogo}
           SourceIcon={SourceIcon}
           placeholders={pending ? placeholderCount(group) : 0}
+          lead={
+            group.title === "Properties"
+              ? propertiesLead
+              : group.title === "Source"
+                ? sourceLead
+                : undefined
+          }
         />
       ))}
       {pending && !renderedTitles.has("Properties") ? (
@@ -67,11 +105,17 @@ export function SaveInfoSections({
       {pending && !renderedTitles.has("Dates") ? (
         <SkeletonSection title="Dates" rows={2} defaultOpen={false} />
       ) : null}
-      {!renderedTitles.has("Properties") && colors.length > 0 ? (
+      {!hideCoreProperties &&
+      !renderedTitles.has("Properties") &&
+      colors.length > 0 ? (
         <Section title="Properties">
-          <div className={styles.rows}>
-            <PropertyColors colors={colors} />
-          </div>
+          <PropertyList.Root>
+            <PropertyColors
+              colors={hideCoreProperties ? [] : colors}
+              primaryColor={save.primaryColor ?? null}
+              saveId={save.id}
+            />
+          </PropertyList.Root>
         </Section>
       ) : null}
     </>
@@ -100,24 +144,41 @@ function placeholderCount(group: DetailGroup): number {
 function InfoSection({
   group,
   colors,
+  primaryColor,
+  saveId,
   avatarUrl,
   sourceLogo,
   SourceIcon,
   placeholders,
+  lead,
 }: {
   group: DetailGroup;
   colors: string[];
+  primaryColor: string | null;
+  saveId: string;
   avatarUrl: string | null;
   sourceLogo: string | null;
   SourceIcon: IconComponent | null;
   placeholders: number;
+  lead?: ReactNode;
 }) {
   return (
     <Section
       title={group.title}
-      defaultOpen={group.title !== "File" && group.title !== "Dates"}
+      defaultOpen={
+        group.title !== "File" &&
+        group.title !== "Dates" &&
+        group.title !== "Source"
+      }
+      empty={
+        !lead &&
+        group.rows.length === 0 &&
+        colors.length === 0 &&
+        placeholders === 0
+      }
     >
-      <div className={styles.rows}>
+      <PropertyList.Root>
+        {lead}
         {group.rows.map((row) => (
           <PropertyRow
             key={row.id}
@@ -128,12 +189,16 @@ function InfoSection({
           />
         ))}
         {group.title === "Properties" ? (
-          <PropertyColors colors={colors} />
+          <PropertyColors
+            colors={colors}
+            primaryColor={primaryColor}
+            saveId={saveId}
+          />
         ) : null}
         {SKELETON_ROWS.slice(0, placeholders).map((row, index) => (
           <SkeletonRow key={row} index={index} />
         ))}
-      </div>
+      </PropertyList.Root>
     </Section>
   );
 }
@@ -149,35 +214,48 @@ function SkeletonSection({
 }) {
   return (
     <Section title={title} defaultOpen={defaultOpen}>
-      <div className={styles.rows} aria-hidden="true">
+      <PropertyList.Root aria-hidden="true">
         {SKELETON_ROWS.slice(0, rows).map((row, index) => (
           <SkeletonRow key={row} index={index} />
         ))}
-      </div>
+      </PropertyList.Root>
     </Section>
   );
 }
 
 function SkeletonRow({ index }: { index: number }) {
   return (
-    <div className={styles.row} aria-hidden="true">
+    <PropertyList.Row aria-hidden="true">
       <span className={styles["skeleton-label"]} />
       <span className={styles["skeleton-value"]} data-width={(index % 3) + 1} />
-    </div>
+    </PropertyList.Row>
   );
 }
 
-function PropertyColors({ colors }: { colors: string[] }) {
+function PropertyColors({
+  colors,
+  primaryColor,
+  saveId,
+}: {
+  colors: string[];
+  primaryColor: string | null;
+  saveId: string;
+}) {
   if (colors.length === 0) return null;
   return (
-    <div className={styles.row}>
-      <span className={styles.label}>Colors</span>
+    <PropertyList.Row>
+      <PropertyList.Label>Colors</PropertyList.Label>
       <div className={styles.colors}>
         {colors.map((color) => (
-          <ColorSwatch key={color} color={color} />
+          <ColorSwatch
+            key={color}
+            color={color}
+            primaryColor={primaryColor}
+            saveId={saveId}
+          />
         ))}
       </div>
-    </div>
+    </PropertyList.Row>
   );
 }
 
@@ -224,8 +302,8 @@ function PropertyRow({
   SourceIcon: IconComponent | null;
 }) {
   return (
-    <div className={styles.row}>
-      <span className={styles.label}>{row.label}</span>
+    <PropertyList.Row>
+      <PropertyList.Label>{row.label}</PropertyList.Label>
       {row.kind === "author" ? (
         row.href ? (
           <Tooltip label="Open in browser" side="left">
@@ -240,13 +318,13 @@ function PropertyRow({
               }}
             >
               <AuthorAvatar name={row.value} avatarUrl={avatarUrl} />
-              <span className={styles.value}>{row.value}</span>
+              <PropertyList.Value>{row.value}</PropertyList.Value>
             </Button>
           </Tooltip>
         ) : (
           <span className={styles["row-inline"]}>
             <AuthorAvatar name={row.value} avatarUrl={avatarUrl} />
-            <span className={styles.value}>{row.value}</span>
+            <PropertyList.Value>{row.value}</PropertyList.Value>
           </span>
         )
       ) : row.kind === "account" && row.accountId ? (
@@ -259,12 +337,16 @@ function PropertyRow({
             onClick={() => {
               const id = row.accountId;
               if (!id) return;
-              if (row.watch) sourceDetail.openWatch(id);
-              else sourceDetail.openAccount(id);
+              openHarvester({
+                section: "sources",
+                intent: row.watch
+                  ? { type: "inspect-watch", id }
+                  : { type: "inspect-account", id },
+              });
             }}
           >
             <AuthorAvatar name={row.value} avatarUrl={row.avatarUrl ?? null} />
-            <span className={styles.value}>{row.value}</span>
+            <PropertyList.Value>{row.value}</PropertyList.Value>
           </Button>
         </Tooltip>
       ) : row.kind === "platform" ? (
@@ -278,13 +360,11 @@ function PropertyRow({
               <SourceIcon width={16} height={16} />
             </span>
           ) : null}
-          <span className={styles.value}>{row.value}</span>
+          <PropertyList.Value>{row.value}</PropertyList.Value>
         </span>
       ) : (
-        <span className={styles.value} title={row.value}>
-          {row.value}
-        </span>
+        <PropertyList.Value title={row.value}>{row.value}</PropertyList.Value>
       )}
-    </div>
+    </PropertyList.Row>
   );
 }

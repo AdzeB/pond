@@ -19,6 +19,7 @@ import {
   type ThemeDef,
   type WindowBounds,
 } from "./prefs.types";
+import { SavedViewPresentationSchema } from "./saved-view-presentation";
 import {
   getPreset,
   migrateThemeDef,
@@ -58,6 +59,7 @@ const StoredPreferencesSchema = z
     reduceMotion: z.string().optional().catch(undefined),
     tweetCover: z.string().optional().catch(undefined),
     soundsEnabled: z.boolean().optional().catch(undefined),
+    autoSelectAfterImport: z.boolean().optional().catch(undefined),
     soundFeel: z.string().optional().catch(undefined),
     themeMode: z.string().optional().catch(undefined),
     presetId: z.string().optional().catch(undefined),
@@ -83,6 +85,7 @@ interface MigratedPreferences {
   reduceMotion?: string;
   tweetCover?: string;
   soundsEnabled?: boolean;
+  autoSelectAfterImport?: boolean;
 }
 
 function migratePreferencesTheme(
@@ -93,6 +96,7 @@ function migratePreferencesTheme(
     reduceMotion: stored.reduceMotion,
     tweetCover: stored.tweetCover,
     soundsEnabled: stored.soundFeel === "off" ? false : stored.soundsEnabled,
+    autoSelectAfterImport: stored.autoSelectAfterImport,
   };
 
   if (
@@ -174,32 +178,107 @@ const preferences = z.preprocess(
     reduceMotion: z.enum(["system", "always", "never"]).catch("system"),
     tweetCover: z.enum(["media", "screenshot"]).catch("media"),
     soundsEnabled: z.boolean().catch(true),
+    autoSelectAfterImport: z.boolean().catch(true),
   }),
 );
 
-const sidebar = z.object({
-  showCounts: z.boolean().catch(true),
-  doubleClickBehavior: z.enum(["open", "expand-collapse"]).catch("open"),
-  destinations: z
-    .object({
-      all: z.boolean().catch(true),
-      uncategorized: z.boolean().catch(true),
-      untagged: z.boolean().catch(true),
-      tags: z.boolean().catch(true),
-      trash: z.boolean().catch(true),
-      downloads: z.boolean().catch(true),
-      sources: z.boolean().catch(true),
-    })
-    .catch({
-      all: true,
-      uncategorized: true,
-      untagged: true,
-      tags: true,
-      trash: true,
-      downloads: true,
-      sources: true,
-    }),
-});
+export const SIDEBAR_DESTINATIONS = [
+  "all",
+  "uncategorized",
+  "assistant",
+  "untagged",
+  "recentlyUsed",
+  "tags",
+  "random",
+  "trash",
+  "downloads",
+  "sources",
+] as const;
+
+export type SidebarDestination = (typeof SIDEBAR_DESTINATIONS)[number];
+
+export const SIDEBAR_BADGE_STYLES = ["count", "dot", "none"] as const;
+
+export type SidebarBadgeStyle = (typeof SIDEBAR_BADGE_STYLES)[number];
+
+const SidebarDestinationSchema = z.enum(SIDEBAR_DESTINATIONS);
+const SidebarBadgeStyleSchema = z.enum(SIDEBAR_BADGE_STYLES);
+
+export function normalizeSidebarDestinationOrder(
+  order: readonly SidebarDestination[],
+): SidebarDestination[] {
+  const unique = [...new Set(order)];
+  for (const [defaultIndex, destination] of SIDEBAR_DESTINATIONS.entries()) {
+    if (unique.includes(destination)) continue;
+    let insertionIndex = 0;
+    for (let index = defaultIndex - 1; index >= 0; index -= 1) {
+      const candidate = SIDEBAR_DESTINATIONS[index];
+      if (candidate && unique.includes(candidate)) {
+        insertionIndex = unique.indexOf(candidate) + 1;
+        break;
+      }
+    }
+    unique.splice(insertionIndex, 0, destination);
+  }
+  return unique;
+}
+
+const StoredSidebarSchema = z
+  .object({
+    showCounts: z.boolean().optional().catch(undefined),
+    badgeStyle: SidebarBadgeStyleSchema.optional().catch(undefined),
+  })
+  .loose()
+  .catch({});
+
+const sidebar = z.preprocess(
+  (raw) => {
+    const stored = StoredSidebarSchema.parse(raw);
+    return {
+      ...stored,
+      badgeStyle:
+        stored.badgeStyle ?? (stored.showCounts === false ? "none" : "count"),
+    };
+  },
+  z.object({
+    // Retained so older settings patches keep round-tripping. New UI reads badgeStyle.
+    showCounts: z.boolean().catch(true),
+    badgeStyle: SidebarBadgeStyleSchema.catch("count"),
+    badgeOverrides: z
+      .partialRecord(SidebarDestinationSchema, SidebarBadgeStyleSchema)
+      .catch({}),
+    order: z
+      .array(SidebarDestinationSchema)
+      .catch([...SIDEBAR_DESTINATIONS])
+      .transform(normalizeSidebarDestinationOrder),
+    doubleClickBehavior: z.enum(["open", "expand-collapse"]).catch("open"),
+    destinations: z
+      .object({
+        all: z.boolean().catch(true),
+        uncategorized: z.boolean().catch(true),
+        assistant: z.boolean().catch(true),
+        untagged: z.boolean().catch(true),
+        recentlyUsed: z.boolean().catch(true),
+        tags: z.boolean().catch(true),
+        random: z.boolean().catch(true),
+        trash: z.boolean().catch(true),
+        downloads: z.boolean().catch(true),
+        sources: z.boolean().catch(true),
+      })
+      .catch({
+        all: true,
+        uncategorized: true,
+        assistant: true,
+        untagged: true,
+        recentlyUsed: true,
+        tags: true,
+        random: true,
+        trash: true,
+        downloads: true,
+        sources: true,
+      }),
+  }),
+);
 
 const feedback = z.object({
   sounds: z
@@ -253,10 +332,45 @@ const windowSlice = z.object({
   interfaceZoom: z.number().int().min(50).max(200).catch(100),
 });
 
+const system = z.object({
+  proxyMode: z.enum(["system", "direct", "manual"]).catch("system"),
+  proxyUrl: z.string().catch(""),
+  displayColorSpace: z.enum(["auto", "srgb", "display-p3"]).catch("auto"),
+  hardwareAcceleration: z.boolean().catch(true),
+  vibrancy: z.boolean().catch(false),
+  dockVisibility: z.enum(["automatic", "always"]).catch("automatic"),
+});
+
 const autoImport = z.object({
   enabled: z.boolean().catch(false),
   path: z.string().catch(""),
   mode: z.enum(["copy", "move"]).catch("copy"),
+});
+
+export const ScreenshotIntakeRuleSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().catch("Screenshots"),
+  enabled: z.boolean().catch(true),
+  path: z.string().catch(""),
+  mode: z.enum(["copy", "move"]).catch("copy"),
+  folderId: z.string().nullable().catch(null),
+  tags: z.array(z.string()).catch([]),
+  duplicatePolicy: z.enum(["skip", "import"]).catch("skip"),
+  autoSelect: z.boolean().catch(true),
+  notifications: z.boolean().catch(true),
+});
+
+export const ScreenshotPrefsSchema = z.object({
+  format: z.enum(["png", "jpeg", "webp"]).catch("png"),
+  quality: z.number().int().min(1).max(100).catch(90),
+  shortcutsEnabled: z.boolean().catch(true),
+  askWhereToSave: z.boolean().catch(false),
+  afterSaving: z.enum(["return", "open"]).catch("open"),
+  autoTag: z.boolean().catch(true),
+  copyToClipboard: z.boolean().catch(false),
+  useRetina: z.boolean().catch(true),
+  tool: z.enum(["native", "cleanshot", "shottr", "pond"]).catch("pond"),
+  intakeRules: z.array(ScreenshotIntakeRuleSchema).catch([]),
 });
 
 const quickCapture = z.object({
@@ -274,11 +388,40 @@ const tagPicker = z.object({
   pinned: z.boolean().catch(false),
 });
 
+const search = z.object({
+  scopes: z
+    .object({
+      title: z.boolean().catch(true),
+      description: z.boolean().catch(true),
+      creator: z.boolean().catch(true),
+      tags: z.boolean().catch(true),
+      notes: z.boolean().catch(true),
+      url: z.boolean().catch(true),
+      folder: z.boolean().catch(true),
+      folderDescription: z.boolean().catch(true),
+      extension: z.boolean().catch(true),
+      annotation: z.boolean().catch(true),
+    })
+    .catch({
+      title: true,
+      description: true,
+      creator: true,
+      tags: true,
+      notes: true,
+      url: true,
+      folder: true,
+      folderDescription: true,
+      extension: true,
+      annotation: true,
+    }),
+});
+
 const allTags = z.object({
   layout: z.enum(["list", "grid"]).catch("grid"),
   gridSize: z.enum(["sm", "md", "lg"]).catch("md"),
   showCounts: z.boolean().catch(true),
   sort: z.enum(["name", "count", "recent"]).catch("name"),
+  sortDirection: z.enum(["asc", "desc"]).catch("asc"),
 });
 
 const sourcesView = z.object({
@@ -299,13 +442,6 @@ const updates = z.object({
 
 const localization = z.object({
   locale: LocaleSchema,
-});
-
-const security = z.object({
-  lockOnLaunch: z.boolean().catch(true),
-  lockOnSleep: z.boolean().catch(true),
-  idleMinutes: z.number().int().min(0).max(240).catch(15),
-  biometricUnlock: z.boolean().catch(false),
 });
 
 export const FetchRecurrenceSchema = z
@@ -419,12 +555,10 @@ const agent = z.object({
   visionModelId: z.string().optional(),
   mcpSearch: z.boolean().catch(true),
   mcpOpen: z.boolean().catch(true),
-  mcpActions: z.boolean().catch(true),
   mcpExport: z.boolean().catch(true),
 });
 
 const ai = z.object({
-  nlCompiler: z.boolean().catch(false),
   semanticSearch: z.boolean().catch(false),
   embedModelId: z.string().catch(""),
   enableCaption: z.boolean().catch(false),
@@ -460,6 +594,7 @@ const shortcuts = z.object({
 const PrefsObject = z.object({
   folderRules: z.record(z.string(), FolderRulesSchema).catch({}),
   folderViews: z.record(z.string(), FolderPresentationSchema).catch({}),
+  savedViewViews: z.record(z.string(), SavedViewPresentationSchema).catch({}),
   viewer: ViewerPrefsSchema.catch(ViewerPrefsSchema.parse({})),
   shortcuts: shortcuts.catch(shortcuts.parse({})),
   preferences: preferences.catch(preferences.parse({})),
@@ -467,15 +602,17 @@ const PrefsObject = z.object({
   feedback: feedback.catch(feedback.parse({})),
   trash: trash.catch(trash.parse({})),
   window: windowSlice.catch(windowSlice.parse({})),
+  system: system.catch(system.parse({})),
   quickCapture: quickCapture.catch(quickCapture.parse({})),
   autoImport: autoImport.catch(autoImport.parse({})),
+  screenshots: ScreenshotPrefsSchema.catch(ScreenshotPrefsSchema.parse({})),
   tagPicker: tagPicker.catch(tagPicker.parse({})),
+  search: search.catch(search.parse({})),
   allTags: allTags.catch(allTags.parse({})),
   sourcesView: sourcesView.catch(sourcesView.parse({})),
   api: api.catch(api.parse({})),
   updates: updates.catch(updates.parse({})),
   localization: localization.catch(localization.parse({})),
-  security: security.catch(security.parse({})),
   sync: sync.catch(sync.parse({})),
   storage: storage.catch(storage.parse({})),
   ai: ai.catch(ai.parse({})),

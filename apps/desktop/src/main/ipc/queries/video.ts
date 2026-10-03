@@ -13,7 +13,8 @@ import { persistSaveThumbnail } from "../../core/save-thumbnail";
 import {
   materializeLibraryMediaForExternalUse,
   withDecryptedLibraryMediaPath,
-} from "../../core/security/library-media-storage";
+} from "../../core/storage/library-media-storage";
+import { ensureVideoPreviewProxy } from "../../core/video-preview-proxy";
 import { getDb } from "../../db";
 import { extractFrameAt, extractSampledFrames } from "../../lib/ffmpeg-frame";
 import { itemFile } from "../../paths";
@@ -50,6 +51,11 @@ const SampleFramesParams = z.object({
 });
 
 export const videoQueries = {
+  "video.preparePreview": query(
+    z.object({ src: StringParam }),
+    async ({ src }) => ensureVideoPreviewProxy(src),
+  ),
+
   "video.sampleFrames": query(SampleFramesParams, async (params) => {
     const resolved = resolvePondItemPath(params.src);
     if (!resolved) return { ok: false, frames: [] };

@@ -8,16 +8,8 @@
   background: var(--ds-gray-1);
 }
 
-.count {
-  padding: 2px 4px;
-}
-
-.query {
-  padding: 2px 4px;
-}
-
 .field {
-  width: min(18rem, 40vw);
+  width: min(18rem, 50cqw);
 }
 
 .status {
@@ -33,7 +25,7 @@
 .list {
   flex: 1;
   min-height: 0;
-  padding: 52px 0 0;
+  padding: 0;
   margin: 0;
   overflow: auto;
   list-style: none;

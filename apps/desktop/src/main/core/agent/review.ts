@@ -46,7 +46,7 @@ import { createView, listViews, updateView } from "../saved-views";
 import {
   materializeLibraryMediaForExternalUse,
   withDecryptedLibraryMediaPath,
-} from "../security/library-media-storage";
+} from "../storage/library-media-storage";
 import { syncAccount } from "../sync";
 import { createTag, mergeTags, renameTag, setSaveTags } from "../tags";
 import { applyPondOperation, summarizeOperationResult } from "./operations";
@@ -68,23 +68,36 @@ function sameValue(
 }
 
 function commentTexts(raw: ImageComment[] | null): string[] {
-  return (raw ?? []).map((entry) => entry.text).filter((text) => text.trim());
+  return (raw ?? [])
+    .filter((entry) => entry.resolvedAt == null)
+    .map((entry) => entry.text)
+    .filter((text) => text.trim());
 }
 
 function toComments(
   texts: string[],
   previous: ImageComment[] | null,
 ): ImageComment[] {
-  const existing = previous ?? [];
-  return texts.map((text, index) => ({
-    id: existing[index]?.id ?? ulid(),
-    x: existing[index]?.x ?? 0,
-    y: existing[index]?.y ?? 0,
-    w: existing[index]?.w ?? 1,
-    h: existing[index]?.h ?? 1,
-    text,
-    createdAt: existing[index]?.createdAt ?? Date.now(),
-  }));
+  const resolved = (previous ?? []).filter(
+    (comment) => comment.resolvedAt != null,
+  );
+  const existing = (previous ?? []).filter(
+    (comment) => comment.resolvedAt == null,
+  );
+  return [
+    ...texts.map((text, index) => ({
+      ...(existing[index] ?? {
+        id: ulid(),
+        x: 0,
+        y: 0,
+        w: 1,
+        h: 1,
+        createdAt: Date.now(),
+      }),
+      text,
+    })),
+    ...resolved,
+  ];
 }
 
 interface ReviewSave

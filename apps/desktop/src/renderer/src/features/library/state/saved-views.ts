@@ -18,8 +18,23 @@ import {
 } from "@/features/library/state/view-store";
 import { descendantFolderIds } from "@/features/saves/lib/nav-filter";
 
-const store = new Store<{ views: SavedView[]; loaded: boolean }>({
+export interface SavedViewEditorRequest {
+  token: number;
+  kind: "smart_folder" | "group";
+  parentId: string | null;
+}
+
+interface SavedViewsState {
+  views: SavedView[];
+  editingId: string | null;
+  editorRequest: SavedViewEditorRequest;
+  loaded: boolean;
+}
+
+const store = new Store<SavedViewsState>({
   views: [],
+  editingId: null,
+  editorRequest: { token: 0, kind: "smart_folder", parentId: null },
   loaded: false,
 });
 
@@ -58,9 +73,40 @@ export const savedViews = {
   snapshot(): SavedView[] {
     return store.state.views;
   },
+  startEditing(id: string): void {
+    store.setState((state) => ({ ...state, editingId: id }));
+  },
+  finishEditing(id?: string): void {
+    store.setState((state) => ({
+      ...state,
+      editingId: id == null || state.editingId === id ? null : state.editingId,
+    }));
+  },
+  openEditor(input: {
+    kind: "smart_folder" | "group";
+    parentId?: string | null;
+  }): void {
+    store.setState((state) => ({
+      ...state,
+      editorRequest: {
+        token: state.editorRequest.token + 1,
+        kind: input.kind,
+        parentId: input.parentId ?? null,
+      },
+    }));
+  },
   async refresh(): Promise<void> {
     const views = await window.pond.query("savedViews.list", {});
-    store.setState(() => ({ views: views ?? [], loaded: true }));
+    store.setState((state) => ({
+      ...state,
+      views: views ?? [],
+      editingId:
+        state.editingId &&
+        (views ?? []).some((view) => view.id === state.editingId)
+          ? state.editingId
+          : null,
+      loaded: true,
+    }));
     const { activeViewId } = getViewState();
     if (!activeViewId) return;
     const active = store.state.views.find((view) => view.id === activeViewId);
@@ -118,6 +164,26 @@ export const savedViews = {
     if (!result.ok) throw new Error("Could not update this smart folder item.");
     await savedViews.refresh();
   },
+  async duplicate(id: string): Promise<SavedView> {
+    const view = store.state.views.find((entry) => entry.id === id);
+    if (!view) throw new Error("This smart folder item no longer exists.");
+    const result = await window.pond.query("savedViews.create", {
+      name: `${view.name} Copy`,
+      kind: view.kind,
+      parentId: view.parentId,
+      question: view.question,
+      query: view.query,
+      sortKey: view.sortKey,
+      sortDir: view.sortDir,
+      layout: view.layout,
+    });
+    if (!result.ok || !result.id)
+      throw new Error("Could not duplicate this smart folder item.");
+    await savedViews.refresh();
+    const copy = store.state.views.find((entry) => entry.id === result.id);
+    if (!copy) throw new Error("The duplicate could not be loaded.");
+    return copy;
+  },
   async edit(id: string, name: string, query: Query): Promise<void> {
     const active = getViewState().activeViewId === id;
     const result = await window.pond.query("savedViews.update", {
@@ -150,6 +216,14 @@ export const savedViews = {
 
 export function useSavedViews(): SavedView[] {
   return useSelector(store, (s) => s.views);
+}
+
+export function useEditingSavedViewId(): string | null {
+  return useSelector(store, (s) => s.editingId);
+}
+
+export function useSavedViewEditorRequest(): SavedViewEditorRequest {
+  return useSelector(store, (s) => s.editorRequest);
 }
 
 export function useHydrateSavedViews(): void {

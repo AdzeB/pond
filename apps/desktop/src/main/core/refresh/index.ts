@@ -7,6 +7,7 @@ import { itemFile } from "../../paths";
 import { persistSave } from "../persist-save";
 import { resetTasksForSave } from "../pipeline/enqueue";
 import { withInteractivePriority } from "../pipeline/priority";
+import { createQueueGeneration } from "../pipeline/queue-generations";
 import { kickReconciler } from "../pipeline/reconciler-client";
 
 export type RefreshOutcome =
@@ -31,6 +32,11 @@ export async function refreshSave(
   if (!current.url) return { ok: false, reason: "no_url" };
 
   try {
+    const generationId = await createQueueGeneration({
+      kind: "refresh",
+      source: current.source,
+      scope: { saveIds: [saveId], overwrite: opts.overwrite === true },
+    });
     if (opts.overwrite) {
       const existing = current.files ?? [];
       await Promise.all(
@@ -50,7 +56,7 @@ export async function refreshSave(
         })
         .where(and(eq(tasks.saveId, saveId), eq(tasks.op, "harvest_metadata")))
         .run();
-      await resetTasksForSave(saveId, "user:refresh-overwrite");
+      await resetTasksForSave(saveId, "user:refresh-overwrite", generationId);
       await persistSave(
         saveId,
         {
@@ -75,6 +81,7 @@ export async function refreshSave(
         payload: withInteractivePriority({ force: true }),
         status: "pending",
         attempts: 0,
+        generationId,
         lastError: null,
         nextRunAt: now,
         updatedAt: now,

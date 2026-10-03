@@ -5,6 +5,9 @@
     "apps/desktop": {
       "entry": [
         "src/renderer/src/routes/**/*.{ts,tsx}",
+        "src/renderer/src/dev/shadow-gallery/index.tsx",
+        "src/renderer/src/dev/harvester/index.tsx",
+        "src/renderer/src/harvester.tsx",
         "scripts/*.{mjs,cjs,ts}",
         "src/main/core/media-warm/service.ts",
         "src/main/core/enrichment-sidecar.ts"

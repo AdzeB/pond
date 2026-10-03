@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import defaultAppIcon from "@/generated/app-icon-previews/aqua.png";
-import { EagleImport } from "./eagle-import";
 import styles from "./styles.module.css";
 
 const LibraryInfoSchema = z.object({
@@ -89,7 +88,6 @@ export function LibrarySettings() {
           </Settings.ItemControl>
         </Settings.Item>
       ) : null}
-      <EagleImport />
     </Settings.List>
   );
 }

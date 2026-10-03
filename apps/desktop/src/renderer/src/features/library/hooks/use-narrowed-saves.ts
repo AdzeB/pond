@@ -14,6 +14,7 @@ import {
   useEffectiveFilterQuery,
   useIncludeSubfolders,
   useRandomSeed,
+  useSearchScope,
   useSearchText,
   useSortDir,
   useSortKey,
@@ -24,23 +25,30 @@ import type { SaveListMode } from "@/features/saves/lib/list";
 import { descendantFolderIds } from "@/features/saves/lib/nav-filter";
 import { useRecents } from "@/features/saves/state/recents";
 import type { Save } from "@/features/saves/types";
+import { keywordScopesFromPrefs } from "@/features/search/components/bar/search-scope-menu";
 import { useRetrievalOverlay } from "@/features/search/hooks/use-retrieval-overlay";
 import { usePrefs } from "@/features/settings/state/prefs";
+
+/** Long enough to span a pause between keystrokes, so results swap once typing stops. */
+const KEYWORD_DEBOUNCE_MS = 250;
 
 export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
   const saves = useSaves();
   const recents = useRecents();
   const query = useEffectiveFilterQuery();
   const keywords = useSearchText();
+  const searchScope = useSearchScope();
   const sortKey = useSortKey();
   const sortDir = useSortDir();
   const randomSeed = useRandomSeed();
   const [folderViews, , viewsReady] = usePrefs("folderViews");
+  const [searchPrefs] = usePrefs("search");
   const includeSubfolders = useIncludeSubfolders();
   const nav = useLibraryNav();
   const memberships = useFolderMemberships();
   const folders = useFolders();
   const folderId = nav.kind === "folder" ? nav.id : null;
+  const searchEverywhere = searchScope === "all" && keywords.trim().length > 0;
   useEffect(() => {
     if (viewsReady)
       activateFolderPresentation(
@@ -52,31 +60,36 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
     () => ({
       query,
       keywords,
+      keywordScopes: keywordScopesFromPrefs(searchPrefs.scopes),
       sortKey,
       randomSeed,
-      orderFolderId: folderId ?? undefined,
+      orderFolderId: searchEverywhere ? undefined : (folderId ?? undefined),
       sortDir: sortDir === "asc" ? "asc" : "desc",
       scope: {
         deletedOnly: mode === "trash",
-        source: sourceFilter || undefined,
-        untagged: mode === "untagged",
-        uncategorized: nav.kind === "uncategorized",
+        source: searchEverywhere ? undefined : sourceFilter || undefined,
+        untagged: !searchEverywhere && mode === "untagged",
+        uncategorized: !searchEverywhere && nav.kind === "uncategorized",
         folderIds:
-          nav.kind === "folder"
+          !searchEverywhere && nav.kind === "folder"
             ? [
                 ...(includeSubfolders
                   ? descendantFolderIds(nav.id, folders)
                   : [nav.id]),
               ]
             : undefined,
-        tag: nav.kind === "tag" ? nav.name : undefined,
+        tag: !searchEverywhere && nav.kind === "tag" ? nav.name : undefined,
         saveIds:
-          mode === "recents" ? recents.map((entry) => entry.saveId) : undefined,
+          !searchEverywhere && mode === "recents"
+            ? recents.map((entry) => entry.saveId)
+            : undefined,
       },
     }),
     [
       query,
       keywords,
+      searchPrefs.scopes,
+      searchEverywhere,
       sortKey,
       randomSeed,
       folderId,
@@ -110,7 +123,7 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
       () => {
         void session.load();
       },
-      request.keywords?.trim() ? 100 : 0,
+      request.keywords?.trim() ? KEYWORD_DEBOUNCE_MS : 0,
     );
     return () => {
       clearTimeout(timer);

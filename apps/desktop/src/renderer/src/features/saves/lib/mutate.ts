@@ -19,6 +19,7 @@ export type SaveEdit = Partial<
     | "createdAt"
     | "deletedAt"
     | "publishedAt"
+    | "takenAt"
     | "ingestStartedAt"
     | "ingestCompletedAt"
   >
@@ -37,6 +38,7 @@ function toNewSave(save: Save): NewSave {
     createdAt: new Date(save.createdAt),
     deletedAt: save.deletedAt === null ? null : new Date(save.deletedAt),
     publishedAt: save.publishedAt == null ? null : new Date(save.publishedAt),
+    takenAt: save.takenAt == null ? null : new Date(save.takenAt),
     ingestStartedAt:
       save.ingestStartedAt == null ? null : new Date(save.ingestStartedAt),
     ingestCompletedAt:
@@ -151,6 +153,10 @@ export async function bulkMutation(
       pool.upsert({ ...save, deletedAt: null });
     else if (operation.kind === "rating" && !save.deletedAt)
       pool.upsert({ ...save, rating: operation.rating || null });
+    else if (operation.kind === "notes")
+      pool.upsert({ ...save, notes: operation.notes });
+    else if (operation.kind === "tags" && operation.mode === "replace")
+      pool.upsert({ ...save, tags: operation.tags });
   }
   try {
     const result = await window.pond.query("saves.bulkEdit", {

@@ -20,16 +20,16 @@ export function ChatContext({
   useSourceCovers([...attached, ...previous].map((save) => save.id));
   return (
     <Popover.Root>
-      <Tooltip label="Context" side="bottom">
+      <Tooltip label="Library Access" side="top">
         <Popover.Trigger
-          render={<Button icon size="sm" variant="ghost" />}
-          aria-label="Context"
+          render={<Button icon size="xs" variant="ghost" />}
+          aria-label="Library Access"
         >
           <IconLayersOutline18 />
         </Popover.Trigger>
       </Tooltip>
       <Popover.Portal>
-        <Popover.Positioner align="end" sideOffset={6}>
+        <Popover.Positioner side="top" align="start" sideOffset={6}>
           <Popover.Popup
             className={styles.popup}
             aria-label="Chat Context"

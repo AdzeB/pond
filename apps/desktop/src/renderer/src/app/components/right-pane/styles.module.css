@@ -4,9 +4,9 @@
   width: 100%;
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
+  overflow: clip;
+  overflow-clip-margin: var(--window-inset, 8px);
   border-radius: var(--window-radius);
-  box-shadow: var(--ds-shadow-1);
 }
 
 .panel {
@@ -19,6 +19,7 @@
   overflow: hidden;
   background: var(--window-background-secondary);
   border-radius: var(--window-radius);
+  box-shadow: var(--ds-shadow-xs);
 
   &:not([data-active]) {
     pointer-events: none;

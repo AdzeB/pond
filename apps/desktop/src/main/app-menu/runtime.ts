@@ -1,7 +1,11 @@
 import type { Locale } from "@pond/schema";
 import { app, BrowserWindow, shell, type WebContents } from "electron";
 import log from "electron-log/main.js";
-import { IPC, type MenuActionId } from "../../shared/constants";
+import {
+  IPC,
+  type MenuActionEvent,
+  type MenuActionId,
+} from "../../shared/constants";
 import {
   createCopyTranslator,
   createTranslator,
@@ -11,7 +15,9 @@ import {
   type ShortcutId,
   type ShortcutPreferences,
 } from "../../shared/shortcuts";
+import { openHarvesterWindow } from "../core/harvester-window";
 import { reconcileLibrary } from "../core/scan";
+import { openSettingsWindow } from "../core/settings-window";
 import { menuAccelerator } from "../lib/menu-accelerator";
 import { libraryRoot } from "../paths";
 import type { AppMenuContext } from "./types";
@@ -36,12 +42,48 @@ function withFocusedWebContents(
 export function createAppMenuContext(deps: AppMenuRuntimeDeps): AppMenuContext {
   const bindings = resolveShortcuts(deps.shortcuts);
   const accelerator = (id: ShortcutId) => menuAccelerator(bindings[id]);
-  const navTo = (path: string) => () => {
+  const navTo = (path: string) => async () => {
+    if (path === "/settings" || path.startsWith("/settings/")) {
+      await openSettingsWindow({
+        section: path.slice("/settings/".length) || undefined,
+      });
+      return;
+    }
+    if (path === "/sources" || path === "/downloads") {
+      await openHarvesterWindow({
+        section: path === "/downloads" ? "downloads" : "sources",
+      });
+      return;
+    }
+    await deps.openLibraryWindow();
     deps.focusedOrMain()?.webContents.send(IPC.nav, path);
   };
-  const sendMenuAction = (id: MenuActionId) => () => {
-    deps.focusedOrMain()?.webContents.send(IPC.menuAction, id);
-  };
+  const sendMenuAction: AppMenuContext["sendMenuAction"] =
+    (id: MenuActionId) => async (_item, _window, event) => {
+      if (
+        id === "capture.area" ||
+        id === "capture.window" ||
+        id === "capture.screen"
+      ) {
+        const { beginScreenshot } = await import("../core/screenshot-window");
+        const mode =
+          id === "capture.area"
+            ? "area"
+            : id === "capture.window"
+              ? "window"
+              : "screen";
+        await beginScreenshot(mode).catch((error) =>
+          log.warn("[pond menu] capture failed", error),
+        );
+        return;
+      }
+      await deps.openLibraryWindow();
+      const action: MenuActionEvent = {
+        id,
+        source: event.triggeredByAccelerator ? "accelerator" : "menu",
+      };
+      deps.focusedOrMain()?.webContents.send(IPC.menuAction, action);
+    };
 
   return {
     accelerator,
@@ -74,6 +116,9 @@ export function createAppMenuContext(deps: AppMenuRuntimeDeps): AppMenuContext {
       void reconcileLibrary().catch((error) =>
         log.warn("[pond menu] rescan failed", error),
       );
+    },
+    reloadLibrary: () => {
+      deps.focusedOrMain()?.webContents.reload();
     },
     revealLibrary: () => {
       void shell.openPath(libraryRoot());

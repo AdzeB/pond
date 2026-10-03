@@ -123,6 +123,8 @@ continuity another way rather than adding decorative motion.
   motion to be legible.
 - **Don't** add motion for its own sake, or animate a component that's already on screen
   and staying put.
+- **Don't** add a footer Cancel button to a dialog that already has a header close
+  control. Reserve cancel actions for stopping work that is already in progress.
 - **Don't** use full-screen/route swaps for transient actions that belong in an overlay.
 - **Don't** spend high-intensity delight on high-frequency interactions.
 

@@ -1,6 +1,7 @@
 import {
+  IconFilterPlusOutline18,
   IconImageSparkleOutline18,
-  IconPlusOutline18,
+  IconRefreshOutline18,
   IconTextToImageOutline18,
 } from "@pond/icons/outline/18";
 import { FIELD_META } from "@pond/schema/filters/meta";
@@ -129,7 +130,7 @@ export function CustomizeFilters({
           variant="ghost"
           aria-label="Customize Filters"
         >
-          <IconPlusOutline18 />
+          <IconFilterPlusOutline18 />
         </Menu.Trigger>
       </Tooltip>
       <Menu.Portal>
@@ -173,6 +174,9 @@ export function CustomizeFilters({
             </Menu.List>
             <Menu.Separator />
             <Menu.Item onClick={() => filterToolbar.restoreDefaults()}>
+              <Menu.ItemIcon>
+                <IconRefreshOutline18 />
+              </Menu.ItemIcon>
               <Menu.ItemLabel>Reset Filters</Menu.ItemLabel>
             </Menu.Item>
           </FilterPopup>

@@ -73,6 +73,7 @@ it("reveals chips and keeps a chosen filter after the menu closes", async () => 
   expect(document.getElementById("table-filters")).toBeNull();
   await act(async () => button("Filter").click());
   expect(document.getElementById("table-filters")).not.toBeNull();
+  expect(button("Status").getAttribute("data-variant")).toBe("ghost");
   await act(async () => button("Status").click());
   const failed = [
     ...document.querySelectorAll('[role="menuitemcheckbox"]'),

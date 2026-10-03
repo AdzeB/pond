@@ -54,6 +54,7 @@ export const IPC = {
   storageStatus: "pond:storage-status",
   editUndoRequested: "pond:edit-undo-requested",
   editRedoRequested: "pond:edit-redo-requested",
+  shortcutAction: "pond:shortcut-action",
   menuAction: "pond:menu-action",
   pondId: "pond:pond-id",
   menuRecents: "pond:menu-recents",
@@ -66,11 +67,11 @@ export const IPC = {
   agentFilter: "pond:agent-filter",
   agentCite: "pond:agent-cite",
   agentOverlay: "pond:agent-overlay",
-  securityState: "pond:security-state",
   previewOpen: "pond:preview-open",
   previewConfigure: "pond:preview-configure",
   previewNavigate: "pond:preview-navigate",
   previewNeighborRequest: "pond:preview-neighbor-request",
+  previewFileAction: "pond:preview-file-action",
   previewClose: "pond:preview-close",
   previewState: "pond:preview-state",
 } as const;
@@ -86,9 +87,18 @@ export type BlankDocumentMenuActionId =
 export type ConnectSourceMenuActionId = `library.connect-${ExternalSource}`;
 export type WatchSourceMenuActionId = `library.watch-${ExternalSource}`;
 
+export type FindFilterMenuActionId = `find.filter.${string}`;
+
+export type FindReverseImageMenuActionId =
+  `find.reverse-image.${"google-lens" | "yandex" | "bing" | "tineye" | "saucenao" | "baidu" | "sogou"}`;
+
 export type MenuActionId =
   | "history.back"
   | "history.forward"
+  | "history.clear"
+  | "selection.select-all"
+  | "selection.clear"
+  | "selection.invert"
   | "view.inspector.toggle"
   | "view.layout.cycle"
   | "view.zoom-in"
@@ -111,7 +121,6 @@ export type MenuActionId =
   | "theme.light"
   | "theme.dark"
   | "theme.system"
-  | "security.lock"
   | "refresh.all"
   | "refresh.cancel"
   | "save.reveal"
@@ -120,6 +129,11 @@ export type MenuActionId =
   | "save.copy-url"
   | "save.copy-media"
   | "save.copy-id"
+  | "save.copy-name"
+  | "save.copy-file-path"
+  | "save.copy-pond-link"
+  | "save.copy-tags"
+  | "save.paste-tags"
   | "save.rename"
   | "save.add-tag"
   | "save.refresh"
@@ -128,6 +142,12 @@ export type MenuActionId =
   | "save.delete-forever"
   | "save.bulk-trash"
   | "save.bulk-refresh"
+  | "save.export-files"
+  | "save.export-converted"
+  | "save.export-eagle-package"
+  | "save.export-pond-package"
+  | "save.export-csv"
+  | "save.remove-current-folder"
   | "trash.empty"
   | "trash.restore-all"
   | "library.move"
@@ -139,8 +159,12 @@ export type MenuActionId =
   | "library.connect"
   | "library.new-folder"
   | "library.new-smart-folder"
+  | "library.new-smart-folder-group"
   | "library.new-note"
   | "library.capture-screenshot"
+  | "capture.area"
+  | "capture.window"
+  | "capture.screen"
   | "library.new-tag"
   | "library.new-tag-group"
   | "library.import-files"
@@ -157,13 +181,44 @@ export type MenuActionId =
   | "library.connect-pinterest"
   | BlankDocumentMenuActionId
   | "library.auto-import-folder"
-  | "library.auto-import-settings"
   | "library.find-duplicates-all"
   | "library.find-duplicates-list"
   | "library.find-duplicates-selected"
   | "library.rescan"
   | "library.verify-integrity"
+  | "find.search"
+  | "find.search-all"
+  | "find.go-to-folder"
+  | "find.add-to-folders"
+  | "find.add-to-last-folder"
+  | "find.filters.toggle"
+  | "find.filters.reset"
+  | "find.visual-search"
+  | FindFilterMenuActionId
+  | FindReverseImageMenuActionId
+  | "organize.rating.0"
+  | "organize.rating.1"
+  | "organize.rating.2"
+  | "organize.rating.3"
+  | "organize.rating.4"
+  | "organize.rating.5"
+  | "organize.add-to-folders"
+  | "organize.add-to-last-folder"
+  | "organize.add-tag"
+  | "organize.clear-tags"
+  | "organize.copy-tags"
+  | "organize.paste-tags"
   | "view.sidebar.toggle"
   | "view.agent.toggle"
   | "view.grayscale"
-  | "view.navigator";
+  | "view.random"
+  | "view.subfolders.toggle"
+  | "help.shortcuts"
+  | "help.export-debug-report";
+
+export type MenuActionSource = "accelerator" | "menu" | "automation";
+
+export interface MenuActionEvent {
+  id: MenuActionId;
+  source: MenuActionSource;
+}

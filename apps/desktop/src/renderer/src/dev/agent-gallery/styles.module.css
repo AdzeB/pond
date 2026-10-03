@@ -1,0 +1,255 @@
+:global(html),
+:global(body),
+:global(#root) {
+  min-height: 100%;
+}
+
+:global(html) {
+  overflow: auto;
+  background: var(--ds-gray-2);
+}
+
+:global(html[data-theme="light"]) {
+  --ds-bg-l: 1;
+  --ds-fg-l: 0.25;
+
+  color-scheme: light;
+}
+
+:global(html[data-theme="dark"]) {
+  --ds-bg-l: 0.14;
+  --ds-fg-l: 0.94;
+
+  color-scheme: dark;
+}
+
+:global(body) {
+  overflow: visible;
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-2);
+}
+
+.page {
+  width: min(1280px, 100%);
+  min-height: 100vh;
+  padding: 40px;
+  margin-inline: auto;
+}
+
+.hero {
+  display: flex;
+  gap: 32px;
+  align-items: end;
+  justify-content: space-between;
+  padding-bottom: 24px;
+  border-bottom: var(--ds-border-width) solid var(--ds-gray-5);
+}
+
+.hero > div:first-child {
+  max-width: 620px;
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-xl);
+  color: var(--ds-gray-9);
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: var(--ds-text-xl);
+  color: var(--ds-gray-12);
+}
+
+.hero p {
+  margin: 10px 0 0;
+  font-size: var(--ds-text-lg);
+  line-height: 1.5;
+  color: var(--ds-gray-10);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: end;
+  justify-content: flex-end;
+}
+
+.control {
+  display: grid;
+  gap: 6px;
+}
+
+.control > span {
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-lg);
+  color: var(--ds-gray-9);
+}
+
+.control > div {
+  display: flex;
+  gap: 4px;
+}
+
+.event {
+  min-height: 20px;
+  margin: 16px 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-10);
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.specimen {
+  min-width: 0;
+  overflow: hidden;
+  background: var(--ds-gray-1);
+  border: var(--ds-border-width) solid var(--ds-gray-5);
+  border-radius: var(--ds-radius-xl);
+}
+
+.specimen[data-wide] {
+  grid-column: 1 / -1;
+}
+
+.specimen-header {
+  padding: 16px 18px;
+  background: var(--ds-gray-2);
+  border-bottom: var(--ds-border-width) solid var(--ds-gray-4);
+}
+
+.specimen-header h2 {
+  margin: 0;
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-xl);
+  color: var(--ds-gray-12);
+}
+
+.specimen-header p {
+  margin: 4px 0 0;
+  font-size: var(--ds-text-sm);
+  line-height: 1.45;
+  color: var(--ds-gray-9);
+}
+
+.surface {
+  min-width: 0;
+  padding: 20px;
+}
+
+.frame {
+  width: 100%;
+  min-width: 0;
+  margin-inline: auto;
+  transition: max-width var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.frame[data-width="pane"] {
+  max-width: 380px;
+}
+
+.frame[data-width="page"] {
+  max-width: 720px;
+}
+
+.thumbnails {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.thumbnails > div {
+  display: grid;
+  gap: 10px;
+  place-items: center;
+  min-height: 140px;
+  padding: 14px;
+  background: var(--ds-gray-2);
+  border-radius: var(--ds-radius-lg);
+}
+
+.thumbnails > div > span:last-child {
+  font-size: var(--ds-text-xs);
+  color: var(--ds-gray-9);
+}
+
+.visual > :first-child {
+  flex-basis: 100px;
+  width: 100px;
+  height: 100px;
+}
+
+.stack {
+  display: grid;
+  gap: 14px;
+}
+
+.labels {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.labels > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: baseline;
+  min-width: 0;
+  padding-block: 10px;
+  border-bottom: var(--ds-border-width) solid var(--ds-gray-4);
+}
+
+.labels > div:last-child {
+  border-bottom: 0;
+}
+
+.labels dt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.labels dd {
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-9);
+}
+
+@media (max-width: 800px) {
+  .page {
+    padding: 24px;
+  }
+
+  .hero {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  .controls {
+    justify-content: flex-start;
+  }
+
+  .gallery {
+    grid-template-columns: 1fr;
+  }
+
+  .specimen[data-wide] {
+    grid-column: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame {
+    transition: none;
+  }
+}

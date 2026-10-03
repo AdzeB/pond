@@ -21,6 +21,7 @@ export interface SavesMutationQueryInputs {
   "saves.deactivateFont": SavesIdInput;
   "saves.setAudioAnalysis": { id: string; bpm: number };
   "saves.setCustomThumbnail": SavesIdInput;
+  "saves.setThumbnailFromClipboard": SavesIdInput;
   "saves.setGifThumbnail": {
     id: string;
     src: string;
@@ -30,6 +31,12 @@ export interface SavesMutationQueryInputs {
   "saves.replaceFile": SavesIdInput;
   "saves.removeCustomThumbnail": SavesIdInput;
   "saves.backfillColors": EmptyInput;
+  "saves.backfillMetadata": EmptyInput;
+  "saves.reanalyzeColors": SavesIdInput;
+  "saves.setPrimaryColor": { id: string; color: string | null };
+  "saves.convertTextEncoding": SavesIdInput & { fileIndex: number };
+  "saves.exportDotLottie": SavesIdInput & { fileIndex: number };
+  "saves.regeneratePoster": SavesIdInput;
   "saves.findDuplicates": { visualDistance?: number };
 }
 
@@ -53,11 +60,18 @@ export interface SavesMutationQueryResults {
   "saves.deactivateFont": OkResult & { error?: string };
   "saves.setAudioAnalysis": OkResult;
   "saves.setCustomThumbnail": OkResult & { canceled?: boolean };
+  "saves.setThumbnailFromClipboard": OkResult & { error?: string };
   "saves.setGifThumbnail": OkResult & { error?: string };
   "saves.loadSubtitles": OkResult & { canceled?: boolean; error?: string };
   "saves.replaceFile": OkResult & { canceled?: boolean; error?: string };
   "saves.removeCustomThumbnail": OkResult;
   "saves.backfillColors": OkResult & { updated: number };
+  "saves.backfillMetadata": OkResult & { updated: number };
+  "saves.reanalyzeColors": OkResult & { updated: boolean };
+  "saves.setPrimaryColor": OkResult;
+  "saves.convertTextEncoding": OkResult & { updated: boolean };
+  "saves.exportDotLottie": OkResult & { canceled?: boolean; error?: string };
+  "saves.regeneratePoster": OkResult;
   "saves.findDuplicates": {
     groups: { kind: "exact" | "similar"; ids: string[] }[];
     visualIndexed: number;

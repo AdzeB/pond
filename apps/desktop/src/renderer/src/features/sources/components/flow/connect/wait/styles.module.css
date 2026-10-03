@@ -19,7 +19,7 @@
 .status {
   margin: 0;
   font-size: 16px;
-  font-weight: var(--ds-weight-semibold);
+  font-weight: var(--ds-weight-xl);
   line-height: 22px;
   color: var(--ds-gray-12);
   letter-spacing: -0.3px;
@@ -58,7 +58,7 @@
   color: white;
   background: var(--ds-gray-1);
   border-radius: 50%;
-  box-shadow: var(--ds-shadow-1);
+  box-shadow: var(--ds-shadow-xs);
   transition: background-color var(--ds-duration-medium)
     var(--ds-easing-standard);
 }

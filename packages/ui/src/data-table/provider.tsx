@@ -15,6 +15,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
   useCallback,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -47,6 +48,11 @@ function compareValues(a: SortValue, b: SortValue, sort: SortKind): number {
   return an === bn ? 0 : an > bn ? 1 : -1;
 }
 
+export interface DataTableSort {
+  id: string;
+  desc: boolean;
+}
+
 export interface DataTableProviderProps<T extends RowData> {
   data: T[];
   columns: TableColumn<T>[];
@@ -56,6 +62,10 @@ export interface DataTableProviderProps<T extends RowData> {
   onSelectionChange?: (ids: string[]) => void;
   selectionCheckboxes?: boolean;
   defaultSort?: { id: string; desc: boolean };
+  sorting?: DataTableSort | null;
+  onSortingChange?: (sorting: DataTableSort | null) => void;
+  columnOrder?: string[];
+  onColumnOrderChange?: (order: string[]) => void;
   expandedIds?: string[];
   onToggleExpand?: (id: string, next: boolean) => void;
   height?: number;
@@ -76,6 +86,10 @@ export function DataTableProvider<T extends RowData>({
   onSelectionChange,
   selectionCheckboxes = true,
   defaultSort,
+  sorting: sortingProp,
+  onSortingChange,
+  columnOrder: columnOrderProp,
+  onColumnOrderChange,
   expandedIds,
   onToggleExpand,
   height,
@@ -91,15 +105,54 @@ export function DataTableProvider<T extends RowData>({
   const clickSelects = selectOnClick ?? !selectionCheckboxes;
 
   const [selectionStore] = useState(
-    () => new Store<SelectionState>({ selectedIds: new Set<string>() }),
+    () =>
+      new Store<SelectionState>({
+        selectedIds: new Set<string>(),
+        cursorId: null,
+      }),
   );
 
-  const [sorting, setSorting] = useState<SortingState>(
+  const gridRef = useRef<HTMLDivElement>(null);
+  const revealRow = useRef<((id: string) => void) | null>(null);
+  const gridId = useId();
+  const rowElementId = useCallback(
+    (id: string) => `${gridId}-row-${encodeURIComponent(id)}`,
+    [gridId],
+  );
+
+  const [uncontrolledSorting, setUncontrolledSorting] = useState<SortingState>(
     defaultSort ? [{ id: defaultSort.id, desc: defaultSort.desc }] : [],
+  );
+  const onSortingChangeRef = useRef(onSortingChange);
+  onSortingChangeRef.current = onSortingChange;
+  const controlledSorting = useMemo<SortingState>(
+    () => (sortingProp ? [{ id: sortingProp.id, desc: sortingProp.desc }] : []),
+    [sortingProp],
+  );
+  const sorting = onSortingChange ? controlledSorting : uncontrolledSorting;
+  const sortingRef = useRef(sorting);
+  sortingRef.current = sorting;
+  const commitSorting = useCallback((next: SortingState) => {
+    const handler = onSortingChangeRef.current;
+    if (handler) {
+      const current = next[0];
+      handler(current ? { id: current.id, desc: current.desc } : null);
+      return;
+    }
+    setUncontrolledSorting(next);
+  }, []);
+  const handleSortingChange = useCallback(
+    (updater: SortingState | ((prev: SortingState) => SortingState)) => {
+      commitSorting(
+        typeof updater === "function" ? updater(sortingRef.current) : updater,
+      );
+    },
+    [commitSorting],
   );
   const [internalExpanded, setInternalExpanded] = useState<ExpandedState>({});
   const [columnSizing, setColumnSizing] = useState<Record<string, number>>({});
-  const [columnOrder, setColumnOrder] = useState<string[]>([]);
+  const [uncontrolledOrder, setUncontrolledOrder] = useState<string[]>([]);
+  const columnOrder = columnOrderProp ?? uncontrolledOrder;
 
   const expanded = useMemo<ExpandedState>(() => {
     if (!expandedIds) return internalExpanded;
@@ -131,7 +184,7 @@ export function DataTableProvider<T extends RowData>({
     state: { sorting, expanded },
     getRowId: (row) => getRowId(row),
     getSubRows: getSubRows ? (row) => getSubRows(row) : undefined,
-    onSortingChange: setSorting,
+    onSortingChange: handleSortingChange,
     onExpandedChange: setInternalExpanded,
     enableSortingRemoval: false,
   });
@@ -169,6 +222,11 @@ export function DataTableProvider<T extends RowData>({
       ...(rowChildrenRef.current.get(id) ?? []),
     ];
 
+    const focusRow = (id: string) => {
+      selectionStore.setState((s) => ({ ...s, cursorId: id }));
+      gridRef.current?.focus({ preventScroll: true });
+    };
+
     const toggleRow = (id: string, extend: boolean) => {
       selectionStore.setState((s) => {
         const next = new Set(s.selectedIds);
@@ -178,10 +236,11 @@ export function DataTableProvider<T extends RowData>({
           const to = ids.indexOf(id);
           if (from >= 0 && to >= 0) {
             const [lo, hi] = from <= to ? [from, to] : [to, from];
+            next.clear();
             for (const rowId of ids.slice(lo, hi + 1)) {
               for (const d of withDescendants(rowId)) next.add(d);
             }
-            return { selectedIds: next };
+            return { selectedIds: next, cursorId: id };
           }
         }
         const targets = withDescendants(id);
@@ -191,7 +250,7 @@ export function DataTableProvider<T extends RowData>({
           for (const d of targets) next.add(d);
         }
         anchorRef.current = id;
-        return { selectedIds: next };
+        return { selectedIds: next, cursorId: id };
       });
       commitSelection();
     };
@@ -199,6 +258,7 @@ export function DataTableProvider<T extends RowData>({
     const selectRow = (id: string) => {
       selectionStore.setState(() => ({
         selectedIds: new Set(withDescendants(id)),
+        cursorId: id,
       }));
       anchorRef.current = id;
       commitSelection();
@@ -206,8 +266,9 @@ export function DataTableProvider<T extends RowData>({
 
     const toggleAll = (next: boolean) => {
       const ids = next ? orderedIdsRef.current : [];
-      selectionStore.setState(() => ({
+      selectionStore.setState((s) => ({
         selectedIds: new Set(ids),
+        cursorId: s.cursorId ?? ids[0] ?? null,
       }));
       anchorRef.current = ids[0] ?? null;
       commitSelection();
@@ -220,7 +281,10 @@ export function DataTableProvider<T extends RowData>({
       for (const id of ids) {
         for (const d of withDescendants(id)) next.add(d);
       }
-      selectionStore.setState(() => ({ selectedIds: next }));
+      selectionStore.setState(() => ({
+        selectedIds: next,
+        cursorId: ids.at(-1) ?? null,
+      }));
       anchorRef.current = ids[ids.length - 1] ?? null;
       commitSelection();
     };
@@ -241,11 +305,10 @@ export function DataTableProvider<T extends RowData>({
     };
 
     const toggleSort = (id: string) => {
-      setSorting((prev) => {
-        const cur = prev[0];
-        if (cur?.id === id) return [{ id, desc: !cur.desc }];
-        return [{ id, desc: false }];
-      });
+      const cur = sortingRef.current[0];
+      commitSorting(
+        cur?.id === id ? [{ id, desc: !cur.desc }] : [{ id, desc: false }],
+      );
     };
 
     const resizeColumn = (id: string, width: number) => {
@@ -256,21 +319,36 @@ export function DataTableProvider<T extends RowData>({
     };
 
     const reorderColumns = (fromId: string, toId: string) => {
-      if (fromId === toId) return;
-      setColumnOrder((prev) => {
-        const base = prev.length > 0 ? prev : columns.map((c) => c.id);
+      const move = (base: string[]) => {
+        if (fromId === toId) return null;
         const from = base.indexOf(fromId);
         const to = base.indexOf(toId);
-        if (from < 0 || to < 0) return base;
+        if (from < 0 || to < 0) return null;
         const next = [...base];
         const [moved] = next.splice(from, 1);
-        if (moved === undefined) return base;
+        if (moved === undefined) return null;
         next.splice(to, 0, moved);
         return next;
+      };
+      if (columnOrderProp) {
+        const next = move(
+          columnOrderProp.length > 0
+            ? columnOrderProp
+            : columns.map((column) => column.id),
+        );
+        if (next) onColumnOrderChange?.(next);
+        return;
+      }
+      setUncontrolledOrder((prev) => {
+        const next = move(
+          prev.length > 0 ? prev : columns.map((column) => column.id),
+        );
+        return next ?? prev;
       });
     };
 
     return {
+      focusRow,
       toggleRow,
       selectRow,
       toggleAll,
@@ -288,6 +366,9 @@ export function DataTableProvider<T extends RowData>({
     internalExpanded,
     onToggleExpand,
     columns,
+    columnOrderProp,
+    onColumnOrderChange,
+    commitSorting,
   ]);
 
   const orderedColumns = useMemo(() => {
@@ -326,6 +407,9 @@ export function DataTableProvider<T extends RowData>({
   const rowApi = useMemo<RowApi<T>>(
     () => ({
       selectionStore,
+      gridRef,
+      rowElementId,
+      focusRow: actions.focusRow,
       columns: orderedColumns,
       gridTemplate,
       selectionEnabled,
@@ -340,6 +424,8 @@ export function DataTableProvider<T extends RowData>({
     }),
     [
       selectionStore,
+      rowElementId,
+      actions.focusRow,
       orderedColumns,
       gridTemplate,
       selectionEnabled,
@@ -368,6 +454,9 @@ export function DataTableProvider<T extends RowData>({
       selectionStore,
       actions,
       meta: {
+        gridRef,
+        revealRow,
+        rowElementId,
         columns: orderedColumns,
         gridTemplate,
         selectionEnabled,
@@ -385,6 +474,7 @@ export function DataTableProvider<T extends RowData>({
     [
       selectionStore,
       actions,
+      rowElementId,
       orderedColumns,
       gridTemplate,
       selectionEnabled,

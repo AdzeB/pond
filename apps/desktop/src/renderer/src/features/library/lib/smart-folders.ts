@@ -55,3 +55,15 @@ export function groupMoveChoices(
       !ancestors(view, views).some((parent) => parent.id === viewId),
   );
 }
+
+export function selectedViewRoots(
+  ids: readonly string[],
+  views: readonly SavedView[],
+): SavedView[] {
+  const selected = new Set(ids);
+  return views.filter(
+    (view) =>
+      selected.has(view.id) &&
+      !ancestors(view, views).some((parent) => selected.has(parent.id)),
+  );
+}

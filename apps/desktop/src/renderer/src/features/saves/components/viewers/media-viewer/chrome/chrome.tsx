@@ -40,7 +40,6 @@ export function ViewerChrome({
 }) {
   const [top, setTop] = useState<HTMLElement | null>(null);
   const [bottom, setBottom] = useState<HTMLElement | null>(null);
-  const topFade = useScrollFade<HTMLDivElement>();
   const bottomFade = useScrollFade<HTMLDivElement>();
 
   return (
@@ -51,7 +50,7 @@ export function ViewerChrome({
         data-viewer-root
       >
         {enabled ? (
-          <div className={styles.top} {...topFade}>
+          <div className={styles.top}>
             <Toolbar.Root aria-label="Preview" className={styles.toolbar}>
               <Toolbar.Row>
                 <Toolbar.Group fill>
@@ -62,7 +61,7 @@ export function ViewerChrome({
           </div>
         ) : null}
         <div className={styles.stage}>
-          <HudHost>{children}</HudHost>
+          <HudHost enabled={enabled}>{children}</HudHost>
         </div>
         {enabled ? (
           <div className={styles.bottom} {...bottomFade}>

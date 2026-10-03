@@ -1,24 +1,10 @@
-import {
-  IconChevronRightOutline12 as Chevron,
-  IconCodeOutline12 as Code,
-  IconCircleInfoOutline12 as Info,
-} from "@pond/icons/outline/12";
-import { Button, Popover, Settings, Switch } from "@pond/ui";
-import {
-  hostSetupCommands,
-  isMcpDeeplinkHost,
-  MCP_HOST_CATALOG,
-  type McpHostDefinition,
-  type McpHostId,
-} from "@shared/mcp-hosts";
+import { Settings, Switch } from "@pond/ui";
+import { MCP_HOST_CATALOG, type McpHostDefinition } from "@shared/mcp-hosts";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 import { z } from "zod";
-import anthropic from "@/assets/logos/providers/anthropic.webp";
-import google from "@/assets/logos/providers/google.webp";
-import openai from "@/assets/logos/providers/openai.webp";
 import { usePrefs } from "@/features/settings/state/prefs";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
+import { HostPopover } from "./host-popover";
+import { HostLogo } from "./logo";
 import styles from "./styles.module.css";
 
 const McpSnippetSchema = z.object({
@@ -28,13 +14,6 @@ const McpSnippetSchema = z.object({
 });
 
 type PondSnippet = z.infer<typeof McpSnippetSchema>;
-
-const HOST_LOGOS = {
-  "claude-code": anthropic,
-  "claude-desktop": anthropic,
-  codex: openai,
-  "gemini-cli": google,
-} satisfies Partial<Record<McpHostId, string>>;
 
 const ACCESS = [
   {
@@ -48,19 +27,11 @@ const ACCESS = [
     description: "Reveal a save in the Pond window",
   },
   {
-    key: "mcpActions",
-    title: "Run Actions",
-    description: "Preview and run library Actions",
-  },
-  {
     key: "mcpExport",
     title: "Export Files",
     description: "Convert copies. Originals stay in the library.",
   },
 ] as const;
-
-const FEATURED = MCP_HOST_CATALOG.filter((host) => host.featured);
-const EXTRA = MCP_HOST_CATALOG.filter((host) => !host.featured);
 
 export function McpSection() {
   const snippet = useQuery({
@@ -81,7 +52,6 @@ export function McpSection() {
       </Settings.Header>
       <AccessSection />
       <AgentsSection snippet={snippet.data} />
-      <AdvancedSection snippet={snippet.data} />
     </Settings.Page>
   );
 }
@@ -117,84 +87,17 @@ function AccessSection() {
 }
 
 function AgentsSection({ snippet }: { snippet?: PondSnippet }) {
-  const [more, setMore] = useState(false);
   return (
     <Settings.Section>
       <Settings.SectionTitle>Agents</Settings.SectionTitle>
       <Settings.List>
-        {FEATURED.map((host) => (
+        {MCP_HOST_CATALOG.map((host) => (
           <HostRow key={host.id} host={host} snippet={snippet} />
         ))}
-        <Settings.Item
-          className={styles.disclosure}
-          role="button"
-          tabIndex={0}
-          aria-expanded={more}
-          onClick={() => setMore((value) => !value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              setMore((value) => !value);
-            }
-          }}
-        >
-          <Settings.ItemDetails>
-            <Settings.ItemTitle>More Agents</Settings.ItemTitle>
-            <Settings.ItemDescription>
-              Claude Desktop, VS Code, Any MCP client
-            </Settings.ItemDescription>
-          </Settings.ItemDetails>
-          <Settings.ItemControl>
-            <Chevron className={styles.chevron} data-open={more || undefined} />
-          </Settings.ItemControl>
-        </Settings.Item>
-        {more
-          ? EXTRA.map((host) => (
-              <HostRow key={host.id} host={host} snippet={snippet} />
-            ))
-          : null}
       </Settings.List>
       <p className={styles.note}>
         Agents run on this Mac and read the library over stdio.
       </p>
-    </Settings.Section>
-  );
-}
-
-function AdvancedSection({ snippet }: { snippet?: PondSnippet }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <Settings.Section>
-      <Settings.List>
-        <Settings.Item
-          className={styles.disclosure}
-          role="button"
-          tabIndex={0}
-          aria-expanded={open}
-          onClick={() => setOpen((value) => !value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              setOpen((value) => !value);
-            }
-          }}
-        >
-          <Settings.ItemDetails>
-            <Settings.ItemTitle>Advanced</Settings.ItemTitle>
-            <Settings.ItemDescription>
-              Command line tool, server test
-            </Settings.ItemDescription>
-          </Settings.ItemDetails>
-          <Settings.ItemControl>
-            <Chevron className={styles.chevron} data-open={open || undefined} />
-          </Settings.ItemControl>
-        </Settings.Item>
-        {open && snippet ? (
-          <div className={styles.expanded}>
-            <McpSnippet json={snippet.json} />
-          </div>
-        ) : null}
-      </Settings.List>
     </Settings.Section>
   );
 }
@@ -216,217 +119,5 @@ function HostRow({
         <HostPopover host={host} snippet={snippet} />
       </Settings.ItemControl>
     </Settings.Item>
-  );
-}
-
-function HostLogo({ id }: { id: McpHostId }) {
-  const src = Object.entries(HOST_LOGOS).find(([hostId]) => hostId === id)?.[1];
-  if (src) {
-    return (
-      <img src={src} alt="" width={20} height={20} className={styles.logo} />
-    );
-  }
-  return (
-    <span className={styles.mark} aria-hidden>
-      <Code />
-    </span>
-  );
-}
-
-function HostPopover({
-  host,
-  snippet,
-}: {
-  host: McpHostDefinition;
-  snippet?: PondSnippet;
-}) {
-  const [error, setError] = useState("");
-  const commands = snippet
-    ? hostSetupCommands(host.id, snippet.command, snippet.args)
-    : [];
-  const json = snippet?.json ?? "";
-  const deeplink = isMcpDeeplinkHost(host.id) ? host.id : null;
-
-  async function addToClient() {
-    if (!deeplink) return;
-    setError("");
-    const result = await window.pond.query("agent.openMcpInstall", {
-      id: deeplink,
-    });
-    if (!result.ok) {
-      setError(
-        result.error ??
-          "Pond could not open that install link. Copy the config instead.",
-      );
-    }
-  }
-
-  return (
-    <Popover.Root>
-      <Popover.Trigger
-        render={<Button icon size="xs" variant="ghost" />}
-        aria-label={`Set up ${host.name}`}
-      >
-        <Info />
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Positioner side="left" align="start" sideOffset={8}>
-          <Popover.Popup className={styles.popup}>
-            <Popover.Title className={styles.title}>{host.name}</Popover.Title>
-            <p className={styles.lead}>The agent can search and read saves.</p>
-            {deeplink ? (
-              <Button size="sm" onClick={() => void addToClient()}>
-                {host.addLabel}
-              </Button>
-            ) : null}
-            {commands.map((command) => (
-              <CopyLine
-                key={command.label}
-                label={command.label}
-                value={command.value}
-              />
-            ))}
-            {commands.length === 0 ? (
-              <>
-                <p className={styles.merge}>
-                  {deeplink
-                    ? `Or merge into ${host.configPath}:`
-                    : `Merge into ${host.configPath}:`}
-                </p>
-                <JsonBlock json={json} />
-              </>
-            ) : null}
-            <p className={styles.lead}>{host.hint}</p>
-            {error ? (
-              <p className={styles.error} role="alert">
-                {error}
-              </p>
-            ) : null}
-          </Popover.Popup>
-        </Popover.Positioner>
-      </Popover.Portal>
-    </Popover.Root>
-  );
-}
-
-function CopyLine({ label, value }: { label: string; value: string }) {
-  const [copied, setCopied] = useState(false);
-  const [copying, setCopying] = useState(false);
-  return (
-    <div className={styles.step}>
-      <p className={styles.merge}>{label}</p>
-      <div className={styles.command}>
-        <code className={styles.value}>{value}</code>
-        <Button
-          size="xs"
-          variant="ghost"
-          disabled={!value || copying}
-          onClick={() => {
-            void (async () => {
-              setCopying(true);
-              setCopied(false);
-              try {
-                const result = await window.pond.query("clipboard.writeText", {
-                  text: value,
-                });
-                if (!result.ok) throw new Error("Clipboard write failed");
-                setCopied(true);
-              } finally {
-                setCopying(false);
-              }
-            })();
-          }}
-        >
-          {copying ? "Copying" : copied ? "Copied" : "Copy"}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function JsonBlock({ json }: { json: string }) {
-  const [copied, setCopied] = useState(false);
-  const [copying, setCopying] = useState(false);
-  const scrollFade = useScrollFade<HTMLPreElement>();
-  return (
-    <>
-      <pre className={styles.code} {...scrollFade}>
-        <code>{json}</code>
-      </pre>
-      <Button
-        size="sm"
-        variant="secondary"
-        disabled={!json || copying}
-        onClick={() => {
-          void (async () => {
-            setCopying(true);
-            setCopied(false);
-            try {
-              const result = await window.pond.query("clipboard.writeText", {
-                text: json,
-              });
-              if (!result.ok) throw new Error("Clipboard write failed");
-              setCopied(true);
-            } finally {
-              setCopying(false);
-            }
-          })();
-        }}
-      >
-        {copying ? "Copying" : copied ? "Copied" : "Copy"}
-      </Button>
-    </>
-  );
-}
-
-export function McpSnippet({ json }: { json: string }) {
-  const [copied, setCopied] = useState(false);
-  const [copying, setCopying] = useState(false);
-  const [error, setError] = useState("");
-  const scrollFade = useScrollFade<HTMLPreElement>();
-
-  const copyConfig = async () => {
-    setCopying(true);
-    setCopied(false);
-    setError("");
-    try {
-      const result = await window.pond.query("clipboard.writeText", {
-        text: json,
-      });
-      if (!result.ok) throw new Error("Clipboard write failed");
-      setCopied(true);
-    } catch {
-      setError("Could not copy config. Try again.");
-    } finally {
-      setCopying(false);
-    }
-  };
-
-  return (
-    <div className={styles.snippet}>
-      <div className={styles.toolbar}>
-        <span className={styles.language}>JSON</span>
-        <Button
-          size="xs"
-          variant="ghost"
-          disabled={copying}
-          onClick={() => void copyConfig()}
-        >
-          {copying ? "Copying" : copied ? "Copied" : "Copy Config"}
-        </Button>
-      </div>
-      <pre className={styles.advanced} {...scrollFade}>
-        <code>{json}</code>
-      </pre>
-      <p className={styles.caption}>
-        This command is the Pond binary on this Mac. Pond does not host an MCP
-        URL.
-      </p>
-      {error ? (
-        <p className={styles.error} role="alert">
-          {error}
-        </p>
-      ) : null}
-    </div>
   );
 }

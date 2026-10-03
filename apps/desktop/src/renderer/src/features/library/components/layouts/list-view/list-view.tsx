@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { ListHeader } from "@/features/library/components/layouts/list-header";
 import { SavePackedGrid } from "@/features/library/components/layouts/packed-grid/packed-grid";
 import { packList } from "@/features/library/components/layouts/packing";
 import { useGridWidth } from "@/features/library/state/shell-state";
@@ -26,11 +27,14 @@ export function ListView({ saves, onEndReached }: ListViewProps) {
   );
 
   return (
-    <SavePackedGrid
-      layout="list"
-      items={items}
-      totalHeight={totalHeight}
-      onEndReached={onEndReached}
-    />
+    <>
+      <ListHeader />
+      <SavePackedGrid
+        layout="list"
+        items={items}
+        totalHeight={totalHeight}
+        onEndReached={onEndReached}
+      />
+    </>
   );
 }

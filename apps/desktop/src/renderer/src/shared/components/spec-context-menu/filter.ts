@@ -36,10 +36,27 @@ function leafMatches(item: MenuItemSpec, needle: string): boolean {
   return haystack(item).includes(needle);
 }
 
+function withBreadcrumb(
+  item: MenuItemSpec,
+  breadcrumb: ReactNode[],
+): MenuItemSpec {
+  if (
+    breadcrumb.length === 0 ||
+    item.type === "separator" ||
+    item.type === "custom" ||
+    item.type === "group" ||
+    item.type === "submenu"
+  ) {
+    return item;
+  }
+  return { ...item, breadcrumb };
+}
+
 function collectLeaves(
   items: MenuItemSpec[],
   needle: string,
   parentMatches: boolean,
+  breadcrumb: ReactNode[],
 ): MenuItemSpec[] {
   const out: MenuItemSpec[] = [];
   for (const item of items) {
@@ -50,20 +67,18 @@ function collectLeaves(
         item.items,
         needle,
         parentMatches || haystack(item).includes(needle),
+        [...breadcrumb, item.label],
       );
-      if (nested.length === 0) continue;
-      out.push({
-        type: "group",
-        label: item.label,
-        items: nested,
-      });
+      out.push(...nested);
       continue;
     }
     if (parentMatches && !isDisabled(item) && item.type !== "custom") {
-      out.push(item);
+      out.push(withBreadcrumb(item, breadcrumb));
       continue;
     }
-    if (leafMatches(item, needle)) out.push(item);
+    if (leafMatches(item, needle)) {
+      out.push(withBreadcrumb(item, breadcrumb));
+    }
   }
   return out;
 }
@@ -74,7 +89,7 @@ export function filterMenuItems(
 ): MenuItemSpec[] {
   const needle = query.trim().toLowerCase();
   if (!needle) return items;
-  return collectLeaves(items, needle, false);
+  return collectLeaves(items, needle, false, []);
 }
 
 export function hasVisibleMenuItems(items: MenuItemSpec[]): boolean {

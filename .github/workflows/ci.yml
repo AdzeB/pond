@@ -21,6 +21,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Validate provenance with the public action
+        uses: raphaelsalaja/provenance@v0.3.0
+        with:
+          file: .provenance
+
       - uses: pnpm/action-setup@v6
 
       - uses: actions/setup-node@v6
@@ -46,8 +51,6 @@ jobs:
       - name: Native database tests
         run: ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts
 
-      - name: Security and migration release gates
-        run: pnpm --filter @pond/desktop test:release-security
 
       - name: Build
         run: pnpm build

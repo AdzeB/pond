@@ -4,12 +4,14 @@ import { Store } from "@tanstack/store";
 interface SelectionState {
   readonly ids: ReadonlySet<string>;
   readonly anchor: string | null;
+  readonly cursor: string | null;
   readonly snapshot: ReadonlyArray<string>;
 }
 
 const initialSelection: SelectionState = {
   ids: new Set(),
   anchor: null,
+  cursor: null,
   snapshot: [],
 };
 
@@ -21,6 +23,7 @@ function withIds(
   anchor: string | null = state.anchor,
 ): SelectionState {
   return {
+    cursor: state.cursor,
     ids: next,
     anchor,
     snapshot: Array.from(next),
@@ -51,8 +54,8 @@ function toggleSelection(id: string): void {
 
 function clearSelection(): void {
   selectionStore.setState((s) => {
-    if (s.ids.size === 0 && s.anchor === null) return s;
-    return { ids: new Set(), anchor: null, snapshot: [] };
+    if (s.ids.size === 0 && s.anchor === null && s.cursor === null) return s;
+    return { ids: new Set(), anchor: null, cursor: null, snapshot: [] };
   });
 }
 
@@ -74,6 +77,14 @@ function setSelectionRange(
 }
 
 export const selection = {
+  getCursor(): string | null {
+    return selectionStore.state.cursor;
+  },
+  setCursor(cursor: string | null): void {
+    selectionStore.setState((s) =>
+      s.cursor === cursor ? s : { ...s, cursor },
+    );
+  },
   snapshot(): ReadonlyArray<string> {
     return selectionStore.state.snapshot;
   },
@@ -106,14 +117,18 @@ export const selection = {
   },
 };
 
+export function useSelectedSaveIds(): readonly string[] {
+  return useSelector(selectionStore, (s) => s.snapshot);
+}
+
 export function useSelectionSize(): number {
   return useSelector(selectionStore, (s) => s.ids.size);
 }
-export function useSelectionAnchor(): string | null {
-  return useSelector(selectionStore, (s) => s.anchor);
+export function useSelectionCursor(): string | null {
+  return useSelector(selectionStore, (s) => s.cursor);
 }
-export function useIsAnchor(id: string): boolean {
-  return useSelector(selectionStore, (s) => s.anchor === id);
+export function useIsCursor(id: string): boolean {
+  return useSelector(selectionStore, (s) => s.cursor === id);
 }
 export function useIsSelected(id: string): boolean {
   return useSelector(selectionStore, (s) => s.ids.has(id));

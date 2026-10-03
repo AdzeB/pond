@@ -12,7 +12,7 @@ import { readBundleJson, writeBundleJson } from "../lib/library-config";
 import { resolvePaths } from "../paths";
 import { convertMedia } from "./convert-media";
 import { compressExistingImages } from "./image-compression";
-import { withDecryptedLibraryMediaPath } from "./security/library-media-storage";
+import { withDecryptedLibraryMediaPath } from "./storage/library-media-storage";
 
 export function conversionPresets(
   root = resolvePaths().libraryRoot,

@@ -13,18 +13,6 @@ import {
 } from "./shared";
 
 export function registerAutomationCommands(program: Command): void {
-  const actions = program.command("actions");
-  operationCommand(program, actions, "list", "actions.list", "List actions");
-  operationCommand(program, actions, "get", "actions.list", "Read an action");
-  operationCommand(
-    program,
-    actions,
-    "preview",
-    "actions.preview",
-    "Preview an action",
-  );
-  operationCommand(program, actions, "run", "actions.run", "Run an action");
-
   const duplicates = program.command("duplicates");
   operationCommand(
     program,

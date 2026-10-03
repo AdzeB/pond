@@ -2,15 +2,6 @@
   --width: 320px;
 }
 
-.card {
-  --ds-popup-width: 260px;
-  --ds-popup-min-width: 240px;
-  --ds-popup-max-width: 280px;
-  display: grid;
-  gap: 8px;
-  padding: 10px;
-}
-
 .body {
   display: grid;
   gap: 10px;
@@ -23,16 +14,8 @@
   font-size: var(--ds-text-md);
 }
 
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: flex-end;
-}
-
-.compose {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: space-between;
+.timestamp {
+  font-size: var(--ds-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-9);
 }

@@ -2,169 +2,250 @@ import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useRef } from "react";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
+import { collectionOwnsKeyboard } from "@/features/saves/lib/keyboard-owner";
 import { openSave, saveIdFromPath } from "@/features/saves/lib/save-nav";
 import {
   clearSaveSelection,
   selectOnlySave,
 } from "@/features/saves/lib/select";
+import { selectResults } from "@/features/saves/lib/select-results";
+import type { ResultDirection } from "@/features/saves/lib/spatial-navigation";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 import { getAppRouter } from "@/shared/lib/app-router";
+import { findScrollParent } from "@/shared/lib/dom";
 import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
+import { notify } from "@/shared/lib/toast";
 
-function gridFocusFree(): boolean {
-  const el = document.activeElement;
-  if (!el || el === document.body) return true;
-  return el.closest("[data-save-id]") != null;
+type Movement = ResultDirection | "first" | "last";
+
+function canNavigate(event: KeyboardEvent): boolean {
+  return (
+    !event.defaultPrevented &&
+    !event.isComposing &&
+    collectionOwnsKeyboard() &&
+    !saveIdFromPath(getAppRouter()?.state.location.pathname ?? "")
+  );
 }
 
-function saveRouteOpen(): boolean {
-  const path = getAppRouter()?.state.location.pathname ?? "";
-  return saveIdFromPath(path) != null;
-}
-
-export function useGridHotkeys(
-  filteredIds: ReadonlyArray<string>,
-  allIds?: () => Promise<string[] | null>,
-): void {
+export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
   const shortcuts = useShortcutBindings();
   const idsRef = useRef(filteredIds);
   idsRef.current = filteredIds;
-  const cursorRef = useRef<string | null>(null);
   const movementQueue = useRef(Promise.resolve());
 
-  const move = async (delta: number, extend: boolean, event: KeyboardEvent) => {
-    if (saveRouteOpen()) return;
-    if (!gridFocusFree()) return;
-    let ids = idsRef.current;
-    if (ids.length === 0) return;
-    event.preventDefault();
-
-    const anchor = selection.getAnchor();
-    const base = extend ? (cursorRef.current ?? anchor) : anchor;
-    let baseIdx = base ? ids.indexOf(base) : -1;
-    if (
-      allIds &&
-      (baseIdx + delta >= ids.length || (baseIdx < 0 && delta < 0))
-    ) {
-      ids = (await allIds()) ?? ids;
-      baseIdx = base ? ids.indexOf(base) : -1;
+  const move = async (
+    direction: Movement,
+    extend: boolean,
+    key: string | undefined,
+    focusOnly: boolean,
+  ) => {
+    if (key !== resultNavigation.key() || !collectionOwnsKeyboard()) return;
+    let ids: readonly string[] = idsRef.current;
+    if (!ids.length) return;
+    const cursor = selection.getCursor();
+    const base = cursor && ids.includes(cursor) ? cursor : null;
+    const forward =
+      direction === "right" ||
+      direction === "down" ||
+      direction === "page-down";
+    const active = document.activeElement;
+    const parent = findScrollParent(
+      active instanceof HTMLElement ? active : null,
+    );
+    let next: string | null = null;
+    if (direction === "first") next = ids[0] ?? null;
+    else if (direction === "last") {
+      ids = await resultNavigation.ids();
+      next = ids.at(-1) ?? null;
+    } else if (!base) next = forward ? (ids[0] ?? null) : (ids.at(-1) ?? null);
+    else {
+      next = resultNavigation.neighbor(
+        base,
+        direction,
+        parent?.clientHeight ?? 600,
+      );
+      if ((!next || direction === "page-down") && forward) {
+        if (await resultNavigation.loadNextPage()) {
+          await new Promise<void>((resolve) =>
+            requestAnimationFrame(() => resolve()),
+          );
+          ids = idsRef.current;
+          next = resultNavigation.neighbor(
+            base,
+            direction,
+            parent?.clientHeight ?? 600,
+          );
+        }
+      }
+      if (!next && (direction === "left" || direction === "right"))
+        next = await resultNavigation.next(
+          base,
+          direction === "right" ? 1 : -1,
+        );
     }
-    const nextIdx =
-      baseIdx < 0
-        ? delta > 0
-          ? 0
-          : ids.length - 1
-        : Math.min(ids.length - 1, Math.max(0, baseIdx + delta));
-    const next = ids[nextIdx];
-    if (!next) return;
+    if (!next || key !== resultNavigation.key() || !collectionOwnsKeyboard())
+      return;
     await ensureSaves([next]);
-
-    if (extend) {
-      const from = anchor ?? next;
-      if (!anchor) selection.setAnchor(next);
+    if (key !== resultNavigation.key() || !collectionOwnsKeyboard()) return;
+    if (focusOnly) selection.setCursor(next);
+    else if (extend) {
+      if (!ids.includes(next)) ids = await resultNavigation.ids();
+      if (key !== resultNavigation.key() || !collectionOwnsKeyboard()) return;
+      const anchor = selection.getAnchor();
+      const from = anchor && ids.includes(anchor) ? anchor : (base ?? next);
+      selection.setAnchor(from);
       selection.setRange(ids, from, next);
+      selection.setCursor(next);
       primarySelection.set(next);
-      libraryChrome.setInspectorSaveId(next);
-    } else {
-      selectOnlySave(next);
-    }
-    cursorRef.current = next;
-    await resultNavigation.reveal(next);
+      libraryChrome.openSaveDetails(next);
+    } else selectOnlySave(next);
+    await resultNavigation.reveal(next, { focus: true });
   };
 
   const enqueueMove = (
-    delta: number,
+    direction: Movement,
     extend: boolean,
     event: KeyboardEvent,
+    focusOnly = false,
   ) => {
-    if (saveRouteOpen() || !gridFocusFree()) return;
+    if (!canNavigate(event)) return;
     event.preventDefault();
+    const key = resultNavigation.key();
     movementQueue.current = movementQueue.current
-      .then(() => move(delta, extend, event))
-      .catch((error) => console.warn("[pond navigation]", error));
-  };
-
-  const open = (event: KeyboardEvent) => {
-    if (saveRouteOpen()) return;
-    if (!gridFocusFree()) return;
-    const anchor = selection.getAnchor();
-    if (!anchor || !idsRef.current.includes(anchor)) return;
-    event.preventDefault();
-    openSave(anchor);
+      .then(() => move(direction, extend, key, focusOnly))
+      .catch(() =>
+        notify({
+          id: "result-navigation",
+          title: "Couldn’t navigate Saves",
+          description: "Try again.",
+        }),
+      );
   };
 
   useHotkeys(
     [
       {
         hotkey: bindingKeys(shortcuts, "grid.prev"),
-        callback: (event) => enqueueMove(-1, false, event),
-        options: { preventDefault: false },
+        callback: (event) => enqueueMove("left", false, event),
       },
       {
         hotkey: bindingKeys(shortcuts, "grid.next"),
-        callback: (event) => enqueueMove(1, false, event),
-        options: { preventDefault: false },
+        callback: (event) => enqueueMove("right", false, event),
       },
       {
         hotkey: bindingKeys(shortcuts, "grid.extend-prev"),
-        callback: (event) => enqueueMove(-1, true, event),
-        options: { preventDefault: false },
+        callback: (event) => enqueueMove("left", true, event),
       },
       {
         hotkey: bindingKeys(shortcuts, "grid.extend-next"),
-        callback: (event) => enqueueMove(1, true, event),
-        options: { preventDefault: false },
+        callback: (event) => enqueueMove("right", true, event),
+      },
+      {
+        hotkey: bindingKeys(shortcuts, "grid.up"),
+        callback: (event) => enqueueMove("up", false, event),
+      },
+      {
+        hotkey: bindingKeys(shortcuts, "grid.down"),
+        callback: (event) => enqueueMove("down", false, event),
+      },
+      {
+        hotkey: bindingKeys(shortcuts, "grid.extend-up"),
+        callback: (event) => enqueueMove("up", true, event),
+      },
+      {
+        hotkey: bindingKeys(shortcuts, "grid.extend-down"),
+        callback: (event) => enqueueMove("down", true, event),
+      },
+      {
+        hotkey: "Alt+ArrowLeft",
+        callback: (event) => enqueueMove("left", false, event, true),
+      },
+      {
+        hotkey: "Alt+ArrowRight",
+        callback: (event) => enqueueMove("right", false, event, true),
+      },
+      {
+        hotkey: "Alt+ArrowUp",
+        callback: (event) => enqueueMove("up", false, event, true),
+      },
+      {
+        hotkey: "Alt+ArrowDown",
+        callback: (event) => enqueueMove("down", false, event, true),
+      },
+      {
+        hotkey: "Shift+Space",
+        callback: (event) => {
+          if (!canNavigate(event)) return;
+          const cursor = selection.getCursor();
+          if (!cursor) return;
+          event.preventDefault();
+          selection.toggle(cursor);
+          selection.setAnchor(cursor);
+          const primary = selection.has(cursor)
+            ? cursor
+            : (selection.snapshot()[0] ?? null);
+          primarySelection.set(primary);
+          if (primary) libraryChrome.openSaveDetails(primary);
+          else libraryChrome.inspectSave(null);
+        },
+      },
+      {
+        hotkey: "Home",
+        callback: (event) => enqueueMove("first", false, event),
+      },
+      { hotkey: "End", callback: (event) => enqueueMove("last", false, event) },
+      {
+        hotkey: "Shift+Home",
+        callback: (event) => enqueueMove("first", true, event),
+      },
+      {
+        hotkey: "Shift+End",
+        callback: (event) => enqueueMove("last", true, event),
+      },
+      {
+        hotkey: "PageUp",
+        callback: (event) => enqueueMove("page-up", false, event),
+      },
+      {
+        hotkey: "PageDown",
+        callback: (event) => enqueueMove("page-down", false, event),
+      },
+      {
+        hotkey: "Shift+PageUp",
+        callback: (event) => enqueueMove("page-up", true, event),
+      },
+      {
+        hotkey: "Shift+PageDown",
+        callback: (event) => enqueueMove("page-down", true, event),
       },
       {
         hotkey: bindingKeys(shortcuts, "grid.open"),
-        callback: open,
-        options: { preventDefault: false },
+        callback: (event) => {
+          if (!canNavigate(event)) return;
+          const cursor = selection.getCursor();
+          if (!cursor || !idsRef.current.includes(cursor)) return;
+          event.preventDefault();
+          openSave(cursor);
+        },
       },
       {
         hotkey: bindingKeys(shortcuts, "grid.select-all"),
         callback: (event) => {
-          if (saveRouteOpen()) return;
-          if (!gridFocusFree()) return;
-          const ids = idsRef.current;
-          if (ids.length === 0) return;
+          if (!canNavigate(event)) return;
           event.preventDefault();
-          if (allIds) {
-            void allIds()
-              .then((matches) => {
-                if (matches) selection.set(matches);
-              })
-              .catch((error) => console.warn("[pond selection]", error));
-          } else selection.set(ids);
-          const first = ids[0];
-          if (first && !selection.getAnchor()) selection.setAnchor(first);
-          const focus = selection.getAnchor() ?? first;
-          if (focus) {
-            primarySelection.set(focus);
-            libraryChrome.setInspectorSaveId(focus);
-          }
+          void selectResults("all");
         },
-        options: { preventDefault: false },
       },
       {
         hotkey: bindingKeys(shortcuts, "grid.clear"),
         callback: (event) => {
-          if (event.defaultPrevented) return;
-          if (saveRouteOpen()) return;
-          const focused = document.activeElement;
-          if (
-            focused instanceof HTMLElement &&
-            focused.closest("[data-library-search]")
-          ) {
-            return;
-          }
-          if (selection.size() === 0 && !selection.getAnchor()) return;
+          if (!canNavigate(event)) return;
+          event.preventDefault();
           clearSaveSelection();
-          cursorRef.current = null;
         },
-        options: { preventDefault: false },
       },
     ],
-    { ignoreInputs: true },
+    { ignoreInputs: true, preventDefault: false },
   );
 }

@@ -12,6 +12,8 @@ export const BLANK_DOCUMENT_KINDS = [
 
 export type BlankDocumentKind = (typeof BLANK_DOCUMENT_KINDS)[number];
 
+export type BlankDocumentIcons = Partial<Record<BlankDocumentKind, string>>;
+
 export interface BlankDocumentDef {
   kind: BlankDocumentKind;
   label: string;

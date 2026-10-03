@@ -1,23 +1,34 @@
-import { useEffect, useMemo, useState } from "react";
+import { IconCodeOutline18, IconEyeOutline18 } from "@pond/icons/outline/18";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
+import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
+import { type MhtmlPage, parseMhtml } from "./mhtml";
 import { sanitizeOfflineHtml } from "./sanitize";
 import styles from "./styles.module.css";
 
 interface SafeWebViewerProps {
   url: string;
+  path: string;
   size: number;
   onUnavailable: () => void;
+  toolbarStart?: ReactNode;
+  toolbarEnd?: ReactNode;
 }
 
 const MAX_HTML_BYTES = 10 * 1024 ** 2;
 
 export function SafeWebViewer({
   url,
+  path,
   size,
   onUnavailable,
+  toolbarStart,
+  toolbarEnd,
 }: SafeWebViewerProps) {
   const [source, setSource] = useState<string | null>(null);
+  const [pages, setPages] = useState<MhtmlPage[]>([]);
+  const [pageIndex, setPageIndex] = useState(0);
   const [mode, setMode] = useState<"rendered" | "source">("rendered");
   const scrollFade = useScrollFade<HTMLPreElement>();
 
@@ -30,10 +41,26 @@ export function SafeWebViewer({
     void fetch(url)
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.text();
+        return response.arrayBuffer();
       })
-      .then((text) => {
-        if (alive) setSource(text);
+      .then((buffer) => {
+        if (!alive) return;
+        const bytes = new Uint8Array(buffer);
+        let binary = "";
+        for (let offset = 0; offset < bytes.length; offset += 32_768)
+          binary += String.fromCharCode(
+            ...bytes.subarray(offset, offset + 32_768),
+          );
+        if (/\.mhtml?$/i.test(path)) {
+          const archivePages = parseMhtml(binary);
+          if (archivePages.length === 0) throw new Error("No archived page");
+          setPages(archivePages);
+          setPageIndex(0);
+          setSource(archivePages[0]?.html ?? "");
+          return;
+        }
+        setPages([]);
+        setSource(new TextDecoder("utf-8").decode(bytes));
       })
       .catch(() => {
         if (alive) onUnavailable();
@@ -41,7 +68,12 @@ export function SafeWebViewer({
     return () => {
       alive = false;
     };
-  }, [onUnavailable, size, url]);
+  }, [onUnavailable, path, size, url]);
+
+  useEffect(() => {
+    const page = pages[pageIndex];
+    if (page) setSource(page.html);
+  }, [pageIndex, pages]);
 
   const safeHtml = useMemo(
     () => (source === null ? "" : sanitizeOfflineHtml(source)),
@@ -50,35 +82,50 @@ export function SafeWebViewer({
 
   return (
     <div className={styles.root}>
-      <ViewerHud.Root>
-        <ViewerHud.Cluster anchor="top-left">
-          <ViewerHud.Pill role="toolbar" aria-label="Preview">
-            <ViewerHud.Tool
-              icon={false}
-              label="Rendered"
-              pressed={mode === "rendered"}
-              onClick={() => setMode("rendered")}
-            >
-              Rendered
-            </ViewerHud.Tool>
-            <ViewerHud.Tool
-              icon={false}
-              label="Source"
-              pressed={mode === "source"}
-              onClick={() => setMode("source")}
-            >
-              Source
-            </ViewerHud.Tool>
-          </ViewerHud.Pill>
-        </ViewerHud.Cluster>
-        <ViewerHud.Cluster anchor="top-right">
-          <ViewerHud.Pill className={styles.hint}>
-            <span>
-              Scripts, forms, embeds, and network requests are disabled.
-            </span>
-          </ViewerHud.Pill>
-        </ViewerHud.Cluster>
-      </ViewerHud.Root>
+      <ChromePortal slot="top">
+        <ViewerHud.Bar
+          label="Web archive"
+          start={toolbarStart}
+          center={
+            <>
+              <ViewerHud.Tool
+                label="Rendered"
+                pressed={mode === "rendered"}
+                onClick={() => setMode("rendered")}
+              >
+                <IconEyeOutline18 />
+              </ViewerHud.Tool>
+              <ViewerHud.Tool
+                label="Source"
+                pressed={mode === "source"}
+                onClick={() => setMode("source")}
+              >
+                <IconCodeOutline18 />
+              </ViewerHud.Tool>
+            </>
+          }
+          end={
+            <>
+              <span className={styles.hint}>
+                Scripts, forms, embeds, and network requests are disabled.
+              </span>
+              {pages.length > 1
+                ? pages.map((page, index) => (
+                    <ViewerHud.Tool
+                      key={page.label}
+                      label={page.label}
+                      pressed={pageIndex === index}
+                      onClick={() => setPageIndex(index)}
+                    >
+                      {index + 1}
+                    </ViewerHud.Tool>
+                  ))
+                : null}
+              {toolbarEnd}
+            </>
+          }
+        />
+      </ChromePortal>
       {source === null ? (
         <div className={styles.status}>Reading page</div>
       ) : null}

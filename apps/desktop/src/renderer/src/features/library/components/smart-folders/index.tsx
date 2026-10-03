@@ -2,18 +2,33 @@ import { IconDotsFill12 } from "@pond/icons/fill/12";
 import { IconChevronRightOutline12 } from "@pond/icons/outline/12";
 import {
   IconBarsFilterOutline18,
+  IconColorPaletteOutline18,
+  IconDuplicateOutline18,
+  IconExportOutline18,
+  IconFileExportOutline18,
   IconFolderSearchOutline18,
   IconGridOutline18,
+  IconGridPlusOutline18,
   IconLink2Outline18,
+  IconMoveObjDownOutline18,
+  IconMoveObjUpOutline18,
   IconPencilOutline18,
   IconPlusOutline18,
+  IconQuickAccessOutline18,
+  IconRefreshOutline18,
+  IconRenameOutline18,
+  IconShapesOutline18,
+  IconTableOutline18,
   IconTrash2Outline18,
   IconVersionsOutline18,
+  IconViewPlusSignOutline18,
 } from "@pond/icons/outline/18";
+import type { Prefs } from "@pond/schema";
 import type { SavedView } from "@pond/schema/db";
 import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
 import {
   Button,
+  Chip,
   cssVars,
   Dialog,
   Menu,
@@ -22,21 +37,30 @@ import {
 } from "@pond/ui";
 import { librarySavedViewLink } from "@shared/library-links";
 import { useSelector } from "@tanstack/react-store";
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { filterToolbar } from "@/features/library/components/filter-menu/toolbar-state";
 import {
   combineQueries,
   groupMoveChoices,
   inheritedQueryFor,
+  selectedViewRoots,
 } from "@/features/library/lib/smart-folders";
 import { useFolders } from "@/features/library/state/folders";
 import { openOrganizationRenameDialog } from "@/features/library/state/organization-rename-dialog";
+import { saveSavedViewPresentation } from "@/features/library/state/saved-view-presentation";
 import {
   savedViews,
+  useEditingSavedViewId,
+  useSavedViewEditorRequest,
   useSavedViews,
 } from "@/features/library/state/saved-views";
 import { useViewStore } from "@/features/library/state/view-store";
+import {
+  exportSelectionCsv,
+  exportSelectionFiles,
+} from "@/features/saves/lib/selection";
 import { savesStore } from "@/features/saves/state/pool";
+import { usePrefs } from "@/features/settings/state/prefs";
 import { useTags } from "@/features/tags/state/tags";
 import { InlineNameEditor } from "@/shared/components/inline-name-editor";
 import {
@@ -44,6 +68,15 @@ import {
   SpecMenu,
 } from "@/shared/components/spec-context-menu/spec-context-menu";
 import { notify } from "@/shared/lib/toast";
+import { useOrganizationTree } from "../../hooks/use-organization-tree";
+import { resetFilters, setQuery } from "../../state/view-store";
+import {
+  FOLDER_ICONS,
+  FOLDER_SWATCHES,
+  FolderIcon,
+  folderColorCss,
+} from "../folder-sidebar/folder-icons";
+import { selectLibraryNav } from "../folder-sidebar/navigation";
 import { RuleDialog } from "./rule-dialog";
 import { newRule } from "./rule-editor";
 import styles from "./styles.module.css";
@@ -58,6 +91,7 @@ type EditorRequest =
   | { mode: "edit"; view: SavedView };
 
 type OpenEditor = (request: EditorRequest) => void;
+type SavedViewPresentation = Prefs["savedViewViews"][string];
 
 async function countMatches(query: Query): Promise<number> {
   const result = await window.pond.query("saves.queryCount", { query });
@@ -72,6 +106,12 @@ const ENTRY_TYPES = {
   SavedView["kind"],
   { label: string; icon: React.ComponentType }
 >;
+
+const CREATE_ENTRY_ICONS = {
+  smart_folder: IconFolderSearchOutline18,
+  group: IconGridPlusOutline18,
+  saved_view: IconViewPlusSignOutline18,
+} satisfies Record<SavedView["kind"], React.ComponentType>;
 
 async function runAction(action: () => Promise<void>): Promise<void> {
   try {
@@ -93,7 +133,8 @@ function creationItems(
 ): MenuItemSpec[] {
   const kinds: SavedView["kind"][] = ["smart_folder", "group", "saved_view"];
   return kinds.map((kind) => {
-    const { label, icon: Icon } = ENTRY_TYPES[kind];
+    const { label } = ENTRY_TYPES[kind];
+    const Icon = CREATE_ENTRY_ICONS[kind];
     return {
       label: `New ${label}`,
       icon: <Icon />,
@@ -125,6 +166,37 @@ interface EntryActions {
   onRename: () => void;
   onStartRenaming: (id: string) => void;
   openEditor: OpenEditor;
+  presentation: SavedViewPresentation;
+  quickAccessIds: string[];
+}
+
+async function saveIdsForView(
+  view: SavedView,
+  views: SavedView[],
+): Promise<string[]> {
+  const result = await window.pond.query("saves.queryIds", {
+    query: combineQueries([inheritedQueryFor(view, views), view.query]),
+  });
+  return result.ids;
+}
+
+async function moveSavedViewQuickAccess(
+  id: string,
+  ids: string[],
+  offset: -1 | 1,
+): Promise<void> {
+  const current = ids.indexOf(id);
+  const target = current + offset;
+  if (current < 0 || target < 0 || target >= ids.length) return;
+  const ordered = [...ids];
+  const [moved] = ordered.splice(current, 1);
+  if (!moved) return;
+  ordered.splice(target, 0, moved);
+  await Promise.all(
+    ordered.map((viewId, quickAccessOrder) =>
+      saveSavedViewPresentation(viewId, { quickAccessOrder }),
+    ),
+  );
 }
 
 function entryItems({
@@ -136,8 +208,11 @@ function entryItems({
   onRename,
   onStartRenaming,
   openEditor,
+  presentation,
+  quickAccessIds,
 }: EntryActions): MenuItemSpec[] {
   const { label } = ENTRY_TYPES[view.kind];
+  const quickAccessIndex = quickAccessIds.indexOf(view.id);
   return [
     ...(view.kind === "group"
       ? [
@@ -164,13 +239,110 @@ function entryItems({
       onClick: () => void runAction(() => savedViews.updateCurrent(view.id)),
     },
     {
+      label: "Refresh",
+      icon: <IconRefreshOutline18 />,
+      onClick: () => void runAction(() => savedViews.refresh()),
+    },
+    {
+      label: "Duplicate",
+      icon: <IconDuplicateOutline18 />,
+      onClick: () =>
+        void runAction(async () => {
+          const copy = await savedViews.duplicate(view.id);
+          if (presentation.icon || presentation.color) {
+            await saveSavedViewPresentation(copy.id, {
+              icon: presentation.icon,
+              color: presentation.color,
+            });
+          }
+          onStartRenaming(copy.id);
+        }),
+    },
+    {
+      type: "submenu",
+      label: "Export",
+      icon: <IconExportOutline18 />,
+      items: [
+        {
+          label: "Export Files",
+          icon: <IconFileExportOutline18 />,
+          onClick: () =>
+            void runAction(async () => {
+              const ids = await saveIdsForView(view, views);
+              await exportSelectionFiles(ids);
+            }),
+        },
+        {
+          label: "Export to CSV",
+          icon: <IconTableOutline18 />,
+          onClick: () =>
+            void runAction(async () => {
+              const ids = await saveIdsForView(view, views);
+              await exportSelectionCsv(ids);
+            }),
+        },
+      ],
+    },
+    {
+      type: "checkbox",
+      label: "Quick Access",
+      icon: <IconQuickAccessOutline18 />,
+      checked: presentation.quickAccess ?? false,
+      onCheckedChange: (quickAccess) =>
+        void saveSavedViewPresentation(view.id, {
+          quickAccess,
+          quickAccessOrder: quickAccess ? quickAccessIds.length : undefined,
+        }),
+    },
+    {
+      label: "Move Up in Quick Access",
+      icon: <IconMoveObjUpOutline18 />,
+      hidden: !presentation.quickAccess || quickAccessIndex <= 0,
+      onClick: () => void moveSavedViewQuickAccess(view.id, quickAccessIds, -1),
+    },
+    {
+      label: "Move Down in Quick Access",
+      icon: <IconMoveObjDownOutline18 />,
+      hidden:
+        !presentation.quickAccess ||
+        quickAccessIndex < 0 ||
+        quickAccessIndex >= quickAccessIds.length - 1,
+      onClick: () => void moveSavedViewQuickAccess(view.id, quickAccessIds, 1),
+    },
+    {
+      type: "submenu",
+      label: "Icon",
+      icon: <IconShapesOutline18 />,
+      items: FOLDER_ICONS.map((option) => ({
+        type: "checkbox",
+        label: option.label,
+        icon: <option.Icon />,
+        checked: presentation.icon === option.id,
+        onCheckedChange: () =>
+          void saveSavedViewPresentation(view.id, { icon: option.id }),
+      })),
+    },
+    {
+      type: "submenu",
+      label: "Color",
+      icon: <IconColorPaletteOutline18 />,
+      items: FOLDER_SWATCHES.map((option) => ({
+        type: "checkbox",
+        label: option.label,
+        icon: <Chip.Swatch color={option.css} />,
+        checked: (presentation.color ?? null) === option.id,
+        onCheckedChange: () =>
+          void saveSavedViewPresentation(view.id, { color: option.id }),
+      })),
+    },
+    {
       label: "Rename",
       icon: <IconPencilOutline18 />,
       onClick: onRename,
     },
     {
       label: "Batch Rename Smart Folders",
-      icon: <IconPencilOutline18 />,
+      icon: <IconRenameOutline18 />,
       onClick: () => openOrganizationRenameDialog("saved-views", view.id),
     },
     {
@@ -191,11 +363,13 @@ function entryItems({
       items: [
         {
           label: "Smart Folders",
+          icon: <IconFolderSearchOutline18 />,
           disabled: view.parentId === null,
           onClick: () => void runAction(() => savedViews.move(view.id, null)),
         },
         ...groupMoveChoices(view.id, views).map((group) => ({
           label: group.name,
+          icon: <IconGridOutline18 />,
           disabled: view.parentId === group.id,
           onClick: () =>
             void runAction(() => savedViews.move(view.id, group.id)),
@@ -223,6 +397,7 @@ function entryItems({
 }
 
 interface EntryProps {
+  organization: ReturnType<typeof useOrganizationTree>;
   view: SavedView;
   views: SavedView[];
   childrenByParent: Map<string | null, SavedView[]>;
@@ -233,9 +408,12 @@ interface EntryProps {
   onFinishRenaming: () => void;
   onStartRenaming: (id: string) => void;
   openEditor: OpenEditor;
+  presentations: Record<string, SavedViewPresentation>;
+  quickAccessIds: string[];
 }
 
 function SmartFolderEntry({
+  organization,
   view,
   views,
   childrenByParent,
@@ -246,6 +424,8 @@ function SmartFolderEntry({
   onFinishRenaming,
   onStartRenaming,
   openEditor,
+  presentations,
+  quickAccessIds,
 }: EntryProps) {
   const [open, setOpen] = useState(true);
   const childrenId = useId();
@@ -254,24 +434,130 @@ function SmartFolderEntry({
   const renaming = editingViewId === view.id;
   const children = childrenByParent.get(view.id) ?? [];
   const { label, icon: Icon } = ENTRY_TYPES[view.kind];
+  const presentation = presentations[view.id] ?? {};
+  const color = folderColorCss(presentation.color);
   const select = () => {
     savedViews.select(view.id);
     onSelect();
   };
-  const items = () =>
-    entryItems({
-      view,
-      views,
-      active,
-      onSelect: select,
-      openEditor,
-      onRename: () => onStartRenaming(view.id),
-      onStartRenaming,
-      onCreated: () => {
-        setOpen(true);
-        onSelect();
-      },
-    });
+  const selectedViews = views.filter((entry) =>
+    organization.selected.includes(entry.id),
+  );
+  const moveRoots = selectedViewRoots(organization.selected, views);
+  const items = (): MenuItemSpec[] =>
+    selectedViews.length > 1 && organization.selected.includes(view.id)
+      ? [
+          {
+            label: "Batch Rename Smart Folders",
+            onClick: () =>
+              openOrganizationRenameDialog(
+                "saved-views",
+                organization.selected,
+              ),
+          },
+          {
+            type: "submenu",
+            label: "Move to Group",
+            items: [
+              {
+                label: "Smart Folders",
+                onClick: () =>
+                  void runAction(async () => {
+                    for (const entry of moveRoots)
+                      await savedViews.move(entry.id, null);
+                  }),
+              },
+              ...views
+                .filter(
+                  (group) =>
+                    group.kind === "group" &&
+                    selectedViews.every((entry) =>
+                      groupMoveChoices(entry.id, views).some(
+                        (choice) => choice.id === group.id,
+                      ),
+                    ),
+                )
+                .map((group) => ({
+                  label: group.name,
+                  onClick: () =>
+                    void runAction(async () => {
+                      for (const entry of moveRoots)
+                        await savedViews.move(entry.id, group.id);
+                    }),
+                })),
+            ],
+          },
+          {
+            label: "Export Files",
+            onClick: () =>
+              void runAction(async () => {
+                const ids = [
+                  ...new Set(
+                    (
+                      await Promise.all(
+                        selectedViews.map((entry) =>
+                          saveIdsForView(entry, views),
+                        ),
+                      )
+                    ).flat(),
+                  ),
+                ];
+                await exportSelectionFiles(ids);
+              }),
+          },
+          {
+            label: "Export to CSV",
+            onClick: () =>
+              void runAction(async () => {
+                const ids = [
+                  ...new Set(
+                    (
+                      await Promise.all(
+                        selectedViews.map((entry) =>
+                          saveIdsForView(entry, views),
+                        ),
+                      )
+                    ).flat(),
+                  ),
+                ];
+                await exportSelectionCsv(ids);
+              }),
+          },
+          {
+            label: "Delete",
+            variant: "destructive",
+            onClick: () =>
+              Dialog.confirm({
+                title: `Delete ${selectedViews.length} Entries`,
+                description:
+                  "Your Saves stay in the Library. Entries inside deleted Groups move up one level.",
+                confirmLabel: "Delete",
+                confirmVariant: "destructive",
+                onConfirm: async () => {
+                  for (const entry of selectedViews.toSorted(
+                    (a, b) =>
+                      Number(a.kind === "group") - Number(b.kind === "group"),
+                  ))
+                    await savedViews.remove(entry.id);
+                },
+              }),
+          },
+        ]
+      : entryItems({
+          view,
+          views,
+          active,
+          onSelect: select,
+          openEditor,
+          onRename: () => onStartRenaming(view.id),
+          onStartRenaming,
+          onCreated: () => {
+            setOpen(true);
+            onSelect();
+          },
+          presentation,
+          quickAccessIds,
+        });
 
   return (
     <Sidebar.CollapsibleGroup
@@ -294,7 +580,13 @@ function SmartFolderEntry({
               aria-label={`${open ? "Collapse" : "Expand"} ${view.name}`}
               aria-expanded={open}
               aria-controls={childrenId}
-              onClick={() => setOpen((value) => !value)}
+              tabIndex={-1}
+              onClick={(event) => {
+                setOpen((value) => !value);
+                event.currentTarget.parentElement
+                  ?.querySelector<HTMLElement>('[role="treeitem"]')
+                  ?.focus();
+              }}
             >
               <IconChevronRightOutline12 data-open={open || undefined} />
             </Button>
@@ -302,7 +594,13 @@ function SmartFolderEntry({
           {renaming ? (
             <div className={styles.editor}>
               <Sidebar.Icon className={styles.icon}>
-                <Icon />
+                <span style={color ? { color } : undefined}>
+                  {presentation.icon ? (
+                    <FolderIcon name={presentation.icon} />
+                  ) : (
+                    <Icon />
+                  )}
+                </span>
               </Sidebar.Icon>
               <InlineNameEditor
                 name={view.name}
@@ -315,14 +613,76 @@ function SmartFolderEntry({
           ) : (
             <Sidebar.Item
               className={styles.item}
-              data-status={active ? "active" : undefined}
+              data-status={
+                active || organization.selected.includes(view.id)
+                  ? "active"
+                  : undefined
+              }
               aria-current={active ? "page" : undefined}
-              onClick={select}
+              draggable
+              onDragStart={(event) => {
+                event.dataTransfer.setData(
+                  "application/x-pond-saved-views",
+                  (organization.selected.includes(view.id)
+                    ? organization.selected
+                    : [view.id]
+                  ).join("\n"),
+                );
+                event.dataTransfer.effectAllowed = "move";
+              }}
+              onDragOver={(event) => {
+                if (
+                  isGroup &&
+                  event.dataTransfer.types.includes(
+                    "application/x-pond-saved-views",
+                  )
+                ) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  event.dataTransfer.dropEffect = "move";
+                }
+              }}
+              onDrop={(event) => {
+                if (!isGroup) return;
+                const ids = event.dataTransfer
+                  .getData("application/x-pond-saved-views")
+                  .split("\n")
+                  .filter(Boolean);
+                if (!ids.length) return;
+                event.preventDefault();
+                event.stopPropagation();
+                const roots = selectedViewRoots(ids, views);
+                if (
+                  !roots.every((entry) =>
+                    groupMoveChoices(entry.id, views).some(
+                      (group) => group.id === view.id,
+                    ),
+                  )
+                )
+                  return;
+                void runAction(async () => {
+                  for (const entry of roots)
+                    await savedViews.move(entry.id, view.id);
+                  setOpen(true);
+                });
+              }}
+              {...organization.rowProps(
+                view.id,
+                depth,
+                isGroup ? open : undefined,
+                () => setOpen((value) => !value),
+              )}
             >
               <Sidebar.Icon>
-                <Icon />
+                <span style={color ? { color } : undefined}>
+                  {presentation.icon ? (
+                    <FolderIcon name={presentation.icon} />
+                  ) : (
+                    <Icon />
+                  )}
+                </span>
               </Sidebar.Icon>
-              <span className={styles.name}>{view.name}</span>
+              <Sidebar.ItemLabel>{view.name}</Sidebar.ItemLabel>
             </Sidebar.Item>
           )}
           {renaming ? null : (
@@ -335,10 +695,11 @@ function SmartFolderEntry({
               <Menu.Trigger
                 icon
                 size="xs"
-                variant="ghost"
+                variant="text"
                 rounding="rounded"
                 className={styles.more}
                 aria-label={`More Actions for ${view.name}`}
+                tabIndex={-1}
               >
                 <IconDotsFill12 />
               </Menu.Trigger>
@@ -354,6 +715,7 @@ function SmartFolderEntry({
         >
           {children.map((child) => (
             <SmartFolderEntry
+              organization={organization}
               key={child.id}
               view={child}
               views={views}
@@ -365,6 +727,8 @@ function SmartFolderEntry({
               onFinishRenaming={onFinishRenaming}
               onStartRenaming={onStartRenaming}
               openEditor={openEditor}
+              presentations={presentations}
+              quickAccessIds={quickAccessIds}
             />
           ))}
         </Sidebar.CollapsibleGroupContent>
@@ -381,9 +745,27 @@ export function SmartFoldersSection({
 }) {
   const views = useSavedViews();
   const { activeViewId } = useViewStore();
+  const [presentations] = usePrefs("savedViewViews");
   const [open, setOpen] = useState(true);
   const [editor, setEditor] = useState<EditorRequest | null>(null);
-  const [editingViewId, setEditingViewId] = useState<string | null>(null);
+  const editingViewId = useEditingSavedViewId();
+  const editorRequest = useSavedViewEditorRequest();
+  const handledEditorRequest = useRef(0);
+  useEffect(() => {
+    if (
+      editorRequest.token === 0 ||
+      editorRequest.token === handledEditorRequest.current
+    )
+      return;
+    handledEditorRequest.current = editorRequest.token;
+    setOpen(true);
+    setEditor({
+      mode: "create",
+      kind: editorRequest.kind,
+      parentId: editorRequest.parentId,
+      onSaved: onSelect,
+    });
+  }, [editorRequest, onSelect]);
   const childrenByParent = useMemo(() => {
     const groups = new Set(
       views.filter((view) => view.kind === "group").map((view) => view.id),
@@ -398,6 +780,35 @@ export function SmartFoldersSection({
     }
     return children;
   }, [views]);
+  const organization = useOrganizationTree(views, (ids) => {
+    if (ids.length === 1 && ids[0]) {
+      savedViews.select(ids[0]);
+      onSelect();
+    } else if (ids.length > 1) {
+      resetFilters();
+      selectLibraryNav({ kind: "all" });
+      setQuery({
+        combinator: "or",
+        rules: views
+          .filter((view) => ids.includes(view.id))
+          .map((view) =>
+            combineQueries([inheritedQueryFor(view, views), view.query]),
+          ),
+      });
+      onSelect();
+    }
+  });
+  const quickAccessIds = views
+    .filter((view) => presentations[view.id]?.quickAccess)
+    .toSorted(
+      (left, right) =>
+        (presentations[left.id]?.quickAccessOrder ?? Number.MAX_SAFE_INTEGER) -
+          (presentations[right.id]?.quickAccessOrder ??
+            Number.MAX_SAFE_INTEGER) ||
+        left.sortOrder - right.sortOrder ||
+        left.name.localeCompare(right.name),
+    )
+    .map((view) => view.id);
   const items = () =>
     creationItems(
       null,
@@ -406,7 +817,7 @@ export function SmartFoldersSection({
         onSelect();
       },
       setEditor,
-      setEditingViewId,
+      savedViews.startEditing,
     );
 
   return (
@@ -421,6 +832,11 @@ export function SmartFoldersSection({
             <Sidebar.CollapsibleGroupLabel>
               Smart Folders
             </Sidebar.CollapsibleGroupLabel>
+            {organization.selected.length > 1 ? (
+              <Sidebar.Count aria-live="polite">
+                {organization.selected.length} selected
+              </Sidebar.Count>
+            ) : null}
             <Menu.Root>
               <Menu.Trigger
                 icon
@@ -440,9 +856,17 @@ export function SmartFoldersSection({
             </Menu.Root>
           </Sidebar.GroupHeader>
         </SpecContextMenu>
-        <Sidebar.CollapsibleGroupContent inert={!open} aria-hidden={!open}>
+        <Sidebar.CollapsibleGroupContent
+          ref={organization.root}
+          role="tree"
+          aria-label="Smart Folders"
+          aria-multiselectable
+          inert={!open}
+          aria-hidden={!open}
+        >
           {(childrenByParent.get(null) ?? []).map((view) => (
             <SmartFolderEntry
+              organization={organization}
               key={view.id}
               view={view}
               views={views}
@@ -451,9 +875,11 @@ export function SmartFoldersSection({
               onSelect={onSelect}
               depth={0}
               editingViewId={editingViewId}
-              onFinishRenaming={() => setEditingViewId(null)}
-              onStartRenaming={setEditingViewId}
+              onFinishRenaming={() => savedViews.finishEditing()}
+              onStartRenaming={savedViews.startEditing}
               openEditor={setEditor}
+              presentations={presentations}
+              quickAccessIds={quickAccessIds}
             />
           ))}
         </Sidebar.CollapsibleGroupContent>

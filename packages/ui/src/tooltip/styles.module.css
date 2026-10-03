@@ -8,12 +8,12 @@
   max-width: 320px;
   padding: 0;
   font-size: var(--ds-text-xs);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   text-align: center;
   color: var(--ds-gray-11);
   background: var(--ds-gray-1);
-  border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-1);
+  border-radius: var(--ds-radius-sm);
+  box-shadow: var(--ds-shadow-tooltip);
   transition:
     opacity var(--ds-duration-snap) var(--ds-easing-decelerate),
     transform var(--ds-duration-snap) var(--ds-easing-decelerate);

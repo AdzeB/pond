@@ -1,4 +1,4 @@
-import type { SyncAccounts } from "@pond/schema/db";
+import { PrefsSchema, type SyncAccounts } from "@pond/schema/db";
 import { describe, expect, it } from "vitest";
 import {
   mergeAppSlice,
@@ -8,6 +8,37 @@ import {
 } from "./prefs-scope";
 
 const GREEN = { appearance: "system", lightPresetId: "mint" } as const;
+
+it("loads legacy search preferences without resetting semantic search", () => {
+  const prefs = PrefsSchema.parse({
+    ai: { nlCompiler: true, semanticSearch: true, embedModelId: "local-model" },
+  });
+  expect(prefs.ai.semanticSearch).toBe(true);
+  expect(prefs.ai.embedModelId).toBe("local-model");
+  expect(prefs.ai).not.toHaveProperty("nlCompiler");
+});
+
+it("migrates legacy sidebar counts and completes saved destination order", () => {
+  const prefs = PrefsSchema.parse({
+    sidebar: {
+      showCounts: false,
+      order: ["trash", "all", "trash"],
+    },
+  });
+
+  expect(prefs.sidebar.badgeStyle).toBe("none");
+  expect(prefs.sidebar.order).toEqual([
+    "trash",
+    "all",
+    "uncategorized",
+    "untagged",
+    "recentlyUsed",
+    "tags",
+    "random",
+    "downloads",
+    "sources",
+  ]);
+});
 
 describe("splitPrefsPatch", () => {
   it("routes appearance (preferences) to the library slice", () => {
@@ -161,6 +192,31 @@ it("keeps independent folder presentations in the portable library slice", () =>
   const split = splitPrefsPatch({ folderViews: next.folderViews });
   expect(split.pond.folderViews).toEqual(next.folderViews);
   expect(split.app).not.toHaveProperty("folderViews");
+});
+
+it("keeps Saved View presentations in the portable library slice", () => {
+  const next = mergePondSlice(
+    {},
+    {
+      savedViewViews: {
+        reading: {
+          icon: "bookmark",
+          color: "blue",
+          quickAccess: true,
+          quickAccessOrder: 0,
+        },
+      },
+    },
+  );
+  expect(next.savedViewViews.reading).toEqual({
+    icon: "bookmark",
+    color: "blue",
+    quickAccess: true,
+    quickAccessOrder: 0,
+  });
+  const split = splitPrefsPatch({ savedViewViews: next.savedViewViews });
+  expect(split.pond.savedViewViews).toEqual(next.savedViewViews);
+  expect(split.app).not.toHaveProperty("savedViewViews");
 });
 
 it("keeps automatic folder rules portable and isolated to their library", () => {

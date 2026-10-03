@@ -7,7 +7,7 @@ import { isAuxiliaryKind } from "@shared/save-file-names";
 import { z } from "zod";
 import { readBundleJson } from "../lib/library-config";
 import type { PackageOrganization } from "./package-organization";
-import { exportLibraryMedia } from "./security/library-media-storage";
+import { exportLibraryMedia } from "./storage/library-media-storage";
 import {
   checkTransferCancellation,
   recordTransferCopy,

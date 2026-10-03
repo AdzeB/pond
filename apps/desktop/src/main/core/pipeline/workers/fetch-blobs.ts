@@ -15,12 +15,22 @@ import { persistSave } from "../../persist-save";
 import { getImageDownloadPrefs } from "../../prefs";
 import { ensureSaveThumbnail } from "../../save-thumbnail";
 import { TransientError } from "../extractors/errors";
+import {
+  QueueWorkerImageDimsSchema,
+  QueueWorkerImageResultSchema,
+} from "../worker-contract";
+import { runQueueWorkerJob } from "../worker-host";
 import { readSave, type WriteFileArgs } from "./apply";
 import { fetchSourceIcon } from "./source-icon";
 
+interface FetchBlobsContext extends TransferOptions {
+  leaseToken?: string;
+  cancellationFence?: number;
+}
+
 export async function runFetchBlobs(
   saveId: string,
-  ctx: TransferOptions = {},
+  ctx: FetchBlobsContext = {},
 ): Promise<void> {
   const save = await readSave(saveId);
   if (!save) return;
@@ -87,21 +97,50 @@ export async function runFetchBlobs(
       let mimeType = tx.mimeType;
       let dims: { width: number; height: number } | null = null;
       if (kind !== "video") {
-        const processed = await processImage(
-          bytes,
-          filename,
-          mimeType ?? undefined,
-          imagePrefs,
-        );
+        const processed =
+          ctx.leaseToken && ctx.cancellationFence != null
+            ? QueueWorkerImageResultSchema.nullable().parse(
+                await runQueueWorkerJob(
+                  {
+                    operation: "process_image",
+                    bytes: Uint8Array.from(bytes),
+                    filename,
+                    mimeType: mimeType ?? undefined,
+                    prefs: imagePrefs,
+                    leaseToken: ctx.leaseToken,
+                    cancellationFence: ctx.cancellationFence,
+                  },
+                  { signal: ctx.signal },
+                ),
+              )
+            : await processImage(
+                bytes,
+                filename,
+                mimeType ?? undefined,
+                imagePrefs,
+              );
         if (processed) {
-          bytes = processed.bytes;
+          bytes = Buffer.from(processed.bytes);
           filename = processed.filename;
           mimeType = processed.mimeType;
           if (processed.width && processed.height) {
             dims = { width: processed.width, height: processed.height };
           }
         }
-        dims ??= await probeImageDims(bytes);
+        dims ??=
+          ctx.leaseToken && ctx.cancellationFence != null
+            ? QueueWorkerImageDimsSchema.nullable().parse(
+                await runQueueWorkerJob(
+                  {
+                    operation: "probe_image",
+                    bytes: Uint8Array.from(bytes),
+                    leaseToken: ctx.leaseToken,
+                    cancellationFence: ctx.cancellationFence,
+                  },
+                  { signal: ctx.signal },
+                ),
+              )
+            : await probeImageDims(bytes);
       }
       const write: WriteFileArgs = {
         kind,

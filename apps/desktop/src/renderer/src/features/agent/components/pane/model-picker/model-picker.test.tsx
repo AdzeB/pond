@@ -123,22 +123,34 @@ async function openPicker() {
   );
 }
 
-it("opens a compact root menu and a searchable model submenu", async () => {
+it("splits provider and model choices into separate submenus", async () => {
   const { onChange, onManageModels } = await renderPicker();
   await openPicker();
 
   expect(menuItem("Fast")).toBeTruthy();
   expect(menuItem("Context")).toBeTruthy();
   expect(menuItem("Reasoning")).toBeTruthy();
+  expect(menuItem("Provider")?.textContent).toContain("OpenAI");
   expect(menuItem("Model")).toBeTruthy();
   expect(document.body.textContent).not.toContain("200K tokens");
   expect(document.body.textContent).not.toContain("Legacy Test");
 
-  await act(async () => menuItem("Model")?.click());
+  await act(async () => menuItem("Provider")?.click());
   expect(document.body.textContent).toContain("OpenAI");
   expect(document.body.textContent).toContain("Anthropic");
   expect(document.body.textContent).toContain("Ollama");
-  expect(document.body.textContent).toContain("gemma4:26b");
+  expect(document.body.textContent).not.toContain("Claude Test");
+  await act(async () => menuItem("Anthropic")?.click());
+  expect(onChange).toHaveBeenCalledWith({
+    provider: "anthropic",
+    modelId: "claude-test",
+  });
+
+  await openPicker();
+  await act(async () => menuItem("Model")?.click());
+  expect(document.body.textContent).not.toContain("Anthropic");
+  expect(document.body.textContent).not.toContain("Claude Test");
+  expect(document.body.textContent).not.toContain("gemma4:26b");
   const selectedModel = menuItem("GPT-5.6 Sol");
   const modelMenu = selectedModel?.closest<HTMLElement>('[role="menu"]');
   if (!selectedModel || !modelMenu)
@@ -164,15 +176,15 @@ it("opens a compact root menu and a searchable model submenu", async () => {
     'input[placeholder="Search models…"]',
   );
   if (!input) throw new Error("Missing model search");
-  await act(async () => setInput(input, "claude"));
-  expect(document.body.textContent).toContain("Claude Test");
-  expect(document.body.textContent).not.toContain("GPT-5.6 SolOpenAI");
+  await act(async () => setInput(input, "sol"));
+  expect(document.body.textContent).toContain("GPT-5.6 Sol");
+  expect(document.body.textContent).not.toContain("Claude Test");
   expect(document.body.textContent).toContain("Manage Models");
 
-  await act(async () => menuItem("Claude Test")?.click());
+  await act(async () => menuItem("GPT-5.6 Sol")?.click());
   expect(onChange).toHaveBeenCalledWith({
-    provider: "anthropic",
-    modelId: "claude-test",
+    provider: "openai",
+    modelId: "gpt-5.6-sol",
   });
 
   await openPicker();

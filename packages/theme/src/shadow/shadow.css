@@ -1,39 +1,67 @@
 :root {
-  --ds-shadow-1:
-    0 0 0 1px light-dark(oklch(0 0 0 / 0.06), oklch(1 0 0 / 0.1)),
-    0 1px 2px -1px light-dark(oklch(0 0 0 / 0.06), oklch(0 0 0 / 0.2)),
-    0 2px 4px light-dark(oklch(0 0 0 / 0.04), oklch(0 0 0 / 0.12));
+  --ds-material-border-color: color-mix(in oklch, var(--ds-fg) 8%, transparent);
+  --ds-material-surface-color: var(--ds-gray-2);
+  --ds-material-sm-layer: 0 2px 2px rgb(0 0 0 / 4%);
+  --ds-material-md-near-layer: 0 2px 2px rgb(0 0 0 / 4%);
+  --ds-material-md-far-layer: 0 8px 8px -8px rgb(0 0 0 / 4%);
 
-  --ds-shadow-2:
-    0 0 0 1px light-dark(oklch(0 0 0 / 0.08), oklch(1 0 0 / 0.14)),
-    0 1px 2px -1px light-dark(oklch(0 0 0 / 0.08), oklch(0 0 0 / 0.28)),
-    0 2px 4px light-dark(oklch(0 0 0 / 0.06), oklch(0 0 0 / 0.16));
+  --ds-shadow-xs:
+    0 0 0 1px var(--ds-material-border-color),
+    0 0 0 1px var(--ds-material-surface-color);
 
-  --ds-shadow-3:
-    0 0 0 1px light-dark(oklch(0 0 0 / 0.06), oklch(1 0 0 / 0.1)),
-    0 1px 2px -1px light-dark(oklch(0 0 0 / 0.06), oklch(0 0 0 / 0.24)),
-    0 6px 18px -1px light-dark(oklch(0 0 0 / 0.02), oklch(0 0 0 / 0.16)),
-    0 3px 9px -1px light-dark(oklch(0 0 0 / 0.04), oklch(0 0 0 / 0.1));
+  --ds-shadow-sm:
+    0 0 0 1px var(--ds-material-border-color), var(--ds-material-sm-layer),
+    0 0 0 1px var(--ds-material-surface-color);
 
-  --ds-shadow-4: var(--ds-shadow-1);
+  --ds-shadow-md:
+    0 0 0 1px var(--ds-material-border-color), var(--ds-material-md-near-layer),
+    var(--ds-material-md-far-layer), 0 0 0 1px var(--ds-material-surface-color);
 
-  --ds-shadow-5:
-    0 0 0 1px light-dark(oklch(0 0 0 / 0.06), oklch(1 0 0 / 0.1)),
-    0 1px 2px -1px light-dark(oklch(0 0 0 / 0.06), oklch(0 0 0 / 0.24)),
-    0 9px 48px -1px light-dark(oklch(0 0 0 / 0.08), oklch(0 0 0 / 0.28)),
-    0 6px 24px -1px light-dark(oklch(0 0 0 / 0.1), oklch(0 0 0 / 0.18));
+  --ds-shadow-lg:
+    0 0 0 1px var(--ds-material-border-color), 0 2px 2px rgb(0 0 0 / 4%),
+    0 8px 16px -4px rgb(0 0 0 / 4%), 0 0 0 1px var(--ds-material-surface-color);
 
-  --ds-shadow-6:
-    0 0 0 1px light-dark(oklch(0 0 0 / 0.06), oklch(1 0 0 / 0.1)),
-    0 1px 2px -1px light-dark(oklch(0 0 0 / 0.06), oklch(0 0 0 / 0.24)),
-    0 12px 48px -1px light-dark(oklch(0 0 0 / 0.1), oklch(0 0 0 / 0.34)),
-    0 8px 24px -1px light-dark(oklch(0 0 0 / 0.12), oklch(0 0 0 / 0.22));
+  --ds-shadow-tooltip:
+    0 0 0 1px var(--ds-material-border-color), 0 1px 1px rgb(0 0 0 / 2%),
+    0 4px 8px rgb(0 0 0 / 4%), 0 0 0 1px var(--ds-material-surface-color);
 
-  --ds-shadow-inset:
-    inset 0 1px 1px oklch(0 0 0 / 0.067), inset 0 1px 3px oklch(0 0 0 / 0.067),
-    inset 0 2px 5px oklch(0 0 0 / 0.1);
+  --ds-shadow-menu:
+    0 0 0 1px var(--ds-material-border-color),
+    0 1px 1px rgb(0 0 0 / 2%), 0 4px 8px -4px rgb(0 0 0 / 4%),
+    0 16px 24px -8px rgb(0 0 0 / 6%),
+    0 0 0 1px var(--ds-material-surface-color);
 
-  --ds-shadow-popover: var(--ds-shadow-3);
-  --ds-shadow-dialog: var(--ds-shadow-5);
-  --ds-shadow-search: var(--ds-shadow-1);
+  --ds-shadow-modal:
+    0 0 0 1px var(--ds-material-border-color),
+    0 1px 1px rgb(0 0 0 / 2%), 0 8px 16px -4px rgb(0 0 0 / 4%),
+    0 24px 32px -8px rgb(0 0 0 / 6%),
+    0 0 0 1px var(--ds-material-surface-color);
+
+  --ds-shadow-fullscreen: var(--ds-shadow-modal);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ds-material-border-color: color-mix(
+      in oklch,
+      var(--ds-fg) 14.5%,
+      transparent
+    );
+    --ds-material-surface-color: var(--ds-gray-1);
+    --ds-material-sm-layer: 0 1px 2px rgb(0 0 0 / 16%);
+    --ds-material-md-near-layer: 0 2px 2px rgb(0 0 0 / 32%);
+    --ds-material-md-far-layer: 0 8px 8px -8px rgb(0 0 0 / 16%);
+  }
+}
+
+:root[data-theme="dark"] {
+  --ds-material-border-color: color-mix(
+    in oklch,
+    var(--ds-fg) 14.5%,
+    transparent
+  );
+  --ds-material-surface-color: var(--ds-gray-1);
+  --ds-material-sm-layer: 0 1px 2px rgb(0 0 0 / 16%);
+  --ds-material-md-near-layer: 0 2px 2px rgb(0 0 0 / 32%);
+  --ds-material-md-far-layer: 0 8px 8px -8px rgb(0 0 0 / 16%);
 }

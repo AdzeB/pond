@@ -3,7 +3,7 @@ import type { SavesFileInput, SavesIdsInput } from "./saves-contracts-shared";
 
 export interface SavesExportQueryInputs {
   "saves.exportEaglePackage": SavesIdsInput;
-  "saves.exportPackage": SavesIdsInput & { password?: string };
+  "saves.exportPackage": SavesIdsInput;
   "saves.exportFile": SavesFileInput;
   "saves.share": { id: string; fileIndex?: number };
   "saves.exportFiles": SavesIdsInput;
@@ -22,7 +22,6 @@ export interface SavesExportQueryResults {
     ok: boolean;
     path?: string;
     exported?: number;
-    recoveryKey?: string;
     error?: string;
   };
   "saves.exportFile": OkResult & { path?: string };

@@ -2,11 +2,13 @@ import { app, BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import { startAutoImport, stopAutoImport } from "../../core/auto-import";
 import { resumeMutations, suspendMutations } from "../../core/executor";
+import { prepareLegacyLibraryRead } from "../../core/legacy-encryption/library-access";
 import {
   resumeLibraryTransfers,
   stopLibraryTransfers,
 } from "../../core/library-transfers";
 import { downloadActivity } from "../../core/pipeline/download-activity";
+import { createLibraryWorkCoordinator } from "../../core/pipeline/library-work-coordinator";
 import {
   pauseAndDrainReconciler,
   setReconcilerPaused,
@@ -14,6 +16,11 @@ import {
 import { invalidatePrefs } from "../../core/prefs";
 import { closePreviewWindows } from "../../core/preview-windows";
 import { reconcileLibrary } from "../../core/scan";
+import {
+  startScreenshotIntake,
+  stopScreenshotIntake,
+} from "../../core/screenshot-intake";
+import { closeScreenshotWindow } from "../../core/screenshot-window";
 import { migrateLegacySyncPrefs } from "../../core/sync";
 import { flushTagsDump, hydrateTagsFromBundle } from "../../core/tags-bundle";
 import { clearUndoHistory } from "../../core/undo";
@@ -21,26 +28,26 @@ import { closeDb } from "../../db";
 import { rotateBundleBackups } from "../../lib/library-config";
 import { invalidatePaths, resolvePaths } from "../../paths";
 
-let reconcilerWasPaused: boolean | null = null;
+const libraryWork = createLibraryWorkCoordinator({
+  stopAutoImport,
+  stopScreenshotIntake,
+  stopLibraryTransfers,
+  pauseAndDrainReconciler,
+  suspendMutations,
+  resumeMutations,
+  resumeLibraryTransfers,
+  setReconcilerPaused,
+  startAutoImport,
+  startScreenshotIntake,
+  warn: (message, error) => log.warn(message, error),
+});
 
 export async function suspendLibraryWork(): Promise<void> {
-  await stopAutoImport();
-  await stopLibraryTransfers();
-  if (reconcilerWasPaused === null) {
-    reconcilerWasPaused = await pauseAndDrainReconciler();
-  }
-  await suspendMutations();
+  await libraryWork.suspend();
 }
 
 export async function resumeLibraryWork(): Promise<void> {
-  resumeMutations();
-  resumeLibraryTransfers();
-  const wasPaused = reconcilerWasPaused;
-  reconcilerWasPaused = null;
-  if (wasPaused === false) await setReconcilerPaused(false);
-  await startAutoImport().catch((error) =>
-    log.warn("Could not start auto-import", error),
-  );
+  await libraryWork.resume();
 }
 
 let relaunchPending = false;
@@ -88,6 +95,7 @@ async function softRepointInDev(): Promise<void> {
   closeDb();
   invalidatePaths();
   invalidatePrefs();
+  await prepareLegacyLibraryRead();
   clearUndoHistory();
   resumeMutations();
   try {
@@ -116,6 +124,7 @@ async function softRepointInDev(): Promise<void> {
     log.warn("[pond library-ops] dev re-point reconcile failed", err);
   }
   await resumeLibraryWork();
+  closeScreenshotWindow();
   closePreviewWindows();
   for (const win of BrowserWindow.getAllWindows()) {
     if (!win.isDestroyed()) win.webContents.reload();

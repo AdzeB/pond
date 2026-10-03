@@ -1,6 +1,9 @@
-import { CANCEL_REASON, SKIP_REASON, saves, tasks } from "@pond/schema/db";
-import type { PipelineTaskEvent } from "@pond/schema/events";
-import { and, eq, inArray } from "drizzle-orm";
+import { CANCEL_REASON, OPS, SKIP_REASON, saves, tasks } from "@pond/schema/db";
+import type {
+  PipelineTaskAttemptEvent,
+  PipelineTaskEvent,
+} from "@pond/schema/events";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { getDb } from "../../db";
@@ -8,10 +11,16 @@ import { commitEvent, startTaskEvent, toErrorInfo } from "../../lib/wide-event";
 import { persistSave } from "../persist-save";
 import { downloadActivity } from "./download-activity";
 import { canDispatchTask, isInteractiveTask } from "./priority";
+import {
+  cancelQueueGeneration,
+  completeQueueGenerationIfSettled,
+} from "./queue-generations";
 import { noteSuccess } from "./rate-governor";
+import { migrateLegacyGovernorState } from "./rate-governor-state";
 import {
   type DueTask,
   isSourceTask,
+  MAX_BACKGROUND_INFLIGHT,
   MAX_GLOBAL_INFLIGHT,
   MAX_INTERACTIVE_INFLIGHT,
   metrics,
@@ -23,23 +32,29 @@ import {
   WorkerWatchdogError,
 } from "./reconciler-config";
 import {
-  pullDueTasks,
+  claimDueTasks,
+  extendOwnedLeasesSync,
+  heartbeatTaskLease,
+  recoverExpiredLeases,
   sweepOrphanTasks,
   sweepTasklessIngestingSaves,
+  TASK_LEASE_MS,
 } from "./task-queue";
 import {
   enrichTaskEventWithSave,
   gateForSource,
   handleFailure,
   markDone,
-  markRunning,
   maybeFinalizeSave,
 } from "./task-settlement";
 
 const TaskPayloadSchema = z.json().catch(null);
+const LEASE_OWNER = `main:${process.pid}`;
 
 let started = false;
 let paused = false;
+let pausedBeforeSuspend = false;
+let suspended = false;
 let pollTimer: NodeJS.Timeout | null = null;
 let kickPending = false;
 let nextOrphanSweepAt = 0;
@@ -126,6 +141,25 @@ export function resumeReconciler(): void {
   kickReconciler();
 }
 
+export async function suspendReconciler(): Promise<void> {
+  if (suspended) return;
+  suspended = true;
+  pausedBeforeSuspend = paused;
+  pauseReconciler();
+  const db = await getDb();
+  const at = Date.now();
+  extendOwnedLeasesSync(db.$raw, LEASE_OWNER, at, false);
+}
+
+export async function resumeReconcilerAfterSuspend(): Promise<void> {
+  if (!suspended) return;
+  suspended = false;
+  const db = await getDb();
+  const at = Date.now();
+  extendOwnedLeasesSync(db.$raw, LEASE_OWNER, at, true);
+  if (!pausedBeforeSuspend) resumeReconciler();
+}
+
 export async function cancelSaveIngest(saveId: string): Promise<boolean> {
   const db = await getDb();
   const save = db
@@ -151,11 +185,22 @@ export async function cancelSaveIngest(saveId: string): Promise<boolean> {
 
   db.update(tasks)
     .set({
-      status: "failed",
+      status: "cancelled",
       lastError: CANCEL_REASON,
+      cancellationFence: sql`${tasks.cancellationFence} + 1`,
+      leaseOwner: null,
+      leaseToken: null,
+      leaseExpiresAt: null,
+      heartbeatAt: null,
+      completedAt: new Date(),
       updatedAt: new Date(),
     })
-    .where(and(eq(tasks.saveId, saveId), eq(tasks.status, "pending")))
+    .where(
+      and(
+        eq(tasks.saveId, saveId),
+        inArray(tasks.status, ["pending", "deferred", "running", "blocked"]),
+      ),
+    )
     .run();
 
   await persistSave(
@@ -183,6 +228,18 @@ export async function cancelAllIngest(): Promise<number> {
   if (!wasPaused) resumeReconciler();
   log.info("[pond pipeline:reconciler] cancelled all ingest", { cancelled });
   return cancelled;
+}
+
+export async function cancelGeneration(generationId: string): Promise<number> {
+  const runningIds = await cancelQueueGeneration(generationId);
+  for (const id of runningIds) {
+    runningTasks.get(id)?.abort();
+  }
+  log.info("[pond pipeline:reconciler] cancelled generation", {
+    generationId,
+    running: runningIds.length,
+  });
+  return runningIds.length;
 }
 
 export async function skipSaves(ids: readonly string[]): Promise<number> {
@@ -218,14 +275,20 @@ export async function skipSaves(ids: readonly string[]): Promise<number> {
     );
     db.update(tasks)
       .set({
-        status: "failed",
+        status: "cancelled",
         lastError: SKIP_REASON,
+        cancellationFence: sql`${tasks.cancellationFence} + 1`,
+        leaseOwner: null,
+        leaseToken: null,
+        leaseExpiresAt: null,
+        heartbeatAt: null,
+        completedAt: new Date(),
         updatedAt: new Date(),
       })
       .where(
         and(
           eq(tasks.saveId, saveId),
-          inArray(tasks.status, ["pending", "running", "blocked"]),
+          inArray(tasks.status, ["pending", "deferred", "running", "blocked"]),
         ),
       )
       .run();
@@ -239,18 +302,9 @@ export function startReconciler(): void {
   if (started) return;
   started = true;
   log.info("[pond pipeline:reconciler] starting");
-  void track(recoverOrphanedRunningTasks()).catch((err) =>
-    log.warn("[pond pipeline:reconciler] stale-running sweep failed", err),
+  void track(initializeReconciler()).catch((err) =>
+    log.error("[pond pipeline:reconciler] initialization failed", err),
   );
-  void track(sweepOrphanTasks()).catch((err) =>
-    log.warn("[pond pipeline:reconciler] orphan sweep failed", err),
-  );
-  void track(sweepTasklessIngestingSaves()).catch((err) =>
-    log.warn("[pond pipeline:reconciler] taskless sweep failed", err),
-  );
-  nextOrphanSweepAt = Date.now() + ORPHAN_SWEEP_INTERVAL_MS;
-  schedulePoll(POLL_INTERVAL_MS);
-  void track(tick());
 }
 
 export function kickReconciler(): void {
@@ -263,31 +317,14 @@ export function kickReconciler(): void {
   });
 }
 
-async function recoverOrphanedRunningTasks(): Promise<void> {
-  const db = await getDb();
-  const running = db
-    .select({ id: tasks.id })
-    .from(tasks)
-    .where(eq(tasks.status, "running"))
-    .all();
-  const orphanIds = running
-    .map((t) => t.id)
-    .filter((id) => !runningTaskIds.has(id));
-  if (orphanIds.length === 0) return;
-  const now = new Date();
-  db.update(tasks)
-    .set({
-      status: "pending",
-      lastError: "recovered: process restarted while running",
-      nextRunAt: now,
-      updatedAt: now,
-    })
-    .where(and(inArray(tasks.id, orphanIds), eq(tasks.status, "running")))
-    .run();
-  log.info("[pond pipeline:reconciler] recovered orphaned running tasks", {
-    count: orphanIds.length,
-  });
-  kickReconciler();
+async function initializeReconciler(): Promise<void> {
+  await migrateLegacyGovernorState();
+  await recoverExpiredLeases();
+  await sweepOrphanTasks();
+  await sweepTasklessIngestingSaves();
+  nextOrphanSweepAt = Date.now() + ORPHAN_SWEEP_INTERVAL_MS;
+  schedulePoll(POLL_INTERVAL_MS);
+  await tick();
 }
 
 function schedulePoll(ms: number): void {
@@ -299,15 +336,15 @@ function schedulePoll(ms: number): void {
 }
 
 async function tick(): Promise<void> {
-  if (!started) return;
-  if (!paused && Date.now() >= nextOrphanSweepAt) {
+  if (!started || paused) return;
+  if (Date.now() >= nextOrphanSweepAt) {
     nextOrphanSweepAt = Date.now() + ORPHAN_SWEEP_INTERVAL_MS;
     void track(sweepOrphanTasks()).catch((err) =>
       log.warn("[pond pipeline:reconciler] periodic orphan sweep failed", err),
     );
-    void track(recoverOrphanedRunningTasks()).catch((err) =>
+    void track(recoverExpiredLeases()).catch((err) =>
       log.warn(
-        "[pond pipeline:reconciler] periodic stale-running sweep failed",
+        "[pond pipeline:reconciler] periodic lease recovery failed",
         err,
       ),
     );
@@ -318,11 +355,31 @@ async function tick(): Promise<void> {
       ),
     );
   }
-  const backgroundInflight = inflightGlobal - inflightInteractive;
-  const interactiveRoom = inflightInteractive < MAX_INTERACTIVE_INFLIGHT;
-  const backgroundRoom = !paused && backgroundInflight < MAX_GLOBAL_INFLIGHT;
-  if (!interactiveRoom && !backgroundRoom) return;
-  const due = await pullDueTasks();
+  const globalRoom = MAX_GLOBAL_INFLIGHT - inflightGlobal;
+  if (globalRoom <= 0) return;
+  const availableByOp = z
+    .record(z.enum(OPS), z.number())
+    .parse(
+      Object.fromEntries(
+        OPS.map((op) => [
+          op,
+          Math.max(0, PER_OP_CONCURRENCY[op] - inflightByOp[op]),
+        ]),
+      ),
+    );
+  const due = await claimDueTasks({
+    owner: LEASE_OWNER,
+    limit: globalRoom,
+    availableInteractive: Math.max(
+      0,
+      MAX_INTERACTIVE_INFLIGHT - inflightInteractive,
+    ),
+    availableBackground: Math.max(
+      0,
+      MAX_BACKGROUND_INFLIGHT - (inflightGlobal - inflightInteractive),
+    ),
+    availableByOp,
+  });
   if (due.length === 0) return;
   for (const task of due) {
     if (runningTaskIds.has(task.id)) continue;
@@ -334,7 +391,7 @@ async function tick(): Promise<void> {
         inflightInteractive,
         inflightForOp: inflightByOp[task.op],
         opCap: PER_OP_CONCURRENCY[task.op],
-        backgroundCap: MAX_GLOBAL_INFLIGHT,
+        backgroundCap: MAX_BACKGROUND_INFLIGHT,
         interactiveCap: MAX_INTERACTIVE_INFLIGHT,
       })
     ) {
@@ -345,6 +402,7 @@ async function tick(): Promise<void> {
 }
 
 async function dispatchTask(task: DueTask): Promise<void> {
+  if (!task.leaseToken) return;
   const interactive = isInteractiveTask(task);
   runningTaskIds.add(task.id);
   inflightByOp[task.op]++;
@@ -363,11 +421,41 @@ async function dispatchTask(task: DueTask): Promise<void> {
   });
   await enrichTaskEventWithSave(ev);
   const t0 = Date.now();
+  const attemptBase = {
+    saveId: task.saveId,
+    source: task.source,
+    op: task.op,
+    taskId: task.id,
+    generationId: task.generationId,
+    attempt: task.attempts + 1,
+    leaseOwner: task.leaseOwner,
+    leaseToken: task.leaseToken,
+    cancellationFence: task.cancellationFence,
+  };
+  void track(
+    commitEvent({
+      kind: "pipeline.task.attempt",
+      ts: t0,
+      ...attemptBase,
+      phase: "claimed",
+      nextRunAt: null,
+      deferredReason: null,
+      durationMs: null,
+      error: null,
+    }),
+  );
   const activity = downloadActivity.begin(task);
   const stopActivity = () => activity.finish("failed");
   controller.signal.addEventListener("abort", stopActivity, { once: true });
+  const heartbeat = setInterval(
+    () => {
+      void heartbeatTaskLease(task).then((renewed) => {
+        if (!renewed) controller.abort();
+      });
+    },
+    Math.max(1_000, Math.floor(TASK_LEASE_MS / 3)),
+  );
   try {
-    await markRunning(task);
     const payload = TaskPayloadSchema.parse(task.payload);
     const budget = TASK_WATCHDOG_MS[task.op];
     let watchdogHandle: NodeJS.Timeout | null = null;
@@ -386,6 +474,8 @@ async function dispatchTask(task: DueTask): Promise<void> {
           WORKERS[task.op](task.saveId, payload, {
             signal: controller.signal,
             reportActivity: activity.report,
+            leaseToken: task.leaseToken,
+            cancellationFence: task.cancellationFence,
           }),
         ),
         watchdog,
@@ -394,21 +484,30 @@ async function dispatchTask(task: DueTask): Promise<void> {
       if (watchdogHandle) clearTimeout(watchdogHandle);
     }
     controller.signal.throwIfAborted();
-    await markDone(task);
+    const settled = await markDone(task);
+    if (!settled) {
+      ev.outcome = "skipped";
+      return;
+    }
     metrics.tasksCompleted++;
     if (isSourceTask(task.op)) noteSuccess(task.source);
     await maybeFinalizeSave(task.saveId);
+    await completeQueueGenerationIfSettled(task.generationId);
     activity.finish("completed");
     ev.outcome = "ok";
     ev.attempts = task.attempts + 1;
   } catch (err) {
     activity.finish("failed");
     const result = await handleFailure(task, err);
-    ev.outcome = result.outcome;
+    if (result.settled) {
+      await completeQueueGenerationIfSettled(task.generationId);
+    }
+    ev.outcome = result.settled ? result.outcome : "skipped";
     ev.error = toErrorInfo(err);
     ev.nextRunAt = result.nextRunAt;
     ev.attempts = result.recordedAttempts;
   } finally {
+    clearInterval(heartbeat);
     controller.signal.removeEventListener("abort", stopActivity);
     runningTaskIds.delete(task.id);
     runningTasks.delete(task.id);
@@ -418,6 +517,30 @@ async function dispatchTask(task: DueTask): Promise<void> {
     ev.durationMs = Date.now() - t0;
     ev.pipeline = { inflight: inflightGlobal, paused };
     ev.gate = gateForSource(task.source);
+    const phase: PipelineTaskAttemptEvent["phase"] =
+      ev.outcome === "ok"
+        ? "completed"
+        : ev.outcome === "deferred"
+          ? "deferred"
+          : ev.outcome === "blocked"
+            ? "blocked"
+            : ev.outcome === "dead"
+              ? "dead"
+              : ev.outcome === "cancelled"
+                ? "cancelled"
+                : "stale_rejected";
+    void track(
+      commitEvent({
+        kind: "pipeline.task.attempt",
+        ts: Date.now(),
+        ...attemptBase,
+        phase,
+        nextRunAt: ev.nextRunAt,
+        deferredReason: task.deferredReason,
+        durationMs: ev.durationMs,
+        error: ev.error,
+      }),
+    );
     void track(commitEvent(ev));
     kickReconciler();
   }

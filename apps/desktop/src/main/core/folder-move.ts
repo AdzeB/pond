@@ -40,6 +40,7 @@ export function planFolderBatchMove(
   rows: readonly OrderedFolder[],
   ids: readonly string[],
   parentId: string | null,
+  beforeId?: string,
 ) {
   const selected = new Set(ids);
   const roots = [...selected].filter((id) => {
@@ -59,7 +60,10 @@ export function planFolderBatchMove(
   let next = [...rows];
   for (const id of roots) {
     const patches = new Map(
-      planFolderMove(next, id, parentId).map((patch) => [patch.id, patch]),
+      planFolderMove(next, id, parentId, beforeId).map((patch) => [
+        patch.id,
+        patch,
+      ]),
     );
     next = next.map((row) => patches.get(row.id) ?? row);
   }

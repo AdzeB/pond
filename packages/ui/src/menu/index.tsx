@@ -359,7 +359,7 @@ function Items({ items }: { items: MenuItemSpec[] }) {
 function Input({ className, onKeyDown, ...props }: BaseInput.Props) {
   return (
     <BaseInput
-      type="search"
+      type="text"
       spellCheck={false}
       className={cn(styles.input, className)}
       onKeyDown={(event) => {

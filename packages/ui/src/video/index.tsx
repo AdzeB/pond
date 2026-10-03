@@ -1,11 +1,11 @@
 import { Slider as SliderBase } from "@base-ui/react/slider";
 import {
-  IconFullScreenFill18 as FullscreenIcon,
-  IconMediaPauseFill18 as PauseIcon,
-  IconMediaPlayFill18 as PlayIcon,
-  IconVolumeFill18 as VolumeIcon,
-  IconVolumeOffFill18 as VolumeOffIcon,
-} from "@pond/icons/fill/18";
+  IconFullScreenOutline18 as FullscreenIcon,
+  IconMediaPauseOutline18 as PauseIcon,
+  IconMediaPlayOutline18 as PlayIcon,
+  IconVolumeOutline18 as VolumeIcon,
+  IconVolumeOffOutline18 as VolumeOffIcon,
+} from "@pond/icons/outline/18";
 import { clsx as cn } from "clsx";
 import { useMemo, useState } from "react";
 import {
@@ -197,7 +197,12 @@ function TimeDisplay({
   );
 }
 
-function Scrubber({ className }: { className?: string }) {
+interface ScrubberProps {
+  className?: string;
+  renderPreview?: (time: number) => React.ReactNode;
+}
+
+function Scrubber({ className, renderPreview }: ScrubberProps) {
   const { state, actions } = useVideo();
   const [hover, setHover] = useState<number | null>(null);
   const max = state.duration > 0 ? state.duration : 1;
@@ -225,12 +230,24 @@ function Scrubber({ className }: { className?: string }) {
       {hover !== null && hasDuration ? (
         <span
           className={styles.preview}
-          style={{ left: `${hover * 100}%` }}
+          style={{
+            left: `${hover * 100}%`,
+            transform: `translateX(-${hover * 100}%)`,
+          }}
           aria-hidden
         >
-          <span>{formatTime(hover * max)}</span>
-          <span>/</span>
-          <span>{formatTime(max)}</span>
+          {renderPreview ? (
+            <span className={styles["preview-media"]}>
+              {renderPreview(hover * max)}
+            </span>
+          ) : null}
+          <span className={styles["preview-time"]}>
+            {formatTime(hover * max)}
+          </span>
+          <span
+            className={styles["preview-line"]}
+            style={{ left: `${hover * 100}%` }}
+          />
         </span>
       ) : null}
       <SliderBase.Control className={styles.control}>

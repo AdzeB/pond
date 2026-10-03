@@ -4,41 +4,23 @@ import {
   readColorMatch,
 } from "@pond/schema/filters/color";
 import type { Predicate } from "@pond/schema/filters/types";
-import { Button, ColorPicker, Input, Slider } from "@pond/ui";
-import { useId, useState } from "react";
+import { Button, Chip, ColorPicker, Input, Slider } from "@pond/ui";
+import { useState } from "react";
 import { z } from "zod";
 import { stopMenuKeys } from "../menu-keys";
 import styles from "./styles.module.css";
 
-const FILTER_COLOR_ORDER = [
-  "Black",
-  "Gray",
-  "White",
-  "Brown",
-  "Pink",
-  "Purple",
-  "Red",
-  "Orange",
-  "Yellow",
-  "Green",
-  "Teal",
-  "Blue",
-] as const;
-
-const FILTER_COLORS = FILTER_COLOR_ORDER.flatMap((name) =>
-  COLOR_PRESETS.filter((color) => color.label === name),
-);
-
 export function ColorFilter({
   current,
   onApply,
+  onClear,
 }: {
   current?: Predicate;
   onApply: (predicate: Predicate) => void;
+  onClear: () => void;
 }) {
   const match = readColorMatch(current?.value);
-  const hexId = useId();
-  const [hex, setHex] = useState(match?.hex ?? "#ff0000");
+  const [hex, setHex] = useState(match?.hex ?? "#0087ef");
   const [text, setText] = useState(match?.hex ?? "");
   const [tolerance, setTolerance] = useState(
     match?.tolerance ?? DEFAULT_COLOR_TOLERANCE,
@@ -55,24 +37,51 @@ export function ColorFilter({
     });
   };
   return (
-    <fieldset className={styles.root} onKeyDown={stopMenuKeys}>
-      <ColorPicker
-        value={hex}
-        ariaLabel="Filter Color"
-        areaWidth={176}
-        areaHeight={176}
-        onChange={(value) => apply(value)}
-      />
+    <fieldset
+      className={styles.root}
+      aria-label="Color Filter"
+      onKeyDown={stopMenuKeys}
+    >
+      <ColorPicker.Root value={hex} ariaLabel="Filter Color" onChange={apply}>
+        <div className={styles.picker}>
+          <ColorPicker.Area
+            width={150}
+            height={150}
+            className={styles.area}
+            thumbClassName={styles.areaThumb}
+          />
+          <ColorPicker.Hue
+            width={13}
+            height={150}
+            className={styles.hue}
+            thumbClassName={styles.hueThumb}
+          />
+        </div>
+      </ColorPicker.Root>
       <fieldset className={styles.palette} aria-label="Preset Colors">
-        {FILTER_COLORS.map(({ label, hex: preset }) => (
+        <Button
+          icon
+          size="xs"
+          variant="ghost"
+          className={styles.clear}
+          aria-label="Clear Color Filter"
+          title="Clear Color Filter"
+          aria-pressed={!match}
+          onClick={() => {
+            setText("");
+            onClear();
+          }}
+        />
+        {COLOR_PRESETS.map(({ label, hex: preset }) => (
           <Button
             key={preset}
             icon
             size="xs"
             variant="ghost"
             aria-label={label}
-            aria-pressed={!!match && preset.toLowerCase() === match.hex}
+            aria-pressed={!!match && preset === match.hex}
             title={label}
+            data-color={label}
             style={{ backgroundColor: preset }}
             onClick={() => apply(preset)}
           />
@@ -86,47 +95,65 @@ export function ColorFilter({
           if (next) apply(next.hex);
         }}
       >
-        <label className={styles.field} htmlFor={hexId}>
-          <Input.Root size="sm">
-            <Input.Field
-              id={hexId}
-              aria-label="Color Hex"
-              value={text}
-              placeholder="#RRGGBB"
-              spellCheck={false}
-              aria-invalid={!!text && !readColorMatch(text)}
-              onBlur={() => {
-                if (!readColorMatch(text)) setText(match?.hex ?? "");
-              }}
-              onValueChange={(value) => {
-                setText(value);
-                const next = readColorMatch(value);
-                if (next) apply(next.hex);
-              }}
+        <Input.Root size="sm" variant="borderless" className={styles.input}>
+          <span
+            className={styles.preview}
+            style={{ backgroundColor: match ? hex : "var(--ds-gray-9)" }}
+            aria-hidden="true"
+          />
+          <Input.Field
+            className={styles.value}
+            aria-label="Color Hex"
+            value={text}
+            placeholder="#FF0000"
+            spellCheck={false}
+            autoCapitalize="off"
+            autoCorrect="off"
+            aria-invalid={!!text && !readColorMatch(text)}
+            onBlur={() => {
+              if (!readColorMatch(text)) setText(match?.hex ?? "");
+            }}
+            onValueChange={(value) => {
+              setText(value);
+              const next = readColorMatch(value);
+              if (next) apply(next.hex);
+            }}
+          />
+          <span className={styles.nativePicker}>
+            <Chip.Swatch />
+            <input
+              type="color"
+              aria-label="Choose Color"
+              title="Choose Color"
+              value={hex}
+              onChange={(event) => apply(event.target.value)}
             />
-          </Input.Root>
-        </label>
+          </span>
+        </Input.Root>
       </form>
-      {match ? (
-        <Slider.Root
-          min={0}
-          max={150}
-          step={1}
-          value={tolerance}
-          onValueChange={(value) => {
-            const next = z.number().safeParse(value);
-            if (next.success) apply(hex, next.data);
-          }}
-        >
-          <Slider.Label>Tolerance:</Slider.Label>
-          <Slider.Control>
-            <Slider.Track>
-              <Slider.Indicator />
-              <Slider.Thumb aria-label="Color Tolerance" />
-            </Slider.Track>
-          </Slider.Control>
-        </Slider.Root>
-      ) : null}
+
+      <Slider.Root
+        className={styles.range}
+        disabled={!match}
+        min={0}
+        max={150}
+        step={1}
+        value={150 - tolerance}
+        onValueChange={(value) => {
+          const next = z.number().safeParse(value);
+          if (next.success) apply(hex, 150 - next.data);
+        }}
+      >
+        <Slider.Label className={styles.rangeLabel}>Accuracy</Slider.Label>
+        <Slider.Control className={styles.control}>
+          <Slider.Track className={styles.track}>
+            <Slider.Thumb
+              className={styles.rangeThumb}
+              aria-label="Color Accuracy"
+            />
+          </Slider.Track>
+        </Slider.Control>
+      </Slider.Root>
     </fieldset>
   );
 }

@@ -1,11 +1,17 @@
+import { resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
+import { saves } from "@pond/schema/db";
+import { isThumbnailKind } from "@shared/save-file-names";
+import { eq } from "drizzle-orm";
 import { ClipboardItem, clipboard, nativeImage } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import {
   materializeLibraryMediaForExternalUse,
   readLibraryMedia,
-} from "../../core/security/library-media-storage";
+} from "../../core/storage/library-media-storage";
+import { getDb } from "../../db";
+import { itemDir } from "../../paths";
 import { resolveSaveFilePath } from "../helpers";
 import {
   FileIndexParam,
@@ -49,6 +55,56 @@ export const savesClipboardQueries = {
       return { ok: true as const };
     } catch (error) {
       log.warn("[pond ipc] saves.copyImage failed", error);
+      return { ok: false as const, reason: "internal_error" as const };
+    }
+  }),
+
+  "saves.copyThumbnail": query(
+    z.object({ id: StringParam }),
+    async ({ id }) => {
+      if (!id) return { ok: false as const, reason: "not_found" as const };
+      const db = await getDb();
+      const row = db.select().from(saves).where(eq(saves.id, id)).get();
+      const file = row?.files.find((candidate) =>
+        isThumbnailKind(candidate.kind),
+      );
+      if (!file) return { ok: false as const, reason: "missing" as const };
+      const root = resolve(itemDir(id));
+      const path = resolve(root, file.path);
+      if (!path.startsWith(`${root}${sep}`))
+        return { ok: false as const, reason: "unsafe_path" as const };
+      try {
+        const image = nativeImage.createFromBuffer(
+          await readLibraryMedia(path),
+        );
+        if (image.isEmpty())
+          return { ok: false as const, reason: "missing" as const };
+        await clipboard.write([
+          new ClipboardItem({
+            "image/png": new Blob([Uint8Array.from(image.toPNG())], {
+              type: "image/png",
+            }),
+          }),
+        ]);
+        return { ok: true as const };
+      } catch (error) {
+        log.warn("[pond ipc] saves.copyThumbnail failed", error);
+        return { ok: false as const, reason: "internal_error" as const };
+      }
+    },
+  ),
+
+  "saves.copyBase64": query(FileParams, async (params) => {
+    if (!params.id) return { ok: false as const, reason: "not_found" as const };
+    const target = await resolveSaveFilePath(params.id, params.fileIndex);
+    if (!target.ok) return target;
+    try {
+      await clipboard.writeText(
+        (await readLibraryMedia(target.path)).toString("base64"),
+      );
+      return { ok: true as const };
+    } catch (error) {
+      log.warn("[pond ipc] saves.copyBase64 failed", error);
       return { ok: false as const, reason: "internal_error" as const };
     }
   }),

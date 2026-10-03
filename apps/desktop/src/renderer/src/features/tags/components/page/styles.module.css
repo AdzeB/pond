@@ -75,7 +75,7 @@
   margin-bottom: 18px;
   overflow: hidden;
   border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-1);
+  box-shadow: var(--ds-shadow-xs);
 }
 
 .groupDetail {
@@ -97,7 +97,7 @@
   align-items: baseline;
   margin: 0;
   font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   color: var(--ds-gray-12);
 }
 
@@ -142,7 +142,7 @@
 .letterHeader h2 {
   margin: 0;
   font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   color: var(--ds-gray-11);
 }
 
@@ -160,7 +160,7 @@
 
 @media (min-width: 1320px) {
   .tagGrid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

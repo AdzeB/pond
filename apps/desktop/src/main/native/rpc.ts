@@ -22,7 +22,6 @@ export interface EnqueueResult {
 }
 
 export interface NativePorts {
-  authorize?: (requestType: string) => void;
   capture?: (
     draft: CaptureWebDraft,
     cookies?: ExtensionCookie[],
@@ -49,7 +48,6 @@ export async function dispatchNative(
 
   const req = parsed.data;
   try {
-    if (req.type !== "hello") ports.authorize?.(req.type);
     switch (req.type) {
       case "capture.accept":
         if (!ports.capture) return { ok: false, error: "capture_unavailable" };

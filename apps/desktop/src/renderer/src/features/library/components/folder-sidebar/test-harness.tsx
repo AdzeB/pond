@@ -2,6 +2,7 @@ import { PrefsSchema } from "@pond/schema";
 import type { Folder, SavedView } from "@pond/schema/db";
 import { Dialog } from "@pond/ui";
 import type { LibrarySidebarCounts } from "@shared/sidebar-counts";
+import type { WirePrefsPatch } from "@shared/wire";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   createMemoryHistory,
@@ -45,7 +46,8 @@ export const sidebarCounts = {
   current: emptySidebarCounts(),
 };
 
-export const pondQuery = vi.fn(async (name: string) => {
+let storedPrefs = PrefsSchema.parse({});
+export const pondQuery = vi.fn(async (name: string, patch?: WirePrefsPatch) => {
   if (name === "saves.sidebarCounts") return sidebarCounts.current;
   if (name === "savedViews.list") return savedViewList.current;
   if (name === "accounts.list") return { accounts: [] };
@@ -58,7 +60,19 @@ export const pondQuery = vi.fn(async (name: string) => {
   if (name === "library.info")
     return { path: "/tmp/My Pond.pond", name: "My Pond" };
   if (name === "library.recent") return [];
-  if (name === "settings.getPrefs") return PrefsSchema.parse({});
+  if (name === "settings.getPrefs") return storedPrefs;
+  if (name === "settings.setPrefs") {
+    const updates = new Map(Object.entries(patch ?? {}));
+    storedPrefs = PrefsSchema.parse(
+      Object.fromEntries(
+        Object.entries(storedPrefs).map(([section, value]) => [
+          section,
+          { ...value, ...updates.get(section) },
+        ]),
+      ),
+    );
+    return { ok: true, prefs: storedPrefs };
+  }
   return { ok: true };
 });
 
@@ -103,7 +117,7 @@ export function folderTransfer(id = "") {
   return {
     types,
     dropEffect: "none",
-    effectAllowed: "all",
+    effectAllowed: "all" as DataTransfer["effectAllowed"],
     setData(type: string, value: string) {
       data.set(type, value);
       if (!types.includes(type)) types.push(type);
@@ -138,6 +152,7 @@ export function createFolderSidebarHarness() {
       return getHost();
     },
     async setup(): Promise<void> {
+      storedPrefs = PrefsSchema.parse({});
       libraryChrome.setNav({ kind: "all" });
       resetFilters();
       savedViewList.current = [];
@@ -159,6 +174,7 @@ export function createFolderSidebarHarness() {
         onSyncAction: () => () => {},
         onSaveUpdated: () => () => {},
         onSyncStatus: () => () => {},
+        openHarvesterWindow: vi.fn(),
       });
       await folders.refresh();
       await savedViews.refresh();
@@ -211,6 +227,7 @@ export function createFolderSidebarHarness() {
         "/tags",
         "/assistant",
         "/untagged",
+        "/recents",
         "/downloads",
       ].map((routePath) =>
         createRoute({

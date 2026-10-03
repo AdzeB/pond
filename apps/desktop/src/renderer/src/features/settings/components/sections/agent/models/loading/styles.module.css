@@ -1,0 +1,78 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  min-width: 0;
+}
+.status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.toolbar,
+.header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.header {
+  padding: 8px 12px 12px;
+}
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 6rem 6rem 7rem 2rem;
+  gap: 8px;
+  align-items: center;
+  height: 40px;
+  padding-inline: 12px;
+}
+.bone {
+  display: block;
+  height: 10px;
+  background: var(--ds-gray-4);
+  border-radius: var(--ds-radius-sm);
+  animation: pulse calc(var(--ds-duration-slow) * 4) var(--ds-easing-standard)
+    infinite;
+}
+.bone[data-part="search"] {
+  flex: 1;
+  height: 30px;
+}
+.bone[data-part="action"] {
+  width: 48px;
+  margin-inline: 8px;
+}
+.bone[data-part="logo"] {
+  width: 20px;
+  height: 20px;
+}
+.bone[data-part="provider"] {
+  width: 88px;
+}
+.bone[data-part="name"] {
+  width: 45%;
+}
+.row:nth-child(even) .bone[data-part="name"] {
+  width: 60%;
+}
+.bone[data-part="metric"] {
+  justify-self: end;
+  width: 32px;
+}
+.bone[data-part="check"] {
+  justify-self: center;
+  width: 14px;
+  height: 14px;
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bone {
+    animation: none;
+  }
+}

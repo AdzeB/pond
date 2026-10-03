@@ -1,0 +1,29 @@
+.drawer {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 1px solid var(--ds-border-subtle);
+}
+
+.handle {
+  flex: none;
+  height: 8px;
+  margin: 0;
+  cursor: row-resize;
+  background: transparent;
+  border: 0;
+  -webkit-app-region: no-drag;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--ds-gray-a4);
+  }
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}

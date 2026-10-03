@@ -51,7 +51,7 @@ export function TagRowProvider({
   row: TagsRowData;
   children: ReactNode;
 }) {
-  const { groups } = useTagsTable();
+  const { groups, tags } = useTagsTable();
   const shortcuts = useShortcutBindings();
   const isGroup = row.kind === "group";
   const name = isGroup ? row.group.name : row.tag.name;
@@ -124,6 +124,9 @@ export function TagRowProvider({
     const inGroup = row.kind === "tag" ? row.inGroup : null;
     const actions: TagMenuActions = {
       groups,
+      mergeTargets: tags.filter(
+        (candidate) => candidate.toLowerCase() !== name.toLowerCase(),
+      ),
       inGroup,
       starred: row.kind === "tag" && row.tag.starred,
       onFilter: () => {
@@ -149,6 +152,7 @@ export function TagRowProvider({
           group: inGroup,
         });
       },
+      onMerge: (target) => void tagOperations.mergeTags([name], target),
       onRename: startRename,
       onRemove: confirmDelete,
     };

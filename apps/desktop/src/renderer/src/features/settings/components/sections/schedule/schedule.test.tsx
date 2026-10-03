@@ -36,18 +36,15 @@ async function choose(label: string, optionLabel: string) {
     throw new Error(`Missing ${optionLabel} option`);
   await act(async () => option.click());
 }
-async function submit() {
-  await act(async () =>
-    host
-      .querySelector("form")
-      ?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })),
-  );
+async function toggleSchedule() {
+  const toggle = host.querySelector<HTMLButtonElement>('[role="switch"]');
+  if (!toggle) throw new Error("Missing schedule switch");
+  await act(async () => toggle.click());
 }
-it("keeps edits as a draft until Save", async () => {
+it("saves edits automatically without saving on mount", async () => {
   await render({ enabled: true, intervalHours: 12 });
-  await choose("Repeat", "days");
   expect(save).not.toHaveBeenCalled();
-  await submit();
+  await choose("Repeat", "days");
   expect(save).toHaveBeenCalledWith(
     expect.objectContaining({
       enabled: true,
@@ -56,6 +53,7 @@ it("keeps edits as a draft until Save", async () => {
   );
   expect(host.textContent).not.toContain("Schedule saved.");
   expect(host.textContent).not.toContain("Next fetch:");
+  expect(host.textContent).not.toContain("Save Schedule");
 });
 it("loads a weekly schedule and prevents saving without weekdays", async () => {
   await render({
@@ -71,11 +69,9 @@ it("loads a weekly schedule and prevents saving without weekdays", async () => {
     'button[aria-label="Monday"]',
   );
   await act(async () => monday?.click());
-  await submit();
   expect(save).not.toHaveBeenCalled();
-  expect(host.querySelector('button[type="submit"]')).toHaveProperty(
-    "disabled",
-    true,
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain(
+    "Choose at least one day.",
   );
 });
 it("saves manual mode without a calendar rule", async () => {
@@ -84,8 +80,11 @@ it("saves manual mode without a calendar rule", async () => {
     intervalHours: 6,
     calendar: { kind: "daily", time: "09:00" },
   });
-  await choose("Schedule mode", "Manual");
-  await submit();
+  await toggleSchedule();
+  expect(
+    host.querySelector('[role="switch"]')?.getAttribute("aria-checked"),
+  ).toBe("false");
+  expect(host.querySelector('input[aria-label="Start date"]')).toBeNull();
   expect(save).toHaveBeenCalledWith(
     expect.objectContaining({
       enabled: false,
@@ -97,16 +96,15 @@ it("saves manual mode without a calendar rule", async () => {
 it("shows a save failure and keeps the draft available to retry", async () => {
   save.mockRejectedValueOnce(new Error("disk unavailable"));
   await render({ enabled: true, intervalHours: 12 });
-  await submit();
+  await choose("Repeat", "days");
   expect(host.textContent).toContain("Couldn’t save your schedule");
   expect(host.textContent).not.toContain("Schedule saved.");
-  expect(host.querySelector('button[type="submit"]')).toHaveProperty(
-    "disabled",
-    false,
-  );
+  await choose("Repeat", "weeks");
+  expect(save).toHaveBeenCalledTimes(2);
+  expect(host.querySelector('[role="alert"]')).toBeNull();
 });
 
-it("retains monthly settings when switching manual off again", async () => {
+it("retains monthly settings when toggling the schedule off and on", async () => {
   await render({
     enabled: true,
     intervalHours: 12,
@@ -118,9 +116,16 @@ it("retains monthly settings when switching manual off again", async () => {
       days: [3],
     },
   });
-  await choose("Schedule mode", "Manual");
-  await choose("Schedule mode", "Schedule");
-  await submit();
+  await toggleSchedule();
+  expect(host.querySelector('input[aria-label="Start date"]')).toBeNull();
+  await toggleSchedule();
+  expect(
+    host.querySelector('[role="switch"]')?.getAttribute("aria-checked"),
+  ).toBe("true");
+  expect(host.querySelector('input[aria-label="Start date"]')).toHaveProperty(
+    "value",
+    "2026-09-09",
+  );
   expect(save).toHaveBeenCalledWith(
     expect.objectContaining({
       enabled: true,
@@ -132,5 +137,24 @@ it("retains monthly settings when switching manual off again", async () => {
         days: [3],
       },
     }),
+  );
+});
+
+it("saves rapid changes in order while keeping the controls available", async () => {
+  const firstSave = Promise.withResolvers<void>();
+  save.mockReturnValueOnce(firstSave.promise);
+  await render({ enabled: true, intervalHours: 12 });
+  await toggleSchedule();
+  await toggleSchedule();
+  expect(save).toHaveBeenCalledTimes(1);
+  expect(host.querySelector('input[aria-label="Start date"]')).not.toBeNull();
+  await act(async () => firstSave.resolve());
+  expect(save).toHaveBeenCalledTimes(2);
+  expect(save).toHaveBeenNthCalledWith(
+    1,
+    expect.objectContaining({ enabled: false }),
+  );
+  expect(save).toHaveBeenLastCalledWith(
+    expect.objectContaining({ enabled: true }),
   );
 });

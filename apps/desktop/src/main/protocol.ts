@@ -6,12 +6,11 @@ import { app, net, protocol } from "electron";
 import log from "electron-log/main.js";
 import mime from "mime-types";
 import { POND_PROTOCOL } from "../shared/constants";
-import { assertLibraryUnlocked } from "./core/security/app-lock-runtime";
-import { saveIsLocked } from "./core/security/folder-passwords";
 import {
   libraryMediaMetadata,
   readLibraryMediaRange,
-} from "./core/security/library-media-storage";
+} from "./core/storage/library-media-storage";
+import { VIDEO_CACHE_HOST } from "./core/video-preview-proxy";
 import {
   clampThumbWidth,
   ensureThumbnailInBackground,
@@ -70,19 +69,6 @@ export function registerProtocol() {
       if (!host || !file) {
         return new Response("bad request", { status: 400 });
       }
-      try {
-        assertLibraryUnlocked();
-      } catch {
-        return new Response("Library locked", { status: 423 });
-      }
-      if (
-        host !== META_HOST &&
-        host !== REPLAY_HOST &&
-        (await saveIsLocked(host))
-      ) {
-        return new Response("not found", { status: 404 });
-      }
-
       const { resolved, prefix } = resolveTarget(host, file);
       if (!resolved.startsWith(prefix)) {
         return new Response("forbidden", { status: 403 });
@@ -235,6 +221,10 @@ function resolveTarget(host: string, file: string): ProtocolTarget {
       return { resolved: "", prefix: "\u0000" };
     }
     return { resolved: join(base, asset), prefix: normalize(base) };
+  }
+  if (host === VIDEO_CACHE_HOST) {
+    const base = join(libraryRoot(), VIDEO_CACHE_HOST);
+    return { resolved: resolve(join(base, file)), prefix: normalize(base) };
   }
   return {
     resolved: resolve(itemFile(host, file)),

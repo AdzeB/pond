@@ -85,6 +85,16 @@ const mergeMetadataSchema = z.object({
       h: z.number(),
       text: z.string(),
       createdAt: z.number().optional(),
+      replies: z
+        .array(
+          z.object({
+            id: z.string(),
+            text: z.string(),
+            createdAt: z.number().optional(),
+          }),
+        )
+        .optional(),
+      resolvedAt: z.number().optional(),
     }),
   ),
   videoNotes: z.array(

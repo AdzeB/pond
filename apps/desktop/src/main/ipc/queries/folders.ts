@@ -16,8 +16,23 @@ export const foldersQueries = {
       return createFoldersBatch(params);
     },
   ),
+  "folders.createWithSaves": query(
+    z.object({
+      name: StringParam,
+      parentId: NullableStringParam,
+      saveIds: StringListParam,
+    }),
+    async (params) => {
+      const { createFolderWithSaves } = await import("../../core/folders");
+      return createFolderWithSaves(params);
+    },
+  ),
   "folders.moveBatch": query(
-    z.object({ ids: StringListParam, parentId: z.string().nullable() }),
+    z.object({
+      ids: StringListParam,
+      parentId: z.string().nullable(),
+      beforeId: StringParam.optional(),
+    }),
     async (params) => {
       const { moveFoldersBatch } = await import("../../core/folders");
       return moveFoldersBatch(params);
@@ -104,64 +119,6 @@ export const foldersQueries = {
       return setFolderMetadata(folderId, { description, externalLink });
     },
   ),
-  "folders.security.set": query(
-    z.object({
-      folderId: StringParam,
-      password: StringParam,
-      currentPassword: z.string().optional(),
-      hint: z.string().nullable().optional(),
-      lockChildren: z.boolean().optional(),
-    }),
-    async (params) => {
-      const { setFolderPassword } = await import(
-        "../../core/security/folder-passwords"
-      );
-      return setFolderPassword(params);
-    },
-  ),
-  "folders.security.remove": query(
-    z.object({ folderId: StringParam, password: z.string().optional() }),
-    async ({ folderId, password }) => {
-      const { removeFolderPassword } = await import(
-        "../../core/security/folder-passwords"
-      );
-      return removeFolderPassword(folderId, password);
-    },
-  ),
-  "folders.security.unlock": query(
-    z.object({ folderId: StringParam, password: StringParam }),
-    async ({ folderId, password }) => {
-      const { unlockFolder } = await import(
-        "../../core/security/folder-passwords"
-      );
-      return unlockFolder(folderId, password);
-    },
-  ),
-  "folders.security.lock": query(
-    z.object({ folderId: StringParam }),
-    async ({ folderId }) => {
-      const { lockFolder } = await import(
-        "../../core/security/folder-passwords"
-      );
-      lockFolder(folderId);
-      return { ok: true as const };
-    },
-  ),
-  "folders.security.status": query(
-    z.object({ folderId: StringParam }),
-    async ({ folderId }) => {
-      const { folderSecurityStatus } = await import(
-        "../../core/security/folder-passwords"
-      );
-      return folderSecurityStatus(folderId);
-    },
-  ),
-  "folders.security.list": query(z.object({}), async () => {
-    const { folderSecurityList } = await import(
-      "../../core/security/folder-passwords"
-    );
-    return folderSecurityList();
-  }),
   "folders.create": query(
     z.object({
       name: StringParam,

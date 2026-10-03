@@ -93,27 +93,32 @@ describe("buildTrayTemplate", () => {
     ).toEqual([
       "Pond · 1200 saves",
       "Saving 4 of 248 items",
-      "Open Pond",
       "New",
+      "Capture",
       "Import",
       "Sources",
       "Library",
-      "Go To",
-      "Settings",
+      "Navigate",
       "Quit",
       "Pond v0.0.1",
     ]);
     expect(labelsOf(findByLabel(template, "New")?.submenu ?? [])).toEqual([
       "New Folder",
       "New Smart Folder",
+      "New Smart Folder Group",
       "New Note",
-      "Capture Screenshot",
       "Word Document",
       "New Tag",
       "New Tag Group",
     ]);
+    expect(labelsOf(findByLabel(template, "Capture")?.submenu ?? [])).toEqual([
+      "Capture Screenshot",
+    ]);
     expect(labelsOf(findByLabel(template, "Import")?.submenu ?? [])).toContain(
       "Import Eagle Library",
+    );
+    expect(labelsOf(findByLabel(template, "Import")?.submenu ?? [])).toContain(
+      "Auto Import",
     );
     expect(labelsOf(findByLabel(template, "Sources")?.submenu ?? [])).toContain(
       "New Watch",
@@ -121,8 +126,8 @@ describe("buildTrayTemplate", () => {
     expect(labelsOf(findByLabel(template, "Library")?.submenu ?? [])).toContain(
       "Verify Integrity",
     );
-    expect(labelsOf(findByLabel(template, "Go To")?.submenu ?? [])).toContain(
-      "Untagged",
+    expect(labelsOf(findByLabel(template, "Navigate")?.submenu ?? [])).toEqual(
+      expect.arrayContaining(["Untagged", "Settings"]),
     );
     expect(labelsOf(template)).not.toContain("Recently Saved");
   });
@@ -137,7 +142,7 @@ describe("buildTrayTemplate", () => {
     expect(actions.onOpenDownloads).toHaveBeenCalledOnce();
   });
 
-  it("keeps Open Pond and Settings directly accessible", () => {
+  it("removes Open Pond and opens Settings from Navigate", () => {
     const template = buildTrayTemplate(
       { ...library, ingesting: 0, inflight: 0 },
       actions,
@@ -145,9 +150,10 @@ describe("buildTrayTemplate", () => {
     );
 
     template.find((item) => item.label === "Open Pond")?.click?.();
-    template.find((item) => item.label === "Settings")?.click?.();
-
-    expect(actions.onOpenLibrary).toHaveBeenCalledOnce();
+    findByLabel(template, "Navigate")
+      ?.submenu?.find((item) => item.label === "Settings")
+      ?.click?.();
+    expect(actions.onOpenLibrary).not.toHaveBeenCalled();
     expect(actions.onOpenSettings).toHaveBeenCalledOnce();
   });
 
@@ -159,7 +165,8 @@ describe("buildTrayTemplate", () => {
       }),
     );
 
-    expect(labels).toContain("開啟 Pond");
+    expect(labels).not.toContain("開啟 Pond");
+    expect(labels).toContain("Navigate");
     expect(labels).toContain("設定");
     expect(labels).toContain("結束");
     expect(labels).toContain("Pond · 1200 個儲存項目");
@@ -178,17 +185,21 @@ describe("buildTrayTemplate", () => {
       },
     );
     findByLabel(template, "New Folder")?.click?.();
+    findByLabel(template, "Capture Screenshot")?.click?.();
     findByLabel(template, "Word Document")?.click?.();
     findByLabel(template, "New Watch")
       ?.submenu?.find((item) => item.label === "YouTube")
       ?.click?.();
-    findByLabel(template, "Go To")
+    findByLabel(template, "Navigate")
       ?.submenu?.find((item) => item.label === "Search")
       ?.click?.();
-    findByLabel(template, "Go To")
+    findByLabel(template, "Navigate")
       ?.submenu?.find((item) => item.label === "Sources")
       ?.click?.();
     expect(actions.onMenuAction).toHaveBeenCalledWith("library.new-folder");
+    expect(actions.onMenuAction).toHaveBeenCalledWith(
+      "library.capture-screenshot",
+    );
     expect(actions.onMenuAction).toHaveBeenCalledWith("library.new-blank-word");
     expect(actions.onMenuAction).toHaveBeenCalledWith("library.watch-youtube");
     expect(actions.onMenuAction).toHaveBeenCalledWith("library.search");

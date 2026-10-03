@@ -31,7 +31,7 @@ import {
   decodeLibraryFile,
   encodeLibraryFile,
   readLibraryFileSync,
-} from "./security/library-file-storage";
+} from "./storage/library-file-storage";
 
 const OrganizationEnvelope = z.object({ data: OrganizationBundleSchema });
 const EnrichmentEnvelope = z.object({
@@ -284,6 +284,7 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
               comments: save.comments ?? [],
               videoNotes: save.videoNotes ?? [],
               dominantColors: save.dominantColors ?? [],
+              primaryColor: save.primaryColor ?? null,
               rotate: save.rotate ?? 0,
               flipX: save.flipX ?? false,
               flipY: save.flipY ?? false,

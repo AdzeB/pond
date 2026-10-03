@@ -52,7 +52,7 @@
   &[data-active] {
     color: var(--ds-gray-12);
     background: var(--ds-gray-1);
-    box-shadow: var(--ds-shadow-2);
+    box-shadow: var(--ds-shadow-sm);
   }
 }
 

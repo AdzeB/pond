@@ -1,0 +1,13 @@
+.loop {
+  flex-wrap: wrap;
+  height: auto;
+  min-height: 32px;
+}
+
+.loop > div {
+  max-width: 84px;
+}
+
+.button {
+  color: inherit;
+}

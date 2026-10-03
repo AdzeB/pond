@@ -6,11 +6,16 @@ export const BulkEditSchema = z.object({
   operation: z.discriminatedUnion("kind", [
     z.object({
       kind: z.literal("tags"),
-      tags: z.array(z.string().trim().min(1)).min(1),
+      tags: z.array(z.string().trim().min(1)),
+      mode: z.enum(["add", "replace", "remove"]).optional(),
     }),
     z.object({
       kind: z.literal("rating"),
       rating: z.number().int().min(0).max(5),
+    }),
+    z.object({
+      kind: z.literal("notes"),
+      notes: z.string().max(8192).nullable(),
     }),
     z.object({ kind: z.literal("suggested-tags") }),
     z.object({ kind: z.literal("trash") }),

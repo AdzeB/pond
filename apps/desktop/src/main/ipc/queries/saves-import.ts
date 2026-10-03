@@ -21,6 +21,8 @@ export const savesImportQueries = {
     savesImportDesktopQueries["saves.captureDesktopScreenshot"],
   "saves.setCustomThumbnail":
     savesImportPersistenceQueries["saves.setCustomThumbnail"],
+  "saves.setThumbnailFromClipboard":
+    savesImportPersistenceQueries["saves.setThumbnailFromClipboard"],
   "saves.setGifThumbnail":
     savesImportPersistenceQueries["saves.setGifThumbnail"],
   "saves.loadSubtitles": savesImportPersistenceQueries["saves.loadSubtitles"],
@@ -33,6 +35,8 @@ export const savesImportQueries = {
   "saves.createBlankDocument":
     savesImportPersistenceQueries["saves.createBlankDocument"],
   "saves.combineImages": savesImportPersistenceQueries["saves.combineImages"],
+  "saves.exportDotLottie":
+    savesImportPersistenceQueries["saves.exportDotLottie"],
   "saves.pickEagleLibrary": savesImportSourceQueries["saves.pickEagleLibrary"],
   "saves.importEagleLibrary":
     savesImportSourceQueries["saves.importEagleLibrary"],

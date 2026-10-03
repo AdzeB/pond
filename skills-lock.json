@@ -7,6 +7,18 @@
       "skillPath": "skills/use-ai-sdk/SKILL.md",
       "computedHash": "2fdbb3c2c9c0e19c64f03f2febd4fec134473e2fe7443f7ebe67870eba5b3c75"
     },
+    "architect": {
+      "source": "cursor/plugins",
+      "sourceType": "github",
+      "skillPath": "pstack/skills/architect/SKILL.md",
+      "computedHash": "7b8d33812c190d7c6c0fa45f6230495030403240bb86ad39facc9f93802dc115"
+    },
+    "arena": {
+      "source": "cursor/plugins",
+      "sourceType": "github",
+      "skillPath": "pstack/skills/arena/SKILL.md",
+      "computedHash": "66e9b8b4486f3fc07ffdf0e0b2874ba1dc411f6df24a440af5873c35a079cefc"
+    },
     "ask-matt": {
       "source": "mattpocock/skills",
       "sourceType": "github",
@@ -42,6 +54,12 @@
       "source": "blossom-carousel.com",
       "sourceType": "well-known",
       "computedHash": "6a91633828967bb54865b6ce6043b5a97a5b0f21af5d886ebd11ea047c27b500"
+    },
+    "brag": {
+      "source": "latent-spaces/brag",
+      "sourceType": "github",
+      "skillPath": "skills/brag/SKILL.md",
+      "computedHash": "7696bdd28d584063f36eb8a35d0ea11138a697706498537aff79c74e6befc345"
     },
     "claude-handoff": {
       "source": "mattpocock/skills",
@@ -132,6 +150,12 @@
       "sourceType": "github",
       "skillPath": "skills/productivity/handoff/SKILL.md",
       "computedHash": "20e5f4afdef502637510bc5c64d27645d3c85c88df9cb006824bbb0980166319"
+    },
+    "how": {
+      "source": "cursor/plugins",
+      "sourceType": "github",
+      "skillPath": "pstack/skills/how/SKILL.md",
+      "computedHash": "532e080fb8d0f9119488628910d2ff2e2976882b009d3df4e8a29c86016e3207"
     },
     "impeccable": {
       "source": "pbakaus/impeccable",
@@ -348,6 +372,12 @@
       "sourceType": "github",
       "skillPath": "dev-toolkit/skills/web-scraping/SKILL.md",
       "computedHash": "9433970aae1f1d0c9fb3daf8ab8073240f40ff72be23932929b7075bdc5d7475"
+    },
+    "why": {
+      "source": "cursor/plugins",
+      "sourceType": "github",
+      "skillPath": "pstack/skills/why/SKILL.md",
+      "computedHash": "552d937a5bad70c5e0c2b92fa21cc914cd4b59d3c1747554a68f26bce9fc9a0f"
     },
     "wizard": {
       "source": "mattpocock/skills",

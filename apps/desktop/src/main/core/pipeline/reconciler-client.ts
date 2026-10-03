@@ -41,6 +41,10 @@ export async function cancelAllIngest(): Promise<number> {
   return (await loadReconciler()).cancelAllIngest();
 }
 
+export async function cancelGeneration(generationId: string): Promise<number> {
+  return (await loadReconciler()).cancelGeneration(generationId);
+}
+
 export async function skipSaves(ids: readonly string[]): Promise<number> {
   return (await loadReconciler()).skipSaves(ids);
 }
@@ -53,4 +57,12 @@ export async function pauseAndDrainReconciler(
   timeoutMs?: number,
 ): Promise<boolean> {
   return (await loadReconciler()).pauseAndDrainReconciler(timeoutMs);
+}
+
+export async function suspendReconciler(): Promise<void> {
+  await (await loadReconciler()).suspendReconciler();
+}
+
+export async function resumeReconcilerAfterSuspend(): Promise<void> {
+  await (await loadReconciler()).resumeReconcilerAfterSuspend();
 }

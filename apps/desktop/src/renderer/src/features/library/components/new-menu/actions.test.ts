@@ -9,11 +9,13 @@ import { selection } from "@/features/saves/state/selection";
 import { libraryViewContext } from "@/features/saves/state/view-context";
 import { createNewActions, type NewActionServices } from "./actions";
 
-const prompt = vi.fn<NewActionServices["prompt"]>();
 const notify = vi.fn<NewActionServices["notify"]>();
 const updateNotification = vi.fn<NewActionServices["updateNotification"]>();
 const openSave = vi.fn<NewActionServices["openSave"]>();
 const folders = { refresh: vi.fn(async () => {}) };
+const startEditingFolder = vi.fn<NewActionServices["startEditingFolder"]>();
+const openTagCreation = vi.fn<NewActionServices["openTagCreation"]>();
+const openSavedViewEditor = vi.fn<NewActionServices["openSavedViewEditor"]>();
 const openSource = vi.fn<NewActionServices["openSource"]>();
 const selectSave = vi.fn<NewActionServices["selectSave"]>();
 const currentFolderId = vi.fn<NewActionServices["currentFolderId"]>(() => null);
@@ -39,17 +41,20 @@ const {
   importPondPackage,
   newFolder,
   newSource,
+  newSmartFolder,
   newTag,
   parseImportLinks,
   rescanLibrary,
   runNewAction,
   verifyIntegrity,
 } = createNewActions({
-  prompt,
   notify,
   updateNotification,
   openSave,
   refreshFolders: folders.refresh,
+  startEditingFolder,
+  openTagCreation,
+  openSavedViewEditor,
   openSource,
   selectSave,
   currentFolderId,
@@ -244,27 +249,35 @@ describe("new menu actions", () => {
     expect(duplicateReview.state).toBeNull();
   });
 
-  it("preserves parent folders and refreshes the sidebar", async () => {
-    newFolder("parent");
-    await vi.mocked(prompt).mock.calls[0]?.[0].onConfirm(" Child ");
+  it("creates an untitled folder and starts inline naming", async () => {
+    query.mockResolvedValue({ id: "created" });
+    await newFolder("parent");
     expect(query).toHaveBeenCalledWith("folders.create", {
-      name: "Child",
+      name: "Untitled",
       parentId: "parent",
     });
     expect(folders.refresh).toHaveBeenCalledOnce();
+    expect(startEditingFolder).toHaveBeenCalledWith("created");
   });
 
-  it("ignores blank folder names", async () => {
-    newFolder();
-    await vi.mocked(prompt).mock.calls[0]?.[0].onConfirm(" ");
+  it("creates root folders without a parent field", async () => {
+    query.mockResolvedValue({ id: "created" });
+    await newFolder();
+    expect(query).toHaveBeenCalledWith("folders.create", {
+      name: "Untitled",
+    });
+  });
+
+  it("opens the inline tag group draft", () => {
+    newTag("tag-group");
+    expect(openTagCreation).toHaveBeenCalledWith("group");
     expect(query).not.toHaveBeenCalled();
   });
 
-  it("creates tag groups through their own query", async () => {
-    query.mockResolvedValue({ ok: true });
-    newTag("tag-group");
-    await vi.mocked(prompt).mock.calls[0]?.[0].onConfirm(" Design ");
-    expect(query).toHaveBeenCalledWith("tagGroups.create", { name: "Design" });
+  it("opens the full smart-folder rule editor", () => {
+    newSmartFolder();
+    expect(openSavedViewEditor).toHaveBeenCalledWith("smart_folder");
+    expect(query).not.toHaveBeenCalled();
   });
 
   it("opens the correct source setup flow", () => {

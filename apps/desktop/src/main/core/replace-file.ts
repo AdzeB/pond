@@ -1,6 +1,9 @@
-import { stat } from "node:fs/promises";
+import { open, stat } from "node:fs/promises";
 import { type SaveFile, saves } from "@pond/schema/db";
-import { classifyLibraryFile, libraryFilename } from "@shared/file-format";
+import {
+  classifyLibraryFileFromHeader,
+  libraryFilename,
+} from "@shared/file-format";
 import { isAuxiliaryKind } from "@shared/save-file-names";
 import { eq } from "drizzle-orm";
 import mime from "mime-types";
@@ -21,14 +24,15 @@ export async function replaceSaveFile(input: {
   const row = db.select().from(saves).where(eq(saves.id, input.id)).all()[0];
   const kind = replacementKind(row?.files ?? []);
   if (!kind) return { ok: false, error: "This save has no file to replace." };
-  const format = classifyLibraryFile(
-    input.sourcePath,
-    mime.lookup(input.sourcePath) || null,
-  );
   const info = await stat(input.sourcePath).catch(() => null);
   if (!info?.isFile() || info.size === 0) {
     return { ok: false, error: "Choose a non-empty file." };
   }
+  const format = classifyLibraryFileFromHeader(
+    input.sourcePath,
+    mime.lookup(input.sourcePath) || null,
+    await readFilePrefix(input.sourcePath, Math.min(info.size, 188 * 3)),
+  );
   const updated = await persistSave(
     input.id,
     { mediaType: format.mediaType },
@@ -48,4 +52,15 @@ export async function replaceSaveFile(input: {
   return updated
     ? { ok: true }
     : { ok: false, error: "Couldn’t replace this file." };
+}
+
+async function readFilePrefix(path: string, length: number): Promise<Buffer> {
+  const buffer = Buffer.alloc(length);
+  const handle = await open(path, "r");
+  try {
+    const { bytesRead } = await handle.read(buffer, 0, length, 0);
+    return buffer.subarray(0, bytesRead);
+  } finally {
+    await handle.close();
+  }
 }

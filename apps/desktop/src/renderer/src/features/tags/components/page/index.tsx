@@ -9,6 +9,7 @@ import { IconFolderOutline18, IconStarOutline18 } from "@pond/icons/outline/18";
 import { Button, DataTable, Empty, Input, Sidebar, Tooltip } from "@pond/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MatchesEmpty } from "@/features/library/components/empty";
+import { usePrefs } from "@/features/settings/state/prefs";
 import { TagsBulkActionBar } from "@/features/tags/components/manager/bulk-actions";
 import { DraftRow } from "@/features/tags/components/manager/draft-row";
 import { TagItem } from "@/features/tags/components/manager/item";
@@ -18,11 +19,13 @@ import type { TagsRowData } from "@/features/tags/components/manager/lib/types";
 import { TagPicker } from "@/features/tags/components/picker/picker";
 import { useTagCreation } from "@/features/tags/hooks/use-tag-creation";
 import { useTagsData } from "@/features/tags/hooks/use-tag-manager";
+import { useTagCreationRequest } from "@/features/tags/state/creation";
 import {
   SearchChrome,
   SearchChromeInput,
 } from "@/shared/components/search-chrome";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
+import { TagSortMenu } from "./sort-menu";
 import styles from "./styles.module.css";
 
 type Scope = "all" | "ungrouped" | "starred" | string;
@@ -43,7 +46,10 @@ function alphabetKey(name: string): string {
   return /^[A-Z]$/.test(first) ? first : "#";
 }
 
-function groupAlphabetically(rows: TagData[]): AlphabetGroup[] {
+function groupAlphabetically(
+  rows: TagData[],
+  direction: "asc" | "desc",
+): AlphabetGroup[] {
   const grouped = new Map<string, TagData[]>();
   for (const row of rows) {
     const key = alphabetKey(row.tag.name);
@@ -51,14 +57,16 @@ function groupAlphabetically(rows: TagData[]): AlphabetGroup[] {
     if (group) group.push(row);
     else grouped.set(key, [row]);
   }
+  const order = direction === "asc" ? 1 : -1;
   return [...grouped]
-    .sort(([a], [b]) => a.localeCompare(b))
+    .sort(([a], [b]) => a.localeCompare(b) * order)
     .map(([letter, items]) => ({
       letter,
-      rows: items.toSorted((a, b) =>
-        a.tag.name.localeCompare(b.tag.name, undefined, {
-          sensitivity: "base",
-        }),
+      rows: items.toSorted(
+        (a, b) =>
+          a.tag.name.localeCompare(b.tag.name, undefined, {
+            sensitivity: "base",
+          }) * order,
       ),
     }));
 }
@@ -75,16 +83,43 @@ export function TagsPage() {
     starredTotal,
     total,
   } = useTagsData();
+  const [allTags, patchAllTags] = usePrefs("allTags");
   const [scope, setScope] = useState<Scope>("all");
   const { creating, startCreate, cancelCreate, saveCreate } = useTagCreation();
+  const creationRequest = useTagCreationRequest();
+  const handledCreationRequest = useRef(0);
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const cancelDescriptionRef = useRef(false);
   const clearRef = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    if (
+      creationRequest.token === 0 ||
+      creationRequest.token === handledCreationRequest.current
+    )
+      return;
+    handledCreationRequest.current = creationRequest.token;
+    setScope(creationRequest.kind === "group" ? "all" : "ungrouped");
+    startCreate(creationRequest.kind);
+  }, [creationRequest, startCreate]);
   const sidebarFade = useScrollFade<HTMLDivElement>();
   const scrollFade = useScrollFade<HTMLDivElement>();
   const contextValue = useMemo(
-    () => ({ groups: groupOptions }),
-    [groupOptions],
+    () => ({
+      groups: groupOptions,
+      tags: [
+        ...new Set(
+          data.flatMap((row) =>
+            row.kind === "tag"
+              ? [row.tag.name]
+              : row.children.flatMap((child) =>
+                  child.kind === "tag" ? [child.tag.name] : [],
+                ),
+          ),
+        ),
+      ],
+    }),
+    [data, groupOptions],
   );
 
   useEffect(() => {
@@ -126,9 +161,29 @@ export function TagsPage() {
       (row): row is TagData => row.kind === "tag",
     );
   }, [groups, scope, ungrouped]);
+  const orderedRows = useMemo(() => {
+    const direction = allTags.sortDirection === "asc" ? 1 : -1;
+    return visibleRows.toSorted((a, b) => {
+      if (allTags.sort === "count")
+        return (
+          (a.saves - b.saves) * direction ||
+          a.tag.name.localeCompare(b.tag.name)
+        );
+      if (allTags.sort === "recent")
+        return (
+          ((a.tag.lastUsedAt ?? 0) - (b.tag.lastUsedAt ?? 0)) * direction ||
+          a.tag.name.localeCompare(b.tag.name)
+        );
+      return (
+        a.tag.name.localeCompare(b.tag.name, undefined, {
+          sensitivity: "base",
+        }) * direction
+      );
+    });
+  }, [allTags.sort, allTags.sortDirection, visibleRows]);
   const alphabet = useMemo(
-    () => groupAlphabetically(visibleRows),
-    [visibleRows],
+    () => groupAlphabetically(orderedRows, allTags.sortDirection),
+    [allTags.sortDirection, orderedRows],
   );
 
   useEffect(() => {
@@ -166,7 +221,17 @@ export function TagsPage() {
       defaultSort={{ id: "name", desc: false }}
     >
       <div className={styles.page}>
-        <SearchChrome>
+        <SearchChrome
+          actions={
+            <TagSortMenu
+              sort={allTags.sort}
+              direction={allTags.sortDirection}
+              onChange={(sort, sortDirection) =>
+                void patchAllTags({ sort, sortDirection })
+              }
+            />
+          }
+        >
           <SearchChromeInput
             value={q}
             onChange={(event) => setQ(event.target.value)}
@@ -193,7 +258,7 @@ export function TagsPage() {
                         <Sidebar.Icon>
                           <IconBookmarkOutline12 aria-hidden="true" />
                         </Sidebar.Icon>
-                        All
+                        <Sidebar.ItemLabel>All</Sidebar.ItemLabel>
                         <Sidebar.Count>{total}</Sidebar.Count>
                       </Sidebar.Item>
                       <Sidebar.Item
@@ -209,7 +274,7 @@ export function TagsPage() {
                         <Sidebar.Icon>
                           <IconFolderOutline12 aria-hidden="true" />
                         </Sidebar.Icon>
-                        Uncategorized
+                        <Sidebar.ItemLabel>Uncategorized</Sidebar.ItemLabel>
                         <Sidebar.Count>{ungroupedTotal}</Sidebar.Count>
                       </Sidebar.Item>
                       <Sidebar.Item
@@ -221,7 +286,7 @@ export function TagsPage() {
                         <Sidebar.Icon>
                           <IconStarOutline12 aria-hidden="true" />
                         </Sidebar.Icon>
-                        Starred
+                        <Sidebar.ItemLabel>Starred</Sidebar.ItemLabel>
                         {starredTotal > 0 ? (
                           <Sidebar.Count>{starredTotal}</Sidebar.Count>
                         ) : null}
@@ -276,7 +341,7 @@ export function TagsPage() {
                             <Sidebar.Icon>
                               <IconFolderOutline12 aria-hidden="true" />
                             </Sidebar.Icon>
-                            {group.name}
+                            <Sidebar.ItemLabel>{group.name}</Sidebar.ItemLabel>
                             <Sidebar.Count>{group.count}</Sidebar.Count>
                           </Sidebar.Item>
                         ))}
@@ -360,10 +425,11 @@ export function TagsPage() {
                 </div>
               ) : null}
 
-              {activeGroupRow && visibleRows.length > 0 ? (
+              {(activeGroupRow || allTags.sort !== "name") &&
+              orderedRows.length > 0 ? (
                 <div className={styles.groupTags}>
                   <div className={styles.tagGrid}>
-                    {visibleRows.map((row) => (
+                    {orderedRows.map((row) => (
                       <TagItem key={row.id} row={row} variant="index" />
                     ))}
                   </div>

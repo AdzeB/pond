@@ -2,14 +2,13 @@ import { IconDotsFill18 as Ellipsis } from "@pond/icons/fill/18";
 import { Menu } from "@pond/ui";
 import { useState } from "react";
 import {
-  buildSaveMenu,
+  buildSaveDetailMenu,
   loadOpenWithApps,
   type OpenWithApp,
   openWithKind,
   peekOpenWithApps,
 } from "@/features/saves/lib/menu";
 import type { Save } from "@/features/saves/types";
-import { tagClipboard } from "@/features/tags/state/tag-clipboard";
 import { SpecMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
 
 export function KebabMenu({
@@ -19,26 +18,23 @@ export function KebabMenu({
   save: Save;
   fileIndex?: number | null;
 }) {
-  const [clipboardEmpty, setClipboardEmpty] = useState(
-    () => tagClipboard.get().length === 0,
-  );
   const [openWithApps, setOpenWithApps] = useState<OpenWithApp[]>([]);
 
   return (
     <SpecMenu
       search
       searchLabel="Search save operations"
+      minWidth="280px"
       buildItems={() => {
         const peeked = peekOpenWithApps(openWithKind(save, fileIndex));
-        return buildSaveMenu(save, {
-          clipboardEmpty,
+        return buildSaveDetailMenu(save, {
+          clipboardEmpty: true,
           fileIndex,
           openWithApps: peeked.length ? peeked : openWithApps,
           opened: true,
         });
       }}
       onOpen={() => {
-        setClipboardEmpty(tagClipboard.get().length === 0);
         void loadOpenWithApps({
           ids: [save.id],
           fileIndex,

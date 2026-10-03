@@ -130,14 +130,6 @@ const ZOOM_SLIDER_MID = 50;
 const ACTUAL_AT_MIN = 0.05;
 const ACTUAL_AT_MAX = 8;
 
-export function actualSizeZoom(
-  naturalWidth: number,
-  frameWidth: number,
-): number | null {
-  if (!(naturalWidth > 0 && frameWidth > 0)) return null;
-  return naturalWidth / frameWidth;
-}
-
 export function poseToActual(zoom: number, oneToOne: number | null): number {
   return oneToOne && oneToOne > 0 ? zoom / oneToOne : zoom;
 }

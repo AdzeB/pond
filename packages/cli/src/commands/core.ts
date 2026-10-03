@@ -5,7 +5,7 @@ import { configPath, readConfig, writeConfig } from "../config";
 import { action, commandContext, StringSchema } from "./shared";
 
 const topLevelCommands =
-  "status doctor version completion config auth libraries saves folders tags sources sync downloads conversions actions agent mcp skill library trash schema";
+  "status doctor version completion config auth libraries saves folders tags sources sync downloads conversions agent mcp skill library trash schema";
 
 export function completionScript(shell: string): string {
   if (shell === "fish") return `complete -c pond -f -a '${topLevelCommands}'`;

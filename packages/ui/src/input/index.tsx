@@ -45,6 +45,26 @@ function Action({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
+function Prefix({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="prefix"
+      className={cn(styles.affix, className)}
+      {...props}
+    />
+  );
+}
+
+function Suffix({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="suffix"
+      className={cn(styles.affix, className)}
+      {...props}
+    />
+  );
+}
+
 const Field = forwardRef<HTMLInputElement, Base.Props>(function Field(
   { className, onKeyDown, ...props },
   ref,
@@ -102,4 +122,12 @@ const Textarea = forwardRef<
   );
 });
 
-export const Input = { Root, Icon, Action, Field, Textarea };
+export const Input = {
+  Root,
+  Prefix,
+  Suffix,
+  Icon,
+  Action,
+  Field,
+  Textarea,
+};

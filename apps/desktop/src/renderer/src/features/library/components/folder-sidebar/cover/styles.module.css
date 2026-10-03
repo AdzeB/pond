@@ -1,0 +1,6 @@
+.cover {
+  width: 18px;
+  height: 18px;
+  object-fit: cover;
+  border-radius: var(--ds-radius-sm);
+}

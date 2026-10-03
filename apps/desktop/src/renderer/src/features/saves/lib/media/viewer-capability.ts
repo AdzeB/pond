@@ -1,4 +1,5 @@
 import {
+  canDestructivelyEditImage,
   canRequestNativeThumbnail,
   classifyLibraryFile,
 } from "@shared/file-format";
@@ -13,29 +14,100 @@ export type FileViewerKind =
   | "epub"
   | "model"
   | "archive"
+  | "live-photo"
   | "safe-web"
   | "native-preview"
   | "generic";
 
-export interface ViewerCapability {
-  kind: FileViewerKind;
-  renderer: "built-in" | "generated" | "external";
-  originalActions: true;
-}
+type SpecialistViewerKind = Exclude<
+  FileViewerKind,
+  "media" | "native-preview" | "generic"
+>;
+
+export type ViewerCapability =
+  | {
+      kind: "media" | "native-preview";
+      surface: "raster";
+      source: "original" | "generated";
+      edits: "full" | "none";
+      comments: "spatial";
+      originalActions: true;
+    }
+  | {
+      kind: "media";
+      surface: "temporal";
+      comments: "temporal";
+      sizing: "fit-fill";
+      originalActions: true;
+    }
+  | {
+      kind: SpecialistViewerKind;
+      surface: "specialist";
+      comments: "item";
+      originalActions: true;
+    }
+  | {
+      kind: "generic";
+      surface: "fallback";
+      comments: "item";
+      originalActions: true;
+    };
 
 const INTERACTIVE_MODELS = new Set([
   "glb",
+  "gltf",
   "fbx",
   "obj",
   "3ds",
   "3mf",
+  "amf",
   "dae",
   "ply",
   "stl",
+  "usdc",
+  "usdz",
+  "vtk",
 ]);
 
-function builtIn(kind: FileViewerKind): ViewerCapability {
-  return { kind, renderer: "built-in", originalActions: true };
+function originalRaster(file: SaveFile): ViewerCapability {
+  return {
+    kind: "media",
+    surface: "raster",
+    source: "original",
+    edits: canDestructivelyEditImage(file.path) ? "full" : "none",
+    comments: "spatial",
+    originalActions: true,
+  };
+}
+
+function generatedRaster(kind: "media" | "native-preview"): ViewerCapability {
+  return {
+    kind,
+    surface: "raster",
+    source: "generated",
+    edits: "none",
+    comments: "spatial",
+    originalActions: true,
+  };
+}
+
+function temporal(): ViewerCapability {
+  return {
+    kind: "media",
+    surface: "temporal",
+    comments: "temporal",
+    sizing: "fit-fill",
+    originalActions: true,
+  };
+}
+
+function specialist(kind: SpecialistViewerKind): ViewerCapability {
+  return {
+    kind,
+    surface: "specialist",
+    comments: "item",
+    originalActions: true,
+  };
 }
 
 export function viewerCapabilityFor(file: SaveFile): ViewerCapability {
@@ -43,31 +115,40 @@ export function viewerCapabilityFor(file: SaveFile): ViewerCapability {
 
   switch (format.previewKind) {
     case "direct-image":
+      return originalRaster(file);
     case "native-image":
+      return generatedRaster("media");
     case "video":
-      return builtIn("media");
+      return temporal();
     case "pdf":
-      return builtIn("pdf");
+      return specialist("pdf");
     case "audio":
-      return builtIn("audio");
+      return specialist("audio");
     case "font":
-      return builtIn("font");
+      return specialist("font");
     case "text":
-      return builtIn("text");
+      return specialist("text");
   }
 
-  if (format.extension === "epub") return builtIn("epub");
-  if (INTERACTIVE_MODELS.has(format.extension)) return builtIn("model");
-  if (["zip", "rar", "7z"].includes(format.extension)) {
-    return builtIn("archive");
+  if (format.extension === "epub") return specialist("epub");
+  if (format.extension === "livp") return specialist("live-photo");
+  if (INTERACTIVE_MODELS.has(format.extension)) return specialist("model");
+  if (["zip", "rar", "7z", "lottie"].includes(format.extension)) {
+    return specialist("archive");
   }
-  if (format.extension === "html") return builtIn("safe-web");
-  if (canRequestNativeThumbnail(file.path)) {
-    return {
-      kind: "native-preview",
-      renderer: "generated",
-      originalActions: true,
-    };
+  if (["html", "mhtml", "mht"].includes(format.extension))
+    return specialist("safe-web");
+  if (format.mediaType === "video") return temporal();
+  if (
+    canRequestNativeThumbnail(file.path) &&
+    format.mimeType !== "application/octet-stream"
+  ) {
+    return generatedRaster("native-preview");
   }
-  return { kind: "generic", renderer: "external", originalActions: true };
+  return {
+    kind: "generic",
+    surface: "fallback",
+    comments: "item",
+    originalActions: true,
+  };
 }

@@ -1,14 +1,90 @@
+import { useChat } from "@ai-sdk/react";
 import type { AgentStreamRequest, AssistantMessage } from "@shared/assistant";
 import { act } from "react";
+import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 import { libraryChrome } from "../../library/state/library-chrome";
 import { selection } from "../../saves/state/selection";
-import { assistant } from "./assistant";
+import { assistant, useAssistant } from "./assistant";
 import {
   agentStreamBridge,
   createAssistantHarness,
   type StreamReply,
 } from "./assistant.test-harness";
+import { pondChatSession } from "./pond-chat";
+import { messageText } from "./pond-messages";
+
+it("renders a multi-chunk reply progressively", async () => {
+  const chatId = "multi-chunk-render";
+  const nextChunk = Promise.withResolvers<void>();
+  const snapshots: Array<{
+    busy: boolean;
+    status: string;
+    text: string;
+  }> = [];
+  vi.stubGlobal("pond", {
+    query: vi.fn(() => Promise.resolve([])),
+    agentStream: agentStreamBridge(() => ({
+      text: ["One two three four five ", "six seven eight nine ten."],
+      waitForTextChunk: () => nextChunk.promise,
+    })),
+    onAgentChunk: () => () => {},
+  });
+  assistant.newChat();
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  function Probe() {
+    const state = useAssistant();
+    const chat = pondChatSession(state.chatId ?? "draft");
+    const { messages, status } = useChat({ chat });
+    const last = messages.at(-1);
+    snapshots.push({
+      busy: state.busy,
+      status,
+      text: last?.role === "assistant" ? messageText(last) : "",
+    });
+    return null;
+  }
+  let pending: Promise<void> = Promise.resolve();
+  try {
+    await act(async () => root.render(<Probe />));
+    await act(async () => {
+      await assistant.openChat(chatId);
+      assistant.setDraft("Use the fixed reply");
+      pending = assistant.send("openai");
+    });
+    await vi.waitFor(() =>
+      expect(
+        snapshots.some(
+          (snapshot) =>
+            snapshot.text === "One two three four five " &&
+            snapshot.status === "streaming",
+        ),
+      ).toBe(true),
+    );
+    expect(
+      snapshots.some(
+        (snapshot) =>
+          snapshot.text === "One two three four five six seven eight nine ten.",
+      ),
+    ).toBe(false);
+    await act(async () => {
+      nextChunk.resolve();
+      await pending;
+    });
+    expect(
+      snapshots.some(
+        (snapshot) =>
+          snapshot.text === "One two three four five six seven eight nine ten.",
+      ),
+    ).toBe(true);
+  } finally {
+    nextChunk.resolve();
+    await act(async () => root.unmount());
+    assistant.newChat();
+    vi.unstubAllGlobals();
+  }
+});
 
 it("keeps the singleton run across pane unmount and waits for saved metadata after stop", async () => {
   const response = Promise.withResolvers<StreamReply>();

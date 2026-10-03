@@ -19,7 +19,7 @@ import { stopAppHotkeysFromEditable } from "@/shared/lib/editable-target";
 import { ComposerDrop } from "./drop";
 import { ComposerEditing } from "./editing";
 import { createComposerExtension } from "./editor-extension";
-import { ComposerMentions } from "./mention-node";
+import { ComposerMentions } from "./mention";
 import styles from "./styles.module.css";
 import { ComposerSuggestions } from "./suggestions";
 

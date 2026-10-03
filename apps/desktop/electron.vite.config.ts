@@ -65,7 +65,13 @@ export default defineConfig({
     build: {
       externalizeDeps: { exclude: ["@pond/schema"] },
       rollupOptions: {
-        input: resolve(__dirname, "src/main/index.ts"),
+        input: {
+          index: resolve(__dirname, "src/main/index.ts"),
+          "queue-worker": resolve(
+            __dirname,
+            "src/main/core/pipeline/queue-worker.ts",
+          ),
+        },
         /** Native modules resolve their platform .node binaries at runtime; `re2` isn't built here, so external lets url-regex-safe fall back to plain RegExp. */
         external: ["electron", "better-sqlite3", "sqlite-vec", "sharp", "re2"],
         output: {
@@ -86,6 +92,8 @@ export default defineConfig({
         input: {
           index: resolve(__dirname, "src/preload/index.ts"),
           preview: resolve(__dirname, "src/preload/preview.ts"),
+          screenshot: resolve(__dirname, "src/preload/screenshot.ts"),
+          settings: resolve(__dirname, "src/preload/settings.ts"),
           scrape: resolve(__dirname, "src/preload/scrape.cjs.ts"),
         },
         external: ["electron"],
@@ -177,8 +185,19 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve(__dirname, "src/renderer/index.html"),
+          "agent-gallery": resolve(
+            __dirname,
+            "src/renderer/agent-gallery.html",
+          ),
           capture: resolve(__dirname, "src/renderer/capture.html"),
           preview: resolve(__dirname, "src/renderer/preview.html"),
+          "picker-gallery": resolve(
+            __dirname,
+            "src/renderer/picker-gallery.html",
+          ),
+          screenshot: resolve(__dirname, "src/renderer/screenshot.html"),
+          settings: resolve(__dirname, "src/renderer/settings.html"),
+          harvester: resolve(__dirname, "src/renderer/harvester.html"),
         },
         preserveEntrySignatures: false,
         output: {

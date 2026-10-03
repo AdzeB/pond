@@ -5,8 +5,17 @@ import {
   IMAGE_INSPECTOR_SAVE,
   setupImageInspectorTest,
 } from "./image-inspector-test-harness";
+import { actualScale } from "./use-image-viewport";
 
 const inspector = setupImageInspectorTest();
+
+it("uses the fitted portrait width to calculate actual size", () => {
+  expect(actualScale({ naturalWidth: 1000, fittedWidth: 500 })).toBe(2);
+});
+
+it("uses decoded preview dimensions instead of original metadata at actual size", () => {
+  expect(actualScale({ naturalWidth: 2048, fittedWidth: 1000 })).toBe(2.048);
+});
 
 it("shows persisted transforms and keeps a cancelled crop draft out of storage", async () => {
   await inspector.render();
@@ -14,9 +23,12 @@ it("shows persisted transforms and keeps a cancelled crop draft out of storage",
   expect(image?.style.transform).toBe("rotate(90deg) scaleX(-1)");
   expect(image?.style.clipPath).toContain("inset(");
   const frame = image?.closest("[data-background]");
-  expect(frame?.contains(inspector.button("Fit"))).toBe(false);
+  expect(frame?.contains(inspector.button("Fit to Window"))).toBe(false);
   expect(
-    inspector.button("Fit").closest("[data-slot]")?.getAttribute("data-slot"),
+    inspector
+      .button("Fit to Window")
+      .closest("[data-slot]")
+      ?.getAttribute("data-slot"),
   ).toBe("top");
   expect(
     inspector
@@ -26,7 +38,7 @@ it("shows persisted transforms and keeps a cancelled crop draft out of storage",
   ).toBe("top");
   await act(async () => inspector.button("Zoom In").click());
   expect(inspector.host.textContent).toContain("125%");
-  await act(async () => inspector.button("Fit").click());
+  await act(async () => inspector.button("Fit to Window").click());
   expect(inspector.host.textContent).toContain("100%");
   await act(async () => inspector.button("Crop").click());
   expect(inspector.button("Apply Crop").disabled).toBe(true);

@@ -5,7 +5,7 @@ import log from "electron-log/main.js";
 import { IPC } from "../../../shared/constants";
 import { executeBatch, executeTransaction } from "../../core/executor";
 import { currentPondId } from "../../core/prefs-scope";
-import { materializeLibraryMediaForExternalUse } from "../../core/security/library-media-storage";
+import { materializeLibraryMediaForExternalUse } from "../../core/storage/library-media-storage";
 import {
   canRedo,
   canUndo,

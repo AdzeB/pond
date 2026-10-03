@@ -94,14 +94,6 @@ export function SaveDialog({
             </Dialog.Content>
             <Dialog.Footer>
               <Button
-                type="button"
-                variant="ghost"
-                onClick={onClose}
-                disabled={busy}
-              >
-                Cancel
-              </Button>
-              <Button
                 type="submit"
                 disabled={busy || !text.trim()}
                 loading={busy}

@@ -2,9 +2,9 @@ export { statusFeed } from "./activity";
 export type {
   DownloadRow,
   HistoryCursor,
+  StatusFilter,
 } from "./downloads";
 export {
-  downloadFiltersActive,
   downloadRowSource,
   HistoryPageSchema,
   historyToDownloadRow,
@@ -15,4 +15,3 @@ export {
   STATUS_FILTER_OPTIONS,
   statusBucket,
 } from "./downloads";
-export { useStatusFeed } from "./use";

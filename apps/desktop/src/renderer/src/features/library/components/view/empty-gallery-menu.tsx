@@ -4,5 +4,5 @@ import { blankDocuments } from "@/features/library/state/blank-documents";
 
 export function buildEmptyGalleryMenu(): MenuItemSpec[] {
   void blankDocuments.refresh();
-  return buildNewMenuItems(blankDocuments.kinds());
+  return buildNewMenuItems(blankDocuments.kinds(), blankDocuments.icons());
 }

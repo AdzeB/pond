@@ -1,5 +1,5 @@
 import type { MediaType, Source } from "@pond/schema/db";
-import type { BlankDocumentKind } from "./blank-documents";
+import type { BlankDocumentIcons, BlankDocumentKind } from "./blank-documents";
 import type { CombineImagesOptions } from "./combine-images-contracts";
 import type { EmptyInput, OkResult } from "./query-contracts-shared";
 import type {
@@ -133,7 +133,10 @@ export interface SavesImportQueryResults {
     error?: "source_not_found" | "capture_unavailable" | "save_failed";
   };
   "saves.createManual": OkResult & { id?: string; skipped?: boolean };
-  "saves.listBlankDocuments": { kinds: BlankDocumentKind[] };
+  "saves.listBlankDocuments": {
+    kinds: BlankDocumentKind[];
+    icons: BlankDocumentIcons;
+  };
   "saves.createBlankDocument": OkResult & { id?: string };
   "saves.combineImages": OkResult & {
     id?: string;

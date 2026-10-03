@@ -3,13 +3,15 @@ import { Menu, Tooltip } from "@pond/ui";
 import { useEffect, useState } from "react";
 import {
   blankDocuments,
-  useBlankDocumentKinds,
+  useBlankDocuments,
 } from "@/features/library/state/blank-documents";
 import {
   newMenuDialog,
   useNewMenuDialog,
 } from "@/features/library/state/new-menu-dialog";
 import { useRetainedDialogPayload } from "@/shared/hooks/use-retained-dialog-payload";
+import { LibraryRepairDialog } from "../repair-dialog";
+import { ScreenshotOrganizeDialog } from "../screenshot-organize";
 import { SaveDialog } from "./save-dialog";
 import { ScreenshotDialog } from "./screenshot-dialog";
 import { buildNewMenuItems, filterMenuItems } from "./spec";
@@ -18,8 +20,11 @@ import styles from "./styles.module.css";
 export function NewMenu() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
-  const installed = useBlankDocumentKinds();
-  const items = filterMenuItems(buildNewMenuItems(installed), search);
+  const documents = useBlankDocuments();
+  const items = filterMenuItems(
+    buildNewMenuItems(documents.kinds, documents.icons),
+    search,
+  );
 
   useEffect(() => {
     if (open) void blankDocuments.refresh();
@@ -71,7 +76,17 @@ export function NewMenuDialogHost() {
     void blankDocuments.refresh();
   }, []);
   const kind = presentation.payload;
-  if (kind === "links") {
+  if (kind?.kind === "screenshot-organize") {
+    return (
+      <ScreenshotOrganizeDialog
+        key={kind.draft.token}
+        draft={kind.draft}
+        open={presentation.open}
+        onClose={() => newMenuDialog.close()}
+      />
+    );
+  }
+  if (kind?.kind === "links") {
     return (
       <SaveDialog
         open={presentation.open}
@@ -79,9 +94,18 @@ export function NewMenuDialogHost() {
       />
     );
   }
-  if (kind === "screenshot") {
+  if (kind?.kind === "screenshot") {
     return (
       <ScreenshotDialog
+        open={presentation.open}
+        onClose={() => newMenuDialog.close()}
+      />
+    );
+  }
+  if (kind?.kind === "repair") {
+    return (
+      <LibraryRepairDialog
+        kind={kind.repair}
         open={presentation.open}
         onClose={() => newMenuDialog.close()}
       />

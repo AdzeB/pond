@@ -11,7 +11,18 @@ import {
   pipelineEvents,
   type SaveIngestEvent,
 } from "@pond/schema/events";
-import { and, desc, eq, inArray, isNull, like, lt, or, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  like,
+  lt,
+  ne,
+  or,
+  sql,
+} from "drizzle-orm";
 import { z } from "zod";
 import { downloadActivity } from "../../core/pipeline/download-activity";
 import { pipelineSnapshot } from "../../core/pipeline/reconciler-client";
@@ -102,6 +113,7 @@ export const downloadsQueries = {
       .where(
         and(
           isNull(saves.deletedAt),
+          ne(saves.source, "local"),
           inArray(saves.status, ["ingesting", "failed", "skipped"]),
         ),
       );
@@ -131,6 +143,7 @@ export const downloadsQueries = {
       const clauses = [
         eq(pipelineEvents.kind, "save.ingest.completed"),
         eq(pipelineEvents.outcome, "complete"),
+        or(isNull(pipelineEvents.source), ne(pipelineEvents.source, "local")),
       ];
       if (sources.length > 0) {
         clauses.push(inArray(pipelineEvents.source, sources));

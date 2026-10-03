@@ -15,9 +15,11 @@ out
 .env.*.local
 !.env.example
 
-# logs / coverage
+# logs / test output
 *.log
 coverage/
+playwright-report/
+test-results/
 
 # packed tarballs
 *.tgz
@@ -73,6 +75,14 @@ apps/desktop/resources/bin/pond-native-host
 # generated icon previews
 apps/desktop/src/renderer/src/generated/
 
-# Local package cache and UI inspection captures
+# Local caches, scratch files, and UI inspection captures
+.artifacts/
+.cache/
+.eslintcache
+.stylelintcache
 .pnpm-store/
 .tmp/
+
+# Launch video: only the final cut is tracked.
+brag-output/*
+!brag-output/brag.mp4

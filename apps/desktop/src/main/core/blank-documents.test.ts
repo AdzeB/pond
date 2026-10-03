@@ -1,6 +1,7 @@
 import { readFile, rm } from "node:fs/promises";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  listInstalledBlankDocumentApps,
   listInstalledBlankDocuments,
   writeBlankDocumentFile,
 } from "./blank-documents";
@@ -21,6 +22,21 @@ describe("blank documents", () => {
         entries: () => ["Adobe Photoshop 2025.app", "Pages.app", "Safari.app"],
       }),
     ).toEqual(["photoshop", "pages"]);
+  });
+
+  it("retains each installed application's path for native icon lookup", () => {
+    expect(
+      listInstalledBlankDocumentApps({
+        exists: () => true,
+        entries: (path) =>
+          path === "/Applications"
+            ? ["Microsoft Excel.app", "Safari.app"]
+            : ["Pages.app"],
+      }),
+    ).toEqual([
+      { kind: "excel", path: "/Applications/Microsoft Excel.app" },
+      { kind: "pages", path: "/System/Applications/Pages.app" },
+    ]);
   });
 
   it("writes a file with the document extension", async () => {

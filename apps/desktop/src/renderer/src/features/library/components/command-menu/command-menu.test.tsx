@@ -4,10 +4,17 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { commandMenu } from "@/features/library/state/command-menu";
 import { normalise } from "@/features/saves/lib/reconcile";
+import { pool } from "@/features/saves/state/pool";
+import { clearRecents, useTrackVisit } from "@/features/saves/state/recents";
 import { selection } from "@/features/saves/state/selection";
 import { CommandMenuHost } from "./";
 
 const openSave = vi.fn();
+function RecentVisit({ saveId }: { saveId: string }) {
+  useTrackVisit(saveId);
+  return null;
+}
+
 function useResults(query: string) {
   const save = normalise({
     id: "save-1",
@@ -46,6 +53,7 @@ describe("command menu", () => {
     );
     Element.prototype.scrollIntoView = vi.fn();
     openSave.mockClear();
+    clearRecents();
     commandMenu.close();
     selection.clear();
     host = document.createElement("div");
@@ -85,6 +93,33 @@ describe("command menu", () => {
     expect(document.body.textContent).toContain("Navigate");
   });
 
+  it("shows recent saves before commands and opens one", async () => {
+    const save = normalise({
+      id: "recent-save",
+      source: "local",
+      title: "Recently viewed poster",
+      url: "pond://recent-save",
+      author: "Pond",
+      mediaType: "image",
+    });
+    if (!save) throw new Error("Invalid recent save fixture");
+    pool.upsert(save);
+    await act(async () => root.render(<RecentVisit saveId={save.id} />));
+
+    const input = await open();
+    expect(document.body.textContent).toContain("Recent");
+    expect(document.body.textContent).toContain("Recently viewed poster");
+    expect(input?.getAttribute("aria-activedescendant")).toBe(
+      "recent:recent-save",
+    );
+    await act(async () => {
+      input?.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
+    });
+    expect(openSave).toHaveBeenCalledWith("recent-save");
+  });
+
   it("prioritizes actions for the current selection", async () => {
     selection.set(["save-1"]);
     await open();
@@ -118,6 +153,35 @@ describe("command menu", () => {
     });
     expect(openSave).toHaveBeenCalledWith("save-1");
     expect(document.querySelector('[role="dialog"][data-open]')).toBeNull();
+  });
+
+  it("keeps composed text and dead keys from executing a command", async () => {
+    const input = await open();
+    if (!input) throw new Error("Missing command input");
+    const initial = input.getAttribute("aria-activedescendant");
+    await act(async () => {
+      for (const key of ["ArrowDown", "Enter"])
+        input.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key,
+            isComposing: true,
+            bubbles: true,
+          }),
+        );
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Enter",
+          keyCode: 229,
+          bubbles: true,
+        }),
+      );
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Dead", bubbles: true }),
+      );
+    });
+    expect(input.getAttribute("aria-activedescendant")).toBe(initial);
+    expect(document.contains(input)).toBe(true);
+    expect(openSave).not.toHaveBeenCalled();
   });
 
   it("resets the query and selection after an external close", async () => {

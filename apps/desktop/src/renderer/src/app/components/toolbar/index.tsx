@@ -4,6 +4,7 @@ import {
   IconBookmarkOutline18,
   IconBookmarkSlashOutline18,
   IconChatBubblePenOutline18,
+  IconClockRotateClockwiseOutline18,
   IconDotsOutline18,
   IconGear3Outline18,
   IconTrashXmarkOutline18,
@@ -11,10 +12,20 @@ import {
 } from "@pond/icons/outline/18";
 import { Button, Menu } from "@pond/ui";
 import { useRouter, useRouterState } from "@tanstack/react-router";
+import { useState } from "react";
 import { ChromeHistoryNav } from "@/app/components/chrome-toolbar";
 import { AgentToggle } from "@/features/library/components/agent-toggle/agent-toggle";
+import { FolderCustomizeDialog } from "@/features/library/components/folder-customize-dialog";
+import {
+  FOLDER_ICONS,
+  FOLDER_SWATCHES,
+} from "@/features/library/components/folder-sidebar/folder-icons";
 import { SidebarToggle } from "@/features/library/components/sidebar-toggle";
-import { useFolders } from "@/features/library/state/folders";
+import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
+import {
+  folders as folderStore,
+  useFolders,
+} from "@/features/library/state/folders";
 import {
   libraryChrome,
   useLibraryNav,
@@ -29,6 +40,8 @@ import { useSave } from "@/features/saves/hooks/use-saves";
 import { getLastListPath } from "@/features/saves/lib/list-path";
 import { saveIdFromPath } from "@/features/saves/lib/save-nav";
 import { useViewFilteredCount } from "@/features/saves/state/view-context";
+import { usePrefs } from "@/features/settings/state/prefs";
+import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
 import { type Breadcrumb, buildBreadcrumbs } from "./breadcrumbs";
 import { computeLabel } from "./labels";
 import styles from "./styles.module.css";
@@ -39,6 +52,7 @@ const ROOT_ICONS = {
   "/sources": IconArrowDiagonalInOutline18,
   "/tags": IconBookmarkOutline18,
   "/untagged": IconBookmarkSlashOutline18,
+  "/recents": IconClockRotateClockwiseOutline18,
   "/downloads": IconWindowDownloadOutline18,
   "/trash": IconTrashXmarkOutline18,
   "/settings": IconGear3Outline18,
@@ -61,7 +75,11 @@ function Breadcrumbs() {
     select: (state) => state.location.pathname,
   });
   const nav = useLibraryNav();
-  const folders = useFolders();
+  const folderRows = useFolders();
+  const [folderViews] = usePrefs("folderViews");
+  const [customizingFolderId, setCustomizingFolderId] = useState<string | null>(
+    null,
+  );
   const save = useSave(saveIdFromPath(pathname));
   const hasActiveSearch = useHasActiveSearch();
   const filteredCount = useViewFilteredCount();
@@ -69,16 +87,93 @@ function Breadcrumbs() {
     pathname,
     listPath: getLastListPath(),
     nav,
-    folders,
+    folders: folderRows,
     saveLabel: computeLabel(pathname, save),
     searchResultCount: hasActiveSearch ? filteredCount : undefined,
   });
   const hidden = crumbs.length > 3 ? crumbs.slice(1, -2) : [];
+  const customizingFolder = customizingFolderId
+    ? folderRows.find((folder) => folder.id === customizingFolderId)
+    : undefined;
 
   function navigate(crumb: Breadcrumb) {
     if (crumb.nav) libraryChrome.setNav(crumb.nav);
     if (crumb.nav?.kind === "all" && crumb.path === "/") resetFilters();
     router.history.push(crumb.path);
+  }
+
+  function folderMenu(crumb: Breadcrumb) {
+    if (crumb.nav?.kind !== "folder") return null;
+    const folderId = crumb.nav.id;
+    const folder = folderRows.find((entry) => entry.id === folderId);
+    if (!folder) return null;
+    const presentation = folderViews[folder.id];
+    return {
+      folder,
+      items: [
+        {
+          label: "Open Folder",
+          onClick: () => navigate(crumb),
+        },
+        {
+          type: "checkbox" as const,
+          label: "Quick Access",
+          checked: presentation?.quickAccess ?? false,
+          onCheckedChange: (quickAccess: boolean) =>
+            void saveFolderPresentation(folder.id, { quickAccess }),
+        },
+        {
+          type: "submenu" as const,
+          label: "Icon",
+          items: FOLDER_ICONS.map((option) => ({
+            type: "checkbox" as const,
+            label: option.label,
+            checked: (presentation?.icon ?? "folder") === option.id,
+            onCheckedChange: () =>
+              void saveFolderPresentation(folder.id, { icon: option.id }),
+          })),
+        },
+        {
+          type: "submenu" as const,
+          label: "Color",
+          items: FOLDER_SWATCHES.map((option) => ({
+            type: "checkbox" as const,
+            label: option.label,
+            checked: folder.color === option.id,
+            onCheckedChange: () =>
+              void window.pond
+                .query("folders.setColor", {
+                  id: folder.id,
+                  color: option.id,
+                })
+                .then(() => folderStore.refresh()),
+          })),
+        },
+        {
+          type: "submenu" as const,
+          label: "Sort By",
+          items: (
+            [
+              ["savedAt", "Date Saved"],
+              ["createdAt", "Date Added"],
+              ["title", "Title"],
+              ["type", "Type"],
+              ["random", "Random"],
+            ] as const
+          ).map(([sortKey, label]) => ({
+            type: "checkbox" as const,
+            label,
+            checked: (presentation?.sortKey ?? "savedAt") === sortKey,
+            onCheckedChange: () =>
+              void saveFolderPresentation(folder.id, { sortKey }),
+          })),
+        },
+        {
+          label: "Customize Folder",
+          onClick: () => setCustomizingFolderId(folder.id),
+        },
+      ],
+    };
   }
 
   return (
@@ -120,6 +215,28 @@ function Breadcrumbs() {
             );
           }
           const current = index === crumbs.length - 1;
+          const menu = folderMenu(crumb);
+          const segment = current ? (
+            <span
+              className={styles.current}
+              aria-current="page"
+              title={crumb.label}
+            >
+              {index === 0 ? <RootIcon path={crumb.path} /> : null}
+              <span className={styles.label}>{crumb.label}</span>
+            </span>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              className={styles.crumb}
+              title={crumb.label}
+              onClick={() => navigate(crumb)}
+            >
+              {index === 0 ? <RootIcon path={crumb.path} /> : null}
+              <span className={styles.label}>{crumb.label}</span>
+            </Button>
+          );
           return (
             <li
               key={
@@ -135,31 +252,24 @@ function Breadcrumbs() {
                   /
                 </span>
               ) : null}
-              {current ? (
-                <span
-                  className={styles.current}
-                  aria-current="page"
-                  title={crumb.label}
-                >
-                  {index === 0 ? <RootIcon path={crumb.path} /> : null}
-                  <span className={styles.label}>{crumb.label}</span>
-                </span>
+              {menu ? (
+                <SpecContextMenu buildItems={() => menu.items}>
+                  {segment}
+                </SpecContextMenu>
               ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={styles.crumb}
-                  title={crumb.label}
-                  onClick={() => navigate(crumb)}
-                >
-                  {index === 0 ? <RootIcon path={crumb.path} /> : null}
-                  <span className={styles.label}>{crumb.label}</span>
-                </Button>
+                segment
               )}
             </li>
           );
         })}
       </ol>
+      {customizingFolder ? (
+        <FolderCustomizeDialog
+          folder={customizingFolder}
+          folderIcon={folderViews[customizingFolder.id]?.icon}
+          onClose={() => setCustomizingFolderId(null)}
+        />
+      ) : null}
     </nav>
   );
 }

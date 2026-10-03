@@ -14,12 +14,14 @@
 }
 
 .meta {
+  flex: 1 1 0;
   align-items: flex-start;
   min-width: 0;
   text-align: left;
 }
 
 .cell {
+  flex: 1 1 0;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -102,7 +102,7 @@
   height: 28px;
   padding: 0 6px;
   font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   line-height: 20px;
   color: var(--ds-gray-10);
 }

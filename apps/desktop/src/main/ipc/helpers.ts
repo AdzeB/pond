@@ -5,10 +5,8 @@ import { eq } from "drizzle-orm";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { ipcMain } from "electron";
 import log from "electron-log/main.js";
-import { IPC, POND_PROTOCOL } from "../../shared/constants";
+import { POND_PROTOCOL } from "../../shared/constants";
 import { isAuxiliaryKind } from "../../shared/save-file-names";
-import { assertLibraryUnlocked } from "../core/security/app-lock-runtime";
-import { saveIsLocked } from "../core/security/folder-passwords";
 import { getDb } from "../db";
 import { itemFile, itemsRoot } from "../paths";
 import { toWireSave } from "./wire";
@@ -44,13 +42,6 @@ export function safeHandle<Args extends unknown[], R>(
       );
       throw new Error("untrusted sender");
     }
-    if (
-      channel !== IPC.query &&
-      channel !== IPC.appInfo &&
-      channel !== IPC.openExternal
-    ) {
-      assertLibraryUnlocked();
-    }
     return handler(event, ...args);
   });
 }
@@ -72,7 +63,6 @@ export async function resolveSaveFilePath(
     }
 > {
   try {
-    if (await saveIsLocked(id)) return { ok: false, reason: "not_found" };
     const db = await getDb();
     const rows = await db.select().from(saves).where(eq(saves.id, id));
     const row = rows[0];

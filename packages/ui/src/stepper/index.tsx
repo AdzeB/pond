@@ -28,6 +28,8 @@ interface StepperProps {
   incrementLabel?: string;
   resetLabel?: string;
   "aria-label"?: string;
+  "aria-labelledby"?: string;
+  "aria-describedby"?: string;
   className?: string;
 }
 
@@ -45,6 +47,8 @@ export function Stepper({
   incrementLabel = "Increase",
   resetLabel = "Reset",
   "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
+  "aria-describedby": ariaDescribedBy,
   className,
 }: StepperProps) {
   const safe = Number.isFinite(value) ? value : fallback;
@@ -66,6 +70,8 @@ export function Stepper({
         min={min}
         max={max}
         aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
         value={String(safe)}
         onChange={(e) => set(Number(e.target.value) || fallback)}
         className={styles.input}

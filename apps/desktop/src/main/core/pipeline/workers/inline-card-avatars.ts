@@ -6,7 +6,7 @@ import type { TxSaveFile } from "@pond/schema/tx";
 import sharp from "sharp";
 import { fetchAvatarToTxFile } from "../../../lib/blob";
 import { itemFile } from "../../../paths";
-import { readLibraryMedia } from "../../security/library-media-storage";
+import { readLibraryMedia } from "../../storage/library-media-storage";
 
 export interface InlinedAvatars {
   capture: Capture;

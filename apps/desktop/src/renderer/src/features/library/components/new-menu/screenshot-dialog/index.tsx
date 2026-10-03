@@ -303,7 +303,6 @@ export function ScreenshotDialog({
               </div>
             </Dialog.Content>
             <Dialog.Footer>
-              <Dialog.Cancel type="button" disabled={busy} onClick={onClose} />
               <Dialog.Confirm
                 type="submit"
                 loading={busy}

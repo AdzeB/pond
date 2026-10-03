@@ -40,7 +40,7 @@ function task(
 ): WireTask {
   return {
     op,
-    status: "failed",
+    status: lastError === CANCEL_REASON ? "cancelled" : "dead",
     attempts: 1,
     maxAttempts: 3,
     lastError,
@@ -56,15 +56,15 @@ describe("cancelled downloads", () => {
     expect(statusBucket("cancelled")).toBe("cancelled");
   });
 
-  it("still reads a real error as failed", () => {
+  it("reads an exhausted error as dead", () => {
     const rows = projectLiveDownloads([save([task("TerminalError: no data")])]);
-    expect(rows[0]?.status).toBe("failed");
+    expect(rows[0]?.status).toBe("dead");
   });
 
-  it("keeps a set with one real error as failed", () => {
+  it("keeps a set with one real error as dead", () => {
     const rows = projectLiveDownloads([
       save([task(CANCEL_REASON), task("boom", "finalize")]),
     ]);
-    expect(rows[0]?.status).toBe("failed");
+    expect(rows[0]?.status).toBe("dead");
   });
 });

@@ -72,6 +72,8 @@
 
 .pill {
   padding: 2px;
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow-tooltip);
 }
 
 .tools {
@@ -81,9 +83,45 @@
   min-width: 0;
 }
 
-.pager {
-  flex: 0 0 auto;
-  order: -1;
+.tools[data-layout="contents"] {
+  display: contents;
+}
+
+.bar {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.barStart,
+.barCenter,
+.barEnd {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  min-width: 0;
+}
+
+.barCenter {
+  justify-content: center;
+}
+
+.barEnd {
+  justify-content: flex-end;
+}
+
+@container (max-width: 620px) {
+  .bar[data-collapse-center] {
+    grid-template-columns: auto 1fr;
+    gap: 8px;
+  }
+
+  .bar[data-collapse-center] .barCenter {
+    display: none;
+  }
 }
 
 .scale {
@@ -92,7 +130,7 @@
   justify-content: center;
   width: auto;
   min-width: 40px;
-  height: 32px;
+  height: var(--ds-size-sm);
   padding-inline: 6px;
   font-size: var(--ds-text-sm);
   font-variant-numeric: tabular-nums;

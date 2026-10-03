@@ -77,6 +77,32 @@ export interface CompletionInput {
   onActivity?: (activity: AssistantActivity) => void;
   abortController: AbortController;
   onText: (delta: string) => void;
+  waitForTextChunk?: (milliseconds: number) => Promise<void>;
+}
+
+const textChunkDelayMs = 50;
+const maxTextChunks = 40;
+
+const waitForTextChunk = (milliseconds: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
+
+function validatedTextChunks(text: string) {
+  const words = text.match(/\S+\s*|\s+/g) ?? [];
+  const wordsPerChunk = Math.max(1, Math.ceil(words.length / maxTextChunks));
+  const chunks: string[] = [];
+  for (let index = 0; index < words.length; index += wordsPerChunk)
+    chunks.push(words.slice(index, index + wordsPerChunk).join(""));
+  return chunks;
+}
+
+async function publishValidatedText(input: CompletionInput, text: string) {
+  const chunks = validatedTextChunks(text);
+  const wait = input.waitForTextChunk ?? waitForTextChunk;
+  for (let index = 0; index < chunks.length; index++) {
+    input.abortController.signal.throwIfAborted();
+    input.onText(chunks[index] ?? "");
+    if (index < chunks.length - 1) await wait(textChunkDelayMs);
+  }
 }
 
 function uniqueSources(sources: AssistantSource[]): AssistantSource[] {
@@ -418,6 +444,6 @@ export async function completeWithTools(
       "The model returned an unreadable reply. Try again or choose another model.",
     );
   input.abortController.signal.throwIfAborted();
-  if (assembled) input.onText(assembled);
+  if (assembled) await publishValidatedText(input, assembled);
   return assembled;
 }

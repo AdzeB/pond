@@ -49,7 +49,6 @@ const JobSchema = StoredJobSchema.transform(
 );
 export interface CaptureQueuePorts {
   root(): string;
-  canProcess?: () => boolean;
   readStored?: (path: string) => Promise<string>;
   writeStored?: (path: string, value: string) => Promise<void>;
   process(
@@ -84,7 +83,7 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
     const tmp = `${target}.tmp`;
     const value = JSON.stringify(job);
     if (Buffer.byteLength(value) > 128 * 1024 * 1024)
-      throw new Error("This capture exceeds the locked queue limit.");
+      throw new Error("This capture exceeds the capture queue limit.");
     if (ports.writeStored) await ports.writeStored(tmp, value);
     else await writeFile(tmp, value);
     await rename(tmp, target);
@@ -112,7 +111,6 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
     duplicateCount: job.duplicateCount,
   });
   function run(job: Job) {
-    if (ports.canProcess && !ports.canProcess()) return;
     const key = path(job.library, job.draft.id);
     if (active.has(key)) return;
     const work = serial

@@ -2,6 +2,7 @@
   "$schema": "https://turborepo.com/schema.json",
   "ui": "tui",
   "globalDependencies": ["tsconfig.base.json", "pnpm-workspace.yaml"],
+  "globalPassThroughEnv": ["POND_DEV_RUNTIME_TOKEN"],
   "tasks": {
     "transit": {
       "dependsOn": ["^transit"]
@@ -73,12 +74,11 @@
       ],
       "outputs": []
     },
-    "//#references:check:repo": {
+    "//#provenance:check:repo": {
       "inputs": [
-        "docs/references/**",
-        "references.md",
-        "scripts/check-references.mjs",
-        "scripts/check-references.test.mjs",
+        ".provenance/**",
+        "package.json",
+        "pnpm-lock.yaml",
         "scripts/reference-capture.mjs",
         "scripts/reference-capture.test.mjs"
       ],

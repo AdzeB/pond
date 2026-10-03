@@ -97,6 +97,25 @@ export async function backfillColors(): Promise<TaskResult> {
   };
 }
 
+export async function backfillMetadata(): Promise<TaskResult> {
+  const job = statusFeed.start("Extracting media metadata");
+  const res = BackfillReplySchema.parse(
+    await window.pond.query("saves.backfillMetadata", {}),
+  );
+  if (!res.ok) {
+    statusFeed.fail(job, "Media metadata extraction failed.");
+    return { ok: false, message: "Media metadata extraction failed." };
+  }
+  const updated = res.updated ?? 0;
+  statusFeed.done(
+    job,
+    updated > 0
+      ? `Updated ${updated} ${plural(updated, "item")}`
+      : "Media metadata is up to date.",
+  );
+  return { ok: true, message: `${updated} updated` };
+}
+
 function kickRescan(ids?: TaskScope): void {
   void import("./sweep").then(({ rescanEnrichment }) => {
     rescanEnrichment(ids && ids.length > 0 ? ids : undefined);

@@ -16,12 +16,29 @@ describe("portable save metadata", () => {
     });
     const changed = applyPatchToInfo(info, {
       rating: 4,
-      comments: [{ id: "comment", x: 0, y: 0, w: 1, h: 1, text: "Reference" }],
+      comments: [
+        {
+          id: "comment",
+          x: 0,
+          y: 0,
+          w: 1,
+          h: 1,
+          text: "Reference",
+          replies: [{ id: "reply", text: "Reply", createdAt: 2 }],
+          resolvedAt: 3,
+        },
+      ],
       videoNotes: [{ id: "note", timeSec: 12, text: "frame" }],
       rotate: 90,
       crop: { x: 0, y: 0, w: 0.5, h: 0.5 },
     });
     expect(StoredInfoDocSchema.parse(changed).userData?.rating).toBe(4);
+    expect(
+      StoredInfoDocSchema.parse(changed).userData?.comments[0],
+    ).toMatchObject({
+      replies: [{ id: "reply", text: "Reply", createdAt: 2 }],
+      resolvedAt: 3,
+    });
     expect(changed.files).toEqual(info.files);
     expect(changed.folderIds).toEqual(["project"]);
     const cleared = applyPatchToInfo(changed, {

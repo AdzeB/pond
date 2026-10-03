@@ -1,0 +1,29 @@
+.brandLogo,
+.logo {
+  display: block;
+  flex-shrink: 0;
+  border-radius: 22%;
+  box-shadow: var(--ds-shadow-xs);
+}
+
+.brandLogo {
+  box-sizing: border-box;
+  padding: 3px;
+  object-fit: contain;
+  background: var(--ds-gray-1);
+}
+
+.logo {
+  object-fit: cover;
+}
+
+.mark {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  color: var(--ds-gray-11);
+  background: var(--ds-gray-3);
+  border-radius: 22%;
+}

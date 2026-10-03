@@ -1,19 +1,33 @@
-import type { BlankDocumentKind } from "@shared/blank-documents";
+import type {
+  BlankDocumentIcons,
+  BlankDocumentKind,
+} from "@shared/blank-documents";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
-const store = new Store<{ kinds: BlankDocumentKind[] }>({ kinds: [] });
+interface BlankDocumentsState {
+  kinds: BlankDocumentKind[];
+  icons: BlankDocumentIcons;
+}
+
+const store = new Store<BlankDocumentsState>({ kinds: [], icons: {} });
 
 export const blankDocuments = {
   kinds(): BlankDocumentKind[] {
     return store.state.kinds;
   },
+  icons(): BlankDocumentIcons {
+    return store.state.icons;
+  },
   async refresh(): Promise<void> {
     const result = await window.pond.query("saves.listBlankDocuments", {});
-    store.setState(() => ({ kinds: result.kinds ?? [] }));
+    store.setState(() => ({
+      kinds: result.kinds ?? [],
+      icons: result.icons ?? {},
+    }));
   },
 };
 
-export function useBlankDocumentKinds(): BlankDocumentKind[] {
-  return useSelector(store, (state) => state.kinds);
+export function useBlankDocuments(): BlankDocumentsState {
+  return useSelector(store, (state) => state);
 }

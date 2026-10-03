@@ -11,7 +11,7 @@ import {
 import { z } from "zod";
 import { libraryItemLink } from "../../../shared/library-links";
 import { runLibraryTransfer } from "../../core/library-transfers";
-import { materializeLibraryMediaForExternalUse } from "../../core/security/library-media-storage";
+import { materializeLibraryMediaForExternalUse } from "../../core/storage/library-media-storage";
 import {
   type OpenWithAppInfo,
   openWithListingKey,
@@ -139,6 +139,22 @@ async function openFilesWith(
 }
 
 export const openWithQueries = {
+  "saves.quickLook": query(
+    z.object({
+      id: z.string().min(1),
+      fileIndex: z.number().int().nonnegative().optional(),
+    }),
+    async ({ id, fileIndex }) => {
+      if (process.platform !== "darwin")
+        return { ok: false as const, error: "Quick Look requires macOS." };
+      const target = await resolveSaveFilePath(id, fileIndex);
+      if (!target.ok)
+        return { ok: false as const, error: "This Save has no original file." };
+      const file = await materializeLibraryMediaForExternalUse(target.path);
+      execFile("/usr/bin/qlmanage", ["-p", file]).unref();
+      return { ok: true as const };
+    },
+  ),
   "saves.copyInternalLinks": query(
     z.object({ ids: z.array(z.string().min(1)).min(1) }),
     async ({ ids }) => {

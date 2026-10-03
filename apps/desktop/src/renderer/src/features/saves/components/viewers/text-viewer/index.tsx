@@ -6,6 +6,12 @@ import { useExtensionDependency } from "@lexical/react/useExtensionComponent";
 import { useSignalValue } from "@lexical/react/useExtensionSignalValue";
 import { Debouncer } from "@tanstack/pacer";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ViewerHud } from "@/features/saves/components/viewers/hud";
+import {
+  ChromePortal,
+  ViewerChrome,
+} from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+import { ViewerResultCount } from "@/features/saves/components/viewers/viewer-result-count";
 import { ensureTextCover } from "@/features/saves/lib/ensure-text-cover";
 import { mutateSave } from "@/features/saves/lib/mutate";
 import {
@@ -32,10 +38,12 @@ export const NOTE_BODY_PLACEHOLDER = "Write anything, or type / for commands";
 
 export function TextViewer({ save }: { save: Save }) {
   return (
-    <TextViewerSession
-      key={`${save.id}:${save.source === "local" ? "edit" : "read"}`}
-      save={save}
-    />
+    <ViewerChrome>
+      <TextViewerSession
+        key={`${save.id}:${save.source === "local" ? "edit" : "read"}`}
+        save={save}
+      />
+    </ViewerChrome>
   );
 }
 
@@ -55,6 +63,12 @@ function TextViewerSession({ save }: { save: Save }) {
 
   return (
     <div className={styles.root} {...scrollFade}>
+      <ChromePortal slot="top">
+        <ViewerHud.Bar
+          label="Text"
+          start={<ViewerResultCount saveId={save.id} />}
+        />
+      </ChromePortal>
       <LexicalExtensionComposer
         key={save.id}
         extension={extension}

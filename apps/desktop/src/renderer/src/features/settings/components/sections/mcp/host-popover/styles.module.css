@@ -1,0 +1,32 @@
+.title {
+  margin: 0;
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-xl);
+}
+
+.popup {
+  --ds-popup-width: 320px;
+  --ds-popup-min-width: 280px;
+  gap: 10px;
+  padding: 12px;
+}
+
+.lead {
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  line-height: 1.4;
+  color: var(--ds-gray-11);
+}
+
+.merge {
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  line-height: 1.4;
+  color: var(--ds-gray-11);
+}
+
+.error {
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-red-11);
+}

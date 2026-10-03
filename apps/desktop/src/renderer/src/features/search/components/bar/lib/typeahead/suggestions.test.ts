@@ -9,19 +9,10 @@ const facets: TypeaheadFacets = {
 };
 
 describe("search suggestions", () => {
-  it("finds source names without requiring filter syntax and ranks prefixes first", () => {
-    expect(buildMenu("youtube", facets)?.items[0]?.token).toBe(
-      "source:youtube.com",
-    );
-  });
-
-  it("suggests tags and media types by value", () => {
-    expect(buildMenu("design", facets)?.items[0]?.token).toBe("tag:design");
-    expect(
-      buildMenu("video", facets)?.items.some(
-        (item) => item.token === "type:video",
-      ),
-    ).toBe(true);
+  it("does not suggest filters for ordinary search text", () => {
+    expect(buildMenu("d", facets)).toBeNull();
+    expect(buildMenu("youtube", facets)).toBeNull();
+    expect(buildMenu("design", facets)).toBeNull();
   });
 
   it("keeps existing selections when completing a comma-separated filter", () => {
@@ -43,9 +34,7 @@ describe("search suggestions", () => {
       ...facets,
       folders: [{ value: "folder-123", label: "Inspiration" }],
     };
-    expect(buildMenu("inspiration", next)?.items[0]?.token).toBe(
-      "folder:folder-123",
-    );
+    expect(buildMenu("inspiration", next)).toBeNull();
     expect(buildMenu("folder:insp", next)?.items[0]?.token).toBe(
       "folder:folder-123",
     );

@@ -310,13 +310,6 @@ function GroupReview({
       <div className={styles.footer}>
         <span>{Math.max(0, selected.length - 1)} saves to merge</span>
         <Button
-          variant="secondary"
-          disabled={busy}
-          onClick={closeDuplicateReview}
-        >
-          Cancel
-        </Button>
-        <Button
           disabled={busy || selected.length < 2}
           loading={busy}
           onClick={() => void merge()}
@@ -365,7 +358,7 @@ function Candidate({
         </span>
         <span>
           {save?.tags.length ?? 0} tags · {save?.comments?.length ?? 0} comments
-          · {save?.videoNotes?.length ?? 0} video notes
+          · {save?.videoNotes?.length ?? 0} video comments
         </span>
         {save?.notes ? <span>{save.notes}</span> : null}
       </div>

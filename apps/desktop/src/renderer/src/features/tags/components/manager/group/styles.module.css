@@ -2,7 +2,7 @@
   overflow: hidden;
   background: var(--ds-gray-1);
   border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-1);
+  box-shadow: var(--ds-shadow-xs);
 }
 
 .header {
@@ -57,7 +57,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   color: var(--ds-gray-12);
   white-space: nowrap;
 }

@@ -132,37 +132,6 @@ describe("durable capture queue", () => {
     expect(calls).toEqual(["capture-1:0", "capture-1:1"]);
     expect((await queue.list())[0]?.state).toBe("complete");
   });
-  it("keeps locked captures encrypted and resumes them after unlock", async () => {
-    const calls: string[] = [];
-    const { root, ports } = await fixture(async (_item, _meta, id) => {
-      calls.push(id);
-      return { id };
-    });
-    let unlocked = false;
-    ports.canProcess = () => unlocked;
-    ports.writeStored = (path, value) =>
-      writeFile(path, `protected:${Buffer.from(value).toString("base64")}`);
-    ports.readStored = async (path) => {
-      const stored = await readFile(path, "utf8");
-      return Buffer.from(stored.slice("protected:".length), "base64").toString(
-        "utf8",
-      );
-    };
-    const queue = createCaptureQueue(ports);
-
-    await queue.accept(draft());
-    await queue.idle();
-    expect(calls).toEqual([]);
-    expect(
-      await readFile(join(root, ".capture-queue/capture-1.json"), "utf8"),
-    ).toMatch(/^protected:/);
-
-    unlocked = true;
-    await queue.recover();
-    await queue.idle();
-    expect(calls).toEqual(["capture-1:0", "capture-1:1"]);
-    expect((await queue.list())[0]?.state).toBe("complete");
-  });
   it("rejects invalid capture IDs", async () => {
     const { queue } = await fixture(async () => ({ id: "id" }));
 

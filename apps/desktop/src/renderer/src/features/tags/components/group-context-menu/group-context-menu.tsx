@@ -3,7 +3,7 @@ import {
   IconPencilOutline18,
   IconTrash2Outline18,
 } from "@pond/icons/outline/18";
-import { cssVars, type MenuItemSpec } from "@pond/ui";
+import { Chip, type MenuItemSpec } from "@pond/ui";
 import { FOLDER_SWATCHES } from "@/features/library/components/folder-sidebar/folder-icons";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import styles from "./styles.module.css";
@@ -34,9 +34,10 @@ function ColorSwatches({
           aria-label={swatch.label}
           aria-pressed={swatch.id === color}
           data-selected={swatch.id === color || undefined}
-          style={cssVars({ "--swatch": swatch.css })}
           onClick={() => onChange(swatch.id)}
-        />
+        >
+          <Chip.Swatch color={swatch.css} />
+        </button>
       ))}
     </fieldset>
   );

@@ -28,6 +28,8 @@ export function applyNavFilter<T extends Pick<Save, "id" | "tags">>(
 ): T[] {
   if (
     nav.kind === "all" ||
+    nav.kind === "recents" ||
+    nav.kind === "random" ||
     nav.kind === "trash" ||
     nav.kind === "downloads" ||
     nav.kind === "sources"

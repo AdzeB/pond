@@ -33,6 +33,7 @@ export async function startMissingVideoBackfill(): Promise<{
     const page = db
       .select({
         id: saves.id,
+        source: saves.source,
         files: saves.files,
         mediaType: saves.mediaType,
         rawJson: saves.rawJson,
@@ -91,6 +92,7 @@ export async function startMissingVideoBackfill(): Promise<{
             const taskRow: NewTask = {
               id: ulid(),
               saveId: row.id,
+              source: row.source,
               op,
               status: "pending",
               attempts: 0,

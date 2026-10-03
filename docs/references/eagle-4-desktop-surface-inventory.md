@@ -7,6 +7,11 @@ This inventory closes the surface-level coverage for the
 installed Eagle 4.0.0 renderer, menus, options, viewers, dialogs, and states.
 Plugin marketplace behavior and plugin-provided features remain excluded.
 
+Surface coverage does not establish interaction completeness. The
+[September 22 interaction audit](eagle-interaction-accessibility-audit-2026-09-22.md)
+adds current selection, keyboard, focus, and accessibility findings, with live
+verification limits stated separately.
+
 ## Coverage boundary
 
 Static inspection covers all readable first-party renderer assets in the
@@ -14,8 +19,8 @@ installed application:
 
 - 1,915 main-application English interface keys
 - 52 Collect-window interface keys
-- 175 application-menu entries
-- 191 context-menu keys across 20 surfaces
+- 184 `appmenu.*` application-menu keys
+- 191 `context.*` and 31 `Context.*` context-menu keys across more than 20 surfaces
 - 145 macOS shortcut slots in 11 groups, including 100 default bindings
 - 13 active preference panes, including 3 excluded plugin shells
 - 62 preference options bound in Eagle's preferences HTML
@@ -52,7 +57,7 @@ Their functionality depends on plugins.
 | --- | --- | --- | --- |
 | `index.html` | Main Library shell | Runtime and static | Partial |
 | `preferences.html` | Preferences window | Runtime and static | Partial |
-| `preview-window.html` | Detached preview | Static | Parity |
+| `preview-window.html` | Detached preview | Static | Partial for menu placement |
 | `progress.html` | Floating job progress | Static | Partial |
 | `registration.html` | Registration and trial | Static | Not applicable |
 | `manage-device.html` | License device management | Static | Not applicable |
@@ -147,7 +152,7 @@ All Tags is a separate full-page workspace with tag groups and starred tags.
 
 ## Application menu
 
-Eagle defines 175 labels across these top-level menus.
+Eagle defines 184 `appmenu.*` keys across these top-level menus.
 
 ### Eagle
 
@@ -161,8 +166,8 @@ Eagle Package, Auto Import, Auto Import Settings, Find Duplicated Files, Export
 to Computer, Export Eaglepack, Export in Specified Format or Dimension, Export
 CSV, and imports from ArtStation and Huaban.
 
-Pinterest appears elsewhere as a documentation route, not a working importer in
-the readable Eagle 4.0.0 renderer.
+The readable File menu includes hardcoded Pinterest and Inboard entries.
+Huaban appears through localization and import-context paths.
 
 ### Edit
 
@@ -219,6 +224,9 @@ slot whose action providers are excluded plugin behavior.
 The 191 context labels belong to:
 
 - item and gallery
+- built-in sidebar visibility
+- Recently Used
+- Quick Access
 - layout and sort
 - folder
 - subfolder
@@ -238,10 +246,19 @@ The 191 context labels belong to:
 - custom thumbnail
 - viewer-specific media actions
 - shared selection actions
+- search scope
+- filter customization
+- tag-list sorting
+- list-column visibility
+- navigation history
+- export shortcut popups
+- sidebar pane toggles
 
-Material commands not already represented by Pond include Copy Base64, custom
-thumbnail from clipboard, local Search by Image, WebP batch conversion, Replace
-File, and the filename, thumbnail, empty-folder, and metadata repair commands.
+Pond now represents Copy Name, Copy Thumbnail, Copy Base64, custom thumbnails
+from the clipboard, Replace File, color reanalysis, and in-place WebP
+conversion. Remaining command gaps include targeted filename, thumbnail,
+empty-folder, and metadata repair, plus several menu-placement differences
+cataloged in the parity audit.
 
 ## Shortcuts
 
@@ -408,37 +425,35 @@ The 121 state strings cover:
 - file-extension validation
 - Auto Import
 - authenticated loopback HTTP API and Developer token
+- native Find and Organize menus
+- checked built-in visibility, search-scope, zoom-ratio, tag-sort, and
+  list-column menus
+- Recently Used, Random, Quick Access, breadcrumb, folder, Smart Folder,
+  folder-picker, and detached-preview menus
+- previewed targeted thumbnail, filename, invalid-content, and metadata repair
 
 ### Partial
 
 - saved filters, represented through Saved Views
 - Smart Folder rules without camera or EXIF fields
-- WebP conversion that exports copies instead of replacing originals
 - import-error actions split across dialogs, Downloads, and transfers
 - saved-page browser toolbar and web capture
-- debug support that reveals logs without bundling a report
 - GIF controls embedded in the image inspector
-- Library reload, cache, and repair tools
 - Notification history split across transient and workflow-specific surfaces
 
 ### Missing
 
-- copy item name, thumbnail, and Base64
-- first-run onboarding
 - mouse-wheel first-run guidance
 - unified Notification Center history
-- Community sidebar destination
-- auto-advancing slideshow
-- folder results in Quick Search
-- camera and EXIF filter surfaces
-- direct ArtStation, Pixave, and Inboard import
 - application proxy settings
-- display color-space controls
+- dedicated EXIF viewer
 
 ### Intentional or not applicable
 
 - Pinterest is a connected source instead of a one-time importer.
 - The dedicated Collect window maps to Pond's extension and capture queue.
+- Eagle's hosted Community feed has no Pond equivalent because Pond stays
+  local-first.
 - Registration, trial, device management, and license recovery do not apply to
   Pond's open-source distribution.
 

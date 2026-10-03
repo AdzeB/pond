@@ -37,14 +37,25 @@ export function useCropKeyboard({
 
   useEffect(() => {
     if (!active || mode !== "crop" || !draft) return;
+    const element = frame.current;
+    if (!element) return;
     const onKey = (event: KeyboardEvent) => {
+      if (
+        event.defaultPrevented ||
+        event.isComposing ||
+        !(event.target instanceof Node) ||
+        !frame.current?.contains(event.target)
+      )
+        return;
       if (event.key === "Enter") {
         event.preventDefault();
+        event.stopPropagation();
         applyRef.current();
         return;
       }
       if (event.key === "Escape") {
         event.preventDefault();
+        event.stopPropagation();
         setMode("view");
         setDraft(null);
         return;
@@ -82,12 +93,13 @@ export function useCropKeyboard({
                 : null;
       if (!delta) return;
       event.preventDefault();
+      event.stopPropagation();
       const [dx, dy, dw, dh] = delta;
       setDraft((current) =>
         current ? nudgeCrop(current, dx, dy, dw, dh) : current,
       );
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    element.addEventListener("keydown", onKey);
+    return () => element.removeEventListener("keydown", onKey);
   }, [active, draft, frame, mode, ratio, setDraft, setMode]);
 }

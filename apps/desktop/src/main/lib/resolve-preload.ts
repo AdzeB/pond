@@ -10,7 +10,12 @@ function mainOutDir(): string {
  * `out/main/` or `out/main/chunks/`; pick the path that exists.
  */
 export function resolvePreload(
-  name: "index.cjs" | "preview.cjs" | "scrape.cjs",
+  name:
+    | "index.cjs"
+    | "preview.cjs"
+    | "screenshot.cjs"
+    | "settings.cjs"
+    | "scrape.cjs",
 ): string {
   const path = join(mainOutDir(), "../preload", name);
   if (!existsSync(path)) {

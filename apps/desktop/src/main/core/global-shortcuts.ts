@@ -65,7 +65,7 @@ export function summonShortcutTarget(
   overrides: Bindings,
   mainWindowFocused: boolean,
   isMac: boolean,
-): "layout" | "summon" {
+): "renderer" | "summon" {
   if (!mainWindowFocused) return "summon";
   try {
     const summon = accelerator(
@@ -76,7 +76,7 @@ export function summonShortcutTarget(
       overrides["view.layout-cycle"] ?? LAYOUT_CYCLE_SHORTCUT.keys,
       isMac,
     );
-    return summon === layout ? "layout" : "summon";
+    return summon === layout ? "renderer" : "summon";
   } catch {
     return "summon";
   }
@@ -92,13 +92,16 @@ export class GlobalShortcutController {
     private readonly isMac: boolean,
   ) {}
 
-  private desired(overrides: Bindings): Map<string, GlobalShortcutId> {
+  private desired(
+    overrides: Bindings,
+    screenshotsEnabled = true,
+  ): Map<string, GlobalShortcutId> {
     const desired = new Map<string, GlobalShortcutId>();
     for (const id of ids) {
-      const key = accelerator(
-        overrides[id] ?? GLOBAL_SHORTCUTS[id].keys,
-        this.isMac,
-      );
+      if (id.startsWith("capture.") && !screenshotsEnabled) continue;
+      const chord = overrides[id] ?? GLOBAL_SHORTCUTS[id].keys;
+      if (!chord) continue;
+      const key = accelerator(chord, this.isMac);
       const conflict = desired.get(key);
       if (conflict)
         throw new Error(
@@ -109,10 +112,10 @@ export class GlobalShortcutController {
     return desired;
   }
 
-  start(overrides: Bindings): void {
+  start(overrides: Bindings, screenshotsEnabled = true): void {
     let desired: Map<string, GlobalShortcutId>;
     try {
-      desired = this.desired(overrides);
+      desired = this.desired(overrides, screenshotsEnabled);
     } catch (error) {
       this.errors = [
         error instanceof Error
@@ -145,8 +148,8 @@ export class GlobalShortcutController {
     if (id) this.actions[id]();
   }
 
-  prepare(overrides: Bindings): Change {
-    const desired = this.desired(overrides);
+  prepare(overrides: Bindings, screenshotsEnabled = true): Change {
+    const desired = this.desired(overrides, screenshotsEnabled);
     const staged: string[] = [];
     const rollback = () => {
       for (const key of staged) this.native.unregister(key);
@@ -192,17 +195,26 @@ export function startGlobalShortcuts(
   native: NativeShortcuts,
   actions: Actions,
   overrides: Bindings,
+  screenshotsEnabled = true,
 ): void {
   controller = new GlobalShortcutController(
     native,
     actions,
     process.platform === "darwin",
   );
-  controller.start(overrides);
+  controller.start(overrides, screenshotsEnabled);
 }
 export function globalShortcutStatus(): GlobalShortcutStatus {
   return controller?.status() ?? { enabled: false, errors: [] };
 }
-export function prepareGlobalShortcuts(overrides: Bindings): Change {
-  return controller?.prepare(overrides) ?? { commit() {}, rollback() {} };
+export function prepareGlobalShortcuts(
+  overrides: Bindings,
+  screenshotsEnabled = true,
+): Change {
+  return (
+    controller?.prepare(overrides, screenshotsEnabled) ?? {
+      commit() {},
+      rollback() {},
+    }
+  );
 }

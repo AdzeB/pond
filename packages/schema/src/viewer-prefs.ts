@@ -4,6 +4,7 @@ const ViewerActionSchema = z.enum([
   "none",
   "open",
   "preview",
+  "quick-look",
   "presentation",
   "detached",
 ]);
@@ -22,6 +23,7 @@ export const ViewerPrefsSchema = z.object({
   thumbnailBackground: z
     .enum(["none", "black", "gray", "white", "grid"])
     .catch("none"),
+  galleryFit: z.enum(["fit", "fill"]).catch("fit"),
   thumbnailBehavior: z.enum(["still", "scrub"]).catch("scrub"),
   thumbnailSpeed: z.enum(["slow", "normal", "fast"]).catch("normal"),
   thumbnailQuality: z.enum(["fast", "balanced", "quality"]).catch("balanced"),

@@ -1,13 +1,71 @@
 import { describe, expect, it } from "vitest";
 import { EAGLE_SUPPORTED_EXTENSIONS } from "./eagle-formats";
 import {
+  canDestructivelyEditImage,
   canRequestNativeThumbnail,
   classifyLibraryFile,
+  classifyLibraryFileFromHeader,
+  isMpegTransportStreamHeader,
   libraryFilename,
   typeLabelForPath,
 } from "./file-format";
 
+describe("canDestructivelyEditImage", () => {
+  it.each(["avif", "gif", "jpeg", "jpg", "png", "tif", "tiff", "webp"])(
+    "allows .%s transforms",
+    (extension) => {
+      expect(canDestructivelyEditImage(`/Library/PHOTO.${extension}`)).toBe(
+        true,
+      );
+    },
+  );
+
+  it.each(["heic", "jxl", "dng", "cr3", "psd", "svg", "unknown"])(
+    "rejects .%s transforms",
+    (extension) => {
+      expect(canDestructivelyEditImage(`asset.${extension}`)).toBe(false);
+    },
+  );
+});
+
 describe("classifyLibraryFile", () => {
+  it("distinguishes MPEG transport streams from TypeScript with the same extension", () => {
+    const transportStream = Buffer.alloc(188 * 3);
+    transportStream[0] = 0x47;
+    transportStream[188] = 0x47;
+    transportStream[376] = 0x47;
+
+    expect(isMpegTransportStreamHeader(transportStream)).toBe(true);
+    expect(
+      classifyLibraryFileFromHeader("clip.ts", "video/mp2t", transportStream),
+    ).toMatchObject({
+      mediaType: "video",
+      previewKind: "video",
+      mimeType: "video/mp2t",
+    });
+    expect(
+      classifyLibraryFileFromHeader(
+        "source.ts",
+        "video/mp2t",
+        Buffer.from("export const answer = 42;", "utf8"),
+      ),
+    ).toMatchObject({
+      mediaType: "text",
+      previewKind: "text",
+      mimeType: "text/typescript",
+    });
+    expect(classifyLibraryFile("clip.ts", "video/mp2t")).toMatchObject({
+      mediaType: "video",
+      previewKind: "video",
+      mimeType: "video/mp2t",
+    });
+    expect(classifyLibraryFile("source.ts")).toMatchObject({
+      mediaType: "text",
+      previewKind: "text",
+      mimeType: "text/typescript",
+    });
+  });
+
   it.each([
     ["photo.jpg", "image", "direct-image", "image/jpeg"],
     ["photo.jfif", "image", "direct-image", "image/jpeg"],
@@ -23,6 +81,18 @@ describe("classifyLibraryFile", () => {
     ["family.woff2", "font", "font", "font/woff2"],
     ["family.ttc", "font", "font", "font/collection"],
     ["notes.md", "text", "text", "text/markdown"],
+    ["styles.css", "text", "text", "text/css"],
+    ["source.java", "text", "text", "text/x-java-source"],
+    ["script.js", "text", "text", "text/javascript"],
+    ["script.py", "text", "text", "text/x-python"],
+    ["source.rs", "text", "text", "text/x-rust"],
+    ["query.sql", "text", "text", "application/sql"],
+    ["source.ts", "text", "text", "text/typescript"],
+    ["data.json", "text", "text", "application/json"],
+    ["motion.lottie", "file", "generic", "application/zip+dotlottie"],
+    ["photo.livp", "image", "generic", "application/zip+live-photo"],
+    ["motion.pag", "file", "generic", "application/x-pag"],
+    ["motion.svga", "file", "generic", "application/x-svga"],
     ["layout.psd", "image", "generic", "image/vnd.adobe.photoshop"],
     ["negative.cr3", "image", "generic", "image/x-canon-cr3"],
     [
@@ -32,6 +102,10 @@ describe("classifyLibraryFile", () => {
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ],
     ["scene.glb", "file", "generic", "model/gltf-binary"],
+    ["scene.gltf", "file", "generic", "model/gltf+json"],
+    ["scene.amf", "file", "generic", "application/x-amf"],
+    ["scene.usdc", "file", "generic", "model/vnd.usd"],
+    ["scene.vtk", "file", "generic", "model/vnd.vtk"],
     ["movie.mpeg", "video", "generic", "video/mpeg"],
     ["book.epub", "document", "generic", "application/epub+zip"],
     ["offline.webarchive", "file", "generic", "application/x-webarchive"],

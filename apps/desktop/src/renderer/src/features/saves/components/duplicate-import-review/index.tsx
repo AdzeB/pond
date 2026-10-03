@@ -91,9 +91,6 @@ function DuplicateImportReview({
             Apply to All
           </div>
           <Dialog.Footer>
-            <Button variant="secondary" onClick={closeDuplicateImportReview}>
-              Cancel
-            </Button>
             <Button variant="secondary" onClick={() => choose("keep-both")}>
               Keep Both
             </Button>

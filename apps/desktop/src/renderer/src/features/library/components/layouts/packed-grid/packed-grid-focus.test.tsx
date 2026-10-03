@@ -1,0 +1,140 @@
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { afterEach, expect, it } from "vitest";
+import { resultNavigation } from "@/features/saves/state/result-navigation";
+import { selection } from "@/features/saves/state/selection";
+import { PackedGrid } from "./packed-grid";
+
+afterEach(() => {
+  selection.clear();
+  resultNavigation.setSource({ key: "empty", ids: [] });
+});
+
+it("repairs a removed result cursor when focus enters the new collection", async () => {
+  selection.setCursor("removed");
+  const host = document.createElement("div");
+  host.style.overflowY = "auto";
+  Object.defineProperties(host, {
+    offsetHeight: { value: 600 },
+    offsetWidth: { value: 600 },
+  });
+  host.scrollTo = () => {};
+  document.body.append(host);
+  const root = createRoot(host);
+  try {
+    await act(() =>
+      root.render(
+        <PackedGrid
+          layout="grid"
+          totalHeight={100}
+          items={[
+            {
+              id: "available",
+              left: 0,
+              top: 0,
+              width: 100,
+              height: 100,
+              mediaHeight: 100,
+            },
+          ]}
+          renderItem={(item) => (
+            <span
+              key={item.id}
+              id={`save-option-${item.id}`}
+              role="option"
+              tabIndex={-1}
+              aria-selected={false}
+            >
+              {item.id}
+            </span>
+          )}
+        />,
+      ),
+    );
+    const collection = host.querySelector<HTMLElement>(
+      "[data-save-collection]",
+    );
+    if (!collection) throw new Error("Missing collection");
+    await act(() => collection.focus());
+    expect(collection.getAttribute("aria-activedescendant")).toBe(
+      "save-option-available",
+    );
+    expect(selection.getCursor()).toBe("available");
+  } finally {
+    await act(() => root.unmount());
+    host.remove();
+  }
+});
+
+it("keeps a virtual cursor mounted and reveals it on focus return without changing selection", async () => {
+  const items = Array.from({ length: 100 }, (_, index) => ({
+    id: String(index),
+    left: 0,
+    top: index * 100,
+    width: 100,
+    height: 100,
+    mediaHeight: 100,
+  }));
+  resultNavigation.setSource({
+    key: "focus-return",
+    ids: items.map((item) => item.id),
+  });
+  selection.set(["0", "90"]);
+  selection.setCursor("90");
+  const host = document.createElement("div");
+  host.style.overflowY = "auto";
+  Object.defineProperties(host, {
+    offsetHeight: { value: 600 },
+    offsetWidth: { value: 600 },
+    clientHeight: { value: 600 },
+  });
+  host.scrollTo = () => {};
+  document.body.append(host);
+  const root = createRoot(host);
+  let pageRequests = 0;
+  try {
+    await act(() =>
+      root.render(
+        <PackedGrid
+          layout="grid"
+          totalHeight={10000}
+          items={items}
+          onEndReached={() => {
+            pageRequests++;
+          }}
+          renderItem={(item) => (
+            <span
+              key={item.id}
+              id={`save-option-${item.id}`}
+              role="option"
+              tabIndex={-1}
+              aria-selected={selection.has(item.id)}
+            >
+              {item.id}
+            </span>
+          )}
+        />,
+      ),
+    );
+    const collection = host.querySelector<HTMLElement>(
+      "[data-save-collection]",
+    );
+    if (!collection) throw new Error("Missing collection");
+    expect(document.getElementById("save-option-90")).not.toBeNull();
+    expect(pageRequests).toBe(0);
+    await act(() => collection.focus());
+    expect(host.scrollTop).toBeGreaterThan(0);
+    const other = document.createElement("button");
+    host.append(other);
+    other.focus();
+    host.scrollTop = 0;
+    await act(() => collection.focus());
+    expect(host.scrollTop).toBeGreaterThan(0);
+    expect(selection.snapshot()).toEqual(["0", "90"]);
+    expect(selection.getCursor()).toBe("90");
+    expect(document.activeElement).toBe(collection);
+  } finally {
+    await act(() => root.unmount());
+    host.remove();
+  }
+});

@@ -122,7 +122,7 @@
   overflow: hidden;
   background: var(--window-background-secondary);
   border-radius: var(--window-radius);
-  box-shadow: var(--ds-shadow-1);
+  box-shadow: var(--ds-shadow-xs);
   transform: translateX(6px);
 }
 
@@ -148,7 +148,7 @@
   overflow: hidden;
   background: var(--window-background-secondary);
   border-radius: var(--window-radius);
-  box-shadow: var(--ds-shadow-1);
+  box-shadow: var(--ds-shadow-xs);
 }
 
 .center::after {

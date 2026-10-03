@@ -6,6 +6,7 @@ import {
   type FunctionComponent,
   isValidElement,
   type ReactNode,
+  useLayoutEffect,
 } from "react";
 import { DataTableBody } from "./body";
 import { useDataTable } from "./context";
@@ -23,12 +24,26 @@ export function DataTableRoot<T extends RowData>({
   children,
   className,
   variant = "table",
+  "aria-label": ariaLabel = "Records",
 }: {
   children?: ReactNode;
   className?: string;
   variant?: "table" | "list";
+  "aria-label"?: string;
 }) {
-  const { meta } = useDataTable<T>();
+  const { meta, selectionStore, actions } = useDataTable<T>();
+  const cursorId = useSelector(selectionStore, (s) => s.cursorId);
+
+  useLayoutEffect(() => {
+    if (
+      !cursorId ||
+      meta.rows.some((row) => row.id === cursorId) ||
+      document.activeElement !== meta.gridRef.current
+    )
+      return;
+    const first = meta.rows[0];
+    if (first) actions.focusRow(first.id);
+  }, [cursorId, meta.rows, meta.gridRef, actions]);
 
   let extraRow: ReactNode = null;
   let emptyState: ReactNode = null;
@@ -44,11 +59,41 @@ export function DataTableRoot<T extends RowData>({
   return (
     <div
       className={cn(styles.container, className)}
+      ref={meta.gridRef}
       role="grid"
+      tabIndex={0}
+      onFocus={(event) => {
+        if (event.target !== event.currentTarget) return;
+        const cursor = selectionStore.state.cursorId;
+        const id =
+          cursor && meta.rows.some((row) => row.id === cursor)
+            ? cursor
+            : meta.rows[0]?.id;
+        if (!id) return;
+        actions.focusRow(id);
+        meta.revealRow.current?.(id);
+      }}
+      aria-label={ariaLabel}
+      aria-multiselectable={meta.selectionEnabled || undefined}
+      aria-rowcount={meta.rowCount + (showHeader ? 1 : 0)}
+      aria-colcount={
+        meta.columns.length +
+        Number(meta.selectionEnabled && meta.selectionCheckboxes) +
+        Number(meta.expansionEnabled)
+      }
+      aria-activedescendant={
+        cursorId && meta.rows.some((row) => row.id === cursorId)
+          ? meta.rowElementId(cursorId)
+          : undefined
+      }
       data-list={(variant === "list" && hasRows) || undefined}
     >
       {showHeader ? <DataTableHeader<T> /> : null}
-      <DataTableBody<T> extraRow={extraRow} emptyState={emptyState} />
+      <DataTableBody<T>
+        extraRow={extraRow}
+        emptyState={emptyState}
+        rowOffset={showHeader ? 1 : 0}
+      />
     </div>
   );
 }

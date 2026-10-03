@@ -12,7 +12,7 @@ import {
   Stepper,
   Switch,
 } from "@pond/ui";
-import type { ReactNode } from "react";
+import { type ReactNode, useId } from "react";
 import { z } from "zod";
 import type {
   Binding,
@@ -36,6 +36,13 @@ const FiniteNumberSchema = z.number().refine(Number.isFinite);
 const HexColorSchema = z.string().catch("#000000");
 
 export function ItemView({ item, binding }: { item: Item; binding: Binding }) {
+  const titleId = useId();
+  const descriptionId = useId();
+  const labelled = {
+    "aria-labelledby": titleId,
+    "aria-describedby":
+      item.control !== "custom" && item.description ? descriptionId : undefined,
+  };
   if (item.control === "custom") {
     return <CustomControl item={item} binding={binding} />;
   }
@@ -43,9 +50,9 @@ export function ItemView({ item, binding }: { item: Item; binding: Binding }) {
   return (
     <>
       <Settings.ItemDetails>
-        <Settings.ItemTitle>{item.title}</Settings.ItemTitle>
+        <Settings.ItemTitle id={titleId}>{item.title}</Settings.ItemTitle>
         {item.description ? (
-          <Settings.ItemDescription>
+          <Settings.ItemDescription id={descriptionId}>
             {item.description}
           </Settings.ItemDescription>
         ) : null}
@@ -54,7 +61,7 @@ export function ItemView({ item, binding }: { item: Item; binding: Binding }) {
         {item.control === "button" ? (
           <ButtonControl item={item} binding={binding} />
         ) : (
-          <FieldControl item={item} binding={binding} />
+          <FieldControl item={item} binding={binding} labelled={labelled} />
         )}
       </Settings.ItemControl>
     </>
@@ -93,9 +100,11 @@ function ButtonControl({
 function FieldControl({
   item,
   binding,
+  labelled,
 }: {
   item: FieldItem;
   binding: Binding;
+  labelled: { "aria-labelledby": string; "aria-describedby"?: string };
 }): ReactNode {
   const { values } = binding;
   const patch = (delta: Parameters<Binding["patch"]>[0]) => {
@@ -108,7 +117,7 @@ function FieldControl({
     case "switch":
       return (
         <Switch.Root
-          aria-label={item.title}
+          {...labelled}
           checked={Boolean(current)}
           disabled={disabled}
           onCheckedChange={(v) => {
@@ -120,6 +129,7 @@ function FieldControl({
     case "select":
       return (
         <EnumSelect<SelectOption["value"]>
+          {...labelled}
           value={current}
           disabled={disabled}
           onValueChange={(next) => {
@@ -133,6 +143,7 @@ function FieldControl({
     case "range":
       return (
         <Slider.Root
+          disabled={disabled}
           min={item.min}
           max={item.max}
           step={item.step}
@@ -145,7 +156,7 @@ function FieldControl({
           <Slider.Control>
             <Slider.Track>
               <Slider.Indicator />
-              <Slider.Thumb aria-label={item.title} />
+              <Slider.Thumb {...labelled} />
             </Slider.Track>
           </Slider.Control>
           <Input.Root size="sm">
@@ -154,7 +165,8 @@ function FieldControl({
               min={item.min}
               max={item.max}
               step={item.step}
-              aria-label={`${item.title} value`}
+              {...labelled}
+              disabled={disabled}
               value={String(toNumber(current, item.min))}
               onChange={(e) => {
                 const n = clamp(
@@ -173,6 +185,7 @@ function FieldControl({
     case "stepper":
       return (
         <Stepper
+          {...labelled}
           aria-label={item.title}
           min={item.min}
           max={item.max}
@@ -192,6 +205,7 @@ function FieldControl({
       return (
         <div className={styles.number}>
           <Input.Field
+            {...labelled}
             data-size="sm"
             type="number"
             min={item.min}
@@ -215,6 +229,7 @@ function FieldControl({
     case "color":
       return (
         <ColorField
+          aria-describedby={labelled["aria-describedby"]}
           aria-label={item.title}
           value={HexColorSchema.parse(current)}
           onChange={(hex) => {

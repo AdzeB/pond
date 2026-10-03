@@ -14,7 +14,10 @@ export type ModelLoaderKind =
   | "ply"
   | "3mf"
   | "3ds"
-  | "dae";
+  | "dae"
+  | "amf"
+  | "usd"
+  | "vtk";
 
 export interface LoadedModel {
   object: Object3D;
@@ -31,6 +34,10 @@ const LOADER_BY_EXTENSION = new Map<string, ModelLoaderKind>([
   ["3mf", "3mf"],
   ["3ds", "3ds"],
   ["dae", "dae"],
+  ["amf", "amf"],
+  ["usdc", "usd"],
+  ["usdz", "usd"],
+  ["vtk", "vtk"],
 ]);
 
 function extensionFrom(value: string): string {
@@ -118,6 +125,27 @@ export async function loadModel(
       const result = await new ColladaLoader().loadAsync(url);
       if (!result) throw new Error(`Unable to parse ${path}`);
       return { object: result.scene, animations: result.scene.animations };
+    }
+    case "amf": {
+      const { AMFLoader } = await import("three/addons/loaders/AMFLoader.js");
+      return {
+        object: await new AMFLoader().loadAsync(url),
+        animations: [],
+      };
+    }
+    case "usd": {
+      const { USDLoader } = await import("three/addons/loaders/USDLoader.js");
+      return {
+        object: await new USDLoader().loadAsync(url),
+        animations: [],
+      };
+    }
+    case "vtk": {
+      const { VTKLoader } = await import("three/addons/loaders/VTKLoader.js");
+      return {
+        object: meshForGeometry(await new VTKLoader().loadAsync(url)),
+        animations: [],
+      };
     }
   }
 }

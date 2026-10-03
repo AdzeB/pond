@@ -1,7 +1,7 @@
 import { Select } from "@pond/ui";
 import { useView } from "@/features/library/hooks/use-view";
 import { nearestZoomIndex, ZOOM_STEPS } from "@/features/library/lib/zoom";
-import styles from "../styles.module.css";
+import { ViewMenuRow } from "../row";
 
 const options = [...ZOOM_STEPS];
 
@@ -17,12 +17,12 @@ export function ZoomSection() {
         if (value !== null) actions.setZoom(value);
       }}
     >
-      <div className={styles.row}>
-        <Select.Label className={styles.label}>Thumbnail Size</Select.Label>
-        <Select.Trigger size="sm" className={styles.select}>
+      <ViewMenuRow.Root>
+        <Select.Label className={ViewMenuRow.Label}>Thumbnail Size</Select.Label>
+        <Select.Trigger size="sm" className={ViewMenuRow.Select}>
           <Select.Value />
         </Select.Trigger>
-      </div>
+      </ViewMenuRow.Root>
       <Select.Portal>
         <Select.Positioner align="end" sideOffset={6}>
           <Select.Popup>

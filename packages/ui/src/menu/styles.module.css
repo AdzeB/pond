@@ -37,18 +37,6 @@
       margin: 0;
     }
   }
-
-  &[data-variant="destructive"] {
-    color: var(--ds-red-11);
-
-    &::before {
-      background: var(--ds-red-3);
-    }
-
-    &[data-disabled] {
-      color: var(--ds-gray-8);
-    }
-  }
 }
 
 .group-label {
@@ -138,15 +126,10 @@
 .secondary-label {
   margin-left: auto;
   font-size: var(--ds-text-xs);
-  font-weight: var(--ds-weight-normal);
+  font-weight: var(--ds-weight-md);
   color: var(--ds-gray-10);
 }
 
 .input {
   composes: input from "../shared/styles/popup/styles.module.css";
-}
-
-.item[data-variant="destructive"] .item-icon,
-.item[data-variant="destructive"] .item-keyboard {
-  color: inherit;
 }

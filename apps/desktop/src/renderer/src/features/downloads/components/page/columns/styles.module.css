@@ -1,0 +1,146 @@
+.row {
+  --activity-color: light-dark(var(--ds-blue-11), var(--ds-blue-8));
+  position: relative;
+  height: var(--data-table-row-height, 48px);
+}
+
+.row[data-processing] {
+  --activity-color: light-dark(var(--ds-green-11), var(--ds-green-8));
+}
+
+.open {
+  --ds-focus-offset: 2px;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+}
+
+.lead {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-md);
+  font-weight: 500;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.source {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.source-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-11);
+  white-space: nowrap;
+}
+
+.status {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.mark {
+  display: inline-flex;
+  flex: none;
+  color: var(--ds-gray-8);
+
+  &[data-status="complete"] {
+    color: var(--ds-accent-11);
+  }
+
+  &[data-status="progress"] {
+    color: var(--ds-yellow-9);
+  }
+
+  &[data-status="failed"] {
+    color: var(--ds-red-11);
+  }
+
+  &[data-status="paused"] {
+    color: var(--ds-orange-11);
+  }
+}
+
+.glyph {
+  display: block;
+}
+
+.status-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-md);
+  font-weight: 400;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.row[data-stalled] .status-label {
+  color: var(--ds-orange-11);
+}
+
+.metric {
+  font-size: var(--ds-text-sm);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-11);
+  white-space: nowrap;
+}
+
+.added {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.progress-cell {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.progress-ring {
+  display: block;
+  flex: none;
+  color: var(--ds-accent-10);
+}
+
+.progress-ring-track {
+  stroke: var(--ds-gray-a5);
+}
+
+.progress-ring-value {
+  stroke: currentColor;
+  transition: stroke-dasharray var(--ds-duration-medium)
+    var(--ds-easing-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-ring-value {
+    transition: none;
+  }
+}
+
+:global([data-reduce-motion="true"]) .progress-ring-value {
+  transition: none;
+}

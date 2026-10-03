@@ -1,14 +1,11 @@
 import { existsSync, mkdirSync } from "node:fs";
 import type { Server as NetServer } from "node:net";
 import { join, resolve as resolvePath } from "node:path";
-import { app, globalShortcut, ipcMain } from "electron";
+import { app, globalShortcut, ipcMain, powerMonitor } from "electron";
 import log from "electron-log/main.js";
 import { DEFAULT_APP_ICON } from "../shared/app-icons";
-import {
-  IPC,
-  type MenuActionId,
-  type RecentMenuEntry,
-} from "../shared/constants";
+import { IPC, type RecentMenuEntry } from "../shared/constants";
+import type { ShortcutId } from "../shared/shortcuts";
 import { startAutoImport, stopAutoImport } from "./core/auto-import";
 import { captures } from "./core/captures";
 import { ensureDefaultLibrary } from "./core/ensure-default-library";
@@ -17,20 +14,31 @@ import {
   startGlobalShortcuts,
   summonShortcutTarget,
 } from "./core/global-shortcuts";
+import { registerHarvesterWindowIpc } from "./core/harvester-window";
 import { syncLibraryRootMetadata } from "./core/library-ops";
 import { runLibraryScopeMigration } from "./core/library-scope-migration";
 import { stopLibraryTransfers } from "./core/library-transfers";
 import { flushGovernor } from "./core/pipeline/rate-governor";
-import { startReconciler } from "./core/pipeline/reconciler-client";
+import {
+  resumeReconcilerAfterSuspend,
+  startReconciler,
+  suspendReconciler,
+} from "./core/pipeline/reconciler-client";
+import { disposeQueueWorkerHost } from "./core/pipeline/worker-host";
 import { getPrefs } from "./core/prefs";
 import { closePreviewWindows } from "./core/preview-windows";
 import { disposeHiddenWindow } from "./core/refresh/scrape-window";
 import { disposeRenderCardWindow } from "./core/render-card";
 import {
-  librarySecurityStatus,
-  restoreLibraryUnlock,
-} from "./core/security/app-lock-runtime";
-import { configureLockLifecycle } from "./core/security/lock-lifecycle";
+  startScreenshotIntake,
+  stopScreenshotIntake,
+} from "./core/screenshot-intake";
+import {
+  beginScreenshot,
+  closeScreenshotWindow,
+  registerScreenshotWindowIpc,
+} from "./core/screenshot-window";
+import { registerSettingsWindowIpc } from "./core/settings-window";
 import {
   startStorageWatcher,
   stopStorageWatcher,
@@ -146,12 +154,17 @@ if (!process.env.POND_SANDBOX && process.defaultApp) {
 
 app.on("open-url", (event, url) => {
   event.preventDefault();
-  handleDeepLink(url, getMainWindow());
+  const destination = handleDeepLink(url, getMainWindow());
+  if (app.isReady() && destination === "library") void openLibraryWindow();
 });
 
 app.on("second-instance", (_event, argv) => {
   const url = argv.find((a) => a.startsWith("pond://"));
-  if (url) handleDeepLink(url, getMainWindow());
+  if (url) {
+    const destination = handleDeepLink(url, getMainWindow());
+    if (destination === "library") void openLibraryWindow();
+    return;
+  }
   const win = getMainWindow();
   if (win && !win.isDestroyed()) {
     if (win.isMinimized()) win.restore();
@@ -182,16 +195,11 @@ app.whenReady().then(async () => {
   }
 
   registerIpc();
-  configureLockLifecycle();
+  registerScreenshotWindowIpc({ openLibraryWindow });
+  registerSettingsWindowIpc({ openLibraryWindow });
+  registerHarvesterWindowIpc();
   const menuPrefs = await getPrefs();
   setMainLocale(menuPrefs.localization.locale);
-  if (librarySecurityStatus().configured && !menuPrefs.security.lockOnLaunch) {
-    const restored = await restoreLibraryUnlock();
-    if (restored.ok) {
-      const { captures } = await import("./core/captures");
-      void captures.recover();
-    }
-  }
   installAppMenu({
     shortcuts: menuPrefs.shortcuts,
     locale: menuPrefs.localization.locale,
@@ -294,6 +302,9 @@ async function postLaunchInit(): Promise<void> {
   void startAutoImport().catch((err) =>
     log.warn("[pond] auto-import failed to start", err),
   );
+  void startScreenshotIntake().catch((err) =>
+    log.warn("[pond] screenshot intake failed to start", err),
+  );
 
   await initTray();
   registerSyncActionListener(() => queueTrayRefresh());
@@ -312,6 +323,12 @@ async function startDeferredMaintenance(): Promise<void> {
   });
   await Promise.race([rendererReady, fallback]);
   startReconciler();
+  powerMonitor.on("suspend", () => {
+    void suspendReconciler();
+  });
+  powerMonitor.on("resume", () => {
+    void resumeReconcilerAfterSuspend();
+  });
 
   const [scanModule, mediaModule, enrichmentModule] = await Promise.all([
     import("./core/scan"),
@@ -334,6 +351,12 @@ async function startDeferredMaintenance(): Promise<void> {
       ).startMissingVideoBackfill(),
     )
     .catch((err) => log.warn("[pond] missing video backfill failed", err))
+    .then(async () =>
+      (
+        await import("./core/refresh/transport-stream-backfill")
+      ).startTransportStreamBackfill(),
+    )
+    .catch((err) => log.warn("[pond] transport stream backfill failed", err))
     .then(async () =>
       (await import("./core/refresh/poster-backfill")).startPosterBackfill(),
     )
@@ -387,6 +410,15 @@ async function registerSummonHotkey() {
   startGlobalShortcuts(
     globalShortcut,
     {
+      "capture.area": run(async () => {
+        await beginScreenshot("area");
+      }),
+      "capture.window": run(async () => {
+        await beginScreenshot("window");
+      }),
+      "capture.screen": run(async () => {
+        await beginScreenshot("screen");
+      }),
       "app.summon": run(async () => {
         const { shortcuts } = await getPrefs();
         const win = getMainWindow();
@@ -395,11 +427,11 @@ async function registerSummonHotkey() {
             shortcuts.overrides,
             Boolean(win && !win.isDestroyed() && win.isFocused()),
             process.platform === "darwin",
-          ) === "layout"
+          ) === "renderer"
         ) {
           win?.webContents.send(
-            IPC.menuAction,
-            "view.layout.cycle" satisfies MenuActionId,
+            IPC.shortcutAction,
+            "view.layout-cycle" satisfies ShortcutId,
           );
           return;
         }
@@ -407,6 +439,7 @@ async function registerSummonHotkey() {
       }),
     },
     (await getPrefs()).shortcuts.overrides,
+    (await getPrefs()).screenshots.shortcutsEnabled,
   );
 }
 
@@ -432,6 +465,7 @@ app.on("before-quit", async (event) => {
   try {
     await waitForLibraryLocationChanges();
     await stopAutoImport();
+    await stopScreenshotIntake();
     await stopLibraryTransfers();
   } catch (error) {
     log.warn("[pond] auto import shutdown failed", error);
@@ -461,6 +495,8 @@ app.on("before-quit", async (event) => {
   } catch (err) {
     log.warn("[pond] render-card window dispose failed", err);
   }
+  disposeQueueWorkerHost();
+  closeScreenshotWindow();
   closePreviewWindows();
   try {
     await stopNativeServer(nativeServer);

@@ -21,8 +21,10 @@
   height: var(--ds-title-bar-height);
   min-height: var(--ds-title-bar-height);
   padding-inline: 8px;
-  overflow-x: auto;
+  overflow-x: hidden;
   overflow-y: hidden;
+  background: color-mix(in srgb, var(--ds-gray-1) 94%, transparent);
+  backdrop-filter: blur(16px);
 }
 
 .top {
@@ -48,6 +50,10 @@
   display: none;
 }
 
+.bottom:has([aria-label="Playback"]) {
+  overflow: visible;
+}
+
 .stage {
   display: grid;
   grid-area: stage;
@@ -70,6 +76,7 @@
   align-items: center;
   width: 100%;
   min-width: 0;
+  container-type: inline-size;
 }
 
 .bottom .tools {

@@ -1,48 +1,178 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  width: 100%;
   min-width: 0;
-  padding: 8px;
+  padding: 12px 15px 8px;
   margin: 0;
   border: 0;
 }
 
+.picker {
+  display: flex;
+  gap: 7px;
+}
+
+.area {
+  flex: none;
+  border-radius: 0;
+}
+
+.areaThumb {
+  width: 10px;
+  height: 10px;
+  border-width: 1px;
+  box-shadow: 0 0 0 1px var(--ds-black-a6);
+}
+
+.hue {
+  border-radius: 2px;
+}
+
+.hueThumb {
+  width: 13px;
+  height: 1px;
+  border: 0;
+  border-top: 1px solid var(--ds-black-a8);
+  border-radius: 0;
+  box-shadow: 0 -1px 0 var(--ds-white-a12);
+}
+
 .palette {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 2px;
-  width: 100%;
+  grid-template-columns: repeat(7, 20px);
+  gap: 5px;
   padding: 0;
   margin: 0;
   border: 0;
 }
 
 .palette > button {
+  width: 20px;
   min-width: 0;
-  aspect-ratio: 1 / 1;
+  height: 20px;
+  padding: 0;
   border: var(--ds-border-width) solid var(--ds-gray-a5);
-  border-radius: var(--ds-radius-sm);
+  border-radius: 5px;
+  opacity: 0.8;
+}
+
+.palette > button[data-color="Red"] {
+  grid-column: 1;
+}
+
+.palette > button:hover,
+.palette > button[aria-pressed="true"] {
+  opacity: 1;
 }
 
 .palette > button[aria-pressed="true"] {
-  outline: 1px solid var(--ds-focus-outline);
-  outline-offset: -1px;
+  box-shadow: inset 0 0 0 1px var(--ds-white-a12);
+}
+
+.clear {
+  overflow: hidden;
+  background: var(--ds-gray-5);
+}
+
+.clear::after {
+  position: absolute;
+  width: 28px;
+  height: 1px;
+  content: "";
+  background: var(--ds-gray-10);
+  transform: rotate(45deg);
 }
 
 .hex {
   width: 100%;
 }
 
-.field {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  min-width: 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-11);
+.input {
+  gap: 0;
+  width: 100%;
+  height: 32px;
+  border: var(--ds-border-width) solid var(--ds-gray-a5);
+  border-radius: var(--ds-radius-xs);
+  box-shadow: none;
 }
 
-.field > :global([data-slot="root"]) {
-  flex: 1 1 auto;
+.input:focus-within {
+  border-color: var(--ds-focus-outline);
+}
+
+.preview {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-left: 8px;
+  border-radius: var(--ds-radius-xs);
+}
+
+.value {
+  min-width: 0;
+  padding-inline: 8px 4px;
+  font-size: var(--ds-text-xs);
+  text-transform: uppercase;
+}
+
+.nativePicker {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-left: var(--ds-border-width) solid var(--ds-gray-a5);
+}
+
+.nativePicker > span {
+  width: 16px;
+  height: 16px;
+}
+
+.nativePicker > input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: var(--ds-cursor-interactive, pointer);
+  opacity: 0;
+}
+
+.nativePicker:focus-within {
+  outline: 2px solid var(--ds-focus-outline);
+  outline-offset: 1px;
+}
+
+.range {
+  gap: 10px;
+  min-width: 0;
+}
+
+.rangeLabel {
+  flex: none;
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-md);
+  color: var(--ds-gray-10);
+}
+
+.control {
+  width: 100%;
+  min-width: 0;
+  height: 12px;
+}
+
+.track {
+  height: 3px;
+  background: var(--ds-gray-a6);
+}
+
+.rangeThumb {
+  width: 12px;
+  height: 12px;
+  border: var(--ds-border-width) solid var(--ds-gray-a5);
+  box-shadow: var(--ds-shadow-xs);
 }

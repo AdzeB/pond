@@ -1,0 +1,14 @@
+.media {
+  margin: var(--note-space-large) 0 0;
+
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
+.image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--ds-radius-sm);
+}

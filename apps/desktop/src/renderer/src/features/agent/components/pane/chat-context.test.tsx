@@ -18,11 +18,11 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-it("uses an icon trigger instead of a Context label", async () => {
+it("uses an icon trigger labeled for library access", async () => {
   await act(async () =>
     root.render(<ChatContext attached={[]} previous={[]} />),
   );
-  const trigger = host.querySelector('button[aria-label="Context"]');
+  const trigger = host.querySelector('button[aria-label="Library Access"]');
   expect(trigger?.querySelector("svg")).toBeTruthy();
   expect(trigger?.textContent?.trim()).toBe("");
 });

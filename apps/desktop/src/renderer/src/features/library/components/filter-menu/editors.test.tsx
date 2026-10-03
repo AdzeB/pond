@@ -303,17 +303,21 @@ describe("filter editors", () => {
     ).toEqual(["2026-08-01", "2026-08-31"]);
   });
 
-  it("opens color without a selected preset or tolerance until a color is chosen", async () => {
+  it("opens color with presets and enables color range after selection", async () => {
     await render("color");
     expect(rows).toEqual([]);
     expect(
       document.querySelector(
-        '[aria-label="Preset Colors"] [aria-pressed="true"]',
+        '[aria-label="Preset Colors"] [data-color][aria-pressed="true"]',
       ),
     ).toBeNull();
-    expect(document.querySelector('[aria-label="Color Tolerance"]')).toBeNull();
     expect(
-      document.querySelector<HTMLInputElement>('[aria-label="Color Hex"]')
+      document.querySelector<HTMLInputElement>(
+        'input[aria-label="Color Accuracy"]',
+      )?.disabled,
+    ).toBe(true);
+    expect(
+      document.querySelector<HTMLInputElement>('input[aria-label="Color Hex"]')
         ?.value,
     ).toBe("");
     await click("button", "Red");
@@ -321,7 +325,7 @@ describe("filter editors", () => {
       {
         field: "color",
         operator: "near",
-        value: { hex: "#e5484d", tolerance: 60 },
+        value: { hex: "#ff2727", tolerance: 60 },
       },
     ]);
     expect(
@@ -330,8 +334,10 @@ describe("filter editors", () => {
         ?.getAttribute("aria-pressed"),
     ).toBe("true");
     expect(
-      document.querySelector('[aria-label="Color Tolerance"]'),
-    ).not.toBeNull();
+      document.querySelector<HTMLInputElement>(
+        'input[aria-label="Color Accuracy"]',
+      )?.disabled,
+    ).toBe(false);
   });
 
   it("retains the chosen tolerance across swatches and rejects incomplete hex edits", async () => {
@@ -343,9 +349,9 @@ describe("filter editors", () => {
       },
     ]);
     await click("button", "White");
-    expect(rows[0]?.value).toEqual({ hex: "#fafafa", tolerance: 25 });
+    expect(rows[0]?.value).toEqual({ hex: "#ffffff", tolerance: 25 });
     await fill("Color Hex", "#12");
-    expect(rows[0]?.value).toEqual({ hex: "#fafafa", tolerance: 25 });
+    expect(rows[0]?.value).toEqual({ hex: "#ffffff", tolerance: 25 });
     expect(
       document
         .querySelector('[aria-label="Color Hex"]')

@@ -1,0 +1,275 @@
+:global(html),
+:global(body),
+:global(#root) {
+  min-height: 100%;
+}
+
+:global(html) {
+  overflow: auto;
+  background: var(--ds-gray-2);
+}
+
+:global(body) {
+  min-width: 720px;
+  overflow: visible;
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-2);
+}
+
+:global(button) {
+  font: inherit;
+}
+
+.page {
+  width: min(1480px, 100%);
+  min-height: 100vh;
+  padding: 48px;
+  margin-inline: auto;
+}
+
+.hero {
+  display: flex;
+  gap: 48px;
+  align-items: end;
+  justify-content: space-between;
+  padding-bottom: 28px;
+  margin-bottom: 32px;
+  border-bottom: var(--ds-border-width) solid var(--ds-gray-5);
+}
+
+.heroCopy {
+  max-width: 660px;
+}
+
+.eyebrow,
+.kicker {
+  display: block;
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-xl);
+  color: var(--ds-gray-9);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.eyebrow {
+  margin-bottom: 8px;
+}
+
+.hero h1,
+.comparisonHeader h2,
+.specimen h3 {
+  margin: 0;
+  color: var(--ds-gray-12);
+}
+
+.hero h1 {
+  font-size: 40px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.hero p,
+.description {
+  color: var(--ds-gray-10);
+}
+
+.hero p {
+  max-width: 590px;
+  margin: 14px 0 0;
+  font-size: var(--ds-text-lg);
+  line-height: 1.5;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  justify-content: flex-end;
+}
+
+.control {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.control legend {
+  margin-bottom: 6px;
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-lg);
+  color: var(--ds-gray-9);
+}
+
+.segments {
+  display: flex;
+  padding: 3px;
+  background: var(--ds-gray-3);
+  border: var(--ds-border-width) solid var(--ds-gray-5);
+  border-radius: var(--ds-radius-md);
+}
+
+.segments button,
+.reset {
+  height: 30px;
+  padding-inline: 11px;
+  color: var(--ds-gray-10);
+  background: transparent;
+  border: 0;
+  border-radius: calc(var(--ds-radius-md) - 3px);
+}
+
+.segments button {
+  min-width: 54px;
+  text-transform: capitalize;
+}
+
+.segments button[aria-pressed="true"],
+.reset {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-1);
+  box-shadow: var(--ds-shadow-xs);
+}
+
+.comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.comparisonSet {
+  min-width: 0;
+}
+
+.comparisonHeader {
+  display: flex;
+  gap: 20px;
+  align-items: end;
+  justify-content: space-between;
+}
+
+.comparisonHeader h2 {
+  margin-top: 4px;
+  font-size: var(--ds-text-2xl);
+  letter-spacing: -0.02em;
+}
+
+.versionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+
+.specimen {
+  min-width: 0;
+  padding: 16px;
+  background: var(--ds-gray-3);
+  border: var(--ds-border-width) solid var(--ds-gray-5);
+  border-radius: var(--ds-radius-xl);
+}
+
+.specimen > header {
+  display: flex;
+  gap: 20px;
+  align-items: end;
+  justify-content: space-between;
+}
+
+.specimen h3 {
+  margin-top: 4px;
+  font-size: var(--ds-text-xl);
+  letter-spacing: -0.02em;
+}
+
+.version {
+  display: block;
+  font-size: 10px;
+  font-weight: var(--ds-weight-xl);
+  color: var(--ds-gray-9);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.badge {
+  flex: none;
+  padding: 4px 7px;
+  font-size: 10px;
+  font-weight: var(--ds-weight-lg);
+  color: var(--ds-gray-10);
+  background: var(--ds-gray-4);
+  border-radius: var(--ds-radius-sm);
+}
+
+.status {
+  flex: none;
+  font-size: var(--ds-text-xs);
+  color: var(--ds-gray-9);
+}
+
+.description {
+  max-width: 760px;
+  margin: 8px 0 16px;
+  font-size: var(--ds-text-sm);
+  line-height: 1.5;
+}
+
+.panelFrame {
+  --available-width: 100%;
+  --available-height: 600px;
+
+  min-width: 0;
+  overflow: hidden;
+  background: var(--ds-gray-1);
+  border: var(--ds-border-width) solid var(--ds-gray-5);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow-menu);
+}
+
+.panelFrame > div,
+.referenceFrame {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+}
+
+.referenceFrame {
+  display: block;
+  border: 0;
+}
+
+.folderFrame {
+  height: 420px;
+}
+
+.tagFrame {
+  height: 500px;
+}
+
+.footer {
+  padding-top: 22px;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-9);
+  text-align: center;
+}
+
+@media (max-width: 980px) {
+  .page {
+    padding: 32px 24px;
+  }
+
+  .hero {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  .controls {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 760px) {
+  .versionGrid {
+    grid-template-columns: 1fr;
+  }
+}

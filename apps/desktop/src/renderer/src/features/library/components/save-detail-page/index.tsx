@@ -9,20 +9,17 @@ import {
 } from "react";
 import { AppShell } from "@/features/library/components/workspace-shell";
 import { SaveArchiveViewer } from "@/features/saves/components/viewers/archive-viewer";
-import { StoredFileViewer } from "@/features/saves/components/viewers/file-viewer";
-import {
-  MediaViewer,
-  type ViewerNav,
-} from "@/features/saves/components/viewers/media-viewer";
+import type { ViewerNav } from "@/features/saves/components/viewers/media-viewer";
 import {
   buildViewerMenu,
   fileIndexFromSlide,
 } from "@/features/saves/components/viewers/media-viewer/lib/menu";
+import { SaveViewer } from "@/features/saves/components/viewers/save-viewer";
 import { TextViewer } from "@/features/saves/components/viewers/text-viewer";
 import { useSave } from "@/features/saves/hooks/use-saves";
+import { ensureSaves } from "@/features/saves/lib/ensure-saves";
+import { saveOwnsKeyboard } from "@/features/saves/lib/keyboard-owner";
 import { hasArchive } from "@/features/saves/lib/media/archive";
-import { storedFileViewerKind } from "@/features/saves/lib/media/file-viewer";
-import { pickPrimaryFile } from "@/features/saves/lib/media/units";
 import {
   loadOpenWithApps,
   type OpenWithApp,
@@ -32,9 +29,9 @@ import {
 import { closeSave, openSave } from "@/features/saves/lib/save-nav";
 import { isTextOnlySave } from "@/features/saves/lib/text";
 import { useTrackVisit } from "@/features/saves/state/recents";
+import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { setSaveViewerFileIndex } from "@/features/saves/state/save-viewer";
 import { primarySelection, selection } from "@/features/saves/state/selection";
-import { libraryViewContext } from "@/features/saves/state/view-context";
 import type { Save } from "@/features/saves/types";
 import { tagClipboard } from "@/features/tags/state/tag-clipboard";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
@@ -49,18 +46,17 @@ export function SaveDetailPage() {
 
   useEffect(() => {
     if (primarySelection.get() !== id) primarySelection.set(id);
-    selection.setAnchor(id);
+    selection.setCursor(id);
   }, [id]);
 
   const stepSave = useCallback(
     (delta: number) => {
-      const ids = libraryViewContext.filteredIds();
-      const idx = ids.indexOf(id);
-      if (idx < 0) return;
-      const next = ids[idx + delta];
-      if (!next) return;
-      selection.setAnchor(next);
-      openSave(next);
+      void resultNavigation.next(id, delta).then(async (next) => {
+        if (!next || selection.getCursor() !== id) return;
+        await ensureSaves([next]);
+        if (selection.getCursor() !== id) return;
+        openSave(next);
+      });
     },
     [id],
   );
@@ -75,33 +71,49 @@ export function SaveDetailPage() {
     [stepSave],
   );
 
-  useHotkeys([
-    {
-      hotkey: bindingKeys(shortcuts, "viewer.step-prev"),
-      callback: () => stepImageOrSave(-1),
-      options: { ignoreInputs: true },
-    },
-    {
-      hotkey: bindingKeys(shortcuts, "viewer.step-next"),
-      callback: () => stepImageOrSave(1),
-      options: { ignoreInputs: true },
-    },
-    {
-      hotkey: bindingKeys(shortcuts, "viewer.prev-save"),
-      callback: () => stepSave(-1),
-      options: { ignoreInputs: true },
-    },
-    {
-      hotkey: bindingKeys(shortcuts, "viewer.next-save"),
-      callback: () => stepSave(1),
-      options: { ignoreInputs: true },
-    },
-    {
-      hotkey: "Escape",
-      callback: closeSave,
-      options: { ignoreInputs: true },
-    },
-  ]);
+  useHotkeys(
+    [
+      {
+        hotkey: bindingKeys(shortcuts, "viewer.step-prev"),
+        callback: () => stepImageOrSave(-1),
+        options: { ignoreInputs: true },
+      },
+      {
+        hotkey: bindingKeys(shortcuts, "viewer.step-next"),
+        callback: () => stepImageOrSave(1),
+        options: { ignoreInputs: true },
+      },
+      {
+        hotkey: bindingKeys(shortcuts, "viewer.prev-save"),
+        callback: () => stepSave(-1),
+        options: { ignoreInputs: true },
+      },
+      {
+        hotkey: bindingKeys(shortcuts, "viewer.next-save"),
+        callback: () => stepSave(1),
+        options: { ignoreInputs: true },
+      },
+      {
+        hotkey: "Escape" as const,
+        callback: closeSave,
+        options: { ignoreInputs: true },
+      },
+    ].map((binding) => ({
+      ...binding,
+      callback: (event: KeyboardEvent) => {
+        if (!saveOwnsKeyboard(event)) return;
+        if (
+          event.key !== "Escape" &&
+          event.target instanceof HTMLElement &&
+          event.target.closest("button, input, [role='slider']")
+        )
+          return;
+        event.preventDefault();
+        binding.callback();
+      },
+      options: { ...binding.options, preventDefault: false },
+    })),
+  );
 
   return <SaveDetailSession key={id} save={save} viewerNav={viewerNav} />;
 }
@@ -113,6 +125,10 @@ function SaveDetailSession({
   save: Save | undefined;
   viewerNav: RefObject<ViewerNav | null>;
 }) {
+  const pageRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    pageRef.current?.focus({ preventScroll: true });
+  }, []);
   const [activeFileIndex, setActiveFileIndex] = useState<number | null>(null);
   const onActiveFileIndexChange = useCallback((fileIndex: number | null) => {
     setActiveFileIndex(fileIndex);
@@ -132,9 +148,6 @@ function SaveDetailSession({
       </AppShell.Content>
     );
   }
-
-  const storedFile = pickPrimaryFile(save);
-  const storedViewerKind = storedFileViewerKind(storedFile);
 
   return (
     <AppShell.Content>
@@ -168,23 +181,27 @@ function SaveDetailSession({
           });
         }}
       >
-        <div className={styles.page}>
+        <section
+          ref={pageRef}
+          className={styles.page}
+          data-save-details=""
+          tabIndex={-1}
+          aria-label={save.title || "Save viewer"}
+        >
           <div className={styles.main}>
             {hasArchive(save) ? (
               <SaveArchiveViewer save={save} />
             ) : isTextOnlySave(save) ? (
               <TextViewer save={save} />
-            ) : storedFile && storedViewerKind ? (
-              <StoredFileViewer save={save} file={storedFile} />
             ) : (
-              <MediaViewer
+              <SaveViewer
                 save={save}
                 onActiveFileIndexChange={onActiveFileIndexChange}
                 navRef={viewerNav}
               />
             )}
           </div>
-        </div>
+        </section>
       </SpecContextMenu>
     </AppShell.Content>
   );

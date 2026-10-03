@@ -2,9 +2,11 @@ import { typeLabelForPath } from "@shared/file-format";
 import { isThumbnailKind } from "@shared/save-file-names";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { DownloadingBadge } from "@/features/saves/components/card/media/downloading-badge";
+import { FilePreview } from "@/features/saves/components/card/media/file-preview";
 import { HoverGallery } from "@/features/saves/components/card/media/hover-gallery";
 import { HoverVideo } from "@/features/saves/components/card/media/hover-video";
 import { CardImage } from "@/features/saves/components/card/media/image";
+import { TextPreview } from "@/features/saves/components/card/media/text-preview";
 import { RichFilePreview } from "@/features/saves/components/card/rich-file-preview";
 import type { LibraryCardView } from "@/features/saves/components/card/types";
 import { useIsVideoDownloading } from "@/features/saves/hooks/use-is-video-downloading";
@@ -252,13 +254,9 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
         ) : null}
         {showPlaceholder ? (
           textPreview ? (
-            <div className={styles["text-preview"]}>
-              <span className={styles["text-preview-body"]}>{textPreview}</span>
-            </div>
+            <TextPreview>{textPreview}</TextPreview>
           ) : fileLabel ? (
-            <div className={styles["file-preview"]} aria-hidden>
-              <span>{fileLabel}</span>
-            </div>
+            <FilePreview label={fileLabel} />
           ) : (
             <div className={styles.placeholder} aria-hidden />
           )

@@ -80,6 +80,7 @@ export interface CustomItem {
   keywords?: string[];
   visible?: (values: SettingsValues) => boolean;
   prefsKey?: keyof Prefs;
+  standalone?: boolean;
   render: (binding: Binding) => ReactNode;
 }
 
@@ -99,7 +100,6 @@ export interface SectionConfig {
   title?: ReactNode;
   description?: ReactNode;
   keywords?: string[];
-  width?: "narrow" | "medium" | "wide";
   prefsKey?: keyof Prefs;
   useBinding?: () => Binding;
   groups?: GroupConfig[];
@@ -166,7 +166,6 @@ interface TypedSectionInput<V> {
   title?: ReactNode;
   description?: ReactNode;
   keywords?: string[];
-  width?: SectionConfig["width"];
   groups: TypedGroupInput<V>[];
 }
 
@@ -174,7 +173,6 @@ interface CustomSectionInput {
   title?: ReactNode;
   description?: ReactNode;
   keywords?: string[];
-  width?: SectionConfig["width"];
   groups: GroupConfig[];
 }
 

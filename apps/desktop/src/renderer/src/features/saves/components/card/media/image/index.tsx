@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { BlurHash } from "@/features/saves/components/card/media/blur-hash";
 import { useImageReady } from "@/features/saves/components/card/media/lib/use-image-ready";
 import { useQualityImage } from "@/features/saves/hooks/use-quality-image";
@@ -39,13 +39,16 @@ export function CardImage({
   const thumbnail = unit.requiresGeneratedPreview
     ? previewThumbUrlFor(unit.url, width)
     : thumbUrlFor(unit.url, width);
-  const src = useQualityImage(
+  const qualitySrc = useQualityImage(
     thumbnail,
     unit.url,
     viewer.thumbnailQuality === "quality" &&
       (width ?? 0) >= 384 &&
       !unit.requiresGeneratedPreview,
   );
+  const animated = viewer.gifAutoplay && /\.gif(?:$|[?#])/i.test(unit.key);
+  const [visible, setVisible] = useState(false);
+  const src = animated && visible ? unit.url : qualitySrc;
   const reportReady = useCallback(
     (image: HTMLImageElement) => {
       recordAspect(save.id, image.naturalWidth, image.naturalHeight, {
@@ -56,6 +59,28 @@ export function CardImage({
     [onReady, save.id, unit],
   );
   const ready = useImageReady(src, reportReady);
+  useEffect(() => {
+    const image = ready.ref.current;
+    if (!animated || !image) return;
+    const updateVisibility = () => {
+      const bounds = image.getBoundingClientRect();
+      setVisible(
+        !document.hidden &&
+          bounds.bottom >= -64 &&
+          bounds.top <= window.innerHeight + 64,
+      );
+    };
+    const observer = new IntersectionObserver(updateVisibility, {
+      rootMargin: "64px",
+    });
+    observer.observe(image);
+    updateVisibility();
+    document.addEventListener("visibilitychange", updateVisibility);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", updateVisibility);
+    };
+  }, [animated, ready.ref]);
 
   return (
     <>
@@ -71,6 +96,7 @@ export function CardImage({
         width={w ?? undefined}
         height={h ?? undefined}
         className={styles.media}
+        data-fit={viewer.galleryFit}
         data-loaded={!save.blurhash || ready.loaded ? "true" : "false"}
         onLoad={ready.onLoad}
         onError={onBroken}

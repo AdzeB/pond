@@ -11,7 +11,8 @@ export function DownloadingBadge({
 }) {
   if (save.status === "failed") {
     const lastError =
-      save.tasks?.find((t) => t.status === "failed")?.lastError ?? "Failed";
+      save.tasks?.find((t) => t.status === "dead" || t.status === "blocked")
+        ?.lastError ?? "Failed";
     return (
       <Badge
         tone="negative"

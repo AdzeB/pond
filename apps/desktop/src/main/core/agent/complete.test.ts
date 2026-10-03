@@ -31,6 +31,7 @@ function request(model = textModel("Hi! How can I help?")): CompletionInput {
     languageModel: model,
     abortController: new AbortController(),
     onText: vi.fn(),
+    waitForTextChunk: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -384,6 +385,13 @@ it("does not publish a response after cancellation", async () => {
   expect(input.onText).not.toHaveBeenCalled();
 });
 
+it("stops publishing validated chunks after cancellation", async () => {
+  const input = request(textModel("A short answer."));
+  input.waitForTextChunk = vi.fn(async () => input.abortController.abort());
+  await expect(complete(input)).rejects.toThrow();
+  expect(input.onText).toHaveBeenCalledExactlyOnceWith("A ");
+});
+
 it("explains an Ollama tensor loading failure with a recovery step", async () => {
   const input = {
     ...request(errorModel('tensor "blk.0.ffn_down_exps.weight" size overflow')),
@@ -418,8 +426,20 @@ it("publishes a valid external answer after validation", async () => {
   const input = request(textModel("A short answer."));
   const onActivity = vi.fn();
   expect(await complete({ ...input, onActivity })).toBe("A short answer.");
-  expect(input.onText).toHaveBeenCalledExactlyOnceWith("A short answer.");
+  expect(input.onText).toHaveBeenNthCalledWith(1, "A ");
+  expect(input.onText).toHaveBeenNthCalledWith(2, "short ");
+  expect(input.onText).toHaveBeenNthCalledWith(3, "answer.");
   expect(onActivity).toHaveBeenCalledExactlyOnceWith("writing");
+});
+
+it("publishes a validated answer as paced text chunks", async () => {
+  const input = request(textModel(["A short ", "answer."]));
+  expect(await complete(input)).toBe("A short answer.");
+  expect(input.onText).toHaveBeenNthCalledWith(1, "A ");
+  expect(input.onText).toHaveBeenNthCalledWith(2, "short ");
+  expect(input.onText).toHaveBeenNthCalledWith(3, "answer.");
+  expect(input.waitForTextChunk).toHaveBeenCalledTimes(2);
+  expect(input.waitForTextChunk).toHaveBeenCalledWith(50);
 });
 
 it("does not search when the edit target is a pronoun", async () => {

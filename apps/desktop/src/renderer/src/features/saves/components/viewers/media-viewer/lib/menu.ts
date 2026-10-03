@@ -31,17 +31,45 @@ export function fileIndexFromSlide(
   return Number.isFinite(idx) ? idx : null;
 }
 
-function omitCopyImage(items: MenuItemSpec[]): MenuItemSpec[] {
-  const out: MenuItemSpec[] = [];
-  for (const item of items) {
-    if (item.type === "submenu" || item.type === "group") {
-      out.push({ ...item, items: omitCopyImage(item.items) });
-      continue;
+function adaptVideoItems(
+  items: MenuItemSpec[],
+  save: Save,
+  video: HTMLVideoElement,
+): MenuItemSpec[] {
+  return items.map((item): MenuItemSpec => {
+    if ("id" in item && item.id === "copy-primary") {
+      return {
+        label: "Copy Current Frame",
+        icon: createElement(IconClone2Outline18),
+        shortcut: shortcutGlyphs("viewer.copy-frame"),
+        onClick: () => void copyVideoFrame(video),
+      };
     }
-    if ("label" in item && item.label === "Copy Image") continue;
-    out.push(item);
-  }
-  return out;
+    if ("label" in item && item.label === "Set Thumbnail from File") {
+      return {
+        label: "Set Current Frame as Thumbnail",
+        icon: createElement(IconImagePlusOutline18),
+        onClick: () => void setVideoThumbnail(save.id, video),
+      };
+    }
+    if (item.type !== "submenu" && item.type !== "group") return item;
+
+    const nested = adaptVideoItems(item.items, save, video);
+    return item.type === "submenu" && item.label === "Export"
+      ? {
+          ...item,
+          items: [
+            {
+              label: "Save Current Frame",
+              icon: createElement(IconFloppyDiskOutline18),
+              shortcut: shortcutGlyphs("viewer.save-frame"),
+              onClick: () => void saveVideoFrame(video),
+            },
+            ...nested,
+          ],
+        }
+      : { ...item, items: nested };
+  });
 }
 
 export function buildViewerMenu(
@@ -55,52 +83,5 @@ export function buildViewerMenu(
     opened: true,
   });
   if (!video?.videoWidth) return base;
-
-  return omitCopyImage(base).map((item): MenuItemSpec => {
-    if (item.type !== "submenu") return item;
-    if (item.label === "Copy") {
-      return {
-        ...item,
-        items: [
-          {
-            label: "Copy Current Frame",
-            icon: createElement(IconClone2Outline18),
-            shortcut: shortcutGlyphs("viewer.copy-frame"),
-            onClick: () => void copyVideoFrame(video),
-          },
-          ...item.items,
-        ],
-      };
-    }
-    if (item.label === "Export") {
-      return {
-        ...item,
-        items: [
-          {
-            label: "Save Current Frame",
-            icon: createElement(IconFloppyDiskOutline18),
-            shortcut: shortcutGlyphs("viewer.save-frame"),
-            onClick: () => void saveVideoFrame(video),
-          },
-          ...item.items,
-        ],
-      };
-    }
-    if (item.label === "Advanced") {
-      return {
-        ...item,
-        items: item.items.map(
-          (action): MenuItemSpec =>
-            "label" in action && action.label === "Set Thumbnail"
-              ? {
-                  label: "Set Thumbnail",
-                  icon: createElement(IconImagePlusOutline18),
-                  onClick: () => void setVideoThumbnail(save.id, video),
-                }
-              : action,
-        ),
-      };
-    }
-    return item;
-  });
+  return adaptVideoItems(base, save, video);
 }

@@ -1,13 +1,52 @@
 import { DEFAULT_PREFS } from "@pond/schema/db";
 import { describe, expect, it } from "vitest";
 import {
+  PreviewFileActionSchema,
   PreviewNeighborRequestSchema,
   PreviewWindowConfigureSchema,
   PreviewWindowOpenSchema,
   PreviewWindowStateSchema,
+  previewMediaProfile,
+  previewMediaType,
 } from "./preview-window-contracts";
 
 describe("preview window contracts", () => {
+  it("recognizes video originals and excludes generated posters and unsupported files", () => {
+    expect(previewMediaType({ kind: "video", path: "clip.mov" })).toBe("video");
+    expect(
+      previewMediaType({ kind: "file", path: "clip", mimeType: "video/mp4" }),
+    ).toBe("video");
+    expect(previewMediaType({ kind: "poster", path: "poster.jpg" })).toBeNull();
+    expect(previewMediaType({ kind: "file", path: "document.pdf" })).toBeNull();
+  });
+
+  it("keeps the original identity while classifying generated raster sources", () => {
+    expect(previewMediaProfile({ kind: "file", path: "photo.heic" })).toEqual({
+      mediaType: "image",
+      source: "generated",
+    });
+    expect(previewMediaProfile({ kind: "file", path: "capture.dng" })).toEqual({
+      mediaType: "image",
+      source: "generated",
+    });
+    expect(previewMediaProfile({ kind: "file", path: "layout.psd" })).toEqual({
+      mediaType: "image",
+      source: "generated",
+    });
+    expect(previewMediaProfile({ kind: "file", path: "photo.jpeg" })).toEqual({
+      mediaType: "image",
+      source: "original",
+    });
+  });
+
+  it("bounds original-file actions to the active preview window", () => {
+    expect(
+      PreviewFileActionSchema.parse({ windowId: 4, action: "open" }),
+    ).toEqual({ windowId: 4, action: "open" });
+    expect(() =>
+      PreviewFileActionSchema.parse({ windowId: 4, action: "delete" }),
+    ).toThrow();
+  });
   it("migrates older viewer preferences to parity defaults", () => {
     expect(DEFAULT_PREFS.viewer).toMatchObject({
       defaultImageSize: "fit",
@@ -44,8 +83,12 @@ describe("preview window contracts", () => {
         mirrored: true,
         grayscale: true,
         size: "actual",
+        zoom: 2,
       }),
-    ).toMatchObject({ opacity: 0.75, rotation: 270, size: "actual" });
+    ).toMatchObject({ opacity: 0.75, rotation: 270, zoom: 2 });
+    expect(() =>
+      PreviewWindowConfigureSchema.parse({ windowId: 4, zoom: 9 }),
+    ).toThrow();
   });
 
   it("limits neighbor requests to adjacent directions", () => {
@@ -74,12 +117,18 @@ describe("preview window contracts", () => {
         kind: "presentation",
         title: "Reference",
         url: "pond://save/image.png",
+        originalPath: "image.png",
+        mediaType: "image",
+        source: "original",
+        reduceMotion: "system",
+        fullscreen: true,
         opacity: 1,
         alwaysOnTop: false,
         rotation: 0,
         mirrored: false,
         grayscale: false,
         size: "fit",
+        zoom: null,
       }).success,
     ).toBe(true);
   });

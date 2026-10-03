@@ -1,6 +1,7 @@
 import { clsx as cn } from "clsx";
 import {
   type ComponentPropsWithoutRef,
+  type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   useCallback,
   useLayoutEffect,
@@ -122,6 +123,7 @@ function useEdgeResize(
             minWidth: value.minWidth,
             maxWidth: value.maxWidth,
             defaultWidth: value.defaultWidth,
+            width: value.width,
             resizeLabel: value.resizeLabel,
             onResize: value.onResize,
             onCollapse: value.onCollapse,
@@ -138,6 +140,7 @@ function useEdgeResize(
     value.minWidth,
     value.maxWidth,
     value.defaultWidth,
+    value.width,
     value.resizeLabel,
     value.onResize,
     value.onCollapse,
@@ -165,6 +168,7 @@ interface SideProps extends ComponentPropsWithoutRef<"aside"> {
   minWidth?: number;
   maxWidth?: number;
   defaultWidth?: number;
+  width?: number;
   resizeLabel?: string;
   onResize?: (width: number) => void;
   onCollapse?: () => void;
@@ -177,6 +181,7 @@ function Left({
   minWidth = 180,
   maxWidth = 420,
   defaultWidth,
+  width,
   resizeLabel,
   onResize,
   onCollapse,
@@ -187,6 +192,7 @@ function Left({
     minWidth,
     maxWidth,
     defaultWidth,
+    width,
     resizeLabel,
     onResize,
     onCollapse,
@@ -212,7 +218,12 @@ function Center({
 }: ComponentPropsWithoutRef<"div">) {
   const { state, resize } = useWindow();
   return (
-    <div className={cn(styles.center, className)} data-slot="center" {...props}>
+    <div
+      className={cn(styles.center, className)}
+      data-slot="center"
+      tabIndex={-1}
+      {...props}
+    >
       {state.left && resize.left ? (
         <Handle edge="left" {...resize.left} />
       ) : null}
@@ -231,6 +242,7 @@ function Right({
   minWidth = 280,
   maxWidth = 560,
   defaultWidth,
+  width,
   resizeLabel,
   onResize,
   onCollapse,
@@ -241,6 +253,7 @@ function Right({
     minWidth,
     maxWidth,
     defaultWidth,
+    width,
     resizeLabel,
     onResize,
     onCollapse,
@@ -264,6 +277,7 @@ function Handle({
   minWidth,
   maxWidth,
   defaultWidth,
+  width,
   resizeLabel,
   onResize,
   onCollapse,
@@ -272,12 +286,56 @@ function Handle({
   minWidth: number;
   maxWidth: number;
   defaultWidth?: number;
+  width?: number;
   resizeLabel?: string;
   onResize?: (width: number) => void;
   onCollapse?: () => void;
 }) {
   const varName =
     edge === "left" ? "--window-left-track" : "--window-right-track";
+
+  const [liveWidth, setLiveWidth] = useState(width ?? defaultWidth ?? minWidth);
+  useLayoutEffect(() => {
+    setLiveWidth(width ?? defaultWidth ?? minWidth);
+  }, [width, defaultWidth, minWidth]);
+
+  const onKeyDown = (event: ReactKeyboardEvent<HTMLHRElement>) => {
+    if (
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.nativeEvent.isComposing
+    )
+      return;
+    if (event.key === "Enter" && onCollapse) {
+      event.preventDefault();
+      event.stopPropagation();
+      const center = event.currentTarget.closest<HTMLElement>(
+        '[data-slot="center"]',
+      );
+      onCollapse();
+      center?.focus({ preventScroll: true });
+      return;
+    }
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const step = event.shiftKey ? 40 : 10;
+    const delta =
+      (event.key === "ArrowRight" ? 1 : -1) * (edge === "left" ? 1 : -1) * step;
+    const next =
+      event.key === "Home"
+        ? minWidth
+        : event.key === "End"
+          ? maxWidth
+          : Math.min(maxWidth, Math.max(minWidth, liveWidth + delta));
+    const root = event.currentTarget.closest<HTMLElement>(
+      '[data-slot="window"]',
+    );
+    root?.style.setProperty(varName, `${next}px`);
+    setLiveWidth(next);
+    onResize?.(next);
+  };
 
   const onPointerDown = (event: ReactPointerEvent<HTMLHRElement>) => {
     if (event.button !== 0) return;
@@ -331,6 +389,7 @@ function Handle({
     const cancel = (ev: PointerEvent) => {
       finish(ev);
       restoreTrack();
+      setLiveWidth(startWidth);
     };
 
     const move = (ev: PointerEvent) => {
@@ -349,6 +408,7 @@ function Handle({
         return;
       }
       nextWidth = next;
+      setLiveWidth(next);
       root.style.setProperty(varName, `${next}px`);
     };
 
@@ -388,8 +448,11 @@ function Handle({
         }
         aria-valuemin={minWidth}
         aria-valuemax={maxWidth}
-        aria-valuenow={defaultWidth ?? minWidth}
-        tabIndex={-1}
+        aria-valuenow={liveWidth}
+        aria-valuetext={`${Math.round(liveWidth)} pixels`}
+        aria-keyshortcuts="ArrowLeft ArrowRight Home End Enter"
+        tabIndex={0}
+        onKeyDown={onKeyDown}
         onPointerDown={onPointerDown}
       />
     </Tooltip>

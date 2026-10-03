@@ -1,0 +1,17 @@
+.preview {
+  display: block;
+  width: clamp(120px, 16vw, 180px);
+  max-height: min(40vh, 320px);
+  color: var(--ds-gray-12);
+  object-fit: contain;
+  background: var(--ds-gray-12);
+  border: 2px solid var(--ds-gray-1);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow-lg);
+  opacity: 0;
+  transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
+}
+
+.preview[data-ready] {
+  opacity: 1;
+}

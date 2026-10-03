@@ -1,10 +1,4 @@
-import {
-  CANCEL_REASON,
-  OPS,
-  type Op,
-  SOURCES,
-  type Source,
-} from "@pond/schema/db";
+import { OPS, type Op, SOURCES, type Source } from "@pond/schema/db";
 import { INGEST_OUTCOMES } from "@pond/schema/events";
 import { hostToSource } from "@pond/schema/sources";
 import type { WireTask } from "@shared/wire";
@@ -38,17 +32,20 @@ export type HistoryCursor = z.infer<typeof HistoryPageSchema>["nextCursor"];
 export const PipelineStatusSchema = z.object({ paused: z.boolean() });
 
 export type DownloadStatus =
-  | "pending"
+  | "waiting"
   | "running"
   | "retrying"
+  | "parked"
   | "blocked"
   | "failed"
   | "cancelled"
+  | "dead"
   | "skipped"
   | "complete";
 
 export type StatusFilter =
-  | "in-progress"
+  | "active"
+  | "waiting"
   | "failed"
   | "cancelled"
   | "skipped"
@@ -68,6 +65,7 @@ export interface DownloadRow {
   error: string | null;
   ts: number;
   durationMs: number | null;
+  nextRunAt?: number | null;
   live: boolean;
   interactive?: boolean;
 }
@@ -82,7 +80,8 @@ export const STATUS_FILTER_OPTIONS: readonly {
   id: StatusFilter;
   label: string;
 }[] = [
-  { id: "in-progress", label: "In Progress" },
+  { id: "active", label: "Active" },
+  { id: "waiting", label: "Waiting" },
   { id: "failed", label: "Failed" },
   { id: "cancelled", label: "Cancelled" },
   { id: "skipped", label: "Skipped" },
@@ -103,38 +102,42 @@ export function downloadFiltersActive(filters: DownloadFilters): boolean {
 
 function wasCancelled(save: Save): boolean {
   const stopped = (save.tasks ?? []).filter(
-    (t) => t.status === "failed" || t.status === "blocked",
+    (t) =>
+      t.status === "cancelled" || t.status === "dead" || t.status === "blocked",
   );
   return (
-    stopped.length > 0 && stopped.every((t) => t.lastError === CANCEL_REASON)
+    stopped.length > 0 && stopped.every((task) => task.status === "cancelled")
   );
 }
 
 function isRetryingTask(task: WireTask): boolean {
-  return (
-    task.status === "pending" && (task.attempts > 0 || Boolean(task.lastError))
-  );
+  return task.status === "deferred" && task.deferredReason === "retry_backoff";
 }
 
 function liveStatus(save: Save): DownloadStatus | null {
   if (save.status === "skipped") return "skipped";
   if (save.status === "failed") {
-    return wasCancelled(save) ? "cancelled" : "failed";
+    if (wasCancelled(save)) return "cancelled";
+    if (save.tasks?.some((task) => task.status === "dead")) return "dead";
+    return "failed";
   }
   if (save.status !== "ingesting") return null;
   const tasks = save.tasks ?? [];
   if (tasks.some((t) => t.status === "running")) return "running";
   if (tasks.some((t) => t.status === "blocked")) return "blocked";
+  if (tasks.some((t) => t.status === "dead")) return "dead";
+  if (tasks.some((t) => t.status === "cancelled")) return "cancelled";
   const next = tasks.find((t) => t.status !== "done");
   if (next && isRetryingTask(next)) return "retrying";
-  return "pending";
+  if (next?.status === "deferred") return "parked";
+  return "waiting";
 }
 
 function currentOp(save: Save): Op | null {
   const tasks = save.tasks ?? [];
   const running = tasks.find((t) => t.status === "running");
   if (running) return running.op;
-  const failed = tasks.find((t) => t.status === "failed");
+  const failed = tasks.find((t) => t.status === "dead");
   if (failed) return failed.op;
   const blocked = tasks.find((t) => t.status === "blocked");
   if (blocked) return blocked.op;
@@ -146,9 +149,10 @@ function rowError(save: Save): string | null {
   let error: string | null = null;
   for (const t of save.tasks ?? []) {
     if (
-      t.status !== "failed" &&
+      t.status !== "dead" &&
       t.status !== "blocked" &&
-      !(t.status === "pending" && t.lastError)
+      t.status !== "cancelled" &&
+      !(t.status === "deferred" && t.lastError)
     ) {
       continue;
     }
@@ -160,18 +164,20 @@ function rowError(save: Save): string | null {
 const DOWNLOAD_STATUS_RANK = {
   running: 0,
   retrying: 1,
-  blocked: 2,
-  pending: 3,
-  failed: 4,
-  cancelled: 5,
-  skipped: 6,
-  complete: 7,
+  waiting: 2,
+  parked: 3,
+  blocked: 4,
+  failed: 5,
+  cancelled: 6,
+  dead: 7,
+  skipped: 8,
+  complete: 9,
 } satisfies Record<DownloadStatus, number>;
 
 export function projectLiveDownloads(saves: readonly Save[]): DownloadRow[] {
   const rows: DownloadRow[] = [];
   for (const save of saves) {
-    if (save.deletedAt != null) continue;
+    if (save.deletedAt != null || save.source === "local") continue;
     const status = liveStatus(save);
     if (!status) continue;
     const tasks = save.tasks ?? [];
@@ -194,6 +200,8 @@ export function projectLiveDownloads(saves: readonly Save[]): DownloadRow[] {
       error: rawError ? humanizeError(rawError) : null,
       ts,
       durationMs: null,
+      nextRunAt:
+        tasks.find((task) => task.status !== "done")?.nextRunAt ?? null,
       live: true,
       interactive: tasks.some((t) => t.interactive),
     });
@@ -207,11 +215,13 @@ export function projectLiveDownloads(saves: readonly Save[]): DownloadRow[] {
 }
 
 export function statusBucket(status: DownloadStatus): StatusFilter {
-  if (status === "failed" || status === "blocked") return "failed";
+  if (status === "failed" || status === "blocked" || status === "dead")
+    return "failed";
   if (status === "cancelled") return "cancelled";
   if (status === "skipped") return "skipped";
   if (status === "complete") return "complete";
-  return "in-progress";
+  if (status === "running") return "active";
+  return "waiting";
 }
 
 export function downloadRowSource(row: DownloadRow): Source {

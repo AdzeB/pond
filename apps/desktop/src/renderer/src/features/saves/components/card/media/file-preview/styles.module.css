@@ -1,0 +1,27 @@
+.file-preview {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 34%, var(--ds-gray-4), transparent 44%),
+    var(--ds-gray-2);
+  border-radius: inherit;
+}
+
+.file-preview span {
+  display: grid;
+  place-items: end center;
+  min-width: 3.6em;
+  min-height: 4.6em;
+  padding: 0.6em;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1;
+  color: var(--ds-gray-11);
+  letter-spacing: 0.08em;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-sm);
+  box-shadow: var(--ds-shadow-sm);
+}

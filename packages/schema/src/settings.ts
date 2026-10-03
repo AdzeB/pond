@@ -37,12 +37,6 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     label: "Storage",
     group: "library",
   },
-  {
-    id: "security",
-    path: "security",
-    label: "Security",
-    group: "library",
-  },
   { id: "backups", path: "backups", label: "Backups", group: "library" },
   {
     id: "search",
@@ -60,6 +54,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     id: "harvesting",
     path: "harvesting",
     label: "Harvesting",
+    group: "library",
+  },
+  {
+    id: "screenshots",
+    path: "screenshots",
+    label: "Screenshots",
     group: "library",
   },
   { id: "models", path: "models", label: "Providers", group: "ai" },

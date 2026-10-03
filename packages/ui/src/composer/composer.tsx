@@ -41,7 +41,7 @@ const Input = forwardRef<
 
 function Send({ children, ...props }: ComponentPropsWithoutRef<typeof Button>) {
   return (
-    <Button type="submit" icon size="sm" {...props}>
+    <Button type="submit" icon variant="secondary" size="sm" {...props}>
       {children}
     </Button>
   );

@@ -1,6 +1,6 @@
 import { type Source, saves, type Task, tasks } from "@pond/schema/db";
 import type { PipelineTaskEvent } from "@pond/schema/events";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "../../db";
 import { commitSaveIngestEvent, toErrorInfo } from "../../lib/wide-event";
 import { persistSave } from "../persist-save";
@@ -46,53 +46,81 @@ export function gateForSource(source: Source): PipelineTaskEvent["gate"] {
   return hit ? { reason: hit.reason, until: hit.until } : null;
 }
 
-export async function markRunning(task: Task): Promise<void> {
-  const db = await getDb();
-  db.update(tasks)
-    .set({ status: "running", updatedAt: new Date() })
-    .where(eq(tasks.id, task.id))
-    .run();
+function leaseGuard(task: Task) {
+  if (!task.leaseToken) return;
+  return and(
+    eq(tasks.id, task.id),
+    eq(tasks.status, "running"),
+    eq(tasks.leaseToken, task.leaseToken),
+    eq(tasks.cancellationFence, task.cancellationFence),
+  );
 }
 
-export async function markDone(task: Task): Promise<void> {
+export async function markDone(task: Task): Promise<boolean> {
+  const guard = leaseGuard(task);
+  if (!guard) return false;
   const db = await getDb();
-  db.update(tasks)
+  const result = db
+    .update(tasks)
     .set({
       status: "done",
       attempts: task.attempts + 1,
       lastError: null,
+      leaseOwner: null,
+      leaseToken: null,
+      leaseExpiresAt: null,
+      heartbeatAt: null,
+      completedAt: new Date(),
       updatedAt: new Date(),
     })
-    .where(eq(tasks.id, task.id))
+    .where(guard)
     .run();
+  return result.changes === 1;
 }
 
 export interface FailureResult {
-  outcome: "deferred" | "blocked" | "failed";
+  outcome: "deferred" | "blocked" | "failed" | "dead";
   nextRunAt: number | null;
   recordedAttempts: number;
+  settled: boolean;
 }
 
 export async function handleFailure(
   task: DueTask,
   cause: unknown,
 ): Promise<FailureResult> {
+  const guard = leaseGuard(task);
+  if (!guard) {
+    return {
+      outcome: "deferred",
+      nextRunAt: null,
+      recordedAttempts: task.attempts,
+      settled: false,
+    };
+  }
   if (cause instanceof FinalizeIncompleteError) {
     const db = await getDb();
     const nextRun = new Date(Date.now() + 30_000);
-    db.update(tasks)
+    const result = db
+      .update(tasks)
       .set({
-        status: "pending",
+        status: "deferred",
+        deferredReason: "retry_backoff",
         nextRunAt: nextRun,
         lastError: cause.message,
+        leaseOwner: null,
+        leaseToken: null,
+        leaseExpiresAt: null,
+        heartbeatAt: null,
         updatedAt: new Date(),
       })
-      .where(eq(tasks.id, task.id))
+      .where(guard)
       .run();
     return {
       outcome: "deferred",
       nextRunAt: nextRun.getTime(),
       recordedAttempts: task.attempts,
+      settled: result.changes === 1,
     };
   }
 
@@ -117,42 +145,65 @@ export async function handleFailure(
   const db = await getDb();
 
   const nonFatalTerminal =
-    decision.status === "failed" && NON_FATAL_OPS.has(task.op);
+    decision.status === "dead" && NON_FATAL_OPS.has(task.op);
   if (nonFatalTerminal) {
     metrics.tasksFailed++;
-    db.update(tasks)
+    const result = db
+      .update(tasks)
       .set({
         status: "done",
         attempts: task.attempts + 1,
         nextRunAt: decision.nextRunAt,
         lastError: decision.lastError,
+        leaseOwner: null,
+        leaseToken: null,
+        leaseExpiresAt: null,
+        heartbeatAt: null,
+        completedAt: new Date(),
         updatedAt: new Date(),
       })
-      .where(eq(tasks.id, task.id))
+      .where(guard)
       .run();
-    await maybeFinalizeSave(task.saveId);
+    if (result.changes === 1) await maybeFinalizeSave(task.saveId);
     return {
       outcome: "failed",
       nextRunAt: decision.nextRunAt.getTime(),
       recordedAttempts: task.attempts + 1,
+      settled: result.changes === 1,
     };
   }
 
-  db.update(tasks)
+  const result = db
+    .update(tasks)
     .set({
       status: decision.status,
       attempts: decision.recordAttempt ? task.attempts + 1 : task.attempts,
       nextRunAt: decision.nextRunAt,
       lastError: decision.lastError,
+      deferredReason: decision.deferredReason,
+      leaseOwner: null,
+      leaseToken: null,
+      leaseExpiresAt: null,
+      heartbeatAt: null,
+      failedAt: decision.status === "dead" ? new Date() : null,
+      completedAt: decision.status === "dead" ? new Date() : null,
       updatedAt: new Date(),
     })
-    .where(eq(tasks.id, task.id))
+    .where(guard)
     .run();
 
   const recordedAttempts = decision.recordAttempt
     ? task.attempts + 1
     : task.attempts;
-  if (decision.status === "failed") {
+  if (result.changes !== 1) {
+    return {
+      outcome: "deferred",
+      nextRunAt: null,
+      recordedAttempts: task.attempts,
+      settled: false,
+    };
+  }
+  if (decision.status === "dead") {
     metrics.tasksFailed++;
     const current = db
       .select({ status: saves.status })
@@ -167,11 +218,18 @@ export async function handleFailure(
       );
       db.update(tasks)
         .set({
-          status: "failed",
+          status: "dead",
           lastError: `blocked by failed ${task.op}`,
+          failedAt: new Date(),
+          completedAt: new Date(),
           updatedAt: new Date(),
         })
-        .where(and(eq(tasks.saveId, task.saveId), eq(tasks.status, "pending")))
+        .where(
+          and(
+            eq(tasks.saveId, task.saveId),
+            inArray(tasks.status, ["pending", "deferred"]),
+          ),
+        )
         .run();
       metrics.cascadeEvents += 1;
     }
@@ -185,13 +243,14 @@ export async function handleFailure(
   }
   return {
     outcome:
-      decision.status === "failed"
-        ? "failed"
+      decision.status === "dead"
+        ? "dead"
         : decision.status === "blocked"
           ? "blocked"
           : "deferred",
     nextRunAt: decision.nextRunAt.getTime(),
     recordedAttempts,
+    settled: true,
   };
 }
 

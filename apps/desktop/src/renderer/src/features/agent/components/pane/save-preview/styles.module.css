@@ -1,75 +1,66 @@
 .citation {
+  --ds-focus-offset: 2px;
   display: inline-flex;
-  gap: 5px;
-  align-items: center;
-  max-width: 190px;
-  padding: 1px 6px;
-  margin-inline: 2px;
-  font: inherit;
-  font-size: 0.82em;
-  line-height: 1.6;
-  vertical-align: baseline;
-  color: var(--ds-gray-11);
-  background: var(--ds-gray-3);
-  border: var(--ds-border-width) solid var(--ds-gray-5);
-  border-radius: var(--ds-radius-sm);
+  gap: 4px;
+  align-items: baseline;
+  color: var(--ds-accent-11);
+  transition: color var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &::after {
+    display: none;
+  }
+
+  &:hover {
+    color: var(--ds-accent-12);
+  }
+
+  &:hover > span {
+    background-size: 100% 1px;
+  }
 }
-.citation > span:first-child {
-  font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-10);
+
+.citation > span {
+  background-image: linear-gradient(currentcolor, currentcolor);
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  background-size: 0 1px;
+  transition: background-size var(--ds-duration-medium)
+    var(--ds-easing-standard);
 }
+
+.citation-icon {
+  flex-shrink: 0;
+  align-self: center;
+  width: 12px;
+  height: 12px;
+}
+
 .citation-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.citation:hover,
-.citation[data-popup-open] {
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-4);
-}
-.preview {
-  width: min(340px, calc(100vw - 32px));
-  max-height: min(440px, var(--available-height));
-  padding: 14px;
-  overflow: auto;
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-1);
-  border: var(--ds-border-width) solid var(--ds-gray-5);
-  border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-popover);
-}
-.preview-heading {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-.preview-heading > div {
-  min-width: 0;
-}
-.preview-heading small {
-  display: block;
-  margin-bottom: 4px;
-  font-size: 11px;
-  color: var(--ds-gray-10);
-}
-.preview-heading :is(h2, h3) {
-  font-size: 13px;
-  font-weight: 550;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-}
+
 .thumbnail {
+  --thumbnail-icon-size: 18px;
+
   display: grid;
   flex: 0 0 52px;
   place-items: center;
   width: 52px;
-  height: 56px;
+  height: 52px;
+  aspect-ratio: 1;
   overflow: hidden;
   color: var(--ds-gray-9);
   background: var(--ds-gray-3);
-  border: 1px solid var(--ds-gray-4);
   border-radius: 6px;
+}
+.thumbnail[data-size="compact"] {
+  --thumbnail-icon-size: 12px;
+
+  flex-basis: 40px;
+  width: 40px;
+  height: 40px;
 }
 .thumbnail img {
   width: 100%;
@@ -77,153 +68,8 @@
   object-fit: cover;
 }
 .thumbnail svg {
-  width: 22px;
-  height: 22px;
-}
-.excerpt {
-  margin: 12px 0 0;
-  font-size: 12px;
-  line-height: 1.7;
-  color: var(--ds-gray-11);
-  overflow-wrap: anywhere;
-}
-.preview-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: space-between;
-  padding-top: 12px;
-  margin-top: 12px;
-  border-top: 1px solid var(--ds-gray-4);
-}
-.preview-actions button {
-  font-size: 11px;
-}
-.preview-actions svg {
-  width: 13px;
-  height: 13px;
-}
-.results {
-  margin: 20px 0;
-  container-type: inline-size;
-}
-.results-label {
-  margin-bottom: 8px;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-medium);
-  color: var(--ds-gray-10);
-}
-.result-strip {
-  display: grid;
-  grid-auto-columns: calc((100% - 30px) / 4);
-  grid-auto-flow: column;
-  gap: 10px;
-  padding: 3px;
-  margin: -3px;
-  overflow-x: auto;
-  overscroll-behavior-inline: contain;
-  scroll-snap-type: x proximity;
-}
-.result-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 22px 12px;
-}
-.result-card {
-  position: relative;
-  min-width: 0;
-  scroll-snap-align: start;
-}
-.result-open {
-  display: block;
-  width: 100%;
-  text-align: left;
-  border-radius: 7px;
-}
-.result-open > .thumbnail {
-  display: grid;
-  width: 100%;
-  height: auto;
-  aspect-ratio: 1 / 1.08;
-  border-radius: var(--assistant-card-radius, 8px);
-}
-.result-open:hover > .thumbnail {
-  border-color: var(--ds-gray-6);
-}
-.result-info {
-  display: block;
-  margin-top: 9px;
-}
-.result-info strong {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.55;
-  color: var(--ds-gray-12);
-  white-space: nowrap;
-}
-.result-info small {
-  display: block;
-  margin-top: 3px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 10px;
-  color: var(--ds-gray-10);
-  white-space: nowrap;
-}
-.result-add {
-  position: absolute;
-  top: 7px;
-  right: 7px;
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  color: var(--ds-gray-11);
-  background: var(--ds-gray-1);
-  border: 1px solid var(--ds-gray-5);
-  border-radius: 50%;
-  box-shadow: 0 2px 5px #00000010;
-  opacity: 0;
-  transition: opacity 120ms ease;
-}
-.result-card:hover .result-add,
-.result-card:focus-within .result-add,
-.result-add:disabled {
-  opacity: 1;
-}
-.result-add:hover {
-  background: var(--ds-gray-3);
-}
-.result-add:disabled {
-  cursor: default;
-}
-.result-add svg {
-  width: 13px;
-  height: 13px;
-}
-.results-footer {
-  display: flex;
-  margin-top: 10px;
-  font-size: 11px;
-  color: var(--ds-gray-10);
-}
-.results-footer button {
-  display: flex;
-  gap: 5px;
-  align-items: center;
-  padding-block: 4px;
-}
-.results-footer button:hover {
-  color: var(--ds-gray-12);
-}
-.results-footer svg {
-  width: 11px;
-  height: 11px;
-}
-.results-footer [aria-expanded="true"] svg {
-  transform: rotate(180deg);
+  width: var(--thumbnail-icon-size);
+  height: var(--thumbnail-icon-size);
 }
 .cover-fallback {
   display: grid;
@@ -253,24 +99,9 @@
   width: 16px;
   height: 16px;
 }
-:is(.preview, .results, .result-card, .citation) {
-  --ds-focus-offset: 2px;
-}
-@container (max-width: 460px) {
-  .result-strip {
-    grid-auto-columns: 44%;
-  }
-  .result-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (hover: none) {
-  .result-add {
-    opacity: 1;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
-  .result-add {
+  .citation,
+  .citation > span {
     transition: none;
   }
 }

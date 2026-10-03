@@ -20,7 +20,7 @@ describe("card media elevation", () => {
   it("keeps the shared thumbnail shadow outside the clipped visual", () => {
     const thumbnail = declarations(mediaCss, ".thumb");
     expect(thumbnail).toContain("border-radius: var(--ds-radius-xs);");
-    expect(thumbnail).toContain("box-shadow: var(--ds-shadow-2);");
+    expect(thumbnail).toContain("box-shadow: var(--ds-shadow-sm);");
   });
 
   it("does not clip the shared thumbnail shadow in grid cards", () => {

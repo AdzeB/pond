@@ -99,6 +99,7 @@ export async function startArchiveBackfill(): Promise<{
       const taskRow: NewTask = {
         id: ulid(),
         saveId: id,
+        source: "web",
         op: "archive_page",
         status: "pending",
         attempts: 0,
@@ -165,6 +166,7 @@ export async function archiveSiteForSave(
     const taskRow: NewTask = {
       id: ulid(),
       saveId,
+      source: "web",
       op: "archive_page",
       status: "pending",
       attempts: 0,

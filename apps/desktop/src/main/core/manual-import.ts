@@ -9,27 +9,29 @@ import {
   saves,
 } from "@pond/schema/db";
 import {
-  classifyLibraryFile,
+  classifyLibraryFileFromHeader,
   type LibraryFileFormat,
   libraryFilename,
 } from "@shared/file-format";
 import { isAuxiliaryKind, THUMBNAIL_KIND } from "@shared/save-file-names";
 import { and, eq } from "drizzle-orm";
 import mime from "mime-types";
-import sharp from "sharp";
 import { ulid } from "ulid";
 import { getDb } from "../db";
 import { writeSaveInfo } from "../lib/library";
 import { itemDir } from "../paths";
 import { executeBatch, withMutationScope } from "./executor";
-import { extractFontFamily } from "./font-metadata";
+import { extractFontMetadata, metadataFromOpenType } from "./font-metadata";
+import { extractImageMetadata, type ImageMetadata } from "./image-metadata";
+import { extractMediaMetadata } from "./media-metadata";
 import { persistSave } from "./persist-save";
 import type { WriteFileArgs } from "./pipeline/workers/apply";
 import { ensureSaveThumbnail } from "./save-thumbnail";
-import { libraryMediaMetadata } from "./security/library-media-storage";
+import { libraryMediaMetadata } from "./storage/library-media-storage";
 import { normalizeTagList, prepareTagRegistryUpdates } from "./tags";
 
 const MAX_TEXT_BODY_BYTES = 100_000;
+const FORMAT_HEADER_BYTES = 188 * 3;
 
 export interface ManualSaveInput {
   title?: string | null;
@@ -76,6 +78,8 @@ interface ReadableImport {
   body?: string;
   width?: number;
   height?: number;
+  keywords?: string[];
+  metadata?: ImageMetadata;
 }
 
 const MEDIA_TYPE_PRIORITY: readonly MediaType[] = [
@@ -87,6 +91,35 @@ const MEDIA_TYPE_PRIORITY: readonly MediaType[] = [
   "text",
   "file",
 ];
+const MAX_IPTC_BYTES = 2 * 1024 * 1024;
+
+export function extractIptcKeywords(bytes: Buffer): string[] {
+  const keywords: string[] = [];
+  for (let offset = 0; offset <= bytes.length - 5; offset += 1) {
+    if (
+      bytes[offset] !== 0x1c ||
+      bytes[offset + 1] !== 0x02 ||
+      bytes[offset + 2] !== 0x19
+    )
+      continue;
+    const length = bytes.readUInt16BE(offset + 3);
+    if ((length & 0x8000) !== 0) continue;
+    const start = offset + 5;
+    const end = start + length;
+    if (end > bytes.length) continue;
+    const value = bytes.subarray(start, end);
+    let keyword: string;
+    try {
+      keyword = new TextDecoder("utf-8", { fatal: true }).decode(value);
+    } catch {
+      keyword = value.toString("latin1");
+    }
+    const normalized = keyword.trim();
+    if (normalized) keywords.push(normalized);
+    offset = end - 1;
+  }
+  return [...new Set(keywords)];
+}
 
 export function mediaTypeForImportedFiles(
   formats: readonly LibraryFileFormat[],
@@ -213,11 +246,14 @@ async function importManualSave(
   }
 
   const note = input.note?.trim() || null;
-  const tags = normalizeTagList(input.tags ?? []);
   const readable = [
     ...(await inspectImportPaths(input.filePaths ?? [])),
     ...(await inspectMemoryFiles(input.memoryFiles ?? [])),
   ];
+  const tags = normalizeTagList([
+    ...(input.tags ?? []),
+    ...readable.flatMap((item) => item.keywords ?? []),
+  ]);
 
   if (requestedFileCount > 0 && readable.length === 0) {
     return { ok: false, error: "no_readable_files", skipped: true };
@@ -283,6 +319,11 @@ async function importManualSave(
   if (input.comments) insertValues.comments = input.comments;
   if (input.videoNotes) insertValues.videoNotes = input.videoNotes;
   if (input.dominantColors) insertValues.dominantColors = input.dominantColors;
+  const primaryMetadata = readable[0]?.metadata;
+  if (primaryMetadata) Object.assign(insertValues, primaryMetadata);
+  if (!insertValues.container && readable[0])
+    insertValues.container = readable[0].format.extension;
+  if (readable.length > 0) insertValues.metadataVersion = 1;
   const registry = await prepareTagRegistryUpdates(tags);
   if (!recovering) {
     await executeBatch([
@@ -362,15 +403,37 @@ async function importManualSave(
       return { ok: false, id, error: "incomplete_import" };
     }
     const font = readable.find((item) => item.format.mediaType === "font");
-    if (font && "path" in font.source) {
-      const family = await extractFontFamily(font.source.path);
-      if (family) {
+    if (font) {
+      const metadata =
+        "path" in font.source
+          ? await extractFontMetadata(font.source.path)
+          : metadataFromOpenType(font.source.bytes);
+      if (metadata) {
+        const style = metadata.subfamily?.toLocaleLowerCase() ?? "";
+        const automaticTags = [
+          ...(style.includes("bold") || (metadata.weight ?? 0) >= 700
+            ? ["Bold"]
+            : []),
+          ...(style.includes("italic") || style.includes("oblique")
+            ? ["Italic"]
+            : []),
+        ];
+        const nextTags = normalizeTagList([...tags, ...automaticTags]);
+        const fontRegistry = await prepareTagRegistryUpdates(nextTags);
+        if (fontRegistry.length) await executeBatch(fontRegistry);
         const files = completed.files.map((file, index) =>
-          index === 0 ? { ...file, family } : file,
+          index === 0
+            ? {
+                ...file,
+                family: metadata.family,
+                subfamily: metadata.subfamily,
+                fontWeight: metadata.weight,
+              }
+            : file,
         );
         const patch = input.title?.trim()
-          ? { files }
-          : { files, title: family };
+          ? { files, tags: nextTags }
+          : { files, tags: nextTags, title: metadata.family ?? title };
         await persistSave(id, patch, { actorReason: "manual:font-family" });
       }
     }
@@ -392,7 +455,11 @@ async function inspectImportPaths(
       const info = await stat(path);
       if (!info.isFile() || info.size === 0) continue;
       const detectedMime = mime.lookup(path) || null;
-      const format = classifyLibraryFile(path, detectedMime);
+      const format = classifyLibraryFileFromHeader(
+        path,
+        detectedMime,
+        await readFilePrefix(path, Math.min(info.size, FORMAT_HEADER_BYTES)),
+      );
       const item: ReadableImport = {
         filename: libraryFilename(path),
         size: info.size,
@@ -403,10 +470,13 @@ async function inspectImportPaths(
         item.body = await readTextBody(path, info.size);
       }
       if (format.mediaType === "image") {
-        const dimensions = await readImageDimensions(path);
-        if (dimensions.width) item.width = dimensions.width;
-        if (dimensions.height) item.height = dimensions.height;
+        item.metadata = await extractImageMetadata(path);
+        if (item.metadata.width) item.width = item.metadata.width;
+        if (item.metadata.height) item.height = item.metadata.height;
+        item.keywords = await readIptcKeywords(path, info.size);
       }
+      if (format.mediaType === "video" || format.mediaType === "audio")
+        item.metadata = await extractMediaMetadata(path);
       out.push(item);
     } catch {}
   }
@@ -419,7 +489,11 @@ async function inspectMemoryFiles(
   const out: ReadableImport[] = [];
   for (const file of files) {
     if (file.bytes.byteLength === 0) continue;
-    const format = classifyLibraryFile(file.filename, file.mimeType);
+    const format = classifyLibraryFileFromHeader(
+      file.filename,
+      file.mimeType,
+      file.bytes.subarray(0, FORMAT_HEADER_BYTES),
+    );
     const item: ReadableImport = {
       filename: libraryFilename(file.filename),
       size: file.bytes.byteLength,
@@ -427,13 +501,39 @@ async function inspectMemoryFiles(
       source: { bytes: file.bytes },
     };
     if (format.mediaType === "image") {
-      const dimensions = await readImageDimensions(file.bytes);
-      if (dimensions.width) item.width = dimensions.width;
-      if (dimensions.height) item.height = dimensions.height;
+      item.metadata = await extractImageMetadata(file.bytes);
+      if (item.metadata.width) item.width = item.metadata.width;
+      if (item.metadata.height) item.height = item.metadata.height;
+      item.keywords = extractIptcKeywords(
+        file.bytes.subarray(0, MAX_IPTC_BYTES),
+      );
     }
     out.push(item);
   }
   return out;
+}
+
+async function readIptcKeywords(path: string, size: number): Promise<string[]> {
+  const length = Math.min(size, MAX_IPTC_BYTES);
+  const buffer = Buffer.alloc(length);
+  const handle = await open(path, "r");
+  try {
+    await handle.read(buffer, 0, length, 0);
+  } finally {
+    await handle.close();
+  }
+  return extractIptcKeywords(buffer);
+}
+
+async function readFilePrefix(path: string, length: number): Promise<Buffer> {
+  const buffer = Buffer.alloc(length);
+  const handle = await open(path, "r");
+  try {
+    const { bytesRead } = await handle.read(buffer, 0, length, 0);
+    return buffer.subarray(0, bytesRead);
+  } finally {
+    await handle.close();
+  }
 }
 
 async function inspectCustomThumbnail(
@@ -454,28 +554,6 @@ async function readTextBody(path: string, size: number): Promise<string> {
     await handle.close();
   }
   return buffer.toString("utf8");
-}
-
-interface ImageDimensions {
-  width?: number;
-  height?: number;
-}
-
-async function readImageDimensions(
-  source: string | Buffer,
-): Promise<ImageDimensions> {
-  try {
-    const metadata = await sharp(source, {
-      failOn: "none",
-      pages: 1,
-    }).metadata();
-    const out: ImageDimensions = {};
-    if (metadata.width) out.width = metadata.width;
-    if (metadata.height) out.height = metadata.height;
-    return out;
-  } catch {
-    return {};
-  }
 }
 
 export async function importedFilesComplete(

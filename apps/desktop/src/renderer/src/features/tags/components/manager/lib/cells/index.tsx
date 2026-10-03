@@ -42,7 +42,7 @@ export function ActionsCell() {
       <Menu.Trigger
         icon
         size="xs"
-        variant="ghost"
+        variant="text"
         className={styles.action}
         aria-label="More Actions"
         onClick={stop}

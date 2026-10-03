@@ -8,17 +8,47 @@ import styles from "./styles.module.css";
 interface SectionProps {
   title: string;
   defaultOpen?: boolean;
+  divider?: boolean;
+  action?: React.ReactNode;
+  empty?: boolean;
   children: React.ReactNode;
 }
 
-export function Section({ title, defaultOpen = true, children }: SectionProps) {
+export function Section({
+  title,
+  defaultOpen = true,
+  divider = true,
+  action,
+  empty = false,
+  children,
+}: SectionProps) {
   const [open, setOpen] = useState(defaultOpen);
   const id = useId();
   const reduceMotion = useReducedMotion();
 
+  if (empty && !action) return null;
+
+  if (empty) {
+    return (
+      <section
+        className={styles.section}
+        data-divider={divider ? undefined : "none"}
+        aria-labelledby={`${id}-title`}
+      >
+        <h3 className={styles.header}>
+          <span className={styles.title} id={`${id}-title`}>
+            {title}
+          </span>
+          <span className={styles.action}>{action}</span>
+        </h3>
+      </section>
+    );
+  }
+
   return (
     <Accordion.Root
       className={styles.section}
+      data-divider={divider ? undefined : "none"}
       multiple
       value={open ? [title] : []}
       onValueChange={(next) => setOpen(next.includes(title))}
@@ -35,6 +65,7 @@ export function Section({ title, defaultOpen = true, children }: SectionProps) {
               <IconChevronDownOutline12 />
             </span>
           </Accordion.Trigger>
+          {action ? <span className={styles.action}>{action}</span> : null}
         </Accordion.Header>
         <AnimatePresence mode="wait" initial={false}>
           {open ? (

@@ -50,6 +50,7 @@ function Root({ header, children, left, right, className }: RootProps) {
         minWidth={SIDEBAR_WIDTH_MIN}
         maxWidth={SIDEBAR_WIDTH_MAX}
         defaultWidth={SIDEBAR_WIDTH_DEFAULT}
+        width={sidebarWidth}
         onResize={libraryChrome.setSidebarWidth}
         onCollapse={libraryChrome.toggleSidebar}
       >
@@ -63,6 +64,7 @@ function Root({ header, children, left, right, className }: RootProps) {
         minWidth={AGENT_WIDTH_MIN}
         maxWidth={AGENT_WIDTH_MAX}
         defaultWidth={AGENT_WIDTH_DEFAULT}
+        width={agentWidth}
         resizeLabel={rightPane === "agent" ? "Resize Agent" : "Resize Details"}
         onResize={libraryChrome.setAgentWidth}
         onCollapse={libraryChrome.closeRightPane}

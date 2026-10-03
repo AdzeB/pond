@@ -75,7 +75,7 @@ export const MCP_HOST_CATALOG: readonly McpHostDefinition[] = [
   },
   {
     id: "other",
-    name: "Any MCP Client",
+    name: "Other",
     featured: false,
     configPath: "your MCP client config",
     hint: "Merge this block into the client that should search this library.",

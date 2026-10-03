@@ -1,0 +1,22 @@
+.chrome {
+  -webkit-app-region: drag;
+  position: absolute;
+  z-index: 20;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: var(--ds-title-bar-height);
+}
+
+.close {
+  -webkit-app-region: no-drag;
+  position: absolute;
+  top: 32px;
+  right: 32px;
+  border-radius: 100%;
+}
+
+.chrome[data-align="title"] .close {
+  top: calc((var(--ds-title-bar-height) - var(--ds-size-sm)) / 2);
+  right: 16px;
+}

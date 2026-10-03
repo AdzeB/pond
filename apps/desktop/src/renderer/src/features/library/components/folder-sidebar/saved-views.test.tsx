@@ -1,5 +1,6 @@
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { saveSavedViewPresentation } from "@/features/library/state/saved-view-presentation";
 import { savedViews } from "@/features/library/state/saved-views";
 import {
   getViewState,
@@ -60,6 +61,7 @@ describe("folder sidebar saved views", () => {
     );
     if (!(more instanceof HTMLElement)) throw new Error("Missing More Actions");
     expect(more.dataset.rounding).toBe("rounded");
+    expect(more.dataset.variant).toBe("text");
     await act(async () => more.click());
     await act(async () => harness.menuItem("Rename").click());
     expect(document.querySelector('[role="dialog"]')).toBeNull();
@@ -108,7 +110,75 @@ describe("folder sidebar saved views", () => {
         }),
       );
     });
+    const labels = [
+      "Edit Filters",
+      "Update Saved View",
+      "Refresh",
+      "Duplicate",
+      "Export",
+      "Quick Access",
+      "Icon",
+      "Color",
+      "Rename",
+      "Batch Rename Smart Folders",
+      "Copy Link",
+      "Move to Group",
+      "Delete",
+    ];
+    const icons = labels.map((label) => {
+      const icon = harness.menuItem(label).querySelector("svg");
+      expect(icon, `${label} should have an icon`).not.toBeNull();
+      return icon?.innerHTML;
+    });
+    expect(new Set(icons).size).toBe(labels.length);
     await confirmDelete();
+  });
+
+  it("opens group operations from the disclosure button", async () => {
+    savedViewList.current = [savedView("Branding", "group")];
+    await savedViews.refresh();
+    await harness.mount();
+    await act(async () => {
+      harness.iconButton("Collapse Branding").dispatchEvent(
+        new MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          button: 2,
+          clientX: 24,
+          clientY: 24,
+        }),
+      );
+    });
+    expect(harness.menuItem("Duplicate")).toBeDefined();
+    expect(harness.menuItem("Quick Access")).toBeDefined();
+  });
+
+  it("opens Saved View Quick Access operations from its row", async () => {
+    await saveSavedViewPresentation("view-1", {
+      quickAccess: true,
+      quickAccessOrder: 0,
+    });
+    await mountUnreadView();
+    const rows = [...harness.host.querySelectorAll("button")].filter(
+      (button) => button.textContent?.trim() === "Unread",
+    );
+    const quickRow = rows.at(-1);
+    if (!quickRow) throw new Error("Missing Quick Access Saved View");
+    await act(async () => {
+      quickRow.dispatchEvent(
+        new MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          button: 2,
+          clientX: 24,
+          clientY: 24,
+        }),
+      );
+    });
+    expect(harness.menuItem("Remove from Quick Access")).toBeDefined();
+    expect(harness.menuItem("Move Up")).toBeDefined();
+    expect(harness.menuItem("Move Down")).toBeDefined();
+    await saveSavedViewPresentation("view-1", { quickAccess: false });
   });
 
   it.each([
@@ -242,7 +312,7 @@ describe("folder sidebar saved views", () => {
   it("leaves the smart folder scope when navigating to another destination", async () => {
     await mountUnreadView();
     await act(async () => harness.button("Unread").click());
-    await act(async () => harness.button("Sources").click());
+    await act(async () => harness.button("Untagged").click());
     expect(getViewState().activeViewId).toBeNull();
     expect(harness.button("Unread").getAttribute("aria-current")).toBeNull();
   });

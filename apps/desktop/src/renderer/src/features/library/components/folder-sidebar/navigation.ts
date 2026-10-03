@@ -15,5 +15,6 @@ export function selectLibraryNav(nav: LibraryNav): void {
   if (nav.kind === "trash") goToLibraryPath("/trash");
   else if (nav.kind === "downloads") goToLibraryPath("/downloads");
   else if (nav.kind === "sources") goToLibraryPath("/sources");
+  else if (nav.kind === "recents") goToLibraryPath("/recents");
   else goToLibraryPath("/");
 }

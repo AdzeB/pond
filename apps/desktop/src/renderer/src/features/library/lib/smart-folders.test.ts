@@ -6,6 +6,7 @@ import {
   combineQueries,
   groupMoveChoices,
   inheritedQueryFor,
+  selectedViewRoots,
 } from "./smart-folders";
 
 function view(
@@ -126,4 +127,17 @@ describe("combining shared and local conditions", () => {
       }),
     ).toBe(false);
   });
+});
+
+it("moves selected Groups with their selected descendants intact", () => {
+  const views = [
+    view("parent", null),
+    view("child", "parent", "smart_folder"),
+    view("other", null, "saved_view"),
+  ];
+  expect(
+    selectedViewRoots(["parent", "child", "other"], views).map(
+      (view) => view.id,
+    ),
+  ).toEqual(["parent", "other"]);
 });

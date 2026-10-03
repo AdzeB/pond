@@ -23,6 +23,17 @@ export function rememberFolderDestinations(ids: readonly string[]): void {
   } catch {}
 }
 
+export function forgetRecentFolder(id: string): void {
+  try {
+    localStorage.setItem(
+      RECENT_FOLDER_DESTINATIONS_KEY,
+      readRecentFolderIds()
+        .filter((candidate) => candidate !== id)
+        .join("\n"),
+    );
+  } catch {}
+}
+
 export function lastUsedFolderId(): string | null {
   return readRecentFolderIds()[0] ?? null;
 }

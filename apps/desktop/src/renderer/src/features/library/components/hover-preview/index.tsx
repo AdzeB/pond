@@ -9,12 +9,13 @@ import {
 } from "@/features/saves/components/viewers/media-viewer";
 import { useSave } from "@/features/saves/hooks/use-saves";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
+import { collectionOwnsKeyboard } from "@/features/saves/lib/keyboard-owner";
 import { storedFileViewerKind } from "@/features/saves/lib/media/file-viewer";
 import { pickPrimaryFile } from "@/features/saves/lib/media/units";
 import { saveIdFromPath } from "@/features/saves/lib/save-nav";
 import { selectOnlySave } from "@/features/saves/lib/select";
 import {
-  imageFileIndex,
+  previewFileIndex,
   runViewerAction,
 } from "@/features/saves/lib/viewer-actions";
 import { inspect, useInspect } from "@/features/saves/state/inspect";
@@ -22,7 +23,7 @@ import { onQuickPreviewRequest } from "@/features/saves/state/quick-preview";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import {
   selection,
-  useSelectionAnchor,
+  useSelectionCursor,
   useSelectionSize,
 } from "@/features/saves/state/selection";
 import { usePrefs } from "@/features/settings/state/prefs";
@@ -34,6 +35,7 @@ import styles from "./styles.module.css";
 export function HoverPreview() {
   const [open, setOpen] = useState(false);
   const [hoverId, setHoverId] = useState<string | null>(null);
+  const [compareZoom, setCompareZoom] = useState(1);
   const heldKey = useRef<string | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const viewerNav = useRef<ViewerNav | null>(null);
@@ -42,18 +44,28 @@ export function HoverPreview() {
   const shortcuts = useShortcutBindings();
   const { grayscale, compare } = useInspect();
   const selectedCount = useSelectionSize();
-  const selectedId = useSelectionAnchor();
+  const selectedId = useSelectionCursor();
   const compareIds = compare ? [...selection.snapshot()].slice(0, 2) : [];
   const save = useSave(open ? selectedId : hoverId);
   const compareA = useSave(compareIds[0] ?? null);
   const compareB = useSave(compareIds[1] ?? null);
+  useEffect(() => {
+    if (!compare) setCompareZoom(1);
+  }, [compare]);
 
   useHotkey(
     bindingKeys(shortcuts, "grid.preview"),
     (event) => {
-      if (event.repeat || isEditableTarget(event.target)) return;
+      if (
+        event.defaultPrevented ||
+        event.isComposing ||
+        event.repeat ||
+        isEditableTarget(event.target)
+      )
+        return;
+      if (!open && !collectionOwnsKeyboard()) return;
       if (saveIdFromPath(getAppRouter()?.state.location.pathname ?? "")) return;
-      const selected = selection.getAnchor();
+      const selected = selection.getCursor();
       if (!selected) return;
       if (
         open &&
@@ -102,7 +114,7 @@ export function HoverPreview() {
             const saveId = await resultNavigation.next(current, request.delta);
             if (!saveId) return;
             await ensureSaves([saveId]);
-            const fileIndex = imageFileIndex(saveId);
+            const fileIndex = previewFileIndex(saveId, request.kind);
             if (fileIndex !== null) {
               await window.pond.navigatePreviewWindow({
                 windowId: request.windowId,
@@ -121,7 +133,7 @@ export function HoverPreview() {
     if (withinSave && viewerNav.current?.step(delta)) return;
     navigation.current = navigation.current
       .then(async () => {
-        const id = selection.getAnchor();
+        const id = selection.getCursor();
         if (!id) return;
         const next = await resultNavigation.next(id, delta);
         if (next) await showSave(next);
@@ -154,8 +166,8 @@ export function HoverPreview() {
         event.altKey
       )
         return;
-      if (event.key.toLowerCase() === "z" && !open)
-        setHoverId(selection.getAnchor());
+      if (event.key.toLowerCase() === "z" && !open && collectionOwnsKeyboard())
+        setHoverId(selection.getCursor());
     };
     const up = (event: KeyboardEvent) => {
       if (event.key.toLowerCase() === "z") setHoverId(null);
@@ -215,23 +227,48 @@ export function HoverPreview() {
           </Dialog.Title>
           <div className={styles.viewer}>
             {compare && compareA && compareB ? (
-              <div className={styles.compare}>
+              <div
+                className={styles.compare}
+                onWheel={(event) => {
+                  event.preventDefault();
+                  setCompareZoom((zoom) =>
+                    Math.max(
+                      0.5,
+                      Math.min(4, zoom * (event.deltaY < 0 ? 1.1 : 0.9)),
+                    ),
+                  );
+                }}
+              >
                 <div
                   className={styles.frame}
                   data-grayscale={grayscale || undefined}
                 >
-                  <CardThumb save={compareA} />
+                  <div
+                    className={styles["compare-media"]}
+                    style={{ transform: `scale(${compareZoom})` }}
+                  >
+                    <CardThumb save={compareA} />
+                  </div>
                 </div>
                 <div
                   className={styles.frame}
                   data-grayscale={grayscale || undefined}
                 >
-                  <CardThumb save={compareB} />
+                  <div
+                    className={styles["compare-media"]}
+                    style={{ transform: `scale(${compareZoom})` }}
+                  >
+                    <CardThumb save={compareB} />
+                  </div>
                 </div>
               </div>
             ) : save ? (
               file && storedFileViewerKind(file) ? (
-                <StoredFileViewer save={save} file={file} />
+                <StoredFileViewer
+                  save={save}
+                  file={file}
+                  showControls={false}
+                />
               ) : (
                 <MediaViewer
                   key={save.id}
@@ -247,6 +284,31 @@ export function HoverPreview() {
           </div>
           {selectedCount >= 2 ? (
             <div className={styles.tools}>
+              {compare ? (
+                <>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    aria-label="Zoom Out"
+                    onClick={() =>
+                      setCompareZoom((zoom) => Math.max(0.5, zoom / 1.25))
+                    }
+                  >
+                    −
+                  </Button>
+                  <span>{Math.round(compareZoom * 100)}%</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    aria-label="Zoom In"
+                    onClick={() =>
+                      setCompareZoom((zoom) => Math.min(4, zoom * 1.25))
+                    }
+                  >
+                    +
+                  </Button>
+                </>
+              ) : null}
               <Button
                 size="sm"
                 variant="secondary"

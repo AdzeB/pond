@@ -17,6 +17,42 @@ const excluded = new Set([
   "definition",
 ]);
 
+const saveCitation = /^#save-[1-9]\d*$/;
+const trailingPunctuation = /^[,.;:!?)}\]]/;
+
+function endsWithSaveCitation(node: MarkdownNode): boolean {
+  if (node.type === "link") return saveCitation.test(node.url ?? "");
+  if (!node.children) return false;
+  for (let index = node.children.length - 1; index >= 0; index -= 1) {
+    const child = node.children[index];
+    if (!child || (child.type === "text" && !child.value)) continue;
+    return endsWithSaveCitation(child);
+  }
+  return false;
+}
+
+function bindCitationPunctuation(children: MarkdownNode[]) {
+  for (let index = 0; index < children.length - 1; index += 1) {
+    const citation = children[index];
+    const next = children[index + 1];
+    if (
+      citation &&
+      next?.type === "text" &&
+      next.value &&
+      endsWithSaveCitation(citation) &&
+      trailingPunctuation.test(next.value)
+    ) {
+      next.value = `\u2060${next.value}`;
+    }
+  }
+}
+
+function bindCitationPunctuationInTree(node: MarkdownNode) {
+  if (!node.children) return;
+  for (const child of node.children) bindCitationPunctuationInTree(child);
+  bindCitationPunctuation(node.children);
+}
+
 export function remarkSaveCitations({
   count,
   source,
@@ -85,5 +121,6 @@ export function remarkSaveCitations({
       });
     }
     visit(tree);
+    bindCitationPunctuationInTree(tree);
   };
 }

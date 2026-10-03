@@ -5,7 +5,9 @@ import { DEFAULT_APP_ICON } from "../shared/app-icons";
 import { IPC } from "../shared/constants";
 import { attachEditableContextMenu } from "./context-menu";
 import { hardenArchiveWebviews } from "./core/archive-viewer";
+import { openHarvesterWindow } from "./core/harvester-window";
 import { getPrefs, setPrefs } from "./core/prefs";
+import { openSettingsWindow } from "./core/settings-window";
 import { consumePendingDeepLink } from "./deep-link";
 import { lockRendererZoom } from "./lib/lock-renderer-zoom";
 import { resolveMainOut, resolvePreload } from "./lib/resolve-preload";
@@ -58,10 +60,6 @@ export function queueTrayRefresh(): void {
   }, 150);
 }
 
-function navigateMain(route: string): void {
-  mainWindowState.current?.webContents.send(IPC.nav, route);
-}
-
 interface ShellHint {
   theme?: "light" | "dark";
   bgL?: number;
@@ -104,7 +102,18 @@ async function resolveShellHint(): Promise<ShellHint> {
   };
 }
 
-export async function createWindow(): Promise<BrowserWindow> {
+let openingLibraryWindow: Promise<BrowserWindow> | null = null;
+
+export function createWindow(): Promise<BrowserWindow> {
+  if (!openingLibraryWindow) {
+    openingLibraryWindow = buildLibraryWindow().finally(() => {
+      openingLibraryWindow = null;
+    });
+  }
+  return openingLibraryWindow;
+}
+
+async function buildLibraryWindow(): Promise<BrowserWindow> {
   const isMac = process.platform === "darwin";
 
   const shellHint = await resolveShellHint();
@@ -149,6 +158,10 @@ export async function createWindow(): Promise<BrowserWindow> {
   if (!isMac && appIcon) options.icon = appIcon;
 
   const win = new BrowserWindow(options);
+  mainWindowState.current = win;
+  win.once("closed", () => {
+    if (mainWindowState.current === win) mainWindowState.current = null;
+  });
   lockRendererZoom(win.webContents);
 
   hardenArchiveWebviews(win);
@@ -263,7 +276,6 @@ export async function createWindow(): Promise<BrowserWindow> {
     await win.loadFile(resolveMainOut("../renderer/index.html"));
   }
 
-  mainWindowState.current = win;
   void applyAppIcon(prefs?.window.appIcon);
 
   if (!nativeThemeListenerAttached) {
@@ -277,6 +289,7 @@ export async function createWindow(): Promise<BrowserWindow> {
 }
 
 async function ensureMainWindow(): Promise<BrowserWindow> {
+  if (openingLibraryWindow) return openingLibraryWindow;
   if (!mainWindowState.current || mainWindowState.current.isDestroyed()) {
     return createWindow();
   }
@@ -292,15 +305,11 @@ export async function openLibraryWindow(): Promise<void> {
 
 export async function handleActivate(): Promise<void> {
   if (process.platform === "darwin") app.dock?.show();
-  if (BrowserWindow.getAllWindows().length === 0) {
-    await createWindow();
-  } else {
-    mainWindowState.current?.show();
-  }
+  await openLibraryWindow();
 }
 
 export function focusedOrMain(): BrowserWindow | null {
-  const target = mainWindowState.current ?? BrowserWindow.getFocusedWindow();
+  const target = mainWindowState.current;
   if (!target || target.isDestroyed()) return null;
   if (target.isMinimized()) target.restore();
   target.show();
@@ -319,17 +328,29 @@ export async function initTray(): Promise<void> {
   try {
     tray = await ensureTray({
       onOpenLibrary: openLibraryWindow,
-      onOpenSettings: async () => {
-        await openLibraryWindow();
-        navigateMain("/settings");
-      },
-      onOpenDownloads: async () => {
-        await openLibraryWindow();
-        navigateMain("/downloads");
-      },
+      onOpenSettings: () => openSettingsWindow(),
+      onOpenDownloads: () => openHarvesterWindow({ section: "downloads" }),
       onMenuAction: async (id) => {
+        if (id === "library.capture-screenshot") {
+          const { launchScreenshotTool } = await import(
+            "./core/screenshot-tools"
+          );
+          const result = await launchScreenshotTool(
+            (await getPrefs()).screenshots.tool,
+          );
+          if (result.openPondCapture) {
+            const { beginScreenshot } = await import(
+              "./core/screenshot-window"
+            );
+            await beginScreenshot("area");
+          }
+          return;
+        }
         await openLibraryWindow();
-        mainWindowState.current?.webContents.send(IPC.menuAction, id);
+        mainWindowState.current?.webContents.send(IPC.menuAction, {
+          id,
+          source: "menu",
+        });
       },
     });
   } catch (err) {

@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto";
-import { extname } from "node:path";
 import {
   type ImageCrop,
   type NewSave,
@@ -7,24 +6,14 @@ import {
   saves,
 } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
+import { canDestructivelyEditImage } from "@shared/file-format";
 import { eq } from "drizzle-orm";
 import sharp, { type OutputInfo } from "sharp";
 import { getDb } from "../db";
 import { itemFile } from "../paths";
 import { executeTransaction } from "./executor";
-import { readLibraryMedia } from "./security/library-media-storage";
+import { readLibraryMedia } from "./storage/library-media-storage";
 import { recordForUndo } from "./undo";
-
-const EDITABLE_IMAGE_EXTENSIONS = new Set([
-  ".avif",
-  ".gif",
-  ".jpeg",
-  ".jpg",
-  ".png",
-  ".tif",
-  ".tiff",
-  ".webp",
-]);
 
 export interface ApplyImageTransformInput {
   id: string;
@@ -93,7 +82,7 @@ export async function applyImageTransformToFile(
   if (!save) throw new Error("The Save no longer exists.");
   const file = save.files[input.fileIndex];
   if (!file) throw new Error("The image no longer exists.");
-  if (!EDITABLE_IMAGE_EXTENSIONS.has(extname(file.path).toLowerCase())) {
+  if (!canDestructivelyEditImage(file.path)) {
     throw new Error("This image format can’t be edited in place.");
   }
 

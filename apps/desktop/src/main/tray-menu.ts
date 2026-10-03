@@ -1,10 +1,11 @@
 import { saves } from "@pond/schema/db";
-import { count, eq, isNull } from "drizzle-orm";
+import { count, isNull } from "drizzle-orm";
 import { app, Menu } from "electron";
 import { blankDocumentDef } from "../shared/blank-documents";
 import { resolveShortcuts } from "../shared/shortcuts";
 import { listInstalledBlankDocuments } from "./core/blank-documents";
 import { readLibraryIdentity } from "./core/library-identity";
+import { readQueueSummary } from "./core/pipeline/queue-summary";
 import { getPrefs } from "./core/prefs";
 import { getDb } from "./db";
 import { menuAccelerator } from "./lib/menu-accelerator";
@@ -46,7 +47,6 @@ export async function buildMenu(
     status,
     {
       onOpenDownloads: opts.onOpenDownloads,
-      onOpenLibrary: opts.onOpenLibrary,
       onOpenSettings: opts.onOpenSettings ?? opts.onOpenLibrary,
       onMenuAction: opts.onMenuAction,
     },
@@ -68,17 +68,12 @@ async function loadTrayStatus(inflight: number): Promise<TrayStatusInput> {
   const [activeRow] = db
     ? await db.select({ n: count() }).from(saves).where(isNull(saves.deletedAt))
     : [];
-  const [ingestRow] = db
-    ? await db
-        .select({ n: count() })
-        .from(saves)
-        .where(eq(saves.status, "ingesting"))
-    : [];
+  const queue = db ? await readQueueSummary().catch(() => null) : null;
   return {
     libraryName: libraryDisplayName(),
     active: Number(activeRow?.n ?? 0),
-    ingesting: Number(ingestRow?.n ?? 0),
-    inflight,
+    ingesting: queue?.actionable ?? 0,
+    inflight: queue?.running ?? inflight,
   };
 }
 
@@ -98,7 +93,6 @@ async function loadTrayAccelerators(
     importFolders: menuAccelerator(bindings["library.import-folders"]),
     importLinks: menuAccelerator(bindings["library.import-links"]),
     rescan: menuAccelerator(bindings["library.rescan"]),
-    openLibrary: menuAccelerator(bindings["app.summon"]),
     search: menuAccelerator(bindings["library.search"]),
     sources: menuAccelerator(bindings["nav.sources"]),
     downloads: menuAccelerator(bindings["nav.downloads"]),

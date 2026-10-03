@@ -4,6 +4,8 @@ import type { Op, Source } from "./db";
 
 export const EVENT_KINDS = [
   "pipeline.task.completed",
+  "pipeline.task.attempt",
+  "pipeline.source-gate.transition",
   "sync.run.completed",
   "save.ingest.completed",
 ] as const;
@@ -15,8 +17,23 @@ export const TASK_OUTCOMES = [
   "blocked",
   "deferred",
   "skipped",
+  "cancelled",
+  "dead",
 ] as const;
 export type TaskOutcome = (typeof TASK_OUTCOMES)[number];
+
+export const TASK_ATTEMPT_PHASES = [
+  "claimed",
+  "heartbeat",
+  "completed",
+  "deferred",
+  "blocked",
+  "dead",
+  "cancelled",
+  "stale_rejected",
+  "watchdog",
+] as const;
+export type TaskAttemptPhase = (typeof TASK_ATTEMPT_PHASES)[number];
 
 export const SYNC_OUTCOMES = [
   "ok",
@@ -64,6 +81,36 @@ export interface PipelineTaskEvent {
   pipeline: PipelineSnapshot;
 }
 
+export interface PipelineTaskAttemptEvent {
+  kind: "pipeline.task.attempt";
+  ts: number;
+  saveId: string;
+  source: Source;
+  op: Op;
+  taskId: string;
+  generationId: string | null;
+  attempt: number;
+  phase: TaskAttemptPhase;
+  leaseOwner: string | null;
+  leaseToken: string | null;
+  cancellationFence: number;
+  nextRunAt: number | null;
+  deferredReason: string | null;
+  durationMs: number | null;
+  error: ErrorInfo | null;
+}
+
+export interface SourceGateTransitionEvent {
+  kind: "pipeline.source-gate.transition";
+  ts: number;
+  source: Source;
+  from: "closed" | "open" | "half_open" | "paused";
+  to: "closed" | "open" | "half_open" | "paused";
+  reason: string | null;
+  retryAt: number | null;
+  trigger: string;
+}
+
 export interface SyncRunEvent {
   kind: "sync.run.completed";
   ts: number;
@@ -102,7 +149,12 @@ export interface SaveIngestEvent {
   trigger: string | null;
 }
 
-export type WideEvent = PipelineTaskEvent | SyncRunEvent | SaveIngestEvent;
+export type WideEvent =
+  | PipelineTaskEvent
+  | PipelineTaskAttemptEvent
+  | SourceGateTransitionEvent
+  | SyncRunEvent
+  | SaveIngestEvent;
 
 export const pipelineEvents = sqliteTable(
   "pipeline_events",

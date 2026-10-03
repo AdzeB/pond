@@ -71,6 +71,16 @@ function Meta({ className, ...props }: ComponentPropsWithoutRef<"span">) {
   return <span className={cn(styles.meta, className)} {...props} />;
 }
 
+function Action({ className, ...props }: Base.Action.Props) {
+  return (
+    <Base.Action
+      className={cn(styles.action, className)}
+      render={<Button size="xs" variant="text" />}
+      {...props}
+    />
+  );
+}
+
 function Close({ className, ...props }: Base.Close.Props) {
   return (
     <Base.Close
@@ -96,6 +106,7 @@ export const Toast = {
   Description,
   Progress,
   Meta,
+  Action,
   Close,
   createToastManager: Base.createToastManager,
   useToastManager: Base.useToastManager,

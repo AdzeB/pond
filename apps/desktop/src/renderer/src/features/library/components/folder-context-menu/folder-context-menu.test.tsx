@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { menuLabels as labels } from "@/shared/test/menu-labels";
+import {
+  menuLabels as labels,
+  menuLabelsWithoutIcons,
+} from "@/shared/test/menu-labels";
 import {
   buildFolderMenuItems,
   type FolderMenuActions,
@@ -36,6 +39,10 @@ function actions(
 }
 
 describe("folder context menu", () => {
+  it("gives every searchable action an icon", () => {
+    expect(menuLabelsWithoutIcons(buildFolderMenuItems(actions()))).toEqual([]);
+  });
+
   it("matches Eagle folder operations Pond supports", () => {
     const menuLabels = labels(buildFolderMenuItems(actions()));
 

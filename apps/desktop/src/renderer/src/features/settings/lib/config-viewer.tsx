@@ -24,6 +24,7 @@ export const viewerSection = defineCustomSection({
           description: "Choose what Space opens for the selected Save.",
           options: [
             { value: "preview", label: "Quick Preview" },
+            { value: "quick-look", label: "macOS Quick Look" },
             { value: "presentation", label: "Presentation" },
             { value: "detached", label: "Detached Window" },
             { value: "open", label: "Save Details" },
@@ -116,6 +117,16 @@ export const viewerSection = defineCustomSection({
     group.prefs("viewer", {
       title: "Gallery",
       items: [
+        {
+          control: "select",
+          key: "galleryFit",
+          title: "Thumbnail Fit",
+          description: "Fit the full image or fill each gallery card.",
+          options: [
+            { value: "fit", label: "Fit" },
+            { value: "fill", label: "Fill" },
+          ],
+        },
         {
           control: "select",
           key: "thumbnailBehavior",

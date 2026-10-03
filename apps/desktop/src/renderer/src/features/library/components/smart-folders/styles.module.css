@@ -51,7 +51,7 @@
   padding: 0 6px;
   overflow: hidden;
   font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   color: var(--ds-gray-12);
 }
 
@@ -69,12 +69,6 @@
 .field {
   font-size: var(--ds-text-md);
   line-height: 1;
-}
-
-.name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .more {

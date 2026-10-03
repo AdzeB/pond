@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { createDecipheriv } from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -7,7 +7,7 @@ import type { ExtensionCookie } from "@pond/schema/session";
 import type { Transaction } from "@pond/schema/tx";
 import { eq } from "drizzle-orm";
 import { getDb } from "../db";
-import { ensureSecureSecretBytes } from "../keychain";
+import { getSecureSecretBytes } from "../keychain";
 import { readOrCreatePondId } from "../lib/pond-identity";
 import { libraryRoot } from "../paths";
 import { captureAsset } from "./capture-asset";
@@ -18,11 +18,10 @@ import { folderIdsForSave } from "./folder-memberships";
 import { runLibraryTransfer } from "./library-transfers";
 import { createManualSave } from "./manual-import";
 import { enqueue } from "./pipeline/enqueue";
-import { librarySecurityStatus } from "./security/app-lock-runtime";
 import {
   decodeLibraryFile,
   isEncryptedLibraryFile,
-} from "./security/library-file-storage";
+} from "./storage/library-file-storage";
 import { normalizeTagList, prepareTagRegistryUpdates } from "./tags";
 import { recordBatchForUndo } from "./undo";
 import { hasUserTitle } from "./user-metadata";
@@ -31,34 +30,16 @@ const captureCookies = new Map<string, ExtensionCookie[]>();
 const CAPTURE_QUEUE_MAGIC = Buffer.from("PONDCAP1", "ascii");
 
 async function captureQueueKey(): Promise<Buffer> {
-  return ensureSecureSecretBytes(
+  const key = await getSecureSecretBytes(
     `pond:capture-queue:${readOrCreatePondId(libraryRoot())}`,
     32,
   );
+  if (!key) throw new Error("The existing capture queue key is unavailable.");
+  return key;
 }
 
 async function writeCaptureQueue(path: string, value: string): Promise<void> {
-  const key = await captureQueueKey();
-  const nonce = randomBytes(12);
-  try {
-    const cipher = createCipheriv("aes-256-gcm", key, nonce);
-    const ciphertext = Buffer.concat([
-      cipher.update(value, "utf8"),
-      cipher.final(),
-    ]);
-    await writeFile(
-      path,
-      Buffer.concat([
-        CAPTURE_QUEUE_MAGIC,
-        nonce,
-        cipher.getAuthTag(),
-        ciphertext,
-      ]),
-      { mode: 0o600 },
-    );
-  } finally {
-    key.fill(0);
-  }
+  await writeFile(path, value, { mode: 0o600 });
 }
 
 async function readCaptureQueue(path: string): Promise<string> {
@@ -93,7 +74,6 @@ export function attachCaptureCookies(
 
 export const captures = createCaptureQueue({
   root: libraryRoot,
-  canProcess: () => librarySecurityStatus().state !== "locked",
   readStored: readCaptureQueue,
   writeStored: writeCaptureQueue,
   transfer: runLibraryTransfer,

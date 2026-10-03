@@ -1,7 +1,7 @@
 import { Select } from "@pond/ui";
 import { useView } from "@/features/library/hooks/use-view";
 import type { LayoutValue } from "@/features/library/lib/view-prefs";
-import styles from "../styles.module.css";
+import { ViewMenuRow } from "../row";
 
 const OPTIONS: { value: LayoutValue; label: string }[] = [
   { value: "waterfall", label: "Waterfall" },
@@ -21,12 +21,12 @@ export function LayoutSection() {
         if (value !== null) actions.setLayout(value);
       }}
     >
-      <div className={styles.row}>
-        <Select.Label className={styles.label}>Layout</Select.Label>
-        <Select.Trigger size="sm" className={styles.select}>
+      <ViewMenuRow.Root>
+        <Select.Label className={ViewMenuRow.Label}>Layout</Select.Label>
+        <Select.Trigger size="sm" className={ViewMenuRow.Select}>
           <Select.Value />
         </Select.Trigger>
-      </div>
+      </ViewMenuRow.Root>
       <Select.Portal>
         <Select.Positioner align="end" sideOffset={6}>
           <Select.Popup>

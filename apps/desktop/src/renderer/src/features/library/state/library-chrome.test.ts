@@ -41,6 +41,19 @@ describe("independent Agent and inspector panes", () => {
     expect(libraryChrome.getState().rightPane).toBeNull();
   });
 
+  it("opens a save directly on its Comments tab", async () => {
+    const { libraryChrome } = await import("./library-chrome");
+    libraryChrome.openSaveDetails("first", "comments");
+    expect(libraryChrome.getState()).toMatchObject({
+      rightPane: "inspector",
+      inspectorSaveId: "first",
+      inspectorMode: "save",
+      inspectorTab: "comments",
+    });
+    libraryChrome.setInspectorTab("info");
+    expect(libraryChrome.getState().inspectorTab).toBe("info");
+  });
+
   it("reopens the selected download after closing Details or showing Agent", async () => {
     const { libraryChrome } = await import("./library-chrome");
     libraryChrome.inspectDownload("first");

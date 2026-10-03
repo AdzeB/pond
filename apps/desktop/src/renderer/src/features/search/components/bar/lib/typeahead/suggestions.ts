@@ -5,7 +5,6 @@ import {
   canonicalKey,
   DATE_PRESETS,
   fieldForKey,
-  TOKEN_FIELDS,
 } from "@/features/search/lib/syntax";
 
 const LOOKUP_CAP = 8;
@@ -54,7 +53,7 @@ function valueSuggestionsFor(
 }
 
 export type MenuItem = {
-  kind: "field" | "value";
+  kind: "value";
   key: string;
   field: FieldId;
   label: string;
@@ -120,46 +119,7 @@ export function buildMenu(
     return items.length ? { title: FIELD_META[field].label, items } : null;
   }
 
-  const q = body.toLowerCase();
-  if (!q) return null;
-  const fields: MenuItem[] = TOKEN_FIELDS.filter(
-    (spec) =>
-      spec.keys.some((key) => key.startsWith(q)) ||
-      FIELD_META[spec.field].label.toLowerCase().startsWith(q),
-  ).map((spec) => ({
-    kind: "field",
-    key: `field-${spec.field}`,
-    field: spec.field,
-    label: FIELD_META[spec.field].label,
-    description: `${prefix}${spec.keys[0]}:`,
-    token: `${prefix}${spec.keys[0]}:`,
-  }));
-  const values: MenuItem[] = [];
-  if (q.length >= 2) {
-    for (const field of [
-      "source",
-      "tags",
-      "type",
-      "creator",
-      "folder",
-      "account",
-    ] as const) {
-      for (const suggestion of valueSuggestionsFor(field, facets)) {
-        if (matchRank(q, suggestion.value, suggestion.label) === 3) continue;
-        values.push({
-          kind: "value",
-          key: `${field}-${suggestion.value}`,
-          field,
-          label: suggestion.label,
-          description: FIELD_META[field].label,
-          token: `${prefix}${canonicalKey(field)}:${quoteIfNeeded(suggestion.value)}`,
-        });
-      }
-    }
-    values.sort((a, b) => matchRank(q, a.label) - matchRank(q, b.label));
-  }
-  const items = [...values, ...fields].slice(0, LOOKUP_CAP);
-  return items.length ? { title: "Suggested Filters", items } : null;
+  return null;
 }
 
 export function triggerFn(text: string): MenuTextMatch | null {

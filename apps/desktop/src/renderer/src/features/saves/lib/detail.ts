@@ -34,8 +34,33 @@ const DETAIL_GROUPS = [
       "shares",
     ],
   },
-  { title: "File", ids: ["duration", "dimensions", "size", "id"] },
-  { title: "Dates", ids: ["published", "imported", "modified"] },
+  {
+    title: "File",
+    ids: [
+      "duration",
+      "dimensions",
+      "size",
+      "container",
+      "videoCodec",
+      "audioCodec",
+      "bitrate",
+      "colorSpace",
+      "id",
+    ],
+  },
+  {
+    title: "EXIF",
+    ids: [
+      "cameraMake",
+      "cameraModel",
+      "lensModel",
+      "focalLength",
+      "aperture",
+      "exposureTime",
+      "iso",
+    ],
+  },
+  { title: "Dates", ids: ["taken", "published", "imported", "modified"] },
 ] as const;
 
 export interface DetailGroup {

@@ -85,6 +85,9 @@ export function ProviderConnection({
     (!catalog.needsKey || connected || Boolean(keyDraft.trim()));
   const refresh = async () => {
     await onRefresh();
+    await queryClient.invalidateQueries({
+      queryKey: ["agent-provider-connections"],
+    });
     await Promise.all([
       queryClient.invalidateQueries({
         queryKey: ["provider-models", catalog.id],

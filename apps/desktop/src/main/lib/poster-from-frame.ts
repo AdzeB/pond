@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import {
   isEncryptedLibraryMedia,
   withDecryptedLibraryMediaPath,
-} from "../core/security/library-media-storage";
+} from "../core/storage/library-media-storage";
 import { extractFirstFrame } from "./ffmpeg-frame";
 import { probeImageDims } from "./image-process";
 import type { PosterWrite } from "./poster-policy";

@@ -17,7 +17,7 @@ import {
   writePartitionCookies,
 } from "../../refresh/scrape-window/session";
 import { sleep } from "../../refresh/scrape-window/util";
-import { readLibraryMedia } from "../../security/library-media-storage";
+import { readLibraryMedia } from "../../storage/library-media-storage";
 import { TransientError } from "../extractors/errors";
 import {
   dropPageCookies,

@@ -28,3 +28,18 @@ export function topLevelMenuLabels(items: MenuItemSpec[]): string[] {
     return label ? [label] : [];
   });
 }
+
+export function menuLabelsWithoutIcons(items: MenuItemSpec[]): string[] {
+  return items.flatMap((item) => {
+    if (item.type === "separator" || item.type === "custom") return [];
+    if ("hidden" in item && item.hidden) return [];
+    if (item.type === "group") return menuLabelsWithoutIcons(item.items);
+    const label = "label" in item ? labelText(item.label) : null;
+    const current =
+      label && (!("icon" in item) || item.icon == null) ? [label] : [];
+    if (item.type === "submenu") {
+      return [...current, ...menuLabelsWithoutIcons(item.items)];
+    }
+    return current;
+  });
+}

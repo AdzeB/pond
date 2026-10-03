@@ -1,8 +1,17 @@
 import {
+  IconArchiveExportOutline18,
   IconBoxArchiveOutline18,
   IconConversionOutline18,
   IconFileExportOutline18,
+  IconFileZipOutline18,
+  IconGaugeOutline18,
+  IconImageBinaryOutline18,
+  IconImageMinusOutline18,
   IconImageOutline18,
+  IconImageSparkleOutline18,
+  IconImageUpscaleOutline18,
+  IconPhotoOutline18,
+  IconShieldCheckOutline18,
   IconTableDownloadOutline18,
 } from "@pond/icons/outline/18";
 import { Dialog, type MenuItemSpec } from "@pond/ui";
@@ -50,13 +59,26 @@ function startWebpConvert(
 function compressImages(
   ids: string[],
   fileIndex: number,
-  mode: "lossless" | "quality",
+  mode: "lossless" | "quality" | "webp" | "upscale" | "remove-background",
 ): void {
+  const editing = mode === "upscale" || mode === "remove-background";
+  const title =
+    mode === "webp"
+      ? "Convert to WebP"
+      : mode === "upscale"
+        ? "Upscale Images"
+        : mode === "remove-background"
+          ? "Remove Backgrounds"
+          : "Compress Images";
   Dialog.confirm({
-    title: "Compress Images",
+    title,
     description:
-      "This replaces the selected image files and regenerates their thumbnails and metadata. You can undo the completed batch.",
-    confirmLabel: "Compress",
+      mode === "webp"
+        ? "This replaces selected image files with WebP files and regenerates their thumbnails and metadata. You can undo the completed batch."
+        : editing
+          ? "Pond records this replacement in Undo history. Applying replaces selected files and regenerates their thumbnails and metadata."
+          : "This replaces the selected image files and regenerates their thumbnails and metadata. You can undo the completed batch.",
+    confirmLabel: mode === "webp" ? "Convert" : editing ? "Apply" : "Compress",
     onConfirm: async () => {
       const job = await window.pond.query("conversion.compress", {
         ids,
@@ -95,6 +117,7 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
   const { ids, hasFiles, fileIndex, isWebp } = context;
   return [
     {
+      id: "export-files",
       label: "Export Files",
       icon: glyph(IconFileExportOutline18),
       keywords: "files",
@@ -105,6 +128,7 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
       },
     },
     {
+      id: "export-converted",
       label: "Export Converted Files",
       icon: glyph(IconConversionOutline18),
       hidden: !hasFiles,
@@ -113,16 +137,42 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
     {
       type: "submenu",
       label: "Compress Images",
-      icon: glyph(IconConversionOutline18),
+      icon: glyph(IconFileZipOutline18),
       hidden: compressibleImageCount(context) === 0,
       items: [
         {
+          label: "Convert to WebP",
+          icon: glyph(IconImageOutline18),
+          onClick: () => compressImages(ids, fileIndex ?? 0, "webp"),
+        },
+        {
           label: "Lossless",
+          icon: glyph(IconShieldCheckOutline18),
           onClick: () => compressImages(ids, fileIndex ?? 0, "lossless"),
         },
         {
           label: "Quality 85",
+          icon: glyph(IconGaugeOutline18),
           onClick: () => compressImages(ids, fileIndex ?? 0, "quality"),
+        },
+      ],
+    },
+    {
+      type: "submenu",
+      label: "Image Tools",
+      icon: glyph(IconImageSparkleOutline18),
+      hidden: compressibleImageCount(context) === 0,
+      items: [
+        {
+          label: "Remove Background",
+          icon: glyph(IconImageMinusOutline18),
+          onClick: () =>
+            compressImages(ids, fileIndex ?? 0, "remove-background"),
+        },
+        {
+          label: "Upscale 2×",
+          icon: glyph(IconImageUpscaleOutline18),
+          onClick: () => compressImages(ids, fileIndex ?? 0, "upscale"),
         },
       ],
     },
@@ -136,6 +186,7 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
     },
     {
       label: "Convert to PNG",
+      icon: glyph(IconImageBinaryOutline18),
       hidden: !isWebp,
       onClick: () => {
         void startWebpConvert(ids, fileIndex ?? 0, "png");
@@ -143,12 +194,14 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
     },
     {
       label: "Convert to JPG",
+      icon: glyph(IconPhotoOutline18),
       hidden: !isWebp,
       onClick: () => {
         void startWebpConvert(ids, fileIndex ?? 0, "jpeg");
       },
     },
     {
+      id: "export-eagle-package",
       label: "Export Eagle Package",
       icon: glyph(IconBoxArchiveOutline18),
       keywords: "eagle package",
@@ -171,48 +224,12 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
     },
     {
       label: "Export Pond Package",
-      icon: glyph(IconBoxArchiveOutline18),
+      icon: glyph(IconArchiveExportOutline18),
       keywords: "package",
       onClick: () => {
         void window.pond
           .query("saves.exportPackage", { ids })
           .then((result) => {
-            if (!result.ok && result.error === "password_required") {
-              Dialog.prompt({
-                title: "Protect Pond Package",
-                description:
-                  "Enter a password for this export. Pond will show a separate recovery key after export.",
-                inputType: "password",
-                autoComplete: "new-password",
-                confirmLabel: "Export",
-                onConfirm: async (password) => {
-                  if (password.length < 8)
-                    throw new Error("Use at least 8 characters.");
-                  const protectedResult = await window.pond.query(
-                    "saves.exportPackage",
-                    { ids, password },
-                  );
-                  if (!protectedResult.ok)
-                    throw new Error(
-                      protectedResult.error || "Couldn't export package.",
-                    );
-                  if (protectedResult.recoveryKey) {
-                    Dialog.confirm({
-                      title: "Package Recovery Key",
-                      description: protectedResult.recoveryKey,
-                      confirmLabel: "Copy Recovery Key",
-                      cancelLabel: "Done",
-                      onConfirm: async () => {
-                        await window.pond.query("clipboard.writeText", {
-                          text: protectedResult.recoveryKey ?? "",
-                        });
-                      },
-                    });
-                  }
-                },
-              });
-              return;
-            }
             if (!result.ok && result.error !== "canceled")
               notify({
                 id: "package-export",
@@ -224,10 +241,31 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
       },
     },
     {
+      id: "export-csv",
       label: "Export to CSV",
       icon: glyph(IconTableDownloadOutline18),
       keywords: "csv",
       onClick: () => void exportSelectionCsv(ids),
     },
   ];
+}
+
+const EXPORT_POPUP_IDS = new Set([
+  "export-files",
+  "export-converted",
+  "export-eagle-package",
+  "export-csv",
+]);
+
+export function buildExportPopupItems(
+  context: SaveMenuContext,
+): MenuItemSpec[] {
+  return buildExportItems(context).filter(
+    (item) =>
+      item.type !== "separator" &&
+      "id" in item &&
+      item.id !== undefined &&
+      EXPORT_POPUP_IDS.has(item.id) &&
+      !item.hidden,
+  );
 }

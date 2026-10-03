@@ -8,6 +8,7 @@ export type FolderTool = {
   kind: "tags" | "create" | "move";
   id: string;
   name: string;
+  ids?: string[];
 };
 export function FolderToolsDialog({
   tool,
@@ -21,7 +22,7 @@ export function FolderToolsDialog({
   const registry = useTags();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>(
-    tool.kind === "move" ? [tool.id] : [],
+    tool.kind === "move" ? (tool.ids ?? [tool.id]) : [],
   );
   const [inherited, setInherited] = useState<string[]>([]);
   const [names, setNames] = useState("");
@@ -302,9 +303,6 @@ export function FolderToolsDialog({
             )}
             {error ? <p role="alert">{error}</p> : null}
             <div className={styles.footer}>
-              <Button type="button" disabled={busy} onClick={onClose}>
-                Cancel
-              </Button>
               <Button
                 type="submit"
                 disabled={

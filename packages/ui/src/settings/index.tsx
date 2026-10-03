@@ -3,7 +3,6 @@ import { forwardRef } from "react";
 import styles from "./styles.module.css";
 
 interface PageProps extends React.ComponentPropsWithoutRef<"div"> {
-  width?: "narrow" | "medium" | "wide";
   inset?: number;
 }
 
@@ -11,13 +10,12 @@ interface PageStyle extends React.CSSProperties {
   "--settings-padding-inline-inset"?: string;
 }
 
-function Page({ className, width, inset, style, ...props }: PageProps) {
+function Page({ className, inset, style, ...props }: PageProps) {
   const pageStyle: PageStyle = { ...style };
   if (inset) pageStyle["--settings-padding-inline-inset"] = `${inset}px`;
   return (
     <div
       className={cn(styles.page, className)}
-      data-width={width}
       data-inset={inset}
       style={pageStyle}
       {...props}

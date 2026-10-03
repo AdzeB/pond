@@ -37,3 +37,23 @@ it("moves selected roots together while preserving selected descendants inside t
     "itself",
   );
 });
+
+it("reorders a selected batch before an existing sibling without reversing it", () => {
+  const rows = ["a", "b", "c", "d"].map((id, sortOrder) => ({
+    id,
+    parentId: null,
+    sortOrder,
+  }));
+  const patches = new Map(
+    planFolderBatchMove(rows, ["c", "d"], null, "a").map((row) => [
+      row.id,
+      row,
+    ]),
+  );
+  expect(
+    rows
+      .map((row) => patches.get(row.id) ?? row)
+      .toSorted((a, b) => a.sortOrder - b.sortOrder)
+      .map((row) => row.id),
+  ).toEqual(["c", "d", "a", "b"]);
+});

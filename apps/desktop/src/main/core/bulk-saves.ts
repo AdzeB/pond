@@ -45,6 +45,7 @@ export async function bulkEditSaves(
         id: saves.id,
         tags: saves.tags,
         rating: saves.rating,
+        notes: saves.notes,
         suggestedTags: saves.suggestedTags,
         deletedAt: saves.deletedAt,
       })
@@ -57,12 +58,22 @@ export async function bulkEditSaves(
       );
     for (const row of rows) {
       if (operation.kind === "tags" || operation.kind === "suggested-tags") {
-        const next = normalizeTagList([
-          ...row.tags,
-          ...(operation.kind === "tags"
-            ? operation.tags
-            : (row.suggestedTags ?? [])),
-        ]);
+        const removed = new Set(
+          operation.kind === "tags"
+            ? normalizeTagList(operation.tags).map((tag) => tag.toLowerCase())
+            : [],
+        );
+        const next =
+          operation.kind === "tags" && operation.mode === "remove"
+            ? row.tags.filter((tag) => !removed.has(tag.toLowerCase()))
+            : operation.kind === "tags" && operation.mode === "replace"
+              ? normalizeTagList(operation.tags)
+              : normalizeTagList([
+                  ...row.tags,
+                  ...(operation.kind === "tags"
+                    ? operation.tags
+                    : (row.suggestedTags ?? [])),
+                ]);
         if (JSON.stringify(next) !== JSON.stringify(row.tags))
           transactions.push({
             kind: "update",
@@ -70,6 +81,16 @@ export async function bulkEditSaves(
             id: row.id,
             before: { tags: row.tags },
             patch: { tags: next },
+            meta,
+          });
+      } else if (operation.kind === "notes") {
+        if (row.notes !== operation.notes)
+          transactions.push({
+            kind: "update",
+            model: "save",
+            id: row.id,
+            before: { notes: row.notes },
+            patch: { notes: operation.notes },
             meta,
           });
       } else if (operation.kind === "rating") {

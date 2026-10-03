@@ -95,7 +95,7 @@ export function ImageOverlay({
               className={styles.index}
               aria-label={
                 comment.text
-                  ? `Edit comment ${index + 1}: ${comment.text}`
+                  ? `Open comment ${index + 1}: ${comment.text}`
                   : `Comment ${index + 1}`
               }
               title={comment.text || undefined}

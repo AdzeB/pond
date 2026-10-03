@@ -1,8 +1,10 @@
 import type { RecentMenuEntry } from "../../shared/constants";
 import { buildEditSection } from "./edit-section";
 import { buildFileSection } from "./file-section";
+import { buildFindSection } from "./find-section";
 import { buildLibrarySection } from "./library-section";
 import { buildGoSection, buildHistorySection } from "./navigation-sections";
+import { buildOrganizeSection } from "./organize-section";
 import {
   buildApplicationSections,
   buildDeveloperSections,
@@ -24,6 +26,8 @@ export function buildAppMenuTemplate(
       ...buildApplicationSections(context, settingsItem),
       buildFileSection(context),
       buildEditSection(context, settingsItem),
+      buildFindSection(context),
+      buildOrganizeSection(context),
       buildViewSection(context),
       buildGoSection(context),
       buildHistorySection(context, recentEntries),

@@ -73,7 +73,7 @@
   padding: 12px;
   background: var(--ds-gray-1);
   border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-5);
+  box-shadow: var(--ds-shadow-modal);
 }
 
 .editor {

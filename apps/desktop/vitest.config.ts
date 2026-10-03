@@ -14,7 +14,6 @@ const rendererTypeScriptTests = [
   "src/renderer/src/features/saves/lib/selection.test.ts",
   "src/renderer/src/features/saves/lib/viewer-memory.test.ts",
   "src/renderer/src/features/saves/components/viewers/safe-web-viewer/sanitize.test.ts",
-  "src/renderer/src/features/saves/components/preview/preview.test.ts",
   "src/renderer/src/features/library/state/library-chrome.test.ts",
   "src/renderer/src/features/library/state/saved-views.test.ts",
   "src/renderer/src/features/library/state/view-store.test.ts",

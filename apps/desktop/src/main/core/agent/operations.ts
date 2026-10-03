@@ -1,11 +1,6 @@
 import type { JsonObject, JsonValue } from "@pond/schema/json";
 import { z } from "zod";
 import type { AgentOperationRequest } from "../../../shared/agent-operations";
-import { assertLibraryUnlocked } from "../security/app-lock-runtime";
-import {
-  folderSecurityStatus,
-  saveIsLocked,
-} from "../security/folder-passwords";
 import type { ToolSpec } from "./complete";
 
 export interface PondOperation {
@@ -44,12 +39,10 @@ export async function applyPondOperation(
   request: AgentOperationRequest,
   catalog = registered,
 ): Promise<JsonValue> {
-  assertLibraryUnlocked();
   if (catalog.libraryId() !== request.libraryId)
     throw new Error("The Library changed. Request this operation again.");
   const operation = findOperation(request.operation, catalog);
   operation.inputSchema.parse(request.arguments);
-  await assertUnlockedOperationTargets(request.operation, request.arguments);
   const result = await operation.execute(request.arguments);
   const failure = z
     .object({
@@ -65,43 +58,6 @@ export async function applyPondOperation(
         "The operation did not finish.",
     );
   return result;
-}
-
-const OperationTargetIdSchema = z.string().min(1);
-
-async function assertUnlockedOperationTargets(
-  operation: string,
-  args: JsonObject,
-): Promise<void> {
-  const saveIds = new Set<string>();
-  const folderIds = new Set<string>();
-  for (const [key, value] of Object.entries(args)) {
-    const values = Array.isArray(value) ? value : [value];
-    for (const candidate of values) {
-      const targetId = OperationTargetIdSchema.safeParse(candidate);
-      if (!targetId.success) continue;
-      if (
-        operation.startsWith("saves.") &&
-        ["id", "ids", "saveId", "saveIds"].includes(key)
-      ) {
-        saveIds.add(targetId.data);
-      }
-      if (["folderId", "folderIds", "destinationFolderId"].includes(key)) {
-        folderIds.add(targetId.data);
-      }
-      if (operation.startsWith("folders.") && ["id", "ids"].includes(key)) {
-        folderIds.add(targetId.data);
-      }
-    }
-  }
-  for (const id of saveIds) {
-    if (await saveIsLocked(id))
-      throw new Error("This Save is in a locked folder.");
-  }
-  for (const id of folderIds) {
-    if ((await folderSecurityStatus(id)).locked)
-      throw new Error("This folder is locked.");
-  }
 }
 
 const discoverInput = z.object({
@@ -160,7 +116,6 @@ export function pondOperationTools(
         "Find Pond capabilities for Saves, folders, tags, Smart Folders, imports, exports, conversion, downloads, sources, settings, storage, navigation, and more. Search by a short feature or action name; omit query to browse. Read the operation schema before calling it. Do not claim Pond cannot do something without checking here.",
       schema: discoverInput,
       execute: async (args) => {
-        assertLibraryUnlocked();
         input.signal.throwIfAborted();
         const { query, offset, limit } = discoverInput.parse(args);
         const terms = query.toLocaleLowerCase().split(/\s+/).filter(Boolean);
@@ -195,7 +150,6 @@ export function pondOperationTools(
         "Read the exact input schema and review requirement for a Pond operation. Use the app's real IDs and current values. For settings patches, read current preferences first and change only requested fields.",
       schema: describeInput,
       execute: async (args) => {
-        assertLibraryUnlocked();
         input.signal.throwIfAborted();
         const operation = findOperation(
           describeInput.parse(args).operation,
@@ -220,7 +174,6 @@ export function pondOperationTools(
         "Use a discovered Pond capability with arguments matching its schema. Reads and native UI flows run immediately. Changes are prepared for Apply in the chat; a pending review is not a completed operation. Never report success until the operation actually completes.",
       schema: runInput,
       execute: async (args) => {
-        assertLibraryUnlocked();
         input.signal.throwIfAborted();
         if (catalog.libraryId() !== origin)
           throw new Error("The Library changed. Start a new request.");
@@ -272,7 +225,6 @@ export function pondOperationTools(
         "Read the next character range of a large JSON result without rerunning its operation. Only the four most recent large results in this turn are retained. Prefer paginated queries for large libraries.",
       schema: resultInput,
       execute: async (args) => {
-        assertLibraryUnlocked();
         input.signal.throwIfAborted();
         if (catalog.libraryId() !== origin)
           throw new Error("The Library changed. Start a new request.");

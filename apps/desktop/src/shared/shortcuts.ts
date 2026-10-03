@@ -74,11 +74,6 @@ export const SHORTCUTS = {
     label: "Close Window",
     group: "Navigate",
   },
-  "app.lock": {
-    keys: "Mod+Alt+L",
-    label: "Lock Pond",
-    group: "Library",
-  },
 
   "view.zoom-in": { keys: "Mod+=", label: "Zoom In", group: "View" },
   "view.zoom-out": { keys: "Mod+-", label: "Zoom Out", group: "View" },
@@ -138,6 +133,18 @@ export const SHORTCUTS = {
     label: "Extend Selection Right",
     group: "Selection",
   },
+  "grid.up": { keys: "ArrowUp", label: "Save Above", group: "Selection" },
+  "grid.down": { keys: "ArrowDown", label: "Save Below", group: "Selection" },
+  "grid.extend-up": {
+    keys: "Shift+ArrowUp",
+    label: "Extend Selection Up",
+    group: "Selection",
+  },
+  "grid.extend-down": {
+    keys: "Shift+ArrowDown",
+    label: "Extend Selection Down",
+    group: "Selection",
+  },
   "grid.open": { keys: "Enter", label: "Open Save", group: "Selection" },
   "grid.preview": { keys: "Space", label: "Preview Save", group: "Selection" },
   "grid.select-all": {
@@ -181,8 +188,8 @@ export const SHORTCUTS = {
     group: "Saves",
   },
   "save.export": { keys: "Mod+E", label: "Export", group: "Saves" },
-  "save.refresh": { keys: "R", label: "Refresh Details", group: "Saves" },
-  "save.add-tag": { keys: "A", label: "Add Tag", group: "Saves" },
+  "save.refresh": { keys: "R", label: "Refresh from Source", group: "Saves" },
+  "save.add-tag": { keys: "A", label: "Add Tags", group: "Saves" },
   "save.rate-0": { keys: "Alt+0", label: "Clear Rating", group: "Saves" },
   "save.rate-1": { keys: "Alt+1", label: "Rate 1 Star", group: "Saves" },
   "save.rate-2": { keys: "Alt+2", label: "Rate 2 Stars", group: "Saves" },
@@ -220,7 +227,11 @@ export const SHORTCUTS = {
     group: "Saves",
   },
   "save.rename": { keys: "N", label: "Rename", group: "Saves" },
-  "save.open-url": { keys: "U", label: "Open Original URL", group: "Saves" },
+  "save.open-url": {
+    keys: "U",
+    label: "Open Original in Browser",
+    group: "Saves",
+  },
   "save.reveal": { keys: "F", label: "Reveal in Finder", group: "Saves" },
   "save.trash": { keys: "Backspace", label: "Move to Trash", group: "Saves" },
   "save.restore": {
@@ -341,6 +352,11 @@ export const SHORTCUTS = {
   "save.assign-folders": {
     keys: "Alt+F",
     label: "Assign Folders",
+    group: "Saves",
+  },
+  "save.add-to-last-folder": {
+    keys: "Shift+D",
+    label: "Add to Last Used Folder",
     group: "Saves",
   },
 

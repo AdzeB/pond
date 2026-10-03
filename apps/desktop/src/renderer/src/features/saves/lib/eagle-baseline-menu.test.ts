@@ -155,7 +155,7 @@ describe("Eagle baseline save menu", () => {
     expect(top).not.toContain("Plugin");
   });
 
-  it("lists apps alongside the other opening actions", () => {
+  it("keeps opening actions flat and apps in Open With", () => {
     const items = buildSaveMenu(fileSave(), {
       clipboardEmpty: true,
       openWithApps: [
@@ -167,19 +167,17 @@ describe("Eagle baseline save menu", () => {
         },
       ],
     });
-    const openWith = items.find(
-      (item) => item.type === "submenu" && item.label === "Open",
-    );
-    expect(
-      openWith && "items" in openWith ? labels(openWith.items) : [],
-    ).toEqual(
+    const openWith = findSubmenu(items, "Open With");
+    expect(openWith ? labels(openWith.items) : []).toEqual([
+      "Preview.app (Default)",
+    ]);
+    expect(labels(items)).toEqual(
       expect.arrayContaining([
-        "Preview.app (Default)",
         "Open with Default App",
-        "Open Original URL",
+        "Open Original in Browser",
+        "Open With",
       ]),
     );
-    expect(labels(items)).not.toContain("Open With");
   });
 
   it("shows Combine Images when two PNG saves are selected", () => {
@@ -187,6 +185,13 @@ describe("Eagle baseline save menu", () => {
       clipboardEmpty: true,
     });
     expect(labels(items)).toContain("Combine Images");
+  });
+
+  it("keeps the selected save count in the new-folder action", () => {
+    const items = buildSaveMenu([imageSave("one"), imageSave("two")], {
+      clipboardEmpty: true,
+    });
+    expect(labels(items)).toContain("New Folder with 2 Saves");
   });
 
   it("hides Combine Images for a single file save", () => {
@@ -268,24 +273,24 @@ describe("Eagle baseline save menu", () => {
     expect(labels(items)).not.toContain("Reset Loop Range");
   });
 
-  it("exposes Set as GIF Thumbnail on an opened GIF", () => {
+  it("exposes Set Current Frame as Thumbnail on an opened GIF", () => {
     const items = buildSaveMenu(gifSave(), {
       clipboardEmpty: true,
       opened: true,
     });
-    expect(labels(items)).toContain("Set as GIF Thumbnail");
+    expect(labels(items)).toContain("Set Current Frame as Thumbnail");
   });
 
-  it("hides Set as GIF Thumbnail in the gallery", () => {
+  it("hides Set Current Frame as Thumbnail in the gallery", () => {
     expect(
       labels(buildSaveMenu(gifSave(), { clipboardEmpty: true })),
-    ).not.toContain("Set as GIF Thumbnail");
+    ).not.toContain("Set Current Frame as Thumbnail");
   });
 
   it("exposes Load Subtitles on a video save", () => {
-    expect(
-      labels(buildSaveMenu(videoSave(), { clipboardEmpty: true })),
-    ).toContain("Load Subtitles");
+    const video = labels(buildSaveMenu(videoSave(), { clipboardEmpty: true }));
+    expect(video).toContain("Load Subtitles");
+    expect(video).toContain("Refresh Video Poster");
   });
 
   it("hides Load Subtitles on a still image", () => {
@@ -294,15 +299,37 @@ describe("Eagle baseline save menu", () => {
     ).not.toContain("Load Subtitles");
   });
 
-  it("exposes Show Navigator on an opened image", () => {
-    expect(
-      labels(
-        buildSaveMenu(imageSave("still"), {
-          clipboardEmpty: true,
-          opened: true,
-        }),
+  it("uses outcome-led labels for image and source actions", () => {
+    const items = labels(
+      buildSaveMenu(
+        { ...imageSave("web"), source: "web" },
+        { clipboardEmpty: true },
       ),
-    ).toContain("Show Navigator");
+    );
+
+    expect(items).toEqual(
+      expect.arrayContaining([
+        "Copy as Base64",
+        "Find Similar Saves",
+        "Re-analyze Colors",
+        "Set Thumbnail from File",
+        "Refresh from Source",
+        "Archive Site",
+      ]),
+    );
+  });
+
+  it("keeps Navigator and Grayscale in the opened image menu", () => {
+    const items = buildSaveMenu(imageSave("still"), {
+      clipboardEmpty: true,
+      opened: true,
+    });
+    expect(labels(items)).toEqual(
+      expect.arrayContaining(["Navigator", "Grayscale"]),
+    );
+    expect(
+      items.find((item) => "label" in item && item.label === "Navigator"),
+    ).toMatchObject({ type: "checkbox", indicator: "check" });
   });
 
   it("exposes Convert to PNG and Convert to JPG on a WebP save", () => {

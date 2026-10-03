@@ -30,7 +30,23 @@ export function TagsSection() {
 
   const { creating, startCreate, cancelCreate, saveCreate } = useTagCreation();
   const clearRef = useRef<() => void>(() => {});
-  const ctxValue = useMemo(() => ({ groups: groupOptions }), [groupOptions]);
+  const ctxValue = useMemo(
+    () => ({
+      groups: groupOptions,
+      tags: [
+        ...new Set(
+          data.flatMap((row) =>
+            row.kind === "tag"
+              ? [row.tag.name]
+              : row.children.flatMap((child) =>
+                  child.kind === "tag" ? [child.tag.name] : [],
+                ),
+          ),
+        ),
+      ],
+    }),
+    [data, groupOptions],
+  );
   const onSelectionChange = useCallback(() => {}, []);
   const reduceMotion = useReducedMotion();
   const motionTransition = reduceMotion ? { duration: 0 } : gentleSpring;

@@ -1,4 +1,6 @@
+import { IconArrowDownToLineOutline18 } from "@pond/icons/outline/18";
 import { clsx as cn } from "clsx";
+import { useReducedMotionConfig } from "motion/react";
 import {
   type ComponentPropsWithoutRef,
   forwardRef,
@@ -41,6 +43,7 @@ function Messages({
 }
 
 function ScrollToLatest({ viewport }: { viewport: HTMLElement | null }) {
+  const reduceMotion = useReducedMotionConfig();
   const [clipped, setClipped] = useState(false);
   useEffect(() => {
     if (!viewport) return;
@@ -62,13 +65,19 @@ function ScrollToLatest({ viewport }: { viewport: HTMLElement | null }) {
   return (
     <div className={styles["scroll-action"]}>
       <Button
+        aria-label="Read latest response"
+        icon
+        rounding="pill"
         size="xs"
         variant="secondary"
         onClick={() =>
-          viewport?.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" })
+          viewport?.scrollTo({
+            top: viewport.scrollHeight,
+            behavior: reduceMotion ? "instant" : "smooth",
+          })
         }
       >
-        Latest Message
+        <IconArrowDownToLineOutline18 aria-hidden="true" />
       </Button>
     </div>
   );

@@ -1,18 +1,22 @@
 import {
   IconClone2Outline18,
+  IconColorPaletteOutline18,
   IconMagnifierOutline18,
 } from "@pond/icons/outline/18";
 import { Menu, type MenuItemSpec } from "@pond/ui";
 import { useEffect, useState } from "react";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
+import { pool } from "@/features/saves/state/pool";
 import { SpecMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
 import { colorCopyFormats } from "@/shared/lib/color";
 import styles from "./styles.module.css";
 
 const COPIED_HOLD_MS = 1200;
 
-function buildColorSwatchMenu(
+export function buildColorSwatchMenu(
   color: string,
+  primary: boolean,
+  setPrimary: (primary: boolean) => void,
   copyValue: (value: string) => void,
 ): MenuItemSpec[] {
   const formats = colorCopyFormats(color);
@@ -23,6 +27,14 @@ function buildColorSwatchMenu(
       icon: <IconMagnifierOutline18 />,
       keywords: "color similar",
       onClick: () => saveLibraryBridge.findSimilarColor(color),
+    },
+    {
+      type: "checkbox",
+      label: "Set Primary Color",
+      icon: <IconColorPaletteOutline18 />,
+      indicator: "check",
+      checked: primary,
+      onCheckedChange: setPrimary,
     },
     { type: "separator" },
     ...formats.primary.map((format) => ({
@@ -39,8 +51,17 @@ function buildColorSwatchMenu(
   ];
 }
 
-export function ColorSwatch({ color }: { color: string }) {
+export function ColorSwatch({
+  color,
+  primaryColor,
+  saveId,
+}: {
+  color: string;
+  primaryColor: string | null;
+  saveId: string;
+}) {
   const [copied, setCopied] = useState(false);
+  const primary = color.toLowerCase() === primaryColor?.toLowerCase();
 
   useEffect(() => {
     if (!copied) return;
@@ -55,11 +76,25 @@ export function ColorSwatch({ color }: { color: string }) {
     );
     if (written) setCopied(true);
   };
+  const setPrimary = async (checked: boolean): Promise<void> => {
+    const next = checked ? color : null;
+    const result = await window.pond.query("saves.setPrimaryColor", {
+      id: saveId,
+      color: next,
+    });
+    const save = pool.get(saveId);
+    if (result.ok && save) pool.upsert({ ...save, primaryColor: next });
+  };
 
   return (
     <SpecMenu
       buildItems={() =>
-        buildColorSwatchMenu(color, (value) => void copyValue(value))
+        buildColorSwatchMenu(
+          color,
+          primary,
+          (checked) => void setPrimary(checked),
+          (value) => void copyValue(value),
+        )
       }
     >
       <Menu.Trigger

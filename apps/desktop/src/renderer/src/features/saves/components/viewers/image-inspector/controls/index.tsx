@@ -1,21 +1,27 @@
 import {
-  IconContrastFill18,
-  IconCropFill18,
-  IconExpandFill18,
-  IconFlipHorizontal2Fill18,
-  IconMediaFastBackwardsFill18,
-  IconMediaFastForwardFill18,
-  IconMediaPauseFill18,
-  IconMediaPlayFill18,
-  IconPencilFill18,
-  IconRefreshFill18,
-  IconRotateImageClockwiseFill18,
-} from "@pond/icons/fill/18";
-import { IconSizeLgOutline18 } from "@pond/icons/outline/18";
-import { Button, stepPlaybackRate, Tray } from "@pond/ui";
+  IconAnimationFramesOutline18,
+  IconChatBubbleOutline18,
+  IconCropOutline18,
+  IconExpandOutline18,
+  IconMediaFastBackwardsOutline18,
+  IconMediaFastForwardOutline18,
+  IconMediaPauseOutline18,
+  IconMediaPlayOutline18,
+  IconMirrorObjXOutline18,
+  IconRefreshOutline18,
+  IconRotateImageClockwiseOutline18,
+  IconSizeLgOutline18,
+} from "@pond/icons/outline/18";
+import { Button, stepPlaybackRate } from "@pond/ui";
 import { useHotkey } from "@tanstack/react-hotkeys";
+import type { ReactNode } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+import {
+  type ViewerNavigation,
+  ViewerNavigationControls,
+  ViewerToolbarGroups,
+} from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import type { useGifPlayer } from "@/features/saves/hooks/use-gif-player";
 import { clampGifFrame } from "@/features/saves/lib/gif-loop";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys";
@@ -31,25 +37,27 @@ interface HudProps {
   active: boolean;
   busy: boolean;
   canCrop: boolean;
-  grayscale: boolean;
+  itemIndex: number;
+  itemTotal: number;
+  isGif?: boolean;
+  gifFramesOpen?: boolean;
   mode: InspectorMode;
-  transformMode: "preview" | "file";
+  edits?: "full" | "none";
+  endActions?: ReactNode;
+  slideNavigation?: ViewerNavigation;
   onActualSize: () => void;
   onApplyCrop: () => void;
   onCancelCrop: () => void;
-  onDetach: () => void;
   onFit: () => void;
   onFlip: () => void;
-  onReset: () => void;
   onRotate: () => void;
-  onPresent: () => void;
   onSaveCrop: () => void;
   onToggleComment: () => void;
   onToggleCrop: () => void;
-  onToggleGrayscale: () => void;
-  onTransformModeChange: (mode: "preview" | "file") => void;
+  onToggleGifFrames?: () => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
+  onZoomRatio: (ratio: number) => void;
 }
 
 function Hud({
@@ -57,25 +65,27 @@ function Hud({
   active,
   busy,
   canCrop,
-  grayscale,
+  itemIndex,
+  itemTotal,
+  isGif = false,
+  gifFramesOpen = false,
   mode,
-  transformMode,
+  edits = "full",
+  endActions,
+  slideNavigation,
   onActualSize,
   onApplyCrop,
   onCancelCrop,
-  onDetach,
   onFit,
   onFlip,
-  onReset,
   onRotate,
-  onPresent,
   onSaveCrop,
   onToggleComment,
   onToggleCrop,
-  onToggleGrayscale,
-  onTransformModeChange,
+  onToggleGifFrames,
   onZoomIn,
   onZoomOut,
+  onZoomRatio,
 }: HudProps) {
   const shortcuts = useShortcutBindings();
   useHotkey(bindingKeys(shortcuts, "viewer.comment"), onToggleComment, {
@@ -92,128 +102,136 @@ function Hud({
   });
 
   if (!active) return null;
-  if (mode === "crop")
+  if (mode === "crop" && edits === "full")
     return (
       <ChromePortal slot="top">
-        <ViewerHud.Tools
-          tooltipSide="bottom"
-          className={styles.crop}
-          role="toolbar"
-          aria-label="Crop"
-        >
-          <span className={styles.hint}>Select an area to crop</span>
-          <Button
-            size="sm"
-            variant="primary"
-            disabled={busy || !canCrop}
-            loading={busy}
-            onClick={onApplyCrop}
-          >
-            Apply Crop
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={busy || !canCrop}
-            onClick={onSaveCrop}
-          >
-            Save as New Image
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={busy}
-            onClick={onCancelCrop}
-          >
-            Cancel
-          </Button>
-        </ViewerHud.Tools>
+        <ViewerHud.Bar
+          label="Crop"
+          center={
+            <div className={styles.crop}>
+              <span className={styles.hint}>Select an area to crop</span>
+              <Button
+                size="sm"
+                variant="primary"
+                disabled={busy || !canCrop}
+                loading={busy}
+                onClick={onApplyCrop}
+              >
+                Apply Crop
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={busy || !canCrop}
+                onClick={onSaveCrop}
+              >
+                Save as New Image
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={busy}
+                onClick={onCancelCrop}
+              >
+                Cancel
+              </Button>
+            </div>
+          }
+        />
       </ChromePortal>
     );
 
   return (
     <ChromePortal slot="top">
-      <ViewerHud.Tools
-        tooltipSide="bottom"
-        className={styles.toolbar}
-        role="toolbar"
-        aria-label="Image"
-      >
-        <div className={styles.start}>
-          <Button
-            size="sm"
-            variant={transformMode === "preview" ? "secondary" : "ghost"}
-            aria-pressed={transformMode === "preview"}
-            onClick={() => onTransformModeChange("preview")}
-          >
-            Preview Only
-          </Button>
-          <Button
-            size="sm"
-            variant={transformMode === "file" ? "secondary" : "ghost"}
-            aria-pressed={transformMode === "file"}
-            onClick={() => onTransformModeChange("file")}
-          >
-            Apply to File
-          </Button>
-          <Tray.Separator />
-          <ViewerHud.Tool label="Crop" onClick={onToggleCrop}>
-            <IconCropFill18 />
-          </ViewerHud.Tool>
-          <ViewerHud.Tool
-            label="Comment"
-            shortcut={<ShortcutKeys id="viewer.comment" />}
-            pressed={mode === "comment"}
-            onClick={onToggleComment}
-          >
-            <IconPencilFill18 />
-          </ViewerHud.Tool>
-          <Tray.Separator />
-          <ViewerHud.Tool label="Rotate" disabled={busy} onClick={onRotate}>
-            <IconRotateImageClockwiseFill18 />
-          </ViewerHud.Tool>
-          <ViewerHud.Tool label="Flip" disabled={busy} onClick={onFlip}>
-            <IconFlipHorizontal2Fill18 />
-          </ViewerHud.Tool>
-          <ViewerHud.Tool
-            label="Grayscale"
-            pressed={grayscale}
-            onClick={onToggleGrayscale}
-          >
-            <IconContrastFill18 />
-          </ViewerHud.Tool>
-        </div>
-        <div className={styles.center}>
-          <ZoomPill actual={actual} onOut={onZoomOut} onIn={onZoomIn} />
-        </div>
-        <div className={styles.end}>
-          <Button size="sm" variant="ghost" onClick={onPresent}>
-            Present
-          </Button>
-          <Button size="sm" variant="ghost" onClick={onDetach}>
-            Detach
-          </Button>
-          <Tray.Separator />
-          <ViewerHud.Tool
-            label="Actual Size"
-            shortcut={<ShortcutKeys id="viewer.actual-size" />}
-            onClick={onActualSize}
-          >
-            <IconSizeLgOutline18 />
-          </ViewerHud.Tool>
-          <ViewerHud.Tool
-            label="Fit"
-            shortcut={<ShortcutKeys id="viewer.zoom-fit" />}
-            onClick={onFit}
-          >
-            <IconExpandFill18 />
-          </ViewerHud.Tool>
-          <Tray.Separator />
-          <ViewerHud.Tool label="Reset" disabled={busy} onClick={onReset}>
-            <IconRefreshFill18 />
-          </ViewerHud.Tool>
-        </div>
-      </ViewerHud.Tools>
+      <ViewerHud.Bar
+        label="Image"
+        collapseCenter
+        start={
+          itemIndex >= 0 && itemTotal > 0 ? (
+            <ViewerHud.Scale>
+              {itemIndex + 1} / {itemTotal}
+            </ViewerHud.Scale>
+          ) : null
+        }
+        center={
+          <ZoomPill
+            actual={actual}
+            onOut={onZoomOut}
+            onIn={onZoomIn}
+            onRatio={onZoomRatio}
+          />
+        }
+        end={
+          <ViewerToolbarGroups
+            actions={
+              <>
+                <ViewerHud.Tool
+                  label="Comment"
+                  shortcut={<ShortcutKeys id="viewer.comment" />}
+                  pressed={mode === "comment"}
+                  onClick={onToggleComment}
+                >
+                  <IconChatBubbleOutline18 />
+                </ViewerHud.Tool>
+                {endActions}
+              </>
+            }
+            edits={
+              edits === "full" ? (
+                <>
+                  <ViewerHud.Tool label="Flip" disabled={busy} onClick={onFlip}>
+                    <IconMirrorObjXOutline18 />
+                  </ViewerHud.Tool>
+                  <ViewerHud.Tool
+                    label="Rotate"
+                    disabled={busy}
+                    onClick={onRotate}
+                  >
+                    <IconRotateImageClockwiseOutline18 />
+                  </ViewerHud.Tool>
+                  <ViewerHud.Tool label="Crop" onClick={onToggleCrop}>
+                    <IconCropOutline18 />
+                  </ViewerHud.Tool>
+                </>
+              ) : null
+            }
+            view={
+              <>
+                <ViewerHud.Tool
+                  label="Actual Size"
+                  shortcut={<ShortcutKeys id="viewer.actual-size" />}
+                  onClick={onActualSize}
+                >
+                  <IconSizeLgOutline18 />
+                </ViewerHud.Tool>
+                <ViewerHud.Tool
+                  label="Fit to Window"
+                  shortcut={<ShortcutKeys id="viewer.zoom-fit" />}
+                  onClick={onFit}
+                >
+                  <IconExpandOutline18 />
+                </ViewerHud.Tool>
+                {isGif && onToggleGifFrames ? (
+                  <ViewerHud.Tool
+                    label="GIF Frames"
+                    pressed={gifFramesOpen}
+                    onClick={onToggleGifFrames}
+                  >
+                    <IconAnimationFramesOutline18 />
+                  </ViewerHud.Tool>
+                ) : null}
+              </>
+            }
+            navigation={
+              slideNavigation && slideNavigation.count > 1 ? (
+                <div className={styles.slideNavigation}>
+                  <ViewerNavigationControls navigation={slideNavigation} />
+                </div>
+              ) : null
+            }
+          />
+        }
+      />
     </ChromePortal>
   );
 }
@@ -282,14 +300,18 @@ function Gif({ active, gif, mode }: GifProps) {
           label={gif.playing ? "Pause GIF" : "Play GIF"}
           onClick={gif.toggle}
         >
-          {gif.playing ? <IconMediaPauseFill18 /> : <IconMediaPlayFill18 />}
+          {gif.playing ? (
+            <IconMediaPauseOutline18 />
+          ) : (
+            <IconMediaPlayOutline18 />
+          )}
         </ViewerHud.Tool>
         <ViewerHud.Tool
           label="Previous Frame"
           disabled={gif.frameIndex <= loopStart}
           onClick={() => gif.seek(gif.frameIndex - 1)}
         >
-          <IconMediaFastBackwardsFill18 />
+          <IconMediaFastBackwardsOutline18 />
         </ViewerHud.Tool>
         <ViewerHud.Scale>
           {gif.frameIndex + 1} / {gif.frameCount} · {gif.rate}×
@@ -299,21 +321,20 @@ function Gif({ active, gif, mode }: GifProps) {
           disabled={gif.frameIndex >= loopEnd}
           onClick={() => gif.seek(gif.frameIndex + 1)}
         >
-          <IconMediaFastForwardFill18 />
+          <IconMediaFastForwardOutline18 />
         </ViewerHud.Tool>
-        <Tray.Separator />
         <ViewerHud.Tool label="Set Loop Start" onClick={gif.setLoopStart}>
-          <IconMediaFastBackwardsFill18 />
+          <IconMediaFastBackwardsOutline18 />
         </ViewerHud.Tool>
         <ViewerHud.Tool label="Set Loop End" onClick={gif.setLoopEnd}>
-          <IconMediaFastForwardFill18 />
+          <IconMediaFastForwardOutline18 />
         </ViewerHud.Tool>
         <ViewerHud.Tool
           label="Reset Loop Range"
           disabled={!gif.loop}
           onClick={gif.resetLoop}
         >
-          <IconRefreshFill18 />
+          <IconRefreshOutline18 />
         </ViewerHud.Tool>
       </ViewerHud.Tools>
     </ChromePortal>

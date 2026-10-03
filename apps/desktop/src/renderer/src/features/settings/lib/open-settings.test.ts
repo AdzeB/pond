@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_SETTINGS_SECTION,
   rememberSettingsSection,
@@ -43,8 +43,11 @@ describe("settings hrefs", () => {
       "/settings/backups#setting-backups-backup",
     );
     expect(settingsHref("storage", "setting-storage-watched-folder")).toBe(
-      "/settings/harvesting#setting-harvesting-watched-folder",
+      "/settings/harvesting",
     );
+    expect(
+      settingsHref("harvesting", "setting-harvesting-watched-folder"),
+    ).toBe("/settings/harvesting");
     expect(settingsHref("search", "setting-search-enableClip")).toBe(
       "/settings/processing#setting-processing-enableClip",
     );
@@ -75,8 +78,28 @@ describe("settings hrefs", () => {
   it("reopens the last section when none is asked for", () => {
     settingsHref("search");
     expect(settingsHref()).toBe("/settings/search");
-    expect(settingsHref(undefined, "setting-search-nlCompiler")).toBe(
-      "/settings/search#setting-search-nlCompiler",
+    expect(settingsHref(undefined, "setting-search-semanticSearch")).toBe(
+      "/settings/search#setting-search-semanticSearch",
     );
   });
+});
+
+it("opens a native Settings window with the canonical location instead of changing the Library route", async () => {
+  const { openSettings } = await import("./open-settings");
+  const requests: { section?: string; hash?: string }[] = [];
+  vi.stubGlobal("window", {
+    pond: {
+      async openSettingsWindow(location: { section?: string; hash?: string }) {
+        requests.push(location);
+      },
+    },
+  });
+  try {
+    openSettings("search", "setting-search-enableClip");
+    expect(requests).toEqual([
+      { section: "processing", hash: "setting-processing-enableClip" },
+    ]);
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });

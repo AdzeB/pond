@@ -4,6 +4,7 @@ import { sourceLabel } from "@pond/schema/sources";
 import log from "electron-log/main.js";
 import { type EnqueueItem, enqueue } from "../pipeline/enqueue";
 import { mergeListKindsOntoExisting } from "../pipeline/list-kinds";
+import { createQueueGeneration } from "../pipeline/queue-generations";
 import {
   harvestInstagramLikedList,
   harvestSourceList,
@@ -238,13 +239,18 @@ export async function syncListSource(
     progress: { current: 0, total: fresh.length },
   });
 
+  const generationId = await createQueueGeneration({
+    kind: "sync",
+    source,
+    scope: { accountId, total: fresh.length },
+  });
   const bulk = await enqueue(
     fresh.map((entry) => {
       const item: EnqueueItem = { url: entry.url };
       if (entry.listKinds) item.listKinds = entry.listKinds;
       return item;
     }),
-    { trigger: `sync:${source}`, accountId },
+    { trigger: `sync:${source}`, accountId, generationId },
   );
   const succeeded = bulk.created + bulk.existing;
   ev.enqueue = { succeeded, failed: bulk.failed };

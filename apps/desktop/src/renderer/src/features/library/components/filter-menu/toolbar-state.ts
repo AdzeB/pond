@@ -132,9 +132,15 @@ const store = new Store({
 });
 
 export const filterToolbar = {
+  isOpen(): boolean {
+    return store.state.open;
+  },
   setOpen(open: boolean): void {
     writeViewPref("filters", open ? "1" : "0");
     store.setState((state) => ({ ...state, open }));
+  },
+  toggle(): void {
+    filterToolbar.setOpen(!store.state.open);
   },
   setPinned(field: FieldId, pinned: boolean): void {
     const fields = store.state.pinned.filter((value) => value !== field);

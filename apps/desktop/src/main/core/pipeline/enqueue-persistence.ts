@@ -137,7 +137,7 @@ export async function persistMergedListKinds(
 
 export function createEnqueueBundle(
   candidate: EnqueueCandidate,
-  opts: Pick<EnqueueOptions, "accountId" | "trigger">,
+  opts: Pick<EnqueueOptions, "accountId" | "generationId" | "trigger">,
   now: Date,
   actorReason: string,
 ): EnqueueBundle {
@@ -163,7 +163,14 @@ export function createEnqueueBundle(
   }
   return {
     save,
-    tasks: createPendingTasks(id, candidate.source, now, opts.trigger),
+    tasks: createPendingTasks(
+      id,
+      candidate.source,
+      now,
+      opts.trigger,
+      ulid,
+      opts.generationId,
+    ),
     action: {
       modelName: "save",
       modelId: id,

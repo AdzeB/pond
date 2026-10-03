@@ -3,7 +3,7 @@
   display: block;
   margin: auto;
   border-radius: var(--ds-radius-xs);
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-sm);
 }
 
 .poster {
@@ -13,6 +13,10 @@
   height: 100%;
   object-fit: cover;
   opacity: 0;
+
+  &[data-fit="fit"] {
+    object-fit: contain;
+  }
 }
 
 .poster[data-loaded="true"] {
@@ -28,6 +32,10 @@
   object-fit: contain;
   opacity: 0;
   transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &[data-fit="fill"] {
+    object-fit: cover;
+  }
 }
 
 .media[data-active][data-ready],

@@ -12,7 +12,7 @@ import { extractPalette } from "../lib/palette";
 import { resolvePaths } from "../paths";
 import { executeBatch } from "./executor";
 import { renderThumbnailPng } from "./save-thumbnail-file";
-import { readLibraryMedia } from "./security/library-media-storage";
+import { readLibraryMedia } from "./storage/library-media-storage";
 import { recordBatchForUndo } from "./undo";
 
 type CompressionSave = Pick<
@@ -114,12 +114,20 @@ export async function compressExistingImages(
       input.mode,
       input.quality,
     );
-    if (!compressed || compressed.length >= candidate.source.length) {
+    if (
+      !compressed ||
+      (!["webp", "upscale", "remove-background"].includes(input.mode) &&
+        compressed.length >= candidate.source.length)
+    ) {
       skipped += 1;
       input.onProgress?.(index + 1, ids.length);
       continue;
     }
-    const transaction = await compressionTransaction(candidate, compressed);
+    const transaction = await compressionTransaction(
+      candidate,
+      compressed,
+      input.mode,
+    );
     transactions.push(transaction);
     bytesBefore += candidate.source.length;
     bytesAfter += compressed.length;
@@ -146,6 +154,51 @@ export async function encodeCompressedImage(
   quality: number,
 ): Promise<Buffer | null> {
   const extension = extname(path).slice(1).toLowerCase();
+  if (mode === "upscale") {
+    const metadata = await sharp(source).metadata();
+    if (!metadata.width || !metadata.height) return null;
+    return sharp(source)
+      .resize(metadata.width * 2, metadata.height * 2, {
+        fit: "fill",
+        kernel: sharp.kernel.lanczos3,
+      })
+      .toFormat(extension === "jpg" || extension === "jpeg" ? "jpeg" : "png", {
+        quality,
+      })
+      .toBuffer();
+  }
+  if (mode === "remove-background") {
+    const decoded = await sharp(source).ensureAlpha().raw().toBuffer({
+      resolveWithObject: true,
+    });
+    const pixels = decoded.data;
+    const targetRed = pixels[0] ?? 255;
+    const targetGreen = pixels[1] ?? 255;
+    const targetBlue = pixels[2] ?? 255;
+    for (let offset = 0; offset < pixels.length; offset += 4) {
+      const distance = Math.hypot(
+        (pixels[offset] ?? 0) - targetRed,
+        (pixels[offset + 1] ?? 0) - targetGreen,
+        (pixels[offset + 2] ?? 0) - targetBlue,
+      );
+      if (distance < 36) pixels[offset + 3] = 0;
+      else if (distance < 72)
+        pixels[offset + 3] = Math.round(((distance - 36) / 36) * 255);
+    }
+    return sharp(pixels, { raw: decoded.info })
+      .webp({ lossless: true })
+      .toBuffer();
+  }
+  if (mode === "webp") {
+    return sharp(source, {
+      animated: extension === "gif" || extension === "webp",
+      failOn: "warning",
+      limitInputPixels: 100_000_000,
+    })
+      .rotate()
+      .webp({ quality, effort: 6 })
+      .toBuffer();
+  }
   if (extension === "svg") {
     if (mode !== "lossless") return null;
     return optimizeSvg(source);
@@ -199,12 +252,28 @@ export async function encodeCompressedImage(
 async function compressionTransaction(
   candidate: CompressionCandidate,
   compressed: Buffer,
+  mode: ImageCompressionRequest["mode"],
 ): Promise<Transaction> {
   const metadata = await sharp(compressed, {
     animated: candidate.file.path.toLowerCase().endsWith(".gif"),
   }).metadata();
+  const outputPath =
+    mode === "webp" || mode === "remove-background"
+      ? `${candidate.file.path.replace(/\.[^.]+$/, "")}.webp`
+      : candidate.file.path;
+  if (
+    outputPath !== candidate.file.path &&
+    (candidate.save.files ?? []).some((file) => file.path === outputPath)
+  ) {
+    throw new Error(`A file named ${outputPath} already exists in this save.`);
+  }
   const updatedFile: SaveFile = {
     ...candidate.file,
+    path: outputPath,
+    mimeType:
+      mode === "webp" || mode === "remove-background"
+        ? "image/webp"
+        : candidate.file.mimeType,
     sha256: digest(compressed),
     size: compressed.length,
     width: metadata.width ?? candidate.file.width,
@@ -213,9 +282,7 @@ async function compressionTransaction(
   const files = (candidate.save.files ?? []).map((file) =>
     file.path === candidate.file.path ? updatedFile : file,
   );
-  const writes: TxSaveFile[] = [
-    { filename: candidate.file.path, bytes: compressed },
-  ];
+  const writes: TxSaveFile[] = [{ filename: outputPath, bytes: compressed }];
   const beforeFiles: TxSaveFile[] = [
     { filename: candidate.file.path, bytes: candidate.source },
   ];
@@ -270,11 +337,17 @@ async function compressionTransaction(
       blurhash: candidate.save.blurhash,
     },
     patch,
+    fileRenames:
+      outputPath === candidate.file.path
+        ? undefined
+        : [{ from: candidate.file.path, to: outputPath }],
     files: writes,
     beforeFiles,
     meta: {
       actor: "user",
-      actorReason: "image:compress",
+      actorReason: ["upscale", "remove-background"].includes(mode)
+        ? `image:${mode}`
+        : "image:compress",
     },
   };
 }

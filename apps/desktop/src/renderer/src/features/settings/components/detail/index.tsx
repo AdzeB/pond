@@ -58,7 +58,7 @@ export function SettingsDetail({
         <SettingsSectionView config={def.config} sectionId={def.id} />
       ) : (
         <div className={styles.body}>
-          <Settings.Page width={def.config.width ?? "medium"}>
+          <Settings.Page>
             {def.config.title ? (
               <Settings.Header>
                 <Settings.HeaderText>

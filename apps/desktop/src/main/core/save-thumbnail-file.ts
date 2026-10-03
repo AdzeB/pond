@@ -14,7 +14,7 @@ import sharp from "sharp";
 import {
   withDecryptedLibraryMediaPath,
   writeLibraryMedia,
-} from "./security/library-media-storage";
+} from "./storage/library-media-storage";
 
 const MAX_EDGE = 1024;
 

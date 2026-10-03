@@ -6,8 +6,9 @@ import { createCopyTranslator, createTranslator } from "../shared/localization";
 import { isWatchableSource } from "./core/watch/types";
 import {
   FILE_MENU_AUTO_IMPORT_LABELS,
-  FILE_MENU_CREATE_LABELS,
   FILE_MENU_DUPLICATES_LABELS,
+  FILE_MENU_IMPORT_LABELS,
+  FILE_MENU_NEW_LABELS,
 } from "./file-menu";
 
 export interface TrayStatusInput {
@@ -30,7 +31,6 @@ interface TrayTemplateItem {
 
 export interface TrayTemplateActions {
   onOpenDownloads?: () => void | Promise<void>;
-  onOpenLibrary: () => void | Promise<void>;
   onOpenSettings: () => void | Promise<void>;
   onMenuAction: (id: MenuActionId) => void | Promise<void>;
 }
@@ -45,7 +45,6 @@ export interface TrayAccelerators {
   importFolders?: string;
   importLinks?: string;
   rescan?: string;
-  openLibrary?: string;
   search?: string;
   sources?: string;
   downloads?: string;
@@ -141,31 +140,17 @@ export function buildTrayTemplate(
   template.push(
     { type: "separator" },
     {
-      label: translate("main.openPond"),
-      accelerator: accelerators.openLibrary,
-      registerAccelerator: false,
-      click: () => void actions.onOpenLibrary(),
-    },
-    {
       label: "New",
       submenu: [
         run(
-          FILE_MENU_CREATE_LABELS[0],
+          FILE_MENU_NEW_LABELS[0],
           "library.new-folder",
           accelerators.newFolder,
         ),
-        run(FILE_MENU_CREATE_LABELS[1], "library.new-smart-folder"),
+        run(FILE_MENU_NEW_LABELS[1], "library.new-smart-folder"),
+        run(FILE_MENU_NEW_LABELS[2], "library.new-smart-folder-group"),
         { type: "separator" },
-        run(
-          FILE_MENU_CREATE_LABELS[2],
-          "library.new-note",
-          accelerators.newNote,
-        ),
-        run(
-          "Capture Screenshot",
-          "library.capture-screenshot",
-          accelerators.captureScreenshot,
-        ),
+        run(FILE_MENU_NEW_LABELS[4], "library.new-note", accelerators.newNote),
         ...(options.blankDocuments ?? []).map((doc) =>
           run(doc.label, `library.new-blank-${doc.kind}`),
         ),
@@ -175,20 +160,30 @@ export function buildTrayTemplate(
       ],
     },
     {
+      label: "Capture",
+      submenu: [
+        run(
+          "Capture Screenshot",
+          "library.capture-screenshot",
+          accelerators.captureScreenshot,
+        ),
+      ],
+    },
+    {
       label: "Import",
       submenu: [
         run(
-          FILE_MENU_CREATE_LABELS[3],
+          FILE_MENU_IMPORT_LABELS[0],
           "library.import-files",
           accelerators.importFiles,
         ),
         run(
-          FILE_MENU_CREATE_LABELS[4],
+          FILE_MENU_IMPORT_LABELS[1],
           "library.import-folders",
           accelerators.importFolders,
         ),
         run(
-          FILE_MENU_CREATE_LABELS[5],
+          FILE_MENU_IMPORT_LABELS[2],
           "library.import-links",
           accelerators.importLinks,
         ),
@@ -197,17 +192,13 @@ export function buildTrayTemplate(
         run("Import Bookmarks", "library.import-bookmarks"),
         run("Import Page Assets", "library.import-page-assets"),
         { type: "separator" },
-        run(FILE_MENU_CREATE_LABELS[6], "library.import-package"),
-        run("Import Eagle Library", "library.import-eagle"),
+        run(FILE_MENU_IMPORT_LABELS[3], "library.import-eagle"),
+        run(FILE_MENU_IMPORT_LABELS[4], "library.import-package"),
         { type: "separator" },
         {
           label: "Auto Import",
           submenu: [
             run(FILE_MENU_AUTO_IMPORT_LABELS[0], "library.auto-import-folder"),
-            run(
-              FILE_MENU_AUTO_IMPORT_LABELS[1],
-              "library.auto-import-settings",
-            ),
           ],
         },
       ],
@@ -249,7 +240,7 @@ export function buildTrayTemplate(
       ],
     },
     {
-      label: "Go To",
+      label: "Navigate",
       submenu: [
         run("Library", "nav.library"),
         run("Search", "library.search", accelerators.search),
@@ -261,14 +252,14 @@ export function buildTrayTemplate(
         run("Trash", "nav.trash", accelerators.trash),
         run("Uncategorized", "nav.uncategorized"),
         run("Untagged", "nav.untagged"),
+        { type: "separator" },
+        {
+          label: translate("main.settings"),
+          accelerator: accelerators.settings,
+          registerAccelerator: false,
+          click: () => void actions.onOpenSettings(),
+        },
       ],
-    },
-    { type: "separator" },
-    {
-      label: translate("main.settings"),
-      accelerator: accelerators.settings,
-      registerAccelerator: false,
-      click: () => void actions.onOpenSettings(),
     },
     { type: "separator" },
     {

@@ -1,0 +1,39 @@
+.mention {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 0;
+  margin-inline: 1px;
+  font: inherit;
+  vertical-align: middle;
+  color: inherit;
+  user-select: none;
+  background: transparent;
+  border: 0;
+}
+
+.mention[data-open] {
+  cursor: var(--ds-cursor-interactive, pointer);
+}
+
+.cover {
+  display: grid;
+  width: 16px;
+  height: 16px;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.cover > * {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: inherit;
+}
+
+.cover img,
+.cover svg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

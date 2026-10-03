@@ -12,7 +12,7 @@
 .card-header h3 {
   margin: 6px 0 0;
   font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
 }
 
 .card-header p {

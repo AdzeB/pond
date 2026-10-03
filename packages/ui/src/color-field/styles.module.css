@@ -13,7 +13,7 @@
   padding: 0;
   cursor: var(--ds-cursor-interactive, pointer);
   border-radius: var(--ds-radius-md);
-  box-shadow: var(--ds-shadow-1);
+  box-shadow: var(--ds-shadow-xs);
 }
 
 .swatch[data-empty] {

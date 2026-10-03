@@ -252,9 +252,6 @@ function CombineImagesDialog({
             </div>
           </div>
           <Dialog.Footer>
-            <Button variant="secondary" onClick={closeCombineImagesDialog}>
-              Cancel
-            </Button>
             <Button disabled={busy} onClick={() => void combine()}>
               {options.output === "export" ? "Export" : "Combine"}
             </Button>

@@ -251,7 +251,7 @@ function Page({ children }: { children: React.ReactNode }) {
           (chrome.reduce(
             (height, element) => height + element.offsetHeight,
             0,
-          ) || 64),
+          ) || 52),
       );
     measure();
     const observer = new ResizeObserver(measure);
@@ -346,20 +346,6 @@ function Footer({ className, ...props }: FooterProps) {
   );
 }
 
-function Cancel({ className, children, ...props }: ButtonProps) {
-  return (
-    <Button
-      size="lg"
-      width="full"
-      variant="tertiary"
-      className={cn(styles.button, className)}
-      {...props}
-    >
-      {children ?? "Cancel"}
-    </Button>
-  );
-}
-
 function Confirm({ className, children, ...props }: ButtonProps) {
   return (
     <Button
@@ -389,7 +375,6 @@ export const DialogParts = {
   Help,
   Close,
   Footer,
-  Cancel,
   Confirm,
   Action,
   createHandle: Base.createHandle,

@@ -33,7 +33,7 @@
   --button-icon-size: 14px;
   margin-left: auto;
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-normal);
+  font-weight: var(--ds-weight-md);
   color: inherit;
 }
 

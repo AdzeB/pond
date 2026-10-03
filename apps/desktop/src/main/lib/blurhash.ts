@@ -4,7 +4,7 @@ import { encode } from "blurhash";
 import sharp from "sharp";
 import { isStaticThumbnailFile } from "../../shared/media-index";
 import { persistSave } from "../core/persist-save";
-import { withDecryptedLibraryMediaPath } from "../core/security/library-media-storage";
+import { withDecryptedLibraryMediaPath } from "../core/storage/library-media-storage";
 import { itemFile } from "../paths";
 
 const ENCODE_SIZE = 32;

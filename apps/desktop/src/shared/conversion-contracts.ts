@@ -73,7 +73,7 @@ export const ConversionRequestSchema = z.object({
 export const ImageCompressionRequestSchema = z.object({
   ids: z.array(z.string().min(1)).min(1).max(10_000),
   fileIndex: z.number().int().min(0).default(0),
-  mode: z.enum(["lossless", "quality"]),
+  mode: z.enum(["lossless", "quality", "webp", "upscale", "remove-background"]),
   quality: z.number().int().min(1).max(100).default(85),
 });
 export type ImageCompressionRequest = z.infer<

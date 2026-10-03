@@ -9,10 +9,11 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import legacyFixture from "../core/legacy-encryption/legacy-storage-fixture.json";
 import {
   clearLibraryKey,
   installLibraryKey,
-} from "../core/security/library-key-runtime";
+} from "../core/legacy-encryption/library-key-runtime";
 import {
   readBundleJson,
   rotateBundleBackups,
@@ -42,16 +43,26 @@ describe("writeBundleJson / readBundleJson", () => {
     expect(read?.updatedAt).toBeGreaterThan(0);
   });
 
-  it("encrypts bundle bytes while the Library key is installed", () => {
+  it("writes portable JSON even when a legacy Library key is installed", () => {
     installLibraryKey("library-id", Buffer.alloc(32, 7), root);
     const file = join(root, "settings.json");
 
     writeBundleJson(file, { private: "value" });
 
-    expect(readFileSync(file, "utf8")).not.toContain("private");
+    expect(JSON.parse(readFileSync(file, "utf8")).data).toEqual({
+      private: "value",
+    });
     expect(readBundleJson<{ private: string }>(file)?.data.private).toBe(
       "value",
     );
+  });
+
+  it("preserves a missing decryption-key error instead of reporting corrupt JSON", () => {
+    const file = join(root, "organization.json");
+    const encrypted = Buffer.from(legacyFixture.files.metadata, "base64");
+    writeFileSync(file, encrypted);
+    expect(() => readBundleJson(file)).toThrow("Library key is unavailable");
+    expect(readFileSync(file)).toEqual(encrypted);
   });
 
   it("returns null for a missing file", () => {

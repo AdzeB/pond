@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, stat } from "node:fs/promises";
-import { extname, join } from "node:path";
+import { dirname, extname, join } from "node:path";
 import log from "electron-log/main.js";
 import sharp, { type Metadata } from "sharp";
 import { eagleFormatGroup } from "../../shared/eagle-formats";
@@ -10,6 +10,7 @@ import {
   isThumbnailFileExtension,
   THUMBNAIL_CACHE_VERSION,
 } from "../../shared/media-index";
+import { thumbnailFilename } from "../../shared/save-file-names";
 import { extractOfficePreview } from "../core/office-preview";
 import { extractRawPreviewJpeg } from "../core/raw-preview";
 import {
@@ -19,7 +20,7 @@ import {
   readLibraryMediaRange,
   withDecryptedLibraryMediaPath,
   writeLibraryMedia,
-} from "../core/security/library-media-storage";
+} from "../core/storage/library-media-storage";
 import { libraryRoot, thumbnailCacheRoot } from "../paths";
 import { decodeHeicOnMac } from "./heic";
 
@@ -332,10 +333,18 @@ async function thumbnailPipeline(
   pipeline: ReturnType<typeof sharp>;
   metadata: Metadata;
 } | null> {
+  if (kind === "native") {
+    const imported = await importedThumbnailSidecarPipeline(sourcePath);
+    if (imported) return imported;
+  }
   if (await isEncryptedLibraryMedia(sourcePath)) {
-    return withDecryptedLibraryMediaPath(sourcePath, (path) =>
-      thumbnailPipeline(path, width, kind),
-    );
+    return withDecryptedLibraryMediaPath(sourcePath, async (path) => {
+      const decoded = await thumbnailPipeline(path, width, kind);
+      if (!decoded) return null;
+      const bytes = await decoded.pipeline.toBuffer();
+      const pipeline = sharp(bytes, { failOn: "none" });
+      return { pipeline, metadata: await pipeline.metadata() };
+    });
   }
   if (kind === "native") {
     return nativeThumbnailPipeline(sourcePath, width);
@@ -412,6 +421,8 @@ async function nativeThumbnailPipeline(
   pipeline: ReturnType<typeof sharp>;
   metadata: Metadata;
 } | null> {
+  const imported = await importedThumbnailSidecarPipeline(sourcePath);
+  if (imported) return imported;
   if (
     process.platform === "darwin" &&
     NATIVE_RASTER_EXT.has(extname(sourcePath).toLowerCase())
@@ -424,6 +435,22 @@ async function nativeThumbnailPipeline(
   const native = await osNativeThumbnail(sourcePath, width);
   if (native) return native;
   return officeThumbnailPipeline(sourcePath);
+}
+
+async function importedThumbnailSidecarPipeline(sourcePath: string): Promise<{
+  pipeline: ReturnType<typeof sharp>;
+  metadata: Metadata;
+} | null> {
+  const sidecarPath = join(dirname(sourcePath), thumbnailFilename(sourcePath));
+  if (!existsSync(sidecarPath)) return null;
+  try {
+    const pipeline = sharp(await readLibraryMedia(sidecarPath), {
+      failOn: "none",
+    });
+    return { pipeline, metadata: await pipeline.metadata() };
+  } catch {
+    return null;
+  }
 }
 
 async function rawThumbnailPipeline(sourcePath: string): Promise<{

@@ -59,6 +59,7 @@ export type VisualProbe =
 interface ViewStoreState {
   q: string;
   searchInput: string;
+  searchScope: "all" | "current";
   rows: Predicate[];
   combinator: Combinator;
   query: Query;
@@ -95,6 +96,7 @@ function readInitialZoom(): number {
 const store = new Store<ViewStoreState>({
   q: "",
   searchInput: "",
+  searchScope: "all",
   rows: [],
   combinator: "and",
   query: EMPTY_QUERY,
@@ -161,6 +163,16 @@ export function useSearchText(): string {
 
 export function useSearchInput(): string {
   return useSelector(store, (s) => s.searchInput);
+}
+
+export function useSearchScope(): "all" | "current" {
+  return useSelector(store, (s) => s.searchScope);
+}
+
+export function setSearchScope(searchScope: "all" | "current"): void {
+  store.setState((state) =>
+    state.searchScope === searchScope ? state : { ...state, searchScope },
+  );
 }
 
 export function useSortKey(): string {

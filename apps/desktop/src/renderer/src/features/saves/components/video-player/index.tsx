@@ -1,15 +1,20 @@
 import {
-  IconAnimationRepeatFill18,
-  IconFlipHorizontal2Fill18,
-  IconMediaFastBackwardsFill18,
-  IconMediaFastForwardFill18,
-  IconNotepadFill18,
-  IconRotateImageClockwiseFill18,
-} from "@pond/icons/fill/18";
+  IconAnimationRepeatOutline18,
+  IconArrowsExpandOutline18,
+  IconCaretLeftToLineOutline18,
+  IconCaretRightToLineOutline18,
+  IconClone2Outline18,
+  IconFlipHorizontal2Outline18,
+  IconFloppyDiskOutline18,
+  IconFullScreenOutline18,
+  IconImagePlusOutline18,
+  IconMediaPlayOutline18,
+  IconNotepadOutline18,
+  IconResizeXOutline18,
+  IconRotateImageClockwiseOutline18,
+} from "@pond/icons/outline/18";
 import {
-  Button,
   Dialog,
-  Input,
   stepPlaybackRate,
   stepVolume,
   useVideo,
@@ -18,16 +23,23 @@ import {
 import { useHotkey } from "@tanstack/react-hotkeys";
 import {
   type ReactEventHandler,
+  type ReactNode,
   useCallback,
   useEffect,
   useRef,
   useState,
 } from "react";
-import { VideoNotesSection } from "@/features/saves/components/detail/video-notes";
+import { VideoCommentsSection } from "@/features/saves/components/detail/video-notes";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+import { OriginalFileActions } from "@/features/saves/components/viewers/original-file-actions";
 import { useMediaSession } from "@/features/saves/hooks/use-media-session";
 import { useSave } from "@/features/saves/hooks/use-saves";
+import {
+  copyVideoFrame,
+  saveVideoFrame,
+  setVideoThumbnail,
+} from "@/features/saves/lib/media/capture-frame";
 import {
   type ChapterCue,
   chaptersToVttUrl,
@@ -39,15 +51,28 @@ import {
   setActiveMediaSeek,
   setActiveMediaTime,
 } from "@/features/saves/state/active-media";
+import type { Save } from "@/features/saves/types";
 import { usePrefs } from "@/features/settings/state/prefs";
+import { ShortcutKeys } from "@/shared/components/shortcut-keys";
 import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
+import { EndPoster } from "./end-poster";
 import { videoScaleForRotation } from "./geometry";
+import { LoopControls } from "./loop-controls";
+import { NoteMarkers } from "./markers";
 import styles from "./styles.module.css";
+import { TimelinePreview } from "./timeline-preview";
+import { VolumeControl } from "./volume";
 
 export interface NoteMarker {
   fileIndex?: number;
   id: string;
   timeSec: number;
+}
+
+export interface VideoToolbarSlots {
+  actions: ReactNode;
+  edits: ReactNode;
+  view: ReactNode;
 }
 
 interface VideoPlayerProps {
@@ -64,6 +89,7 @@ interface VideoPlayerProps {
   height?: number | null;
   onRatio?: (ratio: number) => void;
   onError?: () => void;
+  renderToolbar?: (slots: VideoToolbarSlots) => ReactNode;
 }
 
 function MediaBridge({
@@ -178,11 +204,11 @@ function MediaBridge({
     () => actions.stepFrame(10),
     { enabled: active, ignoreInputs: true },
   );
-  useHotkey(bindingKeys(shortcuts, "viewer.seek-back"), () => seekBy(-5), {
+  useHotkey(bindingKeys(shortcuts, "viewer.seek-back"), () => seekBy(-10), {
     enabled: active,
     ignoreInputs: true,
   });
-  useHotkey(bindingKeys(shortcuts, "viewer.seek-forward"), () => seekBy(5), {
+  useHotkey(bindingKeys(shortcuts, "viewer.seek-forward"), () => seekBy(10), {
     enabled: active,
     ignoreInputs: true,
   });
@@ -236,14 +262,6 @@ function MediaBridge({
   return null;
 }
 
-function EndPoster({ src }: { src?: string }) {
-  const { state } = useVideo();
-  if (!src || !state.ended) return null;
-  return (
-    <img src={src} alt="" className={styles["end-poster"]} draggable={false} />
-  );
-}
-
 function WheelBridge() {
   const [prefs] = usePrefs("viewer");
   const { actions, meta, state } = useVideo();
@@ -272,35 +290,6 @@ function WheelBridge() {
   return null;
 }
 
-function NoteMarkers({ markers }: { markers: readonly NoteMarker[] }) {
-  const { state, actions } = useVideo();
-  if (markers.length === 0 || state.duration <= 0) return null;
-  return (
-    <div className={styles.markers} aria-hidden>
-      {markers.map((marker) => {
-        const pct = Math.min(
-          100,
-          Math.max(0, (marker.timeSec / state.duration) * 100),
-        );
-        return (
-          <button
-            key={marker.id}
-            type="button"
-            className={styles.marker}
-            style={{ left: `${pct}%` }}
-            tabIndex={-1}
-            onClick={(e) => {
-              e.stopPropagation();
-              actions.seek(marker.timeSec);
-              actions.play();
-            }}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
 function useChaptersTrackUrl(chapters?: readonly ChapterCue[]): string | null {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -322,6 +311,7 @@ function VideoSurface({
   mirrored,
   ratio,
   stretch,
+  sizeMode,
   onError,
   onLoadedMetadata,
 }: {
@@ -332,6 +322,7 @@ function VideoSurface({
   mirrored: boolean;
   ratio: number | null;
   stretch: boolean;
+  sizeMode: "fit" | "fill";
   onError?: () => void;
   onLoadedMetadata: ReactEventHandler<HTMLVideoElement>;
 }) {
@@ -355,6 +346,7 @@ function VideoSurface({
       : ratio,
     rotation,
   );
+  const fill = sizeMode === "fill";
   return (
     <Video.Media
       className={styles.media}
@@ -363,8 +355,10 @@ function VideoSurface({
       onError={onError}
       onLoadedMetadata={onLoadedMetadata}
       style={{
-        objectFit: stretch ? "fill" : "contain",
-        transform: `scale(${scale}) rotate(${rotation}deg) scaleX(${mirrored ? -1 : 1})`,
+        width: fill ? "100%" : undefined,
+        height: fill ? "100%" : undefined,
+        objectFit: fill ? "cover" : stretch ? "fill" : "contain",
+        transform: `scale(${fill ? 1 : scale}) rotate(${rotation}deg) scaleX(${mirrored ? -1 : 1})`,
       }}
     >
       {trackUrl ? (
@@ -391,6 +385,7 @@ export function VideoPlayer({
   height,
   onRatio,
   onError,
+  renderToolbar,
 }: VideoPlayerProps) {
   const [prefs] = usePrefs("viewer");
   const [notesOpen, setNotesOpen] = useState(false);
@@ -425,6 +420,7 @@ export function VideoPlayer({
   const [looped, setLooped] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [mirrored, setMirrored] = useState(false);
+  const [sizeMode, setSizeMode] = useState<"fit" | "fill">("fit");
 
   const [ratio, setRatio] = useState<number | null>(
     width && height ? width / height : null,
@@ -469,75 +465,73 @@ export function VideoPlayer({
         mirrored={mirrored}
         ratio={ratio}
         stretch={prefs.stretchVideo}
+        sizeMode={sizeMode}
         onError={onError}
         onLoadedMetadata={onLoadedMetadata}
       />
       <EndPoster src={poster} />
       {active ? (
-        <ChromePortal slot="bottom">
-          <ViewerHud.Tools
-            tooltipSide="top"
-            className={styles.transport}
-            role="toolbar"
-            aria-label="Playback"
-          >
-            <Video.Controls className={styles.controls}>
-              <Video.Row className={styles.row}>
-                <Video.PlayButton />
-                <FrameControls frameRate={frameRate} />
-                <Video.Volume />
-                <Video.TimeDisplay />
-                <div className={styles.timeline}>
-                  <Video.Scrubber />
-                  {noteMarkers && noteMarkers.length > 0 ? (
-                    <NoteMarkers
-                      markers={noteMarkers.filter(
-                        (note) => (note.fileIndex ?? 0) === fileIndex,
+        <>
+          <VideoToolbarContent
+            save={save}
+            fileIndex={fileIndex}
+            mirrored={mirrored}
+            onComments={() => setNotesOpen(true)}
+            onMirror={() => setMirrored((value) => !value)}
+            onRotate={() => setRotation((value) => (value + 90) % 360)}
+            sizing={sizeMode}
+            onFill={() => setSizeMode("fill")}
+            onFit={() => setSizeMode("fit")}
+            render={renderToolbar}
+          />
+          <ChromePortal slot="bottom">
+            <ViewerHud.Tools
+              tooltipSide="top"
+              className={styles.transport}
+              role="toolbar"
+              aria-label="Playback"
+            >
+              <Video.Controls className={styles.controls}>
+                <Video.Row className={styles.row}>
+                  <PlaybackButton />
+                  <SeekControls />
+                  <VolumeControl />
+                  <Video.TimeDisplay className={styles.timeDisplay} />
+                  <div className={styles.timeline}>
+                    <Video.Scrubber
+                      renderPreview={(time) => (
+                        <TimelinePreview src={src} time={time} ratio={ratio} />
                       )}
                     />
-                  ) : null}
-                </div>
-                {save ? (
+                    {noteMarkers && noteMarkers.length > 0 ? (
+                      <NoteMarkers
+                        markers={noteMarkers.filter(
+                          (note) => (note.fileIndex ?? 0) === fileIndex,
+                        )}
+                      />
+                    ) : null}
+                  </div>
+                  <Video.SpeedSelect />
                   <ViewerHud.Tool
-                    label="Notes"
-                    onClick={() => setNotesOpen(true)}
+                    label="Loop"
+                    pressed={looped || !!loopRange}
+                    onClick={() => {
+                      if (loopRange) {
+                        changeLoop(null);
+                        setLooped(false);
+                        return;
+                      }
+                      setLooped((value) => !value);
+                    }}
                   >
-                    <IconNotepadFill18 />
+                    <IconAnimationRepeatOutline18 />
                   </ViewerHud.Tool>
-                ) : null}
-                <Video.SpeedSelect />
-                <ViewerHud.Tool
-                  label="Rotate Video"
-                  onClick={() => setRotation((value) => (value + 90) % 360)}
-                >
-                  <IconRotateImageClockwiseFill18 />
-                </ViewerHud.Tool>
-                <ViewerHud.Tool
-                  label="Mirror Video"
-                  pressed={mirrored}
-                  onClick={() => setMirrored((value) => !value)}
-                >
-                  <IconFlipHorizontal2Fill18 />
-                </ViewerHud.Tool>
-                <ViewerHud.Tool
-                  label="Loop"
-                  pressed={looped || !!loopRange}
-                  onClick={() => {
-                    if (loopRange) {
-                      changeLoop(null);
-                      setLooped(false);
-                      return;
-                    }
-                    setLooped((value) => !value);
-                  }}
-                >
-                  <IconAnimationRepeatFill18 />
-                </ViewerHud.Tool>
-                <Video.FullscreenButton />
-              </Video.Row>
-            </Video.Controls>
-          </ViewerHud.Tools>
-        </ChromePortal>
+                  <FullscreenButton />
+                </Video.Row>
+              </Video.Controls>
+            </ViewerHud.Tools>
+          </ChromePortal>
+        </>
       ) : null}
       {notesOpen && save ? (
         <Dialog.Root open onOpenChange={setNotesOpen}>
@@ -545,7 +539,7 @@ export function VideoPlayer({
             <Dialog.Backdrop />
             <Dialog.Popup>
               <Dialog.Header>
-                <Dialog.Title>Video Notes</Dialog.Title>
+                <Dialog.Title>Comments</Dialog.Title>
                 <Dialog.Close />
               </Dialog.Header>
               <div className={styles.notes}>
@@ -554,7 +548,7 @@ export function VideoPlayer({
                   range={loopRange}
                   onChange={changeLoop}
                 />
-                <VideoNotesSection save={save} fileIndex={fileIndex} />
+                <VideoCommentsSection save={save} fileIndex={fileIndex} />
               </div>
             </Dialog.Popup>
           </Dialog.Portal>
@@ -564,113 +558,192 @@ export function VideoPlayer({
   );
 }
 
-function FrameControls({ frameRate }: { frameRate: number | null }) {
+function PlaybackButton() {
+  const { state, actions } = useVideo();
+  return (
+    <ViewerHud.Tool
+      label={state.playing ? "Pause" : "Play"}
+      shortcut={<ShortcutKeys id="viewer.play-pause" />}
+      onClick={actions.togglePlay}
+    >
+      {state.playing ? <PauseIcon /> : <IconMediaPlayOutline18 />}
+    </ViewerHud.Tool>
+  );
+}
+
+function PauseIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 18 18"
+      fill="none"
+      aria-hidden
+      data-pause-icon
+    >
+      <line
+        x1="6"
+        y1="4"
+        x2="6"
+        y2="14"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="12"
+        y1="4"
+        x2="12"
+        y2="14"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function FullscreenButton() {
+  const { state, actions } = useVideo();
+  if (!state.fullscreenSupported) return null;
+  return (
+    <ViewerHud.Tool
+      label={state.fullscreen ? "Exit full screen" : "Full screen"}
+      onClick={actions.toggleFullscreen}
+    >
+      <IconFullScreenOutline18 />
+    </ViewerHud.Tool>
+  );
+}
+
+function VideoToolbarContent({
+  save,
+  fileIndex,
+  mirrored,
+  onComments,
+  onMirror,
+  onRotate,
+  sizing,
+  onFill,
+  onFit,
+  render,
+}: {
+  save: Save | undefined;
+  fileIndex: number;
+  mirrored: boolean;
+  onComments: () => void;
+  onMirror: () => void;
+  onRotate: () => void;
+  sizing: "fit" | "fill";
+  onFill: () => void;
+  onFit: () => void;
+  render?: (slots: VideoToolbarSlots) => ReactNode;
+}) {
+  const { meta, state } = useVideo();
+  const file = save?.files[fileIndex];
+  const videoReady = state.duration > 0 && Boolean(meta.videoRef.current);
+  const withVideo = (action: (video: HTMLVideoElement) => void) => {
+    const video = meta.videoRef.current;
+    if (video) action(video);
+  };
+
+  if (!render) return null;
+
+  return render({
+    actions: (
+      <>
+        <ViewerHud.Tool
+          label="Copy Current Frame"
+          shortcut={<ShortcutKeys id="viewer.copy-frame" />}
+          disabled={!videoReady}
+          onClick={() => withVideo((video) => void copyVideoFrame(video))}
+        >
+          <IconClone2Outline18 />
+        </ViewerHud.Tool>
+        <ViewerHud.Tool
+          label="Save Current Frame"
+          shortcut={<ShortcutKeys id="viewer.save-frame" />}
+          disabled={!videoReady}
+          onClick={() => withVideo((video) => void saveVideoFrame(video))}
+        >
+          <IconFloppyDiskOutline18 />
+        </ViewerHud.Tool>
+        {save ? (
+          <ViewerHud.Tool
+            label="Set Current Frame as Thumbnail"
+            disabled={!videoReady}
+            onClick={() =>
+              withVideo((video) => void setVideoThumbnail(save.id, video))
+            }
+          >
+            <IconImagePlusOutline18 />
+          </ViewerHud.Tool>
+        ) : null}
+        {save ? (
+          <ViewerHud.Tool label="Comments" onClick={onComments}>
+            <IconNotepadOutline18 />
+          </ViewerHud.Tool>
+        ) : null}
+        {save && file ? (
+          <OriginalFileActions save={save} fileIndex={fileIndex} />
+        ) : null}
+      </>
+    ),
+    edits: (
+      <>
+        <ViewerHud.Tool label="Rotate Video" onClick={onRotate}>
+          <IconRotateImageClockwiseOutline18 />
+        </ViewerHud.Tool>
+        <ViewerHud.Tool
+          label="Mirror Video"
+          pressed={mirrored}
+          onClick={onMirror}
+        >
+          <IconFlipHorizontal2Outline18 />
+        </ViewerHud.Tool>
+      </>
+    ),
+    view: (
+      <>
+        <ViewerHud.Tool
+          label="Fill"
+          pressed={sizing === "fill"}
+          disabled={!videoReady}
+          onClick={onFill}
+        >
+          <IconArrowsExpandOutline18 />
+        </ViewerHud.Tool>
+        <ViewerHud.Tool
+          label="Fit"
+          pressed={sizing === "fit"}
+          disabled={!videoReady}
+          onClick={onFit}
+        >
+          <IconResizeXOutline18 />
+        </ViewerHud.Tool>
+      </>
+    ),
+  });
+}
+
+function SeekControls() {
   const { actions } = useVideo();
   return (
     <>
       <ViewerHud.Tool
-        label="Previous Frame"
-        disabled={!frameRate}
-        onClick={() => actions.stepFrame(-1)}
+        label="Back"
+        shortcut={<ShortcutKeys id="viewer.seek-back" />}
+        onClick={() => actions.seekBy(-10)}
       >
-        <IconMediaFastBackwardsFill18 />
+        <IconCaretLeftToLineOutline18 />
       </ViewerHud.Tool>
       <ViewerHud.Tool
-        label="Next Frame"
-        disabled={!frameRate}
-        onClick={() => actions.stepFrame(1)}
+        label="Forward"
+        shortcut={<ShortcutKeys id="viewer.seek-forward" />}
+        onClick={() => actions.seekBy(10)}
       >
-        <IconMediaFastForwardFill18 />
+        <IconCaretRightToLineOutline18 />
       </ViewerHud.Tool>
     </>
-  );
-}
-
-function LoopControls({
-  range,
-  onChange,
-}: {
-  range: [number, number] | null;
-  onChange: (range: [number, number] | null) => void;
-}) {
-  const { state, actions } = useVideo();
-  const [start, setStart] = useState(range?.[0] ?? 0);
-  const [end, setEnd] = useState(range?.[1] ?? 0);
-  const valid =
-    Number.isFinite(start) &&
-    Number.isFinite(end) &&
-    start >= 0 &&
-    end > start &&
-    end <= state.duration;
-  return (
-    <Video.Row className={styles.loop}>
-      <Input.Root>
-        <Input.Field
-          aria-label="Loop Start in Seconds"
-          type="number"
-          min={0}
-          max={state.duration}
-          step={0.001}
-          value={start}
-          onChange={(event) => {
-            setStart(Number(event.target.value));
-            onChange(null);
-          }}
-        />
-      </Input.Root>
-      <Button
-        size="sm"
-        variant="ghost"
-        className={styles.controlButton}
-        onClick={() => {
-          setStart(state.currentTime);
-          onChange(null);
-        }}
-      >
-        Set Start
-      </Button>
-      <Input.Root>
-        <Input.Field
-          aria-label="Loop End in Seconds"
-          type="number"
-          min={0}
-          max={state.duration}
-          step={0.001}
-          value={end}
-          onChange={(event) => {
-            setEnd(Number(event.target.value));
-            onChange(null);
-          }}
-        />
-      </Input.Root>
-      <Button
-        size="sm"
-        variant="ghost"
-        className={styles.controlButton}
-        onClick={() => {
-          setEnd(state.currentTime);
-          onChange(null);
-        }}
-      >
-        Set End
-      </Button>
-      <Button
-        size="sm"
-        variant="ghost"
-        className={styles.controlButton}
-        disabled={!range && !valid}
-        aria-pressed={!!range}
-        onClick={() => {
-          if (range) onChange(null);
-          else {
-            onChange([start, end]);
-            actions.seek(start);
-            actions.play();
-          }
-        }}
-      >
-        {range ? "Stop Loop" : "Loop Range"}
-      </Button>
-    </Video.Row>
   );
 }

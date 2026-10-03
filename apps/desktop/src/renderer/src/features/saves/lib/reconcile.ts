@@ -95,6 +95,16 @@ export const SavePatchSchema = z.object({
         text: z.string(),
         fileIndex: z.number().int().nonnegative().optional(),
         createdAt: z.number().optional(),
+        replies: z
+          .array(
+            z.object({
+              id: z.string(),
+              text: z.string(),
+              createdAt: z.number().optional(),
+            }),
+          )
+          .optional(),
+        resolvedAt: z.number().optional(),
       }),
     )
     .nullish()
@@ -113,6 +123,7 @@ export const SavePatchSchema = z.object({
     .nullish()
     .catch(null),
   dominantColors: Texts,
+  primaryColor: Text,
   tags: Texts,
   listKinds: z.array(z.enum(LIST_KINDS)).nullish().catch(null),
   rawJson: StoredRawJsonSchema.transform(storedAsRawJson).nullish().catch(null),
@@ -225,6 +236,7 @@ export function normalise(
     flipY: raw.flipY ?? false,
     crop: raw.crop ?? null,
     dominantColors: raw.dominantColors ?? [],
+    primaryColor: raw.primaryColor ?? null,
     tags: raw.tags ?? [],
     listKinds: raw.listKinds ?? [],
     rawJson: raw.rawJson ?? undefined,

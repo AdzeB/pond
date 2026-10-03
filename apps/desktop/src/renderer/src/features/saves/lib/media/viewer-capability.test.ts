@@ -14,6 +14,48 @@ function file(extension: string, mimeType?: string): SaveFile {
 }
 
 describe("viewerCapabilityFor", () => {
+  it.each(["jpg", "png", "webp", "avif"])(
+    "treats .%s as an editable original raster",
+    (extension) => {
+      expect(viewerCapabilityFor(file(extension))).toMatchObject({
+        kind: "media",
+        surface: "raster",
+        source: "original",
+        edits: "full",
+        comments: "spatial",
+      });
+    },
+  );
+
+  it.each(["heic", "tiff", "jxl", "dng", "cr3", "psd", "ai", "docx"])(
+    "treats .%s as a generated raster without destructive edits",
+    (extension) => {
+      expect(viewerCapabilityFor(file(extension))).toMatchObject({
+        surface: "raster",
+        source: "generated",
+        edits: "none",
+        comments: "spatial",
+      });
+    },
+  );
+
+  it("gives video temporal comments and fit/fill sizing", () => {
+    expect(viewerCapabilityFor(file("mp4"))).toMatchObject({
+      kind: "media",
+      surface: "temporal",
+      comments: "temporal",
+      sizing: "fit-fill",
+    });
+  });
+
+  it("uses a fallback surface for an unsupported file", () => {
+    expect(viewerCapabilityFor(file("unknown"))).toMatchObject({
+      kind: "generic",
+      surface: "fallback",
+      comments: "item",
+    });
+  });
+
   it.each([...EAGLE_SUPPORTED_EXTENSIONS])(
     "routes Eagle-compatible .%s to a detail viewer",
     (extension) => {
@@ -32,9 +74,18 @@ describe("viewerCapabilityFor", () => {
     ["key", "native-preview"],
     ["pages", "native-preview"],
     ["glb", "model"],
+    ["gltf", "model"],
+    ["amf", "model"],
+    ["usdc", "model"],
+    ["usdz", "model"],
+    ["vtk", "model"],
     ["epub", "epub"],
     ["zip", "archive"],
+    ["lottie", "archive"],
+    ["livp", "live-photo"],
     ["html", "safe-web"],
+    ["mhtml", "safe-web"],
+    ["json", "text"],
   ])("routes .%s through %s", (extension, expected) => {
     expect(viewerCapabilityFor(file(extension)).kind).toBe(expected);
   });
@@ -47,6 +98,13 @@ describe("viewerCapabilityFor", () => {
     ["pdf", "pdf"],
     ["woff2", "font"],
     ["md", "text"],
+    ["css", "text"],
+    ["java", "text"],
+    ["js", "text"],
+    ["py", "text"],
+    ["rs", "text"],
+    ["sql", "text"],
+    ["ts", "text"],
   ])("keeps existing .%s viewer behavior as %s", (extension, expected) => {
     expect(viewerCapabilityFor(file(extension)).kind).toBe(expected);
   });

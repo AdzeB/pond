@@ -6,15 +6,17 @@ export function Reveal({
   visible = true,
   className,
   width,
+  initial = true,
 }: {
   children: ReactNode;
   visible?: boolean;
   className?: string;
   width?: number;
+  initial?: boolean;
 }) {
   const reduced = useReducedMotionConfig();
   return (
-    <AnimatePresence>
+    <AnimatePresence initial={initial}>
       {visible ? (
         <motion.div
           className={className}

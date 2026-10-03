@@ -136,6 +136,13 @@ export async function addTagsToSelection(
   await bulkMutation(ids, { kind: "tags", tags: clean });
 }
 
+export async function clearTagsForSelection(
+  ids: readonly string[],
+): Promise<void> {
+  if (ids.length === 0) return;
+  await bulkMutation(ids, { kind: "tags", tags: [], mode: "replace" });
+}
+
 export async function copyIdsForSelection(
   ids: readonly string[],
 ): Promise<SelectionActionResult> {
@@ -145,6 +152,22 @@ export async function copyIdsForSelection(
   const ok = await writeClipboard(ids.join("\n"));
   return ok
     ? { ok: true, message: `Copied ${pluralize(ids.length, "ID")}` }
+    : { ok: false, message: "Couldn't copy" };
+}
+
+export async function copyNamesForSelection(
+  ids: readonly string[],
+): Promise<SelectionActionResult> {
+  const saves = await resolve(ids);
+  const names = saves.map(
+    (save) =>
+      save.title?.trim() ||
+      save.files[0]?.path.split(/[/\\]/).at(-1) ||
+      save.id,
+  );
+  const ok = await writeClipboard(names.join("\n"));
+  return ok
+    ? { ok: true, message: `Copied ${pluralize(names.length, "name")}` }
     : { ok: false, message: "Couldn't copy" };
 }
 
@@ -341,6 +364,10 @@ export async function reverseImageSearchForSelection(
 ): Promise<void> {
   const engine = REVERSE_SEARCH_ENGINES.find((e) => e.key === engineKey);
   if (!engine) return;
+  if ("usesImageUrl" in engine && !engine.usesImageUrl) {
+    await window.pond.openExternal(engine.url(""));
+    return;
+  }
   let opened = 0;
   for (const save of await resolve(ids)) {
     const result = PublicUrlReplySchema.parse(

@@ -29,8 +29,13 @@ export interface WireTask {
   status: TaskStatus;
   attempts: number;
   maxAttempts: number;
+  generationId?: string | null;
+  deferredReason?: string | null;
   lastError: string | null;
   nextRunAt: number;
+  leaseExpiresAt?: number | null;
+  failedAt?: number | null;
+  completedAt?: number | null;
   updatedAt: number;
   interactive?: boolean;
 }
@@ -46,6 +51,7 @@ export type WireSave = Omit<
   | "createdAt"
   | "deletedAt"
   | "publishedAt"
+  | "takenAt"
   | "ingestStartedAt"
   | "ingestCompletedAt"
 > & {
@@ -53,6 +59,7 @@ export type WireSave = Omit<
   createdAt: number;
   deletedAt: number | null;
   publishedAt: number | null;
+  takenAt: number | null;
   ingestStartedAt: number | null;
   ingestCompletedAt: number | null;
   tasks?: WireTask[];

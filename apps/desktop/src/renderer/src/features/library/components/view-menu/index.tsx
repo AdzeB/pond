@@ -13,8 +13,9 @@ import { ShortcutKeys } from "@/shared/components/shortcut-keys";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { DisplaySection } from "./display";
 import { LayoutSection } from "./layout/layout";
-import { SortSection } from "./sort/sort";
+import { SortSection } from "./sort";
 import styles from "./styles.module.css";
+import { ThumbnailSection } from "./thumbnail";
 import { ZoomSection } from "./zoom/zoom";
 
 const FolderOrderDialog = lazy(() =>
@@ -74,6 +75,7 @@ export function ViewMenu() {
               {...scrollFade}
             >
               <LayoutSection />
+              <ThumbnailSection />
               <ZoomSection />
               <hr className={styles.separator} />
               <SortSection

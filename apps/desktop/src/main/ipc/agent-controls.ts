@@ -81,7 +81,7 @@ const nativeFlows = {
   "library.import-page-assets": "Import page assets",
   "library.import-eagle": "Import an Eagle library",
   "library.import-package": "Import a package",
-  "library.auto-import-folder": "Choose an automatic import folder",
+  "library.auto-import-folder": "Create a watched folder",
   "library.find-duplicates-all": "Inspect duplicate Saves",
 } satisfies Partial<Record<MenuActionId, string>>;
 const viewCommands = [
@@ -98,7 +98,6 @@ const viewCommands = [
   "view.zoom-reset",
   "view.sidebar.toggle",
   "view.grayscale",
-  "view.navigator",
 ] as const satisfies readonly MenuActionId[];
 
 export const agentControlOperations: PondOperation[] = [
@@ -141,7 +140,7 @@ export const agentControlOperations: PondOperation[] = [
     "read",
     z.object({ command: z.enum(viewCommands) }),
     async ({ command }) => {
-      broadcast(IPC.menuAction, command);
+      broadcast(IPC.menuAction, { id: command, source: "automation" });
       return { dispatched: true, command };
     },
   ),
@@ -152,7 +151,7 @@ export const agentControlOperations: PondOperation[] = [
       "read",
       empty,
       async () => {
-        broadcast(IPC.menuAction, command);
+        broadcast(IPC.menuAction, { id: command, source: "automation" });
         return { dispatched: true, awaitingUser: true };
       },
     ),

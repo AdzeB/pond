@@ -126,6 +126,7 @@ export function HoverVideo({
           decoding="async"
           fetchPriority="auto"
           className={styles.poster}
+          data-fit={prefs.galleryFit}
           data-loaded={!blurhash || poster.loaded ? "true" : "false"}
           draggable={false}
           onLoad={poster.onLoad}
@@ -140,6 +141,7 @@ export function HoverVideo({
         playsInline
         preload={primed ? "metadata" : "none"}
         className={styles.media}
+        data-fit={prefs.galleryFit}
         data-active={active ? "true" : undefined}
         data-ready={videoReady ? "true" : undefined}
         data-resting={needsRestingVideo && videoReady ? "true" : undefined}

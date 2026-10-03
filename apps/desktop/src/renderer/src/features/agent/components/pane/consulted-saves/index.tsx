@@ -2,20 +2,17 @@ import { Button, Popover, Reveal } from "@pond/ui";
 import type { ReferenceItem } from "@pond/ui/reference-list";
 import type { AssistantSource } from "@shared/assistant";
 import { sourceExcerpt } from "@shared/assistant-text";
-import type { RefObject } from "react";
+import type { ReactNode, RefObject } from "react";
 import { useState } from "react";
 import { openSave } from "@/features/saves/lib/save-nav";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
-import {
-  SourceThumbnail,
-  sourceDomain,
-  useSourceCovers,
-} from "../save-preview";
+import { SourceThumbnail, useSourceCovers } from "../save-preview";
 import styles from "./styles.module.css";
 
 function toReferenceItems(
   ids: string[],
   sources: AssistantSource[],
+  renderMedia?: (source: AssistantSource) => ReactNode,
 ): ReferenceItem[] {
   const byId = new Map(sources.map((source) => [source.id, source]));
   return [...new Set(ids)].flatMap((id) => {
@@ -26,9 +23,10 @@ function toReferenceItems(
       {
         id: source.id,
         title: source.title || "Untitled",
-        meta: sourceDomain(source),
         description: excerpt || undefined,
-        media: <SourceThumbnail id={source.id} source={source} />,
+        media: renderMedia?.(source) ?? (
+          <SourceThumbnail id={source.id} source={source} size="compact" />
+        ),
       },
     ];
   });
@@ -40,18 +38,21 @@ export function ConsultedSaves({
   attachedIds = [],
   onOpenSave,
   onAttach,
+  renderMedia,
 }: {
   sources: AssistantSource[];
   saveIds?: string[];
   attachedIds?: string[];
   onOpenSave: (id: string) => void;
   onAttach: (sources: AssistantSource[]) => void;
+  renderMedia?: (source: AssistantSource) => ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
   const scrollFade = useScrollFade<HTMLDivElement>();
   const items = toReferenceItems(
     saveIds ?? sources.map((source) => source.id),
     sources,
+    renderMedia,
   );
   useSourceCovers(items.map((item) => item.id));
   if (!items.length) return null;
@@ -66,7 +67,6 @@ export function ConsultedSaves({
           <span className={styles.title} title={item.title}>
             {item.title}
           </span>
-          <span className={styles.source}>{item.meta}</span>
         </Popover.Trigger>
         <Popover.Portal>
           <Popover.Positioner side="top" align="start" sideOffset={8}>

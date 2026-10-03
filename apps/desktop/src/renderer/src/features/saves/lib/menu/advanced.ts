@@ -28,13 +28,25 @@ import { buildDetailItems } from "./details";
 import { glyph, notifyCopy } from "./shared";
 import type { SaveMenuContext } from "./types";
 
-const REVERSE_SEARCH_LOGOS = {
-  "google-lens": googleLensLogo,
-  yandex: yandexLogo,
-  bing: bingLogo,
-  tineye: tineyeLogo,
-  saucenao: sauceNaoLogo,
-} satisfies Record<(typeof REVERSE_SEARCH_ENGINES)[number]["key"], string>;
+function reverseSearchLogo(
+  key: (typeof REVERSE_SEARCH_ENGINES)[number]["key"],
+): string | null {
+  switch (key) {
+    case "google-lens":
+      return googleLensLogo;
+    case "yandex":
+      return yandexLogo;
+    case "bing":
+      return bingLogo;
+    case "tineye":
+      return tineyeLogo;
+    case "saucenao":
+      return sauceNaoLogo;
+    case "baidu":
+    case "sogou":
+      return null;
+  }
+}
 
 function combinableImageCount(items: readonly Save[]): number {
   return items.filter((item) =>
@@ -52,91 +64,132 @@ export function buildReverseSearchItems({
   save,
   ids,
   batch,
+  hasHttpUrl,
 }: SaveMenuContext): MenuItemSpec[] {
-  return REVERSE_SEARCH_ENGINES.map((engine) => ({
-    label: engine.label,
-    icon: createElement("img", {
-      src: REVERSE_SEARCH_LOGOS[engine.key],
-      alt: "",
-      width: 16,
-      height: 16,
-      draggable: false,
-    }),
-    keywords: engine.key === "saucenao" ? "sauce nao anime" : undefined,
-    onClick: () => {
-      if (batch) {
-        void reverseImageSearchForSelection(ids, engine.key);
-        return;
-      }
-      void reverseImageSearch(save, engine.key);
-    },
-  }));
-}
-
-export function buildAdvancedItems(
-  context: SaveMenuContext,
-  maintenanceItems: MenuItemSpec[],
-): MenuItemSpec[] {
-  const { save, saves, ids, batch, fontActivated } = context;
-
   return [
     {
-      label: "Copy Save ID",
-      icon: glyph(IconCopyIdOutline18),
-      shortcut: shortcutGlyphs("save.copy-id"),
-      onClick: () => {
-        if (batch) {
-          void copyIdsForSelection(ids).then(notifyCopy);
-          return;
-        }
-        void copyId(save.id);
-      },
-    },
-    ...maintenanceItems,
-    { type: "separator" },
-    {
-      label: "Combine Images",
+      label: "Find Similar Saves",
       icon: glyph(IconImageOutline18),
-      hidden: combinableImageCount(saves) < 2,
-      onClick: () => {
-        const nav = saveLibraryBridge.getNav();
-        openCombineImagesDialog(ids, nav.kind === "folder" ? nav.id : null);
-      },
+      hidden: batch || save.mediaType !== "image",
+      onClick: () =>
+        saveLibraryBridge.setVisualProbe({
+          id: save.id,
+          label: save.title?.trim() || "Selected Save",
+        }),
     },
-    {
-      label: "Change File Extension",
-      icon: glyph(IconFileOutline18),
-      hidden: !saves.some((item) => item.files.length > 0),
-      onClick: () => {
-        Dialog.prompt({
-          title: "Change File Extension",
-          confirmLabel: "Change Extension",
-          placeholder: "png",
-          onConfirm: async (extension) => {
-            const result = await window.pond.query("saves.batchEditExtension", {
-              ids,
-              extension,
-            });
-            notify({
-              id: "batch-extension",
-              title: "File Extensions Changed",
-              description: `${result.changedFiles} files changed. Use Undo to reverse this action.`,
-            });
-          },
-        });
-      },
-    },
-    {
-      label: fontActivated ? "Deactivate Font" : "Activate Font",
-      icon: glyph(IconFileOutline18),
-      hidden: batch || save.mediaType !== "font",
-      onClick: () => {
-        void window.pond.query(
-          fontActivated ? "saves.deactivateFont" : "saves.activateFont",
-          { id: save.id },
-        );
-      },
-    },
-    ...buildDetailItems(context),
+    ...REVERSE_SEARCH_ENGINES.map((engine): MenuItemSpec => {
+      const logo = reverseSearchLogo(engine.key);
+      return {
+        label: engine.label,
+        icon: logo
+          ? createElement("img", {
+              src: logo,
+              alt: "",
+              width: 16,
+              height: 16,
+              draggable: false,
+            })
+          : glyph(IconImageOutline18),
+        hidden:
+          "usesImageUrl" in engine && !engine.usesImageUrl
+            ? false
+            : !hasHttpUrl,
+        keywords: engine.key === "saucenao" ? "sauce nao anime" : undefined,
+        onClick: () => {
+          if (batch) {
+            void reverseImageSearchForSelection(ids, engine.key);
+            return;
+          }
+          void reverseImageSearch(save, engine.key);
+        },
+      };
+    }),
   ];
+}
+
+export interface SupplementalMenuItems {
+  copy: MenuItemSpec[];
+  details: ReturnType<typeof buildDetailItems>;
+  file: MenuItemSpec[];
+  more: MenuItemSpec[];
+  organization: MenuItemSpec[];
+}
+
+export function buildSupplementalItems(
+  context: SaveMenuContext,
+  maintenanceItems: MenuItemSpec[],
+): SupplementalMenuItems {
+  const { save, saves, ids, batch, fontActivated } = context;
+  const details = buildDetailItems(context);
+
+  return {
+    copy: [
+      {
+        label: "Copy Save ID",
+        icon: glyph(IconCopyIdOutline18),
+        shortcut: shortcutGlyphs("save.copy-id"),
+        onClick: () => {
+          if (batch) {
+            void copyIdsForSelection(ids).then(notifyCopy);
+            return;
+          }
+          void copyId(save.id);
+        },
+      },
+    ],
+    details,
+    organization: [
+      {
+        label: "Combine Images",
+        icon: glyph(IconImageOutline18),
+        hidden: combinableImageCount(saves) < 2,
+        onClick: () => {
+          const nav = saveLibraryBridge.getNav();
+          openCombineImagesDialog(ids, nav.kind === "folder" ? nav.id : null);
+        },
+      },
+      ...details.organization,
+    ],
+    file: [
+      {
+        label: fontActivated ? "Deactivate Font" : "Activate Font",
+        icon: glyph(IconFileOutline18),
+        hidden: batch || save.mediaType !== "font",
+        onClick: () => {
+          void window.pond.query(
+            fontActivated ? "saves.deactivateFont" : "saves.activateFont",
+            { id: save.id },
+          );
+        },
+      },
+      ...details.file,
+    ],
+    more: [
+      ...maintenanceItems,
+      { type: "separator" },
+      {
+        label: "Change Extension",
+        icon: glyph(IconFileOutline18),
+        hidden: !saves.some((item) => item.files.length > 0),
+        onClick: () => {
+          Dialog.prompt({
+            title: "Change Extension",
+            confirmLabel: "Change Extension",
+            placeholder: "png",
+            onConfirm: async (extension) => {
+              const result = await window.pond.query(
+                "saves.batchEditExtension",
+                { ids, extension },
+              );
+              notify({
+                id: "batch-extension",
+                title: "Extensions changed",
+                description: `${result.changedFiles} files changed. Use Undo to reverse this action.`,
+              });
+            },
+          });
+        },
+      },
+    ],
+  };
 }

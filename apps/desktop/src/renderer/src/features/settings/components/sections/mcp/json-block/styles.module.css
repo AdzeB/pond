@@ -1,0 +1,16 @@
+.code {
+  max-height: 140px;
+  padding: 8px 10px;
+  margin: 0;
+  overflow: auto;
+  font-family: var(--ds-font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  background: var(--ds-gray-2);
+  border-radius: var(--ds-radius-md);
+}
+
+.code code {
+  font: inherit;
+  white-space: pre;
+}

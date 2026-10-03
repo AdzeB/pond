@@ -1,4 +1,4 @@
-import { ProcessingStatus } from "@/features/settings/components/sections/processing/processing-status";
+import { ProcessingStatus } from "@/features/settings/components/sections/processing";
 import { defineSection } from "@/features/settings/lib/engine-types";
 
 export const processingSection = defineSection("ai", {
@@ -15,7 +15,7 @@ export const processingSection = defineSection("ai", {
     "enrichment",
   ],
   groups: [
-    { title: "Overview", render: () => <ProcessingStatus /> },
+    { title: "Processing Status", render: () => <ProcessingStatus /> },
     {
       title: "Details",
       items: [

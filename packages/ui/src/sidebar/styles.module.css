@@ -101,7 +101,7 @@
   height: var(--sidebar-height-md);
   padding: 0 8px;
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   color: var(--ds-gray-9);
   border-radius: var(--ds-radius-md);
   transition:
@@ -178,7 +178,7 @@ button.label:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   color: var(--ds-gray-10);
   white-space: nowrap;
   border-radius: var(--ds-radius-md);
@@ -193,7 +193,8 @@ button.label:hover {
 
   &[data-pressed],
   &[data-status="active"],
-  &[data-popup-open] {
+  &[data-popup-open],
+  &[aria-selected="true"] {
     color: var(--ds-gray-12);
     background: var(--ds-gray-a4);
   }
@@ -211,6 +212,7 @@ button.label:hover {
   .icon {
     position: relative;
     display: flex;
+    flex: none;
     align-items: center;
     justify-content: center;
     width: 16px;
@@ -224,16 +226,25 @@ button.label:hover {
       padding: 0;
       margin-right: 8px;
       border-radius: var(--ds-radius-xs);
-      box-shadow: var(--ds-shadow-2);
+      box-shadow: var(--ds-shadow-sm);
     }
   }
 }
 
+.item-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .count {
+  flex: none;
   margin-right: 4px;
   margin-left: auto;
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-9);
 }

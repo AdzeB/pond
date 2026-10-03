@@ -44,6 +44,20 @@ export function migratePond(sqlite: Database.Database): void {
 					width INTEGER,
 					height INTEGER,
 					file_size INTEGER,
+					container TEXT,
+					video_codec TEXT,
+					audio_codec TEXT,
+					bitrate INTEGER,
+					color_space TEXT,
+					camera_make TEXT,
+					camera_model TEXT,
+					lens_model TEXT,
+					focal_length REAL,
+					aperture REAL,
+					exposure_time TEXT,
+					iso INTEGER,
+					taken_at INTEGER,
+					metadata_version INTEGER,
 					phash TEXT,
 					blurhash TEXT,
 					embedding TEXT,
@@ -71,6 +85,7 @@ export function migratePond(sqlite: Database.Database): void {
 					flip_y INTEGER NOT NULL DEFAULT 0,
 					crop TEXT,
 					dominant_colors TEXT NOT NULL DEFAULT '[]',
+					primary_color TEXT,
 					status TEXT NOT NULL DEFAULT 'ingesting',
 					ingest_started_at INTEGER,
 					ingest_completed_at INTEGER,
@@ -89,13 +104,72 @@ export function migratePond(sqlite: Database.Database): void {
 				CREATE INDEX IF NOT EXISTS saves_deleted_idx ON saves(deleted_at);
 				CREATE INDEX IF NOT EXISTS saves_status_idx ON saves(status);
 
+				CREATE TABLE IF NOT EXISTS queue_generations (
+					id TEXT PRIMARY KEY,
+					kind TEXT NOT NULL,
+					status TEXT NOT NULL DEFAULT 'active',
+					source TEXT,
+					scope TEXT,
+					cancellation_fence INTEGER NOT NULL DEFAULT 0,
+					created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+					updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+					completed_at INTEGER
+				);
+				CREATE INDEX IF NOT EXISTS queue_generations_status_created_idx
+					ON queue_generations(status, created_at);
+				CREATE INDEX IF NOT EXISTS queue_generations_source_status_idx
+					ON queue_generations(source, status);
+
+				CREATE TABLE IF NOT EXISTS source_gates (
+					source TEXT PRIMARY KEY,
+					state TEXT NOT NULL DEFAULT 'closed',
+					reason TEXT,
+					retry_at INTEGER,
+					probe_lease_token TEXT,
+					probe_lease_expires_at INTEGER,
+					failure_count INTEGER NOT NULL DEFAULT 0,
+					failure_window_started_at INTEGER,
+					version INTEGER NOT NULL DEFAULT 0,
+					updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+				);
+
+				CREATE TABLE IF NOT EXISTS source_request_ledger (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					source TEXT NOT NULL,
+					requested_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+					permits INTEGER NOT NULL DEFAULT 1,
+					task_id TEXT,
+					generation_id TEXT REFERENCES queue_generations(id) ON DELETE SET NULL
+				);
+				CREATE INDEX IF NOT EXISTS source_request_ledger_source_requested_idx
+					ON source_request_ledger(source, requested_at);
+				CREATE INDEX IF NOT EXISTS source_request_ledger_generation_idx
+					ON source_request_ledger(generation_id);
+
+				CREATE TABLE IF NOT EXISTS queue_metadata (
+					key TEXT PRIMARY KEY,
+					value TEXT NOT NULL,
+					updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+				);
+
 				CREATE TABLE IF NOT EXISTS tasks (
 					id TEXT PRIMARY KEY,
 					save_id TEXT NOT NULL REFERENCES saves(id) ON DELETE CASCADE,
+					source TEXT NOT NULL,
 					op TEXT NOT NULL,
 					status TEXT NOT NULL DEFAULT 'pending',
 					attempts INTEGER NOT NULL DEFAULT 0,
 					max_attempts INTEGER NOT NULL DEFAULT 5,
+					generation_id TEXT REFERENCES queue_generations(id) ON DELETE SET NULL,
+					cancellation_fence INTEGER NOT NULL DEFAULT 0,
+					deferred_reason TEXT,
+					lease_owner TEXT,
+					lease_token TEXT,
+					lease_expires_at INTEGER,
+					heartbeat_at INTEGER,
+					started_at INTEGER,
+					failed_at INTEGER,
+					completed_at INTEGER,
 					next_run_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
 					last_error TEXT,
 					payload TEXT,
@@ -284,6 +358,21 @@ export function migratePond(sqlite: Database.Database): void {
   addColumnIfMissing(sqlite, "saves", "suggested_tags_model", "TEXT");
   addColumnIfMissing(sqlite, "saves", "account_id", "TEXT");
   addColumnIfMissing(sqlite, "saves", "blurhash", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "container", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "video_codec", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "audio_codec", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "bitrate", "INTEGER");
+  addColumnIfMissing(sqlite, "saves", "color_space", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "camera_make", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "camera_model", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "lens_model", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "focal_length", "REAL");
+  addColumnIfMissing(sqlite, "saves", "aperture", "REAL");
+  addColumnIfMissing(sqlite, "saves", "exposure_time", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "iso", "INTEGER");
+  addColumnIfMissing(sqlite, "saves", "taken_at", "INTEGER");
+  addColumnIfMissing(sqlite, "saves", "metadata_version", "INTEGER");
+  addColumnIfMissing(sqlite, "saves", "primary_color", "TEXT");
   addColumnIfMissing(
     sqlite,
     "saves",
@@ -297,6 +386,63 @@ export function migratePond(sqlite: Database.Database): void {
   addColumnIfMissing(sqlite, "saves", "flip_y", "INTEGER NOT NULL DEFAULT 0");
   addColumnIfMissing(sqlite, "saves", "crop", "TEXT");
   addColumnIfMissing(sqlite, "pipeline_events", "account_id", "TEXT");
+  addColumnIfMissing(sqlite, "tasks", "source", "TEXT");
+  addColumnIfMissing(sqlite, "tasks", "generation_id", "TEXT");
+  addColumnIfMissing(
+    sqlite,
+    "tasks",
+    "cancellation_fence",
+    "INTEGER NOT NULL DEFAULT 0",
+  );
+  addColumnIfMissing(sqlite, "tasks", "deferred_reason", "TEXT");
+  addColumnIfMissing(sqlite, "tasks", "lease_owner", "TEXT");
+  addColumnIfMissing(sqlite, "tasks", "lease_token", "TEXT");
+  addColumnIfMissing(sqlite, "tasks", "lease_expires_at", "INTEGER");
+  addColumnIfMissing(sqlite, "tasks", "heartbeat_at", "INTEGER");
+  addColumnIfMissing(sqlite, "tasks", "started_at", "INTEGER");
+  addColumnIfMissing(sqlite, "tasks", "failed_at", "INTEGER");
+  addColumnIfMissing(sqlite, "tasks", "completed_at", "INTEGER");
+  sqlite.exec(`
+				UPDATE tasks
+				SET source = (
+					SELECT saves.source FROM saves WHERE saves.id = tasks.save_id
+				)
+				WHERE source IS NULL;
+
+				UPDATE tasks
+				SET
+					status = 'pending',
+					lease_owner = NULL,
+					lease_token = NULL,
+					lease_expires_at = NULL,
+					heartbeat_at = NULL,
+					started_at = NULL,
+					updated_at = unixepoch() * 1000
+				WHERE status = 'running' AND lease_token IS NULL;
+
+				UPDATE tasks
+				SET
+					status = CASE
+						WHEN lower(COALESCE(last_error, '')) LIKE '%cancel%' THEN 'cancelled'
+						ELSE 'dead'
+					END,
+					failed_at = COALESCE(failed_at, updated_at),
+					completed_at = COALESCE(completed_at, updated_at)
+				WHERE status = 'failed';
+
+				CREATE INDEX IF NOT EXISTS tasks_source_op_idx
+					ON tasks(source, op, status, next_run_at);
+				CREATE INDEX IF NOT EXISTS tasks_generation_idx
+					ON tasks(generation_id, status);
+				CREATE INDEX IF NOT EXISTS tasks_lease_recovery_idx
+					ON tasks(status, lease_expires_at);
+				CREATE INDEX IF NOT EXISTS tasks_claim_idx
+					ON tasks(source, op, next_run_at, created_at)
+					WHERE status IN ('pending', 'deferred');
+				CREATE INDEX IF NOT EXISTS tasks_running_lease_idx
+					ON tasks(lease_expires_at)
+					WHERE status = 'running';
+			`);
   sqlite.exec(
     "CREATE INDEX IF NOT EXISTS saves_account_idx ON saves(account_id);",
   );

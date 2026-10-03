@@ -8,6 +8,7 @@ import {
   createContext,
   use,
   useId,
+  useLayoutEffect,
   useState,
 } from "react";
 import { Input } from "../input";
@@ -41,6 +42,12 @@ function Item({ className, ...props }: ItemProps) {
   return <Button className={cn(styles.item, className)} {...props} />;
 }
 
+interface ItemLabelProps extends React.ComponentPropsWithoutRef<"span"> {}
+
+function ItemLabel({ className, ...props }: ItemLabelProps) {
+  return <span className={cn(styles["item-label"], className)} {...props} />;
+}
+
 interface ResultButtonProps extends Button.Props {}
 
 function ResultButton({ ...props }: ResultButtonProps) {
@@ -67,7 +74,7 @@ function Count({ ...props }: CountProps) {
   return <span className={styles.count} {...props} />;
 }
 
-interface GroupProps extends React.ComponentPropsWithoutRef<"div"> {}
+interface GroupProps extends React.ComponentPropsWithRef<"div"> {}
 
 function Group({ className, ...props }: GroupProps) {
   return <div className={cn(styles.group, className)} {...props} />;
@@ -210,9 +217,21 @@ function CollapsibleGroupContent({
   ...props
 }: CollapsibleGroupContentProps) {
   const { open, id } = useCollapsibleGroup();
+  const contentId = props.id ?? id;
+  useLayoutEffect(() => {
+    const content = document.getElementById(contentId);
+    if (open || !content?.contains(document.activeElement)) return;
+    const parent = content.parentElement;
+    const controller = parent?.querySelector<HTMLElement>(
+      '[role="treeitem"], button[aria-expanded]',
+    );
+    controller?.focus();
+  }, [open, contentId]);
 
   return (
     <motion.div
+      inert={!open}
+      aria-hidden={!open}
       id={id}
       className={cn(styles.panel, className)}
       transition={{
@@ -238,6 +257,7 @@ export const Sidebar = {
   Scroll,
   Search,
   Item,
+  ItemLabel,
   Icon,
   Count,
   ResultButton,

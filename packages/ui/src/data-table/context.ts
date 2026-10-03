@@ -4,6 +4,7 @@ import {
   createContext,
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
+  type RefObject,
   use,
 } from "react";
 import type { DATA_TABLE_FEATURES } from "./provider";
@@ -11,10 +12,14 @@ import type { RenderRowArgs, TableColumn } from "./types";
 
 export interface SelectionState {
   selectedIds: Set<string>;
+  cursorId: string | null;
 }
 
 export interface RowApi<T extends RowData> {
   selectionStore: Store<SelectionState>;
+  gridRef: RefObject<HTMLDivElement | null>;
+  rowElementId: (id: string) => string;
+  focusRow: (id: string) => void;
   columns: TableColumn<T>[];
   gridTemplate: string;
   selectionEnabled: boolean;
@@ -31,6 +36,7 @@ export interface RowApi<T extends RowData> {
 export interface DataTableContextValue<T extends RowData> {
   selectionStore: Store<SelectionState>;
   actions: {
+    focusRow: (id: string) => void;
     toggleRow: (id: string, extend: boolean) => void;
     selectRow: (id: string) => void;
     toggleAll: (next: boolean) => void;
@@ -42,6 +48,9 @@ export interface DataTableContextValue<T extends RowData> {
     reorderColumns: (fromId: string, toId: string) => void;
   };
   meta: {
+    gridRef: RefObject<HTMLDivElement | null>;
+    revealRow: RefObject<((id: string) => void) | null>;
+    rowElementId: (id: string) => string;
     columns: TableColumn<T>[];
     gridTemplate: string;
     selectionEnabled: boolean;

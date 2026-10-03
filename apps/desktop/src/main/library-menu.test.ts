@@ -8,11 +8,13 @@ it("exposes create, switch, backup, restore, merge, and verify", () => {
     "Reveal Library in Finder",
     "Move Library",
     "Rescan Library",
+    "Reload Library",
     "Verify Integrity",
     "Backup",
     "Restore",
     "Merge Library",
     "Empty Trash",
     "Restore All from Trash",
+    "Clear History",
   ]);
 });

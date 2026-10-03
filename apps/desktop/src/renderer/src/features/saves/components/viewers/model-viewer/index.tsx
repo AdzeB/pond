@@ -1,5 +1,8 @@
-import { IconRefreshFill18 } from "@pond/icons/fill/18";
-import { useEffect, useRef, useState } from "react";
+import {
+  IconGroundPlaneDetectionOutline18,
+  IconRefreshOutline18,
+} from "@pond/icons/outline/18";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import {
   AnimationMixer,
   Box3,
@@ -18,6 +21,8 @@ import {
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
+import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+import { bindCameraKeys } from "./camera-keyboard";
 import { loadModel } from "./load-model";
 import styles from "./styles.module.css";
 
@@ -25,9 +30,17 @@ interface ModelViewerProps {
   url: string;
   path: string;
   onUnavailable: () => void;
+  toolbarStart?: ReactNode;
+  toolbarEnd?: ReactNode;
 }
 
-export function ModelViewer({ url, path, onUnavailable }: ModelViewerProps) {
+export function ModelViewer({
+  url,
+  path,
+  onUnavailable,
+  toolbarStart,
+  toolbarEnd,
+}: ModelViewerProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const resetRef = useRef<(() => void) | null>(null);
   const gridRef = useRef<GridHelper | null>(null);
@@ -54,6 +67,18 @@ export function ModelViewer({ url, path, onUnavailable }: ModelViewerProps) {
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
+    renderer.domElement.tabIndex = 0;
+    renderer.domElement.setAttribute("role", "application");
+    renderer.domElement.setAttribute(
+      "aria-label",
+      "3D model. Arrow keys orbit. Shift and arrow keys pan. Plus and minus zoom. Home resets the view.",
+    );
+    const unbindKeys = bindCameraKeys(
+      renderer.domElement,
+      camera,
+      controls,
+      () => resetRef.current?.(),
+    );
 
     const hemisphere = new HemisphereLight(0xffffff, 0x334155, 2.4);
     scene.add(hemisphere);
@@ -134,6 +159,7 @@ export function ModelViewer({ url, path, onUnavailable }: ModelViewerProps) {
       resetRef.current = null;
       gridRef.current = null;
       mixer?.stopAllAction();
+      unbindKeys();
       controls.dispose();
       if (loadedObject) disposeObject(loadedObject);
       renderer.dispose();
@@ -148,27 +174,35 @@ export function ModelViewer({ url, path, onUnavailable }: ModelViewerProps) {
   return (
     <div className={styles.root}>
       <div ref={rootRef} className={styles.canvas} />
-      {loading ? <div className={styles.status}>Loading 3D model</div> : null}
-      <ViewerHud.Root>
-        <ViewerHud.Cluster anchor="top-right">
-          <ViewerHud.Pill role="toolbar" aria-label="View">
-            <ViewerHud.Tool
-              label="Reset View"
-              onClick={() => resetRef.current?.()}
-            >
-              <IconRefreshFill18 />
-            </ViewerHud.Tool>
-            <ViewerHud.Tool
-              icon={false}
-              label="Grid"
-              pressed={gridVisible}
-              onClick={() => setGridVisible((visible) => !visible)}
-            >
-              Grid
-            </ViewerHud.Tool>
-          </ViewerHud.Pill>
-        </ViewerHud.Cluster>
-      </ViewerHud.Root>
+      {loading ? (
+        <div className={styles.status} role="status">
+          Loading 3D model
+        </div>
+      ) : null}
+      <ChromePortal slot="top">
+        <ViewerHud.Bar
+          label="Model"
+          start={toolbarStart}
+          end={
+            <>
+              <ViewerHud.Tool
+                label="Reset View"
+                onClick={() => resetRef.current?.()}
+              >
+                <IconRefreshOutline18 />
+              </ViewerHud.Tool>
+              <ViewerHud.Tool
+                label="Grid"
+                pressed={gridVisible}
+                onClick={() => setGridVisible((visible) => !visible)}
+              >
+                <IconGroundPlaneDetectionOutline18 />
+              </ViewerHud.Tool>
+              {toolbarEnd}
+            </>
+          }
+        />
+      </ChromePortal>
     </div>
   );
 }

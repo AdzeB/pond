@@ -8,7 +8,6 @@ import { SQLiteSyncDialect } from "drizzle-orm/sqlite-core";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { dedupePredicates } from "@/features/search/lib/nl-query";
-import { validatePlan } from "@/features/search/lib/nl-validate";
 import { rangePredicate } from "./range";
 import { changeChoiceMode, isChoiceSelected, selectChoice } from "./selection";
 
@@ -248,14 +247,6 @@ describe("filter dropdown matching", () => {
       { hex: "bad", tolerance: 30 },
     ])
       expect(readColorMatch(value)).toBeNull();
-    const rule: Predicate = {
-      field: "color",
-      operator: "near",
-      value: { hex: "#ff0000", tolerance: 25 },
-    };
-    expect(validatePlan({ filter: query([rule]) }).filter).toEqual(
-      query([rule]),
-    );
   });
 
   it("retains distinct content, matching modes and negation when deduplicating", () => {
@@ -267,7 +258,6 @@ describe("filter dropdown matching", () => {
       { field: "note", operator: "contains", value: "beta" },
     ];
     expect(dedupePredicates([...rows, ...rows])).toEqual(rows);
-    expect(validatePlan({ filter: query(rows) }).filter).toEqual(query(rows));
   });
 
   it("treats blank URLs as missing in memory and SQLite", () => {

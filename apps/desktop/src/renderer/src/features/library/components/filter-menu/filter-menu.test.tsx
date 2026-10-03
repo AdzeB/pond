@@ -2,6 +2,7 @@ import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { savedViews } from "@/features/library/state/saved-views";
 import {
   getOverlays,
   resetFilters,
@@ -48,6 +49,7 @@ describe("filter toolbar", () => {
     host.remove();
     resetFilters();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   async function render() {
@@ -111,8 +113,15 @@ describe("filter toolbar", () => {
       "Date Saved",
       "Date Modified",
       "Customize Filters",
+      "Save",
+      "Clear Filters",
     ]);
     expect(button("Color").querySelector("[data-spectrum]")).not.toBeNull();
+    for (const label of ["Customize Filters", "Save", "Clear Filters"]) {
+      expect(button(label).querySelector("svg")).not.toBeNull();
+    }
+    expect(button("Save").textContent).toBe("");
+    expect(button("Clear Filters").textContent).toBe("");
   });
 
   it("groups filter customization into named sections", async () => {
@@ -151,6 +160,34 @@ describe("filter toolbar", () => {
     expect(button("Source: YouTube")).toBeTruthy();
   });
 
+  it("creates an Untitled saved view and starts inline naming", async () => {
+    const created = {
+      id: "view-1",
+      name: "Untitled",
+      kind: "saved_view" as const,
+      parentId: null,
+      query: { combinator: "and" as const, rules: [] },
+      question: null,
+      sortKey: "savedAt" as const,
+      sortDir: "desc" as const,
+      layout: "waterfall" as const,
+      sortOrder: 0,
+      createdAt: new Date(),
+    };
+    vi.spyOn(savedViews, "create").mockResolvedValue(created);
+    const startEditing = vi.spyOn(savedViews, "startEditing");
+    await render();
+
+    await act(async () => button("Save").click());
+
+    expect(savedViews.create).toHaveBeenCalledWith({
+      kind: "saved_view",
+      name: "Untitled",
+    });
+    await vi.waitFor(() => expect(startEditing).toHaveBeenCalledWith("view-1"));
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+  });
+
   it("shows source names without changing filter values", async () => {
     setSearchInput(
       [{ field: "source", operator: "eq", value: "x.com" }],
@@ -172,7 +209,7 @@ describe("filter toolbar", () => {
         {
           field: "color",
           operator: "near",
-          value: { hex: "#0091ff", tolerance: 60 },
+          value: { hex: "#2b76e7", tolerance: 60 },
         },
       ],
       "",
@@ -180,7 +217,7 @@ describe("filter toolbar", () => {
     await render();
     const color = button("Color: Blue");
     expect(color.textContent).toBe("Color");
-    expect(color.querySelector('[data-swatch="#0091ff"]')).not.toBeNull();
+    expect(color.querySelector('[data-swatch="#2b76e7"]')).not.toBeNull();
     expect(color.querySelector("[data-spectrum]")).toBeNull();
   });
 
@@ -208,6 +245,26 @@ describe("filter toolbar", () => {
         (node) => node.getAttribute("aria-label") === "Source",
       ),
     ).toBe(false);
+  });
+
+  it("clears all toolbar filters while keeping search text", async () => {
+    setSearchInput(
+      [
+        { field: "type", operator: "eq", value: "video" },
+        { field: "source", operator: "eq", value: "youtube.com" },
+      ],
+      "cats",
+      "type:video source:youtube.com cats",
+    );
+    setSemanticQuery("black cat");
+    await render();
+    await act(async () => button("Clear Filters").click());
+    expect(state()).toEqual({
+      query: { combinator: "and", rules: [] },
+      text: "cats",
+    });
+    expect(getOverlays().semanticQuery).toBeNull();
+    expect(button("Clear Filters").disabled).toBe(true);
   });
 
   it("keeps an active category visible when it is unpinned", async () => {

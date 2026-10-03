@@ -98,6 +98,59 @@ describe.skipIf(!nativeAvailable())("complete bulk selections", () => {
     expect(f.batches).toEqual([]);
     expect(f.undo).toEqual([]);
   });
+  it("replaces tags across the complete selection", async () => {
+    const f = fixture();
+    const result = await bulkEditSaves(
+      {
+        ids: f.ids,
+        operation: { kind: "tags", tags: [], mode: "replace" },
+      },
+      f.db,
+      f.commit,
+      f.recordUndo,
+    );
+    expect(result).toEqual({ changed: f.ids.length });
+    expect(
+      f.batches[0]?.filter(
+        (tx) =>
+          tx.kind === "update" &&
+          tx.model === "save" &&
+          tx.patch.tags?.length === 0,
+      ),
+    ).toHaveLength(f.ids.length);
+  });
+  it("replaces notes and removes only the requested tags with undo snapshots", async () => {
+    const f = fixture();
+    f.raw.exec(
+      "update saves set notes='previous', tags='[\"original\",\"Keep\"]'",
+    );
+    await bulkEditSaves(
+      { ids: f.ids, operation: { kind: "notes", notes: "Reviewed" } },
+      f.db,
+      f.commit,
+      f.recordUndo,
+    );
+    expect(f.undo[0]?.[0]).toMatchObject({
+      before: { notes: "previous" },
+      patch: { notes: "Reviewed" },
+    });
+    await bulkEditSaves(
+      {
+        ids: f.ids,
+        operation: { kind: "tags", tags: ["ORIGINAL"], mode: "remove" },
+      },
+      f.db,
+      f.commit,
+      f.recordUndo,
+    );
+    expect(f.undo[1]?.filter((tx) => tx.model === "save")).toHaveLength(
+      f.ids.length,
+    );
+    expect(f.undo[1]?.find((tx) => tx.model === "save")).toMatchObject({
+      before: { tags: ["original", "Keep"] },
+      patch: { tags: ["Keep"] },
+    });
+  });
   it("restores every selected trashed Save and records nothing when commit fails", async () => {
     const f = fixture();
     f.raw.exec("update saves set deleted_at=1");

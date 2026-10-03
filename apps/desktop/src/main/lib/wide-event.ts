@@ -8,7 +8,7 @@ import {
   type SyncRunEvent,
   type WideEvent,
 } from "@pond/schema/events";
-import { eq } from "drizzle-orm";
+import { desc, eq, lt } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../db";
 
@@ -130,7 +130,8 @@ export function toErrorInfo(cause: unknown): ErrorInfo | null {
 export async function commitEvent(ev: WideEvent): Promise<void> {
   try {
     const db = await getDb();
-    db.insert(pipelineEvents)
+    const inserted = db
+      .insert(pipelineEvents)
       .values({
         ts: new Date(ev.ts),
         kind: ev.kind,
@@ -138,15 +139,34 @@ export async function commitEvent(ev: WideEvent): Promise<void> {
         source: ev.source ?? null,
         accountId: "accountId" in ev ? (ev.accountId ?? null) : null,
         op: "op" in ev ? ev.op : null,
-        outcome: ev.outcome,
-        durationMs: ev.durationMs ?? null,
+        outcome:
+          "outcome" in ev
+            ? ev.outcome
+            : "phase" in ev
+              ? ev.phase
+              : `${ev.from}:${ev.to}`,
+        durationMs: "durationMs" in ev ? (ev.durationMs ?? null) : null,
         attempts: "attempts" in ev ? (ev.attempts ?? null) : null,
-        errorName: ev.error?.name ?? null,
-        errorMessage: ev.error?.message ?? null,
+        errorName: "error" in ev ? (ev.error?.name ?? null) : null,
+        errorMessage: "error" in ev ? (ev.error?.message ?? null) : null,
         trigger: "trigger" in ev ? (ev.trigger ?? null) : null,
         payload: ev,
       })
       .run();
+    if (Number(inserted.lastInsertRowid) % 100 === 0) {
+      const boundary = db
+        .select({ id: pipelineEvents.id })
+        .from(pipelineEvents)
+        .orderBy(desc(pipelineEvents.id))
+        .limit(1)
+        .offset(5_000)
+        .get();
+      if (boundary) {
+        db.delete(pipelineEvents)
+          .where(lt(pipelineEvents.id, boundary.id))
+          .run();
+      }
+    }
   } catch (err) {
     log.warn("[pond events] commit failed", err);
   }
@@ -155,6 +175,10 @@ export async function commitEvent(ev: WideEvent): Promise<void> {
 
 function formatSummary(ev: WideEvent): string {
   switch (ev.kind) {
+    case "pipeline.task.attempt":
+      return `[attempt ${ev.source}/${ev.op}] ${ev.phase} · attempt ${ev.attempt} · save=${ev.saveId.slice(0, 8)}`;
+    case "pipeline.source-gate.transition":
+      return `[gate ${ev.source}] ${ev.from}:${ev.to} · trigger=${ev.trigger}`;
     case "pipeline.task.completed": {
       const tag = `[task ${ev.source}/${ev.op}]`;
       const meta: string[] = [

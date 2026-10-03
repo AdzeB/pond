@@ -7,6 +7,7 @@ export interface WindowTrackResize {
   minWidth: number;
   maxWidth: number;
   defaultWidth?: number;
+  width?: number;
   resizeLabel?: string;
   onResize?: (width: number) => void;
   onCollapse?: () => void;

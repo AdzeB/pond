@@ -30,6 +30,11 @@ function ToastList() {
                   <Toast.Meta>{toast.data.progress.detail}</Toast.Meta>
                 ) : null}
               </Toast.Header>
+              {toast.data?.action ? (
+                <Toast.Action onClick={toast.data.action.onClick}>
+                  {toast.data.action.label}
+                </Toast.Action>
+              ) : null}
               <Toast.Close />
             </Toast.Content>
           </Toast.Root>

@@ -1,4 +1,4 @@
-import { IconCheckOutline18 } from "@pond/icons/outline/18";
+import { IconCheckOutline12 } from "@pond/icons/outline/12";
 import { useState } from "react";
 import { Button } from "../button";
 import { Input } from "../input";
@@ -41,57 +41,51 @@ export function QuestionCard({
   }
   return (
     <Reveal>
-      <section
-        className={styles["review-card"]}
-        aria-label={title}
-        aria-busy={busy}
-      >
-        <div className={styles["card-header"]}>
+      <section className={styles.root} aria-label={title} aria-busy={busy}>
+        <div className={styles.header}>
           <span className={styles.eyebrow}>
             {answered ? "Answered" : "Question"}
           </span>
-          <h3>{title}</h3>
+          <h3 className={styles.title}>{title}</h3>
         </div>
         {answered ? (
-          <p className={styles["card-body"]}>
+          <p className={styles.answer}>
             {options.find((option) => option.id === answered)?.label ??
               answered}
           </p>
         ) : (
           <>
-            <fieldset
-              className={styles["question-options"]}
-              aria-label="Choose an answer"
-            >
+            <fieldset className={styles.options} aria-label="Choose an answer">
               {options.map((option) => (
                 <Button
                   key={option.id}
                   variant="ghost"
-                  className={styles["question-option"]}
+                  width="full"
+                  className={styles.option}
                   aria-pressed={value === option.id}
                   disabled={busy || disabled}
                   onClick={() => setValue(option.id)}
                 >
-                  <span className={styles["model-content"]}>
+                  <span className={styles.content}>
                     <span>{option.label}</span>
                     {option.description && (
-                      <span className={styles["row-description"]}>
+                      <span className={styles.description}>
                         {option.description}
                       </span>
                     )}
                   </span>
                   <span className={styles["selection-mark"]}>
-                    {value === option.id && <IconCheckOutline18 />}
+                    {value === option.id && <IconCheckOutline12 />}
                   </span>
                 </Button>
               ))}
             </fieldset>
             {allowFreeform && (
-              <div className={styles["card-body"]}>
-                <Input.Root size="sm">
+              <div className={styles.freeform}>
+                <Input.Root className={styles.input} size="sm">
                   <Input.Field
                     aria-label="Your answer"
-                    placeholder="Write an answer"
+                    placeholder="Or write an answer"
                     disabled={busy || disabled}
                     value={
                       options.some((option) => option.id === value) ? "" : value
@@ -108,11 +102,11 @@ export function QuestionCard({
               </div>
             )}
             {error && (
-              <div className={styles["inline-error"]} role="alert">
+              <div className={styles.error} role="alert">
                 {error}
               </div>
             )}
-            <div className={styles["card-actions"]}>
+            <div className={styles.actions}>
               <Button
                 size="sm"
                 disabled={!value.trim() || busy || disabled}

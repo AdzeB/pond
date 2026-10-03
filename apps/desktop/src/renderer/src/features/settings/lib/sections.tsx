@@ -7,6 +7,7 @@ import { harvestingSection } from "@/features/settings/lib/config-harvesting";
 import { librarySection } from "@/features/settings/lib/config-library";
 import { mcpSection } from "@/features/settings/lib/config-mcp";
 import { processingSection } from "@/features/settings/lib/config-processing";
+import { screenshotsSection } from "@/features/settings/lib/config-screenshots";
 import { searchSection } from "@/features/settings/lib/config-search";
 import { storageSection } from "@/features/settings/lib/config-storage";
 import { viewerSection } from "@/features/settings/lib/config-viewer";
@@ -43,12 +44,6 @@ const ShortcutSettings = lazy(() =>
     default: m.ShortcutSettings,
   })),
 );
-const SecuritySettings = lazy(() =>
-  import("@/features/settings/components/sections/security").then((m) => ({
-    default: m.SecuritySettings,
-  })),
-);
-
 export const SECTION_CONFIGS = new Map<string, SectionConfig>([
   ["general", generalSection],
   ["viewer", viewerSection],
@@ -59,7 +54,6 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
       component: ShortcutSettings,
       title: "Hotkeys",
       keywords: ["hotkeys", "keys", "commands", "Eagle"],
-      width: "wide",
     },
   ],
   [
@@ -131,20 +125,11 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
   ],
   ["library", librarySection],
   ["storage", storageSection],
-  [
-    "security",
-    {
-      component: SecuritySettings,
-      title: "Security",
-      description:
-        "Encrypt this Library and control when Pond requires authorization.",
-      keywords: ["password", "encryption", "lock", "recovery", "idle", "sleep"],
-    },
-  ],
   ["backups", backupsSection],
   ["search", searchSection],
   ["processing", processingSection],
   ["harvesting", harvestingSection],
+  ["screenshots", screenshotsSection],
   [
     "mcp",
     {

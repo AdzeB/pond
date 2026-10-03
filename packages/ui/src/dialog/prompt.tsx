@@ -17,7 +17,6 @@ export interface PromptOptions {
   title: ReactNode;
   description?: ReactNode;
   confirmLabel?: ReactNode;
-  cancelLabel?: ReactNode;
   confirmVariant?: ButtonVariant;
   placeholder?: string;
   inputType?: "text" | "password";
@@ -112,11 +111,6 @@ function PromptContent({
             ) : null}
           </Dialog.Content>
           <Dialog.Footer>
-            <Dialog.Close
-              render={<Button variant="secondary" disabled={busy} />}
-            >
-              {options.cancelLabel ?? "Cancel"}
-            </Dialog.Close>
             <Button
               type="submit"
               variant={options.confirmVariant ?? "primary"}

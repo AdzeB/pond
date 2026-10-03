@@ -1,21 +1,24 @@
 import {
   IconArrowUpRightOutline18,
   IconBanOutline18,
+  IconClone2Outline18,
   IconTrashXmarkOutline18,
   IconXmarkOutline18,
 } from "@pond/icons/outline/18";
-import { Button, TitleBar, Tooltip } from "@pond/ui";
+import { Button, PaneBody, PaneHeader, Tooltip } from "@pond/ui";
 import type {
   DownloadActivity,
   DownloadTransfer,
 } from "@shared/download-activity";
+import { type QueueAttempt, QueueAttemptSchema } from "@shared/queue-contracts";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { z } from "zod";
 import {
   canSkipDownload,
   canTrashDownload,
   confirmSkipDownloadRows,
-  confirmTrashDownloadRows,
+  trashDownloadRows,
 } from "@/features/downloads/components/lib/actions";
 import { downloadStatusLabel } from "@/features/downloads/components/page/status";
 import {
@@ -44,6 +47,7 @@ import { useSave } from "@/features/saves/hooks/use-saves";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
 import { openSave } from "@/features/saves/lib/save-nav";
 import { pool } from "@/features/saves/state/pool";
+import { PropertyList } from "@/shared/components/property-list";
 import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import {
   type DownloadInspectorProperty,
@@ -92,6 +96,15 @@ export function DownloadInspector({ saveId }: { saveId: string }) {
     },
   });
   const query = useDownloadActivity(active);
+  const attempts = useQuery({
+    queryKey: ["queue.attempts", saveId],
+    enabled: active,
+    queryFn: async () =>
+      z
+        .array(QueueAttemptSchema)
+        .parse(await window.pond.query("queue.attempts", { saveId })),
+    refetchInterval: 2_000,
+  });
   const latestActivity = downloadActivityForSave(query.data ?? [], saveId);
   const activity =
     save?.status === "ingesting" && latestActivity?.state !== "running"
@@ -116,6 +129,7 @@ export function DownloadInspector({ saveId }: { saveId: string }) {
       fallbackError={row?.error ?? undefined}
       tasks={details?.tasks}
       properties={details?.properties}
+      attempts={attempts.data}
       details={
         save ? (
           <SaveInfoSections
@@ -137,7 +151,16 @@ export function DownloadInspector({ saveId }: { saveId: string }) {
       }
       onTrash={
         row && canTrashDownload(row)
-          ? () => confirmTrashDownloadRows([row])
+          ? () => trashDownloadRows([row])
+          : undefined
+      }
+      onCopyError={
+        row?.error
+          ? () => {
+              void window.pond.query("clipboard.writeText", {
+                text: row.error ?? "",
+              });
+            }
           : undefined
       }
       onRetry={() => {
@@ -158,12 +181,14 @@ interface DownloadInspectorViewProps {
   fallbackError?: string;
   tasks?: DownloadInspectorTask[];
   properties?: DownloadInspectorProperty[];
+  attempts?: QueueAttempt[];
   details?: ReactNode;
   now: number;
   onClose: () => void;
   onOpenSave?: () => void;
   onSkip?: () => void;
   onTrash?: () => void;
+  onCopyError?: () => void;
   onRetry: () => void;
 }
 
@@ -177,12 +202,14 @@ export function DownloadInspectorView({
   fallbackError,
   tasks = [],
   properties = [],
+  attempts = [],
   details,
   now,
   onClose,
   onOpenSave,
   onSkip,
   onTrash,
+  onCopyError,
   onRetry,
 }: DownloadInspectorViewProps) {
   const scrollFade = useScrollFade<HTMLDivElement>();
@@ -204,32 +231,32 @@ export function DownloadInspectorView({
         : [];
   return (
     <div className={styles.root}>
-      <TitleBar.Root className={styles.header}>
-        <TitleBar.Start>
-          <TitleBar.Label className={styles.label}>Details</TitleBar.Label>
-        </TitleBar.Start>
-        <TitleBar.End className={styles.actions}>
-          {onOpenSave && !saveLoading && !saveError ? (
-            <HeaderIcon label="Open Save" onClick={onOpenSave}>
-              <IconArrowUpRightOutline18 />
-            </HeaderIcon>
-          ) : null}
-          {onSkip ? (
-            <HeaderIcon label="Skip Download" onClick={onSkip}>
-              <IconBanOutline18 />
-            </HeaderIcon>
-          ) : null}
-          {onTrash ? (
-            <HeaderIcon label="Move to Trash" onClick={onTrash}>
-              <IconTrashXmarkOutline18 />
-            </HeaderIcon>
-          ) : null}
-          <HeaderIcon label="Close Details" onClick={onClose}>
-            <IconXmarkOutline18 />
+      <PaneHeader title="Details">
+        {onOpenSave && !saveLoading && !saveError ? (
+          <HeaderIcon label="Open Save" onClick={onOpenSave}>
+            <IconArrowUpRightOutline18 />
           </HeaderIcon>
-        </TitleBar.End>
-      </TitleBar.Root>
-      <div className={styles.scroll} {...scrollFade}>
+        ) : null}
+        {onSkip ? (
+          <HeaderIcon label="Skip Download" onClick={onSkip}>
+            <IconBanOutline18 />
+          </HeaderIcon>
+        ) : null}
+        {onTrash ? (
+          <HeaderIcon label="Move to Trash" onClick={onTrash}>
+            <IconTrashXmarkOutline18 />
+          </HeaderIcon>
+        ) : null}
+        {onCopyError ? (
+          <HeaderIcon label="Copy Error" onClick={onCopyError}>
+            <IconClone2Outline18 />
+          </HeaderIcon>
+        ) : null}
+        <HeaderIcon label="Close Details" onClick={onClose}>
+          <IconXmarkOutline18 />
+        </HeaderIcon>
+      </PaneHeader>
+      <PaneBody className={styles.scroll} {...scrollFade}>
         {saveError ? (
           <div className={styles.notice} role="status">
             <p>Couldn't load this save.</p>
@@ -382,8 +409,28 @@ export function DownloadInspectorView({
             <ActivityProperties properties={properties} />
           </Section>
         ) : null}
+        {attempts.length > 0 ? (
+          <Section title="Attempt History">
+            <ol className={styles.timeline}>
+              {attempts.map((attempt) => (
+                <li className={styles.event} key={attempt.id}>
+                  <span className={styles["event-dot"]} aria-hidden="true" />
+                  <span>
+                    {attempt.op ?? "Source gate"}: {attempt.outcome}
+                    {attempt.errorMessage ? (
+                      <small>{attempt.errorMessage}</small>
+                    ) : null}
+                  </span>
+                  <span className={styles.timing}>
+                    {new Date(attempt.ts).toLocaleTimeString()}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </Section>
+        ) : null}
         {saveLoading ? <SaveInfoSectionsSkeleton /> : details}
-      </div>
+      </PaneBody>
     </div>
   );
 }
@@ -478,7 +525,7 @@ function RequestDetails({
       {multiple ? (
         <h4 className={styles["section-title"]}>File {transfer.fileIndex}</h4>
       ) : null}
-      <dl className={styles.rows}>
+      <PropertyList.Root>
         <Property label="Method" value={request.method} />
         <Property label="Host" value={request.host} />
         {request.status != null ? (
@@ -499,17 +546,17 @@ function RequestDetails({
             value={formatTiming(request.firstByteMs)}
           />
         ) : null}
-      </dl>
+      </PropertyList.Root>
     </div>
   );
 }
 
 function Property({ label, value }: { label: string; value: string }) {
   return (
-    <div className={styles.row}>
-      <dt className={styles["property-label"]}>{label}</dt>
-      <dd className={styles.value}>{value}</dd>
-    </div>
+    <PropertyList.Row>
+      <PropertyList.Label>{label}</PropertyList.Label>
+      <PropertyList.Value>{value}</PropertyList.Value>
+    </PropertyList.Row>
   );
 }
 
@@ -520,7 +567,7 @@ function ActivityProperties({
 }) {
   if (properties.length === 0) return null;
   return (
-    <dl className={styles["activity-properties"]}>
+    <PropertyList.Root className={styles["activity-properties"]}>
       {properties.map((property) => (
         <Property
           key={property.label}
@@ -528,6 +575,6 @@ function ActivityProperties({
           value={property.value}
         />
       ))}
-    </dl>
+    </PropertyList.Root>
   );
 }

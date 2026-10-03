@@ -1,0 +1,72 @@
+.root {
+  min-width: 0;
+}
+
+.list {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+}
+
+.tab {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+  height: var(--ds-size-sm);
+  padding: 0 10px;
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-lg);
+  line-height: 1;
+  color: var(--ds-gray-11);
+  cursor: var(--ds-cursor-interactive, pointer);
+  user-select: none;
+  background: transparent;
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  transition:
+    color var(--ds-duration-fast) var(--ds-easing-standard),
+    background var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a2);
+  }
+
+  &[data-active] {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-3);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ds-focus-ring);
+    outline-offset: 1px;
+  }
+
+  &[data-icon] {
+    width: var(--ds-size-sm);
+    padding: 0;
+  }
+
+  & > :where(svg) {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.panel {
+  min-width: 0;
+}
+
+.indicator {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab {
+    transition: none;
+  }
+}

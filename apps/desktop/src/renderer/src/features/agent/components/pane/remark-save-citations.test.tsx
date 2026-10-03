@@ -18,7 +18,16 @@ it("turns valid bare Save references into compact links within normal and bold t
   const html = render("Use #save-1, **#save-2**, or (#save-6).");
   expect(html).toContain('<a href="#save-1">1</a>');
   expect(html).toContain('<strong><a href="#save-2">2</a></strong>');
-  expect(html).toContain('(<a href="#save-6">6</a>)');
+  expect(html).toContain('(<a href="#save-6">6</a>\u2060)');
+});
+
+it("keeps sentence punctuation attached to Save citations", () => {
+  const html = render("[Linked](#save-1). **#save-2**, (#save-6).");
+  expect(html).toContain('<a href="#save-1">Linked</a>\u2060.');
+  expect(html).toContain(
+    '<strong><a href="#save-2">2</a></strong>\u2060,',
+  );
+  expect(html).toContain('<a href="#save-6">6</a>\u2060)');
 });
 
 it("preserves escaped references without suppressing their valid neighbors", () => {

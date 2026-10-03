@@ -4,6 +4,10 @@
   --window-background-primary: var(--ds-gray-3);
 }
 
+.shell > [data-slot="center"] {
+  margin-right: 16px;
+}
+
 :global(html[data-platform="mac"]) .shell {
   --window-chrome-start: 96px;
 }

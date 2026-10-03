@@ -66,7 +66,7 @@
 
   font-family: var(--ds-ui-font-family);
   font-size: var(--ds-ui-font-size);
-  font-weight: var(--ds-weight-normal);
+  font-weight: var(--ds-weight-md);
 
   font-feature-settings:
     "liga" 1,
@@ -145,13 +145,13 @@ body {
   -webkit-mask-image: linear-gradient(
     to bottom,
     #000 0%,
-    #000 calc(100% - var(--scroll-fade-size, 32px)),
+    #000 calc(100% - var(--scroll-fade-size-end, var(--scroll-fade-size, 32px))),
     transparent
   );
   mask-image: linear-gradient(
     to bottom,
     #000 0%,
-    #000 calc(100% - var(--scroll-fade-size, 32px)),
+    #000 calc(100% - var(--scroll-fade-size-end, var(--scroll-fade-size, 32px))),
     transparent
   );
 }
@@ -176,14 +176,14 @@ body {
     to bottom,
     transparent,
     #000 var(--scroll-fade-size, 32px),
-    #000 calc(100% - var(--scroll-fade-size, 32px)),
+    #000 calc(100% - var(--scroll-fade-size-end, var(--scroll-fade-size, 32px))),
     transparent
   );
   mask-image: linear-gradient(
     to bottom,
     transparent,
     #000 var(--scroll-fade-size, 32px),
-    #000 calc(100% - var(--scroll-fade-size, 32px)),
+    #000 calc(100% - var(--scroll-fade-size-end, var(--scroll-fade-size, 32px))),
     transparent
   );
 }

@@ -1,0 +1,52 @@
+.fileCard {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: center;
+  width: min(100%, 34rem);
+  padding: 32px;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow-md);
+}
+
+.heading {
+  min-width: 0;
+  text-align: center;
+}
+
+.heading h1 {
+  margin: 0 0 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-lg);
+  color: var(--ds-gray-12);
+}
+
+.heading p {
+  margin: 4px 0 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-10);
+  word-break: break-word;
+}
+
+.fileMark {
+  display: grid;
+  place-items: end center;
+  width: 104px;
+  height: 128px;
+  padding: 16px;
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-xl);
+  color: var(--ds-gray-11);
+  background: var(--ds-gray-2);
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}

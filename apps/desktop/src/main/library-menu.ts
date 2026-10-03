@@ -4,10 +4,12 @@ export const LIBRARY_MENU_LABELS = [
   "Reveal Library in Finder",
   "Move Library",
   "Rescan Library",
+  "Reload Library",
   "Verify Integrity",
   "Backup",
   "Restore",
   "Merge Library",
   "Empty Trash",
   "Restore All from Trash",
+  "Clear History",
 ] as const;

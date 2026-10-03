@@ -22,7 +22,7 @@
   & h2 {
     margin: 0;
     font-size: var(--ds-text-md);
-    font-weight: var(--ds-weight-medium);
+    font-weight: var(--ds-weight-lg);
     color: var(--ds-gray-11);
   }
 
@@ -38,8 +38,8 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(var(--grid-min, 130px), 1fr));
+  gap: 10px;
   padding: 0;
   margin: 0;
   list-style: none;
@@ -47,24 +47,49 @@
 
 .card {
   display: grid;
-  grid-template-rows: minmax(96px, 1fr) auto auto;
-  gap: 6px;
+  grid-template-rows: auto auto auto;
+  gap: 2px;
+  align-items: start;
+  justify-content: stretch;
   min-width: 0;
-  height: 100%;
+  height: auto;
+  padding: 0;
   text-align: left;
+  background: transparent;
+
+  &:hover {
+    background: transparent;
+  }
 }
 
 .cover {
   display: grid;
-  place-items: center;
+  grid-template-rows: repeat(2, 1fr);
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
   width: 100%;
-  min-width: 0;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1;
+  padding: 5px;
   overflow: hidden;
-  background: var(--ds-gray-3);
-  border: var(--ds-border-width) solid var(--ds-gray-5);
+  background: var(--ds-gray-a3);
   border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-sm);
+}
 
+.card:hover .cover {
+  background: var(--ds-gray-a4);
+}
+
+.preview,
+.fallback {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: var(--ds-radius-sm);
+}
+
+.preview {
   & img {
     width: 100%;
     height: 100%;
@@ -73,8 +98,8 @@
 }
 
 .fallback {
-  display: grid;
-  place-items: center;
+  grid-row: 1 / -1;
+  grid-column: 1 / -1;
   color: var(--ds-gray-9);
 }
 
@@ -83,16 +108,37 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: var(--ds-text-sm);
+  line-height: 1.2;
   white-space: nowrap;
 }
 
 .name {
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-medium);
+  margin-top: 4px;
+  margin-bottom: 2px;
+  font-weight: var(--ds-weight-lg);
   color: var(--ds-gray-12);
 }
 
 .metadata {
   font-size: var(--ds-text-sm);
   color: var(--ds-gray-9);
+}
+
+.selection {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.card[aria-selected="true"] {
+  background: transparent;
+
+  & .cover {
+    outline: 1px solid var(--ds-gray-8);
+    background: var(--ds-gray-a5);
+  }
 }

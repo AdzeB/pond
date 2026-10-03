@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { downloadsColumnsLayout } from "@/features/downloads/state/downloads-columns";
 import { downloadsFilters } from "@/features/downloads/state/downloads-filters";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
 import { libraryChrome } from "@/features/library/state/library-chrome";
@@ -10,11 +11,12 @@ import { savesStore } from "@/features/saves/state/pool";
 import { primarySelection } from "@/features/saves/state/selection";
 import type { Save } from "@/features/saves/types";
 import { DownloadsPage } from "./";
+import { hydrateLiveDownloadSaves } from "./hydrate-live-saves";
 
 function save(
   id: string,
   status: Save["status"],
-  taskStatus?: "running" | "pending" | "failed",
+  taskStatus?: "running" | "pending" | "dead",
   extras: Partial<Save> = {},
 ): Save {
   return {
@@ -41,7 +43,7 @@ function save(
             status: taskStatus,
             attempts: taskStatus === "pending" ? 0 : 1,
             maxAttempts: 5,
-            lastError: taskStatus === "failed" ? "Network unavailable" : null,
+            lastError: taskStatus === "dead" ? "Network unavailable" : null,
             nextRunAt: 0,
             updatedAt: 1,
           },
@@ -80,6 +82,7 @@ beforeEach(() => {
   }));
   vi.clearAllMocks();
   downloadsFilters.reset();
+  downloadsColumnsLayout.reset();
   primarySelection.set(null);
   libraryChrome.inspectSave(null);
   libraryChrome.closeRightPane();
@@ -91,14 +94,13 @@ beforeEach(() => {
     if (name === "pipeline.status") return { paused: false };
     if (name === "pipeline.inflight") return [];
     if (name === "downloads.ingestingOrFailed") return [];
-    if (name === "saves.retryFailed") return { ok: true, requeued: 1 };
     if (name === "saves.getMany") return [];
     throw new Error(`Unexpected query: ${name}`);
   });
   setSaves([
     save("Running video", "ingesting", "running"),
     save("Waiting video", "ingesting", "pending"),
-    save("Failed video", "failed", "failed"),
+    save("Failed video", "failed", "dead"),
   ]);
   host = document.createElement("div");
   document.body.append(host);
@@ -144,8 +146,33 @@ async function click(selector: string, modifiers = {}) {
     await new Promise((resolve) => setTimeout(resolve, 0));
   });
 }
+
+async function clickButton(label: string) {
+  const button = [...document.querySelectorAll("button")].find(
+    (node) =>
+      node.getAttribute("aria-label") === label || node.textContent === label,
+  );
+  if (!button) throw new Error(`Missing button ${label}`);
+  await act(async () => button.click());
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+}
+
+async function clickFilterOption(label: string) {
+  const option = [
+    ...document.querySelectorAll('[role="menuitemcheckbox"]'),
+  ].find((node) => node.textContent === label);
+  if (!option) throw new Error(`Missing filter option ${label}`);
+  await act(async () =>
+    option.dispatchEvent(new MouseEvent("click", { bubbles: true })),
+  );
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+}
 it("shows live downloads that paging missed without hydrating the whole library", async () => {
-  const queued = save("Old failure", "failed", "failed");
+  const queued = save("Old failure", "failed", "dead");
   setSaves([save("Recent clip", "complete")]);
   query.mockImplementation(async (name: string, args?: { ids?: string[] }) => {
     if (name === "settings.getPrefs") return {};
@@ -170,22 +197,54 @@ it("shows live downloads that paging missed without hydrating the whole library"
   expect(host.querySelector('[aria-label="Inspect Recent clip"]')).toBeNull();
 });
 
-it("keeps running work active when the queue is paused and scopes retry to visible failures", async () => {
+it("does not refetch queue saves that are already in the library pool", async () => {
+  query.mockImplementation(async (name: string) => {
+    if (name === "settings.getPrefs") return {};
+    if (name === "downloads.activity") return [];
+    if (name === "downloads.history") return { rows: [], nextCursor: null };
+    if (name === "pipeline.status") return { paused: false };
+    if (name === "pipeline.inflight") return [];
+    if (name === "downloads.ingestingOrFailed") {
+      return ["Running video", "Waiting video", "Failed video"];
+    }
+    if (name === "saves.getMany") return [];
+    throw new Error(`Unexpected query: ${name}`);
+  });
+
+  await render();
+
+  expect(query).not.toHaveBeenCalledWith("saves.getMany", expect.anything());
+});
+
+it("hydrates large queues in renderer-sized batches", async () => {
+  setSaves([]);
+  const ids = Array.from({ length: 401 }, (_, index) => `save-${index}`);
+
+  await hydrateLiveDownloadSaves(ids, () => false);
+
+  const batches = query.mock.calls.flatMap(([name, args]) =>
+    name === "saves.getMany" ? [args.ids as string[]] : [],
+  );
+  expect(batches.map((batch) => batch.length)).toEqual([200, 200, 1]);
+});
+
+it("keeps running work active when the queue is paused without showing action bars", async () => {
   await render();
   expect(host.querySelector('[role="tablist"]')).toBeNull();
+  expect(host.querySelector('[aria-label="Filter"]')).not.toBeNull();
+  expect(host.querySelector('[aria-label="Queue details"]')).toBeNull();
   expect(host.querySelector("footer")).toBeNull();
   await click('[aria-label="Pause Queue"]');
   expect(pipelinePause).toHaveBeenCalledWith(true);
   expect(
     host.querySelector('[data-status="running"]')?.hasAttribute("data-moving"),
   ).toBe(true);
-  expect(host.querySelector('[data-status="pending"]')?.textContent).toContain(
+  expect(host.querySelector('[data-status="waiting"]')?.textContent).toContain(
     "Paused",
   );
-  await click('[aria-label="Retry Failed"]');
-  expect(query).toHaveBeenCalledWith("saves.retryFailed", {
-    ids: ["Failed video"],
-  });
+  await click('[aria-label="Inspect Failed video"]', { metaKey: true });
+  expect(host.querySelector('[aria-label="Selected downloads"]')).toBeNull();
+  expect(host.querySelector('[aria-label="Retry Selected"]')).toBeNull();
   expect(
     host.querySelector('[aria-label="Actions for Running video"]'),
   ).toBeNull();
@@ -202,7 +261,7 @@ it("preserves row selection and prunes completed selections after live updates",
   await act(async () =>
     setSaves([
       save("Running video", "complete"),
-      save("Failed video", "failed", "failed"),
+      save("Failed video", "failed", "dead"),
     ]),
   );
   expect(downloadsSelection.size()).toBe(0);
@@ -210,6 +269,27 @@ it("preserves row selection and prunes completed selections after live updates",
   expect(primarySelection.get()).toBeNull();
   expect(libraryChrome.getState()).toMatchObject({
     inspectorSaveId: "Failed video",
+    inspectorMode: "download",
+    rightPane: "inspector",
+  });
+});
+
+it("uses the shared selected-row state when inspecting a download", async () => {
+  await render();
+  await click('[aria-label="Inspect Running video"]');
+
+  const selectedRow = host
+    .querySelector('[aria-label="Inspect Running video"]')
+    ?.closest('[role="row"]');
+  expect(selectedRow?.hasAttribute("data-selected")).toBe(true);
+  expect(selectedRow?.hasAttribute("data-inspected")).toBe(false);
+});
+
+it("replaces a stale save inspector with a visible download", async () => {
+  libraryChrome.inspectSave("stale-save");
+  await render();
+  expect(libraryChrome.getState()).toMatchObject({
+    inspectorSaveId: "Running video",
     inspectorMode: "download",
     rightPane: "inspector",
   });
@@ -226,6 +306,12 @@ it("lists waiting and completed rows in the same table", async () => {
   expect(
     host.querySelector('[aria-label="Inspect Waiting video"]'),
   ).not.toBeNull();
+  const waitingProgress = host.querySelector(
+    '[aria-label="Waiting video transfer progress"]',
+  );
+  expect(waitingProgress?.getAttribute("aria-valuenow")).toBe("0");
+  expect(waitingProgress?.textContent).toBe("0%");
+  expect(waitingProgress?.querySelector("progress")).toBeNull();
   await click('[aria-label="Sort by Name"]');
   expect(
     [...host.querySelectorAll('button[aria-label^="Inspect "]')].map((button) =>
@@ -256,6 +342,19 @@ it("shows completed history in the table without opening a group", async () => {
       return {
         rows: [
           {
+            id: 2,
+            saveId: "local-file",
+            title: "Local file",
+            url: "pond:local/local-file",
+            source: "local",
+            outcome: "complete",
+            durationMs: 0,
+            attempts: 0,
+            failedOp: null,
+            error: null,
+            ts: 2_000,
+          },
+          {
             id: 1,
             saveId: "done",
             title: "Saved clip",
@@ -274,6 +373,7 @@ it("shows completed history in the table without opening a group", async () => {
     throw new Error(`Unexpected query: ${name}`);
   });
   await render();
+  expect(host.querySelector('[aria-label="Inspect Local file"]')).toBeNull();
   await click('[aria-label="Inspect Saved clip"]');
   expect(libraryChrome.getState()).toMatchObject({
     inspectorSaveId: "done",
@@ -284,7 +384,7 @@ it("shows completed history in the table without opening a group", async () => {
 it("keeps status out of the name and shows the normalized source", async () => {
   setSaves([
     save("Clip", "ingesting", "pending"),
-    save("Failed video", "failed", "failed", {
+    save("Failed video", "failed", "dead", {
       source: "web",
       url: "https://www.youtube.com/",
       title: "https://www.youtube.com/",
@@ -300,12 +400,10 @@ it("keeps status out of the name and shows the normalized source", async () => {
     host.querySelector('[aria-label="Inspect https://www.youtube.com/"]')
       ?.textContent,
   ).not.toContain("Failed");
-  expect(host.querySelector('[data-status="pending"]')?.textContent).toContain(
-    "In Progress",
+  expect(host.querySelector('[data-status="waiting"]')?.textContent).toContain(
+    "Waiting",
   );
-  expect(host.querySelector('[data-status="failed"]')?.textContent).toContain(
-    "Failed",
-  );
+  expect(host.textContent).toContain("Stopped after 1 attempt");
   const youtubeRow = host
     .querySelector('[aria-label="Inspect https://www.youtube.com/"]')
     ?.closest('[role="row"]');
@@ -326,23 +424,41 @@ it("keeps media previews out of the name column", async () => {
   expect(video?.querySelector("img")).toBeNull();
 });
 
-it("filters the table from the Status chip", async () => {
+it("filters active, waiting, and failed work from the filter toolbar", async () => {
   await render();
-  await click('[aria-label="Filter"]');
-  await click('[aria-label="Status"]');
-  const failed = [
-    ...document.querySelectorAll('[role="menuitemcheckbox"]'),
-  ].find((node) => node.textContent === "Failed");
-  if (!failed) throw new Error("Missing Failed filter");
-  await act(async () => {
-    failed.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-  });
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+  await clickButton("Filter");
+  await clickButton("Status");
+  await clickFilterOption("Waiting");
+  expect(
+    host.querySelector('[aria-label="Inspect Waiting video"]'),
+  ).not.toBeNull();
+  expect(host.querySelector('[aria-label="Inspect Running video"]')).toBeNull();
+  expect(host.querySelector('[aria-label="Inspect Failed video"]')).toBeNull();
+
+  await clickFilterOption("Waiting");
+  await clickFilterOption("Active");
+  expect(
+    host.querySelector('[aria-label="Inspect Running video"]'),
+  ).not.toBeNull();
+  expect(host.querySelector('[aria-label="Inspect Waiting video"]')).toBeNull();
+
+  await clickFilterOption("Active");
+  await clickFilterOption("Failed");
   expect(
     host.querySelector('[aria-label="Inspect Failed video"]'),
   ).not.toBeNull();
   expect(host.querySelector('[aria-label="Inspect Running video"]')).toBeNull();
   expect(host.querySelector('[aria-label="Inspect Waiting video"]')).toBeNull();
+});
+
+it("bounds the initial render before the downloads table is measured", async () => {
+  setSaves(
+    Array.from({ length: 1_000 }, (_, index) =>
+      save(`Failed video ${index}`, "failed", "dead"),
+    ),
+  );
+
+  await render();
+
+  expect(host.querySelectorAll('[role="row"]').length).toBeLessThan(100);
 });

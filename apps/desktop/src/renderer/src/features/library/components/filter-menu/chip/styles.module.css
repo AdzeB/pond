@@ -16,8 +16,9 @@
   }
 
   &[data-layout="color"] {
-    --ds-popup-min-width: 220px;
-    width: min(220px, var(--available-width));
+    --ds-popup-min-width: 202px;
+    width: min(202px, var(--available-width));
+    border-radius: var(--ds-radius-md);
   }
 
   &[data-layout="content"] {

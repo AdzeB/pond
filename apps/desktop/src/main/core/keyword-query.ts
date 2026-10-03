@@ -1,7 +1,7 @@
 import { folderMetadata, folders, saveFolders, saves } from "@pond/schema/db";
 import { type SQL, sql } from "drizzle-orm";
 
-type KeywordScope =
+export type KeywordScope =
   | "title"
   | "description"
   | "creator"
@@ -9,10 +9,12 @@ type KeywordScope =
   | "notes"
   | "url"
   | "folder"
-  | "folder-description";
+  | "folder-description"
+  | "extension"
+  | "annotation";
 type IndexedKeywordScope = Exclude<
   KeywordScope,
-  "folder" | "folder-description"
+  "folder" | "folder-description" | "extension"
 >;
 type Keyword =
   | {
@@ -37,6 +39,8 @@ const SCOPES = new Set<string>([
   "url",
   "folder",
   "folder-description",
+  "extension",
+  "annotation",
 ]);
 function isKeywordScope(value: string): value is KeywordScope {
   return SCOPES.has(value);
@@ -168,11 +172,13 @@ function termQuery(term: Extract<Keyword, { kind: "term" }>): string {
     tags: "tag_names",
     notes: "notes",
     url: "url",
+    annotation: "annotations",
   } satisfies Record<IndexedKeywordScope, string>;
   if (
     !term.scope ||
     term.scope === "folder" ||
-    term.scope === "folder-description"
+    term.scope === "folder-description" ||
+    term.scope === "extension"
   )
     return value;
   return `${columns[term.scope]} : ${value}`;
@@ -181,23 +187,57 @@ function termQuery(term: Extract<Keyword, { kind: "term" }>): string {
 export function compileKeywordWhere(
   query: string,
   mode: "all" | "any" = "all",
+  scopes?: readonly KeywordScope[],
 ): SQL | undefined {
   const tree = parse(query, mode);
+  function compileTerm(
+    term: Extract<Keyword, { kind: "term" }>,
+    scope = term.scope,
+  ): SQL {
+    if (!scope) {
+      const indexed = sql`${saves.id} in (
+        select id from saves_fts
+        where saves_fts match ${termQuery(term)}
+      )`;
+      return sql`(${indexed})
+        or (${compileTerm(term, "folder")})
+        or (${compileTerm(term, "folder-description")})
+        or (${compileTerm(term, "extension")})`;
+    }
+    if (scope === "folder" || scope === "folder-description") {
+      const column =
+        scope === "folder" ? folders.name : folderMetadata.description;
+      const value = `%${term.value.toLowerCase()}%`;
+      return sql`exists (
+        select 1 from ${saveFolders}
+        inner join ${folders} on ${folders.id} = ${saveFolders.folderId}
+        left join ${folderMetadata} on ${folderMetadata.folderId} = ${folders.id}
+        where ${saveFolders.saveId} = ${saves.id}
+          and lower(coalesce(${column}, '')) like ${value}
+      )`;
+    }
+    if (scope === "extension") {
+      const value = `%.${term.value.toLowerCase()}%`;
+      return sql`exists (
+        select 1 from json_each(${saves.files})
+        where lower(json_extract(value, '$.path')) like ${value}
+      )`;
+    }
+    return sql`${saves.id} in (
+      select id from saves_fts
+      where saves_fts match ${termQuery({ ...term, scope })}
+    )`;
+  }
   function compile(node: Keyword): SQL {
     if (node.kind === "term") {
-      if (node.scope === "folder" || node.scope === "folder-description") {
-        const column =
-          node.scope === "folder" ? folders.name : folderMetadata.description;
-        const value = `%${node.value.toLowerCase()}%`;
-        return sql`exists (
-          select 1 from ${saveFolders}
-          inner join ${folders} on ${folders.id} = ${saveFolders.folderId}
-          left join ${folderMetadata} on ${folderMetadata.folderId} = ${folders.id}
-          where ${saveFolders.saveId} = ${saves.id}
-            and lower(coalesce(${column}, '')) like ${value}
-        )`;
-      }
-      return sql`${saves.id} in (select id from saves_fts where saves_fts match ${termQuery(node)})`;
+      const selected = node.scope ? [node.scope] : scopes;
+      if (!selected?.length) return compileTerm(node);
+      const [first, ...rest] = selected;
+      if (!first) return compileTerm(node);
+      return rest.reduce<SQL>(
+        (where, scope) => sql`(${where}) or (${compileTerm(node, scope)})`,
+        compileTerm(node, first),
+      );
     }
     if (node.kind === "not") return sql`not (${compile(node.child)})`;
     return node.kind === "and"

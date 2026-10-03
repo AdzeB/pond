@@ -4,13 +4,18 @@ import {
 } from "@pond/icons/outline/18";
 import { Select, Slider } from "@pond/ui";
 import type { Book, NavItem, Rendition } from "epubjs";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
+import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+import { ViewerToolbarGroups } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import styles from "./styles.module.css";
 
 interface EpubViewerProps {
   url: string;
   onUnavailable: () => void;
+  toolbarStart?: ReactNode;
+  toolbarEnd?: ReactNode;
+  toolbarNavigation?: ReactNode;
 }
 
 function flattenNavigation(
@@ -23,7 +28,13 @@ function flattenNavigation(
   ]);
 }
 
-export function EpubViewer({ url, onUnavailable }: EpubViewerProps) {
+export function EpubViewer({
+  url,
+  onUnavailable,
+  toolbarStart,
+  toolbarEnd,
+  toolbarNavigation,
+}: EpubViewerProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const renditionRef = useRef<Rendition | null>(null);
   const [toc, setToc] = useState<Array<NavItem & { depth: number }>>([]);
@@ -99,46 +110,58 @@ export function EpubViewer({ url, onUnavailable }: EpubViewerProps) {
     <div className={styles.root}>
       <div ref={rootRef} className={styles.reader} />
       {!ready ? <div className={styles.status}>Opening book</div> : null}
-      <ViewerHud.Root>
-        <ViewerHud.Cluster anchor="top-left">
-          <ViewerHud.Pill role="toolbar" aria-label="Pages">
-            <ViewerHud.Tool
-              label="Previous"
-              onClick={() => void renditionRef.current?.prev()}
-            >
-              <IconArrowLeftOutline18 />
-            </ViewerHud.Tool>
-            <ViewerHud.Tool
-              label="Next"
-              onClick={() => void renditionRef.current?.next()}
-            >
-              <IconArrowRightOutline18 />
-            </ViewerHud.Tool>
-          </ViewerHud.Pill>
-        </ViewerHud.Cluster>
-        <ViewerHud.Cluster anchor="top-right">
-          <ViewerHud.Pill className={styles.size} aria-label="Type size">
-            <ViewerHud.Scale>{fontSize}%</ViewerHud.Scale>
-            <Slider.Root
-              min={75}
-              max={175}
-              step={1}
-              value={fontSize}
-              onValueChange={(next) => {
-                const value = Array.isArray(next) ? (next[0] ?? 100) : next;
-                setFontSize(value);
-              }}
-            >
-              <Slider.Control>
-                <Slider.Track>
-                  <Slider.Indicator />
-                  <Slider.Thumb aria-label="Book font size" />
-                </Slider.Track>
-              </Slider.Control>
-            </Slider.Root>
-          </ViewerHud.Pill>
-        </ViewerHud.Cluster>
-        {chapters.length > 0 ? (
+      <ChromePortal slot="top">
+        <ViewerHud.Bar
+          label="Book"
+          start={toolbarStart}
+          center={
+            <div className={styles.size}>
+              <ViewerHud.Scale>{fontSize}%</ViewerHud.Scale>
+              <Slider.Root
+                min={75}
+                max={175}
+                step={1}
+                value={fontSize}
+                onValueChange={(next) => {
+                  const value = Array.isArray(next) ? (next[0] ?? 100) : next;
+                  setFontSize(value);
+                }}
+              >
+                <Slider.Control>
+                  <Slider.Track>
+                    <Slider.Indicator />
+                    <Slider.Thumb aria-label="Book font size" />
+                  </Slider.Track>
+                </Slider.Control>
+              </Slider.Root>
+            </div>
+          }
+          end={
+            <ViewerToolbarGroups
+              actions={toolbarEnd}
+              view={
+                <>
+                  <ViewerHud.Tool
+                    label="Previous"
+                    onClick={() => void renditionRef.current?.prev()}
+                  >
+                    <IconArrowLeftOutline18 />
+                  </ViewerHud.Tool>
+                  <ViewerHud.Tool
+                    label="Next"
+                    onClick={() => void renditionRef.current?.next()}
+                  >
+                    <IconArrowRightOutline18 />
+                  </ViewerHud.Tool>
+                </>
+              }
+              navigation={toolbarNavigation}
+            />
+          }
+        />
+      </ChromePortal>
+      {chapters.length > 0 ? (
+        <ViewerHud.Root>
           <ViewerHud.Cluster anchor="bottom-center">
             <ViewerHud.Pill className={styles.contents}>
               <Select.Root
@@ -169,8 +192,8 @@ export function EpubViewer({ url, onUnavailable }: EpubViewerProps) {
               </Select.Root>
             </ViewerHud.Pill>
           </ViewerHud.Cluster>
-        ) : null}
-      </ViewerHud.Root>
+        </ViewerHud.Root>
+      ) : null}
     </div>
   );
 }

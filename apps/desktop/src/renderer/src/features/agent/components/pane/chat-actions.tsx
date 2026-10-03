@@ -1,10 +1,11 @@
 import {
   IconClone2Outline18,
+  IconDotsOutline18,
   IconDownloadOutline18,
   IconPencilOutline18,
   IconTrash2Outline18,
 } from "@pond/icons/outline/18";
-import { Button, Dialog, Tooltip } from "@pond/ui";
+import { Dialog, Menu, Tooltip } from "@pond/ui";
 import type { AssistantMessage } from "@shared/assistant";
 import { conversationMarkdown } from "@shared/conversation-markdown";
 import { notify } from "@/shared/lib/toast";
@@ -15,11 +16,13 @@ export function ChatActions({
   title,
   messages,
   disabled,
+  onRename,
 }: {
   chatId: string | null;
   title: string | null;
   messages: AssistantMessage[];
   disabled: boolean;
+  onRename: () => void;
 }) {
   async function transfer(kind: "copy" | "export") {
     if (!chatId) return;
@@ -51,77 +54,63 @@ export function ChatActions({
     }
   }
   return (
-    <>
-      <Tooltip label="Rename Chat" side="bottom">
-        <Button
+    <Menu.Root>
+      <Tooltip label="Chat Actions" side="bottom">
+        <Menu.Trigger
           icon
           size="sm"
           variant="ghost"
-          aria-label="Rename Chat"
-          disabled={disabled || !chatId}
-          onClick={() => {
-            if (!chatId) return;
-            Dialog.prompt({
-              title: "Rename Chat",
-              initialValue: title || "New Chat",
-              confirmLabel: "Rename",
-              onConfirm: async (value) => {
-                const next = value.trim();
-                if (!next || next.length > 120)
-                  throw new Error("Enter a name between 1 and 120 characters.");
-                await assistant.renameChat(chatId, next);
-              },
-            });
-          }}
+          aria-label="Chat Actions"
+          disabled={disabled || (!chatId && !messages.length)}
         >
-          <IconPencilOutline18 />
-        </Button>
+          <IconDotsOutline18 />
+        </Menu.Trigger>
       </Tooltip>
-      <Tooltip label="Copy Conversation" side="bottom">
-        <Button
-          icon
-          size="sm"
-          variant="ghost"
-          aria-label="Copy Conversation"
-          disabled={disabled || !messages.length}
-          onClick={() => void transfer("copy")}
-        >
-          <IconClone2Outline18 />
-        </Button>
-      </Tooltip>
-      <Tooltip label="Export Markdown" side="bottom">
-        <Button
-          icon
-          size="sm"
-          variant="ghost"
-          aria-label="Export Markdown"
-          disabled={disabled || !messages.length}
-          onClick={() => void transfer("export")}
-        >
-          <IconDownloadOutline18 />
-        </Button>
-      </Tooltip>
-      <Tooltip label="Delete Chat" side="bottom">
-        <Button
-          icon
-          size="sm"
-          variant="ghost"
-          aria-label="Delete Chat"
-          disabled={disabled || !chatId}
-          onClick={() => {
-            if (!chatId) return;
-            Dialog.confirm({
-              title: "Delete Chat",
-              description:
-                "This permanently deletes the conversation. Your Saves stay in your library.",
-              confirmLabel: "Delete Chat",
-              onConfirm: () => assistant.deleteChat(chatId),
-            });
-          }}
-        >
-          <IconTrash2Outline18 />
-        </Button>
-      </Tooltip>
-    </>
+      <Menu.Portal>
+        <Menu.Positioner side="bottom" align="end">
+          <Menu.Popup>
+            <Menu.Items
+              items={[
+                {
+                  label: "Rename Chat",
+                  icon: <IconPencilOutline18 />,
+                  disabled: disabled || !chatId,
+                  onClick: onRename,
+                },
+                {
+                  label: "Copy Conversation",
+                  icon: <IconClone2Outline18 />,
+                  disabled: disabled || !messages.length,
+                  onClick: () => void transfer("copy"),
+                },
+                {
+                  label: "Export Markdown",
+                  icon: <IconDownloadOutline18 />,
+                  disabled: disabled || !messages.length,
+                  onClick: () => void transfer("export"),
+                },
+                { type: "separator" },
+                {
+                  label: "Delete Chat",
+                  icon: <IconTrash2Outline18 />,
+                  variant: "destructive",
+                  disabled: disabled || !chatId,
+                  onClick: () => {
+                    if (!chatId) return;
+                    Dialog.confirm({
+                      title: "Delete Chat",
+                      description:
+                        "This permanently deletes the conversation. Your Saves stay in your library.",
+                      confirmLabel: "Delete Chat",
+                      onConfirm: () => assistant.deleteChat(chatId),
+                    });
+                  },
+                },
+              ]}
+            />
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }

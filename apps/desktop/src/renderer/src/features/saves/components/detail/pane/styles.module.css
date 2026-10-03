@@ -1,81 +1,78 @@
 .root {
-  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 0;
   width: 100%;
   min-width: 0;
   height: 100%;
   min-height: 0;
+  container-type: inline-size;
 }
-
-.header {
-  flex-shrink: 0;
-  padding: 8px;
-  overflow: visible;
-  border-bottom: 1px solid var(--ds-gray-a3);
-  -webkit-app-region: no-drag;
-}
-
-.label {
-  font-size: var(--ds-text-md);
-}
-
-.actions {
-  gap: 4px;
-}
-
 .scroll {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: 0;
+  flex: 1;
   min-height: 0;
-  padding: 8px 20px 20px;
-  overflow: visible;
+  padding-block: 20px;
+  overflow-y: auto;
 }
-
-.about {
+.rating {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 8px;
-  padding: 4px 0 16px;
+  align-items: center;
+  min-height: 28px;
 }
-
-.tags {
-  display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
-  gap: 8px;
-  align-items: baseline;
-  padding-bottom: 16px;
-}
-
-.field-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.emptyTab {
+  margin: 12px 0;
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-normal);
   color: var(--ds-gray-10);
-  white-space: nowrap;
 }
-
-.heading-title {
-  margin: 0;
-  font-size: var(--ds-text-lg);
-  font-weight: var(--ds-weight-medium);
-  line-height: 1.5;
-  color: var(--ds-gray-12);
-  overflow-wrap: anywhere;
+.count {
+  margin: 0 0 20px;
+  color: var(--ds-gray-11);
+  text-align: center;
 }
-
-.heading-input {
+.count strong {
+  color: var(--ds-blue-9);
+}
+.sourceUrlEditor {
   width: 100%;
-  padding: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  background: transparent;
-  border: none;
-  border-radius: var(--ds-radius-xs);
+  min-width: 0;
+}
+.sourceUrlEditor :global([data-slot="field"]) {
+  padding-inline: 0;
+}
+.additional {
+  display: grid;
+  gap: 16px;
+}
+.muted {
+  font-size: var(--ds-text-xs);
+  color: var(--ds-gray-10);
+}
+.error {
+  font-size: var(--ds-text-xs);
+  color: var(--ds-red-11);
+}
+
+.tabsList {
+  margin-left: -8px;
+}
+
+.tabIcon {
+  display: none;
+}
+
+@container (max-width: 360px) {
+  .tab {
+    width: var(--ds-size-sm);
+    padding-inline: 0;
+  }
+
+  .tabIcon {
+    display: block;
+  }
+
+  .tabLabel {
+    display: none;
+  }
 }

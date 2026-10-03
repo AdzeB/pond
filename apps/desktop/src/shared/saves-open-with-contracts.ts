@@ -12,6 +12,7 @@ export interface SavesOpenWithQueryInputs {
     fileIndex?: number;
     application?: string;
   };
+  "saves.quickLook": { id: string; fileIndex?: number };
 }
 
 export interface SavesOpenWithQueryResults {
@@ -25,4 +26,5 @@ export interface SavesOpenWithQueryResults {
     }>;
   };
   "saves.openWith": { ok: boolean; error?: string; cancelled?: boolean };
+  "saves.quickLook": { ok: boolean; error?: string };
 }

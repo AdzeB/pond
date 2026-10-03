@@ -14,7 +14,7 @@ import { resolveSaveFilePath } from "../ipc/helpers";
 import { executeBatch } from "./executor";
 import { addSavesToFolder } from "./folders";
 import { createManualSave } from "./manual-import";
-import { readLibraryMedia } from "./security/library-media-storage";
+import { readLibraryMedia } from "./storage/library-media-storage";
 import { recordBatchForUndo } from "./undo";
 
 const COMBINABLE = new Set([

@@ -7,6 +7,35 @@ export function buildViewSection(context: AppMenuContext): AppMenuItem {
     label: "View",
     submenu: [
       {
+        label: "All Saves",
+        accelerator: accelerator("nav.library"),
+        registerAccelerator: false,
+        click: sendMenuAction("nav.library"),
+      },
+      {
+        label: "Tags",
+        click: sendMenuAction("nav.tags"),
+      },
+      {
+        label: "Uncategorized",
+        click: sendMenuAction("nav.uncategorized"),
+      },
+      {
+        label: "Untagged",
+        click: sendMenuAction("nav.untagged"),
+      },
+      {
+        label: "Random",
+        click: sendMenuAction("view.random"),
+      },
+      {
+        label: "Trash",
+        accelerator: accelerator("nav.trash"),
+        registerAccelerator: false,
+        click: sendMenuAction("nav.trash"),
+      },
+      { type: "separator" },
+      {
         label: "Cycle Layout",
         accelerator: accelerator("view.layout-cycle"),
         registerAccelerator: false,
@@ -62,8 +91,8 @@ export function buildViewSection(context: AppMenuContext): AppMenuItem {
         click: sendMenuAction("view.grayscale"),
       },
       {
-        label: "Show Navigator",
-        click: sendMenuAction("view.navigator"),
+        label: "Show Subfolder Content",
+        click: sendMenuAction("view.subfolders.toggle"),
       },
       {
         label: "Appearance",
@@ -81,6 +110,25 @@ export function buildViewSection(context: AppMenuContext): AppMenuItem {
             click: sendMenuAction("theme.system"),
           },
         ],
+      },
+      { type: "separator" },
+      {
+        label: "Open with Default App",
+        accelerator: accelerator("save.open"),
+        registerAccelerator: false,
+        click: sendMenuAction("save.open-with-default"),
+      },
+      {
+        label: "Open Link in Browser",
+        accelerator: accelerator("save.open-url"),
+        registerAccelerator: false,
+        click: sendMenuAction("save.open-original"),
+      },
+      {
+        label: "Reveal in Finder",
+        accelerator: accelerator("save.reveal"),
+        registerAccelerator: false,
+        click: sendMenuAction("save.reveal"),
       },
       { type: "separator" },
       {

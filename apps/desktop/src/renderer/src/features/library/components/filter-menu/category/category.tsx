@@ -136,7 +136,9 @@ function FilterEditor({
   if (type === "optional" || type === "string")
     return <ContentFilter field={field} rows={rows} onChange={onChange} />;
   if (type === "color")
-    return <ColorFilter current={current} onApply={apply} />;
+    return (
+      <ColorFilter current={current} onApply={apply} onClear={clearField} />
+    );
   if (type === "number" || type === "date")
     return (
       <CustomFilter

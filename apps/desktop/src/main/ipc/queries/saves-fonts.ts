@@ -15,7 +15,7 @@ import {
 } from "../../core/font-activation";
 import { extractFontFamily, renameWithFamily } from "../../core/font-metadata";
 import { persistSave } from "../../core/persist-save";
-import { withDecryptedLibraryMediaPath } from "../../core/security/library-media-storage";
+import { withDecryptedLibraryMediaPath } from "../../core/storage/library-media-storage";
 import { hasUserTitle } from "../../core/user-metadata";
 import { getDb } from "../../db";
 import { itemFile } from "../../paths";

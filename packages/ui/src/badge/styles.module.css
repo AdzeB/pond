@@ -5,7 +5,7 @@
   height: 20px;
   padding-inline: 8px;
   font-size: var(--ds-text-xs);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   line-height: 1;
   color: var(--ds-gray-11);
   white-space: nowrap;

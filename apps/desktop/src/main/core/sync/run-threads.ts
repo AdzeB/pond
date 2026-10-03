@@ -5,6 +5,7 @@ import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { type EnqueueItem, enqueue } from "../pipeline/enqueue";
 import { mergeListKindsOntoExisting } from "../pipeline/list-kinds";
+import { createQueueGeneration } from "../pipeline/queue-generations";
 import {
   harvestThreadsLikes,
   harvestThreadsSaved,
@@ -187,6 +188,11 @@ export async function syncThreads(
   });
 
   const queue = [...fresh, ...recovery];
+  const generationId = await createQueueGeneration({
+    kind: "sync",
+    source,
+    scope: { accountId, total: queue.length },
+  });
   const bulk = await enqueue(
     queue.map((entry) => {
       const item: EnqueueItem = { url: entry.url };
@@ -195,7 +201,7 @@ export async function syncThreads(
       if (entry.listKinds) item.listKinds = entry.listKinds;
       return item;
     }),
-    { trigger: "sync:threads", accountId },
+    { trigger: "sync:threads", accountId, generationId },
   );
   const succeeded = bulk.created + bulk.existing;
   ev.enqueue = { succeeded, failed: bulk.failed };

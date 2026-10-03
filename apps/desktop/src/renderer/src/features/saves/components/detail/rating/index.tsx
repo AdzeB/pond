@@ -1,33 +1,41 @@
-import { IconStarOutline18 } from "@pond/icons/outline/18";
+import { IconStarFill18 } from "@pond/icons/fill/18";
 import { Button } from "@pond/ui";
-import { mutateSave } from "@/features/saves/lib/mutate";
-import type { Save } from "@/features/saves/types";
 import styles from "./styles.module.css";
 
-export function RatingStars({ save }: { save: Save }) {
-  const value = save.rating ?? 0;
+export function RatingStars({
+  value,
+  onChange,
+}: {
+  value: number | null;
+  onChange(value: number): void;
+}) {
   return (
-    <fieldset className={styles.root} aria-label="Rating">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Button
-          key={star}
-          icon
-          size="xs"
-          variant="ghost"
-          aria-label={`${star} ${star === 1 ? "Star" : "Stars"}`}
-          data-active={star <= value || undefined}
-          className={styles.star}
-          onClick={() =>
-            void mutateSave(
-              save.id,
-              { rating: value === star ? null : star },
-              { actorReason: "inspect:rating" },
-            )
-          }
-        >
-          <IconStarOutline18 />
-        </Button>
-      ))}
+    <fieldset
+      className={styles.root}
+      aria-label={
+        value === null
+          ? "Multiple ratings"
+          : `Rating: ${value ? `${value} of 5 stars` : "Unrated"}. Select the current rating to remove it.`
+      }
+    >
+      {[1, 2, 3, 4, 5].map((star) => {
+        const filled = value !== null && star <= value;
+        return (
+          <Button
+            key={star}
+            icon
+            size="xs"
+            variant="text"
+            aria-label={`${star} ${star === 1 ? "Star" : "Stars"}`}
+            aria-pressed={star === value}
+            data-active={filled || undefined}
+            className={styles.star}
+            onClick={() => onChange(value === star ? 0 : star)}
+          >
+            <IconStarFill18 />
+          </Button>
+        );
+      })}
     </fieldset>
   );
 }

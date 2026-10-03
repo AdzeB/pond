@@ -1,4 +1,3 @@
-import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
 type ActivityState = "running" | "done" | "error";
@@ -71,7 +70,3 @@ export const statusFeed = {
     });
   },
 };
-
-export function useActivityEntries(): readonly ActivityEntry[] {
-  return useSelector(store, (s) => s.entries);
-}

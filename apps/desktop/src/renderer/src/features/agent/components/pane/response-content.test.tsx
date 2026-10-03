@@ -1,6 +1,9 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterAll, afterEach, beforeEach, expect, it, vi } from "vitest";
+import type { AssistantState } from "@/features/agent/state/assistant";
+import { toUIMessage } from "@/features/agent/state/pond-messages";
+import { AgentMessage } from "./index";
 import { ResponseContent } from "./response-content";
 
 beforeEach(() => {
@@ -50,4 +53,57 @@ it("renders a citation-only lookup as visual Saves instead of numbered prose", a
   ).toHaveLength(3);
   expect(host.textContent).not.toContain("A resizable sidebar");
   expect(host.textContent).toContain("CRM reference 1");
+});
+
+it("keeps the completed work summary above the response", async () => {
+  const state: AssistantState = {
+    chatId: "chat",
+    chats: [],
+    referenceMessageId: null,
+    messages: [],
+    draft: "",
+    attachments: [],
+    files: [],
+    busy: false,
+    loading: false,
+    requestId: null,
+    sources: [],
+    activity: "thinking",
+    results: [],
+    steps: [],
+    error: null,
+    failed: null,
+  };
+  await act(async () =>
+    root.render(
+      <AgentMessage
+        message={toUIMessage({
+          id: "reply",
+          chatId: "chat",
+          role: "assistant",
+          content: "A completed response.",
+          metadata: { elapsedMs: 30_000 },
+        })}
+        state={state}
+        provider="openai"
+        attachedIds={[]}
+        attach={vi.fn()}
+        streaming={false}
+        latest
+        onAnswer={vi.fn()}
+      />,
+    ),
+  );
+
+  const response = [...host.querySelectorAll("p")].find(
+    (element) => element.textContent === "A completed response.",
+  );
+  const summary = [...host.querySelectorAll("button")].find(
+    (element) => element.textContent === "Worked for 30s",
+  );
+  if (!response || !summary)
+    throw new Error("Missing response or work summary");
+  expect(response.compareDocumentPosition(summary)).toBe(
+    Node.DOCUMENT_POSITION_PRECEDING,
+  );
 });

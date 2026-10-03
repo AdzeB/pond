@@ -5,7 +5,7 @@ import { reviewImportDuplicates } from "../../core/duplicate-import";
 import { importEaglePackage } from "../../core/eagle-package";
 import { importFiles } from "../../core/import-files";
 import { importPondPackage } from "../../core/pond-package";
-import { materializeLibraryMediaForExternalUse } from "../../core/security/library-media-storage";
+import { materializeLibraryMediaForExternalUse } from "../../core/storage/library-media-storage";
 import { runTransferJob } from "../../core/transfer-jobs";
 import { copySaveSelectionToLibrary } from "../../core/transfer-operations";
 import { libraryRoot } from "../../paths";
@@ -18,6 +18,7 @@ import {
   StringListParam,
   StringParam,
 } from "./params";
+import { saveDragIconSvg } from "./save-drag-icon";
 
 export const savesImportTransferQueries = {
   "saves.reviewImportDuplicates": query(
@@ -196,8 +197,27 @@ export const savesImportTransferQueries = {
         const { nativeImage } = await import("electron");
         const first = files[0] ?? "";
         let icon = nativeImage.createFromPath(first);
+        if (files.length > 1) {
+          const thumbnails = files
+            .slice(0, 3)
+            .map((file) => nativeImage.createFromPath(file))
+            .filter((image) => !image.isEmpty())
+            .map(
+              (image) =>
+                `data:image/png;base64,${image
+                  .resize({ width: 60, height: 60, quality: "better" })
+                  .toPNG()
+                  .toString("base64")}`,
+            );
+          const svg = saveDragIconSvg(thumbnails, files.length);
+          const composite = nativeImage.createFromDataURL(
+            `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`,
+          );
+          if (!composite.isEmpty()) icon = composite;
+        }
         if (icon.isEmpty()) icon = nativeImage.createEmpty();
-        else icon = icon.resize({ width: 72, height: 72, quality: "better" });
+        else if (files.length === 1)
+          icon = icon.resize({ width: 72, height: 72, quality: "better" });
         if (files.length === 1) {
           event.sender.startDrag({ file: first, icon });
         } else {

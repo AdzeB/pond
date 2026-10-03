@@ -1,5 +1,4 @@
 import { Dialog, Tooltip } from "@pond/ui";
-import type { LibrarySecurityStatus } from "@shared/security-contracts";
 import { HotkeysProvider } from "@tanstack/react-hotkeys";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -8,22 +7,17 @@ import {
   RouterProvider,
 } from "@tanstack/react-router";
 import { MotionConfig } from "motion/react";
-import {
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import { ActionDialogHost } from "@/features/library/components/action-dialog";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { ConversionDialogHost } from "@/features/library/components/conversion-dialog";
 import { FolderPickerHost } from "@/features/library/components/folder-picker";
+import { RenameDialogHost } from "@/features/library/components/rename-dialog";
 import type { PondApi } from "../../../preload";
 import { ExtensionCaptureToast } from "../features/captures/effects/extension-capture-toast";
+import { NotificationStatusBridge } from "../features/downloads/effects/notification-status-bridge";
 import { EnrichmentSweep } from "../features/enrichment/effects/enrichment-sweep";
 import { CommandMenuHost } from "../features/library/components/command-menu";
 import { useHydrateFolders } from "../features/library/state/folders";
+import { ScreenshotIntakeSelection } from "../features/saves/effects/screenshot-intake-selection";
 import { syncPrimaryFromPath } from "../features/saves/lib/save-nav";
 import { InterfaceZoom } from "../features/settings/effects/interface-zoom";
 import { ThemeApplier } from "../features/settings/effects/theme-applier";
@@ -38,9 +32,10 @@ import { pondScopedKey } from "../shared/lib/pond-scope";
 import { BootScreen } from "./components/boot-screen/boot-screen";
 import { ErrorBoundary } from "./components/error-boundary/error-boundary";
 import { ErrorScreen } from "./components/error-screen";
-import { LockScreen } from "./components/lock-screen";
+import { Onboarding } from "./components/onboarding";
 import { AgentLibraryBridge } from "./effects/agent-library-bridge";
 import { MenuRecentsBridge } from "./effects/menu-recents-bridge";
+import { SettingsProcessingBridge } from "./effects/settings-processing-bridge";
 import "./effects/save-library-bridge";
 
 const DuplicateReviewHost = lazy(() =>
@@ -115,7 +110,11 @@ function buildRouter(entry: string) {
 }
 
 function AppContent() {
-  const [router] = useState(() => buildRouter(initialPath()));
+  const [router] = useState(() => {
+    const next = buildRouter(initialPath());
+    setAppRouter(next);
+    return next;
+  });
 
   useEffect(() => {
     const unsub = router.subscribe("onResolved", () => {
@@ -138,46 +137,7 @@ function AppContent() {
 }
 
 export function App() {
-  const [security, setSecurity] = useState<LibrarySecurityStatus | null>(null);
-
-  const refreshSecurity = useCallback(async () => {
-    const next = await window.pond.query("security.status", {});
-    setSecurity(next);
-  }, []);
-
-  useEffect(() => {
-    void refreshSecurity().catch(() => {
-      setSecurity({
-        configured: true,
-        state: "locked",
-        biometricSupported: false,
-        biometricAvailable: false,
-        recoveryAvailable: true,
-      });
-    });
-  }, [refreshSecurity]);
-
-  useEffect(
-    () => window.pond.onSecurityStateChanged(refreshSecurity),
-    [refreshSecurity],
-  );
-
-  useEffect(() => {
-    if (security) dismissBootCover();
-  }, [security]);
-
-  if (!security) return <InterfaceZoom />;
-  if (security.configured && security.state !== "unlocked") {
-    return (
-      <>
-        <InterfaceZoom />
-        <LockScreen
-          status={security}
-          onUnlocked={() => void refreshSecurity()}
-        />
-      </>
-    );
-  }
+  useEffect(() => dismissBootCover(), []);
   return (
     <>
       <InterfaceZoom />
@@ -190,6 +150,7 @@ function LibraryApp() {
   useHydrateFolders();
 
   const [windowPrefs] = usePrefs("window");
+  const [systemPrefs] = usePrefs("system");
   const startupPage = windowPrefs?.startupPage;
   useEffect(() => {
     if (!startupPage) return;
@@ -197,6 +158,9 @@ function LibraryApp() {
       localStorage.setItem(STARTUP_PAGE_KEY, startupPage);
     } catch {}
   }, [startupPage]);
+  useEffect(() => {
+    document.documentElement.dataset.colorSpace = systemPrefs.displayColorSpace;
+  }, [systemPrefs.displayColorSpace]);
 
   const queryClient = useMemo(
     () =>
@@ -223,18 +187,22 @@ function LibraryApp() {
           <Tooltip.Provider>
             <ThemeApplier />
             <UiSounds />
+            <NotificationStatusBridge />
             <MenuRecentsBridge />
             <AgentLibraryBridge />
             <SyncStatusBridge />
             <ExtensionCaptureToast />
             <EnrichmentSweep />
+            <SettingsProcessingBridge />
+            <ScreenshotIntakeSelection />
             <BootScreen />
+            <Onboarding />
             <ErrorBoundary>
               <AppContent />
             </ErrorBoundary>
             <Dialog.Host />
             <FolderPickerHost />
-            <ActionDialogHost />
+            <RenameDialogHost />
             <Suspense fallback={null}>
               <DuplicateReviewHost />
             </Suspense>

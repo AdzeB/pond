@@ -2,6 +2,11 @@
 
 Audit date: September 20, 2026
 
+Interaction follow-up: the [September 22 selection, keyboard, and accessibility audit](eagle-interaction-accessibility-audit-2026-09-22.md)
+records gaps in the current working tree that operation-level parity does not
+cover. A feature marked implemented here does not establish complete keyboard
+access, focus behavior, or sidebar multi-selection.
+
 ## Scope
 
 This audit compares Eagle 4.0.0 for macOS with Pond at commit `ad665308`.
@@ -21,7 +26,7 @@ The comparison uses:
 - Pond implementation and test evidence at the audited commit
 
 Eagle's support pages remain the documented product baseline
-([Eagle (n.d.-ae)](../../references.md#eagle-cool)). The local application
+([Eagle (n.d.-ae)](../provenance/generated/REFERENCES.md#eagle-cool)). The local application
 inspection verifies behavior that support copy does not fully specify. Local
 screenshots contain the existing Library sidebar and stay outside Git. The
 committed Eaglepack samples contain only generated media, example.com URLs, and
@@ -46,9 +51,17 @@ screenshot, and organization work in `ad665308`.
 
 The companion
 [surface inventory](eagle-4-desktop-surface-inventory.md) catalogs 18
-first-party HTML entries, 175 application-menu labels, 191 context-menu keys,
-145 macOS shortcut slots, 62 bound preference options, 19 filter directives,
-and 121 state strings.
+first-party HTML entries, 184 `appmenu.*` keys, 191 `context.*` keys, 31
+`Context.*` keys, 145 macOS shortcut slots, 62 bound preference options, 19
+filter directives, and 121 state strings.
+
+The feature counts above describe the historical `ad665308` audit. The current
+menu pass records 37 in-scope surfaces in
+`apps/desktop/test/fixtures/compatibility/eagle-menus/manifest.json`. Every
+recorded surface now has a working Pond trigger. Focused suites cover native
+templates, real `contextmenu` events, checked state, menu builders, and repair
+previews. Collect, Community, licensing, and plugin-provided rows remain
+explicit exclusions.
 
 ## Parity
 
@@ -69,52 +82,35 @@ Pond now matches the audited Eagle behavior for:
 - thumbnail quality modes
 - existing-image compression
 - folder and Saved View links
-- sidebar customization
+- sidebar customization through Settings
 - configurable input behavior
 - notification and sound controls
 - duplicate-import decisions
 - interface zoom from 50 to 200 percent
+- native Find and Organize menus
+- built-in sidebar visibility with hidden-item recovery
+- Recently Used, Random, and mixed Quick Access
+- folder, Smart Folder, breadcrumb, disclosure, and folder-picker menus
+- dedicated export, GIF, zoom-ratio, search-scope, layout, list-column, tag,
+  navigation-history, and detached-preview menus
+- previewed targeted Library repairs
+
+## Interoperability closures
+
+Pond reads and writes Eagle 4.0.0's singular `pack.json.folder` tree while still
+accepting Pond's legacy `folders` array. Fixture coverage verifies nested folder
+names, item membership, tags, ratings, notes, colors, and custom thumbnails.
+
+Selection copy and export now retain the selected Saved View hierarchy and
+referenced Tag Groups instead of emitting empty organizational collections.
 
 ## Partial parity
 
-### P0: Interoperability correctness
-
-#### Eaglepack
-
-Real Eagle 4.0.0 exports use `pack.json.folder` for one nested root folder.
-Pond currently parses and writes `pack.json.folders`. Media, tags, ratings,
-notes, colors, and custom-thumbnail naming are compatible, but folder names and
-hierarchy are not interoperable in either direction.
-
-Evidence:
-
-- `apps/desktop/src/main/core/eagle-package.ts`
-- `apps/desktop/test/fixtures/compatibility/eaglepack/manifest.json`
-- `apps/desktop/test/fixtures/compatibility/eaglepack/characterization.json`
-- `apps/desktop/test/fixtures/compatibility/eaglepack/samples/`
-
-The samples replace the earlier assumption-only descriptor. They confirm Eagle's
-ZIP container, `pack.json`, `{itemId}.info` directories, `metadata.json`,
-`{itemName}_thumbnail.png`, singular folder root, nested children, and
-selection-export folder stripping.
-
-#### Copy organizational objects between Libraries
-
-Full-library Pond packages preserve Saved Views and Tag Groups. Selection copy
-and selection export still write empty `views` and `groups` collections.
-
 ### P1: Visible product gaps
 
-- Gallery GIF autoplay: the preference affects detail playback, not cards.
-- Font activation filter: the field exists in the filter engine but is absent
-  from the quick filter menu.
 - Screenshot capture: Pond captures screens and windows, crops, converts, and
   copies to the clipboard. It lacks Eagle's free-form area overlay, annotation
   tools, and dedicated screenshot preferences.
-- Tag picker controls: preferences and recommended tags exist, but Settings
-  does not expose layout, width, and section controls.
-- Quick Access: Pond pins folders but lacks an independent reorder model and a
-  context-menu toggle.
 - Localization: Pond ships eight locale catalogs, but most Library and Save
   renderer copy remains English.
 
@@ -132,8 +128,9 @@ and selection export still write empty `views` and `groups` collections.
 - Folder passwords and Touch ID: password protection and library biometric
   unlock exist. Folder biometric unlock and Eagle's license-recovery path do
   not.
-- Recent searches: history and boolean syntax exist. Explicit extension scope
-  and a scope picker do not.
+- Recent searches: history, boolean syntax, explicit extension scope, and a
+  checked scope picker exist. Pond does not preserve Eagle's exact query-history
+  presentation.
 - Original-file image transforms: Pond offers an explicit destructive action
   with Undo, while the default remains non-destructive.
 - Conversion matrix: Pond declares 18 formats with runtime capability checks.
@@ -148,41 +145,42 @@ maintenance utilities added these findings.
 
 ### Missing
 
-- Copy an item's name, thumbnail, or image bytes as Base64.
-- Filter folders and Saved Views in the sidebar.
-- Auto-select newly imported items.
 - Convert IPTC keywords into tags during import.
-- Show camera metadata, camera filters, and a dedicated EXIF viewer.
+- Show a dedicated EXIF viewer.
 - Preview HDR and EXR textures interactively.
 - Configure an application proxy.
-- Route Space to macOS Quick Look.
-- Select a display color-space mode.
-- Show first-run onboarding.
 - Keep unified Notification Center history.
-- Run an auto-advancing slideshow.
-- Include folders in Quick Search results.
-- Import directly from ArtStation, Pixave, and Inboard.
 
 ### Partial
 
 - Export in a specified format and dimension: conversions exist, but the
   combined batch dialog does not.
-- Repair Library data: integrity verification exists, but Eagle's filename,
-  thumbnail, metadata, and empty-folder repair tools do not.
-- Set a custom thumbnail from the clipboard: Pond accepts a selected file.
-- Search by Image locally: Pond offers on-device visual retrieval, but not
-  Eagle's item-menu entry point.
-- Re-analyze colors: Pond computes palettes in its pipeline, but does not expose
-  a user command.
-- Switch gallery thumbnails between Fit and Fill.
+- Search by Image locally: Pond exposes on-device visual retrieval from the
+  item and native menus. Baidu and Sogou open their official upload surfaces
+  because they do not expose a stable public URL-search route.
 - Match Eagle's menu-bar quick-capture surface.
 - Match the full interactive depth of Eagle's saved-page and HTML viewer.
-- Export a bundled debug report: Pond can reveal raw logs.
 - Save filters independently: Pond stores them through Saved Views.
 - Match Smart Folder rules that depend on camera and EXIF metadata.
-- Convert WebP in place: Pond's general conversion flow exports copies.
 - Centralize import-error retry, clear, and copy actions.
 - Match Eagle's dedicated GIF-only frame-viewer surface.
+
+### Strict menu placement
+
+The extracted renderer proves the first-party menu groups recorded in the
+compatibility manifest. Pond now exposes each in-scope group at its equivalent
+native, row, toolbar, viewer, picker, or preview trigger.
+
+The native application template includes File, Edit, Find, Organize, View, Go,
+History, Library, Window, and Help. Renderer placement covers built-in sidebar
+visibility, Recently Used, Quick Access, folder and Smart Folder operations,
+breadcrumbs, export shortcuts, checked zoom and search scope, color, GIF, tags,
+tag groups, tag sorting, list columns, navigation history, layouts, folder
+pickers, detached preview, editable fields, saved pages, and targeted repairs.
+
+The plugin-populated Actions slot remains excluded. Pond's extension and capture
+queue replace Collect, and local-first Pond has no hosted Community or licensing
+surface.
 
 ### Intentional
 
@@ -208,10 +206,10 @@ The exhaustive pass also confirmed that Pond already covers:
 The local API lacks a visible token-rotation control, but its authenticated
 server and client behavior reach parity with Eagle's Developer token surface.
 
-Visual and placement differences do not block the same task. Eagle swaps detail
-content in place while Pond can use an overlay, uses a dedicated progress window
-where Pond uses status surfaces, and places some folder commands in Customize or
-row menus instead of the context menu.
+Visual differences do not block feature parity. Placement differences are now
+tracked separately because they affect discoverability and interaction parity.
+Eagle swaps detail content in place while Pond can use an overlay and uses a
+dedicated progress window where Pond uses status surfaces.
 
 ## Beyond Eagle
 
@@ -263,17 +261,14 @@ are bytecode, so their window-constructor list is not readable.
 
 ## Follow-up order
 
-1. Correct Eaglepack's singular folder container in both import and export.
-2. Add gallery GIF autoplay and expose the font activation quick filter.
-3. Preserve Saved Views and Tag Groups in selection copy.
-4. Add screenshot area selection, annotation, and screenshot preferences.
-5. Expose tag-picker settings and Quick Access ordering.
-6. Expand renderer localization coverage.
-7. Add camera and EXIF surfaces, gallery Fit and Fill, and the most valuable
-   missing desktop commands.
-8. Add folder biometric unlock and the remaining gallery audio behavior.
+1. Add screenshot area selection, annotation, and screenshot preferences.
+2. Expand renderer localization.
+3. Add the dedicated EXIF and remaining HDR or EXR viewer depth.
+4. Consolidate Notification Center history.
+5. Finish application proxy controls and the remaining conversion acceptance
+   fixtures.
 
 Eaglepack documentation uses Eagle's first-party transfer behavior
-([Eagle (n.d.-av)](../../references.md#en-eagle-cool-support-article-import-exporting-eaglepacks))
+([Eagle (n.d.-av)](../provenance/generated/REFERENCES.md#en-eagle-cool-support-article-import-exporting-eaglepacks))
 and the earlier independent format research
-([Kerekes (2026)](../../references.md#kerekes-2026-eaglepack-importer)).
+([Kerekes (2026)](../provenance/generated/REFERENCES.md#kerekes-2026-eaglepack-importer)).

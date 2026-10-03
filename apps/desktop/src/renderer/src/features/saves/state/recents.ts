@@ -50,6 +50,11 @@ function recordVisit(saveId: string): void {
   patchPrefsSection("saveRecents", { entries: store.state });
 }
 
+export function clearRecents(): void {
+  store.setState(() => []);
+  patchPrefsSection("saveRecents", { entries: [] });
+}
+
 export function useRecents(): RecentSaveVisit[] {
   return useSelector(store, (s) => s);
 }

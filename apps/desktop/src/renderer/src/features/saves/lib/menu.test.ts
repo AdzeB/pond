@@ -3,6 +3,10 @@ import { isValidElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import "@/app/effects/save-library-bridge";
 import {
+  closeConversionDialog,
+  conversionDialogStore,
+} from "@/features/library/state/conversion-dialog";
+import {
   closeFolderPicker,
   folderPickerStore,
 } from "@/features/library/state/folder-picker";
@@ -13,10 +17,13 @@ import { selection } from "@/features/saves/state/selection";
 import type { Save } from "@/features/saves/types";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
 import {
+  menuLabelsWithoutIcons,
   topLevelMenuLabels as topLevelLabels,
   menuLabels as visibleLabels,
 } from "@/shared/test/menu-labels";
 import {
+  buildSaveDetailMenu,
+  buildSaveExportPopup,
   buildSaveMenu,
   contextMenuSaves,
   type OpenWithApp,
@@ -37,6 +44,27 @@ function sectionItems(
     }
   }
   return null;
+}
+
+function containsSubmenu(items: MenuItemSpec[]): boolean {
+  return items.some((item) => {
+    if (item.type === "submenu") return true;
+    return item.type === "group" ? containsSubmenu(item.items) : false;
+  });
+}
+
+function visibleLeafItems(items: MenuItemSpec[]): MenuItemSpec[] {
+  return items.flatMap((item) => {
+    if ("hidden" in item && item.hidden) return [];
+    if (item.type === "group") return visibleLeafItems(item.items);
+    if (
+      item.type === "separator" ||
+      item.type === "custom" ||
+      item.type === "submenu"
+    )
+      return [];
+    return [item];
+  });
 }
 
 function fileSave(overrides: Partial<Save> = {}): Save {
@@ -73,6 +101,7 @@ afterEach(async () => {
   vi.unstubAllGlobals();
   selection.clear();
   pool.clear();
+  closeConversionDialog();
   vi.stubGlobal("pond", {
     query: async () => [],
   });
@@ -97,6 +126,139 @@ function previewOpenWithApps(): OpenWithApp[] {
 }
 
 describe("buildSaveMenu", () => {
+  it("keeps the detail menu focused on file actions", () => {
+    const items = buildSaveDetailMenu(fileSave(), {
+      clipboardEmpty: true,
+      openWithApps: previewOpenWithApps(),
+      opened: true,
+    });
+
+    expect(topLevelLabels(items)).toEqual([
+      "Open in New Window",
+      "Open With",
+      REVEAL_LABEL,
+      "Replace File",
+      "Export…",
+      "Share",
+      "Copy",
+      "Move to Trash",
+    ]);
+    const exportItem = items.find(
+      (item) => "label" in item && item.label === "Export…",
+    );
+    if (!exportItem || !("onClick" in exportItem))
+      throw new Error("Missing Export action");
+    exportItem.onClick?.();
+    expect(conversionDialogStore.state?.mode).toBe("files");
+    expect(topLevelLabels(sectionItems(items, "Open With") ?? [])).toEqual([
+      "Default App",
+      "Photomator.app",
+    ]);
+    const detailCopyItems = sectionItems(items, "Copy") ?? [];
+    expect(topLevelLabels(detailCopyItems)).toEqual([
+      "Copy Name",
+      "Copy",
+      "Copy File Path",
+    ]);
+    expect(visibleLabels(detailCopyItems)).toEqual([
+      "Copy Name",
+      "Copy",
+      "Copy File Path",
+      "Copy as Base64",
+      "Copy Pond Link",
+      "Copy URL",
+    ]);
+    const copyIcons = visibleLeafItems(detailCopyItems).map((item) =>
+      "icon" in item && isValidElement(item.icon) ? item.icon.type : null,
+    );
+    expect(copyIcons).not.toContain(null);
+    expect(new Set(copyIcons).size).toBe(copyIcons.length);
+    expect(
+      items
+        .filter((item) => item.type === "submenu")
+        .every((item) => !containsSubmenu(item.items)),
+    ).toBe(true);
+    expect(visibleLabels(items)).not.toEqual(
+      expect.arrayContaining([
+        "Add Tags",
+        "Add to Folders",
+        "Add to Other Library",
+        "Rename",
+        "Paste Tags",
+        "Find Duplicates",
+        "Merge Duplicates",
+        "Copy Save ID",
+        "Thumbnail",
+        "Re-analyze Colors",
+        "Navigator",
+      ]),
+    );
+  });
+
+  it("offers to create a folder from the current selection", () => {
+    const items = buildSaveMenu(
+      [fileSave({ id: "one" }), fileSave({ id: "two" })],
+      { clipboardEmpty: true },
+    );
+
+    expect(visibleLabels(items)).toContain("New Folder with 2 Saves");
+  });
+
+  it("offers detached references for video originals but not batch selections or documents", () => {
+    const video = fileSave({
+      files: [
+        {
+          kind: "video",
+          path: "clip.mp4",
+          mimeType: "video/mp4",
+          sha256: "video",
+          size: 42,
+        },
+      ],
+    });
+    expect(
+      visibleLabels(buildSaveMenu(video, { clipboardEmpty: true })),
+    ).toContain("Open in New Window");
+    expect(
+      visibleLabels(
+        buildSaveMenu([video, { ...video, id: "second" }], {
+          clipboardEmpty: true,
+        }),
+      ),
+    ).not.toContain("Open in New Window");
+    const document = fileSave({
+      files: [
+        {
+          kind: "file",
+          path: "document.pdf",
+          mimeType: "application/pdf",
+          sha256: "pdf",
+          size: 12,
+        },
+      ],
+    });
+    expect(
+      visibleLabels(buildSaveMenu(document, { clipboardEmpty: true })),
+    ).not.toContain("Open in New Window");
+  });
+
+  it("builds the dedicated export popup", () => {
+    expect(
+      visibleLabels(
+        buildSaveExportPopup(fileSave(), {
+          clipboardEmpty: true,
+          fileIndex: 0,
+          opened: true,
+        }),
+      ),
+    ).toEqual([
+      "Export Files",
+      "Export Converted Files",
+      "Export Eagle Package",
+      "Export to CSV",
+    ]);
+  });
+
   it("offers lossless and quality compression for supported images", () => {
     const save = fileSave({
       mediaType: "image",
@@ -115,26 +277,44 @@ describe("buildSaveMenu", () => {
     const compression = sectionItems(exports, "Compress Images");
     expect(topLevelLabels(exports)).toContain("Compress Images");
     expect(topLevelLabels(compression ?? [])).toEqual([
+      "Convert to WebP",
       "Lossless",
       "Quality 85",
     ]);
   });
 
-  it("groups save actions into compact single-word submenus", () => {
+  it("keeps common actions flat and reserves submenus for option families", () => {
     const items = buildSaveMenu(fileSave(), {
       clipboardEmpty: true,
       openWithApps: previewOpenWithApps(),
     });
 
     expect(topLevelLabels(items)).toEqual([
-      "Open",
-      "Organise",
-      "Copy",
-      "Share",
+      "Open Save",
+      "Open in New Window",
+      "Open with Default App",
+      "Open With",
+      REVEAL_LABEL,
+      "Open Original in Browser",
+      "Replace File",
+      "Add Tags",
+      "Add to Folders",
+      "Add to Other Library",
       "Export",
+      "Share",
+      "Paste Tags",
+      "Find Duplicates",
+      "Merge Duplicates",
+      "Copy Name",
+      "Copy",
+      "Copy File Path",
+      "Copy Options",
+      "Copy Save ID",
+      "Thumbnail",
+      "Refresh from Source",
       "Search by Image",
       "Agent",
-      "Advanced",
+      "More",
       "Move to Trash",
     ]);
     expect(visibleLabels(sectionItems(items, "Agent") ?? [])).toEqual([
@@ -145,13 +325,9 @@ describe("buildSaveMenu", () => {
       "Transcribe Media",
       "Check Sensitive Content",
     ]);
-    expect(topLevelLabels(sectionItems(items, "Open") ?? [])).toEqual([
+    expect(topLevelLabels(sectionItems(items, "Open With") ?? [])).toEqual([
       "Preview.app (Default)",
       "Photomator.app",
-      "Open Save",
-      "Open with Default App",
-      REVEAL_LABEL,
-      "Open Original URL",
     ]);
     const reverseSearchItems = sectionItems(items, "Search by Image") ?? [];
     expect(visibleLabels(reverseSearchItems)).toEqual([
@@ -160,14 +336,26 @@ describe("buildSaveMenu", () => {
       "Bing",
       "TinEye",
       "SauceNAO",
+      "Baidu",
+      "Sogou",
     ]);
+    const visibleReverseSearchItems = reverseSearchItems.filter(
+      (item) => !("hidden" in item) || !item.hidden,
+    );
     expect(
-      reverseSearchItems.every(
-        (item) =>
-          "icon" in item &&
-          isValidElement(item.icon) &&
-          item.icon.type === "img",
+      visibleReverseSearchItems.every(
+        (item) => "icon" in item && isValidElement(item.icon),
       ),
+    ).toBe(true);
+    expect(
+      visibleReverseSearchItems
+        .slice(0, 5)
+        .every(
+          (item) =>
+            "icon" in item &&
+            isValidElement(item.icon) &&
+            item.icon.type === "img",
+        ),
     ).toBe(true);
     expect(visibleLabels(sectionItems(items, "Export") ?? [])).toEqual([
       "Export Files",
@@ -177,17 +365,14 @@ describe("buildSaveMenu", () => {
       "Export Pond Package",
       "Export to CSV",
     ]);
-    expect(visibleLabels(sectionItems(items, "Advanced") ?? [])).toEqual([
-      "Copy Save ID",
+    expect(visibleLabels(sectionItems(items, "More") ?? [])).toEqual([
       "Rebuild Search Index",
       "Rebuild Visual Index",
-      "Change File Extension",
-      "Actions",
-      "Find Duplicates",
-      "Merge Duplicates",
-      "Set Thumbnail",
-      "Replace File",
-      "Refresh Details",
+      "Change Extension",
+    ]);
+    expect(visibleLabels(sectionItems(items, "Thumbnail") ?? [])).toEqual([
+      "Set Thumbnail from File",
+      "Set Thumbnail from Clipboard",
       "Thumbnail Background",
       "None",
       "Black",
@@ -197,14 +382,23 @@ describe("buildSaveMenu", () => {
     ]);
   });
 
+  it("does not use ellipses in action labels", () => {
+    const labels = visibleLabels(
+      buildSaveMenu(fileSave(), {
+        clipboardEmpty: true,
+        openWithApps: previewOpenWithApps(),
+      }),
+    );
+
+    expect(labels.filter((label) => label.includes("…"))).toEqual([]);
+  });
+
   it("keeps opening actions available before apps are listed", () => {
     const items = buildSaveMenu(fileSave(), {
       clipboardEmpty: true,
       openWithApps: [],
     });
-    expect(visibleLabels(sectionItems(items, "Open") ?? [])).toContain(
-      "Open with Default App",
-    );
+    expect(topLevelLabels(items)).toContain("Open with Default App");
     expect(visibleLabels(items)).not.toContain("Open With");
   });
 
@@ -227,20 +421,16 @@ describe("buildSaveMenu", () => {
     ).toBe(".png");
   });
 
-  it("lists apps directly in Open with the default marked", () => {
+  it("lists apps in Open With with the default marked", () => {
     const items = buildSaveMenu(fileSave(), {
       clipboardEmpty: true,
       openWithApps: previewOpenWithApps(),
     });
-    expect(topLevelLabels(sectionItems(items, "Open") ?? [])).toEqual([
+    expect(topLevelLabels(sectionItems(items, "Open With") ?? [])).toEqual([
       "Preview.app (Default)",
       "Photomator.app",
-      "Open Save",
-      "Open with Default App",
-      REVEAL_LABEL,
-      "Open Original URL",
     ]);
-    const preview = sectionItems(items, "Open")?.find(
+    const preview = sectionItems(items, "Open With")?.find(
       (item) => "label" in item && item.label === "Preview.app (Default)",
     );
     expect(preview && "icon" in preview ? preview.icon : null).toBeTruthy();
@@ -305,10 +495,10 @@ describe("buildSaveMenu", () => {
       ],
     });
     const items = buildSaveMenu(save, { clipboardEmpty: true });
-    expect(visibleLabels(items)).toContain("Remove Thumbnail");
+    expect(visibleLabels(items)).toContain("Reset Thumbnail");
     expect(
-      sectionItems(items, "Advanced")?.find(
-        (item) => "label" in item && item.label === "Remove Thumbnail",
+      sectionItems(items, "Thumbnail")?.find(
+        (item) => "label" in item && item.label === "Reset Thumbnail",
       ),
     ).toMatchObject({ variant: "destructive" });
   });
@@ -335,7 +525,7 @@ describe("buildSaveMenu", () => {
     expect(labels).not.toContain("Open with Default App");
     expect(labels).not.toContain("Export Files");
     expect(labels).toContain("Export to CSV");
-    expect(labels).not.toContain("Remove Thumbnail");
+    expect(labels).not.toContain("Reset Thumbnail");
     expect(labels).toContain("Rename");
   });
 
@@ -361,7 +551,7 @@ describe("buildSaveMenu", () => {
     const items = buildSaveMenu([fileSave(), fileSave({ id: "other" })], {
       clipboardEmpty: true,
     });
-    const assign = sectionItems(items, "Organise")?.find(
+    const assign = items.find(
       (item) => "label" in item && item.label === "Add to Folders",
     );
     if (!assign || !("onClick" in assign))
@@ -390,7 +580,7 @@ describe("buildSaveMenu", () => {
     ).toContain("Rename");
   });
 
-  it("puts All ahead of folder names under Open File Location", async () => {
+  it("puts All ahead of folder names under Navigate to Folder", async () => {
     vi.stubGlobal("pond", {
       query: async (name: string) => {
         if (name === "folders.list")
@@ -413,11 +603,8 @@ describe("buildSaveMenu", () => {
     expect(
       visibleLabels(
         sectionItems(
-          sectionItems(
-            buildSaveMenu(fileSave(), { clipboardEmpty: true }),
-            "Open",
-          ) ?? [],
-          "Open File Location",
+          buildSaveMenu(fileSave(), { clipboardEmpty: true }),
+          "Navigate to Folder",
         ) ?? [],
       ),
     ).toEqual(["All", "Refs"]);
@@ -436,6 +623,14 @@ describe("buildSaveMenu", () => {
       );
     });
     expect(missing).toEqual([]);
+  });
+
+  it("gives every visible searchable action an icon", () => {
+    expect(
+      menuLabelsWithoutIcons(
+        buildSaveMenu(fileSave(), { clipboardEmpty: true }),
+      ),
+    ).toEqual([]);
   });
 });
 
@@ -470,11 +665,11 @@ describe("buildViewerMenu", () => {
       }),
     );
     expect(labels).not.toContain("Open Save");
-    expect(labels[0]).toBe("Open");
+    expect(labels[0]).toBe("Open in New Window");
     expect(labels).not.toContain("Pin Preview");
   });
 
-  it("drops Copy Image from the Copy submenu when a video frame is available", () => {
+  it("replaces Copy Image when a video frame is available", () => {
     const save = fileSave({
       mediaType: "image",
       files: [
@@ -492,11 +687,11 @@ describe("buildViewerMenu", () => {
     const labels = visibleLabels(
       buildViewerMenu(save, { clipboardEmpty: true, video, fileIndex: 0 }),
     );
-    expect(labels).toContain("Set Thumbnail");
+    expect(labels).toContain("Set Current Frame as Thumbnail");
     expect(labels).toContain("Copy Current Frame");
     expect(labels).not.toContain("Copy Image");
     expect(labels).not.toContain("Open Save");
-    expect(labels).toContain("Copy");
+    expect(labels).toContain("Copy Options");
   });
 
   it("converts the WebP file selected in the viewer", () => {

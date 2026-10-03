@@ -1,11 +1,22 @@
-import { Button, Checkbox, Input, Settings, Tooltip } from "@pond/ui";
+import { IconChevronDownOutline12 } from "@pond/icons/outline/12";
+import {
+  Accordion,
+  Button,
+  Checkbox,
+  Input,
+  Loader,
+  Settings,
+  Tooltip,
+} from "@pond/ui";
 import { ASSISTANT_MODELS, type AssistantProvider } from "@shared/assistant";
 import { modelsForChooser, type ProviderModel } from "@shared/provider-models";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactElement, useState } from "react";
+import { openSettings } from "@/features/settings/lib/open-settings";
 import { savePrefsSection, usePrefs } from "@/features/settings/state/prefs";
 import { ProviderLogo } from "../icons";
-import type { AgentPrefs } from "../types";
+import { type AgentPrefs, keyRowsSchema } from "../types";
+import { ModelsLoading } from "./loading";
 import styles from "./styles.module.css";
 
 const priceFormat = new Intl.NumberFormat("en-US", {
@@ -79,31 +90,6 @@ function selectedIds(models: CatalogModel[], visibleIds: string[] | undefined) {
   return new Set(visibleIds ?? selectable.map((model) => model.id));
 }
 
-async function loadCatalog() {
-  return Promise.all(
-    ASSISTANT_MODELS.map(async (entry) => {
-      try {
-        const listed = await window.pond.query("agent.listModels", {
-          provider: entry.id,
-        });
-        return {
-          provider: entry.id,
-          providerName: entry.provider,
-          ...listed,
-        };
-      } catch {
-        return {
-          provider: entry.id,
-          providerName: entry.provider,
-          ok: false,
-          models: [],
-          error: `Could not load models from ${entry.provider}. Try again.`,
-        };
-      }
-    }),
-  );
-}
-
 function uniqueErrors(rows: Array<{ error?: string }>) {
   return [...new Set(rows.flatMap((row) => (row.error ? [row.error] : [])))];
 }
@@ -146,12 +132,50 @@ function CatalogUnavailable({
 export function ModelsSection() {
   const [agent, , loaded] = usePrefs("agent");
   const client = useQueryClient();
-  const query = useQuery({
-    queryKey: ["all-provider-models"],
-    queryFn: loadCatalog,
+  const connections = useQuery({
+    queryKey: ["agent-provider-connections"],
+    queryFn: async () =>
+      keyRowsSchema.parse(await window.pond.query("agent.keys", {})),
+    staleTime: 15 * 60_000,
+    gcTime: Infinity,
+    refetchOnWindowFocus: false,
     retry: false,
   });
-  const rows = query.data ?? [];
+  const connected = ASSISTANT_MODELS.filter(
+    (entry) =>
+      !connections.isError &&
+      connections.data?.some(
+        (row) => row.provider === entry.id && row.hasKey && row.enabled,
+      ),
+  );
+  const queries = useQueries({
+    queries: connected.map((entry) => ({
+      queryKey: ["all-provider-models", entry.id],
+      queryFn: async () =>
+        window.pond.query("agent.listModels", { provider: entry.id }),
+      staleTime: 15 * 60_000,
+      gcTime: Infinity,
+      refetchOnWindowFocus: false,
+      retry: false,
+    })),
+  });
+  const fetching =
+    connections.isFetching || queries.some((query) => query.isFetching);
+  const pending = queries.some((query) => query.isPending);
+  const rows = connected.flatMap((entry, index) => {
+    const query = queries[index];
+    if (!query || query.isPending) return [];
+    return [
+      {
+        provider: entry.id,
+        providerName: entry.provider,
+        models: query?.data?.models ?? [],
+        error: query?.isError
+          ? `Could not load models from ${entry.provider}. Try again.`
+          : query?.data?.error,
+      },
+    ];
+  });
   const models: CatalogModel[] = rows
     .flatMap((row) => {
       const listed = row.models ?? [];
@@ -173,10 +197,19 @@ export function ModelsSection() {
         a.name.localeCompare(b.name),
     );
   const errors = uniqueErrors(rows);
-  const loadError = catalogLoadError(query.isError, models, errors);
-  const retry = () => void query.refetch();
+  const loadError = connections.isError
+    ? "Could not load providers. Try again."
+    : catalogLoadError(
+        queries.length > 0 && queries.every((query) => query.isError),
+        models,
+        errors,
+      );
+  const retry = () => {
+    void connections.refetch();
+    for (const query of queries) void query.refetch();
+  };
   return (
-    <Settings.Page width="wide">
+    <Settings.Page>
       <Settings.Header>
         <Settings.HeaderText>
           <Settings.Title>Models</Settings.Title>
@@ -184,9 +217,19 @@ export function ModelsSection() {
             Choose which models appear in Agent.
           </Settings.Description>
         </Settings.HeaderText>
+        <Button
+          className={styles.refresh}
+          size="sm"
+          variant="ghost"
+          disabled={fetching}
+          aria-label={fetching ? "Loading models" : "Refresh"}
+          onClick={retry}
+        >
+          {fetching ? <Loader.Dots /> : "Refresh"}
+        </Button>
       </Settings.Header>
-      {!loaded || query.isPending ? (
-        <p role="status">Loading models</p>
+      {!loaded || connections.isPending || (pending && !models.length) ? (
+        <ModelsLoading />
       ) : loadError ? (
         <CatalogUnavailable message={loadError} onRetry={retry} />
       ) : (
@@ -223,20 +266,37 @@ export function ModelCatalogTable({
   models,
   visibleByProvider,
   onSave,
+  onOpenProviders = () => openSettings("providers"),
 }: {
   models: CatalogModel[];
   visibleByProvider: VisibleModelIds;
   onSave: (visibleModelIds: VisibleModelIds) => Promise<void>;
+  onOpenProviders?: () => void;
 }) {
   const [search, setSearch] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [collapsed, setCollapsed] = useState(new Set<AssistantProvider>());
   const needle = search.trim().toLowerCase();
   const filtered = models.filter((model) =>
     `${model.name} ${model.id} ${model.providerName}`
       .toLowerCase()
       .includes(needle),
   );
+  const groups = new Map<
+    AssistantProvider,
+    { name: string; models: CatalogModel[] }
+  >();
+  for (const model of filtered) {
+    const group = groups.get(model.provider);
+    if (group) group.models.push(model);
+    else {
+      groups.set(model.provider, {
+        name: model.providerName,
+        models: [model],
+      });
+    }
+  }
   const selectable = models.filter((model) => model.available !== false);
   const shownCount = selectable.filter((model) =>
     selectedIds(
@@ -291,7 +351,10 @@ export function ModelCatalogTable({
             aria-label="Search models"
             placeholder="Search models…"
             value={search}
-            onValueChange={setSearch}
+            onValueChange={(value) => {
+              setSearch(value);
+              if (value.trim()) setCollapsed(new Set());
+            }}
           />
         </Input.Root>
         <Button
@@ -313,135 +376,196 @@ export function ModelCatalogTable({
           Hide All
         </Button>
       </div>
-      <Settings.List>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th scope="col">Model</th>
-              <th scope="col">Provider</th>
-              <th scope="col" className={styles.metric}>
-                <Hint label="Price per million input tokens.">
-                  <span>Input</span>
-                </Hint>
-              </th>
-              <th scope="col" className={styles.metric}>
-                <Hint label="Price per million output tokens.">
-                  <span>Output</span>
-                </Hint>
-              </th>
-              <th scope="col" className={styles.context}>
-                <Hint label="Context window in tokens.">
-                  <span>Context</span>
-                </Hint>
-              </th>
-              <th scope="col" className={styles.check} aria-label="Show" />
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((model) => {
-              const input = tokenPrice(model.pricing?.input);
-              const output = tokenPrice(model.pricing?.output);
-              const inputHint = priceHint("Input", model.pricing?.input);
-              const outputHint = priceHint("Output", model.pricing?.output);
-              const tokens = compactTokens(model.contextWindow);
-              const tokensHint = contextHint(model.contextWindow);
-              return (
-                <tr key={`${model.provider}:${model.id}`}>
-                  <td>
-                    <Hint label={modelHint(model) || undefined}>
-                      <label
-                        htmlFor={`model-visible-${model.provider}-${model.id}`}
-                        className={styles.name}
-                      >
-                        {model.name}
-                      </label>
-                    </Hint>
-                  </td>
-                  <td>
-                    <span className={styles.provider}>
-                      <ProviderLogo provider={model.provider} />
-                      <span className={styles["provider-name"]}>
-                        {model.providerName}
-                      </span>
-                    </span>
-                  </td>
-                  <td className={styles.metric}>
-                    <Hint label={inputHint}>
-                      {inputHint ? (
-                        <button
-                          type="button"
-                          className={styles.hint}
-                          aria-label={inputHint}
-                        >
-                          {input}
-                        </button>
-                      ) : (
-                        <span>{input}</span>
-                      )}
-                    </Hint>
-                  </td>
-                  <td className={styles.metric}>
-                    <Hint label={outputHint}>
-                      {outputHint ? (
-                        <button
-                          type="button"
-                          className={styles.hint}
-                          aria-label={outputHint}
-                        >
-                          {output}
-                        </button>
-                      ) : (
-                        <span>{output}</span>
-                      )}
-                    </Hint>
-                  </td>
-                  <td className={styles.context}>
-                    <Hint label={tokensHint}>
-                      <button
-                        type="button"
-                        className={styles.hint}
-                        aria-label={tokensHint}
-                      >
-                        {tokens}
-                      </button>
-                    </Hint>
-                  </td>
-                  <td className={styles.check}>
-                    <Checkbox.Root
-                      id={`model-visible-${model.provider}-${model.id}`}
-                      size="sm"
-                      aria-label={`Show ${model.name} in model pickers`}
-                      checked={
-                        model.available !== false &&
-                        providerVisible(model.provider).has(model.id)
-                      }
-                      disabled={pending || model.available === false}
-                      onCheckedChange={(checked) => {
-                        const next = new Set(providerVisible(model.provider));
-                        if (checked) next.add(model.id);
-                        else next.delete(model.id);
-                        void save({
-                          ...visibleByProvider,
-                          [model.provider]: [...next],
-                        });
-                      }}
-                    >
-                      <Checkbox.Indicator />
-                    </Checkbox.Root>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        {!filtered.length ? (
-          <p className={styles.empty}>
-            {models.length
-              ? "No models found. Try another name."
-              : "No models found. Connect a provider first."}
-          </p>
-        ) : null}
-      </Settings.List>
+      <Accordion.Root
+        multiple
+        className={styles.groups}
+        value={[...groups.keys()].filter(
+          (provider) => !collapsed.has(provider),
+        )}
+        onValueChange={(expanded) => {
+          setCollapsed((current) => {
+            const next = new Set(current);
+            for (const provider of groups.keys()) {
+              if (expanded.includes(provider)) next.delete(provider);
+              else next.add(provider);
+            }
+            return next;
+          });
+        }}
+      >
+        {[...groups].map(([provider, group]) => (
+          <Accordion.Item key={provider} value={provider}>
+            <Accordion.Header render={<h2 aria-label={group.name} />}>
+              <Accordion.Trigger
+                className={styles["group-header"]}
+                aria-label={group.name}
+              >
+                <span id={`provider-${provider}`} className={styles.provider}>
+                  <ProviderLogo provider={provider} size={20} />
+                  {group.name}
+                </span>
+                <span className={styles.count} aria-hidden="true">
+                  {group.models.length}
+                </span>
+                <IconChevronDownOutline12 />
+              </Accordion.Trigger>
+            </Accordion.Header>
+            <Accordion.Panel className={styles.panel}>
+              {group.models.some((model) => model.available === false) ? (
+                <div
+                  className={styles.connection}
+                  id={`connection-${provider}`}
+                >
+                  <p>Check the provider connection to select models.</p>
+                  <Button size="xs" variant="ghost" onClick={onOpenProviders}>
+                    Open Providers
+                  </Button>
+                </div>
+              ) : null}
+              <Settings.List>
+                <table
+                  className={styles.table}
+                  aria-labelledby={`provider-${provider}`}
+                >
+                  <thead>
+                    <tr>
+                      <th scope="col">Model</th>
+                      <th scope="col" className={styles.metric}>
+                        <Hint label="Price per million input tokens.">
+                          <span>Input</span>
+                        </Hint>
+                      </th>
+                      <th scope="col" className={styles.metric}>
+                        <Hint label="Price per million output tokens.">
+                          <span>Output</span>
+                        </Hint>
+                      </th>
+                      <th scope="col" className={styles.context}>
+                        <Hint label="Context window in tokens.">
+                          <span>Context</span>
+                        </Hint>
+                      </th>
+                      <th
+                        scope="col"
+                        className={styles.check}
+                        aria-label="Show"
+                      />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {group.models.map((model) => {
+                      const input = tokenPrice(model.pricing?.input);
+                      const output = tokenPrice(model.pricing?.output);
+                      const inputHint = priceHint(
+                        "Input",
+                        model.pricing?.input,
+                      );
+                      const outputHint = priceHint(
+                        "Output",
+                        model.pricing?.output,
+                      );
+                      const tokens = compactTokens(model.contextWindow);
+                      const tokensHint = contextHint(model.contextWindow);
+                      return (
+                        <tr key={`${model.provider}:${model.id}`}>
+                          <td>
+                            <Hint label={modelHint(model) || undefined}>
+                              <label
+                                htmlFor={`model-visible-${model.provider}-${model.id}`}
+                                className={styles.name}
+                              >
+                                {model.name}
+                              </label>
+                            </Hint>
+                          </td>
+                          <td className={styles.metric}>
+                            <Hint label={inputHint}>
+                              {inputHint ? (
+                                <button
+                                  type="button"
+                                  className={styles.hint}
+                                  aria-label={inputHint}
+                                >
+                                  {input}
+                                </button>
+                              ) : (
+                                <span>{input}</span>
+                              )}
+                            </Hint>
+                          </td>
+                          <td className={styles.metric}>
+                            <Hint label={outputHint}>
+                              {outputHint ? (
+                                <button
+                                  type="button"
+                                  className={styles.hint}
+                                  aria-label={outputHint}
+                                >
+                                  {output}
+                                </button>
+                              ) : (
+                                <span>{output}</span>
+                              )}
+                            </Hint>
+                          </td>
+                          <td className={styles.context}>
+                            <Hint label={tokensHint}>
+                              <button
+                                type="button"
+                                className={styles.hint}
+                                aria-label={tokensHint}
+                              >
+                                {tokens}
+                              </button>
+                            </Hint>
+                          </td>
+                          <td className={styles.check}>
+                            <Checkbox.Root
+                              id={`model-visible-${model.provider}-${model.id}`}
+                              size="sm"
+                              aria-label={`Show ${model.name} in model pickers`}
+                              checked={
+                                model.available !== false &&
+                                providerVisible(model.provider).has(model.id)
+                              }
+                              disabled={pending || model.available === false}
+                              aria-describedby={
+                                model.available === false
+                                  ? `connection-${provider}`
+                                  : undefined
+                              }
+                              onCheckedChange={(checked) => {
+                                const next = new Set(
+                                  providerVisible(model.provider),
+                                );
+                                if (checked) next.add(model.id);
+                                else next.delete(model.id);
+                                void save({
+                                  ...visibleByProvider,
+                                  [model.provider]: [...next],
+                                });
+                              }}
+                            >
+                              <Checkbox.Indicator />
+                            </Checkbox.Root>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </Settings.List>
+            </Accordion.Panel>
+          </Accordion.Item>
+        ))}
+      </Accordion.Root>
+      {!filtered.length ? (
+        <p className={styles.empty}>
+          {models.length
+            ? "No models found. Try another name."
+            : "No models found. Connect a provider first."}
+        </p>
+      ) : null}
       <div className={styles.summary} role="status">
         {pending
           ? "Saving model visibility"

@@ -1,0 +1,219 @@
+import sharp from "sharp";
+
+export interface ImageMetadata {
+  width?: number;
+  height?: number;
+  container?: string;
+  videoCodec?: string;
+  audioCodec?: string;
+  bitrate?: number;
+  colorSpace?: string;
+  cameraMake?: string;
+  cameraModel?: string;
+  lensModel?: string;
+  focalLength?: number;
+  aperture?: number;
+  exposureTime?: string;
+  iso?: number;
+  takenAt?: Date;
+}
+
+interface TiffReader {
+  bytes: Buffer;
+  base: number;
+  littleEndian: boolean;
+}
+
+type ExifValue =
+  | { kind: "text"; value: string }
+  | { kind: "number"; value: number }
+  | null;
+
+function typeSize(type: number): number | null {
+  if (type === 1 || type === 2 || type === 7) return 1;
+  if (type === 3) return 2;
+  if (type === 4 || type === 9) return 4;
+  if (type === 5 || type === 10) return 8;
+  return null;
+}
+
+function uint16(reader: TiffReader, offset: number): number {
+  return reader.littleEndian
+    ? reader.bytes.readUInt16LE(offset)
+    : reader.bytes.readUInt16BE(offset);
+}
+
+function uint32(reader: TiffReader, offset: number): number {
+  return reader.littleEndian
+    ? reader.bytes.readUInt32LE(offset)
+    : reader.bytes.readUInt32BE(offset);
+}
+
+function int32(reader: TiffReader, offset: number): number {
+  return reader.littleEndian
+    ? reader.bytes.readInt32LE(offset)
+    : reader.bytes.readInt32BE(offset);
+}
+
+function valueOffset(
+  reader: TiffReader,
+  entry: number,
+  type: number,
+  count: number,
+): number | null {
+  const size = typeSize(type);
+  if (!size) return null;
+  const length = size * count;
+  const offset =
+    length <= 4 ? entry + 8 : reader.base + uint32(reader, entry + 8);
+  return offset >= 0 && offset + length <= reader.bytes.length ? offset : null;
+}
+
+function entryValue(reader: TiffReader, entry: number): ExifValue {
+  const type = uint16(reader, entry + 2);
+  const count = uint32(reader, entry + 4);
+  const offset = valueOffset(reader, entry, type, count);
+  if (offset === null) return null;
+  if (type === 2)
+    return {
+      kind: "text",
+      value: reader.bytes
+        .toString("utf8", offset, offset + count)
+        .replace(/\0+$/, "")
+        .trim(),
+    };
+  if (type === 3) return { kind: "number", value: uint16(reader, offset) };
+  if (type === 4) return { kind: "number", value: uint32(reader, offset) };
+  if (type === 9) return { kind: "number", value: int32(reader, offset) };
+  if (type === 5) {
+    const denominator = uint32(reader, offset + 4);
+    return denominator
+      ? { kind: "number", value: uint32(reader, offset) / denominator }
+      : null;
+  }
+  if (type === 10) {
+    const denominator = int32(reader, offset + 4);
+    return denominator
+      ? { kind: "number", value: int32(reader, offset) / denominator }
+      : null;
+  }
+  return null;
+}
+
+function readIfd(
+  reader: TiffReader,
+  relativeOffset: number,
+): Map<number, { entry: number; value: ExifValue }> {
+  const fields = new Map<number, { entry: number; value: ExifValue }>();
+  const start = reader.base + relativeOffset;
+  if (start < 0 || start + 2 > reader.bytes.length) return fields;
+  const count = uint16(reader, start);
+  for (let index = 0; index < count; index += 1) {
+    const entry = start + 2 + index * 12;
+    if (entry + 12 > reader.bytes.length) break;
+    fields.set(uint16(reader, entry), {
+      entry,
+      value: entryValue(reader, entry),
+    });
+  }
+  return fields;
+}
+
+function exifDate(value: string | undefined): Date | undefined {
+  if (!value) return undefined;
+  const match = /^(\d{4}):(\d{2}):(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/.exec(
+    value,
+  );
+  if (!match) return undefined;
+  const [, year, month, day, hour, minute, second] = match;
+  const date = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute),
+    Number(second),
+  );
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+function text(
+  fields: Map<number, { value: ExifValue }>,
+  tag: number,
+): string | undefined {
+  const value = fields.get(tag)?.value;
+  return value?.kind === "text" && value.value ? value.value : undefined;
+}
+
+function number(
+  fields: Map<number, { value: ExifValue }>,
+  tag: number,
+): number | undefined {
+  const value = fields.get(tag)?.value;
+  return value?.kind === "number" && Number.isFinite(value.value)
+    ? value.value
+    : undefined;
+}
+
+export function parseExif(exif: Buffer | undefined): ImageMetadata {
+  if (!exif || exif.length < 14) return {};
+  const base = exif.toString("ascii", 0, 6) === "Exif\u0000\u0000" ? 6 : 0;
+  const order = exif.toString("ascii", base, base + 2);
+  if (order !== "II" && order !== "MM") return {};
+  const reader: TiffReader = {
+    bytes: exif,
+    base,
+    littleEndian: order === "II",
+  };
+  if (uint16(reader, base + 2) !== 42) return {};
+  const primary = readIfd(reader, uint32(reader, base + 4));
+  const exifPointer = number(primary, 0x8769);
+  const details = exifPointer ? readIfd(reader, exifPointer) : new Map();
+  const exposure = number(details, 0x829a);
+  const colorCode = number(details, 0xa001);
+  return {
+    cameraMake: text(primary, 0x010f),
+    cameraModel: text(primary, 0x0110),
+    lensModel: text(details, 0xa434),
+    focalLength: number(details, 0x920a),
+    aperture: number(details, 0x829d),
+    exposureTime:
+      exposure && exposure > 0
+        ? exposure < 1
+          ? `1/${Math.round(1 / exposure)}`
+          : `${exposure}`
+        : undefined,
+    iso: number(details, 0x8827),
+    takenAt: exifDate(text(details, 0x9003)) ?? exifDate(text(primary, 0x0132)),
+    colorSpace:
+      colorCode === 1
+        ? "sRGB"
+        : colorCode === 0xffff
+          ? "Uncalibrated"
+          : undefined,
+  };
+}
+
+export async function extractImageMetadata(
+  source: string | Buffer,
+): Promise<ImageMetadata> {
+  try {
+    const metadata = await sharp(source, {
+      failOn: "none",
+      pages: 1,
+    }).metadata();
+    const exif = parseExif(metadata.exif);
+    return {
+      ...exif,
+      width: metadata.width,
+      height: metadata.height,
+      container: metadata.format,
+      colorSpace:
+        exif.colorSpace ??
+        metadata.space ??
+        (metadata.hasProfile ? "ICC" : undefined),
+    };
+  } catch {
+    return {};
+  }
+}

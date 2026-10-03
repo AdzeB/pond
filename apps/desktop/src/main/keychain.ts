@@ -212,13 +212,10 @@ export function createKeychain(port: KeychainPort) {
 export const {
   deleteSecret,
   ensureIngestToken,
-  ensureSecureSecretBytes,
   getIngestToken,
   getSecret,
   getSecrets,
-  getSecureSecret,
   getSecureSecretBytes,
   rotateIngestToken,
   setSecret,
-  setSecureSecret,
 } = createKeychain(electronKeychainPort);

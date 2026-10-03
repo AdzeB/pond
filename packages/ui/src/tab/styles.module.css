@@ -95,7 +95,7 @@
   height: var(--tab-height);
   padding-inline: 8px 4px;
   font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-lg);
   color: var(--ds-gray-10);
   cursor: default;
   user-select: none;
@@ -131,14 +131,14 @@
   &[data-lifted] {
     z-index: 3;
     cursor: grabbing;
-    box-shadow: var(--ds-shadow-2);
+    box-shadow: var(--ds-shadow-sm);
     transition: none;
   }
 
   &[data-active] {
     color: var(--ds-gray-12);
     background: var(--ds-gray-1);
-    box-shadow: var(--ds-shadow-1);
+    box-shadow: var(--ds-shadow-xs);
 
     &:hover {
       background: var(--ds-gray-1);

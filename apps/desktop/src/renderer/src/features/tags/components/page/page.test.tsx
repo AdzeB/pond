@@ -8,6 +8,7 @@ import {
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { tagCreation } from "@/features/tags/state/creation";
 import type { TagGroupRow } from "@/features/tags/state/tag-groups";
 import type { TagRow } from "@/features/tags/state/tags";
 import { TagsPage } from "./";
@@ -175,6 +176,7 @@ describe("library Tags page", () => {
     if (!(row instanceof HTMLDivElement)) throw new Error("Missing tag row");
 
     expect(checkbox).toBeNull();
+    expect(row.firstElementChild?.textContent).toContain("Animation");
     await act(async () => row.click());
     expect(row.getAttribute("aria-selected")).toBe("false");
 
@@ -204,5 +206,12 @@ describe("library Tags page", () => {
       );
     });
     expect(query).toHaveBeenCalledWith("tagGroups.create", { name: "Design" });
+  });
+
+  it("opens the inline draft requested from global New Tag actions", async () => {
+    tagCreation.request("tag");
+    await mount();
+    expect(host.querySelector('input[aria-label="Tag name"]')).not.toBeNull();
+    expect(host.querySelector('[role="dialog"]')).toBeNull();
   });
 });

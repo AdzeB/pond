@@ -20,8 +20,8 @@ import { writeGeneratedThumbnail } from "./save-thumbnail-file";
 import {
   decodeLibraryFile,
   encodeLibraryFile,
-} from "./security/library-file-storage";
-import { readLibraryMedia } from "./security/library-media-storage";
+} from "./storage/library-file-storage";
+import { readLibraryMedia } from "./storage/library-media-storage";
 
 export interface LayoutDiskResult<T extends LayoutFile> {
   files: T[];

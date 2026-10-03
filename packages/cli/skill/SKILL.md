@@ -44,7 +44,6 @@ pond tags list
 pond sources accounts
 pond sync history
 pond downloads list
-pond actions list
 pond duplicates list
 pond views list
 pond stats

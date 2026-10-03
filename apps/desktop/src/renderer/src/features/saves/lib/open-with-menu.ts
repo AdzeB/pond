@@ -1,3 +1,4 @@
+import { IconApplicationsOutline18 } from "@pond/icons/outline/18";
 import type { MenuItemSpec } from "@pond/ui";
 import { createElement } from "react";
 import type { Save } from "@/features/saves/types";
@@ -70,7 +71,7 @@ export function openWithMenuItems(
           height: 16,
           draggable: false,
         })
-      : undefined,
+      : createElement(IconApplicationsOutline18),
     onClick: () => openWith(ids, fileIndex, entry.path),
   }));
 }

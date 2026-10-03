@@ -124,7 +124,7 @@ export function useRevealFolderDrop(
 ): void {
   useEffect(() => {
     if (folderDrop?.kind !== "into") return;
-    const timer = window.setTimeout(() => revealFolder(folderDrop.id), 500);
+    const timer = window.setTimeout(() => revealFolder(folderDrop.id), 600);
     return () => window.clearTimeout(timer);
   }, [folderDrop, revealFolder]);
 }
