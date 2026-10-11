@@ -16,19 +16,19 @@
   gap: 4px;
 }
 
-.link-card-media {
+.media {
   flex-shrink: 0;
   overflow: hidden;
   background: var(--tw-placeholder);
 }
 
-.link-card:not([data-large="true"]) .link-card-media {
+.link-card:not([data-large="true"]) .media {
   width: 130px;
   aspect-ratio: 1 / 1;
   border-right: 1px solid var(--tw-border);
 }
 
-.link-card[data-large="true"] .link-card-media {
+.link-card[data-large="true"] .media {
   position: relative;
   width: 100%;
   aspect-ratio: 1.91 / 1;
@@ -36,14 +36,14 @@
   border-radius: var(--ds-radius-xl);
 }
 
-.link-card-image {
+.image {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.link-card-overlay-title {
+.overlay-title {
   position: absolute;
   bottom: 12px;
   left: 12px;
@@ -51,7 +51,7 @@
   padding: 2px 6px;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 13px;
+  font-size: var(--ds-text-md);
   line-height: 16px;
   color: #fff;
   white-space: nowrap;
@@ -59,13 +59,13 @@
   border-radius: var(--ds-radius-xs);
 }
 
-.link-card-domain-below {
-  font-size: 15px;
+.domain-below {
+  font-size: var(--ds-text-lg);
   line-height: 20px;
   color: var(--tw-secondary);
 }
 
-.link-card-detail {
+.detail {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -74,30 +74,30 @@
   padding: 12px;
 }
 
-.link-card-domain {
+.domain {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 15px;
+  font-size: var(--ds-text-lg);
   line-height: 20px;
   color: var(--tw-secondary);
   white-space: nowrap;
 }
 
-.link-card-title {
+.title {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   overflow: hidden;
   -webkit-line-clamp: 1;
-  font-size: 15px;
+  font-size: var(--ds-text-lg);
   line-height: 20px;
 }
 
-.link-card-description {
+.description {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   overflow: hidden;
   -webkit-line-clamp: 2;
-  font-size: 15px;
+  font-size: var(--ds-text-lg);
   line-height: 20px;
   color: var(--tw-secondary);
 }

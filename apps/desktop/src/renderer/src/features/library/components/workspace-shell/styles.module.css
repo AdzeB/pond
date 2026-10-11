@@ -1,7 +1,7 @@
 .shell {
   --window-inset: 8px;
   --window-left-min: 0px;
-  --window-background-primary: var(--ds-gray-3);
+  --window-background-primary: var(--ds-gray-2);
 }
 
 .shell > [data-slot="center"] {

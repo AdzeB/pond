@@ -5,7 +5,7 @@
   min-width: max-content;
 }
 
-.slideNavigation {
+.slide-navigation {
   display: flex;
   gap: 2px;
   align-items: center;

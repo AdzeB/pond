@@ -13,6 +13,18 @@
   align-items: flex-start;
 }
 
+.draft {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.draft > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
 .frame {
   width: 100%;
   aspect-ratio: 16 / 9;

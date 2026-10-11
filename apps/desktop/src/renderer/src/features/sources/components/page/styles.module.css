@@ -13,7 +13,6 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  padding: 0 0 20px;
 }
 
 .table {
@@ -42,7 +41,6 @@
 }
 
 .grid {
-  --data-table-inset: 20px;
   --data-table-header-height: 40px;
   --data-table-header-weight: 400;
   width: 100%;

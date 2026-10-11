@@ -30,7 +30,7 @@
   width: 100%;
 }
 
-.groupDraft {
+.group-draft {
   max-height: 40px;
   padding: 2px 4px 6px;
   overflow: hidden;
@@ -39,7 +39,7 @@
     var(--ds-easing-decelerate) both;
 }
 
-.groupDraft > div {
+.group-draft > div {
   min-height: 32px;
   padding-inline: 8px;
   background: var(--ds-gray-1);
@@ -78,20 +78,20 @@
   box-shadow: var(--ds-shadow-xs);
 }
 
-.groupDetail {
+.group-detail {
   padding: 0 4px 15px;
   margin-bottom: 13px;
   border-bottom: 1px solid var(--ds-gray-a3);
 }
 
-.groupDetailTitle {
+.group-detail-title {
   display: flex;
   gap: 5px;
   align-items: center;
   min-height: 28px;
 }
 
-.groupDetailTitle h1 {
+.group-detail-title h1 {
   display: flex;
   gap: 7px;
   align-items: baseline;
@@ -101,19 +101,19 @@
   color: var(--ds-gray-12);
 }
 
-.groupDetailCount {
+.group-detail-count {
   font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-regular);
   color: var(--ds-gray-8);
 }
 
-.groupDescription {
+.group-description {
   width: 100%;
   height: 24px;
   margin-top: 1px;
 }
 
-.groupTags {
+.group-tags {
   padding: 0 4px 16px;
 }
 
@@ -122,56 +122,56 @@
   flex-direction: column;
 }
 
-.letterGroup {
+.letter-group {
   padding: 16px 0 17px;
   border-top: 1px solid var(--ds-gray-a3);
 }
 
-.letterGroup:first-child {
+.letter-group:first-child {
   padding-top: 0;
   border-top: 0;
 }
 
-.letterHeader {
+.letter-header {
   display: flex;
   gap: 7px;
   align-items: baseline;
   margin-bottom: 7px;
 }
 
-.letterHeader h2 {
+.letter-header h2 {
   margin: 0;
   font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-lg);
   color: var(--ds-gray-11);
 }
 
-.letterHeader span {
+.letter-header span {
   font-size: var(--ds-text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-8);
 }
 
-.tagGrid {
+.tag-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0 20px;
 }
 
 @media (min-width: 1320px) {
-  .tagGrid {
+  .tag-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 .empty,
 .matches,
-.scopeEmpty {
+.scope-empty {
   min-height: clamp(280px, 55vh, 520px);
 }
 
 @media (max-width: 900px) {
-  .tagGrid {
+  .tag-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -185,7 +185,7 @@
     padding-inline: 16px;
   }
 
-  .tagGrid {
+  .tag-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 }

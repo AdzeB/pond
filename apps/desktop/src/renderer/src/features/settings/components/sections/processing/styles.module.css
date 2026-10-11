@@ -27,12 +27,9 @@
   height: 44px;
   color: var(--status-color);
   background: var(--ds-gray-1);
-  border: var(--ds-border-width) solid var(--ds-border-subtle);
-  border-radius: 12px;
+  border-radius: var(--ds-radius-xl);
   box-shadow: var(--ds-shadow-xs);
-  transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    border-color var(--ds-duration-medium) var(--ds-easing-standard);
+  transition: color var(--ds-duration-medium) var(--ds-easing-standard);
 }
 
 .spinner {

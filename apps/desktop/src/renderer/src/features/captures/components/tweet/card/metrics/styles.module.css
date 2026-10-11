@@ -11,7 +11,7 @@
   display: inline-flex;
   gap: 6px;
   align-items: center;
-  font-size: 13px;
+  font-size: var(--ds-text-md);
   color: var(--tw-secondary);
 }
 

@@ -52,13 +52,13 @@
 .change-diff > div:first-child {
   color: var(--ds-gray-10);
   background: var(--ds-gray-a3);
-  border-radius: 5px 5px 0 0;
+  border-radius: var(--ds-radius-xs) var(--ds-radius-xs) 0 0;
 }
 
 .change-diff > div:last-child {
   color: var(--ds-gray-12);
   background: var(--ds-gray-a5);
-  border-radius: 0 0 5px 5px;
+  border-radius: 0 0 var(--ds-radius-xs) var(--ds-radius-xs);
 }
 
 .change-reason {
@@ -67,7 +67,7 @@
   color: var(--ds-gray-10);
 }
 
-.review-actions {
+.actions {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -92,7 +92,7 @@
   overflow-wrap: anywhere;
   white-space: pre-wrap;
   background: var(--ds-gray-a3);
-  border-radius: 5px;
+  border-radius: var(--ds-radius-xs);
 }
 
 .operation-title {

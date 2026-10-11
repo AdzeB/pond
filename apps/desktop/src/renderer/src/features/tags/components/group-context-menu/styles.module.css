@@ -1,24 +1,10 @@
 .palette {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   align-items: center;
   min-width: 0;
   height: 28px;
-  padding-inline: 12px;
+  padding-inline: 8px;
   margin: 0;
   border: 0;
-}
-
-.swatch {
-  display: grid;
-  padding: 0;
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: none;
-  border: 0;
-  border-radius: var(--ds-radius-full);
-
-  &[data-selected] {
-    outline: 2px solid var(--ds-gray-12);
-    outline-offset: 2px;
-  }
 }

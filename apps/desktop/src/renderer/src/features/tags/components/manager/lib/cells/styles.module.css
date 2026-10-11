@@ -10,7 +10,7 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 13px;
+  font-size: var(--ds-text-md);
   font-weight: 500;
   color: var(--ds-gray-12);
   white-space: nowrap;
@@ -20,7 +20,7 @@
   flex: none;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 13px;
+  font-size: var(--ds-text-md);
   font-weight: 400;
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-10);
@@ -43,7 +43,7 @@
 
 .input {
   height: 24px;
-  font-size: 13px;
+  font-size: var(--ds-text-md);
 }
 
 .action {
@@ -58,7 +58,7 @@
   cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
   border: 0;
-  border-radius: var(--ds-radius-sm, 6px);
+  border-radius: var(--ds-radius-sm);
   opacity: 0;
 
   transition:

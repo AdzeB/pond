@@ -40,24 +40,24 @@
   aspect-ratio: 16 / 9;
 }
 
-.media-tile {
+.tile {
   position: relative;
   overflow: hidden;
   background: var(--tw-placeholder);
 }
 
-.media-tile[data-span="true"] {
+.tile[data-span="true"] {
   grid-row: span 2;
 }
 
-.media-image {
+.image {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.media-placeholder {
+.placeholder {
   width: 100%;
   height: 100%;
   background: var(--tw-placeholder);
@@ -84,7 +84,7 @@
   bottom: 8px;
   left: 8px;
   padding: 1px 6px;
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
   font-weight: 600;
   color: #fff;
   background: rgb(15 20 25 / 0.77);

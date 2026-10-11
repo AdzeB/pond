@@ -1,13 +1,12 @@
 .popup {
-  width: min(520px, calc(100vw - 40px));
-  padding: 20px;
+  --width: 520px;
 }
 
 .editor {
   display: grid;
   gap: 8px;
-  padding: 0;
-  margin: 16px 0;
+  padding: 16px 20px;
+  margin: 0;
   border: 0;
 }
 
@@ -20,13 +19,8 @@
   width: 100%;
 }
 
-.editor p {
+.error {
+  padding: 0 20px 12px;
   margin: 0;
-  font-size: 12px;
-}
-
-.footer {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
+  color: var(--ds-red-11);
 }

@@ -6,25 +6,13 @@
 }
 
 .grid {
+  position: relative;
   padding: 0;
   margin: 0;
   contain: layout;
   list-style: none;
-}
 
-.grid-waterfall {
-  position: relative;
-}
-
-.grid-grid {
-  position: relative;
-}
-
-.grid-justified {
-  position: relative;
-}
-
-.grid-list {
-  position: relative;
-  display: block;
+  &[data-layout="list"] {
+    display: block;
+  }
 }

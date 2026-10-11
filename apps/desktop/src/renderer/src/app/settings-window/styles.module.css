@@ -10,10 +10,6 @@
 .sidebar {
   flex: 0 0 216px;
   min-height: 0;
-
-  .header {
-    display: none;
-  }
 }
 
 .content {

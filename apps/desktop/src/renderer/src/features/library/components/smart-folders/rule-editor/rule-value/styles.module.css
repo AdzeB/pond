@@ -11,6 +11,6 @@
 
 .no-value {
   margin: 0;
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-10);
 }

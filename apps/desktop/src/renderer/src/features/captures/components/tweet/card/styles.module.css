@@ -74,7 +74,7 @@
 
 .reply-context {
   margin: 12px 0 0;
-  font-size: 15px;
+  font-size: var(--ds-text-lg);
   color: var(--tw-secondary);
 }
 
@@ -84,6 +84,6 @@
 
 .timestamp {
   margin: 16px 0 0;
-  font-size: 15px;
+  font-size: var(--ds-text-lg);
   color: var(--tw-secondary);
 }

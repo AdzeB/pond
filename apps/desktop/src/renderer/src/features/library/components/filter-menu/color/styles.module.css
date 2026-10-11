@@ -19,7 +19,7 @@
   border-radius: 0;
 }
 
-.areaThumb {
+.area-thumb {
   width: 10px;
   height: 10px;
   border-width: 1px;
@@ -30,7 +30,7 @@
   border-radius: 2px;
 }
 
-.hueThumb {
+.hue-thumb {
   width: 13px;
   height: 1px;
   border: 0;
@@ -54,7 +54,7 @@
   height: 20px;
   padding: 0;
   border: var(--ds-border-width) solid var(--ds-gray-a5);
-  border-radius: 5px;
+  border-radius: var(--ds-radius-xs);
   opacity: 0.8;
 }
 
@@ -117,7 +117,7 @@
   text-transform: uppercase;
 }
 
-.nativePicker {
+.native-picker {
   position: relative;
   display: flex;
   flex: none;
@@ -128,12 +128,12 @@
   border-left: var(--ds-border-width) solid var(--ds-gray-a5);
 }
 
-.nativePicker > span {
+.native-picker > span {
   width: 16px;
   height: 16px;
 }
 
-.nativePicker > input {
+.native-picker > input {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -142,7 +142,7 @@
   opacity: 0;
 }
 
-.nativePicker:focus-within {
+.native-picker:focus-within {
   outline: 2px solid var(--ds-focus-outline);
   outline-offset: 1px;
 }
@@ -152,7 +152,7 @@
   min-width: 0;
 }
 
-.rangeLabel {
+.range-label {
   flex: none;
   font-size: var(--ds-text-xs);
   font-weight: var(--ds-weight-md);
@@ -170,9 +170,8 @@
   background: var(--ds-gray-a6);
 }
 
-.rangeThumb {
+.range-thumb {
   width: 12px;
   height: 12px;
-  border: var(--ds-border-width) solid var(--ds-gray-a5);
   box-shadow: var(--ds-shadow-xs);
 }

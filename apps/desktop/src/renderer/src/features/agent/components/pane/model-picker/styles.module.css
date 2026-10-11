@@ -47,6 +47,12 @@
   max-height: var(--available-height);
 }
 
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
 .list {
   min-height: 0;
   max-height: min(360px, calc(var(--available-height) - 88px));

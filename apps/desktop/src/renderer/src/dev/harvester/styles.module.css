@@ -37,8 +37,8 @@
 }
 
 .activity {
-  margin: 0;
   padding: 8px 12px 4px;
+  margin: 0;
   font-size: var(--ds-text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-11);
@@ -137,10 +137,10 @@
 
 .metric {
   overflow: hidden;
+  text-overflow: ellipsis;
   font-size: var(--ds-text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-11);
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -219,17 +219,17 @@
 
 .detail-name {
   overflow: hidden;
-  font-size: var(--ds-text-md);
   text-overflow: ellipsis;
+  font-size: var(--ds-text-md);
   white-space: nowrap;
 }
 
 .detail-meta {
   margin: 0;
   overflow: hidden;
+  text-overflow: ellipsis;
   font-size: var(--ds-text-sm);
   color: var(--ds-gray-11);
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

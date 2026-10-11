@@ -17,10 +17,6 @@
   overflow: hidden;
   touch-action: none;
 
-  &[data-commenting] {
-    cursor: crosshair;
-  }
-
   &[data-background="white"] {
     background: white;
   }

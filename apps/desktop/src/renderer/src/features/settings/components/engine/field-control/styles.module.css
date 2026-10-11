@@ -5,7 +5,7 @@
 }
 
 .unit {
-  font-size: 13px;
+  font-size: var(--ds-text-md);
   font-weight: 400;
   color: var(--ds-gray-11);
 }

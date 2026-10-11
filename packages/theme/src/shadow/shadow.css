@@ -1,67 +1,20 @@
 :root {
-  --ds-material-border-color: color-mix(in oklch, var(--ds-fg) 8%, transparent);
-  --ds-material-surface-color: var(--ds-gray-2);
-  --ds-material-sm-layer: 0 2px 2px rgb(0 0 0 / 4%);
-  --ds-material-md-near-layer: 0 2px 2px rgb(0 0 0 / 4%);
-  --ds-material-md-far-layer: 0 8px 8px -8px rgb(0 0 0 / 4%);
+  --ds-shadow-border: 0 0 0 1px var(--ds-gray-a4);
 
-  --ds-shadow-xs:
-    0 0 0 1px var(--ds-material-border-color),
-    0 0 0 1px var(--ds-material-surface-color);
+  --ds-shadow-xs: var(--ds-shadow-border);
 
-  --ds-shadow-sm:
-    0 0 0 1px var(--ds-material-border-color), var(--ds-material-sm-layer),
-    0 0 0 1px var(--ds-material-surface-color);
+  --ds-shadow-sm: var(--ds-shadow-border), 0 1px 1px var(--ds-gray-a2);
 
   --ds-shadow-md:
-    0 0 0 1px var(--ds-material-border-color), var(--ds-material-md-near-layer),
-    var(--ds-material-md-far-layer), 0 0 0 1px var(--ds-material-surface-color);
+    var(--ds-shadow-border), 0 1px 1px var(--ds-gray-a2),
+    0 6px 18px var(--ds-gray-a3);
 
   --ds-shadow-lg:
-    0 0 0 1px var(--ds-material-border-color), 0 2px 2px rgb(0 0 0 / 4%),
-    0 8px 16px -4px rgb(0 0 0 / 4%), 0 0 0 1px var(--ds-material-surface-color);
+    var(--ds-shadow-border), 0 1px 1px var(--ds-gray-a2),
+    0 9px 48px var(--ds-gray-a4);
 
-  --ds-shadow-tooltip:
-    0 0 0 1px var(--ds-material-border-color), 0 1px 1px rgb(0 0 0 / 2%),
-    0 4px 8px rgb(0 0 0 / 4%), 0 0 0 1px var(--ds-material-surface-color);
-
-  --ds-shadow-menu:
-    0 0 0 1px var(--ds-material-border-color),
-    0 1px 1px rgb(0 0 0 / 2%), 0 4px 8px -4px rgb(0 0 0 / 4%),
-    0 16px 24px -8px rgb(0 0 0 / 6%),
-    0 0 0 1px var(--ds-material-surface-color);
-
-  --ds-shadow-modal:
-    0 0 0 1px var(--ds-material-border-color),
-    0 1px 1px rgb(0 0 0 / 2%), 0 8px 16px -4px rgb(0 0 0 / 4%),
-    0 24px 32px -8px rgb(0 0 0 / 6%),
-    0 0 0 1px var(--ds-material-surface-color);
-
-  --ds-shadow-fullscreen: var(--ds-shadow-modal);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --ds-material-border-color: color-mix(
-      in oklch,
-      var(--ds-fg) 14.5%,
-      transparent
-    );
-    --ds-material-surface-color: var(--ds-gray-1);
-    --ds-material-sm-layer: 0 1px 2px rgb(0 0 0 / 16%);
-    --ds-material-md-near-layer: 0 2px 2px rgb(0 0 0 / 32%);
-    --ds-material-md-far-layer: 0 8px 8px -8px rgb(0 0 0 / 16%);
-  }
-}
-
-:root[data-theme="dark"] {
-  --ds-material-border-color: color-mix(
-    in oklch,
-    var(--ds-fg) 14.5%,
-    transparent
-  );
-  --ds-material-surface-color: var(--ds-gray-1);
-  --ds-material-sm-layer: 0 1px 2px rgb(0 0 0 / 16%);
-  --ds-material-md-near-layer: 0 2px 2px rgb(0 0 0 / 32%);
-  --ds-material-md-far-layer: 0 8px 8px -8px rgb(0 0 0 / 16%);
+  --ds-shadow-tooltip: var(--ds-shadow-sm);
+  --ds-shadow-menu: var(--ds-shadow-md);
+  --ds-shadow-modal: var(--ds-shadow-lg);
+  --ds-shadow-fullscreen: var(--ds-shadow-lg);
 }

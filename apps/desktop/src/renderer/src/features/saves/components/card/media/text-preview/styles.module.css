@@ -13,13 +13,13 @@
   box-shadow: var(--ds-shadow-sm);
 }
 
-.text-preview-body {
+.body {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   width: 100%;
   overflow: hidden;
   -webkit-line-clamp: 8;
-  font-size: 11px;
+  font-size: var(--ds-text-xs);
   font-weight: 400;
   line-height: 1.4;
   color: var(--ds-gray-12);

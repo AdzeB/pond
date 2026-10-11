@@ -1,10 +1,32 @@
 .popup {
-  width: min(440px, calc(100vw - 32px));
-  padding: 20px;
+  --width: 520px;
 }
 
-.progress {
-  margin: 20px 0 0;
-  font-size: 12px;
-  color: var(--ds-gray-11);
+.hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  height: 264px;
+  padding-top: 24px;
+  overflow: hidden;
+  background: var(--ds-gray-2);
+  border-bottom: var(--ds-border-width) solid var(--ds-gray-a4);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px 24px 24px;
+}
+
+.popup .title {
+  font-size: var(--ds-text-lg);
+  font-weight: var(--ds-weight-xxxl);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
 }

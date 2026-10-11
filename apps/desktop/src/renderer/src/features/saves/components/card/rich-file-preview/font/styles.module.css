@@ -7,8 +7,8 @@
   align-items: center;
   justify-content: center;
   padding: 8%;
-  overflow: hidden;
   container-type: inline-size;
+  overflow: hidden;
   color: light-dark(#171717, #f5f5f5);
   text-align: center;
   background:
@@ -22,7 +22,7 @@
   max-width: 96%;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: var(--pond-card-font), ui-serif, Georgia, serif;
+  font-family: var(--card-font), ui-serif, Georgia, serif;
   font-size: clamp(16px, 18cqw, 36px);
   font-weight: 400;
   line-height: 1.08;
@@ -42,5 +42,5 @@
 }
 
 .font[data-view="list"] span {
-  font-size: 13px;
+  font-size: var(--ds-text-md);
 }

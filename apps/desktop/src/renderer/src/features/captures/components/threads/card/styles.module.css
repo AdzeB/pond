@@ -37,13 +37,13 @@
 
 .card .caption {
   margin: 4px 0 0;
-  font-size: 15px;
+  font-size: var(--ds-text-lg);
   line-height: 20px;
 }
 
 .reply-context {
   margin: 4px 0 0;
-  font-size: 15px;
+  font-size: var(--ds-text-lg);
   color: var(--tw-secondary);
 }
 
@@ -53,6 +53,6 @@
 
 .timestamp {
   margin: 16px 0 0;
-  font-size: 15px;
+  font-size: var(--ds-text-lg);
   color: var(--tw-secondary);
 }
