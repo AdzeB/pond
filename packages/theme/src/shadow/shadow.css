@@ -1,20 +1,31 @@
 :root {
+  --ds-shadow-faint: var(--ds-gray-a2);
+  --ds-shadow-soft: var(--ds-gray-a3);
+  --ds-shadow-strong: var(--ds-gray-a4);
+
   --ds-shadow-border: 0 0 0 1px var(--ds-gray-a4);
 
   --ds-shadow-xs: var(--ds-shadow-border);
 
-  --ds-shadow-sm: var(--ds-shadow-border), 0 1px 1px var(--ds-gray-a2);
+  --ds-shadow-sm: var(--ds-shadow-border), 0 1px 1px var(--ds-shadow-faint);
 
   --ds-shadow-md:
-    var(--ds-shadow-border), 0 1px 1px var(--ds-gray-a2),
-    0 6px 18px var(--ds-gray-a3);
+    var(--ds-shadow-border), 0 1px 1px var(--ds-shadow-faint),
+    0 6px 18px var(--ds-shadow-soft);
 
   --ds-shadow-lg:
-    var(--ds-shadow-border), 0 1px 1px var(--ds-gray-a2),
-    0 9px 48px var(--ds-gray-a4);
+    var(--ds-shadow-border), 0 1px 1px var(--ds-shadow-faint),
+    0 9px 48px var(--ds-shadow-strong);
 
   --ds-shadow-tooltip: var(--ds-shadow-sm);
   --ds-shadow-menu: var(--ds-shadow-md);
   --ds-shadow-modal: var(--ds-shadow-lg);
   --ds-shadow-fullscreen: var(--ds-shadow-lg);
+}
+
+/* Gray alphas mix the light foreground in dark mode, so drop layers glow instead of casting depth. */
+:root[data-theme="dark"] {
+  --ds-shadow-faint: var(--ds-black-a4);
+  --ds-shadow-soft: var(--ds-black-a6);
+  --ds-shadow-strong: var(--ds-black-a7);
 }

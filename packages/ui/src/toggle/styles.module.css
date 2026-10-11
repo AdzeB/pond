@@ -65,7 +65,7 @@
 
 [data-pond-toggle-group][data-multiple] > .root[data-pressed] {
   background: var(--ds-gray-1);
-  box-shadow: 0 1px 2px var(--ds-gray-a4);
+  box-shadow: 0 1px 2px var(--ds-shadow-strong);
 }
 
 [data-pond-toggle-group][data-orientation="vertical"] > .root {

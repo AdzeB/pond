@@ -28,7 +28,7 @@
   pointer-events: none;
   background: var(--ds-gray-1);
   border-radius: var(--ds-radius-sm);
-  box-shadow: 0 1px 2px var(--ds-gray-a4);
+  box-shadow: 0 1px 2px var(--ds-shadow-strong);
   transform: translate(0);
   transition:
     transform var(--ds-duration-emphasized) var(--ds-easing-snap),
