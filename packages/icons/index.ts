@@ -617,24 +617,6 @@ export const IconChatBubble = /* @__PURE__ */ createIcon(
     ],
   ],
 );
-export const IconChatBubblePen = /* @__PURE__ */ createIcon(
-  "ChatBubblePen",
-  "outline",
-  [
-    [
-      "path",
-      {
-        d: "M9 2.75C12.73 2.75 15.75 5.42 15.75 8.75S12.73 14.75 9 14.75C8.1 14.75 7.24 14.6 6.46 14.32L3 15.25L3.95 12.37C2.88 11.3 2.25 10.08 2.25 8.75C2.25 5.42 5.27 2.75 9 2.75Z",
-      },
-    ],
-    [
-      "path",
-      {
-        d: "M9 5.75Q9.54 8.21 12 8.75Q9.54 9.29 9 11.75Q8.46 9.29 6 8.75Q8.46 8.21 9 5.75Z",
-      },
-    ],
-  ],
-);
 export const IconCheck = /* @__PURE__ */ createIcon("Check", "outline", [
   ["path", { d: "M3.25 9.5L7 13.25L14.75 5" }],
 ]);

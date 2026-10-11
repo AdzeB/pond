@@ -56,7 +56,6 @@ export const manifest: IconManifest = {
   CaretMinimize: ["outline"],
   CaretRight: ["fill"],
   ChatBubble: ["outline"],
-  ChatBubblePen: ["outline"],
   Check: ["outline", "fill"],
   CheckList: ["outline"],
   CheckboxChecked: ["outline"],

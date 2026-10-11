@@ -1,6 +1,6 @@
 import {
   IconArrowRotateClockwise,
-  IconChatBubblePen,
+  IconChatBubble,
   IconMediaPlay,
 } from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
@@ -28,7 +28,7 @@ export function buildAgentItems({
   const agent: MenuItemSpec[] = [
     {
       label: "Add to Chat",
-      icon: glyph(IconChatBubblePen),
+      icon: glyph(IconChatBubble),
       hidden: allTrashed,
       onClick: () => addSavesToChat(ids),
     },

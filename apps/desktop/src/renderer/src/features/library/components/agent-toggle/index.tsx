@@ -1,4 +1,4 @@
-import { IconChatBubblePen } from "@pond/icons";
+import { IconChatBubble } from "@pond/icons";
 import { Button, Tooltip } from "@pond/ui";
 import {
   libraryChrome,
@@ -19,7 +19,7 @@ export function AgentToggle() {
         aria-pressed={open}
         onClick={() => libraryChrome.setAgentOpen(true)}
       >
-        <IconChatBubblePen />
+        <IconChatBubble />
       </Button>
     </Tooltip>
   );

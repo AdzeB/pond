@@ -1,6 +1,6 @@
 import {
   IconArrowRotateAnticlockwise,
-  IconChatBubblePen,
+  IconChatBubble,
   IconFile,
   IconFolder,
   IconImage,
@@ -99,7 +99,7 @@ export function useMenuEntries({
                 id: "selection:add-to-chat",
                 group,
                 label: "Add to Chat",
-                icon: <IconChatBubblePen aria-hidden />,
+                icon: <IconChatBubble aria-hidden />,
                 run: () => addSavesToChat(selected()),
               },
             ]),

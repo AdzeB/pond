@@ -22,7 +22,7 @@ import {
   IconArrowDiagonalIn,
   IconBookmark,
   IconBookmarkSlash,
-  IconChatBubblePen,
+  IconChatBubble,
   IconClockPlus,
   IconFolderBan,
   IconHistory,
@@ -133,7 +133,7 @@ function DestinationIcon({ destination }: { destination: SidebarDestination }) {
     case "uncategorized":
       return <IconFolderBan />;
     case "assistant":
-      return <IconChatBubblePen />;
+      return <IconChatBubble />;
     case "untagged":
       return <IconBookmarkSlash />;
     case "recentlyAdded":
@@ -298,7 +298,7 @@ export function LibraryDestinations({
           <BuiltInVisibilityMenu destination={destination} key={destination}>
             <Row
               label="Assistant"
-              icon={<IconChatBubblePen />}
+              icon={<IconChatBubble />}
               active={isDestinationActive(destination)}
               {...dragProps}
               onClick={() => goToLibraryPath("/assistant")}

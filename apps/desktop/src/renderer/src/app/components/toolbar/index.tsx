@@ -3,7 +3,7 @@ import {
   IconArrowDiagonalIn,
   IconBookmark,
   IconBookmarkSlash,
-  IconChatBubblePen,
+  IconChatBubble,
   IconDots,
   IconEye,
   IconGear3,
@@ -46,7 +46,7 @@ import styles from "./styles.module.css";
 
 const ROOT_ICONS = {
   "/": IconAlbum2,
-  "/assistant": IconChatBubblePen,
+  "/assistant": IconChatBubble,
   "/sources": IconArrowDiagonalIn,
   "/tags": IconBookmark,
   "/untagged": IconBookmarkSlash,

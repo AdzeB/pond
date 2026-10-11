@@ -7,7 +7,7 @@ import {
   IconBlockquote,
   IconBulletList,
   IconCaretMinimize,
-  IconChatBubblePen,
+  IconChatBubble,
   IconCheckList,
   IconChevronDown,
   IconCode,
@@ -540,7 +540,7 @@ export function FormatToolbar() {
                     label="Assistant"
                     onClick={() => saveLibraryBridge.setAgentOpen(true)}
                   >
-                    <IconChatBubblePen />
+                    <IconChatBubble />
                   </FormatButton>
                 </Toolbar.Root>
               )}
