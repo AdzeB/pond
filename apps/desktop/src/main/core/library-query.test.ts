@@ -4,6 +4,7 @@ import { EMPTY_QUERY } from "@pond/schema/filters";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
+import { recentlyAddedSince } from "../../shared/recently-added";
 import { initializePondSchema } from "../db";
 import { queryFolderSummaries } from "./folder-summaries";
 import { queryLibraryIds, queryLibraryPage } from "./library-query";
@@ -57,6 +58,8 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
       library: 1199,
       uncategorized: 0,
       untagged: 1199,
+      recentlyAdded: 0,
+      recentlyUsed: 0,
       trash: 1,
       folders: { all: 1199 },
     });
@@ -83,6 +86,32 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
       child: 3,
       leaf: 1,
     });
+  });
+  it("counts recently used saves that are still in the library", () => {
+    const { db, sqlite } = setup();
+    sqlite.exec("update saves set deleted_at=1 where id='0001'");
+    sqlite.exec("update saves set status='ingesting' where id='0002'");
+    expect(
+      querySidebarCounts(db, [], ["0000", "0001", "0002", "missing"]),
+    ).toMatchObject({
+      recentlyUsed: 1,
+    });
+  });
+  it("counts and lists saves added in the last week", async () => {
+    const { db, sqlite } = setup();
+    sqlite.exec(`
+      update saves set deleted_at=1 where id='1199';
+      update saves set status='ingesting' where id='1198';
+    `);
+    const week = -recentlyAddedSince(0);
+    const now = week + 1195;
+    expect(querySidebarCounts(db, [], [], now).recentlyAdded).toBe(3);
+    const result = await queryLibraryPage(db, "library", {
+      query: EMPTY_QUERY,
+      sortKey: "savedAt",
+      scope: { savedSince: recentlyAddedSince(now) },
+    });
+    expect(result.ids).toEqual(["1197", "1196", "1195"]);
   });
   it("summarizes direct child folders and picks the newest visual cover", async () => {
     const { db, sqlite } = setup();
@@ -296,42 +325,6 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
     expect(pinned.ids.slice(0, 4)).toEqual(["0003", "0001", "1199", "1198"]);
   });
 
-  it("indexes image comments and video notes and refreshes annotations on edit", async () => {
-    const { db, sqlite } = setup();
-    sqlite
-      .prepare("update saves set comments=?,video_notes=? where id=?")
-      .run(
-        JSON.stringify([{ id: "c", text: "cyan region" }]),
-        JSON.stringify([{ id: "v", timeSec: 5, text: "waterfall moment" }]),
-        "0001",
-      );
-    expect(
-      (
-        await queryLibraryPage(db, "library", {
-          query: EMPTY_QUERY,
-          keywords: "waterfall",
-        })
-      ).ids,
-    ).toEqual(["0001"]);
-    expect(
-      (
-        await queryLibraryPage(db, "library", {
-          query: EMPTY_QUERY,
-          keywords: '"cyan region"',
-        })
-      ).ids,
-    ).toEqual(["0001"]);
-    sqlite.exec("update saves set video_notes='[]' where id='0001'");
-    expect(
-      (
-        await queryLibraryPage(db, "library", {
-          query: EMPTY_QUERY,
-          keywords: "waterfall",
-        })
-      ).total,
-    ).toBe(0);
-  });
-
   it("refreshes keyword results after imports and searchable metadata edits", async () => {
     const { db, sqlite } = setup();
     const idsFor = async (keywords: string) =>
@@ -352,7 +345,7 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
 
     sqlite
       .prepare(
-        "update saves set title=?, tags=?, notes=?, ocr_text=?, transcript=?, comments=?, video_notes=? where id='imported'",
+        "update saves set title=?, tags=?, notes=?, ocr_text=?, transcript=? where id='imported'",
       )
       .run(
         "renamedmarker",
@@ -360,8 +353,6 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
         "notesmarker",
         "ocrmarker",
         "transcriptmarker",
-        JSON.stringify([{ id: "comment", text: "commentmarker" }]),
-        JSON.stringify([{ id: "video-note", timeSec: 4, text: "videomarker" }]),
       );
     for (const keyword of [
       "renamedmarker",
@@ -369,14 +360,12 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
       "notesmarker",
       "ocrmarker",
       "transcriptmarker",
-      "commentmarker",
-      "videomarker",
     ])
       expect(await idsFor(keyword)).toEqual(["imported"]);
 
     sqlite
       .prepare(
-        "update saves set title='ordinary', tags='[]', notes=null, ocr_text=null, transcript=null, comments='[]', video_notes='[]' where id='imported'",
+        "update saves set title='ordinary', tags='[]', notes=null, ocr_text=null, transcript=null where id='imported'",
       )
       .run();
     for (const keyword of [
@@ -385,8 +374,6 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
       "notesmarker",
       "ocrmarker",
       "transcriptmarker",
-      "commentmarker",
-      "videomarker",
     ])
       expect(await idsFor(keyword)).toEqual([]);
   });

@@ -15,7 +15,7 @@ describe("nextTrackWidth", () => {
     ).toBe(260);
   });
 
-  it("grows Agent when dragging left", () => {
+  it("grows Assistant when dragging left", () => {
     expect(
       nextTrackWidth({
         edge: "right",

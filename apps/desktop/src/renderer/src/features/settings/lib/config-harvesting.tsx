@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import type { SectionConfig } from "@/features/settings/components/engine/engine";
+import type { SectionConfig } from "@/features/settings/components/engine";
 import { imagesSection } from "@/features/settings/lib/config-images";
 import { videosSection } from "@/features/settings/lib/config-videos";
 

@@ -5,7 +5,7 @@ import { createLibraryRepairService } from "./library-repairs";
 
 function createFixture() {
   let now = 1_000;
-  let pondId = "pond-a";
+  let libraryId = "pond-a";
   let root = "/library-a";
   const runtime: LibraryIntegrityRuntime = {
     root: () => root,
@@ -27,16 +27,11 @@ function createFixture() {
       reason: "missing",
     }),
     canRenderThumbnail: async () => false,
-    readInfo: async () => ({
-      ok: false,
-      encrypted: false,
-      value: null,
-      fingerprint: "missing",
-    }),
+    readInfo: async () => ({ status: "missing" }),
   };
   const service = createLibraryRepairService({
     now: () => now,
-    pondId: () => pondId,
+    libraryId: () => libraryId,
     root: () => root,
     integrityRuntime: runtime,
     commit: async () => {},
@@ -49,7 +44,7 @@ function createFixture() {
       now += milliseconds;
     },
     switchLibrary() {
-      pondId = "pond-b";
+      libraryId = "pond-b";
       root = "/library-b";
     },
   };
@@ -114,16 +109,11 @@ describe("Library repair previews", () => {
         reason: "missing",
       }),
       canRenderThumbnail: async () => false,
-      readInfo: async () => ({
-        ok: false,
-        encrypted: false,
-        value: null,
-        fingerprint: "missing",
-      }),
+      readInfo: async () => ({ status: "missing" }),
     };
     const service = createLibraryRepairService({
       now: () => 1_000,
-      pondId: () => "pond",
+      libraryId: () => "pond",
       root: () => "/library",
       integrityRuntime: runtime,
       commit: async (transactions) => {

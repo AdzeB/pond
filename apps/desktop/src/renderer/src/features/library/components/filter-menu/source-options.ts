@@ -1,4 +1,4 @@
-import { getSourceDefForIdentity } from "@/features/sources/lib/registry";
+import { getSourceDefForIdentity } from "@/features/sources";
 import type { FilterOption } from "./options";
 
 export function sourceOptions(values: readonly string[]): FilterOption[] {

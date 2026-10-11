@@ -1,8 +1,7 @@
 import { IconCodeOutline18, IconEyeOutline18 } from "@pond/icons/outline/18";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
-import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
+import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { type MhtmlPage, parseMhtml } from "./mhtml";
 import { sanitizeOfflineHtml } from "./sanitize";
 import styles from "./styles.module.css";
@@ -30,7 +29,6 @@ export function SafeWebViewer({
   const [pages, setPages] = useState<MhtmlPage[]>([]);
   const [pageIndex, setPageIndex] = useState(0);
   const [mode, setMode] = useState<"rendered" | "source">("rendered");
-  const scrollFade = useScrollFade<HTMLPreElement>();
 
   useEffect(() => {
     if (size > MAX_HTML_BYTES) {
@@ -138,9 +136,7 @@ export function SafeWebViewer({
         />
       ) : null}
       {source !== null && mode === "source" ? (
-        <pre className={styles.source} {...scrollFade}>
-          {source}
-        </pre>
+        <pre className={styles.source}>{source}</pre>
       ) : null}
     </div>
   );

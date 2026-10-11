@@ -1,6 +1,6 @@
 import { $ZodNumber, $ZodString, safeParse } from "zod/v4/core";
 
-// Each page hook is a separate bundle; core schemas and pure construction keep unused parsers out.
+/** Each page hook is a separate bundle; core schemas and pure construction keep unused parsers out. */
 export const TextValue = /* @__PURE__ */ new $ZodString({ type: "string" });
 const NumberValue = /* @__PURE__ */ new $ZodNumber({ type: "number" });
 
@@ -46,7 +46,7 @@ export function at(
 export function parseJsonValue(text: string | null): JsonValue | null {
   if (!text) return null;
   try {
-    // SAFETY: JSON.parse only yields JSON values; re-validating that walks the whole payload for nothing.
+    /** SAFETY: JSON.parse only yields JSON values; re-validating that walks the whole payload for nothing. */
     return JSON.parse(text) as JsonValue;
   } catch {
     return null;

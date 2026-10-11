@@ -9,6 +9,7 @@ import {
   tags as tagsTable,
 } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
+import type { OkResult } from "@shared/query-contracts-shared";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { ulid } from "ulid";
 import type { Db } from "../db";
@@ -81,9 +82,9 @@ export async function createGroup(input: {
   name: string;
   color?: string | null;
   description?: string | null;
-}): Promise<{ ok: boolean; id?: string }> {
+}): Promise<OkResult<{ id: string }>> {
   const name = input.name.trim();
-  if (!name) return { ok: false };
+  if (!name) return { ok: false, error: "Enter a group name." };
   const db = await getDb();
   const existing = await groupByLowerName(db, name.toLowerCase());
   if (existing) return { ok: true, id: existing.id };
@@ -106,22 +107,19 @@ export async function createGroup(input: {
   return { ok: true, id: data.id };
 }
 
-export async function renameGroup(
-  from: string,
-  to: string,
-): Promise<{ ok: boolean }> {
+export async function renameGroup(from: string, to: string): Promise<OkResult> {
   const target = to.trim();
-  if (!target) return { ok: false };
+  if (!target) return { ok: false, error: "Enter a group name." };
   const db = await getDb();
   const fromRow = await groupByLowerName(db, from.trim().toLowerCase());
-  if (!fromRow) return { ok: false };
+  if (!fromRow) return { ok: false, error: "Tag group not found." };
   const targetKey = target.toLowerCase();
   if (fromRow.name.toLowerCase() === targetKey && fromRow.name === target) {
     return { ok: true };
   }
   const collision = await groupByLowerName(db, targetKey);
   if (collision && collision.id !== fromRow.id) {
-    return { ok: false };
+    return { ok: false, error: "A tag group with that name already exists." };
   }
   await executeTransaction({
     kind: "update",
@@ -137,10 +135,10 @@ export async function renameGroup(
 export async function updateGroup(
   name: string,
   patch: Partial<NewTagGroup>,
-): Promise<{ ok: boolean }> {
+): Promise<OkResult> {
   const db = await getDb();
   const row = await groupByLowerName(db, name.trim().toLowerCase());
-  if (!row) return { ok: false };
+  if (!row) return { ok: false, error: "Tag group not found." };
   const next: Partial<NewTagGroup> = { ...patch };
   if ("description" in next) {
     const description = next.description?.trim() ?? "";
@@ -159,10 +157,10 @@ export async function updateGroup(
 
 export async function deleteGroup(
   name: string,
-): Promise<{ ok: boolean; affected: number }> {
+): Promise<OkResult<{ affected: number }>> {
   const db = await getDb();
   const row = await groupByLowerName(db, name.trim().toLowerCase());
-  if (!row) return { ok: false, affected: 0 };
+  if (!row) return { ok: false, error: "Tag group not found." };
   const members = await db
     .select()
     .from(tagGroupMembersTable)
@@ -191,10 +189,10 @@ export async function deleteGroup(
 export async function addTagsToGroup(
   tagNames: string[],
   groupName: string,
-): Promise<{ ok: boolean; affected: number }> {
+): Promise<OkResult<{ affected: number }>> {
   const db = await getDb();
   const group = await groupByLowerName(db, groupName.trim().toLowerCase());
-  if (!group) return { ok: false, affected: 0 };
+  if (!group) return { ok: false, error: "Tag group not found." };
   const txs: Transaction[] = [];
   const [last] = await db
     .select({
@@ -237,11 +235,12 @@ export async function addTagsToGroup(
 export async function removeTagFromGroup(
   tagName: string,
   groupName: string,
-): Promise<{ ok: boolean }> {
+): Promise<OkResult> {
   const db = await getDb();
   const tag = await tagByLowerName(db, tagName.trim().toLowerCase());
   const group = await groupByLowerName(db, groupName.trim().toLowerCase());
-  if (!tag || !group) return { ok: false };
+  if (!tag || !group)
+    return { ok: false, error: "Tag or tag group not found." };
   const rows = await db
     .select()
     .from(tagGroupMembersTable)

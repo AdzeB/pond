@@ -41,7 +41,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-family: var(--site-font-mono);
-  font-size: 10.5px;
+  font-size: var(--ds-text-xs);
   color: var(--ds-gray-10);
   white-space: nowrap;
   background: var(--ds-gray-3);
@@ -57,7 +57,7 @@
   height: 26px;
   color: var(--ds-gray-1);
   background: var(--ds-gray-12);
-  border-radius: 7px;
+  border-radius: var(--ds-radius-sm);
 }
 
 .page {
@@ -104,7 +104,7 @@
   align-items: center;
   padding: 8px 12px 8px 9px;
   background: var(--ds-gray-1);
-  border-radius: var(--site-radius-pill);
+  border-radius: var(--ds-radius-full);
   box-shadow:
     0 0 0 1px var(--ds-gray-a3),
     0 8px 20px -4px var(--ds-gray-a5);
@@ -127,14 +127,14 @@
 }
 
 .toast-title {
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
   font-weight: 550;
   color: var(--ds-gray-12);
 }
 
 .toast-meta {
   font-family: var(--site-font-mono);
-  font-size: 10px;
+  font-size: var(--ds-text-xxs);
   color: var(--ds-gray-10);
 }
 
@@ -151,7 +151,7 @@
 .strip-label {
   flex-shrink: 0;
   font-family: var(--site-font-mono);
-  font-size: 10px;
+  font-size: var(--ds-text-xxs);
   font-weight: 500;
   color: var(--ds-gray-9);
   text-transform: uppercase;
@@ -187,7 +187,7 @@
 .strip-count {
   flex-shrink: 0;
   font-family: var(--site-font-mono);
-  font-size: 10.5px;
+  font-size: var(--ds-text-xs);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-9);
 }

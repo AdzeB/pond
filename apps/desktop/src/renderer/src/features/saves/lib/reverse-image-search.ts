@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { statusFeed } from "@/features/downloads/lib/status-feed";
+import { statusFeed } from "@/features/downloads/status-feed";
 import type { Save } from "@/features/saves/types";
 
 export const REVERSE_SEARCH_ENGINES = [

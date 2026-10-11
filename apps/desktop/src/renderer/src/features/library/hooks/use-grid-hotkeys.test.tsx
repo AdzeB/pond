@@ -4,11 +4,14 @@ import { act, useLayoutEffect, useRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { libraryChrome } from "@/features/library/state/library-chrome";
+import { selectOnlySave } from "@/features/saves";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
-import { selectOnlySave } from "@/features/saves/lib/select";
-import { pool } from "@/features/saves/state/pool";
-import { resultNavigation } from "@/features/saves/state/result-navigation";
-import { primarySelection, selection } from "@/features/saves/state/selection";
+import {
+  primarySelection,
+  resultNavigation,
+  selection,
+} from "@/features/saves/navigation";
+import { pool } from "@/features/saves/pool";
 import { useGridHotkeys } from "./use-grid-hotkeys";
 
 const allIds = ["A", "B", "C", "D", "E", "F"];

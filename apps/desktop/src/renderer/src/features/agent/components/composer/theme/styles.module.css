@@ -62,7 +62,7 @@ ol.list {
   height: 14px;
   content: "";
   border: 1px solid var(--ds-gray-8);
-  border-radius: 3px;
+  border-radius: var(--ds-radius-xs);
 }
 
 .checked::before {
@@ -88,15 +88,15 @@ ol.list {
   border-radius: var(--ds-radius-sm);
 }
 
-.inlineCode {
+.inline-code {
   padding: 1px 4px;
   font-family: var(--ds-font-mono);
   font-size: 0.95em;
   background: var(--ds-gray-3);
-  border-radius: 3px;
+  border-radius: var(--ds-radius-xs);
 }
 
-.tableScroll {
+.table-scroll {
   overflow-x: auto;
 }
 

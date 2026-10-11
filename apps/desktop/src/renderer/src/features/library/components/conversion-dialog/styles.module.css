@@ -1,42 +1,67 @@
 .popup {
-  width: min(600px, calc(100vw - 32px));
-  max-height: 85vh;
-  padding: 20px;
-  overflow: auto;
+  --width: 880px;
+  --height: 600px;
 }
-.fields {
-  display: grid;
-  gap: 12px;
-  padding: 0;
-  margin: 16px 0;
-  border: 0;
-}
-.fields > label,
-.field {
+
+.body {
   display: grid;
   flex: 1;
-  gap: 6px;
+  grid-template-columns: 300px minmax(0, 1fr);
+  min-height: 0;
+  margin-top: 16px;
+  border-top: 1px solid var(--ds-gray-a4);
+}
+
+.settings {
+  padding-top: 16px;
+  border-inline-end: 1px solid var(--ds-gray-a4);
+}
+
+.fields {
+  display: grid;
+  gap: 14px;
   min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
 }
-.fields > label > [data-slot="root"] {
-  width: 100%;
+
+.hint {
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-10);
 }
-.row {
+
+.job {
+  display: grid;
+  gap: 6px;
+
+  & p {
+    margin: 0;
+  }
+
+  & progress {
+    width: 100%;
+  }
+}
+
+.error {
+  margin: 0;
+  color: var(--ds-red-11);
+}
+
+.files {
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--ds-gray-1);
 }
-.slider {
-  width: 100%;
-}
-.check {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.popup p {
-  font-size: 12px;
-  overflow-wrap: anywhere;
-}
-.popup progress {
-  width: 100%;
+
+.skipped {
+  flex: none;
+  padding: 12px 16px 0;
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-orange-11);
 }

@@ -29,13 +29,13 @@ export function peekOpenWithApps(kind: string): OpenWithApp[] {
 
 function notifyOpenWith(result: {
   ok: boolean;
-  cancelled?: boolean;
+  reason?: string;
   error?: string;
 }): void {
-  if (!result.ok && !result.cancelled)
+  if (!result.ok && result.reason !== "cancelled")
     notify({
       id: "open-with",
-      title: "Couldn’t open Save",
+      title: "Couldn't open Save",
       description: result.error,
     });
 }
@@ -52,7 +52,7 @@ function openWith(
       application,
     })
     .then(notifyOpenWith)
-    .catch(() => notify({ id: "open-with", title: "Couldn’t open Save" }));
+    .catch(() => notify({ id: "open-with", title: "Couldn't open Save" }));
 }
 
 export function openWithMenuItems(

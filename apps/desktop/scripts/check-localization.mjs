@@ -89,17 +89,27 @@ for (const key of usedKeys) {
   }
 }
 
+const surfaceCopies = new Set();
 for (const relativePath of localizedSurfaces) {
   const paths = await collectPath(join(root, relativePath));
   for (const path of paths) {
     const source = await readFile(path, "utf8");
     for (const copy of extractCopy(source)) {
+      surfaceCopies.add(copy);
       if (!englishMessages.has(copy)) {
         errors.push(
           `${path.slice(root.length + 1)} contains unregistered copy: ${copy}`,
         );
       }
     }
+  }
+}
+
+for (const [key, message] of Object.entries(english)) {
+  if (key.startsWith("copy.") && !surfaceCopies.has(message)) {
+    errors.push(
+      `English contains unused copy ${key}: ${message}. Run pnpm generate:localization.`,
+    );
   }
 }
 

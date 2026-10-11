@@ -2,13 +2,12 @@ import { existsSync } from "node:fs";
 import { writeOrganizationBundle } from "./organization-bundle";
 export async function flushPortableMetadata(): Promise<void> {
   const { getDb } = await import("../db");
-  const { libraryRoot, itemFile } = await import("../paths");
+  const { libraryRoot, saveFile } = await import("../paths");
   const { saves } = await import("@pond/schema/db");
   const { and, asc, gt, isNull } = await import("drizzle-orm");
   const { readFile } = await import("node:fs/promises");
   const { StoredInfoDocSchema } = await import("../lib/library-format");
   const { writeSaveInfo } = await import("../lib/library");
-  const { decodeLibraryFile } = await import("./storage/library-file-storage");
   const db = await getDb();
   const root = libraryRoot();
   writeOrganizationBundle(db, root);
@@ -24,12 +23,10 @@ export async function flushPortableMetadata(): Promise<void> {
       .limit(250);
     if (!rows.length) return;
     for (const row of rows) {
-      const path = itemFile(row.id, "info.json");
+      const path = saveFile(row.id, "info.json");
       if (!existsSync(path)) continue;
       const info = StoredInfoDocSchema.parse(
-        JSON.parse(
-          decodeLibraryFile(path, await readFile(path)).toString("utf8"),
-        ),
+        JSON.parse(await readFile(path, "utf8")),
       );
       if (!info.userData) await writeSaveInfo(row);
     }

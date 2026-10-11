@@ -1,11 +1,10 @@
-import { Dialog } from "@pond/ui";
 import { z } from "zod";
 import {
   type DownloadRow,
   statusFeed,
 } from "@/features/downloads/lib/status-feed";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
-import { trashSaves } from "@/features/saves/lib/mutate";
+import { trashSaves } from "@/features/saves/pool";
 import { notify } from "@/shared/lib/toast";
 
 const RetryResultSchema = z.object({ ok: z.boolean(), requeued: z.number() });
@@ -38,79 +37,58 @@ export async function retryDownloadRows(
   return true;
 }
 
-async function cancelDownloadRows(rows: readonly DownloadRow[]): Promise<void> {
+export function cancelDownloadRows(rows: readonly DownloadRow[]): void {
   const live = rows.filter(canCancelDownload);
   if (live.length === 0) return;
-  await Promise.all(
+  void Promise.all(
     live.map((row) => window.pond.pipelineCancelSave(row.saveId)),
-  );
+  ).then(() => downloadsSelection.clear());
 }
 
-export function confirmCancelDownloadRows(rows: readonly DownloadRow[]): void {
-  const live = rows.filter(canCancelDownload);
-  if (live.length === 0) return;
-  Dialog.confirm({
-    title: "Cancel Selected",
-    description:
-      "Pond stops ingesting the selected saves. You can retry them later.",
-    confirmLabel: "Cancel Selected",
-    confirmVariant: "destructive",
-    onConfirm: () =>
-      cancelDownloadRows(live).then(() => downloadsSelection.clear()),
-  });
-}
-
-async function skipDownloadRows(rows: readonly DownloadRow[]): Promise<void> {
+export function skipDownloadRows(rows: readonly DownloadRow[]): void {
   const ids = [
     ...new Set(rows.filter(canSkipDownload).map((row) => row.saveId)),
   ];
   if (ids.length === 0) return;
-  const result = SkipResultSchema.parse(
-    await window.pond.query("saves.skipIngest", { ids }),
-  );
-  if (!result.ok || result.skipped === 0) {
-    throw new Error("skip failed");
-  }
+  void window.pond
+    .query("saves.skipIngest", { ids })
+    .then((value) => {
+      const result = SkipResultSchema.parse(value);
+      if (!result.ok || result.skipped === 0) throw new Error("skip failed");
+      downloadsSelection.clear();
+    })
+    .catch(() =>
+      statusFeed.error(
+        "Skip downloads",
+        "Couldn't skip these downloads. Try again.",
+      ),
+    );
 }
 
-export function confirmSkipDownloadRows(rows: readonly DownloadRow[]): void {
-  const skippable = rows.filter(canSkipDownload);
-  if (skippable.length === 0) return;
-  Dialog.confirm({
-    title: skippable.length === 1 ? "Skip Download" : "Skip Selected",
-    description:
-      "Pond stops ingesting these saves and will not harvest them again.",
-    confirmLabel: skippable.length === 1 ? "Skip Download" : "Skip Selected",
-    confirmVariant: "destructive",
-    onConfirm: () =>
-      skipDownloadRows(skippable)
-        .then(() => downloadsSelection.clear())
-        .catch(() =>
-          statusFeed.error(
-            "Skip downloads",
-            "Couldn't skip these downloads. Try again.",
-          ),
-        ),
-  });
+interface TrashDownloadDependencies {
+  trash: typeof trashSaves;
+  notify: typeof notify;
+  undo: () => Promise<{ ok: boolean }>;
 }
 
-async function moveDownloadRowsToTrash(
+const TRASH_DOWNLOAD_DEPENDENCIES: TrashDownloadDependencies = {
+  trash: trashSaves,
+  notify,
+  undo: () => window.pond.undo(),
+};
+
+export function trashDownloadRows(
   rows: readonly DownloadRow[],
-): Promise<void> {
-  const ids = [
-    ...new Set(rows.filter(canTrashDownload).map((row) => row.saveId)),
-  ];
-  if (ids.length === 0) return;
-  await trashSaves(ids);
-}
-
-export function trashDownloadRows(rows: readonly DownloadRow[]): void {
+  dependencies = TRASH_DOWNLOAD_DEPENDENCIES,
+): void {
   const trashable = rows.filter(canTrashDownload);
   if (trashable.length === 0) return;
-  void moveDownloadRowsToTrash(trashable)
+  const ids = [...new Set(trashable.map((row) => row.saveId))];
+  void dependencies
+    .trash(ids)
     .then(() => {
       downloadsSelection.clear();
-      notify({
+      dependencies.notify({
         id: "trash-downloads",
         title:
           trashable.length === 1
@@ -119,7 +97,7 @@ export function trashDownloadRows(rows: readonly DownloadRow[]): void {
         action: {
           label: "Undo",
           onClick: () => {
-            void window.pond.undo().then((result) => {
+            void dependencies.undo().then((result) => {
               if (!result.ok)
                 statusFeed.error(
                   "Undo move to Trash",

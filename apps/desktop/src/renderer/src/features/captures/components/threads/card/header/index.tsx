@@ -1,7 +1,7 @@
 import {
   MetaVerifiedIcon,
   ThreadsWordmark,
-} from "@/features/captures/components/threads/card/icons/icons";
+} from "@/features/captures/components/threads/card/icons";
 import { Avatar } from "@/features/captures/components/tweet/card/header";
 import type { TweetCardAuthor } from "@/features/captures/components/tweet/card/lib/data";
 import styles from "./styles.module.css";

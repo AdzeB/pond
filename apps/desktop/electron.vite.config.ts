@@ -53,6 +53,19 @@ function cjsShimPlugin(): Plugin {
   };
 }
 
+const FONT_PRELOAD_CROSSORIGIN_RE =
+  /(<link\s+rel="preload"[^>]*?as="font"[^>]*?)\s+crossorigin="anonymous"/g;
+
+/** Chromium fetches fonts on file:// pages without CORS, so a `crossorigin` preload never matches and the font downloads twice. */
+function fileFontPreloadPlugin(): Plugin {
+  return {
+    name: "pond:file-font-preload",
+    apply: "build",
+    transformIndexHtml: (html) =>
+      html.replace(FONT_PRELOAD_CROSSORIGIN_RE, "$1"),
+  };
+}
+
 export default defineConfig({
   main: {
     plugins: [cjsShimPlugin()],
@@ -91,8 +104,8 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve(__dirname, "src/preload/index.ts"),
+          "combine-images": resolve(__dirname, "src/preload/combine-images.ts"),
           preview: resolve(__dirname, "src/preload/preview.ts"),
-          screenshot: resolve(__dirname, "src/preload/screenshot.ts"),
           settings: resolve(__dirname, "src/preload/settings.ts"),
           scrape: resolve(__dirname, "src/preload/scrape.cjs.ts"),
         },
@@ -135,6 +148,7 @@ export default defineConfig({
         autoCodeSplitting: true,
       }),
       react(),
+      fileFontPreloadPlugin(),
     ],
     resolve: {
       /** Workspace packages and nested @base-ui peers otherwise pull a second React and crash Tooltip.Provider with an invalid hook call. */
@@ -182,6 +196,8 @@ export default defineConfig({
       /** Electron ships a recent Chromium; skip legacy transforms and module-preload polyfills. */
       target: "esnext",
       modulePreload: { polyfill: false },
+      /** electron-vite defaults renderer `minify` to false; every window parses this code before first paint. */
+      minify: true,
       rollupOptions: {
         input: {
           index: resolve(__dirname, "src/renderer/index.html"),
@@ -190,12 +206,15 @@ export default defineConfig({
             "src/renderer/agent-gallery.html",
           ),
           capture: resolve(__dirname, "src/renderer/capture.html"),
+          "combine-images": resolve(
+            __dirname,
+            "src/renderer/combine-images.html",
+          ),
           preview: resolve(__dirname, "src/renderer/preview.html"),
           "picker-gallery": resolve(
             __dirname,
             "src/renderer/picker-gallery.html",
           ),
-          screenshot: resolve(__dirname, "src/renderer/screenshot.html"),
           settings: resolve(__dirname, "src/renderer/settings.html"),
           harvester: resolve(__dirname, "src/renderer/harvester.html"),
         },

@@ -19,7 +19,7 @@ export function FieldInput({
   width,
 }: FieldInputProps) {
   return (
-    <Input.Root className={styles.root} data-width={width}>
+    <Input.Root size="sm" className={styles.root} data-width={width}>
       <Input.Field
         aria-label={label}
         value={value}

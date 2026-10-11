@@ -113,7 +113,7 @@
   white-space: nowrap;
 }
 
-.toolbarEnd {
+.toolbar-end {
   height: 100%;
 }
 
@@ -130,7 +130,7 @@
   padding: 4px 12px 4px 20px;
 }
 
-.brandLabel {
+.brand-label {
   font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-lg);
   color: var(--ds-gray-12);

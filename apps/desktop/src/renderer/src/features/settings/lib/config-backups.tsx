@@ -1,4 +1,4 @@
-import type { SectionConfig } from "@/features/settings/components/engine/engine";
+import type { SectionConfig } from "@/features/settings/components/engine";
 import { BackupSettings } from "@/features/settings/components/sections/backups";
 import { BackupSummary } from "@/features/settings/components/sections/backups/summary";
 

@@ -11,7 +11,7 @@ interface StoredCapture {
 }
 
 function storedRawJson(value: { capture?: StoredCapture }): RawJson {
-  // SAFETY: older rows really do hold partial captures; tolerating them is the promise under test.
+  /** SAFETY: older rows really do hold partial captures; tolerating them is the promise under test. */
   return value as RawJson;
 }
 

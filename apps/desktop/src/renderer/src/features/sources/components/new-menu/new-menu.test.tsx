@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
 import { watchFlow } from "@/features/sources/state/watch-flow";
-import { NewSourceMenu } from "./new-menu";
+import { NewSourceMenu } from ".";
 
 const labels = ["New Source", "New Watch", "New Folder"];
 

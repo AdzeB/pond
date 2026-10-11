@@ -2,8 +2,11 @@ import "@/app/effects/save-library-bridge";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { resultNavigation } from "@/features/saves/state/result-navigation";
-import { primarySelection, selection } from "@/features/saves/state/selection";
+import {
+  primarySelection,
+  resultNavigation,
+  selection,
+} from "@/features/saves/navigation";
 import { useRectangleSelection } from "./use-rectangle-selection";
 
 function Gallery() {

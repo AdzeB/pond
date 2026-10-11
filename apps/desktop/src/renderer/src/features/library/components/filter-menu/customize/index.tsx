@@ -1,15 +1,21 @@
 import {
+  IconCalendarOutline18,
+  IconCircleInfoOutline18,
+  IconCompassOutline18,
   IconFilterPlusOutline18,
   IconImageSparkleOutline18,
+  IconLayersOutline18,
+  IconMediaLibraryOutline18,
   IconRefreshOutline18,
   IconTextToImageOutline18,
 } from "@pond/icons/outline/18";
+import type { IconComponent } from "@pond/icons/types";
 import { FIELD_META } from "@pond/schema/filters/meta";
 import type { FieldId } from "@pond/schema/filters/types";
 import { Menu, Tooltip } from "@pond/ui";
-import { useState } from "react";
 import { libraryHeader } from "@/features/library/state/library-header";
-import { fieldIcon } from "@/features/search/lib/fields";
+import { fieldIcon } from "@/features/search/query";
+import { useMenuFilterQuery } from "@/shared/hooks/use-menu-filter-query";
 import { FilterPopup } from "../chip";
 import {
   FILTER_SECTIONS,
@@ -19,6 +25,14 @@ import {
 } from "../options";
 import { filterToolbar, useFilterToolbar } from "../toolbar-state";
 import styles from "./styles.module.css";
+
+const SECTION_ICONS = {
+  Discovery: IconCompassOutline18,
+  Organize: IconLayersOutline18,
+  Media: IconMediaLibraryOutline18,
+  Details: IconCircleInfoOutline18,
+  Dates: IconCalendarOutline18,
+} satisfies Record<string, IconComponent>;
 
 export function CustomizeFilters({
   choices,
@@ -32,7 +46,7 @@ export function CustomizeFilters({
   visualActive: boolean;
 }) {
   const { pinned, overlays } = useFilterToolbar();
-  const [search, setSearch] = useState("");
+  const { query: search, onValueChange, reset } = useMenuFilterQuery();
   const overlayQuery = search.trim().toLowerCase();
   const showSemantic = !overlayQuery || "semantic".includes(overlayQuery);
   const showVisual =
@@ -96,92 +110,102 @@ export function CustomizeFilters({
   };
 
   const renderSubmenu = (
-    label: string,
+    label: keyof typeof SECTION_ICONS,
     items: ReturnType<typeof renderField>[],
-  ) => (
-    <Menu.SubmenuRoot key={label}>
-      <Menu.SubmenuTrigger>
-        <Menu.ItemLabel>{label}</Menu.ItemLabel>
-      </Menu.SubmenuTrigger>
-      <Menu.Portal>
-        <Menu.Positioner
-          side="inline-end"
-          align="start"
-          sideOffset={-2}
-          alignOffset={-4}
-        >
-          <FilterPopup>{items}</FilterPopup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.SubmenuRoot>
-  );
+  ) => {
+    const Icon = SECTION_ICONS[label];
+    return (
+      <Menu.SubmenuRoot key={label}>
+        <Menu.SubmenuTrigger>
+          <Menu.ItemIcon>
+            <Icon />
+          </Menu.ItemIcon>
+          <Menu.ItemLabel>{label}</Menu.ItemLabel>
+        </Menu.SubmenuTrigger>
+        <Menu.Portal>
+          <Menu.Positioner
+            side="inline-end"
+            align="start"
+            sideOffset={-2}
+            alignOffset={-4}
+          >
+            <FilterPopup>{items}</FilterPopup>
+          </Menu.Positioner>
+        </Menu.Portal>
+      </Menu.SubmenuRoot>
+    );
+  };
 
   return (
-    <Menu.Root
-      onOpenChange={(open) => {
-        if (open) libraryHeader.closePopover();
-        else setSearch("");
-      }}
+    <Menu.FilterProvider
+      filter={null}
+      value={search}
+      onValueChange={onValueChange}
     >
-      <Tooltip label="Customize Filters" side="bottom">
-        <Menu.Trigger
-          icon
-          size="sm"
-          variant="ghost"
-          aria-label="Customize Filters"
-        >
-          <IconFilterPlusOutline18 />
-        </Menu.Trigger>
-      </Tooltip>
-      <Menu.Portal>
-        <Menu.Positioner side="bottom" align="start" sideOffset={6}>
-          <FilterPopup className={styles.popup}>
-            <Menu.Input
-              aria-label="Find Filter"
-              placeholder="Find Filter…"
-              value={search}
-              onValueChange={setSearch}
-            />
-            <Menu.List>
-              {searching ? (
-                <>
-                  {showVisual ? renderOverlay("visual") : null}
-                  {showSemantic ? renderOverlay("semantic") : null}
-                  {fields.map(renderField)}
-                </>
-              ) : (
-                <>
-                  {renderSubmenu("Discovery", [
-                    renderOverlay("visual"),
-                    renderOverlay("semantic"),
-                  ])}
-                  {sections.map((section) =>
-                    renderSubmenu(
-                      section.label,
-                      section.fields.map(renderField),
-                    ),
+      <Menu.Root
+        onOpenChange={(open) => {
+          if (!open) return;
+          libraryHeader.closePopover();
+          reset();
+        }}
+      >
+        <Tooltip label="Customize Filters" side="bottom">
+          <Menu.Trigger
+            icon
+            size="sm"
+            variant="ghost"
+            aria-label="Customize Filters"
+          >
+            <IconFilterPlusOutline18 />
+          </Menu.Trigger>
+        </Tooltip>
+        <Menu.Portal>
+          <Menu.Positioner side="bottom" align="start" sideOffset={6}>
+            <FilterPopup className={styles.popup}>
+              <Menu.Input aria-label="Find Filter" placeholder="Find Filter…" />
+              <Menu.FilterList className={styles.content}>
+                <Menu.List>
+                  {searching ? (
+                    <>
+                      {showVisual ? renderOverlay("visual") : null}
+                      {showSemantic ? renderOverlay("semantic") : null}
+                      {fields.map(renderField)}
+                    </>
+                  ) : (
+                    <>
+                      {renderSubmenu("Discovery", [
+                        renderOverlay("visual"),
+                        renderOverlay("semantic"),
+                      ])}
+                      {sections.map((section) =>
+                        renderSubmenu(
+                          section.label,
+                          section.fields.map(renderField),
+                        ),
+                      )}
+                    </>
                   )}
-                </>
-              )}
-              {searching &&
-              fields.length === 0 &&
-              !showSemantic &&
-              !showVisual ? (
-                <Menu.Item disabled>
-                  <Menu.ItemLabel>No matches</Menu.ItemLabel>
+                  {searching &&
+                  fields.length === 0 &&
+                  !showSemantic &&
+                  !showVisual ? (
+                    <Menu.Item disabled>
+                      <Menu.ItemLabel>No matches</Menu.ItemLabel>
+                    </Menu.Item>
+                  ) : null}
+                </Menu.List>
+                <Menu.Separator />
+                <Menu.Item onClick={() => filterToolbar.restoreDefaults()}>
+                  <Menu.ItemIcon>
+                    <IconRefreshOutline18 />
+                  </Menu.ItemIcon>
+                  <Menu.ItemLabel>Reset Filters</Menu.ItemLabel>
                 </Menu.Item>
-              ) : null}
-            </Menu.List>
-            <Menu.Separator />
-            <Menu.Item onClick={() => filterToolbar.restoreDefaults()}>
-              <Menu.ItemIcon>
-                <IconRefreshOutline18 />
-              </Menu.ItemIcon>
-              <Menu.ItemLabel>Reset Filters</Menu.ItemLabel>
-            </Menu.Item>
-          </FilterPopup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.Root>
+              </Menu.FilterList>
+            </FilterPopup>
+          </Menu.Positioner>
+        </Menu.Portal>
+      </Menu.Root>
+    </Menu.FilterProvider>
   );
 }

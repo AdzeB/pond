@@ -5,18 +5,16 @@ import {
   IconFolderBanFill18,
   IconFolderOpenFill18,
   IconTrashXmarkFill18,
-  IconWindowDownloadFill18,
 } from "@pond/icons/fill/18";
 import {
+  IconClockPlusOutline18,
   IconClockRotateClockwiseOutline18,
-  IconMagnifierOutline18,
 } from "@pond/icons/outline/18";
 import { Button, Empty } from "@pond/ui";
-import { openHarvester } from "@/features/library/lib/open-harvester";
 import { libraryChrome } from "@/features/library/state/library-chrome";
-import type { SaveListMode } from "@/features/saves/lib/list";
-import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
+import type { SaveListMode } from "@/features/saves";
 import { getAppRouter } from "@/shared/lib/app-router";
+import { openHarvester } from "@/shared/lib/open-harvester";
 import styles from "./styles.module.css";
 
 export function LibraryEmpty() {
@@ -41,62 +39,6 @@ export function LibraryEmpty() {
           }
         >
           New Source
-        </Button>
-      </Empty.Action>
-    </Empty.Root>
-  );
-}
-
-export function SourcesEmpty({ scope }: { scope?: "account" | "watch" }) {
-  const title =
-    scope === "account"
-      ? "No accounts yet"
-      : scope === "watch"
-        ? "No watches yet"
-        : "No sources yet";
-  const description =
-    scope === "account"
-      ? "Connect an account to keep Pond in sync."
-      : scope === "watch"
-        ? "Watch a public page to keep Pond in sync."
-        : "Connect an account or watch a public one to keep Pond in sync.";
-  return (
-    <Empty.Root>
-      <Empty.Media>
-        <IconArrowDiagonalInFill18 />
-      </Empty.Media>
-      <Empty.Title>{title}</Empty.Title>
-      <Empty.Description>{description}</Empty.Description>
-      <Empty.Action>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => sourceNewMenu.open()}
-        >
-          New Source
-        </Button>
-      </Empty.Action>
-    </Empty.Root>
-  );
-}
-
-export function DownloadsEmpty() {
-  return (
-    <Empty.Root>
-      <Empty.Media>
-        <IconWindowDownloadFill18 />
-      </Empty.Media>
-      <Empty.Title>No downloads yet</Empty.Title>
-      <Empty.Description>
-        Files appear here while Pond downloads them for your library.
-      </Empty.Description>
-      <Empty.Action>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => getAppRouter()?.history.push("/")}
-        >
-          Open Library
         </Button>
       </Empty.Action>
     </Empty.Root>
@@ -194,11 +136,17 @@ export function LibrarySectionEmpty({ mode }: { mode: LibrarySection }) {
             title: "No recent saves",
             description: "Recently opened saves appear here.",
           }
-        : {
-            icon: <IconArrowDiagonalInFill18 />,
-            title: "No saves from this source",
-            description: "Saves synced from this source appear here.",
-          };
+        : mode === "recentlyAdded"
+          ? {
+              icon: <IconClockPlusOutline18 />,
+              title: "No new saves",
+              description: "Saves from the last 7 days appear here.",
+            }
+          : {
+              icon: <IconArrowDiagonalInFill18 />,
+              title: "No saves from this source",
+              description: "Saves synced from this source appear here.",
+            };
 
   return (
     <Empty.Root role="status" aria-live="polite">
@@ -214,35 +162,6 @@ export function LibrarySectionEmpty({ mode }: { mode: LibrarySection }) {
           Open Library
         </Button>
       </Empty.Action>
-    </Empty.Root>
-  );
-}
-
-interface MatchesEmptyProps {
-  actionLabel?: string;
-  description?: string;
-  onReset?: () => void;
-}
-
-export function MatchesEmpty({
-  actionLabel = "Clear Search and Filters",
-  description = "Try a different search or clear the filters.",
-  onReset,
-}: MatchesEmptyProps = {}) {
-  return (
-    <Empty.Root role="status" aria-live="polite">
-      <Empty.Media>
-        <IconMagnifierOutline18 />
-      </Empty.Media>
-      <Empty.Title>No results found</Empty.Title>
-      <Empty.Description>{description}</Empty.Description>
-      {onReset ? (
-        <Empty.Action>
-          <Button variant="primary" size="sm" onClick={onReset}>
-            {actionLabel}
-          </Button>
-        </Empty.Action>
-      ) : null}
     </Empty.Root>
   );
 }

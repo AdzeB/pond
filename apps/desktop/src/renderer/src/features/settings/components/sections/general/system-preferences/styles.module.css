@@ -4,6 +4,6 @@
 }
 
 .field span {
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-11);
 }

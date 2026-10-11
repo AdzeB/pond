@@ -19,8 +19,6 @@ export interface InfoFile {
 export type SaveUserData = Pick<
   Save,
   | "rating"
-  | "comments"
-  | "videoNotes"
   | "dominantColors"
   | "primaryColor"
   | "rotate"
@@ -61,36 +59,6 @@ export const StoredInfoDocSchema = z.object({
   userData: z
     .object({
       rating: z.number().min(0).max(5).nullable(),
-      comments: z.array(
-        z.object({
-          id: z.string(),
-          fileIndex: z.number().int().nonnegative().optional(),
-          x: z.number(),
-          y: z.number(),
-          w: z.number(),
-          h: z.number(),
-          text: z.string(),
-          createdAt: z.number().optional(),
-          replies: z
-            .array(
-              z.object({
-                id: z.string(),
-                text: z.string(),
-                createdAt: z.number().optional(),
-              }),
-            )
-            .optional(),
-          resolvedAt: z.number().optional(),
-        }),
-      ),
-      videoNotes: z.array(
-        z.object({
-          id: z.string(),
-          fileIndex: z.number().int().nonnegative().optional(),
-          timeSec: z.number(),
-          text: z.string(),
-        }),
-      ),
       dominantColors: z.array(z.string()),
       primaryColor: z
         .string()
@@ -169,8 +137,6 @@ export function infoDocFromSave(
   return {
     userData: {
       rating: save.rating ?? null,
-      comments: save.comments ?? [],
-      videoNotes: save.videoNotes ?? [],
       dominantColors: save.dominantColors ?? [],
       primaryColor: save.primaryColor ?? null,
       rotate: save.rotate ?? 0,
@@ -206,8 +172,6 @@ export function infoDocFromSave(
 const EXPORTED_SAVE_FIELDS = [
   "files",
   "rating",
-  "comments",
-  "videoNotes",
   "dominantColors",
   "primaryColor",
   "rotate",
@@ -241,11 +205,14 @@ export function applyPatchToInfo(
   info: StoredInfoDoc,
   patch: Partial<Save>,
 ): InfoDoc {
-  const next: InfoDoc = { ...info, schema: INFO_SCHEMA };
+  const next: InfoDoc = {
+    ...info,
+    userData: info.userData,
+    notes: info.notes ?? null,
+    schema: INFO_SCHEMA,
+  };
   const userFields = [
     "rating",
-    "comments",
-    "videoNotes",
     "dominantColors",
     "primaryColor",
     "rotate",
@@ -256,8 +223,6 @@ export function applyPatchToInfo(
   if (userFields.some((key) => patch[key] !== undefined)) {
     next.userData = {
       rating: info.userData?.rating ?? null,
-      comments: info.userData?.comments ?? [],
-      videoNotes: info.userData?.videoNotes ?? [],
       dominantColors: info.userData?.dominantColors ?? [],
       primaryColor: info.userData?.primaryColor ?? null,
       rotate: info.userData?.rotate ?? 0,
@@ -266,10 +231,6 @@ export function applyPatchToInfo(
       crop: info.userData?.crop ?? null,
     };
     if (patch.rating !== undefined) next.userData.rating = patch.rating;
-    if (patch.comments !== undefined)
-      next.userData.comments = patch.comments ?? [];
-    if (patch.videoNotes !== undefined)
-      next.userData.videoNotes = patch.videoNotes ?? [];
     if (patch.dominantColors !== undefined)
       next.userData.dominantColors = patch.dominantColors ?? [];
     if (patch.primaryColor !== undefined)

@@ -1,24 +1,22 @@
 import { existsSync, rmSync } from "node:fs";
 import { copyFile, mkdir, rm } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
+import type { OkResult } from "@shared/query-contracts-shared";
 import type Database from "better-sqlite3";
 import { readBundleJson, writeBundleJson } from "../lib/library-config";
-import { itemDir } from "../paths";
-import { withDecryptedLibraryMediaPath } from "./storage/library-media-storage";
+import { saveDir } from "../paths";
 
 export async function activateFont(input: {
   sourcePath: string;
   saveId: string;
   fontsDir: string;
-}): Promise<{ ok: boolean; path?: string; error?: string }> {
+}): Promise<OkResult<{ path: string }>> {
   const pondDir = join(input.fontsDir, "Pond");
   const extension = extname(input.sourcePath) || ".ttf";
   const dest = join(pondDir, `${input.saveId}${extension}`);
   try {
     await mkdir(pondDir, { recursive: true });
-    await withDecryptedLibraryMediaPath(input.sourcePath, (path) =>
-      copyFile(path, dest),
-    );
+    await copyFile(input.sourcePath, dest);
     return { ok: true, path: dest };
   } catch (error) {
     return {
@@ -31,7 +29,7 @@ export async function activateFont(input: {
 export async function deactivateFont(input: {
   installedPath: string;
   fontsDir: string;
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<OkResult> {
   const pondDir = resolve(join(input.fontsDir, "Pond"));
   const target = resolve(input.installedPath);
   if (target === pondDir || !target.startsWith(`${pondDir}${sep}`))
@@ -58,7 +56,7 @@ export function pondFontsDir(
 }
 
 function sidecarPath(id: string): string {
-  return join(itemDir(id), "font-activation.json");
+  return join(saveDir(id), "font-activation.json");
 }
 
 export function readFontActivation(id: string): string | null {

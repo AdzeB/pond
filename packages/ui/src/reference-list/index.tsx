@@ -28,19 +28,18 @@ export function ReferenceList({
   addedIds?: readonly string[];
   empty?: string;
 }) {
-  if (!items.length)
-    return <div className={styles["picker-empty"]}>{empty}</div>;
+  if (!items.length) return <div className={styles.empty}>{empty}</div>;
   return (
-    <div className={styles["reference-list"]}>
+    <div className={styles.list}>
       {items.map((item) => (
-        <article key={item.id} className={styles["reference-row"]}>
+        <article key={item.id} className={styles.row}>
           <Button
             variant="ghost"
-            className={styles["reference-open"]}
+            className={styles.open}
             aria-label={`Open ${item.title}`}
             onClick={() => onOpen(item)}
           >
-            <span className={styles["reference-media"]}>
+            <span className={styles.media}>
               {item.media ?? <IconLink2Outline18 />}
             </span>
             <span className={styles["model-content"]}>
@@ -49,9 +48,7 @@ export function ReferenceList({
                 <span className={styles["row-description"]}>{item.meta}</span>
               )}
               {item.description && (
-                <span className={styles["reference-description"]}>
-                  {item.description}
-                </span>
+                <span className={styles.description}>{item.description}</span>
               )}
             </span>
           </Button>

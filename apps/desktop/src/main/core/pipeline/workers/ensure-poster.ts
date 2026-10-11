@@ -17,13 +17,10 @@ import {
   youtubeThumbnailUrl,
 } from "../../../lib/poster-policy";
 import { probeVideoDims } from "../../../lib/video-dims";
-import { itemDir } from "../../../paths";
+import { saveDir } from "../../../paths";
 import { persistSave } from "../../persist-save";
 import { ensureSaveThumbnail } from "../../save-thumbnail";
-import {
-  readLibraryMedia,
-  withDecryptedLibraryMediaPath,
-} from "../../storage/library-media-storage";
+import { readLibraryMedia } from "../../storage/library-media-storage";
 import { TransientError } from "../extractors/errors";
 import { QueueWorkerPosterResultSchema } from "../worker-contract";
 import { runQueueWorkerJob } from "../worker-host";
@@ -161,10 +158,7 @@ async function hydrateVideoDims(
       if (!isVideoFile(file) || hasMediaDims(file)) {
         return { file, changed: false };
       }
-      const dims = await withDecryptedLibraryMediaPath(
-        join(itemDir(saveId), file.path),
-        probeVideoDims,
-      );
+      const dims = await probeVideoDims(join(saveDir(saveId), file.path));
       if (!dims) return { file, changed: false };
       return { file: { ...file, ...dims }, changed: true };
     }),
@@ -187,24 +181,22 @@ async function producePoster(args: {
     const platform = await platformPosterFromSave(args.rawJson, args.index);
     if (platform) return platform;
   }
-  const videoPath = join(itemDir(args.saveId), args.video.path);
-  return withDecryptedLibraryMediaPath(videoPath, async (source) => {
-    const filename = posterFilename(args.index, ".jpg");
-    if (!args.worker) return buildFirstFramePoster(source, filename);
-    const result = QueueWorkerPosterResultSchema.nullable().parse(
-      await runQueueWorkerJob(
-        {
-          operation: "build_poster",
-          sourcePath: source,
-          filename,
-          leaseToken: args.worker.leaseToken,
-          cancellationFence: args.worker.cancellationFence,
-        },
-        { signal: args.worker.signal },
-      ),
-    );
-    return result ? { ...result, bytes: Buffer.from(result.bytes) } : null;
-  });
+  const source = join(saveDir(args.saveId), args.video.path);
+  const filename = posterFilename(args.index, ".jpg");
+  if (!args.worker) return buildFirstFramePoster(source, filename);
+  const result = QueueWorkerPosterResultSchema.nullable().parse(
+    await runQueueWorkerJob(
+      {
+        operation: "build_poster",
+        sourcePath: source,
+        filename,
+        leaseToken: args.worker.leaseToken,
+        cancellationFence: args.worker.cancellationFence,
+      },
+      { signal: args.worker.signal },
+    ),
+  );
+  return result ? { ...result, bytes: Buffer.from(result.bytes) } : null;
 }
 
 async function platformPosterFromSave(
@@ -236,7 +228,7 @@ async function readExistingPoster(
 ): Promise<PosterWrite | null> {
   if (!poster) return null;
   try {
-    const bytes = await readLibraryMedia(join(itemDir(saveId), poster.path));
+    const bytes = await readLibraryMedia(join(saveDir(saveId), poster.path));
     if (bytes.byteLength === 0) return null;
     const ext = poster.path.includes(".")
       ? `.${poster.path.split(".").pop()}`

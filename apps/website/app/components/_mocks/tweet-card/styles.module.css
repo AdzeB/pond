@@ -7,7 +7,7 @@
   max-width: 380px;
   padding: 20px;
   background: var(--ds-gray-1);
-  border-radius: 20px;
+  border-radius: var(--ds-radius-2xl);
   box-shadow:
     0 0 0 1px var(--ds-gray-a3),
     0 16px 32px -8px var(--ds-gray-a4);
@@ -23,12 +23,12 @@
   height: 21px;
   padding: 0 8px;
   font-family: var(--site-font-mono);
-  font-size: 10px;
+  font-size: var(--ds-text-xxs);
   font-weight: 500;
   color: var(--ds-gray-12);
   text-transform: uppercase;
   background: var(--ds-gray-1);
-  border-radius: var(--site-radius-pill);
+  border-radius: var(--ds-radius-full);
   box-shadow:
     0 0 0 1px var(--ds-gray-a4),
     0 2px 6px var(--ds-gray-a3);
@@ -62,13 +62,13 @@
 }
 
 .name {
-  font-size: 13.5px;
+  font-size: var(--ds-text-md);
   font-weight: 550;
   color: var(--ds-gray-12);
 }
 
 .handle {
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-10);
 }
 
@@ -77,13 +77,13 @@
 }
 
 .body {
-  font-size: 14px;
+  font-size: var(--site-text-sm);
   line-height: 1.5;
   color: var(--ds-gray-12);
 }
 
 .time {
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
   color: var(--ds-gray-10);
 }
 
@@ -102,13 +102,13 @@
   & dt {
     width: 64px;
     font-family: var(--site-font-mono);
-    font-size: 10.5px;
+    font-size: var(--ds-text-xs);
     color: var(--ds-gray-9);
     text-transform: uppercase;
   }
 
   & dd {
-    font-size: 12px;
+    font-size: var(--ds-text-sm);
     color: var(--ds-gray-12);
   }
 }

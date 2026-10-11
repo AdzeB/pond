@@ -1,11 +1,11 @@
 import { Tooltip } from "@pond/ui";
 import type { DownloadActivity } from "@shared/download-activity";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, type ComponentProps } from "react";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { libraryChrome } from "@/features/library/state/library-chrome";
-import { savesStore } from "@/features/saves/state/pool";
+import { libraryChrome } from "@/features/library";
+import { savesStore } from "@/features/saves/pool";
 import { DownloadInspector, DownloadInspectorView } from "./";
 
 const activity: DownloadActivity = {
@@ -66,12 +66,7 @@ describe("download details", () => {
     container.remove();
     vi.unstubAllGlobals();
   });
-  async function render(
-    next?: DownloadActivity,
-    now = 5_000,
-    error = false,
-    attempts: ComponentProps<typeof DownloadInspectorView>["attempts"] = [],
-  ) {
+  async function render(next?: DownloadActivity, error = false) {
     const onClose = vi.fn();
     const onOpenSave = vi.fn();
     const onRetry = vi.fn();
@@ -79,10 +74,8 @@ describe("download details", () => {
       root.render(
         <Tooltip.Provider>
           <DownloadInspectorView
-            activity={next}
-            attempts={attempts}
-            now={now}
-            error={error}
+            activity={{ status: error ? "error" : "ready", activity: next }}
+            save={{ status: "ready", tasks: [] }}
             onClose={onClose}
             onOpenSave={onOpenSave}
             onRetry={onRetry}
@@ -92,72 +85,31 @@ describe("download details", () => {
     );
     return { onClose, onOpenSave, onRetry };
   }
-  it("shows measured transfer progress and expandable request timings", async () => {
+  it("shows only the collapsible activity timeline", async () => {
     await render(activity);
-    expect(container.textContent).toContain("38 MB / 120 MB");
-    expect(container.textContent).toContain("4.2 MB/s");
-    expect(container.textContent).toContain("File 2 of 3");
-    expect(container.textContent?.match(/File 2 of 3/g)).toHaveLength(1);
-    expect(container.textContent).toContain("340 ms");
-    expect(container.textContent).toContain("media.example.com");
-    expect(container.querySelector("progress")?.value).toBeCloseTo(31.666);
-    const trigger = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Request Details",
-    );
-    expect(trigger?.getAttribute("aria-expanded")).toBe("true");
-    await act(() => trigger?.click());
-    expect(trigger?.getAttribute("aria-expanded")).toBe("false");
-  });
-  it("omits percentages, speeds, and request fields when no measurements exist", async () => {
-    await render({ ...activity, phase: "processing", transfers: [] });
-    expect(container.querySelector("progress")).toBeNull();
-    expect(container.textContent).not.toContain("%");
-    expect(container.textContent).not.toContain("MB/s");
-    expect(container.textContent).not.toContain("Request Details");
-  });
-
-  it("keeps simultaneous file transfers separate", async () => {
-    await render({
-      ...activity,
-      transfers: [
-        ...activity.transfers,
-        {
-          fileIndex: 3,
-          fileCount: 3,
-          state: "receiving",
-          startedAt: 3_000,
-          updatedAt: 5_000,
-          receivedBytes: 1_000_000,
-          totalBytes: 2_000_000,
-        },
-      ],
-    });
-    expect(container.querySelectorAll("progress")).toHaveLength(2);
-    expect(container.textContent).toContain("38 MB / 120 MB");
-    expect(container.textContent).toContain("1 MB / 2 MB");
-    expect(container.textContent).toContain("File 3 of 3");
-  });
-  it("explains a stalled transfer and removes stale speed and estimates", async () => {
-    await render(activity, 22_000);
-    expect(container.textContent).toContain("No data received for 17s");
-    expect(container.textContent).not.toContain("4.2 MB/s");
-    expect(container.textContent).not.toContain("left");
+    expect(container.querySelector("h2")?.textContent).toBe("Details");
+    const activityTrigger = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("button"),
+    ).find((button) => button.textContent === "Activity");
+    expect(activityTrigger?.getAttribute("aria-expanded")).toBe("true");
+    expect(container.textContent).toContain("Preparing download");
+    expect(container.textContent).toContain("Waiting for server response");
+    expect(container.textContent).toContain("Downloading media");
+    expect(container.textContent).not.toContain("Overview");
+    expect(container.textContent).not.toContain("Network");
+    expect(container.textContent).not.toContain("Attempts");
+    expect(container.textContent).not.toContain("Output");
+    expect(container.textContent).not.toContain("Metadata");
+    expect(
+      container.querySelector('[aria-label="Search activity"]'),
+    ).toBeNull();
+    expect(
+      container.querySelector('[aria-label="Filter activity"]'),
+    ).toBeNull();
+    await act(() => activityTrigger?.click());
+    expect(activityTrigger?.getAttribute("aria-expanded")).toBe("false");
   });
 
-  it("does not revive stale speed when a transfer reports without new bytes", async () => {
-    await render(
-      {
-        ...activity,
-        transfers: activity.transfers.map((transfer) => ({
-          ...transfer,
-          updatedAt: 22_000,
-        })),
-      },
-      22_000,
-    );
-    expect(container.textContent).not.toContain("4.2 MB/s");
-    expect(container.textContent).not.toContain("left");
-  });
   it("keeps empty activity truthful and allows opening the save or closing details", async () => {
     const commands = await render();
     expect(container.textContent).toContain("No recent activity is available");
@@ -173,49 +125,15 @@ describe("download details", () => {
     expect(commands.onClose).toHaveBeenCalledOnce();
     expect(commands.onOpenSave).toHaveBeenCalledOnce();
   });
-  it("offers retry and stops claiming live speed after an activity query fails", async () => {
-    const commands = await render(activity, 5_000, true);
+  it("offers retry and stops claiming the failed activity is current", async () => {
+    const commands = await render(activity, true);
     expect(container.textContent).toContain("Download activity is unavailable");
-    expect(container.textContent).not.toContain("4.2 MB/s");
     expect(container.textContent).not.toContain("Now");
     const retry = Array.from(container.querySelectorAll("button")).find(
       (button) => button.textContent === "Try Again",
     );
     await act(() => retry?.click());
     expect(commands.onRetry).toHaveBeenCalledOnce();
-  });
-
-  it("shows persisted task attempts and source gate transitions", async () => {
-    await render(undefined, 5_000, false, [
-      {
-        id: 1,
-        ts: 1_000,
-        kind: "pipeline.task.attempt",
-        op: "fetch_video_ytdlp",
-        outcome: "dead",
-        durationMs: 700,
-        attempts: 5,
-        errorName: "TransientError",
-        errorMessage: "Network unavailable",
-        payload: {},
-      },
-      {
-        id: 2,
-        ts: 2_000,
-        kind: "pipeline.source-gate.transition",
-        op: null,
-        outcome: "open",
-        durationMs: null,
-        attempts: null,
-        errorName: null,
-        errorMessage: null,
-        payload: {},
-      },
-    ]);
-    expect(container.textContent).toContain("Attempt History");
-    expect(container.textContent).toContain("fetch_video_ytdlp: dead");
-    expect(container.textContent).toContain("Source gate: open");
-    expect(container.textContent).toContain("Network unavailable");
   });
 });
 
@@ -265,7 +183,6 @@ describe("download inspector data", () => {
   it("hydrates an older completed save and stops activity polling when Details closes", async () => {
     const query = vi.fn(async (name: string) => {
       if (name === "settings.getPrefs") return {};
-      if (name === "queue.attempts") return [];
       if (name === "downloads.activity") return [];
       if (name === "saves.getMany")
         return [
@@ -284,13 +201,11 @@ describe("download inspector data", () => {
     await render();
     await act(async () => {
       await vi.waitFor(() =>
-        expect(container.textContent).toContain("Completed"),
+        expect(container.textContent).toContain("No recent activity"),
       );
     });
-    expect(container.textContent).toContain("Completed");
-    expect(container.textContent).toContain("Properties");
-    expect(container.textContent).toContain("YouTube");
-    expect(container.textContent).toContain("File");
+    expect(container.textContent).not.toContain("Overview");
+    expect(container.textContent).not.toContain("Metadata");
     expect(
       container.querySelector('button[aria-label="Open Save"]'),
     ).not.toBeNull();
@@ -314,7 +229,6 @@ describe("download inspector data", () => {
     vi.stubGlobal("pond", {
       query: async (name: string) => {
         if (name === "settings.getPrefs") return {};
-        if (name === "queue.attempts") return [];
         if (name === "downloads.activity") return [];
         if (name === "saves.getMany") {
           if (fail) throw new Error("Library unavailable");
@@ -349,10 +263,9 @@ describe("download inspector data", () => {
     await act(() => retry?.click());
     await act(async () => {
       await vi.waitFor(() =>
-        expect(container.textContent).toContain("Waiting"),
+        expect(container.textContent).toContain("No recent activity"),
       );
     });
-    expect(container.textContent).toContain("Waiting");
     expect(container.textContent).not.toContain("Couldn't load this save.");
     expect(
       container.querySelector('button[aria-label="Open Save"]'),
@@ -363,7 +276,6 @@ describe("download inspector data", () => {
     vi.stubGlobal("pond", {
       query: async (name: string) => {
         if (name === "settings.getPrefs") return {};
-        if (name === "queue.attempts") return [];
         if (name === "downloads.activity") return [];
         if (name === "saves.getMany")
           return [
@@ -398,15 +310,13 @@ describe("download inspector data", () => {
     });
     expect(container.textContent).toContain("Network unavailable");
     expect(container.textContent).toContain("Downloading video");
-    expect(container.textContent).toContain("YouTube");
-    expect(container.querySelector("progress")).toBeNull();
+    expect(container.textContent).not.toContain("Metadata");
   });
 
   it("shows a restarted save as waiting instead of the previous attempt's finished activity", async () => {
     vi.stubGlobal("pond", {
       query: async (name: string) => {
         if (name === "settings.getPrefs") return {};
-        if (name === "queue.attempts") return [];
         if (name === "downloads.activity")
           return [
             {
@@ -434,13 +344,9 @@ describe("download inspector data", () => {
     await render();
     await act(async () => {
       await vi.waitFor(() =>
-        expect(container.textContent).toContain("Waiting"),
+        expect(container.textContent).toContain("No recent activity"),
       );
     });
-    expect(container.textContent).toContain("Waiting");
-    expect(container.textContent).toContain("Loading save details");
-    expect(container.textContent).toContain("Properties");
     expect(container.textContent).not.toContain("Stopped");
-    expect(container.querySelector("progress")).toBeNull();
   });
 });

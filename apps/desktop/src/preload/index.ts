@@ -10,6 +10,10 @@ import {
 import type { AgentStreamEvent } from "../shared/agent-stream";
 import type { AssistantChunk } from "../shared/assistant";
 import {
+  COMBINE_IMAGES_WINDOW_IPC,
+  type CombineImagesWindowOpen,
+} from "../shared/combine-images-contracts";
+import {
   IPC,
   type MenuActionEvent,
   type RecentMenuEntry,
@@ -32,6 +36,11 @@ import type {
   SettingsProcessingStatus,
   SettingsWindowLocation,
 } from "../shared/settings-window-contracts";
+import {
+  SHELL_HINT_ARG,
+  type ShellHint,
+  ShellHintSchema,
+} from "../shared/shell-hint";
 import type { ShortcutId } from "../shared/shortcuts";
 
 import type {
@@ -87,7 +96,7 @@ export interface StorageGuardStatusWire {
   appliedAt: string;
 }
 
-let cachedPondId: string | null = null;
+let cachedLibraryId: string | null = null;
 
 const api = {
   processingReady(): Promise<void> {
@@ -103,6 +112,9 @@ const api = {
   },
   openSettingsWindow(input: SettingsWindowLocation = {}): Promise<void> {
     return ipcRenderer.invoke(SETTINGS_WINDOW_IPC.open, input);
+  },
+  openCombineImagesWindow(input: CombineImagesWindowOpen): Promise<void> {
+    return ipcRenderer.invoke(COMBINE_IMAGES_WINDOW_IPC.open, input);
   },
   openHarvesterWindow(input: HarvesterWindowLocation = {}): Promise<void> {
     return ipcRenderer.invoke(HARVESTER_WINDOW_IPC.open, input);
@@ -136,15 +148,15 @@ const api = {
     return ipcRenderer.invoke(IPC.tx, tx);
   },
 
-  pondId(): string {
-    if (cachedPondId) return cachedPondId;
+  libraryId(): string {
+    if (cachedLibraryId) return cachedLibraryId;
     try {
-      const value: string = ipcRenderer.sendSync(IPC.pondId);
-      cachedPondId = value.length > 0 ? value : "unbound";
+      const value: string = ipcRenderer.sendSync(IPC.libraryId);
+      cachedLibraryId = value.length > 0 ? value : "unbound";
     } catch {
-      cachedPondId = "unbound";
+      cachedLibraryId = "unbound";
     }
-    return cachedPondId;
+    return cachedLibraryId;
   },
 
   batch(txs: Transaction[]): Promise<void> {
@@ -490,29 +502,14 @@ const api = {
   },
 };
 
-interface ShellHint {
-  theme?: "light" | "dark";
-  bgL?: number;
-  bgC?: number;
-  bgH?: number;
-  fgL?: number;
-  fgC?: number;
-  fgH?: number;
-  accentL?: number;
-  accentC?: number;
-  accentH?: number;
-  contrast?: number;
-  background?: string;
-  pointerCursors?: boolean;
-}
-
 function readShellHint(): ShellHint {
-  const prefix = "--pond-shell=";
-  const arg = process.argv.find((a) => a.startsWith(prefix));
+  const arg = process.argv.find((a) => a.startsWith(SHELL_HINT_ARG));
   if (!arg) return {};
   try {
-    const parsed: ShellHint | null = JSON.parse(arg.slice(prefix.length));
-    return parsed ?? {};
+    const parsed = ShellHintSchema.safeParse(
+      JSON.parse(arg.slice(SHELL_HINT_ARG.length)),
+    );
+    return parsed.success ? parsed.data : {};
   } catch {
     return {};
   }

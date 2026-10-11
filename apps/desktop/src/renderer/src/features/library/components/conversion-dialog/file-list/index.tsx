@@ -1,0 +1,127 @@
+import { IconXmarkOutline12 } from "@pond/icons/outline/12";
+import { Button, Empty } from "@pond/ui";
+import type { ConversionPreset } from "@shared/conversion-contracts";
+import { typeLabelForPath } from "@shared/file-format";
+import { CardThumb } from "@/features/saves";
+import type { Save, SaveFile } from "@/features/saves/types";
+import { type Dimensions, fitInside } from "../export-plan";
+import styles from "./styles.module.css";
+
+export interface ExportRow {
+  id: string;
+  save: Save | undefined;
+  file: SaveFile | null;
+  skipped: boolean;
+}
+
+export interface ExportTarget {
+  label: string;
+  box: Pick<ConversionPreset, "width" | "height">;
+}
+
+function dimensions(size: Dimensions): string {
+  return `${size.width} × ${size.height}`;
+}
+
+function Row({
+  row,
+  target,
+  disabled,
+  onRemove,
+}: {
+  row: ExportRow;
+  target: ExportTarget | null;
+  disabled: boolean;
+  onRemove: () => void;
+}) {
+  const title = row.save?.title || "Untitled";
+  const from = row.file ? typeLabelForPath(row.file.path) : null;
+  const before =
+    row.file?.width && row.file.height
+      ? { width: row.file.width, height: row.file.height }
+      : null;
+  const fitted =
+    before && target
+      ? fitInside(before.width, before.height, target.box)
+      : null;
+  const after =
+    fitted &&
+    (fitted.width !== before?.width || fitted.height !== before?.height)
+      ? fitted
+      : null;
+  const status = !row.save
+    ? null
+    : !row.file
+      ? "No file to export"
+      : row.skipped && target
+        ? `Can't convert to ${target.label}`
+        : null;
+  return (
+    <li className={styles.row} data-skipped={row.skipped || undefined}>
+      <span className={styles.frame}>
+        {row.save ? <CardThumb save={row.save} width={96} /> : null}
+      </span>
+      <span className={styles.caption}>
+        <span className={styles.title} title={title}>
+          {title}
+        </span>
+        {status ? <span className={styles.status}>{status}</span> : null}
+      </span>
+      <span className={styles.format}>
+        {from}
+        {target && !row.skipped && target.label !== from
+          ? ` → ${target.label}`
+          : null}
+      </span>
+      <span className={styles.size}>
+        {before ? dimensions(before) : null}
+        {after && !row.skipped ? ` → ${dimensions(after)}` : null}
+      </span>
+      <Button
+        className={styles.remove}
+        icon
+        size="xs"
+        variant="ghost"
+        aria-label={`Remove ${title}`}
+        disabled={disabled}
+        onClick={onRemove}
+      >
+        <IconXmarkOutline12 />
+      </Button>
+    </li>
+  );
+}
+
+export function FileList({
+  rows,
+  target,
+  disabled,
+  onRemove,
+}: {
+  rows: readonly ExportRow[];
+  target: ExportTarget | null;
+  disabled: boolean;
+  onRemove: (id: string) => void;
+}) {
+  if (rows.length === 0)
+    return (
+      <div className={styles.empty}>
+        <Empty.Root>
+          <Empty.Title>No saves to export</Empty.Title>
+        </Empty.Root>
+      </div>
+    );
+  return (
+    <ul className={styles.list} aria-label="Saves to export">
+      {rows.map((row) => (
+        <Row
+          key={row.id}
+          row={row}
+          target={target}
+          disabled={disabled}
+          onRemove={() => onRemove(row.id)}
+        />
+      ))}
+    </ul>
+  );
+}

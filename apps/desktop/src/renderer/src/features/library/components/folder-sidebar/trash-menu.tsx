@@ -3,7 +3,7 @@ import {
   IconTrashXmarkOutline18,
 } from "@pond/icons/outline/18";
 import type { MenuItemSpec } from "@pond/ui";
-import { confirmEmptyTrash } from "@/features/saves/lib/empty-trash";
+import { confirmEmptyTrash } from "@/features/saves";
 
 export function buildTrashMenuItems(hasItems: boolean): MenuItemSpec[] {
   return [

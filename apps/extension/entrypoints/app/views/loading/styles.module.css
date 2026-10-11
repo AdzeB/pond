@@ -1,6 +1,6 @@
 .message {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--ds-text-md);
   font-weight: 400;
   line-height: 1.4;
   color: var(--ds-gray-11);

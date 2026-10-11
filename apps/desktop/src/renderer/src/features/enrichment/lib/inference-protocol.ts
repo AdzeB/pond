@@ -7,6 +7,11 @@ export interface SerializedImage {
   channels: 1 | 2 | 3 | 4;
 }
 
+export interface SerializedVideoFrame {
+  image: SerializedImage;
+  timestamp: number;
+}
+
 export type InferenceRequest =
   | {
       id: number;
@@ -28,6 +33,13 @@ export type InferenceRequest =
     }
   | { id: number; op: "embedText"; text: string }
   | { id: number; op: "embedTexts"; texts: string[] }
+  | { id: number; op: "embedAudio"; audio: Float32Array }
+  | {
+      id: number;
+      op: "embedVideoFrames";
+      frames: SerializedVideoFrame[];
+      duration: number;
+    }
   | { id: number; op: "transcribe"; audio: Float32Array };
 
 export type InferenceResult =

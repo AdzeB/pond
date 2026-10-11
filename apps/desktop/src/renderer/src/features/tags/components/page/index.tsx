@@ -8,23 +8,19 @@ import {
 import { IconFolderOutline18, IconStarOutline18 } from "@pond/icons/outline/18";
 import { Button, DataTable, Empty, Input, Sidebar, Tooltip } from "@pond/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MatchesEmpty } from "@/features/library/components/empty";
-import { usePrefs } from "@/features/settings/state/prefs";
 import { TagsBulkActionBar } from "@/features/tags/components/manager/bulk-actions";
 import { DraftRow } from "@/features/tags/components/manager/draft-row";
 import { TagItem } from "@/features/tags/components/manager/item";
-import { tagsColumns } from "@/features/tags/components/manager/lib/columns/columns";
+import { tagsColumns } from "@/features/tags/components/manager/lib/columns";
 import { TagsTableContext } from "@/features/tags/components/manager/lib/context";
 import type { TagsRowData } from "@/features/tags/components/manager/lib/types";
-import { TagPicker } from "@/features/tags/components/picker/picker";
+import { TagPicker } from "@/features/tags/components/picker";
 import { useTagCreation } from "@/features/tags/hooks/use-tag-creation";
 import { useTagsData } from "@/features/tags/hooks/use-tag-manager";
 import { useTagCreationRequest } from "@/features/tags/state/creation";
-import {
-  SearchChrome,
-  SearchChromeInput,
-} from "@/shared/components/search-chrome";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
+import { MatchesEmpty } from "@/shared/components/matches-empty";
+import { SearchChrome } from "@/shared/components/search-chrome";
+import { usePrefs } from "@/shared/state/prefs";
 import { TagSortMenu } from "./sort-menu";
 import styles from "./styles.module.css";
 
@@ -102,8 +98,6 @@ export function TagsPage() {
     setScope(creationRequest.kind === "group" ? "all" : "ungrouped");
     startCreate(creationRequest.kind);
   }, [creationRequest, startCreate]);
-  const sidebarFade = useScrollFade<HTMLDivElement>();
-  const scrollFade = useScrollFade<HTMLDivElement>();
   const contextValue = useMemo(
     () => ({
       groups: groupOptions,
@@ -221,7 +215,7 @@ export function TagsPage() {
       defaultSort={{ id: "name", desc: false }}
     >
       <div className={styles.page}>
-        <SearchChrome
+        <SearchChrome.Root
           actions={
             <TagSortMenu
               sort={allTags.sort}
@@ -232,7 +226,7 @@ export function TagsPage() {
             />
           }
         >
-          <SearchChromeInput
+          <SearchChrome.Input
             value={q}
             onChange={(event) => setQ(event.target.value)}
             spellCheck={false}
@@ -240,13 +234,13 @@ export function TagsPage() {
             aria-label="Search Tags"
             data-tags-search=""
           />
-        </SearchChrome>
+        </SearchChrome.Root>
 
         <TagsTableContext value={contextValue}>
           <div className={styles.workspace}>
             <aside className={styles.sidebar} aria-label="Tag Collections">
               <Sidebar.Root width="full">
-                <Sidebar.Scroll {...sidebarFade}>
+                <Sidebar.Scroll>
                   <nav>
                     <Sidebar.Group className={styles["scope-group"]}>
                       <Sidebar.Item
@@ -313,7 +307,7 @@ export function TagsPage() {
                       </Tooltip>
                     </Sidebar.GroupHeader>
                     {creating === "group" ? (
-                      <div className={styles.groupDraft}>
+                      <div className={styles["group-draft"]}>
                         <DraftRow
                           creating="group"
                           onSave={saveCreate}
@@ -352,13 +346,13 @@ export function TagsPage() {
               </Sidebar.Root>
             </aside>
 
-            <main className={styles.main} {...scrollFade}>
+            <main className={styles.main}>
               {activeGroupRow ? (
-                <section className={styles.groupDetail}>
-                  <div className={styles.groupDetailTitle}>
+                <section className={styles["group-detail"]}>
+                  <div className={styles["group-detail-title"]}>
                     <h1>
                       {activeGroupRow.group.name}
-                      <span className={styles.groupDetailCount}>
+                      <span className={styles["group-detail-count"]}>
                         ({visibleRows.length})
                       </span>
                     </h1>
@@ -379,7 +373,7 @@ export function TagsPage() {
                     </TagPicker.Root>
                   </div>
                   <Input.Root
-                    className={styles.groupDescription}
+                    className={styles["group-description"]}
                     size="xs"
                     variant="borderless"
                   >
@@ -427,8 +421,8 @@ export function TagsPage() {
 
               {(activeGroupRow || allTags.sort !== "name") &&
               orderedRows.length > 0 ? (
-                <div className={styles.groupTags}>
-                  <div className={styles.tagGrid}>
+                <div className={styles["group-tags"]}>
+                  <div className={styles["tag-grid"]}>
                     {orderedRows.map((row) => (
                       <TagItem key={row.id} row={row} variant="index" />
                     ))}
@@ -437,12 +431,15 @@ export function TagsPage() {
               ) : alphabet.length > 0 ? (
                 <div className={styles.index}>
                   {alphabet.map((group) => (
-                    <section className={styles.letterGroup} key={group.letter}>
-                      <header className={styles.letterHeader}>
+                    <section
+                      className={styles["letter-group"]}
+                      key={group.letter}
+                    >
+                      <header className={styles["letter-header"]}>
                         <h2>{group.letter}</h2>
                         <span>({group.rows.length})</span>
                       </header>
-                      <div className={styles.tagGrid}>
+                      <div className={styles["tag-grid"]}>
                         {group.rows.map((row) => (
                           <TagItem key={row.id} row={row} variant="index" />
                         ))}
@@ -479,7 +476,7 @@ export function TagsPage() {
                 </div>
               ) : (
                 <Empty.Root
-                  className={styles.scopeEmpty}
+                  className={styles["scope-empty"]}
                   role="status"
                   aria-live="polite"
                 >

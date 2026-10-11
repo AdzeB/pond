@@ -134,15 +134,16 @@ dmg:
       type: link
       path: /Applications
 
-win:
-  target:
-    - target: nsis
-      arch:
-        - x64
-        - arm64
-
-linux:
-  target:
-    - target: AppImage
-    - target: deb
-  category: Utility
+# Windows and Linux targets are disabled until those builds ship.
+# Coming soon:
+# win:
+#   target:
+#     - target: nsis
+#       arch:
+#         - x64
+#         - arm64
+# linux:
+#   target:
+#     - target: AppImage
+#     - target: deb
+#   category: Utility

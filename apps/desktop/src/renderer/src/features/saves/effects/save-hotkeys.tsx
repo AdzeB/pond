@@ -75,7 +75,7 @@ function withSelection(
       void Promise.resolve(multiple(ids)).catch(() =>
         notify({
           id: "selection-error",
-          title: "Couldn’t complete the selection command",
+          title: "Couldn't complete the selection command",
           description: "Try again.",
         }),
       );
@@ -116,13 +116,13 @@ export function SaveHotkeys() {
         if (detail) openSave(next);
         else await resultNavigation.reveal(next);
       })
-      .catch(() =>
+      .catch(() => {
         notify({
           id: "rating-error",
-          title: "Couldn’t update the rating",
+          title: "Couldn't update the rating",
           description: "Try again.",
-        }),
-      );
+        });
+      });
   };
 
   useHotkeys(
@@ -313,8 +313,8 @@ export function SaveHotkeys() {
           (ids) =>
             Dialog.confirm({
               title: "Delete Forever",
-              description: `Delete ${ids.length} selected items and their files? This can’t be undone.`,
-              confirmLabel: "Delete Forever",
+              description: `${ids.length === 1 ? "This save and its file are" : `${ids.length} saves and their files are`} deleted. This cannot be undone.`,
+              confirmLabel: "Delete",
               onConfirm: () => deleteSelectionForever(ids),
             }),
         ),

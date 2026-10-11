@@ -47,8 +47,6 @@ type ExportSave = Pick<
       | "author"
       | "description"
       | "rating"
-      | "comments"
-      | "videoNotes"
       | "savedAt"
       | "createdAt"
     >
@@ -321,8 +319,6 @@ export async function exportFiles(input: {
             author: save.author,
             description: save.description,
             rating: save.rating,
-            comments: save.comments,
-            videoNotes: save.videoNotes,
             savedAt: save.savedAt,
             createdAt: save.createdAt,
             files: save.files,

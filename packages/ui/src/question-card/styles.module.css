@@ -1,7 +1,6 @@
 .root {
   overflow: hidden;
   background: var(--ds-gray-1);
-  border: var(--ds-border-width) solid var(--ds-border-subtle);
   border-radius: var(--ds-radius-xl);
   box-shadow: var(--ds-shadow-xs);
 }

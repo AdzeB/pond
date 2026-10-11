@@ -23,6 +23,7 @@ import {
   IconBookmarkOutline18,
   IconBookmarkSlashOutline18,
   IconChatBubblePenOutline18,
+  IconClockPlusOutline18,
   IconClockRotateClockwiseOutline18,
   IconFolderBanOutline18,
   IconShuffleOutline18,
@@ -53,16 +54,16 @@ import {
   resolveSidebarBadgeStyle,
   SIDEBAR_DESTINATION_GROUPS,
   SIDEBAR_DESTINATION_LABELS,
-} from "@/features/settings/lib/sidebar-customization";
-import { usePrefs } from "@/features/settings/state/prefs";
-import { useAccounts } from "@/features/sources/hooks/use-accounts";
-import { useTags } from "@/features/tags/state/tags";
+} from "@/features/settings";
+import { useAccounts } from "@/features/sources";
+import { useTags } from "@/features/tags";
 import {
   createSortableAnnouncements,
   SIDEBAR_SORTABLE_KEYBOARD_CODES,
   SIDEBAR_SORTABLE_SCREEN_READER_INSTRUCTIONS,
   SORTABLE_DROP_ANIMATION,
 } from "@/shared/lib/dnd-kit";
+import { usePrefs } from "@/shared/state/prefs";
 import { BuiltInVisibilityMenu } from "../built-in-visibility-menu";
 import { goToLibraryPath, selectLibraryNav } from "../navigation";
 import { Row } from "../sidebar-row";
@@ -135,6 +136,8 @@ function DestinationIcon({ destination }: { destination: SidebarDestination }) {
       return <IconChatBubblePenOutline18 />;
     case "untagged":
       return <IconBookmarkSlashOutline18 />;
+    case "recentlyAdded":
+      return <IconClockPlusOutline18 />;
     case "recentlyUsed":
       return <IconClockRotateClockwiseOutline18 />;
     case "tags":
@@ -205,6 +208,8 @@ export function LibraryDestinations({
         return assistantPage;
       case "untagged":
         return untaggedPage;
+      case "recentlyAdded":
+        return nav.kind === "recentlyAdded";
       case "recentlyUsed":
         return nav.kind === "recents";
       case "tags":
@@ -238,8 +243,11 @@ export function LibraryDestinations({
         return downloadsCount;
       case "sources":
         return accounts.length;
-      case "assistant":
+      case "recentlyAdded":
+        return counts.recentlyAdded;
       case "recentlyUsed":
+        return counts.recentlyUsed;
+      case "assistant":
       case "random":
         return undefined;
     }
@@ -315,12 +323,31 @@ export function LibraryDestinations({
             />
           </BuiltInVisibilityMenu>
         );
+      case "recentlyAdded":
+        return (
+          <BuiltInVisibilityMenu destination={destination} key={destination}>
+            <Row
+              label="Recently Added"
+              icon={<IconClockPlusOutline18 />}
+              count={counts.recentlyAdded}
+              badgeStyle={badgeStyle}
+              active={isDestinationActive(destination)}
+              {...dragProps}
+              onClick={() => {
+                resetFilters();
+                selectLibraryNav({ kind: "recentlyAdded" });
+              }}
+            />
+          </BuiltInVisibilityMenu>
+        );
       case "recentlyUsed":
         return (
           <BuiltInVisibilityMenu destination={destination} key={destination}>
             <Row
               label="Recently Used"
               icon={<IconClockRotateClockwiseOutline18 />}
+              count={counts.recentlyUsed}
+              badgeStyle={badgeStyle}
               active={isDestinationActive(destination)}
               {...dragProps}
               onClick={() => selectLibraryNav({ kind: "recents" })}
@@ -421,14 +448,13 @@ export function LibraryDestinations({
     <>
       {visibleGroups.map((group) => (
         <Sidebar.Group key={group.label}>
-          <BuiltInVisibilityMenu>
-            <Sidebar.GroupLabel>{group.label}</Sidebar.GroupLabel>
-          </BuiltInVisibilityMenu>
           <DndContext
             accessibility={{
               announcements: createSortableAnnouncements(
                 group.destinations,
-                (id) => SIDEBAR_DESTINATION_LABELS[id as SidebarDestination],
+                (id) =>
+                  /** SAFETY: this context only registers the group's destination ids. */
+                  SIDEBAR_DESTINATION_LABELS[id as SidebarDestination],
               ),
               screenReaderInstructions:
                 SIDEBAR_SORTABLE_SCREEN_READER_INSTRUCTIONS,
@@ -438,6 +464,7 @@ export function LibraryDestinations({
             sensors={sensors}
             onDragStart={({ active, activatorEvent }) =>
               setActiveSort({
+                /** SAFETY: this context only registers the group's destination ids. */
                 destination: active.id as SidebarDestination,
                 group: group.label,
                 keyboard: activatorEvent.type.startsWith("key"),

@@ -15,6 +15,7 @@ import {
   type ShortcutId,
   type ShortcutPreferences,
 } from "../../shared/shortcuts";
+import { routeCombineImagesZoom } from "../core/combine-images-window";
 import { openHarvesterWindow } from "../core/harvester-window";
 import { reconcileLibrary } from "../core/scan";
 import { openSettingsWindow } from "../core/settings-window";
@@ -60,23 +61,7 @@ export function createAppMenuContext(deps: AppMenuRuntimeDeps): AppMenuContext {
   };
   const sendMenuAction: AppMenuContext["sendMenuAction"] =
     (id: MenuActionId) => async (_item, _window, event) => {
-      if (
-        id === "capture.area" ||
-        id === "capture.window" ||
-        id === "capture.screen"
-      ) {
-        const { beginScreenshot } = await import("../core/screenshot-window");
-        const mode =
-          id === "capture.area"
-            ? "area"
-            : id === "capture.window"
-              ? "window"
-              : "screen";
-        await beginScreenshot(mode).catch((error) =>
-          log.warn("[pond menu] capture failed", error),
-        );
-        return;
-      }
+      if (routeCombineImagesZoom(id)) return;
       await deps.openLibraryWindow();
       const action: MenuActionEvent = {
         id,

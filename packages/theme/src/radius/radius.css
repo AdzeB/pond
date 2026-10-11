@@ -4,18 +4,11 @@
   --ds-radius-md: 8px;
   --ds-radius-lg: 10px;
   --ds-radius-xl: 12px;
+  --ds-radius-2xl: 16px;
   --ds-radius-full: 9999px;
 
-  --ds-radius-app-icon: 40%;
+  --ds-radius-app-icon: 33%;
   --ds-radius-source: var(--ds-radius-app-icon);
 
-  --ds-superellipse: 1.4;
   --ds-corner-icon: round;
-}
-
-/* corner-shape ships in Chromium 139+ (our Electron runtime) and degrades to plain border-radius elsewhere. */
-@supports (corner-shape: superellipse(1)) {
-  :root {
-    --ds-corner-icon: superellipse(var(--ds-superellipse));
-  }
 }

@@ -1,7 +1,6 @@
 export type { Db } from "./database/client";
 export {
   closeDb,
-  configureLibraryMigration,
   getDb,
   getGlobalDb,
 } from "./database/lifecycle";

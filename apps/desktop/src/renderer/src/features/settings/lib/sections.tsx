@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import type { SectionConfig } from "@/features/settings/components/engine/engine";
+import type { SectionConfig } from "@/features/settings/components/engine";
 import { appearanceSection } from "@/features/settings/lib/config-appearance";
 import { backupsSection } from "@/features/settings/lib/config-backups";
 import { generalSection } from "@/features/settings/lib/config-general";
@@ -7,13 +7,12 @@ import { harvestingSection } from "@/features/settings/lib/config-harvesting";
 import { librarySection } from "@/features/settings/lib/config-library";
 import { mcpSection } from "@/features/settings/lib/config-mcp";
 import { processingSection } from "@/features/settings/lib/config-processing";
-import { screenshotsSection } from "@/features/settings/lib/config-screenshots";
 import { searchSection } from "@/features/settings/lib/config-search";
 import { storageSection } from "@/features/settings/lib/config-storage";
 import { viewerSection } from "@/features/settings/lib/config-viewer";
 
 const TagsSection = lazy(() =>
-  import("@/features/tags/components/manager").then((m) => ({
+  import("@/features/tags/manager").then((m) => ({
     default: m.TagsSection,
   })),
 );
@@ -71,7 +70,7 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
       component: AgentSection,
       title: "Providers",
       description:
-        "Connect the AI providers Agent uses with your keys or a local host you run.",
+        "Connect the AI providers Assistant uses with your keys or a local host you run.",
       keywords: [
         "ai",
         "agent",
@@ -93,7 +92,7 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
     {
       component: ModelsSection,
       title: "Models",
-      description: "Choose which models appear in Agent.",
+      description: "Choose which models appear in Assistant.",
       keywords: [
         "ai",
         "agent",
@@ -111,7 +110,7 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
     {
       component: PersonalizationSection,
       title: "Personalization",
-      description: "Give Agent context about you and how you like replies.",
+      description: "Give Assistant context about you and how you like replies.",
       keywords: [
         "ai",
         "agent",
@@ -129,7 +128,6 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
   ["search", searchSection],
   ["processing", processingSection],
   ["harvesting", harvestingSection],
-  ["screenshots", screenshotsSection],
   [
     "mcp",
     {

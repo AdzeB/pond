@@ -1,4 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900">
+  <title>Transit map</title>
   <rect width="900" height="900" fill="#132436"/>
   <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="24">
     <path d="M90 710h160l94-94V300l118-118h338" stroke="#f4b942"/>

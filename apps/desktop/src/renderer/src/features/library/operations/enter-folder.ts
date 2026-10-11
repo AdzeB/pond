@@ -1,7 +1,7 @@
 import { folders } from "@/features/library/state/folders";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { resetFilters, setQuery } from "@/features/library/state/view-store";
-import { descendantFolderIds } from "@/features/saves/lib/nav-filter";
+import { descendantFolderIds } from "@/features/saves";
 import { getAppRouter } from "@/shared/lib/app-router";
 
 export function enterFolder(folderId: string): void {

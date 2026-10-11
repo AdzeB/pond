@@ -5,41 +5,41 @@
   border-radius: var(--ds-radius-xl);
 }
 
-.quoted-header {
+.header {
   display: flex;
   gap: 6px;
   align-items: center;
   min-width: 0;
 }
 
-.quoted-name {
+.name {
   display: inline-flex;
   gap: 3px;
   align-items: center;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 15px;
+  font-size: var(--ds-text-lg);
   font-weight: 700;
   line-height: 20px;
   white-space: nowrap;
 }
 
-.quoted-handle {
+.handle {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 15px;
+  font-size: var(--ds-text-lg);
   line-height: 20px;
   color: var(--tw-secondary);
   white-space: nowrap;
 }
 
-.quoted-body {
+.body {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   margin: 4px 0 0;
   overflow: hidden;
   -webkit-line-clamp: 6;
-  font-size: 15px;
+  font-size: var(--ds-text-lg);
   line-height: 20px;
   overflow-wrap: anywhere;
   white-space: pre-wrap;

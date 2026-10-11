@@ -165,7 +165,7 @@ export const agentControlOperations: PondOperation[] = [
   ),
   operation(
     "history.undo",
-    "Undo the latest operation recorded in Pond's global Undo history. Read history.status first; applies to the latest app action, not necessarily an Agent action.",
+    "Undo the latest operation recorded in Pond's global Undo history. Read history.status first; applies to the latest app action, not necessarily an Assistant action.",
     "review",
     empty,
     async () => ({ ok: await undo(), canUndo: canUndo(), canRedo: canRedo() }),

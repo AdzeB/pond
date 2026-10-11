@@ -1,14 +1,16 @@
 import { IconChevronRightOutline12 as ChevronRight } from "@pond/icons/outline/12";
-import {
-  IconFolderOutline18 as Folder,
-  IconPlusOutline18 as Plus,
-} from "@pond/icons/outline/18";
+import { IconPlusOutline18 as Plus } from "@pond/icons/outline/18";
 import {
   PickerPanel,
   type PickerSelectionState,
   usePickerCursor,
 } from "@pond/ui";
 import { type CSSProperties, useMemo, useState } from "react";
+import {
+  FolderIcon,
+  type FolderIconId,
+  folderColorCss,
+} from "@/shared/lib/folder-icons";
 import styles from "./styles.module.css";
 
 export interface FolderMenuItem {
@@ -16,12 +18,15 @@ export interface FolderMenuItem {
   name: string;
   parentId?: string | null;
   count: number;
+  disabled?: boolean;
+  icon?: FolderIconId;
+  color?: string | null;
 }
 
 interface FolderNode extends FolderMenuItem {
   children: FolderNode[];
   depth: number;
-  parentName: string | null;
+  parents: readonly string[];
   path: string;
 }
 
@@ -36,6 +41,7 @@ interface FolderRowStyle extends CSSProperties {
 export interface FolderMenuProps {
   folders: readonly FolderMenuItem[];
   selectionSize: number;
+  selection?: "multiple" | "single";
   onToggle(folder: FolderMenuItem): void | Promise<void>;
   onCreate?(name: string): void | Promise<void>;
 }
@@ -75,7 +81,7 @@ function buildTree(folders: readonly FolderMenuItem[]): FolderNode[] {
   ): FolderNode => ({
     ...folder,
     depth,
-    parentName: parents.at(-1) ?? null,
+    parents,
     path: [...parents, folder.name].join(" / "),
     children: (children.get(folder.id) ?? [])
       .toSorted(compare)
@@ -120,12 +126,21 @@ function rowId(row: FolderPickerRow) {
   return row.id;
 }
 
+function iconStyle(
+  color: string | null | undefined,
+): CSSProperties | undefined {
+  const css = folderColorCss(color);
+  return css ? { color: css } : undefined;
+}
+
 export function FolderMenu({
   folders,
   selectionSize,
+  selection = "multiple",
   onToggle,
   onCreate,
 }: FolderMenuProps) {
+  const single = selection === "single";
   const tree = useMemo(() => buildTree(folders), [folders]);
   const flat = useMemo(() => flatten(tree), [tree]);
   const [query, setQuery] = useState("");
@@ -168,6 +183,7 @@ export function FolderMenu({
       void onCreate?.(row.name);
       return;
     }
+    if (row.folder.disabled) return;
     void onToggle(row.folder);
   }
 
@@ -188,7 +204,10 @@ export function FolderMenu({
   });
 
   return (
-    <PickerPanel.Surface className={styles.root}>
+    <PickerPanel.Surface
+      className={styles.root}
+      data-selection-mode={selection}
+    >
       <PickerPanel.Header>
         <PickerPanel.Search
           {...cursor.inputProps}
@@ -205,7 +224,7 @@ export function FolderMenu({
         className={styles.list}
         role={showTree ? "tree" : "listbox"}
         aria-label="Folders"
-        aria-multiselectable="true"
+        aria-multiselectable={!single}
       >
         {rows.map((row) => {
           const itemProps = cursor.getItemProps(row);
@@ -227,7 +246,7 @@ export function FolderMenu({
             );
 
           const { folder } = row;
-          const selection: PickerSelectionState =
+          const state: PickerSelectionState =
             folder.count === selectionSize
               ? "checked"
               : folder.count > 0
@@ -237,9 +256,7 @@ export function FolderMenu({
             "--folder-depth": showTree ? folder.depth : 0,
           };
           const accessibleName =
-            selection === "mixed"
-              ? `${folder.name}, some selected`
-              : folder.name;
+            state === "mixed" ? `${folder.name}, some selected` : folder.name;
           return (
             <PickerPanel.Item
               {...itemProps}
@@ -249,45 +266,47 @@ export function FolderMenu({
               role={showTree ? "treeitem" : "option"}
               aria-label={accessibleName}
               aria-level={showTree ? folder.depth + 1 : undefined}
-              aria-selected={selection === "checked"}
+              aria-selected={state === "checked"}
               aria-expanded={
                 showTree && folder.children.length
                   ? !collapsed.has(folder.id)
                   : undefined
               }
-              selected={selection}
+              aria-disabled={folder.disabled || undefined}
+              selected={state}
               data-depth={folder.depth}
-              data-nested={showTree && folder.depth > 0 ? "" : undefined}
+              data-disabled={folder.disabled || undefined}
             >
-              <span className={styles.guideline} aria-hidden="true" />
-              <PickerPanel.SelectionIndicator state={selection} />
-              <PickerPanel.ItemIcon className={styles.folderIcon}>
-                <Folder />
+              {showTree ? (
+                folder.children.length ? (
+                  <span
+                    className={styles.expand}
+                    aria-hidden="true"
+                    data-expanded={!collapsed.has(folder.id) || undefined}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggleExpanded(folder.id);
+                    }}
+                  >
+                    <ChevronRight />
+                  </span>
+                ) : (
+                  <span className={styles.expand} aria-hidden="true" />
+                )
+              ) : null}
+              <PickerPanel.ItemIcon
+                className={styles.icon}
+                style={iconStyle(folder.color)}
+              >
+                <FolderIcon name={folder.icon} />
               </PickerPanel.ItemIcon>
-              <PickerPanel.ItemLabel title={folder.path}>
+              <PickerPanel.ItemLabel
+                title={folder.path}
+                path={showTree ? undefined : folder.parents}
+              >
                 {folder.name}
               </PickerPanel.ItemLabel>
-              {!showTree && folder.parentName ? (
-                <PickerPanel.ItemMeta
-                  className={styles.parent}
-                  title={folder.path}
-                >
-                  {folder.parentName}
-                </PickerPanel.ItemMeta>
-              ) : null}
-              {showTree && folder.children.length ? (
-                <span
-                  className={styles.expand}
-                  aria-hidden="true"
-                  data-expanded={!collapsed.has(folder.id) ? "" : undefined}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    toggleExpanded(folder.id);
-                  }}
-                >
-                  <ChevronRight />
-                </span>
-              ) : null}
+              <PickerPanel.SelectionMark state={state} />
             </PickerPanel.Item>
           );
         })}

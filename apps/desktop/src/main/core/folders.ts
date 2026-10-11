@@ -6,6 +6,11 @@ import {
   saves,
 } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
+import type {
+  BatchRenameInput,
+  OkResult,
+  OkSuccess,
+} from "@shared/query-contracts-shared";
 import { applyRenameTemplate } from "@shared/rename-template";
 import { asc, eq, inArray, isNull } from "drizzle-orm";
 import { ulid } from "ulid";
@@ -184,14 +189,14 @@ export async function createFoldersBatch(input: {
 export async function renameFolder(
   id: string,
   name: string,
-): Promise<{ ok: boolean }> {
+): Promise<OkResult> {
   const trimmed = name.trim();
-  if (!trimmed) return { ok: false };
+  if (!trimmed) return { ok: false, error: "Enter a folder name." };
   const db = await getDb();
   const row = (
     await db.select().from(foldersTable).where(eq(foldersTable.id, id))
   )[0];
-  if (!row) return { ok: false };
+  if (!row) return { ok: false, error: "Folder not found." };
   await executeTransaction({
     kind: "update",
     model: "folder",
@@ -203,13 +208,13 @@ export async function renameFolder(
   return { ok: true };
 }
 
-export async function renameFoldersBatch(input: {
-  ids: string[];
-  pattern: string;
-}): Promise<{ ok: boolean; renamed: number }> {
+export async function renameFoldersBatch(
+  input: BatchRenameInput,
+): Promise<OkResult<{ renamed: number }>> {
   const ids = [...new Set(input.ids.filter(Boolean))];
   const pattern = input.pattern.trim();
-  if (!pattern || ids.length === 0) return { ok: false, renamed: 0 };
+  if (!pattern || ids.length === 0)
+    return { ok: false, error: "Enter a name pattern and choose folders." };
   const db = await getDb();
   const rows = await db
     .select()
@@ -225,6 +230,10 @@ export async function renameFoldersBatch(input: {
       title: row.name,
       original: row.name,
       id: row.id,
+      date: row.createdAt,
+      start: input.start,
+      replacement: input.replacement,
+      textCase: input.textCase,
     });
     if (!name || name === row.name) continue;
     transactions.push({
@@ -244,13 +253,13 @@ export async function renameFoldersBatch(input: {
 export async function setFolderColor(
   id: string,
   color: string | null,
-): Promise<{ ok: boolean }> {
+): Promise<OkResult> {
   const next = color?.trim() || null;
   const db = await getDb();
   const row = (
     await db.select().from(foldersTable).where(eq(foldersTable.id, id))
   )[0];
-  if (!row) return { ok: false };
+  if (!row) return { ok: false, error: "Folder not found." };
   if (row.color === next) return { ok: true };
   await executeTransaction({
     kind: "update",
@@ -266,7 +275,7 @@ export async function setFolderColor(
 export async function deleteFolder(
   id: string,
   options: { trashContainedSaves?: boolean } = {},
-): Promise<{ ok: boolean }> {
+): Promise<OkSuccess> {
   const all = await listFolders();
   const ids = collectDescendants(id, all);
   const db = await getDb();
@@ -349,7 +358,7 @@ export async function memberships(): Promise<
 export async function assignSaveFolders(
   assignments: Array<{ saveId: string; folderIds: string[] }>,
   undo = true,
-): Promise<{ ok: boolean }> {
+): Promise<OkSuccess> {
   return withMutationScope(async () => {
     const txs = await folderAssignmentTransactions(assignments);
     if (txs.length) {
@@ -430,7 +439,7 @@ export async function setFolderRules(input: {
   id: string;
   tags: string[];
   applyExisting?: boolean;
-}) {
+}): Promise<OkSuccess<{ affected: number }>> {
   return withMutationScope(async () => {
     const all = await listFolders();
     if (!all.some((row) => row.id === input.id))
@@ -471,14 +480,14 @@ export async function setFolderRules(input: {
 export async function setSaveFolders(
   saveId: string,
   folderIds: string[],
-): Promise<{ ok: boolean }> {
+): Promise<OkSuccess> {
   return assignSaveFolders([{ saveId, folderIds }]);
 }
 
 export async function addSavesToFolder(
   folderId: string,
   saveIds: string[],
-): Promise<{ ok: boolean }> {
+): Promise<OkSuccess> {
   return withMutationScope(async () => {
     const assignments = await Promise.all(
       [...new Set(saveIds)].map(async (saveId) => ({
@@ -559,7 +568,7 @@ export function moveFolder(input: {
   id: string;
   parentId: string | null;
   beforeId?: string;
-}): Promise<{ ok: boolean }> {
+}): Promise<OkSuccess> {
   return withMutationScope(async () => {
     const rows = await listFolders();
     return commitFolderMoves(
@@ -573,7 +582,7 @@ export async function moveFoldersBatch(input: {
   ids: string[];
   parentId: string | null;
   beforeId?: string;
-}): Promise<{ ok: boolean }> {
+}): Promise<OkSuccess> {
   return withMutationScope(async () => {
     const rows = await listFolders();
     const changes = planFolderBatchMove(
@@ -589,7 +598,7 @@ export async function moveFoldersBatch(input: {
 async function commitFolderMoves(
   rows: Folder[],
   changes: Array<{ id: string; parentId: string | null; sortOrder: number }>,
-) {
+): Promise<OkSuccess> {
   const byId = new Map(changes.map((row) => [row.id, row]));
   const txs: Transaction[] = changes.flatMap((patch) => {
     const before = rows.find((row) => row.id === patch.id);

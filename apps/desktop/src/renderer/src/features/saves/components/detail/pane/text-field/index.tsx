@@ -1,5 +1,6 @@
 import { Button, Input } from "@pond/ui";
 import { useRef, useState } from "react";
+import { errorCopy } from "@/shared/lib/error-copy";
 import styles from "./styles.module.css";
 
 interface Draft {
@@ -66,8 +67,7 @@ export function InspectorTextField({
       drafts.delete(cacheKey);
     } catch (error) {
       next.pending = false;
-      next.error =
-        error instanceof Error ? error.message : "Couldn't save changes.";
+      next.error = errorCopy(error, "Couldn't save changes. Try again.");
     }
     refresh();
   }

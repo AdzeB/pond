@@ -174,4 +174,11 @@ describe("auto-import reconciliation", () => {
     expect(await readFile(join(library, "save-0"), "utf8")).toBe("original");
     await worker.stop();
   });
+
+  it("refuses to start over a corrupt checkpoint file instead of overwriting it", async () => {
+    const { options } = await fixture();
+    await writeFile(options.checkpointPath, "{not json");
+    await expect(createAutoImportWorker(options)).rejects.toThrow();
+    expect(await readFile(options.checkpointPath, "utf8")).toBe("{not json");
+  });
 });

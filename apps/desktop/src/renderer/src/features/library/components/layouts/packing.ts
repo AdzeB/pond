@@ -17,7 +17,7 @@ export interface AspectEntry {
   aspect: number;
 }
 
-export const LIBRARY_ITEM_GAP = 16;
+export const LIBRARY_SAVE_GAP = 16;
 
 function columnMetrics(
   containerWidth: number,

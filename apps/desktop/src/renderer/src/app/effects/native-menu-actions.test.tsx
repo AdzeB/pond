@@ -15,7 +15,7 @@ afterEach(() => {
   editor.remove();
 });
 
-it("ignores a native accelerator while the Agent editor owns the keyboard", () => {
+it("ignores a native accelerator while the Assistant editor owns the keyboard", () => {
   editor.focus();
   expect(document.activeElement).toBe(editor);
 

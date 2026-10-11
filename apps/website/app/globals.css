@@ -48,10 +48,23 @@
   --site-font-sans:
     inter-variable, ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
     "Segoe UI", sans-serif;
+  --site-font-display: ui-rounded, var(--site-font-sans);
   --site-font-mono: jetbrains-mono, var(--ds-font-mono);
 
+  /* Marketing steps the app scale lacks; sizes that match an app step use --ds-text-*. */
+  --site-text-sm: 14px;
+  --site-text-md: 16px;
+  --site-text-lg: 18px;
+  --site-text-xl: 20px;
+  --site-text-2xl: 24px;
+  --site-text-title: clamp(28px, 3.6vw, 44px);
+  --site-text-display: clamp(32px, 4vw, 52px);
+
   --site-column: 640px;
+  --site-page-max: 1200px;
   --site-page-padding: 16px;
+  --site-section-gap: 128px;
+
   --site-ink: #0f0906;
   --site-mute: #b49c8b;
   --site-copy: #856b5a;
@@ -64,14 +77,14 @@
   gap: 6px;
   align-items: center;
   font-family: var(--site-font-sans);
-  font-size: 16px;
+  font-size: var(--site-text-md);
   font-weight: 500;
   color: var(--site-ink);
 }
 
 html {
   font-family: var(--site-font-sans);
-  font-size: 16px;
+  font-size: var(--site-text-md);
   line-height: 1.5;
   color: var(--site-ink);
   color-scheme: light;
@@ -86,6 +99,18 @@ body {
 ::selection {
   color: var(--site-ink);
   background: color-mix(in srgb, var(--site-mute) 35%, transparent);
+}
+
+@media (max-width: 720px) {
+  :root {
+    --site-section-gap: 72px;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --site-text-2xl: 22px;
+  }
 }
 
 @media (color-gamut: p3) {

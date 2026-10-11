@@ -1,17 +1,21 @@
 import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useRef } from "react";
 import { libraryChrome } from "@/features/library/state/library-chrome";
-import { ensureSaves } from "@/features/saves/lib/ensure-saves";
-import { collectionOwnsKeyboard } from "@/features/saves/lib/keyboard-owner";
-import { openSave, saveIdFromPath } from "@/features/saves/lib/save-nav";
+import type { ResultDirection } from "@/features/saves";
 import {
   clearSaveSelection,
+  collectionOwnsKeyboard,
   selectOnlySave,
-} from "@/features/saves/lib/select";
-import { selectResults } from "@/features/saves/lib/select-results";
-import type { ResultDirection } from "@/features/saves/lib/spatial-navigation";
-import { resultNavigation } from "@/features/saves/state/result-navigation";
-import { primarySelection, selection } from "@/features/saves/state/selection";
+  selectResults,
+} from "@/features/saves";
+import {
+  openSave,
+  primarySelection,
+  resultNavigation,
+  saveIdFromPath,
+  selection,
+} from "@/features/saves/navigation";
+import { ensureSaves } from "@/features/saves/pool";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { findScrollParent } from "@/shared/lib/dom";
 import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
@@ -98,7 +102,7 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
       selection.setRange(ids, from, next);
       selection.setCursor(next);
       primarySelection.set(next);
-      libraryChrome.openSaveDetails(next);
+      libraryChrome.inspectSave(next);
     } else selectOnlySave(next);
     await resultNavigation.reveal(next, { focus: true });
   };
@@ -114,13 +118,13 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
     const key = resultNavigation.key();
     movementQueue.current = movementQueue.current
       .then(() => move(direction, extend, key, focusOnly))
-      .catch(() =>
+      .catch(() => {
         notify({
           id: "result-navigation",
-          title: "Couldn’t navigate Saves",
+          title: "Couldn't navigate Saves",
           description: "Try again.",
-        }),
-      );
+        });
+      });
   };
 
   useHotkeys(
@@ -186,8 +190,7 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
             ? cursor
             : (selection.snapshot()[0] ?? null);
           primarySelection.set(primary);
-          if (primary) libraryChrome.openSaveDetails(primary);
-          else libraryChrome.inspectSave(null);
+          if (primary) libraryChrome.inspectSave(primary);
         },
       },
       {

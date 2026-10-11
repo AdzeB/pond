@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto";
-import { existsSync } from "node:fs";
 import {
   mkdir,
   mkdtemp,
@@ -24,15 +23,11 @@ import { ulid } from "ulid";
 import { z } from "zod";
 import { getDb } from "../db";
 import { writeBundleJson } from "../lib/library-config";
-import { itemDir } from "../paths";
+import { saveDir } from "../paths";
 import { writeEnrichmentSidecar } from "./enrichment-sidecar";
 import { executeBatch, withMutationScope } from "./executor";
 import { exportSavesToDirectory } from "./export-saves";
 import { importFolderTree, setSaveFolders } from "./folders";
-import {
-  decryptPondPackageDirectoryWithPassword,
-  POND_PACKAGE_SECURITY_MANIFEST_FILENAME,
-} from "./legacy-encryption/pond-package-directory";
 import { runLibraryTransfer } from "./library-transfers";
 import {
   importPackageOrganization,
@@ -75,40 +70,6 @@ const PackageSaveSchema = z.object({
   description: z.string().nullable().optional(),
   author: z.string().nullable().optional(),
   rating: z.number().nullable().optional(),
-  comments: z
-    .array(
-      z.object({
-        id: z.string(),
-        fileIndex: z.number().int().nonnegative().optional(),
-        x: z.number(),
-        y: z.number(),
-        w: z.number(),
-        h: z.number(),
-        text: z.string(),
-        createdAt: z.number().optional(),
-        replies: z
-          .array(
-            z.object({
-              id: z.string(),
-              text: z.string(),
-              createdAt: z.number().optional(),
-            }),
-          )
-          .optional(),
-        resolvedAt: z.number().optional(),
-      }),
-    )
-    .optional(),
-  videoNotes: z
-    .array(
-      z.object({
-        id: z.string(),
-        fileIndex: z.number().int().nonnegative().optional(),
-        timeSec: z.number(),
-        text: z.string(),
-      }),
-    )
-    .optional(),
   dominantColors: z.array(z.string()).optional(),
   primaryColor: z.string().nullable().optional(),
   width: z.number().nullable().optional(),
@@ -168,13 +129,10 @@ interface PackageImportRuntime {
   directory: (id: string) => string;
   commit: (id: string, save: PackageSave, folderIds: string[]) => Promise<void>;
 }
-const PackageImportRuntimeSchema = z.custom<PackageImportRuntime>(
-  (value) => value instanceof Object,
-);
 const runtime: PackageImportRuntime = {
   organization: importPackageOrganization,
   folders: (nodes) => withMutationScope(() => importFolderTree(nodes, true)),
-  directory: itemDir,
+  directory: saveDir,
   async existing(save) {
     const db = await getDb();
     const [existing] = await db
@@ -211,8 +169,6 @@ const runtime: PackageImportRuntime = {
         author: save.author,
         tags: save.tags,
         rating: save.rating,
-        comments: save.comments,
-        videoNotes: save.videoNotes,
         dominantColors: save.dominantColors,
         primaryColor: save.primaryColor,
         width: save.width,
@@ -459,34 +415,7 @@ export function exportPondPackage(ids: readonly string[], destination: string) {
 }
 export function importPondPackage(
   directory: string,
-  passwordOrDependencies?: string | PackageImportRuntime,
   dependencies: PackageImportRuntime = runtime,
 ) {
-  const parsedPassword = z.string().safeParse(passwordOrDependencies);
-  const parsedDependencies = PackageImportRuntimeSchema.safeParse(
-    passwordOrDependencies,
-  );
-  const password = parsedPassword.success ? parsedPassword.data : undefined;
-  const selectedDependencies = parsedDependencies.success
-    ? parsedDependencies.data
-    : dependencies;
-  return runLibraryTransfer(async () => {
-    if (!existsSync(join(directory, POND_PACKAGE_SECURITY_MANIFEST_FILENAME))) {
-      return importPackage(directory, selectedDependencies);
-    }
-    if (!password) throw new Error("This Pond package requires a password.");
-    const staging = await mkdtemp(
-      join(dirname(resolve(directory)), ".pond-import-"),
-    );
-    try {
-      await decryptPondPackageDirectoryWithPassword({
-        packageDirectory: directory,
-        stagingDirectory: staging,
-        password,
-      });
-      return await importPackage(staging, selectedDependencies);
-    } finally {
-      await rm(staging, { recursive: true, force: true });
-    }
-  });
+  return runLibraryTransfer(() => importPackage(directory, dependencies));
 }

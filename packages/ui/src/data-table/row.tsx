@@ -108,7 +108,10 @@ function RowImpl<T extends RowData>({
     "aria-rowindex": rowIndex,
     "data-cursor": cursor ? "" : undefined,
     className: styles.row ?? "",
-    style: { gridTemplateColumns: api.gridTemplate },
+    style: {
+      gridTemplateColumns: api.gridTemplate,
+      minWidth: api.gridMinWidth,
+    },
     onClick,
     "aria-selected": api.selectionEnabled ? selected : undefined,
     "data-selected": selected ? "" : undefined,
@@ -135,5 +138,5 @@ function RowImpl<T extends RowData>({
 }
 
 export const Row =
-  // SAFETY: `memo` renders `RowImpl` with the same props; only the type parameter is lost, because React types `memo` without one.
+  /** SAFETY: `memo` renders `RowImpl` with the same props; only the type parameter is lost, because React types `memo` without one. */
   memo(RowImpl) as typeof RowImpl;

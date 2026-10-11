@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import {
   open,
   readdir,
@@ -27,11 +28,6 @@ import {
   readPackageOrganization,
 } from "./package-organization";
 import { importPondPackage } from "./pond-package";
-import {
-  decodeLibraryFile,
-  encodeLibraryFile,
-  readLibraryFileSync,
-} from "./storage/library-file-storage";
 
 const OrganizationEnvelope = z.object({ data: OrganizationBundleSchema });
 const EnrichmentEnvelope = z.object({
@@ -46,20 +42,20 @@ const EnrichmentEnvelope = z.object({
 });
 
 function readLibraryText(path: string): string {
-  return readLibraryFileSync(path).toString("utf8");
+  return readFileSync(path).toString("utf8");
 }
 const TransferLock = z.object({ pid: z.number().int(), host: z.string() });
 
 async function readOrganization(root: string) {
   const path = join(root, "organization.json");
   const text = await readFile(path)
-    .then((value) => decodeLibraryFile(path, value).toString("utf8"))
+    .then((value) => value.toString("utf8"))
     .catch(() => null);
   if (!text)
     throw new Error("Open this library in Pond once before transferring it.");
   return { text, data: OrganizationEnvelope.parse(JSON.parse(text)).data };
 }
-async function readItems(root: string, includeTrash = false) {
+async function readSaves(root: string, includeTrash = false) {
   const items = [];
   for (const bucket of includeTrash ? ["items", "trash"] : ["items"]) {
     for (const entry of await readdir(join(root, bucket), {
@@ -69,11 +65,7 @@ async function readItems(root: string, includeTrash = false) {
       const directory = join(root, bucket, entry.name);
       const infoPath = join(directory, "info.json");
       const info = StoredInfoDocSchema.parse(
-        JSON.parse(
-          decodeLibraryFile(infoPath, await readFile(infoPath)).toString(
-            "utf8",
-          ),
-        ),
+        JSON.parse(await readFile(infoPath, "utf8")),
       );
       items.push({ directory, info });
     }
@@ -132,7 +124,7 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
         organization.data.views,
         organization.data.folders.map((folder) => folder.id),
       );
-      const items = await readItems(root, true);
+      const items = await readSaves(root, true);
       const existing = new Map(
         items.map(({ info }) => [`${info.source}\0${info.sourceId}`, info.id]),
       );
@@ -219,9 +211,7 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
           );
           const settingsFile = join(root, "settings.json");
           const settingsText = await readFile(settingsFile)
-            .then((value) =>
-              decodeLibraryFile(settingsFile, value).toString("utf8"),
-            )
+            .then((value) => value.toString("utf8"))
             .catch((error: NodeJS.ErrnoException) => {
               if (error.code === "ENOENT") return null;
               throw error;
@@ -281,8 +271,6 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
             })),
             userData: {
               rating: save.rating ?? null,
-              comments: save.comments ?? [],
-              videoNotes: save.videoNotes ?? [],
               dominantColors: save.dominantColors ?? [],
               primaryColor: save.primaryColor ?? null,
               rotate: save.rotate ?? 0,
@@ -294,11 +282,9 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
           const directory = join(root, "items", `${id}.info`);
           if (save.rawJson) {
             const sourcePath = join(directory, "source.json");
-            await writeFile(
-              sourcePath,
-              encodeLibraryFile(sourcePath, JSON.stringify(save.rawJson)),
-              { flag: "wx" },
-            );
+            await writeFile(sourcePath, JSON.stringify(save.rawJson), {
+              flag: "wx",
+            });
           }
           writeBundleJson(join(directory, "enrichment.json"), {
             caption: save.caption,
@@ -307,15 +293,12 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
             ocrModel: save.ocrModel,
             transcript: save.transcript,
             transcriptModel: save.transcriptModel,
-            videoNotes: save.videoNotes,
             dominantColors: save.dominantColors,
           });
           const infoPath = join(directory, "info.json");
-          await writeFile(
-            infoPath,
-            encodeLibraryFile(infoPath, JSON.stringify(info, null, 2)),
-            { flag: "wx" },
-          );
+          await writeFile(infoPath, JSON.stringify(info, null, 2), {
+            flag: "wx",
+          });
           const knownTags = new Set(
             tagCatalog.tags.map((tag) => tag.name.toLowerCase()),
           );
@@ -359,17 +342,15 @@ export function packageLibrary(libraryPath: string, destination: string) {
     await verifyLibraryBackup(root);
     const organization = await readOrganization(root);
     const items: ExportItem[] = [];
-    for (const { directory, info } of await readItems(root)) {
+    for (const { directory, info } of await readSaves(root)) {
       if (info.deletedAt) continue;
       const sourcePath = join(directory, "source.json");
       const raw = await readFile(sourcePath)
-        .then((value) => decodeLibraryFile(sourcePath, value).toString("utf8"))
+        .then((value) => value.toString("utf8"))
         .catch(() => null);
       const enrichmentPath = join(directory, "enrichment.json");
       const enrichmentText = await readFile(enrichmentPath)
-        .then((value) =>
-          decodeLibraryFile(enrichmentPath, value).toString("utf8"),
-        )
+        .then((value) => value.toString("utf8"))
         .catch(() => null);
       const enrichment = enrichmentText
         ? EnrichmentEnvelope.parse(JSON.parse(enrichmentText)).data
@@ -381,6 +362,7 @@ export function packageLibrary(libraryPath: string, destination: string) {
           ...info,
           ...info.userData,
           ...enrichment,
+          notes: info.notes ?? null,
           source: z.enum(SOURCES).parse(info.source),
           mediaType: z.enum(MEDIA_TYPES).nullable().parse(info.mediaType),
           rawJson: raw

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { VerifiedIcon } from "@/features/captures/components/tweet/card/icons/icons";
+import { VerifiedIcon } from "@/features/captures/components/tweet/card/icons";
 import type { TweetCardAuthor } from "@/features/captures/components/tweet/card/lib/data";
 import { initials } from "@/shared/lib/initials";
 import styles from "./styles.module.css";

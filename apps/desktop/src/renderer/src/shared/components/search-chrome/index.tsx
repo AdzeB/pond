@@ -1,39 +1,33 @@
-import { cn, Input } from "@pond/ui";
+import { Input as Base } from "@pond/ui";
+import { clsx as cn } from "clsx";
 import {
   type ComponentPropsWithoutRef,
   forwardRef,
   type ReactNode,
 } from "react";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import styles from "./styles.module.css";
 
-interface SearchChromeProps {
-  children: ReactNode;
+interface RootProps extends ComponentPropsWithoutRef<"div"> {
   filters?: ReactNode;
   actions?: ReactNode;
   below?: ReactNode;
-  className?: string;
   tone?: "plain" | "header";
 }
 
-export function SearchChrome({
+function Root({
   children,
   filters,
   actions,
   below,
   className,
   tone,
-}: SearchChromeProps) {
-  const scrollFade = useScrollFade<HTMLDivElement>("x");
+  ...props
+}: RootProps) {
   return (
-    <div className={cn(styles.root, className)} data-tone={tone}>
+    <div className={cn(styles.root, className)} data-tone={tone} {...props}>
       <div className={styles.bar}>
         <div className={styles.search}>{children}</div>
-        {filters ? (
-          <div className={styles.filters} {...scrollFade}>
-            {filters}
-          </div>
-        ) : null}
+        {filters ? <div className={styles.filters}>{filters}</div> : null}
         {actions ? <div className={styles.actions}>{actions}</div> : null}
       </div>
       {below ? <div className={styles.below}>{below}</div> : null}
@@ -41,25 +35,23 @@ export function SearchChrome({
   );
 }
 
-interface SearchChromeInputProps
-  extends ComponentPropsWithoutRef<typeof Input.Field> {
+interface InputProps extends ComponentPropsWithoutRef<typeof Base.Field> {
   variant?: "primary" | "secondary" | "borderless";
 }
 
-export const SearchChromeInput = forwardRef<
-  HTMLInputElement,
-  SearchChromeInputProps
->(function SearchChromeInput(
+const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   { className, variant = "borderless", ...props },
   ref,
 ) {
   return (
-    <Input.Root
+    <Base.Root
       className={cn(styles.input, className)}
       size="md"
       variant={variant}
     >
-      <Input.Field ref={ref} className={styles.field} {...props} />
-    </Input.Root>
+      <Base.Field ref={ref} className={styles.field} {...props} />
+    </Base.Root>
   );
 });
+
+export const SearchChrome = { Root, Input };

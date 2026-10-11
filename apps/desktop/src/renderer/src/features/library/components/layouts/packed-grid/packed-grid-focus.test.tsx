@@ -1,9 +1,8 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it } from "vitest";
-import { resultNavigation } from "@/features/saves/state/result-navigation";
-import { selection } from "@/features/saves/state/selection";
-import { PackedGrid } from "./packed-grid";
+import { resultNavigation, selection } from "@/features/saves/navigation";
+import { PackedGrid } from ".";
 
 afterEach(() => {
   selection.clear();

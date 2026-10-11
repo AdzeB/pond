@@ -2,19 +2,13 @@ import { DEFAULT_LIBRARY_NAME } from "@shared/constants";
 import { notify } from "@/shared/lib/toast";
 
 function reportFailure(
-  result: { ok: boolean; reason?: string },
+  result: { ok: boolean; reason?: string; error?: string },
   id: string,
   title: string,
   fallback: string,
 ): void {
-  if (result.ok) return;
-  if (result.reason === "cancelled" || result.reason === "canceled") return;
-  notify({
-    id,
-    title,
-    description:
-      result.reason && /[ .]/.test(result.reason) ? result.reason : fallback,
-  });
+  if (result.ok || result.reason === "cancelled") return;
+  notify({ id, title, description: result.error ?? fallback });
 }
 
 function reportError(id: string, title: string, error: Error): void {
@@ -86,7 +80,7 @@ export async function moveLibrary(): Promise<void> {
     reportFailure(
       result,
       "move-library",
-      "Couldn’t move the library",
+      "Couldn't move the library",
       "Choose a different location.",
     );
     if (result.ok && result.sourceRemoved === false) {
@@ -99,7 +93,7 @@ export async function moveLibrary(): Promise<void> {
   } catch (error) {
     reportError(
       "move-library",
-      "Couldn’t move the library",
+      "Couldn't move the library",
       error instanceof Error ? error : new Error("Try again."),
     );
   }
@@ -109,7 +103,7 @@ export async function mergeLibrary(): Promise<void> {
   try {
     const result = await window.pond.query("library.mergeFrom", {});
     if (!result.ok) {
-      if (result.error === "canceled") return;
+      if (result.reason === "cancelled") return;
       throw new Error(result.error || "Choose a different library.");
     }
     notify({
@@ -120,7 +114,7 @@ export async function mergeLibrary(): Promise<void> {
   } catch (error) {
     reportError(
       "merge-library",
-      "Couldn’t merge the library",
+      "Couldn't merge the library",
       error instanceof Error ? error : new Error("Try again."),
     );
   }
@@ -132,7 +126,7 @@ export async function backupLibrary(): Promise<void> {
     reportFailure(
       result,
       "backup-library",
-      "Couldn’t back up the library",
+      "Couldn't back up the library",
       "Choose a different location.",
     );
     if (result.ok) {
@@ -145,7 +139,7 @@ export async function backupLibrary(): Promise<void> {
   } catch (error) {
     reportError(
       "backup-library",
-      "Couldn’t back up the library",
+      "Couldn't back up the library",
       error instanceof Error ? error : new Error("Try again."),
     );
   }
@@ -157,13 +151,13 @@ export async function restoreLibrary(): Promise<void> {
     reportFailure(
       result,
       "restore-library",
-      "Couldn’t restore the library",
+      "Couldn't restore the library",
       "Choose a valid Pond backup.",
     );
   } catch (error) {
     reportError(
       "restore-library",
-      "Couldn’t restore the library",
+      "Couldn't restore the library",
       error instanceof Error ? error : new Error("Try again."),
     );
   }

@@ -8,7 +8,7 @@ export function GenericFileCard({
   ...props
 }: ViewerProps & { message?: string }) {
   return (
-    <div className={styles.fileCard}>
+    <div className={styles.card}>
       <FileMark file={props.file} />
       <div className={styles.heading}>
         <h1>{props.save.title ?? props.file.path}</h1>
@@ -26,5 +26,5 @@ export function FileMark({ file }: { file: SaveFile }) {
   const dot = file.path.lastIndexOf(".");
   const label =
     dot >= 0 ? file.path.slice(dot + 1, dot + 13).toUpperCase() : "FILE";
-  return <div className={styles.fileMark}>{label || "FILE"}</div>;
+  return <div className={styles.mark}>{label || "FILE"}</div>;
 }

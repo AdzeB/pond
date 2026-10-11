@@ -1,26 +1,9 @@
 import type { Prefs } from "@pond/schema/db";
+import type { SavesDerivedPatch } from "@shared/saves-contracts-shared";
 import type { Save } from "@/features/saves/types";
 
-export type DerivedFields = {
-  caption?: string | null;
-  captionModel?: string | null;
-  ocrText?: string | null;
-  ocrModel?: string | null;
-  transcript?: string | null;
-  transcriptModel?: string | null;
-  clipEmbedding?: number[] | null;
-  clipModel?: string | null;
-  aesthetic?: string[] | null;
-  aestheticModel?: string | null;
-  sensitiveScore?: number | null;
-  sensitiveModel?: string | null;
-  autoTitleModel?: string | null;
-  suggestedTags?: string[] | null;
-  suggestedTagsModel?: string | null;
-};
-
-interface DerivedPatch {
-  derived?: DerivedFields;
+export interface DerivedPatch {
+  derived?: SavesDerivedPatch;
   optimistic?: Partial<Save>;
 }
 
@@ -29,6 +12,6 @@ export interface Enricher {
   dependsOn?: string[];
   hydrate?: () => Promise<void>;
   enabled: (prefs: Prefs | null) => boolean;
-  eligible: (save: Save) => boolean;
-  run: (save: Save) => Promise<DerivedPatch | null>;
+  eligible: (save: Save, prefs?: Prefs["ai"]) => boolean;
+  run: (save: Save, prefs?: Prefs["ai"]) => Promise<DerivedPatch | null>;
 }

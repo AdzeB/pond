@@ -1,5 +1,5 @@
 import type { RawImage } from "@huggingface/transformers";
-import { buildMediaUnits } from "@/features/saves/lib/media/units";
+import { buildMediaUnits } from "@/features/saves/media";
 import type { Save } from "@/features/saves/types";
 import { loadImage } from "../image";
 import {

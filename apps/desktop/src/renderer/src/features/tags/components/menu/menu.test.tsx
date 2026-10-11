@@ -2,7 +2,7 @@ import { PickerPanel } from "@pond/ui";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
-import { TagMenu } from "./";
+import { TagMenu, TagMenuView } from "./";
 
 it("keeps an inline tag draft after a failed create and applies it only after retry succeeds", async () => {
   vi.stubGlobal(
@@ -74,6 +74,7 @@ it("keeps an inline tag draft after a failed create and applies it only after re
             <PickerPanel.Positioner>
               <PickerPanel.Popup>
                 <TagMenu
+                  layout="grid"
                   allowCreate
                   onToggle={(name) => {
                     applied.push(name);
@@ -123,7 +124,7 @@ it("keeps an inline tag draft after a failed create and applies it only after re
       ),
     );
     expect(document.querySelector('[role="alert"]')?.textContent).toContain(
-      "Library unavailable",
+      "Couldn't create the tag. Try again.",
     );
     expect(input.value).toBe("New Tag");
     expect(applied).toEqual([]);
@@ -136,6 +137,90 @@ it("keeps an inline tag draft after a failed create and applies it only after re
     expect(created).toEqual(["New Tag"]);
     expect(applied).toEqual(["New Tag"]);
     expect(input.value).toBe("");
+  } finally {
+    await act(() => root.unmount());
+    host.remove();
+    vi.unstubAllGlobals();
+  }
+});
+
+it("lists tag groups as expandable parents with their tags nested under them", async () => {
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+  const tag = (id: string, name: string) => ({
+    id,
+    name,
+    starred: false,
+    description: null,
+    lastUsedAt: null,
+    usageCount: 0,
+    createdAt: null,
+  });
+  const tags = [tag("sunset", "Sunset"), tag("loose", "Loose")];
+  const groups = [
+    {
+      id: "mood",
+      name: "Mood",
+      description: null,
+      color: null,
+      sortOrder: 0,
+      collapsed: false,
+      tagIds: ["sunset"],
+      tagNames: ["Sunset"],
+    },
+  ];
+  const applied: string[] = [];
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  try {
+    await act(async () =>
+      root.render(
+        <PickerPanel.Root open>
+          <PickerPanel.Portal>
+            <PickerPanel.Positioner>
+              <PickerPanel.Popup>
+                <TagMenuView
+                  tags={tags}
+                  groups={groups}
+                  appliedKeys={new Set(["sunset"])}
+                  onToggle={(name) => {
+                    applied.push(name);
+                  }}
+                />
+              </PickerPanel.Popup>
+            </PickerPanel.Positioner>
+          </PickerPanel.Portal>
+        </PickerPanel.Root>,
+      ),
+    );
+    const items = () =>
+      Array.from(document.querySelectorAll('[role="treeitem"]')).map(
+        (item) =>
+          `${item.getAttribute("aria-level")}:${item.getAttribute("aria-label")}`,
+      );
+    expect(document.querySelector('[role="tree"]')).not.toBeNull();
+    expect(items()).toEqual(["1:Mood", "2:Sunset", "1:Loose"]);
+    expect(
+      document
+        .querySelector('[aria-label="Sunset"]')
+        ?.getAttribute("data-selection"),
+    ).toBe("checked");
+
+    const group = document.querySelector<HTMLElement>('[aria-label="Mood"]');
+    await act(async () => group?.click());
+    expect(items()).toEqual(["1:Mood", "1:Loose"]);
+    expect(applied).toEqual([]);
+
+    const loose = document.querySelector<HTMLElement>('[aria-label="Loose"]');
+    await act(async () => loose?.click());
+    expect(applied).toEqual(["Loose"]);
   } finally {
     await act(() => root.unmount());
     host.remove();

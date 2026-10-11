@@ -1,6 +1,6 @@
 const RECENT_FOLDER_DESTINATIONS_KEY = "pond:recent-folder-destinations";
 
-export function readRecentFolderIds(): string[] {
+function readRecentFolderIds(): string[] {
   try {
     return (
       localStorage
@@ -19,17 +19,6 @@ export function rememberFolderDestinations(ids: readonly string[]): void {
     localStorage.setItem(
       RECENT_FOLDER_DESTINATIONS_KEY,
       [...new Set([...ids, ...readRecentFolderIds()])].slice(0, 10).join("\n"),
-    );
-  } catch {}
-}
-
-export function forgetRecentFolder(id: string): void {
-  try {
-    localStorage.setItem(
-      RECENT_FOLDER_DESTINATIONS_KEY,
-      readRecentFolderIds()
-        .filter((candidate) => candidate !== id)
-        .join("\n"),
     );
   } catch {}
 }

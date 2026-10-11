@@ -1,4 +1,5 @@
 import type { LibraryQueryRequest } from "@shared/library-query";
+import { recentlyAddedSince } from "@shared/recently-added";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   useFolderMemberships,
@@ -19,15 +20,12 @@ import {
   useSortDir,
   useSortKey,
 } from "@/features/library/state/view-store";
-import { useSaves } from "@/features/saves/hooks/use-saves";
-import { reloadSaves } from "@/features/saves/lib/ensure-saves";
-import type { SaveListMode } from "@/features/saves/lib/list";
-import { descendantFolderIds } from "@/features/saves/lib/nav-filter";
-import { useRecents } from "@/features/saves/state/recents";
+import type { SaveListMode } from "@/features/saves";
+import { descendantFolderIds, useRecents } from "@/features/saves";
+import { reloadSaves, useSaves } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
-import { keywordScopesFromPrefs } from "@/features/search/components/bar/search-scope-menu";
-import { useRetrievalOverlay } from "@/features/search/hooks/use-retrieval-overlay";
-import { usePrefs } from "@/features/settings/state/prefs";
+import { keywordScopesFromPrefs, useRetrievalOverlay } from "@/features/search";
+import { usePrefs } from "@/shared/state/prefs";
 
 /** Long enough to span a pause between keystrokes, so results swap once typing stops. */
 const KEYWORD_DEBOUNCE_MS = 250;
@@ -49,6 +47,7 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
   const folders = useFolders();
   const folderId = nav.kind === "folder" ? nav.id : null;
   const searchEverywhere = searchScope === "all" && keywords.trim().length > 0;
+  const recentlyAdded = !searchEverywhere && mode === "recentlyAdded";
   useEffect(() => {
     if (viewsReady)
       activateFolderPresentation(
@@ -61,11 +60,12 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
       query,
       keywords,
       keywordScopes: keywordScopesFromPrefs(searchPrefs.scopes),
-      sortKey,
+      sortKey: recentlyAdded ? "savedAt" : sortKey,
       randomSeed,
       orderFolderId: searchEverywhere ? undefined : (folderId ?? undefined),
-      sortDir: sortDir === "asc" ? "asc" : "desc",
+      sortDir: !recentlyAdded && sortDir === "asc" ? "asc" : "desc",
       scope: {
+        savedSince: recentlyAdded ? recentlyAddedSince() : undefined,
         deletedOnly: mode === "trash",
         source: searchEverywhere ? undefined : sourceFilter || undefined,
         untagged: !searchEverywhere && mode === "untagged",
@@ -90,6 +90,7 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
       keywords,
       searchPrefs.scopes,
       searchEverywhere,
+      recentlyAdded,
       sortKey,
       randomSeed,
       folderId,

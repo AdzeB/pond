@@ -1,0 +1,17 @@
+.window {
+  -webkit-app-region: drag;
+  display: grid;
+  grid-template-columns: 296px minmax(0, 1fr) 64px;
+  gap: 8px;
+  box-sizing: border-box;
+  height: 100dvh;
+  padding: 8px;
+  background: var(--ds-gray-3);
+}
+
+.placeholder {
+  -webkit-app-region: no-drag;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow-sm);
+}

@@ -1,10 +1,49 @@
 import pLimit from "p-limit";
 import { enrichmentMonitor } from "@/features/enrichment/state/enrichment-monitor";
-import { onPoolDirty, pool, upsertSave } from "@/features/saves/state/pool";
+import { onPoolDirty, pool, upsertSave } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
-import { getPrefsSnapshot } from "@/features/settings/state/prefs";
+import { getPrefsSnapshot, subscribePrefsSnapshot } from "@/shared/state/prefs";
 import { ENRICHERS, ENRICHERS_BY_ID } from "./registry";
 import type { Enricher } from "./types";
+
+type PrefsSnapshot = ReturnType<typeof getPrefsSnapshot>;
+
+export function createEnrichmentPreferenceAccess(
+  getPrefs: () => PrefsSnapshot,
+) {
+  return {
+    eligible(enricher: Enricher, save: Save, prefs = getPrefs()): boolean {
+      return enricher.eligible(save, prefs?.ai);
+    },
+    run(enricher: Enricher, save: Save) {
+      return enricher.run(save, getPrefs()?.ai);
+    },
+  };
+}
+
+function mediaUnderstandingPreferenceKey(prefs: PrefsSnapshot): string {
+  const ai = prefs?.ai;
+  return ai
+    ? `${ai.mediaUnderstandingMode}\u0000${ai.mediaUnderstandingProvider}\u0000${ai.mediaUnderstandingModelId}\u0000${ai.mediaUnderstandingFallbackToFlorence}`
+    : "";
+}
+
+export function subscribeMediaUnderstandingRefresh(dependencies: {
+  getPrefs: () => PrefsSnapshot;
+  subscribe: (listener: () => void) => () => void;
+  refresh: () => void;
+}): () => void {
+  let preferenceKey = mediaUnderstandingPreferenceKey(dependencies.getPrefs());
+  return dependencies.subscribe(() => {
+    const nextKey = mediaUnderstandingPreferenceKey(dependencies.getPrefs());
+    if (nextKey === preferenceKey) return;
+    preferenceKey = nextKey;
+    dependencies.refresh();
+  });
+}
+
+const enrichmentPreferenceAccess =
+  createEnrichmentPreferenceAccess(getPrefsSnapshot);
 
 declare global {
   interface Navigator {
@@ -92,13 +131,17 @@ function dependenciesSatisfied(
   for (const depId of enricher.dependsOn) {
     const dep = ENRICHERS_BY_ID.get(depId);
     if (!dep) continue;
-    if (dep.enabled(prefs) && dep.eligible(save)) return false;
+    if (
+      dep.enabled(prefs) &&
+      enrichmentPreferenceAccess.eligible(dep, save, prefs)
+    )
+      return false;
   }
   return true;
 }
 
 async function persist(enricher: Enricher, save: Save): Promise<void> {
-  const result = await enricher.run(save);
+  const result = await enrichmentPreferenceAccess.run(enricher, save);
   if (result == null) {
     failed.add(keyFor(enricher, save));
     return;
@@ -164,7 +207,7 @@ function scan(ids?: readonly string[]): void {
     if (!enricher.enabled(prefs)) continue;
     let eligible = 0;
     for (const save of saves) {
-      if (!enricher.eligible(save)) continue;
+      if (!enrichmentPreferenceAccess.eligible(enricher, save, prefs)) continue;
       eligible += 1;
       if (!dependenciesSatisfied(enricher, save, prefs)) continue;
       schedule(enricher, save);
@@ -238,6 +281,11 @@ export function startEnrichmentSweep(): () => void {
       : [],
   );
   void Promise.all(hydrations).then(() => scheduleScan());
+  const detachPrefs = subscribeMediaUnderstandingRefresh({
+    getPrefs: getPrefsSnapshot,
+    subscribe: subscribePrefsSnapshot,
+    refresh: () => rescanEnrichment(),
+  });
   const detachDirty = onPoolDirty((ids) => {
     mutationGeneration += 1;
     scheduleScan(ids);
@@ -274,6 +322,7 @@ export function startEnrichmentSweep(): () => void {
 
   return () => {
     detachDirty();
+    detachPrefs();
     clearInterval(fullScanTimer);
     detachVisibility();
     detachBattery();

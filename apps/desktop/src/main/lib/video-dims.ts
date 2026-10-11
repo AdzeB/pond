@@ -2,11 +2,6 @@ import { spawn } from "node:child_process";
 import { stat } from "node:fs/promises";
 import log from "electron-log/main.js";
 import { binariesAvailable } from "../core/refresh/binaries";
-import {
-  isEncryptedLibraryMedia,
-  withDecryptedLibraryMediaPath,
-} from "../core/storage/library-media-storage";
-
 import { frameRateFromProbe } from "./video-timing";
 
 const HARD_TIMEOUT_MS = 10_000;
@@ -98,9 +93,6 @@ const probes = new Map<string, Promise<VideoMetadata>>();
 export async function probeVideoDims(
   videoPath: string,
 ): Promise<VideoMetadata> {
-  if (await isEncryptedLibraryMedia(videoPath).catch(() => false)) {
-    return withDecryptedLibraryMediaPath(videoPath, probeVideoDims);
-  }
   const info = await stat(videoPath).catch(() => null);
   if (!info) return null;
   const key = `${videoPath}:${info.size}:${info.mtimeMs}`;

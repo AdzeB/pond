@@ -1,7 +1,4 @@
 import type { RawJson } from "@pond/schema/raw";
-import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
-import type Database from "better-sqlite3";
-import { z } from "zod";
 
 export function slimRawJson(raw: RawJson | null | undefined): RawJson | null {
   if (!raw) return null;
@@ -38,71 +35,4 @@ export function withRawSlim<T extends { rawJson?: RawJson | null }>(
 ): T & { rawSlim?: RawJson | null } {
   if (!("rawJson" in values)) return values;
   return { ...values, rawSlim: slimRawJson(values.rawJson) };
-}
-
-const BackfillRowSchema = z.object({ id: z.string(), rawJson: z.string() });
-
-const StoredJsonText = z.preprocess((text) => {
-  try {
-    return JSON.parse(String(text));
-  } catch {
-    return null;
-  }
-}, StoredRawJsonSchema);
-
-export interface RawSlimBackfillResult {
-  processed: number;
-  hasMore: boolean;
-}
-
-interface RawSlimStore {
-  readBatch(limit: number): Array<{ id: string; rawJson: string }>;
-  writeBatch(rows: Array<{ id: string; rawSlim: string }>): void;
-}
-
-export function backfillRawSlimBatch(
-  sqlite: Database.Database,
-  limit = 500,
-): RawSlimBackfillResult {
-  return backfillRawSlim(
-    {
-      readBatch: (batchLimit) =>
-        sqlite
-          .prepare(
-            `SELECT id, raw_json AS rawJson FROM saves WHERE raw_slim IS NULL AND raw_json IS NOT NULL ORDER BY saved_at DESC, id DESC LIMIT ?`,
-          )
-          .all(batchLimit)
-          .map((row) => BackfillRowSchema.safeParse(row))
-          .filter((parsed) => parsed.success)
-          .map((parsed) => parsed.data),
-      writeBatch(rows) {
-        const update = sqlite.prepare(
-          `UPDATE saves SET raw_slim = ? WHERE id = ?`,
-        );
-        sqlite.transaction(() => {
-          for (const row of rows) update.run(row.rawSlim, row.id);
-        })();
-      },
-    },
-    limit,
-  );
-}
-
-export function backfillRawSlim(
-  store: RawSlimStore,
-  limit = 500,
-): RawSlimBackfillResult {
-  const batchLimit = Math.max(1, Math.floor(limit));
-  const rows = store.readBatch(batchLimit);
-  if (rows.length === 0) return { processed: 0, hasMore: false };
-  store.writeBatch(
-    rows.map((row) => {
-      const stored = StoredJsonText.safeParse(row.rawJson);
-      const slim = stored.success
-        ? slimRawJson(storedAsRawJson(stored.data))
-        : null;
-      return { id: row.id, rawSlim: JSON.stringify(slim) };
-    }),
-  );
-  return { processed: rows.length, hasMore: rows.length === batchLimit };
 }

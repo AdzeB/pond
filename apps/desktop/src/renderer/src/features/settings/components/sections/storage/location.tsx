@@ -9,11 +9,15 @@ const LibraryInfoSchema = z.object({ path: z.string() });
 
 const MoveResultSchema = z.discriminatedUnion("ok", [
   z.object({ ok: z.literal(true), path: z.string() }),
-  z.object({ ok: z.literal(false), reason: z.string() }),
+  z.object({
+    ok: z.literal(false),
+    reason: z.string().optional(),
+    error: z.string().optional(),
+  }),
 ]);
 
-function moveError(reason: string): string {
-  switch (reason) {
+function moveError(failure: { reason?: string; error?: string }): string {
+  switch (failure.reason) {
     case "cancelled":
       return "";
     case "same_path":
@@ -25,7 +29,7 @@ function moveError(reason: string): string {
     case "no_library":
       return "No library is open to move.";
     default:
-      return `Couldn't move library: ${reason}`;
+      return failure.error ?? "Couldn't move the library. Try again.";
   }
 }
 
@@ -41,7 +45,7 @@ export function StorageLocationSettings() {
         await window.pond.query("library.move", {}),
       );
       if (!result.ok) {
-        const message = moveError(result.reason);
+        const message = moveError(result);
         if (message) throw new Error(message);
       }
     },
@@ -91,7 +95,7 @@ export function StorageLocationSettings() {
                 title: "Move Library",
                 description:
                   "Pond will verify the new copy before removing the library from its current location.",
-                confirmLabel: "Move Library",
+                confirmLabel: "Move",
                 busyLabel: "Moving",
                 onConfirm: () => move.mutateAsync(),
               })

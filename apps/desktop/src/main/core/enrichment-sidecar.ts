@@ -6,7 +6,7 @@ import log from "electron-log/main.js";
 import { z } from "zod";
 import { getDb } from "../db";
 import { readBundleJson, writeBundleJson } from "../lib/library-config";
-import { itemFile } from "../paths";
+import { saveFile } from "../paths";
 
 const SIDECAR_FILE = "enrichment.json";
 
@@ -26,7 +26,6 @@ const ENRICHMENT_KEYS = [
   "autoTitleModel",
   "suggestedTags",
   "suggestedTagsModel",
-  "videoNotes",
   "dominantColors",
 ] as const satisfies readonly (keyof Save)[];
 
@@ -38,7 +37,7 @@ export function patchTouchesEnrichment(patch: Partial<NewSave>): boolean {
 }
 
 function sidecarPath(id: string): string {
-  return itemFile(id, SIDECAR_FILE);
+  return saveFile(id, SIDECAR_FILE);
 }
 
 export function writeEnrichmentSidecar(save: Save): void {
@@ -60,7 +59,6 @@ export function writeEnrichmentSidecar(save: Save): void {
   if (save.suggestedTagsModel) {
     data.suggestedTagsModel = save.suggestedTagsModel;
   }
-  if (save.videoNotes?.length) data.videoNotes = save.videoNotes;
   if (save.dominantColors?.length) data.dominantColors = save.dominantColors;
 
   const file = sidecarPath(save.id);
@@ -82,13 +80,6 @@ const textList = z
   .optional()
   .catch(undefined);
 
-const VideoNoteSchema = z.object({
-  id: z.string(),
-  fileIndex: z.number().int().nonnegative().optional(),
-  timeSec: z.number(),
-  text: z.string(),
-});
-
 const EnrichmentSidecarSchema = z.object({
   phash: text,
   blurhash: text,
@@ -106,13 +97,6 @@ const EnrichmentSidecarSchema = z.object({
   suggestedTags: textList,
   suggestedTagsModel: text,
   dominantColors: textList,
-  videoNotes: z
-    .array(z.unknown())
-    .transform((items) =>
-      items.flatMap((item) => VideoNoteSchema.safeParse(item).data ?? []),
-    )
-    .optional()
-    .catch(undefined),
 });
 
 export function readEnrichmentSidecar(
@@ -148,7 +132,6 @@ export function readEnrichmentSidecar(
   if (stored.suggestedTagsModel) {
     out.suggestedTagsModel = stored.suggestedTagsModel;
   }
-  if (stored.videoNotes?.length) out.videoNotes = stored.videoNotes;
   if (stored.dominantColors?.length) {
     out.dominantColors = stored.dominantColors;
   }
@@ -171,7 +154,6 @@ export async function backfillEnrichmentSidecars(): Promise<void> {
         isNotNull(savesTable.sensitiveScore),
         isNotNull(savesTable.autoTitleModel),
         isNotNull(savesTable.suggestedTags),
-        sql`json_array_length(${savesTable.videoNotes}) > 0`,
         sql`json_array_length(${savesTable.dominantColors}) > 0`,
       ),
     );

@@ -22,7 +22,7 @@
 }
 
 .avatar-fallback {
-  font-size: 15px;
+  font-size: var(--ds-text-lg);
   font-weight: 700;
   color: var(--tw-secondary);
 }
@@ -40,7 +40,7 @@
   align-items: center;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 15px;
+  font-size: var(--ds-text-lg);
   font-weight: 700;
   line-height: 20px;
   white-space: nowrap;
@@ -54,7 +54,7 @@
 .handle {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 15px;
+  font-size: var(--ds-text-lg);
   line-height: 20px;
   color: var(--tw-secondary);
   white-space: nowrap;

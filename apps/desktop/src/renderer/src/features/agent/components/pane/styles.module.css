@@ -37,14 +37,3 @@
 .assistant[data-layout="page"] .chat-viewport {
   padding: 24px 24px 12px;
 }
-
-.compose-area {
-  width: 100%;
-  margin: 0 0 4px;
-}
-
-.notices {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 8px;
-}

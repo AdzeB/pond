@@ -3,8 +3,10 @@ import { RawImage } from "@huggingface/transformers";
 import {
   coreClipAesthetic,
   coreClipImage,
+  coreEmbedAudio,
   coreEmbedText,
   coreEmbedTexts,
+  coreEmbedVideoFrames,
   coreFlorence,
   coreSensitiveContent,
   coreTranscribe,
@@ -57,6 +59,20 @@ async function handle(
     case "embedTexts": {
       const vecs = await coreEmbedTexts(req.texts);
       return { result: vecs, transfer: vecs.map((v) => v.buffer) };
+    }
+    case "embedAudio": {
+      const vec = await coreEmbedAudio(req.audio);
+      return { result: vec, transfer: [vec.buffer] };
+    }
+    case "embedVideoFrames": {
+      const vec = await coreEmbedVideoFrames(
+        req.frames.map((frame) => ({
+          image: toRawImage(frame.image),
+          timestamp: frame.timestamp,
+        })),
+        req.duration,
+      );
+      return { result: vec, transfer: [vec.buffer] };
     }
     case "transcribe":
       return {

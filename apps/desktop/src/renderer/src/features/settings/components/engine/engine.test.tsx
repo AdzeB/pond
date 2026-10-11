@@ -3,7 +3,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it } from "vitest";
 import type { SectionConfig } from "@/features/settings/lib/engine-types";
-import { SettingsSectionView } from "./engine";
+import { SettingsSectionView } from ".";
 
 it("renders standalone custom surfaces beside row lists instead of nesting them", async () => {
   const host = document.createElement("div");

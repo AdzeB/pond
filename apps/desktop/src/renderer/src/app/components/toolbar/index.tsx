@@ -6,6 +6,7 @@ import {
   IconChatBubblePenOutline18,
   IconClockRotateClockwiseOutline18,
   IconDotsOutline18,
+  IconEyeOutline18,
   IconGear3Outline18,
   IconTrashXmarkOutline18,
   IconWindowDownloadOutline18,
@@ -14,12 +15,8 @@ import { Button, Menu } from "@pond/ui";
 import { useRouter, useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
 import { ChromeHistoryNav } from "@/app/components/chrome-toolbar";
-import { AgentToggle } from "@/features/library/components/agent-toggle/agent-toggle";
+import { AgentToggle } from "@/features/library/components/agent-toggle";
 import { FolderCustomizeDialog } from "@/features/library/components/folder-customize-dialog";
-import {
-  FOLDER_ICONS,
-  FOLDER_SWATCHES,
-} from "@/features/library/components/folder-sidebar/folder-icons";
 import { SidebarToggle } from "@/features/library/components/sidebar-toggle";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import {
@@ -40,8 +37,9 @@ import { useSave } from "@/features/saves/hooks/use-saves";
 import { getLastListPath } from "@/features/saves/lib/list-path";
 import { saveIdFromPath } from "@/features/saves/lib/save-nav";
 import { useViewFilteredCount } from "@/features/saves/state/view-context";
-import { usePrefs } from "@/features/settings/state/prefs";
-import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
+import { SpecContextMenu } from "@/shared/components/spec-context-menu";
+import { FOLDER_MENU_ICONS, FOLDER_SWATCHES } from "@/shared/lib/folder-icons";
+import { usePrefs } from "@/shared/state/prefs";
 import { type Breadcrumb, buildBreadcrumbs } from "./breadcrumbs";
 import { computeLabel } from "./labels";
 import styles from "./styles.module.css";
@@ -55,6 +53,7 @@ const ROOT_ICONS = {
   "/recents": IconClockRotateClockwiseOutline18,
   "/downloads": IconWindowDownloadOutline18,
   "/trash": IconTrashXmarkOutline18,
+  "/shadows": IconEyeOutline18,
   "/settings": IconGear3Outline18,
 } as const;
 
@@ -125,7 +124,7 @@ function Breadcrumbs() {
         {
           type: "submenu" as const,
           label: "Icon",
-          items: FOLDER_ICONS.map((option) => ({
+          items: FOLDER_MENU_ICONS.map((option) => ({
             type: "checkbox" as const,
             label: option.label,
             checked: (presentation?.icon ?? "folder") === option.id,
@@ -279,7 +278,9 @@ export function Toolbar() {
     select: (s) => s.location.pathname,
   });
   const hideInspector =
-    pathname === "/assistant" || pathname.startsWith("/settings");
+    pathname === "/assistant" ||
+    pathname === "/shadows" ||
+    pathname.startsWith("/settings");
   const sidebarOpen = useSidebarOpen();
   const rightPane = useRightPane();
   return (

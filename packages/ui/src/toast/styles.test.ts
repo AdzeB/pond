@@ -28,3 +28,16 @@ describe("toast alignment", () => {
     expect(close).not.toContain("translate:");
   });
 });
+
+describe("toast stacking", () => {
+  it("keeps active toasts in separate rows", () => {
+    const viewport = declarations(".viewport");
+    const root = declarations(".root");
+
+    expect(viewport).toContain("display: flex;");
+    expect(viewport).toContain("flex-direction: column-reverse;");
+    expect(viewport).toContain("gap: var(--toast-gap);");
+    expect(root).toContain("position: relative;");
+    expect(root).not.toContain("--toast-offset-y");
+  });
+});

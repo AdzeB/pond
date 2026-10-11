@@ -1,5 +1,50 @@
+import { Input, Settings } from "@pond/ui";
+import { useEffect, useId, useState } from "react";
+import { z } from "zod";
 import { ProcessingStatus } from "@/features/settings/components/sections/processing";
-import { defineSection } from "@/features/settings/lib/engine-types";
+import {
+  type Binding,
+  defineSection,
+} from "@/features/settings/lib/engine-types";
+
+function MediaModelIdControl({ binding }: { binding: Binding }) {
+  const titleId = useId();
+  const descriptionId = useId();
+  const modelId = z
+    .string()
+    .catch("")
+    .parse(binding.values.mediaUnderstandingModelId);
+  const [draft, setDraft] = useState(modelId);
+  useEffect(() => setDraft(modelId), [modelId]);
+  return (
+    <>
+      <Settings.ItemDetails>
+        <Settings.ItemTitle id={titleId}>Local Model ID</Settings.ItemTitle>
+        <Settings.ItemDescription id={descriptionId}>
+          Enter the exact installed model ID for captions and text recognition.
+        </Settings.ItemDescription>
+      </Settings.ItemDetails>
+      <Settings.ItemControl>
+        <Input.Root size="sm">
+          <Input.Field
+            aria-labelledby={titleId}
+            aria-describedby={descriptionId}
+            disabled={!binding.loaded}
+            value={draft}
+            placeholder="gemma4:e2b"
+            onValueChange={setDraft}
+            onBlur={() => {
+              const value = draft.trim();
+              if (value && value !== modelId)
+                void binding.patch({ mediaUnderstandingModelId: value });
+            }}
+            style={{ width: 160 }}
+          />
+        </Input.Root>
+      </Settings.ItemControl>
+    </>
+  );
+}
 
 export const processingSection = defineSection("ai", {
   title: "Processing",
@@ -17,6 +62,56 @@ export const processingSection = defineSection("ai", {
   groups: [
     { title: "Processing Status", render: () => <ProcessingStatus /> },
     {
+      title: "Image Understanding",
+      items: [
+        {
+          control: "select",
+          key: "mediaUnderstandingMode",
+          title: "Image Understanding",
+          description:
+            "Choose which on-device model adds captions and reads text.",
+          keywords: ["gemma", "florence", "vision", "benchmark"],
+          options: [
+            { value: "florence", label: "Built-In Model" },
+            { value: "gemma4", label: "Local Runtime Model" },
+            {
+              value: "shadow",
+              label: "Compare Both, Keep Built-In Results",
+            },
+          ],
+        },
+        {
+          control: "select",
+          key: "mediaUnderstandingProvider",
+          title: "Local Runtime",
+          description: "Choose the app that runs the local model.",
+          keywords: ["ollama", "lm studio", "local", "runtime"],
+          options: [
+            { value: "ollama", label: "Ollama" },
+            { value: "lmstudio", label: "LM Studio" },
+          ],
+          visible: (v) => v.mediaUnderstandingMode !== "florence",
+        },
+        {
+          control: "custom",
+          key: "media-understanding-model-id",
+          title: "Local Model ID",
+          keywords: ["gemma", "model", "installed", "e2b", "e4b"],
+          visible: (v) => v.mediaUnderstandingMode !== "florence",
+          render: (binding) => <MediaModelIdControl binding={binding} />,
+        },
+        {
+          control: "switch",
+          key: "mediaUnderstandingFallbackToFlorence",
+          title: "Image Processing Fallback",
+          description:
+            "Use the built-in model when the local model can't process an image.",
+          keywords: ["gemma", "florence", "fallback", "vision"],
+          visible: (v) => v.mediaUnderstandingMode === "gemma4",
+        },
+      ],
+    },
+    {
       title: "Details",
       items: [
         {
@@ -30,7 +125,7 @@ export const processingSection = defineSection("ai", {
           control: "switch",
           key: "enableOcr",
           title: "Text in Images",
-          description: "Read text in screenshots and photos.",
+          description: "Read text in images.",
           keywords: ["ocr", "recognition", "florence"],
         },
         {

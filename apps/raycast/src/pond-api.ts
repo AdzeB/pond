@@ -73,7 +73,7 @@ export async function searchLibrary(
     };
   }
 
-  const rows = await request(() => api().items({ ids: page.ids }));
+  const rows = await request(() => api().saves({ ids: page.ids }));
   const byId = new Map(rows.map((save) => [save.id, save]));
   return {
     saves: page.ids.flatMap((id) => {

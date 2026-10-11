@@ -1,23 +1,36 @@
+import { DEFAULT_PREFS } from "@pond/schema";
 import type { Save } from "@/features/saves/types";
-import { florenceModelVersion, runFlorence } from "../florence";
-import { loadImage, representativeImageUrl } from "../image";
+import { representativeImageUrl } from "../image";
+import {
+  type MediaUnderstandingRouter,
+  mediaUnderstandingRouter,
+} from "../media-understanding-router";
 import type { Enricher } from "../types";
 
-export const ocrEnricher: Enricher = {
-  id: "ocr",
-  enabled: (prefs) => prefs?.ai?.enableOcr === true,
-  eligible(save: Save) {
-    if (save.status !== "complete" || save.deletedAt != null) return false;
-    if (!representativeImageUrl(save)) return false;
-    return save.ocrModel !== florenceModelVersion();
-  },
-  async run(save: Save) {
-    const url = representativeImageUrl(save);
-    if (!url) return null;
-    const image = await loadImage(url);
-    const text = await runFlorence(image, "<OCR>");
-    const model = florenceModelVersion();
-    const fields = { ocrText: text || null, ocrModel: model };
-    return { derived: fields, optimistic: fields };
-  },
-};
+export function createOcrEnricher(
+  router: MediaUnderstandingRouter = mediaUnderstandingRouter,
+): Enricher {
+  return {
+    id: "ocr",
+    enabled: (prefs) => prefs?.ai?.enableOcr === true,
+    eligible(save: Save, prefs = DEFAULT_PREFS.ai) {
+      if (save.status !== "complete" || save.deletedAt != null) return false;
+      if (!representativeImageUrl(save)) return false;
+      return save.ocrModel !== router.primaryModel("ocr", prefs);
+    },
+    async run(save: Save, prefs = DEFAULT_PREFS.ai) {
+      const imageUrl = representativeImageUrl(save);
+      if (!imageUrl) return null;
+      const result = await router.run({
+        saveId: save.id,
+        imageUrl,
+        task: "ocr",
+        prefs,
+      });
+      const fields = { ocrText: result.text || null, ocrModel: result.model };
+      return { derived: fields, optimistic: fields };
+    },
+  };
+}
+
+export const ocrEnricher = createOcrEnricher();

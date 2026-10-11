@@ -577,18 +577,15 @@ const isThreads =
   host.endsWith(".threads.com") ||
   host.endsWith(".threads.net");
 
-if (isTwitter) {
-  webFrame.executeJavaScript(TWITTER_HOOK).catch(() => {});
+function installHook(name: string, source: string): void {
+  webFrame
+    .executeJavaScript(source)
+    .catch((err) =>
+      console.error(`[pond preload] ${name} capture hook failed`, host, err),
+    );
 }
 
-if (isCosmos) {
-  webFrame.executeJavaScript(COSMOS_HOOK).catch(() => {});
-}
-
-if (isInstagram) {
-  webFrame.executeJavaScript(INSTAGRAM_HOOK).catch(() => {});
-}
-
-if (isThreads) {
-  webFrame.executeJavaScript(THREADS_HOOK).catch(() => {});
-}
+if (isTwitter) installHook("twitter", TWITTER_HOOK);
+if (isCosmos) installHook("cosmos", COSMOS_HOOK);
+if (isInstagram) installHook("instagram", INSTAGRAM_HOOK);
+if (isThreads) installHook("threads", THREADS_HOOK);

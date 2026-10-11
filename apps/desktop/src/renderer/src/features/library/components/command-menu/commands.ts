@@ -24,12 +24,12 @@ import {
   newTag,
   runNewAction,
 } from "@/features/library/components/new-menu/actions";
-import { openHarvester } from "@/features/library/lib/open-harvester";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { resetFilters } from "@/features/library/state/view-store";
-import { openSettings } from "@/features/settings/lib/open-settings";
-import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
+import { pickWatchedFolder } from "@/features/sources";
 import { getAppRouter } from "@/shared/lib/app-router";
+import { openHarvester } from "@/shared/lib/open-harvester";
+import { openSettings } from "@/shared/lib/open-settings";
 import type { CommandSpec } from "./types";
 
 export function navigateTo(path: string): void {
@@ -221,6 +221,24 @@ export const COMMANDS: readonly CommandSpec[] = [
       libraryChrome.setNav({ kind: "trash" });
       navigateTo("/trash");
     },
+  },
+  {
+    id: "dialogs",
+    group: "App",
+    label: "Dialog Gallery",
+    detail: "Review the dialogs in the app",
+    icon: IconEyeOutline18,
+    keywords: "dialogs gallery audit preview",
+    run: () => navigateTo("/dialogs"),
+  },
+  {
+    id: "icons",
+    group: "App",
+    label: "Icon Gallery",
+    detail: "Review source and brand icons",
+    icon: IconEyeOutline18,
+    keywords: "icons logos brands gallery audit",
+    run: () => navigateTo("/icons"),
   },
   {
     id: "settings",

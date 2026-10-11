@@ -20,8 +20,8 @@ export function Split() {
           </Section.Title>
           <p className={styles.lead}>
             The extension talks to Pond on your Mac through native messaging.
-            On-device enrichment never leaves the machine. Agent uses a key you
-            paste or a local host you run.
+            On-device enrichment never leaves the machine. Assistant uses a key
+            you paste or a local host you run.
           </p>
           <p className={styles.aside}>On-device.</p>
           <ul className={styles.list}>

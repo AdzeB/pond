@@ -1,6 +1,6 @@
 import { useDataTable } from "@pond/ui";
 import { useSelector } from "@tanstack/react-store";
-import { TagContextMenu } from "@/features/tags/components/context-menu/context-menu";
+import { TagContextMenu } from "@/features/tags/components/context-menu";
 import { ActionsCell, NameCell } from "../lib/cells";
 import { TagRowProvider, useTagRow } from "../lib/row-context";
 import { TagCheckbox } from "../lib/select";

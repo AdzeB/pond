@@ -1,7 +1,14 @@
 import type { Source } from "@pond/schema/db";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import { playUiSuccess } from "@/features/settings/lib/sounds";
+import { playUiSuccess } from "@/shared/lib/sounds";
+
+export interface ConnectedAccount {
+  id: string;
+  handle: string | null;
+  label: string | null;
+  avatarUrl?: string | null;
+}
 
 interface ConnectFlowState {
   source: Source | null;
@@ -9,6 +16,7 @@ interface ConnectFlowState {
   connectedBefore: ReadonlySet<string>;
   completed: boolean;
   failed: boolean;
+  account: ConnectedAccount | null;
 }
 
 const store = new Store<ConnectFlowState>({
@@ -17,6 +25,7 @@ const store = new Store<ConnectFlowState>({
   connectedBefore: new Set<string>(),
   completed: false,
   failed: false,
+  account: null,
 });
 
 export const connectFlow = {
@@ -27,6 +36,7 @@ export const connectFlow = {
       connectedBefore: new Set(connectedIds),
       completed: false,
       failed: false,
+      account: null,
     }));
     void requestConnection(source);
   },
@@ -36,9 +46,11 @@ export const connectFlow = {
     store.setState((s) => ({ ...s, failed: false }));
     void requestConnection(source);
   },
-  complete(): void {
+  complete(account: ConnectedAccount): void {
     const already = store.state.completed;
-    store.setState((s) => (s.completed ? s : { ...s, completed: true }));
+    store.setState((s) =>
+      s.completed ? s : { ...s, completed: true, account },
+    );
     if (!already) playUiSuccess();
   },
   clear(): void {
@@ -62,6 +74,10 @@ export function useConnectedBefore(): ReadonlySet<string> {
 
 export function useConnectCompleted(): boolean {
   return useSelector(store, (s) => s.completed);
+}
+
+export function useConnectedAccount(): ConnectedAccount | null {
+  return useSelector(store, (s) => s.account);
 }
 
 async function requestConnection(source: Source): Promise<void> {

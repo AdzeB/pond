@@ -4,23 +4,14 @@ import {
   IconDownloadOutline18,
 } from "@pond/icons/outline/18";
 import type { Source } from "@pond/schema/db";
-import {
-  Button,
-  Input,
-  Menu,
-  type MenuItemSpec,
-  PaneBody,
-  PaneHeader,
-} from "@pond/ui";
+import { Button, Input, Menu, type MenuItemSpec, Pane } from "@pond/ui";
 import { useEffect, useId, useRef, useState } from "react";
-import { downloadsFilters } from "@/features/downloads/state/downloads-filters";
-import { openHarvester } from "@/features/library/lib/open-harvester";
+import { downloadsFilters } from "@/features/downloads";
 import {
   libraryChrome,
   useInspectorSourceId,
   useInspectorSourceKind,
-} from "@/features/library/state/library-chrome";
-import { Section } from "@/features/saves/components/detail/section";
+} from "@/features/library";
 import { HeroAvatar } from "@/features/sources/components/flow/detail/hero-avatar";
 import {
   type CardModel,
@@ -47,10 +38,11 @@ import {
   type SyncSourceStatus,
   useSyncByAccount,
 } from "@/features/sources/state/sync-monitor";
+import { Section } from "@/shared/components/inspector-section";
 import { PropertyList } from "@/shared/components/property-list";
-import { SpecMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
+import { SpecMenu } from "@/shared/components/spec-context-menu";
 import { formatNumber, formatTimestampLine } from "@/shared/lib/format";
+import { openHarvester } from "@/shared/lib/open-harvester";
 import styles from "./styles.module.css";
 
 export function SourceInspector() {
@@ -71,8 +63,7 @@ function AccountInspector({ id }: { id: string }) {
   if (!account) {
     return (
       <SourceInspectorView
-        loading={loading}
-        missing={!loading}
+        status={loading ? "loading" : "missing"}
         onClose={libraryChrome.closeRightPane}
       />
     );
@@ -90,6 +81,7 @@ function AccountInspector({ id }: { id: string }) {
   return (
     <SourceInspectorView
       key={account.id}
+      status="ready"
       handle={account.handle ? `@${account.handle}` : null}
       source={account.source}
       avatarUrl={account.avatarUrl}
@@ -127,8 +119,7 @@ function WatchInspector({ id }: { id: string }) {
   if (!watch) {
     return (
       <SourceInspectorView
-        loading={loading}
-        missing={!loading}
+        status={loading ? "loading" : "missing"}
         onClose={libraryChrome.closeRightPane}
       />
     );
@@ -145,6 +136,7 @@ function WatchInspector({ id }: { id: string }) {
   return (
     <SourceInspectorView
       key={watch.id}
+      status="ready"
       handle={
         watch.kind === "playlist" || watch.kind === "list"
           ? watch.handle
@@ -263,60 +255,37 @@ function openDownloads(source: Source): void {
   downloadsFilters.setQ("");
   downloadsFilters.setStatuses(new Set());
   downloadsFilters.setSources(new Set([source]));
-  libraryChrome.closeRightPane();
+  libraryChrome.dismissInspector();
   openHarvester({ section: "downloads" });
 }
 
-export interface SourceInspectorViewProps {
+interface SourceInspectorDetailsProps {
   handle?: string | null;
-  source?: Source;
+  source: Source;
   avatarUrl?: string | null;
   model?: CardModel;
   syncStatus?: SyncSourceStatus;
   nickname?: string;
-  loading?: boolean;
-  missing?: boolean;
   menuItems?: MenuItemSpec[];
   properties?: SourceInspectorProperty[];
   onFetch?: () => void;
   onCancel?: () => void;
   onSignIn?: () => void;
   onOpenDownloads?: () => void;
-  onClose: () => void;
   onNicknameSave?: (value: string) => Promise<void>;
 }
 
-export function SourceInspectorView({
-  handle,
-  source,
-  avatarUrl,
-  model,
-  syncStatus,
-  nickname = "",
-  loading,
-  missing,
-  menuItems = [],
-  properties = [],
-  onFetch,
-  onCancel,
-  onSignIn,
-  onOpenDownloads,
-  onClose,
-  onNicknameSave,
-}: SourceInspectorViewProps) {
-  const scrollFade = useScrollFade<HTMLDivElement>();
-  const primaryAction = model
-    ? sourcePrimaryAction({
-        model,
-        syncStatus,
-        onFetch,
-        onCancel,
-        onSignIn,
-      })
-    : undefined;
+export type SourceInspectorViewProps = { onClose: () => void } & (
+  | { status: "loading" }
+  | { status: "missing" }
+  | ({ status: "ready" } & SourceInspectorDetailsProps)
+);
+
+export function SourceInspectorView(props: SourceInspectorViewProps) {
+  const menuItems = props.status === "ready" ? (props.menuItems ?? []) : [];
   return (
     <div className={styles.root}>
-      <PaneHeader title="Details">
+      <Pane.Header title="Details">
         {menuItems.length > 0 ? (
           <SpecMenu align="end" buildItems={() => menuItems}>
             <Menu.Trigger
@@ -335,100 +304,126 @@ export function SourceInspectorView({
           size="sm"
           variant="ghost"
           aria-label="Close Details"
-          onClick={onClose}
+          onClick={props.onClose}
         >
           <Cross />
         </Button>
-      </PaneHeader>
-      <PaneBody className={styles.scroll} {...scrollFade}>
-        {loading ? (
+      </Pane.Header>
+      <Pane.Body className={styles.scroll}>
+        {props.status === "loading" ? (
           <p className={styles.empty} role="status">
             Loading source details
           </p>
-        ) : missing || !source ? (
+        ) : props.status === "missing" ? (
           <p className={styles.empty} role="status">
             This source is unavailable.
           </p>
         ) : (
-          <>
-            <div className={styles.identity}>
-              <HeroAvatar
-                source={source}
-                avatarUrl={avatarUrl}
-                size={40}
-                badgeSize={16}
-              />
-              <div className={styles.copy}>
-                {onNicknameSave ? (
-                  <IdentityName
-                    nickname={nickname}
-                    placeholder={handle ?? "None"}
-                    onSave={onNicknameSave}
-                  />
-                ) : (
-                  <h2 className={styles.name}>
-                    {nickname || handle || "None"}
-                  </h2>
-                )}
-                {nickname && handle ? (
-                  <span className={styles.handle}>{handle}</span>
-                ) : null}
-              </div>
-            </div>
-            {onOpenDownloads ? (
+          <SourceInspectorDetails {...props} />
+        )}
+      </Pane.Body>
+    </div>
+  );
+}
+
+function SourceInspectorDetails({
+  handle,
+  source,
+  avatarUrl,
+  model,
+  syncStatus,
+  nickname = "",
+  properties = [],
+  onFetch,
+  onCancel,
+  onSignIn,
+  onOpenDownloads,
+  onNicknameSave,
+}: SourceInspectorDetailsProps) {
+  const primaryAction = model
+    ? sourcePrimaryAction({
+        model,
+        syncStatus,
+        onFetch,
+        onCancel,
+        onSignIn,
+      })
+    : undefined;
+  return (
+    <>
+      <div className={styles.identity}>
+        <HeroAvatar
+          source={source}
+          avatarUrl={avatarUrl}
+          size={40}
+          badgeSize={16}
+        />
+        <div className={styles.copy}>
+          {onNicknameSave ? (
+            <IdentityName
+              nickname={nickname}
+              placeholder={handle ?? "None"}
+              onSave={onNicknameSave}
+            />
+          ) : (
+            <h2 className={styles.name}>{nickname || handle || "None"}</h2>
+          )}
+          {nickname && handle ? (
+            <span className={styles.handle}>{handle}</span>
+          ) : null}
+        </div>
+      </div>
+      {onOpenDownloads ? (
+        <Button
+          size="xs"
+          variant="secondary"
+          className={styles["downloads-link"]}
+          onClick={onOpenDownloads}
+        >
+          <IconDownloadOutline18 />
+          View Downloads
+        </Button>
+      ) : null}
+      {properties.length > 0 ? (
+        <Section title="Properties">
+          <PropertyList.Root>
+            {properties.map((property) => (
+              <PropertyList.Row key={property.label}>
+                <PropertyList.Label>{property.label}</PropertyList.Label>
+                <PropertyList.Value>{property.value}</PropertyList.Value>
+              </PropertyList.Row>
+            ))}
+          </PropertyList.Root>
+        </Section>
+      ) : null}
+      {model ? (
+        <Section title="Activity">
+          <div className={styles.activity}>
+            <p
+              className={styles.detail}
+              data-tone={
+                model.tone === "err" || model.tone === "paused"
+                  ? model.tone
+                  : undefined
+              }
+            >
+              {activityDetail(model, syncStatus)}
+            </p>
+            <SourceProgress progress={syncStatus?.progress} />
+            {primaryAction ? (
               <Button
                 size="xs"
                 variant="secondary"
-                className={styles["downloads-link"]}
-                onClick={onOpenDownloads}
+                className={styles.primary}
+                onClick={primaryAction.onClick}
               >
-                <IconDownloadOutline18 />
-                View Downloads
+                {primaryAction.label}
               </Button>
             ) : null}
-            {properties.length > 0 ? (
-              <Section title="Properties">
-                <PropertyList.Root>
-                  {properties.map((property) => (
-                    <PropertyList.Row key={property.label}>
-                      <PropertyList.Label>{property.label}</PropertyList.Label>
-                      <PropertyList.Value>{property.value}</PropertyList.Value>
-                    </PropertyList.Row>
-                  ))}
-                </PropertyList.Root>
-              </Section>
-            ) : null}
-            {model ? (
-              <Section title="Activity">
-                <div className={styles.activity}>
-                  <p
-                    className={styles.detail}
-                    data-tone={
-                      model.tone === "err" || model.tone === "paused"
-                        ? model.tone
-                        : undefined
-                    }
-                  >
-                    {activityDetail(model, syncStatus)}
-                  </p>
-                  <SourceProgress progress={syncStatus?.progress} />
-                  {primaryAction ? (
-                    <Button
-                      size="xs"
-                      variant="secondary"
-                      className={styles.primary}
-                      onClick={primaryAction.onClick}
-                    >
-                      {primaryAction.label}
-                    </Button>
-                  ) : null}
-                </div>
-              </Section>
-            ) : null}
-          </>
-        )}
-      </PaneBody>
-    </div>
+          </div>
+        </Section>
+      ) : null}
+    </>
   );
 }
 

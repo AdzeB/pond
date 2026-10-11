@@ -1,5 +1,4 @@
 import { ContextMenu as Base } from "@base-ui/react/context-menu";
-import { Input as BaseInput } from "@base-ui/react/input";
 import {
   IconCaretRightFill12 as CaretRight,
   IconCheck2Fill12,
@@ -7,8 +6,8 @@ import {
 import { clsx as cn } from "clsx";
 import { Checkbox } from "../checkbox";
 import { Keyboard } from "../keyboard";
+import { Menu } from "../menu";
 import { type MenuItemSpec, renderMenuSpec } from "../menu/items";
-import { stopPageHotkeys } from "../stop-page-hotkeys";
 import styles from "./styles.module.css";
 
 function Root(props: Base.Root.Props) {
@@ -189,21 +188,6 @@ function SubmenuTrigger({ className, ...props }: Base.SubmenuTrigger.Props) {
   );
 }
 
-function Input({ className, onKeyDown, ...props }: BaseInput.Props) {
-  return (
-    <BaseInput
-      type="text"
-      spellCheck={false}
-      className={cn(styles.input, className)}
-      onKeyDown={(event) => {
-        onKeyDown?.(event);
-        stopPageHotkeys(event);
-      }}
-      {...props}
-    />
-  );
-}
-
 function Items({ items }: { items: MenuItemSpec[] }) {
   return (
     <>
@@ -251,6 +235,10 @@ export const ContextMenu = {
   CheckboxItemIndicator,
   SubmenuRoot,
   SubmenuTrigger,
-  Input,
+  /** Base UI's `ContextMenu.Root` renders `Menu.Root`, which reads the menu filter provider. */
+  FilterProvider: Menu.FilterProvider,
+  FilterList: Menu.FilterList,
+  Input: Menu.Input,
+  Empty: Menu.Empty,
   Items,
 };

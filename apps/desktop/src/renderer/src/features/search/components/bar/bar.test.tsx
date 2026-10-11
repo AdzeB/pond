@@ -9,7 +9,7 @@ import {
   setSearchInput,
   useFilterQuery,
   useSearchInput,
-} from "@/features/library/state/view-store";
+} from "@/features/library";
 import type { SearchComposerProps } from "./";
 import { SearchComposer } from "./";
 import { $writeSearchString } from "./lib/editor-state";

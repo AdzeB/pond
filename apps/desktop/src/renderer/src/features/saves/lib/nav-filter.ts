@@ -29,6 +29,7 @@ export function applyNavFilter<T extends Pick<Save, "id" | "tags">>(
   if (
     nav.kind === "all" ||
     nav.kind === "recents" ||
+    nav.kind === "recentlyAdded" ||
     nav.kind === "random" ||
     nav.kind === "trash" ||
     nav.kind === "downloads" ||

@@ -1,4 +1,4 @@
-import { IconMinusOutline18, IconPlusOutline18 } from "@pond/icons/outline/18";
+import { IconMinusOutline12, IconPlusOutline12 } from "@pond/icons/outline/12";
 import { isGroup, type Query } from "@pond/schema/filters/types";
 import { Button } from "@pond/ui";
 import { useId } from "react";
@@ -36,8 +36,8 @@ export function Group({
           label={`${path} Match`}
           width="content"
           items={[
-            { value: "or", label: "any" },
-            { value: "and", label: "all" },
+            { value: "or", label: "Any" },
+            { value: "and", label: "All" },
           ]}
           onChange={editor.setCombinator}
         />
@@ -56,11 +56,12 @@ export function Group({
         {onRemove ? (
           <Button
             icon
+            size="xs"
             variant="secondary"
             aria-label={`Remove ${path}`}
             onClick={onRemove}
           >
-            <IconMinusOutline18 />
+            <IconMinusOutline12 />
           </Button>
         ) : null}
         <Button variant="secondary" size="sm" onClick={editor.addGroup}>
@@ -68,36 +69,37 @@ export function Group({
         </Button>
         <Button
           icon
+          size="xs"
           variant="secondary"
           aria-label={`Add Rule to ${path}`}
           onClick={editor.addRule}
         >
-          <IconPlusOutline18 />
+          <IconPlusOutline12 />
         </Button>
       </div>
       <div className={styles.rules}>
-        {query.rules.map((rule, index) =>
-          isGroup(rule) ? (
-            <Group
-              key={rule.id}
-              query={rule}
-              choices={choices}
-              path={`${path} Group ${index + 1}`}
-              onChange={(next) => editor.updateRule(index, next)}
-              onRemove={() => editor.removeRule(index)}
-            />
-          ) : (
-            <Predicate
-              key={rule.id}
-              rule={rule}
-              index={index}
-              choices={choices}
-              onChange={(next) => editor.updateRule(index, next)}
-              onRemove={() => editor.removeRule(index)}
-              onInsert={() => editor.insertRule(index)}
-            />
-          ),
-        )}
+        {query.rules.map((rule, index) => (
+          <div key={rule.id} className={styles.rule}>
+            {isGroup(rule) ? (
+              <Group
+                query={rule}
+                choices={choices}
+                path={`${path} Group ${index + 1}`}
+                onChange={(next) => editor.updateRule(index, next)}
+                onRemove={() => editor.removeRule(index)}
+              />
+            ) : (
+              <Predicate
+                rule={rule}
+                index={index}
+                choices={choices}
+                onChange={(next) => editor.updateRule(index, next)}
+                onRemove={() => editor.removeRule(index)}
+                onInsert={() => editor.insertRule(index)}
+              />
+            )}
+          </div>
+        ))}
         {query.rules.length === 0 ? (
           <p className={styles["no-value"]}>
             All saves match. Add a rule to narrow the results.

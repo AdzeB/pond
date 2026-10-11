@@ -14,12 +14,16 @@ import {
   libraryFilename,
 } from "@shared/file-format";
 import { isAuxiliaryKind, THUMBNAIL_KIND } from "@shared/save-file-names";
+import type {
+  ImportFileFailure,
+  ManualSaveResult,
+} from "@shared/saves-import-contracts";
 import { and, eq } from "drizzle-orm";
 import mime from "mime-types";
 import { ulid } from "ulid";
 import { getDb } from "../db";
 import { writeSaveInfo } from "../lib/library";
-import { itemDir } from "../paths";
+import { saveDir } from "../paths";
 import { executeBatch, withMutationScope } from "./executor";
 import { extractFontMetadata, metadataFromOpenType } from "./font-metadata";
 import { extractImageMetadata, type ImageMetadata } from "./image-metadata";
@@ -51,8 +55,6 @@ export interface ManualSaveInput {
   width?: number;
   height?: number;
   rating?: number | null;
-  comments?: import("@pond/schema/db").ImageComment[];
-  videoNotes?: import("@pond/schema/db").VideoNote[];
   dominantColors?: string[];
   mediaType?: MediaType | null;
 }
@@ -61,13 +63,6 @@ export interface ManualSaveMemoryFile {
   bytes: Buffer;
   filename: string;
   mimeType: string;
-}
-
-export interface ManualSaveResult {
-  ok: boolean;
-  id?: string;
-  error?: string;
-  skipped?: boolean;
 }
 
 interface ReadableImport {
@@ -235,7 +230,7 @@ async function importManualSave(
         requestedFileCount === 0 ||
         (await importedFilesComplete(
           existing,
-          itemDir(existing.id),
+          saveDir(existing.id),
           requestedFileCount,
         ))
       )
@@ -246,8 +241,12 @@ async function importManualSave(
   }
 
   const note = input.note?.trim() || null;
+  const inspected = await inspectImportPaths(input.filePaths ?? []);
+  const failedFiles = inspected.failures.length
+    ? inspected.failures
+    : undefined;
   const readable = [
-    ...(await inspectImportPaths(input.filePaths ?? [])),
+    ...inspected.items,
     ...(await inspectMemoryFiles(input.memoryFiles ?? [])),
   ];
   const tags = normalizeTagList([
@@ -256,7 +255,7 @@ async function importManualSave(
   ]);
 
   if (requestedFileCount > 0 && readable.length === 0) {
-    return { ok: false, error: "no_readable_files", skipped: true };
+    return { ok: false, error: "no_readable_files", failedFiles };
   }
 
   const title =
@@ -316,8 +315,6 @@ async function importManualSave(
   if (input.width != null) insertValues.width = input.width;
   if (input.height != null) insertValues.height = input.height;
   if (input.rating != null) insertValues.rating = input.rating;
-  if (input.comments) insertValues.comments = input.comments;
-  if (input.videoNotes) insertValues.videoNotes = input.videoNotes;
   if (input.dominantColors) insertValues.dominantColors = input.dominantColors;
   const primaryMetadata = readable[0]?.metadata;
   if (primaryMetadata) Object.assign(insertValues, primaryMetadata);
@@ -393,14 +390,14 @@ async function importManualSave(
     );
     if (
       !completed ||
-      !(await importedFilesComplete(completed, itemDir(id), readable.length))
+      !(await importedFilesComplete(completed, saveDir(id), readable.length))
     ) {
       await persistSave(
         id,
         { status: "failed", ingestCompletedAt: null },
         { actorReason: "manual:import-incomplete" },
       );
-      return { ok: false, id, error: "incomplete_import" };
+      return { ok: false, error: "incomplete_import" };
     }
     const font = readable.find((item) => item.format.mediaType === "font");
     if (font) {
@@ -443,13 +440,15 @@ async function importManualSave(
     if (finalRow) await writeSaveInfo(finalRow);
   }
 
-  return { ok: true, id };
+  return { ok: true, id, failedFiles };
 }
 
-async function inspectImportPaths(
-  paths: readonly string[],
-): Promise<ReadableImport[]> {
+async function inspectImportPaths(paths: readonly string[]): Promise<{
+  items: ReadableImport[];
+  failures: ImportFileFailure[];
+}> {
   const out: ReadableImport[] = [];
+  const failures: ImportFileFailure[] = [];
   for (const path of paths) {
     try {
       const info = await stat(path);
@@ -478,9 +477,14 @@ async function inspectImportPaths(
       if (format.mediaType === "video" || format.mediaType === "audio")
         item.metadata = await extractMediaMetadata(path);
       out.push(item);
-    } catch {}
+    } catch (err) {
+      failures.push({
+        path,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
-  return out;
+  return { items: out, failures };
 }
 
 async function inspectMemoryFiles(
@@ -539,7 +543,7 @@ async function readFilePrefix(path: string, length: number): Promise<Buffer> {
 async function inspectCustomThumbnail(
   path: string,
 ): Promise<ReadableImport | null> {
-  const items = await inspectImportPaths([path]);
+  const { items } = await inspectImportPaths([path]);
   const item = items[0];
   return item?.format.mediaType === "image" ? item : null;
 }

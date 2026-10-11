@@ -43,6 +43,13 @@ async function click(host: HTMLElement, label: string): Promise<void> {
   await act(async () => labeledButton(host, label).click());
 }
 
+async function findToolbar(host: HTMLElement, label: string): Promise<void> {
+  await vi.waitFor(() => {
+    if (!host.querySelector(`[role="toolbar"][aria-label="${label}"]`))
+      throw new Error(`Missing ${label} toolbar`);
+  });
+}
+
 describe("SaveViewer", () => {
   let host: HTMLDivElement;
   let root: Root;
@@ -106,16 +113,12 @@ describe("SaveViewer", () => {
     expect(labeledButton(host, "Previous Slide").disabled).toBe(true);
 
     await click(host, "Next Slide");
-    expect(
-      host.querySelector('[role="toolbar"][aria-label="PDF"]'),
-    ).not.toBeNull();
+    await findToolbar(host, "PDF");
     expect(host.querySelectorAll("[data-viewer-root]")).toHaveLength(1);
     expect(host.querySelectorAll('[role="separator"]')).toHaveLength(1);
 
     await click(host, "Next Slide");
-    expect(
-      host.querySelector('[role="toolbar"][aria-label="Font"]'),
-    ).not.toBeNull();
+    await findToolbar(host, "Font");
     expect(labeledButton(host, "Next Slide").disabled).toBe(true);
     expect(host.querySelectorAll("[data-viewer-root]")).toHaveLength(1);
     expect(host.querySelectorAll('[role="separator"]')).toHaveLength(1);
@@ -132,14 +135,10 @@ describe("SaveViewer", () => {
 
     await act(async () => root.render(<SaveViewer save={save} />));
 
-    expect(
-      host.querySelector('[role="toolbar"][aria-label="PDF"]'),
-    ).not.toBeNull();
+    await findToolbar(host, "PDF");
     await click(host, "Next Slide");
     expect(host.querySelector('img[alt="Mixed viewer"]')).not.toBeNull();
     await click(host, "Next Slide");
-    expect(
-      host.querySelector('[role="toolbar"][aria-label="Font"]'),
-    ).not.toBeNull();
+    await findToolbar(host, "Font");
   });
 });

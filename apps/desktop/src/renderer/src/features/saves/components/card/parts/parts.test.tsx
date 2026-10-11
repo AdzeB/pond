@@ -20,7 +20,6 @@ const emptyOverlay: SaveCardOverlayModel = {
   type: null,
   source: null,
   fileCount: null,
-  hasNote: false,
 };
 
 describe("Save card source badge", () => {

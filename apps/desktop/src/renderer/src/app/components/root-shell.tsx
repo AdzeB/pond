@@ -13,14 +13,13 @@ import { OrganizationRenameDialogHost } from "@/features/library/components/orga
 import { AppShell } from "@/features/library/components/workspace-shell";
 import { enterFolder } from "@/features/library/operations/enter-folder";
 import { savedViews } from "@/features/library/state/saved-views";
-import { CombineImagesDialogHost } from "@/features/saves/components/combine-images-dialog";
 import { DuplicateImportReviewHost } from "@/features/saves/components/duplicate-import-review";
 import { SaveHotkeys } from "@/features/saves/effects/save-hotkeys";
 import { openSave, saveIdFromPath } from "@/features/saves/lib/save-nav";
 import { LocalizedSettings } from "@/features/settings/effects/localized-settings";
-import { settingsHref } from "@/features/settings/lib/open-settings";
 import { SourceFlowHost } from "@/features/sources/components/flow";
 import { getAppRouter } from "@/shared/lib/app-router";
+import { settingsHref } from "@/shared/lib/open-settings";
 
 const SettingsSidebar = lazy(() =>
   import("@/features/settings/components/sidebar").then((module) => ({
@@ -70,7 +69,6 @@ export function RootShell() {
       <AppHotkeys />
       <NewMenuDialogHost />
       <OrganizationRenameDialogHost />
-      <CombineImagesDialogHost />
       <DuplicateImportReviewHost />
       {isSettings ? <LocalizedSettings /> : null}
       <AppShell.Root

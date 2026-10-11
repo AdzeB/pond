@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { topLevelMenuLabels as labels } from "@/shared/test/menu-labels";
-import {
-  buildTagGroupMenuItems,
-  type TagGroupMenuActions,
-} from "./group-context-menu";
+import { buildTagGroupMenuItems, type TagGroupMenuActions } from ".";
 
 function actions(
   overrides: Partial<TagGroupMenuActions> = {},

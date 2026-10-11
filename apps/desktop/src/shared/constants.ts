@@ -13,12 +13,6 @@ export const KEYCHAIN_INGEST_TOKEN = "ingest-token";
 
 export const KEYCHAIN_AGENT_PREFIX = "agent";
 
-export const KEYCHAIN_DATABASE_GLOBAL = "database:global";
-
-export const KEYCHAIN_DATABASE_LIBRARY_PREFIX = "database:library";
-
-export const KEYCHAIN_LIBRARY_MASTER_KEY_PREFIX = "library:master";
-
 export const POND_PROTOCOL = "pond";
 
 export const IPC = {
@@ -56,7 +50,7 @@ export const IPC = {
   editRedoRequested: "pond:edit-redo-requested",
   shortcutAction: "pond:shortcut-action",
   menuAction: "pond:menu-action",
-  pondId: "pond:pond-id",
+  libraryId: "pond:library-id",
   menuRecents: "pond:menu-recents",
   menuOpenSave: "pond:menu-open-save",
   archiveNavigate: "pond:archive-navigate",
@@ -161,10 +155,6 @@ export type MenuActionId =
   | "library.new-smart-folder"
   | "library.new-smart-folder-group"
   | "library.new-note"
-  | "library.capture-screenshot"
-  | "capture.area"
-  | "capture.window"
-  | "capture.screen"
   | "library.new-tag"
   | "library.new-tag-group"
   | "library.import-files"

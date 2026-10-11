@@ -7,7 +7,7 @@ import type { QueryHandlerMap } from "./params";
 const descriptions = new Map<string, string>(
   Object.entries({
     "settings.getPrefs":
-      "Read current application preferences, including appearance, layout, shortcuts, download preferences, Agent provider/model selections, storage, and viewer settings. Contains no provider API keys.",
+      "Read current application preferences, including appearance, layout, shortcuts, download preferences, Assistant provider/model selections, storage, and viewer settings. Contains no provider API keys.",
     "settings.setPrefs":
       "Patch application preferences. Read settings.getPrefs and settings.preferenceSchema first, use the same nested field names, and send only the fields the user requested. Provider API keys are managed through the native Integrations screen.",
     "agent.keys":
@@ -66,7 +66,7 @@ export function agentOperationsForQueries(
   const names = z.enum(Object.keys(queryOperationAccess));
   return Object.keys(registry).flatMap((key) => {
     const name = names.parse(key);
-    // SAFETY: the exhaustive QueryName record above is the source of this validated name.
+    /** SAFETY: the exhaustive QueryName record above is the source of this validated name. */
     const queryName = name as QueryName;
     const access = queryOperationAccess[queryName];
     if (access === "hidden") return [];

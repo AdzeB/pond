@@ -2,8 +2,7 @@ import { Input } from "@pond/ui";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
-import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
+import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { formatBytes } from "@/shared/lib/format";
 import { archiveSafety } from "./archive";
 import styles from "./styles.module.css";
@@ -43,7 +42,6 @@ export function ArchiveFileViewer({
   const [entries, setEntries] = useState<ArchiveEntry[] | null>(null);
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const scrollFade = useScrollFade<HTMLUListElement>();
 
   useEffect(() => {
     if (!/\.(zip|lottie|livp)$/i.test(path)) {
@@ -140,7 +138,7 @@ export function ArchiveFileViewer({
         <div className={styles.status}>Reading archive directory</div>
       ) : null}
       {entries ? (
-        <ul className={styles.list} {...scrollFade}>
+        <ul className={styles.list}>
           {filtered.map((entry) => (
             <li key={entry.name} className={styles.row}>
               <span>{entry.name}</span>

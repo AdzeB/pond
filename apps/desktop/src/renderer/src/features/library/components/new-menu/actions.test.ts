@@ -5,13 +5,19 @@ import {
   closeDuplicateReview,
   duplicateReview,
 } from "@/features/library/state/duplicate-review";
-import { selection } from "@/features/saves/state/selection";
-import { libraryViewContext } from "@/features/saves/state/view-context";
+import {
+  closeOrganizationReview,
+  organizationReview,
+} from "@/features/library/state/organization-review";
+import { libraryViewContext } from "@/features/saves";
+import { selection } from "@/features/saves/navigation";
 import { createNewActions, type NewActionServices } from "./actions";
 
-const notify = vi.fn<NewActionServices["notify"]>();
+let notificationSequence = 0;
+const notify = vi.fn<NewActionServices["notify"]>(
+  (options) => `${options.id}:test-${++notificationSequence}`,
+);
 const updateNotification = vi.fn<NewActionServices["updateNotification"]>();
-const openSave = vi.fn<NewActionServices["openSave"]>();
 const folders = { refresh: vi.fn(async () => {}) };
 const startEditingFolder = vi.fn<NewActionServices["startEditingFolder"]>();
 const openTagCreation = vi.fn<NewActionServices["openTagCreation"]>();
@@ -29,10 +35,10 @@ const onEagleImportProgress = vi.fn<NewActionServices["onEagleImportProgress"]>(
   },
 );
 const {
-  captureScreenshot,
   createNote,
   createBlankDocument,
   findDuplicates,
+  reviewOrganization,
   importClipboard,
   importEagle,
   importEaglePackage,
@@ -50,7 +56,6 @@ const {
 } = createNewActions({
   notify,
   updateNotification,
-  openSave,
   refreshFolders: folders.refresh,
   startEditingFolder,
   openTagCreation,
@@ -66,6 +71,7 @@ const query = vi.fn();
 describe("new menu actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    notificationSequence = 0;
     query.mockReset();
     currentFolderId.mockReturnValue(null);
     eagleImportProgress = null;
@@ -74,6 +80,7 @@ describe("new menu actions", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     closeDuplicateReview();
+    closeOrganizationReview();
     selection.clear();
     libraryViewContext.set([], "library");
   });
@@ -105,7 +112,7 @@ describe("new menu actions", () => {
     query
       .mockResolvedValueOnce({ paths: ["/tmp/unsupported"] })
       .mockResolvedValueOnce({ candidates: [] })
-      .mockResolvedValueOnce({ ok: false });
+      .mockResolvedValueOnce({ ok: false, error: "no_files" });
     await expect(importPaths("files")).rejects.toThrow(
       "No files were imported",
     );
@@ -113,7 +120,7 @@ describe("new menu actions", () => {
   });
 
   it("reports an empty clipboard", async () => {
-    query.mockResolvedValue({ ok: false, ids: [] });
+    query.mockResolvedValue({ ok: false, error: "no_files" });
     await expect(importClipboard()).rejects.toThrow(
       "Copy an image or files first",
     );
@@ -141,7 +148,7 @@ describe("new menu actions", () => {
   it("keeps only failed links for retry, including rejected queries", async () => {
     query
       .mockResolvedValueOnce({ ok: true, id: "one" })
-      .mockResolvedValueOnce({ ok: false })
+      .mockResolvedValueOnce({ ok: false, error: "unsupported_url" })
       .mockRejectedValueOnce(new Error("offline"));
     expect(
       await importLinks("https://one.test https://two.test https://three.test"),
@@ -149,10 +156,15 @@ describe("new menu actions", () => {
     expect(notify).toHaveBeenCalledWith(
       expect.objectContaining({ title: "Downloading" }),
     );
-    expect(openSave).toHaveBeenCalledWith("one");
   });
 
-  it("opens a single imported link and not a batch", async () => {
+  it("leaves added links in the library without selecting them", async () => {
+    query.mockResolvedValueOnce({ ok: true, id: "first" });
+    await importLinks("https://one.test");
+    expect(selectSave).not.toHaveBeenCalled();
+  });
+
+  it("reports a batch of links as one download", async () => {
     query
       .mockResolvedValueOnce({ ok: true, id: "first" })
       .mockResolvedValueOnce({ ok: true, id: "second" });
@@ -160,7 +172,6 @@ describe("new menu actions", () => {
     expect(notify).toHaveBeenCalledWith(
       expect.objectContaining({ title: "Downloading 2 links" }),
     );
-    expect(openSave).not.toHaveBeenCalled();
   });
 
   it("creates an untitled note in the library without opening it", async () => {
@@ -171,28 +182,8 @@ describe("new menu actions", () => {
       note: null,
       mediaType: "text",
     });
-    expect(openSave).not.toHaveBeenCalled();
     expect(selectSave).toHaveBeenCalledWith("note-id");
     expect(notify).not.toHaveBeenCalled();
-  });
-
-  it("captures the selected desktop source into the current folder", async () => {
-    currentFolderId.mockReturnValue("folder-1");
-    query.mockResolvedValue({ ok: true, id: "screenshot-id" });
-    await captureScreenshot("window:8:0");
-    expect(query).toHaveBeenCalledWith("saves.captureDesktopScreenshot", {
-      sourceId: "window:8:0",
-      folderId: "folder-1",
-    });
-    expect(selectSave).toHaveBeenCalledWith("screenshot-id");
-  });
-
-  it("reports when a selected desktop source disappears", async () => {
-    query.mockResolvedValue({ ok: false, error: "source_not_found" });
-    await expect(captureScreenshot("window:8:0")).rejects.toThrow(
-      "no longer available",
-    );
-    expect(selectSave).not.toHaveBeenCalled();
   });
 
   it("assigns a new note to the current folder", async () => {
@@ -208,7 +199,7 @@ describe("new menu actions", () => {
   });
 
   it("does not select a failed note", async () => {
-    query.mockResolvedValue({ ok: false });
+    query.mockResolvedValue({ ok: false, error: "empty_input" });
     await expect(createNote()).rejects.toThrow("Couldn't save");
     expect(selectSave).not.toHaveBeenCalled();
   });
@@ -247,6 +238,12 @@ describe("new menu actions", () => {
       expect.objectContaining({ title: "Select Saves first" }),
     );
     expect(duplicateReview.state).toBeNull();
+  });
+
+  it("reviews organization for the current selection", () => {
+    selection.set(["one", "two", "three"]);
+    reviewOrganization("selected");
+    expect(organizationReview.state?.ids).toEqual(["one", "two", "three"]);
   });
 
   it("creates an untitled folder and starts inline naming", async () => {
@@ -316,7 +313,7 @@ describe("new menu actions", () => {
     );
     expect(unsubscribeEagleImportProgress).toHaveBeenCalledOnce();
     expect(folders.refresh).toHaveBeenCalledOnce();
-    expect(notify).toHaveBeenLastCalledWith(
+    expect(updateNotification).toHaveBeenLastCalledWith(
       expect.objectContaining({
         title: "Imported 2 items",
         description: "3 skipped, 1 failed",
@@ -334,18 +331,17 @@ describe("new menu actions", () => {
         error: "not_eagle_library",
       });
     await runNewAction(importEagle);
-    expect(notify).toHaveBeenLastCalledWith(
+    expect(updateNotification).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        id: "new-import",
-        title: "Couldn't complete action",
-        description: "That folder doesn't look like an Eagle library.",
+        id: "new-import:test-1",
+        title: "That folder doesn't look like an Eagle library",
         timeout: 5000,
       }),
     );
   });
 
   it("does not import or notify when a Pond package picker is cancelled", async () => {
-    query.mockResolvedValue({ ok: false, error: "canceled" });
+    query.mockResolvedValue({ ok: false, reason: "cancelled" });
     await importPondPackage();
     expect(query).toHaveBeenCalledExactlyOnceWith("saves.importPackage", {});
     expect(notify).not.toHaveBeenCalled();
@@ -384,7 +380,7 @@ describe("new menu actions", () => {
     query.mockResolvedValue({ updated: 3, total: 1200 });
     await rescanLibrary();
     expect(query).toHaveBeenCalledExactlyOnceWith("library.rescan", {});
-    expect(notify).toHaveBeenLastCalledWith(
+    expect(updateNotification).toHaveBeenLastCalledWith(
       expect.objectContaining({ title: "Updated 3 of 1200 saves" }),
     );
   });
@@ -392,7 +388,7 @@ describe("new menu actions", () => {
   it("says the library is up to date when rescan changes nothing", async () => {
     query.mockResolvedValue({ updated: 0, total: 1200 });
     await rescanLibrary();
-    expect(notify).toHaveBeenLastCalledWith(
+    expect(updateNotification).toHaveBeenLastCalledWith(
       expect.objectContaining({ title: "Library is up to date" }),
     );
   });
@@ -409,7 +405,7 @@ describe("new menu actions", () => {
       "library.verifyIntegrity",
       {},
     );
-    expect(notify).toHaveBeenLastCalledWith(
+    expect(updateNotification).toHaveBeenLastCalledWith(
       expect.objectContaining({ title: "Library looks healthy" }),
     );
   });
@@ -422,7 +418,7 @@ describe("new menu actions", () => {
       errors: {},
     });
     await verifyIntegrity();
-    expect(notify).toHaveBeenLastCalledWith(
+    expect(updateNotification).toHaveBeenLastCalledWith(
       expect.objectContaining({
         title: "2 saves are missing from disk. 1 file isn't in the index",
         description: "Reveal the Library in Finder to check, or rescan.",
@@ -431,9 +427,17 @@ describe("new menu actions", () => {
   });
 
   it("surfaces a failed integrity check", async () => {
-    query.mockResolvedValue({ ok: false, reason: "internal_error" });
-    await expect(verifyIntegrity()).rejects.toThrow(
-      "Couldn't verify the library. Try again.",
+    query.mockResolvedValue({
+      ok: false,
+      error: "Something went wrong. Try again.",
+    });
+    await verifyIntegrity();
+    expect(updateNotification).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        title: "Couldn't verify the library",
+        description: "Something went wrong. Try again.",
+        timeout: 5000,
+      }),
     );
   });
 });

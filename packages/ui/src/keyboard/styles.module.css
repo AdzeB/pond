@@ -17,7 +17,7 @@
 }
 
 .separator {
-  font-size: 10px;
+  font-size: var(--ds-text-xxs);
   color: var(--ds-gray-9);
   text-transform: lowercase;
 }
@@ -30,7 +30,7 @@
   min-width: 18px;
   height: 18px;
   padding: 0 4px;
-  font-size: 10px;
+  font-size: var(--ds-text-xxs);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   line-height: 1;

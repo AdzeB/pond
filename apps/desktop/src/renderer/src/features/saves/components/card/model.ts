@@ -20,11 +20,18 @@ import {
 } from "@/features/saves/state/aspect";
 import {
   type DisplayPrefs,
+  type ItemInfo,
+  type ItemInfoField,
   useDisplayPrefs,
+  useItemInfo,
 } from "@/features/saves/state/display-prefs";
+import {
+  formatListDimension,
+  formatListRating,
+} from "@/features/saves/state/list-columns";
 import type { Save, SaveFile } from "@/features/saves/types";
-import { getSourceIcon, getSourceLogo } from "@/features/sources/lib/registry";
-import { formatAbsolute } from "@/shared/lib/format";
+import { getSourceIcon, getSourceLogo } from "@/features/sources";
+import { formatAbsolute, formatBytes } from "@/shared/lib/format";
 
 type SourceIcon = IconComponent;
 type TypeKind = ReturnType<typeof deriveTypeKind>;
@@ -38,7 +45,6 @@ export interface SaveCardOverlayModel {
     icon: SourceIcon | null;
   } | null;
   fileCount: number | null;
-  hasNote: boolean;
 }
 
 export interface SaveCardModel {
@@ -53,11 +59,34 @@ export interface SaveCardModel {
   overlay: SaveCardOverlayModel;
 }
 
+function itemInfoLine(
+  save: Save,
+  field: ItemInfoField,
+  primary: SaveFile | null,
+): string | null {
+  if (field === "dimensions") {
+    return formatListDimension(
+      save.width ?? primary?.width,
+      save.height ?? primary?.height,
+    );
+  }
+  if (field === "fileSize") {
+    const bytes = save.fileSize ?? primary?.size;
+    if (bytes == null || bytes <= 0) return "—";
+    return formatBytes(bytes);
+  }
+  if (field === "tags") return save.tags.join(", ") || "—";
+  if (field === "rating") return formatListRating(save.rating);
+  if (field === "modified") return formatAbsolute(save.createdAt) || null;
+  return formatAbsolute(save.savedAt) || null;
+}
+
 export function buildSaveCardModel(
   save: Save,
   pickOptions: MediaPickOptions,
   display: DisplayPrefs,
   aspect: number,
+  itemInfo?: ItemInfo,
 ): SaveCardModel {
   const unit = pickCardUnit(save, pickOptions);
   const primary = pickPrimaryFile(save, pickOptions);
@@ -80,7 +109,13 @@ export function buildSaveCardModel(
     aspect:
       previewAspect === 1 && typeKind === "doc" ? PAPER_ASPECT : previewAspect,
     title: display.name ? displayTitleForSave(save) : null,
-    time: display.date ? formatAbsolute(save.savedAt) : null,
+    time: itemInfo
+      ? itemInfo.visible
+        ? itemInfoLine(save, itemInfo.field, primary)
+        : null
+      : display.date
+        ? formatAbsolute(save.savedAt) || null
+        : null,
     overlay: {
       type: typeLabel ? { label: typeLabel, kind: typeKind } : null,
       source: sourceLabel
@@ -93,7 +128,6 @@ export function buildSaveCardModel(
           }
         : null,
       fileCount: fileCount > 1 ? fileCount : null,
-      hasNote: Boolean(save.notes?.trim()),
     },
   };
 }
@@ -104,6 +138,7 @@ export function useSaveCardModel(
 ): SaveCardModel {
   const pickOptions = useMediaPickOptions();
   const display = useDisplayPrefs();
+  const itemInfo = useItemInfo();
   const aspectVersion = useAspectVersion(observeAspect);
 
   return useMemo(() => {
@@ -113,6 +148,7 @@ export function useSaveCardModel(
       pickOptions,
       display,
       aspectFor(save, pickOptions),
+      itemInfo,
     );
-  }, [aspectVersion, display, pickOptions, save]);
+  }, [aspectVersion, display, itemInfo, pickOptions, save]);
 }

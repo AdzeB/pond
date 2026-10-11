@@ -1,95 +1,104 @@
-.body {
+.form {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  height: 108px;
+  padding-top: 8px;
 }
 
-.empty {
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--ds-text-lg);
+  font-weight: var(--ds-weight-xl);
+  line-height: 24px;
+  color: var(--ds-gray-12);
+}
+
+.description {
+  max-width: 350px;
+  margin: 0 auto;
+  font-size: var(--ds-text-sm);
+  line-height: 20px;
+  color: var(--ds-gray-10);
+}
+
+.field {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  align-items: center;
-  color: var(--ds-gray-8);
+  margin-top: 20px;
 }
 
-.hint {
-  padding-inline: 4px;
+.message {
+  padding-inline: 2px;
   margin: 0;
-  font-size: 13px;
-  font-weight: 400;
-  line-height: 22px;
-  color: var(--ds-gray-10);
-  text-align: center;
-  white-space: pre-line;
+  font-size: var(--ds-text-sm);
+  line-height: 18px;
+  color: var(--ds-red-11);
 }
 
-.chip {
-  align-self: center;
-  max-width: 100%;
-  padding: 5px 12px;
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 12px;
+.details {
+  padding-top: 18px;
+  margin-top: 20px;
+  border-top: 1px solid var(--ds-gray-4);
+}
+
+.heading {
+  margin: 0 0 10px;
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-lg);
-  white-space: nowrap;
-  border-radius: var(--ds-radius-full);
+  line-height: 18px;
+  color: var(--ds-gray-12);
 }
 
-.error {
-  color: var(--ds-orange-11);
-  background: var(--ds-orange-3);
-}
-
-.options {
+.list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  max-height: 280px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  gap: 9px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
 }
 
-.skeletons {
+.kind {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.skeletonRow {
-  display: flex;
-  gap: 10px;
+  gap: 9px;
   align-items: center;
-  padding: 10px 8px;
+  font-size: var(--ds-text-sm);
+  line-height: 18px;
+  color: var(--ds-gray-11);
 }
 
-.skeletonAvatar {
-  flex: none;
-  width: 36px;
-  height: 36px;
-  background: var(--ds-gray-3);
-  border-radius: 50%;
+.check {
+  flex: 0 0 auto;
+  color: var(--ds-accent-9);
 }
 
-.skeletonText {
+.example {
+  margin-left: auto;
+  color: var(--ds-gray-9);
+}
+
+.notice {
   display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 6px;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 10px 10px 14px;
+  margin-top: 18px;
+  background: var(--ds-gray-2);
+  border: var(--ds-border-width) solid var(--ds-gray-a4);
+  border-radius: var(--ds-radius-lg);
 }
 
-.skeletonName,
-.skeletonHandle {
-  height: 12px;
-  background: var(--ds-gray-3);
-  border-radius: var(--ds-radius-sm);
-}
-
-.skeletonName {
-  width: 55%;
-}
-
-.skeletonHandle {
-  width: 38%;
+.text {
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  line-height: 18px;
+  color: var(--ds-gray-11);
 }

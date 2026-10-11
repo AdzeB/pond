@@ -26,7 +26,7 @@ function stage(next: HarvesterWindowLocation): void {
   };
 }
 
-export function harvesterWindowOwnsSender(id: number): boolean {
+function harvesterWindowOwnsSender(id: number): boolean {
   return harvesterWindow?.webContents.id === id;
 }
 
@@ -104,16 +104,21 @@ async function createHarvesterWindow(): Promise<void> {
 }
 
 export function registerHarvesterWindowIpc(): void {
-  safeHandle(HARVESTER_WINDOW_IPC.open, async (_event, input: unknown) => {
-    await openHarvesterWindow(HarvesterWindowLocationSchema.parse(input ?? {}));
-  });
+  safeHandle(
+    HARVESTER_WINDOW_IPC.open,
+    async (_event, input?: HarvesterWindowLocation) => {
+      await openHarvesterWindow(
+        HarvesterWindowLocationSchema.parse(input ?? {}),
+      );
+    },
+  );
   safeHandle(HARVESTER_WINDOW_IPC.ready, (event) => {
     if (!harvesterWindowOwnsSender(event.sender.id))
       throw new Error("Not a Harvester window");
     delivered = true;
     return location;
   });
-  safeHandle(HARVESTER_WINDOW_IPC.ack, (event, nonce: unknown) => {
+  safeHandle(HARVESTER_WINDOW_IPC.ack, (event, nonce: number) => {
     if (!harvesterWindowOwnsSender(event.sender.id))
       throw new Error("Not a Harvester window");
     if (nonce !== location.intentNonce) return;

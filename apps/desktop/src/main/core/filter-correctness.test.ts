@@ -33,8 +33,6 @@ const examples: SaveLike[] = [
     width: 2100,
     height: 900,
     sensitiveScore: 0.91,
-    comments: [{ text: " Nice layout " }],
-    videoNotes: [{ text: "Bright opening" }],
     dominantColors: ["#0000ff"],
   },
   {
@@ -47,7 +45,6 @@ const examples: SaveLike[] = [
     width: 1600,
     height: 900,
     sensitiveScore: 0.55,
-    comments: [{ text: "   " }],
   },
   {
     id: "none",
@@ -63,7 +60,7 @@ const examples: SaveLike[] = [
 
 function fixture() {
   const db = new Database(":memory:");
-  db.exec(`CREATE TABLE saves (id TEXT, title TEXT, tags TEXT, comments TEXT, video_notes TEXT, width INTEGER, height INTEGER, dominant_colors TEXT, sensitive_score REAL, files TEXT);
+  db.exec(`CREATE TABLE saves (id TEXT, title TEXT, tags TEXT, width INTEGER, height INTEGER, dominant_colors TEXT, sensitive_score REAL, files TEXT);
     CREATE TABLE folders (id TEXT PRIMARY KEY, name TEXT);
     CREATE TABLE folder_metadata (folder_id TEXT PRIMARY KEY, description TEXT);
     CREATE TABLE save_folders (save_id TEXT, folder_id TEXT);
@@ -80,12 +77,10 @@ function fixture() {
   db.prepare("INSERT INTO folders VALUES (?, ?)").run("FolderA", "Folder A");
   db.prepare("INSERT INTO folders VALUES (?, ?)").run("FolderB", "Folder B");
   for (const save of examples) {
-    db.prepare("INSERT INTO saves VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
+    db.prepare("INSERT INTO saves VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run(
       save.id,
       save.title,
       JSON.stringify(save.tags),
-      JSON.stringify(save.comments ?? []),
-      JSON.stringify(save.videoNotes ?? []),
       save.width,
       save.height,
       JSON.stringify(save.dominantColors ?? []),
@@ -148,20 +143,6 @@ describe.skipIf(!nativeSqliteAvailable())("filter engine parity", () => {
     {
       combinator: "and",
       rules: [{ field: "folder", operator: "exact", value: [] }],
-    },
-    {
-      combinator: "and",
-      rules: [
-        { field: "comment", operator: "contains", value: "bright opening" },
-      ],
-    },
-    {
-      combinator: "and",
-      rules: [{ field: "comment", operator: "contains", value: "text" }],
-    },
-    {
-      combinator: "and",
-      rules: [{ field: "comment", operator: "exists", value: false }],
     },
     {
       combinator: "and",

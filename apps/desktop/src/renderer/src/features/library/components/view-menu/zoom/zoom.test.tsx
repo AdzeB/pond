@@ -5,7 +5,7 @@ import {
   getViewState,
   restoreDefaults,
 } from "@/features/library/state/view-store";
-import { ZoomSection } from "./zoom";
+import { ZoomSection } from ".";
 
 describe("zoom section", () => {
   let root: Root;

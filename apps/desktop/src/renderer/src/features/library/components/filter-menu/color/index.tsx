@@ -4,7 +4,7 @@ import {
   readColorMatch,
 } from "@pond/schema/filters/color";
 import type { Predicate } from "@pond/schema/filters/types";
-import { Button, Chip, ColorPicker, Input, Slider } from "@pond/ui";
+import { Button, Chip, ColorField, Input, Slider } from "@pond/ui";
 import { useState } from "react";
 import { z } from "zod";
 import { stopMenuKeys } from "../menu-keys";
@@ -42,22 +42,26 @@ export function ColorFilter({
       aria-label="Color Filter"
       onKeyDown={stopMenuKeys}
     >
-      <ColorPicker.Root value={hex} ariaLabel="Filter Color" onChange={apply}>
+      <ColorField.PickerRoot
+        value={hex}
+        ariaLabel="Filter Color"
+        onChange={apply}
+      >
         <div className={styles.picker}>
-          <ColorPicker.Area
+          <ColorField.Area
             width={150}
             height={150}
             className={styles.area}
-            thumbClassName={styles.areaThumb}
+            thumbClassName={styles["area-thumb"]}
           />
-          <ColorPicker.Hue
+          <ColorField.Hue
             width={13}
             height={150}
             className={styles.hue}
-            thumbClassName={styles.hueThumb}
+            thumbClassName={styles["hue-thumb"]}
           />
         </div>
-      </ColorPicker.Root>
+      </ColorField.PickerRoot>
       <fieldset className={styles.palette} aria-label="Preset Colors">
         <Button
           icon
@@ -119,7 +123,7 @@ export function ColorFilter({
               if (next) apply(next.hex);
             }}
           />
-          <span className={styles.nativePicker}>
+          <span className={styles["native-picker"]}>
             <Chip.Swatch />
             <input
               type="color"
@@ -144,11 +148,11 @@ export function ColorFilter({
           if (next.success) apply(hex, 150 - next.data);
         }}
       >
-        <Slider.Label className={styles.rangeLabel}>Accuracy</Slider.Label>
+        <Slider.Label className={styles["range-label"]}>Accuracy</Slider.Label>
         <Slider.Control className={styles.control}>
           <Slider.Track className={styles.track}>
             <Slider.Thumb
-              className={styles.rangeThumb}
+              className={styles["range-thumb"]}
               aria-label="Color Accuracy"
             />
           </Slider.Track>

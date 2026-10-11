@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { notify, toastManager, updateNotification } from "@/shared/lib/toast";
-import { ToastHost } from "./toast-host";
+import { ToastHost } from ".";
 
 let root: Root;
 let host: HTMLDivElement;
@@ -32,11 +32,34 @@ it("renders toasts at the app root", async () => {
   expect(host.contains(viewport)).toBe(false);
 });
 
+it("keeps repeated notifications as unique toast instances", async () => {
+  await act(async () => root.render(<ToastHost />));
+
+  const ids: string[] = [];
+  await act(async () => {
+    for (let index = 0; index < 4; index += 1) {
+      ids.push(
+        notify({
+          id: "copy-media",
+          title: "Image copied to clipboard",
+          timeout: 0,
+        }),
+      );
+    }
+  });
+
+  const viewport = document.body.querySelector("[data-slot='toasts']");
+  expect(new Set(ids).size).toBe(4);
+  expect(viewport?.querySelectorAll("[role='dialog']")).toHaveLength(4);
+  expect(viewport?.querySelectorAll("[data-limited]")).toHaveLength(0);
+});
+
 it("renders determinate toast progress", async () => {
   await act(async () => root.render(<ToastHost />));
 
+  let notificationId = "";
   await act(async () => {
-    notify({
+    notificationId = notify({
       id: "import",
       title: "Importing Eagle library",
       description: "0 of 10 items",
@@ -51,7 +74,7 @@ it("renders determinate toast progress", async () => {
 
   await act(async () => {
     updateNotification({
-      id: "import",
+      id: notificationId,
       title: "Importing Eagle library",
       description: "6 of 10 items",
       progress: {

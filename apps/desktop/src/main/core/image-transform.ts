@@ -10,7 +10,7 @@ import { canDestructivelyEditImage } from "@shared/file-format";
 import { eq } from "drizzle-orm";
 import sharp, { type OutputInfo } from "sharp";
 import { getDb } from "../db";
-import { itemFile } from "../paths";
+import { saveFile } from "../paths";
 import { executeTransaction } from "./executor";
 import { readLibraryMedia } from "./storage/library-media-storage";
 import { recordForUndo } from "./undo";
@@ -83,10 +83,10 @@ export async function applyImageTransformToFile(
   const file = save.files[input.fileIndex];
   if (!file) throw new Error("The image no longer exists.");
   if (!canDestructivelyEditImage(file.path)) {
-    throw new Error("This image format can’t be edited in place.");
+    throw new Error("This image format can't be edited in place.");
   }
 
-  const source = await readLibraryMedia(itemFile(input.id, file.path));
+  const source = await readLibraryMedia(saveFile(input.id, file.path));
   const { bytes, info } = await transformImageBytes(source, input);
   const files = [...save.files];
   files[input.fileIndex] = transformedFile(file, bytes, info);

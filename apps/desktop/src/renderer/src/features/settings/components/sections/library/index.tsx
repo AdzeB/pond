@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import defaultAppIcon from "@/generated/app-icon-previews/aqua.png";
+import { errorCopy } from "@/shared/lib/error-copy";
 import styles from "./styles.module.css";
 
 const LibraryInfoSchema = z.object({
@@ -36,8 +37,7 @@ export function LibrarySettings() {
   const openRecent = useMutation({
     mutationFn: async (path: string) => {
       const result = await window.pond.query("library.switchTo", { path });
-      if (!result.ok)
-        throw new Error(result.reason || "Couldn't open library.");
+      if (!result.ok) throw new Error(result.error ?? "Couldn't open library.");
     },
   });
 
@@ -116,7 +116,7 @@ function LibraryIdentitySettings({ info }: { info?: LibraryInfo }) {
       icon: nextLogo,
     });
     if (!result.ok) {
-      throw new Error(result.reason || "Couldn’t update the logo.");
+      throw new Error(result.error);
     }
     setLogo(nextLogo);
     await refreshIdentity();
@@ -127,16 +127,14 @@ function LibraryIdentitySettings({ info }: { info?: LibraryInfo }) {
     setLogoError(null);
     try {
       const result = await window.pond.query("library.identity.pickIcon", {});
-      if (!result.ok || !result.icon) {
+      if (!result.ok) {
         if (result.reason !== "cancelled")
           setLogoError("Choose a supported image.");
         return;
       }
       await updateLogo(result.icon);
     } catch (error) {
-      setLogoError(
-        error instanceof Error ? error.message : "Couldn’t choose the logo.",
-      );
+      setLogoError(errorCopy(error, "Couldn't choose the logo. Try again."));
     } finally {
       setLogoBusy(false);
     }
@@ -148,9 +146,7 @@ function LibraryIdentitySettings({ info }: { info?: LibraryInfo }) {
     try {
       await updateLogo(null);
     } catch (error) {
-      setLogoError(
-        error instanceof Error ? error.message : "Couldn’t reset the logo.",
-      );
+      setLogoError(errorCopy(error, "Couldn't reset the logo. Try again."));
     } finally {
       setLogoBusy(false);
     }
@@ -180,15 +176,13 @@ function LibraryIdentitySettings({ info }: { info?: LibraryInfo }) {
               name: nextName,
             });
       if (!result.ok) {
-        setNameError(result.reason || "Couldn’t rename the library.");
+        setNameError(result.error ?? "Couldn't rename the library. Try again.");
         return;
       }
       setName(nextName);
       await refreshIdentity();
     } catch (error) {
-      setNameError(
-        error instanceof Error ? error.message : "Couldn’t rename the library.",
-      );
+      setNameError(errorCopy(error, "Couldn't rename the library. Try again."));
     } finally {
       setNameBusy(false);
     }

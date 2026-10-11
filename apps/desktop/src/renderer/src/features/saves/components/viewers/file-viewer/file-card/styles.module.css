@@ -1,4 +1,4 @@
-.fileCard {
+.card {
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -30,7 +30,7 @@
   word-break: break-word;
 }
 
-.fileMark {
+.mark {
   display: grid;
   place-items: end center;
   width: 104px;

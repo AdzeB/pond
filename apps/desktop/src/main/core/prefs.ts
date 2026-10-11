@@ -15,10 +15,9 @@ import { z } from "zod";
 import { getGlobalDb } from "../db";
 import { createMemoCache } from "../lib/memo-cache";
 import { prepareGlobalShortcuts } from "./global-shortcuts";
-import { prepareLegacyLibraryRead } from "./legacy-encryption/library-access";
 import {
-  currentPondId,
-  isUnboundPondId,
+  currentLibraryId,
+  isUnboundLibraryId,
   mergeAppSlice,
   mergePondSlice,
   mergePrefs,
@@ -32,7 +31,7 @@ import {
 } from "./prefs-scope";
 
 interface SettingsCache {
-  pondId: string;
+  libraryId: string;
   prefs: Prefs;
   videoDownload: VideoDownloadSettings;
   imageDownload: ImageDownloadSettings;
@@ -53,8 +52,7 @@ export function invalidatePrefs(): void {
 }
 
 async function fetchSettings(): Promise<SettingsCache> {
-  await prepareLegacyLibraryRead();
-  const pondId = currentPondId();
+  const libraryId = currentLibraryId();
   const db = await getGlobalDb();
   const rows = await db
     .select({
@@ -69,9 +67,9 @@ async function fetchSettings(): Promise<SettingsCache> {
   if (!isSameStored(row?.prefs, stored)) {
     await persistStoredPrefs(stored);
   }
-  const pond = await resolvePondSlice(stored, pondId);
+  const pond = await resolvePondSlice(stored, libraryId);
   return {
-    pondId,
+    libraryId,
     prefs: mergePrefs(stored.app, pond),
     videoDownload: normalizeVideo(row?.videoDownload ?? DEFAULT_VIDEO_DOWNLOAD),
     imageDownload: normalizeImage(row?.imageDownload ?? DEFAULT_IMAGE_DOWNLOAD),
@@ -80,15 +78,15 @@ async function fetchSettings(): Promise<SettingsCache> {
 
 async function resolvePondSlice(
   stored: StoredPrefs,
-  pondId: string,
+  libraryId: string,
 ): Promise<DeepPartial<PondPrefs>> {
-  if (isUnboundPondId(pondId)) return stored.pending ?? {};
+  if (isUnboundLibraryId(libraryId)) return stored.pending ?? {};
 
   let bundle: DeepPartial<PondPrefs> | null = null;
   try {
     bundle = readBundlePondPrefs();
   } catch (error) {
-    log.debug("[pond prefs] Legacy Library preferences unavailable", {
+    log.debug("[pond prefs] Library preferences unavailable", {
       error: error instanceof Error ? error.message : "unknown error",
     });
     return stored.pending ?? {};
@@ -115,14 +113,14 @@ async function resolvePondSlice(
 async function loadSettings(): Promise<SettingsCache> {
   try {
     const cached = settingsCache.peek();
-    const pondId = currentPondId();
-    if (cached && cached.pondId === pondId) return cached;
+    const libraryId = currentLibraryId();
+    if (cached && cached.libraryId === libraryId) return cached;
     settingsCache.invalidate();
     return await settingsCache.get();
   } catch (err) {
     log.warn("[pond prefs] failed to read settings, using defaults", err);
     return {
-      pondId: currentPondId(),
+      libraryId: currentLibraryId(),
       prefs: DEFAULT_PREFS,
       videoDownload: DEFAULT_VIDEO_DOWNLOAD,
       imageDownload: DEFAULT_IMAGE_DOWNLOAD,
@@ -177,14 +175,14 @@ export function setPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
 }
 
 async function applyPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
-  const pondId = currentPondId();
+  const libraryId = currentLibraryId();
   const current = await loadSettings();
   const { app, pond } = splitPrefsPatch(patch);
 
   let stored = normalizeStoredPrefs(await readRawStoredPrefs());
 
   let pondSlice: PondPrefs;
-  if (isUnboundPondId(pondId)) {
+  if (isUnboundLibraryId(libraryId)) {
     if (Object.keys(pond).length > 0) {
       stored = {
         ...stored,
@@ -201,15 +199,11 @@ async function applyPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
     stored = { ...stored, app: mergeAppSlice(stored.app, app) };
   }
   const merged = mergePrefs(stored.app, pondSlice);
-  const shortcutChange =
-    patch.shortcuts || patch.screenshots?.shortcutsEnabled !== undefined
-      ? prepareGlobalShortcuts(
-          merged.shortcuts.overrides,
-          merged.screenshots.shortcutsEnabled,
-        )
-      : null;
+  const shortcutChange = patch.shortcuts
+    ? prepareGlobalShortcuts(merged.shortcuts.overrides)
+    : null;
   try {
-    if (!isUnboundPondId(pondId) && Object.keys(pond).length > 0)
+    if (!isUnboundLibraryId(libraryId) && Object.keys(pond).length > 0)
       writeBundlePondPrefs(pondSlice);
     await persistStoredPrefs(stored);
     shortcutChange?.commit();
@@ -218,7 +212,7 @@ async function applyPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
     throw error;
   }
   settingsCache.set({
-    pondId,
+    libraryId,
     prefs: merged,
     videoDownload: current.videoDownload,
     imageDownload: current.imageDownload,

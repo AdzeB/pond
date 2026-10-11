@@ -47,6 +47,8 @@ describe("vec-index knn", () => {
     const hits = knnVec(db, "text", [1, 0, 0, 0], 2);
     expect(hits[0]?.id).toBe("near");
     expect(hits[0]?.distance).toBe(0);
+    expect(knnVec(db, "text", [1, 0, 0], 2)).toEqual([]);
+    expect(knnVec(db, "text", [1, 0, 0, 0, 0], 2)).toEqual([]);
     db.close();
   });
 

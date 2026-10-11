@@ -37,6 +37,12 @@ export function createTagOperations(client: TagClient) {
           await client.merge(name, to);
       }
     },
+    async addToGroup(tag: string, group: string) {
+      await client.addToGroup(tag, group);
+    },
+    async removeFromGroup(tag: string, group: string) {
+      await client.removeFromGroup(tag, group);
+    },
     async moveToGroup(tag: string, from: string, to: string) {
       if (from === to) return;
       await client.addToGroup(tag, to);

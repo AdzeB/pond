@@ -1,11 +1,12 @@
 import { dialog } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
+import type { QueryResult } from "../../../shared/query-contracts";
 import { reviewImportDuplicates } from "../../core/duplicate-import";
 import { importEaglePackage } from "../../core/eagle-package";
 import { importFiles } from "../../core/import-files";
 import { importPondPackage } from "../../core/pond-package";
-import { materializeLibraryMediaForExternalUse } from "../../core/storage/library-media-storage";
+import { rememberSaveDrag } from "../../core/save-drag-session";
 import { runTransferJob } from "../../core/transfer-jobs";
 import { copySaveSelectionToLibrary } from "../../core/transfer-operations";
 import { libraryRoot } from "../../paths";
@@ -27,14 +28,16 @@ export const savesImportTransferQueries = {
       candidates: await reviewImportDuplicates(paths),
     }),
   ),
-  async "saves.importEaglePackage"() {
+  async "saves.importEaglePackage"(): Promise<
+    QueryResult<"saves.importEaglePackage">
+  > {
     const picked = await dialog.showOpenDialog({
       title: "Import Eagle Package",
       buttonLabel: "Import",
       properties: ["openDirectory", "openFile"],
     });
     if (picked.canceled || !picked.filePaths[0])
-      return { ok: false, error: "canceled" };
+      return { ok: false, reason: "cancelled" };
     try {
       const source = picked.filePaths[0];
       return {
@@ -62,14 +65,14 @@ export const savesImportTransferQueries = {
 
   "saves.copyToLibrary": query(
     z.object({ ids: StringListParam }),
-    async ({ ids }) => {
+    async ({ ids }): Promise<QueryResult<"saves.copyToLibrary">> => {
       const picked = await dialog.showOpenDialog({
         title: "Copy to Library",
         buttonLabel: "Copy",
         properties: ["openDirectory", "openFile"],
       });
       const target = picked.filePaths[0];
-      if (picked.canceled || !target) return { ok: false, error: "canceled" };
+      if (picked.canceled || !target) return { ok: false, reason: "cancelled" };
       try {
         return {
           ok: true,
@@ -94,15 +97,15 @@ export const savesImportTransferQueries = {
   ),
 
   "saves.importPackage": query(
-    z.object({ password: z.string().max(1_024).optional() }),
-    async ({ password }) => {
+    z.object({}),
+    async (): Promise<QueryResult<"saves.importPackage">> => {
       const picked = await dialog.showOpenDialog({
         title: "Import Pond Package",
         buttonLabel: "Import",
         properties: ["openDirectory", "openFile"],
       });
       if (picked.canceled || !picked.filePaths[0]) {
-        return { ok: false, error: "canceled" };
+        return { ok: false, reason: "cancelled" };
       }
       try {
         const source = picked.filePaths[0];
@@ -115,7 +118,7 @@ export const savesImportTransferQueries = {
               source,
               destination: libraryRoot(),
             },
-            () => importPondPackage(source, password),
+            () => importPondPackage(source),
           )),
         };
       } catch (error) {
@@ -179,20 +182,27 @@ export const savesImportTransferQueries = {
       ids: StringListParam,
       fileIndex: FileIndexParam,
     }),
-    async (params, event) => {
+    async (params, event): Promise<QueryResult<"saves.startDrag">> => {
       const ids = [
         ...new Set(
           (params.ids.length > 0 ? params.ids : [params.id]).filter(Boolean),
         ),
       ];
-      if (ids.length === 0 || !event) return { ok: false };
-      const files: string[] = [];
+      if (ids.length === 0 || !event)
+        return { ok: false, error: "Choose Saves to drag." };
+      const dragged: Array<{ id: string; path: string }> = [];
       for (const id of ids) {
         const target = await resolveSaveFilePath(id, params.fileIndex);
         if (target.ok)
-          files.push(await materializeLibraryMediaForExternalUse(target.path));
+          dragged.push({
+            id,
+            path: target.path,
+          });
       }
-      if (files.length === 0) return { ok: false };
+      const files = dragged.map((file) => file.path);
+      if (files.length === 0)
+        return { ok: false, error: "These Saves have no files to drag." };
+      rememberSaveDrag(dragged);
       try {
         const { nativeImage } = await import("electron");
         const first = files[0] ?? "";
@@ -226,7 +236,10 @@ export const savesImportTransferQueries = {
         return { ok: true };
       } catch (error) {
         log.warn("[pond ipc] startDrag failed", error);
-        return { ok: false };
+        return {
+          ok: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   ),

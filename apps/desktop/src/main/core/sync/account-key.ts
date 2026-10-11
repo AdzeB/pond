@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { extractorFor } from "../pipeline/extractors";
-import { probeUserHandle } from "../refresh/scrape-window";
+import { probeUserHandle } from "../refresh/harvest-window";
 import {
   listAccountsForSource,
   normalizeHandle,

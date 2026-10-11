@@ -9,7 +9,7 @@ import type { ImageCompressionRequest } from "../../shared/conversion-contracts"
 import { getDb } from "../db";
 import { encodeBlurhash } from "../lib/blurhash";
 import { extractPalette } from "../lib/palette";
-import { resolvePaths } from "../paths";
+import { resolvePaths, saveDirIn } from "../paths";
 import { executeBatch } from "./executor";
 import { renderThumbnailPng } from "./save-thumbnail-file";
 import { readLibraryMedia } from "./storage/library-media-storage";
@@ -70,14 +70,12 @@ const runtime: CompressionRuntime = {
       candidates.push({
         save,
         file,
-        source: await readLibraryMedia(
-          join(root, "items", `${id}.info`, file.path),
-        ),
+        source: await readLibraryMedia(join(saveDirIn(root, id), file.path)),
         thumbnail: thumbnail
           ? {
               file: thumbnail,
               source: await readLibraryMedia(
-                join(root, "items", `${id}.info`, thumbnail.path),
+                join(saveDirIn(root, id), thumbnail.path),
               ),
             }
           : null,

@@ -27,30 +27,6 @@ export const IMAGE_INSPECTOR_SAVE: Save = {
   crop: { x: 0.1, y: 0.2, w: 0.5, h: 0.6 },
 };
 
-export function commentSave(
-  id: string,
-  comments: NonNullable<Save["comments"]> = [],
-): Save {
-  return {
-    ...IMAGE_INSPECTOR_SAVE,
-    id,
-    width: 800,
-    height: 400,
-    files: [
-      {
-        path: "reference.jpg",
-        kind: "image",
-        size: 1,
-        sha256: "fixture",
-        width: 800,
-        height: 400,
-        mimeType: "image/jpeg",
-      },
-    ],
-    comments,
-  };
-}
-
 export function setupImageInspectorTest() {
   let host: HTMLDivElement;
   let root: Root;
@@ -112,24 +88,6 @@ export function setupImageInspectorTest() {
     });
     return frame;
   };
-  const submitComment = async (textValue: string) => {
-    const text = document.querySelector("textarea");
-    if (!text) throw new Error("Missing comment text");
-    await act(async () => {
-      Object.getOwnPropertyDescriptor(
-        HTMLTextAreaElement.prototype,
-        "value",
-      )?.set?.call(text, textValue);
-      text.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-    const confirm = [...document.querySelectorAll("button")].find(
-      (candidate) =>
-        (candidate.textContent === "Add Comment" ||
-          candidate.getAttribute("aria-label") === "Add Comment") &&
-        !candidate.disabled,
-    );
-    await act(async () => confirm?.click());
-  };
   const flushPose = async () => {
     await act(async () => {
       await new Promise<void>((resolve) => {
@@ -146,7 +104,6 @@ export function setupImageInspectorTest() {
     },
     prepareFrame,
     render,
-    submitComment,
     tx,
   };
 }

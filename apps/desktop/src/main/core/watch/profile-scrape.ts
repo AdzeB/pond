@@ -3,13 +3,13 @@ import log from "electron-log/main.js";
 import { z } from "zod";
 import { markAtRisk } from "../pipeline/rate-governor";
 import { sourceIdFromUrl } from "../pipeline/url";
-import { NAV_TIMEOUT_MS } from "../refresh/scrape-window/constants";
+import { NAV_TIMEOUT_MS } from "../refresh/harvest-window/constants";
 import {
   looksLikeAuthWall,
   looksLikeChallenge,
   navigateWithTimeout,
-} from "../refresh/scrape-window/navigation";
-import { leaseWindow } from "../refresh/scrape-window/pool";
+} from "../refresh/harvest-window/navigation";
+import { leaseWindow } from "../refresh/harvest-window/pool";
 import type { WatchEntry, WatchHarvestResult } from "./types";
 
 /** Instagram/Twitter watch listing scrolls the profile in a hidden window on a connected account's partition; both platforms auth-wall logged-out visitors. */

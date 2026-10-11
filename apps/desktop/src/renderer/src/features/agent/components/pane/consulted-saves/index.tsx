@@ -4,8 +4,7 @@ import type { AssistantSource } from "@shared/assistant";
 import { sourceExcerpt } from "@shared/assistant-text";
 import type { ReactNode, RefObject } from "react";
 import { useState } from "react";
-import { openSave } from "@/features/saves/lib/save-nav";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
+import { openSave } from "@/features/saves/navigation";
 import { SourceThumbnail, useSourceCovers } from "../save-preview";
 import styles from "./styles.module.css";
 
@@ -48,7 +47,6 @@ export function ConsultedSaves({
   renderMedia?: (source: AssistantSource) => ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const scrollFade = useScrollFade<HTMLDivElement>();
   const items = toReferenceItems(
     saveIds ?? sources.map((source) => source.id),
     sources,
@@ -108,7 +106,7 @@ export function ConsultedSaves({
   );
   return (
     <section className={styles.card} aria-label="Consulted Saves">
-      <div className={styles.rows} {...scrollFade}>
+      <div className={styles.rows}>
         {items.slice(0, 3).map(renderRow)}
         <Reveal visible={expanded}>
           <div className={styles.more}>{items.slice(3).map(renderRow)}</div>

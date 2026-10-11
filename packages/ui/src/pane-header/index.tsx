@@ -6,17 +6,12 @@ import {
 } from "react";
 import styles from "./styles.module.css";
 
-interface PaneHeaderProps
+interface HeaderProps
   extends Omit<ComponentPropsWithoutRef<"header">, "title"> {
   title: ReactNode;
 }
 
-export function PaneHeader({
-  title,
-  children,
-  className,
-  ...props
-}: PaneHeaderProps) {
+function Header({ title, children, className, ...props }: HeaderProps) {
   return (
     <header
       {...props}
@@ -33,16 +28,17 @@ export function PaneHeader({
   );
 }
 
-export const PaneBody = forwardRef<
-  HTMLDivElement,
-  ComponentPropsWithoutRef<"div">
->(function PaneBody({ className, ...props }, ref) {
-  return (
-    <div
-      {...props}
-      ref={ref}
-      className={cn(styles.body, className)}
-      data-slot="pane-body"
-    />
-  );
-});
+const Body = forwardRef<HTMLDivElement, ComponentPropsWithoutRef<"div">>(
+  function Body({ className, ...props }, ref) {
+    return (
+      <div
+        {...props}
+        ref={ref}
+        className={cn(styles.body, className)}
+        data-slot="pane-body"
+      />
+    );
+  },
+);
+
+export const Pane = { Header, Body };

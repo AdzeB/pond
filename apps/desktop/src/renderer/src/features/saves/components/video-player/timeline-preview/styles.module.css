@@ -5,7 +5,6 @@
   color: var(--ds-gray-12);
   object-fit: contain;
   background: var(--ds-gray-12);
-  border: 2px solid var(--ds-gray-1);
   border-radius: var(--ds-radius-lg);
   box-shadow: var(--ds-shadow-lg);
   opacity: 0;

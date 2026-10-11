@@ -67,6 +67,11 @@ export function ProviderConnection({
   const [editing, setEditing] = useState(!connected);
   const [keyDraft, setKeyDraft] = useState("");
   const [endpointDraft, setEndpointDraft] = useState(endpoint ?? "");
+  const [syncedEndpoint, setSyncedEndpoint] = useState(endpoint);
+  if (endpoint !== syncedEndpoint) {
+    setSyncedEndpoint(endpoint);
+    setEndpointDraft(endpoint ?? "");
+  }
   const [revealed, setRevealed] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -75,9 +80,6 @@ export function ProviderConnection({
   useEffect(() => {
     appeared.current = true;
   }, []);
-  useEffect(() => {
-    setEndpointDraft(endpoint ?? "");
-  }, [endpoint]);
   const hasEndpoint = endpoint === undefined || Boolean(endpointDraft.trim());
   const canSave =
     !saving &&
@@ -107,20 +109,19 @@ export function ProviderConnection({
         await onPatchAgent(endpointPatch(catalog.id, endpointDraft.trim()));
         endpointSaved = true;
       }
-      const result =
-        connected && !keyDraft.trim()
-          ? await window.pond.query("agent.listModels", {
-              provider: catalog.id,
-            })
-          : await window.pond.query("agent.saveKey", {
-              provider: catalog.id,
-              key: keyDraft.trim(),
-            });
-      if (!result.ok || result.error)
-        throw new Error(
-          result.error ||
-            "Could not connect. Check the settings and try again.",
-        );
+      if (connected && !keyDraft.trim()) {
+        const result = await window.pond.query("agent.listModels", {
+          provider: catalog.id,
+        });
+        if (!result.ok) throw new Error(result.error);
+        if (result.warning) throw new Error(result.warning);
+      } else {
+        const result = await window.pond.query("agent.saveKey", {
+          provider: catalog.id,
+          key: keyDraft.trim(),
+        });
+        if (!result.ok) throw new Error(result.error);
+      }
       verified = true;
       if (!agent.languageModel)
         await onPatchAgent({ languageModel: catalog.id });

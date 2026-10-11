@@ -8,10 +8,9 @@ export const HARVESTER_WINDOW_IPC = {
   close: "pond:harvester-window-close",
 } as const;
 
-export const HarvesterSectionSchema = z.enum(["sources", "downloads"]);
-export type HarvesterSection = z.infer<typeof HarvesterSectionSchema>;
+const HarvesterSectionSchema = z.enum(["sources", "downloads"]);
 
-export const HarvesterIntentSchema = z.union([
+const HarvesterIntentSchema = z.union([
   z.object({ type: z.literal("new-source") }),
   z.object({
     type: z.literal("connect"),
@@ -30,7 +29,6 @@ export const HarvesterIntentSchema = z.union([
     id: z.string().min(1).max(1024),
   }),
 ]);
-export type HarvesterIntent = z.infer<typeof HarvesterIntentSchema>;
 
 export const HarvesterWindowLocationSchema = z.object({
   section: HarvesterSectionSchema.optional(),

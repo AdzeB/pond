@@ -1,5 +1,8 @@
-import { Button, Checkbox, Dialog, Input } from "@pond/ui";
-import { useId, useMemo, useState } from "react";
+import { useMemo } from "react";
+import {
+  BatchRenameDialog,
+  type BatchRenameItem,
+} from "@/features/library/components/batch-rename";
 import { folders, useFolders } from "@/features/library/state/folders";
 import {
   closeOrganizationRenameDialog,
@@ -11,9 +14,39 @@ import {
   useSavedViews,
 } from "@/features/library/state/saved-views";
 import { useRetainedDialogPayload } from "@/shared/hooks/use-retained-dialog-payload";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { notify } from "@/shared/lib/toast";
-import styles from "./styles.module.css";
+
+const TOKENS = [
+  { token: "{n}", label: "Number" },
+  { token: "{title}", label: "Name" },
+  { token: "{date}", label: "Date" },
+];
+
+const NOUNS = {
+  folders: { one: "Folder", other: "Folders" },
+  "saved-views": { one: "Smart Folder", other: "Smart Folders" },
+} satisfies Record<OrganizationRenameKind, { one: string; other: string }>;
+
+function treeOrder<Row extends { id: string; parentId: string | null }>(
+  rows: readonly Row[],
+  selected: ReadonlySet<string>,
+): Row[] {
+  const ids = new Set(rows.map((row) => row.id));
+  const children = new Map<string | null, Row[]>();
+  for (const row of rows) {
+    const parent = row.parentId && ids.has(row.parentId) ? row.parentId : null;
+    children.set(parent, [...(children.get(parent) ?? []), row]);
+  }
+  const ordered: Row[] = [];
+  const visit = (parent: string | null) => {
+    for (const row of children.get(parent) ?? []) {
+      if (selected.has(row.id)) ordered.push(row);
+      visit(row.id);
+    }
+  };
+  visit(null);
+  return ordered;
+}
 
 export function OrganizationRenameDialogHost() {
   const state = useOrganizationRenameDialog();
@@ -39,129 +72,45 @@ function OrganizationRenameDialog({
 }) {
   const folderRows = useFolders();
   const viewRows = useSavedViews();
-  const rows = useMemo(
-    () =>
-      (kind === "folders" ? folderRows : viewRows).map((row) => ({
-        id: row.id,
-        name: row.name,
-      })),
-    [folderRows, kind, viewRows],
+  const selected = useMemo(() => new Set(initialIds), [initialIds]);
+  const items = useMemo(
+    (): BatchRenameItem[] =>
+      kind === "folders"
+        ? treeOrder(folderRows, selected).map((row) => ({
+            id: row.id,
+            name: row.name,
+            date: row.createdAt,
+          }))
+        : treeOrder(viewRows, selected).map((row) => ({
+            id: row.id,
+            name: row.name,
+            date: row.createdAt,
+          })),
+    [folderRows, kind, selected, viewRows],
   );
-  const [selected, setSelected] = useState(() => new Set(initialIds ?? []));
-  const [pattern, setPattern] = useState("{n:2} {title}");
-  const [busy, setBusy] = useState(false);
-  const templateId = useId();
-  const scrollFade = useScrollFade<HTMLDivElement>();
-  const title =
-    kind === "folders" ? "Batch Rename Folders" : "Batch Rename Smart Folders";
-
-  async function rename() {
-    setBusy(true);
-    try {
-      const ids = [...selected];
-      const result =
-        kind === "folders"
-          ? await window.pond.query("folders.renameBatch", { ids, pattern })
-          : await window.pond.query("savedViews.renameBatch", {
-              ids,
-              pattern,
-            });
-      if (!result.ok) throw new Error(result.error ?? "Rename failed.");
-      await (kind === "folders" ? folders.refresh() : savedViews.refresh());
-      notify({
-        id: "organization-rename",
-        title: `${result.renamed} ${kind === "folders" ? "Folders" : "Smart Folders"} Renamed`,
-      });
-      closeOrganizationRenameDialog();
-    } catch (error) {
-      notify({
-        id: "organization-rename",
-        title: "Couldn’t Rename Items",
-        description: error instanceof Error ? error.message : "Try again.",
-      });
-    } finally {
-      setBusy(false);
-    }
-  }
+  const noun = NOUNS[kind];
 
   return (
-    <Dialog.Root
+    <BatchRenameDialog
       open={open}
-      onOpenChange={(open) => {
-        if (!open) closeOrganizationRenameDialog();
+      noun={noun}
+      items={items}
+      tokens={TOKENS}
+      defaultPattern="{n:2} {title}"
+      onClose={closeOrganizationRenameDialog}
+      onRename={async (request) => {
+        const result =
+          kind === "folders"
+            ? await window.pond.query("folders.renameBatch", request)
+            : await window.pond.query("savedViews.renameBatch", request);
+        if (!result.ok) throw new Error(result.error ?? "Rename failed.");
+        await (kind === "folders" ? folders.refresh() : savedViews.refresh());
+        notify({
+          id: "organization-rename",
+          title: `${result.renamed} ${result.renamed === 1 ? noun.one : noun.other} Renamed`,
+        });
+        closeOrganizationRenameDialog();
       }}
-    >
-      <Dialog.Portal>
-        <Dialog.Backdrop />
-        <Dialog.Popup className={styles.popup}>
-          <Dialog.Header>
-            <Dialog.Title>{title}</Dialog.Title>
-            <Dialog.Close />
-          </Dialog.Header>
-          <Dialog.Description>
-            Select items and apply one shared rename template.
-          </Dialog.Description>
-          <label htmlFor={templateId}>
-            Template
-            <Input.Field
-              id={templateId}
-              value={pattern}
-              onValueChange={setPattern}
-              placeholder="{n:2} {title}"
-            />
-          </label>
-          <p className={styles.help}>
-            Tokens: {"{n}"}, {"{title}"}, {"{id}"}, {"{date}"},{" "}
-            {"{date:compact}"}, {"{date:month}"}, {"{date:year}"},{" "}
-            {"{date:timestamp}"}, {"{original}"}
-          </p>
-          <div className={styles.actions}>
-            <Button
-              size="xs"
-              variant="ghost"
-              onClick={() => setSelected(new Set(rows.map((row) => row.id)))}
-            >
-              Select All
-            </Button>
-            <Button
-              size="xs"
-              variant="ghost"
-              onClick={() => setSelected(new Set())}
-            >
-              Clear
-            </Button>
-          </div>
-          <div className={styles.list} {...scrollFade}>
-            {rows.map((row) => (
-              <div key={row.id} className={styles.item}>
-                <Checkbox.Root
-                  aria-label={`Select ${row.name}`}
-                  checked={selected.has(row.id)}
-                  onCheckedChange={(checked) => {
-                    setSelected((current) => {
-                      const next = new Set(current);
-                      if (checked === true) next.add(row.id);
-                      else next.delete(row.id);
-                      return next;
-                    });
-                  }}
-                >
-                  <Checkbox.Indicator />
-                </Checkbox.Root>
-                {row.name}
-              </div>
-            ))}
-          </div>
-          <Dialog.Footer>
-            <Button
-              disabled={busy || selected.size === 0 || !pattern.trim()}
-              onClick={() => void rename()}
-            >
-              Rename
-            </Button>
-          </Dialog.Footer>
-        </Dialog.Popup>
-      </Dialog.Portal>
-    </Dialog.Root>
+    />
   );
 }

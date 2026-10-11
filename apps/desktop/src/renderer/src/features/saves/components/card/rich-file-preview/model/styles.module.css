@@ -9,8 +9,8 @@
   box-shadow: var(--ds-shadow-sm);
 }
 
-.modelCanvas,
-.modelCanvas canvas {
+.canvas,
+.canvas canvas {
   width: 100%;
   height: 100%;
 }
@@ -19,11 +19,11 @@
   position: absolute;
   right: 8px;
   bottom: 8px;
-  font-size: 10px;
+  font-size: var(--ds-text-xxs);
   color: rgb(226 232 240 / 70%);
 }
 
-.modelFallback {
+.fallback {
   position: absolute;
   inset: 0;
   display: grid;
@@ -36,13 +36,12 @@
   background-size: 22px 22px;
 }
 
-.modelFallback strong {
+.fallback strong {
   font-size: clamp(26px, 20cqw, 52px);
-  letter-spacing: -0.08em;
 }
 
-.modelFallback span {
-  font-size: 10px;
+.fallback span {
+  font-size: var(--ds-text-xxs);
   color: rgb(226 232 240 / 65%);
 }
 

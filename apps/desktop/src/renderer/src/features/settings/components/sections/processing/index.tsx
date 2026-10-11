@@ -8,8 +8,8 @@ import {
 } from "@pond/icons/outline/18";
 import { Button, Settings } from "@pond/ui";
 import { useState } from "react";
-import { useEnrichmentStatus } from "@/features/enrichment/state/enrichment-monitor";
-import { usePrefs } from "@/features/settings/state/prefs";
+import { useEnrichmentStatus } from "@/features/enrichment/status";
+import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
 async function checkLibrary(): Promise<void> {
@@ -17,7 +17,7 @@ async function checkLibrary(): Promise<void> {
     await window.pondSettings.checkLibrary();
     return;
   }
-  const { runEnrichment } = await import("@/features/enrichment/lib/tasks");
+  const { runEnrichment } = await import("@/features/enrichment");
   runEnrichment();
 }
 

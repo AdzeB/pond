@@ -2,7 +2,7 @@ import { IconImageOutline18, IconVideoOutline18 } from "@pond/icons/outline/18";
 import JSZip from "jszip";
 import { type ReactNode, useEffect, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
-import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import styles from "./styles.module.css";
 
 interface LivePhotoMedia {

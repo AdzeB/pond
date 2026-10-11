@@ -1,6 +1,5 @@
 import {
   IconAnimationFramesOutline18,
-  IconChatBubbleOutline18,
   IconCropOutline18,
   IconExpandOutline18,
   IconMediaFastBackwardsOutline18,
@@ -16,7 +15,7 @@ import { Button, stepPlaybackRate } from "@pond/ui";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import type { ReactNode } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
-import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import {
   type ViewerNavigation,
   ViewerNavigationControls,
@@ -52,7 +51,6 @@ interface HudProps {
   onFlip: () => void;
   onRotate: () => void;
   onSaveCrop: () => void;
-  onToggleComment: () => void;
   onToggleCrop: () => void;
   onToggleGifFrames?: () => void;
   onZoomIn: () => void;
@@ -80,7 +78,6 @@ function Hud({
   onFlip,
   onRotate,
   onSaveCrop,
-  onToggleComment,
   onToggleCrop,
   onToggleGifFrames,
   onZoomIn,
@@ -88,10 +85,6 @@ function Hud({
   onZoomRatio,
 }: HudProps) {
   const shortcuts = useShortcutBindings();
-  useHotkey(bindingKeys(shortcuts, "viewer.comment"), onToggleComment, {
-    enabled: active,
-    ignoreInputs: true,
-  });
   useHotkey(bindingKeys(shortcuts, "viewer.zoom-fit"), onFit, {
     enabled: active && mode === "view",
     ignoreInputs: true,
@@ -163,19 +156,7 @@ function Hud({
         }
         end={
           <ViewerToolbarGroups
-            actions={
-              <>
-                <ViewerHud.Tool
-                  label="Comment"
-                  shortcut={<ShortcutKeys id="viewer.comment" />}
-                  pressed={mode === "comment"}
-                  onClick={onToggleComment}
-                >
-                  <IconChatBubbleOutline18 />
-                </ViewerHud.Tool>
-                {endActions}
-              </>
-            }
+            actions={endActions}
             edits={
               edits === "full" ? (
                 <>
@@ -224,7 +205,7 @@ function Hud({
             }
             navigation={
               slideNavigation && slideNavigation.count > 1 ? (
-                <div className={styles.slideNavigation}>
+                <div className={styles["slide-navigation"]}>
                   <ViewerNavigationControls navigation={slideNavigation} />
                 </div>
               ) : null

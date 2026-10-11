@@ -1,52 +1,65 @@
 import type { Capture, CaptureMedia } from "@pond/schema/raw";
+import { z } from "zod";
 
-export interface TweetCardAuthor {
-  name: string;
-  handle: string;
-  avatarUrl?: string;
-  verified?: boolean;
-}
+const TweetCardAuthorSchema = z.object({
+  name: z.string(),
+  handle: z.string(),
+  avatarUrl: z.string().optional(),
+  verified: z.boolean().optional(),
+});
 
-export interface TweetCardMedia {
-  url: string;
-  type: "image" | "video";
-  posterUrl?: string;
-  durationSec?: number;
-  width?: number;
-  height?: number;
-  altText?: string;
-}
+export type TweetCardAuthor = z.infer<typeof TweetCardAuthorSchema>;
 
-export interface TweetCardMetrics {
-  replies?: number;
-  retweets?: number;
-  likes?: number;
-  views?: number;
-  bookmarks?: number;
-  shares?: number;
-}
+const TweetCardMediaSchema = z.object({
+  url: z.string(),
+  type: z.enum(["image", "video"]),
+  posterUrl: z.string().optional(),
+  durationSec: z.number().optional(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+  altText: z.string().optional(),
+});
 
-export interface TweetCardLink {
-  url?: string;
-  domain?: string;
-  title?: string;
-  description?: string;
-  imageUrl?: string;
-  large?: boolean;
-}
+export type TweetCardMedia = z.infer<typeof TweetCardMediaSchema>;
 
-export interface TweetCardData {
-  author: TweetCardAuthor;
-  text?: string;
-  publishedAt?: string;
-  lang?: string;
-  isReply?: boolean;
-  replyingTo?: string;
-  media?: TweetCardMedia[];
-  metrics?: TweetCardMetrics;
-  quoted?: TweetCardData;
-  card?: TweetCardLink;
-}
+const TweetCardMetricsSchema = z.object({
+  replies: z.number().optional(),
+  retweets: z.number().optional(),
+  likes: z.number().optional(),
+  views: z.number().optional(),
+  bookmarks: z.number().optional(),
+  shares: z.number().optional(),
+});
+
+export type TweetCardMetrics = z.infer<typeof TweetCardMetricsSchema>;
+
+const TweetCardLinkSchema = z.object({
+  url: z.string().optional(),
+  domain: z.string().optional(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  imageUrl: z.string().optional(),
+  large: z.boolean().optional(),
+});
+
+export type TweetCardLink = z.infer<typeof TweetCardLinkSchema>;
+
+export const TweetCardDataSchema = z.object({
+  author: TweetCardAuthorSchema,
+  text: z.string().optional(),
+  publishedAt: z.string().optional(),
+  lang: z.string().optional(),
+  isReply: z.boolean().optional(),
+  replyingTo: z.string().optional(),
+  media: z.array(TweetCardMediaSchema).optional(),
+  metrics: TweetCardMetricsSchema.optional(),
+  get quoted() {
+    return TweetCardDataSchema.optional();
+  },
+  card: TweetCardLinkSchema.optional(),
+});
+
+export type TweetCardData = z.infer<typeof TweetCardDataSchema>;
 
 /** X wraps media and cards as t.co; the native UI hides those tokens. */
 export function stripTwitterShortUrls(text: string): string {

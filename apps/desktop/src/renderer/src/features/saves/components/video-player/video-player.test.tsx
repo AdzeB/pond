@@ -6,7 +6,7 @@ import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import {
   ChromePortal,
   ViewerChrome,
-} from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+} from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerToolbarGroups } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import { VideoPlayer } from "./";
 
@@ -54,11 +54,10 @@ function TestVideoPlayer() {
       <VideoPlayer
         src="pond://test/clip.mp4"
         active
-        renderToolbar={({ actions, edits, view }) => (
+        renderToolbar={({ actions, edits }) => (
           <ChromePortal slot="top">
             <ViewerHud.Bar
               label="Video"
-              center={view}
               end={<ViewerToolbarGroups actions={actions} edits={edits} />}
             />
           </ChromePortal>
@@ -81,6 +80,9 @@ it("composes one top video toolbar and one bottom playback toolbar", async () =>
   const actionToolbar = host.querySelector(
     '[role="toolbar"][aria-label="Video"]',
   );
+  const playbackToolbar = host.querySelector(
+    '[role="toolbar"][aria-label="Playback"]',
+  );
   expect(
     host.querySelectorAll('[data-slot="top"] [role="toolbar"]'),
   ).toHaveLength(1);
@@ -94,44 +96,42 @@ it("composes one top video toolbar and one bottom playback toolbar", async () =>
   expect(loop?.closest("[data-slot]")?.getAttribute("data-slot")).toBe(
     "bottom",
   );
-  const fill = host.querySelector<HTMLButtonElement>(
-    'button[aria-label="Fill"]',
-  );
-  const fit = host.querySelector<HTMLButtonElement>('button[aria-label="Fit"]');
-  expect(fill).not.toBeNull();
-  expect(fit).not.toBeNull();
-  expect(fill?.getAttribute("aria-pressed")).toBeNull();
-  expect(fit?.getAttribute("aria-pressed")).toBe("true");
+  expect(playbackToolbar?.hasAttribute("data-chrome")).toBe(true);
+  expect(host.querySelector('[aria-label="Loop Start in Seconds"]')).toBeNull();
+  expect(host.querySelector('button[aria-label="Fill"]')).toBeNull();
+  expect(host.querySelector('button[aria-label="Fit"]')).toBeNull();
   const mute = host.querySelector<HTMLButtonElement>(
     'button[aria-label="Mute"]',
   );
   const volume = host.querySelector('[aria-label="Video Volume"]');
-  expect(volume).not.toBeNull();
-  expect(volume?.closest("[data-video-volume-control]")).toBe(
-    mute?.parentElement,
+  expect(volume).toBeNull();
+  expect(host.querySelector("[data-video-volume-popover]")).toBeNull();
+  expect(mute?.parentElement).toBe(playbackToolbar?.firstElementChild);
+  const elapsedTime = host.querySelector('[aria-label="Elapsed time"]');
+  const seek = host.querySelector('[aria-label="Seek"]');
+  const duration = host.querySelector('[aria-label="Duration"]');
+  if (!elapsedTime || !seek || !duration) {
+    throw new Error("Missing video transport timing controls");
+  }
+  expect(elapsedTime.compareDocumentPosition(seek)).toBe(
+    Node.DOCUMENT_POSITION_FOLLOWING,
   );
-  expect(volume?.parentElement?.hasAttribute("data-video-volume-popover")).toBe(
-    true,
+  expect(seek.compareDocumentPosition(duration)).toBe(
+    Node.DOCUMENT_POSITION_FOLLOWING,
   );
   const video = host.querySelector("video");
-  const back = host.querySelector<HTMLButtonElement>(
-    'button[aria-label="Back"]',
-  );
-  const forward = host.querySelector<HTMLButtonElement>(
-    'button[aria-label="Forward"]',
-  );
   expect(video).toBeTruthy();
-  expect(back).toBeTruthy();
-  expect(forward).toBeTruthy();
+  await act(async () => mute?.click());
+  expect(video?.muted).toBe(true);
+  await act(async () => video?.dispatchEvent(new Event("volumechange")));
+  expect(host.querySelector('button[aria-label="Unmute"]')).toBe(mute);
+  expect(host.querySelector('button[aria-label="Back"]')).toBeNull();
+  expect(host.querySelector('button[aria-label="Forward"]')).toBeNull();
   Object.defineProperty(video, "duration", {
     configurable: true,
     value: 60,
   });
   if (video) video.currentTime = 20;
-  await act(async () => back?.click());
-  expect(video?.currentTime).toBe(10);
-  await act(async () => forward?.click());
-  expect(video?.currentTime).toBe(20);
   await act(async () => {
     document.dispatchEvent(
       new KeyboardEvent("keydown", {
@@ -157,7 +157,7 @@ it("composes one top video toolbar and one bottom playback toolbar", async () =>
   expect(host.querySelector("[data-anchor]")).toBeNull();
 });
 
-it("switches between Fill and Fit video sizing", async () => {
+it("always fits video inside the viewer", async () => {
   await act(async () => {
     root.render(<TestVideoPlayer />);
   });
@@ -171,22 +171,50 @@ it("switches between Fill and Fit video sizing", async () => {
   await act(async () => {
     video?.dispatchEvent(new Event("loadedmetadata"));
   });
-  const fill = host.querySelector<HTMLButtonElement>(
-    'button[aria-label="Fill"]',
-  );
-  const fit = host.querySelector<HTMLButtonElement>('button[aria-label="Fit"]');
-  expect(fill?.disabled).toBe(false);
-  await act(async () => fill?.click());
-  expect(video?.style.width).toBe("100%");
-  expect(video?.style.height).toBe("100%");
-  expect(video?.style.objectFit).toBe("cover");
-  expect(video?.style.transform).toContain("scale(1)");
-  expect(fill?.getAttribute("aria-pressed")).toBe("true");
-  expect(fit?.getAttribute("aria-pressed")).toBeNull();
-  await act(async () => fit?.click());
   expect(video?.style.width).toBe("");
   expect(video?.style.height).toBe("");
   expect(video?.style.objectFit).toBe("contain");
-  expect(fill?.getAttribute("aria-pressed")).toBeNull();
-  expect(fit?.getAttribute("aria-pressed")).toBe("true");
+  expect(host.querySelector('button[aria-label="Fill"]')).toBeNull();
+  expect(host.querySelector('button[aria-label="Fit"]')).toBeNull();
+});
+
+it("toggles whole-video looping from the playback toolbar", async () => {
+  await act(async () => {
+    root.render(<TestVideoPlayer />);
+  });
+  const video = host.querySelector("video");
+  const loop = host.querySelector<HTMLButtonElement>(
+    'button[aria-label="Loop"]',
+  );
+  expect(video?.loop).toBe(false);
+  expect(loop?.getAttribute("aria-pressed")).toBeNull();
+
+  await act(async () => loop?.click());
+
+  expect(video?.loop).toBe(true);
+  expect(loop?.getAttribute("aria-pressed")).toBe("true");
+});
+
+it("lets the playback toolbar turn off automatic short-video looping", async () => {
+  await act(async () => {
+    root.render(<TestVideoPlayer />);
+  });
+  const video = host.querySelector("video");
+  const loop = host.querySelector<HTMLButtonElement>(
+    'button[aria-label="Loop"]',
+  );
+  Object.defineProperty(video, "duration", {
+    configurable: true,
+    value: 10,
+  });
+  await act(async () => {
+    video?.dispatchEvent(new Event("durationchange"));
+  });
+  expect(video?.loop).toBe(true);
+  expect(loop?.getAttribute("aria-pressed")).toBe("true");
+
+  await act(async () => loop?.click());
+
+  expect(video?.loop).toBe(false);
+  expect(loop?.getAttribute("aria-pressed")).toBeNull();
 });

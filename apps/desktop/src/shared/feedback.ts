@@ -1,7 +1,6 @@
 export const FEEDBACK_EVENTS = [
   "saveDeletion",
   "folderDeletion",
-  "screenshot",
   "extensionCapture",
   "autoImport",
 ] as const;

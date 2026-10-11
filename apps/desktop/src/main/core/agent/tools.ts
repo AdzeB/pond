@@ -1,4 +1,4 @@
-import { type ImageComment, saves, tags } from "@pond/schema/db";
+import { saves, tags } from "@pond/schema/db";
 import { tagsEmpty } from "@pond/schema/filters/fields";
 import { FIELD_IDS } from "@pond/schema/filters/meta";
 import {
@@ -31,7 +31,7 @@ export const searchLibraryInput = libraryRetrievalInput;
 export const readSaveInput = z.object({
   id: z.string(),
   field: z
-    .enum(["caption", "ocr", "transcript", "notes", "comments", "description"])
+    .enum(["caption", "ocr", "transcript", "notes", "description"])
     .optional(),
   offset: z.number().int().min(0).optional(),
   limit: z.number().int().min(1).max(8000).optional(),
@@ -117,6 +117,8 @@ export const describeSavesInput = z.object({
   ids: z.array(z.string()).min(1).max(24),
 });
 
+export const findDuplicatesInput = z.object({});
+
 export type LibraryScope = LibraryRetrievalScope;
 
 const GrepRowsSchema = z.array(
@@ -147,7 +149,6 @@ export const toolDependencies = {
         caption: saves.caption,
         ocrText: saves.ocrText,
         transcript: saves.transcript,
-        comments: saves.comments,
         rating: saves.rating,
         mediaType: saves.mediaType,
         width: saves.width,
@@ -191,7 +192,11 @@ export async function searchLibrary(
   scope: LibraryScope = {},
   deps = toolDependencies,
 ) {
-  const result = await deps.retrieveLibrary(input, scope);
+  const boundedInput =
+    input.limit !== undefined && input.limit > 40
+      ? { ...input, limit: 40 }
+      : input;
+  const result = await deps.retrieveLibrary(boundedInput, scope);
   return { saves: result.saves };
 }
 
@@ -208,16 +213,6 @@ async function sliceTokens(text: string, offset = 0, limit = 2000) {
   };
 }
 
-function commentTexts(raw: ImageComment[] | null): string[] {
-  return (raw ?? [])
-    .filter((entry) => entry.resolvedAt == null)
-    .flatMap((entry) => [
-      entry.text,
-      ...(entry.replies ?? []).map((reply) => reply.text),
-    ])
-    .filter((text) => text.trim());
-}
-
 export async function readSave(
   input: z.infer<typeof readSaveInput>,
   scope: LibraryScope = {},
@@ -228,14 +223,12 @@ export async function readSave(
   );
   const row = rows[0];
   if (!row) return { error: "Save not found." };
-  const comments = commentTexts(row.comments);
   const fields = {
     description: row.description ?? "",
     notes: row.notes ?? "",
     caption: row.caption ?? "",
     ocr: row.ocrText ?? "",
     transcript: row.transcript ?? "",
-    comments: comments.join("\n"),
   };
   const offset = input.offset ?? 0;
   const limit = input.limit ?? 2000;
@@ -277,7 +270,6 @@ export async function readSave(
       ocrTokens: ocr.total,
       transcript: transcript.text,
       transcriptTokens: transcript.total,
-      comments,
       rating: row.rating,
       tags: row.tags,
       folderIds: await deps.folderIdsForSave(row.id),
@@ -447,11 +439,7 @@ export async function openSave(input: z.infer<typeof openSaveInput>) {
 }
 
 export async function describeSaves(input: z.infer<typeof describeSavesInput>) {
-  const { visionEnabled, imagesForSaves } = await import("./vision");
-  const prefs = await getPrefs();
-  if (!visionEnabled(prefs.agent.languageModel, prefs.agent.visionModel)) {
-    return { error: "Choose a vision model in Settings Models." };
-  }
+  const { imagesForSaves } = await import("./vision");
   const images = await imagesForSaves(input.ids);
   if (!images.length) {
     return {

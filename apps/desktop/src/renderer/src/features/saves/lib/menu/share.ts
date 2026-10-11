@@ -24,7 +24,7 @@ export function buildShareItem({
           if (!result.ok) {
             notify({
               id: "share",
-              title: result.error ?? "Couldn’t share this file.",
+              title: result.error ?? "Couldn't share this file.",
             });
           }
         });

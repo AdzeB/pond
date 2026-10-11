@@ -7,7 +7,8 @@ import {
   endSaveDrag,
   isLibrarySaveDrag,
   saveDropIds,
-} from "@/features/saves/lib/start-drag";
+} from "@/features/saves";
+import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
 import { type FolderDropKind, planFolderSidebarDrop } from "./folder-drop";
 
@@ -64,7 +65,7 @@ export function useFolderDragDrop({
       notify({
         id: "add-saves-to-folder",
         title: `Couldn't add ${count === 1 ? "Save" : "Saves"} to folder`,
-        description: error instanceof Error ? error.message : "Try again.",
+        description: errorCopy(error, "Try again."),
       });
     }
   }
@@ -114,7 +115,7 @@ export function useFolderDragDrop({
       notify({
         id: "move-folder",
         title: "Couldn't move folder",
-        description: error instanceof Error ? error.message : "Try again.",
+        description: errorCopy(error, "Try again."),
       });
     }
   }

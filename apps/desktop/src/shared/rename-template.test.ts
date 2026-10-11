@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyRenameTemplate } from "./rename-template";
+import { applyRenameTemplate, literalReplacement } from "./rename-template";
 
 describe("applyRenameTemplate", () => {
   it("expands portable Save and organization tokens", () => {
@@ -45,6 +45,30 @@ describe("applyRenameTemplate", () => {
         },
       ),
     ).toBe("20260919 2026 2026-09 20260919-083045");
+  });
+
+  it("replaces literal text, including regex and replacement symbols", () => {
+    expect(
+      applyRenameTemplate("{title}", {
+        index: 0,
+        title: "IMG (1).png $1",
+        id: "save-1",
+        replacement: literalReplacement("(1).png $1", "$& done"),
+      }),
+    ).toBe("IMG $& done");
+  });
+
+  it("applies upper, lower, and title case after expanding tokens", () => {
+    const values = { index: 0, title: "hero-final v3", id: "save-1" };
+    expect(
+      applyRenameTemplate("{title}", { ...values, textCase: "upper" }),
+    ).toBe("HERO-FINAL V3");
+    expect(
+      applyRenameTemplate("{n} {title}", { ...values, textCase: "lower" }),
+    ).toBe("1 hero-final v3");
+    expect(
+      applyRenameTemplate("{title}", { ...values, textCase: "title" }),
+    ).toBe("Hero-Final V3");
   });
 
   it("keeps unknown tokens literal and rejects invalid regex flags", () => {

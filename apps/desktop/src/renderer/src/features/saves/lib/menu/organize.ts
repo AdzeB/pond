@@ -21,6 +21,7 @@ import {
 } from "@/features/saves/lib/folder-actions";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { pasteTagsForSelection } from "@/features/saves/lib/selection";
+import { errorCopy } from "@/shared/lib/error-copy";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { notify } from "@/shared/lib/toast";
 import { glyph } from "./shared";
@@ -80,8 +81,7 @@ function buildAddItems(ids: string[], batch: boolean): MenuItemSpec[] {
             notify({
               id: "create-folder-with-saves",
               title: "Couldn't create folder",
-              description:
-                error instanceof Error ? error.message : "Try again.",
+              description: errorCopy(error, "Try again."),
             });
           }
         })();
@@ -100,7 +100,7 @@ function buildAddItems(ids: string[], batch: boolean): MenuItemSpec[] {
                 title: "Saves copied to library",
                 description: `${result.imported ?? 0} copied, ${result.skipped ?? 0} already in this library.`,
               });
-            else if (result.error !== "canceled")
+            else if (result.reason !== "cancelled")
               notify({
                 id: "library-copy",
                 title: result.error || "Couldn't copy saves",

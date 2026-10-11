@@ -1,6 +1,7 @@
 import type { LanguageModel } from "ai";
 import { assistantCatalog } from "../../../shared/assistant";
 import type { AgentProviderId } from "./keys";
+import { createLocalLanguageModel } from "./local-language-model";
 
 export async function loadModel(input: {
   provider: AgentProviderId;
@@ -72,30 +73,12 @@ export async function loadModel(input: {
     const { createDeepSeek } = await import("@ai-sdk/deepseek");
     return createDeepSeek({ apiKey: key })(modelId);
   }
-  if (input.provider === "ollama") {
-    const { createOpenAICompatible } = await import(
-      "@ai-sdk/openai-compatible"
-    );
-    const origin = (input.baseUrl ?? "http://127.0.0.1:11434").replace(
-      /\/v1\/?$/i,
-      "",
-    );
-    return createOpenAICompatible({
-      name: "ollama",
-      apiKey: key || "local",
-      baseURL: `${origin.replace(/\/$/, "")}/v1`,
-    })(modelId);
-  }
-  if (input.provider === "lmstudio") {
-    const { createOpenAICompatible } = await import(
-      "@ai-sdk/openai-compatible"
-    );
-    const baseURL = input.baseUrl?.trim() || "http://127.0.0.1:1234/v1";
-    return createOpenAICompatible({
-      name: "lmstudio",
-      apiKey: key || "local",
-      baseURL: baseURL.replace(/\/$/, ""),
-    })(modelId);
-  }
+  if (input.provider === "ollama" || input.provider === "lmstudio")
+    return createLocalLanguageModel({
+      provider: input.provider,
+      model: modelId,
+      apiKey: key,
+      baseUrl: input.baseUrl,
+    });
   return null;
 }

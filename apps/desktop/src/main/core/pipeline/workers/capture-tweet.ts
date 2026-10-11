@@ -6,7 +6,7 @@ import {
   screenshotThreadsDual,
   screenshotTweetDual,
   type TweetScreenshotResult,
-} from "../../refresh/scrape-window";
+} from "../../refresh/harvest-window";
 import {
   type RenderedCard,
   renderThreadsCardPng,

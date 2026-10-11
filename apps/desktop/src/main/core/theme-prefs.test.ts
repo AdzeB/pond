@@ -30,25 +30,21 @@ describe("theme prefs rebuild", () => {
     expect(THEME_PRESETS).toHaveLength(30);
   });
 
-  it("migrates legacy preset mode", () => {
-    const prefs = PrefsSchema.parse({
-      preferences: { themeMode: "preset", presetId: "mint" },
-    });
-    expect(prefs.preferences.appearance).toBe("light");
-    expect(prefs.preferences.lightPresetId).toBe("mint");
-    expect(prefs.preferences.light.accent).toBe("#0CA678");
-  });
-
-  it("migrates legacy custom dark base into the dark side", () => {
+  it("keeps a stored dark side", () => {
     const prefs = PrefsSchema.parse({
       preferences: {
-        themeMode: "custom",
-        custom: { base: "#0A0A0A", accent: "#ff0000", contrast: 40 },
+        appearance: "dark",
+        darkPresetId: "custom",
+        dark: {
+          accent: "#ff0000",
+          background: "#0A0A0A",
+          foreground: "#EEEEEE",
+          contrast: 40,
+        },
       },
     });
     expect(prefs.preferences.appearance).toBe("dark");
     expect(prefs.preferences.dark.accent).toBe("#ff0000");
-    expect(prefs.preferences.dark.background).toBe("#0A0A0A");
     expect(prefs.preferences.dark.contrast).toBe(40);
   });
 

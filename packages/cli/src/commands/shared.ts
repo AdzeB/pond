@@ -129,7 +129,7 @@ export async function waitForSaves(
 ): Promise<LocalApiSave[]> {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
-    const rows = await api.items({ ids, includeDeleted: true });
+    const rows = await api.saves({ ids, includeDeleted: true });
     if (
       rows.length === ids.length &&
       rows.every((row) => row.status !== "ingesting")

@@ -1,0 +1,24 @@
+.count {
+  flex-shrink: 0;
+  padding-inline-start: 6px;
+}
+
+.row {
+  padding-inline-start: calc(12px + var(--tag-depth) * 16px);
+}
+
+.expand {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-inline: -2px -4px;
+  color: var(--ds-gray-9);
+  transition: transform var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &[data-expanded] {
+    transform: rotate(90deg);
+  }
+}

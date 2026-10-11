@@ -1,8 +1,8 @@
 import { LOCALES, type Locale } from "@pond/schema";
 import { Settings } from "@pond/ui";
 import { createTranslator, LOCALE_LABELS } from "@shared/localization";
-import { usePrefs } from "@/features/settings/state/prefs";
 import { EnumSelect } from "@/shared/components/enum-select";
+import { usePrefs } from "@/shared/state/prefs";
 
 const OPTIONS = LOCALES.map((locale) => ({
   value: locale,

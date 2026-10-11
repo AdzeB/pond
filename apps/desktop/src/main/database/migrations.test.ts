@@ -1,7 +1,10 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import * as schema from "@pond/schema/db";
 import Database from "better-sqlite3";
+import { is } from "drizzle-orm";
+import { getTableConfig, SQLiteTable } from "drizzle-orm/sqlite-core";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { migratePond } from "./migrations";
@@ -59,42 +62,41 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
     }
   });
 
-  it("migrates legacy queue rows and creates scheduler indexes", () => {
+  it("creates every column the Drizzle schema declares", () => {
     const db = new Database(":memory:");
     try {
       migratePond(db);
-      db.prepare(
-        "INSERT INTO saves (id, source, source_id, url) VALUES (?, ?, ?, ?)",
-      ).run("save-1", "twitter", "one", "https://x.com/a/status/1");
-      const insertTask = db.prepare(`
-        INSERT INTO tasks (
-          id, save_id, source, op, status, last_error, created_at, updated_at
-        ) VALUES (?, 'save-1', 'twitter', ?, ?, ?, 1, 2)
-      `);
-      insertTask.run("running", "harvest_metadata", "running", null);
-      insertTask.run(
-        "cancelled",
-        "capture_tweet",
-        "failed",
-        "cancelled by user",
-      );
-      insertTask.run("dead", "finalize", "failed", "network failure");
-
-      migratePond(db);
-
-      const statuses = db
-        .prepare("SELECT id, status FROM tasks ORDER BY id")
-        .all()
-        .map((row) =>
-          z.object({ id: z.string(), status: z.string() }).parse(row),
+      for (const table of Object.values(schema)) {
+        if (!is(table, SQLiteTable)) continue;
+        const config = getTableConfig(table);
+        const present = db
+          .prepare(`pragma table_info(${config.name})`)
+          .all()
+          .map((row) => z.object({ name: z.string() }).parse(row).name);
+        if (present.length === 0) continue;
+        expect(present, config.name).toEqual(
+          expect.arrayContaining(config.columns.map((column) => column.name)),
         );
-      expect(statuses).toEqual([
-        { id: "cancelled", status: "cancelled" },
-        { id: "dead", status: "dead" },
-        { id: "running", status: "pending" },
-      ]);
+      }
+    } finally {
+      db.close();
+    }
+  });
 
-      const indexes = db
+  it("creates scheduler indexes and reruns without changes", () => {
+    const root = mkdtempSync(join(tmpdir(), "pond-migration-"));
+    try {
+      const created = new Database(join(root, "index.db"));
+      migratePond(created);
+      const schemaSql = () =>
+        created
+          .prepare("SELECT name, sql FROM sqlite_master ORDER BY name")
+          .all();
+      const before = schemaSql();
+      migratePond(created);
+      expect(schemaSql()).toEqual(before);
+
+      const indexes = created
         .prepare("PRAGMA index_list(tasks)")
         .all()
         .map((row) => z.object({ name: z.string() }).parse(row).name);
@@ -106,66 +108,7 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
           "tasks_source_op_idx",
         ]),
       );
-
-      const queueTables = db
-        .prepare(
-          "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'source_%' OR name = 'queue_generations'",
-        )
-        .all()
-        .map((row) => z.object({ name: z.string() }).parse(row).name);
-      expect(queueTables).toEqual(
-        expect.arrayContaining([
-          "queue_generations",
-          "source_gates",
-          "source_request_ledger",
-        ]),
-      );
-    } finally {
-      db.close();
-    }
-  });
-
-  it("migrates Queue V2 in a temporary Library", () => {
-    const root = mkdtempSync(join(tmpdir(), "pond-queue-migration-"));
-    const file = join(root, "index.db");
-    try {
-      const created = new Database(file);
-      migratePond(created);
-      created
-        .prepare(
-          `INSERT INTO saves (id, source, source_id, url)
-            VALUES ('save', 'twitter', 'one', 'https://x.com/a/status/1')`,
-        )
-        .run();
-      created
-        .prepare(
-          `INSERT INTO tasks (
-              id, save_id, source, op, status, last_error
-            ) VALUES (
-              'legacy', 'save', 'twitter', 'harvest_metadata', 'failed',
-              'network failure'
-            )`,
-        )
-        .run();
-      migratePond(created);
       created.close();
-
-      const reopened = new Database(file);
-      expect(
-        reopened
-          .prepare(
-            "SELECT status, failed_at IS NOT NULL AS failed FROM tasks WHERE id = 'legacy'",
-          )
-          .get(),
-      ).toEqual({ status: "dead", failed: 1 });
-      expect(
-        reopened
-          .prepare(
-            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'source_gates'",
-          )
-          .get(),
-      ).toEqual({ name: "source_gates" });
-      reopened.close();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

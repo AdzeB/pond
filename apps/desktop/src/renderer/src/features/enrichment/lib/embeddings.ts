@@ -1,4 +1,9 @@
-import { textEmbeddingVersion } from "@shared/embeddings";
+import {
+  embeddingDocument,
+  embeddingSearchQuery,
+  embeddingSimilarityText,
+  textEmbeddingVersion,
+} from "@shared/embeddings";
 import {
   inferEmbedText,
   inferEmbedTexts,
@@ -8,23 +13,28 @@ export function embedModelVersion(): string {
   return textEmbeddingVersion();
 }
 
-export function embedText(text: string): Promise<Float32Array> {
-  return inferEmbedText(text);
+export function embedDocument(
+  title: string | null,
+  text: string,
+): Promise<Float32Array> {
+  return inferEmbedText(embeddingDocument(title, text));
 }
 
 export function embedTexts(texts: string[]): Promise<Float32Array[]> {
-  return inferEmbedTexts(texts);
+  return inferEmbedTexts(texts.map(embeddingSimilarityText));
 }
 
-export function saveEmbeddingText(save: {
-  title: string | null;
+export function embedSearchQueries(texts: string[]): Promise<Float32Array[]> {
+  return inferEmbedTexts(texts.map(embeddingSearchQuery));
+}
+
+export function saveEmbeddingBody(save: {
   description: string | null;
   notes: string | null;
   author: string | null;
   tags: string[];
 }): string {
   return [
-    save.title ?? "",
     save.description ?? "",
     save.notes ?? "",
     save.author ?? "",

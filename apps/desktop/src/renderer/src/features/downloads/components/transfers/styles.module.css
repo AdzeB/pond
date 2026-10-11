@@ -6,7 +6,7 @@
 }
 .panel h2 {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--ds-text-md);
   font-weight: 600;
 }
 .row {
@@ -22,7 +22,7 @@
   flex-direction: column;
   gap: 5px;
   min-width: 0;
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
 }
 .destination {
   overflow: hidden;

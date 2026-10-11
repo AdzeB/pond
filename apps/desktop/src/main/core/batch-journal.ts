@@ -13,6 +13,7 @@ import {
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { Transaction } from "@pond/schema/tx";
 import { z } from "zod";
+import { saveDirIn, trashSaveDirIn } from "../paths";
 
 const SnapshotSchema = z.object({
   path: z.string(),
@@ -76,10 +77,10 @@ function targetsFor(
       tx.id === ".."
     )
       throw new Error("Invalid Save ID.");
-    const directory = join(root, "items", `${tx.id}.info`);
+    const directory = saveDirIn(root, tx.id);
     if (tx.kind === "delete" || tx.kind === "purge") {
       add(directory, "directory");
-      add(join(root, "trash", `${tx.id}.info`), "directory");
+      add(trashSaveDirIn(root, tx.id), "directory");
     } else {
       add(join(directory, "info.json"), "file");
       add(join(directory, "source.json"), "file");
@@ -154,7 +155,7 @@ export async function prepareBatchJournal(
       .filter((tx) => tx.model === "save" || tx.model === "save_folder")
       .map((tx) => tx.id),
   )) {
-    const itemDirectory = join(root, "items", `${id}.info`);
+    const itemDirectory = saveDirIn(root, id);
     if (!(await exists(itemDirectory))) {
       targets = targets.filter(
         (target) =>

@@ -8,11 +8,7 @@ import {
   ScrollRestorationContext,
   useScrollRestoration,
 } from "@/shared/hooks/use-scroll-restoration";
-import {
-  findScrollAnchor,
-  PackedGrid,
-  surroundingBandIndexes,
-} from "./packed-grid";
+import { findScrollAnchor, PackedGrid, surroundingBandIndexes } from ".";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 

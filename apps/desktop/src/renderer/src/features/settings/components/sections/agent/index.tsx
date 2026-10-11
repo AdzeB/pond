@@ -1,6 +1,6 @@
 import { Button, Loader, Settings } from "@pond/ui";
 import { useCallback, useEffect, useState } from "react";
-import { savePrefsSection, usePrefs } from "@/features/settings/state/prefs";
+import { savePrefsSection, usePrefs } from "@/shared/state/prefs";
 import {
   addedProvidersWith,
   GROUPS,
@@ -61,8 +61,8 @@ export function AgentSection() {
         <Settings.HeaderText>
           <Settings.Title>Providers</Settings.Title>
           <Settings.Description>
-            Connect the AI providers Agent uses with your keys or a local host
-            you run.
+            Connect the AI providers Assistant uses with your keys or a local
+            host you run.
           </Settings.Description>
         </Settings.HeaderText>
       </Settings.Header>

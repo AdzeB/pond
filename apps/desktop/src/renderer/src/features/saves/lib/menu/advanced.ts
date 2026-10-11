@@ -3,7 +3,8 @@ import {
   IconFileOutline18,
   IconImageOutline18,
 } from "@pond/icons/outline/18";
-import { Dialog, type MenuItemSpec } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
+import { clipEmbeddingVersion, embeddingDimensions } from "@shared/embeddings";
 import { createElement } from "react";
 import bingLogo from "@/assets/logos/reverse-search/bing.png";
 import googleLensLogo from "@/assets/logos/reverse-search/google-lens.svg";
@@ -20,11 +21,10 @@ import {
   copyIdsForSelection,
   reverseImageSearchForSelection,
 } from "@/features/saves/lib/selection";
-import { openCombineImagesDialog } from "@/features/saves/state/combine-images-dialog";
 import type { Save } from "@/features/saves/types";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
-import { notify } from "@/shared/lib/toast";
 import { buildDetailItems } from "./details";
+import { ExtensionField } from "./extension-field";
 import { glyph, notifyCopy } from "./shared";
 import type { SaveMenuContext } from "./types";
 
@@ -60,6 +60,13 @@ function combinableImageCount(items: readonly Save[]): number {
   ).length;
 }
 
+function hasCompatibleMediaEmbedding(save: Save): boolean {
+  return (
+    save.clipModel === clipEmbeddingVersion() &&
+    save.clipEmbedding?.length === embeddingDimensions()
+  );
+}
+
 export function buildReverseSearchItems({
   save,
   ids,
@@ -70,7 +77,7 @@ export function buildReverseSearchItems({
     {
       label: "Find Similar Saves",
       icon: glyph(IconImageOutline18),
-      hidden: batch || save.mediaType !== "image",
+      hidden: batch || !hasCompatibleMediaEmbedding(save),
       onClick: () =>
         saveLibraryBridge.setVisualProbe({
           id: save.id,
@@ -145,7 +152,10 @@ export function buildSupplementalItems(
         hidden: combinableImageCount(saves) < 2,
         onClick: () => {
           const nav = saveLibraryBridge.getNav();
-          openCombineImagesDialog(ids, nav.kind === "folder" ? nav.id : null);
+          void window.pond.openCombineImagesWindow({
+            ids,
+            folderId: nav.kind === "folder" ? nav.id : null,
+          });
         },
       },
       ...details.organization,
@@ -168,27 +178,16 @@ export function buildSupplementalItems(
       ...maintenanceItems,
       { type: "separator" },
       {
+        type: "submenu",
         label: "Change Extension",
         icon: glyph(IconFileOutline18),
         hidden: !saves.some((item) => item.files.length > 0),
-        onClick: () => {
-          Dialog.prompt({
-            title: "Change Extension",
-            confirmLabel: "Change Extension",
-            placeholder: "png",
-            onConfirm: async (extension) => {
-              const result = await window.pond.query(
-                "saves.batchEditExtension",
-                { ids, extension },
-              );
-              notify({
-                id: "batch-extension",
-                title: "Extensions changed",
-                description: `${result.changedFiles} files changed. Use Undo to reverse this action.`,
-              });
-            },
-          });
-        },
+        items: [
+          {
+            type: "custom",
+            render: () => createElement(ExtensionField, { ids }),
+          },
+        ],
       },
     ],
   };

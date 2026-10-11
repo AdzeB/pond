@@ -21,7 +21,7 @@
 }
 
 .selection-count {
-  font-size: 13px;
+  font-size: var(--ds-text-md);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-12);
@@ -43,6 +43,13 @@
 
 .draft {
   overflow: hidden;
+}
+
+.field {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
 }
 
 .action-bar {

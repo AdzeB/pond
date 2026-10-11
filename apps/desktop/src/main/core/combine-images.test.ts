@@ -1,9 +1,10 @@
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { isCombinableImage } from "@shared/combine-images-layout";
 import sharp from "sharp";
 import { expect, it } from "vitest";
-import { isCombinableImage, joinRasterImages } from "./combine-images";
+import { joinRasterImages } from "./combine-images";
 
 it("accepts raster formats supported by the composition pipeline", () => {
   expect(isCombinableImage("image/png", "a.png")).toBe(true);
@@ -39,7 +40,25 @@ it("supports vertical reverse composition, dimensions, spacing, margins, and web
     quality: 80,
   });
   const meta = await sharp(combined).metadata();
-  expect([meta.width, meta.height, meta.format]).toEqual([24, 47, "webp"]);
+  expect([meta.width, meta.height, meta.format]).toEqual([20, 31, "webp"]);
+});
+
+it("rounds the canvas corners into transparency for PNG", async () => {
+  const tile = await sharp({
+    create: { width: 20, height: 20, channels: 4, background: "red" },
+  })
+    .png()
+    .toBuffer();
+  const combined = await joinRasterImages([tile, tile], {
+    canvasRadius: 10,
+    format: "png",
+  });
+  const { data, info } = await sharp(combined)
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  expect([info.width, info.height]).toEqual([40, 20]);
+  expect(data[3]).toBe(0);
+  expect(data[(10 * info.width + 20) * 4 + 3]).toBe(255);
 });
 
 it("joins images left to right at the tallest height without touching originals", async () => {

@@ -78,7 +78,7 @@ it("retains failed notes across selection changes and retries the original value
   await render("a", "Original", commit);
   await fill("Keep this draft");
   await blur();
-  expect(host.textContent).toContain("Disk full");
+  expect(host.textContent).toContain("Couldn't save changes. Try again.");
   await render("b", "Different", async () => {});
   await render("a", "Original", commit);
   expect(field().value).toBe("Keep this draft");

@@ -1,6 +1,6 @@
 .input {
   height: 24px;
-  font-size: 13px;
+  font-size: var(--ds-text-md);
 }
 
 .draft-row {

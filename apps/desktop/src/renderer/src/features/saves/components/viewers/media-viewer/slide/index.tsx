@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  type NoteMarker,
-  VideoPlayer,
-} from "@/features/saves/components/video-player";
+import { VideoPlayer } from "@/features/saves/components/video-player";
 import { GeneratedRasterViewer } from "@/features/saves/components/viewers/generated-raster-viewer";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ImageInspector } from "@/features/saves/components/viewers/image-inspector";
-import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { OriginalFileActions } from "@/features/saves/components/viewers/original-file-actions";
 import { ViewerFallback } from "@/features/saves/components/viewers/viewer-fallback";
 import { ViewerResultCount } from "@/features/saves/components/viewers/viewer-result-count";
@@ -45,7 +42,6 @@ interface SlideProps {
   title?: string | null;
   artist?: string | null;
   chapters?: ChapterCue[];
-  noteMarkers?: readonly NoteMarker[];
   ratio?: number;
   onRatio?: (src: string, ratio: number) => void;
   slideNavigation?: ViewerNavigation;
@@ -64,7 +60,6 @@ export function Slide({
   title,
   artist,
   chapters,
-  noteMarkers,
   ratio,
   onRatio,
   slideNavigation,
@@ -110,7 +105,6 @@ export function Slide({
             title={title}
             artist={artist}
             chapters={chapters}
-            noteMarkers={noteMarkers}
             ratioOverride={ratio}
             onRatio={onRatio}
             onError={onProviderError}
@@ -148,7 +142,6 @@ function VideoSlide({
   title,
   artist,
   chapters,
-  noteMarkers,
   ratioOverride,
   onRatio,
   onError,
@@ -160,7 +153,6 @@ function VideoSlide({
   title?: string | null;
   artist?: string | null;
   chapters?: ChapterCue[];
-  noteMarkers?: readonly NoteMarker[];
   ratioOverride?: number;
   onRatio?: (src: string, ratio: number) => void;
   onError: () => void;
@@ -216,19 +208,17 @@ function VideoSlide({
         width={slide.width}
         height={slide.height}
         chapters={chapters}
-        noteMarkers={noteMarkers}
         onRatio={(r) => {
           setLocal(r);
           onRatio?.(slide.src, r);
         }}
         onError={handlePlaybackError}
-        renderToolbar={({ actions, edits, view }) =>
+        renderToolbar={({ actions, edits }) =>
           active ? (
             <ChromePortal slot="top">
               <ViewerHud.Bar
                 label="Video"
                 start={<ViewerResultCount saveId={saveId} />}
-                center={view}
                 end={
                   <ViewerToolbarGroups
                     actions={actions}
@@ -260,7 +250,7 @@ function PosterSlide({ slide, saveId }: { slide: MediaSlide; saveId: string }) {
       aria-label="Drag save"
       draggable
       onDragStart={(event) => {
-        beginSaveDrag(saveId, event.dataTransfer);
+        beginSaveDrag(saveId, event);
       }}
     >
       <img

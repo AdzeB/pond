@@ -1,6 +1,6 @@
 import { isThumbnailKind } from "@shared/save-file-names";
 import { z } from "zod";
-import { statusFeed } from "@/features/downloads/lib/status-feed";
+import { statusFeed } from "@/features/downloads/status-feed";
 import {
   deriveTypeKind,
   isImageFile,
@@ -15,10 +15,7 @@ import {
 } from "@/features/saves/lib/mutate";
 import { pool } from "@/features/saves/state/pool";
 import type { Save, SaveFile } from "@/features/saves/types";
-import {
-  mergeUniqueTags,
-  tagClipboard,
-} from "@/features/tags/state/tag-clipboard";
+import { mergeUniqueTags, tagClipboard } from "@/features/tags";
 import { notify } from "@/shared/lib/toast";
 
 const OkSchema = z

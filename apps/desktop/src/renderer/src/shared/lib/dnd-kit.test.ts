@@ -31,9 +31,10 @@ describe("sortable announcements", () => {
     const announcements = createSortableAnnouncements(items, labelFor);
     expect(
       announcements.onDragCancel({
+        /** SAFETY: onDragCancel only reads the active id. */
         active: { id: "projects" } as never,
         over: null,
       }),
-    ).toBe("Moving PROJECTS was cancelled.");
+    ).toBe("Moving PROJECTS was canceled.");
   });
 });

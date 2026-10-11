@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { SavesImportResult } from "@shared/saves-contracts-shared";
 import { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
@@ -42,13 +43,9 @@ export function pageAssetsDraft(input: {
   };
 }
 
-export async function extractPageAssets(url: string): Promise<{
-  ok: boolean;
-  imported: number;
-  skipped: number;
-  queued: number;
-  error?: string;
-}> {
+export async function extractPageAssets(
+  url: string,
+): Promise<SavesImportResult> {
   let href: string;
   try {
     href = new URL(url).toString();

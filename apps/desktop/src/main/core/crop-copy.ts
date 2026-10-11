@@ -8,7 +8,6 @@ import { getDb } from "../db";
 import { resolveSaveFilePath } from "../ipc/helpers";
 import { cropImage } from "../lib/crop-image";
 import { createManualSave } from "./manual-import";
-import { withDecryptedLibraryMediaPath } from "./storage/library-media-storage";
 
 export async function saveCropCopy(input: {
   id: string;
@@ -28,10 +27,7 @@ export async function saveCropCopy(input: {
       .where(eq(saves.id, input.id));
     if (!original)
       return { ok: false, error: "The original save is unavailable." };
-    const bytes = await withDecryptedLibraryMediaPath(
-      target.path,
-      (decrypted) => cropImage(decrypted, input.crop, input.frameIndex),
-    );
+    const bytes = await cropImage(target.path, input.crop, input.frameIndex);
     const path = join(directory, "crop.png");
     await writeFile(path, bytes);
     const result = await createManualSave({
@@ -39,14 +35,14 @@ export async function saveCropCopy(input: {
       filePaths: [path],
       tags: original.tags ?? [],
     });
-    return result.ok && result.id
+    return result.ok
       ? { ok: true, id: result.id }
-      : { ok: false, error: result.error || "Couldn’t save this crop." };
+      : { ok: false, error: result.error };
   } catch (error) {
     return {
       ok: false,
       error:
-        error instanceof Error ? error.message : "Couldn’t save this crop.",
+        error instanceof Error ? error.message : "Couldn't save this crop.",
     };
   } finally {
     await rm(directory, { recursive: true, force: true });

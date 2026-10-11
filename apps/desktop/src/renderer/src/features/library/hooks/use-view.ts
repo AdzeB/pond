@@ -21,7 +21,7 @@ import {
   type DisplayPrefs,
   setDisplayPref,
   useDisplayPrefs,
-} from "@/features/saves/state/display-prefs";
+} from "@/features/saves";
 import { isSortKey, type SortDir, type SortKey } from "./use-filtered-saves";
 
 export type { SortKey };

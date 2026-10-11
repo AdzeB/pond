@@ -1,5 +1,5 @@
 import { extname } from "node:path";
-import { ASSISTANT_MODELS } from "../../../shared/assistant";
+import type { ProviderModel } from "../../../shared/provider-models";
 import { resolveSaveFilePath } from "../../ipc/helpers";
 import { readLibraryMedia } from "../storage/library-media-storage";
 
@@ -14,13 +14,9 @@ const MIME = new Map<string, string>(
 );
 
 export function visionEnabled(
-  provider: string,
-  visionModel: string | undefined,
+  model: Pick<ProviderModel, "modelCapabilities"> | undefined,
 ): boolean {
-  const id = visionModel || provider;
-  return ASSISTANT_MODELS.some(
-    (model) => model.id === id && model.capabilities.vision,
-  );
+  return model?.modelCapabilities?.vision === true;
 }
 
 export async function imagesForSaves(
@@ -32,12 +28,10 @@ export async function imagesForSaves(
     if (!target.ok) continue;
     const mime = MIME.get(extname(target.path).toLowerCase());
     if (!mime) continue;
-    try {
-      images.push({
-        mimeType: mime,
-        data: (await readLibraryMedia(target.path)).toString("base64"),
-      });
-    } catch {}
+    images.push({
+      mimeType: mime,
+      data: (await readLibraryMedia(target.path)).toString("base64"),
+    });
   }
   return images;
 }

@@ -8,10 +8,8 @@ import type {
 import {
   type CropHandle,
   clampImagePoint,
-  commentFromGesture,
   cropContains,
   inImage,
-  isAreaComment,
   lockCropAspect,
   nudgeCrop,
   resizeCrop,
@@ -39,10 +37,8 @@ interface ImageGestureOptions {
   active: boolean;
   draft: ImageCrop | null;
   drag: RefObject<ImageDrag | null>;
-  editingComment: boolean;
   gestureMoved: RefObject<boolean>;
   mode: InspectorMode;
-  onComment: (region: ImageCrop) => void;
   onNavigate: (delta: number) => void;
   pointFromClient: (
     clientX: number,
@@ -69,10 +65,8 @@ export function createImageGestures({
   active,
   draft,
   drag,
-  editingComment,
   gestureMoved,
   mode,
-  onComment,
   onNavigate,
   pointFromClient,
   poseZoom,
@@ -99,12 +93,7 @@ export function createImageGestures({
       const raw = pointFromClient(event.clientX, event.clientY);
       const point = clampImagePoint(raw);
       const moving =
-        (mode === "crop" ||
-          (mode === "comment" && !!draft && isAreaComment(draft))) &&
-        !handle &&
-        !!draft &&
-        cropContains(draft, point);
-      if (editingComment && mode === "comment" && !handle && !moving) return;
+        mode === "crop" && !handle && !!draft && cropContains(draft, point);
       if (mode !== "view" && !handle && !moving && !inImage(raw)) return;
       event.preventDefault();
       event.stopPropagation();
@@ -172,9 +161,7 @@ export function createImageGestures({
             h: Math.abs(point.y - origin.cropY),
           };
           setDraft(
-            mode === "crop" && event.shiftKey && ratio
-              ? lockCropAspect(next, ratio)
-              : next,
+            event.shiftKey && ratio ? lockCropAspect(next, ratio) : next,
           );
         }
       } else
@@ -198,19 +185,6 @@ export function createImageGestures({
           Math.abs(event.clientY - origin.startY)
       )
         onNavigate(event.clientX > origin.startX ? -1 : 1);
-      if (
-        mode === "comment" &&
-        origin?.button === 0 &&
-        !origin.handle &&
-        !origin.crop &&
-        !editingComment
-      )
-        onComment(
-          commentFromGesture(
-            { x: origin.cropX, y: origin.cropY },
-            clampImagePoint(pointFromClient(event.clientX, event.clientY)),
-          ),
-        );
       drag.current = null;
       event.stopPropagation();
       if (event.currentTarget.hasPointerCapture(event.pointerId))

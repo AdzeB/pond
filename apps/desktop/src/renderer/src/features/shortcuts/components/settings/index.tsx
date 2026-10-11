@@ -1,7 +1,7 @@
 import { IconMagnifierOutline12 } from "@pond/icons/outline/12";
 import { Button, Empty, Input, Settings } from "@pond/ui";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { savePrefsSection, usePrefs } from "@/features/settings/state/prefs";
+import { errorCopy } from "@/shared/lib/error-copy";
 import {
   chordGlyphs,
   isShortcutId,
@@ -10,6 +10,7 @@ import {
   type ShortcutId,
   shortcutConflict,
 } from "@/shared/lib/shortcuts";
+import { savePrefsSection, usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
 export function ShortcutSettings({
@@ -55,14 +56,15 @@ export function ShortcutSettings({
         .then((status) => setNativeErrors(status.errors))
         .catch(() => {
           setNativeErrors([
-            "Couldn’t check global shortcut availability. Reopen Hotkeys to retry.",
+            "Couldn't check global shortcut availability. Reopen Hotkeys to retry.",
           ]);
         });
     } catch (reason) {
       setError(
-        reason instanceof Error
-          ? reason.message
-          : "Couldn’t change this shortcut. Your previous shortcut is unchanged.",
+        errorCopy(
+          reason,
+          "Couldn't change this shortcut. Your previous shortcut is unchanged.",
+        ),
       );
     } finally {
       pendingRef.current = false;

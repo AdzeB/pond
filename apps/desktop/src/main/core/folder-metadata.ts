@@ -1,5 +1,6 @@
 import { type FolderMetadata, folderMetadata, folders } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
+import type { OkResult } from "../../shared/query-contracts-shared";
 import { getDb } from "../db";
 import { libraryRoot } from "../paths";
 import { withMutationScope } from "./executor";
@@ -44,7 +45,7 @@ export async function getFolderMetadata(
 export async function setFolderMetadata(
   folderId: string,
   input: FolderMetadataInput,
-): Promise<{ ok: boolean }> {
+): Promise<OkResult> {
   return withMutationScope(async () => {
     const db = await getDb();
     const exists = db
@@ -52,7 +53,7 @@ export async function setFolderMetadata(
       .from(folders)
       .where(eq(folders.id, folderId))
       .get();
-    if (!exists) return { ok: false };
+    if (!exists) return { ok: false, error: "Folder not found." };
     const next = normalizeFolderMetadata(input);
     if (!next.description && !next.externalLink) {
       db.delete(folderMetadata)

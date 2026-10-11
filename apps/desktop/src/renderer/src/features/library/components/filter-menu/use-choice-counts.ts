@@ -6,8 +6,8 @@ import {
   useFolders,
 } from "@/features/library/state/folders";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
-import { useSaves } from "@/features/saves/hooks/use-saves";
-import { applyNavFilter } from "@/features/saves/lib/nav-filter";
+import { applyNavFilter } from "@/features/saves";
+import { useSaves } from "@/features/saves/pool";
 
 export function useChoiceCounts(field: FieldId) {
   const saves = useSaves();

@@ -65,7 +65,6 @@ export const TOKEN_FIELDS: readonly TokenFieldSpec[] = [
   { field: "width", keys: ["width"] },
   { field: "height", keys: ["height"] },
   { field: "url", keys: ["url"] },
-  { field: "comment", keys: ["comment", "comments"] },
 ];
 
 const KEY_TO_FIELD = new Map<string, FieldId>();

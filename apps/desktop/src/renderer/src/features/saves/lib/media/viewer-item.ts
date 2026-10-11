@@ -10,7 +10,7 @@ import {
   viewerCapabilityFor,
 } from "@/features/saves/lib/media/viewer-capability";
 import type { Save } from "@/features/saves/types";
-import type { ResolvedTheme } from "@/features/settings/hooks/use-resolved-theme";
+import type { ResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 
 export interface ViewerItem {
   key: string;

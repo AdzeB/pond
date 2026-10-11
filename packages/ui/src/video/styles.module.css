@@ -53,7 +53,7 @@
   position: relative;
   inset: auto;
   gap: 8px;
-  padding: 4px 8px;
+
   color: var(--ds-gray-12);
   pointer-events: auto;
   background: none;
@@ -64,7 +64,7 @@
 .bar {
   display: flex;
   flex: 0 0 auto;
-  gap: 12px;
+  gap: 16px;
   align-items: center;
   height: 32px;
   pointer-events: auto;
@@ -102,7 +102,7 @@
 .time {
   flex-shrink: 0;
   min-width: 40px;
-  font-size: 13px;
+  font-size: var(--ds-text-md);
   font-variant-numeric: tabular-nums;
   color: var(--ds-white-a12);
   text-align: center;
@@ -115,7 +115,7 @@
   flex: 0 0 auto;
   gap: 6px;
   align-items: center;
-  font-size: 13px;
+  font-size: var(--ds-text-md);
   font-variant-numeric: tabular-nums;
   color: var(--ds-white-a12);
   white-space: nowrap;
@@ -146,7 +146,7 @@
   gap: 4px;
   justify-items: center;
   padding: 0;
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--ds-white-a12);
   white-space: nowrap;
@@ -171,6 +171,7 @@
 .preview-line {
   position: absolute;
   top: 100%;
+  left: 50%;
   width: 1px;
   height: 32px;
   background: currentColor;
@@ -265,7 +266,7 @@
   justify-content: center;
   height: 32px;
   padding: 0 8px;
-  font-size: 13px;
+  font-size: var(--ds-text-md);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--ds-white-a12);
@@ -300,13 +301,13 @@
 }
 
 .controls[data-chrome] .bar {
-  gap: 2px;
-  height: 24px;
+  gap: 8px;
+  height: var(--ds-size-sm);
 }
 
 .controls[data-chrome] .button {
-  width: 24px;
-  height: 24px;
+  width: var(--ds-size-sm);
+  height: var(--ds-size-sm);
   border-radius: var(--ds-radius-sm);
 }
 
@@ -342,8 +343,8 @@
 }
 
 .controls[data-chrome] .speed {
-  width: 24px;
-  height: 24px;
+  width: var(--ds-size-sm);
+  height: var(--ds-size-sm);
   padding: 0;
   font-size: var(--ds-text-xs);
   color: var(--ds-gray-12);

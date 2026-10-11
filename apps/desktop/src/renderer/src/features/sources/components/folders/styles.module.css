@@ -1,0 +1,84 @@
+.page {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.table {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.table > :global([role="grid"]) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+}
+
+.empty {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.grid {
+  --data-table-header-height: 40px;
+  --data-table-header-weight: 400;
+  width: 100%;
+  min-width: 0;
+}
+
+.name,
+.path,
+.status {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-md);
+  white-space: nowrap;
+}
+
+.name {
+  font-weight: 500;
+  color: var(--ds-gray-12);
+}
+
+.count {
+  flex: none;
+  font-size: var(--ds-text-md);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-10);
+  white-space: nowrap;
+}
+
+.path,
+.when {
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-11);
+}
+
+.status {
+  color: var(--ds-gray-11);
+
+  &[data-watching] {
+    color: var(--ds-accent-11);
+  }
+}

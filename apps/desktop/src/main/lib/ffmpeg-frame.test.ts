@@ -4,7 +4,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { binariesAvailable } from "../core/refresh/binaries";
-import { extractSampledFrames, sampleFrameTimestamps } from "./ffmpeg-frame";
+import {
+  embeddingFrameTimestamps,
+  extractSampledFrames,
+  sampleFrameTimestamps,
+} from "./ffmpeg-frame";
 
 function run(bin: string, args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -17,6 +21,14 @@ function run(bin: string, args: string[]): Promise<void> {
 }
 
 describe("video frame sampling", () => {
+  it("samples the first thirty-two seconds at one frame per second", () => {
+    expect(embeddingFrameTimestamps(3.2, 32)).toEqual([0, 1, 2, 3]);
+    const samples = embeddingFrameTimestamps(120, 32);
+    expect(samples).toHaveLength(32);
+    expect(samples[0]).toBe(0);
+    expect(samples[31]).toBe(31);
+  });
+
   it("samples short videos away from duplicate endpoints", () => {
     expect(sampleFrameTimestamps(8, 12)).toEqual([2, 4, 6]);
   });

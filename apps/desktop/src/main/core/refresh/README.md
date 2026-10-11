@@ -7,7 +7,7 @@ URL-first ingest pipeline.
   world is "reset the task rows back to `pending` and bump the
   reconciler". The `harvest_metadata` worker re-runs and rebuilds the
   `Capture` from scratch.
-- `scrape-window.ts` is a small pool of hidden `BrowserWindow`s.
+- `harvest-window/` is a small pool of hidden `BrowserWindow`s.
   `captureFromSource` returns a Capture: Source APIs where they exist,
   otherwise `harvestUrl` against the window pool.
 - `harvest/<source>/item.ts` are the in-page DOM scrapers. They serialise
@@ -37,7 +37,7 @@ screenshot navigation — is gated by one shared governor in
 - **`await acquire(source)` before, `report(source, …)` after.** `acquire` blocks
   until it's safe (per-source spacing + human jitter, rolling per-window budget,
   cooldowns, circuit breaker, manual/at-risk pauses). The hidden-window pool
-  (`scrape-window/pool.ts`) calls `acquire` inside `leaseWindow`, so anything that
+  (`harvest-window/pool.ts`) calls `acquire` inside `leaseWindow`, so anything that
   leases a window is automatically paced.
 - **Respect platform signals.** `report` reads `retry-after` /
   `x-rate-limit-remaining` / `x-rate-limit-reset` and adjusts pacing (AIMD) and

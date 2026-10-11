@@ -20,13 +20,13 @@ import { IPC } from "../../shared/constants";
 import { getDb } from "../db";
 import { toWireSyncAction } from "../ipc/wire";
 import {
-  applyItemPatch,
-  removeItem,
-  setItemDeleted,
-  writeItemFiles,
+  patchSaveFiles,
+  removeSave,
+  setSaveDeleted,
+  writeSaveFiles,
 } from "../lib/library";
 import { withRawSlim } from "../lib/raw-slim";
-import { itemDir, libraryRoot } from "../paths";
+import { libraryRoot, saveDir } from "../paths";
 import { BatchRecoveryError, runRecoverableBatch } from "./batch-journal";
 import {
   replaceFolderMemberships,
@@ -220,15 +220,14 @@ async function applyToDisk(tx: Transaction): Promise<void> {
   if (tx.model !== "save") return;
   switch (tx.kind) {
     case "create": {
-      // SAFETY: a create carries the full row it is inserting; `NewSave` only differs by
-      // the columns the DB defaults, none of which `writeItemFiles` reads.
-      await writeItemFiles(tx.id, tx.data as Save, tx.files ?? []);
+      /** SAFETY: a create carries the full row; `NewSave` differs only in DB-defaulted columns `writeSaveFiles` never reads. */
+      await writeSaveFiles(tx.id, tx.data as Save, tx.files ?? []);
       return;
     }
     case "update": {
       for (const file of tx.fileRenames ?? []) {
-        const source = joinItemFile(tx.id, file.from);
-        const destination = joinItemFile(tx.id, file.to);
+        const source = joinSaveFile(tx.id, file.from);
+        const destination = joinSaveFile(tx.id, file.to);
         const destinationExists = await lstat(destination).then(
           () => true,
           (error: NodeJS.ErrnoException) => {
@@ -245,9 +244,8 @@ async function applyToDisk(tx: Transaction): Promise<void> {
           throw new Error(`A file named ${file.to} already exists.`);
         await rename(source, destination);
       }
-      // SAFETY: `Partial<NewSave>` and `Partial<Save>` differ only in the timestamp columns'
-      // nullability, and `applyItemPatch` writes them straight back out.
-      const patched = await applyItemPatch(
+      /** SAFETY: `Partial<NewSave>` and `Partial<Save>` differ only in timestamp nullability, which `patchSaveFiles` writes back unchanged. */
+      const patched = await patchSaveFiles(
         tx.id,
         (tx.patch ?? {}) as Partial<Save>,
         tx.files ?? [],
@@ -271,14 +269,14 @@ async function applyToDisk(tx: Transaction): Promise<void> {
           );
           throw new Error("The Save no longer exists.");
         }
-        // SAFETY: `current` is a full row from the DB; the patch only narrows its columns.
+        /** SAFETY: `current` is a full row from the DB; the patch only narrows its columns. */
         const merged = { ...current, ...tx.patch } as Save;
         log.info(
           "[pond executor] healing orphan: rebuilding items dir",
           tx.id,
           tx.files.map((f) => f.filename),
         );
-        await writeItemFiles(tx.id, merged, tx.files);
+        await writeSaveFiles(tx.id, merged, tx.files);
         if (tx.titleLock) setUserTitleLock(tx.id, tx.titleLock.after);
         return;
       }
@@ -288,18 +286,18 @@ async function applyToDisk(tx: Transaction): Promise<void> {
     }
     case "delete":
     case "purge":
-      await removeItem(tx.id);
+      await removeSave(tx.id);
       return;
     case "trash":
-      await setItemDeleted(tx.id, new Date());
+      await setSaveDeleted(tx.id, new Date());
       return;
     case "untrash":
-      await setItemDeleted(tx.id, null);
+      await setSaveDeleted(tx.id, null);
       return;
   }
 }
 
-function joinItemFile(id: string, filename: string): string {
+function joinSaveFile(id: string, filename: string): string {
   if (
     !filename ||
     filename.includes("/") ||
@@ -308,7 +306,7 @@ function joinItemFile(id: string, filename: string): string {
     filename === ".."
   )
     throw new Error("Invalid Save filename.");
-  return join(itemDir(id), filename);
+  return join(saveDir(id), filename);
 }
 
 function applyToIndex(

@@ -3,7 +3,7 @@ import {
   type MessageKey,
   type TranslationValues,
 } from "@shared/localization";
-import { usePrefs } from "@/features/settings/state/prefs";
+import { usePrefs } from "@/shared/state/prefs";
 
 interface LocalizedTextProps {
   message: MessageKey;

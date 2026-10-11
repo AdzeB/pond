@@ -4,7 +4,7 @@ export function confirmEmptyTrash(): void {
   Dialog.confirm({
     title: "Empty Trash",
     description:
-      "Every save in the trash is deleted forever. This cannot be undone.",
+      "Every save in Trash is deleted forever. This cannot be undone.",
     confirmLabel: "Empty Trash",
     busyLabel: "Emptying",
     onConfirm: async () => {

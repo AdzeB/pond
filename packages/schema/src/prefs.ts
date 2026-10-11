@@ -12,20 +12,11 @@ import {
   DEFAULT_SYNC_CRON,
   type SourceMetricDisplay,
   type SyncAccounts,
-  type SyncHandles,
-  type SyncSources,
   type SyncWatches,
   type ThemeAppearance,
-  type ThemeDef,
   type WindowBounds,
 } from "./prefs.types";
 import { SavedViewPresentationSchema } from "./saved-view-presentation";
-import {
-  getPreset,
-  migrateThemeDef,
-  presetDef,
-  StoredThemeDefSchema,
-} from "./theme-presets";
 import { ViewerPrefsSchema } from "./viewer-prefs";
 
 export * from "./prefs.types";
@@ -48,145 +39,27 @@ const darkThemeDefSchema = z
   })
   .catch(DEFAULT_DARK_THEME);
 
-const StoredPreferencesSchema = z
-  .object({
-    appearance: z.string().optional().catch(undefined),
-    lightPresetId: z.string().optional().catch(undefined),
-    darkPresetId: z.string().optional().catch(undefined),
-    light: StoredThemeDefSchema.optional().catch(undefined),
-    dark: StoredThemeDefSchema.optional().catch(undefined),
-    pointerCursors: z.boolean().optional().catch(undefined),
-    reduceMotion: z.string().optional().catch(undefined),
-    tweetCover: z.string().optional().catch(undefined),
-    soundsEnabled: z.boolean().optional().catch(undefined),
-    autoSelectAfterImport: z.boolean().optional().catch(undefined),
-    soundFeel: z.string().optional().catch(undefined),
-    themeMode: z.string().optional().catch(undefined),
-    presetId: z.string().optional().catch(undefined),
-    systemLightId: z.string().optional().catch(undefined),
-    systemDarkId: z.string().optional().catch(undefined),
-    custom: StoredThemeDefSchema.optional().catch(undefined),
-  })
-  .catch({});
-
-const APPEARANCES = ["system", "light", "dark"] as const;
-
-function toAppearance(value: string | undefined): ThemeAppearance {
-  return APPEARANCES.find((appearance) => appearance === value) ?? "system";
-}
-
-interface MigratedPreferences {
-  appearance: ThemeAppearance;
-  lightPresetId: string;
-  darkPresetId: string;
-  light: ThemeDef;
-  dark: ThemeDef;
-  pointerCursors?: boolean;
-  reduceMotion?: string;
-  tweetCover?: string;
-  soundsEnabled?: boolean;
-  autoSelectAfterImport?: boolean;
-}
-
-function migratePreferencesTheme(
-  stored: z.infer<typeof StoredPreferencesSchema>,
-): MigratedPreferences {
-  const carried = {
-    pointerCursors: stored.pointerCursors,
-    reduceMotion: stored.reduceMotion,
-    tweetCover: stored.tweetCover,
-    soundsEnabled: stored.soundFeel === "off" ? false : stored.soundsEnabled,
-    autoSelectAfterImport: stored.autoSelectAfterImport,
-  };
-
-  if (
-    stored.appearance &&
-    stored.light &&
-    stored.dark &&
-    stored.lightPresetId &&
-    stored.darkPresetId
-  ) {
-    return {
-      ...carried,
-      appearance: toAppearance(stored.appearance),
-      lightPresetId: stored.lightPresetId,
-      darkPresetId: stored.darkPresetId,
-      light: migrateThemeDef(stored.light, "light"),
-      dark: migrateThemeDef(stored.dark, "dark"),
-    };
-  }
-
-  const presetId = stored.presetId ?? DEFAULT_LIGHT_PRESET_ID;
-  const lightPresetId = stored.systemLightId ?? DEFAULT_LIGHT_PRESET_ID;
-  const darkPresetId = stored.systemDarkId ?? DEFAULT_DARK_PRESET_ID;
-  const sides = {
-    ...carried,
-    lightPresetId,
-    darkPresetId,
-    light: presetDef(lightPresetId, DEFAULT_LIGHT_THEME),
-    dark: presetDef(darkPresetId, DEFAULT_DARK_THEME),
-  };
-
-  if (stored.themeMode === "custom") {
-    const custom = stored.custom ?? {};
-    const background = (custom.background ?? custom.base ?? "").toLowerCase();
-    const isDark =
-      background.startsWith("#0") ||
-      background.startsWith("#1") ||
-      background === "#000000";
-    return isDark
-      ? { ...sides, appearance: "dark", dark: migrateThemeDef(custom, "dark") }
-      : {
-          ...sides,
-          appearance: "light",
-          light: migrateThemeDef(custom, "light"),
-        };
-  }
-
-  if (stored.themeMode === "preset") {
-    const preset = getPreset(presetId);
-    return preset?.appearance === "dark"
-      ? {
-          ...sides,
-          appearance: "dark",
-          darkPresetId: presetId,
-          dark: preset.def,
-        }
-      : {
-          ...sides,
-          appearance: "light",
-          lightPresetId: presetId,
-          light: preset?.def ?? presetDef(presetId, DEFAULT_LIGHT_THEME),
-        };
-  }
-
-  return { ...sides, appearance: "system" };
-}
-
-/** Older builds stored mute as `soundFeel: "off"`; lift that into `soundsEnabled`. */
-const preferences = z.preprocess(
-  (raw) => migratePreferencesTheme(StoredPreferencesSchema.parse(raw)),
-  z.object({
-    appearance: z
-      .enum(["system", "light", "dark"])
-      .catch("system" satisfies ThemeAppearance),
-    lightPresetId: z.string().catch(DEFAULT_LIGHT_PRESET_ID),
-    darkPresetId: z.string().catch(DEFAULT_DARK_PRESET_ID),
-    light: lightThemeDefSchema.catch(DEFAULT_LIGHT_THEME),
-    dark: darkThemeDefSchema.catch(DEFAULT_DARK_THEME),
-    pointerCursors: z.boolean().catch(false),
-    reduceMotion: z.enum(["system", "always", "never"]).catch("system"),
-    tweetCover: z.enum(["media", "screenshot"]).catch("media"),
-    soundsEnabled: z.boolean().catch(true),
-    autoSelectAfterImport: z.boolean().catch(true),
-  }),
-);
+const preferences = z.object({
+  appearance: z
+    .enum(["system", "light", "dark"])
+    .catch("system" satisfies ThemeAppearance),
+  lightPresetId: z.string().catch(DEFAULT_LIGHT_PRESET_ID),
+  darkPresetId: z.string().catch(DEFAULT_DARK_PRESET_ID),
+  light: lightThemeDefSchema.catch(DEFAULT_LIGHT_THEME),
+  dark: darkThemeDefSchema.catch(DEFAULT_DARK_THEME),
+  pointerCursors: z.boolean().catch(false),
+  reduceMotion: z.enum(["system", "always", "never"]).catch("system"),
+  tweetCover: z.enum(["media", "screenshot"]).catch("media"),
+  soundsEnabled: z.boolean().catch(true),
+  autoSelectAfterImport: z.boolean().catch(true),
+});
 
 export const SIDEBAR_DESTINATIONS = [
   "all",
   "uncategorized",
   "assistant",
   "untagged",
+  "recentlyAdded",
   "recentlyUsed",
   "tags",
   "random",
@@ -197,7 +70,19 @@ export const SIDEBAR_DESTINATIONS = [
 
 export type SidebarDestination = (typeof SIDEBAR_DESTINATIONS)[number];
 
-export const SIDEBAR_BADGE_STYLES = ["count", "dot", "none"] as const;
+export const LOCKED_SIDEBAR_DESTINATIONS = [
+  "all",
+  "assistant",
+  "trash",
+] as const satisfies readonly SidebarDestination[];
+
+export function isLockedSidebarDestination(
+  destination: SidebarDestination,
+): boolean {
+  return LOCKED_SIDEBAR_DESTINATIONS.some((locked) => locked === destination);
+}
+
+export const SIDEBAR_BADGE_STYLES = ["count", "none"] as const;
 
 export type SidebarBadgeStyle = (typeof SIDEBAR_BADGE_STYLES)[number];
 
@@ -223,62 +108,50 @@ export function normalizeSidebarDestinationOrder(
   return unique;
 }
 
-const StoredSidebarSchema = z
-  .object({
-    showCounts: z.boolean().optional().catch(undefined),
-    badgeStyle: SidebarBadgeStyleSchema.optional().catch(undefined),
-  })
-  .loose()
-  .catch({});
-
-const sidebar = z.preprocess(
-  (raw) => {
-    const stored = StoredSidebarSchema.parse(raw);
-    return {
-      ...stored,
-      badgeStyle:
-        stored.badgeStyle ?? (stored.showCounts === false ? "none" : "count"),
-    };
-  },
-  z.object({
-    // Retained so older settings patches keep round-tripping. New UI reads badgeStyle.
-    showCounts: z.boolean().catch(true),
-    badgeStyle: SidebarBadgeStyleSchema.catch("count"),
-    badgeOverrides: z
-      .partialRecord(SidebarDestinationSchema, SidebarBadgeStyleSchema)
-      .catch({}),
-    order: z
-      .array(SidebarDestinationSchema)
-      .catch([...SIDEBAR_DESTINATIONS])
-      .transform(normalizeSidebarDestinationOrder),
-    doubleClickBehavior: z.enum(["open", "expand-collapse"]).catch("open"),
-    destinations: z
-      .object({
-        all: z.boolean().catch(true),
-        uncategorized: z.boolean().catch(true),
-        assistant: z.boolean().catch(true),
-        untagged: z.boolean().catch(true),
-        recentlyUsed: z.boolean().catch(true),
-        tags: z.boolean().catch(true),
-        random: z.boolean().catch(true),
-        trash: z.boolean().catch(true),
-        downloads: z.boolean().catch(true),
-        sources: z.boolean().catch(true),
-      })
-      .catch({
-        all: true,
-        uncategorized: true,
-        assistant: true,
-        untagged: true,
-        recentlyUsed: true,
-        tags: true,
-        random: true,
-        trash: true,
-        downloads: true,
-        sources: true,
-      }),
-  }),
-);
+const sidebar = z.object({
+  badgeStyle: SidebarBadgeStyleSchema.catch("count"),
+  badgeOverrides: z
+    .partialRecord(SidebarDestinationSchema, SidebarBadgeStyleSchema)
+    .catch({}),
+  order: z
+    .array(SidebarDestinationSchema)
+    .catch([...SIDEBAR_DESTINATIONS])
+    .transform(normalizeSidebarDestinationOrder),
+  doubleClickBehavior: z.enum(["open", "expand-collapse"]).catch("open"),
+  destinations: z
+    .object({
+      all: z.boolean().catch(true),
+      uncategorized: z.boolean().catch(true),
+      assistant: z.boolean().catch(true),
+      untagged: z.boolean().catch(true),
+      recentlyAdded: z.boolean().catch(true),
+      recentlyUsed: z.boolean().catch(true),
+      tags: z.boolean().catch(true),
+      random: z.boolean().catch(true),
+      trash: z.boolean().catch(true),
+      downloads: z.boolean().catch(true),
+      sources: z.boolean().catch(true),
+    })
+    .catch({
+      all: true,
+      uncategorized: true,
+      assistant: true,
+      untagged: true,
+      recentlyAdded: true,
+      recentlyUsed: true,
+      tags: true,
+      random: true,
+      trash: true,
+      downloads: true,
+      sources: true,
+    })
+    .transform((destinations) => ({
+      ...destinations,
+      ...Object.fromEntries(
+        LOCKED_SIDEBAR_DESTINATIONS.map((destination) => [destination, true]),
+      ),
+    })),
+});
 
 const feedback = z.object({
   sounds: z
@@ -286,7 +159,6 @@ const feedback = z.object({
       interface: z.boolean().catch(true),
       saveDeletion: z.boolean().catch(true),
       folderDeletion: z.boolean().catch(true),
-      screenshot: z.boolean().catch(true),
       extensionCapture: z.boolean().catch(true),
       autoImport: z.boolean().catch(true),
     })
@@ -294,7 +166,6 @@ const feedback = z.object({
       interface: true,
       saveDeletion: true,
       folderDeletion: true,
-      screenshot: true,
       extensionCapture: true,
       autoImport: true,
     }),
@@ -302,14 +173,12 @@ const feedback = z.object({
     .object({
       saveDeletion: z.boolean().catch(false),
       folderDeletion: z.boolean().catch(false),
-      screenshot: z.boolean().catch(false),
       extensionCapture: z.boolean().catch(true),
       autoImport: z.boolean().catch(true),
     })
     .catch({
       saveDeletion: false,
       folderDeletion: false,
-      screenshot: false,
       extensionCapture: true,
       autoImport: true,
     }),
@@ -337,7 +206,6 @@ const system = z.object({
   proxyUrl: z.string().catch(""),
   displayColorSpace: z.enum(["auto", "srgb", "display-p3"]).catch("auto"),
   hardwareAcceleration: z.boolean().catch(true),
-  vibrancy: z.boolean().catch(false),
   dockVisibility: z.enum(["automatic", "always"]).catch("automatic"),
 });
 
@@ -345,32 +213,6 @@ const autoImport = z.object({
   enabled: z.boolean().catch(false),
   path: z.string().catch(""),
   mode: z.enum(["copy", "move"]).catch("copy"),
-});
-
-export const ScreenshotIntakeRuleSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().catch("Screenshots"),
-  enabled: z.boolean().catch(true),
-  path: z.string().catch(""),
-  mode: z.enum(["copy", "move"]).catch("copy"),
-  folderId: z.string().nullable().catch(null),
-  tags: z.array(z.string()).catch([]),
-  duplicatePolicy: z.enum(["skip", "import"]).catch("skip"),
-  autoSelect: z.boolean().catch(true),
-  notifications: z.boolean().catch(true),
-});
-
-export const ScreenshotPrefsSchema = z.object({
-  format: z.enum(["png", "jpeg", "webp"]).catch("png"),
-  quality: z.number().int().min(1).max(100).catch(90),
-  shortcutsEnabled: z.boolean().catch(true),
-  askWhereToSave: z.boolean().catch(false),
-  afterSaving: z.enum(["return", "open"]).catch("open"),
-  autoTag: z.boolean().catch(true),
-  copyToClipboard: z.boolean().catch(false),
-  useRetina: z.boolean().catch(true),
-  tool: z.enum(["native", "cleanshot", "shottr", "pond"]).catch("pond"),
-  intakeRules: z.array(ScreenshotIntakeRuleSchema).catch([]),
 });
 
 const quickCapture = z.object({
@@ -459,9 +301,6 @@ export const FetchRecurrenceSchema = z
 const sync = z.object({
   accounts: z.custom<SyncAccounts>().default({}),
   watches: z.custom<SyncWatches>().default({}),
-  /** @deprecated Drained into `accounts` by the one-time migration and kept empty afterwards. */
-  sources: z.custom<SyncSources>().default({}),
-  handles: z.custom<SyncHandles>().default({}),
   cron: z
     .object({
       enabled: z.boolean().catch(true),
@@ -535,10 +374,7 @@ export type AgentRunControls = z.infer<typeof AgentRunControlsSchema>;
 const agent = z.object({
   userProfile: z.string().max(8000).optional(),
   responseInstructions: z.string().max(8000).optional(),
-  languageModel: z
-    .string()
-    .catch("")
-    .transform((value) => (value === "minnow" ? "" : value)),
+  languageModel: z.string().catch(""),
   azureResourceName: z.string().catch(""),
   ollamaBaseUrl: z.string().catch("http://127.0.0.1:11434/v1"),
   lmstudioBaseUrl: z.string().catch("http://127.0.0.1:1234/v1"),
@@ -551,8 +387,6 @@ const agent = z.object({
   enabledKeys: z.record(z.string(), z.boolean()).catch({}),
   addedProviders: z.array(z.string()).catch([]),
   connectedLocalProviders: z.record(z.string(), z.boolean()).optional(),
-  visionModel: z.string().catch(""),
-  visionModelId: z.string().optional(),
   mcpSearch: z.boolean().catch(true),
   mcpOpen: z.boolean().catch(true),
   mcpExport: z.boolean().catch(true),
@@ -570,6 +404,12 @@ const ai = z.object({
   blurSensitiveThumbnails: z.boolean().catch(false),
   enableAutoTitle: z.boolean().catch(false),
   enableSuggestedTags: z.boolean().catch(false),
+  mediaUnderstandingMode: z
+    .enum(["florence", "gemma4", "shadow"])
+    .catch("florence"),
+  mediaUnderstandingProvider: z.enum(["ollama", "lmstudio"]).catch("ollama"),
+  mediaUnderstandingModelId: z.string().catch("gemma4:e2b"),
+  mediaUnderstandingFallbackToFlorence: z.boolean().catch(false),
   captionModelId: z.string().catch(""),
   clipModelId: z.string().catch(""),
   whisperModelId: z.string().catch(""),
@@ -605,7 +445,6 @@ const PrefsObject = z.object({
   system: system.catch(system.parse({})),
   quickCapture: quickCapture.catch(quickCapture.parse({})),
   autoImport: autoImport.catch(autoImport.parse({})),
-  screenshots: ScreenshotPrefsSchema.catch(ScreenshotPrefsSchema.parse({})),
   tagPicker: tagPicker.catch(tagPicker.parse({})),
   search: search.catch(search.parse({})),
   allTags: allTags.catch(allTags.parse({})),
@@ -640,12 +479,6 @@ export interface StoredPrefsEnvelope {
   version: number;
   app: PrefsPatchDeep;
   pending: PrefsPatchDeep | null;
-}
-
-export interface StoredPrefsEnvelopeV2 {
-  version: number;
-  app?: PrefsPatchDeep;
-  ponds?: Record<string, PrefsPatchDeep>;
 }
 
 export type PrefsParsed = z.infer<typeof PrefsSchema>;

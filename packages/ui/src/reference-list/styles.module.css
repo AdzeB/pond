@@ -1,5 +1,5 @@
 .model-icon,
-.reference-media {
+.media {
   display: flex;
   flex-shrink: 0;
   align-items: center;
@@ -12,7 +12,7 @@
   border-radius: var(--ds-radius-md);
 }
 
-.reference-media > img {
+.media > img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -42,19 +42,19 @@
   overflow-wrap: anywhere;
 }
 
-.reference-list {
+.list {
   display: flex;
   flex-direction: column;
   padding: 4px 6px;
 }
 
-.reference-row {
+.row {
   display: flex;
   gap: 6px;
   align-items: center;
 }
 
-.reference-open {
+.open {
   display: flex;
   flex: 1;
   gap: 10px;
@@ -65,7 +65,7 @@
   border-radius: var(--ds-radius-md);
 }
 
-.reference-description {
+.description {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -75,7 +75,7 @@
   color: var(--ds-gray-10);
 }
 
-.picker-empty {
+.empty {
   padding: 24px 12px;
   font-size: var(--ds-text-md);
   color: var(--ds-gray-9);

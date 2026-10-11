@@ -1,17 +1,12 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { app } from "electron";
 import log from "electron-log/main.js";
-import {
-  DEFAULT_LIBRARY_NAME,
-  LIBRARY_SCHEMA_VERSION,
-} from "../../shared/constants";
-import {
-  checkPointerSafety,
-  readLibraryPointer,
-  writeLibraryPointer,
-} from "../lib/library-pointer";
+import { DEFAULT_LIBRARY_NAME } from "../../shared/constants";
+import { readOrCreateLibraryId } from "../lib/library-id";
+import { checkPointerSafety, readLibraryPointer } from "../lib/library-pointer";
 import { invalidatePaths, resolvePaths } from "../paths";
+import { commitLibraryPointer } from "./recent-libraries";
 
 export type CreatePondResult =
   | { ok: true; path: string }
@@ -41,30 +36,9 @@ export function createPondBundle(
 
   mkdirSync(join(bundlePath, "items"), { recursive: true });
   mkdirSync(join(bundlePath, "trash"), { recursive: true });
+  readOrCreateLibraryId(bundlePath, safeName);
 
-  const metadataFile = join(bundlePath, "metadata.json");
-  if (!existsSync(metadataFile)) {
-    const bytes = crypto.getRandomValues(new Uint8Array(16));
-    const id = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join(
-      "",
-    );
-    writeFileSync(
-      metadataFile,
-      JSON.stringify(
-        {
-          id,
-          name: safeName,
-          createdAt: Date.now(),
-          schemaVersion: LIBRARY_SCHEMA_VERSION,
-          appVersion: process.env.npm_package_version ?? "0.0.1",
-        },
-        null,
-        2,
-      ),
-    );
-  }
-
-  writeLibraryPointer(bundlePath);
+  commitLibraryPointer(bundlePath);
   invalidatePaths();
   resolvePaths(bundlePath);
 
@@ -79,7 +53,7 @@ export function ensureDefaultLibrary(): void {
   const defaultRoot = join(parentDir, `${DEFAULT_LIBRARY_NAME}.pond`);
 
   if (existsSync(defaultRoot)) {
-    writeLibraryPointer(defaultRoot);
+    commitLibraryPointer(defaultRoot);
     invalidatePaths();
     resolvePaths(defaultRoot);
     log.info("[pond library-ops] adopted existing default pond", defaultRoot);

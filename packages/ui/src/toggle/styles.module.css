@@ -47,7 +47,8 @@
 [data-pond-toggle-group] > .root {
   z-index: 1;
   flex: 1;
-  border-radius: var(--ds-radius-full);
+  min-width: max-content;
+  white-space: nowrap;
   transition: color var(--ds-duration-emphasized) var(--ds-easing-snap);
 
   &:hover,

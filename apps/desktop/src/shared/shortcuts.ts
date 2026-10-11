@@ -93,14 +93,14 @@ export const SHORTCUTS = {
   "view.layout-list": { keys: "4", label: "List Layout", group: "View" },
   "view.inspector": { keys: "Mod+I", label: "Toggle Details", group: "View" },
   "view.sidebar": { keys: "[", label: "Toggle Sidebar", group: "View" },
-  "view.agent": { keys: "]", label: "Toggle Agent", group: "View" },
+  "view.agent": { keys: "]", label: "Toggle Assistant", group: "View" },
   "view.grayscale": {
     keys: "Mod+Alt+G",
     label: "Grayscale Overlay",
     group: "View",
   },
-  "view.options": { keys: "V", label: "View Options", group: "View" },
-  "view.display": { keys: "D", label: "Display Options", group: "View" },
+  "view.options": { keys: "V", label: "Layout", group: "View" },
+  "view.display": { keys: "D", label: "Display", group: "View" },
   "view.sort-dir": {
     keys: "Y",
     label: "Toggle Sort Direction",
@@ -292,7 +292,6 @@ export const SHORTCUTS = {
     label: "Actual Size",
     group: "Preview",
   },
-  "viewer.comment": { keys: "C", label: "Comment Mode", group: "Preview" },
 
   "sources.new": { keys: "Mod+N", label: "New Source", group: "Sources" },
   "sources.sync-all": {
@@ -385,11 +384,6 @@ export const SHORTCUTS = {
   "library.new-note": {
     keys: "Mod+Alt+N",
     label: "New Note",
-    group: "Library",
-  },
-  "library.capture-screenshot": {
-    keys: "Mod+Shift+5",
-    label: "Capture Screenshot",
     group: "Library",
   },
   "library.import-files": {

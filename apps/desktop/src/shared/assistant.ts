@@ -308,12 +308,6 @@ const assistantChangeProposal = z.discriminatedUnion("field", [
   }),
   z.object({
     saveId: z.string(),
-    field: z.literal("comments"),
-    after: z.array(z.string().trim().min(1).max(2000)).max(24),
-    reason: z.string().max(500),
-  }),
-  z.object({
-    saveId: z.string(),
     field: z.literal("trash"),
     after: z.enum(["trash", "restore"]),
     reason: z.string().max(500),
@@ -460,11 +454,6 @@ export const assistantChange = z.intersection(
       after: z.number(),
     }),
     z.object({
-      field: z.literal("comments"),
-      before: z.array(z.string()),
-      after: z.array(z.string()),
-    }),
-    z.object({
       field: z.literal("trash"),
       before: z.enum(["active", "trashed"]),
       after: z.enum(["active", "trashed"]),
@@ -487,7 +476,12 @@ export const assistantMetadata = z.object({
   scope: assistantScope.optional(),
   scopeLabel: z.string().optional(),
   sources: z.array(assistantSource).optional(),
-  changes: z.array(assistantChange).optional(),
+  changes: z
+    .array(z.unknown())
+    .transform((items) =>
+      items.flatMap((item) => assistantChange.safeParse(item).data ?? []),
+    )
+    .optional(),
   question: assistantQuestion.optional(),
   replyToQuestion: z.string().optional(),
   results: z.array(assistantResultSet).optional(),

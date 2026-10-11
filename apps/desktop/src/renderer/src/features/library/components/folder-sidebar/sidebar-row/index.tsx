@@ -2,7 +2,6 @@ import type { SidebarBadgeStyle } from "@pond/schema";
 import { Sidebar } from "@pond/ui";
 import { forwardRef } from "react";
 import { formatCount } from "../counts";
-import styles from "./styles.module.css";
 
 interface RowProps
   extends Omit<
@@ -44,20 +43,7 @@ export const Row = forwardRef<HTMLButtonElement, RowProps>(function Row(
       {status != null ? (
         <Sidebar.Count>{status}</Sidebar.Count>
       ) : count != null && badgeStyle !== "none" ? (
-        <Sidebar.Count>
-          {badgeStyle === "dot" ? (
-            count > 0 ? (
-              <>
-                <span className={styles["count-dot"]} aria-hidden />
-                <span className={styles["visually-hidden"]}>
-                  {formatCount(count)}
-                </span>
-              </>
-            ) : null
-          ) : (
-            formatCount(count)
-          )}
-        </Sidebar.Count>
+        <Sidebar.Count>{formatCount(count)}</Sidebar.Count>
       ) : null}
     </Sidebar.Item>
   );

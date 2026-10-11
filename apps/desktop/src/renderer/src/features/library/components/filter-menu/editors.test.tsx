@@ -3,9 +3,9 @@ import type { Predicate } from "@pond/schema/filters/types";
 import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { normalise } from "@/features/saves/lib/reconcile";
-import { pool } from "@/features/saves/state/pool";
-import { FilterCategory } from "./category/category";
+import { normalise } from "@/features/saves";
+import { pool } from "@/features/saves/pool";
+import { FilterCategory } from "./category";
 import { choiceOptions, presetOptions } from "./options";
 
 describe("filter editors", () => {

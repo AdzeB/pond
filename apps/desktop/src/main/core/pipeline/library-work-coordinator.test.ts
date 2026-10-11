@@ -16,7 +16,6 @@ function setup(wasPaused: boolean) {
     });
   const operations: LibraryWorkOperations = {
     stopAutoImport: asyncStep("stop-auto-import"),
-    stopScreenshotIntake: asyncStep("stop-screenshot-intake"),
     stopLibraryTransfers: asyncStep("stop-transfers"),
     pauseAndDrainReconciler: vi.fn(async () => {
       order.push("pause-and-drain");
@@ -30,7 +29,6 @@ function setup(wasPaused: boolean) {
       return false;
     }),
     startAutoImport: asyncStep("start-auto-import"),
-    startScreenshotIntake: asyncStep("start-screenshot-intake"),
     warn: vi.fn(),
   };
   return {
@@ -48,7 +46,6 @@ it("drains queue work before a Library switch and restores admission afterward",
 
   expect(order).toEqual([
     "stop-auto-import",
-    "stop-screenshot-intake",
     "stop-transfers",
     "pause-and-drain",
     "suspend-mutations",
@@ -56,7 +53,6 @@ it("drains queue work before a Library switch and restores admission afterward",
     "resume-transfers",
     "resume-reconciler",
     "start-auto-import",
-    "start-screenshot-intake",
   ]);
   expect(operations.setReconcilerPaused).toHaveBeenCalledWith(false);
 });

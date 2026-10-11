@@ -231,9 +231,7 @@ export function classifyLibraryFile(
   const extension = extensionFor(path);
   const supplied = suppliedMimeType?.split(";", 1)[0]?.trim().toLowerCase();
 
-  // `.ts` is ambiguous: it is both TypeScript and an MPEG transport stream.
-  // Importers inspect the file header and persist this MIME type so later
-  // classification can retain the content-based decision.
+  /** `.ts` is both TypeScript and MPEG-TS; importers sniff the header and persist this MIME type. */
   if (extension === "ts" && supplied === "video/mp2t") {
     return format(extension, "video", supplied, "video");
   }

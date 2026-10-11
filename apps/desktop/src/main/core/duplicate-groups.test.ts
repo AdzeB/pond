@@ -17,7 +17,13 @@ it("requires the same complete originals, ignoring decorative files", () => {
     },
     { id: "shared-first", files: [file("a"), file("c")], phash: null },
   ]);
-  expect(result.groups).toEqual([{ kind: "exact", ids: ["one", "two"] }]);
+  expect(result.groups).toEqual([
+    {
+      kind: "exact",
+      ids: ["one", "two"],
+      evidence: { sha256Equal: true },
+    },
+  ]);
 });
 it("separates nearby perceptual hashes from exact byte matches without grouping distant hashes", () => {
   const result = duplicateGroups([
@@ -26,7 +32,13 @@ it("separates nearby perceptual hashes from exact byte matches without grouping 
     { id: "far", files: [file("c")], phash: "ffffffffffffffff" },
     { id: "invalid", files: [file("d")], phash: "not-a-hash" },
   ]);
-  expect(result.groups).toEqual([{ kind: "similar", ids: ["one", "near"] }]);
+  expect(result.groups).toEqual([
+    {
+      kind: "visual-near",
+      ids: ["one", "near"],
+      evidence: { distance: 4 },
+    },
+  ]);
   expect(result.visualIndexed).toBe(3);
   expect(result.visualDistance).toBe(6);
   expect(result.total).toBe(4);
@@ -38,7 +50,11 @@ it("recomputes visual groups at the requested threshold", () => {
   ];
   expect(duplicateGroups(rows, { visualDistance: 3 }).groups).toEqual([]);
   expect(duplicateGroups(rows, { visualDistance: 4 }).groups).toEqual([
-    { kind: "similar", ids: ["one", "four-away"] },
+    {
+      kind: "visual-near",
+      ids: ["one", "four-away"],
+      evidence: { distance: 4 },
+    },
   ]);
 });
 it("does not duplicate exact groups in the similar review", () => {
@@ -47,5 +63,11 @@ it("does not duplicate exact groups in the similar review", () => {
       { id: "one", files: [file("a")], phash: "0000000000000000" },
       { id: "two", files: [file("a")], phash: "0000000000000000" },
     ]).groups,
-  ).toEqual([{ kind: "exact", ids: ["one", "two"] }]);
+  ).toEqual([
+    {
+      kind: "exact",
+      ids: ["one", "two"],
+      evidence: { sha256Equal: true },
+    },
+  ]);
 });

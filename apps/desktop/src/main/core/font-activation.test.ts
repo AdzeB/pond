@@ -19,15 +19,15 @@ it("installs a font into the Pond fonts directory and removes it", async () => {
     saveId: "save-1",
     fontsDir,
   });
-  expect(activated.ok).toBe(true);
-  expect(activated.path?.startsWith(join(fontsDir, "Pond"))).toBe(true);
-  expect(await readFile(activated.path ?? "", "utf8")).toBe("font");
+  if (!activated.ok) throw new Error(activated.error);
+  expect(activated.path.startsWith(join(fontsDir, "Pond"))).toBe(true);
+  expect(await readFile(activated.path, "utf8")).toBe("font");
   const deactivated = await deactivateFont({
-    installedPath: activated.path ?? "",
+    installedPath: activated.path,
     fontsDir,
   });
   expect(deactivated.ok).toBe(true);
-  await expect(readFile(activated.path ?? "")).rejects.toThrow();
+  await expect(readFile(activated.path)).rejects.toThrow();
 });
 
 it("backfills indexed activation from existing sidecars", () => {

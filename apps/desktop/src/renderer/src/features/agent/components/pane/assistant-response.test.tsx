@@ -61,9 +61,9 @@ it("renders semantic paragraphs, lists, tables, quotes and code", () => {
     "<table>",
     "<th>",
     "<blockquote>",
-    "<pre>",
   ])
     expect(html).toContain(tag);
+  expect(html).toMatch(/<pre[^>]*><code[^>]*>const x = 1;/);
 });
 it("renders only verified Save references as controls", () => {
   const html = render("[Invented title](#save-1) [Unknown](#save-7)");

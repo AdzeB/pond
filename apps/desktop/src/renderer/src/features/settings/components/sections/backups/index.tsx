@@ -2,20 +2,24 @@ import { Button, Settings } from "@pond/ui";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { z } from "zod";
-import { TransferJobsPanel } from "@/features/downloads/components/transfers";
-import { playUiSuccess } from "@/features/settings/lib/sounds";
+import { TransferJobsPanel } from "@/features/downloads/transfers";
 import { prettyPath } from "@/shared/lib/pretty-path";
+import { playUiSuccess } from "@/shared/lib/sounds";
 import styles from "./styles.module.css";
 
 const BackupResultSchema = z.discriminatedUnion("ok", [
   z.object({ ok: z.literal(true), path: z.string(), copied: z.number() }),
-  z.object({ ok: z.literal(false), reason: z.string() }),
+  z.object({
+    ok: z.literal(false),
+    reason: z.string().optional(),
+    error: z.string().optional(),
+  }),
 ]);
 
 const FIRST_BACKUP_KEY = "pond.first-library-backup";
 
-function backupError(reason: string): string {
-  switch (reason) {
+function backupError(failure: { reason?: string; error?: string }): string {
+  switch (failure.reason) {
     case "cancelled":
       return "";
     case "same_path":
@@ -27,7 +31,7 @@ function backupError(reason: string): string {
     case "no_library":
       return "No library is open to back up.";
     default:
-      return `Couldn't back up library: ${reason}`;
+      return failure.error ?? "Couldn't back up the library. Try again.";
   }
 }
 
@@ -44,7 +48,7 @@ export function BackupSettings() {
         await window.pond.query("library.backupTo", {}),
       );
       if (!result.ok) {
-        const message = backupError(result.reason);
+        const message = backupError(result);
         if (message) throw new Error(message);
         return;
       }
@@ -73,7 +77,9 @@ export function BackupSettings() {
         await window.pond.query("library.restoreBackup", {}),
       );
       if (!result.ok && result.reason !== "cancelled")
-        throw new Error(result.reason);
+        throw new Error(
+          result.error ?? "Couldn't restore the backup. Try again.",
+        );
     },
   });
 
@@ -143,13 +149,9 @@ function StatusNote({
   if (!message) return null;
   return (
     <span
-      className={
-        error
-          ? styles.error
-          : celebrate
-            ? styles["success-celebrate"]
-            : styles.success
-      }
+      className={styles.message}
+      data-error={error ? true : undefined}
+      data-celebrate={!error && celebrate ? true : undefined}
       role={error ? "alert" : "status"}
     >
       {message}

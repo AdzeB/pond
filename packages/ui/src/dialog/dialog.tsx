@@ -3,6 +3,7 @@ import { Dialog as Base } from "@base-ui/react/dialog";
 import { IconAlertQuestionFill12 } from "@pond/icons/fill/12";
 import {
   IconChevronLeftOutline12,
+  IconCircleInfoOutline12,
   IconXmarkOutline12,
 } from "@pond/icons/outline/12";
 import { clsx as cn } from "clsx";
@@ -15,7 +16,12 @@ import {
 import {
   type ComponentPropsWithoutRef,
   type CSSProperties,
-  type HTMLAttributes,
+  createContext,
+  type Dispatch,
+  type ForwardedRef,
+  forwardRef,
+  type ReactNode,
+  type SetStateAction,
   use,
   useCallback,
   useEffect,
@@ -25,10 +31,23 @@ import {
   useState,
 } from "react";
 import { Button, type ButtonProps } from "../button";
+import { Tooltip } from "../tooltip";
 import { DialogPageContext, useDialogPage } from "./context";
 import styles from "./styles.module.css";
 
 const PAGE_EASE = [0.26, 0.08, 0.25, 1] as const;
+
+type PortalContainer = HTMLElement | null;
+
+const DialogPortalContext = createContext<{
+  container: PortalContainer;
+  setContainer: Dispatch<SetStateAction<PortalContainer>>;
+}>({
+  container: null,
+  setContainer: () => {},
+});
+
+const DialogPreviewContext = createContext(false);
 
 const scaleVariants = {
   enter: (deeper: boolean) => ({
@@ -71,9 +90,65 @@ function Root<Payload = unknown>(props: RootProps<Payload>) {
   return <Base.Root {...rest} />;
 }
 
-function Portal(props: Base.Portal.Props) {
-  return <Base.Portal {...props} />;
+function PortalProvider({ children }: { children: ReactNode }) {
+  const [container, setContainer] = useState<PortalContainer>(null);
+  const value = useMemo(() => ({ container, setContainer }), [container]);
+  return <DialogPortalContext value={value}>{children}</DialogPortalContext>;
 }
+
+function Portal({
+  className,
+  container: providedContainer,
+  ...props
+}: Base.Portal.Props) {
+  const { container } = use(DialogPortalContext);
+  const resolvedContainer =
+    providedContainer === undefined ? container : providedContainer;
+  return (
+    <Base.Portal
+      className={cn(styles.portal, className)}
+      {...(resolvedContainer ? { container: resolvedContainer } : {})}
+      data-contained={resolvedContainer ? "" : undefined}
+      {...props}
+    />
+  );
+}
+
+function assignRef<T>(ref: ForwardedRef<T>, value: T | null) {
+  if (!ref) return;
+  if ("current" in ref) ref.current = value;
+  else ref(value);
+}
+
+const PortalTarget = forwardRef<
+  HTMLDivElement,
+  ComponentPropsWithoutRef<"div">
+>(function PortalTarget({ children, ...props }, forwardedRef) {
+  const { setContainer } = use(DialogPortalContext);
+  const localRef = useRef<HTMLDivElement>(null);
+  const ref = useCallback(
+    (node: HTMLDivElement | null) => {
+      localRef.current = node;
+      assignRef(forwardedRef, node);
+    },
+    [forwardedRef],
+  );
+
+  useLayoutEffect(() => {
+    const node = localRef.current;
+    if (!node) return;
+    setContainer(node);
+    return () => {
+      setContainer((current) => (current === node ? null : current));
+    };
+  }, [setContainer]);
+
+  return (
+    <div ref={ref} {...props}>
+      {children}
+    </div>
+  );
+});
 
 function Backdrop({ className, ...props }: Base.Backdrop.Props) {
   return (
@@ -159,8 +234,22 @@ function Header({ className, ...props }: HeaderProps) {
   return <header className={cn(styles.header, className)} {...props} />;
 }
 
+interface PreviewProps extends ComponentPropsWithoutRef<"div"> {}
+
+/** Popup chrome without a dialog root, for inert specimens in docs and galleries. */
+function Preview({ className, ...props }: PreviewProps) {
+  return (
+    <DialogPreviewContext value>
+      <div className={cn(styles.popup, className)} {...props} />
+    </DialogPreviewContext>
+  );
+}
+
 function Title({ className, children, ...props }: Base.Title.Props) {
   const page = use(DialogPageContext);
+  const preview = use(DialogPreviewContext);
+  if (preview)
+    return <h2 className={cn(styles.title, className)}>{children}</h2>;
   if (!page)
     return (
       <Base.Title className={cn(styles.title, className)} {...props}>
@@ -193,7 +282,8 @@ interface DescriptionProps extends ComponentPropsWithoutRef<"p"> {}
 
 function Description({ className, ...props }: DescriptionProps) {
   const page = use(DialogPageContext);
-  if (page)
+  const preview = use(DialogPreviewContext);
+  if (page || preview)
     return <p className={cn(styles.description, className)} {...props} />;
   return (
     <Base.Description
@@ -311,6 +401,27 @@ function Help(props: ComponentPropsWithoutRef<"button">) {
   );
 }
 
+function Info({
+  label,
+  ...props
+}: { label: ReactNode } & Omit<
+  ComponentPropsWithoutRef<"button">,
+  "children"
+>) {
+  return (
+    <Tooltip label={label}>
+      <button
+        type="button"
+        className={styles.info}
+        aria-label="More information"
+        {...props}
+      >
+        <IconCircleInfoOutline12 />
+      </button>
+    </Tooltip>
+  );
+}
+
 function Close(props: Base.Close.Props) {
   return (
     <Base.Close
@@ -329,18 +440,36 @@ function Close(props: Base.Close.Props) {
   );
 }
 
-interface FooterProps extends HTMLAttributes<HTMLDivElement> {}
-
 function Content({ className, ...props }: ComponentPropsWithoutRef<"div">) {
   return <div className={cn(styles.content, className)} {...props} />;
 }
 
-function Footer({ className, ...props }: FooterProps) {
-  const page = use(DialogPageContext);
+function Footer({
+  className,
+  children,
+  leading,
+  ...props
+}: ComponentPropsWithoutRef<"div"> & { leading?: ReactNode }) {
   return (
     <div
       className={cn(styles.footer, className)}
-      data-paged={page ? "" : undefined}
+      data-leading={leading ? "" : undefined}
+      {...props}
+    >
+      {leading ? <div className={styles.leading}>{leading}</div> : null}
+      <div className={styles.actions}>{children}</div>
+    </div>
+  );
+}
+
+function Cancel({ className, children = "Cancel", ...props }: ButtonProps) {
+  return (
+    <Base.Close
+      render={
+        <Button type="button" variant="secondary" className={className}>
+          {children}
+        </Button>
+      }
       {...props}
     />
   );
@@ -348,13 +477,7 @@ function Footer({ className, ...props }: FooterProps) {
 
 function Confirm({ className, children, ...props }: ButtonProps) {
   return (
-    <Button
-      size="lg"
-      width="full"
-      variant="primary"
-      className={cn(styles.button, className)}
-      {...props}
-    >
+    <Button variant="primary" className={className} {...props}>
       {children ?? "Confirm"}
     </Button>
   );
@@ -364,17 +487,22 @@ export const DialogParts = {
   Trigger: Base.Trigger,
   Content,
   Root,
+  PortalProvider,
+  PortalTarget,
   Portal,
   Backdrop,
   Popup,
+  Preview,
   Header,
   Title,
   Description,
   Viewport,
   Back,
   Help,
+  Info,
   Close,
   Footer,
+  Cancel,
   Confirm,
   Action,
   createHandle: Base.createHandle,

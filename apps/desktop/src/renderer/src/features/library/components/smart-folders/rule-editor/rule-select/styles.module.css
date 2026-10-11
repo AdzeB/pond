@@ -3,8 +3,8 @@
   width: 100%;
   min-width: 0;
 
-  &[data-width="content"] {
-    width: auto;
-    min-width: 70px;
+  &[data-width="auto"] {
+    width: fit-content;
+    min-width: 72px;
   }
 }

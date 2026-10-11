@@ -2,7 +2,7 @@ import { IconChevronRightOutline12 as ChevronRight } from "@pond/icons/outline/1
 import { Accordion } from "@pond/ui";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { InlineNameEditor } from "@/shared/components/inline-name-editor";
-import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
+import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import { gentleSpring } from "@/shared/lib/motion";
 import { TagItem } from "../item";
 import { ActionsCell } from "../lib/cells";

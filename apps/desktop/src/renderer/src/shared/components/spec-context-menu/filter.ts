@@ -1,5 +1,7 @@
-import type { MenuItemSpec } from "@pond/ui";
+import { Menu, type MenuItemSpec } from "@pond/ui";
 import { Children, isValidElement, type ReactNode } from "react";
+
+const { contains } = Menu.getFilter();
 
 function labelText(label: ReactNode): string {
   const labels = Children.toArray(label);
@@ -11,9 +13,9 @@ function keywordsOf(item: MenuItemSpec): string {
   return "keywords" in item ? (item.keywords ?? "") : "";
 }
 
-function haystack(item: MenuItemSpec): string {
+function textOf(item: MenuItemSpec): string {
   const label = "label" in item ? labelText(item.label) : "";
-  return `${label} ${keywordsOf(item)}`.toLowerCase();
+  return `${label} ${keywordsOf(item)}`;
 }
 
 function isHidden(item: MenuItemSpec): boolean {
@@ -24,16 +26,12 @@ function isDisabled(item: MenuItemSpec): boolean {
   return "disabled" in item && Boolean(item.disabled);
 }
 
-function matchesCustom(needle: string): boolean {
-  return /color|icon|swatch/.test(needle);
+function matchesAll(text: string, terms: string[]): boolean {
+  return terms.every((term) => contains(text, term));
 }
 
-function leafMatches(item: MenuItemSpec, needle: string): boolean {
-  if (item.type === "separator") return false;
-  if (isHidden(item) || isDisabled(item)) return false;
-  if (item.type === "custom") return matchesCustom(needle);
-  if (item.type === "submenu" || item.type === "group") return false;
-  return haystack(item).includes(needle);
+function matchesCustom(terms: string[]): boolean {
+  return terms.some((term) => /color|icon|swatch/i.test(term));
 }
 
 function withBreadcrumb(
@@ -54,29 +52,29 @@ function withBreadcrumb(
 
 function collectLeaves(
   items: MenuItemSpec[],
-  needle: string,
-  parentMatches: boolean,
+  terms: string[],
+  path: string,
   breadcrumb: ReactNode[],
 ): MenuItemSpec[] {
   const out: MenuItemSpec[] = [];
   for (const item of items) {
-    if (item.type === "separator" || isHidden(item)) continue;
+    if (item.type === "separator" || isHidden(item) || isDisabled(item)) {
+      continue;
+    }
     if (item.type === "submenu" || item.type === "group") {
-      if (isDisabled(item)) continue;
-      const nested = collectLeaves(
-        item.items,
-        needle,
-        parentMatches || haystack(item).includes(needle),
-        [...breadcrumb, item.label],
+      out.push(
+        ...collectLeaves(item.items, terms, `${path} ${textOf(item)}`, [
+          ...breadcrumb,
+          item.label,
+        ]),
       );
-      out.push(...nested);
       continue;
     }
-    if (parentMatches && !isDisabled(item) && item.type !== "custom") {
-      out.push(withBreadcrumb(item, breadcrumb));
+    if (item.type === "custom") {
+      if (matchesCustom(terms)) out.push(item);
       continue;
     }
-    if (leafMatches(item, needle)) {
+    if (matchesAll(`${path} ${textOf(item)}`, terms)) {
       out.push(withBreadcrumb(item, breadcrumb));
     }
   }
@@ -87,11 +85,7 @@ export function filterMenuItems(
   items: MenuItemSpec[],
   query: string,
 ): MenuItemSpec[] {
-  const needle = query.trim().toLowerCase();
-  if (!needle) return items;
-  return collectLeaves(items, needle, false, []);
-}
-
-export function hasVisibleMenuItems(items: MenuItemSpec[]): boolean {
-  return items.some((item) => item.type !== "separator");
+  const terms = query.trim().split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return items;
+  return collectLeaves(items, terms, "", []);
 }

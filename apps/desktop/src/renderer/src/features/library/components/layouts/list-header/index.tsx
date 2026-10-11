@@ -5,8 +5,8 @@ import {
   type ListColumnKey,
   setListColumn,
   useListColumns,
-} from "@/features/saves/state/list-columns";
-import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
+} from "@/features/saves";
+import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import styles from "./styles.module.css";
 
 function sortKeyFor(column: ListColumnKey): SortKey | null {

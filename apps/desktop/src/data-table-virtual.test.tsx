@@ -47,7 +47,7 @@ describe("virtual DataTable navigation", () => {
         ),
       );
       const grid = host.querySelector<HTMLElement>('[role="grid"]');
-      const viewport = host.querySelector<HTMLElement>('[role="rowgroup"]');
+      const viewport = host.querySelector<HTMLElement>("[data-viewport]");
       if (!grid || !viewport) throw new Error("Missing virtual table");
       const scrollTo = vi.fn((options: ScrollToOptions) => {
         viewport.scrollTop = options.top ?? 0;

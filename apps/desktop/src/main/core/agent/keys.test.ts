@@ -21,7 +21,7 @@ describe("checkProviderKey", () => {
       { provider: "openai", key: "sk-bad", ...bases },
       async () => new Response(null, { status: 401 }),
     );
-    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("Expected a failure.");
     expect(result.error).toMatch(/OpenAI rejected this key/);
   });
 
@@ -45,7 +45,7 @@ describe("checkProviderKey", () => {
         { provider: "openai", key: "sk-test", ...bases },
         async () => new Response(null, { status }),
       );
-      expect(result.ok).toBe(false);
+      if (result.ok) throw new Error("Expected a failure.");
       expect(result.error).toContain(`HTTP ${status}`);
       expect(result.error).not.toContain("rejected");
     },
@@ -107,6 +107,98 @@ describe("checkProviderKey", () => {
 });
 
 describe("complete model discovery", () => {
+  it("augments Ollama inventory with capabilities from the native detail endpoint", async () => {
+    const requests: Array<{
+      url: string;
+      method?: string;
+      body?: BodyInit | null;
+    }> = [];
+    const result = await fetchProviderModels(
+      { provider: "ollama", key: "", ...bases },
+      async (url, options) => {
+        requests.push({
+          url: String(url),
+          method: options?.method,
+          body: options?.body,
+        });
+        if (String(url).endsWith("/v1/models")) {
+          return Response.json({ data: [{ id: "gemma4:e2b" }] });
+        }
+        return Response.json({
+          capabilities: ["completion", "vision", "tools"],
+        });
+      },
+    );
+
+    expect(requests).toEqual([
+      {
+        url: "http://127.0.0.1:11434/v1/models",
+        method: undefined,
+        body: undefined,
+      },
+      {
+        url: "http://127.0.0.1:11434/api/show",
+        method: "POST",
+        body: JSON.stringify({ model: "gemma4:e2b" }),
+      },
+    ]);
+    expect(result).toEqual({
+      ok: true,
+      json: {
+        data: [
+          {
+            id: "gemma4:e2b",
+            capabilities: ["completion", "vision", "tools"],
+          },
+        ],
+      },
+    });
+  });
+
+  it("keeps Ollama inventory when its native detail endpoint is unavailable", async () => {
+    const result = await fetchProviderModels(
+      { provider: "ollama", key: "", ...bases },
+      async (url) =>
+        String(url).endsWith("/v1/models")
+          ? Response.json({ data: [{ id: "llama3.2" }] })
+          : new Response(null, { status: 404 }),
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      json: { data: [{ id: "llama3.2" }] },
+    });
+  });
+
+  it("keeps other Ollama models conservative when one detail lookup fails", async () => {
+    const result = await fetchProviderModels(
+      { provider: "ollama", key: "", ...bases },
+      async (url, options) => {
+        if (String(url).endsWith("/v1/models")) {
+          return Response.json({
+            data: [{ id: "vision-model" }, { id: "unknown-model" }],
+          });
+        }
+        return options?.body === JSON.stringify({ model: "vision-model" })
+          ? Response.json({ capabilities: ["completion", "vision"] })
+          : new Response(null, { status: 500 });
+      },
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      json: {
+        data: [
+          {
+            id: "vision-model",
+            capabilities: ["completion", "vision"],
+          },
+          { id: "unknown-model" },
+        ],
+      },
+    });
+  });
+
   it.each(["gemini", "anthropic"] as const)(
     "collects every %s page",
     async (provider) => {

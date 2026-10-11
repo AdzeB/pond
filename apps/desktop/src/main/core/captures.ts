@@ -1,4 +1,3 @@
-import { createDecipheriv } from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -7,8 +6,6 @@ import type { ExtensionCookie } from "@pond/schema/session";
 import type { Transaction } from "@pond/schema/tx";
 import { eq } from "drizzle-orm";
 import { getDb } from "../db";
-import { getSecureSecretBytes } from "../keychain";
-import { readOrCreatePondId } from "../lib/pond-identity";
 import { libraryRoot } from "../paths";
 import { captureAsset } from "./capture-asset";
 import { createCaptureQueue } from "./capture-queue";
@@ -18,51 +15,17 @@ import { folderIdsForSave } from "./folder-memberships";
 import { runLibraryTransfer } from "./library-transfers";
 import { createManualSave } from "./manual-import";
 import { enqueue } from "./pipeline/enqueue";
-import {
-  decodeLibraryFile,
-  isEncryptedLibraryFile,
-} from "./storage/library-file-storage";
 import { normalizeTagList, prepareTagRegistryUpdates } from "./tags";
 import { recordBatchForUndo } from "./undo";
 import { hasUserTitle } from "./user-metadata";
 
 const captureCookies = new Map<string, ExtensionCookie[]>();
-const CAPTURE_QUEUE_MAGIC = Buffer.from("PONDCAP1", "ascii");
-
-async function captureQueueKey(): Promise<Buffer> {
-  const key = await getSecureSecretBytes(
-    `pond:capture-queue:${readOrCreatePondId(libraryRoot())}`,
-    32,
-  );
-  if (!key) throw new Error("The existing capture queue key is unavailable.");
-  return key;
-}
-
 async function writeCaptureQueue(path: string, value: string): Promise<void> {
   await writeFile(path, value, { mode: 0o600 });
 }
 
 async function readCaptureQueue(path: string): Promise<string> {
-  const stored = await readFile(path);
-  if (
-    !stored.subarray(0, CAPTURE_QUEUE_MAGIC.length).equals(CAPTURE_QUEUE_MAGIC)
-  )
-    return isEncryptedLibraryFile(stored)
-      ? decodeLibraryFile(path, stored).toString("utf8")
-      : stored.toString("utf8");
-  const key = await captureQueueKey();
-  try {
-    const nonce = stored.subarray(8, 20);
-    const tag = stored.subarray(20, 36);
-    const decipher = createDecipheriv("aes-256-gcm", key, nonce);
-    decipher.setAuthTag(tag);
-    return Buffer.concat([
-      decipher.update(stored.subarray(36)),
-      decipher.final(),
-    ]).toString("utf8");
-  } finally {
-    key.fill(0);
-  }
+  return readFile(path, "utf8");
 }
 export function attachCaptureCookies(
   id: string,
@@ -133,8 +96,7 @@ export const captures = createCaptureQueue({
           tags: metadata.tags,
           rating: metadata.rating,
         });
-        if (!result.ok || !result.id)
-          throw new Error(result.error || "The capture could not be saved.");
+        if (!result.ok) throw new Error(result.error);
         id = result.id;
         duplicate = Boolean(result.skipped);
       } finally {

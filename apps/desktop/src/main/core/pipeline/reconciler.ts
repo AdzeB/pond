@@ -16,7 +16,6 @@ import {
   completeQueueGenerationIfSettled,
 } from "./queue-generations";
 import { noteSuccess } from "./rate-governor";
-import { migrateLegacyGovernorState } from "./rate-governor-state";
 import {
   type DueTask,
   isSourceTask,
@@ -318,7 +317,6 @@ export function kickReconciler(): void {
 }
 
 async function initializeReconciler(): Promise<void> {
-  await migrateLegacyGovernorState();
   await recoverExpiredLeases();
   await sweepOrphanTasks();
   await sweepTasklessIngestingSaves();

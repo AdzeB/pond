@@ -38,7 +38,7 @@
   align-items: center;
   min-height: 38px;
   padding: 7px 14px;
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
   border-bottom: 1px solid var(--ds-gray-3);
 }
 

@@ -1,18 +1,18 @@
 .root,
-.previewRoot {
+.preview {
   display: flex;
   flex: 1;
   min-width: 0;
   min-height: 0;
 }
 
-.previewRoot {
+.preview {
   position: relative;
   flex-direction: column;
   background: var(--ds-gray-2);
 }
 
-.previewStatus {
+.status {
   position: absolute;
   inset: 0;
   display: grid;

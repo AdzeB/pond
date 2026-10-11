@@ -4,6 +4,7 @@ import { openSave } from "@/features/saves/lib/save-nav";
 import { selectOnlySave } from "@/features/saves/lib/select";
 import { pool } from "@/features/saves/state/pool";
 import { requestQuickPreview } from "@/features/saves/state/quick-preview";
+import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
 
 type ViewerAction = Prefs["viewer"]["doubleClickAction"];
@@ -33,8 +34,8 @@ export function openReferenceWindow(
     .catch((error) =>
       notify({
         id: "preview-window",
-        title: "Couldn’t open this preview",
-        description: error instanceof Error ? error.message : "Try again.",
+        title: "Couldn't open this preview",
+        description: errorCopy(error, "Try again."),
       }),
     );
 }
@@ -55,7 +56,7 @@ export function runViewerAction(saveId: string, action: ViewerAction): void {
       if (!result.ok)
         notify({
           id: "quick-look",
-          title: "Couldn’t Open Quick Look",
+          title: "Couldn't Open Quick Look",
           description: result.error,
         });
     });
@@ -65,7 +66,7 @@ export function runViewerAction(saveId: string, action: ViewerAction): void {
   if (fileIndex === null) {
     notify({
       id: "preview-window",
-      title: "This Save doesn’t contain a supported preview",
+      title: "This Save doesn't contain a supported preview",
     });
     return;
   }

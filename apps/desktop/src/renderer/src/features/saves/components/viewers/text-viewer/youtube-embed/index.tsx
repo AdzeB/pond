@@ -9,7 +9,6 @@ import { Menu } from "@pond/ui";
 import type { LexicalEditor } from "lexical";
 import { type MouseEvent as ReactMouseEvent, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import {
   $createYouTubeNode,
   parseYouTubeId,
@@ -85,20 +84,11 @@ export function YouTubeEmbed() {
 }
 
 function EmbedMenu({ children }: { children: React.ReactNode }) {
-  const scrollFade = useScrollFade<HTMLDivElement>();
   return (
     <Menu.Surface className={styles.slash} aria-label="Embed">
-      <div className={styles.commands} {...scrollFade}>
+      <div className={styles.commands}>
         <Menu.Group>{children}</Menu.Group>
       </div>
     </Menu.Surface>
   );
-}
-
-export function insertYouTubeFromUrl(editor: LexicalEditor, url: string): void {
-  const id = parseYouTubeId(url);
-  if (!id) throw new Error("Enter a YouTube URL.");
-  editor.update(() => {
-    $insertNodeToNearestRoot($createYouTubeNode(id));
-  });
 }

@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { app, BrowserWindow, dialog } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
+import type { QueryResult } from "../../../shared/query-contracts";
 import { restoreLibraryBackup } from "../../core/library-backup";
 import { updateLibraryIdentity } from "../../core/library-identity";
 import {
@@ -38,7 +39,7 @@ const PathParams = z.object({ path: StringParam });
 export const libraryLocationMaintenanceQueries = {
   "library.mergeFrom": query(
     z.object({ source: z.string().optional() }),
-    async (params) => {
+    async (params): Promise<QueryResult<"library.mergeFrom">> => {
       let source = params.source?.trim();
       if (!source) {
         const picked = await dialog.showOpenDialog({
@@ -47,7 +48,8 @@ export const libraryLocationMaintenanceQueries = {
           properties: ["openDirectory", "openFile"],
         });
         source = picked.filePaths[0];
-        if (picked.canceled || !source) return { ok: false, error: "canceled" };
+        if (picked.canceled || !source)
+          return { ok: false, reason: "cancelled" as const };
       }
       try {
         return {
@@ -78,7 +80,7 @@ export const libraryLocationMaintenanceQueries = {
       icon: z.string().nullable().optional(),
       accent: z.string().nullable().optional(),
     }),
-    async (params) => {
+    async (params): Promise<QueryResult<"library.rename">> => {
       const source = libraryRootDir();
       try {
         await suspendLibraryWork();
@@ -110,7 +112,7 @@ export const libraryLocationMaintenanceQueries = {
         await resumeLibraryWork();
         return {
           ok: false as const,
-          reason:
+          error:
             error instanceof Error
               ? error.message
               : "Could not rename the library.",
@@ -119,79 +121,86 @@ export const libraryLocationMaintenanceQueries = {
     },
   ),
 
-  "library.move": query(PathParams, async (params) => {
-    const src = libraryRootDir().replace(/\/+$/, "");
-    if (!src || !existsSync(src)) {
-      return { ok: false as const, reason: "no_library" as const };
-    }
-
-    let dest = params.path.trim();
-    if (!dest) {
-      const win = BrowserWindow.getFocusedWindow() ?? undefined;
-      const dialogOpts = {
-        title: "Move Library",
-        nameFieldLabel: "Pond Name:",
-        buttonLabel: "Move",
-        defaultPath: join(app.getPath("home"), "Pond", "My Pond.pond"),
-        properties: ["createDirectory" as const],
-      };
-      const result = win
-        ? await dialog.showSaveDialog(win, dialogOpts)
-        : await dialog.showSaveDialog(dialogOpts);
-      if (result.canceled || !result.filePath) {
-        return { ok: false as const, reason: "cancelled" as const };
+  "library.move": query(
+    PathParams,
+    async (params): Promise<QueryResult<"library.move">> => {
+      const src = libraryRootDir().replace(/\/+$/, "");
+      if (!src || !existsSync(src)) {
+        return { ok: false as const, reason: "no_library" as const };
       }
-      dest = result.filePath;
-    }
 
-    const destResolved = resolve(ensurePondSuffix(dest)).replace(/\/+$/, "");
-    const srcResolved = resolve(src);
-
-    if (srcResolved === destResolved) {
-      return { ok: false as const, reason: "same_path" as const };
-    }
-    if (
-      destResolved.startsWith(`${srcResolved}/`) ||
-      srcResolved.startsWith(`${destResolved}/`)
-    ) {
-      return { ok: false as const, reason: "nested_path" as const };
-    }
-
-    try {
-      if (existsSync(destResolved)) {
-        const entries = await readdir(destResolved);
-        if (entries.length > 0) {
-          return { ok: false as const, reason: "destination_exists" as const };
+      let dest = params.path.trim();
+      if (!dest) {
+        const win = BrowserWindow.getFocusedWindow() ?? undefined;
+        const dialogOpts = {
+          title: "Move Library",
+          nameFieldLabel: "Pond Name:",
+          buttonLabel: "Move",
+          defaultPath: join(app.getPath("home"), "Pond", "My Pond.pond"),
+          properties: ["createDirectory" as const],
+        };
+        const result = win
+          ? await dialog.showSaveDialog(win, dialogOpts)
+          : await dialog.showSaveDialog(dialogOpts);
+        if (result.canceled || !result.filePath) {
+          return { ok: false as const, reason: "cancelled" as const };
         }
+        dest = result.filePath;
       }
 
-      await suspendLibraryWork();
-      await flushTagsDump();
-      await flushPortableMetadata();
-      await restoreLibraryBackup({
-        source: srcResolved,
-        destination: destResolved,
-      });
-      const result = await relocateLibrary(destResolved, "adopt");
-      const sourceRemoved = await removeMovedLibrarySource(
-        srcResolved,
-        destResolved,
-      );
-      removeRecentLibrary(recentLibrariesFile(), srcResolved);
-      await relaunchSoon();
-      const moved = {
-        ok: true as const,
-        path: result.path,
-        sourceRemoved,
-      };
-      if (sourceRemoved) return moved;
-      return { ...moved, cleanupPath: srcResolved };
-    } catch (err) {
-      await resumeLibraryWork();
-      return {
-        ok: false as const,
-        reason: err instanceof Error ? err.message : "move_failed",
-      };
-    }
-  }),
+      const destResolved = resolve(ensurePondSuffix(dest)).replace(/\/+$/, "");
+      const srcResolved = resolve(src);
+
+      if (srcResolved === destResolved) {
+        return { ok: false as const, reason: "same_path" as const };
+      }
+      if (
+        destResolved.startsWith(`${srcResolved}/`) ||
+        srcResolved.startsWith(`${destResolved}/`)
+      ) {
+        return { ok: false as const, reason: "nested_path" as const };
+      }
+
+      try {
+        if (existsSync(destResolved)) {
+          const entries = await readdir(destResolved);
+          if (entries.length > 0) {
+            return {
+              ok: false as const,
+              reason: "destination_exists" as const,
+            };
+          }
+        }
+
+        await suspendLibraryWork();
+        await flushTagsDump();
+        await flushPortableMetadata();
+        await restoreLibraryBackup({
+          source: srcResolved,
+          destination: destResolved,
+        });
+        const result = await relocateLibrary(destResolved, "adopt");
+        const sourceRemoved = await removeMovedLibrarySource(
+          srcResolved,
+          destResolved,
+        );
+        removeRecentLibrary(recentLibrariesFile(), srcResolved);
+        await relaunchSoon();
+        const moved = {
+          ok: true as const,
+          path: result.path,
+          sourceRemoved,
+        };
+        if (sourceRemoved) return moved;
+        return { ...moved, cleanupPath: srcResolved };
+      } catch (err) {
+        await resumeLibraryWork();
+        return {
+          ok: false as const,
+          error:
+            err instanceof Error ? err.message : "Couldn't move the library.",
+        };
+      }
+    },
+  ),
 } satisfies QueryHandlerMap;

@@ -1,9 +1,13 @@
 import { basename, extname } from "node:path";
 import { saves } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
-import { applyRenameTemplate } from "@shared/rename-template";
+import {
+  applyRenameTemplate,
+  RenameOptionsSchema,
+} from "@shared/rename-template";
 import { eq, inArray } from "drizzle-orm";
 import { z } from "zod";
+import type { QueryResult } from "../../../shared/query-contracts";
 import { executeBatch } from "../../core/executor";
 import {
   activateFont,
@@ -15,10 +19,9 @@ import {
 } from "../../core/font-activation";
 import { extractFontFamily, renameWithFamily } from "../../core/font-metadata";
 import { persistSave } from "../../core/persist-save";
-import { withDecryptedLibraryMediaPath } from "../../core/storage/library-media-storage";
 import { hasUserTitle } from "../../core/user-metadata";
 import { getDb } from "../../db";
-import { itemFile } from "../../paths";
+import { saveFile } from "../../paths";
 import {
   type QueryHandlerMap,
   query,
@@ -28,10 +31,11 @@ import {
 
 export const savesFontQueries = {
   "saves.batchRename": query(
-    z.object({ ids: StringListParam, pattern: StringParam }),
-    async (params) => {
+    RenameOptionsSchema.extend({ ids: StringListParam, pattern: StringParam }),
+    async (params): Promise<QueryResult<"saves.batchRename">> => {
       const pattern = params.pattern.trim();
-      if (!pattern || params.ids.length === 0) return { ok: false, renamed: 0 };
+      if (!pattern || params.ids.length === 0)
+        return { ok: false, error: "Enter a name pattern and choose Saves." };
       const db = await getDb();
       const rows = await db
         .select()
@@ -46,10 +50,7 @@ export const savesFontQueries = {
         const family =
           stored?.family ??
           (stored?.path
-            ? await withDecryptedLibraryMediaPath(
-                itemFile(row.id, stored.path),
-                extractFontFamily,
-              )
+            ? await extractFontFamily(saveFile(row.id, stored.path))
             : null);
         const fallback = renameWithFamily("{family}", {
           n: index + 1,
@@ -68,8 +69,11 @@ export const savesFontQueries = {
           date: row.savedAt,
           tags: row.tags,
           original,
+          start: params.start,
+          replacement: params.replacement,
+          textCase: params.textCase,
         });
-        if (title === row.title) continue;
+        if (!title || title === row.title) continue;
         txs.push({
           kind: "update",
           model: "save",
@@ -90,32 +94,34 @@ export const savesFontQueries = {
     return path ? { activated: true, path } : { activated: false };
   }),
 
-  "saves.activateFont": query(z.object({ id: StringParam }), async ({ id }) => {
-    const db = await getDb();
-    const row = db.select().from(saves).where(eq(saves.id, id)).get();
-    const file = row?.files[0];
-    if (!row || !file?.path)
-      return { ok: false, error: "missing_file" as const };
-    const { app } = await import("electron");
-    const result = await activateFont({
-      sourcePath: itemFile(id, file.path),
-      saveId: id,
-      fontsDir: pondFontsDir(app.getPath("home")),
-    });
-    if (result.ok && result.path) {
-      writeFontActivation(id, result.path);
-      await persistSave(
-        id,
-        { fontActivated: true },
-        { actorReason: "font:activate" },
-      );
-    }
-    return result;
-  }),
+  "saves.activateFont": query(
+    z.object({ id: StringParam }),
+    async ({ id }): Promise<QueryResult<"saves.activateFont">> => {
+      const db = await getDb();
+      const row = db.select().from(saves).where(eq(saves.id, id)).get();
+      const file = row?.files[0];
+      if (!row || !file?.path) return { ok: false, error: "missing_file" };
+      const { app } = await import("electron");
+      const result = await activateFont({
+        sourcePath: saveFile(id, file.path),
+        saveId: id,
+        fontsDir: pondFontsDir(app.getPath("home")),
+      });
+      if (result.ok) {
+        writeFontActivation(id, result.path);
+        await persistSave(
+          id,
+          { fontActivated: true },
+          { actorReason: "font:activate" },
+        );
+      }
+      return result;
+    },
+  ),
 
   "saves.deactivateFont": query(
     z.object({ id: StringParam }),
-    async ({ id }) => {
+    async ({ id }): Promise<QueryResult<"saves.deactivateFont">> => {
       const installed = readFontActivation(id);
       if (!installed) return { ok: true };
       const { app } = await import("electron");
@@ -140,10 +146,10 @@ export const savesFontQueries = {
       id: StringParam,
       bpm: z.number().int().min(1).max(300),
     }),
-    async ({ id, bpm }) => {
+    async ({ id, bpm }): Promise<QueryResult<"saves.setAudioAnalysis">> => {
       const db = await getDb();
       const [row] = await db.select().from(saves).where(eq(saves.id, id));
-      if (!row) return { ok: false };
+      if (!row) return { ok: false, error: "Save not found." };
       const files = row.files.map((file, index) =>
         index === 0 ? { ...file, bpm } : file,
       );

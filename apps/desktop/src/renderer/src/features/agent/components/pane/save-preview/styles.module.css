@@ -1,46 +1,3 @@
-.citation {
-  --ds-focus-offset: 2px;
-  display: inline-flex;
-  gap: 4px;
-  align-items: baseline;
-  color: var(--ds-accent-11);
-  transition: color var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &::after {
-    display: none;
-  }
-
-  &:hover {
-    color: var(--ds-accent-12);
-  }
-
-  &:hover > span {
-    background-size: 100% 1px;
-  }
-}
-
-.citation > span {
-  background-image: linear-gradient(currentcolor, currentcolor);
-  background-repeat: no-repeat;
-  background-position: left bottom;
-  background-size: 0 1px;
-  transition: background-size var(--ds-duration-medium)
-    var(--ds-easing-standard);
-}
-
-.citation-icon {
-  flex-shrink: 0;
-  align-self: center;
-  width: 12px;
-  height: 12px;
-}
-
-.citation-title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .thumbnail {
   --thumbnail-icon-size: 18px;
 
@@ -53,7 +10,7 @@
   overflow: hidden;
   color: var(--ds-gray-9);
   background: var(--ds-gray-3);
-  border-radius: 6px;
+  border-radius: var(--ds-radius-sm);
 }
 .thumbnail[data-size="compact"] {
   --thumbnail-icon-size: 12px;
@@ -90,7 +47,7 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   -webkit-line-clamp: 5;
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
   line-height: 1.7;
   color: var(--ds-gray-11);
 }
@@ -99,6 +56,50 @@
   width: 16px;
   height: 16px;
 }
+
+.citation > span {
+  background-image: linear-gradient(currentcolor, currentcolor);
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  background-size: 0 1px;
+  transition: background-size var(--ds-duration-medium)
+    var(--ds-easing-standard);
+}
+
+.citation {
+  --ds-focus-offset: 2px;
+  display: inline-flex;
+  gap: 4px;
+  align-items: baseline;
+  color: var(--ds-accent-11);
+  transition: color var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &::after {
+    display: none;
+  }
+
+  &:hover {
+    color: var(--ds-accent-12);
+  }
+
+  &:hover > span {
+    background-size: 100% 1px;
+  }
+}
+
+.citation-icon {
+  flex-shrink: 0;
+  align-self: center;
+  width: 12px;
+  height: 12px;
+}
+
+.citation-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .citation,
   .citation > span {

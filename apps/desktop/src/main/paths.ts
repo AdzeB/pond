@@ -1,10 +1,10 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { app } from "electron";
+import { resolveLibraryId } from "./lib/library-id";
 import { readLibraryPointer } from "./lib/library-pointer";
-import { resolvePondId } from "./lib/pond-identity";
 
-interface PondPaths {
+export interface PondPaths {
   appData: string;
   cache: string;
   logs: string;
@@ -13,8 +13,9 @@ interface PondPaths {
   indexesDir: string;
   thumbnailCache: string;
   config: string;
+  libraryId: string;
   libraryRoot: string;
-  itemsDir: string;
+  savesDir: string;
   trashDir: string;
   libraryMetadata: string;
   settingsFile: string;
@@ -52,19 +53,20 @@ export function resolvePaths(libraryRootOverride?: string): PondPaths {
     libraryRootOverride != null || pointer != null || existsSync(root);
   if (committed) ensureLibraryDirs(root);
 
-  const pondId = resolvePondId(root, committed);
+  const libraryId = resolveLibraryId(root, committed);
 
   const paths: PondPaths = {
     appData,
     cache,
     logs,
     globalDb: join(appData, "global.db"),
-    indexDb: join(indexesDir, `${pondId}.db`),
+    indexDb: join(indexesDir, `${libraryId}.db`),
     indexesDir,
-    thumbnailCache: ensureDir(join(cache, "thumbs", pondId)),
+    thumbnailCache: ensureDir(join(cache, "thumbs", libraryId)),
     config: join(appData, "config.json"),
+    libraryId,
     libraryRoot: root,
-    itemsDir: join(root, "items"),
+    savesDir: join(root, "items"),
     trashDir: join(root, "trash"),
     libraryMetadata: join(root, "metadata.json"),
     settingsFile: join(root, "settings.json"),
@@ -82,12 +84,20 @@ function ensureLibraryDirs(root: string): void {
   ensureDir(join(root, "trash"));
 }
 
-export function itemDir(id: string): string {
-  return join(resolvePaths().itemsDir, `${id}.info`);
+export function saveDirIn(root: string, id: string): string {
+  return join(root, "items", `${id}.info`);
 }
 
-export function itemFile(id: string, file: string): string {
-  return join(itemDir(id), file);
+export function trashSaveDirIn(root: string, id: string): string {
+  return join(root, "trash", `${id}.info`);
+}
+
+export function saveDir(id: string): string {
+  return saveDirIn(resolvePaths().libraryRoot, id);
+}
+
+export function saveFile(id: string, file: string): string {
+  return join(saveDir(id), file);
 }
 
 export function appDataRoot(): string {
@@ -98,12 +108,16 @@ export function libraryRoot(): string {
   return resolvePaths().libraryRoot;
 }
 
+export function libraryId(): string {
+  return resolvePaths().libraryId;
+}
+
 export function thumbnailCacheRoot(): string {
   return resolvePaths().thumbnailCache;
 }
 
-export function itemsRoot(): string {
-  return resolvePaths().itemsDir;
+export function savesRoot(): string {
+  return resolvePaths().savesDir;
 }
 
 export function trashRoot(): string {

@@ -1,6 +1,5 @@
 import { type CSSProperties, useCallback, useEffect } from "react";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import type { MenuEntry, MenuGroup } from "../types";
 import { useResultsHeight } from "../use-results-height";
 import styles from "./styles.module.css";
@@ -26,13 +25,11 @@ export function ResultsList({
     open,
     groups,
   );
-  const { ref: scrollRef, ...scrollFade } = useScrollFade<HTMLDivElement>();
   const setViewportRef = useCallback(
     (element: HTMLDivElement | null) => {
       viewportRef.current = element;
-      scrollRef.current = element;
     },
-    [scrollRef, viewportRef],
+    [viewportRef],
   );
 
   useEffect(() => {
@@ -54,7 +51,6 @@ export function ResultsList({
       role="listbox"
       data-sized={sized || undefined}
       style={resultsStyle}
-      {...scrollFade}
     >
       <div ref={contentRef} className={styles.content}>
         {groups.map((section) => (

@@ -39,12 +39,16 @@ export function useGifPlayer(
   const [loop, setLoop] = useState<[number, number] | null>(() =>
     viewerMemory.loop(src),
   );
-  useEffect(() => {
+  const [loopSrc, setLoopSrc] = useState(src);
+  if (src !== loopSrc) {
+    setLoopSrc(src);
     setLoop(viewerMemory.loop(src));
-  }, [src]);
-  useEffect(() => {
+  }
+  const [syncedAutoplay, setSyncedAutoplay] = useState(autoplay);
+  if (autoplay !== syncedAutoplay) {
+    setSyncedAutoplay(autoplay);
     setPlaying(autoplay);
-  }, [autoplay]);
+  }
   useEffect(() => {
     if (!enabled || !window.ImageDecoder) return;
     const abort = new AbortController();
@@ -52,7 +56,7 @@ export function useGifPlayer(
     let instance: BrowserImageDecoder | null = null;
     const load = async () => {
       const response = await fetch(src, { signal: abort.signal });
-      if (!response.ok) throw new Error("Couldn’t load this GIF.");
+      if (!response.ok) throw new Error("Couldn't load this GIF.");
       const data = await response.arrayBuffer();
       if (!current || !window.ImageDecoder) return;
       instance = new window.ImageDecoder({ data, type: "image/gif" });

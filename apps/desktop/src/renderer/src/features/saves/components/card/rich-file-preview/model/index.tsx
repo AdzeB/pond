@@ -109,10 +109,10 @@ export function ModelCardPreview({
 
   return (
     <div className={styles.model} data-view={view} data-status={status}>
-      <div ref={rootRef} className={styles.modelCanvas} />
-      {status === "loading" ? <span>Loading model…</span> : null}
+      <div ref={rootRef} className={styles.canvas} />
+      {status === "loading" ? <span>Loading model</span> : null}
       {status === "failed" ? (
-        <div className={styles.modelFallback}>
+        <div className={styles.fallback}>
           <strong>3D</strong>
           <span>Interactive model</span>
         </div>

@@ -3,7 +3,6 @@ import {
   IconArrowRotateClockwiseOutline18,
   IconBoxArchiveDownloadOutline18,
   IconBulletListOutline18,
-  IconCameraOutline18,
   IconCheckboxCheckedOutline18,
   IconClone2Outline18,
   IconDownloadOutline18,
@@ -37,14 +36,12 @@ import {
   type BlankDocumentIcons,
   type BlankDocumentKind,
 } from "@shared/blank-documents";
-import { Children, isValidElement, type ReactNode } from "react";
-import { launchScreenshotTool } from "@/features/library/lib/launch-screenshot";
 import { newMenuDialog } from "@/features/library/state/new-menu-dialog";
 import {
   connectableSourceItems,
+  pickWatchedFolder,
   watchableSourceItems,
-} from "@/features/sources/lib/create-menu";
-import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
+} from "@/features/sources";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import {
   createBlankDocument,
@@ -64,6 +61,7 @@ import {
   newSource,
   newTag,
   rescanLibrary,
+  reviewOrganization,
   runNewAction,
   verifyIntegrity,
 } from "./actions";
@@ -154,22 +152,6 @@ export function buildNewMenuItems(
     },
     {
       type: "submenu",
-      id: "capture",
-      label: "Capture",
-      icon: <IconCameraOutline18 />,
-      keywords: "screenshot screen window desktop image",
-      items: [
-        {
-          id: "screenshot",
-          label: "Capture Screenshot",
-          icon: <IconCameraOutline18 />,
-          keywords: "screen window desktop image",
-          onClick: () => void launchScreenshotTool(),
-        },
-      ],
-    },
-    {
-      type: "submenu",
       id: "import",
       label: "Import",
       icon: <IconDownloadOutline18 />,
@@ -221,6 +203,8 @@ export function buildNewMenuItems(
           onClick: () => {
             Dialog.prompt({
               title: "Import Page Assets",
+              description:
+                "Pond saves the images and files from the page you enter.",
               confirmLabel: "Import",
               placeholder: "https://",
               onConfirm: (url) =>
@@ -332,6 +316,33 @@ export function buildNewMenuItems(
           ],
         },
         {
+          type: "submenu",
+          id: "review-organization",
+          label: "Review Organization",
+          icon: <IconFolderSearchOutline18 />,
+          keywords: "cluster classify labels folders related",
+          items: [
+            {
+              id: "organization-all",
+              label: "All Saves",
+              icon: <IconFiles2Outline18 />,
+              onClick: () => reviewOrganization("all"),
+            },
+            {
+              id: "organization-list",
+              label: "Current List",
+              icon: <IconBulletListOutline18 />,
+              onClick: () => reviewOrganization("list"),
+            },
+            {
+              id: "organization-selected",
+              label: "Selected",
+              icon: <IconCheckboxCheckedOutline18 />,
+              onClick: () => reviewOrganization("selected"),
+            },
+          ],
+        },
+        {
           id: "rescan",
           label: "Rescan Library",
           icon: <IconArrowRotateClockwiseOutline18 />,
@@ -405,58 +416,4 @@ export function buildNewMenuItems(
       ],
     },
   ];
-}
-
-export function filterMenuItems(
-  items: MenuItemSpec[],
-  search: string,
-): MenuItemSpec[] {
-  const terms = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  if (terms.length === 0) return items;
-  const out: MenuItemSpec[] = [];
-  for (const item of items) {
-    if (item.type === "separator" || item.type === "custom") continue;
-    if (item.type === "group") {
-      const children = filterMenuItems(item.items, search);
-      if (children.length > 0) {
-        out.push({ ...item, items: children });
-      } else if (matches(item, terms)) {
-        out.push(item);
-      }
-      continue;
-    }
-    if (item.type === "submenu") {
-      const children = filterMenuItems(item.items, search);
-      if (children.length > 0) {
-        const parentLabel = labelText(item.label);
-        out.push(
-          ...children.map((child) => {
-            const childLabel = "label" in child ? labelText(child.label) : null;
-            return parentLabel && childLabel
-              ? { ...child, label: `${parentLabel} · ${childLabel}` }
-              : child;
-          }),
-        );
-      } else if (matches(item, terms)) {
-        out.push(item);
-      }
-      continue;
-    }
-    if (matches(item, terms)) out.push(item);
-  }
-  return out;
-}
-
-function labelText(label: ReactNode): string | null {
-  const labels = Children.toArray(label);
-  const value = labels.length === 1 ? labels[0] : null;
-  return value != null && !isValidElement(value) ? String(value) : null;
-}
-
-function matches(item: MenuItemSpec, terms: string[]): boolean {
-  if (!("label" in item) && !("keywords" in item)) return false;
-  const label = "label" in item ? (labelText(item.label) ?? "") : "";
-  const keywords = "keywords" in item ? (item.keywords ?? "") : "";
-  const text = `${label} ${keywords}`.toLowerCase();
-  return terms.every((term) => text.includes(term));
 }

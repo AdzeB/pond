@@ -1,8 +1,5 @@
-import { z } from "zod";
 import {
   CONTRAST_DEFAULT,
-  DEFAULT_DARK_THEME,
-  DEFAULT_LIGHT_THEME,
   type ThemeAppearance,
   type ThemeDef,
 } from "./prefs.types";
@@ -118,40 +115,6 @@ export function lightPresets(): ThemePreset[] {
 
 export function darkPresets(): ThemePreset[] {
   return THEME_PRESETS.filter((p) => p.appearance === "dark");
-}
-
-export function presetDef(
-  id: string,
-  fallback: ThemeDef = DEFAULT_LIGHT_THEME,
-): ThemeDef {
-  return getPreset(id)?.def ?? fallback;
-}
-
-export const StoredThemeDefSchema = z
-  .object({
-    accent: z.string().optional().catch(undefined),
-    background: z.string().optional().catch(undefined),
-    base: z.string().optional().catch(undefined),
-    foreground: z.string().optional().catch(undefined),
-    contrast: z.number().refine(Number.isFinite).optional().catch(undefined),
-  })
-  .catch({});
-
-export type StoredThemeDef = z.infer<typeof StoredThemeDefSchema>;
-
-export function migrateThemeDef(
-  stored: StoredThemeDef,
-  appearance: "light" | "dark",
-): ThemeDef {
-  const fallback =
-    appearance === "light" ? DEFAULT_LIGHT_THEME : DEFAULT_DARK_THEME;
-  return {
-    accent: stored.accent ?? fallback.accent,
-    background: stored.background ?? stored.base ?? fallback.background,
-    foreground:
-      stored.foreground ?? (appearance === "dark" ? "#EEEEEE" : "#1B1B1B"),
-    contrast: stored.contrast ?? fallback.contrast,
-  };
 }
 
 export interface ThemePrefsSlice {

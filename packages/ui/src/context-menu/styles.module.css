@@ -64,7 +64,3 @@
 .separator {
   composes: separator from "../shared/styles/popup/styles.module.css";
 }
-
-.input {
-  composes: input from "../shared/styles/popup/styles.module.css";
-}

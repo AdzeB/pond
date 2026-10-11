@@ -1,13 +1,11 @@
 import type { Prefs } from "@pond/schema/db";
 import { z } from "zod";
-import { statusFeed } from "@/features/downloads/lib/status-feed";
-import { clearClipEmbeddings } from "@/features/enrichment/state/clip-embedding-store";
+import { statusFeed } from "@/features/downloads/status-feed";
 import { clearEmbeddings } from "@/features/enrichment/state/embedding-store";
-import { ensureSaves } from "@/features/saves/lib/ensure-saves";
-import { bulkMutation } from "@/features/saves/lib/mutate";
-import { pool } from "@/features/saves/state/pool";
+import { clearMediaEmbeddings } from "@/features/enrichment/state/media-embedding-store";
+import { bulkMutation, ensureSaves, pool } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
-import { getPrefsSnapshot } from "@/features/settings/state/prefs";
+import { getPrefsSnapshot } from "@/shared/state/prefs";
 
 const BackfillReplySchema = z.object({
   ok: z.boolean().catch(false),
@@ -201,7 +199,7 @@ export async function rebuildVisualIndex(ids?: TaskScope): Promise<TaskResult> {
   if (!TASK_ENABLED.clip(getPrefsSnapshot()))
     return { ok: false, message: DISABLED_HINTS.clip };
   if (ids?.length) await ensureSaves(ids);
-  clearClipEmbeddings(ids && ids.length > 0 ? ids : undefined);
+  clearMediaEmbeddings(ids && ids.length > 0 ? ids : undefined);
   return reprocessStamped(
     true,
     DISABLED_HINTS.clip,

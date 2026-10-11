@@ -1,4 +1,4 @@
-import type { ImportableCookie } from "../refresh/scrape-window/session";
+import type { ImportableCookie } from "../refresh/harvest-window/session";
 
 const stash = new Map<string, ImportableCookie[]>();
 

@@ -1,8 +1,10 @@
 import "@/app/effects/save-library-bridge";
+import { mediaEmbeddingVersion } from "@shared/embeddings";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { z } from "zod";
+import { libraryChrome } from "@/features/library";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import { setSaveViewerFileIndex } from "@/features/saves/state/save-viewer";
@@ -74,9 +76,7 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-async function selectInspectorTab(
-  label: "Organise" | "Properties" | "Comments",
-) {
+async function selectInspectorTab(label: "Organize" | "Properties") {
   const tab = [
     ...host.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
   ].find((candidate) => candidate.textContent === label);
@@ -232,14 +232,12 @@ it("shows editable identity fields and places the URL in Source", async () => {
   ).toBe("Add notes");
   const tabs = [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
   expect(tabs.map((tab) => tab.textContent)).toEqual([
-    "Organise",
+    "Organize",
     "Properties",
-    "Comments",
   ]);
   expect(tabs.map((tab) => tab.getAttribute("aria-label"))).toEqual([
-    "Organise",
+    "Organize",
     "Properties",
-    "Comments",
   ]);
   expect(tabs.every((tab) => tab.querySelector("svg"))).toBe(true);
   expect(tabs[0]?.getAttribute("aria-selected")).toBe("true");
@@ -249,7 +247,7 @@ it("shows editable identity fields and places the URL in Source", async () => {
     ),
   );
   expect(tabs[1]?.getAttribute("aria-selected")).toBe("true");
-  await selectInspectorTab("Organise");
+  await selectInspectorTab("Organize");
   const organizeSectionButtons = [...host.querySelectorAll("button")].filter(
     (button) => button.getAttribute("aria-expanded") !== null,
   );
@@ -263,13 +261,10 @@ it("shows editable identity fields and places the URL in Source", async () => {
   expect(host.textContent).not.toContain("Rating");
   expect(
     organizeSectionButtons.map((button) => button.textContent),
-  ).not.toEqual(
-    expect.arrayContaining(["Properties", "Source", "Activity", "Comments"]),
-  );
+  ).not.toEqual(expect.arrayContaining(["Properties", "Source", "Activity"]));
   expect(host.textContent).toContain("Folders");
   expect(host.querySelector('[aria-label="Add Tag"]')).not.toBeNull();
   expect(host.querySelector('[aria-label="Add Folder"]')).not.toBeNull();
-  expect(host.querySelector('[aria-label="Add Comment"]')).toBeNull();
 
   const tagsTrigger = organizeSectionButtons.find(
     (button) => button.textContent === "Tags",
@@ -309,17 +304,11 @@ it("shows editable identity fields and places the URL in Source", async () => {
   expect(host.textContent).toContain("Modified");
   expect(host.textContent).not.toContain("Additional Details");
   expect(host.querySelector("details:not([open])")).toBeNull();
-  expect(host.textContent).not.toContain("Add Image Comment");
   expect(
     [...host.querySelectorAll("button")].some(
       (button) => button.textContent?.trim() === "Export",
     ),
   ).toBe(false);
-
-  await selectInspectorTab("Comments");
-  expect(host.querySelector('[aria-label="Add Comment"]')).toBeNull();
-  expect(host.textContent).toContain("No comments yet");
-  expect(host.textContent).toContain("Add one from the preview toolbar.");
 });
 
 it("keeps Description visible when it is empty or matches the title", async () => {
@@ -346,61 +335,6 @@ it("keeps Description visible when it is empty or matches the title", async () =
   ).toBe("");
 });
 
-it("shows media-aware video comments directly in the Comments tab", async () => {
-  const current = pool.get("a");
-  if (!current) throw new Error("Missing Save fixture");
-  pool.upsert({
-    ...current,
-    files: [
-      {
-        kind: "poster",
-        path: "poster.jpg",
-        sha256: "fedcba9876543210",
-        size: 2048,
-        mimeType: "image/jpeg",
-      },
-      {
-        kind: "original",
-        path: "clip.mp4",
-        sha256: "0123456789abcdef",
-        size: 8192,
-        mimeType: "video/mp4",
-      },
-    ],
-    videoNotes: [
-      { id: "moment", timeSec: 3, text: "Video comment", fileIndex: 1 },
-    ],
-    comments: [
-      {
-        id: "image-comment",
-        x: 0.1,
-        y: 0.1,
-        w: 0.2,
-        h: 0.2,
-        text: "Image comment",
-        fileIndex: 1,
-      },
-    ],
-  });
-  setSaveViewerFileIndex(1);
-
-  await act(async () => root.render(<SaveInspector saveId="a" />));
-  await selectInspectorTab("Comments");
-
-  const nestedCommentsSections = [...host.querySelectorAll("button")].filter(
-    (button) =>
-      button.getAttribute("aria-expanded") !== null &&
-      button.textContent === "Comments",
-  );
-  expect(nestedCommentsSections).toHaveLength(0);
-  expect(host.querySelector('[aria-label="Add Comment"]')).toBeNull();
-  expect(host.textContent).toContain("Video comment");
-  expect(host.textContent).not.toContain("No comments yet");
-  expect(host.textContent).not.toContain("Image comment");
-  expect(host.textContent).not.toContain("Video Notes");
-  expect(host.querySelector('[aria-label="Seek to 0:03"]')).not.toBeNull();
-});
-
 it("hides empty read-only sections and keeps empty addable sections static", async () => {
   const current = pool.get("a");
   if (!current) throw new Error("Missing Save fixture");
@@ -417,18 +351,12 @@ it("hides empty read-only sections and keeps empty addable sections static", asy
     (button) => button.getAttribute("aria-expanded") !== null,
   );
   expect(sectionButtons.map((button) => button.textContent)).not.toEqual(
-    expect.arrayContaining(["Tags", "Folders", "Comments", "Activity"]),
+    expect.arrayContaining(["Tags", "Folders", "Activity"]),
   );
   expect(host.textContent).toContain("Tags");
   expect(host.textContent).toContain("Folders");
-  expect(host.textContent).toContain("Comments");
   expect(host.querySelector('[aria-label="Add Tag"]')).not.toBeNull();
   expect(host.querySelector('[aria-label="Add Folder"]')).not.toBeNull();
-  expect(host.querySelector('[aria-label="Add Comment"]')).toBeNull();
-  await selectInspectorTab("Comments");
-  expect(host.querySelector('[aria-label="Add Comment"]')).toBeNull();
-  expect(host.textContent).toContain("No comments yet");
-  expect(host.textContent).toContain("Add one from the preview toolbar.");
 });
 
 it("removes only the clicked folder immediately for every selected Save", async () => {
@@ -578,4 +506,73 @@ it("shows child folders as inset tree rows and keeps search results contextual",
   expect(result?.querySelector("[title]")?.getAttribute("title")).toBe(
     "Reference / A very long collection name that needs truncation",
   );
+});
+
+it("loads Related Saves only when the section opens and opens a selected Save", async () => {
+  const current = pool.get("a");
+  if (!current) throw new Error("Missing Save fixture");
+  pool.upsert({ ...current, clipModel: mediaEmbeddingVersion() });
+  const query = vi.fn(
+    async (name: string, input: Record<string, string | string[] | number>) => {
+      requests.push({ name, input });
+      if (name === "saves.related") {
+        return {
+          items: [
+            {
+              id: "related",
+              score: 0.9,
+              reason: "semantically-related",
+            },
+          ],
+        };
+      }
+      if (name === "saves.getMany") {
+        return [
+          SavePatchSchema.parse({
+            id: "related",
+            title: "Related Save",
+            source: "local",
+            url: "pond:local/related",
+            mediaType: "image",
+            files: [
+              {
+                kind: "original",
+                path: "related.jpg",
+                mimeType: "image/jpeg",
+                sha256: "0123456789abcdef",
+                size: 1024,
+              },
+            ],
+          }),
+        ];
+      }
+      if (name === "saves.rawJson") return { rawJson: null };
+      return [];
+    },
+  );
+  vi.stubGlobal("pond", { query });
+
+  await act(async () => root.render(<SaveInspector saveId="a" tab="info" />));
+  expect(query).not.toHaveBeenCalledWith("saves.related", expect.anything());
+
+  const trigger = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
+    (button) =>
+      button.textContent === "Related" &&
+      button.getAttribute("aria-expanded") === "false",
+  );
+  if (!trigger) throw new Error("Missing Related section");
+  await act(async () => trigger.click());
+
+  expect(query).toHaveBeenCalledWith("saves.related", { id: "a", limit: 12 });
+  expect(
+    query.mock.calls.every(([name]) =>
+      ["saves.rawJson", "saves.related", "saves.getMany"].includes(name),
+    ),
+  ).toBe(true);
+  const related = host.querySelector<HTMLButtonElement>(
+    '[aria-label="Open Related Save"]',
+  );
+  expect(related).not.toBeNull();
+  await act(async () => related?.click());
+  expect(libraryChrome.getState().inspectorSaveId).toBe("related");
 });

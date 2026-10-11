@@ -6,7 +6,7 @@ import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
 import { IconCircleXmarkFill18 } from "@pond/icons/fill/18";
-import { Button, Loader, Menu, Tooltip } from "@pond/ui";
+import { Button, Loader, Tooltip } from "@pond/ui";
 import {
   $createTextNode,
   $getRoot,
@@ -25,14 +25,14 @@ import {
   useRef,
   useState,
 } from "react";
-import { useSearchNonce } from "@/features/library/state/library-header";
 import {
   setSearchDraft,
   setSearchInput,
   useFilterQuery,
   useSearchInput,
+  useSearchNonce,
   useSearchText,
-} from "@/features/library/state/view-store";
+} from "@/features/library";
 import {
   useNlCompiler,
   useNlFacets,
@@ -42,16 +42,10 @@ import {
   flattenPredicates,
 } from "@/features/search/lib/nl-query";
 import { parseSearchInput } from "@/features/search/lib/syntax";
-import {
-  recordRecentSearch,
-  removeRecentSearch,
-  useRecentSearches,
-} from "@/features/search/state/recent-searches";
-import { usePrefs } from "@/features/settings/state/prefs";
-import { useTags } from "@/features/tags/state/tags";
-import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
+import { useTags } from "@/features/tags";
+import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import { stopAppHotkeysFromEditable } from "@/shared/lib/editable-target";
+import { usePrefs } from "@/shared/state/prefs";
 import { $readSearchString, $writeSearchString } from "./lib/editor-state";
 import { FilterTokenNode } from "./lib/token-node";
 import { FilterTokenPlugin } from "./lib/token-plugin";
@@ -101,7 +95,6 @@ function SearchField({
   const searchNonce = useSearchNonce();
   const hostRef = useRef<HTMLDivElement>(null);
   const [typeaheadOpen, setTypeaheadOpen] = useState(false);
-  const [focused, setFocused] = useState(false);
   const [status, setStatus] = useState<"idle" | "thinking" | "error">("idle");
   const compileRef = useRef(compile);
   compileRef.current = compile;
@@ -110,8 +103,6 @@ function SearchField({
   const typeaheadOpenRef = useRef(typeaheadOpen);
   typeaheadOpenRef.current = typeaheadOpen;
   const runRef = useRef(0);
-  const scrollFade = useScrollFade<HTMLDivElement>();
-  const recentSearches = useRecentSearches();
   const [searchPrefs, patchSearchPrefs] = usePrefs("search");
 
   const tagNames = useMemo(() => tags.map((t) => t.name), [tags]);
@@ -174,7 +165,6 @@ function SearchField({
       raw = $readSearchString();
     });
     if (!raw) return;
-    recordRecentSearch(raw);
     const parsed = parseSearchInput(raw);
     if (!parsed.text.trim()) {
       setSearchDraft(raw, true);
@@ -261,15 +251,7 @@ function SearchField({
   };
 
   return (
-    <div
-      ref={hostRef}
-      className={styles.wrap}
-      onFocusCapture={() => setFocused(true)}
-      onBlurCapture={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget))
-          setFocused(false);
-      }}
-    >
+    <div ref={hostRef} className={styles.wrap}>
       <SpecContextMenu
         buildItems={() =>
           buildSearchScopeItems({
@@ -288,7 +270,6 @@ function SearchField({
                   ariaLabel="Search"
                   aria-busy={status === "thinking"}
                   data-library-search=""
-                  {...scrollFade}
                   onKeyDown={stopAppHotkeysFromEditable}
                 />
               }
@@ -331,40 +312,6 @@ function SearchField({
           ) : null}
         </div>
       </SpecContextMenu>
-      {focused && !hasText && recentSearches.length > 0 ? (
-        <Menu.Surface className={styles.recent}>
-          <Menu.SectionLabel>Recent Searches</Menu.SectionLabel>
-          <Menu.List role="listbox" aria-label="Recent Searches">
-            {recentSearches.map((query) => (
-              <Menu.Row
-                key={query}
-                role="option"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => {
-                  setSearchDraft(query, true);
-                  editor.update(() => $writeSearchString(query), {
-                    tag: "search-store-sync",
-                  });
-                }}
-              >
-                <Menu.ItemLabel>{query}</Menu.ItemLabel>
-                <Button
-                  icon
-                  size="xs"
-                  variant="ghost"
-                  aria-label={`Remove ${query}`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    removeRecentSearch(query);
-                  }}
-                >
-                  <IconCircleXmarkFill18 />
-                </Button>
-              </Menu.Row>
-            ))}
-          </Menu.List>
-        </Menu.Surface>
-      ) : null}
       {status === "error" ? (
         <div className={styles.status}>
           <span role="status">

@@ -3,12 +3,7 @@ import { Button } from "@pond/ui";
 import type { FolderSummary } from "@shared/folder-contracts";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { FolderCustomizeDialog } from "@/features/library/components/folder-customize-dialog";
-import {
-  FOLDER_ICONS,
-  FOLDER_SWATCHES,
-  FolderIcon,
-  type FolderIconId,
-} from "@/features/library/components/folder-sidebar/folder-icons";
+import { useLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
 import { folderCoverUrl } from "@/features/library/lib/folder-cover";
 import {
   enterFolder,
@@ -16,10 +11,17 @@ import {
 } from "@/features/library/operations/enter-folder";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import { folders, useFolders } from "@/features/library/state/folders";
-import { useSave } from "@/features/saves/hooks/use-saves";
-import { ensureSaves } from "@/features/saves/lib/ensure-saves";
-import { usePrefs } from "@/features/settings/state/prefs";
-import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
+import { Card, useDisplayPrefs, useItemInfo } from "@/features/saves";
+import { ensureSaves, useSave } from "@/features/saves/pool";
+import { SpecContextMenu } from "@/shared/components/spec-context-menu";
+import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
+import {
+  FOLDER_MENU_ICONS,
+  FOLDER_SWATCHES,
+  FolderIcon,
+  type FolderIconId,
+} from "@/shared/lib/folder-icons";
+import { usePrefs } from "@/shared/state/prefs";
 import { useOrganizationTree } from "../../hooks/use-organization-tree";
 import { openOrganizationRenameDialog } from "../../state/organization-rename-dialog";
 import { type FolderTool, FolderToolsDialog } from "../folder-tools";
@@ -35,19 +37,23 @@ function FolderCard({
   customCoverSaveId,
   presentation,
   organization,
+  galleryFit,
 }: {
   organization: ReturnType<typeof useOrganizationTree>;
   folder: Folder;
   summary: FolderSummary | undefined;
   customCoverSaveId: string | null;
+  galleryFit: "fit" | "fill";
   presentation: {
     icon?: FolderIconId;
     sortKey: string;
     sortDir: "asc" | "desc";
     quickAccess?: boolean;
+    includeSubfolders: boolean;
   };
 }) {
   const [customizing, setCustomizing] = useState(false);
+  const theme = useResolvedTheme();
   const previewIds = [
     customCoverSaveId,
     ...(summary?.previewSaveIds ?? []),
@@ -69,15 +75,20 @@ function FolderCard({
   ]
     .flatMap((save) => {
       if (!save) return [];
-      const src = folderCoverUrl(save, 360);
+      const src = folderCoverUrl(save, 360, theme);
       return src ? [{ id: save.id, src }] : [];
     })
     .slice(0, 4);
+  const display = useDisplayPrefs();
+  const itemInfo = useItemInfo();
   const directSaveCount = summary?.directSaveCount ?? 0;
   const childFolderCount = summary?.childFolderCount ?? 0;
-  const metadata =
-    directSaveCount === 0 && childFolderCount === 0
-      ? "Empty"
+  const empty =
+    summary !== undefined && directSaveCount === 0 && childFolderCount === 0;
+  const metadata = !summary
+    ? ""
+    : empty
+      ? countLabel(0, "item", "items")
       : [
           directSaveCount > 0
             ? countLabel(directSaveCount, "item", "items")
@@ -107,7 +118,7 @@ function FolderCard({
           {
             type: "submenu",
             label: "Icon",
-            items: FOLDER_ICONS.map((option) => ({
+            items: FOLDER_MENU_ICONS.map((option) => ({
               type: "checkbox",
               label: option.label,
               checked: (presentation.icon ?? "folder") === option.id,
@@ -149,18 +160,26 @@ function FolderCard({
             })),
           },
           {
+            type: "checkbox",
+            label: "Show Subfolder Contents",
+            checked: presentation.includeSubfolders,
+            onCheckedChange: (includeSubfolders) =>
+              void saveFolderPresentation(folder.id, { includeSubfolders }),
+          },
+          {
             label: "Customize Folder",
             onClick: () => setCustomizing(true),
           },
         ]}
       >
-        <Button
-          width="full"
-          size="lg"
-          variant="ghost"
-          className={styles.card}
+        <Card.Select
+          className={styles.trigger}
           {...organization.rowProps(folder.id, 0)}
-          aria-label={`Open ${folder.name}, ${metadata}`}
+          aria-label={
+            metadata
+              ? `Open ${folder.name}, ${metadata}`
+              : `Open ${folder.name}`
+          }
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.nativeEvent.isComposing) {
               event.preventDefault();
@@ -175,22 +194,26 @@ function FolderCard({
           }}
           onDoubleClick={() => void enterFolder(folder.id)}
         >
-          <span className={styles.cover}>
-            {previews.length > 0 ? (
-              previews.map((preview) => (
-                <span className={styles.preview} key={preview.id}>
-                  <img src={preview.src} alt="" />
+          <Card.Media>
+            <span className={styles.cover}>
+              {previews.length > 0 ? (
+                previews.map((preview) => (
+                  <span className={styles.preview} key={preview.id}>
+                    <img src={preview.src} alt="" data-fit={galleryFit} />
+                  </span>
+                ))
+              ) : (
+                <span className={styles.fallback}>
+                  <FolderIcon name={presentation.icon} />
                 </span>
-              ))
-            ) : (
-              <span className={styles.fallback}>
-                <FolderIcon name={presentation.icon} />
-              </span>
-            )}
-          </span>
-          <span className={styles.name}>{folder.name}</span>
-          <span className={styles.metadata}>{metadata}</span>
-        </Button>
+              )}
+            </span>
+          </Card.Media>
+          <Card.Meta
+            title={display.name ? folder.name : undefined}
+            time={itemInfo.visible && metadata ? metadata : undefined}
+          />
+        </Card.Select>
       </SpecContextMenu>
       {customizing ? (
         <FolderCustomizeDialog
@@ -214,6 +237,8 @@ export function FolderBrowser({
 }) {
   const folders = useFolders();
   const [folderViews] = usePrefs("folderViews");
+  const [viewer] = usePrefs("viewer");
+  const gap = useLibrarySaveGap();
   const children = useMemo(
     () => folders.filter((folder) => folder.parentId === parentId),
     [folders, parentId],
@@ -221,20 +246,14 @@ export function FolderBrowser({
   const [folderTool, setFolderTool] = useState<FolderTool | null>(null);
   const organization = useOrganizationTree(children, () => {});
   const [summaries, setSummaries] = useState<FolderSummary[]>([]);
-  const [loading, setLoading] = useState(children.length > 0);
-  const [error, setError] = useState(false);
 
   useEffect(() => {
     if (children.length === 0) {
       setSummaries([]);
-      setLoading(false);
-      setError(false);
       return;
     }
     let active = true;
     const load = async () => {
-      setLoading(true);
-      setError(false);
       try {
         const next = await window.pond.query("folders.summaries", { parentId });
         if (!active) return;
@@ -250,10 +269,8 @@ export function FolderBrowser({
           );
         });
         await ensureSaves(coverIds);
-      } catch {
-        if (active) setError(true);
-      } finally {
-        if (active) setLoading(false);
+      } catch (error) {
+        console.warn("[pond] folder summaries failed", error);
       }
     };
     void load();
@@ -288,10 +305,6 @@ export function FolderBrowser({
         <section className={styles.section} aria-labelledby="subfolders-title">
           <div className={styles.header}>
             <h2 id="subfolders-title">Subfolders ({children.length})</h2>
-            {loading ? <span role="status">Loading subfolders</span> : null}
-            {error ? (
-              <span role="alert">Couldn&apos;t load folder details.</span>
-            ) : null}
           </div>
           {organization.selected.length ? (
             <fieldset
@@ -337,12 +350,13 @@ export function FolderBrowser({
             aria-label="Subfolders"
             aria-multiselectable
           >
-            <ul className={styles.grid}>
+            <ul className={styles.grid} style={{ gap }}>
               {children.map((folder) => (
                 <FolderCard
                   key={folder.id}
                   folder={folder}
                   organization={organization}
+                  galleryFit={viewer.galleryFit}
                   summary={summaryById.get(folder.id)}
                   customCoverSaveId={
                     folderViews[folder.id]?.coverSaveId ?? null
@@ -352,6 +366,8 @@ export function FolderBrowser({
                     sortKey: folderViews[folder.id]?.sortKey ?? "savedAt",
                     sortDir: folderViews[folder.id]?.sortDir ?? "desc",
                     quickAccess: folderViews[folder.id]?.quickAccess,
+                    includeSubfolders:
+                      folderViews[folder.id]?.includeSubfolders ?? true,
                   }}
                 />
               ))}

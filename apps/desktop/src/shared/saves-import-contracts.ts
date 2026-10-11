@@ -1,11 +1,30 @@
 import type { MediaType, Source } from "@pond/schema/db";
 import type { BlankDocumentIcons, BlankDocumentKind } from "./blank-documents";
 import type { CombineImagesOptions } from "./combine-images-contracts";
-import type { EmptyInput, OkResult } from "./query-contracts-shared";
+import type {
+  CancellableResult,
+  EmptyInput,
+  OkResult,
+  ReasonResult,
+} from "./query-contracts-shared";
 import type {
   SavesIdsInput,
+  SavesImportCounts,
   SavesImportResult,
 } from "./saves-contracts-shared";
+
+export interface ImportFileFailure {
+  path: string;
+  error: string;
+}
+
+export type ManualSaveResult = OkResult<{ id: string; skipped?: boolean }> & {
+  failedFiles?: ImportFileFailure[];
+};
+
+export type SavesImportFilesResult = OkResult<{ ids: string[] }> & {
+  failedPaths?: string[];
+};
 
 export interface DuplicateImportCandidate {
   path: string;
@@ -25,23 +44,9 @@ export interface EagleImportProgress {
   failed: number;
 }
 
-export interface DesktopScreenshotSource {
-  id: string;
-  name: string;
-  kind: "screen" | "window";
-  thumbnailDataUrl: string;
-}
-
-export interface DesktopScreenshotCrop {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
 export interface SavesImportQueryInputs {
   "saves.importEaglePackage": EmptyInput;
-  "saves.importPackage": { password?: string };
+  "saves.importPackage": EmptyInput;
   "saves.pickImportPaths": { kind: "files" | "folders" };
   "saves.classifyUrl": { url: string };
   "saves.importFiles": {
@@ -52,19 +57,6 @@ export interface SavesImportQueryInputs {
     duplicateDecisions?: Record<string, DuplicateImportChoice>;
   };
   "saves.reviewImportDuplicates": { paths: string[] };
-  "saves.desktopScreenshotSources": EmptyInput;
-  "saves.captureDesktopScreenshot": {
-    sourceId: string;
-    folderId?: string | null;
-    title?: string | null;
-    notes?: string | null;
-    tags?: string[];
-    rating?: number;
-    format?: "png" | "jpeg" | "webp";
-    quality?: number;
-    crop?: DesktopScreenshotCrop | null;
-    copyToClipboard?: boolean;
-  };
   "saves.createManual": {
     title?: string | null;
     url?: string | null;
@@ -107,42 +99,31 @@ export interface SavesImportQueryInputs {
 }
 
 export interface SavesImportQueryResults {
-  "saves.importEaglePackage": {
-    ok: boolean;
+  "saves.importEaglePackage": CancellableResult<{
     imported?: number;
     skipped?: number;
-    error?: string;
-  };
-  "saves.importPackage": {
-    ok: boolean;
+  }>;
+  "saves.importPackage": CancellableResult<{
     imported?: number;
     skipped?: number;
-    error?: string;
-  };
+  }>;
   "saves.pickImportPaths": { paths: string[] };
   "saves.classifyUrl": { source: Source | null };
-  "saves.importFiles": OkResult & { ids?: string[] };
+  "saves.importFiles": SavesImportFilesResult;
   "saves.reviewImportDuplicates": {
     candidates: DuplicateImportCandidate[];
   };
-  "saves.desktopScreenshotSources": {
-    sources: DesktopScreenshotSource[];
-  };
-  "saves.captureDesktopScreenshot": OkResult & {
-    id?: string;
-    error?: "source_not_found" | "capture_unavailable" | "save_failed";
-  };
-  "saves.createManual": OkResult & { id?: string; skipped?: boolean };
+  "saves.createManual": ManualSaveResult;
   "saves.listBlankDocuments": {
     kinds: BlankDocumentKind[];
     icons: BlankDocumentIcons;
   };
-  "saves.createBlankDocument": OkResult & { id?: string };
-  "saves.combineImages": OkResult & {
+  "saves.createBlankDocument": OkResult<{ id: string }>;
+  "saves.combineImages": CancellableResult<{
     id?: string;
-    skipped?: number;
-    error?: string;
-  };
+    path?: string;
+    skipped: number;
+  }>;
   "saves.importEagleLibrary": SavesImportResult & {
     failed: number;
     deletedSkipped: number;
@@ -163,17 +144,15 @@ export interface SavesImportQueryResults {
       imported: number;
     };
   };
-  "saves.pickEagleLibrary": { ok: boolean; path: string | null };
-  "saves.importClipboard": OkResult & { ids: string[] };
-  "saves.importBookmarks": SavesImportResult;
+  "saves.pickEagleLibrary": ReasonResult<"cancelled", { path: string }>;
+  "saves.importClipboard": SavesImportFilesResult;
+  "saves.importBookmarks": CancellableResult<SavesImportCounts>;
   "saves.extractPageAssets": SavesImportResult;
-  "saves.quickAdd": OkResult & { id?: string; created?: boolean };
+  "saves.quickAdd": OkResult<{ id: string; created?: boolean }>;
   "saves.startDrag": OkResult;
-  "saves.copyToLibrary": {
-    ok: boolean;
+  "saves.copyToLibrary": CancellableResult<{
     path?: string;
     imported?: number;
     skipped?: number;
-    error?: string;
-  };
+  }>;
 }

@@ -1,44 +1,14 @@
 .popup {
-  width: min(480px, calc(100vw - 32px));
-  padding: 20px;
-}
-.popup form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.list {
-  display: flex;
-  flex-direction: column;
-  max-height: 320px;
-  overflow: auto;
-}
-.row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  min-height: 36px;
-}
-.row label {
-  flex: 1;
-}
-.editor {
-  flex: 1;
-  min-width: 0;
-}
-.row small {
-  opacity: 0.6;
-}
-.footer {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
+  /* FolderMenu sizes itself from the popover's available-space variables. */
+  --available-width: calc(100vw - 32px);
+  --available-height: min(480px, calc(100dvh - 80px));
+  --width: 480px;
 }
 
-.scopes {
-  display: flex;
-  gap: 4px;
-  padding: 0;
+.error {
+  padding: 8px 12px;
   margin: 0;
-  border: 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-red-11);
+  border-top: var(--ds-border-width) solid var(--ds-gray-a3);
 }

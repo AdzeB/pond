@@ -14,7 +14,7 @@ import {
 import { ViewMenuRow } from "../row";
 import styles from "./styles.module.css";
 
-const KEY_OPTIONS: Array<{ value: SortKey; label: string }> = [
+export const SORT_OPTIONS: Array<{ value: SortKey; label: string }> = [
   { value: "random", label: "Random" },
   { value: "savedAt", label: "Date Saved" },
   { value: "createdAt", label: "Date Added" },
@@ -35,8 +35,8 @@ const KEY_OPTIONS: Array<{ value: SortKey; label: string }> = [
   { value: "fileCount", label: "Count" },
 ];
 
-function labelFor(key: SortKey): string {
-  return KEY_OPTIONS.find((item) => item.value === key)?.label ?? key;
+function sortOptionLabel(key: SortKey): string {
+  return SORT_OPTIONS.find((item) => item.value === key)?.label ?? key;
 }
 
 export function SortSection({ onArrange }: { onArrange?: () => void }) {
@@ -47,7 +47,7 @@ export function SortSection({ onArrange }: { onArrange?: () => void }) {
   return (
     <>
       <Select.Root
-        items={KEY_OPTIONS}
+        items={SORT_OPTIONS}
         value={key}
         onValueChange={(value) => {
           if (value && isSortKey(value)) actions.setSort({ key: value, dir });
@@ -74,14 +74,14 @@ export function SortSection({ onArrange }: { onArrange?: () => void }) {
               size="sm"
               className={cn(ViewMenuRow.Select, styles.select)}
             >
-              <Select.Value>{labelFor(key)}</Select.Value>
+              <Select.Value>{sortOptionLabel(key)}</Select.Value>
             </Select.Trigger>
           </div>
         </ViewMenuRow.Root>
         <Select.Portal>
           <Select.Positioner align="end" sideOffset={6}>
             <Select.Popup>
-              <Select.Items items={KEY_OPTIONS} />
+              <Select.Items items={SORT_OPTIONS} />
             </Select.Popup>
           </Select.Positioner>
         </Select.Portal>

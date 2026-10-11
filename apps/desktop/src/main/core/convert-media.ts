@@ -36,7 +36,7 @@ export async function convertMedia(input: {
     });
 
   const image = sharp(source, { limitInputPixels: 100_000_000 }).rotate();
-  const abort = () => image.destroy(new Error("Conversion cancelled."));
+  const abort = () => image.destroy(new Error("Conversion canceled."));
   signal.addEventListener("abort", abort, { once: true });
   try {
     input.onProgress?.(0.05);

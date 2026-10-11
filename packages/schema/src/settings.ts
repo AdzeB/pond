@@ -1,4 +1,4 @@
-export type SettingsGroup = "general" | "library" | "ai" | "capture";
+export type SettingsGroup = "general" | "library" | "ai";
 
 export interface SettingsSection {
   id: string;
@@ -56,12 +56,6 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     label: "Harvesting",
     group: "library",
   },
-  {
-    id: "screenshots",
-    path: "screenshots",
-    label: "Screenshots",
-    group: "library",
-  },
   { id: "models", path: "models", label: "Providers", group: "ai" },
   { id: "agent-models", path: "agent-models", label: "Models", group: "ai" },
   {
@@ -77,33 +71,10 @@ export const SETTINGS_GROUP_ORDER: readonly SettingsGroup[] = [
   "general",
   "library",
   "ai",
-  "capture",
 ];
 
 export const SETTINGS_GROUP_LABELS = {
   general: null,
   library: "Workspace",
   ai: "Intelligence",
-  capture: "Capture",
 } satisfies Record<SettingsGroup, string | null>;
-
-export const SETTINGS_SECTION_ALIASES = {
-  preview: "viewer",
-  hotkeys: "shortcuts",
-  downloads: "harvesting",
-  videos: "harvesting",
-  schedule: "harvesting",
-  fetching: "harvesting",
-  images: "harvesting",
-  trash: "library",
-  agent: "models",
-  providers: "models",
-  integrations: "models",
-  intelligence: "models",
-  personalisation: "personalization",
-  ai: "models",
-  "ai-models": "agent-models",
-  "ai-providers": "models",
-  enrichment: "processing",
-  skills: "processing",
-} satisfies Readonly<Record<string, string>>;

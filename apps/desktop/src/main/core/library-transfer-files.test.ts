@@ -115,8 +115,6 @@ async function fixture() {
           tags: ["Research"],
           mediaType: "document",
           rating: 5,
-          comments: [],
-          videoNotes: [],
           files: [
             {
               path: "one.pdf",

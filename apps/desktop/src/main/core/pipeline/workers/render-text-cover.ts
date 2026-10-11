@@ -10,7 +10,6 @@ import {
 } from "@shared/save-file-names";
 import {
   RENDER_TEXT_COVER_VERSION,
-  TEXT_COVER_KINDS,
   textBodyFromFields,
   textCoverVersionFromRawJson,
 } from "@shared/text-card";
@@ -29,7 +28,7 @@ function needsTextCover(
   const files = save.files ?? [];
   if (save.mediaType === "video" || save.mediaType === "image") return false;
   return !files.some((f) => {
-    if (isAuxiliaryKind(f.kind) || TEXT_COVER_KINDS.has(f.kind)) return false;
+    if (isAuxiliaryKind(f.kind)) return false;
     return (
       isOriginalImageKind(f.kind) ||
       f.kind === "video" ||

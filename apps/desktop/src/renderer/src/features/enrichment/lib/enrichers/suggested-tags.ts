@@ -1,7 +1,7 @@
 import { z } from "zod";
 import {
   embedModelVersion,
-  embedTexts,
+  embedSearchQueries,
 } from "@/features/enrichment/lib/embeddings";
 import { embeddingFor } from "@/features/enrichment/state/embedding-store";
 import type { Save } from "@/features/saves/types";
@@ -38,7 +38,7 @@ async function getVocab(): Promise<VocabEntry[]> {
       .map((r) => r.name)
       .filter((n): n is string => !!n && n.trim().length > 0);
     if (names.length === 0) return [];
-    const vecs = await embedTexts(names);
+    const vecs = await embedSearchQueries(names);
     return names.flatMap((name, i) => {
       const vec = vecs[i];
       return vec ? [{ name, vec }] : [];

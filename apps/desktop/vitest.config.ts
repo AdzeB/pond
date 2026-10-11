@@ -38,7 +38,7 @@ export default defineConfig({
       {
         test: {
           name: "node",
-          include: ["src/**/*.test.ts"],
+          include: ["src/**/*.test.ts", "scripts/ai-benchmark/**/*.test.ts"],
           exclude: rendererTypeScriptTests,
           environment: "node",
         },

@@ -1,49 +1,46 @@
 import {
   IconCircleInfoOutline18,
-  IconMessageOutline18,
   IconPlusOutline18,
   IconSlidersOutline18,
   IconXmarkOutline18,
 } from "@pond/icons/outline/18";
-import { Button, PaneBody, PaneHeader, PickerPanel, Tabs } from "@pond/ui";
+import { Button, Pane, PickerPanel, Tabs } from "@pond/ui";
+import { mediaEmbeddingVersion } from "@shared/embeddings";
 import { useEffect, useMemo, useState } from "react";
-import {
-  libraryChrome,
-  type SaveInspectorTab,
-} from "@/features/library/state/library-chrome";
-import { ImageComments } from "@/features/saves/components/annotations/image-comments";
 import { FolderMenu } from "@/features/saves/components/detail/folder-menu";
 import { SaveInfoSections } from "@/features/saves/components/detail/info-sections";
-import { KebabMenu } from "@/features/saves/components/detail/kebab/kebab";
+import { KebabMenu } from "@/features/saves/components/detail/kebab";
 import { RatingStars } from "@/features/saves/components/detail/rating";
-import { Section } from "@/features/saves/components/detail/section";
-import { VideoCommentsSection } from "@/features/saves/components/detail/video-notes";
+import { RelatedSaves } from "@/features/saves/components/detail/related-saves";
 import { useSaves } from "@/features/saves/hooks/use-saves";
 import { ensureSaves, reloadSaves } from "@/features/saves/lib/ensure-saves";
-import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import {
-  buildMediaUnits,
+  type SaveInspectorTab,
+  saveLibraryBridge,
+} from "@/features/saves/lib/library-bridge";
+import {
   deriveTypeLabel,
   pickPrimaryFile,
 } from "@/features/saves/lib/media/units";
 import { bulkMutation, mutateSave } from "@/features/saves/lib/mutate";
 import { pool } from "@/features/saves/state/pool";
 import { useSaveViewerFileIndex } from "@/features/saves/state/save-viewer";
-import type { Save } from "@/features/saves/types";
-import { usePrefs } from "@/features/settings/state/prefs";
-import { TagMenu } from "@/features/tags/components/menu";
+import { TagMenu } from "@/features/tags";
+import { Section } from "@/shared/components/inspector-section";
 import { PropertyList } from "@/shared/components/property-list";
 import { useStableStrings } from "@/shared/hooks/use-stable-array";
+import { errorCopy } from "@/shared/lib/error-copy";
+import type { FolderIconId } from "@/shared/lib/folder-icons";
 import { formatBytes } from "@/shared/lib/format";
+import { usePrefs } from "@/shared/state/prefs";
 import { AssignmentChip } from "./chip";
 import { SavePreviews } from "./previews";
 import styles from "./styles.module.css";
 import { type InspectorDrafts, InspectorTextField } from "./text-field";
 
 const INSPECTOR_TABS = [
-  { id: "organize", label: "Organise", Icon: IconSlidersOutline18 },
+  { id: "organize", label: "Organize", Icon: IconSlidersOutline18 },
   { id: "info", label: "Properties", Icon: IconCircleInfoOutline18 },
-  { id: "comments", label: "Comments", Icon: IconMessageOutline18 },
 ] as const;
 
 export interface SaveInspectorProps {
@@ -54,6 +51,8 @@ export interface SaveInspectorProps {
     name: string;
     parentId?: string | null;
     count: number;
+    icon?: FolderIconId;
+    color?: string | null;
   }[];
   tab?: SaveInspectorTab;
 }
@@ -136,10 +135,7 @@ export function SaveInspector({
       await action();
     } catch (error) {
       setFailure({
-        message:
-          error instanceof Error
-            ? error.message
-            : "Couldn't update the selection.",
+        message: errorCopy(error, "Couldn't update the selection."),
         retry: action,
       });
     }
@@ -211,18 +207,17 @@ export function SaveInspector({
       data-save-inspector={saveId}
       value={activeTab}
       onValueChange={(value) => {
-        if (value !== "organize" && value !== "info" && value !== "comments")
-          return;
+        if (value !== "organize" && value !== "info") return;
         setActiveTab(value);
-        libraryChrome.setInspectorTab(value);
+        saveLibraryBridge.setInspectorTab(value);
       }}
     >
-      <PaneHeader
+      <Pane.Header
         title={
           <Tabs.List
             aria-label="Save details"
             activateOnFocus
-            className={styles.tabsList}
+            className={styles.tabs}
           >
             {INSPECTOR_TABS.map(({ id, label, Icon }) => (
               <Tabs.Tab
@@ -232,8 +227,8 @@ export function SaveInspector({
                 title={label}
                 value={id}
               >
-                <Icon aria-hidden="true" className={styles.tabIcon} />
-                <span className={styles.tabLabel}>{label}</span>
+                <Icon aria-hidden="true" className={styles.icon} />
+                <span className={styles.label}>{label}</span>
               </Tabs.Tab>
             ))}
           </Tabs.List>
@@ -250,8 +245,8 @@ export function SaveInspector({
         >
           <IconXmarkOutline18 />
         </Button>
-      </PaneHeader>
-      <PaneBody className={styles.scroll}>
+      </Pane.Header>
+      <Pane.Body className={styles.scroll}>
         {loadError ? (
           <div role="alert">
             {loadError}
@@ -382,6 +377,7 @@ export function SaveInspector({
                         recommendedNames={single?.suggestedTags ?? []}
                         allowCreate
                         showCounts={false}
+                        layout={tagPickerPreferences.layout}
                         gridSize={tagPickerPreferences.gridSize}
                         showStarred={tagPickerPreferences.showStarred}
                         showRecently={tagPickerPreferences.showRecently}
@@ -476,7 +472,7 @@ export function SaveInspector({
                     <PropertyList.Row>
                       <PropertyList.Label>URL</PropertyList.Label>
                       <InspectorTextField
-                        className={styles.sourceUrlEditor}
+                        className={styles["source-url-editor"]}
                         drafts={drafts}
                         cacheKey={`${targetKey}:url`}
                         label="Source URL"
@@ -587,38 +583,15 @@ export function SaveInspector({
                   </PropertyList.Root>
                 </Section>
               )}
-            </Tabs.Panel>
-            <Tabs.Panel value="comments">
-              {single ? (
-                <AdditionalDetails key={single.id} save={single} />
-              ) : (
-                <p className={styles.emptyTab}>
-                  Select one Save to view comments.
-                </p>
-              )}
+              {single?.clipModel === mediaEmbeddingVersion() ? (
+                <Section title="Related" defaultOpen={false}>
+                  <RelatedSaves saveId={single.id} />
+                </Section>
+              ) : null}
             </Tabs.Panel>
           </>
         ) : null}
-      </PaneBody>
+      </Pane.Body>
     </Tabs.Root>
-  );
-}
-
-function AdditionalDetails({ save }: { save: Save }) {
-  const fileIndex = useSaveViewerFileIndex() ?? 0;
-  const units = buildMediaUnits(save);
-  const activePath = save.files[fileIndex]?.path;
-  const activeUnit =
-    units.find((unit) => unit.key === activePath) ??
-    units[fileIndex] ??
-    (units.length === 1 ? units[0] : undefined);
-  return (
-    <div className={styles.additional}>
-      {activeUnit?.isVideo ? (
-        <VideoCommentsSection save={save} fileIndex={fileIndex} bare />
-      ) : (
-        <ImageComments save={save} fileIndex={fileIndex} bare />
-      )}
-    </div>
   );
 }

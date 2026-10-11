@@ -9,7 +9,7 @@ import {
   useSidebarOpen,
 } from "@/features/library/state/library-chrome";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys";
-import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
+import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import styles from "./styles.module.css";
 
 const EASE = [0.25, 0.1, 0.25, 1] as const;
@@ -131,7 +131,7 @@ export function SidebarToggle({
             },
             {
               type: "checkbox",
-              label: "Agent",
+              label: "Assistant",
               checked: rightPane === "agent",
               onCheckedChange: (checked) => libraryChrome.setAgentOpen(checked),
             },

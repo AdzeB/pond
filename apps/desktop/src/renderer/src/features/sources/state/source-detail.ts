@@ -1,6 +1,6 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import { libraryChrome } from "@/features/library/state/library-chrome";
+import { libraryChrome } from "@/features/library";
 
 interface SourceDetailState {
   revision: number;

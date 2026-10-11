@@ -8,6 +8,7 @@ import {
 import { Dialog, Menu, Tooltip } from "@pond/ui";
 import type { AssistantMessage } from "@shared/assistant";
 import { conversationMarkdown } from "@shared/conversation-markdown";
+import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
 import { assistant } from "../../state/assistant";
 
@@ -34,8 +35,8 @@ export function ChatActions({
             })
           : await window.pond.query("agent.exportChat", { chatId });
       if (!result.ok) {
-        if (result.reason === "canceled") return;
-        throw new Error(result.error || "Try again.");
+        if (result.reason === "cancelled") return;
+        throw new Error(result.error);
       }
       notify({
         id: "chat-transfer",
@@ -49,7 +50,7 @@ export function ChatActions({
           kind === "copy"
             ? "Could not copy conversation"
             : "Could not export conversation",
-        description: error instanceof Error ? error.message : "Try again.",
+        description: errorCopy(error, "Try again."),
       });
     }
   }
@@ -101,7 +102,7 @@ export function ChatActions({
                       title: "Delete Chat",
                       description:
                         "This permanently deletes the conversation. Your Saves stay in your library.",
-                      confirmLabel: "Delete Chat",
+                      confirmLabel: "Delete",
                       onConfirm: () => assistant.deleteChat(chatId),
                     });
                   },

@@ -7,36 +7,42 @@ import {
   splitPrefsPatch,
 } from "./prefs-scope";
 
-const GREEN = { appearance: "system", lightPresetId: "mint" } as const;
-
-it("loads legacy search preferences without resetting semantic search", () => {
-  const prefs = PrefsSchema.parse({
-    ai: { nlCompiler: true, semanticSearch: true, embedModelId: "local-model" },
-  });
-  expect(prefs.ai.semanticSearch).toBe(true);
-  expect(prefs.ai.embedModelId).toBe("local-model");
-  expect(prefs.ai).not.toHaveProperty("nlCompiler");
-});
-
-it("migrates legacy sidebar counts and completes saved destination order", () => {
+it("keeps All, Assistant, and Trash visible in the sidebar", () => {
   const prefs = PrefsSchema.parse({
     sidebar: {
-      showCounts: false,
-      order: ["trash", "all", "trash"],
+      destinations: {
+        all: false,
+        assistant: false,
+        trash: false,
+        random: false,
+      },
     },
   });
 
-  expect(prefs.sidebar.badgeStyle).toBe("none");
+  expect(prefs.sidebar.destinations.all).toBe(true);
+  expect(prefs.sidebar.destinations.assistant).toBe(true);
+  expect(prefs.sidebar.destinations.trash).toBe(true);
+  expect(prefs.sidebar.destinations.random).toBe(false);
+});
+
+it("completes saved destination order", () => {
+  const prefs = PrefsSchema.parse({
+    sidebar: { order: ["trash", "all", "trash"] },
+  });
+
+  expect(prefs.sidebar.badgeStyle).toBe("count");
   expect(prefs.sidebar.order).toEqual([
     "trash",
+    "downloads",
+    "sources",
     "all",
     "uncategorized",
+    "assistant",
     "untagged",
+    "recentlyAdded",
     "recentlyUsed",
     "tags",
     "random",
-    "downloads",
-    "sources",
   ]);
 });
 
@@ -61,17 +67,17 @@ describe("splitPrefsPatch", () => {
   it("keeps feedback and sidebar behavior in the app slice", () => {
     const { app, pond } = splitPrefsPatch({
       window: { interfaceZoom: 150 },
-      sidebar: { showCounts: false },
+      sidebar: { badgeStyle: "none" },
       feedback: {
-        sounds: { screenshot: false },
+        sounds: { saveDeletion: false },
         notifications: { autoImport: false },
       },
     });
     expect(app).toMatchObject({
       window: { interfaceZoom: 150 },
-      sidebar: { showCounts: false },
+      sidebar: { badgeStyle: "none" },
       feedback: {
-        sounds: { screenshot: false },
+        sounds: { saveDeletion: false },
         notifications: { autoImport: false },
       },
     });
@@ -83,20 +89,6 @@ describe("normalizeStoredPrefs", () => {
   it("passes a v3 blob through untouched", () => {
     const stored = { version: 3 as const, app: { window: {} }, pending: null };
     expect(normalizeStoredPrefs(stored)).toBe(stored);
-  });
-
-  it("keeps the app slice and unbound entry from a v2 blob", () => {
-    const stored = normalizeStoredPrefs({
-      version: 2,
-      app: { window: { restorePosition: false } },
-      ponds: {
-        unbound: { preferences: GREEN },
-        "pond-a": { preferences: { lightPresetId: "ocean" } },
-      },
-    });
-    expect(stored.version).toBe(3);
-    expect(stored.app).toEqual({ window: { restorePosition: false } });
-    expect(stored.pending).toEqual({ preferences: GREEN });
   });
 
   it("falls back to empty slices for unrecognized input", () => {
@@ -122,20 +114,6 @@ describe("mergePondSlice (sync account registry)", () => {
       runningSince: null,
     },
   };
-
-  it("replaces nested sync records wholesale, so the legacy drain empties them", () => {
-    const base = {
-      sync: {
-        handles: { twitter: "personal" },
-        sources: { twitter: { knownCount: 42 } },
-      },
-    };
-    const drained = mergePondSlice(base, {
-      sync: { handles: {}, sources: {} },
-    });
-    expect(drained.sync.handles).toEqual({});
-    expect(drained.sync.sources).toEqual({});
-  });
 
   it("keeps the account registry intact across unrelated sync patches", () => {
     const base = {
@@ -240,10 +218,10 @@ it("deep-merges app feedback and sidebar destination preferences", () => {
   const next = mergeAppSlice(
     {
       feedback: {
-        sounds: { screenshot: false },
+        sounds: { saveDeletion: false },
         notifications: { autoImport: false },
       },
-      sidebar: { destinations: { trash: false } },
+      sidebar: { destinations: { random: false } },
     },
     {
       feedback: {
@@ -255,7 +233,7 @@ it("deep-merges app feedback and sidebar destination preferences", () => {
   );
 
   expect(next.feedback.sounds).toMatchObject({
-    screenshot: false,
+    saveDeletion: false,
     folderDeletion: false,
   });
   expect(next.feedback.notifications).toMatchObject({
@@ -263,7 +241,7 @@ it("deep-merges app feedback and sidebar destination preferences", () => {
     extensionCapture: false,
   });
   expect(next.sidebar.destinations).toMatchObject({
-    trash: false,
+    random: false,
     sources: false,
   });
 });

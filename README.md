@@ -2,7 +2,7 @@
 
 ## Install
 
-Download the latest `.dmg` from [GitHub Releases](https://github.com/raphaelsalaja/pond/releases). Requires macOS 12 or later (Apple Silicon and Intel builds are published separately). Windows builds can be produced locally and have not been tested.
+Download the latest `.dmg` from [GitHub Releases](https://github.com/raphaelsalaja/pond/releases). Requires macOS 12 or later (Apple Silicon and Intel builds are published separately). Windows and Linux are coming soon.
 
 **First open (unsigned build):** macOS may block the app with "developer cannot be verified." Right-click the app → **Open**, or go to **System Settings → Privacy & Security → Open Anyway**.
 
@@ -70,9 +70,9 @@ pnpm --filter @pond/desktop rebuild
 
 See [`apps/desktop/README.md`](apps/desktop/README.md) for architecture and on-disk layout. Before contributing, read the [contributor guide](CONTRIBUTING.md), [code standards](docs/contributing/code-standards.md), and [desktop architecture](docs/contributing/architecture.md). Run `pnpm check` and `pnpm build` from the repository root to verify a change.
 
-## Agent and MCP
+## Assistant and MCP
 
-Agent lives in the right column. It searches this library with a key you paste in Settings, or a local host you run such as Ollama or LM Studio. Pond never stores those keys on a Pond server.
+Assistant lives in the right column. It searches this library with a key you paste in Settings, or a local host you run such as Ollama or LM Studio. Pond never stores those keys on a Pond server.
 
 Cursor, Claude, and other MCP hosts can search the same library. Pond speaks MCP over stdio. This block belongs in Cursor `mcp.json`. It launches Pond as a local stdio server (`--mcp`) against the library on this Mac:
 
@@ -91,9 +91,9 @@ Copy the exact command from Settings → Model Context Protocol → Advanced. Po
 
 ## Library
 
-The desktop library is a three-column DAM: folder sidebar, image list, Agent. Folders, Uncategorized, List layout, and Eagle import that keeps folder trees ship in this cut.
+The desktop library is a three-column DAM: folder sidebar, image list, Assistant. Folders, Uncategorized, List layout, and Eagle import that keeps folder trees ship in this cut.
 
-Later on the same app: ratings, duplicate merge, spacebar browse, GIF/video frame tools, annotations, batch rename, detached windows, a JS plugin host, and Agent as an MCP host. Not on the list: Eagle Cloud, their Plugin Center store, or Photoshop-class format preview.
+Later on the same app: ratings, duplicate merge, spacebar browse, GIF/video frame tools, annotations, batch rename, detached windows, a JS plugin host, and Assistant as an MCP host. Not on the list: Eagle Cloud, their Plugin Center store, or Photoshop-class format preview.
 
 ## How sourcing works (and your responsibility)
 

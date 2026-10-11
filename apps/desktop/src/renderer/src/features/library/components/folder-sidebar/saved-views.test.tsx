@@ -30,15 +30,9 @@ describe("folder sidebar saved views", () => {
     await harness.mount();
   }
 
-  async function confirmDelete(): Promise<void> {
+  async function deleteFromMenu(): Promise<void> {
     await act(async () => harness.menuItem("Delete").click());
-    const dialog = document.querySelector('[role="alertdialog"]');
-    expect(dialog?.textContent).toContain("Delete Saved View");
-    const confirmButton = [...(dialog?.querySelectorAll("button") ?? [])].find(
-      (node) => node.textContent === "Delete",
-    );
-    if (!confirmButton) throw new Error("Missing delete confirmation");
-    await act(async () => confirmButton.click());
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
     expect(pondQuery).toHaveBeenCalledWith("savedViews.delete", {
       id: "view-1",
     });
@@ -94,7 +88,7 @@ describe("folder sidebar saved views", () => {
     expect(harness.menuItem("Rename").querySelector("svg")).not.toBeNull();
     expect(harness.menuItem("Delete").querySelector("svg")).not.toBeNull();
     expect(harness.menuItem("Delete").dataset.variant).toBe("destructive");
-    await confirmDelete();
+    await deleteFromMenu();
   });
 
   it("deletes a saved view from the context menu", async () => {
@@ -131,7 +125,7 @@ describe("folder sidebar saved views", () => {
       return icon?.innerHTML;
     });
     expect(new Set(icons).size).toBe(labels.length);
-    await confirmDelete();
+    await deleteFromMenu();
   });
 
   it("opens group operations from the disclosure button", async () => {

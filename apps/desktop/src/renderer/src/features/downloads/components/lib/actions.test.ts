@@ -1,50 +1,81 @@
-import { Dialog } from "@pond/ui";
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import type { DownloadRow } from "@/features/downloads/lib/status-feed";
-import { statusFeed } from "@/features/downloads/lib/status-feed";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
-import { trashSaves } from "@/features/saves/lib/mutate";
-import { notify } from "@/shared/lib/toast";
+import type { NotifyOptions } from "@/shared/lib/toast";
 import { trashDownloadRows } from "./actions";
 
-vi.mock("@/features/saves/lib/mutate", () => ({
-  trashSaves: vi.fn(async () => 1),
-}));
-vi.mock("@/shared/lib/toast", () => ({ notify: vi.fn() }));
-
-const row = {
+const row: DownloadRow = {
+  id: "save-1",
   saveId: "save-1",
-  live: true,
+  name: "Download",
+  url: "https://example.com",
+  source: "web",
   status: "failed",
-} as DownloadRow;
+  stage: null,
+  op: null,
+  progress: null,
+  attempts: 1,
+  error: null,
+  ts: 0,
+  durationMs: null,
+  live: true,
+};
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  vi.spyOn(downloadsSelection, "clear");
-  vi.spyOn(statusFeed, "error");
-  vi.stubGlobal("window", {
-    pond: { undo: vi.fn(async () => ({ ok: true })) },
-  });
-});
+function createTrashFake(outcome: "trashed" | "rejected") {
+  const trashed: (readonly string[])[] = [];
+  const notices: NotifyOptions[] = [];
+  let undone = 0;
+  return {
+    trashed,
+    notices,
+    undone: () => undone,
+    dependencies: {
+      trash: async (ids: readonly string[]) => {
+        trashed.push(ids);
+        if (outcome === "rejected") throw new Error("Disk unavailable");
+        return ids.length;
+      },
+      notify: (options: NotifyOptions) => {
+        notices.push(options);
+        return options.id;
+      },
+      undo: async () => {
+        undone += 1;
+        return { ok: true };
+      },
+    },
+  };
+}
+
+afterEach(() => downloadsSelection.clear());
 
 it("moves downloads to Trash immediately and offers Undo", async () => {
-  const confirm = vi.spyOn(Dialog, "confirm");
+  const fake = createTrashFake("trashed");
+  downloadsSelection.set([row]);
 
-  trashDownloadRows([row]);
+  trashDownloadRows([row], fake.dependencies);
 
-  await vi.waitFor(() =>
-    expect(downloadsSelection.clear).toHaveBeenCalledOnce(),
-  );
-  expect(trashSaves).toHaveBeenCalledWith(["save-1"]);
-  expect(confirm).not.toHaveBeenCalled();
-  expect(notify).toHaveBeenCalledWith(
+  expect(fake.trashed).toEqual([["save-1"]]);
+  await vi.waitFor(() => expect(downloadsSelection.size()).toBe(0));
+  expect(fake.notices).toEqual([
     expect.objectContaining({
       title: "Moved download to Trash",
       action: expect.objectContaining({ label: "Undo" }),
     }),
-  );
+  ]);
 
-  const options = vi.mocked(notify).mock.calls[0]?.[0];
-  options?.action?.onClick();
-  expect(window.pond.undo).toHaveBeenCalledOnce();
+  fake.notices[0]?.action?.onClick();
+  expect(fake.undone()).toBe(1);
+});
+
+it("keeps the selection and skips the Undo notice when Trash fails", async () => {
+  const fake = createTrashFake("rejected");
+  downloadsSelection.set([row]);
+
+  trashDownloadRows([row], fake.dependencies);
+
+  expect(fake.trashed).toEqual([["save-1"]]);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(downloadsSelection.size()).toBe(1);
+  expect(fake.notices).toEqual([]);
 });

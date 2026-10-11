@@ -1,6 +1,6 @@
 import type { ListKind, Source } from "@pond/schema/db";
 import { mergeListKinds } from "@pond/schema/list-kinds";
-import type { ImportableCookie } from "../refresh/scrape-window/session";
+import type { ImportableCookie } from "../refresh/harvest-window/session";
 import { classifyUrlToSource } from "./extractors";
 import { listKindsFromTrigger } from "./list-kinds";
 import type { EnqueueSeed } from "./seed";

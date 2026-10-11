@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { z } from "zod";
-import { reloadSaves } from "@/features/saves/lib/ensure-saves";
+import { reloadSaves } from "@/features/saves/pool";
 import { hydrateLiveDownloadSaves } from "../components/page/hydrate-live-saves";
 
 const InflightIdsSchema = z.array(z.string()).catch([]);

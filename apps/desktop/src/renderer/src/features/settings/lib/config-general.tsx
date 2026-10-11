@@ -1,6 +1,6 @@
 import { LocalizedText } from "@/features/settings/components/localized-text";
+import { CheckNowRow } from "@/features/settings/components/sections/general";
 import { NotificationPreferences } from "@/features/settings/components/sections/general/feedback";
-import { CheckNowRow } from "@/features/settings/components/sections/general/general";
 import { LanguageRow } from "@/features/settings/components/sections/general/language";
 import { RaycastRow } from "@/features/settings/components/sections/general/raycast";
 import { SidebarPreferences } from "@/features/settings/components/sections/general/sidebar";
@@ -22,7 +22,7 @@ function runApply(
   void window.pond.query(channel, {}).catch(() =>
     notify({
       id: "settings-apply-error",
-      title: "Couldn’t apply this setting",
+      title: "Couldn't apply this setting",
       description: "Try again or restart Pond.",
     }),
   );
@@ -84,7 +84,7 @@ export const generalSection = defineCustomSection({
           key: "proxyMode",
           title: "Proxy",
           description:
-            "Choose how Pond’s main-process requests reach the network.",
+            "Choose how Pond's main-process requests reach the network.",
           options: [
             { value: "system", label: "System Settings" },
             { value: "direct", label: "Direct" },
@@ -115,13 +115,6 @@ export const generalSection = defineCustomSection({
           key: "hardwareAcceleration",
           title: "Hardware Acceleration",
           description: "Use the GPU after you restart Pond.",
-          apply: () => runApply("system.applyPrefs"),
-        },
-        {
-          control: "switch",
-          key: "vibrancy",
-          title: "Window Vibrancy",
-          description: "Use the macOS vibrancy effect when available.",
           apply: () => runApply("system.applyPrefs"),
         },
         {
@@ -206,6 +199,7 @@ export const generalSection = defineCustomSection({
           control: "select",
           key: "gridSize",
           title: "Grid Size",
+          visible: (v) => v.layout === "grid",
           description: "Set the density of tags in the grid layout.",
           options: [
             { value: "sm", label: "Small" },
@@ -217,12 +211,14 @@ export const generalSection = defineCustomSection({
           control: "switch",
           key: "showStarred",
           title: "Starred Tags",
+          visible: (v) => v.layout === "grid",
           description: "Show starred tags in their own section.",
         },
         {
           control: "switch",
           key: "showRecently",
           title: "Recent Tags",
+          visible: (v) => v.layout === "grid",
           description: "Show tags you used recently.",
         },
         {
@@ -252,7 +248,7 @@ export const generalSection = defineCustomSection({
           control: "custom",
           key: "notifications",
           title: "Notifications",
-          keywords: ["alerts", "extension", "auto import", "screenshots"],
+          keywords: ["alerts", "extension", "auto import"],
           standalone: true,
           render: () => <NotificationPreferences />,
         },

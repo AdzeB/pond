@@ -6,7 +6,7 @@ import {
   saves,
 } from "@pond/schema/db";
 import { buildWhere, type Query } from "@pond/schema/filters";
-import { and, desc, eq, inArray, isNull, type SQL, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, ne, type SQL, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import type { LibraryQueryRequest } from "../../shared/library-query";
@@ -14,6 +14,7 @@ import { type Db, getDb } from "../db";
 import { compileKeywordWhere, toFtsMatchQuery } from "./keyword-query";
 import { libraryQueryWhere } from "./library-query";
 import {
+  EMBEDDING_QUERY_TASKS,
   encodeQueryEmbeddings,
   type QueryEmbeddings,
   reciprocalRankFusion,
@@ -21,7 +22,7 @@ import {
 } from "./query-embeddings";
 import { knnVec, parseJsonVector } from "./vec-index";
 
-const visualProbe = z.discriminatedUnion("kind", [
+const mediaProbe = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("saveId"), id: z.string().min(1) }),
   z.object({
     kind: z.literal("vector"),
@@ -36,7 +37,8 @@ export const libraryRetrievalInput = z.object({
   folderId: z.string().optional(),
   media: z.array(z.enum(MEDIA_TYPES)).max(MEDIA_TYPES.length).optional(),
   limit: z.number().int().min(1).max(500).optional(),
-  visual: visualProbe.optional(),
+  task: z.enum(EMBEDDING_QUERY_TASKS).optional(),
+  visual: mediaProbe.optional(),
 });
 
 export type LibraryRetrievalInput = z.infer<typeof libraryRetrievalInput>;
@@ -47,7 +49,7 @@ export interface LibraryRetrievalScope {
   libraryQuery?: LibraryQueryRequest;
 }
 
-export type RetrievalChannel = "fts" | "text" | "visual" | "recent";
+export type RetrievalChannel = "fts" | "text" | "media" | "recent";
 
 export interface LibraryRetrievalHit {
   id: string;
@@ -157,7 +159,7 @@ export interface RetrievalStore {
     condition?: SQL,
   ): Array<{ id: string; rank: number }>;
   neighbors(
-    kind: "text" | "clip",
+    kind: "text" | "media",
     vector: number[],
     limit: number,
     condition?: SQL,
@@ -207,7 +209,14 @@ function retrievalStore(db: Db): RetrievalStore {
       );
     },
     neighbors(kind, vector, limit, condition) {
-      if (!condition) return knnVec(db.$raw, kind, vector, limit);
+      if (!condition) {
+        return knnVec(
+          db.$raw,
+          kind === "text" ? "text" : "clip",
+          vector,
+          limit,
+        );
+      }
       const column = kind === "text" ? saves.embedding : saves.clipEmbedding;
       const distance = sql<number>`vec_distance_cosine(${column}, ${JSON.stringify(vector)})`;
       return db
@@ -229,14 +238,14 @@ function retrievalStore(db: Db): RetrievalStore {
 
 async function denseChannel(
   store: RetrievalStore,
-  kind: "text" | "visual",
+  kind: "text" | "media",
   vector: VersionedVector,
   clauses: SQL[],
   limit: number,
 ): Promise<string[]> {
   const ids = store
     .neighbors(
-      kind === "text" ? "text" : "clip",
+      kind,
       vector.vector,
       knnLimit(limit),
       and(
@@ -257,9 +266,9 @@ async function denseChannel(
   return ids.filter((id) => admitted.has(id));
 }
 
-async function resolveVisualProbe(
+async function resolveMediaProbe(
   db: Db,
-  probe: z.infer<typeof visualProbe> | undefined,
+  probe: z.infer<typeof mediaProbe> | undefined,
 ): Promise<VersionedVector | undefined> {
   if (!probe) return undefined;
   if (probe.kind === "vector") {
@@ -301,16 +310,21 @@ export async function retrieveLibraryWithStore(
 ): Promise<LibraryRetrievalResult> {
   const limit = input.limit ?? 12;
   const clauses = [...libraryScopeClauses(scope), ...inputClauses(input)];
+  const excludedId = input.visual?.kind === "saveId" ? input.visual.id : null;
+  if (excludedId) clauses.push(ne(saves.id, excludedId));
   const query = input.query?.trim() ?? "";
   const match = compileKeywordWhere(query);
-  const hasDense = Boolean(queryEmbeddings.text || queryEmbeddings.visual);
+  const hasDense = Boolean(queryEmbeddings.text || queryEmbeddings.media);
   if (!match && !hasDense) {
     const rows = await store.records(and(...clauses), limit);
-    const hits = rows.map((row, index) => ({
-      ...row,
-      score: 1 / (index + 1),
-      channels: ["recent" as const],
-    }));
+    const hits = rows
+      .filter((row) => row.id !== excludedId)
+      .slice(0, limit)
+      .map((row, index) => ({
+        ...row,
+        score: 1 / (index + 1),
+        channels: ["recent" as const],
+      }));
     return { hits, saves: publicSaves(hits) };
   }
 
@@ -351,15 +365,15 @@ export async function retrieveLibraryWithStore(
     );
     if (ids.length) ranked.push({ channel: "text", ids });
   }
-  if (queryEmbeddings.visual) {
+  if (queryEmbeddings.media) {
     const ids = await denseChannel(
       store,
-      "visual",
-      queryEmbeddings.visual,
+      "media",
+      queryEmbeddings.media,
       clauses,
       limit,
     );
-    if (ids.length) ranked.push({ channel: "visual", ids });
+    if (ids.length) ranked.push({ channel: "media", ids });
   }
 
   const channelById = new Map<string, RetrievalChannel[]>();
@@ -370,10 +384,9 @@ export async function retrieveLibraryWithStore(
       channelById.set(id, channels);
     }
   }
-  const fused = reciprocalRankFusion(ranked.map((list) => list.ids)).slice(
-    0,
-    Math.max(limit * 4, 50),
-  );
+  const fused = reciprocalRankFusion(ranked.map((list) => list.ids))
+    .filter((row) => row.id !== excludedId)
+    .slice(0, Math.max(limit * 4, 50));
   if (!fused.length) return { hits: [], saves: [] };
   const rows = await store.records(
     and(
@@ -413,6 +426,8 @@ export async function retrieveLibrary(
       embeddings = await encodeQueryEmbeddings(
         input.query,
         normalizeMedia(input.media),
+        undefined,
+        input.task,
       );
     } catch (error) {
       log.warn("[pond retrieval] dense query encoding unavailable", {
@@ -421,10 +436,10 @@ export async function retrieveLibrary(
     }
   }
   try {
-    const visual = await resolveVisualProbe(db, input.visual);
-    if (visual) embeddings = { ...embeddings, visual };
+    const media = await resolveMediaProbe(db, input.visual);
+    if (media) embeddings = { ...embeddings, media };
   } catch (error) {
-    log.warn("[pond retrieval] visual probe unavailable", {
+    log.warn("[pond retrieval] media probe unavailable", {
       error: error instanceof Error ? error.message : "unknown error",
     });
   }
@@ -435,7 +450,7 @@ export async function retrieveLibrary(
     hits: result.hits.length,
     channels: [...new Set(result.hits.flatMap((hit) => hit.channels))],
     denseText: Boolean(embeddings.text),
-    denseVisual: Boolean(embeddings.visual),
+    denseMedia: Boolean(embeddings.media),
     ms: Date.now() - startedAt,
   });
   return result;

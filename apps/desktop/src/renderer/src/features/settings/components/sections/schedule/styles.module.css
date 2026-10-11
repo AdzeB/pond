@@ -63,7 +63,7 @@
   gap: 6px;
   align-items: center;
 }
-.srOnly {
+.hidden {
   position: absolute;
   width: 1px;
   height: 1px;

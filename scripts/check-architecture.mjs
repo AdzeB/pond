@@ -194,6 +194,14 @@ export function rendererOwnershipError(from, to) {
   return null;
 }
 
+export function featureEntryError(from, to) {
+  const source = /^renderer\/src\/features\/([^/]+)\//.exec(from);
+  const target = /^renderer\/src\/features\/([^/]+)\/(.+)$/.exec(to);
+  if (!source || !target || source[1] === target[1]) return null;
+  if (!target[2].includes("/")) return null;
+  return `Cross-feature import bypasses the feature entry: ${from} -> ${to}`;
+}
+
 function main() {
   const files = sourceFiles(desktop);
   const graph = new Map();
@@ -210,7 +218,8 @@ function main() {
       .filter(Boolean);
     for (const target of allDependencies) {
       const to = relative(desktop, target);
-      const ownershipError = rendererOwnershipError(from, to);
+      const ownershipError =
+        rendererOwnershipError(from, to) ?? featureEntryError(from, to);
       if (ownershipError) errors.push(ownershipError);
       if (
         from.startsWith("renderer/src/shared/") &&

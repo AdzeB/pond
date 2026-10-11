@@ -1,0 +1,34 @@
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+}
+
+.row-label {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-md);
+  color: var(--ds-gray-12);
+}
+
+.select {
+  flex: 0 0 auto;
+  width: 148px;
+}
+
+.separator {
+  flex-shrink: 0;
+  height: 1px;
+  margin: 4px -16px;
+  background: var(--ds-border-subtle);
+  border: 0;
+}

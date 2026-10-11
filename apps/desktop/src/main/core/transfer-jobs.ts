@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { app } from "electron";
 import { ulid } from "ulid";
 import { z } from "zod";
+import type { OkResult } from "../../shared/query-contracts-shared";
 import {
   type TransferJob,
   TransferJobSchema,
@@ -38,7 +39,7 @@ interface TransferContext {
 const scope = new AsyncLocalStorage<TransferContext>();
 class TransferCancelledError extends Error {
   constructor() {
-    super("Transfer cancelled.");
+    super("Transfer canceled.");
     this.name = "TransferCancelledError";
   }
 }
@@ -171,10 +172,11 @@ export function createTransferJobStore(directory: string) {
         .sort((a, b) => b.startedAt - a.startedAt)
         .map((job) => structuredClone(job));
     },
-    async cancel(id: string) {
+    async cancel(id: string): Promise<OkResult> {
       await load();
       const context = running.get(id);
-      if (!context) return { ok: false };
+      if (!context)
+        return { ok: false, error: "This transfer already finished." };
       context.cancelled = true;
       context.job.status = "cancelling";
       context.job.updatedAt = Date.now();

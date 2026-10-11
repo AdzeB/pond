@@ -76,12 +76,12 @@ function PromptContent({
           aria-busy={busy}
           onSubmit={(event) => {
             event.preventDefault();
+            if (!value.trim()) return;
             void submit(() => options.onConfirm(value));
           }}
         >
           <Dialog.Header>
             <Dialog.Title id={titleId}>{options.title}</Dialog.Title>
-            <Dialog.Close disabled={busy} />
           </Dialog.Header>
           <Dialog.Content>
             {options.description ? (
@@ -89,7 +89,7 @@ function PromptContent({
                 {options.description}
               </Dialog.Description>
             ) : null}
-            <Input.Root size="lg">
+            <Input.Root size="md">
               <Input.Field
                 aria-labelledby={titleId}
                 aria-describedby={
@@ -111,10 +111,11 @@ function PromptContent({
             ) : null}
           </Dialog.Content>
           <Dialog.Footer>
+            <Dialog.Cancel disabled={busy} />
             <Button
               type="submit"
               variant={options.confirmVariant ?? "primary"}
-              disabled={busy}
+              disabled={busy || !value.trim()}
               loading={busy}
             >
               {options.confirmLabel ?? "Confirm"}

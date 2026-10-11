@@ -1,4 +1,5 @@
 import { SAVED_VIEW_KINDS } from "@pond/schema/db";
+import { RenameOptionsSchema } from "@shared/rename-template";
 import { z } from "zod";
 import {
   NonEmptyTextParam,
@@ -50,7 +51,7 @@ export const savedViewsQueries = {
     },
   ),
   "savedViews.renameBatch": query(
-    z.object({ ids: StringListParam, pattern: StringParam }),
+    RenameOptionsSchema.extend({ ids: StringListParam, pattern: StringParam }),
     async (params) => {
       const { renameViewsBatch } = await import("../../core/saved-views");
       return renameViewsBatch(params);

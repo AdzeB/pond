@@ -55,7 +55,6 @@
 }
 
 .list {
-  --scroll-fade-size: 10px;
   flex: 1 1 auto;
   min-height: 0;
   overflow-x: hidden;
@@ -132,4 +131,8 @@
 
 .input {
   composes: input from "../shared/styles/popup/styles.module.css";
+}
+
+.empty {
+  composes: empty from "../shared/styles/popup/styles.module.css";
 }

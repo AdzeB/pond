@@ -6,14 +6,14 @@ import { Hono } from "hono";
 import { DEFAULT_INGEST_PORT } from "../../shared/constants";
 import { getPrefs } from "../core/prefs";
 import { getIngestToken } from "../keychain";
-import { enqueueHandler } from "./item-add";
-import { itemGetHandler } from "./item-get";
-import { itemInfoHandler } from "./item-info";
-import { itemThumbHandler } from "./item-thumb";
+import { enqueueHandler } from "./enqueue";
 import { libraryRoutes } from "./library";
 import { libraryInfoHandler } from "./library-info";
 import { libraryLocationRoutes } from "./library-locations";
 import { operationRoutes } from "./operations";
+import { saveInfoHandler } from "./save-info";
+import { saveThumbHandler } from "./save-thumb";
+import { savesGetHandler } from "./saves-get";
 import { sessionImportHandler } from "./session-import";
 import { sessionPendingHandler } from "./session-pending";
 
@@ -121,16 +121,16 @@ function buildApp(): Hono {
   };
 
   api.use("/api/v2/enqueue", requireAuth);
-  api.use("/api/v2/item/*", requireAuth);
+  api.use("/api/v2/saves/*", requireAuth);
   api.use("/api/v2/library/*", requireAuth);
   api.use("/api/v2/operations/*", requireAuth);
   api.use("/api/v2/session/*", requireAuth);
 
   api.post("/api/v2/enqueue", enqueueHandler);
-  api.post("/api/v2/item/get", itemGetHandler);
-  api.get("/api/v2/item/get", itemGetHandler);
-  api.get("/api/v2/item/info", itemInfoHandler);
-  api.get("/api/v2/item/thumb", itemThumbHandler);
+  api.post("/api/v2/saves/get", savesGetHandler);
+  api.get("/api/v2/saves/get", savesGetHandler);
+  api.get("/api/v2/saves/info", saveInfoHandler);
+  api.get("/api/v2/saves/thumb", saveThumbHandler);
   api.get("/api/v2/library/info", libraryInfoHandler);
   api.route("/api/v2/library", libraryRoutes());
   api.route("/api/v2/library", libraryLocationRoutes());

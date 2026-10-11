@@ -1,12 +1,19 @@
 import { DEFAULT_PREFS } from "@pond/schema";
-import { describe, expect, it } from "vitest";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { describe, expect, it, vi } from "vitest";
 import { processingSection } from "./config-processing";
+
+const processingItems = () =>
+  (processingSection.groups ?? []).flatMap((group) =>
+    "items" in group ? (group.items ?? []) : [],
+  );
 
 describe("sensitive-content processing settings", () => {
   it("shows blur controls only while classification is enabled", () => {
-    const blur = (processingSection.groups ?? [])
-      .flatMap((group) => ("items" in group ? group.items : []))
-      .find((item) => item?.key === "blurSensitiveThumbnails");
+    const blur = processingItems().find(
+      (item) => item?.key === "blurSensitiveThumbnails",
+    );
     expect(blur).toBeDefined();
     expect(blur?.visible?.(DEFAULT_PREFS.ai)).toBe(false);
     expect(
@@ -18,11 +25,112 @@ describe("sensitive-content processing settings", () => {
   });
 
   it("does not expose implementation model choices", () => {
-    const keys = (processingSection.groups ?? []).flatMap((group) =>
-      "items" in group ? (group.items ?? []).map((item) => item?.key) : [],
-    );
+    const keys = processingItems().map((item) => item?.key);
     expect(keys).not.toContain("captionModelId");
     expect(keys).not.toContain("clipModelId");
     expect(keys).not.toContain("whisperModelId");
+  });
+
+  it("offers explicit Florence fallback only for primary Gemma processing", () => {
+    const fallback = processingItems().find(
+      (item) => item?.key === "mediaUnderstandingFallbackToFlorence",
+    );
+
+    expect(fallback).toMatchObject({
+      control: "switch",
+      title: "Image Processing Fallback",
+      description:
+        "Use the built-in model when the local model can't process an image.",
+    });
+    expect(fallback?.visible?.(DEFAULT_PREFS.ai)).toBe(false);
+    expect(
+      fallback?.visible?.({
+        ...DEFAULT_PREFS.ai,
+        mediaUnderstandingMode: "gemma4",
+      }),
+    ).toBe(true);
+  });
+
+  it("lets users choose the image model, runtime, and exact installed model ID", () => {
+    const items = processingItems();
+    const mode = items.find((item) => item?.key === "mediaUnderstandingMode");
+    const provider = items.find(
+      (item) => item?.key === "mediaUnderstandingProvider",
+    );
+    const model = items.find(
+      (item) => item?.key === "media-understanding-model-id",
+    );
+
+    expect(mode).toMatchObject({
+      control: "select",
+      title: "Image Understanding",
+      options: [
+        { value: "florence", label: "Built-In Model" },
+        { value: "gemma4", label: "Local Runtime Model" },
+        { value: "shadow", label: "Compare Both, Keep Built-In Results" },
+      ],
+    });
+    expect(provider).toMatchObject({
+      control: "select",
+      title: "Local Runtime",
+      options: [
+        { value: "ollama", label: "Ollama" },
+        { value: "lmstudio", label: "LM Studio" },
+      ],
+    });
+    expect(model).toMatchObject({
+      control: "custom",
+      title: "Local Model ID",
+    });
+    expect(provider?.visible?.(DEFAULT_PREFS.ai)).toBe(false);
+    expect(model?.visible?.(DEFAULT_PREFS.ai)).toBe(false);
+    const gemma = {
+      ...DEFAULT_PREFS.ai,
+      mediaUnderstandingMode: "gemma4" as const,
+    };
+    expect(provider?.visible?.(gemma)).toBe(true);
+    expect(model?.visible?.(gemma)).toBe(true);
+  });
+
+  it("saves an exact installed model ID", async () => {
+    const model = processingItems().find(
+      (item) => item?.key === "media-understanding-model-id",
+    );
+    if (model?.control !== "custom")
+      throw new Error("Missing local model ID control");
+    const patch = vi.fn();
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    try {
+      await act(async () =>
+        root.render(
+          model.render({
+            loaded: true,
+            values: DEFAULT_PREFS.ai,
+            patch,
+          }),
+        ),
+      );
+      const input = host.querySelector("input");
+      if (!input) throw new Error("Missing local model ID input");
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(
+          HTMLInputElement.prototype,
+          "value",
+        )?.set?.call(input, "gemma4:custom-vision");
+        input.dispatchEvent(new InputEvent("input", { bubbles: true }));
+      });
+      await act(async () => {
+        input.focus();
+        input.blur();
+      });
+      expect(patch).toHaveBeenLastCalledWith({
+        mediaUnderstandingModelId: "gemma4:custom-vision",
+      });
+    } finally {
+      await act(async () => root.unmount());
+      host.remove();
+    }
   });
 });

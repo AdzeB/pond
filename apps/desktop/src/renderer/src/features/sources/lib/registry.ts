@@ -1,13 +1,12 @@
 import {
-  IconFolderFill18 as LocalIcon,
-  IconEarthFill18 as WebIcon,
-} from "@pond/icons/fill/18";
-import {
   IconBrandArena,
   IconBrandCosmos,
   IconBrandThreads,
   IconInstagram,
   IconPinterest,
+  IconReddit,
+  IconSourceLocal,
+  IconSourceWeb,
   IconTikTok,
   IconXTwitter,
   IconYoutube,
@@ -19,7 +18,6 @@ import {
   resolveSourceId,
   sourceLabel,
 } from "@pond/schema/sources";
-import redditLogo from "@/assets/logos/reddit.png";
 
 interface SourceDef {
   source: Source;
@@ -36,7 +34,7 @@ const SOURCE_LOGOS = {
   cosmos: null,
   tiktok: null,
   youtube: null,
-  reddit: redditLogo,
+  reddit: null,
   threads: null,
   web: null,
   local: null,
@@ -50,10 +48,10 @@ const SOURCE_ICONS = {
   cosmos: IconBrandCosmos,
   tiktok: IconTikTok,
   youtube: IconYoutube,
-  reddit: null,
+  reddit: IconReddit,
   threads: IconBrandThreads,
-  web: WebIcon,
-  local: LocalIcon,
+  web: IconSourceWeb,
+  local: IconSourceLocal,
 } satisfies Record<Source, IconComponent | null>;
 
 export function getSourceDef(source: Source): SourceDef {

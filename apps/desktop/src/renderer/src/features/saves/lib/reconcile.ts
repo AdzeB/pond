@@ -73,42 +73,6 @@ export const SavePatchSchema = z.object({
   autoTitleModel: Text,
   suggestedTags: Texts,
   suggestedTagsModel: Text,
-  videoNotes: z
-    .array(
-      z.object({
-        id: z.string(),
-        timeSec: z.number(),
-        text: z.string(),
-        fileIndex: z.number().int().nonnegative().optional(),
-      }),
-    )
-    .nullish()
-    .catch(null),
-  comments: z
-    .array(
-      z.object({
-        id: z.string(),
-        x: z.number(),
-        y: z.number(),
-        w: z.number(),
-        h: z.number(),
-        text: z.string(),
-        fileIndex: z.number().int().nonnegative().optional(),
-        createdAt: z.number().optional(),
-        replies: z
-          .array(
-            z.object({
-              id: z.string(),
-              text: z.string(),
-              createdAt: z.number().optional(),
-            }),
-          )
-          .optional(),
-        resolvedAt: z.number().optional(),
-      }),
-    )
-    .nullish()
-    .catch(null),
   rating: Num,
   rotate: z.number().nullish().catch(0),
   flipX: z.boolean().nullish().catch(false),
@@ -228,8 +192,6 @@ export function normalise(
     autoTitleModel: raw.autoTitleModel ?? null,
     suggestedTags: raw.suggestedTags ?? null,
     suggestedTagsModel: raw.suggestedTagsModel ?? null,
-    videoNotes: raw.videoNotes ?? [],
-    comments: raw.comments ?? [],
     rating: raw.rating ?? null,
     rotate: raw.rotate ?? 0,
     flipX: raw.flipX ?? false,

@@ -1,19 +1,11 @@
 import type { RawJson } from "@pond/schema/raw";
 import { z } from "zod";
 
-export interface TextCardData {
-  text: string;
-}
+export const TextCardDataSchema = z.object({ text: z.string() });
+
+export type TextCardData = z.infer<typeof TextCardDataSchema>;
 
 export const RENDER_TEXT_COVER_VERSION = 2;
-
-export const TEXT_COVER_LIGHT_KIND = "text_cover_light";
-export const TEXT_COVER_DARK_KIND = "text_cover_dark";
-
-export const TEXT_COVER_KINDS: ReadonlySet<string> = new Set([
-  TEXT_COVER_LIGHT_KIND,
-  TEXT_COVER_DARK_KIND,
-]);
 
 export function textBodyFromFields(
   description: string | null | undefined,

@@ -3,7 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@/app/effects/save-library-bridge";
 import type { Save } from "@/features/saves/types";
-import { KebabMenu } from "./kebab";
+import { KebabMenu } from ".";
 
 const save: Save = {
   id: "open-save",

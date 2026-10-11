@@ -1,10 +1,8 @@
 import { Dialog } from "@pond/ui";
+import { clsx as cn } from "clsx";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { SourceFlowHost } from "@/features/sources/components/flow";
-import { sourceFlow } from "@/features/sources/state/source-flow";
-import dialogStyles from "../../../../../../../packages/ui/src/dialog/styles.module.css";
 
 let root: Root;
 let host: HTMLDivElement;
@@ -69,24 +67,33 @@ it("preserves shared layout classes when a caller adds its own class", async () 
   await act(async () =>
     root.render(
       <>
-        <Dialog.Header className="custom-header">
-          <Dialog.Back />
-          <h2>Title</h2>
-          <Dialog.Action position="end">Close</Dialog.Action>
-        </Dialog.Header>
-        <Dialog.Content className="custom-content">Content</Dialog.Content>
-        <Dialog.Footer className="custom-footer">Footer</Dialog.Footer>
+        <div data-set="shared">
+          <Dialog.Header />
+          <Dialog.Content />
+          <Dialog.Footer />
+        </div>
+        <div data-set="custom">
+          <Dialog.Header className="custom-header">
+            <Dialog.Back />
+            <h2>Title</h2>
+            <Dialog.Action position="end">Close</Dialog.Action>
+          </Dialog.Header>
+          <Dialog.Content className="custom-content">Content</Dialog.Content>
+          <Dialog.Footer className="custom-footer">Footer</Dialog.Footer>
+        </div>
       </>,
     ),
   );
-  expect(host.querySelector(".custom-header")?.className.split(" ")).toContain(
-    dialogStyles.header,
-  );
-  expect(host.querySelector(".custom-content")?.className.split(" ")).toContain(
-    dialogStyles.content,
-  );
-  expect(host.querySelector(".custom-footer")?.className.split(" ")).toContain(
-    dialogStyles.footer,
+  const shared = [...host.querySelectorAll('[data-set="shared"] > *')];
+  const custom = [...host.querySelectorAll('[data-set="custom"] > *')];
+  expect(shared.every((element) => element.className)).toBe(true);
+  expect(custom.map((element) => element.className)).toEqual(
+    shared.map((element, index) =>
+      cn(
+        element.className,
+        ["custom-header", "custom-content", "custom-footer"][index],
+      ),
+    ),
   );
   expect(
     [...host.querySelectorAll("button")].map(
@@ -109,10 +116,10 @@ it("renders prompt inputs inside their styled root with an accessible name", asy
   expect(input?.parentElement?.dataset.slot).toBe("root");
   expect(input?.getAttribute("aria-labelledby")).toBeTruthy();
   expect(input?.value).toBe("Ideas");
-  expect(document.body.textContent).not.toContain("Cancel");
+  expect(button("Cancel").type).toBe("button");
 });
 
-it("uses large-sized page dialog confirmation actions", async () => {
+it("uses medium confirmation actions", async () => {
   await act(async () =>
     root.render(
       <Dialog.Footer>
@@ -120,7 +127,7 @@ it("uses large-sized page dialog confirmation actions", async () => {
       </Dialog.Footer>,
     ),
   );
-  expect(button("Confirm").dataset.size).toBe("lg");
+  expect(button("Confirm").dataset.size).toBe("md");
 });
 
 it("keeps a prompt open and blocks duplicate submissions while saving", async () => {
@@ -136,6 +143,7 @@ it("keeps a prompt open and blocks duplicate submissions while saving", async ()
     Dialog.prompt({
       title: "Rename Folder",
       confirmLabel: "Rename",
+      initialValue: "Moodboards",
       onConfirm,
     }),
   );
@@ -148,7 +156,7 @@ it("keeps a prompt open and blocks duplicate submissions while saving", async ()
   expect(
     document.querySelector('[role="dialog"]')?.hasAttribute("data-open"),
   ).toBe(true);
-  expect(button("Close").disabled).toBe(true);
+  expect(button("Cancel").disabled).toBe(true);
   await act(async () => finish());
   expect(document.querySelector('[role="dialog"][data-open]')).toBeNull();
 });
@@ -166,8 +174,7 @@ it("focuses the safe close action before a destructive action", async () => {
     async () =>
       new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
   );
-  expect(document.activeElement).toBe(button("Close"));
-  expect(document.body.textContent).not.toContain("Cancel");
+  expect(document.activeElement).toBe(button("Cancel"));
 });
 
 it("passes the confirmation checkbox value to the action", async () => {
@@ -226,7 +233,7 @@ it("resets a prompt when it is reopened with another payload", async () => {
       onConfirm: vi.fn(),
     }),
   );
-  await act(async () => button("Close").click());
+  await act(async () => button("Cancel").click());
   await act(async () =>
     Dialog.prompt({
       title: "Rename Folder",
@@ -292,7 +299,7 @@ it("blocks duplicate confirmations and Escape while an action is pending", async
   expect(
     document.querySelector('[role="alertdialog"][data-open]'),
   ).not.toBeNull();
-  expect(button("Close").disabled).toBe(true);
+  expect(button("Cancel").disabled).toBe(true);
   await act(async () => finish());
   expect(document.querySelector('[role="alertdialog"][data-open]')).toBeNull();
 });
@@ -430,12 +437,13 @@ it("disables prompt header dismissal while saving", async () => {
     Dialog.prompt({
       title: "Save",
       confirmLabel: "Submit",
+      initialValue: "Draft",
       onConfirm: () => pending,
     }),
   );
   await act(async () => button("Submit").click());
-  expect(button("Close").disabled).toBe(true);
-  await act(async () => button("Close").click());
+  expect(button("Cancel").disabled).toBe(true);
+  await act(async () => button("Cancel").click());
   expect(document.querySelector('[role="dialog"]')).not.toBeNull();
   await act(async () => finish());
 });
@@ -447,34 +455,17 @@ it("supports command defaults through the shared host", async () => {
   expect(document.querySelector('[role="alertdialog"]')).not.toBeNull();
   await act(async () => button("Confirm").click());
   expect(onConfirm).toHaveBeenCalledOnce();
-  await act(async () => Dialog.prompt({ title: "Enter value", onConfirm }));
+  await act(async () =>
+    Dialog.prompt({ title: "Enter value", initialValue: "Value", onConfirm }),
+  );
   expect(document.querySelector('[role="dialog"]')).not.toBeNull();
   await act(async () => button("Confirm").click());
-  expect(onConfirm).toHaveBeenLastCalledWith("");
+  expect(onConfirm).toHaveBeenLastCalledWith("Value");
 });
 
-it.each(["close", "escape", "back"] as const)(
-  "releases the source overlay after %s clears its page stack",
-  async (dismiss) => {
-    await act(async () => root.render(<SourceFlowHost />));
-    await act(async () => sourceFlow.open("connect-help"));
-    expect(document.querySelector('[role="dialog"]')).not.toBeNull();
-    await act(async () => {
-      if (dismiss === "close") button("Close").click();
-      else if (dismiss === "back") sourceFlow.back();
-      else
-        document.dispatchEvent(
-          new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
-        );
-    });
-    expect(sourceFlow.current()).toBeNull();
-    expect(document.querySelector(`.${dialogStyles.backdrop}`)).toBeNull();
-    expect(document.querySelector("[data-base-ui-inert]")).toBeNull();
-    await act(async () => sourceFlow.open("connect-help"));
-    expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
-      "Connecting a Source",
-    );
-    await act(async () => button("Close").click());
-    expect(document.querySelector(`.${dialogStyles.backdrop}`)).toBeNull();
-  },
-);
+it("keeps the prompt confirm disabled until the field has a value", async () => {
+  const onConfirm = vi.fn();
+  await act(async () => root.render(<Dialog.Host />));
+  await act(async () => Dialog.prompt({ title: "Enter value", onConfirm }));
+  expect(button("Confirm").disabled).toBe(true);
+});

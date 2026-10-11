@@ -61,8 +61,6 @@ async function fixture(extra: [string, string][] = []) {
           tags: ["Print"],
           files,
           rating: 4,
-          comments: [],
-          videoNotes: [],
           savedAt: new Date("2020-01-01T00:00:00.000Z"),
         },
       },

@@ -1,10 +1,16 @@
 import { PrefsSchema } from "@pond/schema";
+import type { SavedView } from "@pond/schema/db";
+import type { QueryInput } from "@shared/query-contracts";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { savedViews } from "@/features/library/state/saved-views";
+import {
+  savedViews,
+  useEditingSavedViewId,
+} from "@/features/library/state/saved-views";
 import {
   getOverlays,
+  getViewState,
   resetFilters,
   setSearchInput,
   setSemanticQuery,
@@ -16,9 +22,12 @@ import { filterToolbar } from "./toolbar-state";
 
 function State() {
   return (
-    <output>
-      {JSON.stringify({ query: useFilterQuery(), text: useSearchText() })}
-    </output>
+    <>
+      <output>
+        {JSON.stringify({ query: useFilterQuery(), text: useSearchText() })}
+      </output>
+      <span data-editing>{useEditingSavedViewId()}</span>
+    </>
   );
 }
 
@@ -48,8 +57,8 @@ describe("filter toolbar", () => {
     await act(async () => root.unmount());
     host.remove();
     resetFilters();
+    savedViews.finishEditing();
     vi.unstubAllGlobals();
-    vi.restoreAllMocks();
   });
 
   async function render() {
@@ -107,7 +116,6 @@ describe("filter toolbar", () => {
       "Dimensions",
       "Duration",
       "Size",
-      "Comment",
       "Note",
       "URL",
       "Date Saved",
@@ -134,6 +142,18 @@ describe("filter toolbar", () => {
     expect(menu?.textContent).toContain("Details");
     expect(menu?.textContent).toContain("Dates");
     expect(menu?.textContent).toContain("Reset Filters");
+    for (const label of [
+      "Discovery",
+      "Organize",
+      "Media",
+      "Details",
+      "Dates",
+    ]) {
+      const item = [...document.querySelectorAll('[role="menuitem"]')].find(
+        (node) => node.textContent === label,
+      );
+      expect(item?.querySelector("svg")).not.toBeNull();
+    }
     const discovery = [...document.querySelectorAll('[role="menuitem"]')].find(
       (node) => node.textContent === "Discovery",
     );
@@ -161,30 +181,42 @@ describe("filter toolbar", () => {
   });
 
   it("creates an Untitled saved view and starts inline naming", async () => {
-    const created = {
-      id: "view-1",
-      name: "Untitled",
-      kind: "saved_view" as const,
-      parentId: null,
-      query: { combinator: "and" as const, rules: [] },
-      question: null,
-      sortKey: "savedAt" as const,
-      sortDir: "desc" as const,
-      layout: "waterfall" as const,
-      sortOrder: 0,
-      createdAt: new Date(),
-    };
-    vi.spyOn(savedViews, "create").mockResolvedValue(created);
-    const startEditing = vi.spyOn(savedViews, "startEditing");
+    const views: SavedView[] = [];
+    const created: QueryInput<"savedViews.create">[] = [];
+    vi.stubGlobal("pond", {
+      query: async (name: string, input: QueryInput<"savedViews.create">) => {
+        if (name === "savedViews.create") {
+          created.push(input);
+          views.push({
+            id: "view-1",
+            name: input.name,
+            kind: "saved_view",
+            parentId: null,
+            query: input.query ?? { combinator: "and", rules: [] },
+            question: null,
+            sortKey: "savedAt",
+            sortDir: "desc",
+            layout: "waterfall",
+            sortOrder: 0,
+            createdAt: new Date(),
+          });
+          return { ok: true, id: "view-1" };
+        }
+        if (name === "savedViews.list") return views;
+        return PrefsSchema.parse({});
+      },
+    });
     await render();
 
     await act(async () => button("Save").click());
 
-    expect(savedViews.create).toHaveBeenCalledWith({
-      kind: "saved_view",
-      name: "Untitled",
-    });
-    await vi.waitFor(() => expect(startEditing).toHaveBeenCalledWith("view-1"));
+    expect(created).toEqual([
+      expect.objectContaining({ kind: "saved_view", name: "Untitled" }),
+    ]);
+    await vi.waitFor(() =>
+      expect(host.querySelector("[data-editing]")?.textContent).toBe("view-1"),
+    );
+    expect(getViewState().activeViewId).toBe("view-1");
     expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
 

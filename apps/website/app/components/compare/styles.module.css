@@ -16,7 +16,7 @@
 .product {
   width: 14%;
   padding: 16px 8px 20px;
-  font-size: 13px;
+  font-size: var(--ds-text-md);
   font-weight: 500;
   vertical-align: bottom;
   color: var(--ds-gray-10);
@@ -25,7 +25,7 @@
   &[data-pond] {
     color: var(--ds-gray-12);
     background: #f6f6f4;
-    border-radius: var(--ds-radius-xl) 12px 0 0;
+    border-radius: var(--ds-radius-xl) var(--ds-radius-xl) 0 0;
   }
 
   svg {
@@ -36,7 +36,7 @@
 
 .label {
   padding: 18px 12px 18px 0;
-  font-size: 14px;
+  font-size: var(--site-text-sm);
   font-weight: 500;
   color: var(--ds-gray-12);
   text-align: left;
@@ -67,7 +67,7 @@
 }
 
 tbody tr:last-child .cell[data-pond] {
-  border-radius: 0 0 12px 12px;
+  border-radius: 0 0 var(--ds-radius-xl) var(--ds-radius-xl);
 }
 
 .sr {

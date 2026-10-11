@@ -216,12 +216,6 @@ export const viewerSection = defineCustomSection({
           description: "Repeat clips shorter than 30 seconds.",
         },
         {
-          control: "switch",
-          key: "stretchVideo",
-          title: "Stretch Video to Fit",
-          description: "Fill the viewer even when the aspect ratio differs.",
-        },
-        {
           control: "select",
           key: "videoWheelBehavior",
           title: "Video Scrolling",

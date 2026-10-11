@@ -1,7 +1,9 @@
+import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { IconArrowUpRightOutline18 } from "@pond/icons/outline/18";
-import { Button } from "@pond/ui";
+import { Button, Input } from "@pond/ui";
 import {
   $applyNodeReplacement,
+  $getNodeByKey,
   DecoratorNode,
   type EditorConfig,
   type LexicalNode,
@@ -9,7 +11,7 @@ import {
   type SerializedLexicalNode,
   type Spread,
 } from "lexical";
-import type { JSX } from "react";
+import { type JSX, useState } from "react";
 import styles from "./styles.module.css";
 
 const YOUTUBE_ID =
@@ -79,7 +81,14 @@ export class YouTubeNode extends DecoratorNode<JSX.Element> {
     return this.__id;
   }
 
+  setId(id: string): this {
+    const writable = this.getWritable();
+    writable.__id = id;
+    return writable;
+  }
+
   decorate(): JSX.Element {
+    if (!this.__id) return <YouTubeDraft nodeKey={this.getKey()} />;
     const watch = youtubeWatchUrl(this.__id);
     return (
       <div className={styles.youtube}>
@@ -103,6 +112,50 @@ export class YouTubeNode extends DecoratorNode<JSX.Element> {
       </div>
     );
   }
+}
+
+function YouTubeDraft({ nodeKey }: { nodeKey: NodeKey }) {
+  const [editor] = useLexicalComposerContext();
+  const [value, setValue] = useState("");
+  const [invalid, setInvalid] = useState(false);
+
+  function embed() {
+    const id = parseYouTubeId(value);
+    if (!id) {
+      setInvalid(true);
+      return;
+    }
+    editor.update(() => {
+      const node = $getNodeByKey(nodeKey);
+      if ($isYouTubeNode(node)) node.setId(id);
+    });
+  }
+
+  return (
+    <form
+      className={styles.draft}
+      onSubmit={(event) => {
+        event.preventDefault();
+        embed();
+      }}
+    >
+      <Input.Root size="sm">
+        <Input.Field
+          aria-label="YouTube link"
+          placeholder="https://www.youtube.com/watch?v="
+          value={value}
+          aria-invalid={invalid || undefined}
+          onValueChange={(next) => {
+            setInvalid(false);
+            setValue(next);
+          }}
+        />
+      </Input.Root>
+      <Button size="sm" type="submit">
+        Embed
+      </Button>
+    </form>
+  );
 }
 
 export function $createYouTubeNode(id: string): YouTubeNode {

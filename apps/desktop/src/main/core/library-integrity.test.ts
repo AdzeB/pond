@@ -5,22 +5,16 @@ import { join } from "node:path";
 import sharp from "sharp";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  clearLibraryKey,
-  installLibraryKey,
-} from "./legacy-encryption/library-key-runtime";
-import {
   type IntegritySave,
   inspectSaveIntegrity,
   type LibraryIntegrityRuntime,
   libraryIntegrityRuntime,
 } from "./library-integrity";
-import { encodeLibraryFile } from "./storage/library-file-storage";
 import { writeLibraryMedia } from "./storage/library-media-storage";
 
 const roots: string[] = [];
 
 afterEach(async () => {
-  clearLibraryKey();
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
   );
@@ -92,7 +86,7 @@ describe("Library integrity repair previews", () => {
     ]);
     const row = fixtureSave([
       file("image", "photo.png", original),
-      file("custom_thumbnail", "photo.png_thumbnail.png", custom),
+      file("thumbnail", "photo.png_thumbnail.png", custom),
     ]);
 
     await expect(
@@ -104,18 +98,14 @@ describe("Library integrity repair previews", () => {
     ).resolves.toBeNull();
   });
 
-  it("reads payloads before offering metadata recovery with a legacy key installed", async () => {
+  it("reads payloads before offering metadata recovery", async () => {
     const root = await fixtureRoot();
-    installLibraryKey("fixture-library", Buffer.alloc(32, 4), root);
     const directory = join(root, "items", "save-1.info");
-    const payload = Buffer.from("verified encrypted payload");
+    const payload = Buffer.from("verified payload");
     const row = fixtureSave([file("other", "payload.bin", payload)]);
     await writeLibraryMedia(join(directory, "payload.bin"), payload);
     const infoPath = join(directory, "info.json");
-    await writeFile(
-      infoPath,
-      encodeLibraryFile(infoPath, Buffer.from("{not-json")),
-    );
+    await writeFile(infoPath, Buffer.from("{not-json"));
 
     const issue = await inspectSaveIntegrity({
       kind: "save-metadata",
@@ -126,7 +116,7 @@ describe("Library integrity repair previews", () => {
     expect(issue).toMatchObject({
       kind: "save-metadata",
       saveId: "save-1",
-      summary: "Save metadata is damaged",
+      summary: "Save record is out of date",
     });
   });
 

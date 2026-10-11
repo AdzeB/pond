@@ -5,7 +5,9 @@ import { Store } from "@tanstack/store";
 import { z } from "zod";
 import { readViewPref, writeViewPref } from "@/features/library/lib/view-prefs";
 
-export type OverlayId = "semantic" | "visual";
+const OverlayIdSchema = z.enum(["semantic", "visual"]);
+
+export type OverlayId = z.infer<typeof OverlayIdSchema>;
 
 const DEFAULT_FILTER_FIELDS: readonly FieldId[] = [
   "color",
@@ -18,7 +20,6 @@ const DEFAULT_FILTER_FIELDS: readonly FieldId[] = [
   "width",
   "duration",
   "fileSize",
-  "comment",
   "note",
   "url",
   "savedAt",
@@ -53,7 +54,6 @@ const PREVIOUS_DEFAULT_FILTER_FIELDS: readonly FieldId[] = [
   "height",
   "duration",
   "fileSize",
-  "comment",
   "note",
   "url",
   "savedAt",
@@ -64,24 +64,28 @@ function sameIds(left: readonly string[], right: readonly string[]): boolean {
   return left.length === right.length && left.every((id, i) => id === right[i]);
 }
 
-const StoredFields = z.array(z.json());
+const StoredList = z.array(z.json());
 const Field = z.custom<FieldId>(
   (value) =>
     z.string().safeParse(value).success &&
     Object.hasOwn(FIELD_META, String(value)),
 );
 
-function parseFields(text: string | null): FieldId[] | null {
-  const saved = StoredFields.safeParse(JSON.parse(text ?? "null"));
+function parseList<T>(text: string | null, item: z.ZodType<T>): T[] | null {
+  const saved = StoredList.safeParse(JSON.parse(text ?? "null"));
   if (!saved.success) return null;
   return [
     ...new Set(
       saved.data.flatMap((value) => {
-        const field = Field.safeParse(value);
-        return field.success ? [field.data] : [];
+        const parsed = item.safeParse(value);
+        return parsed.success ? [parsed.data] : [];
       }),
     ),
   ];
+}
+
+function parseFields(text: string | null): FieldId[] | null {
+  return parseList(text, Field);
 }
 
 function readPinnedFields(): FieldId[] {
@@ -102,20 +106,12 @@ function readPinnedFields(): FieldId[] {
 
 function readPinnedOverlays(): OverlayId[] {
   try {
-    const saved: unknown = JSON.parse(readViewPref("filterOverlays") ?? "null");
+    const overlays = parseList(readViewPref("filterOverlays"), OverlayIdSchema);
     const stockPins = sameIds(
       parseFields(readViewPref("filterFields")) ?? [],
       STOCK_FILTER_FIELDS_TO_REPLACE,
     );
-    if (Array.isArray(saved)) {
-      const overlays = [
-        ...new Set(
-          saved.filter(
-            (value): value is OverlayId =>
-              value === "semantic" || value === "visual",
-          ),
-        ),
-      ];
+    if (overlays) {
       if (overlays.length === 0 && stockPins) {
         return [...DEFAULT_FILTER_OVERLAYS];
       }

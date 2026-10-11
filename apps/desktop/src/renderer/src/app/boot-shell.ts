@@ -1,32 +1,7 @@
-import { z } from "zod";
-import { pondScopedKey } from "@/shared/lib/pond-scope";
+import { type ShellHint, ShellHintSchema } from "@shared/shell-hint";
+import { libraryScopedKey } from "@/shared/lib/library-scope";
 
-/** Runs from the bundle because the packaged CSP blocks the inline <script> this used to live in. */
-
-const num = z.number().optional();
-
-const ShellHintSchema = z
-  .object({
-    theme: z.enum(["light", "dark"]).optional(),
-    background: z.string().optional(),
-    pointerCursors: z.boolean().optional(),
-    bgL: num,
-    bgC: num,
-    bgH: num,
-    fgL: num,
-    fgC: num,
-    fgH: num,
-    accentL: num,
-    accentC: num,
-    accentH: num,
-    contrast: num,
-    baseL: num,
-    baseC: num,
-    baseH: num,
-  })
-  .catch({});
-
-type ShellHint = z.infer<typeof ShellHintSchema>;
+/** Runs from the bundle because the packaged CSP blocks inline <script>. */
 
 const ANCHORS = [
   ["bgL", "--ds-bg-l"],
@@ -41,33 +16,21 @@ const ANCHORS = [
   ["contrast", "--ds-contrast"],
 ] as const;
 
-/** Older mirrors wrote one base anchor instead of separate bg and fg anchors. */
-const LEGACY_ANCHORS = [
-  ["baseL", "--ds-bg-l"],
-  ["baseC", "--ds-bg-c"],
-  ["baseH", "--ds-bg-h"],
-  ["accentL", "--ds-accent-l"],
-  ["accentC", "--ds-accent-c"],
-  ["accentH", "--ds-accent-h"],
-  ["contrast", "--ds-contrast"],
-] as const;
-
-type Anchors = typeof ANCHORS | typeof LEGACY_ANCHORS;
-
 const BOOT_FAILSAFE_MS = 4000;
 
 function readStoredShell(): ShellHint {
   try {
-    return ShellHintSchema.parse(
-      JSON.parse(localStorage.getItem(pondScopedKey("pondShell")) ?? "{}"),
+    const stored = ShellHintSchema.safeParse(
+      JSON.parse(localStorage.getItem(libraryScopedKey("pondShell")) ?? "{}"),
     );
+    return stored.success ? stored.data : {};
   } catch {
     return {};
   }
 }
 
-function applyAnchors(shell: ShellHint, anchors: Anchors): void {
-  for (const [key, prop] of anchors) {
+function applyAnchors(shell: ShellHint): void {
+  for (const [key, prop] of ANCHORS) {
     const value = shell[key];
     if (value !== undefined) {
       document.documentElement.style.setProperty(prop, String(value));
@@ -78,7 +41,7 @@ function applyAnchors(shell: ShellHint, anchors: Anchors): void {
 function paintShell(): void {
   const shell: ShellHint = {
     ...readStoredShell(),
-    ...ShellHintSchema.parse(window.__pondShell ?? {}),
+    ...window.__pondShell,
   };
   const doc = document.documentElement;
 
@@ -90,8 +53,7 @@ function paintShell(): void {
   doc.setAttribute("data-theme", theme);
   doc.classList.add(theme);
 
-  applyAnchors(shell, ANCHORS);
-  if (shell.bgL === undefined) applyAnchors(shell, LEGACY_ANCHORS);
+  applyAnchors(shell);
   if (shell.pointerCursors) doc.setAttribute("data-pointer-cursors", "true");
   doc.setAttribute(
     "data-platform",

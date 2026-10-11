@@ -228,7 +228,7 @@ function FieldControl({
 
     case "color":
       return (
-        <ColorField
+        <ColorField.Root
           aria-describedby={labelled["aria-describedby"]}
           aria-label={item.title}
           value={HexColorSchema.parse(current)}

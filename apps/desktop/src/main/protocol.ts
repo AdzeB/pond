@@ -10,14 +10,14 @@ import {
   libraryMediaMetadata,
   readLibraryMediaRange,
 } from "./core/storage/library-media-storage";
-import { VIDEO_CACHE_HOST } from "./core/video-preview-proxy";
 import {
-  clampThumbWidth,
   ensureThumbnailInBackground,
   getOrCreateThumbnail,
   lookupCachedThumbnail,
-} from "./lib/thumbnail";
-import { itemFile, libraryRoot, resolvePaths } from "./paths";
+} from "./core/thumbnail";
+import { VIDEO_CACHE_HOST } from "./core/video-preview-proxy";
+import { clampThumbWidth } from "./lib/thumbnail";
+import { libraryRoot, resolvePaths, saveFile } from "./paths";
 
 const ONE_YEAR_SECONDS = 31_536_000;
 
@@ -227,7 +227,7 @@ function resolveTarget(host: string, file: string): ProtocolTarget {
     return { resolved: resolve(join(base, file)), prefix: normalize(base) };
   }
   return {
-    resolved: resolve(itemFile(host, file)),
-    prefix: normalize(resolvePaths().itemsDir),
+    resolved: resolve(saveFile(host, file)),
+    prefix: normalize(resolvePaths().savesDir),
   };
 }

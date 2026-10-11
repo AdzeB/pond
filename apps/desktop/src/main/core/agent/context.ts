@@ -29,6 +29,7 @@ import {
   describeSaves,
   describeSavesInput,
   findDuplicateSaves,
+  findDuplicatesInput,
   grepLibrary,
   grepLibraryInput,
   type LibraryScope,
@@ -68,6 +69,7 @@ export function libraryContext(
     onSources: (sources: AssistantSource[]) => void;
     onResults?: (results: AssistantResultSet[]) => void;
     onSteps?: (steps: AssistantToolStep[]) => void;
+    visionEnabled?: () => boolean;
   },
   deps = contextDependencies,
 ) {
@@ -160,7 +162,7 @@ export function libraryContext(
     {
       name: "searchLibrary",
       description:
-        "Gather Saves from titles, descriptions, authors, tags, captions, OCR, transcripts, notes, and URLs within the selected scope. Use media as a filter rather than adding words such as pictures or videos to query. Omit query to list recent Saves. Then explain or act; call showSaves for a small set to display.",
+        "Gather ranked evidence from titles, descriptions, authors, tags, captions, OCR, transcripts, notes, and URLs within the selected scope. Set task explicitly to code for source-code retrieval or fact-check to verify a claim; otherwise omit it for ordinary search. Use media as a filter rather than adding words such as pictures or videos to query. Omit query to list recent Saves. Then explain or act; call showSaves for a small set to display.",
       schema: searchLibraryInput,
       execute: async (args) => {
         const parsed = searchLibraryInput.parse(args);
@@ -176,7 +178,7 @@ export function libraryContext(
     {
       name: "readSave",
       description:
-        "Read a Save the way Cursor reads a file: caption, OCR, transcript, notes, comments, rating, tags, folders, and media. Use field plus offset and limit for long transcripts.",
+        "Read a Save the way Cursor reads a file: caption, OCR, transcript, notes, rating, tags, folders, and media. Use field plus offset and limit for long transcripts.",
       schema: readSaveInput,
       execute: async (args) => {
         input.signal.throwIfAborted();
@@ -244,7 +246,7 @@ export function libraryContext(
     {
       name: "findDuplicates",
       description: "Find duplicate Saves by file hash or perceptual hash.",
-      schema: z.object({}),
+      schema: findDuplicatesInput,
       execute: async () => {
         input.signal.throwIfAborted();
         return deps.findDuplicateSaves();
@@ -257,6 +259,8 @@ export function libraryContext(
       schema: describeSavesInput,
       execute: async (args) => {
         input.signal.throwIfAborted();
+        if (!input.visionEnabled?.())
+          return { error: "Choose a vision model in Settings Models." };
         input.onActivity("reading");
         const parsed = describeSavesInput.parse(args);
         for (const id of parsed.ids) {
@@ -280,7 +284,7 @@ export function libraryContext(
     {
       name: "proposeChanges",
       description:
-        "Prepare Library edits for explicit review. Never applies changes. Covers title, note, tags, folders, rating, comments, trash, folder and tag CRUD, saved views, import URL, merge duplicates, export, sync, refresh, archive, copy URL, reveal, batch rename, and empty trash. Tags and folders replace the current list, so preserve entries the user has not asked to remove.",
+        "Prepare Library edits for explicit review. Never applies changes. Covers title, note, tags, folders, rating, trash, folder and tag CRUD, saved views, import URL, merge duplicates, export, sync, refresh, archive, copy URL, reveal, batch rename, and empty trash. Tags and folders replace the current list, so preserve entries the user has not asked to remove.",
       schema: assistantProposalInput,
       execute: async (args) => {
         input.signal.throwIfAborted();
@@ -368,16 +372,6 @@ export function libraryContext(
               field: "rating",
               before:
                 "rating" in result.save ? (result.save.rating ?? null) : null,
-              after: proposal.after,
-            };
-          } else if (proposal.field === "comments") {
-            change = {
-              ...base,
-              field: "comments",
-              before:
-                "comments" in result.save && Array.isArray(result.save.comments)
-                  ? result.save.comments
-                  : [],
               after: proposal.after,
             };
           } else if (proposal.field === "trash") {

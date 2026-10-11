@@ -1,6 +1,6 @@
 import type { MenuItemSpec } from "@pond/ui";
 import type { ReactElement } from "react";
-import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
+import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 
 export function buildGifMenuItems({
   hasLoop,

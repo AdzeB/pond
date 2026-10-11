@@ -115,7 +115,7 @@ export function registerIntegrationCommands(
         keywords: line.trim(),
         limit: 20,
       });
-      const saves = await api.items({ ids: page.ids });
+      const saves = await api.saves({ ids: page.ids });
       results.push({ query: line.trim(), saves });
       process.stderr.write(
         `${saves.map((save) => `${save.id}  ${save.title ?? save.url}`).join("\n")}\n`,

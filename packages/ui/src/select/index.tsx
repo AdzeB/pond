@@ -5,7 +5,6 @@ import {
 } from "@pond/icons/outline/12";
 import { clsx as cn } from "clsx";
 import { Button, type ButtonProps } from "../button";
-import { useScrollFade } from "../use-scroll-fade";
 import { renderSelectSpec, type SelectItemSpec } from "./items";
 import styles from "./styles.module.css";
 
@@ -99,17 +98,7 @@ function Popup({ className, ...props }: Base.Popup.Props) {
 }
 
 function List({ className, ...props }: Base.List.Props) {
-  const scrollFade = useScrollFade<HTMLDivElement>();
-
-  return (
-    <Base.List
-      {...props}
-      ref={scrollFade.ref}
-      className={cn(styles.list, className)}
-      data-scroll-fade={scrollFade["data-scroll-fade"]}
-      data-scrollable={scrollFade["data-scrollable"] || undefined}
-    />
-  );
+  return <Base.List {...props} className={cn(styles.list, className)} />;
 }
 
 function Arrow({ className, ...props }: Base.Arrow.Props) {

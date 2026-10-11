@@ -1,8 +1,7 @@
-import { IconCheck2Fill12 } from "@pond/icons/fill/12";
-import { IconXmarkOutline12 } from "@pond/icons/outline/12";
-import { Button } from "@pond/ui";
+import { IconCircleCheckFill12 } from "@pond/icons/fill/12";
+import { Button, Dialog } from "@pond/ui";
 import { useEffect } from "react";
-import { BrandTile } from "@/features/sources/components/sync-monitor-source-tile";
+import { ConnectionVisual } from "@/features/sources/components/flow/connection-visual";
 import {
   type AccountRow,
   useAccounts,
@@ -11,6 +10,7 @@ import { getSourceDef } from "@/features/sources/lib/registry";
 import {
   connectFlow,
   useConnectCompleted,
+  useConnectedAccount,
   useConnectedBefore,
   useConnectFailed,
   useConnectSource,
@@ -29,54 +29,109 @@ export function ConnectWaitSection() {
   useConnectArrival();
   if (!source) return null;
   const label = getSourceDef(source).label;
+  const state = completed ? "connected" : failed ? "failed" : "waiting";
 
   return (
-    <>
-      <div className={styles.body}>
-        <div className={styles.avatar}>
-          <div className={styles.image}>
-            <BrandTile source={source} size={96} />
-            <span
-              className={styles.badge}
-              data-state={
-                completed ? "connected" : failed ? "failed" : "waiting"
-              }
-              aria-hidden="true"
-            >
-              <span className={styles.loading}>
-                <span className={styles.spinner} />
-              </span>
-              <IconCheck2Fill12 className={styles.check} />
-              <IconXmarkOutline12 className={styles.cross} strokeWidth={2} />
-            </span>
-          </div>
-        </div>
-        <div className={styles.copy} aria-live="polite">
-          <p className={styles.status}>
-            {completed
-              ? "Connected"
-              : failed
-                ? "Connection Unavailable"
-                : "Requesting Connection"}
-          </p>
-          <p className={styles.hint}>
-            {completed
-              ? `${label} is connected. Your saved posts will appear in your library.`
-              : failed
-                ? `Couldn't open ${label}. Try opening the sign-in page again.`
-                : `Sign in to ${label} in your browser. The Pond extension sends your session back.`}
-          </p>
-        </div>
+    <div className={styles.body}>
+      <ConnectionVisual source={source} state={state} />
+      <div
+        key={state}
+        className={styles.copy}
+        data-state={completed ? "connected" : failed ? "failed" : undefined}
+        aria-live="polite"
+      >
+        <h2 className={styles.title}>
+          {completed
+            ? `${label} is connected`
+            : failed
+              ? `Couldn't connect ${label}`
+              : `Connect ${label} to Pond`}
+        </h2>
+        <p className={styles.description}>
+          {completed ? (
+            <>
+              Pond is syncing your saved posts now.
+              <br />
+              New saves keep arriving in your library.
+            </>
+          ) : failed ? (
+            "Try opening the sign-in page again."
+          ) : (
+            <>
+              Sign in to {label} in your browser.
+              <br />
+              Pond will finish the connection here.
+            </>
+          )}
+        </p>
       </div>
-      {failed && !completed ? (
+      <ConnectPromises />
+    </div>
+  );
+}
+
+function ConnectPromises() {
+  return (
+    <>
+      <div className={styles.details}>
+        <p className={styles["details-title"]}>Pond will</p>
+        <ul className={styles.checklist}>
+          <li>
+            <IconCircleCheckFill12 className={styles.check} />
+            <span>Keep your session on this device</span>
+          </li>
+          <li>
+            <IconCircleCheckFill12 className={styles.check} />
+            <span>Read your saved posts</span>
+          </li>
+          <li>
+            <IconCircleCheckFill12 className={styles.check} />
+            <span>Add new saves to your library</span>
+          </li>
+        </ul>
+      </div>
+      <p className={styles.note}>
+        Sign in through your browser. The session stays on this device, and Pond
+        only reads your saves.
+      </p>
+    </>
+  );
+}
+
+export function ConnectActions() {
+  const completed = useConnectCompleted();
+  const failed = useConnectFailed();
+  const account = useConnectedAccount();
+  if (completed && account)
+    return (
+      <>
         <Button
-          variant="tertiary"
-          width="full"
-          className={styles.retry}
-          onClick={() => connectFlow.retry()}
+          variant="secondary"
+          onClick={() => {
+            connectFlow.clear();
+            sourceFlow.close();
+            sourceDetail.openAccount(account.id);
+          }}
         >
-          Try Again
+          View
         </Button>
+        <Dialog.Confirm
+          onClick={() => {
+            connectFlow.clear();
+            sourceFlow.close();
+          }}
+        >
+          Done
+        </Dialog.Confirm>
+      </>
+    );
+  return (
+    <>
+      <Dialog.Cancel />
+      {failed ? (
+        <Dialog.Confirm onClick={() => connectFlow.retry()}>
+          Try Again
+        </Dialog.Confirm>
       ) : null}
     </>
   );
@@ -101,13 +156,7 @@ function useConnectArrival(): void {
       arrivedOnce = true;
       syncMonitor.seed(account.id, source, { connected: true });
       void window.pond.syncRunNow(account.id);
-      connectFlow.complete();
-      window.setTimeout(() => {
-        if (cancelled) return;
-        connectFlow.clear();
-        sourceFlow.close();
-        sourceDetail.openAccount(account.id);
-      }, 1100);
+      connectFlow.complete(account);
     };
 
     const tick = () => {

@@ -1,5 +1,5 @@
 import type { OkResult } from "./query-contracts-shared";
-import type { SavesFileInput } from "./saves-contracts-shared";
+import type { SaveFileResult, SavesFileInput } from "./saves-contracts-shared";
 
 export interface SavesClipboardQueryInputs {
   "saves.copyImage": SavesFileInput;
@@ -11,10 +11,10 @@ export interface SavesClipboardQueryInputs {
 }
 
 export interface SavesClipboardQueryResults {
-  "saves.copyImage": OkResult;
-  "saves.copyThumbnail": OkResult;
-  "saves.copyBase64": OkResult;
-  "saves.copyFile": OkResult;
-  "saves.copyFiles": OkResult & { copied?: number };
+  "saves.copyImage": SaveFileResult;
+  "saves.copyThumbnail": SaveFileResult;
+  "saves.copyBase64": SaveFileResult;
+  "saves.copyFile": SaveFileResult;
+  "saves.copyFiles": SaveFileResult<{ copied: number }>;
   "clipboard.writeText": OkResult;
 }

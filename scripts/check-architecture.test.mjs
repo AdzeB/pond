@@ -6,6 +6,7 @@ import { test } from "node:test";
 import {
   declaredWorkspaceDependencyErrors,
   dependencyCycles,
+  featureEntryError,
   rendererOwnershipError,
   runtimeImports,
 } from "./check-architecture.mjs";
@@ -60,6 +61,36 @@ test("save features cannot depend on Library features", () => {
     rendererOwnershipError(
       "renderer/src/features/library/components/grid.tsx",
       "renderer/src/features/saves/components/card.tsx",
+    ),
+    null,
+  );
+});
+
+test("features import other features only through root entries", () => {
+  assert.match(
+    featureEntryError(
+      "renderer/src/features/library/components/grid.tsx",
+      "renderer/src/features/saves/state/pool.ts",
+    ),
+    /bypasses the feature entry/,
+  );
+  for (const to of [
+    "renderer/src/features/saves/index.ts",
+    "renderer/src/features/saves/pool.ts",
+    "renderer/src/features/library/state/folders.ts",
+    "renderer/src/shared/lib/format.ts",
+  ])
+    assert.equal(
+      featureEntryError(
+        "renderer/src/features/library/components/grid.tsx",
+        to,
+      ),
+      null,
+    );
+  assert.equal(
+    featureEntryError(
+      "renderer/src/app/index.tsx",
+      "renderer/src/features/saves/state/pool.ts",
     ),
     null,
   );

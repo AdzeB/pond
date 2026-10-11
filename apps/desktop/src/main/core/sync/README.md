@@ -23,8 +23,7 @@ syncAccount(accountId)
 ### Incremental cursor (watermark)
 
 Per-Account state lives under `prefs.sync.accounts[accountId].sync`
-(`SourceSyncPrefs`). The pre-account `prefs.sync.sources` and
-`prefs.sync.handles` fields remain parseable only for migration.
+(`SourceSyncPrefs`).
 
 - `highWaterMark` — most recent source id we've enqueued (lists are newest-first).
 - `lastFullSyncAt` — gates the expensive full-list walk vs the cheap incremental

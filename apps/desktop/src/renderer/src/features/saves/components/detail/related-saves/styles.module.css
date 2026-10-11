@@ -1,0 +1,29 @@
+.list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 10px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.item {
+  gap: 8px;
+  min-width: 0;
+}
+
+.media {
+  height: 92px;
+  aspect-ratio: 1 / 1;
+}
+
+.message {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
+  margin: 0;
+  font-size: var(--ds-text-xs);
+  color: var(--ds-gray-10);
+}

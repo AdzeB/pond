@@ -1,8 +1,3 @@
-.transport {
-  width: 100%;
-  min-width: 0;
-}
-
 .media {
   transition: transform var(--ds-duration-medium) var(--ds-easing-standard);
 }
@@ -19,8 +14,20 @@
   width: 100%;
 }
 
-.timeDisplay {
+.current-time {
   margin-inline: 4px 6px;
+}
+
+.controls[data-chrome] .current-time,
+.controls[data-chrome] .duration {
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-9);
+}
+
+.controls[data-chrome] .duration {
+  min-width: 32px;
+  margin-inline: 6px 4px;
+  text-align: left;
 }
 
 .timeline {
@@ -31,8 +38,4 @@
   width: 100%;
   min-width: 0;
   height: 24px;
-}
-
-.notes {
-  padding: 16px;
 }

@@ -1,13 +1,7 @@
-import {
-  agentMessages,
-  type ImageComment,
-  type Save,
-  saves,
-} from "@pond/schema/db";
+import { agentMessages, type Save, saves } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
 import { eq, inArray, isNotNull } from "drizzle-orm";
 import { clipboard, shell } from "electron";
-import { ulid } from "ulid";
 import { z } from "zod";
 import { agentOperationRequest } from "../../../shared/agent-operations";
 import type {
@@ -21,7 +15,7 @@ import {
 import { getDb } from "../../db";
 import { resolveSaveFilePath } from "../../ipc/helpers";
 import { toCsv } from "../../lib/csv";
-import { itemFile } from "../../paths";
+import { saveFile } from "../../paths";
 import { executeBatch, executeTransaction } from "../executor";
 import { writeExportFile } from "../export-files";
 import { exportSavesToDirectory } from "../export-saves";
@@ -43,10 +37,6 @@ import { enqueue } from "../pipeline/enqueue";
 import { refreshSave } from "../refresh";
 import { archiveSiteForSave } from "../refresh/archive-backfill";
 import { createView, listViews, updateView } from "../saved-views";
-import {
-  materializeLibraryMediaForExternalUse,
-  withDecryptedLibraryMediaPath,
-} from "../storage/library-media-storage";
 import { syncAccount } from "../sync";
 import { createTag, mergeTags, renameTag, setSaveTags } from "../tags";
 import { applyPondOperation, summarizeOperationResult } from "./operations";
@@ -67,43 +57,10 @@ function sameValue(
     : a === b;
 }
 
-function commentTexts(raw: ImageComment[] | null): string[] {
-  return (raw ?? [])
-    .filter((entry) => entry.resolvedAt == null)
-    .map((entry) => entry.text)
-    .filter((text) => text.trim());
-}
-
-function toComments(
-  texts: string[],
-  previous: ImageComment[] | null,
-): ImageComment[] {
-  const resolved = (previous ?? []).filter(
-    (comment) => comment.resolvedAt != null,
-  );
-  const existing = (previous ?? []).filter(
-    (comment) => comment.resolvedAt == null,
-  );
-  return [
-    ...texts.map((text, index) => ({
-      ...(existing[index] ?? {
-        id: ulid(),
-        x: 0,
-        y: 0,
-        w: 1,
-        h: 1,
-        createdAt: Date.now(),
-      }),
-      text,
-    })),
-    ...resolved,
-  ];
-}
-
 interface ReviewSave
   extends Pick<
     Save,
-    "id" | "title" | "notes" | "tags" | "comments" | "rating" | "deletedAt"
+    "id" | "title" | "notes" | "tags" | "rating" | "deletedAt"
   > {}
 export const reviewDependencies = {
   async message(id: string) {
@@ -179,15 +136,13 @@ export async function reviewChanges(
               ? await deps.folderIdsForSave(change.saveId)
               : change.field === "note"
                 ? (current.notes ?? "")
-                : change.field === "comments"
-                  ? commentTexts(current.comments)
-                  : change.field === "rating"
-                    ? (current.rating ?? null)
-                    : change.field === "trash"
-                      ? current.deletedAt
-                        ? "trashed"
-                        : "active"
-                      : current[change.field];
+                : change.field === "rating"
+                  ? (current.rating ?? null)
+                  : change.field === "trash"
+                    ? current.deletedAt
+                      ? "trashed"
+                      : "active"
+                    : current[change.field];
           const expected =
             input.action === "undo" ? change.after : change.before;
           if (change.field !== "rating" && !sameValue(value, expected))
@@ -198,7 +153,7 @@ export async function reviewChanges(
             throw new Error(
               "This value changed since the review. Your newer edit was kept.",
             );
-          await writeChange(change, input.action, current.comments, deps);
+          await writeChange(change, input.action, deps);
           change.status = input.action === "undo" ? "undone" : "applied";
         }
         delete change.error;
@@ -219,7 +174,6 @@ export async function reviewChanges(
 async function writeChange(
   change: AssistantChange,
   action: "apply" | "undo",
-  previousComments: ImageComment[] | null,
   deps: ReviewDependencies,
 ) {
   if (change.field === "folders") {
@@ -259,16 +213,6 @@ async function writeChange(
       id: change.saveId,
       patch: { rating: next },
       before: { rating: prev },
-      meta: { actor: "agent", actorReason: `assistant:${action}` },
-    });
-  } else if (change.field === "comments") {
-    const next = action === "undo" ? change.before : change.after;
-    await deps.executeTransaction({
-      kind: "update",
-      model: "save",
-      id: change.saveId,
-      patch: { comments: toComments(next, previousComments) },
-      before: { comments: toComments(change.before, previousComments) },
       meta: { actor: "agent", actorReason: `assistant:${action}` },
     });
   } else if (change.field === "trash") {
@@ -426,9 +370,7 @@ async function writeAction(
   } else if (change.action === "reveal") {
     const target = await resolveSaveFilePath(change.saveId, 0);
     if (!target.ok) throw new Error("Could not reveal this Save.");
-    shell.showItemInFolder(
-      await materializeLibraryMediaForExternalUse(target.path),
-    );
+    shell.showItemInFolder(target.path);
   } else if (change.action === "batchRename") {
     const pattern = String(payload.pattern ?? "");
     const ids = payload.ids ?? [];
@@ -442,10 +384,7 @@ async function writeAction(
       const family =
         stored?.family ??
         (stored?.path
-          ? await withDecryptedLibraryMediaPath(
-              itemFile(row.id, stored.path),
-              extractFontFamily,
-            )
+          ? await extractFontFamily(saveFile(row.id, stored.path))
           : null);
       const title = renameWithFamily(pattern, {
         n,

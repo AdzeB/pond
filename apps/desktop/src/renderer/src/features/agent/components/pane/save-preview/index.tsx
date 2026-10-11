@@ -9,11 +9,13 @@ import { sourceExcerpt } from "@shared/assistant-text";
 import { useSelector } from "@tanstack/react-store";
 import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { ensureSaves } from "@/features/saves/lib/ensure-saves";
-import { pickCardUnit } from "@/features/saves/lib/media/units";
-import { thumbUrlFor } from "@/features/saves/lib/media/url";
-import { aspectFor, clampRatio } from "@/features/saves/state/aspect";
-import { savesStore } from "@/features/saves/state/pool";
+import {
+  aspectFor,
+  clampRatio,
+  pickCardUnit,
+  thumbUrlFor,
+} from "@/features/saves/media";
+import { ensureSaves, savesStore } from "@/features/saves/pool";
 import styles from "./styles.module.css";
 
 interface ThumbnailStyle extends CSSProperties {

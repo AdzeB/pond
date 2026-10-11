@@ -16,7 +16,7 @@ import {
   recordAspect,
 } from "@/features/saves/state/aspect";
 import type { Save } from "@/features/saves/types";
-import { usePrefs } from "@/features/settings/state/prefs";
+import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
 export function HoverGallery({

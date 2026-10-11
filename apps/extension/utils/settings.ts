@@ -6,7 +6,6 @@ import {
   type PondSettings,
 } from "./types";
 
-/** Values are normalized on read so legacy stored shapes keep migrating. */
 const item = storage.defineItem<JsonValue>("local:settings");
 
 export async function getSettings(): Promise<PondSettings> {

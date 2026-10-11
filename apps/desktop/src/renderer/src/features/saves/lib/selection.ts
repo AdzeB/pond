@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { statusFeed } from "@/features/downloads/lib/status-feed";
+import { statusFeed } from "@/features/downloads/status-feed";
 import { resolveFileIndex } from "@/features/saves/lib/actions";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
 import {
@@ -12,10 +12,7 @@ import { REVERSE_SEARCH_ENGINES } from "@/features/saves/lib/reverse-image-searc
 import { pool } from "@/features/saves/state/pool";
 import { selection } from "@/features/saves/state/selection";
 import type { Save } from "@/features/saves/types";
-import {
-  mergeUniqueTags,
-  tagClipboard,
-} from "@/features/tags/state/tag-clipboard";
+import { mergeUniqueTags, tagClipboard } from "@/features/tags";
 import { notify } from "@/shared/lib/toast";
 
 const OkSchema = z
@@ -41,9 +38,9 @@ const ExportReplySchema = z
     ok: z.boolean().catch(false),
     exported: z.number().catch(0),
     count: z.number().catch(0),
-    error: z.string().nullish().catch(null),
+    reason: z.string().nullish().catch(null),
   })
-  .catch({ ok: false, exported: 0, count: 0, error: null });
+  .catch({ ok: false, exported: 0, count: 0, reason: null });
 
 const PublicUrlReplySchema = z
   .object({
@@ -220,7 +217,7 @@ export async function exportSelectionFiles(
     await window.pond.query("saves.exportFiles", { ids: [...ids] }),
   );
   if (!result.ok) {
-    if (result.error === "canceled") {
+    if (result.reason === "cancelled") {
       statusFeed.dismiss(job);
       return { ok: true, message: "Export canceled" };
     }
@@ -241,7 +238,7 @@ export async function exportSelectionCsv(
     await window.pond.query("saves.exportCsv", { ids: [...ids] }),
   );
   if (!result.ok) {
-    if (result.error === "canceled") {
+    if (result.reason === "cancelled") {
       statusFeed.dismiss(job);
       return { ok: true, message: "Export canceled" };
     }

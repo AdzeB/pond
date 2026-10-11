@@ -66,7 +66,7 @@ it("marks the wait screen connected when a new account arrives", async () => {
     root.render(<ConnectWaitSection />);
   });
   await vi.waitFor(() => {
-    expect(host.textContent).toContain("Connected");
+    expect(host.textContent).toContain("Pond is syncing your saved posts now.");
   });
 });
 
@@ -84,7 +84,7 @@ it("marks the wait screen connected when an existing account is reimported", asy
   await act(async () => {
     await Promise.resolve();
   });
-  expect(host.textContent).toContain("Requesting Connection");
+  expect(host.textContent).toContain("Sign in to Twitter in your browser.");
   const sessionImported = imported;
   if (!sessionImported)
     throw new Error("session import listener was not attached");
@@ -92,6 +92,25 @@ it("marks the wait screen connected when an existing account is reimported", asy
     sessionImported({ source: "twitter", accountId: "acc-twitter" });
   });
   await vi.waitFor(() => {
-    expect(host.textContent).toContain("Connected");
+    expect(host.textContent).toContain("Pond is syncing your saved posts now.");
   });
+});
+
+it("explains the local connection before the account arrives", async () => {
+  stubPond();
+  connectFlow.start("twitter", ["acc-twitter"]);
+  await act(async () => {
+    root.render(<ConnectWaitSection />);
+  });
+  await act(async () => {
+    await Promise.resolve();
+  });
+
+  expect(host.textContent).toContain("Connect Twitter to Pond");
+  expect(host.textContent).toContain("Keep your session on this device");
+  expect(host.textContent).toContain("Read your saved posts");
+  expect(host.textContent).toContain(
+    "Sign in through your browser. The session stays on this device, and Pond only reads your saves.",
+  );
+  expect(host.textContent).not.toContain("Waiting for sign-in");
 });

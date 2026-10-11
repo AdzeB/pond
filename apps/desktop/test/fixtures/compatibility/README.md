@@ -25,8 +25,7 @@ them.
 - `pond-package`: current directory-based `.pondpack` version 1 manifest
 - `eagle-library`: unpacked Eagle Library structure accepted by the importer
 - `locked-eagle-folders`: Eagle password markers and inherited exclusion
-- `preferences`: flat, version 2, version 3, and Library-bundle preference forms
-- `deep-links`: Library-bound and legacy Pond Save links
+- `deep-links`: Library-bound and unbound Pond Save links
 - `eaglepack`: Eagle 4.0.0 folder and custom-thumbnail transfer packages
 
 The Eaglepack samples contain generated media and audit-only metadata. The

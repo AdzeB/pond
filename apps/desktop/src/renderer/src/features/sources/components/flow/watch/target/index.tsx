@@ -1,18 +1,30 @@
-import { IconTelescopeFill18 as Telescope } from "@pond/icons/fill/18";
-import type { Source, WatchKind } from "@pond/schema/db";
-import { motion, useReducedMotion } from "motion/react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { IconCircleCheckFill12 } from "@pond/icons/fill/12";
+import type { Source } from "@pond/schema/db";
+import { Button, Dialog } from "@pond/ui";
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { z } from "zod";
+import { ConnectionVisual } from "@/features/sources/components/flow/connection-visual";
 import { useAccounts } from "@/features/sources/hooks/use-accounts";
 import { WATCH_NEEDS_SESSION } from "@/features/sources/hooks/use-watches";
+import { startConnect } from "@/features/sources/lib/create";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import { useWatchSource, watchFlow } from "@/features/sources/state/watch-flow";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { WatchTargetField } from "../target-field";
-import { WatchTargetMatch } from "../target-match";
 import { watchInputSource } from "./input-source";
 import styles from "./styles.module.css";
+import { watchTargets } from "./targets";
+
+const FORM_ID = "watch-target";
+/** Long enough for the merge into the check to settle before the dialog closes. */
+const ADDED_HOLD_MS = 1100;
 
 const AddWatchResultSchema = z.object({
   ok: z.boolean(),
@@ -20,99 +32,119 @@ const AddWatchResultSchema = z.object({
   watch: z.object({ id: z.string() }).optional(),
 });
 
-interface WatchTargetMatchData {
-  kind?: WatchKind;
-  handle: string;
-  display: string;
-  avatarUrl?: string;
-}
+type AddWatchResult = z.infer<typeof AddWatchResultSchema>;
 
-const ResolveTargetSchema = z.object({
-  ok: z.boolean(),
-  target: z
-    .object({
-      kind: z
-        .enum([
-          "channel",
-          "user",
-          "group",
-          "playlist",
-          "board",
-          "cluster",
-          "list",
-        ])
-        .optional(),
-      handle: z.string(),
-      display: z.string(),
-      avatarUrl: z.url().optional(),
-    })
-    .optional(),
-});
-
-function TelescopeSweep() {
-  const reduce = useReducedMotion();
-  return (
-    <motion.span
-      style={{ display: "inline-flex", transformOrigin: "50% 80%" }}
-      animate={reduce ? undefined : { rotate: [0, -9, 6, -3, 0] }}
-      transition={
-        reduce
-          ? undefined
-          : {
-              duration: 7,
-              repeat: Number.POSITIVE_INFINITY,
-              repeatDelay: 2,
-              ease: "easeInOut",
-            }
-      }
-      aria-hidden
-    >
-      <Telescope width={24} height={24} />
-    </motion.span>
-  );
-}
-
-function WatchResults({ children }: { children: ReactNode }) {
-  const scrollFade = useScrollFade<HTMLDivElement>();
-  const reduceMotion = useReducedMotion();
-  return (
-    <motion.div
-      {...scrollFade}
-      className={styles.options}
-      role="group"
-      aria-label="Account to watch"
-      initial={{ height: 0, opacity: 0 }}
-      animate={{ height: "auto", opacity: 1 }}
-      transition={{ duration: reduceMotion ? 0 : 0.2 }}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-type WatchOption =
-  | { source: Source; status: "checking" | "unavailable" | "failed" }
-  | { source: Source; status: "available"; target: WatchTargetMatchData };
-
-interface WatchTargetFormProps {
+interface WatchTargetProviderProps {
   source: Source;
   connectedSources: readonly Source[];
-  resolveTarget: (
-    source: Source,
-    input: string,
-  ) => Promise<WatchTargetMatchData | null>;
-  addWatch: (
-    source: Source,
-    input: string,
-  ) => Promise<z.infer<typeof AddWatchResultSchema>>;
+  addWatch: (source: Source, input: string) => Promise<AddWatchResult>;
   onAdded: (id: string) => void;
+  children: ReactNode;
 }
 
-async function resolveTarget(source: Source, input: string) {
-  const result = ResolveTargetSchema.parse(
-    await window.pond.query("watches.resolve", { source, input }),
+function watchErrorMessage(reason: string | undefined, label: string): string {
+  switch (reason) {
+    case "already_watching":
+      return "You're already watching this.";
+    case "needs_account":
+      return `Connect an account on ${label} first.`;
+    case "invalid":
+      return `Couldn't find that profile on ${label}. Check the link or handle.`;
+    default:
+      return "Couldn't start watching. Try again.";
+  }
+}
+
+function useWatchTargetState({
+  source,
+  connectedSources,
+  addWatch,
+  onAdded,
+}: Omit<WatchTargetProviderProps, "children">) {
+  const label = getSourceDef(source).label;
+  const [value, setValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [added, setAdded] = useState(false);
+  const submitting = useRef(false);
+  const addedTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(addedTimer.current), []);
+  const input = value.trim();
+  const detected = watchInputSource(input);
+  const mismatch =
+    detected.type === "unsupported" ||
+    (detected.type === "link" && detected.source !== source)
+      ? `This link isn't from ${label}. Paste a ${label} link or enter a handle.`
+      : null;
+  const needsSession =
+    WATCH_NEEDS_SESSION.includes(source) && !connectedSources.includes(source);
+  const canSubmit = !!input && !mismatch && !needsSession && !busy && !added;
+
+  const change = (next: string) => {
+    setValue(next);
+    setError(null);
+  };
+
+  const submit = async () => {
+    if (!canSubmit || submitting.current) return;
+    submitting.current = true;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await addWatch(source, input);
+      if (res.ok && res.watch) {
+        const id = res.watch.id;
+        setAdded(true);
+        addedTimer.current = window.setTimeout(
+          () => onAdded(id),
+          ADDED_HOLD_MS,
+        );
+        return;
+      }
+      setError(watchErrorMessage(res.reason, label));
+    } catch {
+      setError(watchErrorMessage(undefined, label));
+    } finally {
+      submitting.current = false;
+      setBusy(false);
+    }
+  };
+
+  return {
+    source,
+    label,
+    value,
+    change,
+    error,
+    mismatch,
+    needsSession,
+    busy,
+    added,
+    canSubmit,
+    submit,
+  };
+}
+
+const WatchTargetContext = createContext<ReturnType<
+  typeof useWatchTargetState
+> | null>(null);
+
+function useWatchTarget() {
+  const state = useContext(WatchTargetContext);
+  if (!state) throw new Error("WatchTarget parts need a WatchTargetProvider");
+  return state;
+}
+
+export function WatchTargetProvider({
+  children,
+  ...props
+}: WatchTargetProviderProps) {
+  const state = useWatchTargetState(props);
+  return (
+    <WatchTargetContext.Provider value={state}>
+      {children}
+    </WatchTargetContext.Provider>
   );
-  return result.ok ? (result.target ?? null) : null;
 }
 
 async function addWatch(source: Source, handle: string) {
@@ -121,198 +153,130 @@ async function addWatch(source: Source, handle: string) {
   );
 }
 
-export function WatchTargetSection() {
-  const source = useWatchSource();
+export function WatchTargetRoot({ children }: { children: ReactNode }) {
+  const activeSource = useWatchSource();
   const { accounts } = useAccounts();
-  if (!source) return null;
+  const [source, setSource] = useState(activeSource);
+  /** The flow clears its source on close, before the popup finishes animating out. */
+  if (activeSource && activeSource !== source) setSource(activeSource);
+  if (!source) return children;
+  const connectedSources = accounts
+    .filter((account) => account.connected)
+    .map((account) => account.source);
   return (
-    <WatchTargetForm
+    <WatchTargetProvider
+      key={source}
       source={source}
-      connectedSources={accounts
-        .filter((account) => account.connected)
-        .map((account) => account.source)}
-      resolveTarget={resolveTarget}
+      connectedSources={connectedSources}
       addWatch={addWatch}
       onAdded={(id) => {
         watchFlow.added(id);
         sourceFlow.close();
       }}
-    />
+    >
+      {children}
+    </WatchTargetProvider>
   );
 }
 
-export function WatchTargetForm({
-  source,
-  connectedSources,
-  resolveTarget,
-  addWatch,
-  onAdded,
-}: WatchTargetFormProps) {
-  const label = getSourceDef(source).label;
-  const [handle, setHandle] = useState("");
-  const input = handle.trim();
-  const detected = watchInputSource(input);
-  const unsupported =
-    detected.type === "unsupported" ||
-    (detected.type === "link" && detected.source !== source);
-  const [startingSource, setStartingSource] = useState<Source | null>(null);
-  const [lookup, setLookup] = useState<{
-    input: string;
-    options: WatchOption[];
-  }>({ input: "", options: [] });
-  const options = lookup.input === input ? lookup.options : [];
-  const matches = options.filter((option) => option.status === "available");
-  const checking =
-    !!input &&
-    !unsupported &&
-    (lookup.input !== input ||
-      options.some((option) => option.status === "checking"));
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const submitting = useRef(false);
-  const handleRef = useRef<HTMLInputElement>(null);
+export function WatchTargetSection() {
+  const {
+    source,
+    label,
+    value,
+    change,
+    error,
+    mismatch,
+    needsSession,
+    busy,
+    added,
+    submit,
+  } = useWatchTarget();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const message = error ?? (value.trim() ? mismatch : null);
+  const { placeholder, kinds } = watchTargets(source);
 
   useEffect(() => {
-    handleRef.current?.focus();
+    inputRef.current?.focus();
   }, []);
 
-  useEffect(() => {
-    if (!input || unsupported) {
-      setLookup({ input, options: [] });
-      return;
-    }
-    setLookup({
-      input,
-      options: [{ source, status: "checking" }],
-    });
-    let cancelled = false;
-    const timer = setTimeout(() => {
-      void (async (): Promise<WatchOption> => {
-        try {
-          const target = await resolveTarget(source, input);
-          return target
-            ? { source, status: "available", target }
-            : { source, status: "unavailable" };
-        } catch {
-          return { source, status: "failed" };
-        }
-      })().then((option) => {
-        if (!cancelled) setLookup({ input, options: [option] });
-      });
-    }, 500);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [input, source, unsupported, resolveTarget]);
-
-  const needsAccount = (source: Source) =>
-    WATCH_NEEDS_SESSION.includes(source) && !connectedSources.includes(source);
-  const start = async (source: Source) => {
-    if (
-      needsAccount(source) ||
-      submitting.current ||
-      !matches.some((option) => option.source === source)
-    )
-      return;
-    submitting.current = true;
-    setBusy(true);
-    setStartingSource(source);
-    setError(null);
-    try {
-      const res = await addWatch(source, input);
-      if (res.ok && res.watch) {
-        onAdded(res.watch.id);
-        return;
-      }
-      setError(
-        res.reason === "already_watching"
-          ? "You're already watching this."
-          : res.reason === "needs_account"
-            ? `Connect an account on ${getSourceDef(source).label} first.`
-            : res.reason === "invalid"
-              ? "Couldn't recognise that handle or link."
-              : "Couldn't start watching. Try again.",
-      );
-    } catch {
-      setError("Couldn't start watching. Try again.");
-    } finally {
-      submitting.current = false;
-      setBusy(false);
-      setStartingSource(null);
-    }
-  };
-
-  const changeHandle = (value: string) => {
-    setHandle(value);
-    setError(null);
-  };
-
   return (
-    <>
-      <WatchTargetField
-        inputRef={handleRef}
-        value={handle}
-        disabled={busy}
-        checking={checking}
-        onChange={changeHandle}
+    <form
+      id={FORM_ID}
+      className={styles.form}
+      onSubmit={(event) => {
+        event.preventDefault();
+        void submit();
+      }}
+    >
+      <ConnectionVisual
+        source={source}
+        state={
+          added ? "connected" : error ? "failed" : busy ? "waiting" : "idle"
+        }
       />
-      {input && !unsupported ? (
-        <WatchResults>
-          {matches.map((option) => (
-            <WatchTargetMatch
-              key={option.source}
-              source={option.source}
-              match={option.target}
-              handle={input}
-              disabled={busy || needsAccount(option.source)}
-              status={startingSource === option.source ? "Starting" : undefined}
-              hint={
-                needsAccount(option.source)
-                  ? `Connect your ${getSourceDef(option.source).label} account in Sources to watch this profile. Pond needs a signed-in account to check for new posts.`
-                  : undefined
-              }
-              onSelect={() => void start(option.source)}
-            />
-          ))}
-          {checking ? (
-            <div
-              className={styles.skeletons}
-              role="status"
-              aria-label="Looking for accounts"
-            >
-              <div className={styles.skeletonRow} aria-hidden="true">
-                <span className={styles.skeletonAvatar} />
-                <span className={styles.skeletonText}>
-                  <span className={styles.skeletonName} />
-                  <span className={styles.skeletonHandle} />
-                </span>
-              </div>
-            </div>
-          ) : null}
-          {!checking && matches.length === 0 ? (
-            <p className={styles.hint} role="status">
-              Couldn't find anything. Try another search.
-            </p>
-          ) : null}
-        </WatchResults>
-      ) : (
-        <div className={styles.body}>
-          <div className={styles.empty}>
-            <TelescopeSweep />
-            <p className={styles.hint}>
-              {unsupported
-                ? `This link isn't from ${label}. Paste a ${label} link or enter a handle.`
-                : `Paste a link or enter a handle\nto start watching on ${label}.`}
-            </p>
-          </div>
-        </div>
-      )}
-      {error ? (
-        <p className={`${styles.chip} ${styles.error}`} role="alert">
-          {error}
+      <div className={styles.copy}>
+        <h2 className={styles.title}>Watch on {label}</h2>
+        <p className={styles.description}>
+          Enter a handle or paste a {label} link.
+          <br />
+          Pond adds new posts to your library.
         </p>
+      </div>
+      <div className={styles.field}>
+        <WatchTargetField
+          inputRef={inputRef}
+          value={value}
+          placeholder={placeholder}
+          disabled={busy || added}
+          invalid={!!message}
+          onChange={change}
+        />
+        {message ? (
+          <p className={styles.message} role="alert">
+            {message}
+          </p>
+        ) : null}
+      </div>
+      <div className={styles.details}>
+        <p className={styles.heading}>You can watch</p>
+        <ul className={styles.list}>
+          {kinds.map((kind) => (
+            <li key={kind.label} className={styles.kind}>
+              <IconCircleCheckFill12 className={styles.check} />
+              <span>{kind.label}</span>
+              <span className={styles.example}>{kind.example}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {needsSession ? (
+        <div className={styles.notice}>
+          <p className={styles.text}>Watching needs your {label} account.</p>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={() => void startConnect(source)}
+          >
+            Connect
+          </Button>
+        </div>
       ) : null}
-    </>
+    </form>
+  );
+}
+
+export function WatchTargetSubmit() {
+  const { busy, canSubmit } = useWatchTarget();
+  return (
+    <Dialog.Confirm
+      type="submit"
+      form={FORM_ID}
+      loading={busy}
+      disabled={!canSubmit}
+    >
+      Watch
+    </Dialog.Confirm>
   );
 }

@@ -4,6 +4,7 @@ import { app, BrowserWindow, dialog } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { IPC } from "../../../shared/constants";
+import type { QueryResult } from "../../../shared/query-contracts";
 import { parseNetscapeBookmarks } from "../../core/bookmarks";
 import {
   dryRunEagleLibrary,
@@ -34,7 +35,9 @@ export const savesImportSourceQueries = {
     return { source };
   }),
 
-  async "saves.pickEagleLibrary"() {
+  async "saves.pickEagleLibrary"(): Promise<
+    QueryResult<"saves.pickEagleLibrary">
+  > {
     const win = BrowserWindow.getFocusedWindow() ?? undefined;
     const options = {
       properties: ["openDirectory" as const],
@@ -43,10 +46,9 @@ export const savesImportSourceQueries = {
     const result = win
       ? await dialog.showOpenDialog(win, options)
       : await dialog.showOpenDialog(options);
-    if (result.canceled || !result.filePaths[0]) {
-      return { ok: false, path: null };
-    }
-    return { ok: true, path: result.filePaths[0] };
+    const path = result.filePaths[0];
+    if (result.canceled || !path) return { ok: false, reason: "cancelled" };
+    return { ok: true, path };
   },
 
   "saves.importEagleLibrary": query(
@@ -56,7 +58,7 @@ export const savesImportSourceQueries = {
       importShortcuts: z.boolean().optional(),
       progressId: z.string().optional(),
     }),
-    async (params, event) => {
+    async (params, event): Promise<QueryResult<"saves.importEagleLibrary">> => {
       const path = params.path.trim();
       const discovery = await readEagleShortcuts(
         join(app.getPath("appData"), "Eagle", "Settings"),
@@ -139,47 +141,52 @@ export const savesImportSourceQueries = {
     },
   ),
 
-  "saves.quickAdd": query(QuickAddParamsSchema, async (params) => {
-    const { url, note, tags } = normalizeQuickAddInput(params);
+  "saves.quickAdd": query(
+    QuickAddParamsSchema,
+    async (params): Promise<QueryResult<"saves.quickAdd">> => {
+      const { url, note, tags } = normalizeQuickAddInput(params);
 
-    if (!url) {
-      const result = await createManualSave({ title: note, note, tags });
-      return result.ok
-        ? { ok: true, id: result.id }
-        : { ok: false, error: result.error ?? "empty_input" };
-    }
-    try {
-      const result = await enqueue(url, { trigger: "user:quickAdd" });
-      if (tags.length > 0) await setSaveTags(result.id, tags);
-      if (note) {
-        await persistSave(
-          result.id,
-          { notes: note },
-          { actorReason: "user:quickAdd-note" },
-        );
-      }
-      return { ok: true, id: result.id, created: result.created };
-    } catch (error) {
-      if (error instanceof UnsupportedError) {
-        const result = await createManualSave({
-          url,
-          title: note ?? url,
-          note,
-          tags,
-        });
+      if (!url) {
+        const result = await createManualSave({ title: note, note, tags });
         return result.ok
           ? { ok: true, id: result.id }
-          : { ok: false, error: "unsupported_url" };
+          : { ok: false, error: result.error };
       }
-      log.error("[pond ipc] quickAdd failed", error);
-      return {
-        ok: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
-  }),
+      try {
+        const result = await enqueue(url, { trigger: "user:quickAdd" });
+        if (tags.length > 0) await setSaveTags(result.id, tags);
+        if (note) {
+          await persistSave(
+            result.id,
+            { notes: note },
+            { actorReason: "user:quickAdd-note" },
+          );
+        }
+        return { ok: true, id: result.id, created: result.created };
+      } catch (error) {
+        if (error instanceof UnsupportedError) {
+          const result = await createManualSave({
+            url,
+            title: note ?? url,
+            note,
+            tags,
+          });
+          return result.ok
+            ? { ok: true, id: result.id }
+            : { ok: false, error: "unsupported_url" };
+        }
+        log.error("[pond ipc] quickAdd failed", error);
+        return {
+          ok: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+  ),
 
-  async "saves.importBookmarks"() {
+  async "saves.importBookmarks"(): Promise<
+    QueryResult<"saves.importBookmarks">
+  > {
     const win = BrowserWindow.getFocusedWindow();
     const options = {
       properties: ["openFile" as const],
@@ -190,9 +197,7 @@ export const savesImportSourceQueries = {
       ? await dialog.showOpenDialog(win, options)
       : await dialog.showOpenDialog(options);
     const path = picked.filePaths[0];
-    if (picked.canceled || !path) {
-      return { ok: false, imported: 0, skipped: 0 };
-    }
+    if (picked.canceled || !path) return { ok: false, reason: "cancelled" };
     const html = await readFile(path, "utf8");
     const urls = parseNetscapeBookmarks(html);
     let imported = 0;
@@ -205,12 +210,17 @@ export const savesImportSourceQueries = {
         failed.push(url);
       }
     }
-    return { ok: imported > 0, imported, skipped: failed.length };
+    if (imported === 0 && failed.length > 0)
+      return {
+        ok: false,
+        error: "Couldn't import those bookmarks. Try another file.",
+      };
+    return { ok: true, imported, skipped: failed.length };
   },
 
   "saves.extractPageAssets": query(
     z.object({ url: StringParam }),
-    async (params) => {
+    async (params): Promise<QueryResult<"saves.extractPageAssets">> => {
       const url = params.url.trim();
       if (!url) return { ok: false, imported: 0, skipped: 0, error: "empty" };
       return extractPageAssets(url);

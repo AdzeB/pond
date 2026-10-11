@@ -1,6 +1,6 @@
 import { Input, Settings } from "@pond/ui";
 import { useEffect, useRef, useState } from "react";
-import { savePrefsSection, usePrefs } from "@/features/settings/state/prefs";
+import { savePrefsSection, usePrefs } from "@/shared/state/prefs";
 import type { AgentPrefs } from "../types";
 import styles from "./styles.module.css";
 
@@ -14,7 +14,7 @@ export function PersonalizationSection() {
         <Settings.HeaderText>
           <Settings.Title>Personalization</Settings.Title>
           <Settings.Description>
-            Give Agent context about you and how you like replies.
+            Give Assistant context about you and how you like replies.
           </Settings.Description>
         </Settings.HeaderText>
       </Settings.Header>
@@ -141,7 +141,7 @@ export function PersonalizationForm({
       <GuidanceField
         id="agent-profile"
         title="About You"
-        description="Share your interests, work, or context you want Agent to know."
+        description="Share your interests, work, or context you want Assistant to know."
         placeholder="Your role, interests, and other context"
         value={profile}
         onValueChange={(text) => {

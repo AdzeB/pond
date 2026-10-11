@@ -1,10 +1,10 @@
-:global(html),
-:global(body),
-:global(#root) {
+:global(html[data-shadow-gallery]),
+:global(html[data-shadow-gallery] body),
+:global(#shadow-gallery-root) {
   min-height: 100%;
 }
 
-:global(html) {
+:global(html[data-shadow-gallery]) {
   overflow: auto;
   background: var(--ds-gray-2);
 }
@@ -19,7 +19,7 @@
   --ds-fg: #eee;
 }
 
-:global(body) {
+:global(html[data-shadow-gallery] body) {
   min-width: 760px;
   overflow: visible;
   color: var(--ds-gray-12);
@@ -34,9 +34,17 @@
   --gallery-backdrop: var(--ds-gray-3);
 
   width: min(1480px, 100%);
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
   padding: 48px;
   margin-inline: auto;
+  overflow: auto;
+}
+
+:global(#shadow-gallery-root) .page {
+  height: auto;
+  min-height: 100vh;
+  overflow: visible;
 }
 
 .page[data-backdrop="plain"] {
@@ -57,7 +65,7 @@
   border-bottom: var(--ds-border-width) solid var(--ds-gray-5);
 }
 
-.heroCopy {
+.hero-copy {
   max-width: 660px;
 }
 
@@ -68,13 +76,12 @@
   font-weight: var(--ds-weight-xl);
   color: var(--ds-gray-9);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 
 .hero h1,
-.sectionHeading h2,
-.contextCard h3,
-.swatchDetails h3 {
+.section-heading h2,
+.context-card h3,
+.swatch-details h3 {
   margin: 0;
   color: var(--ds-gray-12);
 }
@@ -82,13 +89,12 @@
 .hero h1 {
   font-size: 42px;
   line-height: 1;
-  letter-spacing: -0.04em;
 }
 
 .hero :where(p),
-.sectionHeading :where(p),
-.contextCard :where(header p),
-.swatchDetails :where(p) {
+.section-heading :where(p),
+.context-card :where(header p),
+.swatch-details :where(p) {
   margin: 0;
   color: var(--ds-gray-10);
 }
@@ -154,12 +160,12 @@
   outline-offset: var(--ds-focus-offset);
 }
 
-.contextSection,
-.systemSection {
+.context-section,
+.system-section {
   margin-top: 48px;
 }
 
-.sectionHeading {
+.section-heading {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 520px);
   gap: 40px;
@@ -167,89 +173,144 @@
   margin-bottom: 20px;
 }
 
-.sectionHeading h2 {
+.section-heading h2 {
   font-size: var(--ds-text-2xl);
-  letter-spacing: -0.02em;
 }
 
-.sectionHeading :where(p) {
+.section-heading :where(p) {
   line-height: 1.5;
 }
 
-.contextGrid {
+.context-grid {
   display: grid;
   gap: 16px;
 }
 
-.contextCard,
-.swatchCard {
+.blend-control {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  background: var(--ds-gray-1);
+  border: var(--ds-border-width) solid var(--ds-gray-5);
+  border-radius: var(--ds-radius-xl);
+  box-shadow: var(--ds-shadow-xs);
+}
+
+.blend-heading,
+.blend-range {
+  align-items: center;
+}
+
+.blend-heading {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.blend-heading label {
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-xl);
+  color: var(--ds-gray-12);
+}
+
+.blend-heading output {
+  font-size: var(--ds-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-9);
+}
+
+.blend-range {
+  display: grid;
+  grid-template-columns: auto minmax(160px, 1fr) auto;
+  gap: 12px;
+  font-size: var(--ds-text-xxs);
+  font-weight: var(--ds-weight-lg);
+  color: var(--ds-gray-8);
+  text-transform: uppercase;
+}
+
+.blend-range input {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--ds-accent-9);
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+.blend-range input:focus-visible {
+  outline: var(--ds-focus-width) solid var(--ds-focus-outline);
+  outline-offset: var(--ds-focus-offset);
+}
+
+.context-card,
+.swatch-card {
   overflow: hidden;
   background: var(--ds-gray-1);
   border: var(--ds-border-width) solid var(--ds-gray-5);
   border-radius: var(--ds-radius-xl);
 }
 
-.contextCard > header {
+.context-card > header {
   min-height: 96px;
   padding: 18px 20px;
   border-right: var(--ds-border-width) solid var(--ds-gray-4);
 }
 
-.contextCard {
+.context-card {
   display: grid;
   grid-template-columns: 240px minmax(0, 1fr);
 }
 
-.contextCard h3,
-.swatchDetails h3 {
+.context-card h3,
+.swatch-details h3 {
   font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-xl);
 }
 
-.contextCard :where(header p),
-.swatchDetails :where(p) {
+.context-card :where(header p),
+.swatch-details :where(p) {
   margin-top: 5px;
   font-size: var(--ds-text-sm);
   line-height: 1.45;
 }
 
-.contextPair {
+.context-pair {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.contextSpecimen + .contextSpecimen {
+.context-specimen + .context-specimen {
   border-left: var(--ds-border-width) solid var(--ds-gray-4);
 }
 
-.systemLabel {
+.system-label {
   display: flex;
   align-items: center;
   height: 30px;
   padding-inline: 12px;
-  font-size: 10px;
+  font-size: var(--ds-text-xxs);
   font-weight: var(--ds-weight-xl);
   color: var(--ds-gray-9);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
   background: var(--ds-gray-2);
   border-bottom: var(--ds-border-width) solid var(--ds-gray-4);
 }
 
-.contextCanvas,
-.swatchCanvas {
+.context-canvas,
+.swatch-canvas {
   position: relative;
   background-color: var(--gallery-backdrop);
 }
 
-.contextCanvas {
+.context-canvas {
   display: grid;
   place-items: center;
   min-height: 230px;
   padding: 24px 18px;
 }
 
-.raisedCard,
+.raised-card,
 .popover,
 .dialog,
 .swatch {
@@ -257,7 +318,26 @@
   background: var(--ds-gray-1);
 }
 
-.raisedCard {
+.blended-shadow {
+  animation-name: shadow-blend;
+  animation-duration: 100s;
+  animation-timing-function: linear;
+  animation-delay: var(--shadow-blend-delay);
+  animation-fill-mode: both;
+  animation-play-state: paused;
+}
+
+@keyframes shadow-blend {
+  from {
+    box-shadow: var(--pond-shadow);
+  }
+
+  to {
+    box-shadow: var(--codex-shadow);
+  }
+}
+
+.raised-card {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 10px;
@@ -269,7 +349,7 @@
 }
 
 .avatar,
-.dialogIcon {
+.dialog-icon {
   display: grid;
   place-items: center;
   font-weight: var(--ds-weight-xl);
@@ -285,35 +365,35 @@
   border-radius: 50%;
 }
 
-.raisedCopy {
+.raised-copy {
   display: grid;
   gap: 2px;
   min-width: 0;
 }
 
-.raisedCopy strong {
+.raised-copy strong {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--ds-text-sm);
   white-space: nowrap;
 }
 
-.raisedCopy span {
+.raised-copy span {
   font-size: var(--ds-text-xs);
   color: var(--ds-gray-9);
 }
 
-.statusDot {
+.status-dot {
   grid-column: 2;
   width: fit-content;
   padding: 2px 6px;
-  font-size: 10px;
+  font-size: var(--ds-text-xxs);
   color: var(--ds-green-11);
   background: var(--ds-green-3);
   border-radius: var(--ds-radius-full);
 }
 
-.anchorButton {
+.anchor-button {
   position: absolute;
   top: 32px;
   left: 24px;
@@ -339,13 +419,12 @@
   border-radius: var(--ds-radius-lg);
 }
 
-.popoverLabel {
+.popover-label {
   padding: 6px 8px 4px;
-  font-size: 10px;
+  font-size: var(--ds-text-xxs);
   font-weight: var(--ds-weight-xl);
   color: var(--ds-gray-8);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
 }
 
 .popover button {
@@ -382,7 +461,7 @@
   border-radius: var(--ds-radius-xl);
 }
 
-.dialogIcon {
+.dialog-icon {
   width: 30px;
   height: 30px;
   border-radius: var(--ds-radius-md);
@@ -400,7 +479,7 @@
   color: var(--ds-gray-9);
 }
 
-.dialogActions {
+.dialog-actions {
   display: flex;
   grid-column: 1 / -1;
   gap: 6px;
@@ -408,7 +487,7 @@
   padding-top: 4px;
 }
 
-.dialogActions button {
+.dialog-actions button {
   height: 28px;
   padding-inline: 10px;
   font-size: var(--ds-text-xs);
@@ -418,19 +497,19 @@
   border-radius: var(--ds-radius-md);
 }
 
-.dialogActions .primaryAction {
+.dialog-actions .primary-action {
   color: oklch(1 0 0);
   background: var(--ds-accent-9);
   border-color: var(--ds-accent-9);
 }
 
-.swatchGrid {
+.swatch-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
 
-.swatchCanvas {
+.swatch-canvas {
   display: grid;
   place-items: center;
   min-height: 190px;
@@ -447,7 +526,7 @@
   border-radius: var(--ds-radius-lg);
 }
 
-.swatchMark {
+.swatch-mark {
   width: 22px;
   height: 4px;
   margin-bottom: -22px;
@@ -455,18 +534,18 @@
   border-radius: var(--ds-radius-full);
 }
 
-.swatchDetails {
+.swatch-details {
   display: grid;
   grid-template-rows: auto minmax(42px, auto) 1fr;
   padding: 16px;
   border-top: var(--ds-border-width) solid var(--ds-gray-4);
 }
 
-.swatchDetails code {
+.swatch-details code {
   display: block;
   padding: 10px;
   margin-top: 12px;
-  font-size: 10px;
+  font-size: var(--ds-text-xxs);
   line-height: 1.55;
   color: var(--ds-gray-9);
   overflow-wrap: anywhere;
@@ -485,7 +564,7 @@
 }
 
 @media (max-width: 1180px) {
-  .swatchGrid {
+  .swatch-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
@@ -496,7 +575,7 @@
   }
 
   .hero,
-  .sectionHeading {
+  .section-heading {
     grid-template-columns: 1fr;
   }
 
@@ -509,20 +588,20 @@
     justify-content: flex-start;
   }
 
-  .sectionHeading {
+  .section-heading {
     gap: 8px;
   }
 
-  .contextCard {
+  .context-card {
     grid-template-columns: 1fr;
   }
 
-  .contextCard > header {
+  .context-card > header {
     border-right: 0;
     border-bottom: var(--ds-border-width) solid var(--ds-gray-4);
   }
 
-  .swatchGrid {
+  .swatch-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

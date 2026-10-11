@@ -27,7 +27,6 @@ import {
 import { libraryRetrievalInput } from "../../core/library-retrieval";
 import { getPrefs } from "../../core/prefs";
 import { querySidebarCounts } from "../../core/sidebar-counts";
-import { materializeLibraryMediaForExternalUse } from "../../core/storage/library-media-storage";
 import type { Db } from "../../db";
 import { getDb } from "../../db";
 import { resolvePaths } from "../../paths";
@@ -106,9 +105,17 @@ const IdParams = z.object({ id: StringParam });
 const FileParams = z.object({ id: StringParam, fileIndex: FileIndexParam });
 
 export const savesReadQueries = {
-  "saves.sidebarCounts": query(z.object({}), async () => {
-    return querySidebarCounts(await getDb());
-  }),
+  "saves.sidebarCounts": query(
+    z.object({
+      recentIds: z.array(z.string()).max(100).optional(),
+    }),
+    async ({ recentIds }) => {
+      const ids =
+        recentIds ??
+        (await getPrefs()).saveRecents.entries.map((entry) => entry.saveId);
+      return querySidebarCounts(await getDb(), [], ids);
+    },
+  ),
   "saves.queryPage": query(LibraryQueryParams, async (params) => {
     const view = params.orderFolderId
       ? (await getPrefs()).folderViews[params.orderFolderId]
@@ -288,6 +295,45 @@ export const savesReadQueries = {
     },
   ),
 
+  "saves.related": query(
+    z.object({
+      id: z.string().min(1),
+      limit: z.number().int().min(1).max(100).optional(),
+    }),
+    async (params) => {
+      const { relatedSaves } = await import(
+        "../../core/semantic-recommendations"
+      );
+      return await relatedSaves(await getDb(), params);
+    },
+  ),
+
+  "saves.semanticClusters": query(
+    z.object({
+      saveIds: z.array(z.string().trim().min(1)).max(2_000).optional(),
+      folderId: z.string().trim().min(1).optional(),
+      distance: z.number().finite().min(0).max(2),
+      limit: z.number().int().min(3).max(2_000),
+    }),
+    async (params) => {
+      const { semanticClusters } = await import("../../core/semantic-clusters");
+      return await semanticClusters(await getDb(), params);
+    },
+  ),
+
+  "saves.classifyLabels": query(
+    z.object({
+      saveIds: z.array(z.string().trim().min(1)).min(1).max(2_000),
+      labels: z.array(z.string().trim().min(1).max(80)).min(1).max(50),
+    }),
+    async (params) => {
+      const { classifyLabels } = await import(
+        "../../core/semantic-classification"
+      );
+      return await classifyLabels(await getDb(), params);
+    },
+  ),
+
   "saves.query": query(
     z.object({
       query: QueryParam,
@@ -361,7 +407,7 @@ export const savesReadQueries = {
     return result.ok
       ? {
           ok: true as const,
-          path: await materializeLibraryMediaForExternalUse(result.path),
+          path: result.path,
         }
       : result;
   }),
@@ -419,11 +465,11 @@ export const savesReadQueries = {
   },
 
   "saves.publicImageUrl": query(IdParams, async (params) => {
-    if (!params.id) return { ok: false as const, url: null };
+    if (!params.id) return { ok: false as const, error: "Save not found." };
     const db = await getDb();
     const rows = await db.select().from(saves).where(eq(saves.id, params.id));
     const row = rows[0];
-    if (!row) return { ok: false as const, url: null };
+    if (!row) return { ok: false as const, error: "Save not found." };
     return { ok: true as const, url: derivePublicImageUrl(row.rawJson) };
   }),
 } satisfies QueryHandlerMap;

@@ -14,7 +14,7 @@ import {
   IconShieldCheckOutline18,
   IconTableDownloadOutline18,
 } from "@pond/icons/outline/18";
-import { Dialog, type MenuItemSpec } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import {
   exportSelectionCsv,
@@ -56,60 +56,96 @@ function startWebpConvert(
   });
 }
 
+interface CompressionCopy {
+  busy: string;
+  done: string;
+  failed: string;
+}
+
+function compressionCopy(
+  mode: "lossless" | "quality" | "webp" | "upscale" | "remove-background",
+): CompressionCopy {
+  if (mode === "webp") {
+    return {
+      busy: "Converting to WebP",
+      done: "Converted",
+      failed: "Couldn't convert these images.",
+    };
+  }
+  if (mode === "upscale") {
+    return {
+      busy: "Upscaling Images",
+      done: "Upscaled",
+      failed: "Couldn't upscale these images.",
+    };
+  }
+  if (mode === "remove-background") {
+    return {
+      busy: "Removing Backgrounds",
+      done: "Updated",
+      failed: "Couldn't remove these backgrounds.",
+    };
+  }
+  return {
+    busy: "Compressing Images",
+    done: "Compressed",
+    failed: "Couldn't compress these images.",
+  };
+}
+
 function compressImages(
   ids: string[],
   fileIndex: number,
   mode: "lossless" | "quality" | "webp" | "upscale" | "remove-background",
 ): void {
-  const editing = mode === "upscale" || mode === "remove-background";
-  const title =
-    mode === "webp"
-      ? "Convert to WebP"
-      : mode === "upscale"
-        ? "Upscale Images"
-        : mode === "remove-background"
-          ? "Remove Backgrounds"
-          : "Compress Images";
-  Dialog.confirm({
-    title,
-    description:
-      mode === "webp"
-        ? "This replaces selected image files with WebP files and regenerates their thumbnails and metadata. You can undo the completed batch."
-        : editing
-          ? "Pond records this replacement in Undo history. Applying replaces selected files and regenerates their thumbnails and metadata."
-          : "This replaces the selected image files and regenerates their thumbnails and metadata. You can undo the completed batch.",
-    confirmLabel: mode === "webp" ? "Convert" : editing ? "Apply" : "Compress",
-    onConfirm: async () => {
-      const job = await window.pond.query("conversion.compress", {
-        ids,
-        fileIndex,
-        mode,
-        quality: 85,
-      });
+  const copy = compressionCopy(mode);
+  void window.pond
+    .query("conversion.compress", {
+      ids,
+      fileIndex,
+      mode,
+      quality: 85,
+    })
+    .then((job) => {
       notify({
         id: `image-compression-${job.id}`,
-        title: "Compressing Images",
+        title: copy.busy,
       });
-      void pollCompression(job.id);
-    },
-  });
+      void pollCompression(job.id, copy);
+    })
+    .catch(() => {
+      notify({ id: "image-compression", title: copy.failed });
+    });
 }
 
-async function pollCompression(id: string): Promise<void> {
+async function pollCompression(
+  id: string,
+  copy: { done: string; failed: string },
+): Promise<void> {
   const job = await window.pond.query("conversion.status", { id });
   if (!job) return;
   if (job.status === "running") {
-    setTimeout(() => void pollCompression(id), 500);
+    setTimeout(() => void pollCompression(id, copy), 500);
     return;
   }
+  const count = `${job.changed} ${job.changed === 1 ? "image" : "images"}`;
   notify({
     id: `image-compression-${id}`,
     title:
       job.status === "complete"
-        ? `Compressed ${job.changed} ${job.changed === 1 ? "image" : "images"}${job.skipped > 0 ? `. Skipped ${job.skipped}.` : ""}`
+        ? `${copy.done} ${count}${job.skipped > 0 ? `. Skipped ${job.skipped}.` : ""}`
         : job.status === "cancelled"
-          ? "Image Compression Cancelled"
-          : job.error || "Couldn’t compress these images.",
+          ? "Image Compression Canceled"
+          : job.error || copy.failed,
+    action:
+      job.status === "complete" && job.changed > 0
+        ? {
+            label: "Undo",
+            onClick: () => {
+              void window.pond.undo();
+            },
+          }
+        : undefined,
   });
 }
 
@@ -209,7 +245,7 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
         void window.pond
           .query("saves.exportEaglePackage", { ids })
           .then((result) => {
-            if (!result.ok && result.error !== "canceled")
+            if (!result.ok && result.reason !== "cancelled")
               notify({
                 id: "eagle-package-export",
                 title: result.error || "Couldn't export Eagle package.",
@@ -230,7 +266,7 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
         void window.pond
           .query("saves.exportPackage", { ids })
           .then((result) => {
-            if (!result.ok && result.error !== "canceled")
+            if (!result.ok && result.reason !== "cancelled")
               notify({
                 id: "package-export",
                 title: result.error || "Couldn't export package.",

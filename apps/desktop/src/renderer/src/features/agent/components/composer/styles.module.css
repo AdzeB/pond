@@ -20,6 +20,18 @@
   scrollbar-width: thin;
 }
 
+.link {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 0 6px 6px;
+}
+
+.link > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
 .placeholder {
   position: absolute;
   top: 2px;

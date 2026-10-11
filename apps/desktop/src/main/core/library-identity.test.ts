@@ -13,7 +13,7 @@ afterEach(async () => {
 });
 
 async function createLibrary(name = "Existing") {
-  const parent = await mkdtemp(join(tmpdir(), "pond-identity-"));
+  const parent = await mkdtemp(join(tmpdir(), "library-id-"));
   roots.push(parent);
   const root = join(parent, `${name}.pond`);
   await mkdir(root);

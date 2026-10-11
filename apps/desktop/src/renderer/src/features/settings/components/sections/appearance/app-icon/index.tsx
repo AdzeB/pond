@@ -1,7 +1,7 @@
 import { DEFAULT_PREFS } from "@pond/schema/db";
 import type { CSSProperties } from "react";
 import { z } from "zod";
-import type { Binding } from "@/features/settings/components/engine/engine";
+import type { Binding } from "@/features/settings/components/engine";
 import { listAppIconPreviews } from "@/features/settings/lib/app-icon-previews";
 import styles from "./styles.module.css";
 

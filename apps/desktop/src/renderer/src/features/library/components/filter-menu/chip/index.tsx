@@ -5,13 +5,18 @@ import { libraryHeader } from "@/features/library/state/library-header";
 import type { FilterLayout } from "../layout";
 import styles from "./styles.module.css";
 
-type FilterChipProps = Omit<ComponentProps<typeof Chip.Filter>, "onOpenChange">;
+type FilterChipProps = Omit<
+  ComponentProps<typeof Chip.Filter>,
+  "onOpenChange"
+> & { onOpen?: () => void };
 
-export function FilterChip(props: FilterChipProps) {
+export function FilterChip({ onOpen, ...props }: FilterChipProps) {
   return (
     <Chip.Filter
       onOpenChange={(open) => {
-        if (open) libraryHeader.closePopover();
+        if (!open) return;
+        libraryHeader.closePopover();
+        onOpen?.();
       }}
       {...props}
     />

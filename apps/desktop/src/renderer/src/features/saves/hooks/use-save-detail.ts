@@ -10,9 +10,9 @@ import {
 } from "@/features/saves/lib/media/url";
 import { ensureRawJson } from "@/features/saves/lib/raw-json";
 import type { Save } from "@/features/saves/types";
-import { accountRefsFromSync } from "@/features/search/lib/account-aliases";
-import { usePrefs } from "@/features/settings/state/prefs";
-import { getSourceIcon, getSourceLogo } from "@/features/sources/lib/registry";
+import { accountRefsFromSync } from "@/features/search/query";
+import { getSourceIcon, getSourceLogo } from "@/features/sources";
+import { usePrefs } from "@/shared/state/prefs";
 import { useSave } from "./use-saves";
 
 type SourceIcon = ReturnType<typeof getSourceIcon>;

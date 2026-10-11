@@ -56,18 +56,18 @@
   border-radius: 50%;
 }
 
-.sourceImage {
+.source-image {
   display: block;
 }
 
-.sourceImage[data-large] {
+.source-image[data-large] {
   overflow: hidden;
   background: var(--ds-gray-1);
-  border-radius: 16px;
+  border-radius: var(--ds-radius-2xl);
   box-shadow: var(--ds-shadow-sm);
 }
 
-.sourceImage[data-large] > span {
-  border-radius: 16px;
+.source-image[data-large] > span {
+  border-radius: var(--ds-radius-2xl);
   box-shadow: none;
 }

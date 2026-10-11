@@ -1,51 +1,37 @@
 import { useSelector } from "@tanstack/react-store";
 import type { RowData, Row as TanstackRow } from "@tanstack/react-table";
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
-import {
-  type ReactNode,
-  useCallback,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { type ReactNode, useCallback, useLayoutEffect } from "react";
 import { cssVars } from "../css-vars";
 import { useDataTable } from "./context";
 import type { DATA_TABLE_FEATURES } from "./provider";
 import { Row } from "./row";
 import styles from "./styles.module.css";
 
-type ScrollEdges = "" | "start" | "end" | "start end";
-
-function scrollEdgesOf(element: HTMLDivElement): ScrollEdges {
-  const start = element.scrollTop > 1;
-  const end =
-    element.scrollTop + element.clientHeight < element.scrollHeight - 1;
-  if (start && end) return "start end";
-  if (start) return "start";
-  return end ? "end" : "";
-}
-
 export function DataTableBody<T extends RowData>({
   extraRow,
   emptyState,
   rowOffset = 1,
+  scrollMargin = 0,
 }: {
   extraRow?: ReactNode;
   emptyState?: ReactNode;
   rowOffset?: number;
+  /** Distance from the scrollport to the first row. The sticky header occupies it. */
+  scrollMargin?: number;
 }) {
   const { meta, selectionStore } = useDataTable<T>();
   const { rows, rowApi, height, rowHeight, overscan } = meta;
 
   const cursorId = useSelector(selectionStore, (s) => s.cursorId);
   const cursorIndex = rows.findIndex((row) => row.id === cursorId);
-  const parentRef = useRef<HTMLDivElement>(null);
-  const [edges, setEdges] = useState<ScrollEdges>("");
   const virtualizer = useVirtualizer({
     count: rows.length,
-    getScrollElement: () => parentRef.current,
+    getScrollElement: () => meta.scrollRef.current,
     estimateSize: () => rowHeight,
     overscan,
+    scrollMargin,
+    scrollPaddingStart: scrollMargin,
     rangeExtractor: (range) => {
       const indexes = defaultRangeExtractor(range);
       if (cursorIndex >= 0 && !indexes.includes(cursorIndex))
@@ -81,28 +67,6 @@ export function DataTableBody<T extends RowData>({
       revealRow(cursorId);
   }, [cursorId, meta.gridRef, revealRow]);
 
-  useLayoutEffect(() => {
-    if (height === undefined) return;
-    const element = parentRef.current;
-    if (!element) return;
-    const update = () =>
-      setEdges((prev) => {
-        const next = scrollEdgesOf(element);
-        return prev === next ? prev : next;
-      });
-    const resizeObserver = new ResizeObserver(update);
-    resizeObserver.observe(element);
-    if (element.firstElementChild) {
-      resizeObserver.observe(element.firstElementChild);
-    }
-    element.addEventListener("scroll", update, { passive: true });
-    update();
-    return () => {
-      element.removeEventListener("scroll", update);
-      resizeObserver.disconnect();
-    };
-  }, [height]);
-
   const renderRow = (
     row: TanstackRow<typeof DATA_TABLE_FEATURES, T>,
     index: number,
@@ -127,14 +91,7 @@ export function DataTableBody<T extends RowData>({
 
   if (height !== undefined) {
     return (
-      <div
-        ref={parentRef}
-        className={styles.body}
-        role="rowgroup"
-        style={{ height, overflow: "auto", ...rowHeightStyle }}
-        data-scroll-fade="y"
-        data-scrollable={edges}
-      >
+      <div className={styles.body} role="rowgroup" style={rowHeightStyle}>
         <div
           style={{
             height: virtualizer.getTotalSize(),
@@ -154,7 +111,7 @@ export function DataTableBody<T extends RowData>({
                   right: 0,
                   left: 0,
                   height: `${vi.size}px`,
-                  transform: `translateY(${vi.start}px)`,
+                  transform: `translateY(${vi.start - scrollMargin}px)`,
                 }}
               >
                 {renderRow(row, vi.index)}

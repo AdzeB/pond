@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import "../../styles.css";
 import styles from "./styles.module.css";
 
 type Theme = "light" | "dark";
 type Backdrop = "soft" | "plain" | "contrast";
-type System = "Pond" | "Linear" | "Vercel";
+type System = "Pond" | "Codex" | "Linear" | "Vercel";
 type ContextKind = "raised" | "popover" | "dialog";
-type ThemeShadow = Record<Theme, string>;
+interface ThemeShadow {
+  light: string;
+  dark: string;
+}
 
 interface ShadowSpecimen {
   darkValue?: string;
@@ -17,19 +20,65 @@ interface ShadowSpecimen {
 }
 
 interface ContextComparisonProps {
+  codexShadow: ThemeShadow;
   description: string;
   kind: ContextKind;
-  linearShadow: string;
   pondShadow: string;
   title: string;
-  vercelShadow: ThemeShadow;
 }
+
+interface ShadowBlend {
+  codexShadow: string;
+  percentage: number;
+  pondShadow: string;
+}
+
+type ShadowBlendStyle = CSSProperties & {
+  "--codex-shadow": string;
+  "--pond-shadow": string;
+  "--shadow-blend-delay": string;
+};
 
 const LINEAR_LOW_SHADOW = "0 3px 6px -2px #00000005, 0 1px 1px #0000000a";
 const LINEAR_MEDIUM_SHADOW =
   "0 6px 18px #00000005, 0 3px 9px #0000000a, 0 1px 1px #0000000a";
 const LINEAR_HIGH_SHADOW =
   "0 9px 48px #00000014, 0 6px 24px #00000019, 0 1px 1px #0000000a";
+
+const CODEX_HAIRLINE_SHADOW: ThemeShadow = {
+  light: "0 0 0 0.5px #0000001a",
+  dark: "0 0 0 0.5px #ffffff1f",
+};
+
+const CODEX_SMALL_SHADOW: ThemeShadow = {
+  light: "0 1px 2px -1px rgb(0 0 0 / 8%)",
+  dark: "0 1px 2px -1px rgb(0 0 0 / 20%)",
+};
+
+const CODEX_MEDIUM_SHADOW: ThemeShadow = {
+  light: "0 2px 4px -1px rgb(0 0 0 / 8%)",
+  dark: "0 2px 4px -1px rgb(0 0 0 / 20%)",
+};
+
+const CODEX_LARGE_SHADOW: ThemeShadow = {
+  light: "0 4px 8px -2px rgb(0 0 0 / 10%)",
+  dark: "0 4px 8px -2px rgb(0 0 0 / 36%)",
+};
+
+const CODEX_XL_SHADOW: ThemeShadow = {
+  light: "0 0 0 0.5px #0000001a, 0 8px 16px -4px rgb(0 0 0 / 12%)",
+  dark: "0 0 0 0.5px #ffffff1f, 0 8px 16px -4px rgb(0 0 0 / 30%)",
+};
+
+const CODEX_2XL_SHADOW: ThemeShadow = {
+  light: "0 16px 32px -8px #00000030",
+  dark: "0 16px 32px -8px #00000030",
+};
+
+const CODEX_CARD_SHADOW: ThemeShadow = {
+  light: "0 4px 16px #0000000d",
+  dark: "0 4px 16px #0000000d",
+};
 
 const VERCEL_SMALL_SHADOW: ThemeShadow = {
   light:
@@ -89,6 +138,77 @@ const POND_SHADOWS: ShadowSpecimen[] = [
     name: "fullscreen",
     description: "The command menu and full-window takeovers.",
     value: "var(--ds-shadow-fullscreen)",
+  },
+];
+
+const CODEX_SHADOWS: ShadowSpecimen[] = [
+  {
+    name: "Hairline",
+    description: "The half-pixel perimeter used to separate elevated surfaces.",
+    value: CODEX_HAIRLINE_SHADOW.light,
+    darkValue: CODEX_HAIRLINE_SHADOW.dark,
+  },
+  {
+    name: "Small",
+    description: "The first step in the shared elevation geometry.",
+    value: CODEX_SMALL_SHADOW.light,
+    darkValue: CODEX_SMALL_SHADOW.dark,
+  },
+  {
+    name: "Small stronger",
+    description: "A higher-contrast variant of the smallest shadow.",
+    value: "0 1px 2px -1px #00000021",
+  },
+  {
+    name: "Medium",
+    description: "A compact lift for controls and small floating surfaces.",
+    value: CODEX_MEDIUM_SHADOW.light,
+    darkValue: CODEX_MEDIUM_SHADOW.dark,
+  },
+  {
+    name: "Large",
+    description: "The default popover elevation before its hairline.",
+    value: CODEX_LARGE_SHADOW.light,
+    darkValue: CODEX_LARGE_SHADOW.dark,
+  },
+  {
+    name: "Large stronger",
+    description: "The stronger large shadow shipped beside the core ramp.",
+    value: "0 4px 8px -2px #00000029",
+  },
+  {
+    name: "XL menu",
+    description: "Menu elevation composed with the product hairline.",
+    value: CODEX_XL_SHADOW.light,
+    darkValue: CODEX_XL_SHADOW.dark,
+  },
+  {
+    name: "2XL modal",
+    description: "The broadest named elevation, used by the command menu.",
+    value: CODEX_2XL_SHADOW.light,
+    darkValue: CODEX_2XL_SHADOW.dark,
+  },
+  {
+    name: "Card",
+    description: "A diffuse shadow for standalone content cards.",
+    value: CODEX_CARD_SHADOW.light,
+    darkValue: CODEX_CARD_SHADOW.dark,
+  },
+  {
+    name: "Tooltip",
+    description: "A compact but high-contrast floating label.",
+    value: "0 8px 18px #0f172a33",
+  },
+  {
+    name: "Composer",
+    description: "The signature ambient stack around the message composer.",
+    value: "0 0 0 1px #0000000a, 0 2px 8px #0000000a, 0 4px 80px 8px #00000006",
+    darkValue: "inset 0 0 1px #ffffff33",
+  },
+  {
+    name: "Prominent",
+    description: "A hairline, near shadow, and soft ambient glow.",
+    value: "0 0 0 0.5px #0000001a, 0 3px 7.5px #0000000a, 0 0 20px #0000000d",
   },
 ];
 
@@ -177,7 +297,7 @@ const VERCEL_SHADOWS: ShadowSpecimen[] = [
   },
   {
     name: "Fullscreen",
-    description: "The largest material, sharing Modal’s shadow stack.",
+    description: "The largest material, sharing Modal's shadow stack.",
     value: VERCEL_MODAL_SHADOW.light,
     darkValue: VERCEL_MODAL_SHADOW.dark,
   },
@@ -189,32 +309,31 @@ const CONTEXTS: ContextComparisonProps[] = [
     title: "Raised surface",
     description: "A card that needs separation without demanding focus.",
     pondShadow: "var(--ds-shadow-sm)",
-    linearShadow: LINEAR_LOW_SHADOW,
-    vercelShadow: VERCEL_SMALL_SHADOW,
+    codexShadow: CODEX_CARD_SHADOW,
   },
   {
     kind: "popover",
     title: "Popover",
     description: "A temporary surface anchored above the working context.",
     pondShadow: "var(--ds-shadow-menu)",
-    linearShadow: LINEAR_MEDIUM_SHADOW,
-    vercelShadow: VERCEL_MENU_SHADOW,
+    codexShadow: CODEX_XL_SHADOW,
   },
   {
     kind: "dialog",
     title: "Dialog",
     description: "The highest focused layer in the interface.",
     pondShadow: "var(--ds-shadow-modal)",
-    linearShadow: LINEAR_HIGH_SHADOW,
-    vercelShadow: VERCEL_MODAL_SHADOW,
+    codexShadow: CODEX_2XL_SHADOW,
   },
 ];
 
-const initialTheme: Theme = matchMedia("(prefers-color-scheme: dark)").matches
-  ? "dark"
-  : "light";
-
-document.documentElement.dataset.theme = initialTheme;
+function readInitialTheme(): Theme {
+  const currentTheme = document.documentElement.dataset.theme;
+  if (currentTheme === "light" || currentTheme === "dark") {
+    return currentTheme;
+  }
+  return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
 
 declare global {
   interface Window {
@@ -263,14 +382,14 @@ function ShadowSwatch({
     theme === "dark" ? (shadow.darkValue ?? shadow.value) : shadow.value;
 
   return (
-    <article className={styles.swatchCard}>
-      <div className={styles.swatchCanvas}>
+    <article className={styles["swatch-card"]}>
+      <div className={styles["swatch-canvas"]}>
         <div className={styles.swatch} style={{ boxShadow: value }}>
-          <span className={styles.swatchMark} />
+          <span className={styles["swatch-mark"]} />
           <span>{shadow.name}</span>
         </div>
       </div>
-      <div className={styles.swatchDetails}>
+      <div className={styles["swatch-details"]}>
         <h3>{shadow.name}</h3>
         <p>{shadow.description}</p>
         <code>{value}</code>
@@ -291,15 +410,15 @@ function ShadowSystem({
   theme: Theme;
 }) {
   return (
-    <section className={styles.systemSection}>
-      <div className={styles.sectionHeading}>
+    <section className={styles["system-section"]}>
+      <div className={styles["section-heading"]}>
         <div>
           <span className={styles.eyebrow}>{name} system</span>
           <h2>{name} shadow ramp</h2>
         </div>
         <p>{description}</p>
       </div>
-      <div className={styles.swatchGrid}>
+      <div className={styles["swatch-grid"]}>
         {shadows.map((shadow) => (
           <ShadowSwatch key={shadow.name} shadow={shadow} theme={theme} />
         ))}
@@ -309,22 +428,39 @@ function ShadowSystem({
 }
 
 function ContextSurface({
+  blend,
   kind,
   shadow,
 }: {
+  blend?: ShadowBlend;
   kind: ContextKind;
   shadow: string;
 }) {
+  const blendStyle: ShadowBlendStyle | undefined = blend
+    ? {
+        "--codex-shadow": blend.codexShadow,
+        "--pond-shadow": blend.pondShadow,
+        "--shadow-blend-delay": `-${blend.percentage}s`,
+      }
+    : undefined;
+
+  const surface = (baseClassName: string | undefined) => ({
+    className: [baseClassName, blend ? styles["blended-shadow"] : undefined]
+      .filter(Boolean)
+      .join(" "),
+    style: blendStyle ?? { boxShadow: shadow },
+  });
+
   if (kind === "raised") {
     return (
-      <div className={styles.contextCanvas}>
-        <div className={styles.raisedCard} style={{ boxShadow: shadow }}>
+      <div className={styles["context-canvas"]}>
+        <div {...surface(styles["raised-card"])}>
           <div className={styles.avatar}>P</div>
-          <div className={styles.raisedCopy}>
+          <div className={styles["raised-copy"]}>
             <strong>Design review</strong>
             <span>Today at 14:30</span>
           </div>
-          <span className={styles.statusDot}>Ready</span>
+          <span className={styles["status-dot"]}>Ready</span>
         </div>
       </div>
     );
@@ -332,10 +468,10 @@ function ContextSurface({
 
   if (kind === "popover") {
     return (
-      <div className={styles.contextCanvas}>
-        <div className={styles.anchorButton}>Organize</div>
-        <div className={styles.popover} style={{ boxShadow: shadow }}>
-          <span className={styles.popoverLabel}>Move to</span>
+      <div className={styles["context-canvas"]}>
+        <div className={styles["anchor-button"]}>Organize</div>
+        <div {...surface(styles.popover)}>
+          <span className={styles["popover-label"]}>Move to</span>
           <button type="button">Inspiration</button>
           <button type="button">Projects</button>
           <button type="button">Archive</button>
@@ -345,17 +481,17 @@ function ContextSurface({
   }
 
   return (
-    <div className={styles.contextCanvas}>
+    <div className={styles["context-canvas"]}>
       <div className={styles.scrim} />
-      <div className={styles.dialog} style={{ boxShadow: shadow }}>
-        <span className={styles.dialogIcon}>P</span>
+      <div {...surface(styles.dialog)}>
+        <span className={styles["dialog-icon"]}>P</span>
         <div>
           <strong>Move 12 saves?</strong>
-          <p>They’ll stay available in your library.</p>
+          <p>They'll stay available in your library.</p>
         </div>
-        <div className={styles.dialogActions}>
+        <div className={styles["dialog-actions"]}>
           <button type="button">Cancel</button>
-          <button className={styles.primaryAction} type="button">
+          <button className={styles["primary-action"]} type="button">
             Move
           </button>
         </div>
@@ -365,62 +501,81 @@ function ContextSurface({
 }
 
 function ContextComparison({
+  blend,
+  codexShadow,
   description,
   kind,
-  linearShadow,
   pondShadow,
   theme,
   title,
-  vercelShadow,
-}: ContextComparisonProps & { theme: Theme }) {
+}: ContextComparisonProps & { blend: number; theme: Theme }) {
+  const resolvedCodexShadow = codexShadow[theme];
+
   return (
-    <article className={styles.contextCard}>
+    <article className={styles["context-card"]}>
       <header>
         <h3>{title}</h3>
         <p>{description}</p>
       </header>
-      <div className={styles.contextPair}>
-        <div className={styles.contextSpecimen}>
-          <span className={styles.systemLabel}>Pond</span>
+      <div className={styles["context-pair"]}>
+        <div className={styles["context-specimen"]}>
+          <span className={styles["system-label"]}>Pond</span>
           <ContextSurface kind={kind} shadow={pondShadow} />
         </div>
-        <div className={styles.contextSpecimen}>
-          <span className={styles.systemLabel}>Linear</span>
-          <ContextSurface kind={kind} shadow={linearShadow} />
+        <div className={styles["context-specimen"]}>
+          <span className={styles["system-label"]}>Blend · {blend}% Codex</span>
+          <ContextSurface
+            blend={{
+              codexShadow: resolvedCodexShadow,
+              percentage: blend,
+              pondShadow,
+            }}
+            kind={kind}
+            shadow={pondShadow}
+          />
         </div>
-        <div className={styles.contextSpecimen}>
-          <span className={styles.systemLabel}>Vercel</span>
-          <ContextSurface kind={kind} shadow={vercelShadow[theme]} />
+        <div className={styles["context-specimen"]}>
+          <span className={styles["system-label"]}>Codex</span>
+          <ContextSurface kind={kind} shadow={resolvedCodexShadow} />
         </div>
       </div>
     </article>
   );
 }
 
-function ShadowGallery() {
-  const [theme, setTheme] = useState<Theme>(initialTheme);
+export function ShadowGallery() {
+  const [theme, setTheme] = useState<Theme>(readInitialTheme);
   const [backdrop, setBackdrop] = useState<Backdrop>("soft");
+  const [blend, setBlend] = useState(50);
 
-  const changeTheme = (nextTheme: Theme) => {
-    document.documentElement.dataset.theme = nextTheme;
-    setTheme(nextTheme);
-  };
+  useEffect(() => {
+    const previousTheme = document.documentElement.dataset.theme;
+    document.documentElement.dataset.theme = theme;
+    return () => {
+      if (previousTheme) {
+        document.documentElement.dataset.theme = previousTheme;
+      } else {
+        delete document.documentElement.dataset.theme;
+      }
+    };
+  }, [theme]);
 
   return (
     <main className={styles.page} data-backdrop={backdrop}>
       <header className={styles.hero}>
-        <div className={styles.heroCopy}>
+        <div className={styles["hero-copy"]}>
           <span className={styles.eyebrow}>Pond design system</span>
           <h1>Shadow lab</h1>
           <p>
-            Compare Pond’s production elevation tokens with Linear’s core
-            shadows and Vercel’s complete material system.
+            Compare Pond's production elevation tokens with Linear's core
+            shadows, Vercel's material system, and the tokens extracted from the
+            installed Codex desktop app.
           </p>
         </div>
         <div className={styles.controls}>
           <SegmentedControl
             label="Theme"
-            onChange={changeTheme}
+            onChange={setTheme}
             options={["light", "dark"]}
             value={theme}
           />
@@ -433,45 +588,83 @@ function ShadowGallery() {
         </div>
       </header>
 
-      <section className={styles.contextSection}>
-        <div className={styles.sectionHeading}>
+      <section className={styles["context-section"]}>
+        <div className={styles["section-heading"]}>
           <div>
             <span className={styles.eyebrow}>Direct comparison</span>
             <h2>Shadows in context</h2>
           </div>
           <p>
             The same interface geometry, surface, radius, and content. Only the
-            shadow changes.
+            shadow changes. The middle specimen interpolates between Pond and
+            Codex.
           </p>
         </div>
-        <div className={styles.contextGrid}>
+        <div className={styles["blend-control"]}>
+          <div className={styles["blend-heading"]}>
+            <label htmlFor="shadow-blend">Pond ↔ Codex blend</label>
+            <output htmlFor="shadow-blend">
+              {100 - blend}% Pond / {blend}% Codex
+            </output>
+          </div>
+          <div className={styles["blend-range"]}>
+            <span>Pond</span>
+            <input
+              aria-valuetext={`${100 - blend}% Pond, ${blend}% Codex`}
+              id="shadow-blend"
+              max="100"
+              min="0"
+              name="shadow-blend"
+              onChange={(event) => setBlend(Number(event.currentTarget.value))}
+              step="1"
+              type="range"
+              value={blend}
+            />
+            <span>Codex</span>
+          </div>
+        </div>
+        <div className={styles["context-grid"]}>
           {CONTEXTS.map((context) => (
-            <ContextComparison key={context.kind} {...context} theme={theme} />
+            <ContextComparison
+              blend={blend}
+              key={context.kind}
+              {...context}
+              theme={theme}
+            />
           ))}
         </div>
       </section>
 
       <ShadowSystem
         name="Pond"
-        description="Pond’s eight production tokens, from quiet surface separation through full-window elevation."
+        description="Linear's hairline and elevation geometry mapped onto Pond's semantic shadow API and adaptive gray palette."
         shadows={POND_SHADOWS}
         theme={theme}
       />
       <ShadowSystem
+        name="Codex"
+        description="The complete named elevation ramp and product-level composites extracted from the installed ChatGPT Codex desktop app. Theme-specific values update with the gallery theme."
+        shadows={CODEX_SHADOWS}
+        theme={theme}
+      />
+      <ShadowSystem
         name="Linear"
-        description="The reusable core palette from Linear’s production web stylesheet. Names are descriptive because the shipped token names are obfuscated."
+        description="The reusable core palette from Linear's production web stylesheet. Names are descriptive because the shipped token names are obfuscated."
         shadows={LINEAR_SHADOWS}
         theme={theme}
       />
       <ShadowSystem
         name="Vercel"
-        description="Vercel’s eight published material tiers. Their shadow stacks update with the gallery theme; radii remain constant here so elevation is directly comparable."
+        description="Vercel's eight published material tiers. Their shadow stacks update with the gallery theme; radii remain constant here so elevation is directly comparable."
         shadows={VERCEL_SHADOWS}
         theme={theme}
       />
 
       <footer className={styles.footer}>
-        <span>Linear and Vercel values inspected 25 September 2026.</span>
+        <span>
+          Codex 26.1002.52244 extracted 8 October 2026; Linear and Vercel
+          inspected 25 September 2026.
+        </span>
         <span>
           Pond API: xs · sm · md · lg · tooltip · menu · modal · fullscreen
         </span>
@@ -480,7 +673,8 @@ function ShadowGallery() {
   );
 }
 
-const rootElement = document.getElementById("root");
-if (!rootElement) throw new Error("#root element missing");
-window.__pondShadowGalleryRoot ??= createRoot(rootElement);
-window.__pondShadowGalleryRoot.render(<ShadowGallery />);
+const rootElement = document.getElementById("shadow-gallery-root");
+if (rootElement) {
+  window.__pondShadowGalleryRoot ??= createRoot(rootElement);
+  window.__pondShadowGalleryRoot.render(<ShadowGallery />);
+}

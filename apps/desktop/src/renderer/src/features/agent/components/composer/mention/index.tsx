@@ -192,30 +192,35 @@ export function SaveMentionChip({
   onOpen?: (id: string) => void;
 }) {
   useSourceCovers([id]);
-  const chip = (
-    <Chip.Item tone="mention" contentEditable={false}>
+  const content = (
+    <>
       <Chip.Icon>
         <span className={styles.cover}>
           <SourceThumbnail id={id} />
         </span>
       </Chip.Icon>
       <Chip.Label>{title}</Chip.Label>
-    </Chip.Item>
+    </>
   );
   if (onOpen) {
     return (
-      <button
-        type="button"
+      <Chip.Action
+        tone="mention"
         className={styles.mention}
-        data-open
         aria-label={`Open ${title}`}
         onClick={() => onOpen(id)}
       >
-        {chip}
-      </button>
+        {content}
+      </Chip.Action>
     );
   }
-  return <span className={styles.mention}>{chip}</span>;
+  return (
+    <span className={styles.mention}>
+      <Chip.Item tone="mention" contentEditable={false}>
+        {content}
+      </Chip.Item>
+    </span>
+  );
 }
 
 export function ComposerMentions({

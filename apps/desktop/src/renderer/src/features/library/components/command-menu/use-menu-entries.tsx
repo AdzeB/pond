@@ -11,7 +11,7 @@ import {
 } from "@pond/icons/outline/18";
 import { useSelector } from "@tanstack/react-store";
 import { useMemo } from "react";
-import { addSavesToChat } from "@/features/agent/lib/add-to-chat";
+import { addSavesToChat } from "@/features/agent";
 import { selectLibraryNav } from "@/features/library/components/folder-sidebar/navigation";
 import { newFolder } from "@/features/library/components/new-menu/actions";
 import { useFolders } from "@/features/library/state/folders";
@@ -32,10 +32,10 @@ import {
   exportSelectionFiles,
   restoreSelection,
   trashSelection,
-} from "@/features/saves/lib/selection";
-import { pool, savesStore } from "@/features/saves/state/pool";
-import { useRecents } from "@/features/saves/state/recents";
-import { selection, useSelectionSize } from "@/features/saves/state/selection";
+  useRecents,
+} from "@/features/saves";
+import { selection, useSelectionSize } from "@/features/saves/navigation";
+import { pool, savesStore } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
 import { navigateTo } from "./commands";
 import { matchingCommands, saveDetail, saveLabel } from "./search";

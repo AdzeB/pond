@@ -6,19 +6,18 @@ export function selectOnlySave(id: string): void {
   selection.set([id]);
   selection.setAnchor(id);
   primarySelection.set(id);
-  saveLibraryBridge.openSaveDetails(id);
+  saveLibraryBridge.inspectSave(id);
 }
 
 function rememberSave(id: string): void {
   selection.setAnchor(id);
   primarySelection.set(id);
-  saveLibraryBridge.openSaveDetails(id);
+  saveLibraryBridge.inspectSave(id);
 }
 
 export function clearSaveSelection(): void {
   selection.clear();
   primarySelection.set(null);
-  saveLibraryBridge.inspectSave(null);
 }
 
 export function clickSave(
@@ -40,8 +39,7 @@ export function clickSave(
       selection.snapshot()[0] ??
       null;
     primarySelection.set(fallback);
-    if (fallback) saveLibraryBridge.openSaveDetails(fallback);
-    else saveLibraryBridge.inspectSave(null);
+    if (fallback) saveLibraryBridge.inspectSave(fallback);
     return;
   }
 
@@ -50,7 +48,7 @@ export function clickSave(
     selection.setRange(filteredIds, anchor, id);
     selection.setAnchor(anchor);
     primarySelection.set(id);
-    saveLibraryBridge.openSaveDetails(id);
+    saveLibraryBridge.inspectSave(id);
     return;
   }
 

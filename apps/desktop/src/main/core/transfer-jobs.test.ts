@@ -95,7 +95,7 @@ it("persists cancellation and reuses verified completed originals on retry after
   if (!job) throw new Error("Missing transfer");
   await store.cancel(job.id);
   resume.release();
-  await expect(run).rejects.toThrow("cancelled");
+  await expect(run).rejects.toThrow("canceled");
   expect((await store.list())[0]?.status).toBe("cancelled");
   const reopened = createTransferJobStore(directory);
   await reopened.run(
@@ -181,5 +181,5 @@ it("isolates cancellation between parallel transfers", async () => {
     ),
   ).resolves.toBe("done");
   resume.release();
-  await expect(stopped).rejects.toThrow("cancelled");
+  await expect(stopped).rejects.toThrow("canceled");
 });

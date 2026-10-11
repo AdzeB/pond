@@ -12,31 +12,31 @@
   box-shadow: var(--ds-shadow-sm);
 }
 
-.archiveIcon {
+.icon {
   width: clamp(36px, 32cqw, 58px);
   overflow: visible;
   filter: drop-shadow(0 1px 1px light-dark(#0002, #0005));
 }
 
-.archivePage {
+.page {
   fill: var(--ds-gray-1);
   stroke: currentColor;
   stroke-width: 2;
   stroke-linejoin: round;
 }
 
-.archiveFold {
+.fold {
   fill: var(--ds-gray-3);
   stroke: currentColor;
   stroke-width: 2;
   stroke-linejoin: round;
 }
 
-.archiveZip {
+.zip {
   fill: var(--ds-gray-8);
 }
 
-.archivePull {
+.pull {
   fill: var(--ds-gray-3);
   stroke: var(--ds-gray-8);
   stroke-width: 2;
@@ -47,6 +47,6 @@
   border-radius: var(--ds-radius-sm);
 }
 
-.archive[data-view="list"] .archiveIcon {
+.archive[data-view="list"] .icon {
   width: 28px;
 }

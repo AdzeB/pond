@@ -1,7 +1,10 @@
 import { type AgentReasoning, AgentReasoningSchema } from "@pond/schema";
 import { z } from "zod";
 import { gatewayCreator } from "../../../shared/assistant";
-import type { ProviderModel } from "../../../shared/provider-models";
+import {
+  modelCapabilities,
+  type ProviderModel,
+} from "../../../shared/provider-models";
 import type { AgentProviderId } from "./keys";
 
 const CATALOG_URL = "https://ai-gateway.vercel.sh/v1/models";
@@ -82,7 +85,11 @@ function creator(provider: AgentProviderId): string | undefined {
   return gatewayCreator(provider);
 }
 
-function withMetadata(entry: CatalogEntry, id: string): ProviderModel {
+function withMetadata(
+  entry: CatalogEntry,
+  id: string,
+  native?: ProviderModel,
+): ProviderModel {
   const model: ProviderModel = { id, name: entry.name, catalogId: entry.id };
   if (entry.description) model.description = entry.description;
   if (entry.context_window) model.contextWindow = entry.context_window;
@@ -92,6 +99,21 @@ function withMetadata(entry: CatalogEntry, id: string): ProviderModel {
       entry.tags.map((tag) => tag.trim().toLowerCase()).filter(Boolean),
     ),
   ];
+  const capabilityTags = new Set(model.capabilities);
+  model.modelCapabilities =
+    native?.modelCapabilities ??
+    modelCapabilities.parse({
+      text: true,
+      vision: capabilityTags.has("vision"),
+      audio: capabilityTags.has("audio"),
+      tools: [
+        "tools",
+        "tool-use",
+        "tool_use",
+        "tool-calling",
+        "function-calling",
+      ].some((tag) => capabilityTags.has(tag)),
+    });
   const reasoningOptions = (entry.reasoning_options ?? []).flatMap((option) =>
     option.type === "effort"
       ? (option.values ?? []).flatMap((value): AgentReasoning[] => {
@@ -140,7 +162,7 @@ export function catalogModelsForProvider(
         (entry) => entry.name.toLowerCase() === native.name.toLowerCase(),
       );
       const entry = exact ?? (names.length === 1 ? names[0] : undefined);
-      return entry ? withMetadata(entry, native.id) : native;
+      return entry ? withMetadata(entry, native.id, native) : native;
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 }

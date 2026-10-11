@@ -22,7 +22,7 @@ function metaFor(id: FieldId): FieldMeta {
 }
 
 export const FIELD_META: Readonly<Record<FieldId, FieldMeta>> = Object.freeze(
-  // SAFETY: the keys come from FIELD_DESCRIPTORS itself, so every FieldId is present.
+  /** SAFETY: the keys come from FIELD_DESCRIPTORS itself, so every FieldId is present. */
   Object.fromEntries(FIELD_ID_LIST.map((id) => [id, metaFor(id)])) as Record<
     FieldId,
     FieldMeta

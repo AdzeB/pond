@@ -1,15 +1,15 @@
 import { Shell } from "@pond/ui";
 import { Outlet, useRouterState } from "@tanstack/react-router";
 import { useLayoutEffect } from "react";
-import { LibraryChrome } from "@/features/library/components/chrome/chrome";
-import { LibraryView } from "@/features/library/components/view/view";
+import { LibraryChrome } from "@/features/library/components/chrome";
+import { LibraryView } from "@/features/library/components/view";
 import { AppShell } from "@/features/library/components/workspace-shell";
 import {
   getLastListPath,
   getLastListSearch,
   rememberListPath,
-} from "@/features/saves/lib/list-path";
-import { saveIdFromPath } from "@/features/saves/lib/save-nav";
+} from "@/features/saves";
+import { saveIdFromPath } from "@/features/saves/navigation";
 import {
   ScrollRestorationContext,
   useScrollRestoration,
@@ -24,9 +24,15 @@ export function Library() {
   const isDownloads = pathname.startsWith("/downloads");
   const isAssistant = pathname === "/assistant";
   const isTags = pathname === "/tags";
+  const isGallery = pathname === "/dialogs" || pathname === "/icons";
   const isSettings = pathname.startsWith("/settings");
   const showLibraryGrid =
-    !isSources && !isDownloads && !isAssistant && !isTags && !isSettings;
+    !isSources &&
+    !isDownloads &&
+    !isAssistant &&
+    !isTags &&
+    !isGallery &&
+    !isSettings;
 
   useLayoutEffect(() => {
     rememberListPath(pathname, search);
@@ -66,7 +72,12 @@ export function Library() {
         <div className={styles.overlay}>
           <Outlet />
         </div>
-      ) : isSources || isDownloads || isAssistant || isTags || isSettings ? (
+      ) : isSources ||
+        isDownloads ||
+        isAssistant ||
+        isTags ||
+        isGallery ||
+        isSettings ? (
         <Outlet />
       ) : null}
     </div>

@@ -6,7 +6,7 @@ import type {
   AssistantSource,
 } from "@shared/assistant";
 import { assistant } from "@/features/agent/state/assistant";
-import { openSave } from "@/features/saves/lib/save-nav";
+import { openSave } from "@/features/saves/navigation";
 import { AssistantResponse } from "./assistant-response";
 import { ConsultedSaves } from "./consulted-saves";
 import { ResponseError } from "./response-error";

@@ -62,3 +62,73 @@ export function setDisplayPref(key: DisplayPrefKey, value: boolean): void {
 export function useDisplayPrefs(): DisplayPrefs {
   return useSelector(store, (s) => s);
 }
+
+export type ItemInfoField =
+  | "dimensions"
+  | "fileSize"
+  | "tags"
+  | "rating"
+  | "modified"
+  | "created";
+
+export interface ItemInfo {
+  field: ItemInfoField;
+  visible: boolean;
+}
+
+const ITEM_INFO_FIELD_KEY = "pond.display.itemInfoField";
+const ITEM_INFO_VISIBLE_KEY = "pond.display.itemInfo";
+const ITEM_INFO_FIELDS: ReadonlyArray<ItemInfoField> = [
+  "dimensions",
+  "fileSize",
+  "tags",
+  "rating",
+  "modified",
+  "created",
+];
+
+function readItemInfoField(value: string | null): ItemInfoField {
+  return ITEM_INFO_FIELDS.find((field) => field === value) ?? "created";
+}
+
+function readItemInfo(): ItemInfo {
+  if (!globalThis.window) return { field: "created", visible: true };
+  try {
+    const field = window.localStorage.getItem(ITEM_INFO_FIELD_KEY);
+    const visible = window.localStorage.getItem(ITEM_INFO_VISIBLE_KEY);
+    return {
+      field: readItemInfoField(field),
+      visible: visible == null ? readKey("date") : visible === "1",
+    };
+  } catch {
+    return { field: "created", visible: true };
+  }
+}
+
+const itemInfoStore = new Store<ItemInfo>(readItemInfo());
+
+export function useItemInfo(): ItemInfo {
+  return useSelector(itemInfoStore, (info) => info);
+}
+
+export function setItemInfoField(field: ItemInfoField): void {
+  if (globalThis.window) {
+    try {
+      window.localStorage.setItem(ITEM_INFO_FIELD_KEY, field);
+    } catch {}
+  }
+  itemInfoStore.setState((info) =>
+    info.field === field ? info : { ...info, field },
+  );
+}
+
+export function setItemInfoVisible(visible: boolean): void {
+  if (globalThis.window) {
+    try {
+      window.localStorage.setItem(ITEM_INFO_VISIBLE_KEY, visible ? "1" : "0");
+    } catch {}
+  }
+  itemInfoStore.setState((info) =>
+    info.visible === visible ? info : { ...info, visible },
+  );
+}

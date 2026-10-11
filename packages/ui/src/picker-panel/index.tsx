@@ -1,5 +1,10 @@
+import {
+  IconCheckOutline12 as Check,
+  IconChevronRightOutline12 as ChevronRight,
+} from "@pond/icons/outline/12";
 import { clsx as cn } from "clsx";
 import {
+  Fragment,
   forwardRef,
   type KeyboardEvent,
   type MouseEvent,
@@ -273,7 +278,7 @@ function ToolbarButton({
       {...props}
       type="button"
       data-active={active ? "" : undefined}
-      className={cn(styles.toolbarButton, className)}
+      className={cn(styles["toolbar-button"], className)}
     />
   );
 }
@@ -286,7 +291,10 @@ function Sidebar({ className, ...props }: React.ComponentProps<"div">) {
   return <div {...props} className={cn(styles.sidebar, className)} />;
 }
 
-function Collection({ className, ...props }: React.ComponentProps<"div">) {
+function Collection({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<"div">) {
   return <div {...props} className={cn(styles.collection, className)} />;
 }
 
@@ -295,7 +303,7 @@ function Group({ className, ...props }: React.ComponentProps<"div">) {
 }
 
 function GroupLabel({ className, ...props }: React.ComponentProps<"div">) {
-  return <div {...props} className={cn(styles.groupLabel, className)} />;
+  return <div {...props} className={cn(styles["group-label"], className)} />;
 }
 
 function SectionButton({
@@ -306,7 +314,7 @@ function SectionButton({
     <button
       {...props}
       type="button"
-      className={cn(styles.sectionButton, className)}
+      className={cn(styles["section-button"], className)}
     />
   );
 }
@@ -339,7 +347,7 @@ function Item({
   );
 }
 
-function SelectionIndicator({
+function SelectionMark({
   state = "unchecked",
 }: {
   state?: PickerSelectionState;
@@ -347,28 +355,52 @@ function SelectionIndicator({
   return (
     <span
       aria-hidden="true"
-      className={styles.selectionIndicator}
+      className={styles["selection-mark"]}
       data-selection={state}
-    />
+    >
+      {state === "checked" ? <Check /> : null}
+    </span>
   );
 }
 
 function ItemIcon({ className, ...props }: React.ComponentProps<"span">) {
-  return <span {...props} className={cn(styles.itemIcon, className)} />;
+  return <span {...props} className={cn(styles["item-icon"], className)} />;
 }
 
-function ItemLabel({ className, ...props }: React.ComponentProps<"span">) {
+interface ItemLabelProps extends React.ComponentProps<"span"> {
+  path?: readonly string[];
+}
+
+function ItemLabel({ path, className, children, ...props }: ItemLabelProps) {
+  const crumbs = path?.length ? path : null;
   return (
     <span
       {...props}
       data-slot="picker-label"
-      className={cn(styles.itemLabel, className)}
-    />
+      data-path={crumbs ? "" : undefined}
+      className={cn(styles["item-label"], className)}
+    >
+      {crumbs ? (
+        <span className={styles.trail}>
+          {crumbs.map((segment, index, segments) => (
+            <Fragment key={segments.slice(0, index + 1).join("/")}>
+              <span className={styles.crumb}>{segment}</span>
+              <ChevronRight className={styles.separator} aria-hidden="true" />
+            </Fragment>
+          ))}
+        </span>
+      ) : null}
+      {crumbs ? (
+        <span className={styles["item-name"]}>{children}</span>
+      ) : (
+        children
+      )}
+    </span>
   );
 }
 
 function ItemMeta({ className, ...props }: React.ComponentProps<"span">) {
-  return <span {...props} className={cn(styles.itemMeta, className)} />;
+  return <span {...props} className={cn(styles["item-meta"], className)} />;
 }
 
 function Empty({ className, ...props }: React.ComponentProps<"div">) {
@@ -402,7 +434,7 @@ export const PickerPanel = {
   GroupLabel,
   SectionButton,
   Item,
-  SelectionIndicator,
+  SelectionMark,
   ItemIcon,
   ItemLabel,
   ItemMeta,

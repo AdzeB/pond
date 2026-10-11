@@ -1,7 +1,6 @@
 import { isSource } from "@pond/schema/sources";
 import { Dialog } from "@pond/ui";
 import { isBlankDocumentKind } from "@shared/blank-documents";
-import { DEFAULT_LIBRARY_NAME } from "@shared/constants";
 import { useEffect } from "react";
 import {
   createBlankDocument,
@@ -22,16 +21,13 @@ import {
   verifyIntegrity,
 } from "@/features/library/components/new-menu/actions";
 import {
-  captureScreenshot,
-  launchScreenshotTool,
-} from "@/features/library/lib/launch-screenshot";
-import {
   backupLibrary,
+  createLibrary,
   mergeLibrary,
   moveLibrary,
+  openLibrary,
   restoreLibrary,
 } from "@/features/library/lib/library-location";
-import { openHarvester } from "@/features/library/lib/open-harvester";
 import { isLayoutValue } from "@/features/library/lib/view-prefs";
 import { ZOOM_DEFAULT } from "@/features/library/lib/zoom";
 import { commandMenu } from "@/features/library/state/command-menu";
@@ -63,11 +59,12 @@ import { inspect } from "@/features/saves/state/inspect";
 import { pool } from "@/features/saves/state/pool";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 import { tumbleToTrash } from "@/features/saves/state/trash-tumble";
-import { openSettings } from "@/features/settings/lib/open-settings";
-import { usePrefs } from "@/features/settings/state/prefs";
 import { CONNECTABLE, WATCH_MENU_SOURCES } from "@/features/sources/lib/create";
 import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
 import { getAppRouter } from "@/shared/lib/app-router";
+import { openHarvester } from "@/shared/lib/open-harvester";
+import { openSettings } from "@/shared/lib/open-settings";
+import { usePrefs } from "@/shared/state/prefs";
 import { handleNativeMenuAction } from "./native-menu-actions";
 
 export function MenuBridge() {
@@ -251,29 +248,18 @@ export function MenuBridge() {
             title: "Move Library",
             description:
               "Pond will verify the new copy before removing the library from its current location.",
-            confirmLabel: "Move Library",
+            confirmLabel: "Move",
             busyLabel: "Moving",
             onConfirm: moveLibrary,
           });
           return;
 
         case "library.new":
-          void (async () => {
-            const picked = await window.pond.query("library.pickFolder", {});
-            if (!picked.ok || !picked.path) return;
-            await window.pond.query("library.createAt", {
-              path: picked.path,
-              name: DEFAULT_LIBRARY_NAME,
-            });
-          })();
+          void createLibrary();
           return;
 
         case "library.open":
-          void (async () => {
-            const picked = await window.pond.query("library.pickExisting", {});
-            if (!picked.ok || !picked.path) return;
-            await window.pond.query("library.switchTo", { path: picked.path });
-          })();
+          void openLibrary();
           return;
 
         case "library.backup":
@@ -298,19 +284,6 @@ export function MenuBridge() {
 
         case "library.new-note":
           void runNewAction(createNote);
-          return;
-
-        case "capture.area":
-          void captureScreenshot("area");
-          return;
-        case "capture.window":
-          void captureScreenshot("window");
-          return;
-        case "capture.screen":
-          void captureScreenshot("screen");
-          return;
-        case "library.capture-screenshot":
-          void launchScreenshotTool();
           return;
 
         case "library.new-tag":
@@ -344,6 +317,8 @@ export function MenuBridge() {
         case "library.import-page-assets":
           Dialog.prompt({
             title: "Import Page Assets",
+            description:
+              "Pond saves the images and files from the page you enter.",
             confirmLabel: "Import",
             placeholder: "https://",
             onConfirm: (url) => void runNewAction(() => importPageAssets(url)),

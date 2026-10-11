@@ -20,7 +20,7 @@
   filter: drop-shadow(0 8px 14px rgb(0 0 0 / 24%));
 }
 
-.bookFallback {
+.fallback {
   display: flex;
   flex-direction: column;
   width: min(78%, 150px);
@@ -35,13 +35,12 @@
     0 10px 20px rgb(0 0 0 / 22%);
 }
 
-.bookFallback span {
+.fallback span {
   font-size: 9px;
   font-weight: 750;
-  letter-spacing: 0.12em;
 }
 
-.bookFallback strong {
+.fallback strong {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   margin-top: 10%;
@@ -52,7 +51,7 @@
   line-height: 1.08;
 }
 
-.bookFallback i {
+.fallback i {
   width: 34%;
   height: 2px;
   margin-top: auto;
@@ -64,12 +63,12 @@
   border-radius: var(--ds-radius-sm);
 }
 
-.epub[data-view="list"] .bookFallback strong,
-.epub[data-view="list"] .bookFallback i {
+.epub[data-view="list"] .fallback strong,
+.epub[data-view="list"] .fallback i {
   display: none;
 }
 
-.epub[data-view="list"] .bookFallback {
+.epub[data-view="list"] .fallback {
   min-height: 70%;
   padding: 18% 12%;
 }

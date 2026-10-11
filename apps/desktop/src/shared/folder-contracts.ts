@@ -1,4 +1,5 @@
 import type { FolderMetadata } from "@pond/schema/db";
+import type { OkResult } from "./query-contracts-shared";
 
 export interface FolderSummary {
   id: string;
@@ -20,5 +21,5 @@ export interface FolderQueryInputs {
 export interface FolderQueryResults {
   "folders.summaries": FolderSummary[];
   "folders.metadata.get": FolderMetadata;
-  "folders.metadata.set": { ok: boolean };
+  "folders.metadata.set": OkResult;
 }

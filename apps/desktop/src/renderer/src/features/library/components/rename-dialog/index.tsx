@@ -1,32 +1,81 @@
 import { useSelector } from "@tanstack/react-store";
-import { lazy, Suspense, useState } from "react";
+import { useEffect, useMemo } from "react";
 import {
-  closeRenameDialog,
-  renameDialogStore,
-} from "@/features/library/state/rename-dialog";
-import { DialogLoadError } from "@/shared/components/dialog-load-error";
+  BatchRenameDialog,
+  type BatchRenameItem,
+} from "@/features/library/components/batch-rename";
+import { closeRenameDialog } from "@/features/library/state/rename-dialog";
+import { CardThumb } from "@/features/saves";
+import { ensureSaves, reloadSaves, savesStore } from "@/features/saves/pool";
 
-const RenameDialog = lazy(() =>
-  import("./rename-dialog")
-    .then((module) => ({ default: module.RenameDialog }))
-    .catch(() => ({
-      default: ({ open }: { open: boolean }) => (
-        <DialogLoadError
-          open={open}
-          title="Couldn’t Open Rename"
-          onClose={closeRenameDialog}
-        />
-      ),
-    })),
-);
+const TOKENS = [
+  { token: "{n}", label: "Number" },
+  { token: "{title}", label: "Name" },
+  { token: "{date}", label: "Date" },
+  { token: "{tags}", label: "Tags" },
+  { token: "{original}", label: "File Name" },
+];
 
-export function RenameDialogHost() {
-  const state = useSelector(renameDialogStore, (value) => value);
-  const [last, setLast] = useState(state);
-  if (state && state !== last) setLast(state);
-  return last ? (
-    <Suspense fallback={null}>
-      <RenameDialog key={last.id} ids={last.ids} open={state !== null} />
-    </Suspense>
-  ) : null;
+const NOUN = { one: "Save", other: "Saves" };
+
+export function RenameDialog({
+  ids,
+  open,
+}: {
+  ids: readonly string[];
+  open: boolean;
+}) {
+  const saves = useSelector(
+    savesStore,
+    (state) => ids.map((id) => state.byId.get(id)),
+    {
+      compare: (a, b) =>
+        a.length === b.length && a.every((save, index) => save === b[index]),
+    },
+  );
+  useEffect(() => {
+    void ensureSaves(ids);
+  }, [ids]);
+  const items = useMemo(
+    () =>
+      saves.flatMap((save): BatchRenameItem[] => {
+        if (!save) return [];
+        const path = save.files[0]?.path;
+        return [
+          {
+            id: save.id,
+            name: save.title || "Untitled",
+            original: path
+              ?.split("/")
+              .pop()
+              ?.replace(/\.[^.]+$/, ""),
+            date: save.savedAt,
+            tags: save.tags,
+            preview: (
+              <span>
+                <CardThumb save={save} width={32} />
+              </span>
+            ),
+          },
+        ];
+      }),
+    [saves],
+  );
+
+  return (
+    <BatchRenameDialog
+      open={open}
+      noun={NOUN}
+      items={items}
+      tokens={TOKENS}
+      defaultPattern="{title} {n}"
+      onClose={closeRenameDialog}
+      onRename={async (request) => {
+        const result = await window.pond.query("saves.batchRename", request);
+        if (!result.ok) throw new Error("Enter a name and try again.");
+        await reloadSaves(request.ids);
+        closeRenameDialog();
+      }}
+    />
+  );
 }

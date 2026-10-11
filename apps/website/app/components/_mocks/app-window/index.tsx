@@ -37,7 +37,7 @@ function ChromeButton({
   return (
     <button
       type="button"
-      className={styles.chromeButton}
+      className={styles["chrome-button"]}
       aria-label={label}
       disabled={disabled}
       tabIndex={-1}
@@ -70,11 +70,11 @@ export function AppWindow() {
         <div className={styles.tabs}>
           <div className={styles.group}>
             <div className={styles.tab} data-active>
-              <span className={styles.tabIcon}>
+              <span className={styles.icon}>
                 <IconArchiveContent2Fill18 />
               </span>
-              <span className={styles.tabLabel}>Library</span>
-              <span className={styles.tabClose}>
+              <span className={styles.label}>Library</span>
+              <span className={styles.close}>
                 <IconXmarkOutline12 />
               </span>
             </div>

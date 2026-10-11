@@ -3,7 +3,7 @@ import type { Transaction, TxMeta } from "@pond/schema/tx";
 import { optimistic } from "@/features/saves/lib/optimistic";
 import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
-import { emitFeedback } from "@/features/settings/lib/sounds";
+import { emitFeedback } from "@/shared/lib/sounds";
 
 interface MutateOpts {
   actorReason?: string;
@@ -82,7 +82,7 @@ export async function mutateSave(
   );
   if (result === null && opts.throwOnError)
     throw new Error(
-      "Couldn’t save changes. Your previous version is unchanged.",
+      "Couldn't save changes. Your previous version is unchanged.",
     );
 }
 

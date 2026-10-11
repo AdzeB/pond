@@ -8,11 +8,10 @@ import {
   rememberSettingsSection,
   resolveSettingsLocation,
   settingsHref,
-} from "@/features/settings/lib/open-settings";
+} from "@/shared/lib/open-settings";
 
 export const Route = createFileRoute("/_library/settings/$section")({
   beforeLoad: ({ params, location }) => {
-    if (params.section === "tags") throw redirect({ href: "/tags" });
     const currentHash = location.hash?.replace(/^#/, "") || null;
     const resolved = resolveSettingsLocation(params.section, currentHash ?? "");
     rememberSettingsSection(resolved.section);

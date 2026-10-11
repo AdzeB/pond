@@ -12,7 +12,7 @@ import {
 } from "@pond/icons/outline/18";
 import type { Source, WatchKind } from "@pond/schema/db";
 import { Dialog, type MenuItemSpec } from "@pond/ui";
-import { viewAccountItems } from "@/features/search/lib/open-search";
+import { viewAccountItems } from "@/features/library";
 import type { CardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
 import type { AccountRow } from "@/features/sources/hooks/use-accounts";
 import type { WatchRow } from "@/features/sources/hooks/use-watches";
@@ -291,7 +291,7 @@ function confirmRemove(target: SourceMenuTarget, onChanged: () => void): void {
     Dialog.confirm({
       title: "Stop Watching",
       description: `Pond stops checking ${targetName(target)} for new posts. The ${itemCount} already saved stay in your library.`,
-      confirmLabel: "Stop Watching",
+      confirmLabel: "Stop",
       onConfirm: async () => {
         await window.pond.query("watches.remove", { watchId: target.id });
         onChanged();
@@ -301,9 +301,8 @@ function confirmRemove(target: SourceMenuTarget, onChanged: () => void): void {
     return;
   }
 
-  const sourceLabel = getSourceDef(target.source).label;
   Dialog.confirm({
-    title: `Disconnect ${sourceLabel}`,
+    title: "Disconnect",
     description: `Pond signs ${targetName(target)} out and stops its syncing. The ${itemCount} already saved stay in your library.`,
     confirmLabel: "Disconnect",
     onConfirm: async () => {

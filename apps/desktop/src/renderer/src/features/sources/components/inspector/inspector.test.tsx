@@ -58,10 +58,26 @@ function menuItem(label: string) {
   );
 }
 
+it.each([
+  ["loading", "Loading source details"],
+  ["missing", "This source is unavailable."],
+] as const)(
+  "shows the %s state without source actions",
+  async (status, copy) => {
+    await act(async () => {
+      root.render(<SourceInspectorView status={status} onClose={() => {}} />);
+    });
+    expect(host.querySelector('[role="status"]')?.textContent).toBe(copy);
+    expect(host.querySelector('[aria-label="Source Actions"]')).toBeNull();
+    expect(host.querySelector('input[aria-label="Nickname"]')).toBeNull();
+  },
+);
+
 it("uses the handle as the identity name instead of the source", async () => {
   await act(async () => {
     root.render(
       <SourceInspectorView
+        status="ready"
         handle="@oluwa.rafa"
         source="instagram"
         nickname=""
@@ -90,6 +106,7 @@ it("flattens connection details instead of nesting profile pages", async () => {
   await act(async () => {
     root.render(
       <SourceInspectorView
+        status="ready"
         handle="@raphael-salaja"
         source="arena"
         model={cardModel(status)}
@@ -160,6 +177,7 @@ it("keeps a failed nickname edit available and retries it on the next blur", asy
   await act(async () => {
     root.render(
       <SourceInspectorView
+        status="ready"
         source="arena"
         nickname="Alex"
         onClose={() => {}}
@@ -212,6 +230,7 @@ it("shows live fetch progress and cancels the active fetch", async () => {
   await act(async () => {
     root.render(
       <SourceInspectorView
+        status="ready"
         source="twitter"
         model={cardModel(status)}
         syncStatus={status}
@@ -249,6 +268,7 @@ it("offers sign-in recovery when authentication expires", async () => {
   await act(async () => {
     root.render(
       <SourceInspectorView
+        status="ready"
         source="instagram"
         model={cardModel(status)}
         syncStatus={status}
@@ -282,6 +302,7 @@ it("shows watch properties and retries a failed fetch", async () => {
   await act(async () => {
     root.render(
       <SourceInspectorView
+        status="ready"
         source="youtube"
         model={cardModel(status)}
         syncStatus={status}

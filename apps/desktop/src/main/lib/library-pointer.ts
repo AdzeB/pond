@@ -8,9 +8,7 @@ import {
 } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { app } from "electron";
-import log from "electron-log/main.js";
 import { z } from "zod";
-import { recordRecentLibrary } from "../core/recent-libraries";
 
 const POINTER_FILE = "library-location.json";
 
@@ -52,14 +50,6 @@ export function writeLibraryPointer(absPath: string): void {
   const file = pointerPath();
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, JSON.stringify(body, null, 2));
-  try {
-    recordRecentLibrary(
-      join(app.getPath("userData"), "recent-libraries.json"),
-      absPath,
-    );
-  } catch (error) {
-    log.warn("Could not record the recent library", error);
-  }
 }
 
 interface PointerSafetyReport {

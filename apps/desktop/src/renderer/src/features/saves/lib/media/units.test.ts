@@ -33,34 +33,6 @@ function makeSave(partial: Partial<Save> & { id: string }): Save {
 }
 
 describe("buildMediaUnits video posters", () => {
-  it("uses a generic cover as the resting poster for every video", () => {
-    const save = makeSave({
-      id: "multi-video",
-      source: "instagram",
-      files: [
-        file("video", "video-1.mp4", "video/mp4"),
-        file("cover", "cover.jpg", "image/jpeg"),
-        file("video", "video-2.mp4", "video/mp4"),
-      ],
-    });
-
-    const units = buildMediaUnits(save);
-
-    expect(units).toHaveLength(2);
-    expect(units.map((unit) => unit.key)).toEqual([
-      "video-1.mp4",
-      "video-2.mp4",
-    ]);
-    expect(units.map((unit) => unit.posterUrl)).toEqual([
-      "pond://multi-video/cover.jpg?v=abcdef123456",
-      "pond://multi-video/cover.jpg?v=abcdef123456",
-    ]);
-    expect(units.map((unit) => unit.posterKey)).toEqual([
-      "cover.jpg",
-      "cover.jpg",
-    ]);
-  });
-
   it("uses the first poster for every video until the sweep fills missing slots", () => {
     const save = makeSave({
       id: "multi-video",
@@ -83,7 +55,7 @@ describe("buildMediaUnits video posters", () => {
       id: "image-cover",
       source: "instagram",
       files: [
-        file("cover", "cover.jpg", "image/jpeg"),
+        file("image", "cover.jpg", "image/jpeg"),
         file("avatar", "avatar.jpg", "image/jpeg"),
       ],
     });
@@ -97,17 +69,17 @@ describe("buildMediaUnits video posters", () => {
     ]);
   });
 
-  it("keeps a legacy extensionless cover as visible image media", () => {
+  it("keeps an extensionless cover image as visible media", () => {
     const save = makeSave({
-      id: "legacy-cover",
+      id: "bare-cover",
       source: "cosmos",
-      files: [file("cover", "cover.", "")],
+      files: [file("image", "cover.", "")],
     });
 
     expect(buildMediaUnits(save)).toEqual([
       {
         key: "cover.",
-        url: "pond://legacy-cover/cover.?v=abcdef123456",
+        url: "pond://bare-cover/cover.?v=abcdef123456",
         isVideo: false,
       },
     ]);

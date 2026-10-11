@@ -34,8 +34,8 @@ export function FontCardPreview({
     };
   }, [family, url]);
 
-  const style: React.CSSProperties & { "--pond-card-font": string } = {
-    "--pond-card-font": loaded ? JSON.stringify(family) : "inherit",
+  const style: React.CSSProperties & { "--card-font": string } = {
+    "--card-font": loaded ? JSON.stringify(family) : "inherit",
   };
   return (
     <div

@@ -2,7 +2,7 @@ import type { Source } from "@pond/schema/db";
 import { mergeListKinds } from "@pond/schema/list-kinds";
 import log from "electron-log/main.js";
 import { broadcastSyncAction } from "../executor";
-import type { ImportableCookie } from "../refresh/scrape-window/session";
+import type { ImportableCookie } from "../refresh/harvest-window/session";
 import {
   type EnqueueCandidate,
   type EnqueueItem,

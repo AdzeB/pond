@@ -71,7 +71,7 @@ export async function fetchDownload(
         ? Math.min(args.imageMaxBytes, args.maxBytes)
         : args.maxBytes;
     const length = Number(response.headers.get("content-length"));
-    // Fetch decodes compressed responses, so their wire length is not a body-byte total.
+    /** Fetch decodes compressed responses, so their wire length is not a body-byte total. */
     if (
       length > 0 &&
       Number.isFinite(length) &&

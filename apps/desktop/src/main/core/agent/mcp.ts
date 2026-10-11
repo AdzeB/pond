@@ -109,7 +109,7 @@ export async function startPondMcp(): Promise<void> {
     "read_save",
     {
       description:
-        "Read stored caption, OCR, transcript, notes, comments, and metadata for one save.",
+        "Read stored caption, OCR, transcript, notes, and metadata for one save.",
       inputSchema: readSaveInput,
     },
     withAccess("search", async (args) =>

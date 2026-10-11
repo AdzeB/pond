@@ -5,18 +5,18 @@ import type { WebContents } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import type { TransferOptions } from "../../../lib/download-transfer";
-import { itemFile } from "../../../paths";
+import { saveFile } from "../../../paths";
 import { persistSave } from "../../persist-save";
 import {
   looksLikeAuthWall,
   navigateWithTimeout,
-} from "../../refresh/scrape-window/navigation";
-import { leaseWindow } from "../../refresh/scrape-window/pool";
+} from "../../refresh/harvest-window/navigation";
+import { leaseWindow } from "../../refresh/harvest-window/pool";
 import {
   type ImportableCookie,
   writePartitionCookies,
-} from "../../refresh/scrape-window/session";
-import { sleep } from "../../refresh/scrape-window/util";
+} from "../../refresh/harvest-window/session";
+import { sleep } from "../../refresh/harvest-window/util";
 import { readLibraryMedia } from "../../storage/library-media-storage";
 import { TransientError } from "../extractors/errors";
 import {
@@ -84,7 +84,7 @@ export async function readArchivedMeta(
 ): Promise<{ scope: ArchiveScope; version: number }> {
   try {
     const raw = (
-      await readLibraryMedia(itemFile(saveId, ARCHIVE_MANIFEST_FILENAME))
+      await readLibraryMedia(saveFile(saveId, ARCHIVE_MANIFEST_FILENAME))
     ).toString("utf8");
     const manifest = StoredArchiveManifestSchema.parse(JSON.parse(raw));
     return {

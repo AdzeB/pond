@@ -18,7 +18,7 @@ const states = {
   cancelling: "Cancelling after this file",
   completed: "Completed",
   failed: "Failed",
-  cancelled: "Cancelled",
+  cancelled: "Canceled",
   interrupted: "Interrupted",
 } satisfies Record<TransferJob["status"], string>;
 export function TransferJobsPanel({ search = "" }: { search?: string }) {

@@ -12,7 +12,6 @@ import { readBundleJson, writeBundleJson } from "../lib/library-config";
 import { resolvePaths } from "../paths";
 import { convertMedia } from "./convert-media";
 import { compressExistingImages } from "./image-compression";
-import { withDecryptedLibraryMediaPath } from "./storage/library-media-storage";
 
 export function conversionPresets(
   root = resolvePaths().libraryRoot,
@@ -64,7 +63,7 @@ const runtime: ConversionRuntime = {
   },
   async withSource(id, fileIndex, operation) {
     const source = await this.resolve(id, fileIndex);
-    return withDecryptedLibraryMediaPath(source, operation);
+    return operation(source);
   },
   convert: convertMedia,
   compress: compressExistingImages,

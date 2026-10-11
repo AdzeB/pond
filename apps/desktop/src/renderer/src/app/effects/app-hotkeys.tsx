@@ -7,8 +7,6 @@ import {
   newTag,
   runNewAction,
 } from "@/features/library/components/new-menu/actions";
-import { launchScreenshotTool } from "@/features/library/lib/launch-screenshot";
-import { openHarvester } from "@/features/library/lib/open-harvester";
 import type { LayoutValue } from "@/features/library/lib/view-prefs";
 import { ZOOM_DEFAULT } from "@/features/library/lib/zoom";
 import { commandMenu } from "@/features/library/state/command-menu";
@@ -35,20 +33,21 @@ import {
 } from "@/features/saves/lib/save-nav";
 import { inspect } from "@/features/saves/state/inspect";
 import { selection } from "@/features/saves/state/selection";
-import { openSettings } from "@/features/settings/lib/open-settings";
-import {
-  getPrefsSnapshot,
-  patchPrefsSection,
-  usePrefs,
-} from "@/features/settings/state/prefs";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { isEditableTarget } from "@/shared/lib/editable-target";
+import { openHarvester } from "@/shared/lib/open-harvester";
+import { openSettings } from "@/shared/lib/open-settings";
 import {
   bindingKeys,
   bindingSequence,
   configureShortcuts,
   useShortcutBindings,
 } from "@/shared/lib/shortcuts";
+import {
+  getPrefsSnapshot,
+  patchPrefsSection,
+  usePrefs,
+} from "@/shared/state/prefs";
 
 function scrollActiveViewport(position: "top" | "bottom"): void {
   const active = document.activeElement;
@@ -138,8 +137,12 @@ export function AppHotkeys() {
     [
       {
         hotkey: bindingKeys(shortcuts, "library.search"),
-        callback: () => commandMenu.toggle(),
-        options: { ignoreInputs: true },
+        callback: (event: KeyboardEvent) => {
+          if (event.defaultPrevented) return;
+          event.preventDefault();
+          commandMenu.toggle();
+        },
+        options: { ignoreInputs: false, preventDefault: false },
       },
       {
         hotkey: bindingKeys(shortcuts, "app.settings"),
@@ -255,7 +258,7 @@ export function AppHotkeys() {
       },
       {
         hotkey: bindingKeys(shortcuts, "view.display"),
-        callback: () => libraryHeader.togglePopover(),
+        callback: () => libraryHeader.togglePopover("display"),
         options: { ignoreInputs: true },
       },
       {
@@ -314,11 +317,6 @@ export function AppHotkeys() {
       {
         hotkey: bindingKeys(shortcuts, "library.new-note"),
         callback: () => void runNewAction(createNote),
-        options: { ignoreInputs: true },
-      },
-      {
-        hotkey: bindingKeys(shortcuts, "library.capture-screenshot"),
-        callback: () => void launchScreenshotTool(),
         options: { ignoreInputs: true },
       },
       {

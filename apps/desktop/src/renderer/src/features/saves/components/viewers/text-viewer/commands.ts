@@ -4,7 +4,6 @@ import { $isListItemNode, $isListNode } from "@lexical/list";
 import { $isHeadingNode, $isQuoteNode } from "@lexical/rich-text";
 import { $setBlocksType } from "@lexical/selection";
 import { $findMatchingParent, $insertNodeToNearestRoot } from "@lexical/utils";
-import { Dialog } from "@pond/ui";
 import {
   $createParagraphNode,
   $createRangeSelection,
@@ -19,7 +18,7 @@ import { $applyMarkdownBlock } from "@/shared/markdown-editor/blocks";
 import { $insertCollapsible } from "./collapsible";
 import { $createFileNode } from "./file-node";
 import { $createImageNode } from "./image-node";
-import { insertYouTubeFromUrl } from "./youtube-embed";
+import { $createYouTubeNode } from "./youtube-node";
 
 export const OPEN_NOTE_LINK_COMMAND = createCommand("OPEN_NOTE_LINK");
 
@@ -108,11 +107,8 @@ export function applyNoteBlock(editor: LexicalEditor, block: NoteBlock): void {
 }
 
 export function promptYouTube(editor: LexicalEditor): void {
-  Dialog.prompt({
-    title: "YouTube",
-    confirmLabel: "Embed",
-    placeholder: "https://www.youtube.com/watch?v=",
-    onConfirm: (value) => insertYouTubeFromUrl(editor, value),
+  editor.update(() => {
+    $insertNodeToNearestRoot($createYouTubeNode(""));
   });
 }
 

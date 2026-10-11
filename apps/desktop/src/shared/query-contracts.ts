@@ -29,8 +29,18 @@ import type {
   LibraryRepairQueryInputs,
   LibraryRepairQueryResults,
 } from "./library-repair-contracts";
-import type { EmptyInput, OkResult } from "./query-contracts-shared";
-import type { SystemQueryResults } from "./query-contracts-system";
+import type {
+  BatchRenameInput,
+  CancellableResult,
+  EmptyInput,
+  OkResult,
+  OkSuccess,
+} from "./query-contracts-shared";
+import type {
+  LibraryLocationResult,
+  MediaUnderstandInput,
+  SystemQueryResults,
+} from "./query-contracts-system";
 import type { QueueQueryInputs, QueueQueryResults } from "./queue-contracts";
 import type {
   SavesClipboardQueryInputs,
@@ -57,7 +67,6 @@ import type {
   SavesReadQueryInputs,
   SavesReadQueryResults,
 } from "./saves-read-contracts";
-import type { ScreenshotMode, ScreenshotSaveInput } from "./screenshot-capture";
 import type {
   TransferQueryInputs,
   TransferQueryResults,
@@ -114,6 +123,7 @@ export interface QueryInputs
     SavesOpenWithQueryInputs,
     QueueQueryInputs,
     LibraryRepairQueryInputs {
+  "saves.understandMedia": MediaUnderstandInput;
   "folders.rules.get": { id: string };
   "folders.rules.set": { id: string; tags: string[]; applyExisting?: boolean };
   "folders.createBatch": { names: string[]; parentId?: string | null };
@@ -137,7 +147,7 @@ export interface QueryInputs
   };
   "savedViews.create": SavedViewInput;
   "savedViews.rename": { id: string; name: string };
-  "savedViews.renameBatch": { ids: string[]; pattern: string };
+  "savedViews.renameBatch": BatchRenameInput;
   "savedViews.update": {
     id: string;
     patch: Partial<Omit<SavedViewInput, "kind">> & { sortOrder?: number };
@@ -150,7 +160,7 @@ export interface QueryInputs
     color?: string | null;
   };
   "folders.rename": { id: string; name: string };
-  "folders.renameBatch": { ids: string[]; pattern: string };
+  "folders.renameBatch": BatchRenameInput;
   "folders.setColor": { id: string; color: string | null };
   "folders.delete": { id: string; trashContainedSaves?: boolean };
   "folders.setSaveFolders": { saveId: string; folderIds: string[] };
@@ -192,7 +202,11 @@ export interface QueryInputs
   "watches.add": { source: Source; handle: string; label?: string | null };
   "watches.setLabel": { watchId: string; label: string | null };
   "watches.remove": { watchId: string };
-  "video.sampleFrames": { src: string; maxFrames: number };
+  "video.sampleFrames": {
+    src: string;
+    maxFrames: number;
+    strategy?: "spread" | "embedding";
+  };
   "video.preparePreview": { src: string };
   "video.copyFrame": FrameInput;
   "video.saveFrame": FrameInput;
@@ -203,7 +217,6 @@ export interface QueryInputs
     path?: string;
     mode?: "copy" | "move";
   };
-  "screenshots.set": Partial<Prefs["screenshots"]>;
   "library.createAt": { path: string; name: string };
   "library.identity.update": {
     name?: string;
@@ -293,12 +306,6 @@ export interface QueryInputs
   "system.applyPrefs": EmptyInput;
   "autoImport.status": EmptyInput;
   "autoImport.pickFolder": EmptyInput;
-  "screenshots.status": EmptyInput;
-  "screenshots.pickFolder": EmptyInput;
-  "screenshots.launch": EmptyInput;
-  "screenshots.capture": { mode: ScreenshotMode };
-  "screenshots.finish": ScreenshotSaveInput;
-  "screenshots.discard": { token: string };
   "pipeline.status": EmptyInput;
   "pipeline.inflight": EmptyInput;
   "savedViews.list": EmptyInput;
@@ -325,10 +332,10 @@ export interface QueryResults
     QueueQueryResults,
     LibraryRepairQueryResults {
   "folders.rules.get": { tags: string[]; inheritedTags: string[] };
-  "folders.rules.set": { ok: boolean; affected: number };
+  "folders.rules.set": OkResult<{ affected: number }>;
   "folders.createBatch": Folder[];
   "folders.createWithSaves": Folder;
-  "folders.moveBatch": { ok: boolean };
+  "folders.moveBatch": OkResult;
 
   "library.recent": Array<{
     path: string;
@@ -339,59 +346,41 @@ export interface QueryResults
     icon: string | null;
     accent: string | null;
   }>;
-  "library.identity.update": {
-    ok: boolean;
+  "library.identity.update": OkResult<{
     name?: string;
     icon?: string | null;
     accent?: string | null;
-    reason?: string;
-  };
-  "library.identity.pickIcon": {
-    ok: boolean;
-    icon?: string;
-    reason?: string;
-  };
-  "library.rename": {
-    ok: boolean;
-    path?: string;
-    reason?: string;
-  };
-  "library.recent.pickIcon": {
-    ok: boolean;
-    icon?: string;
-    reason?: string;
-  };
-  "library.recent.removeIcon": { ok: boolean };
-  "library.recent.reveal": { ok: boolean; reason?: string };
-  "library.recent.remove": { ok: boolean };
-  "library.mergeFrom": {
-    ok: boolean;
+  }>;
+  "library.identity.pickIcon": LibraryLocationResult<{ icon: string }>;
+  "library.rename": OkResult<{ path: string }>;
+  "library.recent.pickIcon": LibraryLocationResult<{ icon: string }>;
+  "library.recent.removeIcon": OkResult;
+  "library.recent.reveal": LibraryLocationResult;
+  "library.recent.remove": OkResult;
+  "library.mergeFrom": CancellableResult<{
     path?: string;
     imported?: number;
     skipped?: number;
-    error?: string;
-  };
+  }>;
 
-  "library.restoreBackup": {
-    ok: boolean;
-    path?: string;
+  "library.restoreBackup": LibraryLocationResult<{
+    path: string;
     copied?: number;
-    reason?: string;
-  };
-  "folders.move": { ok: boolean };
-  "folders.assign": { ok: boolean };
+  }>;
+  "folders.move": OkResult;
+  "folders.assign": OkResult;
   "tags.list": Tag[];
-  "tags.rename": OkResult & { affected: number };
-  "tags.merge": OkResult & { affected: number };
+  "tags.rename": OkResult<{ affected: number }>;
+  "tags.merge": OkResult<{ affected: number }>;
   "tags.update": OkResult;
-  "tags.delete": OkResult & { affected: number };
+  "tags.delete": OkResult<{ affected: number }>;
   "tags.convertToGroup": OkResult;
   "tags.setForSave": OkResult;
   "tagGroups.list": (TagGroup & { tagIds: string[]; tagNames: string[] })[];
   "tagGroups.rename": OkResult;
   "tagGroups.update": OkResult;
-  "tagGroups.delete": OkResult & { affected: number };
-  "tagGroups.addTags": OkResult & { affected: number };
+  "tagGroups.delete": OkResult<{ affected: number }>;
+  "tagGroups.addTags": OkResult<{ affected: number }>;
   "tagGroups.removeTag": OkResult;
   "pipeline.status": { paused: boolean; inflight: number };
   "pipeline.inflight": string[];
@@ -413,31 +402,27 @@ export interface QueryResults
     }[];
     nextCursor: { ts: number; id: number } | null;
   };
-  "video.sampleFrames": {
-    ok: boolean;
-    frames: Array<{ bytes: Uint8Array; mimeType: string }>;
-  };
-  "video.preparePreview": {
-    ok: boolean;
-    url?: string;
-    error?: string;
-  };
+  "video.sampleFrames": OkResult<{
+    duration: number;
+    frames: Array<{ bytes: Uint8Array; mimeType: string; timestamp: number }>;
+  }>;
+  "video.preparePreview": OkResult<{ url: string }>;
   "video.copyFrame": OkResult;
-  "video.saveFrame": OkResult & { path?: string };
+  "video.saveFrame": CancellableResult<{ path: string }>;
   "video.setThumbnail": OkResult;
   "video.copyFilePath": OkResult;
 
   "savedViews.list": SavedView[];
-  "savedViews.create": { ok: boolean; id?: string };
+  "savedViews.create": OkResult<{ id: string }>;
   "savedViews.rename": OkResult;
-  "savedViews.renameBatch": OkResult & { renamed: number };
+  "savedViews.renameBatch": OkResult<{ renamed: number }>;
   "savedViews.update": OkResult;
   "savedViews.delete": OkResult;
   "savedViews.reorder": OkResult;
   "folders.list": Folder[];
   "folders.create": Folder;
   "folders.rename": OkResult;
-  "folders.renameBatch": OkResult & { renamed: number };
+  "folders.renameBatch": OkResult<{ renamed: number }>;
   "folders.setColor": OkResult;
   "folders.delete": OkResult;
   "folders.memberships": { saveId: string; folderId: string }[];
@@ -448,7 +433,7 @@ export interface QueryResults
   "agent.saveKey": OkResult;
   "settings.getPrefs": Prefs;
   "settings.globalShortcutStatus": GlobalShortcutStatus;
-  "settings.setPrefs": { ok: boolean; prefs: Prefs };
+  "settings.setPrefs": OkSuccess<{ prefs: Prefs }>;
   "feedback.emit": OkResult;
   "notifications.openSettings": OkResult;
 }

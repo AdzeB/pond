@@ -2,7 +2,7 @@ import { DEFAULT_PREFS } from "@pond/schema";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
-import { getPrefsSnapshot } from "@/features/settings/state/prefs";
+import { getPrefsSnapshot } from "@/shared/state/prefs";
 import { ShortcutSettings } from "./";
 
 it("shows editable shortcuts without profile controls or explanatory copy", async () => {
@@ -35,7 +35,7 @@ it("shows editable shortcuts without profile controls or explanatory copy", asyn
     expect(host.querySelector('[aria-label="Shortcut Profile"]')).toBeNull();
     expect(host.textContent).toContain("Show Pond is unavailable.");
     const globalHeading = [...host.querySelectorAll("h2")].find((heading) =>
-      heading.textContent?.includes("Global (2)"),
+      heading.textContent?.includes("Global (1)"),
     );
     expect(globalHeading?.parentElement?.textContent).toContain("Show Pond");
     expect(host.textContent).toContain("Navigate (");
@@ -56,7 +56,7 @@ it("shows editable shortcuts without profile controls or explanatory copy", asyn
       ),
     );
     expect(writes).toEqual(["settings.setPrefs"]);
-    expect(host.textContent).toContain("Your shortcuts were not changed.");
+    expect(host.textContent).toContain("Your previous shortcut is unchanged.");
     expect(control.value).toBe("Press keys");
     expect(
       getPrefsSnapshot()?.shortcuts.overrides["app.summon"],

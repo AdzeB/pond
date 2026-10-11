@@ -30,15 +30,7 @@ Renderer ↔ main IPC handlers validate the sending frame. Untrusted web content
 
 ### Library data
 
-Library Encryption protects item files, portable metadata, thumbnails, backups, and the search index at rest. Pond derives a random Library key from your password or recovery key and keeps the unlocked key in the main process only. Touch ID can authorize access to wrapped key material on supported Macs.
-
-Locking closes the Library index, clears folder sessions and key material, and denies Library access through IPC, the `pond://` protocol, loopback HTTP, native messaging, MCP, and Agent operations. Folder passwords hide every Save contained by a locked folder or locked ancestor.
-
-Backups preserve ciphertext and security metadata. Password-protected Pond packages use separate package keys. Features that hand a file to another app create a permission-restricted temporary plaintext copy and remove it after use, timeout, or Library lock.
-
-Initial encryption creates a verified plaintext migration backup beside the Library. Pond shows its location after setup. Move it to encrypted storage or delete it after you verify the encrypted Library.
-
-Encryption does not protect content while the Library is unlocked or against a process that controls your operating-system account. Logs, global preferences, and files you export may remain plaintext. Keep full-disk encryption and standard account security enabled.
+Pond stores Library files, thumbnails, backups, and the search index unencrypted on your Mac. Logs, preferences, and files you export are also plaintext. Keep FileVault and standard account security on to protect them at rest.
 
 ## Best practices for users
 

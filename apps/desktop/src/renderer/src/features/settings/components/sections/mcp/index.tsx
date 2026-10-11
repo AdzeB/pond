@@ -2,7 +2,7 @@ import { Settings, Switch } from "@pond/ui";
 import { MCP_HOST_CATALOG, type McpHostDefinition } from "@shared/mcp-hosts";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
-import { usePrefs } from "@/features/settings/state/prefs";
+import { usePrefs } from "@/shared/state/prefs";
 import { HostPopover } from "./host-popover";
 import { HostLogo } from "./logo";
 import styles from "./styles.module.css";

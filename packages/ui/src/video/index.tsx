@@ -232,7 +232,7 @@ function Scrubber({ className, renderPreview }: ScrubberProps) {
           className={styles.preview}
           style={{
             left: `${hover * 100}%`,
-            transform: `translateX(-${hover * 100}%)`,
+            transform: "translateX(-50%)",
           }}
           aria-hidden
         >
@@ -244,10 +244,7 @@ function Scrubber({ className, renderPreview }: ScrubberProps) {
           <span className={styles["preview-time"]}>
             {formatTime(hover * max)}
           </span>
-          <span
-            className={styles["preview-line"]}
-            style={{ left: `${hover * 100}%` }}
-          />
+          <span className={styles["preview-line"]} />
         </span>
       ) : null}
       <SliderBase.Control className={styles.control}>

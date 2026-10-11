@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { usePrefs } from "@/features/settings/state/prefs";
+import { usePrefs } from "@/shared/state/prefs";
 
 const INTERFACE_ZOOM_MIN = 50;
 const INTERFACE_ZOOM_MAX = 200;

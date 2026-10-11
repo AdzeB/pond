@@ -11,8 +11,6 @@ import {
   lazy,
   Suspense,
   useCallback,
-  useEffect,
-  useRef,
   useState,
 } from "react";
 import { createPortal } from "react-dom";
@@ -22,7 +20,6 @@ import {
 } from "@/features/library/state/folders";
 import {
   type LibraryInspectorMode,
-  libraryChrome,
   useInspectorMode,
   useInspectorSaveId,
   useInspectorSourceId,
@@ -31,7 +28,7 @@ import {
 } from "@/features/library/state/library-chrome";
 import type { SaveInspectorProps } from "@/features/saves/components/detail/pane";
 import { useSelectedSaveIds } from "@/features/saves/state/selection";
-import { usePrefs } from "@/features/settings/state/prefs";
+import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
 const AgentPane = lazy(async () => {
@@ -120,25 +117,17 @@ export function RightPane() {
     viewerOpen || !selectedIds.length ? (saveId ? [saveId] : []) : selectedIds;
   const memberships = useFolderMemberships();
   const allFolders = useFolders();
+  const [folderViews] = usePrefs("folderViews");
   const folderCounts = allFolders.map((folder) => ({
     id: folder.id,
     name: folder.name,
     parentId: folder.parentId,
+    icon: folderViews[folder.id]?.icon,
+    color: folder.color,
     count: saveIds.filter((id) => memberships[id]?.includes(folder.id)).length,
   }));
   const inspectorMode = useInspectorMode();
   const inspectorTab = useInspectorTab();
-  const hadSelection = useRef(selectedIds.length > 0);
-  useEffect(() => {
-    if (
-      hadSelection.current &&
-      !selectedIds.length &&
-      !viewerOpen &&
-      inspectorMode === "save"
-    )
-      libraryChrome.inspectSave(null);
-    hadSelection.current = selectedIds.length > 0;
-  }, [selectedIds.length, viewerOpen, inspectorMode]);
   const sourceId = useInspectorSourceId();
   const [preferences] = usePrefs("preferences");
   const systemReducedMotion = useReducedMotion();

@@ -2,6 +2,7 @@ import { IconPaperclipOutline18 } from "@pond/icons/outline/18";
 import { Button, Tooltip } from "@pond/ui";
 import type { AssistantFileAttachment } from "@shared/assistant";
 import { useState } from "react";
+import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
 
 interface AttachFilesButtonProps {
@@ -26,7 +27,7 @@ export function AttachFilesButton({
       notify({
         id: "agent-attach-files",
         title: "Could not attach files",
-        description: error instanceof Error ? error.message : "Try again.",
+        description: errorCopy(error, "Try again."),
       });
     } finally {
       setBusy(false);

@@ -20,18 +20,17 @@ export function DialogLoadError({
         <Dialog.Popup>
           <Dialog.Header>
             <Dialog.Title>{title}</Dialog.Title>
-            <Dialog.Close />
           </Dialog.Header>
           <Dialog.Content>
-            <p role="alert">
-              This window couldn’t load. Reload Pond to try again.
-            </p>
+            <Dialog.Description role="alert">
+              This window couldn't load. Reload Pond to try again.
+            </Dialog.Description>
           </Dialog.Content>
           <Dialog.Footer>
-            <Button onClick={onClose}>Close</Button>
-            <Button onClick={() => window.location.reload()}>
-              Reload Pond
+            <Button variant="secondary" onClick={onClose}>
+              Cancel
             </Button>
+            <Button onClick={() => window.location.reload()}>Reload</Button>
           </Dialog.Footer>
         </Dialog.Popup>
       </Dialog.Portal>

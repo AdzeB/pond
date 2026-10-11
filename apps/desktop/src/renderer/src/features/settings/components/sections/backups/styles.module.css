@@ -1,21 +1,16 @@
-.success,
-.success-celebrate,
-.error {
+.message {
   display: block;
   margin-top: 2px;
-}
-
-.success,
-.success-celebrate {
   color: var(--ds-green-11);
-}
 
-.success-celebrate {
-  animation: backup-flourish var(--ds-duration-slow) var(--ds-easing-decelerate);
-}
+  &[data-celebrate] {
+    animation: backup-flourish var(--ds-duration-slow)
+      var(--ds-easing-decelerate);
+  }
 
-.error {
-  color: var(--ds-red-11);
+  &[data-error] {
+    color: var(--ds-red-11);
+  }
 }
 
 @keyframes backup-flourish {
@@ -36,7 +31,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .success-celebrate {
+  .message[data-celebrate] {
     animation: none;
   }
 }

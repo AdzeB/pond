@@ -1,7 +1,6 @@
 import { isAuxiliaryKind, isOriginalImageKind } from "@shared/save-file-names";
 import {
   arenaBlockClassFromRawJson,
-  TEXT_COVER_KINDS,
   textBodyFromFields,
 } from "@shared/text-card";
 import { composeContentDescription } from "@/features/saves/lib/content-description";
@@ -48,11 +47,7 @@ function isMediaFile(file: SaveFile): boolean {
 
 export function isTextOnlyAsideFromCover(save: Save): boolean {
   return !(save.files ?? []).some(
-    (f) =>
-      !TEXT_COVER_KINDS.has(f.kind) &&
-      !isAuxiliaryKind(f.kind) &&
-      !isArchiveFile(f) &&
-      isMediaFile(f),
+    (f) => !isAuxiliaryKind(f.kind) && !isArchiveFile(f) && isMediaFile(f),
   );
 }
 

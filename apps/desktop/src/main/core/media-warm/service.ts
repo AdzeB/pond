@@ -223,7 +223,7 @@ async function processCandidate(candidate: MediaWarmCandidate): Promise<void> {
   }
   const save = await readCandidateSave(candidate.saveId);
   if (!save) return;
-  const { writeSaveBlurhash } = await import("../../lib/blurhash");
+  const { writeSaveBlurhash } = await import("../save-blurhash");
   await writeSaveBlurhash(save);
 }
 

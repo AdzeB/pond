@@ -5,7 +5,7 @@ import type {
   KeyboardEventHandler,
   RefObject,
 } from "react";
-import { SearchChromeInput } from "@/shared/components/search-chrome";
+import { SearchChrome } from "@/shared/components/search-chrome";
 import styles from "./styles.module.css";
 
 interface SearchFieldProps {
@@ -26,7 +26,7 @@ export function SearchField({
   return (
     <div className={styles.search}>
       <IconMagnifierOutline18 className={styles.magnifier} aria-hidden />
-      <SearchChromeInput
+      <SearchChrome.Input
         ref={inputRef}
         className={styles.input}
         value={value}

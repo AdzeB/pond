@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
-import { ensureSaves } from "@/features/saves/lib/ensure-saves";
-import { pool } from "@/features/saves/state/pool";
+import { ensureSaves, pool, useSaves } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
 import { searchFtsScores } from "@/features/search/lib/fts-client";
 import { retrieveSaveIds } from "@/features/search/lib/retrieve-client";
-import { useSaves } from "../../saves/hooks/use-saves";
 
 const MAX_RESULTS = 500;
 const DEBOUNCE_MS = 100;

@@ -28,7 +28,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-family: var(--ds-font-mono);
-  font-size: 11px;
+  font-size: var(--ds-text-xs);
   line-height: 1.4;
   white-space: nowrap;
 }

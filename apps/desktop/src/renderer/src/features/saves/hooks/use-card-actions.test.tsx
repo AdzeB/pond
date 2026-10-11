@@ -2,18 +2,22 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 import "@/app/effects/save-library-bridge";
+import { ToastHost } from "@/shared/components/toast-host";
 import { toastManager } from "@/shared/lib/toast";
 import { useCardActions } from "./use-card-actions";
 
 afterEach(() => {
+  toastManager.close();
   vi.unstubAllGlobals();
-  vi.restoreAllMocks();
 });
+
+function toastText(): string {
+  return document.body.querySelector("[data-slot='toasts']")?.textContent ?? "";
+}
 
 it.each(["native file", "file URI"])(
   "imports a dropped %s and confirms the save",
   async (kind) => {
-    const notify = vi.spyOn(toastManager, "add");
     const query = vi.fn(async (operation: string) =>
       operation === "saves.reviewImportDuplicates"
         ? { candidates: [] }
@@ -31,7 +35,14 @@ it.each(["native file", "file URI"])(
       );
     }
     try {
-      await act(async () => root.render(<Harness />));
+      await act(async () =>
+        root.render(
+          <>
+            <Harness />
+            <ToastHost />
+          </>,
+        ),
+      );
       const event = new Event("drop", { bubbles: true, cancelable: true });
       Object.defineProperty(event, "dataTransfer", {
         value: {
@@ -49,9 +60,7 @@ it.each(["native file", "file URI"])(
       expect(query).toHaveBeenCalledWith("saves.importFiles", {
         paths: ["/tmp/drop image.png"],
       });
-      expect(notify).toHaveBeenCalledWith(
-        expect.objectContaining({ title: "Saved to Pond" }),
-      );
+      expect(toastText()).toContain("Saved to Pond");
     } finally {
       await act(async () => root.unmount());
     }
@@ -59,7 +68,6 @@ it.each(["native file", "file URI"])(
 );
 
 it("starts a dropped link immediately and does not claim it is saved", async () => {
-  const notify = vi.spyOn(toastManager, "add");
   const query = vi.fn().mockResolvedValue({ ok: true, id: "pasted-save" });
   vi.stubGlobal("pond", { query });
   const host = document.createElement("div");
@@ -73,7 +81,14 @@ it("starts a dropped link immediately and does not claim it is saved", async () 
     );
   }
   try {
-    await act(async () => root.render(<Harness />));
+    await act(async () =>
+      root.render(
+        <>
+          <Harness />
+          <ToastHost />
+        </>,
+      ),
+    );
     const event = new Event("drop", { bubbles: true, cancelable: true });
     Object.defineProperty(event, "dataTransfer", {
       value: {
@@ -88,9 +103,8 @@ it("starts a dropped link immediately and does not claim it is saved", async () 
     expect(query).toHaveBeenCalledWith("saves.quickAdd", {
       url: "https://example.com/clip",
     });
-    expect(notify).toHaveBeenCalledWith(
-      expect.objectContaining({ title: "Downloading" }),
-    );
+    expect(toastText()).toContain("Downloading");
+    expect(toastText()).not.toContain("Saved to Pond");
   } finally {
     await act(async () => root.unmount());
   }

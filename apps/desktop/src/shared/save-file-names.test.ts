@@ -61,8 +61,8 @@ describe("inferKindFromFilename", () => {
     expect(inferKindFromFilename("thumbnail-dark.png")).toBe("thumbnail_dark");
   });
 
-  it("still recognizes legacy cover filenames", () => {
-    expect(inferKindFromFilename("cover.jpg")).toBe("cover");
+  it("treats cover filenames as images", () => {
+    expect(inferKindFromFilename("cover.jpg")).toBe("image");
   });
 });
 

@@ -30,26 +30,21 @@ export type ViewerCapability =
       surface: "raster";
       source: "original" | "generated";
       edits: "full" | "none";
-      comments: "spatial";
       originalActions: true;
     }
   | {
       kind: "media";
       surface: "temporal";
-      comments: "temporal";
-      sizing: "fit-fill";
       originalActions: true;
     }
   | {
       kind: SpecialistViewerKind;
       surface: "specialist";
-      comments: "item";
       originalActions: true;
     }
   | {
       kind: "generic";
       surface: "fallback";
-      comments: "item";
       originalActions: true;
     };
 
@@ -75,7 +70,6 @@ function originalRaster(file: SaveFile): ViewerCapability {
     surface: "raster",
     source: "original",
     edits: canDestructivelyEditImage(file.path) ? "full" : "none",
-    comments: "spatial",
     originalActions: true,
   };
 }
@@ -86,7 +80,6 @@ function generatedRaster(kind: "media" | "native-preview"): ViewerCapability {
     surface: "raster",
     source: "generated",
     edits: "none",
-    comments: "spatial",
     originalActions: true,
   };
 }
@@ -95,8 +88,6 @@ function temporal(): ViewerCapability {
   return {
     kind: "media",
     surface: "temporal",
-    comments: "temporal",
-    sizing: "fit-fill",
     originalActions: true,
   };
 }
@@ -105,7 +96,6 @@ function specialist(kind: SpecialistViewerKind): ViewerCapability {
   return {
     kind,
     surface: "specialist",
-    comments: "item",
     originalActions: true,
   };
 }
@@ -148,7 +138,6 @@ export function viewerCapabilityFor(file: SaveFile): ViewerCapability {
   return {
     kind: "generic",
     surface: "fallback",
-    comments: "item",
     originalActions: true,
   };
 }

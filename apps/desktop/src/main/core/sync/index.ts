@@ -2,7 +2,7 @@ import type { ConnectedAccount, Source } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
 import log from "electron-log/main.js";
 import { commitEvent, startSyncEvent, toErrorInfo } from "../../lib/wide-event";
-import { isAccountConnected } from "../refresh/scrape-window";
+import { isAccountConnected } from "../refresh/harvest-window";
 import { isSyncBlockedByStorageGuard } from "../storage-watcher";
 import { watchNow } from "../watch/run";
 import { ensureAccountHandle } from "./account-key";
@@ -20,7 +20,6 @@ import { emit, inFlight } from "./sync-status";
 import { listWatches } from "./watches";
 
 export { getAccountSync } from "./accounts";
-export { migrateLegacySyncPrefs } from "./migrate-legacy";
 export {
   cancelSync,
   isSyncing,
@@ -170,9 +169,6 @@ export async function syncAccount(
     watchdog,
     source,
   });
-  void patchAccountSync(accountId, {
-    runningSince: new Date(startedAt).toISOString(),
-  }).catch(() => {});
   const ev: SyncRunEvent = startSyncEvent({
     source,
     accountId,
@@ -181,6 +177,9 @@ export async function syncAccount(
   });
   emit({ accountId, source, state: "running", message: "Starting" });
   try {
+    await patchAccountSync(accountId, {
+      runningSince: new Date(startedAt).toISOString(),
+    });
     await ensureAccountHandle(account);
     if (source === "twitter") {
       await syncTwitter(
@@ -234,7 +233,9 @@ export async function syncAccount(
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     log.error("[pond sync] fatal error", source, accountId, err);
-    await patchAccountSync(accountId, { lastError: msg });
+    await patchAccountSync(accountId, { lastError: msg }).catch((patchErr) =>
+      log.warn("[pond sync] failed to record lastError", accountId, patchErr),
+    );
     emit({
       accountId,
       source,
@@ -248,7 +249,9 @@ export async function syncAccount(
     const entry = inFlight.get(accountId);
     if (entry) clearTimeout(entry.watchdog);
     inFlight.delete(accountId);
-    void patchAccountSync(accountId, { runningSince: null }).catch(() => {});
+    await patchAccountSync(accountId, { runningSince: null }).catch((err) =>
+      log.warn("[pond sync] failed to clear runningSince", accountId, err),
+    );
     ev.durationMs = Date.now() - startedAt;
     ev.lockHeldMs = ev.durationMs;
     ev.watchdogTripped = watchdogTripped;
@@ -262,11 +265,20 @@ export async function recoverInterruptedSyncs(): Promise<string[]> {
   for (const account of await listAccounts()) {
     const cfg = await getAccountSync(account.id);
     if (!cfg.runningSince) continue;
+    try {
+      await patchAccountSync(account.id, {
+        runningSince: null,
+        lastError: "interrupted",
+      });
+    } catch (err) {
+      log.warn(
+        "[pond sync] failed to recover interrupted run",
+        account.id,
+        err,
+      );
+      continue;
+    }
     recovered.push(account.id);
-    await patchAccountSync(account.id, {
-      runningSince: null,
-      lastError: "interrupted",
-    }).catch(() => {});
     emit({
       accountId: account.id,
       source: account.source,

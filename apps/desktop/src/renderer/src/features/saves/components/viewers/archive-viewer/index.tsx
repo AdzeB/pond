@@ -7,7 +7,7 @@ import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import {
   ChromePortal,
   ViewerChrome,
-} from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+} from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerResultCount } from "@/features/saves/components/viewers/viewer-result-count";
 import {
   type ArchiveManifest,

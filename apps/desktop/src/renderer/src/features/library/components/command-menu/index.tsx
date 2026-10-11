@@ -10,9 +10,9 @@ import {
   commandMenu,
   useCommandMenuOpen,
 } from "@/features/library/state/command-menu";
-import { openSave } from "@/features/saves/lib/save-nav";
-import { useSearchResults } from "@/features/search/hooks/use-search-results";
-import { usePrefs } from "@/features/settings/state/prefs";
+import { openSave } from "@/features/saves/navigation";
+import { useSearchResults } from "@/features/search";
+import { usePrefs } from "@/shared/state/prefs";
 import { ResultsList } from "./results-list";
 import { SearchField } from "./search-field";
 import styles from "./styles.module.css";

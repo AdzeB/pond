@@ -15,10 +15,6 @@ import {
 } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { z } from "zod";
-import {
-  decodeLibraryFile,
-  isEncryptedLibraryFile,
-} from "./storage/library-file-storage";
 
 const MANIFEST = "pond-backup-manifest.json";
 const BackupEntrySchema = z.object({
@@ -32,7 +28,7 @@ const BackupManifestSchema = z.object({
   files: z.array(BackupEntrySchema),
 });
 type BackupEntry = z.infer<typeof BackupEntrySchema>;
-const ItemFilesSchema = z.object({
+const SaveFilesSchema = z.object({
   id: z.string().min(1),
   files: z.array(
     z.object({ path: z.string().min(1), size: z.number(), sha256: z.string() }),
@@ -97,8 +93,7 @@ async function validateReferences(root: string, files: readonly BackupEntry[]) {
   for (const name of ["metadata.json", "settings.json", "tags.json"]) {
     if (indexed.has(name)) {
       const path = join(root, name);
-      const stored = await readFile(path);
-      JSON.parse(decodeLibraryFile(path, stored).toString("utf8"));
+      JSON.parse(await readFile(path, "utf8"));
     }
   }
   for (const entry of files) {
@@ -109,10 +104,8 @@ async function validateReferences(root: string, files: readonly BackupEntry[]) {
     )
       continue;
     const infoPath = join(root, entry.path);
-    const storedInfo = await readFile(infoPath);
-    const encryptedInfo = isEncryptedLibraryFile(storedInfo);
-    const item = ItemFilesSchema.parse(
-      JSON.parse(decodeLibraryFile(infoPath, storedInfo).toString("utf8")),
+    const item = SaveFilesSchema.parse(
+      JSON.parse(await readFile(infoPath, "utf8")),
     );
     const directory = dirname(entry.path);
     for (const file of item.files) {
@@ -122,9 +115,8 @@ async function validateReferences(root: string, files: readonly BackupEntry[]) {
       const original = indexed.get(relative(root, path).split(sep).join("/"));
       if (
         !original ||
-        (!encryptedInfo &&
-          (original.size !== file.size ||
-            (file.sha256 && original.sha256 !== file.sha256)))
+        original.size !== file.size ||
+        (file.sha256 && original.sha256 !== file.sha256)
       )
         throw new Error(
           `An original is missing or damaged in Save ${item.id}: ${file.path}`,

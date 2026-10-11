@@ -104,4 +104,4 @@ Run these before announcing a release:
 
 - **Signing**: v0.0.1 ships unsigned. Users may need right-click → Open on first launch.
 - **Auto-update**: Requires the published `latest-mac.yml` from the release workflow. Dev builds skip the updater.
-- **Windows**: `pnpm --filter @pond/desktop dist:win` produces an NSIS installer. It is unpublished and untested. Linux packaging exists in the same config and is not supported.
+- **Windows and Linux**: Builds are disabled. Those platforms are coming soon.

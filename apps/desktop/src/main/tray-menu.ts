@@ -86,7 +86,6 @@ async function loadTrayAccelerators(
   return {
     newFolder: menuAccelerator(bindings["library.new-folder"]),
     newNote: menuAccelerator(bindings["library.new-note"]),
-    captureScreenshot: menuAccelerator(bindings["library.capture-screenshot"]),
     newTag: menuAccelerator(bindings["library.new-tag"]),
     newTagGroup: menuAccelerator(bindings["library.new-tag-group"]),
     importFiles: menuAccelerator(bindings["library.import-files"]),

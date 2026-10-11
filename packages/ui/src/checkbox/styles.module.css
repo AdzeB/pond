@@ -8,6 +8,7 @@
   width: 16px;
   height: 16px;
   padding: 0;
+  vertical-align: middle;
   color: var(--ds-gray-1);
   cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
@@ -27,7 +28,8 @@
     border-radius: var(--ds-radius-xs);
   }
 
-  &[data-checked] {
+  &[data-checked],
+  &[data-indeterminate] {
     background: var(--ds-accent-9);
     border-color: var(--ds-accent-9);
   }
@@ -38,7 +40,8 @@
   }
 
   &[data-checked]:hover,
-  &[data-checked][data-demo-state="hover"] {
+  &[data-checked][data-demo-state="hover"],
+  &[data-indeterminate]:hover {
     background: var(--ds-accent-9);
   }
 
@@ -60,6 +63,11 @@
     width: 12px;
     height: 12px;
   }
+}
+
+.indicator[data-indeterminate] > [data-mark="checked"],
+.indicator:not([data-indeterminate]) > [data-mark="indeterminate"] {
+  display: none;
 }
 
 .root[data-size="sm"] .indicator > svg {

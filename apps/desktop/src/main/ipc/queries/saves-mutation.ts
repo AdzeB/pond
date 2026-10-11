@@ -4,9 +4,13 @@ import { basename, join } from "node:path";
 import { saves } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
 import { classifyLibraryFile } from "@shared/file-format";
+import { SavesDerivedPatchSchema } from "@shared/saves-contracts-shared";
 import { decodeTextBytes } from "@shared/text-encoding";
 import { eq, isNotNull, isNull } from "drizzle-orm";
 import { z } from "zod";
+import { mediaEmbeddingVersion } from "../../../shared/embeddings";
+import type { QueryResult } from "../../../shared/query-contracts";
+import type { OkFailure } from "../../../shared/query-contracts-shared";
 import { duplicateGroups } from "../../core/duplicate-groups";
 import { executeBatch } from "../../core/executor";
 import { extractImageMetadata } from "../../core/image-metadata";
@@ -18,14 +22,12 @@ import { skipSaves } from "../../core/pipeline/reconciler-client";
 import { runEnsurePoster } from "../../core/pipeline/workers/ensure-poster";
 import { runRenderTextCover } from "../../core/pipeline/workers/render-text-cover";
 import { replaceSaveFile } from "../../core/replace-file";
-import {
-  readLibraryMedia,
-  withDecryptedLibraryMediaPath,
-} from "../../core/storage/library-media-storage";
+import { findSemanticDuplicateGroups } from "../../core/semantic-duplicates";
+import { readLibraryMedia } from "../../core/storage/library-media-storage";
 import { recordForUndo } from "../../core/undo";
-import { parseJsonVector, upsertVec } from "../../core/vec-index";
+import { knnVec, parseJsonVector, upsertVec } from "../../core/vec-index";
 import { getDb } from "../../db";
-import { itemFile } from "../../paths";
+import { saveFile } from "../../paths";
 import {
   FlagParam,
   NullableStringParam,
@@ -34,26 +36,6 @@ import {
   StringListParam,
   StringParam,
 } from "./params";
-
-const DerivedPatchSchema = z
-  .object({
-    caption: z.string().nullable().optional(),
-    captionModel: z.string().nullable().optional(),
-    ocrText: z.string().nullable().optional(),
-    ocrModel: z.string().nullable().optional(),
-    transcript: z.string().nullable().optional(),
-    transcriptModel: z.string().nullable().optional(),
-    clipEmbedding: z.array(z.number()).nullable().optional(),
-    clipModel: z.string().nullable().optional(),
-    aesthetic: z.array(z.string()).nullable().optional(),
-    aestheticModel: z.string().nullable().optional(),
-    sensitiveScore: z.number().min(0).max(1).nullable().optional(),
-    sensitiveModel: z.string().nullable().optional(),
-    autoTitleModel: z.string().nullable().optional(),
-    suggestedTags: z.array(z.string()).nullable().optional(),
-    suggestedTagsModel: z.string().nullable().optional(),
-  })
-  .catch({});
 
 async function analyzeSaveColors(
   row: typeof saves.$inferSelect,
@@ -64,7 +46,7 @@ async function analyzeSaveColors(
     "../../lib/blurhash"
   );
   const { encodePhash } = await import("../../lib/phash");
-  const { itemFile } = await import("../../paths");
+  const { saveFile } = await import("../../paths");
   const still = pickBlurhashStill(row);
   if (!still) return false;
   const needsColors =
@@ -74,25 +56,20 @@ async function analyzeSaveColors(
   const needsPerceptualHash =
     row.mediaType === "image" && (force || !row.phash);
   if (!needsColors && !needsHash && !needsPerceptualHash) return false;
-  const patch = await withDecryptedLibraryMediaPath(
-    itemFile(row.id, still.path),
-    async (path): Promise<Parameters<typeof persistSave>[1]> => {
-      const next: Parameters<typeof persistSave>[1] = {};
-      if (needsColors) {
-        const colors = await extractPalette(path);
-        if (colors.length > 0) next.dominantColors = colors;
-      }
-      if (needsHash) {
-        const hash = await encodeBlurhash(path);
-        if (hash) next.blurhash = hash;
-      }
-      if (needsPerceptualHash) {
-        const hash = await encodePhash(path);
-        if (hash) next.phash = hash;
-      }
-      return next;
-    },
-  );
+  const path = saveFile(row.id, still.path);
+  const patch: Parameters<typeof persistSave>[1] = {};
+  if (needsColors) {
+    const colors = await extractPalette(path);
+    if (colors.length > 0) patch.dominantColors = colors;
+  }
+  if (needsHash) {
+    const hash = await encodeBlurhash(path);
+    if (hash) patch.blurhash = hash;
+  }
+  if (needsPerceptualHash) {
+    const hash = await encodePhash(path);
+    if (hash) patch.phash = hash;
+  }
   if (Object.keys(patch).length === 0) return false;
   await persistSave(row.id, patch, {
     actorReason: force ? "color:reanalyze" : "color:backfill",
@@ -111,13 +88,11 @@ async function analyzeSaveMetadata(
   if (!file) return false;
   const mediaType = classifyLibraryFile(file.path, file.mimeType).mediaType;
   if (!force && row.metadataVersion === 1) return false;
-  const metadata = await withDecryptedLibraryMediaPath(
-    itemFile(row.id, file.path),
-    (path) =>
-      mediaType === "image"
-        ? extractImageMetadata(path)
-        : extractMediaMetadata(path),
-  );
+  const path = saveFile(row.id, file.path);
+  const metadata =
+    mediaType === "image"
+      ? await extractImageMetadata(path)
+      : await extractMediaMetadata(path);
   if (Object.keys(metadata).length === 0) return false;
   await persistSave(
     row.id,
@@ -128,6 +103,8 @@ async function analyzeSaveMetadata(
   );
   return true;
 }
+
+const SAVE_NOT_FOUND: OkFailure = { ok: false, error: "Save not found." };
 
 export const savesMutationQueries = {
   "saves.batchEditExtension": query(
@@ -201,8 +178,8 @@ export const savesMutationQueries = {
 
   "saves.setPhash": query(
     z.object({ id: StringParam, phash: NullableStringParam }),
-    async (params) => {
-      if (!params.id) return { ok: false };
+    async (params): Promise<QueryResult<"saves.setPhash">> => {
+      if (!params.id) return SAVE_NOT_FOUND;
       await persistSave(
         params.id,
         { phash: params.phash },
@@ -221,8 +198,8 @@ export const savesMutationQueries = {
         .catch(null),
       embeddingModel: NullableStringParam,
     }),
-    async (params) => {
-      if (!params.id) return { ok: false };
+    async (params): Promise<QueryResult<"saves.setEmbedding">> => {
+      if (!params.id) return SAVE_NOT_FOUND;
       const db = await getDb();
       await db
         .update(saves)
@@ -238,20 +215,21 @@ export const savesMutationQueries = {
   ),
 
   "saves.patchDerived": query(
-    z.object({ id: StringParam, patch: DerivedPatchSchema }),
-    async (params) => {
-      if (!params.id) return { ok: false as const };
-      if (Object.keys(params.patch).length === 0) return { ok: false as const };
+    z.object({ id: StringParam, patch: SavesDerivedPatchSchema.catch({}) }),
+    async (params): Promise<QueryResult<"saves.patchDerived">> => {
+      if (!params.id) return SAVE_NOT_FOUND;
+      if (Object.keys(params.patch).length === 0)
+        return { ok: false, error: "Nothing to update." };
       const updated = await persistSave(params.id, params.patch, {
         actorReason: "enrichment:derived",
       });
-      if (!updated) return { ok: false as const };
+      if (!updated) return SAVE_NOT_FOUND;
       if (params.patch.clipEmbedding) {
         const db = await getDb();
         const vector = parseJsonVector(params.patch.clipEmbedding);
         if (vector) upsertVec(db.$raw, "clip", params.id, vector);
       }
-      return { ok: true as const };
+      return { ok: true };
     },
   ),
 
@@ -261,7 +239,7 @@ export const savesMutationQueries = {
 
     let updated = 0;
     for (const row of rows) if (await analyzeSaveColors(row, false)) updated++;
-    return { ok: true, updated };
+    return { ok: true as const, updated };
   },
 
   async "saves.backfillMetadata"() {
@@ -270,17 +248,19 @@ export const savesMutationQueries = {
     let updated = 0;
     for (const row of rows)
       if (await analyzeSaveMetadata(row, false)) updated++;
-    return { ok: true, updated };
+    return { ok: true as const, updated };
   },
 
   "saves.reanalyzeColors": query(
     z.object({ id: StringParam }),
-    async ({ id }) => {
+    async ({ id }): Promise<QueryResult<"saves.reanalyzeColors">> => {
       const db = await getDb();
       const row = db.select().from(saves).where(eq(saves.id, id)).get();
-      if (!row) return { ok: false, updated: false };
+      if (!row) return SAVE_NOT_FOUND;
       const updated = await analyzeSaveColors(row, true);
-      return { ok: updated, updated };
+      return updated
+        ? { ok: true, updated }
+        : { ok: false, error: "Couldn't read colors from this Save." };
     },
   ),
 
@@ -292,10 +272,10 @@ export const savesMutationQueries = {
         .regex(/^#[0-9a-f]{6}$/i)
         .nullable(),
     }),
-    async ({ id, color }) => {
+    async ({ id, color }): Promise<QueryResult<"saves.setPrimaryColor">> => {
       const db = await getDb();
       const row = db.select().from(saves).where(eq(saves.id, id)).get();
-      if (!row) return { ok: false as const };
+      if (!row) return SAVE_NOT_FOUND;
       const primaryColor = color?.toLowerCase() ?? null;
       if (
         primaryColor &&
@@ -303,19 +283,22 @@ export const savesMutationQueries = {
           (candidate) => candidate.toLowerCase() === primaryColor,
         )
       )
-        return { ok: false as const };
+        return { ok: false, error: "Choose one of this Save's colors." };
       await persistSave(
         id,
         { primaryColor },
         { actorReason: "color:set-primary" },
       );
-      return { ok: true as const };
+      return { ok: true };
     },
   ),
 
   "saves.convertTextEncoding": query(
     z.object({ id: StringParam, fileIndex: z.number().int().nonnegative() }),
-    async ({ id, fileIndex }) => {
+    async ({
+      id,
+      fileIndex,
+    }): Promise<QueryResult<"saves.convertTextEncoding">> => {
       const db = await getDb();
       const row = db.select().from(saves).where(eq(saves.id, id)).get();
       const file = row?.files[fileIndex];
@@ -323,8 +306,8 @@ export const savesMutationQueries = {
         !file ||
         classifyLibraryFile(file.path, file.mimeType).mediaType !== "text"
       )
-        return { ok: false, updated: false };
-      const bytes = await readLibraryMedia(itemFile(id, file.path));
+        return { ok: false, error: "This Save has no text file." };
+      const bytes = await readLibraryMedia(saveFile(id, file.path));
       const decoded = decodeTextBytes(bytes);
       if (decoded.encoding === "utf-8" && !decoded.hadBom)
         return { ok: true, updated: false };
@@ -333,7 +316,7 @@ export const savesMutationQueries = {
       try {
         await writeFile(path, decoded.text, "utf8");
         const result = await replaceSaveFile({ id, sourcePath: path });
-        return { ok: result.ok, updated: result.ok };
+        return result.ok ? { ok: true, updated: true } : result;
       } finally {
         await rm(directory, { recursive: true, force: true });
       }
@@ -351,7 +334,7 @@ export const savesMutationQueries = {
   "saves.ensureTextCover": query(
     z.object({ id: StringParam, force: FlagParam.default(false) }),
     async (params) => {
-      if (!params.id) return { ok: false as const, captured: 0 };
+      if (!params.id) return SAVE_NOT_FOUND;
       const captured = await runRenderTextCover(params.id, {
         force: params.force,
       });
@@ -371,12 +354,38 @@ export const savesMutationQueries = {
           title: saves.title,
           phash: saves.phash,
           files: saves.files,
+          status: saves.status,
+          clipEmbedding: saves.clipEmbedding,
+          clipModel: saves.clipModel,
         })
         .from(saves)
         .where(isNull(saves.deletedAt));
-      return duplicateGroups(rows, {
+      const base = duplicateGroups(rows, {
         visualDistance: params.visualDistance,
       });
+      const excludedPairs: Array<[string, string]> = [];
+      for (const group of base.groups) {
+        for (let left = 0; left < group.ids.length; left++) {
+          for (let right = left + 1; right < group.ids.length; right++) {
+            const leftId = group.ids[left];
+            const rightId = group.ids[right];
+            if (leftId && rightId) excludedPairs.push([leftId, rightId]);
+          }
+        }
+      }
+      const semantic = findSemanticDuplicateGroups(
+        rows.map((row) => ({
+          id: row.id,
+          vector: parseJsonVector(row.clipEmbedding),
+          model: row.clipModel,
+          status: row.status,
+        })),
+        {
+          neighbors: (vector, limit) => knnVec(db.$raw, "clip", vector, limit),
+        },
+        { model: mediaEmbeddingVersion(), excludedPairs },
+      );
+      return { ...base, groups: [...base.groups, ...semantic] };
     },
   ),
 

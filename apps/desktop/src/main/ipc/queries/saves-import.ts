@@ -1,6 +1,5 @@
 import type { QueryHandlerMap } from "./params";
 import { savesImportClipboardQueries } from "./saves-import-clipboard";
-import { savesImportDesktopQueries } from "./saves-import-desktop";
 import { savesImportPersistenceQueries } from "./saves-import-persistence";
 import { savesImportSourceQueries } from "./saves-import-sources";
 import { savesImportTransferQueries } from "./saves-import-transfer";
@@ -15,10 +14,6 @@ export const savesImportQueries = {
   "saves.importFiles": savesImportTransferQueries["saves.importFiles"],
   "saves.reviewImportDuplicates":
     savesImportTransferQueries["saves.reviewImportDuplicates"],
-  "saves.desktopScreenshotSources":
-    savesImportDesktopQueries["saves.desktopScreenshotSources"],
-  "saves.captureDesktopScreenshot":
-    savesImportDesktopQueries["saves.captureDesktopScreenshot"],
   "saves.setCustomThumbnail":
     savesImportPersistenceQueries["saves.setCustomThumbnail"],
   "saves.setThumbnailFromClipboard":

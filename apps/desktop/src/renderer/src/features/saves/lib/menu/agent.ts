@@ -4,13 +4,13 @@ import {
   IconMediaPlayOutline18,
 } from "@pond/icons/outline/18";
 import type { MenuItemSpec } from "@pond/ui";
-import { addSavesToChat } from "@/features/agent/lib/add-to-chat";
+import { addSavesToChat } from "@/features/agent";
 import {
   failedIdsIn,
   retryFailedSelection,
 } from "@/features/saves/lib/selection";
 import { selectableTasks } from "@/features/saves/lib/tasks";
-import { getPrefsSnapshot } from "@/features/settings/state/prefs";
+import { getPrefsSnapshot } from "@/shared/state/prefs";
 import { glyph } from "./shared";
 import type { SaveMenuContext } from "./types";
 

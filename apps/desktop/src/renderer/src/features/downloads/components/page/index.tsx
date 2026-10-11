@@ -13,6 +13,7 @@ import {
 } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { z } from "zod";
+import { DownloadsEmpty } from "@/features/downloads/components/empty";
 import { useLiveDownloadHydration } from "@/features/downloads/hooks/use-live-download-hydration";
 import {
   type DownloadRow,
@@ -33,20 +34,14 @@ import {
 } from "@/features/downloads/state/downloads-filters";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
 import {
-  DownloadsEmpty,
-  MatchesEmpty,
-} from "@/features/library/components/empty";
-import {
   libraryChrome,
   useInspectorMode,
   useInspectorSaveId,
   useRightPane,
-} from "@/features/library/state/library-chrome";
-import { useSaves } from "@/features/saves/hooks/use-saves";
-import {
-  SearchChrome,
-  SearchChromeInput,
-} from "@/shared/components/search-chrome";
+} from "@/features/library";
+import { useSaves } from "@/features/saves/pool";
+import { MatchesEmpty } from "@/shared/components/matches-empty";
+import { SearchChrome } from "@/shared/components/search-chrome";
 import {
   TableFilterBar,
   TableFilterChip,
@@ -193,7 +188,7 @@ export function DownloadsPage() {
       ),
   });
   const toolbar = (
-    <SearchChrome
+    <SearchChrome.Root
       actions={
         <>
           <DownloadOptionsMenu />
@@ -248,7 +243,7 @@ export function DownloadsPage() {
         </TableFilterBar>
       }
     >
-      <SearchChromeInput
+      <SearchChrome.Input
         value={filters.q}
         onChange={(e) => downloadsFilters.setQ(e.target.value)}
         spellCheck={false}
@@ -256,13 +251,13 @@ export function DownloadsPage() {
         aria-label="Search Downloads"
         data-downloads-search=""
       />
-    </SearchChrome>
+    </SearchChrome.Root>
   );
   return (
     <div className={styles.page}>
       {toolbar}
       {activity.isError ? (
-        <p className={styles.activityError} role="status">
+        <p className={styles["activity-error"]} role="status">
           Live activity is unavailable.{" "}
           <Button
             type="button"

@@ -1,4 +1,4 @@
-.picker-list {
+.list {
   max-height: 270px;
   padding: 4px;
   overflow-y: auto;
@@ -53,7 +53,7 @@
   padding: 6px;
 }
 
-.context-row {
+.row {
   display: flex;
   gap: 10px;
   width: 100%;
@@ -77,13 +77,13 @@
   color: var(--ds-accent-11);
 }
 
-.picker-empty {
+.empty {
   padding: 24px 12px;
   font-size: var(--ds-text-md);
   color: var(--ds-gray-9);
 }
 
-.picker-footer {
+.footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -95,7 +95,7 @@
 
 .option-group,
 .question-options,
-fieldset.picker-list {
+fieldset.list {
   min-width: 0;
   margin: 0;
   border: 0;

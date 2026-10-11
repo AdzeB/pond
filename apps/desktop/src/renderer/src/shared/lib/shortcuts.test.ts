@@ -101,7 +101,6 @@ describe("shortcut profiles", () => {
     expect(eagle["save.rate-next-4"].keys).toBe("Shift+4");
     expect(eagle["view.layout-grid"].keys).toBe("Alt+2");
     expect(eagle["save.add-tag"].keys).toBe("T");
-    expect(eagle["viewer.comment"].keys).toBe("C");
     expect(eagle["save.copy-image"].keys).toBe("Mod+C");
     const pond = resolveShortcuts({ profile: "pond", overrides: {} });
     expect(pond["view.layout-grid"].keys).toBe("2");

@@ -1,4 +1,4 @@
-import type { OkResult } from "./query-contracts-shared";
+import type { CancellableResult, OkResult } from "./query-contracts-shared";
 
 export interface SavesOpenWithQueryInputs {
   "saves.copyInternalLinks": { ids: string[] };
@@ -25,6 +25,6 @@ export interface SavesOpenWithQueryResults {
       isDefault: boolean;
     }>;
   };
-  "saves.openWith": { ok: boolean; error?: string; cancelled?: boolean };
-  "saves.quickLook": { ok: boolean; error?: string };
+  "saves.openWith": CancellableResult;
+  "saves.quickLook": OkResult;
 }

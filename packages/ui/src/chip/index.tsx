@@ -6,6 +6,7 @@ import type {
   ReactNode,
 } from "react";
 import { Button, type ButtonProps } from "../button";
+import { cssVars } from "../css-vars";
 import { Menu } from "../menu";
 import styles from "./styles.module.css";
 
@@ -36,7 +37,7 @@ function Item({ className, kind, tone, selected, ...props }: ItemProps) {
 }
 
 interface ActionProps extends ComponentPropsWithoutRef<"button"> {
-  tone: Extract<ChipTone, "applied" | "suggested">;
+  tone: Extract<ChipTone, "applied" | "suggested" | "mention">;
 }
 
 function Action({ className, tone, type = "button", ...props }: ActionProps) {
@@ -120,15 +121,21 @@ function Clear({ className, children, ...props }: ButtonProps) {
 
 interface SwatchProps extends ComponentPropsWithoutRef<"span"> {
   color?: string;
+  /** Set on swatches in a picker; omit for display-only swatches. */
+  selected?: boolean;
 }
 
-function Swatch({ color, className, style, ...props }: SwatchProps) {
+function Swatch({ color, selected, className, style, ...props }: SwatchProps) {
   return (
     <span
       className={cn(styles.swatch, className)}
       data-spectrum={color ? undefined : ""}
       data-swatch={color}
-      style={color ? { ...style, backgroundColor: color } : style}
+      data-selectable={selected === undefined ? undefined : ""}
+      data-selected={selected || undefined}
+      style={
+        color ? { ...style, ...cssVars({ "--swatch-color": color }) } : style
+      }
       aria-hidden
       {...props}
     />
@@ -146,6 +153,7 @@ interface FilterProps
   clearLabel?: string;
   onClear?: () => void;
   onOpenChange?: ComponentProps<typeof Menu.Root>["onOpenChange"];
+  search?: Omit<ComponentProps<typeof Menu.FilterProvider>, "children">;
   children: ReactNode;
 }
 
@@ -159,32 +167,40 @@ function Filter({
   clearLabel,
   onClear,
   onOpenChange,
+  search,
   children,
   className,
   ...props
 }: FilterProps) {
+  const root = (
+    <Menu.Root onOpenChange={onOpenChange}>
+      <Menu.Trigger
+        size="sm"
+        variant={variant}
+        className={styles["filter-trigger"]}
+        data-active={active || undefined}
+        aria-label={ariaLabel}
+        title={title ?? ariaLabel}
+      >
+        <span className={styles["filter-icon"]} aria-hidden>
+          {icon}
+        </span>
+        <span className={styles["filter-label"]}>{label}</span>
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Positioner side="bottom" align="start" sideOffset={6}>
+          {children}
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
+  );
   return (
     <div className={cn(styles.filter, className)} {...props}>
-      <Menu.Root onOpenChange={onOpenChange}>
-        <Menu.Trigger
-          size="sm"
-          variant={variant}
-          className={styles["filter-trigger"]}
-          data-active={active || undefined}
-          aria-label={ariaLabel}
-          title={title ?? ariaLabel}
-        >
-          <span className={styles["filter-icon"]} aria-hidden>
-            {icon}
-          </span>
-          <span className={styles["filter-label"]}>{label}</span>
-        </Menu.Trigger>
-        <Menu.Portal>
-          <Menu.Positioner side="bottom" align="start" sideOffset={6}>
-            {children}
-          </Menu.Positioner>
-        </Menu.Portal>
-      </Menu.Root>
+      {search ? (
+        <Menu.FilterProvider {...search}>{root}</Menu.FilterProvider>
+      ) : (
+        root
+      )}
       {active && onClear ? (
         <Button
           icon

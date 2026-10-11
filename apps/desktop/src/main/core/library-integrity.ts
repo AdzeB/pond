@@ -14,16 +14,11 @@ import type {
   LibraryRepairKind,
 } from "../../shared/library-repair-contracts";
 import { getDb } from "../db";
-import { libraryRoot } from "../paths";
+import { libraryRoot, saveDirIn } from "../paths";
 import { renderThumbnailPng, thumbnailSource } from "./save-thumbnail-file";
-import {
-  decodeLibraryFile,
-  isEncryptedLibraryFile,
-} from "./storage/library-file-storage";
 import {
   libraryMediaMetadata,
   readLibraryMediaRange,
-  withDecryptedLibraryMediaPath,
 } from "./storage/library-media-storage";
 
 type SaveFile = Save["files"][number];
@@ -65,12 +60,11 @@ export interface PayloadInspection {
   reason: "ok" | "missing" | "unsafe" | "empty" | "size" | "hash" | "error";
 }
 
-export interface InfoInspection {
-  ok: boolean;
-  encrypted: boolean;
-  value: RepairInfo | null;
-  fingerprint: string;
-}
+export type InfoInspection =
+  | { status: "valid"; value: RepairInfo; fingerprint: string }
+  | { status: "invalid"; fingerprint: string }
+  | { status: "missing" }
+  | { status: "unreadable" };
 
 const RepairInfoSchema = z.object({
   id: z.string(),
@@ -99,39 +93,30 @@ const defaultRuntime: LibraryIntegrityRuntime = {
   },
   inspectPayload,
   async canRenderThumbnail(path) {
-    return (
-      (await withDecryptedLibraryMediaPath(path, renderThumbnailPng).catch(
-        () => null,
-      )) !== null
-    );
+    return (await renderThumbnailPng(path).catch(() => null)) !== null;
   },
   async readInfo(path) {
+    let decoded: Buffer;
     try {
-      const stored = await readFile(path);
-      const encrypted = isEncryptedLibraryFile(stored);
-      const decoded = decodeLibraryFile(path, stored);
-      const fingerprint = createHash("sha256").update(decoded).digest("hex");
-      let raw: unknown;
-      try {
-        raw = JSON.parse(decoded.toString("utf8"));
-      } finally {
-        decoded.fill(0);
-      }
-      const parsed = RepairInfoSchema.safeParse(raw);
-      return {
-        ok: parsed.success,
-        encrypted,
-        value: parsed.success ? parsed.data : null,
-        fingerprint,
-      };
-    } catch {
-      return {
-        ok: false,
-        encrypted: false,
-        value: null,
-        fingerprint: "unreadable",
-      };
+      decoded = await readFile(path);
+    } catch (error) {
+      if (error instanceof Error && "code" in error && error.code === "ENOENT")
+        return { status: "missing" };
+      return { status: "unreadable" };
     }
+    const fingerprint = createHash("sha256").update(decoded).digest("hex");
+    let raw: unknown;
+    try {
+      raw = JSON.parse(decoded.toString("utf8"));
+    } catch {
+      return { status: "invalid", fingerprint };
+    } finally {
+      decoded.fill(0);
+    }
+    const parsed = RepairInfoSchema.safeParse(raw);
+    return parsed.success
+      ? { status: "valid", value: parsed.data, fingerprint }
+      : { status: "invalid", fingerprint };
   },
 };
 
@@ -189,7 +174,7 @@ async function inspectThumbnail(
   row: IntegritySave,
   runtime: LibraryIntegrityRuntime,
 ): Promise<InternalLibraryRepairIssue | null> {
-  const directory = join(runtime.root(), "items", `${row.id}.info`);
+  const directory = saveDirIn(runtime.root(), row.id);
   const thumbnails = row.files.filter((file) => isThumbnailKind(file.kind));
   for (const thumbnail of thumbnails) {
     const inspection = await runtime.inspectPayload(
@@ -231,7 +216,7 @@ async function inspectThumbnail(
     row,
     summary:
       thumbnails.length === 0 ? "Thumbnail is missing" : "Thumbnail is damaged",
-    detail: `Generate ${destination} from a verified Library file.`,
+    detail: "Pond makes a new thumbnail from the original file.",
     observed,
     action: { kind: "thumbnail", source: source.path, destination },
   });
@@ -241,7 +226,7 @@ async function inspectPhysicalNames(
   row: IntegritySave,
   runtime: LibraryIntegrityRuntime,
 ): Promise<InternalLibraryRepairIssue | null> {
-  const directory = join(runtime.root(), "items", `${row.id}.info`);
+  const directory = saveDirIn(runtime.root(), row.id);
   const occupied = new Set(row.files.map((file) => file.path.toLowerCase()));
   const changes: Array<{
     from: string;
@@ -266,8 +251,8 @@ async function inspectPhysicalNames(
     row,
     summary:
       changes.length === 1
-        ? "One physical file name is invalid"
-        : `${changes.length} physical file names are invalid`,
+        ? "1 file name needs renaming"
+        : `${changes.length} file names need renaming`,
     detail: changes.map((change) => `${change.from} → ${change.to}`).join(", "),
     observed: { files: fileFacts(row.files), changes },
     action: {
@@ -282,7 +267,7 @@ async function inspectInvalidContent(
   runtime: LibraryIntegrityRuntime,
 ): Promise<InternalLibraryRepairIssue | null> {
   const originals = row.files.filter((file) => !isAuxiliaryKind(file.kind));
-  const directory = join(runtime.root(), "items", `${row.id}.info`);
+  const directory = saveDirIn(runtime.root(), row.id);
   const payloads = await Promise.all(
     originals.map((file) =>
       runtime.inspectPayload(safePayloadPath(directory, file.path), file),
@@ -292,11 +277,11 @@ async function inspectInvalidContent(
   return issue({
     kind: "invalid-content",
     row,
-    summary: "Save has no verified content",
+    summary: "Files are missing or damaged",
     detail:
       originals.length === 0
-        ? "Move this Save to Trash without deleting its payload directory."
-        : "Every original is missing, empty, or fails its stored hash.",
+        ? "This save has no original file."
+        : "Every original file is missing, empty, or changed since it was saved.",
     observed: { files: fileFacts(row.files), payloads },
     action: { kind: "invalid-content" },
   });
@@ -307,7 +292,7 @@ async function inspectSaveMetadata(
   runtime: LibraryIntegrityRuntime,
 ): Promise<InternalLibraryRepairIssue | null> {
   if (row.files.length === 0) return null;
-  const directory = join(runtime.root(), "items", `${row.id}.info`);
+  const directory = saveDirIn(runtime.root(), row.id);
   const payloads = await Promise.all(
     row.files.map((file) =>
       runtime.inspectPayload(safePayloadPath(directory, file.path), file),
@@ -315,13 +300,13 @@ async function inspectSaveMetadata(
   );
   if (payloads.some((payload) => !payload.ok)) return null;
   const info = await runtime.readInfo(join(directory, "info.json"));
-  if (info.ok && info.value && metadataMatches(row, info.value)) return null;
+  if (info.status === "valid" && metadataMatches(row, info.value)) return null;
   return issue({
     kind: "save-metadata",
     row,
-    summary: "Save metadata is damaged",
+    summary: "Save record is out of date",
     detail:
-      "Rebuild info.json from the verified index row and verified payload hashes.",
+      "The record stored with this save is missing or doesn't match your library.",
     observed: { files: fileFacts(row.files), payloads, info },
     action: { kind: "save-metadata" },
   });
@@ -486,8 +471,7 @@ function issue(input: {
 }
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
-  if (signal?.aborted)
-    throw new DOMException("Repair cancelled.", "AbortError");
+  if (signal?.aborted) throw new DOMException("Repair canceled.", "AbortError");
 }
 
 export const libraryIntegrityRuntime = defaultRuntime;

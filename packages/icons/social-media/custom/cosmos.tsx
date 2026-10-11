@@ -12,7 +12,8 @@ export function IconBrandCosmos(props: SVGProps<SVGSVGElement>) {
     >
       <title>Cosmos</title>
       <rect width="370" height="370" fill="#F7F5F3" />
-      <g transform="translate(58 40) scale(9.0625)">
+      {/** Round or dense mark: fits 196 instead of 206 so it matches the other tiles optically. */}
+      <g transform="translate(95.81 87) scale(6.333)">
         <path
           d="M14.006 8.985a4.493 4.493 0 1 0 0-8.984 4.493 4.493 0 0 0 0 8.984Z"
           fill="#0D0D0D"

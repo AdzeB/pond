@@ -41,13 +41,13 @@ const FAQS: FaqItem[] = [
     value: "ai",
     question: "Does Pond send my data anywhere?",
     answer:
-      "Your library stays on your Mac. On-device enrichment (captions, text in images, transcripts, visual search) never leaves the machine. Agent uses a key you paste or a local host you run.",
+      "Your library stays on your Mac. On-device enrichment (captions, text in images, transcripts, visual search) never leaves the machine. Assistant uses a key you paste or a local host you run.",
   },
   {
     value: "platforms",
     question: "Does it work on Windows or Linux?",
     answer:
-      "Windows should work. It hasn't been tested. Linux is not supported.",
+      "Windows and Linux are coming soon. Pond ships for macOS 12 or later.",
   },
 ];
 

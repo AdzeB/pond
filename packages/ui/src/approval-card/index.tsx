@@ -51,7 +51,7 @@ export function ApprovalCard({
         aria-label={title}
         aria-busy={busy}
       >
-        <div className={styles["card-header"]}>
+        <div className={styles.header}>
           <span className={styles.eyebrow}>
             {eyebrow ??
               (decision === "pending"
@@ -63,14 +63,14 @@ export function ApprovalCard({
           <h3>{title}</h3>
           {description && <p>{description}</p>}
         </div>
-        {children && <div className={styles["card-body"]}>{children}</div>}
+        {children && <div className={styles.body}>{children}</div>}
         {error && (
           <div className={styles["inline-error"]} role="alert">
             {error}
           </div>
         )}
         {(showActions ?? decision === "pending") && (
-          <div className={styles["card-actions"]}>
+          <div className={styles.actions}>
             <Button
               variant="ghost"
               size="sm"

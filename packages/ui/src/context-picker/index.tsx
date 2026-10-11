@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Button } from "../button";
 import { Input } from "../input";
 import type { ReferenceItem } from "../reference-list";
-import { useScrollFade } from "../use-scroll-fade";
 import styles from "./styles.module.css";
 
 export function ContextPicker({
@@ -20,7 +19,6 @@ export function ContextPicker({
   onQueryChange?: (query: string) => void;
 }) {
   const [localQuery, setLocalQuery] = useState("");
-  const scrollFade = useScrollFade<HTMLFieldSetElement>();
   const value = query ?? localQuery;
   const visible = onQueryChange
     ? items
@@ -42,17 +40,13 @@ export function ContextPicker({
           }}
         />
       </Input.Root>
-      <fieldset
-        className={styles["picker-list"]}
-        aria-label="Context"
-        {...scrollFade}
-      >
+      <fieldset className={styles.list} aria-label="Context">
         {visible.length ? (
           visible.map((item) => (
             <Button
               key={item.id}
               variant="ghost"
-              className={styles["context-row"]}
+              className={styles.row}
               aria-label={item.title}
               aria-pressed={selectedIds.includes(item.id)}
               onClick={() =>
@@ -76,10 +70,10 @@ export function ContextPicker({
             </Button>
           ))
         ) : (
-          <div className={styles["picker-empty"]}>No matching Saves</div>
+          <div className={styles.empty}>No matching Saves</div>
         )}
       </fieldset>
-      <div className={styles["picker-footer"]} aria-live="polite">
+      <div className={styles.footer} aria-live="polite">
         {selectedIds.length} selected
         {selectedIds.length > 0 && (
           <Button

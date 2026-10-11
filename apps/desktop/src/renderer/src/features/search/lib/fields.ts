@@ -9,7 +9,6 @@ import {
   IconCameraOutline18 as CameraMakeIcon,
   IconCamera2Outline18 as CameraModelIcon,
   IconChatBubbleOutline18 as Caption,
-  IconMsg2Outline18 as Comment,
   IconFileOutline18 as FileIcon,
   IconClone2Outline18 as FilesIcon,
   IconFocusOutline18 as FocalLengthIcon,
@@ -86,7 +85,6 @@ const FIELD_ICONS = {
   width: WidthIcon,
   height: HeightIcon,
   url: UrlIcon,
-  comment: Comment,
 } satisfies Record<FieldId, IconComponent>;
 export function fieldIcon(field: FieldId): IconComponent {
   return FIELD_ICONS[field];

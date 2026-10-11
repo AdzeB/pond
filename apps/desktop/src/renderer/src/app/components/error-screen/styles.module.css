@@ -29,14 +29,14 @@
 
 .message {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--ds-text-md);
   line-height: 20px;
   color: var(--ds-gray-11);
   word-break: break-word;
 }
 
 .summary {
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
   font-weight: 500;
   color: var(--ds-gray-10);
   cursor: var(--ds-cursor-interactive, pointer);
@@ -58,13 +58,13 @@
   overflow: auto;
   font-family:
     ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-  font-size: 11px;
+  font-size: var(--ds-text-xs);
   line-height: 16px;
   color: var(--ds-gray-11);
   word-break: break-word;
   white-space: pre-wrap;
   background: var(--ds-gray-2);
-  border-radius: var(--ds-radius-md, 8px);
+  border-radius: var(--ds-radius-md);
 }
 
 .actions {

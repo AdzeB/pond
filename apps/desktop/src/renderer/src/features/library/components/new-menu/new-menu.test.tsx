@@ -21,11 +21,7 @@ describe("new menu", () => {
       },
     );
     vi.stubGlobal("pond", {
-      query: vi.fn(async (name: string) =>
-        name === "saves.desktopScreenshotSources"
-          ? { sources: [] }
-          : { kinds: [] },
-      ),
+      query: vi.fn(async () => ({ kinds: [] })),
     });
     host = document.createElement("div");
     document.body.append(host);
@@ -113,15 +109,6 @@ describe("new menu", () => {
     await act(async () => newMenuDialog.open({ kind: "links" }));
     expect(document.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
       "https://example.test",
-    );
-  });
-
-  it("hosts the screenshot source picker from the shared store", async () => {
-    await act(async () => root.render(<NewMenuDialogHost />));
-    await act(async () => newMenuDialog.open({ kind: "screenshot" }));
-    expect(document.body.textContent).toContain("Capture Screenshot");
-    expect(document.body.textContent).toContain(
-      "Choose a screen or window to save as an image.",
     );
   });
 });

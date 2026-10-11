@@ -1,3 +1,5 @@
+import { matchesShortcut } from "@/shared/lib/shortcuts";
+
 const NON_TEXT_INPUTS = new Set([
   "button",
   "checkbox",
@@ -53,7 +55,9 @@ export function eventFromEditable(event: KeyboardEvent): boolean {
 }
 
 export function stopAppHotkeysFromEditable(event: {
+  nativeEvent: KeyboardEvent;
   stopPropagation: () => void;
 }): void {
+  if (matchesShortcut(event.nativeEvent, "library.search")) return;
   event.stopPropagation();
 }

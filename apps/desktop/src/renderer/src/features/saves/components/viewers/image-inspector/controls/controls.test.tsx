@@ -37,7 +37,6 @@ describe("image inspector toolbar", () => {
           onFlip={noop}
           onRotate={noop}
           onSaveCrop={noop}
-          onToggleComment={noop}
           onToggleCrop={noop}
           onZoomIn={noop}
           onZoomOut={noop}
@@ -53,7 +52,6 @@ describe("image inspector toolbar", () => {
       "Zoom Out",
       "Zoom Ratio",
       "Zoom In",
-      "Comment",
       "Flip",
       "Rotate",
       "Crop",
@@ -101,7 +99,6 @@ describe("image inspector toolbar", () => {
           onFlip={noop}
           onRotate={noop}
           onSaveCrop={noop}
-          onToggleComment={noop}
           onToggleCrop={noop}
           onZoomIn={noop}
           onZoomOut={noop}
@@ -153,7 +150,6 @@ describe("image inspector toolbar", () => {
           onFlip={noop}
           onRotate={noop}
           onSaveCrop={noop}
-          onToggleComment={noop}
           onToggleCrop={noop}
           onToggleGifFrames={noop}
           onZoomIn={noop}
@@ -187,7 +183,6 @@ describe("image inspector toolbar", () => {
           onFlip={noop}
           onRotate={noop}
           onSaveCrop={noop}
-          onToggleComment={noop}
           onToggleCrop={noop}
           onZoomIn={noop}
           onZoomOut={noop}
@@ -198,7 +193,6 @@ describe("image inspector toolbar", () => {
 
     const labeled = (label: string) =>
       host.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`);
-    expect(labeled("Comment")).not.toBeNull();
     expect(labeled("Actual Size")).not.toBeNull();
     expect(labeled("Fit to Window")).not.toBeNull();
     expect(labeled("Flip")).toBeNull();

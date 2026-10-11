@@ -1,4 +1,4 @@
-import { useVideoDownloadBinding } from "@/features/settings/components/sections/downloads/downloads";
+import { useVideoDownloadBinding } from "@/features/settings/components/sections/downloads";
 import {
   defineCustomSection,
   group,

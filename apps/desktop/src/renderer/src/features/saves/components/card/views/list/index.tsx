@@ -56,9 +56,7 @@ export function ListCard({ model, width }: SaveCardViewProps) {
         </span>
       ) : null}
       {columns.annotation ? (
-        <span className={styles.cell}>
-          {save.notes?.trim() || (save.comments?.length ?? 0) > 0 ? "Yes" : "—"}
-        </span>
+        <span className={styles.cell}>{save.notes?.trim() ? "Yes" : "—"}</span>
       ) : null}
     </div>
   );

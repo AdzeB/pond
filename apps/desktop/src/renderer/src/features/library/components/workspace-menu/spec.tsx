@@ -7,7 +7,7 @@ import {
 import { IconGithub, IconXTwitterGlyph } from "@pond/icons/social-media";
 import type { MenuItemSpec } from "@pond/ui";
 import { z } from "zod";
-import { openSettings } from "@/features/settings/lib/open-settings";
+import { openSettings } from "@/shared/lib/open-settings";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { notify } from "@/shared/lib/toast";
 

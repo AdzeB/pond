@@ -25,7 +25,7 @@ function EagleReferenceFrame({
   return (
     <iframe
       key={`${picker}-${theme}-${resetKey}`}
-      className={styles.referenceFrame}
+      className={styles["reference-frame"]}
       title={`Extracted Eagle 4 ${picker} picker`}
       src={`/__eagle_reference__/index.html?embed=1&picker=${picker}&theme=${theme}`}
       sandbox="allow-scripts allow-same-origin"
@@ -318,7 +318,7 @@ function PickerGallery() {
   return (
     <main className={styles.page}>
       <header className={styles.hero}>
-        <div className={styles.heroCopy}>
+        <div className={styles["hero-copy"]}>
           <span className={styles.eyebrow}>Pond design system</span>
           <h1>Assignment picker lab</h1>
           <p>
@@ -340,8 +340,8 @@ function PickerGallery() {
       </header>
 
       <section className={styles.comparison} aria-label="Picker comparison">
-        <section className={styles.comparisonSet}>
-          <header className={styles.comparisonHeader}>
+        <section className={styles["comparison-set"]}>
+          <header className={styles["comparison-header"]}>
             <div>
               <span className={styles.kicker}>Hierarchy</span>
               <h2>Folders</h2>
@@ -353,7 +353,7 @@ function PickerGallery() {
             reference runs Eagle's original picker code against local fixture
             data.
           </p>
-          <div className={styles.versionGrid}>
+          <div className={styles["version-grid"]}>
             <article className={styles.specimen}>
               <header>
                 <div>
@@ -362,7 +362,9 @@ function PickerGallery() {
                 </div>
                 <span className={styles.badge}>Extracted behavior</span>
               </header>
-              <div className={`${styles.panelFrame} ${styles.folderFrame}`}>
+              <div
+                className={`${styles["panel-frame"]} ${styles["folder-frame"]}`}
+              >
                 <EagleReferenceFrame
                   picker="folder"
                   theme={theme}
@@ -379,7 +381,9 @@ function PickerGallery() {
                 </div>
                 <span className={styles.badge}>Current proposal</span>
               </header>
-              <div className={`${styles.panelFrame} ${styles.folderFrame}`}>
+              <div
+                className={`${styles["panel-frame"]} ${styles["folder-frame"]}`}
+              >
                 <FolderMenu
                   folders={folders}
                   selectionSize={3}
@@ -396,8 +400,8 @@ function PickerGallery() {
           </div>
         </section>
 
-        <section className={styles.comparisonSet}>
-          <header className={styles.comparisonHeader}>
+        <section className={styles["comparison-set"]}>
+          <header className={styles["comparison-header"]}>
             <div>
               <span className={styles.kicker}>Classification</span>
               <h2>Tags</h2>
@@ -411,7 +415,7 @@ function PickerGallery() {
             assignment surface focused on search and selection without a
             secondary navigation rail.
           </p>
-          <div className={styles.versionGrid}>
+          <div className={styles["version-grid"]}>
             <article className={styles.specimen}>
               <header>
                 <div>
@@ -420,7 +424,9 @@ function PickerGallery() {
                 </div>
                 <span className={styles.badge}>Extracted behavior</span>
               </header>
-              <div className={`${styles.panelFrame} ${styles.tagFrame}`}>
+              <div
+                className={`${styles["panel-frame"]} ${styles["tag-frame"]}`}
+              >
                 <EagleReferenceFrame
                   picker="tag"
                   theme={theme}
@@ -437,7 +443,9 @@ function PickerGallery() {
                 </div>
                 <span className={styles.badge}>Current proposal</span>
               </header>
-              <div className={`${styles.panelFrame} ${styles.tagFrame}`}>
+              <div
+                className={`${styles["panel-frame"]} ${styles["tag-frame"]}`}
+              >
                 <TagMenuView
                   tags={TAGS}
                   groups={TAG_GROUPS}

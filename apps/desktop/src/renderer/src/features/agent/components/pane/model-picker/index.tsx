@@ -19,8 +19,11 @@ import { displayName, type ProviderModel } from "@shared/provider-models";
 import type { QueryResult } from "@shared/query-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
-import { openSettings } from "@/features/settings/lib/open-settings";
+import { useMenuFilterQuery } from "@/shared/hooks/use-menu-filter-query";
+import { openSettings } from "@/shared/lib/open-settings";
 import styles from "./styles.module.css";
+
+const { contains } = Menu.getFilter();
 
 type PickerModel = ProviderModel & {
   key: string;
@@ -90,7 +93,7 @@ export function ModelPicker({
   onOptionsChange: (next: AgentModelOptions) => void;
   onManageModels?: (section: "agent-models" | "models") => void;
 }) {
-  const [query, setQuery] = useState("");
+  const { query, onValueChange, reset } = useMenuFilterQuery();
   const [open, setOpen] = useState(false);
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [activeTop, setActiveTop] = useState(0);
@@ -124,12 +127,10 @@ export function ModelPicker({
   const label =
     selected?.name ?? (modelId ? displayName(modelId) : "Choose a model");
   const providerLabel = selectedProvider?.provider ?? "Choose a provider";
-  const normalizedQuery = query.trim().toLowerCase();
+  const trimmedQuery = query.trim();
   const providerItems = items.filter((item) => item.provider === provider);
-  const visibleItems = normalizedQuery
-    ? providerItems.filter((item) =>
-        item.search.toLowerCase().includes(normalizedQuery),
-      )
+  const visibleItems = trimmedQuery
+    ? providerItems.filter((item) => contains(item.search, trimmedQuery))
     : providerItems;
   const activeModel = visibleItems.find((item) => item.key === activeKey);
   const contextChoices = contextChoicesFor(selected?.contextWindow);
@@ -145,7 +146,7 @@ export function ModelPicker({
       : "provider-default",
   };
   const modelError =
-    catalog.isError || catalog.data?.providers.some((row) => row.error);
+    catalog.isError || catalog.data?.providers.some((row) => !row.ok);
   const emptyMessage = providerItems.length
     ? "No models found. Try another name."
     : catalog.data?.providers.length
@@ -292,124 +293,133 @@ export function ModelPicker({
   );
 
   const modelSubmenu = (
-    <Menu.SubmenuRoot>
-      <Menu.SubmenuTrigger className={styles["option-submenu"]}>
-        <Menu.ItemLabel>Model</Menu.ItemLabel>
-        <Menu.SecondaryLabel>{label}</Menu.SecondaryLabel>
-      </Menu.SubmenuTrigger>
-      <Menu.Portal>
-        <Menu.Positioner
-          side="inline-end"
-          align="start"
-          sideOffset={-2}
-          alignOffset={-4}
-        >
-          <Menu.Popup className={styles.models}>
-            <Menu.Input
-              aria-label="Search models"
-              placeholder="Search models…"
-              value={query}
-              onValueChange={setQuery}
-            />
-            <Menu.List className={styles.list} aria-label="Models">
-              {catalog.isPending ? (
-                <Menu.Item disabled>
-                  <Menu.ItemLabel>Loading models</Menu.ItemLabel>
-                </Menu.Item>
-              ) : visibleItems.length ? (
-                visibleItems.map((model) => (
-                  <Menu.Item
-                    key={model.key}
-                    onFocus={(event) =>
-                      activateModel(model, event.currentTarget)
-                    }
-                    onMouseEnter={(event) =>
-                      activateModel(model, event.currentTarget)
-                    }
-                    onClick={() =>
-                      onChange({
-                        provider: model.provider,
-                        modelId: model.id,
-                      })
-                    }
-                  >
-                    <Menu.ItemLabel>{model.name}</Menu.ItemLabel>
-                    {model.key === selected?.key ? (
-                      <span className={styles.check} aria-hidden>
-                        <IconCheck2Fill12 />
-                      </span>
-                    ) : null}
-                  </Menu.Item>
-                ))
-              ) : (
-                <Menu.Item disabled>
-                  <Menu.ItemLabel>{emptyMessage}</Menu.ItemLabel>
-                </Menu.Item>
-              )}
-            </Menu.List>
-            {modelError ? (
-              <>
+    <Menu.FilterProvider
+      filter={null}
+      value={query}
+      onValueChange={onValueChange}
+    >
+      <Menu.SubmenuRoot
+        onItemHighlighted={(element) => {
+          const key = element?.dataset.modelKey;
+          const model = visibleItems.find((item) => item.key === key);
+          if (element && model) activateModel(model, element);
+        }}
+      >
+        <Menu.SubmenuTrigger className={styles["option-submenu"]}>
+          <Menu.ItemLabel>Model</Menu.ItemLabel>
+          <Menu.SecondaryLabel>{label}</Menu.SecondaryLabel>
+        </Menu.SubmenuTrigger>
+        <Menu.Portal>
+          <Menu.Positioner
+            side="inline-end"
+            align="start"
+            sideOffset={-2}
+            alignOffset={-4}
+          >
+            <Menu.Popup className={styles.models}>
+              <Menu.Input
+                aria-label="Search models"
+                placeholder="Search models…"
+              />
+              <Menu.FilterList className={styles.content} aria-label="Models">
+                <Menu.List className={styles.list}>
+                  {catalog.isPending ? (
+                    <Menu.Item disabled>
+                      <Menu.ItemLabel>Loading models</Menu.ItemLabel>
+                    </Menu.Item>
+                  ) : visibleItems.length ? (
+                    visibleItems.map((model) => (
+                      <Menu.Item
+                        key={model.key}
+                        data-model-key={model.key}
+                        onClick={() =>
+                          onChange({
+                            provider: model.provider,
+                            modelId: model.id,
+                          })
+                        }
+                      >
+                        <Menu.ItemLabel>{model.name}</Menu.ItemLabel>
+                        {model.key === selected?.key ? (
+                          <span className={styles.check} aria-hidden>
+                            <IconCheck2Fill12 />
+                          </span>
+                        ) : null}
+                      </Menu.Item>
+                    ))
+                  ) : (
+                    <Menu.Item disabled>
+                      <Menu.ItemLabel>{emptyMessage}</Menu.ItemLabel>
+                    </Menu.Item>
+                  )}
+                </Menu.List>
+                {modelError ? (
+                  <>
+                    <Menu.Separator />
+                    <Menu.Item
+                      closeOnClick={false}
+                      onClick={() => catalog.refetch()}
+                    >
+                      <Menu.ItemLabel>Retry Loading Models</Menu.ItemLabel>
+                    </Menu.Item>
+                  </>
+                ) : null}
                 <Menu.Separator />
                 <Menu.Item
-                  closeOnClick={false}
-                  onClick={() => catalog.refetch()}
+                  onClick={() => {
+                    setOpen(false);
+                    onManageModels(
+                      catalog.data?.providers.length
+                        ? "agent-models"
+                        : "models",
+                    );
+                  }}
                 >
-                  <Menu.ItemLabel>Retry Loading Models</Menu.ItemLabel>
+                  <Menu.ItemLabel>Manage Models</Menu.ItemLabel>
                 </Menu.Item>
-              </>
-            ) : null}
-            <Menu.Separator />
-            <Menu.Item
-              onClick={() => {
-                setOpen(false);
-                onManageModels(
-                  catalog.data?.providers.length ? "agent-models" : "models",
-                );
-              }}
-            >
-              <Menu.ItemLabel>Manage Models</Menu.ItemLabel>
-            </Menu.Item>
-            {activeModel &&
-            (activeModel.description ||
-              activeModel.contextWindow ||
-              activeModel.maxOutputTokens) ? (
-              <aside
-                className={styles.details}
-                style={{ insetBlockStart: activeTop }}
-                aria-live="polite"
-              >
-                <h3 className={styles.title}>{activeModel.name}</h3>
-                {activeModel.description ? (
-                  <p className={styles.description}>
-                    {activeModel.description}
-                  </p>
-                ) : null}
-                {activeModel.contextWindow || activeModel.maxOutputTokens ? (
-                  <dl className={styles.specs}>
-                    {activeModel.contextWindow ? (
-                      <div>
-                        <dt>Context</dt>
-                        <dd>
-                          {compactTokens(activeModel.contextWindow)} tokens
-                        </dd>
-                      </div>
-                    ) : null}
-                    {activeModel.maxOutputTokens ? (
-                      <div>
-                        <dt>Maximum output</dt>
-                        <dd>
-                          {compactTokens(activeModel.maxOutputTokens)} tokens
-                        </dd>
-                      </div>
-                    ) : null}
-                  </dl>
-                ) : null}
-              </aside>
-            ) : null}
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.SubmenuRoot>
+              </Menu.FilterList>
+              {activeModel &&
+              (activeModel.description ||
+                activeModel.contextWindow ||
+                activeModel.maxOutputTokens) ? (
+                <aside
+                  className={styles.details}
+                  style={{ insetBlockStart: activeTop }}
+                  aria-live="polite"
+                >
+                  <h3 className={styles.title}>{activeModel.name}</h3>
+                  {activeModel.description ? (
+                    <p className={styles.description}>
+                      {activeModel.description}
+                    </p>
+                  ) : null}
+                  {activeModel.contextWindow || activeModel.maxOutputTokens ? (
+                    <dl className={styles.specs}>
+                      {activeModel.contextWindow ? (
+                        <div>
+                          <dt>Context</dt>
+                          <dd>
+                            {compactTokens(activeModel.contextWindow)} tokens
+                          </dd>
+                        </div>
+                      ) : null}
+                      {activeModel.maxOutputTokens ? (
+                        <div>
+                          <dt>Maximum output</dt>
+                          <dd>
+                            {compactTokens(activeModel.maxOutputTokens)} tokens
+                          </dd>
+                        </div>
+                      ) : null}
+                    </dl>
+                  ) : null}
+                </aside>
+              ) : null}
+            </Menu.Popup>
+          </Menu.Positioner>
+        </Menu.Portal>
+      </Menu.SubmenuRoot>
+    </Menu.FilterProvider>
   );
 
   return (
@@ -418,7 +428,7 @@ export function ModelPicker({
       onOpenChange={(next) => {
         setOpen(next);
         if (!next) {
-          setQuery("");
+          reset();
           setActiveKey(null);
           setActiveTop(0);
         }

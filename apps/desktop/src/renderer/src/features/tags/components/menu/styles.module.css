@@ -8,18 +8,14 @@
 }
 
 .list {
-  --scroll-fade-size: 16px;
-}
-
-.list {
   min-height: 120px;
 }
 
-.tagGroup {
+.group {
   display: block;
 }
 
-.root[data-layout="grid"] .tagGroup {
+.root[data-layout="grid"] .group {
   display: grid;
   grid-template-columns: repeat(var(--tag-grid-columns), minmax(0, 1fr));
   gap: 2px 0;
@@ -40,17 +36,12 @@
   width: min(360px, var(--available-width));
 }
 
-.root[data-layout="grid"] .tagGroup > :first-child {
+.root[data-layout="grid"] .group > :first-child {
   grid-column: 1 / -1;
 }
 
-.root[data-layout="grid"] .tagGroup > [role="option"] {
+.root[data-layout="grid"] .group > [role="option"] {
   margin-inline: 2px;
-}
-
-.count {
-  flex-shrink: 0;
-  padding-inline-start: 6px;
 }
 
 .section svg {
@@ -62,4 +53,8 @@
 
 .section[aria-expanded="false"] svg {
   transform: rotate(-90deg);
+}
+
+.root[data-layout="list"] {
+  width: min(440px, var(--available-width));
 }

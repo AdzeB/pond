@@ -67,7 +67,7 @@ export function EpubCardPreview({
         />
       ) : null}
       {!loaded ? (
-        <div className={styles.bookFallback}>
+        <div className={styles.fallback}>
           <span>EPUB</span>
           <strong>{title || "eBook"}</strong>
           <i />

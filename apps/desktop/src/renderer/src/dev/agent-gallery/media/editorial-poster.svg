@@ -1,4 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 900">
+  <title>Editorial poster</title>
   <rect width="720" height="900" fill="#efe7d7"/>
   <rect x="48" y="48" width="624" height="804" fill="#f8f3e8" stroke="#201d19" stroke-width="3"/>
   <circle cx="492" cy="282" r="154" fill="#df4c2f"/>

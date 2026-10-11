@@ -1,16 +1,16 @@
 .root {
   display: flex;
   flex: 1;
-  min-width: 0;
-  min-height: 0;
   align-items: center;
   justify-content: center;
+  min-width: 0;
+  min-height: 0;
   padding: 48px;
   overflow: auto;
   background: var(--ds-gray-2);
 }
 
-.audioCard {
+.card {
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -22,7 +22,7 @@
   box-shadow: var(--ds-shadow-md);
 }
 
-.audioCard audio {
+.card audio {
   width: 100%;
 }
 
@@ -33,7 +33,7 @@
   cursor: crosshair;
 }
 
-.audioTransport {
+.transport {
   display: flex;
   gap: 2px;
   align-items: center;
@@ -41,13 +41,13 @@
   min-width: 0;
 }
 
-.audioProgress {
+.progress {
   flex: 1 1 160px;
   min-width: 80px;
   margin-inline: 6px;
 }
 
-.audioVolume {
+.volume {
   flex: 0 1 104px;
   width: 104px;
   min-width: 64px;

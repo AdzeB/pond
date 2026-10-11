@@ -1,6 +1,7 @@
 import type { MenuItemSpec } from "@pond/ui";
 import { describe, expect, it } from "vitest";
 import "@/app/effects/save-library-bridge";
+import { clipEmbeddingVersion, embeddingDimensions } from "@shared/embeddings";
 import type { Save } from "@/features/saves/types";
 import { menuLabels as labels } from "@/shared/test/menu-labels";
 import { buildSaveMenu } from "./menu";
@@ -302,7 +303,12 @@ describe("Eagle baseline save menu", () => {
   it("uses outcome-led labels for image and source actions", () => {
     const items = labels(
       buildSaveMenu(
-        { ...imageSave("web"), source: "web" },
+        {
+          ...imageSave("web"),
+          source: "web",
+          clipEmbedding: Array.from({ length: embeddingDimensions() }, () => 0),
+          clipModel: clipEmbeddingVersion(),
+        },
         { clipboardEmpty: true },
       ),
     );
@@ -317,6 +323,29 @@ describe("Eagle baseline save menu", () => {
         "Archive Site",
       ]),
     );
+  });
+
+  it("offers Find Similar Saves for compatible media vectors", () => {
+    const embeddedVideo: Save = {
+      ...videoSave(),
+      clipEmbedding: Array.from({ length: embeddingDimensions() }, () => 0),
+      clipModel: clipEmbeddingVersion(),
+    };
+    const staleImage: Save = {
+      ...imageSave("stale"),
+      clipEmbedding: Array.from({ length: embeddingDimensions() }, () => 0),
+      clipModel: "old-media-model",
+    };
+
+    expect(
+      labels(buildSaveMenu(embeddedVideo, { clipboardEmpty: true })),
+    ).toContain("Find Similar Saves");
+    expect(
+      labels(buildSaveMenu(imageSave("unembedded"), { clipboardEmpty: true })),
+    ).not.toContain("Find Similar Saves");
+    expect(
+      labels(buildSaveMenu(staleImage, { clipboardEmpty: true })),
+    ).not.toContain("Find Similar Saves");
   });
 
   it("keeps Navigator and Grayscale in the opened image menu", () => {

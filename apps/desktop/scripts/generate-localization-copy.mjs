@@ -45,12 +45,20 @@ for (const copy of [...copies].sort()) {
   }
 }
 
+for (const [key, message] of Object.entries(english)) {
+  if (key.startsWith("copy.") && !copies.has(message)) delete english[key];
+}
+
 for (const locale of locales) {
   const path = join(catalogDir, `${locale}.json`);
   const catalog = catalogs.get(locale);
   const sorted = Object.fromEntries(
     Object.entries(catalog)
-      .filter(([key, message]) => locale === "en" || message !== english[key])
+      .filter(
+        ([key, message]) =>
+          Object.hasOwn(english, key) &&
+          (locale === "en" || message !== english[key]),
+      )
       .sort(([left], [right]) => left.localeCompare(right)),
   );
   await writeFile(path, `${JSON.stringify(sorted, null, 2)}\n`);

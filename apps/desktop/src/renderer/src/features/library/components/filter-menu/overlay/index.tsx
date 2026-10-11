@@ -6,10 +6,10 @@ import {
 import { Button, Input } from "@pond/ui";
 import { useId, useRef, useState } from "react";
 import {
-  clipImageEmbedding,
-  clipModelVersion,
-} from "@/features/enrichment/lib/clip";
-import { loadImage } from "@/features/enrichment/lib/image";
+  loadImage,
+  mediaImageEmbedding,
+  mediaModelVersion,
+} from "@/features/enrichment";
 import {
   setSemanticQuery,
   setVisualProbe,
@@ -17,10 +17,10 @@ import {
   useVisualProbe,
   type VisualProbe,
 } from "@/features/library/state/view-store";
-import { draggingSaveIds } from "@/features/saves/lib/start-drag";
-import { pool } from "@/features/saves/state/pool";
-import { openSettings } from "@/features/settings/lib/open-settings";
-import { usePrefs } from "@/features/settings/state/prefs";
+import { draggingSaveIds } from "@/features/saves";
+import { pool } from "@/features/saves/pool";
+import { openSettings } from "@/shared/lib/open-settings";
+import { usePrefs } from "@/shared/state/prefs";
 import { FilterChip, FilterPopup } from "../chip";
 import { stopMenuKeys } from "../menu-keys";
 import styles from "./styles.module.css";
@@ -230,10 +230,10 @@ async function encodeFile(
   const url = URL.createObjectURL(file);
   try {
     const image = await loadImage(url);
-    const vec = await clipImageEmbedding(image);
+    const vec = await mediaImageEmbedding(image);
     setVisualProbe({
       kind: "vector",
-      model: clipModelVersion(),
+      model: mediaModelVersion(),
       values: Array.from(vec),
       label: file.name || "Dropped image",
     });

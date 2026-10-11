@@ -23,12 +23,9 @@ import {
 } from "@/features/saves/lib/selection";
 import { viewerMemory } from "@/features/saves/lib/viewer-memory";
 import { inspect } from "@/features/saves/state/inspect";
-import {
-  getPrefsSnapshot,
-  savePrefsSection,
-} from "@/features/settings/state/prefs";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { notify } from "@/shared/lib/toast";
+import { getPrefsSnapshot, savePrefsSection } from "@/shared/state/prefs";
 import { glyph } from "./shared";
 import type { SaveMenuContext } from "./types";
 
@@ -197,7 +194,7 @@ export function buildDetailItems({
           void window.pond
             .query("saves.loadSubtitles", { id: save.id })
             .then((result) => {
-              if (!result.ok && !result.canceled)
+              if (!result.ok && result.reason !== "cancelled")
                 notify({
                   id: "subtitles",
                   title: "Couldn't load subtitles",
@@ -232,11 +229,11 @@ export function buildDetailItems({
           void window.pond
             .query("saves.replaceFile", { id: save.id })
             .then((result) => {
-              if (result.canceled) return;
               if (!result.ok) {
+                if (result.reason === "cancelled") return;
                 notify({
                   id: "replace-file",
-                  title: result.error ?? "Couldn't replace this file",
+                  title: result.error,
                 });
               }
             });

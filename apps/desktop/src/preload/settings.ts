@@ -3,7 +3,7 @@ import { contextBridge, type IpcRendererEvent, ipcRenderer } from "electron";
 
 const IPC = {
   query: "pond:query",
-  pondId: "pond:pond-id",
+  libraryId: "pond:library-id",
   openExternal: "pond:open-external",
 } as const;
 
@@ -29,8 +29,8 @@ const query: QueryClient = (name, ...args) => {
 };
 const api = {
   query,
-  pondId(): string {
-    return ipcRenderer.sendSync(IPC.pondId);
+  libraryId(): string {
+    return ipcRenderer.sendSync(IPC.libraryId);
   },
   openExternal(url: string): Promise<{ ok: boolean }> {
     return ipcRenderer.invoke(IPC.openExternal, url);

@@ -1,16 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
-  commentFromGesture,
   containImage,
   cropContains,
   imagePoint,
   inImage,
-  isAreaComment,
   lockCropAspect,
   nudgeCrop,
-  pinRegion,
   resizeCrop,
-  validImageRegion,
   viewToImagePoint,
 } from "./image-regions";
 
@@ -46,30 +42,6 @@ describe("original image coordinates", () => {
     expect(
       inImage(viewToImagePoint(frame, { zoom: 1, x: 0, y: 0 }, 2, 200, 20)),
     ).toBe(false);
-  });
-  it("rejects empty, overflowing, and nonfinite regions", () => {
-    expect(validImageRegion({ x: 0.2, y: 0.1, w: 0.5, h: 0.7 })).toBe(true);
-    expect(validImageRegion({ x: 0.8, y: 0, w: 0.5, h: 1 })).toBe(false);
-    expect(validImageRegion({ x: 0, y: 0, w: 0, h: 1 })).toBe(false);
-    expect(validImageRegion({ x: 0, y: 0, w: NaN, h: 1 })).toBe(false);
-  });
-  it("turns a click into a pin and a drag into an area", () => {
-    expect(pinRegion({ x: 0.5, y: 0.5 })).toEqual({
-      x: 0.5,
-      y: 0.5,
-      w: 0.02,
-      h: 0.02,
-    });
-    expect(isAreaComment(pinRegion({ x: 0.99, y: 0.99 }))).toBe(false);
-    expect(
-      commentFromGesture({ x: 0.2, y: 0.2 }, { x: 0.21, y: 0.205 }),
-    ).toEqual(pinRegion({ x: 0.2, y: 0.2 }));
-    expect(commentFromGesture({ x: 0, y: 0 }, { x: 0.5, y: 0.5 })).toEqual({
-      x: 0,
-      y: 0,
-      w: 0.5,
-      h: 0.5,
-    });
   });
 });
 

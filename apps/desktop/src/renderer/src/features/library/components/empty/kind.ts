@@ -1,5 +1,5 @@
 import type { LibraryNav } from "@/features/library/state/library-chrome";
-import type { SaveListMode } from "@/features/saves/lib/list";
+import type { SaveListMode } from "@/features/saves";
 
 export type LibraryEmptyKind =
   | "trash"

@@ -73,7 +73,7 @@ export function buildViewSection(context: AppMenuContext): AppMenuItem {
         click: sendMenuAction("view.sidebar.toggle"),
       },
       {
-        label: "Toggle Agent",
+        label: "Toggle Assistant",
         accelerator: accelerator("view.agent"),
         registerAccelerator: false,
         click: sendMenuAction("view.agent.toggle"),

@@ -1,71 +1,28 @@
 .popup {
-  --width: 780px;
+  --width: 880px;
+  --height: min(720px, calc(100dvh - 32px));
 }
-.body {
-  display: grid;
-  gap: 12px;
-  padding: 16px;
-}
-.tabs,
-.navigation,
-.footer {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.navigation {
-  justify-content: space-between;
-}
-.footer {
-  justify-content: flex-end;
-}
-.footer span {
-  margin-right: auto;
-}
-.description {
-  margin: 0;
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-11);
-}
+
 .list {
-  height: min(45vh, 460px);
-  overflow: auto;
-  border: var(--ds-border-width) solid var(--ds-border-subtle);
-  border-radius: var(--ds-radius-md);
-}
-.candidate {
-  position: absolute;
-  inset: 0 0 auto;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  height: 140px;
-  padding: 12px;
-  border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
-}
-.thumb {
-  position: relative;
-  flex: 0 0 120px;
-  width: 120px;
-  height: 112px;
-  overflow: hidden;
-  border-radius: var(--ds-radius-sm);
-}
-.metadata {
   display: grid;
   flex: 1;
-  gap: 6px;
-  min-width: 0;
-  font-size: var(--ds-text-md);
+  min-height: 0;
+  padding-inline: 20px;
+  margin-block-start: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
-.metadata span,
-.metadata strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+
+.rows {
+  position: relative;
 }
-.choices {
-  display: grid;
-  gap: 12px;
-  font-size: var(--ds-text-md);
+
+.row {
+  position: absolute;
+  inset: 0 0 auto;
+}
+
+.error {
+  margin: 0;
+  color: var(--ds-red-11);
 }
