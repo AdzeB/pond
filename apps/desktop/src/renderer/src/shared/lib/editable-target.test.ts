@@ -44,7 +44,6 @@ describe("editable target", () => {
   });
 
   it("stops app hotkeys from an editable surface except search", () => {
-    const mac = navigator.platform.toLowerCase().includes("mac");
     let stopped = 0;
     const stopPropagation = () => {
       stopped += 1;
@@ -57,8 +56,7 @@ describe("editable target", () => {
     stopAppHotkeysFromEditable({
       nativeEvent: new KeyboardEvent("keydown", {
         key: "k",
-        metaKey: mac,
-        ctrlKey: !mac,
+        metaKey: true,
       }),
       stopPropagation,
     });

@@ -1,7 +1,11 @@
 import { readFile } from "node:fs/promises";
 import { normalizeHotkey } from "@tanstack/hotkeys";
 import { z } from "zod";
-import { isValidShortcut, type ShortcutId } from "../../shared/shortcuts";
+import {
+  isValidShortcut,
+  SHORTCUT_PLATFORM,
+  type ShortcutId,
+} from "../../shared/shortcuts";
 
 const EagleSettingsSchema = z.object({
   preferences: z.object({
@@ -172,7 +176,7 @@ export function normalizeEagleShortcut(value: string): string | null {
   });
   const shortcut = normalized.join("+");
   if (!isValidShortcut(shortcut)) return null;
-  return normalizeHotkey(shortcut);
+  return normalizeHotkey(shortcut, SHORTCUT_PLATFORM);
 }
 
 export function mapEagleShortcuts(

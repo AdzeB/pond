@@ -132,13 +132,11 @@ describe("app hotkeys in text fields", () => {
   it("opens search from a field", async () => {
     const input = document.createElement("input");
     await mount(input);
-    const mac = navigator.platform.toLowerCase().includes("mac");
     await act(async () => {
       input.dispatchEvent(
         new KeyboardEvent("keydown", {
           key: "k",
-          metaKey: mac,
-          ctrlKey: !mac,
+          metaKey: true,
           bubbles: true,
           cancelable: true,
         }),
@@ -151,13 +149,11 @@ describe("app hotkeys in text fields", () => {
     const input = document.createElement("input");
     input.addEventListener("keydown", (event) => event.preventDefault());
     await mount(input);
-    const mac = navigator.platform.toLowerCase().includes("mac");
     await act(async () => {
       input.dispatchEvent(
         new KeyboardEvent("keydown", {
           key: "k",
-          metaKey: mac,
-          ctrlKey: !mac,
+          metaKey: true,
           bubbles: true,
           cancelable: true,
         }),
@@ -170,13 +166,11 @@ describe("app hotkeys in text fields", () => {
     const input = document.createElement("input");
     await mount(input);
     const layout = getViewState().layout;
-    const mac = navigator.platform.toLowerCase().includes("mac");
     await act(async () => {
       input.dispatchEvent(
         new KeyboardEvent("keydown", {
           key: "l",
-          metaKey: mac,
-          ctrlKey: !mac,
+          metaKey: true,
           shiftKey: true,
           bubbles: true,
           cancelable: true,

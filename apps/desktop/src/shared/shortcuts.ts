@@ -5,6 +5,9 @@ import {
 } from "@tanstack/hotkeys";
 import { GLOBAL_SHORTCUTS, LAYOUT_CYCLE_SHORTCUT } from "./global-shortcuts";
 
+/** Pond ships only on macOS; pinning it keeps `Control` distinct from `Mod` when tests run on Linux. */
+export const SHORTCUT_PLATFORM = "mac";
+
 type ShortcutGroup =
   | "Global"
   | "Navigate"
@@ -308,12 +311,12 @@ export const SHORTCUTS = {
   "viewer.frame-prev": { keys: "[", label: "Previous Frame", group: "Preview" },
   "viewer.frame-next": { keys: "]", label: "Next Frame", group: "Preview" },
   "viewer.frame-prev-ten": {
-    keys: normalizeHotkey("Shift+["),
+    keys: normalizeHotkey("Shift+[", SHORTCUT_PLATFORM),
     label: "Back Ten Frames",
     group: "Preview",
   },
   "viewer.frame-next-ten": {
-    keys: normalizeHotkey("Shift+]"),
+    keys: normalizeHotkey("Shift+]", SHORTCUT_PLATFORM),
     label: "Forward Ten Frames",
     group: "Preview",
   },
@@ -448,24 +451,27 @@ export function resolveShortcuts(
     ] as const) {
       resolved[id] = {
         ...resolved[id],
-        keys: normalizeHotkey(`Alt+${SHORTCUTS[id].keys}`),
+        keys: normalizeHotkey(`Alt+${SHORTCUTS[id].keys}`, SHORTCUT_PLATFORM),
       };
     }
     for (const command of RATING_COMMANDS) {
       resolved[command.id] = {
         ...resolved[command.id],
-        keys: normalizeHotkey(String(command.rating)),
+        keys: normalizeHotkey(String(command.rating), SHORTCUT_PLATFORM),
       };
       resolved[command.nextId] = {
         ...resolved[command.nextId],
-        keys: normalizeHotkey(`Shift+${command.rating}`),
+        keys: normalizeHotkey(`Shift+${command.rating}`, SHORTCUT_PLATFORM),
       };
     }
   }
   for (const id of Object.keys(resolved).filter(isShortcutId)) {
     const override = preferences.overrides[id];
     if (override && resolved[id].keys && isValidShortcut(override))
-      resolved[id] = { ...resolved[id], keys: normalizeHotkey(override) };
+      resolved[id] = {
+        ...resolved[id],
+        keys: normalizeHotkey(override, SHORTCUT_PLATFORM),
+      };
   }
   return resolved;
 }

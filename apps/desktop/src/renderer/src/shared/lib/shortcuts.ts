@@ -1,5 +1,6 @@
 import {
   resolveShortcuts,
+  SHORTCUT_PLATFORM,
   type SHORTCUTS,
   type ShortcutBindings,
   type ShortcutDef,
@@ -68,7 +69,14 @@ export function matchesShortcut(
   id: ShortcutKeyId,
 ): boolean {
   const keys = resolveShortcuts(shortcutPreferences.state)[id].keys;
-  return keys != null && matchesKeyboardEvent(event, parseHotkey(keys));
+  return (
+    keys != null &&
+    matchesKeyboardEvent(
+      event,
+      parseHotkey(keys, SHORTCUT_PLATFORM),
+      SHORTCUT_PLATFORM,
+    )
+  );
 }
 
 export function bindingSequence(
@@ -125,7 +133,7 @@ function unfuseGlyphs(token: string): string[] {
 }
 
 export function chordGlyphs(keys: string): string[] {
-  return formatForDisplay(keys)
+  return formatForDisplay(keys, { platform: SHORTCUT_PLATFORM })
     .split(/[\s+]+/)
     .filter(Boolean)
     .flatMap(unfuseGlyphs);

@@ -228,7 +228,7 @@ describe("gallery keyboard interaction", () => {
   it("selects every matching result from a partially loaded gallery", async () => {
     await mount(["A", "B"]);
     selectOnlySave("B");
-    await press("a", { ctrlKey: true });
+    await press("a", { metaKey: true });
     expect(selection.snapshot()).toEqual(allIds);
     expect(selection.getCursor()).toBe("B");
     expect(pool.snapshot()).toHaveLength(6);
