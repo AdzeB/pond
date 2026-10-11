@@ -8,7 +8,7 @@
   --ds-radius-full: 9999px;
 
   --ds-radius-app-icon: 33%;
-  --ds-radius-source: var(--ds-radius-app-icon);
+  --ds-radius-source: 22%;
 
   --ds-corner-icon: round;
 }

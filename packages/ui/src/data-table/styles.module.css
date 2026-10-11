@@ -39,7 +39,7 @@
   top: 0;
   z-index: 2;
   width: 100%;
-  background: var(--data-table-header-bg, var(--ds-gray-2));
+  background: var(--data-table-header-bg, var(--ds-gray-1));
 }
 
 .header-row {
@@ -59,7 +59,7 @@
   min-width: 0;
   height: var(--data-table-header-height, 28px);
   padding: 0 12px;
-  background: var(--data-table-header-bg, var(--ds-gray-2));
+  background: var(--data-table-header-bg, var(--ds-gray-1));
 }
 
 .header[data-dragging] {
