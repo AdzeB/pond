@@ -39,7 +39,7 @@
     "perf:check:repo": "node scripts/check-performance-budgets.mjs",
     "sbom:generate": "pnpm sbom --sbom-format spdx --prod --out pond.spdx.json",
     "dist": "turbo run dist",
-    "dist:mac": "turbo run build --filter @pond/desktop && pnpm --filter @pond/desktop dist:mac",
+    "dist:mac": "turbo run build --filter @pond/desktop --filter @pond/extension && pnpm --filter @pond/desktop dist:mac",
     "dist:win": "pnpm --filter @pond/desktop dist:win",
     "dist:linux": "pnpm --filter @pond/desktop dist:linux",
     "prepare": "husky",

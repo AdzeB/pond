@@ -15,6 +15,7 @@
       "outputs": ["out/**", "src/renderer/src/generated/**"]
     },
     "dist": {
+      "dependsOn": ["build", "@pond/extension#build"],
       "inputs": [
         "$TURBO_EXTENDS$",
         "electron-builder.yml",

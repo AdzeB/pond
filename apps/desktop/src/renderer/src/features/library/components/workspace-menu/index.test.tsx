@@ -110,7 +110,7 @@ describe("workspace menu", () => {
     expect(text).not.toContain("Switch Library");
     expect(text).toContain("Settings");
     expect(text).toContain("Check for Updates");
-    expect(text).toContain("Download Browser Extension");
+    expect(text).toContain("Browser Extension");
     expect(text).toContain("Twitter");
     expect(text).toContain("GitHub");
     expect(text).toContain("Email");
@@ -170,6 +170,34 @@ describe("workspace menu", () => {
     await act(async () => item.click());
     await vi.waitFor(() =>
       expect(query).toHaveBeenCalledWith("library.mergeFrom", {}),
+    );
+  });
+
+  it("downloads the browser extension from its dialog", async () => {
+    await openMenu();
+    const item = [...document.querySelectorAll('[role="menuitem"]')].find(
+      (entry) => entry.textContent?.includes("Browser Extension"),
+    );
+    if (!(item instanceof HTMLElement))
+      throw new Error("Missing Browser Extension action");
+    await act(async () => item.click());
+    await vi.waitFor(() =>
+      expect(document.querySelector('[role="dialog"]')).not.toBeNull(),
+    );
+    const dialog = document.querySelector('[role="dialog"]');
+    expect(dialog?.querySelector("video")).not.toBeNull();
+    const download = [...(dialog?.querySelectorAll("button") ?? [])].find(
+      (button) => button.textContent === "Download",
+    );
+    if (!download) throw new Error("Missing Download button");
+    await act(async () => download.click());
+    await vi.waitFor(() =>
+      expect(query).toHaveBeenCalledWith("extension.install", {}),
+    );
+    await vi.waitFor(() =>
+      expect(dialog?.textContent).toContain(
+        "Pond Extension is in your Downloads folder.",
+      ),
     );
   });
 });

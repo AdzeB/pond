@@ -2,7 +2,7 @@ const { existsSync, readdirSync, rmSync, statSync } = require("node:fs");
 const { join } = require("node:path");
 const { z } = require("zod");
 
-/** Fails the pack when bundled ffmpeg is missing; yt-dlp is fetched into userData at runtime. */
+/** Fails the pack when a bundled binary or the extension is missing; yt-dlp is fetched into userData at runtime. */
 exports.default = async function verifyBinaries(context) {
   const platform = normalizePlatform(context.electronPlatformName);
   const resourcesDir = resolveResourcesDir(context, platform);
@@ -13,6 +13,10 @@ exports.default = async function verifyBinaries(context) {
   assertPresent(ffmpegPath, "ffmpeg");
   if (platform === "darwin") {
     assertPresent(nativeHostPath, "pond-native-host");
+    assertPresent(
+      join(resourcesDir, "extension", "manifest.json"),
+      "browser extension",
+    );
   }
 
   console.log(`[pond verify] bundled ffmpeg OK (${platform})`);

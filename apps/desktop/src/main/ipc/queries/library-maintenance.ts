@@ -172,6 +172,13 @@ export const libraryMaintenanceQueries = {
     return await checkForUpdatesNow();
   },
 
+  async "extension.install"(): Promise<QueryResult<"extension.install">> {
+    const { installBrowserExtension } = await import(
+      "../../core/browser-extension"
+    );
+    return await installBrowserExtension();
+  },
+
   async "quickCapture.applyPrefs"(): Promise<
     QueryResult<"quickCapture.applyPrefs">
   > {

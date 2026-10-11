@@ -42,6 +42,7 @@ export const queryOperationAccess = {
   "downloads.activity": "read",
   "downloads.history": "read",
   "downloads.ingestingOrFailed": "read",
+  "extension.install": "hidden",
   "feedback.emit": "hidden",
   "notifications.openSettings": "hidden",
   "folders.addSaves": "review",

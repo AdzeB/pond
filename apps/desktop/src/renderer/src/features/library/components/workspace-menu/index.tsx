@@ -9,6 +9,7 @@ import { cssVars, Menu } from "@pond/ui";
 import type { QueryResult } from "@shared/query-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { BrowserExtensionDialog } from "@/features/library/components/browser-extension-dialog";
 import {
   createLibrary,
   mergeLibrary,
@@ -102,45 +103,54 @@ export function WorkspaceMenu() {
     queryKey: ["recent-libraries"],
     queryFn: () => window.pond.query("library.recent", {}),
   });
-  const items = buildWorkspaceMenuItems();
+  const [extensionOpen, setExtensionOpen] = useState(false);
+  const items = buildWorkspaceMenuItems({
+    onBrowserExtension: () => setExtensionOpen(true),
+  });
   const name = info?.name || "Pond";
 
   return (
-    <Menu.Root
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (next) void refetch();
-      }}
-    >
-      <Menu.Trigger
-        variant="ghost"
-        size="sm"
-        rounding="rounded"
-        className={styles.trigger}
+    <>
+      <Menu.Root
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (next) void refetch();
+        }}
       >
-        <span className={styles.mark} aria-hidden>
-          <img
-            className={styles["library-icon"]}
-            src={info?.icon ?? defaultAppIcon}
-            alt=""
-          />
-        </span>
-        <span className={styles.name}>{name}</span>
-        <IconChevronDown size={12} className={styles.chevron} aria-hidden />
-      </Menu.Trigger>
-      <Menu.Portal>
-        <Menu.Positioner align="start" side="bottom" alignOffset={-2}>
-          <Menu.Popup
-            className={styles.switcher}
-            style={cssVars({ "--menu-width": `${sidebarWidth - 30}px` })}
-          >
-            <LibraryMenuContent libraries={recent} />
-            <Menu.Separator />
-            <Menu.Items items={items} />
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.Root>
+        <Menu.Trigger
+          variant="ghost"
+          size="sm"
+          rounding="rounded"
+          className={styles.trigger}
+        >
+          <span className={styles.mark} aria-hidden>
+            <img
+              className={styles["library-icon"]}
+              src={info?.icon ?? defaultAppIcon}
+              alt=""
+            />
+          </span>
+          <span className={styles.name}>{name}</span>
+          <IconChevronDown size={12} className={styles.chevron} aria-hidden />
+        </Menu.Trigger>
+        <Menu.Portal>
+          <Menu.Positioner align="start" side="bottom" alignOffset={-2}>
+            <Menu.Popup
+              className={styles.switcher}
+              style={cssVars({ "--menu-width": `${sidebarWidth - 30}px` })}
+            >
+              <LibraryMenuContent libraries={recent} />
+              <Menu.Separator />
+              <Menu.Items items={items} />
+            </Menu.Popup>
+          </Menu.Positioner>
+        </Menu.Portal>
+      </Menu.Root>
+      <BrowserExtensionDialog
+        open={extensionOpen}
+        onOpenChange={setExtensionOpen}
+      />
+    </>
   );
 }

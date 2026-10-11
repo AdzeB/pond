@@ -1,17 +1,27 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { menuLabels, topLevelMenuLabels } from "@/shared/test/menu-labels";
-import { buildWorkspaceMenuItems, downloadBrowserExtension } from "./spec";
+import { buildWorkspaceMenuItems } from "./spec";
+
+function findItem(
+  items: ReturnType<typeof buildWorkspaceMenuItems>,
+  label: string,
+) {
+  return items.find(
+    (candidate) =>
+      candidate.type !== "separator" &&
+      candidate.type !== "custom" &&
+      candidate.label === label,
+  );
+}
 
 describe("workspace menu spec", () => {
-  afterEach(() => vi.unstubAllGlobals());
-
   it("lists app, release, and contact actions without submenus", () => {
-    const items = buildWorkspaceMenuItems();
+    const items = buildWorkspaceMenuItems({ onBrowserExtension: () => {} });
     const labels = [
       "Settings",
       "Check for Updates",
-      "Download Browser Extension",
+      "Browser Extension",
       "Twitter",
       "GitHub",
       "Email",
@@ -31,46 +41,24 @@ describe("workspace menu spec", () => {
     for (const label of [
       "Settings",
       "Check for Updates",
-      "Download Browser Extension",
+      "Browser Extension",
     ]) {
-      const item = items.find(
-        (candidate) =>
-          candidate.type !== "separator" &&
-          candidate.type !== "custom" &&
-          candidate.label === label,
-      );
+      const item = findItem(items, label);
       expect(item && "icon" in item ? item.icon : null).not.toBeNull();
     }
     expect(labels.join(" ")).not.toContain("…");
     expect(labels.join(" ")).not.toContain("...");
   });
 
-  it("downloads the browser extension from the latest release", async () => {
-    const openExternal = vi.fn(async () => ({ ok: true }));
-    const fetchLatest = vi.fn(
-      async () =>
-        new Response(
-          JSON.stringify({
-            assets: [
-              {
-                name: "pond-extension-1.2.3.zip",
-                browser_download_url:
-                  "https://github.com/raphaelsalaja/pond/releases/download/v1.2.3/pond-extension-1.2.3.zip",
-              },
-            ],
-          }),
-        ),
+  it("opens the browser extension dialog", () => {
+    const onBrowserExtension = vi.fn();
+    const item = findItem(
+      buildWorkspaceMenuItems({ onBrowserExtension }),
+      "Browser Extension",
     );
-    vi.stubGlobal("fetch", fetchLatest);
-    vi.stubGlobal("pond", { openExternal });
-
-    await downloadBrowserExtension();
-
-    expect(fetchLatest).toHaveBeenCalledWith(
-      "https://api.github.com/repos/raphaelsalaja/pond/releases/latest",
-    );
-    expect(openExternal).toHaveBeenCalledWith(
-      "https://github.com/raphaelsalaja/pond/releases/download/v1.2.3/pond-extension-1.2.3.zip",
-    );
+    if (!item || !("onClick" in item) || !item.onClick)
+      throw new Error("Missing Browser Extension item");
+    item.onClick();
+    expect(onBrowserExtension).toHaveBeenCalledOnce();
   });
 });
