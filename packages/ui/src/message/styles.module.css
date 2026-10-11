@@ -8,7 +8,6 @@
   font-weight: var(--ds-weight-md);
   line-height: 24px;
   color: var(--ds-gray-12);
-  letter-spacing: -0.1px;
 }
 
 .message[data-enter="true"] {
@@ -31,7 +30,7 @@
   width: 100%;
 }
 
-.message-body {
+.body {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -39,7 +38,7 @@
   min-width: 0;
 }
 
-.message[data-role="user"] .message-body {
+.message[data-role="user"] .body {
   width: fit-content;
   max-width: 75%;
   padding: 8px 12px;
@@ -48,14 +47,14 @@
   border-radius: var(--ds-radius-md);
 }
 
-.message-actions {
+.actions {
   display: flex;
   gap: 12px;
   align-items: center;
   color: var(--ds-gray-9);
 }
 
-.message-actions button {
+.actions button {
   --button-icon-size: 14px;
   width: 14px;
   height: 24px;
@@ -63,12 +62,12 @@
   padding-inline: 0;
 }
 
-.message[data-role="user"] .message-actions {
+.message[data-role="user"] .actions {
   opacity: 0;
   transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
 }
 
-.message[data-role="user"]:is(:hover, :focus-within) .message-actions {
+.message[data-role="user"]:is(:hover, :focus-within) .actions {
   opacity: 1;
 }
 
@@ -120,7 +119,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .message-actions,
+  .actions,
   .activity-trigger svg,
   .history-archive {
     transition: none;
@@ -132,7 +131,7 @@
   margin-block: 8px 24px;
 }
 
-.message[data-role="user"] > :last-child:not(.message-body) {
+.message[data-role="user"] > :last-child:not(.body) {
   position: absolute;
   right: 0;
   bottom: -28px;

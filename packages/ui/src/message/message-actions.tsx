@@ -9,7 +9,7 @@ import { ActionHint } from "../shared/action-hint";
 import { Tooltip } from "../tooltip";
 import styles from "./styles.module.css";
 
-export function MessageActions({
+export function ActionBar({
   text,
   onQuote,
 }: {
@@ -19,7 +19,7 @@ export function MessageActions({
   const [copied, setCopied] = useState(false);
   return (
     <Tooltip.Provider>
-      <div className={styles["message-actions"]}>
+      <div className={styles.actions}>
         <ActionHint label={copied ? "Copied" : "Copy"}>
           <Button
             icon

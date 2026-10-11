@@ -170,14 +170,27 @@
     display: inline-flex;
     gap: 4px;
     align-items: center;
+
+    /* The reset's `* { text-wrap: pretty }` re-enables wrapping on each segment. */
+    & > * {
+      white-space: nowrap;
+    }
   }
 
   [data-menu-breadcrumb] {
+    flex: none;
     color: var(--ds-gray-10);
   }
 
   [data-menu-breadcrumb-separator] {
+    flex: none;
     color: var(--ds-gray-8);
+  }
+
+  [data-menu-breadcrumb-current] {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
@@ -196,6 +209,18 @@
   &:first-child {
     margin-right: 8px;
   }
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding-inline: 12px;
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-md);
+  color: var(--ds-gray-8);
+  cursor: default;
+  user-select: none;
 }
 
 .group-label {

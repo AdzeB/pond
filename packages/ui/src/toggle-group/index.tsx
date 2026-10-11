@@ -8,23 +8,23 @@ function pressedToggle(root: HTMLElement): HTMLElement | null {
   return pressed.length === 1 ? pressed.item(0) : null;
 }
 
-function placePill(
-  pill: HTMLElement,
+function placeIndicator(
+  indicator: HTMLElement,
   tab: HTMLElement | null,
   animate: boolean,
 ): void {
-  if (!animate) pill.dataset.snap = "";
+  if (!animate) indicator.dataset.snap = "";
   if (tab) {
-    pill.style.transform = `translate(${tab.offsetLeft}px, ${tab.offsetTop}px)`;
-    pill.style.width = `${tab.offsetWidth}px`;
-    pill.style.height = `${tab.offsetHeight}px`;
+    indicator.style.transform = `translate(${tab.offsetLeft}px, ${tab.offsetTop}px)`;
+    indicator.style.width = `${tab.offsetWidth}px`;
+    indicator.style.height = `${tab.offsetHeight}px`;
   } else {
-    pill.style.width = "0";
-    pill.style.height = "0";
+    indicator.style.width = "0";
+    indicator.style.height = "0";
   }
   if (!animate) {
-    void pill.offsetWidth;
-    delete pill.dataset.snap;
+    void indicator.offsetWidth;
+    delete indicator.dataset.snap;
   }
 }
 
@@ -34,17 +34,17 @@ export function ToggleGroup({
   multiple,
   ...props
 }: Base.Props) {
-  const pillRef = useRef<HTMLSpanElement>(null);
+  const indicatorRef = useRef<HTMLSpanElement>(null);
 
   useLayoutEffect(() => {
     if (multiple) return;
-    const pill = pillRef.current;
-    const root = pill?.parentElement;
-    if (!pill || !root) return;
+    const indicator = indicatorRef.current;
+    const root = indicator?.parentElement;
+    if (!indicator || !root) return;
 
     let ready = false;
     const sync = (animate: boolean) => {
-      placePill(pill, pressedToggle(root), animate);
+      placeIndicator(indicator, pressedToggle(root), animate);
     };
 
     sync(false);
@@ -74,7 +74,11 @@ export function ToggleGroup({
       {...props}
     >
       {multiple ? null : (
-        <span ref={pillRef} className={styles.pill} aria-hidden="true" />
+        <span
+          ref={indicatorRef}
+          className={styles.indicator}
+          aria-hidden="true"
+        />
       )}
       {children}
     </Base>

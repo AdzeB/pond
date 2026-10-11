@@ -7,6 +7,10 @@
   bottom: 16px;
   left: auto;
   z-index: 50;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--toast-gap);
+  align-items: flex-end;
   width: var(--toast-width);
   max-width: calc(100vw - 32px);
   margin: 0;
@@ -17,17 +21,7 @@
 }
 
 .root {
-  --toast-y: calc(
-    (var(--toast-offset-y, 0px) * -1) +
-    (var(--toast-index, 0) * var(--toast-gap) * -1) +
-    var(--toast-swipe-movement-y, 0px)
-  );
-
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: auto;
-  z-index: calc(50 - var(--toast-index, 0));
+  position: relative;
   box-sizing: border-box;
   width: var(--toast-width);
   max-width: 100%;
@@ -39,7 +33,7 @@
   border-radius: var(--ds-radius-xl);
   box-shadow: var(--ds-shadow-menu);
   transform: translateX(var(--toast-swipe-movement-x, 0px))
-    translateY(var(--toast-y));
+    translateY(var(--toast-swipe-movement-y, 0px));
   transition:
     transform var(--ds-duration-medium) var(--ds-easing-decelerate),
     opacity var(--ds-duration-snap) var(--ds-easing-standard);
@@ -49,7 +43,7 @@
   &[data-ending-style] {
     opacity: 0;
     transform: translateX(var(--toast-swipe-movement-x, 0px))
-      translateY(calc(var(--toast-y) + 8px));
+      translateY(calc(var(--toast-swipe-movement-y, 0px) + 8px));
   }
 
   &[data-limited] {
@@ -59,22 +53,22 @@
 
   &[data-ending-style][data-swipe-direction="down"] {
     transform: translateX(var(--toast-swipe-movement-x, 0px))
-      translateY(calc(var(--toast-y) + 24px));
+      translateY(calc(var(--toast-swipe-movement-y, 0px) + 24px));
   }
 
   &[data-ending-style][data-swipe-direction="left"] {
     transform: translateX(calc(var(--toast-swipe-movement-x, 0px) - 24px))
-      translateY(var(--toast-y));
+      translateY(var(--toast-swipe-movement-y, 0px));
   }
 
   &[data-ending-style][data-swipe-direction="right"] {
     transform: translateX(calc(var(--toast-swipe-movement-x, 0px) + 24px))
-      translateY(var(--toast-y));
+      translateY(var(--toast-swipe-movement-y, 0px));
   }
 
   &[data-ending-style][data-swipe-direction="up"] {
     transform: translateX(var(--toast-swipe-movement-x, 0px))
-      translateY(calc(var(--toast-y) - 24px));
+      translateY(calc(var(--toast-swipe-movement-y, 0px) - 24px));
   }
 
   &[data-swiping] {

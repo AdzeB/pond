@@ -28,8 +28,10 @@ import {
 } from "./context";
 import type { RenderRowArgs, SortKind, SortValue, TableColumn } from "./types";
 
-const SELECT_WIDTH = "40px";
-const CARET_WIDTH = "28px";
+const SELECT_WIDTH = 40;
+const CARET_WIDTH = 28;
+const FIXED_PIXEL_WIDTH = /^(\d+(?:\.\d+)?)px$/;
+const MINMAX_PIXEL_WIDTH = /^minmax\(\s*(\d+(?:\.\d+)?)px\s*,/;
 
 export const DATA_TABLE_FEATURES = tableFeatures({
   rowSortingFeature,
@@ -46,6 +48,14 @@ function compareValues(a: SortValue, b: SortValue, sort: SortKind): number {
   const an = a == null ? Number.NEGATIVE_INFINITY : Number(a);
   const bn = b == null ? Number.NEGATIVE_INFINITY : Number(b);
   return an === bn ? 0 : an > bn ? 1 : -1;
+}
+
+function minimumColumnWidth<T extends RowData>(column: TableColumn<T>): number {
+  const width = column.width?.trim();
+  const match =
+    width?.match(FIXED_PIXEL_WIDTH) ?? width?.match(MINMAX_PIXEL_WIDTH);
+  if (match?.[1]) return Number(match[1]);
+  return column.minWidth ?? 0;
 }
 
 export interface DataTableSort {
@@ -113,6 +123,8 @@ export function DataTableProvider<T extends RowData>({
   );
 
   const gridRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
   const revealRow = useRef<((id: string) => void) | null>(null);
   const gridId = useId();
   const rowElementId = useCallback(
@@ -144,7 +156,7 @@ export function DataTableProvider<T extends RowData>({
   const handleSortingChange = useCallback(
     (updater: SortingState | ((prev: SortingState) => SortingState)) => {
       commitSorting(
-        typeof updater === "function" ? updater(sortingRef.current) : updater,
+        updater instanceof Function ? updater(sortingRef.current) : updater,
       );
     },
     [commitSorting],
@@ -387,8 +399,9 @@ export function DataTableProvider<T extends RowData>({
 
   const gridTemplate = useMemo(() => {
     const parts: string[] = [];
-    if (selectionEnabled && selectionCheckboxes) parts.push(SELECT_WIDTH);
-    if (expansionEnabled) parts.push(CARET_WIDTH);
+    if (selectionEnabled && selectionCheckboxes)
+      parts.push(`${SELECT_WIDTH}px`);
+    if (expansionEnabled) parts.push(`${CARET_WIDTH}px`);
     for (const col of orderedColumns) {
       const sized = columnSizing[col.id];
       parts.push(
@@ -396,6 +409,21 @@ export function DataTableProvider<T extends RowData>({
       );
     }
     return parts.join(" ");
+  }, [
+    selectionEnabled,
+    selectionCheckboxes,
+    expansionEnabled,
+    orderedColumns,
+    columnSizing,
+  ]);
+
+  const gridMinWidth = useMemo(() => {
+    let width = 0;
+    if (selectionEnabled && selectionCheckboxes) width += SELECT_WIDTH;
+    if (expansionEnabled) width += CARET_WIDTH;
+    for (const column of orderedColumns)
+      width += columnSizing[column.id] ?? minimumColumnWidth(column);
+    return width;
   }, [
     selectionEnabled,
     selectionCheckboxes,
@@ -412,6 +440,7 @@ export function DataTableProvider<T extends RowData>({
       focusRow: actions.focusRow,
       columns: orderedColumns,
       gridTemplate,
+      gridMinWidth,
       selectionEnabled,
       selectionCheckboxes,
       selectOnClick: clickSelects,
@@ -428,6 +457,7 @@ export function DataTableProvider<T extends RowData>({
       actions.focusRow,
       orderedColumns,
       gridTemplate,
+      gridMinWidth,
       selectionEnabled,
       selectionCheckboxes,
       clickSelects,
@@ -455,10 +485,13 @@ export function DataTableProvider<T extends RowData>({
       actions,
       meta: {
         gridRef,
+        scrollRef,
+        headerRef,
         revealRow,
         rowElementId,
         columns: orderedColumns,
         gridTemplate,
+        gridMinWidth,
         selectionEnabled,
         selectionCheckboxes,
         expansionEnabled,
@@ -477,6 +510,7 @@ export function DataTableProvider<T extends RowData>({
       rowElementId,
       orderedColumns,
       gridTemplate,
+      gridMinWidth,
       selectionEnabled,
       selectionCheckboxes,
       expansionEnabled,

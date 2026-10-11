@@ -6,12 +6,39 @@ import {
   type FunctionComponent,
   isValidElement,
   type ReactNode,
+  type RefObject,
   useLayoutEffect,
+  useState,
 } from "react";
+import { cssVars } from "../css-vars";
 import { DataTableBody } from "./body";
 import { useDataTable } from "./context";
 import { DataTableHeader } from "./header";
 import styles from "./styles.module.css";
+
+function useStickyHeaderOffset(
+  headerRef: RefObject<HTMLDivElement | null>,
+  enabled: boolean,
+) {
+  const [offset, setOffset] = useState(0);
+  useLayoutEffect(() => {
+    const node = headerRef.current;
+    if (!enabled || !node) {
+      setOffset(0);
+      return;
+    }
+    const measure = () => {
+      const next = node.offsetHeight;
+      setOffset((current) => (current === next ? current : next));
+    };
+    measure();
+    if (!globalThis.ResizeObserver) return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [headerRef, enabled]);
+  return offset;
+}
 
 interface SlotProps {
   children?: ReactNode;
@@ -55,6 +82,8 @@ export function DataTableRoot<T extends RowData>({
 
   const hasRows = meta.rows.length > 0 || extraRow != null;
   const showHeader = variant !== "list" && hasRows;
+  const sized = meta.height !== undefined;
+  const scrollMargin = useStickyHeaderOffset(meta.headerRef, showHeader);
 
   return (
     <div
@@ -88,12 +117,28 @@ export function DataTableRoot<T extends RowData>({
       }
       data-list={(variant === "list" && hasRows) || undefined}
     >
-      {showHeader ? <DataTableHeader<T> /> : null}
-      <DataTableBody<T>
-        extraRow={extraRow}
-        emptyState={emptyState}
-        rowOffset={showHeader ? 1 : 0}
-      />
+      <div
+        ref={meta.scrollRef}
+        className={styles.viewport}
+        data-viewport=""
+        data-header={showHeader || undefined}
+        data-sized={sized || undefined}
+        style={
+          sized
+            ? cssVars({ "--data-table-body-height": `${meta.height}px` })
+            : undefined
+        }
+      >
+        <div className={styles.sheet} style={{ minWidth: meta.gridMinWidth }}>
+          {showHeader ? <DataTableHeader<T> /> : null}
+          <DataTableBody<T>
+            extraRow={extraRow}
+            emptyState={emptyState}
+            rowOffset={showHeader ? 1 : 0}
+            scrollMargin={scrollMargin}
+          />
+        </div>
+      </div>
     </div>
   );
 }

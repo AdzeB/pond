@@ -21,6 +21,7 @@ import { CSS } from "@dnd-kit/utilities";
 import type { RowData } from "@tanstack/react-table";
 import { useReducedMotionConfig } from "motion/react";
 import {
+  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
   type PointerEvent as ReactPointerEvent,
   useRef,
@@ -113,13 +114,38 @@ function HeaderCell<T extends RowData>({ column }: { column: TableColumn<T> }) {
     window.addEventListener("pointerup", up);
   };
 
+  const resizeWithKeyboard = (event: ReactKeyboardEvent) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    event.stopPropagation();
+    const width = headRef.current?.getBoundingClientRect().width ?? 0;
+    const direction = event.key === "ArrowLeft" ? -1 : 1;
+    actions.resizeColumn(column.id, width + direction * 8);
+  };
+
+  const reorderWithKeyboard = (event: ReactKeyboardEvent) => {
+    if (
+      !column.reorderable ||
+      !event.altKey ||
+      (event.key !== "ArrowLeft" && event.key !== "ArrowRight")
+    )
+      return;
+    const index = meta.columns.findIndex((item) => item.id === column.id);
+    const offset = event.key === "ArrowLeft" ? -1 : 1;
+    const target = meta.columns[index + offset];
+    if (!target) return;
+    event.preventDefault();
+    event.stopPropagation();
+    actions.reorderColumns(column.id, target.id);
+  };
+
   const resizeHandle = column.resizable ? (
-    <span
+    <button
+      type="button"
       className={styles["resize-handle"]}
-      role="separator"
-      aria-orientation="vertical"
-      aria-label="Resize column"
+      aria-label={`Resize ${column.sortLabel ?? column.id} column`}
       onPointerDown={startResize}
+      onKeyDown={resizeWithKeyboard}
       onClick={stop}
     />
   ) : null;
@@ -144,6 +170,15 @@ function HeaderCell<T extends RowData>({ column }: { column: TableColumn<T> }) {
       data-align={column.align}
       data-dragging={isDragging || undefined}
       aria-hidden={column.headerHidden || undefined}
+      aria-sort={
+        sortable
+          ? sorted === "asc"
+            ? "ascending"
+            : sorted === "desc"
+              ? "descending"
+              : "none"
+          : undefined
+      }
       style={{
         transform: CSS.Transform.toString(transform),
         transition: reduceMotion || keyboardDrag ? "none" : transition,
@@ -155,6 +190,10 @@ function HeaderCell<T extends RowData>({ column }: { column: TableColumn<T> }) {
           className={styles["sort-button"]}
           data-active={sorted ? true : undefined}
           aria-label={`Sort by ${column.sortLabel ?? column.id}`}
+          aria-keyshortcuts={
+            column.reorderable ? "Alt+ArrowLeft Alt+ArrowRight" : undefined
+          }
+          onKeyDown={reorderWithKeyboard}
           onClick={(event) => {
             const origin = dragOrigin.current;
             dragOrigin.current = null;
@@ -234,7 +273,7 @@ export function DataTableHeader<T extends RowData>() {
               ? `Dropped ${labelFor(active.id)} at position ${ids.indexOf(String(over.id)) + 1} of ${ids.length}.`
               : `${labelFor(active.id)} was dropped without moving.`,
           onDragCancel: ({ active }) =>
-            `Moving ${labelFor(active.id)} was cancelled.`,
+            `Moving ${labelFor(active.id)} was canceled.`,
         },
       }}
       collisionDetection={closestCenter}
@@ -257,27 +296,33 @@ export function DataTableHeader<T extends RowData>() {
     >
       <SortableContext items={ids} strategy={horizontalListSortingStrategy}>
         <div
-          role="row"
-          aria-rowindex={1}
-          className={styles["header-row"]}
-          style={{ gridTemplateColumns: meta.gridTemplate }}
+          ref={meta.headerRef}
+          className={styles["header-scroll"]}
+          role="rowgroup"
         >
-          {meta.selectionEnabled && meta.selectionCheckboxes ? (
-            <div
-              role="columnheader"
-              className={styles["select-header"]}
-              aria-hidden
-            />
-          ) : null}
-          {meta.expansionEnabled ? (
-            <div role="columnheader" className={styles.header} aria-hidden />
-          ) : null}
-          {meta.columns.map((column) => (
-            <HeaderCell key={column.id} column={column} />
-          ))}
+          <div
+            role="row"
+            aria-rowindex={1}
+            className={styles["header-row"]}
+            style={{ gridTemplateColumns: meta.gridTemplate }}
+          >
+            {meta.selectionEnabled && meta.selectionCheckboxes ? (
+              <div
+                role="columnheader"
+                className={styles["select-header"]}
+                aria-hidden
+              />
+            ) : null}
+            {meta.expansionEnabled ? (
+              <div role="columnheader" className={styles.header} aria-hidden />
+            ) : null}
+            {meta.columns.map((column) => (
+              <HeaderCell key={column.id} column={column} />
+            ))}
+          </div>
         </div>
       </SortableContext>
-      {typeof document === "undefined"
+      {!globalThis.document
         ? null
         : createPortal(
             <DragOverlay

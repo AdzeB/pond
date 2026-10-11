@@ -22,6 +22,7 @@ export interface RowApi<T extends RowData> {
   focusRow: (id: string) => void;
   columns: TableColumn<T>[];
   gridTemplate: string;
+  gridMinWidth: number;
   selectionEnabled: boolean;
   selectionCheckboxes: boolean;
   selectOnClick: boolean;
@@ -49,10 +50,13 @@ export interface DataTableContextValue<T extends RowData> {
   };
   meta: {
     gridRef: RefObject<HTMLDivElement | null>;
+    scrollRef: RefObject<HTMLDivElement | null>;
+    headerRef: RefObject<HTMLDivElement | null>;
     revealRow: RefObject<((id: string) => void) | null>;
     rowElementId: (id: string) => string;
     columns: TableColumn<T>[];
     gridTemplate: string;
+    gridMinWidth: number;
     selectionEnabled: boolean;
     selectionCheckboxes: boolean;
     expansionEnabled: boolean;

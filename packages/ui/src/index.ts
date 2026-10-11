@@ -8,7 +8,7 @@ export { Badge, type BadgeTone } from "./badge";
 export { Button, type ButtonProps } from "./button";
 export { Checkbox } from "./checkbox";
 export { Chip, type ChipTone } from "./chip";
-export { ColorField, ColorPicker } from "./color-field";
+export { ColorField } from "./color-field";
 export { Combobox } from "./combobox";
 export { ContentRow } from "./content-row";
 export { ContextMenu } from "./context-menu";
@@ -28,9 +28,9 @@ export { Field } from "./field";
 export { Input } from "./input";
 export { Keyboard } from "./keyboard";
 export { Loader } from "./loader";
-export { Logo, type LogoProps } from "./logo";
+export { LOGO_PATH, LOGO_VIEW_BOX, Logo, type LogoProps } from "./logo";
 export { Menu, type MenuItemSpec } from "./menu";
-export { PaneBody, PaneHeader } from "./pane-header";
+export { Pane } from "./pane-header";
 export {
   PickerPanel,
   type PickerSelectionState,
@@ -57,7 +57,6 @@ export { ToggleGroup } from "./toggle-group";
 export { Toolbar } from "./toolbar";
 export { Tooltip } from "./tooltip";
 export { Tray } from "./tray";
-export { useScrollFade } from "./use-scroll-fade";
 export { Video } from "./video";
 export { useVideo, type VideoContextValue } from "./video/context";
 export {

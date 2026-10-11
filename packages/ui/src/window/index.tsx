@@ -444,7 +444,8 @@ function Handle({
         data-edge={edge}
         aria-orientation="vertical"
         aria-label={
-          resizeLabel ?? (edge === "left" ? "Resize sidebar" : "Resize Agent")
+          resizeLabel ??
+          (edge === "left" ? "Resize sidebar" : "Resize Assistant")
         }
         aria-valuemin={minWidth}
         aria-valuemax={maxWidth}

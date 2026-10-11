@@ -85,6 +85,7 @@ export type MenuItemSpec =
 
 interface MenuParts {
   Item: React.ComponentType<{
+    label?: string;
     disabled?: boolean;
     stale?: boolean;
     variant?: "default" | "destructive";
@@ -96,6 +97,7 @@ interface MenuParts {
   ItemLabel: React.ComponentType<{ children?: ReactNode }>;
   ItemKeyboard: React.ComponentType<{ children?: MenuShortcut }>;
   CheckboxItem: React.ComponentType<{
+    label?: string;
     checked?: boolean;
     onCheckedChange?: (checked: boolean) => void;
     disabled?: boolean;
@@ -107,6 +109,7 @@ interface MenuParts {
     variant?: "checkbox" | "check";
   }>;
   LinkItem: React.ComponentType<{
+    label?: string;
     href?: string;
     disabled?: boolean;
     onClick?: (event: React.MouseEvent) => void;
@@ -117,6 +120,7 @@ interface MenuParts {
   GroupLabel: React.ComponentType<{ children?: ReactNode }>;
   SubmenuRoot: React.ComponentType<{ children?: ReactNode }>;
   SubmenuTrigger: React.ComponentType<{
+    label?: string;
     disabled?: boolean;
     children?: ReactNode;
   }>;
@@ -167,6 +171,15 @@ function specKey(spec: MenuItemSpec, index: number): string | number {
   const breadcrumb = spec.breadcrumb.map(keyText);
   if (breadcrumb.some((segment) => segment == null)) return index;
   return [...breadcrumb, label].join(" › ");
+}
+
+/** Base UI filters on the item's `label`, so keywords join the visible text there. */
+function filterLabel(
+  spec: MenuActionItem | MenuCheckboxItem | MenuLinkItem | MenuSubmenuItem,
+): string | undefined {
+  if (!spec.keywords) return undefined;
+  const label = keyText(spec.label);
+  return label == null ? undefined : `${label} ${spec.keywords}`;
 }
 
 function renderItemLabel(
@@ -229,6 +242,7 @@ function renderSpec(
     return (
       <parts.CheckboxItem
         key={key}
+        label={filterLabel(spec)}
         checked={spec.checked}
         onCheckedChange={spec.onCheckedChange}
         disabled={spec.disabled}
@@ -254,6 +268,7 @@ function renderSpec(
     return (
       <parts.LinkItem
         key={key}
+        label={filterLabel(spec)}
         href={spec.href}
         disabled={spec.disabled}
         onClick={
@@ -279,7 +294,10 @@ function renderSpec(
   if (spec.type === "submenu") {
     return (
       <parts.SubmenuRoot key={key}>
-        <parts.SubmenuTrigger disabled={spec.disabled}>
+        <parts.SubmenuTrigger
+          label={filterLabel(spec)}
+          disabled={spec.disabled}
+        >
           {spec.icon != null ? (
             <parts.ItemIcon>{spec.icon}</parts.ItemIcon>
           ) : null}
@@ -306,6 +324,7 @@ function renderSpec(
   return (
     <parts.Item
       key={key}
+      label={filterLabel(spec)}
       disabled={spec.disabled}
       stale={spec.stale}
       variant={spec.variant}

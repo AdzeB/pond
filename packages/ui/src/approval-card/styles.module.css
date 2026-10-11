@@ -5,17 +5,17 @@
   border-radius: var(--ds-radius-xl);
 }
 
-.card-header {
+.header {
   padding: 12px;
 }
 
-.card-header h3 {
+.header h3 {
   margin: 6px 0 0;
   font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-lg);
 }
 
-.card-header p {
+.header p {
   margin: 6px 0 0;
   font-size: var(--ds-text-md);
   line-height: 1.5;
@@ -27,13 +27,13 @@
   color: var(--ds-gray-9);
 }
 
-.card-body {
+.body {
   padding: 0 12px 12px;
   font-size: var(--ds-text-md);
   color: var(--ds-gray-11);
 }
 
-.card-actions {
+.actions {
   display: flex;
   gap: 6px;
   align-items: center;

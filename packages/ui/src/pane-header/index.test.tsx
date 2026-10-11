@@ -1,13 +1,13 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { PaneBody, PaneHeader } from ".";
+import { Pane } from ".";
 
-describe("PaneHeader", () => {
+describe("Pane.Header", () => {
   it("groups a pane title and its actions in the shared chrome", () => {
     const markup = renderToStaticMarkup(
-      <PaneHeader title="Details">
+      <Pane.Header title="Details">
         <button type="button">Close</button>
-      </PaneHeader>,
+      </Pane.Header>,
     );
 
     expect(markup).toContain('data-slot="pane-header"');
@@ -18,10 +18,10 @@ describe("PaneHeader", () => {
   });
 });
 
-describe("PaneBody", () => {
+describe("Pane.Body", () => {
   it("preserves caller attributes on the shared inset container", () => {
     const markup = renderToStaticMarkup(
-      <PaneBody aria-label="Details content">Content</PaneBody>,
+      <Pane.Body aria-label="Details content">Content</Pane.Body>,
     );
 
     expect(markup).toContain('data-slot="pane-body"');

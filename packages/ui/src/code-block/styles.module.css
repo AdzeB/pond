@@ -1,4 +1,4 @@
-.code-block {
+.root {
   min-width: 0;
   overflow: hidden;
   background: var(--ds-gray-2);
@@ -6,7 +6,7 @@
   border-radius: var(--ds-radius-xl);
 }
 
-.code-header {
+.header {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -18,7 +18,7 @@
   border-radius: var(--ds-radius-xl) var(--ds-radius-xl) 0 0;
 }
 
-.code-block pre {
+.pre {
   padding: 10px 12px 12px;
   margin: 0;
   overflow-x: auto;
@@ -29,7 +29,7 @@
   user-select: text;
 }
 
-.code-header > button {
+.header > button {
   --button-icon-size: 14px;
   margin-left: auto;
   font-size: var(--ds-text-sm);
@@ -37,6 +37,6 @@
   color: inherit;
 }
 
-.code-block pre code {
+.code {
   font: inherit;
 }

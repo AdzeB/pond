@@ -81,7 +81,6 @@ function ConfirmContent({
       <Dialog.Popup initialFocus={cancelRef} aria-busy={busy}>
         <Dialog.Header>
           <Dialog.Title>{options.title}</Dialog.Title>
-          <Dialog.Close ref={cancelRef} disabled={busy} />
         </Dialog.Header>
         <Dialog.Content>
           {options.description ? (
@@ -107,6 +106,7 @@ function ConfirmContent({
           ) : null}
         </Dialog.Content>
         <Dialog.Footer>
+          <Dialog.Cancel ref={cancelRef} disabled={busy} />
           <Button
             variant={options.confirmVariant ?? "destructive"}
             disabled={busy}

@@ -1,9 +1,9 @@
 import { clsx as cn } from "clsx";
 import {
+  type ComponentPropsWithoutRef,
   createContext,
   type ReactNode,
   use,
-  useEffect,
   useRef,
   useState,
 } from "react";
@@ -47,39 +47,41 @@ function toHsb(hex: string): Color {
   }
 }
 
-interface ColorFieldProps {
+interface RootProps
+  extends Omit<
+    ComponentPropsWithoutRef<"div">,
+    "onChange" | "aria-label" | "aria-describedby"
+  > {
   value: string;
   onChange: (hex: string) => void;
   "aria-label": string;
   "aria-describedby"?: string;
   normalize?: (input: string) => string | null;
-  className?: string;
 }
 
-export function ColorField({
+function Root({
   value,
   onChange,
   "aria-label": ariaLabel,
   "aria-describedby": ariaDescribedBy,
   normalize = defaultNormalize,
   className,
-}: ColorFieldProps) {
-  const [text, setText] = useState(value);
-
-  useEffect(() => {
-    setText(value);
-  }, [value]);
+  ...props
+}: RootProps) {
+  /** A draft only applies while `value` still matches what the draft committed. */
+  const [draft, setDraft] = useState({ value, text: value });
+  const text = draft.value === value ? draft.text : value;
 
   const handleChange = (next: string) => {
-    setText(next);
     const normalized = normalize(next);
+    setDraft({ value: normalized ?? value, text: next });
     if (normalized) onChange(normalized);
   };
 
   const normalized = normalize(text);
 
   return (
-    <div className={cn(styles.root, className)}>
+    <div className={cn(styles.root, className)} {...props}>
       <Popover.Root>
         <Popover.Trigger
           type="button"
@@ -92,7 +94,7 @@ export function ColorField({
         <Popover.Portal>
           <Popover.Positioner sideOffset={6} align="start">
             <Popover.Popup className={styles.popup}>
-              <ColorPicker
+              <Picker
                 value={normalized ?? "#000000"}
                 ariaLabel={ariaLabel}
                 onChange={onChange}
@@ -128,12 +130,14 @@ const PickerContext = createContext<PickerContextValue | null>(null);
 function usePicker(): PickerContextValue {
   const context = use(PickerContext);
   if (!context) {
-    throw new Error("Color picker parts must be rendered within ColorPicker");
+    throw new Error(
+      "ColorField picker parts must be rendered within ColorField.PickerRoot",
+    );
   }
   return context;
 }
 
-function ColorPickerRoot({
+function PickerRoot({
   value,
   ariaLabel,
   onChange,
@@ -144,11 +148,12 @@ function ColorPickerRoot({
   onChange: (hex: string) => void;
   children: ReactNode;
 }) {
-  const [color, setColor] = useState<Color>(() => toHsb(value));
-
-  useEffect(() => {
-    setColor((prev) => (prev.toString("hex") === value ? prev : toHsb(value)));
-  }, [value]);
+  /** Hex drops hue at zero saturation, so keep the last HSB color while it still matches `value`. */
+  const [stored, setColor] = useState<Color>(() => toHsb(value));
+  const color =
+    stored.toString("hex").toLowerCase() === value.toLowerCase()
+      ? stored
+      : toHsb(value);
 
   const apply = (next: Color) => {
     setColor(next);
@@ -162,7 +167,7 @@ function ColorPickerRoot({
   );
 }
 
-export function ColorPicker({
+function Picker({
   value,
   ariaLabel,
   onChange,
@@ -176,18 +181,18 @@ export function ColorPicker({
   areaHeight?: number;
 }) {
   return (
-    <ColorPickerRoot value={value} ariaLabel={ariaLabel} onChange={onChange}>
+    <PickerRoot value={value} ariaLabel={ariaLabel} onChange={onChange}>
       <div className={styles.picker}>
         <div className={styles.body}>
-          <ColorArea width={areaWidth} height={areaHeight} />
-          <HueSlider height={areaHeight} />
+          <Area width={areaWidth} height={areaHeight} />
+          <Hue height={areaHeight} />
         </div>
       </div>
-    </ColorPickerRoot>
+    </PickerRoot>
   );
 }
 
-function ColorArea({
+function Area({
   width,
   height = AREA_SIZE,
   className,
@@ -247,7 +252,7 @@ function ColorArea({
   );
 }
 
-function HueSlider({
+function Hue({
   height = AREA_SIZE,
   width = TRACK_WIDTH,
   orientation = "vertical",
@@ -312,6 +317,4 @@ function HueSlider({
   );
 }
 
-ColorPicker.Root = ColorPickerRoot;
-ColorPicker.Area = ColorArea;
-ColorPicker.Hue = HueSlider;
+export const ColorField = { Root, Picker, PickerRoot, Area, Hue };

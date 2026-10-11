@@ -1,5 +1,5 @@
 import type { ComponentProps } from "react";
-import { PaneHeader } from "../pane-header";
+import { Pane } from "../pane-header";
 import styles from "./styles.module.css";
 
 export function AgentHeader({
@@ -12,7 +12,7 @@ export function AgentHeader({
   subtitle?: string;
 }) {
   return (
-    <PaneHeader
+    <Pane.Header
       {...props}
       title={
         <>
@@ -24,6 +24,6 @@ export function AgentHeader({
       }
     >
       {children}
-    </PaneHeader>
+    </Pane.Header>
   );
 }

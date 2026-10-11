@@ -50,8 +50,8 @@ describe("PickerPanel", () => {
   });
 
   it("keeps static and collapsible section headers on the same type scale", () => {
-    const sharedHeaders = declarations(".groupLabel,\n.sectionButton");
-    const sectionButton = declarations(".sectionButton", 1);
+    const sharedHeaders = declarations(".group-label,\n.section-button");
+    const sectionButton = declarations(".section-button", 1);
 
     expect(sharedHeaders).toContain("font-family: inherit;");
     expect(sharedHeaders).toContain("font-size: var(--ds-text-sm);");

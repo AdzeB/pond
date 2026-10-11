@@ -5,8 +5,9 @@
   gap: 3px;
   align-items: stretch;
   padding: 3px;
+  overflow: hidden;
   background: var(--ds-gray-a3);
-  border-radius: var(--ds-radius-full);
+  border-radius: var(--ds-radius-md);
 
   &[data-orientation="vertical"] {
     flex-direction: column;
@@ -17,7 +18,7 @@
   }
 }
 
-.pill {
+.indicator {
   position: absolute;
   top: 0;
   left: 0;
@@ -26,7 +27,7 @@
   height: 0;
   pointer-events: none;
   background: var(--ds-gray-1);
-  border-radius: var(--ds-radius-full);
+  border-radius: var(--ds-radius-sm);
   box-shadow: 0 1px 2px var(--ds-gray-a4);
   transform: translate(0);
   transition:
@@ -41,7 +42,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pill {
+  .indicator {
     transition: none;
   }
 }

@@ -2,17 +2,17 @@ import {
   IconCheckOutline18,
   IconClone2Outline18,
 } from "@pond/icons/outline/18";
-import { useState } from "react";
+import { clsx as cn } from "clsx";
+import { type ComponentPropsWithoutRef, useState } from "react";
 import { Button } from "../button";
 import styles from "./styles.module.css";
 
-export function CodeHeader({
-  language,
-  code,
-}: {
-  language?: string;
+interface HeaderProps extends ComponentPropsWithoutRef<"div"> {
   code: string;
-}) {
+  language?: string;
+}
+
+function Header({ code, language, className, ...props }: HeaderProps) {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const copied = copiedCode === code;
   const [error, setError] = useState(false);
@@ -26,7 +26,7 @@ export function CodeHeader({
     }
   }
   return (
-    <div className={styles["code-header"]}>
+    <div className={cn(styles.header, className)} {...props}>
       <span>{language || "Code"}</span>
       <Button
         size="xs"
@@ -42,19 +42,20 @@ export function CodeHeader({
   );
 }
 
-export function CodeBlock({
-  code,
-  language,
-}: {
+interface RootProps extends ComponentPropsWithoutRef<"div"> {
   code: string;
   language?: string;
-}) {
+}
+
+function Root({ code, language, className, ...props }: RootProps) {
   return (
-    <div className={styles["code-block"]}>
-      <CodeHeader code={code} language={language} />
-      <pre>
-        <code>{code}</code>
+    <div className={cn(styles.root, className)} {...props}>
+      <Header code={code} language={language} />
+      <pre className={styles.pre}>
+        <code className={styles.code}>{code}</code>
       </pre>
     </div>
   );
 }
+
+export const CodeBlock = { Root, Header };

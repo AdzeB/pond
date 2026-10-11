@@ -1,17 +1,15 @@
-import { Input as BaseInput } from "@base-ui/react/input";
 import { Menu as Base } from "@base-ui/react/menu";
 import {
   IconChevronRightFill12 as CaretRight,
   IconCheck2Fill12,
 } from "@pond/icons/fill/12";
 import { clsx as cn } from "clsx";
-import { forwardRef, useImperativeHandle } from "react";
+import { forwardRef } from "react";
 import { Button, type ButtonProps } from "../button";
 import { Checkbox } from "../checkbox";
 import { Keyboard } from "../keyboard";
 import { stopPageHotkeys } from "../stop-page-hotkeys";
 import { Switch } from "../switch";
-import { useScrollFade } from "../use-scroll-fade";
 import { type MenuItemSpec, renderMenuSpec } from "./items";
 
 import styles from "./styles.module.css";
@@ -109,25 +107,26 @@ function Viewport({ className, ...props }: Base.Viewport.Props) {
 }
 
 const List = forwardRef<HTMLDivElement, React.ComponentPropsWithoutRef<"div">>(
-  function List({ className, ...props }, forwardedRef) {
-    const scrollFade = useScrollFade<HTMLDivElement>("y");
-    useImperativeHandle(forwardedRef, () => {
-      const element = scrollFade.ref.current;
-      if (!element) throw new Error("Menu list did not mount");
-      return element;
-    });
+  function List({ className, ...props }, ref) {
+    return <div ref={ref} className={cn(styles.list, className)} {...props} />;
+  },
+);
 
+const FilterList = forwardRef<HTMLDivElement, Base.List.Props>(
+  function FilterList({ className, ...props }, ref) {
     return (
-      <div
-        ref={scrollFade.ref}
-        className={cn(styles.list, className)}
-        {...props}
-        data-scroll-fade={scrollFade["data-scroll-fade"]}
-        data-scrollable={scrollFade["data-scrollable"] || undefined}
-      />
+      <Base.List ref={ref} className={cn(styles.list, className)} {...props} />
     );
   },
 );
+
+function FilterProvider(props: Base.FilterProvider.Props) {
+  return <Base.FilterProvider {...props} />;
+}
+
+function Empty({ className, ...props }: Base.Empty.Props) {
+  return <Base.Empty className={cn(styles.empty, className)} {...props} />;
+}
 
 function Arrow({ className, ...props }: Base.Arrow.Props) {
   return <Base.Arrow className={cn(styles.arrow, className)} {...props} />;
@@ -356,11 +355,9 @@ function Items({ items }: { items: MenuItemSpec[] }) {
   );
 }
 
-function Input({ className, onKeyDown, ...props }: BaseInput.Props) {
+function Input({ className, onKeyDown, ...props }: Base.Input.Props) {
   return (
-    <BaseInput
-      type="text"
-      spellCheck={false}
+    <Base.Input
       className={cn(styles.input, className)}
       onKeyDown={(event) => {
         onKeyDown?.(event);
@@ -389,7 +386,12 @@ export const Menu = {
   ItemContent,
   ItemDescription,
   ItemKeyboard,
+  FilterProvider,
+  FilterList,
   Input,
+  Empty,
+  /** Base UI names this `useFilter`, but it is a plain function safe to call outside render. */
+  getFilter: Base.useFilter,
   SecondaryLabel,
   Group,
   GroupLabel,
