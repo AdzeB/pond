@@ -6,16 +6,15 @@ import { getDb } from "../../db";
 import { persistSave } from "../persist-save";
 import { kickReconciler } from "../pipeline/reconciler-client";
 import { maxAttemptsFor } from "../pipeline/specs";
-import {
-  ARCHIVE_VERSION,
-  hasWarcArchive,
-  readArchivedMeta,
-} from "../pipeline/workers/archive-page";
 
 export async function startArchiveBackfill(): Promise<{
   ok: true;
   queued: number;
 }> {
+  /** archive-page pulls in the WARC stack; IPC handlers import this module at launch. */
+  const { ARCHIVE_VERSION, hasWarcArchive, readArchivedMeta } = await import(
+    "../pipeline/workers/archive-page"
+  );
   const db = await getDb();
   /** Settled saves only: ingesting saves already have live tasks, and pending archive_page behind non-done peers would deadlock the sequential gate. */
   const rows = db

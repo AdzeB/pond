@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import type { Context } from "hono";
 import { readLibraryMedia } from "../core/storage/library-media-storage";
 import { getDb } from "../db";
-import { itemFile } from "../paths";
+import { saveFile } from "../paths";
 
 const IMAGE_TYPES = new Map([
   [".jpg", "image/jpeg"],
@@ -17,7 +17,7 @@ const IMAGE_TYPES = new Map([
   [".avif", "image/avif"],
 ]);
 
-export async function itemThumbHandler(c: Context): Promise<Response> {
+export async function saveThumbHandler(c: Context): Promise<Response> {
   const id = c.req.query("id");
   if (!id) return c.json({ status: "error", error: "missing id" }, 400);
 
@@ -39,8 +39,8 @@ export async function itemThumbHandler(c: Context): Promise<Response> {
       : IMAGE_TYPES.get(extname(cover.path).toLowerCase());
   if (!type) return c.json({ status: "error", error: "no cover" }, 404);
 
-  /** File names come from our own DB, but basename() keeps a corrupted row from escaping the item dir. */
-  const path = itemFile(id, basename(cover.path));
+  /** File names come from our own DB, but basename() keeps a corrupted row from escaping the Save directory. */
+  const path = saveFile(id, basename(cover.path));
   if (!existsSync(path)) {
     return c.json({ status: "error", error: "no cover" }, 404);
   }

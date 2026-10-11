@@ -6,7 +6,7 @@ import {
   TerminalError,
   TransientError,
 } from "../../pipeline/extractors/errors";
-import { harvestUrl } from "../scrape-window/harvest";
+import { harvestUrl } from "../harvest-window/harvest";
 
 interface CaptureArgs {
   url: string;

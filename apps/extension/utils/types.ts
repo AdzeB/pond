@@ -55,13 +55,11 @@ export const DEFAULT_SETTINGS: PondSettings = {
   },
 };
 
-/** Keep `enabled` from older stored shapes; drop port, apiKey, and endpoint. */
 export function normalizeStoredSettings(stored: JsonValue): PondSettings {
   const storedEnabled = at(stored, "enabled");
   if (!isRecord(storedEnabled)) {
     return { enabled: { ...DEFAULT_SETTINGS.enabled } };
   }
-  // Stored flags are only read for truthiness, so legacy non-boolean entries keep behaving as they did.
   const enabled: Record<string, boolean> = {};
   for (const [key, value] of Object.entries(storedEnabled)) {
     enabled[key] = Boolean(value);

@@ -37,7 +37,7 @@ export function libraryLocationRoutes(
       return c.json(
         {
           status: "error",
-          error: result.reason || "Could not switch Libraries.",
+          error: result.error ?? "Could not switch Libraries.",
         },
         409,
       );

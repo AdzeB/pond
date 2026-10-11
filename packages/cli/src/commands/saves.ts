@@ -42,7 +42,7 @@ export function registerSaveCommands(program: Command): void {
         sortKey: "savedAt",
         sortDir: "desc",
       });
-      return api.items({ ids: page.ids });
+      return api.saves({ ids: page.ids });
     },
   );
   action(
@@ -58,12 +58,12 @@ export function registerSaveCommands(program: Command): void {
         sortKey: "savedAt",
         sortDir: "desc",
       });
-      return api.items({ ids: page.ids });
+      return api.saves({ ids: page.ids });
     },
   );
   action(program, saves.command("get").argument("<ids...>"), async (ids) => {
     const { api } = await commandContext(program);
-    return api.items({ ids: StringArraySchema.parse(ids) });
+    return api.saves({ ids: StringArraySchema.parse(ids) });
   });
   operationCommand(
     program,

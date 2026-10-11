@@ -3,7 +3,7 @@ import { saves, tasks } from "@pond/schema/db";
 import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
-import { itemFile } from "../../paths";
+import { saveFile } from "../../paths";
 import { persistSave } from "../persist-save";
 import { resetTasksForSave } from "../pipeline/enqueue";
 import { withInteractivePriority } from "../pipeline/priority";
@@ -41,7 +41,7 @@ export async function refreshSave(
       const existing = current.files ?? [];
       await Promise.all(
         existing.map((f) =>
-          rm(itemFile(saveId, f.path), { force: true }).catch(() => {}),
+          rm(saveFile(saveId, f.path), { force: true }).catch(() => {}),
         ),
       );
       db.update(saves)
@@ -111,4 +111,4 @@ export async function refreshSave(
   }
 }
 
-export { isSourceConnected, signInToSource } from "./scrape-window";
+export { isSourceConnected, signInToSource } from "./harvest-window";

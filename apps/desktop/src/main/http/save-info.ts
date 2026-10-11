@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import type { Context } from "hono";
 import { getDb } from "../db";
 
-export async function itemInfoHandler(c: Context) {
+export async function saveInfoHandler(c: Context) {
   const id = c.req.query("id");
   if (!id) return c.json({ status: "error", error: "Missing id" }, 400);
 

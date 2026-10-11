@@ -3,8 +3,8 @@ import { saves } from "@pond/schema/db";
 import { and, asc, eq, isNull, or } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
+import { GLOBAL_POOL_CAP } from "./harvest-window";
 import { type RefreshOutcome, refreshSave } from "./index";
-import { GLOBAL_POOL_CAP } from "./scrape-window";
 
 export interface RefreshBackfillOptions {
   source?: Source | null;

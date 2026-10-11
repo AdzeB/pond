@@ -49,7 +49,7 @@ it("switches to a validated recent Library path", async () => {
 it("returns switch failures without claiming success", async () => {
   const routes = libraryLocationRoutes({
     recent: async () => [library],
-    switchTo: async () => ({ ok: false, reason: "Library not found." }),
+    switchTo: async () => ({ ok: false, error: "Library not found." }),
   });
 
   const response = await routes.request("/switch", {

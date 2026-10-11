@@ -62,6 +62,7 @@ export const LocalApiLibraryQueryRequestSchema = z.object({
       uncategorized: z.boolean().optional(),
       tag: z.string().optional(),
       saveIds: z.array(z.string()).optional(),
+      savedSince: z.number().int().nonnegative().optional(),
     })
     .optional(),
   randomSeed: z.string().max(128).optional(),
@@ -80,7 +81,7 @@ export const LocalApiQueryPageSchema = z.object({
   revision: z.number(),
 });
 
-export const LocalApiItemGetParamsSchema = z
+export const LocalApiSavesGetParamsSchema = z
   .object({
     limit: z.union([z.string(), z.number()]).optional().catch(undefined),
     offset: z.union([z.string(), z.number()]).optional().catch(undefined),
@@ -164,6 +165,8 @@ export type LocalApiLibraryQueryRequest = z.infer<
   typeof LocalApiLibraryQueryRequestSchema
 >;
 export type LocalApiQueryPage = z.infer<typeof LocalApiQueryPageSchema>;
-export type LocalApiItemGetParams = z.input<typeof LocalApiItemGetParamsSchema>;
+export type LocalApiSavesGetParams = z.input<
+  typeof LocalApiSavesGetParamsSchema
+>;
 export type LocalApiSave = z.infer<typeof LocalApiSaveSchema>;
 export type LocalApiLibrary = z.infer<typeof LocalApiLibrarySchema>;

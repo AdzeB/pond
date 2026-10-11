@@ -17,15 +17,15 @@ import {
 export type { JsonObject, JsonValue } from "@pond/schema/json";
 export type {
   LocalApiCursor,
-  LocalApiItemGetParams,
   LocalApiLibrary,
   LocalApiLibraryQueryRequest,
   LocalApiSave,
+  LocalApiSavesGetParams,
 } from "@pond/schema/local-api";
 
 import type {
-  LocalApiItemGetParams,
   LocalApiLibraryQueryRequest,
+  LocalApiSavesGetParams,
 } from "@pond/schema/local-api";
 
 interface Schema<Output> {
@@ -187,8 +187,8 @@ export class PondLocalApi {
     });
   }
 
-  items(input: LocalApiItemGetParams) {
-    return this.request("/item/get", LocalApiSaveSchema.array(), {
+  saves(input: LocalApiSavesGetParams) {
+    return this.request("/saves/get", LocalApiSaveSchema.array(), {
       method: "POST",
       body: JSON.stringify(input),
     });

@@ -1,6 +1,6 @@
 import { SOURCES, saves } from "@pond/schema/db";
 import type { JsonValue } from "@pond/schema/json";
-import { LocalApiItemGetParamsSchema } from "@pond/schema/local-api";
+import { LocalApiSavesGetParamsSchema } from "@pond/schema/local-api";
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Context } from "hono";
 import { getDb } from "../db";
@@ -16,8 +16,8 @@ async function readParams(c: Context): Promise<JsonValue> {
   }
 }
 
-export async function itemGetHandler(c: Context) {
-  const params = LocalApiItemGetParamsSchema.parse(await readParams(c));
+export async function savesGetHandler(c: Context) {
+  const params = LocalApiSavesGetParamsSchema.parse(await readParams(c));
 
   const db = await getDb();
   const limit = Math.min(Number(params.limit ?? 200), 1000);

@@ -1,6 +1,6 @@
 import { session } from "electron";
 import log from "electron-log/main.js";
-import { PARTITION } from "../../scrape-window/constants";
+import { PARTITION } from "../../harvest-window/constants";
 import { uniqueIdFromTiktokHtml } from "./listing";
 
 const CHROME_UA =

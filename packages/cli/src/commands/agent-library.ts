@@ -10,15 +10,21 @@ import {
 
 export function registerAgentLibraryCommands(program: Command): void {
   const agent = program.command("agent");
-  operationCommand(program, agent, "ask", "agent.send", "Ask the Agent");
+  operationCommand(program, agent, "ask", "agent.send", "Ask the Assistant");
   const chats = agent.command("chats");
-  operationCommand(program, chats, "list", "agent.chats", "List Agent chats");
+  operationCommand(
+    program,
+    chats,
+    "list",
+    "agent.chats",
+    "List Assistant chats",
+  );
   operationCommand(
     program,
     chats,
     "export",
     "agent.exportChat",
-    "Export an Agent chat",
+    "Export an Assistant chat",
   );
 
   const library = program.command("library");

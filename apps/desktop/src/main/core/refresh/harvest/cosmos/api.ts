@@ -2,7 +2,7 @@ import { session } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { partitionForIngest } from "../../../sync/accounts";
-import { PARTITION } from "../../scrape-window/constants";
+import { PARTITION } from "../../harvest-window/constants";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 import {
   CosmosLibraryDataSchema,

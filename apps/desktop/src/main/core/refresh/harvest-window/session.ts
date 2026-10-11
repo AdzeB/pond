@@ -45,8 +45,8 @@ export async function isSourceConnected(source: Source): Promise<boolean> {
   for (const account of accounts) {
     if (await isAccountConnected(account)) return true;
   }
-  const legacy = await listCookiesForSource(source, PARTITION);
-  return legacy.some((c) => isAuthCookie(source, c));
+  const shared = await listCookiesForSource(source, PARTITION);
+  return shared.some((c) => isAuthCookie(source, c));
 }
 
 export interface ImportableCookie {
@@ -182,7 +182,7 @@ export function isAuthCookieName(
   return extractorFor(source)?.authCookies(name, value) ?? false;
 }
 
-export async function listCookiesForSource(
+async function listCookiesForSource(
   source: Source,
   partition: string,
 ): Promise<Cookie[]> {

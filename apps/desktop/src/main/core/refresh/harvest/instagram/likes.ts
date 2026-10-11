@@ -53,9 +53,8 @@ export function buildInstagramLikesExpression(args: ListHarvestArgs): string {
 }
 
 /**
- * `/api/v1/feed/liked/` answers "useragent mismatch" to any web session, so this reads the Bloks
- * activity screen. That screen pages on pane scroll, which dead-ends once the pane sits at the
- * bottom and stops emitting scroll events, so each payload's own next-page arguments are replayed.
+ * `/api/v1/feed/liked/` rejects web sessions with "useragent mismatch", so this reads the Bloks activity screen.
+ * @remarks Pane-scroll paging dead-ends at the bottom, so each payload's next-page arguments are replayed.
  */
 async function inPageInstagramLikes(
   args: LikesArgs,
