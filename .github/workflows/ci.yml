@@ -51,4 +51,8 @@ jobs:
         run: pnpm build
 
       - name: Desktop end-to-end smoke
-        run: xvfb-run -a pnpm --filter @pond/desktop smoke:desktop
+        run: |
+          SANDBOX="$(dirname "$(cd apps/desktop && node -p "require('electron')")")/chrome-sandbox"
+          sudo chown root:root "$SANDBOX"
+          sudo chmod 4755 "$SANDBOX"
+          xvfb-run -a pnpm --filter @pond/desktop smoke:desktop
