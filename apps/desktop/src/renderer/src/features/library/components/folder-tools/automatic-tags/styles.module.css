@@ -1,0 +1,43 @@
+.popup {
+  --width: 480px;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.menu {
+  /* TagMenu sizes itself from the popover's available-space variables. */
+  --available-width: 100%;
+  --available-height: 320px;
+
+  display: flex;
+  overflow: hidden;
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-border);
+
+  & > * {
+    flex: 1;
+  }
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-11);
+}
+
+.option {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: var(--ds-text-sm);
+}
+
+.error {
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-red-11);
+}

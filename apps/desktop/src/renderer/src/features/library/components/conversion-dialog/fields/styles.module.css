@@ -1,0 +1,15 @@
+.field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+
+  & > [data-slot="root"] {
+    width: 100%;
+  }
+}
+
+.check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}

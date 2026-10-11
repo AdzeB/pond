@@ -1,0 +1,13 @@
+{
+  "duration": 1,
+  "frames": [
+    {
+      "path": "frame-0.png",
+      "timestamp": 0
+    },
+    {
+      "path": "frame-1.png",
+      "timestamp": 0.5
+    }
+  ]
+}

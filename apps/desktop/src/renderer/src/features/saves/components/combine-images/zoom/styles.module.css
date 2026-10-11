@@ -1,0 +1,30 @@
+.bar {
+  position: absolute;
+  inset-block-end: 16px;
+  inset-inline-start: 50%;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 4px;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow-md);
+  transform: translateX(-50%);
+}
+
+.slider {
+  width: 96px;
+  margin-inline: 4px;
+}
+
+.divider {
+  align-self: stretch;
+  width: 1px;
+  margin-block: 2px;
+  background: var(--ds-gray-a4);
+}
+
+.percent {
+  min-width: 56px;
+  font-variant-numeric: tabular-nums;
+}

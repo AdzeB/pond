@@ -8,7 +8,7 @@ import {
   stampListKind,
   unionById,
 } from "../../../sync/harvest-union";
-import { PARTITION } from "../../scrape-window/constants";
+import { PARTITION } from "../../harvest-window/constants";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 import {
   avatarFromMeJson,

@@ -1,0 +1,82 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  padding: 8px;
+  margin: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.empty {
+  display: grid;
+  flex: 1;
+  place-items: center;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto auto 24px;
+  gap: 12px;
+  align-items: center;
+  min-height: 52px;
+  padding: 6px 8px;
+  border-radius: var(--ds-radius-md);
+
+  &:hover {
+    background: var(--ds-gray-a2);
+  }
+}
+
+.frame {
+  position: relative;
+  display: block;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  background: var(--ds-gray-a2);
+  border-radius: var(--ds-radius-sm);
+  box-shadow: 0 0 0 1px var(--ds-gray-a4);
+}
+
+.caption {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-md);
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.status {
+  font-size: var(--ds-text-sm);
+  color: var(--ds-orange-11);
+}
+
+.format,
+.size {
+  font-size: var(--ds-text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-11);
+  white-space: nowrap;
+}
+
+/* Revealed on row hover so the list reads as data, not a column of buttons. */
+.remove {
+  opacity: 0;
+
+  .row:hover &,
+  .row:focus-within & {
+    opacity: 1;
+  }
+}
+
+.row[data-skipped] :is(.frame, .title, .format, .size) {
+  opacity: 0.5;
+}

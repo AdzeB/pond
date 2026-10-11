@@ -435,8 +435,8 @@ and refreshes saves from:
   icon colorways under `packages/icons/brand/tints/`.
 - **Apple notarization & code signing** — via env vars `APPLE_ID`,
   `APPLE_ID_PASSWORD`, `APPLE_TEAM_ID`, `CSC_LINK`, `CSC_KEY_PASSWORD`.
-- **Distribution targets** — macOS DMG (arm64 + x64), Windows NSIS (x64 + arm64),
-  Linux AppImage + deb.
+- **Distribution targets** — macOS DMG (arm64 + x64). Windows and Linux are
+  coming soon.
 
 ---
 

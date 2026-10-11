@@ -11,7 +11,7 @@ The twenty findings below describe the pre-implementation snapshot. The follow-u
 | 9–10 | Native and keyboard selection resolve the full result set through one async command with pending/error feedback and stale-query guards. Save, collection, table, viewer, inspector, editable and overlay commands check ownership. Async navigation does not reclaim focus after the user leaves. |
 | 11–12 | DataTable range extension reverses/shrinks correctly; arrows, boundaries, page movement and toggling use an independent cursor. Virtual rows reveal on navigation and focus return; the grid exposes total/index/selection metadata. Sources, Downloads and Tags share the control. |
 | 13–16 | Splitters accept keyboard resize/bounds/collapse and expose current widths; Assign Folders supports arrow navigation, scopes and explicit keyboard Apply; Settings fields reference visible names/descriptions; rating buttons expose the exact rating and removal behavior. |
-| 17–20 | Image comment placement, Navigator panning and 3D orbit/pan/zoom have focused keyboard paths. Agent announces completion/error/required-action boundaries and offers Read Latest Response. Command-menu Enter ignores IME composition. Imperative app/Thread scrolling follows effective reduced-motion preferences. |
+| 17–20 | Navigator panning and 3D orbit/pan/zoom have focused keyboard paths. Agent announces completion/error/required-action boundaries and offers Read Latest Response. Command-menu Enter ignores IME composition. Imperative app/Thread scrolling follows effective reduced-motion preferences. |
 
 Implementation ownership and protocols are recorded in [desktop architecture](../contributing/architecture.md). Additional regression review repaired stale cursors, focus re-entry, selected ancestor/descendant moves, preserving union browsing through unlock, and key propagation from spatial viewers.
 
@@ -116,7 +116,7 @@ Eagle's `app/index.html:589` displays `selectedFolders.length`; `:907` changes t
 
 **Acceptance:** all four directions, appropriate row/column movement, range extension, boundaries, and offscreen reveal. Use layout geometry for justified/waterfall neighbors; define list behavior separately. Keep paging support. The [W3C grid guidance](../provenance/generated/REFERENCES.md#w3c-apg-grid) provides a focus-management baseline; exact geometry is a Pond implementation decision.
 
-**Code:** [shortcut definitions](../../apps/desktop/src/shared/shortcuts.ts), [grid hotkeys](../../apps/desktop/src/renderer/src/features/library/hooks/use-grid-hotkeys.ts), [list layout](../../apps/desktop/src/renderer/src/features/library/components/layouts/list-view/list-view.tsx).
+**Code:** [shortcut definitions](../../apps/desktop/src/shared/shortcuts.ts), [grid hotkeys](../../apps/desktop/src/renderer/src/features/library/hooks/use-grid-hotkeys.ts), [list layout](../../apps/desktop/src/renderer/src/features/library/components/layouts/list-view/index.tsx).
 
 ### 6. P2 — Gallery rectangle selection is absent
 
@@ -124,7 +124,7 @@ Eagle's `app/index.html:589` displays `selectedFolders.length`; `:907` changes t
 
 **Acceptance:** support background drag selection, additive modifiers, scrolling, cancellation, and clear selection feedback. Retain a complete keyboard equivalent; rectangle selection is a productivity feature, not a prerequisite for accessibility.
 
-**Code:** [LibraryView](../../apps/desktop/src/renderer/src/features/library/components/view/view.tsx), [selection operations](../../apps/desktop/src/renderer/src/features/saves/lib/select.ts).
+**Code:** [LibraryView](../../apps/desktop/src/renderer/src/features/library/components/view/index.tsx), [selection operations](../../apps/desktop/src/renderer/src/features/saves/lib/select.ts).
 
 ### 7. P1 — Gallery selection moves without moving DOM focus
 
@@ -132,7 +132,7 @@ Eagle's `app/index.html:589` displays `selectedFolders.length`; `:907` changes t
 
 **Acceptance:** choose roving focus or active-descendant navigation, preserve a stable cursor across virtualization, and announce the current Save/selection. Tab should enter and leave the collection predictably. Test moving beyond the mounted window and returning from detail/preview. See [W3C grid guidance](../provenance/generated/REFERENCES.md#w3c-apg-grid).
 
-**Code:** [packed-grid reveal](../../apps/desktop/src/renderer/src/features/library/components/layouts/packed-grid/packed-grid.tsx), [card](../../apps/desktop/src/renderer/src/features/saves/components/card/card.tsx), [card button](../../apps/desktop/src/renderer/src/features/saves/components/card/parts/index.tsx).
+**Code:** [packed-grid reveal](../../apps/desktop/src/renderer/src/features/library/components/layouts/packed-grid/index.tsx), [card](../../apps/desktop/src/renderer/src/features/saves/components/card/index.tsx), [card button](../../apps/desktop/src/renderer/src/features/saves/components/card/parts/index.tsx).
 
 ### 8. P1 — Enter and Space target the range anchor instead of its moving endpoint
 
@@ -148,7 +148,7 @@ Eagle's `app/index.html:589` displays `selectedFolders.length`; `:907` changes t
 
 **Acceptance:** on a Library larger than one page, native menu, command invocation, and keyboard paths must agree on count and exact IDs. Show pending/error state while resolving the full result set. This is distinct from the native text-editing Select All menu item, which already has its own handler.
 
-**Code:** [native selection commands](../../apps/desktop/src/renderer/src/app/effects/native-menu-actions.ts), [view context publication](../../apps/desktop/src/renderer/src/features/library/components/view/view.tsx), [Edit menu](../../apps/desktop/src/main/app-menu/edit-section.ts).
+**Code:** [native selection commands](../../apps/desktop/src/renderer/src/app/effects/native-menu-actions.ts), [view context publication](../../apps/desktop/src/renderer/src/features/library/components/view/index.tsx), [Edit menu](../../apps/desktop/src/main/app-menu/edit-section.ts).
 
 ### 10. P1 — Keyboard commands lack consistent focus ownership
 
@@ -210,11 +210,11 @@ Eagle's `app/index.html:589` displays `selectedFolders.length`; `:907` changes t
 
 ### 17. P1 — Some spatial viewer tasks have no equivalent keyboard operation
 
-**Source; Pond baseline.** New image comments are placed through pointer gestures; entering comment mode does not provide a keyboard placement path. Crop nudging exists, but is explicitly limited to crop mode. The Navigator button derives position from mouse coordinates, so keyboard activation cannot choose a meaningful location. The 3D viewer attaches OrbitControls to a canvas without a keyboard listener/focus path; Reset and grid toggling do not provide orbit/pan/zoom equivalence.
+**Source; Pond baseline.** Crop nudging exists, but is explicitly limited to crop mode. The Navigator button derives position from mouse coordinates, so keyboard activation cannot choose a meaningful location. The 3D viewer attaches OrbitControls to a canvas without a keyboard listener/focus path; Reset and grid toggling do not provide orbit/pan/zoom equivalence.
 
-**Acceptance:** a keyboard placement cursor or numeric region form for comments; directional navigator movement; keyboard camera controls or equivalent explicit buttons. Review `role="application"` on the image stage against actual keyboard support. Existing annotation editing buttons and crop controls should be retained.
+**Acceptance:** directional navigator movement; keyboard camera controls or equivalent explicit buttons. Review `role="application"` on the image stage against actual keyboard support. Existing crop controls should be retained.
 
-**Code:** [image gestures](../../apps/desktop/src/renderer/src/features/saves/components/viewers/image-inspector/image-gestures.ts), [comment mode](../../apps/desktop/src/renderer/src/features/saves/components/viewers/image-inspector/index.tsx), [crop keys](../../apps/desktop/src/renderer/src/features/saves/components/viewers/image-inspector/use-crop-keyboard.ts), [navigator](../../apps/desktop/src/renderer/src/features/saves/components/viewers/image-inspector/navigator/index.tsx), [3D viewer](../../apps/desktop/src/renderer/src/features/saves/components/viewers/model-viewer/index.tsx).
+**Code:** [image gestures](../../apps/desktop/src/renderer/src/features/saves/components/viewers/image-inspector/image-gestures.ts), [crop keys](../../apps/desktop/src/renderer/src/features/saves/components/viewers/image-inspector/use-crop-keyboard.ts), [navigator](../../apps/desktop/src/renderer/src/features/saves/components/viewers/image-inspector/navigator/index.tsx), [3D viewer](../../apps/desktop/src/renderer/src/features/saves/components/viewers/model-viewer/index.tsx).
 
 ### 18. P2 — Agent response completion has no dedicated announcement path
 
@@ -222,7 +222,7 @@ Eagle's `app/index.html:589` displays `selectedFolders.length`; `:907` changes t
 
 **Acceptance:** announce meaningful completion, failure, or required action without reading every streamed token. Preserve the user's reading position and offer a keyboard route to the response. Verify actual VoiceOver behavior before assigning a conformance result.
 
-**Code:** [Agent pane](../../apps/desktop/src/renderer/src/features/agent/components/pane/index.tsx), [ConversationView](../../packages/ui/src/thread/conversation-view.tsx), [Thread](../../packages/ui/src/thread/thread.tsx).
+**Code:** [Agent pane](../../apps/desktop/src/renderer/src/features/agent/components/pane/index.tsx), [ConversationView](../../packages/ui/src/thread/index.tsx), [Thread](../../packages/ui/src/thread/index.tsx).
 
 ### 19. P2 — Command palette Enter does not guard IME composition
 
@@ -238,7 +238,7 @@ Eagle's `app/index.html:589` displays `selectedFolders.length`; `:907` changes t
 
 **Acceptance:** use immediate scrolling when reduced motion is requested, for both OS and Pond preference paths. Verify actual Chromium behavior. Other animations, auto-play, and focus-ring contrast require live checks rather than conclusions from this source scan.
 
-**Code:** [app scrolling](../../apps/desktop/src/renderer/src/app/effects/app-hotkeys.tsx), [Latest Message](../../packages/ui/src/thread/thread.tsx), [global CSS](../../apps/desktop/src/renderer/src/styles.css).
+**Code:** [app scrolling](../../apps/desktop/src/renderer/src/app/effects/app-hotkeys.tsx), [Latest Message](../../packages/ui/src/thread/index.tsx), [global CSS](../../apps/desktop/src/renderer/src/styles.css).
 
 ## Recommended implementation order
 
@@ -264,7 +264,7 @@ Use a disposable Library with 20 nested folders, duplicate folder names, a locke
 | VoiceOver traversal of trees, grids, settings, ratings, progress, and errors | Names, roles, values, selection, expansion, position, and meaningful updates are announced |
 | All layouts, 200% interface zoom, narrow window, light/dark/custom themes | No clipped controls or obscured focus; measure contrast/target size in rendered states |
 | OS and Pond reduced motion, IME composition, repeat keys | No unwanted motion, accidental command, repeated action, or focus jump |
-| Image comment/crop, navigator, 3D, video/audio, detached preview | Every non-path-dependent operation has an operable keyboard route |
+| Image crop, navigator, 3D, video/audio, detached preview | Every non-path-dependent operation has an operable keyboard route |
 
 Repeat the same selection and navigation exercises in Eagle to distinguish exact parity from Pond's accessibility baseline. Eagle is a workflow comparator, not an accessibility certification target.
 
@@ -297,4 +297,4 @@ The environment ran Node `25.1.0` and pnpm `11.27.0`; the repository specifies N
 - The first performance pass exceeded desktop budgets. Loading optional ZIP export support and Action/Conversion dialog bodies on use brought all five budgets back within their existing limits, without increasing them. The final desktop main bundle is 3,063.4 / 3,173.8 KiB and renderer is 5,261.0 / 5,273.4 KiB.
 - The dialog measurement regression fixture now specifies its own header size. It continues to verify observation after outgoing content unmounts, independently of a pre-existing change to the header's visual default.
 
-The remaining acceptance work is the live interaction/VoiceOver matrix above. Automated component tests cover keyboard events, paging, virtual reveal, range reversal, noncontiguous selection, modal/pane ownership, cancellation, IME, focus return, comment submission, camera movement and meaningful announcements; they do not substitute for a full assistive-technology pass.
+The remaining acceptance work is the live interaction/VoiceOver matrix above. Automated component tests cover keyboard events, paging, virtual reveal, range reversal, noncontiguous selection, modal/pane ownership, cancellation, IME, focus return, camera movement and meaningful announcements; they do not substitute for a full assistive-technology pass.

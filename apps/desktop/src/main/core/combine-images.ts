@@ -7,6 +7,11 @@ import {
   type CombineImagesOptions,
   CombineImagesOptionsSchema,
 } from "@shared/combine-images-contracts";
+import {
+  isCombinableImage,
+  layoutCombinedImages,
+} from "@shared/combine-images-layout";
+import type { OkResult } from "@shared/query-contracts-shared";
 import { inArray } from "drizzle-orm";
 import sharp, { type OverlayOptions } from "sharp";
 import { getDb } from "../db";
@@ -16,35 +21,6 @@ import { addSavesToFolder } from "./folders";
 import { createManualSave } from "./manual-import";
 import { readLibraryMedia } from "./storage/library-media-storage";
 import { recordBatchForUndo } from "./undo";
-
-const COMBINABLE = new Set([
-  "image/avif",
-  "image/gif",
-  "image/jpeg",
-  "image/jpg",
-  "image/png",
-  "image/tiff",
-  "image/webp",
-]);
-
-export function isCombinableImage(
-  mimeType: string | null | undefined,
-  path: string,
-): boolean {
-  const mime = mimeType?.trim().toLowerCase() ?? "";
-  if (COMBINABLE.has(mime)) return true;
-  const lower = path.toLowerCase();
-  return [
-    ".avif",
-    ".gif",
-    ".jpg",
-    ".jpeg",
-    ".png",
-    ".tif",
-    ".tiff",
-    ".webp",
-  ].some((extension) => lower.endsWith(extension));
-}
 
 export async function joinRasterImages(
   paths: Array<string | Buffer>,
@@ -60,34 +36,18 @@ export async function joinRasterImages(
       return { input: path, width: meta.width ?? 1, height: meta.height ?? 1 };
     }),
   );
-  const defaultCross =
-    options.direction === "horizontal"
-      ? Math.max(...sources.map((source) => source.height))
-      : Math.max(...sources.map((source) => source.width));
-  const resized = await Promise.all(
-    sources.map(async (source) => {
-      const width =
-        options.width ??
-        (options.direction === "vertical"
-          ? defaultCross
-          : options.height
-            ? Math.round(source.width * (options.height / source.height))
-            : Math.round(source.width * (defaultCross / source.height)));
-      const height =
-        options.height ??
-        (options.direction === "horizontal"
-          ? defaultCross
-          : options.width
-            ? Math.round(source.height * (options.width / source.width))
-            : Math.round(source.height * (defaultCross / source.width)));
+  const layout = layoutCombinedImages(sources, options);
+  const composites: OverlayOptions[] = await Promise.all(
+    sources.map(async (source, index) => {
+      const { left, top, width, height } = layout.items[index] ?? {
+        left: 0,
+        top: 0,
+        width: source.width,
+        height: source.height,
+      };
       let image = sharp(source.input, { pages: 1 })
         .rotate()
-        .resize({
-          width,
-          height,
-          fit: options.width && options.height ? "contain" : "fill",
-          background: { r: 0, g: 0, b: 0, alpha: 0 },
-        })
+        .resize({ width, height, fit: "fill" })
         .ensureAlpha()
         .png();
       if (options.radius > 0 || options.opacity < 1) {
@@ -97,58 +57,30 @@ export async function joinRasterImages(
         );
         image = image.composite([{ input: mask, blend: "dest-in" }]);
       }
-      return image.toBuffer({ resolveWithObject: true });
+      return { input: await image.toBuffer(), left, top };
     }),
   );
-  const contentWidth =
-    options.direction === "horizontal"
-      ? resized.reduce((sum, item) => sum + item.info.width, 0) +
-        options.spacing * (resized.length - 1)
-      : Math.max(...resized.map((item) => item.info.width));
-  const contentHeight =
-    options.direction === "vertical"
-      ? resized.reduce((sum, item) => sum + item.info.height, 0) +
-        options.spacing * (resized.length - 1)
-      : Math.max(...resized.map((item) => item.info.height));
-  const width = contentWidth + options.margin * 2;
-  const height = contentHeight + options.margin * 2;
-  const composites: OverlayOptions[] = [];
-  let cursor = options.margin;
-  for (const item of resized) {
-    const crossSize =
-      options.direction === "horizontal" ? item.info.height : item.info.width;
-    const crossAvailable =
-      options.direction === "horizontal" ? contentHeight : contentWidth;
-    const crossOffset =
-      options.alignment === "start"
-        ? 0
-        : options.alignment === "end"
-          ? crossAvailable - crossSize
-          : Math.round((crossAvailable - crossSize) / 2);
-    composites.push({
-      input: item.data,
-      left:
-        options.direction === "horizontal"
-          ? cursor
-          : options.margin + crossOffset,
-      top:
-        options.direction === "vertical"
-          ? cursor
-          : options.margin + crossOffset,
-    });
-    cursor +=
-      (options.direction === "horizontal"
-        ? item.info.width
-        : item.info.height) + options.spacing;
-  }
-  const output = sharp({
+  let output = sharp({
     create: {
-      width,
-      height,
+      width: layout.width,
+      height: layout.height,
       channels: 4,
       background: options.background,
     },
   }).composite(composites);
+  if (options.canvasRadius > 0 && options.format !== "jpeg") {
+    const radius = Math.min(
+      options.canvasRadius,
+      layout.width / 2,
+      layout.height / 2,
+    );
+    const mask = Buffer.from(
+      `<svg width="${layout.width}" height="${layout.height}"><rect width="${layout.width}" height="${layout.height}" rx="${radius}" fill="white"/></svg>`,
+    );
+    output = sharp(await output.png().toBuffer()).composite([
+      { input: mask, blend: "dest-in" },
+    ]);
+  }
   switch (options.format) {
     case "jpeg":
       return output
@@ -168,13 +100,7 @@ export async function combineImages(input: {
   ids: string[];
   folderId?: string | null;
   options?: Partial<CombineImagesOptions>;
-}): Promise<{
-  ok: boolean;
-  id?: string;
-  path?: string;
-  skipped?: number;
-  error?: string;
-}> {
+}): Promise<OkResult<{ id?: string; path?: string; skipped: number }>> {
   const unique = [...new Set(input.ids.filter(Boolean))];
   if (unique.length < 2) {
     return {
@@ -204,17 +130,13 @@ export async function combineImages(input: {
     combinedIds.push(id);
   }
   if (imageInputs.length < 2) {
-    return {
-      ok: false,
-      skipped,
-      error: "Select at least two images.",
-    };
+    return { ok: false, error: "Select at least two images." };
   }
   const directory = await mkdtemp(join(tmpdir(), "pond-combine-"));
   try {
     const options = CombineImagesOptionsSchema.parse(input.options ?? {});
     if (options.output === "export" && !options.outputPath)
-      return { ok: false, skipped, error: "Choose an export location." };
+      return { ok: false, error: "Choose an export location." };
     const bytes = await joinRasterImages(imageInputs, options);
     const extension = options.format === "jpeg" ? "jpg" : options.format;
     const path =
@@ -230,13 +152,7 @@ export async function combineImages(input: {
       title: "Combined Images",
       filePaths: [path],
     });
-    if (!created.ok || !created.id) {
-      return {
-        ok: false,
-        skipped,
-        error: created.error || "Couldn’t combine these images.",
-      };
-    }
+    if (!created.ok) return created;
     if (input.folderId) {
       await addSavesToFolder(input.folderId, [created.id]);
     }

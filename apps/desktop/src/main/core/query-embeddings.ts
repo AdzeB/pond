@@ -1,17 +1,17 @@
 import type {
-  FeatureExtractionPipeline,
+  PreTrainedModel,
   PreTrainedTokenizer,
-  SiglipTextModel,
 } from "@huggingface/transformers";
 import type { MediaType, Prefs } from "@pond/schema/db";
 import {
-  clipEmbeddingVersion,
+  embeddingCodeQuery,
+  embeddingFactClaim,
+  embeddingSearchQuery,
+  mediaEmbeddingVersion,
+  normalizedEmbeddingVector,
   textEmbeddingVersion,
 } from "../../shared/embeddings";
-import {
-  TEXT_EMBEDDING_MODEL,
-  VISUAL_MODEL,
-} from "../../shared/on-device-models";
+import { EMBEDDING_MODEL } from "../../shared/on-device-models";
 import { getPrefs } from "./prefs";
 
 export interface VersionedVector {
@@ -21,20 +21,37 @@ export interface VersionedVector {
 
 export interface QueryEmbeddings {
   text?: VersionedVector;
-  visual?: VersionedVector;
+  media?: VersionedVector;
+}
+
+export const EMBEDDING_QUERY_TASKS = ["search", "code", "fact-check"] as const;
+export type EmbeddingQueryTask = (typeof EMBEDDING_QUERY_TASKS)[number];
+
+export function embeddingQueryText(
+  task: EmbeddingQueryTask,
+  query: string,
+): string {
+  switch (task) {
+    case "code":
+      return embeddingCodeQuery(query);
+    case "fact-check":
+      return embeddingFactClaim(query);
+    case "search":
+      return embeddingSearchQuery(query);
+  }
 }
 
 interface Disposable {
   dispose(): void | Promise<void>;
 }
-interface ClipTextBundle {
+
+interface EmbeddingTextBundle extends Disposable {
   tokenizer: PreTrainedTokenizer;
-  model: SiglipTextModel;
-  dispose(): Promise<void>;
+  model: PreTrainedModel;
 }
-const textCache = new Map<string, Promise<FeatureExtractionPipeline>>();
-const clipCache = new Map<string, Promise<ClipTextBundle>>();
-const MODEL_CACHE_LIMIT = 2;
+
+const embeddingCache = new Map<string, Promise<EmbeddingTextBundle>>();
+const MODEL_CACHE_LIMIT = 1;
 
 function memo<T extends Disposable>(
   cache: Map<string, Promise<T>>,
@@ -59,45 +76,23 @@ function memo<T extends Disposable>(
   return pending;
 }
 
-function normalize(vector: ArrayLike<number>): number[] {
-  let magnitude = 0;
-  for (let index = 0; index < vector.length; index++) {
-    const value = vector[index] ?? 0;
-    magnitude += value * value;
-  }
-  const divisor = Math.sqrt(magnitude);
-  if (!divisor) return Array.from(vector);
-  return Array.from(vector, (value) => value / divisor);
-}
-
-async function textExtractor(): Promise<FeatureExtractionPipeline> {
-  return memo(textCache, TEXT_EMBEDDING_MODEL.revision, async () => {
+async function embeddingTextBundle(): Promise<EmbeddingTextBundle> {
+  return memo(embeddingCache, EMBEDDING_MODEL.revision, async () => {
     const transformers = await import("@huggingface/transformers");
     transformers.env.allowLocalModels = false;
-    return transformers.pipeline(
-      "feature-extraction",
-      TEXT_EMBEDDING_MODEL.id,
-      {
-        revision: TEXT_EMBEDDING_MODEL.revision,
-        device: "wasm",
-        dtype: "q8",
-      },
+    const options = { revision: EMBEDDING_MODEL.revision };
+    const config = await transformers.AutoConfig.from_pretrained(
+      EMBEDDING_MODEL.id,
+      options,
     );
-  });
-}
-
-async function clipTextBundle(): Promise<ClipTextBundle> {
-  return memo(clipCache, VISUAL_MODEL.revision, async () => {
-    const transformers = await import("@huggingface/transformers");
-    transformers.env.allowLocalModels = false;
+    Object.assign(config, { audio_config: null, vision_config: null });
     const [tokenizer, model] = await Promise.all([
-      transformers.AutoTokenizer.from_pretrained(VISUAL_MODEL.id, {
-        revision: VISUAL_MODEL.revision,
-      }),
-      transformers.SiglipTextModel.from_pretrained(VISUAL_MODEL.id, {
-        revision: VISUAL_MODEL.revision,
-        device: "wasm",
-        dtype: "q8",
+      transformers.AutoTokenizer.from_pretrained(EMBEDDING_MODEL.id, options),
+      transformers.AutoModel.from_pretrained(EMBEDDING_MODEL.id, {
+        ...options,
+        config,
+        device: "cpu",
+        dtype: "q4",
       }),
     ]);
     return {
@@ -108,6 +103,16 @@ async function clipTextBundle(): Promise<ClipTextBundle> {
       },
     };
   });
+}
+
+function sentenceVector(output: {
+  sentence_embedding?: { data?: ArrayLike<number> };
+}): number[] {
+  const data = output.sentence_embedding?.data;
+  if (!data) {
+    throw new Error("[embedding-gemma] model returned no sentence embedding");
+  }
+  return normalizedEmbeddingVector(data);
 }
 
 export function cosineSimilarity(
@@ -147,45 +152,74 @@ export function reciprocalRankFusion(
     );
 }
 
+interface QueryEmbeddingChannels {
+  text: boolean;
+  media: boolean;
+}
+
+export function queryEmbeddingChannels(
+  media: MediaType[],
+  prefs: Pick<Prefs["ai"], "semanticSearch" | "enableClip">,
+): QueryEmbeddingChannels {
+  const hasMediaScope =
+    !media.length ||
+    media.some(
+      (type) => type === "image" || type === "audio" || type === "video",
+    );
+  return {
+    text: prefs.semanticSearch === true,
+    media: prefs.enableClip === true && hasMediaScope,
+  };
+}
+
 export async function encodeQueryEmbeddings(
   query: string,
   media: MediaType[],
   prefs?: Pick<Prefs, "ai">,
+  task: EmbeddingQueryTask = "search",
 ): Promise<QueryEmbeddings> {
   const trimmed = query.trim();
   if (!trimmed) return {};
   const resolvedPrefs = prefs ?? (await getPrefs());
-  const text = resolvedPrefs.ai.semanticSearch
-    ? (async (): Promise<VersionedVector> => {
-        const extractor = await textExtractor();
-        const output = await extractor(trimmed, {
-          pooling: "mean",
-          normalize: true,
-        });
-        return {
-          model: textEmbeddingVersion(),
-          vector: normalize(Array.from(output.data, Number)),
-        };
-      })()
-    : undefined;
-  const visual =
-    resolvedPrefs.ai.enableClip && (!media.length || media.includes("image"))
-      ? (async (): Promise<VersionedVector> => {
-          const bundle = await clipTextBundle();
-          const inputs = bundle.tokenizer([trimmed], {
-            padding: "max_length",
-            truncation: true,
-          });
-          const output = await bundle.model(inputs);
-          return {
-            model: clipEmbeddingVersion(),
-            vector: normalize(Array.from(output.pooler_output.data, Number)),
-          };
-        })()
-      : undefined;
-  const [textResult, visualResult] = await Promise.all([text, visual]);
+  const channels = queryEmbeddingChannels(media, resolvedPrefs.ai);
+  if (!channels.text && !channels.media) return {};
+
+  const { model, tokenizer } = await embeddingTextBundle();
+  const inputs = tokenizer([embeddingQueryText(task, trimmed)], {
+    padding: true,
+    truncation: true,
+  });
+  const vector = sentenceVector(await model(inputs));
   const result: QueryEmbeddings = {};
-  if (textResult) result.text = textResult;
-  if (visualResult) result.visual = visualResult;
+  if (channels.text) {
+    result.text = { model: textEmbeddingVersion(), vector };
+  }
+  if (channels.media) {
+    result.media = { model: mediaEmbeddingVersion(), vector };
+  }
   return result;
+}
+
+export async function encodeClassificationLabelEmbeddings(
+  texts: string[],
+): Promise<number[][]> {
+  if (texts.length === 0) return [];
+  const { model, tokenizer } = await embeddingTextBundle();
+  const inputs = tokenizer(texts, {
+    padding: true,
+    truncation: true,
+  });
+  const output = await model(inputs);
+  const tensor = output.sentence_embedding;
+  if (tensor?.dims.length !== 2 || tensor.dims[0] !== texts.length) {
+    throw new Error(
+      "[embedding-gemma] model returned invalid label embeddings",
+    );
+  }
+  const width = tensor.dims[1] ?? 0;
+  return Array.from({ length: texts.length }, (_, index) =>
+    normalizedEmbeddingVector(
+      tensor.data.slice(index * width, (index + 1) * width),
+    ),
+  );
 }
