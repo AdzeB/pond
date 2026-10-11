@@ -6,7 +6,7 @@
 .backdrop {
   position: fixed;
   inset: 0;
-  background: var(--ds-black-a1);
+  background: light-dark(var(--ds-black-a4), var(--ds-black-a6));
   transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);
   -webkit-app-region: no-drag;
 
