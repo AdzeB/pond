@@ -1,0 +1,10 @@
+/** Opening Saves and selection state without Save UI, for the Harvester window's Downloads views. */
+export { closeSave, openSave, saveIdFromPath } from "./lib/save-nav";
+export { resultNavigation, useResultTotal } from "./state/result-navigation";
+export {
+  primarySelection,
+  primarySelectionStore,
+  selection,
+  useSelectionCursor,
+  useSelectionSize,
+} from "./state/selection";

@@ -1,6 +1,11 @@
 import { DEFAULT_PREFS, type Prefs } from "@pond/schema";
 import { expect, it, vi } from "vitest";
-import { getPrefsSnapshot, loadPrefs, savePrefsSection } from "./prefs";
+import {
+  getPrefsSnapshot,
+  loadPrefs,
+  savePrefsSection,
+  subscribePrefsSnapshot,
+} from "./prefs";
 
 it("receives another window's preferences and keeps the main process's committed values", async () => {
   const listeners = new Set<(prefs: Prefs) => void>();
@@ -22,7 +27,10 @@ it("receives another window's preferences and keeps the main process's committed
       },
     },
   });
+  let unsubscribe = (): void => {};
   try {
+    const prefsChanged = vi.fn();
+    unsubscribe = subscribePrefsSnapshot(prefsChanged);
     await loadPrefs();
     await loadPrefs();
     expect(listeners.size).toBe(1);
@@ -35,7 +43,9 @@ it("receives another window's preferences and keeps the main process's committed
     await savePrefsSection("window", { interfaceZoom: 125 });
     expect(getPrefsSnapshot()?.window.interfaceZoom).toBe(125);
     expect(getPrefsSnapshot()?.preferences.pointerCursors).toBe(true);
+    expect(prefsChanged).toHaveBeenCalled();
   } finally {
+    unsubscribe();
     vi.unstubAllGlobals();
   }
 });

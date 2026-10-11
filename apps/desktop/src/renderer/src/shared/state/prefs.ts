@@ -50,7 +50,7 @@ export function patchPrefsSection<K extends keyof Prefs>(
   return savePrefsSection(section, delta).catch(() => {
     notify({
       id: "settings-save-error",
-      title: "Couldn’t save this setting",
+      title: "Couldn't save this setting",
       description: "Your previous setting is unchanged. Try again.",
       timeout: 8000,
     });
@@ -68,7 +68,7 @@ export function usePrefs<K extends keyof Prefs>(
     void load().catch(() =>
       notify({
         id: "settings-load-error",
-        title: "Couldn’t load settings",
+        title: "Couldn't load settings",
         description: "Open Settings again to retry.",
         timeout: 8000,
       }),
@@ -86,6 +86,11 @@ export function usePrefs<K extends keyof Prefs>(
 
 export function getPrefsSnapshot(): Prefs | null {
   return prefsStore.state.value;
+}
+
+export function subscribePrefsSnapshot(listener: () => void): () => void {
+  const subscription = prefsStore.subscribe(listener);
+  return () => subscription.unsubscribe();
 }
 
 let saveQueue = Promise.resolve();

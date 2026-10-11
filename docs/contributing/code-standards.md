@@ -14,7 +14,7 @@ A styled component owns a folder with `index.tsx` and `styles.module.css`. Coloc
 
 Each feature owns its UI, hooks, state, operations, and tests. Application composition wires features together. Shared modules contain reusable infrastructure and primitives and must not import feature implementations. Main and renderer implementations must not import one another; exchange domain contracts through preload and shared schemas. An entrypoint composes dependencies; lower-level code does not import it to obtain runtime services.
 
-Use direct imports from an owning module’s exported entry when crossing a feature boundary. The current architecture check detects runtime cycles, process violations, and renderer shared-code violations; it does not enforce an export allowlist for each feature. Review cross-feature imports for ownership as part of the PR.
+Use direct imports from an owning module’s exported entry when crossing a feature boundary. The architecture check detects runtime cycles, process violations, renderer shared-code violations, and imports below another feature's root entries. Review what each feature entry exports for ownership as part of the PR.
 
 A module's public interface is the information callers need to use it correctly. Keep that interface smaller than the implementation it hides. Add an adapter when there is a real external dependency to replace, not in anticipation of hypothetical implementations. Keep persistence, Electron, network, and UI effects outside pure domain transformations.
 
@@ -22,7 +22,7 @@ A module's public interface is the information callers need to use it correctly.
 
 Use the type supplied by the owner of a value. Derive types from schemas rather than copying their definitions. Parse external input at its I/O boundary, then pass domain values into the application. Preserve existing serialized formats and supported input behavior unless the change explicitly migrates them.
 
-The custom lint rules prohibit module mocking, runtime `typeof`, broad `object`/`unknown` contracts, chained assertions, and widening a known value only to assert it back. A necessary assertion must have a local `SAFETY:` comment stating the verified invariant. Do not use a cast, suppression, or a weaker rule to conceal a mismatch. Discriminated unions describe states that have different valid data.
+The custom lint rules prohibit module mocking, runtime `typeof`, broad `object`/`unknown` contracts, chained assertions, and widening a known value only to assert it back. A necessary assertion must have a local `/** SAFETY: … */` comment stating the verified invariant. Do not use a cast, suppression, or a weaker rule to conceal a mismatch. Discriminated unions describe states that have different valid data.
 
 Name input types for their domain meaning. Use parameter objects when their named fields make a call clearer; the broad TypeScript `object` type is not a domain contract. Keep error results meaningful and preserve failure propagation. Optional data and failed operations are different states.
 
