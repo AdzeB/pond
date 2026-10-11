@@ -1,13 +1,26 @@
 .popup {
-  --width: 480px;
+  --width: 520px;
 }
 
-.media {
-  flex: none;
-  aspect-ratio: 2 / 1;
+.hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  height: 264px;
+  padding-top: 24px;
   overflow: hidden;
   background: var(--ds-gray-2);
   border-bottom: var(--ds-border-width) solid var(--ds-gray-a4);
+}
+
+.window {
+  flex: none;
+  width: 480px;
+  aspect-ratio: 2 / 1;
+  overflow: hidden;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-xl) var(--ds-radius-xl) 0 0;
+  box-shadow: var(--ds-shadow-xs), var(--ds-shadow-md);
 }
 
 .video {
@@ -17,14 +30,32 @@
   object-fit: cover;
 }
 
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px 24px 24px;
+}
+
+.popup .title {
+  font-size: var(--ds-text-lg);
+  font-weight: var(--ds-weight-xxxl);
+}
+
 .steps {
   display: grid;
-  gap: 6px;
-  padding-inline-start: 20px;
-  margin: 0;
+  gap: 4px;
+  padding-inline-start: 18px;
+  margin: 8px 0 0;
   font-size: var(--ds-text-md);
   line-height: 20px;
   color: var(--ds-gray-11);
+  list-style: decimal;
+
+  & li::marker {
+    font-variant-numeric: tabular-nums;
+    color: var(--ds-gray-9);
+  }
 
   & code {
     font-family: var(--ds-font-mono);
@@ -35,7 +66,7 @@
 
 .status,
 .error {
-  margin: 0;
+  margin: 8px 0 0;
   font-size: var(--ds-text-md);
 }
 
@@ -45,4 +76,10 @@
 
 .error {
   color: var(--ds-red-11);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
 }

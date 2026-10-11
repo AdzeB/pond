@@ -1,4 +1,4 @@
-import { Dialog } from "@pond/ui";
+import { Button, Dialog } from "@pond/ui";
 import { useReducedMotion } from "motion/react";
 import { useState } from "react";
 import installPoster from "@/assets/extension-install.jpg";
@@ -45,35 +45,35 @@ export function BrowserExtensionDialog({
   return (
     <Dialog.Root
       open={open}
-      onOpenChange={(next) => {
-        if (!next) setStatus({ kind: "idle" });
-        onOpenChange(next);
-      }}
+      onOpenChange={onOpenChange}
+      onOpenChangeComplete={(next) => !next && setStatus({ kind: "idle" })}
     >
       <Dialog.Portal>
         <Dialog.Backdrop />
         <Dialog.Popup className={styles.popup}>
-          <div className={styles.media}>
-            <video
-              className={styles.video}
-              src={installVideo}
-              poster={installPoster}
-              autoPlay={!reduceMotion}
-              controls={reduceMotion ?? false}
-              loop
-              muted
-              playsInline
-              aria-label="Installing the Pond extension from chrome://extensions"
-            />
+          <div className={styles.hero}>
+            <div className={styles.window}>
+              <video
+                className={styles.video}
+                src={installVideo}
+                poster={installPoster}
+                autoPlay={!reduceMotion}
+                controls={reduceMotion ?? false}
+                loop
+                muted
+                playsInline
+                aria-label="Installing the Pond extension from chrome://extensions"
+              />
+            </div>
           </div>
-          <Dialog.Header>
-            <Dialog.Title>Browser Extension</Dialog.Title>
-          </Dialog.Header>
-          <Dialog.Description>
-            Save pages and images from Chrome, Arc, Brave, or Edge into your
-            library.
-          </Dialog.Description>
-          <Dialog.Content>
+          <div className={styles.body}>
+            <Dialog.Title className={styles.title}>
+              Browser Extension
+            </Dialog.Title>
+            <Dialog.Description>
+              Save pages and images from Chrome, Arc, Brave, or Edge into your
+              library.
+            </Dialog.Description>
             <ol className={styles.steps}>
               <li>
                 Click Download to add a Pond Extension folder to Downloads.
@@ -92,17 +92,15 @@ export function BrowserExtensionDialog({
             {status.kind === "error" ? (
               <p className={styles.error}>{status.message}</p>
             ) : null}
-          </Dialog.Content>
-          <Dialog.Footer>
-            <Dialog.Cancel>Close</Dialog.Cancel>
-            <Dialog.Confirm
-              type="button"
-              loading={status.kind === "saving"}
-              onClick={() => void download()}
-            >
-              Download
-            </Dialog.Confirm>
-          </Dialog.Footer>
+            <div className={styles.actions}>
+              <Button
+                loading={status.kind === "saving"}
+                onClick={() => void download()}
+              >
+                Download
+              </Button>
+            </div>
+          </div>
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
