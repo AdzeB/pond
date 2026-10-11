@@ -90,29 +90,27 @@
     transform var(--exit);
 }
 
-[data-state="agent"] {
-  .chat {
-    opacity: 1;
-    transition: opacity var(--enter) 100ms;
-  }
+:global([data-state="agent"]) .chat {
+  opacity: 1;
+  transition: opacity var(--enter) 100ms;
+}
 
-  :is(.ask, .reply, .attachment) {
-    opacity: 1;
-    transform: none;
-    transition:
-      opacity var(--enter) var(--delay),
-      transform var(--enter) var(--delay);
-  }
+:global([data-state="agent"]) :is(.ask, .reply, .attachment) {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--enter) var(--delay),
+    transform var(--enter) var(--delay);
+}
 
-  .ask {
-    --delay: 150ms;
-  }
+:global([data-state="agent"]) .ask {
+  --delay: 150ms;
+}
 
-  .reply {
-    --delay: 300ms;
-  }
+:global([data-state="agent"]) .reply {
+  --delay: 300ms;
+}
 
-  .attachment {
-    --delay: 450ms;
-  }
+:global([data-state="agent"]) .attachment {
+  --delay: 450ms;
 }

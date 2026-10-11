@@ -69,29 +69,27 @@
   }
 }
 
-[data-state="enrich"] {
-  .inspector {
-    opacity: 1;
-    transition: opacity var(--enter) 100ms;
-  }
+:global([data-state="enrich"]) .inspector {
+  opacity: 1;
+  transition: opacity var(--enter) 100ms;
+}
 
-  .chips > span {
-    opacity: 1;
-    transform: none;
-    transition:
-      opacity var(--enter) var(--delay),
-      transform var(--enter) var(--delay);
-  }
+:global([data-state="enrich"]) .chips > span {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--enter) var(--delay),
+    transform var(--enter) var(--delay);
+}
 
-  .chips > span:nth-child(1) {
-    --delay: 450ms;
-  }
+:global([data-state="enrich"]) .chips > span:nth-child(1) {
+  --delay: 450ms;
+}
 
-  .chips > span:nth-child(2) {
-    --delay: 530ms;
-  }
+:global([data-state="enrich"]) .chips > span:nth-child(2) {
+  --delay: 530ms;
+}
 
-  .chips > span:nth-child(3) {
-    --delay: 610ms;
-  }
+:global([data-state="enrich"]) .chips > span:nth-child(3) {
+  --delay: 610ms;
 }

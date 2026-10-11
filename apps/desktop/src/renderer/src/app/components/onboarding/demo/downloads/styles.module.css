@@ -121,7 +121,7 @@
 }
 
 /* The live row rests finished so the table never rewinds while it fades out. */
-[data-live] {
+.download[data-live] {
   .fill {
     width: 100%;
   }
@@ -135,24 +135,22 @@
   }
 }
 
-[data-state="harvest"] {
-  .table {
-    opacity: 1;
-    transition: opacity var(--enter) 80ms;
+:global([data-state="harvest"]) .table {
+  opacity: 1;
+  transition: opacity var(--enter) 80ms;
+}
+
+:global([data-state="harvest"]) .download[data-live] {
+  .fill {
+    animation: fill 1400ms var(--ds-easing-standard) 400ms both;
   }
 
-  [data-live] {
-    .fill {
-      animation: fill 1400ms var(--ds-easing-standard) 400ms both;
-    }
+  .status > :first-child {
+    animation: swap 200ms var(--ds-easing-standard) 1800ms reverse both;
+  }
 
-    .status > :first-child {
-      animation: swap 200ms var(--ds-easing-standard) 1800ms reverse both;
-    }
-
-    .status > :nth-child(2) {
-      animation: swap 200ms var(--ds-easing-standard) 1800ms both;
-    }
+  .status > :nth-child(2) {
+    animation: swap 200ms var(--ds-easing-standard) 1800ms both;
   }
 }
 

@@ -27,11 +27,11 @@
   }
 }
 
-[data-view] {
+.window [data-view] {
   transition: opacity var(--exit);
 }
 
-[data-view="harvest"] {
+.window [data-view="harvest"] {
   opacity: 0;
 }
 
