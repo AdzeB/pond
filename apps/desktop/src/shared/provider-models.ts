@@ -1,13 +1,26 @@
 import type { AgentReasoning } from "@pond/schema";
+import { z } from "zod";
+import type { OkFailure, OkSuccess } from "./query-contracts-shared";
+
+export const modelCapabilities = z.object({
+  text: z.boolean().default(true),
+  vision: z.boolean().default(false),
+  audio: z.boolean().default(false),
+  tools: z.boolean().default(false),
+});
+
+export type ModelCapabilities = z.infer<typeof modelCapabilities>;
 
 export interface ProviderModel {
   id: string;
   name: string;
+  sizeBytes?: number;
   contextWindow?: number;
   catalogId?: string;
   description?: string;
   maxOutputTokens?: number;
   capabilities?: string[];
+  modelCapabilities?: ModelCapabilities;
   reasoningOptions?: AgentReasoning[];
   pricing?: {
     input?: string;
@@ -17,6 +30,26 @@ export interface ProviderModel {
   };
   available?: boolean;
 }
+
+export type ProviderModelsResult = { models: ProviderModel[] } & (
+  | OkSuccess<{ warning?: string }>
+  | OkFailure
+);
+
+export const RECOMMENDED_LOCAL_MODELS = [
+  {
+    id: "gemma4:e2b",
+    name: "Gemma 4 E2B",
+    tier: "default",
+    minimumDiskBytes: 4_600_000_000,
+  },
+  {
+    id: "gemma4:e4b",
+    name: "Gemma 4 E4B",
+    tier: "quality",
+    minimumDiskBytes: 6_600_000_000,
+  },
+] as const;
 
 const TOKENS = new Map([
   ["gpt", "GPT"],

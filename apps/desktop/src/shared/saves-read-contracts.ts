@@ -1,7 +1,7 @@
 import type { Query } from "@pond/schema/filters/types";
 import type { RawJson } from "@pond/schema/raw";
 import type { LibraryQueryPage, LibraryQueryRequest } from "./library-query";
-import type { EmptyInput } from "./query-contracts-shared";
+import type { EmptyInput, OkResult } from "./query-contracts-shared";
 import type {
   SavesFileInput,
   SavesIdInput,
@@ -12,7 +12,7 @@ import type { LibrarySidebarCounts } from "./sidebar-counts";
 import type { WireSave } from "./wire";
 
 export interface SavesReadQueryInputs {
-  "saves.sidebarCounts": EmptyInput;
+  "saves.sidebarCounts": { recentIds?: string[] };
   "saves.queryPage": LibraryQueryRequest;
   "saves.queryIds": LibraryQueryRequest;
   "saves.queryCount": { query: Query };
@@ -29,6 +29,14 @@ export interface SavesReadQueryInputs {
     mode?: "all" | "any";
   };
   "saves.retrieve": SavesRetrievalInput;
+  "saves.related": { id: string; limit?: number };
+  "saves.semanticClusters": {
+    saveIds?: string[];
+    folderId?: string;
+    distance: number;
+    limit: number;
+  };
+  "saves.classifyLabels": { saveIds: string[]; labels: string[] };
   "saves.query": {
     query: Query;
     deletedOnly?: boolean;
@@ -59,6 +67,28 @@ export interface SavesReadQueryResults {
     total: number | null;
   };
   "saves.searchFts": { ids: string[]; scores: Record<string, number> };
+  "saves.related": {
+    items: Array<{
+      id: string;
+      score: number;
+      reason: "semantically-related" | "already-organized";
+    }>;
+  };
+  "saves.semanticClusters": {
+    clusters: Array<{
+      id: string;
+      labels: string[];
+      memberIds: string[];
+    }>;
+    unclustered: string[];
+  };
+  "saves.classifyLabels": {
+    items: Array<{
+      id: string;
+      scores: Array<{ label: string; score: number }>;
+    }>;
+    excludedIds: string[];
+  };
   "saves.query": { ids: string[] };
   "saves.getMany": WireSave[];
   "saves.rawJson": { id: string; rawJson: RawJson | null };
@@ -68,7 +98,7 @@ export interface SavesReadQueryResults {
     embedding: number[] | null;
     embeddingModel: string | null;
   };
-  "saves.publicImageUrl": { ok: boolean; url: string | null };
+  "saves.publicImageUrl": OkResult<{ url: string | null }>;
   "saves.fontStatus": { activated: boolean; path?: string };
   "saves.embeddings": {
     id: string;

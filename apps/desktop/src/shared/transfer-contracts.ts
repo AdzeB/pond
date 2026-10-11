@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { OkResult } from "./query-contracts-shared";
 
 export const TransferRequestSchema = z.object({
   kind: z.enum([
@@ -45,6 +46,6 @@ export interface TransferQueryInputs {
 }
 export interface TransferQueryResults {
   "transferJobs.list": TransferJob[];
-  "transferJobs.cancel": { ok: boolean };
-  "transferJobs.retry": { ok: boolean };
+  "transferJobs.cancel": OkResult;
+  "transferJobs.retry": OkResult;
 }

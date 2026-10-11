@@ -12,9 +12,18 @@ export const RenameReplacementSchema = z.object({
     .default("g"),
 });
 
-export interface RenameTemplateValues {
+export const RenameTextCaseSchema = z.enum(["upper", "lower", "title"]);
+export type RenameTextCase = z.infer<typeof RenameTextCaseSchema>;
+
+export const RenameOptionsSchema = z.object({
+  start: z.number().int().min(0).max(999_999).optional(),
+  replacement: RenameReplacementSchema.nullish(),
+  textCase: RenameTextCaseSchema.nullish(),
+});
+export type RenameOptions = z.input<typeof RenameOptionsSchema>;
+
+export interface RenameTemplateValues extends RenameOptions {
   index: number;
-  start?: number;
   padding?: number;
   title: string;
   id: string;
@@ -22,7 +31,38 @@ export interface RenameTemplateValues {
   date?: Date | string | number | null;
   tags?: readonly string[];
   original?: string | null;
-  replacement?: z.input<typeof RenameReplacementSchema> | null;
+}
+
+export function literalReplacement(
+  find: string,
+  replace: string,
+): z.input<typeof RenameReplacementSchema> {
+  return {
+    find: find.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+    replace: replace.replaceAll("$", "$$$$"),
+    flags: "g",
+  };
+}
+
+function applyTextCase(
+  name: string,
+  textCase: RenameTextCase | null | undefined,
+): string {
+  switch (textCase) {
+    case "upper":
+      return name.toUpperCase();
+    case "lower":
+      return name.toLowerCase();
+    case "title":
+      return name
+        .toLowerCase()
+        .replace(
+          /(^|[\s_\-./])(\p{L})/gu,
+          (_match, gap: string, letter) => `${gap}${letter.toUpperCase()}`,
+        );
+    default:
+      return name;
+  }
 }
 
 function formattedDate(
@@ -62,7 +102,7 @@ export function applyRenameTemplate(
   const original = values.original?.trim() || values.title;
   const title = replaceSource(values.title, values.replacement);
   const sequence = (values.start ?? 1) + values.index;
-  return template
+  const expanded = template
     .replace(TOKEN, (_match, token: string, tokenPadding?: string) => {
       switch (token) {
         case "n":
@@ -89,4 +129,5 @@ export function applyRenameTemplate(
       }
     })
     .trim();
+  return applyTextCase(expanded, values.textCase);
 }

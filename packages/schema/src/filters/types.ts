@@ -104,7 +104,6 @@ export type FieldId =
   | "width"
   | "height"
   | "url"
-  | "comment"
   | "fontFamily"
   | "fontActivated"
   | "bpm"

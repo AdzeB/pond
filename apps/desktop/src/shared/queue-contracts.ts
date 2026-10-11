@@ -100,7 +100,7 @@ export interface QueueQueryResults {
   };
   "queue.generation.pause": OkResult;
   "queue.generation.resume": OkResult;
-  "queue.generation.cancel": OkResult & { running: number };
+  "queue.generation.cancel": OkResult<{ running: number }>;
   "queue.source.pause": OkResult;
   "queue.source.resume": OkResult;
 }

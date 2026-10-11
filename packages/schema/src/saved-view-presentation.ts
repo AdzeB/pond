@@ -1,9 +1,8 @@
 import { z } from "zod";
+import { FolderIconIdSchema } from "./folder-presentation";
 
 export const SavedViewPresentationSchema = z.object({
-  icon: z
-    .enum(["folder", "bookmark", "album", "tag", "download", "code"])
-    .optional(),
+  icon: FolderIconIdSchema.optional(),
   color: z
     .enum([
       "red",

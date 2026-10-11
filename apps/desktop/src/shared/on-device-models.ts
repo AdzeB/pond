@@ -3,19 +3,14 @@ export interface OnDeviceModel {
   revision: string;
 }
 
-export const TEXT_EMBEDDING_MODEL = {
-  id: "Xenova/all-mpnet-base-v2",
-  revision: "e086c5e0b3a57b0ce46dd6d9c0662948860b35f3",
+export const EMBEDDING_MODEL = {
+  id: "onnx-community/embeddinggemma-2-ONNX",
+  revision: "daa72c51243991dfcaf9f9137d2c573d8f7790c0",
 } as const satisfies OnDeviceModel;
 
 export const IMAGE_MODEL = {
   id: "onnx-community/Florence-2-base-ft",
   revision: "e88a44eaf3791a35eae0c5a47b3dbcd36e67eb6f",
-} as const satisfies OnDeviceModel;
-
-export const VISUAL_MODEL = {
-  id: "onnx-community/siglip2-base-patch16-224-ONNX",
-  revision: "ba1f3b0843f24bc5417d38e19c37b287d719b2f4",
 } as const satisfies OnDeviceModel;
 
 export const TRANSCRIPTION_MODEL = {

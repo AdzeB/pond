@@ -2,6 +2,7 @@ import { LocaleSchema } from "@pond/schema";
 import type { SaveFile } from "@pond/schema/db";
 import { z } from "zod";
 import { canRequestNativeThumbnail, classifyLibraryFile } from "./file-format";
+import type { CancellableResult } from "./query-contracts-shared";
 import { isAuxiliaryKind } from "./save-file-names";
 
 const PreviewWindowKindSchema = z.enum(["presentation", "detached"]);
@@ -53,10 +54,7 @@ export const PreviewFileActionSchema = z.object({
 });
 export type PreviewFileAction = z.infer<typeof PreviewFileActionSchema>;
 
-export interface PreviewFileActionResult {
-  ok: boolean;
-  error?: string;
-}
+export type PreviewFileActionResult = CancellableResult;
 
 export const PreviewWindowStateSchema = z.object({
   windowId: z.number().int().positive(),

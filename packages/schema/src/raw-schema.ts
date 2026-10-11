@@ -147,9 +147,8 @@ export const RawJsonSchema = z.object({
 });
 
 /**
- * What `raw_json` and `source.json` actually hold. Extractors write a full `RawJson`, but
- * yt-dlp records a video before any capture exists and older rows predate fields that are
- * required today, so every part of it is optional at rest.
+ * What `raw_json` and `source.json` hold at rest: every part is optional.
+ * @remarks yt-dlp records a video before any capture exists, so a full `RawJson` is not guaranteed.
  */
 export const StoredRawJsonSchema = z.object({
   capture: CaptureSchema.partial().default({}),
@@ -164,7 +163,6 @@ export type StoredRawJson = z.infer<typeof StoredRawJsonSchema>;
 export type StoredRawJsonInput = z.input<typeof StoredRawJsonSchema>;
 
 export function storedAsRawJson(stored: StoredRawJsonInput): RawJson {
-  // SAFETY: the stored shape is `RawJson` with the gaps described above, and every reader
-  // reaches into it with optional chaining.
+  /** SAFETY: the stored shape is `RawJson` with the gaps above, and every reader uses optional chaining. */
   return stored as RawJson;
 }

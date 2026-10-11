@@ -10,23 +10,89 @@ import type {
   WatchedAccount,
 } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
+import { z } from "zod";
 import type {
   AssistantChange,
   AssistantFileAttachment,
   AssistantProvider,
   AssistantSendResult,
 } from "./assistant";
-import type { ProviderModel } from "./provider-models";
-import type { ScreenshotCaptureResult } from "./screenshot-capture";
+import type { ProviderModelsResult } from "./provider-models";
+import type {
+  CancellableResult,
+  OkFailure,
+  OkResult,
+  ReasonFailure,
+  ReasonResult,
+} from "./query-contracts-shared";
 
-interface OkResult {
-  ok: boolean;
-  reason?: string;
-  error?: string;
-}
-interface PathResult extends OkResult {
-  path?: string;
-}
+export const MediaUnderstandInputSchema = z.strictObject({
+  saveId: z.string().min(1),
+  task: z.enum(["caption", "ocr"]),
+});
+
+export type MediaUnderstandInput = z.infer<typeof MediaUnderstandInputSchema>;
+
+export type MediaUnderstandFailureReason =
+  | "not_found"
+  | "no_files"
+  | "out_of_range"
+  | "missing"
+  | "auxiliary_file"
+  | "unsafe_path"
+  | "unsupported_media"
+  | "too_large"
+  | "read_failed"
+  | "model_unavailable"
+  | "model_not_vision"
+  | "invalid_input"
+  | "aborted"
+  | "timeout"
+  | "generation_failed"
+  | "empty_output"
+  | "model_chatter"
+  | "output_too_long"
+  | "internal_error";
+
+export type MediaUnderstandOperationalMetric = {
+  modelId: string;
+  task: MediaUnderstandInput["task"];
+  temperature: "cold" | "warm";
+  durationMs: number;
+  imageBytes: number;
+  outcome: "ok" | MediaUnderstandFailureReason;
+  fallbackUsed: boolean;
+};
+
+export type MediaUnderstandResult =
+  | { ok: true; text: string; model: string }
+  | {
+      ok: false;
+      reason: MediaUnderstandFailureReason;
+      operation?: MediaUnderstandOperationalMetric;
+    };
+
+export type LibraryLocationFailure =
+  | "cancelled"
+  | "invalid_image"
+  | "missing"
+  | "no_path"
+  | "no_library"
+  | "same_path"
+  | "nested_path"
+  | "destination_exists"
+  | "inside_user_data"
+  | "not_writable"
+  | "not_a_directory"
+  | "unknown_error";
+
+export type LibraryLocationResult<Data = Record<never, never>> =
+  | ReasonResult<LibraryLocationFailure, Data>
+  | OkFailure;
+
+type PathResult<Data = Record<never, never>> = LibraryLocationResult<
+  { path: string } & Data
+>;
 interface RetrievalSave {
   id: string;
   title: string | null;
@@ -40,7 +106,7 @@ interface RetrievalHit extends RetrievalSave {
   mediaType: MediaType | null;
   savedAt: Date;
   score: number;
-  channels: ("fts" | "text" | "visual" | "recent")[];
+  channels: ("fts" | "text" | "media" | "recent")[];
 }
 interface SyncRun {
   id: number;
@@ -70,13 +136,7 @@ interface AttachmentIdentity {
 type Attachment = AttachmentIdentity &
   (
     | {
-        field:
-          | "description"
-          | "notes"
-          | "caption"
-          | "ocr"
-          | "transcript"
-          | "comments";
+        field: "description" | "notes" | "caption" | "ocr" | "transcript";
         text: string;
         offset: number;
         length: number;
@@ -93,7 +153,6 @@ type Attachment = AttachmentIdentity &
         ocrTokens: number;
         transcript: string;
         transcriptTokens: number;
-        comments: string[];
         rating: number | null;
         tags: string[];
         folderIds: string[];
@@ -107,15 +166,15 @@ export interface SystemQueryResults {
   "accounts.list": {
     accounts: (ConnectedAccount & { connected: boolean; syncing: boolean })[];
   };
-  "accounts.setHandle": OkResult & { account: ConnectedAccount | null };
-  "accounts.setLabel": OkResult & { account: ConnectedAccount | null };
+  "accounts.setHandle": OkResult<{ account: ConnectedAccount }>;
+  "accounts.setLabel": OkResult<{ account: ConnectedAccount }>;
   "accounts.disconnect": OkResult;
   "watches.list": { watches: (WatchedAccount & { syncing: boolean })[] };
   "watches.resolve": { ok: false } | { ok: true; target: WatchTarget };
   "watches.add":
     | { ok: false; reason: string }
     | { ok: true; watch: WatchedAccount };
-  "watches.setLabel": OkResult & { watch: WatchedAccount | null };
+  "watches.setLabel": OkResult<{ watch: WatchedAccount }>;
   "watches.remove": OkResult;
   "agent.keys": {
     provider: AssistantProvider;
@@ -126,19 +185,16 @@ export interface SystemQueryResults {
   "agent.removeKey": OkResult;
   "agent.setKeyEnabled": OkResult;
   "agent.verifyKey": OkResult;
-  "agent.listModels": OkResult & { models: ProviderModel[] };
+  "agent.listModels": ProviderModelsResult;
   "agent.listAvailableModels": {
-    providers: (OkResult & {
-      provider: AssistantProvider;
-      models: ProviderModel[];
-    })[];
+    providers: (ProviderModelsResult & { provider: AssistantProvider })[];
   };
   "agent.chats": Omit<AgentChat, "canonicalTranscript">[];
   "agent.messages": AgentMessage[];
   "agent.newChat": Omit<AgentChat, "canonicalTranscript">;
   "agent.deleteChat": OkResult;
   "agent.renameChat": OkResult;
-  "agent.exportChat": OkResult;
+  "agent.exportChat": CancellableResult;
   "agent.send": AssistantSendResult;
   "agent.stop": OkResult;
   "agent.searchSaves": { saves: RetrievalSave[] };
@@ -154,6 +210,7 @@ export interface SystemQueryResults {
     app: string;
   };
   "agent.openMcpInstall": OkResult;
+  "saves.understandMedia": MediaUnderstandResult;
   "saves.retrieve": { hits: RetrievalHit[]; saves: RetrievalSave[] };
   "sync.history": { runs: SyncRun[] };
   "sync.recent": { runs: SyncRun[] };
@@ -179,12 +236,12 @@ export interface SystemQueryResults {
     libraryRoot: string | null;
     updatedAt: Date;
   };
-  "settings.setVideoDownload": OkResult & {
+  "settings.setVideoDownload": OkResult<{
     videoDownload: VideoDownloadSettings;
-  };
-  "settings.setImageDownload": OkResult & {
+  }>;
+  "settings.setImageDownload": OkResult<{
     imageDownload: ImageDownloadSettings;
-  };
+  }>;
   "settings.ingestToken": { token: string | null };
   "settings.rotateIngestToken": { token: string };
   "settings.getOnboarded": { onboarded: boolean };
@@ -199,33 +256,7 @@ export interface SystemQueryResults {
     }[];
   };
   "autoImport.set": OkResult;
-  "autoImport.pickFolder": { ok: boolean; path: string | null };
-  "screenshots.status": Prefs["screenshots"] & {
-    tools: {
-      id: Prefs["screenshots"]["tool"];
-      label: string;
-      installed: boolean;
-    }[];
-    history: {
-      at: number;
-      ruleId: string;
-      name: string;
-      mode: "copy" | "move";
-      ok: boolean;
-      autoSelect: boolean;
-      id?: string;
-    }[];
-  };
-  "screenshots.capture": ScreenshotCaptureResult;
-  "screenshots.finish": { id: string };
-  "screenshots.discard": OkResult;
-  "screenshots.set": OkResult;
-  "screenshots.pickFolder": { ok: boolean; path: string | null };
-  "screenshots.launch": OkResult & {
-    used: Prefs["screenshots"]["tool"];
-    fallback: boolean;
-    openPondCapture: boolean;
-  };
+  "autoImport.pickFolder": ReasonResult<"cancelled", { path: string }>;
   "library.info": {
     path: string;
     name: string;
@@ -234,29 +265,26 @@ export interface SystemQueryResults {
   };
   "library.rescan": { updated: number; total: number };
   "library.openInFinder": OkResult;
-  "library.exportDebugReport": OkResult & {
-    canceled?: boolean;
-    path?: string;
-  };
-  "library.verifyIntegrity": OkResult & {
+  "library.exportDebugReport": CancellableResult<{ path: string }>;
+  "library.verifyIntegrity": OkResult<{
     orphans?: string[];
     missing?: string[];
     errors?: Record<string, string>;
     totalIndexed?: number;
     totalOnDisk?: number;
-  };
+  }>;
   "library.createAt": PathResult;
   "library.pickExisting": PathResult;
   "library.pickFolder": PathResult;
-  "library.switchTo": PathResult & { mode?: "adopt" | "copy" };
-  "library.move": PathResult & {
+  "library.switchTo": PathResult<{ mode?: "adopt" | "copy" }>;
+  "library.move": PathResult<{
     sourceRemoved?: boolean;
     cleanupPath?: string;
-  };
-  "library.backupTo": PathResult & { copied?: number };
+  }>;
+  "library.backupTo": PathResult<{ copied?: number }>;
   "reset.preferences": OkResult;
-  "reset.clearVideoCache": OkResult & { removed: number };
-  "reset.clearThumbnails": OkResult & { removed: number };
+  "reset.clearVideoCache": OkResult<{ removed: number }>;
+  "reset.clearThumbnails": OkResult<{ removed: number }>;
   "reset.factory": OkResult;
   "storage.snapshot": {
     pondBytes: number;
@@ -283,10 +311,12 @@ export interface SystemQueryResults {
     action: "warn" | "pauseSync" | "pauseVideo";
     appliedAt: string;
   };
-  "api.restart": OkResult & { port?: number };
+  "api.restart": OkResult<{ port?: number }>;
   "updates.applyPrefs": OkResult;
-  "updates.checkNow": OkResult & { version?: string };
+  "updates.checkNow":
+    | OkResult<{ version?: string }>
+    | ReasonFailure<"dev_build">;
   "quickCapture.applyPrefs": OkResult;
   "window.applyPrefs": OkResult;
-  "system.applyPrefs": OkResult & { restartRequired?: boolean };
+  "system.applyPrefs": OkResult<{ restartRequired?: boolean }>;
 }

@@ -33,6 +33,5 @@ export const ViewerPrefsSchema = z.object({
   hoverVideo: z.boolean().catch(true),
   rememberPlayback: z.boolean().catch(true),
   loopShortVideos: z.boolean().catch(true),
-  stretchVideo: z.boolean().catch(false),
   videoWheelBehavior: z.enum(["none", "progress", "volume"]).catch("progress"),
 });

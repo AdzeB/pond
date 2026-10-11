@@ -12,7 +12,6 @@ import {
 } from "./camera";
 import { caption } from "./caption";
 import { color } from "./color";
-import { comment } from "./comment";
 import { creator } from "./creator";
 import type { FieldDescriptor } from "./descriptor";
 import { aspect, orientation } from "./dims";
@@ -91,5 +90,4 @@ export const FIELD_DESCRIPTORS = {
   width,
   height,
   url,
-  comment,
 } satisfies Record<FieldId, FieldDescriptor>;

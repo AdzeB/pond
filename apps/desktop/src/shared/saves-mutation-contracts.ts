@@ -1,4 +1,10 @@
-import type { EmptyInput, OkResult } from "./query-contracts-shared";
+import type {
+  BatchRenameInput,
+  CancellableResult,
+  EmptyInput,
+  OkResult,
+  OkSuccess,
+} from "./query-contracts-shared";
 import type { SavesDerivedPatch, SavesIdInput } from "./saves-contracts-shared";
 
 export interface SavesMutationQueryInputs {
@@ -15,7 +21,7 @@ export interface SavesMutationQueryInputs {
   "saves.patchDerived": { id: string; patch: SavesDerivedPatch };
   "saves.ensureTextCover": { id: string; force?: boolean };
   "saves.mergeDuplicates": { keepId: string; ids: string[] };
-  "saves.batchRename": { ids: string[]; pattern: string };
+  "saves.batchRename": BatchRenameInput;
   "saves.batchEditExtension": { ids: string[]; extension: string };
   "saves.activateFont": SavesIdInput;
   "saves.deactivateFont": SavesIdInput;
@@ -40,40 +46,57 @@ export interface SavesMutationQueryInputs {
   "saves.findDuplicates": { visualDistance?: number };
 }
 
+export type DuplicateGroupResult =
+  | {
+      kind: "exact";
+      ids: string[];
+      evidence: { sha256Equal: true };
+    }
+  | {
+      kind: "visual-near";
+      ids: string[];
+      evidence: { distance: number };
+    }
+  | {
+      kind: "semantic-near";
+      ids: string[];
+      evidence: { model: string; distance: number };
+    };
+
 export interface SavesMutationQueryResults {
-  "saves.emptyTrash": OkResult & { count: number };
-  "saves.restoreAll": OkResult & { count: number };
-  "saves.retryFailed": OkResult & { requeued: number };
-  "saves.skipIngest": OkResult & { skipped: number };
+  "saves.emptyTrash": OkResult<{ count: number }>;
+  "saves.restoreAll": OkResult<{ count: number }>;
+  "saves.retryFailed": OkResult<{ requeued: number }>;
+  "saves.skipIngest": OkResult<{ skipped: number }>;
   "saves.setPhash": OkResult;
   "saves.setEmbedding": OkResult;
   "saves.patchDerived": OkResult;
-  "saves.ensureTextCover": OkResult & { captured: number };
-  "saves.mergeDuplicates": OkResult & { trashed: number };
-  "saves.batchRename": OkResult & { renamed: number };
-  "saves.batchEditExtension": OkResult & {
+  "saves.ensureTextCover": OkResult<{ captured: number }>;
+  "saves.mergeDuplicates": OkResult<{ trashed: number }>;
+  "saves.batchRename": OkResult<{ renamed: number }>;
+  "saves.batchEditExtension": OkSuccess<{
     changed: number;
     changedFiles: number;
     skipped: number;
-  };
-  "saves.activateFont": OkResult & { path?: string; error?: string };
-  "saves.deactivateFont": OkResult & { error?: string };
+  }>;
+  "saves.activateFont": OkResult<{ path: string }>;
+  "saves.deactivateFont": OkResult;
   "saves.setAudioAnalysis": OkResult;
-  "saves.setCustomThumbnail": OkResult & { canceled?: boolean };
-  "saves.setThumbnailFromClipboard": OkResult & { error?: string };
-  "saves.setGifThumbnail": OkResult & { error?: string };
-  "saves.loadSubtitles": OkResult & { canceled?: boolean; error?: string };
-  "saves.replaceFile": OkResult & { canceled?: boolean; error?: string };
+  "saves.setCustomThumbnail": CancellableResult;
+  "saves.setThumbnailFromClipboard": OkResult;
+  "saves.setGifThumbnail": OkResult;
+  "saves.loadSubtitles": CancellableResult;
+  "saves.replaceFile": CancellableResult;
   "saves.removeCustomThumbnail": OkResult;
-  "saves.backfillColors": OkResult & { updated: number };
-  "saves.backfillMetadata": OkResult & { updated: number };
-  "saves.reanalyzeColors": OkResult & { updated: boolean };
+  "saves.backfillColors": OkResult<{ updated: number }>;
+  "saves.backfillMetadata": OkResult<{ updated: number }>;
+  "saves.reanalyzeColors": OkResult<{ updated: boolean }>;
   "saves.setPrimaryColor": OkResult;
-  "saves.convertTextEncoding": OkResult & { updated: boolean };
-  "saves.exportDotLottie": OkResult & { canceled?: boolean; error?: string };
+  "saves.convertTextEncoding": OkResult<{ updated: boolean }>;
+  "saves.exportDotLottie": CancellableResult;
   "saves.regeneratePoster": OkResult;
   "saves.findDuplicates": {
-    groups: { kind: "exact" | "similar"; ids: string[] }[];
+    groups: DuplicateGroupResult[];
     visualIndexed: number;
     visualDistance: number;
     total: number;

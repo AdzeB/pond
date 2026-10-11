@@ -1,8 +1,8 @@
 import { expect, it } from "vitest";
-import { libraryItemLink, linkMatchesLibrary } from "./library-links";
+import { librarySaveLink, linkMatchesLibrary } from "./library-links";
 
 it("encodes library identity separately and refuses an identically named item in another library", () => {
-  const link = new URL(libraryItemLink("original library", "save-id"));
+  const link = new URL(librarySaveLink("original library", "save-id"));
   expect(link.searchParams.get("library")).toBe("original library");
   expect(linkMatchesLibrary(link, "original library")).toBe(true);
   expect(linkMatchesLibrary(link, "another library")).toBe(false);

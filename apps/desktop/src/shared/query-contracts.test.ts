@@ -26,4 +26,18 @@ describe("desktop query contracts", () => {
     expectTypeOf<[]>().toExtend<QueryArguments<"savedViews.list">>();
     expectTypeOf<[]>().not.toExtend<QueryArguments<"saves.get">>();
   });
+
+  it("types related Save recommendations as a read-only result", () => {
+    expectTypeOf<QueryInput<"saves.related">>().toEqualTypeOf<{
+      id: string;
+      limit?: number;
+    }>();
+    expectTypeOf<QueryResult<"saves.related">>().toEqualTypeOf<{
+      items: Array<{
+        id: string;
+        score: number;
+        reason: "semantically-related" | "already-organized";
+      }>;
+    }>();
+  });
 });

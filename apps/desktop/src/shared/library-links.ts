@@ -1,4 +1,4 @@
-export function libraryItemLink(libraryId: string, saveId: string): string {
+export function librarySaveLink(libraryId: string, saveId: string): string {
   const url = new URL(`pond://item/${encodeURIComponent(saveId)}`);
   url.searchParams.set("library", libraryId);
   return url.toString();

@@ -1,7 +1,6 @@
 /**
- * Detail-view families observed in Eagle 4.0.0 build 23 with the local
- * 2026-09-27 format gallery. This is an empirical viewer-routing baseline,
- * not Eagle's official import manifest.
+ * Detail-view families observed in Eagle 4.0.0 build 23 against the 2026-09-27 format gallery.
+ * @remarks Empirical viewer routing, not Eagle's official import manifest.
  */
 export const EAGLE_DETAIL_VIEW_FORMATS = {
   standardVisualCanvas: [

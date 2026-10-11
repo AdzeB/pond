@@ -1,6 +1,7 @@
 import type { MediaType, Source } from "@pond/schema/db";
+import { z } from "zod";
 import type { LibraryQueryRequest } from "./library-query";
-import type { OkResult } from "./query-contracts-shared";
+import type { OkResult, ReasonResult } from "./query-contracts-shared";
 
 export interface SavesIdInput {
   id: string;
@@ -13,6 +14,19 @@ export interface SavesIdsInput {
 export interface SavesFileInput extends SavesIdInput {
   fileIndex?: number | null;
 }
+
+export type SaveFileFailure =
+  | "not_found"
+  | "no_files"
+  | "out_of_range"
+  | "missing"
+  | "auxiliary_file"
+  | "unsafe_path";
+
+export type SaveFileResult<Data = Record<never, never>> = ReasonResult<
+  SaveFileFailure | "internal_error",
+  Data
+>;
 
 export interface SavesRetrievalInput {
   libraryQuery?: LibraryQueryRequest;
@@ -27,26 +41,33 @@ export interface SavesRetrievalInput {
     | { kind: "vector"; model: string; values: number[] };
 }
 
-export interface SavesDerivedPatch {
-  caption?: string | null;
-  captionModel?: string | null;
-  ocrText?: string | null;
-  ocrModel?: string | null;
-  transcript?: string | null;
-  transcriptModel?: string | null;
-  clipEmbedding?: number[] | null;
-  clipModel?: string | null;
-  aesthetic?: string[] | null;
-  aestheticModel?: string | null;
-  sensitiveScore?: number | null;
-  sensitiveModel?: string | null;
-  autoTitleModel?: string | null;
-  suggestedTags?: string[] | null;
-  suggestedTagsModel?: string | null;
-}
+const DerivedText = z.string().nullable().optional();
+const DerivedList = z.array(z.string()).nullable().optional();
 
-export interface SavesImportResult extends OkResult {
+export const SavesDerivedPatchSchema = z.object({
+  caption: DerivedText,
+  captionModel: DerivedText,
+  ocrText: DerivedText,
+  ocrModel: DerivedText,
+  transcript: DerivedText,
+  transcriptModel: DerivedText,
+  clipEmbedding: z.array(z.number()).nullable().optional(),
+  clipModel: DerivedText,
+  aesthetic: DerivedList,
+  aestheticModel: DerivedText,
+  sensitiveScore: z.number().min(0).max(1).nullable().optional(),
+  sensitiveModel: DerivedText,
+  autoTitleModel: DerivedText,
+  suggestedTags: DerivedList,
+  suggestedTagsModel: DerivedText,
+});
+
+export type SavesDerivedPatch = z.infer<typeof SavesDerivedPatchSchema>;
+
+export interface SavesImportCounts {
   imported: number;
   skipped: number;
   queued?: number;
 }
+
+export type SavesImportResult = SavesImportCounts & OkResult;

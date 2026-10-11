@@ -6,12 +6,6 @@ export const POSTER_KIND = "poster";
 const AVATAR_KIND = "avatar";
 const SOURCE_ICON_KIND = "source_icon";
 
-export const LEGACY_COVER_KIND = "cover";
-export const LEGACY_MEDIA_KIND = "media";
-export const LEGACY_CUSTOM_THUMBNAIL_KIND = "custom_thumbnail";
-export const LEGACY_TEXT_COVER_LIGHT_KIND = "text_cover_light";
-export const LEGACY_TEXT_COVER_DARK_KIND = "text_cover_dark";
-
 const THUMBNAIL_SUFFIX = "_thumbnail.png";
 export const TEXT_THUMBNAIL_FILE = "thumbnail.png";
 export const THUMBNAIL_DARK_FILE = "thumbnail-dark.png";
@@ -19,9 +13,6 @@ export const THUMBNAIL_DARK_FILE = "thumbnail-dark.png";
 const THUMBNAIL_KINDS: ReadonlySet<string> = new Set([
   THUMBNAIL_KIND,
   THUMBNAIL_DARK_KIND,
-  LEGACY_CUSTOM_THUMBNAIL_KIND,
-  LEGACY_TEXT_COVER_LIGHT_KIND,
-  LEGACY_TEXT_COVER_DARK_KIND,
 ]);
 
 const AUXILIARY_KINDS: ReadonlySet<string> = new Set([
@@ -40,11 +31,7 @@ export function isAuxiliaryKind(kind: string): boolean {
 }
 
 export function isOriginalImageKind(kind: string): boolean {
-  return (
-    kind === IMAGE_KIND ||
-    kind === LEGACY_COVER_KIND ||
-    kind === LEGACY_MEDIA_KIND
-  );
+  return kind === IMAGE_KIND;
 }
 
 export function isThumbnailFilename(filename: string): boolean {
@@ -119,7 +106,7 @@ export function inferKindFromFilename(filename: string): string {
   if (name === THUMBNAIL_DARK_FILE) return THUMBNAIL_DARK_KIND;
   if (isThumbnailFilename(name)) return THUMBNAIL_KIND;
   if (name.startsWith("poster")) return POSTER_KIND;
-  if (name.startsWith("cover")) return LEGACY_COVER_KIND;
+  if (name.startsWith("cover")) return IMAGE_KIND;
   if (name.startsWith("video")) return VIDEO_KIND;
   if (name.startsWith("media-")) return IMAGE_KIND;
   if (name.startsWith("avatar")) return AVATAR_KIND;
@@ -153,17 +140,6 @@ export function pickCardFile<T extends { kind: string; path: string }>(
     files.find((file) => !isAuxiliaryKind(file.kind)) ??
     null
   );
-}
-
-export function thumbnailFileIndex(
-  files: ReadonlyArray<{ kind: string }>,
-): number {
-  const index = files.findIndex((file) => file.kind === THUMBNAIL_KIND);
-  if (index >= 0) return index;
-  const any = files.findIndex((file) => isThumbnailKind(file.kind));
-  if (any >= 0) return any;
-  const original = files.findIndex((file) => !isAuxiliaryKind(file.kind));
-  return original >= 0 ? original : 0;
 }
 
 function isHarvestedVideoName(filename: string): boolean {

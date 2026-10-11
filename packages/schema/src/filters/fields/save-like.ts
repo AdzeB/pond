@@ -37,6 +37,4 @@ export interface SaveLike {
   createdAt?: string | Date | number | null;
   publishedAt?: string | Date | number | null;
   rating?: number | null;
-  comments?: ReadonlyArray<{ text?: string | null }> | null;
-  videoNotes?: ReadonlyArray<{ text?: string | null }> | null;
 }

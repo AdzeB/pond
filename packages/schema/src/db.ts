@@ -127,32 +127,6 @@ export interface SaveFile {
   bpm?: number | null;
 }
 
-export interface VideoNote {
-  fileIndex?: number;
-  id: string;
-  timeSec: number;
-  text: string;
-}
-
-export interface ImageCommentReply {
-  id: string;
-  text: string;
-  createdAt?: number;
-}
-
-export interface ImageComment {
-  fileIndex?: number;
-  id: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  text: string;
-  createdAt?: number;
-  replies?: ImageCommentReply[];
-  resolvedAt?: number;
-}
-
 export interface ImageCrop {
   x: number;
   y: number;
@@ -231,14 +205,6 @@ export const saves = sqliteTable(
     autoTitleModel: text("auto_title_model"),
     suggestedTags: text("suggested_tags", { mode: "json" }).$type<string[]>(),
     suggestedTagsModel: text("suggested_tags_model"),
-    videoNotes: text("video_notes", { mode: "json" })
-      .$type<VideoNote[]>()
-      .notNull()
-      .default(sql`'[]'`),
-    comments: text("comments", { mode: "json" })
-      .$type<ImageComment[]>()
-      .notNull()
-      .default(sql`'[]'`),
     rating: integer("rating"),
     rotate: integer("rotate").notNull().default(0),
     flipX: integer("flip_x", { mode: "boolean" }).notNull().default(false),
@@ -460,16 +426,6 @@ export const tagGroupMembers = sqliteTable(
   }),
 );
 
-export interface FolderPasswordVerifier {
-  algorithm: "scrypt";
-  version: 1;
-  salt: string;
-  hash: string;
-  N: number;
-  r: number;
-  p: number;
-}
-
 export const folders = sqliteTable("folders", {
   id: text("id").primaryKey(),
   parentId: text("parent_id"),
@@ -487,19 +443,6 @@ export const folderMetadata = sqliteTable("folder_metadata", {
     .references(() => folders.id, { onDelete: "cascade" }),
   description: text("description"),
   externalLink: text("external_link"),
-});
-
-export const folderSecurity = sqliteTable("folder_security", {
-  folderId: text("folder_id")
-    .primaryKey()
-    .references(() => folders.id, { onDelete: "cascade" }),
-  passwordVerifier: text("password_verifier", { mode: "json" })
-    .$type<FolderPasswordVerifier>()
-    .notNull(),
-  passwordHint: text("password_hint"),
-  lockChildren: integer("lock_children", { mode: "boolean" })
-    .notNull()
-    .default(true),
 });
 
 export const saveFolders = sqliteTable(

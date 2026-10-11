@@ -1,9 +1,44 @@
 import { z } from "zod";
 
+export const FOLDER_ICON_IDS = [
+  "folder",
+  "bookmark",
+  "album",
+  "tag",
+  "download",
+  "code",
+  "star",
+  "heart",
+  "sparkle",
+  "image",
+  "camera",
+  "video",
+  "music",
+  "book",
+  "note",
+  "palette",
+  "brush",
+  "typography",
+  "layers",
+  "cube",
+  "globe",
+  "pin",
+  "plane",
+  "house",
+  "inbox",
+  "lightbulb",
+  "flag",
+  "trophy",
+  "rocket",
+  "gamepad",
+  "leaf",
+  "shopping",
+] as const;
+
+export const FolderIconIdSchema = z.enum(FOLDER_ICON_IDS);
+
 export const FolderPresentationSchema = z.object({
-  icon: z
-    .enum(["folder", "bookmark", "album", "tag", "download", "code"])
-    .optional(),
+  icon: FolderIconIdSchema.optional(),
   layout: z.enum(["waterfall", "grid", "justified", "list"]).catch("waterfall"),
   sortKey: z.string().catch("savedAt"),
   sortDir: z.enum(["asc", "desc"]).catch("desc"),

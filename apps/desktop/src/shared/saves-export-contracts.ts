@@ -1,5 +1,13 @@
-import type { OkResult } from "./query-contracts-shared";
-import type { SavesFileInput, SavesIdsInput } from "./saves-contracts-shared";
+import type {
+  CancellableResult,
+  OkResult,
+  ReasonResult,
+} from "./query-contracts-shared";
+import type {
+  SaveFileFailure,
+  SavesFileInput,
+  SavesIdsInput,
+} from "./saves-contracts-shared";
 
 export interface SavesExportQueryInputs {
   "saves.exportEaglePackage": SavesIdsInput;
@@ -12,21 +20,20 @@ export interface SavesExportQueryInputs {
 }
 
 export interface SavesExportQueryResults {
-  "saves.exportEaglePackage": {
-    ok: boolean;
+  "saves.exportEaglePackage": CancellableResult<{
     path?: string;
     exported?: number;
-    error?: string;
-  };
-  "saves.exportPackage": {
-    ok: boolean;
+  }>;
+  "saves.exportPackage": CancellableResult<{
     path?: string;
     exported?: number;
-    error?: string;
-  };
-  "saves.exportFile": OkResult & { path?: string };
-  "saves.share": OkResult & { error?: string };
-  "saves.exportFiles": OkResult & { exported?: number; dir?: string };
-  "saves.exportWebp": OkResult & { exported?: number; dir?: string };
-  "saves.exportCsv": OkResult & { count?: number; path?: string };
+  }>;
+  "saves.exportFile": ReasonResult<
+    SaveFileFailure | "cancelled" | "internal_error",
+    { path: string }
+  >;
+  "saves.share": OkResult;
+  "saves.exportFiles": CancellableResult<{ exported: number; dir: string }>;
+  "saves.exportWebp": CancellableResult<{ exported: number; dir: string }>;
+  "saves.exportCsv": CancellableResult<{ count: number; path: string }>;
 }
