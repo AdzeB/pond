@@ -1,0 +1,76 @@
+import { clsx as cn } from "clsx";
+import { useReducedMotionConfig } from "motion/react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import { ActionBar } from "./message-actions";
+import styles from "./styles.module.css";
+
+interface RootProps extends ComponentPropsWithoutRef<"article"> {
+  role: "user" | "assistant" | "system";
+}
+
+function Root({ className, role, ...props }: RootProps) {
+  const reduced = useReducedMotionConfig();
+  return (
+    <article
+      {...props}
+      data-reduced-motion={reduced || undefined}
+      data-role={role}
+      className={cn(styles.message, className)}
+    />
+  );
+}
+
+function Body({ className, ...props }: ComponentPropsWithoutRef<"div">) {
+  return <div className={cn(styles.body, className)} {...props} />;
+}
+
+function Leading({ children }: { children?: ReactNode }) {
+  if (!children) return null;
+  return <div className={styles.leading}>{children}</div>;
+}
+
+function Footer({ children }: { children?: ReactNode }) {
+  return children ? children : null;
+}
+
+function Actions({ children }: { children?: ReactNode }) {
+  if (!children) return null;
+  return <div className={styles.actions}>{children}</div>;
+}
+
+function View({
+  role,
+  leading,
+  footer,
+  actions,
+  children,
+  animateEntrance = false,
+}: {
+  role: "user" | "assistant" | "system";
+  leading?: ReactNode;
+  footer?: ReactNode;
+  actions?: ReactNode;
+  children?: ReactNode;
+  animateEntrance?: boolean;
+}) {
+  return (
+    <Root role={role} data-enter={animateEntrance || undefined}>
+      <Leading>{leading}</Leading>
+      <div className={styles.body}>
+        {children}
+        <Footer>{footer}</Footer>
+      </div>
+      <Actions>{actions}</Actions>
+    </Root>
+  );
+}
+
+export const Message = {
+  Root,
+  Body,
+  Leading,
+  Footer,
+  Actions,
+  View,
+  ActionBar,
+};
