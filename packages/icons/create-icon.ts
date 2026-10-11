@@ -4,11 +4,12 @@ import type { IconComponent, IconNode, IconProps, IconStyle } from "./types";
 const GRID = 18;
 const STROKE = 1.5;
 
-/** Holds the pixel weight up to the 18px grid, then grows with the glyph. */
-function strokePixels(stroke: number | string, size: number | string) {
+/** Converts on-screen pixels at `size` to viewBox units: held up to the 18px grid, then grown with the glyph. */
+function strokeUnits(stroke: number | string, size: number | string) {
   const pixels = Number.isFinite(Number(stroke)) ? Number(stroke) : STROKE;
   const rendered = Number(size);
-  return rendered > GRID ? (pixels * rendered) / GRID : pixels;
+  if (!(rendered > 0) || rendered > GRID) return pixels;
+  return (pixels * GRID) / rendered;
 }
 
 export function createIcon(
@@ -16,15 +17,6 @@ export function createIcon(
   style: IconStyle,
   nodes: IconNode,
 ): IconComponent {
-  /** Non-scaling strokes stay in screen pixels when CSS, not `size`, sets the box. */
-  const children =
-    style === "outline"
-      ? nodes.map(
-          ([tag, attrs]) =>
-            [tag, { ...attrs, vectorEffect: "non-scaling-stroke" }] as const,
-        )
-      : nodes;
-
   function Icon({
     size = GRID,
     strokeWidth = STROKE,
@@ -39,7 +31,7 @@ export function createIcon(
             stroke: "currentColor",
             strokeLinecap: "round" as const,
             strokeLinejoin: "round" as const,
-            strokeWidth: strokePixels(strokeWidth, size),
+            strokeWidth: strokeUnits(strokeWidth, size),
           }
         : { fill: "currentColor" };
     return createElement(
@@ -55,7 +47,7 @@ export function createIcon(
         ...props,
       },
       title ? createElement("title", null, title) : null,
-      ...children.map(([tag, attrs], index) =>
+      ...nodes.map(([tag, attrs], index) =>
         createElement(tag, { key: index, ...attrs }),
       ),
       extra,

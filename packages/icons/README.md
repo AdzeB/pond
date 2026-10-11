@@ -15,9 +15,10 @@ import { IconFolder, IconStarFill } from "@pond/icons";
 exists. Props:
 
 - `size` sets width and height. Default `18`.
-- `strokeWidth` is the on-screen stroke in pixels. Default `1.5`. At 18px and
-  below it stays that weight, so a 12px icon is as crisp as an 18px one. Above
-  18px the stroke grows with the glyph.
+- `strokeWidth` is the on-screen stroke in pixels at `size`. Default `1.5`. At
+  18px and below it stays that weight, so `size={12}` is as crisp as 18px.
+  Above 18px the stroke grows with the glyph. When CSS resizes the icon instead
+  of `size`, the stroke scales with it, so a 14px button icon thins to match.
 - `title` labels the icon for assistive tech. Without it the icon is
   `aria-hidden`.
 

@@ -144,6 +144,15 @@ button.label:hover {
     max-width: calc(100% - var(--sidebar-height-md));
   }
 
+  /* Header actions rest at the label's tone and take the ghost hover color. */
+  > :where([data-variant="ghost"]):not(
+      :hover,
+      [data-pressed],
+      [data-popup-open]
+    ) {
+    color: var(--ds-gray-9);
+  }
+
   &:hover .caret {
     opacity: 1;
   }
