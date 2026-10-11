@@ -118,7 +118,6 @@ adapter authors are expected to respect.
 
 ## Documentation
 
-- [References](docs/provenance/generated/REFERENCES.md)
 - [License](LICENSE)
 - [Privacy](PRIVACY.md)
 - [Security](SECURITY.md)

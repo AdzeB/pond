@@ -1,8 +1,5 @@
 import { Menu as Base } from "@base-ui/react/menu";
-import {
-  IconChevronRightFill12 as CaretRight,
-  IconCheck2Fill12,
-} from "@pond/icons/fill/12";
+import { IconChevronRightFill as CaretRight, IconCheckFill } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import { forwardRef } from "react";
 import { Button, type ButtonProps } from "../button";
@@ -278,7 +275,7 @@ function CheckboxItemIndicator({
         className={cn(styles["check-indicator"], className)}
         {...props}
       >
-        <IconCheck2Fill12 aria-hidden />
+        <IconCheckFill size={12} aria-hidden />
       </Base.CheckboxItemIndicator>
     );
   }
@@ -320,7 +317,7 @@ function SubmenuTrigger({ className, icon, ...props }: SubmenuTriggerProps) {
       {...props}
     >
       {props.children}
-      {icon ? null : <CaretRight />}
+      {icon ? null : <CaretRight size={12} />}
     </Base.SubmenuTrigger>
   );
 }

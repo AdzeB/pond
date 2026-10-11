@@ -1,4 +1,4 @@
-import { IconXmarkOutline12 } from "@pond/icons/outline/12";
+import { IconXmark } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import { useLayoutEffect, useRef, useState } from "react";
 import { Button, type ButtonProps } from "../button";
@@ -69,7 +69,7 @@ function Action({ className, ...props }: ButtonProps) {
 function Close({ className, children, ...props }: ButtonProps) {
   return (
     <Action className={className} {...props}>
-      {children ?? <IconXmarkOutline12 />}
+      {children ?? <IconXmark size={12} />}
     </Action>
   );
 }

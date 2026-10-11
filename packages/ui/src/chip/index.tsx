@@ -1,4 +1,4 @@
-import { IconXmarkOutline12 } from "@pond/icons/outline/12";
+import { IconXmark } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import type {
   ComponentProps,
@@ -114,7 +114,7 @@ function Clear({ className, children, ...props }: ButtonProps) {
       className={cn(styles.clear, className)}
       {...props}
     >
-      {children ?? <IconXmarkOutline12 />}
+      {children ?? <IconXmark size={12} />}
     </Button>
   );
 }
@@ -210,7 +210,8 @@ function Filter({
           aria-label={clearLabel}
           onClick={onClear}
         >
-          <IconXmarkOutline12
+          <IconXmark
+            size={12}
             strokeWidth={2}
             className={styles["filter-clear-icon"]}
           />

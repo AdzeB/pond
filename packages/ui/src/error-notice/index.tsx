@@ -1,4 +1,4 @@
-import { IconTriangleWarningOutline18 } from "@pond/icons/outline/18";
+import { IconTriangleWarning } from "@pond/icons";
 import type { ReactNode } from "react";
 import { Button } from "../button";
 import { Reveal } from "../reveal";
@@ -18,7 +18,7 @@ export function ErrorNotice({
   return (
     <Reveal>
       <div className={styles.notice} role="alert">
-        <IconTriangleWarningOutline18 />
+        <IconTriangleWarning />
         <div className={styles["model-content"]}>
           <span className={styles["model-name"]}>{title}</span>
           {children && (

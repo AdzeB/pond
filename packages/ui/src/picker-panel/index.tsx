@@ -1,7 +1,7 @@
 import {
-  IconCheckOutline12 as Check,
-  IconChevronRightOutline12 as ChevronRight,
-} from "@pond/icons/outline/12";
+  IconCheck as Check,
+  IconChevronRight as ChevronRight,
+} from "@pond/icons";
 import { clsx as cn } from "clsx";
 import {
   Fragment,
@@ -358,7 +358,7 @@ function SelectionMark({
       className={styles["selection-mark"]}
       data-selection={state}
     >
-      {state === "checked" ? <Check /> : null}
+      {state === "checked" ? <Check size={12} /> : null}
     </span>
   );
 }
@@ -385,7 +385,11 @@ function ItemLabel({ path, className, children, ...props }: ItemLabelProps) {
           {crumbs.map((segment, index, segments) => (
             <Fragment key={segments.slice(0, index + 1).join("/")}>
               <span className={styles.crumb}>{segment}</span>
-              <ChevronRight className={styles.separator} aria-hidden="true" />
+              <ChevronRight
+                size={12}
+                className={styles.separator}
+                aria-hidden="true"
+              />
             </Fragment>
           ))}
         </span>

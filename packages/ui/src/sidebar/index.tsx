@@ -1,6 +1,8 @@
 import { Button } from "@base-ui/react/button";
-import { IconCaretRightFill12 as CaretRight } from "@pond/icons/fill/12";
-import { IconMagnifierOutline18 as Magnifier } from "@pond/icons/outline/18";
+import {
+  IconCaretRightFill as CaretRight,
+  IconMagnifier as Magnifier,
+} from "@pond/icons";
 import { clsx as cn } from "clsx";
 import { type HTMLMotionProps, motion } from "motion/react";
 import {
@@ -202,7 +204,7 @@ function CollapsibleGroupLabel({
       {...props}
     >
       {children}
-      <CaretRight className={styles.caret} />
+      <CaretRight size={12} className={styles.caret} />
     </button>
   );
 }

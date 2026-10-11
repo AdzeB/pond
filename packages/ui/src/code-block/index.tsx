@@ -1,7 +1,4 @@
-import {
-  IconCheckOutline18,
-  IconClone2Outline18,
-} from "@pond/icons/outline/18";
+import { IconCheck, IconCopy } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import { type ComponentPropsWithoutRef, useState } from "react";
 import { Button } from "../button";
@@ -34,7 +31,7 @@ function Header({ code, language, className, ...props }: HeaderProps) {
         onClick={() => void copy()}
         aria-label="Copy Code"
       >
-        {copied ? <IconCheckOutline18 /> : <IconClone2Outline18 />}
+        {copied ? <IconCheck /> : <IconCopy />}
         {copied ? "Copied" : "Copy"}
       </Button>
       {error && <span role="status">Select the code to copy it</span>}

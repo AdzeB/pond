@@ -1,8 +1,5 @@
 import { Select as Base } from "@base-ui/react/select";
-import {
-  IconCheckOutline12 as Check,
-  IconChevronExpandYOutline12 as Expand,
-} from "@pond/icons/outline/12";
+import { IconCheck as Check, IconChevronExpandY as Expand } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import { Button, type ButtonProps } from "../button";
 import { renderSelectSpec, type SelectItemSpec } from "./items";
@@ -48,7 +45,7 @@ function Trigger({
           >
             {props.children}
             <Icon>
-              <Expand />
+              <Expand size={12} />
             </Icon>
           </Button>
         )
@@ -118,7 +115,7 @@ function ItemText({ className, ...props }: Base.ItemText.Props) {
 function ItemIndicator({ className, ...props }: Base.ItemIndicator.Props) {
   return (
     <Base.ItemIndicator className={cn(styles.indicator, className)} {...props}>
-      <Check />
+      <Check size={12} />
     </Base.ItemIndicator>
   );
 }

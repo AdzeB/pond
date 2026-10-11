@@ -1,8 +1,4 @@
-import {
-  IconCheckOutline18,
-  IconLink2Outline18,
-  IconPlusOutline18,
-} from "@pond/icons/outline/18";
+import { IconCheck, IconLink2, IconPlus } from "@pond/icons";
 import type { ReactNode } from "react";
 import { Button } from "../button";
 import styles from "./styles.module.css";
@@ -39,9 +35,7 @@ export function ReferenceList({
             aria-label={`Open ${item.title}`}
             onClick={() => onOpen(item)}
           >
-            <span className={styles.media}>
-              {item.media ?? <IconLink2Outline18 />}
-            </span>
+            <span className={styles.media}>{item.media ?? <IconLink2 />}</span>
             <span className={styles["model-content"]}>
               <span className={styles["model-name"]}>{item.title}</span>
               {item.meta && (
@@ -61,11 +55,7 @@ export function ReferenceList({
               disabled={addedIds.includes(item.id)}
               onClick={() => onAdd(item)}
             >
-              {addedIds.includes(item.id) ? (
-                <IconCheckOutline18 />
-              ) : (
-                <IconPlusOutline18 />
-              )}
+              {addedIds.includes(item.id) ? <IconCheck /> : <IconPlus />}
             </Button>
           )}
         </article>

@@ -1,4 +1,4 @@
-import { IconCheckOutline12 } from "@pond/icons/outline/12";
+import { IconCheck } from "@pond/icons";
 import { useState } from "react";
 import { Button } from "../button";
 import { Input } from "../input";
@@ -75,7 +75,7 @@ export function QuestionCard({
                     )}
                   </span>
                   <span className={styles["selection-mark"]}>
-                    {value === option.id && <IconCheckOutline12 />}
+                    {value === option.id && <IconCheck size={12} />}
                   </span>
                 </Button>
               ))}

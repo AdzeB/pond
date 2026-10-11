@@ -1,11 +1,11 @@
 import { AlertDialog as Alert } from "@base-ui/react/alert-dialog";
 import { Dialog as Base } from "@base-ui/react/dialog";
-import { IconAlertQuestionFill12 } from "@pond/icons/fill/12";
 import {
-  IconChevronLeftOutline12,
-  IconCircleInfoOutline12,
-  IconXmarkOutline12,
-} from "@pond/icons/outline/12";
+  IconAlertQuestionFill,
+  IconChevronLeft,
+  IconCircleInfo,
+  IconXmark,
+} from "@pond/icons";
 import { clsx as cn } from "clsx";
 import {
   AnimatePresence,
@@ -388,7 +388,7 @@ function Action({ className, position = "start", ...props }: ActionProps) {
 function Back(props: ComponentPropsWithoutRef<"button">) {
   return (
     <Action aria-label="Back" {...props}>
-      <IconChevronLeftOutline12 strokeWidth={2} />
+      <IconChevronLeft size={12} strokeWidth={2} />
     </Action>
   );
 }
@@ -396,7 +396,7 @@ function Back(props: ComponentPropsWithoutRef<"button">) {
 function Help(props: ComponentPropsWithoutRef<"button">) {
   return (
     <Action aria-label="Help" {...props}>
-      <IconAlertQuestionFill12 strokeWidth={2} />
+      <IconAlertQuestionFill size={12} strokeWidth={2} />
     </Action>
   );
 }
@@ -416,7 +416,7 @@ function Info({
         aria-label="More information"
         {...props}
       >
-        <IconCircleInfoOutline12 />
+        <IconCircleInfo size={12} />
       </button>
     </Tooltip>
   );
@@ -432,7 +432,7 @@ function Close(props: Base.Close.Props) {
           data-position="end"
           aria-label="Close"
         >
-          <IconXmarkOutline12 strokeWidth={2} />
+          <IconXmark size={12} strokeWidth={2} />
         </button>
       }
       {...props}

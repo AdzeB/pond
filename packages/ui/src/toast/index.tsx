@@ -1,5 +1,5 @@
 import { Toast as Base } from "@base-ui/react/toast";
-import { IconXmarkOutline12 } from "@pond/icons/outline/12";
+import { IconXmark } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import type { ComponentPropsWithoutRef } from "react";
 import { Button } from "../button";
@@ -87,7 +87,7 @@ function Close({ className, ...props }: Base.Close.Props) {
       className={cn(styles.close, className)}
       render={
         <Button icon size="xs" variant="ghost" aria-label="Dismiss">
-          <IconXmarkOutline12 />
+          <IconXmark size={12} />
         </Button>
       }
       {...props}

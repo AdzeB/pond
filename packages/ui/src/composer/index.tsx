@@ -1,4 +1,4 @@
-import { IconArrowUpFill18 } from "@pond/icons/fill/18";
+import { IconArrowUpFill } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import { AnimatePresence, motion, useReducedMotionConfig } from "motion/react";
 import {
@@ -124,7 +124,7 @@ export function ComposerView({
                 ) : (
                   <ActionHint label="Send message">
                     <Send aria-label="Send" className={styles["send-button"]}>
-                      <IconArrowUpFill18 />
+                      <IconArrowUpFill />
                     </Send>
                   </ActionHint>
                 )}

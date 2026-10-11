@@ -1,8 +1,4 @@
-import {
-  IconCheckOutline18,
-  IconClone2Outline18,
-  IconMsg2Outline18,
-} from "@pond/icons/outline/18";
+import { IconChatBubble, IconCheck, IconCopy } from "@pond/icons";
 import { useState } from "react";
 import { Button } from "../button";
 import { ActionHint } from "../shared/action-hint";
@@ -33,7 +29,7 @@ export function ActionBar({
               });
             }}
           >
-            {copied ? <IconCheckOutline18 /> : <IconClone2Outline18 />}
+            {copied ? <IconCheck /> : <IconCopy />}
           </Button>
         </ActionHint>
         {onQuote ? (
@@ -45,7 +41,7 @@ export function ActionBar({
               aria-label="Quote"
               onClick={onQuote}
             >
-              <IconMsg2Outline18 />
+              <IconChatBubble />
             </Button>
           </ActionHint>
         ) : null}

@@ -1,7 +1,4 @@
-import {
-  IconCheckOutline18,
-  IconCircleDashedClockOutline18,
-} from "@pond/icons/outline/18";
+import { IconCheck, IconCircleDashedClock } from "@pond/icons";
 import { useReducedMotionConfig } from "motion/react";
 import type { ReactNode } from "react";
 import { Reveal } from "../reveal";
@@ -24,9 +21,9 @@ export function RunStatus({
         data-reduced-motion={reduced || undefined}
       >
         {state === "complete" ? (
-          <IconCheckOutline18 />
+          <IconCheck />
         ) : state === "stopped" ? (
-          <IconCircleDashedClockOutline18 />
+          <IconCircleDashedClock />
         ) : null}
         {state === "working" ? (
           <Shimmer.Root className={styles["working-label"]}>

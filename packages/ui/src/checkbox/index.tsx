@@ -1,8 +1,5 @@
 import { Checkbox as Base } from "@base-ui/react/checkbox";
-import {
-  IconCheckOutline12 as Check,
-  IconMinusOutline12 as Minus,
-} from "@pond/icons/outline/12";
+import { IconCheck as Check, IconMinus as Minus } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import styles from "./styles.module.css";
 
@@ -21,8 +18,8 @@ function Root({ className, size = "md", ...props }: RootProps) {
 function Indicator({ className, ...props }: Base.Indicator.Props) {
   return (
     <Base.Indicator className={cn(styles.indicator, className)} {...props}>
-      <Check data-mark="checked" />
-      <Minus data-mark="indeterminate" />
+      <Check size={12} data-mark="checked" />
+      <Minus size={12} data-mark="indeterminate" />
     </Base.Indicator>
   );
 }

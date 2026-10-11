@@ -1,4 +1,4 @@
-import { IconArrowDownToLineOutline18 } from "@pond/icons/outline/18";
+import { IconArrowDownToLine } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import { useReducedMotionConfig } from "motion/react";
 import {
@@ -80,7 +80,7 @@ function ScrollToLatest({ viewport }: { viewport: HTMLElement | null }) {
           })
         }
       >
-        <IconArrowDownToLineOutline18 aria-hidden="true" />
+        <IconArrowDownToLine aria-hidden="true" />
       </Button>
     </div>
   );

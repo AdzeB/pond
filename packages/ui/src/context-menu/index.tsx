@@ -1,8 +1,5 @@
 import { ContextMenu as Base } from "@base-ui/react/context-menu";
-import {
-  IconCaretRightFill12 as CaretRight,
-  IconCheck2Fill12,
-} from "@pond/icons/fill/12";
+import { IconCaretRightFill as CaretRight, IconCheckFill } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import { Checkbox } from "../checkbox";
 import { Keyboard } from "../keyboard";
@@ -149,7 +146,7 @@ function CheckboxItemIndicator({
         className={cn(styles["check-indicator"], className)}
         {...props}
       >
-        <IconCheck2Fill12 aria-hidden />
+        <IconCheckFill size={12} aria-hidden />
       </Base.CheckboxItemIndicator>
     );
   }
@@ -183,7 +180,7 @@ function SubmenuTrigger({ className, ...props }: Base.SubmenuTrigger.Props) {
   return (
     <Base.SubmenuTrigger className={cn(styles.item, className)} {...props}>
       {props.children}
-      <CaretRight />
+      <CaretRight size={12} />
     </Base.SubmenuTrigger>
   );
 }

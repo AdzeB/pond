@@ -1,4 +1,4 @@
-import { IconCheckOutline18, IconFileOutline18 } from "@pond/icons/outline/18";
+import { IconCheck, IconFile } from "@pond/icons";
 import { useState } from "react";
 import { Button } from "../button";
 import { Input } from "../input";
@@ -58,14 +58,14 @@ export function ContextPicker({
               }
             >
               <span className={styles["reference-media"]}>
-                {item.media ?? <IconFileOutline18 />}
+                {item.media ?? <IconFile />}
               </span>
               <span className={styles["model-content"]}>
                 <span className={styles["model-name"]}>{item.title}</span>
                 <span className={styles["row-description"]}>{item.meta}</span>
               </span>
               <span className={styles["selection-mark"]}>
-                {selectedIds.includes(item.id) && <IconCheckOutline18 />}
+                {selectedIds.includes(item.id) && <IconCheck />}
               </span>
             </Button>
           ))

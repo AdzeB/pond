@@ -1,8 +1,5 @@
 import { Combobox as Base } from "@base-ui/react/combobox";
-import {
-  IconCheckOutline12 as Check,
-  IconChevronExpandYOutline12 as Expand,
-} from "@pond/icons/outline/12";
+import { IconCheck as Check, IconChevronExpandY as Expand } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import { Button, type ButtonProps } from "../button";
 import { stopPageHotkeys } from "../stop-page-hotkeys";
@@ -46,7 +43,7 @@ function Trigger({
           >
             {props.children}
             <Icon>
-              <Expand />
+              <Expand size={12} />
             </Icon>
           </Button>
         )
@@ -144,7 +141,7 @@ function ItemMeta({ className, ...props }: React.ComponentProps<"span">) {
 function ItemIndicator({ className, ...props }: Base.ItemIndicator.Props) {
   return (
     <Base.ItemIndicator className={cn(styles.indicator, className)} {...props}>
-      <Check />
+      <Check size={12} />
     </Base.ItemIndicator>
   );
 }

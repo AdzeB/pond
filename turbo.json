@@ -74,16 +74,6 @@
       ],
       "outputs": []
     },
-    "//#provenance:check:repo": {
-      "inputs": [
-        ".provenance/**",
-        "package.json",
-        "pnpm-lock.yaml",
-        "scripts/reference-capture.mjs",
-        "scripts/reference-capture.test.mjs"
-      ],
-      "outputs": []
-    },
     "//#architecture:check:repo": {
       "inputs": [
         "apps/desktop/src/**",
