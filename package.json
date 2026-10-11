@@ -30,7 +30,7 @@
     "lint": "turbo run lint:repo",
     "lint:repo": "biome ci . --error-on-warnings",
     "knip": "turbo run knip:repo",
-    "knip:repo": "knip",
+    "knip:repo": "pnpm --filter @pond/desktop exec tsr generate && knip",
     "oxlint": "turbo run oxlint:repo",
     "oxlint:repo": "oxlint",
     "typecheck": "turbo run typecheck",
