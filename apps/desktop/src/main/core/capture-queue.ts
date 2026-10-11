@@ -15,9 +15,10 @@ import {
   type CaptureMetadata,
   type CaptureReceipt,
 } from "@pond/schema/capture";
+import log from "electron-log/main.js";
 import { z } from "zod";
 
-const JobFields = {
+const JobSchema = z.object({
   draft: CaptureDraftSchema.extend({
     items: z.array(CaptureItemSchema).max(500),
   }),
@@ -27,26 +28,9 @@ const JobFields = {
   saveIds: z.array(z.string()),
   duplicateCount: z.number().int().nonnegative().default(0),
   error: z.string().optional(),
-};
-const StoredJobSchema = z.object({
-  ...JobFields,
-  state: z.enum([
-    "draft",
-    "accepted",
-    "processing",
-    "complete",
-    "failed",
-    "cancelled",
-  ]),
+  state: z.enum(["accepted", "processing", "complete", "failed", "cancelled"]),
 });
-type StoredJob = z.infer<typeof StoredJobSchema>;
-type Job = Omit<StoredJob, "state"> & { state: CaptureReceipt["state"] };
-const JobSchema = StoredJobSchema.transform(
-  (job): Job =>
-    job.state === "draft"
-      ? { ...job, state: "accepted" }
-      : { ...job, state: job.state },
-);
+type Job = z.infer<typeof JobSchema>;
 export interface CaptureQueuePorts {
   root(): string;
   readStored?: (path: string) => Promise<string>;
@@ -162,7 +146,14 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
           if (job.state === "complete" && ports.onComplete) {
             try {
               await ports.onComplete(receipt(job));
-            } catch {}
+            } catch (error) {
+              log.warn(
+                "[pond capture] onComplete failed",
+                job.draft.id,
+                job.saveIds,
+                error,
+              );
+            }
           }
         }),
       )

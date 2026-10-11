@@ -8,14 +8,12 @@ interface FeedbackMessage {
     | "feedback.autoImport.title"
     | "feedback.extensionCapture.title"
     | "feedback.folderDeletion.title"
-    | "feedback.saveDeletion.title"
-    | "feedback.screenshot.title";
+    | "feedback.saveDeletion.title";
 }
 
 const MESSAGES = {
   saveDeletion: { title: "feedback.saveDeletion.title" },
   folderDeletion: { title: "feedback.folderDeletion.title" },
-  screenshot: { title: "feedback.screenshot.title" },
   extensionCapture: { title: "feedback.extensionCapture.title" },
   autoImport: { title: "feedback.autoImport.title" },
 } as const satisfies Record<FeedbackEvent, FeedbackMessage>;

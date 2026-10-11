@@ -2,7 +2,7 @@ import { readdir, stat, statfs } from "node:fs/promises";
 import { join, sep } from "node:path";
 import log from "electron-log/main.js";
 import { createMemoCache } from "../lib/memo-cache";
-import { itemsRoot, libraryRoot } from "../paths";
+import { libraryRoot, savesRoot, thumbnailCacheRoot } from "../paths";
 
 interface LibraryBreakdown {
   items: number;
@@ -36,7 +36,6 @@ const KNOWN_BUCKETS: ReadonlyArray<{
 }> = [
   { dir: "items", bucket: "items" },
   { dir: "_video_cache", bucket: "videoCache" },
-  { dir: "_thumbs", bucket: "thumbs" },
   { dir: "_meta", bucket: "meta" },
 ];
 
@@ -77,7 +76,7 @@ async function computeSnapshot(): Promise<StorageSnapshot> {
 
 async function computeLibraryBreakdown(): Promise<LibraryBreakdown> {
   const root = libraryRoot();
-  const itemsAbs = itemsRoot();
+  const itemsAbs = savesRoot();
   const buckets: Omit<LibraryBreakdown, "total"> = {
     items: 0,
     videoCache: 0,
@@ -113,6 +112,8 @@ async function computeLibraryBreakdown(): Promise<LibraryBreakdown> {
   if (!entries.some((e) => e.abs === itemsAbs) && itemsAbs.startsWith(root)) {
     buckets.items += await sumDirSizes(itemsAbs);
   }
+
+  buckets.thumbs += await sumDirSizes(thumbnailCacheRoot());
 
   try {
     const dbPath = (await import("../paths")).resolvePaths().indexDb;

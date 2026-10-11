@@ -1,4 +1,3 @@
-import { stat } from "node:fs/promises";
 import { join } from "node:path";
 import {
   folders,
@@ -12,14 +11,12 @@ import { isAuxiliaryKind } from "@shared/save-file-names";
 import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { type Db, getDb } from "../db";
-import { readItemMetadata, scanLibrary } from "../lib/library";
-import { INFO_FILE } from "../lib/library-format";
+import { readSaveMetadata, scanLibrary } from "../lib/library";
 import { withRawSlim } from "../lib/raw-slim";
 import { libraryRoot } from "../paths";
 import { readEnrichmentSidecar } from "./enrichment-sidecar";
 import { broadcastSyncAction, withMutationScope } from "./executor";
 import { runLibraryTransfer } from "./library-transfers";
-import { migrateSaveFileLayout } from "./save-file-layout-migration";
 import { libraryMediaMetadata } from "./storage/library-media-storage";
 
 export async function reconcileLibrary(): Promise<{
@@ -62,25 +59,12 @@ export async function reconcileLibraryIndex(
         .where(eq(libraryScan.itemId, id));
 
       if (existing[0] && existing[0].mtimeMs === mtimeMs) return;
-      const metadata = await readItemMetadata(id, root);
-      if (!metadata) {
+      const read = await readSaveMetadata(id, root);
+      if (read.status !== "ok") {
         await stampScan(db, id, mtimeMs);
         return;
       }
-
-      let stampedAt = mtimeMs;
-      const migrated = await migrateSaveFileLayout(
-        id,
-        metadata.files,
-        metadata.pond.schemaVersion,
-        { root, persist: false },
-      );
-      if (migrated.changed) {
-        metadata.files = migrated.files;
-        metadata.pond.coverIndex = migrated.coverIndex;
-        stampedAt = (await stat(join(root, "items", `${id}.info`, INFO_FILE)))
-          .mtimeMs;
-      }
+      const { metadata } = read;
 
       if (!metadata.source || !metadata.sourceId || !metadata.url) {
         log.warn("[pond scan] skipping item with incomplete metadata", {
@@ -89,7 +73,7 @@ export async function reconcileLibraryIndex(
           hasSourceId: Boolean(metadata.sourceId),
           hasUrl: Boolean(metadata.url),
         });
-        await stampScan(db, id, stampedAt);
+        await stampScan(db, id, mtimeMs);
         return;
       }
 
@@ -185,7 +169,7 @@ export async function reconcileLibraryIndex(
             })
             .returning()
             .all()[0];
-          stampScan(tx, id, stampedAt);
+          stampScan(tx, id, mtimeMs);
           return inserted;
         });
         if (action) runtime.changed(action);

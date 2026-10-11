@@ -92,13 +92,9 @@ export class GlobalShortcutController {
     private readonly isMac: boolean,
   ) {}
 
-  private desired(
-    overrides: Bindings,
-    screenshotsEnabled = true,
-  ): Map<string, GlobalShortcutId> {
+  private desired(overrides: Bindings): Map<string, GlobalShortcutId> {
     const desired = new Map<string, GlobalShortcutId>();
     for (const id of ids) {
-      if (id.startsWith("capture.") && !screenshotsEnabled) continue;
       const chord = overrides[id] ?? GLOBAL_SHORTCUTS[id].keys;
       if (!chord) continue;
       const key = accelerator(chord, this.isMac);
@@ -112,15 +108,15 @@ export class GlobalShortcutController {
     return desired;
   }
 
-  start(overrides: Bindings, screenshotsEnabled = true): void {
+  start(overrides: Bindings): void {
     let desired: Map<string, GlobalShortcutId>;
     try {
-      desired = this.desired(overrides, screenshotsEnabled);
+      desired = this.desired(overrides);
     } catch (error) {
       this.errors = [
         error instanceof Error
           ? error.message
-          : "Couldn’t register global shortcuts.",
+          : "Couldn't register global shortcuts.",
       ];
       return;
     }
@@ -148,8 +144,8 @@ export class GlobalShortcutController {
     if (id) this.actions[id]();
   }
 
-  prepare(overrides: Bindings, screenshotsEnabled = true): Change {
-    const desired = this.desired(overrides, screenshotsEnabled);
+  prepare(overrides: Bindings): Change {
+    const desired = this.desired(overrides);
     const staged: string[] = [];
     const rollback = () => {
       for (const key of staged) this.native.unregister(key);
@@ -195,24 +191,20 @@ export function startGlobalShortcuts(
   native: NativeShortcuts,
   actions: Actions,
   overrides: Bindings,
-  screenshotsEnabled = true,
 ): void {
   controller = new GlobalShortcutController(
     native,
     actions,
     process.platform === "darwin",
   );
-  controller.start(overrides, screenshotsEnabled);
+  controller.start(overrides);
 }
 export function globalShortcutStatus(): GlobalShortcutStatus {
   return controller?.status() ?? { enabled: false, errors: [] };
 }
-export function prepareGlobalShortcuts(
-  overrides: Bindings,
-  screenshotsEnabled = true,
-): Change {
+export function prepareGlobalShortcuts(overrides: Bindings): Change {
   return (
-    controller?.prepare(overrides, screenshotsEnabled) ?? {
+    controller?.prepare(overrides) ?? {
       commit() {},
       rollback() {},
     }

@@ -6,6 +6,8 @@ import {
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { FEEDBACK_EVENTS } from "../../../shared/feedback";
+import type { QueryResult } from "../../../shared/query-contracts";
+import type { OkFailure } from "../../../shared/query-contracts-shared";
 import {
   emitRendererFeedback,
   openNotificationSettings,
@@ -67,6 +69,11 @@ const PrefsPatchParamsSchema = z.looseObject({
     .catch({})
     .optional(),
 });
+
+const NOTIFICATION_SETTINGS_UNAVAILABLE: OkFailure = {
+  ok: false,
+  error: "Open notification settings from your system settings.",
+};
 
 export const settingsQueries = {
   async "settings.get"() {
@@ -153,19 +160,22 @@ export const settingsQueries = {
     return await getPrefs();
   },
 
-  "settings.setPrefs": query(PrefsPatchParamsSchema, async (params) => {
-    const next = await setPrefs(params);
-    if ("preferences" in params) await syncShellChrome();
-    if ("localization" in params) {
-      setMainLocale(next.localization.locale);
-      queueTrayRefresh();
-    }
-    if (params.window && "appIcon" in params.window) {
-      const { applyAppIcon } = await import("../../core/app-icon");
-      await applyAppIcon(params.window.appIcon);
-    }
-    return { ok: true, prefs: next };
-  }),
+  "settings.setPrefs": query(
+    PrefsPatchParamsSchema,
+    async (params): Promise<QueryResult<"settings.setPrefs">> => {
+      const next = await setPrefs(params);
+      if ("preferences" in params) await syncShellChrome();
+      if ("localization" in params) {
+        setMainLocale(next.localization.locale);
+        queueTrayRefresh();
+      }
+      if (params.window && "appIcon" in params.window) {
+        const { applyAppIcon } = await import("../../core/app-icon");
+        await applyAppIcon(params.window.appIcon);
+      }
+      return { ok: true, prefs: next };
+    },
+  ),
 
   "feedback.emit": query(
     z.object({ event: z.enum(FEEDBACK_EVENTS) }),
@@ -175,7 +185,9 @@ export const settingsQueries = {
     },
   ),
 
-  "notifications.openSettings": query(z.object({}), async () => ({
-    ok: await openNotificationSettings(),
-  })),
+  "notifications.openSettings": query(z.object({}), async () =>
+    (await openNotificationSettings())
+      ? { ok: true as const }
+      : NOTIFICATION_SETTINGS_UNAVAILABLE,
+  ),
 } satisfies QueryHandlerMap;

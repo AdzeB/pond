@@ -66,8 +66,114 @@ describe("modelsFromProviderResponse", () => {
       data: [{ id: "llama3.2:latest" }, { id: "qwen2.5vl" }],
     });
     expect(models).toEqual([
-      { id: "llama3.2:latest", name: "llama3.2:latest" },
-      { id: "qwen2.5vl", name: "qwen2.5vl" },
+      {
+        id: "llama3.2:latest",
+        name: "llama3.2:latest",
+        modelCapabilities: {
+          text: true,
+          vision: false,
+          audio: false,
+          tools: false,
+        },
+      },
+      {
+        id: "qwen2.5vl",
+        name: "qwen2.5vl",
+        modelCapabilities: {
+          text: true,
+          vision: false,
+          audio: false,
+          tools: false,
+        },
+      },
+    ]);
+  });
+
+  it("keeps native capabilities separate from catalog capability tags", () => {
+    expect(
+      modelsFromProviderResponse("ollama", {
+        data: [
+          {
+            id: "gemma4:e2b",
+            capabilities: ["completion", "vision", "tools"],
+          },
+        ],
+      }),
+    ).toEqual([
+      {
+        id: "gemma4:e2b",
+        name: "gemma4:e2b",
+        modelCapabilities: {
+          text: true,
+          vision: true,
+          audio: false,
+          tools: true,
+        },
+      },
+    ]);
+  });
+
+  it("keeps model byte sizes reported by local runtimes", () => {
+    expect(
+      modelsFromProviderResponse("ollama", {
+        data: [
+          {
+            id: "gemma4:e2b",
+            size: 4_800_000_000,
+          },
+        ],
+      }),
+    ).toEqual([
+      {
+        id: "gemma4:e2b",
+        name: "gemma4:e2b",
+        sizeBytes: 4_800_000_000,
+        modelCapabilities: {
+          text: true,
+          vision: false,
+          audio: false,
+          tools: false,
+        },
+      },
+    ]);
+  });
+
+  it("uses LM Studio capability metadata without guessing from the id", () => {
+    expect(
+      modelsFromProviderResponse("lmstudio", {
+        data: [
+          {
+            id: "plain-model",
+            display_name: "Plain Model",
+            capabilities: {
+              vision: true,
+              trained_for_tool_use: true,
+            },
+          },
+          { id: "vision-model-without-metadata" },
+        ],
+      }),
+    ).toEqual([
+      {
+        id: "plain-model",
+        name: "Plain Model",
+        modelCapabilities: {
+          text: true,
+          vision: true,
+          audio: false,
+          tools: true,
+        },
+      },
+      {
+        id: "vision-model-without-metadata",
+        name: "vision-model-without-metadata",
+        modelCapabilities: {
+          text: true,
+          vision: false,
+          audio: false,
+          tools: false,
+        },
+      },
     ]);
   });
 });

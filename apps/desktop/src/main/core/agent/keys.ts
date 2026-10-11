@@ -6,15 +6,19 @@ import {
   assistantCatalog,
 } from "../../../shared/assistant";
 import { KEYCHAIN_AGENT_PREFIX } from "../../../shared/constants";
-import { modelsForChooser } from "../../../shared/provider-models";
+import {
+  modelsForChooser,
+  type ProviderModelsResult,
+} from "../../../shared/provider-models";
+import type {
+  OkResult,
+  OkSuccess,
+} from "../../../shared/query-contracts-shared";
 import { deleteSecret, getSecret, getSecrets, setSecret } from "../../keychain";
 import { getPrefs, setPrefs } from "../prefs";
 import { isLocalProviderConnected } from "./local-provider-state";
 import { catalogModelsForProvider, loadModelCatalog } from "./model-catalog";
-import {
-  modelsFromProviderResponse,
-  type ProviderModel,
-} from "./provider-models";
+import { modelsFromProviderResponse } from "./provider-models";
 
 const AGENT_PROVIDERS = ASSISTANT_MODELS.map((model) => model.id);
 export type AgentProviderId = AssistantProvider;
@@ -88,7 +92,7 @@ export async function listKeys(): Promise<
 export async function saveKey(
   provider: AgentProviderId,
   key: string,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<OkResult> {
   const catalog = assistantCatalog(provider);
   const trimmed = key.trim();
   if (!trimmed && catalog?.needsKey) {
@@ -115,9 +119,7 @@ export async function saveKey(
   return { ok: true };
 }
 
-export async function removeKey(
-  provider: AgentProviderId,
-): Promise<{ ok: boolean }> {
+export async function removeKey(provider: AgentProviderId): Promise<OkSuccess> {
   await deleteSecret(accountFor(provider));
   const prefs = await getPrefs();
   await setPrefs({
@@ -139,7 +141,7 @@ export async function removeKey(
 export async function setKeyEnabled(
   provider: AgentProviderId,
   enabled: boolean,
-): Promise<{ ok: boolean }> {
+): Promise<OkSuccess> {
   const prefs = await getPrefs();
   await setPrefs({
     agent: {
@@ -162,7 +164,7 @@ export async function keyFor(
 export async function verifyKey(
   provider: AgentProviderId,
   key: string,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<OkResult> {
   const prefs = await getPrefs();
   return checkProviderKey({
     provider,
@@ -175,18 +177,17 @@ export async function verifyKey(
 
 export async function listProviderModels(
   provider: AgentProviderId,
-): Promise<{ ok: boolean; models: ProviderModel[]; error?: string }> {
+): Promise<ProviderModelsResult> {
   const catalog = assistantCatalog(provider);
   const local = catalog?.local === true;
   const publicCatalog = local ? { models: [] } : await loadModelCatalog();
   const prefs = await getPrefs();
   const key = (await getSecret(accountFor(provider))) ?? "";
   if (!key && !local) {
-    return {
-      ok: !publicCatalog.error,
-      models: catalogModelsForProvider(provider, publicCatalog.models),
-      error: publicCatalog.error,
-    };
+    const models = catalogModelsForProvider(provider, publicCatalog.models);
+    return publicCatalog.error
+      ? { ok: false, models, error: publicCatalog.error }
+      : { ok: true, models };
   }
   const fetched = await fetchProviderModels({
     provider,
@@ -208,41 +209,38 @@ export async function listProviderModels(
       publicCatalog.models,
       modelsFromProviderResponse(provider, fetched.json),
     ),
-    error: publicCatalog.error,
+    warning: publicCatalog.error,
   };
 }
 
 export async function listAvailableModels(): Promise<{
-  providers: Array<{
-    provider: AgentProviderId;
-    ok: boolean;
-    models: ProviderModel[];
-    error?: string;
-  }>;
+  providers: Array<ProviderModelsResult & { provider: AgentProviderId }>;
 }> {
   const prefs = await getPrefs();
   const rows = await listKeys();
   const connected = rows.filter((row) => row.hasKey && row.enabled);
   const providers = await Promise.all(
-    connected.map(async (row) => {
-      const listed = await listProviderModels(row.provider);
-      const available = listed.models.filter(
-        (model) => model.available !== false,
-      );
-      const models = modelsForChooser(
-        available,
-        prefs.agent.visibleModelIds?.[row.provider] ?? [
-          ...available.map((model) => model.id),
-          ...(prefs.agent.customModelIds?.[row.provider] ?? []),
-        ],
-      );
-      return {
-        provider: row.provider,
-        ...listed,
-        models,
-        ok: listed.ok || models.length > 0,
-      };
-    }),
+    connected.map(
+      async (
+        row,
+      ): Promise<ProviderModelsResult & { provider: AgentProviderId }> => {
+        const listed = await listProviderModels(row.provider);
+        const available = listed.models.filter(
+          (model) => model.available !== false,
+        );
+        const models = modelsForChooser(
+          available,
+          prefs.agent.visibleModelIds?.[row.provider] ?? [
+            ...available.map((model) => model.id),
+            ...(prefs.agent.customModelIds?.[row.provider] ?? []),
+          ],
+        );
+        if (listed.ok) return { provider: row.provider, ...listed, models };
+        return models.length > 0
+          ? { provider: row.provider, ok: true, models, warning: listed.error }
+          : { provider: row.provider, ...listed, models };
+      },
+    ),
   );
   return { providers };
 }
@@ -259,10 +257,54 @@ type ModelDiscoveryResult =
   | { ok: true; json: JsonValue }
   | { ok: false; error: string; unsupported?: boolean };
 
+const jsonObject = z.record(z.string(), z.json());
+const ollamaModelDetail = z.object({
+  capabilities: z.array(z.string()),
+});
+
+function ollamaShowUrl(modelsUrl: string): string {
+  const url = new URL(modelsUrl);
+  url.pathname = url.pathname.replace(/\/v1\/models\/?$/, "/api/show");
+  url.search = "";
+  return url.toString();
+}
+
+async function withOllamaModelDetails(
+  rows: JsonValue[],
+  modelsUrl: string,
+  headers: Record<string, string>,
+  signal: AbortSignal,
+  fetcher: typeof fetch,
+): Promise<JsonValue[]> {
+  const url = ollamaShowUrl(modelsUrl);
+  return Promise.all(
+    rows.map(async (row) => {
+      const parsedRow = jsonObject.safeParse(row);
+      const id = z.string().min(1).safeParse(parsedRow.data?.id);
+      if (!parsedRow.success || !id.success) return row;
+      try {
+        const response = await fetcher(url, {
+          method: "POST",
+          headers: { ...headers, "content-type": "application/json" },
+          body: JSON.stringify({ model: id.data }),
+          signal,
+        });
+        if (!response.ok) return row;
+        const detail = ollamaModelDetail.safeParse(await response.json());
+        return detail.success
+          ? { ...parsedRow.data, capabilities: detail.data.capabilities }
+          : row;
+      } catch {
+        return row;
+      }
+    }),
+  );
+}
+
 export async function checkProviderKey(
   input: ProviderConnection,
   fetcher: typeof fetch = fetch,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<OkResult> {
   const fetched = await fetchProviderModels(input, fetcher);
   if (fetched.ok || fetched.unsupported) return { ok: true };
   return { ok: false, error: fetched.error };
@@ -366,9 +408,22 @@ export async function fetchProviderModels(
         )
           throw new Error("Missing pagination cursor");
         if (!cursor) {
+          const discoveredRows =
+            provider === "ollama"
+              ? await withOllamaModelDetails(
+                  rows,
+                  endpoint,
+                  headers,
+                  signal,
+                  fetcher,
+                )
+              : rows;
           return {
             ok: true,
-            json: provider === "gemini" ? { models: rows } : { data: rows },
+            json:
+              provider === "gemini"
+                ? { models: discoveredRows }
+                : { data: discoveredRows },
           };
         }
         if (cursors.has(cursor)) throw new Error("Repeated pagination cursor");

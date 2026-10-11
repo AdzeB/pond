@@ -5,6 +5,11 @@ import {
 } from "@pond/schema/db";
 import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
 import type { Transaction } from "@pond/schema/tx";
+import type {
+  BatchRenameInput,
+  OkFailure,
+  OkResult,
+} from "@shared/query-contracts-shared";
 import { applyRenameTemplate } from "@shared/rename-template";
 import { asc, eq, inArray, sql } from "drizzle-orm";
 import { ulid } from "ulid";
@@ -58,14 +63,21 @@ interface CreateViewInput {
   layout?: string | null;
 }
 
+const MISSING_NAME: OkFailure = { ok: false, error: "Enter a name." };
+const NOT_FOUND: OkFailure = { ok: false, error: "Saved view not found." };
+const INVALID_PARENT: OkFailure = {
+  ok: false,
+  error: "Choose a different parent group.",
+};
+
 export async function createView(
   input: CreateViewInput,
   runtime: SavedViewRuntime = defaultRuntime,
-): Promise<{ ok: boolean; id?: string }> {
+): Promise<OkResult<{ id: string }>> {
   const name = input.name.trim();
-  if (!name) return { ok: false };
+  if (!name) return MISSING_NAME;
   return mutateViews(runtime, async (db) => {
-    if (!(await validParent(db, input.parentId ?? null))) return { ok: false };
+    if (!(await validParent(db, input.parentId ?? null))) return INVALID_PARENT;
     const data: NewSavedView = {
       id: ulid(),
       name,
@@ -95,19 +107,19 @@ export async function updateView(
   id: string,
   patch: Partial<Omit<CreateViewInput, "kind">> & { sortOrder?: number },
   runtime: SavedViewRuntime = defaultRuntime,
-): Promise<{ ok: boolean }> {
+): Promise<OkResult> {
   return mutateViews(runtime, async (db) => {
     const row = await viewById(db, id);
-    if (!row) return { ok: false };
+    if (!row) return NOT_FOUND;
     if (
       patch.parentId !== undefined &&
       !(await validParent(db, patch.parentId, id))
     ) {
-      return { ok: false };
+      return INVALID_PARENT;
     }
     if (patch.name !== undefined) {
       const name = patch.name.trim();
-      if (!name) return { ok: false };
+      if (!name) return MISSING_NAME;
       patch = { ...patch, name };
     }
     await runtime.commit([
@@ -128,19 +140,20 @@ export async function renameView(
   id: string,
   name: string,
   runtime: SavedViewRuntime = defaultRuntime,
-): Promise<{ ok: boolean }> {
+): Promise<OkResult> {
   const target = name.trim();
-  if (!target) return { ok: false };
+  if (!target) return MISSING_NAME;
   return updateView(id, { name: target }, runtime);
 }
 
 export async function renameViewsBatch(
-  input: { ids: string[]; pattern: string },
+  input: BatchRenameInput,
   runtime: SavedViewRuntime = defaultRuntime,
-): Promise<{ ok: boolean; renamed: number }> {
+): Promise<OkResult<{ renamed: number }>> {
   const ids = [...new Set(input.ids.filter(Boolean))];
   const pattern = input.pattern.trim();
-  if (!pattern || ids.length === 0) return { ok: false, renamed: 0 };
+  if (!pattern || ids.length === 0)
+    return { ok: false, error: "Enter a name pattern and choose views." };
   return mutateViews(runtime, async (db) => {
     const rows = await db
       .select()
@@ -157,6 +170,9 @@ export async function renameViewsBatch(
         original: row.name,
         id: row.id,
         date: row.createdAt,
+        start: input.start,
+        replacement: input.replacement,
+        textCase: input.textCase,
       });
       if (!name || name === row.name) continue;
       transactions.push({
@@ -177,10 +193,10 @@ export async function renameViewsBatch(
 export async function deleteView(
   id: string,
   runtime: SavedViewRuntime = defaultRuntime,
-): Promise<{ ok: boolean }> {
+): Promise<OkResult> {
   return mutateViews(runtime, async (db) => {
     const row = await viewById(db, id);
-    if (!row) return { ok: false };
+    if (!row) return NOT_FOUND;
     const children = await db
       .select()
       .from(savedViewsTable)
@@ -208,7 +224,7 @@ export async function deleteView(
 export async function reorderViews(
   orderedIds: string[],
   runtime: SavedViewRuntime = defaultRuntime,
-): Promise<{ ok: boolean }> {
+): Promise<OkResult> {
   return mutateViews(runtime, async (db) => {
     const txs: Transaction[] = [];
     for (let i = 0; i < orderedIds.length; i++) {

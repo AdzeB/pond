@@ -12,8 +12,8 @@ function mainOutDir(): string {
 export function resolvePreload(
   name:
     | "index.cjs"
+    | "combine-images.cjs"
     | "preview.cjs"
-    | "screenshot.cjs"
     | "settings.cjs"
     | "scrape.cjs",
 ): string {

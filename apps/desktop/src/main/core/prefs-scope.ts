@@ -6,12 +6,11 @@ import {
   type PrefsPatchDeep,
   PrefsSchema,
   type StoredPrefsEnvelope,
-  type StoredPrefsEnvelopeV2,
 } from "@pond/schema/db";
 import { z } from "zod";
 import { readBundleJson, writeBundleJson } from "../lib/library-config";
-import { resolvePondId, UNBOUND_POND_ID } from "../lib/pond-identity";
-import { resolvePaths } from "../paths";
+import { UNBOUND_LIBRARY_ID } from "../lib/library-id";
+import { libraryId, resolvePaths } from "../paths";
 
 const POND_PREF_KEYS = [
   "folderRules",
@@ -47,7 +46,6 @@ const APP_PREF_KEYS = [
   "system",
   "quickCapture",
   "autoImport",
-  "screenshots",
   "sidebar",
   "feedback",
   "api",
@@ -60,14 +58,12 @@ const APP_PREF_KEYS = [
 const _DEFAULT_APP_PREFS: AppPrefs = pickPrefs(DEFAULT_PREFS, APP_PREF_KEYS);
 const _DEFAULT_POND_PREFS: PondPrefs = pickPrefs(DEFAULT_PREFS, POND_PREF_KEYS);
 
-export function currentPondId(): string {
-  const paths = resolvePaths();
-  const committed = existsSync(paths.libraryRoot);
-  return resolvePondId(paths.libraryRoot, committed);
+export function currentLibraryId(): string {
+  return libraryId();
 }
 
-export function isUnboundPondId(pondId: string): boolean {
-  return pondId === UNBOUND_POND_ID;
+export function isUnboundLibraryId(libraryId: string): boolean {
+  return libraryId === UNBOUND_LIBRARY_ID;
 }
 
 const StoredSliceSchema = z.custom<PrefsPatchDeep>(
@@ -76,8 +72,6 @@ const StoredSliceSchema = z.custom<PrefsPatchDeep>(
 
 export type StoredPrefsInput =
   | StoredPrefsEnvelope
-  | StoredPrefsEnvelopeV2
-  | PrefsPatchDeep
   | string
   | number
   | boolean
@@ -88,12 +82,6 @@ const StoredPrefsV3Schema = z.object({
   version: z.literal(3),
   app: StoredSliceSchema,
   pending: StoredSliceSchema.nullish(),
-});
-
-const StoredPrefsV2Schema = z.object({
-  version: z.literal(2),
-  app: StoredSliceSchema.optional(),
-  ponds: z.record(z.string(), StoredSliceSchema).optional(),
 });
 
 function storedSlice(value: PrefsPatchDeep | null | undefined): PrefsPatchDeep {
@@ -107,27 +95,9 @@ function isStoredPrefs(
 }
 
 export function normalizeStoredPrefs(stored: StoredPrefsInput): StoredPrefs {
-  if (isStoredPrefs(stored)) return stored;
-
-  const v2 = StoredPrefsV2Schema.safeParse(stored);
-  if (v2.success) {
-    return {
-      version: 3,
-      app: storedSlice(v2.data.app),
-      pending: storedSlice(v2.data.ponds?.[UNBOUND_POND_ID]) ?? null,
-    };
-  }
-
-  const flat = PrefsSchema.safeParse(stored);
-  if (flat.success && StoredSliceSchema.safeParse(stored).success) {
-    return {
-      version: 3,
-      app: pickPrefs(flat.data, APP_PREF_KEYS),
-      pending: pickPrefs(flat.data, POND_PREF_KEYS),
-    };
-  }
-
-  return { version: 3, app: {}, pending: null };
+  return isStoredPrefs(stored)
+    ? stored
+    : { version: 3, app: {}, pending: null };
 }
 
 function mergeAll(base: Prefs, patch: DeepPartial<Prefs>): Prefs {
@@ -143,7 +113,6 @@ function mergeAll(base: Prefs, patch: DeepPartial<Prefs>): Prefs {
     system: { ...base.system, ...patch.system },
     quickCapture: { ...base.quickCapture, ...patch.quickCapture },
     autoImport: { ...base.autoImport, ...patch.autoImport },
-    screenshots: { ...base.screenshots, ...patch.screenshots },
     sidebar: {
       ...base.sidebar,
       ...patch.sidebar,
@@ -244,7 +213,7 @@ function assignSlice<T extends object, K extends keyof Prefs>(
   key: K,
   value: DeepPartial<Prefs>[K],
 ): void {
-  // SAFETY: `key` indexes both objects with the same `Prefs` key, so the value type matches.
+  /** SAFETY: `key` indexes both objects with the same `Prefs` key, so the value type matches. */
   (target as Record<K, DeepPartial<Prefs>[K]>)[key] = value;
 }
 
@@ -252,7 +221,7 @@ function pickPrefs<K extends keyof Prefs>(
   prefs: Prefs,
   keys: readonly K[],
 ): Pick<Prefs, K> {
-  // SAFETY: filled from `keys` on the line below, which is exactly the picked key set.
+  /** SAFETY: filled from `keys` on the line below, which is exactly the picked key set. */
   const out = {} as Pick<Prefs, K>;
   for (const key of keys) out[key] = prefs[key];
   return out;

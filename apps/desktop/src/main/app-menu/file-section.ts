@@ -58,29 +58,6 @@ export function buildFileSection(context: AppMenuContext): AppMenuItem {
         ],
       },
       {
-        label: "Capture",
-        submenu: [
-          {
-            label: "Capture Area",
-            accelerator: accelerator("capture.area"),
-            registerAccelerator: false,
-            click: sendMenuAction("capture.area"),
-          },
-          {
-            label: "Capture Window",
-            accelerator: accelerator("capture.window"),
-            registerAccelerator: false,
-            click: sendMenuAction("capture.window"),
-          },
-          {
-            label: "Capture Full Screen",
-            accelerator: accelerator("capture.screen"),
-            registerAccelerator: false,
-            click: sendMenuAction("capture.screen"),
-          },
-        ],
-      },
-      {
         label: "Import",
         submenu: [
           {

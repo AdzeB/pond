@@ -3,12 +3,12 @@ import { basename, relative, resolve, sep } from "node:path";
 import { type Save, saves } from "@pond/schema/db";
 import { labelKey } from "@pond/schema/label-name";
 import type { Transaction, TxMeta } from "@pond/schema/tx";
+import type { OkResult } from "@shared/query-contracts-shared";
 import { inArray } from "drizzle-orm";
-import { ulid } from "ulid";
 import { z } from "zod";
 import { getDb } from "../db";
 import { writeSaveInfo } from "../lib/library";
-import { itemDir } from "../paths";
+import { saveDir } from "../paths";
 import { executeBatch } from "./executor";
 import { copyExportFile } from "./export-files";
 import { folderIdsForSave, setSaveFolders } from "./folders";
@@ -16,14 +16,14 @@ import { runLibraryTransfer } from "./library-transfers";
 
 type MergeSave = Pick<
   Save,
-  "id" | "tags" | "comments" | "videoNotes" | "files" | "fileSize" | "deletedAt"
+  "id" | "tags" | "notes" | "files" | "fileSize" | "deletedAt"
 >;
 
 export interface DuplicateMergeRuntime {
   read(ids: string[]): Promise<MergeSave[]>;
   directory(id: string): string;
   folders(id: string): Promise<string[]>;
-  setFolders(id: string, ids: string[]): Promise<{ ok: boolean }>;
+  setFolders(id: string, ids: string[]): Promise<OkResult>;
   commit(transactions: Transaction[]): Promise<void>;
 }
 
@@ -31,7 +31,7 @@ const runtime: DuplicateMergeRuntime = {
   async read(ids) {
     return (await getDb()).select().from(saves).where(inArray(saves.id, ids));
   },
-  directory: itemDir,
+  directory: saveDir,
   folders: folderIdsForSave,
   async setFolders(id, ids) {
     const result = await setSaveFolders(id, ids);
@@ -49,24 +49,6 @@ const runtime: DuplicateMergeRuntime = {
   },
 };
 
-function uniqueAnnotations<T extends { id: string }>(
-  values: T[],
-  key: (value: T) => string,
-): T[] {
-  const seen = new Set<string>();
-  const ids = new Set<string>();
-  const result: T[] = [];
-  for (const value of values) {
-    const identity = key(value);
-    if (seen.has(identity)) continue;
-    seen.add(identity);
-    const id = ids.has(value.id) ? ulid() : value.id;
-    ids.add(id);
-    result.push({ ...value, id });
-  }
-  return result;
-}
-
 interface DuplicateMergeInput {
   keepId: string;
   ids: readonly string[];
@@ -75,36 +57,7 @@ interface DuplicateMergeInput {
 
 const mergeMetadataSchema = z.object({
   tags: z.array(z.string()),
-  comments: z.array(
-    z.object({
-      id: z.string(),
-      fileIndex: z.number().int().nonnegative().optional(),
-      x: z.number(),
-      y: z.number(),
-      w: z.number(),
-      h: z.number(),
-      text: z.string(),
-      createdAt: z.number().optional(),
-      replies: z
-        .array(
-          z.object({
-            id: z.string(),
-            text: z.string(),
-            createdAt: z.number().optional(),
-          }),
-        )
-        .optional(),
-      resolvedAt: z.number().optional(),
-    }),
-  ),
-  videoNotes: z.array(
-    z.object({
-      id: z.string(),
-      fileIndex: z.number().int().nonnegative().optional(),
-      timeSec: z.number(),
-      text: z.string(),
-    }),
-  ),
+  notes: z.string().nullable().optional(),
   files: z.array(
     z.object({
       kind: z.string(),
@@ -198,7 +151,8 @@ async function preserveDuplicates(
 ) {
   const keepId = input.keepId.trim();
   const ids = [...new Set(input.ids.filter((id) => id && id !== keepId))];
-  if (!keepId || ids.length === 0) return { ok: false, trashed: 0 };
+  if (!keepId || ids.length === 0)
+    return { ok: false as const, error: "Choose duplicates to merge." };
   const rows = await dependencies.read([keepId, ...ids]);
   const byId = new Map(rows.map((save) => [save.id, save]));
   const keep = byId.get(keepId);
@@ -231,60 +185,28 @@ async function preserveDuplicates(
   );
   const folderIds = [...new Set(memberships.flat())];
   const files = [...keep.files];
-  const attachmentMap = new Map<string, Map<number, number>>([
-    [keep.id, new Map(keep.files.map((_, index) => [index, index]))],
-  ]);
   const target = await realpath(dependencies.directory(keepId));
   for (const extra of extras) {
     const sourceRoot = await realpath(dependencies.directory(extra.id));
-    const indexes = new Map<number, number>();
-    attachmentMap.set(extra.id, indexes);
-    for (const [index, file] of extra.files.entries()) {
-      const existing = file.sha256
-        ? files.findIndex((candidate) => candidate.sha256 === file.sha256)
-        : -1;
-      if (existing >= 0) {
-        indexes.set(index, existing);
+    for (const file of extra.files) {
+      if (
+        file.sha256 &&
+        files.some((candidate) => candidate.sha256 === file.sha256)
+      )
         continue;
-      }
       const source = await realpath(resolve(sourceRoot, file.path));
       if (!source.startsWith(`${sourceRoot}${sep}`))
         throw new Error("A duplicate file resolves outside its Save.");
       const copied = await copyExportFile(source, target, basename(file.path));
-      indexes.set(index, files.length);
       files.push({ ...file, path: relative(target, copied) });
     }
   }
-  function remapAnnotation<T extends { fileIndex?: number }>(
-    annotation: T,
-    saveId: string,
-  ): T {
-    const mapped = attachmentMap.get(saveId)?.get(annotation.fileIndex ?? 0);
-    return mapped === undefined ||
-      (mapped === 0 && annotation.fileIndex === undefined)
-      ? annotation
-      : { ...annotation, fileIndex: mapped };
+  let notes: string[] = [];
+  for (const note of ordered.map((save) => save.notes?.trim())) {
+    if (!note || notes.some((kept) => kept.includes(note))) continue;
+    notes = [...notes.filter((kept) => !note.includes(kept)), note];
   }
-  const comments = uniqueAnnotations(
-    ordered.flatMap((save) =>
-      (save.comments ?? []).map((comment) => remapAnnotation(comment, save.id)),
-    ),
-    (comment) =>
-      JSON.stringify([
-        comment.fileIndex ?? 0,
-        comment.x,
-        comment.y,
-        comment.w,
-        comment.h,
-        comment.text,
-      ]),
-  );
-  const videoNotes = uniqueAnnotations(
-    ordered.flatMap((save) =>
-      (save.videoNotes ?? []).map((note) => remapAnnotation(note, save.id)),
-    ),
-    (note) => JSON.stringify([note.fileIndex ?? 0, note.timeSec, note.text]),
-  );
+  const mergedNotes = notes.length > 0 ? notes.join("\n\n") : null;
   const meta: TxMeta = {
     actor: "user",
     actorReason: "merge-duplicates",
@@ -293,8 +215,7 @@ async function preserveDuplicates(
   const before = mergeMetadataSchema.parse(keep);
   const after = {
     tags,
-    comments,
-    videoNotes,
+    notes: mergedNotes,
     files,
     fileSize: files.reduce((size, file) => size + file.size, 0),
   };
@@ -305,15 +226,13 @@ async function preserveDuplicates(
       id: keepId,
       patch: {
         tags,
-        comments,
-        videoNotes,
+        notes: mergedNotes,
         files,
         fileSize: files.reduce((size, file) => size + file.size, 0),
       },
       before: {
         tags: keep.tags,
-        comments: keep.comments,
-        videoNotes: keep.videoNotes,
+        notes: keep.notes,
         files: keep.files,
         fileSize: keep.fileSize,
       },
@@ -327,7 +246,7 @@ async function preserveDuplicates(
     ids.map((id) => ({ kind: "trash", model: "save", id, meta })),
   );
   return {
-    ok: true,
+    ok: true as const,
     trashed: ids.length,
     receipt: {
       keepId,

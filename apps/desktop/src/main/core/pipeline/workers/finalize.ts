@@ -70,8 +70,8 @@ export async function runFinalize(saveId: string): Promise<void> {
     const cover = pickCardFile(files) ?? files[0];
     if (cover) {
       const { extractPalette } = await import("../../../lib/palette");
-      const { itemFile } = await import("../../../paths");
-      const colors = await extractPalette(itemFile(saveId, cover.path));
+      const { saveFile } = await import("../../../paths");
+      const colors = await extractPalette(saveFile(saveId, cover.path));
       if (colors.length > 0) {
         await persistSave(
           saveId,
@@ -83,7 +83,7 @@ export async function runFinalize(saveId: string): Promise<void> {
   }
 
   const latest = (await readSave(saveId)) ?? save;
-  const { writeSaveBlurhash } = await import("../../../lib/blurhash");
+  const { writeSaveBlurhash } = await import("../../save-blurhash");
   await writeSaveBlurhash(latest);
 
   await persistSave(

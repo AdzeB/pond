@@ -8,6 +8,10 @@ import { IPC, type RecentMenuEntry } from "../shared/constants";
 import type { ShortcutId } from "../shared/shortcuts";
 import { startAutoImport, stopAutoImport } from "./core/auto-import";
 import { captures } from "./core/captures";
+import {
+  closeCombineImagesWindow,
+  registerCombineImagesWindowIpc,
+} from "./core/combine-images-window";
 import { ensureDefaultLibrary } from "./core/ensure-default-library";
 import { registerSyncActionListener } from "./core/executor";
 import {
@@ -16,7 +20,6 @@ import {
 } from "./core/global-shortcuts";
 import { registerHarvesterWindowIpc } from "./core/harvester-window";
 import { syncLibraryRootMetadata } from "./core/library-ops";
-import { runLibraryScopeMigration } from "./core/library-scope-migration";
 import { stopLibraryTransfers } from "./core/library-transfers";
 import { flushGovernor } from "./core/pipeline/rate-governor";
 import {
@@ -27,24 +30,14 @@ import {
 import { disposeQueueWorkerHost } from "./core/pipeline/worker-host";
 import { getPrefs } from "./core/prefs";
 import { closePreviewWindows } from "./core/preview-windows";
-import { disposeHiddenWindow } from "./core/refresh/scrape-window";
+import { disposeHiddenWindow } from "./core/refresh/harvest-window";
 import { disposeRenderCardWindow } from "./core/render-card";
-import {
-  startScreenshotIntake,
-  stopScreenshotIntake,
-} from "./core/screenshot-intake";
-import {
-  beginScreenshot,
-  closeScreenshotWindow,
-  registerScreenshotWindowIpc,
-} from "./core/screenshot-window";
 import { registerSettingsWindowIpc } from "./core/settings-window";
 import {
   startStorageWatcher,
   stopStorageWatcher,
 } from "./core/storage-watcher";
 import {
-  migrateLegacySyncPrefs,
   recoverInterruptedSyncs,
   type SyncStatusUpdate,
   subscribeToSyncStatus,
@@ -55,22 +48,29 @@ import {
   registerTrashCron,
   registerYtDlpUpdateCron,
 } from "./crons";
-import { configureLibraryMigration, getDb } from "./db";
+import { getDb } from "./db";
 import { handleDeepLink } from "./deep-link";
 import { registerIpc } from "./ipc";
 import { waitForLibraryLocationChanges } from "./ipc/queries/library-locations";
 import { ensureIngestToken } from "./keychain";
 import { broadcast } from "./lib/broadcast";
 import { rotateBundleBackups } from "./lib/library-config";
+import { LibraryMetadataError } from "./lib/library-id";
 import { disableMenuActionImages } from "./lib/menu-action-images";
+import { recoverUnreadableLibrary } from "./library-recovery";
 import { setMainLocale } from "./localization-runtime";
 import { installAppMenu, setMenuRecents } from "./menu";
 import { writeNativeHostManifests } from "./native/manifests";
 import { startNativeServer, stopNativeServer } from "./native/server";
-import { libraryRoot, resolvePaths } from "./paths";
+import { libraryRoot, type PondPaths, resolvePaths } from "./paths";
 import { registerProtocol, registerScheme } from "./protocol";
 import { runtimeControls } from "./runtime";
 import { configureSessionDefaults } from "./session-config";
+import {
+  logStartupTiming,
+  markStartup,
+  watchMainThreadStalls,
+} from "./startup-timing";
 import { registerAutoUpdater } from "./updater";
 import {
   beginQuit,
@@ -85,6 +85,8 @@ import {
   setCloseToTray,
   summonMainWindow,
 } from "./window";
+
+markStartup("modules-loaded");
 
 /** Force app.name before any menu/dock work; dev falls back to "Electron" otherwise. */
 app.setName("Pond");
@@ -116,7 +118,6 @@ log.info("[pond] main starting", {
   version: app.getVersion(),
   platform: process.platform,
 });
-configureLibraryMigration(runLibraryScopeMigration);
 
 const wantsMcp = process.argv.includes("--mcp");
 
@@ -128,6 +129,8 @@ const rendererReady = new Promise<void>((resolve) => {
   signalRendererReady = resolve;
 });
 ipcMain.once(IPC.rendererReady, () => {
+  markStartup("renderer-ready");
+  logStartupTiming();
   signalRendererReady?.();
   signalRendererReady = null;
 });
@@ -174,13 +177,14 @@ app.on("second-instance", (_event, argv) => {
 });
 
 app.whenReady().then(async () => {
+  markStartup("app-ready");
   if (process.platform === "darwin" && !app.isPackaged) {
     const { applyAppIcon } = await import("./core/app-icon");
     await applyAppIcon(DEFAULT_APP_ICON);
   }
 
-  ensureDefaultLibrary();
-  const paths = resolvePaths();
+  const paths = await openActiveLibrary();
+  if (!paths) return;
   log.info("[pond] paths", paths);
 
   configureSessionDefaults();
@@ -195,9 +199,9 @@ app.whenReady().then(async () => {
   }
 
   registerIpc();
-  registerScreenshotWindowIpc({ openLibraryWindow });
   registerSettingsWindowIpc({ openLibraryWindow });
   registerHarvesterWindowIpc();
+  registerCombineImagesWindowIpc();
   const menuPrefs = await getPrefs();
   setMainLocale(menuPrefs.localization.locale);
   installAppMenu({
@@ -225,6 +229,7 @@ app.whenReady().then(async () => {
   if (!launchedHidden) {
     await createWindow();
   }
+  watchMainThreadStalls();
 
   const [tokenResult, dbResult] = await Promise.allSettled([
     ensureIngestToken(),
@@ -243,6 +248,19 @@ app.whenReady().then(async () => {
     log.error("[pond] post-launch init failed", err),
   );
 });
+
+async function openActiveLibrary(): Promise<PondPaths | null> {
+  try {
+    ensureDefaultLibrary();
+    return resolvePaths();
+  } catch (error) {
+    if (!(error instanceof LibraryMetadataError)) throw error;
+    log.error("[pond] Library metadata is unreadable", error.file, error.cause);
+    if (wantsMcp) app.exit(1);
+    else await recoverUnreadableLibrary(error);
+    return null;
+  }
+}
 
 async function postLaunchInit(): Promise<void> {
   if (!process.env.POND_SANDBOX) {
@@ -282,11 +300,6 @@ async function postLaunchInit(): Promise<void> {
     log.error("[pond] native host failed to start", err);
   }
 
-  try {
-    await migrateLegacySyncPrefs();
-  } catch (err) {
-    log.warn("[pond] legacy sync-prefs migration failed", err);
-  }
   void recoverInterruptedSyncs().catch((err) =>
     log.warn("[pond] interrupted-sync recovery failed", err),
   );
@@ -301,9 +314,6 @@ async function postLaunchInit(): Promise<void> {
     .catch((error) => log.warn("[pond] capture recovery failed", error));
   void startAutoImport().catch((err) =>
     log.warn("[pond] auto-import failed to start", err),
-  );
-  void startScreenshotIntake().catch((err) =>
-    log.warn("[pond] screenshot intake failed to start", err),
   );
 
   await initTray();
@@ -353,32 +363,10 @@ async function startDeferredMaintenance(): Promise<void> {
     .catch((err) => log.warn("[pond] missing video backfill failed", err))
     .then(async () =>
       (
-        await import("./core/refresh/transport-stream-backfill")
-      ).startTransportStreamBackfill(),
-    )
-    .catch((err) => log.warn("[pond] transport stream backfill failed", err))
-    .then(async () =>
-      (await import("./core/refresh/poster-backfill")).startPosterBackfill(),
-    )
-    .catch((err) => log.warn("[pond] poster backfill failed", err))
-    .then(async () =>
-      (
-        await import("./core/refresh/save-file-layout-backfill")
-      ).startSaveFileLayoutBackfill(),
-    )
-    .catch((err) => log.warn("[pond] save file layout backfill failed", err))
-    .then(async () =>
-      (
         await import("./core/refresh/threads-card-backfill")
       ).startThreadsCardBackfill(),
     )
     .catch((err) => log.warn("[pond] native card backfill failed", err))
-    .then(async () =>
-      (
-        await import("./core/refresh/threads-landing-og-trash")
-      ).startThreadsLandingOgTrash(),
-    )
-    .catch((err) => log.warn("[pond] threads landing-og trash failed", err))
     .then(async () =>
       (
         await import("./core/refresh/source-icon-backfill")
@@ -410,15 +398,6 @@ async function registerSummonHotkey() {
   startGlobalShortcuts(
     globalShortcut,
     {
-      "capture.area": run(async () => {
-        await beginScreenshot("area");
-      }),
-      "capture.window": run(async () => {
-        await beginScreenshot("window");
-      }),
-      "capture.screen": run(async () => {
-        await beginScreenshot("screen");
-      }),
       "app.summon": run(async () => {
         const { shortcuts } = await getPrefs();
         const win = getMainWindow();
@@ -439,7 +418,6 @@ async function registerSummonHotkey() {
       }),
     },
     (await getPrefs()).shortcuts.overrides,
-    (await getPrefs()).screenshots.shortcutsEnabled,
   );
 }
 
@@ -465,7 +443,6 @@ app.on("before-quit", async (event) => {
   try {
     await waitForLibraryLocationChanges();
     await stopAutoImport();
-    await stopScreenshotIntake();
     await stopLibraryTransfers();
   } catch (error) {
     log.warn("[pond] auto import shutdown failed", error);
@@ -496,8 +473,8 @@ app.on("before-quit", async (event) => {
     log.warn("[pond] render-card window dispose failed", err);
   }
   disposeQueueWorkerHost();
-  closeScreenshotWindow();
   closePreviewWindows();
+  closeCombineImagesWindow();
   try {
     await stopNativeServer(nativeServer);
     nativeServer = null;

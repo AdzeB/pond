@@ -4,8 +4,7 @@ import { app, ipcMain, shell } from "electron";
 import log from "electron-log/main.js";
 import { IPC } from "../../../shared/constants";
 import { executeBatch, executeTransaction } from "../../core/executor";
-import { currentPondId } from "../../core/prefs-scope";
-import { materializeLibraryMediaForExternalUse } from "../../core/storage/library-media-storage";
+import { currentLibraryId } from "../../core/prefs-scope";
 import {
   canRedo,
   canUndo,
@@ -18,9 +17,9 @@ import { hasUserTitle } from "../../core/user-metadata";
 import { resolveSaveFilePath, safeHandle } from "../helpers";
 
 export function registerAppHandlers(): void {
-  ipcMain.on(IPC.pondId, (event) => {
+  ipcMain.on(IPC.libraryId, (event) => {
     try {
-      event.returnValue = currentPondId();
+      event.returnValue = currentLibraryId();
     } catch {
       event.returnValue = "unbound";
     }
@@ -106,18 +105,14 @@ export function registerAppHandlers(): void {
   safeHandle(IPC.revealSave, async (_, id: string, fileIndex?: number) => {
     const target = await resolveSaveFilePath(id, fileIndex);
     if (!target.ok) return target;
-    shell.showItemInFolder(
-      await materializeLibraryMediaForExternalUse(target.path),
-    );
+    shell.showItemInFolder(target.path);
     return { ok: true as const };
   });
 
   safeHandle(IPC.openSaveFile, async (_, id: string, fileIndex?: number) => {
     const target = await resolveSaveFilePath(id, fileIndex);
     if (!target.ok) return target;
-    const err = await shell.openPath(
-      await materializeLibraryMediaForExternalUse(target.path),
-    );
+    const err = await shell.openPath(target.path);
     if (err) {
       log.warn("[pond ipc] openSaveFile failed", err);
       return { ok: false as const, reason: err };

@@ -3,13 +3,12 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, rename, rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 import log from "electron-log/main.js";
-import { resolvePondItemPath } from "../ipc/helpers";
+import { resolvePondSavePath } from "../ipc/helpers";
 import { libraryRoot } from "../paths";
 import { binariesAvailable } from "./refresh/binaries";
-import { withDecryptedLibraryMediaPath } from "./storage/library-media-storage";
 
 export const VIDEO_CACHE_HOST = "_video_cache";
-const VIDEO_CACHE_DIR = "_video_cache";
+export const VIDEO_CACHE_DIR = "_video_cache";
 const PROXY_TIMEOUT_MS = 30 * 60_000;
 const inFlight = new Map<string, Promise<string | null>>();
 
@@ -56,7 +55,7 @@ export function buildVideoPreviewArguments(
 export async function ensureVideoPreviewProxy(
   src: string,
 ): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
-  const resolved = resolvePondItemPath(src);
+  const resolved = resolvePondSavePath(src);
   if (!resolved) return { ok: false, error: "The video file is unavailable." };
   const ffmpeg = binariesAvailable().ffmpeg;
   if (!ffmpeg) {
@@ -96,8 +95,14 @@ export async function ensureVideoPreviewProxy(
     }).finally(() => inFlight.delete(key));
     inFlight.set(key, pending);
   }
-  const output = await pending;
-  if (!output) {
+  try {
+    await pending;
+  } catch (error) {
+    log.warn(
+      "[pond video-preview] proxy generation failed",
+      resolved.path,
+      error,
+    );
     return {
       ok: false,
       error: "Pond could not prepare a compatible video preview.",
@@ -111,28 +116,25 @@ async function createVideoPreviewProxy(input: {
   destination: string;
   ffmpeg: string;
   source: string;
-}): Promise<string | null> {
+}): Promise<string> {
   await mkdir(input.cacheRoot, { recursive: true });
   const temporary = join(input.cacheRoot, `.video-preview-${randomUUID()}.mp4`);
   try {
-    const ok = await withDecryptedLibraryMediaPath(input.source, (source) =>
-      runFfmpeg(input.ffmpeg, buildVideoPreviewArguments(source, temporary)),
+    await runFfmpeg(
+      input.ffmpeg,
+      buildVideoPreviewArguments(input.source, temporary),
     );
-    if (!ok) return null;
-    const output = await stat(temporary).catch(() => null);
-    if (!output?.isFile() || output.size === 0) return null;
+    const output = await stat(temporary);
+    if (output.size === 0) throw new Error("FFmpeg wrote an empty preview.");
     await rename(temporary, input.destination);
     return input.destination;
-  } catch (error) {
-    log.warn("[pond video-preview] proxy generation failed", error);
-    return null;
   } finally {
     await rm(temporary, { force: true }).catch(() => {});
   }
 }
 
-function runFfmpeg(path: string, args: string[]): Promise<boolean> {
-  return new Promise((resolve) => {
+function runFfmpeg(path: string, args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
     const child = spawn(path, args, { stdio: ["ignore", "ignore", "pipe"] });
     let stderr = "";
     child.stderr.on("data", (chunk: Buffer) => {
@@ -144,19 +146,12 @@ function runFfmpeg(path: string, args: string[]): Promise<boolean> {
     timer.unref();
     child.once("error", (error) => {
       clearTimeout(timer);
-      log.warn("[pond video-preview] could not start FFmpeg", error);
-      resolve(false);
+      reject(error);
     });
     child.once("close", (code) => {
       clearTimeout(timer);
-      if (code !== 0) {
-        log.warn(
-          "[pond video-preview] FFmpeg exited unsuccessfully",
-          code,
-          stderr,
-        );
-      }
-      resolve(code === 0);
+      if (code === 0) resolve();
+      else reject(new Error(`FFmpeg exited with code ${code}: ${stderr}`));
     });
   });
 }

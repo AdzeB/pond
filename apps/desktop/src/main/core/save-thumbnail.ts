@@ -2,9 +2,6 @@ import type { Save } from "@pond/schema/db";
 import { saves } from "@pond/schema/db";
 import {
   hasMediaThumbnail,
-  LEGACY_CUSTOM_THUMBNAIL_KIND,
-  LEGACY_TEXT_COVER_DARK_KIND,
-  LEGACY_TEXT_COVER_LIGHT_KIND,
   primaryOriginalPath,
   THUMBNAIL_DARK_KIND,
   THUMBNAIL_KIND,
@@ -14,11 +11,10 @@ import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import sharp from "sharp";
 import { getDb } from "../db";
-import { itemFile } from "../paths";
+import { saveFile } from "../paths";
 import { persistSave } from "./persist-save";
 import type { WriteFileArgs } from "./pipeline/workers/apply";
 import { renderThumbnailPng, thumbnailSource } from "./save-thumbnail-file";
-import { withDecryptedLibraryMediaPath } from "./storage/library-media-storage";
 
 export { renderThumbnailPng };
 
@@ -40,12 +36,7 @@ function thumbnailWriteArgs(
   return write;
 }
 
-export const THUMBNAIL_REPLACE_KINDS = [
-  THUMBNAIL_KIND,
-  LEGACY_CUSTOM_THUMBNAIL_KIND,
-  LEGACY_TEXT_COVER_LIGHT_KIND,
-  LEGACY_TEXT_COVER_DARK_KIND,
-];
+export const THUMBNAIL_REPLACE_KINDS = [THUMBNAIL_KIND];
 
 export async function persistSaveThumbnail(
   saveId: string,
@@ -86,10 +77,7 @@ export async function ensureSaveThumbnail(
   if (hasMediaThumbnail(files)) return;
   const primary = thumbnailSource(files);
   if (!primary) return;
-  const png = await withDecryptedLibraryMediaPath(
-    itemFile(saveId, primary.path),
-    renderThumbnailPng,
-  );
+  const png = await renderThumbnailPng(saveFile(saveId, primary.path));
   if (!png) return;
   const meta = await sharp(png)
     .metadata()

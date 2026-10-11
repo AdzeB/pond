@@ -58,8 +58,6 @@ async function exportFixture() {
           width: 640,
           height: 480,
           rating: 4,
-          comments: [],
-          videoNotes: [],
           dominantColors: ["#112233"],
           savedAt: new Date("2024-01-02T00:00:00.000Z"),
           createdAt: new Date("2024-01-01T00:00:00.000Z"),
@@ -131,10 +129,7 @@ function fakeRuntime(options: { failId?: string } = {}) {
   return { runtime, imported, rolledBack, folders };
 }
 
-async function directoryFixture(
-  items = ["one"],
-  options: { legacyFolders?: boolean } = {},
-) {
+async function directoryFixture(items = ["one"]) {
   const root = await temporaryRoot("directory");
   const packageRoot = join(root, "Selection.eaglepack");
   await mkdir(packageRoot);
@@ -152,23 +147,11 @@ async function directoryFixture(
     join(packageRoot, "pack.json"),
     JSON.stringify({
       images,
-      ...(options.legacyFolders
-        ? {
-            folders: [
-              {
-                id: "parent",
-                name: "Design",
-                children: [{ id: "child", name: "Posters", children: [] }],
-              },
-            ],
-          }
-        : {
-            folder: {
-              id: "parent",
-              name: "Design",
-              children: [{ id: "child", name: "Posters", children: [] }],
-            },
-          }),
+      folder: {
+        id: "parent",
+        name: "Design",
+        children: [{ id: "child", name: "Posters", children: [] }],
+      },
     }),
   );
   for (const item of images) {
@@ -232,15 +215,6 @@ describe("Eagle package transfer", () => {
       folderIds: ["mapped-child"],
       tags: ["Reference"],
     });
-  });
-
-  it("continues to import Pond packages that used the legacy folders array", async () => {
-    const fixture = await directoryFixture(["one"], { legacyFolders: true });
-    const target = fakeRuntime();
-    await expect(
-      importEaglePackage(fixture.packageRoot, target.runtime),
-    ).resolves.toEqual({ imported: 1, skipped: 0 });
-    expect(target.folders).toEqual([["Design", "Posters"]]);
   });
 
   it("rejects directory symlinks before importing anything", async () => {

@@ -9,17 +9,16 @@ import {
   nativeImage,
 } from "electron";
 import { z } from "zod";
-import { libraryItemLink } from "../../../shared/library-links";
+import { librarySaveLink } from "../../../shared/library-links";
+import type { QueryResult } from "../../../shared/query-contracts";
 import { runLibraryTransfer } from "../../core/library-transfers";
-import { materializeLibraryMediaForExternalUse } from "../../core/storage/library-media-storage";
 import {
   type OpenWithAppInfo,
   openWithListingKey,
   parseOpenWithPayload,
   rankOpenWithApps,
 } from "../../lib/open-with-apps";
-import { readOrCreatePondId } from "../../lib/pond-identity";
-import { libraryRoot } from "../../paths";
+import { libraryId as activeLibraryId } from "../../paths";
 import { resolveSaveFilePath } from "../helpers";
 import { type QueryHandlerMap, query } from "./params";
 
@@ -39,7 +38,7 @@ async function resolveFiles(
         ok: false,
         error: "A selected Save has no available original file.",
       };
-    files.push(await materializeLibraryMediaForExternalUse(target.path));
+    files.push(target.path);
   }
   return { ok: true, files };
 }
@@ -150,7 +149,7 @@ export const openWithQueries = {
       const target = await resolveSaveFilePath(id, fileIndex);
       if (!target.ok)
         return { ok: false as const, error: "This Save has no original file." };
-      const file = await materializeLibraryMediaForExternalUse(target.path);
+      const file = target.path;
       execFile("/usr/bin/qlmanage", ["-p", file]).unref();
       return { ok: true as const };
     },
@@ -158,10 +157,10 @@ export const openWithQueries = {
   "saves.copyInternalLinks": query(
     z.object({ ids: z.array(z.string().min(1)).min(1) }),
     async ({ ids }) => {
-      const libraryId = readOrCreatePondId(libraryRoot());
+      const libraryId = activeLibraryId();
       clipboard.writeText(
         [...new Set(ids)]
-          .map((id) => libraryItemLink(libraryId, id))
+          .map((id) => librarySaveLink(libraryId, id))
           .join("\n"),
       );
       return { ok: true };
@@ -178,7 +177,7 @@ export const openWithQueries = {
       const target = await resolveSaveFilePath(ids[0] ?? "", fileIndex);
       if (!target.ok) return { apps: [] };
       try {
-        const file = await materializeLibraryMediaForExternalUse(target.path);
+        const file = target.path;
         const ranked = await listedApps(file);
         const apps = await Promise.all(
           ranked.map(async (entry) => ({
@@ -201,7 +200,7 @@ export const openWithQueries = {
       application: z.string().min(1).optional(),
     }),
     async ({ ids, fileIndex, application }) =>
-      runLibraryTransfer(async () => {
+      runLibraryTransfer(async (): Promise<QueryResult<"saves.openWith">> => {
         const resolved = await resolveFiles(ids, fileIndex);
         if (!resolved.ok) return resolved;
         const { files } = resolved;
@@ -230,7 +229,7 @@ export const openWithQueries = {
             filters: [{ name: "Applications", extensions: ["app"] }],
           });
           if (picked.canceled || !picked.filePaths[0])
-            return { ok: false, cancelled: true };
+            return { ok: false, reason: "cancelled" };
           return openFilesWith(files, picked.filePaths[0]);
         } catch (error) {
           return {

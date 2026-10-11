@@ -6,6 +6,10 @@ import {
   type ProviderModel,
 } from "../../../shared/provider-models";
 import type { AgentProviderId } from "./keys";
+import {
+  type DeclaredLocalModelCapabilities,
+  normalizeLocalModel,
+} from "./local-model-capabilities";
 
 export type { ProviderModel } from "../../../shared/provider-models";
 export { displayName };
@@ -25,10 +29,16 @@ export function modelsFromProviderResponse(
     const id = raw.id.trim();
     if (!id || seen.has(id) || !isChatModel(provider, id)) continue;
     seen.add(id);
-    const model: ProviderModel = {
-      id,
-      name: raw.name.trim() || (local ? id : displayName(id)),
-    };
+    const name = raw.name.trim() || (local ? id : displayName(id));
+    const model: ProviderModel = local
+      ? normalizeLocalModel({
+          provider,
+          id,
+          name,
+          sizeBytes: raw.sizeBytes,
+          capabilities: raw.localCapabilities,
+        })
+      : { id, name };
     models.push(model);
   }
   return models.sort((a, b) => a.name.localeCompare(b.name));
@@ -37,8 +47,14 @@ export function modelsFromProviderResponse(
 function idsFromResponse(
   provider: AgentProviderId,
   json: JsonValue | undefined,
-): Array<{ id: string; name: string }> {
+): Array<{
+  id: string;
+  name: string;
+  sizeBytes?: number;
+  localCapabilities?: DeclaredLocalModelCapabilities;
+}> {
   const stringField = z.string().catch("");
+  const byteSize = z.number().int().positive().optional().catch(undefined);
   if (provider === "gemini") {
     const parsed = z
       .object({
@@ -70,6 +86,20 @@ function idsFromResponse(
       return id ? [{ id, name: row.displayName }] : [];
     });
   }
+  const localCapabilities = z
+    .union([
+      z.array(z.string()),
+      z.object({
+        text: z.boolean().optional(),
+        vision: z.boolean().optional(),
+        audio: z.boolean().optional(),
+        tools: z.boolean().optional(),
+        tool_use: z.boolean().optional(),
+        trained_for_tool_use: z.boolean().optional(),
+      }),
+    ])
+    .optional()
+    .catch(undefined);
   const parsed = z
     .object({
       data: z
@@ -78,6 +108,9 @@ function idsFromResponse(
             .object({
               id: stringField,
               display_name: stringField,
+              size: byteSize,
+              size_bytes: byteSize,
+              capabilities: localCapabilities,
             })
             .nullable()
             .catch(null),
@@ -86,16 +119,28 @@ function idsFromResponse(
     })
     .safeParse(json);
   return parsed.success
-    ? parsed.data.data.flatMap((row) =>
-        row?.id
-          ? [
-              {
-                id: row.id,
-                name: row.display_name,
-              },
-            ]
-          : [],
-      )
+    ? parsed.data.data.flatMap((row) => {
+        if (!row?.id) return [];
+        const capabilities = row.capabilities;
+        const localCapabilities =
+          capabilities && !Array.isArray(capabilities)
+            ? {
+                text: capabilities.text,
+                vision: capabilities.vision,
+                audio: capabilities.audio,
+                tools: capabilities.tools || capabilities.tool_use,
+                trainedForToolUse: capabilities.trained_for_tool_use,
+              }
+            : capabilities;
+        return [
+          {
+            id: row.id,
+            name: row.display_name,
+            sizeBytes: row.size_bytes ?? row.size,
+            localCapabilities,
+          },
+        ];
+      })
     : [];
 }
 

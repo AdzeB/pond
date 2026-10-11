@@ -57,15 +57,22 @@ async function filesUnder(directory: string): Promise<string[]> {
   return files;
 }
 
+async function readCheckpoints(path: string): Promise<ImportCheckpoints> {
+  let raw: string;
+  try {
+    raw = await readFile(path, "utf8");
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT")
+      return {};
+    throw error;
+  }
+  return Checkpoints.parse(JSON.parse(raw));
+}
+
 export async function createAutoImportWorker(options: AutoImportWorkerOptions) {
   const observations = new Map<string, Observation>();
   const now = options.now ?? Date.now;
-  let checkpoints: ImportCheckpoints = {};
-  try {
-    checkpoints = Checkpoints.parse(
-      JSON.parse(await readFile(options.checkpointPath, "utf8")),
-    );
-  } catch {}
+  let checkpoints = await readCheckpoints(options.checkpointPath);
   let stopped = false;
   let active: Promise<void> = Promise.resolve();
 

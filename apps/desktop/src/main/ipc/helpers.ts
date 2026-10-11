@@ -6,9 +6,11 @@ import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { ipcMain } from "electron";
 import log from "electron-log/main.js";
 import { POND_PROTOCOL } from "../../shared/constants";
+import type { ReasonResult } from "../../shared/query-contracts-shared";
 import { isAuxiliaryKind } from "../../shared/save-file-names";
+import type { SaveFileFailure } from "../../shared/saves-contracts-shared";
 import { getDb } from "../db";
-import { itemFile, itemsRoot } from "../paths";
+import { saveFile, savesRoot } from "../paths";
 import { toWireSave } from "./wire";
 
 export function isTrustedSender(event: {
@@ -24,7 +26,7 @@ export function isTrustedSender(event: {
 }
 
 function isInsideLibrary(absolute: string): boolean {
-  const root = resolvePath(itemsRoot());
+  const root = resolvePath(savesRoot());
   return absolute === root || absolute.startsWith(root + pathSep);
 }
 
@@ -49,19 +51,7 @@ export function safeHandle<Args extends unknown[], R>(
 export async function resolveSaveFilePath(
   id: string,
   fileIndex: number | undefined,
-): Promise<
-  | { ok: true; path: string }
-  | {
-      ok: false;
-      reason:
-        | "not_found"
-        | "no_files"
-        | "out_of_range"
-        | "missing"
-        | "auxiliary_file"
-        | "unsafe_path";
-    }
-> {
+): Promise<ReasonResult<SaveFileFailure, { path: string }>> {
   try {
     const db = await getDb();
     const rows = await db.select().from(saves).where(eq(saves.id, id));
@@ -77,7 +67,7 @@ export async function resolveSaveFilePath(
       return { ok: false, reason: "auxiliary_file" };
     }
 
-    const absolute = resolvePath(itemFile(id, file.path));
+    const absolute = resolvePath(saveFile(id, file.path));
     if (!isInsideLibrary(absolute)) {
       log.warn("[pond ipc] refused path outside library", { id, absolute });
       return { ok: false, reason: "unsafe_path" };
@@ -90,7 +80,7 @@ export async function resolveSaveFilePath(
   }
 }
 
-export function resolvePondItemPath(
+export function resolvePondSavePath(
   src: string,
 ): { saveId: string; path: string } | null {
   let url: URL;
@@ -103,7 +93,7 @@ export function resolvePondItemPath(
   const saveId = url.hostname;
   const file = decodeURIComponent(url.pathname.replace(/^\//, ""));
   if (!saveId || !file) return null;
-  const absolute = resolvePath(itemFile(saveId, file));
+  const absolute = resolvePath(saveFile(saveId, file));
   if (!isInsideLibrary(absolute)) {
     log.warn("[pond ipc] refused pond URL outside library", { src, absolute });
     return null;

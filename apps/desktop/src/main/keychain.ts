@@ -63,13 +63,6 @@ function encrypt(port: KeychainPort, plain: string): string {
   return `raw:${Buffer.from(plain, "utf8").toString("base64")}`;
 }
 
-function encryptSecurely(port: KeychainPort, plain: string): string {
-  if (!port.encryptionAvailable()) {
-    throw new Error("Secure key storage is unavailable.");
-  }
-  return `enc:${port.protect(plain).toString("base64")}`;
-}
-
 function decrypt(port: KeychainPort, value: string): string | null {
   try {
     if (value.startsWith("enc:")) {
@@ -110,62 +103,6 @@ export function createKeychain(port: KeychainPort) {
     await writeAll(port, all);
   }
 
-  async function getSecureSecret(account: string): Promise<string | null> {
-    const all = await readAll(port);
-    const value = all[entryKey(KEYCHAIN_SERVICE, account)];
-    if (!value) return null;
-    if (!value.startsWith("enc:")) {
-      throw new Error(
-        "Secure secret is not protected by the operating system.",
-      );
-    }
-    const decrypted = decrypt(port, value);
-    if (decrypted === null) {
-      throw new Error("Secure secret could not be decrypted.");
-    }
-    return decrypted;
-  }
-
-  async function getSecureSecretBytes(
-    account: string,
-    byteLength: number,
-  ): Promise<Buffer | null> {
-    const existing = await getSecureSecret(account);
-    if (!existing) return null;
-    const decoded = Buffer.from(existing, "base64");
-    if (decoded.byteLength !== byteLength) {
-      decoded.fill(0);
-      throw new Error("Stored secure secret has an invalid length.");
-    }
-    return decoded;
-  }
-
-  async function setSecureSecret(
-    account: string,
-    plain: string,
-  ): Promise<void> {
-    const all = await readAll(port);
-    all[entryKey(KEYCHAIN_SERVICE, account)] = encryptSecurely(port, plain);
-    await writeAll(port, all);
-  }
-
-  async function ensureSecureSecretBytes(
-    account: string,
-    byteLength: number,
-  ): Promise<Buffer> {
-    const existing = await getSecureSecretBytes(account, byteLength);
-    if (existing) {
-      return existing;
-    }
-    const created = randomBytes(byteLength);
-    try {
-      await setSecureSecret(account, created.toString("base64"));
-      return Buffer.from(created);
-    } finally {
-      created.fill(0);
-    }
-  }
-
   async function deleteSecret(account: string): Promise<void> {
     const all = await readAll(port);
     delete all[entryKey(KEYCHAIN_SERVICE, account)];
@@ -197,15 +134,11 @@ export function createKeychain(port: KeychainPort) {
   return {
     deleteSecret,
     ensureIngestToken,
-    ensureSecureSecretBytes,
     getIngestToken,
     getSecret,
     getSecrets,
-    getSecureSecret,
-    getSecureSecretBytes,
     rotateIngestToken,
     setSecret,
-    setSecureSecret,
   };
 }
 
@@ -215,7 +148,6 @@ export const {
   getIngestToken,
   getSecret,
   getSecrets,
-  getSecureSecretBytes,
   rotateIngestToken,
   setSecret,
 } = createKeychain(electronKeychainPort);

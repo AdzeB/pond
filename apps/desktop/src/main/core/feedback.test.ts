@@ -8,14 +8,12 @@ function preferences() {
     sounds: {
       saveDeletion: true,
       folderDeletion: true,
-      screenshot: true,
       extensionCapture: true,
       autoImport: true,
     },
     notifications: {
       saveDeletion: false,
       folderDeletion: false,
-      screenshot: false,
       extensionCapture: true,
       autoImport: true,
     },

@@ -18,13 +18,14 @@ import {
 } from "../../../shared/assistant";
 import { IPC } from "../../../shared/constants";
 import { displayName } from "../../../shared/provider-models";
+import type { OkResult } from "../../../shared/query-contracts-shared";
 import { getDb } from "../../db";
 import { broadcast } from "../../lib/broadcast";
 import { listFolders } from "../folders";
 import { getPrefs } from "../prefs";
 import type { CompletionInput } from "./complete";
 import { libraryContext } from "./context";
-import { keyFor, parseProvider } from "./keys";
+import { keyFor, listProviderModels, parseProvider } from "./keys";
 import { catalogModelsForProvider, loadModelCatalog } from "./model-catalog";
 import { appendMessage, listMessages } from "./persist";
 import { connectionFor } from "./provider-models";
@@ -50,6 +51,7 @@ const chatDependencies = {
   libraryContext,
   loadModelTranscript,
   loadModelCatalog,
+  listProviderModels,
   appendMessage,
   async listMessages(chatId: string) {
     return assistantMessages.parse(await listMessages(chatId));
@@ -69,9 +71,10 @@ const active = new Map<
   { requestId: string; controller: AbortController }
 >();
 
-export function stopMessage(chatId: string, requestId: string) {
+export function stopMessage(chatId: string, requestId: string): OkResult {
   const run = active.get(chatId);
-  if (!run || run.requestId !== requestId) return { ok: false };
+  if (!run || run.requestId !== requestId)
+    return { ok: false, error: "This reply already finished." };
   run.controller.abort();
   return { ok: true };
 }
@@ -101,6 +104,7 @@ export async function sendMessage(
   let accepted = false;
   let assembled = "";
   let context: ReturnType<typeof libraryContext> | undefined;
+  let selectedModelHasVision = false;
   try {
     if (!(await deps.conversationExists(chatId)))
       throw new Error("This conversation no longer exists. Start a new chat.");
@@ -141,6 +145,7 @@ export async function sendMessage(
       onSources: (sources) => emit({ type: "sources", sources }),
       onResults: (results) => emit({ type: "results", results }),
       onSteps: (steps) => emit({ type: "steps", steps }),
+      visionEnabled: () => selectedModelHasVision,
     });
     const previous = await deps.listMessages(chatId);
     const pendingQuestion = previous.at(-1);
@@ -226,62 +231,39 @@ export async function sendMessage(
     ]
       .filter(Boolean)
       .join(" ");
-    const images = visionEnabled(provider, prefs.agent.visionModel)
-      ? await deps.imagesForSaves(attachmentIds)
-      : [];
+    const images = await deps.imagesForSaves(attachmentIds);
     const hasImages =
       images.length > 0 ||
       files.some((file) => file.mediaType.startsWith("image/"));
-    const visionProvider = parseProvider(prefs.agent.visionModel || provider);
-    const chatProvider =
-      hasImages &&
-      visionProvider &&
-      visionEnabled(visionProvider, visionProvider)
-        ? visionProvider
-        : agentProvider;
-    const chatModel =
-      ASSISTANT_MODELS.find((entry) => entry.id === chatProvider) ?? model;
-    const chatKey =
-      chatProvider === agentProvider ? apiKey : await deps.keyFor(chatProvider);
-    if (
-      chatProvider !== agentProvider &&
-      chatModel.needsKey &&
-      (!chatKey || prefs.agent.enabledKeys[chatProvider] === false)
-    )
-      throw new Error("Add an enabled vision model key in Settings.");
-    const connection = connectionFor(
-      chatProvider,
-      prefs.agent,
-      chatModel.model,
-    );
-    if (chatProvider === agentProvider && input.modelId)
-      connection.modelId = input.modelId;
-    const effectiveModelId =
-      hasImages && prefs.agent.visionModel
-        ? prefs.agent.visionModelId?.trim() || connection.modelId
-        : connection.modelId;
-    const usingVisionModel = hasImages && Boolean(prefs.agent.visionModel);
+    const connection = connectionFor(agentProvider, prefs.agent, model.model);
+    if (input.modelId) connection.modelId = input.modelId;
+    const modelId = connection.modelId;
     const requestedControls =
-      !usingVisionModel && chatProvider === agentProvider && input.controls
-        ? input.controls
-        : runControlsForOptions(
-            agentModelOptionsFor(
-              prefs.agent.modelOptions,
-              chatProvider,
-              effectiveModelId,
-            ),
-          );
+      input.controls ??
+      runControlsForOptions(
+        agentModelOptionsFor(prefs.agent.modelOptions, agentProvider, modelId),
+      );
     const catalog = await deps
       .loadModelCatalog()
       .catch(() => ({ models: [], fetchedAt: 0 }));
-    const modelMetadata = catalogModelsForProvider(
-      chatProvider,
-      catalog.models,
-      [{ id: effectiveModelId, name: displayName(effectiveModelId) }],
-    )[0];
+    const modelMetadata =
+      model.local && hasImages
+        ? (
+            await deps
+              .listProviderModels(agentProvider)
+              .catch(() => ({ ok: false, models: [] }))
+          ).models.find((entry) => entry.id === modelId)
+        : model.local
+          ? undefined
+          : catalogModelsForProvider(agentProvider, catalog.models, [
+              { id: modelId, name: displayName(modelId) },
+            ])[0];
+    selectedModelHasVision = visionEnabled(modelMetadata);
+    if (hasImages && !selectedModelHasVision)
+      throw new Error("Choose a vision model in Settings Models.");
     const controls = validateAgentRunControls(
       requestedControls,
-      chatProvider,
+      agentProvider,
       modelMetadata,
     );
     const personalization = {
@@ -296,10 +278,10 @@ export async function sendMessage(
     await deps.completeWithTools({
       threadId: chatId,
       canonicalMessages: [...canonical, { role: "user", content }],
-      provider: chatProvider,
-      model: effectiveModelId,
+      provider: agentProvider,
+      model: modelId,
       controls,
-      apiKey: chatKey,
+      apiKey,
       baseUrl: connection.baseUrl,
       messages: history.map((row) => {
         const question = assistantQuestion.safeParse(row.metadata?.question);

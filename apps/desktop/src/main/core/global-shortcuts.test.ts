@@ -9,9 +9,6 @@ function fixture() {
   const blocked = new Set<string>();
   const actions = {
     "app.summon": vi.fn(),
-    "capture.area": vi.fn(),
-    "capture.window": vi.fn(),
-    "capture.screen": vi.fn(),
   };
   const controller = new GlobalShortcutController(
     {
@@ -27,20 +24,13 @@ function fixture() {
     actions,
     true,
   );
-  controller.start({}, false);
+  controller.start({});
   return { controller, callbacks, blocked, actions };
 }
 
 describe("global shortcut registration", () => {
-  it("enables capture shortcuts, accepts an unbound mode, and disables them without removing Show Pond", () => {
-    const { controller, callbacks, actions } = fixture();
-    controller.prepare({ "capture.window": "Mod+Alt+W" }, true).commit();
-    callbacks.get("Alt+Command+E")?.();
-    callbacks.get("Alt+Command+W")?.();
-    expect(actions["capture.area"]).toHaveBeenCalledOnce();
-    expect(actions["capture.window"]).toHaveBeenCalledOnce();
-    expect(callbacks.size).toBe(3);
-    controller.prepare({ "capture.window": "Mod+Alt+W" }, false).commit();
+  it("registers Show Pond", () => {
+    const { callbacks } = fixture();
     expect([...callbacks.keys()]).toEqual(["Command+Shift+L"]);
   });
   it("keeps old dispatch until persisted and can roll back staged bindings", () => {
@@ -78,13 +68,10 @@ describe("global shortcut registration", () => {
       { register: () => false, unregister() {} },
       {
         "app.summon": vi.fn(),
-        "capture.area": vi.fn(),
-        "capture.window": vi.fn(),
-        "capture.screen": vi.fn(),
       },
       true,
     );
-    controller.start({}, false);
+    controller.start({});
     expect(controller.status().errors).toHaveLength(1);
   });
   it("allows changing a binding that failed at startup", () => {
@@ -102,16 +89,13 @@ describe("global shortcut registration", () => {
       },
       {
         "app.summon": vi.fn(),
-        "capture.area": vi.fn(),
-        "capture.window": vi.fn(),
-        "capture.screen": vi.fn(),
       },
       true,
     );
-    controller.start({}, false);
+    controller.start({});
     expect(controller.status().errors).toHaveLength(1);
     expect(controller.status().errors[0]).toContain("Show Pond");
-    controller.prepare({ "app.summon": "Mod+Shift+A" }, false).commit();
+    controller.prepare({ "app.summon": "Mod+Shift+A" }).commit();
     expect(callbacks.has("Command+Shift+A")).toBe(true);
     expect(controller.status().errors).toHaveLength(0);
   });

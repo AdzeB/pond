@@ -14,7 +14,7 @@ import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { getDb } from "../../../db";
 import { withRawSlim } from "../../../lib/raw-slim";
-import { itemDir } from "../../../paths";
+import { saveDir } from "../../../paths";
 import { broadcastSyncAction, withMutationScope } from "../../executor";
 import {
   copyLibraryMediaFile,
@@ -81,7 +81,7 @@ export async function applySavePatch(
           );
     const written: SaveFile[] = [];
     if (opts.newFiles && opts.newFiles.length > 0) {
-      const dir = itemDir(saveId);
+      const dir = saveDir(saveId);
       if (!existsSync(dir)) await mkdir(dir, { recursive: true });
       const existingForNames = replaceKinds
         ? (current.files ?? []).filter((file) => !replaceKinds.has(file.kind))
@@ -152,7 +152,7 @@ export async function applySavePatch(
 
     if (replaceKinds) {
       const retainedPaths = new Set((nextFiles ?? []).map((file) => file.path));
-      const dir = resolve(itemDir(saveId));
+      const dir = resolve(saveDir(saveId));
       for (const file of current.files ?? []) {
         if (!replaceKinds.has(file.kind) || retainedPaths.has(file.path))
           continue;

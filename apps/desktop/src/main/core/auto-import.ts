@@ -29,14 +29,20 @@ function logPath(root = libraryRoot()): string {
   return join(root, "auto-import-log.json");
 }
 
-export async function readAutoImportLog(): Promise<AutoImportLog> {
+async function readLogFile(root: string): Promise<AutoImportLog> {
+  let raw: string;
   try {
-    return AutoImportLogSchema.parse(
-      JSON.parse(await readFile(logPath(), "utf8")),
-    );
-  } catch {
-    return { entries: [] };
+    raw = await readFile(logPath(root), "utf8");
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT")
+      return { entries: [] };
+    throw error;
   }
+  return AutoImportLogSchema.parse(JSON.parse(raw));
+}
+
+export function readAutoImportLog(): Promise<AutoImportLog> {
+  return readLogFile(libraryRoot());
 }
 
 export async function stopAutoImport(): Promise<void> {
@@ -77,18 +83,17 @@ export async function startAutoImport(): Promise<void> {
       });
     },
     async report(entry) {
-      let history: AutoImportLog = { entries: [] };
       try {
-        history = AutoImportLogSchema.parse(
-          JSON.parse(await readFile(logPath(root), "utf8")),
-        );
-      } catch {}
-      history.entries = [
-        { ...entry, at: Date.now(), mode: cfg.mode },
-        ...history.entries,
-      ].slice(0, 200);
-      await mkdir(root, { recursive: true });
-      await writeFile(logPath(root), JSON.stringify(history, null, 2));
+        const history = await readLogFile(root);
+        history.entries = [
+          { ...entry, at: Date.now(), mode: cfg.mode },
+          ...history.entries,
+        ].slice(0, 200);
+        await mkdir(root, { recursive: true });
+        await writeFile(logPath(root), JSON.stringify(history, null, 2));
+      } catch (error) {
+        log.warn("[pond auto-import] import log not updated", error);
+      }
       if (entry.ok) {
         await emitFeedback("autoImport").catch((error) =>
           log.warn("[pond auto-import] feedback failed", error),

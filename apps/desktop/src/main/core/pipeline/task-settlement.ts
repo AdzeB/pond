@@ -1,6 +1,7 @@
 import { type Source, saves, type Task, tasks } from "@pond/schema/db";
 import type { PipelineTaskEvent } from "@pond/schema/events";
 import { and, eq, inArray } from "drizzle-orm";
+import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { commitSaveIngestEvent, toErrorInfo } from "../../lib/wide-event";
 import { persistSave } from "../persist-save";
@@ -37,7 +38,9 @@ export async function enrichTaskEventWithSave(
       ev.sourceId = row.sourceId ?? null;
       ev.url = row.url ?? null;
     }
-  } catch {}
+  } catch (error) {
+    log.warn("[pond pipeline] task event enrichment failed", ev.saveId, error);
+  }
 }
 
 export function gateForSource(source: Source): PipelineTaskEvent["gate"] {

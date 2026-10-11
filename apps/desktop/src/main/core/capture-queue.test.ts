@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { CaptureDraft } from "@pond/schema/capture";
@@ -105,32 +105,6 @@ describe("durable capture queue", () => {
     await queue.idle();
     expect(calls).toBe(2);
     expect((await queue.list())[0]?.duplicateCount).toBe(2);
-  });
-  it("recovers legacy pending jobs without waiting for review", async () => {
-    const calls: string[] = [];
-    const { root, queue } = await fixture(async (_item, _meta, id) => {
-      calls.push(id);
-      return { id };
-    });
-    const directory = join(root, ".capture-queue");
-    await mkdir(directory);
-    await writeFile(
-      join(directory, "capture-1.json"),
-      JSON.stringify({
-        draft: draft(),
-        library: root,
-        state: "draft",
-        completed: 0,
-        saveIds: [],
-        duplicateCount: 0,
-      }),
-    );
-
-    await queue.recover();
-    await queue.idle();
-
-    expect(calls).toEqual(["capture-1:0", "capture-1:1"]);
-    expect((await queue.list())[0]?.state).toBe("complete");
   });
   it("rejects invalid capture IDs", async () => {
     const { queue } = await fixture(async () => ({ id: "id" }));

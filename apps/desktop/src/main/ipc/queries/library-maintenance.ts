@@ -1,5 +1,6 @@
 import { writeFile } from "node:fs/promises";
-import { app, BrowserWindow, dialog, session, shell } from "electron";
+import { join } from "node:path";
+import { app, dialog, session, shell } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import type { QueryResult } from "../../../shared/query-contracts";
@@ -7,14 +8,12 @@ import {
   readLibraryIdentity,
   updateLibraryIdentity,
 } from "../../core/library-identity";
-import {
-  purgeLibrarySubdir,
-  verifyLibraryIntegrity,
-} from "../../core/library-ops";
+import { purgeDirectory, verifyLibraryIntegrity } from "../../core/library-ops";
 import { getPrefs, invalidatePrefs, setPrefs } from "../../core/prefs";
 import { reconcileLibrary } from "../../core/scan";
+import { VIDEO_CACHE_DIR } from "../../core/video-preview-proxy";
 import { closeDb } from "../../db";
-import { libraryRoot } from "../../paths";
+import { libraryRoot, thumbnailCacheRoot } from "../../paths";
 import { runtimeControls } from "../../runtime";
 import { type QueryHandlerMap, query } from "./params";
 
@@ -39,7 +38,7 @@ export const libraryMaintenanceQueries = {
       } catch (error) {
         return {
           ok: false as const,
-          reason:
+          error:
             error instanceof Error
               ? error.message
               : "Could not customize the library.",
@@ -52,26 +51,30 @@ export const libraryMaintenanceQueries = {
     return await reconcileLibrary();
   },
 
-  async "library.openInFinder"() {
+  async "library.openInFinder"(): Promise<QueryResult<"library.openInFinder">> {
     const err = await shell.openPath(libraryRoot());
-    if (err) return { ok: false as const, reason: err };
+    if (err) return { ok: false as const, error: err };
     return { ok: true as const };
   },
 
-  async "library.exportDebugReport"() {
+  async "library.exportDebugReport"(): Promise<
+    QueryResult<"library.exportDebugReport">
+  > {
     const picked = await dialog.showSaveDialog({
       title: "Export Debug Report",
       defaultPath: `Pond Debug Report ${new Date().toISOString().slice(0, 10)}.zip`,
       filters: [{ name: "ZIP Archive", extensions: ["zip"] }],
     });
     if (picked.canceled || !picked.filePath)
-      return { ok: false as const, canceled: true as const };
+      return { ok: false as const, reason: "cancelled" as const };
     const { createDebugReport } = await import("../../core/debug-report");
     await writeFile(picked.filePath, await createDebugReport());
     return { ok: true as const, path: picked.filePath };
   },
 
-  async "library.verifyIntegrity"() {
+  async "library.verifyIntegrity"(): Promise<
+    QueryResult<"library.verifyIntegrity">
+  > {
     try {
       const result = await verifyLibraryIntegrity();
       return { ok: true as const, ...result };
@@ -79,7 +82,10 @@ export const libraryMaintenanceQueries = {
       log.warn("[pond ipc] verifyIntegrity failed", err);
       return {
         ok: false as const,
-        reason: err instanceof Error ? err.message : "internal_error",
+        error:
+          err instanceof Error
+            ? err.message
+            : "Something went wrong. Try again.",
       };
     }
   },
@@ -91,12 +97,12 @@ export const libraryMaintenanceQueries = {
   },
 
   async "reset.clearVideoCache"() {
-    const removed = await purgeLibrarySubdir("_video_cache");
+    const removed = await purgeDirectory(join(libraryRoot(), VIDEO_CACHE_DIR));
     return { ok: true as const, removed };
   },
 
   async "reset.clearThumbnails"() {
-    const removed = await purgeLibrarySubdir("_thumbs");
+    const removed = await purgeDirectory(thumbnailCacheRoot());
     return { ok: true as const, removed };
   },
 
@@ -130,19 +136,22 @@ export const libraryMaintenanceQueries = {
     return getStorageGuardState();
   },
 
-  async "api.restart"() {
+  async "api.restart"(): Promise<QueryResult<"api.restart">> {
     try {
       const result = await runtimeControls.restartHttpServer();
       return { ok: true as const, ...result };
     } catch (err) {
       return {
         ok: false as const,
-        reason: err instanceof Error ? err.message : "internal_error",
+        error:
+          err instanceof Error
+            ? err.message
+            : "Something went wrong. Try again.",
       };
     }
   },
 
-  async "updates.applyPrefs"() {
+  async "updates.applyPrefs"(): Promise<QueryResult<"updates.applyPrefs">> {
     try {
       const { applyUpdaterPrefs } = await import("../../updater");
       await applyUpdaterPrefs();
@@ -150,17 +159,22 @@ export const libraryMaintenanceQueries = {
     } catch (err) {
       return {
         ok: false as const,
-        reason: err instanceof Error ? err.message : "internal_error",
+        error:
+          err instanceof Error
+            ? err.message
+            : "Something went wrong. Try again.",
       };
     }
   },
 
-  async "updates.checkNow"() {
+  async "updates.checkNow"(): Promise<QueryResult<"updates.checkNow">> {
     const { checkForUpdatesNow } = await import("../../updater");
     return await checkForUpdatesNow();
   },
 
-  async "quickCapture.applyPrefs"() {
+  async "quickCapture.applyPrefs"(): Promise<
+    QueryResult<"quickCapture.applyPrefs">
+  > {
     try {
       await runtimeControls.applyPrefsAtRuntime();
       return { ok: true as const };
@@ -168,12 +182,15 @@ export const libraryMaintenanceQueries = {
       log.warn("[pond ipc] applyPrefsAtRuntime failed", err);
       return {
         ok: false as const,
-        reason: err instanceof Error ? err.message : "internal_error",
+        error:
+          err instanceof Error
+            ? err.message
+            : "Something went wrong. Try again.",
       };
     }
   },
 
-  async "window.applyPrefs"() {
+  async "window.applyPrefs"(): Promise<QueryResult<"window.applyPrefs">> {
     try {
       await runtimeControls.applyWindowPrefsAtRuntime();
       return { ok: true as const };
@@ -181,7 +198,10 @@ export const libraryMaintenanceQueries = {
       log.warn("[pond ipc] applyWindowPrefsAtRuntime failed", err);
       return {
         ok: false as const,
-        reason: err instanceof Error ? err.message : "internal_error",
+        error:
+          err instanceof Error
+            ? err.message
+            : "Something went wrong. Try again.",
       };
     }
   },
@@ -194,11 +214,8 @@ export const libraryMaintenanceQueries = {
         ? { mode: "fixed_servers", proxyRules: prefs.proxyUrl }
         : { mode: prefs.proxyMode === "direct" ? "direct" : "system" },
     );
-    if (process.platform === "darwin") {
-      for (const window of BrowserWindow.getAllWindows()) {
-        window.setVibrancy(prefs.vibrancy ? "sidebar" : null);
-      }
-      if (prefs.dockVisibility === "always") await app.dock?.show();
+    if (process.platform === "darwin" && prefs.dockVisibility === "always") {
+      await app.dock?.show();
     }
     return { ok: true as const, restartRequired: true };
   },

@@ -1,5 +1,9 @@
 import { readdir, stat } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
+import type {
+  ManualSaveResult,
+  SavesImportFilesResult,
+} from "@shared/saves-import-contracts";
 import { createFolder, setSaveFolders } from "./folders";
 import { runLibraryTransfer } from "./library-transfers";
 import { createManualSave } from "./manual-import";
@@ -12,7 +16,7 @@ interface FileImportRuntime {
   importFile(input: {
     filePaths: string[];
     tags: string[];
-  }): Promise<{ ok: boolean; id?: string }>;
+  }): Promise<ManualSaveResult>;
   assignFolders(id: string, folderIds: string[]): Promise<{ ok: boolean }>;
 }
 
@@ -30,7 +34,7 @@ async function importPaths(
     useExisting?: Readonly<Record<string, string>>;
   },
   dependencies: FileImportRuntime = runtime,
-) {
+): Promise<SavesImportFilesResult> {
   const ids: string[] = [];
   const failedPaths: string[] = [];
   const visited = new Set<string>();
@@ -74,8 +78,7 @@ async function importPaths(
           filePaths: [path],
           tags,
         });
-        if (!imported.ok || !imported.id)
-          throw new Error("File import did not complete.");
+        if (!imported.ok) throw new Error(imported.error);
         if (assigned.length > 0) {
           const result = await dependencies.assignFolders(
             imported.id,
@@ -92,8 +95,7 @@ async function importPaths(
   }
 
   for (const path of input.paths) await visit(path, folderIds[0] ?? null);
-  if (ids.length === 0)
-    return { ok: false, ids, failedPaths, error: "no_files" };
+  if (ids.length === 0) return { ok: false, failedPaths, error: "no_files" };
   return { ok: true, ids: [...new Set(ids)], failedPaths };
 }
 

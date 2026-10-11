@@ -12,6 +12,7 @@ import { isBlankDocumentKind } from "../../../shared/blank-documents";
 import { CombineImagesOptionsSchema } from "../../../shared/combine-images-contracts";
 import { classifyLibraryFile } from "../../../shared/file-format";
 import type { QueryResult } from "../../../shared/query-contracts";
+import type { OkFailure } from "../../../shared/query-contracts-shared";
 import {
   listInstalledBlankDocumentApps,
   writeBlankDocumentFile,
@@ -28,8 +29,8 @@ import {
 import { readLibraryMedia } from "../../core/storage/library-media-storage";
 import { srtToVtt } from "../../core/subtitles";
 import { getDb } from "../../db";
-import { itemFile } from "../../paths";
-import { resolvePondItemPath } from "../helpers";
+import { saveFile } from "../../paths";
+import { resolvePondSavePath } from "../helpers";
 import {
   NullableStringParam,
   type QueryHandlerMap,
@@ -46,7 +47,7 @@ import {
 const LottieAnimationSchema = z
   .object({ layers: z.array(z.unknown()) })
   .passthrough();
-const blankDocumentIconCache = new Map<string, string | null>();
+const blankDocumentIconCache = new Map<string, Promise<string | null>>();
 const run = promisify(execFile);
 
 async function readBundleIcon(path: string) {
@@ -85,10 +86,7 @@ async function readBundleIcon(path: string) {
   }
 }
 
-async function blankDocumentIcon(path: string): Promise<string | null> {
-  if (blankDocumentIconCache.has(path)) {
-    return blankDocumentIconCache.get(path) ?? null;
-  }
+async function loadBlankDocumentIcon(path: string): Promise<string | null> {
   try {
     const icon =
       (await readBundleIcon(path)) ??
@@ -96,13 +94,19 @@ async function blankDocumentIcon(path: string): Promise<string | null> {
     const sized = icon.isEmpty()
       ? icon
       : icon.resize({ width: 32, height: 32, quality: "best" });
-    const dataUrl = sized.isEmpty() ? null : sized.toDataURL();
-    blankDocumentIconCache.set(path, dataUrl);
-    return dataUrl;
+    return sized.isEmpty() ? null : sized.toDataURL();
   } catch {
-    blankDocumentIconCache.set(path, null);
     return null;
   }
+}
+
+/** Menus refresh concurrently at launch; share the in-flight lookup so each app spawns plutil and sips once. */
+function blankDocumentIcon(path: string): Promise<string | null> {
+  const cached = blankDocumentIconCache.get(path);
+  if (cached) return cached;
+  const pending = loadBlankDocumentIcon(path);
+  blankDocumentIconCache.set(path, pending);
+  return pending;
 }
 
 async function listBlankDocuments() {
@@ -119,10 +123,12 @@ async function listBlankDocuments() {
   };
 }
 
+const SAVE_NOT_FOUND: OkFailure = { ok: false, error: "Save not found." };
+
 export const savesImportPersistenceQueries = {
   "saves.setCustomThumbnail": query(
     z.object({ id: StringParam }),
-    async (params) => {
+    async (params): Promise<QueryResult<"saves.setCustomThumbnail">> => {
       const win = BrowserWindow.getFocusedWindow() ?? undefined;
       const options = {
         properties: ["openFile" as const],
@@ -150,7 +156,7 @@ export const savesImportPersistenceQueries = {
         ? await dialog.showOpenDialog(win, options)
         : await dialog.showOpenDialog(options);
       const path = result.filePaths[0];
-      if (result.canceled || !path) return { ok: false, canceled: true };
+      if (result.canceled || !path) return { ok: false, reason: "cancelled" };
       const format = classifyLibraryFile(path, mime.lookup(path) || null);
       if (format.mediaType !== "image") {
         return { ok: false, error: "not_an_image" };
@@ -166,13 +172,13 @@ export const savesImportPersistenceQueries = {
         bytes,
         "user:set-thumbnail",
       );
-      return { ok: Boolean(updated) };
+      return updated ? { ok: true } : SAVE_NOT_FOUND;
     },
   ),
 
   "saves.setThumbnailFromClipboard": query(
     z.object({ id: StringParam }),
-    async ({ id }) => {
+    async ({ id }): Promise<QueryResult<"saves.setThumbnailFromClipboard">> => {
       const image = await readClipboardImage();
       if (image.isEmpty()) return { ok: false, error: "clipboard_empty" };
       const bytes = await renderThumbnailPng(image.toPNG());
@@ -182,7 +188,7 @@ export const savesImportPersistenceQueries = {
         bytes,
         "user:set-thumbnail-from-clipboard",
       );
-      return { ok: Boolean(updated) };
+      return updated ? { ok: true } : SAVE_NOT_FOUND;
     },
   ),
 
@@ -192,8 +198,8 @@ export const savesImportPersistenceQueries = {
       src: StringParam,
       frameIndex: z.number().int().min(0),
     }),
-    async (params) => {
-      const resolved = resolvePondItemPath(params.src);
+    async (params): Promise<QueryResult<"saves.setGifThumbnail">> => {
+      const resolved = resolvePondSavePath(params.src);
       if (
         !resolved ||
         resolved.saveId.toLowerCase() !== params.id.toLowerCase()
@@ -209,13 +215,13 @@ export const savesImportPersistenceQueries = {
         png,
         "user:set-gif-thumbnail",
       );
-      return { ok: Boolean(updated) };
+      return updated ? { ok: true } : SAVE_NOT_FOUND;
     },
   ),
 
   "saves.loadSubtitles": query(
     z.object({ id: StringParam }),
-    async (params) => {
+    async (params): Promise<QueryResult<"saves.loadSubtitles">> => {
       const win = BrowserWindow.getFocusedWindow() ?? undefined;
       const options = {
         properties: ["openFile" as const],
@@ -226,7 +232,7 @@ export const savesImportPersistenceQueries = {
         ? await dialog.showOpenDialog(win, options)
         : await dialog.showOpenDialog(options);
       const path = result.filePaths[0];
-      if (result.canceled || !path) return { ok: false, canceled: true };
+      if (result.canceled || !path) return { ok: false, reason: "cancelled" };
       const raw = await readFile(path, "utf8");
       const vtt = srtToVtt(raw);
       const updated = await persistSave(
@@ -245,34 +251,40 @@ export const savesImportPersistenceQueries = {
           ],
         },
       );
-      return { ok: Boolean(updated) };
+      return updated ? { ok: true } : SAVE_NOT_FOUND;
     },
   ),
 
-  "saves.replaceFile": query(z.object({ id: StringParam }), async (params) => {
-    const win = BrowserWindow.getFocusedWindow() ?? undefined;
-    const options = {
-      properties: ["openFile" as const],
-      message: "Choose a replacement file",
-    };
-    const picked = win
-      ? await dialog.showOpenDialog(win, options)
-      : await dialog.showOpenDialog(options);
-    const path = picked.filePaths[0];
-    if (picked.canceled || !path) return { ok: false, canceled: true };
-    const { replaceSaveFile } = await import("../../core/replace-file");
-    return replaceSaveFile({ id: params.id, sourcePath: path });
-  }),
+  "saves.replaceFile": query(
+    z.object({ id: StringParam }),
+    async (params): Promise<QueryResult<"saves.replaceFile">> => {
+      const win = BrowserWindow.getFocusedWindow() ?? undefined;
+      const options = {
+        properties: ["openFile" as const],
+        message: "Choose a replacement file",
+      };
+      const picked = win
+        ? await dialog.showOpenDialog(win, options)
+        : await dialog.showOpenDialog(options);
+      const path = picked.filePaths[0];
+      if (picked.canceled || !path) return { ok: false, reason: "cancelled" };
+      const { replaceSaveFile } = await import("../../core/replace-file");
+      return replaceSaveFile({ id: params.id, sourcePath: path });
+    },
+  ),
 
   "saves.exportDotLottie": query(
     z.object({ id: StringParam, fileIndex: z.number().int().nonnegative() }),
-    async ({ id, fileIndex }) => {
+    async ({
+      id,
+      fileIndex,
+    }): Promise<QueryResult<"saves.exportDotLottie">> => {
       const db = await getDb();
       const row = db.select().from(saves).where(eq(saves.id, id)).get();
       const file = row?.files[fileIndex];
       if (!row || !file || !/\.json$/i.test(file.path))
         return { ok: false, error: "Choose a Lottie JSON file." };
-      const bytes = await readLibraryMedia(itemFile(id, file.path));
+      const bytes = await readLibraryMedia(saveFile(id, file.path));
       let source: unknown;
       try {
         source = JSON.parse(bytes.toString("utf8"));
@@ -295,7 +307,7 @@ export const savesImportPersistenceQueries = {
         filters: [{ name: "dotLottie", extensions: ["lottie"] }],
       });
       if (picked.canceled || !picked.filePath)
-        return { ok: false, canceled: true };
+        return { ok: false, reason: "cancelled" };
       const { default: JSZip } = await import("jszip");
       const archive = new JSZip();
       archive.file(
@@ -320,7 +332,7 @@ export const savesImportPersistenceQueries = {
 
   "saves.removeCustomThumbnail": query(
     z.object({ id: StringParam }),
-    async (params) => {
+    async (params): Promise<QueryResult<"saves.removeCustomThumbnail">> => {
       const updated = await persistSave(
         params.id,
         {},
@@ -329,8 +341,9 @@ export const savesImportPersistenceQueries = {
           replaceFilesWithKind: THUMBNAIL_REPLACE_KINDS,
         },
       );
-      if (updated) await ensureSaveThumbnail(params.id, updated);
-      return { ok: Boolean(updated) };
+      if (!updated) return SAVE_NOT_FOUND;
+      await ensureSaveThumbnail(params.id, updated);
+      return { ok: true };
     },
   ),
 
@@ -348,14 +361,16 @@ export const savesImportPersistenceQueries = {
       folderId: NullableStringParam,
     }),
     async (params): Promise<QueryResult<"saves.createBlankDocument">> => {
-      if (!isBlankDocumentKind(params.kind)) return { ok: false };
+      if (!isBlankDocumentKind(params.kind))
+        return { ok: false, error: "Choose a document type." };
       const path = await writeBlankDocumentFile(params.kind);
-      if (!path) return { ok: false };
+      if (!path)
+        return { ok: false, error: "The document app is not installed." };
       const created = await createManualSave({
         title: null,
         filePaths: [path],
       });
-      if (!created.ok || !created.id) return { ok: false };
+      if (!created.ok) return created;
       if (params.folderId) {
         const { addSavesToFolder } = await import("../../core/folders");
         await addSavesToFolder(params.folderId, [created.id]);
@@ -370,12 +385,13 @@ export const savesImportPersistenceQueries = {
       folderId: NullableStringParam,
       options: CombineImagesOptionsSchema.partial().optional(),
     }),
-    async (params) => {
+    async (params): Promise<QueryResult<"saves.combineImages">> => {
       const { combineImages } = await import("../../core/combine-images");
       const options = CombineImagesOptionsSchema.parse(params.options ?? {});
       if (options.output === "export" && !options.outputPath) {
         const extension = options.format === "jpeg" ? "jpg" : options.format;
-        const picked = await dialog.showSaveDialog({
+        const owner = BrowserWindow.getFocusedWindow();
+        const saveOptions = {
           title: "Export Combined Image",
           defaultPath: `Combined Images.${extension}`,
           filters: [
@@ -384,9 +400,12 @@ export const savesImportPersistenceQueries = {
               extensions: [extension],
             },
           ],
-        });
+        };
+        const picked = owner
+          ? await dialog.showSaveDialog(owner, saveOptions)
+          : await dialog.showSaveDialog(saveOptions);
         if (picked.canceled || !picked.filePath)
-          return { ok: false, error: "canceled" };
+          return { ok: false, reason: "cancelled" };
         options.outputPath = picked.filePath;
       }
       return combineImages({

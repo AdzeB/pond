@@ -24,7 +24,7 @@ describe("portable original manifest", () => {
     );
     expect(manifest[0]).toEqual(original);
     expect(manifest[1]).toMatchObject({
-      kind: "cover",
+      kind: "image",
       path: "cover.png",
       size: 9,
     });

@@ -77,6 +77,11 @@ function setup() {
   return { db, sqlite, runtime, batches, create };
 }
 
+const invalidParent = {
+  ok: false,
+  error: "Choose a different parent group.",
+};
+
 describe.skipIf(!nativeSqliteAvailable())("saved view hierarchy", () => {
   it("rejects the second of concurrent reciprocal moves", async () => {
     const { runtime, create } = setup();
@@ -87,7 +92,7 @@ describe.skipIf(!nativeSqliteAvailable())("saved view hierarchy", () => {
         updateView(first, { parentId: second }, runtime),
         updateView(second, { parentId: first }, runtime),
       ]),
-    ).toEqual([{ ok: true }, { ok: false }]);
+    ).toEqual([{ ok: true }, invalidParent]);
     expect(await listViews(runtime)).toEqual([
       expect.objectContaining({ id: first, parentId: second }),
       expect.objectContaining({ id: second, parentId: null }),
@@ -101,7 +106,7 @@ describe.skipIf(!nativeSqliteAvailable())("saved view hierarchy", () => {
       createView({ name: "Reference", parentId: group }, runtime),
       deleteView(group, runtime),
     ]);
-    expect(created.ok).toBe(true);
+    if (!created.ok) throw new Error(created.error);
     expect(deleted.ok).toBe(true);
     expect(await listViews(runtime)).toEqual([
       expect.objectContaining({ id: created.id, parentId: null }),
@@ -116,7 +121,7 @@ describe.skipIf(!nativeSqliteAvailable())("saved view hierarchy", () => {
         deleteView(group, runtime),
         createView({ name: "Reference", parentId: group }, runtime),
       ]),
-    ).toEqual([{ ok: true }, { ok: false }]);
+    ).toEqual([{ ok: true }, invalidParent]);
     expect(await listViews(runtime)).toEqual([]);
   });
 
@@ -190,25 +195,25 @@ describe.skipIf(!nativeSqliteAvailable())("saved view hierarchy", () => {
     const committed = batches.length;
     expect(
       await createView({ name: "Missing", parentId: "missing" }, runtime),
-    ).toEqual({ ok: false });
+    ).toEqual(invalidParent);
     expect(
       await createView({ name: "Invalid", parentId: view }, runtime),
-    ).toEqual({ ok: false });
+    ).toEqual(invalidParent);
     expect(
       await createView({ name: "Invalid", parentId: smartFolder }, runtime),
-    ).toEqual({ ok: false });
-    expect(await updateView(group, { parentId: group }, runtime)).toEqual({
-      ok: false,
-    });
-    expect(await updateView(group, { parentId: childGroup }, runtime)).toEqual({
-      ok: false,
-    });
-    expect(await updateView(view, { parentId: "missing" }, runtime)).toEqual({
-      ok: false,
-    });
+    ).toEqual(invalidParent);
+    expect(await updateView(group, { parentId: group }, runtime)).toEqual(
+      invalidParent,
+    );
+    expect(await updateView(group, { parentId: childGroup }, runtime)).toEqual(
+      invalidParent,
+    );
+    expect(await updateView(view, { parentId: "missing" }, runtime)).toEqual(
+      invalidParent,
+    );
     expect(
       await updateView(childGroup, { parentId: smartFolder }, runtime),
-    ).toEqual({ ok: false });
+    ).toEqual(invalidParent);
     expect(await listViews(runtime)).toEqual(before);
     expect(batches).toHaveLength(committed);
     expect(await updateView(view, { parentId: null }, runtime)).toEqual({

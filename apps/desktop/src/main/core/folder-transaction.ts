@@ -4,23 +4,19 @@ import { folders, saveFolders, saves } from "@pond/schema/db";
 import { eq, inArray } from "drizzle-orm";
 import type { Db } from "../db";
 import { StoredInfoDocSchema } from "../lib/library-format";
-import { itemDir } from "../paths";
-import {
-  decodeLibraryFile,
-  encodeLibraryFile,
-} from "./storage/library-file-storage";
+import { saveDir } from "../paths";
 
 export async function writeFolderMemberships(
   saveId: string,
   folderIds: readonly string[],
-  directory = itemDir(saveId),
+  directory = saveDir(saveId),
 ): Promise<void> {
   const path = join(directory, "info.json");
   const info = StoredInfoDocSchema.parse(
-    JSON.parse(decodeLibraryFile(path, await readFile(path)).toString("utf8")),
+    JSON.parse(await readFile(path, "utf8")),
   );
   info.folderIds = [...new Set(folderIds)];
-  await writeFile(path, encodeLibraryFile(path, JSON.stringify(info, null, 2)));
+  await writeFile(path, JSON.stringify(info, null, 2));
 }
 export function replaceFolderMemberships(
   db: Db,

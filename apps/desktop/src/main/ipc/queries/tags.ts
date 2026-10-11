@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { QueryResult } from "../../../shared/query-contracts";
 import {
   NullableStringParam,
   type QueryHandlerMap,
@@ -57,16 +58,19 @@ export const tagsQueries = {
     return await deleteTag(params.name);
   }),
 
-  "tags.convertToGroup": query(NameParams, async (params) => {
-    const { createGroup } = await import("../../core/tag-groups");
-    const { deleteTag } = await import("../../core/tags");
-    const name = params.name.trim();
-    if (!name) return { ok: false };
-    const created = await createGroup({ name });
-    if (!created.ok) return { ok: false };
-    await deleteTag(name);
-    return { ok: true };
-  }),
+  "tags.convertToGroup": query(
+    NameParams,
+    async (params): Promise<QueryResult<"tags.convertToGroup">> => {
+      const { createGroup } = await import("../../core/tag-groups");
+      const { deleteTag } = await import("../../core/tags");
+      const name = params.name.trim();
+      if (!name) return { ok: false, error: "Enter a tag name." };
+      const created = await createGroup({ name });
+      if (!created.ok) return created;
+      await deleteTag(name);
+      return { ok: true };
+    },
+  ),
 
   "tags.setForSave": query(
     z.object({ saveId: StringParam, tags: StringListParam }),

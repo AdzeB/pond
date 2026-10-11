@@ -38,10 +38,10 @@ async function fixture() {
       tags: ["design"],
       notes: "Preserve this",
       files: [
-        { kind: "cover", path: "first.jpg", sha256: "one", size: 14 },
-        { kind: "media", path: "second.jpg", sha256: "two", size: 15 },
+        { kind: "image", path: "first.jpg", sha256: "one", size: 14 },
+        { kind: "image", path: "second.jpg", sha256: "two", size: 15 },
         {
-          kind: "custom_thumbnail",
+          kind: "thumbnail",
           path: "thumbnail.png",
           sha256: "thumb",
           size: 20,

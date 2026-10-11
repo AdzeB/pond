@@ -3,6 +3,7 @@ import { type SaveFile, saves } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
 import {
   BrowserWindow,
+  type BrowserWindowConstructorOptions,
   dialog,
   type IpcMain,
   type IpcMainInvokeEvent,
@@ -39,7 +40,6 @@ import { localizeMainCopy } from "../localization-runtime";
 import { mainWindowState } from "../window-state";
 import { copyExportFile } from "./export-files";
 import { getPrefs, subscribePrefs } from "./prefs";
-import { materializeLibraryMediaForExternalUse } from "./storage/library-media-storage";
 
 interface PreviewEntry {
   window: BrowserWindow;
@@ -219,8 +219,7 @@ async function createPreviewWindow(
   if (generation !== libraryGeneration)
     throw new Error(localizeMainCopy("The Library changed."));
   const presentation = input.kind === "presentation";
-  const window = new BrowserWindow({
-    ...(presentation ? {} : detachedWindowChrome()),
+  const options: BrowserWindowConstructorOptions = {
     title: detachedWindowTitle(target.title),
     width: presentation ? 1280 : 720,
     height: presentation ? 800 : 560,
@@ -239,7 +238,9 @@ async function createPreviewWindow(
       sandbox: true,
       backgroundThrottling: false,
     },
-  });
+  };
+  if (!presentation) Object.assign(options, detachedWindowChrome());
+  const window = new BrowserWindow(options);
   const state: PreviewWindowState = {
     windowId: window.id,
     saveId: input.saveId,
@@ -407,9 +408,7 @@ async function runPreviewFileAction(
   }
 
   if (input.action === "open") {
-    const error = await shell.openPath(
-      await materializeLibraryMediaForExternalUse(target.path),
-    );
+    const error = await shell.openPath(target.path);
     return error ? { ok: false, error } : { ok: true };
   }
 
@@ -424,7 +423,8 @@ async function runPreviewFileAction(
   const picked = await dialog.showSaveDialog(entry.window, {
     defaultPath: `${base || "save"}${extension}`,
   });
-  if (picked.canceled || !picked.filePath) return { ok: false };
+  if (picked.canceled || !picked.filePath)
+    return { ok: false, reason: "cancelled" };
   try {
     await copyExportFile(
       target.path,

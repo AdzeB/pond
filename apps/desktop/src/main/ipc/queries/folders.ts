@@ -1,3 +1,4 @@
+import { RenameOptionsSchema } from "@shared/rename-template";
 import { z } from "zod";
 import { withMutationScope } from "../../core/executor";
 import {
@@ -138,7 +139,7 @@ export const foldersQueries = {
     },
   ),
   "folders.renameBatch": query(
-    z.object({ ids: StringListParam, pattern: StringParam }),
+    RenameOptionsSchema.extend({ ids: StringListParam, pattern: StringParam }),
     async (params) => {
       const { renameFoldersBatch } = await import("../../core/folders");
       return renameFoldersBatch(params);

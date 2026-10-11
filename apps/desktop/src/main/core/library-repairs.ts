@@ -23,12 +23,9 @@ import {
   type RepairSave,
   scanLibraryIntegrity,
 } from "./library-integrity";
-import { currentPondId } from "./prefs-scope";
+import { currentLibraryId } from "./prefs-scope";
 import { renderThumbnailPng } from "./save-thumbnail-file";
-import {
-  readLibraryMedia,
-  withDecryptedLibraryMediaPath,
-} from "./storage/library-media-storage";
+import { readLibraryMedia } from "./storage/library-media-storage";
 import { recordBatchForUndo } from "./undo";
 
 const PREVIEW_TTL_MS = 10 * 60_000;
@@ -36,7 +33,7 @@ const PREVIEW_TTL_MS = 10 * 60_000;
 interface PreviewRecord {
   token: string;
   kind: LibraryRepairKind;
-  pondId: string;
+  libraryId: string;
   root: string;
   expiresAt: number;
   issues: InternalLibraryRepairIssue[];
@@ -45,7 +42,7 @@ interface PreviewRecord {
 
 export interface LibraryRepairServiceDependencies {
   now(): number;
-  pondId(): string;
+  libraryId(): string;
   root(): string;
   integrityRuntime: LibraryIntegrityRuntime;
   commit(transactions: Transaction[]): Promise<void>;
@@ -71,13 +68,13 @@ export function createLibraryRepairService(
     onProgress?: (processed: number, total: number) => void;
   }): Promise<LibraryRepairPreview> {
     prune();
-    const pondId = dependencies.pondId();
+    const libraryId = dependencies.libraryId();
     const root = dependencies.root();
     const issues = await scanLibraryIntegrity({
       ...input,
       runtime: dependencies.integrityRuntime,
     });
-    if (pondId !== dependencies.pondId() || root !== dependencies.root())
+    if (libraryId !== dependencies.libraryId() || root !== dependencies.root())
       throw new Error(
         "The active Library changed. Start a new repair preview.",
       );
@@ -86,7 +83,7 @@ export function createLibraryRepairService(
     previews.set(token, {
       token,
       kind: input.kind,
-      pondId,
+      libraryId,
       root,
       expiresAt,
       issues,
@@ -111,7 +108,7 @@ export function createLibraryRepairService(
       throw new Error("This repair preview expired. Preview again.");
     if (
       preview.expiresAt <= dependencies.now() ||
-      preview.pondId !== dependencies.pondId() ||
+      preview.libraryId !== dependencies.libraryId() ||
       preview.root !== dependencies.root()
     ) {
       previews.delete(input.token);
@@ -177,7 +174,7 @@ export function createLibraryRepairService(
     const value = previews.get(token);
     if (
       !value ||
-      value.pondId !== dependencies.pondId() ||
+      value.libraryId !== dependencies.libraryId() ||
       value.root !== dependencies.root()
     )
       return null;
@@ -204,10 +201,7 @@ async function applyIssue(
         `${row.id}.info`,
         action.source,
       );
-      const bytes = await withDecryptedLibraryMediaPath(
-        source,
-        renderThumbnailPng,
-      );
+      const bytes = await renderThumbnailPng(source);
       if (!bytes)
         throw new Error(`Could not generate a thumbnail for Save ${row.id}.`);
       const nextFile = {
@@ -379,13 +373,12 @@ function isRepairThumbnail(kind: string): boolean {
 }
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
-  if (signal?.aborted)
-    throw new DOMException("Repair cancelled.", "AbortError");
+  if (signal?.aborted) throw new DOMException("Repair canceled.", "AbortError");
 }
 
 const defaultDependencies: LibraryRepairServiceDependencies = {
   now: Date.now,
-  pondId: currentPondId,
+  libraryId: currentLibraryId,
   root: libraryRoot,
   integrityRuntime: libraryIntegrityRuntime,
   async commit(transactions) {

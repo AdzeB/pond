@@ -46,49 +46,27 @@ afterEach(async () => {
   await rm(userData, { recursive: true, force: true });
 });
 
-describe("secure secrets", () => {
-  it("creates and reuses an operating-system-protected key", async () => {
-    const created = await keychain.ensureSecureSecretBytes("database:test", 32);
-    const reopened = await keychain.ensureSecureSecretBytes(
-      "database:test",
-      32,
-    );
+describe("secrets", () => {
+  it("stores secrets protected by the operating system", async () => {
+    await keychain.setSecret("agent:test", "sk-test");
 
-    expect(reopened).toEqual(created);
-    expect(await keychain.getSecureSecret("database:test")).toBe(
-      created.toString("base64"),
-    );
+    expect(await keychain.getSecret("agent:test")).toBe("sk-test");
     expect(
       await readFile(join(userData, "secrets.json"), "utf8"),
-    ).not.toContain(created.toString("base64"));
-
-    created.fill(0);
-    reopened.fill(0);
+    ).not.toContain(Buffer.from("sk-test").toString("base64"));
   });
 
-  it("fails closed when secure key storage is unavailable", async () => {
+  it("falls back to tagged plaintext when protection is unavailable", async () => {
     port.encryptionEnabled = false;
+    await keychain.setSecret("agent:test", "sk-test");
 
-    await expect(
-      keychain.ensureSecureSecretBytes("database:test", 32),
-    ).rejects.toThrow("Secure key storage is unavailable");
+    expect(await keychain.getSecret("agent:test")).toBe("sk-test");
   });
 
-  it("does not replace a secure key that cannot be decrypted", async () => {
-    const created = await keychain.ensureSecureSecretBytes("database:test", 32);
-    const secretsBefore = await readFile(
-      join(userData, "secrets.json"),
-      "utf8",
-    );
+  it("returns null for a protected secret that cannot be decrypted", async () => {
+    await keychain.setSecret("agent:test", "sk-test");
     port.decryptionEnabled = false;
 
-    await expect(
-      keychain.ensureSecureSecretBytes("database:test", 32),
-    ).rejects.toThrow("Secure secret could not be decrypted");
-    expect(await readFile(join(userData, "secrets.json"), "utf8")).toBe(
-      secretsBefore,
-    );
-
-    created.fill(0);
+    expect(await keychain.getSecret("agent:test")).toBeNull();
   });
 });

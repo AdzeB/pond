@@ -55,17 +55,9 @@ interface TagsBundle {
 }
 
 const StoredInstantSchema = z
-  .union([
-    z
-      .number()
-      .refine(Number.isFinite)
-      .transform((ms) => new Date(ms)),
-    z
-      .string()
-      .transform((text) => Date.parse(text))
-      .refine(Number.isFinite)
-      .transform((ms) => new Date(ms)),
-  ])
+  .number()
+  .refine(Number.isFinite)
+  .transform((ms) => new Date(ms))
   .nullable()
   .catch(null);
 

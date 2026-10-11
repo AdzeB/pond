@@ -38,7 +38,6 @@ export interface TrayTemplateActions {
 export interface TrayAccelerators {
   newFolder?: string;
   newNote?: string;
-  captureScreenshot?: string;
   newTag?: string;
   newTagGroup?: string;
   importFiles?: string;
@@ -160,16 +159,6 @@ export function buildTrayTemplate(
       ],
     },
     {
-      label: "Capture",
-      submenu: [
-        run(
-          "Capture Screenshot",
-          "library.capture-screenshot",
-          accelerators.captureScreenshot,
-        ),
-      ],
-    },
-    {
       label: "Import",
       submenu: [
         run(
@@ -247,7 +236,7 @@ export function buildTrayTemplate(
         run("Sources", "nav.sources", accelerators.sources),
         run("Downloads", "nav.downloads", accelerators.downloads),
         run("Tags", "nav.tags"),
-        run("Agent", "nav.agent"),
+        run("Assistant", "nav.agent"),
         { type: "separator" },
         run("Trash", "nav.trash", accelerators.trash),
         run("Uncategorized", "nav.uncategorized"),

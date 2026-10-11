@@ -32,8 +32,7 @@ async function fixture() {
       deletedAt: null,
       files: [{ kind: "cover", path: "photo.jpg", sha256: "same", size: 10 }],
       fileSize: 10,
-      comments: [{ id: "comment", x: 0, y: 0, w: 1, h: 1, text: id }],
-      videoNotes: [{ id: "note", timeSec: 3, text: "Review" }],
+      notes: id === "keep" ? "Review" : "Review\n\nFrom the duplicate",
     });
     memberships.set(id, [id === "keep" ? "folder-a" : "folder-b"]);
   }
@@ -117,12 +116,7 @@ describe("merge duplicates", () => {
     ).toMatchObject({ ok: true, trashed: 1 });
     const keep = rows.get("keep");
     expect(keep?.tags).toEqual(["Design", "Type"]);
-    expect(keep?.comments?.map((comment) => comment.text)).toEqual([
-      "keep",
-      "extra",
-    ]);
-    expect(new Set(keep?.comments?.map((comment) => comment.id)).size).toBe(2);
-    expect(keep?.videoNotes).toHaveLength(1);
+    expect(keep?.notes).toBe("Review\n\nFrom the duplicate");
     expect(keep?.files).toHaveLength(2);
     expect(await readFile(join(root, "keep", "clip.mp4"), "utf8")).toBe(
       "extra video",
@@ -165,7 +159,10 @@ describe("merge duplicates", () => {
 
   it("does not trash extras when folder preservation fails", async () => {
     const { rows, runtime } = await fixture();
-    runtime.setFolders = async () => ({ ok: false });
+    runtime.setFolders = async () => ({
+      ok: false,
+      error: "Folder not found.",
+    });
     await expect(
       mergeDuplicateSaves({ keepId: "keep", ids: ["extra"] }, runtime),
     ).rejects.toThrow("folders");

@@ -44,7 +44,16 @@ it("fetches a public catalog without credentials and deduplicates concurrent loa
 it("uses catalog names and metadata while preserving native inference IDs", () => {
   expect(
     catalogModelsForProvider("openai", entries, [
-      { id: "test", name: "Generated Name" },
+      {
+        id: "test",
+        name: "Generated Name",
+        modelCapabilities: {
+          text: true,
+          vision: true,
+          audio: false,
+          tools: true,
+        },
+      },
     ]),
   ).toEqual([
     {
@@ -54,6 +63,12 @@ it("uses catalog names and metadata while preserving native inference IDs", () =
       contextWindow: 200000,
       maxOutputTokens: 8192,
       capabilities: ["vision", "fast"],
+      modelCapabilities: {
+        text: true,
+        vision: true,
+        audio: false,
+        tools: true,
+      },
       reasoningOptions: ["low", "high"],
       pricing: {
         input: "0.000001",
@@ -71,9 +86,24 @@ it("uses catalog names and metadata while preserving native inference IDs", () =
 });
 
 it("maps Google to Pond providers and makes previews unselectable", () => {
+  expect(catalogModelsForProvider("openai", entries)[0]).toMatchObject({
+    id: "openai/test",
+    modelCapabilities: {
+      text: true,
+      vision: true,
+      audio: false,
+      tools: false,
+    },
+  });
   expect(catalogModelsForProvider("gemini", entries)[0]).toMatchObject({
     id: "google/gemini-test",
     available: false,
+    modelCapabilities: {
+      text: true,
+      vision: false,
+      audio: false,
+      tools: false,
+    },
   });
   expect(catalogModelsForProvider("xai", entries)[0]?.name).toBe("Grok Test");
   expect(

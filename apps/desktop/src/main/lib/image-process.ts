@@ -84,17 +84,15 @@ export async function processImage(
   }
 }
 
+/** Resolves null when the image decodes without dimensions; rejects when the bytes are not a readable image. */
 export async function probeImageDims(
   bytes: Buffer,
 ): Promise<{ width: number; height: number } | null> {
-  try {
-    const meta = await sharp(bytes, { failOn: "none" }).metadata();
-    const dims = dimsFromMeta(meta);
-    return dims.width && dims.height
-      ? { width: dims.width, height: dims.height }
-      : null;
-  } catch {}
-  return null;
+  const meta = await sharp(bytes, { failOn: "none" }).metadata();
+  const dims = dimsFromMeta(meta);
+  return dims.width && dims.height
+    ? { width: dims.width, height: dims.height }
+    : null;
 }
 
 interface ImageDims {

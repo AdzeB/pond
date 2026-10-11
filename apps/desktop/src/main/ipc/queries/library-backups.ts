@@ -3,6 +3,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { BrowserWindow, dialog } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
+import type { QueryResult } from "../../../shared/query-contracts";
 import {
   createLibraryBackup,
   restoreLibraryBackup,
@@ -24,7 +25,7 @@ import { type QueryHandlerMap, query } from "./params";
 export const libraryBackupQueries = {
   "library.backupTo": query(
     z.object({ path: z.string().optional() }),
-    async (params) => {
+    async (params): Promise<QueryResult<"library.backupTo">> => {
       const src = libraryRootDir().replace(/\/+$/, "");
       if (!src || !existsSync(src)) {
         return { ok: false as const, reason: "no_library" as const };
@@ -85,7 +86,10 @@ export const libraryBackupQueries = {
       } catch (err) {
         return {
           ok: false as const,
-          reason: err instanceof Error ? err.message : "backup_failed",
+          error:
+            err instanceof Error
+              ? err.message
+              : "Couldn't back up the library.",
         };
       } finally {
         await resumeLibraryWork();
@@ -98,7 +102,7 @@ export const libraryBackupQueries = {
       source: z.string().optional(),
       destination: z.string().optional(),
     }),
-    async (params) => {
+    async (params): Promise<QueryResult<"library.restoreBackup">> => {
       const win = BrowserWindow.getFocusedWindow() ?? undefined;
       const options = {
         title: "Choose a Pond Backup",
@@ -112,7 +116,7 @@ export const libraryBackupQueries = {
           : await dialog.showOpenDialog(options);
       const source = picked.filePaths[0];
       if (picked.canceled || !source) {
-        return { ok: false as const, reason: "cancelled" };
+        return { ok: false as const, reason: "cancelled" as const };
       }
       try {
         await verifyLibraryBackup(source);
@@ -131,7 +135,7 @@ export const libraryBackupQueries = {
             ? await dialog.showSaveDialog(win, destinationOptions)
             : await dialog.showSaveDialog(destinationOptions);
         if (destination.canceled || !destination.filePath) {
-          return { ok: false as const, reason: "cancelled" };
+          return { ok: false as const, reason: "cancelled" as const };
         }
         await suspendLibraryWork();
         await flushTagsDump();
@@ -146,7 +150,10 @@ export const libraryBackupQueries = {
         await resumeLibraryWork();
         return {
           ok: false as const,
-          reason: error instanceof Error ? error.message : "restore_failed",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Couldn't restore the backup.",
         };
       }
     },

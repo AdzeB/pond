@@ -1,5 +1,6 @@
 import { app, dialog } from "electron";
 import log from "electron-log/main.js";
+import type { OkResult, ReasonFailure } from "../shared/query-contracts-shared";
 import { getPrefs } from "./core/prefs";
 
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
@@ -80,11 +81,9 @@ export async function applyUpdaterPrefs(): Promise<void> {
   autoUpdater.autoDownload = prefs.updates.autoInstall;
 }
 
-export async function checkForUpdatesNow(): Promise<{
-  ok: boolean;
-  version?: string;
-  reason?: string;
-}> {
+export async function checkForUpdatesNow(): Promise<
+  OkResult<{ version?: string }> | ReasonFailure<"dev_build">
+> {
   if (!app.isPackaged) {
     return { ok: false, reason: "dev_build" };
   }
@@ -98,7 +97,7 @@ export async function checkForUpdatesNow(): Promise<{
   } catch (err) {
     return {
       ok: false,
-      reason: err instanceof Error ? err.message : "unknown",
+      error: err instanceof Error ? err.message : "Couldn't check for updates.",
     };
   }
 }

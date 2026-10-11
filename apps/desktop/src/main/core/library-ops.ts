@@ -1,28 +1,18 @@
 import { createReadStream, existsSync } from "node:fs";
-import {
-  cp,
-  mkdir,
-  readdir,
-  readFile,
-  rename,
-  rm,
-  stat,
-} from "node:fs/promises";
+import { cp, mkdir, readdir, rm } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { saves, settings as settingsTable } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
 import { eq, isNotNull, isNull } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb, getGlobalDb } from "../db";
-import { readItemMetadata } from "../lib/library";
-import {
-  checkPointerSafety,
-  readLibraryPointer,
-  writeLibraryPointer,
-} from "../lib/library-pointer";
+import { readSaveMetadata } from "../lib/library";
+import { readOrCreateLibraryId } from "../lib/library-id";
+import { checkPointerSafety, readLibraryPointer } from "../lib/library-pointer";
 import { libraryRoot, resolvePaths, trashRoot } from "../paths";
 import { executeBatch } from "./executor";
 import { verifyLibraryBackup } from "./library-backup";
+import { commitLibraryPointer } from "./recent-libraries";
 import { recordForUndo } from "./undo";
 
 interface IntegrityReport {
@@ -41,10 +31,7 @@ export async function verifyLibraryIntegrity(): Promise<IntegrityReport> {
   const indexedSet = new Set(indexed);
 
   const paths = resolvePaths();
-  let entries: string[] = [];
-  try {
-    entries = await readdir(paths.itemsDir);
-  } catch {}
+  const entries = await readdir(paths.savesDir);
   const onDiskIds = entries
     .filter((e) => e.endsWith(".info"))
     .map((e) => e.slice(0, -".info".length));
@@ -54,9 +41,13 @@ export async function verifyLibraryIntegrity(): Promise<IntegrityReport> {
   const errors: Record<string, string> = {};
   for (const id of onDiskIds) {
     if (!indexedSet.has(id)) {
-      const meta = await readItemMetadata(id);
-      if (!meta) {
-        errors[id] = "info.json missing or unreadable";
+      const meta = await readSaveMetadata(id);
+      if (meta.status === "missing") {
+        errors[id] = "info.json missing";
+        continue;
+      }
+      if (meta.status === "corrupt") {
+        errors[id] = `info.json unreadable: ${meta.error}`;
         continue;
       }
       orphans.push(id);
@@ -128,6 +119,8 @@ export async function relocateLibrary(
     }
   }
 
+  readOrCreateLibraryId(destResolved);
+
   const globalDb = await getGlobalDb();
   await globalDb
     .insert(settingsTable)
@@ -138,7 +131,7 @@ export async function relocateLibrary(
     })
     .run();
 
-  writeLibraryPointer(destResolved);
+  commitLibraryPointer(destResolved);
 
   log.info(
     `[pond library-ops] library ${mode === "copy" ? "copied" : "adopted"} → ${destResolved} (copied ${copied}, skipped ${skipped})`,
@@ -192,24 +185,14 @@ export async function emptyTrashOlderThan(days: number): Promise<number> {
   return txs.length;
 }
 
-export async function purgeLibrarySubdir(
-  subdir: string,
-  predicate?: (filename: string) => boolean,
-): Promise<number> {
-  const target = join(libraryRoot(), subdir);
+export async function purgeDirectory(target: string): Promise<number> {
   if (!existsSync(target)) return 0;
-  let removed = 0;
-  for (const entry of await readdir(target)) {
-    if (predicate && !predicate(entry)) continue;
+  const entries = await readdir(target);
+  for (const entry of entries) {
     await rm(join(target, entry), { recursive: true, force: true });
-    removed += 1;
   }
-  return removed;
+  return entries.length;
 }
-
-void readFile;
-void rename;
-void stat;
 void createReadStream;
 void trashRoot;
 void relative;

@@ -84,6 +84,25 @@ beforeEach(() => {
 });
 
 describe("Assistant library boundaries", () => {
+  it("bounds evidence candidates and preserves an explicit retrieval task", async () => {
+    await searchLibrary(
+      {
+        query: "where is the URL parser?",
+        task: "code",
+        limit: 500,
+      },
+      { saveIds: ["attached"] },
+    );
+    expect(mock.retrieve).toHaveBeenCalledExactlyOnceWith(
+      {
+        query: "where is the URL parser?",
+        task: "code",
+        limit: 40,
+      },
+      { saveIds: ["attached"] },
+    );
+  });
+
   it("does not turn an empty attachment scope into unrestricted search", async () => {
     await searchLibrary({}, { saveIds: [] });
     expect(mock.retrieve).toHaveBeenCalledExactlyOnceWith({}, { saveIds: [] });
@@ -112,6 +131,18 @@ it("accepts media constraints separately from the lexical query", () => {
   expect(
     searchLibraryInput.parse({ query: "Kanye", media: ["image"] }),
   ).toEqual({ query: "Kanye", media: ["image"] });
+});
+
+it("accepts explicit evidence tasks while defaulting to ordinary search", () => {
+  expect(searchLibraryInput.parse({ query: "ceramics" })).toEqual({
+    query: "ceramics",
+  });
+  expect(
+    searchLibraryInput.parse({ query: "parse a URL", task: "code" }),
+  ).toEqual({ query: "parse a URL", task: "code" });
+  expect(
+    searchLibraryInput.parse({ query: "edited yesterday", task: "fact-check" }),
+  ).toEqual({ query: "edited yesterday", task: "fact-check" });
 });
 
 it("accepts a visual probe on search input", () => {
@@ -177,7 +208,7 @@ function untypedSchemaPaths(schema: JsonValue, path = "$"): string[] {
   return hits;
 }
 
-it("converts Agent tool inputs to JSON Schema providers can type-check", () => {
+it("converts Assistant tool inputs to JSON Schema providers can type-check", () => {
   const schemas = {
     showSaves: assistantResultSet,
     requestQuestion: assistantQuestion,

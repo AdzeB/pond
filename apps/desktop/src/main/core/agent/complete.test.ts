@@ -8,6 +8,7 @@ import {
   completeWithTools as complete,
 } from "./complete";
 import { contextDependencies, libraryContext } from "./context";
+import type { LocalRuntimeCoordinator } from "./local-runtime-coordinator";
 import {
   errorModel,
   promptDump,
@@ -105,6 +106,43 @@ it("omits unsupported Fast and provider-default Reasoning options", async () => 
   });
   expect(model.doStreamCalls[0]?.reasoning).toBeUndefined();
   expect(model.doStreamCalls[0]?.providerOptions).toBeUndefined();
+});
+
+it("runs a local Assistant stream inside the interactive runtime lease", async () => {
+  const model = textModel("Configured");
+  const requests: Array<{
+    priority: string;
+    provider: string;
+    baseUrl?: string;
+  }> = [];
+  const coordinator: LocalRuntimeCoordinator = {
+    async run(request, operation) {
+      requests.push({
+        priority: request.priority,
+        provider: request.runtime.provider,
+        baseUrl: request.runtime.baseUrl,
+      });
+      return operation({ signal: request.signal, cold: true });
+    },
+  };
+
+  await complete(
+    {
+      ...request(model),
+      provider: "ollama",
+      baseUrl: "http://127.0.0.1:11434/v1",
+    },
+    { coordinator },
+  );
+
+  expect(requests).toEqual([
+    {
+      priority: "interactive",
+      provider: "ollama",
+      baseUrl: "http://127.0.0.1:11434/v1",
+    },
+  ]);
+  expect(model.doStreamCalls).toHaveLength(1);
 });
 
 it("lets the model refine an empty search and curate results before answering", async () => {
@@ -308,6 +346,33 @@ it("adds local files to the latest canonical user message", async () => {
   const prompt = promptDump(model);
   expect(prompt).toContain('"type":"file"');
   expect(prompt).toContain("reference.txt");
+});
+
+it("places a local vision image before the latest user prompt text", async () => {
+  const model = textModel("I can see it.");
+  await complete({
+    ...request(model),
+    provider: "ollama",
+    model: "gemma4:e2b",
+    canonicalMessages: [{ role: "user", content: "Describe this image" }],
+    images: [
+      {
+        mimeType: "image/png",
+        data: Buffer.from("png pixels").toString("base64"),
+      },
+    ],
+  });
+
+  const latest = model.doStreamCalls[0]?.prompt.at(-1);
+  expect(latest).toMatchObject({ role: "user" });
+  expect(
+    latest && Array.isArray(latest.content)
+      ? latest.content.map((part) => part.type)
+      : [],
+  ).toEqual(["file", "text"]);
+  expect(
+    latest && Array.isArray(latest.content) ? latest.content[0] : undefined,
+  ).toMatchObject({ mediaType: "image/png" });
 });
 
 it.each([

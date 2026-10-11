@@ -1,5 +1,4 @@
 import sharp from "sharp";
-import { withDecryptedLibraryMediaPath } from "../core/storage/library-media-storage";
 
 interface Bucket {
   count: number;
@@ -29,9 +28,7 @@ export async function extractPalette(
         .removeAlpha()
         .raw()
         .toBuffer({ resolveWithObject: true });
-    const { data, info } = Buffer.isBuffer(input)
-      ? await read(input)
-      : await withDecryptedLibraryMediaPath(input, read);
+    const { data, info } = await read(input);
 
     const channels = info.channels;
     const buckets = new Map<string, Bucket>();

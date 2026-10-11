@@ -6,6 +6,7 @@ import {
 } from "@pond/schema/db";
 import { labelKey, normalizeLabelName } from "@pond/schema/label-name";
 import type { Transaction } from "@pond/schema/tx";
+import type { OkResult } from "@shared/query-contracts-shared";
 import { eq, sql } from "drizzle-orm";
 import { ulid } from "ulid";
 import type { Db } from "../db";
@@ -40,11 +41,9 @@ export async function listTags() {
   return await db.select().from(tagsTable);
 }
 
-export async function createTag(
-  input: CreateTagInput,
-): Promise<{ ok: boolean }> {
+export async function createTag(input: CreateTagInput): Promise<OkResult> {
   const name = normalizeLabelName(input.name);
-  if (!name) return { ok: false };
+  if (!name) return { ok: false, error: "Enter a tag name." };
   const data: NewTag = {
     id: ulid(),
     name,
@@ -63,12 +62,12 @@ export async function createTag(
 export async function renameTag(
   from: string,
   to: string,
-): Promise<{ ok: boolean; affected: number }> {
+): Promise<OkResult<{ affected: number }>> {
   const fromKey = labelKey(from);
   const toStored = normalizeLabelName(to);
   const toKey = toStored.toLowerCase();
   if (!fromKey || !toStored) {
-    return { ok: false, affected: 0 };
+    return { ok: false, error: "Enter a tag name." };
   }
   const db = await getDb();
   const fromCanon = await tagByLowerName(db, fromKey);
@@ -123,12 +122,12 @@ export async function renameTag(
 export async function mergeTags(
   from: string,
   to: string,
-): Promise<{ ok: boolean; affected: number }> {
+): Promise<OkResult<{ affected: number }>> {
   const fromKey = labelKey(from);
   const toStored = normalizeLabelName(to);
   const toKey = toStored.toLowerCase();
   if (!fromKey || !toStored || fromKey === toKey) {
-    return { ok: false, affected: 0 };
+    return { ok: false, error: "Choose a different tag to merge into." };
   }
 
   const db = await getDb();
@@ -188,11 +187,11 @@ interface TagPatch {
 export async function updateTag(
   name: string,
   patch: TagPatch,
-): Promise<{ ok: boolean }> {
+): Promise<OkResult> {
   const key = labelKey(name) || name.trim().toLowerCase();
   const db = await getDb();
   const row = await tagByLowerName(db, key);
-  if (!row) return { ok: false };
+  if (!row) return { ok: false, error: "Tag not found." };
 
   const next: TagPatch = {};
   if ("starred" in patch) next.starred = Boolean(patch.starred);
@@ -213,10 +212,9 @@ export async function updateTag(
   return { ok: true };
 }
 
-export async function deleteTag(name: string): Promise<{
-  ok: boolean;
-  affected: number;
-}> {
+export async function deleteTag(
+  name: string,
+): Promise<OkResult<{ affected: number }>> {
   const key = labelKey(name) || name.trim().toLowerCase();
   const db = await getDb();
   const all = await savesWithTag(db, key);
@@ -265,14 +263,14 @@ export function normalizeTagList(names: string[]): string[] {
 export async function setSaveTags(
   saveId: string,
   next: string[],
-): Promise<{ ok: boolean }> {
+): Promise<OkResult> {
   const db = await getDb();
   const rows = await db
     .select()
     .from(savesTable)
     .where(eq(savesTable.id, saveId));
   const row = rows[0];
-  if (!row) return { ok: false };
+  if (!row) return { ok: false, error: "Save not found." };
   const normalized = normalizeTagList(next);
   const registry = await prepareTagRegistryUpdates(normalized);
   await executeBatch([

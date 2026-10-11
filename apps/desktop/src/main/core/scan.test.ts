@@ -68,12 +68,9 @@ async function fixture() {
     savedAt: "2020-01-02T00:00:00Z",
     createdAt: "2019-01-02T00:00:00Z",
     publishedAt: "2018-01-02T00:00:00Z",
+    notes: "Review",
     userData: {
       rating: 4,
-      comments: [
-        { id: "comment", fileIndex: 0, x: 0, y: 0, w: 1, h: 1, text: "Review" },
-      ],
-      videoNotes: [],
       dominantColors: ["#112233"],
       rotate: 90,
       flipX: false,
@@ -87,7 +84,7 @@ async function fixture() {
   return { db, raw, directory, path, metadata, scan };
 }
 describe.skipIf(!nativeAvailable())("portable index reconciliation", () => {
-  it("rebuilds attachment metadata, organization, annotations and readiness into a fresh index", async () => {
+  it("rebuilds attachment metadata, organization, notes and readiness into a fresh index", async () => {
     const f = await fixture();
     expect(await f.scan()).toEqual({ updated: 1, total: 1 });
     const save = f.db.select().from(schema.saves).get();
@@ -96,7 +93,7 @@ describe.skipIf(!nativeAvailable())("portable index reconciliation", () => {
       rating: 4,
       rotate: 90,
       files: [{ mimeType: "image/png", width: 20, height: 10 }],
-      comments: [{ fileIndex: 0, text: "Review" }],
+      notes: "Review",
       publishedAt: new Date("2018-01-02T00:00:00Z"),
     });
     expect(f.db.select().from(schema.saveFolders).all()).toEqual([

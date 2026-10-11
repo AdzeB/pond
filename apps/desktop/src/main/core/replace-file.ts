@@ -4,6 +4,7 @@ import {
   classifyLibraryFileFromHeader,
   libraryFilename,
 } from "@shared/file-format";
+import type { OkResult } from "@shared/query-contracts-shared";
 import { isAuxiliaryKind } from "@shared/save-file-names";
 import { eq } from "drizzle-orm";
 import mime from "mime-types";
@@ -19,7 +20,7 @@ export function replacementKind(
 export async function replaceSaveFile(input: {
   id: string;
   sourcePath: string;
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<OkResult> {
   const db = await getDb();
   const row = db.select().from(saves).where(eq(saves.id, input.id)).all()[0];
   const kind = replacementKind(row?.files ?? []);
@@ -51,7 +52,7 @@ export async function replaceSaveFile(input: {
   );
   return updated
     ? { ok: true }
-    : { ok: false, error: "Couldn’t replace this file." };
+    : { ok: false, error: "Couldn't replace this file." };
 }
 
 async function readFilePrefix(path: string, length: number): Promise<Buffer> {

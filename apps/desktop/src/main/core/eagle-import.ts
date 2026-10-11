@@ -1,11 +1,15 @@
 import type { Dirent } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
-import type { ImageComment, VideoNote } from "@pond/schema/db";
 import log from "electron-log/main.js";
-import { ulid } from "ulid";
 import { z } from "zod";
+import type { OkResult } from "../../shared/query-contracts-shared";
 import type { EagleImportProgress } from "../../shared/saves-import-contracts";
+import {
+  EagleCommentsSchema,
+  EagleVideoNotesSchema,
+  foldAnnotationsIntoNotes,
+} from "../lib/eagle-annotations";
 import {
   EaglePaletteSchema,
   EagleSmartFolderSchema,
@@ -48,25 +52,6 @@ const EagleLibrarySchema = z.object({
   quickAccess: z.array(z.json()).default([]),
 });
 
-const EagleCommentSchema = z.object({
-  id: z.string().optional().catch(undefined),
-  x: z.number().optional().catch(undefined),
-  y: z.number().optional().catch(undefined),
-  width: z.number().optional().catch(undefined),
-  height: z.number().optional().catch(undefined),
-  w: z.number().optional().catch(undefined),
-  h: z.number().optional().catch(undefined),
-  annotation: z.string().optional().catch(undefined),
-  text: z.string().optional().catch(undefined),
-});
-
-const EagleVideoMarkSchema = z.object({
-  time: z.number().optional().catch(undefined),
-  duration: z.number().optional().catch(undefined),
-  text: z.string().optional().catch(undefined),
-  annotation: z.string().optional().catch(undefined),
-});
-
 const EagleItemMetaSchema = z.object({
   id: z.string().optional().catch(undefined),
   name: z.string().optional().catch(undefined),
@@ -81,9 +66,9 @@ const EagleItemMetaSchema = z.object({
   palettes: z.array(EaglePaletteSchema).optional().catch(undefined),
   modificationTime: z.number().optional().catch(undefined),
   btime: z.number().optional().catch(undefined),
-  comments: z.array(EagleCommentSchema).optional().catch(undefined),
-  videoMarks: z.array(EagleVideoMarkSchema).optional().catch(undefined),
-  notes: z.array(EagleVideoMarkSchema).optional().catch(undefined),
+  comments: EagleCommentsSchema.optional(),
+  videoMarks: EagleVideoNotesSchema.optional(),
+  notes: EagleVideoNotesSchema.optional(),
 });
 
 export interface EagleLockedFolder {
@@ -92,16 +77,16 @@ export interface EagleLockedFolder {
   reason: "password" | "parent_locked";
 }
 
-export interface EagleImportResult {
-  ok: boolean;
+interface EagleImportCounts {
   imported: number;
   skipped: number;
   failed: number;
   deletedSkipped: number;
   lockedFolders: EagleLockedFolder[];
   droppedFields: string[];
-  error?: string;
 }
+
+export type EagleImportResult = EagleImportCounts & OkResult;
 
 type EagleImportProgressUpdate = Omit<EagleImportProgress, "id">;
 
@@ -174,62 +159,6 @@ export function flattenEagleFolders(
   return out;
 }
 
-export function mapEagleComments(
-  comments: z.infer<typeof EagleCommentSchema>[] | undefined,
-  width?: number,
-  height?: number,
-): ImageComment[] {
-  return (comments ?? [])
-    .map((comment) => {
-      const text = (comment.text ?? comment.annotation ?? "").trim();
-      if (!text) return null;
-      const x = comment.x ?? 0;
-      const y = comment.y ?? 0;
-      const w = comment.w ?? comment.width ?? 0;
-      const h = comment.h ?? comment.height ?? 0;
-      const pixels = [x, y, w, h].some((value) => value > 1);
-      const imageWidth = width ?? 0;
-      const imageHeight = height ?? 0;
-      if (pixels && (imageWidth <= 0 || imageHeight <= 0)) return null;
-      const region = pixels
-        ? {
-            x: x / imageWidth,
-            y: y / imageHeight,
-            w: w / imageWidth,
-            h: h / imageHeight,
-          }
-        : { x, y, w, h };
-      if (
-        ![region.x, region.y, region.w, region.h].every(Number.isFinite) ||
-        region.w <= 0 ||
-        region.h <= 0
-      )
-        return null;
-      return {
-        id: comment.id || ulid(),
-        ...region,
-        text,
-      } satisfies ImageComment;
-    })
-    .filter((comment): comment is ImageComment => comment !== null);
-}
-
-function mapVideoNotes(
-  marks: z.infer<typeof EagleVideoMarkSchema>[] | undefined,
-): VideoNote[] {
-  return (marks ?? [])
-    .map((mark) => {
-      const text = (mark.text ?? mark.annotation ?? "").trim();
-      if (!text) return null;
-      return {
-        id: ulid(),
-        timeSec: mark.time ?? mark.duration ?? 0,
-        text,
-      } satisfies VideoNote;
-    })
-    .filter((note): note is VideoNote => note !== null);
-}
-
 async function readJson<T>(
   path: string,
   schema: z.ZodType<T>,
@@ -290,7 +219,7 @@ async function resolveLibraryMeta(
   return { folders: [], smartFolders: [], tagsGroups: [], quickAccess: [] };
 }
 
-function emptyResult(error?: string): EagleImportResult {
+function emptyResult(error: string): EagleImportResult {
   return {
     ok: false,
     imported: 0,
@@ -465,8 +394,6 @@ async function importEagle(
 
       const tags = [...(meta.tags ?? [])];
       const filePaths = mediaFiles.map((name) => join(itemDir, name));
-      const comments = mapEagleComments(meta.comments, meta.width, meta.height);
-      const videoNotes = mapVideoNotes(meta.videoMarks ?? meta.notes);
       const palettes = (meta.palettes ?? [])
         .map(eaglePaletteColor)
         .filter(Boolean);
@@ -482,7 +409,11 @@ async function importEagle(
         const input: ManualSaveInput = {
           title: meta.name?.trim() || basename(mediaFiles[0] ?? meta.id),
           url: meta.url?.trim() || null,
-          note: meta.annotation?.trim() || null,
+          note: foldAnnotationsIntoNotes(
+            meta.annotation?.trim() || null,
+            meta.comments,
+            meta.videoMarks ?? meta.notes,
+          ),
           tags,
           filePaths,
           thumbnailPath: thumbnail ? join(itemDir, thumbnail) : null,
@@ -495,8 +426,6 @@ async function importEagle(
         if (meta.width !== undefined) input.width = meta.width;
         if (meta.height !== undefined) input.height = meta.height;
         if (meta.star != null && meta.star > 0) input.rating = meta.star;
-        if (comments.length > 0) input.comments = comments;
-        if (videoNotes.length > 0) input.videoNotes = videoNotes;
         if (palettes.length > 0) input.dominantColors = palettes;
         const res = await createManualSave(input);
         if (!res.ok) {
@@ -524,8 +453,7 @@ async function importEagle(
     }
   }
 
-  return {
-    ok: imported > 0 || skipped > 0 || lockedFolders.length > 0,
+  const counts: EagleImportCounts = {
     imported,
     skipped,
     failed,
@@ -533,6 +461,9 @@ async function importEagle(
     lockedFolders,
     droppedFields: [...dropped],
   };
+  return imported > 0 || skipped > 0 || lockedFolders.length > 0
+    ? { ok: true, ...counts }
+    : { ok: false, error: "nothing_imported", ...counts };
 }
 
 export function importEagleLibrary(

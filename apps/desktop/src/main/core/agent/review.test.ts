@@ -53,7 +53,6 @@ const deps = {
     tags: mock.tags,
     deletedAt: mock.deletedAt,
     notes: null,
-    comments: [],
     rating: null,
   }),
   saveMetadata: async (_id: string, metadata: AssistantMetadata) => {

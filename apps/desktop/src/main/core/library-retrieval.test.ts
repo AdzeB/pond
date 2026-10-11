@@ -32,7 +32,7 @@ function fakeDb(input: {
     lexicalCandidates: () => input.candidates ?? [],
     neighbors: (kind, _vector, limit) => {
       neighborLimits.push(limit);
-      return kind === "clip" ? (input.knnClip ?? []) : (input.knnText ?? []);
+      return kind === "media" ? (input.knnClip ?? []) : (input.knnText ?? []);
     },
   };
   return {
@@ -125,11 +125,11 @@ describe("LibraryRetrievalService", () => {
     expect(harness.query().params).toContain("video");
   });
 
-  it("retrieves visual candidates with the matching CLIP text encoder", async () => {
-    const visual: RetrievalRecord = {
-      id: "visual",
-      title: "Untitled portrait",
-      url: "https://example.com/visual",
+  it("retrieves media candidates with the matching embedding model", async () => {
+    const media: RetrievalRecord = {
+      id: "media",
+      title: "Untitled media",
+      url: "https://example.com/media",
       author: null,
       source: "arena",
       notes: null,
@@ -139,29 +139,29 @@ describe("LibraryRetrievalService", () => {
     };
     const harness = fakeDb({
       candidates: [],
-      knnClip: [{ id: "visual", distance: 0 }],
-      rows: [visual],
+      knnClip: [{ id: "media", distance: 0 }],
+      rows: [media],
     });
     const result = await retrieveLibraryWithStore(
       harness.db,
       { query: "Kanye", media: ["image"] },
       {},
       {
-        visual: {
-          model: "Xenova/clip-vit-base-patch32@1",
+        media: {
+          model: "media-model@1",
           vector: [1, 0],
         },
       },
     );
-    expect(result.saves.map((save) => save.id)).toEqual(["visual"]);
-    expect(result.hits[0]).toMatchObject({ channels: ["visual"] });
+    expect(result.saves.map((save) => save.id)).toEqual(["media"]);
+    expect(result.hits[0]).toMatchObject({ channels: ["media"] });
   });
 
-  it("ranks a visual probe without a lexical query", async () => {
-    const visual: RetrievalRecord = {
-      id: "visual",
-      title: "Untitled portrait",
-      url: "https://example.com/visual",
+  it("ranks a media vector without a lexical query", async () => {
+    const media: RetrievalRecord = {
+      id: "media",
+      title: "Untitled media",
+      url: "https://example.com/media",
       author: null,
       source: "arena",
       notes: null,
@@ -170,22 +170,94 @@ describe("LibraryRetrievalService", () => {
       savedAt: new Date(400),
     };
     const harness = fakeDb({
-      knnClip: [{ id: "visual", distance: 0 }],
-      rows: [visual],
+      knnClip: [{ id: "media", distance: 0 }],
+      rows: [media],
     });
     const result = await retrieveLibraryWithStore(
       harness.db,
       {},
       {},
       {
-        visual: {
-          model: "Xenova/clip-vit-base-patch32@1",
+        media: {
+          model: "media-model@1",
           vector: [1, 0],
         },
       },
     );
-    expect(result.saves.map((save) => save.id)).toEqual(["visual"]);
-    expect(result.hits[0]).toMatchObject({ channels: ["visual"] });
+    expect(result.saves.map((save) => save.id)).toEqual(["media"]);
+    expect(result.hits[0]).toMatchObject({ channels: ["media"] });
+  });
+
+  it("excludes a Save media probe while preserving its retrieval scope", async () => {
+    const record = (id: string, savedAt: number): RetrievalRecord => ({
+      id,
+      title: id,
+      url: `https://example.com/${id}`,
+      author: null,
+      source: "arena",
+      notes: null,
+      description: null,
+      mediaType: "video",
+      savedAt: new Date(savedAt),
+    });
+    const harness = fakeDb({
+      knnClip: [
+        { id: "probe", distance: 0 },
+        { id: "near", distance: 0.08 },
+        { id: "far", distance: 0.2 },
+        { id: "outside", distance: 0.25 },
+      ],
+      rows: [record("probe", 400), record("near", 300), record("far", 200)],
+    });
+
+    const result = await retrieveLibraryWithStore(
+      harness.db,
+      { visual: { kind: "saveId", id: "probe" } },
+      { saveIds: ["probe", "near", "far"] },
+      { media: { model: "media-model@1", vector: [1, 0] } },
+    );
+
+    expect(result.hits.map((hit) => hit.id)).toEqual(["near", "far"]);
+    expect(result.hits.every((hit) => hit.id !== "probe")).toBe(true);
+    expect(result.hits.every((hit) => hit.channels.includes("media"))).toBe(
+      true,
+    );
+  });
+
+  it("uses one media channel for scoped audio and video Saves", async () => {
+    const record = (
+      id: string,
+      mediaType: "audio" | "video",
+    ): RetrievalRecord => ({
+      id,
+      title: id,
+      url: `https://example.com/${id}`,
+      author: null,
+      source: "local",
+      notes: null,
+      description: null,
+      mediaType,
+      savedAt: new Date(200),
+    });
+    const harness = fakeDb({
+      knnClip: [
+        { id: "audio", distance: 0.05 },
+        { id: "video", distance: 0.1 },
+      ],
+      rows: [record("audio", "audio"), record("video", "video")],
+    });
+
+    const result = await retrieveLibraryWithStore(
+      harness.db,
+      { query: "applause", media: ["audio", "video"] },
+      {},
+      { media: { model: "media-model@1", vector: [1, 0] } },
+    );
+
+    expect(result.hits.map((hit) => hit.id)).toEqual(["audio", "video"]);
+    expect(result.hits.every((hit) => hit.channels.includes("media"))).toBe(
+      true,
+    );
   });
 
   it("never compares vectors from different model versions", async () => {
@@ -205,13 +277,19 @@ describe("LibraryRetrievalService", () => {
       knnText: [{ id: "stale", distance: 0 }],
       rows: [],
     });
+    const currentModel =
+      "embeddinggemma-2@revision:document:768:current-preprocessing";
     const result = await retrieveLibraryWithStore(
       harness.db,
       { query: "Kanye" },
       {},
-      { text: { model: "new-model@2", vector: [1, 0] } },
+      { text: { model: currentModel, vector: [1, 0] } },
     );
     expect(result.saves).toEqual([]);
+    expect(harness.query()).toMatchObject({
+      sql: expect.stringContaining('"embedding_model" = ?'),
+      params: expect.arrayContaining([currentModel]),
+    });
   });
 
   it("ranks a deeper dense candidate pool than the result window", async () => {

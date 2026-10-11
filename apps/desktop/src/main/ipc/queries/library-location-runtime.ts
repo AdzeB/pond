@@ -1,8 +1,8 @@
 import { app, BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import { startAutoImport, stopAutoImport } from "../../core/auto-import";
+import { closeCombineImagesWindow } from "../../core/combine-images-window";
 import { resumeMutations, suspendMutations } from "../../core/executor";
-import { prepareLegacyLibraryRead } from "../../core/legacy-encryption/library-access";
 import {
   resumeLibraryTransfers,
   stopLibraryTransfers,
@@ -16,12 +16,6 @@ import {
 import { invalidatePrefs } from "../../core/prefs";
 import { closePreviewWindows } from "../../core/preview-windows";
 import { reconcileLibrary } from "../../core/scan";
-import {
-  startScreenshotIntake,
-  stopScreenshotIntake,
-} from "../../core/screenshot-intake";
-import { closeScreenshotWindow } from "../../core/screenshot-window";
-import { migrateLegacySyncPrefs } from "../../core/sync";
 import { flushTagsDump, hydrateTagsFromBundle } from "../../core/tags-bundle";
 import { clearUndoHistory } from "../../core/undo";
 import { closeDb } from "../../db";
@@ -30,7 +24,6 @@ import { invalidatePaths, resolvePaths } from "../../paths";
 
 const libraryWork = createLibraryWorkCoordinator({
   stopAutoImport,
-  stopScreenshotIntake,
   stopLibraryTransfers,
   pauseAndDrainReconciler,
   suspendMutations,
@@ -38,7 +31,6 @@ const libraryWork = createLibraryWorkCoordinator({
   resumeLibraryTransfers,
   setReconcilerPaused,
   startAutoImport,
-  startScreenshotIntake,
   warn: (message, error) => log.warn(message, error),
 });
 
@@ -95,7 +87,6 @@ async function softRepointInDev(): Promise<void> {
   closeDb();
   invalidatePaths();
   invalidatePrefs();
-  await prepareLegacyLibraryRead();
   clearUndoHistory();
   resumeMutations();
   try {
@@ -114,18 +105,13 @@ async function softRepointInDev(): Promise<void> {
     log.warn("[pond library-ops] tags.json hydrate failed", err);
   }
   try {
-    await migrateLegacySyncPrefs();
-  } catch (err) {
-    log.warn("[pond library-ops] legacy sync-prefs migration failed", err);
-  }
-  try {
     await reconcileLibrary();
   } catch (err) {
     log.warn("[pond library-ops] dev re-point reconcile failed", err);
   }
   await resumeLibraryWork();
-  closeScreenshotWindow();
   closePreviewWindows();
+  closeCombineImagesWindow();
   for (const win of BrowserWindow.getAllWindows()) {
     if (!win.isDestroyed()) win.webContents.reload();
   }

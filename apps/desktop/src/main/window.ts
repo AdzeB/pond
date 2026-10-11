@@ -3,6 +3,7 @@ import { app, BrowserWindow, nativeTheme, shell } from "electron";
 import log from "electron-log/main.js";
 import { DEFAULT_APP_ICON } from "../shared/app-icons";
 import { IPC } from "../shared/constants";
+import { SHELL_HINT_ARG, type ShellHint } from "../shared/shell-hint";
 import { attachEditableContextMenu } from "./context-menu";
 import { hardenArchiveWebviews } from "./core/archive-viewer";
 import { openHarvesterWindow } from "./core/harvester-window";
@@ -11,6 +12,7 @@ import { openSettingsWindow } from "./core/settings-window";
 import { consumePendingDeepLink } from "./deep-link";
 import { lockRendererZoom } from "./lib/lock-renderer-zoom";
 import { resolveMainOut, resolvePreload } from "./lib/resolve-preload";
+import { markStartup } from "./startup-timing";
 import { resolveTheme } from "./theme";
 import { ensureTray, type TrayHandle } from "./tray";
 
@@ -58,22 +60,6 @@ export function queueTrayRefresh(): void {
     trayRefreshQueued = false;
     void tray?.refresh();
   }, 150);
-}
-
-interface ShellHint {
-  theme?: "light" | "dark";
-  bgL?: number;
-  bgC?: number;
-  bgH?: number;
-  fgL?: number;
-  fgC?: number;
-  fgH?: number;
-  accentL?: number;
-  accentC?: number;
-  accentH?: number;
-  contrast?: number;
-  background?: string;
-  pointerCursors?: boolean;
 }
 
 export async function syncShellChrome(): Promise<void> {
@@ -152,12 +138,13 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
       sandbox: true,
       backgroundThrottling: true,
       webviewTag: true,
-      additionalArguments: [`--pond-shell=${JSON.stringify(shellHint)}`],
+      additionalArguments: [`${SHELL_HINT_ARG}${JSON.stringify(shellHint)}`],
     },
   };
   if (!isMac && appIcon) options.icon = appIcon;
 
   const win = new BrowserWindow(options);
+  markStartup("window-created");
   mainWindowState.current = win;
   win.once("closed", () => {
     if (mainWindowState.current === win) mainWindowState.current = null;
@@ -168,6 +155,7 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
   attachEditableContextMenu(win.webContents);
 
   win.on("ready-to-show", () => {
+    markStartup("window-shown");
     win.show();
   });
 
@@ -331,21 +319,6 @@ export async function initTray(): Promise<void> {
       onOpenSettings: () => openSettingsWindow(),
       onOpenDownloads: () => openHarvesterWindow({ section: "downloads" }),
       onMenuAction: async (id) => {
-        if (id === "library.capture-screenshot") {
-          const { launchScreenshotTool } = await import(
-            "./core/screenshot-tools"
-          );
-          const result = await launchScreenshotTool(
-            (await getPrefs()).screenshots.tool,
-          );
-          if (result.openPondCapture) {
-            const { beginScreenshot } = await import(
-              "./core/screenshot-window"
-            );
-            await beginScreenshot("area");
-          }
-          return;
-        }
         await openLibraryWindow();
         mainWindowState.current?.webContents.send(IPC.menuAction, {
           id,

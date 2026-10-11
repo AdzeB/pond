@@ -14,7 +14,7 @@ import {
   primaryDomainForSource,
   probeUserHandle,
   writePartitionCookies,
-} from "./refresh/scrape-window";
+} from "./refresh/harvest-window";
 import { identityKeyFromCookies } from "./session-identity";
 import { syncAccount } from "./sync";
 import {

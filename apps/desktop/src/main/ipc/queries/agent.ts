@@ -3,6 +3,7 @@ import { app, dialog, shell } from "electron";
 import { z } from "zod";
 import { assistantProvider, assistantSend } from "../../../shared/assistant";
 import { conversationMarkdown } from "../../../shared/conversation-markdown";
+import type { QueryResult } from "../../../shared/query-contracts";
 import { type QueryHandlerMap, query } from "./params";
 
 const Params = z.looseObject({});
@@ -22,24 +23,24 @@ export const agentQueries = {
 
   "agent.removeKey": query(
     z.object({ provider: assistantProvider }),
-    async (params) => {
+    async (params): Promise<QueryResult<"agent.removeKey">> => {
       const { parseProvider, removeKey } = await import(
         "../../core/agent/keys"
       );
       const provider = parseProvider(String(params.provider ?? ""));
-      if (!provider) return { ok: false };
+      if (!provider) return { ok: false, error: "Unknown provider." };
       return await removeKey(provider);
     },
   ),
 
   "agent.setKeyEnabled": query(
     z.object({ provider: assistantProvider, enabled: z.boolean() }),
-    async (params) => {
+    async (params): Promise<QueryResult<"agent.setKeyEnabled">> => {
       const { parseProvider, setKeyEnabled } = await import(
         "../../core/agent/keys"
       );
       const provider = parseProvider(String(params.provider ?? ""));
-      if (!provider) return { ok: false };
+      if (!provider) return { ok: false, error: "Unknown provider." };
       return await setKeyEnabled(provider, Boolean(params.enabled));
     },
   ),
@@ -53,7 +54,7 @@ export const agentQueries = {
 
   "agent.listModels": query(
     z.object({ provider: assistantProvider }),
-    async (params) => {
+    async (params): Promise<QueryResult<"agent.listModels">> => {
       const { listProviderModels, parseProvider } = await import(
         "../../core/agent/keys"
       );
@@ -100,7 +101,7 @@ export const agentQueries = {
 
   "agent.exportChat": query(
     z.object({ chatId: z.string().min(1) }),
-    async ({ chatId }) => {
+    async ({ chatId }): Promise<QueryResult<"agent.exportChat">> => {
       const { listChats, listMessages } = await import(
         "../../core/agent/persist"
       );
@@ -117,7 +118,7 @@ export const agentQueries = {
         buttonLabel: "Export",
       });
       if (picked.canceled || !picked.filePath)
-        return { ok: false, reason: "canceled" };
+        return { ok: false, reason: "cancelled" };
       await writeFile(picked.filePath, content, "utf8");
       return { ok: true };
     },
@@ -177,7 +178,7 @@ export const agentQueries = {
 
   "agent.openMcpInstall": query(
     z.object({ id: z.enum(["cursor", "vscode"]) }),
-    async ({ id }) => {
+    async ({ id }): Promise<QueryResult<"agent.openMcpInstall">> => {
       const { mcpDeeplinkUrl } = await import("../../core/agent/mcp-hosts");
       const url = mcpDeeplinkUrl(id);
       if (!url) {

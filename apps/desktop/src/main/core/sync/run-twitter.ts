@@ -9,7 +9,7 @@ import { createQueueGeneration } from "../pipeline/queue-generations";
 import {
   harvestTwitterBookmarks,
   harvestTwitterLikes,
-} from "../refresh/scrape-window";
+} from "../refresh/harvest-window";
 import { partitionForAccount } from "./accounts";
 import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
 import {

@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { basename, join } from "node:path";
+import { join } from "node:path";
 import { z } from "zod";
+import { libraryNameFromPath } from "../lib/library-id";
 
 const AccentSchema = z
   .string()
@@ -30,12 +31,8 @@ export interface LibraryIdentityPatch {
   accent?: string | null;
 }
 
-function fallbackLibraryName(root: string): string {
-  return basename(root).replace(/\.(pond|library)$/i, "") || "Library";
-}
-
 export function readLibraryIdentity(root: string): LibraryIdentity {
-  const fallback = fallbackLibraryName(root);
+  const fallback = libraryNameFromPath(root);
   try {
     const parsed = StoredMetadataSchema.safeParse(
       JSON.parse(readFileSync(join(root, "metadata.json"), "utf8")),

@@ -1,7 +1,6 @@
 import type Database from "better-sqlite3";
 import { z } from "zod";
 
-const TableInfoSchema = z.array(z.object({ name: z.string() }));
 const CountRowSchema = z.object({ n: z.number() });
 
 export function migrateGlobal(sqlite: Database.Database): void {
@@ -77,8 +76,6 @@ export function migratePond(sqlite: Database.Database): void {
 					auto_title_model TEXT,
 					suggested_tags TEXT,
 					suggested_tags_model TEXT,
-					video_notes TEXT NOT NULL DEFAULT '[]',
-					comments TEXT NOT NULL DEFAULT '[]',
 					rating INTEGER,
 					rotate INTEGER NOT NULL DEFAULT 0,
 					flip_x INTEGER NOT NULL DEFAULT 0,
@@ -86,6 +83,7 @@ export function migratePond(sqlite: Database.Database): void {
 					crop TEXT,
 					dominant_colors TEXT NOT NULL DEFAULT '[]',
 					primary_color TEXT,
+					font_activated INTEGER NOT NULL DEFAULT 0,
 					status TEXT NOT NULL DEFAULT 'ingesting',
 					ingest_started_at INTEGER,
 					ingest_completed_at INTEGER,
@@ -97,7 +95,6 @@ export function migratePond(sqlite: Database.Database): void {
 
 				CREATE INDEX IF NOT EXISTS saves_saved_at_id_idx
 					ON saves(saved_at DESC, id DESC);
-				DROP INDEX IF EXISTS saves_saved_at_idx;
 				CREATE INDEX IF NOT EXISTS saves_source_idx ON saves(source);
 				CREATE INDEX IF NOT EXISTS saves_size_idx ON saves(file_size);
 				CREATE INDEX IF NOT EXISTS saves_dims_idx ON saves(width, height);
@@ -228,13 +225,6 @@ export function migratePond(sqlite: Database.Database): void {
 					external_link TEXT
 				);
 
-				CREATE TABLE IF NOT EXISTS folder_security (
-					folder_id TEXT PRIMARY KEY REFERENCES folders(id) ON DELETE CASCADE,
-					password_verifier TEXT NOT NULL,
-					password_hint TEXT,
-					lock_children INTEGER NOT NULL DEFAULT 1
-				);
-
 				CREATE TABLE IF NOT EXISTS save_folders (
 					save_id TEXT NOT NULL REFERENCES saves(id) ON DELETE CASCADE,
 					folder_id TEXT NOT NULL REFERENCES folders(id) ON DELETE CASCADE,
@@ -246,6 +236,7 @@ export function migratePond(sqlite: Database.Database): void {
 				CREATE TABLE IF NOT EXISTS agent_chats (
 					id TEXT PRIMARY KEY,
 					title TEXT,
+					canonical_transcript TEXT,
 					created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
 					updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
 				);
@@ -255,6 +246,7 @@ export function migratePond(sqlite: Database.Database): void {
 					chat_id TEXT NOT NULL REFERENCES agent_chats(id) ON DELETE CASCADE,
 					role TEXT NOT NULL,
 					content TEXT NOT NULL,
+					metadata TEXT,
 					created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
 				);
 				CREATE INDEX IF NOT EXISTS agent_messages_chat_idx ON agent_messages(chat_id, created_at);
@@ -318,118 +310,7 @@ export function migratePond(sqlite: Database.Database): void {
 				CREATE INDEX IF NOT EXISTS pipeline_events_source_op_idx ON pipeline_events(source, op);
 			`);
 
-  addColumnIfMissing(sqlite, "saved_views", "question", "TEXT");
-  addColumnIfMissing(
-    sqlite,
-    "saved_views",
-    "kind",
-    "TEXT NOT NULL DEFAULT 'saved_view'",
-  );
-  addColumnIfMissing(sqlite, "saved_views", "parent_id", "TEXT");
-  addColumnIfMissing(sqlite, "agent_messages", "metadata", "TEXT");
-  addColumnIfMissing(sqlite, "agent_chats", "canonical_transcript", "TEXT");
-  addColumnIfMissing(sqlite, "tags", "archived", "INTEGER NOT NULL DEFAULT 0");
-  addColumnIfMissing(sqlite, "tags", "description", "TEXT");
-  addColumnIfMissing(sqlite, "tag_groups", "description", "TEXT");
-  dropColumnIfPresent(sqlite, "tags", "color");
-  addColumnIfMissing(sqlite, "saves", "raw_slim", "TEXT");
-  addColumnIfMissing(
-    sqlite,
-    "saves",
-    "list_kinds",
-    "TEXT NOT NULL DEFAULT '[]'",
-  );
-  addColumnIfMissing(sqlite, "saves", "embedding", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "embedding_model", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "caption", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "caption_model", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "ocr_text", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "ocr_model", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "transcript", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "transcript_model", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "clip_embedding", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "clip_model", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "aesthetic", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "aesthetic_model", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "sensitive_score", "REAL");
-  addColumnIfMissing(sqlite, "saves", "sensitive_model", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "auto_title_model", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "suggested_tags", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "suggested_tags_model", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "account_id", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "blurhash", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "container", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "video_codec", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "audio_codec", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "bitrate", "INTEGER");
-  addColumnIfMissing(sqlite, "saves", "color_space", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "camera_make", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "camera_model", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "lens_model", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "focal_length", "REAL");
-  addColumnIfMissing(sqlite, "saves", "aperture", "REAL");
-  addColumnIfMissing(sqlite, "saves", "exposure_time", "TEXT");
-  addColumnIfMissing(sqlite, "saves", "iso", "INTEGER");
-  addColumnIfMissing(sqlite, "saves", "taken_at", "INTEGER");
-  addColumnIfMissing(sqlite, "saves", "metadata_version", "INTEGER");
-  addColumnIfMissing(sqlite, "saves", "primary_color", "TEXT");
-  addColumnIfMissing(
-    sqlite,
-    "saves",
-    "font_activated",
-    "INTEGER NOT NULL DEFAULT 0",
-  );
-  addColumnIfMissing(sqlite, "saves", "comments", "TEXT NOT NULL DEFAULT '[]'");
-  addColumnIfMissing(sqlite, "saves", "rating", "INTEGER");
-  addColumnIfMissing(sqlite, "saves", "rotate", "INTEGER NOT NULL DEFAULT 0");
-  addColumnIfMissing(sqlite, "saves", "flip_x", "INTEGER NOT NULL DEFAULT 0");
-  addColumnIfMissing(sqlite, "saves", "flip_y", "INTEGER NOT NULL DEFAULT 0");
-  addColumnIfMissing(sqlite, "saves", "crop", "TEXT");
-  addColumnIfMissing(sqlite, "pipeline_events", "account_id", "TEXT");
-  addColumnIfMissing(sqlite, "tasks", "source", "TEXT");
-  addColumnIfMissing(sqlite, "tasks", "generation_id", "TEXT");
-  addColumnIfMissing(
-    sqlite,
-    "tasks",
-    "cancellation_fence",
-    "INTEGER NOT NULL DEFAULT 0",
-  );
-  addColumnIfMissing(sqlite, "tasks", "deferred_reason", "TEXT");
-  addColumnIfMissing(sqlite, "tasks", "lease_owner", "TEXT");
-  addColumnIfMissing(sqlite, "tasks", "lease_token", "TEXT");
-  addColumnIfMissing(sqlite, "tasks", "lease_expires_at", "INTEGER");
-  addColumnIfMissing(sqlite, "tasks", "heartbeat_at", "INTEGER");
-  addColumnIfMissing(sqlite, "tasks", "started_at", "INTEGER");
-  addColumnIfMissing(sqlite, "tasks", "failed_at", "INTEGER");
-  addColumnIfMissing(sqlite, "tasks", "completed_at", "INTEGER");
   sqlite.exec(`
-				UPDATE tasks
-				SET source = (
-					SELECT saves.source FROM saves WHERE saves.id = tasks.save_id
-				)
-				WHERE source IS NULL;
-
-				UPDATE tasks
-				SET
-					status = 'pending',
-					lease_owner = NULL,
-					lease_token = NULL,
-					lease_expires_at = NULL,
-					heartbeat_at = NULL,
-					started_at = NULL,
-					updated_at = unixepoch() * 1000
-				WHERE status = 'running' AND lease_token IS NULL;
-
-				UPDATE tasks
-				SET
-					status = CASE
-						WHEN lower(COALESCE(last_error, '')) LIKE '%cancel%' THEN 'cancelled'
-						ELSE 'dead'
-					END,
-					failed_at = COALESCE(failed_at, updated_at),
-					completed_at = COALESCE(completed_at, updated_at)
-				WHERE status = 'failed';
-
 				CREATE INDEX IF NOT EXISTS tasks_source_op_idx
 					ON tasks(source, op, status, next_run_at);
 				CREATE INDEX IF NOT EXISTS tasks_generation_idx
@@ -442,12 +323,7 @@ export function migratePond(sqlite: Database.Database): void {
 				CREATE INDEX IF NOT EXISTS tasks_running_lease_idx
 					ON tasks(lease_expires_at)
 					WHERE status = 'running';
-			`);
-  sqlite.exec(
-    "CREATE INDEX IF NOT EXISTS saves_account_idx ON saves(account_id);",
-  );
-
-  sqlite.exec(`
+				CREATE INDEX IF NOT EXISTS saves_account_idx ON saves(account_id);
 				CREATE INDEX IF NOT EXISTS saves_has_embedding_idx
 					ON saves(id) WHERE embedding IS NOT NULL;
 				CREATE INDEX IF NOT EXISTS saves_has_clip_embedding_idx
@@ -457,36 +333,7 @@ export function migratePond(sqlite: Database.Database): void {
   ensureSavesFts(sqlite);
 }
 
-const SAVES_FTS_COLUMNS = [
-  "id",
-  "title",
-  "description",
-  "author",
-  "tag_names",
-  "caption",
-  "ocr_text",
-  "transcript",
-  "notes",
-  "url",
-  "annotations",
-] as const;
-
 function ensureSavesFts(sqlite: Database.Database): void {
-  const existing = TableInfoSchema.parse(
-    sqlite.prepare("PRAGMA table_info(saves_fts)").all(),
-  ).map((c) => c.name);
-  const hasAll = SAVES_FTS_COLUMNS.every((c) => existing.includes(c));
-  if (existing.length > 0 && !hasAll) {
-    sqlite.exec(`
-				DROP TRIGGER IF EXISTS saves_ai;
-				DROP TRIGGER IF EXISTS saves_ad;
-				DROP TRIGGER IF EXISTS saves_au;
-				DROP TABLE IF EXISTS saves_fts;
-			`);
-  }
-
-  sqlite.exec("DROP TRIGGER IF EXISTS saves_au;");
-
   sqlite.exec(`
 				CREATE VIRTUAL TABLE IF NOT EXISTS saves_fts USING fts5(
 					id UNINDEXED,
@@ -499,17 +346,15 @@ function ensureSavesFts(sqlite: Database.Database): void {
 					transcript,
 					notes,
 					url,
-					annotations,
 					tokenize = 'porter unicode61'
 				);
 
 				CREATE TRIGGER IF NOT EXISTS saves_ai AFTER INSERT ON saves BEGIN
-					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript, notes, url, annotations)
+					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript, notes, url)
 					VALUES (
 						new.id, new.title, new.description, new.author,
 						COALESCE(replace(replace(replace(new.tags, '[', ''), ']', ''), '"', ''), ''),
-						new.caption, new.ocr_text, new.transcript, new.notes, new.url,
-                        COALESCE((SELECT group_concat(json_extract(value, '$.text'), ' ') FROM json_each(new.comments)), '') || ' ' || COALESCE((SELECT group_concat(json_extract(value, '$.text'), ' ') FROM json_each(new.video_notes)), '')
+						new.caption, new.ocr_text, new.transcript, new.notes, new.url
 					);
 				END;
 
@@ -518,15 +363,14 @@ function ensureSavesFts(sqlite: Database.Database): void {
 				END;
 
 				CREATE TRIGGER IF NOT EXISTS saves_au
-				AFTER UPDATE OF title, description, author, tags, caption, ocr_text, transcript, notes, url, comments, video_notes
+				AFTER UPDATE OF title, description, author, tags, caption, ocr_text, transcript, notes, url
 				ON saves BEGIN
 					DELETE FROM saves_fts WHERE id = old.id;
-					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript, notes, url, annotations)
+					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript, notes, url)
 					VALUES (
 						new.id, new.title, new.description, new.author,
 						COALESCE(replace(replace(replace(new.tags, '[', ''), ']', ''), '"', ''), ''),
-						new.caption, new.ocr_text, new.transcript, new.notes, new.url,
-                        COALESCE((SELECT group_concat(json_extract(value, '$.text'), ' ') FROM json_each(new.comments)), '') || ' ' || COALESCE((SELECT group_concat(json_extract(value, '$.text'), ' ') FROM json_each(new.video_notes)), '')
+						new.caption, new.ocr_text, new.transcript, new.notes, new.url
 					);
 				END;
 			`);
@@ -536,38 +380,12 @@ function ensureSavesFts(sqlite: Database.Database): void {
   );
   if (count.n === 0) {
     sqlite.exec(`
-					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript, notes, url, annotations)
+					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript, notes, url)
 					SELECT
 						id, title, description, author,
 						COALESCE(replace(replace(replace(tags, '[', ''), ']', ''), '"', ''), ''),
-						caption, ocr_text, transcript, notes, url,
-                        COALESCE((SELECT group_concat(json_extract(value, '$.text'), ' ') FROM json_each(saves.comments)), '') || ' ' || COALESCE((SELECT group_concat(json_extract(value, '$.text'), ' ') FROM json_each(saves.video_notes)), '')
+						caption, ocr_text, transcript, notes, url
 					FROM saves;
 				`);
   }
-}
-
-function addColumnIfMissing(
-  sqlite: Database.Database,
-  table: string,
-  column: string,
-  type: string,
-): void {
-  const cols = TableInfoSchema.parse(
-    sqlite.prepare(`PRAGMA table_info(${table})`).all(),
-  );
-  if (cols.some((c) => c.name === column)) return;
-  sqlite.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
-}
-
-function dropColumnIfPresent(
-  sqlite: Database.Database,
-  table: string,
-  column: string,
-): void {
-  const cols = TableInfoSchema.parse(
-    sqlite.prepare(`PRAGMA table_info(${table})`).all(),
-  );
-  if (!cols.some((c) => c.name === column)) return;
-  sqlite.exec(`ALTER TABLE ${table} DROP COLUMN ${column}`);
 }

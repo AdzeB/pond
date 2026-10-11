@@ -31,7 +31,11 @@ import { and, eq, inArray } from "drizzle-orm";
 import { ulid } from "ulid";
 import { z } from "zod";
 import { getDb } from "../db";
-import { mapEagleComments } from "./eagle-import";
+import {
+  EagleCommentsSchema,
+  EagleVideoNotesSchema,
+  foldAnnotationsIntoNotes,
+} from "../lib/eagle-annotations";
 import { EaglePaletteSchema, eaglePaletteColor } from "./eagle-metadata";
 import { executeBatch } from "./executor";
 import {
@@ -78,8 +82,6 @@ type EagleExportSave = Pick<
   | "width"
   | "height"
   | "rating"
-  | "comments"
-  | "videoNotes"
   | "dominantColors"
   | "savedAt"
   | "createdAt"
@@ -119,25 +121,6 @@ const EagleFolderSchema: z.ZodType<EagleFolder> = z.lazy(() =>
   }),
 );
 
-const EagleCommentSchema = z.object({
-  id: z.string().optional().catch(undefined),
-  x: z.number().optional().catch(undefined),
-  y: z.number().optional().catch(undefined),
-  width: z.number().optional().catch(undefined),
-  height: z.number().optional().catch(undefined),
-  w: z.number().optional().catch(undefined),
-  h: z.number().optional().catch(undefined),
-  annotation: z.string().optional().catch(undefined),
-  text: z.string().optional().catch(undefined),
-});
-
-const EagleVideoMarkSchema = z.object({
-  time: z.number().optional().catch(undefined),
-  duration: z.number().optional().catch(undefined),
-  text: z.string().optional().catch(undefined),
-  annotation: z.string().optional().catch(undefined),
-});
-
 const EagleItemSchema = z.object({
   id: z.string().min(1),
   name: z.string().optional().catch(undefined),
@@ -155,16 +138,15 @@ const EagleItemSchema = z.object({
   height: z.number().optional().catch(undefined),
   star: z.number().optional().catch(undefined),
   palettes: z.array(EaglePaletteSchema).optional().catch(undefined),
-  comments: z.array(EagleCommentSchema).optional().catch(undefined),
-  videoMarks: z.array(EagleVideoMarkSchema).optional().catch(undefined),
-  notes: z.array(EagleVideoMarkSchema).optional().catch(undefined),
+  comments: EagleCommentsSchema.optional(),
+  videoMarks: EagleVideoNotesSchema.optional(),
+  notes: EagleVideoNotesSchema.optional(),
 });
 type EagleItem = z.infer<typeof EagleItemSchema>;
 
 const EaglePackSchema = z.object({
   images: z.array(EagleItemSchema).default([]),
   folder: EagleFolderSchema.optional().catch(undefined),
-  folders: z.array(EagleFolderSchema).optional().catch(undefined),
 });
 
 const EagleLibraryHeaderSchema = z.object({
@@ -255,7 +237,11 @@ const runtime: EaglePackageImportRuntime = {
     const input: ManualSaveInput = {
       title: metadata.name?.trim() || basename(mediaPaths[0] ?? metadata.id),
       url: metadata.url?.trim() || null,
-      note: metadata.annotation?.trim() || null,
+      note: foldAnnotationsIntoNotes(
+        metadata.annotation?.trim() || null,
+        metadata.comments,
+        metadata.videoMarks ?? metadata.notes,
+      ),
       tags: metadata.tags ?? [],
       filePaths: mediaPaths,
       thumbnailPath:
@@ -264,12 +250,6 @@ const runtime: EaglePackageImportRuntime = {
       savedAt: timestampDate(metadata.modificationTime ?? metadata.mtime),
       createdAt: timestampDate(metadata.btime),
       rating: metadata.star,
-      comments: mapEagleComments(
-        metadata.comments,
-        metadata.width,
-        metadata.height,
-      ),
-      videoNotes: mapVideoNotes(metadata.videoMarks ?? metadata.notes),
       dominantColors: (metadata.palettes ?? []).map(eaglePaletteColor),
     };
     if (metadata.width !== undefined) input.width = metadata.width;
@@ -317,23 +297,6 @@ function timestampDate(value: number | undefined): Date | undefined {
   if (value === undefined || !Number.isFinite(value)) return undefined;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? undefined : date;
-}
-
-function mapVideoNotes(
-  marks: z.infer<typeof EagleVideoMarkSchema>[] | undefined,
-) {
-  return (marks ?? [])
-    .map((mark) => {
-      const text = (mark.text ?? mark.annotation ?? "").trim();
-      return text
-        ? {
-            id: ulid(),
-            timeSec: mark.time ?? mark.duration ?? 0,
-            text,
-          }
-        : null;
-    })
-    .filter((note): note is NonNullable<typeof note> => note !== null);
 }
 
 function safeSegment(value: string): string {
@@ -679,9 +642,7 @@ async function parsePackage(
   if (metadataById.size === 0)
     throw new Error("The selected source is not an Eagle package.");
 
-  let folderNodes = flattenFolders(
-    pack?.folder ? [pack.folder] : (pack?.folders ?? []),
-  );
+  let folderNodes = flattenFolders(pack?.folder ? [pack.folder] : []);
   if (folderNodes.length === 0) {
     const libraryHeaders = files.filter(
       (file) =>
@@ -867,11 +828,6 @@ function eagleMetadata(item: EaglePackageExportItem): EagleItem {
     height: item.save.height ?? undefined,
     star: item.save.rating ?? undefined,
     palettes: item.save.dominantColors ?? [],
-    comments: item.save.comments,
-    videoMarks: item.save.videoNotes?.map((note) => ({
-      time: note.timeSec,
-      text: note.text,
-    })),
   };
 }
 

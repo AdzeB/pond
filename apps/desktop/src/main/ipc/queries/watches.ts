@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { OkFailure } from "../../../shared/query-contracts-shared";
 import { acquire } from "../../core/pipeline/rate-governor";
 import { isSyncing } from "../../core/sync";
 import { listAccountsForSource } from "../../core/sync/accounts";
@@ -21,6 +22,8 @@ import {
   StringParam,
   TrimmedTextParam,
 } from "./params";
+
+const WATCH_NOT_FOUND: OkFailure = { ok: false, error: "Watch not found." };
 
 export const watchesQueries = {
   async "watches.list"() {
@@ -117,7 +120,7 @@ export const watchesQueries = {
     z.object({ watchId: StringParam, label: TrimmedTextParam }),
     async (params) => {
       const watch = await patchWatch(params.watchId, { label: params.label });
-      return { ok: watch !== null, watch };
+      return watch ? { ok: true as const, watch } : WATCH_NOT_FOUND;
     },
   ),
 
@@ -125,9 +128,9 @@ export const watchesQueries = {
     z.object({ watchId: StringParam }),
     async (params) => {
       const watch = await getWatch(params.watchId);
-      if (!watch) return { ok: false };
+      if (!watch) return WATCH_NOT_FOUND;
       await removeWatch(params.watchId);
-      return { ok: true };
+      return { ok: true as const };
     },
   ),
 } satisfies QueryHandlerMap;

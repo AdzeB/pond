@@ -7,7 +7,10 @@ import {
 } from "node:fs";
 import { stat } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
+import { app } from "electron";
+import log from "electron-log/main.js";
 import { z } from "zod";
+import { writeLibraryPointer } from "../lib/library-pointer";
 import { readLibraryIdentity } from "./library-identity";
 
 const RecentLibrariesSchema = z.array(
@@ -46,6 +49,18 @@ export function recordRecentLibrary(
     ...previous.filter((entry) => entry.path !== normalized),
   ].slice(0, 12);
   writeHistory(file, history);
+}
+
+export function commitLibraryPointer(absPath: string): void {
+  writeLibraryPointer(absPath);
+  try {
+    recordRecentLibrary(
+      join(app.getPath("userData"), "recent-libraries.json"),
+      absPath,
+    );
+  } catch (error) {
+    log.warn("Could not record the recent library", error);
+  }
 }
 
 export function setRecentLibraryIcon(

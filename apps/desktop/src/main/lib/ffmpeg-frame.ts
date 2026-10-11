@@ -17,6 +17,8 @@ export interface ExtractedFrame {
 
 export interface ExtractedFrames {
   frames: Array<Omit<ExtractedFrame, "cleanup">>;
+  timestamps: number[];
+  durationSec: number;
   cleanup: () => Promise<void>;
 }
 
@@ -30,6 +32,19 @@ export function sampleFrameTimestamps(
   return Array.from({ length: count }, (_, index) =>
     Number((((index + 1) * durationSec) / (count + 1)).toFixed(3)),
   );
+}
+
+export function embeddingFrameTimestamps(
+  durationSec: number,
+  maxFrames = 32,
+): number[] {
+  if (!Number.isFinite(durationSec) || durationSec <= 0) return [];
+  const cappedDuration = Math.min(durationSec, 32);
+  const count = Math.min(
+    Math.max(1, Math.floor(maxFrames)),
+    Math.max(1, Math.ceil(cappedDuration)),
+  );
+  return Array.from({ length: count }, (_, index) => index);
 }
 
 export async function extractFirstFrame(
@@ -53,6 +68,7 @@ export async function extractFrameAt(
 export async function extractSampledFrames(
   videoPath: string,
   maxFrames = 12,
+  strategy: "spread" | "embedding" = "spread",
 ): Promise<ExtractedFrames | null> {
   const { ffmpeg } = binariesAvailable();
   if (!ffmpeg) {
@@ -60,11 +76,14 @@ export async function extractSampledFrames(
     return null;
   }
   const durationSec = await probeDuration(ffmpeg, videoPath);
-  const timestamps = sampleFrameTimestamps(
-    durationSec ?? Number.NaN,
-    maxFrames,
-  );
+  if (durationSec == null) return null;
+  const timestamps =
+    strategy === "embedding"
+      ? embeddingFrameTimestamps(durationSec, maxFrames)
+      : sampleFrameTimestamps(durationSec, maxFrames);
   if (timestamps.length === 0) return null;
+  const sampledDurationSec =
+    strategy === "embedding" ? Math.min(durationSec, 32) : durationSec;
 
   let outputDir: string | null = null;
   let cleanupCalled = false;
@@ -131,7 +150,12 @@ export async function extractSampledFrames(
       await cleanup();
       return null;
     }
-    return { frames, cleanup };
+    return {
+      frames,
+      timestamps,
+      durationSec: sampledDurationSec,
+      cleanup,
+    };
   } catch (err) {
     log.warn("[pond ffmpeg-frame] sample extraction error", videoPath, err);
     await cleanup();

@@ -2,6 +2,10 @@ import { type AgentChat, agentChats, agentMessages } from "@pond/schema/db";
 import { asc, desc, eq } from "drizzle-orm";
 import { ulid } from "ulid";
 import type { AssistantMetadata } from "../../../shared/assistant";
+import type {
+  OkResult,
+  OkSuccess,
+} from "../../../shared/query-contracts-shared";
 import { getDb } from "../../db";
 import { chatTitle } from "./chat-title";
 
@@ -40,20 +44,19 @@ export async function createChat(): Promise<
   return created;
 }
 
-export async function renameChat(
-  id: string,
-  title: string,
-): Promise<{ ok: boolean }> {
+export async function renameChat(id: string, title: string): Promise<OkResult> {
   const db = await getDb();
   const rows = await db
     .update(agentChats)
     .set({ title, updatedAt: new Date() })
     .where(eq(agentChats.id, id))
     .returning({ id: agentChats.id });
-  return { ok: rows.length > 0 };
+  return rows.length > 0
+    ? { ok: true }
+    : { ok: false, error: "This chat no longer exists." };
 }
 
-export async function deleteChat(id: string): Promise<{ ok: boolean }> {
+export async function deleteChat(id: string): Promise<OkSuccess> {
   const db = await getDb();
   await db.delete(agentMessages).where(eq(agentMessages.chatId, id));
   await db.delete(agentChats).where(eq(agentChats.id, id));

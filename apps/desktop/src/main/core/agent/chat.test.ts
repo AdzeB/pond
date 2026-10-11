@@ -1,7 +1,6 @@
 import { DEFAULT_PREFS } from "@pond/schema/db";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { agentModelOptionsKey } from "../../../shared/agent-model-options";
 import type {
   AssistantMessage,
   AssistantQuestion,
@@ -51,24 +50,35 @@ const dependencies: ChatDependencies = {
   loadModelCatalog: async () => ({
     fetchedAt: 0,
     models: [
-      "gpt-5.6-sol",
-      "gpt-visible",
-      "language-model",
-      "vision-model",
-    ].map((id) => ({
-      id: `openai/${id}`,
-      name: id,
-      type: "language",
-      context_window: 256_000,
-      tags: ["fast"],
-      reasoning_options: [
-        {
-          type: "effort",
-          values: ["low", "medium", "high"],
-        },
-      ],
-    })),
+      ...["gpt-5.6-sol", "gpt-visible", "language-model"].map((id) => ({
+        id: `openai/${id}`,
+        name: id,
+        type: "language",
+        context_window: 256_000,
+        tags: ["fast"],
+        reasoning_options: [
+          {
+            type: "effort",
+            values: ["low", "medium", "high"],
+          },
+        ],
+      })),
+      ...["vision-model", "saved-model"].map((id) => ({
+        id: `openai/${id}`,
+        name: id,
+        type: "language",
+        context_window: 256_000,
+        tags: ["vision"],
+        reasoning_options: [
+          {
+            type: "effort",
+            values: ["low", "medium", "high"],
+          },
+        ],
+      })),
+    ],
   }),
+  listProviderModels: async () => ({ ok: true, models: [] }),
   libraryContext: () => ({
     onToolExecutionStart: () => {},
     onToolExecutionEnd: () => {},
@@ -303,7 +313,10 @@ describe("Assistant requests", () => {
     });
     const result = sendMessage(request);
     await ready;
-    expect(stopMessage("chat", "different-request")).toEqual({ ok: false });
+    expect(stopMessage("chat", "different-request")).toEqual({
+      ok: false,
+      error: "This reply already finished.",
+    });
     expect(
       await sendMessage({
         ...request,
@@ -324,7 +337,10 @@ describe("Assistant requests", () => {
           z.object({ type: z.string() }).parse(chunk).type === "done",
       ),
     ).toBe(false);
-    expect(stopMessage("chat", "request")).toEqual({ ok: false });
+    expect(stopMessage("chat", "request")).toEqual({
+      ok: false,
+      error: "This reply already finished.",
+    });
   });
 });
 
@@ -382,56 +398,140 @@ it("rejects stale or foreign question replies before appending", async () => {
   expect(mock.complete).not.toHaveBeenCalled();
 });
 
-it("keeps Language and Vision models independent within the same provider", async () => {
+it("sends Save images to a selected local vision model", async () => {
   mock.prefs.agent = {
     ...mock.prefs.agent,
-    modelIds: { openai: "language-model" },
-    visionModel: "openai",
-    visionModelId: "vision-model",
-    modelOptions: {
-      [agentModelOptionsKey("openai", "vision-model")]: {
-        fast: false,
-        context: 64_000,
-        reasoning: "low",
-      },
-    },
+    enabledKeys: { ollama: true },
+    languageModel: "ollama",
+    modelIds: { ollama: "gemma4:e2b" },
   };
-  const snapshotted = {
-    ...request,
-    controls: {
-      fast: true,
-      contextTokens: 256_000,
-      reasoning: "high" as const,
+  const image = { mimeType: "image/png", data: "test-image" };
+  const result = await send(
+    {
+      ...request,
+      provider: "ollama",
+      modelId: "gemma4:e2b",
+      attachmentIds: ["image-save"],
     },
-  };
-  await send(snapshotted, {
-    ...dependencies,
-    imagesForSaves: async () => [{ mimeType: "image/png", data: "test-image" }],
-  });
-  expect(mock.complete.mock.calls.at(-1)?.[0].model).toBe("vision-model");
-  expect(mock.complete.mock.calls.at(-1)?.[0].controls).toEqual({
-    fast: false,
-    contextTokens: 64_000,
-    reasoning: "low",
-  });
-  await sendMessage({ ...snapshotted, requestId: "text-request" });
-  expect(mock.complete.mock.calls.at(-1)?.[0].model).toBe("language-model");
-  expect(mock.complete.mock.calls.at(-1)?.[0].controls).toEqual(
-    snapshotted.controls,
+    {
+      ...dependencies,
+      imagesForSaves: async () => [image],
+      listProviderModels: async () => ({
+        ok: true,
+        models: [
+          {
+            id: "gemma4:e2b",
+            name: "Gemma 4 E2B",
+            modelCapabilities: {
+              text: true,
+              vision: true,
+              audio: false,
+              tools: true,
+            },
+          },
+        ],
+      }),
+    },
+  );
+
+  expect(result).toMatchObject({ accepted: true });
+  expect(result.error).toBeUndefined();
+  expect(mock.complete).toHaveBeenCalledWith(
+    expect.objectContaining({
+      provider: "ollama",
+      model: "gemma4:e2b",
+      images: [image],
+    }),
   );
 });
 
-it("preserves legacy Vision model fallback", async () => {
+it("rejects Save images before transport for a selected text-only local model", async () => {
   mock.prefs.agent = {
     ...mock.prefs.agent,
-    modelIds: { openai: "saved-model" },
-    visionModel: "openai",
+    enabledKeys: { ollama: true },
+    languageModel: "ollama",
+    modelIds: { ollama: "llama3.2" },
   };
-  await send(request, {
-    ...dependencies,
-    imagesForSaves: async () => [{ mimeType: "image/png", data: "test-image" }],
-  });
-  expect(mock.complete.mock.calls.at(-1)?.[0].model).toBe("saved-model");
+  const result = await send(
+    {
+      ...request,
+      provider: "ollama",
+      modelId: "llama3.2",
+      attachmentIds: ["image-save"],
+    },
+    {
+      ...dependencies,
+      imagesForSaves: async () => [
+        { mimeType: "image/png", data: "test-image" },
+      ],
+      listProviderModels: async () => ({
+        ok: true,
+        models: [
+          {
+            id: "llama3.2",
+            name: "Llama 3.2",
+            modelCapabilities: {
+              text: true,
+              vision: false,
+              audio: false,
+              tools: true,
+            },
+          },
+        ],
+      }),
+    },
+  );
+
+  expect(result.error).toBe("Choose a vision model in Settings Models.");
+  expect(mock.complete).not.toHaveBeenCalled();
+});
+
+it("rejects local image files before transport for a selected text-only model", async () => {
+  mock.prefs.agent = {
+    ...mock.prefs.agent,
+    enabledKeys: { ollama: true },
+    languageModel: "ollama",
+    modelIds: { ollama: "llama3.2" },
+  };
+  mock.loadFiles.mockResolvedValue([
+    {
+      id: "image-file",
+      name: "reference.png",
+      mediaType: "image/png",
+      size: 4,
+      data: Buffer.from("test"),
+    },
+  ]);
+
+  const result = await send(
+    {
+      ...request,
+      provider: "ollama",
+      modelId: "llama3.2",
+      fileAttachmentIds: ["image-file"],
+    },
+    {
+      ...dependencies,
+      listProviderModels: async () => ({
+        ok: true,
+        models: [
+          {
+            id: "llama3.2",
+            name: "Llama 3.2",
+            modelCapabilities: {
+              text: true,
+              vision: false,
+              audio: false,
+              tools: true,
+            },
+          },
+        ],
+      }),
+    },
+  );
+
+  expect(result.error).toBe("Choose a vision model in Settings Models.");
+  expect(mock.complete).not.toHaveBeenCalled();
 });
 
 it("gives the next reply the current review outcome and created IDs", async () => {

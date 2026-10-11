@@ -9,9 +9,9 @@ import { and, eq } from "drizzle-orm";
 import { session } from "electron";
 import mime from "mime-types";
 import { getDb } from "../db";
-import { itemDir } from "../paths";
+import { saveDir } from "../paths";
 import { createManualSave, importedFilesComplete } from "./manual-import";
-import { writePartitionCookies } from "./refresh/scrape-window/session";
+import { writePartitionCookies } from "./refresh/harvest-window/session";
 
 export async function captureAsset(input: {
   url: string;
@@ -29,7 +29,7 @@ export async function captureAsset(input: {
     .get();
   if (
     existing &&
-    (await importedFilesComplete(existing, itemDir(existing.id), 1))
+    (await importedFilesComplete(existing, saveDir(existing.id), 1))
   )
     return { id: existing.id, duplicate: true };
   const directory = await mkdtemp(join(tmpdir(), "pond-asset-"));
@@ -93,8 +93,7 @@ export async function captureAsset(input: {
       note: input.metadata.notes,
       rating: input.metadata.rating,
     });
-    if (!result.ok || !result.id)
-      throw new Error(result.error || "The image could not be saved.");
+    if (!result.ok) throw new Error(result.error);
     return { id: result.id, duplicate: Boolean(result.skipped) };
   } finally {
     await Promise.allSettled([

@@ -9,7 +9,7 @@ import {
   harvestInstagramLikedList,
   harvestSourceList,
   harvestYoutubeLikedList,
-} from "../refresh/scrape-window";
+} from "../refresh/harvest-window";
 import { resolveAccountHandle } from "./account-key";
 import { partitionForAccount } from "./accounts";
 import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";

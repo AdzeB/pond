@@ -10,7 +10,7 @@ import {
 import { isGroup, type Query } from "@pond/schema/filters/types";
 import { inArray } from "drizzle-orm";
 import { getDb } from "../db";
-import { itemDir } from "../paths";
+import { saveDir } from "../paths";
 import { exportEaglePackage } from "./eagle-package";
 import { exportFiles } from "./export-files";
 import { runLibraryTransfer } from "./library-transfers";
@@ -153,7 +153,7 @@ async function exportSelection(
     folders: allFolders.filter((folder) => included.has(folder.id)),
     items: rows.map((save) => ({
       save,
-      directory: itemDir(save.id),
+      directory: saveDir(save.id),
       folderIds: memberships
         .filter((membership) => membership.saveId === save.id)
         .map((membership) => membership.folderId),

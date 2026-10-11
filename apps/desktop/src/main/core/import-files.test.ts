@@ -54,6 +54,7 @@ describe("hierarchy-preserving file import", () => {
       { paths: [tree], tags: ["inspiration"], folderIds: ["destination"] },
       runtime,
     );
+    if (!result.ok) throw new Error(result.error);
     expect(result.ids).toHaveLength(2);
     expect(folders).toEqual([
       { id: "folder-0", name: "Design", parentId: "destination" },
@@ -75,6 +76,7 @@ describe("hierarchy-preserving file import", () => {
     const { tree, folders, files, runtime } = await fixture();
     const path = join(tree, "reference.png");
     const result = await importFiles({ paths: [path, path] }, runtime);
+    if (!result.ok) throw new Error(result.error);
     expect(result.ids).toHaveLength(1);
     expect(folders).toEqual([]);
     expect(files[0]?.folderIds).toEqual([]);
@@ -109,7 +111,7 @@ describe("hierarchy-preserving file import", () => {
       { paths: [missing, join(tree, "reference.png")] },
       runtime,
     );
-    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.error);
     expect(result.ids).toHaveLength(1);
     expect(result.failedPaths).toEqual([missing]);
   });

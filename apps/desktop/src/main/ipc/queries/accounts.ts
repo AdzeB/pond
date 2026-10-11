@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { isAccountConnected } from "../../core/refresh/scrape-window";
+import type { OkFailure } from "../../../shared/query-contracts-shared";
+import { isAccountConnected } from "../../core/refresh/harvest-window";
 import { isSyncing } from "../../core/sync";
 import {
   getAccount,
@@ -15,6 +16,8 @@ import {
   StringParam,
   TrimmedTextParam,
 } from "./params";
+
+const ACCOUNT_NOT_FOUND: OkFailure = { ok: false, error: "Account not found." };
 
 export const accountsQueries = {
   async "accounts.list"() {
@@ -44,8 +47,9 @@ export const accountsQueries = {
         avatarUrl: null,
         avatarCheckedAt: null,
       });
-      if (account) fillMissingAvatars();
-      return { ok: account !== null, account };
+      if (!account) return ACCOUNT_NOT_FOUND;
+      fillMissingAvatars();
+      return { ok: true as const, account };
     },
   ),
 
@@ -55,7 +59,7 @@ export const accountsQueries = {
       const account = await patchAccount(params.accountId, {
         label: params.label,
       });
-      return { ok: account !== null, account };
+      return account ? { ok: true as const, account } : ACCOUNT_NOT_FOUND;
     },
   ),
 
@@ -63,9 +67,9 @@ export const accountsQueries = {
     z.object({ accountId: StringParam }),
     async (params) => {
       const account = await getAccount(params.accountId);
-      if (!account) return { ok: false };
+      if (!account) return ACCOUNT_NOT_FOUND;
       await removeAccount(params.accountId);
-      return { ok: true };
+      return { ok: true as const };
     },
   ),
 } satisfies QueryHandlerMap;

@@ -1,6 +1,8 @@
 import { SOURCES } from "@pond/schema/db";
 import { syncConfigFor } from "@pond/schema/sources";
 import { z } from "zod";
+import type { OkFailure } from "../../../shared/query-contracts-shared";
+import { QueueAttemptSchema } from "../../../shared/queue-contracts";
 import {
   createRetryGeneration,
   listQueueGenerations,
@@ -34,6 +36,23 @@ const CountRowSchema = z.object({
 });
 
 const StringId = z.string().trim().min(1);
+
+const AttemptPayloadSchema = z
+  .string()
+  .transform((text, ctx) => {
+    try {
+      return JSON.parse(text);
+    } catch {
+      ctx.addIssue({ code: "custom", message: "Malformed attempt payload." });
+      return z.NEVER;
+    }
+  })
+  .pipe(z.json());
+
+const GENERATION_FINISHED: OkFailure = {
+  ok: false,
+  error: "This queue run has already finished.",
+};
 
 export const queueQueries = {
   "queue.summary": query(z.object({}), () => readQueueSummary()),
@@ -91,24 +110,7 @@ export const queueQueries = {
     async ({ saveId, limit }) => {
       const db = await getDb();
       return z
-        .array(
-          z.object({
-            id: z.number(),
-            ts: z.number(),
-            kind: z.enum([
-              "pipeline.task.completed",
-              "pipeline.task.attempt",
-              "pipeline.source-gate.transition",
-            ]),
-            op: z.string().nullable(),
-            outcome: z.string(),
-            durationMs: z.number().nullable(),
-            attempts: z.number().nullable(),
-            errorName: z.string().nullable(),
-            errorMessage: z.string().nullable(),
-            payload: z.unknown(),
-          }),
-        )
+        .array(QueueAttemptSchema.extend({ payload: AttemptPayloadSchema }))
         .parse(
           db.$raw
             .prepare(
@@ -136,14 +138,7 @@ export const queueQueries = {
               ORDER BY ts DESC, id DESC
               LIMIT ?`,
             )
-            .all(saveId, saveId, limit)
-            .map((row) => {
-              const parsed = z
-                .object({ payload: z.string() })
-                .passthrough()
-                .parse(row);
-              return { ...parsed, payload: JSON.parse(parsed.payload) };
-            }),
+            .all(saveId, saveId, limit),
         );
     },
   ),
@@ -152,13 +147,17 @@ export const queueQueries = {
     z.object({ ids: z.array(StringId).optional() }),
     ({ ids }) => createRetryGeneration(ids),
   ),
-  "queue.generation.pause": query(
-    z.object({ id: StringId }),
-    async ({ id }) => ({ ok: await setQueueGenerationPaused(id, true) }),
+  "queue.generation.pause": query(z.object({ id: StringId }), async ({ id }) =>
+    (await setQueueGenerationPaused(id, true))
+      ? { ok: true as const }
+      : GENERATION_FINISHED,
   ),
   "queue.generation.resume": query(
     z.object({ id: StringId }),
-    async ({ id }) => ({ ok: await setQueueGenerationPaused(id, false) }),
+    async ({ id }) =>
+      (await setQueueGenerationPaused(id, false))
+        ? { ok: true as const }
+        : GENERATION_FINISHED,
   ),
   "queue.generation.cancel": query(
     z.object({ id: StringId }),
