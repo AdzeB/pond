@@ -1,4 +1,4 @@
-import { IconXmarkOutline18 } from "@pond/icons/outline/18";
+import { IconXmark } from "@pond/icons";
 import { Button } from "@pond/ui";
 import styles from "./styles.module.css";
 
@@ -25,7 +25,7 @@ export function FramelessWindowChrome({
         aria-label={closeLabel}
         onClick={onClose}
       >
-        <IconXmarkOutline18 />
+        <IconXmark />
       </Button>
     </div>
   );

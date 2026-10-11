@@ -1,4 +1,4 @@
-import { IconCircleCheckFill12 } from "@pond/icons/fill/12";
+import { IconCircleCheckFill } from "@pond/icons";
 import type { Source } from "@pond/schema/db";
 import { Button, Dialog } from "@pond/ui";
 import {
@@ -243,7 +243,7 @@ export function WatchTargetSection() {
         <ul className={styles.list}>
           {kinds.map((kind) => (
             <li key={kind.label} className={styles.kind}>
-              <IconCircleCheckFill12 className={styles.check} />
+              <IconCircleCheckFill size={12} className={styles.check} />
               <span>{kind.label}</span>
               <span className={styles.example}>{kind.example}</span>
             </li>

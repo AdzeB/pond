@@ -1,4 +1,4 @@
-import { IconPlusOutline18 } from "@pond/icons/outline/18";
+import { IconPlus } from "@pond/icons";
 import styles from "./styles.module.css";
 
 interface FaqItem {
@@ -58,7 +58,7 @@ export function Faqs() {
         <details key={item.value} className={styles.item}>
           <summary className={styles.trigger}>
             <span>{item.question}</span>
-            <IconPlusOutline18 className={styles.plus} />
+            <IconPlus className={styles.plus} />
           </summary>
           <div className={styles.panel}>
             <p className={styles.answer}>{item.answer}</p>

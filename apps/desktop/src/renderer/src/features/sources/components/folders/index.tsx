@@ -1,4 +1,4 @@
-import { IconFolderOpenFill18 } from "@pond/icons/fill/18";
+import { IconFolderOpenFill } from "@pond/icons";
 import { Button, DataTable, Empty, type TableColumn } from "@pond/ui";
 import { useMemo, useState } from "react";
 import {
@@ -156,7 +156,7 @@ export function FoldersPage() {
             <div className={styles.empty}>
               <Empty.Root>
                 <Empty.Media>
-                  <IconFolderOpenFill18 />
+                  <IconFolderOpenFill />
                 </Empty.Media>
                 <Empty.Title>No folders yet</Empty.Title>
                 <Empty.Description>

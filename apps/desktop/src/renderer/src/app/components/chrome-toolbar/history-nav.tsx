@@ -1,7 +1,4 @@
-import {
-  IconArrowLeftOutline18,
-  IconArrowRightOutline18,
-} from "@pond/icons/outline/18";
+import { IconArrowLeft, IconArrowRight } from "@pond/icons";
 import { Button } from "@pond/ui";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -44,7 +41,7 @@ export function ChromeHistoryNav() {
           else router.history.back();
         }}
       >
-        <IconArrowLeftOutline18 />
+        <IconArrowLeft />
       </Button>
       <Button
         icon
@@ -58,7 +55,7 @@ export function ChromeHistoryNav() {
           else router.history.forward();
         }}
       >
-        <IconArrowRightOutline18 />
+        <IconArrowRight />
       </Button>
     </div>
   );

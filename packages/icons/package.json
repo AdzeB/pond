@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "Pond's icon barrel: Nucleo UI packages plus custom social/brand marks.",
+  "description": "Pond icons: one scalable outline and fill drawing per glyph, plus social and brand marks.",
   "license": "MIT",
   "author": {
     "name": "Raphael Salaja",
@@ -19,28 +19,21 @@
     "directory": "packages/icons"
   },
   "exports": {
-    "./fill/12": "./fill/12/index.ts",
-    "./fill/18": "./fill/18/index.ts",
-    "./outline/12": "./outline/12/index.ts",
-    "./outline/18": "./outline/18/index.ts",
+    ".": "./index.ts",
+    "./manifest": "./manifest.ts",
     "./social-media": "./social-media/index.ts",
     "./types": "./types.ts"
   },
   "scripts": {
+    "generate": "node scripts/build.mjs",
+    "generate:check": "node scripts/build.mjs --check",
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
     "react": "catalog:"
   },
-  "dependencies": {
-    "nucleo-ui-fill-12": "^1.5.1",
-    "nucleo-ui-fill-18": "^1.5.1",
-    "nucleo-ui-outline-12": "^1.5.1",
-    "nucleo-ui-outline-18": "^1.5.1"
-  },
   "devDependencies": {
     "@types/react": "catalog:",
-    "react": "catalog:",
-    "react-dom": "catalog:"
+    "react": "catalog:"
   }
 }

@@ -2,28 +2,28 @@ import { TOGGLE_LINK_COMMAND } from "@lexical/link";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { useLexicalFocusManagerRef } from "@lexical/react/useLexicalFocusManagerRef";
 import { mergeRegister } from "@lexical/utils";
-import { IconChevronDownOutline12 } from "@pond/icons/outline/12";
 import {
-  IconArrowUpRightOutline18,
-  IconBlockquoteOutline18,
-  IconBulletListOutline18,
-  IconCaretMinimizeOutline18,
-  IconChatBubblePenOutline18,
-  IconCheckListOutline18,
-  IconCode2Outline18,
-  IconCodeOutline18,
-  IconHeading1Outline18,
-  IconHeading2Outline18,
-  IconHeading3Outline18,
-  IconHeading4Outline18,
-  IconLink2Outline18,
-  IconOrderedListOutline18,
-  IconTextBoldOutline18,
-  IconTextItalicOutline18,
-  IconTextStrikethroughOutline18,
-  IconTextUnderlineOutline18,
-  IconTrash2Outline18,
-} from "@pond/icons/outline/18";
+  IconArrowUpRight,
+  IconBlockquote,
+  IconBulletList,
+  IconCaretMinimize,
+  IconChatBubblePen,
+  IconCheckList,
+  IconChevronDown,
+  IconCode,
+  IconCode2,
+  IconHeading1,
+  IconHeading2,
+  IconHeading3,
+  IconHeading4,
+  IconLink2,
+  IconOrderedList,
+  IconTextBold,
+  IconTextItalic,
+  IconTextStrikethrough,
+  IconTextUnderline,
+  IconTrash,
+} from "@pond/icons";
 import { Button, Keyboard, Menu, Popover, Toolbar, Tooltip } from "@pond/ui";
 import {
   $getSelection,
@@ -112,25 +112,25 @@ const STYLES: {
     block: "h1",
     label: "Heading 1",
     shortcut: ["⌘", "⌥", "1"],
-    Icon: IconHeading1Outline18,
+    Icon: IconHeading1,
   },
   {
     block: "h2",
     label: "Heading 2",
     shortcut: ["⌘", "⌥", "2"],
-    Icon: IconHeading2Outline18,
+    Icon: IconHeading2,
   },
   {
     block: "h3",
     label: "Heading 3",
     shortcut: ["⌘", "⌥", "3"],
-    Icon: IconHeading3Outline18,
+    Icon: IconHeading3,
   },
   {
     block: "h4",
     label: "Heading 4",
     shortcut: ["⌘", "⌥", "4"],
-    Icon: IconHeading4Outline18,
+    Icon: IconHeading4,
   },
 ];
 
@@ -140,9 +140,9 @@ function StyleGlyph({ block }: { block: NoteBlock }) {
 }
 
 function ListGlyph({ block }: { block: NoteBlock }) {
-  if (block === "number") return <IconOrderedListOutline18 />;
-  if (block === "check") return <IconCheckListOutline18 />;
-  return <IconBulletListOutline18 />;
+  if (block === "number") return <IconOrderedList />;
+  if (block === "check") return <IconCheckList />;
+  return <IconBulletList />;
 }
 
 const LISTS: {
@@ -155,19 +155,19 @@ const LISTS: {
     block: "bullet",
     label: "Bulleted List",
     shortcut: ["⌘", "⇧", "8"],
-    icon: <IconBulletListOutline18 />,
+    icon: <IconBulletList />,
   },
   {
     block: "number",
     label: "Numbered List",
     shortcut: ["⌘", "⇧", "9"],
-    icon: <IconOrderedListOutline18 />,
+    icon: <IconOrderedList />,
   },
   {
     block: "check",
     label: "Checklist",
     shortcut: ["⌘", "⇧", "7"],
-    icon: <IconCheckListOutline18 />,
+    icon: <IconCheckList />,
   },
 ];
 
@@ -349,7 +349,7 @@ export function FormatToolbar() {
                       if (openHref) void window.pond.openExternal(openHref);
                     }}
                   >
-                    <IconArrowUpRightOutline18 />
+                    <IconArrowUpRight />
                   </FormatButton>
                   <FormatButton
                     label="Remove Link"
@@ -361,7 +361,7 @@ export function FormatToolbar() {
                       applyHref("");
                     }}
                   >
-                    <IconTrash2Outline18 />
+                    <IconTrash />
                   </FormatButton>
                 </Toolbar.Root>
               ) : (
@@ -384,7 +384,7 @@ export function FormatToolbar() {
                         }
                       >
                         <StyleGlyph block={formats.block} />
-                        <IconChevronDownOutline12 />
+                        <IconChevronDown size={12} />
                       </Toolbar.Button>
                     </Tooltip>
                     <Menu.Portal>
@@ -418,7 +418,7 @@ export function FormatToolbar() {
                     pressed={formats.bold}
                     onClick={() => toggle("bold")}
                   >
-                    <IconTextBoldOutline18 />
+                    <IconTextBold />
                   </FormatButton>
                   <FormatButton
                     label="Italic"
@@ -426,7 +426,7 @@ export function FormatToolbar() {
                     pressed={formats.italic}
                     onClick={() => toggle("italic")}
                   >
-                    <IconTextItalicOutline18 />
+                    <IconTextItalic />
                   </FormatButton>
                   <FormatButton
                     label="Strikethrough"
@@ -434,7 +434,7 @@ export function FormatToolbar() {
                     pressed={formats.strikethrough}
                     onClick={() => toggle("strikethrough")}
                   >
-                    <IconTextStrikethroughOutline18 />
+                    <IconTextStrikethrough />
                   </FormatButton>
                   <FormatButton
                     label="Underline"
@@ -442,7 +442,7 @@ export function FormatToolbar() {
                     pressed={formats.underline}
                     onClick={() => toggle("underline")}
                   >
-                    <IconTextUnderlineOutline18 />
+                    <IconTextUnderline />
                   </FormatButton>
                   <FormatButton
                     label="Link"
@@ -450,7 +450,7 @@ export function FormatToolbar() {
                     pressed={Boolean(formats.href)}
                     onClick={enterLink}
                   >
-                    <IconLink2Outline18 />
+                    <IconLink2 />
                   </FormatButton>
                   <FormatButton
                     label="Quote"
@@ -463,7 +463,7 @@ export function FormatToolbar() {
                       )
                     }
                   >
-                    <IconBlockquoteOutline18 />
+                    <IconBlockquote />
                   </FormatButton>
                   <FormatButton
                     label="Collapse"
@@ -471,7 +471,7 @@ export function FormatToolbar() {
                     pressed={formats.collapse}
                     onClick={() => applyNoteBlock(editor, "collapse")}
                   >
-                    <IconCaretMinimizeOutline18 />
+                    <IconCaretMinimize />
                   </FormatButton>
                   <FormatButton
                     label="Inline Code"
@@ -479,7 +479,7 @@ export function FormatToolbar() {
                     pressed={formats.code}
                     onClick={() => toggle("code")}
                   >
-                    <IconCodeOutline18 />
+                    <IconCode />
                   </FormatButton>
                   <FormatButton
                     label="Code Block"
@@ -492,7 +492,7 @@ export function FormatToolbar() {
                       )
                     }
                   >
-                    <IconCode2Outline18 />
+                    <IconCode2 />
                   </FormatButton>
                   <Menu.Root>
                     <Tooltip label="List" side="top">
@@ -509,7 +509,7 @@ export function FormatToolbar() {
                         }
                       >
                         <ListGlyph block={formats.block} />
-                        <IconChevronDownOutline12 />
+                        <IconChevronDown size={12} />
                       </Toolbar.Button>
                     </Tooltip>
                     <Menu.Portal>
@@ -540,7 +540,7 @@ export function FormatToolbar() {
                     label="Assistant"
                     onClick={() => saveLibraryBridge.setAgentOpen(true)}
                   >
-                    <IconChatBubblePenOutline18 />
+                    <IconChatBubblePen />
                   </FormatButton>
                 </Toolbar.Root>
               )}

@@ -1,5 +1,4 @@
-import { IconBookmarkFill18 } from "@pond/icons/fill/18";
-import { IconMagnifierOutline12 as Magnifier } from "@pond/icons/outline/12";
+import { IconBookmarkFill, IconMagnifier as Magnifier } from "@pond/icons";
 import { Accordion, Button, DataTable, Empty, Input, Settings } from "@pond/ui";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useMemo, useRef } from "react";
@@ -87,7 +86,7 @@ export function TagsSection() {
           <DataTable.Toolbar className={styles.toolbar}>
             <Input.Root className={styles.search}>
               <Input.Icon>
-                <Magnifier />
+                <Magnifier size={12} />
               </Input.Icon>
               <Input.Field
                 value={q}
@@ -158,7 +157,7 @@ export function TagsSection() {
             ) : total === 0 ? (
               <Empty.Root>
                 <Empty.Media>
-                  <IconBookmarkFill18 />
+                  <IconBookmarkFill />
                 </Empty.Media>
                 <Empty.Title>No tags yet</Empty.Title>
                 <Empty.Description>

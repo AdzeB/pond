@@ -1,4 +1,4 @@
-import { IconXmarkOutline12 } from "@pond/icons/outline/12";
+import { IconXmark } from "@pond/icons";
 import { Menu } from "@pond/ui";
 import styles from "./styles.module.css";
 
@@ -8,7 +8,7 @@ export function ChoiceIndicator({ excluded }: { excluded?: boolean }) {
       className={styles.excluded}
       render={<span aria-hidden="true" />}
     >
-      <IconXmarkOutline12 />
+      <IconXmark size={12} />
     </Menu.CheckboxItemIndicator>
   ) : (
     <Menu.CheckboxItemIndicator />

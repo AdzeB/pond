@@ -1,10 +1,10 @@
 import {
-  IconClone2Outline18,
-  IconDotsOutline18,
-  IconDownloadOutline18,
-  IconPencilOutline18,
-  IconTrash2Outline18,
-} from "@pond/icons/outline/18";
+  IconCopy,
+  IconDots,
+  IconDownload,
+  IconPencil,
+  IconTrash,
+} from "@pond/icons";
 import { Dialog, Menu, Tooltip } from "@pond/ui";
 import type { AssistantMessage } from "@shared/assistant";
 import { conversationMarkdown } from "@shared/conversation-markdown";
@@ -64,7 +64,7 @@ export function ChatActions({
           aria-label="Chat Actions"
           disabled={disabled || (!chatId && !messages.length)}
         >
-          <IconDotsOutline18 />
+          <IconDots />
         </Menu.Trigger>
       </Tooltip>
       <Menu.Portal>
@@ -74,26 +74,26 @@ export function ChatActions({
               items={[
                 {
                   label: "Rename Chat",
-                  icon: <IconPencilOutline18 />,
+                  icon: <IconPencil />,
                   disabled: disabled || !chatId,
                   onClick: onRename,
                 },
                 {
                   label: "Copy Conversation",
-                  icon: <IconClone2Outline18 />,
+                  icon: <IconCopy />,
                   disabled: disabled || !messages.length,
                   onClick: () => void transfer("copy"),
                 },
                 {
                   label: "Export Markdown",
-                  icon: <IconDownloadOutline18 />,
+                  icon: <IconDownload />,
                   disabled: disabled || !messages.length,
                   onClick: () => void transfer("export"),
                 },
                 { type: "separator" },
                 {
                   label: "Delete Chat",
-                  icon: <IconTrash2Outline18 />,
+                  icon: <IconTrash />,
                   variant: "destructive",
                   disabled: disabled || !chatId,
                   onClick: () => {

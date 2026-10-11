@@ -1,18 +1,18 @@
 import {
-  IconArchiveOutline18,
-  IconArrowRotateClockwiseOutline18,
-  IconClipboardArrowInOutline18,
-  IconClone2Outline18,
-  IconContrastOutline18,
-  IconFileOutline18,
-  IconFocusOutline18,
-  IconGridOutline18,
-  IconImageMinusOutline18,
-  IconImagePlusOutline18,
-  IconMagicWandOutline18,
-  IconMergeOutline18,
-  IconRefreshOutline18,
-} from "@pond/icons/outline/18";
+  IconArchive,
+  IconArrowRotateClockwise,
+  IconClipboardArrowIn,
+  IconContrast,
+  IconCopy,
+  IconFile,
+  IconFocus,
+  IconGrid,
+  IconImageMinus,
+  IconImagePlus,
+  IconMagicWand,
+  IconMerge,
+  IconRefresh,
+} from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import { createElement } from "react";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
@@ -78,7 +78,7 @@ export function buildViewerDisplayItems(
     {
       type: "checkbox",
       label: "Navigator",
-      icon: glyph(IconFocusOutline18),
+      icon: glyph(IconFocus),
       indicator: "check",
       hidden: !visible,
       checked: state.showNavigator,
@@ -87,7 +87,7 @@ export function buildViewerDisplayItems(
     {
       type: "checkbox",
       label: "Grayscale",
-      icon: glyph(IconContrastOutline18),
+      icon: glyph(IconContrast),
       indicator: "check",
       hidden: !visible,
       checked: state.grayscale,
@@ -121,13 +121,13 @@ export function buildDetailItems({
     organization: [
       {
         label: "Find Duplicates",
-        icon: glyph(IconClone2Outline18),
+        icon: glyph(IconCopy),
         hidden: batch,
         onClick: () => saveLibraryBridge.openDuplicateReview(save.id),
       },
       {
         label: "Merge Duplicates",
-        icon: glyph(IconMergeOutline18),
+        icon: glyph(IconMerge),
         hidden: batch,
         onClick: () => saveLibraryBridge.openDuplicateReview(save.id),
       },
@@ -135,7 +135,7 @@ export function buildDetailItems({
     media: [
       {
         label: "Re-analyze Colors",
-        icon: glyph(IconMagicWandOutline18),
+        icon: glyph(IconMagicWand),
         hidden: batch || save.mediaType !== "image",
         onClick: () => {
           void window.pond
@@ -150,7 +150,7 @@ export function buildDetailItems({
       },
       {
         label: "Reset Loop Range",
-        icon: glyph(IconArrowRotateClockwiseOutline18),
+        icon: glyph(IconArrowRotateClockwise),
         hidden: !opened || !isGif,
         onClick: () => {
           const file = save.files[fileIndex ?? 0] ?? save.files[0];
@@ -161,7 +161,7 @@ export function buildDetailItems({
       },
       {
         label: "Set Current Frame as Thumbnail",
-        icon: glyph(IconImagePlusOutline18),
+        icon: glyph(IconImagePlus),
         hidden: !opened || !isGif,
         onClick: () => {
           const file = save.files[fileIndex ?? 0] ?? save.files[0];
@@ -188,7 +188,7 @@ export function buildDetailItems({
       },
       {
         label: "Load Subtitles",
-        icon: glyph(IconFileOutline18),
+        icon: glyph(IconFile),
         hidden: !isVideo,
         onClick: () => {
           void window.pond
@@ -204,7 +204,7 @@ export function buildDetailItems({
       },
       {
         label: "Refresh Video Poster",
-        icon: glyph(IconRefreshOutline18),
+        icon: glyph(IconRefresh),
         hidden: batch || !isVideo,
         onClick: () => {
           void window.pond
@@ -223,7 +223,7 @@ export function buildDetailItems({
     file: [
       {
         label: "Replace File",
-        icon: glyph(IconFileOutline18),
+        icon: glyph(IconFile),
         hidden: batch || !hasFiles,
         onClick: () => {
           void window.pond
@@ -243,7 +243,7 @@ export function buildDetailItems({
     source: [
       {
         label: "Refresh from Source",
-        icon: glyph(IconArrowRotateClockwiseOutline18),
+        icon: glyph(IconArrowRotateClockwise),
         hidden: !hasUrl,
         shortcut: shortcutGlyphs("save.refresh"),
         onClick: () => {
@@ -256,7 +256,7 @@ export function buildDetailItems({
       },
       {
         label: "Archive Site",
-        icon: glyph(IconArchiveOutline18),
+        icon: glyph(IconArchive),
         hidden: !archivable,
         onClick: () => {
           if (batch) void archiveSitesForSelection(ids);
@@ -267,7 +267,7 @@ export function buildDetailItems({
     thumbnail: [
       {
         label: "Set Thumbnail from File",
-        icon: glyph(IconImagePlusOutline18),
+        icon: glyph(IconImagePlus),
         hidden: batch,
         onClick: () => {
           void window.pond.query("saves.setCustomThumbnail", { id: save.id });
@@ -275,7 +275,7 @@ export function buildDetailItems({
       },
       {
         label: "Set Thumbnail from Clipboard",
-        icon: glyph(IconClipboardArrowInOutline18),
+        icon: glyph(IconClipboardArrowIn),
         hidden: batch,
         onClick: () => {
           void window.pond
@@ -291,7 +291,7 @@ export function buildDetailItems({
       },
       {
         label: "Reset Thumbnail",
-        icon: glyph(IconImageMinusOutline18),
+        icon: glyph(IconImageMinus),
         variant: "destructive",
         hidden: batch || !hasCustomThumbnail,
         onClick: () => {
@@ -303,7 +303,7 @@ export function buildDetailItems({
       {
         type: "submenu",
         label: "Thumbnail Background",
-        icon: glyph(IconGridOutline18),
+        icon: glyph(IconGrid),
         hidden: opened || batch,
         items: buildThumbnailBackgroundItems(),
       },

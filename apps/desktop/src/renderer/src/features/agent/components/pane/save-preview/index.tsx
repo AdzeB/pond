@@ -1,8 +1,4 @@
-import {
-  IconBookmarkOutline12,
-  IconFileOutline12,
-} from "@pond/icons/outline/12";
-import { IconFileOutline18 } from "@pond/icons/outline/18";
+import { IconBookmark, IconFile } from "@pond/icons";
 import { Button } from "@pond/ui";
 import type { AssistantSource } from "@shared/assistant";
 import { sourceExcerpt } from "@shared/assistant-text";
@@ -102,7 +98,7 @@ export function SourceThumbnail({
         />
       ) : (
         <span className={styles["cover-fallback"]}>
-          {size === "compact" ? <IconFileOutline12 /> : <IconFileOutline18 />}
+          {size === "compact" ? <IconFile size={12} /> : <IconFile />}
           {visual ? (
             <span>
               {sourceExcerpt(
@@ -142,7 +138,7 @@ export function SaveCitation({
         <span>{reference}</span>
       ) : (
         <>
-          <IconBookmarkOutline12 className={styles["citation-icon"]} />
+          <IconBookmark size={12} className={styles["citation-icon"]} />
           <span className={styles["citation-title"]}>{title}</span>
         </>
       )}

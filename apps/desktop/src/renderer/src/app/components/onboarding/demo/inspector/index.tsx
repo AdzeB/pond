@@ -1,8 +1,4 @@
-import {
-  IconCircleInfoOutline18,
-  IconMessageOutline18,
-  IconSlidersOutline18,
-} from "@pond/icons/outline/18";
+import { IconCircleInfo, IconMessage, IconSliders } from "@pond/icons";
 import { PaneHeader } from "../pane-header";
 import styles from "./styles.module.css";
 
@@ -14,13 +10,13 @@ export function Inspector() {
       <PaneHeader>
         <span className={styles.tabs}>
           <span data-active>
-            <IconSlidersOutline18 />
+            <IconSliders />
           </span>
           <span>
-            <IconCircleInfoOutline18 />
+            <IconCircleInfo />
           </span>
           <span>
-            <IconMessageOutline18 />
+            <IconMessage />
           </span>
         </span>
       </PaneHeader>

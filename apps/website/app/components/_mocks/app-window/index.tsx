@@ -1,14 +1,15 @@
-import { IconArchiveContent2Fill18, IconPlusFill18 } from "@pond/icons/fill/18";
-import { IconXmarkOutline12 } from "@pond/icons/outline/12";
 import {
-  IconArrowLeftOutline18,
-  IconArrowRightOutline18,
-  IconArrowRotateClockwiseOutline18,
-  IconClockRotateClockwiseOutline18,
-  IconStopwatchOutline18,
-  IconTriangleWarningOutline18,
-  IconVersionsOutline18,
-} from "@pond/icons/outline/18";
+  IconArchiveContent2Fill,
+  IconArrowLeft,
+  IconArrowRight,
+  IconArrowRotateClockwise,
+  IconHistory,
+  IconPlusFill,
+  IconStopwatch,
+  IconTriangleWarning,
+  IconVersions,
+  IconXmark,
+} from "@pond/icons";
 import type { ReactNode } from "react";
 import { SaveThumb } from "../save-thumb";
 import { demoImage, packMasonry, SAVES } from "../saves";
@@ -19,10 +20,10 @@ const CONTENT_WIDTH = 1280 - 32 - 40;
 const PACKED = packMasonry(SAVES, CONTENT_WIDTH, 130, 16, 44);
 
 const TOOLBAR_ACTIONS = [
-  { label: "In progress", icon: IconStopwatchOutline18 },
-  { label: "Recent", icon: IconClockRotateClockwiseOutline18 },
-  { label: "Errors", icon: IconTriangleWarningOutline18 },
-  { label: "Ongoing", icon: IconArrowRotateClockwiseOutline18 },
+  { label: "In progress", icon: IconStopwatch },
+  { label: "Recent", icon: IconHistory },
+  { label: "Errors", icon: IconTriangleWarning },
+  { label: "Ongoing", icon: IconArrowRotateClockwise },
 ] as const;
 
 function ChromeButton({
@@ -58,29 +59,29 @@ export function AppWindow() {
       <div className={styles.chrome}>
         <div className={styles.history}>
           <ChromeButton label="Back" disabled>
-            <IconArrowLeftOutline18 />
+            <IconArrowLeft />
           </ChromeButton>
           <ChromeButton label="Forward" disabled>
-            <IconArrowRightOutline18 />
+            <IconArrowRight />
           </ChromeButton>
           <ChromeButton label="History" disabled>
-            <IconVersionsOutline18 />
+            <IconVersions />
           </ChromeButton>
         </div>
         <div className={styles.tabs}>
           <div className={styles.group}>
             <div className={styles.tab} data-active>
               <span className={styles.icon}>
-                <IconArchiveContent2Fill18 />
+                <IconArchiveContent2Fill />
               </span>
               <span className={styles.label}>Library</span>
               <span className={styles.close}>
-                <IconXmarkOutline12 />
+                <IconXmark size={12} />
               </span>
             </div>
           </div>
           <ChromeButton label="New tab">
-            <IconPlusFill18 />
+            <IconPlusFill />
           </ChromeButton>
         </div>
         <div className={styles.spacer} />

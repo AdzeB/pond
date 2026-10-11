@@ -1,4 +1,4 @@
-import { IconChevronRightOutline12 as ChevronRight } from "@pond/icons/outline/12";
+import { IconChevronRight as ChevronRight } from "@pond/icons";
 import { Accordion } from "@pond/ui";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { InlineNameEditor } from "@/shared/components/inline-name-editor";
@@ -67,7 +67,7 @@ function GroupHeader() {
         {renaming ? (
           <span className={styles.rename}>
             <span className={styles.caret} aria-hidden>
-              <ChevronRight />
+              <ChevronRight size={12} />
             </span>
             <InlineNameEditor
               name={row.group.name}
@@ -82,7 +82,7 @@ function GroupHeader() {
             <Accordion.Trigger className={styles.trigger}>
               <span className={styles.title}>{title}</span>
               <span className={styles.caret} aria-hidden>
-                <ChevronRight />
+                <ChevronRight size={12} />
               </span>
             </Accordion.Trigger>
           </Accordion.Header>

@@ -1,11 +1,11 @@
-import { IconCircleInfoOutline12 } from "@pond/icons/outline/12";
 import {
-  IconCheckOutline18,
-  IconCircleWarningOutline18,
-  IconLoaderOutline18,
-  IconPowerOffOutline18,
-  IconTaskOutline18,
-} from "@pond/icons/outline/18";
+  IconCheck,
+  IconCircleInfo,
+  IconCircleWarning,
+  IconLoader,
+  IconPowerOff,
+  IconTask,
+} from "@pond/icons";
 import { Button, Settings } from "@pond/ui";
 import { useState } from "react";
 import { useEnrichmentStatus } from "@/features/enrichment/status";
@@ -110,13 +110,13 @@ export function ProcessingStatusCard({
         <div className={styles.summary}>
           <span className={styles.indicator} aria-hidden="true">
             {state === "processing" ? (
-              <IconLoaderOutline18 className={styles.spinner} />
+              <IconLoader className={styles.spinner} />
             ) : state === "attention" ? (
-              <IconCircleWarningOutline18 />
+              <IconCircleWarning />
             ) : state === "off" ? (
-              <IconPowerOffOutline18 />
+              <IconPowerOff />
             ) : (
-              <IconCheckOutline18 />
+              <IconCheck />
             )}
           </span>
           <div className={styles.copy} aria-live="polite" aria-atomic="true">
@@ -142,14 +142,14 @@ export function ProcessingStatusCard({
         <dl className={styles.metrics} aria-live="polite">
           <div className={styles.metric}>
             <dt>
-              <IconTaskOutline18 aria-hidden />
+              <IconTask aria-hidden />
               Tasks Running
             </dt>
             <dd>{status.inflight}</dd>
           </div>
           <div className={styles.metric}>
             <dt>
-              <IconCircleWarningOutline18 aria-hidden />
+              <IconCircleWarning aria-hidden />
               Need Retry
             </dt>
             <dd>{failed}</dd>
@@ -157,7 +157,7 @@ export function ProcessingStatusCard({
         </dl>
       </div>
       <p className={styles.note}>
-        <IconCircleInfoOutline12 aria-hidden />
+        <IconCircleInfo size={12} aria-hidden />
         <span>Local processing pauses when the window is hidden.</span>
       </p>
     </Settings.List>

@@ -1,8 +1,8 @@
 import {
-  IconArrowAnticlockwiseTextOutline18,
-  IconCopyOutline18,
-  IconFileExportOutline18,
-} from "@pond/icons/outline/18";
+  IconArrowAnticlockwiseText,
+  IconCopy,
+  IconFileExport,
+} from "@pond/icons";
 import { decodeTextBytes, type TextEncoding } from "@shared/text-encoding";
 import { useEffect, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
@@ -108,7 +108,7 @@ export function TextFileViewer({
                   disabled={converting}
                   onClick={() => void convert()}
                 >
-                  <IconArrowAnticlockwiseTextOutline18 />
+                  <IconArrowAnticlockwiseText />
                 </ViewerHud.Tool>
               ) : null}
               {/\.json$/i.test(file.path) ? (
@@ -116,14 +116,14 @@ export function TextFileViewer({
                   label="Export dotLottie"
                   onClick={() => void exportDotLottie()}
                 >
-                  <IconFileExportOutline18 />
+                  <IconFileExport />
                 </ViewerHud.Tool>
               ) : null}
               <ViewerHud.Tool
                 label="Copy Text"
                 onClick={() => void navigator.clipboard.writeText(text)}
               >
-                <IconCopyOutline18 />
+                <IconCopy />
               </ViewerHud.Tool>
             </>
           }

@@ -1,8 +1,4 @@
-import {
-  IconEyeOutline18,
-  IconFolderOpenOutline18,
-  IconUserPlusOutline18,
-} from "@pond/icons/outline/18";
+import { IconEye, IconFolderOpen, IconUserPlus } from "@pond/icons";
 import type { Source } from "@pond/schema/db";
 import type { MenuItemSpec } from "@pond/ui";
 import type { ReactNode } from "react";
@@ -54,7 +50,7 @@ export function buildSourceNewMenuItems(handlers: {
       type: "submenu",
       id: "new-source",
       label: "New Source",
-      icon: <IconUserPlusOutline18 />,
+      icon: <IconUserPlus />,
       keywords: "connect account sync",
       items: connectableSourceItems(handlers.onConnect),
     },
@@ -62,14 +58,14 @@ export function buildSourceNewMenuItems(handlers: {
       type: "submenu",
       id: "new-watch",
       label: "New Watch",
-      icon: <IconEyeOutline18 />,
+      icon: <IconEye />,
       keywords: "public account follow",
       items: watchableSourceItems(handlers.onWatch),
     },
     {
       id: "new-folder",
       label: "New Folder",
-      icon: <IconFolderOpenOutline18 />,
+      icon: <IconFolderOpen />,
       keywords: "watched folder auto import directory",
       onClick: handlers.onFolder,
     },

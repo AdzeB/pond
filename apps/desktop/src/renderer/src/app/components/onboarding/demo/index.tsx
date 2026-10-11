@@ -1,8 +1,4 @@
-import {
-  IconArrowLeftOutline18,
-  IconArrowRightOutline18,
-  IconDotsOutline18,
-} from "@pond/icons/outline/18";
+import { IconArrowLeft, IconArrowRight, IconDots } from "@pond/icons";
 import { useReducedMotionConfig } from "motion/react";
 import { useEffect, useState } from "react";
 import { Art, type ArtKind } from "./art";
@@ -60,11 +56,11 @@ export function Demo() {
         </div>
         <div className={styles.viewer}>
           <span className={styles.icons}>
-            <IconArrowLeftOutline18 />
-            <IconArrowRightOutline18 />
+            <IconArrowLeft />
+            <IconArrowRight />
           </span>
           <span className={styles["viewer-title"]}>Sunset over the bay</span>
-          <IconDotsOutline18 />
+          <IconDots />
         </div>
       </div>
       <aside className={styles.pane}>

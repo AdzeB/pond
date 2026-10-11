@@ -1,8 +1,4 @@
-import { IconEyeFill18 } from "@pond/icons/fill/18";
-import {
-  IconAscendingSortingOutline18,
-  IconGridOutline18,
-} from "@pond/icons/outline/18";
+import { IconAscendingSorting, IconEyeFill, IconGrid } from "@pond/icons";
 import { Button, Popover, Tooltip } from "@pond/ui";
 import type { ReactNode } from "react";
 import {
@@ -26,20 +22,20 @@ const MENUS: Array<{
     label: "Layout",
     shortcut: "view.options",
     menu: "layout",
-    icon: <IconGridOutline18 />,
+    icon: <IconGrid />,
   },
   {
     id: "sort",
     label: "Sort",
     menu: "sort",
-    icon: <IconAscendingSortingOutline18 />,
+    icon: <IconAscendingSorting />,
   },
   {
     id: "display",
     label: "Display",
     shortcut: "view.display",
     menu: "display",
-    icon: <IconEyeFill18 />,
+    icon: <IconEyeFill />,
   },
 ];
 

@@ -82,6 +82,16 @@
       }
     },
     {
+      "includes": ["packages/icons/svg/**/*.svg"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "noSvgWithoutTitle": "off"
+          }
+        }
+      }
+    },
+    {
       "includes": [
         "apps/desktop/src/main/core/refresh/harvest/lib/browser-validation-source.ts"
       ],

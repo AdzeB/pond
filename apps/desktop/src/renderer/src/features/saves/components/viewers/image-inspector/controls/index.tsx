@@ -1,16 +1,16 @@
 import {
-  IconAnimationFramesOutline18,
-  IconCropOutline18,
-  IconExpandOutline18,
-  IconMediaFastBackwardsOutline18,
-  IconMediaFastForwardOutline18,
-  IconMediaPauseOutline18,
-  IconMediaPlayOutline18,
-  IconMirrorObjXOutline18,
-  IconRefreshOutline18,
-  IconRotateImageClockwiseOutline18,
-  IconSizeLgOutline18,
-} from "@pond/icons/outline/18";
+  IconAnimationFrames,
+  IconCrop,
+  IconExpand,
+  IconFlipHorizontal2,
+  IconMediaFastBackwards,
+  IconMediaFastForward,
+  IconMediaPause,
+  IconMediaPlay,
+  IconRefresh,
+  IconRotateImageClockwise,
+  IconSizeLg,
+} from "@pond/icons";
 import { Button, stepPlaybackRate } from "@pond/ui";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import type { ReactNode } from "react";
@@ -161,17 +161,17 @@ function Hud({
               edits === "full" ? (
                 <>
                   <ViewerHud.Tool label="Flip" disabled={busy} onClick={onFlip}>
-                    <IconMirrorObjXOutline18 />
+                    <IconFlipHorizontal2 />
                   </ViewerHud.Tool>
                   <ViewerHud.Tool
                     label="Rotate"
                     disabled={busy}
                     onClick={onRotate}
                   >
-                    <IconRotateImageClockwiseOutline18 />
+                    <IconRotateImageClockwise />
                   </ViewerHud.Tool>
                   <ViewerHud.Tool label="Crop" onClick={onToggleCrop}>
-                    <IconCropOutline18 />
+                    <IconCrop />
                   </ViewerHud.Tool>
                 </>
               ) : null
@@ -183,14 +183,14 @@ function Hud({
                   shortcut={<ShortcutKeys id="viewer.actual-size" />}
                   onClick={onActualSize}
                 >
-                  <IconSizeLgOutline18 />
+                  <IconSizeLg />
                 </ViewerHud.Tool>
                 <ViewerHud.Tool
                   label="Fit to Window"
                   shortcut={<ShortcutKeys id="viewer.zoom-fit" />}
                   onClick={onFit}
                 >
-                  <IconExpandOutline18 />
+                  <IconExpand />
                 </ViewerHud.Tool>
                 {isGif && onToggleGifFrames ? (
                   <ViewerHud.Tool
@@ -198,7 +198,7 @@ function Hud({
                     pressed={gifFramesOpen}
                     onClick={onToggleGifFrames}
                   >
-                    <IconAnimationFramesOutline18 />
+                    <IconAnimationFrames />
                   </ViewerHud.Tool>
                 ) : null}
               </>
@@ -281,18 +281,14 @@ function Gif({ active, gif, mode }: GifProps) {
           label={gif.playing ? "Pause GIF" : "Play GIF"}
           onClick={gif.toggle}
         >
-          {gif.playing ? (
-            <IconMediaPauseOutline18 />
-          ) : (
-            <IconMediaPlayOutline18 />
-          )}
+          {gif.playing ? <IconMediaPause /> : <IconMediaPlay />}
         </ViewerHud.Tool>
         <ViewerHud.Tool
           label="Previous Frame"
           disabled={gif.frameIndex <= loopStart}
           onClick={() => gif.seek(gif.frameIndex - 1)}
         >
-          <IconMediaFastBackwardsOutline18 />
+          <IconMediaFastBackwards />
         </ViewerHud.Tool>
         <ViewerHud.Scale>
           {gif.frameIndex + 1} / {gif.frameCount} · {gif.rate}×
@@ -302,20 +298,20 @@ function Gif({ active, gif, mode }: GifProps) {
           disabled={gif.frameIndex >= loopEnd}
           onClick={() => gif.seek(gif.frameIndex + 1)}
         >
-          <IconMediaFastForwardOutline18 />
+          <IconMediaFastForward />
         </ViewerHud.Tool>
         <ViewerHud.Tool label="Set Loop Start" onClick={gif.setLoopStart}>
-          <IconMediaFastBackwardsOutline18 />
+          <IconMediaFastBackwards />
         </ViewerHud.Tool>
         <ViewerHud.Tool label="Set Loop End" onClick={gif.setLoopEnd}>
-          <IconMediaFastForwardOutline18 />
+          <IconMediaFastForward />
         </ViewerHud.Tool>
         <ViewerHud.Tool
           label="Reset Loop Range"
           disabled={!gif.loop}
           onClick={gif.resetLoop}
         >
-          <IconRefreshOutline18 />
+          <IconRefresh />
         </ViewerHud.Tool>
       </ViewerHud.Tools>
     </ChromePortal>

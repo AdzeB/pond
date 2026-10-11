@@ -1,18 +1,18 @@
 import {
-  IconAdjustContrastOutline18,
-  IconArrowLeftOutline18,
-  IconArrowRightOutline18,
-  IconExpandOutline18,
-  IconFileExportOutline18,
-  IconFullScreenOutline18,
-  IconMediaPauseOutline18,
-  IconMediaPlayOutline18,
-  IconMirrorObjXOutline18,
-  IconPinTackOutline18,
-  IconRotateImageClockwiseOutline18,
-  IconSizeLgOutline18,
-  IconWindowShareOutline18,
-} from "@pond/icons/outline/18";
+  IconArrowLeft,
+  IconArrowRight,
+  IconContrast,
+  IconExpand,
+  IconFileExport,
+  IconFlipHorizontal2,
+  IconFullScreen,
+  IconMediaPause,
+  IconMediaPlay,
+  IconPinTack,
+  IconRotateImageClockwise,
+  IconSizeLg,
+  IconWindowShare,
+} from "@pond/icons";
 import { Button, Tooltip } from "@pond/ui";
 import type { ReactElement } from "react";
 import { createCopyTranslator } from "../../shared/localization";
@@ -95,14 +95,14 @@ export function PreviewControls({
             onClick={actions.previous}
             side={tooltipSide}
           >
-            <IconArrowLeftOutline18 />
+            <IconArrowLeft />
           </PreviewTool>
           <PreviewTool
             label={label("Next")}
             onClick={actions.next}
             side={tooltipSide}
           >
-            <IconArrowRightOutline18 />
+            <IconArrowRight />
           </PreviewTool>
           {state.kind === "presentation" ? (
             <PreviewTool
@@ -111,11 +111,7 @@ export function PreviewControls({
               pressed={slideshow}
               side={tooltipSide}
             >
-              {slideshow ? (
-                <IconMediaPauseOutline18 />
-              ) : (
-                <IconMediaPlayOutline18 />
-              )}
+              {slideshow ? <IconMediaPause /> : <IconMediaPlay />}
             </PreviewTool>
           ) : null}
         </div>
@@ -127,7 +123,7 @@ export function PreviewControls({
               onClick={actions.rotate}
               side={tooltipSide}
             >
-              <IconRotateImageClockwiseOutline18 />
+              <IconRotateImageClockwise />
             </PreviewTool>
             <PreviewTool
               label={label("Mirror")}
@@ -135,7 +131,7 @@ export function PreviewControls({
               pressed={state.mirrored}
               side={tooltipSide}
             >
-              <IconMirrorObjXOutline18 />
+              <IconFlipHorizontal2 />
             </PreviewTool>
             <PreviewTool
               label={label("Grayscale")}
@@ -143,7 +139,7 @@ export function PreviewControls({
               pressed={state.grayscale}
               side={tooltipSide}
             >
-              <IconAdjustContrastOutline18 />
+              <IconContrast />
             </PreviewTool>
             <PreviewTool
               label={label(state.zoom === null ? "Actual Size" : "Fit")}
@@ -151,11 +147,7 @@ export function PreviewControls({
               pressed={state.zoom !== null}
               side={tooltipSide}
             >
-              {state.zoom === null ? (
-                <IconSizeLgOutline18 />
-              ) : (
-                <IconExpandOutline18 />
-              )}
+              {state.zoom === null ? <IconSizeLg /> : <IconExpand />}
             </PreviewTool>
           </div>
         ) : (
@@ -166,7 +158,7 @@ export function PreviewControls({
               pressed={state.size === "fill"}
               side={tooltipSide}
             >
-              <IconExpandOutline18 />
+              <IconExpand />
             </PreviewTool>
           </div>
         )}
@@ -177,14 +169,14 @@ export function PreviewControls({
             onClick={actions.openOriginal}
             side={tooltipSide}
           >
-            <IconWindowShareOutline18 />
+            <IconWindowShare />
           </PreviewTool>
           <PreviewTool
             label={label("Export Original")}
             onClick={actions.exportOriginal}
             side={tooltipSide}
           >
-            <IconFileExportOutline18 />
+            <IconFileExport />
           </PreviewTool>
         </div>
 
@@ -195,7 +187,7 @@ export function PreviewControls({
             pressed={state.fullscreen}
             side={tooltipSide}
           >
-            <IconFullScreenOutline18 />
+            <IconFullScreen />
           </PreviewTool>
           <Tooltip
             label={`${label("Opacity")}: ${Math.round(state.opacity * 100)}%`}
@@ -218,7 +210,7 @@ export function PreviewControls({
             pressed={state.alwaysOnTop}
             side={tooltipSide}
           >
-            <IconPinTackOutline18 />
+            <IconPinTack />
           </PreviewTool>
         </div>
       </nav>

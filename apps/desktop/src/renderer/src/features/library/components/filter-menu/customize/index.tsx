@@ -1,14 +1,14 @@
 import {
-  IconCalendarOutline18,
-  IconCircleInfoOutline18,
-  IconCompassOutline18,
-  IconFilterPlusOutline18,
-  IconImageSparkleOutline18,
-  IconLayersOutline18,
-  IconMediaLibraryOutline18,
-  IconRefreshOutline18,
-  IconTextToImageOutline18,
-} from "@pond/icons/outline/18";
+  IconCalendar,
+  IconCircleInfo,
+  IconCompass,
+  IconFilterPlus,
+  IconImageSparkle,
+  IconLayers,
+  IconMediaLibrary,
+  IconRefresh,
+  IconTextToImage,
+} from "@pond/icons";
 import type { IconComponent } from "@pond/icons/types";
 import { FIELD_META } from "@pond/schema/filters/meta";
 import type { FieldId } from "@pond/schema/filters/types";
@@ -27,11 +27,11 @@ import { filterToolbar, useFilterToolbar } from "../toolbar-state";
 import styles from "./styles.module.css";
 
 const SECTION_ICONS = {
-  Discovery: IconCompassOutline18,
-  Organize: IconLayersOutline18,
-  Media: IconMediaLibraryOutline18,
-  Details: IconCircleInfoOutline18,
-  Dates: IconCalendarOutline18,
+  Discovery: IconCompass,
+  Organize: IconLayers,
+  Media: IconMediaLibrary,
+  Details: IconCircleInfo,
+  Dates: IconCalendar,
 } satisfies Record<string, IconComponent>;
 
 export function CustomizeFilters({
@@ -65,10 +65,7 @@ export function CustomizeFilters({
   const renderOverlay = (overlay: "visual" | "semantic") => {
     const label = overlay === "visual" ? "Visual Match" : "Semantic";
     const active = overlay === "visual" ? visualActive : semanticActive;
-    const Icon =
-      overlay === "visual"
-        ? IconImageSparkleOutline18
-        : IconTextToImageOutline18;
+    const Icon = overlay === "visual" ? IconImageSparkle : IconTextToImage;
     return (
       <Menu.CheckboxItem
         key={overlay}
@@ -156,7 +153,7 @@ export function CustomizeFilters({
             variant="ghost"
             aria-label="Customize Filters"
           >
-            <IconFilterPlusOutline18 />
+            <IconFilterPlus />
           </Menu.Trigger>
         </Tooltip>
         <Menu.Portal>
@@ -197,7 +194,7 @@ export function CustomizeFilters({
                 <Menu.Separator />
                 <Menu.Item onClick={() => filterToolbar.restoreDefaults()}>
                   <Menu.ItemIcon>
-                    <IconRefreshOutline18 />
+                    <IconRefresh />
                   </Menu.ItemIcon>
                   <Menu.ItemLabel>Reset Filters</Menu.ItemLabel>
                 </Menu.Item>

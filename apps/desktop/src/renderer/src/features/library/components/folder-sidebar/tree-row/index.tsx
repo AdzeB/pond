@@ -1,7 +1,7 @@
 import { useDndContext } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { IconChevronRightOutline12 } from "@pond/icons/outline/12";
+import { IconChevronRight } from "@pond/icons";
 import type { Folder, SidebarBadgeStyle } from "@pond/schema/db";
 import { Button, cssVars, type MenuItemSpec } from "@pond/ui";
 import { useReducedMotionConfig } from "motion/react";
@@ -145,7 +145,7 @@ export function FolderTreeRow(props: FolderTreeRowProps) {
                 ?.focus();
             }}
           >
-            <IconChevronRightOutline12 strokeWidth={2} />
+            <IconChevronRight size={12} strokeWidth={2} />
           </Button>
         ) : null}
         {props.editing ? (

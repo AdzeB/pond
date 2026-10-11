@@ -1,15 +1,15 @@
 import {
-  IconArchiveOutline18,
-  IconArrowRotateClockwiseOutline18,
-  IconArrowUpRightOutline18,
-  IconClone2Outline18,
-  IconCopyIdOutline18,
-  IconDotsOutline18,
-  IconGridOutline18,
-  IconLink2Outline18,
-  IconTableDownloadOutline18,
-  IconTrash2Outline18,
-} from "@pond/icons/outline/18";
+  IconArchive,
+  IconArrowRotateClockwise,
+  IconArrowUpRight,
+  IconCopy,
+  IconCopyId,
+  IconDots,
+  IconGrid,
+  IconLink2,
+  IconTableDownload,
+  IconTrash,
+} from "@pond/icons";
 import type { Source, WatchKind } from "@pond/schema/db";
 import { Dialog, type MenuItemSpec } from "@pond/ui";
 import { viewAccountItems } from "@/features/library";
@@ -145,7 +145,7 @@ function profileItems(target: SourceMenuTarget): MenuItemSpec[] {
   return [
     {
       label: `Open ${sourceLabel} ${kind}`,
-      icon: <IconArrowUpRightOutline18 />,
+      icon: <IconArrowUpRight />,
       hidden: !url,
       onClick: url
         ? () => {
@@ -161,7 +161,7 @@ function profileItems(target: SourceMenuTarget): MenuItemSpec[] {
     },
     {
       label: "Show Saved Items",
-      icon: <IconGridOutline18 />,
+      icon: <IconGrid />,
       onClick: () => viewAccountItems(target.id),
     },
   ];
@@ -178,7 +178,7 @@ function copyItems(target: SourceMenuTarget): MenuItemSpec[] {
   return [
     {
       label: `Copy ${kind} Link`,
-      icon: <IconLink2Outline18 />,
+      icon: <IconLink2 />,
       hidden: !url,
       onClick: url
         ? () => void copyText(url, "source-copy-link", `${kind} link copied`)
@@ -186,7 +186,7 @@ function copyItems(target: SourceMenuTarget): MenuItemSpec[] {
     },
     {
       label: `Copy ${identity}`,
-      icon: <IconClone2Outline18 />,
+      icon: <IconCopy />,
       hidden: !target.handle,
       onClick: target.handle
         ? () =>
@@ -199,7 +199,7 @@ function copyItems(target: SourceMenuTarget): MenuItemSpec[] {
     },
     {
       label: "Copy Connection ID",
-      icon: <IconCopyIdOutline18 />,
+      icon: <IconCopyId />,
       onClick: () =>
         void copyText(
           target.id,
@@ -214,13 +214,13 @@ function primaryFetchItem(target: SourceMenuTarget): MenuItemSpec {
   if (target.model.tone === "run") {
     return {
       label: "Cancel Fetch",
-      icon: <IconArrowRotateClockwiseOutline18 />,
+      icon: <IconArrowRotateClockwise />,
       onClick: () => void window.pond.syncCancel(target.id),
     };
   }
   return {
     label: target.model.tone === "err" ? "Retry Fetch" : "Fetch New Saves",
-    icon: <IconArrowRotateClockwiseOutline18 />,
+    icon: <IconArrowRotateClockwise />,
     disabled: !target.model.connected,
     onClick: () => void window.pond.syncRunNow(target.id),
   };
@@ -232,21 +232,21 @@ function fetchItems(target: SourceMenuTarget): MenuItemSpec[] {
     items.push(
       {
         label: "Fetch Older Saves",
-        icon: <IconArchiveOutline18 />,
+        icon: <IconArchive />,
         disabled: !target.model.connected || target.model.tone === "run",
         onClick: () =>
           void window.pond.syncRunNow(target.id, { forceFull: true }),
       },
       {
         label: "Fetch Save Details",
-        icon: <IconDotsOutline18 />,
+        icon: <IconDots />,
         disabled: !target.model.connected,
         onClick: () =>
           void window.pond.refreshBackfillStart({ source: target.source }),
       },
       {
         label: "Fetch Original Media",
-        icon: <IconTableDownloadOutline18 />,
+        icon: <IconTableDownload />,
         disabled: !target.model.connected,
         onClick: () =>
           void window.pond.refreshBackfillStart({
@@ -259,7 +259,7 @@ function fetchItems(target: SourceMenuTarget): MenuItemSpec[] {
   if (target.model.tone === "err" && target.lastError) {
     items.push({
       label: "Copy Last Fetch Error",
-      icon: <IconClone2Outline18 />,
+      icon: <IconCopy />,
       onClick: () =>
         void copyText(
           target.lastError ?? "",
@@ -322,14 +322,14 @@ function connectionItems(
   if (target.type === "account") {
     items.push({
       label: "Sign In Again",
-      icon: <IconLink2Outline18 />,
+      icon: <IconLink2 />,
       onClick: () => startSourceSignIn(target.source, options.accounts ?? []),
     });
   }
   items.push({
     label:
       target.type === "account" ? `Disconnect ${sourceLabel}` : "Stop Watching",
-    icon: <IconTrash2Outline18 />,
+    icon: <IconTrash />,
     variant: "destructive",
     onClick: () =>
       confirmRemove(target, options.onChanged ?? sourceDetail.changed),
@@ -365,7 +365,7 @@ function batchSourceMenu(targets: readonly SourceMenuTarget[]): MenuItemSpec[] {
       items: [
         {
           label: "Show Saved Items",
-          icon: <IconGridOutline18 />,
+          icon: <IconGrid />,
           onClick: () => viewAccountItems(targets.map((target) => target.id)),
         },
       ],
@@ -376,7 +376,7 @@ function batchSourceMenu(targets: readonly SourceMenuTarget[]): MenuItemSpec[] {
       items: [
         {
           label: "Fetch New Saves",
-          icon: <IconArrowRotateClockwiseOutline18 />,
+          icon: <IconArrowRotateClockwise />,
           disabled: fetchable.length === 0,
           onClick: () => {
             for (const target of fetchable) {

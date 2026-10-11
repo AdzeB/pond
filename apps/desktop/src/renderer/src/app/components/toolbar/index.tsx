@@ -1,16 +1,16 @@
 import {
-  IconAlbum2Outline18,
-  IconArrowDiagonalInOutline18,
-  IconBookmarkOutline18,
-  IconBookmarkSlashOutline18,
-  IconChatBubblePenOutline18,
-  IconClockRotateClockwiseOutline18,
-  IconDotsOutline18,
-  IconEyeOutline18,
-  IconGear3Outline18,
-  IconTrashXmarkOutline18,
-  IconWindowDownloadOutline18,
-} from "@pond/icons/outline/18";
+  IconAlbum2,
+  IconArrowDiagonalIn,
+  IconBookmark,
+  IconBookmarkSlash,
+  IconChatBubblePen,
+  IconDots,
+  IconEye,
+  IconGear3,
+  IconHistory,
+  IconTrashXmark,
+  IconWindowDownload,
+} from "@pond/icons";
 import { Button, Menu } from "@pond/ui";
 import { useRouter, useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
@@ -45,26 +45,26 @@ import { computeLabel } from "./labels";
 import styles from "./styles.module.css";
 
 const ROOT_ICONS = {
-  "/": IconAlbum2Outline18,
-  "/assistant": IconChatBubblePenOutline18,
-  "/sources": IconArrowDiagonalInOutline18,
-  "/tags": IconBookmarkOutline18,
-  "/untagged": IconBookmarkSlashOutline18,
-  "/recents": IconClockRotateClockwiseOutline18,
-  "/downloads": IconWindowDownloadOutline18,
-  "/trash": IconTrashXmarkOutline18,
-  "/shadows": IconEyeOutline18,
-  "/settings": IconGear3Outline18,
+  "/": IconAlbum2,
+  "/assistant": IconChatBubblePen,
+  "/sources": IconArrowDiagonalIn,
+  "/tags": IconBookmark,
+  "/untagged": IconBookmarkSlash,
+  "/recents": IconHistory,
+  "/downloads": IconWindowDownload,
+  "/trash": IconTrashXmark,
+  "/shadows": IconEye,
+  "/settings": IconGear3,
 } as const;
 
 function RootIcon({ path }: { path: string }) {
   const Icon =
     Object.entries(ROOT_ICONS).find(([route]) => route === path)?.[1] ??
     (path.startsWith("/settings")
-      ? IconGear3Outline18
+      ? IconGear3
       : path.startsWith("/source/")
-        ? IconArrowDiagonalInOutline18
-        : IconAlbum2Outline18);
+        ? IconArrowDiagonalIn
+        : IconAlbum2);
   return <Icon aria-hidden="true" />;
 }
 
@@ -195,7 +195,7 @@ function Breadcrumbs() {
                     className={styles.more}
                     aria-label="Show Parent Folders"
                   >
-                    <IconDotsOutline18 />
+                    <IconDots />
                   </Menu.Trigger>
                   <Menu.Portal>
                     <Menu.Positioner align="start" side="bottom">

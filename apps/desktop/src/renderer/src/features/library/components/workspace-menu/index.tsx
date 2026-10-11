@@ -1,10 +1,10 @@
-import { IconCheck2Fill12 } from "@pond/icons/fill/12";
-import { IconChevronDownOutline12 } from "@pond/icons/outline/12";
 import {
-  IconFolderOpenOutline18,
-  IconFolderPlusOutline18,
-  IconFoldersOutline18,
-} from "@pond/icons/outline/18";
+  IconCheckFill,
+  IconChevronDown,
+  IconFolderOpen,
+  IconFolderPlus,
+  IconFolders,
+} from "@pond/icons";
 import { cssVars, Menu } from "@pond/ui";
 import type { QueryResult } from "@shared/query-contracts";
 import { useQuery } from "@tanstack/react-query";
@@ -54,7 +54,7 @@ function LibraryMenuContent({ libraries }: { libraries: RecentLibrary[] }) {
                     className={styles.label}
                     aria-label="Current Library"
                   >
-                    <IconCheck2Fill12 />
+                    <IconCheckFill size={12} />
                   </Menu.SecondaryLabel>
                 ) : null}
               </Menu.Item>
@@ -70,19 +70,19 @@ function LibraryMenuContent({ libraries }: { libraries: RecentLibrary[] }) {
       <Menu.Group>
         <Menu.Item onClick={() => void createLibrary()}>
           <Menu.ItemIcon>
-            <IconFolderPlusOutline18 />
+            <IconFolderPlus />
           </Menu.ItemIcon>
           <Menu.ItemLabel>Create Library</Menu.ItemLabel>
         </Menu.Item>
         <Menu.Item onClick={() => void openLibrary()}>
           <Menu.ItemIcon>
-            <IconFolderOpenOutline18 />
+            <IconFolderOpen />
           </Menu.ItemIcon>
           <Menu.ItemLabel>Open Library</Menu.ItemLabel>
         </Menu.Item>
         <Menu.Item onClick={() => void mergeLibrary()}>
           <Menu.ItemIcon>
-            <IconFoldersOutline18 />
+            <IconFolders />
           </Menu.ItemIcon>
           <Menu.ItemLabel>Merge Library</Menu.ItemLabel>
         </Menu.Item>
@@ -127,7 +127,7 @@ export function WorkspaceMenu() {
           />
         </span>
         <span className={styles.name}>{name}</span>
-        <IconChevronDownOutline12 className={styles.chevron} aria-hidden />
+        <IconChevronDown size={12} className={styles.chevron} aria-hidden />
       </Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner align="start" side="bottom" alignOffset={-2}>

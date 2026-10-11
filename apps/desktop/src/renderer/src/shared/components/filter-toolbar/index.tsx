@@ -1,4 +1,4 @@
-import { IconBarsFilterOutline18 } from "@pond/icons/outline/18";
+import { IconBarsFilter } from "@pond/icons";
 import { Button, Tooltip } from "@pond/ui";
 import { clsx as cn } from "clsx";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -36,7 +36,7 @@ function Toggle({
         onClick={onToggle}
         {...props}
       >
-        <IconBarsFilterOutline18 />
+        <IconBarsFilter />
       </Button>
     </Tooltip>
   );

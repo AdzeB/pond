@@ -1,4 +1,4 @@
-import { IconArrowDiagonalInFill18 } from "@pond/icons/fill/18";
+import { IconArrowDiagonalInFill } from "@pond/icons";
 import { Button, Empty } from "@pond/ui";
 import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
 
@@ -18,7 +18,7 @@ export function SourcesEmpty({ scope }: { scope?: "account" | "watch" }) {
   return (
     <Empty.Root>
       <Empty.Media>
-        <IconArrowDiagonalInFill18 />
+        <IconArrowDiagonalInFill />
       </Empty.Media>
       <Empty.Title>{title}</Empty.Title>
       <Empty.Description>{description}</Empty.Description>

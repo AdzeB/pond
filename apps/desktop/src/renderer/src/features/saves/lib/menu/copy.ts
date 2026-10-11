@@ -1,14 +1,13 @@
 import {
-  IconBinaryOutline18,
-  IconClone2Outline18,
-  IconCopyOutline18,
-  IconGlobeOutline18,
-  IconImageOutline18,
-  IconLink2Outline18,
-  IconPathOutline18,
-  IconTagsOutline18,
-  IconTextOutline18,
-} from "@pond/icons/outline/18";
+  IconBinary,
+  IconCopy,
+  IconGlobe,
+  IconImage,
+  IconLink2,
+  IconPath,
+  IconTags,
+  IconText,
+} from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import { isThumbnailKind } from "@shared/save-file-names";
 import {
@@ -45,19 +44,19 @@ export function buildCopyItems({
   const more: MenuItemSpec[] = [
     {
       label: "Copy Thumbnail",
-      icon: glyph(IconImageOutline18),
+      icon: glyph(IconImage),
       hidden: batch || !save.files.some((file) => isThumbnailKind(file.kind)),
       onClick: () => void copyThumbnail(save),
     },
     {
       label: "Copy as Base64",
-      icon: glyph(IconBinaryOutline18),
+      icon: glyph(IconBinary),
       hidden: batch || !hasFiles,
       onClick: () => void copyBase64(save, fileIndex),
     },
     {
       label: "Copy Pond Link",
-      icon: glyph(IconLink2Outline18),
+      icon: glyph(IconLink2),
       onClick: () => {
         void window.pond
           .query("saves.copyInternalLinks", { ids })
@@ -74,7 +73,7 @@ export function buildCopyItems({
     },
     {
       label: "Copy URL",
-      icon: glyph(IconGlobeOutline18),
+      icon: glyph(IconGlobe),
       hidden: !hasUrl,
       shortcut: shortcutGlyphs("save.copy-url"),
       onClick: () => {
@@ -90,7 +89,7 @@ export function buildCopyItems({
   return [
     {
       label: "Copy Name",
-      icon: glyph(IconTextOutline18),
+      icon: glyph(IconText),
       onClick: () => {
         if (batch) void copyNamesForSelection(ids).then(notifyCopy);
         else void copyName(save);
@@ -99,7 +98,7 @@ export function buildCopyItems({
     {
       id: "copy-primary",
       label: copyLabel,
-      icon: glyph(IconClone2Outline18),
+      icon: glyph(IconCopy),
       hidden: !hasFiles,
       shortcut: shortcutGlyphs("save.copy-image"),
       onClick: () => {
@@ -109,7 +108,7 @@ export function buildCopyItems({
     },
     {
       label: "Copy File Path",
-      icon: glyph(IconPathOutline18),
+      icon: glyph(IconPath),
       hidden: !hasFiles,
       onClick: () => {
         if (batch) {
@@ -122,13 +121,13 @@ export function buildCopyItems({
     {
       type: "submenu",
       label: "Copy Options",
-      icon: glyph(IconCopyOutline18),
+      icon: glyph(IconCopy),
       hidden: submenuHidden(more),
       items: more,
     },
     {
       label: "Copy Tags",
-      icon: glyph(IconTagsOutline18),
+      icon: glyph(IconTags),
       hidden: !hasTags,
       shortcut: shortcutGlyphs("save.copy-tags"),
       onClick: () => {

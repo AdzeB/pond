@@ -1,4 +1,4 @@
-import { IconXmarkOutline12 } from "@pond/icons/outline/12";
+import { IconXmark } from "@pond/icons";
 import { Button, Empty } from "@pond/ui";
 import type { ConversionPreset } from "@shared/conversion-contracts";
 import { typeLabelForPath } from "@shared/file-format";
@@ -86,7 +86,7 @@ function Row({
         disabled={disabled}
         onClick={onRemove}
       >
-        <IconXmarkOutline12 />
+        <IconXmark size={12} />
       </Button>
     </li>
   );

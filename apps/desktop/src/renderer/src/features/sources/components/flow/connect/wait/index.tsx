@@ -1,4 +1,4 @@
-import { IconCircleCheckFill12 } from "@pond/icons/fill/12";
+import { IconCircleCheckFill } from "@pond/icons";
 import { Button, Dialog } from "@pond/ui";
 import { useEffect } from "react";
 import { ConnectionVisual } from "@/features/sources/components/flow/connection-visual";
@@ -77,15 +77,15 @@ function ConnectPromises() {
         <p className={styles["details-title"]}>Pond will</p>
         <ul className={styles.checklist}>
           <li>
-            <IconCircleCheckFill12 className={styles.check} />
+            <IconCircleCheckFill size={12} className={styles.check} />
             <span>Keep your session on this device</span>
           </li>
           <li>
-            <IconCircleCheckFill12 className={styles.check} />
+            <IconCircleCheckFill size={12} className={styles.check} />
             <span>Read your saved posts</span>
           </li>
           <li>
-            <IconCircleCheckFill12 className={styles.check} />
+            <IconCircleCheckFill size={12} className={styles.check} />
             <span>Add new saves to your library</span>
           </li>
         </ul>

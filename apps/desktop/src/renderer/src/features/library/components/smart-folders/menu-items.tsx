@@ -1,25 +1,25 @@
 import {
-  IconBarsFilterOutline18,
-  IconColorPaletteOutline18,
-  IconDuplicateOutline18,
-  IconExportOutline18,
-  IconFaceSmileOutline18,
-  IconFileExportOutline18,
-  IconFolderSearchOutline18,
-  IconGridOutline18,
-  IconGridPlusOutline18,
-  IconLink2Outline18,
-  IconMoveObjDownOutline18,
-  IconMoveObjUpOutline18,
-  IconPencilOutline18,
-  IconQuickAccessOutline18,
-  IconRefreshOutline18,
-  IconRenameOutline18,
-  IconTableOutline18,
-  IconTrash2Outline18,
-  IconVersionsOutline18,
-  IconViewPlusSignOutline18,
-} from "@pond/icons/outline/18";
+  IconBarsFilter,
+  IconDuplicate,
+  IconExport,
+  IconFaceSmile,
+  IconFileExport,
+  IconFolderSearch,
+  IconGrid,
+  IconGridPlus,
+  IconLink2,
+  IconMoveObjDown,
+  IconMoveObjUp,
+  IconPalette,
+  IconPencil,
+  IconQuickAccess,
+  IconRefresh,
+  IconRename,
+  IconTable,
+  IconTrash,
+  IconVersions,
+  IconViewPlusSign,
+} from "@pond/icons";
 import type { SavedView } from "@pond/schema/db";
 import { Chip, type MenuItemSpec } from "@pond/ui";
 import { librarySavedViewLink } from "@shared/library-links";
@@ -46,15 +46,15 @@ interface EntryType {
 type EntryTypes = { [Kind in SavedView["kind"]]: EntryType };
 
 export const ENTRY_TYPES: EntryTypes = {
-  smart_folder: { label: "Smart Folder", icon: IconFolderSearchOutline18 },
-  group: { label: "Group", icon: IconGridOutline18 },
-  saved_view: { label: "Saved View", icon: IconVersionsOutline18 },
+  smart_folder: { label: "Smart Folder", icon: IconFolderSearch },
+  group: { label: "Group", icon: IconGrid },
+  saved_view: { label: "Saved View", icon: IconVersions },
 };
 
 const CREATE_ENTRY_ICONS = {
-  smart_folder: IconFolderSearchOutline18,
-  group: IconGridPlusOutline18,
-  saved_view: IconViewPlusSignOutline18,
+  smart_folder: IconFolderSearch,
+  group: IconGridPlus,
+  saved_view: IconViewPlusSign,
 } satisfies Record<SavedView["kind"], React.ComponentType>;
 
 export async function runAction(action: () => Promise<void>): Promise<void> {
@@ -165,7 +165,7 @@ export function entryItems({
       : []),
     {
       label: "Edit Filters",
-      icon: <IconBarsFilterOutline18 />,
+      icon: <IconBarsFilter />,
       onClick: () => {
         if (view.kind !== "saved_view") {
           openEditor({ mode: "edit", view });
@@ -177,18 +177,18 @@ export function entryItems({
     },
     {
       label: view.kind === "saved_view" ? "Update Saved View" : "Save Filters",
-      icon: <IconVersionsOutline18 />,
+      icon: <IconVersions />,
       disabled: !active,
       onClick: () => void runAction(() => savedViews.updateCurrent(view.id)),
     },
     {
       label: "Refresh",
-      icon: <IconRefreshOutline18 />,
+      icon: <IconRefresh />,
       onClick: () => void runAction(() => savedViews.refresh()),
     },
     {
       label: "Duplicate",
-      icon: <IconDuplicateOutline18 />,
+      icon: <IconDuplicate />,
       onClick: () =>
         void runAction(async () => {
           const copy = await savedViews.duplicate(view.id);
@@ -204,11 +204,11 @@ export function entryItems({
     {
       type: "submenu",
       label: "Export",
-      icon: <IconExportOutline18 />,
+      icon: <IconExport />,
       items: [
         {
           label: "Export Files",
-          icon: <IconFileExportOutline18 />,
+          icon: <IconFileExport />,
           onClick: () =>
             void runAction(async () => {
               const ids = await saveIdsForView(view, views);
@@ -217,7 +217,7 @@ export function entryItems({
         },
         {
           label: "Export to CSV",
-          icon: <IconTableOutline18 />,
+          icon: <IconTable />,
           onClick: () =>
             void runAction(async () => {
               const ids = await saveIdsForView(view, views);
@@ -229,7 +229,7 @@ export function entryItems({
     {
       type: "checkbox",
       label: "Quick Access",
-      icon: <IconQuickAccessOutline18 />,
+      icon: <IconQuickAccess />,
       checked: presentation.quickAccess ?? false,
       onCheckedChange: (quickAccess) =>
         void saveSavedViewPresentation(view.id, {
@@ -239,13 +239,13 @@ export function entryItems({
     },
     {
       label: "Move Up in Quick Access",
-      icon: <IconMoveObjUpOutline18 />,
+      icon: <IconMoveObjUp />,
       hidden: !presentation.quickAccess || quickAccessIndex <= 0,
       onClick: () => void moveSavedViewQuickAccess(view.id, quickAccessIds, -1),
     },
     {
       label: "Move Down in Quick Access",
-      icon: <IconMoveObjDownOutline18 />,
+      icon: <IconMoveObjDown />,
       hidden:
         !presentation.quickAccess ||
         quickAccessIndex < 0 ||
@@ -255,7 +255,7 @@ export function entryItems({
     {
       type: "submenu",
       label: "Icon",
-      icon: <IconFaceSmileOutline18 />,
+      icon: <IconFaceSmile />,
       items: FOLDER_MENU_ICONS.map((option) => ({
         type: "checkbox",
         label: option.label,
@@ -268,7 +268,7 @@ export function entryItems({
     {
       type: "submenu",
       label: "Color",
-      icon: <IconColorPaletteOutline18 />,
+      icon: <IconPalette />,
       items: FOLDER_SWATCHES.map((option) => ({
         type: "checkbox",
         label: option.label,
@@ -280,17 +280,17 @@ export function entryItems({
     },
     {
       label: "Rename",
-      icon: <IconPencilOutline18 />,
+      icon: <IconPencil />,
       onClick: onRename,
     },
     {
       label: "Batch Rename Smart Folders",
-      icon: <IconRenameOutline18 />,
+      icon: <IconRename />,
       onClick: () => openOrganizationRenameDialog("saved-views", view.id),
     },
     {
       label: "Copy Link",
-      icon: <IconLink2Outline18 />,
+      icon: <IconLink2 />,
       onClick: () => {
         void window.pond
           .query("clipboard.writeText", {
@@ -302,17 +302,17 @@ export function entryItems({
     {
       type: "submenu",
       label: "Move to Group",
-      icon: <IconGridOutline18 />,
+      icon: <IconGrid />,
       items: [
         {
           label: "Smart Folders",
-          icon: <IconFolderSearchOutline18 />,
+          icon: <IconFolderSearch />,
           disabled: view.parentId === null,
           onClick: () => void runAction(() => savedViews.move(view.id, null)),
         },
         ...groupMoveChoices(view.id, views).map((group) => ({
           label: group.name,
-          icon: <IconGridOutline18 />,
+          icon: <IconGrid />,
           disabled: view.parentId === group.id,
           onClick: () =>
             void runAction(() => savedViews.move(view.id, group.id)),
@@ -322,7 +322,7 @@ export function entryItems({
     { type: "separator" },
     {
       label: "Delete",
-      icon: <IconTrash2Outline18 />,
+      icon: <IconTrash />,
       variant: "destructive",
       onClick: () => {
         void savedViews.remove(view.id);

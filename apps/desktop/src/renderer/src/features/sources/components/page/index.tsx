@@ -1,8 +1,4 @@
-import {
-  IconCircleCheckOutline18,
-  IconFileOutline18,
-  IconLink2Outline18,
-} from "@pond/icons/outline/18";
+import { IconCircleCheck, IconFile, IconLink2 } from "@pond/icons";
 import { DataTable } from "@pond/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SourcesEmpty } from "@/features/sources/components/empty";
@@ -189,14 +185,14 @@ export function SourcesPage({ scope }: { scope?: "account" | "watch" }) {
         >
           <TableFilterChip
             name="Status"
-            icon={<IconCircleCheckOutline18 />}
+            icon={<IconCircleCheck />}
             options={SOURCE_STATUS_OPTIONS}
             selected={filters.statuses}
             onChange={sourcesFilters.setStatuses}
           />
           <TableFilterChip
             name="Source"
-            icon={<IconLink2Outline18 />}
+            icon={<IconLink2 />}
             options={sourceOptions}
             selected={filters.sources}
             onChange={sourcesFilters.setSources}
@@ -204,7 +200,7 @@ export function SourcesPage({ scope }: { scope?: "account" | "watch" }) {
           {scope === "account" ? null : (
             <TableFilterChip
               name="Type"
-              icon={<IconFileOutline18 />}
+              icon={<IconFile />}
               options={typeOptions}
               selected={filters.types}
               onChange={sourcesFilters.setTypes}

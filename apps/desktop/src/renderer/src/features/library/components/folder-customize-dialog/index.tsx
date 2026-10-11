@@ -1,4 +1,4 @@
-import { IconDotsOutline12 } from "@pond/icons/outline/12";
+import { IconDots } from "@pond/icons";
 import {
   Button,
   Chip,
@@ -149,7 +149,7 @@ export function FolderCustomizeDialog({
                       exit={{ opacity: 0, scale: 0.5, filter: "blur(4px)" }}
                       transition={reduceMotion ? { duration: 0 } : gentleSpring}
                     >
-                      <FolderIcon name={icon} />
+                      <FolderIcon name={icon} size={40} />
                     </motion.span>
                   </AnimatePresence>
                   <AppearancePicker
@@ -240,7 +240,7 @@ function AppearancePicker({
           }
           aria-label="Icon and Color"
         >
-          <IconDotsOutline12 />
+          <IconDots size={12} />
         </Popover.Trigger>
       </Tooltip>
       <Popover.Portal>

@@ -1,7 +1,4 @@
-import {
-  IconClockRotateClockwiseOutline18,
-  IconPlusOutline18,
-} from "@pond/icons/outline/18";
+import { IconHistory, IconPlus } from "@pond/icons";
 import { Button, Combobox, Tooltip } from "@pond/ui";
 import { AgentHeader } from "@pond/ui/agent-header";
 import { type ReactNode, useState } from "react";
@@ -88,7 +85,7 @@ export function ChatHeader({
             aria-label="Chat History"
             render={<Button icon size="sm" variant="ghost" />}
           >
-            <IconClockRotateClockwiseOutline18 aria-hidden="true" />
+            <IconHistory aria-hidden="true" />
           </Combobox.Trigger>
         </Tooltip>
         <Combobox.Portal>
@@ -160,7 +157,7 @@ export function ChatHeader({
             disabled={disabled}
             onClick={onNewChat}
           >
-            <IconPlusOutline18 />
+            <IconPlus />
           </Button>
         </Tooltip>
       ) : null}

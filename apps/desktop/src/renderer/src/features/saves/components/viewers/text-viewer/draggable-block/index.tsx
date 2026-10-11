@@ -8,7 +8,7 @@ import {
   isHTMLElement,
   mergeRegister,
 } from "@lexical/utils";
-import { IconGripDotsVerticalOutline12 } from "@pond/icons/outline/12";
+import { IconGripDotsVertical } from "@pond/icons";
 import { Button } from "@pond/ui";
 import {
   $getNearestNodeFromDOMNode,
@@ -344,7 +344,7 @@ export function DraggableBlockPlugin({ anchor }: { anchor: HTMLElement }) {
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
       >
-        <IconGripDotsVerticalOutline12 />
+        <IconGripDotsVertical size={12} />
       </Button>
       <div ref={lineRef} className={styles.drop} />
     </>,

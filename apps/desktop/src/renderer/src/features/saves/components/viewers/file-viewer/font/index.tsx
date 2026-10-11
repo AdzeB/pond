@@ -1,11 +1,11 @@
 import {
-  IconCircleInfoOutline18,
-  IconDarkLightOutline18,
-  IconKeyboardOutline18,
-  IconTextAOutline18,
-  IconTypeScaleOutline18,
-  IconTypographyOutline18,
-} from "@pond/icons/outline/18";
+  IconCircleInfo,
+  IconContrast,
+  IconKeyboard,
+  IconTextA,
+  IconTypeScale,
+  IconTypography,
+} from "@pond/icons";
 import { Button, Input, Slider } from "@pond/ui";
 import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
@@ -26,11 +26,11 @@ const SYMBOLS =
   "© ® ™ § ¶ † ‡ • … ‰ ′ ″ ‹ › « »\n$ ¢ £ € ¥ ₩ ₹ ₽ ₿\n+ − × ÷ = ≠ ≈ < > ≤ ≥ ± ∞ √ ∑ ∏ ∫ ∂ ∆\n← ↑ → ↓ ↔ ↕ ⇐ ⇑ ⇒ ⇓ ⇔";
 
 const FONT_MODES = [
-  { value: "specimen", label: "Specimen", Icon: IconTypographyOutline18 },
-  { value: "waterfall", label: "Waterfall", Icon: IconTypeScaleOutline18 },
-  { value: "characters", label: "Characters", Icon: IconTextAOutline18 },
-  { value: "symbols", label: "Symbols", Icon: IconKeyboardOutline18 },
-  { value: "information", label: "Information", Icon: IconCircleInfoOutline18 },
+  { value: "specimen", label: "Specimen", Icon: IconTypography },
+  { value: "waterfall", label: "Waterfall", Icon: IconTypeScale },
+  { value: "characters", label: "Characters", Icon: IconTextA },
+  { value: "symbols", label: "Symbols", Icon: IconKeyboard },
+  { value: "information", label: "Information", Icon: IconCircleInfo },
 ] as const;
 
 type FontMode = (typeof FONT_MODES)[number]["value"];
@@ -157,7 +157,7 @@ export function FontViewer(props: ViewerProps & { url: string }) {
                       )
                     }
                   >
-                    <IconDarkLightOutline18 />
+                    <IconContrast />
                   </ViewerHud.Tool>
                 </>
               }

@@ -1,16 +1,16 @@
-import { IconFolderFill18 as Folder } from "@pond/icons/fill/18";
 import {
-  IconFolderOutline18 as AddToGroup,
-  IconArrowRightOutline18 as ArrowRight,
-  IconBarsFilterOutline18 as Filter,
-  IconMergeOutline18 as Merge,
-  IconPencilOutline18 as Pencil,
-  IconMinusOutline18 as RemoveFromGroup,
-  IconStarMinusOutline18 as StarMinus,
-  IconStarPlusOutline18 as StarPlus,
-  IconTagsOutline18 as Tags,
-  IconTrash2Outline18 as Trash,
-} from "@pond/icons/outline/18";
+  IconFolder as AddToGroup,
+  IconArrowRight as ArrowRight,
+  IconBarsFilter as Filter,
+  IconFolderFill as Folder,
+  IconMerge as Merge,
+  IconPencil as Pencil,
+  IconMinus as RemoveFromGroup,
+  IconStarMinus as StarMinus,
+  IconStarPlus as StarPlus,
+  IconTags as Tags,
+  IconTrash as Trash,
+} from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import type { ReactElement } from "react";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";

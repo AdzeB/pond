@@ -1,4 +1,4 @@
-import { IconPaperclipOutline12 } from "@pond/icons/outline/12";
+import { IconPaperclip } from "@pond/icons";
 import { Chip } from "@pond/ui";
 import {
   $applyNodeReplacement,
@@ -82,7 +82,7 @@ export class FileNode extends DecoratorNode<JSX.Element> {
         }}
       >
         <Chip.Icon>
-          <IconPaperclipOutline12 />
+          <IconPaperclip size={12} />
         </Chip.Icon>
         <Chip.Label>{this.__name}</Chip.Label>
       </Chip.Link>

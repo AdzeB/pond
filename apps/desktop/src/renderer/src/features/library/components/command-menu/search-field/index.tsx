@@ -1,4 +1,4 @@
-import { IconMagnifierOutline18 } from "@pond/icons/outline/18";
+import { IconMagnifier } from "@pond/icons";
 import { Keyboard } from "@pond/ui";
 import type {
   ChangeEventHandler,
@@ -25,7 +25,7 @@ export function SearchField({
 }: SearchFieldProps) {
   return (
     <div className={styles.search}>
-      <IconMagnifierOutline18 className={styles.magnifier} aria-hidden />
+      <IconMagnifier className={styles.magnifier} aria-hidden />
       <SearchChrome.Input
         ref={inputRef}
         className={styles.input}

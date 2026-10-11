@@ -1,8 +1,8 @@
 import {
-  IconAscendingSortingOutline18,
-  IconDescendingSortingOutline18,
-  IconSlidersOutline18,
-} from "@pond/icons/outline/18";
+  IconAscendingSorting,
+  IconDescendingSorting,
+  IconSliders,
+} from "@pond/icons";
 import { Button, Popover, Select, Tooltip } from "@pond/ui";
 import { useState } from "react";
 import type {
@@ -58,7 +58,7 @@ export function TableOptionsMenu<Id extends string>({
           variant="ghost"
           aria-label="Options"
         >
-          <IconSlidersOutline18 />
+          <IconSliders />
         </Button>
       </Tooltip>
       <Popover.Portal>
@@ -97,9 +97,9 @@ export function TableOptionsMenu<Id extends string>({
                     }}
                   >
                     {layout.sort?.desc ? (
-                      <IconDescendingSortingOutline18 />
+                      <IconDescendingSorting />
                     ) : (
-                      <IconAscendingSortingOutline18 />
+                      <IconAscendingSorting />
                     )}
                   </Button>
                   <Select.Trigger size="sm" className={styles.select}>

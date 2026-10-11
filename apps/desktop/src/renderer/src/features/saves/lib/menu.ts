@@ -1,10 +1,10 @@
 import {
-  IconDotsOutline18,
-  IconFileExportOutline18,
-  IconImagePlusOutline18,
-  IconMagnifierOutline18,
-  IconMediaPlayOutline18,
-} from "@pond/icons/outline/18";
+  IconDots,
+  IconFileExport,
+  IconImagePlus,
+  IconMagnifier,
+  IconMediaPlay,
+} from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import type { Save } from "@/features/saves/types";
@@ -58,7 +58,7 @@ export function buildSaveMenu(
     {
       type: "submenu",
       label: "Export",
-      icon: glyph(IconFileExportOutline18),
+      icon: glyph(IconFileExport),
       hidden: submenuHidden(exportItems),
       items: exportItems,
     },
@@ -72,7 +72,7 @@ export function buildSaveMenu(
     {
       type: "submenu",
       label: "Thumbnail",
-      icon: glyph(IconImagePlusOutline18),
+      icon: glyph(IconImagePlus),
       hidden: submenuHidden(supplementalItems.details.thumbnail),
       items: supplementalItems.details.thumbnail,
     },
@@ -82,21 +82,21 @@ export function buildSaveMenu(
     {
       type: "submenu",
       label: "Search by Image",
-      icon: glyph(IconMagnifierOutline18),
+      icon: glyph(IconMagnifier),
       hidden: submenuHidden(reverseSearchItems),
       items: reverseSearchItems,
     },
     {
       type: "submenu",
       label: "Assistant",
-      icon: glyph(IconMediaPlayOutline18),
+      icon: glyph(IconMediaPlay),
       hidden: context.allTrashed || submenuHidden(agentItems),
       items: agentItems,
     },
     {
       type: "submenu",
       label: "More",
-      icon: glyph(IconDotsOutline18),
+      icon: glyph(IconDots),
       hidden: submenuHidden(supplementalItems.more),
       items: supplementalItems.more,
     },
@@ -185,7 +185,7 @@ export function buildSaveDetailMenu(
     replaceFile,
     {
       label: "Export",
-      icon: glyph(IconFileExportOutline18),
+      icon: glyph(IconFileExport),
       onClick: () =>
         saveLibraryBridge.openConversion(
           context.ids,

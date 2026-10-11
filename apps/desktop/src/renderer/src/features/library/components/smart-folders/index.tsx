@@ -1,4 +1,4 @@
-import { IconPlusOutline18 } from "@pond/icons/outline/18";
+import { IconPlus } from "@pond/icons";
 import type { SavedView } from "@pond/schema/db";
 import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
 import { Menu, Sidebar } from "@pond/ui";
@@ -142,7 +142,7 @@ export function SmartFoldersSection({
                 variant="ghost"
                 aria-label="New Smart Folder, Group, or Saved View"
               >
-                <IconPlusOutline18 />
+                <IconPlus />
               </Menu.Trigger>
               <Menu.Portal>
                 <Menu.Positioner align="start" side="bottom">

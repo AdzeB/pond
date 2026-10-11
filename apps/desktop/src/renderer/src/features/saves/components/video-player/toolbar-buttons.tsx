@@ -1,8 +1,8 @@
 import {
-  IconArrowBackToBottomLeftOutline18,
-  IconFullScreenOutline18,
-  IconMediaPlayOutline18,
-} from "@pond/icons/outline/18";
+  IconArrowBackToBottomLeft,
+  IconFullScreen,
+  IconMediaPlay,
+} from "@pond/icons";
 import { useVideo } from "@pond/ui";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys";
@@ -36,7 +36,7 @@ function LoopButton({
         onOverrideChange(!looped);
       }}
     >
-      <IconArrowBackToBottomLeftOutline18 />
+      <IconArrowBackToBottomLeft />
     </ViewerHud.Tool>
   );
 }
@@ -49,7 +49,7 @@ function PlaybackButton() {
       shortcut={<ShortcutKeys id="viewer.play-pause" />}
       onClick={actions.togglePlay}
     >
-      {state.playing ? <PauseIcon /> : <IconMediaPlayOutline18 />}
+      {state.playing ? <PauseIcon /> : <IconMediaPlay />}
     </ViewerHud.Tool>
   );
 }
@@ -94,7 +94,7 @@ function FullscreenButton() {
       label={state.fullscreen ? "Exit full screen" : "Full screen"}
       onClick={actions.toggleFullscreen}
     >
-      <IconFullScreenOutline18 />
+      <IconFullScreen />
     </ViewerHud.Tool>
   );
 }

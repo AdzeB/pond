@@ -5,7 +5,7 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
-import { IconCircleXmarkFill18 } from "@pond/icons/fill/18";
+import { IconCircleXmarkFill } from "@pond/icons";
 import { Button, Loader, Tooltip } from "@pond/ui";
 import {
   $createTextNode,
@@ -306,7 +306,7 @@ function SearchField({
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={clearField}
               >
-                <IconCircleXmarkFill18 />
+                <IconCircleXmarkFill />
               </Button>
             </Tooltip>
           ) : null}

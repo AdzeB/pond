@@ -1,4 +1,4 @@
-import { IconChevronDownOutline12 as ChevronDown } from "@pond/icons/outline/12";
+import { IconChevronDown as ChevronDown } from "@pond/icons";
 import { PickerPanel } from "@pond/ui";
 import type { ReactNode } from "react";
 import {
@@ -208,7 +208,7 @@ export function TagMenuView({
                       <span>
                         {section.label} ({section.items.length})
                       </span>
-                      <ChevronDown aria-hidden="true" />
+                      <ChevronDown size={12} aria-hidden="true" />
                     </PickerPanel.SectionButton>
                   ) : (
                     <PickerPanel.GroupLabel>

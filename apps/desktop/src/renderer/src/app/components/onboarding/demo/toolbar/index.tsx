@@ -1,9 +1,9 @@
 import {
-  IconAlbum2Outline18,
-  IconArrowLeftOutline18,
-  IconArrowRightOutline18,
-  IconWindowDownloadOutline18,
-} from "@pond/icons/outline/18";
+  IconAlbum2,
+  IconArrowLeft,
+  IconArrowRight,
+  IconWindowDownload,
+} from "@pond/icons";
 import styles from "./styles.module.css";
 
 function PanelGlyph() {
@@ -36,11 +36,11 @@ export function Toolbar() {
       </span>
       <span className={styles.icons}>
         <PanelGlyph />
-        <IconArrowLeftOutline18 />
-        <IconArrowRightOutline18 />
+        <IconArrowLeft />
+        <IconArrowRight />
       </span>
       <span className={styles.crumbs} data-view="library">
-        <IconAlbum2Outline18 />
+        <IconAlbum2 />
         <span>All</span>
         <span className={styles.leaf}>
           <span className={styles.slash}>/</span>
@@ -48,7 +48,7 @@ export function Toolbar() {
         </span>
       </span>
       <span className={styles.crumbs} data-view="harvest">
-        <IconWindowDownloadOutline18 />
+        <IconWindowDownload />
         <span>Downloads</span>
         <span className={styles.slash}>/</span>
         <span>Active</span>

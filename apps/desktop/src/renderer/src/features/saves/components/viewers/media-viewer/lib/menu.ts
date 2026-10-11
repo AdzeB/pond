@@ -1,8 +1,4 @@
-import {
-  IconClone2Outline18,
-  IconFloppyDiskOutline18,
-  IconImagePlusOutline18,
-} from "@pond/icons/outline/18";
+import { IconCopy, IconFloppyDisk, IconImagePlus } from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import { createElement } from "react";
 import {
@@ -40,7 +36,7 @@ function adaptVideoItems(
     if ("id" in item && item.id === "copy-primary") {
       return {
         label: "Copy Current Frame",
-        icon: createElement(IconClone2Outline18),
+        icon: createElement(IconCopy),
         shortcut: shortcutGlyphs("viewer.copy-frame"),
         onClick: () => void copyVideoFrame(video),
       };
@@ -48,7 +44,7 @@ function adaptVideoItems(
     if ("label" in item && item.label === "Set Thumbnail from File") {
       return {
         label: "Set Current Frame as Thumbnail",
-        icon: createElement(IconImagePlusOutline18),
+        icon: createElement(IconImagePlus),
         onClick: () => void setVideoThumbnail(save.id, video),
       };
     }
@@ -61,7 +57,7 @@ function adaptVideoItems(
           items: [
             {
               label: "Save Current Frame",
-              icon: createElement(IconFloppyDiskOutline18),
+              icon: createElement(IconFloppyDisk),
               shortcut: shortcutGlyphs("viewer.save-frame"),
               onClick: () => void saveVideoFrame(video),
             },

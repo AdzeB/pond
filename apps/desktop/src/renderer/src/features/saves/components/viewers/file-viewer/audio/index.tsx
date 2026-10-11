@@ -1,11 +1,11 @@
 import {
-  IconAnimationRepeatOutline18,
-  IconFullScreenOutline18,
-  IconMediaPauseOutline18,
-  IconMediaPlayOutline18,
-  IconVolumeOffOutline18,
-  IconVolumeOutline18,
-} from "@pond/icons/outline/18";
+  IconAnimationRepeat,
+  IconFullScreen,
+  IconMediaPause,
+  IconMediaPlay,
+  IconVolume,
+  IconVolumeOff,
+} from "@pond/icons";
 import { Select, Slider } from "@pond/ui";
 import { useEffect, useRef, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
@@ -183,17 +183,13 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
               else audio.pause();
             }}
           >
-            {playing ? <IconMediaPauseOutline18 /> : <IconMediaPlayOutline18 />}
+            {playing ? <IconMediaPause /> : <IconMediaPlay />}
           </ViewerHud.Tool>
           <ViewerHud.Tool
             label={muted || volume === 0 ? "Unmute" : "Mute"}
             onClick={() => setMuted((value) => !value)}
           >
-            {muted || volume === 0 ? (
-              <IconVolumeOffOutline18 />
-            ) : (
-              <IconVolumeOutline18 />
-            )}
+            {muted || volume === 0 ? <IconVolumeOff /> : <IconVolume />}
           </ViewerHud.Tool>
           <ViewerHud.Scale>
             {formatAudioTime(currentTime)} / {formatAudioTime(duration)}
@@ -272,7 +268,7 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
             pressed={loop}
             onClick={() => setLoop((value) => !value)}
           >
-            <IconAnimationRepeatOutline18 />
+            <IconAnimationRepeat />
           </ViewerHud.Tool>
           <ViewerHud.Tool
             label="Full Screen"
@@ -283,7 +279,7 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
               else void root.requestFullscreen();
             }}
           >
-            <IconFullScreenOutline18 />
+            <IconFullScreen />
           </ViewerHud.Tool>
         </ViewerHud.Tools>
       </ChromePortal>

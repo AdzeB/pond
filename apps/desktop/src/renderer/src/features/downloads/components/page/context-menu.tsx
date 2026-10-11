@@ -1,12 +1,10 @@
 import {
-  IconCircleXmarkFill18,
-  IconMediaPauseFill18,
-  IconRefreshFill18,
-} from "@pond/icons/fill/18";
-import {
-  IconBanOutline18,
-  IconTrashXmarkOutline18,
-} from "@pond/icons/outline/18";
+  IconBan,
+  IconCircleXmarkFill,
+  IconMediaPauseFill,
+  IconRefreshFill,
+  IconTrashXmark,
+} from "@pond/icons";
 import { type MenuItemSpec, useDataTable } from "@pond/ui";
 import type { ReactElement } from "react";
 import {
@@ -39,7 +37,7 @@ export function buildDownloadMenuItems(
   return [
     {
       label: plural ? "Retry Selected" : "Retry Download",
-      icon: <IconRefreshFill18 />,
+      icon: <IconRefreshFill />,
       disabled: !retryable,
       onClick: () =>
         void retryDownloadRows(rows).then((did) => {
@@ -48,20 +46,20 @@ export function buildDownloadMenuItems(
     },
     {
       label: plural ? "Cancel Selected" : "Cancel Download",
-      icon: <IconMediaPauseFill18 />,
+      icon: <IconMediaPauseFill />,
       disabled: !cancellable,
       onClick: () => cancelDownloadRows(rows),
     },
     {
       label: plural ? "Skip Selected" : "Skip Download",
-      icon: <IconBanOutline18 />,
+      icon: <IconBan />,
       disabled: !skippable,
       onClick: () => skipDownloadRows(rows),
     },
     { type: "separator" },
     {
       label: plural ? "Move Selected to Trash" : "Move to Trash",
-      icon: <IconTrashXmarkOutline18 />,
+      icon: <IconTrashXmark />,
       variant: "destructive",
       disabled: !trashable,
       onClick: () => trashDownloadRows(rows),
@@ -69,7 +67,7 @@ export function buildDownloadMenuItems(
     { type: "separator" },
     {
       label: "Clear Selection",
-      icon: <IconCircleXmarkFill18 />,
+      icon: <IconCircleXmarkFill />,
       onClick: downloadsSelection.clear,
     },
   ];

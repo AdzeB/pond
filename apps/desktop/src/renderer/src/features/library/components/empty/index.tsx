@@ -1,15 +1,13 @@
 import {
-  IconAlbum2Fill18,
-  IconArrowDiagonalInFill18,
-  IconBookmarkSlashFill18,
-  IconFolderBanFill18,
-  IconFolderOpenFill18,
-  IconTrashXmarkFill18,
-} from "@pond/icons/fill/18";
-import {
-  IconClockPlusOutline18,
-  IconClockRotateClockwiseOutline18,
-} from "@pond/icons/outline/18";
+  IconAlbum2Fill,
+  IconArrowDiagonalInFill,
+  IconBookmarkSlashFill,
+  IconClockPlus,
+  IconFolderBanFill,
+  IconFolderOpenFill,
+  IconHistory,
+  IconTrashXmarkFill,
+} from "@pond/icons";
 import { Button, Empty } from "@pond/ui";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import type { SaveListMode } from "@/features/saves";
@@ -21,7 +19,7 @@ export function LibraryEmpty() {
   return (
     <Empty.Root>
       <Empty.Media>
-        <IconAlbum2Fill18 />
+        <IconAlbum2Fill />
       </Empty.Media>
       <Empty.Title>No saves yet</Empty.Title>
       <Empty.Description>
@@ -49,7 +47,7 @@ export function TrashEmpty() {
   return (
     <Empty.Root>
       <Empty.Media>
-        <IconTrashXmarkFill18 />
+        <IconTrashXmarkFill />
       </Empty.Media>
       <Empty.Title>Trash is empty</Empty.Title>
       <Empty.Description>
@@ -84,7 +82,7 @@ export function UncategorizedEmpty() {
   return (
     <Empty.Root role="status" aria-live="polite">
       <Empty.Media>
-        <IconFolderBanFill18 />
+        <IconFolderBanFill />
       </Empty.Media>
       <Empty.Title>No uncategorized saves</Empty.Title>
       <Empty.Description>
@@ -110,7 +108,7 @@ export function FolderEmpty() {
   return (
     <Empty.Root role="status" aria-live="polite">
       <Empty.Media>
-        <IconFolderOpenFill18 />
+        <IconFolderOpenFill />
       </Empty.Media>
       <Empty.Title>This folder is empty</Empty.Title>
       <Empty.Description>
@@ -126,24 +124,24 @@ export function LibrarySectionEmpty({ mode }: { mode: LibrarySection }) {
   const content =
     mode === "untagged"
       ? {
-          icon: <IconBookmarkSlashFill18 />,
+          icon: <IconBookmarkSlashFill />,
           title: "No untagged saves",
           description: "Saves without tags appear here.",
         }
       : mode === "recents"
         ? {
-            icon: <IconClockRotateClockwiseOutline18 />,
+            icon: <IconHistory />,
             title: "No recent saves",
             description: "Recently opened saves appear here.",
           }
         : mode === "recentlyAdded"
           ? {
-              icon: <IconClockPlusOutline18 />,
+              icon: <IconClockPlus />,
               title: "No new saves",
               description: "Saves from the last 7 days appear here.",
             }
           : {
-              icon: <IconArrowDiagonalInFill18 />,
+              icon: <IconArrowDiagonalInFill />,
               title: "No saves from this source",
               description: "Saves synced from this source appear here.",
             };

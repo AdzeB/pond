@@ -1,14 +1,14 @@
 import {
-  IconArrowDownOutline18,
-  IconArrowUpRightOutline18,
-  IconBanOutline18,
-  IconCircleCheckOutline18,
-  IconCircleWarningOutline18,
-  IconClockRotateClockwiseOutline18,
-  IconClone2Outline18,
-  IconTrashXmarkOutline18,
-  IconXmarkOutline18,
-} from "@pond/icons/outline/18";
+  IconArrowDown,
+  IconArrowUpRight,
+  IconBan,
+  IconCircleCheck,
+  IconCircleWarning,
+  IconCopy,
+  IconHistory,
+  IconTrashXmark,
+  IconXmark,
+} from "@pond/icons";
 import { Button, Tooltip } from "@pond/ui";
 import type {
   DownloadActivity,
@@ -180,26 +180,26 @@ export function DownloadInspectorView({
         <div className={styles.actions}>
           {onOpenSave && save.status === "ready" ? (
             <HeaderIcon label="Open Save" onClick={onOpenSave}>
-              <IconArrowUpRightOutline18 />
+              <IconArrowUpRight />
             </HeaderIcon>
           ) : null}
           {onSkip ? (
             <HeaderIcon label="Skip Download" onClick={onSkip}>
-              <IconBanOutline18 />
+              <IconBan />
             </HeaderIcon>
           ) : null}
           {onTrash ? (
             <HeaderIcon label="Move to Trash" onClick={onTrash}>
-              <IconTrashXmarkOutline18 />
+              <IconTrashXmark />
             </HeaderIcon>
           ) : null}
           {onCopyError ? (
             <HeaderIcon label="Copy Error" onClick={onCopyError}>
-              <IconClone2Outline18 />
+              <IconCopy />
             </HeaderIcon>
           ) : null}
           <HeaderIcon label="Close Details" onClick={onClose}>
-            <IconXmarkOutline18 />
+            <IconXmark />
           </HeaderIcon>
         </div>
       </header>
@@ -310,7 +310,7 @@ function ActivityPanel({
       <ol className={styles["activity-feed"]}>
         <li className={styles["feed-date"]}>
           <span className={styles["feed-date-icon"]} aria-hidden="true">
-            <IconClockRotateClockwiseOutline18 />
+            <IconHistory />
           </span>
           <span>This run</span>
         </li>
@@ -323,15 +323,15 @@ function ActivityPanel({
           >
             <span className={styles["feed-icon"]} aria-hidden="true">
               {item.problem ? (
-                <IconCircleWarningOutline18 />
+                <IconCircleWarning />
               ) : item.current ? (
                 item.phase === "receiving" ? (
-                  <IconArrowDownOutline18 />
+                  <IconArrowDown />
                 ) : (
-                  <IconClockRotateClockwiseOutline18 />
+                  <IconHistory />
                 )
               ) : (
-                <IconCircleCheckOutline18 />
+                <IconCircleCheck />
               )}
             </span>
             <span className={styles["feed-copy"]}>

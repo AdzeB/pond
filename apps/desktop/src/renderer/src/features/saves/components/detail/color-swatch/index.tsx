@@ -1,8 +1,4 @@
-import {
-  IconClone2Outline18,
-  IconColorPaletteOutline18,
-  IconMagnifierOutline18,
-} from "@pond/icons/outline/18";
+import { IconCopy, IconMagnifier, IconPalette } from "@pond/icons";
 import { Chip, Menu, type MenuItemSpec } from "@pond/ui";
 import { useEffect, useState } from "react";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
@@ -23,14 +19,14 @@ export function buildColorSwatchMenu(
   return [
     {
       label: "Find Similar Color Items",
-      icon: <IconMagnifierOutline18 />,
+      icon: <IconMagnifier />,
       keywords: "color similar",
       onClick: () => saveLibraryBridge.findSimilarColor(color),
     },
     {
       type: "checkbox",
       label: "Set Primary Color",
-      icon: <IconColorPaletteOutline18 />,
+      icon: <IconPalette />,
       indicator: "check",
       checked: primary,
       onCheckedChange: setPrimary,
@@ -38,13 +34,13 @@ export function buildColorSwatchMenu(
     { type: "separator" },
     ...formats.primary.map((format) => ({
       label: `Copy ${format.label}`,
-      icon: <IconClone2Outline18 />,
+      icon: <IconCopy />,
       onClick: () => copyValue(format.value),
     })),
     { type: "separator" },
     ...formats.secondary.map((format) => ({
       label: `Copy ${format.label}`,
-      icon: <IconClone2Outline18 />,
+      icon: <IconCopy />,
       onClick: () => copyValue(format.value),
     })),
   ];

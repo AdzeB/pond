@@ -1,4 +1,4 @@
-import { IconImageOutline18, IconVideoOutline18 } from "@pond/icons/outline/18";
+import { IconImage, IconVideo } from "@pond/icons";
 import JSZip from "jszip";
 import { type ReactNode, useEffect, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
@@ -125,14 +125,14 @@ export function LivePhotoViewer({
                     pressed={!motion}
                     onClick={() => setMotion(false)}
                   >
-                    <IconImageOutline18 />
+                    <IconImage />
                   </ViewerHud.Tool>
                   <ViewerHud.Tool
                     label="Motion"
                     pressed={motion}
                     onClick={() => setMotion(true)}
                   >
-                    <IconVideoOutline18 />
+                    <IconVideo />
                   </ViewerHud.Tool>
                 </>
               ) : null

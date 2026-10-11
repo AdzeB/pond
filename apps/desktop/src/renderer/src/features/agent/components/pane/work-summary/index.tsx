@@ -1,4 +1,4 @@
-import { IconChevronDownOutline12 } from "@pond/icons/outline/12";
+import { IconChevronDown } from "@pond/icons";
 import { Reveal } from "@pond/ui";
 import { Accordion } from "@pond/ui/accordion";
 import type { AssistantMetadata } from "@shared/assistant";
@@ -48,7 +48,7 @@ export function WorkSummary({
           <Accordion.Header className={styles.header}>
             <Accordion.Trigger className={styles.trigger}>
               {title}
-              <IconChevronDownOutline12 />
+              <IconChevronDown size={12} />
             </Accordion.Trigger>
           </Accordion.Header>
           <Accordion.Panel

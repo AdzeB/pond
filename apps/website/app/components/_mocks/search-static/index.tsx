@@ -1,4 +1,4 @@
-import { IconMagnifierOutline12 } from "@pond/icons/outline/12";
+import { IconMagnifier } from "@pond/icons";
 import Image from "next/image";
 import { demoImage, SAVES } from "../saves";
 import styles from "./styles.module.css";
@@ -32,7 +32,7 @@ export function SearchStatic() {
         <div className={styles.card}>
           <div className={styles.editor}>
             <span className={styles.icon}>
-              <IconMagnifierOutline12 />
+              <IconMagnifier size={12} />
             </span>
             <span className={styles.token}>source: pinterest</span>
             <span className={styles.query}>

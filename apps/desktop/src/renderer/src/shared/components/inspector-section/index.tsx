@@ -1,4 +1,4 @@
-import { IconChevronDownOutline12 } from "@pond/icons/outline/12";
+import { IconChevronDown } from "@pond/icons";
 import { Accordion } from "@pond/ui";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useId, useState } from "react";
@@ -62,7 +62,7 @@ export function Section({
           >
             <span className={styles.title}>{title}</span>
             <span className={styles.chevron} aria-hidden>
-              <IconChevronDownOutline12 />
+              <IconChevronDown size={12} />
             </span>
           </Accordion.Trigger>
           {action ? <span className={styles.action}>{action}</span> : null}

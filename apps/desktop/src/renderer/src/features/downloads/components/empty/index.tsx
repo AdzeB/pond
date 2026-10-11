@@ -1,4 +1,4 @@
-import { IconWindowDownloadFill18 } from "@pond/icons/fill/18";
+import { IconWindowDownloadFill } from "@pond/icons";
 import { Button, Empty } from "@pond/ui";
 import { getAppRouter } from "@/shared/lib/app-router";
 
@@ -6,7 +6,7 @@ export function DownloadsEmpty() {
   return (
     <Empty.Root>
       <Empty.Media>
-        <IconWindowDownloadFill18 />
+        <IconWindowDownloadFill />
       </Empty.Media>
       <Empty.Title>No downloads yet</Empty.Title>
       <Empty.Description>

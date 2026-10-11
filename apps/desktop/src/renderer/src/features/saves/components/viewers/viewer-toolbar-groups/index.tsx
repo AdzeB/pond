@@ -1,7 +1,4 @@
-import {
-  IconArrowLeftOutline18,
-  IconArrowRightOutline18,
-} from "@pond/icons/outline/18";
+import { IconArrowLeft, IconArrowRight } from "@pond/icons";
 import { Tray } from "@pond/ui";
 import type { ReactNode } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
@@ -55,7 +52,7 @@ export function ViewerNavigationControls({
         disabled={navigation.index <= 0}
         onClick={navigation.onPrevious}
       >
-        <IconArrowLeftOutline18 />
+        <IconArrowLeft />
       </ViewerHud.Tool>
       <ViewerHud.Tool
         label="Next Slide"
@@ -63,7 +60,7 @@ export function ViewerNavigationControls({
         disabled={navigation.index >= navigation.count - 1}
         onClick={navigation.onNext}
       >
-        <IconArrowRightOutline18 />
+        <IconArrowRight />
       </ViewerHud.Tool>
     </>
   );

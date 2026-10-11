@@ -1,4 +1,4 @@
-import { IconCheck3Outline12 } from "@pond/icons/outline/12";
+import { IconCheck } from "@pond/icons";
 import { Logo } from "@pond/ui/logo";
 import Image from "next/image";
 import { demoImage, SAVES } from "../saves";
@@ -38,7 +38,7 @@ export function SaveStatic() {
         </div>
         <div className={styles.toast}>
           <span className={styles["toast-icon"]}>
-            <IconCheck3Outline12 />
+            <IconCheck size={12} />
           </span>
           <span className={styles["toast-body"]}>
             <span className={styles["toast-title"]}>Saved to Pond</span>

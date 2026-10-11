@@ -1,7 +1,4 @@
-import {
-  IconArrowLeftOutline18,
-  IconArrowRightOutline18,
-} from "@pond/icons/outline/18";
+import { IconArrowLeft, IconArrowRight } from "@pond/icons";
 import { Select, Slider } from "@pond/ui";
 import type { Book, NavItem, Rendition } from "epubjs";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
@@ -145,13 +142,13 @@ export function EpubViewer({
                     label="Previous"
                     onClick={() => void renditionRef.current?.prev()}
                   >
-                    <IconArrowLeftOutline18 />
+                    <IconArrowLeft />
                   </ViewerHud.Tool>
                   <ViewerHud.Tool
                     label="Next"
                     onClick={() => void renditionRef.current?.next()}
                   >
-                    <IconArrowRightOutline18 />
+                    <IconArrowRight />
                   </ViewerHud.Tool>
                 </>
               }

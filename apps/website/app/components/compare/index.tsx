@@ -1,12 +1,12 @@
-import { IconCircleCheckFill18 } from "@pond/icons/fill/18";
 import {
-  IconComputerOutline18,
-  IconFolderOutline18,
-  IconGlobeOutline18,
-  IconImageOutline18,
-  IconMinusOutline18,
-  IconScanImageOutline18,
-} from "@pond/icons/outline/18";
+  IconCircleCheckFill,
+  IconComputer,
+  IconFolder,
+  IconGlobe,
+  IconImage,
+  IconMinus,
+  IconScanImage,
+} from "@pond/icons";
 import { Logo } from "@pond/ui/logo";
 import type { ComponentType, SVGProps } from "react";
 import { Section } from "../_primitives/section";
@@ -24,27 +24,27 @@ const ROWS: {
   values: readonly [Cell, Cell, Cell, Cell];
 }[] = [
   {
-    icon: IconComputerOutline18,
+    icon: IconComputer,
     label: "Local-first. Nothing leaves your Mac",
     values: [true, false, false, false],
   },
   {
-    icon: IconFolderOutline18,
+    icon: IconFolder,
     label: "A folder you own",
     values: [true, false, false, false],
   },
   {
-    icon: IconImageOutline18,
+    icon: IconImage,
     label: "Original media, not compressed copies",
     values: [true, false, false, false],
   },
   {
-    icon: IconGlobeOutline18,
+    icon: IconGlobe,
     label: "Nine platforms, plus the web",
     values: [true, false, false, false],
   },
   {
-    icon: IconScanImageOutline18,
+    icon: IconScanImage,
     label: "On-device captions, text in images, and visual search",
     values: [true, false, false, false],
   },
@@ -54,7 +54,7 @@ function CellMark({ on }: { on: boolean }) {
   if (on) {
     return (
       <span className={styles.yes}>
-        <IconCircleCheckFill18 />
+        <IconCircleCheckFill />
         <span className={styles.sr}>Yes</span>
       </span>
     );
@@ -62,7 +62,7 @@ function CellMark({ on }: { on: boolean }) {
 
   return (
     <span className={styles.no}>
-      <IconMinusOutline18 />
+      <IconMinus />
       <span className={styles.sr}>No</span>
     </span>
   );

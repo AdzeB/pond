@@ -1,4 +1,4 @@
-import { IconCodeOutline18, IconEyeOutline18 } from "@pond/icons/outline/18";
+import { IconCode, IconEye } from "@pond/icons";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
@@ -91,14 +91,14 @@ export function SafeWebViewer({
                 pressed={mode === "rendered"}
                 onClick={() => setMode("rendered")}
               >
-                <IconEyeOutline18 />
+                <IconEye />
               </ViewerHud.Tool>
               <ViewerHud.Tool
                 label="Source"
                 pressed={mode === "source"}
                 onClick={() => setMode("source")}
               >
-                <IconCodeOutline18 />
+                <IconCode />
               </ViewerHud.Tool>
             </>
           }

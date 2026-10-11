@@ -1,19 +1,18 @@
 import {
-  IconArchiveExportOutline18,
-  IconBoxArchiveOutline18,
-  IconConversionOutline18,
-  IconFileExportOutline18,
-  IconFileZipOutline18,
-  IconGaugeOutline18,
-  IconImageBinaryOutline18,
-  IconImageMinusOutline18,
-  IconImageOutline18,
-  IconImageSparkleOutline18,
-  IconImageUpscaleOutline18,
-  IconPhotoOutline18,
-  IconShieldCheckOutline18,
-  IconTableDownloadOutline18,
-} from "@pond/icons/outline/18";
+  IconArchive,
+  IconArchiveExport,
+  IconConversion,
+  IconFileExport,
+  IconFileZip,
+  IconGauge,
+  IconImage,
+  IconImageBinary,
+  IconImageMinus,
+  IconImageSparkle,
+  IconImageUpscale,
+  IconShieldCheck,
+  IconTableDownload,
+} from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import {
@@ -155,7 +154,7 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
     {
       id: "export-files",
       label: "Export Files",
-      icon: glyph(IconFileExportOutline18),
+      icon: glyph(IconFileExport),
       keywords: "files",
       hidden: !hasFiles,
       shortcut: shortcutGlyphs("save.export"),
@@ -166,29 +165,29 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
     {
       id: "export-converted",
       label: "Export Converted Files",
-      icon: glyph(IconConversionOutline18),
+      icon: glyph(IconConversion),
       hidden: !hasFiles,
       onClick: () => saveLibraryBridge.openConversion(ids, fileIndex ?? 0),
     },
     {
       type: "submenu",
       label: "Compress Images",
-      icon: glyph(IconFileZipOutline18),
+      icon: glyph(IconFileZip),
       hidden: compressibleImageCount(context) === 0,
       items: [
         {
           label: "Convert to WebP",
-          icon: glyph(IconImageOutline18),
+          icon: glyph(IconImage),
           onClick: () => compressImages(ids, fileIndex ?? 0, "webp"),
         },
         {
           label: "Lossless",
-          icon: glyph(IconShieldCheckOutline18),
+          icon: glyph(IconShieldCheck),
           onClick: () => compressImages(ids, fileIndex ?? 0, "lossless"),
         },
         {
           label: "Quality 85",
-          icon: glyph(IconGaugeOutline18),
+          icon: glyph(IconGauge),
           onClick: () => compressImages(ids, fileIndex ?? 0, "quality"),
         },
       ],
@@ -196,25 +195,25 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
     {
       type: "submenu",
       label: "Image Tools",
-      icon: glyph(IconImageSparkleOutline18),
+      icon: glyph(IconImageSparkle),
       hidden: compressibleImageCount(context) === 0,
       items: [
         {
           label: "Remove Background",
-          icon: glyph(IconImageMinusOutline18),
+          icon: glyph(IconImageMinus),
           onClick: () =>
             compressImages(ids, fileIndex ?? 0, "remove-background"),
         },
         {
           label: "Upscale 2×",
-          icon: glyph(IconImageUpscaleOutline18),
+          icon: glyph(IconImageUpscale),
           onClick: () => compressImages(ids, fileIndex ?? 0, "upscale"),
         },
       ],
     },
     {
       label: "Export as WebP",
-      icon: glyph(IconImageOutline18),
+      icon: glyph(IconImage),
       hidden: !hasFiles,
       onClick: () => {
         void window.pond.query("saves.exportWebp", { ids });
@@ -222,7 +221,7 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
     },
     {
       label: "Convert to PNG",
-      icon: glyph(IconImageBinaryOutline18),
+      icon: glyph(IconImageBinary),
       hidden: !isWebp,
       onClick: () => {
         void startWebpConvert(ids, fileIndex ?? 0, "png");
@@ -230,7 +229,7 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
     },
     {
       label: "Convert to JPG",
-      icon: glyph(IconPhotoOutline18),
+      icon: glyph(IconImage),
       hidden: !isWebp,
       onClick: () => {
         void startWebpConvert(ids, fileIndex ?? 0, "jpeg");
@@ -239,7 +238,7 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
     {
       id: "export-eagle-package",
       label: "Export Eagle Package",
-      icon: glyph(IconBoxArchiveOutline18),
+      icon: glyph(IconArchive),
       keywords: "eagle package",
       onClick: () => {
         void window.pond
@@ -260,7 +259,7 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
     },
     {
       label: "Export Pond Package",
-      icon: glyph(IconArchiveExportOutline18),
+      icon: glyph(IconArchiveExport),
       keywords: "package",
       onClick: () => {
         void window.pond
@@ -279,7 +278,7 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
     {
       id: "export-csv",
       label: "Export to CSV",
-      icon: glyph(IconTableDownloadOutline18),
+      icon: glyph(IconTableDownload),
       keywords: "csv",
       onClick: () => void exportSelectionCsv(ids),
     },

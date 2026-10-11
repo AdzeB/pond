@@ -1,8 +1,4 @@
-import {
-  IconArrowsExpandDiagonalOutline12,
-  IconMinusOutline12,
-  IconPlusOutline12,
-} from "@pond/icons/outline/12";
+import { IconArrowsExpandDiagonal, IconMinus, IconPlus } from "@pond/icons";
 import { Button, Menu, type MenuItemSpec, Slider } from "@pond/ui";
 import styles from "./styles.module.css";
 
@@ -87,7 +83,7 @@ export function ZoomBar({
         aria-label="Zoom Out"
         onClick={() => onZoom(stepZoom(scale, -1))}
       >
-        <IconMinusOutline12 />
+        <IconMinus size={12} />
       </Button>
       <Slider.Root
         className={styles.slider}
@@ -112,7 +108,7 @@ export function ZoomBar({
         aria-label="Zoom In"
         onClick={() => onZoom(stepZoom(scale, 1))}
       >
-        <IconPlusOutline12 />
+        <IconPlus size={12} />
       </Button>
       <span className={styles.divider} aria-hidden="true" />
       <Menu.Root>
@@ -141,7 +137,7 @@ export function ZoomBar({
         aria-pressed={fit}
         onClick={onFit}
       >
-        <IconArrowsExpandDiagonalOutline12 />
+        <IconArrowsExpandDiagonal size={12} />
       </Button>
     </div>
   );

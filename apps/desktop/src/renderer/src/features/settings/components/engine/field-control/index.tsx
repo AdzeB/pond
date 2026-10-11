@@ -1,8 +1,8 @@
 import {
-  IconMinusOutline18 as Minus,
-  IconPlusOutline18 as Plus,
-  IconArrowRotateAnticlockwiseOutline18 as RotateCcw,
-} from "@pond/icons/outline/18";
+  IconMinus as Minus,
+  IconPlus as Plus,
+  IconArrowRotateAnticlockwise as RotateCcw,
+} from "@pond/icons";
 import {
   Button,
   ColorField,

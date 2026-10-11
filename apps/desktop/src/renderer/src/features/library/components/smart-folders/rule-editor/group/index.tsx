@@ -1,4 +1,4 @@
-import { IconMinusOutline12, IconPlusOutline12 } from "@pond/icons/outline/12";
+import { IconMinus, IconPlus } from "@pond/icons";
 import { isGroup, type Query } from "@pond/schema/filters/types";
 import { Button } from "@pond/ui";
 import { useId } from "react";
@@ -61,7 +61,7 @@ export function Group({
             aria-label={`Remove ${path}`}
             onClick={onRemove}
           >
-            <IconMinusOutline12 />
+            <IconMinus size={12} />
           </Button>
         ) : null}
         <Button variant="secondary" size="sm" onClick={editor.addGroup}>
@@ -74,7 +74,7 @@ export function Group({
           aria-label={`Add Rule to ${path}`}
           onClick={editor.addRule}
         >
-          <IconPlusOutline12 />
+          <IconPlus size={12} />
         </Button>
       </div>
       <div className={styles.rules}>

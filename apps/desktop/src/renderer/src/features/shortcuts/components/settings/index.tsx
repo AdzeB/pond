@@ -1,4 +1,4 @@
-import { IconMagnifierOutline12 } from "@pond/icons/outline/12";
+import { IconMagnifier } from "@pond/icons";
 import { Button, Empty, Input, Settings } from "@pond/ui";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { errorCopy } from "@/shared/lib/error-copy";
@@ -189,7 +189,7 @@ export function ShortcutSettings({
       {!only && (
         <Input.Root size="md">
           <Input.Icon>
-            <IconMagnifierOutline12 />
+            <IconMagnifier size={12} />
           </Input.Icon>
           <Input.Field
             aria-label="Search shortcuts"

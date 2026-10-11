@@ -1,35 +1,34 @@
 import {
-  IconArchiveDownloadOutline18,
-  IconArrowRotateClockwiseOutline18,
-  IconBoxArchiveDownloadOutline18,
-  IconBulletListOutline18,
-  IconCheckboxCheckedOutline18,
-  IconClone2Outline18,
-  IconDownloadOutline18,
-  IconEyeOutline18,
-  IconFileAlertOutline18,
-  IconFileOutline18,
-  IconFileSettingsOutline18,
-  IconFiles2Outline18,
-  IconFolderImportOutline18,
-  IconFolderOpenOutline18,
-  IconFolderOutline18,
-  IconFolderRefreshOutline18,
-  IconFolderSearchOutline18,
-  IconGlobeOutline18,
-  IconImageOutline18,
-  IconImageSparkleOutline18,
-  IconLink2Outline18,
-  IconNotepadOutline18,
-  IconRenameOutline18,
-  IconReportFileOutline18,
-  IconScanOutline18,
-  IconSettingsWrenchOutline18,
-  IconShieldCheckOutline18,
-  IconTagsOutline18,
-  IconUserPlusOutline18,
-  IconVersionsOutline18,
-} from "@pond/icons/outline/18";
+  IconArchiveDownload,
+  IconArrowRotateClockwise,
+  IconBulletList,
+  IconCheckboxChecked,
+  IconCopy,
+  IconDownload,
+  IconEye,
+  IconFile,
+  IconFileAlert,
+  IconFileSettings,
+  IconFiles2,
+  IconFolder,
+  IconFolderImport,
+  IconFolderOpen,
+  IconFolderRefresh,
+  IconFolderSearch,
+  IconGlobe,
+  IconImage,
+  IconImageSparkle,
+  IconLink2,
+  IconNotepad,
+  IconRename,
+  IconReportFile,
+  IconScan,
+  IconSettingsWrench,
+  IconShieldCheck,
+  IconTags,
+  IconUserPlus,
+  IconVersions,
+} from "@pond/icons";
 import { Dialog, type MenuItemSpec } from "@pond/ui";
 import {
   BLANK_DOCUMENTS,
@@ -77,7 +76,7 @@ export function buildNewMenuItems(
     {
       id: "note",
       label: "New Note",
-      icon: <IconNotepadOutline18 />,
+      icon: <IconNotepad />,
       keywords: "text document write markdown",
       shortcut: shortcutGlyphs("library.new-note"),
       onClick: () => void runNewAction(createNote),
@@ -93,7 +92,7 @@ export function buildNewMenuItems(
             style={DOCUMENT_LOGO_STYLE}
           />
         ) : (
-          <IconFileOutline18 />
+          <IconFile />
         ),
         keywords: `${item.label} document blank template`,
         onClick: () => void runNewAction(() => createBlankDocument(item.kind)),
@@ -106,13 +105,13 @@ export function buildNewMenuItems(
       type: "submenu",
       id: "new",
       label: "New",
-      icon: <IconFolderOutline18 />,
+      icon: <IconFolder />,
       keywords: "create folder tag document",
       items: [
         {
           id: "folder",
           label: "New Folder",
-          icon: <IconFolderOutline18 />,
+          icon: <IconFolder />,
           keywords: "organize directory",
           shortcut: shortcutGlyphs("library.new-folder"),
           onClick: () => newFolder(),
@@ -120,21 +119,21 @@ export function buildNewMenuItems(
         {
           id: "smart-folder",
           label: "New Smart Folder",
-          icon: <IconFolderSearchOutline18 />,
+          icon: <IconFolderSearch />,
           keywords: "filter rules saved view",
           onClick: () => newSmartFolder(),
         },
         {
           id: "watched-folder",
           label: "New Watched Folder",
-          icon: <IconFolderRefreshOutline18 />,
+          icon: <IconFolderRefresh />,
           keywords: "auto import directory local files copy",
           onClick: () => void runNewAction(pickWatchedFolder),
         },
         {
           id: "tag",
           label: "New Tag",
-          icon: <IconTagsOutline18 />,
+          icon: <IconTags />,
           keywords: "label organize",
           shortcut: shortcutGlyphs("library.new-tag"),
           onClick: () => newTag("tag"),
@@ -142,7 +141,7 @@ export function buildNewMenuItems(
         {
           id: "tag-group",
           label: "New Tag Group",
-          icon: <IconVersionsOutline18 />,
+          icon: <IconVersions />,
           keywords: "labels organize",
           shortcut: shortcutGlyphs("library.new-tag-group"),
           onClick: () => newTag("tag-group"),
@@ -154,13 +153,13 @@ export function buildNewMenuItems(
       type: "submenu",
       id: "import",
       label: "Import",
-      icon: <IconDownloadOutline18 />,
+      icon: <IconDownload />,
       keywords: "files folders links clipboard bookmarks packages library",
       items: [
         {
           id: "files",
           label: "Import Files",
-          icon: <IconFileOutline18 />,
+          icon: <IconFile />,
           keywords: "from image video audio pdf font document text file media",
           shortcut: shortcutGlyphs("library.import-files"),
           onClick: () => void runNewAction(() => importPaths("files")),
@@ -168,7 +167,7 @@ export function buildNewMenuItems(
         {
           id: "folders",
           label: "Import Folders",
-          icon: <IconFolderOpenOutline18 />,
+          icon: <IconFolderOpen />,
           keywords: "from directory media",
           shortcut: shortcutGlyphs("library.import-folders"),
           onClick: () => void runNewAction(() => importPaths("folders")),
@@ -176,7 +175,7 @@ export function buildNewMenuItems(
         {
           id: "links",
           label: "Import from Links",
-          icon: <IconLink2Outline18 />,
+          icon: <IconLink2 />,
           keywords: "url website bookmark save",
           shortcut: shortcutGlyphs("library.import-links"),
           onClick: () => newMenuDialog.open({ kind: "links" }),
@@ -184,21 +183,21 @@ export function buildNewMenuItems(
         {
           id: "clipboard",
           label: "Import from Clipboard",
-          icon: <IconClone2Outline18 />,
+          icon: <IconCopy />,
           keywords: "paste image files",
           onClick: () => void runNewAction(importClipboard),
         },
         {
           id: "bookmarks",
           label: "Import Bookmarks",
-          icon: <IconGlobeOutline18 />,
+          icon: <IconGlobe />,
           keywords: "netscape chrome safari html bookmark file",
           onClick: () => void runNewAction(importBookmarks),
         },
         {
           id: "page-assets",
           label: "Import Page Assets",
-          icon: <IconImageSparkleOutline18 />,
+          icon: <IconImageSparkle />,
           keywords: "extract images website scrape batch",
           onClick: () => {
             Dialog.prompt({
@@ -215,21 +214,21 @@ export function buildNewMenuItems(
         {
           id: "eagle-package",
           label: "Import Eagle Package",
-          icon: <IconBoxArchiveDownloadOutline18 />,
+          icon: <IconArchiveDownload />,
           keywords: "eagle archive package migrate",
           onClick: () => void runNewAction(importEaglePackage),
         },
         {
           id: "pond-package",
           label: "Import Pond Package",
-          icon: <IconArchiveDownloadOutline18 />,
+          icon: <IconArchiveDownload />,
           keywords: "archive package migrate",
           onClick: () => void runNewAction(importPondPackage),
         },
         {
           id: "eagle",
           label: "Import Eagle Library",
-          icon: <IconDownloadOutline18 />,
+          icon: <IconDownload />,
           keywords: "migrate archive package",
           onClick: () => void runNewAction(importEagle),
         },
@@ -237,13 +236,13 @@ export function buildNewMenuItems(
           type: "submenu",
           id: "legacy-library",
           label: "Import Legacy Library",
-          icon: <IconFolderImportOutline18 />,
+          icon: <IconFolderImport />,
           keywords: "artstation huaban pixave inboard migrate export",
           items: (["ArtStation", "Huaban", "Pixave", "Inboard"] as const).map(
             (source) => ({
               id: `legacy-${source.toLowerCase()}`,
               label: `Import ${source} Export`,
-              icon: <IconFolderImportOutline18 />,
+              icon: <IconFolderImport />,
               onClick: () =>
                 void runNewAction(() => importLegacyLibrary(source)),
             }),
@@ -255,14 +254,14 @@ export function buildNewMenuItems(
       type: "submenu",
       id: "sources",
       label: "Sources",
-      icon: <IconUserPlusOutline18 />,
+      icon: <IconUserPlus />,
       keywords: "connect watch accounts",
       items: [
         {
           type: "submenu",
           id: "connect",
           label: "New Source",
-          icon: <IconUserPlusOutline18 />,
+          icon: <IconUserPlus />,
           keywords: "new account sync auto import connect",
           items: connectableSourceItems((source) =>
             newSource("connect", source),
@@ -272,7 +271,7 @@ export function buildNewMenuItems(
           type: "submenu",
           id: "watch",
           label: "New Watch",
-          icon: <IconEyeOutline18 />,
+          icon: <IconEye />,
           keywords: "new source public auto import someone watch",
           items: watchableSourceItems((source) => newSource("watch", source)),
         },
@@ -282,34 +281,34 @@ export function buildNewMenuItems(
       type: "submenu",
       id: "library",
       label: "Library",
-      icon: <IconFiles2Outline18 />,
+      icon: <IconFiles2 />,
       keywords: "duplicates rescan verify repair diagnostics",
       items: [
         {
           type: "submenu",
           id: "find-duplicates",
           label: "Find Duplicates",
-          icon: <IconFiles2Outline18 />,
+          icon: <IconFiles2 />,
           keywords: "scan similar exact",
           items: [
             {
               id: "duplicates-all",
               label: "Scan All",
-              icon: <IconScanOutline18 />,
+              icon: <IconScan />,
               keywords: "library",
               onClick: () => findDuplicates("all"),
             },
             {
               id: "duplicates-list",
               label: "Current List",
-              icon: <IconBulletListOutline18 />,
+              icon: <IconBulletList />,
               keywords: "folder view filter",
               onClick: () => findDuplicates("list"),
             },
             {
               id: "duplicates-selected",
               label: "Selected",
-              icon: <IconCheckboxCheckedOutline18 />,
+              icon: <IconCheckboxChecked />,
               keywords: "selection",
               onClick: () => findDuplicates("selected"),
             },
@@ -319,25 +318,25 @@ export function buildNewMenuItems(
           type: "submenu",
           id: "review-organization",
           label: "Review Organization",
-          icon: <IconFolderSearchOutline18 />,
+          icon: <IconFolderSearch />,
           keywords: "cluster classify labels folders related",
           items: [
             {
               id: "organization-all",
               label: "All Saves",
-              icon: <IconFiles2Outline18 />,
+              icon: <IconFiles2 />,
               onClick: () => reviewOrganization("all"),
             },
             {
               id: "organization-list",
               label: "Current List",
-              icon: <IconBulletListOutline18 />,
+              icon: <IconBulletList />,
               onClick: () => reviewOrganization("list"),
             },
             {
               id: "organization-selected",
               label: "Selected",
-              icon: <IconCheckboxCheckedOutline18 />,
+              icon: <IconCheckboxChecked />,
               onClick: () => reviewOrganization("selected"),
             },
           ],
@@ -345,7 +344,7 @@ export function buildNewMenuItems(
         {
           id: "rescan",
           label: "Rescan Library",
-          icon: <IconArrowRotateClockwiseOutline18 />,
+          icon: <IconArrowRotateClockwise />,
           keywords: "reconcile index files disk",
           shortcut: shortcutGlyphs("library.rescan"),
           onClick: () => void runNewAction(rescanLibrary),
@@ -353,7 +352,7 @@ export function buildNewMenuItems(
         {
           id: "verify",
           label: "Verify Integrity",
-          icon: <IconShieldCheckOutline18 />,
+          icon: <IconShieldCheck />,
           keywords: "check missing orphan files disk",
           onClick: () => void runNewAction(verifyIntegrity),
         },
@@ -361,13 +360,13 @@ export function buildNewMenuItems(
           type: "submenu",
           id: "repair-library",
           label: "Repair Library",
-          icon: <IconSettingsWrenchOutline18 />,
+          icon: <IconSettingsWrench />,
           keywords: "fix maintenance metadata filenames thumbnails content",
           items: [
             {
               id: "repair-thumbnails",
               label: "Repair Thumbnails",
-              icon: <IconImageOutline18 />,
+              icon: <IconImage />,
               onClick: () =>
                 newMenuDialog.open({
                   kind: "repair",
@@ -377,7 +376,7 @@ export function buildNewMenuItems(
             {
               id: "repair-physical-file-names",
               label: "Repair Physical File Names",
-              icon: <IconRenameOutline18 />,
+              icon: <IconRename />,
               onClick: () =>
                 newMenuDialog.open({
                   kind: "repair",
@@ -387,7 +386,7 @@ export function buildNewMenuItems(
             {
               id: "repair-invalid-content",
               label: "Repair Invalid Content",
-              icon: <IconFileAlertOutline18 />,
+              icon: <IconFileAlert />,
               onClick: () =>
                 newMenuDialog.open({
                   kind: "repair",
@@ -397,7 +396,7 @@ export function buildNewMenuItems(
             {
               id: "repair-save-metadata",
               label: "Repair Save Metadata",
-              icon: <IconFileSettingsOutline18 />,
+              icon: <IconFileSettings />,
               onClick: () =>
                 newMenuDialog.open({
                   kind: "repair",
@@ -409,7 +408,7 @@ export function buildNewMenuItems(
         {
           id: "debug-report",
           label: "Export Debug Report",
-          icon: <IconReportFileOutline18 />,
+          icon: <IconReportFile />,
           keywords: "diagnostics support privacy redacted",
           onClick: () => void runNewAction(exportDebugReport),
         },

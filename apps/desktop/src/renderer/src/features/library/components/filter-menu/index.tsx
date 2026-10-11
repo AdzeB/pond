@@ -1,7 +1,4 @@
-import {
-  IconBookmarkOutline18,
-  IconFilterOffOutline18,
-} from "@pond/icons/outline/18";
+import { IconBookmark, IconFilterOff } from "@pond/icons";
 import { isPredicate, type Predicate } from "@pond/schema/filters/types";
 import { Button, Tooltip } from "@pond/ui";
 import { useFolders } from "@/features/library/state/folders";
@@ -191,7 +188,7 @@ export function FilterBarView({
                   )
                 }
               >
-                <IconBookmarkOutline18 />
+                <IconBookmark />
               </Button>
             </Tooltip>
           ) : (
@@ -214,7 +211,7 @@ export function FilterBarView({
                     )
                 }
               >
-                <IconBookmarkOutline18 />
+                <IconBookmark />
               </Button>
             </Tooltip>
           )}
@@ -231,7 +228,7 @@ export function FilterBarView({
                 setVisualProbe(null);
               }}
             >
-              <IconFilterOffOutline18 />
+              <IconFilterOff />
             </Button>
           </Tooltip>
         </>

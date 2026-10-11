@@ -1,15 +1,15 @@
 import {
-  IconArrowDownOutline18,
-  IconArrowUpOutline18,
-  IconCalendarDateOutline18,
-  IconCalendarPlusOutline18,
-  IconColorPaletteOutline18,
-  IconDiceOutline18,
-  IconMediaLibraryOutline18,
-  IconQuickAccessOutline18,
-  IconSortAlphaAscendingOutline18,
-  IconSortArrowsOutline18,
-} from "@pond/icons/outline/18";
+  IconArrowDown,
+  IconArrowUp,
+  IconCalendarDate,
+  IconCalendarPlus,
+  IconDice,
+  IconMediaLibrary,
+  IconPalette,
+  IconQuickAccess,
+  IconSortAlphaAscending,
+  IconSortArrows,
+} from "@pond/icons";
 import type { Folder } from "@pond/schema/db";
 import { libraryFolderLink } from "@shared/library-links";
 import { createElement } from "react";
@@ -201,7 +201,7 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
     {
       type: "submenu",
       label: "Icon",
-      icon: createElement(IconMediaLibraryOutline18),
+      icon: createElement(IconMediaLibrary),
       items: FOLDER_MENU_ICONS.map((option) => ({
         type: "checkbox",
         label: option.label,
@@ -214,7 +214,7 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
     {
       type: "submenu",
       label: "Color",
-      icon: createElement(IconColorPaletteOutline18),
+      icon: createElement(IconPalette),
       items: FOLDER_SWATCHES.map((option) => ({
         type: "checkbox",
         label: option.label,
@@ -245,14 +245,14 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
     {
       type: "submenu",
       label: "Sort By",
-      icon: createElement(IconSortArrowsOutline18),
+      icon: createElement(IconSortArrows),
       items: (
         [
-          ["savedAt", "Date Saved", IconCalendarDateOutline18],
-          ["createdAt", "Date Added", IconCalendarPlusOutline18],
-          ["title", "Title", IconSortAlphaAscendingOutline18],
-          ["type", "Type", IconMediaLibraryOutline18],
-          ["random", "Random", IconDiceOutline18],
+          ["savedAt", "Date Saved", IconCalendarDate],
+          ["createdAt", "Date Added", IconCalendarPlus],
+          ["title", "Title", IconSortAlphaAscending],
+          ["type", "Type", IconMediaLibrary],
+          ["random", "Random", IconDice],
         ] as const
       ).map(([key, label, Icon]) => ({
         type: "checkbox",
@@ -272,7 +272,7 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
     {
       type: "checkbox",
       label: "Quick Access",
-      icon: createElement(IconQuickAccessOutline18),
+      icon: createElement(IconQuickAccess),
       checked: input.quickAccess ?? false,
       onCheckedChange: (quickAccess) => {
         void saveFolderPresentation(folder.id, {
@@ -290,14 +290,14 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
     },
     {
       label: "Move Up in Quick Access",
-      icon: createElement(IconArrowUpOutline18),
+      icon: createElement(IconArrowUp),
       hidden: !input.quickAccess || quickIndex <= 0,
       onClick: () =>
         void moveQuickAccess(folder.id, input.quickAccessFolderIds, -1),
     },
     {
       label: "Move Down in Quick Access",
-      icon: createElement(IconArrowDownOutline18),
+      icon: createElement(IconArrowDown),
       hidden:
         !input.quickAccess ||
         quickIndex < 0 ||

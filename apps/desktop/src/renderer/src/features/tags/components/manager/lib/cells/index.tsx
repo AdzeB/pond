@@ -1,4 +1,4 @@
-import { IconDotsFill12 as Dots } from "@pond/icons/fill/12";
+import { IconDotsFill as Dots } from "@pond/icons";
 import { Menu } from "@pond/ui";
 import type { MouseEvent } from "react";
 import { InlineNameEditor } from "@/shared/components/inline-name-editor";
@@ -47,7 +47,7 @@ export function ActionsCell() {
         aria-label="More Actions"
         onClick={stop}
       >
-        <Dots />
+        <Dots size={12} />
       </Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner align="end" sideOffset={4}>

@@ -62,8 +62,8 @@ describe("new menu", () => {
     );
     const icon = item?.querySelector("svg");
     expect(icon).toBeTruthy();
-    expect(icon?.querySelector('[stroke="currentColor"]')).toBeTruthy();
-    expect(icon?.querySelector('[fill="currentColor"]')).toBeNull();
+    expect(icon?.getAttribute("stroke")).toBe("currentColor");
+    expect(icon?.getAttribute("fill")).toBe("none");
   });
 
   it("filters by search and reports no matches", async () => {

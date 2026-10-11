@@ -1,14 +1,14 @@
 import {
-  IconArrowDiagonalInOutline18,
-  IconArrowLeftOutline18,
-  IconArrowRightOutline18,
-  IconCircleWarningOutline18,
-  IconClockRotateClockwiseOutline18,
-  IconEyeOutline18,
-  IconFolderOpenOutline18,
-  IconUserOutline18,
-  IconWindowDownloadOutline18,
-} from "@pond/icons/outline/18";
+  IconArrowDiagonalIn,
+  IconArrowLeft,
+  IconArrowRight,
+  IconCircleWarning,
+  IconEye,
+  IconFolderOpen,
+  IconHistory,
+  IconUser,
+  IconWindowDownload,
+} from "@pond/icons";
 import { isSource } from "@pond/schema/sources";
 import { Button, cssVars, Dialog, Sidebar, Tooltip, Window } from "@pond/ui";
 import type { HarvesterWindowLocation } from "@shared/harvester-window-contracts";
@@ -400,7 +400,7 @@ function HarvesterShell() {
                 disabled={index === 0}
                 onClick={() => travel(-1)}
               >
-                <IconArrowLeftOutline18 />
+                <IconArrowLeft />
               </Button>
               <Button
                 icon
@@ -410,7 +410,7 @@ function HarvesterShell() {
                 disabled={index >= trail.current.length - 1}
                 onClick={() => travel(1)}
               >
-                <IconArrowRightOutline18 />
+                <IconArrowRight />
               </Button>
             </div>
           </div>
@@ -481,7 +481,7 @@ function HarvesterShell() {
                 label="Accounts"
                 onSelect={() => visit({ pile: "sources", scope: "account" })}
               >
-                <IconUserOutline18 />
+                <IconUser />
               </NavItem>
               <NavItem
                 current={nav.pile === "sources" && nav.scope === "watch"}
@@ -489,7 +489,7 @@ function HarvesterShell() {
                 label="Watches"
                 onSelect={() => visit({ pile: "sources", scope: "watch" })}
               >
-                <IconEyeOutline18 />
+                <IconEye />
               </NavItem>
               <NavItem
                 current={nav.pile === "sources" && nav.scope === "folder"}
@@ -497,7 +497,7 @@ function HarvesterShell() {
                 label="Folders"
                 onSelect={() => visit({ pile: "sources", scope: "folder" })}
               >
-                <IconFolderOpenOutline18 />
+                <IconFolderOpen />
               </NavItem>
             </Sidebar.Group>
             <Sidebar.Group>
@@ -508,7 +508,7 @@ function HarvesterShell() {
                 label="Active"
                 onSelect={() => visit({ pile: "downloads", scope: "active" })}
               >
-                <IconWindowDownloadOutline18 />
+                <IconWindowDownload />
               </NavItem>
               <NavItem
                 current={nav.pile === "downloads" && nav.scope === "waiting"}
@@ -516,7 +516,7 @@ function HarvesterShell() {
                 label="Waiting"
                 onSelect={() => visit({ pile: "downloads", scope: "waiting" })}
               >
-                <IconClockRotateClockwiseOutline18 />
+                <IconHistory />
               </NavItem>
               <NavItem
                 current={nav.pile === "downloads" && nav.scope === "failed"}
@@ -524,7 +524,7 @@ function HarvesterShell() {
                 label="Failed"
                 onSelect={() => visit({ pile: "downloads", scope: "failed" })}
               >
-                <IconCircleWarningOutline18 />
+                <IconCircleWarning />
               </NavItem>
             </Sidebar.Group>
           </Sidebar.Scroll>
@@ -561,9 +561,9 @@ function HarvesterShell() {
 
 function CrumbMark({ pile }: { pile: HarvesterNav["pile"] }) {
   return pile === "downloads" ? (
-    <IconWindowDownloadOutline18 />
+    <IconWindowDownload />
   ) : (
-    <IconArrowDiagonalInOutline18 />
+    <IconArrowDiagonalIn />
   );
 }
 

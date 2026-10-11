@@ -1,19 +1,55 @@
 # @pond/icons
 
-UI glyphs come from the Nucleo UI React packages (`nucleo-ui-fill-*` and
-`nucleo-ui-outline-*`). Import through the size barrels:
+Pond's own icon set. Every glyph is drawn once on an 18×18 grid and scales to
+any size. Import from the package root:
 
-```ts
-import { IconCalendarFill18 } from "@pond/icons/fill/18";
-import { IconXmarkOutline12 } from "@pond/icons/outline/12";
+```tsx
+import { IconFolder, IconStarFill } from "@pond/icons";
+
+<IconFolder />
+<IconFolder size={12} />
+<IconStarFill size={24} />
 ```
 
-Social and brand marks live under `social-media/custom/`. The Pond mark lives
-in `brand/`: `icon.svg` is the vector source, and `tints/` holds Icon Composer
-colorways. Assistant uses `IconChatBubblePenOutline18` from
-`@pond/icons/outline/18` (Nucleo UI’s `chat-bubble-pen`).
-The desktop app defaults to `tints/aqua` for the Dock icon.
+`IconName` is the outline glyph and `IconNameFill` is its solid twin, when one
+exists. Props:
 
-When you open-source Pond, extract only the glyphs you ship into this package
-and drop the Nucleo dependencies. Until then, import any Nucleo UI icon from
-the barrels.
+- `size` sets width and height. Default `18`.
+- `strokeWidth` is the on-screen stroke in pixels. Default `1.5`. At 18px and
+  below it stays that weight, so a 12px icon is as crisp as an 18px one. Above
+  18px the stroke grows with the glyph.
+- `title` labels the icon for assistive tech. Without it the icon is
+  `aria-hidden`.
+
+Open the Icon Gallery from the command menu to browse every glyph at each size.
+
+## Drawing a glyph
+
+1. Draw on an 18×18 artboard: 1.5 stroke, round caps and joins, live area
+   2.25 to 15.75. Circles use r6.75, squares 2.75 to 15.25 with r3. Badges sit
+   at the bottom-right around (13.5, 13.5), and the base shape stops short of
+   them.
+2. Save the outline as `svg/outline/<kebab-name>.svg` and the fill, if any, as
+   `svg/fill/<kebab-name>.svg`. Use only `<path>`, `<circle>`, and `<rect>`.
+   Fills are flattened shapes with `fill="currentColor"`, not strokes.
+3. Run `pnpm --filter @pond/icons generate` to rebuild `index.ts` and
+   `manifest.ts`. CI runs the same script with `--check`.
+
+The generator lists glyphs nothing imports, so unused drawings are easy to
+spot.
+
+## Brand marks
+
+Social and brand marks live under `social-media/custom/`. The X, GitHub, and
+Google Chrome paths come from [Simple Icons](https://simpleicons.org/) (CC0).
+Provider logos are documented in `social-media/custom/provider-logos.md`. The
+marks remain their owners' trademarks.
+
+The Pond mark lives in `brand/`: `icon.svg` is the vector source, and `tints/`
+holds Icon Composer colorways. The desktop app defaults to `tints/aqua` for the
+Dock icon.
+
+## License
+
+The glyphs in `svg/` are original Pond artwork under the repository's MIT
+license.

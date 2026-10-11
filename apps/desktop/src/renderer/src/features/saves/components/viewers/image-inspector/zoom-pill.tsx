@@ -1,4 +1,4 @@
-import { IconMinusOutline18, IconPlusOutline18 } from "@pond/icons/outline/18";
+import { IconMinus, IconPlus } from "@pond/icons";
 import { Menu, type MenuItemSpec } from "@pond/ui";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { SpecMenu } from "@/shared/components/spec-context-menu";
@@ -34,7 +34,7 @@ export function ZoomPill({
   return (
     <ViewerHud.Tools tooltipSide="bottom" role="group" aria-label="Zoom">
       <ViewerHud.Tool label="Zoom Out" onClick={onOut}>
-        <IconMinusOutline18 />
+        <IconMinus />
       </ViewerHud.Tool>
       <SpecMenu buildItems={() => buildZoomRatioItems(actual, onRatio)}>
         <Menu.Trigger size="sm" variant="ghost" aria-label="Zoom Ratio">
@@ -42,7 +42,7 @@ export function ZoomPill({
         </Menu.Trigger>
       </SpecMenu>
       <ViewerHud.Tool label="Zoom In" onClick={onIn}>
-        <IconPlusOutline18 />
+        <IconPlus />
       </ViewerHud.Tool>
     </ViewerHud.Tools>
   );

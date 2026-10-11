@@ -1,7 +1,4 @@
-import {
-  IconAscendingSortingOutline18,
-  IconDescendingSortingOutline18,
-} from "@pond/icons/outline/18";
+import { IconAscendingSorting, IconDescendingSorting } from "@pond/icons";
 import { Button, Select } from "@pond/ui";
 import { clsx as cn } from "clsx";
 import { isSortKey } from "@/features/library/hooks/use-filtered-saves";
@@ -65,9 +62,9 @@ export function SortSection({ onArrange }: { onArrange?: () => void }) {
               onClick={toggleSortDir}
             >
               {dir === "asc" ? (
-                <IconAscendingSortingOutline18 />
+                <IconAscendingSorting />
               ) : (
-                <IconDescendingSortingOutline18 />
+                <IconDescendingSorting />
               )}
             </Button>
             <Select.Trigger

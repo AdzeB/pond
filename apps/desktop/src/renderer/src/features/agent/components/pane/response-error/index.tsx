@@ -1,4 +1,4 @@
-import { IconTriangleWarningOutline18 } from "@pond/icons/outline/18";
+import { IconTriangleWarning } from "@pond/icons";
 import { Button } from "@pond/ui";
 import styles from "./styles.module.css";
 
@@ -48,7 +48,7 @@ export function ResponseError({ error }: { error: string }) {
   const copy = responseErrorCopy(error);
   return (
     <div className={styles.notice} role="alert">
-      <IconTriangleWarningOutline18 className={styles.icon} />
+      <IconTriangleWarning className={styles.icon} />
       <div className={styles.content}>
         <span className={styles.title}>{copy.title}</span>
         <span className={styles.description}>{copy.description}</span>

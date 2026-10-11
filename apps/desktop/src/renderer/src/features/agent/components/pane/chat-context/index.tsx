@@ -1,4 +1,4 @@
-import { IconLayersOutline18 } from "@pond/icons/outline/18";
+import { IconLayers } from "@pond/icons";
 import { Button, Popover, Tooltip } from "@pond/ui";
 import type { AssistantSource } from "@shared/assistant";
 import { SourceThumbnail, useSourceCovers } from "../save-preview";
@@ -23,7 +23,7 @@ export function ChatContext({
           render={<Button icon size="xs" variant="ghost" />}
           aria-label="Library Access"
         >
-          <IconLayersOutline18 />
+          <IconLayers />
         </Popover.Trigger>
       </Tooltip>
       <Popover.Portal>

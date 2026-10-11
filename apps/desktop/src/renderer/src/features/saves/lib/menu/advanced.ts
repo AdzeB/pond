@@ -1,8 +1,4 @@
-import {
-  IconCopyIdOutline18,
-  IconFileOutline18,
-  IconImageOutline18,
-} from "@pond/icons/outline/18";
+import { IconCopyId, IconFile, IconImage } from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import { clipEmbeddingVersion, embeddingDimensions } from "@shared/embeddings";
 import { createElement } from "react";
@@ -76,7 +72,7 @@ export function buildReverseSearchItems({
   return [
     {
       label: "Find Similar Saves",
-      icon: glyph(IconImageOutline18),
+      icon: glyph(IconImage),
       hidden: batch || !hasCompatibleMediaEmbedding(save),
       onClick: () =>
         saveLibraryBridge.setVisualProbe({
@@ -96,7 +92,7 @@ export function buildReverseSearchItems({
               height: 16,
               draggable: false,
             })
-          : glyph(IconImageOutline18),
+          : glyph(IconImage),
         hidden:
           "usesImageUrl" in engine && !engine.usesImageUrl
             ? false
@@ -133,7 +129,7 @@ export function buildSupplementalItems(
     copy: [
       {
         label: "Copy Save ID",
-        icon: glyph(IconCopyIdOutline18),
+        icon: glyph(IconCopyId),
         shortcut: shortcutGlyphs("save.copy-id"),
         onClick: () => {
           if (batch) {
@@ -148,7 +144,7 @@ export function buildSupplementalItems(
     organization: [
       {
         label: "Combine Images",
-        icon: glyph(IconImageOutline18),
+        icon: glyph(IconImage),
         hidden: combinableImageCount(saves) < 2,
         onClick: () => {
           const nav = saveLibraryBridge.getNav();
@@ -163,7 +159,7 @@ export function buildSupplementalItems(
     file: [
       {
         label: fontActivated ? "Deactivate Font" : "Activate Font",
-        icon: glyph(IconFileOutline18),
+        icon: glyph(IconFile),
         hidden: batch || save.mediaType !== "font",
         onClick: () => {
           void window.pond.query(
@@ -180,7 +176,7 @@ export function buildSupplementalItems(
       {
         type: "submenu",
         label: "Change Extension",
-        icon: glyph(IconFileOutline18),
+        icon: glyph(IconFile),
         hidden: !saves.some((item) => item.files.length > 0),
         items: [
           {

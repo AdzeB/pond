@@ -1,4 +1,4 @@
-import { IconXmarkOutline12 } from "@pond/icons/outline/12";
+import { IconXmark } from "@pond/icons";
 import { Button } from "@pond/ui";
 import { useState } from "react";
 import { buildPondUrl, thumbUrlFor } from "@/features/saves/lib/media/url";
@@ -66,7 +66,7 @@ export function Strip({
               aria-label={`Remove ${title}`}
               onClick={() => onRemove(save.id)}
             >
-              <IconXmarkOutline12 />
+              <IconXmark size={12} />
             </Button>
           </li>
         );

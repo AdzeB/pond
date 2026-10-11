@@ -1,4 +1,4 @@
-import { IconPlusOutline18 } from "@pond/icons/outline/18";
+import { IconPlus } from "@pond/icons";
 import { Menu, Tooltip } from "@pond/ui";
 import { useEffect, useState } from "react";
 import {
@@ -46,7 +46,7 @@ export function NewMenu() {
       >
         <Tooltip label="New" side="bottom">
           <Menu.Trigger icon size="sm" variant="ghost" aria-label="New">
-            <IconPlusOutline18 />
+            <IconPlus />
           </Menu.Trigger>
         </Tooltip>
         <Menu.Portal>

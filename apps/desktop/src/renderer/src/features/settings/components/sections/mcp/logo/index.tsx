@@ -1,4 +1,4 @@
-import { IconCodeOutline12 as Code } from "@pond/icons/outline/12";
+import { IconCode as Code } from "@pond/icons";
 import type { McpHostId } from "@shared/mcp-hosts";
 import vscode from "@/assets/logos/agents/vscode.svg";
 import anthropic from "@/assets/logos/providers/anthropic.webp";
@@ -30,7 +30,7 @@ export function HostLogo({ id }: { id: McpHostId }) {
   }
   return (
     <span className={styles.mark} aria-hidden>
-      <Code />
+      <Code size={12} />
     </span>
   );
 }

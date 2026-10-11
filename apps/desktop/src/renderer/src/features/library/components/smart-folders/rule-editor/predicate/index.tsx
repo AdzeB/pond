@@ -1,4 +1,4 @@
-import { IconMinusOutline12, IconPlusOutline12 } from "@pond/icons/outline/12";
+import { IconMinus, IconPlus } from "@pond/icons";
 import { FIELD_DESCRIPTORS } from "@pond/schema/filters/fields";
 import type { Predicate as PredicateClause } from "@pond/schema/filters/types";
 import { Button } from "@pond/ui";
@@ -76,7 +76,7 @@ export function Predicate({
         aria-label={`Remove Rule ${number}`}
         onClick={onRemove}
       >
-        <IconMinusOutline12 />
+        <IconMinus size={12} />
       </Button>
       <Button
         icon
@@ -85,7 +85,7 @@ export function Predicate({
         aria-label={`Add Rule after Rule ${number}`}
         onClick={onInsert}
       >
-        <IconPlusOutline12 />
+        <IconPlus size={12} />
       </Button>
     </div>
   );

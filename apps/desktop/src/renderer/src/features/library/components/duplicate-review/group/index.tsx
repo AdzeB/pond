@@ -1,4 +1,4 @@
-import { IconCheckOutline12 } from "@pond/icons/outline/12";
+import { IconCheck } from "@pond/icons";
 import { Checkbox } from "@pond/ui";
 import type { DuplicateGroupResult } from "@shared/saves-mutation-contracts";
 import { useSelector } from "@tanstack/react-store";
@@ -79,7 +79,7 @@ function Tile({
         {save ? <CardThumb save={save} width={160} /> : null}
         {mergeable && keep ? (
           <span className={styles.tick} aria-hidden>
-            <IconCheckOutline12 />
+            <IconCheck size={12} />
           </span>
         ) : null}
       </span>

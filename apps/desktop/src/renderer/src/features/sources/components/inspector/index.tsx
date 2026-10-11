@@ -1,8 +1,8 @@
-import { IconDotsFill18 as Ellipsis } from "@pond/icons/fill/18";
 import {
-  IconXmarkOutline18 as Cross,
-  IconDownloadOutline18,
-} from "@pond/icons/outline/18";
+  IconXmark as Cross,
+  IconDotsFill as Ellipsis,
+  IconDownload,
+} from "@pond/icons";
 import type { Source } from "@pond/schema/db";
 import { Button, Input, Menu, type MenuItemSpec, Pane } from "@pond/ui";
 import { useEffect, useId, useRef, useState } from "react";
@@ -380,7 +380,7 @@ function SourceInspectorDetails({
           className={styles["downloads-link"]}
           onClick={onOpenDownloads}
         >
-          <IconDownloadOutline18 />
+          <IconDownload />
           View Downloads
         </Button>
       ) : null}

@@ -7,17 +7,17 @@ import {
 } from "@lexical/react/LexicalTypeaheadMenuPlugin";
 import { $findMatchingParent } from "@lexical/utils";
 import {
-  IconBlockquoteOutline18,
-  IconBulletListOutline18,
-  IconCheckListOutline18,
-  IconCode2Outline18,
-  IconFileOutline18,
-  IconHeading1Outline18,
-  IconHeading2Outline18,
-  IconHeading3Outline18,
-  IconOrderedListOutline18,
-  IconSquareCodeOutline18,
-} from "@pond/icons/outline/18";
+  IconBlockquote,
+  IconBulletList,
+  IconCheckList,
+  IconCode2,
+  IconFile,
+  IconHeading1,
+  IconHeading2,
+  IconHeading3,
+  IconOrderedList,
+  IconSquareCode,
+} from "@pond/icons";
 import type { IconComponent } from "@pond/icons/types";
 import { Menu, Popover } from "@pond/ui";
 import { type AssistantSource, assistantSources } from "@shared/assistant";
@@ -73,66 +73,66 @@ const COMPOSER_FORMATTING: ComposerFormattingOption[] = [
   {
     key: "bullet",
     label: "Bulleted List",
-    glyph: IconBulletListOutline18,
+    glyph: IconBulletList,
     block: "bullet",
     shortcut: ["⌘", "⇧", "8"],
   },
   {
     key: "number",
     label: "Numbered List",
-    glyph: IconOrderedListOutline18,
+    glyph: IconOrderedList,
     block: "number",
     shortcut: ["⌘", "⇧", "9"],
   },
   {
     key: "check",
     label: "Checklist",
-    glyph: IconCheckListOutline18,
+    glyph: IconCheckList,
     block: "check",
     shortcut: ["⌘", "⇧", "7"],
   },
   {
     key: "code",
     label: "Code Block",
-    glyph: IconCode2Outline18,
+    glyph: IconCode2,
     block: "code",
     shortcut: ["⌘", "⇧", "\\"],
   },
   {
     key: "quote",
     label: "Blockquote",
-    glyph: IconBlockquoteOutline18,
+    glyph: IconBlockquote,
     block: "quote",
     shortcut: ["⌥", "⇧", "."],
   },
   {
     key: "table",
     label: "Table",
-    glyph: IconSquareCodeOutline18,
+    glyph: IconSquareCode,
     block: "table",
   },
   {
     key: "h1",
     label: "Heading 1",
-    glyph: IconHeading1Outline18,
+    glyph: IconHeading1,
     block: "h1",
   },
   {
     key: "h2",
     label: "Heading 2",
-    glyph: IconHeading2Outline18,
+    glyph: IconHeading2,
     block: "h2",
   },
   {
     key: "h3",
     label: "Heading 3",
-    glyph: IconHeading3Outline18,
+    glyph: IconHeading3,
     block: "h3",
   },
   {
     key: "paragraph",
     label: "Plain Text",
-    glyph: IconFileOutline18,
+    glyph: IconFile,
     block: "paragraph",
   },
 ];
@@ -209,7 +209,7 @@ export function ComposerSuggestions({
                 new ComposerOption(
                   save.id,
                   save.title || "Untitled",
-                  IconFileOutline18,
+                  IconFile,
                   { kind: "save", save },
                 ),
             ),

@@ -1,8 +1,8 @@
 import {
-  IconArrowRotateClockwiseOutline18,
-  IconChatBubblePenOutline18,
-  IconMediaPlayOutline18,
-} from "@pond/icons/outline/18";
+  IconArrowRotateClockwise,
+  IconChatBubblePen,
+  IconMediaPlay,
+} from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import { addSavesToChat } from "@/features/agent";
 import {
@@ -28,7 +28,7 @@ export function buildAgentItems({
   const agent: MenuItemSpec[] = [
     {
       label: "Add to Chat",
-      icon: glyph(IconChatBubblePenOutline18),
+      icon: glyph(IconChatBubblePen),
       hidden: allTrashed,
       onClick: () => addSavesToChat(ids),
     },
@@ -41,7 +41,7 @@ export function buildAgentItems({
         : agent;
     items.push({
       label: task.label,
-      icon: glyph(IconMediaPlayOutline18),
+      icon: glyph(IconMediaPlay),
       hidden: allTrashed,
       keywords: task.keywords.join(" "),
       disabled: task.precondition?.(prefs) != null,
@@ -53,7 +53,7 @@ export function buildAgentItems({
   if (incomplete || failedIdsIn(ids).length > 0) {
     agent.push({
       label: "Retry Failed",
-      icon: glyph(IconArrowRotateClockwiseOutline18),
+      icon: glyph(IconArrowRotateClockwise),
       onClick: () => void retryFailedSelection(ids),
     });
   }

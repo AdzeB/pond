@@ -1,8 +1,4 @@
-import {
-  IconFolderSearchOutline18,
-  IconGridOutline18,
-  IconVersionsOutline18,
-} from "@pond/icons/outline/18";
+import { IconFolderSearch, IconGrid, IconVersions } from "@pond/icons";
 import type { Prefs } from "@pond/schema";
 import type { Folder } from "@pond/schema/db";
 import { type MenuItemSpec, Sidebar } from "@pond/ui";
@@ -32,9 +28,9 @@ import { Row } from "../../sidebar-row";
 import { quickAccessRows } from "./order";
 
 const SAVED_VIEW_ICONS = {
-  smart_folder: IconFolderSearchOutline18,
-  group: IconGridOutline18,
-  saved_view: IconVersionsOutline18,
+  smart_folder: IconFolderSearch,
+  group: IconGrid,
+  saved_view: IconVersions,
 } as const;
 
 interface QuickAccessProps {

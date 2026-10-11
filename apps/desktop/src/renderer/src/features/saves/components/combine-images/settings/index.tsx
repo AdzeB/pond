@@ -1,16 +1,16 @@
 import {
-  IconAlign2BottomOutline12,
-  IconAlign2HorizontalOutline12,
-  IconAlign2LeftOutline12,
-  IconAlign2RightOutline12,
-  IconAlign2TopOutline12,
-  IconAlign2VerticalOutline12,
-  IconArrowsExpandXOutline12,
-  IconArrowsExpandYOutline12,
-  IconGridLayoutColsOutline12,
-  IconGridLayoutRowsOutline12,
-} from "@pond/icons/outline/12";
-import { IconXmarkOutline18 } from "@pond/icons/outline/18";
+  IconAlign2Bottom,
+  IconAlign2Horizontal,
+  IconAlign2Left,
+  IconAlign2Right,
+  IconAlign2Top,
+  IconAlign2Vertical,
+  IconArrowsExpandX,
+  IconArrowsExpandY,
+  IconGridLayoutCols,
+  IconGridLayoutRows,
+  IconXmark,
+} from "@pond/icons";
 import {
   Button,
   ColorField,
@@ -44,37 +44,41 @@ const DIRECTIONS = [
   {
     value: "vertical",
     label: "Vertical",
-    icon: <IconGridLayoutRowsOutline12 />,
+    icon: <IconGridLayoutRows size={12} />,
   },
   {
     value: "horizontal",
     label: "Horizontal",
-    icon: <IconGridLayoutColsOutline12 />,
+    icon: <IconGridLayoutCols size={12} />,
   },
 ] as const;
 const ALIGNMENTS = {
   horizontal: [
-    { value: "start", label: "Top", icon: <IconAlign2TopOutline12 /> },
-    { value: "center", label: "Middle", icon: <IconAlign2VerticalOutline12 /> },
-    { value: "end", label: "Bottom", icon: <IconAlign2BottomOutline12 /> },
+    { value: "start", label: "Top", icon: <IconAlign2Top size={12} /> },
+    {
+      value: "center",
+      label: "Middle",
+      icon: <IconAlign2Vertical size={12} />,
+    },
+    { value: "end", label: "Bottom", icon: <IconAlign2Bottom size={12} /> },
     {
       value: "stretch",
       label: "Fill Height",
-      icon: <IconArrowsExpandYOutline12 />,
+      icon: <IconArrowsExpandY size={12} />,
     },
   ],
   vertical: [
-    { value: "start", label: "Left", icon: <IconAlign2LeftOutline12 /> },
+    { value: "start", label: "Left", icon: <IconAlign2Left size={12} /> },
     {
       value: "center",
       label: "Center",
-      icon: <IconAlign2HorizontalOutline12 />,
+      icon: <IconAlign2Horizontal size={12} />,
     },
-    { value: "end", label: "Right", icon: <IconAlign2RightOutline12 /> },
+    { value: "end", label: "Right", icon: <IconAlign2Right size={12} /> },
     {
       value: "stretch",
       label: "Fill Width",
-      icon: <IconArrowsExpandXOutline12 />,
+      icon: <IconArrowsExpandX size={12} />,
     },
   ],
 } as const;
@@ -123,7 +127,7 @@ export function CombineSettings({
           aria-label="Close Combine Images"
           onClick={onClose}
         >
-          <IconXmarkOutline18 />
+          <IconXmark />
         </Button>
       </header>
       <div className={styles.scroll}>

@@ -1,43 +1,43 @@
-import { IconChevronDownOutline12 } from "@pond/icons/outline/12";
 import {
-  IconAlbum2Outline18,
-  IconBookmarkOutline18,
-  IconCircleWarningOutline18,
-  IconClockRotateClockwiseOutline18,
-  IconEyeOutline18,
-  IconFolderOpenOutline18,
-  IconFolderOutline18,
-  IconPlusOutline18,
-  IconTrashXmarkOutline18,
-  IconUserOutline18,
-  IconWindowDownloadOutline18,
-} from "@pond/icons/outline/18";
+  IconAlbum2,
+  IconBookmark,
+  IconChevronDown,
+  IconCircleWarning,
+  IconEye,
+  IconFolder,
+  IconFolderOpen,
+  IconHistory,
+  IconPlus,
+  IconTrashXmark,
+  IconUser,
+  IconWindowDownload,
+} from "@pond/icons";
 import type { ReactNode } from "react";
 import styles from "./styles.module.css";
 
 const library = [
-  { label: "All", count: "1,284", icon: <IconAlbum2Outline18 /> },
+  { label: "All", count: "1,284", icon: <IconAlbum2 /> },
   {
     label: "Recently Used",
     count: "18",
-    icon: <IconClockRotateClockwiseOutline18 />,
+    icon: <IconHistory />,
   },
-  { label: "Tags", count: "58", icon: <IconBookmarkOutline18 /> },
-  { label: "Trash", count: "3", icon: <IconTrashXmarkOutline18 /> },
+  { label: "Tags", count: "58", icon: <IconBookmark /> },
+  { label: "Trash", count: "3", icon: <IconTrashXmark /> },
 ] as const;
 const folders = [
   { label: "Inspiration", count: "248" },
   { label: "Photography", count: "96" },
 ] as const;
 const sources = [
-  { label: "Accounts", count: "4", icon: <IconUserOutline18 /> },
-  { label: "Watches", count: "2", icon: <IconEyeOutline18 /> },
-  { label: "Folders", count: "1", icon: <IconFolderOpenOutline18 /> },
+  { label: "Accounts", count: "4", icon: <IconUser /> },
+  { label: "Watches", count: "2", icon: <IconEye /> },
+  { label: "Folders", count: "1", icon: <IconFolderOpen /> },
 ] as const;
 const queues = [
-  { label: "Active", count: "2", icon: <IconWindowDownloadOutline18 /> },
-  { label: "Waiting", count: "2", icon: <IconClockRotateClockwiseOutline18 /> },
-  { label: "Failed", count: "0", icon: <IconCircleWarningOutline18 /> },
+  { label: "Active", count: "2", icon: <IconWindowDownload /> },
+  { label: "Waiting", count: "2", icon: <IconHistory /> },
+  { label: "Failed", count: "0", icon: <IconCircleWarning /> },
 ] as const;
 
 function Row({
@@ -66,7 +66,7 @@ function LibraryNav() {
       <span className={styles.switcher}>
         <span className={styles.mark} />
         Personal
-        <IconChevronDownOutline12 />
+        <IconChevronDown size={12} />
       </span>
       {library.map((item, index) => (
         <Row
@@ -79,12 +79,12 @@ function LibraryNav() {
       ))}
       <span className={styles.section}>
         Folders
-        <IconPlusOutline18 />
+        <IconPlus />
       </span>
       {folders.map((item) => (
         <Row
           count={item.count}
-          icon={<IconFolderOutline18 />}
+          icon={<IconFolder />}
           key={item.label}
           label={item.label}
         />
@@ -98,7 +98,7 @@ function HarvesterNav() {
     <nav className={styles.nav} data-view="harvest">
       <span className={styles.brand}>
         Harvester
-        <IconPlusOutline18 />
+        <IconPlus />
       </span>
       <span className={styles.section}>Sources</span>
       {sources.map((item) => (

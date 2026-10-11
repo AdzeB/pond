@@ -1,9 +1,9 @@
 import {
-  IconEnvelopeOutline18,
-  IconGear3Outline18,
-  IconRefreshOutline18,
-  IconWindowDownloadOutline18,
-} from "@pond/icons/outline/18";
+  IconEnvelope,
+  IconGear3,
+  IconRefresh,
+  IconWindowDownload,
+} from "@pond/icons";
 import { IconGithub, IconXTwitterGlyph } from "@pond/icons/social-media";
 import type { MenuItemSpec } from "@pond/ui";
 import { z } from "zod";
@@ -56,19 +56,19 @@ export function buildWorkspaceMenuItems(): MenuItemSpec[] {
   return [
     {
       label: "Settings",
-      icon: <IconGear3Outline18 />,
+      icon: <IconGear3 />,
       shortcut: shortcutGlyphs("app.settings"),
       onClick: () => openSettings(),
     },
     { type: "separator" },
     {
       label: "Check for Updates",
-      icon: <IconRefreshOutline18 />,
+      icon: <IconRefresh />,
       onClick: () => openSettings("general"),
     },
     {
       label: "Download Browser Extension",
-      icon: <IconWindowDownloadOutline18 />,
+      icon: <IconWindowDownload />,
       onClick: () => void downloadBrowserExtension(),
     },
     { type: "separator" },
@@ -84,7 +84,7 @@ export function buildWorkspaceMenuItems(): MenuItemSpec[] {
     },
     {
       label: "Email",
-      icon: <IconEnvelopeOutline18 />,
+      icon: <IconEnvelope />,
       onClick: () => void window.pond.openExternal(EMAIL),
     },
   ];

@@ -1,4 +1,4 @@
-import { IconChevronDownOutline12 } from "@pond/icons/outline/12";
+import { IconChevronDown } from "@pond/icons";
 import { Accordion, Button, Input, Settings } from "@pond/ui";
 import type { AssistantProvider } from "@shared/assistant";
 import { useState } from "react";
@@ -155,7 +155,7 @@ export function ModelCatalogTable({
                 <span className={styles.count} aria-hidden="true">
                   {group.models.length}
                 </span>
-                <IconChevronDownOutline12 />
+                <IconChevronDown size={12} />
               </Accordion.Trigger>
             </Accordion.Header>
             <Accordion.Panel className={styles.panel}>

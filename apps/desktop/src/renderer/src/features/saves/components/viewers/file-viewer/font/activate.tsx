@@ -1,4 +1,4 @@
-import { IconTypographyOutline18 } from "@pond/icons/outline/18";
+import { IconTypography } from "@pond/icons";
 import { useEffect, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import type { Save } from "@/features/saves/types";
@@ -32,7 +32,7 @@ export function FontActivate({ save }: { save: Save }) {
           });
       }}
     >
-      <IconTypographyOutline18 />
+      <IconTypography />
     </ViewerHud.Tool>
   );
 }

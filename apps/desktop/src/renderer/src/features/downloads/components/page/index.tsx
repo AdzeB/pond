@@ -1,8 +1,9 @@
-import { IconMediaPauseFill18, IconMediaPlayFill18 } from "@pond/icons/fill/18";
 import {
-  IconCircleCheckOutline18,
-  IconLink2Outline18,
-} from "@pond/icons/outline/18";
+  IconCircleCheck,
+  IconLink2,
+  IconMediaPauseFill,
+  IconMediaPlayFill,
+} from "@pond/icons";
 import { sourceLabel } from "@pond/schema/sources";
 import { Button, Tooltip } from "@pond/ui";
 import {
@@ -215,7 +216,7 @@ export function DownloadsPage() {
               onClick={() => pause.mutate()}
               aria-label={paused ? "Resume Queue" : "Pause Queue"}
             >
-              {paused ? <IconMediaPlayFill18 /> : <IconMediaPauseFill18 />}
+              {paused ? <IconMediaPlayFill /> : <IconMediaPauseFill />}
             </Button>
           </Tooltip>
         </>
@@ -228,14 +229,14 @@ export function DownloadsPage() {
         >
           <TableFilterChip
             name="Status"
-            icon={<IconCircleCheckOutline18 />}
+            icon={<IconCircleCheck />}
             options={STATUS_FILTER_OPTIONS}
             selected={filters.statuses}
             onChange={downloadsFilters.setStatuses}
           />
           <TableFilterChip
             name="Source"
-            icon={<IconLink2Outline18 />}
+            icon={<IconLink2 />}
             options={sourceOptions}
             selected={filters.sources}
             onChange={downloadsFilters.setSources}

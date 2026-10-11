@@ -1,4 +1,4 @@
-import { IconXmarkOutline12 } from "@pond/icons/outline/12";
+import { IconXmark } from "@pond/icons";
 import { Button } from "@pond/ui";
 import { clsx as cn } from "clsx";
 import type { ComponentPropsWithoutRef } from "react";
@@ -44,7 +44,7 @@ function Item({
         aria-label={removeLabel}
         onClick={onRemove}
       >
-        <IconXmarkOutline12 />
+        <IconXmark size={12} />
       </Button>
     </span>
   );

@@ -1,4 +1,4 @@
-import { IconStarFill18 } from "@pond/icons/fill/18";
+import { IconStarFill } from "@pond/icons";
 import { Button } from "@pond/ui";
 import styles from "./styles.module.css";
 
@@ -32,7 +32,7 @@ export function RatingStars({
             className={styles.star}
             onClick={() => onChange(value === star ? 0 : star)}
           >
-            <IconStarFill18 />
+            <IconStarFill />
           </Button>
         );
       })}

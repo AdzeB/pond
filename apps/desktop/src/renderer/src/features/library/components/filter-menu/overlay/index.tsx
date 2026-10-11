@@ -1,8 +1,4 @@
-import {
-  IconImageOutline18,
-  IconImageSparkleOutline18,
-  IconTextToImageOutline18,
-} from "@pond/icons/outline/18";
+import { IconImage, IconImageSparkle, IconTextToImage } from "@pond/icons";
 import { Button, Input } from "@pond/ui";
 import { useId, useRef, useState } from "react";
 import {
@@ -33,7 +29,7 @@ export function SemanticChip() {
   const summary = query ?? "Semantic";
   return (
     <FilterChip
-      icon={<IconTextToImageOutline18 />}
+      icon={<IconTextToImage />}
       label={summary}
       active={active}
       ariaLabel={active ? `Semantic: ${query}` : "Semantic"}
@@ -101,7 +97,7 @@ export function VisualChip() {
   const summary = probe?.label ?? "Visual Match";
   return (
     <FilterChip
-      icon={<IconImageSparkleOutline18 />}
+      icon={<IconImageSparkle />}
       label={summary}
       active={active}
       ariaLabel={active ? `Visual Match: ${probe?.label}` : "Visual Match"}
@@ -163,7 +159,7 @@ function VisualEditor({ probe }: { probe: VisualProbe | null }) {
       }}
     >
       <div className={styles.illustration} data-active={!!probe || undefined}>
-        <IconImageOutline18 />
+        <IconImage />
       </div>
       <p className={styles.title}>
         {probe ? probe.label : "Drag or paste image"}

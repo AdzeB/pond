@@ -1,4 +1,4 @@
-import { IconImagesOutline18 } from "@pond/icons/outline/18";
+import { IconImages } from "@pond/icons";
 import { Empty } from "@pond/ui";
 import type {
   CombineImagesOptions,
@@ -87,7 +87,7 @@ export function Preview({
       {images.length === 0 ? (
         <Empty.Root className={styles.empty}>
           <Empty.Media>
-            <IconImagesOutline18 />
+            <IconImages />
           </Empty.Media>
           <Empty.Title>No images selected</Empty.Title>
           <Empty.Description>

@@ -27,9 +27,6 @@
       "ignoreDependencies": ["@pond/theme"]
     },
     "apps/raycast": { "project": ["src/**/*.{ts,tsx}"] },
-    "packages/icons": {
-      "entry": ["fill/*/index.ts", "outline/*/index.ts"]
-    },
     "packages/schema": {
       "entry": ["scripts/*.ts"]
     },

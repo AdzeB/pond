@@ -1,4 +1,4 @@
-import { IconPaperclipOutline18 } from "@pond/icons/outline/18";
+import { IconPaperclip } from "@pond/icons";
 import { Button, Tooltip } from "@pond/ui";
 import type { AssistantFileAttachment } from "@shared/assistant";
 import { useState } from "react";
@@ -45,7 +45,7 @@ export function AttachFilesButton({
         disabled={disabled || busy}
         onClick={() => void pickFiles()}
       >
-        <IconPaperclipOutline18 />
+        <IconPaperclip />
       </Button>
     </Tooltip>
   );

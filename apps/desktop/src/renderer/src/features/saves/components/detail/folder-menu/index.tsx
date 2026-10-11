@@ -1,5 +1,7 @@
-import { IconChevronRightOutline12 as ChevronRight } from "@pond/icons/outline/12";
-import { IconPlusOutline18 as Plus } from "@pond/icons/outline/18";
+import {
+  IconChevronRight as ChevronRight,
+  IconPlus as Plus,
+} from "@pond/icons";
 import {
   PickerPanel,
   type PickerSelectionState,
@@ -288,7 +290,7 @@ export function FolderMenu({
                       toggleExpanded(folder.id);
                     }}
                   >
-                    <ChevronRight />
+                    <ChevronRight size={12} />
                   </span>
                 ) : (
                   <span className={styles.expand} aria-hidden="true" />

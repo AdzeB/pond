@@ -1,4 +1,4 @@
-import { IconMagnifierOutline18 } from "@pond/icons/outline/18";
+import { IconMagnifier } from "@pond/icons";
 import { Button, Empty } from "@pond/ui";
 
 interface MatchesEmptyProps {
@@ -15,7 +15,7 @@ export function MatchesEmpty({
   return (
     <Empty.Root role="status" aria-live="polite">
       <Empty.Media>
-        <IconMagnifierOutline18 />
+        <IconMagnifier />
       </Empty.Media>
       <Empty.Title>No results found</Empty.Title>
       <Empty.Description>{description}</Empty.Description>

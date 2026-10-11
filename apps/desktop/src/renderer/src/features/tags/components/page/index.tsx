@@ -1,11 +1,10 @@
-import { IconBookmarkFill18 } from "@pond/icons/fill/18";
 import {
-  IconBookmarkOutline12,
-  IconFolderOutline12,
-  IconPlusOutline12,
-  IconStarOutline12,
-} from "@pond/icons/outline/12";
-import { IconFolderOutline18, IconStarOutline18 } from "@pond/icons/outline/18";
+  IconBookmark,
+  IconBookmarkFill,
+  IconFolder,
+  IconPlus,
+  IconStar,
+} from "@pond/icons";
 import { Button, DataTable, Empty, Input, Sidebar, Tooltip } from "@pond/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TagsBulkActionBar } from "@/features/tags/components/manager/bulk-actions";
@@ -250,7 +249,7 @@ export function TagsPage() {
                         onClick={() => setScope("all")}
                       >
                         <Sidebar.Icon>
-                          <IconBookmarkOutline12 aria-hidden="true" />
+                          <IconBookmark size={12} aria-hidden="true" />
                         </Sidebar.Icon>
                         <Sidebar.ItemLabel>All</Sidebar.ItemLabel>
                         <Sidebar.Count>{total}</Sidebar.Count>
@@ -266,7 +265,7 @@ export function TagsPage() {
                         onClick={() => setScope("ungrouped")}
                       >
                         <Sidebar.Icon>
-                          <IconFolderOutline12 aria-hidden="true" />
+                          <IconFolder size={12} aria-hidden="true" />
                         </Sidebar.Icon>
                         <Sidebar.ItemLabel>Uncategorized</Sidebar.ItemLabel>
                         <Sidebar.Count>{ungroupedTotal}</Sidebar.Count>
@@ -278,7 +277,7 @@ export function TagsPage() {
                         onClick={() => setScope("starred")}
                       >
                         <Sidebar.Icon>
-                          <IconStarOutline12 aria-hidden="true" />
+                          <IconStar size={12} aria-hidden="true" />
                         </Sidebar.Icon>
                         <Sidebar.ItemLabel>Starred</Sidebar.ItemLabel>
                         {starredTotal > 0 ? (
@@ -302,7 +301,7 @@ export function TagsPage() {
                           aria-label="New Group"
                           onClick={() => startCreate("group")}
                         >
-                          <IconPlusOutline12 />
+                          <IconPlus size={12} />
                         </Button>
                       </Tooltip>
                     </Sidebar.GroupHeader>
@@ -333,7 +332,7 @@ export function TagsPage() {
                             onClick={() => setScope(group.id)}
                           >
                             <Sidebar.Icon>
-                              <IconFolderOutline12 aria-hidden="true" />
+                              <IconFolder size={12} aria-hidden="true" />
                             </Sidebar.Icon>
                             <Sidebar.ItemLabel>{group.name}</Sidebar.ItemLabel>
                             <Sidebar.Count>{group.count}</Sidebar.Count>
@@ -366,7 +365,7 @@ export function TagsPage() {
                           size="xs"
                           aria-label={`Add Tags to ${activeGroupRow.group.name}`}
                         >
-                          <IconPlusOutline12 />
+                          <IconPlus size={12} />
                         </TagPicker.Trigger>
                       </Tooltip>
                       <TagPicker.Content align="start" />
@@ -450,7 +449,7 @@ export function TagsPage() {
               ) : total === 0 && !q ? (
                 <Empty.Root className={styles.empty}>
                   <Empty.Media>
-                    <IconBookmarkFill18 />
+                    <IconBookmarkFill />
                   </Empty.Media>
                   <Empty.Title>No tags yet</Empty.Title>
                   <Empty.Description>
@@ -482,11 +481,11 @@ export function TagsPage() {
                 >
                   <Empty.Media>
                     {scope === "starred" ? (
-                      <IconStarOutline18 />
+                      <IconStar />
                     ) : scope === "ungrouped" ? (
-                      <IconBookmarkFill18 />
+                      <IconBookmarkFill />
                     ) : (
-                      <IconFolderOutline18 />
+                      <IconFolder />
                     )}
                   </Empty.Media>
                   <Empty.Title>No tags in {scopeLabel}</Empty.Title>

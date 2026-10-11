@@ -1,5 +1,7 @@
-import { IconChevronRightOutline12 as ChevronRight } from "@pond/icons/outline/12";
-import { IconPlusOutline18 as Plus } from "@pond/icons/outline/18";
+import {
+  IconChevronRight as ChevronRight,
+  IconPlus as Plus,
+} from "@pond/icons";
 import { PickerPanel, type PickerSelectionState } from "@pond/ui";
 import type { ComponentPropsWithoutRef } from "react";
 import type { TagGroupRow } from "@/features/tags/state/tag-groups";
@@ -31,7 +33,7 @@ function Group({ group, open, ...props }: GroupProps) {
         aria-hidden="true"
         data-expanded={open || undefined}
       >
-        <ChevronRight />
+        <ChevronRight size={12} />
       </span>
       <PickerPanel.ItemLabel title={group.name}>
         {group.name}

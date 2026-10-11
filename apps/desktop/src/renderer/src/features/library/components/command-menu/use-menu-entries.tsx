@@ -1,14 +1,14 @@
 import {
-  IconArrowRotateAnticlockwiseOutline18,
-  IconChatBubblePenOutline18,
-  IconFileOutline18,
-  IconFolderOutline18,
-  IconImageOutline18,
-  IconLink2Outline18,
-  IconMagnifierOutline18,
-  IconTrashXmarkOutline18,
-  IconUploadOutline18,
-} from "@pond/icons/outline/18";
+  IconArrowRotateAnticlockwise,
+  IconChatBubblePen,
+  IconFile,
+  IconFolder,
+  IconImage,
+  IconLink2,
+  IconMagnifier,
+  IconTrashXmark,
+  IconUpload,
+} from "@pond/icons";
 import { useSelector } from "@tanstack/react-store";
 import { useMemo } from "react";
 import { addSavesToChat } from "@/features/agent";
@@ -47,9 +47,9 @@ interface MenuEntriesResult {
 }
 
 function SaveIcon({ save }: { save: Save }) {
-  if (save.mediaType === "image") return <IconImageOutline18 aria-hidden />;
-  if (save.mediaType === "link") return <IconLink2Outline18 aria-hidden />;
-  return <IconFileOutline18 aria-hidden />;
+  if (save.mediaType === "image") return <IconImage aria-hidden />;
+  if (save.mediaType === "link") return <IconLink2 aria-hidden />;
+  return <IconFile aria-hidden />;
 }
 
 export function useMenuEntries({
@@ -99,7 +99,7 @@ export function useMenuEntries({
                 id: "selection:add-to-chat",
                 group,
                 label: "Add to Chat",
-                icon: <IconChatBubblePenOutline18 aria-hidden />,
+                icon: <IconChatBubblePen aria-hidden />,
                 run: () => addSavesToChat(selected()),
               },
             ]),
@@ -107,7 +107,7 @@ export function useMenuEntries({
           id: "selection:export",
           group,
           label: "Export Selection",
-          icon: <IconUploadOutline18 aria-hidden />,
+          icon: <IconUpload aria-hidden />,
           shortcut: "selection.export",
           run: () => void exportSelectionFiles(selected()),
         },
@@ -116,7 +116,7 @@ export function useMenuEntries({
               id: "selection:restore",
               group,
               label: "Restore from Trash",
-              icon: <IconArrowRotateAnticlockwiseOutline18 aria-hidden />,
+              icon: <IconArrowRotateAnticlockwise aria-hidden />,
               shortcut: "save.restore",
               run: () => void restoreSelection(selected()),
             }
@@ -124,7 +124,7 @@ export function useMenuEntries({
               id: "selection:trash",
               group,
               label: "Move to Trash",
-              icon: <IconTrashXmarkOutline18 aria-hidden />,
+              icon: <IconTrashXmark aria-hidden />,
               shortcut: "save.trash",
               run: () => void trashSelection(selected()),
             },
@@ -137,7 +137,7 @@ export function useMenuEntries({
           id: "folder:new-subfolder",
           group: "Current Folder",
           label: "New Subfolder",
-          icon: <IconFolderOutline18 aria-hidden />,
+          icon: <IconFolder aria-hidden />,
           run: () => newFolder(nav.id),
         },
       ];
@@ -185,7 +185,7 @@ export function useMenuEntries({
         id: `folder:${folder.id}`,
         group: "Folders",
         label: folder.name,
-        icon: <IconFolderOutline18 aria-hidden />,
+        icon: <IconFolder aria-hidden />,
         run: () => selectLibraryNav({ kind: "folder", id: folder.id }),
       }));
   }, [deferredQuery, folders]);
@@ -204,7 +204,7 @@ export function useMenuEntries({
         id: `view:${view.id}`,
         group: "Saved Views",
         label: view.name,
-        icon: <IconMagnifierOutline18 aria-hidden />,
+        icon: <IconMagnifier aria-hidden />,
         run: () => {
           selectLibraryNav({ kind: "all" });
           savedViews.select(view.id);
@@ -220,7 +220,7 @@ export function useMenuEntries({
       group: "Search",
       label: "Search Library",
       detail: value,
-      icon: <IconMagnifierOutline18 aria-hidden />,
+      icon: <IconMagnifier aria-hidden />,
       run: () => {
         resetFilters();
         setSearchInput([], value, value);

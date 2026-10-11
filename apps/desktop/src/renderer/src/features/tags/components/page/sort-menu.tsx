@@ -1,4 +1,4 @@
-import { IconSortArrowsOutline18 } from "@pond/icons/outline/18";
+import { IconSortArrows } from "@pond/icons";
 import type { Prefs } from "@pond/schema";
 import { Menu, type MenuItemSpec } from "@pond/ui";
 import { SpecMenu } from "@/shared/components/spec-context-menu";
@@ -52,7 +52,7 @@ export function TagSortMenu({
       buildItems={() => buildTagSortItems({ sort, direction, onChange })}
     >
       <Menu.Trigger icon size="sm" variant="ghost" aria-label="Sort Tags">
-        <IconSortArrowsOutline18 />
+        <IconSortArrows />
       </Menu.Trigger>
     </SpecMenu>
   );

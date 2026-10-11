@@ -1,7 +1,4 @@
-import {
-  IconArrowLeftOutline18,
-  IconArrowRightOutline18,
-} from "@pond/icons/outline/18";
+import { IconArrowLeft, IconArrowRight } from "@pond/icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import {
@@ -105,14 +102,14 @@ function ArchiveFrame({
                   disabled={pageIndex <= 0}
                   onClick={() => setPageIndex((index) => index - 1)}
                 >
-                  <IconArrowLeftOutline18 />
+                  <IconArrowLeft />
                 </ViewerHud.Tool>
                 <ViewerHud.Tool
                   label="Next Page"
                   disabled={pageIndex >= manifest.pages.length - 1}
                   onClick={() => setPageIndex((index) => index + 1)}
                 >
-                  <IconArrowRightOutline18 />
+                  <IconArrowRight />
                 </ViewerHud.Tool>
               </>
             ) : null

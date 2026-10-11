@@ -1,11 +1,11 @@
-import { IconCircleCheckFill12 as Connected } from "@pond/icons/fill/12";
 import {
-  IconInputPasswordEditOutline12 as Edit,
-  IconExternalLinkOutline12 as ExternalLink,
-  IconEyeOutline12 as Eye,
-  IconEye2Outline12 as EyeOff,
-  IconTrashOutline12 as Trash,
-} from "@pond/icons/outline/12";
+  IconCircleCheckFill as Connected,
+  IconInputPasswordEdit as Edit,
+  IconExternalLink as ExternalLink,
+  IconEye as Eye,
+  IconEye2 as EyeOff,
+  IconTrash as Trash,
+} from "@pond/icons";
 import { Button, Input, Settings, Switch } from "@pond/ui";
 import type { AssistantProvider } from "@shared/assistant";
 import { useQueryClient } from "@tanstack/react-query";
@@ -194,7 +194,7 @@ export function ProviderConnection({
       <Settings.CardTitle>{catalog.provider}</Settings.CardTitle>
       {connected ? (
         <span className={styles.status} role="img" aria-label="Connected">
-          <Connected aria-hidden="true" />
+          <Connected size={12} aria-hidden="true" />
         </span>
       ) : null}
       <Settings.CardAction>
@@ -208,7 +208,7 @@ export function ProviderConnection({
             aria-label={`Edit ${catalog.provider}`}
             onClick={() => setEditing(true)}
           >
-            <Edit />
+            <Edit size={12} />
           </Button>
         )}
         <Button
@@ -220,7 +220,7 @@ export function ProviderConnection({
           aria-label={`Remove ${catalog.provider}`}
           onClick={() => void remove()}
         >
-          <Trash />
+          <Trash size={12} />
         </Button>
         {setupUrl ? (
           <Button
@@ -233,7 +233,7 @@ export function ProviderConnection({
               void window.pond.openExternal(setupUrl);
             }}
           >
-            <ExternalLink />
+            <ExternalLink size={12} />
           </Button>
         ) : null}
         <Switch.Root
@@ -282,7 +282,7 @@ export function ProviderConnection({
                       aria-pressed={revealed || undefined}
                       onClick={() => setRevealed((open) => !open)}
                     >
-                      {revealed ? <EyeOff /> : <Eye />}
+                      {revealed ? <EyeOff size={12} /> : <Eye size={12} />}
                     </Button>
                   </Input.Action>
                 </Input.Root>

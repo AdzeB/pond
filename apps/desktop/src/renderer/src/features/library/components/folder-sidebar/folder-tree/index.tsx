@@ -15,10 +15,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import {
-  IconPlusOutline18,
-  IconSortArrowsOutline18,
-} from "@pond/icons/outline/18";
+import { IconPlus, IconSortArrows } from "@pond/icons";
 import type { Folder } from "@pond/schema/db";
 import { Button, type MenuItemSpec, Sidebar } from "@pond/ui";
 import { useReducedMotionConfig } from "motion/react";
@@ -76,7 +73,7 @@ function folderGroupMenuItems(
     {
       type: "submenu",
       label: "Sort By",
-      icon: <IconSortArrowsOutline18 />,
+      icon: <IconSortArrows />,
       items: FOLDER_SORT_OPTIONS.map((option) => ({
         type: "checkbox",
         label: option.label,
@@ -222,7 +219,7 @@ export function FolderTree({ folderRows, libraryPage, nav }: FolderTreeProps) {
               disabled={creatingFolder}
               onClick={() => void createFolder()}
             >
-              <IconPlusOutline18 />
+              <IconPlus />
             </Button>
           </Sidebar.GroupHeader>
         </SpecContextMenu>

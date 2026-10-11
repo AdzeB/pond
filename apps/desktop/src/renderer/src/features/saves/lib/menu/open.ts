@@ -1,13 +1,13 @@
 import {
-  IconApplicationsOutline18,
-  IconArrowUpRightOutline18,
-  IconFolderOpenOutline18,
-  IconFolderOutline18,
-  IconGridOutline18,
-  IconLink2Outline18,
-  IconOpenInNewWindowOutline18,
-  IconWindowShareOutline18,
-} from "@pond/icons/outline/18";
+  IconApplications,
+  IconArrowUpRight,
+  IconFolder,
+  IconFolderOpen,
+  IconGrid,
+  IconLink2,
+  IconOpenInNewWindow,
+  IconWindowShare,
+} from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import { previewMediaType } from "@shared/preview-window-contracts";
 import {
@@ -49,13 +49,13 @@ function fileLocationItems(
   return [
     {
       label: "All",
-      icon: glyph(IconGridOutline18),
+      icon: glyph(IconGrid),
       onClick: openAllSaves,
     },
     { type: "separator" },
     ...entries.map((folder) => ({
       label: folder.name,
-      icon: glyph(IconFolderOutline18),
+      icon: glyph(IconFolder),
       onClick: () => openFolderLocation(folder.id),
     })),
   ];
@@ -79,14 +79,14 @@ export function buildOpenItems({
   return [
     {
       label: "Open Save",
-      icon: glyph(IconWindowShareOutline18),
+      icon: glyph(IconWindowShare),
       hidden: batch || opened,
       shortcut: shortcutGlyphs("grid.open"),
       onClick: () => openSave(save.id),
     },
     {
       label: "Open in New Window",
-      icon: glyph(IconOpenInNewWindowOutline18),
+      icon: glyph(IconOpenInNewWindow),
       hidden: batch || !targetFile || previewMediaType(targetFile) === null,
       onClick: () => {
         const index = resolveFileIndex(save, fileIndex);
@@ -95,7 +95,7 @@ export function buildOpenItems({
     },
     {
       label: "Open with Default App",
-      icon: glyph(IconArrowUpRightOutline18),
+      icon: glyph(IconArrowUpRight),
       hidden: !hasFiles,
       shortcut: shortcutGlyphs("save.open"),
       onClick: () => {
@@ -106,14 +106,14 @@ export function buildOpenItems({
     {
       type: "submenu",
       label: "Open With",
-      icon: glyph(IconApplicationsOutline18),
+      icon: glyph(IconApplications),
       hidden: openWithItems.length === 0,
       items: openWithItems,
     },
     { type: "separator" },
     {
       label: REVEAL_LABEL,
-      icon: glyph(IconFolderOpenOutline18),
+      icon: glyph(IconFolderOpen),
       keywords: "finder explorer",
       hidden: !hasFiles,
       shortcut: shortcutGlyphs("save.reveal"),
@@ -125,14 +125,14 @@ export function buildOpenItems({
     {
       type: "submenu",
       label: "Navigate to Folder",
-      icon: glyph(IconFolderOutline18),
+      icon: glyph(IconFolder),
       hidden: batch || saveLibraryBridge.foldersForSave(save.id).length === 0,
       items: fileLocationItems(saveLibraryBridge.foldersForSave(save.id)),
     },
     batch
       ? {
           label: "Open Original in Browser",
-          icon: glyph(IconLink2Outline18),
+          icon: glyph(IconLink2),
           hidden: !hasHttpUrl,
           shortcut: shortcutGlyphs("save.open-url"),
           onClick: () => void openInBrowserForSelection(ids),
@@ -140,7 +140,7 @@ export function buildOpenItems({
       : {
           type: "link",
           label: "Open Original in Browser",
-          icon: glyph(IconLink2Outline18),
+          icon: glyph(IconLink2),
           hidden: !hasHttpUrl,
           shortcut: shortcutGlyphs("save.open-url"),
           href: save.url ?? "",

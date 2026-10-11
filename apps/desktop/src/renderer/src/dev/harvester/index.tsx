@@ -1,9 +1,10 @@
 /** Standalone window prototype for sources and downloads. */
-import { IconMediaPauseFill18, IconMediaPlayFill18 } from "@pond/icons/fill/18";
 import {
-  IconArrowDiagonalInOutline18,
-  IconWindowDownloadOutline18,
-} from "@pond/icons/outline/18";
+  IconArrowDiagonalIn,
+  IconMediaPauseFill,
+  IconMediaPlayFill,
+  IconWindowDownload,
+} from "@pond/icons";
 import { sourceLabel } from "@pond/schema/sources";
 import { Button, Empty, Sidebar, TitleBar, Tooltip } from "@pond/ui";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
@@ -257,7 +258,7 @@ function Harvester() {
                 onClick={() => setSection("sources")}
               >
                 <Sidebar.Icon>
-                  <IconArrowDiagonalInOutline18 />
+                  <IconArrowDiagonalIn />
                 </Sidebar.Icon>
                 <Sidebar.ItemLabel>Sources</Sidebar.ItemLabel>
                 <Sidebar.Count>{sources.length}</Sidebar.Count>
@@ -268,7 +269,7 @@ function Harvester() {
                 onClick={() => setSection("downloads")}
               >
                 <Sidebar.Icon>
-                  <IconWindowDownloadOutline18 />
+                  <IconWindowDownload />
                 </Sidebar.Icon>
                 <Sidebar.ItemLabel>Downloads</Sidebar.ItemLabel>
                 <Sidebar.Count>
@@ -322,9 +323,9 @@ function Harvester() {
                       onClick={() => setQueuePaused((paused) => !paused)}
                     >
                       {queuePaused ? (
-                        <IconMediaPlayFill18 />
+                        <IconMediaPlayFill />
                       ) : (
-                        <IconMediaPauseFill18 />
+                        <IconMediaPauseFill />
                       )}
                     </Button>
                   </Tooltip>

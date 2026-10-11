@@ -1,8 +1,4 @@
-import {
-  IconBarsFilterOutline18,
-  IconPencilOutline18,
-  IconTrash2Outline18,
-} from "@pond/icons/outline/18";
+import { IconBarsFilter, IconPencil, IconTrash } from "@pond/icons";
 import { Button, Chip, type MenuItemSpec } from "@pond/ui";
 import { FOLDER_SWATCHES } from "@/shared/lib/folder-icons";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
@@ -48,14 +44,14 @@ export function buildTagGroupMenuItems(a: TagGroupMenuActions): MenuItemSpec[] {
   return [
     {
       label: "Filter Items with the Tag(s)",
-      icon: <IconBarsFilterOutline18 />,
+      icon: <IconBarsFilter />,
       disabled: a.tagCount === 0,
       onClick: a.onFilter,
     },
     { type: "separator" },
     {
       label: "Rename",
-      icon: <IconPencilOutline18 />,
+      icon: <IconPencil />,
       shortcut: shortcutGlyphs("tags.rename"),
       onClick: a.onRename,
     },
@@ -68,7 +64,7 @@ export function buildTagGroupMenuItems(a: TagGroupMenuActions): MenuItemSpec[] {
     { type: "separator" },
     {
       label: "Remove",
-      icon: <IconTrash2Outline18 />,
+      icon: <IconTrash />,
       variant: "destructive",
       onClick: a.onRequestDelete,
     },

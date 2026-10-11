@@ -1,4 +1,4 @@
-import { IconCheckOutline18, IconXmarkOutline18 } from "@pond/icons/outline/18";
+import { IconCheck, IconXmark } from "@pond/icons";
 import type { Source } from "@pond/schema/db";
 import { BrandTile } from "@/features/sources/components/sync-monitor-source-tile";
 import pondIcon from "@/generated/app-icon-previews/aqua.png";
@@ -45,9 +45,9 @@ export function ConnectionVisual({ source, state }: ConnectionVisualProps) {
           data-glow-origin={state === "connected" || undefined}
         >
           {state === "connected" ? (
-            <IconCheckOutline18 strokeWidth={2.5} />
+            <IconCheck strokeWidth={2.5} />
           ) : (
-            <IconXmarkOutline18 strokeWidth={2.5} />
+            <IconXmark strokeWidth={2.5} />
           )}
         </span>
       ) : null}

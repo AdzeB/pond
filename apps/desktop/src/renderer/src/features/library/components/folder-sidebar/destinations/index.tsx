@@ -18,18 +18,18 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  IconAlbum2Outline18,
-  IconArrowDiagonalInOutline18,
-  IconBookmarkOutline18,
-  IconBookmarkSlashOutline18,
-  IconChatBubblePenOutline18,
-  IconClockPlusOutline18,
-  IconClockRotateClockwiseOutline18,
-  IconFolderBanOutline18,
-  IconShuffleOutline18,
-  IconTrashXmarkOutline18,
-  IconWindowDownloadOutline18,
-} from "@pond/icons/outline/18";
+  IconAlbum2,
+  IconArrowDiagonalIn,
+  IconBookmark,
+  IconBookmarkSlash,
+  IconChatBubblePen,
+  IconClockPlus,
+  IconFolderBan,
+  IconHistory,
+  IconShuffle,
+  IconTrashXmark,
+  IconWindowDownload,
+} from "@pond/icons";
 import type { SidebarDestination } from "@pond/schema";
 import { Sidebar } from "@pond/ui";
 import { QueueSummarySchema } from "@shared/queue-contracts";
@@ -129,27 +129,27 @@ function SortableDestination({
 function DestinationIcon({ destination }: { destination: SidebarDestination }) {
   switch (destination) {
     case "all":
-      return <IconAlbum2Outline18 />;
+      return <IconAlbum2 />;
     case "uncategorized":
-      return <IconFolderBanOutline18 />;
+      return <IconFolderBan />;
     case "assistant":
-      return <IconChatBubblePenOutline18 />;
+      return <IconChatBubblePen />;
     case "untagged":
-      return <IconBookmarkSlashOutline18 />;
+      return <IconBookmarkSlash />;
     case "recentlyAdded":
-      return <IconClockPlusOutline18 />;
+      return <IconClockPlus />;
     case "recentlyUsed":
-      return <IconClockRotateClockwiseOutline18 />;
+      return <IconHistory />;
     case "tags":
-      return <IconBookmarkOutline18 />;
+      return <IconBookmark />;
     case "random":
-      return <IconShuffleOutline18 />;
+      return <IconShuffle />;
     case "trash":
-      return <IconTrashXmarkOutline18 />;
+      return <IconTrashXmark />;
     case "downloads":
-      return <IconWindowDownloadOutline18 />;
+      return <IconWindowDownload />;
     case "sources":
-      return <IconArrowDiagonalInOutline18 />;
+      return <IconArrowDiagonalIn />;
   }
 }
 
@@ -264,7 +264,7 @@ export function LibraryDestinations({
           <BuiltInVisibilityMenu destination={destination} key={destination}>
             <Row
               label="All"
-              icon={<IconAlbum2Outline18 />}
+              icon={<IconAlbum2 />}
               count={counts.library}
               badgeStyle={badgeStyle}
               active={isDestinationActive(destination)}
@@ -281,7 +281,7 @@ export function LibraryDestinations({
           <BuiltInVisibilityMenu destination={destination} key={destination}>
             <Row
               label="Uncategorized"
-              icon={<IconFolderBanOutline18 />}
+              icon={<IconFolderBan />}
               count={counts.uncategorized}
               badgeStyle={badgeStyle}
               active={isDestinationActive(destination)}
@@ -298,7 +298,7 @@ export function LibraryDestinations({
           <BuiltInVisibilityMenu destination={destination} key={destination}>
             <Row
               label="Assistant"
-              icon={<IconChatBubblePenOutline18 />}
+              icon={<IconChatBubblePen />}
               active={isDestinationActive(destination)}
               {...dragProps}
               onClick={() => goToLibraryPath("/assistant")}
@@ -310,7 +310,7 @@ export function LibraryDestinations({
           <BuiltInVisibilityMenu destination={destination} key={destination}>
             <Row
               label="Untagged"
-              icon={<IconBookmarkSlashOutline18 />}
+              icon={<IconBookmarkSlash />}
               count={counts.untagged}
               badgeStyle={badgeStyle}
               active={isDestinationActive(destination)}
@@ -328,7 +328,7 @@ export function LibraryDestinations({
           <BuiltInVisibilityMenu destination={destination} key={destination}>
             <Row
               label="Recently Added"
-              icon={<IconClockPlusOutline18 />}
+              icon={<IconClockPlus />}
               count={counts.recentlyAdded}
               badgeStyle={badgeStyle}
               active={isDestinationActive(destination)}
@@ -345,7 +345,7 @@ export function LibraryDestinations({
           <BuiltInVisibilityMenu destination={destination} key={destination}>
             <Row
               label="Recently Used"
-              icon={<IconClockRotateClockwiseOutline18 />}
+              icon={<IconHistory />}
               count={counts.recentlyUsed}
               badgeStyle={badgeStyle}
               active={isDestinationActive(destination)}
@@ -359,7 +359,7 @@ export function LibraryDestinations({
           <BuiltInVisibilityMenu destination={destination} key={destination}>
             <Row
               label="Tags"
-              icon={<IconBookmarkOutline18 />}
+              icon={<IconBookmark />}
               count={tags.length}
               badgeStyle={badgeStyle}
               active={isDestinationActive(destination)}
@@ -373,7 +373,7 @@ export function LibraryDestinations({
           <BuiltInVisibilityMenu destination={destination} key={destination}>
             <Row
               label="Random"
-              icon={<IconShuffleOutline18 />}
+              icon={<IconShuffle />}
               active={isDestinationActive(destination)}
               {...dragProps}
               onClick={() => {
@@ -394,7 +394,7 @@ export function LibraryDestinations({
           >
             <Row
               label="Trash"
-              icon={<IconTrashXmarkOutline18 />}
+              icon={<IconTrashXmark />}
               count={counts.trash}
               badgeStyle={badgeStyle}
               active={isDestinationActive(destination)}
@@ -408,7 +408,7 @@ export function LibraryDestinations({
           <BuiltInVisibilityMenu destination={destination} key={destination}>
             <Row
               label="Downloads"
-              icon={<IconWindowDownloadOutline18 />}
+              icon={<IconWindowDownload />}
               count={downloadsCount}
               badgeStyle={badgeStyle}
               active={isDestinationActive(destination)}
@@ -422,7 +422,7 @@ export function LibraryDestinations({
           <BuiltInVisibilityMenu destination={destination} key={destination}>
             <Row
               label="Sources"
-              icon={<IconArrowDiagonalInOutline18 />}
+              icon={<IconArrowDiagonalIn />}
               count={accounts.length}
               badgeStyle={badgeStyle}
               active={isDestinationActive(destination)}

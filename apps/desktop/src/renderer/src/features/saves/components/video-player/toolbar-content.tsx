@@ -1,10 +1,10 @@
 import {
-  IconClone2Outline18,
-  IconFlipHorizontal2Outline18,
-  IconFloppyDiskOutline18,
-  IconImagePlusOutline18,
-  IconRotateImageClockwiseOutline18,
-} from "@pond/icons/outline/18";
+  IconCopy,
+  IconFlipHorizontal2,
+  IconFloppyDisk,
+  IconImagePlus,
+  IconRotateImageClockwise,
+} from "@pond/icons";
 import { useVideo } from "@pond/ui";
 import type { ReactNode } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
@@ -56,7 +56,7 @@ export function VideoToolbarContent({
           disabled={!videoReady}
           onClick={() => withVideo((video) => void copyVideoFrame(video))}
         >
-          <IconClone2Outline18 />
+          <IconCopy />
         </ViewerHud.Tool>
         <ViewerHud.Tool
           label="Save Current Frame"
@@ -64,7 +64,7 @@ export function VideoToolbarContent({
           disabled={!videoReady}
           onClick={() => withVideo((video) => void saveVideoFrame(video))}
         >
-          <IconFloppyDiskOutline18 />
+          <IconFloppyDisk />
         </ViewerHud.Tool>
         {save ? (
           <ViewerHud.Tool
@@ -74,7 +74,7 @@ export function VideoToolbarContent({
               withVideo((video) => void setVideoThumbnail(save.id, video))
             }
           >
-            <IconImagePlusOutline18 />
+            <IconImagePlus />
           </ViewerHud.Tool>
         ) : null}
         {save && file ? (
@@ -85,14 +85,14 @@ export function VideoToolbarContent({
     edits: (
       <>
         <ViewerHud.Tool label="Rotate Video" onClick={onRotate}>
-          <IconRotateImageClockwiseOutline18 />
+          <IconRotateImageClockwise />
         </ViewerHud.Tool>
         <ViewerHud.Tool
           label="Mirror Video"
           pressed={mirrored}
           onClick={onMirror}
         >
-          <IconFlipHorizontal2Outline18 />
+          <IconFlipHorizontal2 />
         </ViewerHud.Tool>
       </>
     ),

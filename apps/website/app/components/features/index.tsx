@@ -1,12 +1,12 @@
 import {
-  IconArrowUpRightOutline18,
-  IconComputerOutline18,
-  IconFolderOutline18,
-  IconGlobeOutline18,
-  IconImageOutline18,
-  IconMagnifierOutline18,
-  IconScanImageOutline18,
-} from "@pond/icons/outline/18";
+  IconArrowUpRight,
+  IconComputer,
+  IconFolder,
+  IconGlobe,
+  IconImage,
+  IconMagnifier,
+  IconScanImage,
+} from "@pond/icons";
 import { Logo } from "@pond/ui/logo";
 import Image from "next/image";
 import type { ReactNode } from "react";
@@ -90,7 +90,7 @@ export function Features() {
               <div className={styles.actions}>
                 <Chip href={dmgUrl("arm64")}>Download</Chip>
                 <Chip href={GITHUB} external label="GitHub">
-                  <IconArrowUpRightOutline18 />
+                  <IconArrowUpRight />
                 </Chip>
               </div>
             }
@@ -111,38 +111,38 @@ export function Features() {
               <div className={styles.actions}>
                 <Chip href={extensionZipUrl()}>Install Extension</Chip>
                 <Chip href={GITHUB} external label="View Source">
-                  <IconArrowUpRightOutline18 />
+                  <IconArrowUpRight />
                 </Chip>
               </div>
             }
           />
           <Feature
-            icon={<IconGlobeOutline18 />}
+            icon={<IconGlobe />}
             title="Nine platforms, plus the web"
             description="Connect an account and Pond syncs new saves in the background."
           />
           <Feature
-            icon={<IconImageOutline18 />}
+            icon={<IconImage />}
             title="Original media"
             description="Original files, not compressed copies."
           />
           <Feature
-            icon={<IconFolderOutline18 />}
+            icon={<IconFolder />}
             title="A folder you own"
             description="Everything lives in ~/Pond. Back it up, move it, or browse it in Finder."
           />
           <Feature
-            icon={<IconScanImageOutline18 />}
+            icon={<IconScanImage />}
             title="On-device enrichment"
             description="Captions, text in images, and transcripts run on your Mac."
           />
           <Feature
-            icon={<IconComputerOutline18 />}
+            icon={<IconComputer />}
             title="Local-first"
             description="Nothing leaves your Mac."
           />
           <Feature
-            icon={<IconMagnifierOutline18 />}
+            icon={<IconMagnifier />}
             title="Natural language search"
             description="Full-text search and plain-language questions, on-device."
           />

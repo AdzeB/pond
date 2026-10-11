@@ -1,4 +1,4 @@
-import { IconArrowLeftOutline18 } from "@pond/icons/outline/18";
+import { IconArrowLeft } from "@pond/icons";
 import { Button, Sidebar } from "@pond/ui";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import Fuse from "fuse.js";
@@ -111,7 +111,7 @@ export function SettingsSidebarView({
       {onExit ? (
         <Sidebar.Header className={styles.header}>
           <Button variant="ghost" size="sm" onClick={onExit}>
-            <IconArrowLeftOutline18 aria-hidden />
+            <IconArrowLeft aria-hidden />
             Exit settings
           </Button>
         </Sidebar.Header>

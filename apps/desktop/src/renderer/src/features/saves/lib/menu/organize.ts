@@ -1,14 +1,14 @@
 import {
-  IconClipboardOutline18,
-  IconCoverOutline18,
-  IconFolderPlusOutline18,
-  IconFolderSendOutline18,
-  IconFoldersOutline18,
-  IconPencilOutline18,
-  IconPinOutline18,
-  IconRenameOutline18,
-  IconTagPlusOutline18,
-} from "@pond/icons/outline/18";
+  IconClipboard,
+  IconFolderPlus,
+  IconFolderSend,
+  IconFolders,
+  IconImage,
+  IconPencil,
+  IconPinTack,
+  IconRename,
+  IconTagPlus,
+} from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import {
   focusPaneTitle,
@@ -38,7 +38,7 @@ function buildAddItems(ids: string[], batch: boolean): MenuItemSpec[] {
   return [
     {
       label: "Add Tags",
-      icon: glyph(IconTagPlusOutline18),
+      icon: glyph(IconTagPlus),
       shortcut: shortcutGlyphs("save.add-tag"),
       onClick: () => openTagPicker(),
     },
@@ -46,7 +46,7 @@ function buildAddItems(ids: string[], batch: boolean): MenuItemSpec[] {
       label: lastFolder
         ? `Add to "${lastFolder.name}"`
         : "Add to Last Used Folder",
-      icon: glyph(IconFolderPlusOutline18),
+      icon: glyph(IconFolderPlus),
       hidden: !lastFolder,
       shortcut: shortcutGlyphs("save.add-to-last-folder"),
       onClick: () => {
@@ -55,12 +55,12 @@ function buildAddItems(ids: string[], batch: boolean): MenuItemSpec[] {
     },
     {
       label: "Add to Folders",
-      icon: glyph(IconFoldersOutline18),
+      icon: glyph(IconFolders),
       onClick: () => saveLibraryBridge.openFolderPicker(ids),
     },
     {
       label: `New Folder with ${ids.length} Saves`,
-      icon: glyph(IconFolderPlusOutline18),
+      icon: glyph(IconFolderPlus),
       hidden: !batch,
       onClick: () => {
         void (async () => {
@@ -89,7 +89,7 @@ function buildAddItems(ids: string[], batch: boolean): MenuItemSpec[] {
     },
     {
       label: "Add to Other Library",
-      icon: glyph(IconFolderSendOutline18),
+      icon: glyph(IconFolderSend),
       onClick: () => {
         void window.pond
           .query("saves.copyToLibrary", { ids })
@@ -139,20 +139,20 @@ export function buildOrganizeItems(
     editing: [
       {
         label: "Rename",
-        icon: glyph(IconPencilOutline18),
+        icon: glyph(IconPencil),
         hidden: !context.canRename,
         shortcut: shortcutGlyphs("save.rename"),
         onClick: () => focusPaneTitle(),
       },
       {
         label: "Rename Saves",
-        icon: glyph(IconRenameOutline18),
+        icon: glyph(IconRename),
         hidden: !batch,
         onClick: () => saveLibraryBridge.openRename(ids),
       },
       {
         label: "Paste Tags",
-        icon: glyph(IconClipboardOutline18),
+        icon: glyph(IconClipboard),
         disabled: clipboardEmpty,
         shortcut: shortcutGlyphs("save.paste-tags"),
         onClick: () => {
@@ -162,7 +162,7 @@ export function buildOrganizeItems(
       },
       {
         label: isPinned ? "Unpin from Top" : "Pin to Top",
-        icon: glyph(IconPinOutline18),
+        icon: glyph(IconPinTack),
         hidden: !inFolder || batch,
         onClick: () => {
           if (!resolvedFolderId) return;
@@ -176,7 +176,7 @@ export function buildOrganizeItems(
       },
       {
         label: isCover ? "Remove Folder Cover" : "Set as Folder Cover",
-        icon: glyph(IconCoverOutline18),
+        icon: glyph(IconImage),
         hidden: !inFolder || batch,
         onClick: () => {
           if (!resolvedFolderId) return;

@@ -1,4 +1,4 @@
-import { IconFolderFill12 } from "@pond/icons/fill/12";
+import { IconFolderFill } from "@pond/icons";
 import { TweetCard } from "../tweet-card";
 import styles from "./styles.module.css";
 
@@ -26,19 +26,19 @@ export function FinderStatic() {
           <span className={styles.light} />
         </span>
         <span className={styles.path}>
-          <IconFolderFill12 />
+          <IconFolderFill size={12} />
           ~/Pond/My Pond.pond
         </span>
       </div>
       <div className={styles.columns}>
         <div className={styles.column} data-role="root">
           <span className={styles.row} data-selected>
-            <IconFolderFill12 />
+            <IconFolderFill size={12} />
             items
             <span className={styles.meta}>5,070</span>
           </span>
           <span className={styles.row}>
-            <IconFolderFill12 />
+            <IconFolderFill size={12} />
             trash
             <span className={styles.meta}>12</span>
           </span>
@@ -53,7 +53,7 @@ export function FinderStatic() {
               className={styles.row}
               data-selected={index === SELECTED_ITEM || undefined}
             >
-              <IconFolderFill12 />
+              <IconFolderFill size={12} />
               <span className={styles.mono}>{label}</span>
             </span>
           ))}

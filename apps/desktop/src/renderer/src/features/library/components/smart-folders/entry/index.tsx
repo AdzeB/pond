@@ -1,5 +1,4 @@
-import { IconDotsFill12 } from "@pond/icons/fill/12";
-import { IconChevronRightOutline12 } from "@pond/icons/outline/12";
+import { IconChevronRight, IconDotsFill } from "@pond/icons";
 import type { SavedView } from "@pond/schema/db";
 import { Button, cssVars, Menu, type MenuItemSpec, Sidebar } from "@pond/ui";
 import { useId, useState } from "react";
@@ -115,7 +114,7 @@ export function SmartFolderEntry({
                   ?.focus();
               }}
             >
-              <IconChevronRightOutline12 strokeWidth={2} />
+              <IconChevronRight size={12} strokeWidth={2} />
             </Button>
           ) : null}
           {renaming ? (
@@ -228,7 +227,7 @@ export function SmartFolderEntry({
                 aria-label={`More Actions for ${view.name}`}
                 tabIndex={-1}
               >
-                <IconDotsFill12 />
+                <IconDotsFill size={12} />
               </Menu.Trigger>
             </SpecMenu>
           )}

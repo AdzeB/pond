@@ -1,8 +1,5 @@
 import { useChat } from "@ai-sdk/react";
-import {
-  IconArrowsExpandDiagonalOutline18,
-  IconXmarkOutline18,
-} from "@pond/icons/outline/18";
+import { IconArrowsExpandDiagonal, IconXmark } from "@pond/icons";
 import type { AgentModelOptions } from "@pond/schema";
 import { Button, Tooltip } from "@pond/ui";
 import { Thread } from "@pond/ui/thread";
@@ -171,7 +168,7 @@ function AgentPaneContent({
                   aria-label="Open Assistant Page"
                   onClick={() => getAppRouter()?.history.push("/assistant")}
                 >
-                  <IconArrowsExpandDiagonalOutline18 />
+                  <IconArrowsExpandDiagonal />
                 </Button>
               </Tooltip>
               <Tooltip label="Close Assistant" side="bottom">
@@ -182,7 +179,7 @@ function AgentPaneContent({
                   aria-label="Close Assistant"
                   onClick={() => libraryChrome.setAgentOpen(false)}
                 >
-                  <IconXmarkOutline18 />
+                  <IconXmark />
                 </Button>
               </Tooltip>
             </>

@@ -1,4 +1,4 @@
-import { IconCircleInfoOutline12 as Info } from "@pond/icons/outline/12";
+import { IconCircleInfo as Info } from "@pond/icons";
 import { Button, Popover } from "@pond/ui";
 import {
   hostSetupCommands,
@@ -50,7 +50,7 @@ export function HostPopover({
         render={<Button icon size="xs" variant="ghost" />}
         aria-label={`Set up ${host.name}`}
       >
-        <Info />
+        <Info size={12} />
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner side="left" align="start" sideOffset={8}>

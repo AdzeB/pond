@@ -1,8 +1,4 @@
-import {
-  IconTrash2Outline18,
-  IconTrashXmarkOutline18,
-  IconUndoOutline18,
-} from "@pond/icons/outline/18";
+import { IconTrash, IconTrashXmark, IconUndo } from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import { purgeSave, trashSave, untrashSave } from "@/features/saves/lib/mutate";
 import {
@@ -26,7 +22,7 @@ export function buildTrashItems({
     ? [
         {
           label: "Restore from Trash",
-          icon: glyph(IconUndoOutline18),
+          icon: glyph(IconUndo),
           shortcut: shortcutGlyphs("save.restore"),
           onClick: () => {
             if (batch) void restoreSelection(ids);
@@ -35,7 +31,7 @@ export function buildTrashItems({
         },
         {
           label: "Delete Forever",
-          icon: glyph(IconTrash2Outline18),
+          icon: glyph(IconTrash),
           variant: "destructive",
           shortcut: shortcutGlyphs("save.delete-forever"),
           onClick: () => {
@@ -47,7 +43,7 @@ export function buildTrashItems({
     : [
         {
           label: "Move to Trash",
-          icon: glyph(IconTrashXmarkOutline18),
+          icon: glyph(IconTrashXmark),
           variant: "destructive",
           shortcut: shortcutGlyphs("save.trash"),
           onClick: () => {

@@ -1,9 +1,9 @@
 import {
-  IconBadgeCheckOutline18,
-  IconEye2Outline18,
-  IconHistoryOutline18,
-  IconSidebarEditOutline18,
-} from "@pond/icons/outline/18";
+  IconBadgeCheck,
+  IconEye2,
+  IconHistory,
+  IconSidebarEdit,
+} from "@pond/icons";
 import {
   isLockedSidebarDestination,
   type SidebarBadgeStyle,
@@ -54,7 +54,7 @@ export function BuiltInVisibilityMenu({
       {
         type: "submenu",
         label: "Visibility",
-        icon: <IconEye2Outline18 />,
+        icon: <IconEye2 />,
         items: [
           {
             type: "checkbox",
@@ -82,7 +82,7 @@ export function BuiltInVisibilityMenu({
           {
             type: "submenu",
             label: "Badge",
-            icon: <IconBadgeCheckOutline18 />,
+            icon: <IconBadgeCheck />,
             items: [
               {
                 type: "checkbox",
@@ -108,7 +108,7 @@ export function BuiltInVisibilityMenu({
       ...(visibilityItems.length > 0 ? [{ type: "separator" as const }] : []),
       {
         label: "Customize Sidebar",
-        icon: <IconSidebarEditOutline18 />,
+        icon: <IconSidebarEdit />,
         onClick: () => setCustomizing(true),
       },
       ...(destination === "recentlyUsed"
@@ -116,7 +116,7 @@ export function BuiltInVisibilityMenu({
             { type: "separator" as const },
             {
               label: "Clear History",
-              icon: <IconHistoryOutline18 />,
+              icon: <IconHistory />,
               disabled: recents.length === 0,
               onClick: clearRecents,
             },

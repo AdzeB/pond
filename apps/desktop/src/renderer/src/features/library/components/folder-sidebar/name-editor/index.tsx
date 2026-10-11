@@ -1,4 +1,4 @@
-import { IconFolderOutline18 } from "@pond/icons/outline/18";
+import { IconFolder } from "@pond/icons";
 import { Sidebar } from "@pond/ui";
 import { InlineNameEditor } from "@/shared/components/inline-name-editor";
 import styles from "./styles.module.css";
@@ -15,7 +15,7 @@ export function FolderNameEditor({
   return (
     <div className={styles.editor}>
       <Sidebar.Icon className={styles.icon}>
-        <IconFolderOutline18 />
+        <IconFolder />
       </Sidebar.Icon>
       <InlineNameEditor
         name={name}

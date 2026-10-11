@@ -1,15 +1,15 @@
 import {
-  IconArrowLeftOutline18,
-  IconArrowRightOutline18,
-  IconArrowsExpandOutline18,
-  IconMagnifierOutline18,
-  IconMinusOutline18,
-  IconPlusOutline18,
-  IconPrintOutline18,
-  IconResizeXOutline18,
-  IconRotateImageClockwiseOutline18,
-  IconSidebarLeftOutline18,
-} from "@pond/icons/outline/18";
+  IconArrowLeft,
+  IconArrowRight,
+  IconArrowsExpand,
+  IconMagnifier,
+  IconMinus,
+  IconPlus,
+  IconPrint,
+  IconResizeX,
+  IconRotateImageClockwise,
+  IconSidebarLeft,
+} from "@pond/icons";
 import { Input } from "@pond/ui";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { useEffect, useState } from "react";
@@ -68,7 +68,7 @@ export function PdfToolbar({
         disabled={!document}
         onClick={onThumbnailsToggle}
       >
-        <IconSidebarLeftOutline18 />
+        <IconSidebarLeft />
       </ViewerHud.Tool>
       <ViewerHud.Tool
         label="Search Document"
@@ -76,7 +76,7 @@ export function PdfToolbar({
         disabled={!document}
         onClick={() => setSearchOpen((value) => !value)}
       >
-        <IconMagnifierOutline18 />
+        <IconMagnifier />
       </ViewerHud.Tool>
       {searchOpen ? (
         <form
@@ -109,14 +109,14 @@ export function PdfToolbar({
             disabled={!searchResults.length}
             onClick={() => stepSearchResult(-1)}
           >
-            <IconArrowLeftOutline18 />
+            <IconArrowLeft />
           </ViewerHud.Tool>
           <ViewerHud.Tool
             label="Next Result"
             disabled={!searchResults.length}
             onClick={() => stepSearchResult(1)}
           >
-            <IconArrowRightOutline18 />
+            <IconArrowRight />
           </ViewerHud.Tool>
         </form>
       ) : null}
@@ -125,7 +125,7 @@ export function PdfToolbar({
         disabled={!document || currentPage <= 1}
         onClick={() => goToPage(currentPage - 1)}
       >
-        <IconArrowLeftOutline18 />
+        <IconArrowLeft />
       </ViewerHud.Tool>
       <form
         className={styles["page-entry"]}
@@ -156,14 +156,14 @@ export function PdfToolbar({
         disabled={!document || currentPage >= document.numPages}
         onClick={() => goToPage(currentPage + 1)}
       >
-        <IconArrowRightOutline18 />
+        <IconArrowRight />
       </ViewerHud.Tool>
       <ViewerHud.Tool
         label="Zoom Out"
         disabled={!document}
         onClick={() => onZoomStep(-1)}
       >
-        <IconMinusOutline18 />
+        <IconMinus />
       </ViewerHud.Tool>
       <ViewerHud.Scale>{Math.round(zoom * 100)}%</ViewerHud.Scale>
       <ViewerHud.Tool
@@ -171,7 +171,7 @@ export function PdfToolbar({
         disabled={!document}
         onClick={() => onZoomStep(1)}
       >
-        <IconPlusOutline18 />
+        <IconPlus />
       </ViewerHud.Tool>
       <ViewerHud.Tool
         label="Fit Width"
@@ -179,7 +179,7 @@ export function PdfToolbar({
         disabled={!document}
         onClick={() => onFit("width")}
       >
-        <IconResizeXOutline18 />
+        <IconResizeX />
       </ViewerHud.Tool>
       <ViewerHud.Tool
         label="Fit Page"
@@ -187,21 +187,21 @@ export function PdfToolbar({
         disabled={!document}
         onClick={() => onFit("page")}
       >
-        <IconArrowsExpandOutline18 />
+        <IconArrowsExpand />
       </ViewerHud.Tool>
       <ViewerHud.Tool
         label="Rotate Clockwise"
         disabled={!document}
         onClick={onRotate}
       >
-        <IconRotateImageClockwiseOutline18 />
+        <IconRotateImageClockwise />
       </ViewerHud.Tool>
       <ViewerHud.Tool
         label="Print"
         disabled={!document}
         onClick={() => printPdf(url)}
       >
-        <IconPrintOutline18 />
+        <IconPrint />
       </ViewerHud.Tool>
     </>
   );

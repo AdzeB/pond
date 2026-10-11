@@ -1,5 +1,4 @@
-import { IconCheck2Fill12 } from "@pond/icons/fill/12";
-import { IconChevronDownOutline12 } from "@pond/icons/outline/12";
+import { IconCheckFill, IconChevronDown } from "@pond/icons";
 import type {
   AgentContextChoice,
   AgentModelOptions,
@@ -69,7 +68,7 @@ function Choice({
       <Menu.ItemLabel>{children}</Menu.ItemLabel>
       {selected ? (
         <Menu.SecondaryLabel className={styles.check} aria-label="Selected">
-          <IconCheck2Fill12 />
+          <IconCheckFill size={12} />
         </Menu.SecondaryLabel>
       ) : null}
     </Menu.Item>
@@ -342,7 +341,7 @@ export function ModelPicker({
                         <Menu.ItemLabel>{model.name}</Menu.ItemLabel>
                         {model.key === selected?.key ? (
                           <span className={styles.check} aria-hidden>
-                            <IconCheck2Fill12 />
+                            <IconCheckFill size={12} />
                           </span>
                         ) : null}
                       </Menu.Item>
@@ -442,7 +441,7 @@ export function ModelPicker({
         aria-label={`Choose model, ${label}`}
       >
         <span className={styles.name}>{label}</span>
-        <IconChevronDownOutline12 className={styles.chevron} aria-hidden />
+        <IconChevronDown size={12} className={styles.chevron} aria-hidden />
       </Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner side="top" align="start" sideOffset={8}>

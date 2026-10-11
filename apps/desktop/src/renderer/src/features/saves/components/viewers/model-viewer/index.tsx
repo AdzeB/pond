@@ -1,7 +1,4 @@
-import {
-  IconGroundPlaneDetectionOutline18,
-  IconRefreshOutline18,
-} from "@pond/icons/outline/18";
+import { IconGroundPlaneDetection, IconRefresh } from "@pond/icons";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import {
   AnimationMixer,
@@ -189,14 +186,14 @@ export function ModelViewer({
                 label="Reset View"
                 onClick={() => resetRef.current?.()}
               >
-                <IconRefreshOutline18 />
+                <IconRefresh />
               </ViewerHud.Tool>
               <ViewerHud.Tool
                 label="Grid"
                 pressed={gridVisible}
                 onClick={() => setGridVisible((visible) => !visible)}
               >
-                <IconGroundPlaneDetectionOutline18 />
+                <IconGroundPlaneDetection />
               </ViewerHud.Tool>
               {toolbarEnd}
             </>

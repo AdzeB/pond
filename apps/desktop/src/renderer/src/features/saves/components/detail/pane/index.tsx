@@ -1,9 +1,4 @@
-import {
-  IconCircleInfoOutline18,
-  IconPlusOutline18,
-  IconSlidersOutline18,
-  IconXmarkOutline18,
-} from "@pond/icons/outline/18";
+import { IconCircleInfo, IconPlus, IconSliders, IconXmark } from "@pond/icons";
 import { Button, Pane, PickerPanel, Tabs } from "@pond/ui";
 import { mediaEmbeddingVersion } from "@shared/embeddings";
 import { useEffect, useMemo, useState } from "react";
@@ -39,8 +34,8 @@ import styles from "./styles.module.css";
 import { type InspectorDrafts, InspectorTextField } from "./text-field";
 
 const INSPECTOR_TABS = [
-  { id: "organize", label: "Organize", Icon: IconSlidersOutline18 },
-  { id: "info", label: "Properties", Icon: IconCircleInfoOutline18 },
+  { id: "organize", label: "Organize", Icon: IconSliders },
+  { id: "info", label: "Properties", Icon: IconCircleInfo },
 ] as const;
 
 export interface SaveInspectorProps {
@@ -243,7 +238,7 @@ export function SaveInspector({
           aria-label="Close Details"
           onClick={saveLibraryBridge.closeRightPane}
         >
-          <IconXmarkOutline18 />
+          <IconXmark />
         </Button>
       </Pane.Header>
       <Pane.Body className={styles.scroll}>
@@ -342,7 +337,7 @@ export function SaveInspector({
                         />
                       }
                     >
-                      <IconPlusOutline18 />
+                      <IconPlus />
                     </PickerPanel.Trigger>
                   }
                 >
@@ -404,7 +399,7 @@ export function SaveInspector({
                         />
                       }
                     >
-                      <IconPlusOutline18 />
+                      <IconPlus />
                     </PickerPanel.Trigger>
                   }
                 >

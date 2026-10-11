@@ -1,7 +1,4 @@
-import {
-  IconFileExportOutline18,
-  IconWindowShareOutline18,
-} from "@pond/icons/outline/18";
+import { IconFileExport, IconWindowShare } from "@pond/icons";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { exportFile, openDefaultApp } from "@/features/saves/lib/actions";
 import type { Save } from "@/features/saves/types";
@@ -21,13 +18,13 @@ export function OriginalFileActions({
         label="Open in Default App"
         onClick={() => void openDefaultApp(save, fileIndex)}
       >
-        <IconWindowShareOutline18 />
+        <IconWindowShare />
       </ViewerHud.Tool>
       <ViewerHud.Tool
         label="Export Original"
         onClick={() => void exportFile(save, fileIndex)}
       >
-        <IconFileExportOutline18 />
+        <IconFileExport />
       </ViewerHud.Tool>
     </>
   );

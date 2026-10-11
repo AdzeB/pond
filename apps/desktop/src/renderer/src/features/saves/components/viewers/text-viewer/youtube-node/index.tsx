@@ -1,5 +1,5 @@
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { IconArrowUpRightOutline18 } from "@pond/icons/outline/18";
+import { IconArrowUpRight } from "@pond/icons";
 import { Button, Input } from "@pond/ui";
 import {
   $applyNodeReplacement,
@@ -106,7 +106,7 @@ export class YouTubeNode extends DecoratorNode<JSX.Element> {
             void window.pond.openExternal(watch);
           }}
         >
-          <IconArrowUpRightOutline18 />
+          <IconArrowUpRight />
           Open
         </Button>
       </div>
