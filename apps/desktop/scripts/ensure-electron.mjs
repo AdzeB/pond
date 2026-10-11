@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 
-// Electron 42+ no longer runs install.js on pnpm install. electron-vite
-// expects path.txt to exist and won't trigger the lazy download itself.
-// Resolve the package once so the binary is present before dev/build.
+/** Electron 42+ skips install.js under pnpm, and electron-vite needs path.txt before dev or build. */
 
 import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";

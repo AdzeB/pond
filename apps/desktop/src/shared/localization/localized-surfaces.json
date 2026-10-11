@@ -10,6 +10,7 @@
   "src/renderer/src/features/sources",
   "src/renderer/src/shared/components",
   "src/renderer/src/shared/lib/toast.ts",
+  "src/renderer/src/shared/state/prefs.ts",
   "src/renderer/src/app/components/onboarding",
   "src/renderer/preview.html",
   "src/renderer/src/preview.ts",

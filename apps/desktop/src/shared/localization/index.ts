@@ -77,6 +77,10 @@ for (const key of MESSAGE_KEYS) {
   }
 }
 
+export function isCatalogCopy(message: string): boolean {
+  return MESSAGE_KEYS_BY_COPY.has(message);
+}
+
 export function createCopyTranslator(locale: Locale): TranslateCopy {
   const translate = createTranslator(locale);
   return (message) => {

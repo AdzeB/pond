@@ -2,7 +2,7 @@ import { MotionConfig } from "motion/react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Thread } from "../../../packages/ui/src/thread/thread";
+import { Thread } from "../../../packages/ui/src/thread";
 
 class ElementResizeObserver implements ResizeObserver {
   observe() {}

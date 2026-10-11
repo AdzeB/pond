@@ -128,7 +128,7 @@ list exactly what's missing after you add the source. Fill each:
 | `apps/desktop/src/renderer/src/features/sources/lib/registry.ts` | `SOURCE_LOGOS` — a brand icon (add the SVG to `@pond/icons` first) |
 | `apps/desktop/src/main/core/pipeline/specs.ts` | `CAPTURE_EXPECTATIONS` — required/recommended capture fields |
 | `apps/desktop/src/main/core/refresh/harvest/index.ts` | `REGISTRY` — a `Harvester` (copy the throwing `local` entry if the source has no list sync) |
-| `apps/desktop/src/main/core/refresh/scrape-window/pool.ts` | `PER_SOURCE_CAP` — concurrent scrape-window cap |
+| `apps/desktop/src/main/core/refresh/harvest-window/pool.ts` | `PER_SOURCE_CAP` — concurrent harvest-window cap |
 | `apps/desktop/src/main/core/sync/index.ts` | `SYNC_WATCHDOG_MS` — per-source sync watchdog timeout |
 
 ### 5. Tests

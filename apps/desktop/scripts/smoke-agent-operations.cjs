@@ -42,13 +42,13 @@ app.whenReady().then(async () => {
           import { createChat, appendMessage } from ${JSON.stringify(`${main}/core/agent/persist.ts`)};
           import { reviewChanges } from ${JSON.stringify(`${main}/core/agent/review.ts`)};
           import { listFolders } from ${JSON.stringify(`${main}/core/folders.ts`)};
-          import { currentPondId } from ${JSON.stringify(`${main}/core/prefs-scope.ts`)};
+          import { currentLibraryId } from ${JSON.stringify(`${main}/core/prefs-scope.ts`)};
           import { closeDb } from ${JSON.stringify(`${main}/db.ts`)};
           import { libraryRoot } from ${JSON.stringify(`${main}/paths.ts`)};
           export async function run(expectedLibrary) {
             assert.equal(libraryRoot(), expectedLibrary);
             const operations = pondOperations();
-            registerPondOperations({ operations, libraryId: currentPondId });
+            registerPondOperations({ operations, libraryId: currentLibraryId });
             const context = libraryContext({ scope: {}, signal: new AbortController().signal, onActivity() {}, onSources() {} });
             const run = context.tools.find((entry) => entry.name === "runPondOperation");
             assert.ok(run);
@@ -64,7 +64,7 @@ app.whenReady().then(async () => {
             assert.equal((await listFolders())[0].name, "Agent Smoke Folder");
             await reviewChanges(review);
             assert.equal((await listFolders()).length, 1);
-            const undone = await applyPondOperation({ operation: "history.undo", arguments: {}, libraryId: currentPondId() });
+            const undone = await applyPondOperation({ operation: "history.undo", arguments: {}, libraryId: currentLibraryId() });
             assert.equal(undone.ok, true);
             assert.equal((await listFolders()).length, 0);
             await closeDb();

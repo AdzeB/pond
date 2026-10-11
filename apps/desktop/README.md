@@ -20,7 +20,7 @@ Run these commands from `apps/desktop`, or prefix them at the repository root wi
 
 ## On disk
 
-- **App state**: Electron’s `userData` directory holds `global.db`, `config.json`, and encrypted secrets. Per-library indexes live at `indexes/<pondId>.db`; thumbnail derivatives live at `pond-cache/thumbs/<pondId>/`. See [`src/main/paths.ts`](src/main/paths.ts) for the platform-resolved paths.
+- **App state**: Electron’s `userData` directory holds `global.db`, `config.json`, and encrypted secrets. Per-library indexes live at `indexes/<libraryId>.db`; thumbnail derivatives live at `pond-cache/thumbs/<libraryId>/`. See [`src/main/paths.ts`](src/main/paths.ts) for the platform-resolved paths.
 - **Library** (source of truth): `~/Pond/My Pond.pond/` (per-item `.info` folders, trash, library metadata).
 - **Secrets**: ingest token encrypted via Electron's `safeStorage`
   (macOS Keychain, Windows DPAPI, libsecret on Linux) and persisted to

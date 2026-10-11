@@ -42,7 +42,7 @@ app.on("web-contents-created", (_, contents) => {
       );
       const originalUrl = contents.getURL();
       await contents.executeJavaScript(
-        'window.pond.openSettingsWindow({section:"screenshots"})',
+        'window.pond.openSettingsWindow({section:"appearance"})',
       );
       const settings = await waitFor(
         () => settingsWindows()[0],
@@ -51,21 +51,21 @@ app.on("web-contents-created", (_, contents) => {
       await waitFor(
         () =>
           settings.webContents.executeJavaScript(
-            'document.body.innerText.includes("After Saving")',
+            'document.body.innerText.includes("Post Cover")',
           ),
-        "Screenshot settings",
+        "Appearance settings",
       );
       assert.notEqual(settings.webContents.id, contents.id);
       assert.equal(settingsWindows().length, 1);
       await contents.executeJavaScript(
-        'window.pond.openSettingsWindow({section:"preview"})',
+        'window.pond.openSettingsWindow({section:"viewer"})',
       );
       await waitFor(
         () =>
           settings.webContents.executeJavaScript(
             'document.body.innerText.includes("Spacebar Preview")',
           ),
-        "legacy Settings alias",
+        "viewer settings",
       );
       assert.equal(settingsWindows().length, 1);
       await contents.executeJavaScript(

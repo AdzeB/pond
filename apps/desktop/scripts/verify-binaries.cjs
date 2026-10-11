@@ -2,9 +2,7 @@ const { existsSync, readdirSync, rmSync, statSync } = require("node:fs");
 const { join } = require("node:path");
 const { z } = require("zod");
 
-// ffmpeg ships in the bundle (yt-dlp is fetched at runtime into userData,
-// so it is intentionally not bundled). Fail the pack if ffmpeg is missing
-// so we never publish an artifact that can't mux downloaded video.
+/** Fails the pack when bundled ffmpeg is missing; yt-dlp is fetched into userData at runtime. */
 exports.default = async function verifyBinaries(context) {
   const platform = normalizePlatform(context.electronPlatformName);
   const resourcesDir = resolveResourcesDir(context, platform);
