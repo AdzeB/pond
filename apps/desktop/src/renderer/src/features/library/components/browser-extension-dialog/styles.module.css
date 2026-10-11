@@ -45,16 +45,25 @@
 .steps {
   display: grid;
   gap: 4px;
-  padding-inline-start: 18px;
   margin: 8px 0 0;
   font-size: var(--ds-text-md);
   line-height: 20px;
   color: var(--ds-gray-11);
-  list-style: decimal;
+  counter-reset: step;
 
-  & li::marker {
+  /* The reset strips `list-style` from every `li`, so numbers come from a counter. */
+  & li {
+    position: relative;
+    padding-inline-start: 18px;
+    counter-increment: step;
+  }
+
+  & li::before {
+    position: absolute;
+    inset-inline-start: 0;
     font-variant-numeric: tabular-nums;
     color: var(--ds-gray-9);
+    content: counter(step) ".";
   }
 
   & code {
