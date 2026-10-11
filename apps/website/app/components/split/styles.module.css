@@ -26,18 +26,18 @@
 
 .copy h2 {
   max-width: 8em;
-  font-size: clamp(32px, 3.8vw, 44px);
+  font-size: var(--site-text-title);
 }
 
 .index {
-  font-size: 12px;
+  font-size: var(--ds-text-sm);
   font-weight: 500;
   color: var(--ds-gray-9);
 }
 
 .lead {
   max-width: 440px;
-  font-size: var(--site-text-lead);
+  font-size: var(--site-text-lg);
   line-height: 1.55;
   color: var(--ds-gray-11);
   text-wrap: pretty;
@@ -45,7 +45,7 @@
 
 .aside {
   margin-top: auto;
-  font-size: 14px;
+  font-size: var(--site-text-sm);
   font-weight: 500;
   color: var(--ds-gray-12);
 }
@@ -61,7 +61,7 @@
 }
 
 .list li {
-  font-size: 14px;
+  font-size: var(--site-text-sm);
   color: var(--ds-gray-11);
 }
 

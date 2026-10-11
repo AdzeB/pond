@@ -49,7 +49,7 @@
 
 .link {
   --ds-focus-offset: 3px;
-  font-size: 14px;
+  font-size: var(--site-text-sm);
   font-weight: 500;
   color: var(--ds-gray-11);
   text-decoration: none;

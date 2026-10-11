@@ -18,11 +18,11 @@
 }
 
 .error {
-  font-size: 12.5px;
+  font-size: var(--ds-text-md);
   color: var(--ds-red-11);
 }
 
 .success {
-  font-size: 14px;
+  font-size: var(--site-text-sm);
   color: var(--ds-gray-12);
 }

@@ -21,6 +21,10 @@ export function Hero() {
           >
             View Source
           </Cta>
+          <p className={styles.soon}>
+            <span>Windows, coming soon</span>
+            <span>Linux, coming soon</span>
+          </p>
         </div>
         <div className={styles.shot} aria-hidden>
           <div className={styles.canvas}>

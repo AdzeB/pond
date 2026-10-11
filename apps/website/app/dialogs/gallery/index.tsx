@@ -1,10 +1,9 @@
 "use client";
 
-import { IconXmarkOutline12 } from "@pond/icons/outline/12";
 import { Button, Checkbox, Dialog, Input, Select } from "@pond/ui";
 import Link from "next/link";
 import { useId, useState } from "react";
-import dialogStyles from "../../../../../packages/ui/src/dialog/styles.module.css";
+import { Card } from "./card";
 import {
   type DialogExample,
   dialogExamples,
@@ -12,8 +11,16 @@ import {
 } from "./catalog";
 import styles from "./styles.module.css";
 
-const groups = ["All", ...new Set(dialogExamples.map((item) => item.group))];
-const kinds = ["All", "custom", "prompt", "confirm"];
+const groups = [
+  "All",
+  ...new Set(dialogExamples.map((item) => item.group)),
+].map((value) => ({ value, label: value }));
+const kinds = [
+  { value: "All", label: "All" },
+  { value: "custom", label: "Custom dialogs" },
+  { value: "prompt", label: "Prompts" },
+  { value: "confirm", label: "Confirmations" },
+];
 
 export function DialogGallery() {
   const [search, setSearch] = useState("");
@@ -38,7 +45,9 @@ export function DialogGallery() {
         <Link href="/" className={styles.wordmark}>
           pond <span>/ design</span>
         </Link>
-        <span className={styles.eyebrow}>Component inventory</span>
+        <Link href="/dialogs/onboarding" className={styles.eyebrow}>
+          Onboarding
+        </Link>
       </header>
       <div className={styles.intro}>
         <div>
@@ -63,36 +72,18 @@ export function DialogGallery() {
             onValueChange={setSearch}
           />
         </Input.Root>
-        <label className={styles.filter}>
-          Area
-          <select
-            value={group}
-            onChange={(event) => setGroup(event.target.value)}
-          >
-            {groups.map((value) => (
-              <option key={value}>{value}</option>
-            ))}
-          </select>
-        </label>
-        <label className={styles.filter}>
-          Type
-          <select
-            value={kind}
-            onChange={(event) => setKind(event.target.value)}
-          >
-            {kinds.map((value) => (
-              <option key={value} value={value}>
-                {value === "confirm"
-                  ? "Confirmations"
-                  : value === "prompt"
-                    ? "Prompts"
-                    : value === "custom"
-                      ? "Custom dialogs"
-                      : "All"}
-              </option>
-            ))}
-          </select>
-        </label>
+        <FilterSelect
+          label="Area"
+          items={groups}
+          value={group}
+          onValueChange={setGroup}
+        />
+        <FilterSelect
+          label="Type"
+          items={kinds}
+          value={kind}
+          onValueChange={setKind}
+        />
         <Button
           variant="secondary"
           size="lg"
@@ -114,42 +105,16 @@ export function DialogGallery() {
       {examples.length ? (
         <section className={styles.grid} aria-label="Dialog previews">
           {examples.map((example) => (
-            <article className={styles.card} key={example.id} id={example.id}>
-              <div className={styles.cardHeader}>
-                <div>
-                  <span className={styles.badge}>{example.group}</span>
-                  <span className={styles.kind}>{example.kind}</span>
-                </div>
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  onClick={() => {
-                    setSelected(example);
-                    setOpen(true);
-                  }}
-                  aria-label={`Inspect ${example.title}`}
-                >
-                  Inspect ↗
-                </Button>
-              </div>
-              <div className={styles.stage}>
-                <div
-                  className={`${dialogStyles.popup} ${styles.specimen}`}
-                  inert
-                  style={{ maxWidth: example.width }}
-                >
-                  <DialogContents example={example} />
-                </div>
-              </div>
-              <footer className={styles.caption}>
-                <a href={`#${example.id}`}>{example.title}</a>
-                <span>{example.width}px</span>
-                <details>
-                  <summary>Source</summary>
-                  <code>apps/desktop/src/renderer/src/{example.source}</code>
-                </details>
-              </footer>
-            </article>
+            <Card
+              key={example.id}
+              example={example}
+              onInspect={() => {
+                setSelected(example);
+                setOpen(true);
+              }}
+            >
+              <DialogContents example={example} />
+            </Card>
           ))}
         </section>
       ) : (
@@ -168,9 +133,8 @@ export function DialogGallery() {
         </div>
       )}
       <p className={styles.note}>
-        Custom forms are reference fixtures, not live desktop components. Update
-        the catalog alongside dialog changes. Native operating-system file
-        pickers are not included.
+        These cards are layout samples. Open Dialog Gallery in Pond to see the
+        live dialogs. Native operating-system file pickers are not included.
       </p>
       <Dialog.Root open={open} onOpenChange={setOpen}>
         <Dialog.Portal>
@@ -184,9 +148,6 @@ export function DialogGallery() {
                 example={selected}
                 onClose={() => setOpen(false)}
               />
-              <p className={styles.previewNotice}>
-                Preview only. Buttons close this example; no changes are saved.
-              </p>
             </Dialog.Popup>
           ) : null}
         </Dialog.Portal>
@@ -202,40 +163,19 @@ function DialogContents({
   example: DialogExample;
   onClose?: () => void;
 }) {
-  const expanded = onClose !== undefined;
   return (
     <>
       <Dialog.Header>
-        {expanded ? (
-          <Dialog.Title>{example.title}</Dialog.Title>
-        ) : (
-          <h2 className={dialogStyles.title}>{example.title}</h2>
-        )}
-        {example.kind !== "confirm" ? (
-          expanded ? (
-            <Dialog.Close />
-          ) : (
-            <span className={dialogStyles.action} data-position="end">
-              <IconXmarkOutline12 />
-            </span>
-          )
-        ) : null}
+        <Dialog.Title>{example.title}</Dialog.Title>
       </Dialog.Header>
       <Dialog.Content>
         {example.description ? (
-          expanded ? (
-            <Dialog.Description>{example.description}</Dialog.Description>
-          ) : (
-            <p className={dialogStyles.description}>{example.description}</p>
-          )
+          <Dialog.Description>{example.description}</Dialog.Description>
         ) : null}
         {example.fields?.map((field) => (
           <PreviewControl key={field.label} field={field} />
         ))}
         {example.visual ? <PreviewVisual visual={example.visual} /> : null}
-        {example.secondaryFields?.map((field) => (
-          <PreviewControl key={field.label} field={field} />
-        ))}
         {example.rows ? (
           <div className={styles.rows}>
             {example.rows.map((row) => (
@@ -288,6 +228,42 @@ function DialogContents({
   );
 }
 
+function FilterSelect({
+  label,
+  items,
+  value,
+  onValueChange,
+}: {
+  label: string;
+  items: { value: string; label: string }[];
+  value: string;
+  onValueChange: (value: string) => void;
+}) {
+  return (
+    <Select.Root
+      items={items}
+      value={value}
+      onValueChange={(next) => {
+        if (next !== null) onValueChange(next);
+      }}
+    >
+      <div className={styles.filter}>
+        <Select.Label>{label}</Select.Label>
+        <Select.Trigger size="lg">
+          <Select.Value />
+        </Select.Trigger>
+      </div>
+      <Select.Portal>
+        <Select.Positioner>
+          <Select.Popup>
+            <Select.Items items={items} />
+          </Select.Popup>
+        </Select.Positioner>
+      </Select.Portal>
+    </Select.Root>
+  );
+}
+
 function PreviewControl({ field }: { field: PreviewField }) {
   const id = useId();
   if (field.options) {
@@ -314,11 +290,11 @@ function PreviewControl({ field }: { field: PreviewField }) {
     <div className={styles.field}>
       <label
         htmlFor={id}
-        className={field.hiddenLabel ? styles.srOnly : undefined}
+        className={field.hiddenLabel ? styles["sr-only"] : undefined}
       >
         {field.label}
       </label>
-      <Input.Root size="lg">
+      <Input.Root size="md">
         {field.type === "textarea" ? (
           <Input.Textarea
             id={id}
@@ -403,7 +379,10 @@ function PreviewVisual({
     return <div className={styles.connection}>𝕏</div>;
   if (visual === "watch") return <div className={styles.watch}>◎</div>;
   return (
-    <div className={visual === "duplicates" ? styles.mediaPair : styles.media}>
+    <div
+      className={styles.media}
+      data-pair={visual === "duplicates" || undefined}
+    >
       <div className={styles.artwork} />
       {visual === "duplicates" ? <div className={styles.artwork} /> : null}
     </div>

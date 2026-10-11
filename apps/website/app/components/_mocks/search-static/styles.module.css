@@ -6,7 +6,7 @@
   margin-inline: auto;
   overflow: hidden;
   background: var(--ds-gray-1);
-  border-radius: 20px;
+  border-radius: var(--ds-radius-2xl);
   box-shadow:
     0 0 0 1px var(--ds-gray-a3),
     0 24px 48px -16px var(--ds-gray-a5);
@@ -24,7 +24,7 @@
   align-items: center;
   justify-content: space-between;
   font-family: var(--site-font-mono);
-  font-size: 10.5px;
+  font-size: var(--ds-text-xs);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-9);
   text-transform: uppercase;
@@ -99,7 +99,7 @@
 .token {
   flex: none;
   padding: 1px 5px;
-  font-size: 13px;
+  font-size: var(--ds-text-md);
   font-weight: 550;
   color: var(--ds-gray-12);
   background: var(--ds-gray-a3);
@@ -109,7 +109,7 @@
 .query {
   display: inline-flex;
   align-items: center;
-  font-size: 14px;
+  font-size: var(--site-text-sm);
   color: var(--ds-gray-12);
 }
 

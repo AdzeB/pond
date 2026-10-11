@@ -2,10 +2,10 @@
   width: 100%;
   padding: var(--site-section-gap) var(--site-page-padding);
   scroll-margin-top: 64px;
-}
 
-.section-bleed {
-  padding-block: 0;
+  &[data-bleed] {
+    padding-block: 0;
+  }
 }
 
 .inner {
@@ -35,7 +35,7 @@
 }
 
 .eyebrow {
-  font-size: 13px;
+  font-size: var(--ds-text-md);
   font-weight: 500;
   color: var(--ds-gray-9);
 }
@@ -56,7 +56,7 @@
 
 .lead {
   max-width: 520px;
-  font-size: var(--site-text-lead);
+  font-size: var(--site-text-lg);
   line-height: 1.55;
   color: var(--ds-gray-10);
   text-wrap: pretty;
@@ -73,95 +73,4 @@
     grid-template-columns: 1fr;
     gap: 40px;
   }
-}
-
-.card {
-  display: flex;
-  flex-direction: column;
-  grid-column: span var(--card-span, 6);
-  min-height: 0;
-  color: var(--ds-gray-12);
-}
-
-.card[data-surface="panel"] {
-  overflow: hidden;
-  background: #f6f6f4;
-  border-radius: var(--ds-radius-xl);
-}
-
-.card[data-surface="plain"] {
-  overflow: visible;
-  background: transparent;
-}
-
-@media (max-width: 960px) {
-  .card {
-    grid-column: span var(--card-span-md, 6);
-  }
-}
-
-@media (max-width: 720px) {
-  .card {
-    grid-column: 1 / -1;
-  }
-}
-
-.card-fragment {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  min-height: 180px;
-  overflow: hidden;
-}
-
-.card[data-surface="plain"] .card-fragment {
-  align-items: flex-start;
-  justify-content: flex-start;
-  min-height: 200px;
-  padding: 0;
-  overflow: visible;
-}
-
-.card[data-media="end"] .card-fragment {
-  align-items: flex-end;
-  min-height: 168px;
-  padding: 8px 16px 16px;
-}
-
-.card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.card[data-surface="plain"] .card-body {
-  padding-top: 20px;
-}
-
-.card[data-surface="panel"][data-media="end"] .card-body {
-  padding: 24px 24px 4px;
-}
-
-.card[data-surface="panel"][data-media="start"] .card-body {
-  padding: 8px 24px 24px;
-}
-
-.card-index {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ds-gray-9);
-}
-
-.card-title {
-  font-size: 16px;
-  font-weight: 500;
-  line-height: 1.3;
-  color: var(--ds-gray-12);
-}
-
-.card-description {
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--ds-gray-10);
 }

@@ -13,7 +13,7 @@
 
 .meta {
   max-width: 420px;
-  font-size: 12.5px;
+  font-size: var(--ds-text-md);
   line-height: 1.45;
   color: var(--ds-gray-10);
 
@@ -36,6 +36,20 @@
   justify-content: center;
 }
 
+.soon {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  line-height: 1.45;
+  color: var(--ds-gray-9);
+}
+
 .root[data-variant="hero"] .meta {
   text-align: center;
+}
+
+.root[data-variant="hero"] .soon {
+  justify-content: center;
 }

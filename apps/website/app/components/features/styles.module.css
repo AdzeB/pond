@@ -19,14 +19,14 @@
 }
 
 .title {
-  font-size: 24px;
+  font-size: var(--site-text-2xl);
   font-weight: 500;
   line-height: 32px;
   color: var(--site-ink);
 }
 
 .lead {
-  font-size: 24px;
+  font-size: var(--site-text-2xl);
   font-weight: 500;
   line-height: 32px;
   color: var(--site-mute);
@@ -72,14 +72,14 @@
 }
 
 .name {
-  font-size: 18px;
+  font-size: var(--site-text-lg);
   font-weight: 500;
   line-height: 28px;
   color: var(--site-ink);
 }
 
 .body {
-  font-size: 18px;
+  font-size: var(--site-text-lg);
   font-weight: 500;
   line-height: 1.4;
   color: var(--site-copy);
@@ -100,7 +100,7 @@
   min-width: 32px;
   height: 32px;
   padding: 0 12px;
-  font-size: 13px;
+  font-size: var(--ds-text-md);
   font-weight: 500;
   line-height: 1;
   color: var(--site-ink);
@@ -122,7 +122,6 @@
 
   .title,
   .lead {
-    font-size: 22px;
     line-height: 30px;
   }
 }

@@ -22,16 +22,28 @@
 
 .tagline {
   padding-bottom: 24px;
-  font-size: 16px;
+  font-size: var(--site-text-md);
   font-weight: 400;
   color: var(--site-faint);
 }
 
 .cta {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   align-items: center;
   padding-bottom: 32px;
+}
+
+.soon {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  width: 100%;
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  line-height: 1.45;
+  color: var(--site-faint);
 }
 
 .shot {

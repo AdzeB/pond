@@ -30,6 +30,10 @@ export function DownloadCta({ variant = "hero" }: DownloadCtaProps) {
           All releases
         </a>
       </p>
+      <p className={styles.soon}>
+        <span>Windows, coming soon</span>
+        <span>Linux, coming soon</span>
+      </p>
     </div>
   );
 }

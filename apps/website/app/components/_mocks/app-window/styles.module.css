@@ -1,6 +1,6 @@
 .window {
   --window-inset: 16px;
-  --window-radius: 12px;
+  --window-radius: var(--ds-radius-xl);
   --ds-mac-inset: 16px;
   --ds-ui-font-family:
     inter-variable, ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
@@ -16,7 +16,7 @@
   height: 800px;
   overflow: hidden;
   font-family: var(--ds-ui-font-family);
-  font-size: 13px;
+  font-size: var(--ds-text-md);
   font-feature-settings:
     "liga" 1,
     "calt" 1,
@@ -72,7 +72,7 @@
   margin-right: 6px;
 }
 
-.chromeButton {
+.chrome-button {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -86,11 +86,11 @@
   border-radius: var(--ds-radius-full);
 }
 
-.chromeButton:disabled {
+.chrome-button:disabled {
   opacity: 0.5;
 }
 
-.chromeButton > svg {
+.chrome-button > svg {
   width: 14px;
   height: 14px;
 }
@@ -125,20 +125,20 @@
   border-radius: var(--ds-radius-md);
 }
 
-.tabIcon,
-.tabClose {
+.icon,
+.close {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
 }
 
-.tabIcon > svg {
+.icon > svg {
   width: 16px;
   height: 16px;
 }
 
-.tabLabel {
+.label {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -146,13 +146,13 @@
   white-space: nowrap;
 }
 
-.tabClose {
+.close {
   width: 20px;
   height: 20px;
   color: var(--ds-gray-10);
 }
 
-.tabClose > svg {
+.close > svg {
   width: 12px;
   height: 12px;
 }

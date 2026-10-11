@@ -19,13 +19,11 @@ export interface DialogExample {
   cancel?: string;
   variant?: "primary" | "destructive";
   fields?: PreviewField[];
-  secondaryFields?: PreviewField[];
   checks?: string[];
   rows?: string[];
   notes?: string[];
   extra?: string[];
   visual?:
-    | "screen"
     | "folder"
     | "rules"
     | "duplicates"
@@ -44,7 +42,7 @@ export const dialogExamples: DialogExample[] = [
     width: 400,
     description:
       "Pond will verify the new copy before removing the library from its current location.",
-    confirm: "Move Library",
+    confirm: "Move",
   },
   {
     id: "import-page-assets",
@@ -53,6 +51,7 @@ export const dialogExamples: DialogExample[] = [
     kind: "prompt",
     source: "app/effects/menu-bridge.tsx",
     width: 400,
+    description: "Pond saves the images and files from the page you enter.",
     confirm: "Import",
     fields: [
       {
@@ -65,160 +64,15 @@ export const dialogExamples: DialogExample[] = [
     ],
   },
   {
-    id: "protect-pond-package",
-    title: "Protect Pond Package",
-    group: "Library",
-    kind: "prompt",
-    source: "app/effects/native-menu-actions.ts",
-    width: 400,
-    description:
-      "Enter a password for this export. Pond will show a separate recovery key after export.",
-    confirm: "Export",
-    fields: [
-      {
-        label: "Protect Pond Package",
-        placeholder: "",
-        value: "",
-        type: "password",
-        hiddenLabel: true,
-      },
-    ],
-  },
-  {
-    id: "add-tag",
-    title: "Add Tag",
-    group: "Library",
-    kind: "prompt",
-    source: "app/effects/native-menu-actions.ts",
-    width: 400,
-    confirm: "Add Tag",
-    fields: [
-      {
-        label: "Add Tag",
-        placeholder: "Tag name",
-        value: "",
-        type: "text",
-        hiddenLabel: true,
-      },
-    ],
-  },
-  {
-    id: "new-smart-folder-group",
-    title: "New Smart Folder Group",
-    group: "Library",
-    kind: "prompt",
-    source: "app/effects/native-menu-actions.ts",
-    width: 400,
-    confirm: "Create",
-    fields: [
-      {
-        label: "New Smart Folder Group",
-        placeholder: "",
-        value: "Untitled",
-        type: "text",
-        hiddenLabel: true,
-      },
-    ],
-  },
-  {
-    id: "link",
-    title: "Link",
-    group: "Agent",
-    kind: "prompt",
-    source: "features/agent/components/composer/editing.tsx",
-    width: 400,
-    confirm: "Apply",
-    fields: [
-      {
-        label: "Link",
-        placeholder: "https://example.com",
-        value: "",
-        type: "text",
-        hiddenLabel: true,
-      },
-    ],
-  },
-  {
-    id: "rename-chat",
-    title: "Rename Chat",
-    group: "Agent",
-    kind: "prompt",
-    source: "features/agent/components/pane/chat-actions.tsx",
-    width: 400,
-    confirm: "Rename",
-    fields: [
-      {
-        label: "Rename Chat",
-        placeholder: "",
-        value: "",
-        type: "text",
-        hiddenLabel: true,
-      },
-    ],
-  },
-  {
     id: "delete-chat",
     title: "Delete Chat",
-    group: "Agent",
+    group: "Assistant",
     kind: "confirm",
     source: "features/agent/components/pane/chat-actions.tsx",
     width: 400,
     description:
       "This permanently deletes the conversation. Your Saves stay in your library.",
-    confirm: "Delete Chat",
-  },
-  {
-    id: "cancel-selected",
-    title: "Cancel Selected",
-    group: "Downloads",
-    kind: "confirm",
-    source: "features/downloads/components/lib/actions.ts",
-    width: 400,
-    description:
-      "Pond stops ingesting the selected saves. You can retry them later.",
-    confirm: "Cancel Selected",
-    variant: "destructive",
-  },
-  {
-    id: "retry-all-downloads",
-    title: "Retry All Downloads",
-    group: "Downloads",
-    kind: "confirm",
-    source: "features/downloads/components/page/index.tsx",
-    width: 400,
-    confirm: "Retry All",
-    description:
-      "12 saves will retry. 8 images, 4 videos. Estimated minimum duration: 2 minutes.",
-  },
-  {
-    id: "save-view",
-    title: "Save View",
-    group: "Library",
-    kind: "prompt",
-    source: "features/library/components/filter-menu/index.tsx",
-    width: 400,
-    confirm: "Save View",
-    fields: [
-      {
-        label: "Save View",
-        placeholder: "View name",
-        value: "",
-        type: "text",
-        hiddenLabel: true,
-      },
-    ],
-  },
-  {
-    id: "package-recovery-key",
-    title: "Package Recovery Key",
-    group: "Library",
-    kind: "confirm",
-    source:
-      "features/library/components/folder-context-menu/folder-context-menu.tsx",
-    width: 400,
-    confirm: "Copy Recovery Key",
-    cancel: "Done",
-    description: "POND-DEMO-RECOVERY-KEY",
+    confirm: "Delete",
   },
   {
     id: "remove-folder",
@@ -235,99 +89,14 @@ export const dialogExamples: DialogExample[] = [
     checks: ["Move Saves in this folder and its subfolders to Trash"],
   },
   {
-    id: "unlock-pond-package",
-    title: "Unlock Pond Package",
-    group: "Library",
-    kind: "prompt",
-    source: "features/library/components/new-menu/actions.ts",
-    width: 400,
-    description: "Enter the password used when this package was exported.",
-    confirm: "Import",
-    fields: [
-      {
-        label: "Unlock Pond Package",
-        placeholder: "",
-        value: "",
-        type: "password",
-        hiddenLabel: true,
-      },
-    ],
-  },
-  {
-    id: "rename-tag",
-    title: "Rename Tag",
-    group: "Saves",
-    kind: "prompt",
-    source: "features/saves/components/preview/index.tsx",
-    width: 400,
-    confirm: "Rename",
-    fields: [
-      {
-        label: "Rename Tag",
-        placeholder: "",
-        value: "",
-        type: "text",
-        hiddenLabel: true,
-      },
-    ],
-  },
-  {
-    id: "rename-font",
-    title: "Rename Font",
-    group: "Saves",
-    kind: "prompt",
-    source: "features/saves/components/viewers/file-viewer/index.tsx",
-    width: 400,
-    confirm: "Rename",
-    fields: [
-      {
-        label: "Rename Font",
-        placeholder: "",
-        value: "",
-        type: "text",
-        hiddenLabel: true,
-      },
-    ],
-  },
-  {
-    id: "apply-transform-to-file",
-    title: "Apply Transform to File",
-    group: "Saves",
-    kind: "confirm",
-    source: "features/saves/components/viewers/image-inspector/index.tsx",
-    width: 400,
-    description:
-      "Pond replaces the original image. You can use Undo to restore it.",
-    confirm: "Apply to File",
-  },
-  {
-    id: "youtube",
-    title: "YouTube",
-    group: "Saves",
-    kind: "prompt",
-    source: "features/saves/components/viewers/text-viewer/commands.ts",
-    width: 400,
-    confirm: "Embed",
-    fields: [
-      {
-        label: "YouTube",
-        placeholder: "https://www.youtube.com/watch?v=",
-        value: "",
-        type: "text",
-        hiddenLabel: true,
-      },
-    ],
-  },
-  {
     id: "delete-forever",
     title: "Delete Forever",
     group: "Saves",
     kind: "confirm",
     source: "features/saves/effects/save-hotkeys.tsx",
     width: 400,
-    confirm: "Delete Forever",
-    description:
-      "Delete 3 selected items and their files? This can’t be undone.",
+    confirm: "Delete",
+    description: "3 saves and their files are deleted. This cannot be undone.",
   },
   {
     id: "empty-trash",
@@ -337,44 +106,8 @@ export const dialogExamples: DialogExample[] = [
     source: "features/saves/lib/empty-trash.ts",
     width: 400,
     description:
-      "Every save in the trash is deleted forever. This cannot be undone.",
-    confirm: "Empty Trash",
-  },
-  {
-    id: "change-file-extension",
-    title: "Change Extension",
-    group: "Saves",
-    kind: "prompt",
-    source: "features/saves/lib/menu/advanced.ts",
-    width: 400,
-    confirm: "Change Extension",
-    fields: [
-      {
-        label: "Change Extension",
-        placeholder: "png",
-        value: "",
-        type: "text",
-        hiddenLabel: true,
-      },
-    ],
-  },
-  {
-    id: "new-tag",
-    title: "New Tag",
-    group: "Saves",
-    kind: "prompt",
-    source: "features/saves/lib/menu/organize.ts",
-    width: 400,
-    confirm: "Add Tag",
-    fields: [
-      {
-        label: "New Tag",
-        placeholder: "Tag name",
-        value: "",
-        type: "text",
-        hiddenLabel: true,
-      },
-    ],
+      "Every save in Trash is deleted forever. This cannot be undone.",
+    confirm: "Empty",
   },
   {
     id: "rotate-local-api-token",
@@ -385,7 +118,7 @@ export const dialogExamples: DialogExample[] = [
     width: 400,
     description:
       "Existing local integrations stop working until you give them the new token.",
-    confirm: "Rotate Token",
+    confirm: "Rotate",
   },
   {
     id: "stop-watching",
@@ -394,28 +127,9 @@ export const dialogExamples: DialogExample[] = [
     kind: "confirm",
     source: "features/sources/lib/source-menu.tsx",
     width: 400,
-    confirm: "Stop Watching",
+    confirm: "Stop",
     description:
       "Pond stops checking @studio for new posts. The 128 already saved stay in your library.",
-  },
-  {
-    id: "create-tag-group",
-    title: "Create Tag Group",
-    group: "Tags",
-    kind: "prompt",
-    source: "features/tags/components/manager/bulk-actions.tsx",
-    width: 400,
-    description: "Create a group containing the selected tags.",
-    confirm: "Create Group",
-    fields: [
-      {
-        label: "Create Tag Group",
-        placeholder: "Group name",
-        value: "",
-        type: "text",
-        hiddenLabel: true,
-      },
-    ],
   },
   {
     id: "remove-tag-group",
@@ -426,7 +140,7 @@ export const dialogExamples: DialogExample[] = [
     width: 400,
     confirm: "Remove",
     description:
-      "“Inspiration” will be removed. The tags inside it stay in your library; they won’t belong to this group anymore.",
+      '"Inspiration" is removed. The tags stay, and they no longer belong to this group.',
   },
   {
     id: "remove-tag",
@@ -438,28 +152,6 @@ export const dialogExamples: DialogExample[] = [
     confirm: "Remove",
     description:
       "“design” will be removed from every save. This cannot be undone.",
-  },
-  {
-    id: "skip-selected",
-    title: "Skip Selected",
-    group: "Downloads",
-    kind: "confirm",
-    source: "features/downloads/components/lib/actions.ts",
-    width: 400,
-    confirm: "Skip Selected",
-    description:
-      "Pond stops ingesting these saves and will not harvest them again.",
-  },
-  {
-    id: "move-selected-to-trash",
-    title: "Move Selected to Trash",
-    group: "Downloads",
-    kind: "confirm",
-    source: "features/downloads/components/lib/actions.ts",
-    width: 400,
-    confirm: "Move to Trash",
-    description:
-      "These saves leave Downloads and go to Trash. Harvest will not try them again.",
   },
   {
     id: "disconnect-x",
@@ -474,108 +166,13 @@ export const dialogExamples: DialogExample[] = [
   },
   {
     id: "delete-3-tags",
-    title: "Delete 3 tags",
+    title: "Delete 3 Tags",
     group: "Tags",
     kind: "confirm",
     source: "features/tags/components/manager/bulk-actions.ts",
     width: 400,
     confirm: "Delete",
     description: "They will be removed from every save. This cannot be undone.",
-  },
-  {
-    id: "merge-3-tags",
-    title: "Merge 3 tags",
-    group: "Tags",
-    kind: "prompt",
-    source: "features/tags/components/manager/bulk-actions.ts",
-    width: 400,
-    confirm: "Merge",
-    fields: [
-      {
-        label: "Merge 3 tags",
-        value: "",
-        placeholder: "Target tag name",
-        hiddenLabel: true,
-      },
-    ],
-    description:
-      "Every save using the selected tags will be re-tagged with the target, and the originals removed.",
-  },
-  {
-    id: "delete-smart-folder",
-    title: "Delete Smart Folder",
-    group: "Library",
-    kind: "confirm",
-    source: "features/library/components/smart-folders/index.tsx",
-    width: 400,
-    confirm: "Delete",
-    description: "The entry is removed. Your Saves stay.",
-  },
-  {
-    id: "delete-smart-folder-group",
-    title: "Delete Smart Folder Group",
-    group: "Library",
-    kind: "confirm",
-    source: "features/library/components/smart-folders/index.tsx",
-    width: 400,
-    confirm: "Delete",
-    description: "Entries in this group move up one level. Your Saves stay.",
-  },
-  {
-    id: "new-folder",
-    title: "New Folder",
-    group: "Library",
-    kind: "prompt",
-    source: "features/library/components/folder-picker/index.tsx",
-    width: 400,
-    confirm: "Create",
-    fields: [
-      {
-        label: "New Folder",
-        value: "",
-        placeholder: "Folder name",
-        hiddenLabel: true,
-      },
-    ],
-  },
-  {
-    id: "new-subfolder",
-    title: "New Subfolder",
-    group: "Library",
-    kind: "prompt",
-    source: "features/library/components/folder-picker/index.tsx",
-    width: 400,
-    confirm: "Create",
-    fields: [
-      {
-        label: "New Subfolder",
-        value: "",
-        placeholder: "Folder name",
-        hiddenLabel: true,
-      },
-    ],
-  },
-  {
-    id: "convert-to-webp",
-    title: "Convert to WebP",
-    group: "Saves",
-    kind: "confirm",
-    source: "features/saves/lib/menu/export.ts",
-    width: 400,
-    confirm: "Convert",
-    description:
-      "This replaces selected image files with WebP files and regenerates their thumbnails and metadata. You can undo the completed batch.",
-  },
-  {
-    id: "compress-images",
-    title: "Compress Images",
-    group: "Saves",
-    kind: "confirm",
-    source: "features/saves/lib/menu/export.ts",
-    width: 400,
-    confirm: "Compress",
-    description:
-      "This replaces the selected image files and regenerates their thumbnails and metadata. You can undo the completed batch.",
   },
   {
     id: "import-from-links",
@@ -593,36 +190,6 @@ export const dialogExamples: DialogExample[] = [
       },
     ],
     description: "Add website links, one per line.",
-  },
-  {
-    id: "capture-screenshot",
-    title: "Capture Screenshot",
-    group: "Library",
-    kind: "custom",
-    source: "features/library/components/new-menu/screenshot-dialog/index.tsx",
-    width: 560,
-    confirm: "Capture",
-    visual: "screen",
-    rows: ["Built-in Display · Screen", "Pond · Window"],
-    fields: [
-      {
-        label: "Screenshot Title",
-        value: "Screenshot",
-      },
-      {
-        label: "Screenshot Tags",
-        value: "",
-        placeholder: "Tags separated by commas",
-      },
-      {
-        label: "Format",
-        value: "PNG",
-        options: ["PNG", "JPEG", "WebP"],
-      },
-    ],
-    checks: ["Copy to Clipboard"],
-    extra: ["Use Full Source"],
-    description: "Choose a screen or window to save as an image.",
   },
   {
     id: "customize-folder",
@@ -645,38 +212,7 @@ export const dialogExamples: DialogExample[] = [
       },
     ],
     visual: "folder",
-    secondaryFields: [
-      {
-        label: "Password",
-        value: "",
-        type: "password",
-      },
-      {
-        label: "Password Hint",
-        value: "",
-      },
-    ],
-    checks: ["Protect Subfolders"],
     description: "Choose how this folder looks and add optional details.",
-  },
-  {
-    id: "unlock-folder",
-    title: "Unlock Folder",
-    group: "Library",
-    kind: "custom",
-    source: "features/library/components/folder-unlock-dialog/index.tsx",
-    width: 400,
-    confirm: "Unlock",
-    fields: [
-      {
-        label: "Password",
-        value: "",
-        type: "password",
-      },
-    ],
-    notes: ["Hint: Your favorite place"],
-    extra: ["Use Touch ID"],
-    description: "Enter the password to show Saves in Inspiration.",
   },
   {
     id: "assign-folders",
@@ -693,7 +229,7 @@ export const dialogExamples: DialogExample[] = [
       },
     ],
     checks: ["Inspiration", "Design", "Reading"],
-    extra: ["Repeat Last"],
+    extra: ["Repeat"],
     description: "Choose folders for 3 saves.",
   },
   {
@@ -777,12 +313,10 @@ export const dialogExamples: DialogExample[] = [
         value: "{n:2} {title}",
       },
     ],
-    notes: [
-      "Tokens: {n}, {title}, {id}, {date}, {date:compact}, {date:month}, {date:year}, {date:timestamp}, {original}",
-    ],
     checks: ["Design", "Reading", "Photography"],
     extra: ["Select All", "Clear"],
-    description: "Select items and apply one shared rename template.",
+    description:
+      "Rename the selected items with one template, such as {n:2} {title}.",
   },
   {
     id: "batch-rename-smart-folders",
@@ -798,12 +332,10 @@ export const dialogExamples: DialogExample[] = [
         value: "{n:2} {title}",
       },
     ],
-    notes: [
-      "Tokens: {n}, {title}, {id}, {date}, {date:compact}, {date:month}, {date:year}, {date:timestamp}, {original}",
-    ],
     checks: ["Design", "Reading", "Photography"],
     extra: ["Select All", "Clear"],
-    description: "Select items and apply one shared rename template.",
+    description:
+      "Rename the selected items with one template, such as {n:2} {title}.",
   },
   {
     id: "arrange-folder",
@@ -812,7 +344,7 @@ export const dialogExamples: DialogExample[] = [
     kind: "custom",
     source: "features/library/components/folder-order/index.tsx",
     width: 620,
-    confirm: "Save Order",
+    confirm: "Save",
     rows: [
       "1    Color study                      ↑ ↓",
       "2    Reference collection       ↑ ↓",
@@ -876,7 +408,7 @@ export const dialogExamples: DialogExample[] = [
     visual: "rules",
     notes: ["12 matching saves"],
     description:
-      "This smart folder automatically collects saves that match these rules.",
+      "These rules filter every smart folder and saved view in this group.",
   },
   {
     id: "edit-smart-folder-group",
@@ -895,7 +427,7 @@ export const dialogExamples: DialogExample[] = [
     visual: "rules",
     notes: ["12 matching saves"],
     description:
-      "This smart folder automatically collects saves that match these rules.",
+      "These rules filter every smart folder and saved view in this group.",
   },
   {
     id: "rename-saves",
@@ -911,19 +443,16 @@ export const dialogExamples: DialogExample[] = [
         value: "{title} {n}",
       },
     ],
-    notes: [
-      "Use {title}, {n}, {date}, {tags}, {original}, or {id}. Add digits inside a number token, such as {n:3}.",
-    ],
-    description: "Rename 3 saves with one pattern.",
+    description: "Rename 3 saves with a pattern such as {title} {n}.",
   },
   {
     id: "export-converted-files",
-    title: "Export Converted Files",
+    title: "Export",
     group: "Library",
     kind: "custom",
     source: "features/library/components/conversion-dialog/index.tsx",
     width: 600,
-    confirm: "Choose Folder and Export",
+    confirm: "Export",
     fields: [
       {
         label: "Preset",
@@ -956,10 +485,9 @@ export const dialogExamples: DialogExample[] = [
       },
     ],
     checks: ["Lossless"],
-    extra: ["Save Preset"],
+    extra: ["Save"],
     cancel: "Close",
-    description:
-      "Export copies from 3 saves. Existing files keep their names and converted files receive a new name if needed.",
+    description: "Choose how to export 3 saves, then select a destination.",
   },
   {
     id: "repair-thumbnails",
@@ -978,7 +506,7 @@ export const dialogExamples: DialogExample[] = [
       "Pond snapshots every changed file before applying.",
       "You can Undo this repair.",
     ],
-    description: "Preview targeted changes before Pond updates Library files.",
+    description: "Pond rebuilds a thumbnail for each save listed below.",
   },
   {
     id: "repair-physical-file-names",
@@ -990,14 +518,14 @@ export const dialogExamples: DialogExample[] = [
     confirm: "Repair",
     rows: [
       "2 Saves need repair.",
-      "Color study · Missing thumbnail",
-      "Reference collection · Missing thumbnail",
+      "Color study · File name does not match the save",
+      "Reference collection · File name does not match the save",
     ],
     notes: [
       "Pond snapshots every changed file before applying.",
       "You can Undo this repair.",
     ],
-    description: "Preview targeted changes before Pond updates Library files.",
+    description: "Pond renames files on disk so they match the save.",
   },
   {
     id: "repair-invalid-content",
@@ -1009,14 +537,14 @@ export const dialogExamples: DialogExample[] = [
     confirm: "Repair",
     rows: [
       "2 Saves need repair.",
-      "Color study · Missing thumbnail",
-      "Reference collection · Missing thumbnail",
+      "Color study · Unreadable file",
+      "Reference collection · Unreadable file",
     ],
     notes: [
       "Pond snapshots every changed file before applying.",
-      "You can Undo this repair.",
+      "Invalid Saves move to Trash.",
     ],
-    description: "Preview targeted changes before Pond updates Library files.",
+    description: "Saves with unreadable files move to Trash.",
   },
   {
     id: "repair-save-metadata",
@@ -1028,14 +556,12 @@ export const dialogExamples: DialogExample[] = [
     confirm: "Repair",
     rows: [
       "2 Saves need repair.",
-      "Color study · Missing thumbnail",
-      "Reference collection · Missing thumbnail",
+      "Color study · Details do not match the file",
+      "Reference collection · Details do not match the file",
     ],
-    notes: [
-      "Pond snapshots every changed file before applying.",
-      "You can Undo this repair.",
-    ],
-    description: "Preview targeted changes before Pond updates Library files.",
+    notes: ["This repair rebuilds metadata and cannot be undone."],
+    description:
+      "Pond rewrites save details that no longer match the files. This cannot be undone.",
   },
   {
     id: "review-duplicates",
@@ -1044,6 +570,7 @@ export const dialogExamples: DialogExample[] = [
     kind: "custom",
     source: "features/library/components/duplicate-review/index.tsx",
     width: 780,
+    description: "Compare matching saves, then keep one.",
     confirm: "Merge",
     visual: "duplicates",
     rows: [
@@ -1059,6 +586,7 @@ export const dialogExamples: DialogExample[] = [
     kind: "custom",
     source: "features/library/components/command-menu/index.tsx",
     width: 680,
+    description: "Find saves, folders, and commands.",
     confirm: "",
     fields: [
       {
@@ -1082,6 +610,7 @@ export const dialogExamples: DialogExample[] = [
     kind: "custom",
     source: "features/library/components/hover-preview/index.tsx",
     width: 720,
+    description: "A closer look at the selected save.",
     confirm: "",
     visual: "preview",
   },
@@ -1092,6 +621,7 @@ export const dialogExamples: DialogExample[] = [
     kind: "custom",
     source: "features/library/components/hover-preview/index.tsx",
     width: 1000,
+    description: "Look at the selected saves side by side.",
     confirm: "",
     visual: "duplicates",
     notes: ["−     100%     +"],
@@ -1183,70 +713,6 @@ export const dialogExamples: DialogExample[] = [
     description: "This file already exists in your Library.",
   },
   {
-    id: "add-comment",
-    title: "Add Comment",
-    group: "Saves",
-    kind: "custom",
-    source: "features/saves/components/annotations/comment-editor/index.tsx",
-    width: 400,
-    confirm: "Add Comment",
-    fields: [
-      {
-        label: "Comment",
-        value: "A useful reference for the next project.",
-        type: "textarea",
-      },
-    ],
-    extra: [],
-  },
-  {
-    id: "edit-comment",
-    title: "Edit Comment",
-    group: "Saves",
-    kind: "custom",
-    source: "features/saves/components/annotations/comment-editor/index.tsx",
-    width: 400,
-    confirm: "Save",
-    fields: [
-      {
-        label: "Comment",
-        value: "A useful reference for the next project.",
-        type: "textarea",
-      },
-    ],
-    extra: ["Delete Comment"],
-  },
-  {
-    id: "edit-video-note",
-    title: "Edit Video Note",
-    group: "Saves",
-    kind: "custom",
-    source: "features/saves/components/annotations/video-note-editor.tsx",
-    width: 400,
-    confirm: "Save",
-    fields: [
-      {
-        label: "Note",
-        value: "A useful reference for the transition.",
-        type: "textarea",
-      },
-    ],
-  },
-  {
-    id: "video-notes",
-    title: "Video Notes",
-    group: "Saves",
-    kind: "custom",
-    source: "features/saves/components/video-player/index.tsx",
-    width: 400,
-    confirm: "",
-    rows: [
-      "00:12 · Opening sequence",
-      "00:38 · Color and composition",
-      "01:05 · Transition reference",
-    ],
-  },
-  {
     id: "requesting-connection",
     title: "Requesting Connection",
     group: "Sources",
@@ -1256,7 +722,7 @@ export const dialogExamples: DialogExample[] = [
     confirm: "",
     visual: "connection",
     description:
-      "Sign in to X in your browser. The Pond extension sends your session back.",
+      "The session stays on this device, and Pond only reads your saves.",
   },
   {
     id: "connected",
@@ -1267,8 +733,7 @@ export const dialogExamples: DialogExample[] = [
     width: 400,
     confirm: "",
     visual: "connection",
-    description:
-      "X is connected. Your saved posts will appear in your library.",
+    description: "Saved posts appear in your library.",
   },
   {
     id: "connection-unavailable",
@@ -1279,24 +744,7 @@ export const dialogExamples: DialogExample[] = [
     width: 400,
     confirm: "Try Again",
     visual: "connection",
-    description: "Couldn’t open X. Try opening the sign-in page again.",
-  },
-  {
-    id: "connecting-a-source",
-    title: "Connecting a Source",
-    group: "Sources",
-    kind: "custom",
-    source: "features/sources/components/flow/connect/help/index.tsx",
-    width: 400,
-    confirm: "Got It",
-    notes: [
-      "Staying in sync",
-      "Pond checks for new saves using your global schedule. Change it in Settings → Fetch Schedule.",
-      "Your data",
-      "Your session stays on this device. Pond only reads your saves. It never posts, follows, or likes on your behalf.",
-    ],
-    description:
-      "Connecting links an account you own to Pond. Its sign-in page opens in your browser. Sign in as usual; the Pond extension sends your session automatically.",
+    description: "Couldn't open X. Try the sign-in page again.",
   },
   {
     id: "new-watch",
@@ -1315,61 +763,5 @@ export const dialogExamples: DialogExample[] = [
     ],
     visual: "watch",
     description: "Paste a link or enter a handle to start watching on X.",
-  },
-  {
-    id: "watching-an-account",
-    title: "Watching an Account",
-    group: "Sources",
-    kind: "custom",
-    source: "features/sources/components/flow/watch/help/index.tsx",
-    width: 400,
-    confirm: "Got It",
-    notes: [
-      "Checking on a schedule",
-      "Pond checks for new posts using your global schedule. Change it in Settings → Fetch Schedule.",
-      "Your privacy",
-      "Some sources check through your own connected session, and the account never knows. Nothing is posted, followed, or liked on your behalf.",
-    ],
-    description:
-      "Paste a link or enter a handle. Pond looks for matching accounts. Select an account to start collecting its new posts.",
-  },
-  {
-    id: "your-library",
-    title: "Your Library",
-    group: "Onboarding",
-    kind: "custom",
-    source: "app/components/onboarding/index.tsx",
-    width: 400,
-    confirm: "Continue",
-    notes: ["1 of 3"],
-    cancel: "",
-    description:
-      "Import files, folders, or links. Pond keeps your library on this Mac.",
-  },
-  {
-    id: "preview-and-navigate",
-    title: "Preview and Navigate",
-    group: "Onboarding",
-    kind: "custom",
-    source: "app/components/onboarding/index.tsx",
-    width: 400,
-    confirm: "Continue",
-    notes: ["2 of 3"],
-    cancel: "Back",
-    description:
-      "Press Space to preview a Save. Use your mouse wheel to scroll, zoom, or navigate based on Viewer settings.",
-  },
-  {
-    id: "enrichment-stays-local",
-    title: "Enrichment Stays Local",
-    group: "Onboarding",
-    kind: "custom",
-    source: "app/components/onboarding/index.tsx",
-    width: 400,
-    confirm: "Get Started",
-    notes: ["3 of 3"],
-    cancel: "Back",
-    description:
-      "On-device enrichments run on this Mac. Agent features use your configured provider or local host.",
   },
 ];
