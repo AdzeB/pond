@@ -138,13 +138,13 @@ describe("buildSaveMenu", () => {
       "Open With",
       REVEAL_LABEL,
       "Replace File",
-      "Export…",
+      "Export",
       "Share",
       "Copy",
       "Move to Trash",
     ]);
     const exportItem = items.find(
-      (item) => "label" in item && item.label === "Export…",
+      (item) => "label" in item && item.label === "Export",
     );
     if (!exportItem || !("onClick" in exportItem))
       throw new Error("Missing Export action");
@@ -313,11 +313,11 @@ describe("buildSaveMenu", () => {
       "Thumbnail",
       "Refresh from Source",
       "Search by Image",
-      "Agent",
+      "Assistant",
       "More",
       "Move to Trash",
     ]);
-    expect(visibleLabels(sectionItems(items, "Agent") ?? [])).toEqual([
+    expect(visibleLabels(sectionItems(items, "Assistant") ?? [])).toEqual([
       "Add to Chat",
       "Apply Suggested Tags",
       "Caption Images",
@@ -486,7 +486,7 @@ describe("buildSaveMenu", () => {
       files: [
         { kind: "file", path: "asset.zip", sha256: "a", size: 1 },
         {
-          kind: "custom_thumbnail",
+          kind: "thumbnail",
           path: "thumb.png",
           mimeType: "image/png",
           sha256: "b",
@@ -513,7 +513,7 @@ describe("buildSaveMenu", () => {
       mediaType: "link",
       files: [
         {
-          kind: "custom_thumbnail",
+          kind: "thumbnail",
           path: "thumb.png",
           mimeType: "image/png",
           sha256: "b",
@@ -561,12 +561,12 @@ describe("buildSaveMenu", () => {
     closeFolderPicker();
   });
 
-  it("hides Agent for trashed saves", () => {
+  it("hides Assistant for trashed saves", () => {
     expect(
       topLevelLabels(
         buildSaveMenu(fileSave({ deletedAt: 1 }), { clipboardEmpty: true }),
       ),
-    ).not.toContain("Agent");
+    ).not.toContain("Assistant");
   });
 
   it("shows Rename only for a local save", () => {

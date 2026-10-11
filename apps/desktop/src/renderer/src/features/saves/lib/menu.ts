@@ -88,7 +88,7 @@ export function buildSaveMenu(
     },
     {
       type: "submenu",
-      label: "Agent",
+      label: "Assistant",
       icon: glyph(IconMediaPlayOutline18),
       hidden: context.allTrashed || submenuHidden(agentItems),
       items: agentItems,
@@ -184,7 +184,7 @@ export function buildSaveDetailMenu(
     { type: "separator" },
     replaceFile,
     {
-      label: "Export…",
+      label: "Export",
       icon: glyph(IconFileExportOutline18),
       onClick: () =>
         saveLibraryBridge.openConversion(

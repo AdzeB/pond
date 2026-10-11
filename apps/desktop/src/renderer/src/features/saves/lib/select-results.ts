@@ -9,13 +9,24 @@ export async function selectResults(mode: "all" | "invert"): Promise<void> {
   const token = ++request;
   const key = resultNavigation.key();
   const previous = new Set(selection.snapshot());
-  notify({ id: "result-selection", title: "Selecting Saves…", timeout: 0 });
+  const notificationId = notify({
+    id: "result-selection",
+    title: "Selecting Saves",
+    timeout: 0,
+  });
   try {
     const ids = await resultNavigation.ids();
-    if (request !== token) return;
+    if (request !== token) {
+      updateNotification({
+        id: notificationId,
+        title: "Selection canceled",
+        timeout: 2500,
+      });
+      return;
+    }
     if (key !== resultNavigation.key()) {
       updateNotification({
-        id: "result-selection",
+        id: notificationId,
         title: "Selection canceled after navigation",
         timeout: 2500,
       });
@@ -31,18 +42,17 @@ export async function selectResults(mode: "all" | "invert"): Promise<void> {
     primarySelection.set(cursor);
     if (cursor) selection.setAnchor(cursor);
     else selection.clear();
-    if (cursor) saveLibraryBridge.openSaveDetails(cursor);
-    else saveLibraryBridge.inspectSave(null);
+    if (cursor) saveLibraryBridge.inspectSave(cursor);
     updateNotification({
-      id: "result-selection",
+      id: notificationId,
       title: `${selected.length} Saves selected`,
       timeout: 2500,
     });
   } catch {
     if (request === token)
       updateNotification({
-        id: "result-selection",
-        title: "Couldn’t select Saves",
+        id: notificationId,
+        title: "Couldn't select Saves",
         description: "Try again.",
         timeout: 2500,
       });

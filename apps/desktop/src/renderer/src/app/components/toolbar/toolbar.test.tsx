@@ -268,7 +268,7 @@ describe("breadcrumb toolbar", () => {
       [...document.querySelectorAll('[role="menuitemcheckbox"]')].map((item) =>
         item.textContent?.trim(),
       ),
-    ).toEqual(["Sidebar", "Agent", "Details"]);
+    ).toEqual(["Sidebar", "Assistant", "Details"]);
   });
 
   it("updates back and forward controls using the single router history", async () => {
@@ -287,27 +287,27 @@ describe("breadcrumb toolbar", () => {
     );
   });
 
-  it("opens Agent from its own control", async () => {
+  it("opens Assistant from its own control", async () => {
     await mount();
     expect(button("Toggle Details").getAttribute("aria-pressed")).not.toBe(
       "true",
     );
-    await act(async () => button("Agent").click());
+    await act(async () => button("Assistant").click());
     expect(libraryChrome.getState().rightPane).toBe("agent");
-    expect(button("Agent").getAttribute("aria-pressed")).toBe("true");
+    expect(button("Assistant").getAttribute("aria-pressed")).toBe("true");
     expect(button("Toggle Details").getAttribute("aria-pressed")).toBe("true");
     await act(async () => button("Toggle Details").click());
     expect(libraryChrome.getState().rightPane).toBeNull();
   });
 
-  it("closes Details without opening Agent", async () => {
-    libraryChrome.inspectSave("demo");
+  it("closes Details without opening Assistant", async () => {
+    libraryChrome.openSaveDetails("demo");
     await mount("/save/demo");
     expect(libraryChrome.getState().rightPane).toBe("inspector");
     await act(async () => button("Toggle Details").click());
     expect(libraryChrome.getState().rightPane).toBeNull();
     expect(libraryChrome.getState().inspectorSaveId).toBe("demo");
-    expect(button("Agent").getAttribute("aria-pressed")).not.toBe("true");
+    expect(button("Assistant").getAttribute("aria-pressed")).not.toBe("true");
   });
 
   it("keeps the right sidebar toggle visible and reopens Details", async () => {

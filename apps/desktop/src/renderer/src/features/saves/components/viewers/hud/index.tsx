@@ -103,13 +103,13 @@ function Bar({
       aria-label={label}
       {...props}
     >
-      <div className={styles.barStart} data-viewer-bar-slot="start">
+      <div className={styles.start} data-viewer-bar-slot="start">
         {start}
       </div>
-      <div className={styles.barCenter} data-viewer-bar-slot="center">
+      <div className={styles.center} data-viewer-bar-slot="center">
         {center}
       </div>
-      <div className={styles.barEnd} data-viewer-bar-slot="end">
+      <div className={styles.end} data-viewer-bar-slot="end">
         {end}
       </div>
     </Tools>

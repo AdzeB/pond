@@ -6,7 +6,7 @@ import {
   draggingSaveIds,
   SAVE_DRAG_TYPE,
 } from "@/features/saves/lib/start-drag";
-import { selection } from "@/features/saves/state/selection";
+import { selection } from "@/features/saves/navigation";
 import { toastManager } from "@/shared/lib/toast";
 import {
   createFolderSidebarHarness,
@@ -31,6 +31,10 @@ function pointer(type: string, clientY: number): MouseEvent {
     pointerType: { value: "mouse" },
   });
   return event;
+}
+
+function toastText(): string {
+  return document.body.querySelector("[data-slot='toasts']")?.textContent ?? "";
 }
 
 describe("folder sidebar drag and drop", () => {
@@ -113,9 +117,8 @@ describe("folder sidebar drag and drop", () => {
     await folders.refresh();
     selection.set(["drag-a", "drag-b"]);
     const transfer = folderTransfer();
-    beginSaveDrag("drag-a", transfer);
+    beginSaveDrag("drag-a", { dataTransfer: transfer, preventDefault() {} });
     selection.set(["changed-after-start"]);
-    const notify = vi.spyOn(toastManager, "add");
     await harness.mount();
     const target = harness.button("Travel");
 
@@ -135,11 +138,7 @@ describe("folder sidebar drag and drop", () => {
       }),
     );
     await vi.waitFor(() =>
-      expect(notify).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: 'Added 2 Saves to "Travel"',
-        }),
-      ),
+      expect(toastText()).toContain('Added 2 Saves to "Travel"'),
     );
     expect(draggingSaveIds()).toEqual([]);
   });
@@ -149,7 +148,6 @@ describe("folder sidebar drag and drop", () => {
     await folders.refresh();
     const transfer = folderTransfer();
     transfer.setData(SAVE_DRAG_TYPE, "save-1");
-    const notify = vi.spyOn(toastManager, "add");
     await harness.mount();
     pondQuery.mockRejectedValueOnce(new Error("Disk unavailable"));
 
@@ -158,13 +156,9 @@ describe("folder sidebar drag and drop", () => {
     });
 
     await vi.waitFor(() =>
-      expect(notify).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: "Couldn't add Save to folder",
-          description: "Disk unavailable",
-        }),
-      ),
+      expect(toastText()).toContain("Couldn't add Save to folder"),
     );
+    expect(toastText()).toContain("Try again.");
   });
 
   it("does not mistake a legacy folder payload for a Save drop", async () => {

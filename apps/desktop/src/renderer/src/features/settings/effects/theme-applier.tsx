@@ -3,33 +3,27 @@ import {
   resolveActiveTheme,
   themeCssVars,
 } from "@pond/schema/db";
+import { type ShellHint, ShellHintSchema } from "@shared/shell-hint";
 import { useEffect } from "react";
 import { useMediaMatch } from "rooks";
-import { usePrefs } from "@/features/settings/state/prefs";
-import { pondScopedKey } from "@/shared/lib/pond-scope";
+import { libraryScopedKey } from "@/shared/lib/library-scope";
+import { usePrefs } from "@/shared/state/prefs";
 
-const SHELL_KEY = pondScopedKey("pondShell");
+const SHELL_KEY = libraryScopedKey("pondShell");
 
-interface ShellPatch {
-  theme?: "light" | "dark";
-  bgL?: number;
-  bgC?: number;
-  bgH?: number;
-  fgL?: number;
-  fgC?: number;
-  fgH?: number;
-  accentL?: number;
-  accentC?: number;
-  accentH?: number;
-  contrast?: number;
-  pointerCursors?: boolean;
+function readShell(): ShellHint {
+  const stored = ShellHintSchema.safeParse(
+    JSON.parse(localStorage.getItem(SHELL_KEY) ?? "{}"),
+  );
+  return stored.success ? stored.data : {};
 }
 
-function persistShell(patch: ShellPatch) {
+function persistShell(patch: ShellHint) {
   try {
-    const raw = localStorage.getItem(SHELL_KEY);
-    const prev = raw ? JSON.parse(raw) : {};
-    localStorage.setItem(SHELL_KEY, JSON.stringify({ ...prev, ...patch }));
+    localStorage.setItem(
+      SHELL_KEY,
+      JSON.stringify({ ...readShell(), ...patch }),
+    );
   } catch {}
 }
 

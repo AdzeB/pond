@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-describe("independent Agent and inspector panes", () => {
+describe("independent Assistant and inspector panes", () => {
   beforeEach(() => {
     vi.resetModules();
     const memory = new Map<string, string>();
@@ -31,30 +31,33 @@ describe("independent Agent and inspector panes", () => {
     expect(libraryChrome.getState().sidebarWidth).toBe(300);
   });
 
-  it("opens Details without changing the library Agent preference", async () => {
+  it("opens Details without changing the library Assistant preference", async () => {
     localStorage.setItem("pond.agent", "0");
     const { libraryChrome } = await import("./library-chrome");
-    libraryChrome.inspectSave("first");
+    expect(libraryChrome.getState().rightPane).toBeNull();
+    libraryChrome.openSaveDetails("first");
     expect(libraryChrome.getState().rightPane).toBe("inspector");
     expect(localStorage.getItem("pond.agent")).toBe("0");
     libraryChrome.inspectSave(null);
-    expect(libraryChrome.getState().rightPane).toBeNull();
+    expect(libraryChrome.getState().rightPane).toBe("agent");
   });
 
-  it("opens a save directly on its Comments tab", async () => {
+  it("opens a save directly on its Properties tab", async () => {
     const { libraryChrome } = await import("./library-chrome");
-    libraryChrome.openSaveDetails("first", "comments");
+    libraryChrome.openSaveDetails("first", "info");
     expect(libraryChrome.getState()).toMatchObject({
       rightPane: "inspector",
       inspectorSaveId: "first",
       inspectorMode: "save",
-      inspectorTab: "comments",
+      inspectorTab: "info",
     });
+    libraryChrome.setInspectorTab("organize");
+    expect(libraryChrome.getState().inspectorTab).toBe("organize");
     libraryChrome.setInspectorTab("info");
     expect(libraryChrome.getState().inspectorTab).toBe("info");
   });
 
-  it("reopens the selected download after closing Details or showing Agent", async () => {
+  it("reopens the selected download after closing Details or showing Assistant", async () => {
     const { libraryChrome } = await import("./library-chrome");
     libraryChrome.inspectDownload("first");
     expect(libraryChrome.getState()).toMatchObject({
@@ -87,7 +90,7 @@ describe("independent Agent and inspector panes", () => {
     });
   });
 
-  it("swaps Details and Agent without losing the inspected save", async () => {
+  it("swaps Details and Assistant without losing the inspected save", async () => {
     const { libraryChrome } = await import("./library-chrome");
     libraryChrome.inspectSave("first");
     libraryChrome.toggleAgent();
@@ -126,7 +129,7 @@ describe("independent Agent and inspector panes", () => {
     expect(libraryChrome.getState().rightPane).toBeNull();
   });
 
-  it("can select Details directly while Agent is visible", async () => {
+  it("can select Details directly while Assistant is visible", async () => {
     const { libraryChrome } = await import("./library-chrome");
     libraryChrome.inspectSave("first");
     libraryChrome.toggleAgent();
@@ -136,10 +139,12 @@ describe("independent Agent and inspector panes", () => {
     expect(libraryChrome.getState().rightPane).toBe("agent");
   });
 
-  it("only toggles Agent when no save is open", async () => {
+  it("only toggles Assistant when no save is open", async () => {
     const { libraryChrome } = await import("./library-chrome");
-    expect(libraryChrome.getState().rightPane).toBeNull();
+    expect(libraryChrome.getState().rightPane).toBe("agent");
     libraryChrome.toggleInspector();
+    expect(libraryChrome.getState().rightPane).toBe("agent");
+    libraryChrome.toggleAgent();
     expect(libraryChrome.getState().rightPane).toBeNull();
     libraryChrome.toggleAgent();
     expect(libraryChrome.getState().rightPane).toBe("agent");
@@ -184,7 +189,7 @@ describe("independent Agent and inspector panes", () => {
     expect(libraryChrome.getState().rightPane).toBe("inspector");
   });
 
-  it("restores connection details after Agent and clears them on disconnect", async () => {
+  it("restores connection details after Assistant and clears them on disconnect", async () => {
     const { libraryChrome } = await import("./library-chrome");
     libraryChrome.inspectSource("watch", "watch-1");
     libraryChrome.toggleAgent();
@@ -197,10 +202,38 @@ describe("independent Agent and inspector panes", () => {
     });
     libraryChrome.clearSourceInspector();
     expect(libraryChrome.getState()).toMatchObject({
-      rightPane: null,
+      rightPane: "agent",
       inspectorSourceId: null,
       inspectorSourceKind: null,
       inspectorMode: "save",
     });
+  });
+
+  it("keeps the right panel open until the user closes it", async () => {
+    const { libraryChrome } = await import("./library-chrome");
+    expect(libraryChrome.getState().rightPane).toBe("agent");
+    libraryChrome.inspectSave("first");
+    libraryChrome.inspectSave(null);
+    expect(libraryChrome.getState().rightPane).toBe("agent");
+    expect(localStorage.getItem("pond.rightOpen")).toBeNull();
+    libraryChrome.closeRightPane();
+    expect(libraryChrome.getState().rightPane).toBeNull();
+    expect(localStorage.getItem("pond.rightOpen")).toBe("0");
+    libraryChrome.inspectSave("second");
+    expect(libraryChrome.getState()).toMatchObject({
+      rightPane: null,
+      inspectorSaveId: "second",
+    });
+    libraryChrome.openSaveDetails("second");
+    expect(libraryChrome.getState().rightPane).toBe("inspector");
+    expect(localStorage.getItem("pond.rightOpen")).toBe("1");
+  });
+
+  it("restores a closed right panel", async () => {
+    localStorage.setItem("pond.rightOpen", "0");
+    const { libraryChrome } = await import("./library-chrome");
+    expect(libraryChrome.getState().rightPane).toBeNull();
+    libraryChrome.inspectSave("first");
+    expect(libraryChrome.getState().rightPane).toBeNull();
   });
 });

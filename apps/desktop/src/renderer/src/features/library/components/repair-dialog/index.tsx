@@ -4,7 +4,7 @@ import type {
   LibraryRepairKind,
 } from "@shared/library-repair-contracts";
 import { useEffect, useState } from "react";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
+import { errorCopy } from "@/shared/lib/error-copy";
 import styles from "./styles.module.css";
 
 const LABELS = {
@@ -12,6 +12,17 @@ const LABELS = {
   "physical-file-names": "Repair Physical File Names",
   "invalid-content": "Repair Invalid Content",
   "save-metadata": "Repair Save Metadata",
+} satisfies Record<LibraryRepairKind, string>;
+
+const DESCRIPTIONS = {
+  thumbnails:
+    "Pond rebuilds missing or damaged thumbnails from each save's original file.",
+  "physical-file-names":
+    "Pond renames files on disk whose names other computers can't store.",
+  "invalid-content":
+    "Saves whose files are all missing or damaged move to Trash.",
+  "save-metadata":
+    "Pond rewrites the record stored with each save when it no longer matches your library.",
 } satisfies Record<LibraryRepairKind, string>;
 
 export function LibraryRepairDialog({
@@ -25,7 +36,6 @@ export function LibraryRepairDialog({
 }) {
   const [job, setJob] = useState<LibraryRepairJob | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const scrollFade = useScrollFade<HTMLDivElement>();
   const running = job?.status === "queued" || job?.status === "running";
   const preview = job?.preview;
   const completed = job?.phase === "apply" && job.status === "completed";
@@ -51,9 +61,7 @@ export function LibraryRepairDialog({
       .catch((cause) => {
         if (active)
           setError(
-            cause instanceof Error
-              ? cause.message
-              : "Could not inspect the Library.",
+            errorCopy(cause, "Pond couldn't check your library. Try again."),
           );
       });
     return () => {
@@ -73,9 +81,7 @@ export function LibraryRepairDialog({
       await poll(next.id);
     } catch (cause) {
       setError(
-        cause instanceof Error
-          ? cause.message
-          : "Could not repair the Library.",
+        errorCopy(cause, "Pond couldn't repair your library. Try again."),
       );
     }
   }
@@ -104,7 +110,7 @@ export function LibraryRepairDialog({
     running && job.total > 0
       ? `${job.processed} of ${job.total}`
       : running
-        ? "Inspecting Library"
+        ? "Checking library"
         : null;
 
   return (
@@ -119,11 +125,8 @@ export function LibraryRepairDialog({
         <Dialog.Popup className={styles.popup}>
           <Dialog.Header>
             <Dialog.Title>{LABELS[kind]}</Dialog.Title>
-            <Dialog.Close />
           </Dialog.Header>
-          <Dialog.Description>
-            Preview targeted changes before Pond updates Library files.
-          </Dialog.Description>
+          <Dialog.Description>{DESCRIPTIONS[kind]}</Dialog.Description>
           <Dialog.Content className={styles.content}>
             {progress ? <p className={styles.status}>{progress}</p> : null}
             {error || job?.error ? (
@@ -139,12 +142,12 @@ export function LibraryRepairDialog({
               <>
                 <p className={styles.status}>
                   {count === 0
-                    ? "No repairs found."
+                    ? "No repairs needed."
                     : `${count} ${count === 1 ? "Save needs" : "Saves need"} repair.`}
                 </p>
                 {count > 0 ? (
                   <>
-                    <div className={styles.list} {...scrollFade}>
+                    <div className={styles.list}>
                       {preview.issues.map((issue) => (
                         <div className={styles.issue} key={issue.id}>
                           <strong>{issue.title || issue.saveId}</strong>
@@ -154,19 +157,17 @@ export function LibraryRepairDialog({
                       ))}
                     </div>
                     <div className={styles.confirmation}>
-                      <span>
-                        Pond snapshots every changed file before applying.
-                      </span>
+                      <span>Pond backs up every file it changes first.</span>
                       {preview.confirmation.movesToTrash ? (
                         <span>
-                          Invalid Saves move to Trash. Payload directories stay
-                          intact.
+                          These saves move to Trash. Their folders on disk stay
+                          in place.
                         </span>
                       ) : null}
                       <span>
                         {preview.confirmation.canUndo
-                          ? "You can Undo this repair."
-                          : "This repair rebuilds metadata and cannot be undone."}
+                          ? "You can undo this repair."
+                          : "You can't undo this repair."}
                       </span>
                     </div>
                   </>
@@ -174,8 +175,11 @@ export function LibraryRepairDialog({
               </>
             ) : null}
           </Dialog.Content>
-          {!completed && count > 0 ? (
-            <Dialog.Footer>
+          <Dialog.Footer>
+            <Dialog.Cancel disabled={running}>
+              {completed ? "Close" : "Cancel"}
+            </Dialog.Cancel>
+            {!completed && count > 0 ? (
               <Dialog.Confirm
                 type="button"
                 loading={job?.phase === "apply" && running}
@@ -184,8 +188,8 @@ export function LibraryRepairDialog({
               >
                 Repair
               </Dialog.Confirm>
-            </Dialog.Footer>
-          ) : null}
+            ) : null}
+          </Dialog.Footer>
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>

@@ -9,12 +9,14 @@ export function HeroAvatar({
   avatarUrl,
   size = 52,
   ring = false,
+  badge = true,
   badgeSize = 16,
 }: {
   source: Source;
   avatarUrl: string | null | undefined;
   size?: number;
   ring?: boolean;
+  badge?: boolean;
   badgeSize?: number;
 }) {
   const [failed, setFailed] = useState(false);
@@ -23,7 +25,10 @@ export function HeroAvatar({
 
   if (!pfp) {
     const tile = (
-      <span className={styles.sourceImage} data-large={size >= 96 || undefined}>
+      <span
+        className={styles["source-image"]}
+        data-large={size >= 96 || undefined}
+      >
         <BrandTile source={source} size={size} />
       </span>
     );
@@ -40,7 +45,7 @@ export function HeroAvatar({
         referrerPolicy="no-referrer"
         onError={() => setFailed(true)}
       />
-      {Icon || logo ? (
+      {badge && (Icon || logo) ? (
         <span
           className={styles.badge}
           style={{ width: badgeSize, height: badgeSize }}

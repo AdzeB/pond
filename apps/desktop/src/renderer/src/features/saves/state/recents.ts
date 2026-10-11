@@ -3,7 +3,7 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
 import { z } from "zod";
-import { loadPrefs, patchPrefsSection } from "@/features/settings/state/prefs";
+import { loadPrefs, patchPrefsSection } from "@/shared/state/prefs";
 
 const RECENTS_CAP = 20;
 

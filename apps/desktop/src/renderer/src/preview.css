@@ -22,14 +22,14 @@ body {
   pointer-events: none;
 }
 
-.previewWindowChrome button {
+.preview-window-chrome button {
   background: color-mix(in oklab, var(--ds-gray-1) 88%, transparent);
   box-shadow: var(--ds-shadow-sm);
   backdrop-filter: blur(16px) saturate(1.2);
 }
 
 #preview-ui button,
-.previewControls {
+.preview-controls {
   -webkit-app-region: no-drag;
   pointer-events: auto;
 }
@@ -68,7 +68,7 @@ body {
   object-fit: cover;
 }
 
-.previewControls {
+.preview-controls {
   position: fixed;
   right: auto;
   bottom: 16px;
@@ -81,39 +81,35 @@ body {
   max-width: calc(100vw - 96px);
   padding: 4px;
   background: color-mix(in oklab, var(--ds-gray-1) 88%, transparent);
-  border: 1px solid var(--ds-gray-a4);
   border-radius: var(--ds-radius-lg);
   box-shadow: var(--ds-shadow-tooltip);
   backdrop-filter: blur(18px) saturate(1.2);
   transform: translateX(-50%);
-  transition:
-    background-color var(--ds-duration-fast) var(--ds-easing-standard),
-    border-color var(--ds-duration-fast) var(--ds-easing-standard);
+  transition: background-color var(--ds-duration-fast) var(--ds-easing-standard);
 }
 
-.previewControls:hover,
-.previewControls:focus-within {
+.preview-controls:hover,
+.preview-controls:focus-within {
   background: color-mix(in oklab, var(--ds-gray-1) 96%, transparent);
-  border-color: var(--ds-gray-a6);
 }
 
-body[data-media-type="video"] .previewControls {
+body[data-media-type="video"] .preview-controls {
   top: 16px;
   bottom: auto;
 }
 
-.previewControlGroup {
+.preview-control-group {
   display: flex;
   gap: 2px;
   align-items: center;
 }
 
-.previewControlGroup + .previewControlGroup {
+.preview-control-group + .preview-control-group {
   padding-left: 4px;
   border-left: 1px solid var(--ds-gray-a5);
 }
 
-.previewOpacity {
+.preview-opacity {
   min-width: 46px;
   font-variant-numeric: tabular-nums;
 }
@@ -128,7 +124,6 @@ body[data-media-type="video"] .previewControls {
   padding: 20px;
   text-align: center;
   background: var(--ds-gray-2);
-  border: 1px solid var(--ds-gray-a4);
   border-radius: var(--ds-radius-lg);
   box-shadow: var(--ds-shadow-lg);
   transform: translate(-50%, -50%);
@@ -158,12 +153,12 @@ body[data-media-type="video"] .previewControls {
 
 @media (prefers-reduced-motion: reduce) {
   body:not([data-reduce-motion="never"]) #image,
-  body:not([data-reduce-motion="never"]) .previewControls {
+  body:not([data-reduce-motion="never"]) .preview-controls {
     transition: none;
   }
 }
 
 body[data-reduce-motion="always"] #image,
-body[data-reduce-motion="always"] .previewControls {
+body[data-reduce-motion="always"] .preview-controls {
   transition: none;
 }

@@ -6,9 +6,9 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { downloadsColumnsLayout } from "@/features/downloads/state/downloads-columns";
 import { downloadsFilters } from "@/features/downloads/state/downloads-filters";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
-import { libraryChrome } from "@/features/library/state/library-chrome";
-import { savesStore } from "@/features/saves/state/pool";
-import { primarySelection } from "@/features/saves/state/selection";
+import { libraryChrome } from "@/features/library";
+import { primarySelection } from "@/features/saves/navigation";
+import { savesStore } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
 import { DownloadsPage } from "./";
 import { hydrateLiveDownloadSaves } from "./hydrate-live-saves";
@@ -223,7 +223,7 @@ it("hydrates large queues in renderer-sized batches", async () => {
   await hydrateLiveDownloadSaves(ids, () => false);
 
   const batches = query.mock.calls.flatMap(([name, args]) =>
-    name === "saves.getMany" ? [args.ids as string[]] : [],
+    name === "saves.getMany" ? [args.ids] : [],
   );
   expect(batches.map((batch) => batch.length)).toEqual([200, 200, 1]);
 });
@@ -286,7 +286,7 @@ it("uses the shared selected-row state when inspecting a download", async () => 
 });
 
 it("replaces a stale save inspector with a visible download", async () => {
-  libraryChrome.inspectSave("stale-save");
+  libraryChrome.openSaveDetails("stale-save");
   await render();
   expect(libraryChrome.getState()).toMatchObject({
     inspectorSaveId: "Running video",

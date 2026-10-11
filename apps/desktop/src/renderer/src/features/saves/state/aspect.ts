@@ -8,8 +8,8 @@ import {
   pickCardUnit,
 } from "@/features/saves/lib/media/units";
 import type { Save } from "@/features/saves/types";
+import { libraryScopedKey } from "@/shared/lib/library-scope";
 import { clamp } from "@/shared/lib/math";
-import { pondScopedKey } from "@/shared/lib/pond-scope";
 
 const MIN_RATIO = 0.4;
 const MAX_RATIO = 2.5;
@@ -19,7 +19,7 @@ const BURST_WINDOW_MS = 50;
 const SOFT_MIN_DELTA = 0.03;
 const HARD_MIN_DELTA = 0.001;
 
-const MASONRY_ASPECT_CACHE_KEY = pondScopedKey("pond:aspects:v4");
+const MASONRY_ASPECT_CACHE_KEY = libraryScopedKey("pond:aspects:v4");
 const PERSIST_DEBOUNCE_MS = 800;
 
 const measuredAspects = new Map<string, number>();
@@ -153,14 +153,6 @@ export function aspectFor(save: Save, opts: MediaPickOptions = {}): number {
   const key = measuredKey(save.id, coverKey);
   const measured = measuredAspects.get(key);
   if (measured !== undefined) return measured;
-  if (coverKey) {
-    const legacy = measuredAspects.get(save.id);
-    if (legacy !== undefined) {
-      touchMeasured(key, legacy);
-      measuredAspects.delete(save.id);
-      return legacy;
-    }
-  }
   let byCover = fallbackCache.get(save);
   if (!byCover) {
     byCover = new Map();

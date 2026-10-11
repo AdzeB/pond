@@ -7,23 +7,21 @@ export function LinkCard({ data }: { data: TweetCardLink }) {
   if (large && imageUrl) {
     return (
       <div className={styles["link-card"]} data-large="true">
-        <div className={styles["link-card-media"]}>
+        <div className={styles.media}>
           <img
             src={imageUrl}
             alt=""
-            className={styles["link-card-image"]}
+            className={styles.image}
             draggable={false}
             decoding="sync"
             referrerPolicy="no-referrer"
           />
           {title ? (
-            <span className={styles["link-card-overlay-title"]}>{title}</span>
+            <span className={styles["overlay-title"]}>{title}</span>
           ) : null}
         </div>
         {domain ? (
-          <span className={styles["link-card-domain-below"]}>
-            From {domain}
-          </span>
+          <span className={styles["domain-below"]}>From {domain}</span>
         ) : null}
       </div>
     );
@@ -32,26 +30,22 @@ export function LinkCard({ data }: { data: TweetCardLink }) {
   return (
     <div className={styles["link-card"]}>
       {imageUrl ? (
-        <div className={styles["link-card-media"]}>
+        <div className={styles.media}>
           <img
             src={imageUrl}
             alt=""
-            className={styles["link-card-image"]}
+            className={styles.image}
             draggable={false}
             decoding="sync"
             referrerPolicy="no-referrer"
           />
         </div>
       ) : null}
-      <div className={styles["link-card-detail"]}>
-        {domain ? (
-          <span className={styles["link-card-domain"]}>{domain}</span>
-        ) : null}
-        {title ? (
-          <span className={styles["link-card-title"]}>{title}</span>
-        ) : null}
+      <div className={styles.detail}>
+        {domain ? <span className={styles.domain}>{domain}</span> : null}
+        {title ? <span className={styles.title}>{title}</span> : null}
         {description ? (
-          <span className={styles["link-card-description"]}>{description}</span>
+          <span className={styles.description}>{description}</span>
         ) : null}
       </div>
     </div>

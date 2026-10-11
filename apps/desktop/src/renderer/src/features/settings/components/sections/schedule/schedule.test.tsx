@@ -97,7 +97,7 @@ it("shows a save failure and keeps the draft available to retry", async () => {
   save.mockRejectedValueOnce(new Error("disk unavailable"));
   await render({ enabled: true, intervalHours: 12 });
   await choose("Repeat", "days");
-  expect(host.textContent).toContain("Couldn’t save your schedule");
+  expect(host.textContent).toContain("Couldn't save your schedule");
   expect(host.textContent).not.toContain("Schedule saved.");
   await choose("Repeat", "weeks");
   expect(save).toHaveBeenCalledTimes(2);

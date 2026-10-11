@@ -1,13 +1,12 @@
 import { matches } from "@pond/schema/filters/match";
 import type { Query } from "@pond/schema/filters/types";
 import { useCallback, useMemo } from "react";
-import { pool } from "@/features/saves/state/pool";
+import { pool, useSaves } from "@/features/saves/pool";
 import { compileAsk } from "@/features/search/lib/compile-ask";
 import { resolveFacets } from "@/features/search/lib/facet-resolver";
 import { computeLiveFacets } from "@/features/search/lib/live-facets";
 import type { NlFacets } from "@/features/search/lib/nl-query";
-import { usePrefs } from "@/features/settings/state/prefs";
-import { useSaves } from "../../saves/hooks/use-saves";
+import { usePrefs } from "@/shared/state/prefs";
 
 function countMatches(query: Query): number {
   let n = 0;

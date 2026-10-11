@@ -16,5 +16,6 @@ export function selectLibraryNav(nav: LibraryNav): void {
   else if (nav.kind === "downloads") goToLibraryPath("/downloads");
   else if (nav.kind === "sources") goToLibraryPath("/sources");
   else if (nav.kind === "recents") goToLibraryPath("/recents");
+  else if (nav.kind === "recentlyAdded") goToLibraryPath("/recently-added");
   else goToLibraryPath("/");
 }

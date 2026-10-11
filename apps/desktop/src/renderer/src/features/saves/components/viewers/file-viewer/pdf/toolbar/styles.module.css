@@ -1,0 +1,54 @@
+.search {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  min-width: 0;
+}
+
+.search-count {
+  padding-inline: 6px;
+  font-size: var(--ds-text-xs);
+  color: var(--ds-gray-9);
+  white-space: nowrap;
+}
+
+.search {
+  width: 220px;
+  margin-inline: 2px 6px;
+  animation: pdf-search-in var(--ds-duration-snap) var(--ds-easing-standard);
+}
+
+.search > :first-child {
+  flex: 1;
+  min-width: 96px;
+}
+
+.page-entry {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--ds-gray-10);
+  white-space: nowrap;
+}
+
+.page-entry > :first-child {
+  width: 48px;
+}
+
+.page-entry input {
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+@keyframes pdf-search-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search {
+    animation: none;
+  }
+}

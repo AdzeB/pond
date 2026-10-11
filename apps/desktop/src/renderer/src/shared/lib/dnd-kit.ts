@@ -11,11 +11,6 @@ export const SORTABLE_DROP_ANIMATION: DropAnimation = {
   easing: "cubic-bezier(0.22, 1, 0.36, 1)",
 };
 
-export const SORTABLE_SCREEN_READER_INSTRUCTIONS: ScreenReaderInstructions = {
-  draggable:
-    "To pick up an item, press Space. While sorting, use the arrow keys to move it. Press Space again to drop it, or Escape to cancel.",
-};
-
 export const SIDEBAR_SORTABLE_KEYBOARD_CODES: KeyboardCodes = {
   start: ["F2"],
   cancel: ["Escape"],
@@ -58,7 +53,7 @@ export function createSortableAnnouncements(
       return `Dropped ${labelFor(active.id)} at ${sortablePositionAnnouncement(over.id, items, labelFor)}`;
     },
     onDragCancel({ active }) {
-      return `Moving ${labelFor(active.id)} was cancelled.`;
+      return `Moving ${labelFor(active.id)} was canceled.`;
     },
   };
 }

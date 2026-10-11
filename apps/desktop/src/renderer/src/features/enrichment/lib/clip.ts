@@ -1,9 +1,15 @@
 import type { RawImage } from "@huggingface/transformers";
-import { clipEmbeddingVersion } from "@shared/embeddings";
-import { inferClipAesthetic, inferClipImage } from "./inference-client";
+import { mediaEmbeddingVersion } from "@shared/embeddings";
+import {
+  inferClipAesthetic,
+  inferClipImage,
+  inferEmbedAudio,
+  inferEmbedVideoFrames,
+  type VideoEmbeddingFrame,
+} from "./inference-client";
 
-export function clipModelVersion(): string {
-  return clipEmbeddingVersion();
+export function mediaModelVersion(): string {
+  return mediaEmbeddingVersion();
 }
 
 const AESTHETIC_LABELS = [
@@ -24,8 +30,21 @@ const AESTHETIC_LABELS = [
   "typography",
 ] as const;
 
-export function clipImageEmbedding(image: RawImage): Promise<Float32Array> {
+export function mediaImageEmbedding(image: RawImage): Promise<Float32Array> {
   return inferClipImage(image);
+}
+
+export function mediaAudioEmbedding(
+  audio: Float32Array,
+): Promise<Float32Array> {
+  return inferEmbedAudio(audio);
+}
+
+export function mediaVideoEmbedding(
+  frames: VideoEmbeddingFrame[],
+  duration: number,
+): Promise<Float32Array> {
+  return inferEmbedVideoFrames(frames, duration);
 }
 
 export function clipAesthetic(image: RawImage): Promise<string[]> {

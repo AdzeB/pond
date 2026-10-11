@@ -19,7 +19,7 @@ describe("detached preview presentation", () => {
 
   it("keeps every control legible while the toolbar rests", () => {
     expect(css).not.toMatch(/nav:not\([^}]+\)\s*{[^}]*opacity:/s);
-    expect(css).not.toMatch(/\.previewControls[^}]*opacity:\s*0\.[0-9]+/s);
+    expect(css).not.toMatch(/\.preview-controls[^}]*opacity:\s*0\.[0-9]+/s);
   });
 
   it("overlays video controls instead of reserving a second layout row", () => {
@@ -30,7 +30,7 @@ describe("detached preview presentation", () => {
       /body\[data-media-type="video"\]\s+nav\s*{[^}]*position:\s*static/s,
     );
     expect(css).toMatch(
-      /\[data-media-type="video"\][^{]*\.previewControls\s*{[^}]*top:/s,
+      /\[data-media-type="video"\][^{]*\.preview-controls\s*{[^}]*top:/s,
     );
   });
 });

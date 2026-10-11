@@ -10,7 +10,7 @@ import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import {
   ChromePortal,
   ViewerChrome,
-} from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+} from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerResultCount } from "@/features/saves/components/viewers/viewer-result-count";
 import { ensureTextCover } from "@/features/saves/lib/ensure-text-cover";
 import { mutateSave } from "@/features/saves/lib/mutate";
@@ -20,7 +20,6 @@ import {
 } from "@/features/saves/lib/text";
 import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { stopAppHotkeysFromEditable } from "@/shared/lib/editable-target";
 import { CollapsiblePlugin } from "./collapsible";
 import { DraggableBlockPlugin } from "./draggable-block";
@@ -49,7 +48,6 @@ export function TextViewer({ save }: { save: Save }) {
 
 function TextViewerSession({ save }: { save: Save }) {
   const editable = save.source === "local";
-  const scrollFade = useScrollFade<HTMLDivElement>();
   const [anchor, setAnchor] = useState<HTMLDivElement | null>(null);
   const markdown = noteBodyForSave(save);
   const empty = !save.title?.trim() && !markdown;
@@ -62,7 +60,7 @@ function TextViewerSession({ save }: { save: Save }) {
   }, [save]);
 
   return (
-    <div className={styles.root} {...scrollFade}>
+    <div className={styles.root}>
       <ChromePortal slot="top">
         <ViewerHud.Bar
           label="Text"
@@ -134,6 +132,11 @@ function TitleField({
 }) {
   const [editor] = useLexicalComposerContext();
   const [draft, setDraft] = useState(title);
+  const [syncedTitle, setSyncedTitle] = useState(title);
+  if (title !== syncedTitle) {
+    setSyncedTitle(title);
+    if (title.trim() !== draft.trim()) setDraft(title);
+  }
   const inputRef = useRef<HTMLInputElement>(null);
   const persist = useMemo(
     () =>
@@ -148,10 +151,6 @@ function TitleField({
       ),
     [],
   );
-
-  useEffect(() => {
-    setDraft(title);
-  }, [title]);
 
   useEffect(() => {
     if (autoFocus) inputRef.current?.focus();

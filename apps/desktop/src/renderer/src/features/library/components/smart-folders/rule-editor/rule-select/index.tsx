@@ -26,8 +26,8 @@ function Single<T extends string>({
     >
       <Select.Trigger
         className={styles.trigger}
-        data-width={width}
-        size="md"
+        width={width === "content" ? "auto" : "full"}
+        size="sm"
         aria-label={label}
       >
         <Select.Value />
@@ -60,7 +60,7 @@ function Multiple({
 }: MultipleProps) {
   return (
     <Select.Root multiple value={value} items={items} onValueChange={onChange}>
-      <Select.Trigger size="md" className={styles.trigger} aria-label={label}>
+      <Select.Trigger size="sm" className={styles.trigger} aria-label={label}>
         <Select.Value placeholder={placeholder} />
       </Select.Trigger>
       <Select.Portal>

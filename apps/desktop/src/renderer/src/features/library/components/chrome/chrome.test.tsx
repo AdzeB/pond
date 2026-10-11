@@ -6,7 +6,7 @@ import {
   resetFilters,
   setSearchInput,
 } from "@/features/library/state/view-store";
-import { SearchComposer } from "@/features/search/components/bar";
+import { SearchComposer } from "@/features/search";
 import { SearchChrome } from "@/shared/components/search-chrome";
 
 it("shows the source filter once with one clear action", async () => {
@@ -36,9 +36,9 @@ it("shows the source filter once with one clear action", async () => {
   try {
     await act(async () =>
       root.render(
-        <SearchChrome actions={null} below={null}>
+        <SearchChrome.Root actions={null} below={null}>
           <SearchComposer />
-        </SearchChrome>,
+        </SearchChrome.Root>,
       ),
     );
     expect(host.textContent?.match(/source:youtube\.com/g)).toHaveLength(1);

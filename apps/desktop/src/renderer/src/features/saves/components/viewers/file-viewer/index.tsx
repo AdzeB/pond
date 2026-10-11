@@ -1,31 +1,36 @@
-import { lazy, type ReactNode, Suspense, useCallback, useState } from "react";
+import { lazy, Suspense, useCallback, useState } from "react";
 import { GeneratedRasterViewer } from "@/features/saves/components/viewers/generated-raster-viewer";
-import { ViewerHud } from "@/features/saves/components/viewers/hud";
-import {
-  ChromePortal,
-  ViewerChrome,
-} from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
-import { OriginalFileActions } from "@/features/saves/components/viewers/original-file-actions";
+import { ViewerChrome } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerFallback } from "@/features/saves/components/viewers/viewer-fallback";
 import { ViewerResultCount } from "@/features/saves/components/viewers/viewer-result-count";
-import {
-  type ViewerNavigation,
-  ViewerNavigationControls,
-  ViewerToolbarGroups,
-} from "@/features/saves/components/viewers/viewer-toolbar-groups";
+import type { ViewerNavigation } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import {
   type StoredFileViewerKind,
   storedFileViewerKind,
 } from "@/features/saves/lib/media/file-viewer";
 import { buildPondUrl } from "@/features/saves/lib/media/url";
 import type { Save, SaveFile } from "@/features/saves/types";
-import { AudioViewer } from "./audio";
+import {
+  FileActions,
+  FileBar,
+  FileToolbarEnd,
+  navigationControls,
+} from "./file-bar";
 import { GenericFileCard } from "./file-card";
-import { FontViewer } from "./font";
-import { FontActivate } from "./font/activate";
-import { PdfViewer } from "./pdf";
 import styles from "./styles.module.css";
 import type { ViewerProps } from "./types";
+
+const PdfViewer = lazy(() =>
+  import("./pdf").then((module) => ({ default: module.PdfViewer })),
+);
+
+const AudioViewer = lazy(() =>
+  import("./audio").then((module) => ({ default: module.AudioViewer })),
+);
+
+const FontViewer = lazy(() =>
+  import("./font").then((module) => ({ default: module.FontViewer })),
+);
 
 const ArchiveFileViewer = lazy(() =>
   import("@/features/saves/components/viewers/archive-file-viewer").then(
@@ -74,9 +79,7 @@ export function StoredFileViewer({
 }) {
   return (
     <ViewerChrome enabled={showControls}>
-      <Suspense
-        fallback={<div className={styles.previewStatus}>Loading preview</div>}
-      >
+      <Suspense fallback={<div className={styles.status}>Loading preview</div>}>
         <StoredFileContent
           key={`${save.id}:${file.path}:${file.sha256}`}
           save={save}
@@ -153,7 +156,7 @@ function NativePreviewViewer(props: ViewerProps & { url: string }) {
   }
 
   return (
-    <div className={styles.previewRoot}>
+    <div className={styles.preview}>
       <GeneratedRasterViewer
         save={props.save}
         fileIndex={props.fileIndex}
@@ -171,7 +174,7 @@ function ModelFileViewer(props: ViewerProps & { url: string }) {
   const onUnavailable = useCallback(() => setUnavailable(true), []);
   if (unavailable) return <NativePreviewViewer {...props} />;
   return (
-    <div className={styles.previewRoot}>
+    <div className={styles.preview}>
       <ModelViewer
         url={props.url}
         path={props.file.path}
@@ -188,7 +191,7 @@ function EpubFileViewer(props: ViewerProps & { url: string }) {
   const onUnavailable = useCallback(() => setUnavailable(true), []);
   if (unavailable) return <NativePreviewViewer {...props} />;
   return (
-    <div className={styles.previewRoot}>
+    <div className={styles.preview}>
       <EpubViewer
         url={props.url}
         onUnavailable={onUnavailable}
@@ -205,7 +208,7 @@ function ArchiveViewer(props: ViewerProps & { url: string }) {
   const onUnavailable = useCallback(() => setUnavailable(true), []);
   if (unavailable) return <NativePreviewViewer {...props} />;
   return (
-    <div className={styles.previewRoot}>
+    <div className={styles.preview}>
       <ArchiveFileViewer
         url={props.url}
         path={props.file.path}
@@ -223,7 +226,7 @@ function LivePhotoFileViewer(props: ViewerProps & { url: string }) {
   const onUnavailable = useCallback(() => setUnavailable(true), []);
   if (unavailable) return <NativePreviewViewer {...props} />;
   return (
-    <div className={styles.previewRoot}>
+    <div className={styles.preview}>
       <LivePhotoViewer
         url={props.url}
         onUnavailable={onUnavailable}
@@ -239,7 +242,7 @@ function SafeWebFileViewer(props: ViewerProps & { url: string }) {
   const onUnavailable = useCallback(() => setUnavailable(true), []);
   if (unavailable) return <NativePreviewViewer {...props} />;
   return (
-    <div className={styles.previewRoot}>
+    <div className={styles.preview}>
       <SafeWebViewer
         url={props.url}
         path={props.file.path}
@@ -249,53 +252,5 @@ function SafeWebFileViewer(props: ViewerProps & { url: string }) {
         toolbarEnd={<FileToolbarEnd {...props} />}
       />
     </div>
-  );
-}
-
-export function FileBar({
-  children,
-  label = "File viewer",
-  ...props
-}: ViewerProps & { children?: ReactNode; label?: string }) {
-  return (
-    <ChromePortal slot="top">
-      <ViewerHud.Bar
-        label={label}
-        start={<ViewerResultCount saveId={props.save.id} />}
-        end={
-          <ViewerToolbarGroups
-            actions={<FileActions {...props} />}
-            view={children}
-            navigation={navigationControls(props.navigation)}
-          />
-        }
-      />
-    </ChromePortal>
-  );
-}
-
-function FileToolbarEnd(props: ViewerProps) {
-  return (
-    <ViewerToolbarGroups
-      actions={<FileActions {...props} />}
-      navigation={navigationControls(props.navigation)}
-    />
-  );
-}
-
-export function navigationControls(navigation?: ViewerNavigation): ReactNode {
-  return navigation && navigation.count > 1 ? (
-    <ViewerNavigationControls navigation={navigation} />
-  ) : null;
-}
-
-export function FileActions(props: ViewerProps) {
-  return (
-    <>
-      {props.save.mediaType === "font" ? (
-        <FontActivate save={props.save} />
-      ) : null}
-      <OriginalFileActions save={props.save} fileIndex={props.fileIndex} />
-    </>
   );
 }

@@ -6,7 +6,11 @@ import {
   type ShortcutId,
   type ShortcutPreferences,
 } from "@shared/shortcuts";
-import { formatForDisplay } from "@tanstack/react-hotkeys";
+import {
+  formatForDisplay,
+  matchesKeyboardEvent,
+  parseHotkey,
+} from "@tanstack/react-hotkeys";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
@@ -57,6 +61,14 @@ export function bindingKeys(
   const keys = bindings[id].keys;
   if (!keys) throw new Error(`Shortcut "${id}" has no key binding`);
   return keys;
+}
+
+export function matchesShortcut(
+  event: KeyboardEvent,
+  id: ShortcutKeyId,
+): boolean {
+  const keys = resolveShortcuts(shortcutPreferences.state)[id].keys;
+  return keys != null && matchesKeyboardEvent(event, parseHotkey(keys));
 }
 
 export function bindingSequence(

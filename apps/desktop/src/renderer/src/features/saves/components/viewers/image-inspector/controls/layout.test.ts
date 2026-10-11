@@ -29,7 +29,7 @@ it("uses the integrated top toolbar for the image controls", () => {
   expect(chromeCss).toContain("container-type: inline-size");
   expect(hudCss).toContain("@container (max-width: 620px)");
   expect(hudCss).toMatch(
-    /\.bar\[data-collapse-center\] \.barCenter\s*{\s*display: none;/,
+    /\.bar\[data-collapse-center\] \.center\s*{\s*display: none;/,
   );
   expect(hudCss).toContain(
     "grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr)",

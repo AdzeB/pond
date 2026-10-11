@@ -1,6 +1,5 @@
 import type { Source } from "@pond/schema/db";
 import type { TableColumn } from "@pond/ui";
-import { useState } from "react";
 import { BrandTile } from "@/features/sources/components/sync-monitor-source-tile";
 import { formatNumber } from "@/shared/lib/format";
 import { relativeTime } from "@/shared/lib/relative-time";
@@ -9,31 +8,6 @@ import type { SourceTableRow } from "../lib/helpers";
 import styles from "./styles.module.css";
 
 const RING = 100;
-
-function NameMark({ row }: { row: SourceTableRow }) {
-  const [failedUrl, setFailedUrl] = useState<string | null>(null);
-  const pfp =
-    row.avatarUrl && row.avatarUrl !== failedUrl ? row.avatarUrl : null;
-
-  return (
-    <span className={styles.lead}>
-      {pfp ? (
-        <span className={styles.art} data-variant="account">
-          <img
-            src={pfp}
-            alt=""
-            referrerPolicy="no-referrer"
-            onError={() => setFailedUrl(pfp)}
-          />
-        </span>
-      ) : (
-        <BrandTile source={row.source} size={18} />
-      )}
-      <span className={styles.name}>{row.name}</span>
-      <span className={styles.count}>{formatNumber(row.items)}</span>
-    </span>
-  );
-}
 
 function StatusGlyph({ status }: { status: SourceStatusId }) {
   return (
@@ -126,7 +100,18 @@ export const sourcesColumns: TableColumn<SourceTableRow>[] = [
     accessor: (row) => row.name,
     width: "minmax(0, 1fr)",
     reorderable: true,
-    cell: (row) => <NameMark row={row} />,
+    cell: (row) => <span className={styles.name}>{row.name}</span>,
+  },
+  {
+    id: "items",
+    header: "Items",
+    sortLabel: "Items",
+    accessor: (row) => row.items,
+    width: "minmax(0, 80px)",
+    reorderable: true,
+    cell: (row) => (
+      <span className={styles.metric}>{formatNumber(row.items)}</span>
+    ),
   },
   {
     id: "lastSynced",

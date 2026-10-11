@@ -1,6 +1,7 @@
 import { PrefsSchema } from "@pond/schema";
 import type { Folder, SavedView } from "@pond/schema/db";
 import { Dialog } from "@pond/ui";
+import type { QueueSummary } from "@shared/queue-contracts";
 import type { LibrarySidebarCounts } from "@shared/sidebar-counts";
 import type { WirePrefsPatch } from "@shared/wire";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -18,7 +19,9 @@ import { folders } from "@/features/library/state/folders";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { savedViews } from "@/features/library/state/saved-views";
 import { resetFilters } from "@/features/library/state/view-store";
-import { selection } from "@/features/saves/state/selection";
+import type { SaveDragDataTransfer } from "@/features/saves";
+import { selection } from "@/features/saves/navigation";
+import { ToastHost } from "@/shared/components/toast-host";
 import { setAppRouter } from "@/shared/lib/app-router";
 import { FolderSidebar } from ".";
 
@@ -30,11 +33,29 @@ interface FolderFixtures {
   current: Folder[];
 }
 
+interface QueueSummaryFixtures {
+  current: QueueSummary;
+}
+
+function emptyQueueSummary(): QueueSummary {
+  return {
+    running: 0,
+    waiting: 0,
+    parked: 0,
+    failed: 0,
+    cancelled: 0,
+    dead: 0,
+    actionable: 0,
+  };
+}
+
 function emptySidebarCounts(): LibrarySidebarCounts {
   return {
     library: 0,
     uncategorized: 0,
     untagged: 0,
+    recentlyAdded: 0,
+    recentlyUsed: 0,
     trash: 0,
     folders: {},
   };
@@ -45,10 +66,14 @@ export const folderList: FolderFixtures = { current: [] };
 export const sidebarCounts = {
   current: emptySidebarCounts(),
 };
+export const queueSummary: QueueSummaryFixtures = {
+  current: emptyQueueSummary(),
+};
 
 let storedPrefs = PrefsSchema.parse({});
 export const pondQuery = vi.fn(async (name: string, patch?: WirePrefsPatch) => {
   if (name === "saves.sidebarCounts") return sidebarCounts.current;
+  if (name === "queue.summary") return queueSummary.current;
   if (name === "savedViews.list") return savedViewList.current;
   if (name === "accounts.list") return { accounts: [] };
   if (name === "watches.list") return { watches: [] };
@@ -56,7 +81,11 @@ export const pondQuery = vi.fn(async (name: string, patch?: WirePrefsPatch) => {
   if (name === "folders.list") return folderList.current;
   if (name === "folders.memberships") return [];
   if (name === "folders.metadata.get")
-    return { folderId: "folder", description: null, externalLink: null };
+    return {
+      folderId: "folder",
+      description: null,
+      externalLink: "https://example.com/project",
+    };
   if (name === "library.info")
     return { path: "/tmp/My Pond.pond", name: "My Pond" };
   if (name === "library.recent") return [];
@@ -107,7 +136,12 @@ export function savedView(
   };
 }
 
-export function folderTransfer(id = "") {
+interface FolderTransfer extends SaveDragDataTransfer {
+  types: string[];
+  dropEffect: string;
+}
+
+export function folderTransfer(id = ""): FolderTransfer {
   const data = new Map<string, string>();
   const types: string[] = [];
   if (id) {
@@ -117,7 +151,7 @@ export function folderTransfer(id = "") {
   return {
     types,
     dropEffect: "none",
-    effectAllowed: "all" as DataTransfer["effectAllowed"],
+    effectAllowed: "all",
     setData(type: string, value: string) {
       data.set(type, value);
       if (!types.includes(type)) types.push(type);
@@ -158,6 +192,7 @@ export function createFolderSidebarHarness() {
       savedViewList.current = [];
       folderList.current = [];
       sidebarCounts.current = emptySidebarCounts();
+      queueSummary.current = emptyQueueSummary();
       localStorage.removeItem("pond:collapsed-folders");
       localStorage.removeItem("pond:folder-list-sort");
       pondQuery.mockClear();
@@ -250,6 +285,7 @@ export function createFolderSidebarHarness() {
           <QueryClientProvider client={queryClient}>
             <RouterProvider router={router} />
             <Dialog.Host />
+            <ToastHost />
           </QueryClientProvider>,
         );
       });

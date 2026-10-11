@@ -3,7 +3,6 @@ import { Button, Sidebar } from "@pond/ui";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import Fuse from "fuse.js";
 import { useMemo, useState } from "react";
-import { openSettings } from "@/features/settings/lib/open-settings";
 import {
   SETTINGS_MASTER_GROUPS,
   type SectionDef,
@@ -14,7 +13,7 @@ import {
   SETTINGS_SEARCH_INDEX,
   type SettingsSearchEntry,
 } from "@/features/settings/lib/search-index";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
+import { openSettings } from "@/shared/lib/open-settings";
 import styles from "./styles.module.css";
 
 interface SectionResult {
@@ -47,7 +46,6 @@ export function SettingsSidebarView({
 }) {
   const [query, setQuery] = useState("");
   const needle = query.trim();
-  const scrollFade = useScrollFade<HTMLDivElement>();
 
   const fuse = useMemo(
     () =>
@@ -110,14 +108,14 @@ export function SettingsSidebarView({
       role="navigation"
       aria-label="Settings"
     >
-      <Sidebar.Header className={styles.header}>
-        {onExit ? (
+      {onExit ? (
+        <Sidebar.Header className={styles.header}>
           <Button variant="ghost" size="sm" onClick={onExit}>
             <IconArrowLeftOutline18 aria-hidden />
             Exit settings
           </Button>
-        ) : null}
-      </Sidebar.Header>
+        </Sidebar.Header>
+      ) : null}
       <div className={styles.search}>
         <Sidebar.Search
           aria-label="Search settings"
@@ -126,7 +124,7 @@ export function SettingsSidebarView({
           placeholder="Search…"
         />
       </div>
-      <Sidebar.Scroll {...scrollFade}>
+      <Sidebar.Scroll>
         {results === null ? (
           SETTINGS_MASTER_GROUPS.map((group) => (
             <Sidebar.Group key={group.group}>

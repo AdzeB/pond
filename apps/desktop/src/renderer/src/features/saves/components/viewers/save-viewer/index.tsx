@@ -28,7 +28,7 @@ import {
 } from "@/features/saves/lib/media/viewer-item";
 import { openSave } from "@/features/saves/lib/save-nav";
 import type { Save } from "@/features/saves/types";
-import { useResolvedTheme } from "@/features/settings/hooks/use-resolved-theme";
+import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
 
 interface SaveViewerProps {
@@ -81,11 +81,6 @@ function ViewerItemContent({
     item.capability.surface === "temporal"
   ) {
     const slide = mediaSlideFor(save, item);
-    const noteMarkers = (save.videoNotes ?? []).map((note) => ({
-      id: note.id,
-      timeSec: note.timeSec,
-      fileIndex: note.fileIndex,
-    }));
     return (
       <Slide
         slide={slide}
@@ -96,7 +91,6 @@ function ViewerItemContent({
         title={save.title}
         artist={save.author}
         chapters={chapters}
-        noteMarkers={noteMarkers}
         slideNavigation={navigation}
       />
     );

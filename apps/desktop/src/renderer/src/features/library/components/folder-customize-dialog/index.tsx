@@ -1,13 +1,26 @@
-import { Button, Chip, Dialog, Field, Input } from "@pond/ui";
+import { IconDotsOutline12 } from "@pond/icons/outline/12";
+import {
+  Button,
+  Chip,
+  cssVars,
+  Dialog,
+  Field,
+  Input,
+  Popover,
+  Tooltip,
+} from "@pond/ui";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
+import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
+import { folders } from "@/features/library/state/folders";
 import {
   FOLDER_ICONS,
   FOLDER_SWATCHES,
+  FolderIcon,
   type FolderIconId,
-} from "@/features/library/components/folder-sidebar/folder-icons";
-import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
-import { folders } from "@/features/library/state/folders";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
+  folderColorCss,
+} from "@/shared/lib/folder-icons";
+import { gentleSpring } from "@/shared/lib/motion";
 import styles from "./styles.module.css";
 
 interface FolderCustomizeDialogProps {
@@ -26,74 +39,75 @@ export function FolderCustomizeDialog({
   onClose,
 }: FolderCustomizeDialogProps) {
   const initialIcon = folderIcon ?? "folder";
+  const [name, setName] = useState(folder.name);
   const [icon, setIcon] = useState<FolderIconId>(initialIcon);
   const [color, setColor] = useState<string | null>(folder.color);
   const [description, setDescription] = useState("");
   const [initialDescription, setInitialDescription] = useState("");
-  const [externalLink, setExternalLink] = useState("");
-  const [initialExternalLink, setInitialExternalLink] = useState("");
+  const [externalLink, setExternalLink] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const scrollFade = useScrollFade<HTMLDivElement>();
+  const reduceMotion = useReducedMotion();
+  const trimmedName = name.trim();
   const changed =
+    trimmedName !== folder.name ||
     icon !== initialIcon ||
     color !== folder.color ||
-    description !== initialDescription ||
-    externalLink !== initialExternalLink;
+    description !== initialDescription;
 
   useEffect(() => {
+    let current = true;
     void window.pond
       .query("folders.metadata.get", { folderId: folder.id })
       .then((metadata) => {
+        if (!current) return;
         const nextDescription = metadata.description ?? "";
-        const nextExternalLink = metadata.externalLink ?? "";
         setDescription(nextDescription);
         setInitialDescription(nextDescription);
-        setExternalLink(nextExternalLink);
-        setInitialExternalLink(nextExternalLink);
+        setExternalLink(metadata.externalLink);
       });
+    return () => {
+      current = false;
+    };
   }, [folder.id]);
 
   async function submit(): Promise<void> {
-    if (!changed) return;
-    const nextExternalLink = externalLink.trim();
-    if (nextExternalLink) {
-      try {
-        const parsed = new URL(nextExternalLink);
-        if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-          throw new Error("Unsupported protocol");
-        }
-      } catch {
-        setError("Enter a valid HTTP or HTTPS link.");
-        return;
-      }
-    }
+    if (!changed || !trimmedName) return;
     setBusy(true);
     setError(null);
     try {
-      const metadataChanged =
-        description !== initialDescription ||
-        externalLink !== initialExternalLink;
-      const [, , metadataResult] = await Promise.all([
+      const results = await Promise.all([
+        trimmedName !== folder.name
+          ? window.pond.query("folders.rename", {
+              id: folder.id,
+              name: trimmedName,
+            })
+          : Promise.resolve({ ok: true }),
         icon !== initialIcon
-          ? saveFolderPresentation(folder.id, { icon })
-          : Promise.resolve(),
+          ? saveFolderPresentation(folder.id, { icon }).then(() => ({
+              ok: true,
+            }))
+          : Promise.resolve({ ok: true }),
         color !== folder.color
-          ? window.pond.query("folders.setColor", { id: folder.id, color })
-          : Promise.resolve(),
-        metadataChanged
+          ? window.pond
+              .query("folders.setColor", { id: folder.id, color })
+              .then(() => ({ ok: true }))
+          : Promise.resolve({ ok: true }),
+        description !== initialDescription
           ? window.pond.query("folders.metadata.set", {
               folderId: folder.id,
               description: description.trim() || null,
-              externalLink: nextExternalLink || null,
+              externalLink,
             })
           : Promise.resolve({ ok: true }),
       ]);
-      if (!metadataResult.ok) throw new Error("Folder details were rejected.");
+      if (results.some((result) => !result.ok)) {
+        throw new Error("Folder changes were rejected.");
+      }
       await folders.refresh();
       onClose();
     } catch {
-      setError("Couldn't customize folder. Try again.");
+      setError("Couldn't save folder. Try again.");
     } finally {
       setBusy(false);
     }
@@ -109,89 +123,68 @@ export function FolderCustomizeDialog({
     >
       <Dialog.Portal>
         <Dialog.Backdrop />
-        <Dialog.Popup className={styles.popup}>
+        <Dialog.Popup className={styles.popup} aria-label="Customize Folder">
           <form
             onSubmit={(event) => {
               event.preventDefault();
               void submit();
             }}
           >
-            <Dialog.Header>
-              <Dialog.Title>Customize Folder</Dialog.Title>
-              <Dialog.Close disabled={busy} />
-            </Dialog.Header>
-            <Dialog.Content {...scrollFade}>
-              <Dialog.Description>
-                Choose how this folder looks and add optional details.
-              </Dialog.Description>
-              <fieldset className={styles.section} disabled={busy}>
-                <legend className={styles.legend}>Details</legend>
-                <div className={styles.fields}>
-                  <Field.Root>
-                    <Field.Label>Description</Field.Label>
-                    <Input.Root>
-                      <Field.Control
-                        render={<Input.Textarea rows={3} />}
-                        value={description}
-                        onValueChange={setDescription}
-                        maxLength={4000}
-                      />
-                    </Input.Root>
-                  </Field.Root>
-                  <Field.Root>
-                    <Field.Label>External Link</Field.Label>
-                    <Input.Root>
-                      <Field.Control
-                        render={<Input.Field type="url" />}
-                        value={externalLink}
-                        onValueChange={setExternalLink}
-                        placeholder="https://"
-                        maxLength={2048}
-                      />
-                    </Input.Root>
-                  </Field.Root>
-                </div>
-              </fieldset>
-              <fieldset className={styles.section} disabled={busy}>
-                <legend className={styles.legend}>Icon</legend>
-                <div className={styles.options}>
-                  {FOLDER_ICONS.map(({ id, label, Icon }) => (
-                    <Button
-                      key={id}
-                      type="button"
-                      size="lg"
-                      width="full"
-                      variant={icon === id ? "tertiary" : "ghost"}
-                      className={styles.option}
-                      aria-pressed={icon === id}
-                      onClick={() => setIcon(id)}
+            <Dialog.Header data-empty />
+            <Dialog.Content className={styles.content}>
+              <div className={styles.hero}>
+                <div
+                  className={styles.tile}
+                  style={cssVars({
+                    "--tile-color":
+                      folderColorCss(color) ?? "var(--ds-gray-11)",
+                  })}
+                >
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    <motion.span
+                      key={icon}
+                      className={styles.glyph}
+                      initial={{ opacity: 0, scale: 0.5, filter: "blur(4px)" }}
+                      animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                      exit={{ opacity: 0, scale: 0.5, filter: "blur(4px)" }}
+                      transition={reduceMotion ? { duration: 0 } : gentleSpring}
                     >
-                      <Icon />
-                      {label}
-                    </Button>
-                  ))}
+                      <FolderIcon name={icon} />
+                    </motion.span>
+                  </AnimatePresence>
+                  <AppearancePicker
+                    icon={icon}
+                    color={color}
+                    disabled={busy}
+                    onIconChange={setIcon}
+                    onColorChange={setColor}
+                  />
                 </div>
-              </fieldset>
-              <fieldset className={styles.section} disabled={busy}>
-                <legend className={styles.legend}>Color</legend>
-                <div className={styles.colors}>
-                  {FOLDER_SWATCHES.map((swatch) => (
-                    <Button
-                      key={swatch.label}
-                      type="button"
-                      size="lg"
-                      width="full"
-                      variant={color === swatch.id ? "tertiary" : "ghost"}
-                      className={styles.option}
-                      aria-pressed={color === swatch.id}
-                      onClick={() => setColor(swatch.id)}
-                    >
-                      <Chip.Swatch color={swatch.css} />
-                      {swatch.label}
-                    </Button>
-                  ))}
-                </div>
-              </fieldset>
+              </div>
+              <Field.Root>
+                <Field.Label>Name</Field.Label>
+                <Input.Root>
+                  <Field.Control
+                    render={<Input.Field />}
+                    value={name}
+                    onValueChange={setName}
+                    maxLength={255}
+                    disabled={busy}
+                  />
+                </Input.Root>
+              </Field.Root>
+              <Field.Root>
+                <Field.Label>Description</Field.Label>
+                <Input.Root>
+                  <Field.Control
+                    render={<Input.Textarea rows={3} />}
+                    value={description}
+                    onValueChange={setDescription}
+                    maxLength={4000}
+                    disabled={busy}
+                  />
+                </Input.Root>
+              </Field.Root>
               {error ? (
                 <p className={styles.error} role="alert">
                   {error}
@@ -199,7 +192,12 @@ export function FolderCustomizeDialog({
               ) : null}
             </Dialog.Content>
             <Dialog.Footer>
-              <Dialog.Confirm type="submit" loading={busy} disabled={!changed}>
+              <Dialog.Cancel disabled={busy} />
+              <Dialog.Confirm
+                type="submit"
+                loading={busy}
+                disabled={!changed || !trimmedName}
+              >
                 Save
               </Dialog.Confirm>
             </Dialog.Footer>
@@ -207,5 +205,87 @@ export function FolderCustomizeDialog({
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
+  );
+}
+
+interface AppearancePickerProps {
+  icon: FolderIconId;
+  color: string | null;
+  disabled: boolean;
+  onIconChange: (icon: FolderIconId) => void;
+  onColorChange: (color: string | null) => void;
+}
+
+function AppearancePicker({
+  icon,
+  color,
+  disabled,
+  onIconChange,
+  onColorChange,
+}: AppearancePickerProps) {
+  return (
+    <Popover.Root>
+      <Tooltip label="Icon and Color">
+        <Popover.Trigger
+          render={
+            <Button
+              type="button"
+              icon
+              size="sm"
+              variant="secondary"
+              rounding="pill"
+              className={styles.edit}
+              disabled={disabled}
+            />
+          }
+          aria-label="Icon and Color"
+        >
+          <IconDotsOutline12 />
+        </Popover.Trigger>
+      </Tooltip>
+      <Popover.Portal>
+        <Popover.Positioner side="bottom" sideOffset={8}>
+          <Popover.Popup className={styles.picker} aria-label="Icon and Color">
+            <div className={styles.grid}>
+              {FOLDER_ICONS.map(({ id, label, Icon }) => (
+                <Tooltip key={id} label={label}>
+                  <Button
+                    type="button"
+                    icon
+                    size="md"
+                    variant={icon === id ? "tertiary" : "ghost"}
+                    aria-label={label}
+                    aria-pressed={icon === id}
+                    onClick={() => onIconChange(id)}
+                  >
+                    <Icon />
+                  </Button>
+                </Tooltip>
+              ))}
+            </div>
+            <div className={styles.swatches}>
+              {FOLDER_SWATCHES.map((swatch) => (
+                <Tooltip key={swatch.label} label={swatch.label}>
+                  <Button
+                    type="button"
+                    icon
+                    size="md"
+                    variant="ghost"
+                    aria-label={swatch.label}
+                    aria-pressed={color === swatch.id}
+                    onClick={() => onColorChange(swatch.id)}
+                  >
+                    <Chip.Swatch
+                      color={swatch.css}
+                      selected={color === swatch.id}
+                    />
+                  </Button>
+                </Tooltip>
+              ))}
+            </div>
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }

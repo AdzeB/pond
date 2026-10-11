@@ -21,9 +21,9 @@ import {
 } from "@/features/library/lib/zoom";
 import {
   defaultPredicateFor,
+  parseSearchInput,
   predicateIsActive,
-} from "@/features/search/lib/filter-helpers";
-import { parseSearchInput } from "@/features/search/lib/syntax";
+} from "@/features/search/query";
 import { notify } from "@/shared/lib/toast";
 import {
   type FolderPresentation,
@@ -392,7 +392,7 @@ export function setCombinator(combinator: Combinator): void {
   );
 }
 
-export function folderPresentationSnapshot(): Omit<
+function folderPresentationSnapshot(): Omit<
   FolderPresentation,
   "manualOrder" | "pinnedIds" | "coverSaveId"
 > {
@@ -412,7 +412,7 @@ function persistPresentation(): void {
   void saveFolderPresentation(id, folderPresentationSnapshot()).catch(() =>
     notify({
       id: "folder-view-save",
-      title: "Couldn’t save folder view settings",
+      title: "Couldn't save folder view settings",
     }),
   );
 }

@@ -17,7 +17,14 @@ export function whisperModelVersion(): string {
   return onDeviceModelVersion(TRANSCRIPTION_MODEL, 2);
 }
 
-async function decodeMono16k(url: string): Promise<Float32Array> {
+export interface DecodeMono16kOptions {
+  maxSamples?: number;
+}
+
+export async function decodeMono16k(
+  url: string,
+  options: DecodeMono16kOptions = {},
+): Promise<Float32Array> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`fetch failed (${res.status}) for ${url}`);
   const bytes = await res.arrayBuffer();
@@ -29,10 +36,13 @@ async function decodeMono16k(url: string): Promise<Float32Array> {
   const ctx = new Ctx({ sampleRate: 16000 });
   try {
     const buffer = await ctx.decodeAudioData(bytes);
+    const length = Math.min(
+      buffer.length,
+      options.maxSamples ?? Number.POSITIVE_INFINITY,
+    );
     if (buffer.numberOfChannels === 1) {
-      return buffer.getChannelData(0).slice();
+      return buffer.getChannelData(0).slice(0, length);
     }
-    const length = buffer.length;
     const channels = buffer.numberOfChannels;
     const mono = new Float32Array(length);
     for (let ch = 0; ch < channels; ch += 1) {

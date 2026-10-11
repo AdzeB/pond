@@ -37,12 +37,22 @@ function destinationCrumbs(base: string): Breadcrumb[] | null {
       return [{ label: "Tags", path: base }];
     case "/untagged":
       return [{ label: "Untagged", path: base }];
+    case "/recently-added":
+      return [
+        {
+          label: "Recently Added",
+          path: base,
+          nav: { kind: "recentlyAdded" },
+        },
+      ];
     case "/recents":
       return [{ label: "Recently Used", path: base, nav: { kind: "recents" } }];
     case "/downloads":
       return [{ label: "Downloads", path: base, nav: { kind: "downloads" } }];
     case "/trash":
       return [{ label: "Trash", path: base, nav: { kind: "trash" } }];
+    case "/shadows":
+      return [{ label: "Shadow Lab", path: base }];
     default:
       break;
   }

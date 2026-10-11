@@ -12,6 +12,7 @@ export const SIDEBAR_DESTINATION_GROUPS = [
       "uncategorized",
       "assistant",
       "untagged",
+      "recentlyAdded",
       "recentlyUsed",
       "tags",
       "random",
@@ -28,6 +29,7 @@ export const SIDEBAR_DESTINATION_LABELS = {
   uncategorized: "Uncategorized",
   assistant: "Assistant",
   untagged: "Untagged",
+  recentlyAdded: "Recently Added",
   recentlyUsed: "Recently Used",
   tags: "Tags",
   random: "Random",
@@ -35,28 +37,6 @@ export const SIDEBAR_DESTINATION_LABELS = {
   downloads: "Downloads",
   sources: "Sources",
 } as const satisfies Record<SidebarDestination, string>;
-
-export function moveSidebarDestination(
-  order: readonly SidebarDestination[],
-  group: readonly SidebarDestination[],
-  destination: SidebarDestination,
-  targetIndex: number,
-): SidebarDestination[] {
-  const groupOrder = order.filter((item) => group.includes(item));
-  const sourceIndex = groupOrder.indexOf(destination);
-  if (sourceIndex < 0) return [...order];
-  groupOrder.splice(sourceIndex, 1);
-  groupOrder.splice(
-    Math.max(0, Math.min(groupOrder.length, targetIndex)),
-    0,
-    destination,
-  );
-
-  let groupIndex = 0;
-  return order.map((item) =>
-    group.includes(item) ? (groupOrder[groupIndex++] ?? item) : item,
-  );
-}
 
 export function moveVisibleSidebarDestination(
   order: readonly SidebarDestination[],

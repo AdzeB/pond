@@ -2,7 +2,7 @@ import { COLOR_PRESETS } from "@pond/schema/filters/color";
 import { FIELD_META } from "@pond/schema/filters/meta";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { z } from "zod";
-import { DATE_PRESETS } from "@/features/search/lib/syntax";
+import { DATE_PRESETS } from "@/features/search/query";
 
 export interface FilterOption {
   label: string;
@@ -48,7 +48,6 @@ export const FILTER_SECTIONS = [
       "note",
       "caption",
       "transcript",
-      "comment",
       "url",
     ],
   },

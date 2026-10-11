@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { FolderIcon } from "@/features/library/components/folder-sidebar/folder-icons";
 import { folderCoverUrl } from "@/features/library/lib/folder-cover";
-import { normalise } from "@/features/saves/lib/reconcile";
+import { normalise } from "@/features/saves";
 import type { Save } from "@/features/saves/types";
+import { FolderIcon } from "@/shared/lib/folder-icons";
 import styles from "./styles.module.css";
 
 export function FolderCover({

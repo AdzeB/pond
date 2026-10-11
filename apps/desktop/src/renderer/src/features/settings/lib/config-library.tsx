@@ -1,4 +1,4 @@
-import type { SectionConfig } from "@/features/settings/components/engine/engine";
+import type { SectionConfig } from "@/features/settings/components/engine";
 import { LibrarySettings } from "@/features/settings/components/sections/library";
 import { trashSection } from "@/features/settings/lib/config-trash";
 

@@ -1,11 +1,11 @@
-import { AppIconRow } from "@/features/settings/components/sections/appearance/app-icon";
 import {
   AppearanceRow,
   customColorsVisible,
   ThemeColorRow,
   ThemeContrastRow,
   ThemePresetRow,
-} from "@/features/settings/components/sections/appearance/appearance";
+} from "@/features/settings/components/sections/appearance";
+import { AppIconRow } from "@/features/settings/components/sections/appearance/app-icon";
 import { SoundPreferences } from "@/features/settings/components/sections/general/feedback";
 import {
   defineCustomSection,

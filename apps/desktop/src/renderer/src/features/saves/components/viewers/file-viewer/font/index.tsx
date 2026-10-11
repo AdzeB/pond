@@ -7,26 +7,17 @@ import {
   IconTypographyOutline18,
 } from "@pond/icons/outline/18";
 import { Button, Input, Slider } from "@pond/ui";
-import {
-  type CSSProperties,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
-import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerFallback } from "@/features/saves/components/viewers/viewer-fallback";
 import { ViewerResultCount } from "@/features/saves/components/viewers/viewer-result-count";
 import { ViewerToolbarGroups } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import { InlineNameEditor } from "@/shared/components/inline-name-editor";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { formatBytes } from "@/shared/lib/format";
-import { FileActions, navigationControls } from "..";
+import { FileActions, navigationControls } from "../file-bar";
 import type { ViewerProps } from "../types";
-import { FontActivate } from "./activate";
 import styles from "./styles.module.css";
-
-export { FontActivate };
 
 const DEFAULT_SPECIMEN = "Sphinx of black quartz, judge my vow.";
 const GLYPHS =
@@ -52,7 +43,6 @@ export function FontViewer(props: ViewerProps & { url: string }) {
   const [mode, setMode] = useState<FontMode>("specimen");
   const [background, setBackground] = useState<"light" | "dark">("light");
   const [renaming, setRenaming] = useState(false);
-  const scrollFade = useScrollFade<HTMLDivElement>();
   const family = useMemo(
     () => `pond-preview-${props.save.id.replace(/[^a-zA-Z0-9_-]/g, "")}`,
     [props.save.id],
@@ -100,7 +90,7 @@ export function FontViewer(props: ViewerProps & { url: string }) {
   };
 
   return (
-    <div className={styles.fontRoot} style={style} data-background={background}>
+    <div className={styles.root} style={style} data-background={background}>
       <ChromePortal slot="top">
         <ViewerHud.Bar
           label="Font"
@@ -176,7 +166,7 @@ export function FontViewer(props: ViewerProps & { url: string }) {
           }
         />
       </ChromePortal>
-      <div className={styles.scroll} {...scrollFade}>
+      <div className={styles.scroll}>
         {mode === "specimen" ? (
           <div className={styles.specimen}>{specimen || DEFAULT_SPECIMEN}</div>
         ) : null}
@@ -198,7 +188,7 @@ export function FontViewer(props: ViewerProps & { url: string }) {
         ) : null}
         {mode === "information" ? (
           <>
-            <dl className={styles.fontMetadata}>
+            <dl className={styles.metadata}>
               <div>
                 <dt>File</dt>
                 <dd>{props.file.path}</dd>
@@ -224,11 +214,11 @@ export function FontViewer(props: ViewerProps & { url: string }) {
                 <dd>{formatBytes(props.file.size)}</dd>
               </div>
             </dl>
-            <div className={styles.fontInfoActions}>
+            <div className={styles["info-actions"]}>
               {renaming ? (
                 <InlineNameEditor
                   name={props.save.title ?? props.file.family ?? "Untitled"}
-                  className={styles.fontNameEditor}
+                  className={styles["name-editor"]}
                   ariaLabel="Font name"
                   errorTitle="Could not rename this font."
                   onSave={async (name) => {

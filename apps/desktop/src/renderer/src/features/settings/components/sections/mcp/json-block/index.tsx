@@ -1,15 +1,13 @@
 import { Button } from "@pond/ui";
 import { useState } from "react";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import styles from "./styles.module.css";
 
 export function JsonBlock({ json }: { json: string }) {
   const [copied, setCopied] = useState(false);
   const [copying, setCopying] = useState(false);
-  const scrollFade = useScrollFade<HTMLPreElement>();
   return (
     <>
-      <pre className={styles.code} {...scrollFade}>
+      <pre className={styles.code}>
         <code>{json}</code>
       </pre>
       <Button

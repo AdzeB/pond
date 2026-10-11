@@ -1,11 +1,23 @@
+import type { MenuItemSpec } from "@pond/ui";
 import { isValidElement } from "react";
 import { describe, expect, it } from "vitest";
+import { filterMenuItems } from "@/shared/components/spec-context-menu/filter";
 import {
   menuLabels,
   menuLabelsWithoutIcons,
   topLevelMenuLabels,
 } from "@/shared/test/menu-labels";
-import { buildNewMenuItems, filterMenuItems } from "./spec";
+import { buildNewMenuItems } from "./spec";
+
+function rows(items: MenuItemSpec[]): string[] {
+  return items.map((item) =>
+    "label" in item
+      ? [...("breadcrumb" in item ? (item.breadcrumb ?? []) : []), item.label]
+          .map(String)
+          .join(" › ")
+      : item.type,
+  );
+}
 
 describe("new menu spec", () => {
   it("gives every searchable action an icon", () => {
@@ -24,8 +36,6 @@ describe("new menu spec", () => {
       "New Note",
       "Photoshop Document",
       "Word Document",
-      "Capture",
-      "Capture Screenshot",
       "Import",
       "Import Files",
       "Import Folders",
@@ -65,6 +75,10 @@ describe("new menu spec", () => {
       "Scan All",
       "Current List",
       "Selected",
+      "Review Organization",
+      "All Saves",
+      "Current List",
+      "Selected",
       "Rescan Library",
       "Verify Integrity",
       "Repair Library",
@@ -81,7 +95,6 @@ describe("new menu spec", () => {
     expect(labels).not.toContain("Tools");
     expect(topLevelMenuLabels(buildNewMenuItems(["word"]))).toEqual([
       "New",
-      "Capture",
       "Import",
       "Sources",
       "Library",
@@ -113,17 +126,18 @@ describe("new menu spec", () => {
   });
 
   it("filters nested actions by search", () => {
-    const labels = menuLabels(
-      filterMenuItems(buildNewMenuItems(["word"]), "scan all"),
-    );
-    expect(labels).toEqual(["Library · Find Duplicates · Scan All"]);
+    expect(
+      rows(filterMenuItems(buildNewMenuItems(["word"]), "scan all")),
+    ).toEqual([
+      "Library › Find Duplicates › Scan All",
+      "Library › Review Organization › All Saves",
+    ]);
   });
 
-  it("keeps group children when searching a leaf", () => {
-    const labels = menuLabels(filterMenuItems(buildNewMenuItems([]), "eagle"));
-    expect(labels).toEqual([
-      "Import · Import Eagle Package",
-      "Import · Import Eagle Library",
+  it("flattens submenu matches into breadcrumb rows", () => {
+    expect(rows(filterMenuItems(buildNewMenuItems([]), "eagle"))).toEqual([
+      "Import › Import Eagle Package",
+      "Import › Import Eagle Library",
     ]);
   });
 });

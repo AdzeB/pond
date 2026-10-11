@@ -1,39 +1,267 @@
+import { Button, Dialog } from "@pond/ui";
+import {
+  type ConversionCapability,
+  type ConversionPreset,
+  ConversionPresetSchema,
+} from "@shared/conversion-contracts";
 import { useSelector } from "@tanstack/react-store";
-import { lazy, Suspense, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   closeConversionDialog,
-  conversionDialogStore,
+  type ExportMode,
 } from "@/features/library/state/conversion-dialog";
+import { ensureSaves, savesStore } from "@/features/saves/pool";
+import { errorCopy } from "@/shared/lib/error-copy";
+import {
+  canConvert,
+  formatLabel,
+  type SizeMode,
+  sizeModeFor,
+} from "./export-plan";
+import { ExportSettings } from "./export-settings";
+import { ExportField } from "./fields";
+import { type ExportRow, FileList } from "./file-list";
+import styles from "./styles.module.css";
+import { useConversionJob } from "./use-conversion-job";
 
-import { DialogLoadError } from "@/shared/components/dialog-load-error";
+const EXPORT_MODE_ITEMS: Array<{ value: ExportMode; label: string }> = [
+  { value: "files", label: "Original Files" },
+  { value: "converted", label: "Converted Files" },
+  { value: "eagle-package", label: "Eagle Package" },
+  { value: "pond-package", label: "Pond Package" },
+  { value: "csv", label: "CSV Metadata" },
+];
 
-const ConversionDialog = lazy(() =>
-  import("./dialog")
-    .then((module) => ({ default: module.ConversionDialog }))
-    .catch(() => ({
-      default: ({ open }: { open: boolean }) => (
-        <DialogLoadError
-          open={open}
-          title="Couldn’t Open Export"
-          onClose={closeConversionDialog}
-        />
-      ),
-    })),
-);
-
-export function ConversionDialogHost() {
-  const state = useSelector(conversionDialogStore, (state) => state);
-  const [last, setLast] = useState(state);
-  if (state && state !== last) setLast(state);
-  return last ? (
-    <Suspense fallback={null}>
-      <ConversionDialog
-        key={last.id}
-        ids={last.ids}
-        fileIndex={last.fileIndex}
-        initialMode={last.mode}
-        open={state !== null}
-      />
-    </Suspense>
-  ) : null;
+export function ConversionDialog({
+  ids,
+  fileIndex,
+  initialMode,
+  open,
+}: {
+  ids: readonly string[];
+  fileIndex: number;
+  initialMode: ExportMode;
+  open: boolean;
+}) {
+  const [mode, setMode] = useState<ExportMode>(initialMode);
+  const [preset, setPreset] = useState<ConversionPreset>(() =>
+    ConversionPresetSchema.parse({
+      id: crypto.randomUUID(),
+      name: "Web Image",
+      format: "webp",
+    }),
+  );
+  const [sizeMode, setSizeMode] = useState<SizeMode>(() => sizeModeFor(preset));
+  const [removed, setRemoved] = useState<ReadonlySet<string>>(new Set());
+  const [presets, setPresets] = useState<ConversionPreset[]>([]);
+  const [capabilities, setCapabilities] = useState<ConversionCapability[]>([]);
+  const [conversionOptionsLoaded, setConversionOptionsLoaded] = useState(false);
+  const { job, running, busy, error, setError, run, start, cancel, reset } =
+    useConversionJob();
+  const converting = mode === "converted";
+  const selectedCapability = capabilities.find(
+    (capability) => capability.format === preset.format,
+  );
+  const included = ids.filter((id) => !removed.has(id));
+  const saves = useSelector(
+    savesStore,
+    (state) => included.map((id) => state.byId.get(id)),
+    {
+      compare: (a, b) =>
+        a.length === b.length && a.every((save, index) => save === b[index]),
+    },
+  );
+  const rows: ExportRow[] = included.map((id, index) => {
+    const save = saves[index];
+    const file = save ? (save.files?.[fileIndex] ?? null) : null;
+    return {
+      id,
+      save,
+      file,
+      skipped:
+        converting &&
+        save !== undefined &&
+        (!file || !canConvert(file, selectedCapability)),
+    };
+  });
+  const exportIds = rows.filter((row) => !row.skipped).map((row) => row.id);
+  const sizeValid =
+    sizeMode === "original" ||
+    (sizeMode !== "height" && preset.width !== null) ||
+    (sizeMode === "height" && preset.height !== null);
+  useEffect(() => {
+    void ensureSaves(ids).catch(() => undefined);
+  }, [ids]);
+  useEffect(() => {
+    if (!converting || conversionOptionsLoaded) return;
+    void Promise.all([
+      window.pond.query("conversion.presets", {}),
+      window.pond.query("conversion.capabilities", {}),
+    ])
+      .then(([storedPresets, supportedFormats]) => {
+        setPresets(storedPresets);
+        setCapabilities(supportedFormats);
+        setConversionOptionsLoaded(true);
+      })
+      .catch((cause) =>
+        setError(errorCopy(cause, "Couldn't load presets. Try again.")),
+      );
+  }, [converting, conversionOptionsLoaded, setError]);
+  function save(next: ConversionPreset) {
+    return run(async () => {
+      const saved = await window.pond.query("conversion.savePreset", {
+        preset: next,
+      });
+      setPreset(saved);
+      setPresets(await window.pond.query("conversion.presets", {}));
+    }, "Couldn't save the preset. Try again.");
+  }
+  function promptPreset() {
+    Dialog.prompt({
+      title: "Save Preset",
+      description:
+        "Name these settings to reuse them the next time you export.",
+      confirmLabel: "Save",
+      initialValue: preset.name,
+      onConfirm: async (name) => {
+        if (name.trim()) await save({ ...preset, name: name.trim() });
+      },
+    });
+  }
+  const count = `${included.length} ${included.length === 1 ? "save" : "saves"}`;
+  const skipped = rows.length - exportIds.length;
+  return (
+    <Dialog.Root
+      open={open}
+      onOpenChange={(value) => {
+        if (!value) closeConversionDialog();
+      }}
+    >
+      <Dialog.Portal>
+        <Dialog.Backdrop />
+        <Dialog.Popup className={styles.popup}>
+          <Dialog.Header>
+            <Dialog.Title>Export</Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Description>{`Choose how to export ${count}, then select a destination.`}</Dialog.Description>
+          <div className={styles.body}>
+            <Dialog.Content className={styles.settings}>
+              <fieldset disabled={busy || running} className={styles.fields}>
+                <ExportField.Select
+                  label="Export Type"
+                  value={mode}
+                  items={EXPORT_MODE_ITEMS}
+                  onChange={(nextMode) => {
+                    setMode(nextMode);
+                    reset();
+                  }}
+                />
+                {converting ? (
+                  <ExportSettings
+                    preset={preset}
+                    onPresetChange={setPreset}
+                    sizeMode={sizeMode}
+                    onSizeModeChange={setSizeMode}
+                    presets={presets}
+                    capabilities={capabilities}
+                    disabled={busy || running}
+                  />
+                ) : null}
+              </fieldset>
+              {job ? (
+                <div role="status" className={styles.job}>
+                  <p>
+                    {job.status === "running"
+                      ? "Exporting"
+                      : job.status === "complete"
+                        ? "Export Complete"
+                        : job.status === "cancelled"
+                          ? "Export Canceled"
+                          : "Export Failed"}
+                    : {job.completed} of {job.total} files.
+                  </p>
+                  <progress value={job.progress} max={1} />
+                  <p className={styles.hint}>{job.directory}</p>
+                  {job.error && job.status === "failed" ? (
+                    <p role="alert">{job.error}</p>
+                  ) : null}
+                  {job.status !== "complete" && job.completed > 0 ? (
+                    <p className={styles.hint}>
+                      Completed files remain in the export folder.
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+              {error ? (
+                <p role="alert" className={styles.error}>
+                  {error}
+                </p>
+              ) : null}
+            </Dialog.Content>
+            <div className={styles.files}>
+              {skipped > 0 ? (
+                <p className={styles.skipped} role="status">
+                  {`${skipped} ${skipped === 1 ? "save" : "saves"} can't be converted and will be skipped.`}
+                </p>
+              ) : null}
+              <FileList
+                rows={rows}
+                target={
+                  converting && selectedCapability
+                    ? {
+                        label: formatLabel(preset.format),
+                        box: { width: preset.width, height: preset.height },
+                      }
+                    : null
+                }
+                disabled={busy || running}
+                onRemove={(id) =>
+                  setRemoved((current) => new Set([...current, id]))
+                }
+              />
+            </div>
+          </div>
+          <Dialog.Footer
+            leading={
+              converting ? (
+                <Button
+                  variant="ghost"
+                  disabled={
+                    busy ||
+                    running ||
+                    !ConversionPresetSchema.safeParse(preset).success
+                  }
+                  onClick={promptPreset}
+                >
+                  Save Preset
+                </Button>
+              ) : undefined
+            }
+          >
+            <Dialog.Cancel>Close</Dialog.Cancel>
+            {running ? (
+              <Button onClick={() => void cancel()}>Cancel</Button>
+            ) : (
+              <Button
+                variant="primary"
+                disabled={
+                  busy ||
+                  exportIds.length === 0 ||
+                  (converting &&
+                    (!sizeValid ||
+                      !ConversionPresetSchema.safeParse(preset).success))
+                }
+                loading={busy}
+                onClick={() =>
+                  void start({ mode, ids: exportIds, fileIndex, preset })
+                }
+              >
+                {busy ? "Working" : "Export"}
+              </Button>
+            )}
+          </Dialog.Footer>
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
 }

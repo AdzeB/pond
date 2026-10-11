@@ -3,7 +3,7 @@ import {
   menuLabels as labels,
   menuLabelsWithoutIcons,
 } from "@/shared/test/menu-labels";
-import { buildTagMenuItems, type TagMenuActions } from "./context-menu";
+import { buildTagMenuItems, type TagMenuActions } from ".";
 
 function actions(overrides: Partial<TagMenuActions> = {}): TagMenuActions {
   return {

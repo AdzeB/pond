@@ -2,10 +2,7 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import { mergeRegister } from "@lexical/utils";
 import { COMMAND_PRIORITY_HIGH, DRAGOVER_COMMAND, DROP_COMMAND } from "lexical";
 import { useEffect, useRef } from "react";
-import {
-  isLibrarySaveDrag,
-  saveDropIds,
-} from "@/features/saves/lib/start-drag";
+import { isLibrarySaveDrag, saveDropIds } from "@/features/saves";
 
 export function ComposerDrop({
   onDropIds,

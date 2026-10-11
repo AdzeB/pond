@@ -1,7 +1,7 @@
 import { typeLabelForPath } from "@shared/file-format";
 import { isThumbnailKind } from "@shared/save-file-names";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { DownloadingBadge } from "@/features/saves/components/card/media/downloading-badge";
+import { FailedBadge } from "@/features/saves/components/card/media/failed-badge";
 import { FilePreview } from "@/features/saves/components/card/media/file-preview";
 import { HoverGallery } from "@/features/saves/components/card/media/hover-gallery";
 import { HoverVideo } from "@/features/saves/components/card/media/hover-video";
@@ -9,7 +9,6 @@ import { CardImage } from "@/features/saves/components/card/media/image";
 import { TextPreview } from "@/features/saves/components/card/media/text-preview";
 import { RichFilePreview } from "@/features/saves/components/card/rich-file-preview";
 import type { LibraryCardView } from "@/features/saves/components/card/types";
-import { useIsVideoDownloading } from "@/features/saves/hooks/use-is-video-downloading";
 import { useMediaPickOptions } from "@/features/saves/hooks/use-media-pick-options";
 import { ensureTextCover } from "@/features/saves/lib/ensure-text-cover";
 import { richFilePreviewKind } from "@/features/saves/lib/media/rich-file-preview";
@@ -25,7 +24,7 @@ import { mediaTransformStyle } from "@/features/saves/lib/media-transform";
 import { shouldBlurSensitiveThumbnail } from "@/features/saves/lib/sensitive-content";
 import { isTextOnlySave, textBodyForSave } from "@/features/saves/lib/text";
 import type { Save, SaveFile } from "@/features/saves/types";
-import { usePrefs } from "@/features/settings/state/prefs";
+import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
 export const CardThumb = memo(function CardThumb({
@@ -111,9 +110,6 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
       save.width && save.height && save.width > 0 && save.height > 0,
     );
   }, [save.files, save.height, save.width, unit]);
-  const isDownloading = useIsVideoDownloading(save);
-  const pending = save.status === "ingesting" && !isDownloading;
-
   useEffect(() => {
     ensureTextCover(save);
   }, [save]);
@@ -199,11 +195,9 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
       data-thumbnail-bg={
         thumbnailBackground !== "none" ? thumbnailBackground : undefined
       }
-      data-pending={pending || undefined}
       data-multi-media={slides && !broken ? "true" : undefined}
       data-sensitive={blurSensitive || undefined}
       data-hover-zoom={viewer.hoverZoom || undefined}
-      aria-busy={pending || undefined}
       style={mediaTransformStyle(save)}
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
@@ -262,7 +256,7 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
           )
         ) : null}
       </div>
-      <DownloadingBadge save={save} isDownloading={isDownloading} />
+      <FailedBadge save={save} />
     </div>
   );
 });

@@ -1,6 +1,6 @@
 import { createCopyTranslator } from "@shared/localization";
 import { useEffect } from "react";
-import { usePrefs } from "@/features/settings/state/prefs";
+import { usePrefs } from "@/shared/state/prefs";
 
 const LOCALIZED_ATTRIBUTES = [
   "aria-label",

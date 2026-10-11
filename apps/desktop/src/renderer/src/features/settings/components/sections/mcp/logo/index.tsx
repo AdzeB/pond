@@ -23,7 +23,8 @@ export function HostLogo({ id }: { id: McpHostId }) {
         alt=""
         width={20}
         height={20}
-        className={id === "vscode" ? styles.brandLogo : styles.logo}
+        className={styles.logo}
+        data-fit={id === "vscode" ? "contain" : undefined}
       />
     );
   }

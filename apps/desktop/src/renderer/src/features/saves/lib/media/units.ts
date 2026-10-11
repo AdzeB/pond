@@ -10,16 +10,11 @@ import {
   isOriginalImageKind,
   isTextCardThumbnailPath,
   isThumbnailKind,
-  LEGACY_COVER_KIND,
-  LEGACY_CUSTOM_THUMBNAIL_KIND,
   THUMBNAIL_DARK_KIND,
   THUMBNAIL_KIND,
 } from "@shared/save-file-names";
 import {
   RENDER_TEXT_COVER_VERSION,
-  TEXT_COVER_DARK_KIND,
-  TEXT_COVER_KINDS,
-  TEXT_COVER_LIGHT_KIND,
   textCoverVersionFromRawJson,
 } from "@shared/text-card";
 import { hasArchive, isArchiveFile } from "@/features/saves/lib/media/archive";
@@ -33,15 +28,13 @@ import type { Save, SaveFile } from "@/features/saves/types";
 import {
   type ResolvedTheme,
   resolveCurrentTheme,
-} from "@/features/settings/hooks/use-resolved-theme";
-import { getPrefsSnapshot } from "@/features/settings/state/prefs";
+} from "@/shared/hooks/use-resolved-theme";
+import { getPrefsSnapshot } from "@/shared/state/prefs";
 
-const TWEET_SCREENSHOT_LEGACY_KIND = "tweet_screenshot";
 const TWEET_SCREENSHOT_LIGHT_KIND = "tweet_screenshot_light";
 const TWEET_SCREENSHOT_DARK_KIND = "tweet_screenshot_dark";
 
 const TWEET_SCREENSHOT_KINDS: ReadonlySet<string> = new Set([
-  TWEET_SCREENSHOT_LEGACY_KIND,
   TWEET_SCREENSHOT_LIGHT_KIND,
   TWEET_SCREENSHOT_DARK_KIND,
 ]);
@@ -90,21 +83,16 @@ export function buildMediaUnits(
       !TWEET_SCREENSHOT_KINDS.has(f.kind) &&
       !isQuoteScreenshotKind(f.kind),
   );
-  const covers = files.filter((f) => f.kind === LEGACY_COVER_KIND);
-  const hasVideo = files.some(isRenderableVideoFile);
-  const slides = hasVideo
-    ? files.filter((f) => f.kind !== LEGACY_COVER_KIND)
-    : files;
 
   const quoteUnits = buildQuoteScreenshotUnits(save, opts.theme);
 
-  const videos = slides.filter(isRenderableVideoFile);
-  const images = slides.filter(isImageFile);
+  const videos = files.filter(isRenderableVideoFile);
+  const images = files.filter(isImageFile);
 
   if (videos.length === 1 && images.length <= 1 && quoteUnits.length === 0) {
     const video = videos[0];
     if (!video) return [];
-    const poster = posters[0] ?? covers[0] ?? images[0];
+    const poster = posters[0] ?? images[0];
     const unit: MediaUnit = {
       key: video.path,
       url: buildPondUrl(save.id, video),
@@ -119,9 +107,9 @@ export function buildMediaUnits(
 
   const units: MediaUnit[] = [];
   let videoSeen = 0;
-  for (const f of slides) {
+  for (const f of files) {
     if (isRenderableVideoFile(f)) {
-      const poster = posters[videoSeen] ?? posters[0] ?? covers[0];
+      const poster = posters[videoSeen] ?? posters[0];
       const unit: MediaUnit = {
         key: f.path,
         url: buildPondUrl(save.id, f),
@@ -160,16 +148,6 @@ export function buildMediaUnits(
     ];
   }
 
-  const textCover = pickTextCover(save, opts.theme);
-  if (textCover) {
-    return [
-      {
-        key: textCover.path,
-        url: buildPondUrl(save.id, textCover),
-        isVideo: false,
-      },
-    ];
-  }
   return units;
 }
 
@@ -317,8 +295,7 @@ function pickThumbnailFile(
   return (
     files.find((file) => file.kind === preferred && usable(file)) ??
     files.find((file) => file.kind === other && usable(file)) ??
-    files.find((file) => file.kind === LEGACY_CUSTOM_THUMBNAIL_KIND) ??
-    (hasOriginal ? null : pickTextCover(save, theme))
+    null
   );
 }
 
@@ -340,24 +317,6 @@ function pickTweetScreenshot(
   return (
     files.find((f) => f.kind === preferredKind) ??
     files.find((f) => f.kind === otherKind) ??
-    files.find((f) => f.kind === TWEET_SCREENSHOT_LEGACY_KIND) ??
-    null
-  );
-}
-
-function pickTextCover(
-  save: Save,
-  theme: ResolvedTheme | undefined,
-): SaveFile | null {
-  const files = save.files ?? [];
-  const resolved = theme ?? resolveCurrentTheme();
-  const preferredKind =
-    resolved === "light" ? TEXT_COVER_LIGHT_KIND : TEXT_COVER_DARK_KIND;
-  const otherKind =
-    resolved === "light" ? TEXT_COVER_DARK_KIND : TEXT_COVER_LIGHT_KIND;
-  return (
-    files.find((f) => f.kind === preferredKind) ??
-    files.find((f) => f.kind === otherKind) ??
     null
   );
 }
@@ -375,8 +334,7 @@ export function needsTextCover(save: Save): boolean {
 }
 
 export function isImageFile(file: SaveFile): boolean {
-  if (isOriginalImageKind(file.kind) || file.kind === LEGACY_COVER_KIND)
-    return true;
+  if (isOriginalImageKind(file.kind)) return true;
   const previewKind = classifyLibraryFile(file.path, file.mimeType).previewKind;
   return previewKind === "direct-image" || previewKind === "native-image";
 }
@@ -393,7 +351,6 @@ type TypeKind =
 
 export function deriveTypeKind(file: SaveFile | null, save: Save): TypeKind {
   if (save.source === "web") return "link";
-  if (file && TEXT_COVER_KINDS.has(file.kind)) return "text";
 
   if (file) {
     const format = classifyLibraryFile(file.path, file.mimeType);
@@ -424,7 +381,6 @@ export function deriveTypeLabel(
   save: Save,
 ): string | null {
   if (save.source === "web") return "Web";
-  if (file && TEXT_COVER_KINDS.has(file.kind)) return "Text";
   if (arenaBlockClass(save) === "text") return "Text";
   if (
     !file &&

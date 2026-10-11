@@ -1,5 +1,4 @@
-import { mutateSave } from "@/features/saves/lib/mutate";
-import { pool } from "@/features/saves/state/pool";
+import { mutateSave, pool } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
 import type { Enricher } from "../types";
 

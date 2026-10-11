@@ -129,8 +129,27 @@ describe("app hotkeys in text fields", () => {
     expect(libraryChrome.getState().sidebarOpen).toBe(open);
   });
 
-  it("does not open search from a field", async () => {
+  it("opens search from a field", async () => {
     const input = document.createElement("input");
+    await mount(input);
+    const mac = navigator.platform.toLowerCase().includes("mac");
+    await act(async () => {
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "k",
+          metaKey: mac,
+          ctrlKey: !mac,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
+    expect(attr("search")).toBe("open");
+  });
+
+  it("leaves search to a field that handled the shortcut", async () => {
+    const input = document.createElement("input");
+    input.addEventListener("keydown", (event) => event.preventDefault());
     await mount(input);
     const mac = navigator.platform.toLowerCase().includes("mac");
     await act(async () => {

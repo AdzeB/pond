@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { DisplayPrefs } from "@/features/saves/state/display-prefs";
 import type { Save } from "@/features/saves/types";
+import { formatAbsolute } from "@/shared/lib/format";
 import { buildSaveCardModel } from "./model";
 
 const display: DisplayPrefs = {
@@ -65,7 +66,62 @@ describe("buildSaveCardModel", () => {
     expect(model.overlay.type).toEqual({ label: "JPG", kind: "image" });
     expect(model.overlay.source?.label).toBe("Twitter");
     expect(model.overlay.fileCount).toBe(2);
-    expect(model.overlay.hasNote).toBe(true);
+  });
+
+  it("puts the selected item info on the line under the title", () => {
+    const savedAt = Date.UTC(2025, 8, 26, 11, 57);
+    const createdAt = Date.UTC(2024, 0, 2, 8, 0);
+    const sample = save({
+      id: "info",
+      savedAt,
+      createdAt,
+      fileSize: 2048,
+      rating: 4,
+      tags: ["Lookbook", "Studio"],
+    });
+
+    expect(
+      buildSaveCardModel(sample, {}, display, 1.5, {
+        field: "created",
+        visible: true,
+      }).time,
+    ).toBe(formatAbsolute(savedAt));
+    expect(
+      buildSaveCardModel(sample, {}, display, 1.5, {
+        field: "modified",
+        visible: true,
+      }).time,
+    ).toBe(formatAbsolute(createdAt));
+    expect(
+      buildSaveCardModel(sample, {}, display, 1.5, {
+        field: "dimensions",
+        visible: true,
+      }).time,
+    ).toBe("1200 × 800");
+    expect(
+      buildSaveCardModel(sample, {}, display, 1.5, {
+        field: "fileSize",
+        visible: true,
+      }).time,
+    ).toBe("2 KiB");
+    expect(
+      buildSaveCardModel(sample, {}, display, 1.5, {
+        field: "tags",
+        visible: true,
+      }).time,
+    ).toBe("Lookbook, Studio");
+    expect(
+      buildSaveCardModel(sample, {}, display, 1.5, {
+        field: "rating",
+        visible: true,
+      }).time,
+    ).toBe("4");
+    expect(
+      buildSaveCardModel(sample, {}, display, 1.5, {
+        field: "tags",
+        visible: false,
+      }).time,
+    ).toBeNull();
   });
 
   it("omits chrome disabled by display preferences", () => {
@@ -83,7 +139,6 @@ describe("buildSaveCardModel", () => {
     expect(model.overlay.type).toBeNull();
     expect(model.overlay.source).toBeNull();
     expect(model.overlay.fileCount).toBeNull();
-    expect(model.overlay.hasNote).toBe(true);
   });
 
   it("uses a portrait page inside the container for dimensionless documents", () => {

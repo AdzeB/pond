@@ -3,7 +3,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MediaViewer } from "@/features/saves/components/viewers/media-viewer";
-import { ViewerChrome } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+import { ViewerChrome } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
 import { GeneratedRasterViewer } from ".";
@@ -93,7 +93,6 @@ describe("generated raster viewer", () => {
       expect(image?.getAttribute("src")).toContain(
         `${originalUrl}?preview=2048`,
       );
-      expect(labeled("Comment")).not.toBeNull();
       expect(labeled("Actual Size")).not.toBeNull();
       expect(labeled("Fit to Window")).not.toBeNull();
       expect(labeled("Open in Default App")).not.toBeNull();

@@ -2,10 +2,9 @@ import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
-import { normalise } from "@/features/saves/lib/reconcile";
-import { pool } from "@/features/saves/state/pool";
-import { resultNavigation } from "@/features/saves/state/result-navigation";
-import { selection } from "@/features/saves/state/selection";
+import { normalise } from "@/features/saves";
+import { resultNavigation, selection } from "@/features/saves/navigation";
+import { pool } from "@/features/saves/pool";
 import { HoverPreview } from "./";
 
 it("hydrates and previews the next logical save beyond loaded grid rows", async () => {

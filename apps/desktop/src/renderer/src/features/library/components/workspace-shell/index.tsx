@@ -31,7 +31,9 @@ function Root({ header, children, left, right, className }: RootProps) {
   const rightPane = useRightPane();
   const leftOpen = sidebarOpen && Boolean(left);
   const ownsRightPane = useRouterState({
-    select: (s) => s.location.pathname === "/assistant",
+    select: (s) =>
+      s.location.pathname === "/assistant" ||
+      s.location.pathname === "/shadows",
   });
   const rightOpen = !ownsRightPane && rightPane !== null && Boolean(right);
 
@@ -65,7 +67,9 @@ function Root({ header, children, left, right, className }: RootProps) {
         maxWidth={AGENT_WIDTH_MAX}
         defaultWidth={AGENT_WIDTH_DEFAULT}
         width={agentWidth}
-        resizeLabel={rightPane === "agent" ? "Resize Agent" : "Resize Details"}
+        resizeLabel={
+          rightPane === "agent" ? "Resize Assistant" : "Resize Details"
+        }
         onResize={libraryChrome.setAgentWidth}
         onCollapse={libraryChrome.closeRightPane}
       >

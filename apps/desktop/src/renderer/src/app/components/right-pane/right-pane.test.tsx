@@ -88,7 +88,7 @@ describe("sliding right panes", () => {
     vi.unstubAllGlobals();
   });
 
-  it("keeps Agent mounted and visible while it is the active card", async () => {
+  it("keeps Assistant mounted and visible while it is the active card", async () => {
     await act(() => root.render(<RightPane />));
     const draft = container.querySelector("textarea");
     if (!draft) throw new Error("Missing draft");
@@ -171,7 +171,7 @@ describe("sliding right panes", () => {
     expect(draft.value).toBe("Keep my draft");
   });
 
-  it("preserves Agent state and subscriptions after a completed exit and reentry", async () => {
+  it("preserves Assistant state and subscriptions after a completed exit and reentry", async () => {
     await act(() => root.render(<RightPane />));
     const draft = container.querySelector("textarea");
     if (!draft) throw new Error("Missing draft");

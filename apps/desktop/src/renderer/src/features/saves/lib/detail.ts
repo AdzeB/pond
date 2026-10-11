@@ -5,7 +5,7 @@ import {
   type AccountRef,
   accountDisplayName,
   findAccountRef,
-} from "@/features/search/lib/account-aliases";
+} from "@/features/search/query";
 
 type RowKind = "mono" | "author" | "account" | "platform" | "text";
 

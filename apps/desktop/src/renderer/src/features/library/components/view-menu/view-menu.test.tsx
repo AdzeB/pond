@@ -30,19 +30,54 @@ describe("view menu", () => {
     vi.unstubAllGlobals();
   });
 
-  it("keeps layout, sort, and display options together", async () => {
+  it("opens layout, sort, and display as separate menus", async () => {
     await act(async () => root.render(<ViewMenu />));
+
     await act(async () => {
       document
-        .querySelector<HTMLButtonElement>('[aria-label="View Options"]')
+        .querySelector<HTMLButtonElement>('[aria-label="Layout"]')
+        ?.click();
+    });
+    expect(document.body.textContent).toContain("Waterfall");
+    expect(document.body.textContent).toContain("Size");
+    expect(document.body.textContent).not.toContain("Use Everywhere");
+    expect(document.body.textContent).toContain("Gap");
+    expect(document.body.textContent).toContain("Thumbnail Quality");
+    expect(document.body.textContent).toContain("Thumbnail Fit");
+    expect(document.body.textContent).toContain("Item Info");
+    expect(document.body.textContent).not.toContain("%");
+    expect(document.body.textContent).not.toContain("pt");
+    expect(document.body.textContent).not.toContain("Show Sidebar");
+
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>('[aria-label="Sort"]')?.click();
+    });
+    expect(document.body.textContent).toContain("Direction");
+    expect(document.body.textContent).toContain("Descending");
+    expect(document.body.textContent).toContain("Sort");
+    expect(document.body.textContent).toContain("Date Saved");
+    expect(document.body.textContent).not.toContain("Refresh");
+    expect(document.body.textContent).not.toContain("Use Everywhere");
+
+    expect(document.querySelector('[aria-label="Thumbnail"]')).toBeNull();
+
+    await act(async () => {
+      document
+        .querySelector<HTMLButtonElement>('[aria-label="Display"]')
         ?.click();
     });
     const text = document.body.textContent ?? "";
-    expect(text).toContain("Layout");
-    expect(text).toContain("Thumbnail Size");
-    expect(text).toContain("Sort By");
     expect(text).toContain("Show Name");
+    expect(text).toContain("Show Item Info");
+    expect(text).not.toContain("Thumbnail Quality");
+    expect(text).not.toContain("Thumbnail Fit");
+    expect(text).not.toContain("Date Saved");
+    expect(text).toContain("Show Sidebar");
+    expect(text).toContain("Show Inspector");
+    expect(text).not.toContain("Show Tags");
+    expect(text).not.toContain("Show Annotation");
     expect(text).not.toContain("Show Notes");
     expect(text).not.toContain("Start Presentation");
+    expect(text).not.toContain("Use Everywhere");
   });
 });

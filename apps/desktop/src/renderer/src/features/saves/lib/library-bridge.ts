@@ -5,11 +5,14 @@ export interface SaveFolderReference {
   name: string;
 }
 
+export type SaveInspectorTab = "organize" | "info";
+
 export interface SaveLibraryBridge {
   getNav(): LibraryNav;
   inspectSave(id: string | null): void;
   openSaveDetails(id: string): void;
   setInspectorSaveId(id: string | null): void;
+  setInspectorTab(tab: SaveInspectorTab): void;
   setNav(nav: LibraryNav): void;
   setAgentOpen(open: boolean): void;
   closeRightPane(): void;
@@ -45,6 +48,7 @@ let current: SaveLibraryBridge = {
   inspectSave: unavailable,
   openSaveDetails: unavailable,
   setInspectorSaveId: unavailable,
+  setInspectorTab: unavailable,
   setNav: unavailable,
   setAgentOpen: unavailable,
   closeRightPane: unavailable,
@@ -73,6 +77,7 @@ export const saveLibraryBridge: SaveLibraryBridge = {
   inspectSave: (id) => current.inspectSave(id),
   openSaveDetails: (id) => current.openSaveDetails(id),
   setInspectorSaveId: (id) => current.setInspectorSaveId(id),
+  setInspectorTab: (tab) => current.setInspectorTab(tab),
   setNav: (nav) => current.setNav(nav),
   setAgentOpen: (open) => current.setAgentOpen(open),
   closeRightPane: () => current.closeRightPane(),

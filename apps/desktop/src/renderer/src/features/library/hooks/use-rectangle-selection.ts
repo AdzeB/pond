@@ -3,9 +3,12 @@ import { libraryChrome } from "@/features/library/state/library-chrome";
 import {
   clearSaveSelection,
   isLibraryBackgroundTarget,
-} from "@/features/saves/lib/select";
-import { resultNavigation } from "@/features/saves/state/result-navigation";
-import { primarySelection, selection } from "@/features/saves/state/selection";
+} from "@/features/saves";
+import {
+  primarySelection,
+  resultNavigation,
+  selection,
+} from "@/features/saves/navigation";
 import { findScrollParent } from "@/shared/lib/dom";
 
 interface Rectangle {
@@ -72,8 +75,7 @@ export function useRectangleSelection() {
       const cursor = hits.at(-1) ?? (additive ? originalCursor : null);
       selection.setCursor(cursor);
       primarySelection.set(cursor);
-      if (cursor) libraryChrome.openSaveDetails(cursor);
-      else libraryChrome.inspectSave(null);
+      if (cursor) libraryChrome.inspectSave(cursor);
       if (hits[0]) selection.setAnchor(hits[0]);
       const viewport = parent.getBoundingClientRect();
       const top = Math.max(viewport.top, area.top + rect.top);

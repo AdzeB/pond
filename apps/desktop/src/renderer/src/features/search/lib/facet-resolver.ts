@@ -34,7 +34,7 @@ async function buildVocab(facets: NlFacets): Promise<VocabEntry[]> {
     items.push({ field: "creator", value: v });
 
   if (items.length === 0) return [];
-  const { embedTexts } = await import("@/features/enrichment/lib/embeddings");
+  const { embedTexts } = await import("@/features/enrichment/embeddings");
   const vecs = await embedTexts(items.map((i) => i.value));
   return items.flatMap((item, idx) => {
     const vec = vecs[idx];
@@ -78,7 +78,7 @@ export async function resolveFacets(
   const vocab = await getVocab(facets);
   if (vocab.length === 0) return { predicates: [], residual };
 
-  const { embedTexts } = await import("@/features/enrichment/lib/embeddings");
+  const { embedTexts } = await import("@/features/enrichment/embeddings");
   const wordVecs = await embedTexts(words);
   const predicates: Predicate[] = [];
   const leftover: string[] = [];

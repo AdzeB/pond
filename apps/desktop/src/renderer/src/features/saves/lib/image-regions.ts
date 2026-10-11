@@ -60,47 +60,6 @@ export function viewToImagePoint(
     y: (localY - bounds.top) / bounds.height,
   };
 }
-export function validImageRegion(region: ImageCrop): boolean {
-  return (
-    [region.x, region.y, region.w, region.h].every(Number.isFinite) &&
-    region.x >= 0 &&
-    region.y >= 0 &&
-    region.w > 0 &&
-    region.h > 0 &&
-    region.x + region.w <= 1.000001 &&
-    region.y + region.h <= 1.000001
-  );
-}
-
-const COMMENT_PIN = 0.02;
-const COMMENT_AREA = 0.04;
-
-export function pinRegion(point: { x: number; y: number }): ImageCrop {
-  return {
-    x: Math.min(Math.max(0, point.x), 1 - COMMENT_PIN),
-    y: Math.min(Math.max(0, point.y), 1 - COMMENT_PIN),
-    w: COMMENT_PIN,
-    h: COMMENT_PIN,
-  };
-}
-
-export function isAreaComment(region: ImageCrop): boolean {
-  return region.w >= COMMENT_AREA || region.h >= COMMENT_AREA;
-}
-
-export function commentFromGesture(
-  start: { x: number; y: number },
-  end: { x: number; y: number },
-): ImageCrop {
-  const region = {
-    x: Math.min(start.x, end.x),
-    y: Math.min(start.y, end.y),
-    w: Math.abs(end.x - start.x),
-    h: Math.abs(end.y - start.y),
-  };
-  return isAreaComment(region) ? region : pinRegion(start);
-}
-
 const MIN_CROP = 0.001;
 
 function clamp01(value: number): number {

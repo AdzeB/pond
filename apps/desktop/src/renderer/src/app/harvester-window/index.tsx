@@ -5,6 +5,7 @@ import {
   IconCircleWarningOutline18,
   IconClockRotateClockwiseOutline18,
   IconEyeOutline18,
+  IconFolderOpenOutline18,
   IconUserOutline18,
   IconWindowDownloadOutline18,
 } from "@pond/icons/outline/18";
@@ -41,7 +42,11 @@ import {
 } from "@/features/downloads/state/downloads-filters";
 import { SidebarToggle } from "@/features/library/components/sidebar-toggle";
 import {
+  AGENT_WIDTH_DEFAULT,
+  AGENT_WIDTH_MAX,
+  AGENT_WIDTH_MIN,
   libraryChrome,
+  useAgentWidth,
   useInspectorMode,
   useInspectorSaveId,
   useRightPane,
@@ -49,21 +54,22 @@ import {
 import { useSaves } from "@/features/saves/hooks/use-saves";
 import { ThemeApplier } from "@/features/settings/effects/theme-applier";
 import { SourceFlowHost } from "@/features/sources/components/flow";
-import { NewSourceMenu } from "@/features/sources/components/new-menu/new-menu";
+import { FoldersPage } from "@/features/sources/components/folders";
+import { NewSourceMenu } from "@/features/sources/components/new-menu";
 import { SourcesPage } from "@/features/sources/components/page";
 import { SyncStatusBridge } from "@/features/sources/effects/sync-status-bridge";
 import { useAccounts } from "@/features/sources/hooks/use-accounts";
+import { useWatchedFolder } from "@/features/sources/hooks/use-watched-folder";
 import { useWatches } from "@/features/sources/hooks/use-watches";
 import { startConnect, startWatch } from "@/features/sources/lib/create";
 import { sourceDetail } from "@/features/sources/state/source-detail";
 import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
 import { useWatchAdded } from "@/features/sources/state/watch-flow";
-import { ToastHost } from "@/shared/components/toast-host/toast-host";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
-import { HarvesterDrawer } from "./drawer";
+import { useWatchedFolderRevision } from "@/features/sources/state/watched-folder-flow";
+import { ToastHost } from "@/shared/components/toast-host";
 import styles from "./styles.module.css";
 
-type SourceScope = "account" | "watch";
+type SourceScope = "account" | "watch" | "folder";
 type QueueScope = "active" | "waiting" | "failed";
 type HarvesterNav =
   | { pile: "sources"; scope: SourceScope }
@@ -112,11 +118,13 @@ function navForLocation(
   return { pile: "sources", scope: "account" };
 }
 
-function summaryQueueCounts(summary: QueueSummary | undefined): {
+interface QueueCounts {
   active: number;
   waiting: number;
   failed: number;
-} {
+}
+
+function summaryQueueCounts(summary: QueueSummary | undefined): QueueCounts {
   return {
     active: summary?.running ?? 0,
     waiting: (summary?.waiting ?? 0) + (summary?.parked ?? 0),
@@ -175,7 +183,9 @@ function sameNav(left: HarvesterNav, right: HarvesterNav): boolean {
 
 function crumbLabel(nav: HarvesterNav): string {
   if (nav.pile === "sources") {
-    return nav.scope === "watch" ? "Watches" : "Accounts";
+    if (nav.scope === "watch") return "Watches";
+    if (nav.scope === "folder") return "Folders";
+    return "Accounts";
   }
   if (nav.scope === "active") return "Active";
   if (nav.scope === "waiting") return "Waiting";
@@ -238,6 +248,8 @@ function HarvesterShell() {
   const visitRef = useRef<(next: HarvesterNav) => void>(() => {});
   const { accounts } = useAccounts();
   const { watches } = useWatches();
+  const watchedFolder = useWatchedFolder();
+  const folderRevision = useWatchedFolderRevision();
   const saves = useSaves();
   const downloadFilters = useDownloadsFilters();
   const addedWatchId = useWatchAdded();
@@ -296,6 +308,11 @@ function HarvesterShell() {
   }, [addedWatchId]);
 
   useEffect(() => {
+    if (folderRevision === 0) return;
+    visitRef.current({ pile: "sources", scope: "folder" });
+  }, [folderRevision]);
+
+  useEffect(() => {
     setNav((current) => {
       if (current.pile !== "downloads") return current;
       const scope = queueScope(downloadFilters.statuses);
@@ -307,11 +324,11 @@ function HarvesterShell() {
   const [index, setIndex] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(220);
-  const scrollFade = useScrollFade<HTMLDivElement>();
+  const inspectorWidth = useAgentWidth();
   const inspectorMode = useInspectorMode();
   const inspectorSaveId = useInspectorSaveId();
   const inspectorOpen = useRightPane() === "inspector";
-  const drawerOpen =
+  const inspectorVisible =
     inspectorOpen &&
     (inspectorMode === "source" ||
       (inspectorMode === "download" && inspectorSaveId != null));
@@ -340,7 +357,7 @@ function HarvesterShell() {
   }
 
   function visit(next: HarvesterNav) {
-    libraryChrome.closeRightPane();
+    libraryChrome.dismissInspector();
     present(next);
     remember(next);
   }
@@ -361,9 +378,10 @@ function HarvesterShell() {
     <Window.Root
       className={styles.window}
       leftOpen={sidebarOpen}
-      rightOpen={false}
+      rightOpen={inspectorVisible}
       style={cssVars({
         "--window-left-track": `${sidebarWidth}px`,
+        "--window-right-track": `${inspectorWidth}px`,
       })}
     >
       <Window.Top>
@@ -436,7 +454,7 @@ function HarvesterShell() {
               })}
             </ol>
           </nav>
-          <div className={styles.toolbarEnd} />
+          <div className={styles["toolbar-end"]} />
         </div>
       </Window.Top>
       <Window.Left
@@ -451,10 +469,10 @@ function HarvesterShell() {
       >
         <Sidebar.Root className={styles.sidebar} width="full">
           <Sidebar.Header className={styles.brand}>
-            <span className={styles.brandLabel}>Harvester</span>
+            <span className={styles["brand-label"]}>Harvester</span>
             <NewSourceMenu controlled />
           </Sidebar.Header>
-          <Sidebar.Scroll className={styles.nav} {...scrollFade}>
+          <Sidebar.Scroll className={styles.nav}>
             <Sidebar.Group>
               <Sidebar.GroupLabel>Sources</Sidebar.GroupLabel>
               <NavItem
@@ -472,6 +490,14 @@ function HarvesterShell() {
                 onSelect={() => visit({ pile: "sources", scope: "watch" })}
               >
                 <IconEyeOutline18 />
+              </NavItem>
+              <NavItem
+                current={nav.pile === "sources" && nav.scope === "folder"}
+                count={watchedFolder.data?.path ? 1 : 0}
+                label="Folders"
+                onSelect={() => visit({ pile: "sources", scope: "folder" })}
+              >
+                <IconFolderOpenOutline18 />
               </NavItem>
             </Sidebar.Group>
             <Sidebar.Group>
@@ -507,19 +533,28 @@ function HarvesterShell() {
       <Window.Center>
         <div className={styles.stage}>
           <div className={styles.main}>
-            {nav.pile === "sources" ? (
-              <SourcesPage scope={nav.scope} />
-            ) : (
+            {nav.pile === "downloads" ? (
               <DownloadsPage />
+            ) : nav.scope === "folder" ? (
+              <FoldersPage />
+            ) : (
+              <SourcesPage scope={nav.scope} />
             )}
           </div>
-          {drawerOpen ? (
-            <HarvesterDrawer>
-              <HarvesterInspector />
-            </HarvesterDrawer>
-          ) : null}
         </div>
       </Window.Center>
+      <Window.Right
+        open={inspectorVisible}
+        minWidth={AGENT_WIDTH_MIN}
+        maxWidth={AGENT_WIDTH_MAX}
+        defaultWidth={AGENT_WIDTH_DEFAULT}
+        width={inspectorWidth}
+        resizeLabel="Resize Details"
+        onResize={libraryChrome.setAgentWidth}
+        onCollapse={libraryChrome.closeRightPane}
+      >
+        <HarvesterInspector />
+      </Window.Right>
     </Window.Root>
   );
 }
@@ -539,20 +574,20 @@ function HarvesterInspector() {
   if (pane !== "inspector") return null;
   if (mode === "source") {
     return (
-      <aside className={styles.inspector}>
+      <div className={styles.inspector}>
         <Suspense fallback={null}>
           <SourceInspector />
         </Suspense>
-      </aside>
+      </div>
     );
   }
   if (mode === "download" && saveId) {
     return (
-      <aside className={styles.inspector}>
+      <div className={styles.inspector}>
         <Suspense fallback={null}>
           <DownloadInspector saveId={saveId} />
         </Suspense>
-      </aside>
+      </div>
     );
   }
   return null;

@@ -3,7 +3,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { StoredFileViewer } from "@/features/saves/components/viewers/file-viewer";
-import { ViewerChrome } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+import { ViewerChrome } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { pool } from "@/features/saves/state/pool";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import type { Save } from "@/features/saves/types";

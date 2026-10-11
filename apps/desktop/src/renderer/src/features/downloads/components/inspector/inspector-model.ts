@@ -29,7 +29,7 @@ function taskStatusLabel(status: TaskStatus, retrying: boolean): string {
   if (status === "pending") return "Waiting";
   if (status === "deferred") return retrying ? "Trying again" : "Parked";
   if (status === "blocked") return "Authentication required";
-  if (status === "cancelled") return "Cancelled";
+  if (status === "cancelled") return "Canceled";
   if (status === "dead") return "Stopped";
   return "Stopped";
 }

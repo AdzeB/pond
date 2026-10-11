@@ -1,4 +1,4 @@
-import type { ImageComment, ImageCrop } from "@pond/schema/db";
+import type { ImageCrop } from "@pond/schema/db";
 import {
   type CSSProperties,
   type ReactNode,
@@ -7,7 +7,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { CommentEditor } from "@/features/saves/components/annotations/comment-editor";
 import type { ViewerNavigation } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import { useGifPlayer } from "@/features/saves/hooks/use-gif-player";
 import {
@@ -26,8 +25,9 @@ import {
   useResultTotal,
 } from "@/features/saves/state/result-navigation";
 import type { Save } from "@/features/saves/types";
-import { usePrefs } from "@/features/settings/state/prefs";
+import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
+import { usePrefs } from "@/shared/state/prefs";
 import { ImageControls } from "./controls";
 import { GifContextMenu } from "./gif-menu";
 import { createImageGestures, type ImageDrag } from "./image-gestures";
@@ -37,13 +37,6 @@ import styles from "./styles.module.css";
 import type { InspectorMode } from "./types";
 import { useCropKeyboard } from "./use-crop-keyboard";
 import { useImageViewport } from "./use-image-viewport";
-
-interface AnnotationStyle extends CSSProperties {
-  "--marker-scale": number;
-  "--marker-rotate": number;
-  "--marker-flip-x": number;
-  "--marker-flip-y": number;
-}
 
 interface ImageInspectorProps {
   save: Save;
@@ -74,23 +67,17 @@ export function ImageInspector({
   const itemIndex = useResultIndex(save.id);
   const itemTotal = useResultTotal();
   const instructionsId = useId();
-  const { grayscale, showNavigator, commentRequest } = useInspect();
+  const { grayscale, showNavigator } = useInspect();
   const file = save.files[fileIndex];
   const isGif =
     file?.mimeType === "image/gif" ||
     /\.gif(?:$|[?#])/i.test(file?.path ?? src);
   const [mode, setMode] = useState<InspectorMode>("view");
   const [gifFramesOpen, setGifFramesOpen] = useState(false);
-  const [editingComment, setEditingComment] = useState<{
-    comment: ImageComment;
-    creating: boolean;
-  } | null>(null);
-  const [pinEl, setPinEl] = useState<HTMLElement | null>(null);
   const [draft, setDraft] = useState<ImageCrop | null>(null);
   const [busy, setBusy] = useState(false);
   const drag = useRef<ImageDrag | null>(null);
   const lastNavigate = useRef(0);
-  const lastCommentRequest = useRef(0);
   const gestureMoved = useRef(false);
   const pending = useRef(false);
   const gif = useGifPlayer(
@@ -138,18 +125,17 @@ export function ImageInspector({
       notify({
         id: "image-inspection",
         title: "Couldn't update this image",
-        description: error instanceof Error ? error.message : "Try again.",
+        description: errorCopy(error, "Try again."),
       });
     } finally {
       pending.current = false;
       setBusy(false);
     }
   };
-  const toggleMode = (next: "crop" | "comment") => {
-    setMode((previous) => (previous === next ? "view" : next));
+  const toggleCrop = () => {
+    setMode((previous) => (previous === "crop" ? "view" : "crop"));
     setDraft(null);
-    setEditingComment(null);
-    if (next === "crop") viewport.setPosition(() => FIT_POSE);
+    viewport.setPosition(() => FIT_POSE);
   };
   const actualSize = () => {
     const one = viewport.oneToOne;
@@ -191,34 +177,6 @@ export function ImageInspector({
       });
   };
 
-  useEffect(() => {
-    if (
-      !active ||
-      !commentRequest ||
-      commentRequest.saveId !== save.id ||
-      commentRequest.fileIndex !== fileIndex ||
-      commentRequest.revision <= lastCommentRequest.current
-    )
-      return;
-    lastCommentRequest.current = commentRequest.revision;
-    if (commentRequest.commentId === null) {
-      setMode("comment");
-      setDraft(null);
-      setEditingComment(null);
-      return;
-    }
-    const comment = (save.comments ?? []).find(
-      (candidate) =>
-        candidate.id === commentRequest.commentId &&
-        candidate.resolvedAt == null,
-    );
-    if (!comment) return;
-    setMode("view");
-    setPinEl(null);
-    setDraft({ x: comment.x, y: comment.y, w: comment.w, h: comment.h });
-    setEditingComment({ comment, creating: false });
-  }, [active, commentRequest, fileIndex, save.comments, save.id]);
-
   const applyCrop = () => {
     if (!draft) return;
     void run(async () => {
@@ -253,64 +211,20 @@ export function ImageInspector({
     });
   };
 
-  const placedComments = (save.comments ?? []).filter(
-    (comment) =>
-      comment.resolvedAt == null && (comment.fileIndex ?? 0) === fileIndex,
-  );
-  const overlayComments: ImageComment[] = (() => {
-    if (mode !== "comment" || !draft) return placedComments;
-    const next = {
-      ...(editingComment?.comment ?? {
-        id: "draft",
-        text: "",
-        fileIndex,
-      }),
-      ...draft,
-    };
-    if (placedComments.some((comment) => comment.id === next.id))
-      return placedComments.map((comment) =>
-        comment.id === next.id ? next : comment,
-      );
-    return [...placedComments, next];
-  })();
-
   const imageStyle: CSSProperties =
     mode === "view" ? mediaTransformStyle(save) : { transform: "none" };
   imageStyle.imageRendering =
     prefs.imageRendering === "pixelated" ? "pixelated" : "auto";
   if (grayscale) imageStyle.filter = "grayscale(1)";
-  const annotationStyle = {
-    ...(mode === "view" ? mediaTransformStyle(save) : null),
-    "--marker-scale": 1 / viewport.pose.zoom,
-    "--marker-rotate": save.rotate ?? 0,
-    "--marker-flip-x": save.flipX ? -1 : 1,
-    "--marker-flip-y": save.flipY ? -1 : 1,
-  } satisfies AnnotationStyle;
-  const createComment = (region: ImageCrop) => {
-    setDraft(region);
-    setEditingComment({
-      creating: true,
-      comment: {
-        id: crypto.randomUUID(),
-        ...region,
-        text: "",
-        fileIndex,
-        createdAt: Date.now(),
-      },
-    });
-  };
   useEffect(() => {
-    if (active && mode !== "view" && !editingComment)
-      viewport.frame.current?.focus();
-  }, [active, mode, editingComment, viewport.frame]);
+    if (active && mode !== "view") viewport.frame.current?.focus();
+  }, [active, mode, viewport.frame]);
   const gestures = createImageGestures({
     active,
     draft,
     drag,
-    editingComment: editingComment !== null,
     gestureMoved,
     mode,
-    onComment: createComment,
     onNavigate: navigate,
     pointFromClient: viewport.pointFromClient,
     poseZoom: viewport.pose.zoom,
@@ -326,11 +240,9 @@ export function ImageInspector({
       data-gif-player={gif.ready || undefined}
     >
       <span id={instructionsId} className={styles.instructions}>
-        {mode === "comment"
-          ? "Comment placement. Arrow keys move, Alt and arrow keys resize, Shift increases the step. Enter adds a comment. Escape cancels."
-          : mode === "crop"
-            ? "Crop. Arrow keys move the selection, Control or Command and arrow keys resize, Shift increases the step. Enter applies the crop. Escape cancels."
-            : "Arrow keys pan. Plus and minus zoom."}
+        {mode === "crop"
+          ? "Crop. Arrow keys move the selection, Control or Command and arrow keys resize, Shift increases the step. Enter applies the crop. Escape cancels."
+          : "Arrow keys pan. Plus and minus zoom."}
       </span>
       <div
         ref={viewport.frame}
@@ -351,43 +263,7 @@ export function ImageInspector({
             ArrowUp: [0, -1],
             ArrowDown: [0, 1],
           }[event.key];
-          if (mode === "comment" && !editingComment) {
-            if (event.key === "Escape") {
-              event.preventDefault();
-              event.stopPropagation();
-              setMode("view");
-              setDraft(null);
-            } else if (event.key === "Enter") {
-              event.preventDefault();
-              event.stopPropagation();
-              createComment(draft ?? { x: 0.49, y: 0.49, w: 0.02, h: 0.02 });
-            } else if (direction) {
-              event.preventDefault();
-              event.stopPropagation();
-              const step = event.shiftKey ? 0.1 : 0.01;
-              setDraft((previous) => {
-                const region = previous ?? {
-                  x: 0.49,
-                  y: 0.49,
-                  w: 0.02,
-                  h: 0.02,
-                };
-                const dx = (direction[0] ?? 0) * step;
-                const dy = (direction[1] ?? 0) * step;
-                return event.altKey
-                  ? {
-                      ...region,
-                      w: Math.max(0.01, Math.min(1 - region.x, region.w + dx)),
-                      h: Math.max(0.01, Math.min(1 - region.y, region.h + dy)),
-                    }
-                  : {
-                      ...region,
-                      x: Math.max(0, Math.min(1 - region.w, region.x + dx)),
-                      y: Math.max(0, Math.min(1 - region.h, region.y + dy)),
-                    };
-              });
-            }
-          } else if (
+          if (
             mode === "view" &&
             (direction || ["+", "=", "-"].includes(event.key))
           ) {
@@ -408,7 +284,6 @@ export function ImageInspector({
           }
         }}
         data-background={prefs.transparentBackground ?? "none"}
-        data-commenting={mode === "comment" || undefined}
         {...gestures}
       >
         <div
@@ -448,7 +323,7 @@ export function ImageInspector({
               style={{ ...imageStyle, display: gif.ready ? "none" : undefined }}
               draggable={mode === "view" && viewport.pose.zoom <= 1}
               onDragStart={(event) => {
-                beginSaveDrag(save.id, event.dataTransfer);
+                beginSaveDrag(save.id, event);
               }}
               onLoad={(event) =>
                 viewport.reportImage(
@@ -476,24 +351,7 @@ export function ImageInspector({
                 />
               </GifContextMenu>
             ) : null}
-            <ImageOverlay
-              active={active}
-              annotationStyle={annotationStyle}
-              comments={overlayComments}
-              draft={draft}
-              editingComment={editingComment}
-              mode={mode}
-              onEditComment={(comment) => {
-                setDraft({
-                  x: comment.x,
-                  y: comment.y,
-                  w: comment.w,
-                  h: comment.h,
-                });
-                setEditingComment({ comment, creating: false });
-              }}
-              onPinElement={setPinEl}
-            />
+            <ImageOverlay draft={draft} mode={mode} />
           </div>
         </div>
         {showNavigator && viewport.size.width > 0 ? (
@@ -509,19 +367,6 @@ export function ImageInspector({
           />
         ) : null}
       </div>
-      {editingComment && pinEl ? (
-        <CommentEditor
-          key={editingComment.comment.id}
-          saveId={save.id}
-          comment={{ ...editingComment.comment, ...draft }}
-          creating={editingComment.creating}
-          anchor={pinEl}
-          onClose={() => {
-            setEditingComment(null);
-            setDraft(null);
-          }}
-        />
-      ) : null}
       <ImageControls.Hud
         actual={viewport.actual}
         active={active}
@@ -553,8 +398,7 @@ export function ImageInspector({
           )
         }
         onSaveCrop={saveCrop}
-        onToggleComment={() => toggleMode("comment")}
-        onToggleCrop={() => toggleMode("crop")}
+        onToggleCrop={toggleCrop}
         onToggleGifFrames={() => setGifFramesOpen((value) => !value)}
         onZoomIn={zoomIn}
         onZoomOut={zoomOut}

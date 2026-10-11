@@ -1,23 +1,39 @@
+import { DEFAULT_PREFS } from "@pond/schema";
 import type { Save } from "@/features/saves/types";
-import { florenceModelVersion, runFlorence } from "../florence";
-import { loadImage, representativeImageUrl } from "../image";
+import { representativeImageUrl } from "../image";
+import {
+  type MediaUnderstandingRouter,
+  mediaUnderstandingRouter,
+} from "../media-understanding-router";
 import type { Enricher } from "../types";
 
-export const captionEnricher: Enricher = {
-  id: "caption",
-  enabled: (prefs) => prefs?.ai?.enableCaption === true,
-  eligible(save: Save) {
-    if (save.status !== "complete" || save.deletedAt != null) return false;
-    if (!representativeImageUrl(save)) return false;
-    return save.captionModel !== florenceModelVersion();
-  },
-  async run(save: Save) {
-    const url = representativeImageUrl(save);
-    if (!url) return null;
-    const image = await loadImage(url);
-    const caption = await runFlorence(image, "<CAPTION>");
-    const model = florenceModelVersion();
-    const fields = { caption: caption || null, captionModel: model };
-    return { derived: fields, optimistic: fields };
-  },
-};
+export function createCaptionEnricher(
+  router: MediaUnderstandingRouter = mediaUnderstandingRouter,
+): Enricher {
+  return {
+    id: "caption",
+    enabled: (prefs) => prefs?.ai?.enableCaption === true,
+    eligible(save: Save, prefs = DEFAULT_PREFS.ai) {
+      if (save.status !== "complete" || save.deletedAt != null) return false;
+      if (!representativeImageUrl(save)) return false;
+      return save.captionModel !== router.primaryModel("caption", prefs);
+    },
+    async run(save: Save, prefs = DEFAULT_PREFS.ai) {
+      const imageUrl = representativeImageUrl(save);
+      if (!imageUrl) return null;
+      const result = await router.run({
+        saveId: save.id,
+        imageUrl,
+        task: "caption",
+        prefs,
+      });
+      const fields = {
+        caption: result.text || null,
+        captionModel: result.model,
+      };
+      return { derived: fields, optimistic: fields };
+    },
+  };
+}
+
+export const captionEnricher = createCaptionEnricher();

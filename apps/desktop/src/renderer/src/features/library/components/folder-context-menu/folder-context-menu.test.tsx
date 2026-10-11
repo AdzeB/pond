@@ -3,10 +3,7 @@ import {
   menuLabels as labels,
   menuLabelsWithoutIcons,
 } from "@/shared/test/menu-labels";
-import {
-  buildFolderMenuItems,
-  type FolderMenuActions,
-} from "./folder-context-menu";
+import { buildFolderMenuItems, type FolderMenuActions } from ".";
 
 function actions(
   overrides: Partial<FolderMenuActions> = {},

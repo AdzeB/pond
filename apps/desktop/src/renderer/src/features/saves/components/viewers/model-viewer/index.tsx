@@ -21,7 +21,7 @@ import {
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
-import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { bindCameraKeys } from "./camera-keyboard";
 import { loadModel } from "./load-model";
 import styles from "./styles.module.css";

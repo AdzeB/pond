@@ -1,6 +1,6 @@
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
-import { ViewerChrome } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+import { ViewerChrome } from "@/features/saves/components/viewers/media-viewer/chrome";
 import {
   type MediaSlide,
   Slide,
@@ -16,7 +16,7 @@ import {
 import { buildMediaUnits } from "@/features/saves/lib/media/units";
 import { openSave } from "@/features/saves/lib/save-nav";
 import type { Save } from "@/features/saves/types";
-import { useResolvedTheme } from "@/features/settings/hooks/use-resolved-theme";
+import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
 import {
   useActiveSlide,
@@ -86,15 +86,6 @@ export function MediaViewer({
 
   const slides = allSlides;
   const slideChapters = singleVideo ? chapters : undefined;
-  const noteMarkers = useMemo(
-    () =>
-      (save.videoNotes ?? []).map((n) => ({
-        id: n.id,
-        timeSec: n.timeSec,
-        fileIndex: n.fileIndex,
-      })),
-    [save.videoNotes],
-  );
 
   const firstFileIndex = slides[0]?.fileIndex ?? null;
 
@@ -126,7 +117,6 @@ export function MediaViewer({
           title={save.title}
           artist={save.author}
           chapters={slideChapters}
-          noteMarkers={noteMarkers}
         />
       </MediaViewerFrame>
     );
@@ -139,7 +129,6 @@ export function MediaViewer({
       onNavigate={onNavigate}
       slides={slides}
       chapters={slideChapters}
-      noteMarkers={noteMarkers}
       onActiveFileIndexChange={onActiveFileIndexChange}
       navRef={navRef}
       showControls={showControls}
@@ -210,7 +199,6 @@ function Carousel({
   onNavigate,
   slides,
   chapters,
-  noteMarkers,
   onActiveFileIndexChange,
   navRef,
   showControls,
@@ -219,7 +207,6 @@ function Carousel({
   onNavigate: (id: string) => void;
   slides: MediaSlide[];
   chapters?: ChapterCue[];
-  noteMarkers?: readonly { id: string; timeSec: number }[];
   onActiveFileIndexChange?: (fileIndex: number | null) => void;
   navRef?: RefObject<ViewerNav | null>;
   showControls: boolean;
@@ -283,7 +270,6 @@ function Carousel({
             title={save.title}
             artist={save.author}
             chapters={chapters}
-            noteMarkers={noteMarkers}
             ratio={ratios.get(s.src)}
             onRatio={reportRatio}
             slideNavigation={{

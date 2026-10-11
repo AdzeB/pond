@@ -61,9 +61,6 @@ describe("sort section", () => {
     expect(control("Date Published").textContent).toContain("Date Published");
     expect(document.body.textContent).toContain("Random");
     expect(document.body.textContent).not.toContain("Manual");
-    expect(
-      control("Date Published").closest("[data-scroll-fade='y']"),
-    ).not.toBeNull();
     await act(async () => control("Title").click());
     expect(getViewState().sortKey).toBe("title");
     expect(getViewState().sortDir).toBe("desc");

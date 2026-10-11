@@ -3,8 +3,8 @@ import { DEFAULT_SYNC_CRON } from "@pond/schema/db";
 import { Input, Select, Settings, Switch, Toggle, ToggleGroup } from "@pond/ui";
 import type { SyncSchedule } from "@shared/sync-schedule";
 import { useId, useRef, useState } from "react";
-import { savePrefsSection, usePrefs } from "@/features/settings/state/prefs";
 import { AnimateHeight } from "@/shared/components/animate-height";
+import { savePrefsSection, usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
 export function ScheduleSection() {
@@ -129,7 +129,7 @@ export function ScheduleEditor({
           </Settings.Item>
           {enabled ? (
             <fieldset id={scheduleId} className={styles.picker}>
-              <legend className={styles.srOnly}>Fetch schedule</legend>
+              <legend className={styles.hidden}>Fetch schedule</legend>
               <div className={styles.sentence}>
                 <span className={styles.phrase}>
                   Starting{" "}
@@ -232,7 +232,7 @@ export function ScheduleEditor({
       ) : null}
       {status === "error" ? (
         <p className={styles.error} role="alert">
-          Couldn’t save your schedule. Change a setting to try again.
+          Couldn't save your schedule. Change a setting to try again.
         </p>
       ) : null}
     </div>

@@ -83,7 +83,7 @@ export const STATUS_FILTER_OPTIONS: readonly {
   { id: "active", label: "Active" },
   { id: "waiting", label: "Waiting" },
   { id: "failed", label: "Failed" },
-  { id: "cancelled", label: "Cancelled" },
+  { id: "cancelled", label: "Canceled" },
   { id: "skipped", label: "Skipped" },
   { id: "complete", label: "Completed" },
 ];

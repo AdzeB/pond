@@ -1,5 +1,5 @@
 import { sourceIdentity } from "@pond/schema/domain";
-import { onPoolDirty, pool } from "@/features/saves/state/pool";
+import { onPoolDirty, pool } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
 import type { NlFacets } from "@/features/search/lib/nl-query";
 

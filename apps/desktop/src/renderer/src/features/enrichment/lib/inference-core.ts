@@ -1,4 +1,6 @@
 import {
+  AutoConfig,
+  AutoModel,
   AutoProcessor,
   AutoTokenizer,
   env,
@@ -9,17 +11,28 @@ import {
   type Processor,
   pipeline,
   type RawImage,
-  SiglipVisionModel,
+  RawVideo,
+  RawVideoFrame,
   Tensor,
 } from "@huggingface/transformers";
 import {
+  embeddingClassificationLabel,
+  normalizedEmbeddingVector,
+} from "@shared/embeddings";
+import {
+  EMBEDDING_MODEL,
   IMAGE_MODEL,
-  TEXT_EMBEDDING_MODEL,
   TRANSCRIPTION_MODEL,
-  VISUAL_MODEL,
 } from "@shared/on-device-models";
 import { z } from "zod";
 import { pickDevice } from "@/features/enrichment/lib/inference-device";
+import { unitCosine } from "@/shared/lib/vector";
+import {
+  createEmbeddingProfileCache,
+  type EmbeddingProfile,
+  embeddingProfileConfig,
+  type LoadedEmbeddingProfile,
+} from "./embedding-profile";
 
 export type FlorenceTask = "<CAPTION>" | "<DETAILED_CAPTION>" | "<OCR>";
 
@@ -120,54 +133,82 @@ export async function coreFlorence(
   return CaptionSchema.parse(result[task]).trim();
 }
 
-const clipVisionCache = new Map<
-  string,
-  Promise<{ model: PreTrainedModel; processor: Processor }>
->();
-function getClipVision() {
-  return memo(clipVisionCache, VISUAL_MODEL.revision, () =>
-    withDevice("clip", async (device) => {
-      const model = await SiglipVisionModel.from_pretrained(VISUAL_MODEL.id, {
-        revision: VISUAL_MODEL.revision,
-        device,
-        dtype: "q8",
-      });
-      const processor = await AutoProcessor.from_pretrained(VISUAL_MODEL.id, {
-        revision: VISUAL_MODEL.revision,
-      });
-      console.info(`[visual] vision ready (${device})`);
-      return { model, processor };
-    }),
-  );
+interface EmbeddingBundle extends LoadedEmbeddingProfile {
+  model: PreTrainedModel;
+  processor: Processor;
+  tokenizer: PreTrainedTokenizer;
 }
+
+async function loadEmbeddingBundle(
+  profile: EmbeddingProfile,
+): Promise<EmbeddingBundle> {
+  return withDevice("embedding-gemma", async (device) => {
+    const options = { revision: EMBEDDING_MODEL.revision };
+    const config = await AutoConfig.from_pretrained(
+      EMBEDDING_MODEL.id,
+      options,
+    );
+    Object.assign(config, embeddingProfileConfig(profile));
+    const model = await AutoModel.from_pretrained(EMBEDDING_MODEL.id, {
+      ...options,
+      config,
+      device,
+      dtype: "q4",
+    });
+    try {
+      const [processor, tokenizer] = await Promise.all([
+        AutoProcessor.from_pretrained(EMBEDDING_MODEL.id, options),
+        AutoTokenizer.from_pretrained(EMBEDDING_MODEL.id, options),
+      ]);
+      console.info(`[embedding-gemma] ${profile} ready (${device}/q4)`);
+      return {
+        model,
+        processor,
+        profile,
+        tokenizer,
+        async dispose() {
+          await model.dispose();
+        },
+      };
+    } catch (error) {
+      await model.dispose();
+      throw error;
+    }
+  });
+}
+
+const embeddingProfiles = createEmbeddingProfileCache(loadEmbeddingBundle);
 
 const EmbeddingRowsSchema = z.array(z.array(z.number()));
 
-export async function coreClipImage(image: RawImage): Promise<Float32Array> {
-  const { model, processor } = await getClipVision();
-  const inputs = await processor(image);
-  const out = await model(inputs);
-  const rows = EmbeddingRowsSchema.parse(
-    out.pooler_output.normalize().tolist(),
-  );
-  return Float32Array.from(rows[0] ?? []);
+function sentenceEmbeddingRows(
+  output: {
+    sentence_embedding?: Tensor;
+  },
+  expectedRows: number,
+): Float32Array[] {
+  const tensor = output.sentence_embedding;
+  if (!(tensor instanceof Tensor)) {
+    throw new Error("[embedding-gemma] model returned no sentence embedding");
+  }
+  const rows = EmbeddingRowsSchema.parse(tensor.tolist());
+  if (rows.length !== expectedRows) {
+    throw new Error(
+      `[embedding-gemma] expected ${expectedRows} embedding rows, received ${rows.length}`,
+    );
+  }
+  return rows.map((row) => Float32Array.from(normalizedEmbeddingVector(row)));
 }
 
-type ZeroShotClassifier = Awaited<
-  ReturnType<typeof pipeline<"zero-shot-image-classification">>
->;
-
-const clipZeroShotCache = new Map<string, Promise<ZeroShotClassifier>>();
-function getClipZeroShot(): Promise<ZeroShotClassifier> {
-  return memo(clipZeroShotCache, VISUAL_MODEL.revision, () =>
-    withDevice("visual", (device) =>
-      pipeline("zero-shot-image-classification", VISUAL_MODEL.id, {
-        revision: VISUAL_MODEL.revision,
-        device,
-        dtype: "q8",
-      }),
-    ),
-  );
+export async function coreClipImage(image: RawImage): Promise<Float32Array> {
+  return embeddingProfiles.use("text-image", async ({ model, processor }) => {
+    const inputs = await processor(null, image);
+    const [vector] = sentenceEmbeddingRows(await model(inputs), 1);
+    if (!vector) {
+      throw new Error("[embedding-gemma] model returned no image embedding");
+    }
+    return vector;
+  });
 }
 
 export async function coreClipAesthetic(
@@ -176,12 +217,19 @@ export async function coreClipAesthetic(
   threshold = 0.2,
   topN = 3,
 ): Promise<string[]> {
-  const classifier = await getClipZeroShot();
-  const out = await classifier(image, labels);
-  return out
-    .filter((r) => r.score >= threshold)
+  const [imageVector, labelVectors] = await Promise.all([
+    coreClipImage(image),
+    coreEmbedTexts(labels.map(embeddingClassificationLabel)),
+  ]);
+  return labels
+    .map((label, index) => ({
+      label,
+      score: unitCosine(imageVector, labelVectors[index] ?? new Float32Array()),
+    }))
+    .filter((result) => result.score >= threshold)
+    .sort((left, right) => right.score - left.score)
     .slice(0, topN)
-    .map((r) => r.label);
+    .map((result) => result.label);
 }
 
 export async function coreSensitiveContent(
@@ -191,40 +239,51 @@ export async function coreSensitiveContent(
   return runSensitiveModel(images);
 }
 
-type Extractor = Awaited<ReturnType<typeof pipeline<"feature-extraction">>>;
-
-const extractorCache = new Map<string, Promise<Extractor>>();
-function getExtractor(): Promise<Extractor> {
-  return memo(extractorCache, TEXT_EMBEDDING_MODEL.revision, () =>
-    withDevice("embeddings", async (device) => {
-      const pipe = await pipeline(
-        "feature-extraction",
-        TEXT_EMBEDDING_MODEL.id,
-        {
-          revision: TEXT_EMBEDDING_MODEL.revision,
-          device,
-          dtype: "q8",
-        },
-      );
-      console.info(`[embeddings] extractor ready (${device}/q8)`);
-      return pipe;
-    }),
-  );
-}
-
 export async function coreEmbedText(text: string): Promise<Float32Array> {
-  const extractor = await getExtractor();
-  const out = await extractor(text, { pooling: "mean", normalize: true });
-  return Float32Array.from(out.data);
+  const [vector] = await coreEmbedTexts([text]);
+  if (!vector) {
+    throw new Error("[embedding-gemma] model returned no text embedding");
+  }
+  return vector;
 }
 
 export async function coreEmbedTexts(texts: string[]): Promise<Float32Array[]> {
   if (texts.length === 0) return [];
-  const extractor = await getExtractor();
-  const out = await Promise.all(
-    texts.map((t) => extractor(t, { pooling: "mean", normalize: true })),
-  );
-  return out.map((o) => Float32Array.from(o.data));
+  return embeddingProfiles.use("text-image", async ({ model, tokenizer }) => {
+    const inputs = tokenizer(texts, { padding: true, truncation: true });
+    return sentenceEmbeddingRows(await model(inputs), texts.length);
+  });
+}
+
+export async function coreEmbedAudio(
+  audio: Float32Array,
+): Promise<Float32Array> {
+  return embeddingProfiles.use("text-audio", async ({ model, processor }) => {
+    const inputs = await processor(null, null, audio);
+    const [vector] = sentenceEmbeddingRows(await model(inputs), 1);
+    if (!vector) {
+      throw new Error("[embedding-gemma] model returned no audio embedding");
+    }
+    return vector;
+  });
+}
+
+export async function coreEmbedVideoFrames(
+  frames: Array<{ image: RawImage; timestamp: number }>,
+  duration: number,
+): Promise<Float32Array> {
+  return embeddingProfiles.use("text-image", async ({ model, processor }) => {
+    const video = new RawVideo(
+      frames.map((frame) => new RawVideoFrame(frame.image, frame.timestamp)),
+      duration,
+    );
+    const inputs = await processor(null, null, null, video);
+    const [vector] = sentenceEmbeddingRows(await model(inputs), 1);
+    if (!vector) {
+      throw new Error("[embedding-gemma] model returned no video embedding");
+    }
+    return vector;
+  });
 }
 
 type Transcriber = Awaited<

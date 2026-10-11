@@ -5,7 +5,6 @@ import {
 import type { Predicate } from "@pond/schema/filters/types";
 import { Menu } from "@pond/ui";
 import { useMemo, useState } from "react";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { EmptyChoice } from "../choice/empty";
 import { ChoiceOption } from "../choice/option";
 import type { FilterOption } from "../options";
@@ -26,19 +25,18 @@ export function TagChoiceFilter({
   groups,
   matching = "any",
   rows,
+  search,
   onChange,
 }: {
   options: FilterOption[];
   groups: readonly FilterTagGroup[];
   matching?: "any" | "all";
   rows: Predicate[];
+  search: string;
   onChange: (rows: Predicate[]) => void;
 }) {
-  const [search, setSearch] = useState("");
   const [scope, setScope] = useState<TagScope>("all");
   const { counts, empty } = useChoiceCounts("tags");
-  const navFade = useScrollFade<HTMLDivElement>();
-  const listFade = useScrollFade<HTMLDivElement>();
   const needle = search.trim().toLowerCase();
 
   const selectedOptions = useMemo(
@@ -88,19 +86,9 @@ export function TagChoiceFilter({
 
   return (
     <div className={styles.root}>
-      <Menu.Input
-        aria-label="Filter Tags"
-        placeholder="Search tags…"
-        value={search}
-        onValueChange={setSearch}
-      />
+      <Menu.Input aria-label="Filter Tags" placeholder="Search tags…" />
       <div className={styles.body}>
-        <div
-          className={styles.nav}
-          role="radiogroup"
-          aria-label="Tag Group"
-          {...navFade}
-        >
+        <div className={styles.nav} role="radiogroup" aria-label="Tag Group">
           {navItems.map((item, index) => (
             <Menu.Row
               key={item.id}
@@ -122,7 +110,7 @@ export function TagChoiceFilter({
             </Menu.Row>
           ))}
         </div>
-        <div className={styles.list} {...listFade}>
+        <Menu.FilterList className={styles.list}>
           {showEmpty ? (
             <EmptyChoice
               field="tags"
@@ -152,7 +140,7 @@ export function TagChoiceFilter({
               {needle ? "No matches" : "No tags in this group"}
             </div>
           ) : null}
-        </div>
+        </Menu.FilterList>
       </div>
     </div>
   );

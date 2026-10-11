@@ -7,12 +7,15 @@ import {
   useSearchText,
 } from "@/features/library/state/view-store";
 import type { ViewMode } from "@/features/library/types";
-import { parseMode, type SaveListMode } from "@/features/saves/lib/list";
-import { listPathForLocation } from "@/features/saves/lib/list-path";
-import { primarySelectionStore } from "@/features/saves/state/selection";
+import {
+  listPathForLocation,
+  parseMode,
+  type SaveListMode,
+} from "@/features/saves";
+import { primarySelectionStore } from "@/features/saves/navigation";
+import { useBootReady, useSaves } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
 import { useStableStrings } from "../../../shared/hooks/use-stable-array";
-import { useBootReady, useSaves } from "../../saves/hooks/use-saves";
 import { useNarrowedSaves } from "./use-narrowed-saves";
 
 interface LibraryState {

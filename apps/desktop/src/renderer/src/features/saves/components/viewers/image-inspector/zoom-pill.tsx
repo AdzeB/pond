@@ -1,7 +1,7 @@
 import { IconMinusOutline18, IconPlusOutline18 } from "@pond/icons/outline/18";
 import { Menu, type MenuItemSpec } from "@pond/ui";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
-import { SpecMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
+import { SpecMenu } from "@/shared/components/spec-context-menu";
 
 export const ZOOM_RATIOS = [5, 10, 25, 50, 100, 200, 400, 800] as const;
 

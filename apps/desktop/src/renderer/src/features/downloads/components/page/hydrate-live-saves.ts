@@ -1,4 +1,4 @@
-import { ensureSaves } from "@/features/saves/lib/ensure-saves";
+import { ensureSaves } from "@/features/saves/pool";
 
 const HYDRATION_BATCH_SIZE = 200;
 

@@ -1,9 +1,5 @@
 import { useEffect } from "react";
-import {
-  playUiSoft,
-  playUiTap,
-  playUiToggle,
-} from "@/features/settings/lib/sounds";
+import { playUiSoft, playUiTap, playUiToggle } from "@/shared/lib/sounds";
 
 const INTERACTIVE_SELECTOR = [
   "button",

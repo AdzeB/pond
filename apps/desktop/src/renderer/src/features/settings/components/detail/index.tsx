@@ -1,7 +1,7 @@
 import { Settings } from "@pond/ui";
 import { useReducedMotion } from "motion/react";
 import { Suspense, useEffect } from "react";
-import { SettingsSectionView } from "@/features/settings/components/engine/engine";
+import { SettingsSectionView } from "@/features/settings/components/engine";
 import {
   isBespokeSection,
   sectionForPath,

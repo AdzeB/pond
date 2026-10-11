@@ -1,5 +1,4 @@
-import { IconNotepadOutline18 as NotebookPen } from "@pond/icons/outline/18";
-import { cn } from "@pond/ui";
+import { clsx as cn } from "clsx";
 import React, { memo, type ReactNode } from "react";
 import type { SaveCardOverlayModel } from "@/features/saves/components/card/model";
 import styles from "./styles.module.css";
@@ -46,26 +45,6 @@ function Select({
       className={cn(styles.select, className)}
       {...props}
     />
-  );
-}
-
-interface CheckboxProps
-  extends Omit<React.ComponentPropsWithoutRef<"button">, "children"> {
-  checked: boolean;
-}
-
-function Checkbox({ checked, className, type, ...props }: CheckboxProps) {
-  return (
-    <button
-      type={type ?? "button"}
-      aria-pressed={checked}
-      className={cn(styles.checkbox, className)}
-      {...props}
-    >
-      <span aria-hidden className={styles.checkmark}>
-        {checked ? "✓" : ""}
-      </span>
-    </button>
   );
 }
 
@@ -116,12 +95,6 @@ function Count({ className, role, ...props }: CountProps) {
   );
 }
 
-interface NoteProps extends React.ComponentPropsWithoutRef<"span"> {}
-
-function Note({ className, ...props }: NoteProps) {
-  return <span className={cn(styles.note, className)} {...props} />;
-}
-
 const Overlay = memo(function Overlay({
   model,
 }: {
@@ -158,11 +131,6 @@ const Overlay = memo(function Overlay({
           {model.fileCount}
         </Count>
       ) : null}
-      {model.hasNote ? (
-        <Note aria-label="Has a note" title="Has a note">
-          <NotebookPen />
-        </Note>
-      ) : null}
     </div>
   );
 });
@@ -170,13 +138,11 @@ const Overlay = memo(function Overlay({
 export const Card = Object.assign(Root, {
   Root,
   Select,
-  Checkbox,
   Media,
   Frame,
   Meta,
   Type,
   Source,
   Count,
-  Note,
   Overlay,
 });

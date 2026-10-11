@@ -33,7 +33,6 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import {
   $applyNoteBlock,
   insertNoteFiles,
@@ -325,12 +324,9 @@ export function SlashMenu() {
 }
 
 function SlashSurface({ children }: { children: ReactNode }) {
-  const scrollFade = useScrollFade<HTMLDivElement>();
   return (
     <Menu.Surface className={styles.slash} aria-label="Commands">
-      <div className={styles.commands} {...scrollFade}>
-        {children}
-      </div>
+      <div className={styles.commands}>{children}</div>
     </Menu.Surface>
   );
 }

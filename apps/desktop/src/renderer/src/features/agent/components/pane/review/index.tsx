@@ -2,8 +2,8 @@ import { Button, Checkbox } from "@pond/ui";
 import type { AssistantChange } from "@shared/assistant";
 import { useState } from "react";
 import { assistant } from "@/features/agent/state/assistant";
-import { useFolders } from "@/features/library/state/folders";
-import { openSave } from "@/features/saves/lib/save-nav";
+import { useFolders } from "@/features/library";
+import { openSave } from "@/features/saves/navigation";
 import styles from "./styles.module.css";
 
 export function ChangeReview({
@@ -38,8 +38,7 @@ export function ChangeReview({
       return value === "trashed" ? "Trash" : "Library";
     if (change.field === "action") return value ? String(value) : "None";
     if (!Array.isArray(value)) {
-      if (change.field === "note" || change.field === "comments")
-        return value || "None";
+      if (change.field === "note") return value || "None";
       return value || "Untitled";
     }
     return (
@@ -59,7 +58,6 @@ export function ChangeReview({
     tags: "Tags",
     folders: "Folders",
     rating: "Rating",
-    comments: "Comments",
     trash: "Trash",
     action: "Library",
   };
@@ -169,7 +167,7 @@ export function ChangeReview({
           </div>
         ))}
       </div>
-      <div className={styles["review-actions"]}>
+      <div className={styles.actions}>
         {pending.length ? (
           <>
             <Button

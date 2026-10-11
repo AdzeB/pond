@@ -82,14 +82,14 @@ export function PreviewControls({
 
   return (
     <Tooltip.Provider>
-      <div className="previewWindowChrome">
+      <div className="preview-window-chrome">
         <FramelessWindowChrome
           closeLabel={label("Close Preview")}
           onClose={actions.close}
         />
       </div>
-      <nav aria-label={label("Preview Controls")} className="previewControls">
-        <div className="previewControlGroup">
+      <nav aria-label={label("Preview Controls")} className="preview-controls">
+        <div className="preview-control-group">
           <PreviewTool
             label={label("Previous")}
             onClick={actions.previous}
@@ -121,7 +121,7 @@ export function PreviewControls({
         </div>
 
         {state.mediaType === "image" ? (
-          <div className="previewControlGroup">
+          <div className="preview-control-group">
             <PreviewTool
               label={label("Rotate")}
               onClick={actions.rotate}
@@ -159,7 +159,7 @@ export function PreviewControls({
             </PreviewTool>
           </div>
         ) : (
-          <div className="previewControlGroup">
+          <div className="preview-control-group">
             <PreviewTool
               label={label(state.size === "fill" ? "Fit" : "Fill")}
               onClick={actions.toggleSize}
@@ -171,7 +171,7 @@ export function PreviewControls({
           </div>
         )}
 
-        <div className="previewControlGroup">
+        <div className="preview-control-group">
           <PreviewTool
             label={label("Open in Default App")}
             onClick={actions.openOriginal}
@@ -188,7 +188,7 @@ export function PreviewControls({
           </PreviewTool>
         </div>
 
-        <div className="previewControlGroup">
+        <div className="preview-control-group">
           <PreviewTool
             label={label("Fullscreen")}
             onClick={actions.toggleFullscreen}
@@ -203,7 +203,7 @@ export function PreviewControls({
           >
             <Button
               aria-label={`${label("Opacity")}: ${Math.round(state.opacity * 100)}%`}
-              className="previewOpacity"
+              className="preview-opacity"
               onClick={actions.cycleOpacity}
               size="sm"
               type="button"

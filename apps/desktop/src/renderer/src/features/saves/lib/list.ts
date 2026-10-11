@@ -5,6 +5,7 @@ export type SaveListMode =
   | "library"
   | "source"
   | "untagged"
+  | "recentlyAdded"
   | "recents"
   | "trash";
 
@@ -12,6 +13,7 @@ export function parseMode(parentBase: string): SaveListMode | null {
   if (parentBase === "/" || parentBase === "") return "library";
   if (parentBase.startsWith("/source/")) return "source";
   if (parentBase === "/untagged") return "untagged";
+  if (parentBase === "/recently-added") return "recentlyAdded";
   if (parentBase === "/recents") return "recents";
   if (parentBase === "/trash") return "trash";
   return null;

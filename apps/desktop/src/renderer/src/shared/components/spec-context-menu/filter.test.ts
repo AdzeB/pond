@@ -50,6 +50,15 @@ describe("filterMenuItems", () => {
     expect(result.some((item) => item.type === "separator")).toBe(false);
   });
 
+  it("matches each term anywhere along the breadcrumb path", () => {
+    expect(labels(filterMenuItems(MENU, "export csv"))).toEqual([
+      "Export to CSV",
+    ]);
+    expect(labels(filterMenuItems(MENU, "éxport FILES"))).toEqual([
+      "Export Files",
+    ]);
+  });
+
   it("matches keywords on a leaf", () => {
     expect(labels(filterMenuItems(MENU, "explorer"))).toEqual([
       "Reveal in Finder",

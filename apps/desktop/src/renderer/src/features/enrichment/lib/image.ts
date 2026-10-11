@@ -1,5 +1,5 @@
 import type { RawImage } from "@huggingface/transformers";
-import { pickPrimaryUnit } from "@/features/saves/lib/media/units";
+import { pickPrimaryUnit } from "@/features/saves/media";
 import type { Save } from "@/features/saves/types";
 
 export function representativeImageUrl(save: Save): string | null {

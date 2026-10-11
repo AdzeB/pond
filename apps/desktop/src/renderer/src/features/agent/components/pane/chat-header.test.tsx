@@ -27,14 +27,14 @@ it("hides New Chat when the pane only has Open and Close", async () => {
         disabled={false}
         onOpenChat={() => {}}
       >
-        <button type="button" aria-label="Open Agent Page" />
-        <button type="button" aria-label="Close Agent" />
+        <button type="button" aria-label="Open Assistant Page" />
+        <button type="button" aria-label="Close Assistant" />
       </ChatHeader>,
     ),
   );
   expect(host.querySelector('[aria-label="New Chat"]')).toBeNull();
-  expect(host.querySelector('[aria-label="Open Agent Page"]')).toBeTruthy();
-  expect(host.querySelector('[aria-label="Close Agent"]')).toBeTruthy();
+  expect(host.querySelector('[aria-label="Open Assistant Page"]')).toBeTruthy();
+  expect(host.querySelector('[aria-label="Close Assistant"]')).toBeTruthy();
 });
 
 it("renders the chat title as text and puts history in the header actions", async () => {

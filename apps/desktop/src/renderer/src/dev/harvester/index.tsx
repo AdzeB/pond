@@ -9,11 +9,7 @@ import { Button, Empty, Sidebar, TitleBar, Tooltip } from "@pond/ui";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { BrandTile } from "@/features/sources/components/sync-monitor-source-tile";
-import {
-  SearchChrome,
-  SearchChromeInput,
-} from "@/shared/components/search-chrome";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
+import { SearchChrome } from "@/shared/components/search-chrome";
 import "../../styles.css";
 import {
   type DownloadStatus,
@@ -83,12 +79,19 @@ function StatusGlyph({
 }: {
   status: SourceStatus | DownloadStatus | "complete";
 }) {
-  const complete = status === "active" || status === "completed" || status === "complete";
+  const complete =
+    status === "active" || status === "completed" || status === "complete";
   const progress = status === "syncing" || status === "downloading";
   const failed = status === "error";
   const paused = status === "paused";
   return (
-    <svg className={styles.glyph} width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+    <svg
+      className={styles.glyph}
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      aria-hidden
+    >
       <title>{status}</title>
       <circle
         cx="8"
@@ -154,7 +157,9 @@ function Harvester() {
   const [queuePaused, setQueuePaused] = useState(false);
   const [sources, setSources] = useState(INITIAL_SOURCES);
   const [downloads, setDownloads] = useState(INITIAL_DOWNLOADS);
-  const [selectedSourceId, setSelectedSourceId] = useState(INITIAL_SOURCES[0]?.id ?? "");
+  const [selectedSourceId, setSelectedSourceId] = useState(
+    INITIAL_SOURCES[0]?.id ?? "",
+  );
   const [selectedDownloadId, setSelectedDownloadId] = useState(
     INITIAL_DOWNLOADS[0]?.id ?? "",
   );
@@ -175,7 +180,10 @@ function Harvester() {
       setDownloads((current) =>
         current.map((item) => {
           if (item.status !== "downloading" || item.total <= 0) return item;
-          const received = Math.min(item.total, item.received + item.speed * (TICK_MS / 1000));
+          const received = Math.min(
+            item.total,
+            item.received + item.speed * (TICK_MS / 1000),
+          );
           if (received >= item.total) {
             return { ...item, received, status: "completed", speed: 0 };
           }
@@ -190,7 +198,12 @@ function Harvester() {
     () =>
       sources.filter((item) =>
         matchesQuery(
-          [item.name, item.kind, sourceLabel(item.source), sourceStatusLabel(item.status)],
+          [
+            item.name,
+            item.kind,
+            sourceLabel(item.source),
+            sourceStatusLabel(item.status),
+          ],
           query,
         ),
       ),
@@ -210,9 +223,13 @@ function Harvester() {
       ),
     [downloads, query, queuePaused],
   );
-  const activeDownloads = downloads.filter((item) => item.status === "downloading").length;
-  const selectedSource = sources.find((item) => item.id === selectedSourceId) ?? null;
-  const selectedDownload = downloads.find((item) => item.id === selectedDownloadId) ?? null;
+  const activeDownloads = downloads.filter(
+    (item) => item.status === "downloading",
+  ).length;
+  const selectedSource =
+    sources.find((item) => item.id === selectedSourceId) ?? null;
+  const selectedDownload =
+    downloads.find((item) => item.id === selectedDownloadId) ?? null;
 
   const activity =
     queuePaused && activeDownloads > 0
@@ -254,7 +271,9 @@ function Harvester() {
                   <IconWindowDownloadOutline18 />
                 </Sidebar.Icon>
                 <Sidebar.ItemLabel>Downloads</Sidebar.ItemLabel>
-                <Sidebar.Count>{activeDownloads || downloads.length}</Sidebar.Count>
+                <Sidebar.Count>
+                  {activeDownloads || downloads.length}
+                </Sidebar.Count>
               </Sidebar.Item>
             </Sidebar.Scroll>
             <Sidebar.Footer>
@@ -262,7 +281,7 @@ function Harvester() {
             </Sidebar.Footer>
           </Sidebar.Root>
           <main className={styles.panel}>
-            <SearchChrome
+            <SearchChrome.Root
               actions={
                 section === "sources" ? (
                   <Button
@@ -274,7 +293,10 @@ function Harvester() {
                       ).length;
                       const item: HarvesterSource = {
                         id: `desktop-inbox-${next + 1}`,
-                        name: next === 0 ? "Desktop inbox" : `Desktop inbox ${next + 1}`,
+                        name:
+                          next === 0
+                            ? "Desktop inbox"
+                            : `Desktop inbox ${next + 1}`,
                         kind: "Watch",
                         source: "local",
                         status: "active",
@@ -299,20 +321,30 @@ function Harvester() {
                       aria-label={queuePaused ? "Resume Queue" : "Pause Queue"}
                       onClick={() => setQueuePaused((paused) => !paused)}
                     >
-                      {queuePaused ? <IconMediaPlayFill18 /> : <IconMediaPauseFill18 />}
+                      {queuePaused ? (
+                        <IconMediaPlayFill18 />
+                      ) : (
+                        <IconMediaPauseFill18 />
+                      )}
                     </Button>
                   </Tooltip>
                 )
               }
             >
-              <SearchChromeInput
+              <SearchChrome.Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 spellCheck={false}
-                placeholder={section === "sources" ? "Search sources…" : "Search downloads…"}
-                aria-label={section === "sources" ? "Search Sources" : "Search Downloads"}
+                placeholder={
+                  section === "sources"
+                    ? "Search sources…"
+                    : "Search downloads…"
+                }
+                aria-label={
+                  section === "sources" ? "Search Sources" : "Search Downloads"
+                }
               />
-            </SearchChrome>
+            </SearchChrome.Root>
             {section === "sources" ? (
               <SourceTable
                 rows={visibleSources}
@@ -334,7 +366,11 @@ function Harvester() {
                   setSources((current) =>
                     current.map((item) =>
                       item.id === id
-                        ? { ...item, status: "syncing", detail: "Checking for new posts." }
+                        ? {
+                            ...item,
+                            status: "syncing",
+                            detail: "Checking for new posts.",
+                          }
                         : item,
                     ),
                   )
@@ -354,7 +390,9 @@ function Harvester() {
                 onResume={(id) =>
                   setDownloads((current) =>
                     current.map((item) =>
-                      item.id === id ? { ...item, status: "downloading", error: "" } : item,
+                      item.id === id
+                        ? { ...item, status: "downloading", error: "" }
+                        : item,
                     ),
                   )
                 }
@@ -376,13 +414,14 @@ function SourceTable({
   selectedId: string;
   onSelect: (id: string) => void;
 }) {
-  const scrollFade = useScrollFade<HTMLDivElement>();
   if (rows.length === 0) {
     return (
       <div className={styles.empty}>
         <Empty.Root>
           <Empty.Title>No results found</Empty.Title>
-          <Empty.Description>Try another name or clear the search.</Empty.Description>
+          <Empty.Description>
+            Try another name or clear the search.
+          </Empty.Description>
         </Empty.Root>
       </div>
     );
@@ -395,7 +434,7 @@ function SourceTable({
         <span>Status</span>
         <span>Saves</span>
       </div>
-      <div className={styles.scroll} {...scrollFade}>
+      <div className={styles.scroll}>
         {rows.map((item) => (
           <button
             key={item.id}
@@ -432,13 +471,14 @@ function DownloadTable({
   selectedId: string;
   onSelect: (id: string) => void;
 }) {
-  const scrollFade = useScrollFade<HTMLDivElement>();
   if (rows.length === 0) {
     return (
       <div className={styles.empty}>
         <Empty.Root>
           <Empty.Title>No results found</Empty.Title>
-          <Empty.Description>Try another name or clear the search.</Empty.Description>
+          <Empty.Description>
+            Try another name or clear the search.
+          </Empty.Description>
         </Empty.Root>
       </div>
     );
@@ -450,10 +490,13 @@ function DownloadTable({
         <span>Status</span>
         <span>Speed</span>
       </div>
-      <div className={styles.scroll} {...scrollFade}>
+      <div className={styles.scroll}>
         {rows.map((item) => {
           const status = displayedDownloadStatus(item.status, queuePaused);
-          const percent = item.total > 0 ? Math.min(100, (item.received / item.total) * 100) : 0;
+          const percent =
+            item.total > 0
+              ? Math.min(100, (item.received / item.total) * 100)
+              : 0;
           const moving = item.status === "downloading" && !queuePaused;
           return (
             <button
@@ -468,12 +511,17 @@ function DownloadTable({
                 <span className={styles.identity}>
                   <span className={styles.name}>{item.name}</span>
                   <span className={styles.track} data-status={status}>
-                    <span className={styles.fill} style={{ width: `${percent}%` }} />
+                    <span
+                      className={styles.fill}
+                      style={{ width: `${percent}%` }}
+                    />
                   </span>
                 </span>
               </span>
               <span className={styles.status} data-status={status}>
-                <StatusGlyph status={status === "completed" ? "complete" : status} />
+                <StatusGlyph
+                  status={status === "completed" ? "complete" : status}
+                />
                 {downloadStatusLabel(item.status, queuePaused)}
               </span>
               <span className={styles.metric}>
@@ -495,7 +543,8 @@ function SourceDetail({
   onRetry: (id: string) => void;
 }) {
   if (!item) return <DetailShell name="Sources" meta="Select a source." />;
-  const saves = item.items === 1 ? "1 save" : `${formatCount(item.items)} saves`;
+  const saves =
+    item.items === 1 ? "1 save" : `${formatCount(item.items)} saves`;
   const place = item.source === "local" ? "this Mac" : sourceLabel(item.source);
   return (
     <DetailShell
@@ -503,7 +552,11 @@ function SourceDetail({
       meta={`${item.kind} on ${place}. ${saves}. ${item.detail}`}
       actions={
         item.status === "error" ? (
-          <Button size="sm" variant="secondary" onClick={() => onRetry(item.id)}>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => onRetry(item.id)}
+          >
             Retry
           </Button>
         ) : null
@@ -525,10 +578,16 @@ function DownloadDetail({
 }) {
   if (!item) return <DetailShell name="Downloads" meta="Select a download." />;
   const moving = item.status === "downloading" && !queuePaused;
-  const remaining = item.speed > 0 ? (item.total - item.received) / item.speed : Number.POSITIVE_INFINITY;
+  const remaining =
+    item.speed > 0
+      ? (item.total - item.received) / item.speed
+      : Number.POSITIVE_INFINITY;
   let meta = item.error;
   if (item.status === "completed") meta = "Saved to the library.";
-  else if (item.status === "paused" || (item.status === "downloading" && queuePaused)) {
+  else if (
+    item.status === "paused" ||
+    (item.status === "downloading" && queuePaused)
+  ) {
     meta = "Paused. Resume to keep going.";
   } else if (moving) {
     meta = `${formatBytes(item.received)} of ${formatBytes(item.total)}. ${formatBytes(item.speed)}/s. ${formatEta(remaining)}.`;
@@ -539,11 +598,19 @@ function DownloadDetail({
       meta={meta}
       actions={
         item.status === "downloading" && !queuePaused ? (
-          <Button size="sm" variant="secondary" onClick={() => onPause(item.id)}>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => onPause(item.id)}
+          >
             Pause
           </Button>
         ) : item.status === "paused" || item.status === "error" ? (
-          <Button size="sm" variant="secondary" onClick={() => onResume(item.id)}>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => onResume(item.id)}
+          >
             {item.status === "error" ? "Retry" : "Resume"}
           </Button>
         ) : null

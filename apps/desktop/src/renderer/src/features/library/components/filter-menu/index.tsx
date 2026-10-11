@@ -16,17 +16,14 @@ import {
   useViewStore,
   useVisualProbe,
 } from "@/features/library/state/view-store";
-import { useNlFacets } from "@/features/search/hooks/use-nl-query";
-import {
-  accountChipLabel,
-  accountRefsFromSync,
-} from "@/features/search/lib/account-aliases";
-import { usePrefs } from "@/features/settings/state/prefs";
-import { useTagGroups } from "@/features/tags/state/tag-groups";
-import { useTags } from "@/features/tags/state/tags";
+import { useNlFacets } from "@/features/search";
+import { accountChipLabel, accountRefsFromSync } from "@/features/search/query";
+import { useTagGroups, useTags } from "@/features/tags";
 import { FilterToolbar } from "@/shared/components/filter-toolbar";
+import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
-import { FilterCategory } from "./category/category";
+import { usePrefs } from "@/shared/state/prefs";
+import { FilterCategory } from "./category";
 import { CustomizeFilters } from "./customize";
 import { choiceOptions, type FilterOption, presetOptions } from "./options";
 import { SemanticChip, VisualChip } from "./overlay";
@@ -188,9 +185,8 @@ export function FilterBarView({
                   void savedViews.updateCurrent(activeViewId).catch((error) =>
                     notify({
                       id: "save-filter-view",
-                      title: "Couldn’t Update Saved View",
-                      description:
-                        error instanceof Error ? error.message : "Try again.",
+                      title: "Couldn't Update Saved View",
+                      description: errorCopy(error, "Try again."),
                     }),
                   )
                 }
@@ -212,9 +208,8 @@ export function FilterBarView({
                     .catch((error) =>
                       notify({
                         id: "save-filter-view",
-                        title: "Couldn’t Save View",
-                        description:
-                          error instanceof Error ? error.message : "Try again.",
+                        title: "Couldn't Save View",
+                        description: errorCopy(error, "Try again."),
                       }),
                     )
                 }

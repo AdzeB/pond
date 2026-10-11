@@ -23,7 +23,7 @@ import {
   type SettingsGroup,
   type SettingsSection,
 } from "@pond/schema";
-import type { SectionConfig } from "@/features/settings/components/engine/engine";
+import type { SectionConfig } from "@/features/settings/components/engine";
 import { SECTION_CONFIGS } from "@/features/settings/lib/sections";
 
 const ICONS = new Map<string, IconComponent>([
@@ -42,7 +42,6 @@ const ICONS = new Map<string, IconComponent>([
   ["mcp", Mcp],
   ["storage", Storage],
   ["harvesting", Videos],
-  ["screenshots", Images],
 ]);
 
 export interface SectionDef extends SettingsSection {

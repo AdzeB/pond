@@ -1,38 +1,36 @@
 import type { Source } from "@pond/schema/db";
-import { Dialog } from "@pond/ui";
 import type { BlankDocumentKind } from "@shared/blank-documents";
-import type {
-  EagleImportProgress,
-  SavesImportQueryInputs,
-} from "@shared/saves-import-contracts";
+import type { EagleImportProgress } from "@shared/saves-import-contracts";
 import { z } from "zod";
-import { openHarvester } from "@/features/library/lib/open-harvester";
 import { openDuplicateReview } from "@/features/library/state/duplicate-review";
 import { folders } from "@/features/library/state/folders";
 import { libraryChrome } from "@/features/library/state/library-chrome";
+import { openOrganizationReview } from "@/features/library/state/organization-review";
 import { savedViews } from "@/features/library/state/saved-views";
-import { openSave } from "@/features/saves/lib/save-nav";
-import { selectOnlySave } from "@/features/saves/lib/select";
-import { asUrlList } from "@/features/saves/lib/url-list";
-import { importFilesWithDuplicateReview } from "@/features/saves/state/duplicate-import-review";
-import { selection } from "@/features/saves/state/selection";
-import { libraryViewContext } from "@/features/saves/state/view-context";
-import { emitFeedback } from "@/features/settings/lib/sounds";
-import { getPrefsSnapshot } from "@/features/settings/state/prefs";
-import { tagCreation } from "@/features/tags/state/creation";
+import {
+  asUrlList,
+  importFilesWithDuplicateReview,
+  libraryViewContext,
+  selectOnlySave,
+} from "@/features/saves";
+import { selection } from "@/features/saves/navigation";
+import { tagCreation } from "@/features/tags";
 import { getAppRouter } from "@/shared/lib/app-router";
+import { errorCopy } from "@/shared/lib/error-copy";
+import { openHarvester } from "@/shared/lib/open-harvester";
 import { notify, updateNotification } from "@/shared/lib/toast";
+import { getPrefsSnapshot } from "@/shared/state/prefs";
 
 const SaveResultSchema = z.object({
   ok: z.boolean(),
   id: z.string().optional(),
   ids: z.array(z.string()).optional(),
+  reason: z.string().optional(),
 });
 
 export interface NewActionServices {
   notify: typeof notify;
   updateNotification: typeof updateNotification;
-  openSave: typeof openSave;
   refreshFolders: () => Promise<void>;
   startEditingFolder: (id: string) => void;
   openTagCreation: (kind: "tag" | "group") => void;
@@ -48,7 +46,6 @@ export interface NewActionServices {
 export function createNewActions({
   notify,
   updateNotification,
-  openSave,
   refreshFolders,
   startEditingFolder,
   openTagCreation,
@@ -79,7 +76,7 @@ export function createNewActions({
       notify({
         id: "new-import",
         title: "Couldn't complete action",
-        description: error instanceof Error ? error.message : "Try again.",
+        description: errorCopy(error, "Try again."),
         timeout: 5000,
       });
     }
@@ -112,6 +109,7 @@ export function createNewActions({
     const result = SaveResultSchema.parse(
       await importFilesWithDuplicateReview({ paths: picked.paths }),
     );
+    if (result.reason === "cancelled") return;
     if (!result.ok || !result.ids?.length) {
       throw new Error(
         "No files were imported. Choose readable, non-empty files.",
@@ -133,6 +131,7 @@ export function createNewActions({
     const result = SaveResultSchema.parse(
       await importFilesWithDuplicateReview({ paths: picked.paths }),
     );
+    if (result.reason === "cancelled") return;
     if (!result.ok || !result.ids?.length) {
       throw new Error(
         `No files were imported from the ${source} export. Choose its exported media folder.`,
@@ -158,9 +157,9 @@ export function createNewActions({
 
   async function importBookmarks(): Promise<void> {
     const result = await window.pond.query("saves.importBookmarks", {});
-    if (!result.ok && result.imported === 0) {
-      if (result.skipped === 0) return;
-      throw new Error("Couldn't import those bookmarks. Try another file.");
+    if (!result.ok) {
+      if (result.reason === "cancelled") return;
+      throw new Error(result.error);
     }
     notify({
       id: "new-import",
@@ -175,15 +174,25 @@ export function createNewActions({
   async function importPageAssets(url: string): Promise<void> {
     const href = url.trim();
     if (!href) throw new Error("Enter a website link.");
-    notify({ id: "new-import", title: "Extracting page assets", timeout: 0 });
+    const notificationId = notify({
+      id: "new-import",
+      title: "Extracting page assets",
+      timeout: 0,
+    });
     const result = await window.pond.query("saves.extractPageAssets", {
       url: href,
     });
     if (!result.ok && !result.queued && !result.imported) {
-      throw new Error("Couldn't extract images from that page. Try again.");
+      updateNotification({
+        id: notificationId,
+        title: "Couldn't extract images from that page",
+        description: "Try again.",
+        timeout: 5000,
+      });
+      return;
     }
-    notify({
-      id: "new-import",
+    updateNotification({
+      id: notificationId,
       title: result.queued
         ? `Queued ${result.queued} ${result.queued === 1 ? "image" : "images"}`
         : "No images large enough",
@@ -195,11 +204,18 @@ export function createNewActions({
     const picked = await window.pond.query("saves.pickEagleLibrary", {});
     if (!picked.ok || !picked.path) return;
     const progressId = crypto.randomUUID();
+    const notificationId = notify({
+      id: "new-import",
+      title: "Importing Eagle library",
+      description: "Preparing library",
+      progress: { label: "Eagle library import progress" },
+      timeout: 0,
+    });
     const unsubscribe = onEagleImportProgress((progress) => {
       if (progress.id !== progressId) return;
       const hasItems = progress.total > 0;
       updateNotification({
-        id: "new-import",
+        id: notificationId,
         title: "Importing Eagle library",
         description: hasItems
           ? `${progress.processed} of ${progress.total} item${progress.total === 1 ? "" : "s"}`
@@ -213,13 +229,6 @@ export function createNewActions({
         timeout: 0,
       });
     });
-    notify({
-      id: "new-import",
-      title: "Importing Eagle library",
-      description: "Preparing library",
-      progress: { label: "Eagle library import progress" },
-      timeout: 0,
-    });
     const result = await window.pond
       .query("saves.importEagleLibrary", {
         path: picked.path,
@@ -227,15 +236,21 @@ export function createNewActions({
       })
       .finally(unsubscribe);
     if (!result.ok && !result.imported && !result.skipped) {
-      throw new Error(
-        result.error === "not_eagle_library"
-          ? "That folder doesn't look like an Eagle library."
-          : "Couldn't import the Eagle library. Try again.",
-      );
+      updateNotification({
+        id: notificationId,
+        title:
+          result.error === "not_eagle_library"
+            ? "That folder doesn't look like an Eagle library"
+            : "Couldn't import the Eagle library",
+        description:
+          result.error === "not_eagle_library" ? undefined : "Try again.",
+        timeout: 5000,
+      });
+      return;
     }
     await refreshFolders();
-    notify({
-      id: "new-import",
+    updateNotification({
+      id: notificationId,
       title: result.imported
         ? `Imported ${result.imported} item${result.imported === 1 ? "" : "s"}`
         : "Nothing new to import",
@@ -244,24 +259,10 @@ export function createNewActions({
     });
   }
 
-  async function importPondPackage(password?: string): Promise<void> {
-    const result = await window.pond.query("saves.importPackage", { password });
+  async function importPondPackage(): Promise<void> {
+    const result = await window.pond.query("saves.importPackage", {});
     if (!result.ok) {
-      if (result.error === "canceled") return;
-      if (!password && result.error?.includes("requires a password")) {
-        Dialog.prompt({
-          title: "Unlock Pond Package",
-          description:
-            "Enter the password used when this package was exported.",
-          inputType: "password",
-          autoComplete: "current-password",
-          confirmLabel: "Import",
-          onConfirm: async (nextPassword) => {
-            await importPondPackage(nextPassword);
-          },
-        });
-        return;
-      }
+      if (result.reason === "cancelled") return;
       throw new Error(
         result.error || "Couldn't import the package. Try again.",
       );
@@ -280,7 +281,7 @@ export function createNewActions({
   async function importEaglePackage(): Promise<void> {
     const result = await window.pond.query("saves.importEaglePackage", {});
     if (!result.ok) {
-      if (result.error === "canceled") return;
+      if (result.reason === "cancelled") return;
       throw new Error(
         result.error || "Couldn't import the Eagle package. Try again.",
       );
@@ -307,35 +308,6 @@ export function createNewActions({
     if (!result.ok || !result.id)
       throw new Error("Couldn't save the note. Try again.");
     await placeCreatedSave(result.id);
-  }
-
-  async function captureScreenshot(
-    sourceId: string,
-    options: Omit<
-      SavesImportQueryInputs["saves.captureDesktopScreenshot"],
-      "sourceId" | "folderId"
-    > = {},
-  ): Promise<void> {
-    const result = await window.pond.query("saves.captureDesktopScreenshot", {
-      sourceId,
-      folderId: currentFolderId(),
-      ...options,
-    });
-    if (!result.ok || !result.id) {
-      if (result.error === "source_not_found") {
-        throw new Error(
-          "That screen or window is no longer available. Choose it again.",
-        );
-      }
-      if (result.error === "capture_unavailable") {
-        throw new Error(
-          "Pond couldn't capture that source. Check Screen Recording access and try again.",
-        );
-      }
-      throw new Error("Pond couldn't save the screenshot. Try again.");
-    }
-    selectSave(result.id);
-    emitFeedback("screenshot");
   }
 
   async function createBlankDocument(kind: BlankDocumentKind): Promise<void> {
@@ -386,11 +358,35 @@ export function createNewActions({
     openDuplicateReview({ ids: [...ids] });
   }
 
+  function reviewOrganization(scope: "all" | "list" | "selected"): void {
+    if (scope === "all") {
+      openOrganizationReview();
+      return;
+    }
+    const ids =
+      scope === "list"
+        ? libraryViewContext.filteredIds()
+        : selection.snapshot();
+    if (ids.length < 3) {
+      notify({
+        id: "organization-review",
+        title: "Select at least 3 Saves",
+        description: "Choose more Saves, then review organization.",
+      });
+      return;
+    }
+    openOrganizationReview(ids);
+  }
+
   async function rescanLibrary(): Promise<void> {
-    notify({ id: "new-import", title: "Rescanning library", timeout: 0 });
-    const result = await window.pond.query("library.rescan", {});
-    notify({
+    const notificationId = notify({
       id: "new-import",
+      title: "Rescanning library",
+      timeout: 0,
+    });
+    const result = await window.pond.query("library.rescan", {});
+    updateNotification({
+      id: notificationId,
       title:
         result.updated === 0
           ? "Library is up to date"
@@ -399,20 +395,29 @@ export function createNewActions({
   }
 
   async function verifyIntegrity(): Promise<void> {
-    notify({ id: "new-import", title: "Verifying library", timeout: 0 });
+    const notificationId = notify({
+      id: "new-import",
+      title: "Verifying library",
+      timeout: 0,
+    });
     const result = await window.pond.query("library.verifyIntegrity", {});
     if (!result.ok) {
-      throw new Error(
-        result.reason && result.reason !== "internal_error"
-          ? result.reason
-          : "Couldn't verify the library. Try again.",
-      );
+      updateNotification({
+        id: notificationId,
+        title: "Couldn't verify the library",
+        description: result.error,
+        timeout: 5000,
+      });
+      return;
     }
     const missing = result.missing?.length ?? 0;
     const orphans = result.orphans?.length ?? 0;
     const errorCount = Object.keys(result.errors ?? {}).length;
     if (missing === 0 && orphans === 0 && errorCount === 0) {
-      notify({ id: "new-import", title: "Library looks healthy" });
+      updateNotification({
+        id: notificationId,
+        title: "Library looks healthy",
+      });
       return;
     }
     const happened: string[] = [];
@@ -427,8 +432,8 @@ export function createNewActions({
     if (errorCount > 0 && happened.length === 0) {
       happened.push("Couldn't verify every file");
     }
-    notify({
-      id: "new-import",
+    updateNotification({
+      id: notificationId,
       title: happened.join(". "),
       description:
         result.errors?.library ??
@@ -439,8 +444,8 @@ export function createNewActions({
 
   async function exportDebugReport(): Promise<void> {
     const result = await window.pond.query("library.exportDebugReport", {});
-    if (!result.ok && !result.canceled)
-      throw new Error("Couldn’t export the debug report.");
+    if (!result.ok && result.reason !== "cancelled")
+      throw new Error("Couldn't export the debug report.");
     if (result.ok)
       notify({ id: "debug-report", title: "Debug Report Exported" });
   }
@@ -478,8 +483,9 @@ export function createNewActions({
       }
     }
     if (added.length > 0) reportDownloading(added.length);
-    const id = added.length === 1 ? added[0] : null;
-    if (id) openSave(id);
+    const newest = added.findLast((id) => id !== null);
+    if (newest && getPrefsSnapshot()?.preferences.autoSelectAfterImport)
+      selectSave(newest);
     return failed;
   }
 
@@ -497,10 +503,10 @@ export function createNewActions({
     importEaglePackage,
     importPondPackage,
     createNote,
-    captureScreenshot,
     createBlankDocument,
     newSmartFolder,
     findDuplicates,
+    reviewOrganization,
     rescanLibrary,
     verifyIntegrity,
     exportDebugReport,
@@ -523,10 +529,10 @@ export const {
   importEaglePackage,
   importPondPackage,
   createNote,
-  captureScreenshot,
   createBlankDocument,
   newSmartFolder,
   findDuplicates,
+  reviewOrganization,
   rescanLibrary,
   verifyIntegrity,
   exportDebugReport,
@@ -535,7 +541,6 @@ export const {
 } = createNewActions({
   notify,
   updateNotification,
-  openSave,
   refreshFolders: () => folders.refresh(),
   startEditingFolder: (id) => folders.startEditing(id),
   openTagCreation: (kind) => {

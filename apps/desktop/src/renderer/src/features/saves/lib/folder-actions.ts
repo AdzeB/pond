@@ -2,6 +2,7 @@ import {
   type SaveFolderReference,
   saveLibraryBridge,
 } from "@/features/saves/lib/library-bridge";
+import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
 
 function saveCount(count: number): string {
@@ -48,7 +49,7 @@ export async function assignSavesToFolder(
     notify({
       id: "add-saves-to-folder",
       title: `Couldn't add ${ids.length === 1 ? "Save" : "Saves"} to folder`,
-      description: error instanceof Error ? error.message : "Try again.",
+      description: errorCopy(error, "Try again."),
     });
   }
 }

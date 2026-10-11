@@ -61,8 +61,8 @@
     "Segoe UI", sans-serif;
   --ds-code-font-family:
     jetbrains-mono, ui-monospace, "SF Mono", "Menlo", "Consolas", monospace;
-  --ds-ui-font-size: 13px;
-  --ds-code-font-size: 12px;
+  --ds-ui-font-size: var(--ds-text-md);
+  --ds-code-font-size: var(--ds-text-sm);
 
   font-family: var(--ds-ui-font-family);
   font-size: var(--ds-ui-font-size);
@@ -139,100 +139,6 @@ body {
   * {
     scroll-behavior: smooth;
   }
-}
-
-[data-scroll-fade="y"][data-scrollable="end"] {
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    #000 0%,
-    #000 calc(100% - var(--scroll-fade-size-end, var(--scroll-fade-size, 32px))),
-    transparent
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    #000 0%,
-    #000 calc(100% - var(--scroll-fade-size-end, var(--scroll-fade-size, 32px))),
-    transparent
-  );
-}
-
-[data-scroll-fade="y"][data-scrollable="start"] {
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent,
-    #000 var(--scroll-fade-size, 32px),
-    #000 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    transparent,
-    #000 var(--scroll-fade-size, 32px),
-    #000 100%
-  );
-}
-
-[data-scroll-fade="y"][data-scrollable="start end"] {
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent,
-    #000 var(--scroll-fade-size, 32px),
-    #000 calc(100% - var(--scroll-fade-size-end, var(--scroll-fade-size, 32px))),
-    transparent
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    transparent,
-    #000 var(--scroll-fade-size, 32px),
-    #000 calc(100% - var(--scroll-fade-size-end, var(--scroll-fade-size, 32px))),
-    transparent
-  );
-}
-
-[data-scroll-fade="x"][data-scrollable="end"] {
-  -webkit-mask-image: linear-gradient(
-    to right,
-    #000 0%,
-    #000 calc(100% - var(--scroll-fade-size, 32px)),
-    transparent
-  );
-  mask-image: linear-gradient(
-    to right,
-    #000 0%,
-    #000 calc(100% - var(--scroll-fade-size, 32px)),
-    transparent
-  );
-}
-
-[data-scroll-fade="x"][data-scrollable="start"] {
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent,
-    #000 var(--scroll-fade-size, 32px),
-    #000 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent,
-    #000 var(--scroll-fade-size, 32px),
-    #000 100%
-  );
-}
-
-[data-scroll-fade="x"][data-scrollable="start end"] {
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent,
-    #000 var(--scroll-fade-size, 32px),
-    #000 calc(100% - var(--scroll-fade-size, 32px)),
-    transparent
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent,
-    #000 var(--scroll-fade-size, 32px),
-    #000 calc(100% - var(--scroll-fade-size, 32px)),
-    transparent
-  );
 }
 
 @media (prefers-reduced-motion: reduce) {

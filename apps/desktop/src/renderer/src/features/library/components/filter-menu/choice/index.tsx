@@ -1,7 +1,6 @@
 import { FIELD_META } from "@pond/schema/filters/meta";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { Menu } from "@pond/ui";
-import { useState } from "react";
 import { choiceIsSearchable } from "../layout";
 import type { FilterOption } from "../options";
 import { isChoiceSelected } from "../selection";
@@ -16,15 +15,16 @@ export function ChoiceFilter({
   options,
   matching = "any",
   rows,
+  search,
   onChange,
 }: {
   field: FieldId;
   options: FilterOption[];
   matching?: "any" | "all";
   rows: Predicate[];
+  search: string;
   onChange: (rows: Predicate[]) => void;
 }) {
-  const [search, setSearch] = useState("");
   const meta = FIELD_META[field];
   const { counts, empty } = useChoiceCounts(field);
   const searchable = choiceIsSearchable(field, options.length);
@@ -78,11 +78,9 @@ export function ChoiceFilter({
         <Menu.Input
           aria-label={`Filter ${meta.label}`}
           placeholder={`Search ${meta.label.toLowerCase()}…`}
-          value={search}
-          onValueChange={setSearch}
         />
       ) : null}
-      <Menu.List className={styles.options}>
+      <Menu.FilterList className={styles.options}>
         {showEmpty ? (
           <EmptyChoice
             field={field}
@@ -114,7 +112,7 @@ export function ChoiceFilter({
             </Menu.ItemLabel>
           </Menu.Item>
         ) : null}
-      </Menu.List>
+      </Menu.FilterList>
     </>
   );
 }

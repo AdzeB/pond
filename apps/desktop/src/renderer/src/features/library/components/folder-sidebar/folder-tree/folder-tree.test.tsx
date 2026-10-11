@@ -163,7 +163,7 @@ describe("folder sidebar tree", () => {
   it("opens the shared visibility menu from a built-in row", async () => {
     await harness.mount();
     await act(async () => {
-      harness.button("All").dispatchEvent(
+      harness.button("Uncategorized").dispatchEvent(
         new MouseEvent("contextmenu", {
           bubbles: true,
           cancelable: true,
@@ -178,30 +178,6 @@ describe("folder sidebar tree", () => {
     }
   });
 
-  it("opens sidebar customization from the Library label", async () => {
-    await harness.mount();
-    const label = [...harness.host.querySelectorAll("*")].find(
-      (node) => node.children.length === 0 && node.textContent === "Library",
-    );
-    if (!(label instanceof HTMLElement))
-      throw new Error("Missing Library label");
-    await act(async () => {
-      label.dispatchEvent(
-        new MouseEvent("contextmenu", {
-          bubbles: true,
-          cancelable: true,
-          button: 2,
-          clientX: 24,
-          clientY: 24,
-        }),
-      );
-    });
-    await act(async () => harness.menuItem("Customize Sidebar").click());
-    const dialog = document.querySelector('[role="dialog"]');
-    expect(dialog?.textContent).toContain("Customize Sidebar");
-    expect(dialog?.textContent).toContain("All");
-  });
-
   it("makes visible built-in destinations directly sortable", async () => {
     await harness.mount();
     expect(
@@ -213,12 +189,11 @@ describe("folder sidebar tree", () => {
       "uncategorized",
       "assistant",
       "untagged",
+      "recentlyAdded",
       "recentlyUsed",
       "tags",
       "random",
       "trash",
-      "downloads",
-      "sources",
     ]);
   });
 
@@ -245,12 +220,12 @@ describe("folder sidebar tree", () => {
     }
     const all = harness.button("All");
     const allRow = all.closest<HTMLElement>("[data-sidebar-sortable]");
-    expect(allRow).not.toBeNull();
+    if (!allRow) throw new Error("Expected the All row to be sortable");
     const transitions: string[] = [];
     const observer = new MutationObserver(() => {
-      transitions.push(allRow?.style.transition ?? "");
+      transitions.push(allRow.style.transition);
     });
-    observer.observe(allRow as HTMLElement, {
+    observer.observe(allRow, {
       attributes: true,
       attributeFilter: ["style"],
     });
@@ -296,12 +271,11 @@ describe("folder sidebar tree", () => {
       "assistant",
       "untagged",
       "all",
+      "recentlyAdded",
       "recentlyUsed",
       "tags",
       "random",
       "trash",
-      "downloads",
-      "sources",
     ]);
     expect(transitions).toContain("transform 0ms linear");
   });
@@ -365,40 +339,39 @@ describe("folder sidebar tree", () => {
     const dialog = document.querySelector('[role="dialog"]');
     if (!(dialog instanceof HTMLElement))
       throw new Error("Missing customization dialog");
-    expect(dialog?.textContent).toContain("Customize Folder");
-    expect(dialog?.textContent).toContain(
-      "Choose how this folder looks and add optional details.",
-    );
-    expect(dialog?.querySelector('button[aria-pressed="true"]')).not.toBeNull();
+    expect(dialog.getAttribute("aria-label")).toBe("Customize Folder");
 
     const option = (label: string) => {
-      const button = [...dialog.querySelectorAll("button")].find(
-        (candidate) => candidate.textContent?.trim() === label,
+      const button = document.querySelector<HTMLButtonElement>(
+        `button[aria-label="${label}"]`,
       );
       if (!button) throw new Error(`Missing customization option: ${label}`);
       return button;
     };
+    await act(async () => option("Icon and Color").click());
+    expect(
+      document.querySelector(
+        'button[aria-label="Folder"][aria-pressed="true"]',
+      ),
+    ).not.toBeNull();
     await act(async () => option("Album").click());
     await act(async () => option("Pink").click());
     const description = dialog.querySelector("textarea");
-    const externalLink = dialog.querySelector('input[type="url"]');
     if (!(description instanceof HTMLTextAreaElement))
       throw new Error("Missing folder description");
-    if (!(externalLink instanceof HTMLInputElement))
-      throw new Error("Missing external link");
+    expect(dialog.querySelector('input[type="url"]')).toBeNull();
     await act(async () => {
       Object.getOwnPropertyDescriptor(
         HTMLTextAreaElement.prototype,
         "value",
       )?.set?.call(description, "Reference material");
       description.dispatchEvent(new InputEvent("input", { bubbles: true }));
-      Object.getOwnPropertyDescriptor(
-        HTMLInputElement.prototype,
-        "value",
-      )?.set?.call(externalLink, "https://example.com/project");
-      externalLink.dispatchEvent(new InputEvent("input", { bubbles: true }));
     });
-    await act(async () => option("Save").click());
+    await act(async () =>
+      [...dialog.querySelectorAll("button")]
+        .find((candidate) => candidate.textContent?.trim() === "Save")
+        ?.click(),
+    );
 
     expect(pondQuery).toHaveBeenCalledWith("folders.setColor", {
       id: "Shots",
@@ -546,6 +519,8 @@ describe("folder sidebar tree", () => {
       library: 6006,
       uncategorized: 0,
       untagged: 0,
+      recentlyAdded: 0,
+      recentlyUsed: 0,
       trash: 0,
       folders: {
         "Jil Sander": 6006,

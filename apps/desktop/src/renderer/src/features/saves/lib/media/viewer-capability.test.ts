@@ -22,7 +22,6 @@ describe("viewerCapabilityFor", () => {
         surface: "raster",
         source: "original",
         edits: "full",
-        comments: "spatial",
       });
     },
   );
@@ -34,17 +33,14 @@ describe("viewerCapabilityFor", () => {
         surface: "raster",
         source: "generated",
         edits: "none",
-        comments: "spatial",
       });
     },
   );
 
-  it("gives video temporal comments and fit/fill sizing", () => {
+  it("gives video a temporal surface", () => {
     expect(viewerCapabilityFor(file("mp4"))).toMatchObject({
       kind: "media",
       surface: "temporal",
-      comments: "temporal",
-      sizing: "fit-fill",
     });
   });
 
@@ -52,7 +48,6 @@ describe("viewerCapabilityFor", () => {
     expect(viewerCapabilityFor(file("unknown"))).toMatchObject({
       kind: "generic",
       surface: "fallback",
-      comments: "item",
     });
   });
 

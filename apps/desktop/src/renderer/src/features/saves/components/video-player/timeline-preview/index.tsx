@@ -1,15 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./styles.module.css";
 
-export function TimelinePreview({
-  src,
-  time,
-  ratio,
-}: {
-  src: string;
-  time: number;
-  ratio: number | null;
-}) {
+export function TimelinePreview({ src, time }: { src: string; time: number }) {
   const preview = useRef<HTMLVideoElement>(null);
   const [ready, setReady] = useState(false);
 
@@ -34,7 +26,7 @@ export function TimelinePreview({
       ref={preview}
       src={src}
       className={styles.preview}
-      style={{ aspectRatio: ratio ?? undefined }}
+      style={{ aspectRatio: "16 / 9" }}
       preload="metadata"
       muted
       playsInline

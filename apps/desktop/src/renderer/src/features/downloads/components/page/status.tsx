@@ -14,7 +14,7 @@ const STATUS_LABELS = {
   failed: "Failed",
   complete: "Completed",
   paused: "Paused",
-  cancelled: "Cancelled",
+  cancelled: "Canceled",
   skipped: "Skipped",
 } satisfies Record<DownloadTableStatus, string>;
 

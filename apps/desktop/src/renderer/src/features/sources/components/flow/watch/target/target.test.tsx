@@ -1,31 +1,15 @@
 import { act, type ComponentProps } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { WatchTargetForm } from "./";
+import { WatchTargetProvider, WatchTargetSection, WatchTargetSubmit } from "./";
 
-type FormProps = ComponentProps<typeof WatchTargetForm>;
+type ProviderProps = ComponentProps<typeof WatchTargetProvider>;
 let root: Root;
 let host: HTMLDivElement;
-const addWatch = vi.fn<FormProps["addWatch"]>();
-const onAdded = vi.fn<FormProps["onAdded"]>();
+const addWatch = vi.fn<ProviderProps["addWatch"]>();
+const onAdded = vi.fn<ProviderProps["onAdded"]>();
 
 beforeEach(() => {
-  vi.useFakeTimers();
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
-  vi.stubGlobal("matchMedia", () => ({
-    matches: true,
-    addEventListener() {},
-    removeEventListener() {},
-    addListener() {},
-    removeListener() {},
-  }));
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -39,209 +23,131 @@ afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
   vi.useRealTimers();
-  vi.unstubAllGlobals();
 });
 
 async function render(
-  resolveTarget: FormProps["resolveTarget"],
-  source: FormProps["source"] = "youtube",
-  connectedSources: FormProps["connectedSources"] = [],
+  source: ProviderProps["source"] = "youtube",
+  connectedSources: ProviderProps["connectedSources"] = [],
 ) {
   await act(async () =>
     root.render(
-      <WatchTargetForm
+      <WatchTargetProvider
         source={source}
         connectedSources={connectedSources}
-        resolveTarget={resolveTarget}
         addWatch={addWatch}
         onAdded={onAdded}
-      />,
+      >
+        <WatchTargetSection />
+        <WatchTargetSubmit />
+      </WatchTargetProvider>,
     ),
   );
 }
 
-async function typeInput(value: string) {
-  const field = host.querySelector('input[type="text"]');
+function field() {
+  const input = host.querySelector<HTMLInputElement>('input[type="text"]');
+  if (!input) throw new Error("Missing input");
+  return input;
+}
+
+function watchButton() {
+  const button = Array.from(host.querySelectorAll("button")).find(
+    (button) => button.textContent === "Watch",
+  );
+  if (!button) throw new Error("Missing Watch button");
+  return button;
+}
+
+async function type(value: string) {
   await act(async () => {
     Object.getOwnPropertyDescriptor(
       HTMLInputElement.prototype,
       "value",
-    )?.set?.call(field, value);
-    field?.dispatchEvent(new Event("input", { bubbles: true }));
+    )?.set?.call(field(), value);
+    field().dispatchEvent(new Event("input", { bubbles: true }));
   });
-  await act(async () => vi.advanceTimersByTimeAsync(500));
 }
 
-function account(platform: string) {
-  const input = Array.from(
-    host.querySelectorAll<HTMLButtonElement>(
-      "button[aria-label]:not([data-icon])",
-    ),
-  ).find((input) =>
-    input.getAttribute("aria-label")?.startsWith(`${platform}:`),
-  );
-  if (!input) throw new Error(`Missing option: ${platform}`);
-  return input;
+async function submit() {
+  await act(async () => {
+    host.querySelector("form")?.requestSubmit();
+  });
 }
 
-it("resolves the chosen source and submits only after a click", async () => {
-  const resolve = vi.fn<FormProps["resolveTarget"]>(async (_source, input) => ({
-    handle: input,
-    display: `@${input}`,
-    kind: "user",
-  }));
-  await render(resolve);
-  await typeInput("drumarjohnson");
-  expect(host.querySelector("select")).toBeNull();
-  expect(
-    host.querySelectorAll("button[aria-label]:not([data-icon])"),
-  ).toHaveLength(1);
+async function finishAdding() {
+  expect(onAdded).not.toHaveBeenCalled();
+  await act(async () => vi.runOnlyPendingTimers());
+}
+
+it("is a plain input that only submits on Watch", async () => {
+  vi.useFakeTimers({ toFake: ["setTimeout"] });
+  await render();
+  expect(watchButton().disabled).toBe(true);
+  await type("drumarjohnson");
+  expect(host.querySelector('[role="group"]')).toBeNull();
   expect(addWatch).not.toHaveBeenCalled();
-  await act(async () => account("YouTube").click());
-
+  expect(watchButton().disabled).toBe(false);
+  await submit();
   expect(addWatch).toHaveBeenCalledExactlyOnceWith("youtube", "drumarjohnson");
+  await finishAdding();
   expect(onAdded).toHaveBeenCalledWith("watch-1");
 });
 
-it("blocks Instagram watches until that account is connected", async () => {
-  const resolve = vi.fn<FormProps["resolveTarget"]>(async (_source, input) => ({
-    handle: input,
-    display: `@${input}`,
-    kind: "user",
-  }));
-  await render(resolve, "instagram");
-  await typeInput("drumarjohnson");
-  expect(account("Instagram").disabled).toBe(true);
-  expect(host.textContent).not.toContain("Connect your Instagram account");
-  expect(
-    host.querySelector(
-      'button[aria-label^="Connect your Instagram account in Sources"]',
-    ),
-  ).not.toBeNull();
-  expect(addWatch).not.toHaveBeenCalled();
-});
-
-it("rejects a link from another source", async () => {
-  await render(
-    async () => ({ handle: "alice", display: "@alice" }),
-    "instagram",
-  );
-  await typeInput("https://youtube.com/@alice");
-  expect(host.textContent).toContain("This link isn't from Instagram.");
-  expect(addWatch).not.toHaveBeenCalled();
-});
-
-it("resolves a full link and waits for the user to click before starting", async () => {
-  const resolve = vi.fn<FormProps["resolveTarget"]>(async () => ({
-    handle: "alice",
-    display: "@alice",
-    kind: "channel",
-  }));
-  await render(resolve);
-  await typeInput("https://youtube.com/@alice");
-  expect(resolve).toHaveBeenCalledExactlyOnceWith(
-    "youtube",
-    "https://youtube.com/@alice",
-  );
-  expect(addWatch).not.toHaveBeenCalled();
-  await act(async () => account("YouTube").click());
+it("submits a full link as typed", async () => {
+  await render();
+  await type("  https://youtube.com/@alice ");
+  await submit();
   expect(addWatch).toHaveBeenCalledExactlyOnceWith(
     "youtube",
     "https://youtube.com/@alice",
   );
 });
 
-it("waits for the chosen source before showing a result", async () => {
-  let finish: () => void = () => {};
-  const pending = new Promise<null>((resolve) => {
-    finish = () => resolve(null);
-  });
-  await render(() => pending);
-  await typeInput("alice");
-  expect(
-    host.querySelectorAll("button[aria-label]:not([data-icon])"),
-  ).toHaveLength(0);
-  const loading = host.querySelector(
-    '[role="status"][aria-label="Looking for accounts"]',
-  );
-  expect(loading?.children).toHaveLength(1);
-  expect(host.textContent).not.toContain("Looking for accounts");
-  await act(async () => finish());
-  expect(
-    host.querySelectorAll("button[aria-label]:not([data-icon])"),
-  ).toHaveLength(0);
-  expect(host.querySelector('[aria-label="Looking for accounts"]')).toBeNull();
-  expect(host.textContent).toContain(
-    "Couldn't find anything. Try another search.",
-  );
+it("rejects a link from another source", async () => {
+  await render("instagram", ["instagram"]);
+  await type("https://youtube.com/@alice");
+  expect(host.textContent).toContain("This link isn't from Instagram.");
+  expect(watchButton().disabled).toBe(true);
+  await submit();
   expect(addWatch).not.toHaveBeenCalled();
 });
 
-it("ignores responses for the previous handle", async () => {
-  let finish: (value: Awaited<ReturnType<FormProps["resolveTarget"]>>) => void =
-    () => {};
-  const oldResult = new Promise<
-    Awaited<ReturnType<FormProps["resolveTarget"]>>
-  >((resolve) => {
-    finish = resolve;
-  });
-  await render(async (_source, input) =>
-    input === "old" ? oldResult : { handle: input, display: `@${input}` },
-  );
-  await typeInput("old");
-  await typeInput("new");
-  await act(async () => finish({ handle: "old", display: "@old" }));
-  expect(host.textContent).not.toContain("@old");
-  expect(account("YouTube").disabled).toBe(false);
-  await typeInput("third");
-  expect(account("YouTube").getAttribute("aria-label")).toContain("third");
+it("blocks Instagram watches until that account is connected", async () => {
+  await render("instagram");
+  await type("drumarjohnson");
+  expect(host.textContent).toContain("Watching needs your Instagram account.");
+  expect(watchButton().disabled).toBe(true);
+  await submit();
   expect(addWatch).not.toHaveBeenCalled();
 });
 
-it("hides missing accounts and shows an empty result when none exist", async () => {
-  await render(async () => null);
-  await typeInput("missing-account");
+it("offers Connect up front when the source needs a signed-in account", async () => {
+  await render("twitter");
+  expect(field().placeholder).toBe("@handle or x.com link");
   expect(
-    host.querySelectorAll("button[aria-label]:not([data-icon])"),
-  ).toHaveLength(0);
-  expect(host.textContent).toContain(
-    "Couldn't find anything. Try another search.",
+    Array.from(host.querySelectorAll("li"), (item) => item.textContent),
+  ).toEqual(["Accounts@handle", "Listsx.com/i/lists/123"]);
+  const connect = Array.from(host.querySelectorAll("button")).find(
+    (button) => button.textContent === "Connect",
   );
-  expect(addWatch).not.toHaveBeenCalled();
+  expect(connect?.type).toBe("button");
 });
 
-it("reports failed lookups without inventing matches", async () => {
-  await render(async () => {
-    throw new Error("Rate limited");
-  });
-  await typeInput("alice");
-  expect(
-    host.querySelectorAll("button[aria-label]:not([data-icon])"),
-  ).toHaveLength(0);
-  expect(host.textContent).toContain(
-    "Couldn't find anything. Try another search.",
+it("explains a profile Pond couldn't find and clears it on edit", async () => {
+  addWatch.mockResolvedValueOnce({ ok: false, reason: "invalid" });
+  await render();
+  await type("missing-account");
+  await submit();
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain(
+    "Couldn't find that profile on YouTube.",
   );
-});
-
-it("shows the profile photo and handle, with a platform fallback if the photo fails", async () => {
-  await render(async (_source, input) => ({
-    handle: input,
-    display: "Alice Example",
-    avatarUrl: `https://example.com/${input}.jpg`,
-  }));
-  await typeInput("https://youtube.com/@alice");
-  const photo = host.querySelector<HTMLImageElement>(
-    'img[src^="https://example.com/"]',
-  );
-  expect(photo).not.toBeNull();
-  expect(host.textContent).toContain("Alice Example");
-  expect(host.textContent).toContain("@alice");
-  await act(async () => photo?.dispatchEvent(new Event("error")));
-  expect(host.querySelector('img[src^="https://example.com/"]')).toBeNull();
-  expect(account("YouTube").disabled).toBe(false);
+  expect(field().getAttribute("aria-invalid")).toBe("true");
+  await type("missing-account2");
+  expect(host.querySelector('[role="alert"]')).toBeNull();
 });
 
 it("prevents duplicate starts and lets the user retry after a failure", async () => {
+  vi.useFakeTimers({ toFake: ["setTimeout"] });
   let fail: (error: Error) => void = () => {};
   addWatch.mockImplementationOnce(
     () =>
@@ -249,47 +155,18 @@ it("prevents duplicate starts and lets the user retry after a failure", async ()
         fail = reject;
       }),
   );
-  await render(async (_source, input) => ({ handle: input, display: input }));
-  await typeInput("alice");
-  expect(host.textContent).not.toContain("Start Watching");
+  await render();
+  await type("alice");
   await act(async () => {
-    account("YouTube").click();
-    account("YouTube").click();
+    host.querySelector("form")?.requestSubmit();
+    host.querySelector("form")?.requestSubmit();
   });
   expect(addWatch).toHaveBeenCalledTimes(1);
-  expect(account("YouTube").disabled).toBe(true);
-  expect(host.textContent).toContain("Starting");
+  expect(field().disabled).toBe(true);
   await act(async () => fail(new Error("Unavailable")));
   expect(host.querySelector('[role="alert"]')).not.toBeNull();
-  await act(async () => account("YouTube").click());
+  await submit();
   expect(addWatch).toHaveBeenCalledTimes(2);
+  await finishAdding();
   expect(onAdded).toHaveBeenCalledWith("watch-1");
-});
-
-it("never renders an empty result between typing and starting the lookup", async () => {
-  await render(() => new Promise(() => {}));
-  const flashes: string[] = [];
-  const observer = new MutationObserver((records) => {
-    for (const record of records) {
-      for (const node of record.addedNodes) {
-        const text = node.textContent ?? "";
-        if (
-          text.includes("No accounts found") ||
-          text.includes("Couldn't find anything")
-        )
-          flashes.push(text);
-      }
-    }
-  });
-  observer.observe(host, { childList: true, subtree: true });
-  try {
-    await typeInput("a");
-    await typeInput("alice");
-    expect(flashes).toEqual([]);
-    expect(
-      host.querySelector('[aria-label="Looking for accounts"]'),
-    ).not.toBeNull();
-  } finally {
-    observer.disconnect();
-  }
 });

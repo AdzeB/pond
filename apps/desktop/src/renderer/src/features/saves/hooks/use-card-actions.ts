@@ -1,14 +1,18 @@
 import { useCallback, useEffect } from "react";
 import { z } from "zod";
 import type { SaveListMode } from "@/features/saves/lib/list";
-import { openSave } from "@/features/saves/lib/save-nav";
-import { clearSaveSelection, clickSave } from "@/features/saves/lib/select";
+import {
+  clearSaveSelection,
+  clickSave,
+  selectOnlySave,
+} from "@/features/saves/lib/select";
+import { isLibrarySaveDrag } from "@/features/saves/lib/start-drag";
 import { asUrlList, filePathsFromText } from "@/features/saves/lib/url-list";
 import { runViewerAction } from "@/features/saves/lib/viewer-actions";
 import { importFilesWithDuplicateReview } from "@/features/saves/state/duplicate-import-review";
 import { useSelectionSize } from "@/features/saves/state/selection";
-import { usePrefs } from "@/features/settings/state/prefs";
 import { notify } from "@/shared/lib/toast";
+import { getPrefsSnapshot, usePrefs } from "@/shared/state/prefs";
 
 interface CardActions {
   selectionSize: number;
@@ -62,8 +66,9 @@ async function quickAddUrls(urls: readonly string[]): Promise<void> {
     id: "paste-import",
     title: downloadingTitle(added.length),
   });
-  const id = added.length === 1 ? added[0] : null;
-  if (id) openSave(id);
+  const newest = added.findLast((id) => id !== null);
+  if (newest && getPrefsSnapshot()?.preferences.autoSelectAfterImport)
+    selectOnlySave(newest);
 }
 
 async function importClipboardAndNotify(): Promise<void> {
@@ -185,7 +190,7 @@ export function useCardActions(
   }, []);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
-    if (!e.dataTransfer) return;
+    if (!e.dataTransfer || isLibrarySaveDrag(e.dataTransfer)) return;
     const types = Array.from(e.dataTransfer.types ?? []);
     if (
       types.includes("text/uri-list") ||
@@ -200,7 +205,7 @@ export function useCardActions(
   const onDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     const dt = e.dataTransfer;
-    if (!dt) return;
+    if (!dt || isLibrarySaveDrag(dt)) return;
 
     /** Electron 41 removed File.path; resolve absolute paths via the preload bridge. */
     const paths = Array.from(dt.files ?? [])

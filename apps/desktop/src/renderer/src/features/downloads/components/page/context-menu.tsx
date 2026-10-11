@@ -11,16 +11,16 @@ import { type MenuItemSpec, useDataTable } from "@pond/ui";
 import type { ReactElement } from "react";
 import {
   canCancelDownload,
+  cancelDownloadRows,
   canSkipDownload,
   canTrashDownload,
-  confirmCancelDownloadRows,
-  confirmSkipDownloadRows,
   retryDownloadRows,
+  skipDownloadRows,
   trashDownloadRows,
 } from "@/features/downloads/components/lib/actions";
 import type { DownloadRow } from "@/features/downloads/lib/status-feed";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
-import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
+import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import type { DownloadViewRow } from "./columns";
 
 function menuTargets(row: DownloadRow): readonly DownloadRow[] {
@@ -50,13 +50,13 @@ export function buildDownloadMenuItems(
       label: plural ? "Cancel Selected" : "Cancel Download",
       icon: <IconMediaPauseFill18 />,
       disabled: !cancellable,
-      onClick: () => confirmCancelDownloadRows(rows),
+      onClick: () => cancelDownloadRows(rows),
     },
     {
       label: plural ? "Skip Selected" : "Skip Download",
       icon: <IconBanOutline18 />,
       disabled: !skippable,
-      onClick: () => confirmSkipDownloadRows(rows),
+      onClick: () => skipDownloadRows(rows),
     },
     { type: "separator" },
     {

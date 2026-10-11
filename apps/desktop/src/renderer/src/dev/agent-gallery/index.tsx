@@ -84,7 +84,7 @@ const SOURCE_FIXTURES = {
     url: "https://www.cosmos.so/e/15298133",
     source: "cosmos",
     description:
-      "A deliberately long title for checking wrapping inside a narrow Agent pane.",
+      "A deliberately long title for checking wrapping inside a narrow Assistant pane.",
     mediaType: "image",
     files: [],
   },
@@ -121,7 +121,8 @@ const SOURCE_FIXTURES = {
     title: "Museum signage reference",
     url: "https://www.pinterest.com/pin/123456789/",
     source: "pinterest",
-    description: "Quiet directional signage using one type size and two weights.",
+    description:
+      "Quiet directional signage using one type size and two weights.",
     mediaType: "image",
     files: [],
   },
@@ -136,7 +137,7 @@ const SOURCE_FIXTURES = {
   },
   notes: {
     id: "agent-gallery-notes",
-    title: "Agent pane review notes",
+    title: "Assistant pane review notes",
     url: "pond:local/agent-gallery-notes",
     source: "local",
     notes:
@@ -147,14 +148,14 @@ const SOURCE_FIXTURES = {
 } satisfies Record<string, GallerySource>;
 
 const SOURCES = Object.values(SOURCE_FIXTURES);
-const PREVIEW_URLS: Readonly<Record<string, string>> = {
-  [SOURCE_FIXTURES.screenshot.id]: interfaceStudyUrl,
-  [SOURCE_FIXTURES.arena.id]: transitMapUrl,
-  [SOURCE_FIXTURES.cosmos.id]: editorialPosterUrl,
-  [SOURCE_FIXTURES.youtube.id]: printStudioUrl,
-  [SOURCE_FIXTURES.instagram.id]: transitMapUrl,
-  [SOURCE_FIXTURES.pinterest.id]: editorialPosterUrl,
-};
+const PREVIEW_URLS = new Map([
+  [SOURCE_FIXTURES.screenshot.id, interfaceStudyUrl],
+  [SOURCE_FIXTURES.arena.id, transitMapUrl],
+  [SOURCE_FIXTURES.cosmos.id, editorialPosterUrl],
+  [SOURCE_FIXTURES.youtube.id, printStudioUrl],
+  [SOURCE_FIXTURES.instagram.id, transitMapUrl],
+  [SOURCE_FIXTURES.pinterest.id, editorialPosterUrl],
+]);
 
 function fixtureSave(source: GallerySource): Save {
   return {
@@ -230,8 +231,7 @@ function AgentGallery() {
   const [dataSet, setDataSet] = useState<DataSet>("stress");
   const [attachedIds, setAttachedIds] = useState<string[]>([]);
   const [event, setEvent] = useState("No interaction yet.");
-  const visibleSources =
-    dataSet === "stress" ? SOURCES : SOURCES.slice(0, 4);
+  const visibleSources = dataSet === "stress" ? SOURCES : SOURCES.slice(0, 4);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -254,9 +254,9 @@ function AgentGallery() {
       <header className={styles.hero}>
         <div>
           <span className={styles.eyebrow}>Pond design system</span>
-          <h1>Agent component lab</h1>
+          <h1>Assistant component lab</h1>
           <p>
-            Style Agent surfaces against stable fixtures without starting a
+            Style Assistant surfaces against stable fixtures without starting a
             conversation.
           </p>
         </div>
@@ -331,7 +331,7 @@ function AgentGallery() {
               renderMedia={(source) => (
                 <SourceThumbnail
                   id={source.id}
-                  previewUrl={PREVIEW_URLS[source.id]}
+                  previewUrl={PREVIEW_URLS.get(source.id)}
                   source={source}
                   size="compact"
                 />
@@ -348,7 +348,7 @@ function AgentGallery() {
             <div>
               <SourceThumbnail
                 id={SOURCE_FIXTURES.screenshot.id}
-                previewUrl={PREVIEW_URLS[SOURCE_FIXTURES.screenshot.id]}
+                previewUrl={PREVIEW_URLS.get(SOURCE_FIXTURES.screenshot.id)}
                 source={SOURCE_FIXTURES.screenshot}
               />
               <span>Default</span>
@@ -356,7 +356,7 @@ function AgentGallery() {
             <div>
               <SourceThumbnail
                 id={SOURCE_FIXTURES.report.id}
-                previewUrl={PREVIEW_URLS[SOURCE_FIXTURES.report.id]}
+                previewUrl={PREVIEW_URLS.get(SOURCE_FIXTURES.report.id)}
                 source={SOURCE_FIXTURES.report}
                 size="compact"
               />
@@ -365,7 +365,7 @@ function AgentGallery() {
             <div className={styles.visual}>
               <SourceThumbnail
                 id={SOURCE_FIXTURES.arena.id}
-                previewUrl={PREVIEW_URLS[SOURCE_FIXTURES.arena.id]}
+                previewUrl={PREVIEW_URLS.get(SOURCE_FIXTURES.arena.id)}
                 source={SOURCE_FIXTURES.arena}
                 visual
               />

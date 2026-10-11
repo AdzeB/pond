@@ -1,6 +1,5 @@
 import { Button } from "@pond/ui";
 import { z } from "zod";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import styles from "./styles.module.css";
 
 const ThrownStringSchema = z.string();
@@ -27,7 +26,6 @@ export function ErrorScreen({
   const message = messageOf(error);
   const stack = stackOf(error);
   const hasDetails = Boolean(stack || componentStack);
-  const scrollFade = useScrollFade<HTMLPreElement>();
 
   return (
     <div className={styles.root} role="alert">
@@ -38,7 +36,7 @@ export function ErrorScreen({
         {hasDetails ? (
           <details className={styles.details}>
             <summary className={styles.summary}>Technical Details</summary>
-            <pre className={styles.stack} {...scrollFade}>
+            <pre className={styles.stack}>
               {[stack, componentStack].filter(Boolean).join("\n\n")}
             </pre>
           </details>

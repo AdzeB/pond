@@ -6,7 +6,7 @@ import { Select, Slider } from "@pond/ui";
 import type { Book, NavItem, Rendition } from "epubjs";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
-import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerToolbarGroups } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import styles from "./styles.module.css";
 

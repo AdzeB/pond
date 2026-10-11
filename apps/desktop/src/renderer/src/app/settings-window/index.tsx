@@ -11,13 +11,12 @@ import { InterfaceZoom } from "@/features/settings/effects/interface-zoom";
 import { LocalizedSettings } from "@/features/settings/effects/localized-settings";
 import { ThemeApplier } from "@/features/settings/effects/theme-applier";
 import { UiSounds } from "@/features/settings/effects/ui-sounds";
+import { FramelessWindowChrome } from "@/shared/components/frameless-window-chrome";
+import { ToastHost } from "@/shared/components/toast-host";
 import {
   rememberSettingsSection,
   resolveSettingsLocation,
-} from "@/features/settings/lib/open-settings";
-import { FramelessWindowChrome } from "@/shared/components/frameless-window-chrome";
-import { ToastHost } from "@/shared/components/toast-host/toast-host";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
+} from "@/shared/lib/open-settings";
 import type { PondSettingsApi } from "../../../../preload/settings";
 import styles from "./styles.module.css";
 
@@ -30,7 +29,6 @@ declare global {
 export function SettingsWindow() {
   const [location, setLocation] = useState(() => resolveSettingsLocation());
   const [queryClient] = useState(() => new QueryClient());
-  const scrollFade = useScrollFade<HTMLDivElement>();
   useEffect(() => {
     const api = window.pondSettings;
     if (!api) return;

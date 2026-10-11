@@ -4,7 +4,7 @@ import {
   ReplyIcon,
   RetweetIcon,
   ViewsIcon,
-} from "@/features/captures/components/tweet/card/icons/icons";
+} from "@/features/captures/components/tweet/card/icons";
 import type { TweetCardMetrics } from "@/features/captures/components/tweet/card/lib/data";
 import { formatCount } from "@/shared/lib/format";
 import styles from "./styles.module.css";

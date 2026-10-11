@@ -1,4 +1,4 @@
-import { ConversationView } from "@pond/ui/thread";
+import { Thread } from "@pond/ui/thread";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -23,9 +23,9 @@ it("shows the icon-only latest response control only while scrolled away from th
   try {
     await act(async () => {
       root.render(
-        <ConversationView composer={<div>Composer</div>}>
+        <Thread.Conversation composer={<div>Composer</div>}>
           <p>Response</p>
-        </ConversationView>,
+        </Thread.Conversation>,
       );
     });
     const viewport = host.firstElementChild?.firstElementChild;

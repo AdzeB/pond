@@ -5,8 +5,8 @@ import {
   IconCalendarPlusOutline18,
   IconColorPaletteOutline18,
   IconDiceOutline18,
+  IconMediaLibraryOutline18,
   IconQuickAccessOutline18,
-  IconShapesOutline18,
   IconSortAlphaAscendingOutline18,
   IconSortArrowsOutline18,
 } from "@pond/icons/outline/18";
@@ -22,7 +22,7 @@ import {
   exportFolderEaglePackage,
   exportFolderFiles,
   exportFolderPackage,
-} from "@/features/library/components/folder-context-menu/folder-context-menu";
+} from "@/features/library/components/folder-context-menu";
 import type { FolderTool } from "@/features/library/components/folder-tools";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import { folders } from "@/features/library/state/folders";
@@ -32,12 +32,13 @@ import {
   setIncludeSubfolders,
   setSort,
 } from "@/features/library/state/view-store";
-import { notify } from "@/shared/lib/toast";
+import { errorCopy } from "@/shared/lib/error-copy";
 import {
-  FOLDER_ICONS,
+  FOLDER_MENU_ICONS,
   FOLDER_SWATCHES,
   type FolderIconId,
-} from "./folder-icons";
+} from "@/shared/lib/folder-icons";
+import { notify } from "@/shared/lib/toast";
 import { selectLibraryNav } from "./navigation";
 
 interface FolderRowMenuInput {
@@ -144,7 +145,7 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
           notify({
             id: "folder-duplicate",
             title: "Couldn't duplicate folder",
-            description: error instanceof Error ? error.message : "Try again.",
+            description: errorCopy(error, "Try again."),
           }),
         );
     },
@@ -156,7 +157,7 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
     onCopyLink: () => {
       void window.pond
         .query("clipboard.writeText", {
-          text: libraryFolderLink(window.pond.pondId(), folder.id),
+          text: libraryFolderLink(window.pond.libraryId(), folder.id),
         })
         .then(() => notify({ id: "folder-link", title: "Folder link copied" }));
     },
@@ -178,6 +179,7 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
         () =>
           confirmRemoveFolder({
             id: folder.id,
+            name: folder.name,
             onRemoved: async () => {
               await folders.refresh();
               if (input.nav.kind === "folder" && input.nav.id === folder.id) {
@@ -199,8 +201,8 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
     {
       type: "submenu",
       label: "Icon",
-      icon: createElement(IconShapesOutline18),
-      items: FOLDER_ICONS.map((option) => ({
+      icon: createElement(IconMediaLibraryOutline18),
+      items: FOLDER_MENU_ICONS.map((option) => ({
         type: "checkbox",
         label: option.label,
         icon: createElement(option.Icon),
@@ -249,7 +251,7 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
           ["savedAt", "Date Saved", IconCalendarDateOutline18],
           ["createdAt", "Date Added", IconCalendarPlusOutline18],
           ["title", "Title", IconSortAlphaAscendingOutline18],
-          ["type", "Type", IconShapesOutline18],
+          ["type", "Type", IconMediaLibraryOutline18],
           ["random", "Random", IconDiceOutline18],
         ] as const
       ).map(([key, label, Icon]) => ({

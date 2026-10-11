@@ -5,7 +5,7 @@ import type {
   Predicate,
   PredicateValue,
 } from "@pond/schema/filters/types";
-import { describePredicate } from "@/features/search/lib/fields";
+import { describePredicate } from "@/features/search/query";
 import type { FilterOption } from "./options";
 import { isFilterSelected } from "./selection";
 

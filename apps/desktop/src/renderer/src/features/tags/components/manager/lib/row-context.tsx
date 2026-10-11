@@ -9,16 +9,15 @@ import {
   useRef,
   useState,
 } from "react";
-import { libraryChrome } from "@/features/library/state/library-chrome";
-import { resetFilters, setQuery } from "@/features/library/state/view-store";
+import { libraryChrome, resetFilters, setQuery } from "@/features/library";
 import {
   buildTagMenuItems,
   type TagMenuActions,
-} from "@/features/tags/components/context-menu/context-menu";
+} from "@/features/tags/components/context-menu";
 import {
   buildTagGroupMenuItems,
   type TagGroupMenuActions,
-} from "@/features/tags/components/group-context-menu/group-context-menu";
+} from "@/features/tags/components/group-context-menu";
 import { tagOperations } from "@/features/tags/operations/tag-client";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
@@ -81,7 +80,7 @@ export function TagRowProvider({
     if (isGroup) {
       Dialog.confirm({
         title: "Remove Tag Group",
-        description: `"${name}" will be removed. The tags inside it stay in your library; they won't belong to this group anymore.`,
+        description: `"${name}" is removed. The tags stay, and they no longer belong to this group.`,
         confirmLabel: "Remove",
         onConfirm: () => void window.pond.query("tagGroups.delete", { name }),
       });

@@ -1,5 +1,6 @@
 import { Button, Dialog, Settings } from "@pond/ui";
 import { useState } from "react";
+import { errorCopy } from "@/shared/lib/error-copy";
 
 export function RaycastRow() {
   const [busy, setBusy] = useState(false);
@@ -12,18 +13,15 @@ export function RaycastRow() {
     setError(null);
     try {
       const { token } = await window.pond.query("settings.ingestToken", {});
-      if (!token) throw new Error("Pond could not read the Local API Token.");
+      if (!token)
+        throw new Error("Couldn't read the Local API Token. Try again.");
       const result = await window.pond.query("clipboard.writeText", {
         text: token,
       });
-      if (!result.ok) throw new Error("Pond could not copy the token.");
+      if (!result.ok) throw new Error("Couldn't copy the token. Try again.");
       setCopied(true);
     } catch (reason) {
-      setError(
-        reason instanceof Error
-          ? reason.message
-          : "Pond could not copy the token.",
-      );
+      setError(errorCopy(reason, "Couldn't copy the token. Try again."));
     } finally {
       setBusy(false);
     }
@@ -41,14 +39,11 @@ export function RaycastRow() {
       const result = await window.pond.query("clipboard.writeText", {
         text: token,
       });
-      if (!result.ok) throw new Error("Pond could not copy the new token.");
+      if (!result.ok)
+        throw new Error("Couldn't copy the new token. Try again.");
       setCopied(true);
     } catch (reason) {
-      setError(
-        reason instanceof Error
-          ? reason.message
-          : "Pond could not rotate the token.",
-      );
+      setError(errorCopy(reason, "Couldn't rotate the token. Try again."));
     } finally {
       setBusy(false);
     }
@@ -59,7 +54,7 @@ export function RaycastRow() {
       <Settings.ItemDetails>
         <Settings.ItemTitle>Raycast</Settings.ItemTitle>
         <Settings.ItemDescription>
-          Connect the Raycast extension to Pond’s local API. Treat this token
+          Connect the Raycast extension to Pond's local API. Treat this token
           like a password.
           {error ? (
             <>
@@ -88,7 +83,7 @@ export function RaycastRow() {
               title: "Rotate Local API Token",
               description:
                 "Existing local integrations stop working until you give them the new token.",
-              confirmLabel: "Rotate Token",
+              confirmLabel: "Rotate",
               onConfirm: rotateToken,
             })
           }

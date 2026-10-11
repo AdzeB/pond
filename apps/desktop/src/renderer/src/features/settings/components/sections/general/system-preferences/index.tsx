@@ -1,6 +1,6 @@
 import { Input } from "@pond/ui";
 import { useId, useState } from "react";
-import { savePrefsSection, usePrefs } from "@/features/settings/state/prefs";
+import { savePrefsSection, usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
 export function SystemPreferences() {
@@ -24,7 +24,7 @@ export function SystemPreferences() {
           }}
         />
       </Input.Root>
-      <span>Use an HTTP or SOCKS proxy for Pond’s main-process requests.</span>
+      <span>Use an HTTP or SOCKS proxy for Pond's main-process requests.</span>
     </label>
   );
 }

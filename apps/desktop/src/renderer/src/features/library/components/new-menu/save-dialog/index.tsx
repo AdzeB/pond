@@ -1,5 +1,6 @@
 import { Button, Dialog, Field, Input } from "@pond/ui";
 import { useRef, useState } from "react";
+import { errorCopy } from "@/shared/lib/error-copy";
 import { importLinks } from "../actions";
 import styles from "./styles.module.css";
 
@@ -31,9 +32,7 @@ export function SaveDialog({
       }
       onClose();
     } catch (reason) {
-      setError(
-        reason instanceof Error ? reason.message : "Couldn't save. Try again.",
-      );
+      setError(errorCopy(reason, "Couldn't save. Try again."));
     } finally {
       submitting.current = false;
       setBusy(false);
@@ -58,7 +57,6 @@ export function SaveDialog({
           >
             <Dialog.Header>
               <Dialog.Title>Import from Links</Dialog.Title>
-              <Dialog.Close disabled={busy} />
             </Dialog.Header>
             <Dialog.Content className={styles.content}>
               <Dialog.Description>
@@ -66,7 +64,7 @@ export function SaveDialog({
               </Dialog.Description>
               <Field.Root>
                 <Field.Label>Links</Field.Label>
-                <Input.Root size="sm" className={styles.control}>
+                <Input.Root size="md" className={styles.control}>
                   <Field.Control
                     render={<Input.Textarea />}
                     value={text}
@@ -93,6 +91,7 @@ export function SaveDialog({
               ) : null}
             </Dialog.Content>
             <Dialog.Footer>
+              <Dialog.Cancel disabled={busy} />
               <Button
                 type="submit"
                 disabled={busy || !text.trim()}

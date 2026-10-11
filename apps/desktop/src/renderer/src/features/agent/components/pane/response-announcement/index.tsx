@@ -25,7 +25,7 @@ export function ResponseAnnouncement({
         before.running ||
         responseId !== before.responseId)
     )
-      setAnnouncement(`Agent response failed: ${error}`);
+      setAnnouncement(`Assistant response failed: ${error}`);
     else if (running) setAnnouncement("");
     else if (
       requiredAction &&
@@ -35,7 +35,7 @@ export function ResponseAnnouncement({
     )
       setAnnouncement(requiredAction);
     else if (responseId && (before.running || responseId !== before.responseId))
-      setAnnouncement("Agent response complete.");
+      setAnnouncement("Assistant response complete.");
   }, [running, responseId, requiredAction, error]);
   return (
     <span

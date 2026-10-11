@@ -1,7 +1,7 @@
 import { IconSortArrowsOutline18 } from "@pond/icons/outline/18";
 import type { Prefs } from "@pond/schema";
 import { Menu, type MenuItemSpec } from "@pond/ui";
-import { SpecMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
+import { SpecMenu } from "@/shared/components/spec-context-menu";
 
 type TagSort = Prefs["allTags"]["sort"];
 type TagSortDirection = Prefs["allTags"]["sortDirection"];

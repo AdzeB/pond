@@ -1,9 +1,7 @@
 import type { IconComponent } from "@pond/icons/types";
 import { Button, Tooltip } from "@pond/ui";
 import { type ReactNode, useState } from "react";
-import { openHarvester } from "@/features/library/lib/open-harvester";
 import { ColorSwatch } from "@/features/saves/components/detail/color-swatch";
-import { Section } from "@/features/saves/components/detail/section";
 import { useSaveDetail } from "@/features/saves/hooks/use-save-detail";
 import {
   type DetailGroup,
@@ -12,8 +10,10 @@ import {
 } from "@/features/saves/lib/detail";
 import { pickAuthorColor } from "@/features/saves/lib/presentation";
 import type { Save } from "@/features/saves/types";
+import { Section } from "@/shared/components/inspector-section";
 import { PropertyList } from "@/shared/components/property-list";
 import { initials } from "@/shared/lib/initials";
+import { openHarvester } from "@/shared/lib/open-harvester";
 import styles from "./styles.module.css";
 
 const SKELETON_ROWS = ["first", "second", "third", "fourth"] as const;
@@ -118,19 +118,6 @@ export function SaveInfoSections({
           </PropertyList.Root>
         </Section>
       ) : null}
-    </>
-  );
-}
-
-export function SaveInfoSectionsSkeleton() {
-  return (
-    <>
-      <span className={styles["sr-only"]} role="status">
-        Loading save details
-      </span>
-      <SkeletonSection title="Properties" rows={4} />
-      <SkeletonSection title="File" rows={3} defaultOpen={false} />
-      <SkeletonSection title="Dates" rows={2} defaultOpen={false} />
     </>
   );
 }

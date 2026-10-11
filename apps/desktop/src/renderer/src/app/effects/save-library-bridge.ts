@@ -22,6 +22,7 @@ registerSaveLibraryBridge({
   inspectSave: (id) => libraryChrome.inspectSave(id),
   openSaveDetails: (id) => libraryChrome.openSaveDetails(id),
   setInspectorSaveId: (id) => libraryChrome.setInspectorSaveId(id),
+  setInspectorTab: (tab) => libraryChrome.setInspectorTab(tab),
   setNav: (nav) => libraryChrome.setNav(nav),
   setAgentOpen: (open) => libraryChrome.setAgentOpen(open),
   closeRightPane: () => libraryChrome.closeRightPane(),

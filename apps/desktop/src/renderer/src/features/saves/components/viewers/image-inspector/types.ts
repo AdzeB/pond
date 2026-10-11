@@ -1,1 +1,1 @@
-export type InspectorMode = "view" | "crop" | "comment";
+export type InspectorMode = "view" | "crop";

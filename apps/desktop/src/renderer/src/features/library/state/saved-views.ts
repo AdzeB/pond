@@ -16,7 +16,7 @@ import {
   resetFilters,
   setInheritedQuery,
 } from "@/features/library/state/view-store";
-import { descendantFolderIds } from "@/features/saves/lib/nav-filter";
+import { descendantFolderIds } from "@/features/saves";
 
 export interface SavedViewEditorRequest {
   token: number;

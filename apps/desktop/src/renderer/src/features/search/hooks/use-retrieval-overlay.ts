@@ -4,12 +4,11 @@ import {
   useSemanticQuery,
   useVisualProbe,
   type VisualProbe,
-} from "@/features/library/state/view-store";
-import { ensureSaves } from "@/features/saves/lib/ensure-saves";
-import { pool } from "@/features/saves/state/pool";
+} from "@/features/library";
+import { ensureSaves, pool } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
 import { retrieveSaveIds } from "@/features/search/lib/retrieve-client";
-import { usePrefs } from "@/features/settings/state/prefs";
+import { usePrefs } from "@/shared/state/prefs";
 import { useStableById } from "../../../shared/hooks/use-stable-array";
 
 const LIMIT = 500;

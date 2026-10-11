@@ -3,7 +3,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { SearchChrome, SearchChromeInput } from ".";
+import { SearchChrome } from ".";
 import styles from "./styles.module.css";
 
 const css = readFileSync(
@@ -17,12 +17,12 @@ function declarations(selector: string) {
   return css.slice(start, css.indexOf("}", start)).replace(/\s+/g, " ");
 }
 
-describe("SearchChromeInput", () => {
+describe("SearchChrome.Input", () => {
   it("uses the shared chrome's layout inset instead of input padding", () => {
     const markup = renderToStaticMarkup(
-      <SearchChrome>
-        <SearchChromeInput aria-label="Search" />
-      </SearchChrome>,
+      <SearchChrome.Root>
+        <SearchChrome.Input aria-label="Search" />
+      </SearchChrome.Root>,
     );
 
     expect(markup).toContain(styles.input);
@@ -32,9 +32,8 @@ describe("SearchChromeInput", () => {
     expect(declarations(".root")).toContain(
       "--search-chrome-inline-start: 20px;",
     );
-    expect(declarations(".bar")).toContain(
-      "padding-inline-start: var(--search-chrome-inline-start);",
-    );
+    expect(declarations(".bar")).toContain("padding: 8px;");
+    expect(declarations(".search")).toContain("padding-left: 8px;");
     expect(
       declarations('.input[data-variant="borderless"] > .field'),
     ).toContain("padding-inline: 0;");
@@ -42,7 +41,7 @@ describe("SearchChromeInput", () => {
 
   it("uses the primary field for Harvester", () => {
     const markup = renderToStaticMarkup(
-      <SearchChromeInput aria-label="Search" variant="primary" />,
+      <SearchChrome.Input aria-label="Search" variant="primary" />,
     );
     expect(markup).toContain('data-variant="primary"');
   });

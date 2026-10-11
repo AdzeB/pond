@@ -43,12 +43,24 @@ describe("editable target", () => {
     field.remove();
   });
 
-  it("stops every app hotkey from an editable surface", () => {
+  it("stops app hotkeys from an editable surface except search", () => {
+    const mac = navigator.platform.toLowerCase().includes("mac");
     let stopped = 0;
+    const stopPropagation = () => {
+      stopped += 1;
+    };
     stopAppHotkeysFromEditable({
-      stopPropagation: () => {
-        stopped += 1;
-      },
+      nativeEvent: new KeyboardEvent("keydown", { key: "[" }),
+      stopPropagation,
+    });
+    expect(stopped).toBe(1);
+    stopAppHotkeysFromEditable({
+      nativeEvent: new KeyboardEvent("keydown", {
+        key: "k",
+        metaKey: mac,
+        ctrlKey: !mac,
+      }),
+      stopPropagation,
     });
     expect(stopped).toBe(1);
   });

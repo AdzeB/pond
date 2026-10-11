@@ -1,18 +1,43 @@
-import { Button, Checkbox, Dialog, Input } from "@pond/ui";
+import { Button, Dialog, Empty } from "@pond/ui";
 import { useSelector } from "@tanstack/react-store";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   closeDuplicateReview,
   duplicateReview,
 } from "@/features/library/state/duplicate-review";
-import { CardThumb } from "@/features/saves/components/card/media";
-import { useSave } from "@/features/saves/hooks/use-saves";
-import { ensureSaves, reloadSaves } from "@/features/saves/lib/ensure-saves";
+import { pool, reloadSaves } from "@/features/saves/pool";
+import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
+import { type DuplicateGroup, defaultKeeper, Group, groupKey } from "./group";
 import styles from "./styles.module.css";
 
-type Group = { kind: "exact" | "similar"; ids: string[] };
+const GROUP_ORDER = {
+  exact: 0,
+  "visual-near": 1,
+  "semantic-near": 2,
+} satisfies Record<DuplicateGroup["kind"], number>;
+
+function isMergeable(group: DuplicateGroup) {
+  return group.kind !== "semantic-near";
+}
+
+/** Saves that open the review come first; near matches already covered by an exact group are dropped. */
+function arrange(groups: DuplicateGroup[], saveId: string | null) {
+  const sorted = [...groups].sort(
+    (a, b) =>
+      Number(Boolean(saveId && b.ids.includes(saveId))) -
+        Number(Boolean(saveId && a.ids.includes(saveId))) ||
+      GROUP_ORDER[a.kind] - GROUP_ORDER[b.kind],
+  );
+  const exact = sorted.filter((group) => group.kind === "exact");
+  return sorted.filter(
+    (group) =>
+      group.kind === "exact" ||
+      !exact.some((match) => group.ids.every((id) => match.ids.includes(id))),
+  );
+}
+
 export function DuplicateReviewHost() {
   const request = useSelector(duplicateReview, (value) => value);
   return request ? (
@@ -23,6 +48,7 @@ export function DuplicateReviewHost() {
     />
   ) : null;
 }
+
 export function DuplicateReview({
   saveId,
   ids,
@@ -30,57 +56,107 @@ export function DuplicateReview({
   saveId: string | null;
   ids?: string[] | null;
 }) {
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [kind, setKind] = useState<Group["kind"]>("exact");
-  const [index, setIndex] = useState(0);
+  const [groups, setGroups] = useState<DuplicateGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [merging, setMerging] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [coverage, setCoverage] = useState({ indexed: 0, total: 0 });
-  const [visualDistance, setVisualDistance] = useState(6);
-  const visualDistanceId = useId();
+  const [picks, setPicks] = useState<Record<string, string>>({});
+  const [skipped, setSkipped] = useState<ReadonlySet<string>>(new Set());
+
   useEffect(() => {
     let active = true;
     void window.pond
-      .query("saves.findDuplicates", { visualDistance })
+      .query("saves.findDuplicates", {})
       .then((result) => {
         if (!active) return;
-        const nextGroups = ids
-          ? result.groups.filter((group) =>
-              group.ids.some((id) => ids.includes(id)),
-            )
-          : result.groups;
-        setGroups(nextGroups);
-        setCoverage({ indexed: result.visualIndexed, total: result.total });
-        const match = saveId
-          ? nextGroups.find((group) => group.ids.includes(saveId))
-          : undefined;
-        if (match) {
-          setKind(match.kind);
-          setIndex(
-            nextGroups
-              .filter((group) => group.kind === match.kind)
-              .indexOf(match),
-          );
-        }
+        setGroups(
+          ids
+            ? result.groups.filter((group) =>
+                group.ids.some((id) => ids.includes(id)),
+              )
+            : result.groups,
+        );
         setLoading(false);
       })
       .catch((reason) => {
-        if (active) {
-          setError(
-            reason instanceof Error
-              ? reason.message
-              : "Couldn’t find duplicates.",
-          );
-          setLoading(false);
-        }
+        if (!active) return;
+        setError(errorCopy(reason, "Couldn't find duplicates. Try again."));
+        setLoading(false);
       });
     return () => {
       active = false;
     };
-  }, [ids, saveId, visualDistance]);
-  const filtered = groups.filter((group) => group.kind === kind);
-  const group = filtered[Math.min(index, Math.max(0, filtered.length - 1))];
+  }, [ids]);
+
+  const shown = useMemo(() => arrange(groups, saveId), [groups, saveId]);
+  const keeperOf = (group: DuplicateGroup) => {
+    const key = groupKey(group);
+    if (picks[key]) return picks[key];
+    if (saveId && group.ids.includes(saveId)) return saveId;
+    return undefined;
+  };
+  const trashing = new Set<string>();
+  const plan = shown.flatMap((group) => {
+    const key = groupKey(group);
+    if (!isMergeable(group) || skipped.has(key)) return [];
+    const keepId =
+      keeperOf(group) ?? defaultKeeper(group.ids, (id) => pool.get(id));
+    if (trashing.has(keepId)) return [];
+    const selected = group.ids.filter(
+      (id) => id === keepId || !trashing.has(id),
+    );
+    if (selected.length < 2) return [];
+    for (const id of selected) if (id !== keepId) trashing.add(id);
+    return [{ keepId, ids: selected }];
+  });
+  const hasMergeable = shown.some(isMergeable);
+
+  const listRef = useRef<HTMLDivElement>(null);
+  const virtual = useVirtualizer({
+    count: shown.length,
+    getScrollElement: () => listRef.current,
+    estimateSize: () => 248,
+    overscan: 3,
+  });
+
+  const merge = async () => {
+    if (merging || plan.length === 0) return;
+    setMerging(true);
+    setError(null);
+    const merged: { keepId: string; ids: string[] }[] = [];
+    try {
+      for (const item of plan) {
+        const result = await window.pond.query("saves.mergeDuplicates", item);
+        if (!result.ok)
+          throw Error(result.error ?? "Couldn't merge these saves. Try again.");
+        merged.push(item);
+      }
+    } catch (reason) {
+      setError(errorCopy(reason, "Couldn't merge these saves."));
+    }
+    if (merged.length > 0) {
+      const trashed = new Set(
+        merged.flatMap((item) => item.ids.filter((id) => id !== item.keepId)),
+      );
+      await reloadSaves(merged.flatMap((item) => item.ids));
+      setGroups((items) =>
+        items
+          .map((item) => ({
+            ...item,
+            ids: item.ids.filter((id) => !trashed.has(id)),
+          }))
+          .filter((item) => item.ids.length > 1),
+      );
+      notify({
+        id: "duplicate-merge",
+        title: "Duplicates merged",
+        description:
+          "The other saves are in Trash. Use Undo to restore the merge.",
+      });
+    }
+    setMerging(false);
+  };
+
   return (
     <Dialog.Root
       open
@@ -93,299 +169,83 @@ export function DuplicateReview({
         <Dialog.Popup className={styles.popup}>
           <Dialog.Header>
             <Dialog.Title>Review Duplicates</Dialog.Title>
-            <Dialog.Close disabled={merging} />
           </Dialog.Header>
-          <div className={styles.body}>
-            <div className={styles.tabs}>
-              {(["exact", "similar"] as const).map((value) => (
-                <Button
-                  key={value}
-                  variant="secondary"
-                  aria-pressed={kind === value}
-                  disabled={merging}
-                  onClick={() => {
-                    setKind(value);
-                    setIndex(0);
-                  }}
-                >
-                  {value === "exact" ? "Exact Matches" : "Similar Images"} (
-                  {groups.filter((group) => group.kind === value).length})
-                </Button>
-              ))}
-            </div>
-            <p className={styles.description}>
-              {kind === "exact"
-                ? "These saves contain the same original files."
-                : "These images may look alike. Compare them before merging."}
-            </p>
-            {kind === "similar" ? (
-              <>
-                <label htmlFor={visualDistanceId}>
-                  Visual Difference
-                  <Input.Root>
-                    <Input.Field
-                      id={visualDistanceId}
-                      type="number"
-                      min={0}
-                      max={64}
-                      value={visualDistance}
-                      onValueChange={(value) =>
-                        setVisualDistance(
-                          Math.max(0, Math.min(64, Number(value) || 0)),
-                        )
-                      }
-                    />
-                  </Input.Root>
-                </label>
-                <p className={styles.description}>
-                  Visual comparison covers {coverage.indexed.toLocaleString()}{" "}
-                  of {coverage.total.toLocaleString()} saves. A higher value
-                  includes less similar images.
-                </p>
-              </>
-            ) : null}
-            {error ? <p role="alert">{error}</p> : null}
+          <div className={styles.list} ref={listRef}>
             {loading ? (
-              <p role="status">Finding duplicates</p>
-            ) : group ? (
-              <>
-                <div className={styles.navigation}>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    disabled={merging || index === 0}
-                    onClick={() => setIndex((value) => value - 1)}
-                  >
-                    Previous Group
-                  </Button>
-                  <span>
-                    {Math.min(index + 1, filtered.length)} / {filtered.length}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    disabled={merging || index >= filtered.length - 1}
-                    onClick={() => setIndex((value) => value + 1)}
-                  >
-                    Next Group
-                  </Button>
-                </div>
-                <GroupReview
-                  key={group.ids.join(":")}
-                  group={group}
-                  preferredId={saveId ?? group.ids[0] ?? ""}
-                  onBusyChange={setMerging}
-                  onMerged={(keepId, selected) =>
-                    setGroups((items) =>
-                      items
-                        .map((item) => ({
-                          ...item,
-                          ids: item.ids.filter(
-                            (id) => id === keepId || !selected.includes(id),
-                          ),
-                        }))
-                        .filter((item) => item.ids.length > 1),
-                    )
-                  }
-                />
-              </>
+              <Empty.Root>
+                <Empty.Title role="status">Finding duplicates</Empty.Title>
+              </Empty.Root>
+            ) : shown.length === 0 ? (
+              <Empty.Root>
+                <Empty.Title>No duplicates found</Empty.Title>
+              </Empty.Root>
             ) : (
-              <p>
-                No {kind === "exact" ? "exact matches" : "similar images"}{" "}
-                found.
-              </p>
+              <div
+                className={styles.rows}
+                style={{ height: virtual.getTotalSize() }}
+              >
+                {virtual.getVirtualItems().map((row) => {
+                  const group = shown[row.index];
+                  if (!group) return null;
+                  const key = groupKey(group);
+                  return (
+                    <div
+                      key={key}
+                      ref={virtual.measureElement}
+                      data-index={row.index}
+                      className={styles.row}
+                      style={{ transform: `translateY(${row.start}px)` }}
+                    >
+                      <Group
+                        group={group}
+                        keepId={keeperOf(group)}
+                        included={!skipped.has(key)}
+                        mergeable={isMergeable(group)}
+                        disabled={merging}
+                        onKeep={(id) =>
+                          setPicks((current) => ({ ...current, [key]: id }))
+                        }
+                        onInclude={(include) =>
+                          setSkipped((current) => {
+                            const next = new Set(current);
+                            if (include) next.delete(key);
+                            else next.add(key);
+                            return next;
+                          })
+                        }
+                      />
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
+          <Dialog.Footer
+            leading={
+              error ? (
+                <p className={styles.error} role="alert">
+                  {error}
+                </p>
+              ) : null
+            }
+          >
+            {hasMergeable || loading ? (
+              <>
+                <Dialog.Cancel disabled={merging} />
+                <Button
+                  disabled={merging || plan.length === 0}
+                  loading={merging}
+                  onClick={() => void merge()}
+                >
+                  {plan.length > 0 ? `Merge (${plan.length})` : "Merge"}
+                </Button>
+              </>
+            ) : (
+              <Dialog.Cancel>Close</Dialog.Cancel>
+            )}
+          </Dialog.Footer>
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
-  );
-}
-function GroupReview({
-  group,
-  preferredId,
-  onMerged,
-  onBusyChange,
-}: {
-  group: Group;
-  preferredId: string;
-  onMerged: (keepId: string, ids: string[]) => void;
-  onBusyChange: (busy: boolean) => void;
-}) {
-  const [keepId, setKeepId] = useState(
-    group.ids.includes(preferredId) ? preferredId : (group.ids[0] ?? ""),
-  );
-  const [included, setIncluded] = useState(() => new Set(group.ids));
-  const [busy, setBusy] = useState(false);
-  const pending = useRef(false);
-  const [error, setError] = useState<string | null>(null);
-  const scroll = useRef<HTMLDivElement>(null);
-  const virtual = useVirtualizer({
-    count: group.ids.length,
-    getScrollElement: () => scroll.current,
-    estimateSize: () => 140,
-    overscan: 2,
-  });
-  const visible = virtual.getVirtualItems();
-  const first = visible[0]?.index ?? 0;
-  const last = visible.at(-1)?.index ?? 0;
-  useEffect(() => {
-    void ensureSaves(group.ids.slice(first, last + 1)).catch(() =>
-      setError("Couldn’t load previews. Reopen this review to retry."),
-    );
-  }, [group.ids, first, last]);
-  const selected = useMemo(
-    () => group.ids.filter((id) => included.has(id)),
-    [group.ids, included],
-  );
-  const merge = async () => {
-    if (pending.current || selected.length < 2) return;
-    pending.current = true;
-    setBusy(true);
-    onBusyChange(true);
-    setError(null);
-    try {
-      const result = await window.pond.query("saves.mergeDuplicates", {
-        keepId,
-        ids: selected,
-      });
-      if (!result.ok)
-        throw Error(result.error ?? "Couldn’t merge these saves.");
-      await reloadSaves(selected);
-      notify({
-        id: "duplicate-merge",
-        title: "Duplicates merged",
-        description:
-          "The other saves are in Trash. Use Undo to restore the merge.",
-      });
-      onMerged(keepId, selected);
-    } catch (reason) {
-      setError(
-        reason instanceof Error
-          ? reason.message
-          : "Couldn’t merge these saves.",
-      );
-    } finally {
-      pending.current = false;
-      setBusy(false);
-      onBusyChange(false);
-    }
-  };
-  return (
-    <>
-      <div className={styles.list} ref={scroll}>
-        <div style={{ height: virtual.getTotalSize(), position: "relative" }}>
-          {visible.map((row) => {
-            const id = group.ids[row.index];
-            return id ? (
-              <Candidate
-                key={id}
-                id={id}
-                keep={id === keepId}
-                included={included.has(id)}
-                disabled={busy}
-                top={row.start}
-                onKeep={() => {
-                  setKeepId(id);
-                  setIncluded((current) => new Set([...current, id]));
-                }}
-                onInclude={(checked) =>
-                  setIncluded((current) => {
-                    const next = new Set(current);
-                    if (checked) next.add(id);
-                    else next.delete(id);
-                    return next;
-                  })
-                }
-              />
-            ) : null;
-          })}
-        </div>
-      </div>
-      <p className={styles.description}>
-        Keep the selected save. Files, tags, folders, notes, and comments are
-        preserved when the other selected saves move to Trash.
-      </p>
-      {error ? <p role="alert">{error}</p> : null}
-      <div className={styles.footer}>
-        <span>{Math.max(0, selected.length - 1)} saves to merge</span>
-        <Button
-          disabled={busy || selected.length < 2}
-          loading={busy}
-          onClick={() => void merge()}
-        >
-          Merge Selected
-        </Button>
-      </div>
-    </>
-  );
-}
-function Candidate({
-  id,
-  keep,
-  included,
-  disabled,
-  top,
-  onKeep,
-  onInclude,
-}: {
-  id: string;
-  keep: boolean;
-  included: boolean;
-  disabled: boolean;
-  top: number;
-  onKeep: () => void;
-  onInclude: (checked: boolean) => void;
-}) {
-  const save = useSave(id);
-  const includeId = useId();
-  return (
-    <div
-      className={styles.candidate}
-      style={{ transform: `translateY(${top}px)` }}
-    >
-      <div className={styles.thumb}>
-        {save ? <CardThumb save={save} /> : null}
-      </div>
-      <div className={styles.metadata}>
-        <strong>{save?.title || "Untitled"}</strong>
-        <span>
-          {save?.files.length ?? 0} files ·{" "}
-          {save?.width && save.height
-            ? `${save.width} × ${save.height} · `
-            : ""}
-          {save?.source}
-        </span>
-        <span>
-          {save?.tags.length ?? 0} tags · {save?.comments?.length ?? 0} comments
-          · {save?.videoNotes?.length ?? 0} video comments
-        </span>
-        {save?.notes ? <span>{save.notes}</span> : null}
-      </div>
-      <div className={styles.choices}>
-        <label>
-          <input
-            type="radio"
-            name="duplicate-keeper"
-            checked={keep}
-            disabled={disabled}
-            onChange={onKeep}
-          />{" "}
-          Keep
-        </label>
-        <label htmlFor={includeId}>
-          <Checkbox.Root
-            id={includeId}
-            aria-label={`Include ${save?.title || "Untitled"}`}
-            checked={included}
-            disabled={disabled || keep}
-            onCheckedChange={onInclude}
-          >
-            <Checkbox.Indicator />
-          </Checkbox.Root>{" "}
-          Include
-        </label>
-      </div>
-    </div>
   );
 }

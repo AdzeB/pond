@@ -1,5 +1,5 @@
 import { parseMode } from "@/features/saves/lib/list";
-import { listBaseFromPath } from "@/features/search/lib/schemas";
+import { listBaseFromPath } from "@/features/search/query";
 
 let lastListPath = "/";
 let lastListSearch = "";

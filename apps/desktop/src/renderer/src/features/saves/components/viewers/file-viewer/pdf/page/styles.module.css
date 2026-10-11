@@ -1,0 +1,21 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto 24px;
+}
+
+.page canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  box-shadow: var(--ds-shadow-lg);
+}
+
+.page figcaption {
+  padding-top: 8px;
+  font-size: var(--ds-text-xs);
+  color: var(--ds-gray-10);
+}

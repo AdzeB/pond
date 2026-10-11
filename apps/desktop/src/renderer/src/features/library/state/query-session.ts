@@ -2,6 +2,7 @@ import type {
   LibraryQueryPage,
   LibraryQueryRequest,
 } from "@shared/library-query";
+import { errorCopy } from "@/shared/lib/error-copy";
 export interface QuerySessionState {
   page: LibraryQueryPage | null;
   loading: boolean;
@@ -12,8 +13,8 @@ interface Runtime {
   ids(request: LibraryQueryRequest): Promise<{ ids: string[] }>;
   refresh(ids: readonly string[]): Promise<void>;
 }
-function scopeKey({ keywords: _, ...rest }: LibraryQueryRequest): string {
-  return JSON.stringify(rest);
+function scopeKey(request: LibraryQueryRequest): string {
+  return JSON.stringify({ ...request, keywords: undefined });
 }
 
 export function createQuerySession(
@@ -77,10 +78,7 @@ export function createQuerySession(
         return;
       }
       update({
-        error:
-          cause instanceof Error
-            ? cause.message
-            : "Search could not be completed.",
+        error: errorCopy(cause, "Couldn't complete the search. Try again."),
       });
     } finally {
       if (current()) {

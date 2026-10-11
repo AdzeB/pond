@@ -42,7 +42,6 @@ import {
   useState,
 } from "react";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { $inCollapsible } from "../collapsible";
 import {
   $getNoteBlock,
@@ -184,7 +183,6 @@ export function FormatToolbar() {
   const skipBlur = useRef(false);
   const urlRef = useRef<HTMLInputElement>(null);
   const rangeRef = useRef<SavedRange | null>(null);
-  const scrollFade = useScrollFade<HTMLDivElement>();
   const anchor = useMemo(
     () => (rect ? { getBoundingClientRect: () => rect } : null),
     [rect],
@@ -308,7 +306,6 @@ export function FormatToolbar() {
               if (event.target instanceof HTMLInputElement) return;
               event.preventDefault();
             }}
-            {...scrollFade}
           >
             <div ref={toolbarRef} className={styles.focus}>
               {linkMode ? (
@@ -540,7 +537,7 @@ export function FormatToolbar() {
                   </Menu.Root>
                   <Toolbar.Separator />
                   <FormatButton
-                    label="Agent"
+                    label="Assistant"
                     onClick={() => saveLibraryBridge.setAgentOpen(true)}
                   >
                     <IconChatBubblePenOutline18 />

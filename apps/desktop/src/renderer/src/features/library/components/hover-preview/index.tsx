@@ -1,35 +1,33 @@
 import { Button, Dialog } from "@pond/ui";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CardThumb } from "@/features/saves/components/card/media";
-import { StoredFileViewer } from "@/features/saves/components/viewers/file-viewer";
 import {
+  CardThumb,
+  collectionOwnsKeyboard,
+  inspect,
   MediaViewer,
-  type ViewerNav,
-} from "@/features/saves/components/viewers/media-viewer";
-import { useSave } from "@/features/saves/hooks/use-saves";
-import { ensureSaves } from "@/features/saves/lib/ensure-saves";
-import { collectionOwnsKeyboard } from "@/features/saves/lib/keyboard-owner";
-import { storedFileViewerKind } from "@/features/saves/lib/media/file-viewer";
-import { pickPrimaryFile } from "@/features/saves/lib/media/units";
-import { saveIdFromPath } from "@/features/saves/lib/save-nav";
-import { selectOnlySave } from "@/features/saves/lib/select";
-import {
+  onQuickPreviewRequest,
   previewFileIndex,
   runViewerAction,
-} from "@/features/saves/lib/viewer-actions";
-import { inspect, useInspect } from "@/features/saves/state/inspect";
-import { onQuickPreviewRequest } from "@/features/saves/state/quick-preview";
-import { resultNavigation } from "@/features/saves/state/result-navigation";
+  StoredFileViewer,
+  selectOnlySave,
+  storedFileViewerKind,
+  useInspect,
+  type ViewerNav,
+} from "@/features/saves";
+import { pickPrimaryFile } from "@/features/saves/media";
 import {
+  resultNavigation,
+  saveIdFromPath,
   selection,
   useSelectionCursor,
   useSelectionSize,
-} from "@/features/saves/state/selection";
-import { usePrefs } from "@/features/settings/state/prefs";
+} from "@/features/saves/navigation";
+import { ensureSaves, useSave } from "@/features/saves/pool";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { isEditableTarget } from "@/shared/lib/editable-target";
 import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
+import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
 export function HoverPreview() {

@@ -3,7 +3,7 @@ import type { RenderRowArgs, TableColumn } from "@pond/ui";
 import type { DownloadActivity } from "@shared/download-activity";
 import { useDownloadClock } from "@/features/downloads/hooks/use-download-activity";
 import type { DownloadRow } from "@/features/downloads/lib/status-feed";
-import { BrandTile } from "@/features/sources/components/sync-monitor-source-tile";
+import { BrandTile } from "@/features/sources";
 import { relativeTimeFromMs } from "@/shared/lib/relative-time";
 import {
   describeDownloadActivity,
@@ -217,12 +217,6 @@ function receivingTransfer(row: DownloadViewRow) {
     null
   );
 }
-
-export type { DownloadColumnId } from "../../../lib/download-columns";
-export {
-  DOWNLOAD_COLUMN_CATALOG,
-  LOCKED_DOWNLOAD_COLUMN,
-} from "../../../lib/download-columns";
 
 const EMPTY_METRIC = "—";
 

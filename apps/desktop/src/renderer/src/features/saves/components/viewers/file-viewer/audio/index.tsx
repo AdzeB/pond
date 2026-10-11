@@ -9,12 +9,12 @@ import {
 import { Select, Slider } from "@pond/ui";
 import { useEffect, useRef, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
-import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerFallback } from "@/features/saves/components/viewers/viewer-fallback";
 import { estimateBpm } from "@/features/saves/lib/media/audio-bpm";
 import { downsamplePeaks } from "@/features/saves/lib/media/audio-peaks";
 import { formatBytes } from "@/shared/lib/format";
-import { FileBar } from "..";
+import { FileBar } from "../file-bar";
 import { FileMark } from "../file-card";
 import type { ViewerProps } from "../types";
 import styles from "./styles.module.css";
@@ -92,7 +92,7 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
 
   return (
     <div ref={rootRef} className={styles.root}>
-      <div className={styles.audioCard}>
+      <div className={styles.card}>
         <FileMark file={props.file} />
         <div className={styles.heading}>
           <h1>{props.save.title ?? props.file.path}</h1>
@@ -106,7 +106,26 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
           className={styles.waveform}
           width={480}
           height={64}
+          role="slider"
+          tabIndex={0}
           aria-label="Waveform"
+          aria-valuemin={0}
+          aria-valuemax={Math.round(duration)}
+          aria-valuenow={Math.round(currentTime)}
+          aria-valuetext={`${formatAudioTime(currentTime)} of ${formatAudioTime(duration)}`}
+          onKeyDown={(event) => {
+            const audio = audioRef.current;
+            if (!audio?.duration) return;
+            const next = waveformSeekTarget(
+              event.key,
+              audio.currentTime,
+              audio.duration,
+            );
+            if (next === null) return;
+            event.preventDefault();
+            event.stopPropagation();
+            audio.currentTime = next;
+          }}
           onClick={(event) => {
             const audio = audioRef.current;
             if (!audio?.duration) return;
@@ -151,7 +170,7 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
       <ChromePortal slot="bottom">
         <ViewerHud.Tools
           tooltipSide="top"
-          className={styles.audioTransport}
+          className={styles.transport}
           role="toolbar"
           aria-label="Audio playback"
         >
@@ -180,7 +199,7 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
             {formatAudioTime(currentTime)} / {formatAudioTime(duration)}
           </ViewerHud.Scale>
           <Slider.Root
-            className={styles.audioProgress}
+            className={styles.progress}
             aria-label="Audio Position"
             min={0}
             max={Math.max(duration, 0.01)}
@@ -228,7 +247,7 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
             </Select.Portal>
           </Select.Root>
           <Slider.Root
-            className={styles.audioVolume}
+            className={styles.volume}
             aria-label="Audio Volume"
             min={0}
             max={1}
@@ -270,6 +289,29 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
       </ChromePortal>
     </div>
   );
+}
+
+const WAVEFORM_SEEK_SECONDS = 5;
+
+function waveformSeekTarget(
+  key: string,
+  time: number,
+  duration: number,
+): number | null {
+  switch (key) {
+    case "ArrowLeft":
+    case "ArrowDown":
+      return Math.max(0, time - WAVEFORM_SEEK_SECONDS);
+    case "ArrowRight":
+    case "ArrowUp":
+      return Math.min(duration, time + WAVEFORM_SEEK_SECONDS);
+    case "Home":
+      return 0;
+    case "End":
+      return duration;
+    default:
+      return null;
+  }
 }
 
 function formatAudioTime(value: number): string {

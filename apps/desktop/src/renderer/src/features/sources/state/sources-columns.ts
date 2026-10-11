@@ -2,6 +2,7 @@ import { createTableColumnLayout } from "@/shared/lib/table-column-layout";
 
 export const SOURCE_COLUMN_CATALOG = [
   { id: "name", label: "Name" },
+  { id: "items", label: "Items" },
   { id: "lastSynced", label: "Last Synced" },
   { id: "status", label: "Status" },
   { id: "source", label: "Source" },

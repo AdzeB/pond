@@ -1,9 +1,15 @@
 import { Dialog } from "@pond/ui";
-import { type JSX, useState } from "react";
-import { ConnectHelpSection } from "@/features/sources/components/flow/connect/help";
-import { ConnectWaitSection } from "@/features/sources/components/flow/connect/wait";
-import { WatchHelpSection } from "@/features/sources/components/flow/watch/help";
-import { WatchTargetSection } from "@/features/sources/components/flow/watch/target";
+import { type CSSProperties, type JSX, useState } from "react";
+import { ConnectGlow } from "@/features/sources/components/flow/connect/glow";
+import {
+  ConnectActions,
+  ConnectWaitSection,
+} from "@/features/sources/components/flow/connect/wait";
+import {
+  WatchTargetRoot,
+  WatchTargetSection,
+  WatchTargetSubmit,
+} from "@/features/sources/components/flow/watch/target";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import {
   connectFlow,
@@ -16,35 +22,35 @@ import {
   useSourceFlowPage,
 } from "@/features/sources/state/source-flow";
 import { useWatchSource, watchFlow } from "@/features/sources/state/watch-flow";
-import styles from "./styles.module.css";
-
-const HELP = {
-  "connect-wait": "connect-help",
-  "watch-target": "watch-help",
-} satisfies Partial<Record<SourceFlowPage, SourceFlowPage>>;
 
 const PAGES = {
-  "connect-help": ConnectHelpSection,
   "connect-wait": ConnectWaitSection,
-  "watch-help": WatchHelpSection,
   "watch-target": WatchTargetSection,
 } satisfies Record<SourceFlowPage, () => JSX.Element | null>;
+
+const visuallyHidden: CSSProperties = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: "hidden",
+  clip: "rect(0, 0, 0, 0)",
+  whiteSpace: "nowrap",
+  border: 0,
+};
 
 function usePageTitle(page: SourceFlowPage): string {
   const connectingSource = useConnectSource();
   const watchSource = useWatchSource();
 
   switch (page) {
-    case "connect-help":
-      return "Connecting a Source";
     case "connect-wait":
-      return connectingSource
-        ? getSourceDef(connectingSource).label
-        : "Add Connection";
-    case "watch-help":
-      return "Watching an Account";
+      return connectingSource ? "Connection Request" : "Add Connection";
     case "watch-target":
-      return watchSource ? getSourceDef(watchSource).label : "New Watch";
+      return watchSource
+        ? `Watch on ${getSourceDef(watchSource).label}`
+        : "New Watch";
   }
 }
 
@@ -66,9 +72,6 @@ export function SourceFlowHost() {
   const page = activePage ?? presentation.page;
   const depth = open ? activeDepth : presentation.depth;
   const title = usePageTitle(page ?? "connect-wait");
-  const help =
-    page === "connect-wait" || page === "watch-target" ? HELP[page] : undefined;
-  const canBack = depth > 1;
   const Page = page ? PAGES[page] : null;
 
   return (
@@ -84,19 +87,26 @@ export function SourceFlowHost() {
       <Dialog.Portal>
         <Dialog.Backdrop />
         {page && Page ? (
-          <Dialog.Popup className={styles.popup} pageId={page} depth={depth}>
-            <Dialog.Header>
-              {canBack ? (
-                <Dialog.Back onClick={() => sourceFlow.back()} />
-              ) : help ? (
-                <Dialog.Help onClick={() => sourceFlow.push(help)} />
-              ) : null}
-              <Dialog.Title>{title}</Dialog.Title>
-              <Dialog.Close />
-            </Dialog.Header>
-            <Dialog.Viewport>
-              <Page />
-            </Dialog.Viewport>
+          <Dialog.Popup pageId={page} depth={depth}>
+            {page === "connect-wait" ? <ConnectGlow /> : null}
+            <WatchTargetRoot>
+              <Dialog.Header data-empty>
+                <Dialog.Title style={visuallyHidden}>{title}</Dialog.Title>
+              </Dialog.Header>
+              <Dialog.Viewport>
+                <Page />
+              </Dialog.Viewport>
+              <Dialog.Footer>
+                {page === "connect-wait" ? (
+                  <ConnectActions />
+                ) : (
+                  <>
+                    <Dialog.Cancel />
+                    <WatchTargetSubmit />
+                  </>
+                )}
+              </Dialog.Footer>
+            </WatchTargetRoot>
           </Dialog.Popup>
         ) : null}
       </Dialog.Portal>

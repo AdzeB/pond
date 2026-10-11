@@ -9,10 +9,7 @@ import {
 } from "react";
 import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import {
-  parseSaveMentionHref,
-  SaveMentionChip,
-} from "../../composer/mention";
+import { parseSaveMentionHref, SaveMentionChip } from "../../composer/mention";
 import { remarkSaveCitations } from "../remark-save-citations";
 import { SaveCitation } from "../save-preview";
 import styles from "./styles.module.css";
@@ -194,7 +191,7 @@ const responseComponents = {
           classes.find((name) => String(name).startsWith("language-")) ?? "",
         ).replace(/^language-/, "")
       : "";
-    return <CodeBlock code={value} language={language} />;
+    return <CodeBlock.Root code={value} language={language} />;
   },
   table: ({ children }) => (
     <section

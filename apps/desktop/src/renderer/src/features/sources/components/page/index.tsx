@@ -5,11 +5,7 @@ import {
 } from "@pond/icons/outline/18";
 import { DataTable } from "@pond/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  MatchesEmpty,
-  SourcesEmpty,
-} from "@/features/library/components/empty";
-import { TableSelectionSync } from "@/features/library/components/table-selection-sync";
+import { SourcesEmpty } from "@/features/sources/components/empty";
 import { cardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
 import { useAccounts } from "@/features/sources/hooks/use-accounts";
 import { useWatches } from "@/features/sources/hooks/use-watches";
@@ -30,16 +26,15 @@ import {
 import { sourcesSelection } from "@/features/sources/state/sources-selection";
 import { useSyncByAccount } from "@/features/sources/state/sync-monitor";
 import { useWatchAdded, watchFlow } from "@/features/sources/state/watch-flow";
-import {
-  SearchChrome,
-  SearchChromeInput,
-} from "@/shared/components/search-chrome";
+import { MatchesEmpty } from "@/shared/components/matches-empty";
+import { SearchChrome } from "@/shared/components/search-chrome";
 import {
   TableFilterBar,
   TableFilterChip,
   TableFilterToggle,
 } from "@/shared/components/table-filters";
 import { uniqueFilterOptions } from "@/shared/components/table-filters/chip-label";
+import { TableSelectionSync } from "@/shared/components/table-selection-sync";
 import { useClientHeight } from "@/shared/hooks/use-client-height";
 import { sourcesColumns } from "./columns";
 import { SourcesContextMenu } from "./context-menu";
@@ -174,7 +169,7 @@ export function SourcesPage({ scope }: { scope?: "account" | "watch" }) {
     openEntry(row.entry);
   }, []);
   const toolbar = (
-    <SearchChrome
+    <SearchChrome.Root
       actions={
         <>
           <SourceOptionsMenu />
@@ -218,7 +213,7 @@ export function SourcesPage({ scope }: { scope?: "account" | "watch" }) {
         </TableFilterBar>
       }
     >
-      <SearchChromeInput
+      <SearchChrome.Input
         value={filters.q}
         onChange={(e) => sourcesFilters.setQ(e.target.value)}
         spellCheck={false}
@@ -226,7 +221,7 @@ export function SourcesPage({ scope }: { scope?: "account" | "watch" }) {
         aria-label={`Search ${listLabel}`}
         data-sources-search=""
       />
-    </SearchChrome>
+    </SearchChrome.Root>
   );
 
   return (

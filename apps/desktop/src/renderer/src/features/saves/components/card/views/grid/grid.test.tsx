@@ -36,7 +36,6 @@ describe("GridCard", () => {
         type: { label: "PNG", kind: "image" },
         source: null,
         fileCount: null,
-        hasNote: false,
       },
     };
     container = document.createElement("div");

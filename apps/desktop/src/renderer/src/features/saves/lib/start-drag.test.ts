@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
+import { pool } from "@/features/saves/state/pool";
 import { selection } from "@/features/saves/state/selection";
+import { normalise, SavePatchSchema } from "./reconcile";
 import {
   beginSaveDrag,
   clearDraggingSaveIds,
@@ -16,10 +18,36 @@ import {
 afterEach(() => {
   selection.clear();
   clearDraggingSaveIds();
+  pool.clear();
+  vi.unstubAllGlobals();
 });
 
 interface TestSaveDragDataTransfer extends SaveDragDataTransfer {
   readonly dragImage: Element | null;
+}
+
+function start(dataTransfer: SaveDragDataTransfer | null = null) {
+  return { dataTransfer, preventDefault: vi.fn() };
+}
+
+function seedImage(id: string) {
+  const save = normalise(
+    SavePatchSchema.parse({
+      id,
+      source: "local",
+      files: [
+        {
+          kind: "original",
+          path: `${id}.jpg`,
+          sha256: "0123456789abcdef",
+          size: 1,
+          mimeType: "image/jpeg",
+        },
+      ],
+    }),
+  );
+  if (!save) throw new Error("Invalid image fixture");
+  pool.upsert(save);
 }
 
 function transfer(
@@ -49,7 +77,7 @@ function transfer(
 it("marks an in-app Save drag from MIME or the live drag ids", () => {
   const data = transfer();
   expect(isLibrarySaveDrag(data)).toBe(false);
-  beginSaveDrag("film", data);
+  beginSaveDrag("film", start(data));
   expect(data.getData(SAVE_DRAG_TYPE)).toBe("film");
   expect(isLibrarySaveDrag(data)).toBe(true);
   expect(saveDropIds(data)).toEqual(["film"]);
@@ -73,7 +101,7 @@ it("creates a counted drag proxy and clears the entire drag session", () => {
   }
   const data = transfer();
 
-  beginSaveDrag("a", data);
+  beginSaveDrag("a", start(data));
 
   expect(data.dragImage).toBeInstanceOf(HTMLElement);
   expect(data.dragImage?.textContent).toContain("3 Saves");
@@ -85,15 +113,59 @@ it("creates a counted drag proxy and clears the entire drag session", () => {
   expect(draggingSaveIds()).toEqual([]);
   expect(document.body.dataset.saveDragging).toBeUndefined();
   expect(document.querySelector("[data-save-drag-preview]")).toBeNull();
-  document.querySelectorAll("[data-save-id]").forEach((node) => node.remove());
+  for (const node of document.querySelectorAll("[data-save-id]")) node.remove();
 });
 
 it("clears the drag session when the browser dispatches dragend", () => {
   selection.set(["a", "b"]);
-  beginSaveDrag("a", transfer());
+  beginSaveDrag("a", start(transfer()));
 
   window.dispatchEvent(new Event("dragend"));
 
   expect(draggingSaveIds()).toEqual([]);
   expect(document.body.dataset.saveDragging).toBeUndefined();
+});
+
+it("hands saves with files to a native drag and cancels the browser drag", () => {
+  const query = vi.fn(async () => ({ ok: true }));
+  vi.stubGlobal("pond", { query });
+  seedImage("photo");
+  const data = transfer();
+  const event = start(data);
+
+  beginSaveDrag("photo", event);
+
+  expect(event.preventDefault).toHaveBeenCalledOnce();
+  expect(query).toHaveBeenCalledWith("saves.startDrag", {
+    ids: ["photo"],
+    fileIndex: 0,
+  });
+  expect(data.getData(SAVE_DRAG_TYPE)).toBe("");
+  expect(isLibrarySaveDrag(transfer(["Files"]))).toBe(true);
+  expect(saveDropIds(transfer(["Files"]))).toEqual(["photo"]);
+});
+
+it("ends a native drag once the pointer moves with no button held", () => {
+  vi.stubGlobal("pond", { query: vi.fn(async () => ({ ok: true })) });
+  seedImage("photo");
+  beginSaveDrag("photo", start(transfer()));
+
+  window.dispatchEvent(new PointerEvent("pointermove", { buttons: 1 }));
+  expect(draggingSaveIds()).toEqual(["photo"]);
+
+  window.dispatchEvent(new PointerEvent("pointermove", { buttons: 0 }));
+  expect(draggingSaveIds()).toEqual([]);
+  expect(document.body.dataset.saveDragging).toBeUndefined();
+});
+
+it("ends a native drag on the next click or when the window refocuses", () => {
+  vi.stubGlobal("pond", { query: vi.fn(async () => ({ ok: true })) });
+  seedImage("photo");
+  beginSaveDrag("photo", start(transfer()));
+  window.dispatchEvent(new PointerEvent("pointerdown"));
+  expect(draggingSaveIds()).toEqual([]);
+
+  beginSaveDrag("photo", start(transfer()));
+  window.dispatchEvent(new Event("focus"));
+  expect(draggingSaveIds()).toEqual([]);
 });

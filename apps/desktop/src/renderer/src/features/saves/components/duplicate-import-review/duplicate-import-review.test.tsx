@@ -1,0 +1,141 @@
+import "@/app/effects/save-library-bridge";
+import type { WireJson } from "@shared/wire";
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import {
+  closeDuplicateImportReview,
+  importFilesWithDuplicateReview,
+} from "@/features/saves/state/duplicate-import-review";
+import { DuplicateImportReviewHost } from "./";
+
+let root: Root;
+let host: HTMLDivElement;
+const first = "/Users/you/Downloads/a.png";
+const second = "/Users/you/Downloads/b.png";
+const paths = [first, second];
+const query = vi.fn(async (name: string, _args?: WireJson) => {
+  if (name === "saves.reviewImportDuplicates")
+    return {
+      candidates: paths.map((path) => ({
+        path,
+        filename: path.split("/").pop(),
+        existingId: "save-sunset",
+        existingTitle: "Sunset",
+      })),
+    };
+  if (name === "saves.getMany")
+    return [
+      {
+        id: "save-sunset",
+        source: "local",
+        sourceId: "sunset",
+        url: "file:///sunset.png",
+        title: "Sunset",
+        status: "complete",
+        files: [
+          {
+            kind: "original",
+            path: "sunset.png",
+            sha256: "abc",
+            size: 2048,
+            mimeType: "image/png",
+            width: 1600,
+            height: 1000,
+          },
+        ],
+      },
+    ];
+  if (name === "saves.importFiles") return { ok: true, ids: [] };
+  return [];
+});
+
+beforeEach(() => {
+  query.mockClear();
+  vi.stubGlobal("pond", { query });
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+  host = document.createElement("div");
+  document.body.append(host);
+  root = createRoot(host);
+});
+
+afterEach(async () => {
+  await act(() => {
+    closeDuplicateImportReview();
+    root.unmount();
+  });
+  host.remove();
+  vi.unstubAllGlobals();
+});
+
+function dialog() {
+  const element = document.querySelector<HTMLElement>('[role="dialog"]');
+  if (!element) throw new Error("Missing dialog");
+  return element;
+}
+
+function button(name: string) {
+  const match = [...dialog().querySelectorAll("button")].find(
+    (element) => element.textContent?.trim() === name,
+  );
+  if (!match) throw new Error(`Missing button ${name}`);
+  return match;
+}
+
+async function startImport() {
+  let pending: ReturnType<typeof importFilesWithDuplicateReview> | undefined;
+  await act(async () => {
+    root.render(<DuplicateImportReviewHost />);
+    pending = importFilesWithDuplicateReview({ paths });
+  });
+  await vi.waitFor(() => {
+    expect(dialog().textContent).toContain("1600 × 1000");
+  });
+  return { pending };
+}
+
+function importArgs() {
+  return query.mock.calls.find(([name]) => name === "saves.importFiles")?.[1];
+}
+
+it("compares the existing save with the new file", async () => {
+  await startImport();
+  const text = dialog().textContent;
+  expect(text).toContain("Duplicate File");
+  expect(text).toContain("1 of 2");
+  expect(text).toContain("Existing");
+  expect(text).toContain("a.png");
+  expect(text).toContain("Downloads");
+});
+
+it("records each choice and applies one to the rest", async () => {
+  const { pending } = await startImport();
+  await act(async () => button("Next").click());
+  await vi.waitFor(() => expect(dialog().textContent).toContain("2 of 2"));
+  await act(async () => button("Keep Both").click());
+  await act(async () => button("Import").click());
+  await pending;
+  expect(importArgs()).toMatchObject({
+    duplicateDecisions: { [first]: "use-existing", [second]: "keep-both" },
+  });
+});
+
+it("applies the choice to every remaining file", async () => {
+  const { pending } = await startImport();
+  await act(async () => button("Keep Both").click());
+  await act(async () =>
+    dialog().querySelector<HTMLElement>('[role="checkbox"]')?.click(),
+  );
+  await act(async () => button("Import").click());
+  await pending;
+  expect(importArgs()).toMatchObject({
+    duplicateDecisions: { [first]: "keep-both", [second]: "keep-both" },
+  });
+});

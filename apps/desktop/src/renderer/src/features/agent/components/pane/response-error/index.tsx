@@ -16,19 +16,15 @@ export interface ResponseErrorCopy {
 
 export function responseErrorCopy(error: string): ResponseErrorCopy {
   if (/no credits remaining|insufficient_quota/i.test(error)) {
-    return {
+    const copy: ResponseErrorCopy = {
       title: "No API credits remaining",
       description:
         "Add credits in your provider's billing settings, then try again.",
-      ...(error.includes("platform.openai.com")
-        ? {
-            action: {
-              label: "Open Billing",
-              url: OPENAI_BILLING_URL,
-            },
-          }
-        : {}),
     };
+    if (error.includes("platform.openai.com")) {
+      copy.action = { label: "Open Billing", url: OPENAI_BILLING_URL };
+    }
+    return copy;
   }
   if (/rate limit|too many requests/i.test(error)) {
     return {
@@ -39,12 +35,12 @@ export function responseErrorCopy(error: string): ResponseErrorCopy {
   if (/invalid api key|incorrect api key|authentication/i.test(error)) {
     return {
       title: "Couldn't authenticate with the model provider",
-      description: "Check your API key in Agent Settings, then try again.",
+      description: "Check your API key in Assistant Settings, then try again.",
     };
   }
   return {
     title: "Couldn't finish this response",
-    description: "Check your Agent provider settings, then try again.",
+    description: "Check your Assistant provider settings, then try again.",
   };
 }
 

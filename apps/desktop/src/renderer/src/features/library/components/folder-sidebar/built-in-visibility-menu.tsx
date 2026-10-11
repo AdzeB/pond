@@ -4,17 +4,20 @@ import {
   IconHistoryOutline18,
   IconSidebarEditOutline18,
 } from "@pond/icons/outline/18";
-import type { SidebarBadgeStyle, SidebarDestination } from "@pond/schema";
+import {
+  isLockedSidebarDestination,
+  type SidebarBadgeStyle,
+  type SidebarDestination,
+} from "@pond/schema";
 import type { MenuItemSpec } from "@pond/ui";
 import { type ReactElement, useState } from "react";
-import { clearRecents, useRecents } from "@/features/saves/state/recents";
-import { SidebarCustomizationDialog } from "@/features/settings/components/sidebar-customization-dialog";
-import { usePrefs } from "@/features/settings/state/prefs";
-import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
+import { clearRecents, useRecents } from "@/features/saves";
+import { SidebarCustomizationDialog } from "@/features/settings";
+import { SpecContextMenu } from "@/shared/components/spec-context-menu";
+import { usePrefs } from "@/shared/state/prefs";
 
 const BADGE_STYLES: readonly [SidebarBadgeStyle, string][] = [
   ["count", "Count"],
-  ["dot", "Dot"],
   ["none", "None"],
 ];
 
@@ -39,42 +42,43 @@ export function BuiltInVisibilityMenu({
     void patch({ badgeOverrides });
   };
 
+  const buildVisibilityItems = (
+    destination: SidebarDestination,
+  ): MenuItemSpec[] => {
+    if (isLockedSidebarDestination(destination)) return [];
+    const setVisible = (visible: boolean) =>
+      void patch({
+        destinations: { ...sidebar.destinations, [destination]: visible },
+      });
+    return [
+      {
+        type: "submenu",
+        label: "Visibility",
+        icon: <IconEye2Outline18 />,
+        items: [
+          {
+            type: "checkbox",
+            indicator: "check",
+            label: "Always Show",
+            checked: sidebar.destinations[destination],
+            onCheckedChange: () => setVisible(true),
+          },
+          {
+            type: "checkbox",
+            indicator: "check",
+            label: "Hide",
+            checked: !sidebar.destinations[destination],
+            onCheckedChange: () => setVisible(false),
+          },
+        ],
+      },
+    ];
+  };
+
   const buildItems = (): MenuItemSpec[] => {
     const visibilityItems: MenuItemSpec[] = destination
       ? [
-          {
-            type: "submenu",
-            label: "Visibility",
-            icon: <IconEye2Outline18 />,
-            items: [
-              {
-                type: "checkbox",
-                indicator: "check",
-                label: "Always Show",
-                checked: sidebar.destinations[destination],
-                onCheckedChange: () =>
-                  void patch({
-                    destinations: {
-                      ...sidebar.destinations,
-                      [destination]: true,
-                    },
-                  }),
-              },
-              {
-                type: "checkbox",
-                indicator: "check",
-                label: "Hide",
-                checked: !sidebar.destinations[destination],
-                onCheckedChange: () =>
-                  void patch({
-                    destinations: {
-                      ...sidebar.destinations,
-                      [destination]: false,
-                    },
-                  }),
-              },
-            ],
-          },
+          ...buildVisibilityItems(destination),
           {
             type: "submenu",
             label: "Badge",

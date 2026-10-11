@@ -3,10 +3,9 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { commandMenu } from "@/features/library/state/command-menu";
-import { normalise } from "@/features/saves/lib/reconcile";
-import { pool } from "@/features/saves/state/pool";
-import { clearRecents, useTrackVisit } from "@/features/saves/state/recents";
-import { selection } from "@/features/saves/state/selection";
+import { clearRecents, normalise, useTrackVisit } from "@/features/saves";
+import { selection } from "@/features/saves/navigation";
+import { pool } from "@/features/saves/pool";
 import { CommandMenuHost } from "./";
 
 const openSave = vi.fn();

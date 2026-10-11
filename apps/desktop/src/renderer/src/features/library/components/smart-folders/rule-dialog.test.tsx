@@ -168,10 +168,10 @@ describe("smart folder rule dialog", () => {
     await act(async () => button("Remove Rules Group 2").click());
     await act(async () => button("Create").click());
     expect(document.querySelector('[role="alert"]')?.textContent).toBe(
-      "Disk unavailable",
+      "Couldn't save these rules. Try again.",
     );
     expect(closed).toBe(false);
-    await act(async () => button("Close").click());
+    await act(async () => button("Cancel").click());
     expect(attempts).toBe(1);
     expect(closed).toBe(true);
   });

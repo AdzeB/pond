@@ -6,7 +6,7 @@ import {
 import { decodeTextBytes, type TextEncoding } from "@shared/text-encoding";
 import { useEffect, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
-import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome/chrome";
+import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { OriginalFileActions } from "@/features/saves/components/viewers/original-file-actions";
 import { ViewerResultCount } from "@/features/saves/components/viewers/viewer-result-count";
 import {
@@ -15,7 +15,6 @@ import {
   ViewerToolbarGroups,
 } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import type { Save, SaveFile } from "@/features/saves/types";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { notify } from "@/shared/lib/toast";
 import styles from "./styles.module.css";
 
@@ -37,7 +36,6 @@ export function TextFileViewer({
   const [encoding, setEncoding] = useState<TextEncoding>("utf-8");
   const [failed, setFailed] = useState(false);
   const [converting, setConverting] = useState(false);
-  const scrollFade = useScrollFade<HTMLDivElement>();
 
   useEffect(() => {
     const abort = new AbortController();
@@ -74,7 +72,7 @@ export function TextFileViewer({
     } catch {
       notify({
         id: "text-encoding",
-        title: "Couldn’t Convert Text",
+        title: "Couldn't Convert Text",
         description: "The original file is unchanged.",
       });
     } finally {
@@ -86,11 +84,11 @@ export function TextFileViewer({
       id: save.id,
       fileIndex,
     });
-    if (!result.ok && !result.canceled)
+    if (!result.ok && result.reason !== "cancelled")
       notify({
         id: "dotlottie-export",
-        title: "Couldn’t Export dotLottie",
-        description: result.error ?? "This JSON file isn’t a Lottie animation.",
+        title: "Couldn't Export dotLottie",
+        description: result.error,
       });
   };
 
@@ -143,9 +141,9 @@ export function TextFileViewer({
           }
         />
       </ChromePortal>
-      <div className={styles.scroll} {...scrollFade}>
+      <div className={styles.scroll}>
         {failed ? (
-          <p className={styles.status}>Pond couldn’t read this text file.</p>
+          <p className={styles.status}>Pond couldn't read this text file.</p>
         ) : (
           <pre>{text}</pre>
         )}

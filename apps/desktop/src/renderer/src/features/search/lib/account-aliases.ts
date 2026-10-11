@@ -1,6 +1,6 @@
 import type { Source, WatchKind } from "@pond/schema/db";
 import { isSource, sourceLabel } from "@pond/schema/sources";
-import { getPrefsSnapshot } from "@/features/settings/state/prefs";
+import { getPrefsSnapshot } from "@/shared/state/prefs";
 
 export interface AccountRef {
   readonly id: string;

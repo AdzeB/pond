@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { PlayIcon } from "@/features/captures/components/tweet/card/icons/icons";
+import { PlayIcon } from "@/features/captures/components/tweet/card/icons";
 import type { TweetCardMedia } from "@/features/captures/components/tweet/card/lib/data";
 import { formatDuration } from "@/shared/lib/format";
 import styles from "./styles.module.css";
@@ -71,18 +71,18 @@ function Tile({
   const src = media.type === "video" ? media.posterUrl : media.url;
   const span = count === 3 && index === 0;
   return (
-    <div className={styles["media-tile"]} data-span={span ? "true" : undefined}>
+    <div className={styles.tile} data-span={span ? "true" : undefined}>
       {src ? (
         <img
           src={src}
           alt={media.altText ?? ""}
-          className={styles["media-image"]}
+          className={styles.image}
           draggable={false}
           decoding="sync"
           referrerPolicy="no-referrer"
         />
       ) : (
-        <div className={styles["media-placeholder"]} aria-hidden />
+        <div className={styles.placeholder} aria-hidden />
       )}
       {media.type === "video" ? (
         <>

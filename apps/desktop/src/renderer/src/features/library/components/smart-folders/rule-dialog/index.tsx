@@ -1,7 +1,8 @@
 import type { Query } from "@pond/schema/filters/types";
-import { Button, Dialog, Input } from "@pond/ui";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Button, Dialog, Field, Input } from "@pond/ui";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { combineQueries } from "@/features/library/lib/smart-folders";
+import { errorCopy } from "@/shared/lib/error-copy";
 import {
   compileRuleQuery,
   editableQuery,
@@ -25,13 +26,12 @@ export interface RuleDialogProps {
   onClose: () => void;
 }
 
-type PreviewState =
-  | {
-      status: "incomplete" | "loading" | "failed";
-      query: Query;
-      revision: number;
-    }
-  | { status: "ready"; query: Query; count: number; revision: number };
+type PreviewState = {
+  key: string;
+  revision: number;
+  status: "loading" | "ready" | "failed";
+  count: number | null;
+};
 
 export function RuleDialog(props: RuleDialogProps) {
   const {
@@ -50,7 +50,10 @@ export function RuleDialog(props: RuleDialogProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pending = useRef(false);
-  const nameId = useId();
+  const [open, setOpen] = useState(false);
+  useLayoutEffect(() => {
+    setOpen(true);
+  }, []);
   const label = kind === "group" ? "Group" : "Smart Folder";
   const ready = ruleQueryReady(query);
   const effectiveQuery = useMemo(
@@ -58,38 +61,54 @@ export function RuleDialog(props: RuleDialogProps) {
       ready ? combineQueries([inheritedQuery, compileRuleQuery(query)]) : query,
     [inheritedQuery, query, ready],
   );
+  const queryKey = JSON.stringify(effectiveQuery);
+  const queryRef = useRef(effectiveQuery);
+  queryRef.current = effectiveQuery;
   const [preview, setPreview] = useState<PreviewState>({
-    status: "loading",
-    query: effectiveQuery,
+    key: queryKey,
     revision: libraryRevision,
+    status: "loading",
+    count: null,
   });
 
   useEffect(() => {
     if (!ready) return;
     let current = true;
+    const key = queryKey;
     const timer = window.setTimeout(() => {
-      setPreview({
-        status: "loading",
-        query: effectiveQuery,
-        revision: libraryRevision,
-      });
-      void count(effectiveQuery).then(
+      const request = queryRef.current;
+      setPreview((currentPreview) =>
+        currentPreview.key === key
+          ? currentPreview
+          : {
+              key,
+              revision: libraryRevision,
+              status: "loading",
+              count: null,
+            },
+      );
+      void count(request).then(
         (total) => {
           if (current)
             setPreview({
-              status: "ready",
-              query: effectiveQuery,
-              count: total,
+              key,
               revision: libraryRevision,
+              status: "ready",
+              count: total,
             });
         },
         () => {
-          if (current)
-            setPreview({
-              status: "failed",
-              query: effectiveQuery,
-              revision: libraryRevision,
-            });
+          if (!current) return;
+          setPreview((currentPreview) =>
+            currentPreview.key === key && currentPreview.count != null
+              ? { ...currentPreview, revision: libraryRevision }
+              : {
+                  key,
+                  revision: libraryRevision,
+                  status: "failed",
+                  count: null,
+                },
+          );
         },
       );
     }, 200);
@@ -97,23 +116,15 @@ export function RuleDialog(props: RuleDialogProps) {
       current = false;
       window.clearTimeout(timer);
     };
-  }, [effectiveQuery, ready, count, libraryRevision]);
+  }, [queryKey, ready, count, libraryRevision]);
 
-  const previewStatus = !ready
-    ? "incomplete"
-    : preview.query === effectiveQuery && preview.revision === libraryRevision
-      ? preview.status
-      : "loading";
-  const countText =
-    previewStatus === "incomplete"
-      ? "Complete the rules to preview matches."
-      : previewStatus === "loading"
-        ? "Counting matches"
-        : previewStatus === "failed"
-          ? "Couldn't count matches. Your rules can still be saved."
-          : preview.status === "ready"
-            ? `Found ${preview.count.toLocaleString()} ${preview.count === 1 ? "save" : "saves"}`
-            : "Counting matches";
+  const countText = !ready
+    ? "Complete the rules to preview matches."
+    : preview.key === queryKey && preview.count != null
+      ? `Found ${preview.count.toLocaleString()} ${preview.count === 1 ? "save" : "saves"}`
+      : preview.key === queryKey && preview.status === "failed"
+        ? "Couldn't count matches. Your rules can still be saved."
+        : "Counting matches";
 
   const submit = async () => {
     if (!ready || !name.trim() || pending.current) return;
@@ -122,13 +133,9 @@ export function RuleDialog(props: RuleDialogProps) {
     setError(null);
     try {
       await onSave(name.trim(), compileRuleQuery(query));
-      onClose();
+      setOpen(false);
     } catch (failure) {
-      setError(
-        failure instanceof Error
-          ? failure.message
-          : "Couldn't save these rules. Try again.",
-      );
+      setError(errorCopy(failure, "Couldn't save these rules. Try again."));
     } finally {
       pending.current = false;
       setBusy(false);
@@ -137,10 +144,13 @@ export function RuleDialog(props: RuleDialogProps) {
 
   return (
     <Dialog.Root
-      open
-      onOpenChange={(open, details) => {
+      open={open}
+      onOpenChange={(next, details) => {
         if (pending.current) details.cancel();
-        else if (!open) onClose();
+        else setOpen(next);
+      }}
+      onOpenChangeComplete={(next) => {
+        if (!next) onClose();
       }}
     >
       <Dialog.Portal>
@@ -154,25 +164,23 @@ export function RuleDialog(props: RuleDialogProps) {
             }}
             aria-busy={busy}
           >
-            <Dialog.Header className={styles.header}>
-              <Dialog.Title className={styles.title}>
+            <Dialog.Header>
+              <Dialog.Title>
                 {editing ? "Edit" : "New"} {label}
               </Dialog.Title>
-              <Dialog.Close disabled={busy} />
             </Dialog.Header>
             <div className={styles.body}>
-              <label htmlFor={nameId} className={styles.nameLabel}>
-                {label} Name
-              </label>
-              <Input.Root size="xl" className={styles.nameInput}>
-                <Input.Field
-                  id={nameId}
-                  autoFocus
-                  value={name}
-                  onValueChange={setName}
-                  disabled={busy}
-                />
-              </Input.Root>
+              <Field.Root className={styles.name}>
+                <Field.Label>{label} Name</Field.Label>
+                <Input.Root size="sm">
+                  <Field.Control
+                    render={<Input.Field autoFocus />}
+                    value={name}
+                    onValueChange={setName}
+                    disabled={busy}
+                  />
+                </Input.Root>
+              </Field.Root>
               <Dialog.Description className={styles.description}>
                 {kind === "group"
                   ? "These rules filter every smart folder and saved view in this group."
@@ -184,7 +192,7 @@ export function RuleDialog(props: RuleDialogProps) {
                 </p>
               ) : null}
               <fieldset className={styles.editor} disabled={busy}>
-                <legend className={styles.srOnly}>Matching Rules</legend>
+                <legend className={styles.hidden}>Matching Rules</legend>
                 <RuleEditor
                   query={query}
                   choices={choices}
@@ -197,20 +205,23 @@ export function RuleDialog(props: RuleDialogProps) {
                 </p>
               ) : null}
             </div>
-            <div className={styles.footer}>
-              <p className={styles.count} role="status" aria-live="polite">
-                {countText}
-              </p>
+            <Dialog.Footer
+              leading={
+                <p className={styles.count} role="status" aria-live="polite">
+                  {countText}
+                </p>
+              }
+            >
+              <Dialog.Cancel disabled={busy} />
               <Button
                 type="submit"
-                size="lg"
                 variant="primary"
                 disabled={busy || !ready || !name.trim()}
                 loading={busy}
               >
                 {busy ? "Saving" : editing ? "Save" : "Create"}
               </Button>
-            </div>
+            </Dialog.Footer>
           </form>
         </Dialog.Popup>
       </Dialog.Portal>

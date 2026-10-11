@@ -10,7 +10,7 @@ describe("empty gallery menu", () => {
   });
   it("shares the New menu spec", () => {
     const labels = menuLabels(buildEmptyGalleryMenu());
-    expect(labels[0]).toBe("New Folder");
+    expect(labels.slice(0, 2)).toEqual(["New", "New Folder"]);
     expect(labels).toContain("New Smart Folder");
     expect(labels).toContain("Find Duplicates");
     expect(labels).toContain("New Note");

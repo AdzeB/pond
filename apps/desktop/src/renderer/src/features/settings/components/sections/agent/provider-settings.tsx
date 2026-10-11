@@ -5,7 +5,7 @@ import {
   assistantCatalog,
   offeredProviders,
 } from "@shared/assistant";
-import { type ReactNode, useState } from "react";
+import type { ReactNode } from "react";
 import { AnimateHeight } from "@/shared/components/animate-height";
 import { ProviderLogo } from "./icons";
 import { ProviderConnection } from "./provider";
@@ -92,13 +92,9 @@ function remainingProviders(
   kind: "cloud" | "local",
   agent: AgentPrefs,
   keys: KeyRow[],
-  search: string,
 ) {
-  return matchingProviders(
-    offeredProviders(kind).filter(
-      (entry) => !isListedProvider(entry.id, agent, keys),
-    ),
-    search,
+  return offeredProviders(kind).filter(
+    (entry) => !isListedProvider(entry.id, agent, keys),
   );
 }
 
@@ -159,18 +155,6 @@ export function ProviderSettings({
   );
 }
 
-function matchingProviders(
-  providers: ReturnType<typeof offeredProviders>,
-  search: string,
-) {
-  const terms = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  if (!terms.length) return providers;
-  return providers.filter((entry) => {
-    const text = `${entry.provider} ${entry.id}`.toLowerCase();
-    return terms.every((term) => text.includes(term));
-  });
-}
-
 function AddProviderMenu({
   kind,
   agent,
@@ -182,62 +166,49 @@ function AddProviderMenu({
   keys: KeyRow[];
   onAdd: (provider: AssistantProvider) => void;
 }) {
-  const [search, setSearch] = useState("");
-  const [open, setOpen] = useState(false);
-  const remaining = remainingProviders(kind, agent, keys, "");
-  const providers = remainingProviders(kind, agent, keys, search);
-  if (!remaining.length) return null;
+  const providers = remainingProviders(kind, agent, keys);
+  if (!providers.length) return null;
   return (
-    <Menu.Root
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (next) setSearch("");
-      }}
-    >
-      <Menu.Trigger
-        size="xs"
-        variant="secondary"
-        aria-label={
-          kind === "local" ? "Add Local Provider" : "Add Cloud Provider"
-        }
-      >
-        Add Provider
-      </Menu.Trigger>
-      <Menu.Portal>
-        <Menu.Positioner align="end" sideOffset={8}>
-          <Menu.Popup
-            className={styles["add-popup"]}
-            aria-label={
-              kind === "local" ? "Add Local Provider" : "Add Cloud Provider"
-            }
-          >
-            <Menu.Input
-              autoFocus
-              aria-label="Search Providers"
-              placeholder="Search…"
-              value={search}
-              onValueChange={setSearch}
-            />
-            <Menu.List className={styles["add-options"]}>
-              {providers.length > 0 ? (
+    <Menu.FilterProvider autoHighlight>
+      <Menu.Root>
+        <Menu.Trigger
+          size="xs"
+          variant="secondary"
+          aria-label={
+            kind === "local" ? "Add Local Provider" : "Add Cloud Provider"
+          }
+        >
+          Add Provider
+        </Menu.Trigger>
+        <Menu.Portal>
+          <Menu.Positioner align="end" sideOffset={8}>
+            <Menu.Popup
+              className={styles["add-popup"]}
+              aria-label={
+                kind === "local" ? "Add Local Provider" : "Add Cloud Provider"
+              }
+            >
+              <Menu.Input
+                autoFocus
+                aria-label="Search Providers"
+                placeholder="Search…"
+              />
+              <Menu.FilterList className={styles["add-options"]}>
                 <Menu.Items
                   items={providers.map((entry) => ({
                     id: entry.id,
                     label: entry.provider,
+                    keywords: entry.id,
                     icon: <ProviderLogo provider={entry.id} />,
                     onClick: () => onAdd(entry.id),
                   }))}
                 />
-              ) : (
-                <Menu.Item disabled>
-                  <Menu.ItemLabel>No matches</Menu.ItemLabel>
-                </Menu.Item>
-              )}
-            </Menu.List>
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.Root>
+              </Menu.FilterList>
+              <Menu.Empty>No matches</Menu.Empty>
+            </Menu.Popup>
+          </Menu.Positioner>
+        </Menu.Portal>
+      </Menu.Root>
+    </Menu.FilterProvider>
   );
 }

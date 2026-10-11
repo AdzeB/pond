@@ -39,9 +39,9 @@ import {
 } from "@/features/saves/lib/selection";
 import { pool } from "@/features/saves/state/pool";
 import { primarySelection, selection } from "@/features/saves/state/selection";
-import { openSettings } from "@/features/settings/lib/open-settings";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { isEditableTarget } from "@/shared/lib/editable-target";
+import { openSettings } from "@/shared/lib/open-settings";
 import { notify } from "@/shared/lib/toast";
 
 function selectedIds(): string[] {
@@ -85,10 +85,10 @@ async function exportPackage(kind: "eagle" | "pond"): Promise<void> {
   if (ids.length === 0) return;
   if (kind === "eagle") {
     const result = await window.pond.query("saves.exportEaglePackage", { ids });
-    if (!result.ok && result.error !== "canceled") {
+    if (!result.ok && result.reason !== "cancelled") {
       notify({
         id: "native-menu-export",
-        title: result.error || "Couldn’t export Eagle package",
+        title: result.error || "Couldn't export Eagle package",
       });
     }
     return;
@@ -96,10 +96,10 @@ async function exportPackage(kind: "eagle" | "pond"): Promise<void> {
   const result = await window.pond.query("saves.exportPackage", {
     ids,
   });
-  if (!result.ok && result.error !== "canceled") {
+  if (!result.ok && result.reason !== "cancelled") {
     notify({
       id: "native-menu-export",
-      title: result.error || "Couldn’t export Pond package",
+      title: result.error || "Couldn't export Pond package",
     });
   }
 }

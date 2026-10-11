@@ -1,15 +1,13 @@
 import { normalizeSidebarDestinationOrder } from "@pond/schema";
 import { expect, it } from "vitest";
-import {
-  moveSidebarDestination,
-  moveVisibleSidebarDestination,
-} from "./sidebar-customization";
+import { moveVisibleSidebarDestination } from "./sidebar-customization";
 
 const LIBRARY_DESTINATIONS = [
   "all",
   "uncategorized",
   "assistant",
   "untagged",
+  "recentlyAdded",
   "recentlyUsed",
   "tags",
   "random",
@@ -32,39 +30,6 @@ it("places a newly added destination in its default relative position", () => {
   ).toEqual([...LIBRARY_DESTINATIONS, "downloads", "sources"]);
 });
 
-it("reorders one sidebar group without moving destinations across groups", () => {
-  expect(
-    moveSidebarDestination(
-      [...LIBRARY_DESTINATIONS, "downloads", "sources"],
-      LIBRARY_DESTINATIONS,
-      "tags",
-      1,
-    ),
-  ).toEqual([
-    "all",
-    "tags",
-    "uncategorized",
-    "assistant",
-    "untagged",
-    "recentlyUsed",
-    "random",
-    "trash",
-    "downloads",
-    "sources",
-  ]);
-});
-
-it("leaves an unknown group move unchanged", () => {
-  expect(
-    moveSidebarDestination(
-      ["all", "downloads", "sources"],
-      ["downloads", "sources"],
-      "all",
-      1,
-    ),
-  ).toEqual(["all", "downloads", "sources"]);
-});
-
 it("reorders visible sidebar destinations while preserving hidden slots", () => {
   expect(
     moveVisibleSidebarDestination(
@@ -74,6 +39,7 @@ it("reorders visible sidebar destinations while preserving hidden slots", () => 
         "all",
         "assistant",
         "untagged",
+        "recentlyAdded",
         "recentlyUsed",
         "tags",
         "random",
@@ -86,6 +52,7 @@ it("reorders visible sidebar destinations while preserving hidden slots", () => 
     "assistant",
     "uncategorized",
     "untagged",
+    "recentlyAdded",
     "recentlyUsed",
     "tags",
     "all",

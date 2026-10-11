@@ -5,7 +5,6 @@ import {
 } from "@pond/icons/outline/18";
 import { Button, Popover, Select, Tooltip } from "@pond/ui";
 import { useState } from "react";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import type {
   TableColumnLayout,
   TableColumnSpec,
@@ -40,7 +39,6 @@ export function TableOptionsMenu<Id extends string>({
   onReset: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const scrollFade = useScrollFade<HTMLDivElement>();
   const hidden = new Set(layout.hidden);
   const hideable = columns.some((column) => column.id !== lockedId);
   const changed =
@@ -65,11 +63,7 @@ export function TableOptionsMenu<Id extends string>({
       </Tooltip>
       <Popover.Portal>
         <Popover.Positioner side="bottom" align="end" sideOffset={8}>
-          <Popover.Popup
-            className={styles.popup}
-            aria-label="Options"
-            {...scrollFade}
-          >
+          <Popover.Popup className={styles.popup} aria-label="Options">
             <Select.Root
               items={columns.map((column) => ({
                 value: column.id,

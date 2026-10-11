@@ -1,0 +1,130 @@
+.branch {
+  width: 100%;
+  padding-top: 0;
+}
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding-inline-start: calc(var(--entry-depth) * var(--folder-indent));
+  animation: appear var(--ds-duration-fast) var(--ds-easing-standard);
+}
+
+.disclosure {
+  --ds-focus-offset: -16px;
+  position: absolute;
+  inset-inline-start: calc(var(--entry-depth) * var(--folder-indent) - 15px);
+  top: 6px;
+  z-index: 2;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  color: var(--ds-gray-9);
+
+  &:hover {
+    color: var(--ds-gray-11);
+  }
+}
+
+.disclosure svg {
+  width: 8px;
+  transition: transform var(--ds-duration-fast) var(--ds-easing-standard);
+}
+
+.disclosure[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+
+.item {
+  flex: 1;
+  min-width: 0;
+  padding-right: 24px;
+}
+
+.editor {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+  height: var(--sidebar-height-md);
+  padding: 0 6px;
+  overflow: hidden;
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-lg);
+  color: var(--ds-gray-12);
+}
+
+.icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  overflow: hidden;
+}
+
+.field {
+  font-size: var(--ds-text-md);
+  line-height: 1;
+}
+
+.more {
+  position: absolute;
+  right: 2px;
+  margin: 2px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
+}
+
+.row:hover .more,
+.row:focus-within .more,
+.more[data-popup-open] {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+.row:hover .item:not([data-status="active"]) {
+  color: var(--ds-gray-11);
+  background: var(--ds-gray-a3);
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (hover: none) {
+  .more {
+    pointer-events: auto;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row {
+    animation: none;
+  }
+  .more,
+  .disclosure svg {
+    transition: none;
+  }
+}
+
+:global([data-reduce-motion]) .row {
+  animation: none;
+}
+:global([data-reduce-motion]) .more,
+:global([data-reduce-motion]) .disclosure svg {
+  transition: none;
+}

@@ -1,7 +1,6 @@
 import { IconLayersOutline18 } from "@pond/icons/outline/18";
 import { Button, Popover, Tooltip } from "@pond/ui";
 import type { AssistantSource } from "@shared/assistant";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { SourceThumbnail, useSourceCovers } from "../save-preview";
 import styles from "./styles.module.css";
 
@@ -12,7 +11,6 @@ export function ChatContext({
   attached: AssistantSource[];
   previous: AssistantSource[];
 }) {
-  const scrollFade = useScrollFade<HTMLDivElement>();
   const groups = [
     { title: "Next Message", saves: attached },
     { title: "In This Conversation", saves: previous },
@@ -30,15 +28,11 @@ export function ChatContext({
       </Tooltip>
       <Popover.Portal>
         <Popover.Positioner side="top" align="start" sideOffset={6}>
-          <Popover.Popup
-            className={styles.popup}
-            aria-label="Chat Context"
-            {...scrollFade}
-          >
+          <Popover.Popup className={styles.popup} aria-label="Chat Context">
             <div className={styles.access}>
               <h3>Library Access</h3>
               <p>
-                Agent searches your library only when your request needs it.
+                Assistant searches your library only when your request needs it.
               </p>
             </div>
             {groups.map((group) =>

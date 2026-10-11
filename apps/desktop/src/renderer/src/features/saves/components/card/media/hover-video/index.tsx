@@ -4,7 +4,7 @@ import { useImageReady } from "@/features/saves/components/card/media/lib/use-im
 import type { MediaUnit } from "@/features/saves/lib/media/units";
 import { thumbUrlFor } from "@/features/saves/lib/media/url";
 import { aspectCoverKey, recordAspect } from "@/features/saves/state/aspect";
-import { usePrefs } from "@/features/settings/state/prefs";
+import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
 function seekToStart(el: HTMLVideoElement) {
@@ -68,7 +68,7 @@ export function HoverVideo({
     if (!active || !primed || !hoverEnabled) return;
     const el = internalRef.current;
     if (!el) return;
-    // Autoplay rejections are expected; older Chromium returns undefined here.
+    /** Autoplay rejections are expected, and some Chromium builds return undefined here. */
     el.play()?.catch(() => {});
     return () => el.pause();
   }, [active, primed, hoverEnabled]);

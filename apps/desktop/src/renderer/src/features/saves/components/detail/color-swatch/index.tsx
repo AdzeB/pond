@@ -3,13 +3,12 @@ import {
   IconColorPaletteOutline18,
   IconMagnifierOutline18,
 } from "@pond/icons/outline/18";
-import { Menu, type MenuItemSpec } from "@pond/ui";
+import { Chip, Menu, type MenuItemSpec } from "@pond/ui";
 import { useEffect, useState } from "react";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { pool } from "@/features/saves/state/pool";
-import { SpecMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
+import { SpecMenu } from "@/shared/components/spec-context-menu";
 import { colorCopyFormats } from "@/shared/lib/color";
-import styles from "./styles.module.css";
 
 const COPIED_HOLD_MS = 1200;
 
@@ -98,16 +97,14 @@ export function ColorSwatch({
       }
     >
       <Menu.Trigger
-        render={
-          <button
-            type="button"
-            className={styles.swatch}
-            style={{ background: color, color }}
-            title={color}
-            aria-label={copied ? `Copied ${color}` : `Color ${color}`}
-          />
-        }
-      />
+        icon
+        size="xs"
+        variant="ghost"
+        title={color}
+        aria-label={copied ? `Copied ${color}` : `Color ${color}`}
+      >
+        <Chip.Swatch color={color} />
+      </Menu.Trigger>
     </SpecMenu>
   );
 }

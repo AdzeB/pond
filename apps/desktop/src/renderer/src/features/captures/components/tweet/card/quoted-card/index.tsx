@@ -1,6 +1,6 @@
 import type { ComponentType, SVGProps } from "react";
 import { Avatar } from "@/features/captures/components/tweet/card/header";
-import { VerifiedIcon } from "@/features/captures/components/tweet/card/icons/icons";
+import { VerifiedIcon } from "@/features/captures/components/tweet/card/icons";
 import type { TweetCardData } from "@/features/captures/components/tweet/card/lib/data";
 import { MediaGrid } from "@/features/captures/components/tweet/card/media-grid";
 import styles from "./styles.module.css";
@@ -17,17 +17,17 @@ export function QuotedCard({
   const { author, text, media } = data;
   return (
     <div className={styles.quoted}>
-      <div className={styles["quoted-header"]}>
+      <div className={styles.header}>
         <Avatar author={author} size={20} />
-        <span className={styles["quoted-name"]}>
+        <span className={styles.name}>
           {author.name}
           {author.verified ? (
             <Verified className={styles.verified} width={15} height={15} />
           ) : null}
         </span>
-        <span className={styles["quoted-handle"]}>@{author.handle}</span>
+        <span className={styles.handle}>@{author.handle}</span>
       </div>
-      {text ? <p className={styles["quoted-body"]}>{text}</p> : null}
+      {text ? <p className={styles.body}>{text}</p> : null}
       {media && media.length > 0 ? <MediaGrid media={media} compact /> : null}
     </div>
   );

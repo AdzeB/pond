@@ -5,7 +5,7 @@ import { deriveTypeKind } from "@/features/saves/lib/media/units";
 import { pool } from "@/features/saves/state/pool";
 import { selection } from "@/features/saves/state/selection";
 import type { Save, SaveFile } from "@/features/saves/types";
-import { getPrefsSnapshot } from "@/features/settings/state/prefs";
+import { getPrefsSnapshot } from "@/shared/state/prefs";
 import type { BuildSaveMenuOptions, SaveMenuContext } from "./types";
 
 function isHttpUrl(url: string | null | undefined): boolean {

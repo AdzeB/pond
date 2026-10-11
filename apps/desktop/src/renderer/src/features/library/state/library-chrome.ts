@@ -2,6 +2,7 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { beginLibraryLayoutTransition } from "@/features/library/lib/library-layout-transition";
 import { navigationHistory } from "@/features/library/state/navigation-history";
+import type { SaveInspectorTab } from "@/features/saves";
 import type { LibraryNav } from "@/shared/lib/library-nav";
 
 export type { LibraryNav } from "@/shared/lib/library-nav";
@@ -45,14 +46,20 @@ function writeWidth(key: string, width: number): void {
   } catch {}
 }
 
+function writeFlag(key: string, value: boolean): void {
+  try {
+    window.localStorage.setItem(key, value ? "1" : "0");
+  } catch {}
+}
+
 export type LibraryRightPane = "agent" | "inspector" | null;
 export type LibraryInspectorMode = "save" | "download" | "source";
-export type SaveInspectorTab = "organize" | "info" | "comments";
 export type LibraryInspectorSourceKind = "account" | "watch";
 
 interface ChromeState {
   nav: LibraryNav;
   sidebarOpen: boolean;
+  rightOpen: boolean;
   agentOpen: boolean;
   rightPane: LibraryRightPane;
   inspectorSaveId: string | null;
@@ -69,13 +76,53 @@ function hasInspectorTarget(s: ChromeState): boolean {
   return s.inspectorSaveId != null;
 }
 
+function commitChrome(current: ChromeState, next: ChromeState): ChromeState {
+  if (
+    current.rightOpen === next.rightOpen &&
+    current.rightPane === next.rightPane &&
+    current.agentOpen === next.agentOpen &&
+    current.inspectorSaveId === next.inspectorSaveId &&
+    current.inspectorMode === next.inspectorMode &&
+    current.inspectorTab === next.inspectorTab &&
+    current.inspectorSourceId === next.inspectorSourceId &&
+    current.inspectorSourceKind === next.inspectorSourceKind
+  ) {
+    return current;
+  }
+  if ((current.rightPane === null) !== (next.rightPane === null)) {
+    beginLibraryLayoutTransition();
+  }
+  if (current.rightOpen !== next.rightOpen) {
+    writeFlag("pond.rightOpen", next.rightOpen);
+  }
+  if (current.agentOpen !== next.agentOpen) {
+    writeFlag("pond.agent", next.agentOpen);
+  }
+  return next;
+}
+
+function restingPane(open: boolean): LibraryRightPane {
+  return open ? "agent" : null;
+}
+
+function initialRightOpen(): boolean {
+  try {
+    const stored = window.localStorage.getItem("pond.rightOpen");
+    if (stored === "0" || stored === "1") return stored === "1";
+    if (window.localStorage.getItem("pond.agent") === "0") return false;
+  } catch {}
+  return true;
+}
+
 const initialAgentOpen = readFlag("pond.agent", false);
+const rightOpenAtLaunch = initialRightOpen();
 
 const store = new Store<ChromeState>({
   nav: { kind: "all" },
   sidebarOpen: readFlag("pond.sidebar", true),
+  rightOpen: rightOpenAtLaunch,
   agentOpen: initialAgentOpen,
-  rightPane: initialAgentOpen ? "agent" : null,
+  rightPane: rightOpenAtLaunch ? "agent" : null,
   inspectorSaveId: null,
   inspectorMode: "save",
   inspectorTab: "organize",
@@ -103,15 +150,18 @@ export const libraryChrome = {
     store.setState((s) => {
       if (s.inspectorSaveId === inspectorSaveId && s.inspectorMode === "save")
         return s;
-      beginLibraryLayoutTransition();
-      return {
+      return commitChrome(s, {
         ...s,
         inspectorSaveId,
         inspectorMode: "save",
         inspectorTab:
           inspectorSaveId === s.inspectorSaveId ? s.inspectorTab : "organize",
-        rightPane: inspectorSaveId ? "inspector" : s.agentOpen ? "agent" : null,
-      };
+        rightPane: s.rightOpen
+          ? inspectorSaveId
+            ? "inspector"
+            : "agent"
+          : null,
+      });
     });
   },
   openSaveDetails(
@@ -123,17 +173,18 @@ export const libraryChrome = {
         s.inspectorSaveId === inspectorSaveId &&
         s.inspectorMode === "save" &&
         s.inspectorTab === inspectorTab &&
-        s.rightPane === "inspector"
+        s.rightPane === "inspector" &&
+        s.rightOpen
       )
         return s;
-      beginLibraryLayoutTransition();
-      return {
+      return commitChrome(s, {
         ...s,
         inspectorSaveId,
         inspectorMode: "save",
         inspectorTab,
+        rightOpen: true,
         rightPane: "inspector",
-      };
+      });
     });
   },
   setInspectorTab(inspectorTab: SaveInspectorTab): void {
@@ -146,16 +197,17 @@ export const libraryChrome = {
       if (
         s.inspectorSaveId === inspectorSaveId &&
         s.inspectorMode === "download" &&
-        s.rightPane === "inspector"
+        s.rightPane === "inspector" &&
+        s.rightOpen
       )
         return s;
-      beginLibraryLayoutTransition();
-      return {
+      return commitChrome(s, {
         ...s,
         inspectorSaveId,
         inspectorMode: "download",
+        rightOpen: true,
         rightPane: "inspector",
-      };
+      });
     });
   },
   setInspectorSaveId(inspectorSaveId: string | null): void {
@@ -184,17 +236,17 @@ export const libraryChrome = {
   },
   setAgentOpen(agentOpen: boolean): void {
     store.setState((s) => {
-      const rightPane = agentOpen
-        ? "agent"
+      const rightOpen = agentOpen
+        ? true
         : hasInspectorTarget(s)
-          ? "inspector"
-          : null;
-      if (s.agentOpen === agentOpen && s.rightPane === rightPane) return s;
-      beginLibraryLayoutTransition();
-      try {
-        window.localStorage.setItem("pond.agent", agentOpen ? "1" : "0");
-      } catch {}
-      return { ...s, agentOpen, rightPane };
+          ? s.rightOpen
+          : false;
+      const rightPane: LibraryRightPane = !rightOpen
+        ? null
+        : agentOpen
+          ? "agent"
+          : "inspector";
+      return commitChrome(s, { ...s, agentOpen, rightOpen, rightPane });
     });
   },
   inspectSource(kind: LibraryInspectorSourceKind, id: string): void {
@@ -203,17 +255,18 @@ export const libraryChrome = {
         s.inspectorSourceId === id &&
         s.inspectorSourceKind === kind &&
         s.inspectorMode === "source" &&
-        s.rightPane === "inspector"
+        s.rightPane === "inspector" &&
+        s.rightOpen
       )
         return s;
-      beginLibraryLayoutTransition();
-      return {
+      return commitChrome(s, {
         ...s,
         inspectorMode: "source",
         inspectorSourceId: id,
         inspectorSourceKind: kind,
+        rightOpen: true,
         rightPane: "inspector",
-      };
+      });
     });
   },
   clearSourceInspector(): void {
@@ -221,39 +274,49 @@ export const libraryChrome = {
       if (!s.inspectorSourceId && s.inspectorMode !== "source") return s;
       const hidingSource =
         s.rightPane === "inspector" && s.inspectorMode === "source";
-      if (hidingSource) beginLibraryLayoutTransition();
-      return {
+      return commitChrome(s, {
         ...s,
         inspectorSourceId: null,
         inspectorSourceKind: null,
         inspectorMode: s.inspectorMode === "source" ? "save" : s.inspectorMode,
-        rightPane: hidingSource ? (s.agentOpen ? "agent" : null) : s.rightPane,
-      };
+        rightPane: hidingSource ? restingPane(s.rightOpen) : s.rightPane,
+      });
+    });
+  },
+  /** Hiding inspector content keeps the column width stable. */
+  dismissInspector(): void {
+    store.setState((s) => {
+      if (s.rightPane !== "inspector") return s;
+      return commitChrome(s, {
+        ...s,
+        rightPane: restingPane(s.rightOpen),
+      });
     });
   },
   toggleInspector(): void {
     store.setState((s) => {
       if (!hasInspectorTarget(s)) return s;
-      beginLibraryLayoutTransition();
-      return {
+      const opening = s.rightPane !== "inspector";
+      return commitChrome(s, {
         ...s,
-        rightPane: s.rightPane === "inspector" ? null : "inspector",
-      };
+        rightOpen: opening,
+        rightPane: opening ? "inspector" : null,
+      });
     });
   },
   closeRightPane(): void {
     store.setState((s) => {
-      if (s.rightPane === null) return s;
-      beginLibraryLayoutTransition();
-      if (s.rightPane !== "agent") return { ...s, rightPane: null };
-      try {
-        window.localStorage.setItem("pond.agent", "0");
-      } catch {}
-      return { ...s, rightPane: null, agentOpen: false };
+      if (!s.rightOpen && s.rightPane === null) return s;
+      return commitChrome(s, {
+        ...s,
+        rightOpen: false,
+        rightPane: null,
+        agentOpen: s.rightPane === "agent" ? false : s.agentOpen,
+      });
     });
   },
   toggleRightPane(): void {
-    if (store.state.rightPane !== null) libraryChrome.closeRightPane();
+    if (store.state.rightOpen) libraryChrome.closeRightPane();
     else if (hasInspectorTarget(store.state)) libraryChrome.toggleInspector();
     else libraryChrome.setAgentOpen(true);
   },

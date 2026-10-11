@@ -1,7 +1,11 @@
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { libraryChrome } from "@/features/library/state/library-chrome";
-import { createFolderSidebarHarness } from "./test-harness";
+import {
+  createFolderSidebarHarness,
+  queueSummary,
+  sidebarCounts,
+} from "./test-harness";
 
 describe("folder sidebar navigation", () => {
   const harness = createFolderSidebarHarness();
@@ -27,6 +31,16 @@ describe("folder sidebar navigation", () => {
     expect(vi.mocked(window.pond.openHarvesterWindow)).toHaveBeenCalledOnce();
   });
 
+  it("shows the running download count beside the Harvester mark", async () => {
+    queueSummary.current = { ...queueSummary.current, running: 12, waiting: 4 };
+    await harness.mount();
+    await act(async () => {});
+    const harvester = harness.iconButton("Harvester, 12 downloading");
+    expect(harvester.textContent).toBe("12");
+    await act(async () => harvester.click());
+    expect(vi.mocked(window.pond.openHarvesterWindow)).toHaveBeenCalledOnce();
+  });
+
   it("opens Uncategorized from the sidebar", async () => {
     const router = await harness.mount();
     await act(async () => harness.button("Uncategorized").click());
@@ -49,7 +63,9 @@ describe("folder sidebar navigation", () => {
   });
 
   it("shows counts on library destinations", async () => {
+    sidebarCounts.current.recentlyUsed = 4;
     await harness.mount();
+    expect(harness.button("Recently Used").textContent).toContain("4");
     for (const label of ["All", "Uncategorized", "Untagged", "Tags", "Trash"]) {
       expect(harness.button(label).textContent).toContain("0");
     }

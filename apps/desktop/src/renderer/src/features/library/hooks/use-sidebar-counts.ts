@@ -1,16 +1,23 @@
 import type { LibrarySidebarCounts } from "@shared/sidebar-counts";
 import { useEffect, useState } from "react";
+import { useRecents } from "@/features/saves";
 
 const EMPTY: LibrarySidebarCounts = {
   library: 0,
   uncategorized: 0,
   untagged: 0,
+  recentlyAdded: 0,
+  recentlyUsed: 0,
   trash: 0,
   folders: {},
 };
 export function useSidebarCounts(): LibrarySidebarCounts {
+  const recentKey = useRecents()
+    .map((entry) => entry.saveId)
+    .join("\0");
   const [counts, setCounts] = useState(EMPTY);
   useEffect(() => {
+    const recentIds = recentKey ? recentKey.split("\0") : [];
     let active = true;
     let pending = false;
     let dirty = false;
@@ -30,7 +37,9 @@ export function useSidebarCounts(): LibrarySidebarCounts {
       pending = true;
       dirty = false;
       try {
-        const next = await window.pond.query("saves.sidebarCounts", {});
+        const next = await window.pond.query("saves.sidebarCounts", {
+          recentIds,
+        });
         if (active && next) setCounts(next);
       } catch (error) {
         console.warn("[pond] sidebar counts failed", error);
@@ -46,6 +55,6 @@ export function useSidebarCounts(): LibrarySidebarCounts {
       off();
       if (timer) clearTimeout(timer);
     };
-  }, []);
+  }, [recentKey]);
   return counts;
 }

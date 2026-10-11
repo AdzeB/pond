@@ -1,15 +1,13 @@
-import { IconInboxStackOutline18 } from "@pond/icons/outline/18";
-import { Button, Sidebar, Tooltip } from "@pond/ui";
+import { Sidebar } from "@pond/ui";
 import { useRouterState } from "@tanstack/react-router";
+import { HarvesterButton } from "@/features/library/components/harvester-button";
 import { NewMenu } from "@/features/library/components/new-menu";
 import { SmartFoldersSection } from "@/features/library/components/smart-folders";
 import { WorkspaceMenu } from "@/features/library/components/workspace-menu";
-import { openHarvester } from "@/features/library/lib/open-harvester";
 import { useFolders } from "@/features/library/state/folders";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
 import { useHydrateSavedViews } from "@/features/library/state/saved-views";
 import { useViewStore } from "@/features/library/state/view-store";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { LibraryDestinations } from "./destinations";
 import { FolderTree } from "./folder-tree";
 import { selectLibraryNav } from "./navigation";
@@ -20,17 +18,7 @@ function WorkspaceHeader() {
     <Sidebar.Header className={styles.workspace}>
       <WorkspaceMenu />
       <div className={styles["workspace-actions"]}>
-        <Tooltip label="Harvester" side="bottom">
-          <Button
-            icon
-            size="sm"
-            variant="ghost"
-            aria-label="Harvester"
-            onClick={() => openHarvester()}
-          >
-            <IconInboxStackOutline18 />
-          </Button>
-        </Tooltip>
+        <HarvesterButton />
         <NewMenu />
       </div>
     </Sidebar.Header>
@@ -44,7 +32,6 @@ export function FolderSidebar() {
     select: (state) => state.location.pathname,
   });
   const folderRows = useFolders();
-  const scrollFade = useScrollFade<HTMLDivElement>();
   const libraryPage = ![
     "/assistant",
     "/sources",
@@ -61,7 +48,7 @@ export function FolderSidebar() {
       aria-label="Library"
     >
       <WorkspaceHeader />
-      <Sidebar.Scroll className={styles.scroll} {...scrollFade}>
+      <Sidebar.Scroll className={styles.scroll}>
         <LibraryDestinations
           activeViewId={activeViewId}
           nav={nav}

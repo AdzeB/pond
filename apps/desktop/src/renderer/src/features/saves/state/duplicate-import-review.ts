@@ -54,7 +54,7 @@ export async function importFilesWithDuplicateReview(input: {
   if (review.candidates.length === 0)
     return window.pond.query("saves.importFiles", input);
   const decisions = await promptForDuplicateImport(review.candidates);
-  if (!decisions) return { ok: false as const, ids: [] };
+  if (!decisions) return { ok: false as const, reason: "cancelled" as const };
   return window.pond.query("saves.importFiles", {
     ...input,
     duplicatePolicy: "keep-both",

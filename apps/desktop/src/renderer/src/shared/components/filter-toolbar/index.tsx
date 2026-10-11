@@ -3,7 +3,6 @@ import { Button, Tooltip } from "@pond/ui";
 import { clsx as cn } from "clsx";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { ComponentProps, ReactNode } from "react";
-import { useScrollFade } from "@/shared/hooks/use-scroll-fade";
 import { gentleSpring } from "@/shared/lib/motion";
 import styles from "./styles.module.css";
 
@@ -63,7 +62,6 @@ function Bar({
 }: BarProps) {
   const reduceMotion = useReducedMotion();
   const transition = reduceMotion ? { duration: 0 } : gentleSpring;
-  const scrollFade = useScrollFade<HTMLDivElement>("x");
   return (
     <AnimatePresence initial={false}>
       {open ? (
@@ -80,9 +78,7 @@ function Bar({
         >
           <div className={styles.bar}>
             <div className={styles["filters-viewport"]}>
-              <div className={styles.filters} {...scrollFade}>
-                {children}
-              </div>
+              <div className={styles.filters}>{children}</div>
             </div>
             {actions ? <div className={styles.actions}>{actions}</div> : null}
           </div>

@@ -23,14 +23,17 @@ export const libraryHeader = {
   openPopover(popover: ViewPopover): void {
     store.setState((s) => (s.popover === popover ? s : { ...s, popover }));
   },
-  togglePopover(): void {
+  togglePopover(popover: ViewPopover = "layout"): void {
     store.setState((s) => ({
       ...s,
-      popover: s.popover === null ? "layout" : null,
+      popover: s.popover === popover ? null : popover,
     }));
   },
-  closePopover(): void {
-    store.setState((s) => (s.popover === null ? s : { ...s, popover: null }));
+  closePopover(popover?: ViewPopover): void {
+    store.setState((s) => {
+      if (s.popover === null || (popover && s.popover !== popover)) return s;
+      return { ...s, popover: null };
+    });
   },
 };
 

@@ -2,7 +2,7 @@ import { useDataTable } from "@pond/ui";
 import type { ReactElement } from "react";
 import { useAccounts } from "@/features/sources/hooks/use-accounts";
 import { sourceDetail } from "@/features/sources/state/source-detail";
-import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
+import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import type { SourceTableRow } from "./lib/helpers";
 import { buildSourceMenu, contextMenuSources } from "./lib/menu";
 

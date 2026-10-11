@@ -1,5 +1,6 @@
 export type LibraryNav =
   | { kind: "all" }
+  | { kind: "recentlyAdded" }
   | { kind: "recents" }
   | { kind: "random" }
   | { kind: "uncategorized" }

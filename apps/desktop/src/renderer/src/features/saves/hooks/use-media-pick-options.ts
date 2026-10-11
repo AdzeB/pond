@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { MediaPickOptions } from "@/features/saves/lib/media/units";
-import { useResolvedTheme } from "@/features/settings/hooks/use-resolved-theme";
-import { usePrefs } from "@/features/settings/state/prefs";
+import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
+import { usePrefs } from "@/shared/state/prefs";
 
 export function useMediaPickOptions(): MediaPickOptions {
   const theme = useResolvedTheme();

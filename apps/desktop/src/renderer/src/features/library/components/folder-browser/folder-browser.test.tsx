@@ -2,6 +2,7 @@ import { DEFAULT_PREFS } from "@pond/schema";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { setLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
 import { folders } from "@/features/library/state/folders";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { FolderBrowser } from ".";
@@ -28,7 +29,7 @@ const folderRows = [
 describe("folder browser", () => {
   let host: HTMLDivElement;
   let root: Root;
-  const query = vi.fn(async (name: string) => {
+  const queryImpl = async (name: string) => {
     if (name === "folders.list") return folderRows;
     if (name === "folders.memberships") return [];
     if (name === "settings.getPrefs") return DEFAULT_PREFS;
@@ -44,7 +45,8 @@ describe("folder browser", () => {
     }
     if (name === "saves.getMany") return [];
     return null;
-  });
+  };
+  const query = vi.fn<(name: string) => Promise<object | null>>(queryImpl);
 
   beforeEach(async () => {
     vi.stubGlobal("pond", {
@@ -60,11 +62,14 @@ describe("folder browser", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     host.remove();
-    query.mockClear();
+    query.mockReset();
+    query.mockImplementation(queryImpl);
+    setLibrarySaveGap(16);
     vi.unstubAllGlobals();
   });
 
   it("shows child folders separately from contents", async () => {
+    setLibrarySaveGap(0);
     await act(async () => {
       root.render(
         <FolderBrowser parentId="root" contentCount={3}>
@@ -78,9 +83,133 @@ describe("folder browser", () => {
     expect(host.textContent).toContain("Subfolders (1)");
     expect(host.textContent).toContain("Contents (3)");
     expect(host.textContent).toContain("Save grid");
+    expect(host.querySelector("ul")?.style.gap).toBe("0px");
     expect(query).toHaveBeenCalledWith("saves.getMany", {
       ids: ["preview-a", "preview-b", "preview-c", "preview-d"],
     });
+  });
+
+  it("shows up to four item previews, including files that need a generated thumbnail", async () => {
+    query.mockImplementation(async (name: string) => {
+      if (name === "folders.list") return folderRows;
+      if (name === "folders.memberships") return [];
+      if (name === "settings.getPrefs") return DEFAULT_PREFS;
+      if (name === "folders.summaries") {
+        return [
+          {
+            id: "child",
+            directSaveCount: 2,
+            childFolderCount: 0,
+            previewSaveIds: ["preview-a", "preview-b"],
+          },
+        ];
+      }
+      if (name === "saves.getMany") {
+        return [
+          {
+            id: "preview-a",
+            source: "local",
+            sourceId: "preview-a",
+            url: "pond:local/preview-a",
+            title: "contents",
+            mediaType: "text",
+            files: [
+              {
+                kind: "thumbnail",
+                path: "thumbnail.png",
+                mimeType: "image/png",
+                sha256: "abcdef1234567890",
+                size: 10,
+              },
+            ],
+            tags: [],
+            savedAt: 2,
+            createdAt: 2,
+          },
+          {
+            id: "preview-b",
+            source: "local",
+            sourceId: "preview-b",
+            url: "pond:local/preview-b",
+            title: "metadata",
+            mediaType: "file",
+            files: [
+              {
+                kind: "file",
+                path: "metadata.plist",
+                mimeType: "application/octet-stream",
+                sha256: "abcdef1234567890",
+                size: 10,
+              },
+            ],
+            tags: [],
+            savedAt: 1,
+            createdAt: 1,
+          },
+        ];
+      }
+      return null;
+    });
+    await act(async () => {
+      root.render(<FolderBrowser parentId="root" contentCount={0} />);
+    });
+    const images = await vi.waitFor(() => {
+      const found = [...host.querySelectorAll<HTMLImageElement>("img")];
+      expect(found).toHaveLength(2);
+      return found;
+    });
+    expect(images.map((image) => image.getAttribute("src"))).toEqual([
+      expect.stringContaining("thumbnail.png"),
+      expect.stringContaining("preview="),
+    ]);
+    expect(images[1]?.getAttribute("src")).toContain("metadata.plist");
+    expect(images[0]?.getAttribute("data-fit")).toBe("fit");
+  });
+
+  it("labels an empty folder as 0 items and keeps the folder cover", async () => {
+    query.mockImplementation(async (name: string) => {
+      if (name === "folders.list") {
+        return [
+          {
+            id: "empty",
+            parentId: "root",
+            name: "resources",
+            color: null,
+            sortOrder: 0,
+            createdAt: new Date(0),
+          },
+        ];
+      }
+      if (name === "folders.memberships") return [];
+      if (name === "settings.getPrefs") return DEFAULT_PREFS;
+      if (name === "folders.summaries") {
+        return [
+          {
+            id: "empty",
+            directSaveCount: 0,
+            childFolderCount: 0,
+            previewSaveIds: [],
+          },
+        ];
+      }
+      if (name === "saves.getMany") return [];
+      return null;
+    });
+    await folders.refresh();
+    await act(async () => {
+      root.render(<FolderBrowser parentId="root" contentCount={0} />);
+    });
+    const button = await vi.waitFor(() => {
+      const candidate = host.querySelector<HTMLButtonElement>(
+        'button[aria-label="Open resources, 0 items"]',
+      );
+      expect(candidate).not.toBeNull();
+      return candidate;
+    });
+    expect(button?.textContent).toContain("0 items");
+    expect(button?.querySelector("svg")).not.toBeNull();
+    expect(button?.querySelector("img")).toBeNull();
+    expect(button?.textContent).not.toContain("Empty");
   });
 
   it("opens a child folder with the keyboard-accessible card button", async () => {
@@ -131,6 +260,7 @@ describe("folder browser", () => {
       "Icon",
       "Color",
       "Sort By",
+      "Show Subfolder Contents",
       "Customize Folder",
     ]) {
       expect(

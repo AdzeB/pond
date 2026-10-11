@@ -1,7 +1,7 @@
 import {
   createTableColumnLayout,
+  type StoredTableColumnLayout,
   type TableColumnLayout,
-  type TableSort,
 } from "@/shared/lib/table-column-layout";
 import {
   DOWNLOAD_COLUMN_CATALOG,
@@ -9,7 +9,6 @@ import {
   LOCKED_DOWNLOAD_COLUMN,
 } from "../lib/download-columns";
 
-export type DownloadsTableSort = TableSort<DownloadColumnId>;
 export type DownloadsColumnLayout = TableColumnLayout<DownloadColumnId>;
 
 const layout = createTableColumnLayout({
@@ -18,12 +17,8 @@ const layout = createTableColumnLayout({
   lockedId: LOCKED_DOWNLOAD_COLUMN,
 });
 
-export function defaultDownloadsColumnLayout(): DownloadsColumnLayout {
-  return layout.defaultLayout();
-}
-
 export function normalizeDownloadsColumnLayout(
-  value: unknown,
+  value: StoredTableColumnLayout,
 ): DownloadsColumnLayout {
   return layout.normalize(value);
 }

@@ -147,12 +147,16 @@ it("splits provider and model choices into separate submenus", async () => {
   });
 
   await openPicker();
-  await act(async () => menuItem("Model")?.click());
+  await act(async () =>
+    menuItem("Model")?.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, detail: 1 }),
+    ),
+  );
   expect(document.body.textContent).not.toContain("Anthropic");
   expect(document.body.textContent).not.toContain("Claude Test");
   expect(document.body.textContent).not.toContain("gemma4:26b");
   const selectedModel = menuItem("GPT-5.6 Sol");
-  const modelMenu = selectedModel?.closest<HTMLElement>('[role="menu"]');
+  const modelMenu = selectedModel?.closest<HTMLElement>('[role="dialog"]');
   if (!selectedModel || !modelMenu)
     throw new Error("Missing selected model menu item");
   vi.spyOn(selectedModel, "getBoundingClientRect").mockReturnValue(
@@ -161,11 +165,14 @@ it("splits provider and model choices into separate submenus", async () => {
   vi.spyOn(modelMenu, "getBoundingClientRect").mockReturnValue(
     new DOMRect(0, 40),
   );
-  await act(async () =>
+  await act(async () => {
     selectedModel?.dispatchEvent(
       new MouseEvent("mouseover", { bubbles: true }),
-    ),
-  );
+    );
+    selectedModel?.dispatchEvent(
+      new MouseEvent("mousemove", { bubbles: true }),
+    );
+  });
   expect(document.body.textContent).toContain(
     "Built for complex coding and knowledge work.",
   );

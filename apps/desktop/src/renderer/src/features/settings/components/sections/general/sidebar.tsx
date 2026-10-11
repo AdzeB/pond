@@ -1,8 +1,8 @@
 import { Button, Settings } from "@pond/ui";
 import { useState } from "react";
 import { SidebarCustomizationDialog } from "@/features/settings/components/sidebar-customization-dialog";
-import { usePrefs } from "@/features/settings/state/prefs";
 import { EnumSelect } from "@/shared/components/enum-select";
+import { usePrefs } from "@/shared/state/prefs";
 
 export function SidebarPreferences() {
   const [sidebar, patch, loaded] = usePrefs("sidebar");
@@ -15,7 +15,7 @@ export function SidebarPreferences() {
           <Settings.ItemDetails>
             <Settings.ItemTitle>App Sidebar</Settings.ItemTitle>
             <Settings.ItemDescription>
-              Customize sidebar item visibility, ordering, and badge style.
+              Choose which items the sidebar shows and whether they show counts.
             </Settings.ItemDescription>
           </Settings.ItemDetails>
           <Settings.ItemControl>

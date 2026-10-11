@@ -12,6 +12,11 @@ export interface SaveDragDataTransfer {
   setDragImage?(image: Element, x: number, y: number): void;
 }
 
+export interface SaveDragStartEvent {
+  readonly dataTransfer: SaveDragDataTransfer | null;
+  preventDefault(): void;
+}
+
 let draggingIds: string[] = [];
 let dragPreview: HTMLElement | null = null;
 let removeSessionListeners: (() => void) | null = null;
@@ -60,6 +65,7 @@ function createDragPreview(ids: readonly string[]): HTMLElement {
     layer.style.cssText = `position:absolute;inset:${offset}px ${12 - offset}px ${12 - offset}px ${offset}px;overflow:hidden;background:var(--ds-gray-3,#e5e5e5);border:1px solid color-mix(in srgb,var(--ds-gray-12,#111),transparent 82%);border-radius:10px;box-shadow:0 4px 12px rgb(0 0 0 / 20%);`;
     const image = cardImage(id);
     if (image) {
+      /** SAFETY: cloning an img element always yields an img element. */
       const clone = image.cloneNode() as HTMLImageElement;
       clone.removeAttribute("id");
       clone.style.cssText =
@@ -114,6 +120,26 @@ function installSessionListeners(): void {
   };
 }
 
+/** A native drag fires no dragend here, so any drop, click, released-button move or refocus ends it. */
+function installNativeSessionListeners(): void {
+  removeSessionListeners?.();
+  const finish = () => endSaveDrag();
+  const released = (event: PointerEvent) => {
+    if (event.buttons === 0) endSaveDrag();
+  };
+  window.addEventListener("drop", finish);
+  window.addEventListener("pointerdown", finish, true);
+  window.addEventListener("pointermove", released, true);
+  window.addEventListener("focus", finish);
+  removeSessionListeners = () => {
+    window.removeEventListener("drop", finish);
+    window.removeEventListener("pointerdown", finish, true);
+    window.removeEventListener("pointermove", released, true);
+    window.removeEventListener("focus", finish);
+    removeSessionListeners = null;
+  };
+}
+
 export function endSaveDrag(): void {
   draggingIds = [];
   removeSessionListeners?.();
@@ -122,32 +148,35 @@ export function endSaveDrag(): void {
   dragPreview = null;
 }
 
-export function beginSaveDrag(
-  id: string,
-  dataTransfer?: SaveDragDataTransfer,
-): void {
+export function beginSaveDrag(id: string, event?: SaveDragStartEvent): void {
   endSaveDrag();
   const selected = selection.has(id) ? [...selection.snapshot()] : [id];
   draggingIds = selected;
-  dataTransfer?.setData(SAVE_DRAG_TYPE, selected.join(","));
+  document.body.dataset.saveDragging = String(selected.length);
+  announce(
+    `${selected.length} ${selected.length === 1 ? "Save" : "Saves"} ready to add to a folder`,
+  );
+  const ids = selected.filter((saveId) => {
+    const save = pool.get(saveId);
+    return save ? resolveFileIndex(save) != null : false;
+  });
+  if (ids.length > 0) {
+    /** `startDrag` only adds files to Chromium's drag; running both strands this window in a drag that never ends. */
+    event?.preventDefault();
+    installNativeSessionListeners();
+    const save = pool.get(ids[0] ?? id);
+    const fileIndex = save ? resolveFileIndex(save) : 0;
+    void window.pond.query("saves.startDrag", { ids, fileIndex });
+    return;
+  }
+  const dataTransfer = event?.dataTransfer;
   if (dataTransfer) {
+    dataTransfer.setData(SAVE_DRAG_TYPE, selected.join(","));
     dataTransfer.effectAllowed = "copy";
     if (dataTransfer.setDragImage) {
       dragPreview = createDragPreview(selected);
       dataTransfer.setDragImage(dragPreview, 46, 36);
     }
   }
-  document.body.dataset.saveDragging = String(selected.length);
-  announce(
-    `${selected.length} ${selected.length === 1 ? "Save" : "Saves"} ready to add to a folder`,
-  );
   installSessionListeners();
-  const ids = selected.filter((saveId) => {
-    const save = pool.get(saveId);
-    return save ? resolveFileIndex(save) != null : false;
-  });
-  if (ids.length === 0) return;
-  const save = pool.get(ids[0] ?? id);
-  const fileIndex = save ? resolveFileIndex(save) : 0;
-  void window.pond.query("saves.startDrag", { ids, fileIndex });
 }

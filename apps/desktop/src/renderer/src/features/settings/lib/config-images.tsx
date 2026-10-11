@@ -1,4 +1,4 @@
-import { useImageDownloadBinding } from "@/features/settings/components/sections/downloads/downloads";
+import { useImageDownloadBinding } from "@/features/settings/components/sections/downloads";
 import {
   defineCustomSection,
   group,

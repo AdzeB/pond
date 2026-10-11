@@ -5,7 +5,7 @@ import {
   getViewState,
   restoreDefaults,
 } from "@/features/library/state/view-store";
-import { LayoutSection } from "./layout";
+import { LayoutSection } from ".";
 
 describe("layout section", () => {
   let root: Root;

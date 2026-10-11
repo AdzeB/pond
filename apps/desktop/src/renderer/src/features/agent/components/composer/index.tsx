@@ -51,7 +51,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
       <div className={styles.root}>
         <ContentEditable
           className={styles.editor}
-          aria-label="Message Agent"
+          aria-label="Message Assistant"
           aria-multiline
           aria-placeholder={props.placeholder}
           placeholder={

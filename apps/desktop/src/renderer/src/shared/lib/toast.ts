@@ -19,7 +19,9 @@ export interface ToastData {
 
 export const toastManager = Toast.createToastManager<ToastData>();
 
-interface NotifyOptions {
+let toastSequence = 0;
+
+export interface NotifyOptions {
   id: string;
   title: string;
   description?: string;
@@ -44,8 +46,10 @@ function toastOptions(
   return toast;
 }
 
-export function notify(options: NotifyOptions): void {
-  toastManager.add(toastOptions(options));
+export function notify(options: NotifyOptions): string {
+  toastSequence += 1;
+  const id = `${options.id}:${toastSequence}`;
+  toastManager.add(toastOptions({ ...options, id }));
   window.dispatchEvent(
     new CustomEvent("pond:notification", {
       detail: {
@@ -54,6 +58,7 @@ export function notify(options: NotifyOptions): void {
       },
     }),
   );
+  return id;
 }
 
 export function updateNotification(options: NotifyOptions): void {

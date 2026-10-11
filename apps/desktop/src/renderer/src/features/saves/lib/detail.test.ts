@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Save } from "@/features/saves/types";
-import type { AccountRef } from "@/features/search/lib/account-aliases";
+import type { AccountRef } from "@/features/search/query";
 import {
   collectIdentityRows,
   type DetailRow,

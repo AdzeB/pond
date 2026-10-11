@@ -1,12 +1,11 @@
 import { Button, Settings, Switch } from "@pond/ui";
 import { useEffect, useState } from "react";
-import { usePrefs } from "@/features/settings/state/prefs";
+import { usePrefs } from "@/shared/state/prefs";
 
 const SOUND_ROWS = [
   ["interface", "Interface", "Clicks, toggles, and confirmations."],
   ["saveDeletion", "Save Deletion", "Moving or deleting Saves."],
   ["folderDeletion", "Folder Deletion", "Removing folders."],
-  ["screenshot", "Screenshots", "Saving a desktop screenshot."],
   ["extensionCapture", "Extension Capture", "Completing an extension capture."],
   ["autoImport", "Auto Import", "Importing from the watched folder."],
 ] as const;
@@ -14,7 +13,6 @@ const SOUND_ROWS = [
 const NOTIFICATION_ROWS = [
   ["saveDeletion", "Save Deletion", "Show after Saves are moved or deleted."],
   ["folderDeletion", "Folder Deletion", "Show after a folder is removed."],
-  ["screenshot", "Screenshots", "Show after a desktop screenshot is saved."],
   [
     "extensionCapture",
     "Extension Capture",

@@ -8,33 +8,36 @@ import {
   useState,
 } from "react";
 import { AppShell } from "@/features/library/components/workspace-shell";
-import { SaveArchiveViewer } from "@/features/saves/components/viewers/archive-viewer";
-import type { ViewerNav } from "@/features/saves/components/viewers/media-viewer";
+import type { ViewerNav } from "@/features/saves";
 import {
-  buildViewerMenu,
-  fileIndexFromSlide,
-} from "@/features/saves/components/viewers/media-viewer/lib/menu";
-import { SaveViewer } from "@/features/saves/components/viewers/save-viewer";
-import { TextViewer } from "@/features/saves/components/viewers/text-viewer";
-import { useSave } from "@/features/saves/hooks/use-saves";
-import { ensureSaves } from "@/features/saves/lib/ensure-saves";
-import { saveOwnsKeyboard } from "@/features/saves/lib/keyboard-owner";
-import { hasArchive } from "@/features/saves/lib/media/archive";
-import {
+  isTextOnlySave,
   loadOpenWithApps,
   type OpenWithApp,
   openWithKind,
   peekOpenWithApps,
-} from "@/features/saves/lib/menu";
-import { closeSave, openSave } from "@/features/saves/lib/save-nav";
-import { isTextOnlySave } from "@/features/saves/lib/text";
-import { useTrackVisit } from "@/features/saves/state/recents";
-import { resultNavigation } from "@/features/saves/state/result-navigation";
-import { setSaveViewerFileIndex } from "@/features/saves/state/save-viewer";
-import { primarySelection, selection } from "@/features/saves/state/selection";
+  saveOwnsKeyboard,
+  useTrackVisit,
+} from "@/features/saves";
+import {
+  closeSave,
+  openSave,
+  primarySelection,
+  resultNavigation,
+  selection,
+} from "@/features/saves/navigation";
+import { ensureSaves, useSave } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
-import { tagClipboard } from "@/features/tags/state/tag-clipboard";
-import { SpecContextMenu } from "@/shared/components/spec-context-menu/spec-context-menu";
+import {
+  buildViewerMenu,
+  fileIndexFromSlide,
+  hasArchive,
+  SaveArchiveViewer,
+  SaveViewer,
+  setSaveViewerFileIndex,
+  TextViewer,
+} from "@/features/saves/viewers";
+import { tagClipboard } from "@/features/tags";
+import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
 import styles from "./styles.module.css";
 

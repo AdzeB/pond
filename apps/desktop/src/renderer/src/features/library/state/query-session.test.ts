@@ -152,7 +152,7 @@ describe("query session", () => {
     await session.load();
     expect(session.snapshot()).toMatchObject({
       loading: false,
-      error: "invalid query",
+      error: "Couldn't complete the search. Try again.",
       page: null,
     });
   });

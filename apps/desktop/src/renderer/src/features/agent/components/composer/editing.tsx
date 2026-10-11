@@ -6,7 +6,7 @@ import {
 } from "@lexical/mdast";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $findMatchingParent, mergeRegister } from "@lexical/utils";
-import { Dialog } from "@pond/ui";
+import { Button, Input } from "@pond/ui";
 import {
   $getNodeByKey,
   $getSelection,
@@ -20,12 +20,14 @@ import {
   KEY_DOWN_COMMAND,
   KEY_ENTER_COMMAND,
   PASTE_COMMAND,
+  type RangeSelection,
 } from "lexical";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   $applyMarkdownBlock,
   type MarkdownBlock,
 } from "@/shared/markdown-editor/blocks";
+import styles from "./styles.module.css";
 
 export function ComposerEditing({
   running,
@@ -35,6 +37,8 @@ export function ComposerEditing({
   onSend: (markdown: string) => void;
 }) {
   const [editor] = useLexicalComposerContext();
+  const savedSelection = useRef<RangeSelection | null>(null);
+  const [link, setLink] = useState<string | null>(null);
   useEffect(
     () =>
       mergeRegister(
@@ -105,29 +109,13 @@ export function ComposerEditing({
             if (mod && event.code === "KeyK") {
               const selection = $getSelection();
               if (!$isRangeSelection(selection)) return false;
-              const saved = selection.clone();
-              const link = $findMatchingParent(
+              const linkNode = $findMatchingParent(
                 selection.anchor.getNode(),
                 $isLinkNode,
               );
               event.preventDefault();
-              Dialog.prompt({
-                title: "Link",
-                placeholder: "https://example.com",
-                initialValue: $isLinkNode(link) ? link.getURL() : "",
-                confirmLabel: "Apply",
-                onConfirm: (value) =>
-                  editor.update(() => {
-                    if (
-                      !$getNodeByKey(saved.anchor.key) ||
-                      !$getNodeByKey(saved.focus.key)
-                    )
-                      return;
-                    $setSelection(saved);
-                    $toggleLink(value.trim() || null);
-                    editor.focus();
-                  }),
-              });
+              savedSelection.current = selection.clone();
+              setLink($isLinkNode(linkNode) ? linkNode.getURL() : "");
               return true;
             }
             if (
@@ -171,5 +159,46 @@ export function ComposerEditing({
       ),
     [editor, running, onSend],
   );
-  return null;
+  if (link === null) return null;
+  return (
+    <form
+      className={styles.link}
+      onSubmit={(event) => {
+        event.preventDefault();
+        const saved = savedSelection.current;
+        const value = link.trim();
+        editor.update(() => {
+          if (
+            !saved ||
+            !$getNodeByKey(saved.anchor.key) ||
+            !$getNodeByKey(saved.focus.key)
+          )
+            return;
+          $setSelection(saved);
+          $toggleLink(value || null);
+        });
+        setLink(null);
+        editor.focus();
+      }}
+    >
+      <Input.Root size="sm">
+        <Input.Field
+          aria-label="Link"
+          placeholder="https://example.com"
+          value={link}
+          autoFocus
+          onValueChange={setLink}
+          onKeyDown={(event) => {
+            if (event.key !== "Escape") return;
+            event.preventDefault();
+            setLink(null);
+            editor.focus();
+          }}
+        />
+      </Input.Root>
+      <Button size="sm" type="submit">
+        Apply
+      </Button>
+    </form>
+  );
 }

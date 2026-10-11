@@ -8,7 +8,7 @@ import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { libraryViewContext } from "@/features/saves/state/view-context";
 import type { Save } from "@/features/saves/types";
 import { MediaViewer } from "..";
-import { ChromePortal, ViewerChrome } from "./chrome";
+import { ChromePortal, ViewerChrome } from ".";
 
 const save: Save = {
   id: "chrome-save",
@@ -97,10 +97,10 @@ it("places image inspector controls in the integrated top toolbar", async () => 
   expect(fit?.closest("[data-blossom-slide]")).toBeNull();
   expect(fit?.closest("[data-slot]")?.getAttribute("data-slot")).toBe("top");
   expect(fit?.closest("[data-anchor]")).toBeNull();
-  expect(fit?.closest("[data-scroll-fade]")).toBeNull();
-  expect(host.querySelector("[data-viewer-root]")?.contains(fit ?? null)).toBe(
-    true,
-  );
+  const viewerRoot = host.querySelector("[data-viewer-root]");
+  const topSlot = host.querySelector('[data-slot="top"]');
+  expect(viewerRoot?.contains(fit ?? null)).toBe(true);
+  expect(topSlot?.parentElement?.parentElement).toBe(viewerRoot);
 });
 
 it("shows only media when controls are disabled", async () => {
@@ -220,7 +220,8 @@ it("composes video result count and actions into one top bar", async () => {
   ).toBe("Video");
   expect(top?.textContent).toContain("1 / 1");
   expect(top?.querySelector('[aria-label="Rotate Video"]')).not.toBeNull();
-  expect(top?.querySelector('[aria-label="Fill"]')).not.toBeNull();
+  expect(top?.querySelector('[aria-label="Fill"]')).toBeNull();
+  expect(top?.querySelector('[aria-label="Fit"]')).toBeNull();
   expect(top?.querySelectorAll('[role="separator"]')).toHaveLength(1);
   expect(top?.querySelector('[aria-label="Previous Slide"]')).not.toBeNull();
   expect(top?.querySelector('[aria-label="Next Slide"]')).not.toBeNull();

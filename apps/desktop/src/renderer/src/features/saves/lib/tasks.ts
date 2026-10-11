@@ -14,7 +14,7 @@ import {
   TASK_ENABLED,
   type TaskResult,
   type TaskScope,
-} from "@/features/enrichment/lib/tasks";
+} from "@/features/enrichment";
 
 type TaskGroup = "tagging" | "enrichment" | "reprocess";
 

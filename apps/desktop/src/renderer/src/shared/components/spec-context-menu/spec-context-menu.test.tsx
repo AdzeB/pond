@@ -2,7 +2,7 @@ import { Menu, type MenuItemSpec } from "@pond/ui";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SpecMenu } from "./spec-context-menu";
+import { SpecMenu } from ".";
 
 describe("spec menu search", () => {
   let host: HTMLDivElement;
@@ -93,13 +93,15 @@ describe("spec menu search", () => {
 
     expect({
       type: search.type,
+      role: search.getAttribute("role"),
       placeholder: search.placeholder,
       parentRole: search.parentElement?.getAttribute("role"),
       hasIcon: search.parentElement?.querySelector("svg") !== null,
     }).toEqual({
       type: "text",
+      role: "searchbox",
       placeholder: "Filter…",
-      parentRole: "menu",
+      parentRole: "dialog",
       hasIcon: false,
     });
   });

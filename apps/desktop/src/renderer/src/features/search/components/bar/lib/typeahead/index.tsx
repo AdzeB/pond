@@ -18,14 +18,14 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { useFolders } from "@/features/library/state/folders";
+import { useFolders } from "@/features/library";
 import {
   accountChipLabel,
   accountRefsFromSync,
   displayAccountToken,
 } from "@/features/search/lib/account-aliases";
 import { fieldIcon } from "@/features/search/lib/fields";
-import { usePrefs } from "@/features/settings/state/prefs";
+import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 import { buildMenu, type MenuItem, triggerFn } from "./suggestions";
 

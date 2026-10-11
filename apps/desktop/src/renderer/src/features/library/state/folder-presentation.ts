@@ -1,5 +1,5 @@
 import type { Prefs } from "@pond/schema";
-import { loadPrefs, savePrefsSection } from "@/features/settings/state/prefs";
+import { loadPrefs, savePrefsSection } from "@/shared/state/prefs";
 export type FolderPresentation = Prefs["folderViews"][string];
 const defaults: FolderPresentation = {
   layout: "waterfall",

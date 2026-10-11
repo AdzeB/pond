@@ -1,7 +1,8 @@
-import type { TextCardData } from "@shared/text-card";
-import type { TweetCardData } from "@shared/tweet-card";
+import { TextCardDataSchema } from "@shared/text-card";
+import { TweetCardDataSchema } from "@shared/tweet-card";
 import { useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
+import type { z } from "zod";
 import { TextCard } from "./features/captures/components/text-card";
 import { ThreadsCard } from "./features/captures/components/threads/card";
 import { TweetCard } from "./features/captures/components/tweet/card";
@@ -20,21 +21,22 @@ const WIDTH = Number(params.get("w") ?? DEFAULT_WIDTH) || DEFAULT_WIDTH;
 
 document.documentElement.style.background = SCHEME === "dark" ? "#000" : "#fff";
 
-function decodePayload<T>(fallback: T): T {
+function decodePayload<T>(schema: z.ZodType<T>, fallback: T): T {
   try {
     const raw = location.hash.replace(/^#/, "") || params.get("data") || "";
-    // SAFETY: main opens this window with the card payload it wants rendered
-    // encoded in the hash, and `kind` selects which decode is actually used.
-    return JSON.parse(decodeURIComponent(escape(atob(raw)))) as T;
+    const parsed = schema.safeParse(
+      JSON.parse(decodeURIComponent(escape(atob(raw)))),
+    );
+    return parsed.success ? parsed.data : fallback;
   } catch {
     return fallback;
   }
 }
 
-const TWEET_PAYLOAD = decodePayload<TweetCardData>({
+const TWEET_PAYLOAD = decodePayload(TweetCardDataSchema, {
   author: { name: "", handle: "" },
 });
-const TEXT_PAYLOAD = decodePayload<TextCardData>({ text: "" });
+const TEXT_PAYLOAD = decodePayload(TextCardDataSchema, { text: "" });
 
 function waitForImages(root: HTMLElement): Promise<void> {
   const imgs = Array.from(root.querySelectorAll("img")).filter((img) =>

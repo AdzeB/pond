@@ -3,7 +3,7 @@ import {
   ReplyIcon,
   RepostIcon,
   ShareIcon,
-} from "@/features/captures/components/threads/card/icons/icons";
+} from "@/features/captures/components/threads/card/icons";
 import type { TweetCardMetrics } from "@/features/captures/components/tweet/card/lib/data";
 import { formatCount } from "@/shared/lib/format";
 import styles from "./styles.module.css";
