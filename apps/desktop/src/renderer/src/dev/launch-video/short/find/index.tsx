@@ -1,28 +1,13 @@
-import {
-  IconBookmark,
-  IconCrop,
-  IconEye,
-  IconFile,
-  IconFileSettings,
-  IconFilterPlus,
-  IconFolder,
-  IconGridPlus,
-  IconImageSparkle,
-  IconLayers,
-  IconSortArrows,
-  IconStar,
-  IconText,
-} from "@pond/icons";
 import { useRef } from "react";
-import { brand } from "../../stage/brands";
 import { Cursor, glide } from "../../stage/cursor";
-import { cover } from "../../stage/media";
 import { clamp, envelope, progress, styled, WIDTH } from "../../stage/timeline";
 import { lens, track, WHOLE } from "../camera";
+import { Card } from "../card";
 import { Mac, ZOOM } from "../mac";
 import { center, useBoxes } from "../measure";
 import { end, live, start } from "../timeline";
-import { ALL, BROWN, CARD, FALL, imageHeight, place } from "./grid";
+import { Toolbar } from "../toolbar";
+import { ALL, BROWN, CARD, FALL, place } from "./grid";
 import { Picker } from "./picker";
 import styles from "./styles.module.css";
 
@@ -43,20 +28,6 @@ const STEPS = [
   { at: SEARCH, list: FALL },
   { at: FILTER, list: BROWN },
 ];
-
-const FILTERS = [
-  { label: "Visual Match", Icon: IconImageSparkle },
-  { label: "Semantic", Icon: IconText },
-  { label: "Tags", Icon: IconBookmark },
-  { label: "Folders", Icon: IconFolder },
-  { label: "Shape", Icon: IconLayers },
-  { label: "Rating", Icon: IconStar },
-  { label: "Type", Icon: IconFile },
-  { label: "Format", Icon: IconFileSettings },
-  { label: "Dimensions", Icon: IconCrop },
-];
-
-const sourceOf = (source: string) => brand(source === "twitter" ? "x" : source);
 
 /** The library: search by meaning, then narrow by color, cards gliding into place. */
 export function Find({ t }: { t: number }) {
@@ -113,79 +84,26 @@ export function Find({ t }: { t: number }) {
         style={styled(e)}
       >
         <Mac.Panel>
-          <div className={styles.bar}>
-            <span className={styles.search} data-empty={!typed || undefined}>
-              {typed || "Search your library…"}
-              {typed ? (
-                <i
-                  className={styles.caret}
-                  style={{ opacity: blink ? 1 : 0 }}
-                />
-              ) : null}
-            </span>
-            <span className={styles.icons}>
-              <span data-on>
-                <IconFilterPlus size={16} />
-              </span>
-              <span>
-                <IconGridPlus size={16} />
-              </span>
-              <span>
-                <IconSortArrows size={16} />
-              </span>
-              <span>
-                <IconEye size={16} />
-              </span>
-            </span>
-          </div>
-          <div className={styles.filters}>
-            <span
-              ref={chip}
-              className={styles.filter}
-              data-open={(t >= OPEN && t < CLOSE) || undefined}
-            >
-              <i className={styles.color} data-picked={picked || undefined} />
-              Color
-            </span>
-            {FILTERS.map(({ label, Icon }) => (
-              <span key={label} className={styles.filter}>
-                <Icon size={16} />
-                {label}
-              </span>
-            ))}
-          </div>
-          {place(t, STEPS).map((card) => {
-            const { Icon } = sourceOf(card.entry.source);
-            return (
-              <figure
-                key={card.entry.id}
-                className={styles.card}
-                style={{
-                  width: CARD.width,
-                  opacity: card.opacity,
-                  transform: `translate(${card.x}px, ${card.y}px) scale(${card.scale})`,
-                  visibility: card.opacity <= 0.002 ? "hidden" : undefined,
-                }}
-              >
-                <span className={styles.thumb}>
-                  <img
-                    alt=""
-                    src={cover(card.entry.id)}
-                    className={styles.image}
-                    style={{ height: imageHeight(card.entry) }}
-                  />
-                  <span className={styles.type}>JPG</span>
-                  <span className={styles.source}>
-                    <Icon />
-                  </span>
-                </span>
-                <figcaption className={styles.meta}>
-                  <span className={styles.title}>{card.entry.title}</span>
-                  <span className={styles.time}>{card.entry.time}</span>
-                </figcaption>
-              </figure>
-            );
-          })}
+          <Toolbar
+            query={typed}
+            caret={blink}
+            chip={chip}
+            open={t >= OPEN && t < CLOSE}
+            picked={picked}
+          />
+          {place(t, STEPS).map((card) => (
+            <Card
+              key={card.entry.id}
+              entry={card.entry}
+              width={CARD.width}
+              className={styles.card}
+              style={{
+                opacity: card.opacity,
+                transform: `translate(${card.x}px, ${card.y}px) scale(${card.scale})`,
+                visibility: card.opacity <= 0.002 ? "hidden" : undefined,
+              }}
+            />
+          ))}
         </Mac.Panel>
         <Picker
           ref={picker}

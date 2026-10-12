@@ -1,123 +1,125 @@
-import { LOGO_PATH, LOGO_VIEW_BOX } from "@pond/ui/logo";
-import { brand } from "../../stage/brands";
-import { clamp, ease, mix, progress } from "../../stage/timeline";
+import { BRANDS, brand } from "../../stage/brands";
+import {
+  clamp,
+  ease,
+  envelope,
+  mix,
+  progress,
+  styled,
+} from "../../stage/timeline";
 import { Caption } from "../caption";
-import { end, start } from "../timeline";
+import { Card } from "../card";
+import { ALL, CARD, waterfall } from "../find/grid";
+import { Mac } from "../mac";
+import { end, live, start } from "../timeline";
+import { Toolbar } from "../toolbar";
 import styles from "./styles.module.css";
 
-const CHIPS = [
-  { id: "x", brands: ["x"] },
-  { id: "instagram", brands: ["instagram"] },
-  { id: "pinterest", brands: ["pinterest"] },
-  { id: "more", brands: ["reddit", "tiktok", "youtube", "threads"] },
-];
-
-const GAP = 196;
-const POP = start("sources") + 600;
-const BEAT = 500;
-const MERGE = start("sources") + 2700;
+const S = start("sources");
 const EXIT = end("sources") - 350;
-const FOLDER = { x: 960, y: 700 };
+const FLOW = S + 1000;
+const SPAN = 1900;
+const FLIGHT = 850;
+const TOTAL = 54;
 
-/** The sources Pond keeps saves from, dropping into one folder on your Mac. */
+/** The window drawn at 0.8, so one app pixel is one stage pixel. */
+const WINDOW = { x: 320, y: 330, scale: 0.8 };
+const PANEL = { x: WINDOW.x + 228, y: WINDOW.y + 44 };
+const ROW_Y = 236;
+const TILE = 64;
+const TILE_GAP = 20;
+const VISIBLE = 600;
+
+const tileX = (k: number) =>
+  960 -
+  (BRANDS.length * TILE + (BRANDS.length - 1) * TILE_GAP) / 2 +
+  k * (TILE + TILE_GAP) +
+  TILE / 2;
+
+const SLOTS = waterfall(ALL);
+const CARDS = ALL.flatMap((entry, k) => {
+  const slot = SLOTS[k];
+  if (!slot || slot.y > VISIBLE) return [];
+  const id = brand(entry.source === "twitter" ? "x" : entry.source).id;
+  return [{ entry, slot, from: BRANDS.findIndex((item) => item.id === id) }];
+}).map((card, k, list) => ({
+  ...card,
+  launch: FLOW + SPAN * Math.sqrt(k / list.length),
+  spin: ((k * 37) % 25) - 12,
+}));
+
+/** Saves from every source funnelling into one library on your Mac, as the count climbs. */
 export function Sources({ t }: { t: number }) {
-  if (t < start("sources") || t > end("sources") + 50) return null;
-  const folder = ease.outQuint(progress(t, MERGE + 50, 700));
-  const land = progress(t, MERGE + 650, 360);
-  const bump = Math.sin(land * Math.PI) * 0.05;
-  const gone = ease.in(progress(t, EXIT, 350));
-  const shell = {
-    left: FOLDER.x,
-    top: FOLDER.y,
-    opacity: clamp(folder * 2) * (1 - gone),
-    transform: `translate(-50%, -50%) translateY(${(1 - folder) * 40 + gone * 20}px) scale(${mix(0.85, 1, folder) + bump}, ${mix(0.85, 1, folder) - bump})`,
-    filter: gone > 0.01 ? `blur(${gone * 8}px)` : undefined,
-  };
+  if (!live(t, "sources")) return null;
+  const e = envelope(t, S + 250, EXIT, { rise: 40, duration: 800 });
+  let landed = 0;
+  for (const card of CARDS) {
+    landed += progress(t, card.launch + FLIGHT * 0.6, 200);
+  }
+  const count = Math.round((TOTAL * landed) / CARDS.length);
   return (
     <>
       <Caption
         t={t}
-        y={365}
-        text="Keep what you save on"
-        enter={start("sources") + 50}
-        exit={MERGE - 250}
+        y={120}
+        text="Everything you save, in one library on your Mac."
+        enter={S + 100}
+        exit={EXIT - 100}
       />
-      <Caption
-        t={t}
-        y={365}
-        text="in a folder on your Mac."
-        enter={MERGE + 150}
-        exit={EXIT}
-      />
-      <svg
-        aria-hidden
-        className={styles.folder}
-        data-part="back"
-        viewBox="0 0 240 192"
-        style={shell}
+      {BRANDS.map(({ id, Icon }, k) => (
+        <span
+          key={id}
+          className={styles.tile}
+          style={{
+            left: tileX(k) - TILE / 2,
+            top: ROW_Y - TILE / 2,
+            ...styled(
+              envelope(t, S + 350 + k * 60, EXIT - 100 + k * 20, {
+                duration: 550,
+                rise: 16,
+              }),
+            ),
+          }}
+        >
+          <Icon className={styles.logo} />
+        </span>
+      ))}
+      <div
+        className={styles.library}
+        style={styled(e, `scale(${WINDOW.scale})`)}
       >
-        <path
-          d="M0 26Q0 8 18 8H82Q93 8 100 17L108 28H222Q240 28 240 46V174Q240 192 222 192H18Q0 192 0 174Z"
-          fill="#4aa9ee"
-        />
-      </svg>
-      <svg
-        aria-hidden
-        className={styles.folder}
-        data-part="front"
-        viewBox="0 0 240 192"
-        style={shell}
-      >
-        <defs>
-          <linearGradient id="folder-front" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#8ed2ff" />
-            <stop offset="1" stopColor="#3aa3f3" />
-          </linearGradient>
-        </defs>
-        <rect
-          y="50"
-          width="240"
-          height="142"
-          rx="18"
-          fill="url(#folder-front)"
-        />
-        <path
-          d={LOGO_PATH}
-          fill="rgb(0 80 160 / 0.28)"
-          transform={`translate(88 89) scale(${64 / LOGO_VIEW_BOX})`}
-        />
-      </svg>
-      {CHIPS.map((chip, i) => {
-        const pop = ease.outQuint(progress(t, POP + i * BEAT, 550));
-        const fly = ease.inOut(progress(t, MERGE + i * 60, 650));
-        const home = { x: 960 + (i - 1.5) * GAP, y: 600 };
-        const x = mix(home.x, FOLDER.x, fly);
-        const y =
-          mix(home.y, FOLDER.y + 20, fly) - Math.sin(fly * Math.PI) * 150;
-        const scale = mix(0.6, 1, pop) * mix(1, 0.42, fly);
-        const opacity =
-          clamp(pop * 2) * (1 - progress(t, MERGE + 640 + i * 60, 80));
-        return (
-          <div
-            key={chip.id}
-            className={styles.chip}
-            data-many={chip.brands.length > 1 || undefined}
-            style={{
-              left: x,
-              top: y,
-              opacity,
-              transform: `translate(-50%, -50%) scale(${scale})`,
-              filter: pop < 0.98 ? `blur(${(1 - pop) * 8}px)` : undefined,
-              visibility: opacity <= 0.002 ? "hidden" : undefined,
-            }}
-          >
-            {chip.brands.map((id) => {
-              const { Icon } = brand(id);
-              return <Icon key={id} className={styles.icon} />;
-            })}
-          </div>
-        );
-      })}
+        <Mac.Window place="all" counts={{ all: count, added: count }}>
+          <Mac.Panel>
+            <Toolbar />
+          </Mac.Panel>
+        </Mac.Window>
+      </div>
+      <div className={styles.flight} style={styled(e)}>
+        {CARDS.map((card) => {
+          if (t < card.launch) return null;
+          const p = ease.outQuint(progress(t, card.launch, FLIGHT));
+          const scale = mix(0.25, 1, p);
+          const height = CARD.width / card.entry.aspect + CARD.caption;
+          const sx = tileX(card.from) - (CARD.width * 0.25) / 2;
+          const sy = ROW_Y - (height * 0.25) / 2;
+          const x = mix(sx, PANEL.x + card.slot.x, p);
+          const y =
+            mix(sy, PANEL.y + card.slot.y, p) - Math.sin(p * Math.PI) * 60;
+          return (
+            <Card
+              key={card.entry.id}
+              entry={card.entry}
+              width={CARD.width}
+              className={styles.card}
+              style={{
+                opacity: clamp(p * 5),
+                transform: `translate(${x}px, ${y}px) scale(${scale}) rotate(${(1 - p) * card.spin}deg)`,
+                filter: p < 0.9 ? `blur(${(1 - p) * 3}px)` : undefined,
+              }}
+            />
+          );
+        })}
+      </div>
     </>
   );
 }

@@ -43,7 +43,7 @@ Run each step from `apps/desktop`.
 
 ## Short cut
 
-`launch-video-short.html` is a 40 second cut for posting, on white. Saves drift around "The web is a sea of information." and spiral into the mark, then the sources drop into a folder. A plain caption leads into each of Save, Find, and Ask: words settle from gray to ink, then the letters dissolve. Each step is UI rebuilt for the stage and driven by time, not the app in a frame, so the camera can push anywhere. It ends on the thesis, the offer, and the mark. Capture it with `--page`, then mix "Happy Beats vol. 9" from 64.25 seconds, so the drop lands on the mark and the breakdown carries the outro.
+`launch-video-short.html` is a 40 second cut for posting, on white. Saves drift around "The web is a sea of information." and spiral into the mark, then saves from every source funnel into the library as its count climbs. A plain caption leads into each of Save, Find, and Ask: words settle from gray to ink, then the letters dissolve. Each step is UI rebuilt for the stage and driven by time, not the app in a frame, so the camera can push anywhere. It ends on the thesis, the offer, and the mark. Capture it with `--page`, then mix "Happy Beats vol. 9" from 64.25 seconds, so the drop lands on the mark and the breakdown carries the outro.
 
 ```bash
 ./node_modules/.bin/electron scripts/launch-video/capture.cjs \
@@ -52,11 +52,11 @@ ffmpeg -ss 64.25 -t 40.4 \
   -i ../../.agents/skills/brag/assets/music/happy-beats-business-moves-vol-9-by-ende-dot-app.mp3 \
   -af "afade=t=in:d=0.6,afade=t=out:st=39:d=1.4,volume=0.9" -c:a aac -b:a 192k short.m4a
 ffmpeg -i .tmp/launch-video/out/short.mp4 -i short.m4a -map 0:v -map 1:a \
-  -c:v libx264 -preset slow -crf 17 -pix_fmt yuv420p -movflags +faststart \
+  -vf "fade=t=in:st=0:d=0.6,fade=t=out:st=39.4:d=1" -c:v libx264 -preset slow -crf 17 -pix_fmt yuv420p -movflags +faststart \
   -c:a copy -shortest short-cut.mp4
 ```
 
-Its scenes live in `src/renderer/src/dev/launch-video/short/`. `timeline.ts` holds the scenes, `camera.ts` holds the crop helpers, `caption/` sets every line of type, and `mac/` redraws Pond's window, sidebar, and panel at the app's real sizes for Find and Ask.
+Its scenes live in `src/renderer/src/dev/launch-video/short/`. `timeline.ts` holds the scenes, `camera.ts` holds the crop helpers, `caption/` sets every line of type, `card/` and `toolbar/` draw the library, and `mac/` redraws Pond's window, sidebar, and panel at the app's real sizes for Find and Ask.
 
 ## Storyboard
 

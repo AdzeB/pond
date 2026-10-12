@@ -68,12 +68,20 @@ const CRUMBS: Record<Place, { label: string; icon: ReactNode }> = {
 
 interface WindowProps extends React.ComponentPropsWithoutRef<"div"> {
   place: Place;
+  counts?: Partial<Record<string, number>>;
   /** The app's own coordinate space, before the stage zoom. */
   ref?: RefObject<HTMLDivElement | null>;
 }
 
 /** Pond's window: the gray shell, top bar, and sidebar, with the page in `children`. */
-function Window({ place, ref, className, children, ...props }: WindowProps) {
+function Window({
+  place,
+  counts,
+  ref,
+  className,
+  children,
+  ...props
+}: WindowProps) {
   const crumb = CRUMBS[place];
   return (
     <div className={cn(styles.window, className)} {...props}>
@@ -104,14 +112,20 @@ function Window({ place, ref, className, children, ...props }: WindowProps) {
             <IconSidebarLeft size={16} className={styles.flip} />
           </span>
         </header>
-        <Sidebar active={place} />
+        <Sidebar active={place} counts={counts} />
         {children}
       </div>
     </div>
   );
 }
 
-function Sidebar({ active }: { active: Place }) {
+function Sidebar({
+  active,
+  counts = {},
+}: {
+  active: Place;
+  counts?: Partial<Record<string, number>>;
+}) {
   return (
     <nav className={styles.sidebar}>
       <div className={styles.workspace}>
@@ -137,7 +151,9 @@ function Sidebar({ active }: { active: Place }) {
             {row.icon}
             <span className={styles.label}>{row.label}</span>
             {row.count === undefined ? null : (
-              <span className={styles.count}>{row.count}</span>
+              <span className={styles.count}>
+                {counts[row.id] ?? row.count}
+              </span>
             )}
           </span>
         ))}

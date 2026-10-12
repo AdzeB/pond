@@ -67,10 +67,10 @@ const CAPTION = 44;
 export const CARD = { width: 130, caption: CAPTION };
 const GRID = { x: 20, y: 109 };
 
-export const imageHeight = (entry: Sample) => CARD.width / entry.aspect;
+const imageHeight = (entry: Sample) => CARD.width / entry.aspect;
 
 /** Waterfall slots, each card dropping into the shortest column like the library does. */
-function waterfall(list: readonly Sample[]) {
+export function waterfall(list: readonly Sample[]) {
   const heights = Array.from({ length: COLUMNS }, () => 0);
   return list.map((entry) => {
     const column = heights.indexOf(Math.min(...heights));
