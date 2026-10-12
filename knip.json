@@ -17,7 +17,6 @@
       "ignoreDependencies": ["@types/better-sqlite3", "drizzle-kit"]
     },
     "apps/website": {
-      "entry": ["app/**/*.{ts,tsx}", "next.config.{js,ts,mjs}"],
       "project": ["**/*.{ts,tsx}"],
       "ignoreDependencies": ["@pond/theme"]
     },

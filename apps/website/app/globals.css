@@ -9,117 +9,50 @@
   src: url("/fonts/inter-variable.woff2") format("woff2");
 }
 
-@font-face {
-  font-family: jetbrains-mono;
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/jetbrains-mono-400.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: jetbrains-mono;
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url("/fonts/jetbrains-mono-500.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: jetbrains-mono;
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("/fonts/jetbrains-mono-600.woff2") format("woff2");
-}
-
 :root {
-  --ds-bg-l: 1;
-  --ds-bg-c: 0;
-  --ds-bg-h: 0;
-  --ds-fg-l: 0.18;
-  --ds-fg-c: 0;
-  --ds-fg-h: 0;
-  --ds-accent-l: 0.6471;
-  --ds-accent-c: 0.1941;
-  --ds-accent-h: 252.09;
-  --ds-contrast: 1;
+  --page-inset: 36px;
+  --splash-spin: 1.4s;
+  --splash-fly: 0.7s;
+  --splash-land: calc(var(--splash-spin) + var(--splash-fly));
+}
 
-  --site-font-sans:
+/* The page uses one text size; hierarchy comes from weight and color. */
+html {
+  font-family:
     inter-variable, ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
     "Segoe UI", sans-serif;
-  --site-font-display: ui-rounded, var(--site-font-sans);
-  --site-font-mono: jetbrains-mono, var(--ds-font-mono);
-
-  /* Marketing steps the app scale lacks; sizes that match an app step use --ds-text-*. */
-  --site-text-sm: 14px;
-  --site-text-md: 16px;
-  --site-text-lg: 18px;
-  --site-text-xl: 20px;
-  --site-text-2xl: 24px;
-  --site-text-title: clamp(28px, 3.6vw, 44px);
-  --site-text-display: clamp(32px, 4vw, 52px);
-
-  --site-column: 640px;
-  --site-page-max: 1200px;
-  --site-page-padding: 16px;
-  --site-section-gap: 128px;
-
-  --site-ink: #0f0906;
-  --site-mute: #b49c8b;
-  --site-copy: #856b5a;
-  --site-faint: #666;
-  --site-chip: rgb(237 227 216 / 80%);
-}
-
-.wordmark {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  font-family: var(--site-font-sans);
-  font-size: var(--site-text-md);
-  font-weight: 500;
-  color: var(--site-ink);
-}
-
-html {
-  font-family: var(--site-font-sans);
-  font-size: var(--site-text-md);
-  line-height: 1.5;
-  color: var(--site-ink);
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--ds-gray-12);
   color-scheme: light;
   background: var(--ds-gray-1);
 }
 
 body {
-  min-height: 100dvh;
-  background: var(--ds-gray-1);
+  overflow-x: clip;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
 }
 
 ::selection {
-  color: var(--site-ink);
-  background: color-mix(in srgb, var(--site-mute) 35%, transparent);
-}
-
-@media (max-width: 720px) {
-  :root {
-    --site-section-gap: 72px;
-  }
+  background: var(--ds-gray-a4);
 }
 
 @media (max-width: 640px) {
   :root {
-    --site-text-2xl: 22px;
-  }
-}
-
-@media (color-gamut: p3) {
-  :root {
-    --ds-accent-c: 0.2717;
+    --page-inset: 20px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --splash-land: 0s;
+  }
+
   *,
   *::before,
   *::after {

@@ -1,15 +1,15 @@
-import { Features } from "./components/features";
-import { Footer } from "./components/footer";
-import { Hero } from "./components/hero";
+import { Film } from "./components/film";
+import { Intro } from "./components/intro";
+import { Splash } from "./components/splash";
 
 export default function Page() {
   return (
     <>
+      <Splash />
       <main>
-        <Hero />
-        <Features />
+        <Intro />
+        <Film />
       </main>
-      <Footer />
     </>
   );
 }
