@@ -2,7 +2,6 @@ import {
   IconCircleCheckFill,
   IconFolder,
   IconFolderBolt,
-  IconFolderImport,
   IconMagnifier,
 } from "@pond/icons";
 import { Logo } from "@pond/ui/logo";
@@ -207,10 +206,7 @@ const FOLDERS = [
 function Eagle({ t, at }: ArtProps) {
   return (
     <div className={styles.panel}>
-      <div className={styles.root}>
-        <IconFolderImport size={15} />
-        Eagle Library
-      </div>
+      <div className={styles.root}>Eagle Library</div>
       <div className={styles.folders}>
         {FOLDERS.map((folder, index) => {
           const begins = at + 200 + index * 300;
