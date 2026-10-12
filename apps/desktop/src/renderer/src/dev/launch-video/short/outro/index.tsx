@@ -10,7 +10,7 @@ export function Outro({ t }: { t: number }) {
     <>
       <Caption
         t={t}
-        text={"The invisible layer between\ncollecting and organizing."}
+        text="The invisible layer between collecting and organizing."
         enter={start("thesis")}
         exit={end("thesis") - 450}
         stagger={70}

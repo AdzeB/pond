@@ -17,27 +17,27 @@ import styles from "./styles.module.css";
 const TITLES: { scene: SceneId; text: string }[] = [
   {
     scene: "saveTitle",
-    text: "Like or bookmark as usual.\nPond keeps a copy on your Mac.",
+    text: "Like or bookmark as usual. Pond keeps a copy.",
   },
   {
     scene: "ownTitle",
-    text: "Local-first. Every save is\nplain files in a folder you own.",
+    text: "Local-first. Every save is a file you own.",
   },
   {
     scene: "enrichTitle",
-    text: "Each save is analyzed on-device:\ncaptions, text, colors, and tags.",
+    text: "Every save is analyzed on-device.",
   },
   {
     scene: "findTitle",
-    text: "Search everything you've saved,\nby meaning, text, or color.",
+    text: "Search everything you've ever saved.",
   },
   {
     scene: "askTitle",
-    text: "Bring your favorite AI\nto everything you've saved.",
+    text: "Bring your favorite AI to your saves.",
   },
   {
     scene: "connectTitle",
-    text: "Plug your library into Claude,\nCursor, or any MCP client.",
+    text: "Plug your library into any MCP client.",
   },
 ];
 

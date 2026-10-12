@@ -6,7 +6,6 @@ const INK = 17;
 
 interface CaptionProps {
   t: number;
-  /** One or more lines, split on `\n`. */
   text: string;
   enter: number;
   exit: number;
@@ -20,7 +19,7 @@ const scatter = (index: number) => {
   return x - Math.floor(x);
 };
 
-/** Plain centered type: words arrive gray and settle to ink, then the letters dissolve. */
+/** One line of centered type: words arrive gray and settle to ink, then the letters dissolve. */
 export function Caption({
   t,
   text,
@@ -30,41 +29,37 @@ export function Caption({
   stagger = 80,
 }: CaptionProps) {
   if (t < enter - 50 || t > exit + 500) return null;
-  let word = 0;
   let letter = 0;
   return (
     <div className={styles.caption} style={{ top: y }}>
-      {text.split("\n").map((line) => (
-        <div key={line} className={styles.line}>
-          {line.split(" ").map((part) => {
-            const at = enter + word++ * stagger;
-            const show = progress(t, at, 360);
-            const ink = ease.inOut(progress(t, at + 140, 480));
-            const tone = Math.round(mix(GRAY, INK, ink));
-            return (
-              <span
-                key={`${word}-${part}`}
-                className={styles.word}
-                style={{
-                  opacity: ease.out(show),
-                  color: `rgb(${tone} ${tone} ${tone})`,
-                  transform: `translateY(${(1 - ease.outQuint(show)) * 10}px)`,
-                }}
-              >
-                {[...part].map((char) => {
-                  const k = letter++;
-                  const gone = progress(t, exit + scatter(k) * 280, 160);
-                  return (
-                    <span key={k} style={{ opacity: 1 - gone }}>
-                      {char}
-                    </span>
-                  );
-                })}
-              </span>
-            );
-          })}
-        </div>
-      ))}
+      {text.split(" ").map((part, word) => {
+        const at = enter + word * stagger;
+        const show = progress(t, at, 360);
+        const ink = ease.inOut(progress(t, at + 140, 480));
+        const tone = Math.round(mix(GRAY, INK, ink));
+        return (
+          <span
+            // biome-ignore lint/suspicious/noArrayIndexKey: words are static per caption
+            key={`${word}-${part}`}
+            className={styles.word}
+            style={{
+              opacity: ease.out(show),
+              color: `rgb(${tone} ${tone} ${tone})`,
+              transform: `translateY(${(1 - ease.outQuint(show)) * 10}px)`,
+            }}
+          >
+            {[...part].map((char) => {
+              const k = letter++;
+              const gone = progress(t, exit + scatter(k) * 280, 160);
+              return (
+                <span key={k} style={{ opacity: 1 - gone }}>
+                  {char}
+                </span>
+              );
+            })}
+          </span>
+        );
+      })}
     </div>
   );
 }

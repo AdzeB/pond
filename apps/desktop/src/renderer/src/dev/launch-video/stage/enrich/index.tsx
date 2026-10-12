@@ -20,8 +20,9 @@ interface Beat {
 }
 
 const PICTURE = sample("Visual identity for the iFest festival in Catalonia");
-const OFFSETS = [780, 1180, 1980, 2430];
+const OFFSETS = [700, 1050, 1400, 1800, 2200, 2550];
 const WORK = 350;
+const COLORS = 3;
 
 /** Sampled from the picture at each dot. */
 const PALETTE = [
@@ -33,11 +34,20 @@ const PALETTE = [
 ];
 
 const ROWS = [
-  { label: "Caption", time: "0.6s" },
-  { label: "Text in Image", time: "0.3s" },
-  { label: "Colors", time: "0.1s" },
-  { label: "Tags", time: "0.2s" },
+  { id: "caption", label: "Caption", time: "0.6s" },
+  { id: "text", label: "Text in Image", time: "0.3s" },
+  { id: "title", label: "Title", time: "0.2s" },
+  { id: "colors", label: "Colors", time: "0.1s" },
+  { id: "style", label: "Style", time: "0.1s" },
+  { id: "tags", label: "Tags", time: "0.2s" },
 ] as const;
+
+const STYLES = [
+  { label: "Bold", score: 94 },
+  { label: "Geometric", score: 88 },
+  { label: "Colorful", score: 81 },
+  { label: "Graphic", score: 76 },
+];
 
 const begins = (open: number, k: number) => open + (OFFSETS[k] ?? 0);
 const done = (open: number, k: number) => begins(open, k) + WORK;
@@ -65,13 +75,14 @@ function Stream({ t, text, at }: { t: number; text: string; at: number }) {
 
 function Value({ t, k, open }: { t: number; k: number; open: number }) {
   const at = done(open, k);
-  if (k === 0)
+  const id = ROWS[k]?.id;
+  if (id === "caption")
     return (
       <p className={styles.caption}>
         <Stream t={t} at={at} text={PICTURE.caption} />
       </p>
     );
-  if (k === 1)
+  if (id === "text")
     return (
       <p className={styles.text}>
         <Stream
@@ -81,7 +92,13 @@ function Value({ t, k, open }: { t: number; k: number; open: number }) {
         />
       </p>
     );
-  if (k === 2)
+  if (id === "title")
+    return (
+      <p className={styles.title}>
+        <Stream t={t} at={at} text={PICTURE.title} />
+      </p>
+    );
+  if (id === "colors")
     return (
       <div className={styles.palette}>
         {PALETTE.map((color, index) => {
@@ -102,6 +119,30 @@ function Value({ t, k, open }: { t: number; k: number; open: number }) {
               <span className={styles.hex} style={styled(e)}>
                 {color.hex}
               </span>
+            </span>
+          );
+        })}
+      </div>
+    );
+  if (id === "style")
+    return (
+      <div className={styles.styles}>
+        {STYLES.map((style, index) => {
+          const e = envelope(t, at + index * 60, Number.POSITIVE_INFINITY, {
+            duration: 500,
+            rise: 8,
+          });
+          const fill = ease.outQuint(progress(t, at + index * 60, 700));
+          return (
+            <span key={style.label} className={styles.style} style={styled(e)}>
+              <span className={styles.meter}>
+                <span
+                  className={styles.level}
+                  style={{ width: `${style.score * fill}%` }}
+                />
+              </span>
+              {style.label}
+              <span className={styles.score}>{style.score}%</span>
             </span>
           );
         })}
@@ -129,7 +170,7 @@ function Value({ t, k, open }: { t: number; k: number; open: number }) {
   );
 }
 
-/** One picture read on-device: caption, text, colors, and tags fill in beside it. */
+/** One picture read on-device: caption, text, title, colors, style, and tags fill in beside it. */
 export function Enrich({
   t,
   open = opens("enrich"),
@@ -161,7 +202,7 @@ export function Enrich({
         ) : null}
         {PALETTE.map((color, index) => {
           const pop = ease.outQuint(
-            progress(t, done(open, 2) + index * 70, 450),
+            progress(t, done(open, COLORS) + index * 70, 450),
           );
           return (
             <span
