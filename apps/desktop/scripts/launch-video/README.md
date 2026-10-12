@@ -52,7 +52,7 @@ ffmpeg -ss 64.25 -t 40.4 \
   -i ../../.agents/skills/brag/assets/music/happy-beats-business-moves-vol-9-by-ende-dot-app.mp3 \
   -af "afade=t=in:d=0.6,afade=t=out:st=39:d=1.4,volume=0.9" -c:a aac -b:a 192k short.m4a
 ffmpeg -i .tmp/launch-video/out/short.mp4 -i short.m4a -map 0:v -map 1:a \
-  -vf "fade=t=in:st=0:d=0.6,fade=t=out:st=39.4:d=1" -c:v libx264 -preset slow -crf 17 -pix_fmt yuv420p -movflags +faststart \
+  -vf "fade=t=in:st=0:d=0.6:color=white,fade=t=out:st=39.4:d=1:color=white" -c:v libx264 -preset slow -crf 17 -pix_fmt yuv420p -movflags +faststart \
   -c:a copy -shortest short-cut.mp4
 ```
 
