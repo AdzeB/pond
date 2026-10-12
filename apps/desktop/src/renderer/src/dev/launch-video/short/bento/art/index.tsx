@@ -384,7 +384,11 @@ const LANES = [
 
 function Syncing({ t, at }: ArtProps) {
   return (
-    <div className={styles.sync}>
+    <div className={styles.queue}>
+      <div className={styles.heading}>
+        Syncing
+        <span className={styles.pause}>Pause All</span>
+      </div>
       {LANES.map((lane, index) => {
         const { Icon, name } = brand(lane.id);
         const paused = lane.rate === 0;
@@ -399,17 +403,21 @@ function Syncing({ t, at }: ArtProps) {
           >
             <Icon className={styles.brand} />
             <span className={styles.service}>{name}</span>
-            <span className={styles.track}>
-              <span
-                className={styles.fill}
-                style={{
-                  width: `${(paused ? 0.35 : done / lane.total) * 100}%`,
-                }}
-              />
-            </span>
-            <span className={styles.status}>
-              {paused ? "Paused" : `${done} of ${lane.total}`}
-            </span>
+            {paused ? (
+              <span className={styles.paused}>Paused</span>
+            ) : (
+              <>
+                <span className={styles.track}>
+                  <span
+                    className={styles.fill}
+                    style={{ width: `${(done / lane.total) * 100}%` }}
+                  />
+                </span>
+                <span className={styles.status}>
+                  {done}/{lane.total}
+                </span>
+              </>
+            )}
           </div>
         );
       })}
@@ -417,35 +425,90 @@ function Syncing({ t, at }: ArtProps) {
   );
 }
 
-const SUGGESTED = ["outerwear", "brown", "fall"];
-
-function Tags({ t, at }: ArtProps) {
+function Extension({ t, at }: ArtProps) {
+  const press = at + 700;
+  const saved = t >= press + 120;
+  const down = t >= press && t < press + 120;
   return (
-    <div className={styles.suggestions}>
-      {SUGGESTED.map((tag, index) => (
-        <span
-          key={tag}
-          className={styles.suggestion}
-          data-applied={t >= at + 1100 + index * 260 || undefined}
-          style={pop(t, at + 200 + index * 120, 6)}
-        >
-          {t >= at + 1100 + index * 260 ? (
-            <IconCircleCheckFill size={12} />
-          ) : (
-            <span className={styles.plus}>+</span>
-          )}
-          {tag}
+    <div className={styles.extension}>
+      <div className={styles.toolbar}>
+        <span className={styles.lights}>
+          <span />
+          <span />
+          <span />
         </span>
-      ))}
+        <span className={styles.address}>x.com</span>
+        <span
+          className={styles.button}
+          data-saved={saved || undefined}
+          style={{ transform: `scale(${down ? 0.88 : 1})` }}
+        >
+          {saved ? (
+            <IconCircleCheckFill size={14} />
+          ) : (
+            <Logo size={14} aria-hidden />
+          )}
+        </span>
+      </div>
+      <span className={styles.toast} style={pop(t, press + 200, 8)}>
+        Saved to Pond
+      </span>
     </div>
   );
 }
 
-function Stat({ value, detail }: { value: string; detail: string }) {
+const GENERATED = "Black coat, round sunglasses".split(" ");
+
+function Titles({ t, at }: ArtProps) {
+  const strike = ease.inOut(progress(t, at + 400, 400));
   return (
-    <div className={styles.stat}>
-      <span className={styles.value}>{value}</span>
-      <span className={styles.detail}>{detail}</span>
+    <div className={styles.titles}>
+      <span className={styles.filename}>
+        IMG_4021.jpg
+        <span className={styles.strike} style={{ width: `${strike * 100}%` }} />
+      </span>
+      <span className={styles.generated}>
+        {GENERATED.map((word, index) => (
+          <span
+            // biome-ignore lint/suspicious/noArrayIndexKey: words are static
+            key={index}
+            className={styles.term}
+            style={pop(t, at + 900 + index * 90, 4)}
+          >
+            {word}
+          </span>
+        ))}
+      </span>
+    </div>
+  );
+}
+
+const LINES = [92, 100, 84, 100, 96, 70];
+
+function Reader({ t, at }: ArtProps) {
+  return (
+    <div className={styles.book}>
+      {[0, 1].map((page) => (
+        <span key={page} className={styles.page}>
+          {page === 0 ? (
+            <span className={styles.chapter}>Chapter 3</span>
+          ) : null}
+          {LINES.map((width, index) => (
+            <span
+              // biome-ignore lint/suspicious/noArrayIndexKey: lines are static
+              key={index}
+              className={styles.text}
+              style={{
+                width: `${width}%`,
+                opacity: ease.out(
+                  progress(t, at + 300 + (page * 6 + index) * 60, 300),
+                ),
+              }}
+            />
+          ))}
+          <span className={styles.folio}>{12 + page}</span>
+        </span>
+      ))}
     </div>
   );
 }
@@ -463,6 +526,7 @@ export const Art = {
   Model,
   Libraries,
   Syncing,
-  Tags,
-  Stat,
+  Extension,
+  Titles,
+  Reader,
 };

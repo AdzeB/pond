@@ -9,7 +9,6 @@ interface Tile {
   id: string;
   column: string;
   row: string;
-  /** Feature name under the art; stat tiles carry their own type. */
   label?: string;
   art: (t: number, at: number) => ReactNode;
 }
@@ -19,7 +18,7 @@ const TILES: Tile[] = [
     id: "raycast",
     column: "1 / span 2",
     row: "1 / span 2",
-    label: "Raycast",
+    label: "Raycast Integration",
     art: (t, at) => <Art.Raycast t={t} at={at} />,
   },
   {
@@ -37,12 +36,11 @@ const TILES: Tile[] = [
     art: (t, at) => <Art.Cli t={t} at={at} />,
   },
   {
-    id: "mac",
+    id: "extension",
     column: "8",
     row: "1",
-    art: () => (
-      <Art.Stat value="macOS" detail="12 or later, Apple silicon and Intel" />
-    ),
+    label: "Browser Extension",
+    art: (t, at) => <Art.Extension t={t} at={at} />,
   },
   {
     id: "models",
@@ -53,10 +51,11 @@ const TILES: Tile[] = [
   },
   { id: "hero", column: "4 / span 2", row: "2 / span 2", art: () => null },
   {
-    id: "sources",
+    id: "titles",
     column: "6",
     row: "2",
-    art: () => <Art.Stat value="9" detail="sources sync to your Mac" />,
+    label: "Generated Titles",
+    art: (t, at) => <Art.Titles t={t} at={at} />,
   },
   {
     id: "similar",
@@ -80,11 +79,11 @@ const TILES: Tile[] = [
     art: (t, at) => <Art.Specimen t={t} at={at} />,
   },
   {
-    id: "tags",
+    id: "reader",
     column: "6",
     row: "3",
-    label: "Suggested Tags",
-    art: (t, at) => <Art.Tags t={t} at={at} />,
+    label: "EPUB Reader",
+    art: (t, at) => <Art.Reader t={t} at={at} />,
   },
   {
     id: "duplicates",
