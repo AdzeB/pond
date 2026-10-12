@@ -8,18 +8,16 @@ export const HEIGHT = 1080;
 export const BEATS = {
   sea: [130, 3620],
   intro: [3650, 5780],
-  tagline: [5830, 9370],
-  ticker: [9480, 13550],
-  save: [13520, 17870],
-  sync: [17870, 24870],
-  own: [24870, 28870],
-  enrich: [28870, 33750],
-  find: [33750, 38780],
-  ask: [38780, 46080],
-  connect: [46080, 52050],
-  thesis: [52130, 55500],
-  offer: [55610, 58500],
-  end: [58740, 61000],
+  save: [5830, 10180],
+  sync: [10180, 17180],
+  own: [17180, 21180],
+  enrich: [21180, 26060],
+  find: [26060, 31090],
+  ask: [31090, 38390],
+  connect: [38390, 44360],
+  thesis: [44440, 47810],
+  offer: [47920, 50810],
+  end: [51050, 53310],
 } as const satisfies Record<string, readonly [number, number]>;
 
 export type BeatId = keyof typeof BEATS;

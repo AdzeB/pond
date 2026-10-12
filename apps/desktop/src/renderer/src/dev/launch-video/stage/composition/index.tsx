@@ -4,10 +4,8 @@ import { Finder } from "../finder";
 import { Headlines } from "../headlines";
 import { Sea } from "../sea";
 import { Statements } from "../statement";
-import { Swap } from "../swap";
 import { Sync } from "../sync";
 import { Terminal } from "../terminal";
-import { Ticker } from "../ticker";
 import { HEIGHT, WIDTH } from "../timeline";
 import { Windows } from "../windows";
 import styles from "./styles.module.css";
@@ -24,8 +22,6 @@ export function Composition({ t }: { t: number }) {
       <Windows t={t} />
       <Terminal t={t} />
       <Headlines t={t} />
-      <Swap t={t} />
-      <Ticker t={t} />
       <Statements t={t} />
     </div>
   );

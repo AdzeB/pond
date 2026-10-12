@@ -24,10 +24,14 @@ Run each step from `apps/desktop`.
    ./node_modules/.bin/electron scripts/launch-video/capture.cjs
    ```
 
-4. Encode the site cut with the soundtrack, and take the poster at 2 seconds. The beats follow the soundtrack of the first cut, which you can restore with `git show af0ac81f:brag-output/brag.mp4 > soundtrack.mp4`.
+4. Encode the site cut with the soundtrack, and take the poster at 2 seconds. The beats follow the soundtrack of the first cut, minus its tagline and ticker from 5.83 to 13.52 seconds. The first command restores that soundtrack from git and splices out the gap.
 
    ```bash
-   ffmpeg -i .tmp/launch-video/out/stage.mp4 -i soundtrack.mp4 -map 0:v -map 1:a \
+   git show af0ac81f:brag-output/brag.mp4 > first-cut.mp4
+   ffmpeg -i first-cut.mp4 -filter_complex \
+     "[0:a]atrim=0:5.87,asetpts=PTS-STARTPTS[a];[0:a]atrim=13.52,asetpts=PTS-STARTPTS[b];[a][b]acrossfade=d=0.04[out]" \
+     -map "[out]" -c:a aac -b:a 192k soundtrack.m4a
+   ffmpeg -i .tmp/launch-video/out/stage.mp4 -i soundtrack.m4a -map 0:v -map 1:a \
      -vf scale=1600:900:flags=lanczos -c:v libx264 -preset slow -crf 24 \
      -pix_fmt yuv420p -movflags +faststart -c:a aac -b:a 128k -shortest \
      ../website/public/video/pond.mp4
@@ -43,19 +47,17 @@ Run each step from `apps/desktop`.
 | --- | --- | --- |
 | 0 to 3.6 | Sea | Saves drift around "The web is a sea of information.", then spiral in |
 | 3.7 to 5.8 | Intro | Logo and "Introducing Pond" |
-| 5.8 to 9.4 | Tagline | "Your own" cycles from social media archive to anything |
-| 9.5 to 13.6 | Ticker | "Save from" rolls through the sources |
-| 13.5 to 17.9 | Save | An X post is bookmarked in the browser |
-| 17.9 to 24.9 | Sync | Saves fly from each source into a wall as the count climbs |
-| 24.9 to 28.9 | Own | Finder walks from the library into one save's files |
-| 28.9 to 33.8 | Enrich | One image gets a caption, text, colors, and tags |
-| 33.8 to 38.8 | Find | "fall outfits" is typed, then the Brown color filter narrows the grid |
-| 38.8 to 46.1 | Ask | The Assistant answers "What did I save for the studio?" with the saves it used |
-| 46.1 to 52.1 | Connect | Claude Code calls `search_saves` in a terminal |
-| 52.1 to 58.5 | Thesis, Offer | Closing lines |
-| 58.7 to 61 | End | The logo fades out |
+| 5.8 to 10.2 | Save | An X post is bookmarked in the browser |
+| 10.2 to 17.2 | Sync | Saves fly from each source into a wall as the count climbs |
+| 17.2 to 21.2 | Own | Finder walks from the library into one save's files |
+| 21.2 to 26.1 | Enrich | One image gets a caption, text, colors, and tags |
+| 26.1 to 31.1 | Find | "fall outfits" is typed, then the Brown color filter narrows the grid |
+| 31.1 to 38.4 | Ask | The Assistant answers "What did I save for the studio?" with the saves it used |
+| 38.4 to 44.4 | Connect | Claude Code calls `search_saves` in a terminal |
+| 44.4 to 50.8 | Thesis, Offer | Closing lines |
+| 51.1 to 53.3 | End | The logo fades out |
 
-The timing matches the first cut. Find and Ask show the real renderer. The other scenes are staged in `stage/`.
+The timing matches the first cut without its tagline and ticker. Find and Ask show the real renderer. The other scenes are staged in `stage/`.
 
 ## Where things live
 
