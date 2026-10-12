@@ -72,9 +72,6 @@ const DETAILS = [
   ["Where", `items › ${PICK.id.slice(0, 10)}…`],
 ] as const;
 
-const OPEN = opens("own");
-const CLOSE = closes("own");
-const STEPS = [OPEN + 900, OPEN + 1350, OPEN + 1800] as const;
 const CLICKS = ["items", SAVE_DIR, "media-1.jpg"] as const;
 
 function Glyph({ kind }: { kind: Entry["kind"] }) {
@@ -90,16 +87,18 @@ function Column({
   selected,
   at,
   focus,
+  steps,
 }: {
   t: number;
   entries: readonly Entry[];
   selected: string;
   at: number;
   focus: number | null;
+  steps: readonly number[];
 }) {
   const shown = at < 0 ? 1 : ease.out(progress(t, at, 220));
   const pick = focus !== null && t >= focus;
-  const next = STEPS.find((step) => focus !== null && step > focus);
+  const next = steps.find((step) => focus !== null && step > focus);
   const blurred = pick && next !== undefined && t >= next;
   return (
     <ul
@@ -137,7 +136,16 @@ function Column({
 }
 
 /** Finder column view walking from the library folder into one save's files. */
-export function Finder({ t }: { t: number }) {
+export function Finder({
+  t,
+  open = opens("own"),
+  close = closes("own"),
+}: {
+  t: number;
+  open?: number;
+  close?: number;
+}) {
+  const steps = [open + 900, open + 1350, open + 1800] as const;
   const root = useRef<HTMLDivElement>(null);
   const rows = useLayout(() => {
     const box = root.current?.getBoundingClientRect();
@@ -150,32 +158,32 @@ export function Finder({ t }: { t: number }) {
         : { x: 0, y: 0 };
     });
   }, []);
-  const w = lift(t, OPEN, CLOSE);
+  const w = lift(t, open, close);
   const pointer = glide(t, [
-    { at: OPEN, x: 620, y: 420 },
+    { at: open, x: 620, y: 420 },
     ...rows.map((row, index) => ({
-      at: (STEPS[index] ?? OPEN) - 60,
+      at: (steps[index] ?? open) - 60,
       ...row,
       move: 420,
     })),
     {
-      at: STEPS[2] + 700,
+      at: steps[2] + 700,
       x: (rows[2]?.x ?? 0) + 60,
       y: (rows[2]?.y ?? 0) + 70,
     },
   ]);
-  const preview = ease.outQuint(progress(t, STEPS[2] + 40, 500));
+  const preview = ease.outQuint(progress(t, steps[2] + 40, 500));
   const title =
-    t >= STEPS[1] ? SAVE_DIR : t >= STEPS[0] ? "items" : "My Pond.pond";
+    t >= steps[1] ? SAVE_DIR : t >= steps[0] ? "items" : "My Pond.pond";
   const path = [
     "Macintosh HD",
     "Users",
     "mira",
     "Pond",
     "My Pond.pond",
-    ...(t >= STEPS[0] ? ["items"] : []),
-    ...(t >= STEPS[1] ? [SAVE_DIR] : []),
-    ...(t >= STEPS[2] ? ["media-1.jpg"] : []),
+    ...(t >= steps[0] ? ["items"] : []),
+    ...(t >= steps[1] ? [SAVE_DIR] : []),
+    ...(t >= steps[2] ? ["media-1.jpg"] : []),
   ];
   return (
     <div
@@ -218,21 +226,24 @@ export function Finder({ t }: { t: number }) {
             entries={LIBRARY}
             selected="items"
             at={-1}
-            focus={STEPS[0]}
+            focus={steps[0]}
+            steps={steps}
           />
           <Column
             t={t}
             entries={ITEMS}
             selected={SAVE_DIR}
-            at={STEPS[0]}
-            focus={STEPS[1]}
+            at={steps[0]}
+            focus={steps[1]}
+            steps={steps}
           />
           <Column
             t={t}
             entries={SAVE}
             selected="media-1.jpg"
-            at={STEPS[1]}
-            focus={STEPS[2]}
+            at={steps[1]}
+            focus={steps[2]}
+            steps={steps}
           />
           <div
             className={styles.preview}
@@ -269,8 +280,8 @@ export function Finder({ t }: { t: number }) {
       <Cursor
         x={pointer.x}
         y={pointer.y}
-        scale={pressing(t, STEPS) ? 0.86 : 1}
-        opacity={clamp((t - OPEN - 400) / 200)}
+        scale={pressing(t, steps) ? 0.86 : 1}
+        opacity={clamp((t - open - 400) / 200)}
       />
     </div>
   );

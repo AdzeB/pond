@@ -13,10 +13,14 @@ import {
 } from "../timeline";
 import styles from "./styles.module.css";
 
+interface Beat {
+  t: number;
+  open?: number;
+  close?: number;
+}
+
 const PICTURE = sample("Visual identity for the iFest festival in Catalonia");
-const OPEN = opens("enrich");
-const CLOSE = closes("enrich");
-const STARTS = [780, 1180, 1980, 2430].map((ms) => OPEN + ms);
+const OFFSETS = [780, 1180, 1980, 2430];
 const WORK = 350;
 
 /** Sampled from the picture at each dot. */
@@ -35,8 +39,8 @@ const ROWS = [
   { label: "Tags", time: "0.2s" },
 ] as const;
 
-const begins = (k: number) => STARTS[k] ?? OPEN;
-const done = (k: number) => begins(k) + WORK;
+const begins = (open: number, k: number) => open + (OFFSETS[k] ?? 0);
+const done = (open: number, k: number) => begins(open, k) + WORK;
 
 const appear = (t: number, at: number) =>
   styled(envelope(t, at, Number.POSITIVE_INFINITY, { duration: 400, rise: 6 }));
@@ -59,8 +63,8 @@ function Stream({ t, text, at }: { t: number; text: string; at: number }) {
   ));
 }
 
-function Value({ t, k }: { t: number; k: number }) {
-  const at = done(k);
+function Value({ t, k, open }: { t: number; k: number; open: number }) {
+  const at = done(open, k);
   if (k === 0)
     return (
       <p className={styles.caption}>
@@ -126,11 +130,15 @@ function Value({ t, k }: { t: number; k: number }) {
 }
 
 /** One picture read on-device: caption, text, colors, and tags fill in beside it. */
-export function Enrich({ t }: { t: number }) {
-  const image = lift(t, OPEN, CLOSE);
+export function Enrich({
+  t,
+  open = opens("enrich"),
+  close = closes("enrich"),
+}: Beat) {
+  const image = lift(t, open, close);
   if (image.opacity <= 0) return null;
-  const card = lift(t, OPEN + 120, CLOSE);
-  const scan = progress(t, OPEN + 500, 1500);
+  const card = lift(t, open + 120, close);
+  const scan = progress(t, open + 500, 1500);
   return (
     <>
       <figure
@@ -152,7 +160,9 @@ export function Enrich({ t }: { t: number }) {
           />
         ) : null}
         {PALETTE.map((color, index) => {
-          const pop = ease.outQuint(progress(t, done(2) + index * 70, 450));
+          const pop = ease.outQuint(
+            progress(t, done(open, 2) + index * 70, 450),
+          );
           return (
             <span
               key={color.hex}
@@ -185,9 +195,9 @@ export function Enrich({ t }: { t: number }) {
         </header>
         <div className={styles.rows}>
           {ROWS.map((row, k) => {
-            const start = begins(k);
+            const start = begins(open, k);
             const state =
-              t >= done(k) ? "done" : t >= start ? "working" : "pending";
+              t >= done(open, k) ? "done" : t >= start ? "working" : "pending";
             return (
               <div
                 key={row.label}
@@ -212,7 +222,7 @@ export function Enrich({ t }: { t: number }) {
                     {state === "done" ? row.time : ""}
                   </span>
                 </span>
-                <Value t={t} k={k} />
+                <Value t={t} k={k} open={open} />
               </div>
             );
           })}

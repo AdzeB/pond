@@ -1,10 +1,14 @@
+import { Enrich } from "../../stage/enrich";
+import { Finder } from "../../stage/finder";
 import { Sea } from "../../stage/sea";
+import { Terminal } from "../../stage/terminal";
 import { HEIGHT, WIDTH } from "../../stage/timeline";
 import { Ask } from "../ask";
 import { Caption } from "../caption";
 import { Find } from "../find";
 import { Outro } from "../outro";
 import { Save } from "../save";
+import { Shift } from "../shift";
 import { Sources } from "../sources";
 import { end, type SceneId, start } from "../timeline";
 import { Wordmark } from "../wordmark";
@@ -16,12 +20,24 @@ const TITLES: { scene: SceneId; text: string }[] = [
     text: "Like or bookmark as usual.\nPond keeps a copy on your Mac.",
   },
   {
+    scene: "ownTitle",
+    text: "Local-first. Every save is\nplain files in a folder you own.",
+  },
+  {
+    scene: "enrichTitle",
+    text: "Each save is analyzed on-device:\ncaptions, text, colors, and tags.",
+  },
+  {
     scene: "findTitle",
-    text: "Search in plain language,\nthen narrow it down by color.",
+    text: "Search everything you've saved,\nby meaning, text, or color.",
   },
   {
     scene: "askTitle",
-    text: "Ask about your saves\nwith your key or a local model.",
+    text: "Bring your favorite AI\nto everything you've saved.",
+  },
+  {
+    scene: "connectTitle",
+    text: "Plug your library into Claude,\nCursor, or any MCP client.",
   },
 ];
 
@@ -53,8 +69,17 @@ export function Composition({ t }: { t: number }) {
         />
       ))}
       <Save t={t} />
+      <Shift t={t} scene="own" y={-100}>
+        <Finder t={t} open={start("own")} close={end("own") - 350} />
+      </Shift>
+      <Shift t={t} scene="enrich" y={-95}>
+        <Enrich t={t} open={start("enrich")} close={end("enrich") - 350} />
+      </Shift>
       <Find t={t} />
       <Ask t={t} />
+      <Shift t={t} scene="connect" y={-60}>
+        <Terminal t={t} open={start("connect")} close={end("connect") - 350} />
+      </Shift>
       <Outro t={t} />
     </div>
   );

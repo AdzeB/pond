@@ -14,22 +14,27 @@ const HITS = [
   "All black, runway",
 ].map(sample);
 
-const OPEN = opens("connect");
-const CLOSE = closes("connect");
-const TYPE = OPEN + 400;
-const CALL = OPEN + 1700;
-const FOUND = OPEN + 2300;
-const SAY = OPEN + 2750;
-
 const appear = (t: number, at: number, rise = 10) =>
   styled(envelope(t, at, Number.POSITIVE_INFINITY, { duration: 500, rise }));
 
 /** Claude Code calling Pond's MCP server from a terminal. */
-export function Terminal({ t }: { t: number }) {
-  const w = lift(t, OPEN, CLOSE);
+export function Terminal({
+  t,
+  open = opens("connect"),
+  close = closes("connect"),
+}: {
+  t: number;
+  open?: number;
+  close?: number;
+}) {
+  const typing = open + 400;
+  const call = open + 1700;
+  const found = open + 2300;
+  const say = open + 2750;
+  const w = lift(t, open, close);
   if (w.opacity <= 0) return null;
-  const typed = clamp(Math.floor((t - TYPE) / 22), 0, PROMPT.length);
-  const calling = t >= CALL && t < FOUND;
+  const typed = clamp(Math.floor((t - typing) / 22), 0, PROMPT.length);
+  const calling = t >= call && t < found;
   return (
     <div
       className={styles.terminal}
@@ -55,12 +60,12 @@ export function Terminal({ t }: { t: number }) {
             {typed < PROMPT.length ? <span className={styles.block} /> : null}
           </span>
         </p>
-        <p className={styles.call} style={appear(t, CALL)}>
+        <p className={styles.call} style={appear(t, call)}>
           <span
             className={styles.dot}
             data-state={calling ? "calling" : "done"}
             style={{
-              opacity: calling && Math.floor((t - CALL) / 250) % 2 ? 0.3 : 1,
+              opacity: calling && Math.floor((t - call) / 250) % 2 ? 0.3 : 1,
             }}
           >
             ●
@@ -70,7 +75,7 @@ export function Terminal({ t }: { t: number }) {
             {' (MCP)(query: "black coat", limit: 4)'}
           </span>
         </p>
-        <div className={styles.result} style={appear(t, FOUND)}>
+        <div className={styles.result} style={appear(t, found)}>
           <p className={styles.found}>
             <span className={styles.muted}>⎿</span>Found 4 saves
           </p>
@@ -81,7 +86,7 @@ export function Terminal({ t }: { t: number }) {
                 <span
                   key={hit.id}
                   className={styles.hit}
-                  style={appear(t, FOUND + 100 + index * 80, 14)}
+                  style={appear(t, found + 100 + index * 80, 14)}
                 >
                   <img alt="" src={cover(hit.id)} className={styles.thumb} />
                   <Badge className={styles.badge} />
@@ -91,7 +96,7 @@ export function Terminal({ t }: { t: number }) {
           </div>
         </div>
         <p className={styles.answer}>
-          <span className={styles.dot} style={appear(t, SAY, 0)}>
+          <span className={styles.dot} style={appear(t, say, 0)}>
             ●
           </span>
           <span>
@@ -100,7 +105,7 @@ export function Terminal({ t }: { t: number }) {
                 // biome-ignore lint/suspicious/noArrayIndexKey: words are static
                 key={`${index}-${word}`}
                 className={styles.word}
-                style={appear(t, SAY + 80 + index * 62, 6)}
+                style={appear(t, say + 80 + index * 62, 6)}
               >
                 {word}
               </span>
