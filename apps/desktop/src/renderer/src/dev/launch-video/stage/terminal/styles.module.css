@@ -156,9 +156,13 @@
 
 .answer {
   display: flex;
+  font-family: var(--ds-ui-font-family);
+  font-size: 22px;
+  font-weight: 500;
+  color: #171717;
 }
 
 .word {
   display: inline-block;
-  margin-right: 0.6em;
+  margin-right: 0.28em;
 }

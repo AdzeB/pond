@@ -1,11 +1,14 @@
 import { shot, WINDOW } from "../camera";
+import { Cursor } from "../cursor";
 import { FRAME, FRAME_SRC, registerFrame } from "../frames";
+import { pointer } from "../pointer";
 import styles from "./styles.module.css";
 
 /** The real app, always mounted so its state carries across beats, cropped to the part each beat needs. */
 export function Windows({ t }: { t: number }) {
   const s = shot(t);
   const scale = s ? WINDOW.width / s.crop.width : 1;
+  const p = s ? pointer(t) : null;
   return (
     <div
       className={styles.window}
@@ -37,6 +40,14 @@ export function Windows({ t }: { t: number }) {
           title="Pond"
         />
       </div>
+      {s && p ? (
+        <Cursor
+          x={(p.x - s.crop.x) * scale}
+          y={(p.y - s.crop.y) * scale}
+          scale={p.scale}
+          opacity={p.opacity}
+        />
+      ) : null}
     </div>
   );
 }

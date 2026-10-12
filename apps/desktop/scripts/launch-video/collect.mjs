@@ -32,16 +32,10 @@ function size(path) {
   return { width: Number(width), height: Number(height) };
 }
 
-const saves = curated.saves.map((entry, index) => {
-  const dir = join(library, "items", `${entry.id}.info`);
-  const info = JSON.parse(readFileSync(join(dir, "info.json"), "utf8"));
-  const source = info.files.find(
-    (file) => file.kind === "image" && IMAGE.test(file.path),
-  );
-  if (!source) throw new Error(`${entry.id} has no image file`);
-  const target = join(out, "media", entry.id);
-  mkdirSync(target, { recursive: true });
-  const cover = join(target, "cover.jpg");
+/** The first cut's demo saves, removed from the site but kept in history. */
+const SEEDS = "c3ee4719:apps/website/public/demo/library";
+
+function resize(from, to) {
   execFileSync(
     "sips",
     [
@@ -53,17 +47,43 @@ const saves = curated.saves.map((entry, index) => {
       "-s",
       "formatOptions",
       "88",
-      join(dir, source.path),
+      from,
       "--out",
-      cover,
+      to,
     ],
     { stdio: "ignore" },
   );
-  const bytes = readFileSync(cover);
-  const { width, height } = size(cover);
+}
+
+function seeded(entry, cover) {
+  writeFileSync(
+    cover,
+    execFileSync("git", ["show", `${SEEDS}/${entry.seed}.jpg`], {
+      cwd: here,
+      maxBuffer: 1 << 26,
+    }),
+  );
   return {
-    ...entry,
-    index,
+    source: entry.source,
+    sourceId: entry.id,
+    url: entry.url,
+    author: null,
+    siteName: null,
+    description: null,
+    publishedAt: null,
+    dominantColors: entry.colors,
+  };
+}
+
+function copied(entry, cover) {
+  const dir = join(library, "items", `${entry.id}.info`);
+  const info = JSON.parse(readFileSync(join(dir, "info.json"), "utf8"));
+  const source = info.files.find(
+    (file) => file.kind === "image" && IMAGE.test(file.path),
+  );
+  if (!source) throw new Error(`${entry.id} has no image file`);
+  resize(join(dir, source.path), cover);
+  return {
     source: info.source,
     sourceId: info.sourceId,
     url: info.url,
@@ -72,6 +92,22 @@ const saves = curated.saves.map((entry, index) => {
     description: info.description,
     publishedAt: info.publishedAt ? Date.parse(info.publishedAt) : null,
     dominantColors: info.userData?.dominantColors ?? [],
+  };
+}
+
+const saves = curated.saves.map((entry, index) => {
+  const target = join(out, "media", entry.id);
+  mkdirSync(target, { recursive: true });
+  const cover = join(target, "cover.jpg");
+  const meta = entry.seed ? seeded(entry, cover) : copied(entry, cover);
+  const bytes = readFileSync(cover);
+  const { width, height } = size(cover);
+  const { seed, colors, ...rest } = entry;
+  return {
+    ...rest,
+    ...meta,
+    index,
+    savedAt: Date.parse(entry.time.replaceAll("/", "-").replace(" ", "T")),
     file: {
       kind: "image",
       path: "cover.jpg",
@@ -86,6 +122,10 @@ const saves = curated.saves.map((entry, index) => {
 
 writeFileSync(
   join(out, "library.json"),
-  JSON.stringify({ folders: curated.folders, saves }, null, 2),
+  JSON.stringify(
+    { folders: curated.folders, searches: curated.searches, saves },
+    null,
+    2,
+  ),
 );
 console.log(`collect: ${saves.length} saves into ${out}`);

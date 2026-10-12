@@ -10,37 +10,44 @@ import {
   IconGrid,
   IconImage,
 } from "@pond/icons";
+import { useRef } from "react";
+import { Cursor, glide, pressing } from "../cursor";
+import { useLayout } from "../layout";
 import { cover, SAMPLES, sample } from "../media";
-import { closes, ease, lift, mix, opens, progress, styled } from "../timeline";
+import {
+  clamp,
+  closes,
+  ease,
+  lift,
+  mix,
+  opens,
+  progress,
+  styled,
+} from "../timeline";
 import styles from "./styles.module.css";
 
 interface Entry {
   name: string;
   kind: "folder" | "file" | "image";
+  count?: string;
 }
 
-const PICK = sample("Lancia Delta in snow");
+const PICK = sample("Aimé Leon Dore Yankees hand-knit sweater");
 const SAVE_DIR = `${PICK.id}.info`;
 
 const LIBRARY: readonly Entry[] = [
   { name: "backup", kind: "folder" },
-  { name: "items", kind: "folder" },
+  { name: "items", kind: "folder", count: "5,070" },
   { name: "metadata.json", kind: "file" },
   { name: "organization.json", kind: "file" },
   { name: "settings.json", kind: "file" },
   { name: "tags.json", kind: "file" },
-  { name: "trash", kind: "folder" },
+  { name: "trash", kind: "folder", count: "12" },
 ];
 
-const ITEMS: readonly Entry[] = [
-  ...new Set([
-    ...SAMPLES.map((entry) => entry.id)
-      .sort()
-      .slice(14, 31),
-    PICK.id,
-  ]),
-]
+const ITEMS: readonly Entry[] = SAMPLES.map((entry) => entry.id)
   .sort()
+  .slice(-13)
   .map((id) => ({ name: `${id}.info`, kind: "folder" }));
 
 const SAVE: readonly Entry[] = [
@@ -48,22 +55,27 @@ const SAVE: readonly Entry[] = [
   { name: "enrichment.json", kind: "file" },
   { name: "info.json", kind: "file" },
   { name: "media-1.jpg", kind: "image" },
-  { name: "media-1.jpg_thumbnail.png", kind: "image" },
   { name: "source.json", kind: "file" },
 ];
 
 const FAVORITES = [
   { label: "Recents", Icon: IconCircleDashedClock },
   { label: "Applications", Icon: IconGrid },
-  { label: "Desktop", Icon: IconComputer },
   { label: "Documents", Icon: IconFile },
   { label: "Downloads", Icon: IconDownload },
   { label: "Pond", Icon: IconFolder },
 ];
 
+const DETAILS = [
+  ["Created", "Sep 4, 2026 at 9:12"],
+  ["Dimensions", "960×1440"],
+  ["Where", `items › ${PICK.id.slice(0, 10)}…`],
+] as const;
+
 const OPEN = opens("own");
 const CLOSE = closes("own");
-const STEPS = [OPEN + 700, OPEN + 1250, OPEN + 1800] as const;
+const STEPS = [OPEN + 900, OPEN + 1350, OPEN + 1800] as const;
+const CLICKS = ["items", SAVE_DIR, "media-1.jpg"] as const;
 
 function Glyph({ kind }: { kind: Entry["kind"] }) {
   if (kind === "folder")
@@ -101,6 +113,7 @@ function Column({
         <li
           key={entry.name}
           className={styles.row}
+          data-name={entry.name}
           data-selected={
             pick && entry.name === selected
               ? blurred
@@ -111,6 +124,9 @@ function Column({
         >
           <Glyph kind={entry.kind} />
           <span className={styles.name}>{entry.name}</span>
+          {entry.count ? (
+            <span className={styles.count}>{entry.count}</span>
+          ) : null}
           {entry.kind === "folder" ? (
             <IconChevronRight size={12} className={styles.chevron} />
           ) : null}
@@ -122,29 +138,48 @@ function Column({
 
 /** Finder column view walking from the library folder into one save's files. */
 export function Finder({ t }: { t: number }) {
+  const root = useRef<HTMLDivElement>(null);
+  const rows = useLayout(() => {
+    const box = root.current?.getBoundingClientRect();
+    return CLICKS.map((name) => {
+      const row = root.current
+        ?.querySelector(`[data-name="${name}"]`)
+        ?.getBoundingClientRect();
+      return box && row
+        ? { x: row.x - box.x + 60, y: row.y - box.y + row.height / 2 }
+        : { x: 0, y: 0 };
+    });
+  }, []);
   const w = lift(t, OPEN, CLOSE);
-  if (w.opacity <= 0) return null;
+  const pointer = glide(t, [
+    { at: OPEN, x: 620, y: 420 },
+    ...rows.map((row, index) => ({
+      at: (STEPS[index] ?? OPEN) - 60,
+      ...row,
+      move: 420,
+    })),
+    {
+      at: STEPS[2] + 700,
+      x: (rows[2]?.x ?? 0) + 60,
+      y: (rows[2]?.y ?? 0) + 70,
+    },
+  ]);
   const preview = ease.outQuint(progress(t, STEPS[2] + 40, 500));
   const title =
-    t >= STEPS[2]
-      ? "media-1.jpg"
-      : t >= STEPS[1]
-        ? SAVE_DIR
-        : t >= STEPS[0]
-          ? "items"
-          : "Personal.pond";
+    t >= STEPS[1] ? SAVE_DIR : t >= STEPS[0] ? "items" : "My Pond.pond";
   const path = [
     "Macintosh HD",
     "Users",
-    "you",
+    "mira",
     "Pond",
-    "Personal.pond",
+    "My Pond.pond",
     ...(t >= STEPS[0] ? ["items"] : []),
     ...(t >= STEPS[1] ? [SAVE_DIR] : []),
     ...(t >= STEPS[2] ? ["media-1.jpg"] : []),
   ];
   return (
     <div
+      ref={root}
       className={styles.window}
       style={styled({ opacity: w.opacity, dy: w.dy, blur: w.blur })}
     >
@@ -208,7 +243,16 @@ export function Finder({ t }: { t: number }) {
           >
             <img alt="" src={cover(PICK.id)} className={styles.image} />
             <span className={styles.file}>media-1.jpg</span>
-            <span className={styles.meta}>JPEG image · 1,556 × 1,600</span>
+            <span className={styles.meta}>JPEG image · 270 KB</span>
+            <dl className={styles.info}>
+              <dt className={styles.heading}>Information</dt>
+              {DETAILS.map(([label, value]) => (
+                <div key={label} className={styles.detail}>
+                  <dt>{label}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
         </div>
         <footer className={styles.path}>
@@ -222,6 +266,12 @@ export function Finder({ t }: { t: number }) {
           ))}
         </footer>
       </section>
+      <Cursor
+        x={pointer.x}
+        y={pointer.y}
+        scale={pressing(t, STEPS) ? 0.86 : 1}
+        opacity={clamp((t - OPEN - 400) / 200)}
+      />
     </div>
   );
 }

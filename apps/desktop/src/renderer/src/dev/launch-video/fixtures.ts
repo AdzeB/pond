@@ -21,13 +21,18 @@ interface Entry {
   description: string | null;
   publishedAt: number | null;
   dominantColors: string[];
+  savedAt: number;
   file: SaveFile;
 }
 
 const NOW = Date.UTC(2026, 9, 12, 9, 0);
 const HOUR = 3_600_000;
 const response = await fetch("/fixtures/library.json");
-const data = (await response.json()) as { folders: string[]; saves: Entry[] };
+const data = (await response.json()) as {
+  folders: string[];
+  searches: Record<string, string[]>;
+  saves: Entry[];
+};
 
 const folders: Folder[] = data.folders.map((name, i) => ({
   id: `folder-${name.toLowerCase()}`,
@@ -41,7 +46,7 @@ const folders: Folder[] = data.folders.map((name, i) => ({
 const folderId = (name: string) => `folder-${name.toLowerCase()}`;
 
 function toWire(entry: Entry): WireSave {
-  const savedAt = NOW - entry.index * 7 * HOUR;
+  const { savedAt } = entry;
   return {
     id: entry.id,
     source: entry.source,
@@ -134,6 +139,19 @@ function hasKeywords(save: WireSave, keywords: string) {
     );
 }
 
+/** Staged results for a scripted search; any prefix of it keeps the full library while typing. */
+function searched(keywords: string) {
+  const phrase = keywords.toLowerCase();
+  for (const [query, ids] of Object.entries(data.searches)) {
+    if (query === phrase)
+      return saves
+        .filter((save) => ids.includes(save.id))
+        .sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+    if (query.startsWith(phrase)) return saves;
+  }
+  return saves.filter((save) => hasKeywords(save, keywords));
+}
+
 function tagList() {
   const counts = new Map<string, number>();
   for (const save of saves) {
@@ -155,10 +173,11 @@ let prefs: Prefs = {
   ...structuredClone(DEFAULT_PREFS),
   agent: {
     ...DEFAULT_PREFS.agent,
-    languageModel: "anthropic",
-    modelIds: { anthropic: "claude-opus-5" },
-    enabledKeys: { anthropic: true },
-    addedProviders: ["anthropic"],
+    languageModel: "ollama",
+    ollamaModelId: "llama3.2",
+    modelIds: { ollama: "llama3.2" },
+    enabledKeys: { ollama: true },
+    addedProviders: ["ollama"],
   },
 };
 
@@ -199,7 +218,6 @@ defineQueries({
   "tagGroups.list": () => [],
   "savedViews.list": () => [],
   "accounts.list": () => ({ accounts: [] }),
-  "agent.chats": () => [],
   "saves.sidebarCounts": () => ({
     library: saves.length,
     uncategorized: 0,
@@ -225,7 +243,7 @@ defineQueries({
   "saves.queryPage": (request) => {
     const folderIds = request.scope?.folderIds;
     const keywords = request.keywords?.trim();
-    const ids = saves
+    const ids = (keywords ? searched(keywords) : saves)
       .filter(
         (save) =>
           !folderIds ||
@@ -233,7 +251,6 @@ defineQueries({
             (m) => m.saveId === save.id && folderIds.includes(m.folderId),
           ),
       )
-      .filter((save) => !keywords || hasKeywords(save, keywords))
       .filter((save) => !request.query || matches(request.query, save))
       .map((save) => save.id);
     return {

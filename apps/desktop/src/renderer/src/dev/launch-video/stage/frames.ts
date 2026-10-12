@@ -1,6 +1,6 @@
 import type { Director } from "../director";
 
-export const FRAME = { width: 1440, height: 740 } as const;
+export const FRAME = { width: 1110, height: 560 } as const;
 export const FRAME_SRC = "/launch-video-app.html";
 
 let element: HTMLIFrameElement | null = null;

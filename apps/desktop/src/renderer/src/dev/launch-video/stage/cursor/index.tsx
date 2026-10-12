@@ -1,4 +1,30 @@
+import { ease, mix, progress } from "../timeline";
 import styles from "./styles.module.css";
+
+export interface Waypoint {
+  /** When the pointer arrives. */
+  at: number;
+  x: number;
+  y: number;
+  /** How long the glide into this point takes. */
+  move?: number;
+}
+
+/** Where a pointer is at `t`, gliding into each waypoint by its `at`. */
+export function glide(t: number, points: readonly Waypoint[]) {
+  let x = points[0]?.x ?? 0;
+  let y = points[0]?.y ?? 0;
+  for (const point of points) {
+    const move = point.move ?? 500;
+    const k = ease.inOut(progress(t, point.at - move, move));
+    x = mix(x, point.x, k);
+    y = mix(y, point.y, k);
+  }
+  return { x, y };
+}
+
+export const pressing = (t: number, presses: readonly number[]) =>
+  presses.some((at) => t >= at && t < at + 140);
 
 interface CursorProps {
   x: number;

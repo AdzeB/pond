@@ -66,6 +66,9 @@ async function realFrames(count: number) {
 }
 
 async function settled() {
+  /** Effects commit after the frame's advance, so their zero-delay timers would otherwise slip a frame. */
+  await clock.realFrame();
+  clock.advance(0);
   const images = [...document.images].filter((image) => !image.complete);
   if (!images.length) return;
   await Promise.race([

@@ -13,30 +13,33 @@ import {
 } from "../timeline";
 import styles from "./styles.module.css";
 
-const PICTURE = sample("Who Owns the City?");
+const PICTURE = sample("Visual identity for the iFest festival in Catalonia");
 const OPEN = opens("enrich");
 const CLOSE = closes("enrich");
-const FIRST = OPEN + 700;
-const STEP = 420;
+const STARTS = [780, 1180, 1980, 2430].map((ms) => OPEN + ms);
 const WORK = 350;
 
 /** Sampled from the picture at each dot. */
 const PALETTE = [
-  { hex: "#141821", share: 38, x: 0.79, y: 0.2 },
-  { hex: "#142433", share: 22, x: 0.49, y: 0.69 },
-  { hex: "#C35434", share: 18, x: 0.3, y: 0.93 },
-  { hex: "#F18C2A", share: 14, x: 0.41, y: 0.88 },
-  { hex: "#FCF37E", share: 8, x: 0.23, y: 0.105 },
+  { hex: "#A6C6DB", share: 30, x: 0.62, y: 0.08 },
+  { hex: "#97ABB6", share: 22, x: 0.225, y: 0.256 },
+  { hex: "#18E675", share: 18, x: 0.468, y: 0.528 },
+  { hex: "#FA540C", share: 16, x: 0.454, y: 0.665 },
+  { hex: "#FC86F6", share: 14, x: 0.26, y: 0.515 },
 ];
 
 const ROWS = [
-  { label: "Caption", time: "0.4s" },
+  { label: "Caption", time: "0.6s" },
   { label: "Text in Image", time: "0.3s" },
   { label: "Colors", time: "0.1s" },
   { label: "Tags", time: "0.2s" },
 ] as const;
 
-const done = (k: number) => FIRST + k * STEP + WORK;
+const begins = (k: number) => STARTS[k] ?? OPEN;
+const done = (k: number) => begins(k) + WORK;
+
+const appear = (t: number, at: number) =>
+  styled(envelope(t, at, Number.POSITIVE_INFINITY, { duration: 400, rise: 6 }));
 
 function Stream({ t, text, at }: { t: number; text: string; at: number }) {
   return text.split(" ").map((word, index) => (
@@ -67,7 +70,11 @@ function Value({ t, k }: { t: number; k: number }) {
   if (k === 1)
     return (
       <p className={styles.text}>
-        <Stream t={t} at={at} text="@moertel 60" />
+        <Stream
+          t={t}
+          at={at}
+          text="Festival de Emprenedoria, Innovació. Get inspired, be disruptive. ifest.cat"
+        />
       </p>
     );
   if (k === 2)
@@ -98,20 +105,22 @@ function Value({ t, k }: { t: number; k: number }) {
     );
   return (
     <div className={styles.tags}>
-      {["pixel art", "night", "highway", "bridge"].map((tag, index) => (
-        <span
-          key={tag}
-          className={styles.tag}
-          style={styled(
-            envelope(t, at + index * 60, Number.POSITIVE_INFINITY, {
-              duration: 500,
-              rise: 8,
-            }),
-          )}
-        >
-          {tag}
-        </span>
-      ))}
+      {["billboard", "festival", "branding", "typography", "street"].map(
+        (tag, index) => (
+          <span
+            key={tag}
+            className={styles.tag}
+            style={styled(
+              envelope(t, at + index * 60, Number.POSITIVE_INFINITY, {
+                duration: 500,
+                rise: 8,
+              }),
+            )}
+          >
+            {tag}
+          </span>
+        ),
+      )}
     </div>
   );
 }
@@ -166,8 +175,8 @@ export function Enrich({ t }: { t: number }) {
         <header className={styles.header}>
           <img alt="" src={cover(PICTURE.id)} className={styles.thumb} />
           <span className={styles.file}>
-            <span className={styles.name}>who-owns-the-city.jpg</span>
-            <span className={styles.kind}>JPEG image · 1600×1600</span>
+            <span className={styles.name}>ifest-billboard.jpg</span>
+            <span className={styles.kind}>JPEG image · 1080×1080</span>
           </span>
           <span className={styles.device}>
             <IconComputer size={12} />
@@ -176,11 +185,16 @@ export function Enrich({ t }: { t: number }) {
         </header>
         <div className={styles.rows}>
           {ROWS.map((row, k) => {
-            const start = FIRST + k * STEP;
+            const start = begins(k);
             const state =
               t >= done(k) ? "done" : t >= start ? "working" : "pending";
             return (
-              <div key={row.label} className={styles.row} data-state={state}>
+              <div
+                key={row.label}
+                className={styles.row}
+                data-state={state}
+                style={appear(t, start - 120)}
+              >
                 <span className={styles.label}>
                   {state === "done" ? (
                     <IconCircleCheckFill size={14} className={styles.check} />

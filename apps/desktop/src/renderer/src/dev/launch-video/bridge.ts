@@ -69,6 +69,8 @@ const bridge = new Proxy(methods, {
 
 localStorage.clear();
 localStorage.setItem("pond:onboarding:2026", "complete");
+/** Six columns at the 1110px stage frame, matching the original cut. */
+localStorage.setItem("pond.gridZoom", "120");
 
 Object.assign(window, {
   pond: bridge,

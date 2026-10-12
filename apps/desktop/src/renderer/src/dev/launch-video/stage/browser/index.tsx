@@ -1,11 +1,11 @@
 import {
   IconArrowLeft,
+  IconBell,
   IconBookmark,
   IconBookmarkFill,
   IconChatBubble,
   IconChevronLeft,
   IconChevronRight,
-  IconDots,
   IconHeart,
   IconHouse,
   IconMagnifier,
@@ -22,7 +22,8 @@ import { cover, sample } from "../media";
 import { clamp, closes, ease, lift, mix, opens, progress } from "../timeline";
 import styles from "./styles.module.css";
 
-const POST = sample("Lancia Delta in snow");
+const POST = sample("gm");
+const AVATAR = sample("Ikebana");
 const OPEN = opens("save");
 const CLOSE = closes("save");
 const PRESS = OPEN + 1550;
@@ -31,9 +32,9 @@ const SAVED = PRESS + 60;
 const NAV = [
   { label: "Home", Icon: IconHouse },
   { label: "Explore", Icon: IconMagnifier },
+  { label: "Notifications", Icon: IconBell },
   { label: "Bookmarks", Icon: IconBookmark },
   { label: "Profile", Icon: IconUser },
-  { label: "More", Icon: IconDots },
 ];
 
 /** An X post in the browser, bookmarked once, with Pond's extension confirming the copy. */
@@ -80,7 +81,7 @@ export function Browser({ t }: { t: number }) {
           <IconChevronRight size={18} />
         </span>
         <span className={styles.address}>
-          x.com/strada_archive/status/1844210931
+          x.com/noaweiss/status/1822371048821
         </span>
         <span className={styles.extension}>
           <Logo size={20} aria-hidden />
@@ -112,26 +113,24 @@ export function Browser({ t }: { t: number }) {
           </div>
           <article className={styles.post}>
             <div className={styles.author}>
-              <span className={styles.avatar} />
-              <span className={styles.name}>Strada Archive</span>
-              <span className={styles.handle}>@strada_archive</span>
+              <img alt="" src={cover(AVATAR.id)} className={styles.avatar} />
+              <span className={styles.name}>Noa Weiss</span>
+              <span className={styles.handle}>@noaweiss</span>
             </div>
-            <p className={styles.text}>
-              Delta Integrale, the morning after the first snow.
-            </p>
+            <p className={styles.text}>gm</p>
             <img alt="" src={cover(POST.id)} className={styles.media} />
             <p className={styles.meta}>
-              8:52 AM · Oct 9, 2026 · <b>12.4K</b> Views
+              8:52 AM · Aug 10, 2026 · <b>12.4K</b> Views
             </p>
             <footer className={styles.actions}>
               <span className={styles.action}>
-                <IconChatBubble size={18} /> 48
+                <IconChatBubble size={18} /> 24
               </span>
               <span className={styles.action}>
-                <IconRefresh size={18} /> 312
+                <IconRefresh size={18} /> 31
               </span>
               <span className={styles.action}>
-                <IconHeart size={18} /> 4.1K
+                <IconHeart size={18} /> 412
               </span>
               <span
                 ref={target}
@@ -150,7 +149,7 @@ export function Browser({ t }: { t: number }) {
                     <IconBookmark size={18} />
                   )}
                 </span>
-                {saved ? 60 : 59}
+                {saved ? 59 : 58}
               </span>
               <span className={styles.action}>
                 <IconUpload size={18} />
@@ -175,14 +174,14 @@ export function Browser({ t }: { t: number }) {
           <section className={styles.card}>
             <h3 className={styles.title}>Relevant people</h3>
             <div className={styles.person}>
-              <span className={styles.avatar} />
+              <img alt="" src={cover(AVATAR.id)} className={styles.avatar} />
               <span className={styles.who}>
-                <span className={styles.name}>Strada Archive</span>
-                <span className={styles.handle}>@strada_archive</span>
+                <span className={styles.name}>Noa Weiss</span>
+                <span className={styles.handle}>@noaweiss</span>
               </span>
               <span className={styles.follow}>Follow</span>
             </div>
-            <p className={styles.bio}>Italian cars, photographed in winter.</p>
+            <p className={styles.bio}>Photos, mornings, small rooms.</p>
           </section>
         </aside>
       </div>

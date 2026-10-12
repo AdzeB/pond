@@ -1,17 +1,37 @@
 import type { AgentStreamEvent } from "@shared/agent-stream";
-import type { AssistantSource } from "@shared/assistant";
+import type { AssistantSource, AssistantToolStep } from "@shared/assistant";
 import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
 import { defineMethods, defineQueries } from "./bridge";
 import { QUESTION } from "./constants";
 import { saves } from "./fixtures";
 
-const CITED = ["Burgundy bag", "Red purse"];
+const CITED = [
+  "The interior of the Zweifel graphic design studio",
+  "Studio organization featured by Minimalissimo.",
+  "A wicker chair designed by John Dickinson.",
+];
 
 const REPLY = [
-  "You've saved two. A [Burgundy bag](#save-1) with a long knotted strap,",
-  " and a [Red purse](#save-2) shot against a pink backdrop.",
-  " Both sit in Objects.",
+  "Three saves fit: the Zweifel graphic design studio [1](#save-1),",
+  " studio organization from Minimalissimo [2](#save-2),",
+  " and a wicker chair by John Dickinson [3](#save-3).",
 ].join("");
+
+const SEARCH: AssistantToolStep = {
+  id: "search",
+  label: "Search library",
+  detail: "studio",
+  status: "complete",
+  elapsedMs: 400,
+};
+const READ: AssistantToolStep = {
+  id: "read",
+  label: "Read Saves",
+  detail: "3 saves",
+  status: "complete",
+  elapsedMs: 300,
+};
+const STEPS = [SEARCH, READ];
 
 let answered = false;
 
@@ -45,13 +65,29 @@ defineMethods({
             id: "current-activity",
             data: { activity: "searching" },
           });
-          await sleep(700);
+          writer.write({
+            type: "data-pond-steps",
+            id: "current-steps",
+            data: [{ ...SEARCH, status: "running" }],
+          });
+          await sleep(400);
+          writer.write({
+            type: "data-pond-steps",
+            id: "current-steps",
+            data: [SEARCH, { ...READ, status: "running" }],
+          });
+          await sleep(300);
+          writer.write({
+            type: "data-pond-steps",
+            id: "current-steps",
+            data: STEPS,
+          });
           writer.write({ type: "data-pond-sources", data: sources() });
           await sleep(200);
           writer.write({ type: "text-start", id: "text-1" });
           for (const word of REPLY.match(/\S+\s*/g) ?? []) {
             writer.write({ type: "text-delta", id: "text-1", delta: word });
-            await sleep(55);
+            await sleep(50);
           }
           writer.write({ type: "text-end", id: "text-1" });
           writer.write({ type: "finish", finishReason: "stop" });
@@ -77,6 +113,17 @@ defineMethods({
 });
 
 defineQueries({
+  "agent.chats": () =>
+    answered
+      ? [
+          {
+            id: "chat-launch",
+            title: "Studio saves",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ]
+      : [],
   "agent.newChat": () => ({
     id: "chat-launch",
     title: null,
@@ -101,6 +148,7 @@ defineQueries({
             content: REPLY,
             metadata: {
               elapsedMs: 2400,
+              steps: STEPS,
               sources: sources().map((source) => ({
                 ...source,
                 description: source.description ?? null,
@@ -112,7 +160,7 @@ defineQueries({
         ]
       : [],
   "agent.keys": () => [
-    { provider: "anthropic", hasKey: true, masked: "sk-…", enabled: true },
+    { provider: "ollama", hasKey: true, masked: null, enabled: true },
   ],
   "agent.listAvailableModels": () => ({ providers: [] }),
   "agent.mcpSnippet": () => ({

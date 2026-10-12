@@ -6,7 +6,7 @@ The site film at `apps/website/public/video/pond.mp4` is a white stage with stag
 
 Run each step from `apps/desktop`.
 
-1. Collect the sample media from your library into `.tmp/launch-video/fixtures`. `POND_LIBRARY` defaults to `~/Pond/Personal.pond`.
+1. Collect the sample media into `.tmp/launch-video/fixtures`. `library.json` lists every save. Seed saves come from the demo library in git history, and the rest are copied from your library. `POND_LIBRARY` defaults to `~/Pond/Personal.pond`.
 
    ```bash
    node scripts/launch-video/collect.mjs
@@ -42,25 +42,25 @@ Run each step from `apps/desktop`.
 | Time (s) | Beat | On screen |
 | --- | --- | --- |
 | 0 to 3.6 | Sea | Saves drift around "The web is a sea of information.", then spiral in |
-| 3.7 to 5.5 | Intro | Logo and "Introducing Pond" |
-| 5.8 to 9 | Tagline | "Your own" cycles from social media archive to anything |
-| 9.5 to 13.2 | Ticker | "Save from" rolls through the sources |
-| 13.5 to 17.6 | Save | An X post is bookmarked in the browser |
-| 17.9 to 24.6 | Sync | Saves fly from each source into a wall as the count climbs |
-| 24.9 to 28.6 | Own | Finder walks from the library into one save's files |
-| 28.9 to 33.4 | Enrich | One image gets a caption, text, colors, and tags |
-| 33.8 to 38.5 | Find | "wardrobe" is typed, then the White color filter narrows the grid |
-| 38.8 to 45.8 | Ask | The Assistant answers "Which red bags have I saved?" with the saves it used |
-| 46.1 to 51.5 | Connect | Claude Code calls `search_saves` in a terminal |
-| 52.1 to 58 | Thesis, Offer | Closing lines |
+| 3.7 to 5.8 | Intro | Logo and "Introducing Pond" |
+| 5.8 to 9.4 | Tagline | "Your own" cycles from social media archive to anything |
+| 9.5 to 13.6 | Ticker | "Save from" rolls through the sources |
+| 13.5 to 17.9 | Save | An X post is bookmarked in the browser |
+| 17.9 to 24.9 | Sync | Saves fly from each source into a wall as the count climbs |
+| 24.9 to 28.9 | Own | Finder walks from the library into one save's files |
+| 28.9 to 33.8 | Enrich | One image gets a caption, text, colors, and tags |
+| 33.8 to 38.8 | Find | "fall outfits" is typed, then the Brown color filter narrows the grid |
+| 38.8 to 46.1 | Ask | The Assistant answers "What did I save for the studio?" with the saves it used |
+| 46.1 to 52.1 | Connect | Claude Code calls `search_saves` in a terminal |
+| 52.1 to 58.5 | Thesis, Offer | Closing lines |
 | 58.7 to 61 | End | The logo fades out |
 
-Find and Ask show the real renderer. The other scenes are staged in `stage/`.
+The timing matches the first cut. Find and Ask show the real renderer. The other scenes are staged in `stage/`.
 
 ## Where things live
 
 - `src/renderer/src/dev/launch-video/stage/timeline.ts` holds the beats.
 - `stage/camera.ts` crops and lifts the app window.
-- `stage/script.ts` holds the timed actions inside it.
+- `stage/script.ts` holds the timed actions inside it, and `stage/pointer.ts` moves the pointer over it.
 - `bridge.ts`, `fixtures.ts`, and `assistant.ts` stand in for the main process.
 - `clock.ts` owns time for timers, `requestAnimationFrame`, `Date`, and CSS animations.

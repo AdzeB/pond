@@ -14,7 +14,7 @@ const HEADLINES: Record<
     verb: "Sync it.",
     sub: "Connect once, and Pond saves in the background.",
     fx: "flip",
-    exit: BEATS.sync[0] + 2300,
+    exit: BEATS.sync[0] + 2430,
     y: 540,
   },
   own: {

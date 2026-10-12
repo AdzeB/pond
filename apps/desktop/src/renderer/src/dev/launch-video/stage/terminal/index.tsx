@@ -4,22 +4,22 @@ import { cover, sample } from "../media";
 import { clamp, closes, envelope, lift, opens, styled } from "../timeline";
 import styles from "./styles.module.css";
 
-const PROMPT = "Pull knitwear references from Pond for the lookbook";
+const PROMPT = "Pull black coat references from Pond for the lookbook";
 const ANSWER =
-  "Four knits from your library: two rolled-edge sweaters, a pink dip-dye knit, and a red turtleneck.";
+  "Four looks from your library: the long black coat, round sunglasses, black boots, and an all-black runway set.";
 const HITS = [
-  "Green rolled-edge sweater",
-  "Rolled-edge wool sweater",
-  "Pink dip-dye knit",
-  "Red turtleneck",
+  "Long black coat",
+  "Black coat, round sunglasses",
+  "Black coat, black boots",
+  "All black, runway",
 ].map(sample);
 
 const OPEN = opens("connect");
 const CLOSE = closes("connect");
-const TYPE = OPEN + 300;
+const TYPE = OPEN + 400;
 const CALL = OPEN + 1700;
 const FOUND = OPEN + 2300;
-const SAY = OPEN + 2700;
+const SAY = OPEN + 2750;
 
 const appear = (t: number, at: number, rise = 10) =>
   styled(envelope(t, at, Number.POSITIVE_INFINITY, { duration: 500, rise }));
@@ -67,7 +67,7 @@ export function Terminal({ t }: { t: number }) {
           </span>
           <b>pond · search_saves</b>
           <span className={styles.muted}>
-            {' (MCP)(query: "knitwear", limit: 4)'}
+            {' (MCP)(query: "black coat", limit: 4)'}
           </span>
         </p>
         <div className={styles.result} style={appear(t, FOUND)}>
@@ -100,7 +100,7 @@ export function Terminal({ t }: { t: number }) {
                 // biome-ignore lint/suspicious/noArrayIndexKey: words are static
                 key={`${index}-${word}`}
                 className={styles.word}
-                style={appear(t, SAY + 80 + index * 40, 6)}
+                style={appear(t, SAY + 80 + index * 62, 6)}
               >
                 {word}
               </span>

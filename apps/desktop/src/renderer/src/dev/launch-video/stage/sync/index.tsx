@@ -12,7 +12,7 @@ import {
 } from "../timeline";
 import styles from "./styles.module.css";
 
-const START = BEATS.sync[0] + 2550;
+const START = BEATS.sync[0] + 2980;
 const EXIT = closes("sync");
 const TILE = 72;
 const TILE_GAP = 26;
@@ -32,9 +32,11 @@ const iconX = (k: number) =>
   k * (TILE + TILE_GAP) +
   TILE / 2;
 
+const FLOW = START + 950;
+const SPAN = 2200;
+
 const CARDS_LAID = (() => {
   const heights = Array.from({ length: COLUMNS }, () => WALL_Y);
-  let launch = START + 700;
   return Array.from({ length: CARDS }, (_, k) => {
     const entry = SAMPLES[(k * 5 + 3) % SAMPLES.length] ?? SAMPLES[0];
     if (!entry) throw new Error("sync: no samples");
@@ -42,18 +44,15 @@ const CARDS_LAID = (() => {
     const h = COLUMN / entry.aspect;
     const y = heights[column] ?? WALL_Y;
     heights[column] = y + h + GUTTER;
-    const source = k % BRANDS.length;
-    const card = {
+    return {
       id: entry.id,
-      source,
+      source: k % BRANDS.length,
       x: WALL_X + column * (COLUMN + GUTTER),
       y,
       h,
-      launch,
+      launch: FLOW + SPAN * Math.sqrt(k / CARDS),
       spin: ((k * 37) % 25) - 12,
     };
-    launch += mix(100, 16, k / (CARDS - 1));
-    return card;
   });
 })();
 
@@ -65,8 +64,8 @@ export function Sync({ t }: { t: number }) {
   for (const card of CARDS_LAID) {
     landed += progress(t, card.launch + FLIGHT * 0.55, 250);
   }
-  const count = Math.round(TOTAL * ease.in(landed / CARDS) ** 0.6);
-  const counter = envelope(t, START + 500, EXIT, { rise: 12 });
+  const count = Math.round((TOTAL * landed) / CARDS);
+  const counter = envelope(t, START + 850, EXIT, { rise: 12 });
   return (
     <div className={styles.scene} style={styled(out)}>
       {CARDS_LAID.map((card) => {
