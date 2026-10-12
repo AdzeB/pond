@@ -4,7 +4,6 @@ import {
   IconFolderBolt,
   IconFolderImport,
   IconMagnifier,
-  IconMediaPlay,
 } from "@pond/icons";
 import { Logo } from "@pond/ui/logo";
 import { brand } from "../../../stage/brands";
@@ -139,18 +138,10 @@ const BARS = Array.from({ length: 38 }, (_, index) => {
 });
 const SPOKEN = "This wave only breaks a few days a year.".split(" ");
 
-const VIDEO = sample("The Tofino Riders: A 1,000 Year-Old-Wave");
-
 function Transcript({ t, at }: ArtProps) {
   const head = progress(t, at, 2600);
   return (
     <div className={styles.transcript}>
-      <span className={styles.poster}>
-        <img alt="" src={cover(VIDEO.id)} className={styles.video} />
-        <span className={styles.play}>
-          <IconMediaPlay size={16} />
-        </span>
-      </span>
       <div className={styles.wave}>
         {BARS.map((height, index) => (
           <span
@@ -220,24 +211,26 @@ function Eagle({ t, at }: ArtProps) {
         <IconFolderImport size={15} />
         Eagle Library
       </div>
-      {FOLDERS.map((folder, index) => {
-        const begins = at + 200 + index * 300;
-        const fill = ease.out(progress(t, begins, 360));
-        return (
-          <div key={folder.name} className={styles.branch}>
-            <IconFolder size={14} />
-            <span className={styles.name}>{folder.name}</span>
-            <span className={styles.tally}>
-              {Math.round(folder.count * fill)}
-            </span>
-            {fill >= 1 ? (
-              <IconCircleCheckFill size={14} className={styles.check} />
-            ) : (
-              <span className={styles.pending} />
-            )}
-          </div>
-        );
-      })}
+      <div className={styles.folders}>
+        {FOLDERS.map((folder, index) => {
+          const begins = at + 200 + index * 300;
+          const fill = ease.out(progress(t, begins, 360));
+          return (
+            <div key={folder.name} className={styles.branch}>
+              <IconFolder size={14} />
+              <span className={styles.name}>{folder.name}</span>
+              <span className={styles.tally}>
+                {Math.round(folder.count * fill)}
+              </span>
+              {fill >= 1 ? (
+                <IconCircleCheckFill size={14} className={styles.check} />
+              ) : (
+                <span className={styles.pending} />
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -345,7 +338,7 @@ function Model({ t, at }: ArtProps) {
             className={styles.face}
             style={{
               background: face.shade,
-              transform: `${face.turn} translateZ(55px)`,
+              transform: `${face.turn} translateZ(36px)`,
             }}
           />
         ))}
@@ -424,6 +417,30 @@ function Syncing({ t, at }: ArtProps) {
   );
 }
 
+const SUGGESTED = ["outerwear", "brown", "fall"];
+
+function Tags({ t, at }: ArtProps) {
+  return (
+    <div className={styles.suggestions}>
+      {SUGGESTED.map((tag, index) => (
+        <span
+          key={tag}
+          className={styles.suggestion}
+          data-applied={t >= at + 1100 + index * 260 || undefined}
+          style={pop(t, at + 200 + index * 120, 6)}
+        >
+          {t >= at + 1100 + index * 260 ? (
+            <IconCircleCheckFill size={12} />
+          ) : (
+            <span className={styles.plus}>+</span>
+          )}
+          {tag}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function Stat({ value, detail }: { value: string; detail: string }) {
   return (
     <div className={styles.stat}>
@@ -446,5 +463,6 @@ export const Art = {
   Model,
   Libraries,
   Syncing,
+  Tags,
   Stat,
 };
