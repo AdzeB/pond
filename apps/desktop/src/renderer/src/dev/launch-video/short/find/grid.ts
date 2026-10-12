@@ -60,14 +60,25 @@ export const BROWN = pick([
   "Grey suit, white shirt",
 ]);
 
-const COLUMNS = 6;
-export const CARD = { width: 200, image: 250, row: 316, gap: 18 };
-const GRID = { x: 24, y: 142 };
+const COLUMNS = 7;
+const GAP = 16;
+/** The caption under each thumbnail: a 12px gap, then title and date. */
+const CAPTION = 44;
+export const CARD = { width: 130, caption: CAPTION };
+const GRID = { x: 20, y: 109 };
 
-const slot = (index: number) => ({
-  x: GRID.x + (index % COLUMNS) * (CARD.width + CARD.gap),
-  y: GRID.y + Math.floor(index / COLUMNS) * CARD.row,
-});
+export const imageHeight = (entry: Sample) => CARD.width / entry.aspect;
+
+/** Waterfall slots, each card dropping into the shortest column like the library does. */
+function waterfall(list: readonly Sample[]) {
+  const heights = Array.from({ length: COLUMNS }, () => 0);
+  return list.map((entry) => {
+    const column = heights.indexOf(Math.min(...heights));
+    const y = heights[column] ?? 0;
+    heights[column] = y + imageHeight(entry) + CAPTION + GAP;
+    return { x: GRID.x + column * (CARD.width + GAP), y: GRID.y + y };
+  });
+}
 
 export interface Step {
   at: number;
@@ -82,25 +93,25 @@ export interface Placed {
   opacity: number;
 }
 
-/** Every card's place at `t`: shared cards glide between slots, others fade in or out where they stand. */
+/** Every card's place at `t`: shared cards glide from the last step's slots, others fade where they stand. */
 export function place(t: number, steps: readonly Step[]): Placed[] {
-  const ids = new Map<string, Sample>();
-  for (const step of steps)
-    for (const entry of step.list) ids.set(entry.id, entry);
   let index = 0;
   while (index < steps.length - 1 && t >= (steps[index + 1]?.at ?? 0)) index++;
-  const from = steps[index];
-  const to = steps[index + 1];
-  if (!from) return [];
+  const to = steps[index];
+  const from = steps[index - 1] ?? to;
+  if (!from || !to) return [];
+  const before = waterfall(from.list);
+  const after = waterfall(to.list);
+  const ids = new Map<string, Sample>();
+  for (const entry of [...from.list, ...to.list]) ids.set(entry.id, entry);
   return [...ids.values()].flatMap((entry) => {
     const a = from.list.findIndex((item) => item.id === entry.id);
-    const b = to ? to.list.findIndex((item) => item.id === entry.id) : -1;
+    const b = to.list.findIndex((item) => item.id === entry.id);
     const order = Math.max(a, b, 0);
-    const k = to ? ease.inOut(progress(t, to.at + order * 14, 620)) : 0;
-    if (a < 0 && b < 0) return [];
-    if (a >= 0 && b >= 0) {
-      const p = slot(a);
-      const q = slot(b);
+    const p = before[a];
+    const q = after[b];
+    if (p && q) {
+      const k = ease.inOut(progress(t, to.at + order * 14, 620));
       return [
         {
           entry,
@@ -111,15 +122,12 @@ export function place(t: number, steps: readonly Step[]): Placed[] {
         },
       ];
     }
-    if (a >= 0) {
-      const p = slot(a);
-      const gone = to ? ease.out(progress(t, to.at + order * 10, 320)) : 0;
+    if (p) {
+      const gone = ease.out(progress(t, to.at + order * 10, 320));
       return [{ entry, ...p, scale: mix(1, 0.9, gone), opacity: 1 - gone }];
     }
-    const q = slot(b);
-    const come = ease.outQuint(
-      progress(t, (to?.at ?? 0) + 180 + order * 14, 600),
-    );
+    if (!q) return [];
+    const come = ease.outQuint(progress(t, to.at + 180 + order * 14, 600));
     return [{ entry, ...q, scale: mix(0.9, 1, come), opacity: come }];
   });
 }

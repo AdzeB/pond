@@ -8,6 +8,7 @@ export interface Sample {
   source: WireSave["source"];
   folder: string;
   aspect: number;
+  time: string;
 }
 
 interface Entry extends Omit<Sample, "aspect"> {
@@ -24,6 +25,7 @@ export const SAMPLES: readonly Sample[] = data.saves.map((entry) => ({
   source: entry.source,
   folder: entry.folder,
   aspect: (entry.file.width ?? 4) / (entry.file.height ?? 5),
+  time: entry.time,
 }));
 
 export const cover = (id: string) => `pond://${id}/cover.jpg`;

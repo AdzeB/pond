@@ -27,7 +27,6 @@ import {
   styled,
 } from "../../stage/timeline";
 import { lens, track, WHOLE } from "../camera";
-import { Mac } from "../mac";
 import { center, useBoxes } from "../measure";
 import { Morph } from "../morph";
 import { end, live, start } from "../timeline";
@@ -90,7 +89,12 @@ export function Save({ t }: { t: number }) {
         visibility: live(t, "save") ? undefined : "hidden",
       }}
     >
-      <Mac.Window ref={win} className={styles.browser} style={styled(e)}>
+      <div ref={win} className={styles.browser} style={styled(e)}>
+        <span className={styles.lights}>
+          <i />
+          <i />
+          <i />
+        </span>
         <header className={styles.toolbar}>
           <span className={styles.history}>
             <IconChevronLeft size={20} />
@@ -213,7 +217,7 @@ export function Save({ t }: { t: number }) {
             clamp((t - S - 400) / 250) * (1 - progress(t, PRESS + 350, 300))
           }
         />
-      </Mac.Window>
+      </div>
     </div>
   );
 }

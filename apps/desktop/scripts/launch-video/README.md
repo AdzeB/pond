@@ -56,7 +56,7 @@ ffmpeg -i .tmp/launch-video/out/short.mp4 -i short.m4a -map 0:v -map 1:a \
   -c:a copy -shortest short-cut.mp4
 ```
 
-Its scenes live in `src/renderer/src/dev/launch-video/short/`. `timeline.ts` holds the scenes, `camera.ts` holds the crop helpers, and `mac/` draws the window and sidebar the Find and Ask scenes share.
+Its scenes live in `src/renderer/src/dev/launch-video/short/`. `timeline.ts` holds the scenes, `camera.ts` holds the crop helpers, and `mac/` redraws Pond's window, sidebar, and panel at the app's real sizes for Find and Ask.
 
 ## Storyboard
 

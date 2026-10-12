@@ -5,11 +5,47 @@
 }
 
 .browser {
+  position: absolute;
   top: 100px;
   left: 200px;
   width: 1520px;
   height: 880px;
+  overflow: hidden;
+  font-size: 17px;
+  font-weight: 500;
   color: #0f1419;
+  background: #f3f3f2;
+  border-radius: 20px;
+  box-shadow:
+    0 40px 90px -40px rgb(0 0 0 / 0.28),
+    0 12px 32px -12px rgb(0 0 0 / 0.1);
+
+  & svg {
+    flex: none;
+  }
+}
+
+.lights {
+  position: absolute;
+  top: 29px;
+  left: 22px;
+  display: flex;
+  gap: 9px;
+
+  & i {
+    width: 14px;
+    height: 14px;
+    background: #ff5f57;
+    border-radius: 50%;
+  }
+
+  & i:nth-child(2) {
+    background: #febc2e;
+  }
+
+  & i:nth-child(3) {
+    background: #28c840;
+  }
 }
 
 .toolbar {
