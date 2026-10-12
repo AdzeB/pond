@@ -1,0 +1,20 @@
+.row {
+  position: absolute;
+  top: 540px;
+  left: 960px;
+  display: flex;
+  gap: 28px;
+  align-items: center;
+  width: max-content;
+  margin: 0;
+  font-size: 52px;
+  font-weight: 560;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+  translate: -50% -50%;
+}
+
+.bar {
+  font-weight: 300;
+  color: #cfcfca;
+}

@@ -83,3 +83,4 @@ apps/desktop/src/renderer/src/generated/
 .pnpm-store/
 .tmp/
 brag-output/
+brag-output-*/

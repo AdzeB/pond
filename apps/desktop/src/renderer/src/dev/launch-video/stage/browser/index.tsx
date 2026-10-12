@@ -24,10 +24,6 @@ import styles from "./styles.module.css";
 
 const POST = sample("gm");
 const AVATAR = sample("Ikebana");
-const OPEN = opens("save");
-const CLOSE = closes("save");
-const PRESS = OPEN + 1550;
-const SAVED = PRESS + 60;
 
 const NAV = [
   { label: "Home", Icon: IconHouse },
@@ -37,28 +33,46 @@ const NAV = [
   { label: "Profile", Icon: IconUser },
 ];
 
+interface BrowserProps {
+  t: number;
+  open?: number;
+  close?: number;
+  /** When the bookmark is pressed. */
+  press?: number;
+}
+
 /** An X post in the browser, bookmarked once, with Pond's extension confirming the copy. */
-export function Browser({ t }: { t: number }) {
+export function Browser({
+  t,
+  open = opens("save"),
+  close = closes("save"),
+  press = open + 1550,
+}: BrowserProps) {
+  const done = press + 60;
   const root = useRef<HTMLDivElement>(null);
   const target = useRef<HTMLSpanElement>(null);
   const mark = useLayout(
     () => {
-      const a = root.current?.getBoundingClientRect();
+      const el = root.current;
+      const a = el?.getBoundingClientRect();
       const b = target.current?.getBoundingClientRect();
-      return a && b
-        ? { x: b.x - a.x + b.width / 2, y: b.y - a.y + b.height / 2 }
-        : { x: 0, y: 0 };
+      if (!el || !a || !b) return { x: 0, y: 0 };
+      const unscale = el.offsetWidth / a.width;
+      return {
+        x: (b.x - a.x + b.width / 2) * unscale,
+        y: (b.y - a.y + b.height / 2) * unscale,
+      };
     },
     { x: 0, y: 0 },
   );
-  const w = lift(t, OPEN, CLOSE);
-  const saved = t >= SAVED;
-  const pop = ease.outQuint(progress(t, SAVED, 450));
-  const toast = ease.outQuint(progress(t, SAVED + 120, 500));
-  const badge = ease.outQuint(progress(t, SAVED + 260, 450));
-  const travel = ease.inOut(progress(t, OPEN + 500, 950));
-  const away = ease.inOut(progress(t, SAVED + 300, 700));
-  const pressing = t >= PRESS && t < PRESS + 140;
+  const w = lift(t, open, close);
+  const saved = t >= done;
+  const pop = ease.outQuint(progress(t, done, 450));
+  const toast = ease.outQuint(progress(t, done + 120, 500));
+  const badge = ease.outQuint(progress(t, done + 260, 450));
+  const travel = ease.inOut(progress(t, press - 1050, 950));
+  const away = ease.inOut(progress(t, done + 300, 700));
+  const pressing = t >= press && t < press + 140;
   return (
     <div
       ref={root}
@@ -189,7 +203,7 @@ export function Browser({ t }: { t: number }) {
         x={mix(860, mark.x, travel) + away * 70}
         y={mix(640, mark.y, travel) + away * 60}
         scale={pressing ? 0.86 : 1}
-        opacity={clamp((t - OPEN - 400) / 200)}
+        opacity={clamp((t - press + 1150) / 200)}
       />
     </div>
   );

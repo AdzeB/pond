@@ -41,6 +41,23 @@ Run each step from `apps/desktop`.
 
 `probe.cjs` boots one page and saves a screenshot plus a log of bridge calls. Use it to find missing query handlers.
 
+## Short cut
+
+`launch-video-short.html` is a 25.5 second cut for posting. It types "Introducing Pond", drops the sources into a folder, then pushes the camera into Save, Find, and Ask before a values row and the `pond.app` end card. Capture it with `--page`, then mix "Happy Beats vol. 1" from 41 seconds, so the lift lands on Save and the hit on the end card.
+
+```bash
+./node_modules/.bin/electron scripts/launch-video/capture.cjs \
+  --page=launch-video-short.html --out=.tmp/launch-video/out/short.mp4
+ffmpeg -ss 41 -t 25.5 \
+  -i ../../.agents/skills/brag/assets/music/happy-beats-business-moves-vol-1-by-ende-dot-app.mp3 \
+  -af "afade=t=in:d=0.08,afade=t=out:st=24.3:d=1.2,volume=0.9" -c:a aac -b:a 192k short.m4a
+ffmpeg -i .tmp/launch-video/out/short.mp4 -i short.m4a -map 0:v -map 1:a \
+  -c:v libx264 -preset slow -crf 17 -pix_fmt yuv420p -movflags +faststart \
+  -c:a copy -shortest short-cut.mp4
+```
+
+Its scenes live in `src/renderer/src/dev/launch-video/short/`. `timeline.ts` holds the scenes, `camera.ts` holds the crops for the app and its pointer, and `script.ts` holds the actions inside the app.
+
 ## Storyboard
 
 | Time (s) | Beat | On screen |

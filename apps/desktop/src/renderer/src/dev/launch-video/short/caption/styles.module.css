@@ -1,0 +1,34 @@
+.caption {
+  position: absolute;
+  left: 960px;
+  z-index: 20;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  transform: translate(-50%, -50%);
+}
+
+.pill {
+  padding: 6px 18px 7px;
+  font-size: 26px;
+  font-weight: 500;
+  color: #5c5c58;
+  white-space: nowrap;
+  border: 1.5px solid rgb(0 0 0 / 0.16);
+  border-radius: 999px;
+}
+
+.lines {
+  display: inline-grid;
+
+  & > * {
+    grid-area: 1 / 1;
+  }
+}
+
+.line {
+  font-size: 40px;
+  font-weight: 540;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}

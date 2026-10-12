@@ -21,6 +21,7 @@ const fps = Number(arg("fps", 30));
 const from = Number(arg("from", 0));
 const to = arg("to", "");
 const video = arg("out", join(out, "stage.mp4"));
+const page = arg("page", "launch-video.html");
 
 registerSchemes();
 app.commandLine.appendSwitch("force-device-scale-factor", "1");
@@ -55,7 +56,7 @@ app.whenReady().then(async () => {
     if (e.level === "error") errors.push(e.message);
   });
   const stage = (code) => win.webContents.executeJavaScript(code);
-  void win.loadURL("stage://stage/launch-video.html");
+  void win.loadURL(`stage://stage/${page}`);
   await new Promise((r) => win.webContents.once("did-finish-load", r));
   await stage(
     "new Promise((r) => { const tick = () => (window.__stage ? r() : setTimeout(tick, 50)); tick(); })",

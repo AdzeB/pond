@@ -1,0 +1,5 @@
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background-color: #f5f5f2;
+}

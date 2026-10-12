@@ -14,6 +14,7 @@ export default mergeConfig(gallery, {
       input: {
         app: resolve(renderer, "launch-video-app.html"),
         stage: resolve(renderer, "launch-video.html"),
+        short: resolve(renderer, "launch-video-short.html"),
       },
     },
   },

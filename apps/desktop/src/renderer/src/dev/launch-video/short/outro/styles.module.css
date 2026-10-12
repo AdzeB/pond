@@ -1,0 +1,70 @@
+.mark {
+  position: absolute;
+  top: 370px;
+  left: 960px;
+  display: grid;
+  color: #111;
+}
+
+.field {
+  position: absolute;
+  top: 500px;
+  left: 660px;
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  width: 600px;
+  height: 96px;
+  padding: 0 36px;
+  font-size: 42px;
+  font-weight: 520;
+  letter-spacing: -0.02em;
+  white-space: pre;
+  background: #fff;
+  border-radius: 48px;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.06),
+    0 2px 4px rgb(0 0 0 / 0.03),
+    0 40px 80px -36px rgb(20 30 60 / 0.22);
+}
+
+.icon {
+  flex: none;
+  color: #9a9a96;
+}
+
+.text {
+  display: flex;
+  align-items: center;
+}
+
+.caret {
+  width: 3px;
+  height: 46px;
+  margin-left: 2px;
+  background: #008fff;
+  border-radius: 2px;
+}
+
+.button {
+  position: absolute;
+  top: 640px;
+  left: 960px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  height: 72px;
+  padding: 0 34px;
+  font-size: 28px;
+  font-weight: 540;
+  color: #fff;
+  white-space: nowrap;
+  background: #111;
+  border-radius: 36px;
+  translate: -50% 0;
+}
+
+.apple {
+  width: 26px;
+  height: 26px;
+}

@@ -1,0 +1,24 @@
+.window {
+  position: absolute;
+  z-index: 10;
+  overflow: hidden;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.06),
+    0 2px 4px rgb(0 0 0 / 0.03),
+    0 50px 100px -40px rgb(20 30 60 / 0.25);
+}
+
+.view {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+}
+
+/* The browser scene pins its window at the stage's 320, 290. */
+.page {
+  position: absolute;
+  top: -290px;
+  left: -320px;
+}

@@ -1,0 +1,14 @@
+.glow {
+  display: inline-grid;
+
+  & > * {
+    grid-area: 1 / 1;
+  }
+}
+
+.tint {
+  color: transparent;
+  background: linear-gradient(100deg, #008fff 0%, #7b6cff 55%, #20c4c8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
