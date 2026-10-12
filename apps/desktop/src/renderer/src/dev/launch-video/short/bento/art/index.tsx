@@ -6,6 +6,8 @@ import {
   IconMagnifier,
   IconMediaPlay,
 } from "@pond/icons";
+import { Logo } from "@pond/ui/logo";
+import { brand } from "../../../stage/brands";
 import { cover, sample } from "../../../stage/media";
 import {
   clamp,
@@ -70,7 +72,7 @@ function Raycast({ t, at }: ArtProps) {
 }
 
 function Smart({ t, at }: ArtProps) {
-  const saves = BROWN;
+  const saves = BROWN.slice(0, 5);
   const count = saves.filter((_, index) => t >= at + 500 + index * 150).length;
   return (
     <div className={styles.smart}>
@@ -205,7 +207,7 @@ function Similar({ t, at }: ArtProps) {
 }
 
 const FOLDERS = [
-  { name: "Moodboards", count: 214 },
+  { name: "Posters", count: 214 },
   { name: "Typography", count: 96 },
   { name: "Fashion", count: 388 },
   { name: "Interiors", count: 143 },
@@ -320,6 +322,109 @@ function Specimen({ t, at }: ArtProps) {
   );
 }
 
+const FACES = [
+  { turn: "rotateY(0deg)", shade: "#ffffff" },
+  { turn: "rotateY(90deg)", shade: "#e9e9ec" },
+  { turn: "rotateY(180deg)", shade: "#dcdce0" },
+  { turn: "rotateY(-90deg)", shade: "#f1f1f3" },
+  { turn: "rotateX(90deg)", shade: "#fafafa" },
+  { turn: "rotateX(-90deg)", shade: "#cfcfd4" },
+];
+
+function Model({ t, at }: ArtProps) {
+  return (
+    <div className={styles.model}>
+      <div
+        className={styles.cube}
+        style={{
+          transform: `rotateX(-28deg) rotateY(${20 + (t - at) * 0.01}deg)`,
+        }}
+      >
+        {FACES.map((face) => (
+          <span
+            key={face.turn}
+            className={styles.face}
+            style={{
+              background: face.shade,
+              transform: `${face.turn} translateZ(55px)`,
+            }}
+          />
+        ))}
+      </div>
+      <span className={styles.floor} />
+    </div>
+  );
+}
+
+const LIBRARIES = [
+  { name: "Personal", count: "2,431" },
+  { name: "Studio", count: "864" },
+  { name: "Archive", count: "12,077" },
+];
+
+function Libraries({ t, at }: ArtProps) {
+  const active = t >= at + 1000 ? 1 : 0;
+  return (
+    <div className={styles.libraries}>
+      {LIBRARIES.map((library, index) => (
+        <div
+          key={library.name}
+          className={styles.library}
+          data-active={index === active || undefined}
+          style={pop(t, at + index * 100, 8)}
+        >
+          <Logo size={20} aria-hidden />
+          <span className={styles.file}>
+            <span className={styles.name}>{library.name}</span>
+            <span className={styles.meta}>{library.count} saves</span>
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const LANES = [
+  { id: "x", total: 120, rate: 0.75 },
+  { id: "pinterest", total: 64, rate: 0.55 },
+  { id: "arena", total: 38, rate: 0 },
+];
+
+function Syncing({ t, at }: ArtProps) {
+  return (
+    <div className={styles.sync}>
+      {LANES.map((lane, index) => {
+        const { Icon, name } = brand(lane.id);
+        const paused = lane.rate === 0;
+        const steps = Math.floor(progress(t, at + index * 120, 3000) * 8) / 8;
+        const done = Math.round(lane.total * (0.2 + steps * lane.rate * 0.8));
+        return (
+          <div
+            key={lane.id}
+            className={styles.lane}
+            data-paused={paused || undefined}
+            style={pop(t, at + index * 100, 6)}
+          >
+            <Icon className={styles.brand} />
+            <span className={styles.service}>{name}</span>
+            <span className={styles.track}>
+              <span
+                className={styles.fill}
+                style={{
+                  width: `${(paused ? 0.35 : done / lane.total) * 100}%`,
+                }}
+              />
+            </span>
+            <span className={styles.status}>
+              {paused ? "Paused" : `${done} of ${lane.total}`}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function Stat({ value, detail }: { value: string; detail: string }) {
   return (
     <div className={styles.stat}>
@@ -339,5 +444,8 @@ export const Art = {
   Duplicates,
   Formats,
   Specimen,
+  Model,
+  Libraries,
+  Syncing,
   Stat,
 };

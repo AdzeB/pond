@@ -9,7 +9,7 @@
   inset: 24px;
   display: grid;
   grid-template-rows: repeat(4, minmax(0, 1fr));
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -36,12 +36,12 @@
   align-items: center;
   justify-content: center;
   min-height: 0;
-  padding: 22px 24px 0;
+  padding: 20px 20px 0;
 }
 
 .label {
-  padding: 14px 20px 24px;
-  font-size: 21px;
+  padding: 12px 14px 22px;
+  font-size: 19px;
   font-weight: 600;
   color: #171717;
   text-align: center;

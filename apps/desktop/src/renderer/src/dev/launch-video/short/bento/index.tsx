@@ -17,52 +17,52 @@ interface Tile {
 const TILES: Tile[] = [
   {
     id: "raycast",
-    column: "1",
+    column: "1 / span 2",
     row: "1 / span 2",
     label: "Raycast",
     art: (t, at) => <Art.Raycast t={t} at={at} />,
   },
   {
     id: "smart",
-    column: "2 / span 3",
+    column: "3 / span 3",
     row: "1",
     label: "Smart Folders",
     art: (t, at) => <Art.Smart t={t} at={at} />,
   },
   {
     id: "cli",
-    column: "5 / span 2",
+    column: "6 / span 2",
     row: "1",
     label: "CLI",
     art: (t, at) => <Art.Cli t={t} at={at} />,
   },
   {
-    id: "transcription",
-    column: "2",
-    row: "2 / span 2",
-    label: "Transcription",
-    art: (t, at) => <Art.Transcript t={t} at={at} />,
-  },
-  { id: "hero", column: "3 / span 2", row: "2 / span 2", art: () => null },
-  {
     id: "similar",
-    column: "5",
-    row: "2 / span 2",
+    column: "8",
+    row: "1 / span 2",
     label: "Visual Similarity",
     art: (t, at) => <Art.Similar t={t} at={at} />,
   },
   {
-    id: "free",
+    id: "transcription",
+    column: "3",
+    row: "2 / span 2",
+    label: "Transcription",
+    art: (t, at) => <Art.Transcript t={t} at={at} />,
+  },
+  { id: "hero", column: "4 / span 2", row: "2 / span 2", art: () => null },
+  {
+    id: "models",
     column: "6",
-    row: "2",
-    art: () => <Art.Stat value="Free" detail="and open source" />,
+    row: "2 / span 2",
+    label: "3D Models",
+    art: (t, at) => <Art.Model t={t} at={at} />,
   },
   {
-    id: "fonts",
-    column: "6",
-    row: "3",
-    label: "Font Specimens",
-    art: (t, at) => <Art.Specimen t={t} at={at} />,
+    id: "free",
+    column: "7",
+    row: "2",
+    art: () => <Art.Stat value="Free" detail="and open source" />,
   },
   {
     id: "eagle",
@@ -72,24 +72,47 @@ const TILES: Tile[] = [
     art: (t, at) => <Art.Eagle t={t} at={at} />,
   },
   {
+    id: "libraries",
+    column: "2",
+    row: "3 / span 2",
+    label: "Multiple Libraries",
+    art: (t, at) => <Art.Libraries t={t} at={at} />,
+  },
+  {
     id: "duplicates",
-    column: "2 / span 2",
-    row: "4",
+    column: "7 / span 2",
+    row: "3",
     label: "Find Duplicates",
     art: (t, at) => <Art.Duplicates t={t} at={at} />,
   },
   {
     id: "formats",
-    column: "4 / span 2",
+    column: "3 / span 2",
     row: "4",
     label: "140+ File Formats",
     art: (t, at) => <Art.Formats t={t} at={at} />,
   },
   {
-    id: "mac",
-    column: "6",
+    id: "syncing",
+    column: "5 / span 2",
     row: "4",
-    art: () => <Art.Stat value="macOS 12+" detail="Apple silicon and Intel" />,
+    label: "Paced Syncing",
+    art: (t, at) => <Art.Syncing t={t} at={at} />,
+  },
+  {
+    id: "fonts",
+    column: "7",
+    row: "4",
+    label: "Font Specimens",
+    art: (t, at) => <Art.Specimen t={t} at={at} />,
+  },
+  {
+    id: "mac",
+    column: "8",
+    row: "4",
+    art: () => (
+      <Art.Stat value="macOS" detail="12 or later, Apple silicon and Intel" />
+    ),
   },
 ];
 
@@ -100,7 +123,7 @@ const span = (track: string) => {
 
 /** Tiles arrive outward from the hero at the grid's center. */
 const distance = (tile: Tile) =>
-  Math.hypot(span(tile.column) - 3.5, (span(tile.row) - 2.5) * 1.4);
+  Math.hypot(span(tile.column) - 4.5, (span(tile.row) - 2.5) * 1.4);
 
 /** Features the cut never shows, edge to edge around the line that says there are more. */
 export function Bento({ t }: { t: number }) {
@@ -130,7 +153,7 @@ export function Bento({ t }: { t: number }) {
               }}
             >
               <div className={styles.art}>
-                {tile.art(t, open + 650 + index * 90)}
+                {tile.art(t, open + 650 + index * 70)}
               </div>
               {tile.label ? (
                 <span className={styles.label}>{tile.label}</span>
