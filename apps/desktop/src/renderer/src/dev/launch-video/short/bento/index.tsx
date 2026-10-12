@@ -51,11 +51,11 @@ const TILES: Tile[] = [
   },
   { id: "hero", column: "4 / span 2", row: "2 / span 2", art: () => null },
   {
-    id: "titles",
+    id: "api",
     column: "6",
     row: "2",
-    label: "Generated Titles",
-    art: (t, at) => <Art.Titles t={t} at={at} />,
+    label: "Local API",
+    art: (t, at) => <Art.Api t={t} at={at} />,
   },
   {
     id: "similar",

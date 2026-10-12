@@ -457,28 +457,26 @@ function Extension({ t, at }: ArtProps) {
   );
 }
 
-const GENERATED = "Black coat, round sunglasses".split(" ");
+const REQUESTS = ["/library/query", "/saves/get", "/library/recent"];
 
-function Titles({ t, at }: ArtProps) {
-  const strike = ease.inOut(progress(t, at + 400, 400));
+function Api({ t, at }: ArtProps) {
   return (
-    <div className={styles.titles}>
-      <span className={styles.filename}>
-        IMG_4021.jpg
-        <span className={styles.strike} style={{ width: `${strike * 100}%` }} />
+    <div className={styles.api}>
+      <span className={styles.listening}>
+        <span className={styles.live} />
+        Listening
       </span>
-      <span className={styles.generated}>
-        {GENERATED.map((word, index) => (
-          <span
-            // biome-ignore lint/suspicious/noArrayIndexKey: words are static
-            key={index}
-            className={styles.term}
-            style={pop(t, at + 900 + index * 90, 4)}
-          >
-            {word}
-          </span>
-        ))}
-      </span>
+      <span className={styles.host}>127.0.0.1:41610</span>
+      {REQUESTS.map((path, index) => (
+        <span
+          key={path}
+          className={styles.request}
+          style={pop(t, at + 600 + index * 380, 4)}
+        >
+          {path}
+          <span className={styles.ok}>200</span>
+        </span>
+      ))}
     </div>
   );
 }
@@ -527,6 +525,6 @@ export const Art = {
   Libraries,
   Syncing,
   Extension,
-  Titles,
+  Api,
   Reader,
 };
