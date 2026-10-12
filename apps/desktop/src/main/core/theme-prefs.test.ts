@@ -4,10 +4,10 @@ import {
   getPreset,
   isCustomTheme,
   lightPresets,
+  normalizeTheme,
   PrefsSchema,
   resolveActiveTheme,
   THEME_PRESETS,
-  themeCssVars,
 } from "@pond/schema/db";
 import { describe, expect, it } from "vitest";
 
@@ -65,12 +65,29 @@ describe("theme prefs rebuild", () => {
     expect(isCustomTheme("missing", DEFAULT_LIGHT_THEME)).toBe(true);
   });
 
-  it("emits css anchors from themeCssVars", () => {
+  it("normalizes stored colors and derives the mode", () => {
     const prefs = PrefsSchema.parse({});
-    const v = themeCssVars(prefs.preferences.light);
-    expect(v.isDark).toBe(false);
-    expect(v.bgL).toBeGreaterThan(0.9);
-    expect(v.fgL).toBeLessThan(0.4);
-    expect(v.background).toBe("#ffffff");
+    expect(normalizeTheme(prefs.preferences.light)).toEqual({
+      background: "#ffffff",
+      foreground: "#1b1b1b",
+      accent: "#008fff",
+      contrast: 50,
+      mode: "light",
+    });
+    expect(normalizeTheme(prefs.preferences.dark).mode).toBe("dark");
+    expect(
+      normalizeTheme({
+        background: "nope",
+        foreground: "#EEE",
+        accent: "",
+        contrast: 400,
+      }),
+    ).toEqual({
+      background: "#ffffff",
+      foreground: "#eeeeee",
+      accent: "#008fff",
+      contrast: 100,
+      mode: "light",
+    });
   });
 });

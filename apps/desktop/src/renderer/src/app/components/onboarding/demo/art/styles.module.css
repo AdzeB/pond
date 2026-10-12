@@ -10,15 +10,15 @@
 
   &[data-kind="sunset"] {
     background: linear-gradient(
-      color-mix(in oklab, var(--ds-blue-6) 30%, var(--ds-gray-3)),
-      color-mix(in oklab, var(--ds-orange-6) 45%, var(--ds-gray-3))
+      color-mix(in oklab, var(--ds-blue-9) 30%, var(--ds-gray-3)),
+      color-mix(in oklab, var(--ds-orange-9) 45%, var(--ds-gray-3))
     );
   }
 
   &[data-kind="mountain"] {
     background: linear-gradient(
-      color-mix(in oklab, var(--ds-blue-6) 28%, var(--ds-gray-2)),
-      color-mix(in oklab, var(--ds-blue-6) 8%, var(--ds-gray-2))
+      color-mix(in oklab, var(--ds-blue-9) 28%, var(--ds-gray-2)),
+      color-mix(in oklab, var(--ds-blue-9) 8%, var(--ds-gray-2))
     );
 
     &::before,
@@ -29,19 +29,19 @@
     }
 
     &::before {
-      background: color-mix(in oklab, var(--ds-green-7) 40%, var(--ds-gray-4));
+      background: color-mix(in oklab, var(--ds-green-9) 40%, var(--ds-gray-4));
       clip-path: polygon(0 100%, 34% 38%, 72% 100%);
     }
 
     &::after {
-      background: color-mix(in oklab, var(--ds-green-8) 55%, var(--ds-gray-5));
+      background: color-mix(in oklab, var(--ds-green-9) 55%, var(--ds-gray-5));
       clip-path: polygon(28% 100%, 66% 24%, 100% 64%, 100% 100%);
     }
   }
 
   &[data-kind="video"] {
     height: 56%;
-    background: linear-gradient(135deg, var(--ds-purple-8), var(--ds-blue-8));
+    background: linear-gradient(135deg, var(--ds-purple-9), var(--ds-blue-9));
 
     &::before {
       position: absolute;
@@ -71,7 +71,7 @@
       width: 60%;
       height: 8px;
       margin-bottom: 4px;
-      background: color-mix(in oklab, var(--ds-red-6) 60%, var(--ds-gray-4));
+      background: color-mix(in oklab, var(--ds-red-9) 60%, var(--ds-gray-4));
     }
 
     > span:last-child {
@@ -94,19 +94,19 @@
     height: 100%;
 
     > span:nth-child(1) {
-      background: color-mix(in oklab, var(--ds-green-6) 55%, var(--ds-gray-3));
+      background: color-mix(in oklab, var(--ds-green-9) 55%, var(--ds-gray-3));
     }
 
     > span:nth-child(2) {
-      background: color-mix(in oklab, var(--ds-yellow-6) 55%, var(--ds-gray-3));
+      background: color-mix(in oklab, var(--ds-yellow-9) 55%, var(--ds-gray-3));
     }
 
     > span:nth-child(3) {
-      background: color-mix(in oklab, var(--ds-orange-6) 55%, var(--ds-gray-3));
+      background: color-mix(in oklab, var(--ds-orange-9) 55%, var(--ds-gray-3));
     }
 
     > span:nth-child(4) {
-      background: color-mix(in oklab, var(--ds-purple-6) 55%, var(--ds-gray-3));
+      background: color-mix(in oklab, var(--ds-purple-9) 55%, var(--ds-gray-3));
     }
   }
 }
@@ -146,7 +146,7 @@
   left: 39%;
   width: 22%;
   aspect-ratio: 1;
-  background: color-mix(in oklab, var(--ds-orange-6) 85%, var(--ds-gray-1));
+  background: color-mix(in oklab, var(--ds-orange-9) 85%, var(--ds-gray-1));
   border-radius: var(--ds-radius-full);
 }
 
@@ -154,5 +154,5 @@
   position: absolute;
   inset: auto 0 0;
   height: 36%;
-  background: color-mix(in oklab, var(--ds-blue-6) 50%, var(--ds-gray-3));
+  background: color-mix(in oklab, var(--ds-blue-9) 50%, var(--ds-gray-3));
 }

@@ -29,11 +29,17 @@
     "./typography.css": "./src/typography/typography.css",
     "./brand.css": "./src/brand/brand.css",
     "./empty.css": "./src/empty/empty.css",
-    "./popup.css": "./src/popup/popup.css"
+    "./popup.css": "./src/popup/popup.css",
+    "./tokens": "./src/colors/tokens.ts"
   },
   "scripts": {
     "generate": "node src/colors/gen.ts",
     "generate:check": "node src/colors/gen.ts --check",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@pond/schema": "workspace:*",
+    "vitest": "catalog:"
   }
 }

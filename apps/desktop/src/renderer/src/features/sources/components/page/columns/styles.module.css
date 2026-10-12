@@ -31,7 +31,7 @@
   }
 
   &[data-status="syncing"] {
-    color: var(--ds-yellow-9);
+    color: var(--ds-yellow-11);
   }
 
   &[data-status="failed"] {

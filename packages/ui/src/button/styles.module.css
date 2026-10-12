@@ -168,19 +168,15 @@
   }
 
   &:where([data-variant="accent"]) {
-    color: var(--ds-gray-1);
+    color: var(--ds-accent-contrast);
     background:
       linear-gradient(var(--ds-white-a2) 0%, var(--ds-white-a1) 100%),
       var(--ds-accent-9);
 
     &:hover,
+    &:active,
     &[data-demo-state="hover"] {
-      color: var(--ds-gray-1);
-      background-color: var(--ds-accent-3);
-    }
-
-    &:active {
-      background-color: var(--ds-accent-4);
+      background-color: var(--ds-accent-10);
     }
 
     &:focus-visible,
@@ -190,17 +186,13 @@
   }
 
   &:where([data-variant="destructive"]) {
-    color: var(--ds-gray-1);
-    background-color: var(--ds-red-6);
+    color: var(--ds-red-contrast);
+    background-color: var(--ds-red-9);
 
     &:hover,
+    &:active,
     &[data-demo-state="hover"] {
-      color: var(--ds-gray-1);
-      background-color: var(--ds-red-4);
-    }
-
-    &:active {
-      background-color: var(--ds-red-3);
+      background-color: var(--ds-red-10);
     }
 
     &:focus-visible,

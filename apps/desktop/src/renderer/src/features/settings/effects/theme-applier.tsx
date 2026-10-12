@@ -1,12 +1,9 @@
-import {
-  P3_CHROMA_BOOST,
-  resolveActiveTheme,
-  themeCssVars,
-} from "@pond/schema/db";
+import { normalizeTheme, resolveActiveTheme } from "@pond/schema/db";
 import { type ShellHint, ShellHintSchema } from "@shared/shell-hint";
 import { useEffect } from "react";
 import { useMediaMatch } from "rooks";
 import { libraryScopedKey } from "@/shared/lib/library-scope";
+import { paintTheme } from "@/shared/lib/paint-theme";
 import { usePrefs } from "@/shared/state/prefs";
 
 const SHELL_KEY = libraryScopedKey("pondShell");
@@ -36,40 +33,12 @@ export function ThemeApplier() {
   );
 
   useEffect(() => {
-    const root = document.documentElement;
-
-    const def = resolveActiveTheme({ preferences: prefs }, prefersDark);
-    const v = themeCssVars(def);
-    const accentC = prefersP3 ? v.accentC * P3_CHROMA_BOOST : v.accentC;
-    root.style.setProperty("--ds-bg-l", String(v.bgL));
-    root.style.setProperty("--ds-bg-c", String(v.bgC));
-    root.style.setProperty("--ds-bg-h", String(v.bgH));
-    root.style.setProperty("--ds-fg-l", String(v.fgL));
-    root.style.setProperty("--ds-fg-c", String(v.fgC));
-    root.style.setProperty("--ds-fg-h", String(v.fgH));
-    root.style.setProperty("--ds-accent-l", String(v.accentL));
-    root.style.setProperty("--ds-accent-c", String(accentC));
-    root.style.setProperty("--ds-accent-h", String(v.accentH));
-    root.style.setProperty("--ds-contrast", String(v.contrast));
-
-    const theme = v.isDark ? "dark" : "light";
-    root.setAttribute("data-theme", theme);
-    root.classList.toggle("dark", v.isDark);
-    root.classList.toggle("light", !v.isDark);
-
-    persistShell({
-      theme,
-      bgL: v.bgL,
-      bgC: v.bgC,
-      bgH: v.bgH,
-      fgL: v.fgL,
-      fgC: v.fgC,
-      fgH: v.fgH,
-      accentL: v.accentL,
-      accentC,
-      accentH: v.accentH,
-      contrast: v.contrast,
-    });
+    const { background, foreground, accent, contrast } = normalizeTheme(
+      resolveActiveTheme({ preferences: prefs }, prefersDark),
+    );
+    const def = { background, foreground, accent, contrast };
+    const theme = paintTheme(def, prefersP3 ? "p3" : "srgb");
+    persistShell({ theme, ...def });
   }, [
     prefs.appearance,
     prefs.light,
