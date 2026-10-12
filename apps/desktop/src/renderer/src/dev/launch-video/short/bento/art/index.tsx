@@ -259,42 +259,73 @@ function Duplicates({ t, at }: ArtProps) {
   );
 }
 
-const FORMATS = [
-  "JPG",
-  "PNG",
-  "GIF",
-  "WEBP",
-  "HEIC",
-  "RAW",
-  "SVG",
-  "MP4",
-  "MOV",
-  "MP3",
-  "PDF",
-  "EPUB",
-  "PSD",
-  "FIG",
-  "SKETCH",
-  "AI",
-  "GLB",
-  "OBJ",
-  "WOFF2",
-  "ZIP",
-  "HTML",
+type Kind =
+  | "image"
+  | "video"
+  | "audio"
+  | "document"
+  | "design"
+  | "model"
+  | "font"
+  | "archive";
+
+const SHELVES: [string, Kind][][] = [
+  [
+    ["JPG", "image"],
+    ["MP4", "video"],
+    ["PDF", "document"],
+    ["PSD", "design"],
+    ["GLB", "model"],
+    ["WOFF2", "font"],
+    ["HEIC", "image"],
+    ["MP3", "audio"],
+    ["EPUB", "document"],
+    ["ZIP", "archive"],
+  ],
+  [
+    ["FIG", "design"],
+    ["RAW", "image"],
+    ["MOV", "video"],
+    ["OBJ", "model"],
+    ["GIF", "image"],
+    ["SKETCH", "design"],
+    ["OTF", "font"],
+    ["WAV", "audio"],
+    ["SVG", "image"],
+    ["DOCX", "document"],
+  ],
 ];
 
+const FILE = 62;
+
+/** Each shelf repeats once so the drift can wrap without a seam. */
 function Formats({ t, at }: ArtProps) {
   return (
-    <div className={styles.formats}>
-      {FORMATS.map((format, index) => (
-        <span
-          key={format}
-          className={styles.format}
-          style={pop(t, at + 200 + index * 45, 8)}
-        >
-          {format}
-        </span>
-      ))}
+    <div className={styles.shelves}>
+      {SHELVES.map((shelf, row) => {
+        const span = shelf.length * FILE;
+        const drift = ((t - at) * 0.022) % span;
+        const x = row === 0 ? -drift : drift - span;
+        return (
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: shelves are static
+            key={row}
+            className={styles.shelf}
+            style={{ transform: `translateX(${x}px)` }}
+          >
+            {[...shelf, ...shelf].map(([extension, kind], index) => (
+              <span
+                // biome-ignore lint/suspicious/noArrayIndexKey: the repeat shares extensions
+                key={index}
+                className={styles.file}
+                data-kind={kind}
+              >
+                <span className={styles.tag}>{extension}</span>
+              </span>
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }
