@@ -1,6 +1,6 @@
 import { Logo } from "@pond/ui/logo";
-import { Line } from "../../stage/line";
 import { ease, envelope, mix, progress, styled } from "../../stage/timeline";
+import { Caption } from "../caption";
 import { end, start } from "../timeline";
 import styles from "./styles.module.css";
 
@@ -8,28 +8,19 @@ import styles from "./styles.module.css";
 export function Outro({ t }: { t: number }) {
   return (
     <>
-      <Line
+      <Caption
         t={t}
-        y={499}
-        text="The invisible layer between"
+        text={"The invisible layer between\ncollecting and organizing."}
         enter={start("thesis")}
-        exit={end("thesis") - 400}
-        stagger={60}
+        exit={end("thesis") - 450}
+        stagger={70}
       />
-      <Line
-        t={t}
-        y={581}
-        text="collecting and organizing."
-        enter={start("thesis") + 350}
-        exit={end("thesis") - 400}
-        stagger={60}
-      />
-      <Line
+      <Caption
         t={t}
         text="Give it a try. It's free and open source."
         enter={start("offer")}
-        exit={end("offer") - 400}
-        stagger={60}
+        exit={end("offer") - 450}
+        stagger={70}
       />
       <End t={t} />
     </>

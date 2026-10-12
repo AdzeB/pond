@@ -1,18 +1,19 @@
 /** Scene timing for the short cut, in milliseconds. Every scene renders as a pure function of `t`. */
 
-/** Cut to "Happy Beats vol. 1" from 37.5s: the phrase lifts on the Save press and hits on the thesis. */
+/** Cut to "Happy Beats vol. 9" from 64.25s: the drop lands on the mark and the breakdown carries the outro. */
 export const SCENES = {
-  logo: [0, 2700],
-  sources: [2700, 7400],
-  saveTitle: [7400, 9000],
-  save: [9000, 13500],
-  findTitle: [13500, 14800],
-  find: [14800, 19800],
-  askTitle: [19800, 20900],
-  ask: [20900, 26400],
-  thesis: [26500, 29800],
-  offer: [29900, 32500],
-  end: [32600, 35000],
+  sea: [0, 3500],
+  logo: [3300, 6100],
+  sources: [6100, 10800],
+  saveTitle: [10800, 12800],
+  save: [12800, 17300],
+  findTitle: [17300, 19300],
+  find: [19300, 24300],
+  askTitle: [24300, 26300],
+  ask: [26300, 31800],
+  thesis: [31900, 35200],
+  offer: [35300, 37900],
+  end: [38000, 40400],
 } as const satisfies Record<string, readonly [number, number]>;
 
 export type SceneId = keyof typeof SCENES;

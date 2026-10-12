@@ -1,16 +1,3 @@
-.line {
-  position: absolute;
-  top: 330px;
-  left: 0;
-  width: 100%;
-  margin: 0;
-  font-size: 58px;
-  font-weight: 560;
-  line-height: 1.2;
-  text-align: center;
-  letter-spacing: -0.025em;
-}
-
 .icon {
   display: block;
   width: 100%;

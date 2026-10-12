@@ -1,13 +1,7 @@
 import { LOGO_PATH, LOGO_VIEW_BOX } from "@pond/ui/logo";
 import { brand } from "../../stage/brands";
-import {
-  clamp,
-  ease,
-  envelope,
-  mix,
-  progress,
-  styled,
-} from "../../stage/timeline";
+import { clamp, ease, mix, progress } from "../../stage/timeline";
+import { Caption } from "../caption";
 import { end, start } from "../timeline";
 import styles from "./styles.module.css";
 
@@ -28,8 +22,6 @@ const FOLDER = { x: 960, y: 700 };
 /** The sources Pond keeps saves from, dropping into one folder on your Mac. */
 export function Sources({ t }: { t: number }) {
   if (t < start("sources") || t > end("sources") + 50) return null;
-  const first = envelope(t, start("sources") + 50, MERGE, { rise: 20 });
-  const second = envelope(t, MERGE + 100, EXIT, { rise: 20 });
   const folder = ease.outQuint(progress(t, MERGE + 50, 700));
   const land = progress(t, MERGE + 650, 360);
   const bump = Math.sin(land * Math.PI) * 0.05;
@@ -43,12 +35,20 @@ export function Sources({ t }: { t: number }) {
   };
   return (
     <>
-      <p className={styles.line} style={styled(first)}>
-        Keep what you save on
-      </p>
-      <p className={styles.line} style={styled(second)}>
-        in a folder on your Mac.
-      </p>
+      <Caption
+        t={t}
+        y={365}
+        text="Keep what you save on"
+        enter={start("sources") + 50}
+        exit={MERGE - 250}
+      />
+      <Caption
+        t={t}
+        y={365}
+        text="in a folder on your Mac."
+        enter={MERGE + 150}
+        exit={EXIT}
+      />
       <svg
         aria-hidden
         className={styles.folder}
