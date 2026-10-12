@@ -266,7 +266,7 @@ export function SaveInspector({
                   drafts={drafts}
                   cacheKey={`${targetKey}:title`}
                   label="Title"
-                  value={single?.title ?? null}
+                  value={single ? (single.title ?? "") : null}
                   multiline
                   disabled={!single}
                   variant="primary"
@@ -287,7 +287,7 @@ export function SaveInspector({
                   drafts={drafts}
                   cacheKey={`${targetKey}:description`}
                   label="Description"
-                  value={single?.description ?? null}
+                  value={single ? (single.description ?? "") : null}
                   multiline
                   disabled={!single}
                   variant="primary"
