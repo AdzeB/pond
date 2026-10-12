@@ -1,10 +1,10 @@
 import {
   IconCircleCheckFill,
-  IconEye,
   IconFolder,
   IconFolderBolt,
   IconFolderImport,
   IconMagnifier,
+  IconMediaPlay,
 } from "@pond/icons";
 import { cover, sample } from "../../../stage/media";
 import {
@@ -53,7 +53,7 @@ function Raycast({ t, at }: ArtProps) {
           />
         </span>
       </div>
-      {BROWN.slice(0, 3).map((save, index) => (
+      {BROWN.slice(0, 5).map((save, index) => (
         <div
           key={save.id}
           className={styles.result}
@@ -70,7 +70,7 @@ function Raycast({ t, at }: ArtProps) {
 }
 
 function Smart({ t, at }: ArtProps) {
-  const saves = BROWN.slice(0, 5);
+  const saves = BROWN;
   const count = saves.filter((_, index) => t >= at + 500 + index * 150).length;
   return (
     <div className={styles.smart}>
@@ -137,10 +137,18 @@ const BARS = Array.from({ length: 38 }, (_, index) => {
 });
 const SPOKEN = "This wave only breaks a few days a year.".split(" ");
 
+const VIDEO = sample("The Tofino Riders: A 1,000 Year-Old-Wave");
+
 function Transcript({ t, at }: ArtProps) {
   const head = progress(t, at, 2600);
   return (
     <div className={styles.transcript}>
+      <span className={styles.poster}>
+        <img alt="" src={cover(VIDEO.id)} className={styles.video} />
+        <span className={styles.play}>
+          <IconMediaPlay size={16} />
+        </span>
+      </span>
       <div className={styles.wave}>
         {BARS.map((height, index) => (
           <span
@@ -200,6 +208,8 @@ const FOLDERS = [
   { name: "Moodboards", count: 214 },
   { name: "Typography", count: 96 },
   { name: "Fashion", count: 388 },
+  { name: "Interiors", count: 143 },
+  { name: "Packaging", count: 57 },
 ];
 
 function Eagle({ t, at }: ArtProps) {
@@ -210,7 +220,7 @@ function Eagle({ t, at }: ArtProps) {
         Eagle Library
       </div>
       {FOLDERS.map((folder, index) => {
-        const begins = at + 200 + index * 380;
+        const begins = at + 200 + index * 300;
         const fill = ease.out(progress(t, begins, 360));
         return (
           <div key={folder.name} className={styles.branch}>
@@ -255,41 +265,66 @@ function Duplicates({ t, at }: ArtProps) {
   );
 }
 
-const ROW = [
-  { save: sample("Light study"), hide: false },
-  { save: sample("Fun night out, fun outfits <3"), hide: true },
-  { save: sample("Grey suit, white shirt"), hide: false },
-  { save: sample("Same but diff ! Looks for the week!"), hide: true },
-  { save: sample("Desk at night"), hide: false },
-  { save: sample("Rolof lauren beanie outfit"), hide: false },
+const FORMATS = [
+  "JPG",
+  "PNG",
+  "GIF",
+  "WEBP",
+  "HEIC",
+  "RAW",
+  "SVG",
+  "MP4",
+  "MOV",
+  "MP3",
+  "PDF",
+  "EPUB",
+  "PSD",
+  "FIG",
+  "SKETCH",
+  "AI",
+  "GLB",
+  "OBJ",
+  "WOFF2",
+  "ZIP",
+  "HTML",
 ];
 
-function Sensitive({ t, at }: ArtProps) {
+function Formats({ t, at }: ArtProps) {
   return (
-    <div className={styles.strip}>
-      {ROW.map(({ save, hide }, index) => {
-        const blur = hide
-          ? ease.inOut(progress(t, at + 400 + index * 120, 600))
-          : 0;
-        return (
-          <span key={save.id} className={styles.cover}>
-            <img
-              alt=""
-              src={cover(save.id)}
-              className={styles.thumb}
-              style={{
-                filter: blur ? `blur(${blur * 14}px)` : undefined,
-                transform: `scale(${1 + blur * 0.12})`,
-              }}
-            />
-            {hide ? (
-              <span className={styles.hidden} style={{ opacity: blur }}>
-                <IconEye size={14} />
-              </span>
-            ) : null}
-          </span>
-        );
-      })}
+    <div className={styles.formats}>
+      {FORMATS.map((format, index) => (
+        <span
+          key={format}
+          className={styles.format}
+          style={pop(t, at + 200 + index * 45, 8)}
+        >
+          {format}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+const GLYPHS = "Aa Gg Rr Qq &".split(" ");
+
+function Specimen({ t, at }: ArtProps) {
+  const index = clamp(Math.floor((t - at - 300) / 380), 0, GLYPHS.length - 1);
+  return (
+    <span
+      key={index}
+      className={styles.specimen}
+      style={pop(t, at + 300 + index * 380, 6)}
+    >
+      {GLYPHS[index]}
+    </span>
+  );
+}
+
+function Stat({ value, detail }: { value: string; detail: string }) {
+  return (
+    <div className={styles.stat}>
+      <span className={styles.value}>{value}</span>
+      <span className={styles.detail}>{detail}</span>
     </div>
   );
 }
@@ -302,5 +337,7 @@ export const Art = {
   Similar,
   Eagle,
   Duplicates,
-  Sensitive,
+  Formats,
+  Specimen,
+  Stat,
 };
