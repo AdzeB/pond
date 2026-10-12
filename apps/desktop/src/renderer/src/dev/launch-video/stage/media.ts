@@ -1,36 +1,47 @@
-/** Sample media the stage draws outside the app windows. */
+/** Sample media the stage draws outside the app window. */
+import type { WireSave } from "@shared/wire";
+
+export interface Sample {
+  id: string;
+  title: string;
+  caption: string;
+  source: WireSave["source"];
+  folder: string;
+  aspect: number;
+}
+
+interface Entry extends Omit<Sample, "aspect"> {
+  file: { width?: number; height?: number };
+}
+
+const response = await fetch("/fixtures/library.json");
+const data = (await response.json()) as { saves: Entry[] };
+
+export const SAMPLES: readonly Sample[] = data.saves.map((entry) => ({
+  id: entry.id,
+  title: entry.title,
+  caption: entry.caption,
+  source: entry.source,
+  folder: entry.folder,
+  aspect: (entry.file.width ?? 4) / (entry.file.height ?? 5),
+}));
 
 export const cover = (id: string) => `pond://${id}/cover.jpg`;
 
-export const LANCIA = "01M1Z5DRYH8SCZC3SEB5KDTVJ5";
-export const PORSCHE = "01M1Z5DRY5FRAXPA2HZT6QX6GG";
-
-export const CLOUD = [
-  "01M1Z5DRYDGRCEAKW1KJQE0FAX",
-  "01M1Z5DRY5FRAXPA2HZT6QX6GG",
-  "01M1Z5DRY5S61VEYDAW7E002CG",
-  "01M1Z5DRYETKS93P3VYG3XMN0S",
-  "01M1Z5EJKKMDFHN32RF0F8SEHN",
-  "01M1Z5DRYE6T1NGY9JM58J499X",
-  "01M1Z5DRY7F4P95NX6746E78DJ",
-  "01M1Z5EJK4P9ZEZGQ1R9Y54V19",
-  "01M1Z5DRYF2QRP1XWWFNQW1X8X",
-  "01M1Z5EJK972KSWJZB69CV41QW",
-  "01M1Z5DRYHZFA4CA4RF6NZQW4D",
-  "01M1Z5EJJYM93DCFDMSQKTN8KP",
-  "01M1Z5DRXXNQXYN25N0HSAYW9R",
-  "01M1Z5EJKAP3VBPSW2HDZBFG6B",
-] as const;
+export function sample(title: string): Sample {
+  const match = SAMPLES.find((entry) => entry.title === title);
+  if (!match) throw new Error(`media: no sample "${title}"`);
+  return match;
+}
 
 const held: HTMLImageElement[] = [];
 
 /** Decodes every stage image up front so no capture frame catches one mid-load. */
 export async function preload() {
-  const sources = [...new Set([...CLOUD, LANCIA, PORSCHE])].map(cover);
   await Promise.all(
-    sources.map((src) => {
+    SAMPLES.map((entry) => {
       const image = new Image();
-      image.src = src;
+      image.src = cover(entry.id);
       held.push(image);
       return image.decode().catch(() => undefined);
     }),

@@ -4,25 +4,45 @@ export const FPS = 30;
 export const WIDTH = 1920;
 export const HEIGHT = 1080;
 
+/** Matches the beats of the soundtrack in `apps/website/public/video/pond.mp4`. */
 export const BEATS = {
-  hook: [0, 3200],
-  intro: [3200, 5600],
-  from: [5600, 8800],
-  save: [8800, 13800],
-  sync: [13800, 19000],
-  own: [19000, 23000],
-  enrich: [23000, 28000],
-  find: [28000, 34000],
-  ask: [34000, 40000],
-  theme: [40000, 44500],
-  connect: [44500, 49500],
-  layer: [49500, 53000],
-  try: [53000, 56500],
-  outro: [56500, 61000],
+  sea: [130, 3620],
+  intro: [3650, 5480],
+  tagline: [5830, 9000],
+  ticker: [9480, 13220],
+  save: [13520, 17570],
+  sync: [17870, 24570],
+  own: [24870, 28570],
+  enrich: [28870, 33440],
+  find: [33750, 38490],
+  ask: [38780, 45780],
+  connect: [46080, 51520],
+  thesis: [52130, 55000],
+  offer: [55610, 58040],
+  end: [58740, 61000],
 } as const satisfies Record<string, readonly [number, number]>;
 
 export type BeatId = keyof typeof BEATS;
-export const DURATION = BEATS.outro[1];
+export const DURATION = BEATS.end[1];
+
+/** Headline row for every product beat. */
+export const HEAD_Y = 196;
+
+/** How long each product verb holds at center before it docks and its window rises. */
+export const HERO = {
+  save: 1000,
+  sync: 1000,
+  own: 900,
+  enrich: 1050,
+  find: 950,
+  ask: 900,
+  connect: 1000,
+} as const;
+
+export type ProductBeat = keyof typeof HERO;
+
+export const opens = (beat: ProductBeat) => BEATS[beat][0] + HERO[beat];
+export const closes = (beat: BeatId) => BEATS[beat][1] - 350;
 
 export const clamp = (value: number, min = 0, max = 1) =>
   Math.min(max, Math.max(min, value));
@@ -31,30 +51,58 @@ export const mix = (from: number, to: number, amount: number) =>
   from + (to - from) * amount;
 
 export const ease = {
-  linear: (p: number) => p,
   out: (p: number) => 1 - (1 - p) ** 3,
+  outQuint: (p: number) => 1 - (1 - p) ** 5,
   in: (p: number) => p ** 3,
   inOut: (p: number) => (p < 0.5 ? 4 * p ** 3 : 1 - (-2 * p + 2) ** 3 / 2),
-  /** Critically damped settle, close to the site's `--spring-land`. */
-  settle: (p: number) => (p >= 1 ? 1 : 1 - (1 + 8 * p) * Math.exp(-8 * p)),
 };
 
 /** 0 → 1 across `[start, start + duration]`. */
 export const progress = (t: number, start: number, duration: number) =>
   duration <= 0 ? (t >= start ? 1 : 0) : clamp((t - start) / duration);
 
-/** Fade-in after the beat starts and fade-out before it ends. */
-export function presence(
+export interface Envelope {
+  opacity: number;
+  dy: number;
+  blur: number;
+}
+
+/** The shared in/out: rise and unblur over `duration`, then sink and blur away from `exit`. */
+export function envelope(
   t: number,
-  beat: BeatId,
-  fadeIn = 360,
-  fadeOut = 320,
-): number {
-  const [start, end] = BEATS[beat];
-  return (
-    ease.out(progress(t, start, fadeIn)) *
-    (1 - ease.in(progress(t, end - fadeOut, fadeOut)))
-  );
+  enter: number,
+  exit: number,
+  { duration = 700, rise = 16, out = 350 } = {},
+): Envelope {
+  const a = ease.outQuint(progress(t, enter, duration));
+  const b = ease.in(progress(t, exit, out));
+  return {
+    opacity: a * (1 - b),
+    dy: (1 - a) * rise - b * rise * 0.6,
+    blur: (1 - a) * 8 + b * 8,
+  };
+}
+
+/** CSS for an envelope plus any extra transform. */
+export function styled(e: Envelope, transform = "") {
+  return {
+    opacity: e.opacity,
+    transform: `${transform} translateY(${e.dy}px)`.trim(),
+    filter: e.blur > 0.05 ? `blur(${e.blur}px)` : undefined,
+    visibility: e.opacity <= 0.002 ? ("hidden" as const) : undefined,
+  };
+}
+
+/** A window rising into place under the headline, then sinking out with blur. */
+export function lift(t: number, enter: number, exit: number) {
+  const up = ease.outQuint(progress(t, enter, 1100));
+  const out = ease.in(progress(t, exit, 350));
+  const opacity = t < enter || t > exit + 400 ? 0 : clamp(up * 3) * (1 - out);
+  return {
+    opacity,
+    dy: (1 - up) * 500 + out * 40,
+    blur: out * 8,
+  };
 }
 
 export type Key<V> = readonly [time: number, value: V];

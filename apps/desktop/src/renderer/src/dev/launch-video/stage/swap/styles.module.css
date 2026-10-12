@@ -1,0 +1,16 @@
+.swap {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  font-size: 68px;
+  font-weight: 560;
+  line-height: 1.2;
+  color: #171717;
+  white-space: nowrap;
+}
+
+.part {
+  position: absolute;
+  top: 0;
+  left: 0;
+}

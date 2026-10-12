@@ -1,9 +1,9 @@
 /** Sample library served through the fake bridge; data comes from `scripts/launch-video/collect.mjs`. */
 import { DEFAULT_PREFS } from "@pond/schema";
 import type { Folder, Prefs, SaveFile } from "@pond/schema/db";
+import { matches } from "@pond/schema/filters/match";
 import type { WirePrefsPatch, WireSave } from "@shared/wire";
 import { defineQueries, emit } from "./bridge";
-import { SYNCED } from "./constants";
 
 interface Entry {
   id: string;
@@ -115,34 +115,12 @@ function toWire(entry: Entry): WireSave {
 export const saves: WireSave[] = data.saves.map(toWire);
 const entries = new Map(data.saves.map((entry) => [entry.id, entry]));
 
-const hidden = new Set(saves.slice(0, SYNCED).map((save) => save.id));
-let syncId = 1;
-
-const visible = () => saves.filter((save) => !hidden.has(save.id));
-
-export function reveal(id: string) {
-  const save = saves.find((candidate) => candidate.id === id);
-  if (!save || !hidden.delete(id)) return;
-  emit("onSyncAction", {
-    id: syncId++,
-    batchId: null,
-    modelName: "save",
-    modelId: id,
-    action: "I",
-    data: save,
-    prevData: null,
-    actor: "system",
-    actorReason: "sync",
-    createdAt: Date.now(),
-  });
-}
-
 const memberships = data.saves.map((entry) => ({
   saveId: entry.id,
   folderId: folderId(entry.folder),
 }));
 
-function matches(save: WireSave, keywords: string) {
+function hasKeywords(save: WireSave, keywords: string) {
   const entry = entries.get(save.id);
   const haystack = [save.title, save.caption, save.ocrText, ...save.tags]
     .join(" ")
@@ -184,14 +162,8 @@ let prefs: Prefs = {
   },
 };
 
-const initialPreferences = structuredClone(prefs.preferences);
-
-export function resetPreferences() {
-  return applyPrefs({ preferences: structuredClone(initialPreferences) });
-}
-
 /** Merges like the main process: one level deep per top-level key. */
-export function applyPrefs(patch: WirePrefsPatch) {
+function applyPrefs(patch: WirePrefsPatch) {
   const next: Record<string, unknown> = { ...prefs };
   for (const [key, value] of Object.entries(patch)) {
     next[key] = { ...(next[key] as object), ...value };
@@ -201,17 +173,9 @@ export function applyPrefs(patch: WirePrefsPatch) {
   return prefs;
 }
 
-interface StageRelay {
-  __relayPrefs?: (patch: WirePrefsPatch, from: Window) => void;
-}
-
 defineQueries({
   "settings.getPrefs": () => prefs,
-  "settings.setPrefs": (patch) => {
-    const next = applyPrefs(patch);
-    (window.parent as Window & StageRelay).__relayPrefs?.(patch, window);
-    return { ok: true, prefs: next };
-  },
+  "settings.setPrefs": (patch) => ({ ok: true, prefs: applyPrefs(patch) }),
   "library.info": () => ({
     path: "/Users/you/Pond/Personal.pond",
     name: "Personal",
@@ -236,36 +200,32 @@ defineQueries({
   "savedViews.list": () => [],
   "accounts.list": () => ({ accounts: [] }),
   "agent.chats": () => [],
-  "saves.sidebarCounts": () => {
-    const shown = new Set(visible().map((save) => save.id));
-    return {
-      library: shown.size,
-      uncategorized: 0,
-      untagged: 0,
-      recentlyAdded: shown.size,
-      recentlyUsed: 0,
-      trash: 0,
-      folders: Object.fromEntries(
-        folders.map((folder) => [
-          folder.id,
-          memberships.filter(
-            (m) => m.folderId === folder.id && shown.has(m.saveId),
-          ).length,
-        ]),
-      ),
-    };
-  },
-  "saves.list": () => visible(),
-  "saves.listPage": () => {
-    const rows = visible();
-    return { rows, nextCursor: null, total: rows.length };
-  },
+  "saves.sidebarCounts": () => ({
+    library: saves.length,
+    uncategorized: 0,
+    untagged: 0,
+    recentlyAdded: saves.length,
+    recentlyUsed: 0,
+    trash: 0,
+    folders: Object.fromEntries(
+      folders.map((folder) => [
+        folder.id,
+        memberships.filter((m) => m.folderId === folder.id).length,
+      ]),
+    ),
+  }),
+  "saves.list": () => saves,
+  "saves.listPage": () => ({
+    rows: saves,
+    nextCursor: null,
+    total: saves.length,
+  }),
   "saves.getMany": ({ ids }) => saves.filter((save) => ids.includes(save.id)),
   "saves.get": ({ id }) => saves.find((save) => save.id === id) ?? null,
   "saves.queryPage": (request) => {
     const folderIds = request.scope?.folderIds;
     const keywords = request.keywords?.trim();
-    const ids = visible()
+    const ids = saves
       .filter(
         (save) =>
           !folderIds ||
@@ -273,7 +233,8 @@ defineQueries({
             (m) => m.saveId === save.id && folderIds.includes(m.folderId),
           ),
       )
-      .filter((save) => !keywords || matches(save, keywords))
+      .filter((save) => !keywords || hasKeywords(save, keywords))
+      .filter((save) => !request.query || matches(request.query, save))
       .map((save) => save.id);
     return {
       ids,

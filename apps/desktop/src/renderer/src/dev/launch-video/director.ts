@@ -7,14 +7,18 @@ import {
 } from "lexical";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { getAppRouter } from "@/shared/lib/app-router";
-import { emit } from "./bridge";
 import { clock } from "./clock";
-import { SYNCED } from "./constants";
-import { applyPrefs, resetPreferences, reveal, saves } from "./fixtures";
 
-function point(element: Element) {
+function find(selector: string) {
+  const element = document.querySelector(selector);
+  if (!element) throw new Error(`director: no element for ${selector}`);
+  return element;
+}
+
+function press(selector: string) {
+  const element = find(selector);
   const rect = element.getBoundingClientRect();
-  return {
+  const init = {
     bubbles: true,
     cancelable: true,
     composed: true,
@@ -25,89 +29,12 @@ function point(element: Element) {
     pointerType: "mouse",
     isPrimary: true,
   };
-}
-
-function find(selector: string) {
-  const element = document.querySelector(selector);
-  if (!element) throw new Error(`director: no element for ${selector}`);
-  return element;
-}
-
-function byText(text: string, root: ParentNode = document) {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  while (walker.nextNode()) {
-    const node = walker.currentNode;
-    if (node.textContent?.trim() === text && node.parentElement)
-      return node.parentElement;
-  }
-  throw new Error(`director: no text "${text}"`);
-}
-
-function scroller(element: Element) {
-  for (let node = element.parentElement; node; node = node.parentElement) {
-    const overflow = getComputedStyle(node).overflowY;
-    if (/auto|scroll/.test(overflow) && node.scrollHeight > node.clientHeight)
-      return node;
-  }
-  return document.scrollingElement as HTMLElement;
-}
-
-/** Jumps the nearest scroll container so `text` sits `top` px below its edge. */
-function scrollTo(text: string, top = 24) {
-  const element = byText(text);
-  const container = scroller(element);
-  const offset =
-    element.getBoundingClientRect().top - container.getBoundingClientRect().top;
-  container.scrollTop += offset - top;
-}
-
-/** Flips the switch in the settings row titled `label`. */
-function toggle(label: string) {
-  let row: Element | null = byText(label);
-  while (row && !row.querySelector("[role=switch]")) row = row.parentElement;
-  const control = row?.querySelector("[role=switch]");
-  if (!control) throw new Error(`director: no switch for "${label}"`);
-  pressElement(control);
-}
-
-/** Opens the select in the settings row titled `label`. */
-function openSelect(label: string) {
-  let row: Element | null = byText(label);
-  while (row && !row.querySelector("[role=combobox]")) row = row.parentElement;
-  const control = row?.querySelector("[role=combobox]");
-  if (!control) throw new Error(`director: no select for "${label}"`);
-  pressElement(control);
-}
-
-function pick(option: string) {
-  const match = [...document.querySelectorAll("[role=option]")].find(
-    (element) => element.textContent?.trim().endsWith(option),
-  );
-  if (!match) throw new Error(`director: no option "${option}"`);
-  pressElement(match);
-}
-
-function press(selector: string) {
-  pressElement(find(selector));
-}
-
-function pressElement(element: Element) {
-  const init = point(element);
   element.dispatchEvent(new PointerEvent("pointerdown", init));
   element.dispatchEvent(new MouseEvent("mousedown", init));
   if (element instanceof HTMLElement) element.focus({ preventScroll: true });
   element.dispatchEvent(new PointerEvent("pointerup", init));
   element.dispatchEvent(new MouseEvent("mouseup", init));
   element.dispatchEvent(new MouseEvent("click", init));
-}
-
-function type(selector: string, text: string) {
-  const element = find(selector) as HTMLInputElement | HTMLTextAreaElement;
-  element.focus({ preventScroll: true });
-  const prototype = Object.getPrototypeOf(element);
-  const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
-  setter?.call(element, text);
-  element.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
 /** Rewrites a Lexical editor's text through its own update cycle. */
@@ -134,13 +61,6 @@ function key(selector: string, name: string) {
   element.dispatchEvent(new KeyboardEvent("keyup", init));
 }
 
-function rect(selector: string) {
-  const box = document.querySelector(selector)?.getBoundingClientRect();
-  return box
-    ? { x: box.x, y: box.y, width: box.width, height: box.height }
-    : null;
-}
-
 async function realFrames(count: number) {
   for (let index = 0; index < count; index++) await clock.realFrame();
 }
@@ -156,34 +76,15 @@ async function settled() {
 
 export const director = {
   clock,
-  saves,
-  emit,
-  applyPrefs,
-  resetPreferences,
-  reveal,
-  synced: () => saves.slice(0, SYNCED).map((save) => save.id),
   press,
-  type,
   compose,
-  scrollTo,
-  toggle,
-  openSelect,
-  pick,
-  section: (name: string) =>
-    (
-      window as Window & { __settingsGo?: (section: string) => void }
-    ).__settingsGo?.(name),
   key,
-  rect,
   settled,
   navigate: (to: string) => void getAppRouter()?.navigate({ to }),
-  select: (id: string) => press(`[data-save-id="${id}"] img`),
-  inspect: (id: string, tab: "organize" | "info") => {
-    saveLibraryBridge.inspectSave(id);
-    saveLibraryBridge.setInspectorTab(tab);
+  closePanes: () => {
+    saveLibraryBridge.closeRightPane();
+    saveLibraryBridge.setAgentOpen(false);
   },
-  closePane: () => saveLibraryBridge.closeRightPane(),
-  agent: (open: boolean) => saveLibraryBridge.setAgentOpen(open),
   ready: () => document.querySelectorAll("[data-save-id] img").length > 8,
 };
 

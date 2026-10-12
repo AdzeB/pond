@@ -11,7 +11,7 @@
         "scripts/ai-benchmark/run-tool-routing-benchmark.{mjs,ts}",
         "scripts/extension-install-video/render.cjs",
         "scripts/launch-video/*.{mjs,cjs,ts}",
-        "src/renderer/src/dev/launch-video/{app,settings}.tsx",
+        "src/renderer/src/dev/launch-video/app.tsx",
         "src/renderer/src/dev/launch-video/stage/index.tsx",
         "src/main/core/media-warm/service.ts",
         "src/main/core/enrichment-sidecar.ts"

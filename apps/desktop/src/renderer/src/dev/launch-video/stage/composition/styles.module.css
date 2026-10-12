@@ -4,5 +4,13 @@
   font-family: var(--ds-ui-font-family);
   font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
-  background: var(--ds-gray-1);
+  color: #171717;
+  background: #fff;
+}
+
+/* The UI reset pins every element to the 14px optical size, which loosens 68px stage type. */
+:where(.frame) * {
+  font-variation-settings: normal;
+  font-feature-settings: "cv11", "ss01";
+  font-variant-numeric: normal;
 }

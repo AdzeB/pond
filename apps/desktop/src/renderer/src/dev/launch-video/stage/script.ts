@@ -1,36 +1,23 @@
-/** What happens inside the app windows during each beat. */
-import { QUESTION, SYNCED } from "../constants";
+/** What happens inside the app window during each beat. */
+import { QUESTION } from "../constants";
 import { at, composeText } from "./actions";
-import { BEATS } from "./timeline";
+import { FILTER_AT } from "./camera";
+import { closes, opens } from "./timeline";
 
 const SEARCH = '[aria-label="Search"]';
 const MESSAGE = '[aria-label="Message Assistant"]';
+const WHITE = '[aria-label="Preset Colors"] button[aria-label="White"]';
 
-at(0, "app", (d) => d.closePane());
+at(0, (d) => {
+  d.navigate("/");
+  d.closePanes();
+});
 
-for (let index = 0; index < SYNCED; index++) {
-  at(BEATS.sync[0] + 1100 + index * 200, "app", (d) =>
-    d.reveal(d.synced()[SYNCED - 1 - index] ?? ""),
-  );
-}
+composeText(opens("find") + 450, SEARCH, "wardrobe", 75);
+at(FILTER_AT, (d) => d.press('button[aria-label="Color"]'));
+at(FILTER_AT + 550, (d) => d.press(WHITE));
+at(FILTER_AT + 1250, (d) => d.key(WHITE, "Escape"));
 
-composeText(BEATS.find[0] + 1200, "app", SEARCH, "red");
-
-at(BEATS.enrich[0] - 300, "settings", (d) => d.scrollTo("Details", 110));
-at(BEATS.enrich[0] + 1700, "settings", (d) => d.toggle("Image Captions"));
-at(BEATS.enrich[0] + 2300, "settings", (d) => d.toggle("Text in Images"));
-at(BEATS.enrich[0] + 2900, "settings", (d) => d.toggle("Visual Similarity"));
-
-at(BEATS.ask[0], "app", (d) => d.agent(true));
-const asked = composeText(BEATS.ask[0] + 700, "app", MESSAGE, QUESTION, 32);
-at(asked + 200, "app", (d) => d.key(MESSAGE, "Enter"));
-
-at(BEATS.theme[0] - 300, "settings", (d) => d.section("appearance"));
-at(BEATS.theme[0] + 1300, "settings", (d) => d.openSelect("Light"));
-at(BEATS.theme[0] + 1900, "settings", (d) => d.pick("Mint"));
-at(BEATS.theme[0] + 2600, "settings", (d) => d.openSelect("Appearance"));
-at(BEATS.theme[0] + 3200, "settings", (d) => d.pick("Dark"));
-at(BEATS.theme[1] + 50, "settings", (d) => d.resetPreferences());
-at(BEATS.theme[1] + 50, "app", (d) => d.resetPreferences());
-
-at(BEATS.connect[0] - 300, "settings", (d) => d.section("mcp"));
+at(closes("find") + 450, (d) => d.navigate("/assistant"));
+const asked = composeText(opens("ask") + 500, MESSAGE, QUESTION, 32);
+at(asked + 200, (d) => d.key(MESSAGE, "Enter"));

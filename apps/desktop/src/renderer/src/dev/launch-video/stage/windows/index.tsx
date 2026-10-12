@@ -1,43 +1,42 @@
-import { shot } from "../camera";
-import { FRAME_SIZE, FRAME_SRC, type FrameId, registerFrame } from "../frames";
+import { shot, WINDOW } from "../camera";
+import { FRAME, FRAME_SRC, registerFrame } from "../frames";
 import styles from "./styles.module.css";
 
-const IDS: readonly FrameId[] = ["app", "settings"];
-const refs = Object.fromEntries(
-  IDS.map((id) => [
-    id,
-    (element: HTMLIFrameElement | null) => registerFrame(id, element),
-  ]),
-) as Record<FrameId, (element: HTMLIFrameElement | null) => void>;
-
-/** The real app and Settings windows, always mounted so their state carries across beats. */
+/** The real app, always mounted so its state carries across beats, cropped to the part each beat needs. */
 export function Windows({ t }: { t: number }) {
+  const s = shot(t);
+  const scale = s ? WINDOW.width / s.crop.width : 1;
   return (
-    <>
-      {IDS.map((id) => {
-        const s = shot(id, t);
-        return (
-          <div
-            key={id}
-            className={styles.window}
-            data-frame={id}
-            style={{
-              width: FRAME_SIZE[id].width,
-              height: FRAME_SIZE[id].height,
-              transform: `translate(${s.x}px, ${s.y}px) scale(${s.scale})`,
-              opacity: s.opacity,
-              visibility: s.opacity > 0 ? "visible" : "hidden",
-            }}
-          >
-            <iframe
-              ref={refs[id]}
-              className={styles.frame}
-              src={FRAME_SRC[id]}
-              title={id}
-            />
-          </div>
-        );
-      })}
-    </>
+    <div
+      className={styles.window}
+      style={{
+        left: WINDOW.x,
+        top: WINDOW.y,
+        width: WINDOW.width,
+        height: WINDOW.height,
+        opacity: s?.opacity ?? 0,
+        transform: `translateY(${s?.dy ?? 0}px)`,
+        filter: s && s.blur > 0.05 ? `blur(${s.blur}px)` : undefined,
+        visibility: s ? undefined : "hidden",
+      }}
+    >
+      <div
+        className={styles.viewport}
+        style={{
+          width: FRAME.width,
+          height: FRAME.height,
+          transform: s
+            ? `scale(${scale}) translate(${-s.crop.x}px, ${-s.crop.y}px)`
+            : undefined,
+        }}
+      >
+        <iframe
+          ref={registerFrame}
+          className={styles.frame}
+          src={FRAME_SRC}
+          title="Pond"
+        />
+      </div>
+    </div>
   );
 }

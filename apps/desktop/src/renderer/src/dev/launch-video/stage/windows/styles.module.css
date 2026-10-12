@@ -1,20 +1,16 @@
 .window {
   position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 5;
+  z-index: 10;
   overflow: hidden;
-  background: var(--ds-gray-1);
+  background: #fff;
   border-radius: 14px;
   box-shadow:
     0 0 0 1px rgb(0 0 0 / 0.08),
-    0 2px 6px -2px rgb(0 0 0 / 0.08),
-    0 28px 80px -16px rgb(0 0 0 / 0.22);
-  transform-origin: 0 0;
+    0 40px 80px -40px rgb(0 0 0 / 0.22);
+}
 
-  &[data-frame="settings"] {
-    z-index: 6;
-  }
+.viewport {
+  transform-origin: 0 0;
 }
 
 .frame {

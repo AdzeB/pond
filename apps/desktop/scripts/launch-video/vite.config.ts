@@ -13,7 +13,6 @@ export default mergeConfig(gallery, {
     rollupOptions: {
       input: {
         app: resolve(renderer, "launch-video-app.html"),
-        settings: resolve(renderer, "launch-video-settings.html"),
         stage: resolve(renderer, "launch-video.html"),
       },
     },

@@ -57,14 +57,19 @@ app.whenReady().then(async () => {
   const stage = (code) => win.webContents.executeJavaScript(code);
   void win.loadURL("stage://stage/launch-video.html");
   await new Promise((r) => win.webContents.once("did-finish-load", r));
+  await stage(
+    "new Promise((r) => { const tick = () => (window.__stage ? r() : setTimeout(tick, 50)); tick(); })",
+  );
   if (!(await stage("__stage.ready()")))
     throw new Error("stage never became ready");
   const duration = to ? Number(to) : await stage("__stage.duration");
   const step = 1000 / fps;
 
   if (stills.length) {
+    let reached = 0;
     for (const t of stills) {
-      for (let s = 0; s < t; s += 100) await stage(`__stage.seek(${s})`);
+      for (let s = reached; s < t; s += 100) await stage(`__stage.seek(${s})`);
+      reached = t;
       await stage(`__stage.seek(${t})`);
       writeFileSync(
         join(out, `still-${String(t).padStart(5, "0")}.png`),
