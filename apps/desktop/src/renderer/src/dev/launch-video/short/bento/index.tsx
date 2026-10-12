@@ -146,6 +146,7 @@ export function Bento({ t }: { t: number }) {
               key={tile.id}
               className={styles.tile}
               data-hero={tile.id === "hero" || undefined}
+              data-wide={tile.column.includes("span") || undefined}
               style={{
                 gridColumn: tile.column,
                 gridRow: tile.row,

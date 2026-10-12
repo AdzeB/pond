@@ -72,7 +72,7 @@ function Raycast({ t, at }: ArtProps) {
 }
 
 function Smart({ t, at }: ArtProps) {
-  const saves = BROWN.slice(0, 5);
+  const saves = BROWN.slice(0, 4);
   const count = saves.filter((_, index) => t >= at + 500 + index * 150).length;
   return (
     <div className={styles.smart}>
@@ -208,10 +208,9 @@ function Similar({ t, at }: ArtProps) {
 
 const FOLDERS = [
   { name: "Posters", count: 214 },
-  { name: "Typography", count: 96 },
+  { name: "Type", count: 96 },
   { name: "Fashion", count: 388 },
   { name: "Interiors", count: 143 },
-  { name: "Packaging", count: 57 },
 ];
 
 function Eagle({ t, at }: ArtProps) {

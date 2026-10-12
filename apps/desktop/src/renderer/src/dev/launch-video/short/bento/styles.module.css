@@ -6,11 +6,11 @@
 
 .grid {
   position: absolute;
-  inset: 24px;
+  inset: 28px;
   display: grid;
   grid-template-rows: repeat(4, minmax(0, 1fr));
   grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: 16px;
+  gap: 18px;
 }
 
 .tile {
@@ -36,11 +36,15 @@
   align-items: center;
   justify-content: center;
   min-height: 0;
-  padding: 20px 20px 0;
+  padding: 36px 32px 0;
+
+  .tile[data-wide] & {
+    padding: 40px 48px 0;
+  }
 }
 
 .label {
-  padding: 12px 14px 22px;
+  padding: 16px 16px 28px;
   font-size: 19px;
   font-weight: 600;
   color: #171717;
