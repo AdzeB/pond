@@ -4,6 +4,7 @@ import { Sea } from "../../stage/sea";
 import { Terminal } from "../../stage/terminal";
 import { HEIGHT, WIDTH } from "../../stage/timeline";
 import { Ask } from "../ask";
+import { Bento } from "../bento";
 import { Caption } from "../caption";
 import { Find } from "../find";
 import { Outro } from "../outro";
@@ -80,6 +81,7 @@ export function Composition({ t }: { t: number }) {
       <Shift t={t} scene="connect" y={-60}>
         <Terminal t={t} open={start("connect")} close={end("connect") - 350} />
       </Shift>
+      <Bento t={t} />
       <Outro t={t} />
     </div>
   );

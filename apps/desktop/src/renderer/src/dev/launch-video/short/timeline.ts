@@ -17,9 +17,10 @@ export const SCENES = {
   ask: [37800, 43300],
   connectTitle: [43300, 45100],
   connect: [45100, 49600],
-  thesis: [49700, 53000],
-  offer: [53100, 55700],
-  end: [55800, 58200],
+  bento: [49700, 55400],
+  thesis: [55500, 58800],
+  offer: [58900, 61500],
+  end: [61600, 64000],
 } as const satisfies Record<string, readonly [number, number]>;
 
 export type SceneId = keyof typeof SCENES;

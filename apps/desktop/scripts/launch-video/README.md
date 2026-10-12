@@ -43,19 +43,19 @@ Run each step from `apps/desktop`.
 
 ## Short cut
 
-`launch-video-short.html` is a 58 second cut for posting, on white. Saves drift around "The web is a sea of information." and spiral into the mark, then saves from every source funnel into the library as its count climbs. A plain caption leads into each of Save, Own, Enrich, Find, Ask, and Connect: words settle from gray to ink, then the letters dissolve. Each step is UI rebuilt for the stage and driven by time, not the app in a frame, so the camera can push anywhere. It ends on the thesis, the offer, and the mark. Capture it with `--page`, then mix a 58.2 second score whose sections match `SCENES` in `short/timeline.ts`.
+`launch-video-short.html` is a 64 second cut for posting, on white. Saves drift around "The web is a sea of information." and spiral into the mark, then saves from every source funnel into the library as its count climbs. A plain caption leads into each of Save, Own, Enrich, Find, Ask, and Connect: words settle from gray to ink, then the letters dissolve. Each step is UI rebuilt for the stage and driven by time, not the app in a frame, so the camera can push anywhere. A bento grid of features the cut skips sits around "And a lot more." It ends on the thesis, the offer, and the mark. Capture it with `--page`, then mix a 64 second score whose sections match `SCENES` in `short/timeline.ts`.
 
 ```bash
 ./node_modules/.bin/electron scripts/launch-video/capture.cjs \
   --page=launch-video-short.html --out=.tmp/launch-video/out/short.mp4
 ffmpeg -i .tmp/launch-video/out/short.mp4 -i score.mp3 -map 0:v -map 1:a \
-  -vf "fade=t=in:st=0:d=0.6:color=white,fade=t=out:st=57.2:d=1:color=white" \
-  -af "loudnorm=I=-18:TP=-1.5:LRA=11,afade=t=out:st=57.2:d=1" \
+  -vf "fade=t=in:st=0:d=0.6:color=white,fade=t=out:st=63:d=1:color=white" \
+  -af "loudnorm=I=-18:TP=-1.5:LRA=11,afade=t=out:st=63:d=1" \
   -c:v libx264 -preset slow -crf 17 -pix_fmt yuv420p -movflags +faststart \
   -c:a aac -b:a 256k -shortest short-cut.mp4
 ```
 
-Its scenes live in `src/renderer/src/dev/launch-video/short/`. `timeline.ts` holds the scenes, `camera.ts` holds the crop helpers, `caption/` sets every line of type, `card/` and `toolbar/` draw the library, `mac/` redraws Pond's window, sidebar, and panel at the app's real sizes for Find and Ask, and `shift/` recenters the long cut's Finder, Enrich, and terminal scenes without their headlines.
+Its scenes live in `src/renderer/src/dev/launch-video/short/`. `timeline.ts` holds the scenes, `camera.ts` holds the crop helpers, `caption/` sets every line of type, `card/` and `toolbar/` draw the library, `mac/` redraws Pond's window, sidebar, and panel at the app's real sizes for Find and Ask, `bento/` draws the closing feature grid, and `shift/` recenters the long cut's Finder, Enrich, and terminal scenes without their headlines.
 
 ## Storyboard
 
