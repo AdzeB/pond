@@ -373,6 +373,13 @@ export const IconBarsFilter = /* @__PURE__ */ createIcon(
     ["path", { d: "M7.25 13L10.75 13" }],
   ],
 );
+export const IconBell = /* @__PURE__ */ createIcon("Bell", "outline", [
+  [
+    "path",
+    { d: "M4.25 7.25A4.75 4.75 0 0 1 13.75 7.25V10.25L15 12.75H3L4.25 10.25Z" },
+  ],
+  ["path", { d: "M7.25 15.25A1.75 1.75 0 0 0 10.75 15.25" }],
+]);
 export const IconBinary = /* @__PURE__ */ createIcon("Binary", "outline", [
   ["path", { d: "M3.75 4.25L5 3.25V8.25" }],
   ["rect", { x: "9.5", y: "3.25", width: "4.5", height: "5", rx: "2.25" }],

@@ -38,6 +38,7 @@ export const manifest: IconManifest = {
   BagShopping: ["outline"],
   Ban: ["outline"],
   BarsFilter: ["outline"],
+  Bell: ["outline"],
   Binary: ["outline"],
   Blockquote: ["outline"],
   Book: ["outline"],
