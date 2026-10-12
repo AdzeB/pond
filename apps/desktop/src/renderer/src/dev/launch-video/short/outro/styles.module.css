@@ -1,36 +1,28 @@
-.mark {
-  position: absolute;
-  top: 370px;
-  left: 960px;
-  display: grid;
-  color: #111;
-}
-
 .field {
   position: absolute;
-  top: 500px;
-  left: 660px;
+  top: 520px;
+  left: 610px;
   display: flex;
-  gap: 18px;
+  gap: 20px;
   align-items: center;
-  width: 600px;
-  height: 96px;
-  padding: 0 36px;
-  font-size: 42px;
-  font-weight: 520;
+  width: 700px;
+  height: 104px;
+  padding: 0 40px;
+  font-size: 44px;
+  font-weight: 500;
+  color: #111;
   letter-spacing: -0.02em;
   white-space: pre;
   background: #fff;
-  border-radius: 48px;
+  border-radius: 24px;
   box-shadow:
-    0 0 0 1px rgb(0 0 0 / 0.06),
-    0 2px 4px rgb(0 0 0 / 0.03),
-    0 40px 80px -36px rgb(20 30 60 / 0.22);
+    0 0 0 1px rgb(0 0 0 / 0.07),
+    0 24px 60px -24px rgb(0 0 0 / 0.16);
 }
 
 .icon {
   flex: none;
-  color: #9a9a96;
+  color: #8f8f8f;
 }
 
 .text {
@@ -40,15 +32,15 @@
 
 .caret {
   width: 3px;
-  height: 46px;
+  height: 50px;
   margin-left: 2px;
-  background: #008fff;
+  background: #111;
   border-radius: 2px;
 }
 
 .button {
   position: absolute;
-  top: 640px;
+  top: 680px;
   left: 960px;
   display: flex;
   gap: 12px;

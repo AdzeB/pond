@@ -3,14 +3,14 @@
   z-index: 10;
   overflow: hidden;
   background: #fff;
-  border-radius: 18px;
+  border-radius: 14px;
   box-shadow:
-    0 0 0 1px rgb(0 0 0 / 0.06),
-    0 2px 4px rgb(0 0 0 / 0.03),
-    0 50px 100px -40px rgb(20 30 60 / 0.25);
+    0 0 0 1px rgb(0 0 0 / 0.08),
+    0 30px 80px -30px rgb(0 0 0 / 0.18);
 }
 
 .viewport {
+  position: relative;
   transform-origin: 0 0;
 }
 

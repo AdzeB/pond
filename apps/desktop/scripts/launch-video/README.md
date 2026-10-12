@@ -43,20 +43,20 @@ Run each step from `apps/desktop`.
 
 ## Short cut
 
-`launch-video-short.html` is a 25.5 second cut for posting. It types "Introducing Pond", drops the sources into a folder, then pushes the camera into Save, Find, and Ask before a values row and the `pond.app` end card. Capture it with `--page`, then mix "Happy Beats vol. 1" from 41 seconds, so the lift lands on Save and the hit on the end card.
+`launch-video-short.html` is a 28.3 second cut for posting, on white. The wordmark opens it and the sources drop into a folder. A title card leads into each of Save, Find, and Ask, which show whole windows. Each scene dims around one component while the camera pushes in. The `pond.app` end card closes it. Capture it with `--page`, then mix "Happy Beats vol. 1" from 38.7 seconds, so the lift lands on Save and the hit on the end card.
 
 ```bash
 ./node_modules/.bin/electron scripts/launch-video/capture.cjs \
   --page=launch-video-short.html --out=.tmp/launch-video/out/short.mp4
-ffmpeg -ss 41 -t 25.5 \
+ffmpeg -ss 38.7 -t 28.3 \
   -i ../../.agents/skills/brag/assets/music/happy-beats-business-moves-vol-1-by-ende-dot-app.mp3 \
-  -af "afade=t=in:d=0.08,afade=t=out:st=24.3:d=1.2,volume=0.9" -c:a aac -b:a 192k short.m4a
+  -af "afade=t=in:d=0.08,afade=t=out:st=27.1:d=1.2,volume=0.9" -c:a aac -b:a 192k short.m4a
 ffmpeg -i .tmp/launch-video/out/short.mp4 -i short.m4a -map 0:v -map 1:a \
   -c:v libx264 -preset slow -crf 17 -pix_fmt yuv420p -movflags +faststart \
   -c:a copy -shortest short-cut.mp4
 ```
 
-Its scenes live in `src/renderer/src/dev/launch-video/short/`. `timeline.ts` holds the scenes, `camera.ts` holds the crops for the app and its pointer, and `script.ts` holds the actions inside the app.
+Its scenes live in `src/renderer/src/dev/launch-video/short/`. `timeline.ts` holds the scenes, `camera.ts` holds the app's crops, spotlights, and pointer, and `script.ts` holds the actions inside the app.
 
 ## Storyboard
 

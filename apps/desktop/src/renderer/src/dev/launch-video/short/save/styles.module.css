@@ -1,24 +1,13 @@
-.window {
-  position: absolute;
-  z-index: 10;
-  overflow: hidden;
-  background: #fff;
-  border-radius: 18px;
-  box-shadow:
-    0 0 0 1px rgb(0 0 0 / 0.06),
-    0 2px 4px rgb(0 0 0 / 0.03),
-    0 50px 100px -40px rgb(20 30 60 / 0.25);
-}
-
-.view {
+.stage {
   position: absolute;
   inset: 0;
+  overflow: hidden;
   transform-origin: 0 0;
 }
 
-/* The browser scene pins its window at the stage's 320, 290. */
+/* The browser scene pins its window at the stage's 320, 290; this centers it. */
 .page {
   position: absolute;
-  top: -290px;
-  left: -320px;
+  inset: 0;
+  top: -100px;
 }

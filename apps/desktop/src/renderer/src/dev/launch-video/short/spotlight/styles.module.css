@@ -1,0 +1,5 @@
+.spotlight {
+  position: absolute;
+  z-index: 25;
+  pointer-events: none;
+}

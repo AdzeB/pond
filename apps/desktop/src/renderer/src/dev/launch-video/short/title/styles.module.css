@@ -1,0 +1,39 @@
+.title {
+  position: absolute;
+  top: 540px;
+  left: 960px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  align-items: flex-start;
+  width: max-content;
+  translate: -50% -50%;
+}
+
+.pill {
+  display: grid;
+  place-items: center;
+  height: 38px;
+  padding: 0 18px;
+  font-size: 22px;
+  font-weight: 500;
+  color: #6b6b6b;
+  white-space: nowrap;
+  border: 1.5px solid #d4d4d4;
+  border-radius: 999px;
+  transform-origin: 19px 50%;
+}
+
+.mask {
+  display: block;
+  overflow: hidden;
+}
+
+.text {
+  display: block;
+  font-size: 68px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}

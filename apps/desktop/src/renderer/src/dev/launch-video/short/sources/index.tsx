@@ -8,21 +8,20 @@ import {
   progress,
   styled,
 } from "../../stage/timeline";
-import { Glow } from "../glow";
 import { end, start } from "../timeline";
 import styles from "./styles.module.css";
 
 const CHIPS = [
-  { label: "X", brands: ["x"] },
-  { label: "Instagram", brands: ["instagram"] },
-  { label: "Pinterest", brands: ["pinterest"] },
-  { label: "and more", brands: ["reddit", "tiktok", "youtube", "threads"] },
+  { id: "x", brands: ["x"] },
+  { id: "instagram", brands: ["instagram"] },
+  { id: "pinterest", brands: ["pinterest"] },
+  { id: "more", brands: ["reddit", "tiktok", "youtube", "threads"] },
 ];
 
-const GAP = 236;
+const GAP = 196;
 const POP = start("sources") + 600;
 const BEAT = 500;
-const MERGE = start("sources") + 3000;
+const MERGE = start("sources") + 2700;
 const EXIT = end("sources") - 350;
 const FOLDER = { x: 960, y: 700 };
 
@@ -31,8 +30,6 @@ export function Sources({ t }: { t: number }) {
   if (t < start("sources") || t > end("sources") + 50) return null;
   const first = envelope(t, start("sources") + 50, MERGE, { rise: 20 });
   const second = envelope(t, MERGE + 100, EXIT, { rise: 20 });
-  const labels = 1 - ease.in(progress(t, MERGE - 100, 300));
-  const mac = ease.out(progress(t, MERGE + 650, 450));
   const folder = ease.outQuint(progress(t, MERGE + 50, 700));
   const land = progress(t, MERGE + 650, 360);
   const bump = Math.sin(land * Math.PI) * 0.05;
@@ -50,7 +47,7 @@ export function Sources({ t }: { t: number }) {
         Keep what you save on
       </p>
       <p className={styles.line} style={styled(second)}>
-        in a folder on <Glow amount={mac}>your Mac.</Glow>
+        in a folder on your Mac.
       </p>
       <svg
         aria-hidden
@@ -101,45 +98,23 @@ export function Sources({ t }: { t: number }) {
         const opacity =
           clamp(pop * 2) * (1 - progress(t, MERGE + 640 + i * 60, 80));
         return (
-          <div key={chip.label}>
-            <div
-              className={styles.chip}
-              data-many={chip.brands.length > 1 || undefined}
-              style={{
-                left: x,
-                top: y,
-                opacity,
-                transform: `translate(-50%, -50%) scale(${scale})`,
-                filter: pop < 0.98 ? `blur(${(1 - pop) * 8}px)` : undefined,
-                visibility: opacity <= 0.002 ? "hidden" : undefined,
-              }}
-            >
-              {chip.brands.map((id) => {
-                const { Icon } = brand(id);
-                return <Icon key={id} className={styles.icon} />;
-              })}
-            </div>
-            <span
-              className={styles.label}
-              style={{
-                left: home.x,
-                opacity: clamp(pop * 1.5) * labels,
-                transform: `translate(-50%, ${(1 - pop) * 14}px)`,
-              }}
-            >
-              {chip.label}
-            </span>
-            {i > 0 ? (
-              <span
-                className={styles.slash}
-                style={{
-                  left: home.x - GAP / 2,
-                  opacity: clamp(pop * 1.5) * labels,
-                }}
-              >
-                /
-              </span>
-            ) : null}
+          <div
+            key={chip.id}
+            className={styles.chip}
+            data-many={chip.brands.length > 1 || undefined}
+            style={{
+              left: x,
+              top: y,
+              opacity,
+              transform: `translate(-50%, -50%) scale(${scale})`,
+              filter: pop < 0.98 ? `blur(${(1 - pop) * 8}px)` : undefined,
+              visibility: opacity <= 0.002 ? "hidden" : undefined,
+            }}
+          >
+            {chip.brands.map((id) => {
+              const { Icon } = brand(id);
+              return <Icon key={id} className={styles.icon} />;
+            })}
           </div>
         );
       })}
