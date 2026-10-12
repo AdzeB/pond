@@ -89,9 +89,9 @@ export function createQuerySession(
   }
   return {
     snapshot: () => state,
-    setRequest(next: LibraryQueryRequest) {
+    setRequest(next: LibraryQueryRequest): boolean {
       const nextKey = JSON.stringify(next);
-      if (nextKey === key) return;
+      if (nextKey === key) return false;
       /** Typing only changes keywords, so current results stay up until the debounced search replaces them. */
       const retyped = request !== null && scopeKey(request) === scopeKey(next);
       request = next;
@@ -99,6 +99,7 @@ export function createQuerySession(
       sequence++;
       active = false;
       update({ page: retyped ? state.page : null, loading: true, error: null });
+      return retyped;
     },
     load,
     async allIds() {

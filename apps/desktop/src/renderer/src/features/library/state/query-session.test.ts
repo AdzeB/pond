@@ -117,6 +117,27 @@ describe("query session", () => {
     session.setRequest({ query: EMPTY_QUERY, scope: { deletedOnly: true } });
     expect(session.snapshot().page).toBeNull();
   });
+  it("reports a retype only when the keywords alone change", () => {
+    const session = createQuerySession(
+      {
+        page: async () => page(["a"]),
+        ids: async () => ({ ids: [] }),
+        refresh: async () => {},
+      },
+      () => {},
+    );
+    expect(session.setRequest({ query: EMPTY_QUERY })).toBe(false);
+    expect(session.setRequest({ query: EMPTY_QUERY, keywords: "fall" })).toBe(
+      true,
+    );
+    expect(
+      session.setRequest({
+        query: EMPTY_QUERY,
+        keywords: "fall",
+        scope: { deletedOnly: true },
+      }),
+    ).toBe(false);
+  });
   it("does not stretch a new search to the previous result count", async () => {
     let calls = 0;
     const session = createQuerySession(

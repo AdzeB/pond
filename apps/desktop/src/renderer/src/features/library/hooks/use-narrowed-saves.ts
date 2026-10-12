@@ -119,12 +119,12 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
     ),
   );
   useEffect(() => {
-    session.setRequest(request);
+    const retyped = session.setRequest(request);
     const timer = setTimeout(
       () => {
         void session.load();
       },
-      request.keywords?.trim() ? KEYWORD_DEBOUNCE_MS : 0,
+      retyped && request.keywords?.trim() ? KEYWORD_DEBOUNCE_MS : 0,
     );
     return () => {
       clearTimeout(timer);
