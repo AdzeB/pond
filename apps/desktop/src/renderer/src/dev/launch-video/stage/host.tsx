@@ -11,6 +11,7 @@ import { FPS } from "./timeline";
 export function host(
   Composition: ComponentType<{ t: number }>,
   duration: number,
+  { app = true } = {},
 ) {
   const element = document.getElementById("stage");
   if (!element) throw new Error("#stage element missing");
@@ -35,7 +36,7 @@ export function host(
       async ready(timeout = 20000) {
         const started = Date.now();
         while (Date.now() - started < timeout) {
-          if (director()?.ready()) {
+          if (!app || director()?.ready()) {
             await document.fonts.ready;
             await preload();
             return true;

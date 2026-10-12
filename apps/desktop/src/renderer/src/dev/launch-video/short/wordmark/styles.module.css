@@ -8,39 +8,17 @@
 
 .mark {
   position: absolute;
-  top: -42px;
-  left: calc(50% - 42px);
+  top: -48px;
+  left: calc(50% - 48px);
   display: grid;
 }
 
-.clip {
+.name {
   position: absolute;
   top: -48px;
-  height: 96px;
-  overflow: hidden;
-}
-
-.name {
-  display: inline-block;
-  font-size: 80px;
+  font-size: 88px;
   font-weight: 600;
   line-height: 96px;
   letter-spacing: -0.035em;
-}
-
-.spinner {
-  position: absolute;
-  top: 0;
-  left: 50%;
-
-  & i {
-    position: absolute;
-    top: -12px;
-    left: -5px;
-    width: 10px;
-    height: 24px;
-    background: #111;
-    border-radius: 5px;
-    transform-origin: 5px 12px;
-  }
+  white-space: nowrap;
 }

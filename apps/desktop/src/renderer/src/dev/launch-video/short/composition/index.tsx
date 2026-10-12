@@ -1,5 +1,6 @@
 import { HEIGHT, WIDTH } from "../../stage/timeline";
-import { App } from "../app";
+import { Ask } from "../ask";
+import { Find } from "../find";
 import { Outro } from "../outro";
 import { Save } from "../save";
 import { Sources } from "../sources";
@@ -24,9 +25,8 @@ export function Composition({ t }: { t: number }) {
     <div className={styles.frame} style={{ width: WIDTH, height: HEIGHT }}>
       <Wordmark
         t={t}
-        spin
-        enter={start("logo") + 700}
-        retract={end("logo") - 550}
+        enter={start("logo") + 1100}
+        retract={end("logo") - 300}
         exit={end("logo") - 300}
       />
       <Sources t={t} />
@@ -41,7 +41,8 @@ export function Composition({ t }: { t: number }) {
         />
       ))}
       <Save t={t} />
-      <App t={t} />
+      <Find t={t} />
+      <Ask t={t} />
       <Outro t={t} />
     </div>
   );

@@ -1,42 +1,42 @@
-import { Logo } from "@pond/ui/logo";
 import { useRef } from "react";
 import { useLayout } from "../../stage/layout";
 import { clamp, ease, mix, progress } from "../../stage/timeline";
+import { Morph } from "../morph";
 import styles from "./styles.module.css";
 
-const DOTS = [0, 1, 2, 3, 4, 5, 6, 7];
-const GAP = 22;
+const SIZE = 96;
+const GAP = 24;
+const SPIN = 900;
 
 interface WordmarkProps {
   t: number;
-  /** When the mark lands. */
+  /** When the ring finishes morphing into the mark. */
   enter: number;
-  /** When the name starts sliding back behind the mark. */
+  /** When the name fades back out. */
   retract?: number;
   /** When the mark itself leaves. */
   exit?: number;
-  /** Spin a loader in before the mark lands. */
-  spin?: boolean;
   y?: number;
 }
 
-/** The Pond mark landing, with its name sliding out from behind it. */
+/** Pond's loader resolving into the mark, then its name fading in beside it. */
 export function Wordmark({
   t,
   enter,
   retract = Number.POSITIVE_INFINITY,
   exit = Number.POSITIVE_INFINITY,
-  spin = false,
   y = 540,
 }: WordmarkProps) {
   const name = useRef<HTMLSpanElement>(null);
   const width = useLayout(() => name.current?.offsetWidth ?? 0, 0);
-  const from = spin ? enter - 800 : enter;
+  const from = enter - 1100;
   const hidden = t < from || t > exit + 400;
-  const land = ease.outQuint(progress(t, enter, 650));
   const open =
-    ease.inOut(progress(t, enter + 450, 500)) *
-    (1 - ease.inOut(progress(t, retract, 380)));
+    ease.inOut(progress(t, enter + 150, 650)) *
+    (1 - ease.inOut(progress(t, retract, 450)));
+  const fade =
+    ease.out(progress(t, enter + 250, 550)) *
+    (1 - ease.in(progress(t, retract, 300)));
   const out = ease.in(progress(t, exit, 300));
   const shift = (width + GAP) / 2;
   return (
@@ -49,54 +49,46 @@ export function Wordmark({
         visibility: hidden ? "hidden" : undefined,
       }}
     >
-      {spin && !hidden ? <Spinner t={t} enter={enter} /> : null}
       <span
         className={styles.mark}
         style={{
-          opacity: clamp(land * 2),
-          transform: `translateX(${-shift * open}px) scale(${mix(0.4, 1, land) * (1 - out * 0.2)})`,
+          transform: `translateX(${-shift * open}px) scale(${1 - out * 0.15})`,
         }}
       >
-        <Logo size={84} aria-hidden />
+        <Loader t={t} enter={enter} />
       </span>
       <span
-        className={styles.clip}
+        ref={name}
+        className={styles.name}
         style={{
-          left: `calc(50% + ${42 + GAP - shift * open}px)`,
-          width: width * open,
+          left: `calc(50% + ${SIZE / 2 + GAP - shift * open}px)`,
+          opacity: fade,
+          filter: fade < 0.99 ? `blur(${(1 - fade) * 10}px)` : undefined,
+          transform: `translateX(${(1 - fade) * -12}px)`,
         }}
       >
-        <span
-          ref={name}
-          className={styles.name}
-          style={{ transform: `translateX(${(open - 1) * 40}px)` }}
-        >
-          Pond
-        </span>
+        Pond
       </span>
     </div>
   );
 }
 
-/** A ring of dashes turning, then drawing into the mark. */
-function Spinner({ t, enter }: { t: number; enter: number }) {
-  const gather = ease.in(progress(t, enter - 150, 300));
-  if (gather >= 1) return null;
-  const turn = ((t - enter) / 900) * 360;
+/** Pond's loader: a spinning arc that closes into a ring, which morphs into the mark. */
+function Loader({ t, enter }: { t: number; enter: number }) {
+  const appear = ease.outQuint(progress(t, enter - 1100, 400));
+  const close = ease.inOut(progress(t, enter - 620, 300));
+  const morph = ease.inOut(progress(t, enter - 330, 330));
+  const bump = Math.sin(progress(t, enter, 260) * Math.PI) * 0.06;
   return (
-    <span
-      className={styles.spinner}
-      style={{ transform: `rotate(${turn}deg)` }}
-    >
-      {DOTS.map((i) => (
-        <i
-          key={i}
-          style={{
-            opacity: (0.25 + (0.75 * i) / (DOTS.length - 1)) * (1 - gather),
-            transform: `rotate(${(i * 360) / DOTS.length}deg) translateY(${mix(-40, -6, gather)}px)`,
-          }}
-        />
-      ))}
-    </span>
+    <Morph
+      size={SIZE}
+      mark={morph}
+      close={close}
+      turn={((t - enter) / SPIN) * 360 * (1 - close)}
+      style={{
+        opacity: clamp(appear * 1.5),
+        transform: `scale(${mix(0.7, 1, appear) + bump})`,
+      }}
+    />
   );
 }
