@@ -43,7 +43,7 @@ Run each step from `apps/desktop`.
 
 ## Short cut
 
-`launch-video-short.html` is a 35 second cut for posting, on white. Pond's loader morphs into the mark, and the sources drop into a folder. A title card leads into each of Save, Find, and Ask. Each step is UI rebuilt for the stage and driven by time, not the app in a frame, so the camera can push anywhere. It ends on the thesis, the offer, and the mark. Capture it with `--page`, then mix "Happy Beats vol. 1" from 37.5 seconds, so the lift lands on the bookmark press and the hit on the thesis.
+`launch-video-short.html` is a 35 second cut for posting, on white. The mark and name fade in, and the sources drop into a folder. A title card leads into each of Save, Find, and Ask. Each step is UI rebuilt for the stage and driven by time, not the app in a frame, so the camera can push anywhere. It ends on the thesis, the offer, and the mark. Capture it with `--page`, then mix "Happy Beats vol. 1" from 37.5 seconds, so the lift lands on the bookmark press and the hit on the thesis.
 
 ```bash
 ./node_modules/.bin/electron scripts/launch-video/capture.cjs \

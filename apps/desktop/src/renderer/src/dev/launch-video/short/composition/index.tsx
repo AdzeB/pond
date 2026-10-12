@@ -25,7 +25,7 @@ export function Composition({ t }: { t: number }) {
     <div className={styles.frame} style={{ width: WIDTH, height: HEIGHT }}>
       <Wordmark
         t={t}
-        enter={start("logo") + 1100}
+        enter={start("logo") + 900}
         retract={end("logo") - 300}
         exit={end("logo") - 300}
       />

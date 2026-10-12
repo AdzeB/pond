@@ -1,16 +1,15 @@
 import { useRef } from "react";
 import { useLayout } from "../../stage/layout";
-import { clamp, ease, mix, progress } from "../../stage/timeline";
+import { ease, mix, progress } from "../../stage/timeline";
 import { Morph } from "../morph";
 import styles from "./styles.module.css";
 
 const SIZE = 96;
 const GAP = 24;
-const SPIN = 900;
 
 interface WordmarkProps {
   t: number;
-  /** When the ring finishes morphing into the mark. */
+  /** When the mark has finished fading in. */
   enter: number;
   /** When the name fades back out. */
   retract?: number;
@@ -19,7 +18,7 @@ interface WordmarkProps {
   y?: number;
 }
 
-/** Pond's loader resolving into the mark, then its name fading in beside it. */
+/** The Pond mark fading in, then its name fading in beside it. */
 export function Wordmark({
   t,
   enter,
@@ -29,7 +28,8 @@ export function Wordmark({
 }: WordmarkProps) {
   const name = useRef<HTMLSpanElement>(null);
   const width = useLayout(() => name.current?.offsetWidth ?? 0, 0);
-  const from = enter - 1100;
+  const from = enter - 700;
+  const land = ease.out(progress(t, from, 700));
   const hidden = t < from || t > exit + 400;
   const open =
     ease.inOut(progress(t, enter + 150, 650)) *
@@ -55,7 +55,15 @@ export function Wordmark({
           transform: `translateX(${-shift * open}px) scale(${1 - out * 0.15})`,
         }}
       >
-        <Loader t={t} enter={enter} />
+        <Morph
+          size={SIZE}
+          mark={1}
+          style={{
+            opacity: land,
+            filter: land < 0.99 ? `blur(${(1 - land) * 10}px)` : undefined,
+            transform: `scale(${mix(0.92, 1, land)})`,
+          }}
+        />
       </span>
       <span
         ref={name}
@@ -70,25 +78,5 @@ export function Wordmark({
         Pond
       </span>
     </div>
-  );
-}
-
-/** Pond's loader: a spinning arc that closes into a ring, which morphs into the mark. */
-function Loader({ t, enter }: { t: number; enter: number }) {
-  const appear = ease.outQuint(progress(t, enter - 1100, 400));
-  const close = ease.inOut(progress(t, enter - 620, 300));
-  const morph = ease.inOut(progress(t, enter - 330, 330));
-  const bump = Math.sin(progress(t, enter, 260) * Math.PI) * 0.06;
-  return (
-    <Morph
-      size={SIZE}
-      mark={morph}
-      close={close}
-      turn={((t - enter) / SPIN) * 360 * (1 - close)}
-      style={{
-        opacity: clamp(appear * 1.5),
-        transform: `scale(${mix(0.7, 1, appear) + bump})`,
-      }}
-    />
   );
 }
