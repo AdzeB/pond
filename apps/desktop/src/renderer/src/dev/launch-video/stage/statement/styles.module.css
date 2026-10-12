@@ -1,0 +1,43 @@
+.statement {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  font-size: 72px;
+  font-weight: 600;
+  line-height: 84px;
+  text-align: center;
+  letter-spacing: -0.03em;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  align-items: center;
+}
+
+.logo {
+  color: var(--ds-gray-12);
+}
+
+.from {
+  display: inline-flex;
+  gap: 0.26em;
+  align-items: baseline;
+  white-space: pre;
+}
+
+.rotator {
+  display: inline-block;
+  min-width: 6.4em;
+  padding-bottom: 0.12em;
+  overflow: hidden;
+  text-align: left;
+}
+
+.source {
+  display: inline-block;
+  color: var(--ds-accent-9);
+}

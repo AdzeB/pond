@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pond</title>
+    <style>
+      :root {
+        font-family:
+          inter-variable, ui-sans-serif, system-ui, -apple-system,
+          "SF Pro Text", "Segoe UI", sans-serif;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #ffffff;
+      }
+      #root {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        isolation: isolate;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/dev/launch-video/app.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,386 @@
+{
+  "folders": ["Wardrobe", "Objects", "Cars", "Places", "Food", "Art"],
+  "saves": [
+    {
+      "id": "01M1Z5DRXWTMDQ1G7ZDTBB3HDX",
+      "title": "Striped oxford, brown trousers",
+      "caption": "A person wearing a striped blue shirt and brown trousers.",
+      "tags": ["menswear", "shirting"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5DRXWVR24RY7WFRJY7YDS",
+      "title": "Green rolled-edge sweater",
+      "caption": "A model walking a runway in a green sweater and cream trousers.",
+      "tags": ["menswear", "knitwear", "green"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5DRXXNQXYN25N0HSAYW9R",
+      "title": "Apple study",
+      "caption": "A single red apple on a white background.",
+      "tags": ["red", "still life"],
+      "folder": "Food"
+    },
+    {
+      "id": "01M1Z5DRXXRMH73FB2TQP0WM03",
+      "title": "Bottega Veneta",
+      "caption": "A man wearing a blue shirt and olive pleated trousers.",
+      "tags": ["menswear", "shirting"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5DRXZ7V0DYMZY24MR8NH5",
+      "title": "Akikuma mini album",
+      "caption": "Two men in matching tan suits and hats standing in a field.",
+      "tags": ["menswear", "tailoring"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5DRY2K8GHRJCXRRFQB6DM",
+      "title": "Menswear by MORJAS",
+      "caption": "A man sitting on an orange chair wearing a blue sweater.",
+      "tags": ["menswear", "knitwear", "blue"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5DRY2P3N7NAKPPVD60QY4",
+      "title": "Rolled-edge wool sweater",
+      "caption": "A man in a blue sweater and black trousers.",
+      "tags": ["menswear", "knitwear", "blue"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5DRY3A23DC8GYK0PA5MV4",
+      "title": "Vogue runway",
+      "caption": "A model walking under a teal spotlight in a black jacket.",
+      "tags": ["runway"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5DRY5D0WWV462MH583SMV",
+      "title": "Inside out denim",
+      "caption": "Close crop of inside-out denim with red lettering.",
+      "tags": ["denim", "red"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5DRY5FRAXPA2HZT6QX6GG",
+      "title": "Vintage green Porsche",
+      "caption": "A vintage green Porsche 911 parked under city lights.",
+      "ocr": "P",
+      "tags": ["porsche", "green", "vintage"],
+      "folder": "Cars"
+    },
+    {
+      "id": "01M1Z5DRY5S61VEYDAW7E002CG",
+      "title": "Cherry eyes",
+      "caption": "Two cherries resting on a blue eyelid.",
+      "tags": ["red", "macro"],
+      "folder": "Food"
+    },
+    {
+      "id": "01M1Z5DRY6MME2JGW1936CNXW8",
+      "title": "Porsche Cayman S",
+      "caption": "A silver Porsche Cayman parked on a dark street at night.",
+      "tags": ["porsche", "silver"],
+      "folder": "Cars"
+    },
+    {
+      "id": "01M1Z5DRY70CV2PV2Y5ZYC3267",
+      "title": "Who Owns the City?",
+      "caption": "A pixel art highway at night lined with orange street lights.",
+      "tags": ["pixel art", "night"],
+      "folder": "Art"
+    },
+    {
+      "id": "01M1Z5DRY7F4P95NX6746E78DJ",
+      "title": "Twilight Princess",
+      "caption": "A sunlit forest clearing with a stone path.",
+      "tags": ["games", "green"],
+      "folder": "Places"
+    },
+    {
+      "id": "01M1Z5DRY94FHC0VGHMYJ66RWA",
+      "title": "Leather biker jacket",
+      "caption": "A black leather jacket displayed on a tile floor.",
+      "tags": ["leather", "outerwear"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5DRYDGRCEAKW1KJQE0FAX",
+      "title": "Pink dip-dye knit",
+      "caption": "A pink and white dip-dyed sweater laid flat.",
+      "tags": ["knitwear", "pink"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5DRYE6T1NGY9JM58J499X",
+      "title": "Loafers on blue",
+      "caption": "A pair of black loafers on a bright blue floor.",
+      "tags": ["shoes", "loafers", "blue"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5DRYEPJQNWT08V7GFXDWE",
+      "title": "Leaf purse",
+      "caption": "A hand holding a bag shaped like a green leaf.",
+      "tags": ["bags", "green"],
+      "folder": "Objects"
+    },
+    {
+      "id": "01M1Z5DRYETKS93P3VYG3XMN0S",
+      "title": "Jean Bellve star watch",
+      "caption": "A star-shaped watch with a blue dial held in a hand.",
+      "ocr": "JEAN BELLVE",
+      "tags": ["watches", "vintage", "blue"],
+      "folder": "Objects"
+    },
+    {
+      "id": "01M1Z5DRYF2QRP1XWWFNQW1X8X",
+      "title": "Skate deck",
+      "caption": "A skateboard lying on the ground with orange wheels.",
+      "tags": ["skate", "orange"],
+      "folder": "Objects"
+    },
+    {
+      "id": "01M1Z5DRYFR558QSAQGY2EGFBR",
+      "title": "Y2K runners",
+      "caption": "A pair of chrome silver and black sneakers.",
+      "tags": ["shoes", "silver", "y2k"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5DRYG9HCK7D6TN4N34ZDX",
+      "title": "Steps, red cap",
+      "caption": "A man in a red cap sitting on stone steps.",
+      "tags": ["menswear", "streetwear", "red"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5DRYGRZYCF7ACH98AHNA7",
+      "title": "Corteiz lookbook",
+      "caption": "A man in a blue track jacket and cream trousers.",
+      "tags": ["streetwear", "blue"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5DRYH73MTFJAF4YBMF7MB",
+      "title": "Chrome Hearts watch",
+      "caption": "A wrist wearing a curved watch and a chain bracelet.",
+      "ocr": "CARTIER",
+      "tags": ["watches", "silver"],
+      "folder": "Objects"
+    },
+    {
+      "id": "01M1Z5DRYH8SCZC3SEB5KDTVJ5",
+      "title": "Lancia Delta in snow",
+      "caption": "A dark green Lancia Delta parked on a snowy mountain road.",
+      "tags": ["lancia", "green", "snow"],
+      "folder": "Cars"
+    },
+    {
+      "id": "01M1Z5DRYHE6JBEHS4VY5WZYQG",
+      "title": "Camper loafers",
+      "caption": "A pair of glossy black loafers on a white background.",
+      "tags": ["shoes", "loafers"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5DRYHZFA4CA4RF6NZQW4D",
+      "title": "McLaren P1",
+      "caption": "A chrome McLaren P1 with its doors open.",
+      "tags": ["mclaren", "silver"],
+      "folder": "Cars"
+    },
+    {
+      "id": "01M1Z5DRYJGMT2GXY761XXB0B1",
+      "title": "Oakley watch",
+      "caption": "A silver Oakley watch with a metal band held in a hand.",
+      "tags": ["watches", "silver", "y2k"],
+      "folder": "Objects"
+    },
+    {
+      "id": "01M1Z5DRYK36TSW4QCXX4S2M05",
+      "title": "Mercedes in the snow",
+      "caption": "A classic black Mercedes-Benz parked on a snowy street.",
+      "tags": ["mercedes", "black", "snow"],
+      "folder": "Cars"
+    },
+    {
+      "id": "01M1Z5DRYKKHRGE6G1HJY7NTTH",
+      "title": "Gray leather lounge chair",
+      "caption": "A puffy gray leather chair on a chrome frame.",
+      "tags": ["furniture", "leather"],
+      "folder": "Objects"
+    },
+    {
+      "id": "01M1Z5DRYN26WE5HGJH70T65D6",
+      "title": "Chunky brown shoes",
+      "caption": "A pair of red-brown leather shoes seen from above.",
+      "tags": ["shoes", "red", "leather"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5DRYPF1EG0WTVJA5BM4QB",
+      "title": "Rains x Umbro bag",
+      "caption": "A black duffel bag on a gray background.",
+      "tags": ["bags", "black"],
+      "folder": "Objects"
+    },
+    {
+      "id": "01M1Z5DRYQ1V499KC0EG5A69YR",
+      "title": "Fendi Peekaboo",
+      "caption": "A green suede handbag with gold hardware.",
+      "tags": ["bags", "green", "suede"],
+      "folder": "Objects"
+    },
+    {
+      "id": "01M1Z5DRYT1P26QFHQN2ZKFY6Y",
+      "title": "Stripes and a tie",
+      "caption": "A man in a striped sweater, shirt, and tie with wide jeans.",
+      "tags": ["menswear", "knitwear"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5EJJV12E3GTQN29H6XCRT",
+      "title": "Yellow tee",
+      "caption": "A man in a mustard yellow t-shirt and gray trousers.",
+      "tags": ["menswear", "yellow"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5EJJX9V98GVZDRZVFJG7T",
+      "title": "Burgundy bag",
+      "caption": "A hand holding a burgundy leather handbag.",
+      "tags": ["bags", "red", "leather"],
+      "folder": "Objects"
+    },
+    {
+      "id": "01M1Z5EJJYM93DCFDMSQKTN8KP",
+      "title": "Red scarf",
+      "caption": "A figure wrapped in a bright red scarf.",
+      "tags": ["red", "accessories"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5EJJYV0SYK8D7BWJZ32TS",
+      "title": "Pink coat",
+      "caption": "A model in a pink coat carrying a brown bag.",
+      "tags": ["pink", "outerwear"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5EJK0RKFENN1H1EY506E6",
+      "title": "Floral coat",
+      "caption": "A woman with curly hair in a floral print coat and sunglasses.",
+      "tags": ["print", "outerwear"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5EJK1W3TW11FP6CKVR3QX",
+      "title": "White blouse",
+      "caption": "A woman in round sunglasses and a white tie-neck blouse.",
+      "tags": ["womenswear", "white"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5EJK2S40DC4DSP5ERREF9",
+      "title": "Red turtleneck",
+      "caption": "A model in a red turtleneck and a wide-brimmed hat.",
+      "tags": ["red", "knitwear"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5EJK48G6YT0XQRJSK0RHX",
+      "title": "Gold earrings",
+      "caption": "A woman with slicked hair wearing gold earrings.",
+      "tags": ["jewelry", "gold"],
+      "folder": "Wardrobe"
+    },
+    {
+      "id": "01M1Z5EJK4P9ZEZGQ1R9Y54V19",
+      "title": "Red purse",
+      "caption": "A woman holding a red purse in her hand.",
+      "tags": ["bags", "red"],
+      "folder": "Objects"
+    },
+    {
+      "id": "01M1Z5EJK637ZC5QB1SX2JC149",
+      "title": "Notebook and swatches",
+      "caption": "An open notebook on a wooden desk beside fabric swatches.",
+      "tags": ["desk", "paper"],
+      "folder": "Objects"
+    },
+    {
+      "id": "01M1Z5EJK6ZJWZKMWQRR0309JJ",
+      "title": "Two wallets",
+      "caption": "Two brown leather wallets on a wooden table.",
+      "tags": ["leather", "accessories"],
+      "folder": "Objects"
+    },
+    {
+      "id": "01M1Z5EJK89VN0ZFES4WWMSNF6",
+      "title": "Silver tray",
+      "caption": "A silver tray of small dishes on a white tablecloth.",
+      "tags": ["table", "silver"],
+      "folder": "Food"
+    },
+    {
+      "id": "01M1Z5EJK92KDW7BZ527XRYM21",
+      "title": "Shiloh shelf",
+      "caption": "A white shelf with ceramics and a small lamp.",
+      "tags": ["interior", "white"],
+      "folder": "Places"
+    },
+    {
+      "id": "01M1Z5EJK972KSWJZB69CV41QW",
+      "title": "Breakfast on blue",
+      "caption": "Fried eggs, lemons, and glasses on a blue tablecloth.",
+      "tags": ["table", "blue"],
+      "folder": "Food"
+    },
+    {
+      "id": "01M1Z5EJK99WGN0JDRCVXAFX3B",
+      "title": "Juno cutlery",
+      "caption": "A silver bowl and spoon on a gray surface.",
+      "tags": ["table", "silver"],
+      "folder": "Objects"
+    },
+    {
+      "id": "01M1Z5EJKAP3VBPSW2HDZBFG6B",
+      "title": "Green sky",
+      "caption": "A dark landscape under a green and gold sky.",
+      "tags": ["sky", "green"],
+      "folder": "Places"
+    },
+    {
+      "id": "01M1Z5EJKK496JQF99ZVE7E422",
+      "title": "Dolphin print",
+      "caption": "A graphic print of two dolphins over blue water.",
+      "tags": ["print", "blue"],
+      "folder": "Art"
+    },
+    {
+      "id": "01M1Z5EJKKMDFHN32RF0F8SEHN",
+      "title": "Japanese gradients",
+      "caption": "Rows of glass tubes in a blue to orange gradient.",
+      "tags": ["gradient", "color"],
+      "folder": "Art"
+    },
+    {
+      "id": "01M1Z5EJKM5YRN09GYY0W6ESVR",
+      "title": "Horse and rider",
+      "caption": "A collage of a horse and rider over a dusky sky.",
+      "tags": ["collage"],
+      "folder": "Art"
+    },
+    {
+      "id": "01M1Z5EJKMNN32KA36NSXRD7DT",
+      "title": "Desk on the rocks",
+      "caption": "A person working at a white desk on coastal rocks.",
+      "tags": ["outdoors", "work"],
+      "folder": "Places"
+    }
+  ]
+}

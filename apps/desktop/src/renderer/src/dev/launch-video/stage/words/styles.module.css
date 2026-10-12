@@ -1,0 +1,17 @@
+.words {
+  display: inline;
+}
+
+.word {
+  display: inline-block;
+  color: var(--ds-gray-12);
+  white-space: pre;
+
+  &[data-tone="muted"] {
+    color: var(--ds-gray-9);
+  }
+
+  &[data-tone="accent"] {
+    color: var(--ds-accent-9);
+  }
+}

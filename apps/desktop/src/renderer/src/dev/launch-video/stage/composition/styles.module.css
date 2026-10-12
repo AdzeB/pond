@@ -1,0 +1,8 @@
+.frame {
+  position: relative;
+  overflow: hidden;
+  font-family: var(--ds-ui-font-family);
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  background: var(--ds-gray-1);
+}
