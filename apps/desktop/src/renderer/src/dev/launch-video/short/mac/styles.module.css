@@ -7,6 +7,8 @@
   background: #f7f7f7;
   border-radius: 15px;
   box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.1),
+    0 1px 2px rgb(0 0 0 / 0.06),
     0 40px 90px -40px rgb(0 0 0 / 0.26),
     0 12px 32px -12px rgb(0 0 0 / 0.1);
 }

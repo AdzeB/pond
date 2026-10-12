@@ -1,4 +1,5 @@
 import { BRANDS, brand } from "../../stage/brands";
+import { SAMPLES, type Sample } from "../../stage/media";
 import {
   clamp,
   ease,
@@ -9,7 +10,7 @@ import {
 } from "../../stage/timeline";
 import { Caption } from "../caption";
 import { Card } from "../card";
-import { ALL, CARD, waterfall } from "../find/grid";
+import { CARD, waterfall } from "../find/grid";
 import { Mac } from "../mac";
 import { end, live, start } from "../timeline";
 import { Toolbar } from "../toolbar";
@@ -36,11 +37,52 @@ const tileX = (k: number) =>
   k * (TILE + TILE_GAP) +
   TILE / 2;
 
-const SLOTS = waterfall(ALL);
-const CARDS = ALL.flatMap((entry, k) => {
+/** Covers with white edges read as gaps in the grid, so the funnel leaves them out. */
+const BRIGHT = new Set([
+  "Coot - AI iOS device installs and IPA sharing",
+  "Rolof lauren beanie outfit",
+  "Modern Gray Leather Chair with Footrests",
+  "Aimé Leon Dore Yankees hand-knit sweater",
+  "i just ordered it cmon man",
+  "Black suit, long hair",
+  "Long black coat",
+  "Natural Selection",
+  "Lemaire AW25, look 28",
+  "We built a tool to turn any company website into a Jingle.",
+  "few ways to do the CSS for this",
+  "Agents make ugly UIs because they've never seen good design.",
+  "Complete end-to-end Sign In/Sign Up flows.",
+]);
+
+const sourceOf = (entry: Sample) =>
+  brand(entry.source === "twitter" ? "x" : entry.source).id;
+
+/** Every save worth showing, dealt round-robin across sources so each icon keeps firing. */
+const FEED = (() => {
+  const pools = new Map<string, Sample[]>();
+  for (const entry of SAMPLES) {
+    if (BRIGHT.has(entry.title)) continue;
+    const id = sourceOf(entry);
+    pools.set(id, [...(pools.get(id) ?? []), entry]);
+  }
+  const lists = [...pools.values()];
+  const out: Sample[] = [];
+  for (let round = 0; out.length < SAMPLES.length; round++) {
+    const before = out.length;
+    for (const list of lists) {
+      const entry = list[round];
+      if (entry) out.push(entry);
+    }
+    if (out.length === before) break;
+  }
+  return out;
+})();
+
+const SLOTS = waterfall(FEED);
+const CARDS = FEED.flatMap((entry, k) => {
   const slot = SLOTS[k];
   if (!slot || slot.y > VISIBLE) return [];
-  const id = brand(entry.source === "twitter" ? "x" : entry.source).id;
+  const id = sourceOf(entry);
   return [{ entry, slot, from: BRANDS.findIndex((item) => item.id === id) }];
 }).map((card, k, list) => ({
   ...card,
