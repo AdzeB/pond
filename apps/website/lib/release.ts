@@ -1,5 +1,5 @@
 /** Keep in sync with apps/desktop and apps/extension package versions on each release. */
-const POND_VERSION = "0.0.1";
+const POND_VERSION = "0.2.0";
 
 const RELEASES_BASE =
   "https://github.com/raphaelsalaja/pond/releases/latest/download";

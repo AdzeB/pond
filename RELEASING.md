@@ -17,6 +17,14 @@ Update the version string in all of these before tagging:
 
 Hero and footer read the version from `POND_VERSION`, so they update with that file.
 
+Then refresh the SBOM, which carries the root `package.json` version:
+
+```bash
+pnpm sbom:generate && pnpm lint:fix
+```
+
+`pnpm sbom` writes JSON that the formatter rewrites, so `pnpm check` fails without the second step.
+
 Commit the bump on `main`.
 
 ## Tag and publish
