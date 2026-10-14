@@ -1,4 +1,5 @@
 import {
+  IconCoffee,
   IconEnvelope,
   IconGear3,
   IconRefresh,
@@ -12,6 +13,7 @@ import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 const TWITTER = "https://x.com/raphaelsalaja";
 const GITHUB = "https://github.com/raphaelsalaja";
 const EMAIL = "mailto:raphaelsalaja@gmail.com";
+const BUY_ME_A_COFFEE = "https://buymeacoffee.com/raphaelsalaja";
 
 export function buildWorkspaceMenuItems({
   onBrowserExtension,
@@ -51,6 +53,12 @@ export function buildWorkspaceMenuItems({
       label: "Email",
       icon: <IconEnvelope />,
       onClick: () => void window.pond.openExternal(EMAIL),
+    },
+    { type: "separator" },
+    {
+      label: "Buy Me a Coffee",
+      icon: <IconCoffee />,
+      onClick: () => void window.pond.openExternal(BUY_ME_A_COFFEE),
     },
   ];
 }

@@ -889,6 +889,17 @@ export const IconCode2Fill = /* @__PURE__ */ createIcon("Code2", "fill", [
     },
   ],
 ]);
+export const IconCoffee = /* @__PURE__ */ createIcon("Coffee", "outline", [
+  [
+    "path",
+    {
+      d: "M2.75 7.25H12.25V11.75A3.5 3.5 0 0 1 8.75 15.25H6.25A3.5 3.5 0 0 1 2.75 11.75Z",
+    },
+  ],
+  ["path", { d: "M12.25 8.5H13.25A2 2 0 0 1 13.25 12.5H12.25" }],
+  ["path", { d: "M5.75 2.75V4.5" }],
+  ["path", { d: "M9.25 2.75V4.5" }],
+]);
 export const IconCompass = /* @__PURE__ */ createIcon("Compass", "outline", [
   ["circle", { cx: "9", cy: "9", r: "6.75" }],
   ["path", { d: "M11.75 6.25L10.1 10.1L6.25 11.75L7.9 7.9Z" }],

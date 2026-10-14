@@ -5,6 +5,7 @@ import styles from "./styles.module.css";
 
 const GITHUB = "https://github.com/raphaelsalaja/pond";
 const TWITTER = "https://x.com/raphaelsalaja";
+const BUY_ME_A_COFFEE = "https://buymeacoffee.com/raphaelsalaja";
 
 export function Intro() {
   return (
@@ -41,6 +42,14 @@ export function Intro() {
             rel="noreferrer"
           >
             Twitter
+          </a>
+          <a
+            className={styles.link}
+            href={BUY_ME_A_COFFEE}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Buy Me a Coffee
           </a>
         </div>
       </nav>

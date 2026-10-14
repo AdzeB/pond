@@ -76,6 +76,7 @@ export const manifest: IconManifest = {
   ClockPlus: ["outline"],
   Code: ["outline"],
   Code2: ["outline", "fill"],
+  Coffee: ["outline"],
   Compass: ["outline"],
   Computer: ["outline"],
   Contrast: ["outline"],
