@@ -68,7 +68,7 @@ const service = createFeedbackService({
     };
   },
   notificationsSupported: () => Notification.isSupported(),
-  showNotification: (title) => new Notification({ title }).show(),
+  showNotification: (title) => new Notification({ title, silent: true }).show(),
 });
 
 export function emitFeedback(event: FeedbackEvent): Promise<void> {

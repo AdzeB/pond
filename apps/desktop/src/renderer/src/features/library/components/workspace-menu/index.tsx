@@ -1,12 +1,12 @@
 import {
   IconCheckFill,
   IconChevronDown,
-  IconChevronExpandY,
   IconFaceSmile,
   IconFolder,
   IconFolderOpen,
   IconFolderPlus,
   IconFolders,
+  IconLayers,
 } from "@pond/icons";
 import { cssVars, Menu } from "@pond/ui";
 import type { QueryResult } from "@shared/query-contracts";
@@ -39,7 +39,7 @@ function SwitchLibraryMenu({
     <Menu.SubmenuRoot>
       <Menu.SubmenuTrigger>
         <Menu.ItemIcon>
-          <IconChevronExpandY />
+          <IconLayers />
         </Menu.ItemIcon>
         <Menu.ItemLabel>Switch Library</Menu.ItemLabel>
       </Menu.SubmenuTrigger>

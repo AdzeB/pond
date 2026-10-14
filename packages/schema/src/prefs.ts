@@ -159,13 +159,11 @@ const feedback = z.object({
       interface: z.boolean().catch(true),
       saveDeletion: z.boolean().catch(true),
       folderDeletion: z.boolean().catch(true),
-      autoImport: z.boolean().catch(true),
     })
     .catch({
       interface: true,
       saveDeletion: true,
       folderDeletion: true,
-      autoImport: true,
     }),
   notifications: z
     .object({

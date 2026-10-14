@@ -8,7 +8,6 @@ function preferences() {
     sounds: {
       saveDeletion: true,
       folderDeletion: true,
-      autoImport: true,
     },
     notifications: {
       saveDeletion: false,
@@ -20,6 +19,21 @@ function preferences() {
 }
 
 describe("feedback service", () => {
+  it("never sounds when something is added to the library", async () => {
+    const beep = vi.fn();
+    const service = createFeedbackService({
+      beep,
+      getPreferences: async () => preferences(),
+      notificationsSupported: () => true,
+      showNotification: vi.fn(),
+    });
+
+    await service.emit("extensionCapture");
+    await service.emit("autoImport");
+
+    expect(beep).not.toHaveBeenCalled();
+  });
+
   it("applies independent sound and notification preferences", async () => {
     const beep = vi.fn();
     const showNotification = vi.fn();
