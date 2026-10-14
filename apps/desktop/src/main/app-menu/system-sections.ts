@@ -2,7 +2,7 @@ import type { AppMenuContext, AppMenuItem } from "./types";
 
 export function buildSettingsItem(context: AppMenuContext): AppMenuItem {
   return {
-    label: context.translate("main.settings"),
+    label: "Settings",
     accelerator: context.accelerator("app.settings"),
     registerAccelerator: false,
     click: context.navTo("/settings"),
@@ -21,13 +21,11 @@ export function buildApplicationSections(
       submenu: [
         {
           role: "about",
-          label: context.translate("main.about", {
-            appName: context.appName,
-          }),
+          label: `About ${context.appName}`,
         },
         { type: "separator" },
         {
-          label: context.translate("main.checkUpdates"),
+          label: "Check for Updates",
           click: context.navTo("/settings/general"),
         },
         { type: "separator" },
@@ -47,7 +45,7 @@ export function buildApplicationSections(
 
 export function buildWindowSection(context: AppMenuContext): AppMenuItem {
   return {
-    label: context.translate("main.window"),
+    label: "Window",
     submenu: [
       { role: "minimize" },
       { role: "zoom" },
@@ -65,7 +63,7 @@ export function buildDeveloperSections(context: AppMenuContext): AppMenuItem[] {
 
   return [
     {
-      label: context.translate("main.developer"),
+      label: "Developer",
       submenu: [
         { role: "reload" },
         { role: "forceReload" },
@@ -77,7 +75,7 @@ export function buildDeveloperSections(context: AppMenuContext): AppMenuItem[] {
 
 export function buildHelpSection(context: AppMenuContext): AppMenuItem {
   return {
-    label: context.translate("main.help"),
+    label: "Help",
     role: "help",
     submenu: [
       {
@@ -108,7 +106,7 @@ export function buildHelpSection(context: AppMenuContext): AppMenuItem {
         ),
       },
       {
-        label: context.translate("main.email"),
+        label: "Email",
         click: context.openExternalUrl("mailto:raphaelsalaja@gmail.com"),
       },
       {
@@ -119,7 +117,7 @@ export function buildHelpSection(context: AppMenuContext): AppMenuItem {
       },
       { type: "separator" },
       {
-        label: context.translate("main.showLogs"),
+        label: "Show Logs in Finder",
         click: context.showLogs,
       },
     ],

@@ -1,7 +1,6 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createCopyTranslator } from "../../shared/localization";
 import type { PreviewWindowState } from "../../shared/preview-window-contracts";
 import {
   type PreviewControlActions,
@@ -33,7 +32,6 @@ function previewState(
     fileIndex: 0,
     kind: "detached",
     title: "Preview",
-    locale: "en",
     reduceMotion: "system",
     url: "pond://save-1/image.png",
     originalPath: "image.png",
@@ -155,17 +153,14 @@ describe("detached preview controls", () => {
     expect(actions.exportOriginal).toHaveBeenCalledOnce();
   });
 
-  it("localizes control labels and exposes slideshow state", async () => {
-    const translate = createCopyTranslator("es");
-    await render(previewState({ kind: "presentation", locale: "es" }), true);
+  it("labels controls and exposes slideshow state", async () => {
+    await render(previewState({ kind: "presentation" }), true);
 
-    expect(
-      container.querySelector(`[aria-label="${translate("Previous")}"]`),
-    ).not.toBeNull();
+    expect(container.querySelector('[aria-label="Previous"]')).not.toBeNull();
     expect(
       container
         .querySelector('[aria-pressed="true"][aria-label]')
         ?.getAttribute("aria-label"),
-    ).toBe(translate("Pause Slideshow"));
+    ).toBe("Pause Slideshow");
   });
 });

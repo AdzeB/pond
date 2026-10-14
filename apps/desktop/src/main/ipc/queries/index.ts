@@ -5,7 +5,6 @@ import { IPC } from "../../../shared/constants";
 import { registerPondOperations } from "../../core/agent/operations";
 import { combineImagesWindowOwnsSender } from "../../core/combine-images-window";
 import { currentLibraryId } from "../../core/prefs-scope";
-import { localizeMainError } from "../../localization-runtime";
 import { agentControlOperations } from "../agent-controls";
 import { safeHandle } from "../helpers";
 import { accountsQueries } from "./accounts";
@@ -93,7 +92,6 @@ export function registerQueryHandler(): void {
       return await handler(raw, event);
     } catch (err) {
       log.error("[pond ipc] query failed", name, err);
-      if (err instanceof Error) throw localizeMainError(err);
       throw err;
     } finally {
       const ms = Math.round(performance.now() - startedAt);

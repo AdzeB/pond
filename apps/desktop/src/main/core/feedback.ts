@@ -1,27 +1,21 @@
 import { Notification, shell } from "electron";
 import type { FeedbackEvent } from "../../shared/feedback";
-import { createTranslator } from "../../shared/localization";
 import { getPrefs } from "./prefs";
 
 interface FeedbackMessage {
-  title:
-    | "feedback.autoImport.title"
-    | "feedback.extensionCapture.title"
-    | "feedback.folderDeletion.title"
-    | "feedback.saveDeletion.title";
+  title: string;
 }
 
 const MESSAGES = {
-  saveDeletion: { title: "feedback.saveDeletion.title" },
-  folderDeletion: { title: "feedback.folderDeletion.title" },
-  extensionCapture: { title: "feedback.extensionCapture.title" },
-  autoImport: { title: "feedback.autoImport.title" },
+  saveDeletion: { title: "Save Removed" },
+  folderDeletion: { title: "Folder Removed" },
+  extensionCapture: { title: "Saved to Pond" },
+  autoImport: { title: "Imported to Pond" },
 } as const satisfies Record<FeedbackEvent, FeedbackMessage>;
 
 interface FeedbackServicePorts {
   beep(): void;
   getPreferences(): Promise<{
-    locale: Awaited<ReturnType<typeof getPrefs>>["localization"]["locale"];
     masterSound: boolean;
     sounds: Partial<Record<FeedbackEvent, boolean>>;
     notifications: Record<FeedbackEvent, boolean>;
@@ -50,8 +44,7 @@ export function createFeedbackService(ports: FeedbackServicePorts) {
       ) {
         return;
       }
-      const translate = createTranslator(preferences.locale);
-      ports.showNotification(translate(MESSAGES[event].title));
+      ports.showNotification(MESSAGES[event].title);
     },
   };
 }
@@ -61,7 +54,6 @@ const service = createFeedbackService({
   async getPreferences() {
     const prefs = await getPrefs();
     return {
-      locale: prefs.localization.locale,
       masterSound: prefs.preferences.soundsEnabled,
       sounds: prefs.feedback.sounds,
       notifications: prefs.feedback.notifications,

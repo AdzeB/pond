@@ -15,7 +15,6 @@ import {
 } from "@pond/icons";
 import { Button, Tooltip } from "@pond/ui";
 import type { ReactElement } from "react";
-import { createCopyTranslator } from "../../shared/localization";
 import type { PreviewWindowState } from "../../shared/preview-window-contracts";
 import { FramelessWindowChrome } from "./shared/components/frameless-window-chrome";
 
@@ -76,37 +75,31 @@ export function PreviewControls({
   slideshow: boolean;
   state: PreviewWindowState;
 }) {
-  const translate = createCopyTranslator(state.locale);
   const tooltipSide = state.mediaType === "video" ? "bottom" : "top";
-  const label = (source: string) => translate(source);
 
   return (
     <Tooltip.Provider>
       <div className="preview-window-chrome">
         <FramelessWindowChrome
-          closeLabel={label("Close Preview")}
+          closeLabel={"Close Preview"}
           onClose={actions.close}
         />
       </div>
-      <nav aria-label={label("Preview Controls")} className="preview-controls">
+      <nav aria-label={"Preview Controls"} className="preview-controls">
         <div className="preview-control-group">
           <PreviewTool
-            label={label("Previous")}
+            label={"Previous"}
             onClick={actions.previous}
             side={tooltipSide}
           >
             <IconArrowLeft />
           </PreviewTool>
-          <PreviewTool
-            label={label("Next")}
-            onClick={actions.next}
-            side={tooltipSide}
-          >
+          <PreviewTool label={"Next"} onClick={actions.next} side={tooltipSide}>
             <IconArrowRight />
           </PreviewTool>
           {state.kind === "presentation" ? (
             <PreviewTool
-              label={label(slideshow ? "Pause Slideshow" : "Play Slideshow")}
+              label={slideshow ? "Pause Slideshow" : "Play Slideshow"}
               onClick={actions.toggleSlideshow}
               pressed={slideshow}
               side={tooltipSide}
@@ -119,14 +112,14 @@ export function PreviewControls({
         {state.mediaType === "image" ? (
           <div className="preview-control-group">
             <PreviewTool
-              label={label("Rotate")}
+              label={"Rotate"}
               onClick={actions.rotate}
               side={tooltipSide}
             >
               <IconRotateImageClockwise />
             </PreviewTool>
             <PreviewTool
-              label={label("Mirror")}
+              label={"Mirror"}
               onClick={actions.toggleMirror}
               pressed={state.mirrored}
               side={tooltipSide}
@@ -134,7 +127,7 @@ export function PreviewControls({
               <IconFlipHorizontal2 />
             </PreviewTool>
             <PreviewTool
-              label={label("Grayscale")}
+              label={"Grayscale"}
               onClick={actions.toggleGrayscale}
               pressed={state.grayscale}
               side={tooltipSide}
@@ -142,7 +135,7 @@ export function PreviewControls({
               <IconContrast />
             </PreviewTool>
             <PreviewTool
-              label={label(state.zoom === null ? "Actual Size" : "Fit")}
+              label={state.zoom === null ? "Actual Size" : "Fit"}
               onClick={actions.toggleSize}
               pressed={state.zoom !== null}
               side={tooltipSide}
@@ -153,7 +146,7 @@ export function PreviewControls({
         ) : (
           <div className="preview-control-group">
             <PreviewTool
-              label={label(state.size === "fill" ? "Fit" : "Fill")}
+              label={state.size === "fill" ? "Fit" : "Fill"}
               onClick={actions.toggleSize}
               pressed={state.size === "fill"}
               side={tooltipSide}
@@ -165,14 +158,14 @@ export function PreviewControls({
 
         <div className="preview-control-group">
           <PreviewTool
-            label={label("Open in Default App")}
+            label={"Open in Default App"}
             onClick={actions.openOriginal}
             side={tooltipSide}
           >
             <IconWindowShare />
           </PreviewTool>
           <PreviewTool
-            label={label("Export Original")}
+            label={"Export Original"}
             onClick={actions.exportOriginal}
             side={tooltipSide}
           >
@@ -182,7 +175,7 @@ export function PreviewControls({
 
         <div className="preview-control-group">
           <PreviewTool
-            label={label("Fullscreen")}
+            label={"Fullscreen"}
             onClick={actions.toggleFullscreen}
             pressed={state.fullscreen}
             side={tooltipSide}
@@ -190,11 +183,11 @@ export function PreviewControls({
             <IconFullScreen />
           </PreviewTool>
           <Tooltip
-            label={`${label("Opacity")}: ${Math.round(state.opacity * 100)}%`}
+            label={`${"Opacity"}: ${Math.round(state.opacity * 100)}%`}
             side={tooltipSide}
           >
             <Button
-              aria-label={`${label("Opacity")}: ${Math.round(state.opacity * 100)}%`}
+              aria-label={`${"Opacity"}: ${Math.round(state.opacity * 100)}%`}
               className="preview-opacity"
               onClick={actions.cycleOpacity}
               size="sm"
@@ -205,7 +198,7 @@ export function PreviewControls({
             </Button>
           </Tooltip>
           <PreviewTool
-            label={label("Keep on Top")}
+            label={"Keep on Top"}
             onClick={actions.togglePin}
             pressed={state.alwaysOnTop}
             side={tooltipSide}

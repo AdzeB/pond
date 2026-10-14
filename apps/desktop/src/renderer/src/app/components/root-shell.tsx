@@ -17,7 +17,6 @@ import { savedViews } from "@/features/library/state/saved-views";
 import { DuplicateImportReviewHost } from "@/features/saves/components/duplicate-import-review";
 import { SaveHotkeys } from "@/features/saves/effects/save-hotkeys";
 import { openSave, saveIdFromPath } from "@/features/saves/lib/save-nav";
-import { LocalizedSettings } from "@/features/settings/effects/localized-settings";
 import { SourceFlowHost } from "@/features/sources/components/flow";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { settingsHref } from "@/shared/lib/open-settings";
@@ -71,7 +70,6 @@ export function RootShell() {
       <NewMenuDialogHost />
       <OrganizationRenameDialogHost />
       <DuplicateImportReviewHost />
-      {isSettings ? <LocalizedSettings /> : null}
       <AppShell.Root
         header={<Toolbar />}
         left={

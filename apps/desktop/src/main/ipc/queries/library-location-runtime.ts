@@ -1,5 +1,6 @@
 import { app, BrowserWindow } from "electron";
 import log from "electron-log/main.js";
+import { userError } from "../../../shared/user-error";
 import { startAutoImport, stopAutoImport } from "../../core/auto-import";
 import { closeCombineImagesWindow } from "../../core/combine-images-window";
 import { resumeMutations, suspendMutations } from "../../core/executor";
@@ -50,7 +51,7 @@ export async function serializeLocationChange<T>(
 ): Promise<T> {
   const next = locationChange.then(() => {
     if (relaunchPending) {
-      throw new Error("The library is reopening. Try again when it opens.");
+      throw userError("The library is reopening. Try again when it opens.");
     }
     return operation();
   });

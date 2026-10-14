@@ -52,7 +52,6 @@ export async function buildMenu(
     },
     {
       version: app.getVersion(),
-      locale: prefs?.localization.locale,
       accelerators: await loadTrayAccelerators(prefs?.shortcuts),
       blankDocuments: loadTrayBlankDocuments(),
     },

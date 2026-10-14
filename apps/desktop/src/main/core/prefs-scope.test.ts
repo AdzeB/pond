@@ -56,14 +56,6 @@ describe("splitPrefsPatch", () => {
     expect(app).toEqual({ window: { restorePosition: false } });
   });
 
-  it("keeps the locale in the app slice", () => {
-    const { app, pond } = splitPrefsPatch({
-      localization: { locale: "ja" },
-    });
-    expect(app).toEqual({ localization: { locale: "ja" } });
-    expect(pond).toEqual({});
-  });
-
   it("keeps feedback and sidebar behavior in the app slice", () => {
     const { app, pond } = splitPrefsPatch({
       window: { interfaceZoom: 150 },

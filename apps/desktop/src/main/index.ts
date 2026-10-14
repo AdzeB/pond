@@ -56,7 +56,6 @@ import { rotateBundleBackups } from "./lib/library-config";
 import { LibraryMetadataError } from "./lib/library-id";
 import { disableMenuActionImages } from "./lib/menu-action-images";
 import { recoverUnreadableLibrary } from "./library-recovery";
-import { setMainLocale } from "./localization-runtime";
 import { installAppMenu, setMenuRecents } from "./menu";
 import { writeNativeHostManifests } from "./native/manifests";
 import { startNativeServer, stopNativeServer } from "./native/server";
@@ -200,10 +199,8 @@ app.whenReady().then(async () => {
   subscribePrefs((prefs) => broadcast(IPC.prefsChanged, prefs));
   registerCombineImagesWindowIpc();
   const menuPrefs = await getPrefs();
-  setMainLocale(menuPrefs.localization.locale);
   installAppMenu({
     shortcuts: menuPrefs.shortcuts,
-    locale: menuPrefs.localization.locale,
     focusedOrMain,
     openLibraryWindow: () => void openLibraryWindow(),
   });

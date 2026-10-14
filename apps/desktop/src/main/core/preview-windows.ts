@@ -28,6 +28,7 @@ import {
   type PreviewWindowState,
   previewMediaProfile,
 } from "../../shared/preview-window-contracts";
+import { userError } from "../../shared/user-error";
 import { getDb } from "../db";
 import { isTrustedSender, resolveSaveFilePath } from "../ipc/helpers";
 import { toWireSave } from "../ipc/wire";
@@ -36,7 +37,6 @@ import {
   detachedWindowTitle,
 } from "../lib/detached-window-chrome";
 import { resolveMainOut, resolvePreload } from "../lib/resolve-preload";
-import { localizeMainCopy } from "../localization-runtime";
 import { mainWindowState } from "../window-state";
 import { copyExportFile } from "./export-files";
 import { getPrefs, subscribePrefs } from "./prefs";
@@ -180,10 +180,10 @@ async function resolvePreviewTarget(
 ): Promise<PreviewTarget> {
   const db = await getDb();
   const row = db.select().from(saves).where(eq(saves.id, saveId)).get();
-  if (!row) throw new Error(localizeMainCopy("The Save no longer exists."));
+  if (!row) throw userError("The Save no longer exists.");
   const save = toWireSave(row);
   const file = save.files[fileIndex];
-  if (!file) throw new Error(localizeMainCopy("The file no longer exists."));
+  if (!file) throw userError("The file no longer exists.");
   const previewTarget = previewTargetForFile({
     saveId,
     title: save.title,
@@ -191,12 +191,9 @@ async function resolvePreviewTarget(
     kind,
   });
   if (!previewTarget)
-    throw new Error(
-      localizeMainCopy("This file cannot open in a preview window."),
-    );
+    throw userError("This file cannot open in a preview window.");
   const target = await resolveSaveFilePath(saveId, fileIndex);
-  if (!target.ok)
-    throw new Error(localizeMainCopy("The original file is unavailable."));
+  if (!target.ok) throw userError("The original file is unavailable.");
   return previewTarget;
 }
 
@@ -216,8 +213,7 @@ async function createPreviewWindow(
     input.kind,
   );
   const prefs = await getPrefs();
-  if (generation !== libraryGeneration)
-    throw new Error(localizeMainCopy("The Library changed."));
+  if (generation !== libraryGeneration) throw userError("The Library changed.");
   const presentation = input.kind === "presentation";
   const options: BrowserWindowConstructorOptions = {
     title: detachedWindowTitle(target.title),
@@ -247,7 +243,6 @@ async function createPreviewWindow(
     fileIndex: input.fileIndex,
     kind: input.kind,
     title: target.title,
-    locale: prefs.localization.locale,
     reduceMotion: prefs.preferences.reduceMotion,
     url: target.url,
     originalPath: target.originalPath,
@@ -299,7 +294,7 @@ async function createPreviewWindow(
 function configurePreviewWindow(input: PreviewWindowConfigure): void {
   const entry = entries.get(input.windowId);
   if (!entry || entry.window.isDestroyed())
-    throw new Error(localizeMainCopy("The preview window closed."));
+    throw userError("The preview window closed.");
   entry.state = { ...entry.state, ...input };
   if (input.fullscreen !== undefined)
     entry.window.setFullScreen(input.fullscreen);
@@ -344,7 +339,7 @@ function showPreviewContextMenu(entry: PreviewEntry): void {
       "type" in item
         ? { type: "separator" }
         : {
-            label: localizeMainCopy(item.label),
+            label: item.label,
             type: item.checked === undefined ? "normal" : "checkbox",
             checked: item.checked,
             click: () => run(item),
@@ -358,7 +353,7 @@ async function navigatePreviewWindow(
 ): Promise<void> {
   const entry = entries.get(input.windowId);
   if (!entry || entry.window.isDestroyed())
-    throw new Error(localizeMainCopy("The preview window closed."));
+    throw userError("The preview window closed.");
   const target = await resolvePreviewTarget(
     input.saveId,
     input.fileIndex,
@@ -394,7 +389,7 @@ async function runPreviewFileAction(
     entry.window.isDestroyed() ||
     event.sender.id !== entry.window.webContents.id
   ) {
-    throw new Error(localizeMainCopy("The preview window closed."));
+    throw userError("The preview window closed.");
   }
   const target = await resolveSaveFilePath(
     entry.state.saveId,
@@ -403,7 +398,7 @@ async function runPreviewFileAction(
   if (!target.ok) {
     return {
       ok: false,
-      error: localizeMainCopy("The original file is unavailable."),
+      error: "The original file is unavailable.",
     };
   }
 
@@ -436,9 +431,7 @@ async function runPreviewFileAction(
     return {
       ok: false,
       error:
-        error instanceof Error
-          ? error.message
-          : localizeMainCopy("Could not export this file."),
+        error instanceof Error ? error.message : "Could not export this file.",
     };
   }
 }
@@ -453,7 +446,7 @@ function requestPreviewNeighbor(
     entry.window.isDestroyed() ||
     event.sender.id !== entry.window.webContents.id
   )
-    throw new Error(localizeMainCopy("The preview window closed."));
+    throw userError("The preview window closed.");
   mainWindowState.current?.webContents.send(IPC.previewNeighborRequest, {
     ...input,
     saveId: entry.state.saveId,
@@ -479,7 +472,6 @@ export function registerPreviewWindowHandlers(bus: IpcMain): void {
       if (entry.window.isDestroyed()) continue;
       entry.state = {
         ...entry.state,
-        locale: prefs.localization.locale,
         reduceMotion: prefs.preferences.reduceMotion,
       };
       entry.window.webContents.setZoomFactor(prefs.window.interfaceZoom / 100);

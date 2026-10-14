@@ -1,4 +1,3 @@
-import type { Locale } from "@pond/schema";
 import { app, BrowserWindow, shell, type WebContents } from "electron";
 import log from "electron-log/main.js";
 import {
@@ -6,10 +5,6 @@ import {
   type MenuActionEvent,
   type MenuActionId,
 } from "../../shared/constants";
-import {
-  createCopyTranslator,
-  createTranslator,
-} from "../../shared/localization";
 import {
   resolveShortcuts,
   type ShortcutId,
@@ -25,7 +20,6 @@ export interface AppMenuRuntimeDeps {
   focusedOrMain: () => BrowserWindow | null;
   openLibraryWindow: () => void;
   shortcuts: ShortcutPreferences;
-  locale: Locale;
 }
 
 function withFocusedWebContents(
@@ -98,8 +92,6 @@ export function createAppMenuContext(deps: AppMenuRuntimeDeps): AppMenuContext {
     showLogs: () => {
       void shell.openPath(app.getPath("logs"));
     },
-    translate: createTranslator(deps.locale),
-    translateCopy: createCopyTranslator(deps.locale),
     verifyLibrary: async () => {
       try {
         const { verifyLibraryIntegrity } = await import("../core/library-ops");

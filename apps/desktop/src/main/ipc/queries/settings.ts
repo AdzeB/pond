@@ -23,8 +23,7 @@ import {
 } from "../../core/prefs";
 import { getGlobalDb } from "../../db";
 import { getIngestToken, rotateIngestToken } from "../../keychain";
-import { setMainLocale } from "../../localization-runtime";
-import { queueTrayRefresh, syncShellChrome } from "../../window";
+import { syncShellChrome } from "../../window";
 import { type QueryHandlerMap, query } from "./params";
 
 const VideoDownloadPatchSchema = z.object({
@@ -165,10 +164,6 @@ export const settingsQueries = {
     async (params): Promise<QueryResult<"settings.setPrefs">> => {
       const next = await setPrefs(params);
       if ("preferences" in params) await syncShellChrome();
-      if ("localization" in params) {
-        setMainLocale(next.localization.locale);
-        queueTrayRefresh();
-      }
       if (params.window && "appIcon" in params.window) {
         const { applyAppIcon } = await import("../../core/app-icon");
         await applyAppIcon(params.window.appIcon);

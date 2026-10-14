@@ -1,7 +1,5 @@
-import { LocalizedText } from "@/features/settings/components/localized-text";
 import { CheckNowRow } from "@/features/settings/components/sections/general";
 import { NotificationPreferences } from "@/features/settings/components/sections/general/feedback";
-import { LanguageRow } from "@/features/settings/components/sections/general/language";
 import { RaycastRow } from "@/features/settings/components/sections/general/raycast";
 import { SidebarPreferences } from "@/features/settings/components/sections/general/sidebar";
 import { SystemPreferences } from "@/features/settings/components/sections/general/system-preferences";
@@ -29,20 +27,9 @@ function runApply(
 }
 
 export const generalSection = defineCustomSection({
-  title: <LocalizedText message="settings.preferences.title" />,
-  description: <LocalizedText message="settings.preferences.description" />,
+  title: "Preferences",
+  description: "Window behavior, menu bar, and updates.",
   groups: [
-    group.plain({
-      items: [
-        {
-          control: "custom",
-          key: "language",
-          title: "Language",
-          keywords: ["locale", "translation"],
-          render: () => <LanguageRow />,
-        },
-      ],
-    }),
     group.prefs("window", {
       title: "Startup",
       items: [

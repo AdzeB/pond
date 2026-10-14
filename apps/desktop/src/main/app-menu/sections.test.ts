@@ -1,8 +1,4 @@
 import { describe, expect, it } from "vitest";
-import {
-  createCopyTranslator,
-  createTranslator,
-} from "../../shared/localization";
 import { buildEditSection } from "./edit-section";
 import { buildFileSection } from "./file-section";
 import { buildFindSection } from "./find-section";
@@ -49,8 +45,6 @@ function createContext({
     revealLibrary: noOp,
     sendMenuAction: () => noOp,
     showLogs: noOp,
-    translate: createTranslator("en"),
-    translateCopy: createCopyTranslator("en"),
     verifyLibrary: noOp,
   };
 }

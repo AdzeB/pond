@@ -1,6 +1,5 @@
 import type { MenuItemConstructorOptions } from "electron";
 import type { MenuActionId } from "../../shared/constants";
-import type { Translate, TranslateCopy } from "../../shared/localization";
 import type { ShortcutId } from "../../shared/shortcuts";
 
 export type AppMenuItem = MenuItemConstructorOptions;
@@ -29,7 +28,5 @@ export interface AppMenuContext {
     id: MenuActionId,
   ) => NonNullable<MenuItemConstructorOptions["click"]>;
   showLogs: () => void;
-  translate: Translate;
-  translateCopy: TranslateCopy;
   verifyLibrary: () => void;
 }

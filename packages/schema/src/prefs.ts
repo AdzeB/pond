@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { FolderPresentationSchema } from "./folder-presentation";
 import { FolderRulesSchema } from "./folder-rules";
-import { LocaleSchema } from "./locales";
 import {
   DEFAULT_APP_ICON,
   DEFAULT_DARK_PRESET_ID,
@@ -278,10 +277,6 @@ const updates = z.object({
   autoInstall: z.boolean().catch(true),
 });
 
-const localization = z.object({
-  locale: LocaleSchema,
-});
-
 export const FetchRecurrenceSchema = z
   .object({
     startDate: z.iso.date(),
@@ -447,7 +442,6 @@ const PrefsObject = z.object({
   sourcesView: sourcesView.catch(sourcesView.parse({})),
   api: api.catch(api.parse({})),
   updates: updates.catch(updates.parse({})),
-  localization: localization.catch(localization.parse({})),
   sync: sync.catch(sync.parse({})),
   storage: storage.catch(storage.parse({})),
   ai: ai.catch(ai.parse({})),

@@ -101,19 +101,17 @@ async function run(contents) {
   assert.equal(image.isAlwaysOnTop(), true);
   assert.equal(video.isAlwaysOnTop(), true);
 
-  for (const locale of ["ja", "de", "en"]) {
-    await contents.executeJavaScript(
-      `window.pond.query("settings.setPrefs", { localization: { locale: ${JSON.stringify(locale)} }, preferences: { reduceMotion: "always" }, window: { interfaceZoom: 110 } })`,
-    );
-    await waitFor(
-      () =>
-        video.webContents.executeJavaScript(
-          `document.documentElement.lang === ${JSON.stringify(locale)} && document.body.dataset.reduceMotion === "always"`,
-        ),
-      "Preview preferences did not update",
-    );
-    assert.equal(video.webContents.getZoomFactor(), 1.1);
-  }
+  await contents.executeJavaScript(
+    `window.pond.query("settings.setPrefs", { preferences: { reduceMotion: "always" }, window: { interfaceZoom: 110 } })`,
+  );
+  await waitFor(
+    () =>
+      video.webContents.executeJavaScript(
+        'document.body.dataset.reduceMotion === "always"',
+      ),
+    "Preview preferences did not update",
+  );
+  assert.equal(video.webContents.getZoomFactor(), 1.1);
   assert.equal(
     await video.webContents.executeJavaScript(
       'document.querySelector("#close").textContent',

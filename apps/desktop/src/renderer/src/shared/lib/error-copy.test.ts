@@ -4,13 +4,20 @@ import { errorCopy } from "./error-copy";
 const FALLBACK = "Couldn't move folders. Try again.";
 
 describe("errorCopy", () => {
-  it("shows catalog copy thrown across IPC without the Electron prefix", () => {
+  it("shows marked copy thrown across IPC without the Electron prefix", () => {
     const error = new Error(
-      "Error invoking remote method 'pond:query': Error: The library is reopening. Try again when it opens.",
+      "Error invoking remote method 'pond:query': PondUserError: The library is reopening. Try again when it opens.",
     );
     expect(errorCopy(error, FALLBACK)).toBe(
       "The library is reopening. Try again when it opens.",
     );
+  });
+
+  it("falls back for unmarked errors that cross IPC", () => {
+    const error = new Error(
+      "Error invoking remote method 'pond:query': Error: The library is reopening. Try again when it opens.",
+    );
+    expect(errorCopy(error, FALLBACK)).toBe(FALLBACK);
   });
 
   it("falls back for internal errors", () => {

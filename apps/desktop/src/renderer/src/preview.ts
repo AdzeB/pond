@@ -1,7 +1,6 @@
 import { createElement } from "react";
 import { createRoot } from "react-dom/client";
 import type { PondPreviewApi } from "../../preload/preview";
-import { createCopyTranslator } from "../../shared/localization";
 import type { PreviewWindowState } from "../../shared/preview-window-contracts";
 import "./app/boot-shell";
 import {
@@ -42,35 +41,6 @@ const NEXT_ROTATION = {
   PreviewWindowState["rotation"],
   PreviewWindowState["rotation"]
 >;
-
-const staticText = [
-  ...document.querySelectorAll<HTMLElement>("body *"),
-].flatMap((element) =>
-  [...element.childNodes].flatMap((node) =>
-    node instanceof Text && node.data.trim()
-      ? [{ node, source: node.data }]
-      : [],
-  ),
-);
-const staticLabels = [
-  ...document.querySelectorAll<HTMLElement>("body *"),
-].flatMap((element) =>
-  (["aria-label", "title"] as const).flatMap((attribute) => {
-    const source = element.getAttribute(attribute);
-    return source ? [{ element, attribute, source }] : [];
-  }),
-);
-
-function localizePreview(locale: PreviewWindowState["locale"]): void {
-  const translate = createCopyTranslator(locale);
-  document.documentElement.lang = locale;
-  for (const { node, source } of staticText) {
-    node.data = source.replace(source.trim(), translate(source.trim()));
-  }
-  for (const { element, attribute, source } of staticLabels) {
-    element.setAttribute(attribute, translate(source));
-  }
-}
 
 function configure(
   patch: Omit<Parameters<PondPreviewApi["configure"]>[0], "windowId">,
@@ -158,7 +128,6 @@ function refreshSlideshow(): void {
 
 const unsubscribe = window.pondPreview.onState((next) => {
   state = next;
-  localizePreview(next.locale);
   const title = `${next.title} · Pond`;
   document.title = title;
   media.show(next);

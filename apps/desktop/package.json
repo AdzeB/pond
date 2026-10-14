@@ -52,10 +52,8 @@
     "perf:queue": "ELECTRON_RUN_AS_NODE=1 electron ./scripts/bench-queue-v2.mjs",
     "perf:gallery": "node ./scripts/smoke-gallery-performance.cjs",
     "generate:harvest": "node scripts/generate-harvest-validation.mjs",
-    "generate:localization": "node scripts/generate-localization-copy.mjs",
-    "generate": "pnpm generate:harvest && pnpm generate:localization",
-    "generate:check": "pnpm generate:harvest --check && pnpm localization:check",
-    "localization:check": "node scripts/check-localization.mjs"
+    "generate": "pnpm generate:harvest",
+    "generate:check": "pnpm generate:harvest --check"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.54",

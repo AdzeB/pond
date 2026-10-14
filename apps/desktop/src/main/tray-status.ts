@@ -1,8 +1,6 @@
-import type { Locale } from "@pond/schema";
 import { EXTERNAL_SOURCE_IDS, sourceLabel } from "@pond/schema/sources";
 import type { BlankDocumentKind } from "../shared/blank-documents";
 import type { MenuActionId } from "../shared/constants";
-import { createCopyTranslator, createTranslator } from "../shared/localization";
 import { isWatchableSource } from "./core/watch/types";
 import {
   FILE_MENU_AUTO_IMPORT_LABELS,
@@ -58,35 +56,24 @@ export interface TrayBlankDocument {
 
 export function trayHeaderLabel(
   input: Pick<TrayStatusInput, "libraryName" | "active">,
-  locale: Locale = "en",
 ): string {
-  return createTranslator(locale)("tray.header", {
-    libraryName: input.libraryName,
-    count: input.active,
-  });
+  return `${input.libraryName} · ${input.active} saves`;
 }
 
 export function traySavingLabel(
   input: Pick<TrayStatusInput, "ingesting" | "inflight">,
-  locale: Locale = "en",
 ): string | null {
   const { ingesting, inflight } = input;
-  const translate = createTranslator(locale);
   if (ingesting <= 0) return null;
   if (inflight <= 0) {
     return ingesting === 1
-      ? translate("tray.waiting.one")
-      : translate("tray.waiting.many", { count: ingesting });
+      ? "Waiting to save 1 item"
+      : `Waiting to save ${ingesting} items`;
   }
   if (inflight >= ingesting) {
-    return ingesting === 1
-      ? translate("tray.saving.one")
-      : translate("tray.saving.many", { count: ingesting });
+    return ingesting === 1 ? "Saving 1 item" : `Saving ${ingesting} items`;
   }
-  return translate("tray.saving.progress", {
-    current: inflight,
-    total: ingesting,
-  });
+  return `Saving ${inflight} of ${ingesting} items`;
 }
 
 export function trayBadge(input: Pick<TrayStatusInput, "inflight">): string {
@@ -102,14 +89,11 @@ export function buildTrayTemplate(
   actions: TrayTemplateActions,
   options: {
     version: string;
-    locale?: Locale;
     accelerators?: TrayAccelerators;
     blankDocuments?: readonly TrayBlankDocument[];
   },
 ): TrayTemplateItem[] {
   const accelerators = options.accelerators ?? {};
-  const translate = createTranslator(options.locale ?? "en");
-  const translateCopy = createCopyTranslator(options.locale ?? "en");
   const run = (
     label: string,
     id: MenuActionId,
@@ -123,12 +107,12 @@ export function buildTrayTemplate(
 
   const template: TrayTemplateItem[] = [
     {
-      label: trayHeaderLabel(status, options.locale),
+      label: trayHeaderLabel(status),
       enabled: false,
     },
   ];
 
-  const saving = traySavingLabel(status, options.locale);
+  const saving = traySavingLabel(status);
   if (saving) {
     template.push({
       label: saving,
@@ -243,7 +227,7 @@ export function buildTrayTemplate(
         run("Untagged", "nav.untagged"),
         { type: "separator" },
         {
-          label: translate("main.settings"),
+          label: "Settings",
           accelerator: accelerators.settings,
           registerAccelerator: false,
           click: () => void actions.onOpenSettings(),
@@ -252,7 +236,7 @@ export function buildTrayTemplate(
     },
     { type: "separator" },
     {
-      label: translate("main.quit"),
+      label: "Quit",
       accelerator: "CommandOrControl+Q",
       role: "quit",
     },
@@ -260,16 +244,5 @@ export function buildTrayTemplate(
     { label: trayVersionLabel(options.version), enabled: false },
   );
 
-  return localizeTrayItems(template, translateCopy);
-}
-
-function localizeTrayItems(
-  items: TrayTemplateItem[],
-  translateCopy: (copy: string) => string,
-): TrayTemplateItem[] {
-  for (const item of items) {
-    if (item.label) item.label = translateCopy(item.label);
-    if (item.submenu) localizeTrayItems(item.submenu, translateCopy);
-  }
-  return items;
+  return template;
 }

@@ -50,7 +50,6 @@ const APP_PREF_KEYS = [
   "feedback",
   "api",
   "updates",
-  "localization",
   "agent",
   "search",
 ] as const satisfies readonly AppPrefKey[];
@@ -140,7 +139,6 @@ function mergeAll(base: Prefs, patch: DeepPartial<Prefs>): Prefs {
     sourcesView: { ...base.sourcesView, ...patch.sourcesView },
     api: { ...base.api, ...patch.api },
     updates: { ...base.updates, ...patch.updates },
-    localization: { ...base.localization, ...patch.localization },
     sync: { ...base.sync, ...patch.sync },
     storage: { ...base.storage, ...patch.storage },
     ai: { ...base.ai, ...patch.ai },

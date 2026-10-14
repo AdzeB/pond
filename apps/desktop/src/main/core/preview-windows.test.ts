@@ -11,7 +11,6 @@ const state: PreviewWindowState = {
   fileIndex: 0,
   kind: "detached",
   title: "Reference",
-  locale: "en",
   reduceMotion: "system",
   url: "pond://save/reference.png",
   originalPath: "reference.png",

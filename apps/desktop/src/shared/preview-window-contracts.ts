@@ -1,4 +1,3 @@
-import { LocaleSchema } from "@pond/schema";
 import type { SaveFile } from "@pond/schema/db";
 import { z } from "zod";
 import { canRequestNativeThumbnail, classifyLibraryFile } from "./file-format";
@@ -62,7 +61,6 @@ export const PreviewWindowStateSchema = z.object({
   fileIndex: z.number().int().nonnegative(),
   kind: PreviewWindowKindSchema,
   title: z.string(),
-  locale: LocaleSchema,
   reduceMotion: z.enum(["system", "always", "never"]),
   url: z.string(),
   originalPath: z.string().min(1),
