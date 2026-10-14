@@ -30,3 +30,8 @@ Run Pond, copy its Local API Token, then start the extension:
 ```bash
 pnpm --dir apps/raycast develop
 ```
+
+This is the one workspace package that does not use the `catalog:` protocol.
+`@raycast/api` pins `@types/node` and `@types/react` to exact versions as peer
+dependencies, and `ray build` validates against them, so `react` and both type
+packages stay on the versions Raycast requires rather than the catalog's.

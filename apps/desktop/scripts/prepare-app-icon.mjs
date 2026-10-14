@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Derive `build/icon.png` (+ `.icns`) from the aqua tint Default export.
- * Keeps the squircle alpha and insets the art so Electron `dock.setIcon`
- * matches native Dock sizing (opaque full-bleed PNGs render as huge squares).
+ * Keeps the squircle alpha and insets the art because `dock.setIcon` renders opaque full-bleed PNGs as huge squares.
  */
 
 import { spawnSync } from "node:child_process";

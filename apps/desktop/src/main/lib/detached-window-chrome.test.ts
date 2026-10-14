@@ -14,6 +14,6 @@ describe("detached window chrome", () => {
   });
 
   it("keeps detached titles identifiable to the operating system", () => {
-    expect(detachedWindowTitle("Settings")).toBe("Settings — Pond");
+    expect(detachedWindowTitle("Settings")).toBe("Settings · Pond");
   });
 });

@@ -1,10 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * Patch the vendored Electron.app so macOS dev shows "Pond" in the menu bar,
- * Dock tooltip, and ⌘-Tab. Dock reads the .app bundle filename, so CFBundleName
- * alone is not enough. pnpm re-extracts Electron on install; this re-runs from
- * postinstall.
+ * The Dock reads the .app bundle filename, so CFBundleName alone will not show "Pond" in dev.
+ * @remarks Runs from postinstall because pnpm re-extracts Electron on install.
  */
 
 import { spawnSync } from "node:child_process";

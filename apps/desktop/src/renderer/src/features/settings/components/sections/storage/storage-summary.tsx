@@ -20,7 +20,7 @@ export function StorageSummary() {
               ? `${bytes(query.data.pondBytes)} used · ${bytes(query.data.deviceFreeBytes)} available on disk`
               : query.isError
                 ? "Couldn't measure storage."
-                : "Measuring storage…"}
+                : "Measuring storage"}
           </Settings.ItemDescription>
         </Settings.ItemDetails>
         <Settings.ItemControl>

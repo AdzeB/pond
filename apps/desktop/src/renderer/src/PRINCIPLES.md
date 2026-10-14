@@ -1,42 +1,42 @@
 # Design principles
 
-pond borrows its sensibility from Benji Taylor's [Family Values](https://benji.org/family-values)
-— **simplicity**, **fluidity**, and **delight** — and translates them from an iOS wallet
-into a macOS/Electron desktop app. Simplicity keeps pond accessible, fluidity keeps it
-oriented, and delight makes it feel cared for. Together they are how we respect the
-user's time, intelligence, and emotional experience.
+Pond borrows its sensibility from Benji Taylor's [Family Values](https://benji.org/family-values):
+**simplicity**, **fluidity**, and **delight**. It translates them from an iOS wallet
+into a macOS/Electron desktop app. Simplicity keeps Pond accessible, fluidity keeps it
+oriented, and delight makes it feel cared for. Together they are how we respect your
+time, intelligence, and emotional experience.
 
 This is shared vocabulary, not a rulebook to follow blindly. When in doubt, optimise for
 the feeling described here.
 
 ## The three principles
 
-### Simplicity — gradual revelation
+### Simplicity: gradual revelation
 
 Show the fundamentals; reveal everything else as it becomes relevant. Complexity stays
-out of sight and out of mind until the user reaches for it. Think of walking through a
+out of sight and out of mind until you reach for it. Think of walking through a
 doorway: you glimpse a room from afar, and it resolves into detail as you enter.
 
 On the desktop this lives in our overlays. Base UI `Menu`, `ContextMenu`, `Popover`,
-`Drawer`, and `Dialog` are pond's "trays" — each surfaces a single focused action or
+`Drawer`, and `Dialog` are Pond's "trays". Each surfaces a single focused action or
 piece of content, layered on top of the current context rather than navigating away from
 it.
 
-### Fluidity — seamless transitions
+### Fluidity: continuous transitions
 
 Treat the app as one continuous space with consistent physical rules. Every motion should
-help the user understand their path from A to B. We fly instead of teleport: a transition
-should clarify what changed and where things went, never just decorate.
+help you understand your path from A to B. We fly instead of teleport: a transition
+should clarify what changed and where things went, never decorate.
 
-### Delight — selective emphasis
+### Delight: selective emphasis
 
 Delight is deliberate, not sprinkled everywhere. It earns its place by surprise and
 novelty, which is why it belongs most in the corners of the app, not the highways. The
-goal is to make pond feel human and considered, and to reward the user's investment.
+goal is to make Pond feel human and considered, and to reward your investment.
 
 ## iOS to desktop translation
 
-| Family (iOS) | pond (desktop) |
+| Family (iOS) | Pond (desktop) |
 | --- | --- |
 | Dynamic tray system | Base UI `Menu` / `Popover` / `Drawer` / `Dialog` overlays |
 | Tray emerges from a button, preserving context | Popovers/menus anchored to their trigger; detail opens as an overlay, not a route swap |
@@ -55,18 +55,18 @@ goal is to make pond feel human and considered, and to reward the user's investm
 Potential for delight **increases** as feature-usage frequency **decreases**. The
 specialness of a moment fades with repetition.
 
-- **Rare + significant** (creating a pond, a successful backup/export, empty states,
+- **Rare + significant** (creating a Library, a successful backup/export, empty states,
   first-run moments): high-intensity, memorable moments are worth it.
 - **Frequent** (hover, selection, typing, opening saves): restrained polish only. Doing
   too much here turns delight into friction.
 
-When deciding how much delight to add, ask how often the user will see it. The less often,
+When deciding how much delight to add, ask how often it appears. The less often,
 the more you can afford.
 
-## Motion standard — no teleporting UI
+## Motion standard: no teleporting UI
 
 Newly revealed interface must transition into place. User-visible controls, fields,
-rows, panels, menus, notices, and stateful content must not simply appear at their final
+rows, panels, menus, notices, and stateful content must not appear at their final
 size and position.
 
 - Inline reveals should animate the space they occupy as well as opacity and a small,
@@ -95,7 +95,7 @@ size and position.
 
 An animation is not done when its endpoints are correct. Watch it at normal speed and
 inspect its intermediate states. Refine timing, geometry, and sequencing until the path
-feels coherent; small defects compound across the product just as quickly as small,
+feels coherent; small defects compound across the product as quickly as small,
 considered details do.
 
 The exceptions are elements whose motion would misrepresent their behavior, content that
@@ -105,8 +105,8 @@ continuity another way rather than adding decorative motion.
 
 ## Do / don't
 
-- **Do** reveal depth progressively — submenus, side panels, overlays — instead of showing
-  everything at once.
+- **Do** reveal depth progressively through submenus, side panels, and overlays, instead
+  of showing everything at once.
 - **Do** make transitions directional and purposeful: motion should explain the change.
 - **Do** give every newly mounted or revealed user-visible element an intentional enter
   transition, following the motion standard above.
@@ -114,8 +114,8 @@ continuity another way rather than adding decorative motion.
   persist into the next phase, it must not duplicate, remount, or re-animate. Only the
   content that actually changed should transition.
 - **Do** vary an overlay's height/shape between steps so progression is unmistakable.
-- **Do** pull from the shared motion vocabulary — `--ds-duration-*` / `--ds-easing-*`
-  tokens and the presets in [`lib/motion.ts`](./lib/motion.ts) — rather than one-off
+- **Do** pull from the shared motion vocabulary, the `--ds-duration-*` / `--ds-easing-*`
+  tokens and the presets in [`lib/motion.ts`](./lib/motion.ts), rather than one-off
   values.
 - **Do** respect reduced motion. The global `MotionConfig reducedMotion="user"` in
   [`App.tsx`](./App.tsx) and the `data-reduce-motion` CSS overrides in

@@ -378,7 +378,7 @@ export function TagsPage() {
                   >
                     <Input.Field
                       value={descriptionDraft}
-                      placeholder="Add a description…"
+                      placeholder="Add a description"
                       aria-label={`${activeGroupRow.group.name} description`}
                       onChange={(event) =>
                         setDescriptionDraft(event.target.value)

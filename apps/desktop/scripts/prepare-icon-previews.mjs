@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Downscale each app-icon tint to a 128px preview for the settings picker.
- * The 1024px originals stay on disk for the dock; bundling them into the
- * renderer costs ~18 MB and decodes ~50 MB of bitmaps for a 44px grid.
+ * Bundling the 1024px tints instead costs the renderer ~18 MB and ~50 MB of decoded bitmaps for a 44px grid.
  */
 
 import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
@@ -19,16 +17,14 @@ const outDir = resolve(
 );
 
 const PREVIEW_SIZE = 128;
-const SOURCES = ["default.png", "Pond-iOS-Default-1024x1024@1x.png"];
 
 async function sourceFor(dir) {
-  for (const name of SOURCES) {
-    const path = join(dir, name);
-    try {
-      return { path, mtime: (await stat(path)).mtimeMs };
-    } catch {}
+  const path = join(dir, "default.png");
+  try {
+    return { path, mtime: (await stat(path)).mtimeMs };
+  } catch {
+    return null;
   }
-  return null;
 }
 
 async function isFresh(out, sourceMtime) {

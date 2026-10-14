@@ -1,8 +1,5 @@
 /**
- * Copies the replayweb.page viewer bundles (ui.js, sw.js) from the
- * replaywebpage devDependency into resources/replay/, next to the committed
- * index.html. The pond://_replay host serves all three at runtime, and the
- * existing extraResources rule ships them in packaged builds.
+ * Puts the replaywebpage viewer bundles next to the committed index.html that pond://_replay serves.
  */
 import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";

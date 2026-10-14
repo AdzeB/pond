@@ -30,12 +30,8 @@ function tintsRoot(): string {
 }
 
 function iconFile(id: string): string | null {
-  const dir = join(tintsRoot(), id);
-  const preferred = join(dir, "default.png");
-  if (existsSync(preferred)) return preferred;
-  const dumped = join(dir, "Pond-iOS-Default-1024x1024@1x.png");
-  if (existsSync(dumped)) return dumped;
-  return null;
+  const path = join(tintsRoot(), id, "default.png");
+  return existsSync(path) ? path : null;
 }
 
 function availableIds(): string[] {

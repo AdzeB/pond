@@ -159,7 +159,7 @@ function refreshSlideshow(): void {
 const unsubscribe = window.pondPreview.onState((next) => {
   state = next;
   localizePreview(next.locale);
-  const title = `${next.title} — Pond`;
+  const title = `${next.title} · Pond`;
   document.title = title;
   media.show(next);
   preview.dataset.mediaType = next.mediaType;
