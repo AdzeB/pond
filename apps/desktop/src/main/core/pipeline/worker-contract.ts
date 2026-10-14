@@ -75,11 +75,12 @@ export const QueueWorkerResponseSchema = z.discriminatedUnion("ok", [
     jobId: z.string(),
     ...LeaseFields,
     ok: z.literal(true),
+    /** Zod strips unknown keys, so the widest shapes go first or a poster would parse as bare dims. */
     result: z.union([
       z.null(),
-      QueueWorkerImageDimsSchema,
-      QueueWorkerImageResultSchema,
       QueueWorkerPosterResultSchema,
+      QueueWorkerImageResultSchema,
+      QueueWorkerImageDimsSchema,
     ]),
   }),
   z.object({
