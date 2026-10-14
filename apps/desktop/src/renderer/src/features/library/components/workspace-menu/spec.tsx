@@ -14,6 +14,8 @@ const TWITTER = "https://x.com/raphaelsalaja";
 const GITHUB = "https://github.com/raphaelsalaja";
 const EMAIL = "mailto:raphaelsalaja@gmail.com";
 const BUY_ME_A_COFFEE = "https://buymeacoffee.com/raphaelsalaja";
+/** The X mark is drawn edge to edge, so pad it to sit with the outline glyphs beside it. */
+const X_MARK_VIEW_BOX = "-4 -4 32 32";
 
 export function buildWorkspaceMenuItems({
   onBrowserExtension,
@@ -41,7 +43,7 @@ export function buildWorkspaceMenuItems({
     { type: "separator" },
     {
       label: "Twitter",
-      icon: <IconXTwitterGlyph />,
+      icon: <IconXTwitterGlyph viewBox={X_MARK_VIEW_BOX} />,
       onClick: () => void window.pond.openExternal(TWITTER),
     },
     {
