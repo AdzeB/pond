@@ -232,6 +232,15 @@ export const COMMANDS: readonly CommandSpec[] = [
     run: () => navigateTo("/icons"),
   },
   {
+    id: "sounds",
+    group: "App",
+    label: "Sound Gallery",
+    detail: "Audition every interface sound",
+    icon: IconEye,
+    keywords: "sounds audio feedback gallery audition",
+    run: () => navigateTo("/sounds"),
+  },
+  {
     id: "settings",
     group: "App",
     label: "Open Settings",

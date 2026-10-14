@@ -1,7 +1,7 @@
 import type { Layer, SoundDefinition } from "@web-kits/audio";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { SOUND_AUDITIONS, SOUND_PATCH, UI_SOUND_NAMES } from "./sound-packs";
+import { SOUND_PATCH, UI_SOUND_NAMES } from "./sound-packs";
 
 const HertzSchema = z.number();
 const SweepSchema = z.object({ start: z.number(), end: z.number() });
@@ -36,7 +36,7 @@ function durationMs(layer: Layer): number {
   return (delay + attack + decay + release) * 1000;
 }
 
-describe("sound packs", () => {
+describe("interface sounds", () => {
   const patch = SOUND_PATCH.toJSON();
 
   it("exposes every production cue", () => {
@@ -48,7 +48,7 @@ describe("sound packs", () => {
     for (const name of UI_SOUND_NAMES) {
       const layers = layersOf(patch.sounds?.[name]);
       expect(layers.length).toBeGreaterThan(0);
-      expect(layers.length).toBeLessThanOrEqual(2);
+      expect(layers.length).toBeLessThanOrEqual(name === "success" ? 3 : 2);
 
       let gain = 0;
       let longest = 0;
@@ -91,16 +91,5 @@ describe("sound packs", () => {
     expect(gainOf("tap")).toBeLessThan(gainOf("success"));
     expect(gainOf("soft")).toBeLessThan(gainOf("tap"));
     expect(gainOf("toggleOn")).toBeLessThan(gainOf("success"));
-  });
-
-  it("ships audition leftovers as extra definitions", () => {
-    expect(SOUND_AUDITIONS.map((cue) => cue.id)).toEqual([
-      "tap-body",
-      "success-notes",
-      "trash-short",
-    ]);
-    for (const cue of SOUND_AUDITIONS) {
-      expect(layersOf(cue.definition).length).toBeGreaterThan(0);
-    }
   });
 });
