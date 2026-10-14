@@ -70,3 +70,4 @@ export {
   type WindowContextValue,
   type WindowEdge,
 } from "./window";
+export { Wordmark, type WordmarkProps } from "./wordmark";

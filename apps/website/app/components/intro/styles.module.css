@@ -19,22 +19,13 @@
   & > :nth-child(3) {
     animation-delay: calc(var(--splash-land) + 120ms);
   }
-
-  & > :nth-child(4) {
-    animation-delay: calc(var(--splash-land) + 180ms);
-  }
 }
 
-/* Hidden until the splash mark lands on this spot. */
-.logo {
+/* Hidden until the splash mark lands on the wordmark's glyph. */
+.title {
+  display: flex;
   color: var(--ds-gray-12);
   animation: reveal 1ms var(--splash-land) backwards;
-}
-
-.title {
-  margin: 0;
-  font-weight: var(--ds-weight-xl);
-  color: var(--ds-gray-12);
 }
 
 .text {

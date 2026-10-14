@@ -1,4 +1,4 @@
-import { Logo } from "@pond/ui/logo";
+import { Wordmark } from "@pond/ui/wordmark";
 import { dmgUrl, extensionZipUrl } from "@/lib/release";
 import { Cta } from "../cta";
 import styles from "./styles.module.css";
@@ -10,8 +10,9 @@ const BUY_ME_A_COFFEE = "https://buymeacoffee.com/raphaelsalaja";
 export function Intro() {
   return (
     <header className={styles.intro}>
-      <Logo className={styles.logo} size={24} aria-hidden />
-      <h1 className={styles.title}>Pond</h1>
+      <h1 className={styles.title}>
+        <Wordmark size={24} />
+      </h1>
       <p className={styles.text}>
         Keep what you save on X, Instagram, Pinterest, and more in a folder on
         your Mac. Free and open source.

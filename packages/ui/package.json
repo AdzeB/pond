@@ -43,7 +43,8 @@
     "./question-card": "./src/question-card/index.tsx",
     "./reference-list": "./src/reference-list/index.tsx",
     "./run-status": "./src/run-status/index.tsx",
-    "./thread": "./src/thread/index.tsx"
+    "./thread": "./src/thread/index.tsx",
+    "./wordmark": "./src/wordmark/index.tsx"
   },
   "scripts": {
     "test": "vitest run",
