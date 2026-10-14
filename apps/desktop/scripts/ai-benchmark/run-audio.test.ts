@@ -117,6 +117,7 @@ function dependencies(input: {
 }
 
 describe("audio benchmark runner", () => {
+  /** Copies and scores half a million samples, so it needs more than the 5s default on a loaded CI runner. */
   test("decodes once and gives Whisper the complete canonical waveform while Gemma receives deterministic segments from it", async () => {
     const repoRoot = await mkdtemp(join(tmpdir(), "pond-audio-benchmark-"));
     const samples = new Float32Array(31 * 16_000);
@@ -220,7 +221,7 @@ describe("audio benchmark runner", () => {
     expect(gemma?.score.normalized.cer.rate).toBe(0);
     expect(gemma?.realTimeFactor).toBeGreaterThanOrEqual(0);
     expect(gemma?.peakMemoryBytes).toBeGreaterThan(0);
-  });
+  }, 30_000);
 
   test("isolates both implementations from mutations while decoding only once", async () => {
     const repoRoot = await mkdtemp(join(tmpdir(), "pond-audio-isolation-"));
