@@ -200,20 +200,12 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve(__dirname, "src/renderer/index.html"),
-          "agent-gallery": resolve(
-            __dirname,
-            "src/renderer/agent-gallery.html",
-          ),
           capture: resolve(__dirname, "src/renderer/capture.html"),
           "combine-images": resolve(
             __dirname,
             "src/renderer/combine-images.html",
           ),
           preview: resolve(__dirname, "src/renderer/preview.html"),
-          "picker-gallery": resolve(
-            __dirname,
-            "src/renderer/picker-gallery.html",
-          ),
         },
         preserveEntrySignatures: false,
         output: {

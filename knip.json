@@ -7,6 +7,8 @@
         "src/renderer/src/routes/**/*.{ts,tsx}",
         "src/renderer/src/dev/shadow-gallery/index.tsx",
         "src/renderer/src/dev/harvester/index.tsx",
+        "src/renderer/src/dev/agent-gallery/index.tsx",
+        "src/renderer/src/dev/picker-gallery/index.tsx",
         "scripts/*.{mjs,cjs,ts}",
         "scripts/ai-benchmark/run-tool-routing-benchmark.{mjs,ts}",
         "scripts/extension-install-video/render.cjs",
