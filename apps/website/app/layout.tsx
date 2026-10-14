@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 
-const SITE_URL = "https://pond.app";
+const SITE_URL = "https://pond-jade.vercel.app";
 const TITLE = "Pond";
 const DESCRIPTION =
   "Keep what you save on X, Instagram, Pinterest, and more in a folder on your Mac. Free and open source.";

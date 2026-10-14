@@ -69,14 +69,18 @@ function isToggle(control: Element): boolean {
   return control.matches(TOGGLE_SELECTOR);
 }
 
-function toggleIsOn(control: Element): boolean {
+/**
+ * A checkbox flips before the browser dispatches the click, but ARIA state is committed by React
+ * afterwards, so a capture listener still reads the value the control is leaving.
+ */
+export function toggleTurnsOn(control: Element): boolean {
   if (control instanceof HTMLInputElement && control.type === "checkbox") {
     return control.checked;
   }
   const pressed = control.getAttribute("aria-pressed");
-  if (pressed !== null) return pressed === "true";
+  if (pressed !== null) return pressed !== "true";
   const checked = control.getAttribute("aria-checked");
-  if (checked !== null) return checked === "true";
+  if (checked !== null) return checked !== "true";
   return false;
 }
 
@@ -99,7 +103,7 @@ export function UiSounds() {
       if (!from) return;
       const control = from.closest(TOGGLE_SELECTOR) ?? closestControl(from);
       if (!control || !isToggle(control) || shouldSkip(control, from)) return;
-      playUiToggle(toggleIsOn(control));
+      playUiToggle(toggleTurnsOn(control));
     };
 
     document.addEventListener("pointerdown", onPointerDown, true);
