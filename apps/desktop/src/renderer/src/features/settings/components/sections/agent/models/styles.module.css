@@ -1,10 +1,6 @@
 .section {
   gap: 16px;
 }
-.refresh {
-  flex: none;
-  min-width: 72px;
-}
 .notice {
   display: flex;
   flex-wrap: wrap;

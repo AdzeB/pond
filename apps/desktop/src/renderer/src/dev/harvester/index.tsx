@@ -1,8 +1,8 @@
 /** Standalone window prototype for sources and downloads. */
 import {
-  IconArrowDiagonalIn,
   IconMediaPauseFill,
   IconMediaPlayFill,
+  IconNodes3,
   IconWindowDownload,
 } from "@pond/icons";
 import { sourceLabel } from "@pond/schema/sources";
@@ -258,7 +258,7 @@ function Harvester() {
                 onClick={() => setSection("sources")}
               >
                 <Sidebar.Icon>
-                  <IconArrowDiagonalIn />
+                  <IconNodes3 />
                 </Sidebar.Icon>
                 <Sidebar.ItemLabel>Sources</Sidebar.ItemLabel>
                 <Sidebar.Count>{sources.length}</Sidebar.Count>

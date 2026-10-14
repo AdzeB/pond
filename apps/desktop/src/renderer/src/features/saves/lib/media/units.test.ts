@@ -113,6 +113,33 @@ describe("pickPrimaryUnit Threads post cover", () => {
     expect(unit?.key).toBe("tweet-dark.png");
   });
 
+  it("shows only media for a post with media, and the card PNG otherwise", () => {
+    const quoted = makeSave({
+      id: "tweet-quote",
+      source: "twitter",
+      files: [
+        file("image", "photo.jpg", "image/jpeg"),
+        file("tweet_screenshot_dark", "tweet-dark.png", "image/png"),
+        file("tweet_screenshot_quote1_dark", "quote-dark.png", "image/png"),
+      ],
+    });
+    expect(
+      buildMediaUnits(quoted, { theme: "dark" }).map((u) => u.key),
+    ).toEqual(["photo.jpg"]);
+
+    const textOnly = makeSave({
+      id: "tweet-text",
+      source: "twitter",
+      files: [
+        file("tweet_screenshot_light", "tweet-light.png", "image/png"),
+        file("tweet_screenshot_quote1_light", "quote-light.png", "image/png"),
+      ],
+    });
+    expect(
+      buildMediaUnits(textOnly, { theme: "light" }).map((u) => u.key),
+    ).toEqual(["tweet-light.png"]);
+  });
+
   it("falls back to the card PNG for a text-only Threads post", () => {
     const textOnly = makeSave({
       id: "thread-text",

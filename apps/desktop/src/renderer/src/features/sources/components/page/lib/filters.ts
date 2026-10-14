@@ -1,7 +1,7 @@
 import type { Source } from "@pond/schema/db";
 import type { CardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
 
-export type SourceKind = "account" | "watch";
+export type SourceKind = "account" | "watch" | "folder";
 
 export type SourceStatusId =
   | "active"
@@ -20,7 +20,7 @@ export interface SourceFilters {
 export interface FilterableSource {
   name: string;
   handle: string | null;
-  source: Source;
+  source: Source | null;
   sourceLabel: string;
   kind: SourceKind;
   kindLabel: string;
@@ -77,7 +77,10 @@ export function matchesSourceFilters(
   if (filters.statuses.size > 0 && !filters.statuses.has(row.statusId)) {
     return false;
   }
-  if (filters.sources.size > 0 && !filters.sources.has(row.source)) {
+  if (
+    filters.sources.size > 0 &&
+    (!row.source || !filters.sources.has(row.source))
+  ) {
     return false;
   }
   if (filters.types.size > 0 && !filters.types.has(row.kindLabel)) {

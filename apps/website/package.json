@@ -25,14 +25,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@pond/icons": "workspace:*",
     "@pond/theme": "workspace:*",
     "@pond/ui": "workspace:*",
-    "clsx": "catalog:",
     "next": "^16.3.5",
     "react": "catalog:",
-    "react-dom": "catalog:",
-    "zod": "catalog:"
+    "react-dom": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",

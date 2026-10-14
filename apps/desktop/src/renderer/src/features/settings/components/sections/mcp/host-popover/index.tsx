@@ -1,4 +1,4 @@
-import { IconCircleInfo as Info } from "@pond/icons";
+import { IconCircleQuestion as Help } from "@pond/icons";
 import { Button, Popover } from "@pond/ui";
 import {
   hostSetupCommands,
@@ -50,7 +50,7 @@ export function HostPopover({
         render={<Button icon size="xs" variant="ghost" />}
         aria-label={`Set up ${host.name}`}
       >
-        <Info size={12} />
+        <Help size={12} />
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner side="left" align="start" sideOffset={8}>

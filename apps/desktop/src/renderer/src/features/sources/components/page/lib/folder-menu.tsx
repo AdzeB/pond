@@ -1,0 +1,89 @@
+import {
+  IconFolderOpen,
+  IconFolderPen,
+  IconMediaPause,
+  IconMediaPlay,
+  IconTrash,
+} from "@pond/icons";
+import { Dialog, type MenuItemSpec } from "@pond/ui";
+import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
+import { formatNumber } from "@/shared/lib/format";
+import { REVEAL_LABEL } from "@/shared/lib/platform";
+import { notify } from "@/shared/lib/toast";
+
+interface FolderMenuTarget {
+  name: string;
+  imported: number;
+  watching: boolean;
+}
+
+async function revealFolder(name: string): Promise<void> {
+  const result = await window.pond.query("autoImport.reveal", {});
+  if (result.ok) return;
+  notify({
+    id: "folder-reveal",
+    title: `Couldn't find ${name}. Change the folder to keep importing.`,
+  });
+}
+
+async function setWatching(
+  enabled: boolean,
+  onChanged: () => void,
+): Promise<void> {
+  await window.pond.query("autoImport.set", { enabled });
+  onChanged();
+}
+
+function confirmStop(target: FolderMenuTarget, onChanged: () => void): void {
+  const count = target.imported;
+  const fileCount = `${formatNumber(count)} file${count === 1 ? "" : "s"}`;
+  Dialog.confirm({
+    title: "Stop Watching",
+    description: `Pond stops importing new files from ${target.name}. The ${fileCount} already imported stay in your library.`,
+    confirmLabel: "Stop",
+    onConfirm: async () => {
+      await window.pond.query("autoImport.set", { enabled: false, path: "" });
+      onChanged();
+    },
+  });
+}
+
+export function buildFolderMenu(
+  target: FolderMenuTarget,
+  onChanged: () => void,
+): MenuItemSpec[] {
+  return [
+    {
+      type: "group",
+      items: [
+        {
+          label: REVEAL_LABEL,
+          icon: <IconFolderOpen />,
+          onClick: () => void revealFolder(target.name),
+        },
+        {
+          label: "Change Folder",
+          icon: <IconFolderPen />,
+          onClick: () => void pickWatchedFolder(),
+        },
+      ],
+    },
+    { type: "separator" },
+    {
+      type: "group",
+      items: [
+        {
+          label: target.watching ? "Pause Watching" : "Resume Watching",
+          icon: target.watching ? <IconMediaPause /> : <IconMediaPlay />,
+          onClick: () => void setWatching(!target.watching, onChanged),
+        },
+        {
+          label: "Stop Watching",
+          icon: <IconTrash />,
+          variant: "destructive",
+          onClick: () => confirmStop(target, onChanged),
+        },
+      ],
+    },
+  ];
+}

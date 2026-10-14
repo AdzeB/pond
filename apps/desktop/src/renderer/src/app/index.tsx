@@ -27,7 +27,6 @@ import { SyncStatusBridge } from "../features/sources/effects/sync-status-bridge
 import { routeTree } from "../routeTree.gen";
 import { ToastHost } from "../shared/components/toast-host";
 import { setAppRouter } from "../shared/lib/app-router";
-import { dismissBootCover } from "../shared/lib/boot-cover";
 import { libraryScopedKey } from "../shared/lib/library-scope";
 import { BootScreen } from "./components/boot-screen";
 import { ErrorBoundary } from "./components/error-boundary";
@@ -35,7 +34,6 @@ import { ErrorScreen } from "./components/error-screen";
 import { Onboarding } from "./components/onboarding";
 import { AgentLibraryBridge } from "./effects/agent-library-bridge";
 import { MenuRecentsBridge } from "./effects/menu-recents-bridge";
-import { SettingsProcessingBridge } from "./effects/settings-processing-bridge";
 import "./effects/save-library-bridge";
 
 const DuplicateReviewHost = lazy(() =>
@@ -128,7 +126,6 @@ function AppContent() {
 }
 
 export function App() {
-  useEffect(() => dismissBootCover(), []);
   return (
     <>
       <InterfaceZoom />
@@ -185,7 +182,6 @@ function LibraryApp() {
               <SyncStatusBridge />
               <ExtensionCaptureToast />
               <EnrichmentSweep />
-              <SettingsProcessingBridge />
               <BootScreen />
               <Onboarding />
               <ErrorBoundary>

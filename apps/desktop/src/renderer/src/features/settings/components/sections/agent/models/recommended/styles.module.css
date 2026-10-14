@@ -1,8 +1,0 @@
-.command {
-  display: block;
-  margin-top: 6px;
-  font-family: var(--ds-font-mono);
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-11);
-  user-select: all;
-}

@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { dismissBootCover } from "@/shared/lib/boot-cover";
 import { SavePatchesSchema } from "../lib/reconcile";
 import { readSnapshot, scheduleSnapshotWrite } from "../lib/snapshot";
 import { applyActionCoalesced } from "../lib/sync-coalesce";
@@ -18,7 +17,6 @@ const bootstrap = createSaveBootstrap({
   readSnapshot,
   scheduleSnapshotWrite,
   applyActionCoalesced,
-  dismissBootCover,
   rendererReady: () => window.pond.rendererReady(),
   onSyncAction: (callback) => window.pond.onSyncAction(callback),
   loadAll: async () =>

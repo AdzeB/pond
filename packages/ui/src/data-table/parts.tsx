@@ -40,6 +40,20 @@ function useStickyHeaderOffset(
   return offset;
 }
 
+function useHorizontalScrollFlag(scrollRef: RefObject<HTMLDivElement | null>) {
+  useLayoutEffect(() => {
+    const node = scrollRef.current;
+    if (!node) return;
+    const update = () => {
+      if (node.scrollLeft > 0) node.dataset.scrolledX = "";
+      else delete node.dataset.scrolledX;
+    };
+    update();
+    node.addEventListener("scroll", update, { passive: true });
+    return () => node.removeEventListener("scroll", update);
+  }, [scrollRef]);
+}
+
 interface SlotProps {
   children?: ReactNode;
 }
@@ -84,6 +98,7 @@ export function DataTableRoot<T extends RowData>({
   const showHeader = variant !== "list" && hasRows;
   const sized = meta.height !== undefined;
   const scrollMargin = useStickyHeaderOffset(meta.headerRef, showHeader);
+  useHorizontalScrollFlag(meta.scrollRef);
 
   return (
     <div

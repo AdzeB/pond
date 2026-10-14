@@ -78,12 +78,7 @@ export function TagRowProvider({
 
   function confirmDelete() {
     if (isGroup) {
-      Dialog.confirm({
-        title: "Remove Tag Group",
-        description: `"${name}" is removed. The tags stay, and they no longer belong to this group.`,
-        confirmLabel: "Remove",
-        onConfirm: () => void window.pond.query("tagGroups.delete", { name }),
-      });
+      void window.pond.query("tagGroups.delete", { name });
       return;
     }
     Dialog.confirm({

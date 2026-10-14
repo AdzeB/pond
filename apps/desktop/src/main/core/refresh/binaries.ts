@@ -1,8 +1,14 @@
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { app } from "electron";
+import * as electron from "electron";
 import log from "electron-log/main.js";
 import which from "which";
+
+/** Utility processes get an `electron` module without `app`, and queue workers load this file. */
+const app: typeof electron.app | undefined = electron.app;
+
+/** Main resolves ffmpeg and hands the path to queue workers, which can't see `app.isPackaged`. */
+export const FFMPEG_PATH_ENV = "POND_FFMPEG_PATH";
 
 interface ResolvedBinaries {
   ytdlp: string | null;
@@ -14,6 +20,7 @@ export const YTDLP_FILENAME =
 const FFMPEG_FILENAME = process.platform === "win32" ? "ffmpeg.exe" : "ffmpeg";
 
 export function userBinDir(): string {
+  if (!app) throw new Error("The managed binary folder is only known in main.");
   return join(app.getPath("userData"), "bin");
 }
 
@@ -34,14 +41,18 @@ export function invalidateBinariesCache(): void {
 }
 
 function resolveYtDlp(): string | null {
-  const managed = join(userBinDir(), YTDLP_FILENAME);
-  if (existsSync(managed)) return managed;
+  if (app) {
+    const managed = join(userBinDir(), YTDLP_FILENAME);
+    if (existsSync(managed)) return managed;
+  }
   return lookupOnPath(YTDLP_FILENAME);
 }
 
 function resolveFfmpeg(): string | null {
+  const handed = process.env[FFMPEG_PATH_ENV];
+  if (handed && existsSync(handed)) return handed;
   const candidates: string[] = [];
-  if (app.isPackaged) {
+  if (app?.isPackaged) {
     candidates.push(join(process.resourcesPath, "bin", FFMPEG_FILENAME));
   }
   candidates.push(

@@ -1,5 +1,6 @@
 import { IconChevronDown } from "@pond/icons";
 import { Accordion } from "@pond/ui";
+import { clsx as cn } from "clsx";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useId, useState } from "react";
 import { gentleSpring } from "@/shared/lib/motion";
@@ -7,19 +8,23 @@ import styles from "./styles.module.css";
 
 interface SectionProps {
   title: string;
+  className?: string;
   defaultOpen?: boolean;
   divider?: boolean;
   action?: React.ReactNode;
   empty?: boolean;
+  collapsible?: boolean;
   children: React.ReactNode;
 }
 
 export function Section({
   title,
+  className,
   defaultOpen = true,
   divider = true,
   action,
   empty = false,
+  collapsible = true,
   children,
 }: SectionProps) {
   const [open, setOpen] = useState(defaultOpen);
@@ -28,10 +33,10 @@ export function Section({
 
   if (empty && !action) return null;
 
-  if (empty) {
+  if (empty || !collapsible) {
     return (
       <section
-        className={styles.section}
+        className={cn(styles.section, className)}
         data-divider={divider ? undefined : "none"}
         aria-labelledby={`${id}-title`}
       >
@@ -39,15 +44,20 @@ export function Section({
           <span className={styles.title} id={`${id}-title`}>
             {title}
           </span>
-          <span className={styles.action}>{action}</span>
+          {action ? <span className={styles.action}>{action}</span> : null}
         </h3>
+        {empty ? null : (
+          <div className={styles.panel} data-static="">
+            {children}
+          </div>
+        )}
       </section>
     );
   }
 
   return (
     <Accordion.Root
-      className={styles.section}
+      className={cn(styles.section, className)}
       data-divider={divider ? undefined : "none"}
       multiple
       value={open ? [title] : []}

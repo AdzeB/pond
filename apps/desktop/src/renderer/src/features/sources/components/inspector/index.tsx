@@ -1,18 +1,10 @@
-import {
-  IconXmark as Cross,
-  IconDotsFill as Ellipsis,
-  IconDownload,
-} from "@pond/icons";
 import type { Source } from "@pond/schema/db";
-import { Button, Input, Menu, type MenuItemSpec, Pane } from "@pond/ui";
-import { useEffect, useId, useRef, useState } from "react";
-import { downloadsFilters } from "@/features/downloads";
-import {
-  libraryChrome,
-  useInspectorSourceId,
-  useInspectorSourceKind,
-} from "@/features/library";
+import { Dialog, Field, Input, type MenuItemSpec } from "@pond/ui";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import type { SourceDetailsKind } from "@/features/library";
 import { HeroAvatar } from "@/features/sources/components/flow/detail/hero-avatar";
+import { buildFolderMenu } from "@/features/sources/components/page/lib/folder-menu";
 import {
   type CardModel,
   cardModel,
@@ -22,6 +14,10 @@ import {
   useAccounts,
 } from "@/features/sources/hooks/use-accounts";
 import {
+  useWatchedFolder,
+  watchedFolderName,
+} from "@/features/sources/hooks/use-watched-folder";
+import {
   useWatches,
   type WatchRow,
   watchKindLabel,
@@ -30,7 +26,6 @@ import { getSourceDef } from "@/features/sources/lib/registry";
 import {
   accountMenuTarget,
   buildSourceActionMenu,
-  startSourceSignIn,
   watchMenuTarget,
 } from "@/features/sources/lib/source-menu";
 import { sourceDetail } from "@/features/sources/state/source-detail";
@@ -38,21 +33,71 @@ import {
   type SyncSourceStatus,
   useSyncByAccount,
 } from "@/features/sources/state/sync-monitor";
+import { DetailsHero } from "@/shared/components/details-hero";
 import { Section } from "@/shared/components/inspector-section";
 import { PropertyList } from "@/shared/components/property-list";
-import { SpecMenu } from "@/shared/components/spec-context-menu";
 import { formatNumber, formatTimestampLine } from "@/shared/lib/format";
-import { openHarvester } from "@/shared/lib/open-harvester";
+import { relativeTimeFromMs } from "@/shared/lib/relative-time";
 import styles from "./styles.module.css";
 
-export function SourceInspector() {
-  const id = useInspectorSourceId();
-  const kind = useInspectorSourceKind();
-  if (!id || !kind) return null;
+export function SourceInspector({
+  kind,
+  id,
+}: {
+  kind: SourceDetailsKind;
+  id: string;
+}) {
+  if (kind === "folder") return <FolderInspector />;
   return kind === "watch" ? (
     <WatchInspector id={id} />
   ) : (
     <AccountInspector id={id} />
+  );
+}
+
+function fetchedLabel(model: CardModel): string {
+  if (model.lastText === "now") return "Fetching now";
+  if (model.lastText === "—") return "Not fetched yet";
+  return `Last fetched ${model.lastText}`;
+}
+
+function FolderInspector() {
+  const folder = useWatchedFolder();
+  const client = useQueryClient();
+  const status = folder.data;
+  if (!status?.path) {
+    return (
+      <SourceInspectorView status={folder.isPending ? "loading" : "missing"} />
+    );
+  }
+  const name = watchedFolderName(status.path);
+  const imported = status.history.filter((item) => item.ok);
+  const lastMs = imported[0]?.at ?? null;
+  const menuItems = buildFolderMenu(
+    { name, imported: imported.length, watching: status.enabled },
+    () => void client.invalidateQueries({ queryKey: ["watched-folder"] }),
+  );
+  return (
+    <SourceInspectorView
+      key={status.path}
+      status="ready"
+      title={name}
+      description={
+        lastMs == null
+          ? "Nothing imported yet"
+          : `Last imported ${relativeTimeFromMs(lastMs)}`
+      }
+      source="local"
+      menuItems={menuItems}
+      properties={[
+        { label: "Source", value: "Local" },
+        { label: "Type", value: "Folder" },
+        { label: "Location", value: status.path },
+        { label: "Imported Items", value: formatNumber(imported.length) },
+        { label: "Mode", value: status.mode === "move" ? "Move" : "Copy" },
+        { label: "Status", value: status.enabled ? "Watching" : "Paused" },
+      ]}
+    />
   );
 }
 
@@ -61,12 +106,7 @@ function AccountInspector({ id }: { id: string }) {
   const account = accounts.find((row) => row.id === id);
   const byAccount = useSyncByAccount();
   if (!account) {
-    return (
-      <SourceInspectorView
-        status={loading ? "loading" : "missing"}
-        onClose={libraryChrome.closeRightPane}
-      />
-    );
+    return <SourceInspectorView status={loading ? "loading" : "missing"} />;
   }
   const syncStatus = byAccount[account.id];
   const model = cardModel(syncStatus);
@@ -82,6 +122,7 @@ function AccountInspector({ id }: { id: string }) {
     <SourceInspectorView
       key={account.id}
       status="ready"
+      description={fetchedLabel(model)}
       handle={account.handle ? `@${account.handle}` : null}
       source={account.source}
       avatarUrl={account.avatarUrl}
@@ -98,11 +139,6 @@ function AccountInspector({ id }: { id: string }) {
         },
         { label: "Added", value: addedLabel(account.addedAt) },
       ]}
-      onFetch={() => void window.pond.syncRunNow(account.id)}
-      onCancel={() => void window.pond.syncCancel(account.id)}
-      onSignIn={() => startSourceSignIn(account.source, accounts)}
-      onOpenDownloads={() => openDownloads(account.source)}
-      onClose={libraryChrome.closeRightPane}
       onNicknameSave={async (value) => {
         await saveAccountNickname(account, value);
         changed();
@@ -117,12 +153,7 @@ function WatchInspector({ id }: { id: string }) {
   const watch = watches.find((row) => row.id === id);
   const byAccount = useSyncByAccount();
   if (!watch) {
-    return (
-      <SourceInspectorView
-        status={loading ? "loading" : "missing"}
-        onClose={libraryChrome.closeRightPane}
-      />
-    );
+    return <SourceInspectorView status={loading ? "loading" : "missing"} />;
   }
   const syncStatus = byAccount[watch.id];
   const model = cardModel(syncStatus);
@@ -137,6 +168,7 @@ function WatchInspector({ id }: { id: string }) {
     <SourceInspectorView
       key={watch.id}
       status="ready"
+      description={fetchedLabel(model)}
       handle={
         watch.kind === "playlist" || watch.kind === "list"
           ? watch.handle
@@ -149,11 +181,6 @@ function WatchInspector({ id }: { id: string }) {
       nickname={watch.label ?? ""}
       menuItems={menuItems}
       properties={watchProperties(watch, accounts)}
-      onFetch={() => void window.pond.syncRunNow(watch.id)}
-      onCancel={() => void window.pond.syncCancel(watch.id)}
-      onSignIn={() => startSourceSignIn(watch.source, accounts)}
-      onOpenDownloads={() => openDownloads(watch.source)}
-      onClose={libraryChrome.closeRightPane}
       onNicknameSave={async (value) => {
         await saveWatchNickname(watch, value);
         changed();
@@ -162,41 +189,9 @@ function WatchInspector({ id }: { id: string }) {
   );
 }
 
-interface SourceInspectorAction {
-  label: string;
-  onClick: () => void;
-}
-
 interface SourceInspectorProperty {
   label: string;
   value: string;
-}
-
-function sourcePrimaryAction({
-  model,
-  syncStatus,
-  onFetch,
-  onCancel,
-  onSignIn,
-}: {
-  model: CardModel;
-  syncStatus: SyncSourceStatus | undefined;
-  onFetch?: () => void;
-  onCancel?: () => void;
-  onSignIn?: () => void;
-}): SourceInspectorAction | undefined {
-  if (model.tone === "run") {
-    return onCancel ? { label: "Cancel Fetch", onClick: onCancel } : undefined;
-  }
-  if (syncStatus?.state === "auth_required" || !model.connected) {
-    return onSignIn ? { label: "Sign In Again", onClick: onSignIn } : undefined;
-  }
-  return onFetch
-    ? {
-        label: model.tone === "err" ? "Retry Fetch" : "Fetch New Saves",
-        onClick: onFetch,
-      }
-    : undefined;
 }
 
 function addedLabel(value: string): string {
@@ -251,15 +246,9 @@ async function saveWatchNickname(
   });
 }
 
-function openDownloads(source: Source): void {
-  downloadsFilters.setQ("");
-  downloadsFilters.setStatuses(new Set());
-  downloadsFilters.setSources(new Set([source]));
-  libraryChrome.dismissInspector();
-  openHarvester({ section: "downloads" });
-}
-
 interface SourceInspectorDetailsProps {
+  title?: string;
+  description?: string;
   handle?: string | null;
   source: Source;
   avatarUrl?: string | null;
@@ -268,48 +257,19 @@ interface SourceInspectorDetailsProps {
   nickname?: string;
   menuItems?: MenuItemSpec[];
   properties?: SourceInspectorProperty[];
-  onFetch?: () => void;
-  onCancel?: () => void;
-  onSignIn?: () => void;
-  onOpenDownloads?: () => void;
   onNicknameSave?: (value: string) => Promise<void>;
 }
 
-export type SourceInspectorViewProps = { onClose: () => void } & (
+export type SourceInspectorViewProps =
   | { status: "loading" }
   | { status: "missing" }
-  | ({ status: "ready" } & SourceInspectorDetailsProps)
-);
+  | ({ status: "ready" } & SourceInspectorDetailsProps);
 
 export function SourceInspectorView(props: SourceInspectorViewProps) {
-  const menuItems = props.status === "ready" ? (props.menuItems ?? []) : [];
   return (
-    <div className={styles.root}>
-      <Pane.Header title="Details">
-        {menuItems.length > 0 ? (
-          <SpecMenu align="end" buildItems={() => menuItems}>
-            <Menu.Trigger
-              variant="ghost"
-              size="sm"
-              icon
-              aria-label="Source Actions"
-            >
-              <Ellipsis />
-            </Menu.Trigger>
-          </SpecMenu>
-        ) : null}
-        <Button
-          type="button"
-          icon
-          size="sm"
-          variant="ghost"
-          aria-label="Close Details"
-          onClick={props.onClose}
-        >
-          <Cross />
-        </Button>
-      </Pane.Header>
-      <Pane.Body className={styles.scroll}>
+    <>
+      <Dialog.Header data-empty />
+      <Dialog.Content className={styles.content}>
         {props.status === "loading" ? (
           <p className={styles.empty} role="status">
             Loading source details
@@ -321,71 +281,62 @@ export function SourceInspectorView(props: SourceInspectorViewProps) {
         ) : (
           <SourceInspectorDetails {...props} />
         )}
-      </Pane.Body>
-    </div>
+      </Dialog.Content>
+      <Dialog.Footer>
+        <Dialog.Cancel>Done</Dialog.Cancel>
+      </Dialog.Footer>
+    </>
   );
 }
 
 function SourceInspectorDetails({
+  title,
   handle,
+  description,
   source,
   avatarUrl,
   model,
   syncStatus,
   nickname = "",
+  menuItems = [],
   properties = [],
-  onFetch,
-  onCancel,
-  onSignIn,
-  onOpenDownloads,
   onNicknameSave,
 }: SourceInspectorDetailsProps) {
-  const primaryAction = model
-    ? sourcePrimaryAction({
-        model,
-        syncStatus,
-        onFetch,
-        onCancel,
-        onSignIn,
-      })
-    : undefined;
+  const activity = model ? activityDetail(model, syncStatus) : null;
   return (
     <>
-      <div className={styles.identity}>
-        <HeroAvatar
-          source={source}
-          avatarUrl={avatarUrl}
-          size={40}
-          badgeSize={16}
-        />
-        <div className={styles.copy}>
-          {onNicknameSave ? (
-            <IdentityName
-              nickname={nickname}
-              placeholder={handle ?? "None"}
-              onSave={onNicknameSave}
-            />
-          ) : (
-            <h2 className={styles.name}>{nickname || handle || "None"}</h2>
-          )}
-          {nickname && handle ? (
-            <span className={styles.handle}>{handle}</span>
+      <DetailsHero.Root>
+        <DetailsHero.Media>
+          <HeroAvatar
+            source={source}
+            avatarUrl={avatarUrl}
+            size={88}
+            badge={false}
+          />
+          <DetailsHero.Actions items={menuItems} aria-label="Source Actions" />
+        </DetailsHero.Media>
+        <DetailsHero.Copy>
+          <DetailsHero.Title>
+            {title || handle || nickname || getSourceDef(source).label}
+          </DetailsHero.Title>
+          {description ? (
+            <DetailsHero.Description>{description}</DetailsHero.Description>
           ) : null}
-        </div>
-      </div>
-      {onOpenDownloads ? (
-        <Button
-          size="xs"
-          variant="secondary"
-          className={styles["downloads-link"]}
-          onClick={onOpenDownloads}
-        >
-          <IconDownload />
-          View Downloads
-        </Button>
+        </DetailsHero.Copy>
+      </DetailsHero.Root>
+      {onNicknameSave ? (
+        <NicknameField
+          nickname={nickname}
+          placeholder={handle ?? "Add a nickname"}
+          onSave={onNicknameSave}
+        />
       ) : null}
       {properties.length > 0 ? (
-        <Section title="Properties">
+        <Section
+          title="Properties"
+          className={styles.section}
+          collapsible={false}
+        >
           <PropertyList.Root>
             {properties.map((property) => (
               <PropertyList.Row key={property.label}>
@@ -396,8 +347,12 @@ function SourceInspectorDetails({
           </PropertyList.Root>
         </Section>
       ) : null}
-      {model ? (
-        <Section title="Activity">
+      {model && activity ? (
+        <Section
+          title="Activity"
+          className={styles.section}
+          collapsible={false}
+        >
           <div className={styles.activity}>
             <p
               className={styles.detail}
@@ -407,19 +362,9 @@ function SourceInspectorDetails({
                   : undefined
               }
             >
-              {activityDetail(model, syncStatus)}
+              {activity}
             </p>
             <SourceProgress progress={syncStatus?.progress} />
-            {primaryAction ? (
-              <Button
-                size="xs"
-                variant="secondary"
-                className={styles.primary}
-                onClick={primaryAction.onClick}
-              >
-                {primaryAction.label}
-              </Button>
-            ) : null}
           </div>
         </Section>
       ) : null}
@@ -430,15 +375,12 @@ function SourceInspectorDetails({
 function activityDetail(
   model: CardModel,
   syncStatus: SyncSourceStatus | undefined,
-): string {
+): string | null {
   if (syncStatus?.message) return syncStatus.message;
   if (model.tone === "err" && syncStatus?.lastError) {
     return syncStatus.lastError;
   }
-  if (model.lastText !== "—") {
-    return `Last fetched ${model.lastText}.`;
-  }
-  return "No fetch has completed yet.";
+  return null;
 }
 
 function SourceProgress({
@@ -470,7 +412,7 @@ function SourceProgress({
   );
 }
 
-function IdentityName({
+function NicknameField({
   nickname,
   placeholder,
   onSave,
@@ -479,7 +421,6 @@ function IdentityName({
   placeholder: string;
   onSave: (value: string) => Promise<void>;
 }) {
-  const id = useId();
   const savedValue = useRef(nickname);
   const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
   useEffect(() => {
@@ -497,17 +438,15 @@ function IdentityName({
     }
   };
   return (
-    <>
-      <Input.Root className={styles.name} size="lg" variant="borderless">
-        <Input.Field
-          id={id}
-          className={styles["name-field"]}
+    <Field.Root className={styles.field} invalid={status === "error"}>
+      <Field.Label>Nickname</Field.Label>
+      <Input.Root>
+        <Field.Control
+          render={<Input.Field />}
           defaultValue={nickname}
-          aria-label="Nickname"
           placeholder={placeholder}
+          maxLength={255}
           disabled={status === "saving"}
-          aria-invalid={status === "error"}
-          aria-describedby={status === "error" ? `${id}-status` : undefined}
           onChange={() => setStatus("idle")}
           onBlur={(event) => void save(event.currentTarget.value)}
           onKeyDown={(event) => {
@@ -516,10 +455,10 @@ function IdentityName({
         />
       </Input.Root>
       {status === "error" ? (
-        <p id={`${id}-status`} className={styles["field-status"]} role="alert">
+        <p className={styles["field-status"]} role="alert">
           Couldn't save. Focus the field and press Enter to try again.
         </p>
       ) : null}
-    </>
+    </Field.Root>
   );
 }

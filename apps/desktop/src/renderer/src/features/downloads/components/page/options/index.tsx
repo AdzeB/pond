@@ -17,7 +17,6 @@ export function DownloadOptionsMenu() {
       layout={layout}
       onHiddenChange={downloadsColumnsLayout.setHidden}
       onSortChange={downloadsColumnsLayout.setSort}
-      onReset={downloadsColumnsLayout.reset}
     />
   );
 }

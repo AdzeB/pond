@@ -34,8 +34,6 @@
   color: var(--ds-gray-11);
 }
 
-.more {
-  display: flex;
-  justify-content: center;
-  padding: 12px;
+.sentinel {
+  height: 1px;
 }

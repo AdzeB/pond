@@ -2,6 +2,7 @@ import { clsx as cn } from "clsx";
 import {
   type ComponentPropsWithoutRef,
   type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
   type PointerEvent as ReactPointerEvent,
   useCallback,
   useLayoutEffect,
@@ -9,13 +10,7 @@ import {
   useState,
 } from "react";
 import { Tooltip } from "../tooltip";
-import {
-  useWindow,
-  WindowContext,
-  type WindowEdge,
-  type WindowTrackEdge,
-  type WindowTrackResize,
-} from "./context";
+import { useWindow, WindowContext, type WindowEdge } from "./context";
 import styles from "./styles.module.css";
 import { nextTrackWidth } from "./track";
 
@@ -37,27 +32,12 @@ function Root({
     right: false,
     bottom: false,
   });
-  const [resize, setResizeState] = useState<
-    Record<WindowTrackEdge, WindowTrackResize | null>
-  >({
-    left: null,
-    right: null,
-  });
 
   const setOpen = useCallback((edge: WindowEdge, open: boolean) => {
     setState((prev) =>
       prev[edge] === open ? prev : { ...prev, [edge]: open },
     );
   }, []);
-
-  const setResize = useCallback(
-    (edge: WindowTrackEdge, value: WindowTrackResize | null) => {
-      setResizeState((prev) =>
-        prev[edge] === value ? prev : { ...prev, [edge]: value },
-      );
-    },
-    [],
-  );
 
   const resolvedState = useMemo(
     () => ({
@@ -67,15 +47,14 @@ function Root({
     }),
     [state, leftOpen, rightOpen],
   );
-  const actions = useMemo(() => ({ setOpen, setResize }), [setOpen, setResize]);
+  const actions = useMemo(() => ({ setOpen }), [setOpen]);
   const value = useMemo(
     () => ({
       state: resolvedState,
-      resize,
       actions,
       meta: {},
     }),
-    [resolvedState, resize, actions],
+    [resolvedState, actions],
   );
 
   return (
@@ -107,46 +86,6 @@ function useEdgeOpen(edge: WindowEdge, open: boolean) {
   }, [setOpen, edge, open]);
 }
 
-function useEdgeResize(
-  edge: WindowTrackEdge,
-  open: boolean,
-  value: WindowTrackResize,
-) {
-  const {
-    actions: { setResize },
-  } = useWindow();
-  useLayoutEffect(() => {
-    setResize(
-      edge,
-      open
-        ? {
-            minWidth: value.minWidth,
-            maxWidth: value.maxWidth,
-            defaultWidth: value.defaultWidth,
-            width: value.width,
-            resizeLabel: value.resizeLabel,
-            onResize: value.onResize,
-            onCollapse: value.onCollapse,
-          }
-        : null,
-    );
-    return () => {
-      setResize(edge, null);
-    };
-  }, [
-    setResize,
-    edge,
-    open,
-    value.minWidth,
-    value.maxWidth,
-    value.defaultWidth,
-    value.width,
-    value.resizeLabel,
-    value.onResize,
-    value.onCollapse,
-  ]);
-}
-
 interface TopProps extends ComponentPropsWithoutRef<"header"> {
   open?: boolean;
 }
@@ -170,6 +109,7 @@ interface SideProps extends ComponentPropsWithoutRef<"aside"> {
   defaultWidth?: number;
   width?: number;
   resizeLabel?: string;
+  collapseShortcut?: ReactNode;
   onResize?: (width: number) => void;
   onCollapse?: () => void;
 }
@@ -183,20 +123,12 @@ function Left({
   defaultWidth,
   width,
   resizeLabel,
+  collapseShortcut,
   onResize,
   onCollapse,
   ...props
 }: SideProps) {
   useEdgeOpen("left", open);
-  useEdgeResize("left", open, {
-    minWidth,
-    maxWidth,
-    defaultWidth,
-    width,
-    resizeLabel,
-    onResize,
-    onCollapse,
-  });
   return (
     <aside
       className={cn(styles.left, className)}
@@ -207,6 +139,19 @@ function Left({
       aria-hidden={!open || undefined}
     >
       <div className={styles["edge-content"]}>{children}</div>
+      {open ? (
+        <Handle
+          edge="left"
+          minWidth={minWidth}
+          maxWidth={maxWidth}
+          defaultWidth={defaultWidth}
+          width={width}
+          resizeLabel={resizeLabel}
+          collapseShortcut={collapseShortcut}
+          onResize={onResize}
+          onCollapse={onCollapse}
+        />
+      ) : null}
     </aside>
   );
 }
@@ -216,7 +161,6 @@ function Center({
   children,
   ...props
 }: ComponentPropsWithoutRef<"div">) {
-  const { state, resize } = useWindow();
   return (
     <div
       className={cn(styles.center, className)}
@@ -224,13 +168,7 @@ function Center({
       tabIndex={-1}
       {...props}
     >
-      {state.left && resize.left ? (
-        <Handle edge="left" {...resize.left} />
-      ) : null}
       {children}
-      {state.right && resize.right ? (
-        <Handle edge="right" {...resize.right} />
-      ) : null}
     </div>
   );
 }
@@ -244,20 +182,12 @@ function Right({
   defaultWidth,
   width,
   resizeLabel,
+  collapseShortcut,
   onResize,
   onCollapse,
   ...props
 }: SideProps) {
   useEdgeOpen("right", open);
-  useEdgeResize("right", open, {
-    minWidth,
-    maxWidth,
-    defaultWidth,
-    width,
-    resizeLabel,
-    onResize,
-    onCollapse,
-  });
   return (
     <aside
       className={cn(styles.right, className)}
@@ -268,8 +198,29 @@ function Right({
       aria-hidden={!open || undefined}
     >
       <div className={styles["edge-content"]}>{children}</div>
+      {open ? (
+        <Handle
+          edge="right"
+          minWidth={minWidth}
+          maxWidth={maxWidth}
+          defaultWidth={defaultWidth}
+          width={width}
+          resizeLabel={resizeLabel}
+          collapseShortcut={collapseShortcut}
+          onResize={onResize}
+          onCollapse={onCollapse}
+        />
+      ) : null}
     </aside>
   );
+}
+
+function followPointer(event: ReactPointerEvent<HTMLHRElement>) {
+  const handle = event.currentTarget;
+  const y = event.clientY - handle.getBoundingClientRect().top;
+  handle
+    .closest<HTMLElement>('[data-slot="window"]')
+    ?.style.setProperty("--window-handle-y", `${Math.round(y)}px`);
 }
 
 function Handle({
@@ -279,6 +230,7 @@ function Handle({
   defaultWidth,
   width,
   resizeLabel,
+  collapseShortcut,
   onResize,
   onCollapse,
 }: {
@@ -288,6 +240,7 @@ function Handle({
   defaultWidth?: number;
   width?: number;
   resizeLabel?: string;
+  collapseShortcut?: ReactNode;
   onResize?: (width: number) => void;
   onCollapse?: () => void;
 }) {
@@ -310,9 +263,9 @@ function Handle({
     if (event.key === "Enter" && onCollapse) {
       event.preventDefault();
       event.stopPropagation();
-      const center = event.currentTarget.closest<HTMLElement>(
-        '[data-slot="center"]',
-      );
+      const center = event.currentTarget
+        .closest<HTMLElement>('[data-slot="window"]')
+        ?.querySelector<HTMLElement>('[data-slot="center"]');
       onCollapse();
       center?.focus({ preventScroll: true });
       return;
@@ -404,7 +357,12 @@ function Handle({
         collapseAtMin: edge === "left" && Boolean(onCollapse),
       });
       if (next === null) {
-        if (dragged) collapse(ev);
+        if (!dragged) return;
+        finish(ev);
+        root.style.setProperty(varName, `${minWidth}px`);
+        setLiveWidth(minWidth);
+        onResize?.(minWidth);
+        onCollapse?.();
         return;
       }
       nextWidth = next;
@@ -429,14 +387,10 @@ function Handle({
 
   return (
     <Tooltip
-      label={
-        <span className={styles.hint}>
-          <span>Drag to resize</span>
-          <span>Click to collapse</span>
-        </span>
-      }
+      label={Tooltip.Label("Click to collapse", collapseShortcut)}
       side={edge === "left" ? "right" : "left"}
       delay={400}
+      trackCursorAxis="y"
     >
       <hr
         className={styles.handle}
@@ -455,6 +409,7 @@ function Handle({
         tabIndex={0}
         onKeyDown={onKeyDown}
         onPointerDown={onPointerDown}
+        onPointerMove={followPointer}
       />
     </Tooltip>
   );

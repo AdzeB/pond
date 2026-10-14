@@ -16,7 +16,7 @@ const favicon = isFaviconEnv(env) ? FAVICONS[env] : null;
 
 const config: NextConfig = {
   reactStrictMode: true,
-  transpilePackages: ["@pond/ui", "@pond/icons"],
+  transpilePackages: ["@pond/ui"],
   poweredByHeader: false,
   /** TypeScript 7 drops the JS compiler API; next build must shell out to tsc. */
   experimental: {

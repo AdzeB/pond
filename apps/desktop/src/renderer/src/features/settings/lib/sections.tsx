@@ -7,7 +7,6 @@ import { harvestingSection } from "@/features/settings/lib/config-harvesting";
 import { librarySection } from "@/features/settings/lib/config-library";
 import { mcpSection } from "@/features/settings/lib/config-mcp";
 import { processingSection } from "@/features/settings/lib/config-processing";
-import { searchSection } from "@/features/settings/lib/config-search";
 import { storageSection } from "@/features/settings/lib/config-storage";
 import { viewerSection } from "@/features/settings/lib/config-viewer";
 
@@ -125,7 +124,6 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
   ["library", librarySection],
   ["storage", storageSection],
   ["backups", backupsSection],
-  ["search", searchSection],
   ["processing", processingSection],
   ["harvesting", harvestingSection],
   [

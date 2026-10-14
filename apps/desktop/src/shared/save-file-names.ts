@@ -30,6 +30,15 @@ export function isAuxiliaryKind(kind: string): boolean {
   return AUXILIARY_KINDS.has(kind);
 }
 
+export const POST_RENDER_LIGHT_KIND = "tweet_screenshot_light";
+export const POST_RENDER_DARK_KIND = "tweet_screenshot_dark";
+const POST_RENDER_KIND = /^tweet_screenshot_(?:quote\d+_)?(?:light|dark)$/;
+
+/** Rendered X and Threads post cards only stand in for a post that has no media of its own. */
+export function isPostRenderKind(kind: string): boolean {
+  return POST_RENDER_KIND.test(kind);
+}
+
 export function isOriginalImageKind(kind: string): boolean {
   return kind === IMAGE_KIND;
 }

@@ -25,6 +25,7 @@ describe("workspace menu spec", () => {
       "Twitter",
       "GitHub",
       "Email",
+      "Buy Me a Coffee",
     ];
     expect(menuLabels(items)).toEqual(labels);
     expect(topLevelMenuLabels(items)).toEqual(labels);
@@ -36,6 +37,8 @@ describe("workspace menu spec", () => {
       "separator",
       "item",
       "item",
+      "item",
+      "separator",
       "item",
     ]);
     for (const label of [

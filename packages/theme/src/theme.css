@@ -12,7 +12,11 @@
   --ds-mac-inset: 16px;
 
   --ds-border-width: 0.5px;
-  --ds-border-subtle: color-mix(in oklch, var(--ds-fg) 8%, var(--ds-bg));
+  --ds-border-subtle: color-mix(
+    in oklab,
+    var(--ds-gray-12) 8%,
+    var(--ds-gray-1)
+  );
 
   --ds-focus-width: 1px;
   --ds-focus-offset: 0px;

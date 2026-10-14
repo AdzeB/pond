@@ -10,16 +10,10 @@
 }
 
 :global(html[data-theme="light"]) {
-  --ds-bg-l: 1;
-  --ds-fg-l: 0.25;
-
   color-scheme: light;
 }
 
 :global(html[data-theme="dark"]) {
-  --ds-bg-l: 0.14;
-  --ds-fg-l: 0.94;
-
   color-scheme: dark;
 }
 

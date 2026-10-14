@@ -17,7 +17,7 @@ export function formatDuration(ms: number): string {
   return `${Math.floor(seconds / 3_600)}h ${Math.floor((seconds % 3_600) / 60)}m`;
 }
 
-export const DOWNLOAD_PHASE_LABELS = {
+const DOWNLOAD_PHASE_LABELS = {
   starting: "Preparing download",
   waiting: "Waiting on source",
   harvesting: "Reading page",

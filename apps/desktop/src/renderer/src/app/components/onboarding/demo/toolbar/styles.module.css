@@ -29,15 +29,15 @@
   }
 
   > [data-tone="red"] {
-    background: var(--ds-red-6);
+    background: var(--ds-red-9);
   }
 
   > [data-tone="yellow"] {
-    background: var(--ds-yellow-6);
+    background: var(--ds-yellow-9);
   }
 
   > [data-tone="green"] {
-    background: var(--ds-green-6);
+    background: var(--ds-green-9);
   }
 }
 

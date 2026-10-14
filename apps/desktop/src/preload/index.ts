@@ -19,10 +19,6 @@ import {
   type RecentMenuEntry,
 } from "../shared/constants";
 import { FilterQuery } from "../shared/filter-query";
-import {
-  HARVESTER_WINDOW_IPC,
-  type HarvesterWindowLocation,
-} from "../shared/harvester-window-contracts";
 import type {
   PreviewNeighborRequest,
   PreviewWindowConfigure,
@@ -32,10 +28,6 @@ import type {
 } from "../shared/preview-window-contracts";
 import type { QueryClient } from "../shared/query-contracts";
 import type { EagleImportProgress } from "../shared/saves-import-contracts";
-import type {
-  SettingsProcessingStatus,
-  SettingsWindowLocation,
-} from "../shared/settings-window-contracts";
 import {
   SHELL_HINT_ARG,
   type ShellHint,
@@ -56,17 +48,6 @@ const navigation = createNavigationMailbox();
 ipcRenderer.on(IPC.nav, (_: IpcRendererEvent, path: string) =>
   navigation.receive(path),
 );
-
-const SETTINGS_WINDOW_IPC = {
-  open: "pond:settings-window-open",
-  location: "pond:settings-window-location",
-  ready: "pond:settings-window-ready",
-  close: "pond:settings-window-close",
-  processingReady: "pond:settings-processing-ready",
-  processingCheck: "pond:settings-processing-check",
-  processingStatus: "pond:settings-processing-status",
-  prefsChanged: "pond:prefs-changed",
-} as const;
 
 const query: QueryClient = (name, ...args) =>
   ipcRenderer.invoke(IPC.query, name, args[0]);
@@ -99,50 +80,14 @@ export interface StorageGuardStatusWire {
 let cachedLibraryId: string | null = null;
 
 const api = {
-  processingReady(): Promise<void> {
-    return ipcRenderer.invoke(SETTINGS_WINDOW_IPC.processingReady);
-  },
-  sendProcessingStatus(status: SettingsProcessingStatus): Promise<void> {
-    return ipcRenderer.invoke(SETTINGS_WINDOW_IPC.processingStatus, status);
-  },
-  onProcessingCheck(callback: () => void): () => void {
-    const listener = () => callback();
-    ipcRenderer.on(SETTINGS_WINDOW_IPC.processingCheck, listener);
-    return () => ipcRenderer.off(SETTINGS_WINDOW_IPC.processingCheck, listener);
-  },
-  openSettingsWindow(input: SettingsWindowLocation = {}): Promise<void> {
-    return ipcRenderer.invoke(SETTINGS_WINDOW_IPC.open, input);
-  },
   openCombineImagesWindow(input: CombineImagesWindowOpen): Promise<void> {
     return ipcRenderer.invoke(COMBINE_IMAGES_WINDOW_IPC.open, input);
-  },
-  openHarvesterWindow(input: HarvesterWindowLocation = {}): Promise<void> {
-    return ipcRenderer.invoke(HARVESTER_WINDOW_IPC.open, input);
-  },
-  harvesterReady(): Promise<HarvesterWindowLocation> {
-    return ipcRenderer.invoke(HARVESTER_WINDOW_IPC.ready);
-  },
-  harvesterClose(): Promise<void> {
-    return ipcRenderer.invoke(HARVESTER_WINDOW_IPC.close);
-  },
-  onHarvesterLocation(
-    callback: (location: HarvesterWindowLocation) => void,
-  ): () => void {
-    const listener = (
-      _event: IpcRendererEvent,
-      next: HarvesterWindowLocation,
-    ) => callback(next);
-    ipcRenderer.on(HARVESTER_WINDOW_IPC.location, listener);
-    return () => ipcRenderer.off(HARVESTER_WINDOW_IPC.location, listener);
-  },
-  harvesterAck(nonce: number): Promise<void> {
-    return ipcRenderer.invoke(HARVESTER_WINDOW_IPC.ack, nonce);
   },
   onPrefsChanged(callback: (prefs: Prefs) => void): () => void {
     const listener = (_event: IpcRendererEvent, prefs: Prefs) =>
       callback(prefs);
-    ipcRenderer.on(SETTINGS_WINDOW_IPC.prefsChanged, listener);
-    return () => ipcRenderer.off(SETTINGS_WINDOW_IPC.prefsChanged, listener);
+    ipcRenderer.on(IPC.prefsChanged, listener);
+    return () => ipcRenderer.off(IPC.prefsChanged, listener);
   },
   tx(tx: Transaction): Promise<void> {
     return ipcRenderer.invoke(IPC.tx, tx);

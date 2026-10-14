@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignoreBinaries": ["iconutil", "cc"],
+  "ignoreBinaries": ["iconutil", "cc", "sips"],
   "workspaces": {
     "apps/desktop": {
       "entry": [
@@ -10,6 +10,10 @@
         "scripts/*.{mjs,cjs,ts}",
         "scripts/ai-benchmark/run-tool-routing-benchmark.{mjs,ts}",
         "scripts/extension-install-video/render.cjs",
+        "scripts/launch-video/*.{mjs,cjs,ts}",
+        "src/renderer/src/dev/launch-video/app.tsx",
+        "src/renderer/src/dev/launch-video/stage/index.tsx",
+        "src/renderer/src/dev/launch-video/short/index.tsx",
         "src/main/core/media-warm/service.ts",
         "src/main/core/enrichment-sidecar.ts"
       ],
@@ -17,7 +21,6 @@
       "ignoreDependencies": ["@types/better-sqlite3", "drizzle-kit"]
     },
     "apps/website": {
-      "entry": ["app/**/*.{ts,tsx}", "next.config.{js,ts,mjs}"],
       "project": ["**/*.{ts,tsx}"],
       "ignoreDependencies": ["@pond/theme"]
     },

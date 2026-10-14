@@ -6,11 +6,12 @@ import type Database from "better-sqlite3";
 import log from "electron-log/main.js";
 import { load as loadSqliteVecExtension } from "sqlite-vec";
 import { z } from "zod";
+import { embeddingDimensions } from "../../shared/embeddings";
 
 const TEXT_VEC_TABLE = "save_text_vec";
 const CLIP_VEC_TABLE = "save_clip_vec";
-const DEFAULT_TEXT_DIM = 384;
-const DEFAULT_CLIP_DIM = 512;
+const DEFAULT_TEXT_DIM = embeddingDimensions();
+const DEFAULT_CLIP_DIM = embeddingDimensions();
 
 export type VecKind = "text" | "clip";
 

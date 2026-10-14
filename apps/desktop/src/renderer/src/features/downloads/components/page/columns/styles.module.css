@@ -1,25 +1,11 @@
 .row {
-  --activity-color: light-dark(var(--ds-blue-11), var(--ds-blue-8));
+  --activity-color: var(--ds-blue-11);
   position: relative;
   height: var(--data-table-row-height, 48px);
 }
 
 .row[data-processing] {
-  --activity-color: light-dark(var(--ds-green-11), var(--ds-green-8));
-}
-
-.open {
-  --ds-focus-offset: 2px;
-  display: flex;
-  align-items: center;
-  width: 100%;
-  padding: 0;
-  color: inherit;
-  text-align: left;
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: none;
-  border: 0;
-  border-radius: var(--ds-radius-sm);
+  --activity-color: var(--ds-green-11);
 }
 
 .lead {
@@ -69,7 +55,7 @@
   }
 
   &[data-status="progress"] {
-    color: var(--ds-yellow-9);
+    color: var(--ds-yellow-11);
   }
 
   &[data-status="failed"] {

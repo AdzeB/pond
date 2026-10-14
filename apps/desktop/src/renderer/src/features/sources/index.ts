@@ -4,6 +4,7 @@ export {
   connectableSourceItems,
   watchableSourceItems,
 } from "./lib/create-menu";
+export { openSources } from "./lib/open";
 export {
   getSourceDefForIdentity,
   getSourceIcon,

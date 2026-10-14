@@ -36,21 +36,6 @@ export type ProviderModelsResult = { models: ProviderModel[] } & (
   | OkFailure
 );
 
-export const RECOMMENDED_LOCAL_MODELS = [
-  {
-    id: "gemma4:e2b",
-    name: "Gemma 4 E2B",
-    tier: "default",
-    minimumDiskBytes: 4_600_000_000,
-  },
-  {
-    id: "gemma4:e4b",
-    name: "Gemma 4 E4B",
-    tier: "quality",
-    minimumDiskBytes: 6_600_000_000,
-  },
-] as const;
-
 const TOKENS = new Map([
   ["gpt", "GPT"],
   ["chatgpt", "ChatGPT"],

@@ -47,8 +47,6 @@ export function useModelsCatalog(agent: AgentPrefs) {
       retry: false,
     })),
   });
-  const fetching =
-    connections.isFetching || queries.some((query) => query.isFetching);
   const pending = queries.some((query) => query.isPending);
   const rows = connected.flatMap((entry, index) => {
     const query = queries[index];
@@ -85,20 +83,7 @@ export function useModelsCatalog(agent: AgentPrefs) {
         a.providerName.localeCompare(b.providerName) ||
         a.name.localeCompare(b.name),
     );
-  const installedModels: CatalogModel[] = rows.flatMap((row) =>
-    (row.models ?? [])
-      .filter((model) => model.available !== false)
-      .map((model) => ({
-        ...model,
-        provider: row.provider,
-        providerName: row.providerName,
-      })),
-  );
   const errors = uniqueErrors(rows);
-  const localProviders = connected.filter((entry, index) => {
-    const query = queries[index];
-    return entry.local && !query?.isError && query?.data?.ok === true;
-  });
   const loadError = connections.isError
     ? "Could not load providers. Try again."
     : catalogLoadError(
@@ -112,12 +97,9 @@ export function useModelsCatalog(agent: AgentPrefs) {
   };
   return {
     connectionsPending: connections.isPending,
-    fetching,
     pending,
     models,
-    installedModels,
     errors,
-    localProviders,
     loadError,
     retry,
   };

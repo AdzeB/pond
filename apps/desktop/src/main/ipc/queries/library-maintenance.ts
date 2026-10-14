@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { app, dialog, session, shell } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
+import { LibraryMarkSourceSchema } from "../../../shared/library-mark";
 import type { QueryResult } from "../../../shared/query-contracts";
 import {
   readLibraryIdentity,
@@ -27,6 +28,7 @@ export const libraryMaintenanceQueries = {
     z.object({
       name: z.string().optional(),
       icon: z.string().nullable().optional(),
+      mark: LibraryMarkSourceSchema.nullable().optional(),
       accent: z.string().nullable().optional(),
     }),
     (params) => {

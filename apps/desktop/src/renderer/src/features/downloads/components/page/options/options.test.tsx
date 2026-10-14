@@ -40,7 +40,7 @@ describe("download options", () => {
     const text = document.body.textContent ?? "";
     expect(text).toContain("Sort By");
     expect(text).toContain("Display Properties");
-    expect(text).toContain("Reset");
+    expect(text).not.toContain("Reset");
     expect(text).not.toContain("Columns");
 
     const speed = [...document.querySelectorAll("button")].find(
@@ -50,11 +50,5 @@ describe("download options", () => {
     await act(async () => speed?.click());
     expect(downloadsColumnsLayout.snapshot().hidden).toEqual(["speed"]);
     expect(speed?.getAttribute("aria-pressed")).toBe("false");
-
-    const reset = [...document.querySelectorAll("button")].find(
-      (button) => button.textContent === "Reset",
-    );
-    await act(async () => reset?.click());
-    expect(downloadsColumnsLayout.snapshot().hidden).toEqual([]);
   });
 });

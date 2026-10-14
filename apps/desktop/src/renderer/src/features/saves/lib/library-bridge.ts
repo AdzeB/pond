@@ -3,6 +3,7 @@ import type { LibraryNav } from "@/shared/lib/library-nav";
 export interface SaveFolderReference {
   id: string;
   name: string;
+  parentId?: string | null;
 }
 
 export type SaveInspectorTab = "organize" | "info";

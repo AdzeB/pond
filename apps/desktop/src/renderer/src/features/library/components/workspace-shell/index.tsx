@@ -14,6 +14,7 @@ import {
   useSidebarOpen,
   useSidebarWidth,
 } from "@/features/library/state/library-chrome";
+import { ShortcutKeys } from "@/shared/components/shortcut-keys";
 import styles from "./styles.module.css";
 
 interface RootProps {
@@ -53,6 +54,7 @@ function Root({ header, children, left, right, className }: RootProps) {
         maxWidth={SIDEBAR_WIDTH_MAX}
         defaultWidth={SIDEBAR_WIDTH_DEFAULT}
         width={sidebarWidth}
+        collapseShortcut={<ShortcutKeys id="view.sidebar" />}
         onResize={libraryChrome.setSidebarWidth}
         onCollapse={libraryChrome.toggleSidebar}
       >
@@ -69,6 +71,11 @@ function Root({ header, children, left, right, className }: RootProps) {
         width={agentWidth}
         resizeLabel={
           rightPane === "agent" ? "Resize Assistant" : "Resize Details"
+        }
+        collapseShortcut={
+          <ShortcutKeys
+            id={rightPane === "agent" ? "view.agent" : "view.inspector"}
+          />
         }
         onResize={libraryChrome.setAgentWidth}
         onCollapse={libraryChrome.closeRightPane}

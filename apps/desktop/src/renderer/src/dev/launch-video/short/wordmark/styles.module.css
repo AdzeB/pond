@@ -1,0 +1,24 @@
+.wordmark {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 0;
+  color: #111;
+}
+
+.mark {
+  position: absolute;
+  top: -48px;
+  left: calc(50% - 48px);
+  display: grid;
+}
+
+.name {
+  position: absolute;
+  top: -48px;
+  font-size: 88px;
+  font-weight: 600;
+  line-height: 96px;
+  letter-spacing: -0.035em;
+  white-space: nowrap;
+}

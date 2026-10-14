@@ -2,11 +2,9 @@ import log from "electron-log/main.js";
 import { z } from "zod";
 import { COMBINE_IMAGES_QUERY_NAMES } from "../../../shared/combine-images-contracts";
 import { IPC } from "../../../shared/constants";
-import { SETTINGS_QUERY_NAMES } from "../../../shared/settings-window-contracts";
 import { registerPondOperations } from "../../core/agent/operations";
 import { combineImagesWindowOwnsSender } from "../../core/combine-images-window";
 import { currentLibraryId } from "../../core/prefs-scope";
-import { settingsWindowOwnsSender } from "../../core/settings-window";
 import { localizeMainError } from "../../localization-runtime";
 import { agentControlOperations } from "../agent-controls";
 import { safeHandle } from "../helpers";
@@ -83,10 +81,8 @@ export function registerQueryHandler(): void {
     const parsedName = QueryNameSchema.safeParse(name);
     if (!parsedName.success) throw new Error(`unknown query: ${name}`);
     if (
-      (settingsWindowOwnsSender(event.sender.id) &&
-        !SETTINGS_QUERY_NAMES.has(parsedName.data)) ||
-      (combineImagesWindowOwnsSender(event.sender.id) &&
-        !COMBINE_IMAGES_QUERY_NAMES.has(parsedName.data))
+      combineImagesWindowOwnsSender(event.sender.id) &&
+      !COMBINE_IMAGES_QUERY_NAMES.has(parsedName.data)
     ) {
       throw new Error("This action is unavailable in this window.");
     }

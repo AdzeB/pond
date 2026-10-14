@@ -106,7 +106,6 @@ export default defineConfig({
           index: resolve(__dirname, "src/preload/index.ts"),
           "combine-images": resolve(__dirname, "src/preload/combine-images.ts"),
           preview: resolve(__dirname, "src/preload/preview.ts"),
-          settings: resolve(__dirname, "src/preload/settings.ts"),
           scrape: resolve(__dirname, "src/preload/scrape.cjs.ts"),
         },
         external: ["electron"],
@@ -215,8 +214,6 @@ export default defineConfig({
             __dirname,
             "src/renderer/picker-gallery.html",
           ),
-          settings: resolve(__dirname, "src/renderer/settings.html"),
-          harvester: resolve(__dirname, "src/renderer/harvester.html"),
         },
         preserveEntrySignatures: false,
         output: {

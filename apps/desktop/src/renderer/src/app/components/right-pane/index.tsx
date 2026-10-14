@@ -19,10 +19,7 @@ import {
   useFolders,
 } from "@/features/library/state/folders";
 import {
-  type LibraryInspectorMode,
-  useInspectorMode,
   useInspectorSaveId,
-  useInspectorSourceId,
   useInspectorTab,
   useRightPane,
 } from "@/features/library/state/library-chrome";
@@ -39,16 +36,6 @@ const AgentPane = lazy(async () => {
 const SaveInspector = lazy(async () => {
   const module = await import("@/features/saves/components/detail/pane");
   return { default: module.SaveInspector };
-});
-
-const DownloadInspector = lazy(async () => {
-  const module = await import("@/features/downloads/components/inspector");
-  return { default: module.DownloadInspector };
-});
-
-const SourceInspector = lazy(async () => {
-  const module = await import("@/features/sources/components/inspector");
-  return { default: module.SourceInspector };
 });
 
 function createContentHost() {
@@ -126,9 +113,7 @@ export function RightPane() {
     color: folder.color,
     count: saveIds.filter((id) => memberships[id]?.includes(folder.id)).length,
   }));
-  const inspectorMode = useInspectorMode();
   const inspectorTab = useInspectorTab();
-  const sourceId = useInspectorSourceId();
   const [preferences] = usePrefs("preferences");
   const systemReducedMotion = useReducedMotion();
   const reduceMotion =
@@ -140,15 +125,11 @@ export function RightPane() {
       saveId={saveId}
       saveIds={saveIds}
       folders={folderCounts}
-      inspectorMode={inspectorMode}
       inspectorTab={inspectorTab}
-      sourceId={sourceId}
       assistantPage={assistantPage}
       reduceMotion={reduceMotion}
       AgentContent={AgentPane}
       InspectorContent={SaveInspector}
-      DownloadInspectorContent={DownloadInspector}
-      SourceInspectorContent={SourceInspector}
     />
   );
 }
@@ -158,15 +139,11 @@ interface RightPaneViewProps {
   saveId: string | null;
   saveIds?: readonly string[];
   folders?: SaveInspectorProps["folders"];
-  inspectorMode?: LibraryInspectorMode;
   inspectorTab?: SaveInspectorProps["tab"];
-  sourceId?: string | null;
   assistantPage: boolean;
   reduceMotion: boolean;
   AgentContent: ComponentType;
   InspectorContent: ComponentType<SaveInspectorProps>;
-  DownloadInspectorContent: ComponentType<{ saveId: string }>;
-  SourceInspectorContent: ComponentType;
 }
 
 export function RightPaneView({
@@ -174,26 +151,17 @@ export function RightPaneView({
   saveId,
   saveIds,
   folders,
-  inspectorMode = "save",
   inspectorTab = "organize",
-  sourceId = null,
   assistantPage,
   reduceMotion,
   AgentContent,
   InspectorContent,
-  DownloadInspectorContent,
-  SourceInspectorContent,
 }: RightPaneViewProps) {
   const [inspectorId, setInspectorId] = useState(saveId);
-  const [retainedInspectorMode, setRetainedInspectorMode] =
-    useState(inspectorMode);
   const [agentActivated, setAgentActivated] = useState(pane === "agent");
   const [agentHost] = useState(createContentHost);
   const [inspectorHost] = useState(createContentHost);
   if (saveId && saveId !== inspectorId) setInspectorId(saveId);
-  if ((saveId || sourceId) && inspectorMode !== retainedInspectorMode) {
-    setRetainedInspectorMode(inspectorMode);
-  }
   if (pane === "agent" && !agentActivated) setAgentActivated(true);
 
   return (
@@ -207,25 +175,14 @@ export function RightPaneView({
         agentHost,
       )}
       {createPortal(
-        retainedInspectorMode === "source" ? (
+        inspectorId ? (
           <Suspense fallback={null}>
-            <SourceInspectorContent />
-          </Suspense>
-        ) : inspectorId ? (
-          <Suspense fallback={null}>
-            {retainedInspectorMode === "download" ? (
-              <DownloadInspectorContent
-                key={inspectorId}
-                saveId={inspectorId}
-              />
-            ) : (
-              <InspectorContent
-                saveId={inspectorId}
-                saveIds={saveIds}
-                folders={folders}
-                tab={inspectorTab}
-              />
-            )}
+            <InspectorContent
+              saveId={inspectorId}
+              saveIds={saveIds}
+              folders={folders}
+              tab={inspectorTab}
+            />
           </Suspense>
         ) : null,
         inspectorHost,

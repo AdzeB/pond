@@ -17,7 +17,7 @@ afterEach(async () => {
   host.remove();
 });
 
-it("omits the exit header when there is no exit action", async () => {
+it("starts with the search when there is no exit action", async () => {
   await act(async () => {
     root.render(<SettingsSidebarView activeSection="general" />);
   });

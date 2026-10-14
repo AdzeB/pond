@@ -69,7 +69,7 @@ describe("folder sidebar tree", () => {
         }),
       ),
     );
-    expect(harness.menuItem("Move 3 Folders")).toBeDefined();
+    expect(harness.menuItem("Move 3 Folders To")).toBeDefined();
     expect(harness.menuItem("Batch Rename Folders")).toBeDefined();
   });
 
@@ -138,7 +138,7 @@ describe("folder sidebar tree", () => {
     for (const label of [
       "New Folder",
       "New Subfolder",
-      "Move Folder",
+      "Move To",
       "Rename",
       "Set Auto-Tag",
       "Duplicate",
@@ -194,6 +194,8 @@ describe("folder sidebar tree", () => {
       "tags",
       "random",
       "trash",
+      "sources",
+      "downloads",
     ]);
   });
 
@@ -276,6 +278,8 @@ describe("folder sidebar tree", () => {
       "tags",
       "random",
       "trash",
+      "sources",
+      "downloads",
     ]);
     expect(transitions).toContain("transform 0ms linear");
   });

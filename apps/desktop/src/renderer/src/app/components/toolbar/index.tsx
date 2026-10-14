@@ -1,6 +1,5 @@
 import {
   IconAlbum2,
-  IconArrowDiagonalIn,
   IconBookmark,
   IconBookmarkSlash,
   IconChatBubble,
@@ -8,6 +7,7 @@ import {
   IconEye,
   IconGear3,
   IconHistory,
+  IconNodes3,
   IconTrashXmark,
   IconWindowDownload,
 } from "@pond/icons";
@@ -47,7 +47,7 @@ import styles from "./styles.module.css";
 const ROOT_ICONS = {
   "/": IconAlbum2,
   "/assistant": IconChatBubble,
-  "/sources": IconArrowDiagonalIn,
+  "/sources": IconNodes3,
   "/tags": IconBookmark,
   "/untagged": IconBookmarkSlash,
   "/recents": IconHistory,
@@ -63,7 +63,7 @@ function RootIcon({ path }: { path: string }) {
     (path.startsWith("/settings")
       ? IconGear3
       : path.startsWith("/source/")
-        ? IconArrowDiagonalIn
+        ? IconNodes3
         : IconAlbum2);
   return <Icon aria-hidden="true" />;
 }

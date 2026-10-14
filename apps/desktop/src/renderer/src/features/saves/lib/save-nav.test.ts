@@ -28,7 +28,6 @@ describe("openSave", () => {
     expect(primarySelection.get()).toBe("first");
     expect(libraryChrome.getState()).toMatchObject({
       inspectorSaveId: "first",
-      inspectorMode: "save",
       rightPane: "inspector",
     });
   });

@@ -67,72 +67,25 @@ export function hexToOklch(hex: string): Oklch | null {
   return { l: okL, c, h };
 }
 
-function round(value: number, places: number): number {
-  const f = 10 ** places;
-  return Math.round(value * f) / f;
+export interface NormalizedTheme extends ThemeDef {
+  mode: "light" | "dark";
 }
 
-export interface ThemeCssVars {
-  background: string;
-  foreground: string;
-  accent: string;
-  bgL: number;
-  bgC: number;
-  bgH: number;
-  fgL: number;
-  fgC: number;
-  fgH: number;
-  accentL: number;
-  accentC: number;
-  accentH: number;
-  contrast: number;
-  isDark: boolean;
-}
-
-const FALLBACK_BG: Oklch = { l: 1, c: 0, h: 0 };
-const FALLBACK_FG: Oklch = { l: 0.25, c: 0, h: 0 };
-const FALLBACK_ACCENT: Oklch = { l: 0.62, c: 0.19, h: 250 };
-
-export const P3_CHROMA_BOOST = 1.4;
-
-export function contrastMultiplier(contrast: number): number {
-  const n = Number.isFinite(contrast) ? contrast : CONTRAST_DEFAULT;
-  const clamped = clamp(n, CONTRAST_MIN, CONTRAST_MAX);
-  return round(0.6 + (clamped / 100) * 0.8, 4);
-}
-
-function pack(ok: Oklch): Pick<Oklch, "l" | "c" | "h"> {
-  return {
-    l: round(ok.l, 4),
-    c: round(ok.c, 4),
-    h: round(ok.h, 2),
-  };
-}
-
-export function themeCssVars(def: ThemeDef): ThemeCssVars {
+/** Stored prefs may hold hand-edited colors, so every painter reads this cleaned copy. */
+export function normalizeTheme(def: ThemeDef): NormalizedTheme {
   const background = normalizeHex(def?.background ?? "") ?? "#ffffff";
   const foreground = normalizeHex(def?.foreground ?? "") ?? "#1b1b1b";
-  const accentHex = normalizeHex(def?.accent ?? "") ?? "#008fff";
-  const bg = hexToOklch(background) ?? FALLBACK_BG;
-  const fg = hexToOklch(foreground) ?? FALLBACK_FG;
-  const accent = hexToOklch(accentHex) ?? FALLBACK_ACCENT;
-  const bgPacked = pack(bg);
-  const fgPacked = pack(fg);
-  const accentPacked = pack(accent);
+  const accent = normalizeHex(def?.accent ?? "") ?? "#008fff";
+  const contrast = Number.isFinite(def?.contrast)
+    ? clamp(def.contrast, CONTRAST_MIN, CONTRAST_MAX)
+    : CONTRAST_DEFAULT;
+  const bgL = hexToOklch(background)?.l ?? 1;
+  const fgL = hexToOklch(foreground)?.l ?? 0;
   return {
     background,
     foreground,
-    accent: accentHex,
-    bgL: bgPacked.l,
-    bgC: bgPacked.c,
-    bgH: bgPacked.h,
-    fgL: fgPacked.l,
-    fgC: fgPacked.c,
-    fgH: fgPacked.h,
-    accentL: accentPacked.l,
-    accentC: accentPacked.c,
-    accentH: accentPacked.h,
-    contrast: contrastMultiplier(def?.contrast ?? CONTRAST_DEFAULT),
-    isDark: bg.l < fg.l,
+    accent,
+    contrast,
+    mode: bgL < fgL ? "dark" : "light",
   };
 }

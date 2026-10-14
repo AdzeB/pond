@@ -1,6 +1,9 @@
 import {
   isAuxiliaryKind,
+  isPostRenderKind,
   isThumbnailKind,
+  POST_RENDER_DARK_KIND,
+  POST_RENDER_LIGHT_KIND,
   THUMBNAIL_DARK_KIND,
   THUMBNAIL_KIND,
 } from "@shared/save-file-names";
@@ -32,7 +35,7 @@ export function buildViewerItems(
   let videoIndex = 0;
 
   const originals = save.files.flatMap((file, fileIndex) => {
-    if (isAuxiliaryKind(file.kind)) return [];
+    if (isAuxiliaryKind(file.kind) || isPostRenderKind(file.kind)) return [];
 
     const capability = viewerCapabilityFor(file);
     const item: ViewerItem = {
@@ -53,9 +56,18 @@ export function buildViewerItems(
 
   if (originals.length > 0) return originals;
 
-  const preferredThumbnailKind =
-    options.theme === "dark" ? THUMBNAIL_DARK_KIND : THUMBNAIL_KIND;
+  const dark = options.theme === "dark";
+  const preferredRenderKind = dark
+    ? POST_RENDER_DARK_KIND
+    : POST_RENDER_LIGHT_KIND;
+  const preferredThumbnailKind = dark ? THUMBNAIL_DARK_KIND : THUMBNAIL_KIND;
   const presentable =
+    save.files.find((file) => file.kind === preferredRenderKind) ??
+    save.files.find(
+      (file) =>
+        file.kind === POST_RENDER_LIGHT_KIND ||
+        file.kind === POST_RENDER_DARK_KIND,
+    ) ??
     save.files.find((file) => file.kind === preferredThumbnailKind) ??
     save.files.find((file) => isThumbnailKind(file.kind)) ??
     posters[0];

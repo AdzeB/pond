@@ -111,6 +111,12 @@ export function buildHelpSection(context: AppMenuContext): AppMenuItem {
         label: context.translate("main.email"),
         click: context.openExternalUrl("mailto:raphaelsalaja@gmail.com"),
       },
+      {
+        label: "Buy Me a Coffee",
+        click: context.openExternalUrl(
+          "https://buymeacoffee.com/raphaelsalaja",
+        ),
+      },
       { type: "separator" },
       {
         label: context.translate("main.showLogs"),

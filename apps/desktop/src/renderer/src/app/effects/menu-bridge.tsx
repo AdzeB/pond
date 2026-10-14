@@ -60,9 +60,9 @@ import { pool } from "@/features/saves/state/pool";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 import { tumbleToTrash } from "@/features/saves/state/trash-tumble";
 import { CONNECTABLE, WATCH_MENU_SOURCES } from "@/features/sources/lib/create";
+import { openSources } from "@/features/sources/lib/open";
 import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
 import { getAppRouter } from "@/shared/lib/app-router";
-import { openHarvester } from "@/shared/lib/open-harvester";
 import { openSettings } from "@/shared/lib/open-settings";
 import { usePrefs } from "@/shared/state/prefs";
 import { handleNativeMenuAction } from "./native-menu-actions";
@@ -158,11 +158,11 @@ export function MenuBridge() {
           return;
 
         case "nav.sources":
-          openHarvester({ section: "sources" });
+          getAppRouter()?.history.push("/sources");
           return;
 
         case "nav.downloads":
-          openHarvester({ section: "downloads" });
+          getAppRouter()?.history.push("/downloads");
           return;
 
         case "nav.tags":
@@ -193,10 +193,7 @@ export function MenuBridge() {
 
         case "library.connect":
         case "library.watch":
-          openHarvester({
-            section: "sources",
-            intent: { type: "new-source" },
-          });
+          openSources({ type: "new-source" });
           return;
 
         case "view.sidebar.toggle":

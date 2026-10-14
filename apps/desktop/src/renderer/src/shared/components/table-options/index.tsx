@@ -3,7 +3,8 @@ import {
   IconDescendingSorting,
   IconSliders,
 } from "@pond/icons";
-import { Button, Popover, Select, Tooltip } from "@pond/ui";
+import { Button, Popover, Select, Toggle, Tooltip } from "@pond/ui";
+import { clsx as cn } from "clsx";
 import { useState } from "react";
 import type {
   TableColumnLayout,
@@ -12,39 +13,22 @@ import type {
 } from "@/shared/lib/table-column-layout";
 import styles from "./styles.module.css";
 
-function sameSort<Id extends string>(
-  current: TableSort<Id> | null,
-  baseline: TableSort<Id> | null,
-): boolean {
-  if (current === baseline) return true;
-  if (!current || !baseline) return false;
-  return current.id === baseline.id && current.desc === baseline.desc;
-}
-
 export function TableOptionsMenu<Id extends string>({
   columns,
   lockedId,
   layout,
-  defaultSort = null,
   onHiddenChange,
   onSortChange,
-  onReset,
 }: {
   columns: readonly TableColumnSpec<Id>[];
   lockedId: Id;
   layout: TableColumnLayout<Id>;
-  defaultSort?: TableSort<Id> | null;
   onHiddenChange: (id: Id, hidden: boolean) => void;
   onSortChange: (sort: TableSort<Id> | null) => void;
-  onReset: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const hidden = new Set(layout.hidden);
   const hideable = columns.some((column) => column.id !== lockedId);
-  const changed =
-    layout.hidden.length > 0 ||
-    !sameSort(layout.sort, defaultSort) ||
-    layout.order.some((id, index) => id !== columns[index]?.id);
   const sortLabel =
     columns.find((column) => column.id === layout.sort?.id)?.label ?? "None";
 
@@ -79,7 +63,7 @@ export function TableOptionsMenu<Id extends string>({
                 });
               }}
             >
-              <div className={styles.row}>
+              <div className={cn(styles.section, styles.row)}>
                 <Select.Label className={styles.label}>Sort By</Select.Label>
                 <div className={styles.controls}>
                   <Button
@@ -123,38 +107,33 @@ export function TableOptionsMenu<Id extends string>({
             {hideable ? (
               <>
                 <hr className={styles.separator} />
-                <fieldset className={styles.properties}>
-                  <legend className={styles.heading}>Display Properties</legend>
-                  {columns.map((column) => {
-                    const visible = !hidden.has(column.id);
-                    const locked = column.id === lockedId;
-                    return (
-                      <Button
-                        key={column.id}
-                        size="xs"
-                        variant={visible ? "tertiary" : "secondary"}
-                        disabled={locked}
-                        aria-pressed={visible}
-                        onClick={() => onHiddenChange(column.id, visible)}
-                      >
-                        {column.label}
-                      </Button>
-                    );
-                  })}
+                <fieldset className={cn(styles.section, styles.fieldset)}>
+                  <legend className={cn(styles.label, styles.legend)}>
+                    Display Properties
+                  </legend>
+                  <div className={styles.properties}>
+                    {columns
+                      .filter((column) => column.id !== lockedId)
+                      .map((column) => {
+                        const visible = !hidden.has(column.id);
+                        return (
+                          <Toggle
+                            key={column.id}
+                            size="sm"
+                            variant="outline"
+                            pressed={visible}
+                            onPressedChange={() =>
+                              onHiddenChange(column.id, visible)
+                            }
+                          >
+                            {column.label}
+                          </Toggle>
+                        );
+                      })}
+                  </div>
                 </fieldset>
               </>
             ) : null}
-            <hr className={styles.separator} />
-            <div className={styles.footer}>
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={!changed}
-                onClick={onReset}
-              >
-                Reset
-              </Button>
-            </div>
           </Popover.Popup>
         </Popover.Positioner>
       </Popover.Portal>

@@ -14,7 +14,6 @@ export interface SaveBootstrapDependencies {
   readSnapshot: typeof readSnapshot;
   scheduleSnapshotWrite(): void;
   applyActionCoalesced: typeof applyActionCoalesced;
-  dismissBootCover(): void;
   rendererReady(): void;
   onSyncAction(callback: (action: WireSyncAction) => void): void;
   loadAll(): Promise<Array<SavePatch | null>>;
@@ -116,7 +115,6 @@ export function createSaveBootstrap(dependencies: SaveBootstrapDependencies) {
       }
       dependencies.scheduleSnapshotWrite();
       pagingStore.setState((state) => ({ ...state, ready: true }));
-      dependencies.dismissBootCover();
       dependencies.rendererReady();
     })();
 

@@ -73,6 +73,36 @@ describe("buildViewerItems", () => {
     });
   });
 
+  it("keeps rendered post cards out of the viewer", () => {
+    const items = buildViewerItems(
+      save([
+        file("photo.jpg", "image", "image/jpeg"),
+        file("tweet-light.png", "tweet_screenshot_light", "image/png"),
+        file("tweet-dark.png", "tweet_screenshot_dark", "image/png"),
+        file(
+          "tweet-quote1-dark.png",
+          "tweet_screenshot_quote1_dark",
+          "image/png",
+        ),
+      ]),
+    );
+
+    expect(items.map(({ key }) => key)).toEqual(["0:photo.jpg"]);
+  });
+
+  it("shows the theme-matched card for a post with no media", () => {
+    const items = buildViewerItems(
+      save([
+        file("tweet-light.png_thumbnail.png", "thumbnail", "image/png"),
+        file("tweet-light.png", "tweet_screenshot_light", "image/png"),
+        file("tweet-dark.png", "tweet_screenshot_dark", "image/png"),
+      ]),
+      { theme: "dark" },
+    );
+
+    expect(items.map(({ key }) => key)).toEqual(["2:tweet-dark.png"]);
+  });
+
   it("uses one presentable derivative only when there are no originals", () => {
     const items = buildViewerItems(
       save([

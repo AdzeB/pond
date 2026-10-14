@@ -2,7 +2,8 @@
 
 **Research date:** October 8, 2026  
 **Scope:** The current Gemma family—primarily Gemma 4 and EmbeddingGemma 2—evaluated against Pond's Agent and on-device enrichment boundaries.  
-**Source policy:** Product claims use first-party Google or Google DeepMind sources. Repository claims link directly to Pond's implementation.
+**Source policy:** Product claims use first-party Google or Google DeepMind sources. Repository claims link directly to Pond's implementation.  
+**Status:** EmbeddingGemma 2 has shipped as Pond's only embedding model. MPNet and SigLIP 2 are gone. Sections that describe them as current reflect the codebase on the research date. See [Implementation status](#implementation-status) and [On-device model defaults](on-device-model-defaults.md) for the current setup.
 
 ## Decision
 
@@ -202,13 +203,13 @@ Local inference can keep Save text, images, audio, prompts, and model context on
 
 ## Implementation status
 
-Pond now pins `onnx-community/embeddinggemma-2-ONNX` at revision `daa72c51243991dfcaf9f9137d2c573d8f7790c0` and uses Transformers.js 4.3.1, the first published package in this workspace that registers the `embedding_gemma2` architecture. The renderer enrichment worker loads the text and vision encoders with the audio encoder omitted; the main process loads a separate text-only configuration for query generation. Both use Q4 graphs.
+Pond now pins `onnx-community/embeddinggemma-2-ONNX` at revision `daa72c51243991dfcaf9f9137d2c573d8f7790c0` and uses Transformers.js 4.3.1, the first published package in this workspace that registers the `embedding_gemma2` architecture. The renderer enrichment worker switches between a text-and-vision profile and a text-and-audio profile, keeping one alive at a time. The main process loads a separate text-only configuration for query generation and classification labels. All of them use Q4 graphs.
 
 Live Node CPU smoke tests loaded the pinned Q4 graphs and produced 768-dimensional, unit-normalized embeddings for a prefixed text query, a synthetic image, one second of 16 kHz mono audio, and a two-frame generated video. The audio and video checks are opt-in because the audio encoder adds a model download and neither modality belongs in the offline unit-test suite. The renderer's WebGPU/WASM path still requires an application-level smoke test on the supported desktop platforms; the passing Node tests establish the model and processor contracts, not browser-backend performance.
 
 Pond now has an opt-in [embedding dimension benchmark](../../apps/desktop/scripts/benchmark-embedding-dimensions.mjs) that evaluates the same labeled vectors at 768, 512, 256, and 128 dimensions after truncation and L2 re-normalization. Before any result, it declares the adoption rule: 256 dimensions must lose no more than one absolute Recall@10 point overall and no more than two points in every important modality slice; 128 dimensions are excluded from multimodal adoption. It reports Recall@10, mean reciprocal rank, raw float-vector bytes, and measured sqlite-vec database bytes. The repository does not yet contain a representative held-out text/image/audio/video relevance corpus, so the available synthetic dry smoke only validates the measurement path. In that dry run, all dimensions scored 100% Recall@10 and 1.0 MRR by construction; sqlite-vec files measured 3,190,784 bytes at 768 dimensions, 2,142,208 at 512, 1,093,632 at 256, and 569,344 at 128. Those figures are not quality evidence. The adoption decision therefore remains **keep 768 dimensions** until a representative held-out corpus passes the predeclared rule.
 
-The persisted database contract remains unchanged: document vectors continue to use `embedding` and image vectors continue to use `clipEmbedding`. Distinct version stamps encode the document and image preprocessing contracts, so the existing enrichment sweep identifies old MPNet and SigLIP rows and rebuilds them in the background. Search queries are task-prefixed once, embedded once, and projected into whichever text and visual retrieval channels are enabled.
+The persisted database contract remains unchanged: document vectors continue to use `embedding`, and media vectors for images, audio, and video use the legacy-named `clipEmbedding`. Distinct version stamps encode the document and media preprocessing contracts, so the existing enrichment sweep identifies old MPNet and SigLIP rows and rebuilds them in the background. Search queries are task-prefixed once, embedded once, and projected into whichever text and visual retrieval channels are enabled.
 
 This implementation intentionally retains Florence-2, Whisper Base, and the sensitive-content classifier. Removing the first two remains gated on Pond-specific caption, OCR, long-audio, throughput, and memory benchmarks rather than model-family capability alone.
 

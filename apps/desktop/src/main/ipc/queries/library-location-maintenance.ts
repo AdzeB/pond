@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { app, BrowserWindow, dialog } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
+import { LibraryMarkSourceSchema } from "../../../shared/library-mark";
 import type { QueryResult } from "../../../shared/query-contracts";
 import { restoreLibraryBackup } from "../../core/library-backup";
 import { updateLibraryIdentity } from "../../core/library-identity";
@@ -78,6 +79,7 @@ export const libraryLocationMaintenanceQueries = {
     z.object({
       name: StringParam,
       icon: z.string().nullable().optional(),
+      mark: LibraryMarkSourceSchema.nullable().optional(),
       accent: z.string().nullable().optional(),
     }),
     async (params): Promise<QueryResult<"library.rename">> => {
@@ -91,6 +93,7 @@ export const libraryLocationMaintenanceQueries = {
         try {
           updateLibraryIdentity(renamed.path, {
             icon: params.icon,
+            mark: params.mark,
             accent: params.accent,
           });
           await relocateLibrary(renamed.path, "adopt");

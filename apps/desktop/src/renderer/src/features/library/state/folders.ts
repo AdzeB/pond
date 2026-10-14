@@ -69,6 +69,10 @@ export function useFolders(): Folder[] {
   return useSelector(store, (s) => s.folders);
 }
 
+export function useFoldersLoaded(): boolean {
+  return useSelector(store, (s) => s.loaded);
+}
+
 export function useFolderMemberships(): Record<string, string[]> {
   return useSelector(store, (s) => s.bySave);
 }

@@ -156,7 +156,8 @@ export function SpecContextMenu({
   children,
 }: SpecMenuChromeProps) {
   const { query, onValueChange, reset } = useMenuFilterQuery();
-  const items = filterMenuItems(buildItems(), query);
+  const [mounted, setMounted] = useState(false);
+  const items = mounted ? filterMenuItems(buildItems(), query) : [];
   const popupStyle: PopupStyle = minWidth
     ? { "--ds-popup-width": minWidth, "--ds-popup-min-width": minWidth }
     : DEFAULT_POPUP_STYLE;
@@ -171,7 +172,11 @@ export function SpecContextMenu({
             return;
           }
           reset();
+          setMounted(true);
           onOpen?.(eventDetails);
+        }}
+        onOpenChangeComplete={(open) => {
+          if (!open) setMounted(false);
         }}
       >
         <ContextMenu.Trigger render={children} />
@@ -222,7 +227,8 @@ export function SpecMenu({
   children,
 }: SpecMenuProps) {
   const { query, onValueChange, reset } = useMenuFilterQuery();
-  const items = filterMenuItems(buildItems(), query);
+  const [mounted, setMounted] = useState(false);
+  const items = mounted ? filterMenuItems(buildItems(), query) : [];
   const popupStyle: PopupStyle = minWidth
     ? { "--ds-popup-width": minWidth, "--ds-popup-min-width": minWidth }
     : DEFAULT_POPUP_STYLE;
@@ -233,7 +239,11 @@ export function SpecMenu({
         onOpenChange={(next) => {
           if (!next) return;
           reset();
+          setMounted(true);
           onOpen?.();
+        }}
+        onOpenChangeComplete={(next) => {
+          if (!next) setMounted(false);
         }}
       >
         {children}

@@ -1,0 +1,17 @@
+.stage {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+}
+
+.library {
+  top: 77px;
+  left: 160px;
+}
+
+.card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 50% 40%;
+}

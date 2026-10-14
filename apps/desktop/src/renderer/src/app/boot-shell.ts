@@ -1,20 +1,8 @@
 import { type ShellHint, ShellHintSchema } from "@shared/shell-hint";
 import { libraryScopedKey } from "@/shared/lib/library-scope";
+import { displayGamut, paintTheme } from "@/shared/lib/paint-theme";
 
 /** Runs from the bundle because the packaged CSP blocks inline <script>. */
-
-const ANCHORS = [
-  ["bgL", "--ds-bg-l"],
-  ["bgC", "--ds-bg-c"],
-  ["bgH", "--ds-bg-h"],
-  ["fgL", "--ds-fg-l"],
-  ["fgC", "--ds-fg-c"],
-  ["fgH", "--ds-fg-h"],
-  ["accentL", "--ds-accent-l"],
-  ["accentC", "--ds-accent-c"],
-  ["accentH", "--ds-accent-h"],
-  ["contrast", "--ds-contrast"],
-] as const;
 
 const BOOT_FAILSAFE_MS = 4000;
 
@@ -26,15 +14,6 @@ function readStoredShell(): ShellHint {
     return stored.success ? stored.data : {};
   } catch {
     return {};
-  }
-}
-
-function applyAnchors(shell: ShellHint): void {
-  for (const [key, prop] of ANCHORS) {
-    const value = shell[key];
-    if (value !== undefined) {
-      document.documentElement.style.setProperty(prop, String(value));
-    }
   }
 }
 
@@ -53,7 +32,10 @@ function paintShell(): void {
   doc.setAttribute("data-theme", theme);
   doc.classList.add(theme);
 
-  applyAnchors(shell);
+  const { background, foreground, accent, contrast } = shell;
+  if (background && foreground && accent) {
+    paintTheme({ background, foreground, accent, contrast }, displayGamut());
+  }
   if (shell.pointerCursors) doc.setAttribute("data-pointer-cursors", "true");
   doc.setAttribute(
     "data-platform",

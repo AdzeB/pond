@@ -22,11 +22,15 @@ export function buildSourceMenu(
 ): MenuItemSpec[] {
   const rows = Array.isArray(rowOrRows) ? rowOrRows : [rowOrRows];
   return buildSourceActionMenu(
-    rows.map((row) =>
-      row.entry.kind === "account"
-        ? accountMenuTarget(row.entry.row, row.model)
-        : watchMenuTarget(row.entry.row, row.model),
-    ),
+    rows.flatMap((row) => {
+      if (row.entry.kind === "account") {
+        return [accountMenuTarget(row.entry.row, row.model)];
+      }
+      if (row.entry.kind === "watch") {
+        return [watchMenuTarget(row.entry.row, row.model)];
+      }
+      return [];
+    }),
     options,
   );
 }

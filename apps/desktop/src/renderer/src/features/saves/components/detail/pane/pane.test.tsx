@@ -333,6 +333,18 @@ it("keeps Description visible when it is empty or matches the title", async () =
     host.querySelector<HTMLTextAreaElement>('[aria-label="Description"]')
       ?.value,
   ).toBe("");
+  expect(
+    host.querySelector<HTMLTextAreaElement>('[aria-label="Description"]')
+      ?.placeholder,
+  ).toBe("Add a description");
+
+  await act(async () => {
+    pool.upsert({ ...current, title: null, description: null });
+  });
+  expect(
+    host.querySelector<HTMLTextAreaElement>('[aria-label="Title"]')
+      ?.placeholder,
+  ).toBe("Add a title");
 });
 
 it("hides empty read-only sections and keeps empty addable sections static", async () => {

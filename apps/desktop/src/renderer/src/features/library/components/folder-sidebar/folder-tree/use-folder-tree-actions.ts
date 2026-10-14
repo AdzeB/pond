@@ -1,6 +1,7 @@
 import type { Folder } from "@pond/schema/db";
 import { Dialog, type MenuItemSpec } from "@pond/ui";
 import { useState } from "react";
+import { buildMoveFolderItems } from "@/features/library/lib/move-folders-menu";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
 import { saveFolderPresentation } from "../../../state/folder-presentation";
@@ -62,17 +63,12 @@ export function useFolderTreeActions({
     ];
   }
 
-  function selectionItems(folder: Folder, selected: string[]): MenuItemSpec[] {
+  function selectionItems(selected: string[]): MenuItemSpec[] {
     return [
       {
-        label: `Move ${selected.length} Folders`,
-        onClick: () =>
-          setFolderTool({
-            kind: "move",
-            id: folder.id,
-            name: folder.name,
-            ids: selected,
-          }),
+        type: "submenu",
+        label: `Move ${selected.length} Folders To`,
+        items: buildMoveFolderItems(selected),
       },
       {
         label: "Batch Rename Folders",

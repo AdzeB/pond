@@ -19,13 +19,13 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   IconAlbum2,
-  IconArrowDiagonalIn,
   IconBookmark,
   IconBookmarkSlash,
   IconChatBubble,
   IconClockPlus,
   IconFolderBan,
   IconHistory,
+  IconNodes3,
   IconShuffle,
   IconTrashXmark,
   IconWindowDownload,
@@ -149,7 +149,7 @@ function DestinationIcon({ destination }: { destination: SidebarDestination }) {
     case "downloads":
       return <IconWindowDownload />;
     case "sources":
-      return <IconArrowDiagonalIn />;
+      return <IconNodes3 />;
   }
 }
 
@@ -185,10 +185,15 @@ export function LibraryDestinations({
   const destinations = sidebar.destinations;
   const assistantPage = pathname === "/assistant";
   const sourcesPage = pathname === "/sources";
+  const downloadsPage = pathname === "/downloads";
   const tagsPage = pathname === "/tags";
   const untaggedPage = pathname === "/untagged";
   const libraryPage =
-    !assistantPage && !sourcesPage && !tagsPage && !untaggedPage;
+    !assistantPage &&
+    !sourcesPage &&
+    !downloadsPage &&
+    !tagsPage &&
+    !untaggedPage;
   const downloadsCount = queueSummary.data?.actionable ?? 0;
 
   useEffect(() => setOrder(sidebar.order), [sidebar.order]);
@@ -219,7 +224,7 @@ export function LibraryDestinations({
       case "trash":
         return libraryPage && nav.kind === "trash";
       case "downloads":
-        return libraryPage && nav.kind === "downloads";
+        return downloadsPage;
       case "sources":
         return sourcesPage;
     }
@@ -413,7 +418,7 @@ export function LibraryDestinations({
               badgeStyle={badgeStyle}
               active={isDestinationActive(destination)}
               {...dragProps}
-              onClick={() => selectLibraryNav({ kind: "downloads" })}
+              onClick={() => goToLibraryPath("/downloads")}
             />
           </BuiltInVisibilityMenu>
         );
@@ -422,12 +427,12 @@ export function LibraryDestinations({
           <BuiltInVisibilityMenu destination={destination} key={destination}>
             <Row
               label="Sources"
-              icon={<IconArrowDiagonalIn />}
+              icon={<IconNodes3 />}
               count={accounts.length}
               badgeStyle={badgeStyle}
               active={isDestinationActive(destination)}
               {...dragProps}
-              onClick={() => selectLibraryNav({ kind: "sources" })}
+              onClick={() => goToLibraryPath("/sources")}
             />
           </BuiltInVisibilityMenu>
         );
@@ -436,6 +441,7 @@ export function LibraryDestinations({
 
   const visibleGroups = SIDEBAR_DESTINATION_GROUPS.map((group) => ({
     label: group.label,
+    heading: group.heading,
     allDestinations: group.destinations,
     destinations: order.filter(
       (destination) =>
@@ -448,6 +454,9 @@ export function LibraryDestinations({
     <>
       {visibleGroups.map((group) => (
         <Sidebar.Group key={group.label}>
+          {group.heading ? (
+            <Sidebar.GroupLabel>{group.label}</Sidebar.GroupLabel>
+          ) : null}
           <DndContext
             accessibility={{
               announcements: createSortableAnnouncements(

@@ -28,6 +28,7 @@ export const queryOperationAccess = {
   "agent.verifyKey": "hidden",
   "api.restart": "review",
   "autoImport.pickFolder": "read",
+  "autoImport.reveal": "hidden",
   "autoImport.set": "review",
   "autoImport.status": "read",
   "clipboard.writeText": "review",

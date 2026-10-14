@@ -1,26 +1,29 @@
 import { stat } from "node:fs/promises";
-import { isAbsolute, join } from "node:path";
+import { isAbsolute } from "node:path";
 import { app, utilityProcess } from "electron";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
+import { resolveMainOut } from "../../lib/resolve-preload";
+import { binariesAvailable, FFMPEG_PATH_ENV } from "../refresh/binaries";
 import { QueueWorkerResponseSchema } from "./worker-contract";
 import {
   createQueueWorkerHost,
   type QueueWorkerResult,
 } from "./worker-host-core";
 
-function workerEntry(): string {
-  return join(__dirname, "queue-worker.js");
-}
-
 const host = createQueueWorkerHost({
   spawn: () => {
     if (!app.isReady()) {
       throw new Error("Queue workers require Electron to be ready.");
     }
-    const child = utilityProcess.fork(workerEntry(), [], {
+    const ffmpeg = binariesAvailable().ffmpeg;
+    const child = utilityProcess.fork(resolveMainOut("queue-worker.js"), [], {
       serviceName: "Pond Queue Worker",
-      stdio: "ignore",
+      stdio: ["ignore", "ignore", "pipe"],
+      env: ffmpeg ? { ...process.env, [FFMPEG_PATH_ENV]: ffmpeg } : process.env,
+    });
+    child.stderr?.on("data", (chunk: Buffer) => {
+      log.warn("[pond queue workers] stderr", String(chunk).trim());
     });
     return {
       onMessage: (listener) => {

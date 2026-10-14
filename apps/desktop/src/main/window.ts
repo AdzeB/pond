@@ -6,9 +6,7 @@ import { IPC } from "../shared/constants";
 import { SHELL_HINT_ARG, type ShellHint } from "../shared/shell-hint";
 import { attachEditableContextMenu } from "./context-menu";
 import { hardenArchiveWebviews } from "./core/archive-viewer";
-import { openHarvesterWindow } from "./core/harvester-window";
 import { getPrefs, setPrefs } from "./core/prefs";
-import { openSettingsWindow } from "./core/settings-window";
 import { consumePendingDeepLink } from "./deep-link";
 import { lockRendererZoom } from "./lib/lock-renderer-zoom";
 import { resolveMainOut, resolvePreload } from "./lib/resolve-preload";
@@ -316,8 +314,14 @@ export async function initTray(): Promise<void> {
   try {
     tray = await ensureTray({
       onOpenLibrary: openLibraryWindow,
-      onOpenSettings: () => openSettingsWindow(),
-      onOpenDownloads: () => openHarvesterWindow({ section: "downloads" }),
+      onOpenSettings: async () => {
+        await openLibraryWindow();
+        mainWindowState.current?.webContents.send(IPC.nav, "/settings");
+      },
+      onOpenDownloads: async () => {
+        await openLibraryWindow();
+        mainWindowState.current?.webContents.send(IPC.nav, "/downloads");
+      },
       onMenuAction: async (id) => {
         await openLibraryWindow();
         mainWindowState.current?.webContents.send(IPC.menuAction, {

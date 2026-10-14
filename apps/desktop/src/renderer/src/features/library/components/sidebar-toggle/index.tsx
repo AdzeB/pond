@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import {
   libraryChrome,
   useInspectorSaveId,
-  useInspectorSourceId,
   useRightPane,
   useSidebarOpen,
 } from "@/features/library/state/library-chrome";
@@ -78,9 +77,7 @@ export function SidebarToggle({
   const label = side === "left" ? "Toggle Sidebar" : "Toggle Details";
   const sidebarOpen = useSidebarOpen();
   const rightPane = useRightPane();
-  const inspectorSaveId = useInspectorSaveId();
-  const inspectorSourceId = useInspectorSourceId();
-  const canInspect = inspectorSaveId !== null || inspectorSourceId !== null;
+  const canInspect = useInspectorSaveId() !== null;
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setVisual(open));

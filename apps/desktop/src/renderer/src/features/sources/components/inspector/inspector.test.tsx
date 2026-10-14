@@ -1,12 +1,19 @@
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { Dialog } from "@pond/ui";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { act, type ReactNode } from "react";
+import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { cardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
 import type { SyncSourceStatus } from "@/features/sources/state/sync-monitor";
-import { SourceInspectorView } from "./index";
+import { SourceInspector, SourceInspectorView } from "./index";
+
+interface TestRoot {
+  render(node: ReactNode): void;
+  unmount(): void;
+}
 
 let host: HTMLDivElement;
-let root: Root;
+let root: TestRoot;
 
 beforeEach(() => {
   vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
@@ -35,7 +42,18 @@ beforeEach(() => {
   });
   host = document.createElement("div");
   document.body.append(host);
-  root = createRoot(host);
+  const base = createRoot(host);
+  root = {
+    render: (node) =>
+      base.render(
+        <Dialog.Root open>
+          <Dialog.Portal container={host}>
+            <Dialog.Popup>{node}</Dialog.Popup>
+          </Dialog.Portal>
+        </Dialog.Root>,
+      ),
+    unmount: () => base.unmount(),
+  };
 });
 
 afterEach(async () => {
@@ -65,33 +83,45 @@ it.each([
   "shows the %s state without source actions",
   async (status, copy) => {
     await act(async () => {
-      root.render(<SourceInspectorView status={status} onClose={() => {}} />);
+      root.render(<SourceInspectorView status={status} />);
     });
     expect(host.querySelector('[role="status"]')?.textContent).toBe(copy);
     expect(host.querySelector('[aria-label="Source Actions"]')).toBeNull();
-    expect(host.querySelector('input[aria-label="Nickname"]')).toBeNull();
+    expect(nicknameField()).toBeNull();
   },
 );
 
-it("uses the handle as the identity name instead of the source", async () => {
+function nicknameField() {
+  const label = Array.from(host.querySelectorAll("label")).find(
+    (node) => node.textContent === "Nickname",
+  );
+  return label?.htmlFor ? document.getElementById(label.htmlFor) : null;
+}
+
+it("centers the handle and suggests it as the nickname", async () => {
   await act(async () => {
     root.render(
       <SourceInspectorView
         status="ready"
         handle="@oluwa.rafa"
+        description="Last fetched 1 day ago"
         source="instagram"
         nickname=""
-        onClose={() => {}}
         onNicknameSave={async () => {}}
       />,
     );
   });
-  const field = host.querySelector('input[aria-label="Nickname"]');
+  const field = nicknameField();
   if (!(field instanceof HTMLInputElement))
     throw new Error("Missing nickname field");
   expect(field.value).toBe("");
   expect(field.placeholder).toBe("@oluwa.rafa");
-  expect(field.closest("div")?.textContent).not.toContain("Instagram");
+  expect(host.querySelector("h2")?.textContent).toBe("@oluwa.rafa");
+  expect(host.textContent).toContain("Last fetched 1 day ago");
+  const done = Array.from(host.querySelectorAll("button")).find(
+    (button) => button.textContent === "Done",
+  );
+  expect(done).toBeDefined();
 });
 
 it("flattens connection details instead of nesting profile pages", async () => {
@@ -133,13 +163,11 @@ it("flattens connection details instead of nesting profile pages", async () => {
             items: [{ label: "Disconnect Are.na", onClick: () => {} }],
           },
         ]}
-        onClose={() => {}}
-        onFetch={onFetch}
         onNicknameSave={async () => {}}
       />,
     );
   });
-  const field = host.querySelector('input[aria-label="Nickname"]');
+  const field = nicknameField();
   if (!(field instanceof HTMLInputElement))
     throw new Error("Missing nickname field");
   expect(field.value).toBe("Are.na");
@@ -147,13 +175,9 @@ it("flattens connection details instead of nesting profile pages", async () => {
   expect(host.textContent).not.toContain("Profile");
   expect(host.textContent).not.toContain("Options");
   expect(host.textContent).not.toContain("Maintenance");
-  expect(host.textContent).toContain("Activity");
+  expect(host.textContent).not.toContain("Activity");
   expect(host.textContent).toContain("Properties");
   expect(host.textContent).toContain("Saved Items");
-  const panelText = host.textContent ?? "";
-  expect(panelText.indexOf("Properties")).toBeLessThan(
-    panelText.indexOf("Activity"),
-  );
   await openActions();
   expect(document.body.textContent).toContain("Fetch");
   expect(document.body.textContent).toContain("Connection");
@@ -180,14 +204,13 @@ it("keeps a failed nickname edit available and retries it on the next blur", asy
         status="ready"
         source="arena"
         nickname="Alex"
-        onClose={() => {}}
         onNicknameSave={save}
       />,
     );
   });
-  const field = host.querySelector("input");
-  if (!field) throw new Error("Missing nickname field");
-  expect(field.getAttribute("aria-label")).toBe("Nickname");
+  const field = nicknameField();
+  if (!(field instanceof HTMLInputElement))
+    throw new Error("Missing nickname field");
   await act(async () => {
     field.focus();
     field.blur();
@@ -216,8 +239,7 @@ it("keeps a failed nickname edit available and retries it on the next blur", asy
   expect(save).toHaveBeenCalledTimes(2);
 });
 
-it("shows live fetch progress and cancels the active fetch", async () => {
-  const onCancel = vi.fn();
+it("shows live fetch progress without an inline action", async () => {
   const status: SyncSourceStatus = {
     source: "twitter",
     state: "running",
@@ -234,8 +256,6 @@ it("shows live fetch progress and cancels the active fetch", async () => {
         source="twitter"
         model={cardModel(status)}
         syncStatus={status}
-        onCancel={onCancel}
-        onClose={() => {}}
       />,
     );
   });
@@ -246,17 +266,10 @@ it("shows live fetch progress and cancels the active fetch", async () => {
   expect(
     host.querySelector('progress[aria-label="Fetch progress"]'),
   ).not.toBeNull();
-  const cancel = Array.from(host.querySelectorAll("button")).find(
-    (button) => button.textContent === "Cancel Fetch",
-  );
-  if (!(cancel instanceof HTMLButtonElement))
-    throw new Error("Missing Cancel Fetch");
-  await act(async () => cancel.click());
-  expect(onCancel).toHaveBeenCalledOnce();
+  expect(host.textContent).not.toContain("Cancel Fetch");
 });
 
-it("offers sign-in recovery when authentication expires", async () => {
-  const onSignIn = vi.fn();
+it("explains expired authentication", async () => {
   const status: SyncSourceStatus = {
     source: "instagram",
     state: "auth_required",
@@ -272,25 +285,15 @@ it("offers sign-in recovery when authentication expires", async () => {
         source="instagram"
         model={cardModel(status)}
         syncStatus={status}
-        onSignIn={onSignIn}
-        onClose={() => {}}
       />,
     );
   });
   expect(host.textContent).toContain(
     "Sign in to Instagram to keep fetching saves.",
   );
-  const signIn = Array.from(host.querySelectorAll("button")).find(
-    (button) => button.textContent === "Sign In Again",
-  );
-  if (!(signIn instanceof HTMLButtonElement))
-    throw new Error("Missing Sign In Again");
-  await act(async () => signIn.click());
-  expect(onSignIn).toHaveBeenCalledOnce();
 });
 
-it("shows watch properties and retries a failed fetch", async () => {
-  const onFetch = vi.fn();
+it("shows watch properties and the fetch error", async () => {
   const status: SyncSourceStatus = {
     source: "youtube",
     state: "error",
@@ -312,19 +315,46 @@ it("shows watch properties and retries a failed fetch", async () => {
           { label: "Saved Items", value: "42" },
           { label: "Connected Via", value: "@pond" },
         ]}
-        onFetch={onFetch}
-        onClose={() => {}}
       />,
     );
   });
   expect(host.textContent).toContain("Couldn't read this playlist. Try again.");
   expect(host.textContent).toContain("Playlist");
   expect(host.textContent).toContain("Connected Via");
-  const retry = Array.from(host.querySelectorAll("button")).find(
-    (button) => button.textContent === "Retry Fetch",
-  );
-  if (!(retry instanceof HTMLButtonElement))
-    throw new Error("Missing Retry Fetch");
-  await act(async () => retry.click());
-  expect(onFetch).toHaveBeenCalledOnce();
+});
+
+it("shows watched folder details with its folder actions", async () => {
+  vi.stubGlobal("pond", {
+    query: async (name: string) => {
+      if (name === "autoImport.status")
+        return {
+          enabled: true,
+          path: "/Users/me/Inbox",
+          mode: "copy",
+          history: [{ at: Date.now(), name: "a.png", mode: "copy", ok: true }],
+        };
+      throw new Error(name);
+    },
+  });
+  const client = new QueryClient();
+  await act(async () => {
+    root.render(
+      <QueryClientProvider client={client}>
+        <SourceInspector kind="folder" id="/Users/me/Inbox" />
+      </QueryClientProvider>,
+    );
+  });
+  await act(async () => {
+    await vi.waitFor(() =>
+      expect(host.querySelector("h2")?.textContent).toBe("Inbox"),
+    );
+  });
+  expect(host.textContent).toContain("Last imported");
+  expect(host.textContent).toContain("/Users/me/Inbox");
+  expect(host.textContent).toContain("Watching");
+  expect(nicknameField()).toBeNull();
+  await openActions();
+  expect(menuItem("Pause Watching")).toBeTruthy();
+  expect(menuItem("Stop Watching")).toBeTruthy();
+  client.clear();
 });

@@ -14,6 +14,7 @@ import {
   type DownloadViewRow,
   downloadsColumns,
 } from "../columns";
+import { openDownloadSave } from "../context-menu";
 import styles from "./styles.module.css";
 
 function SelectionSync({ rowsById }: { rowsById: Map<string, DownloadRow> }) {
@@ -39,14 +40,12 @@ export function DownloadTable({
   rows,
   paused,
   activities,
-  onInspect,
   height,
   extra,
 }: {
   rows: DownloadRow[];
   paused: boolean;
   activities: readonly DownloadActivity[];
-  onInspect: (row: DownloadRow) => void;
   height?: number;
   extra?: ReactNode;
 }) {
@@ -98,13 +97,13 @@ export function DownloadTable({
         );
       }}
       getRowId={(row) => row.id}
-      rowHeight={48}
       height={height}
       selectionCheckboxes={false}
       selectOnClick
-      onRowClick={(row) => {
+      onRowClick={(row, event) => {
+        if (event && event.detail < 2) return;
         const current = rowsById.get(row.id);
-        if (current) onInspect(current);
+        if (current) openDownloadSave(current);
       }}
       renderRow={renderRow}
       onSelectionChange={(ids) => {

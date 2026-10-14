@@ -1,0 +1,148 @@
+.splash {
+  --spring-flip: linear(
+    0,
+    0.0582,
+    0.1915,
+    0.3535,
+    0.5146,
+    0.6581,
+    0.7762,
+    0.8674,
+    0.9335,
+    0.9784,
+    1.0063,
+    1.0216,
+    1.0281,
+    1.0289,
+    1.0263,
+    1.0221,
+    1.0175,
+    1.013,
+    1.0092,
+    1.0061,
+    1.0038,
+    1.0021,
+    1.001,
+    1.0003,
+    1
+  );
+  --spring-land: linear(
+    0,
+    0.055,
+    0.1736,
+    0.3105,
+    0.4427,
+    0.5598,
+    0.6583,
+    0.7383,
+    0.8018,
+    0.8513,
+    0.8894,
+    0.9183,
+    0.9401,
+    0.9563,
+    0.9684,
+    0.9773,
+    0.9839,
+    0.9887,
+    0.9922,
+    0.9947,
+    0.9965,
+    0.9979,
+    0.9988,
+    0.9995,
+    1
+  );
+
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  container-type: size;
+  pointer-events: none;
+  background: var(--ds-gray-3);
+  animation: dismiss 500ms var(--splash-land) linear forwards;
+}
+
+/* Lands on the intro logo: 24px glyph centered, 40px from the top. */
+.mark {
+  width: 48px;
+  height: 48px;
+  perspective: 400px;
+  animation: land var(--splash-fly) var(--splash-spin) var(--spring-land)
+    forwards;
+}
+
+.spin {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  animation:
+    flip var(--splash-spin) var(--spring-flip) both,
+    pop 600ms var(--spring-land) both;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  color: var(--ds-gray-11);
+  transform: translateZ(calc(var(--depth) * -0.75px));
+
+  &:first-child {
+    color: var(--ds-gray-12);
+  }
+
+  &:last-child {
+    color: var(--ds-gray-12);
+  }
+}
+
+@keyframes flip {
+  0% {
+    transform: rotateX(0) rotateY(0);
+  }
+
+  25% {
+    transform: rotateX(180deg) rotateY(0);
+  }
+
+  50% {
+    transform: rotateX(180deg) rotateY(-180deg);
+  }
+
+  75% {
+    transform: rotateX(360deg) rotateY(-180deg);
+  }
+
+  100% {
+    transform: rotateX(360deg) rotateY(-360deg);
+  }
+}
+
+@keyframes pop {
+  from {
+    scale: 0.7;
+  }
+}
+
+@keyframes land {
+  to {
+    translate: 0 calc(52px - 50cqh);
+    scale: 0.5;
+  }
+}
+
+@keyframes dismiss {
+  to {
+    visibility: hidden;
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash {
+    display: none;
+  }
+}

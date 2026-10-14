@@ -9,16 +9,6 @@
   background: var(--ds-gray-2);
 }
 
-:global(html[data-theme="light"]) {
-  --ds-bg: #fff;
-  --ds-fg: #1b1b1b;
-}
-
-:global(html[data-theme="dark"]) {
-  --ds-bg: #0a0a0a;
-  --ds-fg: #eee;
-}
-
 :global(html[data-shadow-gallery] body) {
   min-width: 760px;
   overflow: visible;

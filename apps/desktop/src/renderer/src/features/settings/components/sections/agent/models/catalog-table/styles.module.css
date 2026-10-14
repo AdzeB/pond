@@ -45,32 +45,12 @@
   flex: 1;
   min-width: 0;
 }
-.table {
-  width: 100%;
-  font-size: var(--ds-text-md);
-  text-align: left;
-  table-layout: fixed;
-  border-collapse: collapse;
-}
-.table thead th {
-  padding: 8px 12px;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-10);
-  white-space: nowrap;
-}
-.table td {
-  padding: 10px 12px;
-  vertical-align: middle;
-  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
-}
-.table td:first-child {
-  min-width: 0;
-}
 .name {
   display: block;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-lg);
   white-space: nowrap;
   cursor: pointer;
@@ -86,40 +66,17 @@
   color: var(--ds-gray-12);
   white-space: nowrap;
 }
-.metric,
-.context {
-  width: 6rem;
+.metric {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: var(--ds-text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-10);
-  text-align: right;
   white-space: nowrap;
-}
-.context {
-  width: 7rem;
-}
-.table th.metric,
-.table th.context,
-.table td.metric,
-.table td.context {
-  padding-inline: 8px;
-}
-.table td.metric,
-.table td.context {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.check {
-  width: 3rem;
-  padding-inline: 8px;
-  text-align: center;
 }
 .empty {
   padding: 12px 16px;
-  color: var(--ds-gray-10);
-}
-.summary {
-  font-size: var(--ds-text-sm);
   color: var(--ds-gray-10);
 }
 .error {

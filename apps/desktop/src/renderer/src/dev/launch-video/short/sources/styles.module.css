@@ -1,0 +1,44 @@
+.tile {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.05),
+    0 16px 30px -16px rgb(20 30 60 / 0.35);
+}
+
+.logo {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.library {
+  position: absolute;
+  top: 330px;
+  left: 320px;
+  z-index: 1;
+  width: 1600px;
+  height: 925px;
+  transform-origin: 0 0;
+}
+
+/* Flying cards clip at the panel's bottom edge, 18px above the frame. */
+.flight {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  clip-path: inset(0 0 18px 0);
+}
+
+.card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}

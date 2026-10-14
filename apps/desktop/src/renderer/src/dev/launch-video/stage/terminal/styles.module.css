@@ -1,0 +1,168 @@
+.terminal {
+  position: absolute;
+  top: 300px;
+  left: 320px;
+  z-index: 10;
+  width: 1280px;
+  height: 600px;
+  overflow: hidden;
+  font-family: var(--ds-code-font-family);
+  font-size: 19px;
+  line-height: 30px;
+  color: #262626;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.08),
+    0 40px 80px -40px rgb(0 0 0 / 0.22);
+}
+
+.bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  font-family: var(--ds-ui-font-family);
+  font-size: 14px;
+  border-bottom: 1px solid #efefef;
+}
+
+.lights {
+  position: absolute;
+  left: 20px;
+  display: flex;
+  gap: 8px;
+
+  & i {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  & i:nth-child(1) {
+    background: #ff5f57;
+  }
+
+  & i:nth-child(2) {
+    background: #febc2e;
+  }
+
+  & i:nth-child(3) {
+    background: #28c840;
+  }
+}
+
+.title {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 600;
+  color: #5c5c5c;
+}
+
+.muted {
+  font-weight: 400;
+  color: #a1a1a1;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 28px 36px;
+
+  & p {
+    margin: 0;
+  }
+}
+
+.prompt {
+  display: flex;
+  gap: 14px;
+  padding: 14px 18px;
+  background: #f4f4f3;
+  border-radius: 10px;
+}
+
+.block {
+  display: inline-block;
+  width: 10px;
+  height: 22px;
+  margin-left: 2px;
+  vertical-align: -4px;
+  background: #262626;
+}
+
+.call {
+  display: flex;
+  white-space: pre;
+}
+
+.dot {
+  margin-right: 14px;
+  color: #262626;
+
+  &[data-state="calling"] {
+    color: #a1a1a1;
+  }
+
+  &[data-state="done"] {
+    color: #1fa64a;
+  }
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-left: 26px;
+}
+
+.found {
+  display: flex;
+  gap: 12px;
+}
+
+.hits {
+  display: flex;
+  gap: 14px;
+  padding-left: 30px;
+}
+
+.hit {
+  position: relative;
+  display: block;
+}
+
+.thumb {
+  display: block;
+  width: 130px;
+  height: 164px;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.06);
+}
+
+.badge {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  box-shadow: 0 0 0 1.5px rgb(255 255 255 / 0.9);
+}
+
+.answer {
+  display: flex;
+  font-family: var(--ds-ui-font-family);
+  font-size: 22px;
+  font-weight: 500;
+  color: #171717;
+}
+
+.word {
+  display: inline-block;
+  margin-right: 0.28em;
+}

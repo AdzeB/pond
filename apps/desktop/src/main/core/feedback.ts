@@ -23,7 +23,7 @@ interface FeedbackServicePorts {
   getPreferences(): Promise<{
     locale: Awaited<ReturnType<typeof getPrefs>>["localization"]["locale"];
     masterSound: boolean;
-    sounds: Record<FeedbackEvent, boolean>;
+    sounds: Partial<Record<FeedbackEvent, boolean>>;
     notifications: Record<FeedbackEvent, boolean>;
   }>;
   notificationsSupported(): boolean;
@@ -68,7 +68,7 @@ const service = createFeedbackService({
     };
   },
   notificationsSupported: () => Notification.isSupported(),
-  showNotification: (title) => new Notification({ title }).show(),
+  showNotification: (title) => new Notification({ title, silent: true }).show(),
 });
 
 export function emitFeedback(event: FeedbackEvent): Promise<void> {

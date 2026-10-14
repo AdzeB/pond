@@ -53,8 +53,6 @@ function writeFlag(key: string, value: boolean): void {
 }
 
 export type LibraryRightPane = "agent" | "inspector" | null;
-export type LibraryInspectorMode = "save" | "download" | "source";
-export type LibraryInspectorSourceKind = "account" | "watch";
 
 interface ChromeState {
   nav: LibraryNav;
@@ -63,16 +61,12 @@ interface ChromeState {
   agentOpen: boolean;
   rightPane: LibraryRightPane;
   inspectorSaveId: string | null;
-  inspectorMode: LibraryInspectorMode;
   inspectorTab: SaveInspectorTab;
-  inspectorSourceId: string | null;
-  inspectorSourceKind: LibraryInspectorSourceKind | null;
   sidebarWidth: number;
   agentWidth: number;
 }
 
 function hasInspectorTarget(s: ChromeState): boolean {
-  if (s.inspectorMode === "source") return s.inspectorSourceId != null;
   return s.inspectorSaveId != null;
 }
 
@@ -82,10 +76,7 @@ function commitChrome(current: ChromeState, next: ChromeState): ChromeState {
     current.rightPane === next.rightPane &&
     current.agentOpen === next.agentOpen &&
     current.inspectorSaveId === next.inspectorSaveId &&
-    current.inspectorMode === next.inspectorMode &&
-    current.inspectorTab === next.inspectorTab &&
-    current.inspectorSourceId === next.inspectorSourceId &&
-    current.inspectorSourceKind === next.inspectorSourceKind
+    current.inspectorTab === next.inspectorTab
   ) {
     return current;
   }
@@ -124,10 +115,7 @@ const store = new Store<ChromeState>({
   agentOpen: initialAgentOpen,
   rightPane: rightOpenAtLaunch ? "agent" : null,
   inspectorSaveId: null,
-  inspectorMode: "save",
   inspectorTab: "organize",
-  inspectorSourceId: null,
-  inspectorSourceKind: null,
   sidebarWidth: readWidth(
     "pond.sidebarWidth",
     SIDEBAR_WIDTH_DEFAULT,
@@ -148,12 +136,10 @@ export const libraryChrome = {
   },
   inspectSave(inspectorSaveId: string | null): void {
     store.setState((s) => {
-      if (s.inspectorSaveId === inspectorSaveId && s.inspectorMode === "save")
-        return s;
+      if (s.inspectorSaveId === inspectorSaveId) return s;
       return commitChrome(s, {
         ...s,
         inspectorSaveId,
-        inspectorMode: "save",
         inspectorTab:
           inspectorSaveId === s.inspectorSaveId ? s.inspectorTab : "organize",
         rightPane: s.rightOpen
@@ -171,7 +157,6 @@ export const libraryChrome = {
     store.setState((s) => {
       if (
         s.inspectorSaveId === inspectorSaveId &&
-        s.inspectorMode === "save" &&
         s.inspectorTab === inspectorTab &&
         s.rightPane === "inspector" &&
         s.rightOpen
@@ -180,7 +165,6 @@ export const libraryChrome = {
       return commitChrome(s, {
         ...s,
         inspectorSaveId,
-        inspectorMode: "save",
         inspectorTab,
         rightOpen: true,
         rightPane: "inspector",
@@ -192,29 +176,9 @@ export const libraryChrome = {
       s.inspectorTab === inspectorTab ? s : { ...s, inspectorTab },
     );
   },
-  inspectDownload(inspectorSaveId: string): void {
-    store.setState((s) => {
-      if (
-        s.inspectorSaveId === inspectorSaveId &&
-        s.inspectorMode === "download" &&
-        s.rightPane === "inspector" &&
-        s.rightOpen
-      )
-        return s;
-      return commitChrome(s, {
-        ...s,
-        inspectorSaveId,
-        inspectorMode: "download",
-        rightOpen: true,
-        rightPane: "inspector",
-      });
-    });
-  },
   setInspectorSaveId(inspectorSaveId: string | null): void {
     store.setState((s) =>
-      s.inspectorSaveId === inspectorSaveId && s.inspectorMode === "save"
-        ? s
-        : { ...s, inspectorSaveId, inspectorMode: "save" },
+      s.inspectorSaveId === inspectorSaveId ? s : { ...s, inspectorSaveId },
     );
   },
   setNav(nav: LibraryNav): void {
@@ -247,40 +211,6 @@ export const libraryChrome = {
           ? "agent"
           : "inspector";
       return commitChrome(s, { ...s, agentOpen, rightOpen, rightPane });
-    });
-  },
-  inspectSource(kind: LibraryInspectorSourceKind, id: string): void {
-    store.setState((s) => {
-      if (
-        s.inspectorSourceId === id &&
-        s.inspectorSourceKind === kind &&
-        s.inspectorMode === "source" &&
-        s.rightPane === "inspector" &&
-        s.rightOpen
-      )
-        return s;
-      return commitChrome(s, {
-        ...s,
-        inspectorMode: "source",
-        inspectorSourceId: id,
-        inspectorSourceKind: kind,
-        rightOpen: true,
-        rightPane: "inspector",
-      });
-    });
-  },
-  clearSourceInspector(): void {
-    store.setState((s) => {
-      if (!s.inspectorSourceId && s.inspectorMode !== "source") return s;
-      const hidingSource =
-        s.rightPane === "inspector" && s.inspectorMode === "source";
-      return commitChrome(s, {
-        ...s,
-        inspectorSourceId: null,
-        inspectorSourceKind: null,
-        inspectorMode: s.inspectorMode === "source" ? "save" : s.inspectorMode,
-        rightPane: hidingSource ? restingPane(s.rightOpen) : s.rightPane,
-      });
     });
   },
   /** Hiding inspector content keeps the column width stable. */
@@ -358,20 +288,8 @@ export function useInspectorSaveId(): string | null {
   return useSelector(store, (s) => s.inspectorSaveId);
 }
 
-export function useInspectorMode(): LibraryInspectorMode {
-  return useSelector(store, (s) => s.inspectorMode);
-}
-
 export function useInspectorTab(): SaveInspectorTab {
   return useSelector(store, (s) => s.inspectorTab);
-}
-
-export function useInspectorSourceId(): string | null {
-  return useSelector(store, (s) => s.inspectorSourceId);
-}
-
-export function useInspectorSourceKind(): LibraryInspectorSourceKind | null {
-  return useSelector(store, (s) => s.inspectorSourceKind);
 }
 
 export function useSidebarWidth(): number {

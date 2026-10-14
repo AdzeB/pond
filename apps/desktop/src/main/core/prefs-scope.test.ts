@@ -33,8 +33,8 @@ it("completes saved destination order", () => {
   expect(prefs.sidebar.badgeStyle).toBe("count");
   expect(prefs.sidebar.order).toEqual([
     "trash",
-    "downloads",
     "sources",
+    "downloads",
     "all",
     "uncategorized",
     "assistant",

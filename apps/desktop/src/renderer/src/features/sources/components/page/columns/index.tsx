@@ -83,10 +83,16 @@ function StatusMark({ row }: { row: SourceTableRow }) {
   );
 }
 
-function SourceMark({ source, label }: { source: Source; label: string }) {
+function SourceMark({
+  source,
+  label,
+}: {
+  source: Source | null;
+  label: string;
+}) {
   return (
     <span className={styles.source}>
-      <BrandTile source={source} size={18} />
+      <BrandTile source={source ?? "local"} size={18} />
       <span className={styles.meta}>{label}</span>
     </span>
   );
@@ -98,7 +104,7 @@ export const sourcesColumns: TableColumn<SourceTableRow>[] = [
     header: "Name",
     sortLabel: "Name",
     accessor: (row) => row.name,
-    width: "minmax(0, 1fr)",
+    width: "minmax(200px, 1fr)",
     reorderable: true,
     cell: (row) => <span className={styles.name}>{row.name}</span>,
   },
@@ -107,7 +113,7 @@ export const sourcesColumns: TableColumn<SourceTableRow>[] = [
     header: "Items",
     sortLabel: "Items",
     accessor: (row) => row.items,
-    width: "minmax(0, 80px)",
+    width: "minmax(72px, 80px)",
     reorderable: true,
     cell: (row) => (
       <span className={styles.metric}>{formatNumber(row.items)}</span>
@@ -118,7 +124,7 @@ export const sourcesColumns: TableColumn<SourceTableRow>[] = [
     header: "Last Synced",
     sortLabel: "Last Synced",
     accessor: (row) => row.lastSyncedMs,
-    width: "minmax(0, 120px)",
+    width: "minmax(112px, 120px)",
     reorderable: true,
     cell: (row) => (
       <span className={styles.metric}>
@@ -131,7 +137,7 @@ export const sourcesColumns: TableColumn<SourceTableRow>[] = [
     header: "Status",
     sortLabel: "Status",
     accessor: (row) => row.statusLabel,
-    width: "minmax(0, 120px)",
+    width: "minmax(112px, 120px)",
     reorderable: true,
     cell: (row) => <StatusMark row={row} />,
   },
@@ -140,7 +146,7 @@ export const sourcesColumns: TableColumn<SourceTableRow>[] = [
     header: "Source",
     sortLabel: "Source",
     accessor: (row) => row.sourceLabel,
-    width: "minmax(0, 140px)",
+    width: "minmax(128px, 140px)",
     reorderable: true,
     cell: (row) => <SourceMark source={row.source} label={row.sourceLabel} />,
   },
@@ -149,7 +155,7 @@ export const sourcesColumns: TableColumn<SourceTableRow>[] = [
     header: "Type",
     sortLabel: "Type",
     accessor: (row) => row.kindLabel,
-    width: "minmax(0, 100px)",
+    width: "minmax(96px, 100px)",
     reorderable: true,
     cell: (row) => <span className={styles.meta}>{row.kindLabel}</span>,
   },

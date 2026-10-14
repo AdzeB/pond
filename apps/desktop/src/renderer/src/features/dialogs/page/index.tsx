@@ -9,7 +9,7 @@ import { FolderToolsDialog } from "@/features/library/folder-tools";
 import { useSaves } from "@/features/saves/pool";
 import styles from "./styles.module.css";
 
-type LocalDialog = "folder-tags" | "folder-move";
+type LocalDialog = "folder-tags";
 
 export function DialogGalleryPage() {
   const folders = useFolders();
@@ -62,11 +62,6 @@ export function DialogGalleryPage() {
           title: "Automatic Tags",
           detail: folder ? undefined : needsFolder,
           open: () => folder && setLocal("folder-tags"),
-        },
-        {
-          title: "Move Folders",
-          detail: folder ? undefined : needsFolder,
-          open: () => folder && setLocal("folder-move"),
         },
         {
           title: "Remove Folder",
@@ -149,10 +144,10 @@ export function DialogGalleryPage() {
           </aside>
         </div>
       </div>
-      {folder && (local === "folder-tags" || local === "folder-move") ? (
+      {folder && local === "folder-tags" ? (
         <FolderToolsDialog
           tool={{
-            kind: local === "folder-tags" ? "tags" : "move",
+            kind: "tags",
             id: folder.id,
             name: folder.name,
           }}

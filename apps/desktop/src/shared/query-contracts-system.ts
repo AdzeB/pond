@@ -17,6 +17,7 @@ import type {
   AssistantProvider,
   AssistantSendResult,
 } from "./assistant";
+import type { LibraryMarkSource } from "./library-mark";
 import type { ProviderModelsResult } from "./provider-models";
 import type {
   CancellableResult,
@@ -257,10 +258,12 @@ export interface SystemQueryResults {
   };
   "autoImport.set": OkResult;
   "autoImport.pickFolder": ReasonResult<"cancelled", { path: string }>;
+  "autoImport.reveal": ReasonResult<"missing">;
   "library.info": {
     path: string;
     name: string;
     icon: string | null;
+    mark: LibraryMarkSource | null;
     accent: string | null;
   };
   "library.rescan": { updated: number; total: number };

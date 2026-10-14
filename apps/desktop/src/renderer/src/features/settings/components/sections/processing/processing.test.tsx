@@ -4,7 +4,15 @@ import { createRoot } from "react-dom/client";
 import { expect, it } from "vitest";
 import { ProcessingStatusCard } from "./";
 
-it("shows the processing summary counts without treating tasks as distinct items", async () => {
+function button(host: HTMLElement, name: string) {
+  return [...host.querySelectorAll<HTMLButtonElement>("button")].find(
+    (element) =>
+      element.textContent === name ||
+      element.getAttribute("aria-label") === name,
+  );
+}
+
+it("groups running tasks into one count with the breakdown on hover", async () => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -25,11 +33,44 @@ it("shows the processing summary counts without treating tasks as distinct items
       );
     });
     expect(host.textContent).toContain("Processing your library");
-    expect(host.textContent).toContain("Tasks Running2");
-    expect(host.textContent).toContain("Need Retry1");
-    expect(host.textContent).not.toContain("Processing 2 items");
-    const check = host.querySelector<HTMLButtonElement>("button");
-    expect(check?.disabled).toBe(true);
+    expect(host.textContent).toContain("2 tasks left");
+    expect(host.textContent).not.toContain("couldn't finish");
+    expect(button(host, "Task Details")).toBeDefined();
+    expect(button(host, "Retry")).toBeUndefined();
+    expect(button(host, "Check Library")?.disabled).toBe(true);
+  } finally {
+    await act(async () => root.unmount());
+    host.remove();
+  }
+});
+
+it("offers a retry once processing stops with failures", async () => {
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  let calls = 0;
+  try {
+    await act(async () => {
+      root.render(
+        <ProcessingStatusCard
+          enabled
+          status={{
+            inflight: 0,
+            activeKeys: new Set(),
+            failedKeys: new Set(["ocr:save-1", "caption:save-2"]),
+          }}
+          onCheck={async () => {
+            calls += 1;
+          }}
+        />,
+      );
+    });
+    expect(host.textContent).toContain("Processing needs attention");
+    expect(host.textContent).toContain("2 tasks couldn't finish");
+    expect(button(host, "Check Library")).toBeUndefined();
+    expect(button(host, "Task Details")).toBeDefined();
+    await act(async () => button(host, "Retry")?.click());
+    expect(calls).toBe(1);
   } finally {
     await act(async () => root.unmount());
     host.remove();
@@ -58,7 +99,7 @@ it("prevents duplicate checks and recovers when starting a check fails", async (
         />,
       );
     });
-    const check = host.querySelector<HTMLButtonElement>("button");
+    const check = button(host, "Check Library");
     await act(async () => check?.click());
     expect(host.textContent).toContain("Checking your library");
     expect(check?.disabled).toBe(true);
@@ -66,8 +107,7 @@ it("prevents duplicate checks and recovers when starting a check fails", async (
     expect(calls).toBe(1);
     await act(async () => failCheck(new Error("Unavailable")));
     expect(host.textContent).toContain("Couldn't check your library");
-    expect(check?.disabled).toBe(false);
-    await act(async () => check?.click());
+    await act(async () => button(host, "Retry")?.click());
     expect(calls).toBe(2);
     expect(host.textContent).toContain("Ready for new items");
     expect(host.textContent).not.toContain("up to date");
@@ -96,9 +136,7 @@ it("keeps the check unavailable until preferences load and processing is enabled
           />,
         );
       });
-      expect(host.querySelector<HTMLButtonElement>("button")?.disabled).toBe(
-        true,
-      );
+      expect(button(host, "Check Library")?.disabled).toBe(true);
       expect(host.textContent).toContain(
         loaded ? "Local processing is off" : "Loading processing settings",
       );

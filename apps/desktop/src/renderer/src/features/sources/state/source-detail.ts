@@ -1,6 +1,6 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import { libraryChrome } from "@/features/library";
+import { detailsDialog } from "@/features/library";
 
 interface SourceDetailState {
   revision: number;
@@ -12,13 +12,16 @@ const store = new Store<SourceDetailState>({
 
 export const sourceDetail = {
   openAccount(id: string): void {
-    libraryChrome.inspectSource("account", id);
+    detailsDialog.openSource("account", id);
   },
   openWatch(id: string): void {
-    libraryChrome.inspectSource("watch", id);
+    detailsDialog.openSource("watch", id);
+  },
+  openFolder(path: string): void {
+    detailsDialog.openSource("folder", path);
   },
   close(): void {
-    libraryChrome.clearSourceInspector();
+    if (detailsDialog.getState()?.kind === "source") detailsDialog.close();
   },
   changed(): void {
     store.setState((s) => ({ revision: s.revision + 1 }));

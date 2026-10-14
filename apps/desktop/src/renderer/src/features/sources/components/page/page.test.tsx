@@ -113,7 +113,7 @@ describe("Sources page selection", () => {
     vi.unstubAllGlobals();
   });
 
-  async function render() {
+  async function render(expectedRows = 3) {
     await act(async () => {
       root.render(
         <QueryClientProvider client={client}>
@@ -127,7 +127,7 @@ describe("Sources page selection", () => {
       await Promise.resolve();
     });
     await vi.waitFor(() => {
-      expect(bodyRows()).toHaveLength(3);
+      expect(bodyRows()).toHaveLength(expectedRows);
     });
   }
 
@@ -276,5 +276,29 @@ describe("Sources page selection", () => {
     });
     expect(bodyRows()).toHaveLength(1);
     expect(rowWith("@pond")).toBeTruthy();
+  });
+
+  it("lists the watched folder as a Folder source", async () => {
+    query.mockImplementation(async (name: string) => {
+      if (name === "accounts.list") return { accounts };
+      if (name === "watches.list") return { watches: [] };
+      if (name === "autoImport.status") {
+        return {
+          enabled: false,
+          path: "/Users/raphael/Inbox",
+          mode: "copy",
+          history: [{ at: Date.now(), name: "a.jpg", mode: "copy", ok: true }],
+        };
+      }
+      return { ok: true };
+    });
+    await render(4);
+    const folder = rowWith("Inbox");
+    expect(folder.textContent).toContain("Folder");
+    expect(folder.textContent).toContain("Local");
+    expect(folder.textContent).toContain("Paused");
+
+    await click(folder);
+    expect(selectedIds()).toEqual(["folder:/Users/raphael/Inbox"]);
   });
 });

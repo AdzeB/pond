@@ -44,7 +44,7 @@
   place-items: center;
   width: 16px;
   height: 16px;
-  color: var(--ds-gray-1);
+  color: var(--ds-accent-contrast);
   background: var(--ds-accent-9);
   border-radius: var(--ds-radius-xs);
 }

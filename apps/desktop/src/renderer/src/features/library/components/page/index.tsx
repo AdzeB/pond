@@ -24,7 +24,8 @@ export function Library() {
   const isDownloads = pathname.startsWith("/downloads");
   const isAssistant = pathname === "/assistant";
   const isTags = pathname === "/tags";
-  const isGallery = pathname === "/dialogs" || pathname === "/icons";
+  const isGallery =
+    pathname === "/dialogs" || pathname === "/icons" || pathname === "/sounds";
   const isSettings = pathname.startsWith("/settings");
   const showLibraryGrid =
     !isSources &&

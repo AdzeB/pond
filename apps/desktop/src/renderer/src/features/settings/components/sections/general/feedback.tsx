@@ -6,8 +6,6 @@ const SOUND_ROWS = [
   ["interface", "Interface", "Clicks, toggles, and confirmations."],
   ["saveDeletion", "Save Deletion", "Moving or deleting Saves."],
   ["folderDeletion", "Folder Deletion", "Removing folders."],
-  ["extensionCapture", "Extension Capture", "Completing an extension capture."],
-  ["autoImport", "Auto Import", "Importing from the watched folder."],
 ] as const;
 
 const NOTIFICATION_ROWS = [

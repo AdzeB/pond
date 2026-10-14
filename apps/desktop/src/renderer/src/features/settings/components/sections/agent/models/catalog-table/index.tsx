@@ -1,13 +1,12 @@
 import { IconChevronDown } from "@pond/icons";
-import { Accordion, Button, Input, Settings } from "@pond/ui";
+import { Accordion, Button, DataTable, Input, Settings } from "@pond/ui";
 import type { AssistantProvider } from "@shared/assistant";
 import { useState } from "react";
 import { openSettings } from "@/shared/lib/open-settings";
 import { ProviderLogo } from "../../icons";
 import type { CatalogModel, VisibleModelIds } from "../types";
+import { modelColumns } from "./columns";
 import { selectedIds } from "./format";
-import { Hint } from "./hint";
-import { ModelRow } from "./model-row";
 import styles from "./styles.module.css";
 
 export function ModelCatalogTable({
@@ -148,7 +147,7 @@ export function ModelCatalogTable({
                 className={styles["group-header"]}
                 aria-label={group.name}
               >
-                <span id={`provider-${provider}`} className={styles.provider}>
+                <span className={styles.provider}>
                   <ProviderLogo provider={provider} size={20} />
                   {group.name}
                 </span>
@@ -171,59 +170,26 @@ export function ModelCatalogTable({
                 </div>
               ) : null}
               <Settings.List>
-                <table
-                  className={styles.table}
-                  aria-labelledby={`provider-${provider}`}
+                <DataTable.Provider
+                  data={group.models}
+                  columns={modelColumns({
+                    provider,
+                    visible: providerVisible(provider),
+                    disabled: pending,
+                    onCheckedChange: (model, checked) => {
+                      const next = new Set(providerVisible(model.provider));
+                      if (checked) next.add(model.id);
+                      else next.delete(model.id);
+                      void save({
+                        ...visibleByProvider,
+                        [model.provider]: [...next],
+                      });
+                    },
+                  })}
+                  getRowId={(model) => `${model.provider}:${model.id}`}
                 >
-                  <thead>
-                    <tr>
-                      <th scope="col">Model</th>
-                      <th scope="col" className={styles.metric}>
-                        <Hint label="Price per million input tokens.">
-                          <span>Input</span>
-                        </Hint>
-                      </th>
-                      <th scope="col" className={styles.metric}>
-                        <Hint label="Price per million output tokens.">
-                          <span>Output</span>
-                        </Hint>
-                      </th>
-                      <th scope="col" className={styles.context}>
-                        <Hint label="Context window in tokens.">
-                          <span>Context</span>
-                        </Hint>
-                      </th>
-                      <th
-                        scope="col"
-                        className={styles.check}
-                        aria-label="Show"
-                      />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {group.models.map((model) => (
-                      <ModelRow
-                        key={`${model.provider}:${model.id}`}
-                        model={model}
-                        provider={provider}
-                        checked={
-                          model.available !== false &&
-                          providerVisible(model.provider).has(model.id)
-                        }
-                        disabled={pending || model.available === false}
-                        onCheckedChange={(checked) => {
-                          const next = new Set(providerVisible(model.provider));
-                          if (checked) next.add(model.id);
-                          else next.delete(model.id);
-                          void save({
-                            ...visibleByProvider,
-                            [model.provider]: [...next],
-                          });
-                        }}
-                      />
-                    ))}
-                  </tbody>
-                </table>
+                  <DataTable.Root aria-label={`${group.name} Models`} />
+                </DataTable.Provider>
               </Settings.List>
             </Accordion.Panel>
           </Accordion.Item>
@@ -236,13 +202,6 @@ export function ModelCatalogTable({
             : "No models found. Connect a provider first."}
         </p>
       ) : null}
-      <div className={styles.summary} role="status">
-        {pending
-          ? "Saving model visibility"
-          : models.length && !selectable.length
-            ? `${models.length} models in catalog`
-            : `${shownCount} of ${selectable.length} models shown`}
-      </div>
       {error ? (
         <p className={styles.error} role="alert">
           {error}

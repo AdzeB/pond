@@ -16,17 +16,17 @@
     fill="white"
   />
   <defs>
-    <linearGradient
+    <radialGradient
       id="instagram-gradient"
-      x1="0"
-      y1="370"
-      x2="370"
-      y2="0"
+      cx="111"
+      cy="395.9"
+      r="555"
       gradientUnits="userSpaceOnUse"
     >
-      <stop stop-color="#FFDC80" />
-      <stop offset="0.5" stop-color="#F56040" />
-      <stop offset="1" stop-color="#833AB4" />
-    </linearGradient>
+      <stop offset="0.05" stop-color="#FDF497" />
+      <stop offset="0.45" stop-color="#FD5949" />
+      <stop offset="0.6" stop-color="#D6249F" />
+      <stop offset="0.9" stop-color="#285AEB" />
+    </radialGradient>
   </defs>
 </svg>

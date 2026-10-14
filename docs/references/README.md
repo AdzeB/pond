@@ -15,6 +15,7 @@ source affects a product or engineering change.
 - [Eagle 4 desktop surface inventory](eagle-4-desktop-surface-inventory.md)
 - [dnd-kit capabilities and interaction research](dnd-kit-capabilities-and-interaction-research-2026-09-25.md)
 - [On-device model defaults](on-device-model-defaults.md)
+- [Theme color algorithm research](theme-color-algorithm-research-2026-10-12.md)
 
 The former bibliography, influence index, inventory, and workflow notes are
 preserved under [`docs/provenance/migration/`](../provenance/migration/) only to

@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { z } from "zod";
 import type { QueryResult } from "../../../shared/query-contracts";
 import { readAutoImportLog, startAutoImport } from "../../core/auto-import";
@@ -97,5 +98,13 @@ export const inspectQueries = {
     });
     await startAutoImport();
     return { ok: true, path: result.filePaths[0] };
+  },
+
+  async "autoImport.reveal"(): Promise<QueryResult<"autoImport.reveal">> {
+    const { path } = (await getPrefs()).autoImport;
+    if (!path || !existsSync(path)) return { ok: false, reason: "missing" };
+    const { shell } = await import("electron");
+    shell.showItemInFolder(path);
+    return { ok: true };
   },
 } satisfies QueryHandlerMap;

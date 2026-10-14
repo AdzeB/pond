@@ -16,9 +16,7 @@ import {
   type ShortcutPreferences,
 } from "../../shared/shortcuts";
 import { routeCombineImagesZoom } from "../core/combine-images-window";
-import { openHarvesterWindow } from "../core/harvester-window";
 import { reconcileLibrary } from "../core/scan";
-import { openSettingsWindow } from "../core/settings-window";
 import { menuAccelerator } from "../lib/menu-accelerator";
 import { libraryRoot } from "../paths";
 import type { AppMenuContext } from "./types";
@@ -44,18 +42,6 @@ export function createAppMenuContext(deps: AppMenuRuntimeDeps): AppMenuContext {
   const bindings = resolveShortcuts(deps.shortcuts);
   const accelerator = (id: ShortcutId) => menuAccelerator(bindings[id]);
   const navTo = (path: string) => async () => {
-    if (path === "/settings" || path.startsWith("/settings/")) {
-      await openSettingsWindow({
-        section: path.slice("/settings/".length) || undefined,
-      });
-      return;
-    }
-    if (path === "/sources" || path === "/downloads") {
-      await openHarvesterWindow({
-        section: path === "/downloads" ? "downloads" : "sources",
-      });
-      return;
-    }
     await deps.openLibraryWindow();
     deps.focusedOrMain()?.webContents.send(IPC.nav, path);
   };

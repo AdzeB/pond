@@ -1,6 +1,13 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRouter,
+} from "@tanstack/react-router";
+import { afterEach, describe, expect, it } from "vitest";
+import { setAppRouter } from "./app-router";
 import {
   DEFAULT_SETTINGS_SECTION,
+  openSettings,
   rememberSettingsSection,
   resolveSettingsLocation,
   resolveSettingsSection,
@@ -23,8 +30,14 @@ describe("settings hrefs", () => {
 
   it("keeps the requested field anchor", () => {
     expect(
-      resolveSettingsLocation("search", "#setting-search-semanticSearch"),
-    ).toEqual({ section: "search", hash: "setting-search-semanticSearch" });
+      resolveSettingsLocation(
+        "processing",
+        "#setting-processing-semanticSearch",
+      ),
+    ).toEqual({
+      section: "processing",
+      hash: "setting-processing-semanticSearch",
+    });
   });
 
   it("sends unknown paths to the default section", () => {
@@ -32,33 +45,22 @@ describe("settings hrefs", () => {
   });
 
   it("reopens the last section when none is asked for", () => {
-    settingsHref("search");
-    expect(settingsHref()).toBe("/settings/search");
-    expect(settingsHref(undefined, "setting-search-semanticSearch")).toBe(
-      "/settings/search#setting-search-semanticSearch",
+    settingsHref("processing");
+    expect(settingsHref()).toBe("/settings/processing");
+    expect(settingsHref(undefined, "setting-processing-semanticSearch")).toBe(
+      "/settings/processing#setting-processing-semanticSearch",
     );
   });
 });
 
-it("opens a native Settings window with the canonical location instead of changing the Library route", async () => {
-  const { openSettings } = await import("./open-settings");
-  const requests: { section?: string; hash?: string }[] = [];
-  vi.stubGlobal("window", {
-    pond: {
-      async openSettingsWindow(location: { section?: string; hash?: string }) {
-        requests.push(location);
-      },
-    },
+it("opens Settings inside the Library window at the canonical location", () => {
+  const router = createRouter({
+    routeTree: createRootRoute(),
+    history: createMemoryHistory(),
   });
-  try {
-    openSettings("nope", "setting-processing-enableClip");
-    expect(requests).toEqual([
-      {
-        section: DEFAULT_SETTINGS_SECTION,
-        hash: "setting-processing-enableClip",
-      },
-    ]);
-  } finally {
-    vi.unstubAllGlobals();
-  }
+  setAppRouter(router);
+  openSettings("nope", "setting-processing-enableClip");
+  expect(router.history.location.href).toBe(
+    `/settings/${DEFAULT_SETTINGS_SECTION}#setting-processing-enableClip`,
+  );
 });

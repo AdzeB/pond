@@ -10,10 +10,10 @@ import {
 } from "@/features/saves/lib/detail";
 import { pickAuthorColor } from "@/features/saves/lib/presentation";
 import type { Save } from "@/features/saves/types";
+import { openSources } from "@/features/sources";
 import { Section } from "@/shared/components/inspector-section";
 import { PropertyList } from "@/shared/components/property-list";
 import { initials } from "@/shared/lib/initials";
-import { openHarvester } from "@/shared/lib/open-harvester";
 import styles from "./styles.module.css";
 
 const SKELETON_ROWS = ["first", "second", "third", "fourth"] as const;
@@ -324,12 +324,11 @@ function PropertyRow({
             onClick={() => {
               const id = row.accountId;
               if (!id) return;
-              openHarvester({
-                section: "sources",
-                intent: row.watch
+              openSources(
+                row.watch
                   ? { type: "inspect-watch", id }
                   : { type: "inspect-account", id },
-              });
+              );
             }}
           >
             <AuthorAvatar name={row.value} avatarUrl={row.avatarUrl ?? null} />
