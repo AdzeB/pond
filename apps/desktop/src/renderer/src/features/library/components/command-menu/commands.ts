@@ -35,7 +35,7 @@ export function navigateTo(path: string): void {
   getAppRouter()?.history.push(path);
 }
 
-export const COMMANDS: readonly CommandSpec[] = [
+const APP_COMMANDS: readonly CommandSpec[] = [
   {
     id: "new-folder",
     group: "Create",
@@ -214,6 +214,19 @@ export const COMMANDS: readonly CommandSpec[] = [
     },
   },
   {
+    id: "settings",
+    group: "App",
+    label: "Open Settings",
+    detail: "Preferences, storage, and AI",
+    icon: IconGear3,
+    keywords: "preferences configuration",
+    shortcut: "app.settings",
+    run: () => openSettings(),
+  },
+];
+
+const GALLERY_COMMANDS: readonly CommandSpec[] = [
+  {
     id: "dialogs",
     group: "App",
     label: "Dialog Gallery",
@@ -240,14 +253,8 @@ export const COMMANDS: readonly CommandSpec[] = [
     keywords: "sounds audio feedback gallery audition",
     run: () => navigateTo("/sounds"),
   },
-  {
-    id: "settings",
-    group: "App",
-    label: "Open Settings",
-    detail: "Preferences, storage, and AI",
-    icon: IconGear3,
-    keywords: "preferences configuration",
-    shortcut: "app.settings",
-    run: () => openSettings(),
-  },
 ];
+
+export const COMMANDS: readonly CommandSpec[] = import.meta.env.DEV
+  ? [...APP_COMMANDS, ...GALLERY_COMMANDS]
+  : APP_COMMANDS;
