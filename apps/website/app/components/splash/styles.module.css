@@ -65,7 +65,7 @@
   animation: dismiss 500ms var(--splash-land) linear forwards;
 }
 
-/* Lands on the intro logo: 24px glyph centered, 40px from the top. */
+/* Lands on the intro logo: 24px glyph at the page inset, 40px from the top. */
 .mark {
   width: 48px;
   height: 48px;
@@ -129,7 +129,7 @@
 
 @keyframes land {
   to {
-    translate: 0 calc(52px - 50cqh);
+    translate: calc(var(--page-inset) + 12px - 50cqw) calc(52px - 50cqh);
     scale: 0.5;
   }
 }

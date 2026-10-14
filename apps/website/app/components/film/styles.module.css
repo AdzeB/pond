@@ -1,7 +1,7 @@
 .film {
   display: grid;
   flex: 1;
-  place-items: center;
+  place-items: start;
   min-height: 200px;
   padding: 24px var(--page-inset) 40px;
   container-type: size;
