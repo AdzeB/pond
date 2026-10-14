@@ -10,11 +10,11 @@ import {
 import { SourceInspector } from "@/features/sources/components/inspector";
 import styles from "./styles.module.css";
 
-const SOURCE_DETAILS_LABELS: Record<SourceDetailsKind, string> = {
+const SOURCE_DETAILS_LABELS = {
   account: "Account Details",
   watch: "Watch Details",
   folder: "Folder Details",
-};
+} satisfies Record<SourceDetailsKind, string>;
 
 export function DetailsDialogHost() {
   const target = useDetailsDialog();

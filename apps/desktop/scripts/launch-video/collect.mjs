@@ -102,7 +102,7 @@ const saves = curated.saves.map((entry, index) => {
   const meta = entry.seed ? seeded(entry, cover) : copied(entry, cover);
   const bytes = readFileSync(cover);
   const { width, height } = size(cover);
-  const { seed, colors, ...rest } = entry;
+  const { seed: _seed, colors: _colors, ...rest } = entry;
   return {
     ...rest,
     ...meta,

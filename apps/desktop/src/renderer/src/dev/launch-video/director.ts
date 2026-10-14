@@ -39,6 +39,7 @@ function press(selector: string) {
 
 /** Rewrites a Lexical editor's text through its own update cycle. */
 function compose(selector: string, text: string) {
+  /** SAFETY: Lexical sets `__lexicalEditor` on its root, and the check below catches a non-root. */
   const element = find(selector) as HTMLElement & {
     __lexicalEditor?: LexicalEditor;
   };

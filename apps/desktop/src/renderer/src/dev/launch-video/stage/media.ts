@@ -16,6 +16,7 @@ interface Entry extends Omit<Sample, "aspect"> {
 }
 
 const response = await fetch("/fixtures/library.json");
+/** SAFETY: `scripts/launch-video/collect.mjs` writes the fixture in exactly this shape. */
 const data = (await response.json()) as { saves: Entry[] };
 
 export const SAMPLES: readonly Sample[] = data.saves.map((entry) => ({

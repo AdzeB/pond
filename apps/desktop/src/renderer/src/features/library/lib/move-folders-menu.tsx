@@ -2,7 +2,7 @@ import { IconFolderTree } from "@pond/icons";
 import type { Folder } from "@pond/schema/db";
 import type { MenuItemSpec } from "@pond/ui";
 import { folders } from "@/features/library/state/folders";
-import { notifyUndoableFolderChange } from "@/features/saves/lib/folder-actions";
+import { notifyUndoableFolderChange } from "@/features/saves";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { buildFolderTreeMenu } from "@/shared/lib/folder-tree-menu";
 import { notify } from "@/shared/lib/toast";

@@ -16,7 +16,10 @@ export function Splash() {
               className={styles.layer}
               size={48}
               aria-hidden
-              style={{ "--depth": depth } as CSSProperties}
+              style={
+                /** SAFETY: React forwards custom properties, but `CSSProperties` has no `--*` keys. */
+                { "--depth": depth } as CSSProperties
+              }
             />
           ))}
         </div>

@@ -17,8 +17,8 @@ function row(id: string, parentId: string | null) {
 function flatten(items: MenuItemSpec[]): Array<[string, boolean]> {
   return items.flatMap((item): Array<[string, boolean]> => {
     if (item.type === "submenu") return flatten(item.items);
-    if (!("label" in item) || typeof item.label !== "string") return [];
-    return [[item.label, "disabled" in item && Boolean(item.disabled)]];
+    if (!("label" in item)) return [];
+    return [[String(item.label), "disabled" in item && Boolean(item.disabled)]];
   });
 }
 

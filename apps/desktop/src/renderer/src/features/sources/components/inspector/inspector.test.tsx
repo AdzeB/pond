@@ -7,8 +7,13 @@ import { cardModel } from "@/features/sources/components/sync-monitor/lib/helper
 import type { SyncSourceStatus } from "@/features/sources/state/sync-monitor";
 import { SourceInspector, SourceInspectorView } from "./index";
 
+interface TestRoot {
+  render(node: ReactNode): void;
+  unmount(): void;
+}
+
 let host: HTMLDivElement;
-let root: { render(node: ReactNode): void; unmount(): void };
+let root: TestRoot;
 
 beforeEach(() => {
   vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {

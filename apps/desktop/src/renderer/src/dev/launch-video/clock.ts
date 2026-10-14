@@ -28,16 +28,13 @@ const births = new WeakMap<Animation, number>();
 
 function schedule(
   handler: TimerHandler,
-  delay: unknown,
+  delay: number | undefined,
   every: boolean,
   args: unknown[],
 ) {
   const id = nextId++;
   const ms = Math.max(0, Number(delay) || 0);
-  const fn =
-    typeof handler === "function"
-      ? () => (handler as (...a: unknown[]) => void)(...args)
-      : () => {};
+  const fn = handler instanceof Function ? () => handler(...args) : () => {};
   timers.set(id, {
     id,
     at: virtual + ms,
@@ -88,8 +85,12 @@ function advance(ms: number) {
 
 class VirtualDate extends RealDate {
   constructor(...args: unknown[]) {
-    if (args.length === 0) super(EPOCH + virtual);
-    else super(...(args as [number]));
+    if (args.length === 0) {
+      super(EPOCH + virtual);
+      return;
+    }
+    /** SAFETY: these are the caller's own `Date` arguments, forwarded unchanged. */
+    super(...(args as [number]));
   }
   static override now() {
     return EPOCH + virtual;

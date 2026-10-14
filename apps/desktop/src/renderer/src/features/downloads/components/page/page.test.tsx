@@ -1,3 +1,4 @@
+import "@/app/effects/save-library-bridge";
 import { Tooltip } from "@pond/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
@@ -7,16 +8,11 @@ import { downloadsColumnsLayout } from "@/features/downloads/state/downloads-col
 import { downloadsFilters } from "@/features/downloads/state/downloads-filters";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
 import { libraryChrome } from "@/features/library";
-import { openSave, primarySelection } from "@/features/saves/navigation";
+import { primarySelection } from "@/features/saves/navigation";
 import { savesStore } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
 import { DownloadsPage } from "./";
 import { hydrateLiveDownloadSaves } from "./hydrate-live-saves";
-
-vi.mock("@/features/saves/navigation", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/features/saves/navigation")>()),
-  openSave: vi.fn(),
-}));
 
 function save(
   id: string,
@@ -364,9 +360,9 @@ it("shows completed history in the table without opening a group", async () => {
   await render();
   expect(host.querySelector('[title="Local file"]')).toBeNull();
   await click('[title="Saved clip"]');
-  expect(openSave).not.toHaveBeenCalled();
+  expect(primarySelection.get()).toBeNull();
   await click('[title="Saved clip"]', { detail: 2 });
-  expect(openSave).toHaveBeenCalledWith("done");
+  expect(primarySelection.get()).toBe("done");
 });
 
 it("keeps status out of the name and shows the normalized source", async () => {

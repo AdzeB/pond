@@ -53,10 +53,7 @@ app.whenReady().then(async () => {
     const result = await win.webContents.executeJavaScript(
       `(async () => { try { return await (${run}); } catch (error) { return "run failed: " + error.stack; } })()`,
     );
-    console.log(
-      "probe: run",
-      typeof result === "string" ? result : JSON.stringify(result),
-    );
+    console.log("probe: run", JSON.stringify(result));
     await new Promise((r) => setTimeout(r, 1000));
   }
   console.log("probe: capturing");

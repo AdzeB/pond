@@ -271,7 +271,7 @@ function fetchItems(target: SourceMenuTarget): MenuItemSpec[] {
   return items;
 }
 
-export function startSourceSignIn(
+function startSourceSignIn(
   source: Source,
   accounts: readonly AccountRow[],
 ): void {

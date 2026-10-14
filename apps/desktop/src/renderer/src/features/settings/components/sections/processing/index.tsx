@@ -10,17 +10,17 @@ import { useEnrichmentStatus } from "@/features/enrichment/status";
 import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
-const TASK_LABELS: Record<string, string> = {
-  caption: "Image Captions",
-  ocr: "Text in Images",
-  transcript: "Transcription",
-  clip: "Visual Similarity",
-  aesthetic: "Style Labels",
-  "sensitive-content": "Sensitive Content",
-  autoTitle: "Generated Titles",
-  suggestedTags: "Suggested Tags",
-  textEmbedding: "Semantic Search",
-};
+const TASK_LABELS = new Map<string, string>([
+  ["caption", "Image Captions"],
+  ["ocr", "Text in Images"],
+  ["transcript", "Transcription"],
+  ["clip", "Visual Similarity"],
+  ["aesthetic", "Style Labels"],
+  ["sensitive-content", "Sensitive Content"],
+  ["autoTitle", "Generated Titles"],
+  ["suggestedTags", "Suggested Tags"],
+  ["textEmbedding", "Semantic Search"],
+]);
 
 interface TaskGroup {
   label: string;
@@ -37,7 +37,7 @@ function taskGroups(
     const id = key.slice(0, key.indexOf(":"));
     const existing = groups.get(id);
     if (existing) return existing;
-    const next = { label: TASK_LABELS[id] ?? id, left: 0, failed: 0 };
+    const next = { label: TASK_LABELS.get(id) ?? id, left: 0, failed: 0 };
     groups.set(id, next);
     return next;
   };

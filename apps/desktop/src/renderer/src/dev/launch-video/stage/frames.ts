@@ -10,6 +10,7 @@ export function registerFrame(next: HTMLIFrameElement | null) {
 }
 
 export function director(): Director | null {
+  /** SAFETY: the framed renderer sets `__director` once it boots, and callers handle its absence. */
   const view = element?.contentWindow as
     | (Window & { __director?: Director })
     | null

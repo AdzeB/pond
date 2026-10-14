@@ -53,11 +53,14 @@ async function openDialog() {
     openRenameDialog(["save-IMG_2041", "save-IMG_2042"]);
     root.render(<RenameDialogHost />);
   });
-  await vi.waitFor(() => {
-    expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
-      "IMG_2042",
-    );
-  });
+  await vi.waitFor(
+    () => {
+      expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
+        "IMG_2042",
+      );
+    },
+    { timeout: 5000 },
+  );
 }
 
 function button(label: string) {

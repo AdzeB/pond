@@ -3,7 +3,7 @@ import { DEFAULT_PREFS } from "@pond/schema";
 import type { Folder, Prefs, SaveFile } from "@pond/schema/db";
 import { matches } from "@pond/schema/filters/match";
 import type { WirePrefsPatch, WireSave } from "@shared/wire";
-import { defineQueries, emit } from "./bridge";
+import { defineQueries, emitPrefsChanged } from "./bridge";
 
 interface Entry {
   id: string;
@@ -28,6 +28,7 @@ interface Entry {
 const NOW = Date.UTC(2026, 9, 12, 9, 0);
 const HOUR = 3_600_000;
 const response = await fetch("/fixtures/library.json");
+/** SAFETY: `scripts/launch-video/collect.mjs` writes the fixture in exactly this shape. */
 const data = (await response.json()) as {
   folders: string[];
   searches: Record<string, string[]>;
@@ -183,12 +184,13 @@ let prefs: Prefs = {
 
 /** Merges like the main process: one level deep per top-level key. */
 function applyPrefs(patch: WirePrefsPatch) {
-  const next: Record<string, unknown> = { ...prefs };
-  for (const [key, value] of Object.entries(patch)) {
-    next[key] = { ...(next[key] as object), ...value };
+  const next = { ...prefs };
+  /** SAFETY: `WirePrefsPatch` keys are a subset of `Prefs` keys. */
+  for (const key of Object.keys(patch) as (keyof Prefs)[]) {
+    Object.assign(next, { [key]: { ...prefs[key], ...patch[key] } });
   }
-  prefs = next as Prefs;
-  emit("onPrefsChanged", prefs);
+  prefs = next;
+  emitPrefsChanged(prefs);
   return prefs;
 }
 

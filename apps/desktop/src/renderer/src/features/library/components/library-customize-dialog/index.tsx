@@ -52,10 +52,14 @@ interface LibraryCustomizeDialogProps {
   onClose: () => void;
 }
 
-function restoreMark(library: LibraryCustomizeDialogProps["library"]): {
+interface MarkSelection {
   mark: LibraryMark;
   swatch: LibrarySwatch;
-} {
+}
+
+function restoreMark(
+  library: LibraryCustomizeDialogProps["library"],
+): MarkSelection {
   const source = library.mark;
   const image = { kind: "image", src: library.icon } as const;
   if (!source) return { mark: image, swatch: DEFAULT_LIBRARY_SWATCH };
@@ -162,7 +166,7 @@ export function LibraryCustomizeDialog({
               ...logo,
             })
           : await window.pond.query("library.identity.update", {
-              ...(nameChanged ? { name: nextName } : {}),
+              name: nameChanged ? nextName : undefined,
               ...logo,
             });
       if (!result.ok) {

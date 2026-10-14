@@ -56,7 +56,7 @@ function PondIcon({ size = 18 }: IconProps) {
   );
 }
 
-const FILLS: Record<Exclude<LibraryIconId, "pond">, IconComponent> = {
+const FILLS = {
   bookmark: IconBookmarkFill,
   album: IconAlbum2Fill,
   tag: IconHashtagFill,
@@ -88,7 +88,7 @@ const FILLS: Record<Exclude<LibraryIconId, "pond">, IconComponent> = {
   gamepad: IconGamepadFill,
   leaf: IconLeafFill,
   shopping: IconBagShoppingFill,
-};
+} satisfies Record<Exclude<LibraryIconId, "pond">, IconComponent>;
 
 export const LIBRARY_ICONS: readonly {
   id: LibraryIconId;

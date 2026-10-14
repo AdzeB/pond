@@ -75,6 +75,7 @@ async function svgImage(
   size: number,
   color: string,
 ): Promise<HTMLImageElement> {
+  /** SAFETY: a deep clone of an `<svg>` element is an `<svg>` element. */
   const clone = svg.cloneNode(true) as SVGSVGElement;
   clone.setAttribute("width", String(size));
   clone.setAttribute("height", String(size));

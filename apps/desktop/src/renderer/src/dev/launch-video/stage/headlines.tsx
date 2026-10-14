@@ -1,10 +1,15 @@
 import { BEATS, closes, HERO, type ProductBeat } from "./timeline";
 import { type Effect, Verb } from "./verb";
 
-const HEADLINES: Record<
-  ProductBeat,
-  { verb: string; sub: string; fx: Effect; exit?: number; y?: number }
-> = {
+interface Headline {
+  verb: string;
+  sub: string;
+  fx: Effect;
+  exit?: number;
+  y?: number;
+}
+
+const HEADLINES = {
   save: {
     verb: "Save it.",
     sub: "Like or bookmark as usual. Pond keeps a copy.",
@@ -42,12 +47,13 @@ const HEADLINES: Record<
     sub: "Cursor and Claude, over MCP.",
     fx: "flip",
   },
-};
+} satisfies Record<ProductBeat, Headline>;
 
 /** The verb line over each product beat. */
 export function Headlines({ t }: { t: number }) {
+  /** SAFETY: `HEADLINES` satisfies a record over exactly the product beats. */
   return (Object.keys(HEADLINES) as ProductBeat[]).map((beat) => {
-    const line = HEADLINES[beat];
+    const line: Headline = HEADLINES[beat];
     return (
       <Verb
         key={beat}
@@ -57,7 +63,7 @@ export function Headlines({ t }: { t: number }) {
         fx={line.fx}
         enter={BEATS[beat][0]}
         exit={line.exit ?? closes(beat)}
-        hero={HERO[beat]}
+        hero={HERO.get(beat)}
         y={line.y}
       />
     );

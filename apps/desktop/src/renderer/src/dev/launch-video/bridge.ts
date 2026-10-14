@@ -1,12 +1,15 @@
 /** Stands in for the preload bridge so the real renderer boots on sample data with no main process. */
+import type { Prefs } from "@pond/schema/db";
 import type {
   QueryInput,
   QueryName,
   QueryResult,
 } from "@shared/query-contracts";
+import type { PondApi } from "../../../../preload";
 
-type Handler = (args: unknown) => unknown;
-type Listener = (payload: unknown) => void;
+type PrefsListener = (prefs: Prefs) => void;
+/** Any argument some preload method accepts. */
+type BridgeArgument = Parameters<PondApi[keyof PondApi]>[number];
 
 export type QueryHandlers = {
   [K in QueryName]?: (
@@ -21,8 +24,8 @@ interface BridgeLog {
 }
 
 const log: BridgeLog = { calls: {}, queries: {}, missing: {} };
-const queries: Record<string, Handler> = {};
-const listeners = new Map<string, Set<Listener>>();
+const queries: QueryHandlers = {};
+const listeners = new Map<string, Set<PrefsListener>>();
 
 let markReady: () => void = () => {};
 /** Sibling modules can query while fixtures are still fetching, so queries wait for them. */
@@ -30,16 +33,25 @@ const ready = new Promise<void>((resolve) => {
   markReady = resolve;
 });
 
-const methods: Record<string, (...args: unknown[]) => unknown> = {
+async function query<K extends QueryName>(
+  name: K,
+  args?: QueryInput<K>,
+): Promise<QueryResult<K>> {
+  await ready;
+  log.queries[name] = (log.queries[name] ?? 0) + 1;
+  const handler: QueryHandlers[K] = queries[name];
+  if (!handler) {
+    log.missing[name] = (log.missing[name] ?? 0) + 1;
+    /** SAFETY: an unhandled query resolves empty on purpose, and `__bridgeLog.missing` reports it. */
+    return undefined as never;
+  }
+  /** SAFETY: callers omit `args` only for queries whose input is an empty object. */
+  return handler((args ?? {}) as QueryInput<K>);
+}
+
+const methods: Partial<PondApi> = {
   libraryId: () => "launch-video",
-  query: async (name: unknown, args: unknown) => {
-    await ready;
-    const key = String(name);
-    log.queries[key] = (log.queries[key] ?? 0) + 1;
-    const handler = queries[key];
-    if (!handler) log.missing[key] = (log.missing[key] ?? 0) + 1;
-    return handler ? handler(args ?? {}) : undefined;
-  },
+  query,
 };
 
 export function fixturesReady() {
@@ -47,10 +59,11 @@ export function fixturesReady() {
 }
 
 function fallback(name: string) {
-  return (...args: unknown[]) => {
+  return (...args: BridgeArgument[]) => {
     log.calls[name] = (log.calls[name] ?? 0) + 1;
     if (/^on[A-Z]/.test(name)) {
-      const listener = args[0] as Listener;
+      /** SAFETY: every `on*` preload method takes its listener first, and only prefs are emitted. */
+      const listener = args[0] as PrefsListener;
       const set = listeners.get(name) ?? new Set();
       set.add(listener);
       listeners.set(name, set);
@@ -62,8 +75,10 @@ function fallback(name: string) {
 
 const bridge = new Proxy(methods, {
   get(target, prop) {
-    if (typeof prop !== "string") return undefined;
-    return target[prop] ?? fallback(prop);
+    const name = String(prop);
+    if (!Object.hasOwn(target, name)) return fallback(name);
+    /** SAFETY: `hasOwn` just confirmed `name` is one of the defined methods. */
+    return target[name as keyof PondApi];
   },
 });
 
@@ -82,12 +97,12 @@ export function defineQueries(handlers: QueryHandlers) {
   Object.assign(queries, handlers);
 }
 
-export function defineMethods(
-  handlers: Record<string, (...args: unknown[]) => unknown>,
-) {
+export function defineMethods(handlers: Partial<PondApi>) {
   Object.assign(methods, handlers);
 }
 
-export function emit(event: string, payload: unknown) {
-  for (const listener of listeners.get(event) ?? []) listener(payload);
+export function emitPrefsChanged(prefs: Prefs) {
+  for (const listener of listeners.get("onPrefsChanged") ?? []) {
+    listener(prefs);
+  }
 }

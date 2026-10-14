@@ -61,10 +61,15 @@ const FOLDERS = [
   { label: "Videos", count: 4 },
 ];
 
-const CRUMBS: Record<Place, { label: string; icon: ReactNode }> = {
+interface Crumb {
+  label: string;
+  icon: ReactNode;
+}
+
+const CRUMBS = {
   all: { label: "All", icon: <IconAlbum2 size={16} /> },
   assistant: { label: "Assistant", icon: <IconChatBubble size={16} /> },
-};
+} satisfies Record<Place, Crumb>;
 
 interface WindowProps extends React.ComponentPropsWithoutRef<"div"> {
   place: Place;

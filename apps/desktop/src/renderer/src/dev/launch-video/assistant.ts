@@ -1,4 +1,3 @@
-import type { AgentStreamEvent } from "@shared/agent-stream";
 import type { AssistantSource, AssistantToolStep } from "@shared/assistant";
 import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
 import { defineMethods, defineQueries } from "./bridge";
@@ -54,8 +53,7 @@ function sources(): AssistantSource[] {
 }
 
 defineMethods({
-  agentStream(_body: unknown, receive: unknown) {
-    const send = receive as (event: AgentStreamEvent) => void;
+  agentStream(_body, send) {
     const response = createUIMessageStreamResponse({
       stream: createUIMessageStream({
         execute: async ({ writer }) => {

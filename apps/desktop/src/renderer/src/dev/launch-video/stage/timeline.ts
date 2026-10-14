@@ -39,13 +39,13 @@ const OPEN = {
 export type ProductBeat = keyof typeof OPEN | "sync";
 
 /** How long each product verb holds at center before it docks. Ask and Connect reveal in place. */
-export const HERO: Partial<Record<ProductBeat, number>> = {
-  save: 830,
-  sync: 800,
-  own: 800,
-  enrich: 850,
-  find: 780,
-};
+export const HERO = new Map<ProductBeat, number>([
+  ["save", 830],
+  ["sync", 800],
+  ["own", 800],
+  ["enrich", 850],
+  ["find", 780],
+]);
 
 export const opens = (beat: keyof typeof OPEN) => BEATS[beat][0] + OPEN[beat];
 export const closes = (beat: BeatId) => BEATS[beat][1] - 350;
