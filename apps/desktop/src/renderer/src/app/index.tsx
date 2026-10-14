@@ -27,7 +27,6 @@ import { SyncStatusBridge } from "../features/sources/effects/sync-status-bridge
 import { routeTree } from "../routeTree.gen";
 import { ToastHost } from "../shared/components/toast-host";
 import { setAppRouter } from "../shared/lib/app-router";
-import { dismissBootCover } from "../shared/lib/boot-cover";
 import { libraryScopedKey } from "../shared/lib/library-scope";
 import { BootScreen } from "./components/boot-screen";
 import { ErrorBoundary } from "./components/error-boundary";
@@ -127,7 +126,6 @@ function AppContent() {
 }
 
 export function App() {
-  useEffect(() => dismissBootCover(), []);
   return (
     <>
       <InterfaceZoom />

@@ -21,7 +21,6 @@ function services(): SaveBootstrapDependencies {
     readSnapshot: async () => [],
     scheduleSnapshotWrite() {},
     applyActionCoalesced() {},
-    dismissBootCover() {},
     rendererReady() {},
     onSyncAction() {},
     loadAll: async () => [],
