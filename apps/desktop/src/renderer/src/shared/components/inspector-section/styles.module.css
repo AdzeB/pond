@@ -74,6 +74,10 @@
   flex-direction: column;
   gap: 6px;
   min-width: 0;
+
+  &[data-static] {
+    margin-top: 8px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -6,10 +6,6 @@ import {
   closeConversionDialog,
   conversionDialogStore,
 } from "@/features/library/state/conversion-dialog";
-import {
-  closeFolderPicker,
-  folderPickerStore,
-} from "@/features/library/state/folder-picker";
 import { folders } from "@/features/library/state/folders";
 import { buildViewerMenu } from "@/features/saves/components/viewers/media-viewer/lib/menu";
 import { pool } from "@/features/saves/state/pool";
@@ -547,18 +543,40 @@ describe("buildSaveMenu", () => {
     expect(labels).toContain("Open with Default App");
   });
 
-  it("opens the folder picker for the full selection", () => {
-    const items = buildSaveMenu([fileSave(), fileSave({ id: "other" })], {
-      clipboardEmpty: true,
+  it("lists the folder tree under Add to Folders and checks folders the save is in", async () => {
+    const row = (id: string, parentId: string | null) => ({
+      id,
+      name: id,
+      parentId,
+      color: null,
+      sortOrder: 0,
+      createdAt: new Date(),
     });
-    const assign = items.find(
-      (item) => "label" in item && item.label === "Add to Folders",
-    );
-    if (!assign || !("onClick" in assign))
-      throw new Error("Missing Add to Folders");
-    assign.onClick?.();
-    expect(folderPickerStore.state).toEqual(["file-save", "other"]);
-    closeFolderPicker();
+    vi.stubGlobal("pond", {
+      query: async (name: string) => {
+        if (name === "folders.list")
+          return [row("Refs", null), row("Shots", "Refs"), row("Inbox", null)];
+        if (name === "folders.memberships")
+          return [{ saveId: "file-save", folderId: "Refs" }];
+        return [];
+      },
+    });
+    await folders.refresh();
+    const items =
+      sectionItems(
+        buildSaveMenu(fileSave(), { clipboardEmpty: true }),
+        "Add to Folders",
+      ) ?? [];
+    expect(visibleLabels(items)).toEqual([
+      "Inbox",
+      "Refs",
+      "Refs",
+      "Shots",
+      "New Folder",
+    ]);
+    const refs = sectionItems(items, "Refs") ?? [];
+    expect(refs[0]).toMatchObject({ type: "checkbox", checked: true });
+    expect(refs[2]).toMatchObject({ label: "Shots", checked: false });
   });
 
   it("hides Assistant for trashed saves", () => {

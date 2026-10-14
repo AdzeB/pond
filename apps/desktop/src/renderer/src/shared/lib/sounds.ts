@@ -62,14 +62,10 @@ function playTrashThunk(): void {
   play("trash", "trash", false);
 }
 
-export function emitFeedback(event: FeedbackEvent): void {
+export function emitFeedback(
+  event: Extract<FeedbackEvent, "saveDeletion" | "folderDeletion">,
+): void {
   const prefs = getPrefsSnapshot();
-  if (prefs?.feedback.sounds[event] !== false) {
-    if (event === "saveDeletion" || event === "folderDeletion") {
-      playTrashThunk();
-    } else {
-      play("success", "success", false);
-    }
-  }
+  if (prefs?.feedback.sounds[event] !== false) playTrashThunk();
   void window.pond.query("feedback.emit", { event }).catch(() => {});
 }

@@ -1,27 +1,17 @@
-import { IconArrowDiagonalInFill } from "@pond/icons";
+import { IconNodes3Fill } from "@pond/icons";
 import { Button, Empty } from "@pond/ui";
 import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
 
-export function SourcesEmpty({ scope }: { scope?: "account" | "watch" }) {
-  const title =
-    scope === "account"
-      ? "No accounts yet"
-      : scope === "watch"
-        ? "No watches yet"
-        : "No sources yet";
-  const description =
-    scope === "account"
-      ? "Connect an account to keep Pond in sync."
-      : scope === "watch"
-        ? "Watch a public page to keep Pond in sync."
-        : "Connect an account or watch a public one to keep Pond in sync.";
+export function SourcesEmpty() {
   return (
     <Empty.Root>
       <Empty.Media>
-        <IconArrowDiagonalInFill />
+        <IconNodes3Fill />
       </Empty.Media>
-      <Empty.Title>{title}</Empty.Title>
-      <Empty.Description>{description}</Empty.Description>
+      <Empty.Title>No sources yet</Empty.Title>
+      <Empty.Description>
+        Connect an account or watch a public one to keep Pond in sync.
+      </Empty.Description>
       <Empty.Action>
         <Button
           variant="primary"

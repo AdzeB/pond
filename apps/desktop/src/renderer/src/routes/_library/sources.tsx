@@ -1,9 +1,6 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { openHarvester } from "@/shared/lib/open-harvester";
+import { createFileRoute } from "@tanstack/react-router";
+import { SourcesPage } from "@/features/sources/components/page";
 
 export const Route = createFileRoute("/_library/sources")({
-  beforeLoad: () => {
-    openHarvester({ section: "sources" });
-    throw redirect({ to: "/" });
-  },
+  component: SourcesPage,
 });

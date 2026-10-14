@@ -48,46 +48,12 @@ describe("independent Assistant and inspector panes", () => {
     expect(libraryChrome.getState()).toMatchObject({
       rightPane: "inspector",
       inspectorSaveId: "first",
-      inspectorMode: "save",
       inspectorTab: "info",
     });
     libraryChrome.setInspectorTab("organize");
     expect(libraryChrome.getState().inspectorTab).toBe("organize");
     libraryChrome.setInspectorTab("info");
     expect(libraryChrome.getState().inspectorTab).toBe("info");
-  });
-
-  it("reopens the selected download after closing Details or showing Assistant", async () => {
-    const { libraryChrome } = await import("./library-chrome");
-    libraryChrome.inspectDownload("first");
-    expect(libraryChrome.getState()).toMatchObject({
-      rightPane: "inspector",
-      inspectorSaveId: "first",
-      inspectorMode: "download",
-    });
-    libraryChrome.closeRightPane();
-    libraryChrome.inspectDownload("first");
-    expect(libraryChrome.getState().rightPane).toBe("inspector");
-    libraryChrome.toggleAgent();
-    libraryChrome.inspectDownload("first");
-    expect(libraryChrome.getState().rightPane).toBe("inspector");
-  });
-
-  it("restores save details when opening a download's save", async () => {
-    const { libraryChrome } = await import("./library-chrome");
-    libraryChrome.inspectDownload("first");
-    libraryChrome.inspectSave("first");
-    expect(libraryChrome.getState()).toMatchObject({
-      rightPane: "inspector",
-      inspectorSaveId: "first",
-      inspectorMode: "save",
-    });
-    libraryChrome.inspectDownload("first");
-    libraryChrome.setInspectorSaveId("second");
-    expect(libraryChrome.getState()).toMatchObject({
-      inspectorSaveId: "second",
-      inspectorMode: "save",
-    });
   });
 
   it("swaps Details and Assistant without losing the inspected save", async () => {
@@ -173,40 +139,6 @@ describe("independent Assistant and inspector panes", () => {
     expect(libraryChrome.getState().rightPane).toBeNull();
     libraryChrome.toggleRightPane();
     expect(libraryChrome.getState().rightPane).toBe("inspector");
-  });
-
-  it("opens connection details in the inspector slot", async () => {
-    const { libraryChrome } = await import("./library-chrome");
-    libraryChrome.inspectSource("account", "acc-1");
-    expect(libraryChrome.getState()).toMatchObject({
-      rightPane: "inspector",
-      inspectorMode: "source",
-      inspectorSourceId: "acc-1",
-      inspectorSourceKind: "account",
-    });
-    libraryChrome.closeRightPane();
-    libraryChrome.inspectSource("account", "acc-1");
-    expect(libraryChrome.getState().rightPane).toBe("inspector");
-  });
-
-  it("restores connection details after Assistant and clears them on disconnect", async () => {
-    const { libraryChrome } = await import("./library-chrome");
-    libraryChrome.inspectSource("watch", "watch-1");
-    libraryChrome.toggleAgent();
-    expect(libraryChrome.getState().rightPane).toBe("agent");
-    expect(libraryChrome.getState().inspectorSourceId).toBe("watch-1");
-    libraryChrome.toggleAgent();
-    expect(libraryChrome.getState()).toMatchObject({
-      rightPane: "inspector",
-      inspectorMode: "source",
-    });
-    libraryChrome.clearSourceInspector();
-    expect(libraryChrome.getState()).toMatchObject({
-      rightPane: "agent",
-      inspectorSourceId: null,
-      inspectorSourceKind: null,
-      inspectorMode: "save",
-    });
   });
 
   it("keeps the right panel open until the user closes it", async () => {

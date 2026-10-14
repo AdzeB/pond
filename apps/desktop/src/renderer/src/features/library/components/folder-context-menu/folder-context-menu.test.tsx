@@ -15,7 +15,7 @@ function actions(
     creating: false,
     onNewFolder: vi.fn(),
     onNewSubfolder: vi.fn(),
-    onMove: vi.fn(),
+    moveItems: [{ label: "Inbox", icon: <span />, onClick: vi.fn() }],
     onRename: vi.fn(),
     onBatchRename: vi.fn(),
     onAutoTag: vi.fn(),
@@ -46,7 +46,8 @@ describe("folder context menu", () => {
     expect(menuLabels).toEqual([
       "New Folder",
       "New Subfolder",
-      "Move Folder",
+      "Move To",
+      "Inbox",
       "Rename",
       "Batch Rename Folders",
       "Set Auto-Tag",

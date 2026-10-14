@@ -2,7 +2,6 @@ import { app, type BrowserWindow, dialog } from "electron";
 import log from "electron-log/main.js";
 import { IPC } from "../shared/constants";
 import { linkMatchesLibrary } from "../shared/library-links";
-import { openSettingsWindow } from "./core/settings-window";
 import { libraryId } from "./paths";
 
 let pendingDeepLink: string | null = null;
@@ -16,7 +15,7 @@ export function consumePendingDeepLink(): string | null {
 export function handleDeepLink(
   url: string,
   mainWindow: BrowserWindow | null,
-): "settings" | "library" | undefined {
+): "library" | undefined {
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== "pond:") return;
@@ -57,18 +56,7 @@ export function handleDeepLink(
       route = `/?capture=1${target ? `&url=${encodeURIComponent(target)}` : ""}`;
     } else if (parsed.hostname === "settings") {
       const sub = parsed.pathname.replace(/^\//, "").replace(/\/+$/, "");
-      void app
-        .whenReady()
-        .then(() =>
-          openSettingsWindow({
-            section: sub || undefined,
-            hash: parsed.hash.replace(/^#/, "") || undefined,
-          }),
-        )
-        .catch((error) =>
-          log.warn("[pond deep-link] Settings could not open", error),
-        );
-      return "settings";
+      route = `/settings${sub ? `/${encodeURIComponent(sub)}` : ""}${parsed.hash}`;
     }
     if (!route) {
       log.info("[pond deep-link] ignored", url);

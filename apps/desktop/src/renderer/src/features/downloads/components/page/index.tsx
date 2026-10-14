@@ -12,12 +12,11 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { z } from "zod";
 import { DownloadsEmpty } from "@/features/downloads/components/empty";
 import { useLiveDownloadHydration } from "@/features/downloads/hooks/use-live-download-hydration";
 import {
-  type DownloadRow,
   downloadRowSource,
   type HistoryCursor,
   HistoryPageSchema,
@@ -34,12 +33,6 @@ import {
   useDownloadsFilters,
 } from "@/features/downloads/state/downloads-filters";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
-import {
-  libraryChrome,
-  useInspectorMode,
-  useInspectorSaveId,
-  useRightPane,
-} from "@/features/library";
 import { useSaves } from "@/features/saves/pool";
 import { MatchesEmpty } from "@/shared/components/matches-empty";
 import { SearchChrome } from "@/shared/components/search-chrome";
@@ -69,9 +62,6 @@ export function DownloadsPage() {
   const filters = useDownloadsFilters();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const activity = useDownloadActivity();
-  const inspectorId = useInspectorSaveId();
-  const inspectorMode = useInspectorMode();
-  const rightPane = useRightPane();
   const live = useMemo(() => projectLiveDownloads(saves), [saves]);
   const history = useInfiniteQuery({
     queryKey: ["downloads.history", filters.q],
@@ -140,17 +130,6 @@ export function DownloadsPage() {
       }),
     );
   }, [rows, visibleCompleted]);
-  useEffect(() => {
-    if (rightPane !== "inspector") return;
-    const visible = [...rows, ...visibleCompleted];
-    const inspectedVisible =
-      inspectorMode === "download" &&
-      inspectorId != null &&
-      visible.some((row) => row.saveId === inspectorId);
-    if (inspectedVisible) return;
-    const first = visible[0];
-    if (first) libraryChrome.inspectDownload(first.saveId);
-  }, [rows, visibleCompleted, rightPane, inspectorMode, inspectorId]);
   useEffect(() => () => downloadsSelection.clear(), []);
 
   const pipeline = useQuery({
@@ -171,10 +150,6 @@ export function DownloadsPage() {
     visibleCompleted.length === 0 &&
     !history.isPending &&
     !showPlaceEmpty;
-
-  const onRowClick = useCallback((row: DownloadRow) => {
-    libraryChrome.inspectDownload(row.saveId);
-  }, []);
 
   const pause = useMutation({
     mutationFn: () => window.pond.pipelinePause(!paused),
@@ -276,7 +251,6 @@ export function DownloadsPage() {
         completed={visibleCompleted}
         activities={activity.data ?? []}
         paused={paused}
-        onInspect={onRowClick}
         historyLoading={history.isPending}
         historyError={history.isError}
         hasMore={history.hasNextPage}

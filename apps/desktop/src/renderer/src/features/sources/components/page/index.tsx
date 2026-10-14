@@ -2,8 +2,10 @@ import { IconCircleCheck, IconFile, IconLink2 } from "@pond/icons";
 import { DataTable } from "@pond/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SourcesEmpty } from "@/features/sources/components/empty";
+import { NewSourceMenu } from "@/features/sources/components/new-menu";
 import { cardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
 import { useAccounts } from "@/features/sources/hooks/use-accounts";
+import { useWatchedFolder } from "@/features/sources/hooks/use-watched-folder";
 import { useWatches } from "@/features/sources/hooks/use-watches";
 import {
   sourceDetail,
@@ -42,6 +44,7 @@ import {
 import {
   type SourceEntry,
   type SourceTableRow,
+  toFolderTableRow,
   toSourceTableRow,
 } from "./lib/helpers";
 import { SourceOptionsMenu } from "./options";
@@ -49,20 +52,22 @@ import styles from "./styles.module.css";
 
 function openEntry(entry: SourceEntry): void {
   if (entry.kind === "account") sourceDetail.openAccount(entry.row.id);
-  else sourceDetail.openWatch(entry.row.id);
+  else if (entry.kind === "watch") sourceDetail.openWatch(entry.row.id);
+  else sourceDetail.openFolder(entry.row.path);
 }
 
 function SourcesMatchesEmpty() {
   return <MatchesEmpty onReset={sourcesFilters.reset} />;
 }
 
-export function SourcesPage({ scope }: { scope?: "account" | "watch" }) {
+export function SourcesPage() {
   const { accounts, loading: accountsLoading, refetch } = useAccounts();
   const {
     watches,
     loading: watchesLoading,
     refetch: refetchWatches,
   } = useWatches();
+  const watchedFolder = useWatchedFolder();
   const byAccount = useSyncByAccount();
   const addedWatchId = useWatchAdded();
   const detailRevision = useSourceDetailRevision();
@@ -71,32 +76,31 @@ export function SourcesPage({ scope }: { scope?: "account" | "watch" }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const { ref: tableRef, height: tableHeight } = useClientHeight();
 
-  const entries = useMemo<SourceEntry[]>(() => {
-    const next: SourceEntry[] = [];
-    if (scope !== "watch") {
-      for (const row of accounts) next.push({ kind: "account", row });
-    }
-    if (scope !== "account") {
-      for (const row of watches) next.push({ kind: "watch", row });
-    }
-    return next;
-  }, [accounts, watches, scope]);
-  const listedFilters = useMemo(() => {
-    if (scope !== "account" || filters.types.size === 0) return filters;
-    return { ...filters, types: new Set<string>() };
-  }, [filters, scope]);
-
   const tableRows = useMemo<SourceTableRow[]>(() => {
     const next: SourceTableRow[] = [];
-    for (const entry of entries) {
-      next.push(toSourceTableRow(entry, cardModel(byAccount[entry.row.id])));
+    for (const row of accounts) {
+      next.push(
+        toSourceTableRow(
+          { kind: "account", row },
+          cardModel(byAccount[row.id]),
+        ),
+      );
     }
+    for (const row of watches) {
+      next.push(
+        toSourceTableRow({ kind: "watch", row }, cardModel(byAccount[row.id])),
+      );
+    }
+    const folder = watchedFolder.data
+      ? toFolderTableRow(watchedFolder.data)
+      : null;
+    if (folder) next.push(folder);
     return next;
-  }, [entries, byAccount]);
+  }, [accounts, watches, watchedFolder.data, byAccount]);
 
   const rows = useMemo(
-    () => tableRows.filter((row) => matchesSourceFilters(row, listedFilters)),
-    [tableRows, listedFilters],
+    () => tableRows.filter((row) => matchesSourceFilters(row, filters)),
+    [tableRows, filters],
   );
   const columns = useMemo(
     () =>
@@ -115,7 +119,9 @@ export function SourcesPage({ scope }: { scope?: "account" | "watch" }) {
   const sourceOptions = useMemo(
     () =>
       uniqueFilterOptions(
-        tableRows.map((row) => ({ id: row.source, label: row.sourceLabel })),
+        tableRows.flatMap((row) =>
+          row.source ? [{ id: row.source, label: row.sourceLabel }] : [],
+        ),
       ),
     [tableRows],
   );
@@ -146,20 +152,9 @@ export function SourcesPage({ scope }: { scope?: "account" | "watch" }) {
     void refetchWatches();
   }, [detailRevision, refetch, refetchWatches]);
 
-  const loaded = !accountsLoading && !watchesLoading;
-  const showMatchesEmpty = loaded && entries.length > 0 && rows.length === 0;
-  const listLabel =
-    scope === "account"
-      ? "Accounts"
-      : scope === "watch"
-        ? "Watches"
-        : "Sources";
-  const searchPlaceholder =
-    scope === "account"
-      ? "Search accounts…"
-      : scope === "watch"
-        ? "Search watches…"
-        : "Search sources…";
+  const loaded =
+    !accountsLoading && !watchesLoading && !watchedFolder.isPending;
+  const showMatchesEmpty = loaded && tableRows.length > 0 && rows.length === 0;
 
   const onRowClick = useCallback((row: SourceTableRow) => {
     openEntry(row.entry);
@@ -168,10 +163,11 @@ export function SourcesPage({ scope }: { scope?: "account" | "watch" }) {
     <SearchChrome.Root
       actions={
         <>
+          <NewSourceMenu controlled />
           <SourceOptionsMenu />
           <TableFilterToggle
             open={filtersOpen}
-            active={sourceFiltersActive(listedFilters)}
+            active={sourceFiltersActive(filters)}
             controlsId="sources-filter-toolbar"
             onToggle={() => setFiltersOpen((open) => !open)}
           />
@@ -197,15 +193,13 @@ export function SourcesPage({ scope }: { scope?: "account" | "watch" }) {
             selected={filters.sources}
             onChange={sourcesFilters.setSources}
           />
-          {scope === "account" ? null : (
-            <TableFilterChip
-              name="Type"
-              icon={<IconFile />}
-              options={typeOptions}
-              selected={filters.types}
-              onChange={sourcesFilters.setTypes}
-            />
-          )}
+          <TableFilterChip
+            name="Type"
+            icon={<IconFile />}
+            options={typeOptions}
+            selected={filters.types}
+            onChange={sourcesFilters.setTypes}
+          />
         </TableFilterBar>
       }
     >
@@ -213,8 +207,8 @@ export function SourcesPage({ scope }: { scope?: "account" | "watch" }) {
         value={filters.q}
         onChange={(e) => sourcesFilters.setQ(e.target.value)}
         spellCheck={false}
-        placeholder={searchPlaceholder}
-        aria-label={`Search ${listLabel}`}
+        placeholder="Search sources…"
+        aria-label="Search Sources"
         data-sources-search=""
       />
     </SearchChrome.Root>
@@ -250,7 +244,6 @@ export function SourcesPage({ scope }: { scope?: "account" | "watch" }) {
       height={
         showMatchesEmpty || tableHeight < 88 ? undefined : tableHeight - 40
       }
-      rowHeight={48}
       selectionCheckboxes={false}
       onRowClick={onRowClick}
       renderRow={({ cells, rowProps, row }) => (
@@ -262,15 +255,15 @@ export function SourcesPage({ scope }: { scope?: "account" | "watch" }) {
       {toolbar}
       <div className={styles.page}>
         <div className={styles.content}>
-          {loaded && entries.length === 0 ? (
-            <SourcesEmpty scope={scope} />
+          {loaded && tableRows.length === 0 ? (
+            <SourcesEmpty />
           ) : showMatchesEmpty ? (
             <div className={styles.empty}>
               <SourcesMatchesEmpty />
             </div>
           ) : (
             <div ref={tableRef} className={styles.table}>
-              <DataTable.Root className={styles.grid} aria-label={listLabel}>
+              <DataTable.Root className={styles.grid} aria-label="Sources">
                 <DataTable.Empty>
                   {loaded ? <SourcesMatchesEmpty /> : null}
                 </DataTable.Empty>

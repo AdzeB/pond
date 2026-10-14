@@ -7,6 +7,7 @@ import type {
 export const SIDEBAR_DESTINATION_GROUPS = [
   {
     label: "Library",
+    heading: false,
     destinations: [
       "all",
       "uncategorized",
@@ -19,8 +20,14 @@ export const SIDEBAR_DESTINATION_GROUPS = [
       "trash",
     ],
   },
+  {
+    label: "Harvesting",
+    heading: true,
+    destinations: ["sources", "downloads"],
+  },
 ] as const satisfies readonly {
   label: string;
+  heading: boolean;
   destinations: readonly SidebarDestination[];
 }[];
 

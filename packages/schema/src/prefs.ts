@@ -64,8 +64,8 @@ export const SIDEBAR_DESTINATIONS = [
   "tags",
   "random",
   "trash",
-  "downloads",
   "sources",
+  "downloads",
 ] as const;
 
 export type SidebarDestination = (typeof SIDEBAR_DESTINATIONS)[number];
@@ -159,14 +159,12 @@ const feedback = z.object({
       interface: z.boolean().catch(true),
       saveDeletion: z.boolean().catch(true),
       folderDeletion: z.boolean().catch(true),
-      extensionCapture: z.boolean().catch(true),
       autoImport: z.boolean().catch(true),
     })
     .catch({
       interface: true,
       saveDeletion: true,
       folderDeletion: true,
-      extensionCapture: true,
       autoImport: true,
     }),
   notifications: z

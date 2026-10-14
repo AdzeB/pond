@@ -1,18 +1,18 @@
 import {
   IconAlbum2Fill,
-  IconArrowDiagonalInFill,
   IconBookmarkSlashFill,
   IconClockPlus,
   IconFolderBanFill,
   IconFolderOpenFill,
   IconHistory,
+  IconNodes3Fill,
   IconTrashXmarkFill,
 } from "@pond/icons";
 import { Button, Empty } from "@pond/ui";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import type { SaveListMode } from "@/features/saves";
+import { openSources } from "@/features/sources";
 import { getAppRouter } from "@/shared/lib/app-router";
-import { openHarvester } from "@/shared/lib/open-harvester";
 import styles from "./styles.module.css";
 
 export function LibraryEmpty() {
@@ -29,12 +29,7 @@ export function LibraryEmpty() {
         <Button
           variant="primary"
           size="sm"
-          onClick={() =>
-            openHarvester({
-              section: "sources",
-              intent: { type: "new-source" },
-            })
-          }
+          onClick={() => openSources({ type: "new-source" })}
         >
           New Source
         </Button>
@@ -141,7 +136,7 @@ export function LibrarySectionEmpty({ mode }: { mode: LibrarySection }) {
               description: "Saves from the last 7 days appear here.",
             }
           : {
-              icon: <IconArrowDiagonalInFill />,
+              icon: <IconNodes3Fill />,
               title: "No saves from this source",
               description: "Saves synced from this source appear here.",
             };

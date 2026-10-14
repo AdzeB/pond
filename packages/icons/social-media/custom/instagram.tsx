@@ -31,18 +31,18 @@ export function IconBrandInstagram(props: SVGProps<SVGSVGElement>) {
         />
       </g>
       <defs>
-        <linearGradient
+        <radialGradient
           id={gradientId}
-          x1="0"
-          y1="370"
-          x2="370"
-          y2="0"
+          cx="111"
+          cy="395.9"
+          r="555"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stopColor="#FFDC80" />
-          <stop offset="0.5" stopColor="#F56040" />
-          <stop offset="1" stopColor="#833AB4" />
-        </linearGradient>
+          <stop offset="0.05" stopColor="#FDF497" />
+          <stop offset="0.45" stopColor="#FD5949" />
+          <stop offset="0.6" stopColor="#D6249F" />
+          <stop offset="0.9" stopColor="#285AEB" />
+        </radialGradient>
       </defs>
     </svg>
   );

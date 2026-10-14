@@ -199,6 +199,7 @@ defineQueries({
     path: "/Users/you/Pond/Personal.pond",
     name: "Personal",
     icon: null,
+    mark: null,
     accent: null,
   }),
   "library.recent": () => [],

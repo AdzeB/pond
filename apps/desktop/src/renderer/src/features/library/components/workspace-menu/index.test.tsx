@@ -93,8 +93,27 @@ describe("workspace menu", () => {
     await act(async () => trigger.click());
   }
 
-  it("shows a compact library menu", async () => {
+  async function openSwitchLibrary() {
     await openMenu();
+    const submenu = [...document.querySelectorAll('[role="menuitem"]')].find(
+      (entry) => entry.textContent?.includes("Switch Library"),
+    );
+    if (!(submenu instanceof HTMLElement))
+      throw new Error("Missing Switch Library submenu");
+    await act(async () => submenu.click());
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain("Library Settings"),
+    );
+  }
+
+  it("keeps library actions in the Switch Library submenu", async () => {
+    await openMenu();
+    expect(document.body.textContent).toContain("Switch Library");
+    expect(document.body.textContent).not.toContain("Create Library");
+  });
+
+  it("shows a compact library menu", async () => {
+    await openSwitchLibrary();
     const text = document.body.textContent ?? "";
     expect(host.querySelector("button img")).toBeTruthy();
     expect(
@@ -107,7 +126,7 @@ describe("workspace menu", () => {
     expect(text).toContain("Create Library");
     expect(text).toContain("Open Library");
     expect(text).toContain("Merge Library");
-    expect(text).not.toContain("Switch Library");
+    expect(text).toContain("Library Settings");
     expect(text).toContain("Settings");
     expect(text).toContain("Check for Updates");
     expect(text).toContain("Browser Extension");
@@ -124,7 +143,7 @@ describe("workspace menu", () => {
   });
 
   it("switches to a recent library", async () => {
-    await openMenu();
+    await openSwitchLibrary();
     await vi.waitFor(() => expect(document.body.textContent).toContain("Work"));
     const work = [...document.querySelectorAll('[role="menuitem"]')].find(
       (item) => item.textContent?.includes("Work"),
@@ -139,7 +158,7 @@ describe("workspace menu", () => {
   });
 
   it("creates a new library", async () => {
-    await openMenu();
+    await openSwitchLibrary();
     await vi.waitFor(() =>
       expect(document.body.textContent).toContain("Create Library"),
     );
@@ -158,7 +177,7 @@ describe("workspace menu", () => {
   });
 
   it("merges another library", async () => {
-    await openMenu();
+    await openSwitchLibrary();
     await vi.waitFor(() =>
       expect(document.body.textContent).toContain("Merge Library"),
     );

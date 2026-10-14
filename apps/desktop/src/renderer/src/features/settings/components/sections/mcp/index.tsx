@@ -5,7 +5,6 @@ import { z } from "zod";
 import { usePrefs } from "@/shared/state/prefs";
 import { HostPopover } from "./host-popover";
 import { HostLogo } from "./logo";
-import styles from "./styles.module.css";
 
 const McpSnippetSchema = z.object({
   command: z.string().min(1),
@@ -95,9 +94,6 @@ function AgentsSection({ snippet }: { snippet?: PondSnippet }) {
           <HostRow key={host.id} host={host} snippet={snippet} />
         ))}
       </Settings.List>
-      <p className={styles.note}>
-        Agents run on this Mac and read the library over stdio.
-      </p>
     </Settings.Section>
   );
 }

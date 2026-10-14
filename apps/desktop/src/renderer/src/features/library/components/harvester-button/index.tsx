@@ -1,7 +1,7 @@
 import { Button, Tooltip } from "@pond/ui";
 import { QueueSummarySchema } from "@shared/queue-contracts";
 import { useQuery } from "@tanstack/react-query";
-import { openHarvester } from "@/shared/lib/open-harvester";
+import { getAppRouter } from "@/shared/lib/app-router";
 import { HarvesterMark } from "./mark";
 import styles from "./styles.module.css";
 
@@ -22,13 +22,13 @@ export function HarvesterButton() {
   const active = running > 0;
 
   return (
-    <Tooltip label="Harvester" side="bottom">
+    <Tooltip label="Downloads" side="bottom">
       <Button
         icon={!active}
         size="sm"
         variant="ghost"
-        aria-label={active ? `Harvester, ${running} downloading` : "Harvester"}
-        onClick={() => openHarvester()}
+        aria-label={active ? `Downloads, ${running} downloading` : "Downloads"}
+        onClick={() => getAppRouter()?.history.push("/downloads")}
       >
         <HarvesterMark active={active} />
         {active ? (

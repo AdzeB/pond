@@ -58,6 +58,7 @@ interface TooltipProps {
   align?: Base.Positioner.Props["align"];
   sideOffset?: number;
   delay?: number;
+  trackCursorAxis?: Base.Root.Props["trackCursorAxis"];
 }
 
 function tooltipContent(label: ReactNode, shortcut?: ReactNode): ReactNode {
@@ -78,9 +79,10 @@ function TooltipWrapper({
   align,
   sideOffset,
   delay,
+  trackCursorAxis,
 }: TooltipProps) {
   return (
-    <Root>
+    <Root trackCursorAxis={trackCursorAxis}>
       <Trigger delay={delay} render={children} />
       <Portal>
         <Positioner side={side} align={align} sideOffset={sideOffset}>

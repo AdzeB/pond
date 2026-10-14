@@ -10,7 +10,6 @@ const KEYS = new Set([
   "End",
   "Enter",
   " ",
-  "Escape",
 ]);
 
 let installed = false;

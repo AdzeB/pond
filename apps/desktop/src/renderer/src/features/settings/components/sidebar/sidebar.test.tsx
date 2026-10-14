@@ -17,7 +17,7 @@ afterEach(async () => {
   host.remove();
 });
 
-it("reserves the header row when there is no exit action", async () => {
+it("starts with the search when there is no exit action", async () => {
   await act(async () => {
     root.render(<SettingsSidebarView activeSection="general" />);
   });
@@ -25,10 +25,7 @@ it("reserves the header row when there is no exit action", async () => {
   const navigation = host.querySelector('[aria-label="Settings"]');
   const search = host.querySelector('[aria-label="Search settings"]');
 
-  expect(navigation?.firstElementChild?.contains(search)).toBe(false);
-  expect(
-    navigation?.firstElementChild?.nextElementSibling?.contains(search),
-  ).toBe(true);
+  expect(navigation?.firstElementChild?.contains(search)).toBe(true);
   expect(host.textContent).not.toContain("Exit settings");
 });
 

@@ -6,11 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, type ReactNode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import {
-  ModelCatalogTable,
-  ModelsSection,
-  RecommendedLocalModels,
-} from "./index";
+import { ModelCatalogTable, ModelsSection } from "./index";
 
 const connectedProviders = ASSISTANT_MODELS.map((entry) => ({
   provider: entry.id,
@@ -46,197 +42,28 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it("shows explicit Ollama install commands without starting a model pull", async () => {
-  const host = document.createElement("div");
-  document.body.append(host);
-  const root = createRoot(host);
-  const copied: string[] = [];
-  const selected: string[] = [];
-  try {
-    await act(async () =>
-      root.render(
-        wrap(
-          <RecommendedLocalModels
-            providers={[
-              {
-                id: "ollama",
-                provider: "Ollama",
-                setupUrl: "https://ollama.com",
-              },
-            ]}
-            installedModels={[]}
-            selectedModelIds={{}}
-            onCopyCommand={(command) => {
-              copied.push(command);
-            }}
-            onOpenSetup={() => {
-              throw new Error("Ollama installation must copy a command");
-            }}
-            onSelect={(provider, id) => {
-              selected.push(`${provider}:${id}`);
-            }}
-          />,
-        ),
-      ),
-    );
-    expect(host.textContent).toContain("Gemma 4 E2B");
-    expect(host.textContent).toContain("ollama pull gemma4:e2b");
-    expect(host.textContent).toContain("Estimated download: 4.6 GB");
-    const copy = [...host.querySelectorAll("button")].find(
-      (button) => button.textContent === "Copy Install Command",
-    );
-    expect(copy).not.toBeUndefined();
-    await act(async () => copy?.click());
-    expect(copied).toEqual(["ollama pull gemma4:e2b"]);
-    expect(selected).toEqual([]);
-  } finally {
-    await act(async () => root.unmount());
-    host.remove();
-  }
-});
-
-it("selects installed recommendations and prefers runtime-reported size", async () => {
-  const host = document.createElement("div");
-  document.body.append(host);
-  const root = createRoot(host);
-  const selected: string[] = [];
-  try {
-    await act(async () =>
-      root.render(
-        wrap(
-          <RecommendedLocalModels
-            providers={[
-              {
-                id: "ollama",
-                provider: "Ollama",
-                setupUrl: "https://ollama.com",
-              },
-            ]}
-            installedModels={[
-              {
-                id: "gemma4:e2b",
-                name: "gemma4:e2b",
-                provider: "ollama",
-                providerName: "Ollama",
-                sizeBytes: 4_800_000_000,
-              },
-            ]}
-            selectedModelIds={{}}
-            onCopyCommand={() => {
-              throw new Error("Installed models must not show install actions");
-            }}
-            onOpenSetup={() => {
-              throw new Error("Installed models must not open setup");
-            }}
-            onSelect={(provider, id) => {
-              selected.push(`${provider}:${id}`);
-            }}
-          />,
-        ),
-      ),
-    );
-    expect(host.textContent).toContain("Installed size: 4.8 GB");
-    expect(host.textContent).not.toContain("Estimated download: 4.6 GB");
-    const select = [...host.querySelectorAll("button")].find(
-      (button) => button.textContent === "Select",
-    );
-    expect(select).not.toBeUndefined();
-    await act(async () => select?.click());
-    expect(selected).toEqual(["ollama:gemma4:e2b"]);
-  } finally {
-    await act(async () => root.unmount());
-    host.remove();
-  }
-});
-
-it("opens the existing LM Studio setup URL for unavailable recommendations", async () => {
-  const host = document.createElement("div");
-  document.body.append(host);
-  const root = createRoot(host);
-  const opened: string[] = [];
-  try {
-    await act(async () =>
-      root.render(
-        wrap(
-          <RecommendedLocalModels
-            providers={[
-              {
-                id: "lmstudio",
-                provider: "LM Studio",
-                setupUrl: "https://lmstudio.ai",
-              },
-            ]}
-            installedModels={[]}
-            selectedModelIds={{}}
-            onCopyCommand={() => {
-              throw new Error("LM Studio must use its setup URL");
-            }}
-            onOpenSetup={(url) => {
-              opened.push(url);
-            }}
-            onSelect={() => {
-              throw new Error("Unavailable models must not be selectable");
-            }}
-          />,
-        ),
-      ),
-    );
-    expect(host.textContent).toContain(
-      "Find this model in LM Studio. Estimated download: 4.6 GB.",
-    );
-    const open = [...host.querySelectorAll("button")].find(
-      (button) => button.textContent === "Open LM Studio",
-    );
-    expect(open).not.toBeUndefined();
-    await act(async () => open?.click());
-    expect(opened).toEqual(["https://lmstudio.ai"]);
-  } finally {
-    await act(async () => root.unmount());
-    host.remove();
-  }
-});
-
-it("copies Ollama commands through the desktop clipboard query", async () => {
-  const calls: Array<{ name: string; params?: { text?: string } }> = [];
+it("lists local models in the catalog without install suggestions", async () => {
   vi.stubGlobal("pond", {
-    query: async (name: string, params?: { text?: string }) => {
-      calls.push({ name, params });
+    query: async (name: string) => {
       if (name === "settings.getPrefs") return DEFAULT_PREFS;
       if (name === "agent.keys") {
         return [
-          {
-            provider: "ollama",
-            hasKey: true,
-            enabled: true,
-            masked: "local",
-          },
+          { provider: "ollama", hasKey: true, enabled: true, masked: "local" },
         ];
       }
-      if (name === "agent.listModels") return { ok: true, models: [] };
-      if (name === "clipboard.writeText") return { ok: true };
+      if (name === "agent.listModels")
+        return { ok: true, models: [{ id: "gemma4:e2b", name: "gemma4:e2b" }] };
       throw new Error(`Unexpected query: ${name}`);
     },
-    openExternal: async () => ({ ok: true }),
   });
   const host = document.createElement("div");
   document.body.append(host);
   const { root, render, client } = renderWithQuery(host, <ModelsSection />);
   try {
     await act(async () => render());
-    await vi.waitFor(() =>
-      expect(host.textContent).toContain("ollama pull gemma4:e2b"),
-    );
-    const copy = [...host.querySelectorAll("button")].find(
-      (button) => button.textContent === "Copy Install Command",
-    );
-    await act(async () => copy?.click());
-    await vi.waitFor(() =>
-      expect(calls).toContainEqual({
-        name: "clipboard.writeText",
-        params: { text: "ollama pull gemma4:e2b" },
-      }),
-    );
-    expect(calls.map((call) => call.name)).not.toContain("agent.pullModel");
+    await vi.waitFor(() => expect(host.textContent).toContain("gemma4:e2b"));
+    expect(host.textContent).not.toContain("Recommended Local Models");
+    expect(host.textContent).not.toContain("ollama pull");
   } finally {
     await act(async () => root.unmount());
     client.clear();
@@ -293,7 +120,7 @@ it("persists visibility, preserves it after rejection, and restores all models",
     expect(host.textContent).toContain("$2/M");
     expect(host.textContent).toContain("$8/M");
     expect(
-      [...host.querySelectorAll("thead th")].map(
+      [...host.querySelectorAll('[role="columnheader"]')].map(
         (header) => header.textContent,
       ),
     ).toEqual(["Model", "Input", "Output", "Context", ""]);
@@ -302,7 +129,9 @@ it("persists visibility, preserves it after rejection, and restores all models",
         header.getAttribute("aria-label"),
       ),
     ).toEqual(["OpenAI"]);
-    expect(host.querySelector("th[aria-label='Show']")).not.toBeNull();
+    expect(
+      host.querySelector('[role="grid"][aria-label="OpenAI Models"]'),
+    ).not.toBeNull();
     expect(
       host.querySelector('[aria-label="Input $2 per million tokens"]'),
     ).not.toBeNull();
@@ -491,7 +320,7 @@ it("tells you to connect a provider when the catalog is empty", async () => {
     expect(host.textContent).toContain(
       "No models found. Connect a provider first.",
     );
-    expect(host.textContent).toContain("0 of 0 models shown");
+    expect(host.textContent).not.toContain("models shown");
   } finally {
     await act(async () => root.unmount());
     host.remove();
@@ -601,13 +430,9 @@ it("shows ready providers while another provider is still loading", async () => 
   try {
     await act(async () => render());
     await vi.waitFor(() => expect(host.textContent).toContain("GPT-4.1"));
-    expect(
-      host.querySelector('button[aria-label="Loading models"]'),
-    ).not.toBeNull();
     await act(async () => slow.resolve({ ok: true, models: [] }));
-    await vi.waitFor(() =>
-      expect(host.querySelector('button[aria-label="Refresh"]')).not.toBeNull(),
-    );
+    expect(host.textContent).toContain("GPT-4.1");
+    expect(host.querySelector('button[aria-label="Refresh"]')).toBeNull();
   } finally {
     slow.resolve({ ok: true, models: [] });
     await act(async () => root.unmount());
@@ -683,12 +508,8 @@ it("keeps cached models across page visits and refreshes stale data in place", a
     expect(calls).toBeGreaterThan(beforeInvalidation);
     expect(host.textContent).toContain("GPT-4.1");
     offline = true;
-    const refreshButton = host.querySelector<HTMLButtonElement>(
-      'button[aria-label="Refresh"]',
-    );
-    if (!refreshButton) throw new Error("Missing refresh button");
     await act(async () => {
-      refreshButton.click();
+      await client.invalidateQueries({ queryKey: ["all-provider-models"] });
       await vi.advanceTimersByTimeAsync(1);
     });
     expect(host.textContent).toContain("GPT-4.1");

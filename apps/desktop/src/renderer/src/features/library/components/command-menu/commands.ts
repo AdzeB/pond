@@ -1,6 +1,5 @@
 import {
   IconAlbum2,
-  IconArrowDiagonalIn,
   IconBookmark,
   IconBookmarkSlash,
   IconChatBubble,
@@ -12,6 +11,7 @@ import {
   IconFolderBan,
   IconFolderOpen,
   IconGear3,
+  IconNodes3,
   IconTrashXmark,
   IconVersions,
   IconWindowDownload,
@@ -26,9 +26,8 @@ import {
 } from "@/features/library/components/new-menu/actions";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { resetFilters } from "@/features/library/state/view-store";
-import { pickWatchedFolder } from "@/features/sources";
+import { openSources, pickWatchedFolder } from "@/features/sources";
 import { getAppRouter } from "@/shared/lib/app-router";
-import { openHarvester } from "@/shared/lib/open-harvester";
 import { openSettings } from "@/shared/lib/open-settings";
 import type { CommandSpec } from "./types";
 
@@ -68,14 +67,10 @@ export const COMMANDS: readonly CommandSpec[] = [
     id: "new-source",
     group: "Create",
     label: "New Source",
-    icon: IconArrowDiagonalIn,
+    icon: IconNodes3,
     keywords: "connect watch folder add account",
     shortcut: "sources.new",
-    run: () =>
-      openHarvester({
-        section: "sources",
-        intent: { type: "new-source" },
-      }),
+    run: () => openSources({ type: "new-source" }),
   },
   {
     id: "new-watch",
@@ -83,11 +78,7 @@ export const COMMANDS: readonly CommandSpec[] = [
     label: "New Watch",
     icon: IconEye,
     keywords: "source public account follow import watch",
-    run: () =>
-      openHarvester({
-        section: "sources",
-        intent: { type: "new-source" },
-      }),
+    run: () => openSources({ type: "new-source" }),
   },
   {
     id: "watched-folder",
@@ -176,10 +167,10 @@ export const COMMANDS: readonly CommandSpec[] = [
     group: "Navigate",
     label: "Sources",
     detail: "Connected accounts and watches",
-    icon: IconArrowDiagonalIn,
+    icon: IconNodes3,
     keywords: "accounts connect watches",
     shortcut: "nav.sources",
-    run: () => openHarvester({ section: "sources" }),
+    run: () => navigateTo("/sources"),
   },
   {
     id: "downloads",
@@ -189,7 +180,7 @@ export const COMMANDS: readonly CommandSpec[] = [
     icon: IconWindowDownload,
     keywords: "transfers queue",
     shortcut: "nav.downloads",
-    run: () => openHarvester({ section: "downloads" }),
+    run: () => navigateTo("/downloads"),
   },
   {
     id: "tags",

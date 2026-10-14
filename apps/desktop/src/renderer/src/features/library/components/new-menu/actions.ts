@@ -14,10 +14,10 @@ import {
   selectOnlySave,
 } from "@/features/saves";
 import { selection } from "@/features/saves/navigation";
+import { openSources } from "@/features/sources";
 import { tagCreation } from "@/features/tags";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { errorCopy } from "@/shared/lib/error-copy";
-import { openHarvester } from "@/shared/lib/open-harvester";
 import { notify, updateNotification } from "@/shared/lib/toast";
 import { getPrefsSnapshot } from "@/shared/state/prefs";
 
@@ -548,12 +548,7 @@ export const {
     tagCreation.request(kind);
   },
   openSavedViewEditor: (kind) => savedViews.openEditor({ kind }),
-  openSource: (kind, source) => {
-    openHarvester({
-      section: "sources",
-      intent: { type: kind, source },
-    });
-  },
+  openSource: (kind, source) => openSources({ type: kind, source }),
   selectSave: selectOnlySave,
   currentFolderId: () => {
     const nav = libraryChrome.getState().nav;

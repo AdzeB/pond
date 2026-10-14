@@ -36,7 +36,7 @@ export interface FolderMenuActions {
   creating: boolean;
   onNewFolder: () => void;
   onNewSubfolder: () => void;
-  onMove: () => void;
+  moveItems: MenuItemSpec[];
   onRename: () => void;
   onBatchRename?: () => void;
   onAutoTag: () => void;
@@ -71,9 +71,10 @@ export function buildFolderMenuItems(a: FolderMenuActions): MenuItemSpec[] {
       onClick: a.onNewSubfolder,
     },
     {
-      label: "Move Folder",
+      type: "submenu",
+      label: "Move To",
       icon: <IconFolderSend />,
-      onClick: a.onMove,
+      items: a.moveItems,
     },
     { type: "separator" },
     {

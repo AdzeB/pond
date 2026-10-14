@@ -4,10 +4,21 @@ import styles from "./styles.module.css";
 
 export interface ToggleProps extends Base.Props {
   size?: "sm" | "md";
+  variant?: "ghost" | "outline";
 }
 
-export function Toggle({ className, size = "md", ...props }: ToggleProps) {
+export function Toggle({
+  className,
+  size = "md",
+  variant = "ghost",
+  ...props
+}: ToggleProps) {
   return (
-    <Base data-size={size} className={cn(styles.root, className)} {...props} />
+    <Base
+      data-size={size}
+      data-variant={variant}
+      className={cn(styles.root, className)}
+      {...props}
+    />
   );
 }

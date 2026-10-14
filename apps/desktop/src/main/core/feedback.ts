@@ -23,7 +23,7 @@ interface FeedbackServicePorts {
   getPreferences(): Promise<{
     locale: Awaited<ReturnType<typeof getPrefs>>["localization"]["locale"];
     masterSound: boolean;
-    sounds: Record<FeedbackEvent, boolean>;
+    sounds: Partial<Record<FeedbackEvent, boolean>>;
     notifications: Record<FeedbackEvent, boolean>;
   }>;
   notificationsSupported(): boolean;

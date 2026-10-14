@@ -1,6 +1,6 @@
 import { Button } from "@pond/ui";
 import type { DownloadActivity } from "@shared/download-activity";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { useClientHeight } from "@/shared/hooks/use-client-height";
 import { type DownloadRow, mergeDownloadRows } from "../../../lib/status-feed";
 import { DownloadTable } from "../table";
@@ -13,7 +13,6 @@ export interface DownloadsViewProps {
   completed: DownloadRow[];
   activities: readonly DownloadActivity[];
   paused: boolean;
-  onInspect: (row: DownloadRow) => void;
   historyLoading: boolean;
   historyError: boolean;
   hasMore: boolean;
@@ -21,6 +20,31 @@ export interface DownloadsViewProps {
   onLoadMore: () => void;
   onRetryHistory: () => void;
   empty?: ReactNode;
+}
+
+function LoadMoreSentinel({
+  loading,
+  onLoadMore,
+}: {
+  loading: boolean;
+  onLoadMore: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const load = useRef(onLoadMore);
+  load.current = onLoadMore;
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || loading || !globalThis.IntersectionObserver) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) load.current();
+      },
+      { rootMargin: "240px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [loading]);
+  return <div ref={ref} className={styles.sentinel} aria-hidden="true" />;
 }
 
 export function DownloadsView(props: DownloadsViewProps) {
@@ -38,16 +62,10 @@ export function DownloadsView(props: DownloadsViewProps) {
       </Button>
     </div>
   ) : props.hasMore ? (
-    <div className={styles.more}>
-      <Button
-        size="sm"
-        variant="ghost"
-        disabled={props.loadingMore}
-        onClick={props.onLoadMore}
-      >
-        {props.loadingMore ? "Loading" : "Load More"}
-      </Button>
-    </div>
+    <LoadMoreSentinel
+      loading={props.loadingMore}
+      onLoadMore={props.onLoadMore}
+    />
   ) : props.historyLoading && rows.length === 0 ? (
     <p className={styles.message} role="status">
       Loading download history
@@ -63,7 +81,6 @@ export function DownloadsView(props: DownloadsViewProps) {
           rows={tableRows}
           paused={props.paused}
           activities={props.activities}
-          onInspect={props.onInspect}
           height={tableMeasured ? height - 40 : undefined}
           extra={extra}
         />

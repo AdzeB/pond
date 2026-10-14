@@ -42,8 +42,7 @@ export function SemanticChip() {
         ) : (
           <IndexOff
             title="Semantic Search is off"
-            section="search"
-            hash="setting-search-semanticSearch"
+            hash="setting-processing-semanticSearch"
           />
         )}
       </FilterPopup>
@@ -110,7 +109,6 @@ export function VisualChip() {
         ) : (
           <IndexOff
             title="Visual Similarity is off"
-            section="processing"
             hash="setting-processing-enableClip"
           />
         )}
@@ -193,24 +191,16 @@ function VisualEditor({ probe }: { probe: VisualProbe | null }) {
   );
 }
 
-function IndexOff({
-  title,
-  section,
-  hash,
-}: {
-  title: string;
-  section: "search" | "processing";
-  hash: string;
-}) {
+function IndexOff({ title, hash }: { title: string; hash: string }) {
   return (
     <div className={styles.drop} data-unavailable>
       <p className={styles.hint}>{title}</p>
       <Button
         size="sm"
         variant="secondary"
-        onClick={() => openSettings(section, hash)}
+        onClick={() => openSettings("processing", hash)}
       >
-        Open {section === "search" ? "Search" : "Processing"} Settings
+        Open Processing Settings
       </Button>
     </div>
   );

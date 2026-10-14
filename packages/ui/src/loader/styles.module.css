@@ -42,9 +42,50 @@
   }
 }
 
+.spinner {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  animation: loader-spin calc(360s / 210) linear infinite;
+}
+
+.track {
+  opacity: 0.16;
+}
+
+.arc {
+  stroke-dasharray: 30 100;
+  animation: loader-breathe 1.3s ease-in-out infinite alternate;
+}
+
+@keyframes loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes loader-breathe {
+  from {
+    stroke-dasharray: 30 100;
+  }
+
+  to {
+    stroke-dasharray: 51 100;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dots > span {
     opacity: 0.55;
     animation: none;
   }
+
+  .spinner,
+  .arc {
+    animation: none;
+  }
+}
+
+:global(html[data-reduce-motion="true"]) :is(.spinner, .arc) {
+  animation: none;
 }

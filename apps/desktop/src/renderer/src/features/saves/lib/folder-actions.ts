@@ -54,6 +54,31 @@ export async function assignSavesToFolder(
   }
 }
 
+export async function removeSavesFromFolder(
+  ids: readonly string[],
+  folder: SaveFolderReference,
+): Promise<void> {
+  if (ids.length === 0) return;
+  try {
+    await window.pond.query("folders.assign", {
+      saveIds: [...ids],
+      addIds: [],
+      removeIds: [folder.id],
+    });
+    await saveLibraryBridge.refreshFolders();
+    notifyUndoableFolderChange(
+      "remove-saves-from-folder",
+      `Removed ${saveCount(ids.length)} from "${folder.name}"`,
+    );
+  } catch (error) {
+    notify({
+      id: "remove-saves-from-folder",
+      title: `Couldn't remove ${ids.length === 1 ? "Save" : "Saves"} from folder`,
+      description: errorCopy(error, "Try again."),
+    });
+  }
+}
+
 export async function addSavesToLastUsedFolder(
   ids: readonly string[],
 ): Promise<void> {

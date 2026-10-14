@@ -24,6 +24,7 @@ import {
   exportFolderPackage,
 } from "@/features/library/components/folder-context-menu";
 import type { FolderTool } from "@/features/library/components/folder-tools";
+import { buildMoveFolderItems } from "@/features/library/lib/move-folders-menu";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import { folders } from "@/features/library/state/folders";
 import type { LibraryNav } from "@/features/library/state/library-chrome";
@@ -123,8 +124,7 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
     creating: input.creating,
     onNewFolder: () => input.onCreateFolder(folder.parentId ?? undefined),
     onNewSubfolder: () => input.onCreateFolder(folder.id),
-    onMove: () =>
-      input.onOpenTool({ kind: "move", id: folder.id, name: folder.name }),
+    moveItems: buildMoveFolderItems([folder.id]),
     onRename: () => input.onStartEditing(folder.id),
     onBatchRename: () => openOrganizationRenameDialog("folders", folder.id),
     onAutoTag: () =>

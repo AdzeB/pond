@@ -73,13 +73,14 @@ function RowImpl<T extends RowData>({
       />,
     );
   }
-  for (const col of api.columns) {
+  for (const [index, col] of api.columns.entries()) {
     cells.push(
       <div
         key={col.id}
         role="gridcell"
         className={styles.cell}
         data-align={col.align ?? undefined}
+        data-pinned={index === 0 || undefined}
       >
         {col.cell(data, cellCtx)}
       </div>,

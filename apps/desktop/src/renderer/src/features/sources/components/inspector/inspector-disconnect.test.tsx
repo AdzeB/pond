@@ -84,19 +84,26 @@ it("disconnects from a confirm dialog over connection details", async () => {
     throw new Error(name);
   });
   vi.stubGlobal("pond", { query });
-  sourceDetail.openAccount(account.id);
   await act(async () => {
     root.render(
       <>
         <Dialog.Host />
-        <SourceInspector />
+        <Dialog.Root open>
+          <Dialog.Portal>
+            <Dialog.Popup>
+              <SourceInspector kind="account" id={account.id} />
+            </Dialog.Popup>
+          </Dialog.Portal>
+        </Dialog.Root>
       </>,
     );
   });
   await vi.waitFor(() => {
-    expect(host.querySelector('[aria-label="Source Actions"]')).not.toBeNull();
+    expect(
+      document.querySelector('[aria-label="Source Actions"]'),
+    ).not.toBeNull();
   });
-  const trigger = host.querySelector('[aria-label="Source Actions"]');
+  const trigger = document.querySelector('[aria-label="Source Actions"]');
   if (!(trigger instanceof HTMLElement))
     throw new Error("Missing Source Actions");
   await act(async () => {

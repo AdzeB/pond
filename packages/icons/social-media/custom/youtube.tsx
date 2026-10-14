@@ -11,11 +11,10 @@ export function IconBrandYoutube(props: SVGProps<SVGSVGElement>) {
       {...props}
     >
       <title>Youtube</title>
-      <rect width="370" height="370" fill="#FF0000" />
-      {/** Centered on the triangle's centroid, not its bounding box, so the play mark reads centered. */}
-      <g transform="translate(-62.74 -64.08) scale(1.3464)">
-        <path d="M142 108.5v153L268 185 142 108.5z" fill="#fff" />
-      </g>
+      <rect width="370" height="370" fill="#fff" />
+      <rect x="57" y="95" width="256" height="180" rx="52" fill="#FF0000" />
+      {/** Shifted right of the button's center so the triangle's centroid reads centered. */}
+      <path d="M160 140v90l76-45z" fill="#fff" />
     </svg>
   );
 }

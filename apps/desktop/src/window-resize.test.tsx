@@ -139,7 +139,7 @@ describe("sidebar resize handle", () => {
     expect(collapsed).not.toHaveBeenCalled();
   });
 
-  it("closes at the minimum before release and reopens at the saved width", async () => {
+  it("closes at the minimum before release and reopens at the minimum width", async () => {
     const handle = element('[data-slot="handle"]');
     await pointer(handle, "pointerdown", 300);
     await pointer(handle, "pointermove", 221);
@@ -148,11 +148,7 @@ describe("sidebar resize handle", () => {
     expect(element('[data-slot="window"]').hasAttribute("data-left-open")).toBe(
       false,
     );
-    expect(
-      element('[data-slot="window"]').style.getPropertyValue(
-        "--window-left-track",
-      ),
-    ).toBe("300px");
+    expect(resized).toHaveBeenCalledWith(220);
     expect(document.body.style.cursor).toBe("");
     expect(document.body.style.userSelect).toBe("");
     expect(element('[data-slot="window"]').hasAttribute("data-resizing")).toBe(
@@ -161,7 +157,7 @@ describe("sidebar resize handle", () => {
     await pointer(handle, "pointermove", 100);
     await pointer(handle, "pointerup", 100);
     expect(collapsed).toHaveBeenCalledTimes(1);
-    expect(resized).not.toHaveBeenCalled();
+    expect(resized).toHaveBeenCalledTimes(1);
     await act(() => element("button").click());
     expect(element('[data-slot="window"]').hasAttribute("data-left-open")).toBe(
       true,
@@ -170,7 +166,10 @@ describe("sidebar resize handle", () => {
       element('[data-slot="window"]').style.getPropertyValue(
         "--window-left-track",
       ),
-    ).toBe("300px");
+    ).toBe("220px");
+    expect(element('[data-slot="handle"]').getAttribute("aria-valuenow")).toBe(
+      "220",
+    );
   });
 
   it.each(["pointercancel", "lostpointercapture"])(
@@ -200,5 +199,11 @@ describe("sidebar resize handle", () => {
     await pointer(handle, "pointerup", 300);
     expect(collapsed).toHaveBeenCalledTimes(1);
     expect(resized).not.toHaveBeenCalled();
+    await act(() => element("button").click());
+    expect(
+      element('[data-slot="window"]').style.getPropertyValue(
+        "--window-left-track",
+      ),
+    ).toBe("300px");
   });
 });

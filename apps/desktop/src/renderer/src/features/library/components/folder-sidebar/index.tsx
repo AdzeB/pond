@@ -34,6 +34,7 @@ export function FolderSidebar() {
   const folderRows = useFolders();
   const libraryPage = ![
     "/assistant",
+    "/downloads",
     "/sources",
     "/tags",
     "/untagged",

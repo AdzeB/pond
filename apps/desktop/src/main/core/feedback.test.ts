@@ -8,7 +8,6 @@ function preferences() {
     sounds: {
       saveDeletion: true,
       folderDeletion: true,
-      extensionCapture: true,
       autoImport: true,
     },
     notifications: {
@@ -34,7 +33,7 @@ describe("feedback service", () => {
     await service.emit("saveDeletion");
     await service.emit("extensionCapture");
 
-    expect(beep).toHaveBeenCalledTimes(2);
+    expect(beep).toHaveBeenCalledOnce();
     expect(showNotification).toHaveBeenCalledOnce();
     expect(showNotification).toHaveBeenCalledWith("Saved to Pond");
   });

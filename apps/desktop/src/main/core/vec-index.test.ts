@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { embeddingDimensions } from "../../shared/embeddings";
 import {
   backfillVecBatch,
   ensureVecTables,
@@ -82,6 +83,34 @@ describe("vec-index knn", () => {
     const result = backfillVecBatch(db);
     expect(result.processed).toBe(1);
     expect(knnVec(db, "text", [1, 0, 0, 0], 1)[0]?.id).toBe("cat");
+    db.close();
+  });
+
+  it("keeps embedding-sized tables when reopened with defaults", async () => {
+    let Database: typeof import("better-sqlite3");
+    try {
+      Database = (await import("better-sqlite3")).default;
+    } catch (error) {
+      if (process.versions.electron) throw error;
+      return;
+    }
+    let db: InstanceType<typeof Database>;
+    try {
+      db = new Database(":memory:");
+    } catch (error) {
+      if (process.versions.electron) throw error;
+      return;
+    }
+    expect(loadSqliteVec(db)).toBe(true);
+    const vector = Array.from({ length: embeddingDimensions() }, (_, index) =>
+      index === 0 ? 1 : 0,
+    );
+    ensureVecTables(db);
+    upsertVec(db, "text", "text-save", vector);
+    upsertVec(db, "clip", "media-save", vector);
+    ensureVecTables(db);
+    expect(knnVec(db, "text", vector, 1)[0]?.id).toBe("text-save");
+    expect(knnVec(db, "clip", vector, 1)[0]?.id).toBe("media-save");
     db.close();
   });
 });

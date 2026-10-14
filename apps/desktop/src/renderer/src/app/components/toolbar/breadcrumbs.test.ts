@@ -86,7 +86,6 @@ describe("library breadcrumb paths", () => {
     ["/settings/library", "Library"],
     ["/settings/storage", "Storage"],
     ["/settings/backups", "Backups"],
-    ["/settings/search", "Search"],
     ["/settings/processing", "Processing"],
     ["/settings/harvesting", "Harvesting"],
   ] as const)("labels the focused section at %s", (pathname, label) => {

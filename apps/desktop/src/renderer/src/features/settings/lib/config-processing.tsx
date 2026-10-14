@@ -58,9 +58,23 @@ export const processingSection = defineSection("ai", {
     "sensitive",
     "nsfw",
     "enrichment",
+    "search",
+    "semantic",
   ],
   groups: [
     { title: "Processing Status", render: () => <ProcessingStatus /> },
+    {
+      title: "Search",
+      items: [
+        {
+          control: "switch",
+          key: "semanticSearch",
+          title: "Semantic Search",
+          description: "Ranks Saves by meaning, including unlabeled photos.",
+          keywords: ["embeddings", "meaning", "vector", "similarity"],
+        },
+      ],
+    },
     {
       title: "Image Understanding",
       items: [

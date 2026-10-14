@@ -35,7 +35,6 @@ import { ErrorScreen } from "./components/error-screen";
 import { Onboarding } from "./components/onboarding";
 import { AgentLibraryBridge } from "./effects/agent-library-bridge";
 import { MenuRecentsBridge } from "./effects/menu-recents-bridge";
-import { SettingsProcessingBridge } from "./effects/settings-processing-bridge";
 import "./effects/save-library-bridge";
 
 const DuplicateReviewHost = lazy(() =>
@@ -185,7 +184,6 @@ function LibraryApp() {
               <SyncStatusBridge />
               <ExtensionCaptureToast />
               <EnrichmentSweep />
-              <SettingsProcessingBridge />
               <BootScreen />
               <Onboarding />
               <ErrorBoundary>

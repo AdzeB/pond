@@ -9,8 +9,6 @@ import { RightPaneView } from "./";
 interface PaneState {
   pane: "agent" | "inspector" | null;
   saveId: string | null;
-  inspectorMode: "save" | "download" | "source";
-  sourceId: string | null;
   reduceMotion: string;
   agentMounts: number;
   agentUnmounts: number;
@@ -18,8 +16,6 @@ interface PaneState {
 const state: PaneState = {
   pane: "agent",
   saveId: null,
-  inspectorMode: "save",
-  sourceId: null,
   reduceMotion: "never",
   agentMounts: 0,
   agentUnmounts: 0,
@@ -36,25 +32,15 @@ function AgentContent() {
 function InspectorContent({ saveId }: { saveId: string }) {
   return <div>Details {saveId}</div>;
 }
-function DownloadInspectorContent({ saveId }: { saveId: string }) {
-  return <div>Download activity {saveId}</div>;
-}
-function SourceInspectorContent() {
-  return <div>Connection details</div>;
-}
 function RightPane() {
   return (
     <RightPaneView
       pane={state.pane}
       saveId={state.saveId}
-      inspectorMode={state.inspectorMode}
-      sourceId={state.sourceId}
       reduceMotion={state.reduceMotion === "always"}
       assistantPage={false}
       AgentContent={AgentContent}
       InspectorContent={InspectorContent}
-      DownloadInspectorContent={DownloadInspectorContent}
-      SourceInspectorContent={SourceInspectorContent}
     />
   );
 }
@@ -66,8 +52,6 @@ describe("sliding right panes", () => {
   beforeEach(() => {
     state.pane = "agent";
     state.saveId = null;
-    state.inspectorMode = "save";
-    state.sourceId = null;
     state.reduceMotion = "never";
     state.agentMounts = 0;
     state.agentUnmounts = 0;
@@ -96,44 +80,6 @@ describe("sliding right panes", () => {
     const agent = container.querySelector('[data-pane="agent"]');
     expect(agent?.hasAttribute("data-active")).toBe(true);
     expect(agent?.hasAttribute("inert")).toBe(false);
-  });
-
-  it("uses the existing Details slot for downloads and restores save details", async () => {
-    state.pane = "inspector";
-    state.saveId = "first";
-    state.inspectorMode = "download";
-    await act(() => root.render(<RightPane />));
-    expect(container.textContent).toContain("Download activity first");
-    expect(container.querySelectorAll('[data-pane="inspector"]')).toHaveLength(
-      1,
-    );
-    state.inspectorMode = "save";
-    await act(() => root.render(<RightPane />));
-    expect(container.textContent).toContain("Details first");
-    expect(container.textContent).not.toContain("Download activity");
-  });
-
-  it("uses the Details slot for connection details", async () => {
-    state.pane = "inspector";
-    state.inspectorMode = "source";
-    state.sourceId = "acc-1";
-    await act(() => root.render(<RightPane />));
-    expect(container.textContent).toContain("Connection details");
-    expect(container.querySelectorAll('[data-pane="inspector"]')).toHaveLength(
-      1,
-    );
-  });
-
-  it("retains download details during the outgoing pane transition", async () => {
-    state.pane = "inspector";
-    state.saveId = "first";
-    state.inspectorMode = "download";
-    await act(() => root.render(<RightPane />));
-    state.saveId = null;
-    state.inspectorMode = "save";
-    state.pane = "agent";
-    await act(() => root.render(<RightPane />));
-    expect(container.textContent).toContain("Download activity first");
   });
 
   it("slides in the new card while the outgoing card remains painted and inert", async () => {

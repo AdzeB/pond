@@ -35,10 +35,7 @@ beside the supplied single- and multiple-selection references. It was reviewed
 in light and dark themes at 280, 340 and 560 pixel panel widths. This confirms
 layout, not Eagle's runtime behavior.
 
-`scripts/smoke-settings-window.cjs` exercises real Electron windows, singleton
-navigation, legacy section aliases, provider pages, scoped queries, preference
-broadcasts, close behavior and Library activation. `scripts/smoke-auxiliary-windows.cjs`
-exercises multiple image/video windows, playback, seeking, volume, fullscreen,
+`scripts/smoke-auxiliary-windows.cjs` exercises multiple image/video windows, playback, seeking, volume, fullscreen,
 Keep on Top, target changes, missing media and live appearance updates.
 
 `scripts/smoke-screenshot-window.cjs` uses real Electron windows, IPC and an

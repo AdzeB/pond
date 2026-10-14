@@ -8,20 +8,6 @@
   --activity-color: var(--ds-green-11);
 }
 
-.open {
-  --ds-focus-offset: 2px;
-  display: flex;
-  align-items: center;
-  width: 100%;
-  padding: 0;
-  color: inherit;
-  text-align: left;
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: none;
-  border: 0;
-  border-radius: var(--ds-radius-sm);
-}
-
 .lead {
   display: flex;
   align-items: center;

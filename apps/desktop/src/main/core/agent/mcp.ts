@@ -98,7 +98,7 @@ export async function startPondMcp(): Promise<void> {
     "search_library",
     {
       description:
-        "Search saves in the local Pond library. Supports visual probes via saveId or a CLIP vector.",
+        "Search saves in the local Pond library. Supports media probes via saveId or a media embedding vector.",
       inputSchema: searchLibraryInput,
     },
     withAccess("search", async (args) =>

@@ -4,9 +4,9 @@ import {
   IconArrowUpRight,
   IconCopy,
   IconCopyId,
-  IconDots,
   IconGrid,
   IconLink2,
+  IconNotepad,
   IconTableDownload,
   IconTrash,
 } from "@pond/icons";
@@ -239,7 +239,7 @@ function fetchItems(target: SourceMenuTarget): MenuItemSpec[] {
       },
       {
         label: "Fetch Save Details",
-        icon: <IconDots />,
+        icon: <IconNotepad />,
         disabled: !target.model.connected,
         onClick: () =>
           void window.pond.refreshBackfillStart({ source: target.source }),

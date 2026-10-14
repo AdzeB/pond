@@ -8,6 +8,7 @@ import { isVideoFile } from "@shared/media-index";
 import {
   isAuxiliaryKind,
   isOriginalImageKind,
+  isPostRenderKind,
   isTextCardThumbnailPath,
   isThumbnailKind,
   THUMBNAIL_DARK_KIND,
@@ -33,17 +34,6 @@ import { getPrefsSnapshot } from "@/shared/state/prefs";
 
 const TWEET_SCREENSHOT_LIGHT_KIND = "tweet_screenshot_light";
 const TWEET_SCREENSHOT_DARK_KIND = "tweet_screenshot_dark";
-
-const TWEET_SCREENSHOT_KINDS: ReadonlySet<string> = new Set([
-  TWEET_SCREENSHOT_LIGHT_KIND,
-  TWEET_SCREENSHOT_DARK_KIND,
-]);
-
-const QUOTE_SCREENSHOT_KIND = /^tweet_screenshot_quote(\d+)_(light|dark)$/;
-
-function isQuoteScreenshotKind(kind: string): boolean {
-  return QUOTE_SCREENSHOT_KIND.test(kind);
-}
 
 export interface MediaUnit {
   key: string;
@@ -80,16 +70,13 @@ export function buildMediaUnits(
     (f) =>
       !isAuxiliaryKind(f.kind) &&
       !isArchiveFile(f) &&
-      !TWEET_SCREENSHOT_KINDS.has(f.kind) &&
-      !isQuoteScreenshotKind(f.kind),
+      !isPostRenderKind(f.kind),
   );
-
-  const quoteUnits = buildQuoteScreenshotUnits(save, opts.theme);
 
   const videos = files.filter(isRenderableVideoFile);
   const images = files.filter(isImageFile);
 
-  if (videos.length === 1 && images.length <= 1 && quoteUnits.length === 0) {
+  if (videos.length === 1 && images.length <= 1) {
     const video = videos[0];
     if (!video) return [];
     const poster = posters[0] ?? images[0];
@@ -133,7 +120,6 @@ export function buildMediaUnits(
       units.push(unit);
     }
   }
-  units.push(...quoteUnits);
   if (units.length > 0) return units;
 
   const screenshot = pickTweetScreenshot(save, opts.theme);
@@ -144,46 +130,9 @@ export function buildMediaUnits(
         url: buildPondUrl(save.id, screenshot),
         isVideo: false,
       },
-      ...quoteUnits,
     ];
   }
 
-  return units;
-}
-
-function buildQuoteScreenshotUnits(
-  save: Save,
-  theme: ResolvedTheme | undefined,
-): MediaUnit[] {
-  if (save.source !== "twitter" && save.source !== "threads") return [];
-  const files = save.files ?? [];
-  const resolved = theme ?? resolveCurrentTheme();
-
-  const byDepth = new Map<number, { light?: SaveFile; dark?: SaveFile }>();
-  for (const f of files) {
-    const m = QUOTE_SCREENSHOT_KIND.exec(f.kind);
-    if (!m) continue;
-    const depth = Number.parseInt(m[1] ?? "", 10);
-    if (!Number.isFinite(depth)) continue;
-    const slot = byDepth.get(depth) ?? {};
-    if (m[2] === "light") slot.light = f;
-    else slot.dark = f;
-    byDepth.set(depth, slot);
-  }
-
-  const units: MediaUnit[] = [];
-  for (const depth of Array.from(byDepth.keys()).sort((a, b) => a - b)) {
-    const slot = byDepth.get(depth);
-    if (!slot) continue;
-    const preferred = resolved === "light" ? slot.light : slot.dark;
-    const file = preferred ?? slot.light ?? slot.dark;
-    if (!file) continue;
-    units.push({
-      key: file.path,
-      url: buildPondUrl(save.id, file),
-      isVideo: false,
-    });
-  }
   return units;
 }
 
@@ -275,8 +224,7 @@ function isAuxiliaryFile(file: SaveFile): boolean {
   return (
     isAuxiliaryKind(file.kind) ||
     isArchiveFile(file) ||
-    TWEET_SCREENSHOT_KINDS.has(file.kind) ||
-    isQuoteScreenshotKind(file.kind)
+    isPostRenderKind(file.kind)
   );
 }
 

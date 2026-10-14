@@ -108,14 +108,14 @@ export function SettingsSidebarView({
       role="navigation"
       aria-label="Settings"
     >
-      <Sidebar.Header className={styles.header}>
-        {onExit ? (
+      {onExit ? (
+        <Sidebar.Header className={styles.header}>
           <Button variant="ghost" size="sm" onClick={onExit}>
             <IconArrowLeft aria-hidden />
             Exit settings
           </Button>
-        ) : null}
-      </Sidebar.Header>
+        </Sidebar.Header>
+      ) : null}
       <div className={styles.search}>
         <Sidebar.Search
           aria-label="Search settings"

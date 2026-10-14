@@ -41,8 +41,6 @@
 }
 
 .grid {
-  --data-table-header-height: 40px;
-  --data-table-header-weight: 400;
   width: 100%;
   min-width: 0;
 }

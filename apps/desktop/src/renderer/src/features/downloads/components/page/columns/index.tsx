@@ -105,17 +105,11 @@ function StatusGlyph({ status }: { status: DownloadTableStatus }) {
 function NameCell({ row }: { row: DownloadViewRow }) {
   const title = row.name.trim() || row.url.trim() || "Untitled save";
   return (
-    <button
-      type="button"
-      className={styles.open}
-      aria-label={`Inspect ${title}`}
-    >
-      <span className={styles.lead}>
-        <span className={styles.name} title={title}>
-          {title}
-        </span>
+    <span className={styles.lead}>
+      <span className={styles.name} title={title}>
+        {title}
       </span>
-    </button>
+    </span>
   );
 }
 

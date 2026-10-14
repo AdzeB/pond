@@ -1,10 +1,11 @@
 import type { Folder } from "@pond/schema/db";
-import { Button } from "@pond/ui";
+import { Button, Menu } from "@pond/ui";
 import type { FolderSummary } from "@shared/folder-contracts";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { FolderCustomizeDialog } from "@/features/library/components/folder-customize-dialog";
 import { useLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
 import { folderCoverUrl } from "@/features/library/lib/folder-cover";
+import { buildMoveFolderItems } from "@/features/library/lib/move-folders-menu";
 import {
   enterFolder,
   enterFolders,
@@ -13,7 +14,10 @@ import { saveFolderPresentation } from "@/features/library/state/folder-presenta
 import { folders, useFolders } from "@/features/library/state/folders";
 import { Card, useDisplayPrefs, useItemInfo } from "@/features/saves";
 import { ensureSaves, useSave } from "@/features/saves/pool";
-import { SpecContextMenu } from "@/shared/components/spec-context-menu";
+import {
+  SpecContextMenu,
+  SpecMenu,
+} from "@/shared/components/spec-context-menu";
 import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 import {
   FOLDER_MENU_ICONS,
@@ -24,7 +28,6 @@ import {
 import { usePrefs } from "@/shared/state/prefs";
 import { useOrganizationTree } from "../../hooks/use-organization-tree";
 import { openOrganizationRenameDialog } from "../../state/organization-rename-dialog";
-import { type FolderTool, FolderToolsDialog } from "../folder-tools";
 import styles from "./styles.module.css";
 
 function countLabel(count: number, singular: string, plural: string): string {
@@ -243,7 +246,6 @@ export function FolderBrowser({
     () => folders.filter((folder) => folder.parentId === parentId),
     [folders, parentId],
   );
-  const [folderTool, setFolderTool] = useState<FolderTool | null>(null);
   const organization = useOrganizationTree(children, () => {});
   const [summaries, setSummaries] = useState<FolderSummary[]>([]);
 
@@ -295,12 +297,6 @@ export function FolderBrowser({
 
   return (
     <div className={styles.root}>
-      {folderTool ? (
-        <FolderToolsDialog
-          tool={folderTool}
-          onClose={() => setFolderTool(null)}
-        />
-      ) : null}
       {children.length > 0 ? (
         <section className={styles.section} aria-labelledby="subfolders-title">
           <div className={styles.header}>
@@ -319,20 +315,15 @@ export function FolderBrowser({
               >
                 Open Selected
               </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() =>
-                  setFolderTool({
-                    kind: "move",
-                    id: organization.selected[0] ?? "",
-                    ids: organization.selected,
-                    name: "Selected Folders",
-                  })
-                }
+              <SpecMenu
+                search
+                searchLabel="Search folders"
+                buildItems={() => buildMoveFolderItems(organization.selected)}
               >
-                Move
-              </Button>
+                <Menu.Trigger size="sm" variant="ghost">
+                  Move
+                </Menu.Trigger>
+              </SpecMenu>
               <Button
                 size="sm"
                 variant="ghost"

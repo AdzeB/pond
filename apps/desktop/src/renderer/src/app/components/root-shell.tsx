@@ -1,5 +1,6 @@
 import { Outlet, useRouterState } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect } from "react";
+import { DetailsDialogHost } from "@/app/components/details-dialog";
 import { RightPane } from "@/app/components/right-pane";
 import { Toolbar } from "@/app/components/toolbar";
 import { Tray } from "@/app/components/tray";
@@ -88,6 +89,7 @@ export function RootShell() {
       </AppShell.Root>
       <Tray.Library />
       <SourceFlowHost />
+      <DetailsDialogHost />
     </>
   );
 }

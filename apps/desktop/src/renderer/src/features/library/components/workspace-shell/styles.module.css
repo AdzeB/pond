@@ -1,11 +1,8 @@
 .shell {
   --window-inset: 8px;
+  --window-gap-right: 16px;
   --window-left-min: 0px;
   --window-background-primary: var(--ds-gray-2);
-}
-
-.shell > [data-slot="center"] {
-  margin-right: 16px;
 }
 
 :global(html[data-platform="mac"]) .shell {

@@ -18,7 +18,6 @@ import {
   startGlobalShortcuts,
   summonShortcutTarget,
 } from "./core/global-shortcuts";
-import { registerHarvesterWindowIpc } from "./core/harvester-window";
 import { syncLibraryRootMetadata } from "./core/library-ops";
 import { stopLibraryTransfers } from "./core/library-transfers";
 import { flushGovernor } from "./core/pipeline/rate-governor";
@@ -28,11 +27,10 @@ import {
   suspendReconciler,
 } from "./core/pipeline/reconciler-client";
 import { disposeQueueWorkerHost } from "./core/pipeline/worker-host";
-import { getPrefs } from "./core/prefs";
+import { getPrefs, subscribePrefs } from "./core/prefs";
 import { closePreviewWindows } from "./core/preview-windows";
 import { disposeHiddenWindow } from "./core/refresh/harvest-window";
 import { disposeRenderCardWindow } from "./core/render-card";
-import { registerSettingsWindowIpc } from "./core/settings-window";
 import {
   startStorageWatcher,
   stopStorageWatcher,
@@ -199,8 +197,7 @@ app.whenReady().then(async () => {
   }
 
   registerIpc();
-  registerSettingsWindowIpc({ openLibraryWindow });
-  registerHarvesterWindowIpc();
+  subscribePrefs((prefs) => broadcast(IPC.prefsChanged, prefs));
   registerCombineImagesWindowIpc();
   const menuPrefs = await getPrefs();
   setMainLocale(menuPrefs.localization.locale);

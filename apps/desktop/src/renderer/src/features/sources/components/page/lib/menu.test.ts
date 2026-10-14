@@ -34,7 +34,7 @@ const running: CardModel = {
   lastText: "now",
 };
 
-function account(id: string) {
+function account(id: string, model: CardModel = ready) {
   const row: AccountRow = {
     id,
     source: "instagram",
@@ -46,7 +46,7 @@ function account(id: string) {
     connected: true,
     syncing: false,
   };
-  return toSourceTableRow({ kind: "account", row }, ready);
+  return toSourceTableRow({ kind: "account", row }, model);
 }
 
 function watch(id: string) {
@@ -130,7 +130,7 @@ describe("buildSourceMenu", () => {
   });
 
   it("disables Fetch New Saves when none of the selection can sync", () => {
-    const row = toSourceTableRow(account("busy").entry, running);
+    const row = account("busy", running);
     expect(
       findItem(buildSourceMenu([row, row]), "Fetch New Saves"),
     ).toMatchObject({ label: "Fetch New Saves", disabled: true });

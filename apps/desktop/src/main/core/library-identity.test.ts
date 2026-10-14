@@ -29,6 +29,7 @@ it("falls back to the folder name for existing libraries", async () => {
   expect(readLibraryIdentity(root)).toEqual({
     name: "Existing",
     icon: null,
+    mark: null,
     accent: null,
   });
 });
@@ -44,6 +45,7 @@ it("updates portable identity without dropping metadata", async () => {
   ).toEqual({
     name: "Design",
     icon: "data:image/png;base64,aWNvbg==",
+    mark: null,
     accent: "#12ABEF",
   });
   expect(
@@ -65,6 +67,18 @@ it("removes optional customization fields", async () => {
   expect(updateLibraryIdentity(root, { icon: null, accent: null })).toEqual({
     name: "Existing",
     icon: null,
+    mark: null,
     accent: null,
   });
+});
+
+it("keeps the logo mark until the icon changes without one", async () => {
+  const root = await createLibrary();
+  const mark = { kind: "icon", icon: "pond", color: "red-bright" } as const;
+  updateLibraryIdentity(root, { icon: "data:image/png;base64,aWNvbg==", mark });
+  expect(updateLibraryIdentity(root, { name: "Design" }).mark).toEqual(mark);
+  expect(
+    updateLibraryIdentity(root, { icon: "data:image/png;base64,b3RoZXI=" })
+      .mark,
+  ).toBeNull();
 });

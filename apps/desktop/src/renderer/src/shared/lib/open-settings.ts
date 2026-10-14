@@ -39,18 +39,5 @@ export function settingsHref(section?: string, hash?: string): string {
 }
 
 export function openSettings(section?: string, hash?: string): void {
-  const href = settingsHref(section, hash);
-  if (window.pond?.openSettingsWindow) {
-    const resolved = resolveSettingsLocation(section, hash);
-    void window.pond.openSettingsWindow(
-      section === undefined && hash === undefined
-        ? {}
-        : {
-            section: resolved.section,
-            hash: resolved.hash ?? undefined,
-          },
-    );
-    return;
-  }
-  getAppRouter()?.history.push(href);
+  getAppRouter()?.history.push(settingsHref(section, hash));
 }

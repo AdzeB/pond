@@ -32,8 +32,8 @@ describe("settings search index", () => {
     }
   });
 
-  it("indexes search and processing independently", () => {
-    expect(entry("search:semanticSearch").sectionLabel).toBe("Search");
+  it("indexes semantic search under processing", () => {
+    expect(entry("processing:semanticSearch").sectionLabel).toBe("Processing");
     expect(entry("processing:enableClip").sectionLabel).toBe("Processing");
     expect(entry("shortcuts").sectionLabel).toBe("Hotkeys");
     expect(entry("viewer").sectionLabel).toBe("Preview");

@@ -25,6 +25,7 @@ import type {
   InspectQueryInputs,
   InspectQueryResults,
 } from "./inspect-contracts";
+import type { LibraryMarkSource } from "./library-mark";
 import type {
   LibraryRepairQueryInputs,
   LibraryRepairQueryResults,
@@ -221,12 +222,14 @@ export interface QueryInputs
   "library.identity.update": {
     name?: string;
     icon?: string | null;
+    mark?: LibraryMarkSource | null;
     accent?: string | null;
   };
   "library.identity.pickIcon": EmptyInput;
   "library.rename": {
     name: string;
     icon?: string | null;
+    mark?: LibraryMarkSource | null;
     accent?: string | null;
   };
   "library.recent": Record<string, never>;
@@ -307,6 +310,7 @@ export interface QueryInputs
   "system.applyPrefs": EmptyInput;
   "autoImport.status": EmptyInput;
   "autoImport.pickFolder": EmptyInput;
+  "autoImport.reveal": EmptyInput;
   "pipeline.status": EmptyInput;
   "pipeline.inflight": EmptyInput;
   "savedViews.list": EmptyInput;
@@ -350,6 +354,7 @@ export interface QueryResults
   "library.identity.update": OkResult<{
     name?: string;
     icon?: string | null;
+    mark?: LibraryMarkSource | null;
     accent?: string | null;
   }>;
   "library.identity.pickIcon": LibraryLocationResult<{ icon: string }>;

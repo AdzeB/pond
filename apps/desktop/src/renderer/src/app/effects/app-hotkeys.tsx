@@ -33,9 +33,9 @@ import {
 } from "@/features/saves/lib/save-nav";
 import { inspect } from "@/features/saves/state/inspect";
 import { selection } from "@/features/saves/state/selection";
+import { openSources } from "@/features/sources/lib/open";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { isEditableTarget } from "@/shared/lib/editable-target";
-import { openHarvester } from "@/shared/lib/open-harvester";
 import { openSettings } from "@/shared/lib/open-settings";
 import {
   bindingKeys,
@@ -105,11 +105,11 @@ export function AppHotkeys() {
       },
       {
         sequence: [...bindingSequence(shortcuts, "nav.sources")],
-        callback: () => openHarvester({ section: "sources" }),
+        callback: () => go("/sources"),
       },
       {
         sequence: [...bindingSequence(shortcuts, "nav.downloads")],
-        callback: () => openHarvester({ section: "downloads" }),
+        callback: () => go("/downloads"),
       },
       {
         sequence: [...bindingSequence(shortcuts, "nav.trash")],
@@ -278,11 +278,7 @@ export function AppHotkeys() {
       },
       {
         hotkey: bindingKeys(shortcuts, "sources.new"),
-        callback: () =>
-          openHarvester({
-            section: "sources",
-            intent: { type: "new-source" },
-          }),
+        callback: () => openSources({ type: "new-source" }),
         options: { ignoreInputs: true },
       },
       {

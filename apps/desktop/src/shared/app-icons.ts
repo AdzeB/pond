@@ -22,7 +22,6 @@ const APP_ICON_ORDER = [
   "moss",
   "teal",
   "plum",
-  "blue",
 ] as const;
 
 const APP_ICON_TINT = new Map<string, string>(
@@ -40,7 +39,6 @@ const APP_ICON_TINT = new Map<string, string>(
     moss: "#65a97e",
     teal: "#62a9ab",
     plum: "#a558aa",
-    blue: "#59a6fc",
   }),
 );
 

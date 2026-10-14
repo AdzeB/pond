@@ -1,5 +1,5 @@
 import { act } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import {
   createFolderSidebarHarness,
@@ -25,20 +25,50 @@ describe("folder sidebar navigation", () => {
     expect(harness.button("All").getAttribute("aria-current")).toBeNull();
   });
 
-  it("opens Harvester from the workspace header", async () => {
-    await harness.mount();
-    await act(async () => harness.iconButton("Harvester").click());
-    expect(vi.mocked(window.pond.openHarvesterWindow)).toHaveBeenCalledOnce();
+  it("opens Downloads from the workspace header", async () => {
+    const router = await harness.mount();
+    await act(async () => harness.iconButton("Downloads").click());
+    expect(router.state.location.pathname).toBe("/downloads");
   });
 
   it("shows the running download count beside the Harvester mark", async () => {
     queueSummary.current = { ...queueSummary.current, running: 12, waiting: 4 };
-    await harness.mount();
+    const router = await harness.mount();
     await act(async () => {});
-    const harvester = harness.iconButton("Harvester, 12 downloading");
+    const harvester = harness.iconButton("Downloads, 12 downloading");
     expect(harvester.textContent).toBe("12");
     await act(async () => harvester.click());
-    expect(vi.mocked(window.pond.openHarvesterWindow)).toHaveBeenCalledOnce();
+    expect(router.state.location.pathname).toBe("/downloads");
+  });
+
+  it("lists Sources then Downloads under Harvesting", async () => {
+    await harness.mount();
+    const group = [...document.querySelectorAll("*")].find(
+      (node) => node.children.length === 0 && node.textContent === "Harvesting",
+    );
+    expect(group).toBeTruthy();
+    const sources = harness.button("Sources");
+    const downloads = harness.button("Downloads");
+    expect(
+      sources.compareDocumentPosition(downloads) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("opens Sources and Downloads in the main window", async () => {
+    const router = await harness.mount();
+    await act(async () => harness.button("Sources").click());
+    expect(router.state.location.pathname).toBe("/sources");
+    expect(harness.button("Sources").getAttribute("aria-current")).toBe("page");
+    expect(harness.button("All").getAttribute("aria-current")).toBeNull();
+
+    await act(async () => harness.button("Downloads").click());
+    expect(router.state.location.pathname).toBe("/downloads");
+    expect(harness.button("Downloads").getAttribute("aria-current")).toBe(
+      "page",
+    );
+    expect(harness.button("Sources").getAttribute("aria-current")).toBeNull();
+    expect(harness.button("All").getAttribute("aria-current")).toBeNull();
   });
 
   it("opens Uncategorized from the sidebar", async () => {
@@ -132,8 +162,8 @@ describe("folder sidebar navigation", () => {
     expect(assistant).toBeLessThan(untagged);
     expect(untagged).toBeLessThan(tags);
     expect(tags).toBeLessThan(trash);
-    expect(labels).not.toContain("Downloads");
-    expect(labels).not.toContain("Sources");
+    expect(trash).toBeLessThan(labels.indexOf("Sources"));
+    expect(labels.indexOf("Sources")).toBeLessThan(labels.indexOf("Downloads"));
   });
 
   it("does not collapse library and downloads groups", async () => {

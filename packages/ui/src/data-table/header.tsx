@@ -73,7 +73,13 @@ function SortCaret({ sorted }: { sorted: "asc" | "desc" }) {
   );
 }
 
-function HeaderCell<T extends RowData>({ column }: { column: TableColumn<T> }) {
+function HeaderCell<T extends RowData>({
+  column,
+  pinned,
+}: {
+  column: TableColumn<T>;
+  pinned: boolean;
+}) {
   const { actions, meta } = useDataTable<T>();
   const headRef = useRef<HTMLDivElement>(null);
   const dragOrigin = useRef<{ x: number; y: number } | null>(null);
@@ -168,6 +174,7 @@ function HeaderCell<T extends RowData>({ column }: { column: TableColumn<T> }) {
       }
       className={styles.header}
       data-align={column.align}
+      data-pinned={pinned || undefined}
       data-dragging={isDragging || undefined}
       aria-hidden={column.headerHidden || undefined}
       aria-sort={
@@ -316,8 +323,12 @@ export function DataTableHeader<T extends RowData>() {
             {meta.expansionEnabled ? (
               <div role="columnheader" className={styles.header} aria-hidden />
             ) : null}
-            {meta.columns.map((column) => (
-              <HeaderCell key={column.id} column={column} />
+            {meta.columns.map((column, index) => (
+              <HeaderCell
+                key={column.id}
+                column={column}
+                pinned={index === 0}
+              />
             ))}
           </div>
         </div>

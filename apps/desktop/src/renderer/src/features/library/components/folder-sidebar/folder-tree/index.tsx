@@ -291,7 +291,7 @@ export function FolderTree({ folderRows, libraryPage, nav }: FolderTreeProps) {
                     selectionItems={
                       organization.selected.includes(folder.id) &&
                       organization.selected.length > 1
-                        ? () => selectionItems(folder, organization.selected)
+                        ? () => selectionItems(organization.selected)
                         : undefined
                     }
                     collapsed={tree.collapsed.has(folder.id)}

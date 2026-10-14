@@ -1,6 +1,9 @@
 import {
   IconCheckFill,
   IconChevronDown,
+  IconChevronExpandY,
+  IconFaceSmile,
+  IconFolder,
   IconFolderOpen,
   IconFolderPlus,
   IconFolders,
@@ -10,6 +13,7 @@ import type { QueryResult } from "@shared/query-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { BrowserExtensionDialog } from "@/features/library/components/browser-extension-dialog";
+import { LibraryCustomizeDialog } from "@/features/library/components/library-customize-dialog";
 import {
   createLibrary,
   mergeLibrary,
@@ -18,12 +22,53 @@ import {
 } from "@/features/library/lib/library-location";
 import { useSidebarWidth } from "@/features/library/state/library-chrome";
 import defaultAppIcon from "@/generated/app-icon-previews/aqua.png";
+import { openSettings } from "@/shared/lib/open-settings";
 import { buildWorkspaceMenuItems } from "./spec";
 import styles from "./styles.module.css";
 
 type RecentLibrary = QueryResult<"library.recent">[number];
 
-function LibraryMenuContent({ libraries }: { libraries: RecentLibrary[] }) {
+function SwitchLibraryMenu({
+  libraries,
+  onCustomize,
+}: {
+  libraries: RecentLibrary[];
+  onCustomize: () => void;
+}) {
+  return (
+    <Menu.SubmenuRoot>
+      <Menu.SubmenuTrigger>
+        <Menu.ItemIcon>
+          <IconChevronExpandY />
+        </Menu.ItemIcon>
+        <Menu.ItemLabel>Switch Library</Menu.ItemLabel>
+      </Menu.SubmenuTrigger>
+      <Menu.Portal>
+        <Menu.Positioner
+          side="inline-end"
+          align="start"
+          sideOffset={-2}
+          alignOffset={-4}
+        >
+          <Menu.Popup>
+            <LibraryMenuContent
+              libraries={libraries}
+              onCustomize={onCustomize}
+            />
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.SubmenuRoot>
+  );
+}
+
+function LibraryMenuContent({
+  libraries,
+  onCustomize,
+}: {
+  libraries: RecentLibrary[];
+  onCustomize: () => void;
+}) {
   return (
     <>
       <Menu.Group>
@@ -69,6 +114,12 @@ function LibraryMenuContent({ libraries }: { libraries: RecentLibrary[] }) {
       </Menu.Group>
       <Menu.Separator />
       <Menu.Group>
+        <Menu.Item onClick={onCustomize}>
+          <Menu.ItemIcon>
+            <IconFaceSmile />
+          </Menu.ItemIcon>
+          <Menu.ItemLabel>Customize Library</Menu.ItemLabel>
+        </Menu.Item>
         <Menu.Item onClick={() => void createLibrary()}>
           <Menu.ItemIcon>
             <IconFolderPlus />
@@ -88,6 +139,13 @@ function LibraryMenuContent({ libraries }: { libraries: RecentLibrary[] }) {
           <Menu.ItemLabel>Merge Library</Menu.ItemLabel>
         </Menu.Item>
       </Menu.Group>
+      <Menu.Separator />
+      <Menu.Item onClick={() => openSettings("library")}>
+        <Menu.ItemIcon>
+          <IconFolder />
+        </Menu.ItemIcon>
+        <Menu.ItemLabel>Library Settings</Menu.ItemLabel>
+      </Menu.Item>
     </>
   );
 }
@@ -104,6 +162,7 @@ export function WorkspaceMenu() {
     queryFn: () => window.pond.query("library.recent", {}),
   });
   const [extensionOpen, setExtensionOpen] = useState(false);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
   const items = buildWorkspaceMenuItems({
     onBrowserExtension: () => setExtensionOpen(true),
   });
@@ -140,7 +199,10 @@ export function WorkspaceMenu() {
               className={styles.switcher}
               style={cssVars({ "--menu-width": `${sidebarWidth - 30}px` })}
             >
-              <LibraryMenuContent libraries={recent} />
+              <SwitchLibraryMenu
+                libraries={recent}
+                onCustomize={() => setCustomizeOpen(true)}
+              />
               <Menu.Separator />
               <Menu.Items items={items} />
             </Menu.Popup>
@@ -151,6 +213,12 @@ export function WorkspaceMenu() {
         open={extensionOpen}
         onOpenChange={setExtensionOpen}
       />
+      {customizeOpen && info ? (
+        <LibraryCustomizeDialog
+          library={info}
+          onClose={() => setCustomizeOpen(false)}
+        />
+      ) : null}
     </>
   );
 }
