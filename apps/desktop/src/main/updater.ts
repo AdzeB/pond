@@ -1,7 +1,10 @@
-import { app, dialog } from "electron";
+import { app } from "electron";
 import log from "electron-log/main.js";
+import { IPC } from "../shared/constants";
 import type { OkResult, ReasonFailure } from "../shared/query-contracts-shared";
+import type { UpdateNotice } from "../shared/update-notice";
 import { getPrefs } from "./core/prefs";
+import { broadcast } from "./lib/broadcast";
 
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
 let wired = false;
@@ -35,6 +38,11 @@ async function wireAutoUpdater(): Promise<void> {
 
   autoUpdater.on("update-available", (info) => {
     log.info("[pond updater] update available", info.version);
+    publishUpdateNotice({
+      phase: "available",
+      version: info.version,
+      downloading: autoUpdater.autoDownload,
+    });
   });
 
   autoUpdater.on("update-not-available", () => {
@@ -45,20 +53,9 @@ async function wireAutoUpdater(): Promise<void> {
     log.warn("[pond updater] error", err);
   });
 
-  autoUpdater.on("update-downloaded", async (info) => {
+  autoUpdater.on("update-downloaded", (info) => {
     log.info("[pond updater] downloaded", info.version);
-    const res = await dialog.showMessageBox({
-      type: "info",
-      buttons: ["Restart & Install", "Later"],
-      defaultId: 0,
-      cancelId: 1,
-      title: "Pond Update Ready",
-      message: `Pond ${info.version} has been downloaded.`,
-      detail: "Restart to apply the update.",
-    });
-    if (res.response === 0) {
-      autoUpdater.quitAndInstall();
-    }
+    publishUpdateNotice({ phase: "downloaded", version: info.version });
   });
 
   setTimeout(() => {
@@ -78,6 +75,36 @@ export async function applyUpdaterPrefs(): Promise<void> {
   const prefs = await getPrefs();
   autoUpdater.allowPrerelease = false;
   autoUpdater.autoDownload = prefs.updates.autoInstall;
+}
+
+function publishUpdateNotice(notice: UpdateNotice): void {
+  broadcast(IPC.updateNotice, notice);
+}
+
+export async function downloadAvailableUpdate(): Promise<
+  OkResult | ReasonFailure<"dev_build">
+> {
+  if (!app.isPackaged) return { ok: false, reason: "dev_build" };
+  try {
+    const autoUpdater = await loadAutoUpdater();
+    await autoUpdater.downloadUpdate();
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error:
+        err instanceof Error ? err.message : "Couldn't download the update.",
+    };
+  }
+}
+
+export async function installDownloadedUpdate(): Promise<
+  OkResult | ReasonFailure<"dev_build">
+> {
+  if (!app.isPackaged) return { ok: false, reason: "dev_build" };
+  const autoUpdater = await loadAutoUpdater();
+  autoUpdater.quitAndInstall();
+  return { ok: true };
 }
 
 export async function checkForUpdatesNow(): Promise<

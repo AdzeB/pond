@@ -174,6 +174,16 @@ export const libraryMaintenanceQueries = {
     return await checkForUpdatesNow();
   },
 
+  async "updates.download"(): Promise<QueryResult<"updates.download">> {
+    const { downloadAvailableUpdate } = await import("../../updater");
+    return await downloadAvailableUpdate();
+  },
+
+  async "updates.install"(): Promise<QueryResult<"updates.install">> {
+    const { installDownloadedUpdate } = await import("../../updater");
+    return await installDownloadedUpdate();
+  },
+
   async "extension.install"(): Promise<QueryResult<"extension.install">> {
     const { installBrowserExtension } = await import(
       "../../core/browser-extension"

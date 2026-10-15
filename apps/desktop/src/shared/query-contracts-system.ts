@@ -319,6 +319,8 @@ export interface SystemQueryResults {
   "updates.checkNow":
     | OkResult<{ version?: string }>
     | ReasonFailure<"dev_build">;
+  "updates.download": OkResult | ReasonFailure<"dev_build">;
+  "updates.install": OkResult | ReasonFailure<"dev_build">;
   "extension.install": OkResult<{ path: string }>;
   "quickCapture.applyPrefs": OkResult;
   "window.applyPrefs": OkResult;

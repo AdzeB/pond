@@ -240,6 +240,8 @@ export const queryOperationAccess = {
   "transferJobs.retry": "review",
   "updates.applyPrefs": "review",
   "updates.checkNow": "read",
+  "updates.download": "review",
+  "updates.install": "review",
   "video.copyFilePath": "review",
   "video.copyFrame": "review",
   "video.preparePreview": "hidden",
