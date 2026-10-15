@@ -73,6 +73,13 @@ export async function loadModel(input: {
     const { createDeepSeek } = await import("@ai-sdk/deepseek");
     return createDeepSeek({ apiKey: key })(modelId);
   }
+  if (input.provider === "opencode-go") {
+    const { createOpenAI } = await import("@ai-sdk/openai");
+    return createOpenAI({
+      apiKey: key,
+      baseURL: "https://opencode.ai/zen/go/v1",
+    }).chat(modelId);
+  }
   if (input.provider === "ollama" || input.provider === "lmstudio")
     return createLocalLanguageModel({
       provider: input.provider,

@@ -35,6 +35,7 @@ const OPENAI_MODELS = {
   perplexity: "https://api.perplexity.ai",
   baseten: "https://inference.baseten.co/v1",
   cohere: "https://api.cohere.com/v2",
+  "opencode-go": "https://opencode.ai/zen/go/v1",
 } as const;
 
 function isOpenAIModelsProvider(
