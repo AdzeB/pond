@@ -38,9 +38,13 @@ Pushing a tag matching `v*` triggers [`.github/workflows/release.yml`](.github/w
 
 1. Runs lint, typecheck, tests, build, and the desktop smoke test
 2. Stops if any signing secret is missing
-3. Signs and notarizes the app, then publishes the DMGs, zips, and `latest-mac.yml`
-4. Builds the extension zip and uploads it as `pond-extension-<version>.zip`
-5. Updates [`Casks/pond.rb`](Casks/pond.rb) with the release version and DMG checksums
+3. Creates a draft release for the tag, unless one exists
+4. Signs and notarizes the app, then uploads the DMGs, zips, and `latest-mac.yml`
+5. Builds the extension zip and uploads it as `pond-extension-<version>.zip`
+6. Publishes the release, which makes it visible to the updater
+7. Updates [`Casks/pond.rb`](Casks/pond.rb) with the release version and DMG checksums
+
+To write release notes before it goes live, edit the draft while the workflow runs.
 
 Release tag format must be `vX.Y.Z` (e.g. `v1.0.1`). Notarization usually adds 10 to 15 minutes to the packaging step.
 

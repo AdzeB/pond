@@ -108,7 +108,16 @@ jobs:
             fi
           done
 
-      - name: Package macOS app and publish release
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
+              --title "Pond ${GITHUB_REF_NAME#v}" --notes ""
+          fi
+
+      - name: Package macOS app and upload to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
@@ -133,6 +142,11 @@ jobs:
           fi
           cp "$ZIP" "pond-extension-${VERSION}.zip"
           gh release upload "$GITHUB_REF_NAME" "pond-extension-${VERSION}.zip" --clobber
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "$GITHUB_REF_NAME" --draft=false --latest
 
   homebrew:
     needs: release
