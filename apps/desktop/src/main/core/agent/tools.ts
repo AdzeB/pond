@@ -121,17 +121,27 @@ export const findDuplicatesInput = z.object({});
 
 export type LibraryScope = LibraryRetrievalScope;
 
+const emptySnippet = z
+  .string()
+  .nullable()
+  .transform((value) => value ?? "");
+
 const GrepRowsSchema = z.array(
   z.object({
     id: z.string(),
-    title: z.string(),
-    description: z.string(),
-    caption: z.string(),
-    ocr: z.string(),
-    transcript: z.string(),
-    notes: z.string(),
+    title: emptySnippet,
+    description: emptySnippet,
+    caption: emptySnippet,
+    ocr: emptySnippet,
+    transcript: emptySnippet,
+    notes: emptySnippet,
   }),
 );
+
+/** SQLite snippet() returns null for columns that did not match. */
+export function parseGrepRows(rows: unknown) {
+  return GrepRowsSchema.parse(rows);
+}
 export const toolDependencies = {
   retrieveLibrary,
   async readRows(condition: SQL | undefined) {
@@ -162,7 +172,7 @@ export const toolDependencies = {
     const db = await getDb();
     const idClause = id ? "AND f.id = ?" : "";
     const params = id ? [match, id, limit] : [match, limit];
-    return GrepRowsSchema.parse(
+    return parseGrepRows(
       db.$raw
         .prepare(
           `SELECT f.id AS id,

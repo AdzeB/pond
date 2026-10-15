@@ -20,6 +20,7 @@ import {
   listFoldersInput,
   openSaveInput,
   setOverlay as overlay,
+  parseGrepRows,
   readSave as read,
   readSaveInput,
   searchLibrary as search,
@@ -151,6 +152,32 @@ it("accepts a visual probe on search input", () => {
       visual: { kind: "saveId", id: "save" },
     }),
   ).toMatchObject({ visual: { kind: "saveId", id: "save" } });
+});
+
+it("treats unmatched grep columns as empty", () => {
+  expect(
+    parseGrepRows([
+      {
+        id: "save",
+        title: null,
+        description: null,
+        caption: null,
+        ocr: null,
+        transcript: null,
+        notes: "invoice",
+      },
+    ]),
+  ).toEqual([
+    {
+      id: "save",
+      title: "",
+      description: "",
+      caption: "",
+      ocr: "",
+      transcript: "",
+      notes: "invoice",
+    },
+  ]);
 });
 
 it("returns OCR snippets from library grep", async () => {
