@@ -9,7 +9,7 @@ brew tap raphaelsalaja/pond https://github.com/raphaelsalaja/pond
 brew install --cask raphaelsalaja/pond/pond
 ```
 
-Pond needs macOS 13 or later, on Apple Silicon or Intel. It's signed and notarized, and it updates itself from GitHub Releases. Windows and Linux are coming soon.
+Pond needs macOS 13 or later, on Apple Silicon or Intel. It's signed and notarized, and it updates itself from GitHub Releases. Windows and Linux are on the [roadmap](ROADMAP.md).
 
 ### Browser extension
 
@@ -98,7 +98,7 @@ Copy the exact command from Settings → Model Context Protocol → Advanced. Po
 
 The desktop library is a three-column DAM: folder sidebar, image list, Assistant. Folders, Uncategorized, List layout, and Eagle import that keeps folder trees ship in this cut.
 
-Later on the same app: ratings, duplicate merge, spacebar browse, GIF/video frame tools, annotations, batch rename, detached windows, a JS plugin host, and Assistant as an MCP host. Not on the list: Eagle Cloud, their Plugin Center store, or Photoshop-class format preview.
+See the [roadmap](ROADMAP.md) for what's next. Not on it: Eagle Cloud, their Plugin Center store, or Photoshop-class format preview.
 
 ## How sourcing works (and your responsibility)
 
@@ -129,6 +129,7 @@ Read [Responsible use](RESPONSIBLE-USE.md) before you connect an account.
 - [License](LICENSE)
 - [Privacy](PRIVACY.md)
 - [Responsible Use](RESPONSIBLE-USE.md)
+- [Roadmap](ROADMAP.md)
 - [Security](SECURITY.md)
 - [Releasing](RELEASING.md)
 - [Contributing](CONTRIBUTING.md)
