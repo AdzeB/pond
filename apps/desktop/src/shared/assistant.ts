@@ -200,6 +200,17 @@ export const ASSISTANT_MODELS = [
     capabilities: text,
   },
   {
+    id: "openrouter",
+    name: "OpenRouter",
+    provider: "OpenRouter",
+    model: "openrouter/auto",
+    local: false,
+    needsKey: true,
+    setupUrl: "https://openrouter.ai/keys",
+    quality: "custom",
+    capabilities: chat,
+  },
+  {
     id: "ollama",
     name: "Llama 3.2",
     provider: "Ollama",

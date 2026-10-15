@@ -73,6 +73,17 @@ export async function loadModel(input: {
     const { createDeepSeek } = await import("@ai-sdk/deepseek");
     return createDeepSeek({ apiKey: key })(modelId);
   }
+  if (input.provider === "openrouter") {
+    const { createOpenAI } = await import("@ai-sdk/openai");
+    return createOpenAI({
+      apiKey: key,
+      baseURL: "https://openrouter.ai/api/v1",
+      headers: {
+        "HTTP-Referer": "https://github.com/raphaelsalaja/pond",
+        "X-Title": "Pond",
+      },
+    }).chat(modelId);
+  }
   if (input.provider === "ollama" || input.provider === "lmstudio")
     return createLocalLanguageModel({
       provider: input.provider,

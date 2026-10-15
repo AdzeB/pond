@@ -152,6 +152,9 @@ function isChatModel(provider: AgentProviderId, id: string): boolean {
   if (provider === "anthropic") return n.includes("claude");
   if (provider === "gemini") return n.includes("gemini");
   if (provider === "deepseek") return n.includes("deepseek");
+  if (provider === "openrouter") {
+    return !/(embed|whisper|tts|dall-e|moderation)/.test(n);
+  }
   return true;
 }
 
