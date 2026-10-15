@@ -19,6 +19,8 @@ import xai from "@/assets/logos/providers/xai.webp";
 import styles from "./styles.module.css";
 
 const logos = {
+  codex: openai,
+  "claude-code": anthropic,
   anthropic,
   openai,
   gemini: google,

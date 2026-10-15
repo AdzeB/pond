@@ -52,6 +52,8 @@ Use [CONTEXT.md](../../CONTEXT.md) for domain terminology and [code standards](c
 
 ## Changes by example
 
+Subscription providers (`codex`, `claude-code`) use `cli-language-model` as an AI SDK V4 adapter. `cli-runtime` owns executable discovery, API credential removal, subscription sign-in checks, bounded process output, timeouts, and cancellation of the process group. Each step runs in a temporary directory with CLI tools and customizations disabled. Structured CLI output becomes ordinary SDK tool calls; the existing Pond tool loop owns execution and review. Settings stores connection flags, never CLI tokens. The default CLI model is offered without invented pricing or model metadata. Text and Library tools are supported; binary attachments require another provider.
+
 ### Add a feature
 
 Start with the owning product area. Keep its UI, operations, state, and tests together. Compose its route or window from application code. Export only the entries another module consumes. Put a helper in shared code only when its responsibility is independent of the feature.

@@ -79,6 +79,10 @@ See [`apps/desktop/README.md`](apps/desktop/README.md) for architecture and on-d
 
 Assistant lives in the right column. It searches this library with a key you paste in Settings, or a local host you run such as Ollama or LM Studio. Pond never stores those keys on a Pond server.
 
+You can also use a subscription through a local Codex or Claude Code installation. In Terminal, run `codex login` and sign in with ChatGPT, or run `claude auth login` and sign in with your Claude plan. In Settings → Providers → Subscriptions, add the provider and click Connect. Select its default model in the Assistant composer. No API key is needed. Removing a connection from Pond does not sign you out of the CLI.
+
+These connections run the official CLIs on your Mac; inference still goes to OpenAI or Anthropic and counts against your plan's limits. Pond does not read or copy CLI tokens. API-key sign-ins are rejected and inherited API credentials are removed from these processes. The CLI returns structured requests to Pond's existing tool loop, so Library access, citations, and review before Apply retain the same behavior. CLI shell, MCP, and customizations are disabled. This integration supports text and Library tools; use a vision provider for image or file attachments. The default model is selected by the CLI; custom model IDs must be available to your plan. Fast and Reasoning controls are not exposed for these connections.
+
 Cursor, Claude, and other MCP hosts can search the same library. Pond speaks MCP over stdio. This block belongs in Cursor `mcp.json`. It launches Pond as a local stdio server (`--mcp`) against the library on this Mac:
 
 ```json
