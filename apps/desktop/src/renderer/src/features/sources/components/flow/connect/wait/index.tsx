@@ -66,12 +66,21 @@ export function ConnectWaitSection() {
           )}
         </p>
       </div>
-      <ConnectPromises completed={completed} />
+      <ConnectPromises completed={completed} label={label} />
     </div>
   );
 }
 
-function ConnectPromises({ completed }: { completed: boolean }) {
+const RESPONSIBLE_USE_URL =
+  "https://github.com/raphaelsalaja/pond/blob/main/RESPONSIBLE-USE.md";
+
+function ConnectPromises({
+  completed,
+  label,
+}: {
+  completed: boolean;
+  label: string;
+}) {
   return (
     <>
       <div className={styles.details}>
@@ -91,7 +100,22 @@ function ConnectPromises({ completed }: { completed: boolean }) {
           </li>
         </ul>
       </div>
-      {completed ? null : <ExtensionNote />}
+      {completed ? null : (
+        <>
+          <ExtensionNote />
+          <p className={styles.note}>
+            You're responsible for following {label}'s terms while Pond syncs
+            your account.{" "}
+            <Button
+              variant="link"
+              size="xs"
+              onClick={() => void window.pond.openExternal(RESPONSIBLE_USE_URL)}
+            >
+              Responsible Use
+            </Button>
+          </p>
+        </>
+      )}
     </>
   );
 }

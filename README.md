@@ -113,7 +113,8 @@ Because that traffic comes from your account, Pond is deliberately conservative:
 a built-in rate governor paces every request, respects platform rate-limit
 signals (`retry-after` and friends), backs off instead of escalating, persists
 cooldowns across restarts, and hard-stops a source if it detects a
-challenge/checkpoint. You can pause all syncing at any time.
+challenge/checkpoint. You can turn off automatic fetching at any time in
+Settings → Harvesting.
 
 That said, **you are responsible for your own use** of each platform under its
 Terms of Service. Pond is a personal tool for organizing things you've already
@@ -121,10 +122,13 @@ saved; use it accordingly. If you're writing or reviewing a source adapter, see
 the [`CONTRIBUTING`](CONTRIBUTING.md) "Add a source" section for the boundaries
 adapter authors are expected to respect.
 
+Read [Responsible use](RESPONSIBLE-USE.md) before you connect an account.
+
 ## Documentation
 
 - [License](LICENSE)
 - [Privacy](PRIVACY.md)
+- [Responsible Use](RESPONSIBLE-USE.md)
 - [Security](SECURITY.md)
 - [Releasing](RELEASING.md)
 - [Contributing](CONTRIBUTING.md)

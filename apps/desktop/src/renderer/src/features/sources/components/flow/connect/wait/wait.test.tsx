@@ -113,5 +113,8 @@ it("explains the local connection before the account arrives", async () => {
     "Pond gets your session through its browser extension.",
   );
   expect(host.textContent).toContain("Get Extension");
+  expect(host.textContent).toContain(
+    "You're responsible for following Twitter's terms while Pond syncs your account.",
+  );
   expect(host.textContent).not.toContain("Waiting for sign-in");
 });

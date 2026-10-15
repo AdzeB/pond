@@ -6,6 +6,7 @@ import styles from "./styles.module.css";
 const GITHUB = "https://github.com/raphaelsalaja/pond";
 const TWITTER = "https://x.com/raphaelsalaja";
 const BUY_ME_A_COFFEE = "https://buymeacoffee.com/raphaelsalaja";
+const RESPONSIBLE_USE = `${GITHUB}/blob/main/RESPONSIBLE-USE.md`;
 
 export function Intro() {
   return (
@@ -51,6 +52,14 @@ export function Intro() {
             rel="noreferrer"
           >
             Buy Me a Coffee
+          </a>
+          <a
+            className={styles.link}
+            href={RESPONSIBLE_USE}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Responsible Use
           </a>
         </div>
       </nav>

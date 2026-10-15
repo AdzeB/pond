@@ -81,6 +81,10 @@
   font-size: var(--ds-text-xs);
   line-height: 18px;
   color: var(--ds-gray-10);
+
+  & + & {
+    padding-top: 6px;
+  }
 }
 
 @keyframes reveal {

@@ -85,6 +85,12 @@ export function buildHelpSection(context: AppMenuContext): AppMenuItem {
         ),
       },
       {
+        label: "Responsible Use",
+        click: context.openExternalUrl(
+          "https://github.com/raphaelsalaja/pond/blob/main/RESPONSIBLE-USE.md",
+        ),
+      },
+      {
         label: "Keyboard Shortcuts",
         click: context.sendMenuAction("help.shortcuts"),
       },
