@@ -49,6 +49,14 @@ export const tagGroupsQueries = {
     },
   ),
 
+  "tagGroups.merge": query(
+    z.object({ from: StringParam, to: StringParam }),
+    async (params) => {
+      const { mergeGroup } = await import("../../core/tag-groups");
+      return await mergeGroup(params.from, params.to);
+    },
+  ),
+
   "tagGroups.delete": query(z.object({ name: StringParam }), async (params) => {
     const { deleteGroup } = await import("../../core/tag-groups");
     return await deleteGroup(params.name);

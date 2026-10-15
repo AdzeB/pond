@@ -232,6 +232,37 @@ export async function addTagsToGroup(
   return { ok: true, affected: txs.length };
 }
 
+export async function mergeGroup(
+  from: string,
+  to: string,
+): Promise<OkResult<{ affected: number }>> {
+  const sourceName = from.trim();
+  const targetName = to.trim();
+  if (!sourceName || !targetName) {
+    return { ok: false, error: "Enter a group name." };
+  }
+  if (sourceName.toLowerCase() === targetName.toLowerCase()) {
+    return { ok: true, affected: 0 };
+  }
+  const db = await getDb();
+  const source = await groupByLowerName(db, sourceName.toLowerCase());
+  const target = await groupByLowerName(db, targetName.toLowerCase());
+  if (!source || !target) return { ok: false, error: "Tag group not found." };
+  const members = await db
+    .select({ name: tagsTable.name })
+    .from(tagGroupMembersTable)
+    .innerJoin(tagsTable, eq(tagGroupMembersTable.tagId, tagsTable.id))
+    .where(eq(tagGroupMembersTable.groupId, source.id));
+  const added = await addTagsToGroup(
+    members.map((member) => member.name),
+    target.name,
+  );
+  if (!added.ok) return added;
+  const removed = await deleteGroup(source.name);
+  if (!removed.ok) return removed;
+  return { ok: true, affected: added.affected };
+}
+
 export async function removeTagFromGroup(
   tagName: string,
   groupName: string,

@@ -189,6 +189,7 @@ export interface QueryInputs
     };
   };
   "tagGroups.delete": NameInput;
+  "tagGroups.merge": { from: string; to: string };
   "tagGroups.addTags": { tags: string[]; group: string };
   "tagGroups.removeTag": { tag: string; group: string };
   "settings.setVideoDownload": Partial<VideoDownloadSettings>;
@@ -386,6 +387,7 @@ export interface QueryResults
   "tagGroups.rename": OkResult;
   "tagGroups.update": OkResult;
   "tagGroups.delete": OkResult<{ affected: number }>;
+  "tagGroups.merge": OkResult<{ affected: number }>;
   "tagGroups.addTags": OkResult<{ affected: number }>;
   "tagGroups.removeTag": OkResult;
   "pipeline.status": { paused: boolean; inflight: number };
