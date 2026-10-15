@@ -9,20 +9,6 @@ import { loadImage } from "./image";
 
 export type MediaUnderstandingTask = MediaUnderstandInput["task"];
 
-export type ShadowMediaBenchmarkRecord = {
-  task: MediaUnderstandingTask;
-  provider: Prefs["ai"]["mediaUnderstandingProvider"];
-  modelId: string;
-  resultModel?: string;
-  durationMs: number;
-  outcome: "ok" | "error";
-  outputCharacters?: number;
-};
-
-export interface ShadowMediaBenchmarkSink {
-  record(record: ShadowMediaBenchmarkRecord): void;
-}
-
 type MediaUnderstandingRouterDependencies = {
   florenceModelVersion: () => string;
   runFlorence: (
@@ -33,8 +19,6 @@ type MediaUnderstandingRouterDependencies = {
     saveId: string,
     task: MediaUnderstandingTask,
   ) => Promise<MediaUnderstandResult>;
-  now: () => number;
-  shadowSink: ShadowMediaBenchmarkSink;
   operationalSink: {
     record(metric: MediaUnderstandOperationalMetric): void;
   };
@@ -66,10 +50,6 @@ const FLORENCE_TASK = {
   ocr: "<OCR>",
 } as const;
 
-const MAX_RECORDED_MODEL_ID_CHARACTERS = 200;
-const MAX_RECORDED_OUTPUT_CHARACTERS = 16_000;
-const MAX_RECORDED_DURATION_MS = 10 * 60_000;
-
 const defaultDependencies: MediaUnderstandingRouterDependencies = {
   florenceModelVersion,
   async runFlorence(task, imageUrl) {
@@ -79,8 +59,6 @@ const defaultDependencies: MediaUnderstandingRouterDependencies = {
   understandMedia(saveId, task) {
     return window.pond.query("saves.understandMedia", { saveId, task });
   },
-  now: () => performance.now(),
-  shadowSink: { record() {} },
   operationalSink: {
     record(metric) {
       console.info("[pond media] local understanding fallback", metric);
@@ -93,15 +71,6 @@ function gemmaModelVersion(
   prefs: Prefs["ai"],
 ): string {
   return `${prefs.mediaUnderstandingProvider}/${prefs.mediaUnderstandingModelId.trim()}:${task}:v1`;
-}
-
-function boundedInteger(value: number, maximum: number): number {
-  if (!Number.isFinite(value)) return 0;
-  return Math.min(maximum, Math.max(0, Math.round(value)));
-}
-
-function boundedText(value: string): string {
-  return value.slice(0, MAX_RECORDED_MODEL_ID_CHARACTERS);
 }
 
 function gemmaFailure(result: Extract<MediaUnderstandResult, { ok: false }>) {
@@ -144,45 +113,6 @@ export function createMediaUnderstandingRouter(
     };
   }
 
-  async function runShadow(input: MediaUnderstandingRunInput): Promise<void> {
-    const startedAt = resolved.now();
-    let record: ShadowMediaBenchmarkRecord;
-    try {
-      const result = await runGemma(input.saveId, input.task);
-      record = {
-        task: input.task,
-        provider: input.prefs.mediaUnderstandingProvider,
-        modelId: boundedText(input.prefs.mediaUnderstandingModelId),
-        resultModel: boundedText(gemmaModelVersion(input.task, input.prefs)),
-        durationMs: boundedInteger(
-          resolved.now() - startedAt,
-          MAX_RECORDED_DURATION_MS,
-        ),
-        outcome: "ok",
-        outputCharacters: boundedInteger(
-          result.text.length,
-          MAX_RECORDED_OUTPUT_CHARACTERS,
-        ),
-      };
-    } catch {
-      record = {
-        task: input.task,
-        provider: input.prefs.mediaUnderstandingProvider,
-        modelId: boundedText(input.prefs.mediaUnderstandingModelId),
-        durationMs: boundedInteger(
-          resolved.now() - startedAt,
-          MAX_RECORDED_DURATION_MS,
-        ),
-        outcome: "error",
-      };
-    }
-    try {
-      resolved.shadowSink.record(record);
-    } catch {
-      /** Shadow measurements must never affect primary enrichment. */
-    }
-  }
-
   return {
     primaryModel(task: MediaUnderstandingTask, prefs: Prefs["ai"]): string {
       return prefs.mediaUnderstandingMode === "gemma4"
@@ -218,10 +148,7 @@ export function createMediaUnderstandingRouter(
         }
       }
 
-      const primary = await runFlorencePrimary(input);
-      if (input.prefs.mediaUnderstandingMode === "shadow")
-        void runShadow(input);
-      return primary;
+      return await runFlorencePrimary(input);
     },
   };
 }

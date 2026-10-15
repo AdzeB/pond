@@ -88,10 +88,6 @@ export const processingSection = defineSection("ai", {
           options: [
             { value: "florence", label: "Built-In Model" },
             { value: "gemma4", label: "Local Runtime Model" },
-            {
-              value: "shadow",
-              label: "Compare Both, Keep Built-In Results",
-            },
           ],
         },
         {

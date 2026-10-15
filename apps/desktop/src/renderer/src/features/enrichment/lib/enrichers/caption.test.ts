@@ -59,7 +59,6 @@ describe("caption enricher", () => {
     expect(enricher.eligible(save("florence:v2"), prefs("florence"))).toBe(
       false,
     );
-    expect(enricher.eligible(save("florence:v2"), prefs("shadow"))).toBe(false);
     expect(enricher.eligible(save("florence:v2"), prefs("gemma4"))).toBe(true);
     expect(
       enricher.eligible(save("ollama/gemma4:e2b:caption:v1"), prefs("gemma4")),

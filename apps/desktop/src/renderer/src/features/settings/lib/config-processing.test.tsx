@@ -67,7 +67,6 @@ describe("sensitive-content processing settings", () => {
       options: [
         { value: "florence", label: "Built-In Model" },
         { value: "gemma4", label: "Local Runtime Model" },
-        { value: "shadow", label: "Compare Both, Keep Built-In Results" },
       ],
     });
     expect(provider).toMatchObject({

@@ -395,9 +395,7 @@ const ai = z.object({
   blurSensitiveThumbnails: z.boolean().catch(false),
   enableAutoTitle: z.boolean().catch(false),
   enableSuggestedTags: z.boolean().catch(false),
-  mediaUnderstandingMode: z
-    .enum(["florence", "gemma4", "shadow"])
-    .catch("florence"),
+  mediaUnderstandingMode: z.enum(["florence", "gemma4"]).catch("florence"),
   mediaUnderstandingProvider: z.enum(["ollama", "lmstudio"]).catch("ollama"),
   mediaUnderstandingModelId: z.string().catch("gemma4:e2b"),
   mediaUnderstandingFallbackToFlorence: z.boolean().catch(false),

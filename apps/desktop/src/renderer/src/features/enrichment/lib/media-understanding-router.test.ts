@@ -4,10 +4,7 @@ import type {
   MediaUnderstandResult,
 } from "@shared/query-contracts-system";
 import { describe, expect, it, vi } from "vitest";
-import {
-  createMediaUnderstandingRouter,
-  type ShadowMediaBenchmarkRecord,
-} from "./media-understanding-router";
+import { createMediaUnderstandingRouter } from "./media-understanding-router";
 
 describe("media understanding preferences", () => {
   it("keeps Florence as the backwards-compatible default", () => {
@@ -17,6 +14,14 @@ describe("media understanding preferences", () => {
     expect(prefs.ai.mediaUnderstandingProvider).toBe("ollama");
     expect(prefs.ai.mediaUnderstandingModelId).toBe("gemma4:e2b");
     expect(prefs.ai.mediaUnderstandingFallbackToFlorence).toBe(false);
+  });
+
+  it("reads the removed comparison mode as Florence", () => {
+    const prefs = PrefsSchema.parse({
+      ai: { mediaUnderstandingMode: "shadow" },
+    });
+
+    expect(prefs.ai.mediaUnderstandingMode).toBe("florence");
   });
 
   it("falls back field-by-field when stored values are invalid", () => {
@@ -39,7 +44,7 @@ describe("media understanding preferences", () => {
 });
 
 function ai(
-  mode: "florence" | "gemma4" | "shadow",
+  mode: "florence" | "gemma4",
 ): ReturnType<typeof PrefsSchema.parse>["ai"] {
   return {
     ...PrefsSchema.parse({}).ai,
@@ -56,7 +61,6 @@ function setup(
     model: "ollama/gemma4:e2b:caption:v1",
   },
 ) {
-  const records: ShadowMediaBenchmarkRecord[] = [];
   const operationalRecords: MediaUnderstandOperationalMetric[] = [];
   const runFlorence = vi.fn(async () => "Florence caption");
   const understandMedia = vi.fn(async () => result);
@@ -64,14 +68,6 @@ function setup(
     florenceModelVersion: () => "florence:v2",
     runFlorence,
     understandMedia,
-    now: (() => {
-      let time = 100;
-      return () => {
-        time += 25;
-        return time;
-      };
-    })(),
-    shadowSink: { record: (record) => records.push(record) },
     operationalSink: {
       record: (record) => operationalRecords.push(record),
     },
@@ -80,7 +76,6 @@ function setup(
     router,
     runFlorence,
     understandMedia,
-    records,
     operationalRecords,
   };
 }
@@ -234,110 +229,10 @@ describe("media-understanding router", () => {
     expect(operationalRecords).toEqual([]);
   });
 
-  it("persists Florence semantics while measuring Gemma without content", async () => {
-    const { router, understandMedia, records } = setup();
-
-    await expect(
-      router.run({
-        saveId: "save-1",
-        imageUrl: "pond://save-1/image.png",
-        task: "caption",
-        prefs: ai("shadow"),
-      }),
-    ).resolves.toEqual({ text: "Florence caption", model: "florence:v2" });
-    await vi.waitFor(() => expect(records).toHaveLength(1));
-    expect(understandMedia).toHaveBeenCalledExactlyOnceWith(
-      "save-1",
-      "caption",
-    );
-    expect(records).toEqual([
-      {
-        task: "caption",
-        provider: "ollama",
-        modelId: "gemma4:e2b",
-        resultModel: "ollama/gemma4:e2b:caption:v1",
-        durationMs: 25,
-        outcome: "ok",
-        outputCharacters: 13,
-      },
-    ]);
-    expect(JSON.stringify(records)).not.toContain("Gemma caption");
-    expect(JSON.stringify(records)).not.toContain("Florence caption");
-    expect(JSON.stringify(records)).not.toContain("pond://");
-  });
-
-  it("does not wait for shadow Gemma before returning Florence", async () => {
-    let finishGemma: (() => void) | undefined;
-    const gemmaPending = new Promise<void>((resolve) => {
-      finishGemma = resolve;
-    });
-    const understandMedia = vi.fn(async () => {
-      await gemmaPending;
-      return {
-        ok: true as const,
-        text: "private output",
-        model: "ollama/gemma4:e2b:caption:v1",
-      };
-    });
-    const router = createMediaUnderstandingRouter({
-      florenceModelVersion: () => "florence:v2",
-      runFlorence: async () => "Florence caption",
-      understandMedia,
-    });
-
-    await expect(
-      router.run({
-        saveId: "save-1",
-        imageUrl: "pond://save-1/image.png",
-        task: "caption",
-        prefs: ai("shadow"),
-      }),
-    ).resolves.toEqual({ text: "Florence caption", model: "florence:v2" });
-    expect(understandMedia).toHaveBeenCalledOnce();
-    finishGemma?.();
-  });
-
-  it("isolates Gemma and benchmark sink failures from shadow Florence", async () => {
-    const { router } = setup({ ok: false, reason: "model_unavailable" });
-    const sinkFailureRouter = createMediaUnderstandingRouter({
-      florenceModelVersion: () => "florence:v2",
-      runFlorence: async () => "Florence caption",
-      understandMedia: async () => ({
-        ok: true,
-        text: "private output",
-        model: "ollama/gemma4:e2b:caption:v1",
-      }),
-      now: () => 0,
-      shadowSink: {
-        record() {
-          throw new Error("sink offline");
-        },
-      },
-    });
-
-    await expect(
-      router.run({
-        saveId: "save-1",
-        imageUrl: "pond://save-1/image.png",
-        task: "caption",
-        prefs: ai("shadow"),
-      }),
-    ).resolves.toEqual({ text: "Florence caption", model: "florence:v2" });
-    await expect(
-      sinkFailureRouter.run({
-        saveId: "save-1",
-        imageUrl: "pond://save-1/image.png",
-        task: "caption",
-        prefs: ai("shadow"),
-      }),
-    ).resolves.toEqual({ text: "Florence caption", model: "florence:v2" });
-  });
-
   it("stamps eligibility with the active primary model", () => {
     const { router } = setup();
 
     expect(router.primaryModel("ocr", ai("florence"))).toBe("florence:v2");
-    expect(router.primaryModel("ocr", ai("shadow"))).toBe("florence:v2");
     expect(router.primaryModel("ocr", ai("gemma4"))).toBe(
       "ollama/gemma4:e2b:ocr:v1",
     );
