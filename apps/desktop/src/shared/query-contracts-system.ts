@@ -169,6 +169,7 @@ export interface SystemQueryResults {
   };
   "accounts.setHandle": OkResult<{ account: ConnectedAccount }>;
   "accounts.setLabel": OkResult<{ account: ConnectedAccount }>;
+  "accounts.setSyncLikes": OkResult;
   "accounts.disconnect": OkResult;
   "watches.list": { watches: (WatchedAccount & { syncing: boolean })[] };
   "watches.resolve": { ok: false } | { ok: true; target: WatchTarget };

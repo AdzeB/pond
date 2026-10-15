@@ -198,6 +198,7 @@ export interface QueryInputs
   "notifications.openSettings": EmptyInput;
   "accounts.setHandle": { accountId: string; handle: string | null };
   "accounts.setLabel": { accountId: string; label: string | null };
+  "accounts.setSyncLikes": { accountId: string; syncLikes: boolean };
   "accounts.disconnect": { accountId: string };
   "watches.resolve": { source: Source; input: string };
   "watches.add": { source: Source; handle: string; label?: string | null };

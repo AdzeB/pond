@@ -243,6 +243,35 @@ describe("buildSourceActionMenu", () => {
     ]);
   });
 
+  it("toggles likes for an X account and hides the action elsewhere", () => {
+    const row: AccountRow = {
+      id: "acc-twitter",
+      source: "twitter",
+      handle: "raphael",
+      label: null,
+      avatarUrl: null,
+      addedAt: "",
+      sync: {
+        lastSyncedAt: null,
+        lastError: null,
+        knownCount: 12,
+        syncLikes: false,
+      },
+      connected: true,
+      syncing: false,
+    };
+    const items = buildSourceActionMenu(accountMenuTarget(row, ready));
+    const likes = findItem(items, "Sync Likes");
+    expect(likes).toMatchObject({ type: "checkbox", checked: false });
+    expect(findItem(buildSourceActionMenu(account()), "Sync Likes")).toBeNull();
+    if (likes?.type !== "checkbox") throw new Error("Missing Sync Likes");
+    likes.onCheckedChange?.(true);
+    expect(window.pond.query).toHaveBeenCalledWith("accounts.setSyncLikes", {
+      accountId: "acc-twitter",
+      syncLikes: true,
+    });
+  });
+
   it("starts the source sign-in flow from the connection group", async () => {
     const items = buildSourceActionMenu(account(), { accounts: [] });
     const signIn = findItem(items, "Sign In Again");

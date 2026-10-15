@@ -6,6 +6,7 @@ import {
   getAccount,
   listAccounts,
   patchAccount,
+  patchAccountSync,
   removeAccount,
 } from "../../core/sync/accounts";
 import { fillMissingAvatars } from "../../core/sync/avatars";
@@ -60,6 +61,18 @@ export const accountsQueries = {
         label: params.label,
       });
       return account ? { ok: true as const, account } : ACCOUNT_NOT_FOUND;
+    },
+  ),
+
+  "accounts.setSyncLikes": query(
+    z.object({ accountId: StringParam, syncLikes: z.boolean() }),
+    async (params) => {
+      const account = await getAccount(params.accountId);
+      if (!account) return ACCOUNT_NOT_FOUND;
+      await patchAccountSync(params.accountId, {
+        syncLikes: params.syncLikes,
+      });
+      return { ok: true as const };
     },
   ),
 

@@ -5,6 +5,7 @@ export const queryOperationAccess = {
   "accounts.list": "read",
   "accounts.setHandle": "review",
   "accounts.setLabel": "review",
+  "accounts.setSyncLikes": "review",
   "agent.attachments": "hidden",
   "agent.chats": "read",
   "agent.deleteChat": "hidden",
