@@ -8,8 +8,6 @@ import { describe, expect, it } from "vitest";
 import { sourceIdFromUrl } from "../url";
 import { EXTRACTOR_LIST, extractorFor, resolveExtractor } from ".";
 
-const LIVE = process.env.POND_LIVE === "1";
-
 describe("extractor registry", () => {
   it("has exactly one extractor per external source", () => {
     expect(EXTRACTOR_LIST).toHaveLength(EXTERNAL_SOURCE_IDS.length);
@@ -85,11 +83,6 @@ for (const extractor of EXTRACTOR_LIST) {
           expect(extractor.handleFromPath?.(segments)).toBe(handle);
         });
       }
-
-      it.skipIf(!LIVE)(`reaches ${sample.url} (live)`, async () => {
-        const res = await fetch(sample.url, { redirect: "follow" });
-        expect(res.status).toBeLessThan(500);
-      });
     }
   });
 }

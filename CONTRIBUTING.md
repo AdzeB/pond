@@ -135,10 +135,6 @@ Offline tests (`pnpm test`) run a generic harness over every extractor's
 embedded `tests`: URL routing, `source_id` parsing, and `handleFromPath`
 parsing, plus registry/descriptor totality. They gate PR CI.
 
-Live checks (`pnpm --filter @pond/desktop test:live`) hit the network to confirm each sample URL is
-still reachable. They are flaky/auth-walled, so they run on a nightly schedule
-(`.github/workflows/sources-live.yml`), not on PRs.
-
 ### 6. Docs
 
 `pnpm generate` rewrites [`docs/supported-sources.md`](docs/supported-sources.md)

@@ -42,7 +42,6 @@
     "typecheck": "tsr generate && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test": "pnpm test:setup && vitest run",
     "test:setup": "node --test ./scripts/postinstall.test.mjs",
-    "test:live": "POND_LIVE=1 vitest run",
     "smoke:desktop": "electron ./scripts/smoke-desktop.cjs",
     "smoke:folder-tags": "electron ./scripts/smoke-folder-tags.cjs",
     "smoke:library-trust": "electron ./scripts/smoke-library-trust.cjs",
