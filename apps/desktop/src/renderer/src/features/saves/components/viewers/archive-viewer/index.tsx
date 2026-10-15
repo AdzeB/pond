@@ -1,4 +1,13 @@
-import { IconArrowLeft, IconArrowRight } from "@pond/icons";
+import {
+  IconArrowLeft,
+  IconArrowRight,
+  IconArrowRotateClockwise,
+  IconChevronDown,
+  IconExternalLink,
+  IconGlobe,
+  IconLink2,
+} from "@pond/icons";
+import { Menu, type MenuItemSpec } from "@pond/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import {
@@ -6,6 +15,7 @@ import {
   ViewerChrome,
 } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerResultCount } from "@/features/saves/components/viewers/viewer-result-count";
+import { copyUrl } from "@/features/saves/lib/actions";
 import {
   type ArchiveManifest,
   archiveUrlKey,
@@ -13,6 +23,7 @@ import {
   loadArchiveManifest,
 } from "@/features/saves/lib/media/archive";
 import type { Save } from "@/features/saves/types";
+import { SpecMenu } from "@/shared/components/spec-context-menu";
 import type { PondWebviewElement } from "@/shared/types/electron-webview";
 import styles from "./styles.module.css";
 
@@ -36,6 +47,21 @@ export function SaveArchiveViewer({ save }: { save: Save }) {
   );
 }
 
+interface PageHistory {
+  entries: number[];
+  cursor: number;
+}
+
+function displayAddress(url: string): string {
+  try {
+    const u = new URL(url);
+    const path = u.pathname.replace(/\/+$/, "");
+    return `${u.hostname.replace(/^www\./, "")}${path}${u.search}`;
+  } catch {
+    return url;
+  }
+}
+
 function ArchiveFrame({
   save,
   manifest,
@@ -43,9 +69,32 @@ function ArchiveFrame({
   save: Save;
   manifest: ArchiveManifest;
 }) {
-  const [pageIndex, setPageIndex] = useState(0);
+  const [history, setHistory] = useState<PageHistory>({
+    entries: [0],
+    cursor: 0,
+  });
   const guestIdRef = useRef<number | null>(null);
   const webviewRef = useRef<PondWebviewElement | null>(null);
+
+  const pageIndex = history.entries[history.cursor] ?? 0;
+  const canGoBack = history.cursor > 0;
+  const canGoForward = history.cursor < history.entries.length - 1;
+
+  const visit = useCallback((index: number) => {
+    setHistory((h) => {
+      if (h.entries[h.cursor] === index) return h;
+      const entries = [...h.entries.slice(0, h.cursor + 1), index];
+      return { entries, cursor: entries.length - 1 };
+    });
+  }, []);
+
+  const step = (delta: number) => {
+    setHistory((h) => {
+      const cursor = h.cursor + delta;
+      if (cursor < 0 || cursor >= h.entries.length) return h;
+      return { ...h, cursor };
+    });
+  };
 
   const pageIndexByKey = useMemo(() => {
     const map = new Map<string, number>();
@@ -79,40 +128,100 @@ function ArchiveFrame({
       if (guestId == null || guestId !== guestIdRef.current) return;
       const index = pageIndexByKey.get(archiveUrlKey(url));
       if (index != null) {
-        setPageIndex(index);
+        visit(index);
       } else {
         void window.pond.openExternal(url);
       }
     });
-  }, [pageIndexByKey]);
+  }, [pageIndexByKey, visit]);
 
   if (!page || !src) return null;
+
+  const address = displayAddress(page.url);
+  const buildPageItems = (): MenuItemSpec[] =>
+    manifest.pages.map((p, index) => ({
+      type: "checkbox",
+      label: p.title.trim() || displayAddress(p.url),
+      indicator: "check",
+      checked: index === pageIndex,
+      onCheckedChange: (checked) => {
+        if (checked) visit(index);
+      },
+    }));
 
   return (
     <div className={styles.root}>
       <ChromePortal slot="top">
         <ViewerHud.Bar
           label="Web archive"
-          start={<ViewerResultCount saveId={save.id} />}
-          end={
+          start={
+            <>
+              <ViewerResultCount saveId={save.id} />
+              <ViewerHud.Tool
+                label="Back"
+                disabled={!canGoBack}
+                onClick={() => step(-1)}
+              >
+                <IconArrowLeft />
+              </ViewerHud.Tool>
+              <ViewerHud.Tool
+                label="Forward"
+                disabled={!canGoForward}
+                onClick={() => step(1)}
+              >
+                <IconArrowRight />
+              </ViewerHud.Tool>
+              <ViewerHud.Tool
+                label="Reload"
+                onClick={() => webviewRef.current?.reload()}
+              >
+                <IconArrowRotateClockwise />
+              </ViewerHud.Tool>
+            </>
+          }
+          center={
             manifest.pages.length > 1 ? (
-              <>
-                <ViewerHud.Tool
-                  label="Previous Page"
-                  disabled={pageIndex <= 0}
-                  onClick={() => setPageIndex((index) => index - 1)}
+              <SpecMenu buildItems={buildPageItems} align="center">
+                <Menu.Trigger
+                  size="sm"
+                  variant="ghost"
+                  className={styles.trigger}
+                  aria-label="Archived Pages"
+                  title={page.url}
                 >
-                  <IconArrowLeft />
-                </ViewerHud.Tool>
+                  <span className={styles.address}>{address}</span>
+                  <IconChevronDown size={12} />
+                </Menu.Trigger>
+              </SpecMenu>
+            ) : (
+              <span className={styles.address} title={page.url}>
+                {address}
+              </span>
+            )
+          }
+          end={
+            <>
+              {manifest.scope === "page" ? (
                 <ViewerHud.Tool
-                  label="Next Page"
-                  disabled={pageIndex >= manifest.pages.length - 1}
-                  onClick={() => setPageIndex((index) => index + 1)}
+                  label="Archive Site"
+                  onClick={() => void window.pond.archiveSite(save.id)}
                 >
-                  <IconArrowRight />
+                  <IconGlobe />
                 </ViewerHud.Tool>
-              </>
-            ) : null
+              ) : null}
+              <ViewerHud.Tool
+                label="Copy Link"
+                onClick={() => void copyUrl(page.url)}
+              >
+                <IconLink2 />
+              </ViewerHud.Tool>
+              <ViewerHud.Tool
+                label="Open in Browser"
+                onClick={() => void window.pond.openExternal(page.url)}
+              >
+                <IconExternalLink />
+              </ViewerHud.Tool>
+            </>
           }
         />
       </ChromePortal>
