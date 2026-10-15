@@ -10,13 +10,11 @@
 
 ## Engineering standards
 
-When an external source materially affects a change, record the entity in [`.provenance/provenance.yaml`](.provenance/provenance.yaml). Once `.provenance/sources/` exists, add `.provenance/sources/<kind>/<id>/source.yaml` instead and treat that folder as the record. Run `pnpm provenance:check`. If a source did not materially affect the change, do not add it.
-
 Read [code standards](docs/contributing/code-standards.md) for naming, interfaces, React, types, and tests. Read [desktop architecture](docs/contributing/architecture.md) when adding a feature or changing ownership or process interfaces. Both human and automated contributors use these documents.
 
 Turborepo owns the build, typecheck, test, generation-check, and repository verification graphs. A transit task makes source-first package changes invalidate consuming apps without serializing unrelated work. Package-level `turbo.json` files define framework inputs and reusable outputs.
 
-`pnpm check` runs Biome, Oxlint, Knip, architecture checks, Provenance validation, non-mutating generated-file checks, type checks, and offline tests in one cacheable graph. `pnpm provenance:check` and `pnpm architecture:check` run focused root tasks. `pnpm build` verifies production bundles and performance budgets. `pnpm lint:fix` applies safe fixes explicitly; `pnpm format` formats files. Pre-commit checks never rewrite your working tree.
+`pnpm check` runs Biome, Oxlint, Knip, architecture checks, non-mutating generated-file checks, type checks, and offline tests in one cacheable graph. `pnpm architecture:check` runs the focused architecture task. `pnpm build` verifies production bundles and performance budgets. `pnpm lint:fix` applies safe fixes explicitly; `pnpm format` formats files. Pre-commit checks never rewrite your working tree.
 
 Run `pnpm generate` only when you intend to update tracked generated files. Run `pnpm generate:check` to verify them without writing. CI runs both the non-mutating checks and a generated diff gate.
 

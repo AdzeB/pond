@@ -1,9 +1,6 @@
 # dependencies
 node_modules
 
-# provenance generated views
-.provenance/output/
-
 # build output
 .next
 .turbo

@@ -77,5 +77,3 @@ allowBuilds:
   sharp: true
 
 minimumReleaseAge: 1440
-minimumReleaseAgeExclude:
-  - "@web-kits/provenance@1.0.0"
