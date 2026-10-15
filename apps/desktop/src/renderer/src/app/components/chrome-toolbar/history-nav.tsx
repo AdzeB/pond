@@ -7,6 +7,7 @@ import {
   navigationHistory,
   useNavigationHistory,
 } from "@/features/library/state/navigation-history";
+import { saveIdFromPath } from "@/features/saves/lib/save-nav";
 import styles from "./styles.module.css";
 
 export function ChromeHistoryNav() {
@@ -36,6 +37,10 @@ export function ChromeHistoryNav() {
         aria-label="Back"
         disabled={history.index === 0 && !canBack}
         onClick={() => {
+          if (saveIdFromPath(router.state.location.pathname)) {
+            router.history.back();
+            return;
+          }
           const target = navigationHistory.back();
           if (target) libraryChrome.setNav(target);
           else router.history.back();
@@ -50,6 +55,10 @@ export function ChromeHistoryNav() {
         aria-label="Forward"
         disabled={history.index >= history.entries.length - 1 && !canForward}
         onClick={() => {
+          if (saveIdFromPath(router.state.location.pathname)) {
+            router.history.forward();
+            return;
+          }
           const target = navigationHistory.forward();
           if (target) libraryChrome.setNav(target);
           else router.history.forward();

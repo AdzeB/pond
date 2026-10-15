@@ -287,6 +287,24 @@ describe("breadcrumb toolbar", () => {
     );
   });
 
+  it("leaves an open save before walking folder history", async () => {
+    libraryChrome.setNav({ kind: "folder", id: "parent" });
+    const router = await mount("/");
+    await act(async () => router.history.push("/save/demo"));
+    await act(async () => button("Back").click());
+    expect(router.state.location.pathname).toBe("/");
+    expect(libraryChrome.getState().nav).toEqual({
+      kind: "folder",
+      id: "parent",
+    });
+    await act(async () => button("Forward").click());
+    expect(router.state.location.pathname).toBe("/save/demo");
+    expect(libraryChrome.getState().nav).toEqual({
+      kind: "folder",
+      id: "parent",
+    });
+  });
+
   it("opens Assistant from its own control", async () => {
     await mount();
     expect(button("Toggle Details").getAttribute("aria-pressed")).not.toBe(
