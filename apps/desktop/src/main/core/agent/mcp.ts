@@ -9,10 +9,7 @@ import {
   type ConversionQueryResults,
   ImageCompressionRequestSchema,
 } from "../../../shared/conversion-contracts";
-import {
-  type LibraryQueryPage,
-  LibraryQueryRequestSchema,
-} from "../../../shared/library-query";
+import type { LibraryQueryPage } from "../../../shared/library-query";
 import { getDb } from "../../db";
 import { resolvePaths } from "../../paths";
 import { conversionCapabilities } from "../conversion-capabilities";
@@ -28,6 +25,10 @@ import {
   type McpAccessGroup,
   mcpToolAllowed,
 } from "./mcp-access";
+import {
+  McpLibraryQueryRequestSchema,
+  parseMcpLibraryQuery,
+} from "./mcp-library-query";
 import {
   applyFilter,
   applyFilterInput,
@@ -81,7 +82,7 @@ export async function startPondMcp(): Promise<void> {
     {
       description:
         "Query exact scoped results with nested filters and keyword grammar, stable sorting, total count and cursor pagination. Use read_save to hydrate returned IDs. Pass nextCursor as cursor for the next page.",
-      inputSchema: LibraryQueryRequestSchema,
+      inputSchema: McpLibraryQueryRequestSchema,
       annotations: { readOnlyHint: true },
     },
     withAccess("search", async (request) =>
@@ -89,7 +90,7 @@ export async function startPondMcp(): Promise<void> {
         await queryLibraryPage(
           await getDb(),
           basename(resolvePaths().indexDb, ".db"),
-          request,
+          parseMcpLibraryQuery(request),
         ),
       ),
     ),
