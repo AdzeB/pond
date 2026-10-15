@@ -50,16 +50,16 @@
     "architecture:check:repo": "node --test scripts/check-architecture.test.mjs && node scripts/check-architecture.mjs"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.13",
-    "@commitlint/cli": "^21.2.2",
-    "@commitlint/config-conventional": "^21.2.2",
-    "@oxlint/plugins": "1.83.0",
+    "@biomejs/biome": "2.5.15",
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "@oxlint/plugins": "1.88.0",
     "@types/node": "catalog:",
     "husky": "^9.1.7",
-    "knip": "^6.35.1",
-    "oxc-parser": "0.150.0",
-    "oxlint": "1.83.0",
-    "turbo": "^2.10.13",
+    "knip": "^6.41.0",
+    "oxc-parser": "0.154.0",
+    "oxlint": "1.88.0",
+    "turbo": "^2.11.8",
     "typescript": "catalog:"
   },
   "engines": {
