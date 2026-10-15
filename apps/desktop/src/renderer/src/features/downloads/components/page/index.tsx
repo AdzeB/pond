@@ -15,6 +15,10 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import type { z } from "zod";
 import { DownloadsEmpty } from "@/features/downloads/components/empty";
+import {
+  canTrashDownload,
+  trashDownloadRows,
+} from "@/features/downloads/components/lib/actions";
 import { useLiveDownloadHydration } from "@/features/downloads/hooks/use-live-download-hydration";
 import {
   downloadRowSource,
@@ -174,6 +178,19 @@ export function DownloadsPage() {
             controlsId="downloads-filter-toolbar"
             onToggle={() => setFiltersOpen((open) => !open)}
           />
+          <Tooltip
+            label="Move every unfinished download to Trash. Finished saves stay in the Library."
+            side="bottom"
+          >
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={!live.some(canTrashDownload)}
+              onClick={() => trashDownloadRows(live)}
+            >
+              Clear Unfinished
+            </Button>
+          </Tooltip>
           <Tooltip
             label={
               paused

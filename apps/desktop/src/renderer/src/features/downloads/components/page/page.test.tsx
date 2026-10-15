@@ -428,6 +428,39 @@ it("filters active, waiting, and failed work from the filter toolbar", async () 
   expect(host.querySelector('[title="Waiting video"]')).toBeNull();
 });
 
+it("moves every unfinished download to Trash and leaves finished saves", async () => {
+  setSaves([
+    save("Running video", "ingesting", "running"),
+    save("Waiting video", "ingesting", "pending"),
+    save("Failed video", "failed", "dead"),
+    save("Finished video", "complete"),
+  ]);
+  query.mockImplementation(async (name: string) => {
+    if (name === "settings.getPrefs") return {};
+    if (name === "downloads.activity") return [];
+    if (name === "downloads.history") return { rows: [], nextCursor: null };
+    if (name === "pipeline.status") return { paused: false };
+    if (name === "pipeline.inflight") return [];
+    if (name === "downloads.ingestingOrFailed") return [];
+    if (name === "saves.getMany") return [];
+    if (name === "saves.bulkEdit") return { changed: 3 };
+    if (name === "feedback.emit") return { ok: true };
+    throw new Error(`Unexpected query: ${name}`);
+  });
+
+  await render();
+  await clickButton("Filter");
+  await clickButton("Status");
+  await clickFilterOption("Failed");
+  await clickButton("Clear Unfinished");
+
+  const trashed = query.mock.calls.find(([name]) => name === "saves.bulkEdit");
+  expect(trashed?.[1]).toEqual({
+    ids: ["Running video", "Waiting video", "Failed video"],
+    operation: { kind: "trash" },
+  });
+});
+
 it("bounds the initial render before the downloads table is measured", async () => {
   setSaves(
     Array.from({ length: 1_000 }, (_, index) =>
