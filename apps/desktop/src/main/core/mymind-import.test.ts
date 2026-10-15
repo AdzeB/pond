@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseMymindCards } from "./mymind-import";
+import { isMymindFileCard, parseMymindCards } from "./mymind-import";
 
 describe("parseMymindCards", () => {
   it("reads notes, links, and tags from a mymind cards.csv", () => {
@@ -14,6 +14,7 @@ describe("parseMymindCards", () => {
     expect(cards).toEqual([
       {
         id: "card-1",
+        type: "note",
         title: "A title, with a comma",
         url: "",
         content: "",
@@ -23,6 +24,7 @@ describe("parseMymindCards", () => {
       },
       {
         id: "card-2",
+        type: "bookmark",
         title: "Docs",
         url: "https://pond.so",
         content: "Body text",
@@ -35,5 +37,12 @@ describe("parseMymindCards", () => {
 
   it("rejects a file that is not a mymind export", () => {
     expect(parseMymindCards("name,email\nAda,ada@example.com")).toBeNull();
+  });
+
+  it("treats an image row without text as a file the export already wrote", () => {
+    const cards = parseMymindCards(
+      "id,type,title,url,content,note,tags,created\n1,Image,photo.jpg,,,,,",
+    );
+    expect(cards?.[0] && isMymindFileCard(cards[0])).toBe(true);
   });
 });

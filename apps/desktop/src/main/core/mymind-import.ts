@@ -1,6 +1,10 @@
 import { readdir, readFile } from "node:fs/promises";
 import { basename, extname, join } from "node:path";
+import type { NewSave } from "@pond/schema/db";
 import { createManualSave } from "./manual-import";
+import { persistSave } from "./persist-save";
+import { enqueue } from "./pipeline/enqueue";
+import { setSaveTags } from "./tags";
 
 const MEDIA_EXTENSIONS = new Set([
   ".avif",
@@ -17,8 +21,21 @@ const MEDIA_EXTENSIONS = new Set([
   ".webp",
 ]);
 
+const FILE_CARD_TYPES = new Set([
+  "audio",
+  "file",
+  "gif",
+  "image",
+  "img",
+  "pdf",
+  "photo",
+  "picture",
+  "video",
+]);
+
 export interface MymindCard {
   id: string;
+  type: string;
   title: string;
   url: string;
   content: string;
@@ -90,11 +107,13 @@ export function parseMymindCards(csv: string): MymindCard[] | null {
     const url = value("url");
     const content = value("content");
     const note = value("note");
-    if (!title && !url && !content && !note) return [];
+    const type = value("type");
+    if (!title && !url && !content && !note && !type) return [];
     const created = Date.parse(value("created"));
     return [
       {
         id: value("id"),
+        type,
         title,
         url: /^https?:\/\//i.test(url) ? url : "",
         content,
@@ -111,6 +130,16 @@ export function parseMymindCards(csv: string): MymindCard[] | null {
 
 function isMymindMediaFile(name: string): boolean {
   return MEDIA_EXTENSIONS.has(extname(name).toLowerCase());
+}
+
+/** Image and PDF rows have no text of their own. The export writes those as files beside the CSV. */
+export function isMymindFileCard(card: MymindCard): boolean {
+  return (
+    FILE_CARD_TYPES.has(card.type.toLowerCase()) &&
+    !card.url &&
+    !card.content &&
+    !card.note
+  );
 }
 
 export async function importMymindExport(
@@ -135,7 +164,8 @@ export async function importMymindExport(
   if (!cards && media.length === 0) {
     return {
       ok: false,
-      error: "That folder doesn't include a mymind cards.csv or media files.",
+      error:
+        "That folder doesn't include a mymind cards.csv or media files. Choose the folder from Export my mind.",
     };
   }
   let imported = 0;
@@ -145,7 +175,9 @@ export async function importMymindExport(
     else skipped += 1;
   };
   for (const card of cards ?? []) {
+    if (isMymindFileCard(card)) continue;
     const note = [card.content, card.note].filter(Boolean).join("\n\n");
+    if (card.url && (await importMymindLink(card, note, count))) continue;
     count(
       await createManualSave({
         source: "local",
@@ -169,4 +201,37 @@ export async function importMymindExport(
     );
   }
   return { ok: true, imported, skipped };
+}
+
+async function importMymindLink(
+  card: MymindCard,
+  note: string,
+  count: (result: { ok: boolean; skipped?: boolean }) => void,
+): Promise<boolean> {
+  let result: { id: string; created: boolean };
+  try {
+    result = await enqueue(card.url, { trigger: "user:importMymind" });
+  } catch {
+    return false;
+  }
+  if (!result.created) {
+    count({ ok: true, skipped: true });
+    return true;
+  }
+  try {
+    if (card.tags.length > 0) await setSaveTags(result.id, card.tags);
+    const patch: Partial<NewSave> = {};
+    if (note) patch.notes = note;
+    if (card.created) {
+      patch.savedAt = card.created;
+      patch.createdAt = card.created;
+    }
+    if (Object.keys(patch).length > 0) {
+      await persistSave(result.id, patch, { actorReason: "mymind:import" });
+    }
+  } catch {
+    /** The link is already saved. A failed tag or note write should not import it twice. */
+  }
+  count({ ok: true });
+  return true;
 }
