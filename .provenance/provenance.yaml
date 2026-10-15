@@ -1,0 +1,7 @@
+schemaVersion: "0.1"
+project:
+  name: Pond
+  repository: https://github.com/raphaelsalaja/pond
+  version: 0.2.0
+sources: []
+relationships: []

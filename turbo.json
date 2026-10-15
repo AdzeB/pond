@@ -74,6 +74,10 @@
       ],
       "outputs": []
     },
+    "//#provenance:check:repo": {
+      "inputs": [".provenance/**", "package.json"],
+      "outputs": []
+    },
     "//#architecture:check:repo": {
       "inputs": [
         "apps/desktop/src/**",
