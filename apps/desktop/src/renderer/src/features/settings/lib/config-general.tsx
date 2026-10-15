@@ -83,6 +83,7 @@ export const generalSection = defineCustomSection({
           control: "custom",
           key: "proxy-url",
           title: "Manual Proxy",
+          visible: (v) => v.proxyMode === "manual",
           render: () => <SystemPreferences />,
         },
         {

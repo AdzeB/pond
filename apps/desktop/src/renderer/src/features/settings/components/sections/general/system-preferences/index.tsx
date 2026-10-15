@@ -7,7 +7,6 @@ export function SystemPreferences() {
   const id = useId();
   const [prefs] = usePrefs("system");
   const [proxyUrl, setProxyUrl] = useState(prefs.proxyUrl);
-  if (prefs.proxyMode !== "manual") return null;
   return (
     <label className={styles.field} htmlFor={id}>
       Proxy URL
