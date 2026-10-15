@@ -165,6 +165,10 @@ export async function harvestSourceList(
       let lastCollected = -1;
       pollInterval = setInterval(() => {
         if (stopPolling) return;
+        if (lease.win.isDestroyed()) {
+          if (pollInterval) clearInterval(pollInterval);
+          return;
+        }
         void lease.win.webContents
           .executeJavaScript(
             "JSON.stringify(globalThis.__pondHarvestStats ?? null)",

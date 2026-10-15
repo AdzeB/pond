@@ -195,6 +195,10 @@ async function harvestTwitterTimeline(
     let stopPolling = false;
     const pollInterval = setInterval(() => {
       if (stopPolling) return;
+      if (lease.win.isDestroyed()) {
+        clearInterval(pollInterval);
+        return;
+      }
       void lease.win.webContents
         .executeJavaScript(
           "JSON.stringify(globalThis.__pondHarvestStats ?? null)",
