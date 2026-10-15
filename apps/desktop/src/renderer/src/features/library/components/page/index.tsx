@@ -24,16 +24,9 @@ export function Library() {
   const isDownloads = pathname.startsWith("/downloads");
   const isAssistant = pathname === "/assistant";
   const isTags = pathname === "/tags";
-  const isGallery =
-    pathname === "/dialogs" || pathname === "/icons" || pathname === "/sounds";
   const isSettings = pathname.startsWith("/settings");
   const showLibraryGrid =
-    !isSources &&
-    !isDownloads &&
-    !isAssistant &&
-    !isTags &&
-    !isGallery &&
-    !isSettings;
+    !isSources && !isDownloads && !isAssistant && !isTags && !isSettings;
 
   useLayoutEffect(() => {
     rememberListPath(pathname, search);
@@ -73,12 +66,7 @@ export function Library() {
         <div className={styles.overlay}>
           <Outlet />
         </div>
-      ) : isSources ||
-        isDownloads ||
-        isAssistant ||
-        isTags ||
-        isGallery ||
-        isSettings ? (
+      ) : !showLibraryGrid ? (
         <Outlet />
       ) : null}
     </div>

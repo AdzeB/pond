@@ -32,9 +32,7 @@ function Root({ header, children, left, right, className }: RootProps) {
   const rightPane = useRightPane();
   const leftOpen = sidebarOpen && Boolean(left);
   const ownsRightPane = useRouterState({
-    select: (s) =>
-      s.location.pathname === "/assistant" ||
-      s.location.pathname === "/shadows",
+    select: (s) => s.location.pathname === "/assistant",
   });
   const rightOpen = !ownsRightPane && rightPane !== null && Boolean(right);
 

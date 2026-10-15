@@ -22,9 +22,6 @@
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "node ../../scripts/run-dev-singleton.mjs -- electron-vite dev --watch",
-    "dev:agent-gallery": "vite --config toolbar-gallery.vite.config.ts --open /agent-gallery.html",
-    "dev:harvester": "vite --config toolbar-gallery.vite.config.ts --open /harvester-gallery.html",
-    "dev:picker-gallery": "vite --config toolbar-gallery.vite.config.ts --open /picker-gallery.html",
     "build": "node ./scripts/prepare-icon-previews.mjs && electron-vite build",
     "preview": "electron-vite preview",
     "start": "electron-vite preview",

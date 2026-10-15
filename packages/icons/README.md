@@ -22,9 +22,6 @@ exists. Props:
 - `title` labels the icon for assistive tech. Without it the icon is
   `aria-hidden`.
 
-In a dev build, open the Icon Gallery from the command menu to browse every
-glyph at each size.
-
 ## Drawing a glyph
 
 1. Draw on an 18×18 artboard: 1.5 stroke, round caps and joins, live area

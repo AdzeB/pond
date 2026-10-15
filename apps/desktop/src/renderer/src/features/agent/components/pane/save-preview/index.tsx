@@ -20,14 +20,6 @@ interface ThumbnailStyle extends CSSProperties {
   "--thumbnail-width-scale": number;
 }
 
-export function sourceDomain(source: AssistantSource) {
-  try {
-    return new URL(source.url).hostname.replace(/^www\./, "") || source.source;
-  } catch {
-    return source.source;
-  }
-}
-
 export function useSourceCovers(ids: string[]) {
   const key = JSON.stringify(ids);
   useEffect(() => {

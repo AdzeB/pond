@@ -51,8 +51,6 @@ function destinationCrumbs(base: string): Breadcrumb[] | null {
       return [{ label: "Downloads", path: base, nav: { kind: "downloads" } }];
     case "/trash":
       return [{ label: "Trash", path: base, nav: { kind: "trash" } }];
-    case "/shadows":
-      return [{ label: "Shadow Lab", path: base }];
     default:
       break;
   }

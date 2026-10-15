@@ -4,7 +4,6 @@ import {
   IconBookmarkSlash,
   IconChatBubble,
   IconDots,
-  IconEye,
   IconGear3,
   IconHistory,
   IconNodes3,
@@ -53,7 +52,6 @@ const ROOT_ICONS = {
   "/recents": IconHistory,
   "/downloads": IconWindowDownload,
   "/trash": IconTrashXmark,
-  "/shadows": IconEye,
   "/settings": IconGear3,
 } as const;
 
@@ -278,9 +276,7 @@ export function Toolbar() {
     select: (s) => s.location.pathname,
   });
   const hideInspector =
-    pathname === "/assistant" ||
-    pathname === "/shadows" ||
-    pathname.startsWith("/settings");
+    pathname === "/assistant" || pathname.startsWith("/settings");
   const sidebarOpen = useSidebarOpen();
   const rightPane = useRightPane();
   return (
