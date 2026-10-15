@@ -443,7 +443,7 @@ importers:
         specifier: ^44.4.0
         version: 44.4.0(supports-color@8.1.1)
       electron-builder:
-        specifier: ^26.15.3
+        specifier: ^26.17.0
         version: 26.17.0(electron-builder-squirrel-windows@26.17.0)(supports-color@8.1.1)
       electron-vite:
         specifier: ^5.0.0
