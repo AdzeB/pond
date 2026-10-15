@@ -524,6 +524,9 @@ importers:
       '@pond/local-api':
         specifier: workspace:*
         version: link:../../packages/local-api
+      '@pond/schema':
+        specifier: workspace:*
+        version: link:../../packages/schema
       '@raycast/api':
         specifier: ^2.4.1
         version: 2.4.1(@types/node@22.19.17)(@types/react@19.0.10)(supports-color@8.1.1)

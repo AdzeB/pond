@@ -39,6 +39,11 @@ interface LocalApiHeaders {
   "content-type": string;
 }
 
+export interface LocalApiThumbnail {
+  type: string;
+  bytes: Uint8Array;
+}
+
 export type LocalApiFailure =
   | "authentication"
   | "connection"
@@ -117,11 +122,7 @@ export class PondLocalApi {
     return token ? `Bearer ${token}` : undefined;
   }
 
-  async request<Output>(
-    path: string,
-    schema: Schema<Output>,
-    init: RequestInit = {},
-  ): Promise<Output> {
+  private async send(path: string, init: RequestInit = {}): Promise<Response> {
     await this.ensureAvailable?.();
     const authorization = await this.authorization();
     const headers: LocalApiHeaders = {
@@ -129,9 +130,8 @@ export class PondLocalApi {
     };
     if (authorization) headers.authorization = authorization;
     Object.assign(headers, Object.fromEntries(new Headers(init.headers)));
-    let response: Response;
     try {
-      response = await this.fetcher(`${this.baseUrl}${path}`, {
+      return await this.fetcher(`${this.baseUrl}${path}`, {
         ...init,
         headers,
       });
@@ -141,23 +141,38 @@ export class PondLocalApi {
         "connection",
       );
     }
+  }
+
+  private async failure(response: Response): Promise<PondLocalApiError> {
+    const decoded = LocalApiJsonSchema.safeParse(
+      await response.json().catch(() => null),
+    );
+    const parsed = LocalApiErrorSchema.safeParse(
+      decoded.success ? decoded.data : null,
+    );
+    const message = parsed.success
+      ? Object(parsed.data.error) === parsed.data.error
+        ? (JSON.stringify(parsed.data.error) ?? String(parsed.data.error))
+        : String(parsed.data.error)
+      : `Pond returned ${response.status}.`;
+    return new PondLocalApiError(
+      message,
+      failureKind(response.status),
+      response.status,
+    );
+  }
+
+  async request<Output>(
+    path: string,
+    schema: Schema<Output>,
+    init: RequestInit = {},
+  ): Promise<Output> {
+    const response = await this.send(path, init);
+    if (!response.ok) throw await this.failure(response);
     const decoded = LocalApiJsonSchema.safeParse(
       await response.json().catch(() => null),
     );
     const payload = decoded.success ? decoded.data : null;
-    if (!response.ok) {
-      const parsed = LocalApiErrorSchema.safeParse(payload);
-      const message = parsed.success
-        ? Object(parsed.data.error) === parsed.data.error
-          ? (JSON.stringify(parsed.data.error) ?? String(parsed.data.error))
-          : String(parsed.data.error)
-        : `Pond returned ${response.status}.`;
-      throw new PondLocalApiError(
-        message,
-        failureKind(response.status),
-        response.status,
-      );
-    }
     const envelope =
       localApiSuccessSchema(LocalApiJsonSchema).safeParse(payload);
     if (!envelope.success)
@@ -192,6 +207,23 @@ export class PondLocalApi {
       method: "POST",
       body: JSON.stringify(input),
     });
+  }
+
+  /** Resolves `null` when the Save has no image cover. */
+  async thumbnail(id: string): Promise<LocalApiThumbnail | null> {
+    const response = await this.send(
+      `/saves/thumb?id=${encodeURIComponent(id)}`,
+    );
+    if (response.status === 404) return null;
+    if (!response.ok) throw await this.failure(response);
+    const type = response.headers.get("content-type") ?? "";
+    if (!type.startsWith("image/"))
+      throw new PondLocalApiError(
+        "Pond returned an unexpected response.",
+        "response",
+        response.status,
+      );
+    return { type, bytes: new Uint8Array(await response.arrayBuffer()) };
   }
 
   enqueue(input: EnqueueRequest) {

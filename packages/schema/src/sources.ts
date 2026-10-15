@@ -6,6 +6,7 @@ export {
   domainFromUrl,
   sourceIdentity,
 } from "./domain";
+export { sourceLabel } from "./source-ids";
 export {
   DEFAULT_RATE_PROFILE,
   descriptorFor,
@@ -29,12 +30,6 @@ const SOURCE_ALIASES = new Map<string, Source>([
   ["are.na", "arena"],
 ]);
 
-const SOURCE_LABELS = new Map<string, string>(
-  SOURCE_DESCRIPTORS.map((d) => [d.id, d.label]),
-);
-SOURCE_LABELS.set("web", "Web");
-SOURCE_LABELS.set("local", "Local");
-
 export function isSource(value: string): value is Source {
   return SOURCE_SET.has(value);
 }
@@ -43,10 +38,6 @@ export function resolveSourceId(value: string): Source | null {
   const key = value.toLowerCase();
   const normalized = SOURCE_ALIASES.get(key) ?? key;
   return isSource(normalized) ? normalized : null;
-}
-
-export function sourceLabel(source: Source): string {
-  return SOURCE_LABELS.get(source) ?? source;
 }
 
 export function sourceIdFromUrl(source: Source, rawUrl: string): string | null {

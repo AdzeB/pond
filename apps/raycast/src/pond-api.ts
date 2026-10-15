@@ -48,6 +48,7 @@ async function request<Result>(operation: () => Promise<Result>) {
 export async function searchLibrary(
   keywords: string,
   cursor: PondCursor | null,
+  source: string | null,
 ): Promise<{
   saves: PondSave[];
   total: number;
@@ -58,6 +59,7 @@ export async function searchLibrary(
     api().query({
       query: { combinator: "and", rules: [] },
       keywords: keywords.trim() || undefined,
+      scope: source ? { source } : undefined,
       cursor,
       limit: 50,
       sortKey: "savedAt",
@@ -84,6 +86,37 @@ export async function searchLibrary(
     nextCursor: page.nextCursor,
     libraryId: page.libraryId,
   };
+}
+
+const CopyFileResultSchema = z.object({
+  ok: z.boolean(),
+  reason: z.string().optional(),
+});
+
+const COPY_FILE_FAILURES = new Map([
+  ["no_files", "This Save has no file to copy."],
+  ["missing", "The file is missing from your Library."],
+  ["not_found", "This Save is no longer in your Library."],
+]);
+
+export async function copySaveFile(id: string): Promise<void> {
+  const args = { id, fileIndex: 0 };
+  const result = await request(async () => {
+    const preview = await api().previewOperation("saves.copyFile", args);
+    return api().runOperation("saves.copyFile", args, preview.token);
+  });
+  const parsed = CopyFileResultSchema.safeParse(result);
+  if (!parsed.success)
+    throw new PondApiError("Pond returned an unexpected response.");
+  if (!parsed.data.ok)
+    throw new PondApiError(
+      COPY_FILE_FAILURES.get(parsed.data.reason ?? "") ??
+        "Couldn't copy the file. Try again.",
+    );
+}
+
+export function fetchThumbnail(id: string) {
+  return request(() => api().thumbnail(id));
 }
 
 export function enqueueUrl(url: string) {
