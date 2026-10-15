@@ -22,7 +22,6 @@
     "css-composes-hmr.ts",
     "src/main/**/*.ts",
     "src/preload/**/*.ts",
-    "src/shared/**/*.ts",
-    "scripts/ai-benchmark/**/*.ts"
+    "src/shared/**/*.ts"
   ]
 }

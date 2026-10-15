@@ -1,9 +1,0 @@
-.cursor {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 30;
-  overflow: visible;
-  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.3));
-  transform-origin: 4px 3px;
-}

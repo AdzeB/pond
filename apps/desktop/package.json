@@ -44,9 +44,6 @@
     "smoke:library-trust": "electron ./scripts/smoke-library-trust.cjs",
     "smoke:sensitive-content": "node ./scripts/smoke-sensitive-content.mjs",
     "smoke:offline-release": "node ./scripts/smoke-offline-release.mjs",
-    "perf:embedding-dimensions": "ELECTRON_RUN_AS_NODE=1 electron ./scripts/benchmark-embedding-dimensions.mjs",
-    "perf:queue": "ELECTRON_RUN_AS_NODE=1 electron ./scripts/bench-queue-v2.mjs",
-    "perf:gallery": "node ./scripts/smoke-gallery-performance.cjs",
     "generate:harvest": "node scripts/generate-harvest-validation.mjs",
     "generate": "pnpm generate:harvest",
     "generate:check": "pnpm generate:harvest --check"

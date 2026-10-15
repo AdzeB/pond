@@ -28,8 +28,6 @@ After building the desktop, `pnpm --filter @pond/desktop exec electron scripts/s
 
 The desktop package also retains focused manual checks outside `pnpm check`. Run `pnpm --filter @pond/desktop smoke:folder-tags` for folder rules, Undo, import recovery, and transfers. Run `pnpm --filter @pond/desktop smoke:library-trust` for backup manifests and detection of password-protected folders in imported Eagle metadata. These checks require a built desktop and a desktop session. Run `pnpm --filter @pond/desktop smoke:sensitive-content` to download the pinned on-device model, verify its checksum, and exercise one inference without Electron.
 
-The manual benchmarks are retained for measurements that should not gate every PR. Run `pnpm --filter @pond/desktop perf:db [scale...]` to benchmark synthetic SQLite libraries. Run `pnpm --filter @pond/desktop perf:gallery -- --sizes 1000,10000,100000` to measure launch, queries, search, and scrolling against generated galleries. The gallery check requires a built desktop and writes its report to a temporary directory unless you pass `--output`.
-
 Use temporary libraries and fixtures in tests. Never require a contributor's personal library, source accounts, or API keys for a PR check. Keep live source tests separate.
 
 ## Add a source

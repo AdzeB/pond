@@ -21,10 +21,7 @@
         "!README.md",
         "!**/*.test.ts",
         "!**/*.test.tsx",
-        "!**/*.bench.test.ts",
-        "!scripts/smoke-*.cjs",
-        "!scripts/gallery-performance-*.cjs",
-        "!scripts/bench-*.mjs"
+        "!scripts/smoke-*.cjs"
       ],
       "outputs": []
     },
