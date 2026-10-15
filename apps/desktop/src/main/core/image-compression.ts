@@ -11,7 +11,7 @@ import { encodeBlurhash } from "../lib/blurhash";
 import { extractPalette } from "../lib/palette";
 import { resolvePaths, saveDirIn } from "../paths";
 import { executeBatch } from "./executor";
-import { renderThumbnailPng } from "./save-thumbnail-file";
+import { renderThumbnail } from "./save-thumbnail-file";
 import { readLibraryMedia } from "./storage/library-media-storage";
 import { recordBatchForUndo } from "./undo";
 
@@ -285,30 +285,40 @@ async function compressionTransaction(
     { filename: candidate.file.path, bytes: candidate.source },
   ];
   let thumbnailBytes: Buffer | null = null;
+  let thumbnailRename: { from: string; to: string } | null = null;
   if (candidate.thumbnail) {
-    thumbnailBytes = await renderThumbnailPng(compressed);
+    thumbnailBytes = await renderThumbnail(compressed);
     if (thumbnailBytes) {
+      const previousPath = candidate.thumbnail.file.path;
+      const thumbnailPath = previousPath.replace(
+        /_thumbnail\.png$/i,
+        "_thumbnail.webp",
+      );
       const thumbnailMetadata = await sharp(thumbnailBytes).metadata();
       const updatedThumbnail: SaveFile = {
         ...candidate.thumbnail.file,
+        path: thumbnailPath,
         sha256: digest(thumbnailBytes),
         size: thumbnailBytes.length,
-        mimeType: "image/png",
+        mimeType: "image/webp",
         width: thumbnailMetadata.width ?? null,
         height: thumbnailMetadata.height ?? null,
       };
       const thumbnailIndex = files.findIndex(
-        (file) => file.path === candidate.thumbnail?.file.path,
+        (file) => file.path === previousPath,
       );
       if (thumbnailIndex >= 0) files[thumbnailIndex] = updatedThumbnail;
       writes.push({
-        filename: candidate.thumbnail.file.path,
+        filename: thumbnailPath,
         bytes: thumbnailBytes,
       });
       beforeFiles.push({
-        filename: candidate.thumbnail.file.path,
+        filename: previousPath,
         bytes: candidate.thumbnail.source,
       });
+      if (thumbnailPath !== previousPath) {
+        thumbnailRename = { from: previousPath, to: thumbnailPath };
+      }
     }
   }
   const palette = await extractPalette(compressed);
@@ -335,10 +345,12 @@ async function compressionTransaction(
       blurhash: candidate.save.blurhash,
     },
     patch,
-    fileRenames:
+    fileRenames: renameList(
       outputPath === candidate.file.path
-        ? undefined
+        ? []
         : [{ from: candidate.file.path, to: outputPath }],
+      thumbnailRename,
+    ),
     files: writes,
     beforeFiles,
     meta: {
@@ -348,6 +360,17 @@ async function compressionTransaction(
         : "image:compress",
     },
   };
+}
+
+function renameList(
+  imageRenames: { from: string; to: string }[],
+  thumbnailRename: { from: string; to: string } | null,
+): { from: string; to: string }[] | undefined {
+  const renames = [
+    ...imageRenames,
+    ...(thumbnailRename ? [thumbnailRename] : []),
+  ];
+  return renames.length > 0 ? renames : undefined;
 }
 
 function digest(bytes: Buffer): string {
