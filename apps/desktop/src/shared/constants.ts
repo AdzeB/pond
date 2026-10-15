@@ -163,6 +163,7 @@ export type MenuActionId =
   | "library.import-links"
   | "library.import-clipboard"
   | "library.import-bookmarks"
+  | "library.import-mymind"
   | "library.import-page-assets"
   | "library.import-eagle"
   | "library.import-package"

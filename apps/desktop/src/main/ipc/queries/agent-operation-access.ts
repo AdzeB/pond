@@ -155,6 +155,7 @@ export const queryOperationAccess = {
   "saves.getEmbedding": "hidden",
   "saves.getMany": "read",
   "saves.importBookmarks": "review",
+  "saves.importMymind": "review",
   "saves.importClipboard": "review",
   "saves.importEagleLibrary": "review",
   "saves.importEaglePackage": "review",
