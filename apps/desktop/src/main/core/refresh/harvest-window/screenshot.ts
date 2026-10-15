@@ -1,4 +1,4 @@
-import type { CaptureMedia } from "@pond/schema/raw";
+import type { Capture, CaptureMedia } from "@pond/schema/raw";
 import type { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import sharp from "sharp";
@@ -51,6 +51,7 @@ interface TweetDualScreenshotResult {
   dark: TweetScreenshotResult;
   quotedUrl?: string;
   media?: CaptureMedia[];
+  page?: Capture;
 }
 
 export async function screenshotTweetDual(
@@ -91,13 +92,10 @@ export async function screenshotTweetDual(
     );
 
     let media: CaptureMedia[] | undefined;
+    let page: Capture | undefined;
     if (args.harvestMedia && light.ok) {
-      const harvested = await harvestPageMedia(
-        lease.win,
-        args.sourceId,
-        "tweet",
-      );
-      if (harvested && harvested.length > 0) media = harvested;
+      page = await harvestPageMedia(lease.win, args.sourceId, "tweet");
+      if (page && page.media.length > 0) media = page.media;
     }
 
     if (restoreEmulation) await restoreEmulation().catch(() => {});
@@ -118,6 +116,7 @@ export async function screenshotTweetDual(
     const dual: TweetDualScreenshotResult = { light, dark };
     if (quotedUrl) dual.quotedUrl = quotedUrl;
     if (media) dual.media = media;
+    if (page) dual.page = page;
     return dual;
   } catch (err) {
     log.warn("[pond screenshot:tweet] unexpected dual error", args.url, err);
@@ -167,13 +166,10 @@ export async function screenshotThreadsDual(
     );
 
     let media: CaptureMedia[] | undefined;
+    let page: Capture | undefined;
     if (args.harvestMedia && light.ok) {
-      const harvested = await harvestPageMedia(
-        lease.win,
-        args.sourceId,
-        "threads",
-      );
-      if (harvested && harvested.length > 0) media = harvested;
+      page = await harvestPageMedia(lease.win, args.sourceId, "threads");
+      if (page && page.media.length > 0) media = page.media;
     }
 
     if (restoreEmulation) await restoreEmulation().catch(() => {});
@@ -197,6 +193,7 @@ export async function screenshotThreadsDual(
     const dual: TweetDualScreenshotResult = { light, dark };
     if (quotedUrl) dual.quotedUrl = quotedUrl;
     if (media) dual.media = media;
+    if (page) dual.page = page;
     return dual;
   } catch (err) {
     log.warn("[pond screenshot:threads] unexpected dual error", args.url, err);
@@ -349,7 +346,7 @@ async function harvestPageMedia(
   win: BrowserWindow,
   sourceId: string,
   kind: "tweet" | "threads",
-): Promise<CaptureMedia[] | undefined> {
+): Promise<Capture | undefined> {
   try {
     const expr =
       kind === "threads"
@@ -366,7 +363,7 @@ async function harvestPageMedia(
     };
     const harvested =
       kind === "threads" ? adaptThreads(raw, ctx) : adapt(raw, ctx);
-    return harvested?.media;
+    return harvested ?? undefined;
   } catch (err) {
     log.warn("[pond screenshot] media harvest failed", err);
     return undefined;

@@ -1,4 +1,4 @@
-import type { CaptureMedia, RawJson } from "@pond/schema/raw";
+import type { Capture, CaptureMedia, RawJson } from "@pond/schema/raw";
 import { QUOTE_DEPTH_CAP } from "@pond/schema/raw";
 import log from "electron-log/main.js";
 import { persistSave } from "../../persist-save";
@@ -58,9 +58,18 @@ export async function runCaptureTweet(
     return idle;
   }
 
-  const rendered = await tryNativeRender(saveId, save);
+  let rawJson = save.rawJson;
+  if (!opts?.nativeOnly) {
+    const filled = await fillReplyParent(saveId, save);
+    if (filled) {
+      const refreshed = await readSave(saveId);
+      if (refreshed?.rawJson) rawJson = refreshed.rawJson;
+    }
+  }
+
+  const rendered = await tryNativeRender(saveId, { ...save, rawJson });
   if (rendered) {
-    await finalizeRawJson(saveId, save.rawJson, [], { stampVersion: true });
+    await finalizeRawJson(saveId, rawJson, [], { stampVersion: true });
     log.info("[pond pipeline:capture-tweet] native card done", { saveId });
     return { captured: 2, authWall: false, mediaAdded: false };
   }
@@ -95,7 +104,7 @@ export async function runCaptureTweet(
   }
 
   let completed = main.complete;
-  let nextUrl = main.quotedUrl ?? quotedUrlFromCapture(save.rawJson);
+  let nextUrl = main.quotedUrl ?? quotedUrlFromCapture(rawJson);
   for (let depth = 1; nextUrl && depth <= QUOTE_DEPTH_CAP; depth += 1) {
     const quotedId =
       save.source === "threads"
@@ -123,7 +132,7 @@ export async function runCaptureTweet(
     nextUrl = quote.quotedUrl;
   }
 
-  const mediaAdded = await finalizeRawJson(saveId, save.rawJson, harvested, {
+  const mediaAdded = await finalizeRawJson(saveId, rawJson, harvested, {
     stampVersion: completed,
   });
 
@@ -233,6 +242,7 @@ interface CaptureVariantsResult {
   authWall: boolean;
   quotedUrl?: string;
   media?: CaptureMedia[];
+  page?: Capture;
 }
 
 async function captureVariants(
@@ -285,6 +295,7 @@ async function captureVariants(
   };
   if (quotedUrl) result.quotedUrl = quotedUrl;
   if (media) result.media = media;
+  if (dual.page) result.page = dual.page;
   return result;
 }
 
@@ -378,4 +389,54 @@ function parsePostCode(url: string): string | null {
 
 function quotedUrlFromCapture(rawJson: RawJson | null): string | undefined {
   return rawJson?.capture?.quoted?.url || undefined;
+}
+
+async function fillReplyParent(
+  saveId: string,
+  save: NonNullable<Awaited<ReturnType<typeof readSave>>>,
+): Promise<boolean> {
+  if (save.source !== "twitter" && save.source !== "threads") return false;
+  const parentUrl = save.rawJson?.capture?.replyTo?.url;
+  if (!parentUrl || parentUrl === save.url) return false;
+  if (save.rawJson?.capture?.replyTo?.description) return false;
+  const parentId =
+    save.source === "threads"
+      ? parsePostCode(parentUrl)
+      : parseTweetId(parentUrl);
+  if (!parentId) return false;
+  const parent = await captureVariants(saveId, {
+    url: parentUrl,
+    sourceId: parentId,
+    source: save.source,
+    lightKind: "tweet_reply_parent_light",
+    darkKind: "tweet_reply_parent_dark",
+    lightFilename: "tweet-reply-parent-light.png",
+    darkFilename: "tweet-reply-parent-dark.png",
+    harvestMedia: true,
+  });
+  if (!parent.page) return false;
+  return mergeReplyParent(saveId, save.rawJson, parent.page);
+}
+
+async function mergeReplyParent(
+  saveId: string,
+  stored: RawJson | null,
+  parent: Capture,
+): Promise<boolean> {
+  if (!stored?.capture?.replyTo) return false;
+  const rawJson = structuredClone(stored);
+  const replyTo = rawJson.capture?.replyTo;
+  if (!replyTo) return false;
+  if (parent.description) replyTo.description = parent.description;
+  if (parent.title) replyTo.title = parent.title;
+  if (parent.author) replyTo.author = parent.author;
+  if (parent.publishedAt) replyTo.publishedAt = parent.publishedAt;
+  if (parent.media.length > 0) replyTo.media = parent.media;
+  if (parent.quoted) replyTo.quoted = parent.quoted;
+  await persistSave(
+    saveId,
+    { rawJson },
+    { actorReason: "pipeline:capture-tweet:reply-parent" },
+  );
+  return true;
 }
