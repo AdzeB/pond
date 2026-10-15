@@ -1,6 +1,6 @@
+import { SOUND_PATCH, type UiSoundName } from "@pond/ui/sounds";
 import type { FeedbackEvent } from "@shared/feedback";
 import { ensureReady, type PlayOptions } from "@web-kits/audio";
-import { SOUND_PATCH, type UiSoundName } from "@/shared/lib/sound-packs";
 import { getPrefsSnapshot } from "@/shared/state/prefs";
 
 type SoundKind = UiSoundName | "toggle";

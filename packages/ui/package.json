@@ -39,6 +39,7 @@
     "./message": "./src/message/index.tsx",
     "./loader": "./src/loader/index.tsx",
     "./shimmer": "./src/shimmer/index.tsx",
+    "./sounds": "./src/sounds/index.ts",
     "./text-reveal": "./src/text-reveal/index.ts",
     "./question-card": "./src/question-card/index.tsx",
     "./reference-list": "./src/reference-list/index.tsx",
@@ -65,6 +66,7 @@
     "@tanstack/react-table": "^9.2.4",
     "@tanstack/react-virtual": "catalog:",
     "@tanstack/store": "catalog:",
+    "@web-kits/audio": "^0.2.0",
     "clsx": "catalog:",
     "motion": "catalog:",
     "react-aria": "^3.52.1",
@@ -75,6 +77,7 @@
     "@types/react-dom": "catalog:",
     "jsdom": "^30.0.1",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "zod": "catalog:"
   }
 }

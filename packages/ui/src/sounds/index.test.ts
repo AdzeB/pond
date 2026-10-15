@@ -1,7 +1,7 @@
 import type { Layer, SoundDefinition } from "@web-kits/audio";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { SOUND_PATCH, UI_SOUND_NAMES } from "./sound-packs";
+import { SOUND_PATCH, UI_SOUND_NAMES } from ".";
 
 const HertzSchema = z.number();
 const SweepSchema = z.object({ start: z.number(), end: z.number() });

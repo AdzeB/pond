@@ -1,0 +1,45 @@
+"use client";
+
+import { SOUND_PATCH, type UiSoundName } from "@pond/ui/sounds";
+import { ensureReady } from "@web-kits/audio";
+import { useEffect } from "react";
+
+const CONTROL = "a[href], button";
+const RATE_MS = 40;
+const RAPID_MS = 110;
+
+/** Download buttons carry `data-variant`; the quieter text links do not. */
+function cueFor(control: Element): UiSoundName {
+  return control.hasAttribute("data-variant") ? "tap" : "soft";
+}
+
+export function Sounds() {
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let last = 0;
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.button !== 0 || reduce.matches) return;
+      if (!(event.target instanceof Element)) return;
+      const control = event.target.closest(CONTROL);
+      if (!control) return;
+
+      const now = performance.now();
+      if (now - last < RATE_MS) return;
+      const volume = now - last < RAPID_MS ? 0.7 : 1;
+      last = now;
+
+      const name = cueFor(control);
+      const detune = (Math.random() - 0.5) * 28;
+      void ensureReady()
+        .then(() => SOUND_PATCH.play(name, { detune, volume }))
+        .catch(() => {});
+    };
+
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () =>
+      document.removeEventListener("pointerdown", onPointerDown, true);
+  }, []);
+
+  return null;
+}

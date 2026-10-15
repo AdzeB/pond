@@ -1,18 +1,18 @@
 import { IconAnimationRepeat, IconMediaPlay } from "@pond/icons";
 import { Button, Switch } from "@pond/ui";
 import {
+  SOUND_PATCH,
+  UI_SOUND_NAMES,
+  UI_SOUNDS,
+  type UiSoundName,
+} from "@pond/ui/sounds";
+import {
   ensureReady,
   type Layer,
   renderToBuffer,
   type SoundDefinition,
 } from "@web-kits/audio";
 import { useEffect, useState } from "react";
-import {
-  SOUND_PATCH,
-  UI_SOUND_NAMES,
-  UI_SOUNDS,
-  type UiSoundName,
-} from "@/shared/lib/sound-packs";
 import styles from "./styles.module.css";
 
 interface Cue {
