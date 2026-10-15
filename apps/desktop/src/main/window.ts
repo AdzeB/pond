@@ -71,6 +71,7 @@ export async function syncShellChrome(): Promise<void> {
       ? "#000000"
       : "#ffffff");
 
+  if (win.isDestroyed()) return;
   win.setBackgroundColor(background);
 }
 
@@ -163,6 +164,7 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
     if (saveBoundsTimer) clearTimeout(saveBoundsTimer);
     saveBoundsTimer = setTimeout(() => {
       saveBoundsTimer = null;
+      if (win.isDestroyed()) return;
       const b = usableWindowBounds(win.getBounds());
       if (!b) return;
       void setPrefs({ window: { bounds: b } }).catch((err) =>
