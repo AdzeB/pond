@@ -2,6 +2,17 @@ packages:
   - "apps/*"
   - "packages/*"
 
+# sharp's Intel prebuild is an optional dependency. Without it, an x64 Mac
+# crashes in the main process on launch.
+supportedArchitectures:
+  os:
+    - current
+    - darwin
+  cpu:
+    - current
+    - arm64
+    - x64
+
 # Single source of truth for versions shared across the workspace. Reference
 # with the `catalog:` protocol in each package.json to prevent version drift.
 catalog:
