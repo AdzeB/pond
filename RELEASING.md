@@ -1,6 +1,6 @@
 # Releasing Pond
 
-Pond ships via **GitHub Releases**: unsigned macOS `.dmg` files (arm64 + x64), `latest-mac.yml` for auto-update, and a browser extension `.zip`.
+Pond ships via **GitHub Releases**: signed and notarized macOS `.dmg` and `.zip` files (arm64 + x64), `latest-mac.yml` for auto-update, and a browser extension `.zip`.
 
 ## Version bump
 
@@ -30,30 +30,47 @@ Commit the bump on `main`.
 ## Tag and publish
 
 ```bash
-git tag v0.0.1
-git push origin v0.0.1
+git tag v1.0.1
+git push origin v1.0.1
 ```
 
 Pushing a tag matching `v*` triggers [`.github/workflows/release.yml`](.github/workflows/release.yml), which:
 
-1. Runs lint, typecheck, tests, and build
-2. Packages the existing Electron/Vite output as macOS DMGs and publishes them
-3. Builds the extension zip and uploads it as `pond-extension-<version>.zip`
-4. Updates [`Casks/pond.rb`](Casks/pond.rb) with the release version and DMG checksums
+1. Runs lint, typecheck, tests, build, and the desktop smoke test
+2. Stops if any signing secret is missing
+3. Signs and notarizes the app, then publishes the DMGs, zips, and `latest-mac.yml`
+4. Builds the extension zip and uploads it as `pond-extension-<version>.zip`
+5. Updates [`Casks/pond.rb`](Casks/pond.rb) with the release version and DMG checksums
 
-Release tag format must be `vX.Y.Z` (e.g. `v0.0.1`).
+Release tag format must be `vX.Y.Z` (e.g. `v1.0.1`). Notarization usually adds 10 to 15 minutes to the packaging step.
 
-Artifact names (used by the website download links):
+Artifact names (used by the website download links and the updater):
 
 - `Pond-<version>-arm64.dmg`
 - `Pond-<version>-x64.dmg`
+- `Pond-<version>-arm64.zip`
+- `Pond-<version>-x64.zip`
+- `latest-mac.yml`
 - `pond-extension-<version>.zip`
+
+## Signing
+
+The release workflow reads five repository secrets:
+
+| Secret | Value |
+|------|-------|
+| `CSC_LINK` | Base64 of the Developer ID Application `.p12` |
+| `CSC_KEY_PASSWORD` | Password for that `.p12` |
+| `APPLE_ID` | Apple Account email for notarization |
+| `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password for that account |
+| `APPLE_TEAM_ID` | Developer team ID |
+
+The Developer ID certificate expires on November 14, 2027. Create a new one before then and replace `CSC_LINK` and `CSC_KEY_PASSWORD`.
 
 ## Homebrew
 
 The repository contains a tap-compatible cask at
-[`Casks/pond.rb`](Casks/pond.rb). After the repository becomes public, install
-it with:
+[`Casks/pond.rb`](Casks/pond.rb). Install it with:
 
 ```bash
 brew tap raphaelsalaja/pond https://github.com/raphaelsalaja/pond
@@ -99,9 +116,10 @@ published `pond --version` matches `packages/cli/package.json`.
 
 Run these before announcing a release:
 
-- [ ] GitHub Release contains versioned arm64 + x64 `.dmg`, `latest-mac.yml`, and `pond-extension-X.Y.Z.zip`
+- [ ] GitHub Release contains versioned arm64 + x64 `.dmg` and `.zip`, `latest-mac.yml`, and `pond-extension-X.Y.Z.zip`
 - [ ] `Casks/pond.rb` contains the release version and DMG checksums
-- [ ] Fresh Mac: download arm64 DMG → right-click → **Open** → app launches (unsigned build)
+- [ ] `spctl -a -vv /Volumes/Pond/Pond.app` reports `Notarized Developer ID`
+- [ ] Fresh Mac: download arm64 DMG → open Pond → it launches without a Gatekeeper prompt
 - [ ] Website Download buttons hit the new artifacts
 - [ ] Open Pond once so it registers the native host
 - [ ] Load the extension unpacked → click the Pond icon or right-click a page → save appears in Pond
@@ -110,6 +128,6 @@ Run these before announcing a release:
 
 ## Notes
 
-- **Signing**: v0.0.1 ships unsigned. Users may need right-click → Open on first launch.
+- **Local packaging**: `pnpm dist:mac` signs with a Developer ID identity in your login keychain and skips notarization unless the Apple variables are set.
 - **Auto-update**: Requires the published `latest-mac.yml` from the release workflow. Dev builds skip the updater.
 - **Windows and Linux**: Builds are disabled. Those platforms are coming soon.

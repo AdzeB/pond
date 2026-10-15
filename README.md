@@ -2,17 +2,22 @@
 
 ## Install
 
-Download the latest `.dmg` from [GitHub Releases](https://github.com/raphaelsalaja/pond/releases). Requires macOS 12 or later (Apple Silicon and Intel builds are published separately). Windows and Linux are coming soon.
+Download the latest `.dmg` from [GitHub Releases](https://github.com/raphaelsalaja/pond/releases), or install it with Homebrew:
 
-**First open (unsigned build):** macOS may block the app with "developer cannot be verified." Right-click the app → **Open**, or go to **System Settings → Privacy & Security → Open Anyway**.
+```bash
+brew tap raphaelsalaja/pond https://github.com/raphaelsalaja/pond
+brew install --cask raphaelsalaja/pond/pond
+```
+
+Pond needs macOS 13 or later, on Apple Silicon or Intel. It's signed and notarized, and it updates itself from GitHub Releases. Windows and Linux are coming soon.
 
 ### Browser extension
 
-Capture from the web requires the Pond extension:
+Saving from the web and connecting accounts in Sources both need the Pond extension. It works in Chrome, Arc, Brave, and Edge.
 
-1. Download `pond-extension-X.Y.Z.zip` from the same release (or build from source; see [`apps/extension/README.md`](apps/extension/README.md)).
-2. Load unpacked in Chrome (`chrome://extensions` → Developer mode).
-3. Open Pond once so it can register the native host, then click the Pond icon or right-click a page to save.
+1. In Pond, open the library menu at the top of the sidebar, choose **Browser Extension**, then click **Download**. A Pond Extension folder lands in Downloads. You can also download `pond-extension-X.Y.Z.zip` from the release, or build it from source with [`apps/extension/README.md`](apps/extension/README.md).
+2. Open `chrome://extensions`, turn on Developer mode, click **Load unpacked**, and choose the folder.
+3. Click the Pond icon or right-click a page to save. Pond must have opened once so the extension can reach it.
 
 ### Raycast extension
 
