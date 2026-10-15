@@ -73,7 +73,6 @@ publish:
   provider: github
   owner: raphaelsalaja
   repo: pond
-  private: true
   releaseType: release
 
 mac:

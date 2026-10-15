@@ -77,7 +77,6 @@ export async function applyUpdaterPrefs(): Promise<void> {
   const autoUpdater = await loadAutoUpdater();
   const prefs = await getPrefs();
   autoUpdater.allowPrerelease = false;
-  autoUpdater.channel = "stable";
   autoUpdater.autoDownload = prefs.updates.autoInstall;
 }
 
