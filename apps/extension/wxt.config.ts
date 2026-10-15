@@ -27,7 +27,7 @@ export default defineConfig({
   }),
   manifest: {
     name: "Pond",
-    version: "0.2.0",
+    version: "1.0.0",
     key: EXTENSION_KEY,
     description:
       "Capture saves from Twitter/X, Instagram, Pinterest, Are.na, Cosmos, TikTok, YouTube, Reddit, Threads, and web articles into one place.",
