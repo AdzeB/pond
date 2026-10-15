@@ -1,29 +1,23 @@
 import { Logo } from "@pond/ui/logo";
-import type { CSSProperties } from "react";
 import styles from "./styles.module.css";
 
-/** Stacked copies at increasing depth give the flat mark an extruded edge while it flips. */
-const LAYERS = [0, 1, 2, 3, 4, 5, 6, 7];
+const WEEK = 7 * 24 * 60 * 60 * 1000;
+
+/** Runs during HTML parsing so returning visitors skip the splash before the first paint. */
+const ONCE_A_WEEK = `(function(){var s=document.currentScript.previousElementSibling;try{var k="pond:splash",n=Date.now(),l=Number(localStorage.getItem(k));if(l&&n-l<${WEEK}){s.setAttribute("data-splash-seen","")}else{localStorage.setItem(k,String(n))}}catch(e){}})()`;
 
 export function Splash() {
   return (
-    <div className={styles.splash} aria-hidden>
-      <div className={styles.mark}>
-        <div className={styles.spin}>
-          {LAYERS.map((depth) => (
-            <Logo
-              key={depth}
-              className={styles.layer}
-              size={48}
-              aria-hidden
-              style={
-                /** SAFETY: React forwards custom properties, but `CSSProperties` has no `--*` keys. */
-                { "--depth": depth } as CSSProperties
-              }
-            />
-          ))}
+    <>
+      <div className={styles.splash} aria-hidden suppressHydrationWarning>
+        <div className={styles.mark}>
+          <Logo className={styles.logo} size={48} aria-hidden />
         </div>
       </div>
-    </div>
+      <script
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: static inline script, no user input.
+        dangerouslySetInnerHTML={{ __html: ONCE_A_WEEK }}
+      />
+    </>
   );
 }
