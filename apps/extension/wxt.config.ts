@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { FIREFOX_EXTENSION_ID } from "@pond/schema/native";
 import { defineConfig } from "wxt";
 
 /** Pinned public key so unpacked and store builds share `EXTENSION_ID` in `@pond/schema/native`. */
@@ -25,10 +26,22 @@ export default defineConfig({
       },
     },
   }),
-  manifest: {
+  manifest: ({ browser }) => ({
     name: "Pond",
     version: "1.0.1",
-    key: EXTENSION_KEY,
+    ...(browser === "firefox"
+      ? {
+          browser_specific_settings: {
+            gecko: {
+              id: FIREFOX_EXTENSION_ID,
+              strict_min_version: "128.0",
+              data_collection_permissions: {
+                required: ["none"],
+              },
+            },
+          },
+        }
+      : { key: EXTENSION_KEY }),
     description:
       "Capture saves from Twitter/X, Instagram, Pinterest, Are.na, Cosmos, TikTok, YouTube, Reddit, Threads, and web articles into one place.",
     icons: {
@@ -77,5 +90,5 @@ export default defineConfig({
       "https://m.youtube.com/*",
       "<all_urls>",
     ],
-  },
+  }),
 });

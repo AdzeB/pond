@@ -9,8 +9,8 @@ export async function nativeCall(
   request: NativeRequest,
 ): Promise<NativeResponse> {
   return new Promise((resolve) => {
-    chrome.runtime.sendNativeMessage(NATIVE_HOST_NAME, request, (response) => {
-      if (chrome.runtime.lastError) {
+    browser.runtime.sendNativeMessage(NATIVE_HOST_NAME, request, (response) => {
+      if (browser.runtime.lastError) {
         resolve({ ok: false, error: "offline" });
         return;
       }

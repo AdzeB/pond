@@ -54,6 +54,8 @@ extraResources:
     to: bin/ffmpeg
   - from: ../extension/.output/chrome-mv3
     to: extension
+  - from: ../extension/.output/firefox-mv3
+    to: extension-firefox
 
 extraMetadata:
   main: ./out/main/index.js

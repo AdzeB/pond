@@ -1,13 +1,17 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { EXTENSION_ID, NATIVE_HOST_NAME } from "@pond/schema/native";
+import {
+  EXTENSION_ID,
+  FIREFOX_EXTENSION_ID,
+  NATIVE_HOST_NAME,
+} from "@pond/schema/native";
 import { app } from "electron";
 import log from "electron-log/main.js";
 
 const HOST_FILENAME = `${NATIVE_HOST_NAME}.json`;
 
-const BROWSER_NMH_DIRS = [
+const CHROMIUM_NMH_DIRS = [
   "Library/Application Support/Google/Chrome/NativeMessagingHosts",
   "Library/Application Support/Google/Chrome Canary/NativeMessagingHosts",
   "Library/Application Support/Google/Chrome for Testing/NativeMessagingHosts",
@@ -16,6 +20,14 @@ const BROWSER_NMH_DIRS = [
   "Library/Application Support/Microsoft Edge/NativeMessagingHosts",
   "Library/Application Support/Arc/User Data/NativeMessagingHosts",
   "Library/Application Support/Vivaldi/NativeMessagingHosts",
+] as const;
+
+const FIREFOX_NMH_DIRS = [
+  "Library/Application Support/Mozilla/NativeMessagingHosts",
+  "Library/Application Support/zen/NativeMessagingHosts",
+  "Library/Application Support/Zen/NativeMessagingHosts",
+  "Library/Application Support/librewolf/NativeMessagingHosts",
+  "Library/Application Support/Floorp/NativeMessagingHosts",
 ] as const;
 
 function nativeHostBinaryPath(): string {
@@ -31,18 +43,33 @@ function nativeHostBinaryPath(): string {
   return found ?? join(process.cwd(), "resources", "bin", "pond-native-host");
 }
 
-function manifestBody(hostPath: string): string {
+function hostManifest(
+  hostPath: string,
+  allow: { allowed_origins: string[] } | { allowed_extensions: string[] },
+): string {
   return `${JSON.stringify(
     {
       name: NATIVE_HOST_NAME,
       description: "Pond",
       path: hostPath,
       type: "stdio",
-      allowed_origins: [`chrome-extension://${EXTENSION_ID}/`],
+      ...allow,
     },
     null,
     2,
   )}\n`;
+}
+
+export function chromiumNativeHostManifest(hostPath: string): string {
+  return hostManifest(hostPath, {
+    allowed_origins: [`chrome-extension://${EXTENSION_ID}/`],
+  });
+}
+
+export function firefoxNativeHostManifest(hostPath: string): string {
+  return hostManifest(hostPath, {
+    allowed_extensions: [FIREFOX_EXTENSION_ID],
+  });
 }
 
 export function writeNativeHostManifests(): void {
@@ -55,16 +82,21 @@ export function writeNativeHostManifests(): void {
   }
 
   const home = homedir();
-  const body = manifestBody(hostPath);
-  for (const rel of BROWSER_NMH_DIRS) {
-    const parent = join(home, rel, "..");
-    if (!existsSync(parent)) continue;
-    const dir = join(home, rel);
-    try {
-      mkdirSync(dir, { recursive: true });
-      writeFileSync(join(dir, HOST_FILENAME), body, { encoding: "utf8" });
-    } catch (err) {
-      log.warn("[pond native] failed to write host manifest", dir, err);
+  const targets = [
+    { dirs: CHROMIUM_NMH_DIRS, body: chromiumNativeHostManifest(hostPath) },
+    { dirs: FIREFOX_NMH_DIRS, body: firefoxNativeHostManifest(hostPath) },
+  ];
+  for (const { dirs, body } of targets) {
+    for (const rel of dirs) {
+      const parent = join(home, rel, "..");
+      if (!existsSync(parent)) continue;
+      const dir = join(home, rel);
+      try {
+        mkdirSync(dir, { recursive: true });
+        writeFileSync(join(dir, HOST_FILENAME), body, { encoding: "utf8" });
+      } catch (err) {
+        log.warn("[pond native] failed to write host manifest", dir, err);
+      }
     }
   }
 }

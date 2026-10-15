@@ -174,12 +174,17 @@ export const libraryMaintenanceQueries = {
     return await checkForUpdatesNow();
   },
 
-  async "extension.install"(): Promise<QueryResult<"extension.install">> {
-    const { installBrowserExtension } = await import(
-      "../../core/browser-extension"
-    );
-    return await installBrowserExtension();
-  },
+  "extension.install": query(
+    z.object({
+      browser: z.enum(["chrome", "firefox"]).optional(),
+    }),
+    async (params): Promise<QueryResult<"extension.install">> => {
+      const { installBrowserExtension } = await import(
+        "../../core/browser-extension"
+      );
+      return await installBrowserExtension(params.browser ?? "chrome");
+    },
+  ),
 
   async "quickCapture.applyPrefs"(): Promise<
     QueryResult<"quickCapture.applyPrefs">

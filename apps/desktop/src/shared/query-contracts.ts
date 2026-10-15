@@ -304,7 +304,7 @@ export interface QueryInputs
   "api.restart": EmptyInput;
   "updates.applyPrefs": EmptyInput;
   "updates.checkNow": EmptyInput;
-  "extension.install": EmptyInput;
+  "extension.install": { browser?: "chrome" | "firefox" };
   "quickCapture.applyPrefs": EmptyInput;
   "window.applyPrefs": EmptyInput;
   "system.applyPrefs": EmptyInput;
