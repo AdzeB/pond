@@ -86,9 +86,14 @@ mac:
       arch:
         - arm64
         - x64
-  # Notarization + signing use env vars: APPLE_ID, APPLE_ID_PASSWORD,
-  # APPLE_TEAM_ID, CSC_LINK, CSC_KEY_PASSWORD. Build works unsigned locally.
-  notarize: false
+    # electron-updater installs macOS updates from the zip, not the DMG.
+    - target: zip
+      arch:
+        - arm64
+        - x64
+  # Signing reads CSC_LINK and CSC_KEY_PASSWORD; notarization reads APPLE_ID,
+  # APPLE_APP_SPECIFIC_PASSWORD, and APPLE_TEAM_ID. Without them it is skipped.
+  notarize: true
   hardenedRuntime: true
   gatekeeperAssess: false
   # The inherit entitlements are applied to the bundled ffmpeg binary (and
