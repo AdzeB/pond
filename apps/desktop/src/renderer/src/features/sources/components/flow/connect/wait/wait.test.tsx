@@ -110,7 +110,8 @@ it("explains the local connection before the account arrives", async () => {
   expect(host.textContent).toContain("Keep your session on this device");
   expect(host.textContent).toContain("Read your saved posts");
   expect(host.textContent).toContain(
-    "Sign in through your browser. The session stays on this device, and Pond only reads your saves.",
+    "Pond gets your session through its browser extension.",
   );
+  expect(host.textContent).toContain("Get Extension");
   expect(host.textContent).not.toContain("Waiting for sign-in");
 });

@@ -12,7 +12,6 @@ import { cssVars, Menu } from "@pond/ui";
 import type { QueryResult } from "@shared/query-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { BrowserExtensionDialog } from "@/features/library/components/browser-extension-dialog";
 import { LibraryCustomizeDialog } from "@/features/library/components/library-customize-dialog";
 import {
   createLibrary,
@@ -22,6 +21,7 @@ import {
 } from "@/features/library/lib/library-location";
 import { useSidebarWidth } from "@/features/library/state/library-chrome";
 import defaultAppIcon from "@/generated/app-icon-previews/aqua.png";
+import { BrowserExtensionDialog } from "@/shared/components/browser-extension-dialog";
 import { openSettings } from "@/shared/lib/open-settings";
 import { buildWorkspaceMenuItems } from "./spec";
 import styles from "./styles.module.css";

@@ -1,6 +1,6 @@
 import { IconCircleCheckFill } from "@pond/icons";
 import { Button, Dialog } from "@pond/ui";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ConnectionVisual } from "@/features/sources/components/flow/connection-visual";
 import {
   type AccountRow,
@@ -19,6 +19,7 @@ import {
 import { sourceDetail } from "@/features/sources/state/source-detail";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import { syncMonitor } from "@/features/sources/state/sync-monitor";
+import { BrowserExtensionDialog } from "@/shared/components/browser-extension-dialog";
 import { findArrivedAccount } from "./arrival";
 import styles from "./styles.module.css";
 
@@ -65,12 +66,12 @@ export function ConnectWaitSection() {
           )}
         </p>
       </div>
-      <ConnectPromises />
+      <ConnectPromises completed={completed} />
     </div>
   );
 }
 
-function ConnectPromises() {
+function ConnectPromises({ completed }: { completed: boolean }) {
   return (
     <>
       <div className={styles.details}>
@@ -90,11 +91,22 @@ function ConnectPromises() {
           </li>
         </ul>
       </div>
-      <p className={styles.note}>
-        Sign in through your browser. The session stays on this device, and Pond
-        only reads your saves.
-      </p>
+      {completed ? null : <ExtensionNote />}
     </>
+  );
+}
+
+function ExtensionNote() {
+  const [open, setOpen] = useState(false);
+  return (
+    <p className={styles.note}>
+      Pond gets your session through its browser extension. Install it in the
+      browser you sign in with.{" "}
+      <Button variant="link" size="xs" onClick={() => setOpen(true)}>
+        Get Extension
+      </Button>
+      <BrowserExtensionDialog open={open} onOpenChange={setOpen} />
+    </p>
   );
 }
 
