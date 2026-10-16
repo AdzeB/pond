@@ -25,6 +25,13 @@ import {
 import type { Save } from "@/features/saves/types";
 import { SpecMenu } from "@/shared/components/spec-context-menu";
 import type { PondWebviewElement } from "@/shared/types/electron-webview";
+import {
+  currentPageIndex,
+  displayArchiveAddress,
+  initialPageHistory,
+  stepPage,
+  visitPage,
+} from "./archive-navigation";
 import styles from "./styles.module.css";
 
 export function SaveArchiveViewer({ save }: { save: Save }) {
@@ -47,21 +54,6 @@ export function SaveArchiveViewer({ save }: { save: Save }) {
   );
 }
 
-interface PageHistory {
-  entries: number[];
-  cursor: number;
-}
-
-function displayAddress(url: string): string {
-  try {
-    const u = new URL(url);
-    const path = u.pathname.replace(/\/+$/, "");
-    return `${u.hostname.replace(/^www\./, "")}${path}${u.search}`;
-  } catch {
-    return url;
-  }
-}
-
 function ArchiveFrame({
   save,
   manifest,
@@ -69,31 +61,20 @@ function ArchiveFrame({
   save: Save;
   manifest: ArchiveManifest;
 }) {
-  const [history, setHistory] = useState<PageHistory>({
-    entries: [0],
-    cursor: 0,
-  });
+  const [history, setHistory] = useState(initialPageHistory);
   const guestIdRef = useRef<number | null>(null);
   const webviewRef = useRef<PondWebviewElement | null>(null);
 
-  const pageIndex = history.entries[history.cursor] ?? 0;
+  const pageIndex = currentPageIndex(history);
   const canGoBack = history.cursor > 0;
   const canGoForward = history.cursor < history.entries.length - 1;
 
   const visit = useCallback((index: number) => {
-    setHistory((h) => {
-      if (h.entries[h.cursor] === index) return h;
-      const entries = [...h.entries.slice(0, h.cursor + 1), index];
-      return { entries, cursor: entries.length - 1 };
-    });
+    setHistory((current) => visitPage(current, index));
   }, []);
 
   const step = (delta: number) => {
-    setHistory((h) => {
-      const cursor = h.cursor + delta;
-      if (cursor < 0 || cursor >= h.entries.length) return h;
-      return { ...h, cursor };
-    });
+    setHistory((current) => stepPage(current, delta));
   };
 
   const pageIndexByKey = useMemo(() => {
@@ -137,11 +118,11 @@ function ArchiveFrame({
 
   if (!page || !src) return null;
 
-  const address = displayAddress(page.url);
+  const address = displayArchiveAddress(page.url);
   const buildPageItems = (): MenuItemSpec[] =>
     manifest.pages.map((p, index) => ({
       type: "checkbox",
-      label: p.title.trim() || displayAddress(p.url),
+      label: p.title.trim() || displayArchiveAddress(p.url),
       indicator: "check",
       checked: index === pageIndex,
       onCheckedChange: (checked) => {

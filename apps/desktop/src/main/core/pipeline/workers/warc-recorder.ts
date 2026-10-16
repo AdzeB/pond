@@ -5,6 +5,7 @@ import type { WebContents } from "electron";
 import log from "electron-log/main.js";
 import { WARCRecord, WARCSerializer } from "warcio";
 import { z } from "zod";
+import { readResponseBodyWithinBudget } from "./response-body";
 
 const MAX_BODY_BYTES = 30 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 250 * 1024 * 1024;
@@ -12,7 +13,8 @@ const MAX_TOTAL_BYTES = 250 * 1024 * 1024;
 const CDP_TIMEOUT_MS = 10_000;
 const FLUSH_BUDGET_MS = 15_000;
 const FULL_BODY_TIMEOUT_MS = 30_000;
-const FULL_BODY_CONCURRENCY = 4;
+/** Full bodies share one archive budget, so reads are serialized to avoid buffering the same remaining bytes concurrently. */
+const FULL_BODY_CONCURRENCY = 1;
 
 export async function withTimeout<T>(
   promise: Promise<T>,
@@ -110,6 +112,7 @@ export class WarcRecorder {
   private readonly pending = new Set<Promise<void>>();
   private writeChain: Promise<void> = Promise.resolve();
   private totalBytes = 0;
+  private reservedBytes = 0;
   private attached = false;
   private lastNetworkActivity = Date.now();
 
@@ -312,24 +315,30 @@ export class WarcRecorder {
 
   private enqueueWrite(meta: CdpResponse, body: Uint8Array): void {
     if (this.writtenUrls.has(meta.url)) return;
-    if (this.totalBytes >= MAX_TOTAL_BYTES) return;
+    if (body.byteLength > this.remainingCaptureBudget()) return;
     this.writtenUrls.add(meta.url);
+    this.reservedBytes += body.byteLength;
     const task = this.writeChain.then(async () => {
-      const record = WARCRecord.create(
-        {
-          url: meta.url,
-          date: new Date().toISOString(),
-          type: "response",
-          warcVersion: "WARC/1.1",
-          statusline: `HTTP/1.1 ${meta.status} ${meta.statusText || "OK"}`,
-          httpHeaders: toHttpHeaders(meta.headers, body.byteLength),
-        },
-        [body],
-      );
-      const bytes = await WARCSerializer.serialize(record, { gzip: true });
-      this.totalBytes += bytes.byteLength;
-      if (!this.stream.write(bytes)) {
-        await once(this.stream, "drain");
+      try {
+        const record = WARCRecord.create(
+          {
+            url: meta.url,
+            date: new Date().toISOString(),
+            type: "response",
+            warcVersion: "WARC/1.1",
+            statusline: `HTTP/1.1 ${meta.status} ${meta.statusText || "OK"}`,
+            httpHeaders: toHttpHeaders(meta.headers, body.byteLength),
+          },
+          [body],
+        );
+        const bytes = await WARCSerializer.serialize(record, { gzip: true });
+        if (bytes.byteLength > MAX_TOTAL_BYTES - this.totalBytes) return;
+        this.totalBytes += bytes.byteLength;
+        if (!this.stream.write(bytes)) {
+          await once(this.stream, "drain");
+        }
+      } finally {
+        this.reservedBytes -= body.byteLength;
       }
     });
     this.writeChain = task.catch((err) => {
@@ -361,7 +370,8 @@ export class WarcRecorder {
   }
 
   private async captureFullBody(url: string): Promise<void> {
-    if (this.writtenUrls.has(url) || this.totalBytes >= MAX_TOTAL_BYTES) return;
+    if (this.writtenUrls.has(url) || this.remainingCaptureBudget() === 0)
+      return;
     const res = await this.wc.session.fetch(url, {
       signal: AbortSignal.timeout(FULL_BODY_TIMEOUT_MS),
     });
@@ -369,17 +379,20 @@ export class WarcRecorder {
       await res.body?.cancel();
       return;
     }
-    if (Number(res.headers.get("content-length") ?? 0) > MAX_BODY_BYTES) {
-      await res.body?.cancel();
-      return;
-    }
-    const body = new Uint8Array(await res.arrayBuffer());
-    if (body.byteLength === 0 || body.byteLength > MAX_BODY_BYTES) return;
+    const body = await readResponseBodyWithinBudget(
+      res,
+      this.remainingCaptureBudget(),
+    );
+    if (!body) return;
     const headers: Record<string, string> = {};
     res.headers.forEach((value, name) => {
       headers[name] = headers[name] ? `${headers[name]}\n${value}` : value;
     });
     this.enqueueWrite({ url, status: 200, statusText: "OK", headers }, body);
+  }
+
+  private remainingCaptureBudget(): number {
+    return Math.max(0, MAX_TOTAL_BYTES - this.totalBytes - this.reservedBytes);
   }
 
   async waitForNetworkIdle(quietMs: number, budgetMs: number): Promise<void> {

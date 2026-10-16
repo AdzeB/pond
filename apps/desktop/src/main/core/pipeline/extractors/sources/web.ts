@@ -10,11 +10,8 @@ import metascraperTitle from "metascraper-title";
 import metascraperUrl from "metascraper-url";
 import {
   browserUserAgent,
-  NAV_TIMEOUT_MS,
-} from "../../../refresh/harvest-window/constants";
-import { navigateWithTimeout } from "../../../refresh/harvest-window/navigation";
-import { leaseWindow } from "../../../refresh/harvest-window/pool";
-import { sleep } from "../../../refresh/harvest-window/util";
+  renderPageHtml,
+} from "../../../refresh/web-page-renderer";
 import { TerminalError, TransientError } from "../errors";
 import type { Capture, ExtractInput, Extractor } from "../types";
 
@@ -35,14 +32,26 @@ const scrape = metascraper([
 ]);
 
 const FETCH_TIMEOUT_MS = 15_000;
-const RENDER_SETTLE_MS = 1_500;
-const RENDER_READ_TIMEOUT_MS = 10_000;
+
+interface WebPageExtractorDependencies {
+  fetchHtml: (url: string) => Promise<string | null>;
+  renderHtml: (url: string, signal?: AbortSignal) => Promise<string>;
+}
+
+const defaultDependencies: WebPageExtractorDependencies = {
+  fetchHtml,
+  renderHtml,
+};
 
 export class WebPageExtractor implements Extractor {
   readonly id = "web-page";
   readonly source = "web" as const;
   readonly validUrl: readonly RegExp[] = [];
   readonly cookieDomain = null;
+
+  constructor(
+    private readonly dependencies: WebPageExtractorDependencies = defaultDependencies,
+  ) {}
 
   authCookies(): boolean {
     return false;
@@ -54,8 +63,8 @@ export class WebPageExtractor implements Extractor {
 
   async extract(input: ExtractInput): Promise<Capture> {
     const html =
-      (await fetchHtml(input.url.href)) ??
-      (await renderHtml(input.url.href, input.signal));
+      (await this.dependencies.fetchHtml(input.url.href)) ??
+      (await this.dependencies.renderHtml(input.url.href, input.signal));
     const meta = await scrape({ url: input.url.href, html });
 
     const canonical = pickString(meta.url) ?? input.url.href;
@@ -130,35 +139,16 @@ async function fetchHtml(url: string): Promise<string | null> {
 }
 
 async function renderHtml(url: string, signal?: AbortSignal): Promise<string> {
-  const lease = await leaseWindow("web", { signal });
-  try {
-    const wc = lease.win.webContents;
-    let status = 0;
-    const onNavigate = (_e: Electron.Event, _url: string, code: number) => {
-      status = code;
-    };
-    wc.on("did-navigate", onNavigate);
-    let loaded: boolean;
-    try {
-      loaded = await navigateWithTimeout(lease.win, url, NAV_TIMEOUT_MS);
-    } finally {
-      wc.off("did-navigate", onNavigate);
-    }
-    if (!loaded) throw new TransientError("web render: navigation failed");
-    assertPageStatus(status, "web render");
-    await sleep(RENDER_SETTLE_MS);
-    const html: unknown = await Promise.race([
-      wc.executeJavaScript("document.documentElement.outerHTML", true),
-      sleep(RENDER_READ_TIMEOUT_MS).then(() => null),
-    ]);
-    if (html === null) throw new TransientError("web render: read timed out");
-    if (typeof html !== "string" || !html.trim()) {
-      throw new TerminalError("web render returned empty document");
-    }
-    return html;
-  } finally {
-    lease.release();
+  const rendered = await renderPageHtml(url, signal);
+  if (!rendered.ok) {
+    if (rendered.reason === "navigation")
+      throw new TransientError("web render: navigation failed");
+    if (rendered.reason === "read-timeout")
+      throw new TransientError("web render: read timed out");
+    throw new TerminalError("web render returned empty document");
   }
+  assertPageStatus(rendered.status, "web render");
+  return rendered.html;
 }
 
 function assertPageStatus(status: number, label: string): void {
@@ -170,7 +160,7 @@ function assertPageStatus(status: number, label: string): void {
 }
 
 function pickString(value: string | null | undefined): string | undefined {
-  if (typeof value !== "string") return undefined;
+  if (value == null) return undefined;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
 }
