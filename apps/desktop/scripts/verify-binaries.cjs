@@ -88,7 +88,7 @@ function verifySharpRuntime(resourcesDir, arch) {
   if (arch !== "arm64" && arch !== "x64") return;
   const unpacked = join(resourcesDir, "app.asar.unpacked");
   const other = arch === "arm64" ? "x64" : "arm64";
-  removeArchPackages(unpacked, `darwin-${other}`);
+  removeSharpPackages(unpacked, other);
   const files = listFiles(unpacked);
   const runtime = files.find(
     (file) =>
@@ -103,22 +103,16 @@ function verifySharpRuntime(resourcesDir, arch) {
   if (!runtime || !libvips) {
     throw new Error(
       `[pond verify] missing sharp darwin-${arch} runtime under ${unpacked}. ` +
-        "An Intel Mac cannot launch without it.",
+        `A ${arch} Mac cannot launch without it.`,
     );
   }
 }
 
-function removeArchPackages(root, token) {
-  if (!existsSync(root)) return;
-  const matches = listFiles(root).filter((file) => file.includes(token));
-  const roots = new Set(
-    matches.map((file) => {
-      const parts = file.split(sep);
-      const index = parts.findIndex((part) => part.includes(token));
-      return parts.slice(0, index + 1).join(sep);
-    }),
-  );
-  for (const path of roots) rmSync(path, { recursive: true, force: true });
+function removeSharpPackages(root, arch) {
+  const imagePackages = join(root, "node_modules", "@img");
+  for (const name of [`sharp-darwin-${arch}`, `sharp-libvips-darwin-${arch}`]) {
+    rmSync(join(imagePackages, name), { recursive: true, force: true });
+  }
 }
 
 function listFiles(root) {

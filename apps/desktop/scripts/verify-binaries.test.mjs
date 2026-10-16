@@ -30,6 +30,7 @@ function runtimeTree() {
   writePackage(unpacked, "sharp-libvips-darwin-arm64", "libvips.dylib");
   writePackage(unpacked, "sharp-darwin-x64", "sharp-darwin-x64.node");
   writePackage(unpacked, "sharp-libvips-darwin-x64", "libvips.dylib");
+  writePackage(unpacked, "unrelated-darwin-arm64", "binding.node");
   return root;
 }
 
@@ -47,6 +48,7 @@ describe("verifySharpRuntime", () => {
     assert.deepEqual(list(unpacked), [
       "node_modules/@img/sharp-darwin-x64/lib/sharp-darwin-x64.node",
       "node_modules/@img/sharp-libvips-darwin-x64/lib/libvips.dylib",
+      "node_modules/@img/unrelated-darwin-arm64/lib/binding.node",
     ]);
   });
 
