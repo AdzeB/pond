@@ -39,6 +39,7 @@ export const IPC = {
   sourceStatus: "pond:source-status",
   sessionPendingClear: "pond:session-pending-clear",
   sessionImported: "pond:session-imported",
+  sessionImportFailed: "pond:session-import-failed",
   eagleImportProgress: "pond:eagle-import-progress",
   syncRunNow: "pond:sync-run-now",
   syncStatus: "pond:sync-status",

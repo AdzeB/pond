@@ -16,6 +16,7 @@ import { nativeCall } from "@/utils/native";
 import { pickPageAssets } from "@/utils/page-assets";
 import { probe } from "@/utils/probe";
 import { ensureSettings } from "@/utils/settings";
+import { createSingleFlightTrigger } from "@/utils/single-flight";
 import type { PondCapturePayload, PushSessionResult } from "@/utils/types";
 import { cookieDomainsForSource, isCookieSourceUrl } from "@/utils/url";
 
@@ -55,8 +56,6 @@ const DEFAULT_SCHEDULER_STATE: SchedulerState = {
 };
 
 export default defineBackground(() => {
-  let autoPushInFlight = false;
-
   browser.runtime.onInstalled.addListener(async () => {
     await ensureSettings();
     clearStaleBadge();
@@ -192,9 +191,7 @@ export default defineBackground(() => {
     void browser.tabs
       .get(info.tabId)
       .then((tab) => {
-        void maybeAutoPush({
-          force: Boolean(tab.url && isCookieSourceUrl(tab.url)),
-        });
+        void maybeAutoPush(Boolean(tab.url && isCookieSourceUrl(tab.url)));
       })
       .catch(() => {
         void maybeAutoPush();
@@ -204,7 +201,7 @@ export default defineBackground(() => {
   browser.tabs.onUpdated.addListener((_id, change, tab) => {
     if (change.status !== "complete" || !tab.url) return;
     if (!isCookieSourceUrl(tab.url)) return;
-    void maybeAutoPush({ force: true });
+    void maybeAutoPush(true);
   });
 
   browser.alarms.onAlarm.addListener((alarm) => {
@@ -213,7 +210,7 @@ export default defineBackground(() => {
   void readSchedulerState()
     .then((state) => scheduleSessionAlarm(state.pending))
     .catch(() => scheduleSessionAlarm(false))
-    .finally(() => maybeAutoPush({ force: true }));
+    .finally(() => maybeAutoPush(true));
 
   async function openPondTab(path: string | undefined): Promise<boolean> {
     const target = path ? `pond://${path}` : "pond://";
@@ -260,72 +257,66 @@ export default defineBackground(() => {
     scheduleSessionAlarm(false);
   }
 
-  async function maybeAutoPush(opts?: { force?: boolean }): Promise<void> {
-    if (autoPushInFlight) return;
-    autoPushInFlight = true;
-    try {
-      const now = Date.now();
-      const state = await readSchedulerState();
-      if (!opts?.force && now < state.nextProbeAt) return;
+  const maybeAutoPush = createSingleFlightTrigger(async (force) => {
+    const now = Date.now();
+    const state = await readSchedulerState();
+    if (!force && now < state.nextProbeAt) return;
 
-      const probeResult = await fetchPendingSource();
-      if (probeResult.kind === "idle") {
-        await markSchedulerIdle();
-        return;
-      }
-      if (probeResult.kind === "offline") {
-        const failures = state.failures + 1;
-        const delay = Math.min(
-          IDLE_PROBE_MS,
-          ACTIVE_PROBE_MS * 2 ** Math.min(failures - 1, 4),
-        );
-        await writeSchedulerState({
-          ...state,
-          failures,
-          nextProbeAt: now + delay,
-        });
-        scheduleSessionAlarm(state.pending);
-        return;
-      }
-
-      const pending = probeResult.source;
-      if (cookieDomainsForSource(pending).length === 0) {
-        await markSchedulerIdle();
-        return;
-      }
-
-      const nextState: SchedulerState = {
-        ...state,
-        failures: 0,
-        pending: true,
-        nextProbeAt: now + ACTIVE_PROBE_MS,
-      };
-      scheduleSessionAlarm(true);
-      if (
-        state.lastPushSource === pending &&
-        now - state.lastPushAt < AUTO_PUSH_COOLDOWN_MS
-      ) {
-        await writeSchedulerState(nextState);
-        return;
-      }
-
-      nextState.lastPushSource = pending;
-      nextState.lastPushAt = now;
-      await writeSchedulerState(nextState);
-      const result = await pushSession(pending);
-      if (result.ok && result.data.connected) {
-        await markSchedulerIdle();
-        flashBadge(undefined, "ok", "#1f9d55");
-        return;
-      }
-      if (result.ok) return;
-      if (result.reason === "network") {
-        console.warn("[pond] auto-push failed", result.detail);
-      }
-    } finally {
-      autoPushInFlight = false;
+    const probeResult = await fetchPendingSource();
+    if (probeResult.kind === "idle") {
+      await markSchedulerIdle();
+      return;
     }
-  }
+    if (probeResult.kind === "offline") {
+      const failures = state.failures + 1;
+      const delay = Math.min(
+        IDLE_PROBE_MS,
+        ACTIVE_PROBE_MS * 2 ** Math.min(failures - 1, 4),
+      );
+      await writeSchedulerState({
+        ...state,
+        failures,
+        nextProbeAt: now + delay,
+      });
+      scheduleSessionAlarm(state.pending);
+      return;
+    }
+
+    const pending = probeResult.source;
+    if (cookieDomainsForSource(pending).length === 0) {
+      await markSchedulerIdle();
+      return;
+    }
+
+    const nextState: SchedulerState = {
+      ...state,
+      failures: 0,
+      pending: true,
+      nextProbeAt: now + ACTIVE_PROBE_MS,
+    };
+    scheduleSessionAlarm(true);
+    if (
+      state.lastPushSource === pending &&
+      now - state.lastPushAt < AUTO_PUSH_COOLDOWN_MS
+    ) {
+      await writeSchedulerState(nextState);
+      return;
+    }
+
+    nextState.lastPushSource = pending;
+    nextState.lastPushAt = now;
+    await writeSchedulerState(nextState);
+    const result = await pushSession(pending);
+    if (result.ok && result.data.connected) {
+      await markSchedulerIdle();
+      flashBadge(undefined, "ok", "#1f9d55");
+      return;
+    }
+    if (result.ok) return;
+    if (result.reason === "network") {
+      console.warn("[pond] auto-push failed", result.detail);
+    }
+  });
 
   async function pushSession(source: Source): Promise<PushSessionResult> {
     const domains = cookieDomainsForSource(source);

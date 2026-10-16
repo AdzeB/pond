@@ -24,6 +24,7 @@
     "dev": "wxt",
     "icons": "node scripts/generate-icons.mjs",
     "postinstall": "wxt prepare",
+    "test": "vitest run",
     "typecheck": "wxt prepare && tsc --noEmit",
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox --mv3"
@@ -45,6 +46,7 @@
     "@wxt-dev/module-react": "^1.2.2",
     "sharp": "catalog:",
     "typescript": "catalog:",
+    "vitest": "catalog:",
     "wxt": "^0.21.4"
   }
 }
