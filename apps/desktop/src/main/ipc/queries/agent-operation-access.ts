@@ -226,6 +226,7 @@ export const queryOperationAccess = {
   "tagGroups.addTags": "review",
   "tagGroups.create": "review",
   "tagGroups.delete": "review",
+  "tagGroups.merge": "review",
   "tagGroups.list": "read",
   "tagGroups.removeTag": "review",
   "tagGroups.rename": "review",
