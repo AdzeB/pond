@@ -34,7 +34,11 @@ import {
   ShellHintSchema,
 } from "../shared/shell-hint";
 import type { ShortcutId } from "../shared/shortcuts";
-import type { UpdateNotice } from "../shared/update-notice";
+import {
+  type UpdateNotice,
+  type UpdateNoticeInput,
+  UpdateNoticeSchema,
+} from "../shared/update-notice";
 
 import type {
   WireJson,
@@ -341,7 +345,8 @@ const api = {
   },
 
   onUpdateNotice(cb: (notice: UpdateNotice) => void): () => void {
-    const listener = (_: IpcRendererEvent, notice: UpdateNotice) => cb(notice);
+    const listener = (_: IpcRendererEvent, payload: UpdateNoticeInput) =>
+      cb(UpdateNoticeSchema.parse(payload));
     ipcRenderer.on(IPC.updateNotice, listener);
     return () => ipcRenderer.off(IPC.updateNotice, listener);
   },

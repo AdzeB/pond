@@ -1,30 +1,16 @@
-export interface UpdateNotice {
-  phase: "available" | "downloaded";
-  version: string;
-  downloading?: boolean;
-}
+import { z } from "zod";
 
-export function updateNoticeCopy(notice: UpdateNotice): {
-  title: string;
-  description: string;
-  action?: "Download" | "Restart";
-} {
-  if (notice.phase === "downloaded") {
-    return {
-      title: "Update ready",
-      description: `Restart to finish installing Pond ${notice.version}.`,
-      action: "Restart",
-    };
-  }
-  if (notice.downloading) {
-    return {
-      title: "Update available",
-      description: `Pond ${notice.version} is downloading.`,
-    };
-  }
-  return {
-    title: "Update available",
-    description: `Pond ${notice.version} is ready to download.`,
-    action: "Download",
-  };
-}
+export const UpdateNoticeSchema = z.discriminatedUnion("phase", [
+  z.strictObject({
+    phase: z.literal("available"),
+    version: z.string().min(1),
+    downloading: z.boolean(),
+  }),
+  z.strictObject({
+    phase: z.literal("downloaded"),
+    version: z.string().min(1),
+  }),
+]);
+
+export type UpdateNotice = z.infer<typeof UpdateNoticeSchema>;
+export type UpdateNoticeInput = z.input<typeof UpdateNoticeSchema>;

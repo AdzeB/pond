@@ -1,41 +1,34 @@
 import { describe, expect, it } from "vitest";
-import { updateNoticeCopy } from "./update-notice";
+import { UpdateNoticeSchema } from "./update-notice";
 
-describe("updateNoticeCopy", () => {
-  it("says a build is downloading when automatic updates are on", () => {
+describe("UpdateNoticeSchema", () => {
+  it("accepts valid phase-specific payloads", () => {
     expect(
-      updateNoticeCopy({
+      UpdateNoticeSchema.parse({
         phase: "available",
         version: "1.0.2",
         downloading: true,
       }),
     ).toEqual({
-      title: "Update available",
-      description: "Pond 1.0.2 is downloading.",
+      phase: "available",
+      version: "1.0.2",
+      downloading: true,
     });
-  });
-
-  it("offers Download when the build is not downloading yet", () => {
     expect(
-      updateNoticeCopy({
-        phase: "available",
-        version: "1.0.2",
-        downloading: false,
-      }),
-    ).toEqual({
-      title: "Update available",
-      description: "Pond 1.0.2 is ready to download.",
-      action: "Download",
-    });
+      UpdateNoticeSchema.parse({ phase: "downloaded", version: "1.0.2" }),
+    ).toEqual({ phase: "downloaded", version: "1.0.2" });
   });
 
-  it("offers Restart after the download finishes", () => {
-    expect(updateNoticeCopy({ phase: "downloaded", version: "1.0.2" })).toEqual(
-      {
-        title: "Update ready",
-        description: "Restart to finish installing Pond 1.0.2.",
-        action: "Restart",
-      },
-    );
+  it("rejects impossible phase data", () => {
+    expect(() =>
+      UpdateNoticeSchema.parse({ phase: "available", version: "1.0.2" }),
+    ).toThrow();
+    expect(() =>
+      UpdateNoticeSchema.parse({
+        phase: "downloaded",
+        version: "1.0.2",
+        downloading: true,
+      }),
+    ).toThrow();
   });
 });

@@ -26,6 +26,7 @@ import type {
   ReasonFailure,
   ReasonResult,
 } from "./query-contracts-shared";
+import type { UpdateNotice } from "./update-notice";
 
 export const MediaUnderstandInputSchema = z.strictObject({
   saveId: z.string().min(1),
@@ -316,6 +317,7 @@ export interface SystemQueryResults {
   };
   "api.restart": OkResult<{ port?: number }>;
   "updates.applyPrefs": OkResult;
+  "updates.currentNotice": UpdateNotice | null;
   "updates.checkNow":
     | OkResult<{ version?: string }>
     | ReasonFailure<"dev_build">;

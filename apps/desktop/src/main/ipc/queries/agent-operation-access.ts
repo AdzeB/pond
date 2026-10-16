@@ -239,6 +239,7 @@ export const queryOperationAccess = {
   "transferJobs.list": "read",
   "transferJobs.retry": "review",
   "updates.applyPrefs": "review",
+  "updates.currentNotice": "hidden",
   "updates.checkNow": "read",
   "updates.download": "review",
   "updates.install": "review",
