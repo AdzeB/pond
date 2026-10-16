@@ -3,6 +3,7 @@ import { cp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { app, shell } from "electron";
 import log from "electron-log/main.js";
+import type { ExtensionBrowser } from "../../shared/browser-extension-contracts";
 import type { QueryResult } from "../../shared/query-contracts";
 
 const TARGETS = {
@@ -17,8 +18,6 @@ const TARGETS = {
     resource: "extension-firefox",
   },
 } as const;
-
-export type ExtensionBrowser = keyof typeof TARGETS;
 
 function bundledExtensionDir(target: ExtensionBrowser): string | null {
   const spec = TARGETS[target];

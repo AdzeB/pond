@@ -60,27 +60,25 @@ export default defineBackground(() => {
   browser.runtime.onInstalled.addListener(async () => {
     await ensureSettings();
     clearStaleBadge();
-    browser.contextMenus.removeAll(() => {
-      browser.contextMenus.create({
-        id: SAVE_MENU_ID,
-        title: "Save to Pond",
-        contexts: ["page", "link", "image", "video", "audio"],
-      });
-      for (const [id, title] of [
-        ["pond-assets", "Collect images from this page"],
-        ["pond-visible", "Save visible page screenshot"],
-        ["pond-region", "Save page region screenshot"],
-        ["pond-element", "Save Page Element Screenshot"],
-        ["pond-full-page", "Save full page screenshot"],
-      ]) {
-        if (id && title)
-          browser.contextMenus.create({
-            id,
-            title,
-            contexts: ["page", "image"],
-          });
-      }
+    await browser.contextMenus.removeAll();
+    browser.contextMenus.create({
+      id: SAVE_MENU_ID,
+      title: "Save to Pond",
+      contexts: ["page", "link", "image", "video", "audio"],
     });
+    for (const [id, title] of [
+      ["pond-assets", "Collect images from this page"],
+      ["pond-visible", "Save visible page screenshot"],
+      ["pond-region", "Save page region screenshot"],
+      ["pond-element", "Save Page Element Screenshot"],
+      ["pond-full-page", "Save full page screenshot"],
+    ]) {
+      browser.contextMenus.create({
+        id,
+        title,
+        contexts: ["page", "image"],
+      });
+    }
   });
 
   browser.runtime.onStartup.addListener(clearStaleBadge);

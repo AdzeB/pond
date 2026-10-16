@@ -12,6 +12,10 @@ import type {
 import type { Query } from "@pond/schema/filters/types";
 import type { z } from "zod";
 import type { assistantSend } from "./assistant";
+import type {
+  BrowserExtensionQueryInputs,
+  BrowserExtensionQueryResults,
+} from "./browser-extension-contracts";
 import type { BulkQueryInputs, BulkQueryResults } from "./bulk-contracts";
 import type {
   ConversionQueryInputs,
@@ -112,6 +116,7 @@ export type { OkResult } from "./query-contracts-shared";
 
 export interface QueryInputs
   extends TransferQueryInputs,
+    BrowserExtensionQueryInputs,
     BulkQueryInputs,
     FolderQueryInputs,
     InspectQueryInputs,
@@ -304,7 +309,6 @@ export interface QueryInputs
   "api.restart": EmptyInput;
   "updates.applyPrefs": EmptyInput;
   "updates.checkNow": EmptyInput;
-  "extension.install": { browser?: "chrome" | "firefox" };
   "quickCapture.applyPrefs": EmptyInput;
   "window.applyPrefs": EmptyInput;
   "system.applyPrefs": EmptyInput;
@@ -323,6 +327,7 @@ export interface QueryInputs
 
 export interface QueryResults
   extends TransferQueryResults,
+    BrowserExtensionQueryResults,
     BulkQueryResults,
     SystemQueryResults,
     FolderQueryResults,

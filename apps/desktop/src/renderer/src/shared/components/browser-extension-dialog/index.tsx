@@ -1,4 +1,5 @@
 import { Button, Dialog } from "@pond/ui";
+import type { ExtensionBrowser } from "@shared/browser-extension-contracts";
 import { useReducedMotion } from "motion/react";
 import { useState } from "react";
 import installPoster from "@/assets/extension-install.jpg";
@@ -11,8 +12,6 @@ type Status =
   | { kind: "saving"; browser: ExtensionBrowser }
   | { kind: "saved"; browser: ExtensionBrowser }
   | { kind: "error"; message: string };
-
-type ExtensionBrowser = "chrome" | "firefox";
 
 export function BrowserExtensionDialog({
   open,

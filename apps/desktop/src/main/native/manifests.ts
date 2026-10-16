@@ -22,12 +22,31 @@ const CHROMIUM_NMH_DIRS = [
   "Library/Application Support/Vivaldi/NativeMessagingHosts",
 ] as const;
 
-const FIREFOX_NMH_DIRS = [
-  "Library/Application Support/Mozilla/NativeMessagingHosts",
-  "Library/Application Support/zen/NativeMessagingHosts",
-  "Library/Application Support/Zen/NativeMessagingHosts",
-  "Library/Application Support/librewolf/NativeMessagingHosts",
-  "Library/Application Support/Floorp/NativeMessagingHosts",
+const FIREFOX_NMH_TARGETS = [
+  {
+    dir: "Library/Application Support/Mozilla/NativeMessagingHosts",
+    apps: [
+      "Firefox.app",
+      "Firefox Developer Edition.app",
+      "Firefox Nightly.app",
+    ],
+  },
+  {
+    dir: "Library/Application Support/zen/NativeMessagingHosts",
+    apps: ["Zen.app", "Zen Browser.app"],
+  },
+  {
+    dir: "Library/Application Support/Zen/NativeMessagingHosts",
+    apps: ["Zen.app", "Zen Browser.app"],
+  },
+  {
+    dir: "Library/Application Support/LibreWolf/NativeMessagingHosts",
+    apps: ["LibreWolf.app"],
+  },
+  {
+    dir: "Library/Application Support/Floorp/NativeMessagingHosts",
+    apps: ["Floorp.app"],
+  },
 ] as const;
 
 function nativeHostBinaryPath(): string {
@@ -60,43 +79,80 @@ function hostManifest(
   )}\n`;
 }
 
-export function chromiumNativeHostManifest(hostPath: string): string {
+function chromiumNativeHostManifest(hostPath: string): string {
   return hostManifest(hostPath, {
     allowed_origins: [`chrome-extension://${EXTENSION_ID}/`],
   });
 }
 
-export function firefoxNativeHostManifest(hostPath: string): string {
+function firefoxNativeHostManifest(hostPath: string): string {
   return hostManifest(hostPath, {
     allowed_extensions: [FIREFOX_EXTENSION_ID],
   });
 }
 
-export function writeNativeHostManifests(): void {
-  if (process.platform !== "darwin") return;
+interface NativeHostManifestDependencies {
+  platform: NodeJS.Platform;
+  hostPath: () => string;
+  home: () => string;
+  exists: (path: string) => boolean;
+  makeDirectory: (path: string) => void;
+  writeFile: (path: string, body: string) => void;
+  warn: (...values: unknown[]) => void;
+}
 
-  const hostPath = nativeHostBinaryPath();
-  if (!existsSync(hostPath)) {
-    log.warn("[pond native] host binary missing", hostPath);
+const defaultDependencies: NativeHostManifestDependencies = {
+  platform: process.platform,
+  hostPath: nativeHostBinaryPath,
+  home: homedir,
+  exists: existsSync,
+  makeDirectory: (path) => mkdirSync(path, { recursive: true }),
+  writeFile: (path, body) => writeFileSync(path, body, { encoding: "utf8" }),
+  warn: (...values) => log.warn(...values),
+};
+
+export function writeNativeHostManifests(
+  overrides: Partial<NativeHostManifestDependencies> = {},
+): void {
+  const dependencies = { ...defaultDependencies, ...overrides };
+  if (dependencies.platform !== "darwin") return;
+
+  const hostPath = dependencies.hostPath();
+  if (!dependencies.exists(hostPath)) {
+    dependencies.warn("[pond native] host binary missing", hostPath);
     return;
   }
 
-  const home = homedir();
+  const home = dependencies.home();
   const targets = [
-    { dirs: CHROMIUM_NMH_DIRS, body: chromiumNativeHostManifest(hostPath) },
-    { dirs: FIREFOX_NMH_DIRS, body: firefoxNativeHostManifest(hostPath) },
+    ...CHROMIUM_NMH_DIRS.map((dir) => ({
+      dir,
+      apps: [],
+      body: chromiumNativeHostManifest(hostPath),
+    })),
+    ...FIREFOX_NMH_TARGETS.map((target) => ({
+      ...target,
+      body: firefoxNativeHostManifest(hostPath),
+    })),
   ];
-  for (const { dirs, body } of targets) {
-    for (const rel of dirs) {
-      const parent = join(home, rel, "..");
-      if (!existsSync(parent)) continue;
-      const dir = join(home, rel);
-      try {
-        mkdirSync(dir, { recursive: true });
-        writeFileSync(join(dir, HOST_FILENAME), body, { encoding: "utf8" });
-      } catch (err) {
-        log.warn("[pond native] failed to write host manifest", dir, err);
-      }
+  for (const { dir: relativeDirectory, apps, body } of targets) {
+    const parent = join(home, relativeDirectory, "..");
+    const installed = apps.some(
+      (name) =>
+        dependencies.exists(join("/Applications", name)) ||
+        dependencies.exists(join(home, "Applications", name)),
+    );
+    if (!dependencies.exists(parent) && !installed) continue;
+    const dir = join(home, relativeDirectory);
+    try {
+      dependencies.makeDirectory(dir);
+      dependencies.writeFile(join(dir, HOST_FILENAME), body);
+    } catch (err) {
+      dependencies.warn(
+        "[pond native] failed to write host manifest",
+        dir,
+        err,
+      );
     }
   }
 }
