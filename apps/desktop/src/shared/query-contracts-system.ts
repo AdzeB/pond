@@ -1,7 +1,6 @@
 import type {
   AgentChat,
   AgentMessage,
-  ConnectedAccount,
   ImageDownloadSettings,
   MediaType,
   Prefs,
@@ -165,12 +164,6 @@ type Attachment = AttachmentIdentity &
   );
 
 export interface SystemQueryResults {
-  "accounts.list": {
-    accounts: (ConnectedAccount & { connected: boolean; syncing: boolean })[];
-  };
-  "accounts.setHandle": OkResult<{ account: ConnectedAccount }>;
-  "accounts.setLabel": OkResult<{ account: ConnectedAccount }>;
-  "accounts.disconnect": OkResult;
   "watches.list": { watches: (WatchedAccount & { syncing: boolean })[] };
   "watches.resolve": { ok: false } | { ok: true; target: WatchTarget };
   "watches.add":
