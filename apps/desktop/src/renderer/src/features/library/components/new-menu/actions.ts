@@ -180,7 +180,7 @@ export function createNewActions({
     notify({
       id: "new-import",
       title: result.imported
-        ? `Imported ${result.imported} ${result.imported === 1 ? "item" : "items"} from mymind`
+        ? `Imported ${result.imported} ${result.imported === 1 ? "Save" : "Saves"} from mymind`
         : "Nothing new to import",
       description: result.skipped > 0 ? `${result.skipped} skipped` : undefined,
       timeout: 5000,

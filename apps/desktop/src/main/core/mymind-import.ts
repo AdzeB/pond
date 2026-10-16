@@ -1,25 +1,16 @@
+import type { Dirent } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
-import { basename, extname, join } from "node:path";
+import { basename, join } from "node:path";
 import type { NewSave } from "@pond/schema/db";
+import { classifyLibraryFile } from "@shared/file-format";
+import type { OkFailure, OkResult } from "@shared/query-contracts-shared";
+import type { SavesImportCounts } from "@shared/saves-contracts-shared";
+import type { ManualSaveResult } from "@shared/saves-import-contracts";
+import { hashImportFile } from "./duplicate-import";
 import { createManualSave } from "./manual-import";
 import { persistSave } from "./persist-save";
-import { enqueue } from "./pipeline/enqueue";
+import { type EnqueueOneResult, enqueue } from "./pipeline/enqueue";
 import { setSaveTags } from "./tags";
-
-const MEDIA_EXTENSIONS = new Set([
-  ".avif",
-  ".gif",
-  ".heic",
-  ".jpeg",
-  ".jpg",
-  ".mov",
-  ".mp4",
-  ".pdf",
-  ".png",
-  ".tif",
-  ".tiff",
-  ".webp",
-]);
 
 const FILE_CARD_TYPES = new Set([
   "audio",
@@ -33,7 +24,7 @@ const FILE_CARD_TYPES = new Set([
   "video",
 ]);
 
-export interface MymindCard {
+interface MymindCard {
   id: string;
   type: string;
   title: string;
@@ -44,7 +35,7 @@ export interface MymindCard {
   created: Date | null;
 }
 
-export function parseCsvRows(text: string): string[][] {
+function parseCsvRows(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let cell = "";
@@ -89,7 +80,7 @@ export function parseCsvRows(text: string): string[][] {
   return rows;
 }
 
-export function parseMymindCards(csv: string): MymindCard[] | null {
+function parseMymindCards(csv: string): MymindCard[] | null {
   const rows = parseCsvRows(csv);
   const header = rows[0]?.map((name) => name.trim().toLowerCase());
   if (!header) return null;
@@ -129,11 +120,16 @@ export function parseMymindCards(csv: string): MymindCard[] | null {
 }
 
 function isMymindMediaFile(name: string): boolean {
-  return MEDIA_EXTENSIONS.has(extname(name).toLowerCase());
+  const file = classifyLibraryFile(name);
+  return (
+    file.mediaType === "image" ||
+    file.mediaType === "video" ||
+    file.mimeType === "application/pdf"
+  );
 }
 
 /** Image and PDF rows have no text of their own. The export writes those as files beside the CSV. */
-export function isMymindFileCard(card: MymindCard): boolean {
+function isMymindFileCard(card: MymindCard): boolean {
   return (
     FILE_CARD_TYPES.has(card.type.toLowerCase()) &&
     !card.url &&
@@ -142,25 +138,77 @@ export function isMymindFileCard(card: MymindCard): boolean {
   );
 }
 
+export type MymindImportResult = OkResult<SavesImportCounts>;
+
+export interface MymindImportDependencies {
+  createSave: (
+    input: Parameters<typeof createManualSave>[0],
+  ) => Promise<ManualSaveResult>;
+  enqueueLink: (url: string) => Promise<EnqueueOneResult>;
+  persistLinkMetadata: (
+    id: string,
+    patch: Partial<NewSave>,
+  ) => Promise<boolean>;
+  setLinkTags: (id: string, tags: string[]) => Promise<OkResult>;
+}
+
+const defaultDependencies: MymindImportDependencies = {
+  createSave: createManualSave,
+  enqueueLink: (url) => enqueue(url, { trigger: "user:importMymind" }),
+  persistLinkMetadata: async (id, patch) =>
+    Boolean(await persistSave(id, patch, { actorReason: "mymind:import" })),
+  setLinkTags: setSaveTags,
+};
+
+function fileCounts(files: readonly string[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const file of files) {
+    const key = file.toLocaleLowerCase();
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function failedImport(label: string, reason?: string): OkFailure {
+  return {
+    ok: false,
+    error: reason
+      ? `Couldn't import ${label}: ${reason}`
+      : `Couldn't import ${label}.`,
+  };
+}
+
 export async function importMymindExport(
   directory: string,
-): Promise<
-  { ok: true; imported: number; skipped: number } | { ok: false; error: string }
-> {
-  let cards: MymindCard[] | null = null;
+  dependencies: MymindImportDependencies = defaultDependencies,
+): Promise<MymindImportResult> {
+  let files: Dirent[];
   try {
-    cards = parseMymindCards(
-      await readFile(join(directory, "cards.csv"), "utf8"),
-    );
+    files = await readdir(directory, { withFileTypes: true });
   } catch {
-    cards = null;
+    return failedImport("that mymind export", "the folder couldn't be read");
   }
-  const files = await readdir(directory, { withFileTypes: true }).catch(
-    () => [],
+
+  let cards: MymindCard[] | null = null;
+  const cardsFile = files.find(
+    (entry) => entry.isFile() && entry.name.toLowerCase() === "cards.csv",
   );
+  if (cardsFile) {
+    try {
+      cards = parseMymindCards(
+        await readFile(join(directory, cardsFile.name), "utf8"),
+      );
+    } catch {
+      return failedImport("cards.csv", "the file couldn't be read");
+    }
+    if (!cards)
+      return failedImport("cards.csv", "the file isn't a mymind export");
+  }
   const media = files.filter(
     (entry) => entry.isFile() && isMymindMediaFile(entry.name),
   );
+  const availableMedia = fileCounts(media.map((entry) => entry.name));
+  const fileCardIds = new Map<string, string[]>();
   if (!cards && media.length === 0) {
     return {
       ok: false,
@@ -170,35 +218,62 @@ export async function importMymindExport(
   }
   let imported = 0;
   let skipped = 0;
-  const count = (result: { ok: boolean; skipped?: boolean }) => {
-    if (result.ok && !result.skipped) imported += 1;
-    else skipped += 1;
-  };
   for (const card of cards ?? []) {
-    if (isMymindFileCard(card)) continue;
+    if (isMymindFileCard(card)) {
+      const filename = basename(card.title).toLocaleLowerCase();
+      const available = availableMedia.get(filename) ?? 0;
+      if (available > 0) {
+        availableMedia.set(filename, available - 1);
+        if (card.id) {
+          const ids = fileCardIds.get(filename) ?? [];
+          ids.push(card.id);
+          fileCardIds.set(filename, ids);
+        }
+      } else skipped += 1;
+      continue;
+    }
     const note = [card.content, card.note].filter(Boolean).join("\n\n");
-    if (card.url && (await importMymindLink(card, note, count))) continue;
-    count(
-      await createManualSave({
-        source: "local",
-        sourceId: card.id ? `mymind:${card.id}` : undefined,
-        title: card.title || null,
-        url: card.url || null,
-        note: note || null,
-        tags: card.tags,
-        savedAt: card.created ?? undefined,
-        createdAt: card.created ?? undefined,
-      }),
-    );
+    if (card.url) {
+      const result = await importMymindLink(card, note, dependencies);
+      if (!result.ok) return result;
+      if (result.skipped) skipped += 1;
+      else imported += 1;
+      continue;
+    }
+    const result = await dependencies.createSave({
+      source: "local",
+      sourceId: card.id ? `mymind:${card.id}` : undefined,
+      title: card.title || null,
+      url: card.url || null,
+      note: note || null,
+      tags: card.tags,
+      savedAt: card.created ?? undefined,
+      createdAt: card.created ?? undefined,
+    });
+    if (!result.ok)
+      return failedImport(card.title || "a mymind Save", result.error);
+    if (result.skipped) skipped += 1;
+    else imported += 1;
   }
   for (const file of media) {
-    count(
-      await createManualSave({
-        source: "local",
-        sourceId: `mymind-file:${basename(file.name)}`,
-        filePaths: [join(directory, file.name)],
-      }),
-    );
+    const path = join(directory, file.name);
+    const fileCardId = fileCardIds.get(file.name.toLocaleLowerCase())?.shift();
+    let sourceId: string;
+    try {
+      sourceId = fileCardId
+        ? `mymind:${fileCardId}`
+        : `mymind-file:${await hashImportFile(path)}`;
+    } catch {
+      return failedImport(file.name, "the file couldn't be read");
+    }
+    const result = await dependencies.createSave({
+      source: "local",
+      sourceId,
+      filePaths: [path],
+    });
+    if (!result.ok) return failedImport(file.name, result.error);
+    if (result.skipped) skipped += 1;
+    else imported += 1;
   }
   return { ok: true, imported, skipped };
 }
@@ -206,20 +281,24 @@ export async function importMymindExport(
 async function importMymindLink(
   card: MymindCard,
   note: string,
-  count: (result: { ok: boolean; skipped?: boolean }) => void,
-): Promise<boolean> {
-  let result: { id: string; created: boolean };
+  dependencies: MymindImportDependencies,
+): Promise<{ ok: true; skipped: boolean } | { ok: false; error: string }> {
+  let result: EnqueueOneResult;
   try {
-    result = await enqueue(card.url, { trigger: "user:importMymind" });
+    result = await dependencies.enqueueLink(card.url);
   } catch {
-    return false;
+    return failedImport(card.title || card.url, "the link couldn't be queued");
   }
-  if (!result.created) {
-    count({ ok: true, skipped: true });
-    return true;
-  }
+  if (!result.created) return { ok: true, skipped: true };
   try {
-    if (card.tags.length > 0) await setSaveTags(result.id, card.tags);
+    if (card.tags.length > 0) {
+      const tagged = await dependencies.setLinkTags(result.id, card.tags);
+      if (!tagged.ok)
+        return failedImport(
+          card.title || card.url,
+          tagged.error ?? "its tags couldn't be saved",
+        );
+    }
     const patch: Partial<NewSave> = {};
     if (note) patch.notes = note;
     if (card.created) {
@@ -227,11 +306,21 @@ async function importMymindLink(
       patch.createdAt = card.created;
     }
     if (Object.keys(patch).length > 0) {
-      await persistSave(result.id, patch, { actorReason: "mymind:import" });
+      const persisted = await dependencies.persistLinkMetadata(
+        result.id,
+        patch,
+      );
+      if (!persisted)
+        return failedImport(
+          card.title || card.url,
+          "its notes or dates couldn't be saved",
+        );
     }
   } catch {
-    /** The link is already saved. A failed tag or note write should not import it twice. */
+    return failedImport(
+      card.title || card.url,
+      "its metadata couldn't be saved",
+    );
   }
-  count({ ok: true });
-  return true;
+  return { ok: true, skipped: false };
 }
