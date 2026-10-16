@@ -17,7 +17,7 @@ import type { z } from "zod";
 import { DownloadsEmpty } from "@/features/downloads/components/empty";
 import {
   canTrashDownload,
-  trashDownloadRows,
+  clearUnfinishedDownloads,
 } from "@/features/downloads/components/lib/actions";
 import { useLiveDownloadHydration } from "@/features/downloads/hooks/use-live-download-hydration";
 import {
@@ -167,6 +167,7 @@ export function DownloadsPage() {
         "Couldn't change the queue. Try again.",
       ),
   });
+  const clearUnfinished = useMutation({ mutationFn: clearUnfinishedDownloads });
   const toolbar = (
     <SearchChrome.Root
       actions={
@@ -185,8 +186,11 @@ export function DownloadsPage() {
             <Button
               size="sm"
               variant="ghost"
-              disabled={!live.some(canTrashDownload)}
-              onClick={() => trashDownloadRows(live)}
+              disabled={
+                !live.some(canTrashDownload) || clearUnfinished.isPending
+              }
+              loading={clearUnfinished.isPending}
+              onClick={() => clearUnfinished.mutate()}
             >
               Clear Unfinished
             </Button>
