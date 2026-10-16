@@ -18,6 +18,7 @@ describe("loadModel", () => {
     "mistral",
     "groq",
     "opencode-go",
+    "openrouter",
   ] as const)(
     "preserves runtime-selected model IDs for %s",
     async (provider) => {

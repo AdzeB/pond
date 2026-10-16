@@ -3,6 +3,7 @@ import { assistantCatalog } from "../../../shared/assistant";
 import type { AgentProviderId } from "./keys";
 import { createLocalLanguageModel } from "./local-language-model";
 import { createOpenCodeGoModel } from "./opencode-go";
+import { createOpenRouterModel } from "./openrouter";
 
 export async function loadModel(input: {
   provider: AgentProviderId;
@@ -81,6 +82,9 @@ export async function loadModel(input: {
       modelId,
       input.threadId ?? crypto.randomUUID(),
     );
+  }
+  if (input.provider === "openrouter") {
+    return createOpenRouterModel(key, modelId);
   }
   if (input.provider === "ollama" || input.provider === "lmstudio")
     return createLocalLanguageModel({
