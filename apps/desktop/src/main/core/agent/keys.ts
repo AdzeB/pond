@@ -18,6 +18,7 @@ import { deleteSecret, getSecret, getSecrets, setSecret } from "../../keychain";
 import { getPrefs, setPrefs } from "../prefs";
 import { isLocalProviderConnected } from "./local-provider-state";
 import { catalogModelsForProvider, loadModelCatalog } from "./model-catalog";
+import { OPENCODE_GO_MODELS_BASE_URL } from "./opencode-go";
 import { OPENROUTER_KEY_URL, OPENROUTER_MODELS_URL } from "./openrouter";
 import { modelsFromProviderResponse } from "./provider-models";
 
@@ -36,6 +37,7 @@ const OPENAI_MODELS = {
   perplexity: "https://api.perplexity.ai",
   baseten: "https://inference.baseten.co/v1",
   cohere: "https://api.cohere.com/v2",
+  "opencode-go": OPENCODE_GO_MODELS_BASE_URL,
 } as const;
 
 function isOpenAIModelsProvider(
