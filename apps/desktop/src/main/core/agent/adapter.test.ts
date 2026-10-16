@@ -17,6 +17,7 @@ describe("loadModel", () => {
     "xai",
     "mistral",
     "groq",
+    "openrouter",
   ] as const)(
     "preserves runtime-selected model IDs for %s",
     async (provider) => {
