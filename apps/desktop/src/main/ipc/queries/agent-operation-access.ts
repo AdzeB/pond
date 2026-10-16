@@ -41,6 +41,7 @@ export const queryOperationAccess = {
   "conversion.start": "review",
   "conversion.status": "read",
   "downloads.activity": "read",
+  "downloads.clearUnfinished": "hidden",
   "downloads.history": "read",
   "downloads.ingestingOrFailed": "read",
   "extension.install": "hidden",

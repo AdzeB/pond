@@ -249,6 +249,7 @@ export interface QueryInputs
     ops?: Op[];
   };
   "downloads.ingestingOrFailed": EmptyInput;
+  "downloads.clearUnfinished": EmptyInput;
   "downloads.activity": EmptyInput;
   "sync.history": { source: Source; accountId?: string; limit?: number };
   "sync.recent": { limit?: number };
@@ -391,6 +392,7 @@ export interface QueryResults
   "pipeline.status": { paused: boolean; inflight: number };
   "pipeline.inflight": string[];
   "downloads.ingestingOrFailed": string[];
+  "downloads.clearUnfinished": { changed: number; ids: string[] };
   "downloads.activity": DownloadActivity[];
   "downloads.history": {
     rows: {
