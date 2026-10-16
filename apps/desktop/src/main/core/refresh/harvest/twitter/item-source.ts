@@ -173,13 +173,27 @@ export function harvestSource(): string {
       replyingPrefix || article.querySelector('[data-testid="reply-context"]')
     );
     if (meta.isReply) {
-      const parentLink = Array.from(
-        article.querySelectorAll<HTMLAnchorElement>('a[href*="/status/"]'),
-      ).find((link) => {
-        if (!notInNested(link)) return false;
-        const id = link.href.match(/\/status\/(\d+)/)?.[1];
-        return !!id && id !== tweetId;
-      });
+      const currentPathId =
+        window.location.pathname.match(/\/status\/(\d+)/)?.[1];
+      const articles = Array.from(document.querySelectorAll("article")).filter(
+        (candidate) => !candidate.parentElement?.closest("article"),
+      );
+      const currentIndex = articles.indexOf(article);
+      let parentLink: HTMLAnchorElement | undefined;
+      if (currentPathId === tweetId && currentIndex > 0) {
+        const candidate = articles[currentIndex - 1];
+        if (candidate) {
+          parentLink = Array.from(
+            candidate.querySelectorAll<HTMLAnchorElement>(
+              'a[href*="/status/"]',
+            ),
+          ).find((link) => {
+            if (link.closest("article") !== candidate) return false;
+            const id = link.href.match(/\/status\/(\d+)/)?.[1];
+            return !!id && id !== tweetId;
+          });
+        }
+      }
       const parentId = parentLink?.href.match(/\/status\/(\d+)/)?.[1];
       if (parentLink && parentId) {
         let pathname = `/i/status/${parentId}`;
@@ -192,7 +206,7 @@ export function harvestSource(): string {
           tweetId: parentId,
           url: `https://x.com${pathname}`,
         };
-        const handle = parentLink.textContent?.match(/@([A-Za-z0-9_]+)/)?.[1];
+        const handle = pathname.match(/^\/([A-Za-z0-9_]+)\/status\//)?.[1];
         if (handle) {
           replyTo.author = `@${handle}`;
           meta.replyingTo = handle;

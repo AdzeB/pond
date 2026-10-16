@@ -22,7 +22,12 @@ import { sleep } from "./util";
 export interface TweetScreenshotResult {
   ok: boolean;
   png?: { bytes: Buffer; width: number; height: number };
-  reason?: "navigate_failed" | "auth_required" | "no_article" | "timeout";
+  reason?:
+    | "navigate_failed"
+    | "auth_required"
+    | "no_article"
+    | "timeout"
+    | "capture_failed";
   quotedUrl?: string;
   media?: CaptureMedia[];
 }
@@ -52,7 +57,10 @@ interface TweetDualScreenshotResult {
   quotedUrl?: string;
   media?: CaptureMedia[];
   page?: Capture;
+  pageFailureReason?: TweetScreenshotResult["reason"];
 }
+
+class ScreenshotTimeoutError extends Error {}
 
 export async function screenshotTweetDual(
   args: TweetDualScreenshotArgs,
@@ -93,8 +101,15 @@ export async function screenshotTweetDual(
 
     let media: CaptureMedia[] | undefined;
     let page: Capture | undefined;
+    let pageFailureReason: TweetScreenshotResult["reason"];
     if (args.harvestMedia && light.ok) {
-      page = await harvestPageMedia(lease.win, args.sourceId, "tweet");
+      const harvested = await harvestPageMedia(
+        lease.win,
+        args.sourceId,
+        "tweet",
+      );
+      page = harvested.page;
+      pageFailureReason = harvested.failureReason;
       if (page && page.media.length > 0) media = page.media;
     }
 
@@ -112,15 +127,31 @@ export async function screenshotTweetDual(
       "tweet",
     );
 
+    if (args.harvestMedia && !page && dark.ok) {
+      const harvested = await harvestPageMedia(
+        lease.win,
+        args.sourceId,
+        "tweet",
+      );
+      page = harvested.page;
+      pageFailureReason = harvested.failureReason;
+      if (page && page.media.length > 0) media = page.media;
+    }
+
     const quotedUrl = light.quotedUrl ?? dark.quotedUrl;
     const dual: TweetDualScreenshotResult = { light, dark };
     if (quotedUrl) dual.quotedUrl = quotedUrl;
     if (media) dual.media = media;
     if (page) dual.page = page;
+    if (pageFailureReason) dual.pageFailureReason = pageFailureReason;
     return dual;
   } catch (err) {
     log.warn("[pond screenshot:tweet] unexpected dual error", args.url, err);
-    const fail: TweetScreenshotResult = { ok: false, reason: "no_article" };
+    const fail: TweetScreenshotResult = {
+      ok: false,
+      reason:
+        err instanceof ScreenshotTimeoutError ? "timeout" : "capture_failed",
+    };
     return { light: fail, dark: fail };
   } finally {
     if (restoreEmulation) await restoreEmulation().catch(() => {});
@@ -167,8 +198,15 @@ export async function screenshotThreadsDual(
 
     let media: CaptureMedia[] | undefined;
     let page: Capture | undefined;
+    let pageFailureReason: TweetScreenshotResult["reason"];
     if (args.harvestMedia && light.ok) {
-      page = await harvestPageMedia(lease.win, args.sourceId, "threads");
+      const harvested = await harvestPageMedia(
+        lease.win,
+        args.sourceId,
+        "threads",
+      );
+      page = harvested.page;
+      pageFailureReason = harvested.failureReason;
       if (page && page.media.length > 0) media = page.media;
     }
 
@@ -189,15 +227,31 @@ export async function screenshotThreadsDual(
       "threads",
     );
 
+    if (args.harvestMedia && !page && dark.ok) {
+      const harvested = await harvestPageMedia(
+        lease.win,
+        args.sourceId,
+        "threads",
+      );
+      page = harvested.page;
+      pageFailureReason = harvested.failureReason;
+      if (page && page.media.length > 0) media = page.media;
+    }
+
     const quotedUrl = light.quotedUrl ?? dark.quotedUrl;
     const dual: TweetDualScreenshotResult = { light, dark };
     if (quotedUrl) dual.quotedUrl = quotedUrl;
     if (media) dual.media = media;
     if (page) dual.page = page;
+    if (pageFailureReason) dual.pageFailureReason = pageFailureReason;
     return dual;
   } catch (err) {
     log.warn("[pond screenshot:threads] unexpected dual error", args.url, err);
-    const fail: TweetScreenshotResult = { ok: false, reason: "no_article" };
+    const fail: TweetScreenshotResult = {
+      ok: false,
+      reason:
+        err instanceof ScreenshotTimeoutError ? "timeout" : "capture_failed",
+    };
     return { light: fail, dark: fail };
   } finally {
     if (restoreEmulation) await restoreEmulation().catch(() => {});
@@ -260,7 +314,7 @@ async function captureCurrentScheme(
               height: Math.max(1, Math.ceil(rect.height)),
             }),
             sleep(CAPTURE_PAGE_TIMEOUT_MS).then(() => {
-              throw new Error(
+              throw new ScreenshotTimeoutError(
                 `capturePage timed out after ${CAPTURE_PAGE_TIMEOUT_MS}ms`,
               );
             }),
@@ -346,7 +400,10 @@ async function harvestPageMedia(
   win: BrowserWindow,
   sourceId: string,
   kind: "tweet" | "threads",
-): Promise<Capture | undefined> {
+): Promise<{
+  page?: Capture;
+  failureReason?: TweetScreenshotResult["reason"];
+}> {
   try {
     const expr =
       kind === "threads"
@@ -354,8 +411,13 @@ async function harvestPageMedia(
         : buildExpression(sourceId);
     const raw = await Promise.race([
       win.webContents.executeJavaScript(expr, true),
-      sleep(SCREENSHOT_ARTICLE_TIMEOUT_MS).then(() => null),
+      sleep(SCREENSHOT_ARTICLE_TIMEOUT_MS).then(
+        () => "__pond_screenshot_timeout__",
+      ),
     ]);
+    if (raw === "__pond_screenshot_timeout__") {
+      return { failureReason: "timeout" };
+    }
     const ctx = {
       source: kind === "threads" ? ("threads" as const) : ("twitter" as const),
       url: win.webContents.getURL(),
@@ -363,10 +425,10 @@ async function harvestPageMedia(
     };
     const harvested =
       kind === "threads" ? adaptThreads(raw, ctx) : adapt(raw, ctx);
-    return harvested ?? undefined;
+    return harvested ? { page: harvested } : { failureReason: "no_article" };
   } catch (err) {
     log.warn("[pond screenshot] media harvest failed", err);
-    return undefined;
+    return { failureReason: "capture_failed" };
   }
 }
 
@@ -420,7 +482,11 @@ async function readArticleRect(
       () => "__pond_screenshot_timeout__",
     ),
   ]);
-  if (raw === "__pond_screenshot_timeout__") return null;
+  if (raw === "__pond_screenshot_timeout__") {
+    throw new ScreenshotTimeoutError(
+      `article lookup timed out after ${SCREENSHOT_ARTICLE_TIMEOUT_MS}ms`,
+    );
+  }
   const rect = ArticleRectSchema.parse(raw);
   if (!rect || rect.width < 8 || rect.height < 8) return null;
   return rect;

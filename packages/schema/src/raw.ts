@@ -130,6 +130,7 @@ export interface CaptureExtras {
   externalLink?: string;
   faviconUrl?: string;
   publisher?: string;
+  replyParentUnavailable?: boolean;
   subreddit?: string;
   tileType?: string;
 }
