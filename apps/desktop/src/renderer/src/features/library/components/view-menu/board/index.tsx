@@ -317,6 +317,16 @@ export function DisplayOptions() {
           onCheckedChange={setIncludeSubfolders}
         />
       </label>
+      <label className={styles.row} htmlFor={`${id}-source`}>
+        <span className={styles.rowLabel}>Show Source Tag</span>
+        <Switch.Root
+          id={`${id}-source`}
+          checked={state.displayPrefs.source}
+          onCheckedChange={(checked) =>
+            actions.setDisplayPref("source", checked)
+          }
+        />
+      </label>
       <hr className={styles.separator} />
       <label className={styles.row} htmlFor={`${id}-sidebar`}>
         <span className={styles.rowLabel}>Show Sidebar</span>
