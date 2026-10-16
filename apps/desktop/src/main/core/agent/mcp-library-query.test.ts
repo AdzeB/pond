@@ -2,22 +2,17 @@ import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import { expect, it } from "vitest";
 import { z } from "zod";
 import { LibraryQueryRequestSchema } from "../../../shared/library-query";
-import {
-  McpLibraryQueryRequestSchema,
-  parseMcpLibraryQuery,
-} from "./mcp-library-query";
 
 it("publishes the library query tool as JSON Schema", () => {
-  expect(() => z.toJSONSchema(McpLibraryQueryRequestSchema)).not.toThrow();
-  expect(() => z.toJSONSchema(LibraryQueryRequestSchema)).toThrow(
-    /Custom types cannot be represented in JSON Schema/,
-  );
+  expect(() => z.toJSONSchema(LibraryQueryRequestSchema)).not.toThrow();
 });
 
 it("accepts a nested library query and fills the empty default", () => {
-  expect(parseMcpLibraryQuery({})).toMatchObject({ query: EMPTY_QUERY });
+  expect(LibraryQueryRequestSchema.parse({})).toMatchObject({
+    query: EMPTY_QUERY,
+  });
   expect(
-    parseMcpLibraryQuery({
+    LibraryQueryRequestSchema.parse({
       keywords: "pond",
       query: {
         combinator: "and",
