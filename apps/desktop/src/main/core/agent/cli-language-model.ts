@@ -4,7 +4,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { LanguageModel } from "ai";
 import { z } from "zod";
-import { type CliProvider, checkCliConnection, runCli } from "./cli-runtime";
+import {
+  type CliProvider,
+  CODEX_ISOLATION_ARGS,
+  checkCliConnection,
+  claudeInvocationArgs,
+  codexRuntimeArgs,
+  prepareCodexRuntime,
+  runCli,
+} from "./cli-runtime";
 
 type CliLanguageModel = Extract<LanguageModel, { specificationVersion: "v4" }>;
 type CallOptions = Parameters<CliLanguageModel["doGenerate"]>[0];
@@ -37,46 +45,27 @@ async function generate(
   const directory = await mkdtemp(join(tmpdir(), "pond-cli-"));
   try {
     const schema = JSON.stringify(z.toJSONSchema(replySchema));
+    const codexRuntime =
+      provider === "codex"
+        ? await prepareCodexRuntime(directory, model, options.abortSignal)
+        : undefined;
+    const runtimeArgs = codexRuntime ? codexRuntimeArgs(codexRuntime) : [];
     const args =
       provider === "codex"
         ? [
             "exec",
             "--json",
-            "--ephemeral",
-            "--ignore-user-config",
-            "--skip-git-repo-check",
-            "--sandbox",
-            "read-only",
-            "--color",
-            "never",
-            "-c",
-            'forced_login_method="chatgpt"',
-            "-c",
-            "features.shell_tool=false",
-            "-c",
-            'web_search="disabled"',
+            ...CODEX_ISOLATION_ARGS,
+            ...runtimeArgs,
             "-c",
             `developer_instructions=${JSON.stringify(protocol)}`,
             "--output-schema",
             join(directory, "reply-schema.json"),
           ]
-        : [
-            "--print",
-            "--output-format",
-            "json",
-            "--json-schema",
+        : claudeInvocationArgs({
             schema,
-            "--no-session-persistence",
-            "--safe-mode",
-            "--restricted",
-            "--tools",
-            "",
-            "--strict-mcp-config",
-            "--permission-mode",
-            "dontAsk",
-            "--system-prompt",
-            protocol,
-          ];
+            systemPrompt: protocol,
+          });
     if (provider === "codex") {
       await writeFile(join(directory, "reply-schema.json"), schema, {
         mode: 0o600,
@@ -88,6 +77,7 @@ async function generate(
       provider,
       args,
       cwd: directory,
+      codexHome: codexRuntime?.codexHome,
       signal: options.abortSignal,
       stdin: JSON.stringify({
         prompt: options.prompt,
