@@ -104,6 +104,20 @@ describe("checkProviderKey", () => {
     );
     expect(result.ok).toBe(true);
   });
+
+  it("checks OpenCode Go through its authenticated models endpoint", async () => {
+    const result = await checkProviderKey(
+      { provider: "opencode-go", key: "go-test", ...bases },
+      async (url, options) => {
+        expect(url).toBe("https://opencode.ai/inference/go/v1/models");
+        expect(options?.headers).toEqual({
+          Authorization: "Bearer go-test",
+        });
+        return Response.json({ data: [{ id: "deepseek-v4-flash" }] });
+      },
+    );
+    expect(result).toEqual({ ok: true });
+  });
 });
 
 describe("complete model discovery", () => {

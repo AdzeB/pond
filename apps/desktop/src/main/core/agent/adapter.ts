@@ -2,12 +2,14 @@ import type { LanguageModel } from "ai";
 import { assistantCatalog } from "../../../shared/assistant";
 import type { AgentProviderId } from "./keys";
 import { createLocalLanguageModel } from "./local-language-model";
+import { createOpenCodeGoModel } from "./opencode-go";
 
 export async function loadModel(input: {
   provider: AgentProviderId;
   model: string;
   apiKey: string | null;
   baseUrl?: string;
+  threadId?: string;
 }): Promise<LanguageModel | null> {
   const key = input.apiKey ?? "";
   const modelId = input.model || assistantCatalog(input.provider)?.model || "";
@@ -74,11 +76,11 @@ export async function loadModel(input: {
     return createDeepSeek({ apiKey: key })(modelId);
   }
   if (input.provider === "opencode-go") {
-    const { createOpenAI } = await import("@ai-sdk/openai");
-    return createOpenAI({
-      apiKey: key,
-      baseURL: "https://opencode.ai/zen/go/v1",
-    }).chat(modelId);
+    return createOpenCodeGoModel(
+      key,
+      modelId,
+      input.threadId ?? crypto.randomUUID(),
+    );
   }
   if (input.provider === "ollama" || input.provider === "lmstudio")
     return createLocalLanguageModel({

@@ -201,9 +201,9 @@ export const ASSISTANT_MODELS = [
   },
   {
     id: "opencode-go",
-    name: "DeepSeek V4 Flash",
+    name: "DeepSeek V4.1 Flash",
     provider: "OpenCode Go",
-    model: "deepseek-v4-flash",
+    model: "deepseek-v4.1-flash",
     local: false,
     needsKey: true,
     setupUrl: "https://opencode.ai/docs/go",
