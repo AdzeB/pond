@@ -304,7 +304,10 @@ export interface QueryInputs
   "storage.guardState": EmptyInput;
   "api.restart": EmptyInput;
   "updates.applyPrefs": EmptyInput;
+  "updates.currentNotice": EmptyInput;
   "updates.checkNow": EmptyInput;
+  "updates.download": EmptyInput;
+  "updates.install": EmptyInput;
   "extension.install": EmptyInput;
   "quickCapture.applyPrefs": EmptyInput;
   "window.applyPrefs": EmptyInput;
