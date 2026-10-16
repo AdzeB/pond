@@ -81,6 +81,12 @@ export function thumbnailFilename(originalFilename: string): string {
   return `${basenameOf(originalFilename)}${THUMBNAIL_WEBP_SUFFIX}`;
 }
 
+export function webpThumbnailFilename(existingFilename: string): string {
+  const name = basenameOf(existingFilename);
+  const extensionIndex = name.lastIndexOf(".");
+  return `${extensionIndex > 0 ? name.slice(0, extensionIndex) : name}.webp`;
+}
+
 /** Existing Pond and Eagle sidecars still use the PNG suffix. */
 export function thumbnailSidecarCandidates(originalFilename: string): string[] {
   const base = basenameOf(originalFilename);

@@ -8,6 +8,7 @@ import {
   posterFilename,
   thumbnailFilename,
   videoFilename,
+  webpThumbnailFilename,
 } from "./save-file-names";
 
 describe("harvested filenames", () => {
@@ -39,6 +40,14 @@ describe("thumbnail suffix", () => {
   it("appends _thumbnail.webp to the original basename", () => {
     expect(thumbnailFilename("layout.psd")).toBe("layout.psd_thumbnail.webp");
     expect(thumbnailFilename("media-1.jpg")).toBe("media-1.jpg_thumbnail.webp");
+  });
+
+  it("gives regenerated thumbnails a WebP extension", () => {
+    expect(webpThumbnailFilename("image.png_thumbnail.png")).toBe(
+      "image.png_thumbnail.webp",
+    );
+    expect(webpThumbnailFilename("thumbnail.png")).toBe("thumbnail.webp");
+    expect(webpThumbnailFilename("preview")).toBe("preview.webp");
   });
 
   it("detects WebP, PNG, and text-card thumbnail names", () => {

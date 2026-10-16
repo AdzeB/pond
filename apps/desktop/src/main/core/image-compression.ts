@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { extname, join } from "node:path";
 import { type Save, type SaveFile, saves } from "@pond/schema/db";
 import type { Transaction, TxSaveFile } from "@pond/schema/tx";
-import { THUMBNAIL_KIND } from "@shared/save-file-names";
+import { THUMBNAIL_KIND, webpThumbnailFilename } from "@shared/save-file-names";
 import { inArray } from "drizzle-orm";
 import sharp from "sharp";
 import type { ImageCompressionRequest } from "../../shared/conversion-contracts";
@@ -290,10 +290,7 @@ async function compressionTransaction(
     thumbnailBytes = await renderThumbnail(compressed);
     if (thumbnailBytes) {
       const previousPath = candidate.thumbnail.file.path;
-      const thumbnailPath = previousPath.replace(
-        /_thumbnail\.png$/i,
-        "_thumbnail.webp",
-      );
+      const thumbnailPath = webpThumbnailFilename(previousPath);
       const thumbnailMetadata = await sharp(thumbnailBytes).metadata();
       const updatedThumbnail: SaveFile = {
         ...candidate.thumbnail.file,

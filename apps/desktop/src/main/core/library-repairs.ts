@@ -224,17 +224,21 @@ async function applyIssue(
         files: [{ filename: action.destination, bytes }],
         meta: { actor: "user", actorReason: "library-repair:thumbnail" },
       };
-      const previous = row.files.find(
-        (file) => file.path === action.destination,
-      );
+      const previous = row.files.find((file) => isRepairThumbnail(file.kind));
       if (previous) {
         const oldBytes = await readLibraryMedia(
           join(dependencies.root(), "items", `${row.id}.info`, previous.path),
         ).catch(() => null);
-        if (oldBytes)
+        if (oldBytes) {
           transaction.beforeFiles = [
             { filename: previous.path, bytes: oldBytes },
           ];
+          if (previous.path !== action.destination) {
+            transaction.fileRenames = [
+              { from: previous.path, to: action.destination },
+            ];
+          }
+        }
       }
       await dependencies.commit([transaction]);
       return [transaction];
