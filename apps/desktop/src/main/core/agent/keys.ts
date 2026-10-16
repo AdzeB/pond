@@ -19,6 +19,8 @@ import { getPrefs, setPrefs } from "../prefs";
 import { checkCliConnection, isCliProvider } from "./cli-runtime";
 import { isLocalProviderConnected } from "./local-provider-state";
 import { catalogModelsForProvider, loadModelCatalog } from "./model-catalog";
+import { OPENCODE_GO_MODELS_BASE_URL } from "./opencode-go";
+import { OPENROUTER_KEY_URL, OPENROUTER_MODELS_URL } from "./openrouter";
 import { modelsFromProviderResponse } from "./provider-models";
 
 const AGENT_PROVIDERS = ASSISTANT_MODELS.map((model) => model.id);
@@ -36,6 +38,7 @@ const OPENAI_MODELS = {
   perplexity: "https://api.perplexity.ai",
   baseten: "https://inference.baseten.co/v1",
   cohere: "https://api.cohere.com/v2",
+  "opencode-go": OPENCODE_GO_MODELS_BASE_URL,
 } as const;
 
 function isOpenAIModelsProvider(
@@ -333,6 +336,34 @@ export async function checkProviderKey(
   fetcher: typeof fetch = fetch,
 ): Promise<OkResult> {
   if (isCliProvider(input.provider)) return checkCliConnection(input.provider);
+  if (input.provider === "openrouter") {
+    try {
+      const response = await fetcher(OPENROUTER_KEY_URL, {
+        headers: { Authorization: `Bearer ${input.key}` },
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (response.ok) return { ok: true };
+      if (response.status === 401 || response.status === 403) {
+        return {
+          ok: false,
+          error:
+            "OpenRouter rejected this key or its permissions. Check it in Settings.",
+        };
+      }
+      return {
+        ok: false,
+        error: `Could not verify the OpenRouter key (HTTP ${response.status}). Try again later.`,
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Could not verify the OpenRouter key. Try again later.",
+      };
+    }
+  }
   const fetched = await fetchProviderModels(input, fetcher);
   if (fetched.ok || fetched.unsupported) return { ok: true };
   return { ok: false, error: fetched.error };
@@ -361,6 +392,9 @@ export async function fetchProviderModels(
     if (!resource) return { ok: false, error: "Enter a resource name first." };
     url = `https://${resource}.openai.azure.com/openai/v1/models`;
     if (key) headers["api-key"] = key;
+  } else if (provider === "openrouter") {
+    url = OPENROUTER_MODELS_URL;
+    if (key) headers.Authorization = `Bearer ${key}`;
   } else if (isOpenAIModelsProvider(provider)) {
     const base = OPENAI_MODELS[provider];
     url = `${base.replace(/\/$/, "")}/models`;

@@ -97,6 +97,8 @@ describe("Assistant model policy", () => {
       "perplexity",
       "baseten",
       "deepseek",
+      "opencode-go",
+      "openrouter",
     ]);
     expect(offeredProviders("local").map((model) => model.id)).toEqual([
       "ollama",

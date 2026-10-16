@@ -47,6 +47,7 @@ export const IPC = {
   governorSetPaused: "pond:governor-set-paused",
   governorResumeSource: "pond:governor-resume-source",
   storageStatus: "pond:storage-status",
+  updateNotice: "pond:update-notice",
   editUndoRequested: "pond:edit-undo-requested",
   editRedoRequested: "pond:edit-redo-requested",
   shortcutAction: "pond:shortcut-action",
@@ -163,6 +164,7 @@ export type MenuActionId =
   | "library.import-links"
   | "library.import-clipboard"
   | "library.import-bookmarks"
+  | "library.import-mymind"
   | "library.import-page-assets"
   | "library.import-eagle"
   | "library.import-package"

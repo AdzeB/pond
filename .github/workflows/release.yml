@@ -28,7 +28,10 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        # electron-builder packages both Mac architectures in this job. Install
+        # both native dependency variants here without bloating normal dev/CI
+        # installs with every dependency's second architecture.
+        run: pnpm install --frozen-lockfile --os=darwin --cpu=arm64 --cpu=x64
 
       - name: Set up Turborepo Remote Cache
         if: ${{ vars.TURBO_TEAM != '' }}
@@ -114,7 +117,7 @@ jobs:
         run: |
           if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
-              --title "Pond ${GITHUB_REF_NAME#v}" --notes ""
+              --title "Pond ${GITHUB_REF_NAME#v}" --generate-notes
           fi
 
       - name: Package macOS app and upload to release

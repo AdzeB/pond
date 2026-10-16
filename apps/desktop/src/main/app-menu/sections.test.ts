@@ -236,6 +236,7 @@ describe("app menu sections", () => {
         { label: "Import from Clipboard" },
         { type: "separator" },
         { label: "Import Bookmarks" },
+        { label: "Import mymind" },
         { label: "Import Page Assets" },
         { type: "separator" },
         { label: "Import Eagle Library" },
