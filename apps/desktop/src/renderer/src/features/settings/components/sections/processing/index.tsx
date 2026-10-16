@@ -2,6 +2,7 @@ import { IconCircleCheck, IconCircleWarning, IconPowerOff } from "@pond/icons";
 import { Button, Loader, Settings, Tooltip } from "@pond/ui";
 import { useState } from "react";
 import { useEnrichmentStatus } from "@/features/enrichment/status";
+import { THIS_DEVICE } from "@/shared/lib/platform";
 import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
@@ -126,7 +127,7 @@ export function ProcessingStatusCard({
           : failed
             ? `${plural(failed, "task", "tasks")} couldn't finish`
             : enabled
-              ? "New saves are processed on this Mac."
+              ? `New saves are processed on ${THIS_DEVICE}.`
               : "Turn on a processing option below to get started.";
   const canRetry = loaded && enabled && !busy && (failed > 0 || checkFailed);
 
