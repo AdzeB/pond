@@ -2,6 +2,7 @@ import type { LanguageModel } from "ai";
 import { assistantCatalog } from "../../../shared/assistant";
 import type { AgentProviderId } from "./keys";
 import { createLocalLanguageModel } from "./local-language-model";
+import { createOpenRouterModel } from "./openrouter";
 
 export async function loadModel(input: {
   provider: AgentProviderId;
@@ -74,15 +75,7 @@ export async function loadModel(input: {
     return createDeepSeek({ apiKey: key })(modelId);
   }
   if (input.provider === "openrouter") {
-    const { createOpenAI } = await import("@ai-sdk/openai");
-    return createOpenAI({
-      apiKey: key,
-      baseURL: "https://openrouter.ai/api/v1",
-      headers: {
-        "HTTP-Referer": "https://github.com/raphaelsalaja/pond",
-        "X-Title": "Pond",
-      },
-    }).chat(modelId);
+    return createOpenRouterModel(key, modelId);
   }
   if (input.provider === "ollama" || input.provider === "lmstudio")
     return createLocalLanguageModel({
