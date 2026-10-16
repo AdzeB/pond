@@ -43,6 +43,7 @@ import {
 import type {
   WireJson,
   WireSessionImported,
+  WireSessionImportFailed,
   WireSyncAction,
   WireSyncStatusUpdate,
   WireUndoState,
@@ -328,6 +329,15 @@ const api = {
       cb(payload);
     ipcRenderer.on(IPC.sessionImported, listener);
     return () => ipcRenderer.off(IPC.sessionImported, listener);
+  },
+
+  onSessionImportFailed(
+    cb: (payload: WireSessionImportFailed) => void,
+  ): () => void {
+    const listener = (_: IpcRendererEvent, payload: WireSessionImportFailed) =>
+      cb(payload);
+    ipcRenderer.on(IPC.sessionImportFailed, listener);
+    return () => ipcRenderer.off(IPC.sessionImportFailed, listener);
   },
 
   onSyncStatus(cb: (update: WireSyncStatusUpdate) => void): () => void {
