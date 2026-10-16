@@ -117,7 +117,7 @@ jobs:
         run: |
           if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
-              --title "Pond ${GITHUB_REF_NAME#v}" --notes ""
+              --title "Pond ${GITHUB_REF_NAME#v}" --generate-notes
           fi
 
       - name: Package macOS app and upload to release
