@@ -154,27 +154,6 @@ export const libraryMaintenanceQueries = {
     }
   },
 
-  async "updates.applyPrefs"(): Promise<QueryResult<"updates.applyPrefs">> {
-    try {
-      const { applyUpdaterPrefs } = await import("../../updater");
-      await applyUpdaterPrefs();
-      return { ok: true as const };
-    } catch (err) {
-      return {
-        ok: false as const,
-        error:
-          err instanceof Error
-            ? err.message
-            : "Something went wrong. Try again.",
-      };
-    }
-  },
-
-  async "updates.checkNow"(): Promise<QueryResult<"updates.checkNow">> {
-    const { checkForUpdatesNow } = await import("../../updater");
-    return await checkForUpdatesNow();
-  },
-
   "extension.install": query(
     BrowserExtensionInstallInputSchema,
     async (params): Promise<QueryResult<"extension.install">> => {

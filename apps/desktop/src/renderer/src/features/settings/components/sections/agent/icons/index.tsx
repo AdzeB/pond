@@ -13,6 +13,7 @@ import lmstudio from "@/assets/logos/providers/lmstudio.webp";
 import mistral from "@/assets/logos/providers/mistral.webp";
 import ollama from "@/assets/logos/providers/ollama.webp";
 import openai from "@/assets/logos/providers/openai.webp";
+import openrouter from "@/assets/logos/providers/openrouter.webp";
 import perplexity from "@/assets/logos/providers/perplexity.webp";
 import together from "@/assets/logos/providers/together.webp";
 import xai from "@/assets/logos/providers/xai.webp";
@@ -34,6 +35,7 @@ const logos = {
   perplexity,
   baseten,
   deepseek,
+  openrouter,
   ollama,
   lmstudio,
 } satisfies Record<AssistantProvider, string>;

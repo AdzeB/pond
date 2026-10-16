@@ -11,6 +11,10 @@ import type {
 } from "@pond/schema/db";
 import type { Query } from "@pond/schema/filters/types";
 import type { z } from "zod";
+import type {
+  AccountQueryInputs,
+  AccountQueryResults,
+} from "./account-contracts";
 import type { assistantSend } from "./assistant";
 import type {
   BrowserExtensionQueryInputs,
@@ -115,7 +119,8 @@ interface SavedViewInput {
 export type { OkResult } from "./query-contracts-shared";
 
 export interface QueryInputs
-  extends TransferQueryInputs,
+  extends AccountQueryInputs,
+    TransferQueryInputs,
     BrowserExtensionQueryInputs,
     BulkQueryInputs,
     FolderQueryInputs,
@@ -201,9 +206,6 @@ export interface QueryInputs
   "settings.setPrefs": WirePrefsPatch;
   "feedback.emit": { event: FeedbackEvent };
   "notifications.openSettings": EmptyInput;
-  "accounts.setHandle": { accountId: string; handle: string | null };
-  "accounts.setLabel": { accountId: string; label: string | null };
-  "accounts.disconnect": { accountId: string };
   "watches.resolve": { source: Source; input: string };
   "watches.add": { source: Source; handle: string; label?: string | null };
   "watches.setLabel": { watchId: string; label: string | null };
@@ -254,6 +256,7 @@ export interface QueryInputs
     ops?: Op[];
   };
   "downloads.ingestingOrFailed": EmptyInput;
+  "downloads.clearUnfinished": EmptyInput;
   "downloads.activity": EmptyInput;
   "sync.history": { source: Source; accountId?: string; limit?: number };
   "sync.recent": { limit?: number };
@@ -308,7 +311,10 @@ export interface QueryInputs
   "storage.guardState": EmptyInput;
   "api.restart": EmptyInput;
   "updates.applyPrefs": EmptyInput;
+  "updates.currentNotice": EmptyInput;
   "updates.checkNow": EmptyInput;
+  "updates.download": EmptyInput;
+  "updates.install": EmptyInput;
   "quickCapture.applyPrefs": EmptyInput;
   "window.applyPrefs": EmptyInput;
   "system.applyPrefs": EmptyInput;
@@ -318,7 +324,6 @@ export interface QueryInputs
   "pipeline.status": EmptyInput;
   "pipeline.inflight": EmptyInput;
   "savedViews.list": EmptyInput;
-  "accounts.list": EmptyInput;
   "tagGroups.list": EmptyInput;
   "library.pickFolder": EmptyInput;
   "library.pickExisting": EmptyInput;
@@ -326,7 +331,8 @@ export interface QueryInputs
 }
 
 export interface QueryResults
-  extends TransferQueryResults,
+  extends AccountQueryResults,
+    TransferQueryResults,
     BrowserExtensionQueryResults,
     BulkQueryResults,
     SystemQueryResults,
@@ -396,6 +402,7 @@ export interface QueryResults
   "pipeline.status": { paused: boolean; inflight: number };
   "pipeline.inflight": string[];
   "downloads.ingestingOrFailed": string[];
+  "downloads.clearUnfinished": { changed: number; ids: string[] };
   "downloads.activity": DownloadActivity[];
   "downloads.history": {
     rows: {

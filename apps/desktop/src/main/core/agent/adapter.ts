@@ -2,6 +2,7 @@ import type { LanguageModel } from "ai";
 import { assistantCatalog } from "../../../shared/assistant";
 import type { AgentProviderId } from "./keys";
 import { createLocalLanguageModel } from "./local-language-model";
+import { createOpenRouterModel } from "./openrouter";
 
 export async function loadModel(input: {
   provider: AgentProviderId;
@@ -72,6 +73,9 @@ export async function loadModel(input: {
   if (input.provider === "deepseek") {
     const { createDeepSeek } = await import("@ai-sdk/deepseek");
     return createDeepSeek({ apiKey: key })(modelId);
+  }
+  if (input.provider === "openrouter") {
+    return createOpenRouterModel(key, modelId);
   }
   if (input.provider === "ollama" || input.provider === "lmstudio")
     return createLocalLanguageModel({

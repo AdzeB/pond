@@ -10,6 +10,9 @@ asarUnpack:
   - "**/node_modules/better-sqlite3/**"
   - "**/node_modules/sqlite-vec/**"
   - "**/node_modules/sqlite-vec-*/**"
+  # sharp loads a sibling dylib. The .node unpack above does not take it along.
+  - "**/node_modules/@img/**"
+  - "**/node_modules/sharp/**"
 
 directories:
   buildResources: build
