@@ -19,6 +19,35 @@ import {
 } from "./params";
 
 const ACCOUNT_NOT_FOUND: OkFailure = { ok: false, error: "Account not found." };
+const SYNC_LIKES_UNSUPPORTED: OkFailure = {
+  ok: false,
+  error: "Syncing Likes is only available for X accounts.",
+};
+
+interface SetSyncLikesDependencies {
+  getAccount: typeof getAccount;
+  patchAccountSync: typeof patchAccountSync;
+}
+
+export function createSetSyncLikesQuery(
+  dependencies: SetSyncLikesDependencies = { getAccount, patchAccountSync },
+) {
+  return query(
+    z.strictObject({
+      accountId: z.string().trim().min(1),
+      syncLikes: z.boolean(),
+    }),
+    async (params) => {
+      const account = await dependencies.getAccount(params.accountId);
+      if (!account) return ACCOUNT_NOT_FOUND;
+      if (account.source !== "twitter") return SYNC_LIKES_UNSUPPORTED;
+      await dependencies.patchAccountSync(params.accountId, {
+        syncLikes: params.syncLikes,
+      });
+      return { ok: true as const };
+    },
+  );
+}
 
 export const accountsQueries = {
   async "accounts.list"() {
@@ -64,17 +93,7 @@ export const accountsQueries = {
     },
   ),
 
-  "accounts.setSyncLikes": query(
-    z.object({ accountId: StringParam, syncLikes: z.boolean() }),
-    async (params) => {
-      const account = await getAccount(params.accountId);
-      if (!account) return ACCOUNT_NOT_FOUND;
-      await patchAccountSync(params.accountId, {
-        syncLikes: params.syncLikes,
-      });
-      return { ok: true as const };
-    },
-  ),
+  "accounts.setSyncLikes": createSetSyncLikesQuery(),
 
   "accounts.disconnect": query(
     z.object({ accountId: StringParam }),

@@ -18,7 +18,7 @@ import {
   persistWatermark,
 } from "./sync-baseline";
 import { emit, listGapNote } from "./sync-status";
-import { shouldHarvestTwitterLikes } from "./twitter-likes";
+import { harvestConfiguredTwitterLikes } from "./twitter-likes";
 import { buildTwitterBookmarkSeed } from "./twitter-seed";
 
 export async function syncTwitter(
@@ -115,17 +115,15 @@ export async function syncTwitter(
     return;
   }
 
-  const handle = account.handle?.replace(/^@/, "").trim();
-  const likes = shouldHarvestTwitterLikes(account, signal.aborted)
-    ? await harvestTwitterLikes(
-        {
-          knownIds: baseline.full ? [] : Array.from(knownIds),
-        },
-        { partition: partitionForAccount(accountId), handle: handle ?? "" },
-      )
-    : account.sync.syncLikes === false
-      ? null
-      : { ok: false as const, reason: "no_match" as const };
+  const likes = await harvestConfiguredTwitterLikes(
+    account,
+    {
+      aborted: signal.aborted,
+      knownIds: baseline.full ? [] : Array.from(knownIds),
+      partition: partitionForAccount(accountId),
+    },
+    { harvestTwitterLikes },
+  );
   const gaps: string[] = [];
   if (likes && !likes.ok) {
     log.warn(`[pond sync:twitter] likes harvest failed: ${likes.reason}`);

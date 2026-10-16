@@ -269,14 +269,30 @@ function fetchItems(
       icon: <IconHeart />,
       checked: target.syncLikes !== false,
       onCheckedChange: (checked) => {
-        void window.pond
-          .query("accounts.setSyncLikes", {
-            accountId: target.id,
-            syncLikes: checked,
-          })
-          .then(() => {
+        void (async () => {
+          try {
+            const result = await window.pond.query("accounts.setSyncLikes", {
+              accountId: target.id,
+              syncLikes: checked,
+            });
+            if (!result.ok) {
+              notify({
+                id: "source-sync-likes",
+                title: "Couldn't update Likes syncing",
+                description: result.error,
+              });
+              return;
+            }
             (options.onChanged ?? sourceDetail.changed)();
-          });
+          } catch (error) {
+            notify({
+              id: "source-sync-likes",
+              title: "Couldn't update Likes syncing",
+              description:
+                error instanceof Error ? error.message : "Please try again.",
+            });
+          }
+        })();
       },
     });
   }
