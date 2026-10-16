@@ -1,5 +1,6 @@
 import type { LanguageModel } from "ai";
 import { assistantCatalog } from "../../../shared/assistant";
+import { isCliProvider } from "./cli-runtime";
 import type { AgentProviderId } from "./keys";
 import { createLocalLanguageModel } from "./local-language-model";
 import { createOpenCodeGoModel } from "./opencode-go";
@@ -14,6 +15,10 @@ export async function loadModel(input: {
 }): Promise<LanguageModel | null> {
   const key = input.apiKey ?? "";
   const modelId = input.model || assistantCatalog(input.provider)?.model || "";
+  if (isCliProvider(input.provider)) {
+    const { createCliLanguageModel } = await import("./cli-language-model");
+    return createCliLanguageModel(input.provider, modelId);
+  }
   if (input.provider === "anthropic") {
     const { createAnthropic } = await import("@ai-sdk/anthropic");
     return createAnthropic({ apiKey: key })(modelId);

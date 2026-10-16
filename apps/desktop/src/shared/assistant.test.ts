@@ -105,6 +105,10 @@ describe("Assistant model policy", () => {
       "lmstudio",
     ]);
     expect(gatewayCreator("groq")).toBe("groq");
+    expect(offeredProviders("subscription").map((model) => model.id)).toEqual([
+      "codex",
+      "claude-code",
+    ]);
     expect(gatewayCreator("azure")).toBeUndefined();
   });
 });

@@ -16,6 +16,7 @@ import type {
 } from "../../../shared/query-contracts-shared";
 import { deleteSecret, getSecret, getSecrets, setSecret } from "../../keychain";
 import { getPrefs, setPrefs } from "../prefs";
+import { checkCliConnection, isCliProvider } from "./cli-runtime";
 import { isLocalProviderConnected } from "./local-provider-state";
 import { catalogModelsForProvider, loadModelCatalog } from "./model-catalog";
 import { OPENCODE_GO_MODELS_BASE_URL } from "./opencode-go";
@@ -98,6 +99,11 @@ export async function saveKey(
 ): Promise<OkResult> {
   const catalog = assistantCatalog(provider);
   const trimmed = key.trim();
+  if (isCliProvider(provider) && trimmed)
+    return {
+      ok: false,
+      error: "Sign in through the CLI instead of entering an API key.",
+    };
   if (!trimmed && catalog?.needsKey) {
     return { ok: false, error: "Paste a key first." };
   }
@@ -161,6 +167,7 @@ export async function setKeyEnabled(
 export async function keyFor(
   provider: AgentProviderId,
 ): Promise<string | null> {
+  if (isCliProvider(provider)) return null;
   return getSecret(accountFor(provider));
 }
 
@@ -181,6 +188,26 @@ export async function verifyKey(
 export async function listProviderModels(
   provider: AgentProviderId,
 ): Promise<ProviderModelsResult> {
+  if (isCliProvider(provider)) {
+    const check = await checkCliConnection(provider);
+    if (!check.ok) return { ...check, models: [] };
+    return {
+      ok: true,
+      models: [
+        {
+          id: "default",
+          name: assistantCatalog(provider)?.name ?? provider,
+          description: "Uses your local CLI sign-in and subscription limits.",
+          modelCapabilities: {
+            text: true,
+            vision: false,
+            audio: false,
+            tools: true,
+          },
+        },
+      ],
+    };
+  }
   const catalog = assistantCatalog(provider);
   const local = catalog?.local === true;
   const publicCatalog = local ? { models: [] } : await loadModelCatalog();
@@ -308,6 +335,7 @@ export async function checkProviderKey(
   input: ProviderConnection,
   fetcher: typeof fetch = fetch,
 ): Promise<OkResult> {
+  if (isCliProvider(input.provider)) return checkCliConnection(input.provider);
   if (input.provider === "openrouter") {
     try {
       const response = await fetcher(OPENROUTER_KEY_URL, {
