@@ -189,6 +189,18 @@ describe("app menu sections", () => {
     );
   });
 
+  it("lets the focused collection own the Select All shortcut", () => {
+    const context = createContext({ isMac: true, isPackaged: true });
+    const edit = buildEditSection(context, buildSettingsItem(context));
+    const submenu = edit.submenu;
+    if (!Array.isArray(submenu)) throw new Error("Missing Edit submenu");
+
+    expect(submenu.find((item) => item.label === "Select All")).toMatchObject({
+      accelerator: "CmdOrCtrl+A",
+      registerAccelerator: false,
+    });
+  });
+
   it("uses the save action language in native menus", () => {
     const context = createContext({ isMac: true, isPackaged: true });
     const file = buildFileSection(context).submenu ?? [];

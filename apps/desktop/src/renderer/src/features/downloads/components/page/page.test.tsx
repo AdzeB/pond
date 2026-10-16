@@ -290,6 +290,26 @@ it("selects a download row on click", async () => {
   expect(selectedRow?.hasAttribute("data-inspected")).toBe(false);
 });
 
+it("selects every download with Command-A while the table is focused", async () => {
+  await render();
+  const table = host.querySelector<HTMLElement>('[role="grid"]');
+  if (!table) throw new Error("Missing Downloads table");
+  table.focus();
+
+  await act(async () => {
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "a",
+        metaKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  });
+
+  expect(downloadsSelection.size()).toBe(3);
+});
+
 it("lists waiting and completed rows in the same table", async () => {
   setSaves([
     save("Z clip", "ingesting", "running"),
