@@ -316,7 +316,6 @@ export interface SystemQueryResults {
     | ReasonFailure<"dev_build">;
   "updates.download": OkResult | ReasonFailure<"dev_build">;
   "updates.install": OkResult | ReasonFailure<"dev_build">;
-  "extension.install": OkResult<{ path: string }>;
   "quickCapture.applyPrefs": OkResult;
   "window.applyPrefs": OkResult;
   "system.applyPrefs": OkResult<{ restartRequired?: boolean }>;
