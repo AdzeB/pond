@@ -152,6 +152,53 @@ describe("Eagle documented metadata conversion", () => {
       rules: [{ field: "format", operator: "some", value: ["png"] }],
     });
   });
+  it("maps Eagle's capture timestamp to Date Taken, including a single day", () => {
+    const day = new Date(2026, 4, 3).getTime();
+    expect(
+      eagleSmartFolderQuery({
+        id: "shot",
+        name: "Shot That Day",
+        conditions: [
+          {
+            match: "AND",
+            rules: [{ property: "timestamp", method: "on", value: [day] }],
+          },
+        ],
+      }),
+    ).toEqual({
+      combinator: "and",
+      rules: [
+        {
+          field: "takenAt",
+          operator: "between",
+          value: [day, day + 86399999],
+        },
+      ],
+    });
+  });
+  it("maps BPM ranges and font activation", () => {
+    expect(
+      eagleSmartFolderQuery({
+        id: "audio",
+        name: "Fast Tracks",
+        conditions: [
+          {
+            match: "AND",
+            rules: [
+              { property: "bpm", method: ">=", value: [160, 0] },
+              { property: "fontActivated", method: "deactivate" },
+            ],
+          },
+        ],
+      }),
+    ).toEqual({
+      combinator: "and",
+      rules: [
+        { field: "bpm", operator: "gte", value: 160 },
+        { field: "fontActivated", operator: "eq", value: false },
+      ],
+    });
+  });
   it("recognizes Eagle's empty-conditions Group with nested Smart Folders", () => {
     const group = EagleSmartFolderSchema.parse({
       id: "group",
