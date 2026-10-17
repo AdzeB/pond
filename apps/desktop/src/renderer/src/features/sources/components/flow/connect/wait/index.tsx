@@ -12,7 +12,7 @@ import {
   useConnectCompleted,
   useConnectedAccount,
   useConnectedBefore,
-  useConnectFailed,
+  useConnectProblem,
   useConnectSource,
   useConnectWaiting,
 } from "@/features/sources/state/connect-flow";
@@ -26,37 +26,54 @@ import styles from "./styles.module.css";
 export function ConnectWaitSection() {
   const source = useConnectSource();
   const completed = useConnectCompleted();
-  const failed = useConnectFailed();
+  const problem = useConnectProblem();
   useConnectArrival();
   if (!source) return null;
   const label = getSourceDef(source).label;
-  const state = completed ? "connected" : failed ? "failed" : "waiting";
+  const step = completed ? "connected" : (problem ?? "waiting");
 
   return (
     <div className={styles.body}>
-      <ConnectionVisual source={source} state={state} />
+      <ConnectionVisual
+        source={source}
+        state={
+          completed
+            ? "connected"
+            : problem === "unavailable"
+              ? "failed"
+              : "waiting"
+        }
+      />
       <div
-        key={state}
+        key={step}
         className={styles.copy}
-        data-state={completed ? "connected" : failed ? "failed" : undefined}
+        data-state={step === "waiting" ? undefined : step}
         aria-live="polite"
       >
         <h2 className={styles.title}>
-          {completed
+          {step === "connected"
             ? `${label} is connected`
-            : failed
+            : step === "unavailable"
               ? `Couldn't connect ${label}`
-              : `Connect ${label} to Pond`}
+              : step === "signed_out"
+                ? `Signed out of ${label}`
+                : `Connect ${label} to Pond`}
         </h2>
         <p className={styles.description}>
-          {completed ? (
+          {step === "connected" ? (
             <>
               Pond is syncing your saved posts now.
               <br />
               New saves keep arriving in your library.
             </>
-          ) : failed ? (
-            "Try opening the sign-in page again."
+          ) : step === "unavailable" ? (
+            "Pond couldn't open the sign-in page. Try again."
+          ) : step === "signed_out" ? (
+            <>
+              Pond's extension found a browser profile signed out of {label}.
+              <br />
+              Sign in there, or add the extension to the profile you use.
+            </>
           ) : (
             <>
               Sign in to {label} in your browser.
@@ -136,7 +153,7 @@ function ExtensionNote() {
 
 export function ConnectActions() {
   const completed = useConnectCompleted();
-  const failed = useConnectFailed();
+  const problem = useConnectProblem();
   const account = useConnectedAccount();
   if (completed && account)
     return (
@@ -164,9 +181,13 @@ export function ConnectActions() {
   return (
     <>
       <Dialog.Cancel />
-      {failed ? (
+      {problem === "unavailable" ? (
         <Dialog.Confirm onClick={() => connectFlow.retry()}>
           Try Again
+        </Dialog.Confirm>
+      ) : problem === "signed_out" ? (
+        <Dialog.Confirm onClick={() => connectFlow.retry()}>
+          Open Sign-In Page
         </Dialog.Confirm>
       ) : null}
     </>
@@ -232,7 +253,7 @@ function useConnectArrival(): void {
     });
     const stopFailureListen = window.pond.onSessionImportFailed((payload) => {
       if (payload.source !== source) return;
-      connectFlow.fail(source);
+      connectFlow.rejectSession(source, payload.reason);
     });
 
     tick();

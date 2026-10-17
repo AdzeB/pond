@@ -89,9 +89,15 @@ export interface WireSessionImported {
   accountId: string;
 }
 
+export type SessionImportFailureReason =
+  | "no_cookie_domain"
+  | "no_cookies_for_source_domain"
+  | "no_auth_cookies_in_payload"
+  | "session_not_authenticated";
+
 export interface WireSessionImportFailed {
   source: Source;
-  reason: string;
+  reason: SessionImportFailureReason;
 }
 
 export interface WireSyncStatusUpdate {

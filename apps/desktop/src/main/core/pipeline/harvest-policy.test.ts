@@ -1,8 +1,37 @@
 import { describe, expect, it } from "vitest";
 import {
+  harvestShouldAdoptSave,
   harvestShouldIgnoreSave,
   harvestShouldReseedFailedSave,
 } from "./harvest-policy";
+
+describe("harvestShouldAdoptSave", () => {
+  const connected = new Set(["current", "other"]);
+
+  it("moves a disconnected account's save to the account that lists it", () => {
+    expect(
+      harvestShouldAdoptSave({ accountId: "removed" }, "current", connected),
+    ).toBe(true);
+  });
+
+  it("leaves saves owned by a connected account or by no account", () => {
+    expect(
+      harvestShouldAdoptSave({ accountId: "other" }, "current", connected),
+    ).toBe(false);
+    expect(
+      harvestShouldAdoptSave({ accountId: "current" }, "current", connected),
+    ).toBe(false);
+    expect(
+      harvestShouldAdoptSave({ accountId: null }, "current", connected),
+    ).toBe(false);
+  });
+
+  it("does nothing outside an account sync", () => {
+    expect(
+      harvestShouldAdoptSave({ accountId: "removed" }, undefined, connected),
+    ).toBe(false);
+  });
+});
 
 describe("harvestShouldIgnoreSave", () => {
   it("ignores skipped and trashed saves", () => {

@@ -1,8 +1,10 @@
-import type { Source } from "@pond/schema/db";
+import type { Save, Source } from "@pond/schema/db";
 import { mergeListKinds } from "@pond/schema/list-kinds";
 import log from "electron-log/main.js";
 import { broadcastSyncAction } from "../executor";
+import { persistSave } from "../persist-save";
 import type { ImportableCookie } from "../refresh/harvest-window/session";
+import { listAccounts } from "../sync/accounts";
 import {
   type EnqueueCandidate,
   type EnqueueItem,
@@ -24,6 +26,7 @@ import {
 import { classifyUrlToSource } from "./extractors";
 import { UnsupportedError } from "./extractors/errors";
 import {
+  harvestShouldAdoptSave,
   harvestShouldIgnoreSave,
   harvestShouldReseedFailedSave,
 } from "./harvest-policy";
@@ -58,6 +61,26 @@ function stashWebCookiesThenKick(
     stashPageCookies(saveId, cookies);
   }
   kickReconciler();
+}
+
+async function adoptOrphanedSave(
+  current: Pick<Save, "id" | "accountId">,
+  opts: EnqueueOptions,
+): Promise<void> {
+  const { accountId } = opts;
+  if (!accountId) return;
+  const connected = new Set((await listAccounts()).map((a) => a.id));
+  if (!harvestShouldAdoptSave(current, accountId, connected)) return;
+  await persistSave(
+    current.id,
+    { accountId },
+    { actorReason: opts.trigger ?? "pipeline:enqueue:adopt" },
+  );
+  log.info("[pond pipeline:enqueue] adopted save from disconnected account", {
+    id: current.id,
+    from: current.accountId,
+    to: accountId,
+  });
 }
 
 export interface EnqueueOneResult {
@@ -125,6 +148,7 @@ async function enqueueOne(
       incomingKinds,
       opts.trigger ?? "pipeline:enqueue",
     );
+    await adoptOrphanedSave(current, opts);
     if (harvestShouldIgnoreSave(current)) {
       stashWebCookiesThenKick(current.id, source, opts.cookies);
       log.info("[pond pipeline:enqueue] existing save", {

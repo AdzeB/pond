@@ -6,6 +6,7 @@ import type {
 import { session } from "electron";
 import log from "electron-log/main.js";
 import { IPC } from "../../shared/constants";
+import type { SessionImportFailureReason } from "../../shared/wire";
 import { broadcast } from "../lib/broadcast";
 import { clearPendingSessionSource } from "../pending-session";
 import { extractorFor } from "./pipeline/extractors";
@@ -37,8 +38,9 @@ interface AccountIdentityPatch {
 
 function failedSessionImport(
   source: Source,
-  reason: string,
+  reason: SessionImportFailureReason,
 ): SessionImportResponse {
+  log.warn(`[pond session-import] ${source}: rejected (${reason})`);
   broadcast(IPC.sessionImportFailed, { source, reason });
   return { ok: false, imported: 0, connected: false, reason };
 }
@@ -48,12 +50,7 @@ export async function importSessionCookies(
   cookies: ExtensionCookie[],
 ): Promise<SessionImportResponse> {
   const domain = primaryDomainForSource(source);
-  if (!domain) {
-    return failedSessionImport(
-      source,
-      `source ${source} has no cookie domain configured`,
-    );
-  }
+  if (!domain) return failedSessionImport(source, "no_cookie_domain");
 
   const allowedHost = domain.replace(/^\./, "").toLowerCase();
   const filtered = cookies.filter((cookie: ExtensionCookie) => {

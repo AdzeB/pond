@@ -84,7 +84,10 @@ const RelayEnvelopeSchema = z
     data: z
       .object({
         v3GetPinQueryv2: z
-          .object({ data: JsonObjectSchema.optional().catch(undefined) })
+          .object({
+            __typename: OptionalText,
+            data: JsonObjectSchema.optional().catch(undefined),
+          })
           .optional()
           .catch(undefined),
       })
@@ -97,7 +100,7 @@ type PinterestCaptureResult =
   | { ok: true; capture: Capture }
   | {
       ok: false;
-      reason: "fetch_failed" | "blocked" | "no_pin";
+      reason: "fetch_failed" | "blocked" | "no_pin" | "not_found";
       status?: number;
     };
 
@@ -131,14 +134,20 @@ export async function fetchPinterestCapture({
       status: res.status,
     };
   }
-  const html = await res.text();
-  const pin = extractPin(html);
-  if (!pin) return { ok: false, reason: "no_pin" };
-  return { ok: true, capture: buildCapture(sourceId, url, pin) };
+  const page = parsePinPage(await res.text());
+  if (page.kind !== "pin") return { ok: false, reason: page.kind };
+  return { ok: true, capture: buildCapture(sourceId, url, page.pin) };
 }
 
-function extractPin(html: string): RelayPin | null {
+type PinPage =
+  | { kind: "pin"; pin: RelayPin }
+  | { kind: "not_found" }
+  | { kind: "no_pin" };
+
+/** Pinterest answers 200 for a removed pin and reports `PinNotFound` in the relay payload instead. */
+export function parsePinPage(html: string): PinPage {
   const candidates: JsonObject[] = [];
+  let notFound = false;
   const callOpen = "__PWS_RELAY_REGISTER_COMPLETED_REQUEST__(";
   let cursor = 0;
   while (true) {
@@ -153,14 +162,17 @@ function extractPin(html: string): RelayPin | null {
       const jsonStr = inner.slice(secondArgOffset).replace(/[\s,]+$/, "");
       try {
         const envelope = RelayEnvelopeSchema.parse(JSON.parse(jsonStr));
-        const candidate = envelope.data?.v3GetPinQueryv2?.data;
-        if (candidate) candidates.push(candidate);
+        const query = envelope.data?.v3GetPinQueryv2;
+        if (query?.data) candidates.push(query.data);
+        if (query?.__typename === "PinNotFound") notFound = true;
       } catch {}
     }
     cursor = callEnd + 1;
   }
-  if (candidates.length === 0) return null;
-  return RelayPinSchema.parse(mergePins(candidates));
+  if (candidates.length > 0) {
+    return { kind: "pin", pin: RelayPinSchema.parse(mergePins(candidates)) };
+  }
+  return { kind: notFound ? "not_found" : "no_pin" };
 }
 
 function mergePins(pins: JsonObject[]): JsonObject {
