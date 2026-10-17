@@ -305,9 +305,11 @@ it("dims YouTube's Add to Folders until you pick a playlist", async () => {
     source: "youtube",
     sync: { importPending: true },
   });
-  expect(host.textContent).toContain(
-    "Pick playlists to file them under YouTube.",
-  );
+  expect(
+    host.querySelector<HTMLButtonElement>(
+      'button[aria-label="About Add to Folders"]',
+    )?.disabled,
+  ).toBe(false);
   expect(toggle("Add to Folders").getAttribute("aria-checked")).toBe("false");
   expect(toggle("Add to Folders").getAttribute("aria-disabled")).toBe("true");
 });

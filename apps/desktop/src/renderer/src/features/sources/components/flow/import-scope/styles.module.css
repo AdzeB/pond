@@ -75,6 +75,12 @@
   color: var(--ds-red-11);
 }
 
+.titled {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+}
+
 .stacked {
   flex-direction: column;
   gap: 8px;
