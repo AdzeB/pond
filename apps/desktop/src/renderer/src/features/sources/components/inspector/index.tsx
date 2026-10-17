@@ -140,15 +140,6 @@ function AccountInspector({ id }: { id: string }) {
       syncStatus={syncStatus}
       nickname={account.label ?? ""}
       menuItems={menuItems}
-      properties={[
-        { label: "Source", value: getSourceDef(account.source).label },
-        { label: "Type", value: "Account" },
-        {
-          label: "Saved Items",
-          value: formatNumber(account.sync.knownCount),
-        },
-        { label: "Added", value: addedLabel(account.addedAt) },
-      ]}
       sections={imports ? <ImportSection account={account} /> : null}
       actions={imports ? <ImportScopeActions /> : undefined}
       onNicknameSave={async (value) => {
