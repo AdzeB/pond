@@ -11,7 +11,7 @@ import {
   harvestYoutubeLikedList,
 } from "../refresh/harvest-window";
 import { resolveAccountHandle } from "./account-key";
-import { partitionForAccount } from "./accounts";
+import { getAccountSync, partitionForAccount } from "./accounts";
 import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
 import {
   loadSyncBaseline,
@@ -74,25 +74,30 @@ export async function syncListSource(
     accountKey = (await resolveAccountHandle(account)) ?? undefined;
   }
 
-  const harvest = await harvestSourceList(
-    source,
-    {
-      knownIds: Array.from(knownIds),
-      earlyStop: !baseline.full,
-      accountKey,
+  const { resumeCursor } = await getAccountSync(accountId);
+  const resuming = baseline.full && Boolean(resumeCursor);
+  if (resuming) {
+    log.info(
+      `[pond sync:${source}] continuing the list where the last run stopped`,
+    );
+  }
+  const listArgs: Parameters<typeof harvestSourceList>[1] = {
+    knownIds: Array.from(knownIds),
+    earlyStop: !baseline.full,
+    accountKey,
+  };
+  if (resuming && resumeCursor) listArgs.resumeCursor = resumeCursor;
+  const harvest = await harvestSourceList(source, listArgs, {
+    partition,
+    onProgress: () => {
+      emit({
+        accountId,
+        source,
+        state: "running",
+        message: "Scanning",
+      });
     },
-    {
-      partition,
-      onProgress: () => {
-        emit({
-          accountId,
-          source,
-          state: "running",
-          message: "Scanning",
-        });
-      },
-    },
-  );
+  });
   if (signal.aborted) {
     ev.outcome = "aborted";
     return;
@@ -199,6 +204,13 @@ export async function syncListSource(
       `[pond sync:${source}] test cap active. Enqueueing ${fresh.length} of ${allFresh.length} fresh items`,
     );
   }
+  /** A capped run leaves harvested items unqueued, so the cursor must not move past them. */
+  const nextResumeCursor =
+    fresh.length < allFresh.length
+      ? undefined
+      : harvest.reachedEnd
+        ? null
+        : (harvest.resumeCursor ?? null);
   ev.harvest = {
     seen: Math.max(harvest.seen ?? 0, combined.length),
     fresh: fresh.length,
@@ -209,6 +221,7 @@ export async function syncListSource(
       full: baseline.full && harvest.reachedEnd,
       newestId: null,
       total: baseline.total,
+      resumeCursor: nextResumeCursor,
     });
     emit({
       accountId,
@@ -261,8 +274,9 @@ export async function syncListSource(
 
   const lastSyncedAt = await persistWatermark(accountId, {
     full: baseline.full && harvest.reachedEnd,
-    newestId: fresh[0]?.sourceId ?? null,
+    newestId: resuming ? null : (fresh[0]?.sourceId ?? null),
     total: baseline.total + bulk.created,
+    resumeCursor: nextResumeCursor,
   });
   emit({
     accountId,

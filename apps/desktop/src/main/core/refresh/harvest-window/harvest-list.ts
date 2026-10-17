@@ -92,6 +92,7 @@ const ListResultSchema = z
       entries: z.array(ListEntrySchema).catch([]),
       reachedEnd: z.boolean().catch(false),
       seen: OptionalCount,
+      resumeCursor: OptionalText,
     }),
     z.object({
       ok: z.literal(false),
@@ -194,7 +195,7 @@ export async function harvestSourceList(
     const timeoutMs = source === "instagram" ? 300_000 : 90_000;
     await lease.win.webContents
       .executeJavaScript(
-        "globalThis.__pondHarvestAbort = false; globalThis.__pondHarvestPartial = null;",
+        "globalThis.__pondHarvestAbort = false; globalThis.__pondHarvestPartial = null; globalThis.__pondHarvestCursor = null;",
         true,
       )
       .catch(() => {});
@@ -212,12 +213,16 @@ export async function harvestSourceList(
         .executeJavaScript("globalThis.__pondHarvestAbort = true;", true)
         .catch(() => {});
       await sleep(750);
+      /** Read before the entries: a page that lands in between is re-read next run rather than skipped. */
+      const resumeCursor = await readHarvestCursor(lease.win);
       const partial = await readHarvestPartial(lease.win);
       if (partial && partial.length > 0) {
         log.info(
-          `[pond list] ${source} recovered ${partial.length} entries after timeout`,
+          `[pond list] ${source} recovered ${partial.length} entries after timeout${resumeCursor ? "; resumes next sync" : ""}`,
         );
-        return { ok: true, entries: partial, reachedEnd: false };
+        return resumeCursor
+          ? { ok: true, entries: partial, reachedEnd: false, resumeCursor }
+          : { ok: true, entries: partial, reachedEnd: false };
       }
       return { ok: false, reason: "timeout" };
     }
@@ -244,6 +249,7 @@ export async function harvestSourceList(
       entries: parsed.entries.flatMap((e) => (e ? [e] : [])),
       reachedEnd: parsed.reachedEnd,
     };
+    if (parsed.resumeCursor) result.resumeCursor = parsed.resumeCursor;
     if (parsed.seen != null) {
       result.seen = parsed.seen;
     } else {
@@ -271,6 +277,20 @@ async function readHarvestCollected(
     return readStats(StatsTextSchema.parse(raw))?.collected ?? null;
   } catch {
     return null;
+  }
+}
+
+async function readHarvestCursor(
+  win: Electron.BrowserWindow,
+): Promise<string | undefined> {
+  try {
+    const raw = await win.webContents.executeJavaScript(
+      "globalThis.__pondHarvestCursor ?? null",
+      true,
+    );
+    return OptionalText.parse(raw ?? undefined) || undefined;
+  } catch {
+    return undefined;
   }
 }
 

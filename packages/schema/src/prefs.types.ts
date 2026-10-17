@@ -72,6 +72,8 @@ export interface SourceSyncPrefs {
   runningSince: string | null;
   /** X only. Omitted means likes still sync. */
   syncLikes?: boolean;
+  /** Where an unfinished list backfill continues, so a list too long for one run still reaches its end. */
+  resumeCursor?: string | null;
 }
 
 export const DEFAULT_SOURCE_SYNC_PREFS: SourceSyncPrefs = {

@@ -3,6 +3,8 @@ import type { ListKind, MediaType } from "@pond/schema/db";
 export interface ListHarvestArgs {
   knownIds: string[];
   earlyStop?: boolean;
+  /** Page cursor an unfinished backfill stopped at. */
+  resumeCursor?: string;
 }
 
 export interface ListEntry {
@@ -24,6 +26,7 @@ export type ListHarvestResult =
       entries: ListEntry[];
       reachedEnd: boolean;
       seen?: number;
+      resumeCursor?: string;
     }
   | {
       ok: false;

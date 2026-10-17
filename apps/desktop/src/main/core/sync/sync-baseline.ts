@@ -71,7 +71,12 @@ export async function countSavesForAccount(
 
 export async function persistWatermark(
   accountId: string,
-  opts: { full: boolean; newestId: string | null; total: number },
+  opts: {
+    full: boolean;
+    newestId: string | null;
+    total: number;
+    resumeCursor?: string | null;
+  },
 ): Promise<string> {
   const lastSyncedAt = new Date().toISOString();
   const patch: Partial<SourceSyncPrefs> = {
@@ -79,6 +84,7 @@ export async function persistWatermark(
     lastError: null,
     knownCount: opts.total,
   };
+  if (opts.resumeCursor !== undefined) patch.resumeCursor = opts.resumeCursor;
   if (opts.newestId) patch.highWaterMark = opts.newestId;
   if (opts.full) patch.lastFullSyncAt = lastSyncedAt;
   await patchAccountSync(accountId, patch);
