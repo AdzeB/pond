@@ -32,6 +32,7 @@ interface BoundSocket {
 }
 
 const listenPaths = new WeakMap<Server, BoundSocket>();
+const openSockets = new WeakMap<Server, Set<Socket>>();
 
 function writeFrame(socket: Socket, value: NativeMessage): void {
   socket.end(encodeFrame(value));
@@ -132,7 +133,13 @@ export async function startNativeServer(
     unlinkSync(path);
   } catch {}
 
-  const server = createServer((socket) => handleConn(socket, dispatch));
+  const sockets = new Set<Socket>();
+  const server = createServer((socket) => {
+    sockets.add(socket);
+    socket.once("close", () => sockets.delete(socket));
+    handleConn(socket, dispatch);
+  });
+  openSockets.set(server, sockets);
   await new Promise<void>((resolve, reject) => {
     server.once("error", reject);
     server.listen(path, () => resolve());
@@ -150,9 +157,12 @@ export async function stopNativeServer(server: Server | null): Promise<void> {
     clearInterval(bound.restore);
     bound.watcher.close();
   }
-  await new Promise<void>((resolve) => {
+  const closed = new Promise<void>((resolve) => {
     server.close(() => resolve());
   });
+  /** `close()` waits for open connections, and a stalled native host would block quitting. */
+  for (const socket of openSockets.get(server) ?? []) socket.destroy();
+  await closed;
   if (!bound) return;
   try {
     /** A newer listener may already own this path after a reload. */

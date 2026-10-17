@@ -64,6 +64,11 @@ import { registerProtocol, registerScheme } from "./protocol";
 import { runtimeControls } from "./runtime";
 import { configureSessionDefaults } from "./session-config";
 import {
+  acquireSingleInstanceLock,
+  isProcessAlive,
+  singletonLockHolder,
+} from "./single-instance";
+import {
   logStartupTiming,
   markStartup,
   watchMainThreadStalls,
@@ -137,10 +142,19 @@ const broadcastSyncStatus = (status: SyncStatusUpdate): void =>
 
 registerScheme();
 
-const gotSingleInstanceLock = wantsMcp || app.requestSingleInstanceLock();
-if (!gotSingleInstanceLock) {
+const singleInstanceLock = wantsMcp
+  ? Promise.resolve(true)
+  : acquireSingleInstanceLock({
+      request: () => app.requestSingleInstanceLock(),
+      waitForPredecessor: !app.isPackaged,
+      holder: () => singletonLockHolder(app.getPath("userData")),
+      isAlive: isProcessAlive,
+    });
+void singleInstanceLock.then((acquired) => {
+  if (acquired) return;
+  log.warn("[pond] another Pond instance holds the lock; quitting");
   app.quit();
-}
+});
 
 if (!process.env.POND_SANDBOX && process.defaultApp) {
   if (process.argv.length >= 2) {
@@ -158,7 +172,13 @@ app.on("open-url", (event, url) => {
   if (app.isReady() && destination === "library") void openLibraryWindow();
 });
 
+let started = false;
+let quitPrepared = false;
+let quitPreparing = false;
+
 app.on("second-instance", (_event, argv) => {
+  /** Showing a window while quitting cancels the quit, and this instance would keep the lock. */
+  if (quitPreparing) return;
   const url = argv.find((a) => a.startsWith("pond://"));
   if (url) {
     const destination = handleDeepLink(url, getMainWindow());
@@ -174,6 +194,8 @@ app.on("second-instance", (_event, argv) => {
 });
 
 app.whenReady().then(async () => {
+  if (!(await singleInstanceLock) || quitPreparing) return;
+  started = true;
   markStartup("app-ready");
   if (process.platform === "darwin" && !app.isPackaged) {
     const { applyAppIcon } = await import("./core/app-icon");
@@ -424,10 +446,25 @@ app.on("window-all-closed", () => {
   app.quit();
 });
 
-let quitPrepared = false;
-let quitPreparing = false;
+const SERVER_CLOSE_MS = 3_000;
+const QUIT_STALL_MS = 5_000;
+
+function withDeadline(work: Promise<void>, ms: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error(`timed out after ${ms}ms`)),
+      ms,
+    );
+    work.then(resolve, reject).finally(() => clearTimeout(timer));
+  });
+}
+
 app.on("before-quit", async (event) => {
   if (quitPrepared) return;
+  if (!started) {
+    quitPreparing = true;
+    return;
+  }
   event.preventDefault();
   if (quitPreparing) return;
   quitPreparing = true;
@@ -470,16 +507,22 @@ app.on("before-quit", async (event) => {
   closePreviewWindows();
   closeCombineImagesWindow();
   try {
-    await stopNativeServer(nativeServer);
+    await withDeadline(stopNativeServer(nativeServer), SERVER_CLOSE_MS);
     nativeServer = null;
   } catch (err) {
     log.warn("[pond] native host close failed", err);
   }
   try {
-    await runtimeControls.closeHttpServer();
+    await withDeadline(runtimeControls.closeHttpServer(), SERVER_CLOSE_MS);
   } catch (err) {
     log.warn("[pond] http server close failed", err);
   }
+  log.info("[pond] quit prepared");
   quitPrepared = true;
+  /** Everything is flushed by now; a window that refuses to close must not keep Pond running. */
+  setTimeout(() => {
+    log.warn("[pond] quit stalled; exiting");
+    app.exit(0);
+  }, QUIT_STALL_MS).unref();
   app.quit();
 });

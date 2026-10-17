@@ -59,6 +59,22 @@ describe("native unix server", () => {
     }
   });
 
+  it("stops while a client holds an unfinished request open", async () => {
+    dir = await mkdtemp(join(tmpdir(), "pond-native-"));
+    const path = join(dir, "native.sock");
+    const server = await startNativeServer({ path, dispatch: vi.fn() });
+    const client = createConnection(path);
+    await new Promise<void>((resolve) => client.once("connect", resolve));
+    client.write(Buffer.from([1, 0]));
+    const clientClosed = new Promise<void>((resolve) =>
+      client.once("close", () => resolve()),
+    );
+    client.on("error", () => {});
+
+    await stopNativeServer(server);
+    await clientClosed;
+  });
+
   it("rejects an oversized frame without calling dispatch", async () => {
     dir = await mkdtemp(join(tmpdir(), "pond-native-"));
     const path = join(dir, "native.sock");
