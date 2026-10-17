@@ -1,3 +1,4 @@
+import { Server as HttpServer } from "node:http";
 import { type ServerType, serve } from "@hono/node-server";
 import { getConnInfo } from "@hono/node-server/conninfo";
 import { app as electronApp } from "electron";
@@ -178,6 +179,8 @@ export async function startHttpServer(
     close: () =>
       new Promise<void>((resolve, reject) => {
         nodeServer.close((err) => (err ? reject(err) : resolve()));
+        /** `close()` waits for open connections, so a held request would block quitting. */
+        if (nodeServer instanceof HttpServer) nodeServer.closeAllConnections();
       }),
   };
 }
