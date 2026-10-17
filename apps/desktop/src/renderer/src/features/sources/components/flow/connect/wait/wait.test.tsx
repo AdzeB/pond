@@ -129,28 +129,66 @@ it("explains the local connection before the account arrives", async () => {
   expect(host.textContent).not.toContain("Waiting for sign-in");
 });
 
-it("shows a retry when the Instagram session import is rejected", async () => {
+it("keeps waiting when a signed-out browser profile sends its session", async () => {
   let importFailed:
     | ((payload: { source: string; reason: string }) => void)
     | undefined;
-  stubPond(undefined, (cb) => {
-    importFailed = cb;
+  let imported:
+    | ((payload: { source: string; accountId: string }) => void)
+    | undefined;
+  stubPond(
+    (cb) => {
+      imported = cb;
+    },
+    (cb) => {
+      importFailed = cb;
+    },
+  );
+  connectFlow.start("twitter", ["acc-twitter"]);
+  await act(async () => {
+    root.render(<ConnectWaitSection />);
+  });
+
+  const notifyImportFailed = importFailed;
+  const notifyImported = imported;
+  if (!notifyImportFailed || !notifyImported)
+    throw new Error("session import listeners were not attached");
+  await act(async () => {
+    notifyImportFailed({
+      source: "twitter",
+      reason: "no_auth_cookies_in_payload",
+    });
+  });
+
+  expect(host.textContent).toContain("Signed out of Twitter");
+  expect(host.textContent).toContain(
+    "Sign in there, or add the extension to the profile you use.",
+  );
+  expect(host.textContent).not.toContain("Couldn't connect");
+
+  await act(async () => {
+    notifyImported({ source: "twitter", accountId: "acc-twitter" });
+  });
+  await vi.waitFor(() => {
+    expect(host.textContent).toContain("Pond is syncing your saved posts now.");
+  });
+});
+
+it("fails when Pond cannot open the sign-in page", async () => {
+  stubPond();
+  vi.stubGlobal("pond", {
+    ...window.pond,
+    connectSource: async () => ({ ok: false, mode: "external" }),
   });
   connectFlow.start("instagram", []);
   await act(async () => {
     root.render(<ConnectWaitSection />);
   });
 
-  const notifyImportFailed = importFailed;
-  if (!notifyImportFailed)
-    throw new Error("session import failure listener was not attached");
-  await act(async () => {
-    notifyImportFailed({
-      source: "instagram",
-      reason: "no_auth_cookies_in_payload",
-    });
+  await vi.waitFor(() => {
+    expect(host.textContent).toContain("Couldn't connect Instagram");
   });
-
-  expect(host.textContent).toContain("Couldn't connect Instagram");
-  expect(host.textContent).toContain("Try opening the sign-in page again.");
+  expect(host.textContent).toContain(
+    "Pond couldn't open the sign-in page. Try again.",
+  );
 });

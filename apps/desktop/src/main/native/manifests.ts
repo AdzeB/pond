@@ -19,6 +19,7 @@ const CHROMIUM_NMH_DIRS = [
   "Library/Application Support/BraveSoftware/Brave-Browser/NativeMessagingHosts",
   "Library/Application Support/Microsoft Edge/NativeMessagingHosts",
   "Library/Application Support/Arc/User Data/NativeMessagingHosts",
+  "Library/Application Support/Dia/User Data/NativeMessagingHosts",
   "Library/Application Support/Vivaldi/NativeMessagingHosts",
 ] as const;
 

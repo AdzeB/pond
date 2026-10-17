@@ -1,4 +1,5 @@
 import type { Source } from "@pond/schema/db";
+import type { SessionImportFailureReason } from "@shared/wire";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { playUiSuccess } from "@/shared/lib/sounds";
@@ -10,12 +11,15 @@ export interface ConnectedAccount {
   avatarUrl?: string | null;
 }
 
+/** `signed_out` keeps waiting: another browser profile with the extension may still send a signed-in session. */
+export type ConnectProblem = "signed_out" | "unavailable";
+
 interface ConnectFlowState {
   source: Source | null;
   waiting: Source | null;
   connectedBefore: ReadonlySet<string>;
   completed: boolean;
-  failed: boolean;
+  problem: ConnectProblem | null;
   account: ConnectedAccount | null;
 }
 
@@ -24,7 +28,7 @@ const store = new Store<ConnectFlowState>({
   waiting: null,
   connectedBefore: new Set<string>(),
   completed: false,
-  failed: false,
+  problem: null,
   account: null,
 });
 
@@ -35,7 +39,7 @@ export const connectFlow = {
       waiting: source,
       connectedBefore: new Set(connectedIds),
       completed: false,
-      failed: false,
+      problem: null,
       account: null,
     }));
     void requestConnection(source);
@@ -43,18 +47,18 @@ export const connectFlow = {
   retry(): void {
     const source = store.state.source;
     if (!source) return;
-    store.setState((s) => ({ ...s, failed: false }));
+    store.setState((s) => ({ ...s, problem: null }));
     void requestConnection(source);
   },
   complete(account: ConnectedAccount): void {
     const already = store.state.completed;
     store.setState((s) =>
-      s.completed ? s : { ...s, completed: true, account },
+      s.completed ? s : { ...s, completed: true, problem: null, account },
     );
     if (!already) playUiSuccess();
   },
-  fail(source: Source): void {
-    markFailed(source);
+  rejectSession(source: Source, reason: SessionImportFailureReason): void {
+    markProblem(source, problemForReason(reason));
   },
   clear(): void {
     const waiting = store.state.waiting;
@@ -62,6 +66,10 @@ export const connectFlow = {
     if (waiting) void window.pond.clearPendingSession(waiting);
   },
 };
+
+function problemForReason(reason: SessionImportFailureReason): ConnectProblem {
+  return reason === "no_cookie_domain" ? "unavailable" : "signed_out";
+}
 
 export function useConnectSource(): Source | null {
   return useSelector(store, (s) => s.source);
@@ -83,21 +91,23 @@ export function useConnectedAccount(): ConnectedAccount | null {
   return useSelector(store, (s) => s.account);
 }
 
+export function useConnectProblem(): ConnectProblem | null {
+  return useSelector(store, (s) => s.problem);
+}
+
 async function requestConnection(source: Source): Promise<void> {
   try {
     const result = await window.pond.connectSource(source);
-    if (!result.ok) markFailed(source);
+    if (!result.ok) markProblem(source, "unavailable");
   } catch {
-    markFailed(source);
+    markProblem(source, "unavailable");
   }
 }
 
-function markFailed(source: Source): void {
+function markProblem(source: Source, problem: ConnectProblem): void {
   store.setState((s) =>
-    s.waiting === source && !s.completed ? { ...s, failed: true } : s,
+    s.waiting === source && !s.completed && s.problem !== problem
+      ? { ...s, problem }
+      : s,
   );
-}
-
-export function useConnectFailed(): boolean {
-  return useSelector(store, (s) => s.failed);
 }

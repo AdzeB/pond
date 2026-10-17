@@ -43,6 +43,25 @@ describe("native host manifests", () => {
     ]);
   });
 
+  it("registers Dia without a Chrome install", () => {
+    const writes: string[] = [];
+
+    writeNativeHostManifests({
+      platform: "darwin",
+      hostPath: () => "/Applications/Pond.app/pond-native-host",
+      home: () => "/Users/test",
+      exists: (path) =>
+        path === "/Applications/Pond.app/pond-native-host" ||
+        path === "/Users/test/Library/Application Support/Dia/User Data",
+      makeDirectory: () => {},
+      writeFile: (path) => writes.push(path),
+    });
+
+    expect(writes).toEqual([
+      "/Users/test/Library/Application Support/Dia/User Data/NativeMessagingHosts/so.pond.host.json",
+    ]);
+  });
+
   it("registers Firefox before its support directory exists", () => {
     const writes: string[] = [];
 

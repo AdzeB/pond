@@ -23,10 +23,12 @@ export async function captureFromSource(args: CaptureArgs): Promise<Capture> {
     );
   }
 
+  let removedAtSource = false;
   if (args.source === "pinterest" && args.sourceId) {
     const { fetchPinterestCapture } = await import("./pinterest/api");
     const result = await fetchPinterestCapture({ sourceId: args.sourceId });
     if (result.ok) return result.capture;
+    removedAtSource = result.reason === "not_found";
   }
 
   if (args.source === "arena" && args.sourceId) {
@@ -36,6 +38,10 @@ export async function captureFromSource(args: CaptureArgs): Promise<Capture> {
   }
 
   const result = await harvestUrl(args);
+  /** A signed-in session can still open a secret-board pin, but an empty page shell means the pin is gone. */
+  if (removedAtSource && (result.capture?.media.length ?? 0) === 0) {
+    throw new TerminalError(`${args.source} item no longer exists`);
+  }
   if (result.ok && result.capture) return result.capture;
   switch (result.reason) {
     case "auth_required":
