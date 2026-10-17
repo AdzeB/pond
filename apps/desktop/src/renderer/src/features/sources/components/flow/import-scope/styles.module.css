@@ -55,8 +55,6 @@
 }
 
 .nested {
-  padding-inline-start: calc(var(--settings-padding) * 2);
-
   & > :not(:last-child) {
     border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
   }
