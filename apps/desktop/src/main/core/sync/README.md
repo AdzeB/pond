@@ -45,6 +45,25 @@ cheap and a sync with N new items walks roughly N items, not the entire backlog.
 `syncRunNow` / `syncRunAll`) to ignore the watermark and walk the whole remote
 list — for drift recovery.
 
+### Import scope
+
+`SourceSyncPrefs.importScope` says which lists an Account imports. Omitted
+means everything, so Accounts connected before scopes existed keep their
+behavior. `listHarvestPlan` (`import-scope.ts`) turns the scope into the walks
+a run makes: excluded lists are never requested, rather than harvested and
+filtered afterward.
+
+- Instagram and YouTube: Saved (Watch Later) and Liked, each on its own walk.
+- Pinterest: every pin, or only the chosen boards through
+  `BoardFeedResource` (`harvest/pinterest/boards.ts`).
+- Every other Source imports everything.
+
+A newly connected Account is created with `importPending: true`, and
+`syncAccount` returns idle without harvesting until you pick a scope through
+`accounts.setImportScope`. Changing the scope clears `lastFullSyncAt` and
+`resumeCursor`, so the next run is a full walk and early stop can't skip older
+items in a newly added list.
+
 ## Account safety (it defers entirely to the governor)
 
 Every platform request is gated by the rate governor (see

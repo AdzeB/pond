@@ -2,8 +2,10 @@ import type { QueryName } from "../../../shared/query-contracts";
 
 export const queryOperationAccess = {
   "accounts.disconnect": "review",
+  "accounts.importOptions": "read",
   "accounts.list": "read",
   "accounts.setHandle": "review",
+  "accounts.setImportScope": "review",
   "accounts.setLabel": "review",
   "accounts.setSyncLikes": "review",
   "agent.attachments": "hidden",

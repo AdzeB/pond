@@ -1,15 +1,28 @@
+import { LIST_KINDS } from "@pond/schema/list-kinds";
+import { sourceLabel } from "@pond/schema/sources";
 import { z } from "zod";
+import {
+  type ImportScopeProblem,
+  importScopeOptions,
+  normalizeImportScope,
+} from "../../../shared/import-scope";
 import type { OkFailure } from "../../../shared/query-contracts-shared";
-import { isAccountConnected } from "../../core/refresh/harvest-window";
+import {
+  isAccountConnected,
+  listSourceCollections,
+} from "../../core/refresh/harvest-window";
 import { isSyncing } from "../../core/sync";
+import { resolveAccountHandle } from "../../core/sync/account-key";
 import {
   getAccount,
   listAccounts,
+  partitionForAccount,
   patchAccount,
   patchAccountSync,
   removeAccount,
 } from "../../core/sync/accounts";
 import { fillMissingAvatars } from "../../core/sync/avatars";
+import { importScopePatch } from "../../core/sync/import-scope";
 import { countSavesForAccount } from "../../core/sync/sync-baseline";
 import {
   type QueryHandlerMap,
@@ -45,6 +58,105 @@ export function createSetSyncLikesQuery(
         syncLikes: params.syncLikes,
       });
       return { ok: true as const };
+    },
+  );
+}
+
+const IMPORT_SCOPE_PROBLEMS = {
+  no_lists: "Choose at least one list to import.",
+  no_collections: "Choose at least one board to import.",
+} satisfies Record<ImportScopeProblem, string>;
+
+const ImportScopeParam = z.strictObject({
+  listKinds: z.array(z.enum(LIST_KINDS)).max(LIST_KINDS.length).optional(),
+  collections: z
+    .array(
+      z.strictObject({
+        id: z.string().trim().min(1).max(64),
+        name: z.string().trim().max(200),
+      }),
+    )
+    .max(500)
+    .optional(),
+});
+
+interface SetImportScopeDependencies {
+  getAccount: typeof getAccount;
+  patchAccountSync: typeof patchAccountSync;
+}
+
+export function createSetImportScopeQuery(
+  dependencies: SetImportScopeDependencies = { getAccount, patchAccountSync },
+) {
+  return query(
+    z.strictObject({
+      accountId: z.string().trim().min(1),
+      scope: ImportScopeParam,
+    }),
+    async (params) => {
+      const account = await dependencies.getAccount(params.accountId);
+      if (!account) return ACCOUNT_NOT_FOUND;
+      const normalized = normalizeImportScope(account.source, params.scope);
+      if (!normalized.ok) {
+        return {
+          ok: false as const,
+          error: IMPORT_SCOPE_PROBLEMS[normalized.problem],
+        };
+      }
+      await dependencies.patchAccountSync(
+        params.accountId,
+        importScopePatch(account.sync, normalized.scope),
+      );
+      return { ok: true as const };
+    },
+  );
+}
+
+interface ImportOptionsDependencies {
+  getAccount: typeof getAccount;
+  resolveAccountHandle: typeof resolveAccountHandle;
+  listSourceCollections: typeof listSourceCollections;
+}
+
+export function createImportOptionsQuery(
+  dependencies: ImportOptionsDependencies = {
+    getAccount,
+    resolveAccountHandle,
+    listSourceCollections,
+  },
+) {
+  return query(
+    z.strictObject({ accountId: z.string().trim().min(1) }),
+    async (params) => {
+      const account = await dependencies.getAccount(params.accountId);
+      if (!account) return ACCOUNT_NOT_FOUND;
+      if (!importScopeOptions(account.source).collections) {
+        return { ok: true as const, collections: null };
+      }
+      const label = sourceLabel(account.source);
+      const handle = await dependencies.resolveAccountHandle(account);
+      if (!handle) {
+        return {
+          ok: false as const,
+          error: `Pond couldn't find your ${label} username. Reconnect the Account and try again.`,
+        };
+      }
+      const result = await dependencies.listSourceCollections(account.source, {
+        partition: partitionForAccount(account.id),
+        accountKey: handle,
+      });
+      if (!result.ok) {
+        return {
+          ok: false as const,
+          error:
+            result.reason === "auth_required"
+              ? `${label} signed you out. Reconnect the Account to load your boards.`
+              : result.reason === "rate_limited"
+                ? `${label} asked Pond to slow down. Try again in a few minutes.`
+                : "Pond couldn't load your boards. Try again.",
+        };
+      }
+      return { ok: true as const, collections: result.collections };
     },
   );
 }
@@ -94,6 +206,10 @@ export const accountsQueries = {
   ),
 
   "accounts.setSyncLikes": createSetSyncLikesQuery(),
+
+  "accounts.importOptions": createImportOptionsQuery(),
+
+  "accounts.setImportScope": createSetImportScopeQuery(),
 
   "accounts.disconnect": query(
     z.object({ accountId: StringParam }),

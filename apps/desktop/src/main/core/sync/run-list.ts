@@ -5,14 +5,17 @@ import log from "electron-log/main.js";
 import { type EnqueueItem, enqueue } from "../pipeline/enqueue";
 import { mergeListKindsOntoExisting } from "../pipeline/list-kinds";
 import { createQueueGeneration } from "../pipeline/queue-generations";
+import type { ListHarvestResult } from "../refresh/harvest/list-types";
 import {
   harvestInstagramLikedList,
+  harvestSourceCollections,
   harvestSourceList,
   harvestYoutubeLikedList,
 } from "../refresh/harvest-window";
 import { resolveAccountHandle } from "./account-key";
 import { getAccountSync, partitionForAccount } from "./accounts";
 import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
+import { listHarvestPlan } from "./import-scope";
 import {
   loadSyncBaseline,
   patchAccountSync,
@@ -74,8 +77,9 @@ export async function syncListSource(
     accountKey = (await resolveAccountHandle(account)) ?? undefined;
   }
 
+  const plan = listHarvestPlan(source, account.sync.importScope);
   const { resumeCursor } = await getAccountSync(accountId);
-  const resuming = baseline.full && Boolean(resumeCursor);
+  const resuming = plan.primary && baseline.full && Boolean(resumeCursor);
   if (resuming) {
     log.info(
       `[pond sync:${source}] continuing the list where the last run stopped`,
@@ -87,17 +91,23 @@ export async function syncListSource(
     accountKey,
   };
   if (resuming && resumeCursor) listArgs.resumeCursor = resumeCursor;
-  const harvest = await harvestSourceList(source, listArgs, {
-    partition,
-    onProgress: () => {
-      emit({
-        accountId,
-        source,
-        state: "running",
-        message: "Scanning",
-      });
-    },
-  });
+  const harvest: ListHarvestResult = plan.collections
+    ? await harvestSourceCollections(source, plan.collections, listArgs, {
+        partition,
+      })
+    : plan.primary
+      ? await harvestSourceList(source, listArgs, {
+          partition,
+          onProgress: () => {
+            emit({
+              accountId,
+              source,
+              state: "running",
+              message: "Scanning",
+            });
+          },
+        })
+      : { ok: true, entries: [], reachedEnd: true };
   if (signal.aborted) {
     ev.outcome = "aborted";
     return;
@@ -151,7 +161,7 @@ export async function syncListSource(
   let combined = dualHarvest
     ? harvest.entries
     : stampListKind(harvest.entries, "saved");
-  if (source === "instagram") {
+  if (source === "instagram" && plan.liked) {
     const liked = await harvestInstagramLikedList(
       {
         knownIds: Array.from(knownIds),
@@ -171,7 +181,7 @@ export async function syncListSource(
       gaps.push(listGapNote("Likes", liked.reason));
     }
   }
-  if (source === "youtube") {
+  if (source === "youtube" && plan.liked) {
     const liked = await harvestYoutubeLikedList(
       {
         knownIds: Array.from(knownIds),
