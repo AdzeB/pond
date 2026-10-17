@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  approximateEagleRules,
   EagleSmartFolderSchema,
   eaglePaletteColor,
   eagleSmartFolderQuery,
@@ -227,18 +228,83 @@ describe("Eagle documented metadata conversion", () => {
       "Files: name/regex",
     ]);
   });
-  it("rejects the entire smart folder when one condition cannot be translated exactly", () => {
+  it("rejects the entire smart folder when one condition cannot be translated", () => {
     expect(
       eagleSmartFolderQuery({
         id: "colors",
-        name: "Red Posters",
+        name: "Gray Posters",
         conditions: [
           {
             match: "AND",
             rules: [
               { property: "tags", method: "intersection", value: ["Poster"] },
-              { property: "color", method: "similar", value: "#ff2600" },
+              { property: "color", method: "grayscale" },
             ],
+          },
+        ],
+      }),
+    ).toBeNull();
+  });
+  it("translates color, shape, and camera as close matches and reports them", () => {
+    const folder = EagleSmartFolderSchema.parse({
+      id: "close",
+      name: "Red Landscapes",
+      conditions: [
+        {
+          match: "AND",
+          rules: [
+            { property: "color", method: "accuracy", value: "#ff2600" },
+            { property: "shape", method: "equal", value: "landscape" },
+            { property: "camera", method: "uncontain", value: "iPhone" },
+            { property: "tags", method: "union", value: ["Poster"] },
+          ],
+        },
+      ],
+    });
+    expect(eagleSmartFolderQuery(folder)).toEqual({
+      combinator: "and",
+      rules: [
+        {
+          field: "color",
+          operator: "near",
+          value: { hex: "#ff2600", tolerance: 30 },
+        },
+        { field: "shape", operator: "eq", value: "landscape" },
+        {
+          combinator: "and",
+          rules: [
+            {
+              field: "cameraMake",
+              operator: "contains",
+              value: "iPhone",
+              negate: true,
+            },
+            {
+              field: "cameraModel",
+              operator: "contains",
+              value: "iPhone",
+              negate: true,
+            },
+          ],
+        },
+        { field: "tags", operator: "some", value: ["Poster"] },
+      ],
+    });
+    expect(approximateEagleRules(folder, new Map())).toEqual([
+      "Red Landscapes: color/accuracy",
+      "Red Landscapes: shape/equal",
+      "Red Landscapes: camera/uncontain",
+    ]);
+  });
+  it("keeps rejecting Eagle's custom aspect shape", () => {
+    expect(
+      eagleSmartFolderQuery({
+        id: "custom",
+        name: "Custom",
+        conditions: [
+          {
+            match: "AND",
+            rules: [{ property: "shape", method: "equal", value: "custom" }],
           },
         ],
       }),

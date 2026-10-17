@@ -79,6 +79,7 @@ export const savesImportSourceQueries = {
           deletedSkipped: 0,
           lockedFolders: [],
           droppedFields: [],
+          approximatedRules: [],
           shortcuts: shortcutSummary,
         };
       }
