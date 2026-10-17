@@ -276,9 +276,7 @@ function CollectionRows({
               label={
                 nonePicked && !options.fileEveryCollection
                   ? `Pick a ${nouns.one} to put its saves in a matching Folder.`
-                  : draft.collections[0]
-                    ? `Files each save in its Folder, like ${label}\u00a0/\u00a0${draft.collections[0].name}.`
-                    : `Files each save under ${label}\u00a0/\u00a0its ${nouns.one}.`
+                  : `Files each save in a Folder that mirrors your ${label} ${nouns.one}s. Pond creates any Folder that's missing.`
               }
               aria-label="About Add to Folders"
             />
