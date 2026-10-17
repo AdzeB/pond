@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from "vitest";
 import {
   createImportOptionsQuery,
   createSetImportScopeQuery,
-  createSetSyncLikesQuery,
 } from "./accounts";
 
 function account(source: ConnectedAccount["source"]): ConnectedAccount {
@@ -25,76 +24,16 @@ function account(source: ConnectedAccount["source"]): ConnectedAccount {
   };
 }
 
-describe("accounts.setSyncLikes", () => {
-  it("persists the preference for an X account", async () => {
-    const patchAccountSync = vi.fn(async () => account("twitter").sync);
-    const operation = createSetSyncLikesQuery({
-      getAccount: vi.fn(async () => account("twitter")),
-      patchAccountSync,
-    });
-
-    await expect(
-      operation({ accountId: "twitter:123", syncLikes: false }),
-    ).resolves.toEqual({ ok: true });
-    expect(patchAccountSync).toHaveBeenCalledWith("twitter:123", {
-      syncLikes: false,
-    });
-  });
-
-  it("rejects unsupported account sources without writing", async () => {
-    const patchAccountSync = vi.fn(async () => account("instagram").sync);
-    const operation = createSetSyncLikesQuery({
-      getAccount: vi.fn(async () => account("instagram")),
-      patchAccountSync,
-    });
-
-    await expect(
-      operation({ accountId: "instagram:123", syncLikes: false }),
-    ).resolves.toEqual({
-      ok: false,
-      error: "Syncing Likes is only available for X accounts.",
-    });
-    expect(patchAccountSync).not.toHaveBeenCalled();
-  });
-
-  it("rejects malformed input at the query boundary", () => {
-    const operation = createSetSyncLikesQuery({
-      getAccount: vi.fn(),
-      patchAccountSync: vi.fn(),
-    });
-
-    expect(() => operation({ accountId: "", syncLikes: false })).toThrow();
-    expect(() =>
-      operation.inputSchema.parse({
-        accountId: "twitter:123",
-        syncLikes: "false",
-      }),
-    ).toThrow();
-  });
-
-  it("propagates persistence failures", async () => {
-    const failure = new Error("write failed");
-    const operation = createSetSyncLikesQuery({
-      getAccount: vi.fn(async () => account("twitter")),
-      patchAccountSync: vi.fn(async () => {
-        throw failure;
-      }),
-    });
-
-    await expect(
-      operation({ accountId: "twitter:123", syncLikes: true }),
-    ).rejects.toBe(failure);
-  });
-});
-
 describe("accounts.setImportScope", () => {
   it("confirms a pending Account with the chosen boards", async () => {
     const pending = account("pinterest");
     pending.sync.importPending = true;
     const patchAccountSync = vi.fn(async () => pending.sync);
+    const releaseFilteredSaves = vi.fn(async () => 0);
     const operation = createSetImportScopeQuery({
       getAccount: vi.fn(async () => pending),
       patchAccountSync,
+      releaseFilteredSaves,
     });
 
     await expect(
@@ -111,13 +50,37 @@ describe("accounts.setImportScope", () => {
       lastFullSyncAt: null,
       resumeCursor: null,
     });
+    expect(releaseFilteredSaves).toHaveBeenCalledWith("pinterest:123");
   });
 
   it("stores everything for options the Source can't honor", async () => {
-    const patchAccountSync = vi.fn(async () => account("twitter").sync);
+    const patchAccountSync = vi.fn(async () => account("threads").sync);
+    const releaseFilteredSaves = vi.fn(async () => 0);
     const operation = createSetImportScopeQuery({
-      getAccount: vi.fn(async () => account("twitter")),
+      getAccount: vi.fn(async () => account("threads")),
       patchAccountSync,
+      releaseFilteredSaves,
+    });
+
+    await operation({
+      accountId: "threads:123",
+      scope: { listKinds: ["saved"] },
+    });
+    expect(patchAccountSync).toHaveBeenCalledWith("threads:123", {
+      importScope: undefined,
+      importPending: false,
+    });
+    expect(releaseFilteredSaves).not.toHaveBeenCalled();
+  });
+
+  it("carries a legacy X Likes opt-out into the scope", async () => {
+    const legacy = account("twitter");
+    legacy.sync.syncLikes = false;
+    const patchAccountSync = vi.fn(async () => legacy.sync);
+    const operation = createSetImportScopeQuery({
+      getAccount: vi.fn(async () => legacy),
+      patchAccountSync,
+      releaseFilteredSaves: vi.fn(async () => 0),
     });
 
     await operation({
@@ -125,9 +88,27 @@ describe("accounts.setImportScope", () => {
       scope: { listKinds: ["saved"] },
     });
     expect(patchAccountSync).toHaveBeenCalledWith("twitter:123", {
-      importScope: undefined,
+      importScope: { listKinds: ["saved"] },
       importPending: false,
+      syncLikes: undefined,
     });
+  });
+
+  it("rejects a date that isn't on the calendar", async () => {
+    const patchAccountSync = vi.fn(async () => account("reddit").sync);
+    const operation = createSetImportScopeQuery({
+      getAccount: vi.fn(async () => account("reddit")),
+      patchAccountSync,
+      releaseFilteredSaves: vi.fn(async () => 0),
+    });
+
+    await expect(
+      operation({ accountId: "reddit:123", scope: { since: "2026-02-30" } }),
+    ).resolves.toEqual({
+      ok: false,
+      error: "Enter a real date to import from.",
+    });
+    expect(patchAccountSync).not.toHaveBeenCalled();
   });
 
   it("rejects a scope that would import nothing without writing", async () => {
@@ -135,6 +116,7 @@ describe("accounts.setImportScope", () => {
     const operation = createSetImportScopeQuery({
       getAccount: vi.fn(async () => account("instagram")),
       patchAccountSync,
+      releaseFilteredSaves: vi.fn(),
     });
 
     await expect(
@@ -150,6 +132,7 @@ describe("accounts.setImportScope", () => {
     const operation = createSetImportScopeQuery({
       getAccount: vi.fn(),
       patchAccountSync: vi.fn(),
+      releaseFilteredSaves: vi.fn(),
     });
     expect(() =>
       operation.inputSchema.parse({
@@ -164,12 +147,12 @@ describe("accounts.importOptions", () => {
   it("returns no collections for Sources that import everything", async () => {
     const listSourceCollections = vi.fn();
     const operation = createImportOptionsQuery({
-      getAccount: vi.fn(async () => account("instagram")),
+      getAccount: vi.fn(async () => account("tiktok")),
       resolveAccountHandle: vi.fn(async () => "raphael"),
       listSourceCollections,
     });
 
-    await expect(operation({ accountId: "instagram:123" })).resolves.toEqual({
+    await expect(operation({ accountId: "tiktok:123" })).resolves.toEqual({
       ok: true,
       collections: null,
     });
@@ -211,6 +194,27 @@ describe("accounts.importOptions", () => {
       ok: false,
       error:
         "Pinterest signed you out. Reconnect the Account to load your boards.",
+    });
+  });
+
+  it("lists Instagram collections without a username", async () => {
+    const listSourceCollections = vi.fn(async () => ({
+      ok: true as const,
+      collections: [{ id: "c1", name: "Recipes", itemCount: 3 }],
+    }));
+    const operation = createImportOptionsQuery({
+      getAccount: vi.fn(async () => account("instagram")),
+      resolveAccountHandle: vi.fn(async () => null),
+      listSourceCollections,
+    });
+
+    await expect(operation({ accountId: "instagram:123" })).resolves.toEqual({
+      ok: true,
+      collections: [{ id: "c1", name: "Recipes", itemCount: 3 }],
+    });
+    expect(listSourceCollections).toHaveBeenCalledWith("instagram", {
+      partition: "persist:pond-acct-instagram:123",
+      accountKey: undefined,
     });
   });
 });

@@ -46,6 +46,15 @@
   border: 0;
 }
 
+.heading {
+  padding: 0;
+  margin: 0 0 -2px;
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-md);
+  line-height: 16px;
+  color: var(--ds-gray-10);
+}
+
 .list {
   display: flex;
   flex-direction: column;
@@ -82,6 +91,11 @@
   font-size: var(--ds-text-xs);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-10);
+}
+
+.date {
+  flex: 0 0 auto;
+  width: 150px;
 }
 
 .status {

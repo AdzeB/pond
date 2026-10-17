@@ -1,4 +1,9 @@
-import { type ImportScope, SOURCES, type Source } from "@pond/schema/db";
+import {
+  IMPORT_MEDIA_KINDS,
+  type ImportScope,
+  SOURCES,
+  type Source,
+} from "@pond/schema/db";
 import { LIST_KINDS } from "@pond/schema/list-kinds";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
@@ -35,6 +40,8 @@ const ImportScopeSchema = z
       .array(z.object({ id: z.string(), name: z.string() }))
       .optional()
       .catch(undefined),
+    mediaKinds: z.array(z.enum(IMPORT_MEDIA_KINDS)).optional().catch(undefined),
+    since: z.string().optional().catch(undefined),
   })
   .optional()
   .catch(undefined);

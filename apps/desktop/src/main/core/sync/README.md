@@ -53,16 +53,30 @@ behavior. `listHarvestPlan` (`import-scope.ts`) turns the scope into the walks
 a run makes: excluded lists are never requested, rather than harvested and
 filtered afterward.
 
-- Instagram and YouTube: Saved (Watch Later) and Liked, each on its own walk.
-- Pinterest: every pin, or only the chosen boards through
-  `BoardFeedResource` (`harvest/pinterest/boards.ts`).
-- Every other Source imports everything.
+- Instagram, X, and YouTube: Saved and Liked, each on its own walk. X Likes
+  used to be the `syncLikes` switch; `accountImportScope` (`shared/import-scope.ts`)
+  reads an old `syncLikes: false` as Bookmarks only.
+- Reddit and TikTok: Saved and Liked come from one walk, which reads
+  `ListHarvestArgs.listKinds` and skips the listing or tab you left out.
+- Collections narrow the saved list: Pinterest boards, Instagram collections,
+  X bookmark folders, and YouTube playlists (Watch Later stays the default).
+  `listSourceCollections` and `harvestSourceCollections`
+  (`harvest-window/harvest-list.ts`) load and walk them.
+- Cosmos, Are.na, and Threads import every list.
+
+Media kinds and a `since` date are filters, not walks: list data is too patchy
+to judge a post before capture, and filtering early would break early stop.
+`applyImportFilter` (`pipeline/import-filter.ts`) runs in `harvest_metadata`,
+marks a filtered save `skipped` with `rawJson.importFilter`, and cancels its
+remaining tasks. Skipped saves stay in the sync baseline, so they aren't
+fetched again. A post with no publish date is kept.
 
 A newly connected Account is created with `importPending: true`, and
 `syncAccount` returns idle without harvesting until you pick a scope through
 `accounts.setImportScope`. Changing the scope clears `lastFullSyncAt` and
 `resumeCursor`, so the next run is a full walk and early stop can't skip older
-items in a newly added list.
+items in a newly added list. It also purges saves the old filters skipped
+(`releaseFilteredSaves`), so that walk judges them again under the new scope.
 
 ## Account safety (it defers entirely to the governor)
 

@@ -6,7 +6,6 @@ import {
   IconCopyId,
   IconDownload,
   IconGrid,
-  IconHeart,
   IconLink2,
   IconNotepad,
   IconSliders,
@@ -244,6 +243,7 @@ function openImportScope(target: SourceMenuTarget): void {
     sync: {
       importScope: target.importScope,
       importPending: target.importPending,
+      syncLikes: target.syncLikes,
     },
   });
   sourceFlow.open("import-scope");
@@ -266,10 +266,7 @@ function importScopeItem(target: SourceMenuTarget): MenuItemSpec | null {
   };
 }
 
-function fetchItems(
-  target: SourceMenuTarget,
-  options: SourceMenuOptions,
-): MenuItemSpec[] {
+function fetchItems(target: SourceMenuTarget): MenuItemSpec[] {
   const scopeItem = importScopeItem(target);
   const items: MenuItemSpec[] = target.importPending
     ? []
@@ -305,40 +302,6 @@ function fetchItems(
           }),
       },
     );
-  }
-  if (target.type === "account" && target.source === "twitter") {
-    items.push({
-      type: "checkbox",
-      label: "Sync Likes",
-      icon: <IconHeart />,
-      checked: target.syncLikes !== false,
-      onCheckedChange: (checked) => {
-        void (async () => {
-          try {
-            const result = await window.pond.query("accounts.setSyncLikes", {
-              accountId: target.id,
-              syncLikes: checked,
-            });
-            if (!result.ok) {
-              notify({
-                id: "source-sync-likes",
-                title: "Couldn't update Likes syncing",
-                description: result.error,
-              });
-              return;
-            }
-            (options.onChanged ?? sourceDetail.changed)();
-          } catch (error) {
-            notify({
-              id: "source-sync-likes",
-              title: "Couldn't update Likes syncing",
-              description:
-                error instanceof Error ? error.message : "Please try again.",
-            });
-          }
-        })();
-      },
-    });
   }
   if (target.model.tone === "err" && target.lastError) {
     items.push({
@@ -430,7 +393,7 @@ function singleSourceMenu(
     { type: "separator" },
     { type: "group", items: copyItems(target) },
     { type: "separator" },
-    { type: "group", items: fetchItems(target, options) },
+    { type: "group", items: fetchItems(target) },
     { type: "separator" },
     {
       type: "group",

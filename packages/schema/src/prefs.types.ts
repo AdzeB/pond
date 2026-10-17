@@ -66,10 +66,18 @@ export interface ImportCollection {
   name: string;
 }
 
+/** What a save holds once captured; `text` is a post with no image or video. */
+export const IMPORT_MEDIA_KINDS = ["image", "video", "text"] as const;
+export type ImportMediaKind = (typeof IMPORT_MEDIA_KINDS)[number];
+
 /** What an Account sync imports. An omitted part imports everything it covers. */
 export interface ImportScope {
   listKinds?: ListKind[];
+  /** Narrows the saved list to these collections. */
   collections?: ImportCollection[];
+  mediaKinds?: ImportMediaKind[];
+  /** Local calendar day (`YYYY-MM-DD`); posts published before it are skipped. */
+  since?: string;
 }
 
 export interface SourceSyncPrefs {
@@ -83,7 +91,7 @@ export interface SourceSyncPrefs {
    * @see recoverInterruptedSyncs
    */
   runningSince: string | null;
-  /** X only. Omitted means likes still sync. */
+  /** @deprecated Read only for X Accounts saved before `importScope`; use `importScope.listKinds`. */
   syncLikes?: boolean;
   /** Where an unfinished list backfill continues, so a list too long for one run still reaches its end. */
   resumeCursor?: string | null;

@@ -5,6 +5,8 @@ export interface ListHarvestArgs {
   earlyStop?: boolean;
   /** Page cursor an unfinished backfill stopped at. */
   resumeCursor?: string;
+  /** Lists a walk that covers saved and liked items reads; omitted reads both. */
+  listKinds?: ListKind[];
 }
 
 export interface ListEntry {

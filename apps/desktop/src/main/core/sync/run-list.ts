@@ -2,6 +2,7 @@ import type { ConnectedAccount, Source } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
 import { sourceLabel } from "@pond/schema/sources";
 import log from "electron-log/main.js";
+import { accountImportScope } from "../../../shared/import-scope";
 import { type EnqueueItem, enqueue } from "../pipeline/enqueue";
 import { mergeListKindsOntoExisting } from "../pipeline/list-kinds";
 import { createQueueGeneration } from "../pipeline/queue-generations";
@@ -77,7 +78,10 @@ export async function syncListSource(
     accountKey = (await resolveAccountHandle(account)) ?? undefined;
   }
 
-  const plan = listHarvestPlan(source, account.sync.importScope);
+  const plan = listHarvestPlan(
+    source,
+    accountImportScope(source, account.sync),
+  );
   const { resumeCursor } = await getAccountSync(accountId);
   const resuming = plan.primary && baseline.full && Boolean(resumeCursor);
   if (resuming) {
@@ -91,6 +95,7 @@ export async function syncListSource(
     accountKey,
   };
   if (resuming && resumeCursor) listArgs.resumeCursor = resumeCursor;
+  if (plan.listKinds.length > 0) listArgs.listKinds = plan.listKinds;
   const harvest: ListHarvestResult = plan.collections
     ? await harvestSourceCollections(source, plan.collections, listArgs, {
         partition,

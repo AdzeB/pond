@@ -12,11 +12,13 @@ describe("listHarvestPlan", () => {
     expect(listHarvestPlan("instagram", undefined)).toEqual({
       primary: true,
       liked: true,
+      listKinds: [],
       collections: null,
     });
     expect(listHarvestPlan("pinterest", undefined)).toEqual({
       primary: true,
       liked: false,
+      listKinds: [],
       collections: null,
     });
   });
@@ -25,24 +27,39 @@ describe("listHarvestPlan", () => {
     expect(listHarvestPlan("instagram", { listKinds: ["liked"] })).toEqual({
       primary: false,
       liked: true,
+      listKinds: [],
       collections: null,
     });
   });
 
   it("skips Likes when you import only saved items", () => {
-    expect(listHarvestPlan("youtube", { listKinds: ["saved"] })).toEqual({
+    expect(listHarvestPlan("twitter", { listKinds: ["saved"] })).toMatchObject({
       primary: true,
       liked: false,
-      collections: null,
     });
   });
 
-  it("walks chosen boards instead of every pin", () => {
+  it("walks chosen collections instead of the whole saved list", () => {
     expect(listHarvestPlan("pinterest", { collections: [BOARD] })).toEqual({
       primary: false,
       liked: false,
+      listKinds: [],
       collections: [BOARD],
     });
+    expect(listHarvestPlan("youtube", { collections: [BOARD] })).toMatchObject({
+      primary: false,
+      liked: true,
+      collections: [BOARD],
+    });
+  });
+
+  it("ignores collections when the saved list is left out", () => {
+    expect(
+      listHarvestPlan("instagram", {
+        listKinds: ["liked"],
+        collections: [BOARD],
+      }),
+    ).toMatchObject({ primary: false, liked: true, collections: null });
   });
 
   it("treats an empty board list as everything rather than nothing", () => {
@@ -51,12 +68,17 @@ describe("listHarvestPlan", () => {
     );
   });
 
-  it("keeps the main list for Sources without separate Likes", () => {
+  it("passes the chosen lists to a combined walk", () => {
     expect(listHarvestPlan("tiktok", { listKinds: ["liked"] })).toEqual({
       primary: true,
       liked: false,
+      listKinds: ["liked"],
       collections: null,
     });
+    expect(listHarvestPlan("reddit", undefined).listKinds).toEqual([
+      "saved",
+      "liked",
+    ]);
   });
 });
 
@@ -70,19 +92,21 @@ describe("isImportPending", () => {
 
 describe("importScopePatch", () => {
   it("confirms a pending Account and stores the omitted form for everything", () => {
-    expect(importScopePatch({}, {})).toEqual({
+    expect(importScopePatch("pinterest", {}, {})).toEqual({
       importScope: undefined,
       importPending: false,
     });
   });
 
   it("resets the full-walk watermark when the selection changes", () => {
-    expect(importScopePatch({}, { collections: [BOARD] })).toEqual({
-      importScope: { collections: [BOARD] },
-      importPending: false,
-      lastFullSyncAt: null,
-      resumeCursor: null,
-    });
+    expect(importScopePatch("pinterest", {}, { collections: [BOARD] })).toEqual(
+      {
+        importScope: { collections: [BOARD] },
+        importPending: false,
+        lastFullSyncAt: null,
+        resumeCursor: null,
+      },
+    );
   });
 
   it("keeps the watermark when the same selection is saved again", () => {
@@ -91,15 +115,34 @@ describe("importScopePatch", () => {
       listKinds: undefined,
     };
     const reordered = { collections: [{ id: "88", name: "Type" }, BOARD] };
-    expect(importScopePatch({ importScope: scope }, reordered)).toEqual({
+    expect(
+      importScopePatch("pinterest", { importScope: scope }, reordered),
+    ).toEqual({
       importScope: reordered,
       importPending: false,
     });
   });
 
-  it("treats going back to everything as a change", () => {
+  it("treats a new filter or going back to everything as a change", () => {
     expect(
-      importScopePatch({ importScope: { listKinds: ["saved"] } }, {}),
+      importScopePatch("reddit", { importScope: { listKinds: ["saved"] } }, {}),
     ).toMatchObject({ importScope: undefined, lastFullSyncAt: null });
+    expect(
+      importScopePatch("reddit", {}, { since: "2024-01-01" }),
+    ).toMatchObject({ lastFullSyncAt: null });
+  });
+
+  it("retires the old X Likes switch when a scope is saved", () => {
+    expect(
+      importScopePatch(
+        "twitter",
+        { syncLikes: false },
+        { listKinds: ["saved"] },
+      ),
+    ).toEqual({
+      importScope: { listKinds: ["saved"] },
+      importPending: false,
+      syncLikes: undefined,
+    });
   });
 });

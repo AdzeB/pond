@@ -10,6 +10,7 @@ import { leaseWindow } from "./pool";
 import { sleep } from "./util";
 
 export {
+  harvestTwitterBookmarkFolder,
   harvestTwitterBookmarks,
   harvestTwitterLikes,
 } from "./harvest-bookmarks";

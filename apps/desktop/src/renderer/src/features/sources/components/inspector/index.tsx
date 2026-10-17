@@ -1,5 +1,6 @@
 import type { Source } from "@pond/schema/db";
 import { Dialog, Field, Input, type MenuItemSpec } from "@pond/ui";
+import { accountImportScope } from "@shared/import-scope";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import type { SourceDetailsKind } from "@/features/library";
@@ -142,7 +143,10 @@ function AccountInspector({ id }: { id: string }) {
           label: "Imports",
           value: account.sync.importPending
             ? "Not started"
-            : importScopeSummary(account.source, account.sync.importScope),
+            : importScopeSummary(
+                account.source,
+                accountImportScope(account.source, account.sync),
+              ),
         },
         { label: "Added", value: addedLabel(account.addedAt) },
       ]}

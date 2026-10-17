@@ -111,7 +111,7 @@ it("won't start an import that would bring in nothing", async () => {
     source: "youtube",
     sync: { importPending: true },
   });
-  await act(async () => checkbox("Watch Later").click());
+  await act(async () => checkbox("Saved Videos").click());
   await act(async () => checkbox("Liked Videos").click());
   expect(button("Start Import").disabled).toBe(true);
 });
@@ -176,18 +176,52 @@ it("saves a change for an active Account without starting a sync", async () => {
   expect(syncRunNow).not.toHaveBeenCalled();
 });
 
-it("says when a Source can only import everything", async () => {
+it("starts a TikTok import from Liked Videos alone", async () => {
   await renderFor({
     id: "acc-tiktok",
     source: "tiktok",
     sync: { importPending: true },
   });
-  expect(host.textContent).toContain(
-    "Pond imports everything you've saved on TikTok.",
-  );
+  await act(async () => checkbox("Favorites").click());
   await act(async () => button("Start Import").click());
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-tiktok",
-    scope: {},
+    scope: { listKinds: ["liked"] },
+  });
+});
+
+it("hides collections while the saved list is off", async () => {
+  await renderFor({
+    id: "acc-instagram",
+    source: "instagram",
+    sync: { importPending: true },
+  });
+  expect(button("Specific Collections")).toBeTruthy();
+  await act(async () => checkbox("Saved Posts").click());
+  await vi.waitFor(() => {
+    expect(host.textContent).not.toContain("Specific Collections");
+  });
+});
+
+it("saves media and date filters with the scope", async () => {
+  await renderFor({
+    id: "acc-reddit",
+    source: "reddit",
+    sync: { importPending: true },
+  });
+  await act(async () => checkbox("Text Posts").click());
+  const date = host.querySelector<HTMLInputElement>('input[type="date"]');
+  if (!date) throw new Error("Missing date field");
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )?.set?.call(date, "2026-01-01");
+    date.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await act(async () => button("Start Import").click());
+  expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+    accountId: "acc-reddit",
+    scope: { mediaKinds: ["image", "video"], since: "2026-01-01" },
   });
 });

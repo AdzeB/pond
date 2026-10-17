@@ -1,10 +1,15 @@
 import type {
   ImportCollection,
+  ImportMediaKind,
   ImportScope,
   ListKind,
   Source,
 } from "@pond/schema/db";
-import { importScopeOptions, normalizeImportScope } from "@shared/import-scope";
+import {
+  accountImportScope,
+  importScopeOptions,
+  normalizeImportScope,
+} from "@shared/import-scope";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
@@ -13,7 +18,11 @@ export type ImportScopeMode = "all" | "collections";
 export interface ImportScopeAccount {
   id: string;
   source: Source;
-  sync: { importScope?: ImportScope; importPending?: boolean };
+  sync: {
+    importScope?: ImportScope | undefined;
+    importPending?: boolean | undefined;
+    syncLikes?: boolean | undefined;
+  };
 }
 
 interface ImportScopeFlowState {
@@ -24,6 +33,9 @@ interface ImportScopeFlowState {
   listKinds: readonly ListKind[];
   mode: ImportScopeMode;
   collections: readonly ImportCollection[];
+  mediaKinds: readonly ImportMediaKind[];
+  /** Local `YYYY-MM-DD`; empty imports every date. */
+  since: string;
   saving: boolean;
   error: string | null;
 }
@@ -35,6 +47,8 @@ const EMPTY: ImportScopeFlowState = {
   listKinds: [],
   mode: "all",
   collections: [],
+  mediaKinds: [],
+  since: "",
   saving: false,
   error: null,
 };
@@ -43,17 +57,19 @@ const store = new Store<ImportScopeFlowState>(EMPTY);
 
 export const importScopeFlow = {
   open(account: ImportScopeAccount): void {
-    const scope = account.sync.importScope;
+    const scope = accountImportScope(account.source, account.sync);
     const collections = scope?.collections ?? [];
+    const options = importScopeOptions(account.source);
     store.setState(() => ({
       ...EMPTY,
       accountId: account.id,
       source: account.source,
       starts: account.sync.importPending === true,
-      listKinds:
-        scope?.listKinds ?? importScopeOptions(account.source).listKinds,
+      listKinds: scope?.listKinds ?? options.listKinds,
       mode: collections.length > 0 ? "collections" : "all",
       collections,
+      mediaKinds: scope?.mediaKinds ?? options.mediaKinds,
+      since: scope?.since ?? "",
     }));
   },
   setListKind(kind: ListKind, included: boolean): void {
@@ -79,6 +95,18 @@ export const importScopeFlow = {
         : s.collections.filter((c) => c.id !== collection.id),
     }));
   },
+  setMediaKind(kind: ImportMediaKind, included: boolean): void {
+    store.setState((s) => ({
+      ...s,
+      error: null,
+      mediaKinds: included
+        ? Array.from(new Set([...s.mediaKinds, kind]))
+        : s.mediaKinds.filter((k) => k !== kind),
+    }));
+  },
+  setSince(since: string): void {
+    store.setState((s) => ({ ...s, since, error: null }));
+  },
   setSaving(saving: boolean): void {
     store.setState((s) => ({ ...s, saving, error: saving ? null : s.error }));
   },
@@ -97,7 +125,7 @@ export const importScopeFlow = {
 export function draftImportScope(
   state: Pick<
     ImportScopeFlowState,
-    "source" | "listKinds" | "mode" | "collections"
+    "source" | "listKinds" | "mode" | "collections" | "mediaKinds" | "since"
   >,
 ): ImportScope | null {
   if (!state.source) return null;
@@ -107,6 +135,8 @@ export function draftImportScope(
   if (options.collections && state.mode === "collections") {
     scope.collections = [...state.collections];
   }
+  if (options.mediaKinds.length > 0) scope.mediaKinds = [...state.mediaKinds];
+  if (options.since && state.since) scope.since = state.since;
   const normalized = normalizeImportScope(state.source, scope);
   return normalized.ok ? normalized.scope : null;
 }

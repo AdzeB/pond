@@ -4,6 +4,7 @@ export {
   harvestSourceList,
   harvestThreadsLikes,
   harvestThreadsSaved,
+  harvestTwitterBookmarkFolder,
   harvestTwitterBookmarks,
   harvestTwitterLikes,
   harvestYoutubeLikedList,

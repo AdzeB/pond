@@ -3,6 +3,7 @@ import {
   Button,
   Checkbox,
   Dialog,
+  Input,
   Reveal,
   Toggle,
   ToggleGroup,
@@ -16,7 +17,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useId } from "react";
 import {
   collectionNouns,
+  hasImportChoices,
   listKindLabel,
+  mediaKindLabel,
   saveImportScope,
 } from "@/features/sources/lib/import-scope";
 import { getSourceDef } from "@/features/sources/lib/registry";
@@ -56,10 +59,13 @@ export function ImportScopeChoices() {
   if (!accountId || !source) return null;
   const options = importScopeOptions(source);
   const label = getSourceDef(source).label;
+  const savedChosen =
+    options.listKinds.length === 0 || draft.listKinds.includes("saved");
   return (
     <div className={styles.choices}>
       {options.listKinds.length > 0 ? (
-        <fieldset className={styles.group} aria-label="Lists">
+        <fieldset className={styles.group}>
+          <legend className={styles.heading}>Lists</legend>
           {options.listKinds.map((kind) => (
             <ChoiceRow
               key={kind}
@@ -74,15 +80,36 @@ export function ImportScopeChoices() {
         </fieldset>
       ) : null}
       {options.collections ? (
-        <CollectionChoices
-          accountId={accountId}
-          kind={options.collections}
-          mode={draft.mode}
-          selected={draft.collections}
-          disabled={draft.saving}
-        />
+        <Reveal visible={savedChosen}>
+          <CollectionChoices
+            accountId={accountId}
+            kind={options.collections}
+            mode={draft.mode}
+            selected={draft.collections}
+            disabled={draft.saving}
+          />
+        </Reveal>
       ) : null}
-      {options.listKinds.length === 0 && !options.collections ? (
+      {options.mediaKinds.length > 0 ? (
+        <fieldset className={styles.group}>
+          <legend className={styles.heading}>Kinds of Posts</legend>
+          {options.mediaKinds.map((kind) => (
+            <ChoiceRow
+              key={kind}
+              label={mediaKindLabel(kind)}
+              checked={draft.mediaKinds.includes(kind)}
+              disabled={draft.saving}
+              onCheckedChange={(included) =>
+                importScopeFlow.setMediaKind(kind, included)
+              }
+            />
+          ))}
+        </fieldset>
+      ) : null}
+      {options.since ? (
+        <SinceChoice since={draft.since} disabled={draft.saving} />
+      ) : null}
+      {!hasImportChoices(source) ? (
         <p className={styles.note}>
           Pond imports everything you've saved on {label}. Choosing specific
           lists isn't available for {label} yet.
@@ -254,6 +281,42 @@ function CollectionList({
         />
       ))}
     </fieldset>
+  );
+}
+
+function SinceChoice({
+  since,
+  disabled,
+}: {
+  since: string;
+  disabled: boolean;
+}) {
+  const id = useId();
+  return (
+    <div className={styles.row}>
+      <label className={styles.label} htmlFor={id}>
+        Posted Since
+      </label>
+      <Input.Root size="sm" className={styles.date}>
+        <Input.Field
+          id={id}
+          type="date"
+          value={since}
+          disabled={disabled}
+          onChange={(event) => importScopeFlow.setSince(event.target.value)}
+        />
+      </Input.Root>
+      {since ? (
+        <Button
+          size="xs"
+          variant="ghost"
+          disabled={disabled}
+          onClick={() => importScopeFlow.setSince("")}
+        >
+          Any Date
+        </Button>
+      ) : null}
+    </div>
   );
 }
 
