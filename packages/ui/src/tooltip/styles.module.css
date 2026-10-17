@@ -36,10 +36,8 @@
   padding: 5px 8px;
 }
 
-/* A wrapped line keeps the box at max width, so explanations read as a left-aligned paragraph. */
 .note {
-  text-align: start;
-  text-wrap: pretty;
+  text-wrap: balance;
 }
 
 .row {
