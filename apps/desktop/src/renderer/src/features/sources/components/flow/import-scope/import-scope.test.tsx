@@ -168,8 +168,12 @@ it("imports chosen Pinterest boards into Folders", async () => {
   expect(host.textContent).not.toContain("Add to Folders");
 
   await pick("Boards", "Design References");
-  expect(document.body.textContent).toContain("42 pins");
-  expect(document.body.textContent).toContain("1 pin");
+  expect(
+    Array.from(
+      document.querySelectorAll('[role="option"]'),
+      (option) => option.textContent,
+    ),
+  ).toEqual(["Design References42", "Memes1"]);
   await vi.waitFor(() => {
     expect(toggle("Add to Folders").getAttribute("aria-checked")).toBe("true");
   });

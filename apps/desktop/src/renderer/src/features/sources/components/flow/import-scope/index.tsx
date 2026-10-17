@@ -213,16 +213,7 @@ function CollectionRows({
   );
   const details = new Map(
     available.flatMap((c) =>
-      c.itemCount == null
-        ? []
-        : [
-            [
-              c.id,
-              `${formatNumber(c.itemCount)} ${
-                c.itemCount === 1 ? nouns.item.one : nouns.item.many
-              }`,
-            ] as const,
-          ],
+      c.itemCount == null ? [] : [[c.id, formatNumber(c.itemCount)] as const],
     ),
   );
   const ids = Array.from(

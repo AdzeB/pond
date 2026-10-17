@@ -33,7 +33,6 @@ interface CollectionNouns {
   many: string;
   title: string;
   all: string;
-  item: { one: string; many: string };
 }
 
 const COLLECTION_NOUNS = {
@@ -42,28 +41,24 @@ const COLLECTION_NOUNS = {
     many: "boards",
     title: "Boards",
     all: "All Pins",
-    item: { one: "pin", many: "pins" },
   },
   collection: {
     one: "collection",
     many: "collections",
     title: "Collections",
     all: "All Saved Posts",
-    item: { one: "post", many: "posts" },
   },
   folder: {
     one: "bookmark folder",
     many: "folders",
     title: "Folders",
     all: "All Bookmarks",
-    item: { one: "post", many: "posts" },
   },
   playlist: {
     one: "playlist",
     many: "playlists",
     title: "Playlists",
     all: "Watch Later",
-    item: { one: "video", many: "videos" },
   },
 } satisfies Record<ImportCollectionKind, CollectionNouns>;
 
