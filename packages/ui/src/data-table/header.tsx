@@ -24,11 +24,12 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
   type PointerEvent as ReactPointerEvent,
+  useMemo,
   useRef,
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { stop } from "./cells";
+import { SelectAllCell, stop } from "./cells";
 import { useDataTable } from "./context";
 import styles from "./styles.module.css";
 import type { HeaderContext, TableColumn } from "./types";
@@ -246,7 +247,8 @@ function HeaderOverlay<T extends RowData>({
 }
 
 export function DataTableHeader<T extends RowData>() {
-  const { actions, meta } = useDataTable<T>();
+  const { actions, meta, selectionStore } = useDataTable<T>();
+  const rowIds = useMemo(() => meta.rows.map((row) => row.id), [meta.rows]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [keyboardDrag, setKeyboardDrag] = useState(false);
   const reduceMotion = useReducedMotionConfig();
@@ -314,10 +316,10 @@ export function DataTableHeader<T extends RowData>() {
             style={{ gridTemplateColumns: meta.gridTemplate }}
           >
             {meta.selectionEnabled && meta.selectionCheckboxes ? (
-              <div
-                role="columnheader"
-                className={styles["select-header"]}
-                aria-hidden
+              <SelectAllCell
+                store={selectionStore}
+                rowIds={rowIds}
+                onToggleAll={actions.toggleAll}
               />
             ) : null}
             {meta.expansionEnabled ? (

@@ -74,6 +74,7 @@ export function DataTableRoot<T extends RowData>({
 }) {
   const { meta, selectionStore, actions } = useDataTable<T>();
   const cursorId = useSelector(selectionStore, (s) => s.cursorId);
+  const selecting = useSelector(selectionStore, (s) => s.selectedIds.size > 0);
 
   useLayoutEffect(() => {
     if (
@@ -131,6 +132,12 @@ export function DataTableRoot<T extends RowData>({
           : undefined
       }
       data-list={(variant === "list" && hasRows) || undefined}
+      data-checkboxes={
+        meta.selectionEnabled && meta.selectionCheckboxes
+          ? meta.checkboxVisibility
+          : undefined
+      }
+      data-selecting={selecting || undefined}
     >
       <div
         ref={meta.scrollRef}
