@@ -33,7 +33,7 @@ export const IPC = {
   refreshBackfillStart: "pond:refresh-backfill-start",
   refreshBackfillCancel: "pond:refresh-backfill-cancel",
   pipelinePause: "pond:pipeline-pause",
-  pipelineCancelSave: "pond:pipeline-cancel-save",
+  pipelineCancelSaves: "pond:pipeline-cancel-saves",
   pipelineCancelAll: "pond:pipeline-cancel-all",
   sourceConnect: "pond:source-connect",
   sourceStatus: "pond:source-status",

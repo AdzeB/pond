@@ -71,6 +71,7 @@ export interface DataTableProviderProps<T extends RowData> {
   expandCaret?: boolean;
   onSelectionChange?: (ids: string[]) => void;
   selectionCheckboxes?: boolean;
+  checkboxVisibility?: "always" | "hover";
   defaultSort?: { id: string; desc: boolean };
   sorting?: DataTableSort | null;
   onSortingChange?: (sorting: DataTableSort | null) => void;
@@ -95,6 +96,7 @@ export function DataTableProvider<T extends RowData>({
   expandCaret = true,
   onSelectionChange,
   selectionCheckboxes = true,
+  checkboxVisibility = "always",
   defaultSort,
   sorting: sortingProp,
   onSortingChange,
@@ -494,6 +496,7 @@ export function DataTableProvider<T extends RowData>({
         gridMinWidth,
         selectionEnabled,
         selectionCheckboxes,
+        checkboxVisibility,
         expansionEnabled,
         rows,
         rowCount: orderedIdsRef.current.length,
@@ -513,6 +516,7 @@ export function DataTableProvider<T extends RowData>({
       gridMinWidth,
       selectionEnabled,
       selectionCheckboxes,
+      checkboxVisibility,
       expansionEnabled,
       rows,
       rowHeight,

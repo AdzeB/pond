@@ -148,4 +148,125 @@ describe("DataTable", () => {
     );
     expect(onColumnOrderChange).toHaveBeenCalledWith(["status", "name"]);
   });
+
+  describe("selection checkboxes", () => {
+    const rows: TestRow[] = ["one", "two", "three", "four"].map((id) => ({
+      id,
+      name: id,
+      status: "Waiting",
+    }));
+
+    async function renderSelectable(
+      onSelectionChange: (ids: string[]) => void,
+    ) {
+      await act(() =>
+        root.render(
+          <DataTable.Provider
+            data={rows}
+            columns={columns}
+            getRowId={(row) => row.id}
+            checkboxVisibility="hover"
+            onSelectionChange={onSelectionChange}
+          >
+            <DataTable.Root aria-label="Test records" />
+          </DataTable.Provider>,
+        ),
+      );
+    }
+
+    function checkbox(label: string): HTMLElement {
+      const node = host.querySelector<HTMLElement>(
+        `[role="checkbox"][aria-label="${label}"]`,
+      );
+      if (!node) throw new Error(`Missing ${label} checkbox`);
+      return node;
+    }
+
+    function rowCheckbox(id: string): HTMLElement {
+      const node = [...host.querySelectorAll('[role="rowgroup"] [role="row"]')]
+        .find((row) => row.textContent?.includes(id))
+        ?.querySelector<HTMLElement>('[role="checkbox"]');
+      if (!node) throw new Error(`Missing ${id} row checkbox`);
+      return node;
+    }
+
+    async function click(node: HTMLElement, init: MouseEventInit = {}) {
+      await act(() =>
+        node.dispatchEvent(
+          new MouseEvent("click", { bubbles: true, cancelable: true, ...init }),
+        ),
+      );
+    }
+
+    it("selects and clears every row from the header checkbox", async () => {
+      const onSelectionChange = vi.fn();
+      await renderSelectable(onSelectionChange);
+
+      await click(checkbox("Select All Rows"));
+      expect(onSelectionChange).toHaveBeenLastCalledWith([
+        "one",
+        "two",
+        "three",
+        "four",
+      ]);
+      expect(checkbox("Deselect All Rows").getAttribute("aria-checked")).toBe(
+        "true",
+      );
+
+      await click(checkbox("Deselect All Rows"));
+      expect(onSelectionChange).toHaveBeenLastCalledWith([]);
+      expect(checkbox("Select All Rows").getAttribute("aria-checked")).toBe(
+        "false",
+      );
+    });
+
+    it("shows a mixed header state and selects the rest from it", async () => {
+      const onSelectionChange = vi.fn();
+      await renderSelectable(onSelectionChange);
+
+      await click(rowCheckbox("two"));
+      expect(checkbox("Select All Rows").getAttribute("aria-checked")).toBe(
+        "mixed",
+      );
+
+      await click(checkbox("Select All Rows"));
+      expect(onSelectionChange).toHaveBeenLastCalledWith([
+        "one",
+        "two",
+        "three",
+        "four",
+      ]);
+    });
+
+    it("extends a range when a row checkbox is Shift-clicked", async () => {
+      const onSelectionChange = vi.fn();
+      await renderSelectable(onSelectionChange);
+
+      await click(rowCheckbox("one"));
+      await click(rowCheckbox("three"), { shiftKey: true });
+      expect(onSelectionChange).toHaveBeenLastCalledWith([
+        "one",
+        "two",
+        "three",
+      ]);
+
+      await click(rowCheckbox("four"));
+      expect(onSelectionChange).toHaveBeenLastCalledWith([
+        "one",
+        "two",
+        "three",
+        "four",
+      ]);
+    });
+
+    it("marks hover checkboxes and keeps them visible while selecting", async () => {
+      await renderSelectable(() => {});
+      const grid = host.querySelector<HTMLElement>('[role="grid"]');
+      expect(grid?.dataset.checkboxes).toBe("hover");
+      expect(grid?.hasAttribute("data-selecting")).toBe(false);
+
+      await click(rowCheckbox("one"));
+      expect(grid?.hasAttribute("data-selecting")).toBe(true);
+    });
+  });
 });

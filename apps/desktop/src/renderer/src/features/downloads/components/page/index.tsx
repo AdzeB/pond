@@ -50,6 +50,7 @@ import { uniqueFilterOptions } from "@/shared/components/table-filters/chip-labe
 import { useDownloadActivity } from "../../hooks/use-download-activity";
 import { TransferJobsPanel } from "../transfers";
 import { DownloadOptionsMenu } from "./options";
+import { DownloadSelectionBar } from "./selection-bar";
 import styles from "./styles.module.css";
 import { DownloadsView } from "./view";
 
@@ -227,26 +228,29 @@ export function DownloadsPage() {
         </>
       }
       below={
-        <TableFilterBar
-          open={filtersOpen}
-          id="downloads-filter-toolbar"
-          label="Download Filters"
-        >
-          <TableFilterChip
-            name="Status"
-            icon={<IconCircleCheck />}
-            options={STATUS_FILTER_OPTIONS}
-            selected={filters.statuses}
-            onChange={downloadsFilters.setStatuses}
-          />
-          <TableFilterChip
-            name="Source"
-            icon={<IconLink2 />}
-            options={sourceOptions}
-            selected={filters.sources}
-            onChange={downloadsFilters.setSources}
-          />
-        </TableFilterBar>
+        <>
+          <TableFilterBar
+            open={filtersOpen}
+            id="downloads-filter-toolbar"
+            label="Download Filters"
+          >
+            <TableFilterChip
+              name="Status"
+              icon={<IconCircleCheck />}
+              options={STATUS_FILTER_OPTIONS}
+              selected={filters.statuses}
+              onChange={downloadsFilters.setStatuses}
+            />
+            <TableFilterChip
+              name="Source"
+              icon={<IconLink2 />}
+              options={sourceOptions}
+              selected={filters.sources}
+              onChange={downloadsFilters.setSources}
+            />
+          </TableFilterBar>
+          <DownloadSelectionBar />
+        </>
       }
     >
       <SearchChrome.Input

@@ -45,6 +45,9 @@ export function saveOwnsKeyboard(event: KeyboardEvent): boolean {
       selection.snapshot().every((selected) => selected === id)
     );
   }
+  /** Focus falls back to body when the focused control unmounts; the open save still owns its keys. */
+  if (active === document.body)
+    return document.querySelector("[data-save-details]") != null;
   return (
     active.closest(
       "[data-save-collection], [data-save-details], [data-quick-preview]",

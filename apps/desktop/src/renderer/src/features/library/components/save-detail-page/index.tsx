@@ -35,6 +35,7 @@ import {
   SaveViewer,
   setSaveViewerFileIndex,
   TextViewer,
+  viewerEscape,
 } from "@/features/saves/viewers";
 import { tagClipboard } from "@/features/tags";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
@@ -98,7 +99,9 @@ export function SaveDetailPage() {
       },
       {
         hotkey: "Escape" as const,
-        callback: closeSave,
+        callback: () => {
+          if (!viewerEscape.cancel()) closeSave();
+        },
         options: { ignoreInputs: true },
       },
     ].map((binding) => ({

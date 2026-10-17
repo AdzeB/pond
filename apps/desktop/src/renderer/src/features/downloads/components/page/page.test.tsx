@@ -64,8 +64,21 @@ let host: HTMLDivElement;
 let root: Root;
 let client: QueryClient;
 const query = vi.fn();
+async function defaultQuery(name: string) {
+  if (name === "settings.getPrefs") return {};
+  if (name === "downloads.activity") return [];
+  if (name === "downloads.history") return { rows: [], nextCursor: null };
+  if (name === "pipeline.status") return { paused: false };
+  if (name === "pipeline.inflight") return [];
+  if (name === "downloads.ingestingOrFailed") return [];
+  if (name === "saves.getMany") return [];
+  throw new Error(`Unexpected query: ${name}`);
+}
 const pipelinePause = vi.fn(async (paused: boolean) => ({ ok: true, paused }));
-const pipelineCancelSave = vi.fn(async () => ({ ok: true, cancelled: true }));
+const pipelineCancelSaves = vi.fn(async (ids: readonly string[]) => ({
+  ok: true,
+  cancelled: ids.length,
+}));
 
 beforeEach(() => {
   vi.stubGlobal(
@@ -87,17 +100,10 @@ beforeEach(() => {
   primarySelection.set(null);
   libraryChrome.inspectSave(null);
   libraryChrome.closeRightPane();
-  Object.assign(window, { pond: { query, pipelinePause, pipelineCancelSave } });
-  query.mockImplementation(async (name: string) => {
-    if (name === "settings.getPrefs") return {};
-    if (name === "downloads.activity") return [];
-    if (name === "downloads.history") return { rows: [], nextCursor: null };
-    if (name === "pipeline.status") return { paused: false };
-    if (name === "pipeline.inflight") return [];
-    if (name === "downloads.ingestingOrFailed") return [];
-    if (name === "saves.getMany") return [];
-    throw new Error(`Unexpected query: ${name}`);
+  Object.assign(window, {
+    pond: { query, pipelinePause, pipelineCancelSaves },
   });
+  query.mockImplementation(defaultQuery);
   setSaves([
     save("Running video", "ingesting", "running"),
     save("Waiting video", "ingesting", "pending"),
@@ -251,8 +257,6 @@ it("keeps running work active when the queue is paused without showing action ba
     "Paused",
   );
   await click('[title="Failed video"]', { metaKey: true });
-  expect(host.querySelector('[aria-label="Selected downloads"]')).toBeNull();
-  expect(host.querySelector('[aria-label="Retry Selected"]')).toBeNull();
   expect(
     host.querySelector('[aria-label="Actions for Running video"]'),
   ).toBeNull();
@@ -318,6 +322,153 @@ it("selects every download with Command-A while the table is focused", async () 
       (checkbox) => checkbox.getAttribute("aria-checked") === "true",
     ),
   ).toBe(true);
+});
+
+function selectionBar(): HTMLElement | null {
+  return host.querySelector(
+    '[role="toolbar"][aria-label="Selected Downloads"]',
+  );
+}
+
+function barButton(label: string): HTMLButtonElement {
+  const button = [...(selectionBar()?.querySelectorAll("button") ?? [])].find(
+    (node) => node.textContent === label,
+  );
+  if (!button) throw new Error(`Missing selection action ${label}`);
+  return button;
+}
+
+async function settle() {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+}
+
+it("selects a range of downloads with Shift-click", async () => {
+  await render();
+  const [first, , last] = rowNames();
+  await click(`[title="${first}"]`);
+  await click(`[title="${last}"]`, { shiftKey: true });
+
+  expect(downloadsSelection.size()).toBe(3);
+  expect(
+    host.querySelectorAll('[role="rowgroup"] [role="row"][data-selected]'),
+  ).toHaveLength(3);
+});
+
+it("selects and clears every download from the header checkbox", async () => {
+  await render();
+  const header = host.querySelector<HTMLElement>(
+    '[role="columnheader"] [role="checkbox"]',
+  );
+  if (!header) throw new Error("Missing header checkbox");
+  expect(header.getAttribute("aria-checked")).toBe("false");
+
+  await click('[title="Running video"]');
+  expect(header.getAttribute("aria-checked")).toBe("mixed");
+
+  await act(async () => header.click());
+  expect(downloadsSelection.size()).toBe(3);
+  expect(header.getAttribute("aria-checked")).toBe("true");
+  expect(selectionBar()?.textContent).toContain("3 selected");
+
+  await act(async () => header.click());
+  expect(downloadsSelection.size()).toBe(0);
+});
+
+it("shows bulk actions for the selection and cancels it in one request", async () => {
+  await render();
+  expect(selectionBar()).toBeNull();
+
+  await click('[title="Running video"]');
+  await click('[title="Waiting video"]', { metaKey: true });
+  expect(selectionBar()?.textContent).toContain("2 selected");
+  expect(barButton("Retry").disabled).toBe(true);
+  expect(barButton("Cancel").disabled).toBe(false);
+
+  await act(async () => barButton("Cancel").click());
+  await settle();
+
+  expect(pipelineCancelSaves).toHaveBeenCalledTimes(1);
+  expect([...(pipelineCancelSaves.mock.calls[0]?.[0] ?? [])].sort()).toEqual([
+    "Running video",
+    "Waiting video",
+  ]);
+  expect(downloadsSelection.size()).toBe(0);
+});
+
+it("retries only failed rows and skips the rest from the selection toolbar", async () => {
+  query.mockImplementation(async (name: string) => {
+    if (name === "saves.retryFailed") return { ok: true, requeued: 1 };
+    if (name === "saves.skipIngest") return { ok: true, skipped: 3 };
+    return defaultQuery(name);
+  });
+  await render();
+
+  await click('[title="Failed video"]');
+  await click('[title="Running video"]', { metaKey: true });
+  await act(async () => barButton("Retry").click());
+  await settle();
+  expect(query).toHaveBeenCalledWith("saves.retryFailed", {
+    ids: ["Failed video"],
+  });
+  expect(downloadsSelection.size()).toBe(0);
+
+  const table = host.querySelector<HTMLElement>('[role="grid"]');
+  table?.focus();
+  await act(async () => {
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "a", metaKey: true, bubbles: true }),
+    );
+  });
+  await act(async () => barButton("Skip").click());
+  await settle();
+  const skipped = query.mock.calls.find(
+    ([name]) => name === "saves.skipIngest",
+  );
+  expect([...(skipped?.[1]?.ids ?? [])].sort()).toEqual([
+    "Failed video",
+    "Running video",
+    "Waiting video",
+  ]);
+  expect(downloadsSelection.size()).toBe(0);
+});
+
+it("applies a context menu action to every selected download", async () => {
+  await render();
+  await click('[title="Running video"]');
+  await click('[title="Waiting video"]', { metaKey: true });
+  const row = host
+    .querySelector('[title="Waiting video"]')
+    ?.closest('[role="row"]');
+  if (!row) throw new Error("Missing Waiting video row");
+
+  await act(async () => {
+    row.dispatchEvent(
+      new MouseEvent("contextmenu", {
+        bubbles: true,
+        cancelable: true,
+        clientX: 10,
+        clientY: 10,
+      }),
+    );
+  });
+  await settle();
+  expect(downloadsSelection.size()).toBe(2);
+  const item = [...document.querySelectorAll('[role="menuitem"]')].find(
+    (node) => node.textContent === "Cancel Selected",
+  );
+  if (!item) throw new Error("Missing Cancel Selected menu item");
+  await act(async () =>
+    item.dispatchEvent(new MouseEvent("click", { bubbles: true })),
+  );
+  await settle();
+
+  expect(pipelineCancelSaves).toHaveBeenCalledTimes(1);
+  expect([...(pipelineCancelSaves.mock.calls[0]?.[0] ?? [])].sort()).toEqual([
+    "Running video",
+    "Waiting video",
+  ]);
 });
 
 it("lists waiting and completed rows in the same table", async () => {
