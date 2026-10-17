@@ -41,6 +41,24 @@ it("keeps the inspector bound to the displayed Save rather than a background bat
   expect(saveOwnsKeyboard(key())).toBe(false);
 });
 
+it("keeps the open save in charge after the focused control unmounts", () => {
+  const button = document.createElement("button");
+  document.body.append(button);
+  button.focus();
+  button.remove();
+  expect(document.activeElement).toBe(document.body);
+  expect(saveOwnsKeyboard(key())).toBe(false);
+  const details = surface("data-save-details");
+  details.blur();
+  expect(document.activeElement).toBe(document.body);
+  expect(saveOwnsKeyboard(key())).toBe(true);
+  const menu = document.createElement("div");
+  menu.setAttribute("role", "menu");
+  document.body.append(menu);
+  nodes.push(menu);
+  expect(saveOwnsKeyboard(key())).toBe(false);
+});
+
 it("lets a preview own Save commands while ordinary dialogs and text editors block them", () => {
   const dialog = surface("role", "dialog");
   dialog.setAttribute("data-quick-preview", "");
