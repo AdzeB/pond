@@ -1,4 +1,5 @@
 import type { Source } from "./db";
+import type { ListKind } from "./list-kinds";
 
 export type VideoCodec = "h264" | "hevc" | "av1" | "vp9" | "any";
 export type AudioCodec = "aac" | "opus" | "any";
@@ -59,6 +60,18 @@ export const DEFAULT_IMAGE_DOWNLOAD: ImageDownloadSettings = {
   maxFileSizeMb: 10,
 };
 
+/** A named list on a Source that an Account can import on its own, such as a Pinterest board. */
+export interface ImportCollection {
+  id: string;
+  name: string;
+}
+
+/** What an Account sync imports. An omitted part imports everything it covers. */
+export interface ImportScope {
+  listKinds?: ListKind[];
+  collections?: ImportCollection[];
+}
+
 export interface SourceSyncPrefs {
   lastSyncedAt: string | null;
   lastError: string | null;
@@ -74,6 +87,10 @@ export interface SourceSyncPrefs {
   syncLikes?: boolean;
   /** Where an unfinished list backfill continues, so a list too long for one run still reaches its end. */
   resumeCursor?: string | null;
+  /** Omitted means everything, which is how Accounts connected before scoped imports keep syncing. */
+  importScope?: ImportScope;
+  /** True on a newly connected Account until you confirm what to import. Sync waits while it is set. */
+  importPending?: boolean;
 }
 
 export const DEFAULT_SOURCE_SYNC_PREFS: SourceSyncPrefs = {
