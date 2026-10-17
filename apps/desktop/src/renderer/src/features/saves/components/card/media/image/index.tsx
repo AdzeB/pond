@@ -15,6 +15,7 @@ import {
   aspectDimsFor,
   recordAspect,
 } from "@/features/saves/state/aspect";
+import { rememberCardThumbnail } from "@/features/saves/state/card-thumbnails";
 import type { Save } from "@/features/saves/types";
 import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
@@ -54,6 +55,7 @@ export function CardImage({
       recordAspect(save.id, image.naturalWidth, image.naturalHeight, {
         coverKey: aspectCoverKey(unit),
       });
+      rememberCardThumbnail(unit.url, image.currentSrc || image.src);
       onReady?.();
     },
     [onReady, save.id, unit],
