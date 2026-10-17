@@ -22,6 +22,10 @@ const CHROME_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 " +
   "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 
+/** Pinterest rejects resource calls with 403 "Invalid Resource Request" unless they name the page handler that would issue them. */
+const BOARDS_HANDLER = "www/[username]/boards.js";
+const BOARD_FEED_HANDLER = "www/[username]/[slug].js";
+
 type ResourceResult<T> =
   | { ok: true; json: T }
   | { ok: false; reason: ResourceFailure };
@@ -34,6 +38,7 @@ export function listPinterestBoards(
     const result = await fetchResource(
       partition,
       boardsUrl(username, bookmark),
+      BOARDS_HANDLER,
       BoardsResponseSchema,
     );
     return result.ok ? { ok: true, page: boardsPage(result.json) } : result;
@@ -49,6 +54,7 @@ export function harvestPinterestBoards(
     const result = await fetchResource(
       partition,
       boardFeedUrl(boardId, bookmark),
+      BOARD_FEED_HANDLER,
       BoardFeedResponseSchema,
     );
     return result.ok ? { ok: true, page: boardPinsPage(result.json) } : result;
@@ -65,6 +71,7 @@ async function fetchResource<
 >(
   partition: string,
   url: string,
+  handler: string,
   schema: z.ZodType<T>,
 ): Promise<ResourceResult<T>> {
   await acquire("pinterest");
@@ -74,6 +81,7 @@ async function fetchResource<
     accept: "application/json, text/javascript, */*; q=0.01",
     "x-requested-with": "XMLHttpRequest",
     "x-pinterest-appstate": "active",
+    "x-pinterest-pws-handler": handler,
     referer: "https://www.pinterest.com/",
     "user-agent": CHROME_UA,
   });
