@@ -1,10 +1,14 @@
 import type { Source } from "@pond/schema/db";
-import { Button, Dialog, Field, Input, type MenuItemSpec } from "@pond/ui";
-import { accountImportScope } from "@shared/import-scope";
+import { Dialog, Field, Input, type MenuItemSpec } from "@pond/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { SourceDetailsKind } from "@/features/library";
 import { HeroAvatar } from "@/features/sources/components/flow/detail/hero-avatar";
+import {
+  ImportScopeActions,
+  ImportScopeChoices,
+  useImportScopeDraft,
+} from "@/features/sources/components/flow/import-scope";
 import { buildFolderMenu } from "@/features/sources/components/page/lib/folder-menu";
 import {
   type CardModel,
@@ -23,15 +27,11 @@ import {
   type WatchRow,
   watchKindLabel,
 } from "@/features/sources/hooks/use-watches";
-import {
-  hasImportChoices,
-  importScopeRows,
-} from "@/features/sources/lib/import-scope";
+import { hasImportChoices } from "@/features/sources/lib/import-scope";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import {
   accountMenuTarget,
   buildSourceActionMenu,
-  openImportScope,
   watchMenuTarget,
 } from "@/features/sources/lib/source-menu";
 import { sourceDetail } from "@/features/sources/state/source-detail";
@@ -124,7 +124,10 @@ function AccountInspector({ id }: { id: string }) {
   const menuItems = buildSourceActionMenu(target, {
     accounts,
     onChanged: changed,
+    importItem: false,
   });
+  const imports =
+    account.sync.importPending || hasImportChoices(account.source);
   return (
     <SourceInspectorView
       key={account.id}
@@ -146,44 +149,27 @@ function AccountInspector({ id }: { id: string }) {
         },
         { label: "Added", value: addedLabel(account.addedAt) },
       ]}
-      sections={
-        account.sync.importPending || hasImportChoices(account.source) ? (
-          <Section
-            title="Import"
-            className={styles.section}
-            collapsible={false}
-            action={
-              <Button
-                size="xs"
-                variant="secondary"
-                onClick={() => openImportScope(target)}
-              >
-                {account.sync.importPending ? "Start Import" : "Edit"}
-              </Button>
-            }
-          >
-            <PropertyList.Root>
-              {(account.sync.importPending
-                ? [{ label: "Status", value: "Not started" }]
-                : importScopeRows(
-                    account.source,
-                    accountImportScope(account.source, account.sync),
-                  )
-              ).map((row) => (
-                <PropertyList.Row key={row.label}>
-                  <PropertyList.Label>{row.label}</PropertyList.Label>
-                  <PropertyList.Value>{row.value}</PropertyList.Value>
-                </PropertyList.Row>
-              ))}
-            </PropertyList.Root>
-          </Section>
-        ) : null
-      }
+      sections={imports ? <ImportSection account={account} /> : null}
+      actions={imports ? <ImportScopeActions /> : undefined}
       onNicknameSave={async (value) => {
         await saveAccountNickname(account, value);
         changed();
       }}
     />
+  );
+}
+
+function ImportSection({ account }: { account: AccountRow }) {
+  useImportScopeDraft(account);
+  return (
+    <Section title="Import" className={styles.section} collapsible={false}>
+      {account.sync.importPending ? (
+        <p className={styles.detail}>
+          Pond waits for your choice before the first sync.
+        </p>
+      ) : null}
+      <ImportScopeChoices accountId={account.id} />
+    </Section>
   );
 }
 
@@ -299,6 +285,8 @@ interface SourceInspectorDetailsProps {
   properties?: SourceInspectorProperty[];
   /** Source-specific sections shown after Properties. */
   sections?: ReactNode;
+  /** Footer buttons in place of Done. */
+  actions?: ReactNode;
   onNicknameSave?: (value: string) => Promise<void>;
 }
 
@@ -308,6 +296,7 @@ export type SourceInspectorViewProps =
   | ({ status: "ready" } & SourceInspectorDetailsProps);
 
 export function SourceInspectorView(props: SourceInspectorViewProps) {
+  const actions = props.status === "ready" ? props.actions : undefined;
   return (
     <>
       <Dialog.Header data-empty />
@@ -325,7 +314,7 @@ export function SourceInspectorView(props: SourceInspectorViewProps) {
         )}
       </Dialog.Content>
       <Dialog.Footer>
-        <Dialog.Cancel>Done</Dialog.Cancel>
+        {actions ?? <Dialog.Cancel>Done</Dialog.Cancel>}
       </Dialog.Footer>
     </>
   );

@@ -1,11 +1,12 @@
+import { Dialog } from "@pond/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { detailsDialog } from "@/features/library";
 import { refetchAccounts } from "@/features/sources/hooks/use-accounts";
 import { connectFlow } from "@/features/sources/state/connect-flow";
-import { importScopeFlow } from "@/features/sources/state/import-scope-flow";
-import { ConnectWaitSection } from "./";
+import { ConnectActions, ConnectWaitSection } from "./";
 
 let root: Root;
 let host: HTMLDivElement;
@@ -68,7 +69,6 @@ afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
   connectFlow.clear();
-  importScopeFlow.clear();
   vi.stubGlobal("pond", {
     query: async () => ({ accounts: [] }),
     connectSource: async () => ({ ok: true, mode: "external" }),
@@ -222,20 +222,30 @@ it("asks what to import before a new account syncs", async () => {
   await act(async () => {
     root.render(
       <QueryClientProvider client={new QueryClient()}>
-        <ConnectWaitSection />
+        <Dialog.Root open={false}>
+          <ConnectWaitSection />
+          <ConnectActions />
+        </Dialog.Root>
       </QueryClientProvider>,
     );
   });
 
   await vi.waitFor(() => {
-    expect(host.textContent).toContain(
-      "Choose what Pond imports, then start the first sync.",
-    );
+    expect(host.textContent).toContain("Next, choose what Pond imports.");
   });
-  expect(host.textContent).toContain("Saved Posts");
-  expect(host.textContent).toContain("Liked Posts");
   expect(host.textContent).not.toContain("Pond is syncing");
   expect(syncRunNow).not.toHaveBeenCalled();
+
+  const next = Array.from(host.querySelectorAll("button")).find(
+    (element) => element.textContent === "Continue",
+  );
+  await act(async () => next?.click());
+  expect(detailsDialog.getState()).toEqual({
+    kind: "source",
+    sourceKind: "account",
+    id: "acc-instagram",
+  });
+  detailsDialog.close();
 });
 
 it("fails when Pond cannot open the sign-in page", async () => {

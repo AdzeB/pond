@@ -67,7 +67,7 @@ const STEPS = [
       "Pond is running on a throwaway library and browser profile. Your real library and logins are untouched.",
       "If Pond shows onboarding, finish it with the defaults.",
       "Each Source step starts with Sign In. Log in in the window that opens, then press Import Session here.",
-      "After you press Start in Pond, wait for the sync to finish, then press Run Checks.",
+      "After you press Start Import in Pond, wait for the sync to finish, then press Run Checks.",
     ],
   },
   {
@@ -76,9 +76,9 @@ const STEPS = [
     source: "twitter",
     steps: [
       "Sign in to X, then press Import Session.",
-      "In Pond, open Sources, find the X Account, and choose Start Import from its menu.",
+      "In Pond, open Sources and click the X Account to open its details.",
       "Turn off Likes. Click the Folders field under Bookmarks and confirm your bookmark folders load with post counts.",
-      "Pick one folder and leave Add to Folders on. In Post Types, add Images and Videos. Press Start.",
+      "Pick one folder and leave Add to Folders on. In Post Types, add Images and Videos. Press Start Import.",
       "When the sync finishes, confirm the Library only shows posts from that folder, none are text-only, and they sit in a Twitter / folder name Folder.",
     ],
     checks: (e) => [
@@ -120,9 +120,9 @@ const STEPS = [
     source: "instagram",
     steps: [
       "Sign in to Instagram, then press Import Session.",
-      "In Pond, choose Start Import from the Instagram Account menu.",
+      "In Pond, open Sources and click the Instagram Account to open its details.",
       "Click the Collections field and confirm your collections load with post counts.",
-      "Pick one collection, leave Add to Folders on, and press Start.",
+      "Pick one collection, leave Add to Folders on, and press Start Import.",
       "When the sync finishes, confirm only that collection's posts arrived, in an Instagram / collection name Folder.",
     ],
     checks: (e) => [
@@ -142,9 +142,9 @@ const STEPS = [
     source: "youtube",
     steps: [
       "Sign in to YouTube, then press Import Session. If Google blocks the sign-in window, mark this step Skip.",
-      "In Pond, choose Start Import from the YouTube Account menu.",
+      "In Pond, open Sources and click the YouTube Account to open its details.",
       "Click the Playlists field and confirm your playlists load.",
-      "Pick one playlist other than Watch Later, leave Add to Folders on, and press Start.",
+      "Pick one playlist other than Watch Later, leave Add to Folders on, and press Start Import.",
       "When the sync finishes, confirm only that playlist's videos arrived, in a YouTube / playlist name Folder.",
     ],
     checks: (e) => [
@@ -164,8 +164,8 @@ const STEPS = [
     source: "tiktok",
     steps: [
       "Sign in to TikTok, then press Import Session.",
-      "In Pond, choose Start Import from the TikTok Account menu.",
-      "Turn off Favorites so only Liked Videos stays on. Press Start.",
+      "In Pond, open Sources and click the TikTok Account to open its details.",
+      "Turn off Favorites so only Liked Videos stays on. Press Start Import.",
       "When the sync finishes, confirm only liked videos arrived.",
     ],
     checks: (e) => [
@@ -188,8 +188,8 @@ const STEPS = [
     source: "reddit",
     steps: [
       "Sign in to Reddit, then press Import Session.",
-      "In Pond, choose Start Import from the Reddit Account menu.",
-      "Turn off Upvoted Posts. Set Posted Since to Custom Date, then pick a day in the calendar that cuts off some of your older saved posts. Press Start.",
+      "In Pond, open Sources and click the Reddit Account to open its details.",
+      "Turn off Upvoted Posts. Set Posted Since to Custom Date, then pick a day in the calendar that cuts off some of your older saved posts. Press Start Import.",
       "When the sync finishes, confirm nothing older than that date is in the Library.",
     ],
     checks: (e) => [
@@ -217,7 +217,7 @@ const STEPS = [
     source: "reddit",
     sync: true,
     steps: [
-      "In Pond, choose Choose What to Import from the Reddit Account menu.",
+      "In Pond, open Sources and click the Reddit Account to open its details.",
       "Set Posted Since to Any Time, then press Save.",
       "Press Sync Now here and wait for the sync to finish.",
       "Confirm the older saved posts now appear in the Library.",

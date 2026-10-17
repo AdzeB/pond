@@ -15,7 +15,7 @@ import {
 } from "@shared/import-scope";
 import type { OkResult } from "@shared/query-contracts-shared";
 import { useQuery } from "@tanstack/react-query";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import {
   collectionNouns,
   hasImportChoices,
@@ -26,41 +26,40 @@ import {
   saveImportScope,
 } from "@/features/sources/lib/import-scope";
 import { getSourceDef } from "@/features/sources/lib/registry";
-import { connectFlow } from "@/features/sources/state/connect-flow";
 import {
+  draftChanged,
   draftFiles,
   draftImportScope,
+  type ImportScopeAccount,
   type ImportScopeFlow,
   useImportScopeFlow,
   useImportScopeFlowActions,
 } from "@/features/sources/state/import-scope-flow";
-import { sourceFlow } from "@/features/sources/state/source-flow";
 import { formatNumber } from "@/shared/lib/format";
 import styles from "./styles.module.css";
 
-export function ImportScopeSection() {
-  const draft = useImportScopeFlow();
-  if (!draft.source) return null;
-  const label = getSourceDef(draft.source).label;
-  return (
-    <div className={styles.body}>
-      <div className={styles.copy}>
-        <h2 className={styles.title}>Choose What to Import</h2>
-        <p className={styles.description}>
-          {draft.starts
-            ? `Pond waits for your choice before it syncs ${label}.`
-            : "Changes apply from the next sync."}
-        </p>
-      </div>
-      <ImportScopeChoices />
-    </div>
-  );
+/** Loads the Account's saved choices into the draft, again whenever a save changes them. */
+export function useImportScopeDraft(account: ImportScopeAccount): void {
+  const flow = useImportScopeFlowActions();
+  const key = JSON.stringify({
+    id: account.id,
+    source: account.source,
+    sync: {
+      importScope: account.sync.importScope,
+      importPending: account.sync.importPending,
+      syncLikes: account.sync.syncLikes,
+    },
+  } satisfies ImportScopeAccount);
+  useEffect(() => {
+    flow.open(JSON.parse(key));
+    return () => flow.clear();
+  }, [flow, key]);
 }
 
-export function ImportScopeChoices() {
+export function ImportScopeChoices({ accountId }: { accountId: string }) {
   const draft = useImportScopeFlow();
-  const { accountId, source } = draft;
-  if (!accountId || !source) return null;
+  const { source } = draft;
+  if (draft.accountId !== accountId || !source) return null;
   const options = importScopeOptions(source);
   const label = getSourceDef(source).label;
   const collections = options.collections ? (
@@ -110,17 +109,23 @@ export function ImportScopeChoices() {
   );
 }
 
-export function ImportScopeConfirm() {
+export function ImportScopeActions() {
   const flow = useImportScopeFlowActions();
   const draft = useImportScopeFlow();
   const ready = draftImportScope(draft) !== null;
+  if (!draft.starts && !draftChanged(draft)) {
+    return <Dialog.Cancel>Done</Dialog.Cancel>;
+  }
   return (
-    <Dialog.Confirm
-      disabled={!ready || draft.saving}
-      onClick={() => void confirmImportScope(flow)}
-    >
-      {draft.starts ? "Start" : "Save"}
-    </Dialog.Confirm>
+    <>
+      <Dialog.Cancel>{draft.starts ? "Not Now" : "Cancel"}</Dialog.Cancel>
+      <Dialog.Confirm
+        disabled={!ready || draft.saving}
+        onClick={() => void confirmImportScope(flow)}
+      >
+        {draft.starts ? "Start Import" : "Save"}
+      </Dialog.Confirm>
+    </>
   );
 }
 
@@ -145,8 +150,7 @@ async function confirmImportScope(flow: ImportScopeFlow): Promise<void> {
     flow.fail(result.error);
     return;
   }
-  connectFlow.clear();
-  sourceFlow.close();
+  flow.setSaving(false);
 }
 
 function ListKindRows({

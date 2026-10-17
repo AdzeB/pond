@@ -1,6 +1,7 @@
 import type { MenuItemSpec } from "@pond/ui";
 import { Children, isValidElement, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { detailsDialog } from "@/features/library";
 import type { CardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
 import type { AccountRow } from "@/features/sources/hooks/use-accounts";
 import type { WatchRow } from "@/features/sources/hooks/use-watches";
@@ -213,8 +214,20 @@ describe("buildSourceActionMenu", () => {
     if (!start || !("onClick" in start))
       throw new Error("Missing Start Import");
     start.onClick?.();
-    expect(sourceFlow.current()).toBe("import-scope");
-    sourceFlow.close();
+    expect(detailsDialog.getState()).toEqual({
+      kind: "source",
+      sourceKind: "account",
+      id: "acc-instagram",
+    });
+    detailsDialog.close();
+  });
+
+  it("leaves the import choice out of the Account's own details", () => {
+    const target = account();
+    target.importPending = true;
+    const items = buildSourceActionMenu(target, { importItem: false });
+    expect(findItem(items, "Start Import")).toBeNull();
+    expect(findItem(items, "Choose What to Import")).toBeNull();
   });
 
   it("uses collection labels and hides account-only actions for watches", () => {

@@ -43,6 +43,8 @@ interface ImportScopeFlowState {
   /** Local `YYYY-MM-DD`; empty imports every date. */
   since: string;
   sincePreset: SincePreset;
+  /** The saved scope in normalized form, so the draft can tell when it differs. */
+  saved: string;
   saving: boolean;
   error: string | null;
 }
@@ -57,6 +59,7 @@ const EMPTY: ImportScopeFlowState = {
   mediaKinds: [],
   since: "",
   sincePreset: "any",
+  saved: "",
   saving: false,
   error: null,
 };
@@ -70,6 +73,7 @@ export function createImportScopeFlow() {
       const scope = accountImportScope(account.source, account.sync);
       const collections = scope?.collections ?? [];
       const options = importScopeOptions(account.source);
+      const saved = normalizeImportScope(account.source, scope ?? {});
       store.setState(() => ({
         ...EMPTY,
         accountId: account.id,
@@ -81,6 +85,7 @@ export function createImportScopeFlow() {
         mediaKinds: scope?.mediaKinds ?? [],
         since: scope?.since ?? "",
         sincePreset: scope?.since ? "custom" : "any",
+        saved: saved.ok ? JSON.stringify(saved.scope) : "",
       }));
     },
     setListKind(kind: ListKind, included: boolean): void {
@@ -173,6 +178,13 @@ export function draftImportScope(
   if (options.since && state.since) scope.since = state.since;
   const normalized = normalizeImportScope(state.source, scope);
   return normalized.ok ? normalized.scope : null;
+}
+
+export function draftChanged(
+  state: Parameters<typeof draftImportScope>[0] &
+    Pick<ImportScopeFlowState, "saved">,
+): boolean {
+  return JSON.stringify(draftImportScope(state)) !== state.saved;
 }
 
 export function useImportScopeFlow(): ImportScopeFlowState {

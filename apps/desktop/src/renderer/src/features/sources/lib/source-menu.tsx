@@ -12,7 +12,7 @@ import {
   IconTableDownload,
   IconTrash,
 } from "@pond/icons";
-import type { ImportScope, Source, WatchKind } from "@pond/schema/db";
+import type { Source, WatchKind } from "@pond/schema/db";
 import { Dialog, type MenuItemSpec } from "@pond/ui";
 import { viewAccountItems } from "@/features/library";
 import type { CardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
@@ -22,7 +22,6 @@ import { hasImportChoices } from "@/features/sources/lib/import-scope";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import { sourceTargetUrl } from "@/features/sources/lib/source-target-url";
 import { connectFlow } from "@/features/sources/state/connect-flow";
-import { importScopeFlow } from "@/features/sources/state/import-scope-flow";
 import { sourceDetail } from "@/features/sources/state/source-detail";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import { formatNumber } from "@/shared/lib/format";
@@ -38,14 +37,14 @@ export interface SourceMenuTarget {
   model: CardModel;
   knownCount: number;
   lastError: string | null;
-  syncLikes?: boolean;
-  importScope?: ImportScope;
   importPending?: boolean;
 }
 
 export interface SourceMenuOptions {
   accounts?: readonly AccountRow[];
   onChanged?: () => void;
+  /** False inside the Account's details, where the Import section already is. */
+  importItem?: boolean;
 }
 
 export function accountMenuTarget(
@@ -61,8 +60,6 @@ export function accountMenuTarget(
     model,
     knownCount: account.sync.knownCount,
     lastError: account.sync.lastError,
-    syncLikes: account.sync.syncLikes,
-    importScope: account.sync.importScope,
     importPending: account.sync.importPending,
   };
 }
@@ -236,38 +233,28 @@ function primaryFetchItem(target: SourceMenuTarget): MenuItemSpec {
   };
 }
 
-export function openImportScope(target: SourceMenuTarget): void {
-  importScopeFlow.open({
-    id: target.id,
-    source: target.source,
-    sync: {
-      importScope: target.importScope,
-      importPending: target.importPending,
-      syncLikes: target.syncLikes,
-    },
-  });
-  sourceFlow.open("import-scope");
-}
-
-function importScopeItem(target: SourceMenuTarget): MenuItemSpec | null {
-  if (target.type !== "account") return null;
+function importScopeItem(
+  target: SourceMenuTarget,
+  options: SourceMenuOptions,
+): MenuItemSpec | null {
+  if (target.type !== "account" || options.importItem === false) return null;
+  const open = () => sourceDetail.openAccount(target.id);
   if (target.importPending) {
-    return {
-      label: "Start Import",
-      icon: <IconDownload />,
-      onClick: () => openImportScope(target),
-    };
+    return { label: "Start Import", icon: <IconDownload />, onClick: open };
   }
   if (!hasImportChoices(target.source)) return null;
   return {
     label: "Choose What to Import",
     icon: <IconSliders />,
-    onClick: () => openImportScope(target),
+    onClick: open,
   };
 }
 
-function fetchItems(target: SourceMenuTarget): MenuItemSpec[] {
-  const scopeItem = importScopeItem(target);
+function fetchItems(
+  target: SourceMenuTarget,
+  options: SourceMenuOptions,
+): MenuItemSpec[] {
+  const scopeItem = importScopeItem(target, options);
   const items: MenuItemSpec[] = target.importPending
     ? []
     : [primaryFetchItem(target)];
@@ -393,7 +380,7 @@ function singleSourceMenu(
     { type: "separator" },
     { type: "group", items: copyItems(target) },
     { type: "separator" },
-    { type: "group", items: fetchItems(target) },
+    { type: "group", items: fetchItems(target, options) },
     { type: "separator" },
     {
       type: "group",

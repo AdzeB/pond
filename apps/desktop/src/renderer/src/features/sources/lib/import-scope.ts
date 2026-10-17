@@ -6,10 +6,8 @@ import type {
 } from "@pond/schema/db";
 import { LIST_KIND_LABELS } from "@pond/schema/list-kinds";
 import {
-  collectionFiling,
   type ImportCollectionKind,
   importScopeOptions,
-  sinceStart,
 } from "@shared/import-scope";
 import type { OkResult } from "@shared/query-contracts-shared";
 import { refetchAccounts } from "@/features/sources/hooks/use-accounts";
@@ -95,59 +93,6 @@ export function hasImportChoices(source: Source): boolean {
   );
 }
 
-export interface ImportScopeRow {
-  label: string;
-  value: string;
-}
-
-/** One row per choice the Source offers, as the inspector lists them. */
-export function importScopeRows(
-  source: Source,
-  scope: ImportScope | undefined,
-): ImportScopeRow[] {
-  const options = importScopeOptions(source);
-  const listKinds = scope?.listKinds ?? options.listKinds;
-  const rows: ImportScopeRow[] = [];
-  if (options.listKinds.length > 0) {
-    rows.push({
-      label: "Lists",
-      value: listKinds.map((kind) => listKindLabel(source, kind)).join(" and "),
-    });
-  }
-  const savedChosen =
-    options.listKinds.length === 0 || listKinds.includes("saved");
-  if (options.collections && savedChosen) {
-    const nouns = collectionNouns(options.collections);
-    const chosen = scope?.collections ?? [];
-    rows.push({
-      label: nouns.title,
-      value:
-        chosen.length > 0 ? chosen.map((c) => c.name).join(", ") : nouns.all,
-    });
-    if (chosen.length > 0 || options.fileEveryCollection) {
-      rows.push({
-        label: "Add to Folders",
-        value: collectionFiling(source, scope) === "off" ? "Off" : "On",
-      });
-    }
-  }
-  if (options.mediaKinds.length > 0) {
-    rows.push({
-      label: "Post Types",
-      value: scope?.mediaKinds
-        ? scope.mediaKinds.map(mediaKindLabel).join(", ")
-        : "All Types",
-    });
-  }
-  if (options.since) {
-    rows.push({
-      label: "Posted Since",
-      value: scope?.since ? formatSince(scope.since) : "Any Time",
-    });
-  }
-  return rows;
-}
-
 export type SincePreset =
   | "any"
   | "month"
@@ -188,17 +133,6 @@ export function localDay(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${date.getFullYear()}-${month}-${day}`;
-}
-
-function formatSince(since: string): string {
-  const start = sinceStart(since);
-  return start
-    ? start.toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      })
-    : since;
 }
 
 export async function saveImportScope(input: {

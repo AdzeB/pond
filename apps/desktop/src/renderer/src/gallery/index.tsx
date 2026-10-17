@@ -1,13 +1,12 @@
+import type { ImportScope } from "@pond/schema/db";
 import { Dialog, Toggle, ToggleGroup } from "@pond/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React, { useLayoutEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import {
-  ImportScopeConfirm,
-  ImportScopeSection,
-} from "@/features/sources/components/flow/import-scope";
+import { SourceInspector } from "@/features/sources/components/inspector";
 import {
   createImportScopeFlow,
+  type ImportScopeAccount,
   ImportScopeFlowProvider,
 } from "@/features/sources/state/import-scope-flow";
 import "../styles.css";
@@ -18,17 +17,50 @@ import {
 } from "./fixtures";
 import styles from "./styles.module.css";
 
+const syncs = new Map<string, ImportScopeAccount["sync"]>(
+  IMPORT_SCOPE_CASES.map((item) => [item.account.id, item.account.sync]),
+);
+
+function accountRow(item: ImportScopeCase) {
+  return {
+    id: item.account.id,
+    source: item.account.source,
+    handle: "raphaelsalaja",
+    label: null,
+    avatarUrl: null,
+    addedAt: "2026-10-17T19:52:00.000Z",
+    sync: {
+      lastSyncedAt: null,
+      lastError: null,
+      knownCount: 0,
+      ...syncs.get(item.account.id),
+    },
+    connected: true,
+    syncing: false,
+  };
+}
+
 /** Fixture answers stand in for main, so the gallery never reads or writes a library. */
-async function query(name: string, input?: { accountId?: string }) {
+async function query(
+  name: string,
+  input?: { accountId?: string; scope?: ImportScope },
+) {
   await new Promise((resolve) => setTimeout(resolve, 600));
+  const accountId = input?.accountId ?? "";
   if (name === "accounts.importOptions") {
-    const options = IMPORT_OPTIONS.get(input?.accountId ?? "");
+    const options = IMPORT_OPTIONS.get(accountId);
     if (options === undefined) return { ok: true, collections: [] };
     return Array.isArray(options)
       ? { ok: true, collections: options }
       : { ok: false, error: options };
   }
-  if (name === "accounts.list") return { accounts: [] };
+  if (name === "accounts.setImportScope") {
+    syncs.set(accountId, { importScope: input?.scope });
+    return { ok: true };
+  }
+  if (name === "accounts.list") {
+    return { accounts: IMPORT_SCOPE_CASES.map(accountRow) };
+  }
   return { ok: true };
 }
 
@@ -56,9 +88,9 @@ function Gallery() {
     <main className={styles.page}>
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>Choose What to Import</h1>
+          <h1 className={styles.title}>Account Details</h1>
           <p className={styles.subtitle}>
-            Every state of the import picker, with fixture Accounts. Choices
+            Every state of the Import section, with fixture Accounts. Choices
             here don't save anywhere.
           </p>
         </div>
@@ -88,11 +120,7 @@ function Gallery() {
 }
 
 function ImportScopeCard({ item }: { item: ImportScopeCase }) {
-  const [flow] = useState(() => {
-    const created = createImportScopeFlow();
-    created.open(item.account);
-    return created;
-  });
+  const [flow] = useState(createImportScopeFlow);
   const [frame, setFrame] = useState<HTMLDivElement | null>(null);
   return (
     <figure className={styles.card}>
@@ -105,23 +133,8 @@ function ImportScopeCard({ item }: { item: ImportScopeCase }) {
           <ImportScopeFlowProvider value={flow}>
             <Dialog.Root open modal={false}>
               <Dialog.Portal container={frame}>
-                <Dialog.Popup
-                  pageId="import-scope"
-                  depth={0}
-                  initialFocus={false}
-                >
-                  <Dialog.Header data-empty>
-                    <Dialog.Title className={styles.hidden}>
-                      Choose What to Import
-                    </Dialog.Title>
-                  </Dialog.Header>
-                  <Dialog.Viewport>
-                    <ImportScopeSection />
-                  </Dialog.Viewport>
-                  <Dialog.Footer>
-                    <Dialog.Cancel />
-                    <ImportScopeConfirm />
-                  </Dialog.Footer>
+                <Dialog.Popup aria-label="Account Details" initialFocus={false}>
+                  <SourceInspector kind="account" id={item.account.id} />
                 </Dialog.Popup>
               </Dialog.Portal>
             </Dialog.Root>
