@@ -5,7 +5,7 @@ import log from "electron-log/main.js";
 import { z } from "zod";
 import { IPC } from "../../../shared/constants";
 import type { QueryResult } from "../../../shared/query-contracts";
-import { parseNetscapeBookmarks } from "../../core/bookmarks";
+import { importBookmarkFile, parseBookmarkFile } from "../../core/bookmarks";
 import {
   dryRunEagleLibrary,
   importEagleLibrary,
@@ -192,32 +192,25 @@ export const savesImportSourceQueries = {
     const win = BrowserWindow.getFocusedWindow();
     const options = {
       properties: ["openFile" as const],
-      message: "Choose a bookmark HTML file",
-      filters: [{ name: "Bookmarks", extensions: ["html", "htm"] }],
+      message: "Choose a bookmark export or a Chromium Bookmarks file",
+      filters: [
+        { name: "Bookmarks", extensions: ["html", "htm", "json"] },
+        { name: "All Files", extensions: ["*"] },
+      ],
     };
     const picked = win
       ? await dialog.showOpenDialog(win, options)
       : await dialog.showOpenDialog(options);
     const path = picked.filePaths[0];
     if (picked.canceled || !path) return { ok: false, reason: "cancelled" };
-    const html = await readFile(path, "utf8");
-    const urls = parseNetscapeBookmarks(html);
-    let imported = 0;
-    const failed: string[] = [];
-    for (const url of urls) {
-      try {
-        await enqueue(url, { trigger: "user:importBookmarks" });
-        imported += 1;
-      } catch {
-        failed.push(url);
-      }
-    }
-    if (imported === 0 && failed.length > 0)
+    const file = parseBookmarkFile(await readFile(path, "utf8"));
+    if (!file?.bookmarks.length)
       return {
         ok: false,
-        error: "Couldn't import those bookmarks. Try another file.",
+        error:
+          "That file has no web bookmarks. Export bookmarks as HTML from your browser and try again.",
       };
-    return { ok: true, imported, skipped: failed.length };
+    return importBookmarkFile(file);
   },
 
   async "saves.importMymind"(): Promise<QueryResult<"saves.importMymind">> {
