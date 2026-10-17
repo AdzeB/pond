@@ -1,6 +1,7 @@
 import { Header } from "@/features/captures/components/threads/card/header";
 import { ThreadsMedia } from "@/features/captures/components/threads/card/media";
 import { Metrics } from "@/features/captures/components/threads/card/metrics";
+import { ParentPost } from "@/features/captures/components/threads/card/parent";
 import { QuotedCard } from "@/features/captures/components/threads/card/quoted";
 import { Body } from "@/features/captures/components/tweet/card/body";
 import type { TweetCardData } from "@/features/captures/components/tweet/card/lib/data";
@@ -23,9 +24,11 @@ export function ThreadsCard({
 
   return (
     <article className={styles.card} data-scheme={scheme}>
+      {data.replyTo ? <ParentPost data={data.replyTo} /> : null}
+
       <Header author={author} />
 
-      {isReply && data.replyingTo ? (
+      {isReply && data.replyingTo && !data.replyTo ? (
         <p className={styles["reply-context"]}>
           Replying to <span className={styles.entity}>@{data.replyingTo}</span>
         </p>

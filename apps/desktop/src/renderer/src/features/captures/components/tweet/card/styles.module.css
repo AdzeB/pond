@@ -43,6 +43,7 @@
   --tw-link: #1d9bf0;
   --tw-verified: #1d9bf0;
   --tw-placeholder: #e1e8ed;
+  --tw-thread: #cfd9de;
 
   box-sizing: border-box;
   display: flex;
@@ -64,6 +65,7 @@
   --tw-link: #1d9bf0;
   --tw-verified: #1d9bf0;
   --tw-placeholder: #16181c;
+  --tw-thread: #333639;
 }
 
 .card *,

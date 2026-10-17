@@ -28,6 +28,8 @@ function quoteScreenshotKind(depth: number, scheme: "light" | "dark"): string {
 }
 
 const CAPTURE_TWEET_VERSION = 12;
+/** Reply images now lead with the parent post; only replies need the extra pass. */
+const REPLY_CAPTURE_TWEET_VERSION = 13;
 
 export interface CaptureTweetResult {
   captured: number;
@@ -78,8 +80,14 @@ function readCaptureTweetVersion(rawJson: RawJson | null): number {
   return version !== undefined && Number.isFinite(version) ? version : 0;
 }
 
+function targetCaptureTweetVersion(rawJson: RawJson | null): number {
+  return rawJson?.capture?.replyTo
+    ? REPLY_CAPTURE_TWEET_VERSION
+    : CAPTURE_TWEET_VERSION;
+}
+
 export function isCaptureTweetStale(rawJson: RawJson | null): boolean {
-  return readCaptureTweetVersion(rawJson) < CAPTURE_TWEET_VERSION;
+  return readCaptureTweetVersion(rawJson) < targetCaptureTweetVersion(rawJson);
 }
 
 function needsReplyParentEnrichment(rawJson: RawJson | null): boolean {
@@ -140,7 +148,7 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
   if (!save.sourceId) return idle;
 
   if (
-    readCaptureTweetVersion(save.rawJson) >= CAPTURE_TWEET_VERSION &&
+    !isCaptureTweetStale(save.rawJson) &&
     !(opts?.retryPendingParent && needsReplyParentEnrichment(save.rawJson))
   ) {
     log.debug("[pond pipeline:capture-tweet] up to date, skipping", saveId);
@@ -180,20 +188,25 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
   let authWall = false;
   const harvested: CaptureMedia[] = [];
 
-  const main = await captureVariants(
-    saveId,
-    {
-      url: save.url,
-      sourceId: save.sourceId,
-      source: save.source,
-      lightKind: TWEET_SCREENSHOT_LIGHT_KIND,
-      darkKind: TWEET_SCREENSHOT_DARK_KIND,
-      lightFilename: "tweet-light.png",
-      darkFilename: "tweet-dark.png",
-      harvestMedia: false,
-    },
-    ports,
-  );
+  const replyParentUrl = rawJson?.capture?.replyTo?.url;
+  const replyParentId = !replyParentUrl
+    ? null
+    : save.source === "threads"
+      ? parsePostCode(replyParentUrl)
+      : parseTweetId(replyParentUrl);
+
+  const mainArgs: CaptureVariantsArgs = {
+    url: save.url,
+    sourceId: save.sourceId,
+    source: save.source,
+    lightKind: TWEET_SCREENSHOT_LIGHT_KIND,
+    darkKind: TWEET_SCREENSHOT_DARK_KIND,
+    lightFilename: "tweet-light.png",
+    darkFilename: "tweet-dark.png",
+    harvestMedia: false,
+  };
+  if (replyParentId) mainArgs.parentId = replyParentId;
+  const main = await captureVariants(saveId, mainArgs, ports);
   captured += main.captured;
   if (main.authWall) authWall = true;
 
@@ -365,6 +378,7 @@ interface CaptureVariantsArgs {
   url: string;
   sourceId: string;
   source: "twitter" | "threads";
+  parentId?: string;
   lightKind: string;
   darkKind: string;
   lightFilename: string;
@@ -393,18 +407,16 @@ async function captureVariants<SaveRow extends CaptureTweetSave>(
   let lightOk = false;
   let darkOk = false;
 
+  const shotArgs: Parameters<typeof screenshotTweetDual>[0] = {
+    url: args.url,
+    sourceId: args.sourceId,
+    harvestMedia: args.harvestMedia,
+  };
+  if (args.parentId) shotArgs.parentId = args.parentId;
   const dual =
     args.source === "threads"
-      ? await ports.screenshotThreadsDual({
-          url: args.url,
-          sourceId: args.sourceId,
-          harvestMedia: args.harvestMedia,
-        })
-      : await ports.screenshotTweetDual({
-          url: args.url,
-          sourceId: args.sourceId,
-          harvestMedia: args.harvestMedia,
-        });
+      ? await ports.screenshotThreadsDual(shotArgs)
+      : await ports.screenshotTweetDual(shotArgs);
 
   const light: TweetScreenshotResult = dual.light;
   if (light.ok && light.png) {
@@ -522,11 +534,9 @@ async function finalizeRawJson<SaveRow extends CaptureTweetSave>(
   }
   if (mediaAdded) rawJson.capture.media = existing;
 
-  const alreadyStamped =
-    readCaptureTweetVersion(rawJson) >= CAPTURE_TWEET_VERSION;
-  const willStamp = opts.stampVersion && !alreadyStamped;
+  const willStamp = opts.stampVersion && isCaptureTweetStale(rawJson);
   if (willStamp) {
-    rawJson.captureTweetVersion = CAPTURE_TWEET_VERSION;
+    rawJson.captureTweetVersion = targetCaptureTweetVersion(rawJson);
   }
 
   if (!mediaAdded && !willStamp) return mediaAdded;

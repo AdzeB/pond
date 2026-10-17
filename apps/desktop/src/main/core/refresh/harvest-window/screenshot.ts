@@ -47,6 +47,7 @@ const CAPTURE_PAGE_TIMEOUT_MS = 15_000;
 interface TweetDualScreenshotArgs {
   url: string;
   sourceId: string;
+  parentId?: string;
   harvestMedia?: boolean;
   accountId?: string | null;
 }
@@ -97,6 +98,7 @@ export async function screenshotTweetDual(
       args.sourceId,
       "light",
       "tweet",
+      args.parentId,
     );
 
     let media: CaptureMedia[] | undefined;
@@ -125,6 +127,7 @@ export async function screenshotTweetDual(
       args.sourceId,
       "dark",
       "tweet",
+      args.parentId,
     );
 
     if (args.harvestMedia && !page && dark.ok) {
@@ -194,6 +197,7 @@ export async function screenshotThreadsDual(
       args.sourceId,
       "light",
       "threads",
+      args.parentId,
     );
 
     let media: CaptureMedia[] | undefined;
@@ -225,6 +229,7 @@ export async function screenshotThreadsDual(
       args.sourceId,
       "dark",
       "threads",
+      args.parentId,
     );
 
     if (args.harvestMedia && !page && dark.ok) {
@@ -264,6 +269,7 @@ async function captureCurrentScheme(
   sourceId: string,
   colorScheme: "light" | "dark",
   kind: "tweet" | "threads",
+  parentId?: string,
 ): Promise<TweetScreenshotResult> {
   const htmlBg = colorScheme === "light" ? "#fff" : "#000";
   const hideCss =
@@ -278,7 +284,7 @@ async function captureCurrentScheme(
     .catch(() => undefined);
 
   try {
-    const initial = await readArticleRect(win, sourceId, kind);
+    const initial = await readArticleRect(win, sourceId, kind, parentId);
     if (!initial) {
       log.info("[pond screenshot:tweet] no article", sourceId);
       return { ok: false, reason: "no_article" };
@@ -297,7 +303,7 @@ async function captureCurrentScheme(
       win.setContentSize(contentWidth, target);
       resized = true;
       await sleep(400);
-      const remeasured = await readArticleRect(win, sourceId, kind);
+      const remeasured = await readArticleRect(win, sourceId, kind, parentId);
       if (remeasured) rect = remeasured;
     }
 
@@ -471,11 +477,12 @@ async function readArticleRect(
   win: BrowserWindow,
   sourceId: string,
   kind: "tweet" | "threads",
+  parentId?: string,
 ): Promise<ArticleRect | null> {
   const expr =
     kind === "threads"
-      ? buildThreadsPostRectExpression(sourceId)
-      : buildArticleRectExpression(sourceId);
+      ? buildThreadsPostRectExpression(sourceId, parentId)
+      : buildArticleRectExpression(sourceId, parentId);
   const raw = await Promise.race([
     win.webContents.executeJavaScript(expr, true),
     sleep(SCREENSHOT_ARTICLE_TIMEOUT_MS).then(

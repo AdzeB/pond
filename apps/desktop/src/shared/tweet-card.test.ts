@@ -97,6 +97,26 @@ describe("buildTweetCardData", () => {
     expect(data?.replyTo?.author.handle).toBe("bob");
   });
 
+  it("drops a parent post that has nothing to show", () => {
+    const data = buildTweetCardData({
+      id: "1",
+      source: "twitter",
+      url: "https://x.com/a/status/1",
+      description: "this reply",
+      isReply: true,
+      replyingTo: "bob",
+      media: [],
+      replyTo: {
+        id: "2",
+        source: "twitter",
+        url: "https://x.com/bob/status/2",
+        media: [],
+      },
+    });
+    expect(data?.replyTo).toBeUndefined();
+    expect(data?.replyingTo).toBe("bob");
+  });
+
   it("keeps http video posters", () => {
     const data = buildTweetCardData({
       id: "1",

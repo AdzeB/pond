@@ -131,6 +131,7 @@ export interface CaptureExtras {
   faviconUrl?: string;
   publisher?: string;
   replyParentUnavailable?: boolean;
+  replyRecaptureQueued?: boolean;
   subreddit?: string;
   tileType?: string;
 }
