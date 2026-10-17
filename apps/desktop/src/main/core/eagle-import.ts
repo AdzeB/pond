@@ -52,6 +52,17 @@ const EagleLibrarySchema = z.object({
   quickAccess: z.array(z.json()).default([]),
 });
 
+/** Eagle writes `modificationTime`, `imageCount`, and `parent` as bookkeeping; the tree already carries `parent`. */
+const EAGLE_SMART_FOLDER_KEYS = new Set([
+  "id",
+  "name",
+  "conditions",
+  "children",
+  "modificationTime",
+  "imageCount",
+  "parent",
+]);
+
 const EagleItemMetaSchema = z.object({
   id: z.string().optional().catch(undefined),
   name: z.string().optional().catch(undefined),
@@ -277,9 +288,14 @@ async function importEagle(
         continue;
       }
       const fields = z.record(z.string(), z.json()).parse(raw);
-      for (const field of Object.keys(fields)) {
-        if (!["id", "name", "conditions", "children"].includes(field))
-          dropped.add(`${parsed.data.name}: ${field}`);
+      for (const [field, value] of Object.entries(fields)) {
+        if (
+          EAGLE_SMART_FOLDER_KEYS.has(field) ||
+          value === "" ||
+          value === null
+        )
+          continue;
+        dropped.add(`${parsed.data.name}: ${field}`);
       }
       const query = eagleSmartFolderQuery(parsed.data, ruleFolders);
       if (!query) {

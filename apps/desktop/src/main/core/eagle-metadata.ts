@@ -152,6 +152,7 @@ function mapRule(
       "focalLength",
       "aperture",
       "iso",
+      "bpm",
     ].includes(rule.property) &&
     numbers.success &&
     numbers.data[0] != null
@@ -165,6 +166,7 @@ function mapRule(
         "focalLength",
         "aperture",
         "iso",
+        "bpm",
       ])
       .parse(rule.property);
     const operators = {
@@ -207,19 +209,17 @@ function mapRule(
     };
   }
   if (
-    (rule.property === "createTime" || rule.property === "dateTimeOriginal") &&
+    ["createTime", "dateTimeOriginal", "timestamp"].includes(rule.property) &&
     numbers.success &&
     numbers.data[0] != null
   ) {
     const first = numbers.data[0];
+    const field = rule.property === "createTime" ? "savedAt" : "takenAt";
     if (rule.method === "within" && Number.isInteger(first) && first > 0)
-      return {
-        field: rule.property === "dateTimeOriginal" ? "takenAt" : "savedAt",
-        operator: "gte",
-        value: `-P${first}D`,
-      };
+      return { field, operator: "gte", value: `-P${first}D` };
     const second = numbers.data[1];
-    const field = rule.property === "dateTimeOriginal" ? "takenAt" : "savedAt";
+    if (rule.method === "on")
+      return { field, operator: "between", value: [first, first + 86399999] };
     if (rule.method === "after")
       return { field, operator: "gte", value: first };
     if (rule.method === "before")
@@ -245,6 +245,15 @@ function mapRule(
         value: value.data === "none" ? 0 : Number(value.data),
       };
   }
+  if (
+    rule.property === "fontActivated" &&
+    ["activate", "deactivate"].includes(rule.method)
+  )
+    return {
+      field: "fontActivated",
+      operator: "eq",
+      value: rule.method === "activate",
+    };
   if (rule.property === "type" && ["equal", "unequal"].includes(rule.method)) {
     const value = z.string().trim().min(1).safeParse(rule.value);
     if (!value.success) return null;
