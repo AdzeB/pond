@@ -138,6 +138,7 @@ describe("buildSourceActionMenu", () => {
       ["Copy Profile Link", "Copy Username", "Copy Connection ID"],
       [
         "Fetch New Saves",
+        "Choose What to Import",
         "Fetch Older Saves",
         "Fetch Save Details",
         "Fetch Original Media",
@@ -202,11 +203,51 @@ describe("buildSourceActionMenu", () => {
     failed.lastError = "Session expired";
     expect(fetchGroup(buildSourceActionMenu(failed))).toEqual([
       "Retry Fetch",
+      "Choose What to Import",
       "Fetch Older Saves",
       "Fetch Save Details",
       "Fetch Original Media",
       "Copy Last Fetch Error",
     ]);
+  });
+
+  it("offers Start Import instead of fetching while an Account waits for a choice", () => {
+    const target = account();
+    target.importPending = true;
+    const items = buildSourceActionMenu(target);
+    expect(fetchGroup(items).slice(0, 2)).toEqual([
+      "Start Import",
+      "Fetch Older Saves",
+    ]);
+    expect(findItem(items, "Fetch Older Saves")).toMatchObject({
+      disabled: true,
+    });
+    const start = findItem(items, "Start Import");
+    if (!start || !("onClick" in start))
+      throw new Error("Missing Start Import");
+    start.onClick?.();
+    expect(sourceFlow.current()).toBe("import-scope");
+    sourceFlow.close();
+  });
+
+  it("hides the import choice for Sources that only import everything", () => {
+    const row: AccountRow = {
+      id: "acc-tiktok",
+      source: "tiktok",
+      handle: "raphael",
+      label: null,
+      avatarUrl: null,
+      addedAt: "",
+      sync: { lastSyncedAt: null, lastError: null, knownCount: 0 },
+      connected: true,
+      syncing: false,
+    };
+    expect(
+      findItem(
+        buildSourceActionMenu(accountMenuTarget(row, ready)),
+        "Choose What to Import",
+      ),
+    ).toBeNull();
   });
 
   it("uses collection labels and hides account-only actions for watches", () => {
@@ -226,6 +267,7 @@ describe("buildSourceActionMenu", () => {
       ["Copy Connection ID"],
       [
         "Fetch New Saves",
+        "Choose What to Import",
         "Fetch Older Saves",
         "Fetch Save Details",
         "Fetch Original Media",

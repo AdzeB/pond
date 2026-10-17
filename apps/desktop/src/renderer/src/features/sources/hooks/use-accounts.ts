@@ -1,4 +1,5 @@
-import { SOURCES, type Source } from "@pond/schema/db";
+import { type ImportScope, SOURCES, type Source } from "@pond/schema/db";
+import { LIST_KINDS } from "@pond/schema/list-kinds";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
@@ -20,10 +21,23 @@ export interface AccountRow {
     lastError: string | null;
     knownCount: number;
     syncLikes?: boolean;
+    importScope?: ImportScope;
+    importPending?: boolean;
   };
   connected: boolean;
   syncing: boolean;
 }
+
+const ImportScopeSchema = z
+  .object({
+    listKinds: z.array(z.enum(LIST_KINDS)).optional().catch(undefined),
+    collections: z
+      .array(z.object({ id: z.string(), name: z.string() }))
+      .optional()
+      .catch(undefined),
+  })
+  .optional()
+  .catch(undefined);
 
 const AccountsReplySchema = z
   .object({
@@ -42,6 +56,8 @@ const AccountsReplySchema = z
               lastError: z.string().nullable().catch(null),
               knownCount: z.number().catch(0),
               syncLikes: z.boolean().optional().catch(undefined),
+              importScope: ImportScopeSchema,
+              importPending: z.boolean().optional().catch(undefined),
             })
             .catch({ lastSyncedAt: null, lastError: null, knownCount: 0 }),
           connected: z.boolean().catch(false),

@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { refetchAccounts } from "@/features/sources/hooks/use-accounts";
 import { connectFlow } from "@/features/sources/state/connect-flow";
+import { importScopeFlow } from "@/features/sources/state/import-scope-flow";
 import { ConnectWaitSection } from "./";
 
 let root: Root;
@@ -58,6 +59,7 @@ afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
   connectFlow.clear();
+  importScopeFlow.clear();
   vi.stubGlobal("pond", {
     query: async () => ({ accounts: [] }),
     connectSource: async () => ({ ok: true, mode: "external" }),
@@ -172,6 +174,39 @@ it("keeps waiting when a signed-out browser profile sends its session", async ()
   await vi.waitFor(() => {
     expect(host.textContent).toContain("Pond is syncing your saved posts now.");
   });
+});
+
+it("asks what to import before a new account syncs", async () => {
+  const syncRunNow = vi.fn(async () => ({ ok: true }));
+  stubPond();
+  vi.stubGlobal("pond", {
+    ...window.pond,
+    query: async () => ({
+      accounts: [
+        {
+          ...twitterAccount,
+          id: "acc-instagram",
+          source: "instagram",
+          sync: { ...twitterAccount.sync, importPending: true },
+        },
+      ],
+    }),
+    syncRunNow,
+  });
+  connectFlow.start("instagram", []);
+  await act(async () => {
+    root.render(<ConnectWaitSection />);
+  });
+
+  await vi.waitFor(() => {
+    expect(host.textContent).toContain(
+      "Choose what Pond imports, then start the first sync.",
+    );
+  });
+  expect(host.textContent).toContain("Saved Posts");
+  expect(host.textContent).toContain("Liked Posts");
+  expect(host.textContent).not.toContain("Pond is syncing");
+  expect(syncRunNow).not.toHaveBeenCalled();
 });
 
 it("fails when Pond cannot open the sign-in page", async () => {

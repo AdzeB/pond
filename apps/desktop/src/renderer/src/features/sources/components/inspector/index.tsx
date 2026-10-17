@@ -22,6 +22,7 @@ import {
   type WatchRow,
   watchKindLabel,
 } from "@/features/sources/hooks/use-watches";
+import { importScopeSummary } from "@/features/sources/lib/import-scope";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import {
   accountMenuTarget,
@@ -136,6 +137,12 @@ function AccountInspector({ id }: { id: string }) {
         {
           label: "Saved Items",
           value: formatNumber(account.sync.knownCount),
+        },
+        {
+          label: "Imports",
+          value: account.sync.importPending
+            ? "Not started"
+            : importScopeSummary(account.source, account.sync.importScope),
         },
         { label: "Added", value: addedLabel(account.addedAt) },
       ]}
