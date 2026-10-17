@@ -21,6 +21,7 @@ export {
   type TableColumn,
   useDataTable,
 } from "./data-table";
+export { DatePicker, type DatePickerProps } from "./date-picker";
 export { Dialog } from "./dialog";
 export { Drawer } from "./drawer";
 export { Empty } from "./empty";
