@@ -7,6 +7,7 @@ import {
   cardMedia,
   transitionSave,
   viewerMedia,
+  viewerStage,
 } from "@/features/saves/lib/save-transition";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { primarySelection, selection } from "@/features/saves/state/selection";
@@ -40,6 +41,7 @@ export function openSave(id: string): void {
     path,
     source: cardMedia(id),
     target: viewerMedia,
+    stage: viewerStage,
   });
 }
 

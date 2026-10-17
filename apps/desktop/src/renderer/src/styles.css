@@ -166,14 +166,19 @@ html[data-reduce-motion="true"] *::after {
 
 ::view-transition-group(root),
 ::view-transition-group(save-media) {
-  animation-duration: var(--ds-duration-emphasized);
-  animation-timing-function: var(--ds-easing-snap);
+  animation-duration: var(--ds-duration-slow);
+  animation-timing-function: var(--ds-easing-emphasized);
+}
+
+/* The morph scales this box from the top-left corner; images overscaled to keep their aspect are clipped to it. */
+::view-transition-group(save-media) {
+  overflow: clip;
+  transform-origin: 0 0;
 }
 
 ::view-transition-old(save-media),
 ::view-transition-new(save-media) {
   height: 100%;
-  object-fit: cover;
 }
 
 html[data-reduce-motion="true"]::view-transition-group(*),

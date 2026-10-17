@@ -9,6 +9,7 @@ import {
   containImage,
   viewToImagePoint,
 } from "@/features/saves/lib/image-regions";
+import { onTransitionMeasure } from "@/features/saves/lib/save-transition";
 import {
   FIT_POSE,
   type ImagePose,
@@ -158,13 +159,24 @@ export function useImageViewport({
   useLayoutEffect(() => {
     const element = frame.current;
     if (!element) return;
-    const measure = () =>
-      setSize({ width: element.clientWidth, height: element.clientHeight });
+    const measure = () => {
+      const width = element.clientWidth;
+      const height = element.clientHeight;
+      setSize((current) =>
+        current.width === width && current.height === height
+          ? current
+          : { width, height },
+      );
+    };
     measure();
-    if (!globalThis.ResizeObserver) return;
+    const release = onTransitionMeasure(measure);
+    if (!globalThis.ResizeObserver) return release;
     const observer = new ResizeObserver(measure);
     observer.observe(element);
-    return () => observer.disconnect();
+    return () => {
+      release();
+      observer.disconnect();
+    };
   }, []);
 
   const wheelState = useRef({
