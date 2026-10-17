@@ -113,16 +113,27 @@ function Info({
   ...props
 }: InfoProps) {
   return (
-    <TooltipWrapper label={label} side={side}>
-      <button
-        type="button"
-        className={clsx(styles.info, className)}
-        aria-label={ariaLabel}
-        {...props}
+    <Root>
+      <Trigger
+        render={
+          <button
+            type="button"
+            className={clsx(styles.info, className)}
+            aria-label={ariaLabel}
+            {...props}
+          />
+        }
       >
         <IconInfo size={12} strokeWidth={1.75} />
-      </button>
-    </TooltipWrapper>
+      </Trigger>
+      <Portal>
+        <Positioner side={side}>
+          <Popup>
+            <span className={clsx(styles.body, styles.note)}>{label}</span>
+          </Popup>
+        </Positioner>
+      </Portal>
+    </Root>
   );
 }
 
