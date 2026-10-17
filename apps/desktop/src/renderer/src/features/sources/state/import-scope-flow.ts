@@ -12,8 +12,10 @@ import {
 } from "@shared/import-scope";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-
-export type ImportScopeMode = "all" | "collections";
+import {
+  type SincePreset,
+  sinceForPreset,
+} from "@/features/sources/lib/import-scope";
 
 export interface ImportScopeAccount {
   id: string;
@@ -31,11 +33,13 @@ interface ImportScopeFlowState {
   /** A pending Account starts its first sync on confirm; an active one only saves. */
   starts: boolean;
   listKinds: readonly ListKind[];
-  mode: ImportScopeMode;
+  /** Empty imports the whole saved list. */
   collections: readonly ImportCollection[];
+  addToFolders: boolean;
   mediaKinds: readonly ImportMediaKind[];
   /** Local `YYYY-MM-DD`; empty imports every date. */
   since: string;
+  sincePreset: SincePreset;
   saving: boolean;
   error: string | null;
 }
@@ -45,10 +49,11 @@ const EMPTY: ImportScopeFlowState = {
   source: null,
   starts: false,
   listKinds: [],
-  mode: "all",
   collections: [],
+  addToFolders: true,
   mediaKinds: [],
   since: "",
+  sincePreset: "any",
   saving: false,
   error: null,
 };
@@ -66,10 +71,11 @@ export const importScopeFlow = {
       source: account.source,
       starts: account.sync.importPending === true,
       listKinds: scope?.listKinds ?? options.listKinds,
-      mode: collections.length > 0 ? "collections" : "all",
       collections,
+      addToFolders: scope?.addToFolders !== false,
       mediaKinds: scope?.mediaKinds ?? options.mediaKinds,
       since: scope?.since ?? "",
+      sincePreset: scope?.since ? "custom" : "any",
     }));
   },
   setListKind(kind: ListKind, included: boolean): void {
@@ -81,27 +87,22 @@ export const importScopeFlow = {
         : s.listKinds.filter((k) => k !== kind),
     }));
   },
-  setMode(mode: ImportScopeMode): void {
-    store.setState((s) => (s.mode === mode ? s : { ...s, mode, error: null }));
+  setCollections(collections: readonly ImportCollection[]): void {
+    store.setState((s) => ({ ...s, collections, error: null }));
   },
-  setCollection(collection: ImportCollection, included: boolean): void {
+  setAddToFolders(addToFolders: boolean): void {
+    store.setState((s) => ({ ...s, addToFolders, error: null }));
+  },
+  setMediaKinds(mediaKinds: readonly ImportMediaKind[]): void {
+    if (mediaKinds.length === 0) return;
+    store.setState((s) => ({ ...s, mediaKinds, error: null }));
+  },
+  setSincePreset(sincePreset: SincePreset): void {
     store.setState((s) => ({
       ...s,
+      sincePreset,
+      since: sincePreset === "custom" ? s.since : sinceForPreset(sincePreset),
       error: null,
-      collections: included
-        ? s.collections.some((c) => c.id === collection.id)
-          ? s.collections
-          : [...s.collections, collection]
-        : s.collections.filter((c) => c.id !== collection.id),
-    }));
-  },
-  setMediaKind(kind: ImportMediaKind, included: boolean): void {
-    store.setState((s) => ({
-      ...s,
-      error: null,
-      mediaKinds: included
-        ? Array.from(new Set([...s.mediaKinds, kind]))
-        : s.mediaKinds.filter((k) => k !== kind),
     }));
   },
   setSince(since: string): void {
@@ -125,15 +126,21 @@ export const importScopeFlow = {
 export function draftImportScope(
   state: Pick<
     ImportScopeFlowState,
-    "source" | "listKinds" | "mode" | "collections" | "mediaKinds" | "since"
+    | "source"
+    | "listKinds"
+    | "collections"
+    | "addToFolders"
+    | "mediaKinds"
+    | "since"
   >,
 ): ImportScope | null {
   if (!state.source) return null;
   const options = importScopeOptions(state.source);
   const scope: ImportScope = {};
   if (options.listKinds.length > 0) scope.listKinds = [...state.listKinds];
-  if (options.collections && state.mode === "collections") {
+  if (options.collections && state.collections.length > 0) {
     scope.collections = [...state.collections];
+    if (!state.addToFolders) scope.addToFolders = false;
   }
   if (options.mediaKinds.length > 0) scope.mediaKinds = [...state.mediaKinds];
   if (options.since && state.since) scope.since = state.since;

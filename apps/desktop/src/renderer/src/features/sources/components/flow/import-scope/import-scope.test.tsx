@@ -70,14 +70,12 @@ async function renderFor(account: ImportScopeAccount): Promise<void> {
   });
 }
 
-function checkbox(label: string): HTMLElement {
-  const element = Array.from(host.querySelectorAll("label")).find(
-    (candidate) => candidate.textContent === label,
+function toggle(label: string): HTMLElement {
+  const found = host.querySelector<HTMLElement>(
+    `[role="switch"][aria-label="${label}"]`,
   );
-  const target =
-    element?.parentElement?.querySelector<HTMLElement>('[role="checkbox"]');
-  if (!target) throw new Error(`Missing checkbox: ${label}`);
-  return target;
+  if (!found) throw new Error(`Missing switch: ${label}`);
+  return found;
 }
 
 function button(label: string): HTMLButtonElement {
@@ -88,14 +86,28 @@ function button(label: string): HTMLButtonElement {
   return found;
 }
 
+async function choose(field: string, option: string): Promise<void> {
+  const trigger = host.querySelector<HTMLElement>(`[aria-label="${field}"]`);
+  if (!trigger) throw new Error(`Missing select: ${field}`);
+  await act(async () => trigger.click());
+  const found = await vi.waitFor(() => {
+    const match = Array.from(
+      document.querySelectorAll<HTMLElement>('[role="option"]'),
+    ).find((element) => element.textContent?.startsWith(option));
+    if (!match) throw new Error(`Missing option: ${option}`);
+    return match;
+  });
+  await act(async () => found.click());
+}
+
 it("starts the first import with only the lists you keep", async () => {
   await renderFor({
     id: "acc-instagram",
     source: "instagram",
     sync: { importPending: true },
   });
-  expect(checkbox("Saved Posts").getAttribute("aria-checked")).toBe("true");
-  await act(async () => checkbox("Liked Posts").click());
+  expect(toggle("Saved Posts").getAttribute("aria-checked")).toBe("true");
+  await act(async () => toggle("Liked Posts").click());
   await act(async () => button("Start Import").click());
 
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
@@ -111,30 +123,47 @@ it("won't start an import that would bring in nothing", async () => {
     source: "youtube",
     sync: { importPending: true },
   });
-  await act(async () => checkbox("Saved Videos").click());
-  await act(async () => checkbox("Liked Videos").click());
+  await act(async () => toggle("Saved Videos").click());
+  await act(async () => toggle("Liked Videos").click());
   expect(button("Start Import").disabled).toBe(true);
 });
 
-it("imports chosen Pinterest boards", async () => {
+it("imports chosen Pinterest boards into Folders", async () => {
   await renderFor({
     id: "acc-pinterest",
     source: "pinterest",
     sync: { importPending: true },
   });
-  await act(async () => button("Specific Boards").click());
-  await vi.waitFor(() => {
-    expect(host.textContent).toContain("Design References");
-  });
-  expect(host.textContent).toContain("42 pins");
-  expect(host.textContent).toContain("1 pin");
-  expect(button("Start Import").disabled).toBe(true);
+  expect(host.textContent).toContain("All Pins");
+  expect(host.textContent).not.toContain("Add to Folders");
 
-  await act(async () => checkbox("Design References").click());
+  await choose("Boards", "Design References");
+  expect(document.body.textContent).toContain("42 pins");
+  expect(document.body.textContent).toContain("1 pin");
+  await vi.waitFor(() => {
+    expect(toggle("Add to Folders").getAttribute("aria-checked")).toBe("true");
+  });
   await act(async () => button("Start Import").click());
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-pinterest",
     scope: { collections: [{ id: "915", name: "Design References" }] },
+  });
+});
+
+it("keeps chosen boards out of Folders when you turn it off", async () => {
+  await renderFor({
+    id: "acc-pinterest",
+    source: "pinterest",
+    sync: { importScope: { collections: [{ id: "915", name: "Design" }] } },
+  });
+  await act(async () => toggle("Add to Folders").click());
+  await act(async () => button("Save").click());
+  expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+    accountId: "acc-pinterest",
+    scope: {
+      collections: [{ id: "915", name: "Design" }],
+      addToFolders: false,
+    },
   });
 });
 
@@ -153,6 +182,12 @@ it("explains a board list Pond couldn't load", async () => {
     source: "pinterest",
     sync: { importScope: { collections: [{ id: "915", name: "Design" }] } },
   });
+  expect(query).not.toHaveBeenCalledWith(
+    "accounts.importOptions",
+    expect.anything(),
+  );
+  const trigger = host.querySelector<HTMLElement>('[aria-label="Boards"]');
+  await act(async () => trigger?.click());
   await vi.waitFor(() => {
     expect(host.textContent).toContain("Pinterest signed you out.");
   });
@@ -165,8 +200,8 @@ it("saves a change for an active Account without starting a sync", async () => {
     source: "instagram",
     sync: { importScope: { listKinds: ["liked"] } },
   });
-  expect(checkbox("Saved Posts").getAttribute("aria-checked")).toBe("false");
-  await act(async () => checkbox("Saved Posts").click());
+  expect(toggle("Saved Posts").getAttribute("aria-checked")).toBe("false");
+  await act(async () => toggle("Saved Posts").click());
   await act(async () => button("Save").click());
 
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
@@ -182,7 +217,7 @@ it("starts a TikTok import from Liked Videos alone", async () => {
     source: "tiktok",
     sync: { importPending: true },
   });
-  await act(async () => checkbox("Favorites").click());
+  await act(async () => toggle("Favorites").click());
   await act(async () => button("Start Import").click());
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-tiktok",
@@ -196,10 +231,10 @@ it("hides collections while the saved list is off", async () => {
     source: "instagram",
     sync: { importPending: true },
   });
-  expect(button("Specific Collections")).toBeTruthy();
-  await act(async () => checkbox("Saved Posts").click());
+  expect(host.textContent).toContain("All Saved Posts");
+  await act(async () => toggle("Saved Posts").click());
   await vi.waitFor(() => {
-    expect(host.textContent).not.toContain("Specific Collections");
+    expect(host.textContent).not.toContain("All Saved Posts");
   });
 });
 
@@ -209,9 +244,13 @@ it("saves media and date filters with the scope", async () => {
     source: "reddit",
     sync: { importPending: true },
   });
-  await act(async () => checkbox("Text Posts").click());
-  const date = host.querySelector<HTMLInputElement>('input[type="date"]');
-  if (!date) throw new Error("Missing date field");
+  await act(async () => button("Text Posts").click());
+  await choose("Posted Since", "Custom Date");
+  const date = await vi.waitFor(() => {
+    const field = host.querySelector<HTMLInputElement>('input[type="date"]');
+    if (!field) throw new Error("Missing date field");
+    return field;
+  });
   await act(async () => {
     Object.getOwnPropertyDescriptor(
       HTMLInputElement.prototype,
@@ -224,4 +263,14 @@ it("saves media and date filters with the scope", async () => {
     accountId: "acc-reddit",
     scope: { mediaKinds: ["image", "video"], since: "2026-01-01" },
   });
+});
+
+it("keeps at least one kind of post", async () => {
+  await renderFor({
+    id: "acc-reddit",
+    source: "reddit",
+    sync: { importScope: { mediaKinds: ["video"] } },
+  });
+  await act(async () => button("Videos").click());
+  expect(button("Videos").hasAttribute("data-pressed")).toBe(true);
 });

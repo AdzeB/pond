@@ -99,6 +99,7 @@ function readSaves(accountId, since) {
     listKinds: { saved: 0, liked: 0, both: 0 },
     completeText: 0,
     completeBeforeSince: 0,
+    folders: [],
     recent: [],
   };
   const file = indexDbPath();
@@ -151,6 +152,17 @@ function readSaves(accountId, since) {
                and status = 'complete' and published_at < ?`,
             )
             .get(accountId, sinceMs).n;
+    saves.folders = db
+      .prepare(
+        `select coalesce(p.name || '/', '') || f.name as path, count(*) as count
+         from save_folders sf
+         join saves s on s.id = sf.save_id
+         join folders f on f.id = sf.folder_id
+         left join folders p on p.id = f.parent_id
+         where s.account_id = ? and s.deleted_at is null
+         group by f.id order by count desc`,
+      )
+      .all(accountId);
     saves.recent = db
       .prepare(
         `select title, url, status, json_extract(raw_json, '$.importFilter') as filter,

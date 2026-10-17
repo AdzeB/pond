@@ -30,40 +30,40 @@ const MEDIA_KIND_LABELS = {
 } satisfies Record<ImportMediaKind, string>;
 
 interface CollectionNouns {
+  one: string;
   many: string;
   title: string;
   all: string;
-  some: string;
   item: { one: string; many: string };
 }
 
 const COLLECTION_NOUNS = {
   board: {
+    one: "board",
     many: "boards",
     title: "Boards",
     all: "All Pins",
-    some: "Specific Boards",
     item: { one: "pin", many: "pins" },
   },
   collection: {
+    one: "collection",
     many: "collections",
     title: "Collections",
     all: "All Saved Posts",
-    some: "Specific Collections",
     item: { one: "post", many: "posts" },
   },
   folder: {
+    one: "bookmark folder",
     many: "folders",
     title: "Folders",
     all: "All Bookmarks",
-    some: "Specific Folders",
     item: { one: "post", many: "posts" },
   },
   playlist: {
+    one: "playlist",
     many: "playlists",
     title: "Playlists",
     all: "Watch Later",
-    some: "Specific Playlists",
     item: { one: "video", many: "videos" },
   },
 } satisfies Record<ImportCollectionKind, CollectionNouns>;
@@ -130,7 +130,44 @@ function whatSummary(source: Source, scope: ImportScope | undefined): string {
   return scope?.mediaKinds || scope?.since ? "" : "Everything";
 }
 
-function formatSince(since: string): string {
+export type SincePreset =
+  | "any"
+  | "month"
+  | "quarter"
+  | "half"
+  | "year"
+  | "custom";
+
+const SINCE_PRESET_MONTHS = {
+  month: 1,
+  quarter: 3,
+  half: 6,
+  year: 12,
+} satisfies Record<Exclude<SincePreset, "any" | "custom">, number>;
+
+export const SINCE_PRESETS = [
+  { value: "any", label: "Any Time" },
+  { value: "month", label: "Past Month" },
+  { value: "quarter", label: "Past 3 Months" },
+  { value: "half", label: "Past 6 Months" },
+  { value: "year", label: "Past Year" },
+  { value: "custom", label: "Custom Date" },
+] as const satisfies ReadonlyArray<{ value: SincePreset; label: string }>;
+
+/** The local `YYYY-MM-DD` a preset starts from; empty for any time or a custom date. */
+export function sinceForPreset(preset: SincePreset, now = new Date()): string {
+  if (preset === "any" || preset === "custom") return "";
+  const start = new Date(
+    now.getFullYear(),
+    now.getMonth() - SINCE_PRESET_MONTHS[preset],
+    now.getDate(),
+  );
+  const month = String(start.getMonth() + 1).padStart(2, "0");
+  const day = String(start.getDate()).padStart(2, "0");
+  return `${start.getFullYear()}-${month}-${day}`;
+}
+
+export function formatSince(since: string): string {
   const start = sinceStart(since);
   return start
     ? start.toLocaleDateString(undefined, {

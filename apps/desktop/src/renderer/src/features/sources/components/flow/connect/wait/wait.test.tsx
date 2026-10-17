@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -83,7 +84,11 @@ afterEach(async () => {
 it("marks the wait screen connected when a new account arrives", async () => {
   connectFlow.start("twitter", []);
   await act(async () => {
-    root.render(<ConnectWaitSection />);
+    root.render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ConnectWaitSection />
+      </QueryClientProvider>,
+    );
   });
   await vi.waitFor(() => {
     expect(host.textContent).toContain("Pond is syncing your saved posts now.");
@@ -99,7 +104,11 @@ it("marks the wait screen connected when an existing account is reimported", asy
   });
   connectFlow.start("twitter", ["acc-twitter"]);
   await act(async () => {
-    root.render(<ConnectWaitSection />);
+    root.render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ConnectWaitSection />
+      </QueryClientProvider>,
+    );
   });
   await act(async () => {
     await Promise.resolve();
@@ -120,7 +129,11 @@ it("explains the local connection before the account arrives", async () => {
   stubPond();
   connectFlow.start("twitter", ["acc-twitter"]);
   await act(async () => {
-    root.render(<ConnectWaitSection />);
+    root.render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ConnectWaitSection />
+      </QueryClientProvider>,
+    );
   });
   await act(async () => {
     await Promise.resolve();
@@ -156,7 +169,11 @@ it("keeps waiting when a signed-out browser profile sends its session", async ()
   );
   connectFlow.start("twitter", ["acc-twitter"]);
   await act(async () => {
-    root.render(<ConnectWaitSection />);
+    root.render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ConnectWaitSection />
+      </QueryClientProvider>,
+    );
   });
 
   const notifyImportFailed = importFailed;
@@ -203,7 +220,11 @@ it("asks what to import before a new account syncs", async () => {
   });
   connectFlow.start("instagram", []);
   await act(async () => {
-    root.render(<ConnectWaitSection />);
+    root.render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ConnectWaitSection />
+      </QueryClientProvider>,
+    );
   });
 
   await vi.waitFor(() => {
@@ -225,7 +246,11 @@ it("fails when Pond cannot open the sign-in page", async () => {
   });
   connectFlow.start("instagram", []);
   await act(async () => {
-    root.render(<ConnectWaitSection />);
+    root.render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ConnectWaitSection />
+      </QueryClientProvider>,
+    );
   });
 
   await vi.waitFor(() => {

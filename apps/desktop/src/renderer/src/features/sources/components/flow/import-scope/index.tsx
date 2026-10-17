@@ -1,10 +1,18 @@
-import type { ImportCollection } from "@pond/schema/db";
+import type {
+  ImportCollection,
+  ImportMediaKind,
+  ListKind,
+  Source,
+} from "@pond/schema/db";
 import {
   Button,
-  Checkbox,
   Dialog,
   Input,
   Reveal,
+  Select,
+  type SelectItemSpec,
+  Settings,
+  Switch,
   Toggle,
   ToggleGroup,
 } from "@pond/ui";
@@ -14,25 +22,28 @@ import {
 } from "@shared/import-scope";
 import type { OkResult } from "@shared/query-contracts-shared";
 import { useQuery } from "@tanstack/react-query";
-import { useId } from "react";
+import { type ReactNode, useState } from "react";
 import {
   collectionNouns,
+  formatSince,
   hasImportChoices,
   listKindLabel,
   mediaKindLabel,
+  SINCE_PRESETS,
   saveImportScope,
 } from "@/features/sources/lib/import-scope";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import { connectFlow } from "@/features/sources/state/connect-flow";
 import {
   draftImportScope,
-  type ImportScopeMode,
   importScopeFlow,
   useImportScopeFlow,
 } from "@/features/sources/state/import-scope-flow";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import { formatNumber } from "@/shared/lib/format";
 import styles from "./styles.module.css";
+
+const ALL = "all";
 
 export function ImportScopeSection() {
   const draft = useImportScopeFlow();
@@ -59,55 +70,37 @@ export function ImportScopeChoices() {
   if (!accountId || !source) return null;
   const options = importScopeOptions(source);
   const label = getSourceDef(source).label;
-  const savedChosen =
-    options.listKinds.length === 0 || draft.listKinds.includes("saved");
+  const collections = options.collections ? (
+    <CollectionRows
+      accountId={accountId}
+      source={source}
+      kind={options.collections}
+    />
+  ) : null;
+  const filters = options.mediaKinds.length > 0 || options.since;
   return (
     <div className={styles.choices}>
       {options.listKinds.length > 0 ? (
-        <fieldset className={styles.group}>
-          <legend className={styles.heading}>Lists</legend>
+        <Settings.List>
           {options.listKinds.map((kind) => (
-            <ChoiceRow
-              key={kind}
-              label={listKindLabel(source, kind)}
-              checked={draft.listKinds.includes(kind)}
-              disabled={draft.saving}
-              onCheckedChange={(included) =>
-                importScopeFlow.setListKind(kind, included)
-              }
-            />
+            <ListKindRows key={kind} source={source} kind={kind}>
+              {kind === "saved" ? collections : null}
+            </ListKindRows>
           ))}
-        </fieldset>
+        </Settings.List>
+      ) : collections ? (
+        <Settings.List>{collections}</Settings.List>
       ) : null}
-      {options.collections ? (
-        <Reveal visible={savedChosen}>
-          <CollectionChoices
-            accountId={accountId}
-            kind={options.collections}
-            mode={draft.mode}
-            selected={draft.collections}
-            disabled={draft.saving}
-          />
-        </Reveal>
-      ) : null}
-      {options.mediaKinds.length > 0 ? (
-        <fieldset className={styles.group}>
-          <legend className={styles.heading}>Kinds of Posts</legend>
-          {options.mediaKinds.map((kind) => (
-            <ChoiceRow
-              key={kind}
-              label={mediaKindLabel(kind)}
-              checked={draft.mediaKinds.includes(kind)}
-              disabled={draft.saving}
-              onCheckedChange={(included) =>
-                importScopeFlow.setMediaKind(kind, included)
-              }
-            />
-          ))}
-        </fieldset>
-      ) : null}
-      {options.since ? (
-        <SinceChoice since={draft.since} disabled={draft.saving} />
+      {filters ? (
+        <div className={styles.section}>
+          <h3 className={styles.heading}>Filters</h3>
+          <Settings.List>
+            {options.mediaKinds.length > 0 ? (
+              <MediaKindsRow kinds={options.mediaKinds} />
+            ) : null}
+            {options.since ? <SinceRows /> : null}
+          </Settings.List>
+        </div>
       ) : null}
       {!hasImportChoices(source) ? (
         <p className={styles.note}>
@@ -162,193 +155,305 @@ async function confirmImportScope(): Promise<void> {
   sourceFlow.close();
 }
 
-function CollectionChoices({
-  accountId,
+function ListKindRows({
+  source,
   kind,
-  mode,
-  selected,
-  disabled,
+  children,
 }: {
-  accountId: string;
-  kind: ImportCollectionKind;
-  mode: ImportScopeMode;
-  selected: readonly ImportCollection[];
-  disabled: boolean;
+  source: Source;
+  kind: ListKind;
+  children: ReactNode;
 }) {
-  const nouns = collectionNouns(kind);
+  const draft = useImportScopeFlow();
+  const title = listKindLabel(source, kind);
+  const included = draft.listKinds.includes(kind);
   return (
-    <div className={styles.group}>
-      <ToggleGroup
-        aria-label="What to import"
-        value={[mode]}
-        onValueChange={(value) => {
-          const next = value[0];
-          if (next === "all" || next === "collections") {
-            importScopeFlow.setMode(next);
-          }
-        }}
-      >
-        <Toggle type="button" size="sm" value="all" disabled={disabled}>
-          {nouns.all}
-        </Toggle>
-        <Toggle type="button" size="sm" value="collections" disabled={disabled}>
-          {nouns.some}
-        </Toggle>
-      </ToggleGroup>
-      <Reveal visible={mode === "collections"}>
-        <CollectionList
-          accountId={accountId}
-          kind={kind}
-          selected={selected}
-          disabled={disabled}
-        />
-      </Reveal>
-    </div>
+    <>
+      <Settings.Item>
+        <Settings.ItemDetails>
+          <Settings.ItemTitle>{title}</Settings.ItemTitle>
+        </Settings.ItemDetails>
+        <Settings.ItemControl>
+          <Switch.Root
+            aria-label={title}
+            checked={included}
+            disabled={draft.saving}
+            onCheckedChange={(next) => importScopeFlow.setListKind(kind, next)}
+          />
+        </Settings.ItemControl>
+      </Settings.Item>
+      {children ? (
+        <Reveal visible={included}>
+          <div className={styles.nested}>{children}</div>
+        </Reveal>
+      ) : null}
+    </>
   );
 }
 
-function CollectionList({
+function CollectionRows({
   accountId,
+  source,
   kind,
-  selected,
-  disabled,
 }: {
   accountId: string;
+  source: Source;
   kind: ImportCollectionKind;
-  selected: readonly ImportCollection[];
-  disabled: boolean;
 }) {
+  const draft = useImportScopeFlow();
   const nouns = collectionNouns(kind);
+  const label = getSourceDef(source).label;
+  const [requested, setRequested] = useState(false);
   const query = useQuery({
     queryKey: ["import-options", accountId],
     queryFn: () => window.pond.query("accounts.importOptions", { accountId }),
     staleTime: 60_000,
+    enabled: requested,
   });
-  if (query.isPending) {
-    return (
-      <p className={styles.status} role="status">
-        Loading {nouns.many}
-      </p>
-    );
-  }
-  const result = query.data;
-  if (!result?.ok) {
-    return (
-      <div className={styles.status} role="alert">
-        <span>
-          {result?.error ?? `Pond couldn't load your ${nouns.many}. Try again.`}
-        </span>
-        <Button
-          size="xs"
-          variant="secondary"
-          onClick={() => void query.refetch()}
-        >
-          Try Again
-        </Button>
-      </div>
-    );
-  }
-  const collections = result.collections ?? [];
-  if (collections.length === 0) {
-    return (
-      <p className={styles.status} role="status">
-        No {nouns.many} found
-      </p>
-    );
-  }
-  const chosen = new Set(selected.map((collection) => collection.id));
+  const failed = query.data && !query.data.ok ? query.data.error : null;
   return (
-    <fieldset className={styles.list} aria-label={nouns.title}>
-      {collections.map((collection) => (
-        <ChoiceRow
-          key={collection.id}
-          label={collection.name}
-          detail={
-            collection.itemCount == null
-              ? undefined
-              : `${formatNumber(collection.itemCount)} ${
-                  collection.itemCount === 1 ? nouns.item.one : nouns.item.many
-                }`
-          }
-          checked={chosen.has(collection.id)}
-          disabled={disabled}
-          onCheckedChange={(included) =>
-            importScopeFlow.setCollection(
-              { id: collection.id, name: collection.name },
-              included,
+    <>
+      <Settings.Item>
+        <Settings.ItemDetails>
+          <Settings.ItemTitle>{nouns.title}</Settings.ItemTitle>
+          {failed ? (
+            <Settings.ItemDescription role="alert" title={failed}>
+              {failed}
+            </Settings.ItemDescription>
+          ) : null}
+        </Settings.ItemDetails>
+        <Settings.ItemControl>
+          {failed ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => void query.refetch()}
+            >
+              Try Again
+            </Button>
+          ) : (
+            <CollectionSelect
+              kind={kind}
+              pending={query.isPending}
+              available={query.data?.ok ? (query.data.collections ?? []) : []}
+              selected={draft.collections}
+              disabled={draft.saving}
+              onOpen={() => setRequested(true)}
+            />
+          )}
+        </Settings.ItemControl>
+      </Settings.Item>
+      <Reveal visible={draft.collections.length > 0}>
+        <Settings.Item>
+          <Settings.ItemDetails>
+            <Settings.ItemTitle>Add to Folders</Settings.ItemTitle>
+            <Settings.ItemDescription>
+              Files each {nouns.one} into its own Folder under {label}.
+            </Settings.ItemDescription>
+          </Settings.ItemDetails>
+          <Settings.ItemControl>
+            <Switch.Root
+              aria-label="Add to Folders"
+              checked={draft.addToFolders}
+              disabled={draft.saving}
+              onCheckedChange={(next) => importScopeFlow.setAddToFolders(next)}
+            />
+          </Settings.ItemControl>
+        </Settings.Item>
+      </Reveal>
+    </>
+  );
+}
+
+function CollectionSelect({
+  kind,
+  pending,
+  available,
+  selected,
+  disabled,
+  onOpen,
+}: {
+  kind: ImportCollectionKind;
+  pending: boolean;
+  available: ReadonlyArray<ImportCollection & { itemCount?: number | null }>;
+  selected: readonly ImportCollection[];
+  disabled: boolean;
+  onOpen: () => void;
+}) {
+  const nouns = collectionNouns(kind);
+  const names = new Map(
+    [...selected, ...available].map((collection) => [
+      collection.id,
+      collection.name,
+    ]),
+  );
+  const value = selected.length > 0 ? selected.map((c) => c.id) : [ALL];
+  const status = pending
+    ? `Loading ${nouns.many}`
+    : available.length === 0
+      ? `No ${nouns.many} found`
+      : null;
+  const items: SelectItemSpec<string>[] = [
+    { value: ALL, label: nouns.all },
+    { type: "separator" },
+    ...(status
+      ? [
+          {
+            type: "custom" as const,
+            render: () => (
+              <p className={styles.status} role="status">
+                {status}
+              </p>
+            ),
+          },
+        ]
+      : available.map((collection) => ({
+          value: collection.id,
+          label: (
+            <span className={styles.option}>
+              <span className={styles.name}>{collection.name}</span>
+              {collection.itemCount == null ? null : (
+                <span className={styles.count}>
+                  {formatNumber(collection.itemCount)}{" "}
+                  {collection.itemCount === 1
+                    ? nouns.item.one
+                    : nouns.item.many}
+                </span>
+              )}
+            </span>
+          ),
+        }))),
+  ];
+  const [first] = selected;
+  const summary =
+    selected.length === 0
+      ? nouns.all
+      : selected.length === 1 && first
+        ? first.name
+        : `${selected.length} ${nouns.many}`;
+  return (
+    <Select.Root
+      multiple
+      value={value}
+      disabled={disabled}
+      onOpenChange={(open) => {
+        if (open) onOpen();
+      }}
+      onValueChange={(next) => {
+        const chosenAll = next.includes(ALL) && !value.includes(ALL);
+        const ids = chosenAll ? [] : next.filter((id) => id !== ALL);
+        importScopeFlow.setCollections(
+          ids.map((id) => ({ id, name: names.get(id) ?? id })),
+        );
+      }}
+    >
+      <Select.Trigger size="sm" aria-label={nouns.title}>
+        <Select.Value className={styles.value}>{() => summary}</Select.Value>
+      </Select.Trigger>
+      <Select.Portal>
+        <Select.Positioner align="end">
+          <Select.Popup>
+            <Select.Items items={items} />
+          </Select.Popup>
+        </Select.Positioner>
+      </Select.Portal>
+    </Select.Root>
+  );
+}
+
+function MediaKindsRow({ kinds }: { kinds: readonly ImportMediaKind[] }) {
+  const draft = useImportScopeFlow();
+  return (
+    <Settings.Item>
+      <Settings.ItemDetails>
+        <Settings.ItemTitle>Kinds of Posts</Settings.ItemTitle>
+      </Settings.ItemDetails>
+      <Settings.ItemControl>
+        <ToggleGroup
+          multiple
+          variant="outline"
+          aria-label="Kinds of Posts"
+          value={[...draft.mediaKinds]}
+          disabled={draft.saving}
+          onValueChange={(next) =>
+            importScopeFlow.setMediaKinds(
+              kinds.filter((kind) => next.includes(kind)),
             )
           }
-        />
-      ))}
-    </fieldset>
-  );
-}
-
-function SinceChoice({
-  since,
-  disabled,
-}: {
-  since: string;
-  disabled: boolean;
-}) {
-  const id = useId();
-  return (
-    <div className={styles.row}>
-      <label className={styles.label} htmlFor={id}>
-        Posted Since
-      </label>
-      <Input.Root size="sm" className={styles.date}>
-        <Input.Field
-          id={id}
-          type="date"
-          value={since}
-          disabled={disabled}
-          onChange={(event) => importScopeFlow.setSince(event.target.value)}
-        />
-      </Input.Root>
-      {since ? (
-        <Button
-          size="xs"
-          variant="ghost"
-          disabled={disabled}
-          onClick={() => importScopeFlow.setSince("")}
         >
-          Any Date
-        </Button>
-      ) : null}
-    </div>
+          {kinds.map((kind) => (
+            <Toggle
+              key={kind}
+              type="button"
+              size="sm"
+              variant="outline"
+              value={kind}
+            >
+              {mediaKindLabel(kind)}
+            </Toggle>
+          ))}
+        </ToggleGroup>
+      </Settings.ItemControl>
+    </Settings.Item>
   );
 }
 
-function ChoiceRow({
-  label,
-  detail,
-  checked,
-  disabled,
-  onCheckedChange,
-}: {
-  label: string;
-  detail?: string | undefined;
-  checked: boolean;
-  disabled: boolean;
-  onCheckedChange: (checked: boolean) => void;
-}) {
-  const id = useId();
+function SinceRows() {
+  const draft = useImportScopeFlow();
+  const custom = draft.sincePreset === "custom";
   return (
-    <div className={styles.row}>
-      <Checkbox.Root
-        id={id}
-        size="sm"
-        checked={checked}
-        disabled={disabled}
-        onCheckedChange={(next) => onCheckedChange(next === true)}
-      >
-        <Checkbox.Indicator />
-      </Checkbox.Root>
-      <label className={styles.label} htmlFor={id}>
-        {label}
-      </label>
-      {detail ? <span className={styles.detail}>{detail}</span> : null}
-    </div>
+    <>
+      <Settings.Item>
+        <Settings.ItemDetails>
+          <Settings.ItemTitle>Posted Since</Settings.ItemTitle>
+          {draft.since && !custom ? (
+            <Settings.ItemDescription>
+              From {formatSince(draft.since)}
+            </Settings.ItemDescription>
+          ) : null}
+        </Settings.ItemDetails>
+        <Settings.ItemControl>
+          <Select.Root
+            value={draft.sincePreset}
+            items={[...SINCE_PRESETS]}
+            disabled={draft.saving}
+            onValueChange={(next) => {
+              if (next) importScopeFlow.setSincePreset(next);
+            }}
+          >
+            <Select.Trigger size="sm" aria-label="Posted Since">
+              <Select.Value />
+            </Select.Trigger>
+            <Select.Portal>
+              <Select.Positioner align="end">
+                <Select.Popup>
+                  <Select.Items items={[...SINCE_PRESETS]} />
+                </Select.Popup>
+              </Select.Positioner>
+            </Select.Portal>
+          </Select.Root>
+        </Settings.ItemControl>
+      </Settings.Item>
+      <Reveal visible={custom}>
+        <Settings.Item>
+          <Settings.ItemDetails>
+            <Settings.ItemTitle>Date</Settings.ItemTitle>
+          </Settings.ItemDetails>
+          <Settings.ItemControl>
+            <Input.Root size="sm" className={styles.date}>
+              <Input.Field
+                aria-label="Date"
+                type="date"
+                value={draft.since}
+                disabled={draft.saving}
+                onChange={(event) =>
+                  importScopeFlow.setSince(event.target.value)
+                }
+              />
+            </Input.Root>
+          </Settings.ItemControl>
+        </Settings.Item>
+      </Reveal>
+    </>
   );
 }

@@ -34,6 +34,26 @@ const connected = (e) => ({
   label: "Account connected in the sandbox",
   ok: e.account !== null,
 });
+/** Folder names come from `sourceLabel`, which still calls X "Twitter". */
+const FOLDER_ROOTS = {
+  twitter: "Twitter",
+  instagram: "Instagram",
+  youtube: "YouTube",
+};
+const filed = (e, source) => {
+  const paths = new Set(e.saves.folders.map((folder) => folder.path));
+  const chosen = scopeOf(e).collections ?? [];
+  const missing = chosen
+    .map((collection) => `${FOLDER_ROOTS[source]}/${collection.name}`)
+    .filter((path) => !paths.has(path));
+  return {
+    label:
+      missing.length === 0
+        ? `Saves filed into ${chosen.map((c) => `${FOLDER_ROOTS[source]}/${c.name}`).join(", ")}`
+        : `No saves in ${missing.join(", ")}`,
+    ok: chosen.length > 0 && missing.length === 0,
+  };
+};
 const started = (e) => ({
   label: "Import started (no longer waiting for a choice)",
   ok: e.account !== null && !e.account.importPending,
@@ -57,9 +77,9 @@ const STEPS = [
     steps: [
       "Sign in to X, then press Import Session.",
       "In Pond, open Sources, find the X Account, and choose Start Import from its menu.",
-      "Uncheck Likes. Choose Specific Folders and confirm your bookmark folders load.",
-      "Pick one folder. Under Kinds of Posts, uncheck Text Posts. Press Start Import.",
-      "When the sync finishes, confirm the Library only shows posts from that folder, and none are text-only.",
+      "Turn off Likes. Open the Folders menu under Bookmarks and confirm your bookmark folders load.",
+      "Pick one folder and leave Add to Folders on. Under Filters, turn off Text Posts. Press Start Import.",
+      "When the sync finishes, confirm the Library only shows posts from that folder, none are text-only, and they sit in a Twitter / folder name Folder.",
     ],
     checks: (e) => [
       connected(e),
@@ -87,6 +107,7 @@ const STEPS = [
         label: "No text-only saves in the Library",
         ok: e.saves.completeText === 0,
       },
+      filed(e, "twitter"),
       {
         label: `Saves skipped by the media filter: ${e.saves.filtered.media}`,
         ok: null,
@@ -100,9 +121,9 @@ const STEPS = [
     steps: [
       "Sign in to Instagram, then press Import Session.",
       "In Pond, choose Start Import from the Instagram Account menu.",
-      "Choose Specific Collections and confirm your collections load with post counts.",
-      "Pick one collection and press Start Import.",
-      "When the sync finishes, confirm only that collection's posts arrived.",
+      "Open the Collections menu and confirm your collections load with post counts.",
+      "Pick one collection, leave Add to Folders on, and press Start Import.",
+      "When the sync finishes, confirm only that collection's posts arrived, in an Instagram / collection name Folder.",
     ],
     checks: (e) => [
       connected(e),
@@ -112,6 +133,7 @@ const STEPS = [
         ok: (scopeOf(e).collections ?? []).length > 0,
       },
       hasSaves(e),
+      filed(e, "instagram"),
     ],
   },
   {
@@ -121,9 +143,9 @@ const STEPS = [
     steps: [
       "Sign in to YouTube, then press Import Session. If Google blocks the sign-in window, mark this step Skip.",
       "In Pond, choose Start Import from the YouTube Account menu.",
-      "Choose Specific Playlists and confirm your playlists load, with Watch Later first.",
-      "Pick one playlist other than Watch Later and press Start Import.",
-      "When the sync finishes, confirm only that playlist's videos arrived.",
+      "Open the Playlists menu and confirm your playlists load.",
+      "Pick one playlist other than Watch Later, leave Add to Folders on, and press Start Import.",
+      "When the sync finishes, confirm only that playlist's videos arrived, in a YouTube / playlist name Folder.",
     ],
     checks: (e) => [
       connected(e),
@@ -133,6 +155,7 @@ const STEPS = [
         ok: (scopeOf(e).collections ?? []).length > 0,
       },
       hasSaves(e),
+      filed(e, "youtube"),
     ],
   },
   {
@@ -142,7 +165,7 @@ const STEPS = [
     steps: [
       "Sign in to TikTok, then press Import Session.",
       "In Pond, choose Start Import from the TikTok Account menu.",
-      "Uncheck Favorites so only Liked Videos stays checked. Press Start Import.",
+      "Turn off Favorites so only Liked Videos stays on. Press Start Import.",
       "When the sync finishes, confirm only liked videos arrived.",
     ],
     checks: (e) => [
@@ -166,7 +189,7 @@ const STEPS = [
     steps: [
       "Sign in to Reddit, then press Import Session.",
       "In Pond, choose Start Import from the Reddit Account menu.",
-      "Uncheck Upvoted Posts. Set Posted Since to a date that cuts off some of your older saved posts. Press Start Import.",
+      "Turn off Upvoted Posts. Set Posted Since to Custom Date and pick a date that cuts off some of your older saved posts. Press Start Import.",
       "When the sync finishes, confirm nothing older than that date is in the Library.",
     ],
     checks: (e) => [
@@ -195,7 +218,7 @@ const STEPS = [
     sync: true,
     steps: [
       "In Pond, choose Choose What to Import from the Reddit Account menu.",
-      "Press Any Date to clear Posted Since, then press Save.",
+      "Set Posted Since to Any Time, then press Save.",
       "Press Sync Now here and wait for the sync to finish.",
       "Confirm the older saved posts now appear in the Library.",
     ],
