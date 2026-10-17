@@ -1,4 +1,9 @@
-import { MEDIA_TYPES, type Source } from "@pond/schema/db";
+import {
+  type ImportCollection,
+  MEDIA_TYPES,
+  type Source,
+} from "@pond/schema/db";
+import type { ImportCollectionOption } from "@shared/import-scope";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { markAtRisk, report } from "../../pipeline/rate-governor";
@@ -371,6 +376,41 @@ function buildListExpressionFor(
     case "local":
       return null;
   }
+}
+
+type CollectionListResult =
+  | { ok: true; collections: ImportCollectionOption[] }
+  | { ok: false; reason: "auth_required" | "rate_limited" | "unknown" };
+
+export async function listSourceCollections(
+  source: Source,
+  opts: { partition: string; accountKey: string },
+): Promise<CollectionListResult> {
+  if (source !== "pinterest") return { ok: false, reason: "unknown" };
+  const { listPinterestBoards } = await import("../harvest/pinterest/resource");
+  const result = await listPinterestBoards(opts.partition, opts.accountKey);
+  if (!result.ok) return result;
+  return {
+    ok: true,
+    collections: result.boards.map((board) => ({
+      id: board.id,
+      name: board.name,
+      itemCount: board.pinCount,
+    })),
+  };
+}
+
+export async function harvestSourceCollections(
+  source: Source,
+  collections: readonly ImportCollection[],
+  args: ListHarvestArgs,
+  opts: { partition: string },
+): Promise<ListHarvestResult> {
+  if (source !== "pinterest") return { ok: false, reason: "no_match" };
+  const { harvestPinterestBoards } = await import(
+    "../harvest/pinterest/resource"
+  );
+  return harvestPinterestBoards(args, collections, opts.partition);
 }
 
 export async function harvestInstagramLikedList(

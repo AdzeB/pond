@@ -15,8 +15,10 @@ export {
 } from "./harvest-bookmarks";
 export {
   harvestInstagramLikedList,
+  harvestSourceCollections,
   harvestSourceList,
   harvestYoutubeLikedList,
+  listSourceCollections,
 } from "./harvest-list";
 export { harvestThreadsLikes, harvestThreadsSaved } from "./harvest-saved";
 
