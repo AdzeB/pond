@@ -421,7 +421,11 @@ function SinceRows() {
               if (next) flow.setSincePreset(next);
             }}
           >
-            <Select.Trigger size="sm" aria-label="Posted Since">
+            <Select.Trigger
+              size="sm"
+              aria-label="Posted Since"
+              className={styles.control}
+            >
               <Select.Value />
             </Select.Trigger>
             <Select.Portal>
@@ -441,6 +445,7 @@ function SinceRows() {
         <Settings.ItemControl>
           <DatePicker
             aria-label="Date"
+            className={styles.date}
             value={draft.since}
             max={localDay(new Date())}
             disabled={draft.saving || !custom}

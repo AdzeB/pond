@@ -87,6 +87,15 @@
   align-items: stretch;
 }
 
+.control {
+  width: 148px;
+}
+
+.date {
+  composes: control;
+  justify-content: flex-start;
+}
+
 .retry {
   align-self: flex-start;
 }
