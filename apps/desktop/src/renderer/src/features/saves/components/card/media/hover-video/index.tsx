@@ -4,6 +4,7 @@ import { useImageReady } from "@/features/saves/components/card/media/lib/use-im
 import type { MediaUnit } from "@/features/saves/lib/media/units";
 import { thumbUrlFor } from "@/features/saves/lib/media/url";
 import { aspectCoverKey, recordAspect } from "@/features/saves/state/aspect";
+import { rememberCardThumbnail } from "@/features/saves/state/card-thumbnails";
 import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
@@ -58,9 +59,10 @@ export function HoverVideo({
           coverKey,
         });
       }
+      rememberCardThumbnail(src, image.currentSrc || image.src);
       onReady?.();
     },
-    [coverKey, hasVideoDims, onReady, saveId],
+    [coverKey, hasVideoDims, onReady, saveId, src],
   );
   const poster = useImageReady(effectivePosterUrl ?? null, reportPosterReady);
 

@@ -15,6 +15,7 @@ import {
   aspectDimsFor,
   recordAspect,
 } from "@/features/saves/state/aspect";
+import { rememberCardThumbnail } from "@/features/saves/state/card-thumbnails";
 import type { Save } from "@/features/saves/types";
 import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
@@ -24,6 +25,7 @@ export function CardImage({
   unit,
   pickOptions,
   width,
+  opens,
   onBroken,
   onReady,
 }: {
@@ -31,6 +33,8 @@ export function CardImage({
   unit: MediaUnit;
   pickOptions: MediaPickOptions;
   width?: number;
+  /** URL of the media the viewer opens first, when the card shows a stand-in such as a generated thumbnail. */
+  opens?: string;
   onBroken: () => void;
   onReady?: () => void;
 }) {
@@ -54,9 +58,12 @@ export function CardImage({
       recordAspect(save.id, image.naturalWidth, image.naturalHeight, {
         coverKey: aspectCoverKey(unit),
       });
+      const shown = image.currentSrc || image.src;
+      rememberCardThumbnail(unit.url, shown);
+      if (opens && opens !== unit.url) rememberCardThumbnail(opens, shown);
       onReady?.();
     },
-    [onReady, save.id, unit],
+    [onReady, opens, save.id, unit],
   );
   const ready = useImageReady(src, reportReady);
   useEffect(() => {

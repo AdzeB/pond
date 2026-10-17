@@ -16,6 +16,7 @@ import { enterFolder } from "@/features/library/operations/enter-folder";
 import { savedViews } from "@/features/library/state/saved-views";
 import { DuplicateImportReviewHost } from "@/features/saves/components/duplicate-import-review";
 import { SaveHotkeys } from "@/features/saves/effects/save-hotkeys";
+import { ViewerPreload } from "@/features/saves/effects/viewer-preload";
 import { openSave, saveIdFromPath } from "@/features/saves/lib/save-nav";
 import { SourceFlowHost } from "@/features/sources/components/flow";
 import { getAppRouter } from "@/shared/lib/app-router";
@@ -66,6 +67,7 @@ export function RootShell() {
       <UndoRedoBridge />
       <MenuBridge />
       <SaveHotkeys />
+      <ViewerPreload />
       <AppHotkeys />
       <NewMenuDialogHost />
       <OrganizationRenameDialogHost />

@@ -4,10 +4,46 @@
   --ds-duration-medium: 200ms;
   --ds-duration-emphasized: 250ms;
   --ds-duration-slow: 350ms;
+  /* Damped spring with a 350ms response and 0.2 bounce: overshoots 1.5% and settles in this time. */
+  --ds-duration-spring: 517ms;
   --ds-easing-standard: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --ds-easing-snap: cubic-bezier(0.22, 1, 0.36, 1);
   --ds-easing-decelerate: cubic-bezier(0.165, 0.84, 0.44, 1);
   --ds-easing-emphasized: var(--ds-easing-decelerate);
+  --ds-easing-spring: linear(
+    0,
+    0.0381,
+    0.1296,
+    0.2478,
+    0.3741,
+    0.4965,
+    0.6079,
+    0.7046,
+    0.7854,
+    0.8506,
+    0.9015,
+    0.9401,
+    0.9682,
+    0.9878,
+    1.0009,
+    1.0089,
+    1.0132,
+    1.015,
+    1.015,
+    1.014,
+    1.0123,
+    1.0105,
+    1.0086,
+    1.0068,
+    1.0052,
+    1.0038,
+    1.0027,
+    1.0019,
+    1.0012,
+    1.0007,
+    1.0003,
+    1
+  );
 }
 
 @property --window-left-width {

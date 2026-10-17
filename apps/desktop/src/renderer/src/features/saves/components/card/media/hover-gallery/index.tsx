@@ -15,6 +15,7 @@ import {
   aspectDimsFor,
   recordAspect,
 } from "@/features/saves/state/aspect";
+import { rememberCardThumbnail } from "@/features/saves/state/card-thumbnails";
 import type { Save } from "@/features/saves/types";
 import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
@@ -96,6 +97,7 @@ function GallerySlide({
   );
   const reportReady = useCallback(
     (image: HTMLImageElement) => {
+      rememberCardThumbnail(unit.url, image.currentSrc || image.src);
       if (!primary) return;
       recordAspect(save.id, image.naturalWidth, image.naturalHeight, {
         coverKey: aspectCoverKey(unit),

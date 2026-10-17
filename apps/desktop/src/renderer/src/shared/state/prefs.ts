@@ -11,6 +11,25 @@ interface PrefsState {
 
 const prefsStore = new Store<PrefsState>({ value: null });
 
+function keepSection<K extends keyof Prefs>(
+  next: Prefs,
+  previous: Prefs,
+  key: K,
+): void {
+  if (JSON.stringify(next[key]) === JSON.stringify(previous[key]))
+    next[key] = previous[key];
+}
+
+/** Keeps unchanged sections by reference so writing one section, like recents on every open, only re-renders its own readers. */
+function share(next: Prefs): PrefsState {
+  const previous = prefsStore.state.value;
+  if (!previous) return { value: next };
+  /** SAFETY: `next` came out of `PrefsSchema.parse`, so its own keys are exactly the Prefs sections. */
+  for (const key of Object.keys(next) as (keyof Prefs)[])
+    keepSection(next, previous, key);
+  return { value: next };
+}
+
 let subscribed = false;
 let prefsRevision = 0;
 function subscribeToPrefs(): void {
@@ -18,7 +37,7 @@ function subscribeToPrefs(): void {
   subscribed = true;
   window.pond.onPrefsChanged((prefs) => {
     prefsRevision += 1;
-    prefsStore.setState(() => ({ value: PrefsSchema.parse(prefs) }));
+    prefsStore.setState(() => share(PrefsSchema.parse(prefs)));
   });
 }
 
@@ -39,7 +58,7 @@ async function refreshPrefs(): Promise<Prefs> {
   const next = PrefsSchema.parse(
     await window.pond.query("settings.getPrefs", {}),
   );
-  if (revision === prefsRevision) prefsStore.setState(() => ({ value: next }));
+  if (revision === prefsRevision) prefsStore.setState(() => share(next));
   return prefsStore.state.value ?? next;
 }
 
@@ -105,7 +124,7 @@ export function savePrefsSection<K extends keyof Prefs>(
     const revision = prefsRevision;
     const result = await window.pond.query("settings.setPrefs", message);
     if (revision === prefsRevision)
-      prefsStore.setState(() => ({ value: PrefsSchema.parse(result.prefs) }));
+      prefsStore.setState(() => share(PrefsSchema.parse(result.prefs)));
   });
   saveQueue = operation.catch(() => {});
   return operation;

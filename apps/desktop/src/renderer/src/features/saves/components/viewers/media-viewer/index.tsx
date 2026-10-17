@@ -66,6 +66,12 @@ export function MediaViewer({
         const fileIndex = save.files.findIndex((f) => f.path === u.key);
         if (fileIndex < 0) return [];
         const file = save.files[fileIndex];
+        const poster = u.posterKey
+          ? save.files.find((f) => f.path === u.posterKey)
+          : undefined;
+        const size = [file, save, poster].find(
+          (source) => source?.width && source.height,
+        );
         return [
           {
             src: u.url,
@@ -76,8 +82,8 @@ export function MediaViewer({
               file?.mimeType === "image/gif" ||
               /\.gif$/i.test(file?.path ?? ""),
             posterUrl: u.posterUrl,
-            width: file?.width ?? save.width ?? undefined,
-            height: file?.height ?? save.height ?? undefined,
+            width: size?.width ?? undefined,
+            height: size?.height ?? undefined,
           },
         ];
       }),
