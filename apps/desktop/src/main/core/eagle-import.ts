@@ -58,6 +58,7 @@ const EagleItemMetaSchema = z.object({
   tags: z.array(z.string()).optional().catch(undefined),
   folders: z.array(z.string()).optional().catch(undefined),
   url: z.string().optional().catch(undefined),
+  ext: z.string().optional().catch(undefined),
   annotation: z.string().optional().catch(undefined),
   width: z.number().optional().catch(undefined),
   height: z.number().optional().catch(undefined),
@@ -103,7 +104,15 @@ export interface FlattenedEagleFolder {
   sortOrder: number;
 }
 
-export function partitionEagleItemFiles(files: readonly string[]) {
+/** Eagle stores a bookmark as an `.url` Internet Shortcut beside a page screenshot. */
+export function isEagleBookmark(meta: { ext?: string; url?: string }) {
+  return meta.ext?.toLowerCase() === "url" && Boolean(meta.url?.trim());
+}
+
+export function partitionEagleItemFiles(
+  files: readonly string[],
+  bookmark = false,
+) {
   const visible = files.filter(
     (name) => name !== "metadata.json" && !name.startsWith("."),
   );
@@ -111,7 +120,11 @@ export function partitionEagleItemFiles(files: readonly string[]) {
     visible.find((name) => name.toLowerCase().endsWith("_thumbnail.png")) ??
     null;
   return {
-    mediaFiles: visible.filter((name) => name !== thumbnail),
+    mediaFiles: visible.filter(
+      (name) =>
+        name !== thumbnail &&
+        !(bookmark && name.toLowerCase().endsWith(".url")),
+    ),
     thumbnail,
   };
 }
@@ -386,8 +399,12 @@ async function importEagle(
         continue;
       }
 
-      const { mediaFiles, thumbnail } = partitionEagleItemFiles(files);
-      if (mediaFiles.length === 0) {
+      const bookmark = isEagleBookmark(meta);
+      const { mediaFiles, thumbnail } = partitionEagleItemFiles(
+        files,
+        bookmark,
+      );
+      if (mediaFiles.length === 0 && !bookmark) {
         skipped += 1;
         continue;
       }

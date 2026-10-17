@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   collectLockedEagleFolders,
   flattenEagleFolders,
+  isEagleBookmark,
   partitionEagleItemFiles,
 } from "./eagle-import";
 
@@ -117,5 +118,29 @@ describe("partitionEagleItemFiles", () => {
       mediaFiles: ["thumbnail-concept.psd"],
       thumbnail: "thumbnail-concept.psd_thumbnail.png",
     });
+  });
+
+  it("drops a bookmark's Internet Shortcut and keeps its page screenshot", () => {
+    const files = ["metadata.json", "Studio.url", "Studio_thumbnail.png"];
+    expect(partitionEagleItemFiles(files, true)).toEqual({
+      mediaFiles: [],
+      thumbnail: "Studio_thumbnail.png",
+    });
+    expect(partitionEagleItemFiles(files).mediaFiles).toEqual(["Studio.url"]);
+  });
+});
+
+describe("isEagleBookmark", () => {
+  it("needs both the url extension and a link", () => {
+    expect(isEagleBookmark({ ext: "url", url: "https://example.com/" })).toBe(
+      true,
+    );
+    expect(isEagleBookmark({ ext: "URL", url: "https://example.com/" })).toBe(
+      true,
+    );
+    expect(isEagleBookmark({ ext: "url", url: " " })).toBe(false);
+    expect(isEagleBookmark({ ext: "png", url: "https://example.com/" })).toBe(
+      false,
+    );
   });
 });
