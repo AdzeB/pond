@@ -104,10 +104,20 @@ const List = forwardRef<HTMLDivElement, ListProps>(function List(
   return <div ref={ref} className={cn(styles.list, className)} {...props} />;
 });
 
-interface ItemProps extends React.ComponentPropsWithoutRef<"div"> {}
+interface ItemProps extends React.ComponentPropsWithoutRef<"div"> {
+  /** Dims the row; disable its control too, since the row can't do that for you. */
+  disabled?: boolean;
+}
 
-function Item({ className, ...props }: ItemProps) {
-  return <div className={cn(styles.item, className)} {...props} />;
+function Item({ className, disabled, ...props }: ItemProps) {
+  return (
+    <div
+      className={cn(styles.item, className)}
+      data-disabled={disabled || undefined}
+      aria-disabled={disabled || undefined}
+      {...props}
+    />
+  );
 }
 
 interface ItemDetailsProps extends React.ComponentPropsWithoutRef<"div"> {}
