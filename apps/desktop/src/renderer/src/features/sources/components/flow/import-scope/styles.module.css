@@ -86,3 +86,7 @@
 .retry {
   align-self: flex-start;
 }
+
+.detail {
+  margin-left: 6px;
+}

@@ -382,11 +382,15 @@ function ChipsField<Value extends string>({
             <Combobox.List>
               {(item: Value) => (
                 <Combobox.Item key={item} value={item}>
-                  <Combobox.ItemLabel>{labelOf(item)}</Combobox.ItemLabel>
-                  <Combobox.ItemEnd>
+                  <Combobox.ItemLabel>
+                    {labelOf(item)}
                     {detailOf?.(item) ? (
-                      <Combobox.ItemMeta>{detailOf(item)}</Combobox.ItemMeta>
+                      <Combobox.ItemMeta className={styles.detail}>
+                        {detailOf(item)}
+                      </Combobox.ItemMeta>
                     ) : null}
+                  </Combobox.ItemLabel>
+                  <Combobox.ItemEnd>
                     <Combobox.ItemIndicator />
                   </Combobox.ItemEnd>
                 </Combobox.Item>
