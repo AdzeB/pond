@@ -46,7 +46,7 @@
 
 .detail {
   display: flex;
-  gap: 2px;
+  gap: 6px;
   align-items: center;
   min-height: 20px;
   margin: 0;
@@ -55,10 +55,6 @@
   line-height: 20px;
   color: var(--ds-gray-10);
   overflow-wrap: anywhere;
-}
-
-.info {
-  color: var(--ds-gray-9);
 }
 
 .action {

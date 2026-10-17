@@ -1,4 +1,3 @@
-import { IconCircleInfo } from "@pond/icons";
 import type { ImportMediaKind, ListKind, Source } from "@pond/schema/db";
 import {
   Button,
@@ -273,7 +272,7 @@ function CollectionRows({
         <Settings.ItemDetails>
           <Settings.ItemTitle className={styles.titled}>
             Add to Folders
-            <Tooltip
+            <Tooltip.Info
               label={
                 nonePicked && !options.fileEveryCollection
                   ? `Pick a ${nouns.one} to put its saves in a matching Folder.`
@@ -281,16 +280,8 @@ function CollectionRows({
                     ? `Puts each save in a matching Folder, like ${label} / ${draft.collections[0].name}.`
                     : `Puts each save in a Folder named after its ${nouns.one}, under ${label}.`
               }
-            >
-              <Button
-                icon
-                size="xs"
-                variant="ghost"
-                aria-label="About Add to Folders"
-              >
-                <IconCircleInfo size={12} />
-              </Button>
-            </Tooltip>
+              aria-label="About Add to Folders"
+            />
           </Settings.ItemTitle>
         </Settings.ItemDetails>
         <Settings.ItemControl>
