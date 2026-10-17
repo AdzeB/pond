@@ -43,6 +43,7 @@
     "smoke:folder-tags": "electron ./scripts/smoke-folder-tags.cjs",
     "smoke:library-trust": "electron ./scripts/smoke-library-trust.cjs",
     "smoke:sensitive-content": "node ./scripts/smoke-sensitive-content.mjs",
+    "smoke:source-drift": "node ./scripts/smoke-source-drift.mjs",
     "smoke:offline-release": "node ./scripts/smoke-offline-release.mjs",
     "generate:harvest": "node scripts/generate-harvest-validation.mjs",
     "generate": "pnpm generate:harvest",
