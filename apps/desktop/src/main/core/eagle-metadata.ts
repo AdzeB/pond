@@ -1,9 +1,13 @@
+import { DEFAULT_COLOR_TOLERANCE } from "@pond/schema/filters/color";
 import type {
   ComparatorId,
   Predicate,
   Query,
 } from "@pond/schema/filters/types";
 import { z } from "zod";
+
+/** Eagle compares color by Delta E, panoramas at 2.5:1, and camera as one string; Pond's fields only come close. */
+const APPROXIMATE_PROPERTIES = new Set(["color", "shape", "camera"]);
 
 const EagleRuleSchema = z.object({
   property: z.string(),
@@ -254,6 +258,61 @@ function mapRule(
       operator: "eq",
       value: rule.method === "activate",
     };
+  if (
+    rule.property === "color" &&
+    ["similar", "accuracy"].includes(rule.method)
+  ) {
+    const hex = z
+      .string()
+      .regex(/^#?[0-9a-f]{6}$/i)
+      .safeParse(rule.value);
+    if (!hex.success) return null;
+    return {
+      field: "color",
+      operator: "near",
+      value: {
+        hex: hex.data,
+        tolerance:
+          rule.method === "accuracy"
+            ? DEFAULT_COLOR_TOLERANCE / 2
+            : DEFAULT_COLOR_TOLERANCE,
+      },
+    };
+  }
+  if (rule.property === "shape" && ["equal", "unequal"].includes(rule.method)) {
+    const orientation = z
+      .enum([
+        "square",
+        "landscape",
+        "portrait",
+        "panoramic-landscape",
+        "panoramic-portrait",
+      ])
+      .safeParse(rule.value);
+    if (!orientation.success) return null;
+    return {
+      field: "shape",
+      operator: rule.method === "equal" ? "eq" : "neq",
+      value: orientation.data,
+    };
+  }
+  if (
+    rule.property === "camera" &&
+    ["contain", "uncontain"].includes(rule.method)
+  ) {
+    const value = z.string().trim().min(1).safeParse(rule.value);
+    if (!value.success) return null;
+    const negate = rule.method === "uncontain";
+    return {
+      combinator: negate ? "and" : "or",
+      rules: (["cameraMake", "cameraModel"] as const).map((field) => ({
+        field,
+        operator: "contains",
+        value: value.data,
+        negate,
+      })),
+    };
+  }
   if (rule.property === "type" && ["equal", "unequal"].includes(rule.method)) {
     const value = z.string().trim().min(1).safeParse(rule.value);
     if (!value.success) return null;
@@ -320,6 +379,20 @@ export function unsupportedEagleRules(
   return folder.conditions.flatMap((condition) =>
     condition.rules
       .filter((rule) => !mapRule(rule, folders))
+      .map((rule) => `${folder.name}: ${rule.property}/${rule.method}`),
+  );
+}
+
+export function approximateEagleRules(
+  folder: z.infer<typeof EagleSmartFolderSchema>,
+  folders: ReadonlyMap<string, string>,
+): string[] {
+  return folder.conditions.flatMap((condition) =>
+    condition.rules
+      .filter(
+        (rule) =>
+          APPROXIMATE_PROPERTIES.has(rule.property) && mapRule(rule, folders),
+      )
       .map((rule) => `${folder.name}: ${rule.property}/${rule.method}`),
   );
 }

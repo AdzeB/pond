@@ -11,6 +11,7 @@ import {
   foldAnnotationsIntoNotes,
 } from "../lib/eagle-annotations";
 import {
+  approximateEagleRules,
   EaglePaletteSchema,
   EagleSmartFolderSchema,
   EagleTagGroupSchema,
@@ -95,6 +96,7 @@ interface EagleImportCounts {
   deletedSkipped: number;
   lockedFolders: EagleLockedFolder[];
   droppedFields: string[];
+  approximatedRules: string[];
 }
 
 export type EagleImportResult = EagleImportCounts & OkResult;
@@ -239,6 +241,7 @@ function emptyResult(error: string): EagleImportResult {
     deletedSkipped: 0,
     lockedFolders: [],
     droppedFields: [],
+    approximatedRules: [],
     error,
   };
 }
@@ -267,6 +270,7 @@ async function importEagle(
   let failed = 0;
   let deletedSkipped = 0;
   const dropped = new Set<string>();
+  const approximated = new Set<string>();
   if (libraryMeta.quickAccess.length) dropped.add("Quick Access shortcuts");
   const existingViews = opts.dryRun ? [] : await listViews();
   const ruleFolders = opts.dryRun
@@ -307,6 +311,8 @@ async function importEagle(
           );
         continue;
       }
+      for (const rule of approximateEagleRules(parsed.data, ruleFolders))
+        approximated.add(rule);
       const question = `eagle:${parsed.data.id}`;
       const kind =
         parsed.data.children.length || parsed.data.conditions.length === 0
@@ -476,6 +482,7 @@ async function importEagle(
     deletedSkipped,
     lockedFolders,
     droppedFields: [...dropped],
+    approximatedRules: [...approximated],
   };
   return imported > 0 || skipped > 0 || lockedFolders.length > 0
     ? { ok: true, ...counts }

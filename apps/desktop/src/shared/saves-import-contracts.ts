@@ -134,6 +134,7 @@ export interface SavesImportQueryResults {
       reason: "password" | "parent_locked";
     }[];
     droppedFields: string[];
+    approximatedRules: string[];
     shortcuts: {
       status:
         | "available"
