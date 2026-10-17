@@ -78,7 +78,7 @@ const STEPS = [
       "Sign in to X, then press Import Session.",
       "In Pond, open Sources, find the X Account, and choose Start Import from its menu.",
       "Turn off Likes. Click the Folders field under Bookmarks and confirm your bookmark folders load with post counts.",
-      "Pick one folder and leave Add to Folders on. In Kinds of Posts, add Images and Videos. Press Start.",
+      "Pick one folder and leave Add to Folders on. In Post Types, add Images and Videos. Press Start.",
       "When the sync finishes, confirm the Library only shows posts from that folder, none are text-only, and they sit in a Twitter / folder name Folder.",
     ],
     checks: (e) => [

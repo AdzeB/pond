@@ -303,15 +303,15 @@ function MediaKindsRow({ kinds }: { kinds: readonly ImportMediaKind[] }) {
   return (
     <Settings.Item className={styles.stacked}>
       <Settings.ItemDetails>
-        <Settings.ItemTitle>Kinds of Posts</Settings.ItemTitle>
+        <Settings.ItemTitle>Post Types</Settings.ItemTitle>
       </Settings.ItemDetails>
       <ChipsField
-        label="Kinds of Posts"
-        placeholder="All Kinds"
+        label="Post Types"
+        placeholder="All Types"
         items={[...kinds]}
         value={[...draft.mediaKinds]}
         labelOf={(kind) => mediaKindLabel(kind)}
-        empty="No kinds match"
+        empty="No types match"
         disabled={draft.saving}
         onValueChange={(next) =>
           flow.setMediaKinds(kinds.filter((kind) => next.includes(kind)))

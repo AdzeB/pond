@@ -320,8 +320,8 @@ it("saves media and date filters with the scope", async () => {
     source: "reddit",
     sync: { importPending: true },
   });
-  await pick("Kinds of Posts", "Images");
-  await pick("Kinds of Posts", "Videos");
+  await pick("Post Types", "Images");
+  await pick("Post Types", "Videos");
   await choose("Posted Since", "Custom Date");
   const trigger = await vi.waitFor(() => {
     const found = host.querySelector<HTMLElement>('[aria-label^="Date"]');
@@ -346,7 +346,7 @@ it("saves media and date filters with the scope", async () => {
   });
 });
 
-it("goes back to every kind of post when you remove the last chip", async () => {
+it("goes back to every post type when you remove the last chip", async () => {
   await renderFor({
     id: "acc-reddit",
     source: "reddit",

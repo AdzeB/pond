@@ -53,7 +53,7 @@ function importScopeProblem(
     case "no_collections":
       return `Choose at least one of your ${COLLECTION_NOUNS[kind ?? "collection"]} to import.`;
     case "no_media":
-      return "Choose at least one kind of post to import.";
+      return "Choose at least one post type to import.";
     case "bad_since":
       return "Enter a real date to import from.";
   }

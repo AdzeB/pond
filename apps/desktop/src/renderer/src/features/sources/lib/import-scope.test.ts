@@ -29,7 +29,7 @@ describe("importScopeRows", () => {
       { label: "Lists", value: "Bookmarks" },
       { label: "Folders", value: "Design" },
       { label: "Add to Folders", value: "Off" },
-      { label: "Kinds of Posts", value: "Images" },
+      { label: "Post Types", value: "Images" },
       { label: "Posted Since", value: "Any Time" },
     ]);
   });
@@ -39,7 +39,7 @@ describe("importScopeRows", () => {
       importScopeRows("instagram", { listKinds: ["liked"] }).map(
         (r) => r.label,
       ),
-    ).toEqual(["Lists", "Kinds of Posts", "Posted Since"]);
+    ).toEqual(["Lists", "Post Types", "Posted Since"]);
   });
 
   it("shows Add to Folders with every collection where it can file them all", () => {

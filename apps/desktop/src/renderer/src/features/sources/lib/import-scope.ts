@@ -133,10 +133,10 @@ export function importScopeRows(
   }
   if (options.mediaKinds.length > 0) {
     rows.push({
-      label: "Kinds of Posts",
+      label: "Post Types",
       value: scope?.mediaKinds
         ? scope.mediaKinds.map(mediaKindLabel).join(", ")
-        : "All Kinds",
+        : "All Types",
     });
   }
   if (options.since) {
