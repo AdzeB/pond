@@ -10,6 +10,7 @@ import {
 
 declare global {
   var __pondHarvestAbort: boolean | undefined;
+  var __pondHarvestCursor: string | null | undefined;
 }
 
 type FeedItem = InstagramMediaNode & {
@@ -80,7 +81,10 @@ async function inPageInstagramList(
   async function fetchSavedViaApi(): Promise<ListHarvestResult | null> {
     const path = "/api/v1/feed/saved/posts/";
     const entries: InstagramEntry[] = [];
-    let cursor: string | undefined;
+    let cursor = args.resumeCursor;
+    let resuming = cursor !== undefined;
+    let pagesRead = 0;
+    globalThis.__pondHarvestCursor = cursor ?? null;
     const known = new Set(args.knownIds.map(String));
     const earlyStopEnabled = args.earlyStop ?? known.size > 0;
     let knownPageStreak = 0;
@@ -110,13 +114,28 @@ async function inPageInstagramList(
       Object.assign(globalThis, { __pondHarvestStats: stats });
     }
 
+    function unfinished(): ListHarvestResult {
+      return cursor
+        ? { ok: true, entries, reachedEnd: false, resumeCursor: cursor }
+        : { ok: true, entries, reachedEnd: false };
+    }
+
+    /** A stored cursor can expire between runs; read the list from the top instead. */
+    function restartFromTop(): boolean {
+      if (!resuming || pagesRead > 0) return false;
+      resuming = false;
+      cursor = undefined;
+      globalThis.__pondHarvestCursor = null;
+      return true;
+    }
+
     reportProgress("connecting", {});
 
     for (let page = 0; page < 200; page++) {
       if (globalThis.__pondHarvestAbort) {
         reportProgress("aborted", { page });
         checkpoint();
-        return { ok: true, entries, reachedEnd: false };
+        return unfinished();
       }
 
       const url = cursor ? `${path}?max_id=${cursor}` : path;
@@ -153,6 +172,7 @@ async function inPageInstagramList(
         }
         if (!res.ok) {
           reportProgress("api_not_ok", { page, status: res.status, path });
+          if (restartFromTop()) continue;
           return null;
         }
 
@@ -162,6 +182,7 @@ async function inPageInstagramList(
           page,
           error: err instanceof Error ? err.name : "error",
         });
+        if (restartFromTop()) continue;
         return null;
       }
 
@@ -170,10 +191,12 @@ async function inPageInstagramList(
       }
 
       const items = json?.items ?? json?.feed_items ?? [];
-      if (items.length === 0 && page === 0) {
+      if (items.length === 0 && pagesRead === 0) {
         reportProgress("api_empty", { page, path });
+        if (restartFromTop()) continue;
         return null;
       }
+      pagesRead += 1;
 
       let pageFresh = 0;
       let pageNorm = 0;
@@ -218,15 +241,17 @@ async function inPageInstagramList(
       }
 
       cursor = String(nextCursor);
+      globalThis.__pondHarvestCursor = cursor;
       await new Promise((r) => setTimeout(r, 250));
     }
 
     reportProgress("done", { page: 199, capped: true });
     checkpoint();
-    return { ok: true, entries, reachedEnd: false };
+    return unfinished();
   }
 
   async function fallbackDomScroll(): Promise<ListHarvestResult> {
+    globalThis.__pondHarvestCursor = null;
     const stats: ListProgress = {
       phase: "dom_fallback",
       collected: 0,

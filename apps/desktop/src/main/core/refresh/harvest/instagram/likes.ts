@@ -66,8 +66,9 @@ async function inPageInstagramLikes(
     return { ok: false, reason: "auth_required" };
   }
 
+  /** Bloks action names are minified per release (`bk.action.array.Make` ships as `dkc`), so only the tuple shape is matched. */
   const ITEM_RE =
-    /\(bk\.action\.array\.Make,\s*\\?"\d{6,25}_\d+\\?",\s*\\?"([A-Za-z0-9_-]{5,20})\\?",\s*\\?"([a-z_]+)\\?",\s*\(bk\.action\.i32\.Const,\s*(\d+)\)/g;
+    /\([\w.$]+,\s*\\?"\d{6,25}_\d+\\?",\s*\\?"([A-Za-z0-9_-]{5,20})\\?",\s*\\?"([a-z_]+)\\?",\s*\([\w.$]+,\s*(\d+)\)/g;
   const NEXT_APP_ID = "com.instagram.privacy.activity_center.liked_next";
   /** Trailing three arguments of that action: cursor, container id, element id. */
   const NEXT_RE =
@@ -211,5 +212,7 @@ async function inPageInstagramLikes(
     knownPageStreak = page.fresh === 0 ? knownPageStreak + 1 : 0;
     if (knownPageStreak >= 3) break;
   }
+  /** A next-page marker means likes exist; reading none means the payload format moved. */
+  if (entries.length === 0) return { ok: false, reason: "no_match" };
   return done(true);
 }

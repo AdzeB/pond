@@ -1,0 +1,97 @@
+import { runInNewContext } from "node:vm";
+import { describe, expect, it } from "vitest";
+import { buildInstagramLikesExpression } from "./likes";
+
+const NEXT_APP = "com.instagram.privacy.activity_center.liked_next";
+
+function item(
+  code: string,
+  product: string,
+  type: number,
+  names = ["dkc", "ety"],
+) {
+  return `(${names[0]}, \\"3996863573288319632_68462680926\\", \\"${code}\\", \\"${product}\\", (${names[1]}, ${type}), \\"https:\\/\\/cdn.example\\/x.jpg\\")`;
+}
+
+function nextMarker(cursor: string) {
+  return `(dmi, \\"${NEXT_APP}\\", (f4i, (dkc, \\"page_size\\", \\"cursor\\", \\"container_id\\", \\"element_id\\"), (dkc, \\"9\\", \\"${cursor}\\", \\"17841400000000000\\", \\"12345678\\")))`;
+}
+
+function payload(...parts: string[]) {
+  return `for (;;);{"payload":{"layout":{"bloks_payload":"${parts.join(", ")}"}}}`;
+}
+
+function run(firstPage: string, laterPages: string[]) {
+  const pages = [...laterPages];
+  const context = {
+    location: { pathname: "/your_activity/interactions/likes/" },
+    document: { querySelectorAll: () => [] },
+    getComputedStyle: () => ({ overflowY: "visible" }),
+    setTimeout: (fn: () => void) => setTimeout(fn, 0),
+    URLSearchParams,
+    __pondIgBloksCaptures: [firstPage],
+    __pondIgLikesRequest: {
+      url: `/async/wbloks/fetch/?appid=${NEXT_APP}&type=action`,
+      body: "params=%7B%7D&lsd=token",
+      headers: {},
+    },
+    fetch: async () => ({
+      ok: true,
+      status: 200,
+      text: async () => pages.shift() ?? payload(),
+    }),
+  };
+  return runInNewContext(
+    buildInstagramLikesExpression({ knownIds: [], earlyStop: false }),
+    context,
+  );
+}
+
+describe("Instagram likes", () => {
+  it("reads liked posts from minified Bloks payloads", async () => {
+    const result = await run(
+      payload(
+        item("Dd3tj5djHqQ", "clips", 2),
+        item("DeEvTWUNxvZ", "feed", 1),
+        nextMarker("QVFCdTk4Nkt2ZXZES1Q3ckJ2SkNm=="),
+      ),
+      [payload(item("DeKLFh4xGXE", "feed", 1))],
+    );
+    expect(result).toMatchObject({ ok: true, reachedEnd: true });
+    expect(result.entries).toEqual([
+      expect.objectContaining({
+        sourceId: "Dd3tj5djHqQ",
+        url: "https://www.instagram.com/reel/Dd3tj5djHqQ/",
+      }),
+      expect.objectContaining({
+        sourceId: "DeEvTWUNxvZ",
+        url: "https://www.instagram.com/p/DeEvTWUNxvZ/",
+      }),
+      expect.objectContaining({ sourceId: "DeKLFh4xGXE" }),
+    ]);
+  });
+
+  it("still reads unminified action names", async () => {
+    const result = await run(
+      payload(
+        item("DeEvTWUNxvZ", "feed", 1, [
+          "bk.action.array.Make",
+          "bk.action.i32.Const",
+        ]),
+        nextMarker("QVFCdTk4Nkt2ZXZES1Q3ckJ2SkNm=="),
+      ),
+      [],
+    );
+    expect(result.entries).toEqual([
+      expect.objectContaining({ sourceId: "DeEvTWUNxvZ" }),
+    ]);
+  });
+
+  it("reports a format change instead of an empty list", async () => {
+    const result = await run(
+      payload(nextMarker("QVFCdTk4Nkt2ZXZES1Q3ckJ2SkNm==")),
+      [payload()],
+    );
+    expect(result).toEqual({ ok: false, reason: "no_match" });
+  });
+});
