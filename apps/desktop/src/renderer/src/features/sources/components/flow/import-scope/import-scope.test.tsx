@@ -84,9 +84,7 @@ function buttonLabels(): string[] {
   return Array.from(
     host.querySelectorAll<HTMLElement>("button"),
     (element) => element.textContent ?? "",
-  ).filter((label) =>
-    ["Done", "Cancel", "Save", "Not Now", "Start Import"].includes(label),
-  );
+  ).filter((label) => ["Done", "Cancel", "Save"].includes(label));
 }
 
 function toggle(label: string): HTMLElement {
@@ -144,13 +142,13 @@ async function pick(field: string, option: string): Promise<void> {
   await act(async () => found.click());
 }
 
-it("asks a waiting Account to start or wait", async () => {
+it("asks a new Account to save its first choice", async () => {
   await renderFor({
     id: "acc-instagram",
     source: "instagram",
     sync: { importPending: true },
   });
-  expect(buttonLabels()).toEqual(["Not Now", "Start Import"]);
+  expect(buttonLabels()).toEqual(["Cancel", "Save"]);
 });
 
 it("offers Save only once you change an active Account's choices", async () => {
@@ -174,7 +172,7 @@ it("starts the first import with only the lists you keep", async () => {
   });
   expect(toggle("Saved Posts").getAttribute("aria-checked")).toBe("true");
   await act(async () => toggle("Liked Posts").click());
-  await act(async () => button("Start Import").click());
+  await act(async () => button("Save").click());
 
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-instagram",
@@ -191,7 +189,7 @@ it("won't start an import that would bring in nothing", async () => {
   });
   await act(async () => toggle("Saved Videos").click());
   await act(async () => toggle("Liked Videos").click());
-  expect(button("Start Import").disabled).toBe(true);
+  expect(button("Save").disabled).toBe(true);
 });
 
 it("imports chosen Pinterest boards into Folders", async () => {
@@ -217,7 +215,7 @@ it("imports chosen Pinterest boards into Folders", async () => {
   await vi.waitFor(() => {
     expect(toggle("Add to Folders").getAttribute("aria-checked")).toBe("true");
   });
-  await act(async () => button("Start Import").click());
+  await act(async () => button("Save").click());
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-pinterest",
     scope: { collections: [{ id: "915", name: "Design References" }] },
@@ -231,7 +229,7 @@ it("files every board when you turn on Add to Folders without picking any", asyn
     sync: { importPending: true },
   });
   await act(async () => toggle("Add to Folders").click());
-  await act(async () => button("Start Import").click());
+  await act(async () => button("Save").click());
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-pinterest",
     scope: { addToFolders: true },
@@ -305,7 +303,7 @@ it("starts a TikTok import from Liked Videos alone", async () => {
     sync: { importPending: true },
   });
   await act(async () => toggle("Favorites").click());
-  await act(async () => button("Start Import").click());
+  await act(async () => button("Save").click());
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-tiktok",
     scope: { listKinds: ["liked"] },
@@ -379,7 +377,7 @@ it("saves media and date filters with the scope", async () => {
     return found;
   });
   await act(async () => day.click());
-  await act(async () => button("Start Import").click());
+  await act(async () => button("Save").click());
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-reddit",
     scope: { mediaKinds: ["image", "video"], since: first },

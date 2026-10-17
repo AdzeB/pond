@@ -154,11 +154,6 @@ function ImportSection({ account }: { account: AccountRow }) {
   useImportScopeDraft(account);
   return (
     <Section title="Import" className={styles.section} collapsible={false}>
-      {account.sync.importPending ? (
-        <p className={styles.detail}>
-          Pond waits for your choice before the first sync.
-        </p>
-      ) : null}
       <ImportScopeChoices accountId={account.id} />
     </Section>
   );

@@ -4,7 +4,6 @@ import {
   IconArrowUpRight,
   IconCopy,
   IconCopyId,
-  IconDownload,
   IconGrid,
   IconLink2,
   IconNotepad,
@@ -238,15 +237,11 @@ function importScopeItem(
   options: SourceMenuOptions,
 ): MenuItemSpec | null {
   if (target.type !== "account" || options.importItem === false) return null;
-  const open = () => sourceDetail.openAccount(target.id);
-  if (target.importPending) {
-    return { label: "Start Import", icon: <IconDownload />, onClick: open };
-  }
-  if (!hasImportChoices(target.source)) return null;
+  if (!target.importPending && !hasImportChoices(target.source)) return null;
   return {
     label: "Choose What to Import",
     icon: <IconSliders />,
-    onClick: open,
+    onClick: () => sourceDetail.openAccount(target.id),
   };
 }
 

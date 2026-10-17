@@ -199,20 +199,20 @@ describe("buildSourceActionMenu", () => {
     ]);
   });
 
-  it("offers Start Import instead of fetching while an Account waits for a choice", () => {
+  it("offers the import choice instead of fetching while an Account waits for one", () => {
     const target = account();
     target.importPending = true;
     const items = buildSourceActionMenu(target);
     expect(fetchGroup(items).slice(0, 2)).toEqual([
-      "Start Import",
+      "Choose What to Import",
       "Fetch Older Saves",
     ]);
     expect(findItem(items, "Fetch Older Saves")).toMatchObject({
       disabled: true,
     });
-    const start = findItem(items, "Start Import");
+    const start = findItem(items, "Choose What to Import");
     if (!start || !("onClick" in start))
-      throw new Error("Missing Start Import");
+      throw new Error("Missing Choose What to Import");
     start.onClick?.();
     expect(detailsDialog.getState()).toEqual({
       kind: "source",
@@ -226,7 +226,6 @@ describe("buildSourceActionMenu", () => {
     const target = account();
     target.importPending = true;
     const items = buildSourceActionMenu(target, { importItem: false });
-    expect(findItem(items, "Start Import")).toBeNull();
     expect(findItem(items, "Choose What to Import")).toBeNull();
   });
 

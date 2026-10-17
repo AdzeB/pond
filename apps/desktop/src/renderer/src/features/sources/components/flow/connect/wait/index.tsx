@@ -67,7 +67,7 @@ export function ConnectWaitSection() {
             <>
               Next, choose what Pond imports.
               <br />
-              Nothing syncs until you start the import.
+              Nothing syncs until you save your choice.
             </>
           ) : next ? (
             <>

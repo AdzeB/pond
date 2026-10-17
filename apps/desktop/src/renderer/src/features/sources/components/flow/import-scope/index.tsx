@@ -118,12 +118,12 @@ export function ImportScopeActions() {
   }
   return (
     <>
-      <Dialog.Cancel>{draft.starts ? "Not Now" : "Cancel"}</Dialog.Cancel>
+      <Dialog.Cancel />
       <Dialog.Confirm
         disabled={!ready || draft.saving}
         onClick={() => void confirmImportScope(flow)}
       >
-        {draft.starts ? "Start Import" : "Save"}
+        Save
       </Dialog.Confirm>
     </>
   );
