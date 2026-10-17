@@ -1,6 +1,7 @@
 import { Tooltip as Base } from "@base-ui/react/tooltip";
+import { IconInfo } from "@pond/icons";
 import { clsx } from "clsx";
-import type { ReactElement, ReactNode } from "react";
+import type { ComponentPropsWithoutRef, ReactElement, ReactNode } from "react";
 import styles from "./styles.module.css";
 
 function Root(props: Base.Root.Props) {
@@ -97,6 +98,34 @@ function TooltipWrapper({
   );
 }
 
+interface InfoProps
+  extends Omit<ComponentPropsWithoutRef<"button">, "children"> {
+  label: ReactNode;
+  side?: TooltipProps["side"];
+}
+
+/** A small "i" beside a title that explains it on hover or focus. */
+function Info({
+  label,
+  side,
+  className,
+  "aria-label": ariaLabel = "More Information",
+  ...props
+}: InfoProps) {
+  return (
+    <TooltipWrapper label={label} side={side}>
+      <button
+        type="button"
+        className={clsx(styles.info, className)}
+        aria-label={ariaLabel}
+        {...props}
+      >
+        <IconInfo size={12} strokeWidth={1.75} />
+      </button>
+    </TooltipWrapper>
+  );
+}
+
 export const Tooltip = Object.assign(TooltipWrapper, {
   Root,
   Provider,
@@ -107,4 +136,5 @@ export const Tooltip = Object.assign(TooltipWrapper, {
   Popup,
   Arrow,
   Label: tooltipContent,
+  Info,
 });

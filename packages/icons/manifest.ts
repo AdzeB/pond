@@ -154,6 +154,7 @@ export const manifest: IconManifest = {
   ImageUpscale: ["outline"],
   Images: ["outline"],
   Inbox: ["outline", "fill"],
+  Info: ["outline"],
   InputPasswordEdit: ["outline"],
   Keyboard: ["outline"],
   Layers: ["outline", "fill"],

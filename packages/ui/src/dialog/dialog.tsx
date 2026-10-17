@@ -1,11 +1,6 @@
 import { AlertDialog as Alert } from "@base-ui/react/alert-dialog";
 import { Dialog as Base } from "@base-ui/react/dialog";
-import {
-  IconAlertQuestionFill,
-  IconChevronLeft,
-  IconCircleInfo,
-  IconXmark,
-} from "@pond/icons";
+import { IconAlertQuestionFill, IconChevronLeft, IconXmark } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import {
   AnimatePresence,
@@ -401,27 +396,6 @@ function Help(props: ComponentPropsWithoutRef<"button">) {
   );
 }
 
-function Info({
-  label,
-  ...props
-}: { label: ReactNode } & Omit<
-  ComponentPropsWithoutRef<"button">,
-  "children"
->) {
-  return (
-    <Tooltip label={label}>
-      <button
-        type="button"
-        className={styles.info}
-        aria-label="More information"
-        {...props}
-      >
-        <IconCircleInfo size={12} />
-      </button>
-    </Tooltip>
-  );
-}
-
 function Close(props: Base.Close.Props) {
   return (
     <Base.Close
@@ -499,7 +473,7 @@ export const DialogParts = {
   Viewport,
   Back,
   Help,
-  Info,
+  Info: Tooltip.Info,
   Close,
   Footer,
   Cancel,
