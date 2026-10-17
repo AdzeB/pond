@@ -314,6 +314,21 @@
   flex: none;
 }
 
+.container[data-checkboxes="hover"]:not([data-selecting]) .check {
+  opacity: 0;
+}
+
+.container[data-checkboxes="hover"]:not([data-selecting])
+  [role="row"]:hover
+  .check,
+.container[data-checkboxes="hover"]:not([data-selecting]) .check:focus-visible,
+:global(html[data-focus-source="keyboard"])
+  .container[data-checkboxes="hover"]:focus-visible
+  [data-cursor]
+  .check {
+  opacity: 1;
+}
+
 .caret {
   display: inline-flex;
   flex: none;

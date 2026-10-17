@@ -280,8 +280,10 @@ const api = {
     return ipcRenderer.invoke(IPC.pipelinePause, paused);
   },
 
-  pipelineCancelSave(id: string): Promise<{ ok: true; cancelled: boolean }> {
-    return ipcRenderer.invoke(IPC.pipelineCancelSave, id);
+  pipelineCancelSaves(
+    ids: readonly string[],
+  ): Promise<{ ok: true; cancelled: number }> {
+    return ipcRenderer.invoke(IPC.pipelineCancelSaves, ids);
   },
 
   pipelineCancelAll(): Promise<{ ok: true; cancelled: number }> {

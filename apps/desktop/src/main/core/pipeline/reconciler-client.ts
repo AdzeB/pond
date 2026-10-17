@@ -37,6 +37,12 @@ export async function cancelSaveIngest(saveId: string): Promise<boolean> {
   return (await loadReconciler()).cancelSaveIngest(saveId);
 }
 
+export async function cancelSavesIngest(
+  saveIds: readonly string[],
+): Promise<number> {
+  return (await loadReconciler()).cancelSavesIngest(saveIds);
+}
+
 export async function cancelAllIngest(): Promise<number> {
   return (await loadReconciler()).cancelAllIngest();
 }

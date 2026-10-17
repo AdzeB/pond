@@ -5,7 +5,15 @@ import type { BrowserValidators } from "../lib/browser-validation";
 
 interface YoutubePlayerResponse {
   videoDetails?: {
+    videoId?: string;
     shortDescription?: string;
+    viewCount?: string;
+    lengthSeconds?: string;
+  };
+  microformat?: {
+    playerMicroformatRenderer?: {
+      publishDate?: string;
+    };
   };
 }
 
@@ -141,6 +149,8 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
       out.mediaUrls = [{ url: out.mediaUrl, type: "video" }];
     }
 
+    Object.assign(meta, readPlayerMeta());
+
     const lang = document.documentElement.lang?.trim();
     if (lang) {
       out.lang = lang;
@@ -158,9 +168,40 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
     return readDomDescription();
   }
 
+  /** `ytInitialPlayerResponse` keeps the first video's data after in-app navigation. */
+  function currentPlayerResponse(): YoutubePlayerResponse | undefined {
+    const player = globalThis.ytInitialPlayerResponse;
+    const id = player?.videoDetails?.videoId;
+    if (id && id !== extractVideoId(location.href)) return undefined;
+    return player;
+  }
+
+  /** The `<video>` element reports the pre-roll ad's length while one plays, and the info line moves between layouts. */
+  function readPlayerMeta(): Pick<
+    YoutubeWatchMeta,
+    "views" | "publishedAt" | "durationSec"
+  > {
+    const player = currentPlayerResponse();
+    const out: Pick<YoutubeWatchMeta, "views" | "publishedAt" | "durationSec"> =
+      {};
+    const views = validators.text.safeParse(player?.videoDetails?.viewCount);
+    if (views.success && /^\d+$/.test(views.data))
+      out.views = Number(views.data);
+    const length = validators.text.safeParse(
+      player?.videoDetails?.lengthSeconds,
+    );
+    if (length.success && /^[1-9]\d*$/.test(length.data))
+      out.durationSec = Number(length.data);
+    const published = validators.text.safeParse(
+      player?.microformat?.playerMicroformatRenderer?.publishDate,
+    );
+    if (published.success && published.data) out.publishedAt = published.data;
+    return out;
+  }
+
   function readPlayerDescription(): string | undefined | null {
     const parsed = validators.text.safeParse(
-      globalThis.ytInitialPlayerResponse?.videoDetails?.shortDescription,
+      currentPlayerResponse()?.videoDetails?.shortDescription,
     );
     if (!parsed.success) return null;
     return clipText(parsed.data);

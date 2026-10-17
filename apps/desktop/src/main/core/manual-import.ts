@@ -273,6 +273,10 @@ async function importManualSave(
 
   const hasFiles = readable.length > 0;
   const hasUrl = Boolean(input.url?.trim());
+  const customThumbnail = input.thumbnailPath
+    ? await inspectCustomThumbnail(input.thumbnailPath)
+    : null;
+  const storesFiles = hasFiles || Boolean(customThumbnail);
   const onlyTextFiles =
     hasFiles && readable.every((item) => item.format.mediaType === "text");
   const textBody = (importedText || note)?.trim() || null;
@@ -301,13 +305,13 @@ async function importManualSave(
     notes: isTextSave ? null : note,
     mediaType,
     siteName: null,
-    status: hasFiles ? "ingesting" : "complete",
+    status: storesFiles ? "ingesting" : "complete",
     tags,
     listKinds: ["saved"],
     files: [],
     coverIndex: 0,
     ingestStartedAt: now,
-    ingestCompletedAt: hasFiles ? null : now,
+    ingestCompletedAt: storesFiles ? null : now,
     savedAt: input.savedAt ?? now,
     createdAt: input.createdAt ?? now,
     publishedAt: input.publishedAt,
@@ -337,7 +341,7 @@ async function importManualSave(
     await executeBatch(registry);
   }
 
-  if (hasFiles) {
+  if (storesFiles) {
     const newFiles: WriteFileArgs[] = readable.map((item) => {
       const kind = storageKindForImport(item.format);
       const metadata = {
@@ -358,9 +362,6 @@ async function importManualSave(
         : { ...metadata, bytes: item.source.bytes };
     });
 
-    const customThumbnail = input.thumbnailPath
-      ? await inspectCustomThumbnail(input.thumbnailPath)
-      : null;
     if (customThumbnail) {
       const metadata = {
         kind: THUMBNAIL_KIND,

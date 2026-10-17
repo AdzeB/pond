@@ -7,8 +7,10 @@ import {
   useRef,
   useState,
 } from "react";
+import { BlurHash } from "@/features/saves/components/card/media/blur-hash";
 import type { ViewerNavigation } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import { useGifPlayer } from "@/features/saves/hooks/use-gif-player";
+import { useMediaReveal } from "@/features/saves/hooks/use-media-reveal";
 import {
   fullImageCrop,
   isFullImageCrop,
@@ -22,12 +24,14 @@ import {
 import { mediaTransformStyle } from "@/features/saves/lib/media-transform";
 import { beginSaveDrag } from "@/features/saves/lib/start-drag";
 import { FIT_POSE, zoomImageAt } from "@/features/saves/lib/viewer-memory";
+import { cardThumbnailFor } from "@/features/saves/state/card-thumbnails";
 import { useInspect } from "@/features/saves/state/inspect";
 import {
   resultNavigation,
   useResultIndex,
   useResultTotal,
 } from "@/features/saves/state/result-navigation";
+import { useViewerEscapeLayer } from "@/features/saves/state/viewer-escape";
 import type { Save } from "@/features/saves/types";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
@@ -40,6 +44,7 @@ import { ImageOverlay } from "./overlay";
 import styles from "./styles.module.css";
 import type { InspectorMode } from "./types";
 import { useCropKeyboard } from "./use-crop-keyboard";
+import { useImageDecoded } from "./use-image-decoded";
 import { useImageViewport } from "./use-image-viewport";
 
 interface ImageInspectorProps {
@@ -118,6 +123,9 @@ export function ImageInspector({
     src,
     wheelBehavior: prefs.wheelBehavior,
   });
+  const decoded = useImageDecoded(viewport.image, src);
+  const thumbnail = cardThumbnailFor(src);
+  const shown = useMediaReveal(decoded || gif.ready, src);
 
   const run = async (action: () => Promise<void>) => {
     if (pending.current) return;
@@ -136,6 +144,14 @@ export function ImageInspector({
       setBusy(false);
     }
   };
+  const cancelCrop = () => {
+    setMode("view");
+    setDraft(null);
+  };
+  useViewerEscapeLayer(
+    active && edits === "full" && mode === "crop",
+    cancelCrop,
+  );
   const toggleCrop = () => {
     const nextMode = mode === "crop" ? "view" : "crop";
     setMode(nextMode);
@@ -223,8 +239,20 @@ export function ImageInspector({
   imageStyle.imageRendering =
     prefs.imageRendering === "pixelated" ? "pixelated" : "auto";
   if (grayscale) imageStyle.filter = "grayscale(1)";
+  const previousMode = useRef(mode);
   useEffect(() => {
-    if (active && mode !== "view") viewport.frame.current?.focus();
+    const leftMode = previousMode.current !== mode && mode === "view";
+    previousMode.current = mode;
+    if (!active) return;
+    if (mode !== "view") {
+      viewport.frame.current?.focus();
+      return;
+    }
+    const focusLost =
+      !document.activeElement || document.activeElement === document.body;
+    /** The crop bar unmounts with its focused button; return focus to the image instead of body. */
+    if (leftMode && focusLost)
+      viewport.frame.current?.focus({ preventScroll: true });
   }, [active, mode, viewport.frame]);
   const gestures = createImageGestures({
     active,
@@ -303,6 +331,10 @@ export function ImageInspector({
         >
           <div
             className={styles.content}
+            data-save-hero={
+              (active && mode === "view" && viewport.pose.zoom <= 1) ||
+              undefined
+            }
             style={
               viewport.size.width && viewport.size.height
                 ? {
@@ -314,6 +346,25 @@ export function ImageInspector({
                 : undefined
             }
           >
+            {thumbnail || save.blurhash ? (
+              <div
+                className={styles.placeholder}
+                data-covered={shown || undefined}
+                aria-hidden
+              >
+                {thumbnail ? (
+                  <img
+                    src={thumbnail}
+                    alt=""
+                    decoding="sync"
+                    draggable={false}
+                    style={imageStyle}
+                  />
+                ) : save.blurhash ? (
+                  <BlurHash hash={save.blurhash} />
+                ) : null}
+              </div>
+            ) : null}
             <img
               ref={(element) => {
                 viewport.image.current = element;
@@ -326,6 +377,7 @@ export function ImageInspector({
               src={src}
               alt={save.title ?? ""}
               className={styles.image}
+              data-pending={!shown || undefined}
               decoding="async"
               fetchPriority={active ? "high" : "low"}
               style={{ ...imageStyle, display: gif.ready ? "none" : undefined }}
@@ -351,6 +403,7 @@ export function ImageInspector({
                   ref={gif.canvas}
                   className={styles.image}
                   data-frame={gif.frameIndex}
+                  data-pending={!shown || undefined}
                   style={{
                     ...imageStyle,
                     display: gif.ready ? "block" : "none",
@@ -390,10 +443,7 @@ export function ImageInspector({
         gifFramesOpen={gifFramesOpen}
         onActualSize={actualSize}
         onApplyCrop={applyCrop}
-        onCancelCrop={() => {
-          setMode("view");
-          setDraft(null);
-        }}
+        onCancelCrop={cancelCrop}
         onFit={() => viewport.setPosition(() => FIT_POSE)}
         onFlip={() =>
           void run(() =>

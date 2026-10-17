@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   type DownloadRow,
+  statusBucket,
   statusFeed,
 } from "@/features/downloads/lib/status-feed";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
@@ -15,6 +16,7 @@ import { notify } from "@/shared/lib/toast";
 
 const RetryResultSchema = z.object({ ok: z.boolean(), requeued: z.number() });
 const SkipResultSchema = z.object({ ok: z.boolean(), skipped: z.number() });
+const CancelResultSchema = z.object({ ok: z.boolean(), cancelled: z.number() });
 const ClearUnfinishedResultSchema = z.object({
   changed: z.number().int().nonnegative(),
   ids: z.array(z.string()),
@@ -30,50 +32,79 @@ export function canTrashDownload(row: DownloadRow): boolean {
 }
 
 export function canCancelDownload(row: DownloadRow): boolean {
-  return row.live && row.status !== "failed";
+  const bucket = statusBucket(row.status);
+  return row.live && (bucket === "active" || bucket === "waiting");
+}
+
+export function canRetryDownload(row: DownloadRow): boolean {
+  return row.status === "failed" || row.status === "dead";
+}
+
+function uniqueSaveIds(
+  rows: readonly DownloadRow[],
+  include: (row: DownloadRow) => boolean,
+): string[] {
+  return [...new Set(rows.filter(include).map((row) => row.saveId))];
 }
 
 export async function retryDownloadRows(
   rows: readonly DownloadRow[],
 ): Promise<boolean> {
-  const ids = rows.filter((r) => r.status === "failed").map((r) => r.saveId);
+  const ids = uniqueSaveIds(rows, canRetryDownload);
   if (ids.length === 0) return false;
-  const result = RetryResultSchema.parse(
-    await window.pond.query("saves.retryFailed", { ids }),
-  );
-  if (!result.ok || result.requeued === 0) {
+  try {
+    const result = RetryResultSchema.parse(
+      await window.pond.query("saves.retryFailed", { ids }),
+    );
+    if (!result.ok || result.requeued === 0) throw new Error("retry failed");
+    downloadsSelection.clear();
+    return true;
+  } catch {
     statusFeed.error("Retry failed items", "Couldn't retry failed items.");
     return false;
   }
-  return true;
 }
 
-export function cancelDownloadRows(rows: readonly DownloadRow[]): void {
-  const live = rows.filter(canCancelDownload);
-  if (live.length === 0) return;
-  void Promise.all(
-    live.map((row) => window.pond.pipelineCancelSave(row.saveId)),
-  ).then(() => downloadsSelection.clear());
-}
-
-export function skipDownloadRows(rows: readonly DownloadRow[]): void {
-  const ids = [
-    ...new Set(rows.filter(canSkipDownload).map((row) => row.saveId)),
-  ];
-  if (ids.length === 0) return;
-  void window.pond
-    .query("saves.skipIngest", { ids })
-    .then((value) => {
-      const result = SkipResultSchema.parse(value);
-      if (!result.ok || result.skipped === 0) throw new Error("skip failed");
-      downloadsSelection.clear();
-    })
-    .catch(() =>
-      statusFeed.error(
-        "Skip downloads",
-        "Couldn't skip these downloads. Try again.",
-      ),
+export async function cancelDownloadRows(
+  rows: readonly DownloadRow[],
+): Promise<boolean> {
+  const ids = uniqueSaveIds(rows, canCancelDownload);
+  if (ids.length === 0) return false;
+  try {
+    const result = CancelResultSchema.parse(
+      await window.pond.pipelineCancelSaves(ids),
     );
+    if (!result.ok) throw new Error("cancel failed");
+    downloadsSelection.clear();
+    return result.cancelled > 0;
+  } catch {
+    statusFeed.error(
+      "Cancel downloads",
+      "Couldn't cancel these downloads. Try again.",
+    );
+    return false;
+  }
+}
+
+export async function skipDownloadRows(
+  rows: readonly DownloadRow[],
+): Promise<boolean> {
+  const ids = uniqueSaveIds(rows, canSkipDownload);
+  if (ids.length === 0) return false;
+  try {
+    const result = SkipResultSchema.parse(
+      await window.pond.query("saves.skipIngest", { ids }),
+    );
+    if (!result.ok || result.skipped === 0) throw new Error("skip failed");
+    downloadsSelection.clear();
+    return true;
+  } catch {
+    statusFeed.error(
+      "Skip downloads",
+      "Couldn't skip these downloads. Try again.",
+    );
+    return false;
+  }
 }
 
 interface TrashNotificationDependencies {
@@ -199,7 +230,6 @@ export async function clearUnfinishedDownloads(
 export function trashDownloadRows(
   rows: readonly DownloadRow[],
   dependencies = TRASH_DOWNLOAD_DEPENDENCIES,
-): void {
-  const ids = rows.filter(canTrashDownload).map((row) => row.saveId);
-  void trashDownloadIds(ids, dependencies);
+): Promise<boolean> {
+  return trashDownloadIds(uniqueSaveIds(rows, canTrashDownload), dependencies);
 }

@@ -69,6 +69,29 @@ it("keeps download actions in the row context menu", () => {
   expect(disabled(running)).toEqual([true, false, false, false, false, false]);
 });
 
+it("retries downloads that ran out of attempts but not canceled ones", () => {
+  const actionStates = (status: DownloadRow["status"]) =>
+    Object.fromEntries(
+      visible([row(status)]).map((item) => [
+        item.label,
+        "disabled" in item ? (item.disabled ?? false) : false,
+      ]),
+    );
+
+  expect(actionStates("dead")).toMatchObject({
+    "Retry Download": false,
+    "Cancel Download": true,
+  });
+  expect(actionStates("cancelled")).toMatchObject({
+    "Retry Download": true,
+    "Cancel Download": true,
+  });
+  expect(actionStates("waiting")).toMatchObject({
+    "Retry Download": true,
+    "Cancel Download": false,
+  });
+});
+
 it("offers Open Save only for a finished download", () => {
   expect(visible([row("complete")])[0]?.label).toBe("Open Save");
   expect(

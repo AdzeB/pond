@@ -79,7 +79,7 @@ describe("standalone harvest validation", () => {
 
   it("preserves valid TikTok fields and drops malformed optional metrics", () => {
     const result = runInNewContext(
-      `${browserValidationSource}\nPondHarvestValidation.browserValidators.tiktokItem.parse({ id: '1', createTime: 123, author: { verified: false }, stats: { playCount: 7, diggCount: '7' }, video: { duration: 'bad' } });`,
+      `${browserValidationSource}\nPondHarvestValidation.browserValidators.tiktokItem.parse({ id: '1', createTime: 123, author: { verified: false }, stats: { playCount: 7, diggCount: 'many', shareCount: '1e3' }, video: { duration: 'bad' } });`,
       {},
     );
     expect(result).toMatchObject({
@@ -89,7 +89,17 @@ describe("standalone harvest validation", () => {
       stats: { playCount: 7 },
     });
     expect(result.stats.diggCount).toBeUndefined();
+    expect(result.stats.shareCount).toBeUndefined();
     expect(result.video.duration).toBeUndefined();
+  });
+
+  it("reads TikTok integers sent as digit strings", () => {
+    const result = runInNewContext(
+      `${browserValidationSource}\nPondHarvestValidation.browserValidators.tiktokItem.parse({ createTime: '1564234358', stats: { diggCount: 35200, collectCount: '648' } });`,
+      {},
+    );
+    expect(result.createTime).toBe(1_564_234_358);
+    expect(result.stats).toEqual({ diggCount: 35200, collectCount: 648 });
   });
 
   it("rejects invalid scalars and arrays at object boundaries", () => {

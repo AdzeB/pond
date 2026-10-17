@@ -35,6 +35,8 @@ export type ListHarvestResult =
         | "no_match"
         | "timeout"
         | "unknown"
-        | "rate_limited";
+        | "rate_limited"
+        | "page_error";
       retryAfterSec?: number;
+      error?: string;
     };

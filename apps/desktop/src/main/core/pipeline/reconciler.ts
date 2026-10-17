@@ -211,6 +211,16 @@ export async function cancelSaveIngest(saveId: string): Promise<boolean> {
   return true;
 }
 
+export async function cancelSavesIngest(
+  saveIds: readonly string[],
+): Promise<number> {
+  let cancelled = 0;
+  for (const id of new Set(saveIds)) {
+    if (await cancelSaveIngest(id)) cancelled += 1;
+  }
+  return cancelled;
+}
+
 export async function cancelAllIngest(): Promise<number> {
   const wasPaused = paused;
   pauseReconciler();
@@ -220,10 +230,7 @@ export async function cancelAllIngest(): Promise<number> {
     .from(saves)
     .where(eq(saves.status, "ingesting"))
     .all();
-  let cancelled = 0;
-  for (const { id } of rows) {
-    if (await cancelSaveIngest(id)) cancelled += 1;
-  }
+  const cancelled = await cancelSavesIngest(rows.map((row) => row.id));
   if (!wasPaused) resumeReconciler();
   log.info("[pond pipeline:reconciler] cancelled all ingest", { cancelled });
   return cancelled;

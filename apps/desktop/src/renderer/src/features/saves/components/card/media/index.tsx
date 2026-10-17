@@ -191,6 +191,7 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
   return (
     <div
       className={styles.thumb}
+      data-save-thumb=""
       data-view={view}
       data-thumbnail-bg={
         thumbnailBackground !== "none" ? thumbnailBackground : undefined
@@ -229,6 +230,7 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
             unit={unit}
             pickOptions={pickOptions}
             width={width}
+            opens={mediaUnits[0]?.url}
             onBroken={onBroken}
           />
         ) : null}

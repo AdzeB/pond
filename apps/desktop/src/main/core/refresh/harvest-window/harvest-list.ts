@@ -108,9 +108,11 @@ const ListResultSchema = z
           "timeout",
           "unknown",
           "rate_limited",
+          "page_error",
         ])
         .catch("unknown"),
       retryAfterSec: OptionalCount,
+      error: OptionalText,
     }),
   ])
   .nullable()
@@ -261,6 +263,9 @@ export async function harvestSourceList(
       const collected = await readHarvestCollected(lease.win);
       if (collected != null) result.seen = collected;
     }
+    log.info(
+      `[pond list] ${source} read ${result.entries.length} (reachedEnd=${result.reachedEnd})`,
+    );
     report(source, { ok: true });
     return result;
   } catch (err) {
@@ -378,6 +383,37 @@ function buildListExpressionFor(
   }
 }
 
+type PartialEntries = Awaited<ReturnType<typeof readHarvestPartial>>;
+type ListFailure = Extract<
+  NonNullable<z.infer<typeof ListResultSchema>>,
+  { ok: false }
+>;
+
+function recoveredLikes(
+  partial: PartialEntries,
+  cause: string,
+): ListHarvestResult | null {
+  if (!partial || partial.length === 0) return null;
+  log.info(
+    `[pond list] instagram likes recovered ${partial.length} entries after ${cause}`,
+  );
+  return { ok: true, entries: partial, reachedEnd: false };
+}
+
+export async function settleInstagramLikesFailure(
+  failure: ListFailure,
+  readPartial: () => Promise<PartialEntries>,
+): Promise<ListHarvestResult> {
+  log.warn(
+    `[pond list] instagram likes stopped: ${failure.reason}${failure.error ? ` (${failure.error})` : ""}`,
+  );
+  if (failure.reason === "page_error") {
+    const recovered = recoveredLikes(await readPartial(), "a page error");
+    if (recovered) return recovered;
+  }
+  return failure;
+}
+
 type CollectionListResult =
   | { ok: true; collections: ImportCollectionOption[] }
   | { ok: false; reason: "auth_required" | "rate_limited" | "unknown" };
@@ -457,20 +493,16 @@ export async function harvestInstagramLikedList(
         .catch(() => {});
       await sleep(750);
       const partial = await readHarvestPartial(lease.win);
-      if (partial && partial.length > 0) {
-        log.info(
-          `[pond list] instagram likes recovered ${partial.length} entries after timeout`,
-        );
-        return { ok: true, entries: partial, reachedEnd: false };
-      }
-      return { ok: false, reason: "timeout" };
+      return (
+        recoveredLikes(partial, "timeout") ?? { ok: false, reason: "timeout" }
+      );
     }
     const parsed = ListResultSchema.parse(raw);
     if (!parsed) return { ok: false, reason: "no_match" };
-    if (!parsed.ok) {
-      log.warn(`[pond list] instagram likes stopped: ${parsed.reason}`);
-      return parsed;
-    }
+    if (!parsed.ok)
+      return settleInstagramLikesFailure(parsed, () =>
+        readHarvestPartial(lease.win),
+      );
     report("instagram", { ok: true });
     log.info(
       `[pond list] instagram likes read ${parsed.entries.length} (reachedEnd=${parsed.reachedEnd})`,

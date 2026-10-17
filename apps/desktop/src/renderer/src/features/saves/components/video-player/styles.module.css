@@ -1,5 +1,18 @@
+.frame {
+  position: absolute;
+  inset: 0;
+}
+
 .media {
-  transition: transform var(--ds-duration-medium) var(--ds-easing-standard);
+  position: relative;
+  transition:
+    transform var(--ds-duration-medium) var(--ds-easing-standard),
+    opacity var(--ds-duration-snap) linear;
+
+  &[data-pending] {
+    opacity: 0;
+    transition: transform var(--ds-duration-medium) var(--ds-easing-standard);
+  }
 }
 
 .controls {

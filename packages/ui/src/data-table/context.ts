@@ -59,6 +59,7 @@ export interface DataTableContextValue<T extends RowData> {
     gridMinWidth: number;
     selectionEnabled: boolean;
     selectionCheckboxes: boolean;
+    checkboxVisibility: "always" | "hover";
     expansionEnabled: boolean;
     rows: TanstackRow<typeof DATA_TABLE_FEATURES, T>[];
     rowCount: number;

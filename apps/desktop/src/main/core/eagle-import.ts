@@ -11,6 +11,7 @@ import {
   foldAnnotationsIntoNotes,
 } from "../lib/eagle-annotations";
 import {
+  approximateEagleRules,
   EaglePaletteSchema,
   EagleSmartFolderSchema,
   EagleTagGroupSchema,
@@ -52,12 +53,24 @@ const EagleLibrarySchema = z.object({
   quickAccess: z.array(z.json()).default([]),
 });
 
+/** Eagle writes `modificationTime`, `imageCount`, and `parent` as bookkeeping; the tree already carries `parent`. */
+const EAGLE_SMART_FOLDER_KEYS = new Set([
+  "id",
+  "name",
+  "conditions",
+  "children",
+  "modificationTime",
+  "imageCount",
+  "parent",
+]);
+
 const EagleItemMetaSchema = z.object({
   id: z.string().optional().catch(undefined),
   name: z.string().optional().catch(undefined),
   tags: z.array(z.string()).optional().catch(undefined),
   folders: z.array(z.string()).optional().catch(undefined),
   url: z.string().optional().catch(undefined),
+  ext: z.string().optional().catch(undefined),
   annotation: z.string().optional().catch(undefined),
   width: z.number().optional().catch(undefined),
   height: z.number().optional().catch(undefined),
@@ -84,6 +97,7 @@ interface EagleImportCounts {
   deletedSkipped: number;
   lockedFolders: EagleLockedFolder[];
   droppedFields: string[];
+  approximatedRules: string[];
 }
 
 export type EagleImportResult = EagleImportCounts & OkResult;
@@ -103,7 +117,15 @@ export interface FlattenedEagleFolder {
   sortOrder: number;
 }
 
-export function partitionEagleItemFiles(files: readonly string[]) {
+/** Eagle stores a bookmark as an `.url` Internet Shortcut beside a page screenshot. */
+export function isEagleBookmark(meta: { ext?: string; url?: string }) {
+  return meta.ext?.toLowerCase() === "url" && Boolean(meta.url?.trim());
+}
+
+export function partitionEagleItemFiles(
+  files: readonly string[],
+  bookmark = false,
+) {
   const visible = files.filter(
     (name) => name !== "metadata.json" && !name.startsWith("."),
   );
@@ -111,7 +133,11 @@ export function partitionEagleItemFiles(files: readonly string[]) {
     visible.find((name) => name.toLowerCase().endsWith("_thumbnail.png")) ??
     null;
   return {
-    mediaFiles: visible.filter((name) => name !== thumbnail),
+    mediaFiles: visible.filter(
+      (name) =>
+        name !== thumbnail &&
+        !(bookmark && name.toLowerCase().endsWith(".url")),
+    ),
     thumbnail,
   };
 }
@@ -228,6 +254,7 @@ function emptyResult(error: string): EagleImportResult {
     deletedSkipped: 0,
     lockedFolders: [],
     droppedFields: [],
+    approximatedRules: [],
     error,
   };
 }
@@ -256,6 +283,7 @@ async function importEagle(
   let failed = 0;
   let deletedSkipped = 0;
   const dropped = new Set<string>();
+  const approximated = new Set<string>();
   if (libraryMeta.quickAccess.length) dropped.add("Quick Access shortcuts");
   const existingViews = opts.dryRun ? [] : await listViews();
   const ruleFolders = opts.dryRun
@@ -277,9 +305,14 @@ async function importEagle(
         continue;
       }
       const fields = z.record(z.string(), z.json()).parse(raw);
-      for (const field of Object.keys(fields)) {
-        if (!["id", "name", "conditions", "children"].includes(field))
-          dropped.add(`${parsed.data.name}: ${field}`);
+      for (const [field, value] of Object.entries(fields)) {
+        if (
+          EAGLE_SMART_FOLDER_KEYS.has(field) ||
+          value === "" ||
+          value === null
+        )
+          continue;
+        dropped.add(`${parsed.data.name}: ${field}`);
       }
       const query = eagleSmartFolderQuery(parsed.data, ruleFolders);
       if (!query) {
@@ -291,6 +324,8 @@ async function importEagle(
           );
         continue;
       }
+      for (const rule of approximateEagleRules(parsed.data, ruleFolders))
+        approximated.add(rule);
       const question = `eagle:${parsed.data.id}`;
       const kind =
         parsed.data.children.length || parsed.data.conditions.length === 0
@@ -386,8 +421,12 @@ async function importEagle(
         continue;
       }
 
-      const { mediaFiles, thumbnail } = partitionEagleItemFiles(files);
-      if (mediaFiles.length === 0) {
+      const bookmark = isEagleBookmark(meta);
+      const { mediaFiles, thumbnail } = partitionEagleItemFiles(
+        files,
+        bookmark,
+      );
+      if (mediaFiles.length === 0 && !bookmark) {
         skipped += 1;
         continue;
       }
@@ -460,6 +499,7 @@ async function importEagle(
     deletedSkipped,
     lockedFolders,
     droppedFields: [...dropped],
+    approximatedRules: [...approximated],
   };
   return imported > 0 || skipped > 0 || lockedFolders.length > 0
     ? { ok: true, ...counts }

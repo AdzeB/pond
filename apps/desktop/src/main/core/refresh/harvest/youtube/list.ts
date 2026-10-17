@@ -52,18 +52,20 @@ async function inPageYoutubeList(
       seen.add(id);
 
       const renderer = a.closest(
-        "ytd-playlist-video-renderer, ytd-video-renderer, ytd-compact-video-renderer, ytd-grid-video-renderer",
+        "yt-lockup-view-model, ytd-playlist-video-renderer, ytd-video-renderer, ytd-compact-video-renderer, ytd-grid-video-renderer",
       );
       const title =
         renderer
-          ?.querySelector<HTMLElement>("#video-title")
-          ?.textContent?.trim() ?? undefined;
+          ?.querySelector<HTMLElement>(
+            "#video-title, .ytLockupMetadataViewModelTitle",
+          )
+          ?.textContent?.trim() || undefined;
       const author =
         renderer
           ?.querySelector<HTMLElement>(
-            "#channel-name yt-formatted-string, .ytd-channel-name yt-formatted-string, #text.ytd-channel-name",
+            "#channel-name yt-formatted-string, .ytd-channel-name yt-formatted-string, #text.ytd-channel-name, .ytContentMetadataViewModelMetadataRow a",
           )
-          ?.textContent?.trim() ?? undefined;
+          ?.textContent?.trim() || undefined;
       const thumb =
         renderer?.querySelector<HTMLImageElement>("img")?.src ?? undefined;
       const mediaUrl = thumb && !thumb.startsWith("data:") ? thumb : undefined;

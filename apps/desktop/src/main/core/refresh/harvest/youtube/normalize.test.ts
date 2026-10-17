@@ -19,10 +19,17 @@ const descriptionBox = `<div id="title"><h1>Leg day</h1></div>
   </div>
 </div>`;
 
-async function harvest(
-  html: string,
-  player?: { videoDetails: { shortDescription: string } },
-) {
+interface PlayerResponse {
+  videoDetails: {
+    videoId?: string;
+    shortDescription?: string;
+    viewCount?: string;
+    lengthSeconds?: string;
+  };
+  microformat?: { playerMicroformatRenderer: { publishDate: string } };
+}
+
+async function harvest(html: string, player?: PlayerResponse) {
   const { window } = new JSDOM(
     `<!doctype html><html><body>${html}</body></html>`,
     { url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
@@ -31,6 +38,7 @@ async function harvest(
     document: window.document,
     location: window.location,
     ytInitialPlayerResponse: player,
+    URL,
     setTimeout,
     clearTimeout,
   });
@@ -61,5 +69,41 @@ https://www.htltsupps.com/products/fe...
 
 SCULPTD Training App:
 https://www.sculptdapp.com/`);
+  });
+});
+
+describe("youtube watch metadata", () => {
+  const player: PlayerResponse = {
+    videoDetails: {
+      videoId: "dQw4w9WgXcQ",
+      shortDescription: caption,
+      viewCount: "768679906",
+      lengthSeconds: "234",
+    },
+    microformat: {
+      playerMicroformatRenderer: { publishDate: "2023-12-07T16:00:10-08:00" },
+    },
+  };
+
+  it("reads views, the publish date, and length from the player response", async () => {
+    const page = await harvest(
+      `${descriptionBox}<div id="info-strings"><yt-formatted-string>Premiered Dec 8, 2023</yt-formatted-string></div>`,
+      player,
+    );
+    expect(page?.meta).toMatchObject({
+      views: 768_679_906,
+      publishedAt: "2023-12-07T16:00:10-08:00",
+      durationSec: 234,
+    });
+  });
+
+  it("ignores a player response left over from another video", async () => {
+    const page = await harvest(descriptionBox, {
+      ...player,
+      videoDetails: { ...player.videoDetails, videoId: "otherVideo1" },
+    });
+    expect(page?.meta?.views).toBeUndefined();
+    expect(page?.meta?.durationSec).toBeUndefined();
+    expect(page?.description).not.toBe(caption);
   });
 });

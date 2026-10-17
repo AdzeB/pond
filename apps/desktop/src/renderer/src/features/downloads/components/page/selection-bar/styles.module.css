@@ -1,0 +1,39 @@
+.bar {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.content {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  padding: 8px;
+}
+
+.count {
+  flex: none;
+  padding-inline: 8px 6px;
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-md);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-12);
+}
+
+.actions {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.actions::-webkit-scrollbar {
+  display: none;
+}
+
+.actions > * {
+  flex: none;
+}

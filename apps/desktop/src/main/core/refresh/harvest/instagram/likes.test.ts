@@ -21,7 +21,7 @@ function payload(...parts: string[]) {
   return `for (;;);{"payload":{"layout":{"bloks_payload":"${parts.join(", ")}"}}}`;
 }
 
-function run(firstPage: string, laterPages: string[]) {
+function run(firstPage: string, laterPages: Array<string | Error>) {
   const pages = [...laterPages];
   const context = {
     location: { pathname: "/your_activity/interactions/likes/" },
@@ -35,16 +35,17 @@ function run(firstPage: string, laterPages: string[]) {
       body: "params=%7B%7D&lsd=token",
       headers: {},
     },
-    fetch: async () => ({
-      ok: true,
-      status: 200,
-      text: async () => pages.shift() ?? payload(),
-    }),
+    fetch: async () => {
+      const page = pages.shift() ?? payload();
+      if (page instanceof Error) throw page;
+      return { ok: true, status: 200, text: async () => page };
+    },
   };
-  return runInNewContext(
+  const result = runInNewContext(
     buildInstagramLikesExpression({ knownIds: [], earlyStop: false }),
     context,
   );
+  return Object.assign(result, { context });
 }
 
 describe("Instagram likes", () => {
@@ -93,5 +94,36 @@ describe("Instagram likes", () => {
       [payload()],
     );
     expect(result).toEqual({ ok: false, reason: "no_match" });
+  });
+
+  it("reports a page exception with its message and keeps what it read", async () => {
+    const pending = run(
+      payload(
+        item("Dd3tj5djHqQ", "clips", 2),
+        nextMarker("QVFCdTk4Nkt2ZXZES1Q3ckJ2SkNm=="),
+      ),
+      [
+        payload(
+          item("DeEvTWUNxvZ", "feed", 1),
+          nextMarker("QVFCZW5kT2ZQYWdlVHdvQ3Vyc29y=="),
+        ),
+        new TypeError("Failed to fetch"),
+      ],
+    );
+    await expect(pending).resolves.toEqual({
+      ok: false,
+      reason: "page_error",
+      error: "TypeError: Failed to fetch",
+    });
+    expect(pending.context.__pondHarvestPartial).toEqual([
+      {
+        sourceId: "Dd3tj5djHqQ",
+        url: "https://www.instagram.com/reel/Dd3tj5djHqQ/",
+      },
+      {
+        sourceId: "DeEvTWUNxvZ",
+        url: "https://www.instagram.com/p/DeEvTWUNxvZ/",
+      },
+    ]);
   });
 });
