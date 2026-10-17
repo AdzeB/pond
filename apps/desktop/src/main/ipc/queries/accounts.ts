@@ -75,6 +75,7 @@ const ImportScopeParam = z.strictObject({
     .max(IMPORT_MEDIA_KINDS.length)
     .optional(),
   since: z.string().trim().max(10).optional(),
+  addToFolders: z.boolean().optional(),
 });
 
 interface SetImportScopeDependencies {

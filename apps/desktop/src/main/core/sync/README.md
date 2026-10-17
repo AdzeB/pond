@@ -64,6 +64,15 @@ filtered afterward.
   (`harvest-window/harvest-list.ts`) load and walk them.
 - Cosmos, Are.na, and Threads import every list.
 
+A save harvested from chosen collections is filed into Folders named
+`<Source>/<collection>` (`collection-folders.ts`). Harvesters tag each entry
+with `collectionIds` as they merge collections (`addCollectionEntry`), and the
+run files every harvested entry, not just new ones, so a full walk after a
+scope change files saves Pond already had. Filing adds to a save's Folders and
+never removes one. `SourceSyncPrefs.collectionFolders` remembers each
+collection's Folder id, so renaming the Folder keeps it in use; a deleted one
+is created again. `importScope.addToFolders: false` turns filing off.
+
 Media kinds and a `since` date are filters, not walks: list data is too patchy
 to judge a post before capture, and filtering early would break early stop.
 `applyImportFilter` (`pipeline/import-filter.ts`) runs in `harvest_metadata`,

@@ -109,6 +109,16 @@ describe("importScopePatch", () => {
     );
   });
 
+  it("walks again in full when Add to Folders turns back on", () => {
+    expect(
+      importScopePatch(
+        "pinterest",
+        { importScope: { collections: [BOARD], addToFolders: false } },
+        { collections: [BOARD] },
+      ),
+    ).toMatchObject({ lastFullSyncAt: null, resumeCursor: null });
+  });
+
   it("keeps the watermark when the same selection is saved again", () => {
     const scope = {
       collections: [BOARD, { id: "88", name: "Type" }],

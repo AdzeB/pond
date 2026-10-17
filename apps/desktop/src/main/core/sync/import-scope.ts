@@ -98,5 +98,6 @@ function scopeKey(scope: ImportScope | undefined): string {
     sorted(scope.collections?.map((collection) => collection.id)),
     sorted(scope.mediaKinds),
     scope.since ?? "*",
+    scope.addToFolders === false ? "loose" : "filed",
   ].join("|");
 }

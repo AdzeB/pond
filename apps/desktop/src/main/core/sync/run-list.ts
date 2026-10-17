@@ -15,6 +15,7 @@ import {
 } from "../refresh/harvest-window";
 import { resolveAccountHandle } from "./account-key";
 import { getAccountSync, partitionForAccount } from "./accounts";
+import { fileIntoFolders } from "./collection-folders";
 import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
 import { listHarvestPlan } from "./import-scope";
 import {
@@ -232,6 +233,7 @@ export async function syncListSource(
     recovery: 0,
   };
   if (fresh.length === 0) {
+    await fileIntoFolders(account, combined);
     const lastSyncedAt = await persistWatermark(accountId, {
       full: baseline.full && harvest.reachedEnd,
       newestId: null,
@@ -286,6 +288,7 @@ export async function syncListSource(
     ev.outcome = "aborted";
     return;
   }
+  await fileIntoFolders(account, combined);
 
   const lastSyncedAt = await persistWatermark(accountId, {
     full: baseline.full && harvest.reachedEnd,

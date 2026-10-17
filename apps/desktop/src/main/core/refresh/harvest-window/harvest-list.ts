@@ -9,6 +9,7 @@ import log from "electron-log/main.js";
 import { z } from "zod";
 import { markAtRisk, report } from "../../pipeline/rate-governor";
 import { arenaProfileUrl, buildArenaListExpression } from "../harvest/arena";
+import { addCollectionEntry } from "../harvest/collection-entries";
 import { buildCosmosListExpression, COSMOS_LIST_URL } from "../harvest/cosmos";
 import {
   buildInstagramCollectionsExpression,
@@ -567,7 +568,7 @@ async function harvestEachCollection(
       continue;
     }
     for (const entry of result.entries) {
-      if (!entries.has(entry.sourceId)) entries.set(entry.sourceId, entry);
+      addCollectionEntry(entries, entry.sourceId, entry, collection.id);
     }
     reachedEnd &&= result.reachedEnd;
   }

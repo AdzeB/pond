@@ -187,9 +187,15 @@ describe("walkBoards", () => {
       { knownIds: [] },
       feed.fetchPage,
     );
+    const [one, two, three, four] = pins(["1", "2", "3", "4"]);
     expect(result).toEqual({
       ok: true,
-      entries: pins(["1", "2", "3", "4"]),
+      entries: [
+        { ...one, collectionIds: ["design"] },
+        { ...two, collectionIds: ["design"] },
+        { ...three, collectionIds: ["design", "type"] },
+        { ...four, collectionIds: ["type"] },
+      ],
       reachedEnd: true,
       seen: 4,
     });
@@ -230,7 +236,7 @@ describe("walkBoards", () => {
     );
     expect(result).toEqual({
       ok: true,
-      entries: pins(["4"]),
+      entries: pins(["4"]).map((pin) => ({ ...pin, collectionIds: ["type"] })),
       reachedEnd: true,
       seen: 1,
     });

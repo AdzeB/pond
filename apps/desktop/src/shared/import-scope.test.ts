@@ -63,6 +63,27 @@ describe("normalizeImportScope", () => {
     ).toEqual({ ok: true, scope: { listKinds: ["liked"] } });
   });
 
+  it("keeps Add to Folders off only alongside collections", () => {
+    expect(
+      normalizeImportScope("twitter", {
+        listKinds: ["saved"],
+        collections: [{ id: "17", name: "Type" }],
+        addToFolders: false,
+      }),
+    ).toEqual({
+      ok: true,
+      scope: {
+        listKinds: ["saved"],
+        collections: [{ id: "17", name: "Type" }],
+        addToFolders: false,
+      },
+    });
+    expect(normalizeImportScope("twitter", { addToFolders: false })).toEqual({
+      ok: true,
+      scope: {},
+    });
+  });
+
   it("dedupes boards and falls back to the id for a blank name", () => {
     expect(
       normalizeImportScope("pinterest", {

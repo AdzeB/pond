@@ -78,6 +78,8 @@ export interface ImportScope {
   mediaKinds?: ImportMediaKind[];
   /** Local calendar day (`YYYY-MM-DD`); posts published before it are skipped. */
   since?: string;
+  /** False keeps collection saves out of Folders; omitted files each collection under its Source. */
+  addToFolders?: boolean;
 }
 
 export interface SourceSyncPrefs {
@@ -99,6 +101,8 @@ export interface SourceSyncPrefs {
   importScope?: ImportScope;
   /** True on a newly connected Account until you confirm what to import. Sync waits while it is set. */
   importPending?: boolean;
+  /** Pond Folder id per collection id, so renaming a Folder doesn't make sync create another. */
+  collectionFolders?: Record<string, string>;
 }
 
 export const DEFAULT_SOURCE_SYNC_PREFS: SourceSyncPrefs = {

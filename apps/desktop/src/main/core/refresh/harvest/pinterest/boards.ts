@@ -1,5 +1,6 @@
 import type { ImportCollection } from "@pond/schema/db";
 import { z } from "zod";
+import { addCollectionEntry } from "../collection-entries";
 import type {
   ListEntry,
   ListHarvestArgs,
@@ -266,7 +267,7 @@ export async function walkBoards(
       let fresh = 0;
       for (const entry of result.page.items) {
         if (!known.has(entry.sourceId)) fresh += 1;
-        if (!entries.has(entry.sourceId)) entries.set(entry.sourceId, entry);
+        addCollectionEntry(entries, entry.sourceId, entry, board.id);
       }
       if (earlyStop && result.page.items.length > 0 && fresh === 0) {
         knownStreak += 1;

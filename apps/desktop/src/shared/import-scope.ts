@@ -125,6 +125,7 @@ export function normalizeImportScope(
       return { ok: false, problem: "no_collections" };
     }
     next.collections = collections;
+    if (scope.addToFolders === false) next.addToFolders = false;
   }
 
   if (scope.mediaKinds && options.mediaKinds.length > 0) {

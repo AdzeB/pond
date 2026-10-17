@@ -20,6 +20,8 @@ export interface ListEntry {
   mediaUrls?: Array<{ url: string; type?: MediaType; poster?: string }>;
   mediaType?: MediaType;
   listKinds?: ListKind[];
+  /** Import collections the entry was found in, so sync can file it into matching Folders. */
+  collectionIds?: string[];
 }
 
 export type ListHarvestResult =

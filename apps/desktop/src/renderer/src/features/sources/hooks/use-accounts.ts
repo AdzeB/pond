@@ -42,6 +42,7 @@ const ImportScopeSchema = z
       .catch(undefined),
     mediaKinds: z.array(z.enum(IMPORT_MEDIA_KINDS)).optional().catch(undefined),
     since: z.string().optional().catch(undefined),
+    addToFolders: z.boolean().optional().catch(undefined),
   })
   .optional()
   .catch(undefined);

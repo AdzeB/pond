@@ -7,6 +7,7 @@ import { getDb } from "../../db";
 import { type EnqueueItem, enqueue } from "../pipeline/enqueue";
 import { mergeListKindsOntoExisting } from "../pipeline/list-kinds";
 import { createQueueGeneration } from "../pipeline/queue-generations";
+import { addCollectionEntry } from "../refresh/harvest/collection-entries";
 import type {
   BookmarksHarvestArgs,
   BookmarksHarvestResult,
@@ -17,6 +18,7 @@ import {
   harvestTwitterLikes,
 } from "../refresh/harvest-window";
 import { partitionForAccount } from "./accounts";
+import { fileIntoFolders } from "./collection-folders";
 import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
 import { listHarvestPlan } from "./import-scope";
 import {
@@ -172,7 +174,12 @@ export async function syncTwitter(
     fresh: fresh.length,
     recovery: recovery.length,
   };
+  const filing = entries.map((e) => ({
+    sourceId: e.tweetId,
+    collectionIds: e.collectionIds,
+  }));
   if (total === 0) {
+    await fileIntoFolders(account, filing);
     const lastSyncedAt = await persistWatermark(accountId, {
       full: baseline.full,
       newestId: null,
@@ -224,6 +231,7 @@ export async function syncTwitter(
     ev.outcome = "aborted";
     return;
   }
+  await fileIntoFolders(account, filing);
 
   const lastSyncedAt = await persistWatermark(accountId, {
     full: baseline.full,
@@ -252,10 +260,12 @@ async function harvestFolders(
   args: BookmarksHarvestArgs,
   opts: Parameters<typeof harvestTwitterBookmarkFolder>[2],
 ): Promise<BookmarksHarvestResult> {
-  const entries: Extract<BookmarksHarvestResult, { ok: true }>["entries"] = [];
+  const entries = new Map<
+    string,
+    Extract<BookmarksHarvestResult, { ok: true }>["entries"][number]
+  >();
   const captures: Extract<BookmarksHarvestResult, { ok: true }>["captures"] =
     [];
-  const seen = new Set<string>();
   let reachedEnd = true;
   let failed: Extract<BookmarksHarvestResult, { ok: false }> | null = null;
   for (const folder of folders) {
@@ -275,13 +285,11 @@ async function harvestFolders(
       continue;
     }
     for (const entry of result.entries) {
-      if (seen.has(entry.tweetId)) continue;
-      seen.add(entry.tweetId);
-      entries.push(entry);
+      addCollectionEntry(entries, entry.tweetId, entry, folder.id);
     }
     captures.push(...result.captures);
     reachedEnd &&= result.reachedEnd;
   }
-  if (failed && entries.length === 0) return failed;
-  return { ok: true, entries, captures, reachedEnd };
+  if (failed && entries.size === 0) return failed;
+  return { ok: true, entries: [...entries.values()], captures, reachedEnd };
 }
