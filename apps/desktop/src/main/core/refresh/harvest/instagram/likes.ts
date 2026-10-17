@@ -48,7 +48,7 @@ export function buildInstagramLikesExpression(args: ListHarvestArgs): string {
   return `(async () => {
     const args = ${JSON.stringify(enriched)};
     try { return await ${fnSrc}(args); }
-    catch (e) { return { ok: false, reason: 'timeout', error: String(e) }; }
+    catch (e) { return { ok: false, reason: 'page_error', error: String(e) }; }
   })()`;
 }
 

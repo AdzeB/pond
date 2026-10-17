@@ -18,6 +18,7 @@ const GAP_TEXT = new Map<string, string>([
   ["no_match", "not available"],
   ["fallback", "unavailable"],
   ["unknown", "failed"],
+  ["page_error", "page error"],
 ]);
 
 export function listGapNote(label: string, reason: string): string {
