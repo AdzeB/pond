@@ -99,8 +99,23 @@ function makePorts(
     persistSave,
     runCaptureTweet: createCaptureTweetRunner(ports),
     screenshotTweetDual,
+    screenshotThreadsDual,
+    renderTweetCardPng,
+    renderThreadsCardPng,
   };
 }
+
+describe("isCaptureTweetStale", () => {
+  it("asks only replies for the parent-aware pass", () => {
+    const reply = { ...replyRaw(), captureTweetVersion: 12 };
+    const { replyTo: _, ...post } = reply.capture;
+    expect(isCaptureTweetStale(reply)).toBe(true);
+    expect(isCaptureTweetStale({ ...reply, captureTweetVersion: 13 })).toBe(
+      false,
+    );
+    expect(isCaptureTweetStale({ ...reply, capture: post })).toBe(false);
+  });
+});
 
 describe("runCaptureTweet reply parent enrichment", () => {
   it("merges parent metadata without persisting parent screenshots", async () => {
@@ -134,6 +149,56 @@ describe("runCaptureTweet reply parent enrichment", () => {
     );
   });
 
+  it("crops the reply screenshot from its parent when the native card misses", async () => {
+    const harness = makePorts(save(replyRaw()), {
+      light: { ok: true, png: rendered },
+      dark: { ok: true, png: rendered },
+    });
+    harness.renderTweetCardPng.mockResolvedValue(null);
+
+    await harness.runCaptureTweet("save-1");
+
+    const calls = harness.screenshotTweetDual.mock.calls.map(([args]) => args);
+    expect(calls).toContainEqual(
+      expect.objectContaining({ sourceId: "2", parentId: "1" }),
+    );
+    expect(calls.find((args) => args.sourceId === "1")).not.toHaveProperty(
+      "parentId",
+    );
+  });
+
+  it("crops a Threads reply screenshot from its parent post", async () => {
+    const raw = replyRaw();
+    raw.capture.source = "threads";
+    raw.capture.url = "https://www.threads.com/@alice/post/ReplyCode";
+    if (raw.capture.replyTo) {
+      raw.capture.replyTo.source = "threads";
+      raw.capture.replyTo.url = "https://www.threads.com/@bob/post/ParentCode";
+    }
+    const harness = makePorts(
+      {
+        ...save(raw),
+        source: "threads",
+        sourceId: "ReplyCode",
+        url: "https://www.threads.com/@alice/post/ReplyCode",
+      },
+      {
+        light: { ok: true, png: rendered },
+        dark: { ok: true, png: rendered },
+      },
+    );
+    harness.renderThreadsCardPng.mockResolvedValue(null);
+
+    await harness.runCaptureTweet("save-1");
+
+    expect(harness.screenshotThreadsDual).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceId: "ReplyCode",
+        parentId: "ParentCode",
+      }),
+    );
+  });
+
   it("reports a transiently missing parent and retries on the next run", async () => {
     const harness = makePorts(save(replyRaw()), {
       light: { ok: true, png: rendered },
@@ -150,7 +215,7 @@ describe("runCaptureTweet reply parent enrichment", () => {
       "capture_tweet: reply parent still pending",
     );
     expect(harness.screenshotTweetDual).toHaveBeenCalledTimes(2);
-    expect(harness.getStored().rawJson?.captureTweetVersion).toBe(12);
+    expect(harness.getStored().rawJson?.captureTweetVersion).toBe(13);
     expect(isCaptureTweetStale(harness.getStored().rawJson)).toBe(false);
   });
 

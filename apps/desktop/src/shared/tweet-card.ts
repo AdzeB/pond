@@ -211,7 +211,9 @@ export function buildTweetCardData(
   const quoted = buildQuoted(capture.quoted);
   if (quoted) data.quoted = quoted;
   const replyTo = buildQuoted(capture.replyTo);
-  if (replyTo) data.replyTo = replyTo;
+  if (replyTo && (replyTo.text || replyTo.media?.length)) {
+    data.replyTo = replyTo;
+  }
 
   const card = buildCard(capture);
   if (card) data.card = card;

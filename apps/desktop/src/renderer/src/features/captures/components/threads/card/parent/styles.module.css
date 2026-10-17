@@ -1,0 +1,50 @@
+.parent {
+  display: flex;
+  gap: 12px;
+}
+
+.rail {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  width: 36px;
+}
+
+.line {
+  flex: 1;
+  width: 2px;
+  margin: 6px 0;
+  background: var(--tw-border);
+  border-radius: var(--ds-radius-full);
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 16px;
+}
+
+.name {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-lg);
+  font-weight: 700;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.verified {
+  flex-shrink: 0;
+  color: var(--tw-verified);
+}
+
+.content .text {
+  margin: 2px 0 0;
+  font-size: var(--ds-text-lg);
+  line-height: 20px;
+}

@@ -3,6 +3,7 @@ import { Header } from "@/features/captures/components/tweet/card/header";
 import { LinkCard } from "@/features/captures/components/tweet/card/link-card";
 import { MediaGrid } from "@/features/captures/components/tweet/card/media-grid";
 import { Metrics } from "@/features/captures/components/tweet/card/metrics";
+import { ParentPost } from "@/features/captures/components/tweet/card/parent";
 import { QuotedCard } from "@/features/captures/components/tweet/card/quoted-card";
 import type { TweetCardData } from "./lib/data";
 import styles from "./styles.module.css";
@@ -37,15 +38,15 @@ export function TweetCard({
 
   return (
     <article className={styles.card} data-scheme={scheme}>
+      {data.replyTo ? <ParentPost data={data.replyTo} /> : null}
+
       <Header author={author} />
 
-      {isReply && data.replyingTo ? (
+      {isReply && data.replyingTo && !data.replyTo ? (
         <p className={styles["reply-context"]}>
           Replying to <span className={styles.entity}>@{data.replyingTo}</span>
         </p>
       ) : null}
-
-      {data.replyTo ? <QuotedCard data={data.replyTo} /> : null}
 
       {text ? <Body text={text} lang={data.lang} /> : null}
 

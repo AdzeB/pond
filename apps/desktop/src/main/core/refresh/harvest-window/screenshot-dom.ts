@@ -1,8 +1,12 @@
-export function buildArticleRectExpression(tweetId: string): string {
+export function buildArticleRectExpression(
+  tweetId: string,
+  parentId?: string,
+): string {
   /** Scroll to top, not center: centering yields a negative top that clips the article. */
   return `(async () => {
     try {
       const tweetId = ${JSON.stringify(tweetId)};
+      const parentId = ${JSON.stringify(parentId ?? null)};
       const findArticle = () => {
         const anchor = document.querySelector('a[href*="/status/' + tweetId + '"]');
         return anchor && anchor.closest('article');
@@ -15,12 +19,32 @@ export function buildArticleRectExpression(tweetId: string): string {
       }
       if (!article) return null;
 
-      /** Hide every other timeline cell so replies and the composer can't bleed into the clip. */
+      const findParent = () => {
+        if (!parentId) return null;
+        const pattern = new RegExp('/status/' + parentId + '(?:/|$)');
+        for (const a of document.querySelectorAll('a[href*="/status/' + parentId + '"]')) {
+          let path = '';
+          try { path = new URL(a.href, 'https://x.com').pathname; } catch (_) {}
+          if (!pattern.test(path)) continue;
+          const el = a.closest('article');
+          if (el && el !== article && !article.contains(el) && !el.contains(article)) return el;
+        }
+        return null;
+      };
+      const parentDeadline = Date.now() + 3_000;
+      let parent = findParent();
+      while (parentId && !parent && Date.now() < parentDeadline) {
+        await new Promise(r => setTimeout(r, 200));
+        parent = findParent();
+      }
+
+      /** Hide every other timeline cell so replies, older ancestors, and the composer can't bleed into the clip. */
       try {
         const cell = article.closest('[data-testid="cellInnerDiv"]');
+        const parentCell = parent && parent.closest('[data-testid="cellInnerDiv"]');
         if (cell) {
           for (const c of document.querySelectorAll('[data-testid="cellInnerDiv"]')) {
-            if (c !== cell) c.style.setProperty('display', 'none', 'important');
+            if (c !== cell && c !== parentCell) c.style.setProperty('display', 'none', 'important');
           }
         }
       } catch (_) {}
@@ -77,6 +101,17 @@ export function buildArticleRectExpression(tweetId: string): string {
         right = Math.min(r.right, Math.max(...rects.map((b) => b.right)));
       }
 
+      if (parent) {
+        const pr = parent.getBoundingClientRect();
+        const tops = [];
+        for (const sel of ['[data-testid^="UserAvatar-Container"]', '[data-testid="User-Name"]']) {
+          const el = parent.querySelector(sel);
+          if (el && el.closest('article') === parent) tops.push(el.getBoundingClientRect().top);
+        }
+        const parentTop = tops.length ? Math.max(pr.top, Math.min(...tops)) : pr.top;
+        if (pr.height > 0 && parentTop < top) top = Math.max(0, parentTop);
+      }
+
       /** Bottom edge: action-bar buttons, then their role="group" wrapper, then the content union, finally the article rect; each fallback is content-safe. */
       let actionBottom = 0;
       for (const b of article.querySelectorAll('[data-testid="reply"],[data-testid="retweet"],[data-testid="unretweet"],[data-testid="like"],[data-testid="unlike"],[data-testid="bookmark"]')) {
@@ -118,13 +153,18 @@ export function buildArticleRectExpression(tweetId: string): string {
   })()`;
 }
 
-export function buildThreadsPostRectExpression(code: string): string {
+export function buildThreadsPostRectExpression(
+  code: string,
+  parentCode?: string,
+): string {
   return `(async () => {
     try {
       const code = ${JSON.stringify(code)};
+      const parentCode = ${JSON.stringify(parentCode ?? null)};
+      const CARD = '[data-pressable-container], [role="article"], article';
       const findCard = () => {
         const anchor = document.querySelector('a[href*="/post/' + code + '"]');
-        return anchor && (anchor.closest('[data-pressable-container], [role="article"], article') || anchor.parentElement);
+        return anchor && (anchor.closest(CARD) || anchor.parentElement);
       };
       const deadline = Date.now() + 10_000;
       let card = findCard();
@@ -134,10 +174,29 @@ export function buildThreadsPostRectExpression(code: string): string {
       }
       if (!card) return null;
 
+      const related = (a, b) => a === b || a.contains(b) || b.contains(a);
+      const findParent = () => {
+        if (!parentCode) return null;
+        const pattern = new RegExp('/post/' + parentCode + '(?:/|$)');
+        for (const a of document.querySelectorAll('a[href*="/post/' + parentCode + '"]')) {
+          let path = '';
+          try { path = new URL(a.href, 'https://www.threads.com').pathname; } catch (_) {}
+          if (!pattern.test(path)) continue;
+          const el = a.closest(CARD);
+          if (el && !related(el, card)) return el;
+        }
+        return null;
+      };
+      const parentDeadline = Date.now() + 3_000;
+      let parent = findParent();
+      while (parentCode && !parent && Date.now() < parentDeadline) {
+        await new Promise(r => setTimeout(r, 200));
+        parent = findParent();
+      }
+
       try {
-        const siblings = document.querySelectorAll('[data-pressable-container], [role="article"], article');
-        for (const s of siblings) {
-          if (s !== card && !card.contains(s) && !s.contains(card)) {
+        for (const s of document.querySelectorAll(CARD)) {
+          if (!related(s, card) && !(parent && related(s, parent))) {
             s.style.setProperty('display', 'none', 'important');
           }
         }
@@ -148,13 +207,18 @@ export function buildThreadsPostRectExpression(code: string): string {
       await new Promise(r => requestAnimationFrame(() => r(null)));
       await new Promise(r => setTimeout(r, 150));
 
-      const r = card.getBoundingClientRect();
+      const c = card.getBoundingClientRect();
+      const p = parent && parent.getBoundingClientRect();
+      const top = p && p.height > 0 ? Math.max(0, Math.min(c.top, p.top)) : c.top;
+      const left = p && p.height > 0 ? Math.min(c.left, p.left) : c.left;
+      const right = p && p.height > 0 ? Math.max(c.right, p.right) : c.right;
+      const r = { left, top, width: right - left, height: c.bottom - top };
       let quotedUrl;
       try {
         for (const link of card.querySelectorAll('a[href*="/post/"]')) {
           const u = new URL(link.href, 'https://www.threads.com');
           const m = u.pathname.match(/\\/post\\/([A-Za-z0-9_-]+)/);
-          if (m && m[1] !== code) {
+          if (m && m[1] !== code && m[1] !== parentCode) {
             quotedUrl = 'https://www.threads.com' + u.pathname;
             break;
           }
