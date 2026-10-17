@@ -1,8 +1,10 @@
 import {
   IconAnimationFrames,
+  IconCheck,
   IconCrop,
   IconExpand,
   IconFlipHorizontal2,
+  IconImagePlus,
   IconMediaFastBackwards,
   IconMediaFastForward,
   IconMediaPause,
@@ -10,8 +12,9 @@ import {
   IconRefresh,
   IconRotateImageClockwise,
   IconSizeLg,
+  IconXmark,
 } from "@pond/icons";
-import { Button, stepPlaybackRate } from "@pond/ui";
+import { stepPlaybackRate } from "@pond/ui";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import type { ReactNode } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
@@ -99,36 +102,38 @@ function Hud({
     return (
       <ChromePortal slot="top">
         <ViewerHud.Bar
+          key="crop"
+          className={styles["mode-bar"]}
+          data-mode="crop"
           label="Crop"
-          center={
-            <div className={styles.crop}>
-              <span className={styles.hint}>Select an area to crop</span>
-              <Button
-                size="sm"
-                variant="primary"
+          end={
+            <ViewerHud.Tools
+              tooltipSide="bottom"
+              role="group"
+              aria-label="Crop Actions"
+            >
+              <ViewerHud.Tool
+                label="Apply Crop"
                 disabled={busy || !canCrop}
-                loading={busy}
                 onClick={onApplyCrop}
               >
-                Apply Crop
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
+                <IconCheck />
+              </ViewerHud.Tool>
+              <ViewerHud.Tool
+                label="Save as New Image"
                 disabled={busy || !canCrop}
                 onClick={onSaveCrop}
               >
-                Save as New Image
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
+                <IconImagePlus />
+              </ViewerHud.Tool>
+              <ViewerHud.Tool
+                label="Cancel"
                 disabled={busy}
                 onClick={onCancelCrop}
               >
-                Cancel
-              </Button>
-            </div>
+                <IconXmark />
+              </ViewerHud.Tool>
+            </ViewerHud.Tools>
           }
         />
       </ChromePortal>
@@ -137,6 +142,9 @@ function Hud({
   return (
     <ChromePortal slot="top">
       <ViewerHud.Bar
+        key="view"
+        className={styles["mode-bar"]}
+        data-mode="view"
         label="Image"
         collapseCenter
         start={

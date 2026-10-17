@@ -13,6 +13,10 @@ const chromeCss = readFileSync(
   "utf8",
 );
 const controls = readFileSync(resolve(directory, "index.tsx"), "utf8");
+const controlsCss = readFileSync(
+  resolve(directory, "styles.module.css"),
+  "utf8",
+);
 
 it("uses the integrated top toolbar for the image controls", () => {
   expect(controls).toContain('ChromePortal slot="top"');
@@ -34,4 +38,8 @@ it("uses the integrated top toolbar for the image controls", () => {
   expect(hudCss).toContain(
     "grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr)",
   );
+  expect(controlsCss).toContain("@starting-style");
+  expect(controlsCss).toContain("prefers-reduced-motion: reduce");
+  expect(controlsCss).toContain("opacity 150ms");
+  expect(controlsCss).not.toContain("transform 180ms");
 });

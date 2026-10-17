@@ -248,7 +248,7 @@ export function ImageInspector({
     >
       <span id={instructionsId} className={styles.instructions}>
         {mode === "crop"
-          ? "Crop. Arrow keys move the selection, Control or Command and arrow keys resize, Shift increases the step. Enter applies the crop. Escape cancels."
+          ? "Crop. Edges and centers snap to guides. Arrow keys move the selection, Control or Command and arrow keys resize, Shift increases the step. Enter applies the crop. Escape cancels."
           : "Arrow keys pan. Plus and minus zoom."}
       </span>
       <div

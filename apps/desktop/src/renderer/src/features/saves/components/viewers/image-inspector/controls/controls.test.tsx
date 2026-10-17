@@ -199,4 +199,47 @@ describe("image inspector toolbar", () => {
     expect(labeled("Rotate")).toBeNull();
     expect(labeled("Crop")).toBeNull();
   });
+
+  it("puts three tooltip-backed icon actions at the end of crop mode", async () => {
+    const noop = vi.fn();
+    await act(async () =>
+      root.render(
+        <ImageControls.Hud
+          actual={1}
+          active
+          busy={false}
+          canCrop
+          itemIndex={0}
+          itemTotal={1}
+          mode="crop"
+          onActualSize={noop}
+          onApplyCrop={noop}
+          onCancelCrop={noop}
+          onFit={noop}
+          onFlip={noop}
+          onRotate={noop}
+          onSaveCrop={noop}
+          onToggleCrop={noop}
+          onZoomIn={noop}
+          onZoomOut={noop}
+          onZoomRatio={noop}
+        />,
+      ),
+    );
+
+    expect(host.textContent).not.toContain("Select an area to crop");
+    expect(host.querySelector('[aria-label="Aspect Ratio"]')).toBeNull();
+    const actions = ["Apply Crop", "Save as New Image", "Cancel"];
+    for (const label of actions) {
+      const button = host.querySelector<HTMLButtonElement>(
+        `button[aria-label="${label}"]`,
+      );
+      expect(button, label).not.toBeNull();
+      expect(
+        button?.closest('[data-viewer-bar-slot="end"]'),
+        `${label} should be in the top-right group`,
+      ).not.toBeNull();
+      expect(button?.textContent, `${label} should be icon-only`).toBe("");
+    }
+  });
 });
