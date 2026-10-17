@@ -2,8 +2,9 @@
   display: flex;
   flex-direction: column;
   gap: 32px;
-  min-height: 100vh;
+  height: 100dvh;
   padding: 40px;
+  overflow-y: auto;
   color: var(--ds-gray-12);
   background: var(--ds-gray-2);
 }

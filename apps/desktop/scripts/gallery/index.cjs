@@ -25,7 +25,7 @@ app.whenReady().then(async () => {
   if (!screenshot) return;
   await new Promise((resolve) => setTimeout(resolve, 2000));
   const height = await window.webContents.executeJavaScript(
-    "document.documentElement.scrollHeight",
+    "document.querySelector('main').scrollHeight",
   );
   window.setContentSize(1400, Math.min(height, 6000));
   await new Promise((resolve) => setTimeout(resolve, 500));
