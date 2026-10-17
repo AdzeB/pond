@@ -1,5 +1,5 @@
 import { PrefsSchema } from "@pond/schema";
-import { act } from "react";
+import { act, useLayoutEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
@@ -101,6 +101,34 @@ it("places image inspector controls in the integrated top toolbar", async () => 
   const topSlot = host.querySelector('[data-slot="top"]');
   expect(viewerRoot?.contains(fit ?? null)).toBe(true);
   expect(topSlot?.parentElement?.parentElement).toBe(viewerRoot);
+});
+
+it("mounts toolbars in the chrome bar before stage layout effects measure", async () => {
+  const bars: (Element | null | undefined)[] = [];
+  function Stage() {
+    useLayoutEffect(() => {
+      bars.push(
+        host.querySelector("[data-probe]")?.closest("[data-slot]")
+          ?.parentElement,
+      );
+    }, []);
+    return (
+      <ChromePortal slot="top">
+        <span data-probe="" />
+      </ChromePortal>
+    );
+  }
+
+  await act(async () => {
+    root.render(
+      <ViewerChrome>
+        <Stage />
+      </ViewerChrome>,
+    );
+  });
+
+  expect(bars).toHaveLength(1);
+  expect(bars[0]?.parentElement).toBe(host.querySelector("[data-viewer-root]"));
 });
 
 it("shows only media when controls are disabled", async () => {
