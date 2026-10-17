@@ -3,6 +3,11 @@ import {
   getLastListPath,
   rememberListPath,
 } from "@/features/saves/lib/list-path";
+import {
+  cardMedia,
+  transitionSave,
+  viewerMedia,
+} from "@/features/saves/lib/save-transition";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 import { getAppRouter } from "@/shared/lib/app-router";
@@ -24,11 +29,18 @@ export function openSave(id: string): void {
   saveLibraryBridge.openSaveDetails(id);
   const router = getAppRouter();
   if (!router) return;
-  rememberListPath(
-    router.state.location.pathname,
-    router.state.location.searchStr,
-  );
-  router.history.push(path);
+  const { pathname, searchStr } = router.state.location;
+  rememberListPath(pathname, searchStr);
+  if (saveIdFromPath(pathname) !== null) {
+    router.history.push(path);
+    return;
+  }
+  transitionSave({
+    router,
+    path,
+    source: cardMedia(id),
+    target: viewerMedia,
+  });
 }
 
 export function closeSave(): void {
@@ -36,8 +48,21 @@ export function closeSave(): void {
   const cursor = selection.getCursor();
   primarySelection.set(cursor);
   if (!router) return;
-  router.history.push(getLastListPath());
-  if (cursor) void resultNavigation.reveal(cursor, { focus: true });
+  const reveal = cursor
+    ? () => resultNavigation.reveal(cursor, { focus: true })
+    : undefined;
+  if (saveIdFromPath(router.state.location.pathname) === null) {
+    router.history.push(getLastListPath());
+    void reveal?.();
+    return;
+  }
+  transitionSave({
+    router,
+    path: getLastListPath(),
+    source: viewerMedia(),
+    target: () => (cursor ? cardMedia(cursor) : null),
+    settle: reveal,
+  });
 }
 
 export function syncPrimaryFromPath(pathname: string): void {

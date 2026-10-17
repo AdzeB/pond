@@ -309,6 +309,10 @@ export function ImageInspector({
         >
           <div
             className={styles.content}
+            data-save-hero={
+              (active && mode === "view" && viewport.pose.zoom <= 1) ||
+              undefined
+            }
             style={
               viewport.size.width && viewport.size.height
                 ? {

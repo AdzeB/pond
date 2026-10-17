@@ -159,6 +159,29 @@ html[data-reduce-motion="true"] *::after {
   animation-iteration-count: 1;
 }
 
+/* Opening and closing a save share one view transition; the live page stays clickable underneath. */
+::view-transition {
+  pointer-events: none;
+}
+
+::view-transition-group(root),
+::view-transition-group(save-media) {
+  animation-duration: var(--ds-duration-emphasized);
+  animation-timing-function: var(--ds-easing-snap);
+}
+
+::view-transition-old(save-media),
+::view-transition-new(save-media) {
+  height: 100%;
+  object-fit: cover;
+}
+
+html[data-reduce-motion="true"]::view-transition-group(*),
+html[data-reduce-motion="true"]::view-transition-old(*),
+html[data-reduce-motion="true"]::view-transition-new(*) {
+  animation: none;
+}
+
 #root {
   display: flex;
   flex-direction: column;

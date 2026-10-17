@@ -66,3 +66,9 @@ it("skips the placeholder when the card already showed the original", async () =
     inspector.host.querySelectorAll(`img[src="${ORIGINAL}"]`),
   ).toHaveLength(1);
 });
+
+it("marks the fitted image as the transition hero", async () => {
+  await inspector.render(undefined, ORIGINAL);
+
+  expect(original()?.closest("[data-save-hero]")).not.toBeNull();
+});

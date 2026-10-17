@@ -1,4 +1,10 @@
-import { type RefObject, useEffect, useRef, useState } from "react";
+import {
+  type RefObject,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   containImage,
   viewToImagePoint,
@@ -148,7 +154,8 @@ export function useImageViewport({
     latestPose.current = next;
     setPose(next);
   }, [defaultSize, hasDecodedImage, oneToOne, rememberPosition, src]);
-  useEffect(() => {
+  /** Fitted bounds must exist before first paint so the open transition lands on the image, not the whole stage. */
+  useLayoutEffect(() => {
     const element = frame.current;
     if (!element) return;
     const measure = () =>
