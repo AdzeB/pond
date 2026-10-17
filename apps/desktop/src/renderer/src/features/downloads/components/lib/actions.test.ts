@@ -53,7 +53,7 @@ it("moves downloads to Trash immediately and offers Undo", async () => {
   const fake = createTrashFake("trashed");
   downloadsSelection.set([row]);
 
-  trashDownloadRows([row], fake.dependencies);
+  await trashDownloadRows([row], fake.dependencies);
 
   expect(fake.trashed).toEqual([["save-1"]]);
   await vi.waitFor(() => expect(downloadsSelection.size()).toBe(0));
@@ -76,7 +76,7 @@ it("does not offer Undo when no downloads changed", async () => {
   };
   downloadsSelection.set([row]);
 
-  trashDownloadRows([row], fake.dependencies);
+  await trashDownloadRows([row], fake.dependencies);
 
   await new Promise((resolve) => setTimeout(resolve, 0));
   expect(downloadsSelection.size()).toBe(1);
@@ -89,7 +89,7 @@ it("handles a rejected Undo request", async () => {
     throw new Error("Undo unavailable");
   };
 
-  trashDownloadRows([row], fake.dependencies);
+  await trashDownloadRows([row], fake.dependencies);
   await vi.waitFor(() => expect(fake.notices).toHaveLength(1));
   fake.notices[0]?.action?.onClick();
 
@@ -126,7 +126,7 @@ it("keeps the selection and skips the Undo notice when Trash fails", async () =>
   const fake = createTrashFake("rejected");
   downloadsSelection.set([row]);
 
-  trashDownloadRows([row], fake.dependencies);
+  await trashDownloadRows([row], fake.dependencies);
 
   expect(fake.trashed).toEqual([["save-1"]]);
   await new Promise((resolve) => setTimeout(resolve, 0));
