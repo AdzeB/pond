@@ -181,6 +181,21 @@ html[data-reduce-motion="true"] *::after {
   height: 100%;
 }
 
+/* The source stays opaque under the destination, so media that is still loading reveals the morphing source instead of an empty box. */
+::view-transition-old(save-media) {
+  animation-name: none;
+}
+
+::view-transition-new(save-media) {
+  animation-name: save-media-reveal;
+}
+
+@keyframes save-media-reveal {
+  from {
+    opacity: 0;
+  }
+}
+
 html[data-reduce-motion="true"]::view-transition-group(*),
 html[data-reduce-motion="true"]::view-transition-old(*),
 html[data-reduce-motion="true"]::view-transition-new(*) {

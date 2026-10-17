@@ -6,7 +6,7 @@ import {
   Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
-import { act, useEffect, useLayoutEffect, useState } from "react";
+import { act, useLayoutEffect, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -15,6 +15,7 @@ import {
   onTransitionMeasure,
   transitionSave,
   viewerMedia,
+  viewerStage,
 } from "./save-transition";
 
 function Grid() {
@@ -46,15 +47,20 @@ function MeasuredViewer() {
   );
 }
 
-function LateViewer() {
-  const [size, setSize] = useState(120);
-  useEffect(() => {
-    const timer = window.setTimeout(() => setSize(480), 0);
-    return () => window.clearTimeout(timer);
-  }, []);
+function HeroImageViewer() {
   return (
     <section data-save-details="">
-      <div data-save-hero="" data-part="viewer" data-size={size} />
+      <div data-save-hero="" data-part="viewer">
+        <img alt="" src="full.jpg" />
+      </div>
+    </section>
+  );
+}
+
+function PosterViewer() {
+  return (
+    <section data-save-details="">
+      <img alt="" src="poster.jpg" />
     </section>
   );
 }
@@ -159,27 +165,53 @@ describe("transitionSave", () => {
     expect(transitions.named()).toEqual([]);
   });
 
-  it.each([
-    ["a synchronous re-measure", MeasuredViewer],
-    ["a layout change one task later", LateViewer],
-  ])("captures the fitted hero after %s", async (_, viewer) => {
-    const router = await mount("/", viewer);
+  it("captures the hero after re-measuring its fit", async () => {
+    const router = await mount("/", MeasuredViewer);
     const transitions = installViewTransitions();
-    /** act() holds default-priority renders until it exits; the browser scheduler does not. */
-    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", false);
 
-    transitionSave({
-      router,
-      path: "/save/a",
-      source: cardMedia("a"),
-      target: viewerMedia,
+    await act(async () => {
+      transitionSave({
+        router,
+        path: "/save/a",
+        source: cardMedia("a"),
+        target: viewerMedia,
+      });
+      await transitions.finished();
     });
-    await transitions.finished();
-    vi.unstubAllGlobals();
-    await act(async () => {});
 
     expect(transitions.captures).toEqual([["card"], ["viewer"]]);
     expect(transitions.sizes).toEqual([[200], [480]]);
+  });
+
+  it.each([
+    ["skips image decodes behind a hero", HeroImageViewer, 0],
+    ["waits for the stage poster without a hero", PosterViewer, 1],
+  ])("%s", async (_, viewer, decodes) => {
+    vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(
+      false,
+    );
+    const decode = vi.fn(() => Promise.resolve());
+    Object.defineProperty(HTMLImageElement.prototype, "decode", {
+      configurable: true,
+      value: decode,
+    });
+    const router = await mount("/", viewer);
+    const transitions = installViewTransitions();
+
+    await act(async () => {
+      transitionSave({
+        router,
+        path: "/save/a",
+        source: cardMedia("a"),
+        target: viewerMedia,
+        stage: viewerStage,
+      });
+      await transitions.finished();
+    });
+
+    Reflect.deleteProperty(HTMLImageElement.prototype, "decode");
+    expect(router.state.location.pathname).toBe("/save/a");
+    expect(decode).toHaveBeenCalledTimes(decodes);
   });
 
   it("shrinks the viewer back into its revealed card", async () => {

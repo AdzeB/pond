@@ -1,4 +1,5 @@
 import type { AnyRouter } from "@tanstack/react-router";
+import { flushSync } from "react-dom";
 
 /** Must match the `::view-transition-*(save-media)` rules in the renderer stylesheet. */
 const HERO_NAME = "save-media";
@@ -104,29 +105,32 @@ function settleTransitions(element: HTMLElement): void {
   }
 }
 
-function rectKey(element: HTMLElement): string | null {
+function hasBox(element: HTMLElement): boolean {
   const rect = element.getBoundingClientRect();
-  if (rect.width <= 0 || rect.height <= 0) return null;
-  return `${rect.x},${rect.y},${rect.width},${rect.height}`;
+  return rect.width > 0 && rect.height > 0;
 }
 
-/** Resolves once the element has a nonzero rect that holds across a task, so the new capture is the final geometry. */
+/**
+ * Re-measures fitted media and settles CSS transitions in place, so the new capture is the resting geometry.
+ * @remarks Yielding a task would queue the capture behind unrelated renders still settling from the selection click.
+ */
 async function fitted(element: HTMLElement): Promise<void> {
-  let previous: string | null = null;
   for (let attempt = 0; attempt < FIT_ATTEMPTS; attempt += 1) {
-    for (const measure of measures) measure();
+    flushSync(() => {
+      for (const measure of measures) measure();
+    });
     settleTransitions(element);
+    if (hasBox(element)) return;
     await nextTask();
-    const key = rectKey(element);
-    if (key && key === previous) return;
-    previous = key;
   }
 }
 
 async function painted(element: HTMLElement): Promise<void> {
   const decodes = [
     ...element.querySelectorAll<HTMLImageElement>("img:not([data-pending])"),
-  ].map((image) => image.decode());
+  ]
+    .filter((image) => !(image.complete && image.naturalWidth > 0))
+    .map((image) => image.decode());
   if (decodes.length === 0) return;
   await Promise.race([
     Promise.any(decodes).catch(() => undefined),
@@ -231,8 +235,8 @@ export function transitionSave({
     await settle?.().catch(() => undefined);
     to = from ? target() : null;
     if (to) await fitted(to);
-    const shown = to ?? stage?.();
-    if (shown) await painted(shown);
+    const backdrop = to ? null : stage?.();
+    if (backdrop) await painted(backdrop);
     setHero(to, true);
   });
   const clear = () => {
