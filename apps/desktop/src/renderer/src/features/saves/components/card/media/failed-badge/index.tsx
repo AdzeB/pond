@@ -1,4 +1,4 @@
-import { Badge } from "@pond/ui";
+import { IconCircleWarning } from "@pond/icons";
 import type { Save } from "@/features/saves/types";
 import styles from "./styles.module.css";
 
@@ -8,14 +8,13 @@ export function FailedBadge({ save }: { save: Save }) {
     save.tasks?.find((t) => t.status === "dead" || t.status === "blocked")
       ?.lastError ?? "Failed";
   return (
-    <Badge
-      tone="negative"
-      className={styles.badge}
+    <span
+      className={styles.indicator}
       role="status"
       aria-label="Ingest failed"
       title={lastError}
     >
-      Failed
-    </Badge>
+      <IconCircleWarning size={12} />
+    </span>
   );
 }

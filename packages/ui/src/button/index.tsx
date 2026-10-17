@@ -13,7 +13,7 @@ export interface ButtonProps extends Base.Props {
     | "destructive"
     | "link";
   size?: "xs" | "sm" | "md" | "lg" | "xl";
-  rounding?: "pill" | "rounded";
+  rounding?: "default" | "full";
   icon?: boolean;
   width?: "full" | "auto";
   loading?: boolean;
@@ -23,7 +23,7 @@ export function Button({
   className,
   variant = "primary",
   size = "md",
-  rounding = "rounded",
+  rounding = "default",
   width = "auto",
   icon,
   loading,

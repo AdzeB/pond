@@ -1,4 +1,5 @@
 .positioner {
+  composes: positioner from "../shared/styles/popup/styles.module.css";
   width: var(--positioner-width);
   max-width: var(--available-width);
   height: var(--positioner-height);

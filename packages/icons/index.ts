@@ -505,6 +505,21 @@ export const IconBracketsCurly = /* @__PURE__ */ createIcon(
     ],
   ],
 );
+export const IconBroom = /* @__PURE__ */ createIcon("Broom", "outline", [
+  [
+    "path",
+    {
+      d: "M6.096 7.032C6.584 7.823 7.207 8.668 8 9.5C9.074 10.625 10.194 11.448 11.204 12.046",
+    },
+  ],
+  ["path", { d: "M16.25 1.5L10.376 7.374" }],
+  [
+    "path",
+    {
+      d: "M10.376 7.374C13.534 10.144 10.299 14.027 8.253 15.662C7.743 16.07 7.067 16.216 6.439 16.037C3.694 15.256 2.048 12.961 1.75 10C3.125 9.812 3.942 9.003 5.197 7.732C6.757 6.151 9 6.166 10.376 7.374Z",
+    },
+  ],
+]);
 export const IconBulletList = /* @__PURE__ */ createIcon(
   "BulletList",
   "outline",
@@ -2700,6 +2715,14 @@ export const IconSidebarLeft = /* @__PURE__ */ createIcon(
   [
     ["rect", { x: "2.25", y: "3", width: "13.5", height: "12", rx: "3" }],
     ["path", { d: "M6.75 3L6.75 15" }],
+  ],
+);
+export const IconSidebarRight = /* @__PURE__ */ createIcon(
+  "SidebarRight",
+  "outline",
+  [
+    ["rect", { x: "2.25", y: "3", width: "13.5", height: "12", rx: "3" }],
+    ["path", { d: "M11.25 3L11.25 15" }],
   ],
 );
 export const IconSizeLg = /* @__PURE__ */ createIcon("SizeLg", "outline", [

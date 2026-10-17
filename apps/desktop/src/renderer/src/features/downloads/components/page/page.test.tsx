@@ -260,10 +260,15 @@ it("keeps running work active when the queue is paused without showing action ba
   expect(primarySelection.get()).toBeNull();
 });
 
-it("preserves row selection and prunes completed selections after live updates", async () => {
+it("selects rows with checkboxes and prunes completed selections after live updates", async () => {
   await render();
-  expect(host.querySelector('[role="checkbox"]')).toBeNull();
-  await click('[title="Running video"]', { metaKey: true });
+  const runningRow = host
+    .querySelector('[title="Running video"]')
+    ?.closest('[role="row"]');
+  const checkbox = runningRow?.querySelector<HTMLElement>('[role="checkbox"]');
+  expect(checkbox?.getAttribute("aria-checked")).toBe("false");
+  await act(async () => checkbox?.click());
+  expect(checkbox?.getAttribute("aria-checked")).toBe("true");
   expect(downloadsSelection.size()).toBe(1);
   expect(primarySelection.get()).toBeNull();
   await act(async () =>
@@ -308,6 +313,11 @@ it("selects every download with Command-A while the table is focused", async () 
   });
 
   expect(downloadsSelection.size()).toBe(3);
+  expect(
+    [...host.querySelectorAll('[role="checkbox"]')].every(
+      (checkbox) => checkbox.getAttribute("aria-checked") === "true",
+    ),
+  ).toBe(true);
 });
 
 it("lists waiting and completed rows in the same table", async () => {
@@ -519,9 +529,10 @@ it("prevents duplicate clear requests while moving downloads to Trash", async ()
 
   await render();
   const button = [...document.querySelectorAll("button")].find(
-    (node) => node.textContent === "Clear Unfinished",
+    (node) => node.getAttribute("aria-label") === "Clear Unfinished",
   );
   if (!button) throw new Error("Missing Clear Unfinished button");
+  expect(button.querySelector("svg")).not.toBeNull();
   await act(async () => button.click());
   await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
   expect(button.hasAttribute("disabled")).toBe(true);

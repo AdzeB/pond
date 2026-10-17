@@ -1,4 +1,5 @@
 import {
+  IconBroom,
   IconCircleCheck,
   IconLink2,
   IconMediaPauseFill,
@@ -180,19 +181,27 @@ export function DownloadsPage() {
             onToggle={() => setFiltersOpen((open) => !open)}
           />
           <Tooltip
-            label="Move every unfinished download to Trash. Finished saves stay in the Library."
+            label={
+              <>
+                Move every unfinished download to Trash.
+                <br />
+                Finished saves stay in the Library.
+              </>
+            }
             side="bottom"
           >
             <Button
+              icon
               size="sm"
               variant="ghost"
+              aria-label="Clear Unfinished"
               disabled={
                 !live.some(canTrashDownload) || clearUnfinished.isPending
               }
               loading={clearUnfinished.isPending}
               onClick={() => clearUnfinished.mutate()}
             >
-              Clear Unfinished
+              <IconBroom />
             </Button>
           </Tooltip>
           <Tooltip

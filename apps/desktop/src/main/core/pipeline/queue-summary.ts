@@ -1,10 +1,14 @@
 import { type QueueSummary, QueueSummarySchema } from "@shared/queue-contracts";
+import type Database from "better-sqlite3";
 import { getDb } from "../../db";
 
 export async function readQueueSummary(): Promise<QueueSummary> {
-  const db = await getDb();
+  return queryQueueSummary((await getDb()).$raw);
+}
+
+export function queryQueueSummary(sqlite: Database.Database): QueueSummary {
   return QueueSummarySchema.parse(
-    db.$raw
+    sqlite
       .prepare(
         `SELECT
           COALESCE(SUM(status = 'running'), 0) AS running,
@@ -20,10 +24,14 @@ export async function readQueueSummary(): Promise<QueueSummary> {
           COALESCE(SUM(status = 'blocked'), 0) AS failed,
           COALESCE(SUM(status = 'cancelled'), 0) AS cancelled,
           COALESCE(SUM(status = 'dead'), 0) AS dead,
-          COUNT(DISTINCT CASE
-            WHEN status IN ('pending', 'deferred', 'running', 'blocked', 'dead')
-            THEN save_id
-          END) AS actionable
+          (
+            SELECT COUNT(DISTINCT t.save_id)
+            FROM tasks t
+            JOIN saves s ON s.id = t.save_id
+            WHERE t.status IN ('pending', 'deferred', 'running', 'blocked', 'dead')
+              AND s.status != 'complete'
+              AND s.deleted_at IS NULL
+          ) AS actionable
         FROM tasks`,
       )
       .get(),

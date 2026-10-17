@@ -3,6 +3,10 @@ import { clsx as cn } from "clsx";
 import { useLayoutEffect, useRef } from "react";
 import styles from "./styles.module.css";
 
+export interface ToggleGroupProps extends Base.Props {
+  variant?: "raised" | "outline";
+}
+
 function pressedToggle(root: HTMLElement): HTMLElement | null {
   const pressed = root.querySelectorAll<HTMLElement>("[data-pressed]");
   return pressed.length === 1 ? pressed.item(0) : null;
@@ -32,12 +36,14 @@ export function ToggleGroup({
   className,
   children,
   multiple,
+  variant = "raised",
   ...props
-}: Base.Props) {
+}: ToggleGroupProps) {
   const indicatorRef = useRef<HTMLSpanElement>(null);
+  const indicated = !multiple && variant === "raised";
 
   useLayoutEffect(() => {
-    if (multiple) return;
+    if (!indicated) return;
     const indicator = indicatorRef.current;
     const root = indicator?.parentElement;
     if (!indicator || !root) return;
@@ -64,22 +70,23 @@ export function ToggleGroup({
       mo.disconnect();
       ro.disconnect();
     };
-  }, [multiple]);
+  }, [indicated]);
 
   return (
     <Base
       data-pond-toggle-group=""
+      data-variant={variant}
       className={cn(styles.root, className)}
       multiple={multiple}
       {...props}
     >
-      {multiple ? null : (
+      {indicated ? (
         <span
           ref={indicatorRef}
           className={styles.indicator}
           aria-hidden="true"
         />
-      )}
+      ) : null}
       {children}
     </Base>
   );

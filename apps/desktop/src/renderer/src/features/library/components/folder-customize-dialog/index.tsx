@@ -233,7 +233,7 @@ function AppearancePicker({
               icon
               size="sm"
               variant="secondary"
-              rounding="pill"
+              rounding="full"
               className={styles.edit}
               disabled={disabled}
             />

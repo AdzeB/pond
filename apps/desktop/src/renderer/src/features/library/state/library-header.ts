@@ -1,7 +1,7 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
-export type ViewPopover = "layout" | "sort" | "zoom" | "display";
+export type ViewPopover = "view";
 
 interface HeaderState {
   searchNonce: number;
@@ -23,7 +23,7 @@ export const libraryHeader = {
   openPopover(popover: ViewPopover): void {
     store.setState((s) => (s.popover === popover ? s : { ...s, popover }));
   },
-  togglePopover(popover: ViewPopover = "layout"): void {
+  togglePopover(popover: ViewPopover = "view"): void {
     store.setState((s) => ({
       ...s,
       popover: s.popover === popover ? null : popover,

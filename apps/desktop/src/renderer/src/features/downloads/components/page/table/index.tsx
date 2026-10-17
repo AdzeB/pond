@@ -98,7 +98,7 @@ export function DownloadTable({
       }}
       getRowId={(row) => row.id}
       height={height}
-      selectionCheckboxes={false}
+      selectionCheckboxes
       selectOnClick
       onRowClick={(row, event) => {
         if (event && event.detail < 2) return;

@@ -222,7 +222,6 @@ export function SmartFolderEntry({
                 icon
                 size="xs"
                 variant="text"
-                rounding="rounded"
                 className={styles.more}
                 aria-label={`More Actions for ${view.name}`}
                 tabIndex={-1}

@@ -295,7 +295,6 @@ export function ProviderConnection({
                         icon
                         size="xs"
                         variant="ghost"
-                        rounding="rounded"
                         aria-label={revealed ? "Hide API Key" : "Show API Key"}
                         aria-pressed={revealed || undefined}
                         onClick={() => setRevealed((open) => !open)}

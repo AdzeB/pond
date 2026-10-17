@@ -4,10 +4,20 @@ import type { IconComponent, IconNode, IconProps, IconStyle } from "./types";
 const GRID = 18;
 const STROKE = 1.5;
 
+/** Default stroke below the grid thins by the square root of the scale, so small glyphs lighten without going spindly. */
+function defaultStroke(rendered: number) {
+  if (!(rendered > 0) || rendered >= GRID) return STROKE;
+  return Math.max(1, STROKE * Math.sqrt(rendered / GRID));
+}
+
 /** Converts on-screen pixels at `size` to viewBox units: held up to the 18px grid, then grown with the glyph. */
-function strokeUnits(stroke: number | string, size: number | string) {
-  const pixels = Number.isFinite(Number(stroke)) ? Number(stroke) : STROKE;
+function strokeUnits(
+  stroke: number | string | undefined,
+  size: number | string,
+) {
   const rendered = Number(size);
+  const explicit = stroke === undefined ? Number.NaN : Number(stroke);
+  const pixels = Number.isFinite(explicit) ? explicit : defaultStroke(rendered);
   if (!(rendered > 0) || rendered > GRID) return pixels;
   return (pixels * GRID) / rendered;
 }
@@ -19,7 +29,7 @@ export function createIcon(
 ): IconComponent {
   function Icon({
     size = GRID,
-    strokeWidth = STROKE,
+    strokeWidth,
     title,
     children: extra,
     ...props
