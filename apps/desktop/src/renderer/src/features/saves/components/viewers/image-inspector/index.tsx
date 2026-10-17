@@ -28,6 +28,7 @@ import {
   useResultIndex,
   useResultTotal,
 } from "@/features/saves/state/result-navigation";
+import { useViewerEscapeLayer } from "@/features/saves/state/viewer-escape";
 import type { Save } from "@/features/saves/types";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
@@ -136,6 +137,14 @@ export function ImageInspector({
       setBusy(false);
     }
   };
+  const cancelCrop = () => {
+    setMode("view");
+    setDraft(null);
+  };
+  useViewerEscapeLayer(
+    active && edits === "full" && mode === "crop",
+    cancelCrop,
+  );
   const toggleCrop = () => {
     const nextMode = mode === "crop" ? "view" : "crop";
     setMode(nextMode);
@@ -223,8 +232,20 @@ export function ImageInspector({
   imageStyle.imageRendering =
     prefs.imageRendering === "pixelated" ? "pixelated" : "auto";
   if (grayscale) imageStyle.filter = "grayscale(1)";
+  const previousMode = useRef(mode);
   useEffect(() => {
-    if (active && mode !== "view") viewport.frame.current?.focus();
+    const leftMode = previousMode.current !== mode && mode === "view";
+    previousMode.current = mode;
+    if (!active) return;
+    if (mode !== "view") {
+      viewport.frame.current?.focus();
+      return;
+    }
+    const focusLost =
+      !document.activeElement || document.activeElement === document.body;
+    /** The crop bar unmounts with its focused button; return focus to the image instead of body. */
+    if (leftMode && focusLost)
+      viewport.frame.current?.focus({ preventScroll: true });
   }, [active, mode, viewport.frame]);
   const gestures = createImageGestures({
     active,
@@ -390,10 +411,7 @@ export function ImageInspector({
         gifFramesOpen={gifFramesOpen}
         onActualSize={actualSize}
         onApplyCrop={applyCrop}
-        onCancelCrop={() => {
-          setMode("view");
-          setDraft(null);
-        }}
+        onCancelCrop={cancelCrop}
         onFit={() => viewport.setPosition(() => FIT_POSE)}
         onFlip={() =>
           void run(() =>

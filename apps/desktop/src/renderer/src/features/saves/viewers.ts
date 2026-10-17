@@ -8,3 +8,4 @@ export { SaveViewer } from "./components/viewers/save-viewer";
 export { TextViewer } from "./components/viewers/text-viewer";
 export { hasArchive } from "./lib/media/archive";
 export { setSaveViewerFileIndex } from "./state/save-viewer";
+export { viewerEscape } from "./state/viewer-escape";
