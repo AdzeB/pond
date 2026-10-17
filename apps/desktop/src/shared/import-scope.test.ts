@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   accountImportScope,
+  collectionFiling,
   importFilterReason,
   importsEverything,
   importsListKind,
@@ -82,6 +83,23 @@ describe("normalizeImportScope", () => {
       ok: true,
       scope: {},
     });
+  });
+
+  it("keeps filing every collection only where the saved list is the union of them", () => {
+    expect(normalizeImportScope("twitter", { addToFolders: true })).toEqual({
+      ok: true,
+      scope: { addToFolders: true },
+    });
+    expect(normalizeImportScope("youtube", { addToFolders: true })).toEqual({
+      ok: true,
+      scope: {},
+    });
+    expect(
+      normalizeImportScope("instagram", {
+        listKinds: ["liked"],
+        addToFolders: true,
+      }),
+    ).toEqual({ ok: true, scope: { listKinds: ["liked"] } });
   });
 
   it("dedupes boards and falls back to the id for a blank name", () => {
@@ -202,5 +220,27 @@ describe("scope readers", () => {
       new Date(2024, 2, 5).getTime(),
     );
     expect(sinceStart("2024-13-01")).toBeNull();
+  });
+});
+
+describe("collectionFiling", () => {
+  const DESIGN = { id: "c1", name: "Design" };
+
+  it("files picked collections unless you turn it off", () => {
+    expect(collectionFiling("twitter", { collections: [DESIGN] })).toBe(
+      "picked",
+    );
+    expect(
+      collectionFiling("twitter", {
+        collections: [DESIGN],
+        addToFolders: false,
+      }),
+    ).toBe("off");
+  });
+
+  it("files every collection only when you turn it on", () => {
+    expect(collectionFiling("pinterest", undefined)).toBe("off");
+    expect(collectionFiling("pinterest", { addToFolders: true })).toBe("every");
+    expect(collectionFiling("youtube", { addToFolders: true })).toBe("off");
   });
 });

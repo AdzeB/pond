@@ -12,6 +12,8 @@ export interface ImportScopeOptions {
   listKinds: readonly ListKind[];
   /** The kind of collection that can narrow the saved list, or null when the sync can only walk all of it. */
   collections: ImportCollectionKind | null;
+  /** Whether Add to Folders can file every collection when none are picked; false where an empty pick means one default list. */
+  fileEveryCollection: boolean;
   /** Media kinds the Source mixes; empty when every save holds the same kind. */
   mediaKinds: readonly ImportMediaKind[];
   /** Whether captures carry a publish date the `since` limit can compare. */
@@ -31,6 +33,7 @@ export interface ImportCollectionOption extends ImportCollection {
 const EVERYTHING_ONLY: ImportScopeOptions = {
   listKinds: [],
   collections: null,
+  fileEveryCollection: false,
   mediaKinds: [],
   since: false,
 };
@@ -42,12 +45,14 @@ const IMPORT_SCOPE_OPTIONS = {
   twitter: {
     listKinds: SAVED_AND_LIKED,
     collections: "folder",
+    fileEveryCollection: true,
     mediaKinds: ALL_MEDIA,
     since: true,
   },
   youtube: {
     listKinds: SAVED_AND_LIKED,
     collections: "playlist",
+    fileEveryCollection: false,
     mediaKinds: [],
     since: true,
   },
@@ -56,24 +61,28 @@ const IMPORT_SCOPE_OPTIONS = {
   pinterest: {
     listKinds: [],
     collections: "board",
+    fileEveryCollection: true,
     mediaKinds: ["image", "video"],
     since: true,
   },
   instagram: {
     listKinds: SAVED_AND_LIKED,
     collections: "collection",
+    fileEveryCollection: true,
     mediaKinds: ["image", "video"],
     since: true,
   },
   tiktok: {
     listKinds: SAVED_AND_LIKED,
     collections: null,
+    fileEveryCollection: false,
     mediaKinds: [],
     since: true,
   },
   reddit: {
     listKinds: SAVED_AND_LIKED,
     collections: null,
+    fileEveryCollection: false,
     mediaKinds: ALL_MEDIA,
     since: true,
   },
@@ -126,6 +135,12 @@ export function normalizeImportScope(
     }
     next.collections = collections;
     if (scope.addToFolders === false) next.addToFolders = false;
+  } else if (
+    scope.addToFolders === true &&
+    options.fileEveryCollection &&
+    importsListKind(next, "saved")
+  ) {
+    next.addToFolders = true;
   }
 
   if (scope.mediaKinds && options.mediaKinds.length > 0) {
@@ -176,6 +191,23 @@ export function importsEverything(scope: ImportScope | undefined): boolean {
     !scope?.mediaKinds &&
     !scope?.since
   );
+}
+
+export type CollectionFiling = "picked" | "every" | "off";
+
+/** Picked collections file by default; with none picked, every collection files only when you turn it on. */
+export function collectionFiling(
+  source: Source,
+  scope: ImportScope | undefined,
+): CollectionFiling {
+  const options = importScopeOptions(source);
+  if (!options.collections || !importsListKind(scope, "saved")) return "off";
+  if (scope?.collections?.length) {
+    return scope.addToFolders === false ? "off" : "picked";
+  }
+  return options.fileEveryCollection && scope?.addToFolders === true
+    ? "every"
+    : "off";
 }
 
 export type ImportFilterReason = "media" | "since";

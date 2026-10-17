@@ -73,6 +73,14 @@ never removes one. `SourceSyncPrefs.collectionFolders` remembers each
 collection's Folder id, so renaming the Folder keeps it in use; a deleted one
 is created again. `importScope.addToFolders: false` turns filing off.
 
+With no collections picked, `addToFolders: true` files every collection
+(`collectionFiling` in `shared/import-scope.ts`) on X, Instagram, and
+Pinterest, where the saved list holds every collection. YouTube's default is
+Watch Later, not every playlist, so it files only picked playlists. The run walks
+the lists as usual, then `walkEveryCollection` lists and walks each collection
+only to tag entries. Those walks never add saves to the import, because filing
+only touches saves already in the Library. A failed pass becomes a gap note.
+
 Media kinds and a `since` date are filters, not walks: list data is too patchy
 to judge a post before capture, and filtering early would break early stop.
 `applyImportFilter` (`pipeline/import-filter.ts`) runs in `harvest_metadata`,

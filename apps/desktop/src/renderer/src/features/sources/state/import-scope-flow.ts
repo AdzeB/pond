@@ -36,7 +36,8 @@ interface ImportScopeFlowState {
   listKinds: readonly ListKind[];
   /** Empty imports the whole saved list. */
   collections: readonly ImportCollection[];
-  addToFolders: boolean;
+  /** Unset follows the default: picked collections file, and none picked doesn't. */
+  addToFolders: boolean | undefined;
   /** Empty imports every kind. */
   mediaKinds: readonly ImportMediaKind[];
   /** Local `YYYY-MM-DD`; empty imports every date. */
@@ -52,7 +53,7 @@ const EMPTY: ImportScopeFlowState = {
   starts: false,
   listKinds: [],
   collections: [],
-  addToFolders: true,
+  addToFolders: undefined,
   mediaKinds: [],
   since: "",
   sincePreset: "any",
@@ -76,7 +77,7 @@ export function createImportScopeFlow() {
         starts: account.sync.importPending === true,
         listKinds: scope?.listKinds ?? options.listKinds,
         collections,
-        addToFolders: scope?.addToFolders !== false,
+        addToFolders: scope?.addToFolders,
         mediaKinds: scope?.mediaKinds ?? [],
         since: scope?.since ?? "",
         sincePreset: scope?.since ? "custom" : "any",
@@ -138,6 +139,12 @@ export function useImportScopeFlowActions(): ImportScopeFlow {
   return use(ImportScopeFlowContext);
 }
 
+export function draftFiles(
+  state: Pick<ImportScopeFlowState, "collections" | "addToFolders">,
+): boolean {
+  return state.addToFolders ?? state.collections.length > 0;
+}
+
 /** The scope the draft describes, or null while it would import nothing. */
 export function draftImportScope(
   state: Pick<
@@ -156,7 +163,9 @@ export function draftImportScope(
   if (options.listKinds.length > 0) scope.listKinds = [...state.listKinds];
   if (options.collections && state.collections.length > 0) {
     scope.collections = [...state.collections];
-    if (!state.addToFolders) scope.addToFolders = false;
+    if (!draftFiles(state)) scope.addToFolders = false;
+  } else if (draftFiles(state)) {
+    scope.addToFolders = true;
   }
   if (options.mediaKinds.length > 0 && state.mediaKinds.length > 0) {
     scope.mediaKinds = [...state.mediaKinds];

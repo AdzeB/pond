@@ -105,6 +105,44 @@ describe("fileCollectionSaves", () => {
     });
   });
 
+  it("files every collection the sync listed when none are picked", async () => {
+    const { store, folders, memberships } = fakeStore([], {
+      t1: "s1",
+      t2: "s2",
+    });
+
+    await expect(
+      fileCollectionSaves(
+        twitter({ importScope: { addToFolders: true } }),
+        [
+          { sourceId: "t1" },
+          { sourceId: "t1", collectionIds: ["c1"] },
+          { sourceId: "t1", collectionIds: ["c2"] },
+          { sourceId: "t2", collectionIds: ["c2"] },
+        ],
+        store,
+        [DESIGN, TYPE],
+      ),
+    ).resolves.toBe(2);
+
+    const design = folders.find((f) => f.name === "Design");
+    const type = folders.find((f) => f.name === "Type");
+    expect(memberships.get("s1")).toEqual([design?.id, type?.id]);
+    expect(memberships.get("s2")).toEqual([type?.id]);
+  });
+
+  it("ignores listed collections unless filing every one is on", async () => {
+    const { store } = fakeStore([], { t1: "s1" });
+    await expect(
+      fileCollectionSaves(
+        twitter({ importScope: {} }),
+        [{ sourceId: "t1", collectionIds: ["c1"] }],
+        store,
+        [DESIGN],
+      ),
+    ).resolves.toBe(0);
+  });
+
   it("reuses a remembered Folder after you rename it", async () => {
     const renamed = folder("kept", "Moodboard", "root");
     const { store, memberships } = fakeStore(

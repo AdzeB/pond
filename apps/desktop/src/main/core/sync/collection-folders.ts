@@ -9,7 +9,10 @@ import {
 import { sourceLabel } from "@pond/schema/sources";
 import { and, eq, inArray, isNull, ne } from "drizzle-orm";
 import log from "electron-log/main.js";
-import { accountImportScope } from "../../../shared/import-scope";
+import {
+  accountImportScope,
+  collectionFiling,
+} from "../../../shared/import-scope";
 import { getDb } from "../../db";
 import { assignSaveFolders, createFolder, listFolders } from "../folders";
 import { patchAccountSync } from "./accounts";
@@ -152,11 +155,18 @@ export async function fileCollectionSaves(
   account: Pick<ConnectedAccount, "id" | "source" | "sync">,
   entries: readonly CollectionEntry[],
   store: CollectionFolderStore = defaultStore,
+  everyCollection: readonly ImportCollection[] = [],
 ): Promise<number> {
   const scope = accountImportScope(account.source, account.sync);
-  const collections = scope?.collections ?? [];
-  if (collections.length === 0 || scope?.addToFolders === false) return 0;
-  const tagged = entries.filter((entry) => entry.collectionIds?.length);
+  const filing = collectionFiling(account.source, scope);
+  const collections =
+    filing === "picked"
+      ? (scope?.collections ?? [])
+      : filing === "every"
+        ? everyCollection
+        : [];
+  if (collections.length === 0) return 0;
+  const tagged = mergeTags(entries);
   if (tagged.length === 0) return 0;
 
   const folderFor = await resolveCollectionFolders(account, collections, store);
@@ -191,10 +201,26 @@ export async function fileCollectionSaves(
 export async function fileIntoFolders(
   account: Pick<ConnectedAccount, "id" | "source" | "sync">,
   entries: readonly CollectionEntry[],
+  everyCollection: readonly ImportCollection[] = [],
 ): Promise<void> {
   try {
-    await fileCollectionSaves(account, entries);
+    await fileCollectionSaves(account, entries, defaultStore, everyCollection);
   } catch (error) {
     log.warn(`[pond sync:${account.source}] filing into Folders failed`, error);
   }
+}
+
+/** A save can arrive from the list walk and from several collection walks in one run. */
+function mergeTags(entries: readonly CollectionEntry[]): CollectionEntry[] {
+  const tags = new Map<string, Set<string>>();
+  for (const entry of entries) {
+    if (!entry.collectionIds?.length) continue;
+    const ids = tags.get(entry.sourceId) ?? new Set<string>();
+    for (const id of entry.collectionIds) ids.add(id);
+    tags.set(entry.sourceId, ids);
+  }
+  return Array.from(tags, ([sourceId, ids]) => ({
+    sourceId,
+    collectionIds: [...ids],
+  }));
 }

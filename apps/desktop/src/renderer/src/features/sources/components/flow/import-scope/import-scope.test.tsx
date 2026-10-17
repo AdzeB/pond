@@ -165,7 +165,7 @@ it("imports chosen Pinterest boards into Folders", async () => {
       .querySelector('input[aria-label="Boards"]')
       ?.getAttribute("placeholder"),
   ).toBe("All Pins");
-  expect(host.textContent).not.toContain("Add to Folders");
+  expect(toggle("Add to Folders").getAttribute("aria-checked")).toBe("false");
 
   await pick("Boards", "Design References");
   expect(
@@ -181,6 +181,20 @@ it("imports chosen Pinterest boards into Folders", async () => {
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-pinterest",
     scope: { collections: [{ id: "915", name: "Design References" }] },
+  });
+});
+
+it("files every board when you turn on Add to Folders without picking any", async () => {
+  await renderFor({
+    id: "acc-pinterest",
+    source: "pinterest",
+    sync: { importPending: true },
+  });
+  await act(async () => toggle("Add to Folders").click());
+  await act(async () => button("Start").click());
+  expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+    accountId: "acc-pinterest",
+    scope: { addToFolders: true },
   });
 });
 

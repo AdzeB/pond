@@ -6,6 +6,7 @@ import type {
 } from "@pond/schema/db";
 import { LIST_KIND_LABELS } from "@pond/schema/list-kinds";
 import {
+  collectionFiling,
   type ImportCollectionKind,
   importScopeOptions,
   sinceStart,
@@ -123,10 +124,10 @@ export function importScopeRows(
       value:
         chosen.length > 0 ? chosen.map((c) => c.name).join(", ") : nouns.all,
     });
-    if (chosen.length > 0) {
+    if (chosen.length > 0 || options.fileEveryCollection) {
       rows.push({
         label: "Add to Folders",
-        value: scope?.addToFolders === false ? "Off" : "On",
+        value: collectionFiling(source, scope) === "off" ? "Off" : "On",
       });
     }
   }

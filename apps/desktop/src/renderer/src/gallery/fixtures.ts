@@ -21,6 +21,7 @@ const X_FOLDERS: GalleryCollection[] = [
 /** Collections each fixture Account returns from `accounts.importOptions`; a string is the error Pond shows. */
 export const IMPORT_OPTIONS = new Map<string, GalleryCollection[] | string>([
   ["x-first", X_FOLDERS],
+  ["x-every-folder", X_FOLDERS],
   ["x-folders", X_FOLDERS],
   [
     "instagram-first",
@@ -59,6 +60,16 @@ export const IMPORT_SCOPE_CASES: ImportScopeCase[] = [
       id: "x-first",
       source: "twitter",
       sync: { importPending: true },
+    },
+  },
+  {
+    id: "x-every-folder",
+    title: "X, every folder filed",
+    note: "All bookmarks, each filed under Twitter / its folder.",
+    account: {
+      id: "x-every-folder",
+      source: "twitter",
+      sync: { importScope: { addToFolders: true } },
     },
   },
   {

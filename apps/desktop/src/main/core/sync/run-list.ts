@@ -12,10 +12,12 @@ import {
   harvestSourceCollections,
   harvestSourceList,
   harvestYoutubeLikedList,
+  listSourceCollections,
 } from "../refresh/harvest-window";
 import { resolveAccountHandle } from "./account-key";
 import { getAccountSync, partitionForAccount } from "./accounts";
 import { fileIntoFolders } from "./collection-folders";
+import { NO_COLLECTION_PASS, walkEveryCollection } from "./every-collection";
 import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
 import { listHarvestPlan } from "./import-scope";
 import {
@@ -210,6 +212,21 @@ export async function syncListSource(
     }
   }
 
+  const collectionPass = plan.fileEveryCollection
+    ? await walkEveryCollection("Folders", {
+        list: () => listSourceCollections(source, { partition, accountKey }),
+        walk: (collections) =>
+          harvestSourceCollections(
+            source,
+            collections,
+            { knownIds: Array.from(knownIds), earlyStop: !baseline.full },
+            { partition },
+          ),
+      })
+    : NO_COLLECTION_PASS;
+  if (collectionPass.gap) gaps.push(collectionPass.gap);
+  const filing = [...combined, ...collectionPass.entries];
+
   await mergeListKindsOntoExisting(source, combined);
 
   const allFresh = combined.filter((e) => !knownIds.has(e.sourceId));
@@ -233,7 +250,7 @@ export async function syncListSource(
     recovery: 0,
   };
   if (fresh.length === 0) {
-    await fileIntoFolders(account, combined);
+    await fileIntoFolders(account, filing, collectionPass.collections);
     const lastSyncedAt = await persistWatermark(accountId, {
       full: baseline.full && harvest.reachedEnd,
       newestId: null,
@@ -288,7 +305,7 @@ export async function syncListSource(
     ev.outcome = "aborted";
     return;
   }
-  await fileIntoFolders(account, combined);
+  await fileIntoFolders(account, filing, collectionPass.collections);
 
   const lastSyncedAt = await persistWatermark(accountId, {
     full: baseline.full && harvest.reachedEnd,

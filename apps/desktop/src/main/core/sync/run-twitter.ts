@@ -16,9 +16,11 @@ import {
   harvestTwitterBookmarkFolder,
   harvestTwitterBookmarks,
   harvestTwitterLikes,
+  listSourceCollections,
 } from "../refresh/harvest-window";
 import { partitionForAccount } from "./accounts";
 import { fileIntoFolders } from "./collection-folders";
+import { NO_COLLECTION_PASS, walkEveryCollection } from "./every-collection";
 import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
 import { listHarvestPlan } from "./import-scope";
 import {
@@ -151,6 +153,32 @@ export async function syncTwitter(
       )
     : stampListKind(harvest.entries, "saved");
 
+  const collectionPass = plan.fileEveryCollection
+    ? await walkEveryCollection("Folders", {
+        list: () =>
+          listSourceCollections(source, {
+            partition: harvestOpts.partition,
+          }),
+        walk: async (folders) => {
+          const walked = await harvestFolders(
+            folders,
+            bookmarkArgs,
+            harvestOpts,
+          );
+          return walked.ok
+            ? {
+                ok: true,
+                entries: walked.entries.map((e) => ({
+                  sourceId: e.tweetId,
+                  collectionIds: e.collectionIds,
+                })),
+              }
+            : walked;
+        },
+      })
+    : NO_COLLECTION_PASS;
+  if (collectionPass.gap) gaps.push(collectionPass.gap);
+
   await mergeListKindsOntoExisting(
     source,
     entries.map((e) => ({
@@ -174,12 +202,15 @@ export async function syncTwitter(
     fresh: fresh.length,
     recovery: recovery.length,
   };
-  const filing = entries.map((e) => ({
-    sourceId: e.tweetId,
-    collectionIds: e.collectionIds,
-  }));
+  const filing = [
+    ...entries.map((e) => ({
+      sourceId: e.tweetId,
+      collectionIds: e.collectionIds,
+    })),
+    ...collectionPass.entries,
+  ];
   if (total === 0) {
-    await fileIntoFolders(account, filing);
+    await fileIntoFolders(account, filing, collectionPass.collections);
     const lastSyncedAt = await persistWatermark(accountId, {
       full: baseline.full,
       newestId: null,
@@ -231,7 +262,7 @@ export async function syncTwitter(
     ev.outcome = "aborted";
     return;
   }
-  await fileIntoFolders(account, filing);
+  await fileIntoFolders(account, filing, collectionPass.collections);
 
   const lastSyncedAt = await persistWatermark(accountId, {
     full: baseline.full,

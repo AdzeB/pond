@@ -7,6 +7,7 @@ import type {
 } from "@pond/schema/db";
 import {
   accountImportScope,
+  collectionFiling,
   importsEverything,
   importsListKind,
 } from "../../../shared/import-scope";
@@ -27,6 +28,8 @@ export interface ListHarvestPlan {
   /** What a combined walk reads; empty for Sources that walk their lists separately. */
   listKinds: ListKind[];
   collections: ImportCollection[] | null;
+  /** Walk every collection after the lists so each save can be filed into its collection's Folder. */
+  fileEveryCollection: boolean;
 }
 
 export function listHarvestPlan(
@@ -46,6 +49,7 @@ export function listHarvestPlan(
         importsListKind(scope, kind),
       ),
       collections: null,
+      fileEveryCollection: false,
     };
   }
   const separateLiked = SEPARATE_LIKED_LISTS.has(source);
@@ -54,6 +58,7 @@ export function listHarvestPlan(
     liked: separateLiked && importsListKind(scope, "liked"),
     listKinds: [],
     collections,
+    fileEveryCollection: collectionFiling(source, scope) === "every",
   };
 }
 
@@ -68,7 +73,10 @@ export function importScopePatch(
   current: Pick<SourceSyncPrefs, "importScope" | "syncLikes">,
   scope: ImportScope,
 ): Partial<SourceSyncPrefs> {
-  const next = importsEverything(scope) ? undefined : scope;
+  const next =
+    importsEverything(scope) && scope.addToFolders === undefined
+      ? undefined
+      : scope;
   const patch: Partial<SourceSyncPrefs> = {
     importScope: next,
     importPending: false,
@@ -98,6 +106,6 @@ function scopeKey(scope: ImportScope | undefined): string {
     sorted(scope.collections?.map((collection) => collection.id)),
     sorted(scope.mediaKinds),
     scope.since ?? "*",
-    scope.addToFolders === false ? "loose" : "filed",
+    String(scope.addToFolders ?? "default"),
   ].join("|");
 }

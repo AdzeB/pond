@@ -28,6 +28,7 @@ import {
 import { getSourceDef } from "@/features/sources/lib/registry";
 import { connectFlow } from "@/features/sources/state/connect-flow";
 import {
+  draftFiles,
   draftImportScope,
   type ImportScopeFlow,
   useImportScopeFlow,
@@ -266,7 +267,12 @@ function CollectionRows({
           />
         )}
       </Settings.Item>
-      <Reveal visible={draft.collections.length > 0}>
+      <Reveal
+        visible={
+          draft.collections.length > 0 ||
+          importScopeOptions(source).fileEveryCollection
+        }
+      >
         <Settings.Item>
           <Settings.ItemDetails>
             <Settings.ItemTitle>Add to Folders</Settings.ItemTitle>
@@ -277,7 +283,7 @@ function CollectionRows({
           <Settings.ItemControl>
             <Switch.Root
               aria-label="Add to Folders"
-              checked={draft.addToFolders}
+              checked={draftFiles(draft)}
               disabled={draft.saving}
               onCheckedChange={(next) => flow.setAddToFolders(next)}
             />

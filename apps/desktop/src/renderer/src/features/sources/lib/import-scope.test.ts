@@ -41,4 +41,14 @@ describe("importScopeRows", () => {
       ),
     ).toEqual(["Lists", "Kinds of Posts", "Posted Since"]);
   });
+
+  it("shows Add to Folders with every collection where it can file them all", () => {
+    const value = (source: "twitter" | "youtube", on: boolean) =>
+      importScopeRows(source, on ? { addToFolders: true } : undefined).find(
+        (r) => r.label === "Add to Folders",
+      )?.value;
+    expect(value("twitter", true)).toBe("On");
+    expect(value("twitter", false)).toBe("Off");
+    expect(value("youtube", true)).toBeUndefined();
+  });
 });

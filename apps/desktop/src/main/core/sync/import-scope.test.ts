@@ -14,12 +14,14 @@ describe("listHarvestPlan", () => {
       liked: true,
       listKinds: [],
       collections: null,
+      fileEveryCollection: false,
     });
     expect(listHarvestPlan("pinterest", undefined)).toEqual({
       primary: true,
       liked: false,
       listKinds: [],
       collections: null,
+      fileEveryCollection: false,
     });
   });
 
@@ -29,6 +31,7 @@ describe("listHarvestPlan", () => {
       liked: true,
       listKinds: [],
       collections: null,
+      fileEveryCollection: false,
     });
   });
 
@@ -45,6 +48,7 @@ describe("listHarvestPlan", () => {
       liked: false,
       listKinds: [],
       collections: [BOARD],
+      fileEveryCollection: false,
     });
     expect(listHarvestPlan("youtube", { collections: [BOARD] })).toMatchObject({
       primary: false,
@@ -62,6 +66,23 @@ describe("listHarvestPlan", () => {
     ).toMatchObject({ primary: false, liked: true, collections: null });
   });
 
+  it("walks every collection after the list when you file them all", () => {
+    expect(listHarvestPlan("twitter", { addToFolders: true })).toMatchObject({
+      primary: true,
+      collections: null,
+      fileEveryCollection: true,
+    });
+    expect(
+      listHarvestPlan("youtube", { addToFolders: true }).fileEveryCollection,
+    ).toBe(false);
+    expect(
+      listHarvestPlan("instagram", {
+        listKinds: ["liked"],
+        addToFolders: true,
+      }).fileEveryCollection,
+    ).toBe(false);
+  });
+
   it("treats an empty board list as everything rather than nothing", () => {
     expect(listHarvestPlan("pinterest", { collections: [] }).primary).toBe(
       true,
@@ -74,6 +95,7 @@ describe("listHarvestPlan", () => {
       liked: false,
       listKinds: ["liked"],
       collections: null,
+      fileEveryCollection: false,
     });
     expect(listHarvestPlan("reddit", undefined).listKinds).toEqual([
       "saved",
@@ -117,6 +139,15 @@ describe("importScopePatch", () => {
         { collections: [BOARD] },
       ),
     ).toMatchObject({ lastFullSyncAt: null, resumeCursor: null });
+  });
+
+  it("keeps filing every collection and walks again in full to file older saves", () => {
+    expect(importScopePatch("twitter", {}, { addToFolders: true })).toEqual({
+      importScope: { addToFolders: true },
+      importPending: false,
+      lastFullSyncAt: null,
+      resumeCursor: null,
+    });
   });
 
   it("keeps the watermark when the same selection is saved again", () => {

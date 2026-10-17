@@ -78,7 +78,7 @@ export interface ImportScope {
   mediaKinds?: ImportMediaKind[];
   /** Local calendar day (`YYYY-MM-DD`); posts published before it are skipped. */
   since?: string;
-  /** False keeps collection saves out of Folders; omitted files each collection under its Source. */
+  /** Picked collections file under their Source unless this is false; with none picked, true files every collection. */
   addToFolders?: boolean;
 }
 
