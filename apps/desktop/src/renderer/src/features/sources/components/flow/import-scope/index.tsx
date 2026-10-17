@@ -119,7 +119,7 @@ export function ImportScopeConfirm() {
       disabled={!ready || draft.saving}
       onClick={() => void confirmImportScope(flow)}
     >
-      {draft.starts ? "Start Import" : "Save"}
+      {draft.starts ? "Start" : "Save"}
     </Dialog.Confirm>
   );
 }

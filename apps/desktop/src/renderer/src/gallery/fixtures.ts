@@ -54,7 +54,7 @@ export const IMPORT_SCOPE_CASES: ImportScopeCase[] = [
   {
     id: "x-first",
     title: "X, first import",
-    note: "Right after connecting. Nothing syncs until Start Import.",
+    note: "Right after connecting. Nothing syncs until you press Start.",
     account: {
       id: "x-first",
       source: "twitter",

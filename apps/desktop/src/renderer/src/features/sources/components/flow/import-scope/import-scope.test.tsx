@@ -134,7 +134,7 @@ it("starts the first import with only the lists you keep", async () => {
   });
   expect(toggle("Saved Posts").getAttribute("aria-checked")).toBe("true");
   await act(async () => toggle("Liked Posts").click());
-  await act(async () => button("Start Import").click());
+  await act(async () => button("Start").click());
 
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-instagram",
@@ -151,7 +151,7 @@ it("won't start an import that would bring in nothing", async () => {
   });
   await act(async () => toggle("Saved Videos").click());
   await act(async () => toggle("Liked Videos").click());
-  expect(button("Start Import").disabled).toBe(true);
+  expect(button("Start").disabled).toBe(true);
 });
 
 it("imports chosen Pinterest boards into Folders", async () => {
@@ -177,7 +177,7 @@ it("imports chosen Pinterest boards into Folders", async () => {
   await vi.waitFor(() => {
     expect(toggle("Add to Folders").getAttribute("aria-checked")).toBe("true");
   });
-  await act(async () => button("Start Import").click());
+  await act(async () => button("Start").click());
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-pinterest",
     scope: { collections: [{ id: "915", name: "Design References" }] },
@@ -251,7 +251,7 @@ it("starts a TikTok import from Liked Videos alone", async () => {
     sync: { importPending: true },
   });
   await act(async () => toggle("Favorites").click());
-  await act(async () => button("Start Import").click());
+  await act(async () => button("Start").click());
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-tiktok",
     scope: { listKinds: ["liked"] },
@@ -296,7 +296,7 @@ it("saves media and date filters with the scope", async () => {
     return found;
   });
   await act(async () => day.click());
-  await act(async () => button("Start Import").click());
+  await act(async () => button("Start").click());
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-reddit",
     scope: { mediaKinds: ["image", "video"], since: first },
