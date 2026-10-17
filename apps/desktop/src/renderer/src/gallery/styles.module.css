@@ -1,0 +1,87 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  min-height: 100vh;
+  padding: 40px;
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-2);
+}
+
+.header {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--ds-text-xl);
+  font-weight: var(--ds-weight-xl);
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  font-size: var(--ds-text-md);
+  color: var(--ds-gray-10);
+}
+
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px 32px;
+  align-items: flex-start;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+}
+
+.caption {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.name {
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-lg);
+}
+
+.note {
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-10);
+}
+
+/* The real dialog, pinned in place so several can sit side by side. */
+.frame {
+  position: relative;
+  width: 400px;
+
+  /* Doubled class outranks the contained-portal rules that pin and cap the dialog. */
+  &.frame > [data-contained] {
+    position: static;
+  }
+
+  &.frame [role="dialog"][data-open] {
+    position: relative;
+    top: auto;
+    left: auto;
+    max-width: none;
+    max-height: none;
+    transform: none;
+  }
+}
+
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
