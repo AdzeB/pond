@@ -13,6 +13,7 @@ import type { ReactElement } from "react";
 import {
   canCancelDownload,
   cancelDownloadRows,
+  canRetryDownload,
   canSkipDownload,
   canTrashDownload,
   retryDownloadRows,
@@ -45,7 +46,7 @@ export function buildDownloadMenuItems(
   const single = plural ? undefined : rows[0];
   const url = single?.url.trim() ?? "";
   const error = single?.error?.trim() ?? "";
-  const retryable = rows.some((row) => row.status === "failed");
+  const retryable = rows.some(canRetryDownload);
   const cancellable = rows.some(canCancelDownload);
   const skippable = rows.some(canSkipDownload);
   const trashable = rows.some(canTrashDownload);
@@ -63,22 +64,19 @@ export function buildDownloadMenuItems(
       label: plural ? "Retry Selected" : "Retry Download",
       icon: <IconRefreshFill />,
       disabled: !retryable,
-      onClick: () =>
-        void retryDownloadRows(rows).then((did) => {
-          if (did) downloadsSelection.clear();
-        }),
+      onClick: () => void retryDownloadRows(rows),
     },
     {
       label: plural ? "Cancel Selected" : "Cancel Download",
       icon: <IconMediaPauseFill />,
       disabled: !cancellable,
-      onClick: () => cancelDownloadRows(rows),
+      onClick: () => void cancelDownloadRows(rows),
     },
     {
       label: plural ? "Skip Selected" : "Skip Download",
       icon: <IconBan />,
       disabled: !skippable,
-      onClick: () => skipDownloadRows(rows),
+      onClick: () => void skipDownloadRows(rows),
     },
     { type: "separator" },
     {
@@ -99,7 +97,7 @@ export function buildDownloadMenuItems(
       icon: <IconTrashXmark />,
       variant: "destructive",
       disabled: !trashable,
-      onClick: () => trashDownloadRows(rows),
+      onClick: () => void trashDownloadRows(rows),
     },
     { type: "separator" },
     {

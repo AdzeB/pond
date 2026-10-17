@@ -17,22 +17,19 @@ import {
 import { openDownloadSave } from "../context-menu";
 import styles from "./styles.module.css";
 
+/** TanStack Store tracks reads inside `subscribe` listeners, so syncing from one would re-run on every table change and revert it. */
 function SelectionSync({ rowsById }: { rowsById: Map<string, DownloadRow> }) {
   const { actions, selectionStore } = useDataTable<DownloadViewRow>();
+  const selectedRows = downloadsSelection.useRows();
   useEffect(() => {
-    const sync = () => {
-      const ids = downloadsSelection
-        .snapshot()
-        .filter((row) => rowsById.has(row.id))
-        .map((row) => row.id);
-      const selected = selectionStore.state.selectedIds;
-      if (ids.length !== selected.size || ids.some((id) => !selected.has(id))) {
-        actions.replaceSelection(ids);
-      }
-    };
-    sync();
-    return downloadsSelection.subscribe(sync);
-  }, [actions, selectionStore, rowsById]);
+    const ids = selectedRows
+      .filter((row) => rowsById.has(row.id))
+      .map((row) => row.id);
+    const selected = selectionStore.state.selectedIds;
+    if (ids.length !== selected.size || ids.some((id) => !selected.has(id))) {
+      actions.replaceSelection(ids);
+    }
+  }, [actions, selectionStore, rowsById, selectedRows]);
   return null;
 }
 
@@ -99,6 +96,7 @@ export function DownloadTable({
       getRowId={(row) => row.id}
       height={height}
       selectionCheckboxes
+      checkboxVisibility="hover"
       selectOnClick
       onRowClick={(row, event) => {
         if (event && event.detail < 2) return;
