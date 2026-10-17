@@ -4,7 +4,6 @@ import {
   Combobox,
   DatePicker,
   Dialog,
-  Reveal,
   Select,
   Settings,
   Switch,
@@ -161,7 +160,6 @@ function ListKindRows({
   const flow = useImportScopeFlowActions();
   const draft = useImportScopeFlow();
   const title = listKindLabel(source, kind);
-  const included = draft.listKinds.includes(kind);
   return (
     <>
       <Settings.Item>
@@ -171,17 +169,13 @@ function ListKindRows({
         <Settings.ItemControl>
           <Switch.Root
             aria-label={title}
-            checked={included}
+            checked={draft.listKinds.includes(kind)}
             disabled={draft.saving}
             onCheckedChange={(next) => flow.setListKind(kind, next)}
           />
         </Settings.ItemControl>
       </Settings.Item>
-      {children ? (
-        <Reveal visible={included}>
-          <div className={styles.nested}>{children}</div>
-        </Reveal>
-      ) : null}
+      {children ? <div className={styles.nested}>{children}</div> : null}
     </>
   );
 }
@@ -199,6 +193,11 @@ function CollectionRows({
   const draft = useImportScopeFlow();
   const nouns = collectionNouns(kind);
   const label = getSourceDef(source).label;
+  const options = importScopeOptions(source);
+  const savedOff =
+    options.listKinds.length > 0 && !draft.listKinds.includes("saved");
+  const nonePicked = draft.collections.length === 0;
+  const filingOff = savedOff || (nonePicked && !options.fileEveryCollection);
   const [requested, setRequested] = useState(false);
   const query = useQuery({
     queryKey: ["import-options", accountId],
@@ -224,7 +223,7 @@ function CollectionRows({
   );
   return (
     <>
-      <Settings.Item className={styles.stacked}>
+      <Settings.Item className={styles.stacked} disabled={savedOff}>
         <Settings.ItemDetails>
           <Settings.ItemTitle>{nouns.title}</Settings.ItemTitle>
           {failed ? (
@@ -238,6 +237,7 @@ function CollectionRows({
             size="sm"
             variant="secondary"
             className={styles.retry}
+            disabled={savedOff}
             onClick={() => void query.refetch()}
           >
             Try Again
@@ -257,7 +257,7 @@ function CollectionRows({
                   ? `No ${nouns.many} found`
                   : `No ${nouns.many} match`
             }
-            disabled={draft.saving}
+            disabled={draft.saving || savedOff}
             onOpen={() => setRequested(true)}
             onValueChange={(next) =>
               flow.setCollections(
@@ -267,29 +267,24 @@ function CollectionRows({
           />
         )}
       </Settings.Item>
-      <Reveal
-        visible={
-          draft.collections.length > 0 ||
-          importScopeOptions(source).fileEveryCollection
-        }
-      >
-        <Settings.Item>
-          <Settings.ItemDetails>
-            <Settings.ItemTitle>Add to Folders</Settings.ItemTitle>
-            <Settings.ItemDescription>
-              Saves to {label} / {nouns.one} name.
-            </Settings.ItemDescription>
-          </Settings.ItemDetails>
-          <Settings.ItemControl>
-            <Switch.Root
-              aria-label="Add to Folders"
-              checked={draftFiles(draft)}
-              disabled={draft.saving}
-              onCheckedChange={(next) => flow.setAddToFolders(next)}
-            />
-          </Settings.ItemControl>
-        </Settings.Item>
-      </Reveal>
+      <Settings.Item disabled={filingOff}>
+        <Settings.ItemDetails>
+          <Settings.ItemTitle>Add to Folders</Settings.ItemTitle>
+          <Settings.ItemDescription>
+            {nonePicked && !options.fileEveryCollection
+              ? `Pick ${nouns.many} to file them under ${label}.`
+              : `Saves to ${label} / ${nouns.one} name.`}
+          </Settings.ItemDescription>
+        </Settings.ItemDetails>
+        <Settings.ItemControl>
+          <Switch.Root
+            aria-label="Add to Folders"
+            checked={!filingOff && draftFiles(draft)}
+            disabled={draft.saving || filingOff}
+            onCheckedChange={(next) => flow.setAddToFolders(next)}
+          />
+        </Settings.ItemControl>
+      </Settings.Item>
     </>
   );
 }
@@ -431,22 +426,20 @@ function SinceRows() {
           </Select.Root>
         </Settings.ItemControl>
       </Settings.Item>
-      <Reveal visible={custom}>
-        <Settings.Item>
-          <Settings.ItemDetails>
-            <Settings.ItemTitle>Date</Settings.ItemTitle>
-          </Settings.ItemDetails>
-          <Settings.ItemControl>
-            <DatePicker
-              aria-label="Date"
-              value={draft.since}
-              max={localDay(new Date())}
-              disabled={draft.saving}
-              onValueChange={(since) => flow.setSince(since)}
-            />
-          </Settings.ItemControl>
-        </Settings.Item>
-      </Reveal>
+      <Settings.Item disabled={!custom}>
+        <Settings.ItemDetails>
+          <Settings.ItemTitle>Date</Settings.ItemTitle>
+        </Settings.ItemDetails>
+        <Settings.ItemControl>
+          <DatePicker
+            aria-label="Date"
+            value={draft.since}
+            max={localDay(new Date())}
+            disabled={draft.saving || !custom}
+            onValueChange={(since) => flow.setSince(since)}
+          />
+        </Settings.ItemControl>
+      </Settings.Item>
     </>
   );
 }

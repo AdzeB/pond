@@ -102,6 +102,16 @@ export const IMPORT_SCOPE_CASES: ImportScopeCase[] = [
     },
   },
   {
+    id: "instagram-liked",
+    title: "Instagram, Liked Posts only",
+    note: "Saved Posts off, so its collections and Folders are dimmed.",
+    account: {
+      id: "instagram-liked",
+      source: "instagram",
+      sync: { importScope: { listKinds: ["liked"] } },
+    },
+  },
+  {
     id: "youtube-playlists",
     title: "YouTube, a playlist without Folders",
     note: "Add to Folders turned off.",

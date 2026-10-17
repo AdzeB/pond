@@ -272,17 +272,44 @@ it("starts a TikTok import from Liked Videos alone", async () => {
   });
 });
 
-it("hides collections while the saved list is off", async () => {
+it("dims collections and Add to Folders while the saved list is off", async () => {
   await renderFor({
     id: "acc-instagram",
     source: "instagram",
     sync: { importPending: true },
   });
-  expect(host.querySelector('input[aria-label="Collections"]')).not.toBeNull();
+  const input = () =>
+    host.querySelector<HTMLInputElement>('input[aria-label="Collections"]');
+  expect(input()?.disabled).toBe(false);
   await act(async () => toggle("Saved Posts").click());
-  await vi.waitFor(() => {
-    expect(host.querySelector('input[aria-label="Collections"]')).toBeNull();
+  expect(input()?.disabled).toBe(true);
+  expect(toggle("Add to Folders").getAttribute("aria-disabled")).toBe("true");
+  expect(input()?.closest("div[aria-disabled]")).not.toBeNull();
+});
+
+it("keeps the date visible but off until you choose Custom Date", async () => {
+  await renderFor({
+    id: "acc-reddit",
+    source: "reddit",
+    sync: { importPending: true },
   });
+  const trigger = host.querySelector<HTMLButtonElement>('[aria-label^="Date"]');
+  expect(trigger?.disabled).toBe(true);
+  await choose("Posted Since", "Custom Date");
+  expect(trigger?.disabled).toBe(false);
+});
+
+it("dims YouTube's Add to Folders until you pick a playlist", async () => {
+  await renderFor({
+    id: "acc-youtube",
+    source: "youtube",
+    sync: { importPending: true },
+  });
+  expect(host.textContent).toContain(
+    "Pick playlists to file them under YouTube.",
+  );
+  expect(toggle("Add to Folders").getAttribute("aria-checked")).toBe("false");
+  expect(toggle("Add to Folders").getAttribute("aria-disabled")).toBe("true");
 });
 
 it("saves media and date filters with the scope", async () => {
