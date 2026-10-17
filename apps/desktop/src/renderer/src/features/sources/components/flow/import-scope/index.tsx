@@ -18,7 +18,6 @@ import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
 import {
   collectionNouns,
-  formatSince,
   hasImportChoices,
   listKindLabel,
   localDay,
@@ -403,11 +402,6 @@ function SinceRows() {
       <Settings.Item>
         <Settings.ItemDetails>
           <Settings.ItemTitle>Posted Since</Settings.ItemTitle>
-          {draft.since && !custom ? (
-            <Settings.ItemDescription>
-              From {formatSince(draft.since)}
-            </Settings.ItemDescription>
-          ) : null}
         </Settings.ItemDetails>
         <Settings.ItemControl>
           <Select.Root

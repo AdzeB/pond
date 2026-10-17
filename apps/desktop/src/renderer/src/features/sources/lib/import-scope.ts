@@ -189,7 +189,7 @@ export function localDay(date: Date): string {
   return `${date.getFullYear()}-${month}-${day}`;
 }
 
-export function formatSince(since: string): string {
+function formatSince(since: string): string {
   const start = sinceStart(since);
   return start
     ? start.toLocaleDateString(undefined, {
