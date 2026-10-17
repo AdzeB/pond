@@ -276,8 +276,10 @@ function CollectionRows({
             <Tooltip
               label={
                 nonePicked && !options.fileEveryCollection
-                  ? `Pick ${nouns.many} to file them under ${label}.`
-                  : `Saves to ${label} / ${nouns.one} name.`
+                  ? `Pick a ${nouns.one} to put its saves in a matching Folder.`
+                  : draft.collections[0]
+                    ? `Puts each save in a matching Folder, like ${label} / ${draft.collections[0].name}.`
+                    : `Puts each save in a Folder named after its ${nouns.one}, under ${label}.`
               }
             >
               <Button
