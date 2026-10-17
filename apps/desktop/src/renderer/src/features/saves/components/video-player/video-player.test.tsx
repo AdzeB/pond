@@ -218,3 +218,24 @@ it("lets the playback toolbar turn off automatic short-video looping", async () 
   expect(video?.loop).toBe(false);
   expect(loop?.getAttribute("aria-pressed")).toBeNull();
 });
+
+it("covers the stage with the poster until the first frame loads", async () => {
+  await act(async () => {
+    root.render(
+      <ViewerChrome>
+        <VideoPlayer
+          src="pond://test/clip.mp4"
+          poster="pond://test/poster.jpg"
+        />
+      </ViewerChrome>,
+    );
+  });
+  const poster = () => host.querySelector('img[src="pond://test/poster.jpg"]');
+  expect(poster()).not.toBeNull();
+
+  await act(async () => {
+    host.querySelector("video")?.dispatchEvent(new Event("loadeddata"));
+  });
+
+  expect(poster()).toBeNull();
+});

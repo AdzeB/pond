@@ -11,9 +11,9 @@ import { useSave } from "@/features/saves/hooks/use-saves";
 import type { ChapterCue } from "@/features/saves/lib/media/chapters-vtt";
 import { buildPondUrl } from "@/features/saves/lib/media/url";
 import { viewerMemory } from "@/features/saves/lib/viewer-memory";
-import { EndPoster } from "./end-poster";
 import { videoScaleForRotation } from "./geometry";
 import { MediaBridge } from "./media-bridge";
+import { Poster } from "./poster";
 import styles from "./styles.module.css";
 import { TimelinePreview } from "./timeline-preview";
 import { PlayerButton } from "./toolbar-buttons";
@@ -196,7 +196,8 @@ export function VideoPlayer({
         onError={onError}
         onLoadedMetadata={onLoadedMetadata}
       />
-      <EndPoster src={poster} />
+      <Poster.Start src={poster} />
+      <Poster.End src={poster} />
       {active ? (
         <>
           <VideoToolbarContent
