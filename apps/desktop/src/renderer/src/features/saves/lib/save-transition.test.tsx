@@ -11,11 +11,12 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   cardMedia,
+  growKeyframes,
   morphKeyframes,
   onTransitionMeasure,
   transitionSave,
+  useSaveTransitionSettled,
   viewerMedia,
-  viewerStage,
 } from "./save-transition";
 
 function Grid() {
@@ -23,6 +24,18 @@ function Grid() {
     <div data-library-grid-viewport="">
       <div data-library-card="" data-save-id="a">
         <div data-save-thumb="" data-part="card" />
+      </div>
+    </div>
+  );
+}
+
+function ThumbnailGrid() {
+  return (
+    <div data-library-grid-viewport="">
+      <div data-library-card="" data-save-id="a">
+        <div data-save-thumb="" data-part="card">
+          <img alt="" src="pond://test/thumb.jpg" />
+        </div>
       </div>
     </div>
   );
@@ -47,20 +60,14 @@ function MeasuredViewer() {
   );
 }
 
-function HeroImageViewer() {
+function VideoViewer() {
   return (
     <section data-save-details="">
       <div data-save-hero="" data-part="viewer">
-        <img alt="" src="full.jpg" />
+        <video>
+          <track kind="captions" />
+        </video>
       </div>
-    </section>
-  );
-}
-
-function PosterViewer() {
-  return (
-    <section data-save-details="">
-      <img alt="" src="poster.jpg" />
     </section>
   );
 }
@@ -71,10 +78,11 @@ function installViewTransitions() {
   const sizes: number[][] = [];
   let finished: Promise<void> = Promise.resolve();
   const heroes = () =>
-    [...document.querySelectorAll<HTMLElement>("[data-part]")].filter(
+    [...document.querySelectorAll<HTMLElement>("*")].filter(
       (element) => element.style.viewTransitionName === "save-media",
     );
-  const named = () => heroes().map((element) => element.dataset.part ?? "");
+  const named = () =>
+    heroes().map((element) => element.dataset.part ?? element.tagName);
   const capture = () => {
     captures.push(named());
     sizes.push(
@@ -122,14 +130,18 @@ describe("transitionSave", () => {
     vi.restoreAllMocks();
   });
 
-  async function mount(path: string, viewer: typeof Viewer = Viewer) {
+  async function mount(
+    path: string,
+    viewer: typeof Viewer = Viewer,
+    grid: typeof Grid = Grid,
+  ) {
     const rootRoute = createRootRoute({ component: Outlet });
     const router = createRouter({
       routeTree: rootRoute.addChildren([
         createRoute({
           getParentRoute: () => rootRoute,
           path: "/",
-          component: Grid,
+          component: grid,
         }),
         createRoute({
           getParentRoute: () => rootRoute,
@@ -183,20 +195,94 @@ describe("transitionSave", () => {
     expect(transitions.sizes).toEqual([[200], [480]]);
   });
 
-  it.each([
-    ["skips image decodes behind a hero", HeroImageViewer, 0],
-    ["waits for the stage poster without a hero", PosterViewer, 1],
-  ])("%s", async (_, viewer, decodes) => {
+  it("grows an uncropped copy of the card thumbnail in place of the card", async () => {
     vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(
-      false,
+      true,
     );
-    const decode = vi.fn(() => Promise.resolve());
-    Object.defineProperty(HTMLImageElement.prototype, "decode", {
-      configurable: true,
-      value: decode,
-    });
-    const router = await mount("/", viewer);
+    vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(
+      100,
+    );
+    vi.spyOn(
+      HTMLImageElement.prototype,
+      "naturalHeight",
+      "get",
+    ).mockReturnValue(200);
+    const router = await mount("/", Viewer, ThumbnailGrid);
     const transitions = installViewTransitions();
+    const card = cardMedia("a");
+    let copy: HTMLImageElement | undefined;
+    let hidden = "";
+
+    await act(async () => {
+      transitionSave({
+        router,
+        path: "/save/a",
+        source: card,
+        target: viewerMedia,
+      });
+      copy = [...document.body.querySelectorAll("img")].find(
+        (image) => image.style.viewTransitionName === "save-media",
+      );
+      hidden = card?.style.visibility ?? "";
+      await transitions.finished();
+    });
+
+    expect(transitions.captures).toEqual([["IMG"], ["viewer"]]);
+    expect(hidden).toBe("hidden");
+    expect(copy?.getAttribute("src")).toBe("pond://test/thumb.jpg");
+    expect(copy?.style.height).toBe("400px");
+    expect(copy?.parentElement?.style.overflow).toBe("hidden");
+    expect(copy?.isConnected).toBe(false);
+    expect(card?.style.visibility).toBe("");
+  });
+
+  it("pauses the viewer video before it is captured", async () => {
+    const router = await mount("/save/a", VideoViewer);
+    const transitions = installViewTransitions();
+    const pause = vi
+      .spyOn(HTMLMediaElement.prototype, "pause")
+      .mockImplementation(() => {});
+
+    await act(async () => {
+      transitionSave({
+        router,
+        path: "/",
+        source: viewerMedia(),
+        target: () => cardMedia("a"),
+      });
+      expect(pause).toHaveBeenCalledOnce();
+      await transitions.finished();
+    });
+
+    expect(transitions.captures).toEqual([["viewer"], ["card"]]);
+  });
+
+  it("reports the transition as unsettled until it finishes", async () => {
+    const router = await mount("/");
+    let release = () => {};
+    let finished = Promise.resolve();
+    Object.defineProperty(document, "startViewTransition", {
+      configurable: true,
+      value: (update: () => Promise<void>) => {
+        finished = new Promise<void>((resolve) => {
+          release = resolve;
+        }).then(update);
+        return {
+          ready: finished,
+          finished,
+          updateCallbackDone: finished,
+          skipTransition: () => {},
+        };
+      },
+    });
+    const seen: boolean[] = [];
+    function Probe() {
+      seen.push(useSaveTransitionSettled());
+      return null;
+    }
+    const probeHost = document.createElement("div");
+    const probe = createRoot(probeHost);
+    await act(async () => probe.render(<Probe />));
 
     await act(async () => {
       transitionSave({
@@ -204,14 +290,18 @@ describe("transitionSave", () => {
         path: "/save/a",
         source: cardMedia("a"),
         target: viewerMedia,
-        stage: viewerStage,
       });
-      await transitions.finished();
+    });
+    const during = seen.at(-1);
+    await act(async () => {
+      release();
+      await finished;
     });
 
-    Reflect.deleteProperty(HTMLImageElement.prototype, "decode");
-    expect(router.state.location.pathname).toBe("/save/a");
-    expect(decode).toHaveBeenCalledTimes(decodes);
+    expect(seen[0]).toBe(true);
+    expect(during).toBe(false);
+    expect(seen.at(-1)).toBe(true);
+    await act(async () => probe.unmount());
   });
 
   it("shrinks the viewer back into its revealed card", async () => {
@@ -273,6 +363,33 @@ describe("transitionSave", () => {
     expect(router.history.location.pathname).toBe("/");
     expect(settle).toHaveBeenCalledOnce();
     await act(async () => {});
+  });
+});
+
+describe("growKeyframes", () => {
+  it("poses the full-aspect media inside the card crop, then at the viewer", () => {
+    const card = { left: 10, top: 20, width: 100, height: 100 };
+    const media = { left: 10, top: -30, width: 100, height: 200 };
+    const viewer = { left: 300, top: 0, width: 400, height: 800 };
+
+    expect(
+      growKeyframes(
+        { media, clip: card, radius: 8 },
+        { media: viewer, clip: viewer, radius: 0 },
+        viewer,
+        "spring",
+      ),
+    ).toEqual([
+      {
+        easing: "spring",
+        transform: "translate(10px, -30px) scale(0.25, 0.25)",
+        clipPath: "inset(200px 0px 200px 0px round 32px / 32px)",
+      },
+      {
+        transform: "translate(300px, 0px) scale(1, 1)",
+        clipPath: "inset(0px 0px 0px 0px round 0px / 0px)",
+      },
+    ]);
   });
 });
 

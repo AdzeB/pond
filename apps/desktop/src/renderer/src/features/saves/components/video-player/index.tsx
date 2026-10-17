@@ -1,16 +1,22 @@
-import { useVideo, Video } from "@pond/ui";
+import { Video } from "@pond/ui";
 import {
   type ReactEventHandler,
   type ReactNode,
   useCallback,
   useEffect,
+  useLayoutEffect,
+  useRef,
   useState,
 } from "react";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
+import { useMediaReveal } from "@/features/saves/hooks/use-media-reveal";
 import { useSave } from "@/features/saves/hooks/use-saves";
+import { containImage } from "@/features/saves/lib/image-regions";
 import type { ChapterCue } from "@/features/saves/lib/media/chapters-vtt";
 import { buildPondUrl } from "@/features/saves/lib/media/url";
+import { onTransitionMeasure } from "@/features/saves/lib/save-transition";
 import { viewerMemory } from "@/features/saves/lib/viewer-memory";
+import { cardThumbnailFor } from "@/features/saves/state/card-thumbnails";
 import { videoScaleForRotation } from "./geometry";
 import { MediaBridge } from "./media-bridge";
 import { Poster } from "./poster";
@@ -19,6 +25,7 @@ import { TimelinePreview } from "./timeline-preview";
 import { PlayerButton } from "./toolbar-buttons";
 import { VideoToolbarContent, type VideoToolbarSlots } from "./toolbar-content";
 import { useChaptersTrackUrl } from "./use-chapters-track-url";
+import { useFirstFrame } from "./use-first-frame";
 import { VolumeControl } from "./volume";
 import { WheelBridge } from "./wheel-bridge";
 
@@ -38,6 +45,7 @@ interface VideoPlayerProps {
   renderToolbar?: (slots: VideoToolbarSlots) => ReactNode;
 }
 
+/** Fits the video and its posters into one box so the open and close transitions morph the visible frame, not the letterboxed stage. */
 function VideoSurface({
   src,
   trackUrl,
@@ -45,8 +53,11 @@ function VideoSurface({
   rotation,
   mirrored,
   ratio,
+  hero,
+  placeholder,
   onError,
   onLoadedMetadata,
+  children,
 }: {
   src: string;
   trackUrl: string | null;
@@ -54,46 +65,89 @@ function VideoSurface({
   rotation: number;
   mirrored: boolean;
   ratio: number | null;
+  hero: boolean;
+  placeholder?: string;
   onError?: () => void;
   onLoadedMetadata: ReactEventHandler<HTMLVideoElement>;
+  children?: ReactNode;
 }) {
-  const { meta } = useVideo();
+  const frame = useRef<HTMLDivElement>(null);
+  const shown = useMediaReveal(useFirstFrame(src), src);
   const [viewerSize, setViewerSize] = useState({ width: 0, height: 0 });
-  useEffect(() => {
-    const root = meta.rootRef.current;
+  /**
+   * The fitted box must exist before first paint so the open transition lands on the video.
+   * @remarks Measures the frame's parent because the root's ref is not attached yet when a child layout effect runs.
+   */
+  useLayoutEffect(() => {
+    const root = frame.current?.parentElement;
     if (!root) return;
-    const update = () =>
-      setViewerSize({ width: root.clientWidth, height: root.clientHeight });
-    update();
-    const observer = new ResizeObserver(update);
+    const measure = () => {
+      const width = root.clientWidth;
+      const height = root.clientHeight;
+      setViewerSize((current) =>
+        current.width === width && current.height === height
+          ? current
+          : { width, height },
+      );
+    };
+    measure();
+    const release = onTransitionMeasure(measure);
+    if (!globalThis.ResizeObserver) return release;
+    const observer = new ResizeObserver(measure);
     observer.observe(root);
-    return () => observer.disconnect();
-  }, [meta.rootRef]);
+    return () => {
+      release();
+      observer.disconnect();
+    };
+  }, []);
   const scale = videoScaleForRotation(
     viewerSize.width,
     viewerSize.height,
     ratio,
     rotation,
   );
+  const fitted =
+    ratio && viewerSize.width && viewerSize.height
+      ? containImage({ left: 0, top: 0, ...viewerSize }, ratio)
+      : null;
   return (
-    <Video.Media
-      className={styles.media}
-      src={src}
-      preload="metadata"
-      onError={onError}
-      onLoadedMetadata={onLoadedMetadata}
-      style={{
-        objectFit: "contain",
-        transform: `scale(${scale}) rotate(${rotation}deg) scaleX(${mirrored ? -1 : 1})`,
-      }}
+    <div
+      ref={frame}
+      className={styles.frame}
+      data-save-hero={(hero && fitted && rotation === 0) || undefined}
+      style={
+        fitted
+          ? {
+              left: fitted.left,
+              top: fitted.top,
+              width: fitted.width,
+              height: fitted.height,
+            }
+          : undefined
+      }
     >
-      {trackUrl ? (
-        <track kind="chapters" src={trackUrl} default label="Chapters" />
-      ) : null}
-      {subtitleUrl ? (
-        <track kind="subtitles" src={subtitleUrl} default label="Subtitles" />
-      ) : null}
-    </Video.Media>
+      <Poster.Start src={placeholder} covered={shown} />
+      <Video.Media
+        className={styles.media}
+        data-pending={!shown || undefined}
+        src={src}
+        preload="metadata"
+        onError={onError}
+        onLoadedMetadata={onLoadedMetadata}
+        style={{
+          objectFit: "contain",
+          transform: `scale(${scale}) rotate(${rotation}deg) scaleX(${mirrored ? -1 : 1})`,
+        }}
+      >
+        {trackUrl ? (
+          <track kind="chapters" src={trackUrl} default label="Chapters" />
+        ) : null}
+        {subtitleUrl ? (
+          <track kind="subtitles" src={subtitleUrl} default label="Subtitles" />
+        ) : null}
+      </Video.Media>
+      {children}
+    </div>
   );
 }
 
@@ -193,11 +247,13 @@ export function VideoPlayer({
         rotation={rotation}
         mirrored={mirrored}
         ratio={ratio}
+        hero={!!active}
+        placeholder={cardThumbnailFor(src) ?? poster}
         onError={onError}
         onLoadedMetadata={onLoadedMetadata}
-      />
-      <Poster.Start src={poster} />
-      <Poster.End src={poster} />
+      >
+        <Poster.End src={poster} />
+      </VideoSurface>
       {active ? (
         <>
           <VideoToolbarContent

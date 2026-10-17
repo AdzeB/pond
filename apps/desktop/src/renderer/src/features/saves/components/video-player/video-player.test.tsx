@@ -1,5 +1,5 @@
 import { PrefsSchema } from "@pond/schema";
-import { act } from "react";
+import { act, type ComponentProps } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
@@ -46,12 +46,14 @@ afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
-function TestVideoPlayer() {
+function TestVideoPlayer(props: Partial<ComponentProps<typeof VideoPlayer>>) {
   return (
     <ViewerChrome>
       <VideoPlayer
+        {...props}
         src="pond://test/clip.mp4"
         active
         renderToolbar={({ actions, edits }) => (
@@ -219,7 +221,7 @@ it("lets the playback toolbar turn off automatic short-video looping", async () 
   expect(loop?.getAttribute("aria-pressed")).toBeNull();
 });
 
-it("covers the stage with the poster until the first frame loads", async () => {
+it("fades the video in over the poster once the first frame loads", async () => {
   await act(async () => {
     root.render(
       <ViewerChrome>
@@ -231,11 +233,92 @@ it("covers the stage with the poster until the first frame loads", async () => {
     );
   });
   const poster = () => host.querySelector('img[src="pond://test/poster.jpg"]');
-  expect(poster()).not.toBeNull();
+  expect(poster()?.hasAttribute("data-covered")).toBe(false);
+  expect(host.querySelector("video")?.hasAttribute("data-pending")).toBe(true);
 
   await act(async () => {
     host.querySelector("video")?.dispatchEvent(new Event("loadeddata"));
   });
 
-  expect(poster()).toBeNull();
+  expect(poster()?.hasAttribute("data-covered")).toBe(true);
+  expect(host.querySelector("video")?.hasAttribute("data-pending")).toBe(false);
+});
+
+it("holds the poster until a video frame is presented", async () => {
+  let present = () => {};
+  Object.defineProperties(HTMLVideoElement.prototype, {
+    requestVideoFrameCallback: {
+      configurable: true,
+      value: (callback: VideoFrameRequestCallback) => {
+        present = () =>
+          callback(0, {
+            expectedDisplayTime: 0,
+            height: 1080,
+            mediaTime: 0,
+            presentationTime: 0,
+            presentedFrames: 1,
+            width: 1920,
+          });
+        return 1;
+      },
+    },
+    cancelVideoFrameCallback: { configurable: true, value: () => {} },
+  });
+  try {
+    await act(async () => {
+      root.render(<TestVideoPlayer poster="pond://test/poster.jpg" />);
+    });
+    const poster = () =>
+      host.querySelector('img[src="pond://test/poster.jpg"]');
+    await act(async () => {
+      host.querySelector("video")?.dispatchEvent(new Event("loadeddata"));
+    });
+    expect(poster()?.hasAttribute("data-covered")).toBe(false);
+
+    await act(async () => present());
+
+    expect(poster()?.hasAttribute("data-covered")).toBe(true);
+  } finally {
+    await act(async () => root.render(null));
+    Reflect.deleteProperty(
+      HTMLVideoElement.prototype,
+      "requestVideoFrameCallback",
+    );
+    Reflect.deleteProperty(
+      HTMLVideoElement.prototype,
+      "cancelVideoFrameCallback",
+    );
+  }
+});
+
+it("fits the video and its poster into the transition hero before first paint", async () => {
+  vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(800);
+  vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(800);
+  await act(async () => {
+    root.render(
+      <TestVideoPlayer
+        poster="pond://test/poster.jpg"
+        width={1080}
+        height={1920}
+      />,
+    );
+  });
+  const hero = host.querySelector<HTMLElement>("[data-save-hero]");
+  expect(hero?.style).toMatchObject({
+    left: "175px",
+    top: "0px",
+    width: "450px",
+    height: "800px",
+  });
+  expect(hero?.querySelector("video")).not.toBeNull();
+  expect(
+    hero?.querySelector('img[src="pond://test/poster.jpg"]'),
+  ).not.toBeNull();
+
+  const rotate = [...host.querySelectorAll("button")].find(
+    (button) => button.getAttribute("aria-label") === "Rotate Video",
+  );
+  await act(async () => rotate?.click());
+
+  expect(host.querySelector("[data-save-hero]")).toBeNull();
 });

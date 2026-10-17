@@ -230,6 +230,7 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
             unit={unit}
             pickOptions={pickOptions}
             width={width}
+            opens={mediaUnits[0]?.url}
             onBroken={onBroken}
           />
         ) : null}

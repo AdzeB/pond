@@ -10,6 +10,7 @@ import {
 import { BlurHash } from "@/features/saves/components/card/media/blur-hash";
 import type { ViewerNavigation } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import { useGifPlayer } from "@/features/saves/hooks/use-gif-player";
+import { useMediaReveal } from "@/features/saves/hooks/use-media-reveal";
 import {
   fullImageCrop,
   isFullImageCrop,
@@ -123,8 +124,8 @@ export function ImageInspector({
     wheelBehavior: prefs.wheelBehavior,
   });
   const decoded = useImageDecoded(viewport.image, src);
-  const cardThumbnail = cardThumbnailFor(src);
-  const thumbnail = cardThumbnail === src ? null : cardThumbnail;
+  const thumbnail = cardThumbnailFor(src);
+  const shown = useMediaReveal(decoded || gif.ready, src);
 
   const run = async (action: () => Promise<void>) => {
     if (pending.current) return;
@@ -345,6 +346,25 @@ export function ImageInspector({
                 : undefined
             }
           >
+            {thumbnail || save.blurhash ? (
+              <div
+                className={styles.placeholder}
+                data-covered={shown || undefined}
+                aria-hidden
+              >
+                {thumbnail ? (
+                  <img
+                    src={thumbnail}
+                    alt=""
+                    decoding="sync"
+                    draggable={false}
+                    style={imageStyle}
+                  />
+                ) : save.blurhash ? (
+                  <BlurHash hash={save.blurhash} />
+                ) : null}
+              </div>
+            ) : null}
             <img
               ref={(element) => {
                 viewport.image.current = element;
@@ -357,7 +377,7 @@ export function ImageInspector({
               src={src}
               alt={save.title ?? ""}
               className={styles.image}
-              data-pending={!decoded || undefined}
+              data-pending={!shown || undefined}
               decoding="async"
               fetchPriority={active ? "high" : "low"}
               style={{ ...imageStyle, display: gif.ready ? "none" : undefined }}
@@ -383,6 +403,7 @@ export function ImageInspector({
                   ref={gif.canvas}
                   className={styles.image}
                   data-frame={gif.frameIndex}
+                  data-pending={!shown || undefined}
                   style={{
                     ...imageStyle,
                     display: gif.ready ? "block" : "none",
@@ -390,19 +411,6 @@ export function ImageInspector({
                   aria-label={`${save.title || "GIF"}, frame ${gif.frameIndex + 1}`}
                 />
               </GifContextMenu>
-            ) : null}
-            {decoded || gif.ready ? null : thumbnail ? (
-              <img
-                src={thumbnail}
-                alt=""
-                aria-hidden
-                className={styles.placeholder}
-                decoding="sync"
-                draggable={false}
-                style={imageStyle}
-              />
-            ) : save.blurhash ? (
-              <BlurHash hash={save.blurhash} />
             ) : null}
             <ImageOverlay draft={draft} mode={mode} />
           </div>

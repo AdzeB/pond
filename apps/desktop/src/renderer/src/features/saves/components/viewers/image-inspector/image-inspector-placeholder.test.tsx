@@ -27,19 +27,21 @@ afterEach(() => {
 
 const original = () =>
   inspector.host.querySelector<HTMLImageElement>(`img[src="${ORIGINAL}"]`);
-const placeholder = () =>
-  inspector.host.querySelector<HTMLImageElement>(`img[src="${THUMBNAIL}"]`);
+const covered = () =>
+  inspector.host
+    .querySelector(`img[src="${THUMBNAIL}"]`)
+    ?.closest("[data-covered]") != null;
 
 it("paints the card thumbnail until the original has decoded", async () => {
   rememberCardThumbnail(ORIGINAL, THUMBNAIL);
   await inspector.render(undefined, ORIGINAL);
 
-  expect(placeholder()).not.toBeNull();
+  expect(covered()).toBe(false);
   expect(original()?.hasAttribute("data-pending")).toBe(true);
 
   await act(async () => decodes[0]?.resolve());
 
-  expect(placeholder()).toBeNull();
+  expect(covered()).toBe(true);
   expect(original()?.hasAttribute("data-pending")).toBe(false);
 });
 
@@ -49,22 +51,29 @@ it("reveals the original on load when decoding fails early", async () => {
 
   await act(async () => decodes[0]?.reject());
 
-  expect(placeholder()).not.toBeNull();
+  expect(covered()).toBe(false);
   expect(original()?.hasAttribute("data-pending")).toBe(true);
 
   await act(async () => original()?.dispatchEvent(new Event("load")));
 
-  expect(placeholder()).toBeNull();
+  expect(covered()).toBe(true);
   expect(original()?.hasAttribute("data-pending")).toBe(false);
 });
 
-it("skips the placeholder when the card already showed the original", async () => {
+it("keeps the card's original under the viewer image until it fades in", async () => {
   rememberCardThumbnail(ORIGINAL, ORIGINAL);
   await inspector.render(undefined, ORIGINAL);
+  const placeholder = () =>
+    inspector.host.querySelector(`[data-covered] img[src="${ORIGINAL}"]`);
 
   expect(
     inspector.host.querySelectorAll(`img[src="${ORIGINAL}"]`),
-  ).toHaveLength(1);
+  ).toHaveLength(2);
+  expect(placeholder()).toBeNull();
+
+  await act(async () => decodes[0]?.resolve());
+
+  expect(placeholder()).not.toBeNull();
 });
 
 it("marks the fitted image as the transition hero", async () => {
