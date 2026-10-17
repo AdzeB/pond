@@ -7,8 +7,8 @@ function optional<T extends z.ZodMiniType>(schema: T) {
 const text = optional(z.string());
 const number = optional(z.number());
 const boolean = optional(z.boolean());
-/** TikTok sends some counters as numeric strings, such as `collectCount: "648"`. */
-const count = optional(
+/** TikTok sends some integers as digit strings, such as `createTime: "1564234358"` and `collectCount: "648"`. */
+const wholeNumber = optional(
   z.union([
     z.number(),
     z.pipe(z.string().check(z.regex(/^\d+$/)), z.transform(Number)),
@@ -60,7 +60,7 @@ const tiktokItem = z.object({
   id: text,
   desc: text,
   description: text,
-  createTime: number,
+  createTime: wholeNumber,
   author: optional(
     z.object({
       uniqueId: text,
@@ -71,11 +71,11 @@ const tiktokItem = z.object({
   ),
   stats: optional(
     z.object({
-      diggCount: count,
-      commentCount: count,
-      shareCount: count,
-      playCount: count,
-      collectCount: count,
+      diggCount: wholeNumber,
+      commentCount: wholeNumber,
+      shareCount: wholeNumber,
+      playCount: wholeNumber,
+      collectCount: wholeNumber,
     }),
   ),
   music: optional(z.object({ title: text })),

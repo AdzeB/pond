@@ -93,11 +93,12 @@ describe("standalone harvest validation", () => {
     expect(result.video.duration).toBeUndefined();
   });
 
-  it("reads TikTok counters sent as numeric strings", () => {
+  it("reads TikTok integers sent as digit strings", () => {
     const result = runInNewContext(
-      `${browserValidationSource}\nPondHarvestValidation.browserValidators.tiktokItem.parse({ stats: { diggCount: 35200, collectCount: '648' } });`,
+      `${browserValidationSource}\nPondHarvestValidation.browserValidators.tiktokItem.parse({ createTime: '1564234358', stats: { diggCount: 35200, collectCount: '648' } });`,
       {},
     );
+    expect(result.createTime).toBe(1_564_234_358);
     expect(result.stats).toEqual({ diggCount: 35200, collectCount: 648 });
   });
 
