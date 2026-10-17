@@ -1,5 +1,3 @@
-import { clamp } from "@/shared/lib/math";
-
 const ZOOM_MIN = 80;
 const ZOOM_MAX = 360;
 export const ZOOM_DEFAULT = 130;
@@ -18,8 +16,9 @@ export const ZOOM_STEPS: ReadonlyArray<{ value: number; label: string }> = [
   { value: ZOOM_MAX, label: "360 px" },
 ];
 
+/** Tiles need a positive width; the steps' range only bounds the zoom shortcuts. */
 export function clampZoom(n: number): number {
-  return clamp(n, ZOOM_MIN, ZOOM_MAX);
+  return Math.max(1, Math.round(n));
 }
 
 export function nearestZoomIndex(zoom: number): number {

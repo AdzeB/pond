@@ -258,7 +258,7 @@ export function AppHotkeys() {
       },
       {
         hotkey: bindingKeys(shortcuts, "view.display"),
-        callback: () => libraryHeader.togglePopover("display"),
+        callback: () => libraryHeader.togglePopover(),
         options: { ignoreInputs: true },
       },
       {

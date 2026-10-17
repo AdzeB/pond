@@ -1,7 +1,15 @@
-.badge {
+.indicator {
   position: absolute;
   top: 6px;
-  right: 6px;
+  left: 6px;
   z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--ds-red-9);
   pointer-events: none;
+  background: var(--ds-red-3);
+  border-radius: var(--ds-radius-source);
 }

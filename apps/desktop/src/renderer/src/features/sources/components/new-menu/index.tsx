@@ -1,4 +1,4 @@
-import { IconPlusFill } from "@pond/icons";
+import { IconPlus } from "@pond/icons";
 import { Menu } from "@pond/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { startConnect, startWatch } from "@/features/sources/lib/create";
@@ -47,7 +47,7 @@ export function NewSourceMenu({
         aria-label={label}
         data-sources-new={controlled || undefined}
       >
-        <IconPlusFill />
+        <IconPlus />
       </Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner align="end" side="bottom">

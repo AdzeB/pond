@@ -406,7 +406,7 @@ function MarkMenu({
         icon
         size="sm"
         variant="secondary"
-        rounding="pill"
+        rounding="full"
         disabled={disabled}
         aria-label="Edit Logo"
       >

@@ -2,30 +2,30 @@
   --button-height-xs: var(--ds-size-xs);
   --button-padding-xs: 0 8px;
   --button-font-size-xs: var(--ds-text-xs);
-  --button-radius-xs: var(--ds-radius-full);
+  --button-radius-xs: var(--ds-radius-sm);
   --button-height-sm: var(--ds-size-sm);
   --button-padding-sm: 0 10px;
   --button-font-size-sm: var(--ds-text-sm);
-  --button-radius-sm: var(--ds-radius-full);
+  --button-radius-sm: var(--ds-radius-sm);
   --button-height-md: var(--ds-size-md);
   --button-padding-md: 0 12px;
   --button-font-size-md: var(--ds-text-md);
-  --button-radius-md: var(--ds-radius-full);
+  --button-radius-md: var(--ds-radius-md);
   --button-height-lg: var(--ds-size-lg);
   --button-padding-lg: 0 14px;
   --button-font-size-lg: var(--ds-text-lg);
-  --button-radius-lg: var(--ds-radius-full);
+  --button-radius-lg: var(--ds-radius-lg);
   --button-height-xl: var(--ds-size-xl);
   --button-padding-xl: 0 16px;
   --button-font-size-xl: var(--ds-text-lg);
-  --button-radius-xl: var(--ds-radius-full);
+  --button-radius-xl: var(--ds-radius-xl);
 
-  &:where([data-rounding="rounded"]) {
-    --button-radius-xs: var(--ds-radius-sm);
-    --button-radius-sm: var(--ds-radius-md);
-    --button-radius-md: var(--ds-radius-md);
-    --button-radius-lg: var(--ds-radius-lg);
-    --button-radius-xl: var(--ds-radius-xl);
+  &:where([data-rounding="full"]) {
+    --button-radius-xs: var(--ds-radius-full);
+    --button-radius-sm: var(--ds-radius-full);
+    --button-radius-md: var(--ds-radius-full);
+    --button-radius-lg: var(--ds-radius-full);
+    --button-radius-xl: var(--ds-radius-full);
   }
 }
 

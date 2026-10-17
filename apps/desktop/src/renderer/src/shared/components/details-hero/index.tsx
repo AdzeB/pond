@@ -30,7 +30,7 @@ function Actions({ items, "aria-label": label }: ActionsProps) {
         className={styles.actions}
         variant="secondary"
         size="sm"
-        rounding="pill"
+        rounding="full"
         icon
         aria-label={label}
       >

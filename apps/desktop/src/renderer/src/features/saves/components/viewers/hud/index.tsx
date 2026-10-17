@@ -164,7 +164,6 @@ function Tool({
         className={className}
         data-demo-state={demoState}
         icon={icon}
-        rounding="rounded"
         size="sm"
         variant="ghost"
         aria-label={label}

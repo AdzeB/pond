@@ -3,13 +3,48 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
 import { libraryHeader } from "@/features/library/state/library-header";
-import { setZoom } from "@/features/library/state/view-store";
+import {
+  getViewState,
+  setLayout,
+  setSort,
+  setZoom,
+} from "@/features/library/state/view-store";
 import { setDisplayPref } from "@/features/saves";
 import { ViewMenu } from "./";
+
+function query<T extends Element>(selector: string): T {
+  const node = document.querySelector<T>(selector);
+  if (!node) throw new Error(`Missing ${selector}`);
+  return node;
+}
+
+function typeInto(input: HTMLInputElement, value: string) {
+  Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    "value",
+  )?.set?.call(input, value);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
 
 describe("view menu", () => {
   let root: Root;
   let host: HTMLDivElement;
+
+  function reset() {
+    libraryHeader.closePopover();
+    setLayout("justified");
+    setZoom(130);
+    setLibrarySaveGap(16);
+    setSort({ key: "savedAt", dir: "desc" });
+    setDisplayPref("source", true);
+  }
+
+  async function open() {
+    await act(async () => root.render(<ViewMenu />));
+    await act(async () =>
+      query<HTMLButtonElement>('[aria-label="View Options"]').click(),
+    );
+  }
 
   beforeEach(() => {
     vi.stubGlobal(
@@ -20,10 +55,7 @@ describe("view menu", () => {
         disconnect() {}
       },
     );
-    libraryHeader.closePopover();
-    setZoom(130);
-    setLibrarySaveGap(16);
-    setDisplayPref("source", true);
+    reset();
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
@@ -32,127 +64,138 @@ describe("view menu", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     host.remove();
-    libraryHeader.closePopover();
-    setZoom(130);
-    setLibrarySaveGap(16);
-    setDisplayPref("source", true);
+    reset();
     vi.unstubAllGlobals();
   });
 
-  it("opens layout, sort, and display as separate menus", async () => {
+  it("shows layout, display, sorting, and thumbnail in one popup", async () => {
     await act(async () => root.render(<ViewMenu />));
+    expect(document.querySelectorAll("button[aria-haspopup]").length).toBe(1);
 
-    await act(async () => {
-      document
-        .querySelector<HTMLButtonElement>('[aria-label="Layout"]')
-        ?.click();
-    });
-    expect(document.body.textContent).toContain("Waterfall");
-    expect(document.body.textContent).toContain("Size");
-    expect(document.body.textContent).not.toContain("Use Everywhere");
-    expect(document.body.textContent).toContain("Gap");
-    expect(document.body.textContent).toContain("Thumbnail Quality");
-    expect(document.body.textContent).toContain("Thumbnail Fit");
-    expect(document.body.textContent).toContain("Item Info");
-    expect(document.querySelector('input[aria-label="Size"]')).not.toBeNull();
-    expect(document.querySelector('input[aria-label="Gap"]')).not.toBeNull();
-    expect(document.body.textContent).toContain("130 px");
-    expect(document.body.textContent).toContain("16 px");
-    expect(document.body.textContent).not.toContain("Show Sidebar");
+    await open();
 
-    await act(async () => {
-      document.querySelector<HTMLButtonElement>('[aria-label="Sort"]')?.click();
-    });
-    expect(document.body.textContent).toContain("Direction");
-    expect(document.body.textContent).toContain("Descending");
-    expect(document.body.textContent).toContain("Sort");
-    expect(document.body.textContent).toContain("Date Saved");
-    expect(document.body.textContent).not.toContain("Refresh");
-    expect(document.body.textContent).not.toContain("Use Everywhere");
+    const popup = query<HTMLElement>(
+      '[role="dialog"][aria-label="View Options"]',
+    );
+    const titles = Array.from(popup.querySelectorAll("section > h3")).map(
+      (node) => node.textContent,
+    );
+    expect(titles).toEqual(["Layout", "Display", "Sorting", "Thumbnail"]);
+    for (const section of popup.querySelectorAll("section")) {
+      const title = section.querySelector("h3");
+      expect(section.getAttribute("aria-labelledby")).toBe(title?.id);
+    }
 
-    expect(document.querySelector('[aria-label="Thumbnail"]')).toBeNull();
-
-    await act(async () => {
-      document
-        .querySelector<HTMLButtonElement>('[aria-label="Display"]')
-        ?.click();
-    });
-    const text = document.body.textContent ?? "";
-    expect(text).toContain("Show Name");
-    expect(text).toContain("Show Item Info");
-    expect(text).not.toContain("Thumbnail Quality");
-    expect(text).not.toContain("Thumbnail Fit");
-    expect(text).not.toContain("Date Saved");
-    expect(text).toContain("Show Sidebar");
-    expect(text).toContain("Show Inspector");
-    expect(text).toContain("Show Source Tag");
-    expect(text).not.toContain("Show Tags");
-    expect(text).not.toContain("Show Annotation");
-    expect(text).not.toContain("Show Notes");
-    expect(text).not.toContain("Start Presentation");
-    expect(text).not.toContain("Use Everywhere");
+    expect(
+      query<HTMLInputElement>('input[aria-label="Size value"]').value,
+    ).toBe("130");
+    expect(query<HTMLInputElement>('input[aria-label="Gap value"]').value).toBe(
+      "16",
+    );
+    expect(popup.textContent).toContain("Quality");
+    expect(popup.textContent).toContain("Item Info");
+    expect(popup.textContent).toContain("Date Saved");
+    expect(
+      query('button[aria-label="Descending"]').getAttribute("aria-pressed"),
+    ).toBe("true");
+    expect(query('button[aria-label="Show Sidebar"]')).not.toBeNull();
   });
 
-  it("steps through discrete size and gap values with the keyboard", async () => {
-    await act(async () => root.render(<ViewMenu />));
-    await act(async () => {
-      document
-        .querySelector<HTMLButtonElement>('[aria-label="Layout"]')
-        ?.click();
-    });
+  it("switches layouts from the view control", async () => {
+    await open();
 
-    const size = document.querySelector<HTMLInputElement>(
-      'input[aria-label="Size"]',
+    const justified = query<HTMLButtonElement>(
+      'button[aria-label="Justified"]',
     );
-    const gap = document.querySelector<HTMLInputElement>(
-      'input[aria-label="Gap"]',
-    );
-    expect(size?.getAttribute("aria-valuetext")).toBe("130 pixels");
-    expect(gap?.getAttribute("aria-valuetext")).toBe("16 pixels");
+    const grid = query<HTMLButtonElement>('button[aria-label="Grid"]');
+    expect(justified.getAttribute("aria-pressed")).toBe("true");
+    expect(grid.getAttribute("aria-pressed")).toBe("false");
 
-    await act(async () => {
-      size?.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
-      );
-      gap?.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
-      );
-    });
+    await act(async () => grid.click());
 
-    expect(window.localStorage.getItem("pond.gridZoom")).toBe("155");
-    expect(window.localStorage.getItem("pond.itemGap")).toBe("24");
-
-    await act(async () => {
-      size?.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "End", bubbles: true }),
-      );
-      gap?.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "End", bubbles: true }),
-      );
-    });
-
-    expect(window.localStorage.getItem("pond.gridZoom")).toBe("360");
-    expect(window.localStorage.getItem("pond.itemGap")).toBe("64");
+    expect(getViewState().layout).toBe("grid");
+    expect(justified.getAttribute("aria-pressed")).toBe("false");
+    expect(grid.getAttribute("aria-pressed")).toBe("true");
   });
 
-  it("lets people hide source tags from display options", async () => {
-    await act(async () => root.render(<ViewMenu />));
+  it("commits exact size and gap values on blur without a range", async () => {
+    await open();
+
+    const size = query<HTMLInputElement>('input[aria-label="Size value"]');
+    const gap = query<HTMLInputElement>('input[aria-label="Gap value"]');
 
     await act(async () => {
-      document
-        .querySelector<HTMLButtonElement>('[aria-label="Display"]')
-        ?.click();
+      typeInto(size, "520");
+      typeInto(gap, "120");
+    });
+    await act(async () => {
+      size.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+      gap.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
     });
 
-    const label = Array.from(document.querySelectorAll("label")).find((node) =>
-      node.textContent?.includes("Show Source Tag"),
+    expect(window.localStorage.getItem("pond.gridZoom")).toBe("520");
+    expect(window.localStorage.getItem("pond.itemGap")).toBe("120");
+    expect(size.value).toBe("520");
+    expect(gap.value).toBe("120");
+  });
+
+  it("floors negative values at zero", async () => {
+    await open();
+
+    const gap = query<HTMLInputElement>('input[aria-label="Gap value"]');
+    await act(async () => typeInto(gap, "-8"));
+    await act(async () => {
+      gap.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+    });
+
+    expect(window.localStorage.getItem("pond.itemGap")).toBe("0");
+    expect(gap.value).toBe("0");
+  });
+
+  it("restores the current value when Escape is pressed", async () => {
+    await open();
+
+    const size = query<HTMLInputElement>('input[aria-label="Size value"]');
+    await act(async () => typeInto(size, "200"));
+    await act(async () => {
+      size.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+    });
+    expect(size.value).toBe("130");
+
+    await act(async () => {
+      size.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+    });
+    expect(getViewState().zoom).toBe(130);
+  });
+
+  it("changes sort direction without resetting the key", async () => {
+    setSort({ key: "title", dir: "desc" });
+    await open();
+
+    await act(async () =>
+      query<HTMLButtonElement>('button[aria-label="Ascending"]').click(),
     );
-    const toggle = label?.querySelector<HTMLButtonElement>('[role="switch"]');
-    expect(toggle?.getAttribute("aria-checked")).toBe("true");
 
-    await act(async () => toggle?.click());
+    expect(getViewState().sortKey).toBe("title");
+    expect(getViewState().sortDir).toBe("asc");
+  });
 
-    expect(toggle?.getAttribute("aria-checked")).toBe("false");
+  it("toggles card details independently", async () => {
+    await open();
+
+    const source = query<HTMLButtonElement>(
+      'button[aria-label="Show Source Tag"]',
+    );
+    const name = query<HTMLButtonElement>('button[aria-label="Show Name"]');
+    const nameBefore = name.getAttribute("aria-pressed");
+    expect(source.getAttribute("aria-pressed")).toBe("true");
+
+    await act(async () => source.click());
+
+    expect(source.getAttribute("aria-pressed")).toBe("false");
     expect(window.localStorage.getItem("pond.display.source")).toBe("0");
+    expect(name.getAttribute("aria-pressed")).toBe(nameBefore);
   });
 });

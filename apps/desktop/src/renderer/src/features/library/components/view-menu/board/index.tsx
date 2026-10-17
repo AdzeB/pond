@@ -1,17 +1,32 @@
-import { Select, Slider, Switch } from "@pond/ui";
-import { useId } from "react";
 import {
-  GAP_STEPS,
-  nearestGap,
+  IconArrowDiagonalIn,
+  IconArrowsExpand,
+  IconAscendingSorting,
+  IconBulletList,
+  IconCircleInfo,
+  IconDescendingSorting,
+  IconFile,
+  IconFolderTree,
+  IconGlobe,
+  IconGrid,
+  IconGridLayoutCols,
+  IconGridLayoutRows,
+  IconSidebarLeft,
+  IconSidebarRight,
+  IconText,
+} from "@pond/icons";
+import { Input, Select, Toggle, ToggleGroup, Tooltip } from "@pond/ui";
+import { type ReactNode, useEffect, useId, useState } from "react";
+import {
   setLibrarySaveGap,
   useLibrarySaveGap,
 } from "@/features/library/components/layouts/save-gap";
 import type { SortDir } from "@/features/library/hooks/use-filtered-saves";
 import { useView } from "@/features/library/hooks/use-view";
 import type { LayoutValue } from "@/features/library/lib/view-prefs";
-import { nearestZoomIndex, ZOOM_STEPS } from "@/features/library/lib/zoom";
 import {
   libraryChrome,
+  useInspectorSaveId,
   useRightPane,
   useSidebarOpen,
 } from "@/features/library/state/library-chrome";
@@ -31,23 +46,41 @@ import { usePrefs } from "@/shared/state/prefs";
 import { SORT_OPTIONS } from "../sort";
 import styles from "./styles.module.css";
 
-const LAYOUT_OPTIONS: Array<{ value: LayoutValue; label: string }> = [
-  { value: "waterfall", label: "Waterfall" },
-  { value: "grid", label: "Grid" },
-  { value: "justified", label: "Justified" },
-  { value: "list", label: "List" },
+interface IconOption<Value extends string> {
+  value: Value;
+  label: string;
+  icon: ReactNode;
+  disabled?: boolean;
+}
+
+const LAYOUT_OPTIONS: Array<IconOption<LayoutValue>> = [
+  {
+    value: "waterfall",
+    label: "Waterfall",
+    icon: <IconGridLayoutCols size={14} />,
+  },
+  { value: "grid", label: "Grid", icon: <IconGrid size={14} /> },
+  {
+    value: "justified",
+    label: "Justified",
+    icon: <IconGridLayoutRows size={14} />,
+  },
+  { value: "list", label: "List", icon: <IconBulletList size={14} /> },
 ];
 
-const INFO_OPTIONS: Array<{
-  value: ItemInfoField;
-  label: string;
-}> = [
-  { value: "dimensions", label: "Dimensions" },
-  { value: "fileSize", label: "File Size" },
-  { value: "tags", label: "Tags" },
-  { value: "rating", label: "Rating" },
-  { value: "modified", label: "Date Modified" },
-  { value: "created", label: "Date Created" },
+type CardDetail = "name" | "info" | "extension" | "source";
+
+type Panel = "subfolders" | "sidebar" | "inspector";
+
+const CARD_DETAIL_OPTIONS: Array<IconOption<CardDetail>> = [
+  { value: "name", label: "Show Name", icon: <IconText size={14} /> },
+  {
+    value: "info",
+    label: "Show Item Info",
+    icon: <IconCircleInfo size={14} />,
+  },
+  { value: "extension", label: "Show Extension", icon: <IconFile size={14} /> },
+  { value: "source", label: "Show Source Tag", icon: <IconGlobe size={14} /> },
 ];
 
 const QUALITY_OPTIONS: Array<{
@@ -58,310 +91,369 @@ const QUALITY_OPTIONS: Array<{
   { value: "balanced", label: "Balanced" },
   { value: "quality", label: "Quality" },
 ];
-const FIT_OPTIONS: Array<{ value: "fit" | "fill"; label: string }> = [
-  { value: "fit", label: "Fit" },
-  { value: "fill", label: "Fill" },
-];
-const SIZE_VALUES = ZOOM_STEPS.map((step) => step.value);
-const GAP_VALUES = GAP_STEPS.map((step) => step.value);
-const DIRECTION_OPTIONS: Array<{ value: SortDir; label: string }> = [
-  { value: "asc", label: "Ascending" },
-  { value: "desc", label: "Descending" },
+
+const INFO_OPTIONS: Array<{ value: ItemInfoField; label: string }> = [
+  { value: "dimensions", label: "Dimensions" },
+  { value: "fileSize", label: "File Size" },
+  { value: "tags", label: "Tags" },
+  { value: "rating", label: "Rating" },
+  { value: "modified", label: "Date Modified" },
+  { value: "created", label: "Date Created" },
 ];
 
-function DiscreteSlider({
+const DIRECTION_OPTIONS: Array<IconOption<SortDir>> = [
+  {
+    value: "asc",
+    label: "Ascending",
+    icon: <IconAscendingSorting size={14} />,
+  },
+  {
+    value: "desc",
+    label: "Descending",
+    icon: <IconDescendingSorting size={14} />,
+  },
+];
+
+const FIT_OPTIONS: Array<IconOption<"fit" | "fill">> = [
+  { value: "fit", label: "Fit", icon: <IconArrowDiagonalIn size={14} /> },
+  { value: "fill", label: "Fill", icon: <IconArrowsExpand size={14} /> },
+];
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  const titleId = useId();
+
+  return (
+    <section className={styles.section} aria-labelledby={titleId}>
+      <h3 className={styles.title} id={titleId}>
+        {title}
+      </h3>
+      {children}
+    </section>
+  );
+}
+
+function SegmentedProperty<Value extends string>({
   label,
-  index,
-  values,
+  options,
+  value,
+  multiple,
   onValueChange,
 }: {
   label: string;
-  index: number;
-  values: ReadonlyArray<number>;
+  options: ReadonlyArray<IconOption<Value>>;
+  value: ReadonlyArray<Value>;
+  multiple?: boolean;
+  onValueChange: (value: Value[]) => void;
+}) {
+  const labelId = useId();
+
+  return (
+    <div className={styles.property}>
+      <span className={styles.label} id={labelId}>
+        {label}
+      </span>
+      <ToggleGroup
+        variant="outline"
+        className={styles.segmented}
+        aria-labelledby={labelId}
+        multiple={multiple}
+        value={[...value]}
+        onValueChange={(next) =>
+          onValueChange(
+            options
+              .map((option) => option.value)
+              .filter((option) => next.includes(option)),
+          )
+        }
+      >
+        {options.map((option) => (
+          <Tooltip key={option.value} label={option.label} side="bottom">
+            <Toggle
+              type="button"
+              value={option.value}
+              disabled={option.disabled}
+              aria-label={option.label}
+            >
+              {option.icon}
+            </Toggle>
+          </Tooltip>
+        ))}
+      </ToggleGroup>
+    </div>
+  );
+}
+
+function NumericProperty({
+  label,
+  value,
+  onValueChange,
+}: {
+  label: string;
+  value: number;
   onValueChange: (value: number) => void;
 }) {
-  const value = values[index] ?? values[0] ?? 0;
+  const fieldId = useId();
+  const [draft, setDraft] = useState(String(value));
 
-  return (
-    <Slider.Root
-      className={styles.row}
-      min={0}
-      max={Math.max(0, values.length - 1)}
-      step={1}
-      value={index}
-      onValueChange={(next) => {
-        const nextIndex = Array.isArray(next) ? (next[0] ?? index) : next;
-        const nextValue = values[nextIndex];
-        if (nextValue !== undefined) onValueChange(nextValue);
-      }}
-    >
-      <Slider.Label className={styles.rowLabel}>{label}</Slider.Label>
-      <Slider.Control className={styles.sliderControl}>
-        <Slider.Track>
-          <Slider.Indicator />
-          <Slider.Thumb aria-label={label} aria-valuetext={`${value} pixels`} />
-        </Slider.Track>
-      </Slider.Control>
-      <output className={styles.sliderValue}>{value} px</output>
-    </Slider.Root>
-  );
-}
+  useEffect(() => setDraft(String(value)), [value]);
 
-export function LayoutOptions() {
-  const { state, actions } = useView();
-  const [viewer, patchViewer] = usePrefs("viewer");
-  const itemInfo = useItemInfo();
-  const gap = nearestGap(useLibrarySaveGap());
-  const sizeIndex = nearestZoomIndex(state.zoom);
-  const gapIndex = Math.max(
-    0,
-    GAP_STEPS.findIndex((step) => step.value === gap),
-  );
-
-  return (
-    <div className={styles.rows}>
-      <Select.Root
-        items={LAYOUT_OPTIONS}
-        value={state.layout}
-        onValueChange={(value) => {
-          if (value !== null) actions.setLayout(value);
-        }}
-      >
-        <div className={styles.row}>
-          <Select.Label className={styles.rowLabel}>Layout</Select.Label>
-          <Select.Trigger size="sm" className={styles.select}>
-            <Select.Value />
-          </Select.Trigger>
-        </div>
-        <Select.Portal>
-          <Select.Positioner align="end" sideOffset={6}>
-            <Select.Popup>
-              <Select.Items items={LAYOUT_OPTIONS} />
-            </Select.Popup>
-          </Select.Positioner>
-        </Select.Portal>
-      </Select.Root>
-      <DiscreteSlider
-        label="Size"
-        index={sizeIndex}
-        values={SIZE_VALUES}
-        onValueChange={actions.setZoom}
-      />
-      <DiscreteSlider
-        label="Gap"
-        index={gapIndex}
-        values={GAP_VALUES}
-        onValueChange={setLibrarySaveGap}
-      />
-      <Select.Root
-        items={QUALITY_OPTIONS}
-        value={viewer.thumbnailQuality}
-        onValueChange={(value) => {
-          if (value === "fast" || value === "balanced" || value === "quality") {
-            void patchViewer({ thumbnailQuality: value });
-          }
-        }}
-      >
-        <div className={styles.row}>
-          <Select.Label className={styles.rowLabel}>
-            Thumbnail Quality
-          </Select.Label>
-          <Select.Trigger size="sm" className={styles.select}>
-            <Select.Value />
-          </Select.Trigger>
-        </div>
-        <Select.Portal>
-          <Select.Positioner align="end" sideOffset={6}>
-            <Select.Popup>
-              <Select.Items items={QUALITY_OPTIONS} />
-            </Select.Popup>
-          </Select.Positioner>
-        </Select.Portal>
-      </Select.Root>
-      <Select.Root
-        items={FIT_OPTIONS}
-        value={viewer.galleryFit}
-        onValueChange={(value) => {
-          if (value === "fit" || value === "fill") {
-            void patchViewer({ galleryFit: value });
-          }
-        }}
-      >
-        <div className={styles.row}>
-          <Select.Label className={styles.rowLabel}>Thumbnail Fit</Select.Label>
-          <Select.Trigger size="sm" className={styles.select}>
-            <Select.Value />
-          </Select.Trigger>
-        </div>
-        <Select.Portal>
-          <Select.Positioner align="end" sideOffset={6}>
-            <Select.Popup>
-              <Select.Items items={FIT_OPTIONS} />
-            </Select.Popup>
-          </Select.Positioner>
-        </Select.Portal>
-      </Select.Root>
-      <Select.Root
-        items={INFO_OPTIONS}
-        value={itemInfo.field}
-        onValueChange={(value) => {
-          if (value) setItemInfoField(value);
-        }}
-      >
-        <div className={styles.row}>
-          <Select.Label className={styles.rowLabel}>Item Info</Select.Label>
-          <Select.Trigger size="sm" className={styles.select}>
-            <Select.Value />
-          </Select.Trigger>
-        </div>
-        <Select.Portal>
-          <Select.Positioner align="end" sideOffset={6}>
-            <Select.Popup>
-              <Select.Items items={INFO_OPTIONS} />
-            </Select.Popup>
-          </Select.Positioner>
-        </Select.Portal>
-      </Select.Root>
-    </div>
-  );
-}
-
-export function SortOptions() {
-  const { state, actions } = useView();
-
-  return (
-    <div className={styles.rows}>
-      <Select.Root
-        items={DIRECTION_OPTIONS}
-        value={state.sort.dir}
-        onValueChange={(value) => {
-          if (value === "asc" || value === "desc") {
-            actions.setSort({ key: state.sort.key, dir: value });
-          }
-        }}
-      >
-        <div className={styles.row}>
-          <Select.Label className={styles.rowLabel}>Direction</Select.Label>
-          <Select.Trigger size="sm" className={styles.select}>
-            <Select.Value />
-          </Select.Trigger>
-        </div>
-        <Select.Portal>
-          <Select.Positioner align="end" sideOffset={6}>
-            <Select.Popup>
-              <Select.Items items={DIRECTION_OPTIONS} />
-            </Select.Popup>
-          </Select.Positioner>
-        </Select.Portal>
-      </Select.Root>
-      <Select.Root
-        items={SORT_OPTIONS}
-        value={state.sort.key}
-        onValueChange={(value) => {
-          if (value) actions.setSort({ key: value, dir: state.sort.dir });
-        }}
-      >
-        <div className={styles.row}>
-          <Select.Label className={styles.rowLabel}>Sort</Select.Label>
-          <Select.Trigger size="sm" className={styles.select}>
-            <Select.Value />
-          </Select.Trigger>
-        </div>
-        <Select.Portal>
-          <Select.Positioner align="end" sideOffset={6}>
-            <Select.Popup>
-              <Select.Items items={SORT_OPTIONS} />
-            </Select.Popup>
-          </Select.Positioner>
-        </Select.Portal>
-      </Select.Root>
-    </div>
-  );
-}
-
-export function DisplayOptions() {
-  const { state, actions } = useView();
-  const includeSubfolders = useIncludeSubfolders();
-  const sidebarOpen = useSidebarOpen();
-  const inspectorOn = useRightPane() === "inspector";
-  const listColumns = useListColumns();
-  const itemInfo = useItemInfo();
-  const id = useId();
-  const list = state.layout === "list";
-  const nameOn = list ? listColumns.name : state.displayPrefs.name;
-
-  function setName(checked: boolean) {
-    if (list) setListColumn("name", checked);
-    else actions.setDisplayPref("name", checked);
+  function commitDraft() {
+    const parsed = Number.parseInt(draft, 10);
+    if (!Number.isFinite(parsed)) {
+      setDraft(String(value));
+      return;
+    }
+    const next = Math.max(0, parsed);
+    setDraft(String(next));
+    onValueChange(next);
   }
 
   return (
-    <div className={styles.rows}>
-      <label className={styles.row} htmlFor={`${id}-name`}>
-        <span className={styles.rowLabel}>Show Name</span>
-        <Switch.Root
-          id={`${id}-name`}
-          checked={nameOn}
-          onCheckedChange={setName}
-        />
+    <div className={styles.property}>
+      <label className={styles.label} htmlFor={fieldId}>
+        {label}
       </label>
-      <label className={styles.row} htmlFor={`${id}-info`}>
-        <span className={styles.rowLabel}>Show Item Info</span>
-        <Switch.Root
-          id={`${id}-info`}
-          checked={itemInfo.visible}
-          onCheckedChange={setItemInfoVisible}
+      <Input.Root size="sm" variant="primary" className={styles.field}>
+        <Input.Field
+          id={fieldId}
+          type="number"
+          inputMode="numeric"
+          min={0}
+          step={1}
+          value={draft}
+          aria-label={`${label} value`}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={commitDraft}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") event.currentTarget.blur();
+            if (event.key === "Escape" && draft !== String(value)) {
+              event.stopPropagation();
+              setDraft(String(value));
+            }
+          }}
         />
-      </label>
-      <label className={styles.row} htmlFor={`${id}-extension`}>
-        <span className={styles.rowLabel}>Show Extension</span>
-        <Switch.Root
-          id={`${id}-extension`}
-          checked={state.displayPrefs.type}
-          onCheckedChange={(checked) => actions.setDisplayPref("type", checked)}
-        />
-      </label>
-      <label className={styles.row} htmlFor={`${id}-subfolders`}>
-        <span className={styles.rowLabel}>Show Subfolder Contents</span>
-        <Switch.Root
-          id={`${id}-subfolders`}
-          checked={includeSubfolders}
-          onCheckedChange={setIncludeSubfolders}
-        />
-      </label>
-      <label className={styles.row} htmlFor={`${id}-source`}>
-        <span className={styles.rowLabel}>Show Source Tag</span>
-        <Switch.Root
-          id={`${id}-source`}
-          checked={state.displayPrefs.source}
-          onCheckedChange={(checked) =>
-            actions.setDisplayPref("source", checked)
+        <Input.Suffix>px</Input.Suffix>
+      </Input.Root>
+    </div>
+  );
+}
+
+function SelectProperty<Value extends string>({
+  label,
+  items,
+  value,
+  onValueChange,
+}: {
+  label: string;
+  items: ReadonlyArray<{ value: Value; label: string }>;
+  value: Value;
+  onValueChange: (value: Value) => void;
+}) {
+  return (
+    <Select.Root
+      items={items}
+      value={value}
+      onValueChange={(next) => {
+        const match = items.find((item) => item.value === next);
+        if (match) onValueChange(match.value);
+      }}
+    >
+      <div className={styles.property}>
+        <Select.Label className={styles.label}>{label}</Select.Label>
+        <Select.Trigger size="sm" width="full" className={styles.select}>
+          <Select.Value />
+        </Select.Trigger>
+      </div>
+      <Select.Portal>
+        <Select.Positioner align="end" sideOffset={6}>
+          <Select.Popup>
+            <Select.Items items={[...items]} />
+          </Select.Popup>
+        </Select.Positioner>
+      </Select.Portal>
+    </Select.Root>
+  );
+}
+
+function LayoutSection() {
+  const { state, actions } = useView();
+  const gap = useLibrarySaveGap();
+
+  return (
+    <Section title="Layout">
+      <SegmentedProperty
+        label="View"
+        options={LAYOUT_OPTIONS}
+        value={[state.layout]}
+        onValueChange={([next]) => {
+          if (next) actions.setLayout(next);
+        }}
+      />
+      <NumericProperty
+        label="Size"
+        value={state.zoom}
+        onValueChange={actions.setZoom}
+      />
+      <NumericProperty
+        label="Gap"
+        value={gap}
+        onValueChange={setLibrarySaveGap}
+      />
+    </Section>
+  );
+}
+
+function DisplaySection() {
+  const { state, actions } = useView();
+  const [viewer, patchViewer] = usePrefs("viewer");
+  const listColumns = useListColumns();
+  const itemInfo = useItemInfo();
+  const list = state.layout === "list";
+  const shown = {
+    name: list ? listColumns.name : state.displayPrefs.name,
+    info: itemInfo.visible,
+    extension: state.displayPrefs.type,
+    source: state.displayPrefs.source,
+  } satisfies Record<CardDetail, boolean>;
+
+  function setShown(detail: CardDetail, on: boolean) {
+    if (detail === "name") {
+      if (list) setListColumn("name", on);
+      else actions.setDisplayPref("name", on);
+    } else if (detail === "info") setItemInfoVisible(on);
+    else if (detail === "extension") actions.setDisplayPref("type", on);
+    else actions.setDisplayPref("source", on);
+  }
+
+  return (
+    <Section title="Display">
+      <SegmentedProperty
+        label="Show"
+        multiple
+        options={CARD_DETAIL_OPTIONS}
+        value={CARD_DETAIL_OPTIONS.filter((option) => shown[option.value]).map(
+          (option) => option.value,
+        )}
+        onValueChange={(next) => {
+          for (const option of CARD_DETAIL_OPTIONS) {
+            const on = next.includes(option.value);
+            if (on !== shown[option.value]) setShown(option.value, on);
           }
-        />
-      </label>
-      <hr className={styles.separator} />
-      <label className={styles.row} htmlFor={`${id}-sidebar`}>
-        <span className={styles.rowLabel}>Show Sidebar</span>
-        <Switch.Root
-          id={`${id}-sidebar`}
-          checked={sidebarOpen}
-          onCheckedChange={(checked) => {
-            if (checked !== sidebarOpen) libraryChrome.toggleSidebar();
-          }}
-        />
-      </label>
-      <label className={styles.row} htmlFor={`${id}-inspector`}>
-        <span className={styles.rowLabel}>Show Inspector</span>
-        <Switch.Root
-          id={`${id}-inspector`}
-          checked={inspectorOn}
-          onCheckedChange={(checked) => {
-            if (checked === inspectorOn) return;
-            if (checked) libraryChrome.toggleInspector();
-            else libraryChrome.closeRightPane();
-          }}
-        />
-      </label>
+        }}
+      />
+      <SelectProperty
+        label="Quality"
+        items={QUALITY_OPTIONS}
+        value={viewer.thumbnailQuality}
+        onValueChange={(value) => {
+          void patchViewer({ thumbnailQuality: value });
+        }}
+      />
+      <SelectProperty
+        label="Item Info"
+        items={INFO_OPTIONS}
+        value={itemInfo.field}
+        onValueChange={setItemInfoField}
+      />
+    </Section>
+  );
+}
+
+function SortingSection() {
+  const { state, actions } = useView();
+
+  return (
+    <Section title="Sorting">
+      <SegmentedProperty
+        label="Direction"
+        options={DIRECTION_OPTIONS}
+        value={[state.sort.dir]}
+        onValueChange={([dir]) => {
+          if (dir) actions.setSort({ key: state.sort.key, dir });
+        }}
+      />
+      <SelectProperty
+        label="Sort"
+        items={SORT_OPTIONS}
+        value={state.sort.key}
+        onValueChange={(key) => actions.setSort({ key, dir: state.sort.dir })}
+      />
+    </Section>
+  );
+}
+
+function ThumbnailSection() {
+  const [viewer, patchViewer] = usePrefs("viewer");
+  const includeSubfolders = useIncludeSubfolders();
+  const sidebarOpen = useSidebarOpen();
+  const inspectorOn = useRightPane() === "inspector";
+  const canInspect = useInspectorSaveId() !== null;
+  const panels = {
+    subfolders: includeSubfolders,
+    sidebar: sidebarOpen,
+    inspector: inspectorOn,
+  } satisfies Record<Panel, boolean>;
+  const panelOptions: Array<IconOption<Panel>> = [
+    {
+      value: "subfolders",
+      label: "Show Subfolder Contents",
+      icon: <IconFolderTree size={14} />,
+    },
+    {
+      value: "sidebar",
+      label: "Show Sidebar",
+      icon: <IconSidebarLeft size={14} />,
+    },
+    {
+      value: "inspector",
+      label: "Show Inspector",
+      icon: <IconSidebarRight size={14} />,
+      disabled: !canInspect && !inspectorOn,
+    },
+  ];
+
+  function setPanel(panel: Panel, on: boolean) {
+    if (panel === "subfolders") setIncludeSubfolders(on);
+    else if (panel === "sidebar") libraryChrome.toggleSidebar();
+    else if (on) libraryChrome.toggleInspector();
+    else libraryChrome.closeRightPane();
+  }
+
+  return (
+    <Section title="Thumbnail">
+      <SegmentedProperty
+        label="Fit"
+        options={FIT_OPTIONS}
+        value={[viewer.galleryFit]}
+        onValueChange={([galleryFit]) => {
+          if (galleryFit) void patchViewer({ galleryFit });
+        }}
+      />
+      <SegmentedProperty
+        label="Show"
+        multiple
+        options={panelOptions}
+        value={panelOptions
+          .filter((option) => panels[option.value])
+          .map((option) => option.value)}
+        onValueChange={(next) => {
+          for (const option of panelOptions) {
+            const on = next.includes(option.value);
+            if (on !== panels[option.value]) setPanel(option.value, on);
+          }
+        }}
+      />
+    </Section>
+  );
+}
+
+export function ViewOptions() {
+  return (
+    <div className={styles.panel}>
+      <LayoutSection />
+      <DisplaySection />
+      <SortingSection />
+      <ThumbnailSection />
     </div>
   );
 }

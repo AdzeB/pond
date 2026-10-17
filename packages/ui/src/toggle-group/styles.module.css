@@ -16,6 +16,14 @@
   &[data-disabled] {
     opacity: 0.5;
   }
+
+  &[data-variant="outline"] {
+    gap: 0;
+    padding: 0;
+    background: var(--ds-gray-1);
+    border-radius: var(--ds-radius-sm);
+    box-shadow: var(--ds-shadow-xs);
+  }
 }
 
 .indicator {

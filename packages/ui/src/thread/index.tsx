@@ -70,7 +70,7 @@ function ScrollToLatest({ viewport }: { viewport: HTMLElement | null }) {
       <Button
         aria-label="Read latest response"
         icon
-        rounding="pill"
+        rounding="full"
         size="xs"
         variant="secondary"
         onClick={() =>

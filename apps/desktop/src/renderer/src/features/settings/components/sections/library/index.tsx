@@ -214,7 +214,6 @@ function LibraryIdentitySettings({ info }: { info?: LibraryInfo }) {
               icon
               size="xl"
               variant="secondary"
-              rounding="rounded"
               className={styles.logo}
               disabled={!info || logoBusy}
               aria-label={logo ? "Change Logo" : "Choose Logo"}
