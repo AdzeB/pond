@@ -14,6 +14,8 @@ import {
   lockCropAspect,
   nudgeCrop,
   resizeCrop,
+  snapCrop,
+  snapImagePoint,
 } from "@/features/saves/lib/image-regions";
 import {
   type ImagePose,
@@ -92,7 +94,7 @@ export function createImageGestures({
       if (event.button !== 0 && event.button !== 2) return;
       if (event.button === 0 && mode === "view" && poseZoom <= 1) return;
       const raw = pointFromClient(event.clientX, event.clientY);
-      const point = clampImagePoint(raw);
+      const point = snapImagePoint(clampImagePoint(raw));
       const moving =
         mode === "crop" &&
         inImage(raw) &&
@@ -142,8 +144,8 @@ export function createImageGestures({
             true,
           );
       } else if (mode !== "view") {
-        const point = clampImagePoint(
-          pointFromClient(event.clientX, event.clientY),
+        const point = snapImagePoint(
+          clampImagePoint(pointFromClient(event.clientX, event.clientY)),
         );
         if (origin.handle && origin.crop) {
           const next = resizeCrop(origin.crop, origin.handle, point);
@@ -152,10 +154,12 @@ export function createImageGestures({
           );
         } else if (origin.crop) {
           setDraft(
-            nudgeCrop(
-              origin.crop,
-              point.x - origin.cropX,
-              point.y - origin.cropY,
+            snapCrop(
+              nudgeCrop(
+                origin.crop,
+                point.x - origin.cropX,
+                point.y - origin.cropY,
+              ),
             ),
           );
         } else {

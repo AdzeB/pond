@@ -12,6 +12,31 @@
   &[data-full="true"] {
     cursor: crosshair;
   }
+
+  &:not([data-full="true"])::before,
+  &:not([data-full="true"])::after {
+    position: absolute;
+    pointer-events: none;
+    content: "";
+    border-color: rgb(255 255 255 / 45%);
+    border-style: solid;
+  }
+
+  &:not([data-full="true"])::before {
+    top: 0;
+    bottom: 0;
+    left: calc(100% / 3);
+    width: calc(100% / 3);
+    border-width: 0 1px;
+  }
+
+  &:not([data-full="true"])::after {
+    top: calc(100% / 3);
+    right: 0;
+    left: 0;
+    height: calc(100% / 3);
+    border-width: 1px 0;
+  }
 }
 
 .handle {

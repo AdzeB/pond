@@ -7,6 +7,8 @@ import {
   lockCropAspect,
   nudgeCrop,
   resizeCrop,
+  snapCrop,
+  snapImagePoint,
   viewToImagePoint,
 } from "./image-regions";
 
@@ -70,6 +72,19 @@ describe("crop nudging", () => {
       y: 0.1,
       w: 0.4,
       h: 0.2,
+    });
+  });
+
+  it("snaps pointers and crops to image guides", () => {
+    expect(snapImagePoint({ x: 0.491, y: 0.992 }, 0.015)).toEqual({
+      x: 0.5,
+      y: 1,
+    });
+    expect(snapCrop({ x: 0.012, y: 0.244, w: 0.4, h: 0.5 }, 0.015)).toEqual({
+      x: 0,
+      y: 0.25,
+      w: 0.4,
+      h: 0.5,
     });
   });
 

@@ -61,6 +61,7 @@ export function viewToImagePoint(
   };
 }
 const MIN_CROP = 0.001;
+const CROP_SNAP_THRESHOLD = 0.015;
 
 export function fullImageCrop(): ImageCrop {
   return { x: 0, y: 0, w: 1, h: 1 };
@@ -72,6 +73,45 @@ export function isFullImageCrop(crop: ImageCrop): boolean {
 
 function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
+}
+
+function snapValue(
+  value: number,
+  guides: readonly number[],
+  threshold: number,
+): number {
+  let closest = value;
+  let distance = threshold;
+  for (const guide of guides) {
+    const nextDistance = Math.abs(value - guide);
+    if (nextDistance > distance) continue;
+    closest = guide;
+    distance = nextDistance;
+  }
+  return closest;
+}
+
+export function snapImagePoint(
+  point: { x: number; y: number },
+  threshold = CROP_SNAP_THRESHOLD,
+) {
+  const clamped = clampImagePoint(point);
+  const guides = [0, 0.5, 1] as const;
+  return {
+    x: snapValue(clamped.x, guides, threshold),
+    y: snapValue(clamped.y, guides, threshold),
+  };
+}
+
+export function snapCrop(
+  crop: ImageCrop,
+  threshold = CROP_SNAP_THRESHOLD,
+): ImageCrop {
+  return {
+    ...crop,
+    x: snapValue(crop.x, [0, (1 - crop.w) / 2, 1 - crop.w], threshold),
+    y: snapValue(crop.y, [0, (1 - crop.h) / 2, 1 - crop.h], threshold),
+  };
 }
 
 export function nudgeCrop(

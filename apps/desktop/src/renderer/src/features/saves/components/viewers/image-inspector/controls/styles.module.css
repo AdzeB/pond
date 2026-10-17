@@ -1,8 +1,10 @@
-.crop {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  min-width: max-content;
+.mode-bar {
+  opacity: 1;
+  transition: opacity 150ms cubic-bezier(0.23, 1, 0.32, 1);
+
+  @starting-style {
+    opacity: 0;
+  }
 }
 
 .slide-navigation {
@@ -17,9 +19,8 @@
   min-width: max-content;
 }
 
-.hint {
-  padding-inline: 8px;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-11);
-  white-space: nowrap;
+@media (prefers-reduced-motion: reduce) {
+  .mode-bar {
+    transition: opacity 100ms linear;
+  }
 }
