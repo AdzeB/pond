@@ -1,20 +1,13 @@
-import type {
-  ImportCollection,
-  ImportMediaKind,
-  ListKind,
-  Source,
-} from "@pond/schema/db";
+import type { ImportMediaKind, ListKind, Source } from "@pond/schema/db";
 import {
   Button,
+  Combobox,
+  DatePicker,
   Dialog,
-  Input,
   Reveal,
   Select,
-  type SelectItemSpec,
   Settings,
   Switch,
-  Toggle,
-  ToggleGroup,
 } from "@pond/ui";
 import {
   type ImportCollectionKind,
@@ -28,6 +21,7 @@ import {
   formatSince,
   hasImportChoices,
   listKindLabel,
+  localDay,
   mediaKindLabel,
   SINCE_PRESETS,
   saveImportScope,
@@ -36,14 +30,13 @@ import { getSourceDef } from "@/features/sources/lib/registry";
 import { connectFlow } from "@/features/sources/state/connect-flow";
 import {
   draftImportScope,
-  importScopeFlow,
+  type ImportScopeFlow,
   useImportScopeFlow,
+  useImportScopeFlowActions,
 } from "@/features/sources/state/import-scope-flow";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import { formatNumber } from "@/shared/lib/format";
 import styles from "./styles.module.css";
-
-const ALL = "all";
 
 export function ImportScopeSection() {
   const draft = useImportScopeFlow();
@@ -118,23 +111,24 @@ export function ImportScopeChoices() {
 }
 
 export function ImportScopeConfirm() {
+  const flow = useImportScopeFlowActions();
   const draft = useImportScopeFlow();
   const ready = draftImportScope(draft) !== null;
   return (
     <Dialog.Confirm
       disabled={!ready || draft.saving}
-      onClick={() => void confirmImportScope()}
+      onClick={() => void confirmImportScope(flow)}
     >
       {draft.starts ? "Start Import" : "Save"}
     </Dialog.Confirm>
   );
 }
 
-async function confirmImportScope(): Promise<void> {
-  const draft = importScopeFlow.snapshot();
+async function confirmImportScope(flow: ImportScopeFlow): Promise<void> {
+  const draft = flow.snapshot();
   const scope = draftImportScope(draft);
   if (!draft.accountId || !draft.source || !scope || draft.saving) return;
-  importScopeFlow.setSaving(true);
+  flow.setSaving(true);
   let result: OkResult;
   try {
     result = await saveImportScope({
@@ -144,11 +138,11 @@ async function confirmImportScope(): Promise<void> {
       start: draft.starts,
     });
   } catch {
-    importScopeFlow.fail("Pond couldn't save your choice. Try again.");
+    flow.fail("Pond couldn't save your choice. Try again.");
     return;
   }
   if (!result.ok) {
-    importScopeFlow.fail(result.error);
+    flow.fail(result.error);
     return;
   }
   connectFlow.clear();
@@ -164,6 +158,7 @@ function ListKindRows({
   kind: ListKind;
   children: ReactNode;
 }) {
+  const flow = useImportScopeFlowActions();
   const draft = useImportScopeFlow();
   const title = listKindLabel(source, kind);
   const included = draft.listKinds.includes(kind);
@@ -178,7 +173,7 @@ function ListKindRows({
             aria-label={title}
             checked={included}
             disabled={draft.saving}
-            onCheckedChange={(next) => importScopeFlow.setListKind(kind, next)}
+            onCheckedChange={(next) => flow.setListKind(kind, next)}
           />
         </Settings.ItemControl>
       </Settings.Item>
@@ -200,6 +195,7 @@ function CollectionRows({
   source: Source;
   kind: ImportCollectionKind;
 }) {
+  const flow = useImportScopeFlowActions();
   const draft = useImportScopeFlow();
   const nouns = collectionNouns(kind);
   const label = getSourceDef(source).label;
@@ -211,9 +207,33 @@ function CollectionRows({
     enabled: requested,
   });
   const failed = query.data && !query.data.ok ? query.data.error : null;
+  const available = query.data?.ok ? (query.data.collections ?? []) : [];
+  const names = new Map(
+    [...draft.collections, ...available].map((c) => [c.id, c.name]),
+  );
+  const details = new Map(
+    available.flatMap((c) =>
+      c.itemCount == null
+        ? []
+        : [
+            [
+              c.id,
+              `${formatNumber(c.itemCount)} ${
+                c.itemCount === 1 ? nouns.item.one : nouns.item.many
+              }`,
+            ] as const,
+          ],
+    ),
+  );
+  const ids = Array.from(
+    new Set([
+      ...available.map((c) => c.id),
+      ...draft.collections.map((c) => c.id),
+    ]),
+  );
   return (
     <>
-      <Settings.Item>
+      <Settings.Item className={styles.stacked}>
         <Settings.ItemDetails>
           <Settings.ItemTitle>{nouns.title}</Settings.ItemTitle>
           {failed ? (
@@ -222,33 +242,46 @@ function CollectionRows({
             </Settings.ItemDescription>
           ) : null}
         </Settings.ItemDetails>
-        <Settings.ItemControl>
-          {failed ? (
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => void query.refetch()}
-            >
-              Try Again
-            </Button>
-          ) : (
-            <CollectionSelect
-              kind={kind}
-              pending={query.isPending}
-              available={query.data?.ok ? (query.data.collections ?? []) : []}
-              selected={draft.collections}
-              disabled={draft.saving}
-              onOpen={() => setRequested(true)}
-            />
-          )}
-        </Settings.ItemControl>
+        {failed ? (
+          <Button
+            size="sm"
+            variant="secondary"
+            className={styles.retry}
+            onClick={() => void query.refetch()}
+          >
+            Try Again
+          </Button>
+        ) : (
+          <ChipsField
+            label={nouns.title}
+            placeholder={nouns.all}
+            items={ids}
+            value={draft.collections.map((c) => c.id)}
+            labelOf={(id) => names.get(id) ?? id}
+            detailOf={(id) => details.get(id)}
+            empty={
+              !requested || query.isPending
+                ? `Loading ${nouns.many}`
+                : available.length === 0
+                  ? `No ${nouns.many} found`
+                  : `No ${nouns.many} match`
+            }
+            disabled={draft.saving}
+            onOpen={() => setRequested(true)}
+            onValueChange={(next) =>
+              flow.setCollections(
+                next.map((id) => ({ id, name: names.get(id) ?? id })),
+              )
+            }
+          />
+        )}
       </Settings.Item>
       <Reveal visible={draft.collections.length > 0}>
         <Settings.Item>
           <Settings.ItemDetails>
             <Settings.ItemTitle>Add to Folders</Settings.ItemTitle>
             <Settings.ItemDescription>
-              Files each {nouns.one} into its own Folder under {label}.
+              Saves to {label} / {nouns.one} name.
             </Settings.ItemDescription>
           </Settings.ItemDetails>
           <Settings.ItemControl>
@@ -256,7 +289,7 @@ function CollectionRows({
               aria-label="Add to Folders"
               checked={draft.addToFolders}
               disabled={draft.saving}
-              onCheckedChange={(next) => importScopeFlow.setAddToFolders(next)}
+              onCheckedChange={(next) => flow.setAddToFolders(next)}
             />
           </Settings.ItemControl>
         </Settings.Item>
@@ -265,140 +298,109 @@ function CollectionRows({
   );
 }
 
-function CollectionSelect({
-  kind,
-  pending,
-  available,
-  selected,
-  disabled,
-  onOpen,
-}: {
-  kind: ImportCollectionKind;
-  pending: boolean;
-  available: ReadonlyArray<ImportCollection & { itemCount?: number | null }>;
-  selected: readonly ImportCollection[];
-  disabled: boolean;
-  onOpen: () => void;
-}) {
-  const nouns = collectionNouns(kind);
-  const names = new Map(
-    [...selected, ...available].map((collection) => [
-      collection.id,
-      collection.name,
-    ]),
-  );
-  const value = selected.length > 0 ? selected.map((c) => c.id) : [ALL];
-  const status = pending
-    ? `Loading ${nouns.many}`
-    : available.length === 0
-      ? `No ${nouns.many} found`
-      : null;
-  const items: SelectItemSpec<string>[] = [
-    { value: ALL, label: nouns.all },
-    { type: "separator" },
-    ...(status
-      ? [
-          {
-            type: "custom" as const,
-            render: () => (
-              <p className={styles.status} role="status">
-                {status}
-              </p>
-            ),
-          },
-        ]
-      : available.map((collection) => ({
-          value: collection.id,
-          label: (
-            <span className={styles.option}>
-              <span className={styles.name}>{collection.name}</span>
-              {collection.itemCount == null ? null : (
-                <span className={styles.count}>
-                  {formatNumber(collection.itemCount)}{" "}
-                  {collection.itemCount === 1
-                    ? nouns.item.one
-                    : nouns.item.many}
-                </span>
-              )}
-            </span>
-          ),
-        }))),
-  ];
-  const [first] = selected;
-  const summary =
-    selected.length === 0
-      ? nouns.all
-      : selected.length === 1 && first
-        ? first.name
-        : `${selected.length} ${nouns.many}`;
-  return (
-    <Select.Root
-      multiple
-      value={value}
-      disabled={disabled}
-      onOpenChange={(open) => {
-        if (open) onOpen();
-      }}
-      onValueChange={(next) => {
-        const chosenAll = next.includes(ALL) && !value.includes(ALL);
-        const ids = chosenAll ? [] : next.filter((id) => id !== ALL);
-        importScopeFlow.setCollections(
-          ids.map((id) => ({ id, name: names.get(id) ?? id })),
-        );
-      }}
-    >
-      <Select.Trigger size="sm" aria-label={nouns.title}>
-        <Select.Value className={styles.value}>{() => summary}</Select.Value>
-      </Select.Trigger>
-      <Select.Portal>
-        <Select.Positioner align="end">
-          <Select.Popup>
-            <Select.Items items={items} />
-          </Select.Popup>
-        </Select.Positioner>
-      </Select.Portal>
-    </Select.Root>
-  );
-}
-
 function MediaKindsRow({ kinds }: { kinds: readonly ImportMediaKind[] }) {
+  const flow = useImportScopeFlowActions();
   const draft = useImportScopeFlow();
   return (
-    <Settings.Item>
+    <Settings.Item className={styles.stacked}>
       <Settings.ItemDetails>
         <Settings.ItemTitle>Kinds of Posts</Settings.ItemTitle>
       </Settings.ItemDetails>
-      <Settings.ItemControl>
-        <ToggleGroup
-          multiple
-          variant="outline"
-          aria-label="Kinds of Posts"
-          value={[...draft.mediaKinds]}
-          disabled={draft.saving}
-          onValueChange={(next) =>
-            importScopeFlow.setMediaKinds(
-              kinds.filter((kind) => next.includes(kind)),
-            )
-          }
-        >
-          {kinds.map((kind) => (
-            <Toggle
-              key={kind}
-              type="button"
-              size="sm"
-              variant="outline"
-              value={kind}
-            >
-              {mediaKindLabel(kind)}
-            </Toggle>
-          ))}
-        </ToggleGroup>
-      </Settings.ItemControl>
+      <ChipsField
+        label="Kinds of Posts"
+        placeholder="All Kinds"
+        items={[...kinds]}
+        value={[...draft.mediaKinds]}
+        labelOf={(kind) => mediaKindLabel(kind)}
+        empty="No kinds match"
+        disabled={draft.saving}
+        onValueChange={(next) =>
+          flow.setMediaKinds(kinds.filter((kind) => next.includes(kind)))
+        }
+      />
     </Settings.Item>
   );
 }
 
+function ChipsField<Value extends string>({
+  label,
+  placeholder,
+  items,
+  value,
+  labelOf,
+  detailOf,
+  empty,
+  disabled,
+  onOpen,
+  onValueChange,
+}: {
+  label: string;
+  placeholder: string;
+  items: Value[];
+  value: Value[];
+  labelOf: (value: Value) => string;
+  detailOf?: (value: Value) => string | undefined;
+  empty: string;
+  disabled: boolean;
+  onOpen?: () => void;
+  onValueChange: (value: Value[]) => void;
+}) {
+  return (
+    <Combobox.Root
+      multiple
+      items={items}
+      value={value}
+      disabled={disabled}
+      itemToStringLabel={labelOf}
+      onOpenChange={(open) => {
+        if (open) onOpen?.();
+      }}
+      onValueChange={onValueChange}
+    >
+      <Combobox.InputGroup>
+        <Combobox.Value>
+          {(selected: Value[]) => (
+            <Combobox.Chips>
+              {selected.map((item) => (
+                <Combobox.Chip key={item} aria-label={labelOf(item)}>
+                  {labelOf(item)}
+                  <Combobox.ChipRemove aria-label={`Remove ${labelOf(item)}`} />
+                </Combobox.Chip>
+              ))}
+              <Combobox.ChipsInput
+                aria-label={label}
+                placeholder={selected.length > 0 ? "" : placeholder}
+              />
+            </Combobox.Chips>
+          )}
+        </Combobox.Value>
+      </Combobox.InputGroup>
+      <Combobox.Portal>
+        <Combobox.Positioner>
+          <Combobox.Popup>
+            <Combobox.Empty>{empty}</Combobox.Empty>
+            <Combobox.List>
+              {(item: Value) => (
+                <Combobox.Item key={item} value={item}>
+                  <Combobox.ItemLabel>{labelOf(item)}</Combobox.ItemLabel>
+                  <Combobox.ItemEnd>
+                    {detailOf?.(item) ? (
+                      <Combobox.ItemMeta>{detailOf(item)}</Combobox.ItemMeta>
+                    ) : null}
+                    <Combobox.ItemIndicator />
+                  </Combobox.ItemEnd>
+                </Combobox.Item>
+              )}
+            </Combobox.List>
+          </Combobox.Popup>
+        </Combobox.Positioner>
+      </Combobox.Portal>
+    </Combobox.Root>
+  );
+}
+
 function SinceRows() {
+  const flow = useImportScopeFlowActions();
   const draft = useImportScopeFlow();
   const custom = draft.sincePreset === "custom";
   return (
@@ -418,7 +420,7 @@ function SinceRows() {
             items={[...SINCE_PRESETS]}
             disabled={draft.saving}
             onValueChange={(next) => {
-              if (next) importScopeFlow.setSincePreset(next);
+              if (next) flow.setSincePreset(next);
             }}
           >
             <Select.Trigger size="sm" aria-label="Posted Since">
@@ -440,17 +442,13 @@ function SinceRows() {
             <Settings.ItemTitle>Date</Settings.ItemTitle>
           </Settings.ItemDetails>
           <Settings.ItemControl>
-            <Input.Root size="sm" className={styles.date}>
-              <Input.Field
-                aria-label="Date"
-                type="date"
-                value={draft.since}
-                disabled={draft.saving}
-                onChange={(event) =>
-                  importScopeFlow.setSince(event.target.value)
-                }
-              />
-            </Input.Root>
+            <DatePicker
+              aria-label="Date"
+              value={draft.since}
+              max={localDay(new Date())}
+              disabled={draft.saving}
+              onValueChange={(since) => flow.setSince(since)}
+            />
           </Settings.ItemControl>
         </Settings.Item>
       </Reveal>

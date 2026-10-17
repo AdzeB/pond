@@ -8,7 +8,6 @@ import { LIST_KIND_LABELS } from "@pond/schema/list-kinds";
 import {
   type ImportCollectionKind,
   importScopeOptions,
-  importsEverything,
   sinceStart,
 } from "@shared/import-scope";
 import type { OkResult } from "@shared/query-contracts-shared";
@@ -100,34 +99,57 @@ export function hasImportChoices(source: Source): boolean {
   );
 }
 
-export function importScopeSummary(
-  source: Source,
-  scope: ImportScope | undefined,
-): string {
-  if (importsEverything(scope)) return "Everything";
-  const parts = [whatSummary(source, scope)];
-  if (scope?.mediaKinds) {
-    parts.push(scope.mediaKinds.map(mediaKindLabel).join(" and "));
-  }
-  if (scope?.since) parts.push(`from ${formatSince(scope.since)}`);
-  return parts.filter(Boolean).join(", ");
+export interface ImportScopeRow {
+  label: string;
+  value: string;
 }
 
-function whatSummary(source: Source, scope: ImportScope | undefined): string {
-  const collections = scope?.collections ?? [];
-  const kind = importScopeOptions(source).collections;
-  const listKinds = scope?.listKinds ?? importScopeOptions(source).listKinds;
-  const lists = listKinds.map((listKind) => {
-    if (listKind !== "saved" || !kind || collections.length === 0) {
-      return listKindLabel(source, listKind);
+/** One row per choice the Source offers, as the inspector lists them. */
+export function importScopeRows(
+  source: Source,
+  scope: ImportScope | undefined,
+): ImportScopeRow[] {
+  const options = importScopeOptions(source);
+  const listKinds = scope?.listKinds ?? options.listKinds;
+  const rows: ImportScopeRow[] = [];
+  if (options.listKinds.length > 0) {
+    rows.push({
+      label: "Lists",
+      value: listKinds.map((kind) => listKindLabel(source, kind)).join(" and "),
+    });
+  }
+  const savedChosen =
+    options.listKinds.length === 0 || listKinds.includes("saved");
+  if (options.collections && savedChosen) {
+    const nouns = collectionNouns(options.collections);
+    const chosen = scope?.collections ?? [];
+    rows.push({
+      label: nouns.title,
+      value:
+        chosen.length > 0 ? chosen.map((c) => c.name).join(", ") : nouns.all,
+    });
+    if (chosen.length > 0) {
+      rows.push({
+        label: "Add to Folders",
+        value: scope?.addToFolders === false ? "Off" : "On",
+      });
     }
-    const [first] = collections;
-    return collections.length === 1 && first
-      ? first.name
-      : `${collections.length} ${collectionNouns(kind).many}`;
-  });
-  if (lists.length > 0) return lists.join(" and ");
-  return scope?.mediaKinds || scope?.since ? "" : "Everything";
+  }
+  if (options.mediaKinds.length > 0) {
+    rows.push({
+      label: "Kinds of Posts",
+      value: scope?.mediaKinds
+        ? scope.mediaKinds.map(mediaKindLabel).join(", ")
+        : "All Kinds",
+    });
+  }
+  if (options.since) {
+    rows.push({
+      label: "Posted Since",
+      value: scope?.since ? formatSince(scope.since) : "Any Time",
+    });
+  }
+  return rows;
 }
 
 export type SincePreset =
@@ -162,9 +184,14 @@ export function sinceForPreset(preset: SincePreset, now = new Date()): string {
     now.getMonth() - SINCE_PRESET_MONTHS[preset],
     now.getDate(),
   );
-  const month = String(start.getMonth() + 1).padStart(2, "0");
-  const day = String(start.getDate()).padStart(2, "0");
-  return `${start.getFullYear()}-${month}-${day}`;
+  return localDay(start);
+}
+
+/** A date as the local `YYYY-MM-DD` the scope stores. */
+export function localDay(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
 }
 
 export function formatSince(since: string): string {

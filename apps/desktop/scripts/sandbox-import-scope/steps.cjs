@@ -77,8 +77,8 @@ const STEPS = [
     steps: [
       "Sign in to X, then press Import Session.",
       "In Pond, open Sources, find the X Account, and choose Start Import from its menu.",
-      "Turn off Likes. Open the Folders menu under Bookmarks and confirm your bookmark folders load.",
-      "Pick one folder and leave Add to Folders on. Under Filters, turn off Text Posts. Press Start Import.",
+      "Turn off Likes. Click the Folders field under Bookmarks and confirm your bookmark folders load with post counts.",
+      "Pick one folder and leave Add to Folders on. In Kinds of Posts, add Images and Videos. Press Start Import.",
       "When the sync finishes, confirm the Library only shows posts from that folder, none are text-only, and they sit in a Twitter / folder name Folder.",
     ],
     checks: (e) => [
@@ -121,7 +121,7 @@ const STEPS = [
     steps: [
       "Sign in to Instagram, then press Import Session.",
       "In Pond, choose Start Import from the Instagram Account menu.",
-      "Open the Collections menu and confirm your collections load with post counts.",
+      "Click the Collections field and confirm your collections load with post counts.",
       "Pick one collection, leave Add to Folders on, and press Start Import.",
       "When the sync finishes, confirm only that collection's posts arrived, in an Instagram / collection name Folder.",
     ],
@@ -143,7 +143,7 @@ const STEPS = [
     steps: [
       "Sign in to YouTube, then press Import Session. If Google blocks the sign-in window, mark this step Skip.",
       "In Pond, choose Start Import from the YouTube Account menu.",
-      "Open the Playlists menu and confirm your playlists load.",
+      "Click the Playlists field and confirm your playlists load.",
       "Pick one playlist other than Watch Later, leave Add to Folders on, and press Start Import.",
       "When the sync finishes, confirm only that playlist's videos arrived, in a YouTube / playlist name Folder.",
     ],
@@ -189,7 +189,7 @@ const STEPS = [
     steps: [
       "Sign in to Reddit, then press Import Session.",
       "In Pond, choose Start Import from the Reddit Account menu.",
-      "Turn off Upvoted Posts. Set Posted Since to Custom Date and pick a date that cuts off some of your older saved posts. Press Start Import.",
+      "Turn off Upvoted Posts. Set Posted Since to Custom Date, then pick a day in the calendar that cuts off some of your older saved posts. Press Start Import.",
       "When the sync finishes, confirm nothing older than that date is in the Library.",
     ],
     checks: (e) => [

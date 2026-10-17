@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { localDay } from "@/features/sources/lib/import-scope";
 import {
   type ImportScopeAccount,
   importScopeFlow,
@@ -100,6 +101,31 @@ async function choose(field: string, option: string): Promise<void> {
   await act(async () => found.click());
 }
 
+async function openCombobox(field: string): Promise<void> {
+  const input = host.querySelector<HTMLInputElement>(
+    `input[aria-label="${field}"]`,
+  );
+  if (!input) throw new Error(`Missing combobox: ${field}`);
+  await act(async () => {
+    input.focus();
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+    );
+  });
+}
+
+async function pick(field: string, option: string): Promise<void> {
+  await openCombobox(field);
+  const found = await vi.waitFor(() => {
+    const match = Array.from(
+      document.querySelectorAll<HTMLElement>('[role="option"]'),
+    ).find((element) => element.textContent?.startsWith(option));
+    if (!match) throw new Error(`Missing option: ${option}`);
+    return match;
+  });
+  await act(async () => found.click());
+}
+
 it("starts the first import with only the lists you keep", async () => {
   await renderFor({
     id: "acc-instagram",
@@ -134,10 +160,14 @@ it("imports chosen Pinterest boards into Folders", async () => {
     source: "pinterest",
     sync: { importPending: true },
   });
-  expect(host.textContent).toContain("All Pins");
+  expect(
+    host
+      .querySelector('input[aria-label="Boards"]')
+      ?.getAttribute("placeholder"),
+  ).toBe("All Pins");
   expect(host.textContent).not.toContain("Add to Folders");
 
-  await choose("Boards", "Design References");
+  await pick("Boards", "Design References");
   expect(document.body.textContent).toContain("42 pins");
   expect(document.body.textContent).toContain("1 pin");
   await vi.waitFor(() => {
@@ -186,8 +216,7 @@ it("explains a board list Pond couldn't load", async () => {
     "accounts.importOptions",
     expect.anything(),
   );
-  const trigger = host.querySelector<HTMLElement>('[aria-label="Boards"]');
-  await act(async () => trigger?.click());
+  await openCombobox("Boards");
   await vi.waitFor(() => {
     expect(host.textContent).toContain("Pinterest signed you out.");
   });
@@ -231,10 +260,10 @@ it("hides collections while the saved list is off", async () => {
     source: "instagram",
     sync: { importPending: true },
   });
-  expect(host.textContent).toContain("All Saved Posts");
+  expect(host.querySelector('input[aria-label="Collections"]')).not.toBeNull();
   await act(async () => toggle("Saved Posts").click());
   await vi.waitFor(() => {
-    expect(host.textContent).not.toContain("All Saved Posts");
+    expect(host.querySelector('input[aria-label="Collections"]')).toBeNull();
   });
 });
 
@@ -244,33 +273,45 @@ it("saves media and date filters with the scope", async () => {
     source: "reddit",
     sync: { importPending: true },
   });
-  await act(async () => button("Text Posts").click());
+  await pick("Kinds of Posts", "Images");
+  await pick("Kinds of Posts", "Videos");
   await choose("Posted Since", "Custom Date");
-  const date = await vi.waitFor(() => {
-    const field = host.querySelector<HTMLInputElement>('input[type="date"]');
-    if (!field) throw new Error("Missing date field");
-    return field;
+  const trigger = await vi.waitFor(() => {
+    const found = host.querySelector<HTMLElement>('[aria-label^="Date"]');
+    if (!found) throw new Error("Missing date picker");
+    return found;
   });
-  await act(async () => {
-    Object.getOwnPropertyDescriptor(
-      HTMLInputElement.prototype,
-      "value",
-    )?.set?.call(date, "2026-01-01");
-    date.dispatchEvent(new Event("input", { bubbles: true }));
+  await act(async () => trigger.click());
+  const now = new Date();
+  const first = localDay(new Date(now.getFullYear(), now.getMonth(), 1));
+  const day = await vi.waitFor(() => {
+    const found = document.querySelector<HTMLButtonElement>(
+      `[data-day="${first}"]`,
+    );
+    if (!found) throw new Error("Missing calendar day");
+    return found;
   });
+  await act(async () => day.click());
   await act(async () => button("Start Import").click());
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-reddit",
-    scope: { mediaKinds: ["image", "video"], since: "2026-01-01" },
+    scope: { mediaKinds: ["image", "video"], since: first },
   });
 });
 
-it("keeps at least one kind of post", async () => {
+it("goes back to every kind of post when you remove the last chip", async () => {
   await renderFor({
     id: "acc-reddit",
     source: "reddit",
     sync: { importScope: { mediaKinds: ["video"] } },
   });
-  await act(async () => button("Videos").click());
-  expect(button("Videos").hasAttribute("data-pressed")).toBe(true);
+  const remove = host.querySelector<HTMLElement>(
+    '[aria-label="Remove Videos"]',
+  );
+  await act(async () => remove?.click());
+  await act(async () => button("Save").click());
+  expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+    accountId: "acc-reddit",
+    scope: {},
+  });
 });

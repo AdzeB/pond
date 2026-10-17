@@ -236,7 +236,7 @@ function primaryFetchItem(target: SourceMenuTarget): MenuItemSpec {
   };
 }
 
-function openImportScope(target: SourceMenuTarget): void {
+export function openImportScope(target: SourceMenuTarget): void {
   importScopeFlow.open({
     id: target.id,
     source: target.source,

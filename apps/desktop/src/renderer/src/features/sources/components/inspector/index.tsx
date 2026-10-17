@@ -1,8 +1,8 @@
 import type { Source } from "@pond/schema/db";
-import { Dialog, Field, Input, type MenuItemSpec } from "@pond/ui";
+import { Button, Dialog, Field, Input, type MenuItemSpec } from "@pond/ui";
 import { accountImportScope } from "@shared/import-scope";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { SourceDetailsKind } from "@/features/library";
 import { HeroAvatar } from "@/features/sources/components/flow/detail/hero-avatar";
 import { buildFolderMenu } from "@/features/sources/components/page/lib/folder-menu";
@@ -23,11 +23,15 @@ import {
   type WatchRow,
   watchKindLabel,
 } from "@/features/sources/hooks/use-watches";
-import { importScopeSummary } from "@/features/sources/lib/import-scope";
+import {
+  hasImportChoices,
+  importScopeRows,
+} from "@/features/sources/lib/import-scope";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import {
   accountMenuTarget,
   buildSourceActionMenu,
+  openImportScope,
   watchMenuTarget,
 } from "@/features/sources/lib/source-menu";
 import { sourceDetail } from "@/features/sources/state/source-detail";
@@ -116,7 +120,8 @@ function AccountInspector({ id }: { id: string }) {
     void refetch();
     sourceDetail.changed();
   };
-  const menuItems = buildSourceActionMenu(accountMenuTarget(account, model), {
+  const target = accountMenuTarget(account, model);
+  const menuItems = buildSourceActionMenu(target, {
     accounts,
     onChanged: changed,
   });
@@ -139,17 +144,41 @@ function AccountInspector({ id }: { id: string }) {
           label: "Saved Items",
           value: formatNumber(account.sync.knownCount),
         },
-        {
-          label: "Imports",
-          value: account.sync.importPending
-            ? "Not started"
-            : importScopeSummary(
-                account.source,
-                accountImportScope(account.source, account.sync),
-              ),
-        },
         { label: "Added", value: addedLabel(account.addedAt) },
       ]}
+      sections={
+        account.sync.importPending || hasImportChoices(account.source) ? (
+          <Section
+            title="Import"
+            className={styles.section}
+            collapsible={false}
+            action={
+              <Button
+                size="xs"
+                variant="secondary"
+                onClick={() => openImportScope(target)}
+              >
+                {account.sync.importPending ? "Start Import" : "Edit"}
+              </Button>
+            }
+          >
+            <PropertyList.Root>
+              {(account.sync.importPending
+                ? [{ label: "Status", value: "Not started" }]
+                : importScopeRows(
+                    account.source,
+                    accountImportScope(account.source, account.sync),
+                  )
+              ).map((row) => (
+                <PropertyList.Row key={row.label}>
+                  <PropertyList.Label>{row.label}</PropertyList.Label>
+                  <PropertyList.Value>{row.value}</PropertyList.Value>
+                </PropertyList.Row>
+              ))}
+            </PropertyList.Root>
+          </Section>
+        ) : null
+      }
       onNicknameSave={async (value) => {
         await saveAccountNickname(account, value);
         changed();
@@ -268,6 +297,8 @@ interface SourceInspectorDetailsProps {
   nickname?: string;
   menuItems?: MenuItemSpec[];
   properties?: SourceInspectorProperty[];
+  /** Source-specific sections shown after Properties. */
+  sections?: ReactNode;
   onNicknameSave?: (value: string) => Promise<void>;
 }
 
@@ -311,6 +342,7 @@ function SourceInspectorDetails({
   nickname = "",
   menuItems = [],
   properties = [],
+  sections,
   onNicknameSave,
 }: SourceInspectorDetailsProps) {
   const activity = model ? activityDetail(model, syncStatus) : null;
@@ -358,6 +390,7 @@ function SourceInspectorDetails({
           </PropertyList.Root>
         </Section>
       ) : null}
+      {sections}
       {model && activity ? (
         <Section
           title="Activity"
