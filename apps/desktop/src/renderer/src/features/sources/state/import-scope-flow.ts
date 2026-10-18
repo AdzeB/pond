@@ -12,7 +12,6 @@ import {
 } from "@shared/import-scope";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import { createContext, use } from "react";
 import {
   type SincePreset,
   sinceForPreset,
@@ -64,8 +63,7 @@ const EMPTY: ImportScopeFlowState = {
   error: null,
 };
 
-/** Each flow owns its draft, so a gallery can show several pickers at once. */
-export function createImportScopeFlow() {
+function createImportScopeFlow() {
   const store = new Store<ImportScopeFlowState>(EMPTY);
   return {
     store,
@@ -136,12 +134,8 @@ export type ImportScopeFlow = ReturnType<typeof createImportScopeFlow>;
 
 export const importScopeFlow = createImportScopeFlow();
 
-const ImportScopeFlowContext = createContext<ImportScopeFlow>(importScopeFlow);
-
-export const ImportScopeFlowProvider = ImportScopeFlowContext;
-
 export function useImportScopeFlowActions(): ImportScopeFlow {
-  return use(ImportScopeFlowContext);
+  return importScopeFlow;
 }
 
 export function draftFiles(
