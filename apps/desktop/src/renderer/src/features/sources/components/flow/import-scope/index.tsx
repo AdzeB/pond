@@ -134,22 +134,26 @@ export function ImportScopeStatus() {
   if (!draft.starts) return alert;
   return (
     <div className={styles.status}>
-      <Settings.Card>
-        <Settings.CardTitle>Not imported yet</Settings.CardTitle>
-        <Settings.CardDescription>
-          Nothing syncs until you start.
-        </Settings.CardDescription>
-        <Settings.CardAction>
-          <Button
-            size="sm"
-            variant="primary"
-            disabled={!ready || draft.saving}
-            onClick={() => void confirmImportScope(flow)}
-          >
-            Start Import
-          </Button>
-        </Settings.CardAction>
-      </Settings.Card>
+      <Settings.List>
+        <Settings.Item>
+          <Settings.ItemDetails>
+            <Settings.ItemTitle>Not imported yet</Settings.ItemTitle>
+            <Settings.ItemDescription>
+              Nothing syncs until you start.
+            </Settings.ItemDescription>
+          </Settings.ItemDetails>
+          <Settings.ItemControl>
+            <Button
+              size="sm"
+              variant="primary"
+              disabled={!ready || draft.saving}
+              onClick={() => void confirmImportScope(flow)}
+            >
+              Start Import
+            </Button>
+          </Settings.ItemControl>
+        </Settings.Item>
+      </Settings.List>
       {alert}
     </div>
   );
@@ -253,7 +257,7 @@ function CollectionRows({
   );
   return (
     <>
-      <Settings.Item className={styles.stacked} disabled={savedOff}>
+      <Settings.Item disabled={savedOff}>
         <Settings.ItemDetails>
           <Settings.ItemTitle>{nouns.title}</Settings.ItemTitle>
           {failed ? (
@@ -262,40 +266,41 @@ function CollectionRows({
             </Settings.ItemDescription>
           ) : null}
         </Settings.ItemDetails>
-        {failed ? (
-          <Button
-            size="sm"
-            variant="secondary"
-            className={styles.retry}
-            disabled={savedOff}
-            onClick={() => void query.refetch()}
-          >
-            Try Again
-          </Button>
-        ) : (
-          <ChipsField
-            label={nouns.title}
-            placeholder={nouns.all}
-            items={ids}
-            value={draft.collections.map((c) => c.id)}
-            labelOf={(id) => names.get(id) ?? id}
-            detailOf={(id) => details.get(id)}
-            empty={
-              !requested || query.isPending
-                ? `Loading ${nouns.many}`
-                : available.length === 0
-                  ? `No ${nouns.many} found`
-                  : `No ${nouns.many} match`
-            }
-            disabled={savedOff}
-            onOpen={() => setRequested(true)}
-            onValueChange={(next) =>
-              flow.setCollections(
-                next.map((id) => ({ id, name: names.get(id) ?? id })),
-              )
-            }
-          />
-        )}
+        <Settings.ItemControl>
+          {failed ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={savedOff}
+              onClick={() => void query.refetch()}
+            >
+              Try Again
+            </Button>
+          ) : (
+            <ChipsField
+              label={nouns.title}
+              placeholder={nouns.all}
+              items={ids}
+              value={draft.collections.map((c) => c.id)}
+              labelOf={(id) => names.get(id) ?? id}
+              detailOf={(id) => details.get(id)}
+              empty={
+                !requested || query.isPending
+                  ? `Loading ${nouns.many}`
+                  : available.length === 0
+                    ? `No ${nouns.many} found`
+                    : `No ${nouns.many} match`
+              }
+              disabled={savedOff}
+              onOpen={() => setRequested(true)}
+              onValueChange={(next) =>
+                flow.setCollections(
+                  next.map((id) => ({ id, name: names.get(id) ?? id })),
+                )
+              }
+            />
+          )}
+        </Settings.ItemControl>
       </Settings.Item>
       <Settings.Item disabled={filingOff}>
         <Settings.ItemDetails>
@@ -328,21 +333,23 @@ function MediaKindsRow({ kinds }: { kinds: readonly ImportMediaKind[] }) {
   const flow = useImportScopeFlowActions();
   const draft = useImportScopeFlow();
   return (
-    <Settings.Item className={styles.stacked}>
+    <Settings.Item>
       <Settings.ItemDetails>
         <Settings.ItemTitle>Post Types</Settings.ItemTitle>
       </Settings.ItemDetails>
-      <ChipsField
-        label="Post Types"
-        placeholder="All Types"
-        items={[...kinds]}
-        value={[...draft.mediaKinds]}
-        labelOf={(kind) => mediaKindLabel(kind)}
-        empty="No types match"
-        onValueChange={(next) =>
-          flow.setMediaKinds(kinds.filter((kind) => next.includes(kind)))
-        }
-      />
+      <Settings.ItemControl>
+        <ChipsField
+          label="Post Types"
+          placeholder="All Types"
+          items={[...kinds]}
+          value={[...draft.mediaKinds]}
+          labelOf={(kind) => mediaKindLabel(kind)}
+          empty="No types match"
+          onValueChange={(next) =>
+            flow.setMediaKinds(kinds.filter((kind) => next.includes(kind)))
+          }
+        />
+      </Settings.ItemControl>
     </Settings.Item>
   );
 }
@@ -382,7 +389,7 @@ function ChipsField<Value extends string>({
       }}
       onValueChange={onValueChange}
     >
-      <Combobox.InputGroup>
+      <Combobox.InputGroup className={styles.chips}>
         <Combobox.Value>
           {(selected: Value[]) => (
             <Combobox.Chips>

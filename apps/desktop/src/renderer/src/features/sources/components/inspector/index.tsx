@@ -505,10 +505,10 @@ function GeneralPage({
         </Settings.Section>
       ) : null}
       {model && activity ? (
-        <Settings.Section>
-          <Settings.SectionTitle>Activity</Settings.SectionTitle>
-          <Settings.List>
-            <Settings.Item className={styles.activity}>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Activity</Settings.ItemTitle>
               <p
                 className={styles.detail}
                 data-tone={
@@ -519,10 +519,10 @@ function GeneralPage({
               >
                 {activity}
               </p>
-              <SourceProgress progress={syncStatus?.progress} />
-            </Settings.Item>
-          </Settings.List>
-        </Settings.Section>
+            </Settings.ItemDetails>
+            <SourceProgress progress={syncStatus?.progress} />
+          </Settings.Item>
+        </Settings.List>
       ) : null}
     </>
   );
@@ -550,21 +550,18 @@ function SourceProgress({
     Math.max(0, (progress.current / progress.total) * 100),
   );
   return (
-    <div className={styles["progress-group"]}>
-      <div className={styles.metrics}>
-        <span>
-          {formatNumber(progress.current)} of {formatNumber(progress.total)}{" "}
-          saves
-        </span>
-        <span>{Math.round(value)}%</span>
-      </div>
+    <Settings.ItemControl className={styles["progress-group"]}>
       <progress
         className={styles.progress}
         aria-label="Fetch progress"
         max={100}
         value={value}
       />
-    </div>
+      <span className={styles.metrics}>
+        {formatNumber(progress.current)} of {formatNumber(progress.total)} saves
+        · {Math.round(value)}%
+      </span>
+    </Settings.ItemControl>
   );
 }
 

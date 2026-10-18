@@ -9,11 +9,11 @@
 }
 
 .note {
+  padding-inline: var(--settings-padding);
   margin: 0;
-  font-size: var(--ds-text-sm);
-  line-height: 20px;
+  font-size: var(--ds-text-md);
+  line-height: 1.5;
   color: var(--ds-gray-11);
-  text-align: center;
 }
 
 .status {
@@ -36,12 +36,6 @@
   align-items: center;
 }
 
-.stacked {
-  flex-direction: column;
-  gap: 8px;
-  align-items: stretch;
-}
-
 .control {
   width: 148px;
 }
@@ -51,8 +45,8 @@
   justify-content: flex-start;
 }
 
-.retry {
-  align-self: flex-start;
+.chips {
+  width: 260px;
 }
 
 .detail {

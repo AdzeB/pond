@@ -76,17 +76,12 @@
   white-space: nowrap;
 }
 
-.activity {
-  flex-direction: column;
-  gap: 12px;
-  align-items: stretch;
-}
-
 .detail {
   margin: 0;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-md);
   line-height: 1.5;
-  color: var(--ds-gray-10);
+  color: var(--ds-gray-11);
   overflow-wrap: anywhere;
 }
 
@@ -99,24 +94,21 @@
 }
 
 .progress-group {
-  display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  align-items: flex-end;
 }
 
 .metrics {
-  display: flex;
-  gap: 8px;
-  align-items: baseline;
-  justify-content: space-between;
   font-size: var(--ds-text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-10);
+  white-space: nowrap;
 }
 
 .progress {
   display: block;
-  width: 100%;
+  width: 160px;
   height: 5px;
   overflow: hidden;
   appearance: none;
