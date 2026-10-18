@@ -17,6 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useState } from "react";
 import {
   collectionNouns,
+  listKindDescription,
   listKindLabel,
   localDay,
   mediaKindLabel,
@@ -195,11 +196,15 @@ function ListKindRows({
   const flow = useImportScopeFlowActions();
   const draft = useImportScopeFlow();
   const title = listKindLabel(source, kind);
+  const description = listKindDescription(source, kind);
   return (
     <>
       <Settings.Item>
         <Settings.ItemDetails>
           <Settings.ItemTitle>{title}</Settings.ItemTitle>
+          {description ? (
+            <Settings.ItemDescription>{description}</Settings.ItemDescription>
+          ) : null}
         </Settings.ItemDetails>
         <Settings.ItemControl>
           <Switch.Root
@@ -264,7 +269,11 @@ function CollectionRows({
             <Settings.ItemDescription role="alert" title={failed}>
               {failed}
             </Settings.ItemDescription>
-          ) : null}
+          ) : (
+            <Settings.ItemDescription>
+              Pick {nouns.many} to import only those.
+            </Settings.ItemDescription>
+          )}
         </Settings.ItemDetails>
         <Settings.ItemControl>
           {failed ? (
@@ -310,11 +319,14 @@ function CollectionRows({
               label={
                 nonePicked && !options.fileEveryCollection
                   ? `Pick a ${nouns.one} to put its saves in a matching Folder.`
-                  : `Files each save in a Folder that mirrors your ${label} ${nouns.one}s. Pond creates any Folder that's missing.`
+                  : `Each save goes in a Folder named after its ${nouns.one}. Pond creates any Folder that's missing.`
               }
               aria-label="About Add to Folders"
             />
           </Settings.ItemTitle>
+          <Settings.ItemDescription>
+            Mirrors your {label} {nouns.one}s in Pond.
+          </Settings.ItemDescription>
         </Settings.ItemDetails>
         <Settings.ItemControl>
           <Switch.Root
@@ -336,6 +348,9 @@ function MediaKindsRow({ kinds }: { kinds: readonly ImportMediaKind[] }) {
     <Settings.Item>
       <Settings.ItemDetails>
         <Settings.ItemTitle>Post Types</Settings.ItemTitle>
+        <Settings.ItemDescription>
+          Leave empty to import every type.
+        </Settings.ItemDescription>
       </Settings.ItemDetails>
       <Settings.ItemControl>
         <ChipsField
@@ -443,7 +458,16 @@ function SinceRows() {
     <>
       <Settings.Item>
         <Settings.ItemDetails>
-          <Settings.ItemTitle>Posted Since</Settings.ItemTitle>
+          <Settings.ItemTitle className={styles.titled}>
+            Posted Since
+            <Tooltip.Info
+              label="Posts without a publish date are always imported."
+              aria-label="About Posted Since"
+            />
+          </Settings.ItemTitle>
+          <Settings.ItemDescription>
+            Skips older posts by publish date.
+          </Settings.ItemDescription>
         </Settings.ItemDetails>
         <Settings.ItemControl>
           <Select.Root
@@ -473,6 +497,9 @@ function SinceRows() {
       <Settings.Item disabled={!custom}>
         <Settings.ItemDetails>
           <Settings.ItemTitle>Date</Settings.ItemTitle>
+          <Settings.ItemDescription>
+            Used when Posted Since is Custom Date.
+          </Settings.ItemDescription>
         </Settings.ItemDetails>
         <Settings.ItemControl>
           <DatePicker

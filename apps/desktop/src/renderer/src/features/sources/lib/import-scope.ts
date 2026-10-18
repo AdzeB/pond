@@ -21,6 +21,29 @@ const SOURCE_LIST_KIND_LABELS = {
   twitter: { saved: "Bookmarks", liked: "Likes" },
 } satisfies Partial<Record<Source, Record<ListKind, string>>>;
 
+const SOURCE_LIST_KIND_DESCRIPTIONS = {
+  instagram: {
+    saved: "Posts you've saved on Instagram.",
+    liked: "Posts you've liked on Instagram.",
+  },
+  youtube: {
+    saved: "Videos you've saved on YouTube.",
+    liked: "Videos you've liked on YouTube.",
+  },
+  tiktok: {
+    saved: "Videos you've added to Favorites on TikTok.",
+    liked: "Videos you've liked on TikTok.",
+  },
+  reddit: {
+    saved: "Posts you've saved on Reddit.",
+    liked: "Posts you've upvoted on Reddit.",
+  },
+  twitter: {
+    saved: "Posts you've bookmarked on Twitter.",
+    liked: "Posts you've liked on Twitter.",
+  },
+} satisfies Partial<Record<Source, Record<ListKind, string>>>;
+
 const MEDIA_KIND_LABELS = {
   image: "Images",
   video: "Videos",
@@ -71,6 +94,22 @@ export function listKindLabel(source: Source, kind: ListKind): string {
       return SOURCE_LIST_KIND_LABELS[source][kind];
     default:
       return LIST_KIND_LABELS[kind];
+  }
+}
+
+export function listKindDescription(
+  source: Source,
+  kind: ListKind,
+): string | null {
+  switch (source) {
+    case "instagram":
+    case "youtube":
+    case "tiktok":
+    case "reddit":
+    case "twitter":
+      return SOURCE_LIST_KIND_DESCRIPTIONS[source][kind];
+    default:
+      return null;
   }
 }
 
