@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -75,12 +76,17 @@ export function windowsNativePipePath(sid: string): string {
 export async function nativeSocketPath(
   platform: NodeJS.Platform = process.platform,
   sidResolver: WindowsSidLoader = resolveWindowsUserSid,
+  sandbox: string | undefined = process.env.POND_SANDBOX,
 ): Promise<string> {
   if (platform === "win32") {
-    return windowsNativePipePath(await sidResolver());
+    const pipe = windowsNativePipePath(await sidResolver());
+    /** Pipe names are machine-global, so a sandbox gets its own and never takes the installed app's pipe. */
+    if (!sandbox) return pipe;
+    const id = createHash("sha256").update(sandbox).digest("hex").slice(0, 16);
+    return `${pipe}-sandbox-${id}`;
   }
-  if (process.env.POND_SANDBOX) {
-    return join(process.env.POND_SANDBOX, "native.sock");
+  if (sandbox) {
+    return join(sandbox, "native.sock");
   }
   return join(homedir(), "Library/Application Support/Pond", "native.sock");
 }

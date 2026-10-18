@@ -16,6 +16,20 @@ describe("nativeSocketPath", () => {
     );
   });
 
+  it("keeps a sandbox off the installed app's Windows pipe", async () => {
+    const sid = async () => "S-1-5-21-10-20-30-1001";
+    const real = await nativeSocketPath("win32", sid, undefined);
+    const sandbox = await nativeSocketPath("win32", sid, "C:\\Temp\\sandbox-a");
+    expect(sandbox).not.toBe(real);
+    expect(sandbox.startsWith(`${real}-sandbox-`)).toBe(true);
+    await expect(
+      nativeSocketPath("win32", sid, "C:\\Temp\\sandbox-b"),
+    ).resolves.not.toBe(sandbox);
+    await expect(
+      nativeSocketPath("win32", sid, "C:\\Temp\\sandbox-a"),
+    ).resolves.toBe(sandbox);
+  });
+
   it("parses the SID from whoami CSV output", () => {
     expect(
       parseWindowsUserSid('"DESKTOP\\Person","S-1-5-21-10-20-30-1001"\r\n'),
