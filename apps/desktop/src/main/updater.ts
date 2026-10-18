@@ -4,6 +4,7 @@ import { IPC } from "../shared/constants";
 import type { OkResult, ReasonFailure } from "../shared/query-contracts-shared";
 import type { UpdateNotice } from "../shared/update-notice";
 import { getPrefs } from "./core/prefs";
+import { installedChannel } from "./core/update-channel";
 import {
   createUpdaterCoordinator,
   type UpdaterPort,
@@ -58,7 +59,13 @@ async function loadUpdater(): Promise<UpdaterPort> {
 const updater = createUpdaterCoordinator({
   isPackaged: () => app.isPackaged,
   loadUpdater,
-  loadPreferences: async () => (await getPrefs()).updates,
+  loadPreferences: async () => {
+    const { autoInstall, channel } = (await getPrefs()).updates;
+    return {
+      autoInstall,
+      channel: channel ?? installedChannel(app.getVersion()),
+    };
+  },
   publish: (notice) => broadcast(IPC.updateNotice, notice),
   scheduleTimeout: (callback, delay) => {
     setTimeout(callback, delay);

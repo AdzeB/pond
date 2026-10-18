@@ -110,6 +110,8 @@ The workflow runs the same checks as `macos`, then stamps a version such as `1.0
 - **Stable** reads `latest-mac.yml` from `releases/latest`, which never points at a prerelease.
 - **Nightly** reads `nightly-mac.yml` from the newest nightly prerelease.
 
+Until you pick one, the channel follows the installed build, so a nightly DMG from GitHub keeps getting nightlies.
+
 Downgrades are off. Switching back to Stable keeps the current nightly until a newer stable release ships. The next stable patch always sorts after the nightlies built for it.
 
 Nightlies never touch `latest` or the Homebrew cask. The workflow keeps the last 7 and deletes older nightly releases and tags.

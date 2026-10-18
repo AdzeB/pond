@@ -275,7 +275,8 @@ const api = z.object({
 
 const updates = z.object({
   autoInstall: z.boolean().catch(true),
-  channel: z.enum(["stable", "nightly"]).catch("stable"),
+  /** Unset until chosen, so the desktop app can follow the installed build. */
+  channel: z.enum(["stable", "nightly"]).optional().catch(undefined),
 });
 
 export const FetchRecurrenceSchema = z

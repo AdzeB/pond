@@ -3,10 +3,9 @@ import type {
   ReasonFailure,
 } from "../../shared/query-contracts-shared";
 import type { UpdateNotice } from "../../shared/update-notice";
+import type { UpdateChannel } from "./update-channel";
 
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
-
-export type UpdateChannel = "stable" | "nightly";
 
 export interface UpdatePreferences {
   autoInstall: boolean;
