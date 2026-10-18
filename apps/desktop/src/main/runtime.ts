@@ -2,6 +2,7 @@ import { app } from "electron";
 import log from "electron-log/main.js";
 import { getPrefs, invalidatePrefs } from "./core/prefs";
 import { startHttpServer } from "./http/server";
+import { channelIdentity } from "./release-channel";
 import { createRuntimeControls } from "./runtime-controls";
 import { setTrayVisible } from "./tray";
 import { setCloseToTray } from "./window";
@@ -15,6 +16,7 @@ export const runtimeControls = createRuntimeControls({
   startHttpServer,
   setTrayVisible,
   isPackaged: app.isPackaged,
+  defaultPort: channelIdentity.ingestPort,
   setLoginItemSettings: (settings) =>
     app.setLoginItemSettings(
       process.platform === "win32"

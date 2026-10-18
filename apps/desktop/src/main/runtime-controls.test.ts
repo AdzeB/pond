@@ -1,8 +1,9 @@
 import { DEFAULT_PREFS, type Prefs } from "@pond/schema/db";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_INGEST_PORT } from "../shared/constants";
 import { createRuntimeControls } from "./runtime-controls";
 
-function setup(isPackaged = false) {
+function setup(isPackaged = false, defaultPort = DEFAULT_INGEST_PORT) {
   const events: string[] = [];
   let prefs = structuredClone(DEFAULT_PREFS);
   let readError: Error | null = null;
@@ -31,6 +32,7 @@ function setup(isPackaged = false) {
       events.push(`tray:${visible}`);
     },
     isPackaged,
+    defaultPort,
     setLoginItemSettings(settings) {
       events.push(`login:${settings.openAtLogin}`);
     },
@@ -80,6 +82,22 @@ describe("runtime controls", () => {
     ]);
     await run.controls.closeHttpServer();
     expect(run.events.at(-1)).toBe("close");
+  });
+
+  it("moves an unchanged port to the channel default and keeps a custom one", async () => {
+    const run = setup(false, DEFAULT_INGEST_PORT + 1);
+    await expect(run.controls.startHttpServer()).resolves.toEqual({
+      port: DEFAULT_INGEST_PORT + 1,
+      host: "127.0.0.1",
+    });
+    run.setPrefs({
+      ...DEFAULT_PREFS,
+      api: { ...DEFAULT_PREFS.api, port: 4567 },
+    });
+    await expect(run.controls.restartHttpServer()).resolves.toEqual({
+      port: 4567,
+      host: "127.0.0.1",
+    });
   });
 
   it("keeps the current server running when preferences cannot be read", async () => {

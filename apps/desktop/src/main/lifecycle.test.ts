@@ -57,7 +57,12 @@ describe("shouldStayResident", () => {
 });
 
 describe("protocolRegistration", () => {
-  const base = { hasInstanceLock: true, sandboxed: false, defaultApp: false };
+  const base = {
+    hasInstanceLock: true,
+    sandboxed: false,
+    defaultApp: false,
+    ownsSystemHandlers: true,
+  };
 
   it("skips development builds on Windows only", () => {
     expect(
@@ -81,6 +86,16 @@ describe("protocolRegistration", () => {
     ).toBe("none");
     expect(
       protocolRegistration({ ...base, platform: "linux", sandboxed: true }),
+    ).toBe("none");
+  });
+
+  it("leaves `pond://` with stable when a nightly runs beside it", () => {
+    expect(
+      protocolRegistration({
+        ...base,
+        platform: "darwin",
+        ownsSystemHandlers: false,
+      }),
     ).toBe("none");
   });
 });

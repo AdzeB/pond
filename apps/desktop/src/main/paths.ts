@@ -1,8 +1,10 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { app } from "electron";
+import { DEFAULT_LIBRARY_NAME } from "../shared/constants";
 import { resolveLibraryId } from "./lib/library-id";
 import { readLibraryPointer } from "./lib/library-pointer";
+import { channelIdentity } from "./release-channel";
 
 export interface PondPaths {
   appData: string;
@@ -30,8 +32,12 @@ function ensureDir(p: string): string {
   return p;
 }
 
+export function defaultLibraryParent(): string {
+  return join(app.getPath("home"), channelIdentity.libraryFolder);
+}
+
 function defaultLibraryRoot(): string {
-  return join(app.getPath("home"), "Pond", "My Pond.pond");
+  return join(defaultLibraryParent(), `${DEFAULT_LIBRARY_NAME}.pond`);
 }
 
 export function invalidatePaths(): void {

@@ -22,6 +22,7 @@ export interface UpdaterPort {
 
 export interface UpdaterDependencies {
   isPackaged(): boolean;
+  allowPrerelease: boolean;
   loadUpdater(): Promise<UpdaterPort>;
   loadAutoInstallPreference(): Promise<boolean>;
   publish(notice: UpdateNotice): void;
@@ -45,7 +46,7 @@ export function createUpdaterCoordinator(dependencies: UpdaterDependencies) {
 
   async function applyPrefsTo(updater: UpdaterPort): Promise<void> {
     const autoInstall = await dependencies.loadAutoInstallPreference();
-    updater.setAllowPrerelease(false);
+    updater.setAllowPrerelease(dependencies.allowPrerelease);
     updater.setAutoDownload(autoInstall);
   }
 
@@ -60,7 +61,7 @@ export function createUpdaterCoordinator(dependencies: UpdaterDependencies) {
     try {
       await applyPrefsTo(updater);
     } catch (error) {
-      updater.setAllowPrerelease(false);
+      updater.setAllowPrerelease(dependencies.allowPrerelease);
       updater.setAutoDownload(false);
       dependencies.warn(
         "[pond updater] prefs apply failed",

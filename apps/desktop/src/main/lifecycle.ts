@@ -21,8 +21,9 @@ export function protocolRegistration(input: {
   hasInstanceLock: boolean;
   sandboxed: boolean;
   defaultApp: boolean;
+  ownsSystemHandlers: boolean;
 }): "none" | "development" | "packaged" {
-  if (input.sandboxed) return "none";
+  if (input.sandboxed || !input.ownsSystemHandlers) return "none";
   if (input.platform === "win32") {
     if (!input.hasInstanceLock || input.defaultApp) return "none";
     return "packaged";

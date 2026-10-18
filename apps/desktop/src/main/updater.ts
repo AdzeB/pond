@@ -9,6 +9,7 @@ import {
   type UpdaterPort,
 } from "./core/updater-coordinator";
 import { broadcast } from "./lib/broadcast";
+import { channelIdentity } from "./release-channel";
 
 let wired = false;
 
@@ -54,6 +55,7 @@ async function loadUpdater(): Promise<UpdaterPort> {
 
 const updater = createUpdaterCoordinator({
   isPackaged: () => app.isPackaged,
+  allowPrerelease: channelIdentity.allowPrerelease,
   loadUpdater,
   loadAutoInstallPreference: async () => (await getPrefs()).updates.autoInstall,
   publish: (notice) => broadcast(IPC.updateNotice, notice),

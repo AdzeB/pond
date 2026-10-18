@@ -9,6 +9,7 @@ import {
   sortAppIconIds,
 } from "../../shared/app-icons";
 import { resolveMainOut } from "../lib/resolve-preload";
+import { channelIdentity } from "../release-channel";
 import { mainWindowState } from "../window-state";
 import { getPrefs } from "./prefs";
 
@@ -106,6 +107,7 @@ function warmDockCache(): void {
 }
 
 export async function applyAppIcon(id?: string): Promise<void> {
+  if (!channelIdentity.followsAppIconPref) return;
   const prefs = id == null ? await getPrefs().catch(() => null) : null;
   const path = resolveAppIconPath(
     id ?? prefs?.window.appIcon ?? DEFAULT_APP_ICON,

@@ -12,7 +12,7 @@ interface UpdaterListeners {
   downloaded?: (version: string) => void;
 }
 
-function setup() {
+function setup(allowPrerelease = false) {
   const listeners: UpdaterListeners = {};
   let autoDownload = false;
   const updater: UpdaterPort = {
@@ -40,6 +40,7 @@ function setup() {
   };
   const dependencies: UpdaterDependencies = {
     isPackaged: () => true,
+    allowPrerelease,
     loadUpdater: async () => updater,
     loadAutoInstallPreference: async () => false,
     publish: vi.fn(),
@@ -63,6 +64,13 @@ describe("updater coordinator", () => {
 
     expect(updater.setAllowPrerelease).toHaveBeenCalledWith(false);
     expect(updater.setAutoDownload).toHaveBeenCalledWith(false);
+  });
+
+  it("lets a nightly build follow prereleases", async () => {
+    const { coordinator, updater } = setup(true);
+    await coordinator.applyPrefs();
+
+    expect(updater.setAllowPrerelease).toHaveBeenCalledWith(true);
   });
 
   it("fails closed when automatic-download preferences cannot be read", async () => {
