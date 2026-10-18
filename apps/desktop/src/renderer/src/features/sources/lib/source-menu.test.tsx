@@ -223,13 +223,6 @@ describe("buildSourceActionMenu", () => {
     detailsDialog.close();
   });
 
-  it("leaves the import choice out of the Account's own details", () => {
-    const target = account();
-    target.importPending = true;
-    const items = buildSourceActionMenu(target, { importItem: false });
-    expect(findItem(items, "Choose What to Import")).toBeNull();
-  });
-
   it("uses collection labels and hides account-only actions for watches", () => {
     expect(groups(buildSourceActionMenu(watch()))).toEqual([
       ["Open Twitter List", "Show Saved Items"],

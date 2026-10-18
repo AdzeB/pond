@@ -3,7 +3,7 @@ import { Store } from "@tanstack/store";
 
 export type SourceDetailsKind = "account" | "watch" | "folder";
 
-export type SourceDetailsPage = "general" | "import" | "filters";
+export type SourceDetailsPage = "general" | "import" | "filters" | "fetch";
 
 export type DetailsDialogTarget = {
   kind: "source";

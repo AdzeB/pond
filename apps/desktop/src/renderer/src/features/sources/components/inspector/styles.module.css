@@ -64,11 +64,14 @@
   max-width: 100%;
 }
 
-.value {
-  display: block;
+.control {
   flex-shrink: 1;
   min-width: 0;
   max-width: 60%;
+}
+
+.value {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--ds-text-md);

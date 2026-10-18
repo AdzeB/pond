@@ -1,18 +1,11 @@
 import {
-  IconDotsFill,
+  IconArrowRotateClockwise,
   IconDownload,
   IconGear3,
   IconSliders,
 } from "@pond/icons";
 import type { Source } from "@pond/schema/db";
-import {
-  Dialog,
-  Input,
-  Menu,
-  type MenuItemSpec,
-  Settings,
-  Sidebar,
-} from "@pond/ui";
+import { Button, Dialog, Input, Settings, Sidebar } from "@pond/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { SourceDetailsKind, SourceDetailsPage } from "@/features/library";
@@ -23,7 +16,7 @@ import {
   ImportScopeStatus,
   useImportScopeDraft,
 } from "@/features/sources/components/flow/import-scope";
-import { buildFolderMenu } from "@/features/sources/components/page/lib/folder-menu";
+import { buildFolderRows } from "@/features/sources/components/page/lib/folder-menu";
 import {
   type CardModel,
   cardModel,
@@ -48,12 +41,13 @@ import {
 import { getSourceDef } from "@/features/sources/lib/registry";
 import {
   accountMenuTarget,
-  buildSourceActionMenu,
+  buildSourceActionRows,
+  type SourceActionRow,
+  type SourceActionSections,
   watchMenuTarget,
 } from "@/features/sources/lib/source-menu";
 import { sourceDetail } from "@/features/sources/state/source-detail";
 import { useSyncByAccount } from "@/features/sources/state/sync-monitor";
-import { SpecMenu } from "@/shared/components/spec-context-menu";
 import { formatNumber, formatTimestampLine } from "@/shared/lib/format";
 import { relativeTimeFromMs } from "@/shared/lib/relative-time";
 import styles from "./styles.module.css";
@@ -93,8 +87,13 @@ function FolderInspector() {
   const name = watchedFolderName(status.path);
   const imported = status.history.filter((item) => item.ok);
   const lastMs = imported[0]?.at ?? null;
-  const menuItems = buildFolderMenu(
-    { name, imported: imported.length, watching: status.enabled },
+  const actions = buildFolderRows(
+    {
+      name,
+      path: status.path,
+      imported: imported.length,
+      watching: status.enabled,
+    },
     () => void client.invalidateQueries({ queryKey: ["watched-folder"] }),
   );
   return (
@@ -108,11 +107,10 @@ function FolderInspector() {
           : `Last imported ${relativeTimeFromMs(lastMs)}`
       }
       source="local"
-      menuItems={menuItems}
+      actions={actions}
       properties={[
         { label: "Source", value: "Local" },
         { label: "Type", value: "Folder" },
-        { label: "Location", value: status.path },
         { label: "Imported Items", value: formatNumber(imported.length) },
         { label: "Mode", value: status.mode === "move" ? "Move" : "Copy" },
         { label: "Status", value: status.enabled ? "Watching" : "Paused" },
@@ -139,11 +137,9 @@ function AccountInspector({
     void refetch();
     sourceDetail.changed();
   };
-  const target = accountMenuTarget(account, model);
-  const menuItems = buildSourceActionMenu(target, {
+  const actions = buildSourceActionRows(accountMenuTarget(account, model), {
     accounts,
     onChanged: changed,
-    importItem: false,
   });
   const imports =
     account.sync.importPending || hasImportChoices(account.source);
@@ -177,18 +173,18 @@ function AccountInspector({
       ),
     });
   }
+  pages.push(fetchPage(actions.fetch, model));
   return (
     <>
       {imports ? <ImportScopeDraft account={account} /> : null}
       <SourceInspectorView
         key={account.id}
         status="ready"
-        description={fetchedLabel(model)}
         handle={account.handle ? `@${account.handle}` : null}
         source={account.source}
         avatarUrl={account.avatarUrl}
         nickname={account.label ?? ""}
-        menuItems={menuItems}
+        actions={actions}
         pages={pages}
         initialPage={
           page ?? (account.sync.importPending ? "import" : "general")
@@ -221,14 +217,13 @@ function WatchInspector({ id }: { id: string }) {
     void refetch();
     sourceDetail.changed();
   };
-  const menuItems = buildSourceActionMenu(watchMenuTarget(watch, model), {
+  const actions = buildSourceActionRows(watchMenuTarget(watch, model), {
     onChanged: changed,
   });
   return (
     <SourceInspectorView
       key={watch.id}
       status="ready"
-      description={fetchedLabel(model)}
       handle={
         watch.kind === "playlist" || watch.kind === "list"
           ? watch.handle
@@ -237,8 +232,9 @@ function WatchInspector({ id }: { id: string }) {
       source={watch.source}
       avatarUrl={watch.avatarUrl}
       nickname={watch.label ?? ""}
-      menuItems={menuItems}
+      actions={actions}
       properties={watchProperties(watch, accounts)}
+      pages={[fetchPage(actions.fetch, model)]}
       onNicknameSave={async (value) => {
         await saveWatchNickname(watch, value);
         changed();
@@ -270,7 +266,6 @@ function watchProperties(
   const properties: SourceInspectorProperty[] = [
     { label: "Source", value: getSourceDef(watch.source).label },
     { label: "Type", value: kind.charAt(0).toUpperCase() + kind.slice(1) },
-    { label: "Saved Items", value: formatNumber(watch.sync.knownCount) },
     { label: "Added", value: addedLabel(watch.addedAt) },
   ];
   const via = accounts.find((account) => account.id === watch.via);
@@ -319,7 +314,7 @@ interface SourceInspectorDetailsProps {
   source: Source;
   avatarUrl?: string | null;
   nickname?: string;
-  menuItems?: MenuItemSpec[];
+  actions?: SourceActionSections;
   properties?: SourceInspectorProperty[];
   /** Pages after General. */
   pages?: SourceInspectorPage[];
@@ -357,7 +352,7 @@ function SourceInspectorDetails({
   source,
   avatarUrl,
   nickname = "",
-  menuItems = [],
+  actions,
   properties = [],
   pages = [],
   initialPage = "general",
@@ -373,6 +368,7 @@ function SourceInspectorDetails({
         handle={handle}
         nickname={nickname}
         properties={properties}
+        actions={actions}
         onNicknameSave={onNicknameSave}
       />
     ),
@@ -393,7 +389,6 @@ function SourceInspectorDetails({
           <h2 className={styles.name}>
             {title || handle || nickname || getSourceDef(source).label}
           </h2>
-          <SourceActions items={menuItems} />
         </header>
         <Sidebar.Root
           className={styles.nav}
@@ -438,23 +433,65 @@ function SourceInspectorDetails({
   );
 }
 
-function SourceActions({ items }: { items: MenuItemSpec[] }) {
-  if (items.length === 0) return null;
+function ActionRows({ rows }: { rows: SourceActionRow[] }) {
   return (
-    <SpecMenu align="end" buildItems={() => items}>
-      <Menu.Trigger variant="ghost" size="xs" icon aria-label="Source Actions">
-        <IconDotsFill size={12} />
-      </Menu.Trigger>
-    </SpecMenu>
+    <Settings.List>
+      {rows.map((row) => (
+        <Settings.Item key={row.id} disabled={row.disabled}>
+          <Settings.ItemDetails>
+            <Settings.ItemTitle>{row.title}</Settings.ItemTitle>
+            {row.description ? (
+              <Settings.ItemDescription>
+                {row.description}
+              </Settings.ItemDescription>
+            ) : null}
+          </Settings.ItemDetails>
+          <Settings.ItemControl className={styles.control}>
+            {row.value ? (
+              <span className={styles.value}>{row.value}</span>
+            ) : null}
+            {row.actions.map((action) => (
+              <Button
+                key={action.label}
+                size="sm"
+                variant={action.variant ?? "secondary"}
+                disabled={row.disabled}
+                aria-label={action.name}
+                onClick={action.onClick}
+              >
+                {action.label}
+              </Button>
+            ))}
+          </Settings.ItemControl>
+        </Settings.Item>
+      ))}
+    </Settings.List>
   );
+}
+
+function fetchPage(
+  rows: SourceActionRow[],
+  model: CardModel,
+): SourceInspectorPage {
+  return {
+    id: "fetch",
+    label: "Fetching",
+    icon: <IconArrowRotateClockwise />,
+    description: fetchedLabel(model),
+    content: <ActionRows rows={rows} />,
+  };
 }
 
 function GeneralPage({
   handle,
   nickname,
   properties,
+  actions,
   onNicknameSave,
-}: Pick<SourceInspectorDetailsProps, "handle" | "onNicknameSave"> & {
+}: Pick<
+  SourceInspectorDetailsProps,
+  "handle" | "actions" | "onNicknameSave"
+> & {
   nickname: string;
   properties: SourceInspectorProperty[];
 }) {
@@ -469,21 +506,29 @@ function GeneralPage({
           />
         </Settings.List>
       ) : null}
+      {actions && actions.profile.length > 0 ? (
+        <Settings.Section>
+          <Settings.SectionTitle>{actions.kind}</Settings.SectionTitle>
+          <ActionRows rows={actions.profile} />
+        </Settings.Section>
+      ) : null}
       {properties.length > 0 ? (
         <Settings.Section>
           <Settings.SectionTitle>Properties</Settings.SectionTitle>
-          <Settings.List>
-            {properties.map((property) => (
-              <Settings.Item key={property.label}>
-                <Settings.ItemDetails>
-                  <Settings.ItemTitle>{property.label}</Settings.ItemTitle>
-                </Settings.ItemDetails>
-                <Settings.ItemControl className={styles.value}>
-                  {property.value}
-                </Settings.ItemControl>
-              </Settings.Item>
-            ))}
-          </Settings.List>
+          <ActionRows
+            rows={properties.map((property) => ({
+              id: property.label,
+              title: property.label,
+              value: property.value,
+              actions: [],
+            }))}
+          />
+        </Settings.Section>
+      ) : null}
+      {actions && actions.connection.length > 0 ? (
+        <Settings.Section>
+          <Settings.SectionTitle>Connection</Settings.SectionTitle>
+          <ActionRows rows={actions.connection} />
         </Settings.Section>
       ) : null}
     </>
