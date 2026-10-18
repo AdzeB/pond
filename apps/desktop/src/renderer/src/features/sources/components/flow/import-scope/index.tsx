@@ -3,7 +3,6 @@ import {
   Button,
   Combobox,
   DatePicker,
-  Dialog,
   Select,
   Settings,
   Switch,
@@ -37,9 +36,10 @@ import {
 import { formatNumber } from "@/shared/lib/format";
 import styles from "./styles.module.css";
 
-/** Loads the Account's saved choices into the draft, again whenever a save changes them. */
+/** Loads the Account's saved choices into the draft and saves each change, like Settings. */
 export function useImportScopeDraft(account: ImportScopeAccount): void {
   const flow = useImportScopeFlowActions();
+  const draft = useImportScopeFlow();
   const key = JSON.stringify({
     id: account.id,
     source: account.source,
@@ -49,10 +49,20 @@ export function useImportScopeDraft(account: ImportScopeAccount): void {
       syncLikes: account.sync.syncLikes,
     },
   } satisfies ImportScopeAccount);
+  useEffect(() => () => flow.clear(), [flow]);
   useEffect(() => {
     flow.open(JSON.parse(key));
-    return () => flow.clear();
   }, [flow, key]);
+  const unsaved =
+    draft.accountId === account.id &&
+    !draft.starts &&
+    !draft.saving &&
+    !draft.error &&
+    draftChanged(draft) &&
+    draftImportScope(draft) !== null;
+  useEffect(() => {
+    if (unsaved) void confirmImportScope(flow);
+  }, [flow, unsaved]);
 }
 
 export function ImportScopeLists({ accountId }: { accountId: string }) {
@@ -107,33 +117,41 @@ export function ImportScopeFilters({ accountId }: { accountId: string }) {
   );
 }
 
-export function ImportScopeError() {
-  const { error } = useImportScopeFlow();
-  if (!error) return null;
-  return (
-    <span className={styles.error} role="alert">
-      {error}
-    </span>
-  );
-}
-
-export function ImportScopeActions() {
+/** Start Import for a new Account, and any reason the choice can't be saved. */
+export function ImportScopeStatus() {
   const flow = useImportScopeFlowActions();
   const draft = useImportScopeFlow();
+  if (!draft.source) return null;
   const ready = draftImportScope(draft) !== null;
-  if (!draft.starts && !draftChanged(draft)) {
-    return <Dialog.Cancel>Done</Dialog.Cancel>;
-  }
+  const problem =
+    draft.error ??
+    (ready ? null : "Turn on at least one list to import from this Account.");
+  const alert = problem ? (
+    <p className={styles.error} role="alert">
+      {problem}
+    </p>
+  ) : null;
+  if (!draft.starts) return alert;
   return (
-    <>
-      <Dialog.Cancel />
-      <Dialog.Confirm
-        disabled={!ready || draft.saving}
-        onClick={() => void confirmImportScope(flow)}
-      >
-        Save
-      </Dialog.Confirm>
-    </>
+    <div className={styles.status}>
+      <Settings.Card>
+        <Settings.CardTitle>Not imported yet</Settings.CardTitle>
+        <Settings.CardDescription>
+          Nothing syncs until you start.
+        </Settings.CardDescription>
+        <Settings.CardAction>
+          <Button
+            size="sm"
+            variant="primary"
+            disabled={!ready || draft.saving}
+            onClick={() => void confirmImportScope(flow)}
+          >
+            Start Import
+          </Button>
+        </Settings.CardAction>
+      </Settings.Card>
+      {alert}
+    </div>
   );
 }
 
@@ -158,7 +176,7 @@ async function confirmImportScope(flow: ImportScopeFlow): Promise<void> {
     flow.fail(result.error);
     return;
   }
-  flow.setSaving(false);
+  flow.markSaved(scope);
 }
 
 function ListKindRows({
@@ -183,7 +201,6 @@ function ListKindRows({
           <Switch.Root
             aria-label={title}
             checked={draft.listKinds.includes(kind)}
-            disabled={draft.saving}
             onCheckedChange={(next) => flow.setListKind(kind, next)}
           />
         </Settings.ItemControl>
@@ -270,7 +287,7 @@ function CollectionRows({
                   ? `No ${nouns.many} found`
                   : `No ${nouns.many} match`
             }
-            disabled={draft.saving || savedOff}
+            disabled={savedOff}
             onOpen={() => setRequested(true)}
             onValueChange={(next) =>
               flow.setCollections(
@@ -298,7 +315,7 @@ function CollectionRows({
           <Switch.Root
             aria-label="Add to Folders"
             checked={!filingOff && draftFiles(draft)}
-            disabled={draft.saving || filingOff}
+            disabled={filingOff}
             onCheckedChange={(next) => flow.setAddToFolders(next)}
           />
         </Settings.ItemControl>
@@ -322,7 +339,6 @@ function MediaKindsRow({ kinds }: { kinds: readonly ImportMediaKind[] }) {
         value={[...draft.mediaKinds]}
         labelOf={(kind) => mediaKindLabel(kind)}
         empty="No types match"
-        disabled={draft.saving}
         onValueChange={(next) =>
           flow.setMediaKinds(kinds.filter((kind) => next.includes(kind)))
         }
@@ -350,7 +366,7 @@ function ChipsField<Value extends string>({
   labelOf: (value: Value) => string;
   detailOf?: (value: Value) => string | undefined;
   empty: string;
-  disabled: boolean;
+  disabled?: boolean;
   onOpen?: () => void;
   onValueChange: (value: Value[]) => void;
 }) {
@@ -426,7 +442,6 @@ function SinceRows() {
           <Select.Root
             value={draft.sincePreset}
             items={[...SINCE_PRESETS]}
-            disabled={draft.saving}
             onValueChange={(next) => {
               if (next) flow.setSincePreset(next);
             }}
@@ -458,7 +473,7 @@ function SinceRows() {
             className={styles.date}
             value={draft.since}
             max={localDay(new Date())}
-            disabled={draft.saving || !custom}
+            disabled={!custom}
             onValueChange={(since) => flow.setSince(since)}
           />
         </Settings.ItemControl>

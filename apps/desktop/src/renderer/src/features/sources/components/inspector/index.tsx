@@ -18,10 +18,9 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { SourceDetailsKind, SourceDetailsPage } from "@/features/library";
 import { HeroAvatar } from "@/features/sources/components/flow/detail/hero-avatar";
 import {
-  ImportScopeActions,
-  ImportScopeError,
   ImportScopeFilters,
   ImportScopeLists,
+  ImportScopeStatus,
   useImportScopeDraft,
 } from "@/features/sources/components/flow/import-scope";
 import { buildFolderMenu } from "@/features/sources/components/page/lib/folder-menu";
@@ -160,7 +159,12 @@ function AccountInspector({
       label: "Import",
       icon: <IconDownload />,
       description: `Nothing else from ${label} reaches your library.`,
-      content: <ImportScopeLists accountId={account.id} />,
+      content: (
+        <>
+          <ImportScopeStatus />
+          <ImportScopeLists accountId={account.id} />
+        </>
+      ),
     });
   }
   if (hasImportFilters(account.source)) {
@@ -169,7 +173,12 @@ function AccountInspector({
       label: "Filters",
       icon: <IconSliders />,
       description: "Applies to every list Pond imports from this Account.",
-      content: <ImportScopeFilters accountId={account.id} />,
+      content: (
+        <>
+          <ImportScopeStatus />
+          <ImportScopeFilters accountId={account.id} />
+        </>
+      ),
     });
   }
   return (
@@ -190,8 +199,6 @@ function AccountInspector({
         initialPage={
           page ?? (account.sync.importPending ? "import" : "general")
         }
-        leading={imports ? <ImportScopeError /> : undefined}
-        actions={imports ? <ImportScopeActions /> : undefined}
         onNicknameSave={async (value) => {
           await saveAccountNickname(account, value);
           changed();
@@ -328,10 +335,6 @@ interface SourceInspectorDetailsProps {
   /** Pages after General. */
   pages?: SourceInspectorPage[];
   initialPage?: SourceDetailsPage;
-  /** Footer status beside the actions. */
-  leading?: ReactNode;
-  /** Footer buttons in place of Done. */
-  actions?: ReactNode;
   onNicknameSave?: (value: string) => Promise<void>;
 }
 
@@ -371,8 +374,6 @@ function SourceInspectorDetails({
   properties = [],
   pages = [],
   initialPage = "general",
-  leading,
-  actions,
   onNicknameSave,
 }: SourceInspectorDetailsProps) {
   const general: SourceInspectorPage = {
@@ -435,26 +436,19 @@ function SourceInspectorDetails({
           </Sidebar.Scroll>
         </Sidebar.Root>
       </aside>
-      <div className={styles.panel}>
-        <Dialog.Content className={styles.main}>
-          <Settings.Page className={styles.page}>
-            <Settings.Header>
-              <Settings.HeaderText>
-                <Settings.Title>{page.label}</Settings.Title>
-                {page.description ? (
-                  <Settings.Description>
-                    {page.description}
-                  </Settings.Description>
-                ) : null}
-              </Settings.HeaderText>
-            </Settings.Header>
-            {page.content}
-          </Settings.Page>
-        </Dialog.Content>
-        <Dialog.Footer leading={leading}>
-          {actions ?? <Dialog.Cancel>Done</Dialog.Cancel>}
-        </Dialog.Footer>
-      </div>
+      <Dialog.Content className={styles.panel}>
+        <Settings.Page className={styles.page}>
+          <Settings.Header>
+            <Settings.HeaderText>
+              <Settings.Title>{page.label}</Settings.Title>
+              {page.description ? (
+                <Settings.Description>{page.description}</Settings.Description>
+              ) : null}
+            </Settings.HeaderText>
+          </Settings.Header>
+          {page.content}
+        </Settings.Page>
+      </Dialog.Content>
     </div>
   );
 }

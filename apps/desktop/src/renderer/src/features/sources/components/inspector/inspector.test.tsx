@@ -118,10 +118,10 @@ it("centers the handle and suggests it as the nickname", async () => {
   const done = Array.from(host.querySelectorAll("button")).find(
     (button) => button.textContent === "Done",
   );
-  expect(done).toBeDefined();
+  expect(done).toBeUndefined();
 });
 
-it("switches pages from the sidebar and keeps the footer", async () => {
+it("switches pages from the sidebar", async () => {
   await act(async () => {
     root.render(
       <SourceInspectorView
@@ -138,7 +138,6 @@ it("switches pages from the sidebar and keeps the footer", async () => {
           },
         ]}
         initialPage="import"
-        actions={<button type="button">Save</button>}
         onNicknameSave={async () => {}}
       />,
     );
@@ -155,10 +154,6 @@ it("switches pages from the sidebar and keeps the footer", async () => {
   expect(nicknameField()).toBeInstanceOf(HTMLInputElement);
   expect(host.textContent).not.toContain("Import choices");
   expect(pages[0]?.getAttribute("aria-current")).toBe("page");
-  const save = Array.from(host.querySelectorAll("button")).find(
-    (button) => button.textContent === "Save",
-  );
-  expect(save).toBeDefined();
 });
 
 it("flattens connection details instead of nesting profile pages", async () => {

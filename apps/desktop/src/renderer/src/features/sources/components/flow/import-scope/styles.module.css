@@ -16,7 +16,14 @@
   text-align: center;
 }
 
+.status {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .error {
+  padding-inline: var(--settings-padding);
   margin: 0;
   font-size: var(--ds-text-sm);
   line-height: 1.4;

@@ -30,7 +30,7 @@ export interface ImportScopeAccount {
 interface ImportScopeFlowState {
   accountId: string | null;
   source: Source | null;
-  /** A pending Account starts its first sync on confirm; an active one only saves. */
+  /** A pending Account holds its draft until Start Import; an active one saves each change. */
   starts: boolean;
   listKinds: readonly ListKind[];
   /** Empty imports the whole saved list. */
@@ -71,19 +71,30 @@ function createImportScopeFlow() {
       const scope = accountImportScope(account.source, account.sync);
       const collections = scope?.collections ?? [];
       const options = importScopeOptions(account.source);
-      const saved = normalizeImportScope(account.source, scope ?? {});
+      const normalized = normalizeImportScope(account.source, scope ?? {});
+      const saved = normalized.ok ? JSON.stringify(normalized.scope) : "";
+      const starts = account.sync.importPending === true;
+      const prev = store.state;
+      /** An autosave refetches the Account; keep the draft so its Since preset and in-flight edits survive. */
+      if (
+        prev.accountId === account.id &&
+        (prev.saving || saved === JSON.stringify(draftImportScope(prev)))
+      ) {
+        store.setState((s) => ({ ...s, starts, saved }));
+        return;
+      }
       store.setState(() => ({
         ...EMPTY,
         accountId: account.id,
         source: account.source,
-        starts: account.sync.importPending === true,
+        starts,
         listKinds: scope?.listKinds ?? options.listKinds,
         collections,
         addToFolders: scope?.addToFolders,
         mediaKinds: scope?.mediaKinds ?? [],
         since: scope?.since ?? "",
         sincePreset: scope?.since ? "custom" : "any",
-        saved: saved.ok ? JSON.stringify(saved.scope) : "",
+        saved,
       }));
     },
     setListKind(kind: ListKind, included: boolean): void {
@@ -117,6 +128,14 @@ function createImportScopeFlow() {
     },
     setSaving(saving: boolean): void {
       store.setState((s) => ({ ...s, saving, error: saving ? null : s.error }));
+    },
+    markSaved(scope: ImportScope): void {
+      store.setState((s) => ({
+        ...s,
+        saving: false,
+        starts: false,
+        saved: JSON.stringify(scope),
+      }));
     },
     fail(error: string): void {
       store.setState((s) => ({ ...s, saving: false, error }));

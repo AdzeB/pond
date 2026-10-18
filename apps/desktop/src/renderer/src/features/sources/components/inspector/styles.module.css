@@ -41,23 +41,15 @@
 }
 
 .panel {
-  display: flex;
-  flex-direction: column;
   min-width: 0;
-  min-height: 0;
+  padding: 0;
   margin: 8px 8px 8px 0;
-  overflow: hidden;
   background: var(--ds-gray-1);
   border-radius: var(--ds-radius-md);
   box-shadow: var(--ds-shadow-xs);
 }
 
-.main {
-  flex: 1;
-  padding: 0;
-}
-
-.main .page {
+.panel .page {
   --settings-margin-block: 32px;
 }
 
