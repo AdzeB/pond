@@ -22,8 +22,9 @@ import { partitionForAccount } from "./accounts";
 import { fileIntoFolders } from "./collection-folders";
 import { NO_COLLECTION_PASS, walkEveryCollection } from "./every-collection";
 import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
-import { listHarvestPlan } from "./import-scope";
+import { collectionCheckDue, listHarvestPlan } from "./import-scope";
 import {
+  loadAllKnownIds,
   loadSyncBaseline,
   patchAccountSync,
   persistWatermark,
@@ -64,8 +65,20 @@ export async function syncTwitter(
     source,
     accountImportScope(source, account.sync),
   );
+  const checkCollections = collectionCheckDue(
+    plan,
+    account.sync,
+    baseline.full,
+  );
+  /** Reading picked folders to the end reaches saves older than the recent window, which must count as known. */
+  if (checkCollections && plan.collections && !baseline.full) {
+    for (const id of await loadAllKnownIds(account)) knownIds.add(id);
+  }
   const bookmarkArgs = {
     knownIds: baseline.full ? [] : Array.from(knownIds),
+  };
+  const folderArgs = {
+    knownIds: checkCollections ? [] : bookmarkArgs.knownIds,
   };
   const harvestOpts = {
     partition: partitionForAccount(accountId),
@@ -77,7 +90,7 @@ export async function syncTwitter(
     },
   };
   const harvest: BookmarksHarvestResult = plan.collections
-    ? await harvestFolders(plan.collections, bookmarkArgs, harvestOpts)
+    ? await harvestFolders(plan.collections, folderArgs, harvestOpts)
     : plan.primary
       ? await harvestTwitterBookmarks(bookmarkArgs, harvestOpts)
       : { ok: true, entries: [], captures: [], reachedEnd: true };
@@ -160,11 +173,7 @@ export async function syncTwitter(
             partition: harvestOpts.partition,
           }),
         walk: async (folders) => {
-          const walked = await harvestFolders(
-            folders,
-            bookmarkArgs,
-            harvestOpts,
-          );
+          const walked = await harvestFolders(folders, folderArgs, harvestOpts);
           return walked.ok
             ? {
                 ok: true,
@@ -215,6 +224,7 @@ export async function syncTwitter(
       full: baseline.full,
       newestId: null,
       total: baseline.total,
+      collectionsChecked: checkCollections,
     });
     emit({
       accountId,
@@ -268,6 +278,7 @@ export async function syncTwitter(
     full: baseline.full,
     newestId: fresh[0]?.tweetId ?? null,
     total: baseline.total + bulk.created,
+    collectionsChecked: checkCollections,
   });
   emit({
     accountId,

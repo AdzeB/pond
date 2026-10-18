@@ -62,6 +62,23 @@ export function listHarvestPlan(
   };
 }
 
+const COLLECTION_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+/** Collection walks stop at known saves, so a save moved into a collection later only turns up on a daily read to the end. */
+export function collectionCheckDue(
+  plan: Pick<ListHarvestPlan, "collections" | "fileEveryCollection">,
+  sync: Pick<SourceSyncPrefs, "lastCollectionCheckAt">,
+  full: boolean,
+  now = Date.now(),
+): boolean {
+  if (plan.collections === null && !plan.fileEveryCollection) return false;
+  if (full) return true;
+  const last = sync.lastCollectionCheckAt
+    ? Date.parse(sync.lastCollectionCheckAt)
+    : Number.NaN;
+  return !Number.isFinite(last) || now - last >= COLLECTION_CHECK_INTERVAL_MS;
+}
+
 export function isImportPending(
   sync: Pick<SourceSyncPrefs, "importPending">,
 ): boolean {

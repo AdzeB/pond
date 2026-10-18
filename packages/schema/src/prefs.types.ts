@@ -103,6 +103,8 @@ export interface SourceSyncPrefs {
   importPending?: boolean;
   /** Pond Folder id per collection id, so renaming a Folder doesn't make sync create another. */
   collectionFolders?: Record<string, string>;
+  /** Last time every collection was read to its end, which is the only way to find old saves moved into one. */
+  lastCollectionCheckAt?: string | null;
 }
 
 export const DEFAULT_SOURCE_SYNC_PREFS: SourceSyncPrefs = {

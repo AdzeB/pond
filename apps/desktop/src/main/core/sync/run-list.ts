@@ -19,8 +19,9 @@ import { getAccountSync, partitionForAccount } from "./accounts";
 import { fileIntoFolders } from "./collection-folders";
 import { NO_COLLECTION_PASS, walkEveryCollection } from "./every-collection";
 import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
-import { listHarvestPlan } from "./import-scope";
+import { collectionCheckDue, listHarvestPlan } from "./import-scope";
 import {
+  loadAllKnownIds,
   loadSyncBaseline,
   patchAccountSync,
   persistWatermark,
@@ -85,13 +86,20 @@ export async function syncListSource(
     source,
     accountImportScope(source, account.sync),
   );
-  const { resumeCursor } = await getAccountSync(accountId);
+  const accountSync = await getAccountSync(accountId);
+  const { resumeCursor } = accountSync;
   const resuming = plan.primary && baseline.full && Boolean(resumeCursor);
   if (resuming) {
     log.info(
       `[pond sync:${source}] continuing the list where the last run stopped`,
     );
   }
+  const checkCollections = collectionCheckDue(plan, accountSync, baseline.full);
+  /** Reading picked collections to the end reaches saves older than the recent window, which must count as known. */
+  if (checkCollections && plan.collections && !baseline.full) {
+    for (const id of await loadAllKnownIds(account)) knownIds.add(id);
+  }
+  const collectionEarlyStop = !(baseline.full || checkCollections);
   const listArgs: Parameters<typeof harvestSourceList>[1] = {
     knownIds: Array.from(knownIds),
     earlyStop: !baseline.full,
@@ -100,9 +108,12 @@ export async function syncListSource(
   if (resuming && resumeCursor) listArgs.resumeCursor = resumeCursor;
   if (plan.listKinds.length > 0) listArgs.listKinds = plan.listKinds;
   const harvest: ListHarvestResult = plan.collections
-    ? await harvestSourceCollections(source, plan.collections, listArgs, {
-        partition,
-      })
+    ? await harvestSourceCollections(
+        source,
+        plan.collections,
+        { ...listArgs, earlyStop: collectionEarlyStop },
+        { partition },
+      )
     : plan.primary
       ? await harvestSourceList(source, listArgs, {
           partition,
@@ -219,7 +230,7 @@ export async function syncListSource(
           harvestSourceCollections(
             source,
             collections,
-            { knownIds: Array.from(knownIds), earlyStop: !baseline.full },
+            { knownIds: Array.from(knownIds), earlyStop: collectionEarlyStop },
             { partition },
           ),
       })
@@ -256,6 +267,7 @@ export async function syncListSource(
       newestId: null,
       total: baseline.total,
       resumeCursor: nextResumeCursor,
+      collectionsChecked: checkCollections,
     });
     emit({
       accountId,
@@ -312,6 +324,7 @@ export async function syncListSource(
     newestId: resuming ? null : (fresh[0]?.sourceId ?? null),
     total: baseline.total + bulk.created,
     resumeCursor: nextResumeCursor,
+    collectionsChecked: checkCollections,
   });
   emit({
     accountId,

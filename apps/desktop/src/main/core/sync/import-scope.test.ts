@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  collectionCheckDue,
   importScopePatch,
   isImportPending,
   listHarvestPlan,
@@ -185,5 +186,36 @@ describe("importScopePatch", () => {
       importPending: false,
       syncLikes: undefined,
     });
+  });
+});
+
+describe("collectionCheckDue", () => {
+  const now = Date.parse("2026-10-18T12:00:00Z");
+  const picked = { collections: [BOARD], fileEveryCollection: false };
+  const every = { collections: null, fileEveryCollection: true };
+  const hoursAgo = (hours: number) => ({
+    lastCollectionCheckAt: new Date(now - hours * 3_600_000).toISOString(),
+  });
+
+  it("never reads to the end without collection walks", () => {
+    expect(
+      collectionCheckDue(
+        { collections: null, fileEveryCollection: false },
+        {},
+        true,
+        now,
+      ),
+    ).toBe(false);
+  });
+
+  it("reads to the end on a full run and on the first incremental run", () => {
+    expect(collectionCheckDue(picked, hoursAgo(1), true, now)).toBe(true);
+    expect(collectionCheckDue(every, {}, false, now)).toBe(true);
+  });
+
+  it("reads to the end once a day", () => {
+    expect(collectionCheckDue(picked, hoursAgo(6), false, now)).toBe(false);
+    expect(collectionCheckDue(every, hoursAgo(23), false, now)).toBe(false);
+    expect(collectionCheckDue(every, hoursAgo(24), false, now)).toBe(true);
   });
 });

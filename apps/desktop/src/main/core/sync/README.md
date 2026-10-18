@@ -81,6 +81,17 @@ the lists as usual, then `walkEveryCollection` lists and walks each collection
 only to tag entries. Those walks never add saves to the import, because filing
 only touches saves already in the Library. A failed pass becomes a gap note.
 
+Collection walks early-stop like any other walk, so an old save moved into a
+collection sits below saves Pond already has and never turns up. Once a day
+(`collectionCheckDue`), a run reads every collection walk to its end instead:
+picked collections on every Source that has them, and the every-collection
+filing pass. The run stamps `SourceSyncPrefs.lastCollectionCheckAt` when it
+finishes. A full run counts as that read. The main saved list keeps its early
+stop, so the extra cost is one read of your collections a day, however often
+sync runs. When picked collections are read to the end, the run loads every
+known id (`loadAllKnownIds`), not the recent window, so older saves aren't
+queued again.
+
 Media kinds and a `since` date are filters, not walks: list data is too patchy
 to judge a post before capture, and filtering early would break early stop.
 `applyImportFilter` (`pipeline/import-filter.ts`) runs in `harvest_metadata`,
