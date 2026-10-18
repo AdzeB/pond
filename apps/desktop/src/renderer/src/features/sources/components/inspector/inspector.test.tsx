@@ -3,8 +3,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
-import type { SyncSourceStatus } from "@/features/sources/state/sync-monitor";
 import { SourceInspector, SourceInspectorView } from "./index";
 
 interface TestRoot {
@@ -158,21 +156,12 @@ it("switches pages from the sidebar", async () => {
 
 it("flattens connection details instead of nesting profile pages", async () => {
   const onFetch = vi.fn();
-  const status: SyncSourceStatus = {
-    source: "arena",
-    state: "idle",
-    lastSyncedAt: "2026-09-17T12:00:00.000Z",
-    lastError: null,
-    connected: true,
-  };
   await act(async () => {
     root.render(
       <SourceInspectorView
         status="ready"
         handle="@raphael-salaja"
         source="arena"
-        model={cardModel(status)}
-        syncStatus={status}
         nickname="Are.na"
         properties={[
           { label: "Source", value: "Are.na" },
@@ -271,76 +260,12 @@ it("keeps a failed nickname edit available and retries it on the next blur", asy
   expect(save).toHaveBeenCalledTimes(2);
 });
 
-it("shows live fetch progress without an inline action", async () => {
-  const status: SyncSourceStatus = {
-    source: "twitter",
-    state: "running",
-    message: "Queueing",
-    progress: { current: 3, total: 12 },
-    lastSyncedAt: "2026-09-17T12:00:00.000Z",
-    lastError: null,
-    connected: true,
-  };
-  await act(async () => {
-    root.render(
-      <SourceInspectorView
-        status="ready"
-        source="twitter"
-        model={cardModel(status)}
-        syncStatus={status}
-      />,
-    );
-  });
-  expect(host.textContent).toContain("Queueing");
-  expect(host.textContent).toContain("3 of 12 saves");
-  expect(host.textContent).toContain("25%");
-  expect(host.querySelector('[aria-label="Current source status"]')).toBeNull();
-  expect(
-    host.querySelector('progress[aria-label="Fetch progress"]'),
-  ).not.toBeNull();
-  expect(host.textContent).not.toContain("Cancel Fetch");
-});
-
-it("explains expired authentication", async () => {
-  const status: SyncSourceStatus = {
-    source: "instagram",
-    state: "auth_required",
-    message: "Sign in to Instagram to keep fetching saves.",
-    lastSyncedAt: null,
-    lastError: "auth_required",
-    connected: true,
-  };
-  await act(async () => {
-    root.render(
-      <SourceInspectorView
-        status="ready"
-        source="instagram"
-        model={cardModel(status)}
-        syncStatus={status}
-      />,
-    );
-  });
-  expect(host.textContent).toContain(
-    "Sign in to Instagram to keep fetching saves.",
-  );
-});
-
-it("shows watch properties and the fetch error", async () => {
-  const status: SyncSourceStatus = {
-    source: "youtube",
-    state: "error",
-    message: "Couldn't read this playlist. Try again.",
-    lastSyncedAt: null,
-    lastError: "playlist_unavailable",
-    connected: true,
-  };
+it("shows watch properties", async () => {
   await act(async () => {
     root.render(
       <SourceInspectorView
         status="ready"
         source="youtube"
-        model={cardModel(status)}
-        syncStatus={status}
         properties={[
           { label: "Source", value: "YouTube" },
           { label: "Type", value: "Playlist" },
@@ -350,7 +275,6 @@ it("shows watch properties and the fetch error", async () => {
       />,
     );
   });
-  expect(host.textContent).toContain("Couldn't read this playlist. Try again.");
   expect(host.textContent).toContain("Playlist");
   expect(host.textContent).toContain("Connected Via");
 });

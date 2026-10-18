@@ -52,10 +52,7 @@ import {
   watchMenuTarget,
 } from "@/features/sources/lib/source-menu";
 import { sourceDetail } from "@/features/sources/state/source-detail";
-import {
-  type SyncSourceStatus,
-  useSyncByAccount,
-} from "@/features/sources/state/sync-monitor";
+import { useSyncByAccount } from "@/features/sources/state/sync-monitor";
 import { SpecMenu } from "@/shared/components/spec-context-menu";
 import { formatNumber, formatTimestampLine } from "@/shared/lib/format";
 import { relativeTimeFromMs } from "@/shared/lib/relative-time";
@@ -137,8 +134,7 @@ function AccountInspector({
   if (!account) {
     return <SourceInspectorView status={loading ? "loading" : "missing"} />;
   }
-  const syncStatus = byAccount[account.id];
-  const model = cardModel(syncStatus);
+  const model = cardModel(byAccount[account.id]);
   const changed = () => {
     void refetch();
     sourceDetail.changed();
@@ -191,8 +187,6 @@ function AccountInspector({
         handle={account.handle ? `@${account.handle}` : null}
         source={account.source}
         avatarUrl={account.avatarUrl}
-        model={model}
-        syncStatus={syncStatus}
         nickname={account.label ?? ""}
         menuItems={menuItems}
         pages={pages}
@@ -222,8 +216,7 @@ function WatchInspector({ id }: { id: string }) {
   if (!watch) {
     return <SourceInspectorView status={loading ? "loading" : "missing"} />;
   }
-  const syncStatus = byAccount[watch.id];
-  const model = cardModel(syncStatus);
+  const model = cardModel(byAccount[watch.id]);
   const changed = () => {
     void refetch();
     sourceDetail.changed();
@@ -243,8 +236,6 @@ function WatchInspector({ id }: { id: string }) {
       }
       source={watch.source}
       avatarUrl={watch.avatarUrl}
-      model={model}
-      syncStatus={syncStatus}
       nickname={watch.label ?? ""}
       menuItems={menuItems}
       properties={watchProperties(watch, accounts)}
@@ -327,8 +318,6 @@ interface SourceInspectorDetailsProps {
   handle?: string | null;
   source: Source;
   avatarUrl?: string | null;
-  model?: CardModel;
-  syncStatus?: SyncSourceStatus;
   nickname?: string;
   menuItems?: MenuItemSpec[];
   properties?: SourceInspectorProperty[];
@@ -367,8 +356,6 @@ function SourceInspectorDetails({
   description,
   source,
   avatarUrl,
-  model,
-  syncStatus,
   nickname = "",
   menuItems = [],
   properties = [],
@@ -384,8 +371,6 @@ function SourceInspectorDetails({
     content: (
       <GeneralPage
         handle={handle}
-        model={model}
-        syncStatus={syncStatus}
         nickname={nickname}
         properties={properties}
         onNicknameSave={onNicknameSave}
@@ -466,16 +451,13 @@ function SourceActions({ items }: { items: MenuItemSpec[] }) {
 
 function GeneralPage({
   handle,
-  model,
-  syncStatus,
   nickname,
   properties,
   onNicknameSave,
-}: Pick<
-  SourceInspectorDetailsProps,
-  "handle" | "model" | "syncStatus" | "onNicknameSave"
-> & { nickname: string; properties: SourceInspectorProperty[] }) {
-  const activity = model ? activityDetail(model, syncStatus) : null;
+}: Pick<SourceInspectorDetailsProps, "handle" | "onNicknameSave"> & {
+  nickname: string;
+  properties: SourceInspectorProperty[];
+}) {
   return (
     <>
       {onNicknameSave ? (
@@ -504,64 +486,7 @@ function GeneralPage({
           </Settings.List>
         </Settings.Section>
       ) : null}
-      {model && activity ? (
-        <Settings.List>
-          <Settings.Item>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>Activity</Settings.ItemTitle>
-              <p
-                className={styles.detail}
-                data-tone={
-                  model.tone === "err" || model.tone === "paused"
-                    ? model.tone
-                    : undefined
-                }
-              >
-                {activity}
-              </p>
-            </Settings.ItemDetails>
-            <SourceProgress progress={syncStatus?.progress} />
-          </Settings.Item>
-        </Settings.List>
-      ) : null}
     </>
-  );
-}
-
-function activityDetail(
-  model: CardModel,
-  syncStatus: SyncSourceStatus | undefined,
-): string | null {
-  if (syncStatus?.message) return syncStatus.message;
-  if (model.tone === "err" && syncStatus?.lastError) {
-    return syncStatus.lastError;
-  }
-  return null;
-}
-
-function SourceProgress({
-  progress,
-}: {
-  progress: SyncSourceStatus["progress"] | undefined;
-}) {
-  if (!progress || progress.total <= 0) return null;
-  const value = Math.min(
-    100,
-    Math.max(0, (progress.current / progress.total) * 100),
-  );
-  return (
-    <Settings.ItemControl className={styles["progress-group"]}>
-      <progress
-        className={styles.progress}
-        aria-label="Fetch progress"
-        max={100}
-        value={value}
-      />
-      <span className={styles.metrics}>
-        {formatNumber(progress.current)} of {formatNumber(progress.total)} saves
-        · {Math.round(value)}%
-      </span>
-    </Settings.ItemControl>
   );
 }
 

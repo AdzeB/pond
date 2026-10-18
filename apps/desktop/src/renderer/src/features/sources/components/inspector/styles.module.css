@@ -76,57 +76,6 @@
   white-space: nowrap;
 }
 
-.detail {
-  margin: 0;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-md);
-  line-height: 1.5;
-  color: var(--ds-gray-11);
-  overflow-wrap: anywhere;
-}
-
-.detail[data-tone="paused"] {
-  color: var(--ds-amber-11);
-}
-
-.detail[data-tone="err"] {
-  color: var(--ds-red-11);
-}
-
-.progress-group {
-  flex-direction: column;
-  gap: 6px;
-  align-items: flex-end;
-}
-
-.metrics {
-  font-size: var(--ds-text-sm);
-  font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-10);
-  white-space: nowrap;
-}
-
-.progress {
-  display: block;
-  width: 160px;
-  height: 5px;
-  overflow: hidden;
-  appearance: none;
-  border: 0;
-  border-radius: var(--ds-radius-full);
-}
-
-.progress::-webkit-progress-bar {
-  background: var(--ds-gray-4);
-  border-radius: var(--ds-radius-full);
-}
-
-.progress::-webkit-progress-value {
-  background: var(--ds-accent-9);
-  border-radius: var(--ds-radius-full);
-  transition: width var(--ds-duration-fast) var(--ds-easing-standard);
-}
-
 .field-status {
   margin: 0;
   font-size: var(--ds-text-sm);
@@ -140,14 +89,4 @@
   font-size: var(--ds-text-sm);
   line-height: 1.5;
   color: var(--ds-gray-10);
-}
-
-:global([data-reduce-motion="true"]) .progress::-webkit-progress-value {
-  transition: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .progress::-webkit-progress-value {
-    transition: none;
-  }
 }
