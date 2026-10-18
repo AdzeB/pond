@@ -5,9 +5,9 @@ import {
   IconCopy,
   IconCopyId,
   IconGrid,
-  IconHeart,
   IconLink2,
   IconNotepad,
+  IconSliders,
   IconTableDownload,
   IconTrash,
 } from "@pond/icons";
@@ -17,6 +17,7 @@ import { viewAccountItems } from "@/features/library";
 import type { CardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
 import type { AccountRow } from "@/features/sources/hooks/use-accounts";
 import type { WatchRow } from "@/features/sources/hooks/use-watches";
+import { hasImportChoices } from "@/features/sources/lib/import-scope";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import { sourceTargetUrl } from "@/features/sources/lib/source-target-url";
 import { connectFlow } from "@/features/sources/state/connect-flow";
@@ -35,7 +36,7 @@ export interface SourceMenuTarget {
   model: CardModel;
   knownCount: number;
   lastError: string | null;
-  syncLikes?: boolean;
+  importPending?: boolean;
 }
 
 export interface SourceMenuOptions {
@@ -56,7 +57,7 @@ export function accountMenuTarget(
     model,
     knownCount: account.sync.knownCount,
     lastError: account.sync.lastError,
-    syncLikes: account.sync.syncLikes,
+    importPending: account.sync.importPending,
   };
 }
 
@@ -229,17 +230,31 @@ function primaryFetchItem(target: SourceMenuTarget): MenuItemSpec {
   };
 }
 
-function fetchItems(
-  target: SourceMenuTarget,
-  options: SourceMenuOptions,
-): MenuItemSpec[] {
-  const items: MenuItemSpec[] = [primaryFetchItem(target)];
+function importScopeItem(target: SourceMenuTarget): MenuItemSpec | null {
+  if (target.type !== "account") return null;
+  if (!target.importPending && !hasImportChoices(target.source)) return null;
+  return {
+    label: "Choose What to Import",
+    icon: <IconSliders />,
+    onClick: () => sourceDetail.openAccount(target.id, "import"),
+  };
+}
+
+function fetchItems(target: SourceMenuTarget): MenuItemSpec[] {
+  const scopeItem = importScopeItem(target);
+  const items: MenuItemSpec[] = target.importPending
+    ? []
+    : [primaryFetchItem(target)];
+  if (scopeItem) items.push(scopeItem);
   if (target.type === "account") {
     items.push(
       {
         label: "Fetch Older Saves",
         icon: <IconArchive />,
-        disabled: !target.model.connected || target.model.tone === "run",
+        disabled:
+          !target.model.connected ||
+          target.model.tone === "run" ||
+          target.importPending === true,
         onClick: () =>
           void window.pond.syncRunNow(target.id, { forceFull: true }),
       },
@@ -254,47 +269,9 @@ function fetchItems(
         label: "Fetch Original Media",
         icon: <IconTableDownload />,
         disabled: !target.model.connected,
-        onClick: () =>
-          void window.pond.refreshBackfillStart({
-            source: target.source,
-            overwrite: true,
-          }),
+        onClick: () => confirmOriginalMedia(target.source),
       },
     );
-  }
-  if (target.type === "account" && target.source === "twitter") {
-    items.push({
-      type: "checkbox",
-      label: "Sync Likes",
-      icon: <IconHeart />,
-      checked: target.syncLikes !== false,
-      onCheckedChange: (checked) => {
-        void (async () => {
-          try {
-            const result = await window.pond.query("accounts.setSyncLikes", {
-              accountId: target.id,
-              syncLikes: checked,
-            });
-            if (!result.ok) {
-              notify({
-                id: "source-sync-likes",
-                title: "Couldn't update Likes syncing",
-                description: result.error,
-              });
-              return;
-            }
-            (options.onChanged ?? sourceDetail.changed)();
-          } catch (error) {
-            notify({
-              id: "source-sync-likes",
-              title: "Couldn't update Likes syncing",
-              description:
-                error instanceof Error ? error.message : "Please try again.",
-            });
-          }
-        })();
-      },
-    });
   }
   if (target.model.tone === "err" && target.lastError) {
     items.push({
@@ -309,6 +286,18 @@ function fetchItems(
     });
   }
   return items;
+}
+
+function confirmOriginalMedia(source: Source): void {
+  const sourceLabel = getSourceDef(source).label;
+  Dialog.confirm({
+    title: "Fetch Original Media",
+    description: `Pond deletes the media on every ${sourceLabel} save and downloads it again. Each save shows no media until its download finishes.`,
+    confirmLabel: "Fetch",
+    onConfirm: async () => {
+      await window.pond.refreshBackfillStart({ source, overwrite: true });
+    },
+  });
 }
 
 function startSourceSignIn(
@@ -386,13 +375,278 @@ function singleSourceMenu(
     { type: "separator" },
     { type: "group", items: copyItems(target) },
     { type: "separator" },
-    { type: "group", items: fetchItems(target, options) },
+    { type: "group", items: fetchItems(target) },
     { type: "separator" },
     {
       type: "group",
       items: connectionItems(target, options),
     },
   ];
+}
+
+export interface SourceActionButton {
+  label: string;
+  /** Names the action for assistive tech when the label alone is ambiguous. */
+  name?: string;
+  variant?: "secondary" | "destructive";
+  onClick: () => void;
+}
+
+export interface SourceActionRow {
+  id: string;
+  title: string;
+  description?: string;
+  value?: string;
+  disabled?: boolean;
+  actions: SourceActionButton[];
+}
+
+export interface SourceActionSections {
+  /** Titles the profile section by what the target is: Profile, Playlist, Board. */
+  kind: string;
+  profile: SourceActionRow[];
+  fetch: SourceActionRow[];
+  connection: SourceActionRow[];
+}
+
+function displayUrl(url: string): string {
+  return url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
+}
+
+function profileRows(target: SourceMenuTarget): SourceActionRow[] {
+  const sourceLabel = getSourceDef(target.source).label;
+  const kind = targetKind(target);
+  const identity = identityKind(target);
+  const url = sourceTargetUrl({
+    source: target.source,
+    handle: target.handle,
+    kind: target.watchKind,
+  });
+  const rows: SourceActionRow[] = [];
+  if (url) {
+    rows.push({
+      id: "link",
+      title: `${sourceLabel} ${kind}`,
+      value: displayUrl(url),
+      actions: [
+        {
+          label: "Copy",
+          name: `Copy ${kind} Link`,
+          onClick: () =>
+            void copyText(url, "source-copy-link", `${kind} link copied`),
+        },
+        {
+          label: "Open",
+          name: `Open ${sourceLabel} ${kind}`,
+          onClick: () => {
+            void window.pond.openExternal(url).then((result) => {
+              if (result.ok) return;
+              notify({
+                id: "source-open-profile",
+                title: `Couldn't open ${sourceLabel}. Try again.`,
+              });
+            });
+          },
+        },
+      ],
+    });
+  }
+  if (target.handle) {
+    const handle = target.handle;
+    rows.push({
+      id: "identity",
+      title: identity,
+      value: handle,
+      actions: [
+        {
+          label: "Copy",
+          name: `Copy ${identity}`,
+          onClick: () =>
+            void copyText(handle, "source-copy-identity", `${identity} copied`),
+        },
+      ],
+    });
+  }
+  rows.push(
+    {
+      id: "connection-id",
+      title: "Connection ID",
+      value: target.id,
+      actions: [
+        {
+          label: "Copy",
+          name: "Copy Connection ID",
+          onClick: () =>
+            void copyText(
+              target.id,
+              "source-copy-connection-id",
+              "Connection ID copied",
+            ),
+        },
+      ],
+    },
+    {
+      id: "saved",
+      title: "Saved Items",
+      value: formatNumber(target.knownCount),
+      actions: [
+        {
+          label: "Show",
+          name: "Show Saved Items",
+          onClick: () => viewAccountItems(target.id),
+        },
+      ],
+    },
+  );
+  return rows;
+}
+
+function fetchRows(target: SourceMenuTarget): SourceActionRow[] {
+  const sourceLabel = getSourceDef(target.source).label;
+  const { connected, tone } = target.model;
+  const pending = target.importPending === true;
+  const rows: SourceActionRow[] = [];
+  if (tone === "err" && target.lastError) {
+    const error = target.lastError;
+    rows.push({
+      id: "error",
+      title: "Last Fetch Error",
+      description: error,
+      actions: [
+        {
+          label: "Copy",
+          name: "Copy Last Fetch Error",
+          onClick: () =>
+            void copyText(
+              error,
+              "source-copy-fetch-error",
+              "Fetch error copied",
+            ),
+        },
+      ],
+    });
+  }
+  rows.push({
+    id: "new",
+    title: "Fetch New Saves",
+    description:
+      tone === "run"
+        ? "A fetch is running now."
+        : `Checks ${sourceLabel} for posts saved since the last fetch.`,
+    disabled: pending || (tone !== "run" && !connected),
+    actions: [
+      tone === "run"
+        ? {
+            label: "Cancel",
+            name: "Cancel Fetch",
+            onClick: () => void window.pond.syncCancel(target.id),
+          }
+        : {
+            label: tone === "err" ? "Retry" : "Fetch",
+            name: tone === "err" ? "Retry Fetch" : "Fetch New Saves",
+            onClick: () => void window.pond.syncRunNow(target.id),
+          },
+    ],
+  });
+  if (target.type !== "account") return rows;
+  rows.push(
+    {
+      id: "older",
+      title: "Fetch Older Saves",
+      description: "Walks your whole history instead of stopping early.",
+      disabled: pending || !connected || tone === "run",
+      actions: [
+        {
+          label: "Fetch",
+          name: "Fetch Older Saves",
+          onClick: () =>
+            void window.pond.syncRunNow(target.id, { forceFull: true }),
+        },
+      ],
+    },
+    {
+      id: "details",
+      title: "Fetch Save Details",
+      description: `Reads text, authors, and dates again for every ${sourceLabel} save.`,
+      disabled: pending || !connected,
+      actions: [
+        {
+          label: "Fetch",
+          name: "Fetch Save Details",
+          onClick: () =>
+            void window.pond.refreshBackfillStart({ source: target.source }),
+        },
+      ],
+    },
+    {
+      id: "media",
+      title: "Fetch Original Media",
+      description: `Replaces the media on every ${sourceLabel} save with a fresh download.`,
+      disabled: pending || !connected,
+      actions: [
+        {
+          label: "Fetch",
+          name: "Fetch Original Media",
+          onClick: () => confirmOriginalMedia(target.source),
+        },
+      ],
+    },
+  );
+  return rows;
+}
+
+function connectionRows(
+  target: SourceMenuTarget,
+  options: SourceMenuOptions,
+): SourceActionRow[] {
+  const sourceLabel = getSourceDef(target.source).label;
+  const remove = () =>
+    confirmRemove(target, options.onChanged ?? sourceDetail.changed);
+  if (target.type !== "account") {
+    return [
+      {
+        id: "remove",
+        title: "Stop Watching",
+        description: "Saves already in your library stay.",
+        actions: [{ label: "Stop", variant: "destructive", onClick: remove }],
+      },
+    ];
+  }
+  return [
+    {
+      id: "sign-in",
+      title: "Sign In Again",
+      description: `Use this when ${sourceLabel} signs you out.`,
+      actions: [
+        {
+          label: "Sign In",
+          onClick: () =>
+            startSourceSignIn(target.source, options.accounts ?? []),
+        },
+      ],
+    },
+    {
+      id: "remove",
+      title: `Disconnect ${sourceLabel}`,
+      description: "Saves already in your library stay.",
+      actions: [
+        { label: "Disconnect", variant: "destructive", onClick: remove },
+      ],
+    },
+  ];
+}
+
+/** The single-target menu as Settings rows, for the details dialog. */
+export function buildSourceActionRows(
+  target: SourceMenuTarget,
+  options: SourceMenuOptions = {},
+): SourceActionSections {
+  return {
+    kind: targetKind(target),
+    profile: profileRows(target),
+    fetch: fetchRows(target),
+    connection: connectionRows(target, options),
+  };
 }
 
 function batchSourceMenu(targets: readonly SourceMenuTarget[]): MenuItemSpec[] {

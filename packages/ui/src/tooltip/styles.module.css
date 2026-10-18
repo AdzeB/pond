@@ -36,6 +36,10 @@
   padding: 5px 8px;
 }
 
+.note {
+  text-wrap: balance;
+}
+
 .row {
   display: inline-flex;
   gap: 8px;
@@ -92,5 +96,31 @@
   &[data-activation-direction~="right"] [data-previous][data-ending-style] {
     opacity: 0;
     translate: -50% 0;
+  }
+}
+
+.info {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  color: var(--ds-gray-10);
+  vertical-align: middle;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: var(--ds-gray-a3);
+  border: 0;
+  border-radius: var(--ds-radius-xs);
+  transition:
+    color var(--ds-duration-snap) var(--ds-easing-standard),
+    background-color var(--ds-duration-snap) var(--ds-easing-standard);
+  -webkit-app-region: no-drag;
+
+  &:hover,
+  &[data-popup-open] {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a4);
   }
 }

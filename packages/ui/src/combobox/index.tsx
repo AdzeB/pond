@@ -1,5 +1,9 @@
 import { Combobox as Base } from "@base-ui/react/combobox";
-import { IconCheck as Check, IconChevronExpandY as Expand } from "@pond/icons";
+import {
+  IconCheck as Check,
+  IconChevronExpandY as Expand,
+  IconXmark,
+} from "@pond/icons";
 import { clsx as cn } from "clsx";
 import { Button, type ButtonProps } from "../button";
 import { stopPageHotkeys } from "../stop-page-hotkeys";
@@ -73,6 +77,46 @@ function Input({ className, onKeyDown, ...props }: Base.Input.Props) {
     <Base.Input
       {...props}
       className={cn(styles.input, className)}
+      onKeyDown={(event) => {
+        onKeyDown?.(event);
+        stopPageHotkeys(event);
+      }}
+    />
+  );
+}
+
+function InputGroup({ className, ...props }: Base.InputGroup.Props) {
+  return <Base.InputGroup className={cn(styles.field, className)} {...props} />;
+}
+
+function Chips({ className, ...props }: Base.Chips.Props) {
+  return <Base.Chips className={cn(styles.chips, className)} {...props} />;
+}
+
+function Chip({ className, children, ...props }: Base.Chip.Props) {
+  return (
+    <Base.Chip className={cn(styles.chip, className)} {...props}>
+      {children}
+    </Base.Chip>
+  );
+}
+
+function ChipRemove({ className, children, ...props }: Base.ChipRemove.Props) {
+  return (
+    <Base.ChipRemove
+      className={cn(styles["chip-remove"], className)}
+      {...props}
+    >
+      {children ?? <IconXmark size={12} />}
+    </Base.ChipRemove>
+  );
+}
+
+function ChipsInput({ className, onKeyDown, ...props }: Base.Input.Props) {
+  return (
+    <Base.Input
+      {...props}
+      className={cn(styles["chips-input"], className)}
       onKeyDown={(event) => {
         onKeyDown?.(event);
         stopPageHotkeys(event);
@@ -176,6 +220,11 @@ export const Combobox = {
   Value,
   Icon,
   Input,
+  InputGroup,
+  Chips,
+  Chip,
+  ChipRemove,
+  ChipsInput,
   Portal,
   Backdrop,
   Positioner,

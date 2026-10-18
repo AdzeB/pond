@@ -1,6 +1,6 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import { detailsDialog } from "@/features/library";
+import { detailsDialog, type SourceDetailsPage } from "@/features/library";
 
 interface SourceDetailState {
   revision: number;
@@ -11,8 +11,8 @@ const store = new Store<SourceDetailState>({
 });
 
 export const sourceDetail = {
-  openAccount(id: string): void {
-    detailsDialog.openSource("account", id);
+  openAccount(id: string, page?: SourceDetailsPage): void {
+    detailsDialog.openSource("account", id, page);
   },
   openWatch(id: string): void {
     detailsDialog.openSource("watch", id);

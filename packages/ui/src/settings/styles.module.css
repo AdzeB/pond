@@ -123,6 +123,16 @@
   align-items: center;
   min-width: 0;
   padding: var(--settings-padding);
+  transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.item[data-disabled] {
+  opacity: 0.5;
+
+  /* The row already dims, so a disabled control inside must not dim twice. */
+  & :is(:disabled, [data-disabled]) {
+    opacity: 1;
+  }
 }
 
 .item[data-highlight] {

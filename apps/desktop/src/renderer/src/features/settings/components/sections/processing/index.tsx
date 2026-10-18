@@ -1,9 +1,4 @@
-import {
-  IconCircleCheck,
-  IconCircleInfo,
-  IconCircleWarning,
-  IconPowerOff,
-} from "@pond/icons";
+import { IconCircleCheck, IconCircleWarning, IconPowerOff } from "@pond/icons";
 import { Button, Loader, Settings, Tooltip } from "@pond/ui";
 import { useState } from "react";
 import { useEnrichmentStatus } from "@/features/enrichment/status";
@@ -168,8 +163,9 @@ export function ProcessingStatusCard({
           <p className={styles.detail}>
             <span>{detail}</span>
             {groups.length > 0 ? (
-              <Tooltip
+              <Tooltip.Info
                 side="top"
+                aria-label="Task Details"
                 label={
                   <span className={styles.breakdown}>
                     {groups.map((group) => (
@@ -182,17 +178,7 @@ export function ProcessingStatusCard({
                     ))}
                   </span>
                 }
-              >
-                <Button
-                  className={styles.info}
-                  icon
-                  size="xs"
-                  variant="ghost"
-                  aria-label="Task Details"
-                >
-                  <IconCircleInfo size={12} />
-                </Button>
-              </Tooltip>
+              />
             ) : null}
           </p>
         </div>

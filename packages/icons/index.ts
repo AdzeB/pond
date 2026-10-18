@@ -2004,6 +2004,13 @@ export const IconInboxFill = /* @__PURE__ */ createIcon("Inbox", "fill", [
     },
   ],
 ]);
+export const IconInfo = /* @__PURE__ */ createIcon("Info", "outline", [
+  ["path", { d: "M9 8L9 13.5" }],
+  [
+    "circle",
+    { cx: "9", cy: "4.75", r: "1.25", fill: "currentColor", stroke: "none" },
+  ],
+]);
 export const IconInputPasswordEdit = /* @__PURE__ */ createIcon(
   "InputPasswordEdit",
   "outline",

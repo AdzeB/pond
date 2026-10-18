@@ -47,6 +47,7 @@ export function DetailsDialogHost() {
               key={shown.id}
               kind={shown.sourceKind}
               id={shown.id}
+              page={shown.page}
             />
           ) : null}
         </Dialog.Popup>

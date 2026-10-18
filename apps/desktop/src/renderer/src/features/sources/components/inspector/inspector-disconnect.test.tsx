@@ -99,28 +99,12 @@ it("disconnects from a confirm dialog over connection details", async () => {
     );
   });
   await vi.waitFor(() => {
-    expect(
-      document.querySelector('[aria-label="Source Actions"]'),
-    ).not.toBeNull();
-  });
-  const trigger = document.querySelector('[aria-label="Source Actions"]');
-  if (!(trigger instanceof HTMLElement))
-    throw new Error("Missing Source Actions");
-  await act(async () => {
-    trigger.click();
-  });
-  await vi.waitFor(() => {
-    expect(
-      Array.from(document.querySelectorAll('[role="menuitem"]')).some(
-        (item) => item.textContent === "Disconnect TikTok",
-      ),
-    ).toBe(true);
+    expect(document.body.textContent).toContain("Disconnect TikTok");
   });
   const disconnect = Array.from(
-    document.querySelectorAll('[role="menuitem"]'),
-  ).find((item) => item.textContent === "Disconnect TikTok");
-  if (!(disconnect instanceof HTMLElement))
-    throw new Error("Missing Disconnect");
+    document.querySelectorAll<HTMLButtonElement>("button"),
+  ).find((button) => button.textContent === "Disconnect");
+  if (!disconnect) throw new Error("Missing Disconnect");
   await act(async () => {
     disconnect.click();
   });

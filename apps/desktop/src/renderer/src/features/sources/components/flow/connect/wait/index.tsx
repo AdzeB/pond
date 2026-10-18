@@ -6,6 +6,7 @@ import {
   type AccountRow,
   useAccounts,
 } from "@/features/sources/hooks/use-accounts";
+import { openSources } from "@/features/sources/lib/open";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import {
   connectFlow,
@@ -16,7 +17,6 @@ import {
   useConnectSource,
   useConnectWaiting,
 } from "@/features/sources/state/connect-flow";
-import { sourceDetail } from "@/features/sources/state/source-detail";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import { syncMonitor } from "@/features/sources/state/sync-monitor";
 import { BrowserExtensionDialog } from "@/shared/components/browser-extension-dialog";
@@ -27,10 +27,13 @@ export function ConnectWaitSection() {
   const source = useConnectSource();
   const completed = useConnectCompleted();
   const problem = useConnectProblem();
+  const account = useConnectedAccount();
   useConnectArrival();
   if (!source) return null;
   const label = getSourceDef(source).label;
   const step = completed ? "connected" : (problem ?? "waiting");
+  const choosing = completed && account?.sync.importPending === true;
+  const next = completed && !choosing;
 
   return (
     <div className={styles.body}>
@@ -60,7 +63,13 @@ export function ConnectWaitSection() {
                 : `Connect ${label} to Pond`}
         </h2>
         <p className={styles.description}>
-          {step === "connected" ? (
+          {choosing ? (
+            <>
+              Next, choose what Pond imports.
+              <br />
+              Nothing syncs until you start the import.
+            </>
+          ) : next ? (
             <>
               Pond is syncing your saved posts now.
               <br />
@@ -157,26 +166,15 @@ export function ConnectActions() {
   const account = useConnectedAccount();
   if (completed && account)
     return (
-      <>
-        <Button
-          variant="secondary"
-          onClick={() => {
-            connectFlow.clear();
-            sourceFlow.close();
-            sourceDetail.openAccount(account.id);
-          }}
-        >
-          View
-        </Button>
-        <Dialog.Confirm
-          onClick={() => {
-            connectFlow.clear();
-            sourceFlow.close();
-          }}
-        >
-          Done
-        </Dialog.Confirm>
-      </>
+      <Dialog.Confirm
+        onClick={() => {
+          connectFlow.clear();
+          sourceFlow.close();
+          openSources({ type: "inspect-account", id: account.id });
+        }}
+      >
+        Continue
+      </Dialog.Confirm>
     );
   return (
     <>
@@ -212,7 +210,7 @@ function useConnectArrival(): void {
       if (cancelled || arrivedOnce) return;
       arrivedOnce = true;
       syncMonitor.seed(account.id, source, { connected: true });
-      void window.pond.syncRunNow(account.id);
+      if (!account.sync.importPending) void window.pond.syncRunNow(account.id);
       connectFlow.complete(account);
     };
 

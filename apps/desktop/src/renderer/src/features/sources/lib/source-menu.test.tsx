@@ -1,6 +1,7 @@
-import type { MenuItemSpec } from "@pond/ui";
+import { Dialog, type MenuItemSpec } from "@pond/ui";
 import { Children, isValidElement, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { detailsDialog } from "@/features/library";
 import type { CardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
 import type { AccountRow } from "@/features/sources/hooks/use-accounts";
 import type { WatchRow } from "@/features/sources/hooks/use-watches";
@@ -101,19 +102,6 @@ function findItem(items: MenuItemSpec[], label: string): MenuItemSpec | null {
   return null;
 }
 
-function nextNotification(): Promise<{ title: string; description?: string }> {
-  return new Promise((resolve) => {
-    window.addEventListener(
-      "pond:notification",
-      (event) => {
-        if (!(event instanceof CustomEvent)) return;
-        resolve(event.detail);
-      },
-      { once: true },
-    );
-  });
-}
-
 beforeEach(() => {
   vi.stubGlobal("pond", {
     clearPendingSession: vi.fn(async () => undefined),
@@ -138,6 +126,7 @@ describe("buildSourceActionMenu", () => {
       ["Copy Profile Link", "Copy Username", "Copy Connection ID"],
       [
         "Fetch New Saves",
+        "Choose What to Import",
         "Fetch Older Saves",
         "Fetch Save Details",
         "Fetch Original Media",
@@ -194,6 +183,25 @@ describe("buildSourceActionMenu", () => {
     });
   });
 
+  it("asks before replacing every save's media", async () => {
+    const confirm = vi.spyOn(Dialog, "confirm").mockImplementation(() => {});
+    const media = findItem(
+      buildSourceActionMenu(account()),
+      "Fetch Original Media",
+    );
+    if (!media || !("onClick" in media)) throw new Error("Missing media item");
+    media.onClick?.();
+    expect(window.pond.refreshBackfillStart).not.toHaveBeenCalled();
+    const options = confirm.mock.calls[0]?.[0];
+    expect(options?.title).toBe("Fetch Original Media");
+    await options?.onConfirm({ checked: false });
+    expect(window.pond.refreshBackfillStart).toHaveBeenCalledWith({
+      source: "instagram",
+      overwrite: true,
+    });
+    confirm.mockRestore();
+  });
+
   it("adapts fetch actions to running and failed states", () => {
     const running = account({ ...ready, tone: "run" });
     expect(fetchGroup(buildSourceActionMenu(running))[0]).toBe("Cancel Fetch");
@@ -202,11 +210,36 @@ describe("buildSourceActionMenu", () => {
     failed.lastError = "Session expired";
     expect(fetchGroup(buildSourceActionMenu(failed))).toEqual([
       "Retry Fetch",
+      "Choose What to Import",
       "Fetch Older Saves",
       "Fetch Save Details",
       "Fetch Original Media",
       "Copy Last Fetch Error",
     ]);
+  });
+
+  it("offers the import choice instead of fetching while an Account waits for one", () => {
+    const target = account();
+    target.importPending = true;
+    const items = buildSourceActionMenu(target);
+    expect(fetchGroup(items).slice(0, 2)).toEqual([
+      "Choose What to Import",
+      "Fetch Older Saves",
+    ]);
+    expect(findItem(items, "Fetch Older Saves")).toMatchObject({
+      disabled: true,
+    });
+    const start = findItem(items, "Choose What to Import");
+    if (!start || !("onClick" in start))
+      throw new Error("Missing Choose What to Import");
+    start.onClick?.();
+    expect(detailsDialog.getState()).toEqual({
+      kind: "source",
+      sourceKind: "account",
+      id: "acc-instagram",
+      page: "import",
+    });
+    detailsDialog.close();
   });
 
   it("uses collection labels and hides account-only actions for watches", () => {
@@ -226,6 +259,7 @@ describe("buildSourceActionMenu", () => {
       ["Copy Connection ID"],
       [
         "Fetch New Saves",
+        "Choose What to Import",
         "Fetch Older Saves",
         "Fetch Save Details",
         "Fetch Original Media",
@@ -256,7 +290,7 @@ describe("buildSourceActionMenu", () => {
     ]);
   });
 
-  it("toggles likes for an X account and hides the action elsewhere", () => {
+  it("offers the import choice for X instead of a Likes toggle", () => {
     const row: AccountRow = {
       id: "acc-twitter",
       source: "twitter",
@@ -264,88 +298,13 @@ describe("buildSourceActionMenu", () => {
       label: null,
       avatarUrl: null,
       addedAt: "",
-      sync: {
-        lastSyncedAt: null,
-        lastError: null,
-        knownCount: 12,
-        syncLikes: false,
-      },
+      sync: { lastSyncedAt: null, lastError: null, knownCount: 12 },
       connected: true,
       syncing: false,
     };
     const items = buildSourceActionMenu(accountMenuTarget(row, ready));
-    const likes = findItem(items, "Sync Likes");
-    expect(likes).toMatchObject({ type: "checkbox", checked: false });
-    expect(findItem(buildSourceActionMenu(account()), "Sync Likes")).toBeNull();
-    if (likes?.type !== "checkbox") throw new Error("Missing Sync Likes");
-    likes.onCheckedChange?.(true);
-    expect(window.pond.query).toHaveBeenCalledWith("accounts.setSyncLikes", {
-      accountId: "acc-twitter",
-      syncLikes: true,
-    });
-  });
-
-  it("does not refresh after a rejected likes preference write", async () => {
-    const onChanged = vi.fn();
-    vi.mocked(window.pond.query).mockResolvedValueOnce({
-      ok: false,
-      error: "write failed",
-    });
-    const row: AccountRow = {
-      id: "acc-twitter",
-      source: "twitter",
-      handle: "raphael",
-      label: null,
-      avatarUrl: null,
-      addedAt: "",
-      sync: { lastSyncedAt: null, lastError: null, knownCount: 12 },
-      connected: true,
-      syncing: false,
-    };
-    const items = buildSourceActionMenu(accountMenuTarget(row, ready), {
-      onChanged,
-    });
-    const likes = findItem(items, "Sync Likes");
-    if (likes?.type !== "checkbox") throw new Error("Missing Sync Likes");
-    const notification = nextNotification();
-
-    likes.onCheckedChange?.(false);
-
-    await expect(notification).resolves.toEqual({
-      title: "Couldn't update Likes syncing",
-      description: "write failed",
-    });
-    expect(onChanged).not.toHaveBeenCalled();
-  });
-
-  it("reports a rejected likes preference request without refreshing", async () => {
-    const onChanged = vi.fn();
-    vi.mocked(window.pond.query).mockRejectedValueOnce(new Error("offline"));
-    const row: AccountRow = {
-      id: "acc-twitter",
-      source: "twitter",
-      handle: "raphael",
-      label: null,
-      avatarUrl: null,
-      addedAt: "",
-      sync: { lastSyncedAt: null, lastError: null, knownCount: 12 },
-      connected: true,
-      syncing: false,
-    };
-    const likes = findItem(
-      buildSourceActionMenu(accountMenuTarget(row, ready), { onChanged }),
-      "Sync Likes",
-    );
-    if (likes?.type !== "checkbox") throw new Error("Missing Sync Likes");
-    const notification = nextNotification();
-
-    likes.onCheckedChange?.(false);
-
-    await expect(notification).resolves.toEqual({
-      title: "Couldn't update Likes syncing",
-      description: "offline",
-    });
-    expect(onChanged).not.toHaveBeenCalled();
+    expect(findItem(items, "Sync Likes")).toBeNull();
+    expect(findItem(items, "Choose What to Import")).not.toBeNull();
   });
 
   it("starts the source sign-in flow from the connection group", async () => {

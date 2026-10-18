@@ -1,5 +1,4 @@
 .popup {
-  --width: 400px;
-
-  max-height: min(640px, calc(100dvh - 64px));
+  --width: 880px;
+  --height: min(640px, calc(100dvh - 64px));
 }

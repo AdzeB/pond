@@ -2,18 +2,26 @@ import type { ConnectedAccount, Source } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
 import { sourceLabel } from "@pond/schema/sources";
 import log from "electron-log/main.js";
+import { accountImportScope } from "../../../shared/import-scope";
 import { type EnqueueItem, enqueue } from "../pipeline/enqueue";
 import { mergeListKindsOntoExisting } from "../pipeline/list-kinds";
 import { createQueueGeneration } from "../pipeline/queue-generations";
+import type { ListHarvestResult } from "../refresh/harvest/list-types";
 import {
   harvestInstagramLikedList,
+  harvestSourceCollections,
   harvestSourceList,
   harvestYoutubeLikedList,
+  listSourceCollections,
 } from "../refresh/harvest-window";
 import { resolveAccountHandle } from "./account-key";
 import { getAccountSync, partitionForAccount } from "./accounts";
+import { fileIntoFolders } from "./collection-folders";
+import { NO_COLLECTION_PASS, walkEveryCollection } from "./every-collection";
 import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
+import { collectionCheckDue, listHarvestPlan } from "./import-scope";
 import {
+  loadAllKnownIds,
   loadSyncBaseline,
   patchAccountSync,
   persistWatermark,
@@ -74,30 +82,51 @@ export async function syncListSource(
     accountKey = (await resolveAccountHandle(account)) ?? undefined;
   }
 
-  const { resumeCursor } = await getAccountSync(accountId);
-  const resuming = baseline.full && Boolean(resumeCursor);
+  const plan = listHarvestPlan(
+    source,
+    accountImportScope(source, account.sync),
+  );
+  const accountSync = await getAccountSync(accountId);
+  const { resumeCursor } = accountSync;
+  const resuming = plan.primary && baseline.full && Boolean(resumeCursor);
   if (resuming) {
     log.info(
       `[pond sync:${source}] continuing the list where the last run stopped`,
     );
   }
+  const checkCollections = collectionCheckDue(plan, accountSync, baseline.full);
+  /** Reading picked collections to the end reaches saves older than the recent window, which must count as known. */
+  if (checkCollections && plan.collections && !baseline.full) {
+    for (const id of await loadAllKnownIds(account)) knownIds.add(id);
+  }
+  const collectionEarlyStop = !(baseline.full || checkCollections);
   const listArgs: Parameters<typeof harvestSourceList>[1] = {
     knownIds: Array.from(knownIds),
     earlyStop: !baseline.full,
     accountKey,
   };
   if (resuming && resumeCursor) listArgs.resumeCursor = resumeCursor;
-  const harvest = await harvestSourceList(source, listArgs, {
-    partition,
-    onProgress: () => {
-      emit({
-        accountId,
+  if (plan.listKinds.length > 0) listArgs.listKinds = plan.listKinds;
+  const harvest: ListHarvestResult = plan.collections
+    ? await harvestSourceCollections(
         source,
-        state: "running",
-        message: "Scanning",
-      });
-    },
-  });
+        plan.collections,
+        { ...listArgs, earlyStop: collectionEarlyStop },
+        { partition },
+      )
+    : plan.primary
+      ? await harvestSourceList(source, listArgs, {
+          partition,
+          onProgress: () => {
+            emit({
+              accountId,
+              source,
+              state: "running",
+              message: "Scanning",
+            });
+          },
+        })
+      : { ok: true, entries: [], reachedEnd: true };
   if (signal.aborted) {
     ev.outcome = "aborted";
     return;
@@ -148,10 +177,25 @@ export async function syncListSource(
 
   const gaps: string[] = [];
   const dualHarvest = source === "reddit" || source === "tiktok";
-  let combined = dualHarvest
-    ? harvest.entries
-    : stampListKind(harvest.entries, "saved");
-  if (source === "instagram") {
+  let combined =
+    dualHarvest && !plan.collections
+      ? harvest.entries
+      : stampListKind(harvest.entries, "saved");
+  if (dualHarvest && plan.collections && plan.primary) {
+    const rest = await harvestSourceList(source, listArgs, { partition });
+    if (rest.ok) {
+      combined = unionById(
+        combined,
+        rest.entries,
+        (e) => e.sourceId,
+        mergeEntryListKinds,
+      );
+    } else {
+      log.warn(`[pond sync:${source}] likes harvest failed: ${rest.reason}`);
+      gaps.push(listGapNote("Likes", rest.reason));
+    }
+  }
+  if (source === "instagram" && plan.liked) {
     const liked = await harvestInstagramLikedList(
       {
         knownIds: Array.from(knownIds),
@@ -171,7 +215,7 @@ export async function syncListSource(
       gaps.push(listGapNote("Likes", liked.reason));
     }
   }
-  if (source === "youtube") {
+  if (source === "youtube" && plan.liked) {
     const liked = await harvestYoutubeLikedList(
       {
         knownIds: Array.from(knownIds),
@@ -193,6 +237,25 @@ export async function syncListSource(
       gaps.push(listGapNote("Liked videos", liked.reason));
     }
   }
+
+  const collectionPass = plan.fileEveryCollection
+    ? await walkEveryCollection("Folders", {
+        list: () => listSourceCollections(source, { partition, accountKey }),
+        walk: (collections) =>
+          harvestSourceCollections(
+            source,
+            collections,
+            {
+              knownIds: Array.from(knownIds),
+              earlyStop: collectionEarlyStop,
+              accountKey,
+            },
+            { partition },
+          ),
+      })
+    : NO_COLLECTION_PASS;
+  if (collectionPass.gap) gaps.push(collectionPass.gap);
+  const filing = [...combined, ...collectionPass.entries];
 
   await mergeListKindsOntoExisting(source, combined);
 
@@ -217,11 +280,13 @@ export async function syncListSource(
     recovery: 0,
   };
   if (fresh.length === 0) {
+    await fileIntoFolders(account, filing, collectionPass.collections);
     const lastSyncedAt = await persistWatermark(accountId, {
       full: baseline.full && harvest.reachedEnd,
       newestId: null,
       total: baseline.total,
       resumeCursor: nextResumeCursor,
+      collectionsChecked: checkCollections,
     });
     emit({
       accountId,
@@ -271,12 +336,14 @@ export async function syncListSource(
     ev.outcome = "aborted";
     return;
   }
+  await fileIntoFolders(account, filing, collectionPass.collections);
 
   const lastSyncedAt = await persistWatermark(accountId, {
     full: baseline.full && harvest.reachedEnd,
     newestId: resuming ? null : (fresh[0]?.sourceId ?? null),
     total: baseline.total + bulk.created,
     resumeCursor: nextResumeCursor,
+    collectionsChecked: checkCollections,
   });
   emit({
     accountId,

@@ -1,16 +1,30 @@
-import { MEDIA_TYPES, type Source } from "@pond/schema/db";
+import {
+  type ImportCollection,
+  MEDIA_TYPES,
+  type Source,
+} from "@pond/schema/db";
+import type { JsonValue } from "@pond/schema/json";
+import type { ImportCollectionOption } from "@shared/import-scope";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { markAtRisk, report } from "../../pipeline/rate-governor";
 import { arenaProfileUrl, buildArenaListExpression } from "../harvest/arena";
+import { addCollectionEntry } from "../harvest/collection-entries";
 import { buildCosmosListExpression, COSMOS_LIST_URL } from "../harvest/cosmos";
 import {
+  buildInstagramCollectionsExpression,
   buildInstagramLikesExpression,
   buildInstagramListExpression,
+  INSTAGRAM_HOME_URL,
   INSTAGRAM_LIKES_TIMEOUT_MS,
   INSTAGRAM_LIKES_URL,
 } from "../harvest/instagram";
-import type { ListHarvestArgs, ListHarvestResult } from "../harvest/list-types";
+import { readCollectionsReply } from "../harvest/lib/collections-reply";
+import type {
+  ListEntry,
+  ListHarvestArgs,
+  ListHarvestResult,
+} from "../harvest/list-types";
 import {
   buildPinterestListExpression,
   pinterestProfileUrl,
@@ -21,12 +35,23 @@ import {
   THREADS_LIST_URL,
 } from "../harvest/threads";
 import {
+  buildTiktokCollectionsExpression,
   buildTiktokListExpression,
+  tiktokCollectionUrl,
   tiktokFavouritesUrl,
 } from "../harvest/tiktok";
 import {
+  buildReadBookmarkFoldersExpression,
+  parseBookmarkFolders,
+  TWITTER_BOOKMARKS_URL,
+} from "../harvest/twitter";
+import {
   buildYoutubeListExpression,
+  parseYoutubePlaylists,
+  READ_YOUTUBE_INITIAL_DATA,
   YOUTUBE_LIST_URLS,
+  YOUTUBE_PLAYLISTS_URL,
+  youtubePlaylistUrl,
 } from "../harvest/youtube";
 import { NAV_TIMEOUT_MS } from "./constants";
 import {
@@ -34,11 +59,16 @@ import {
   looksLikeChallenge,
   navigateWithTimeout,
 } from "./navigation";
+import { runOnSourcePage } from "./page-run";
 import { leaseWindow } from "./pool";
 import { sleep } from "./util";
 
 interface SourceListArgs extends ListHarvestArgs {
   accountKey?: string;
+  /** Instagram and TikTok: walks one saved collection. */
+  collectionId?: string;
+  /** TikTok puts the collection name in its URL. */
+  collectionName?: string;
 }
 
 const OptionalText = z.string().optional().catch(undefined);
@@ -137,7 +167,7 @@ export async function harvestSourceList(
     const { harvestCosmosLibrary } = await import("../harvest/cosmos/api");
     return harvestCosmosLibrary(args, opts.partition);
   }
-  const target = listUrlForSource(source, args.accountKey);
+  const target = listUrlForSource(source, args);
   if (!target) {
     return { ok: false, reason: "no_match" };
   }
@@ -320,7 +350,7 @@ async function readHarvestPartial(
 
 function listUrlForSource(
   source: Source,
-  accountKey: string | undefined,
+  { accountKey, collectionId, collectionName }: SourceListArgs,
 ): string | null {
   switch (source) {
     case "youtube":
@@ -332,9 +362,15 @@ function listUrlForSource(
     case "pinterest":
       return accountKey ? pinterestProfileUrl(accountKey) : null;
     case "instagram":
-      return "https://www.instagram.com/";
+      return INSTAGRAM_HOME_URL;
     case "tiktok":
-      return accountKey ? tiktokFavouritesUrl(accountKey) : null;
+      if (!accountKey) return null;
+      return collectionId
+        ? tiktokCollectionUrl(accountKey, {
+            id: collectionId,
+            name: collectionName ?? "",
+          })
+        : tiktokFavouritesUrl(accountKey);
     case "twitter":
       return null;
     case "reddit":
@@ -350,7 +386,7 @@ function listUrlForSource(
 
 function buildListExpressionFor(
   source: Source,
-  args: ListHarvestArgs,
+  args: SourceListArgs,
 ): string | null {
   switch (source) {
     case "youtube":
@@ -407,6 +443,170 @@ export async function settleInstagramLikesFailure(
     if (recovered) return recovered;
   }
   return failure;
+}
+
+type CollectionListResult =
+  | { ok: true; collections: ImportCollectionOption[] }
+  | { ok: false; reason: "auth_required" | "rate_limited" | "unknown" };
+
+export async function listSourceCollections(
+  source: Source,
+  opts: { partition: string; accountKey?: string | undefined },
+): Promise<CollectionListResult> {
+  switch (source) {
+    case "pinterest": {
+      if (!opts.accountKey) return { ok: false, reason: "unknown" };
+      const { listPinterestBoards } = await import(
+        "../harvest/pinterest/resource"
+      );
+      const result = await listPinterestBoards(opts.partition, opts.accountKey);
+      if (!result.ok) return result;
+      return {
+        ok: true,
+        collections: result.boards.map((board) => ({
+          id: board.id,
+          name: board.name,
+          itemCount: board.pinCount,
+        })),
+      };
+    }
+    case "youtube": {
+      const run = await runOnSourcePage(
+        "youtube",
+        YOUTUBE_PLAYLISTS_URL,
+        READ_YOUTUBE_INITIAL_DATA,
+        { partition: opts.partition },
+      );
+      if (!run.ok) return pageRunFailure(run.reason);
+      return {
+        ok: true,
+        collections: parseYoutubePlaylists(parseJsonText(run.value)),
+      };
+    }
+    case "instagram": {
+      const run = await runOnSourcePage(
+        "instagram",
+        INSTAGRAM_HOME_URL,
+        buildInstagramCollectionsExpression(),
+        { partition: opts.partition },
+      );
+      if (!run.ok) return pageRunFailure(run.reason);
+      return readCollectionsReply(run.value);
+    }
+    case "tiktok": {
+      if (!opts.accountKey) return { ok: false, reason: "unknown" };
+      const run = await runOnSourcePage(
+        "tiktok",
+        tiktokFavouritesUrl(opts.accountKey),
+        buildTiktokCollectionsExpression(),
+        { partition: opts.partition, timeoutMs: 60_000 },
+      );
+      if (!run.ok) return pageRunFailure(run.reason);
+      return readCollectionsReply(run.value);
+    }
+    case "twitter": {
+      const run = await runOnSourcePage(
+        "twitter",
+        TWITTER_BOOKMARKS_URL,
+        buildReadBookmarkFoldersExpression(),
+        { partition: opts.partition },
+      );
+      if (!run.ok) return pageRunFailure(run.reason);
+      return { ok: true, collections: parseBookmarkFolders(run.value) };
+    }
+    default:
+      return { ok: false, reason: "unknown" };
+  }
+}
+
+function pageRunFailure(
+  reason: "auth_required" | "timeout" | "unknown",
+): Extract<CollectionListResult, { ok: false }> {
+  return { ok: false, reason: reason === "auth_required" ? reason : "unknown" };
+}
+
+function parseJsonText(value: JsonValue): JsonValue {
+  try {
+    return JSON.parse(StatsTextSchema.parse(value));
+  } catch {
+    return null;
+  }
+}
+
+export async function harvestSourceCollections(
+  source: Source,
+  collections: readonly ImportCollection[],
+  args: SourceListArgs,
+  opts: { partition: string },
+): Promise<ListHarvestResult> {
+  switch (source) {
+    case "pinterest": {
+      const { harvestPinterestBoards } = await import(
+        "../harvest/pinterest/resource"
+      );
+      return harvestPinterestBoards(args, collections, opts.partition);
+    }
+    case "youtube":
+      return harvestEachCollection(source, collections, (collection) =>
+        harvestYoutubePlaylist(collection.id, args, opts),
+      );
+    case "instagram":
+      return harvestEachCollection(source, collections, (collection) =>
+        harvestSourceList(
+          source,
+          { ...args, collectionId: collection.id },
+          { partition: opts.partition },
+        ),
+      );
+    case "tiktok":
+      return harvestEachCollection(source, collections, (collection) =>
+        harvestSourceList(
+          source,
+          {
+            ...args,
+            collectionId: collection.id,
+            collectionName: collection.name,
+          },
+          { partition: opts.partition },
+        ),
+      );
+    default:
+      return { ok: false, reason: "no_match" };
+  }
+}
+
+/** Walks collections one at a time; a missing collection is skipped, while a sign-out or rate limit stops the run. */
+async function harvestEachCollection(
+  source: Source,
+  collections: readonly ImportCollection[],
+  harvestOne: (collection: ImportCollection) => Promise<ListHarvestResult>,
+): Promise<ListHarvestResult> {
+  const entries = new Map<string, ListEntry>();
+  let reachedEnd = true;
+  let failed: Extract<ListHarvestResult, { ok: false }> | null = null;
+  for (const collection of collections) {
+    const result = await harvestOne(collection);
+    if (!result.ok) {
+      if (
+        result.reason === "auth_required" ||
+        result.reason === "rate_limited"
+      ) {
+        return result;
+      }
+      log.warn(
+        `[pond list] ${source} collection ${collection.id} failed: ${result.reason}`,
+      );
+      failed = result;
+      reachedEnd = false;
+      continue;
+    }
+    for (const entry of result.entries) {
+      addCollectionEntry(entries, entry.sourceId, entry, collection.id);
+    }
+    reachedEnd &&= result.reachedEnd;
+  }
+  if (failed && entries.size === 0) return failed;
+  return { ok: true, entries: [...entries.values()], reachedEnd };
 }
 
 export async function harvestInstagramLikedList(
@@ -481,7 +681,15 @@ export async function harvestInstagramLikedList(
   }
 }
 
-export async function harvestYoutubeLikedList(
+export function harvestYoutubeLikedList(
+  args: ListHarvestArgs,
+  opts: { partition?: string } = {},
+): Promise<ListHarvestResult> {
+  return harvestYoutubePlaylist("LL", args, opts);
+}
+
+async function harvestYoutubePlaylist(
+  listId: string,
   args: ListHarvestArgs,
   opts: { partition?: string } = {},
 ): Promise<ListHarvestResult> {
@@ -489,7 +697,7 @@ export async function harvestYoutubeLikedList(
   try {
     const navOk = await navigateWithTimeout(
       lease.win,
-      YOUTUBE_LIST_URLS[1],
+      youtubePlaylistUrl(listId),
       NAV_TIMEOUT_MS,
     );
     if (!navOk) return { ok: false, reason: "timeout" };
@@ -499,9 +707,9 @@ export async function harvestYoutubeLikedList(
     const expr = buildYoutubeListExpression(args);
     const raw = await Promise.race([
       lease.win.webContents.executeJavaScript(expr, true),
-      sleep(90_000).then(() => "__pond_yt_ll_timeout__"),
+      sleep(90_000).then(() => "__pond_yt_list_timeout__"),
     ]);
-    if (raw === "__pond_yt_ll_timeout__") {
+    if (raw === "__pond_yt_list_timeout__") {
       return { ok: false, reason: "timeout" };
     }
     const parsed = ListResultSchema.parse(raw);
@@ -513,7 +721,7 @@ export async function harvestYoutubeLikedList(
       reachedEnd: parsed.reachedEnd,
     };
   } catch (err) {
-    log.warn("[pond list] youtube LL unexpected error", err);
+    log.warn(`[pond list] youtube ${listId} unexpected error`, err);
     return { ok: false, reason: "timeout" };
   } finally {
     lease.release();

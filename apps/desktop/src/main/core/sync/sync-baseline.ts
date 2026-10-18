@@ -27,6 +27,17 @@ export function syncBaselineWhere(
   );
 }
 
+export async function loadAllKnownIds(
+  account: Pick<ConnectedAccount, "id" | "source">,
+): Promise<Set<string>> {
+  const db = await getDb();
+  const rows = await db
+    .select({ sourceId: saves.sourceId })
+    .from(saves)
+    .where(syncBaselineWhere(account));
+  return new Set<string>(rows.map((r) => r.sourceId));
+}
+
 export async function loadSyncBaseline(
   account: ConnectedAccount,
   forceFull: boolean,
@@ -35,11 +46,7 @@ export async function loadSyncBaseline(
   const cfg = await getAccountSync(account.id);
   const full = forceFull || cfg.lastFullSyncAt === null;
   if (full) {
-    const rows = await db
-      .select({ sourceId: saves.sourceId })
-      .from(saves)
-      .where(syncBaselineWhere(account));
-    const knownIds = new Set<string>(rows.map((r) => r.sourceId));
+    const knownIds = await loadAllKnownIds(account);
     return { knownIds, total: knownIds.size, full: true };
   }
   const rows = await db
@@ -76,6 +83,7 @@ export async function persistWatermark(
     newestId: string | null;
     total: number;
     resumeCursor?: string | null;
+    collectionsChecked?: boolean;
   },
 ): Promise<string> {
   const lastSyncedAt = new Date().toISOString();
@@ -87,6 +95,7 @@ export async function persistWatermark(
   if (opts.resumeCursor !== undefined) patch.resumeCursor = opts.resumeCursor;
   if (opts.newestId) patch.highWaterMark = opts.newestId;
   if (opts.full) patch.lastFullSyncAt = lastSyncedAt;
+  if (opts.collectionsChecked) patch.lastCollectionCheckAt = lastSyncedAt;
   await patchAccountSync(accountId, patch);
   return lastSyncedAt;
 }

@@ -6,6 +6,7 @@ import {
   IconTrash,
 } from "@pond/icons";
 import { Dialog, type MenuItemSpec } from "@pond/ui";
+import type { SourceActionSections } from "@/features/sources/lib/source-menu";
 import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
 import { formatNumber } from "@/shared/lib/format";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
@@ -46,6 +47,63 @@ function confirmStop(target: FolderMenuTarget, onChanged: () => void): void {
       onChanged();
     },
   });
+}
+
+/** The folder menu as Settings rows, for the details dialog. */
+export function buildFolderRows(
+  target: FolderMenuTarget & { path: string },
+  onChanged: () => void,
+): SourceActionSections {
+  return {
+    kind: "Folder",
+    profile: [
+      {
+        id: "location",
+        title: "Location",
+        value: target.path,
+        actions: [
+          {
+            label: REVEAL_LABEL,
+            onClick: () => void revealFolder(target.name),
+          },
+          {
+            label: "Change",
+            name: "Change Folder",
+            onClick: () => void pickWatchedFolder(),
+          },
+        ],
+      },
+    ],
+    fetch: [],
+    connection: [
+      {
+        id: "watching",
+        title: target.watching ? "Pause Watching" : "Resume Watching",
+        description: target.watching
+          ? "Pond stops importing new files until you resume."
+          : "Pond imports new files from the folder again.",
+        actions: [
+          {
+            label: target.watching ? "Pause" : "Resume",
+            name: target.watching ? "Pause Watching" : "Resume Watching",
+            onClick: () => void setWatching(!target.watching, onChanged),
+          },
+        ],
+      },
+      {
+        id: "remove",
+        title: "Stop Watching",
+        description: "Files already in your library stay.",
+        actions: [
+          {
+            label: "Stop",
+            variant: "destructive",
+            onClick: () => confirmStop(target, onChanged),
+          },
+        ],
+      },
+    ],
+  };
 }
 
 export function buildFolderMenu(

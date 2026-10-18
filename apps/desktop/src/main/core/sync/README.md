@@ -45,6 +45,70 @@ cheap and a sync with N new items walks roughly N items, not the entire backlog.
 `syncRunNow` / `syncRunAll`) to ignore the watermark and walk the whole remote
 list — for drift recovery.
 
+### Import scope
+
+`SourceSyncPrefs.importScope` says which lists an Account imports. Omitted
+means everything, so Accounts connected before scopes existed keep their
+behavior. `listHarvestPlan` (`import-scope.ts`) turns the scope into the walks
+a run makes: excluded lists are never requested, rather than harvested and
+filtered afterward.
+
+- Instagram, X, and YouTube: Saved and Liked, each on its own walk. X Likes
+  used to be the `syncLikes` switch; `accountImportScope` (`shared/import-scope.ts`)
+  reads an old `syncLikes: false` as Bookmarks only.
+- Reddit and TikTok: Saved and Liked come from one walk, which reads
+  `ListHarvestArgs.listKinds` and skips the listing or tab you left out.
+- Collections narrow the saved list: Pinterest boards, Instagram and TikTok
+  collections, X bookmark folders, and YouTube playlists (Watch Later stays the
+  default). Picking TikTok collections drops the Favorites tab from its single
+  walk; Liked Videos still comes from that walk.
+  `listSourceCollections` and `harvestSourceCollections`
+  (`harvest-window/harvest-list.ts`) load and walk them.
+- Cosmos, Are.na, and Threads import every list.
+
+A save harvested from chosen collections is filed into Folders named
+`<Source>/<collection>` (`collection-folders.ts`). Harvesters tag each entry
+with `collectionIds` as they merge collections (`addCollectionEntry`), and the
+run files every harvested entry, not just new ones, so a full walk after a
+scope change files saves Pond already had. Filing adds to a save's Folders and
+never removes one. `SourceSyncPrefs.collectionFolders` remembers each
+collection's Folder id, so renaming the Folder keeps it in use; a deleted one
+is created again. `importScope.addToFolders: false` turns filing off.
+
+With no collections picked, `addToFolders: true` files every collection
+(`collectionFiling` in `shared/import-scope.ts`) on X, Instagram, TikTok, and
+Pinterest, where the saved list holds every collection. YouTube's default is
+Watch Later, not every playlist, so it files only picked playlists. The run walks
+the lists as usual, then `walkEveryCollection` lists and walks each collection
+only to tag entries. Those walks never add saves to the import, because filing
+only touches saves already in the Library. A failed pass becomes a gap note.
+
+Collection walks early-stop like any other walk, so an old save moved into a
+collection sits below saves Pond already has and never turns up. Once a day
+(`collectionCheckDue`), a run reads every collection walk to its end instead:
+picked collections on every Source that has them, and the every-collection
+filing pass. The run stamps `SourceSyncPrefs.lastCollectionCheckAt` when it
+finishes. A full run counts as that read. The main saved list keeps its early
+stop, so the extra cost is one read of your collections a day, however often
+sync runs. When picked collections are read to the end, the run loads every
+known id (`loadAllKnownIds`), not the recent window, so older saves aren't
+queued again. Scroll walks stop at any known id they meet, so
+`buildScrollListExpression` sends them none when a walk must reach the end.
+
+Media kinds and a `since` date are filters, not walks: list data is too patchy
+to judge a post before capture, and filtering early would break early stop.
+`applyImportFilter` (`pipeline/import-filter.ts`) runs in `harvest_metadata`,
+marks a filtered save `skipped` with `rawJson.importFilter`, and cancels its
+remaining tasks. Skipped saves stay in the sync baseline, so they aren't
+fetched again. A post with no publish date is kept.
+
+A newly connected Account is created with `importPending: true`, and
+`syncAccount` returns idle without harvesting until you pick a scope through
+`accounts.setImportScope`. Changing the scope clears `lastFullSyncAt` and
+`resumeCursor`, so the next run is a full walk and early stop can't skip older
+items in a newly added list. It also purges saves the old filters skipped
+(`releaseFilteredSaves`), so that walk judges them again under the new scope.
+
 ## Account safety (it defers entirely to the governor)
 
 Every platform request is gated by the rate governor (see

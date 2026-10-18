@@ -1,74 +1,82 @@
-.content {
-  gap: 0;
+/* Mirrors the Settings window: sidebar on the window gray, page in an inset panel. */
+.layout {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 200px minmax(0, 1fr);
+  min-height: 0;
+  background: var(--ds-gray-2);
 }
 
-.field {
-  padding-bottom: 16px;
-}
-
-.section {
-  padding-inline: 20px;
-  margin-inline: -20px;
-}
-
-.activity {
+.aside {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  align-items: stretch;
+  min-height: 0;
+  padding: 12px 8px 0 12px;
 }
 
-.detail {
+.identity {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  align-items: center;
+  height: 32px;
+  padding-inline-start: 6px;
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
   margin: 0;
-  font-size: var(--ds-text-sm);
-  line-height: 1.5;
-  color: var(--ds-gray-10);
-  overflow-wrap: anywhere;
-}
-
-.detail[data-tone="paused"] {
-  color: var(--ds-amber-11);
-}
-
-.detail[data-tone="err"] {
-  color: var(--ds-red-11);
-}
-
-.progress-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.metrics {
-  display: flex;
-  gap: 8px;
-  align-items: baseline;
-  justify-content: space-between;
-  font-size: var(--ds-text-sm);
-  font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-10);
-}
-
-.progress {
-  display: block;
-  width: 100%;
-  height: 5px;
   overflow: hidden;
-  appearance: none;
-  border: 0;
-  border-radius: var(--ds-radius-full);
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-lg);
+  color: var(--ds-gray-12);
+  white-space: nowrap;
 }
 
-.progress::-webkit-progress-bar {
-  background: var(--ds-gray-4);
-  border-radius: var(--ds-radius-full);
+.nav {
+  flex: 1;
+  height: auto;
 }
 
-.progress::-webkit-progress-value {
-  background: var(--ds-accent-9);
-  border-radius: var(--ds-radius-full);
-  transition: width var(--ds-duration-fast) var(--ds-easing-standard);
+.panel {
+  min-width: 0;
+  padding: 0;
+  margin: 8px 8px 8px 0;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-xs);
+}
+
+.panel .page {
+  --settings-margin-block: 32px;
+}
+
+.unavailable {
+  flex: 1;
+  justify-content: center;
+  text-align: center;
+}
+
+.nickname {
+  width: 240px;
+  max-width: 100%;
+}
+
+.control {
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 60%;
+}
+
+.value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-md);
+  color: var(--ds-gray-11);
+  white-space: nowrap;
 }
 
 .field-status {
@@ -84,14 +92,4 @@
   font-size: var(--ds-text-sm);
   line-height: 1.5;
   color: var(--ds-gray-10);
-}
-
-:global([data-reduce-motion="true"]) .progress::-webkit-progress-value {
-  transition: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .progress::-webkit-progress-value {
-    transition: none;
-  }
 }

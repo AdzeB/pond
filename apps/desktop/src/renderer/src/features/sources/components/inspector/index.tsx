@@ -1,10 +1,22 @@
+import {
+  IconArrowRotateClockwise,
+  IconDownload,
+  IconGear3,
+  IconSliders,
+} from "@pond/icons";
 import type { Source } from "@pond/schema/db";
-import { Dialog, Field, Input, type MenuItemSpec } from "@pond/ui";
+import { Button, Dialog, Input, Settings, Sidebar } from "@pond/ui";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
-import type { SourceDetailsKind } from "@/features/library";
+import { type ReactNode, useEffect, useRef, useState } from "react";
+import type { SourceDetailsKind, SourceDetailsPage } from "@/features/library";
 import { HeroAvatar } from "@/features/sources/components/flow/detail/hero-avatar";
-import { buildFolderMenu } from "@/features/sources/components/page/lib/folder-menu";
+import {
+  ImportScopeFilters,
+  ImportScopeLists,
+  ImportScopeStatus,
+  useImportScopeDraft,
+} from "@/features/sources/components/flow/import-scope";
+import { buildFolderRows } from "@/features/sources/components/page/lib/folder-menu";
 import {
   type CardModel,
   cardModel,
@@ -22,20 +34,20 @@ import {
   type WatchRow,
   watchKindLabel,
 } from "@/features/sources/hooks/use-watches";
+import {
+  hasImportChoices,
+  hasImportFilters,
+} from "@/features/sources/lib/import-scope";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import {
   accountMenuTarget,
-  buildSourceActionMenu,
+  buildSourceActionRows,
+  type SourceActionRow,
+  type SourceActionSections,
   watchMenuTarget,
 } from "@/features/sources/lib/source-menu";
 import { sourceDetail } from "@/features/sources/state/source-detail";
-import {
-  type SyncSourceStatus,
-  useSyncByAccount,
-} from "@/features/sources/state/sync-monitor";
-import { DetailsHero } from "@/shared/components/details-hero";
-import { Section } from "@/shared/components/inspector-section";
-import { PropertyList } from "@/shared/components/property-list";
+import { useSyncByAccount } from "@/features/sources/state/sync-monitor";
 import { formatNumber, formatTimestampLine } from "@/shared/lib/format";
 import { relativeTimeFromMs } from "@/shared/lib/relative-time";
 import styles from "./styles.module.css";
@@ -43,15 +55,17 @@ import styles from "./styles.module.css";
 export function SourceInspector({
   kind,
   id,
+  page,
 }: {
   kind: SourceDetailsKind;
   id: string;
+  page?: SourceDetailsPage;
 }) {
   if (kind === "folder") return <FolderInspector />;
   return kind === "watch" ? (
     <WatchInspector id={id} />
   ) : (
-    <AccountInspector id={id} />
+    <AccountInspector id={id} page={page} />
   );
 }
 
@@ -73,8 +87,13 @@ function FolderInspector() {
   const name = watchedFolderName(status.path);
   const imported = status.history.filter((item) => item.ok);
   const lastMs = imported[0]?.at ?? null;
-  const menuItems = buildFolderMenu(
-    { name, imported: imported.length, watching: status.enabled },
+  const actions = buildFolderRows(
+    {
+      name,
+      path: status.path,
+      imported: imported.length,
+      watching: status.enabled,
+    },
     () => void client.invalidateQueries({ queryKey: ["watched-folder"] }),
   );
   return (
@@ -88,11 +107,10 @@ function FolderInspector() {
           : `Last imported ${relativeTimeFromMs(lastMs)}`
       }
       source="local"
-      menuItems={menuItems}
+      actions={actions}
       properties={[
         { label: "Source", value: "Local" },
         { label: "Type", value: "Folder" },
-        { label: "Location", value: status.path },
         { label: "Imported Items", value: formatNumber(imported.length) },
         { label: "Mode", value: status.mode === "move" ? "Move" : "Copy" },
         { label: "Status", value: status.enabled ? "Watching" : "Paused" },
@@ -101,50 +119,89 @@ function FolderInspector() {
   );
 }
 
-function AccountInspector({ id }: { id: string }) {
+function AccountInspector({
+  id,
+  page,
+}: {
+  id: string;
+  page?: SourceDetailsPage;
+}) {
   const { accounts, loading, refetch } = useAccounts();
   const account = accounts.find((row) => row.id === id);
   const byAccount = useSyncByAccount();
   if (!account) {
     return <SourceInspectorView status={loading ? "loading" : "missing"} />;
   }
-  const syncStatus = byAccount[account.id];
-  const model = cardModel(syncStatus);
+  const model = cardModel(byAccount[account.id]);
   const changed = () => {
     void refetch();
     sourceDetail.changed();
   };
-  const menuItems = buildSourceActionMenu(accountMenuTarget(account, model), {
+  const actions = buildSourceActionRows(accountMenuTarget(account, model), {
     accounts,
     onChanged: changed,
   });
+  const imports =
+    account.sync.importPending || hasImportChoices(account.source);
+  const label = getSourceDef(account.source).label;
+  const pages: SourceInspectorPage[] = [];
+  if (imports) {
+    pages.push({
+      id: "import",
+      label: "Import",
+      icon: <IconDownload />,
+      description: `Nothing else from ${label} reaches your library.`,
+      content: (
+        <>
+          <ImportScopeStatus />
+          <ImportScopeLists accountId={account.id} />
+        </>
+      ),
+    });
+  }
+  if (hasImportFilters(account.source)) {
+    pages.push({
+      id: "filters",
+      label: "Filters",
+      icon: <IconSliders />,
+      description: "Applies to every list Pond imports from this Account.",
+      content: (
+        <>
+          <ImportScopeStatus />
+          <ImportScopeFilters accountId={account.id} />
+        </>
+      ),
+    });
+  }
+  pages.push(fetchPage(actions.fetch, model));
   return (
-    <SourceInspectorView
-      key={account.id}
-      status="ready"
-      description={fetchedLabel(model)}
-      handle={account.handle ? `@${account.handle}` : null}
-      source={account.source}
-      avatarUrl={account.avatarUrl}
-      model={model}
-      syncStatus={syncStatus}
-      nickname={account.label ?? ""}
-      menuItems={menuItems}
-      properties={[
-        { label: "Source", value: getSourceDef(account.source).label },
-        { label: "Type", value: "Account" },
-        {
-          label: "Saved Items",
-          value: formatNumber(account.sync.knownCount),
-        },
-        { label: "Added", value: addedLabel(account.addedAt) },
-      ]}
-      onNicknameSave={async (value) => {
-        await saveAccountNickname(account, value);
-        changed();
-      }}
-    />
+    <>
+      {imports ? <ImportScopeDraft account={account} /> : null}
+      <SourceInspectorView
+        key={account.id}
+        status="ready"
+        handle={account.handle ? `@${account.handle}` : null}
+        source={account.source}
+        avatarUrl={account.avatarUrl}
+        nickname={account.label ?? ""}
+        actions={actions}
+        pages={pages}
+        initialPage={
+          page ?? (account.sync.importPending ? "import" : "general")
+        }
+        onNicknameSave={async (value) => {
+          await saveAccountNickname(account, value);
+          changed();
+        }}
+      />
+    </>
   );
+}
+
+/** Lives beside the pages so switching between Import and Filters keeps the draft. */
+function ImportScopeDraft({ account }: { account: AccountRow }) {
+  useImportScopeDraft(account);
+  return null;
 }
 
 function WatchInspector({ id }: { id: string }) {
@@ -155,20 +212,18 @@ function WatchInspector({ id }: { id: string }) {
   if (!watch) {
     return <SourceInspectorView status={loading ? "loading" : "missing"} />;
   }
-  const syncStatus = byAccount[watch.id];
-  const model = cardModel(syncStatus);
+  const model = cardModel(byAccount[watch.id]);
   const changed = () => {
     void refetch();
     sourceDetail.changed();
   };
-  const menuItems = buildSourceActionMenu(watchMenuTarget(watch, model), {
+  const actions = buildSourceActionRows(watchMenuTarget(watch, model), {
     onChanged: changed,
   });
   return (
     <SourceInspectorView
       key={watch.id}
       status="ready"
-      description={fetchedLabel(model)}
       handle={
         watch.kind === "playlist" || watch.kind === "list"
           ? watch.handle
@@ -176,11 +231,10 @@ function WatchInspector({ id }: { id: string }) {
       }
       source={watch.source}
       avatarUrl={watch.avatarUrl}
-      model={model}
-      syncStatus={syncStatus}
       nickname={watch.label ?? ""}
-      menuItems={menuItems}
+      actions={actions}
       properties={watchProperties(watch, accounts)}
+      pages={[fetchPage(actions.fetch, model)]}
       onNicknameSave={async (value) => {
         await saveWatchNickname(watch, value);
         changed();
@@ -212,7 +266,6 @@ function watchProperties(
   const properties: SourceInspectorProperty[] = [
     { label: "Source", value: getSourceDef(watch.source).label },
     { label: "Type", value: kind.charAt(0).toUpperCase() + kind.slice(1) },
-    { label: "Saved Items", value: formatNumber(watch.sync.knownCount) },
     { label: "Added", value: addedLabel(watch.addedAt) },
   ];
   const via = accounts.find((account) => account.id === watch.via);
@@ -246,17 +299,26 @@ async function saveWatchNickname(
   });
 }
 
+interface SourceInspectorPage {
+  id: SourceDetailsPage;
+  label: string;
+  icon: ReactNode;
+  description?: string;
+  content: ReactNode;
+}
+
 interface SourceInspectorDetailsProps {
   title?: string;
   description?: string;
   handle?: string | null;
   source: Source;
   avatarUrl?: string | null;
-  model?: CardModel;
-  syncStatus?: SyncSourceStatus;
   nickname?: string;
-  menuItems?: MenuItemSpec[];
+  actions?: SourceActionSections;
   properties?: SourceInspectorProperty[];
+  /** Pages after General. */
+  pages?: SourceInspectorPage[];
+  initialPage?: SourceDetailsPage;
   onNicknameSave?: (value: string) => Promise<void>;
 }
 
@@ -266,21 +328,15 @@ export type SourceInspectorViewProps =
   | ({ status: "ready" } & SourceInspectorDetailsProps);
 
 export function SourceInspectorView(props: SourceInspectorViewProps) {
+  if (props.status === "ready") return <SourceInspectorDetails {...props} />;
   return (
     <>
-      <Dialog.Header data-empty />
-      <Dialog.Content className={styles.content}>
-        {props.status === "loading" ? (
-          <p className={styles.empty} role="status">
-            Loading source details
-          </p>
-        ) : props.status === "missing" ? (
-          <p className={styles.empty} role="status">
-            This source is unavailable.
-          </p>
-        ) : (
-          <SourceInspectorDetails {...props} />
-        )}
+      <Dialog.Content className={styles.unavailable}>
+        <p className={styles.empty} role="status">
+          {props.status === "loading"
+            ? "Loading source details"
+            : "This source is unavailable."}
+        </p>
       </Dialog.Content>
       <Dialog.Footer>
         <Dialog.Cancel>Done</Dialog.Cancel>
@@ -295,124 +351,191 @@ function SourceInspectorDetails({
   description,
   source,
   avatarUrl,
-  model,
-  syncStatus,
   nickname = "",
-  menuItems = [],
+  actions,
   properties = [],
+  pages = [],
+  initialPage = "general",
   onNicknameSave,
 }: SourceInspectorDetailsProps) {
-  const activity = model ? activityDetail(model, syncStatus) : null;
+  const general: SourceInspectorPage = {
+    id: "general",
+    label: "General",
+    icon: <IconGear3 />,
+    description,
+    content: (
+      <GeneralPage
+        handle={handle}
+        nickname={nickname}
+        properties={properties}
+        actions={actions}
+        onNicknameSave={onNicknameSave}
+      />
+    ),
+  };
+  const all = [general, ...pages];
+  const [pageId, setPageId] = useState(initialPage);
+  const page = all.find((item) => item.id === pageId) ?? general;
   return (
-    <>
-      <DetailsHero.Root>
-        <DetailsHero.Media>
+    <div className={styles.layout}>
+      <aside className={styles.aside}>
+        <header className={styles.identity}>
           <HeroAvatar
             source={source}
             avatarUrl={avatarUrl}
-            size={88}
+            size={24}
             badge={false}
           />
-          <DetailsHero.Actions items={menuItems} aria-label="Source Actions" />
-        </DetailsHero.Media>
-        <DetailsHero.Copy>
-          <DetailsHero.Title>
+          <h2 className={styles.name}>
             {title || handle || nickname || getSourceDef(source).label}
-          </DetailsHero.Title>
-          {description ? (
-            <DetailsHero.Description>{description}</DetailsHero.Description>
-          ) : null}
-        </DetailsHero.Copy>
-      </DetailsHero.Root>
+          </h2>
+        </header>
+        <Sidebar.Root
+          className={styles.nav}
+          width="full"
+          role="navigation"
+          aria-label="Pages"
+        >
+          <Sidebar.Scroll>
+            <Sidebar.Group>
+              {all.map((item) => {
+                const active = item.id === page.id;
+                return (
+                  <Sidebar.Item
+                    key={item.id}
+                    data-status={active ? "active" : undefined}
+                    aria-current={active ? "page" : undefined}
+                    onClick={() => setPageId(item.id)}
+                  >
+                    <Sidebar.Icon>{item.icon}</Sidebar.Icon>
+                    <Sidebar.ItemLabel>{item.label}</Sidebar.ItemLabel>
+                  </Sidebar.Item>
+                );
+              })}
+            </Sidebar.Group>
+          </Sidebar.Scroll>
+        </Sidebar.Root>
+      </aside>
+      <Dialog.Content className={styles.panel}>
+        <Settings.Page className={styles.page}>
+          <Settings.Header>
+            <Settings.HeaderText>
+              <Settings.Title>{page.label}</Settings.Title>
+              {page.description ? (
+                <Settings.Description>{page.description}</Settings.Description>
+              ) : null}
+            </Settings.HeaderText>
+          </Settings.Header>
+          {page.content}
+        </Settings.Page>
+      </Dialog.Content>
+    </div>
+  );
+}
+
+function ActionRows({ rows }: { rows: SourceActionRow[] }) {
+  return (
+    <Settings.List>
+      {rows.map((row) => (
+        <Settings.Item key={row.id} disabled={row.disabled}>
+          <Settings.ItemDetails>
+            <Settings.ItemTitle>{row.title}</Settings.ItemTitle>
+            {row.description ? (
+              <Settings.ItemDescription>
+                {row.description}
+              </Settings.ItemDescription>
+            ) : null}
+          </Settings.ItemDetails>
+          <Settings.ItemControl className={styles.control}>
+            {row.value ? (
+              <span className={styles.value}>{row.value}</span>
+            ) : null}
+            {row.actions.map((action) => (
+              <Button
+                key={action.label}
+                size="sm"
+                variant={action.variant ?? "secondary"}
+                disabled={row.disabled}
+                aria-label={action.name}
+                onClick={action.onClick}
+              >
+                {action.label}
+              </Button>
+            ))}
+          </Settings.ItemControl>
+        </Settings.Item>
+      ))}
+    </Settings.List>
+  );
+}
+
+function fetchPage(
+  rows: SourceActionRow[],
+  model: CardModel,
+): SourceInspectorPage {
+  return {
+    id: "fetch",
+    label: "Fetching",
+    icon: <IconArrowRotateClockwise />,
+    description: fetchedLabel(model),
+    content: <ActionRows rows={rows} />,
+  };
+}
+
+function GeneralPage({
+  handle,
+  nickname,
+  properties,
+  actions,
+  onNicknameSave,
+}: Pick<
+  SourceInspectorDetailsProps,
+  "handle" | "actions" | "onNicknameSave"
+> & {
+  nickname: string;
+  properties: SourceInspectorProperty[];
+}) {
+  return (
+    <>
       {onNicknameSave ? (
-        <NicknameField
-          nickname={nickname}
-          placeholder={handle ?? "Add a nickname"}
-          onSave={onNicknameSave}
-        />
+        <Settings.List>
+          <NicknameItem
+            nickname={nickname}
+            placeholder={handle ?? "Add a nickname"}
+            onSave={onNicknameSave}
+          />
+        </Settings.List>
+      ) : null}
+      {actions && actions.profile.length > 0 ? (
+        <Settings.Section>
+          <Settings.SectionTitle>{actions.kind}</Settings.SectionTitle>
+          <ActionRows rows={actions.profile} />
+        </Settings.Section>
       ) : null}
       {properties.length > 0 ? (
-        <Section
-          title="Properties"
-          className={styles.section}
-          collapsible={false}
-        >
-          <PropertyList.Root>
-            {properties.map((property) => (
-              <PropertyList.Row key={property.label}>
-                <PropertyList.Label>{property.label}</PropertyList.Label>
-                <PropertyList.Value>{property.value}</PropertyList.Value>
-              </PropertyList.Row>
-            ))}
-          </PropertyList.Root>
-        </Section>
+        <Settings.Section>
+          <Settings.SectionTitle>Properties</Settings.SectionTitle>
+          <ActionRows
+            rows={properties.map((property) => ({
+              id: property.label,
+              title: property.label,
+              value: property.value,
+              actions: [],
+            }))}
+          />
+        </Settings.Section>
       ) : null}
-      {model && activity ? (
-        <Section
-          title="Activity"
-          className={styles.section}
-          collapsible={false}
-        >
-          <div className={styles.activity}>
-            <p
-              className={styles.detail}
-              data-tone={
-                model.tone === "err" || model.tone === "paused"
-                  ? model.tone
-                  : undefined
-              }
-            >
-              {activity}
-            </p>
-            <SourceProgress progress={syncStatus?.progress} />
-          </div>
-        </Section>
+      {actions && actions.connection.length > 0 ? (
+        <Settings.Section>
+          <Settings.SectionTitle>Connection</Settings.SectionTitle>
+          <ActionRows rows={actions.connection} />
+        </Settings.Section>
       ) : null}
     </>
   );
 }
 
-function activityDetail(
-  model: CardModel,
-  syncStatus: SyncSourceStatus | undefined,
-): string | null {
-  if (syncStatus?.message) return syncStatus.message;
-  if (model.tone === "err" && syncStatus?.lastError) {
-    return syncStatus.lastError;
-  }
-  return null;
-}
-
-function SourceProgress({
-  progress,
-}: {
-  progress: SyncSourceStatus["progress"] | undefined;
-}) {
-  if (!progress || progress.total <= 0) return null;
-  const value = Math.min(
-    100,
-    Math.max(0, (progress.current / progress.total) * 100),
-  );
-  return (
-    <div className={styles["progress-group"]}>
-      <div className={styles.metrics}>
-        <span>
-          {formatNumber(progress.current)} of {formatNumber(progress.total)}{" "}
-          saves
-        </span>
-        <span>{Math.round(value)}%</span>
-      </div>
-      <progress
-        className={styles.progress}
-        aria-label="Fetch progress"
-        max={100}
-        value={value}
-      />
-    </div>
-  );
-}
-
-function NicknameField({
+function NicknameItem({
   nickname,
   placeholder,
   onSave,
@@ -438,27 +561,36 @@ function NicknameField({
     }
   };
   return (
-    <Field.Root className={styles.field} invalid={status === "error"}>
-      <Field.Label>Nickname</Field.Label>
-      <Input.Root>
-        <Field.Control
-          render={<Input.Field />}
-          defaultValue={nickname}
-          placeholder={placeholder}
-          maxLength={255}
-          disabled={status === "saving"}
-          onChange={() => setStatus("idle")}
-          onBlur={(event) => void save(event.currentTarget.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") event.currentTarget.blur();
-          }}
-        />
-      </Input.Root>
-      {status === "error" ? (
-        <p className={styles["field-status"]} role="alert">
-          Couldn't save. Focus the field and press Enter to try again.
-        </p>
-      ) : null}
-    </Field.Root>
+    <Settings.Item>
+      <Settings.ItemDetails>
+        <Settings.ItemTitle>Nickname</Settings.ItemTitle>
+        {status === "error" ? (
+          <span className={styles["field-status"]} role="alert">
+            Couldn't save. Focus the field and press Enter to try again.
+          </span>
+        ) : (
+          <Settings.ItemDescription>
+            Shown instead of the handle across Pond.
+          </Settings.ItemDescription>
+        )}
+      </Settings.ItemDetails>
+      <Settings.ItemControl>
+        <Input.Root className={styles.nickname}>
+          <Input.Field
+            aria-label="Nickname"
+            aria-invalid={status === "error" || undefined}
+            defaultValue={nickname}
+            placeholder={placeholder}
+            maxLength={255}
+            disabled={status === "saving"}
+            onChange={() => setStatus("idle")}
+            onBlur={(event) => void save(event.currentTarget.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.currentTarget.blur();
+            }}
+          />
+        </Input.Root>
+      </Settings.ItemControl>
+    </Settings.Item>
   );
 }
