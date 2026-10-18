@@ -58,12 +58,21 @@
   align-items: center;
   height: 28px;
   padding: 0 6px;
+  overflow: hidden;
   color: var(--ds-gray-10);
   border-radius: var(--ds-radius-sm);
+  transition:
+    height var(--ds-duration-medium) var(--ds-easing-snap),
+    opacity var(--ds-duration-snap) var(--ds-easing-standard);
 
   &[data-active] {
     color: var(--ds-gray-12);
     background: var(--ds-gray-a4);
+  }
+
+  &[data-hidden] {
+    height: 0;
+    opacity: 0;
   }
 }
 

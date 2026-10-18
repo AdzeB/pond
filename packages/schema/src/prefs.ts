@@ -277,6 +277,11 @@ const updates = z.object({
   autoInstall: z.boolean().catch(true),
 });
 
+const setup = z.object({
+  /** Highest guided setup version finished on this computer; 0 means never. */
+  version: z.number().int().min(0).catch(0),
+});
+
 export const FetchRecurrenceSchema = z
   .object({
     startDate: z.iso.date(),
@@ -440,6 +445,7 @@ const PrefsObject = z.object({
   sourcesView: sourcesView.catch(sourcesView.parse({})),
   api: api.catch(api.parse({})),
   updates: updates.catch(updates.parse({})),
+  setup: setup.catch(setup.parse({})),
   sync: sync.catch(sync.parse({})),
   storage: storage.catch(storage.parse({})),
   ai: ai.catch(ai.parse({})),

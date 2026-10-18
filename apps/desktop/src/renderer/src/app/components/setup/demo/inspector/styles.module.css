@@ -41,12 +41,33 @@
 }
 
 .input {
+  display: grid;
   min-height: 28px;
   padding: 6px 8px;
   color: var(--ds-gray-12);
   background: var(--ds-gray-a2);
   border: var(--ds-border-width) solid var(--ds-border-subtle);
   border-radius: var(--ds-radius-sm);
+
+  > * {
+    grid-area: 1 / 1;
+  }
+}
+
+.from {
+  font-family: var(--ds-font-mono);
+  color: var(--ds-gray-10);
+  transition:
+    opacity var(--exit),
+    filter var(--exit);
+}
+
+.value[data-generated] {
+  opacity: 0;
+  filter: blur(2px);
+  transition:
+    opacity var(--exit),
+    filter var(--exit);
 }
 
 .chips {
@@ -72,6 +93,22 @@
 :global([data-state="enrich"]) .inspector {
   opacity: 1;
   transition: opacity var(--enter) 100ms;
+}
+
+:global([data-state="enrich"]) .from {
+  opacity: 0;
+  filter: blur(2px);
+  transition:
+    opacity var(--exit) 250ms,
+    filter var(--exit) 250ms;
+}
+
+:global([data-state="enrich"]) .value[data-generated] {
+  opacity: 1;
+  filter: none;
+  transition:
+    opacity var(--enter) 320ms,
+    filter var(--enter) 320ms;
 }
 
 :global([data-state="enrich"]) .chips > span {

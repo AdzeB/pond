@@ -7,7 +7,7 @@
   position: relative;
   flex: none;
   width: 800px;
-  height: 480px;
+  height: var(--demo-height, 480px);
   overflow: hidden;
   font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-lg);
@@ -17,6 +17,10 @@
   border-radius: var(--ds-radius-xl) var(--ds-radius-xl) 0 0;
   box-shadow: var(--ds-shadow-xs), var(--ds-shadow-md);
   animation: rise var(--ds-duration-slow) var(--ds-easing-decelerate) both;
+
+  &[data-framing="whole"] {
+    border-radius: var(--ds-radius-xl);
+  }
 
   * {
     box-sizing: border-box;
@@ -156,6 +160,10 @@
     opacity: 0;
   }
 
+  .card {
+    transform: translateY(8px);
+  }
+
   [data-view="harvest"] {
     opacity: 1;
     transition: opacity var(--enter) 80ms;
@@ -171,11 +179,16 @@
 }
 
 .window[data-state="library"] {
-  [data-view="library"],
+  [data-view="library"] {
+    transition: opacity var(--enter) 80ms;
+  }
+
   .card {
+    --delay: calc(120ms + var(--i) * 50ms);
+
     transition:
-      opacity var(--enter) 80ms,
-      transform var(--enter) 80ms;
+      opacity var(--enter) var(--delay),
+      transform var(--enter) var(--delay);
   }
 }
 
@@ -243,13 +256,13 @@
     transform: none;
   }
 
+  /* The sunset tile's frame once the pane narrows the grid to 378px. */
   .save {
-    top: 212px;
-    left: 586px;
-    width: 48px;
-    height: 36px;
+    top: 78.67px;
+    left: 314.67px;
+    width: 100.67px;
+    height: 75.5px;
     outline-color: transparent;
-    transition-delay: 400ms;
   }
 }
 

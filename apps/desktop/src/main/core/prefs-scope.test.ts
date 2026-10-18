@@ -75,6 +75,14 @@ describe("splitPrefsPatch", () => {
     });
     expect(pond).toEqual({});
   });
+
+  it("keeps the setup acknowledgement with this computer, not the library", () => {
+    expect(PrefsSchema.parse({}).setup.version).toBe(0);
+    const { app, pond } = splitPrefsPatch({ setup: { version: 1 } });
+    expect(app).toEqual({ setup: { version: 1 } });
+    expect(pond).toEqual({});
+    expect(mergeAppSlice({}, app).setup.version).toBe(1);
+  });
 });
 
 describe("normalizeStoredPrefs", () => {
