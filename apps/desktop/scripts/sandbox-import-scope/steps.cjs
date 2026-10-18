@@ -39,6 +39,7 @@ const FOLDER_ROOTS = {
   twitter: "Twitter",
   instagram: "Instagram",
   youtube: "YouTube",
+  tiktok: "TikTok",
 };
 const filed = (e, source) => {
   const paths = new Set(e.saves.folders.map((folder) => folder.path));
@@ -180,6 +181,28 @@ const STEPS = [
         label: "No saves came from Favorites",
         ok: e.saves.listKinds.saved === 0 && e.saves.listKinds.both === 0,
       },
+    ],
+  },
+  {
+    id: "tiktok-collections",
+    title: "TikTok: Favorites Collections",
+    source: "tiktok",
+    steps: [
+      "Make at least one collection under Favorites on TikTok first.",
+      "In Pond, open the TikTok Account's details and go to Import.",
+      "Turn Favorites back on. Click the Collections field and confirm your collections load with video counts.",
+      "Pick one collection and leave Add to Folders on.",
+      "On the Fetching page, press Fetch New Saves.",
+      "When the sync finishes, confirm that collection's videos sit in a TikTok / collection name Folder.",
+    ],
+    checks: (e) => [
+      connected(e),
+      {
+        label: "At least one collection chosen",
+        ok: (scopeOf(e).collections ?? []).length > 0,
+      },
+      hasSaves(e),
+      filed(e, "tiktok"),
     ],
   },
   {

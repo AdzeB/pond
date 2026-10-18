@@ -42,14 +42,17 @@ export function listHarvestPlan(
       ? scope.collections
       : null;
   if (COMBINED_LISTS.has(source)) {
+    /** Picked collections replace the saved tab, so the combined walk keeps only what's left. */
+    const listKinds = (["saved", "liked"] as const).filter(
+      (kind) =>
+        importsListKind(scope, kind) && !(kind === "saved" && collections),
+    );
     return {
-      primary: true,
+      primary: listKinds.length > 0,
       liked: false,
-      listKinds: (["saved", "liked"] as const).filter((kind) =>
-        importsListKind(scope, kind),
-      ),
-      collections: null,
-      fileEveryCollection: false,
+      listKinds,
+      collections,
+      fileEveryCollection: collectionFiling(source, scope) === "every",
     };
   }
   const separateLiked = SEPARATE_LIKED_LISTS.has(source);

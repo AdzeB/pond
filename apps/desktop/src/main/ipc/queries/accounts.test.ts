@@ -147,12 +147,12 @@ describe("accounts.importOptions", () => {
   it("returns no collections for Sources that import everything", async () => {
     const listSourceCollections = vi.fn();
     const operation = createImportOptionsQuery({
-      getAccount: vi.fn(async () => account("tiktok")),
+      getAccount: vi.fn(async () => account("reddit")),
       resolveAccountHandle: vi.fn(async () => "raphael"),
       listSourceCollections,
     });
 
-    await expect(operation({ accountId: "tiktok:123" })).resolves.toEqual({
+    await expect(operation({ accountId: "reddit:123" })).resolves.toEqual({
       ok: true,
       collections: null,
     });

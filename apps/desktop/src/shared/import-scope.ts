@@ -74,8 +74,8 @@ const IMPORT_SCOPE_OPTIONS = {
   },
   tiktok: {
     listKinds: SAVED_AND_LIKED,
-    collections: null,
-    fileEveryCollection: false,
+    collections: "collection",
+    fileEveryCollection: true,
     mediaKinds: [],
     since: true,
   },

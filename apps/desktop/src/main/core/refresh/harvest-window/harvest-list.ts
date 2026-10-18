@@ -18,8 +18,8 @@ import {
   INSTAGRAM_HOME_URL,
   INSTAGRAM_LIKES_TIMEOUT_MS,
   INSTAGRAM_LIKES_URL,
-  readInstagramCollections,
 } from "../harvest/instagram";
+import { readCollectionsReply } from "../harvest/lib/collections-reply";
 import type {
   ListEntry,
   ListHarvestArgs,
@@ -35,7 +35,9 @@ import {
   THREADS_LIST_URL,
 } from "../harvest/threads";
 import {
+  buildTiktokCollectionsExpression,
   buildTiktokListExpression,
+  tiktokCollectionUrl,
   tiktokFavouritesUrl,
 } from "../harvest/tiktok";
 import {
@@ -63,8 +65,10 @@ import { sleep } from "./util";
 
 interface SourceListArgs extends ListHarvestArgs {
   accountKey?: string;
-  /** Instagram only: walks one saved collection. */
+  /** Instagram and TikTok: walks one saved collection. */
   collectionId?: string;
+  /** TikTok puts the collection name in its URL. */
+  collectionName?: string;
 }
 
 const OptionalText = z.string().optional().catch(undefined);
@@ -163,7 +167,7 @@ export async function harvestSourceList(
     const { harvestCosmosLibrary } = await import("../harvest/cosmos/api");
     return harvestCosmosLibrary(args, opts.partition);
   }
-  const target = listUrlForSource(source, args.accountKey);
+  const target = listUrlForSource(source, args);
   if (!target) {
     return { ok: false, reason: "no_match" };
   }
@@ -346,7 +350,7 @@ async function readHarvestPartial(
 
 function listUrlForSource(
   source: Source,
-  accountKey: string | undefined,
+  { accountKey, collectionId, collectionName }: SourceListArgs,
 ): string | null {
   switch (source) {
     case "youtube":
@@ -360,7 +364,13 @@ function listUrlForSource(
     case "instagram":
       return INSTAGRAM_HOME_URL;
     case "tiktok":
-      return accountKey ? tiktokFavouritesUrl(accountKey) : null;
+      if (!accountKey) return null;
+      return collectionId
+        ? tiktokCollectionUrl(accountKey, {
+            id: collectionId,
+            name: collectionName ?? "",
+          })
+        : tiktokFavouritesUrl(accountKey);
     case "twitter":
       return null;
     case "reddit":
@@ -376,7 +386,7 @@ function listUrlForSource(
 
 function buildListExpressionFor(
   source: Source,
-  args: ListHarvestArgs,
+  args: SourceListArgs,
 ): string | null {
   switch (source) {
     case "youtube":
@@ -481,7 +491,18 @@ export async function listSourceCollections(
         { partition: opts.partition },
       );
       if (!run.ok) return pageRunFailure(run.reason);
-      return readInstagramCollections(run.value);
+      return readCollectionsReply(run.value);
+    }
+    case "tiktok": {
+      if (!opts.accountKey) return { ok: false, reason: "unknown" };
+      const run = await runOnSourcePage(
+        "tiktok",
+        tiktokFavouritesUrl(opts.accountKey),
+        buildTiktokCollectionsExpression(),
+        { partition: opts.partition, timeoutMs: 60_000 },
+      );
+      if (!run.ok) return pageRunFailure(run.reason);
+      return readCollectionsReply(run.value);
     }
     case "twitter": {
       const run = await runOnSourcePage(
@@ -515,7 +536,7 @@ function parseJsonText(value: JsonValue): JsonValue {
 export async function harvestSourceCollections(
   source: Source,
   collections: readonly ImportCollection[],
-  args: ListHarvestArgs,
+  args: SourceListArgs,
   opts: { partition: string },
 ): Promise<ListHarvestResult> {
   switch (source) {
@@ -534,6 +555,18 @@ export async function harvestSourceCollections(
         harvestSourceList(
           source,
           { ...args, collectionId: collection.id },
+          { partition: opts.partition },
+        ),
+      );
+    case "tiktok":
+      return harvestEachCollection(source, collections, (collection) =>
+        harvestSourceList(
+          source,
+          {
+            ...args,
+            collectionId: collection.id,
+            collectionName: collection.name,
+          },
           { partition: opts.partition },
         ),
       );

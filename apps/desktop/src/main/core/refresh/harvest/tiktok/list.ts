@@ -10,7 +10,12 @@ export function tiktokFavouritesUrl(handle: string): string {
   return `https://www.tiktok.com/@${encodeURIComponent(handle)}`;
 }
 
-export function buildTiktokListExpression(args: ListHarvestArgs): string {
+export interface TiktokListArgs extends ListHarvestArgs {
+  /** Reads the collection page the window is on instead of the Favorites and Liked tabs. */
+  collectionId?: string;
+}
+
+export function buildTiktokListExpression(args: TiktokListArgs): string {
   return buildScrollListExpression(
     inPageTiktokNormalize,
     inPageTiktokList,
@@ -19,7 +24,7 @@ export function buildTiktokListExpression(args: ListHarvestArgs): string {
 }
 
 async function inPageTiktokList(
-  args: ListHarvestArgs,
+  args: TiktokListArgs,
   scroll: ReturnType<typeof inPageScrollCollect>,
   norm: ReturnType<typeof inPageTiktokNormalize>,
 ): Promise<ListHarvestResult> {
@@ -111,6 +116,16 @@ async function inPageTiktokList(
       });
     }
     return out;
+  }
+
+  if (args.collectionId) {
+    const walked = await scroll({
+      collectFn,
+      knownIds: args.knownIds,
+      hydrateSelector: 'a[href*="/video/"]',
+    });
+    if (!walked.ok) return walked;
+    return { ok: true, entries: walked.entries, reachedEnd: walked.reachedEnd };
   }
 
   type Kind = "liked" | "saved";

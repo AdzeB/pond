@@ -31,12 +31,14 @@ export function buildScrollListExpression<Norm, Result>(
   const scrollSrc = `(${inPageScrollCollect.toString()})()`;
   const normSrc = `(${normalizeFactory.toString()})(validators)`;
   const fnSrc = `(${listFn.toString()})`;
+  /** The scroll collector stops at known ids whenever it has any, so a walk that must reach the end gets none. */
+  const pageArgs = args.earlyStop === false ? { ...args, knownIds: [] } : args;
   return `(async () => {
     ${browserValidationSource}
     const validators = PondHarvestValidation.browserValidators;
     const scroll = ${scrollSrc};
     const norm = ${normSrc};
-    const args = ${JSON.stringify(args)};
+    const args = ${JSON.stringify(pageArgs)};
     try { return await ${fnSrc}(args, scroll, norm); }
     catch (e) { return { ok: false, reason: 'timeout', error: String(e) }; }
   })()`;

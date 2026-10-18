@@ -1,8 +1,6 @@
 /// <reference lib="dom" />
 
-import type { JsonValue } from "@pond/schema/json";
-import type { ImportCollectionOption } from "@shared/import-scope";
-import { z } from "zod";
+import type { CollectionsReply } from "../lib/collections-reply";
 
 interface CollectionsPage {
   items?: Array<{
@@ -16,13 +14,6 @@ interface CollectionsPage {
   require_login?: boolean;
   message?: string;
 }
-
-type CollectionsReply =
-  | {
-      ok: true;
-      collections: Array<{ id: string; name: string; count: number | null }>;
-    }
-  | { ok: false; reason: "auth_required" | "rate_limited" | "unknown" };
 
 export function buildInstagramCollectionsExpression(): string {
   return `(async () => {
@@ -74,44 +65,4 @@ async function inPageInstagramCollections(): Promise<CollectionsReply> {
     await new Promise((r) => setTimeout(r, 250));
   }
   return { ok: true, collections };
-}
-
-const ReplySchema = z
-  .union([
-    z.object({
-      ok: z.literal(true),
-      collections: z
-        .array(
-          z.object({
-            id: z.string().min(1),
-            name: z.string().catch(""),
-            count: z.number().nullable().catch(null),
-          }),
-        )
-        .catch([]),
-    }),
-    z.object({
-      ok: z.literal(false),
-      reason: z
-        .enum(["auth_required", "rate_limited", "unknown"])
-        .catch("unknown"),
-    }),
-  ])
-  .catch({ ok: false, reason: "unknown" });
-
-export function readInstagramCollections(
-  value: JsonValue,
-):
-  | { ok: true; collections: ImportCollectionOption[] }
-  | { ok: false; reason: "auth_required" | "rate_limited" | "unknown" } {
-  const reply = ReplySchema.parse(value);
-  if (!reply.ok) return reply;
-  return {
-    ok: true,
-    collections: reply.collections.map((collection) => ({
-      id: collection.id,
-      name: collection.name || collection.id,
-      itemCount: collection.count,
-    })),
-  };
 }

@@ -103,6 +103,28 @@ describe("listHarvestPlan", () => {
       "liked",
     ]);
   });
+
+  it("swaps the saved tab for picked TikTok collections", () => {
+    const collections = [{ id: "7", name: "Recipes" }];
+    expect(listHarvestPlan("tiktok", { collections })).toEqual({
+      primary: true,
+      liked: false,
+      listKinds: ["liked"],
+      collections,
+      fileEveryCollection: false,
+    });
+    expect(
+      listHarvestPlan("tiktok", { listKinds: ["saved"], collections }),
+    ).toMatchObject({ primary: false, listKinds: [], collections });
+  });
+
+  it("files every TikTok collection when Add to Folders is on", () => {
+    expect(listHarvestPlan("tiktok", { addToFolders: true })).toMatchObject({
+      primary: true,
+      listKinds: ["saved", "liked"],
+      fileEveryCollection: true,
+    });
+  });
 });
 
 describe("isImportPending", () => {

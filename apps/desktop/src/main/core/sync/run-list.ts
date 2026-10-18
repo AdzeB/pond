@@ -177,9 +177,24 @@ export async function syncListSource(
 
   const gaps: string[] = [];
   const dualHarvest = source === "reddit" || source === "tiktok";
-  let combined = dualHarvest
-    ? harvest.entries
-    : stampListKind(harvest.entries, "saved");
+  let combined =
+    dualHarvest && !plan.collections
+      ? harvest.entries
+      : stampListKind(harvest.entries, "saved");
+  if (dualHarvest && plan.collections && plan.primary) {
+    const rest = await harvestSourceList(source, listArgs, { partition });
+    if (rest.ok) {
+      combined = unionById(
+        combined,
+        rest.entries,
+        (e) => e.sourceId,
+        mergeEntryListKinds,
+      );
+    } else {
+      log.warn(`[pond sync:${source}] likes harvest failed: ${rest.reason}`);
+      gaps.push(listGapNote("Likes", rest.reason));
+    }
+  }
   if (source === "instagram" && plan.liked) {
     const liked = await harvestInstagramLikedList(
       {
@@ -230,7 +245,11 @@ export async function syncListSource(
           harvestSourceCollections(
             source,
             collections,
-            { knownIds: Array.from(knownIds), earlyStop: collectionEarlyStop },
+            {
+              knownIds: Array.from(knownIds),
+              earlyStop: collectionEarlyStop,
+              accountKey,
+            },
             { partition },
           ),
       })

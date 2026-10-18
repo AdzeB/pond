@@ -58,8 +58,10 @@ filtered afterward.
   reads an old `syncLikes: false` as Bookmarks only.
 - Reddit and TikTok: Saved and Liked come from one walk, which reads
   `ListHarvestArgs.listKinds` and skips the listing or tab you left out.
-- Collections narrow the saved list: Pinterest boards, Instagram collections,
-  X bookmark folders, and YouTube playlists (Watch Later stays the default).
+- Collections narrow the saved list: Pinterest boards, Instagram and TikTok
+  collections, X bookmark folders, and YouTube playlists (Watch Later stays the
+  default). Picking TikTok collections drops the Favorites tab from its single
+  walk; Liked Videos still comes from that walk.
   `listSourceCollections` and `harvestSourceCollections`
   (`harvest-window/harvest-list.ts`) load and walk them.
 - Cosmos, Are.na, and Threads import every list.
@@ -74,7 +76,7 @@ collection's Folder id, so renaming the Folder keeps it in use; a deleted one
 is created again. `importScope.addToFolders: false` turns filing off.
 
 With no collections picked, `addToFolders: true` files every collection
-(`collectionFiling` in `shared/import-scope.ts`) on X, Instagram, and
+(`collectionFiling` in `shared/import-scope.ts`) on X, Instagram, TikTok, and
 Pinterest, where the saved list holds every collection. YouTube's default is
 Watch Later, not every playlist, so it files only picked playlists. The run walks
 the lists as usual, then `walkEveryCollection` lists and walks each collection
@@ -90,7 +92,8 @@ finishes. A full run counts as that read. The main saved list keeps its early
 stop, so the extra cost is one read of your collections a day, however often
 sync runs. When picked collections are read to the end, the run loads every
 known id (`loadAllKnownIds`), not the recent window, so older saves aren't
-queued again.
+queued again. Scroll walks stop at any known id they meet, so
+`buildScrollListExpression` sends them none when a walk must reach the end.
 
 Media kinds and a `since` date are filters, not walks: list data is too patchy
 to judge a post before capture, and filtering early would break early stop.
