@@ -92,10 +92,7 @@ it.each([
 );
 
 function nicknameField() {
-  const label = Array.from(host.querySelectorAll("label")).find(
-    (node) => node.textContent === "Nickname",
-  );
-  return label?.htmlFor ? document.getElementById(label.htmlFor) : null;
+  return host.querySelector('input[aria-label="Nickname"]');
 }
 
 it("centers the handle and suggests it as the nickname", async () => {
@@ -149,12 +146,12 @@ it("switches pages from the sidebar and keeps the footer", async () => {
   const nav = host.querySelector('[aria-label="Pages"]');
   const pages = Array.from(nav?.querySelectorAll("button") ?? []);
   expect(pages.map((page) => page.textContent)).toEqual(["General", "Import"]);
-  expect(host.querySelector("h3")?.textContent).toBe("Import");
+  expect(host.querySelector("h1")?.textContent).toBe("Import");
   expect(host.textContent).toContain("Import choices");
   expect(nicknameField()).toBeNull();
 
   await act(async () => pages[0]?.click());
-  expect(host.querySelector("h3")?.textContent).toBe("General");
+  expect(host.querySelector("h1")?.textContent).toBe("General");
   expect(nicknameField()).toBeInstanceOf(HTMLInputElement);
   expect(host.textContent).not.toContain("Import choices");
   expect(pages[0]?.getAttribute("aria-current")).toBe("page");

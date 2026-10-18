@@ -1,55 +1,64 @@
+/* Mirrors the Settings window: sidebar on the window gray, page in an inset panel. */
 .layout {
   display: grid;
   flex: 1;
-  grid-template-columns: 208px minmax(0, 1fr);
+  grid-template-columns: 200px minmax(0, 1fr);
   min-height: 0;
+  background: var(--ds-gray-2);
 }
 
 .aside {
   display: flex;
   flex-direction: column;
-  gap: 4px;
   min-height: 0;
-  padding: 20px 12px 12px;
-  overflow-y: auto;
-  background: var(--ds-gray-2);
-  border-right: var(--ds-border-width) solid var(--ds-gray-a4);
+  padding: 12px 8px 0 12px;
 }
 
 .identity {
-  gap: 12px;
-  padding: 4px 0 16px;
+  display: flex;
+  flex: none;
+  gap: 8px;
+  align-items: center;
+  height: 32px;
+  padding-inline-start: 6px;
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-lg);
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.nav {
+  flex: 1;
+  height: auto;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  margin: 8px 8px 8px 0;
+  overflow: hidden;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-xs);
 }
 
 .main {
-  gap: 20px;
-  padding: 20px 24px 24px;
+  flex: 1;
+  padding: 0;
 }
 
-.header {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.title {
-  margin: 0;
-  font-size: var(--ds-text-lg);
-  font-weight: var(--ds-weight-xl);
-  line-height: 24px;
-  color: var(--ds-gray-12);
-}
-
-.description {
-  margin: 0;
-  font-size: var(--ds-text-md);
-  line-height: 20px;
-  color: var(--ds-gray-11);
-}
-
-.general {
-  display: flex;
-  flex-direction: column;
+.main .page {
+  --settings-margin-block: 32px;
 }
 
 .unavailable {
@@ -58,17 +67,24 @@
   text-align: center;
 }
 
-.field {
-  padding-bottom: 16px;
+.nickname {
+  width: 240px;
+  max-width: 100%;
 }
 
-.section {
-  padding-inline: 24px;
-  margin-inline: -24px;
+.value {
+  display: block;
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-md);
+  color: var(--ds-gray-11);
+  white-space: nowrap;
 }
 
 .activity {
-  display: flex;
   flex-direction: column;
   gap: 12px;
   align-items: stretch;

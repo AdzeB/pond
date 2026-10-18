@@ -1,6 +1,18 @@
-import { IconDownload, IconGear3, IconSliders } from "@pond/icons";
+import {
+  IconDotsFill,
+  IconDownload,
+  IconGear3,
+  IconSliders,
+} from "@pond/icons";
 import type { Source } from "@pond/schema/db";
-import { Dialog, Field, Input, type MenuItemSpec, Sidebar } from "@pond/ui";
+import {
+  Dialog,
+  Input,
+  Menu,
+  type MenuItemSpec,
+  Settings,
+  Sidebar,
+} from "@pond/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { SourceDetailsKind, SourceDetailsPage } from "@/features/library";
@@ -45,9 +57,7 @@ import {
   type SyncSourceStatus,
   useSyncByAccount,
 } from "@/features/sources/state/sync-monitor";
-import { DetailsHero } from "@/shared/components/details-hero";
-import { Section } from "@/shared/components/inspector-section";
-import { PropertyList } from "@/shared/components/property-list";
+import { SpecMenu } from "@/shared/components/spec-context-menu";
 import { formatNumber, formatTimestampLine } from "@/shared/lib/format";
 import { relativeTimeFromMs } from "@/shared/lib/relative-time";
 import styles from "./styles.module.css";
@@ -369,6 +379,7 @@ function SourceInspectorDetails({
     id: "general",
     label: "General",
     icon: <IconGear3 />,
+    description,
     content: (
       <GeneralPage
         handle={handle}
@@ -384,62 +395,78 @@ function SourceInspectorDetails({
   const [pageId, setPageId] = useState(initialPage);
   const page = all.find((item) => item.id === pageId) ?? general;
   return (
-    <>
-      <div className={styles.layout}>
-        <aside className={styles.aside}>
-          <DetailsHero.Root className={styles.identity}>
-            <DetailsHero.Media>
-              <HeroAvatar
-                source={source}
-                avatarUrl={avatarUrl}
-                size={64}
-                badge={false}
-              />
-              <DetailsHero.Actions
-                items={menuItems}
-                aria-label="Source Actions"
-              />
-            </DetailsHero.Media>
-            <DetailsHero.Copy>
-              <DetailsHero.Title>
-                {title || handle || nickname || getSourceDef(source).label}
-              </DetailsHero.Title>
-              {description ? (
-                <DetailsHero.Description>{description}</DetailsHero.Description>
-              ) : null}
-            </DetailsHero.Copy>
-          </DetailsHero.Root>
-          <Sidebar.Root width="full" role="navigation" aria-label="Pages">
-            {all.map((item) => {
-              const active = item.id === page.id;
-              return (
-                <Sidebar.Item
-                  key={item.id}
-                  data-status={active ? "active" : undefined}
-                  aria-current={active ? "page" : undefined}
-                  onClick={() => setPageId(item.id)}
-                >
-                  <Sidebar.Icon>{item.icon}</Sidebar.Icon>
-                  <Sidebar.ItemLabel>{item.label}</Sidebar.ItemLabel>
-                </Sidebar.Item>
-              );
-            })}
-          </Sidebar.Root>
-        </aside>
+    <div className={styles.layout}>
+      <aside className={styles.aside}>
+        <header className={styles.identity}>
+          <HeroAvatar
+            source={source}
+            avatarUrl={avatarUrl}
+            size={24}
+            badge={false}
+          />
+          <h2 className={styles.name}>
+            {title || handle || nickname || getSourceDef(source).label}
+          </h2>
+          <SourceActions items={menuItems} />
+        </header>
+        <Sidebar.Root
+          className={styles.nav}
+          width="full"
+          role="navigation"
+          aria-label="Pages"
+        >
+          <Sidebar.Scroll>
+            <Sidebar.Group>
+              {all.map((item) => {
+                const active = item.id === page.id;
+                return (
+                  <Sidebar.Item
+                    key={item.id}
+                    data-status={active ? "active" : undefined}
+                    aria-current={active ? "page" : undefined}
+                    onClick={() => setPageId(item.id)}
+                  >
+                    <Sidebar.Icon>{item.icon}</Sidebar.Icon>
+                    <Sidebar.ItemLabel>{item.label}</Sidebar.ItemLabel>
+                  </Sidebar.Item>
+                );
+              })}
+            </Sidebar.Group>
+          </Sidebar.Scroll>
+        </Sidebar.Root>
+      </aside>
+      <div className={styles.panel}>
         <Dialog.Content className={styles.main}>
-          <header className={styles.header}>
-            <h3 className={styles.title}>{page.label}</h3>
-            {page.description ? (
-              <p className={styles.description}>{page.description}</p>
-            ) : null}
-          </header>
-          {page.content}
+          <Settings.Page className={styles.page}>
+            <Settings.Header>
+              <Settings.HeaderText>
+                <Settings.Title>{page.label}</Settings.Title>
+                {page.description ? (
+                  <Settings.Description>
+                    {page.description}
+                  </Settings.Description>
+                ) : null}
+              </Settings.HeaderText>
+            </Settings.Header>
+            {page.content}
+          </Settings.Page>
         </Dialog.Content>
+        <Dialog.Footer leading={leading}>
+          {actions ?? <Dialog.Cancel>Done</Dialog.Cancel>}
+        </Dialog.Footer>
       </div>
-      <Dialog.Footer leading={leading}>
-        {actions ?? <Dialog.Cancel>Done</Dialog.Cancel>}
-      </Dialog.Footer>
-    </>
+    </div>
+  );
+}
+
+function SourceActions({ items }: { items: MenuItemSpec[] }) {
+  if (items.length === 0) return null;
+  return (
+    <SpecMenu align="end" buildItems={() => items}>
+      <Menu.Trigger variant="ghost" size="xs" icon aria-label="Source Actions">
+        <IconDotsFill size={12} />
+      </Menu.Trigger>
+    </SpecMenu>
   );
 }
 
@@ -456,52 +483,54 @@ function GeneralPage({
 > & { nickname: string; properties: SourceInspectorProperty[] }) {
   const activity = model ? activityDetail(model, syncStatus) : null;
   return (
-    <div className={styles.general}>
+    <>
       {onNicknameSave ? (
-        <NicknameField
-          nickname={nickname}
-          placeholder={handle ?? "Add a nickname"}
-          onSave={onNicknameSave}
-        />
+        <Settings.List>
+          <NicknameItem
+            nickname={nickname}
+            placeholder={handle ?? "Add a nickname"}
+            onSave={onNicknameSave}
+          />
+        </Settings.List>
       ) : null}
       {properties.length > 0 ? (
-        <Section
-          title="Properties"
-          className={styles.section}
-          collapsible={false}
-        >
-          <PropertyList.Root>
+        <Settings.Section>
+          <Settings.SectionTitle>Properties</Settings.SectionTitle>
+          <Settings.List>
             {properties.map((property) => (
-              <PropertyList.Row key={property.label}>
-                <PropertyList.Label>{property.label}</PropertyList.Label>
-                <PropertyList.Value>{property.value}</PropertyList.Value>
-              </PropertyList.Row>
+              <Settings.Item key={property.label}>
+                <Settings.ItemDetails>
+                  <Settings.ItemTitle>{property.label}</Settings.ItemTitle>
+                </Settings.ItemDetails>
+                <Settings.ItemControl className={styles.value}>
+                  {property.value}
+                </Settings.ItemControl>
+              </Settings.Item>
             ))}
-          </PropertyList.Root>
-        </Section>
+          </Settings.List>
+        </Settings.Section>
       ) : null}
       {model && activity ? (
-        <Section
-          title="Activity"
-          className={styles.section}
-          collapsible={false}
-        >
-          <div className={styles.activity}>
-            <p
-              className={styles.detail}
-              data-tone={
-                model.tone === "err" || model.tone === "paused"
-                  ? model.tone
-                  : undefined
-              }
-            >
-              {activity}
-            </p>
-            <SourceProgress progress={syncStatus?.progress} />
-          </div>
-        </Section>
+        <Settings.Section>
+          <Settings.SectionTitle>Activity</Settings.SectionTitle>
+          <Settings.List>
+            <Settings.Item className={styles.activity}>
+              <p
+                className={styles.detail}
+                data-tone={
+                  model.tone === "err" || model.tone === "paused"
+                    ? model.tone
+                    : undefined
+                }
+              >
+                {activity}
+              </p>
+              <SourceProgress progress={syncStatus?.progress} />
+            </Settings.Item>
+          </Settings.List>
+        </Settings.Section>
       ) : null}
-    </div>
+    </>
   );
 }
 
@@ -545,7 +574,7 @@ function SourceProgress({
   );
 }
 
-function NicknameField({
+function NicknameItem({
   nickname,
   placeholder,
   onSave,
@@ -571,27 +600,36 @@ function NicknameField({
     }
   };
   return (
-    <Field.Root className={styles.field} invalid={status === "error"}>
-      <Field.Label>Nickname</Field.Label>
-      <Input.Root>
-        <Field.Control
-          render={<Input.Field />}
-          defaultValue={nickname}
-          placeholder={placeholder}
-          maxLength={255}
-          disabled={status === "saving"}
-          onChange={() => setStatus("idle")}
-          onBlur={(event) => void save(event.currentTarget.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") event.currentTarget.blur();
-          }}
-        />
-      </Input.Root>
-      {status === "error" ? (
-        <p className={styles["field-status"]} role="alert">
-          Couldn't save. Focus the field and press Enter to try again.
-        </p>
-      ) : null}
-    </Field.Root>
+    <Settings.Item>
+      <Settings.ItemDetails>
+        <Settings.ItemTitle>Nickname</Settings.ItemTitle>
+        {status === "error" ? (
+          <span className={styles["field-status"]} role="alert">
+            Couldn't save. Focus the field and press Enter to try again.
+          </span>
+        ) : (
+          <Settings.ItemDescription>
+            Shown instead of the handle across Pond.
+          </Settings.ItemDescription>
+        )}
+      </Settings.ItemDetails>
+      <Settings.ItemControl>
+        <Input.Root className={styles.nickname}>
+          <Input.Field
+            aria-label="Nickname"
+            aria-invalid={status === "error" || undefined}
+            defaultValue={nickname}
+            placeholder={placeholder}
+            maxLength={255}
+            disabled={status === "saving"}
+            onChange={() => setStatus("idle")}
+            onBlur={(event) => void save(event.currentTarget.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.currentTarget.blur();
+            }}
+          />
+        </Input.Root>
+      </Settings.ItemControl>
+    </Settings.Item>
   );
 }
