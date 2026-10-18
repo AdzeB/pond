@@ -269,11 +269,7 @@ function fetchItems(target: SourceMenuTarget): MenuItemSpec[] {
         label: "Fetch Original Media",
         icon: <IconTableDownload />,
         disabled: !target.model.connected,
-        onClick: () =>
-          void window.pond.refreshBackfillStart({
-            source: target.source,
-            overwrite: true,
-          }),
+        onClick: () => confirmOriginalMedia(target.source),
       },
     );
   }
@@ -290,6 +286,18 @@ function fetchItems(target: SourceMenuTarget): MenuItemSpec[] {
     });
   }
   return items;
+}
+
+function confirmOriginalMedia(source: Source): void {
+  const sourceLabel = getSourceDef(source).label;
+  Dialog.confirm({
+    title: "Fetch Original Media",
+    description: `Pond deletes the media on every ${sourceLabel} save and downloads it again. Each save shows no media until its download finishes.`,
+    confirmLabel: "Fetch",
+    onConfirm: async () => {
+      await window.pond.refreshBackfillStart({ source, overwrite: true });
+    },
+  });
 }
 
 function startSourceSignIn(
@@ -579,11 +587,7 @@ function fetchRows(target: SourceMenuTarget): SourceActionRow[] {
         {
           label: "Fetch",
           name: "Fetch Original Media",
-          onClick: () =>
-            void window.pond.refreshBackfillStart({
-              source: target.source,
-              overwrite: true,
-            }),
+          onClick: () => confirmOriginalMedia(target.source),
         },
       ],
     },

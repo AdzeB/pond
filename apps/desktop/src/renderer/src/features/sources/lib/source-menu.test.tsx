@@ -1,4 +1,4 @@
-import type { MenuItemSpec } from "@pond/ui";
+import { Dialog, type MenuItemSpec } from "@pond/ui";
 import { Children, isValidElement, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { detailsDialog } from "@/features/library";
@@ -181,6 +181,25 @@ describe("buildSourceActionMenu", () => {
         text: "acc-instagram",
       });
     });
+  });
+
+  it("asks before replacing every save's media", async () => {
+    const confirm = vi.spyOn(Dialog, "confirm").mockImplementation(() => {});
+    const media = findItem(
+      buildSourceActionMenu(account()),
+      "Fetch Original Media",
+    );
+    if (!media || !("onClick" in media)) throw new Error("Missing media item");
+    media.onClick?.();
+    expect(window.pond.refreshBackfillStart).not.toHaveBeenCalled();
+    const options = confirm.mock.calls[0]?.[0];
+    expect(options?.title).toBe("Fetch Original Media");
+    await options?.onConfirm({ checked: false });
+    expect(window.pond.refreshBackfillStart).toHaveBeenCalledWith({
+      source: "instagram",
+      overwrite: true,
+    });
+    confirm.mockRestore();
   });
 
   it("adapts fetch actions to running and failed states", () => {
