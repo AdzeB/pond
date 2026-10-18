@@ -10,7 +10,7 @@ type NavigatorWithHints = Navigator & {
   userAgentData?: { platform: string };
 };
 
-export function detectPlatform(navigator: NavigatorWithHints): Platform {
+function detectPlatform(navigator: NavigatorWithHints): Platform {
   const name = navigator.userAgentData?.platform || navigator.userAgent;
   return /windows|win32|win64/i.test(name) ? "windows" : FALLBACK;
 }
