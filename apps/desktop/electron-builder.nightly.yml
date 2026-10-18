@@ -1,24 +1,10 @@
-# Pond Nightly: a separate app beside stable Pond. The runtime reads the
-# channel from the `-nightly.` version the nightly workflow stamps, which keeps
-# app data, the default Library, `pond://`, and the native host apart.
+# Same Pond app as stable. Only the update feed differs: electron-updater on the
+# Nightly channel reads `nightly-mac.yml` from the newest nightly prerelease.
 #
 # Arrays merge with the parent config, so pick the arch on the command line:
 #   electron-builder --config electron-builder.nightly.yml --mac dmg zip --arm64
 extends: electron-builder.yml
 
-appId: so.pond.desktop.nightly
-productName: Pond Nightly
-
-# Electron names the userData folder after the packaged productName.
-extraMetadata:
-  productName: Pond Nightly
-
-# GitHub rewrites spaces in asset names, which would break the update feed.
-mac:
-  icon: icon.development.icns
-  artifactName: Pond-Nightly-${version}-${arch}.${ext}
-
-# electron-updater reads `nightly-mac.yml` for a `-nightly.` version.
 publish:
   provider: github
   owner: raphaelsalaja

@@ -103,19 +103,18 @@ macOS artifacts are available.
 
 [`.github/workflows/nightly.yml`](.github/workflows/nightly.yml) publishes a signed, notarized arm64 build of `main` every night as a GitHub prerelease. A scheduled run skips when `main` hasn't changed since the last nightly. Run it from the Actions tab to build now.
 
-The workflow runs the same checks as `macos`, then stamps a version such as `1.0.2-nightly.20261018.42` into `apps/desktop/package.json` without committing it. The version is the next patch, the UTC date, and the run number. [`electron-builder.nightly.yml`](apps/desktop/electron-builder.nightly.yml) extends the stable config and packages **Pond Nightly**.
+The workflow runs the same checks as `macos`, then stamps a version such as `1.0.2-nightly.20261018.42` into `apps/desktop/package.json` without committing it. The version is the next patch, the UTC date, and the run number. [`electron-builder.nightly.yml`](apps/desktop/electron-builder.nightly.yml) extends the stable config and only changes the update feed, so a nightly is the same Pond app with the same data and Library.
 
-Pond Nightly reads its channel from that version and stays clear of stable Pond:
+**Settings → Preferences → Update Channel** picks the feed:
 
-- App data in `~/Library/Application Support/Pond Nightly` and a default Library in `~/Pond Nightly`
-- Local API on port 41611, with its own token
-- No `pond://` handler or browser native host, so links and the extension keep reaching Pond
-- The blueprint icon from `build/icon.development.icns`, regardless of the App Icon setting
-- Updates from `nightly-mac.yml` on the newest nightly prerelease. Stable Pond reads `releases/latest`, which never points at a prerelease
+- **Stable** reads `latest-mac.yml` from `releases/latest`, which never points at a prerelease.
+- **Nightly** reads `nightly-mac.yml` from the newest nightly prerelease.
+
+Downgrades are off. Switching back to Stable keeps the current nightly until a newer stable release ships. The next stable patch always sorts after the nightlies built for it.
 
 Nightlies never touch `latest` or the Homebrew cask. The workflow keeps the last 7 and deletes older nightly releases and tags.
 
-Artifacts: `Pond-Nightly-<version>-arm64.dmg`, `Pond-Nightly-<version>-arm64.zip`, and `nightly-mac.yml`.
+Artifacts: `Pond-<version>-arm64.dmg`, `Pond-<version>-arm64.zip`, and `nightly-mac.yml`.
 
 ## Local packaging (without publish)
 

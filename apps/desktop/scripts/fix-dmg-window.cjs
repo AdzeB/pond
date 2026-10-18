@@ -10,15 +10,13 @@ const SECTORS_PER_MB = 2048;
 
 exports.default = async function fixDmgWindows(buildResult) {
   if (process.platform !== "darwin") return;
-  /** The DMG volume is titled "${productName}" in electron-builder.yml. */
-  const volumeName = buildResult.configuration.productName ?? "Pond";
   for (const file of buildResult.artifactPaths) {
-    if (file.endsWith(".dmg")) await bakeFinderLayout(file, volumeName);
+    if (file.endsWith(".dmg")) await bakeFinderLayout(file);
   }
 };
 
-async function bakeFinderLayout(dmgPath, volumeName) {
-  waitUntilUnmounted(volumeName);
+async function bakeFinderLayout(dmgPath) {
+  waitUntilUnmounted();
   const work = await mkdtemp(join(tmpdir(), "pond-dmg-"));
   const rw = join(work, "rw.dmg");
   const out = join(work, basename(dmgPath));
@@ -29,10 +27,10 @@ async function bakeFinderLayout(dmgPath, volumeName) {
     growScratchSpace(rw);
     const device = attachRw(rw);
     try {
-      layoutVolume(waitForVolume(volumeName), volumeName);
+      layoutVolume(waitForVolume());
     } finally {
       execFileSync("hdiutil", ["detach", device, "-force"], { stdio: "pipe" });
-      waitUntilUnmounted(volumeName);
+      waitUntilUnmounted();
     }
     execFileSync("hdiutil", ["convert", rw, "-format", "UDZO", "-o", out], {
       stdio: "pipe",
@@ -65,15 +63,14 @@ function growScratchSpace(image) {
   );
 }
 
-function waitUntilUnmounted(volumeName) {
-  const mounts = [`/Volumes/${volumeName}`, `/Volumes/${volumeName} 1`];
-  for (const mount of mounts) {
+function waitUntilUnmounted() {
+  for (const mount of ["/Volumes/Pond", "/Volumes/Pond 1"]) {
     try {
       execFileSync("hdiutil", ["detach", mount, "-quiet"], { stdio: "pipe" });
     } catch {}
   }
   for (let i = 0; i < 20; i++) {
-    if (!mounts.some((mount) => existsSync(mount))) return;
+    if (!existsSync("/Volumes/Pond") && !existsSync("/Volumes/Pond 1")) return;
     execFileSync("sleep", ["0.25"]);
   }
 }
@@ -91,21 +88,20 @@ function attachRw(image) {
   return match[1];
 }
 
-function waitForVolume(volumeName) {
-  const mount = `/Volumes/${volumeName}`;
+function waitForVolume() {
   for (let i = 0; i < 20; i++) {
-    if (existsSync(mount)) return mount;
+    if (existsSync("/Volumes/Pond")) return "/Volumes/Pond";
     execFileSync("sleep", ["0.25"]);
   }
-  throw new Error(`${volumeName} volume did not appear after attach`);
+  throw new Error("Pond volume did not appear after attach");
 }
 
-function layoutVolume(volume, volumeName) {
+function layoutVolume(volume) {
   const right = WINDOW.x + WINDOW.width;
   const bottom = WINDOW.y + WINDOW.height;
   const script = `
 tell application "Finder"
-  tell disk "${volumeName}"
+  tell disk "Pond"
     open
     set current view of container window to icon view
     set toolbar visible of container window to false

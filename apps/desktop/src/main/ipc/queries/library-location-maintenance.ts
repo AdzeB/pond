@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { readdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { BrowserWindow, dialog } from "electron";
+import { app, BrowserWindow, dialog } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { LibraryMarkSourceSchema } from "../../../shared/library-mark";
@@ -23,10 +23,7 @@ import { flushTagsDump } from "../../core/tags-bundle";
 import { runTransferJob } from "../../core/transfer-jobs";
 import { mergeLibraryFrom } from "../../core/transfer-operations";
 import { closeDb } from "../../db";
-import {
-  defaultLibraryParent,
-  libraryRoot as libraryRootDir,
-} from "../../paths";
+import { libraryRoot as libraryRootDir } from "../../paths";
 import {
   ensurePondSuffix,
   recentLibrariesFile,
@@ -142,7 +139,7 @@ export const libraryLocationMaintenanceQueries = {
           title: "Move Library",
           nameFieldLabel: "Pond Name:",
           buttonLabel: "Move",
-          defaultPath: join(defaultLibraryParent(), "My Pond.pond"),
+          defaultPath: join(app.getPath("home"), "Pond", "My Pond.pond"),
           properties: ["createDirectory" as const],
         };
         const result = win

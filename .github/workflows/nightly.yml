@@ -1,9 +1,8 @@
 name: Nightly
 
-# Publishes a signed, notarized Pond Nightly of `main` as a GitHub prerelease.
-# Pond Nightly installs beside Pond with its own app data and default Library,
-# and updates only from other nightlies. Stable Pond reads `releases/latest`,
-# which never points at a prerelease.
+# Publishes a signed, notarized build of `main` as a GitHub prerelease. Pond on
+# the Nightly update channel follows these. The Stable channel reads
+# `releases/latest`, which never points at a prerelease.
 
 on:
   schedule:
@@ -69,7 +68,7 @@ jobs:
           echo "build=true" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
-          echo "Building Pond Nightly $VERSION"
+          echo "Building Pond $VERSION"
 
   macos:
     needs: plan
@@ -138,10 +137,9 @@ jobs:
           NOTES_START=()
           if [ -n "$PREVIOUS" ]; then NOTES_START=(--notes-start-tag "$PREVIOUS"); fi
           gh release create "$TAG" --draft --prerelease --target "$GITHUB_SHA" \
-            --title "Pond Nightly $VERSION" --generate-notes "${NOTES_START[@]}"
+            --title "Pond $VERSION" --generate-notes "${NOTES_START[@]}"
 
-      # The version decides the runtime channel, so stamp it only into the
-      # packaged app and never commit it.
+      # Stamped only into the packaged app, never committed.
       - name: Stamp nightly version
         run: |
           node -e '
@@ -152,7 +150,7 @@ jobs:
             fs.writeFileSync(path, `${JSON.stringify(pkg, null, 2)}\n`);
           '
 
-      - name: Package Pond Nightly and upload to prerelease
+      - name: Package and upload to prerelease
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
@@ -168,7 +166,7 @@ jobs:
         run: |
           ASSETS="$(gh release view "$TAG" --json assets --jq '.assets[].name')"
           missing=0
-          for name in "Pond-Nightly-${VERSION}-arm64.dmg" "Pond-Nightly-${VERSION}-arm64.zip" "nightly-mac.yml"; do
+          for name in "Pond-${VERSION}-arm64.dmg" "Pond-${VERSION}-arm64.zip" "nightly-mac.yml"; do
             if ! grep -Fxq "$name" <<<"$ASSETS"; then
               echo "Missing prerelease asset: $name"
               missing=1

@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
-import { resolve } from "node:path";
-import { BrowserWindow, dialog, nativeImage, shell } from "electron";
+import { join, resolve } from "node:path";
+import { app, BrowserWindow, dialog, nativeImage, shell } from "electron";
 import { z } from "zod";
 import type { QueryResult } from "../../../shared/query-contracts";
 import { createPondBundle } from "../../core/ensure-default-library";
@@ -16,10 +16,7 @@ import { flushTagsDump } from "../../core/tags-bundle";
 import { LibraryMetadataError, readLibraryId } from "../../lib/library-id";
 import { readLibraryPointer } from "../../lib/library-pointer";
 import { isSamePath } from "../../lib/path-identity";
-import {
-  defaultLibraryParent,
-  libraryRoot as libraryRootDir,
-} from "../../paths";
+import { libraryRoot as libraryRootDir } from "../../paths";
 import { recentLibrariesFile } from "./library-location-paths";
 import {
   relaunchSoon,
@@ -133,7 +130,7 @@ export const libraryLocationOpenQueries = {
     const dialogOpts = {
       title: "Choose Where to Save Your Pond",
       buttonLabel: "Select",
-      defaultPath: defaultLibraryParent(),
+      defaultPath: join(app.getPath("home"), "Pond"),
       properties: ["openDirectory" as const, "createDirectory" as const],
     };
     const result = win

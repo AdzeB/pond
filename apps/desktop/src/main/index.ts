@@ -73,7 +73,6 @@ import { writeNativeHostManifests } from "./native/manifests";
 import { startNativeServer, stopNativeServer } from "./native/server";
 import { libraryRoot, type PondPaths, resolvePaths } from "./paths";
 import { registerProtocol, registerScheme } from "./protocol";
-import { channelIdentity } from "./release-channel";
 import { LOGIN_LAUNCH_ARG, runtimeControls } from "./runtime";
 import { configureSessionDefaults } from "./session-config";
 import {
@@ -105,7 +104,7 @@ import {
 markStartup("modules-loaded");
 
 /** Force app.name before any menu/dock work; dev falls back to "Electron" otherwise. */
-app.setName(channelIdentity.appName);
+app.setName("Pond");
 disableMenuActionImages();
 
 if (process.env.POND_SANDBOX) {
@@ -123,7 +122,7 @@ if (process.env.POND_SANDBOX) {
 }
 if (process.platform === "darwin") {
   app.setAboutPanelOptions({
-    applicationName: channelIdentity.appName,
+    applicationName: "Pond",
     applicationVersion: app.getVersion(),
     copyright: "Copyright © 2026 Raphael Salaja",
   });
@@ -179,7 +178,6 @@ void singleInstanceLock.then((acquired) => {
     hasInstanceLock: acquired,
     sandboxed: Boolean(process.env.POND_SANDBOX),
     defaultApp: Boolean(process.defaultApp),
-    ownsSystemHandlers: channelIdentity.ownsSystemHandlers,
   });
   if (protocolMode === "development") {
     if (process.argv.length >= 2) {
@@ -341,19 +339,17 @@ async function postLaunchInit(): Promise<void> {
     log.error("[pond] http server failed to start", err);
   }
 
-  if (channelIdentity.ownsSystemHandlers) {
+  try {
+    nativeServer = await startNativeServer();
+  } catch (err) {
+    log.error("[pond] native host failed to start", err);
+  }
+  /** Manifests must keep pointing at the real app, and registration never depends on the socket binding. */
+  if (!process.env.POND_SANDBOX) {
     try {
-      nativeServer = await startNativeServer();
+      await writeNativeHostManifests();
     } catch (err) {
-      log.error("[pond] native host failed to start", err);
-    }
-    /** Manifests must keep pointing at the real app, and registration never depends on the socket binding. */
-    if (!process.env.POND_SANDBOX) {
-      try {
-        await writeNativeHostManifests();
-      } catch (err) {
-        log.error("[pond] native host registration failed", err);
-      }
+      log.error("[pond] native host registration failed", err);
     }
   }
 

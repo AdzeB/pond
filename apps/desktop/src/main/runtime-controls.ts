@@ -16,7 +16,6 @@ interface RuntimeDependencies {
   ): Promise<RuntimeServer>;
   setTrayVisible(visible: boolean): Promise<void>;
   isPackaged: boolean;
-  defaultPort: number;
   setLoginItemSettings(settings: { openAtLogin: boolean }): void;
   setCloseToTray(enabled: boolean): void;
   applyAppIcon(icon: Prefs["window"]["appIcon"]): Promise<void>;
@@ -26,16 +25,10 @@ interface RuntimeDependencies {
 export function createRuntimeControls(deps: RuntimeDependencies) {
   let httpServer: RuntimeServer | null = null;
 
-  /** The prefs schema fills in the stable port, so that value means this channel's default. */
-  function portFor(prefs: Prefs): number {
-    const port = prefs.api.port || DEFAULT_INGEST_PORT;
-    return port === DEFAULT_INGEST_PORT ? deps.defaultPort : port;
-  }
-
   async function startHttpServer() {
     const prefs = await deps.getPrefs();
     httpServer = await deps.startHttpServer(
-      portFor(prefs),
+      prefs.api.port || DEFAULT_INGEST_PORT,
       prefs.api.bindAddress,
     );
     return { port: httpServer.port, host: httpServer.host };
@@ -53,7 +46,7 @@ export function createRuntimeControls(deps: RuntimeDependencies) {
       }
     }
     httpServer = await deps.startHttpServer(
-      portFor(prefs),
+      prefs.api.port || DEFAULT_INGEST_PORT,
       prefs.api.bindAddress,
     );
     return { port: httpServer.port, host: httpServer.host };
