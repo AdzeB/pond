@@ -1,12 +1,15 @@
+import { IconDownload, IconGear3, IconSliders } from "@pond/icons";
 import type { Source } from "@pond/schema/db";
-import { Dialog, Field, Input, type MenuItemSpec } from "@pond/ui";
+import { Dialog, Field, Input, type MenuItemSpec, Sidebar } from "@pond/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import type { SourceDetailsKind } from "@/features/library";
+import type { SourceDetailsKind, SourceDetailsPage } from "@/features/library";
 import { HeroAvatar } from "@/features/sources/components/flow/detail/hero-avatar";
 import {
   ImportScopeActions,
-  ImportScopeChoices,
+  ImportScopeError,
+  ImportScopeFilters,
+  ImportScopeLists,
   useImportScopeDraft,
 } from "@/features/sources/components/flow/import-scope";
 import { buildFolderMenu } from "@/features/sources/components/page/lib/folder-menu";
@@ -27,7 +30,10 @@ import {
   type WatchRow,
   watchKindLabel,
 } from "@/features/sources/hooks/use-watches";
-import { hasImportChoices } from "@/features/sources/lib/import-scope";
+import {
+  hasImportChoices,
+  hasImportFilters,
+} from "@/features/sources/lib/import-scope";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import {
   accountMenuTarget,
@@ -49,15 +55,17 @@ import styles from "./styles.module.css";
 export function SourceInspector({
   kind,
   id,
+  page,
 }: {
   kind: SourceDetailsKind;
   id: string;
+  page?: SourceDetailsPage;
 }) {
   if (kind === "folder") return <FolderInspector />;
   return kind === "watch" ? (
     <WatchInspector id={id} />
   ) : (
-    <AccountInspector id={id} />
+    <AccountInspector id={id} page={page} />
   );
 }
 
@@ -107,7 +115,13 @@ function FolderInspector() {
   );
 }
 
-function AccountInspector({ id }: { id: string }) {
+function AccountInspector({
+  id,
+  page,
+}: {
+  id: string;
+  page?: SourceDetailsPage;
+}) {
   const { accounts, loading, refetch } = useAccounts();
   const account = accounts.find((row) => row.id === id);
   const byAccount = useSyncByAccount();
@@ -128,35 +142,59 @@ function AccountInspector({ id }: { id: string }) {
   });
   const imports =
     account.sync.importPending || hasImportChoices(account.source);
+  const label = getSourceDef(account.source).label;
+  const pages: SourceInspectorPage[] = [];
+  if (imports) {
+    pages.push({
+      id: "import",
+      label: "Import",
+      icon: <IconDownload />,
+      description: `Nothing else from ${label} reaches your library.`,
+      content: <ImportScopeLists accountId={account.id} />,
+    });
+  }
+  if (hasImportFilters(account.source)) {
+    pages.push({
+      id: "filters",
+      label: "Filters",
+      icon: <IconSliders />,
+      description: "Applies to every list Pond imports from this Account.",
+      content: <ImportScopeFilters accountId={account.id} />,
+    });
+  }
   return (
-    <SourceInspectorView
-      key={account.id}
-      status="ready"
-      description={fetchedLabel(model)}
-      handle={account.handle ? `@${account.handle}` : null}
-      source={account.source}
-      avatarUrl={account.avatarUrl}
-      model={model}
-      syncStatus={syncStatus}
-      nickname={account.label ?? ""}
-      menuItems={menuItems}
-      sections={imports ? <ImportSection account={account} /> : null}
-      actions={imports ? <ImportScopeActions /> : undefined}
-      onNicknameSave={async (value) => {
-        await saveAccountNickname(account, value);
-        changed();
-      }}
-    />
+    <>
+      {imports ? <ImportScopeDraft account={account} /> : null}
+      <SourceInspectorView
+        key={account.id}
+        status="ready"
+        description={fetchedLabel(model)}
+        handle={account.handle ? `@${account.handle}` : null}
+        source={account.source}
+        avatarUrl={account.avatarUrl}
+        model={model}
+        syncStatus={syncStatus}
+        nickname={account.label ?? ""}
+        menuItems={menuItems}
+        pages={pages}
+        initialPage={
+          page ?? (account.sync.importPending ? "import" : "general")
+        }
+        leading={imports ? <ImportScopeError /> : undefined}
+        actions={imports ? <ImportScopeActions /> : undefined}
+        onNicknameSave={async (value) => {
+          await saveAccountNickname(account, value);
+          changed();
+        }}
+      />
+    </>
   );
 }
 
-function ImportSection({ account }: { account: AccountRow }) {
+/** Lives beside the pages so switching between Import and Filters keeps the draft. */
+function ImportScopeDraft({ account }: { account: AccountRow }) {
   useImportScopeDraft(account);
-  return (
-    <Section title="Import" className={styles.section} collapsible={false}>
-      <ImportScopeChoices accountId={account.id} />
-    </Section>
-  );
+  return null;
 }
 
 function WatchInspector({ id }: { id: string }) {
@@ -258,6 +296,14 @@ async function saveWatchNickname(
   });
 }
 
+interface SourceInspectorPage {
+  id: SourceDetailsPage;
+  label: string;
+  icon: ReactNode;
+  description?: string;
+  content: ReactNode;
+}
+
 interface SourceInspectorDetailsProps {
   title?: string;
   description?: string;
@@ -269,8 +315,11 @@ interface SourceInspectorDetailsProps {
   nickname?: string;
   menuItems?: MenuItemSpec[];
   properties?: SourceInspectorProperty[];
-  /** Source-specific sections shown after Properties. */
-  sections?: ReactNode;
+  /** Pages after General. */
+  pages?: SourceInspectorPage[];
+  initialPage?: SourceDetailsPage;
+  /** Footer status beside the actions. */
+  leading?: ReactNode;
   /** Footer buttons in place of Done. */
   actions?: ReactNode;
   onNicknameSave?: (value: string) => Promise<void>;
@@ -282,25 +331,18 @@ export type SourceInspectorViewProps =
   | ({ status: "ready" } & SourceInspectorDetailsProps);
 
 export function SourceInspectorView(props: SourceInspectorViewProps) {
-  const actions = props.status === "ready" ? props.actions : undefined;
+  if (props.status === "ready") return <SourceInspectorDetails {...props} />;
   return (
     <>
-      <Dialog.Header data-empty />
-      <Dialog.Content className={styles.content}>
-        {props.status === "loading" ? (
-          <p className={styles.empty} role="status">
-            Loading source details
-          </p>
-        ) : props.status === "missing" ? (
-          <p className={styles.empty} role="status">
-            This source is unavailable.
-          </p>
-        ) : (
-          <SourceInspectorDetails {...props} />
-        )}
+      <Dialog.Content className={styles.unavailable}>
+        <p className={styles.empty} role="status">
+          {props.status === "loading"
+            ? "Loading source details"
+            : "This source is unavailable."}
+        </p>
       </Dialog.Content>
       <Dialog.Footer>
-        {actions ?? <Dialog.Cancel>Done</Dialog.Cancel>}
+        <Dialog.Cancel>Done</Dialog.Cancel>
       </Dialog.Footer>
     </>
   );
@@ -317,31 +359,104 @@ function SourceInspectorDetails({
   nickname = "",
   menuItems = [],
   properties = [],
-  sections,
+  pages = [],
+  initialPage = "general",
+  leading,
+  actions,
   onNicknameSave,
 }: SourceInspectorDetailsProps) {
-  const activity = model ? activityDetail(model, syncStatus) : null;
+  const general: SourceInspectorPage = {
+    id: "general",
+    label: "General",
+    icon: <IconGear3 />,
+    content: (
+      <GeneralPage
+        handle={handle}
+        model={model}
+        syncStatus={syncStatus}
+        nickname={nickname}
+        properties={properties}
+        onNicknameSave={onNicknameSave}
+      />
+    ),
+  };
+  const all = [general, ...pages];
+  const [pageId, setPageId] = useState(initialPage);
+  const page = all.find((item) => item.id === pageId) ?? general;
   return (
     <>
-      <DetailsHero.Root>
-        <DetailsHero.Media>
-          <HeroAvatar
-            source={source}
-            avatarUrl={avatarUrl}
-            size={88}
-            badge={false}
-          />
-          <DetailsHero.Actions items={menuItems} aria-label="Source Actions" />
-        </DetailsHero.Media>
-        <DetailsHero.Copy>
-          <DetailsHero.Title>
-            {title || handle || nickname || getSourceDef(source).label}
-          </DetailsHero.Title>
-          {description ? (
-            <DetailsHero.Description>{description}</DetailsHero.Description>
-          ) : null}
-        </DetailsHero.Copy>
-      </DetailsHero.Root>
+      <div className={styles.layout}>
+        <aside className={styles.aside}>
+          <DetailsHero.Root className={styles.identity}>
+            <DetailsHero.Media>
+              <HeroAvatar
+                source={source}
+                avatarUrl={avatarUrl}
+                size={64}
+                badge={false}
+              />
+              <DetailsHero.Actions
+                items={menuItems}
+                aria-label="Source Actions"
+              />
+            </DetailsHero.Media>
+            <DetailsHero.Copy>
+              <DetailsHero.Title>
+                {title || handle || nickname || getSourceDef(source).label}
+              </DetailsHero.Title>
+              {description ? (
+                <DetailsHero.Description>{description}</DetailsHero.Description>
+              ) : null}
+            </DetailsHero.Copy>
+          </DetailsHero.Root>
+          <Sidebar.Root width="full" role="navigation" aria-label="Pages">
+            {all.map((item) => {
+              const active = item.id === page.id;
+              return (
+                <Sidebar.Item
+                  key={item.id}
+                  data-status={active ? "active" : undefined}
+                  aria-current={active ? "page" : undefined}
+                  onClick={() => setPageId(item.id)}
+                >
+                  <Sidebar.Icon>{item.icon}</Sidebar.Icon>
+                  <Sidebar.ItemLabel>{item.label}</Sidebar.ItemLabel>
+                </Sidebar.Item>
+              );
+            })}
+          </Sidebar.Root>
+        </aside>
+        <Dialog.Content className={styles.main}>
+          <header className={styles.header}>
+            <h3 className={styles.title}>{page.label}</h3>
+            {page.description ? (
+              <p className={styles.description}>{page.description}</p>
+            ) : null}
+          </header>
+          {page.content}
+        </Dialog.Content>
+      </div>
+      <Dialog.Footer leading={leading}>
+        {actions ?? <Dialog.Cancel>Done</Dialog.Cancel>}
+      </Dialog.Footer>
+    </>
+  );
+}
+
+function GeneralPage({
+  handle,
+  model,
+  syncStatus,
+  nickname,
+  properties,
+  onNicknameSave,
+}: Pick<
+  SourceInspectorDetailsProps,
+  "handle" | "model" | "syncStatus" | "onNicknameSave"
+> & { nickname: string; properties: SourceInspectorProperty[] }) {
+  const activity = model ? activityDetail(model, syncStatus) : null;
+  return (
+    <div className={styles.general}>
       {onNicknameSave ? (
         <NicknameField
           nickname={nickname}
@@ -365,7 +480,6 @@ function SourceInspectorDetails({
           </PropertyList.Root>
         </Section>
       ) : null}
-      {sections}
       {model && activity ? (
         <Section
           title="Activity"
@@ -387,7 +501,7 @@ function SourceInspectorDetails({
           </div>
         </Section>
       ) : null}
-    </>
+    </div>
   );
 }
 

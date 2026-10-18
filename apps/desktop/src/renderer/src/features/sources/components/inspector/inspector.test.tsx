@@ -124,6 +124,46 @@ it("centers the handle and suggests it as the nickname", async () => {
   expect(done).toBeDefined();
 });
 
+it("switches pages from the sidebar and keeps the footer", async () => {
+  await act(async () => {
+    root.render(
+      <SourceInspectorView
+        status="ready"
+        handle="@raphaelsalaja"
+        source="twitter"
+        pages={[
+          {
+            id: "import",
+            label: "Import",
+            icon: null,
+            description: "Nothing else from X reaches your library.",
+            content: <p>Import choices</p>,
+          },
+        ]}
+        initialPage="import"
+        actions={<button type="button">Save</button>}
+        onNicknameSave={async () => {}}
+      />,
+    );
+  });
+  const nav = host.querySelector('[aria-label="Pages"]');
+  const pages = Array.from(nav?.querySelectorAll("button") ?? []);
+  expect(pages.map((page) => page.textContent)).toEqual(["General", "Import"]);
+  expect(host.querySelector("h3")?.textContent).toBe("Import");
+  expect(host.textContent).toContain("Import choices");
+  expect(nicknameField()).toBeNull();
+
+  await act(async () => pages[0]?.click());
+  expect(host.querySelector("h3")?.textContent).toBe("General");
+  expect(nicknameField()).toBeInstanceOf(HTMLInputElement);
+  expect(host.textContent).not.toContain("Import choices");
+  expect(pages[0]?.getAttribute("aria-current")).toBe("page");
+  const save = Array.from(host.querySelectorAll("button")).find(
+    (button) => button.textContent === "Save",
+  );
+  expect(save).toBeDefined();
+});
+
 it("flattens connection details instead of nesting profile pages", async () => {
   const onFetch = vi.fn();
   const status: SyncSourceStatus = {

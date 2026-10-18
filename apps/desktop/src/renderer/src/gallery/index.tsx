@@ -133,8 +133,16 @@ function ImportScopeCard({ item }: { item: ImportScopeCase }) {
           <ImportScopeFlowProvider value={flow}>
             <Dialog.Root open modal={false}>
               <Dialog.Portal container={frame}>
-                <Dialog.Popup aria-label="Account Details" initialFocus={false}>
-                  <SourceInspector kind="account" id={item.account.id} />
+                <Dialog.Popup
+                  aria-label="Account Details"
+                  className={styles.popup}
+                  initialFocus={false}
+                >
+                  <SourceInspector
+                    kind="account"
+                    id={item.account.id}
+                    page="import"
+                  />
                 </Dialog.Popup>
               </Dialog.Portal>
             </Dialog.Root>

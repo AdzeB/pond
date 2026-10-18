@@ -241,7 +241,7 @@ function importScopeItem(
   return {
     label: "Choose What to Import",
     icon: <IconSliders />,
-    onClick: () => sourceDetail.openAccount(target.id),
+    onClick: () => sourceDetail.openAccount(target.id, "import"),
   };
 }
 

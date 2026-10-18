@@ -218,6 +218,7 @@ describe("buildSourceActionMenu", () => {
       kind: "source",
       sourceKind: "account",
       id: "acc-instagram",
+      page: "import",
     });
     detailsDialog.close();
   });

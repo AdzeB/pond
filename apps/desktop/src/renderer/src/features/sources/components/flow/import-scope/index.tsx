@@ -18,7 +18,6 @@ import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useState } from "react";
 import {
   collectionNouns,
-  hasImportChoices,
   listKindLabel,
   localDay,
   mediaKindLabel,
@@ -56,7 +55,7 @@ export function useImportScopeDraft(account: ImportScopeAccount): void {
   }, [flow, key]);
 }
 
-export function ImportScopeChoices({ accountId }: { accountId: string }) {
+export function ImportScopeLists({ accountId }: { accountId: string }) {
   const draft = useImportScopeFlow();
   const { source } = draft;
   if (draft.accountId !== accountId || !source) return null;
@@ -69,43 +68,52 @@ export function ImportScopeChoices({ accountId }: { accountId: string }) {
       kind={options.collections}
     />
   ) : null;
-  const filters = options.mediaKinds.length > 0 || options.since;
+  if (options.listKinds.length > 0) {
+    return (
+      <Settings.List className={styles.choices}>
+        {options.listKinds.map((kind) => (
+          <ListKindRows key={kind} source={source} kind={kind}>
+            {kind === "saved" ? collections : null}
+          </ListKindRows>
+        ))}
+      </Settings.List>
+    );
+  }
+  if (collections) {
+    return (
+      <Settings.List className={styles.choices}>{collections}</Settings.List>
+    );
+  }
   return (
-    <div className={styles.choices}>
-      {options.listKinds.length > 0 ? (
-        <Settings.List>
-          {options.listKinds.map((kind) => (
-            <ListKindRows key={kind} source={source} kind={kind}>
-              {kind === "saved" ? collections : null}
-            </ListKindRows>
-          ))}
-        </Settings.List>
-      ) : collections ? (
-        <Settings.List>{collections}</Settings.List>
+    <p className={styles.note}>
+      Pond imports everything you've saved on {label}. Choosing specific lists
+      isn't available for {label} yet.
+    </p>
+  );
+}
+
+export function ImportScopeFilters({ accountId }: { accountId: string }) {
+  const draft = useImportScopeFlow();
+  const { source } = draft;
+  if (draft.accountId !== accountId || !source) return null;
+  const options = importScopeOptions(source);
+  return (
+    <Settings.List className={styles.choices}>
+      {options.mediaKinds.length > 0 ? (
+        <MediaKindsRow kinds={options.mediaKinds} />
       ) : null}
-      {filters ? (
-        <div className={styles.section}>
-          <h3 className={styles.heading}>Filters</h3>
-          <Settings.List>
-            {options.mediaKinds.length > 0 ? (
-              <MediaKindsRow kinds={options.mediaKinds} />
-            ) : null}
-            {options.since ? <SinceRows /> : null}
-          </Settings.List>
-        </div>
-      ) : null}
-      {!hasImportChoices(source) ? (
-        <p className={styles.note}>
-          Pond imports everything you've saved on {label}. Choosing specific
-          lists isn't available for {label} yet.
-        </p>
-      ) : null}
-      {draft.error ? (
-        <p className={styles.error} role="alert">
-          {draft.error}
-        </p>
-      ) : null}
-    </div>
+      {options.since ? <SinceRows /> : null}
+    </Settings.List>
+  );
+}
+
+export function ImportScopeError() {
+  const { error } = useImportScopeFlow();
+  if (!error) return null;
+  return (
+    <span className={styles.error} role="alert">
+      {error}
+    </span>
   );
 }
 

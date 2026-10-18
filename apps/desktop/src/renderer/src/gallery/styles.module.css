@@ -58,10 +58,15 @@
   color: var(--ds-gray-10);
 }
 
+.popup {
+  --width: 760px;
+  --height: 560px;
+}
+
 /* The real dialog, pinned in place so several can sit side by side. */
 .frame {
   position: relative;
-  width: 400px;
+  width: 760px;
 
   /* Doubled class outranks the contained-portal rules that pin and cap the dialog. */
   &.frame > [data-contained] {

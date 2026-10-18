@@ -1,5 +1,61 @@
-.content {
-  gap: 0;
+.layout {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 208px minmax(0, 1fr);
+  min-height: 0;
+}
+
+.aside {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  padding: 20px 12px 12px;
+  overflow-y: auto;
+  background: var(--ds-gray-2);
+  border-right: var(--ds-border-width) solid var(--ds-gray-a4);
+}
+
+.identity {
+  gap: 12px;
+  padding: 4px 0 16px;
+}
+
+.main {
+  gap: 20px;
+  padding: 20px 24px 24px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--ds-text-lg);
+  font-weight: var(--ds-weight-xl);
+  line-height: 24px;
+  color: var(--ds-gray-12);
+}
+
+.description {
+  margin: 0;
+  font-size: var(--ds-text-md);
+  line-height: 20px;
+  color: var(--ds-gray-11);
+}
+
+.general {
+  display: flex;
+  flex-direction: column;
+}
+
+.unavailable {
+  flex: 1;
+  justify-content: center;
+  text-align: center;
 }
 
 .field {
@@ -7,8 +63,8 @@
 }
 
 .section {
-  padding-inline: 20px;
-  margin-inline: -20px;
+  padding-inline: 24px;
+  margin-inline: -24px;
 }
 
 .activity {

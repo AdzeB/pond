@@ -8,7 +8,13 @@ import {
   type ImportScopeAccount,
   importScopeFlow,
 } from "@/features/sources/state/import-scope-flow";
-import { ImportScopeActions, ImportScopeChoices, useImportScopeDraft } from ".";
+import {
+  ImportScopeActions,
+  ImportScopeError,
+  ImportScopeFilters,
+  ImportScopeLists,
+  useImportScopeDraft,
+} from ".";
 
 let root: Root;
 let host: HTMLDivElement;
@@ -61,7 +67,9 @@ function Harness({ account }: { account: ImportScopeAccount }) {
   useImportScopeDraft(account);
   return (
     <Dialog.Root open={false}>
-      <ImportScopeChoices accountId={account.id} />
+      <ImportScopeLists accountId={account.id} />
+      <ImportScopeFilters accountId={account.id} />
+      <ImportScopeError />
       <ImportScopeActions />
     </Dialog.Root>
   );
