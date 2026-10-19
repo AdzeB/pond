@@ -122,6 +122,32 @@ describe("importMymindExport", () => {
     });
   });
 
+  it("skips empty cards instead of stopping the import", async () => {
+    const directory = join(root, "empty-cards");
+    await mkdir(directory);
+    await writeFile(
+      join(directory, "cards.csv"),
+      [
+        "id,type,title,url,content,note,tags,created",
+        "empty-1,Placeholder,,,,,,2024-03-01T12:00:00.000Z",
+        "empty-2,Quotation,,,,,saved,2024-03-02T12:00:00.000Z",
+        "note-1,Note,A note,,Note body,,,2024-03-03T12:00:00.000Z",
+      ].join("\n"),
+    );
+    const fixture = createImportFixture();
+    fixture.dependencies.createSave = async (input) => {
+      if (!input.title && !input.note && !input.filePaths?.length)
+        return { ok: false, error: "empty Save" };
+      fixture.saves.set(input.sourceId ?? "", input);
+      return { ok: true, id: input.sourceId ?? "" };
+    };
+
+    await expect(
+      importMymindExport(directory, fixture.dependencies),
+    ).resolves.toEqual({ ok: true, imported: 1, skipped: 2 });
+    expect([...fixture.saves.keys()]).toEqual(["mymind:note-1"]);
+  });
+
   it("rejects a cards.csv that is not a mymind export", async () => {
     const directory = join(root, "invalid");
     await mkdir(directory);

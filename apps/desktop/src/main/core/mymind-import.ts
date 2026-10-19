@@ -240,6 +240,11 @@ export async function importMymindExport(
       else imported += 1;
       continue;
     }
+    // mymind exports placeholder cards with nothing in them; Pond can't save an empty card.
+    if (!card.title && !note) {
+      skipped += 1;
+      continue;
+    }
     const result = await dependencies.createSave({
       source: "local",
       sourceId: card.id ? `mymind:${card.id}` : undefined,
