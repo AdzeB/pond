@@ -51,7 +51,7 @@ jobs:
               "apps/extension/wxt.config.ts",
               readSourceVersion(
                 "apps/extension/wxt.config.ts",
-                /manifest:\s*\{[\s\S]*?\bversion:\s*"([^"]+)"/,
+                /manifest:[\s\S]*?\bversion:\s*"([^"]+)"/,
               ),
             ],
             [
