@@ -1,5 +1,6 @@
 import { JSDOM } from "jsdom";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import {
   buildOpenBookmarkFolderExpression,
   parseBookmarkFolders,
@@ -43,23 +44,31 @@ describe("parseBookmarkFolders", () => {
   });
 });
 
+const CapturesSchema = z.array(z.object({ url: z.string() }));
+
 /** Stands in for X: the bookmarks list has loaded, and routing to a folder sends that folder's request. */
 function bookmarksPage(url: string) {
   const dom = new JSDOM('<div data-testid="primaryColumn"></div>', {
     runScripts: "outside-only",
     url,
   });
-  const captures = () => Reflect.get(dom.window, "__pondBookmarksCaptures");
-  Reflect.set(dom.window, "__pondBookmarksCaptures", [{ url: "Bookmarks" }]);
-  dom.window.addEventListener("popstate", () => {
-    Reflect.set(dom.window, "__pondBookmarkFolderRequest", {
-      url: "BookmarkFolderTimeline",
+  // SAFETY: the fixture scripts are fixed strings that stand in for X's page.
+  dom.window.eval(`
+    globalThis.__pondBookmarksCaptures = [{ url: "Bookmarks" }];
+    addEventListener("popstate", () => {
+      globalThis.__pondBookmarkFolderRequest = { url: "BookmarkFolderTimeline" };
+      globalThis.__pondBookmarksCaptures.push({ url: "BookmarkFolderTimeline" });
     });
-    captures().push({ url: "BookmarkFolderTimeline" });
-  });
-  const open = async (folderId: string): Promise<unknown> =>
+  `);
+  const captures = (): Array<{ url: string }> =>
+    CapturesSchema.parse(dom.window.eval("globalThis.__pondBookmarksCaptures"));
+  const open = async (folderId: string): Promise<boolean> =>
     // SAFETY: the expression wraps the controlled in-page function exercised by this fixture.
-    await dom.window.eval(buildOpenBookmarkFolderExpression(folderId));
+    z
+      .boolean()
+      .parse(
+        await dom.window.eval(buildOpenBookmarkFolderExpression(folderId)),
+      );
   return { dom, captures, open };
 }
 

@@ -18,7 +18,7 @@ export type DownloadColumnId = (typeof DOWNLOAD_COLUMN_CATALOG)[number]["id"];
 
 export const LOCKED_DOWNLOAD_COLUMN: DownloadColumnId = "name";
 
-export const DEFAULT_VISIBLE_DOWNLOAD_COLUMNS: readonly DownloadColumnId[] = [
+const DEFAULT_VISIBLE_DOWNLOAD_COLUMNS: readonly DownloadColumnId[] = [
   "source",
   "stage",
   "progress",
