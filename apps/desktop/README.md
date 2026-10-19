@@ -26,6 +26,7 @@ Run these commands from `apps/desktop`, or prefix them at the repository root wi
 - **Secrets**: ingest token encrypted via Electron's `safeStorage`
   (macOS Keychain, Windows DPAPI, libsecret on Linux) and persisted to
   `secrets.json` in the app data directory.
+- **Logs**: `main.log` uses Electron's logs directory (`~/Library/Logs/Pond` on macOS). If that directory or file is not writable, Pond tries `logs/` inside its app data directory. If both locations fail, file logging is disabled so it does not prevent the app from opening. **Show Logs in Finder** (macOS) or **Show Logs in File Explorer** (Windows) opens the selected directory when file logging is available.
 
 The per-library index is rebuildable from the library. Global app state and encrypted secrets have separate lifecycles; do not treat the whole app data directory as a disposable index.
 
