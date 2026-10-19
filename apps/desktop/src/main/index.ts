@@ -71,6 +71,7 @@ import {
 import { installAppMenu, setMenuRecents } from "./menu";
 import { writeNativeHostManifests } from "./native/manifests";
 import { startNativeServer, stopNativeServer } from "./native/server";
+import { flushOpenFiles, queueOpenFile } from "./open-files";
 import { libraryRoot, type PondPaths, resolvePaths } from "./paths";
 import { registerProtocol, registerScheme } from "./protocol";
 import { LOGIN_LAUNCH_ARG, runtimeControls } from "./runtime";
@@ -218,6 +219,18 @@ app.on("second-instance", (_event, argv) => {
   });
 });
 
+const flushDroppedFiles = () =>
+  void flushOpenFiles({ openLibraryWindow, getMainWindow }).catch((err) =>
+    log.error("[pond] open-file import failed", err),
+  );
+
+/** macOS sends files dropped on the Dock icon here, also when they launch Pond. */
+app.on("open-file", (event, path) => {
+  event.preventDefault();
+  queueOpenFile(path);
+  if (launched && !quitPreparing) setImmediate(flushDroppedFiles);
+});
+
 app.whenReady().then(async () => {
   if (!(await singleInstanceLock) || quitPreparing) return;
   started = true;
@@ -278,6 +291,7 @@ app.whenReady().then(async () => {
     await createWindow();
   }
   launched = true;
+  flushDroppedFiles();
   watchMainThreadStalls();
 
   const [tokenResult, dbResult] = await Promise.allSettled([

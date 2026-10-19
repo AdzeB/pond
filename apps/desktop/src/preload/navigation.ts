@@ -1,12 +1,12 @@
-export function createNavigationMailbox() {
-  const listeners = new Set<(path: string) => void>();
-  let pending: string | undefined;
+export function createNavigationMailbox<T = string>() {
+  const listeners = new Set<(path: T) => void>();
+  let pending: T | undefined;
   return {
-    receive(path: string): void {
+    receive(path: T): void {
       if (!listeners.size) pending = path;
       else for (const listener of listeners) listener(path);
     },
-    subscribe(listener: (path: string) => void): () => void {
+    subscribe(listener: (path: T) => void): () => void {
       listeners.add(listener);
       if (pending !== undefined) {
         const path = pending;

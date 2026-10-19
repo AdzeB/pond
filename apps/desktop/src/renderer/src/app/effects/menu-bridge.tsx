@@ -9,6 +9,7 @@ import {
   importBookmarks,
   importClipboard,
   importEagle,
+  importFilePaths,
   importMymind,
   importPageAssets,
   importPaths,
@@ -71,6 +72,14 @@ import { handleNativeMenuAction } from "./native-menu-actions";
 export function MenuBridge() {
   const [, patchPreferences] = usePrefs("preferences");
   const [, patchSaveRecents] = usePrefs("saveRecents");
+
+  useEffect(
+    () =>
+      window.pond.onOpenFiles(
+        (paths) => void runNewAction(() => importFilePaths(paths)),
+      ),
+    [],
+  );
 
   useEffect(() => {
     return window.pond.onMenuAction(({ id, source }) => {
