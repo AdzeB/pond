@@ -1,11 +1,11 @@
 import type { MenuItemSpec } from "@pond/ui";
 import { Dialog } from "@pond/ui";
-import { useHotkey } from "@tanstack/react-hotkeys";
 import {
   createContext,
   type ReactNode,
   type RefObject,
   use,
+  useEffect,
   useRef,
   useState,
 } from "react";
@@ -20,7 +20,8 @@ import {
 } from "@/features/tags/components/group-context-menu";
 import { tagOperations } from "@/features/tags/operations/tag-client";
 import { getAppRouter } from "@/shared/lib/app-router";
-import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
+import { eventFromEditable } from "@/shared/lib/editable-target";
+import { matchesShortcut } from "@/shared/lib/shortcuts";
 import { useTagsTable } from "./context";
 import type { TagsRowData } from "./types";
 
@@ -31,7 +32,6 @@ interface TagRowContextValue {
   startRename: () => void;
   saveRename: (name: string) => Promise<void>;
   finishRename: () => void;
-  menuItems: MenuItemSpec[];
   buildMenuItems: () => MenuItemSpec[];
 }
 
@@ -51,7 +51,6 @@ export function TagRowProvider({
   children: ReactNode;
 }) {
   const { groups, tags } = useTagsTable();
-  const shortcuts = useShortcutBindings();
   const isGroup = row.kind === "group";
   const name = isGroup ? row.group.name : row.tag.name;
 
@@ -70,11 +69,20 @@ export function TagRowProvider({
     await tagOperations.rename(isGroup ? "group" : "tag", name, next);
   }
 
-  useHotkey(bindingKeys(shortcuts, "tags.rename"), () => startRename(), {
-    target: rowRef,
-    enabled: !renaming,
-    ignoreInputs: true,
-  });
+  // A plain listener per row: useHotkey copies every registration on each render,
+  // which freezes the A-Z index once it holds thousands of tags.
+  useEffect(() => {
+    const element = rowRef.current;
+    if (!element || renaming) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (eventFromEditable(event) || !matchesShortcut(event, "tags.rename"))
+        return;
+      event.preventDefault();
+      setRenaming(true);
+    }
+    element.addEventListener("keydown", onKeyDown);
+    return () => element.removeEventListener("keydown", onKeyDown);
+  }, [renaming]);
 
   function confirmDelete() {
     if (isGroup) {
@@ -165,7 +173,6 @@ export function TagRowProvider({
     startRename,
     saveRename,
     finishRename,
-    menuItems: buildMenuItems(),
     buildMenuItems,
   };
 

@@ -117,26 +117,26 @@
   padding: 0 4px 16px;
 }
 
-.index {
-  display: flex;
-  flex-direction: column;
+.virtual {
+  position: relative;
 }
 
-.letter-group {
-  padding: 16px 0 17px;
-  border-top: 1px solid var(--ds-gray-a3);
-}
-
-.letter-group:first-child {
-  padding-top: 0;
-  border-top: 0;
+.virtual-item {
+  position: absolute;
+  inset: 0 0 auto;
 }
 
 .letter-header {
   display: flex;
   gap: 7px;
   align-items: baseline;
-  margin-bottom: 7px;
+  padding: 16px 0 7px;
+  border-top: 1px solid var(--ds-gray-a3);
+}
+
+.letter-header[data-first] {
+  padding-top: 0;
+  border-top: 0;
 }
 
 .letter-header h2 {
@@ -156,6 +156,10 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0 20px;
+}
+
+.tag-grid[data-group-end] {
+  padding-bottom: 17px;
 }
 
 @media (min-width: 1320px) {
