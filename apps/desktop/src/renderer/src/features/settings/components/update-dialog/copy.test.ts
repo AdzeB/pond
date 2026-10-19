@@ -1,40 +1,40 @@
 import { describe, expect, it } from "vitest";
-import { updateNoticeCopy } from "./update-notice-copy";
+import { updateDialogCopy } from "./copy";
 
-describe("updateNoticeCopy", () => {
-  it("says a build is downloading when automatic updates are on", () => {
+describe("updateDialogCopy", () => {
+  it("stays quiet while an automatic download runs", () => {
     expect(
-      updateNoticeCopy({
+      updateDialogCopy({
         phase: "available",
         version: "1.0.2",
         downloading: true,
       }),
-    ).toEqual({
-      title: "Update available",
-      description: "Pond 1.0.2 is downloading.",
-    });
+    ).toBeNull();
   });
 
   it("offers Download when the build is not downloading yet", () => {
     expect(
-      updateNoticeCopy({
+      updateDialogCopy({
         phase: "available",
         version: "1.0.2",
         downloading: false,
       }),
     ).toEqual({
-      title: "Update available",
+      title: "Update Available",
       description: "Pond 1.0.2 is ready to download.",
       action: "Download",
+      busyLabel: "Downloading",
     });
   });
 
   it("offers Restart after the download finishes", () => {
-    expect(updateNoticeCopy({ phase: "downloaded", version: "1.0.2" })).toEqual(
+    expect(updateDialogCopy({ phase: "downloaded", version: "1.0.2" })).toEqual(
       {
-        title: "Update ready",
-        description: "Restart to finish installing Pond 1.0.2.",
+        title: "Update Ready",
+        description:
+          "Restart to install Pond 1.0.2 now. Otherwise, it installs when you quit.",
         action: "Restart",
+        busyLabel: "Restarting",
       },
     );
   });

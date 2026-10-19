@@ -12,6 +12,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { ConversionDialogHost } from "@/features/library/components/conversion-dialog/host";
 import { FolderPickerHost } from "@/features/library/components/folder-picker";
 import { RenameDialogHost } from "@/features/library/components/rename-dialog/host";
+import { UpdateDialog } from "@/features/settings/components/update-dialog";
 import { usePrefs } from "@/shared/state/prefs";
 import type { PondApi } from "../../../preload";
 import { ExtensionCaptureToast } from "../features/captures/effects/extension-capture-toast";
@@ -23,7 +24,6 @@ import { syncPrimaryFromPath } from "../features/saves/lib/save-nav";
 import { InterfaceZoom } from "../features/settings/effects/interface-zoom";
 import { ThemeApplier } from "../features/settings/effects/theme-applier";
 import { UiSounds } from "../features/settings/effects/ui-sounds";
-import { UpdateNoticeBridge } from "../features/settings/effects/update-notice";
 import { SyncStatusBridge } from "../features/sources/effects/sync-status-bridge";
 import { routeTree } from "../routeTree.gen";
 import { ToastHost } from "../shared/components/toast-host";
@@ -181,7 +181,6 @@ function LibraryApp() {
               <MenuRecentsBridge />
               <AgentLibraryBridge />
               <SyncStatusBridge />
-              <UpdateNoticeBridge />
               <ExtensionCaptureToast />
               <EnrichmentSweep />
               <BootScreen />
@@ -197,6 +196,7 @@ function LibraryApp() {
                 <OrganizationReviewHost />
               </Suspense>
               <ConversionDialogHost />
+              <UpdateDialog />
               <CommandMenuHost />
               <ToastHost />
             </Dialog.PortalProvider>
