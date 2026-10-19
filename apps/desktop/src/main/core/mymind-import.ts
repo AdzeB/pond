@@ -1,6 +1,6 @@
 import type { Dirent } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { basename, extname, join } from "node:path";
 import type { NewSave } from "@pond/schema/db";
 import { classifyLibraryFile } from "@shared/file-format";
 import type { OkFailure, OkResult } from "@shared/query-contracts-shared";
@@ -128,6 +128,10 @@ function isMymindMediaFile(name: string): boolean {
   );
 }
 
+function cardNote(card: MymindCard): string {
+  return [card.content, card.note].filter(Boolean).join("\n\n");
+}
+
 /** Image and PDF rows have no text of their own. The export writes those as files beside the CSV. */
 function isMymindFileCard(card: MymindCard): boolean {
   return (
@@ -208,7 +212,21 @@ export async function importMymindExport(
     (entry) => entry.isFile() && isMymindMediaFile(entry.name),
   );
   const availableMedia = fileCounts(media.map((entry) => entry.name));
-  const fileCardIds = new Map<string, string[]>();
+  // mymind names each card's file `<card id>.<ext>`, whatever the card type, and a card with a file
+  // can also carry its source URL. Matching by id keeps that card to one Save with its metadata.
+  const mediaByCardId = new Map(
+    media.map((entry) => [
+      entry.name.slice(0, entry.name.length - extname(entry.name).length),
+      entry.name.toLocaleLowerCase(),
+    ]),
+  );
+  const fileCards = new Map<string, MymindCard[]>();
+  const claimFile = (filename: string, card: MymindCard) => {
+    availableMedia.set(filename, (availableMedia.get(filename) ?? 0) - 1);
+    const queued = fileCards.get(filename) ?? [];
+    queued.push(card);
+    fileCards.set(filename, queued);
+  };
   if (!cards && media.length === 0) {
     return {
       ok: false,
@@ -219,20 +237,18 @@ export async function importMymindExport(
   let imported = 0;
   let skipped = 0;
   for (const card of cards ?? []) {
-    if (isMymindFileCard(card)) {
-      const filename = basename(card.title).toLocaleLowerCase();
-      const available = availableMedia.get(filename) ?? 0;
-      if (available > 0) {
-        availableMedia.set(filename, available - 1);
-        if (card.id) {
-          const ids = fileCardIds.get(filename) ?? [];
-          ids.push(card.id);
-          fileCardIds.set(filename, ids);
-        }
-      } else skipped += 1;
+    const idFile = card.id ? mediaByCardId.get(card.id) : undefined;
+    if (idFile && (availableMedia.get(idFile) ?? 0) > 0) {
+      claimFile(idFile, card);
       continue;
     }
-    const note = [card.content, card.note].filter(Boolean).join("\n\n");
+    if (isMymindFileCard(card)) {
+      const filename = basename(card.title).toLocaleLowerCase();
+      if ((availableMedia.get(filename) ?? 0) > 0) claimFile(filename, card);
+      else skipped += 1;
+      continue;
+    }
+    const note = cardNote(card);
     if (card.url) {
       const result = await importMymindLink(card, note, dependencies);
       if (!result.ok) return result;
@@ -262,11 +278,11 @@ export async function importMymindExport(
   }
   for (const file of media) {
     const path = join(directory, file.name);
-    const fileCardId = fileCardIds.get(file.name.toLocaleLowerCase())?.shift();
+    const card = fileCards.get(file.name.toLocaleLowerCase())?.shift();
     let sourceId: string;
     try {
-      sourceId = fileCardId
-        ? `mymind:${fileCardId}`
+      sourceId = card?.id
+        ? `mymind:${card.id}`
         : `mymind-file:${await hashImportFile(path)}`;
     } catch {
       return failedImport(file.name, "the file couldn't be read");
@@ -275,6 +291,14 @@ export async function importMymindExport(
       source: "local",
       sourceId,
       filePaths: [path],
+      ...(card && {
+        title: card.title || null,
+        url: card.url || null,
+        note: cardNote(card) || null,
+        tags: card.tags,
+        savedAt: card.created ?? undefined,
+        createdAt: card.created ?? undefined,
+      }),
     });
     if (!result.ok) return failedImport(file.name, result.error);
     if (result.skipped) skipped += 1;
