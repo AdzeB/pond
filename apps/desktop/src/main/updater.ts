@@ -4,6 +4,7 @@ import { IPC } from "../shared/constants";
 import type { OkResult, ReasonFailure } from "../shared/query-contracts-shared";
 import type { UpdateNotice } from "../shared/update-notice";
 import { getPrefs } from "./core/prefs";
+import { installedChannel } from "./core/update-channel";
 import {
   createUpdaterCoordinator,
   type UpdaterPort,
@@ -18,8 +19,11 @@ async function loadUpdater(): Promise<UpdaterPort> {
   autoUpdater.logger = log;
   return {
     autoDownload: () => autoUpdater.autoDownload,
-    setAllowPrerelease: (value) => {
-      autoUpdater.allowPrerelease = value;
+    setChannel: (channel) => {
+      autoUpdater.channel = channel === "nightly" ? "nightly" : "latest";
+      autoUpdater.allowPrerelease = channel === "nightly";
+      /** An older stable build may not open a Library a nightly already migrated. */
+      autoUpdater.allowDowngrade = false;
     },
     setAutoDownload: (value) => {
       autoUpdater.autoDownload = value;
@@ -55,7 +59,13 @@ async function loadUpdater(): Promise<UpdaterPort> {
 const updater = createUpdaterCoordinator({
   isPackaged: () => app.isPackaged,
   loadUpdater,
-  loadAutoInstallPreference: async () => (await getPrefs()).updates.autoInstall,
+  loadPreferences: async () => {
+    const { autoInstall, channel } = (await getPrefs()).updates;
+    return {
+      autoInstall,
+      channel: channel ?? installedChannel(app.getVersion()),
+    };
+  },
   publish: (notice) => broadcast(IPC.updateNotice, notice),
   scheduleTimeout: (callback, delay) => {
     setTimeout(callback, delay);

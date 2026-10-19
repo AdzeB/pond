@@ -17,7 +17,7 @@ function setup() {
   let autoDownload = false;
   const updater: UpdaterPort = {
     autoDownload: () => autoDownload,
-    setAllowPrerelease: vi.fn(),
+    setChannel: vi.fn(),
     setAutoDownload: vi.fn((value) => {
       autoDownload = value;
     }),
@@ -41,7 +41,7 @@ function setup() {
   const dependencies: UpdaterDependencies = {
     isPackaged: () => true,
     loadUpdater: async () => updater,
-    loadAutoInstallPreference: async () => false,
+    loadPreferences: async () => ({ autoInstall: false, channel: "stable" }),
     publish: vi.fn(),
     scheduleTimeout: vi.fn(),
     scheduleInterval: vi.fn(),
@@ -61,17 +61,35 @@ describe("updater coordinator", () => {
     const { coordinator, updater } = setup();
     await coordinator.applyPrefs();
 
-    expect(updater.setAllowPrerelease).toHaveBeenCalledWith(false);
+    expect(updater.setChannel).toHaveBeenCalledWith("stable");
     expect(updater.setAutoDownload).toHaveBeenCalledWith(false);
   });
 
-  it("fails closed when automatic-download preferences cannot be read", async () => {
+  it("follows the chosen channel and checks right away when it changes", async () => {
+    const { coordinator, dependencies, updater } = setup();
+    await coordinator.start();
+    expect(updater.check).not.toHaveBeenCalled();
+
+    dependencies.loadPreferences = async () => ({
+      autoInstall: false,
+      channel: "nightly",
+    });
+    await coordinator.applyPrefs();
+    expect(updater.setChannel).toHaveBeenLastCalledWith("nightly");
+    expect(updater.check).toHaveBeenCalledTimes(1);
+
+    await coordinator.applyPrefs();
+    expect(updater.check).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails closed when update preferences cannot be read", async () => {
     const { coordinator, dependencies, listeners, updater } = setup();
-    dependencies.loadAutoInstallPreference = async () => {
+    dependencies.loadPreferences = async () => {
       throw new Error("prefs unavailable");
     };
     await coordinator.start();
 
+    expect(updater.setChannel).toHaveBeenLastCalledWith("stable");
     expect(updater.setAutoDownload).toHaveBeenLastCalledWith(false);
     listeners.available?.("1.2.0");
     expect(dependencies.publish).toHaveBeenCalledWith({

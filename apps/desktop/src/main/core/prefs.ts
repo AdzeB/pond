@@ -10,6 +10,7 @@ import {
   type VideoDownloadSettings,
 } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
+import { app } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { getGlobalDb } from "../db";
@@ -29,6 +30,11 @@ import {
   splitPrefsPatch,
   writeBundlePondPrefs,
 } from "./prefs-scope";
+import { withInstalledChannel } from "./update-channel";
+
+function resolvedPrefs(prefs: Prefs): Prefs {
+  return withInstalledChannel(prefs, app.getVersion());
+}
 
 interface SettingsCache {
   libraryId: string;
@@ -70,7 +76,7 @@ async function fetchSettings(): Promise<SettingsCache> {
   const pond = await resolvePondSlice(stored, libraryId);
   return {
     libraryId,
-    prefs: mergePrefs(stored.app, pond),
+    prefs: resolvedPrefs(mergePrefs(stored.app, pond)),
     videoDownload: normalizeVideo(row?.videoDownload ?? DEFAULT_VIDEO_DOWNLOAD),
     imageDownload: normalizeImage(row?.imageDownload ?? DEFAULT_IMAGE_DOWNLOAD),
   };
@@ -121,7 +127,7 @@ async function loadSettings(): Promise<SettingsCache> {
     log.warn("[pond prefs] failed to read settings, using defaults", err);
     return {
       libraryId: currentLibraryId(),
-      prefs: DEFAULT_PREFS,
+      prefs: resolvedPrefs(DEFAULT_PREFS),
       videoDownload: DEFAULT_VIDEO_DOWNLOAD,
       imageDownload: DEFAULT_IMAGE_DOWNLOAD,
     };
@@ -198,7 +204,7 @@ async function applyPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
   if (Object.keys(app).length > 0) {
     stored = { ...stored, app: mergeAppSlice(stored.app, app) };
   }
-  const merged = mergePrefs(stored.app, pondSlice);
+  const merged = resolvedPrefs(mergePrefs(stored.app, pondSlice));
   const shortcutChange = patch.shortcuts
     ? prepareGlobalShortcuts(merged.shortcuts.overrides)
     : null;
