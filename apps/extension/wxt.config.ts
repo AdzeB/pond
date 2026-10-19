@@ -28,7 +28,7 @@ export default defineConfig({
   }),
   manifest: ({ browser }) => ({
     name: "Pond",
-    version: "1.1.0",
+    version: "1.1.1",
     ...(browser === "firefox"
       ? {
           browser_specific_settings: {
