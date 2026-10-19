@@ -1,0 +1,22 @@
+.showcase {
+  display: grid;
+  place-items: center;
+  height: calc(100% - 16px);
+}
+
+/* The demo renders at 0.6 zoom; this brings it to about 600px wide. */
+.stage {
+  --demo-height: 560px;
+
+  zoom: 1.25;
+}
+
+@media (width < 900px) {
+  .showcase {
+    height: 480px;
+  }
+
+  .stage {
+    zoom: 1;
+  }
+}

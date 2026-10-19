@@ -105,6 +105,7 @@
     "ai": "^7.0.102",
     "better-sqlite3": "npm:better-sqlite3-multiple-ciphers@^13.0.3",
     "blurhash": "^2.0.5",
+    "calligraph": "^1.4.1",
     "chrono-node": "^2.10.1",
     "clsx": "catalog:",
     "drizzle-orm": "catalog:",

@@ -27,9 +27,32 @@
   border-radius: var(--ds-radius-md);
 }
 
+.turn {
+  display: grid;
+
+  > * {
+    grid-area: 1 / 1;
+  }
+}
+
 .reply {
   font-weight: var(--ds-weight-md);
   line-height: 24px;
+}
+
+.typing {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  height: 24px;
+  opacity: 0;
+
+  > span {
+    width: 6px;
+    height: 6px;
+    background: var(--ds-gray-9);
+    border-radius: var(--ds-radius-full);
+  }
 }
 
 .name {
@@ -69,10 +92,11 @@
 }
 
 .thumb {
+  display: flex;
   flex: none;
   width: 48px;
   height: 36px;
-  background: var(--ds-gray-2);
+  overflow: hidden;
   border-radius: var(--ds-radius-xs);
 }
 
@@ -82,7 +106,13 @@
   min-width: 0;
 }
 
-:is(.ask, .reply, .attachment) {
+.empty {
+  font-weight: var(--ds-weight-md);
+  line-height: 24px;
+  color: var(--ds-gray-10);
+}
+
+:is(.ask, .reply, .attachment, .empty) {
   opacity: 0;
   transform: translateY(4px);
   transition:
@@ -95,7 +125,7 @@
   transition: opacity var(--enter) 100ms;
 }
 
-:global([data-state="agent"]) :is(.ask, .reply, .attachment) {
+:global([data-state="agent"]) :is(.ask, .reply, .attachment, .empty) {
   opacity: 1;
   transform: none;
   transition:
@@ -103,14 +133,54 @@
     transform var(--enter) var(--delay);
 }
 
-:global([data-state="agent"]) .ask {
+:global([data-state="agent"]) :is(.ask, .empty) {
   --delay: 150ms;
 }
 
 :global([data-state="agent"]) .reply {
-  --delay: 300ms;
+  --delay: 850ms;
 }
 
 :global([data-state="agent"]) .attachment {
-  --delay: 450ms;
+  --delay: 1000ms;
+}
+
+:global([data-state="agent"]) .typing {
+  animation: typing 600ms var(--ds-easing-standard) 300ms both;
+
+  > span {
+    animation: bounce 600ms var(--ds-easing-standard) 300ms infinite;
+  }
+
+  > span:nth-child(2) {
+    animation-delay: 400ms;
+  }
+
+  > span:nth-child(3) {
+    animation-delay: 500ms;
+  }
+}
+
+@keyframes typing {
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  20%,
+  80% {
+    opacity: 1;
+  }
+}
+
+@keyframes bounce {
+  0%,
+  60%,
+  100% {
+    transform: none;
+  }
+
+  30% {
+    transform: translateY(-3px);
+  }
 }

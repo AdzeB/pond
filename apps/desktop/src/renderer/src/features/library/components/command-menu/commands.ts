@@ -3,6 +3,7 @@ import {
   IconBookmark,
   IconBookmarkSlash,
   IconChatBubble,
+  IconCompass,
   IconCopy,
   IconDownload,
   IconEye,
@@ -29,6 +30,7 @@ import { resetFilters } from "@/features/library/state/view-store";
 import { openSources, pickWatchedFolder } from "@/features/sources";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { openSettings } from "@/shared/lib/open-settings";
+import { setupFlow } from "@/shared/state/setup";
 import type { CommandSpec } from "./types";
 
 export function navigateTo(path: string): void {
@@ -222,5 +224,14 @@ export const COMMANDS: readonly CommandSpec[] = [
     keywords: "preferences configuration",
     shortcut: "app.settings",
     run: () => openSettings(),
+  },
+  {
+    id: "run-setup",
+    group: "App",
+    label: "Run Setup Again",
+    detail: "Review how Pond is set up",
+    icon: IconCompass,
+    keywords: "onboarding welcome guide tour setup",
+    run: () => setupFlow.open("existing"),
   },
 ];

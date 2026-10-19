@@ -91,6 +91,7 @@ export function Downloads() {
           <span
             className={styles.download}
             data-live={live || undefined}
+            data-status={item.status}
             key={item.id}
             style={progressStyle}
           >

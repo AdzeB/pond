@@ -32,7 +32,7 @@ import { libraryScopedKey } from "../shared/lib/library-scope";
 import { BootScreen } from "./components/boot-screen";
 import { ErrorBoundary } from "./components/error-boundary";
 import { ErrorScreen } from "./components/error-screen";
-import { Onboarding } from "./components/onboarding";
+import { SetupHost } from "./components/setup";
 import { AgentLibraryBridge } from "./effects/agent-library-bridge";
 import { MenuRecentsBridge } from "./effects/menu-recents-bridge";
 import "./effects/save-library-bridge";
@@ -185,7 +185,7 @@ function LibraryApp() {
               <ExtensionCaptureToast />
               <EnrichmentSweep />
               <BootScreen />
-              <Onboarding />
+              <SetupHost />
               <ErrorBoundary>
                 <AppContent />
               </ErrorBoundary>

@@ -154,6 +154,22 @@
   }
 }
 
+:global([data-state="harvest"])
+  .download[data-status="progress"]:not([data-live])
+  .fill {
+  animation: creep 3000ms linear 400ms both;
+}
+
+@keyframes creep {
+  from {
+    width: var(--progress);
+  }
+
+  to {
+    width: calc(var(--progress) + 20%);
+  }
+}
+
 @keyframes fill {
   from {
     width: 35%;

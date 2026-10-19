@@ -6,7 +6,10 @@ import styles from "./styles.module.css";
 interface PresetSelectProps {
   presets: { id: string; name: string; def: ThemeDef }[];
   value: string;
-  customDef: ThemeDef;
+  /** Omitted to hide the Custom option. */
+  customDef?: ThemeDef;
+  disabled?: boolean;
+  "aria-label"?: string;
   onChange: (id: string) => void;
 }
 
@@ -14,19 +17,38 @@ export function PresetSelect({
   presets,
   value,
   customDef,
+  disabled,
+  "aria-label": ariaLabel,
   onChange,
 }: PresetSelectProps) {
+  const items = presets.map(
+    (preset): SelectItemSpec<string> => ({
+      value: preset.id,
+      label: <ThemeOption def={preset.def} label={preset.name} />,
+    }),
+  );
+  if (customDef) {
+    items.push(
+      { type: "separator" },
+      {
+        value: CUSTOM_PRESET_ID,
+        label: <ThemeOption def={customDef} label="Custom" />,
+      },
+    );
+  }
+
   return (
     <Select.Root
       value={value}
+      disabled={disabled}
       onValueChange={(v) => {
         if (v) onChange(v);
       }}
     >
-      <Select.Trigger>
+      <Select.Trigger aria-label={ariaLabel}>
         <Select.Value>
           {(v: string) => {
-            if (v === CUSTOM_PRESET_ID) {
+            if (v === CUSTOM_PRESET_ID && customDef) {
               return <ThemeOption def={customDef} label="Custom" />;
             }
             const preset = presets.find((p) => p.id === v);
@@ -41,21 +63,7 @@ export function PresetSelect({
       <Select.Portal>
         <Select.Positioner sideOffset={6}>
           <Select.Popup>
-            <Select.Items
-              items={[
-                ...presets.map(
-                  (preset): SelectItemSpec<string> => ({
-                    value: preset.id,
-                    label: <ThemeOption def={preset.def} label={preset.name} />,
-                  }),
-                ),
-                { type: "separator" },
-                {
-                  value: CUSTOM_PRESET_ID,
-                  label: <ThemeOption def={customDef} label="Custom" />,
-                },
-              ]}
-            />
+            <Select.Items items={items} />
           </Select.Popup>
         </Select.Positioner>
       </Select.Portal>

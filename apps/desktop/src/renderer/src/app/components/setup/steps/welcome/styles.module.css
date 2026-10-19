@@ -1,0 +1,24 @@
+.mark {
+  flex: none;
+  margin-bottom: 16px;
+  color: var(--ds-gray-12);
+}
+
+.owner {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  font-size: var(--ds-text-md);
+  color: var(--ds-gray-11);
+}
+
+.name {
+  font-weight: var(--ds-weight-xl);
+  color: var(--ds-gray-12);
+}
+
+.meta {
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-10);
+}

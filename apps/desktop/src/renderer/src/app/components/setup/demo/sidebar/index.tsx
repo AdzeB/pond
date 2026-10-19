@@ -1,30 +1,48 @@
 import {
   IconAlbum2,
   IconBookmark,
+  IconChatBubble,
   IconChevronDown,
   IconCircleWarning,
   IconEye,
   IconFolder,
+  IconFolderBan,
   IconFolderOpen,
   IconHistory,
   IconPlus,
+  IconShuffle,
   IconTrashXmark,
   IconUser,
   IconWindowDownload,
 } from "@pond/icons";
+import type { SidebarDestination } from "@pond/schema";
 import type { ReactNode } from "react";
 import styles from "./styles.module.css";
 
-const library = [
-  { label: "All", count: "1,284", icon: <IconAlbum2 /> },
+const library: ReadonlyArray<{
+  id: SidebarDestination;
+  label: string;
+  count: string;
+  icon: ReactNode;
+}> = [
+  { id: "all", label: "All", count: "1,284", icon: <IconAlbum2 /> },
   {
+    id: "uncategorized",
+    label: "Uncategorized",
+    count: "36",
+    icon: <IconFolderBan />,
+  },
+  { id: "assistant", label: "Assistant", count: "", icon: <IconChatBubble /> },
+  {
+    id: "recentlyUsed",
     label: "Recently Used",
     count: "18",
     icon: <IconHistory />,
   },
-  { label: "Tags", count: "58", icon: <IconBookmark /> },
-  { label: "Trash", count: "3", icon: <IconTrashXmark /> },
-] as const;
+  { id: "tags", label: "Tags", count: "58", icon: <IconBookmark /> },
+  { id: "random", label: "Random", count: "", icon: <IconShuffle /> },
+  { id: "trash", label: "Trash", count: "3", icon: <IconTrashXmark /> },
+];
 const folders = [
   { label: "Inspiration", count: "248" },
   { label: "Photography", count: "96" },
@@ -42,17 +60,23 @@ const queues = [
 
 function Row({
   active = false,
+  hidden = false,
   count,
   icon,
   label,
 }: {
   active?: boolean;
+  hidden?: boolean;
   count: string;
   icon: ReactNode;
   label: string;
 }) {
   return (
-    <span className={styles.row} data-active={active || undefined}>
+    <span
+      className={styles.row}
+      data-active={active || undefined}
+      data-hidden={hidden || undefined}
+    >
       {icon}
       <span className={styles.label}>{label}</span>
       <span className={styles.count}>{count}</span>
@@ -60,20 +84,27 @@ function Row({
   );
 }
 
-function LibraryNav() {
+function LibraryNav({
+  name,
+  hidden,
+}: {
+  name: string;
+  hidden: readonly SidebarDestination[];
+}) {
   return (
     <nav className={styles.nav} data-view="library">
       <span className={styles.switcher}>
         <span className={styles.mark} />
-        Personal
+        <span className={styles.label}>{name}</span>
         <IconChevronDown size={12} />
       </span>
       {library.map((item, index) => (
         <Row
           active={index === 0}
+          hidden={hidden.includes(item.id)}
           count={item.count}
           icon={item.icon}
-          key={item.label}
+          key={item.id}
           label={item.label}
         />
       ))}
@@ -123,10 +154,16 @@ function HarvesterNav() {
   );
 }
 
-export function Sidebar() {
+export function Sidebar({
+  name = "Personal",
+  hidden = [],
+}: {
+  name?: string;
+  hidden?: readonly SidebarDestination[];
+}) {
   return (
     <div className={styles.sidebar}>
-      <LibraryNav />
+      <LibraryNav name={name} hidden={hidden} />
       <HarvesterNav />
     </div>
   );
