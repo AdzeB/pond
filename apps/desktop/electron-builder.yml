@@ -131,6 +131,13 @@ mac:
           - so.pond.library
         CFBundleTypeExtensions:
           - pond
+      # Lets the Dock icon accept any file or folder as an import. Alternate
+      # rank keeps Pond from becoming the default app for those files.
+      - CFBundleTypeName: Importable File
+        CFBundleTypeRole: Viewer
+        LSHandlerRank: Alternate
+        LSItemContentTypes:
+          - public.item
 
 dmg:
   title: "${productName}"
