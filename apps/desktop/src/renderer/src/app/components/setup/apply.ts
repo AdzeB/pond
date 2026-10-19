@@ -147,6 +147,26 @@ async function saveLibrary(
   return result.ok ? "" : result.error;
 }
 
+/**
+ * Opens a Library picked on disk; Pond relaunches into it and setup runs again with that Library's preferences.
+ * @remarks Resolves to null when cancelled, an error message, or "" while Pond relaunches.
+ */
+export async function openExistingLibrary(): Promise<string | null> {
+  try {
+    const picked = await window.pond.query("library.pickExisting", {});
+    if (!picked.ok || !picked.path) return null;
+    const result = await window.pond.query("library.switchTo", {
+      path: picked.path,
+    });
+    if (result.ok) return "";
+    return (
+      result.error ?? "Couldn't open that Library. Choose a .pond Library."
+    );
+  } catch (cause) {
+    return failure(cause, "Couldn't open that Library. Try again.");
+  }
+}
+
 /** Saves every choice, records that setup finished, then applies Library changes; resolves to an error message, or "" when done. */
 export async function finishSetup(
   choices: SetupChoices,
