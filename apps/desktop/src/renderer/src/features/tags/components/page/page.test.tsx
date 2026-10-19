@@ -50,6 +50,13 @@ describe("library Tags page", () => {
   beforeEach(() => {
     vi.stubGlobal("scrollTo", vi.fn());
     vi.stubGlobal("pond", { query, onSyncAction: () => () => {} });
+    vi.stubGlobal("matchMedia", () => ({
+      matches: false,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(900);
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(800);
     vi.stubGlobal(
       "ResizeObserver",
       class {
@@ -68,6 +75,7 @@ describe("library Tags page", () => {
     await act(async () => root.unmount());
     host.remove();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   async function mount() {

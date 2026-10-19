@@ -2,6 +2,7 @@ import { IconDotsFill as Dots } from "@pond/icons";
 import { Menu } from "@pond/ui";
 import type { MouseEvent } from "react";
 import { InlineNameEditor } from "@/shared/components/inline-name-editor";
+import { SpecMenu } from "@/shared/components/spec-context-menu";
 import { useTagRow } from "../row-context";
 import styles from "./styles.module.css";
 
@@ -35,10 +36,10 @@ export function NameCell({ index = false }: { index?: boolean }) {
 }
 
 export function ActionsCell() {
-  const { renaming, menuItems } = useTagRow();
+  const { renaming, buildMenuItems } = useTagRow();
   if (renaming) return null;
   return (
-    <Menu.Root>
+    <SpecMenu buildItems={buildMenuItems} align="end">
       <Menu.Trigger
         icon
         size="xs"
@@ -49,13 +50,6 @@ export function ActionsCell() {
       >
         <Dots size={12} />
       </Menu.Trigger>
-      <Menu.Portal>
-        <Menu.Positioner align="end" sideOffset={4}>
-          <Menu.Popup>
-            <Menu.Items items={menuItems} />
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.Root>
+    </SpecMenu>
   );
 }

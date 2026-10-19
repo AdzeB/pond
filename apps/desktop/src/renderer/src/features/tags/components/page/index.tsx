@@ -6,7 +6,8 @@ import {
   IconStar,
 } from "@pond/icons";
 import { Button, DataTable, Empty, Input, Sidebar, Tooltip } from "@pond/ui";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { TagsBulkActionBar } from "@/features/tags/components/manager/bulk-actions";
 import { DraftRow } from "@/features/tags/components/manager/draft-row";
 import { TagItem } from "@/features/tags/components/manager/item";
@@ -19,6 +20,7 @@ import { useTagsData } from "@/features/tags/hooks/use-tag-manager";
 import { useTagCreationRequest } from "@/features/tags/state/creation";
 import { MatchesEmpty } from "@/shared/components/matches-empty";
 import { SearchChrome } from "@/shared/components/search-chrome";
+import { findScrollParent } from "@/shared/lib/dom";
 import { usePrefs } from "@/shared/state/prefs";
 import { TagSortMenu } from "./sort-menu";
 import styles from "./styles.module.css";
@@ -66,6 +68,158 @@ function groupAlphabetically(
     }));
 }
 
+type IndexLine =
+  | { kind: "header"; key: string; letter: string; count: number }
+  | { kind: "tags"; key: string; rows: TagData[]; groupEnd: boolean };
+
+// Mirrors the .tag-grid breakpoints in styles.module.css.
+function readColumns(): number {
+  if (matchMedia("(max-width: 680px)").matches) return 1;
+  if (matchMedia("(max-width: 900px)").matches) return 2;
+  return 3;
+}
+
+function useGridColumns(): number {
+  const [columns, setColumns] = useState(readColumns);
+  useEffect(() => {
+    const queries = ["(max-width: 680px)", "(max-width: 900px)"].map((query) =>
+      matchMedia(query),
+    );
+    const update = () => setColumns(readColumns());
+    for (const query of queries) query.addEventListener("change", update);
+    return () => {
+      for (const query of queries) query.removeEventListener("change", update);
+    };
+  }, []);
+  return columns;
+}
+
+function chunkTags(
+  rows: TagData[],
+  columns: number,
+  closesGroup: boolean,
+): IndexLine[] {
+  const lines: IndexLine[] = [];
+  for (let start = 0; start < rows.length; start += columns) {
+    const chunk = rows.slice(start, start + columns);
+    lines.push({
+      kind: "tags",
+      key: chunk[0]?.id ?? String(start),
+      rows: chunk,
+      groupEnd: closesGroup && start + columns >= rows.length,
+    });
+  }
+  return lines;
+}
+
+// Only the lines near the viewport mount: every TagItem carries two menus, and
+// rendering thousands of them at once stalls the page for seconds.
+// The scroller is looked up from the list itself: a ref on the parent <main>
+// is not attached yet when the virtualizer first measures on mount.
+// The line holding focus stays mounted off screen, so an open rename editor
+// keeps its draft while the user scrolls.
+function VirtualTagIndex({ lines }: { lines: IndexLine[] }) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [focusedKey, setFocusedKey] = useState<string | null>(null);
+  const pinned =
+    focusedKey === null
+      ? -1
+      : lines.findIndex((line) => line.key === focusedKey);
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const onFocusIn = (event: FocusEvent) => {
+      const item =
+        event.target instanceof Element
+          ? event.target.closest(`.${styles["virtual-item"]}`)
+          : null;
+      setFocusedKey(
+        lines[Number(item?.getAttribute("data-index"))]?.key ?? null,
+      );
+    };
+    const onFocusOut = (event: FocusEvent) => {
+      if (
+        !(event.relatedTarget instanceof Node) ||
+        !list.contains(event.relatedTarget)
+      )
+        setFocusedKey(null);
+    };
+    list.addEventListener("focusin", onFocusIn);
+    list.addEventListener("focusout", onFocusOut);
+    return () => {
+      list.removeEventListener("focusin", onFocusIn);
+      list.removeEventListener("focusout", onFocusOut);
+    };
+  }, [lines]);
+  const [scrollMargin, setScrollMargin] = useState(0);
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    const scroller = findScrollParent(list);
+    if (!list || !scroller) return;
+    const next =
+      list.getBoundingClientRect().top -
+      scroller.getBoundingClientRect().top +
+      scroller.scrollTop;
+    setScrollMargin((prev) => (prev === next ? prev : next));
+  });
+  const virtual = useVirtualizer({
+    count: lines.length,
+    getScrollElement: () => findScrollParent(listRef.current),
+    estimateSize: (index) => (lines[index]?.kind === "header" ? 46 : 34),
+    getItemKey: (index) => lines[index]?.key ?? index,
+    scrollMargin,
+    overscan: 10,
+    rangeExtractor: (range) => {
+      const indexes = defaultRangeExtractor(range);
+      if (pinned < 0 || indexes.includes(pinned)) return indexes;
+      return [...indexes, pinned].sort((a, b) => a - b);
+    },
+  });
+
+  return (
+    <div
+      ref={listRef}
+      className={styles.virtual}
+      style={{ height: virtual.getTotalSize() }}
+    >
+      {virtual.getVirtualItems().map((item) => {
+        const line = lines[item.index];
+        if (!line) return null;
+        return (
+          <div
+            key={item.key}
+            ref={virtual.measureElement}
+            data-index={item.index}
+            className={styles["virtual-item"]}
+            style={{
+              transform: `translateY(${item.start - virtual.options.scrollMargin}px)`,
+            }}
+          >
+            {line.kind === "header" ? (
+              <header
+                className={styles["letter-header"]}
+                data-first={item.index === 0 || undefined}
+              >
+                <h2>{line.letter}</h2>
+                <span>({line.count})</span>
+              </header>
+            ) : (
+              <div
+                className={styles["tag-grid"]}
+                data-group-end={line.groupEnd || undefined}
+              >
+                {line.rows.map((row) => (
+                  <TagItem key={row.id} row={row} variant="index" />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function TagsPage() {
   const {
     q,
@@ -86,6 +240,7 @@ export function TagsPage() {
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const cancelDescriptionRef = useRef(false);
   const clearRef = useRef<() => void>(() => {});
+  const columns = useGridColumns();
 
   useEffect(() => {
     if (
@@ -177,6 +332,23 @@ export function TagsPage() {
   const alphabet = useMemo(
     () => groupAlphabetically(orderedRows, allTags.sortDirection),
     [allTags.sortDirection, orderedRows],
+  );
+  const flatLines = useMemo(
+    () => chunkTags(orderedRows, columns, false),
+    [columns, orderedRows],
+  );
+  const indexLines = useMemo(
+    () =>
+      alphabet.flatMap((group): IndexLine[] => [
+        {
+          kind: "header",
+          key: `letter:${group.letter}`,
+          letter: group.letter,
+          count: group.rows.length,
+        },
+        ...chunkTags(group.rows, columns, true),
+      ]),
+    [alphabet, columns],
   );
 
   useEffect(() => {
@@ -421,31 +593,10 @@ export function TagsPage() {
               {(activeGroupRow || allTags.sort !== "name") &&
               orderedRows.length > 0 ? (
                 <div className={styles["group-tags"]}>
-                  <div className={styles["tag-grid"]}>
-                    {orderedRows.map((row) => (
-                      <TagItem key={row.id} row={row} variant="index" />
-                    ))}
-                  </div>
+                  <VirtualTagIndex lines={flatLines} />
                 </div>
               ) : alphabet.length > 0 ? (
-                <div className={styles.index}>
-                  {alphabet.map((group) => (
-                    <section
-                      className={styles["letter-group"]}
-                      key={group.letter}
-                    >
-                      <header className={styles["letter-header"]}>
-                        <h2>{group.letter}</h2>
-                        <span>({group.rows.length})</span>
-                      </header>
-                      <div className={styles["tag-grid"]}>
-                        {group.rows.map((row) => (
-                          <TagItem key={row.id} row={row} variant="index" />
-                        ))}
-                      </div>
-                    </section>
-                  ))}
-                </div>
+                <VirtualTagIndex lines={indexLines} />
               ) : total === 0 && !q ? (
                 <Empty.Root className={styles.empty}>
                   <Empty.Media>
