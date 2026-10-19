@@ -17,7 +17,20 @@ export function liveNativePorts(): NativePorts {
       return (await listFolders()).map((folder) => ({
         id: folder.id,
         name: folder.name,
+        parentId: folder.parentId,
+        color: folder.color,
       }));
+    },
+    tagsList: async () => {
+      const { listTags } = await import("../core/tags");
+      return (await listTags())
+        .filter((tag) => !tag.archived)
+        .map((tag) => ({
+          name: tag.name,
+          starred: tag.starred,
+          usageCount: tag.usageCount,
+          lastUsedAt: tag.lastUsedAt?.getTime() ?? null,
+        }));
     },
     sessionPending,
     sessionImport,

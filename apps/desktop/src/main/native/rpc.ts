@@ -21,6 +21,20 @@ export interface EnqueueResult {
   reseeded?: boolean;
 }
 
+export interface NativeFolder {
+  id: string;
+  name: string;
+  parentId: string | null;
+  color: string | null;
+}
+
+export interface NativeTag {
+  name: string;
+  starred: boolean;
+  usageCount: number;
+  lastUsedAt: number | null;
+}
+
 export interface NativePorts {
   capture?: (
     draft: CaptureWebDraft,
@@ -29,7 +43,8 @@ export interface NativePorts {
   captureStatus?: (id: string) => Promise<CaptureReceipt>;
   enqueue: (url: string, opts: EnqueueOpts) => Promise<EnqueueResult>;
   libraryInfo: () => Promise<LibraryInfo>;
-  foldersList?: () => Promise<{ id: string; name: string }[]>;
+  foldersList?: () => Promise<NativeFolder[]>;
+  tagsList?: () => Promise<NativeTag[]>;
   sessionPending: () => { source: Source } | null;
   sessionImport: (
     source: Source,
@@ -68,6 +83,9 @@ export async function dispatchNative(
         if (!ports.foldersList)
           return { ok: false, error: "folders_unavailable" };
         return { ok: true, data: await ports.foldersList() };
+      case "tags.list":
+        if (!ports.tagsList) return { ok: false, error: "tags_unavailable" };
+        return { ok: true, data: await ports.tagsList() };
       case "session.pending":
         return { ok: true, data: ports.sessionPending() };
       case "enqueue": {
