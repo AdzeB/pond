@@ -1,9 +1,9 @@
 import { Button, Dialog } from "@pond/ui";
 import { Calligraph } from "calligraph";
 import { AnimatePresence, motion, useReducedMotionConfig } from "motion/react";
-import { type KeyboardEvent, useEffect, useId, useRef } from "react";
+import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 import { setupFlow } from "@/shared/state/setup";
-import { connectAssistant, finishSetup } from "../apply";
+import { connectAssistant, finishSetup, openExistingLibrary } from "../apply";
 import { type Session, type SetupChoices, STEP_IDS } from "../model";
 import { stepSpec } from "../steps";
 import styles from "./styles.module.css";
@@ -74,8 +74,21 @@ export function SetupDialog({
     return failure === "";
   };
 
+  const [opening, setOpening] = useState(false);
+  const canOpenExisting = id === "welcome" && profile === "new";
+
+  const openExisting = async () => {
+    if (busy || opening) return;
+    setOpening(true);
+    patch({ error: "" });
+    const failure = await openExistingLibrary();
+    if (failure === "") return;
+    setOpening(false);
+    if (failure) patch({ error: failure });
+  };
+
   const next = async () => {
-    if (busy) return;
+    if (busy || opening) return;
     if (id === "assistant" && !(await run(() => connectAssistant(choices))))
       return;
     if (!last) return go(1);
@@ -205,10 +218,22 @@ export function SetupDialog({
                   Back
                 </Button>
               ) : null}
+              {canOpenExisting ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={busy}
+                  loading={opening}
+                  onClick={() => void openExisting()}
+                >
+                  {opening ? "Opening" : "Open Existing Library"}
+                </Button>
+              ) : null}
               <Button
                 ref={primaryRef}
                 size="sm"
                 loading={busy}
+                disabled={opening}
                 onClick={() => void next()}
               >
                 <Calligraph>{label}</Calligraph>
