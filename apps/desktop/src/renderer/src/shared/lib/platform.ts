@@ -14,6 +14,12 @@ export const IS_MAC: boolean = SHORTCUT_PLATFORM === "mac";
 /** The device noun used in settings copy. */
 export const THIS_DEVICE: string = IS_MAC ? "this Mac" : "this computer";
 
+export const FILE_MANAGER: string = IS_MAC
+  ? "Finder"
+  : SHORTCUT_PLATFORM === "windows"
+    ? "File Explorer"
+    : "your file manager";
+
 /** The native share sheet exists only on macOS; main rejects saves.share elsewhere. */
 export function canShareOn(platformName: string): boolean {
   const p = platformName.toLowerCase();

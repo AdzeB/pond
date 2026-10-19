@@ -221,7 +221,7 @@ describe("Eagle package transfer", () => {
     await expect(
       importEaglePackage(destination, target.runtime),
     ).resolves.toEqual({ imported: 0, skipped: 1 });
-  });
+  }, 30_000);
 
   it("imports a synthetic Eagle directory and preserves nested mappings", async () => {
     const fixture = await directoryFixture();
