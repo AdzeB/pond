@@ -1,6 +1,6 @@
 # Releasing Pond
 
-Pond ships via **GitHub Releases**: signed and notarized macOS `.dmg` and `.zip` files (arm64 + x64) with `latest-mac.yml` for auto-update, a Windows x64 NSIS installer with `latest.yml` for auto-update, and a browser extension `.zip`.
+Pond ships via **GitHub Releases**: signed and notarized macOS `.dmg` and `.zip` files (arm64 + x64) with `latest-mac.yml` for auto-update, and a Windows x64 NSIS installer with `latest.yml` for auto-update. The browser extension ships through the Chrome Web Store and Firefox Add-ons, and each store zip is attached to the release.
 
 ## Version bump
 
@@ -38,10 +38,11 @@ Pushing a tag matching `v*` triggers [`.github/workflows/release.yml`](.github/w
 
 1. `draft`: verifies the version in every file listed above, stops if any Apple signing secret is missing, and creates a draft release for the tag unless one exists
 2. `macos` and `windows`, in parallel, each uploading into the draft:
-   - `macos` runs lint, typecheck, tests, build, and the desktop smoke test, then signs and notarizes the app and uploads the DMGs, zips, and `latest-mac.yml`. It also builds the extension zip and uploads it as `pond-extension-<version>.zip`.
+   - `macos` runs lint, typecheck, tests, build, and the desktop smoke test, then signs and notarizes the app and uploads the DMGs, zips, and `latest-mac.yml`. It also builds the store zips for the browser extension and uploads them.
    - `windows` builds the workspace, runs the desktop smoke test, and runs `pnpm dist:win:publish`, which uploads the installer, its blockmap, and `latest.yml`.
 3. `publish`: checks that every artifact listed below is attached, then publishes the release, which makes it visible to the updater
-4. `homebrew`: updates [`Casks/pond.rb`](Casks/pond.rb) with the release version and DMG checksums
+4. `stores`: submits the extension zips to the Chrome Web Store and Firefox Add-ons for review. Each store is skipped with a warning until its secrets are set (see [Extension stores](#extension-stores))
+5. `homebrew`: updates [`Casks/pond.rb`](Casks/pond.rb) with the release version and DMG checksums
 
 Nothing is public until `publish` runs, so a failed platform build never ships a partial release. To write release notes before it goes live, edit the draft while the workflow runs.
 
@@ -57,7 +58,9 @@ Artifact names (used by the website download links and the updater):
 - `Pond-<version>-x64.exe`
 - `Pond-<version>-x64.exe.blockmap`
 - `latest.yml`
-- `pond-extension-<version>.zip`
+- `pond-extension-<version>-chrome.zip`
+- `pond-extension-<version>-firefox.zip`
+- `pond-extension-<version>-sources.zip`
 
 ## Signing
 
@@ -135,11 +138,25 @@ To try a pull request without building it, download the unsigned test installers
 The root command builds the desktop once, then packages `out/**`. Desktop
 `dist:*` scripts consume an existing build and do not run Electron/Vite again.
 
-Extension zip:
+Extension store zips:
 
 ```bash
-pnpm --filter @pond/extension zip
+pnpm --filter @pond/extension zip:store
 ```
+
+`zip:store` omits the manifest `key`, which the Chrome Web Store rejects. The Firefox build also writes a sources zip for AMO review.
+
+## Extension stores
+
+The `stores` job reads these repository secrets:
+
+| Secret | Store |
+| --- | --- |
+| `CHROME_EXTENSION_ID` | Chrome Web Store item ID |
+| `CHROME_CLIENT_ID`, `CHROME_CLIENT_SECRET`, `CHROME_REFRESH_TOKEN` | Chrome Web Store API OAuth client |
+| `FIREFOX_JWT_ISSUER`, `FIREFOX_JWT_SECRET` | AMO API key |
+
+Run `pnpm --filter @pond/extension exec wxt submit init` locally to create the Chrome OAuth refresh token. The Chrome Web Store assigns its own extension ID, so after the first listing is approved, set `CHROME_WEB_STORE_ID` in [`packages/schema/src/native.ts`](packages/schema/src/native.ts). That adds the store ID to the native host's allowed origins and turns on the Add to Chrome button in Pond.
 
 ## CLI publishing
 
@@ -159,14 +176,14 @@ published `pond --version` matches `packages/cli/package.json`.
 
 Run these before announcing a release:
 
-- [ ] GitHub Release contains versioned arm64 + x64 `.dmg` and `.zip`, `latest-mac.yml`, Windows x64 `.exe` + blockmap, `latest.yml`, and `pond-extension-X.Y.Z.zip`
+- [ ] GitHub Release contains versioned arm64 + x64 `.dmg` and `.zip`, `latest-mac.yml`, Windows x64 `.exe` + blockmap, `latest.yml`, and the three `pond-extension-X.Y.Z-*.zip` store zips
 - [ ] `Casks/pond.rb` contains the release version and DMG checksums
 - [ ] `spctl -a -vv /Volumes/Pond/Pond.app` reports `Notarized Developer ID`
 - [ ] Fresh Mac: download arm64 DMG → open Pond → it launches without a Gatekeeper prompt
 - [ ] Fresh Windows 10/11 x64: run `Pond-X.Y.Z-x64.exe` → Pond installs without administrator rights and launches (SmartScreen may warn if the installer is unsigned)
 - [ ] Website Download buttons (Mac, Intel Mac, Windows) hit the new artifacts
 - [ ] Open Pond once so it registers the native host (a manifest file on macOS, `HKCU` registry keys on Windows)
-- [ ] Load the extension unpacked → click the Pond icon or right-click a page → save appears in Pond
+- [ ] Install the extension from its store listing → click the Pond icon or right-click a page → save appears in Pond
 - [ ] Settings → **Check for Updates** → shows "You're on the latest version"
 - [ ] Windows: Settings → **Check for Updates** → shows "You're on the latest version"
 - [ ] Optional: tag a patch on a fork and confirm auto-update downloads the new build on both platforms

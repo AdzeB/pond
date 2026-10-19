@@ -1,16 +1,18 @@
-import type { Source } from "@pond/schema/db";
+import type { ExternalSource } from "@pond/schema/sources";
+import { acceptHookCapture, createRateLimit } from "./hook-capture";
 import { asText, at, isRecord, type JsonValue } from "./json";
 import { sendMessage } from "./messaging";
-import { getSettings } from "./settings";
-import {
-  POND_EVENT,
-  type PondCapturePayload,
-  type PondLogEntry,
-} from "./types";
+import { getSettings, watchSettings } from "./settings";
+import { POND_EVENT, type PondLogEntry } from "./types";
 
-export async function bridge(source: Source): Promise<void> {
-  const settings = await getSettings();
-  if (!settings.enabled[source]) return;
+const CAPTURES_PER_MINUTE = 30;
+
+export async function bridge(source: ExternalSource): Promise<void> {
+  let settings = await getSettings();
+  watchSettings((next) => {
+    settings = next;
+  });
+  const allow = createRateLimit(CAPTURES_PER_MINUTE, 60_000);
 
   window.addEventListener("message", (event: MessageEvent) => {
     if (event.source !== window) return;
@@ -22,10 +24,13 @@ export async function bridge(source: Source): Promise<void> {
     if (message.kind === "capture") {
       const url = asText(at(message, "payload", "url"));
       if (!url) return;
-      const payload: PondCapturePayload = { url };
-      const trigger = asText(at(message, "payload", "trigger"));
-      if (trigger !== undefined) payload.trigger = trigger;
-      void sendMessage("capture", payload).catch(() => {});
+      const accepted = acceptHookCapture(
+        source,
+        { url, trigger: asText(at(message, "payload", "trigger")) },
+        settings,
+      );
+      if (!accepted || !allow(Date.now())) return;
+      void sendMessage("capture", accepted).catch(() => {});
       return;
     }
 

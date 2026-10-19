@@ -1,12 +1,12 @@
 import { SOURCES, type Source } from "./db";
-import { descriptorFor, SOURCE_DESCRIPTORS } from "./sources/registry";
+import { descriptorFor } from "./sources/registry";
 
 export {
   canonicalHost,
   domainFromUrl,
   sourceIdentity,
 } from "./domain";
-export { sourceLabel } from "./source-ids";
+export { hostToSource, sourceLabel } from "./source-ids";
 export {
   DEFAULT_RATE_PROFILE,
   descriptorFor,
@@ -52,21 +52,6 @@ export function sourceIdFromUrl(source: Source, rawUrl: string): string | null {
   for (const rx of descriptorFor(source).urlPatterns) {
     const match = rx.exec(href);
     if (match?.[1]) return match[1];
-  }
-  return null;
-}
-
-export function hostToSource(rawUrl: string): Source | null {
-  let host: string;
-  try {
-    host = new URL(rawUrl).hostname.replace(/^www\./, "").toLowerCase();
-  } catch {
-    return null;
-  }
-  for (const descriptor of SOURCE_DESCRIPTORS) {
-    for (const owned of descriptor.hosts) {
-      if (host === owned || host.endsWith(`.${owned}`)) return descriptor.id;
-    }
   }
   return null;
 }

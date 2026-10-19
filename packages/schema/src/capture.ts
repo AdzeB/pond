@@ -103,13 +103,14 @@ export function regionFromElement(
   };
 }
 
-export interface CaptureReceipt {
-  id: string;
-  library: string;
-  state: "accepted" | "processing" | "complete" | "failed" | "cancelled";
-  completed: number;
-  total: number;
-  error?: string;
-  saveIds: string[];
-  duplicateCount: number;
-}
+export const CaptureReceiptSchema = z.object({
+  id: z.string(),
+  library: z.string(),
+  state: z.enum(["accepted", "processing", "complete", "failed", "cancelled"]),
+  completed: z.number(),
+  total: z.number(),
+  error: z.string().optional(),
+  saveIds: z.array(z.string()),
+  duplicateCount: z.number(),
+});
+export type CaptureReceipt = z.infer<typeof CaptureReceiptSchema>;

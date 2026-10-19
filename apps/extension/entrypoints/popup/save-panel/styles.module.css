@@ -1,0 +1,70 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.page {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.favicon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--ds-gray-10);
+  object-fit: contain;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.title,
+.meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.title {
+  font-weight: var(--ds-weight-xl);
+
+  &[data-muted] {
+    color: var(--ds-gray-10);
+  }
+}
+
+.meta {
+  font-size: var(--ds-text-xs);
+  color: var(--ds-gray-10);
+}
+
+.status {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: var(--ds-size-md);
+}
+
+.check {
+  flex: none;
+  color: var(--ds-accent-9);
+}
+
+.label {
+  flex: 1;
+  font-weight: var(--ds-weight-xl);
+}
+
+.error {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  color: var(--ds-red-11);
+}

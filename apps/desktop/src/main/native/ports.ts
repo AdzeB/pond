@@ -9,6 +9,7 @@ export function liveNativePorts(): NativePorts {
       if (cookies?.length) attachCaptureCookies(draft.id, cookies);
       return captures.accept(draft);
     },
+    captureStatus: (id) => captures.status(id),
     enqueue: (url, opts) => enqueue(url, opts),
     libraryInfo,
     foldersList: async () => {

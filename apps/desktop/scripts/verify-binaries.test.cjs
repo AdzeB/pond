@@ -33,14 +33,11 @@ async function withTemporaryDirectory(run) {
 
 async function writeWindowsRuntime(resourcesDirectory, options = {}) {
   const binaryDirectory = join(resourcesDirectory, "bin");
-  const extensionDirectory = join(resourcesDirectory, "extension");
   await mkdir(binaryDirectory, { recursive: true });
-  await mkdir(extensionDirectory, { recursive: true });
   await writeFile(join(binaryDirectory, "ffmpeg.exe"), "binary");
   if (options.nativeHost !== false) {
     await writeFile(join(binaryDirectory, "pond-native-host.exe"), "binary");
   }
-  await writeFile(join(extensionDirectory, "manifest.json"), "{}");
   await mkdir(
     join(
       resourcesDirectory,

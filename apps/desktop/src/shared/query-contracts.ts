@@ -15,10 +15,6 @@ import type {
   AccountQueryResults,
 } from "./account-contracts";
 import type { assistantSend } from "./assistant";
-import type {
-  BrowserExtensionQueryInputs,
-  BrowserExtensionQueryResults,
-} from "./browser-extension-contracts";
 import type { BulkQueryInputs, BulkQueryResults } from "./bulk-contracts";
 import type {
   ConversionQueryInputs,
@@ -124,7 +120,6 @@ export type { OkResult } from "./query-contracts-shared";
 export interface QueryInputs
   extends AccountQueryInputs,
     TransferQueryInputs,
-    BrowserExtensionQueryInputs,
     BulkQueryInputs,
     FolderQueryInputs,
     InspectQueryInputs,
@@ -323,7 +318,6 @@ export interface QueryInputs
 export interface QueryResults
   extends AccountQueryResults,
     TransferQueryResults,
-    BrowserExtensionQueryResults,
     BulkQueryResults,
     SystemQueryResults,
     FolderQueryResults,

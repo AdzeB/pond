@@ -7,3 +7,5 @@ export const themeVarsSchema = z.object({
   accent: z.string(),
   contrast: z.number(),
 });
+
+export type ThemeVars = z.infer<typeof themeVarsSchema>;

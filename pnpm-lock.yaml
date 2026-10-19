@@ -475,6 +475,9 @@ importers:
 
   apps/extension:
     dependencies:
+      '@pond/icons':
+        specifier: workspace:*
+        version: link:../../packages/icons
       '@pond/schema':
         specifier: workspace:*
         version: link:../../packages/schema
@@ -487,6 +490,9 @@ importers:
       '@webext-core/messaging':
         specifier: ^4.0.0
         version: 4.0.0(@types/chrome@0.3.0)
+      clsx:
+        specifier: 'catalog:'
+        version: 2.1.1
       react:
         specifier: 'catalog:'
         version: 19.3.0

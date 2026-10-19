@@ -1,0 +1,128 @@
+.backdrop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  pointer-events: auto;
+  background: light-dark(var(--ds-black-a4), var(--ds-black-a6));
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: min(960px, 100%);
+  height: 100%;
+  overflow: hidden;
+  color: var(--ds-gray-12);
+  outline: none;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-xl);
+  box-shadow: var(--ds-shadow-modal);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 12px 12px 20px;
+  border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
+}
+
+.title {
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-xl);
+}
+
+.meta {
+  margin-right: auto;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-10);
+}
+
+.option {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: var(--ds-text-sm);
+  cursor: pointer;
+}
+
+.grid {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-auto-rows: min-content;
+  gap: 12px;
+  padding: 16px 20px;
+  overflow: auto;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  cursor: pointer;
+  outline: 2px solid transparent;
+  background: var(--ds-gray-2);
+  border-radius: var(--ds-radius-lg);
+  transition: outline-color var(--ds-duration-snap) var(--ds-easing-standard);
+
+  &[data-checked] {
+    outline-color: var(--ds-accent-9);
+  }
+}
+
+.check {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1;
+}
+
+.image {
+  width: 100%;
+  height: 115px;
+  object-fit: contain;
+  border-radius: var(--ds-radius-md);
+}
+
+.size {
+  font-size: var(--ds-text-xs);
+  color: var(--ds-gray-10);
+  text-align: center;
+}
+
+.empty {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: var(--ds-gray-10);
+  text-align: center;
+}
+
+.footer {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  padding: 12px 20px 16px;
+  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
+}
+
+.fields {
+  flex: 1;
+  max-width: 420px;
+}
+
+.actions {
+  display: flex;
+  flex: 1;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+}

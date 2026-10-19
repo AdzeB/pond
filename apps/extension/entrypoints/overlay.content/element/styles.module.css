@@ -1,0 +1,20 @@
+.surface {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+}
+
+.highlight {
+  position: absolute;
+  pointer-events: none;
+  outline: 2px solid var(--ds-accent-9);
+  background: var(--ds-accent-a3);
+  transition:
+    left var(--ds-duration-snap) var(--ds-easing-standard),
+    top var(--ds-duration-snap) var(--ds-easing-standard),
+    width var(--ds-duration-snap) var(--ds-easing-standard),
+    height var(--ds-duration-snap) var(--ds-easing-standard);
+}

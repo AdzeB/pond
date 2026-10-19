@@ -11,3 +11,18 @@ SOURCE_LABELS.set("local", "Local");
 export function sourceLabel(source: Source): string {
   return SOURCE_LABELS.get(source) ?? source;
 }
+
+export function hostToSource(rawUrl: string): Source | null {
+  let host: string;
+  try {
+    host = new URL(rawUrl).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return null;
+  }
+  for (const descriptor of SOURCE_DESCRIPTORS) {
+    for (const owned of descriptor.hosts) {
+      if (host === owned || host.endsWith(`.${owned}`)) return descriptor.id;
+    }
+  }
+  return null;
+}

@@ -5,9 +5,11 @@
     "build": {
       "inputs": [
         "$TURBO_EXTENDS$",
+        "components/**",
         "entrypoints/**",
         "public/**",
         "sources/**",
+        "styles/**",
         "utils/**",
         "wxt.config.ts",
         "tsconfig.json"
@@ -17,6 +19,7 @@
     "typecheck": {
       "inputs": [
         "$TURBO_EXTENDS$",
+        "components/**",
         "entrypoints/**",
         "sources/**",
         "utils/**",

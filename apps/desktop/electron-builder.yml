@@ -57,10 +57,6 @@ extraResources:
     to: app-icons
     filter:
       - "**/default.png"
-  - from: ../extension/.output/chrome-mv3
-    to: extension
-  - from: ../extension/.output/firefox-mv3
-    to: extension-firefox
 
 extraMetadata:
   main: ./out/main/index.js

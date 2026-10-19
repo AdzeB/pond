@@ -23,8 +23,7 @@
     },
     "apps/extension": {
       "entry": ["entrypoints/**/*.{ts,tsx}", "scripts/*.mjs"],
-      "project": ["**/*.{ts,tsx}"],
-      "ignoreDependencies": ["@pond/theme"]
+      "project": ["**/*.{ts,tsx}"]
     },
     "apps/raycast": { "project": ["src/**/*.{ts,tsx}"] },
     "packages/schema": {

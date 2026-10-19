@@ -1,0 +1,11 @@
+.body {
+  max-width: 720px;
+  min-height: 100vh;
+  padding: 48px 24px;
+  margin: 0 auto;
+}
+
+.shortcut {
+  font-family: inherit;
+  color: var(--ds-gray-11);
+}

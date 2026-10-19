@@ -26,6 +26,7 @@ export interface NativePorts {
     draft: CaptureWebDraft,
     cookies?: ExtensionCookie[],
   ) => Promise<CaptureReceipt>;
+  captureStatus?: (id: string) => Promise<CaptureReceipt>;
   enqueue: (url: string, opts: EnqueueOpts) => Promise<EnqueueResult>;
   libraryInfo: () => Promise<LibraryInfo>;
   foldersList?: () => Promise<{ id: string; name: string }[]>;
@@ -52,6 +53,10 @@ export async function dispatchNative(
       case "capture.accept":
         if (!ports.capture) return { ok: false, error: "capture_unavailable" };
         return { ok: true, data: await ports.capture(req.draft, req.cookies) };
+      case "capture.status":
+        if (!ports.captureStatus)
+          return { ok: false, error: "capture_unavailable" };
+        return { ok: true, data: await ports.captureStatus(req.id) };
       case "hello":
         return {
           ok: true,

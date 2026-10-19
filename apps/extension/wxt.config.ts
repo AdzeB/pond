@@ -2,9 +2,18 @@ import { resolve } from "node:path";
 import { FIREFOX_EXTENSION_ID } from "@pond/schema/native";
 import { defineConfig } from "wxt";
 
-/** Pinned public key so unpacked and store builds share `EXTENSION_ID` in `@pond/schema/native`. */
+/** Pins unpacked builds to `EXTENSION_ID` in `@pond/schema/native`; the Chrome Web Store rejects `key` and assigns its own ID. */
 const EXTENSION_KEY =
   "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3Zo8eCTaDeFH3Cc8yLtm6FiH3ALU8SMbH+oTFnjzBbD1+zUy1chc0P4c62tYvW4rBiO3CKt2Ycn3u1PmbkBPzuu/65YA7AZMA9+Oyp3QHhsjC1lED4EdCKQJK2WuyLv0k4kG22HQGUN83n9vdx/fPYRk3IL4yFplWUrcsApFOVAIVvhoMizpYfnBvey64aY9FTAFSKd+iYyA7J/yVzRh4AyjYRJFlmdA8K9aMaGZ/Ta4UvUrqoGBkgyGGH+hoVsPvgxW/+w5+JWAThT9ApAVEeuuZp9LeNwmnI2zUFxS0JRf6LHIDy7kbtTOVW5g9eOaS9G3Gs13j2VPC1Yyu7zxTQIDAQAB";
+
+const STORE_BUILD = process.env.POND_STORE_BUILD === "1";
+
+const ICONS = {
+  16: "icons/16.png",
+  32: "icons/32.png",
+  48: "icons/48.png",
+  128: "icons/128.png",
+};
 
 export default defineConfig({
   modules: ["@wxt-dev/module-react"],
@@ -26,6 +35,29 @@ export default defineConfig({
       },
     },
   }),
+  zip: {
+    artifactTemplate: "pond-extension-{{version}}-{{browser}}.zip",
+    sourcesTemplate: "pond-extension-{{version}}-sources.zip",
+    /** AMO reviewers rebuild from source, so the zip carries the workspace packages the extension imports. */
+    sourcesRoot: resolve(__dirname, "../.."),
+    includeSources: [
+      "package.json",
+      "pnpm-lock.yaml",
+      "pnpm-workspace.yaml",
+      "tsconfig.base.json",
+      ".nvmrc",
+      "LICENSE",
+      "apps/extension/**",
+      "packages/icons/**",
+      "packages/schema/**",
+      "packages/theme/**",
+      "packages/ui/**",
+    ],
+    excludeSources: [
+      "packages/icons/brand/**",
+      "packages/icons/social-media/**",
+    ],
+  },
   manifest: ({ browser }) => ({
     name: "Pond",
     version: "1.1.1",
@@ -46,30 +78,29 @@ export default defineConfig({
             },
           },
         }
-      : { key: EXTENSION_KEY }),
+      : STORE_BUILD
+        ? {}
+        : { key: EXTENSION_KEY }),
     description:
-      "Capture saves from Twitter/X, Instagram, Pinterest, Are.na, Cosmos, TikTok, YouTube, Reddit, Threads, and web articles into one place.",
-    icons: {
-      16: "icons/16.png",
-      32: "icons/32.png",
-      48: "icons/48.png",
-      128: "icons/128.png",
-    },
+      "Save pages, screenshots, images, and your bookmarks from X, Instagram, Pinterest, YouTube, Reddit, and more into your local Pond library.",
+    icons: ICONS,
     action: {
-      default_title: "Save to Pond",
-      default_icon: {
-        16: "icons/16.png",
-        32: "icons/32.png",
-        48: "icons/48.png",
-        128: "icons/128.png",
+      default_title: "Pond",
+      default_icon: ICONS,
+    },
+    commands: {
+      _execute_action: {
+        suggested_key: { default: "Alt+Shift+P" },
+        description: "Open Pond",
+      },
+      "save-page": {
+        suggested_key: { default: "Alt+Shift+S" },
+        description: "Save the current page",
+      },
+      "screenshot-region": {
+        description: "Screenshot a region of the page",
       },
     },
-    web_accessible_resources: [
-      {
-        resources: ["icons/brand/icon.svg"],
-        matches: ["<all_urls>"],
-      },
-    ],
     permissions: [
       "storage",
       "activeTab",
@@ -80,20 +111,6 @@ export default defineConfig({
       "nativeMessaging",
       "alarms",
     ],
-    host_permissions: [
-      "https://x.com/*",
-      "https://twitter.com/*",
-      "https://www.instagram.com/*",
-      "https://www.pinterest.com/*",
-      "https://*.pinterest.com/*",
-      "https://www.are.na/*",
-      "https://are.na/*",
-      "https://www.cosmos.so/*",
-      "https://cosmos.so/*",
-      "https://www.tiktok.com/*",
-      "https://www.youtube.com/*",
-      "https://m.youtube.com/*",
-      "<all_urls>",
-    ],
+    host_permissions: ["<all_urls>"],
   }),
 });

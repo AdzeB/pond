@@ -92,4 +92,30 @@ describe("dispatchNative", () => {
       data: [{ id: "refs", name: "Refs" }],
     });
   });
+
+  it("reads a capture receipt by draft id", async () => {
+    const receipt = {
+      id: "draft-1",
+      library: "/library",
+      state: "complete" as const,
+      completed: 1,
+      total: 1,
+      saveIds: ["save-1"],
+      duplicateCount: 0,
+    };
+    const captureStatus = vi.fn().mockResolvedValue(receipt);
+    await expect(
+      dispatchNative(
+        { type: "capture.status", id: "draft-1" },
+        ports({ captureStatus }),
+      ),
+    ).resolves.toEqual({ ok: true, data: receipt });
+    expect(captureStatus).toHaveBeenCalledWith("draft-1");
+  });
+
+  it("rejects a capture status id outside the draft id format", async () => {
+    await expect(
+      dispatchNative({ type: "capture.status", id: "../x" }, ports()),
+    ).resolves.toEqual({ ok: false, error: "invalid" });
+  });
 });

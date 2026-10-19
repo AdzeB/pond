@@ -1,0 +1,21 @@
+.surface {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: crosshair;
+  user-select: none;
+  background: var(--ds-black-a4);
+
+  &[data-dragging] {
+    background: transparent;
+  }
+}
+
+/* The outer shadow dims everything but the selection, so the cutout stays true to the page. */
+.selection {
+  position: absolute;
+  outline: 1px solid var(--ds-white-a12);
+  box-shadow: 0 0 0 100vmax var(--ds-black-a4);
+}
