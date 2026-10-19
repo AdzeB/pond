@@ -107,8 +107,12 @@ export function createNewActions({
       kind,
     });
     if (picked.paths.length === 0) return;
+    await importFilePaths(picked.paths);
+  }
+
+  async function importFilePaths(paths: string[]): Promise<void> {
     const result = SaveResultSchema.parse(
-      await importFilesWithDuplicateReview({ paths: picked.paths }),
+      await importFilesWithDuplicateReview({ paths }),
     );
     if (result.reason === "cancelled") return;
     if (!result.ok || !result.ids?.length) {
@@ -512,6 +516,7 @@ export function createNewActions({
     newTag,
     newSource,
     importPaths,
+    importFilePaths,
     importLegacyLibrary,
     importClipboard,
     importBookmarks,
@@ -539,6 +544,7 @@ export const {
   newTag,
   newSource,
   importPaths,
+  importFilePaths,
   importLegacyLibrary,
   importClipboard,
   importBookmarks,
