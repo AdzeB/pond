@@ -5,8 +5,9 @@ import {
 } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
+import { libraryScopedKey } from "@/shared/lib/library-scope";
 
-const DB_NAME = "pond-pool";
+const DB_BASE_NAME = "pond-pool";
 const STORE = "snapshot";
 const VERSION = 1;
 const SNAPSHOT_LIMIT = 250;
@@ -17,7 +18,9 @@ function openDb(): Promise<IDBDatabase> {
   if (dbPromise) return dbPromise;
   dbPromise = new Promise((resolve, reject) => {
     try {
-      const req = indexedDB.open(DB_NAME, VERSION);
+      // An unscoped snapshot can hold another Library's Saves, so it is never read.
+      indexedDB.deleteDatabase(DB_BASE_NAME);
+      const req = indexedDB.open(libraryScopedKey(DB_BASE_NAME), VERSION);
       req.onupgradeneeded = () => {
         const d = req.result;
         if (!d.objectStoreNames.contains(STORE)) {
