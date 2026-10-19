@@ -1,4 +1,4 @@
-import { closeSync, mkdirSync, openSync } from "node:fs";
+import { closeSync, fstatSync, mkdirSync, openSync } from "node:fs";
 import { join } from "node:path";
 import type { App } from "electron";
 
@@ -14,8 +14,13 @@ export function resolveLogFile(
       const root = directory();
       mkdirSync(root, { recursive: true });
       const file = join(root, "main.log");
-      // An existing directory can be writable while its log file is not.
-      closeSync(openSync(file, "a"));
+      // Opening a directory can succeed on Windows; logging requires a file.
+      const descriptor = openSync(file, "a");
+      try {
+        if (!fstatSync(descriptor).isFile()) continue;
+      } finally {
+        closeSync(descriptor);
+      }
       app.setAppLogsPath(root);
       return file;
     } catch {}
