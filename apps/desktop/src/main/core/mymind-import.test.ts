@@ -148,6 +148,46 @@ describe("importMymindExport", () => {
     expect([...fixture.saves.keys()]).toEqual(["mymind:note-1"]);
   });
 
+  it("matches files named by card id and keeps the card's metadata on one Save", async () => {
+    const directory = join(root, "id-named-files");
+    await mkdir(directory);
+    await Promise.all([
+      writeFile(
+        join(directory, "cards.csv"),
+        [
+          "id,type,title,url,content,note,tags,created",
+          'Img1,Image,Red book cover,https://example.com/post,,Found at the fair,"typography, books",2024-04-01T12:00:00.000Z',
+          "Doc1,Document,A paper,,,,research,2024-04-02T12:00:00.000Z",
+        ].join("\n"),
+      ),
+      writeFile(join(directory, "Img1.jpeg"), "image"),
+      writeFile(join(directory, "Doc1.pdf"), "pdf"),
+    ]);
+    const fixture = createImportFixture();
+
+    await expect(
+      importMymindExport(directory, fixture.dependencies),
+    ).resolves.toEqual({ ok: true, imported: 2, skipped: 0 });
+    expect(fixture.links.size).toBe(0);
+    expect(fixture.saves.get("mymind:Img1")).toEqual({
+      source: "local",
+      sourceId: "mymind:Img1",
+      filePaths: [join(directory, "Img1.jpeg")],
+      title: "Red book cover",
+      url: "https://example.com/post",
+      note: "Found at the fair",
+      tags: ["typography", "books"],
+      savedAt: new Date("2024-04-01T12:00:00.000Z"),
+      createdAt: new Date("2024-04-01T12:00:00.000Z"),
+    });
+    expect(fixture.saves.get("mymind:Doc1")).toMatchObject({
+      filePaths: [join(directory, "Doc1.pdf")],
+      title: "A paper",
+      url: null,
+      tags: ["research"],
+    });
+  });
+
   it("rejects a cards.csv that is not a mymind export", async () => {
     const directory = join(root, "invalid");
     await mkdir(directory);
