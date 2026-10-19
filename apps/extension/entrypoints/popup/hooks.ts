@@ -1,7 +1,4 @@
 import { useEffect, useState } from "react";
-import type { Folder } from "@/utils/messaging";
-import { sendMessage } from "@/utils/messaging";
-import { type RecentCapture, readRecent, watchRecent } from "@/utils/recent";
 
 export function useActiveTab(): chrome.tabs.Tab | null | undefined {
   const [tab, setTab] = useState<chrome.tabs.Tab | null>();
@@ -14,22 +11,32 @@ export function useActiveTab(): chrome.tabs.Tab | null | undefined {
   return tab;
 }
 
-export function useFolders(enabled: boolean): Folder[] {
-  const [folders, setFolders] = useState<Folder[]>([]);
-  useEffect(() => {
-    if (!enabled) return;
-    void sendMessage("folders", undefined)
-      .then(setFolders)
-      .catch(() => {});
-  }, [enabled]);
-  return folders;
+/** Chrome on macOS reports glyphs like `⌥⇧S`; elsewhere it joins key names with `+`. */
+export function shortcutKeys(shortcut: string): string[] {
+  if (shortcut.includes("+")) return shortcut.split("+").filter(Boolean);
+  return [...shortcut];
 }
 
-export function useRecent(): RecentCapture[] {
-  const [recent, setRecent] = useState<RecentCapture[]>([]);
+/** Maps each command name to its keys, leaving out commands with no shortcut set. */
+export function useShortcuts(): ReadonlyMap<string, string[]> {
+  const [shortcuts, setShortcuts] = useState<ReadonlyMap<string, string[]>>(
+    new Map(),
+  );
   useEffect(() => {
-    void readRecent().then(setRecent);
-    return watchRecent(setRecent);
+    void browser.commands
+      ?.getAll()
+      .then((all) =>
+        setShortcuts(
+          new Map(
+            all.flatMap((command) =>
+              command.name && command.shortcut
+                ? [[command.name, shortcutKeys(command.shortcut)]]
+                : [],
+            ),
+          ),
+        ),
+      )
+      .catch(() => {});
   }, []);
-  return recent;
+  return shortcuts;
 }

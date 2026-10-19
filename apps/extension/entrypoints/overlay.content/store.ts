@@ -1,16 +1,15 @@
 import { Toast } from "@pond/ui/toast";
-import type { Folder } from "@/utils/messaging";
 import type { CaptureStatus } from "@/utils/outcome";
 import type { OverlayRequest, OverlayToast } from "@/utils/overlay-messaging";
-import type { ThemeVars } from "@/utils/theme";
+import type { Appearance } from "@/utils/paint-theme";
 
-export type OverlayTool =
-  | { view: "region" }
-  | { view: "element" }
-  | { view: "images"; folders: Folder[] };
+export type OverlayTool = Exclude<
+  OverlayRequest,
+  { view: "clear" } | { view: "toast" }
+>;
 
 export interface OverlayState {
-  theme: ThemeVars | null;
+  appearance: Appearance;
   tool: OverlayTool | null;
 }
 
@@ -34,7 +33,10 @@ const OFFLINE_HINT = "Open Pond on your computer, then try again.";
 export type OverlayStore = ReturnType<typeof createOverlayStore>;
 
 export function createOverlayStore() {
-  let state: OverlayState = { theme: null, tool: null };
+  let state: OverlayState = {
+    appearance: { theme: null, mode: null },
+    tool: null,
+  };
   const listeners = new Set<() => void>();
   const toasts = Toast.createToastManager<ToastData>();
   const live = new Set<string>();
@@ -72,13 +74,13 @@ export function createOverlayStore() {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    show(request: OverlayRequest, theme: ThemeVars | null) {
-      if (theme) set({ theme });
+    show(request: OverlayRequest, appearance: Appearance) {
       if (request.view === "clear") {
         toasts.close();
         set({ tool: null });
         return;
       }
+      set({ appearance });
       if (request.view === "toast") {
         toast(request.toast);
         return;

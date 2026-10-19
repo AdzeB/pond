@@ -1,56 +1,194 @@
-import { type PointerEvent, useState } from "react";
+import { Button } from "@pond/ui/button";
+import { type PointerEvent, useEffect, useEffectEvent, useState } from "react";
 import type { OverlayResult } from "@/utils/messaging";
-import { clampPoint, type Point, regionBetween } from "../geometry";
+import {
+  clampPoint,
+  clipRect,
+  HANDLES,
+  type Handle,
+  moveRect,
+  type Point,
+  type Rect,
+  rectBetween,
+  resizeRect,
+  viewportRegion,
+} from "../geometry";
 import { Hint } from "../hint";
 import { useEscape } from "../use-escape";
 import styles from "./styles.module.css";
+
+/** Under this many pixels a press counts as a click that snaps to the element. */
+const DRAG_THRESHOLD = 4;
+const TOOLBAR_SPACE = 48;
+
+type Gesture =
+  | { kind: "draw"; start: Point; moved: boolean }
+  | { kind: "move" | Handle; start: Point; from: Rect };
+
+/** The overlay covers the page, so look underneath it for the element you're pointing at. */
+function elementRect(point: Point): Rect | null {
+  for (const element of document.elementsFromPoint(point.x, point.y)) {
+    if (element.closest("pond-overlay")) continue;
+    if (element === document.documentElement) return null;
+    const box = element.getBoundingClientRect();
+    return clipRect({
+      x: box.left,
+      y: box.top,
+      width: box.width,
+      height: box.height,
+    });
+  }
+  return null;
+}
+
+function boxStyle(rect: Rect) {
+  return {
+    left: rect.x,
+    top: rect.y,
+    width: rect.width,
+    height: rect.height,
+  };
+}
 
 interface RegionPickerProps {
   onFinish: (result: OverlayResult | null) => void;
 }
 
 export function RegionPicker({ onFinish }: RegionPickerProps) {
-  const [drag, setDrag] = useState<{ start: Point; end: Point } | null>(null);
+  const [hover, setHover] = useState<Rect | null>(null);
+  const [box, setBox] = useState<Rect | null>(null);
+  const [gesture, setGesture] = useState<Gesture | null>(null);
   useEscape(() => onFinish(null));
+
+  const save = () => {
+    const region = box && viewportRegion(box);
+    if (region) onFinish({ kind: "region", region });
+  };
+
+  const onKey = useEffectEvent((event: KeyboardEvent) => {
+    if (event.key !== "Enter" || !box) return;
+    event.preventDefault();
+    event.stopPropagation();
+    save();
+  });
+  useEffect(() => {
+    const listener = (event: KeyboardEvent) => onKey(event);
+    window.addEventListener("keydown", listener, true);
+    return () => window.removeEventListener("keydown", listener, true);
+  }, []);
 
   const point = (event: PointerEvent) =>
     clampPoint(event.clientX, event.clientY);
 
-  const selection = drag
-    ? {
-        left: Math.min(drag.start.x, drag.end.x),
-        top: Math.min(drag.start.y, drag.end.y),
-        width: Math.abs(drag.start.x - drag.end.x),
-        height: Math.abs(drag.start.y - drag.end.y),
-      }
-    : null;
+  const begin = (event: PointerEvent, next: Gesture) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setGesture(next);
+  };
+
+  const onMove = (event: PointerEvent) => {
+    const at = point(event);
+    if (!gesture) {
+      if (!box) setHover(elementRect(at));
+      return;
+    }
+    const dx = at.x - gesture.start.x;
+    const dy = at.y - gesture.start.y;
+    if (gesture.kind === "draw") {
+      const moved = gesture.moved || Math.hypot(dx, dy) >= DRAG_THRESHOLD;
+      if (!moved) return;
+      if (!gesture.moved) setGesture({ ...gesture, moved });
+      setHover(null);
+      setBox(rectBetween(gesture.start, at));
+      return;
+    }
+    setBox(
+      gesture.kind === "move"
+        ? moveRect(gesture.from, dx, dy)
+        : resizeRect(gesture.from, gesture.kind, dx, dy),
+    );
+  };
+
+  const onUp = () => {
+    if (gesture?.kind === "draw") {
+      if (!gesture.moved) setBox(hover);
+      else setBox((current) => (current ? clipRect(current) : null));
+      setHover(null);
+    }
+    setGesture(null);
+  };
+
+  const adjusting = box && gesture?.kind !== "draw";
+  const below = box ? box.y + box.height + TOOLBAR_SPACE <= innerHeight : true;
 
   return (
     <div
       className={styles.surface}
-      data-dragging={drag ? "" : undefined}
-      onPointerDown={(event) => {
-        if (event.button !== 0) return;
-        event.preventDefault();
-        event.currentTarget.setPointerCapture(event.pointerId);
-        const start = point(event);
-        setDrag({ start, end: start });
+      data-picking={!box || undefined}
+      onPointerDown={(event) =>
+        begin(event, { kind: "draw", start: point(event), moved: false })
+      }
+      onPointerMove={onMove}
+      onPointerUp={onUp}
+      onPointerCancel={() => setGesture(null)}
+      onPointerLeave={() => {
+        if (!gesture) setHover(null);
       }}
-      onPointerMove={(event) => {
-        if (drag) setDrag({ ...drag, end: point(event) });
-      }}
-      onPointerUp={(event) => {
-        if (!drag) return;
-        const region = regionBetween(drag.start, point(event));
-        setDrag(null);
-        if (region) onFinish({ kind: "region", region });
-      }}
-      onPointerCancel={() => setDrag(null)}
     >
-      {selection ? (
-        <div className={styles.selection} style={selection} />
+      {hover && !box ? (
+        <div className={styles.highlight} style={boxStyle(hover)} />
+      ) : null}
+      {box ? (
+        <div
+          className={styles.box}
+          style={boxStyle(box)}
+          data-drawing={gesture?.kind === "draw" || undefined}
+          onPointerDown={(event) =>
+            begin(event, { kind: "move", start: point(event), from: box })
+          }
+        >
+          <span className={styles.size}>
+            {Math.round(box.width)} × {Math.round(box.height)}
+          </span>
+          {adjusting
+            ? HANDLES.map((handle) => (
+                <span
+                  key={handle}
+                  className={styles.handle}
+                  data-handle={handle}
+                  onPointerDown={(event) =>
+                    begin(event, {
+                      kind: handle,
+                      start: point(event),
+                      from: box,
+                    })
+                  }
+                />
+              ))
+            : null}
+          {adjusting && !gesture ? (
+            <div
+              className={styles.toolbar}
+              data-above={!below || undefined}
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => onFinish(null)}
+              >
+                Cancel
+              </Button>
+              <Button size="sm" variant="primary" onClick={save}>
+                Save
+              </Button>
+            </div>
+          ) : null}
+        </div>
       ) : (
-        <Hint>Drag to capture a region. Press Esc to cancel.</Hint>
+        <Hint>Click an element or drag to select. Press Esc to cancel.</Hint>
       )}
     </div>
   );

@@ -1,6 +1,6 @@
 import type { SessionImportResponse } from "@pond/schema/session";
 import { SOURCES, type Source } from "@pond/schema/source-ids";
-import { at, isRecord, type JsonValue } from "./json";
+import { asText, at, isRecord, type JsonValue } from "./json";
 
 export const POND_EVENT = "pond:capture";
 
@@ -35,6 +35,10 @@ export type PushSessionResult =
 
 export type ToolbarAction = "popup" | "save";
 
+export type ThemePreference = "library" | "system" | "light" | "dark";
+
+export type ScreenshotFormat = "png" | "jpeg";
+
 export type SourceFlags = Record<Source, boolean>;
 
 /** A type alias, not an interface, so it stays assignable to the stored `JsonValue`. */
@@ -43,6 +47,13 @@ export type PondSettings = {
   likes: SourceFlags;
   toolbar: ToolbarAction;
   confirmations: boolean;
+  askDetails: boolean;
+  altClick: boolean;
+  dragToSave: boolean;
+  dragBlocked: string[];
+  screenshotFormat: ScreenshotFormat;
+  retina: boolean;
+  theme: ThemePreference;
 };
 
 const ALL_SOURCES_ON = {
@@ -64,7 +75,35 @@ export const DEFAULT_SETTINGS: PondSettings = {
   likes: ALL_SOURCES_ON,
   toolbar: "popup",
   confirmations: true,
+  askDetails: true,
+  altClick: true,
+  dragToSave: true,
+  dragBlocked: [],
+  screenshotFormat: "png",
+  retina: true,
+  theme: "library",
 };
+
+const THEMES: readonly ThemePreference[] = [
+  "library",
+  "system",
+  "light",
+  "dark",
+];
+const MAX_BLOCKED_SITES = 500;
+
+function readHosts(value: JsonValue | undefined): string[] {
+  if (!Array.isArray(value)) return [];
+  const hosts = value.flatMap((entry) => {
+    const host = asText(entry);
+    return host && /^[\w.-]{1,253}$/.test(host) ? [host] : [];
+  });
+  return [...new Set(hosts)].slice(0, MAX_BLOCKED_SITES);
+}
+
+function readTheme(value: JsonValue | undefined): ThemePreference {
+  return THEMES.find((theme) => theme === value) ?? "library";
+}
 
 function readFlags(value: JsonValue | undefined, fallback: SourceFlags) {
   const flags = { ...fallback };
@@ -81,5 +120,13 @@ export function normalizeStoredSettings(stored: JsonValue): PondSettings {
     likes: readFlags(at(stored, "likes"), DEFAULT_SETTINGS.likes),
     toolbar: at(stored, "toolbar") === "save" ? "save" : "popup",
     confirmations: at(stored, "confirmations") !== false,
+    askDetails: at(stored, "askDetails") !== false,
+    altClick: at(stored, "altClick") !== false,
+    dragToSave: at(stored, "dragToSave") !== false,
+    dragBlocked: readHosts(at(stored, "dragBlocked")),
+    screenshotFormat:
+      at(stored, "screenshotFormat") === "jpeg" ? "jpeg" : "png",
+    retina: at(stored, "retina") !== false,
+    theme: readTheme(at(stored, "theme")),
   };
 }

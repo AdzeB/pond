@@ -13,7 +13,7 @@ export default defineContentScript({
     const store = createOverlayStore();
     /** The background messages right after injecting, so listen before the shadow root mounts. */
     const stop = onOverlayMessage("show", ({ data }) => {
-      store.show(data.request, data.theme);
+      store.show(data.request, data.appearance);
       return true;
     });
     ctx.onInvalidated(stop);

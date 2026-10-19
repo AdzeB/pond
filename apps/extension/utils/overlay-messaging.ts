@@ -1,7 +1,12 @@
 import { defineExtensionMessaging } from "@webext-core/messaging";
-import type { Folder } from "./messaging";
+import type {
+  DetailsDraft,
+  DragItem,
+  Folder,
+  LibraryTargets,
+} from "./messaging";
 import type { CaptureStatus } from "./outcome";
-import type { ThemeVars } from "./theme";
+import type { Appearance } from "./paint-theme";
 
 export interface OverlayToast {
   id: string;
@@ -15,11 +20,12 @@ export type OverlayRequest =
   | { view: "clear" }
   | { view: "toast"; toast: OverlayToast }
   | { view: "region" }
-  | { view: "element" }
-  | { view: "images"; folders: Folder[] };
+  | { view: "images"; library: LibraryTargets }
+  | { view: "details"; draft: DetailsDraft; library: LibraryTargets }
+  | { view: "dock"; item: DragItem; folders: Folder[] };
 
 interface OverlayProtocol {
-  show(input: { request: OverlayRequest; theme: ThemeVars | null }): boolean;
+  show(input: { request: OverlayRequest; appearance: Appearance }): boolean;
 }
 
 export const { sendMessage: sendOverlayMessage, onMessage: onOverlayMessage } =

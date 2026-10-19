@@ -6,16 +6,145 @@
   touch-action: none;
   cursor: crosshair;
   user-select: none;
-  background: var(--ds-black-a4);
 
-  &[data-dragging] {
+  &[data-picking] {
+    background: var(--ds-black-a4);
+  }
+
+  &[data-picking]:has(.highlight) {
     background: transparent;
   }
 }
 
 /* The outer shadow dims everything but the selection, so the cutout stays true to the page. */
-.selection {
+.highlight,
+.box {
   position: absolute;
-  outline: 1px solid var(--ds-white-a12);
   box-shadow: 0 0 0 100vmax var(--ds-black-a4);
+}
+
+.highlight {
+  pointer-events: none;
+  outline: 2px solid var(--ds-accent-9);
+  outline-offset: -1px;
+}
+
+.box {
+  cursor: move;
+  outline: 1px solid var(--ds-accent-9);
+
+  /* Rule-of-thirds guides, drawn as two framed bands. */
+  &::before,
+  &::after {
+    position: absolute;
+    pointer-events: none;
+    content: "";
+    border: 0 solid var(--ds-accent-a8);
+  }
+
+  &::before {
+    inset: 0 33.333%;
+    border-inline-width: 1px;
+  }
+
+  &::after {
+    inset: 33.333% 0;
+    border-block-width: 1px;
+  }
+
+  &[data-drawing] {
+    cursor: crosshair;
+  }
+}
+
+.size {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  padding: 2px 6px;
+  font-size: var(--ds-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-white-a12);
+  white-space: nowrap;
+  pointer-events: none;
+  background: var(--ds-black-a9);
+  border-radius: var(--ds-radius-sm);
+}
+
+.handle {
+  position: absolute;
+  z-index: 1;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  background: var(--ds-white-a12);
+  border: 1px solid var(--ds-accent-9);
+  border-radius: var(--ds-radius-full);
+
+  &[data-handle="nw"] {
+    top: 0;
+    left: 0;
+    cursor: nwse-resize;
+  }
+
+  &[data-handle="n"] {
+    top: 0;
+    left: 50%;
+    cursor: ns-resize;
+  }
+
+  &[data-handle="ne"] {
+    top: 0;
+    left: 100%;
+    cursor: nesw-resize;
+  }
+
+  &[data-handle="e"] {
+    top: 50%;
+    left: 100%;
+    cursor: ew-resize;
+  }
+
+  &[data-handle="se"] {
+    top: 100%;
+    left: 100%;
+    cursor: nwse-resize;
+  }
+
+  &[data-handle="s"] {
+    top: 100%;
+    left: 50%;
+    cursor: ns-resize;
+  }
+
+  &[data-handle="sw"] {
+    top: 100%;
+    left: 0;
+    cursor: nesw-resize;
+  }
+
+  &[data-handle="w"] {
+    top: 50%;
+    left: 0;
+    cursor: ew-resize;
+  }
+}
+
+.toolbar {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  cursor: default;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow-menu);
+
+  &[data-above] {
+    top: auto;
+    right: 8px;
+    bottom: 8px;
+  }
 }

@@ -6,6 +6,13 @@ export function useEscape(onEscape: () => void): void {
   useEffect(() => {
     const listener = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      const [target] = event.composedPath();
+      /** An open combobox closes its own popup first. */
+      if (
+        target instanceof Element &&
+        target.getAttribute("aria-expanded") === "true"
+      )
+        return;
       event.preventDefault();
       event.stopPropagation();
       handle();

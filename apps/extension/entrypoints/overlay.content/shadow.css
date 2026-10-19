@@ -8,4 +8,14 @@ html {
     sans-serif;
   font-size: var(--ds-text-sm);
   color: var(--ds-gray-12);
+  color-scheme: light dark;
+}
+
+/* `light-dark()` compiles to variables that only these color-scheme declarations define. */
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
 }

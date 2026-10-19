@@ -29,4 +29,35 @@ describe("normalizeStoredSettings", () => {
     ).toMatchObject({ toolbar: "popup", confirmations: true });
     expect(normalizeStoredSettings(["twitter"])).toEqual(DEFAULT_SETTINGS);
   });
+
+  it("reads capture and screenshot preferences", () => {
+    expect(
+      normalizeStoredSettings({
+        askDetails: false,
+        altClick: false,
+        dragToSave: false,
+        screenshotFormat: "jpeg",
+        retina: false,
+        theme: "dark",
+      }),
+    ).toMatchObject({
+      askDetails: false,
+      altClick: false,
+      dragToSave: false,
+      screenshotFormat: "jpeg",
+      retina: false,
+      theme: "dark",
+    });
+    expect(
+      normalizeStoredSettings({ screenshotFormat: "gif", theme: "neon" }),
+    ).toMatchObject({ screenshotFormat: "png", theme: "library" });
+  });
+
+  it("keeps only hostnames in the drag block list, once each", () => {
+    expect(
+      normalizeStoredSettings({
+        dragBlocked: ["example.com", "example.com", "bad host", 4, "a.b-c.io"],
+      }).dragBlocked,
+    ).toEqual(["example.com", "a.b-c.io"]);
+  });
 });

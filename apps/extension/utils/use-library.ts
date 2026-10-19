@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { sendMessage } from "./messaging";
-import { paintTheme } from "./paint-theme";
+import { paintTheme, resolveAppearance } from "./paint-theme";
 import type { ProbeResult } from "./probe";
+import { useSettings } from "./use-settings";
 
-/** Probes Pond through the background and paints the Library's theme on the page. */
+/** Probes Pond through the background and paints the theme the settings ask for. */
 export function useLibrary() {
   const [result, setResult] = useState<ProbeResult | null>(null);
+  const { settings } = useSettings();
 
   const refresh = useCallback(async () => {
     setResult(null);
@@ -22,7 +24,15 @@ export function useLibrary() {
 
   const theme =
     result?.state === "connected" ? (result.library.theme ?? null) : null;
-  useLayoutEffect(() => paintTheme(document.documentElement, theme), [theme]);
+  const preference = settings?.theme ?? "library";
+  useLayoutEffect(
+    () =>
+      paintTheme(
+        document.documentElement,
+        resolveAppearance(preference, theme),
+      ),
+    [preference, theme],
+  );
 
   return { result, refresh };
 }

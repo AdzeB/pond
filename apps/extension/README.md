@@ -10,11 +10,15 @@ Open Pond once so it can register the native host. On macOS this writes a manife
 
 ## Use
 
-- Click the Pond icon to open the panel. Add tags or folders, then click **Save Page**, or pick a capture tool: visible area, region, element, full page, or images on the page.
-- Right-click a page, link, image, or video to save it, or to start a screenshot.
+- Click the Pond icon to open the panel: **Save Page**, **Save Images**, **Capture Region**, **Capture Visible Area**, or **Capture Full Page**.
+- After each capture, a window on the page lets you set the name, rating, description, tags, and folders before it saves. Turn off **Ask Where to Save** in settings to save straight away.
+- **Save Images** lists every image on the page with size, format, and domain filters. Pick folders and tags for the whole batch in its sidebar.
+- **Capture Region** highlights the element under the pointer. Click to snap to it or drag to draw, then move or resize the box and press Enter.
+- Right-click a page, link, image, or video to save it, or Alt-right-click an image or link to skip the menu.
+- Drag an image or link to show a dock with Pond and your recent folders as drop targets. Turn it off for one site from the panel.
 - On supported sites, the usual save or bookmark control also sends the item to your library. Likes are optional per source.
-- In the extension's settings, make the toolbar button save in one click, turn off on-page confirmations, or choose which sources to capture.
-- Keyboard shortcuts: `Alt+Shift+P` opens the panel, `Alt+Shift+S` saves the page. Region screenshots have no default shortcut.
+- In settings, pick PNG or JPEG screenshots at full or page resolution, match the Library theme or a fixed one, and choose which sources to capture.
+- Keyboard shortcuts: `Alt+Shift+P` opens the panel, `Alt+Shift+S` saves the page, `Alt+Shift+I` saves images, `Alt+Shift+R` captures a region. Visible area and full page have no default shortcut.
 
 Session connect happens in the background when Pond is waiting and you open that site signed in.
 
@@ -29,7 +33,8 @@ See [`docs/supported-sources.md`](../../docs/supported-sources.md) for the full 
 | `entrypoints/background/` | Service worker: captures, screenshots, menus, session connect |
 | `entrypoints/hooks.content.ts` | Isolated-world bridge that validates and relays site saves |
 | `entrypoints/hooks-main.content.ts` | Main-world hooks that watch each site's save and like requests |
-| `entrypoints/overlay.content/` | On-page toasts, region and element pickers, and the image collector, in a shadow root |
+| `entrypoints/gestures.content.ts` | Listens for Alt-right-click and drag starts, then asks the background for the overlay |
+| `entrypoints/overlay.content/` | On-page toasts, details window, region picker, image picker, and drag dock, in a shadow root |
 | `entrypoints/popup/` | Toolbar panel |
 | `entrypoints/options/` | Settings page |
 | `sources/` | One folder per supported site |

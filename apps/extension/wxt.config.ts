@@ -97,8 +97,19 @@ export default defineConfig({
         suggested_key: { default: "Alt+Shift+S" },
         description: "Save the current page",
       },
+      "save-images": {
+        suggested_key: { default: "Alt+Shift+I" },
+        description: "Save images from the page",
+      },
       "screenshot-region": {
-        description: "Screenshot a region of the page",
+        suggested_key: { default: "Alt+Shift+R" },
+        description: "Capture a region of the page",
+      },
+      "screenshot-visible": {
+        description: "Capture the visible area",
+      },
+      "screenshot-full": {
+        description: "Capture the full page",
       },
     },
     permissions: [

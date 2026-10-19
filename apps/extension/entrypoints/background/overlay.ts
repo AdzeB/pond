@@ -5,7 +5,7 @@ import {
   sendOverlayMessage,
 } from "@/utils/overlay-messaging";
 import { getSettings } from "@/utils/settings";
-import { libraryTheme } from "./library";
+import { overlayAppearance } from "./library";
 
 const OVERLAY_SCRIPT = "/content-scripts/overlay.js";
 
@@ -14,7 +14,7 @@ export async function showOverlay(
   tabId: number,
   request: OverlayRequest,
 ): Promise<boolean> {
-  const message = { request, theme: await libraryTheme() };
+  const message = { request, appearance: await overlayAppearance() };
   try {
     return await sendOverlayMessage("show", message, tabId);
   } catch {
@@ -35,7 +35,7 @@ export async function showOverlay(
 export async function hideOverlay(tabId: number): Promise<void> {
   const hidden = await sendOverlayMessage(
     "show",
-    { request: { view: "clear" }, theme: null },
+    { request: { view: "clear" }, appearance: { theme: null, mode: null } },
     tabId,
   ).catch(() => false);
   if (hidden) await new Promise((resolve) => setTimeout(resolve, 80));

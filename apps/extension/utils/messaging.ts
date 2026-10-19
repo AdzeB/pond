@@ -1,19 +1,32 @@
+import type { CaptureWebDraft } from "@pond/schema/capture";
 import { defineExtensionMessaging } from "@webext-core/messaging";
 import type { CaptureOutcome } from "./outcome";
 import type { ProbeResult } from "./probe";
 import type { PondCapturePayload, PondLogEntry } from "./types";
 
-export type CaptureTool = "visible" | "region" | "element" | "full" | "images";
+export type CaptureTool = "page" | "visible" | "region" | "full" | "images";
 
 export interface Folder {
   id: string;
   name: string;
+  parentId: string | null;
+  color: string | null;
 }
 
-export interface SavePageInput {
-  tabId: number;
-  tags: string[];
-  folderIds: string[];
+export interface Tag {
+  name: string;
+  starred: boolean;
+  usageCount: number;
+  lastUsedAt: number | null;
+}
+
+/** Everything a capture picker needs to offer folders and tags without a native round trip. */
+export interface LibraryTargets {
+  name: string;
+  folders: Folder[];
+  tags: Tag[];
+  recentFolderIds: string[];
+  recentTags: string[];
 }
 
 export interface CaptureRegion {
@@ -25,25 +38,57 @@ export interface CaptureRegion {
   viewportHeight: number;
 }
 
+export type DetailsKind = "page" | "link" | "media" | "screenshot";
+
+export interface DetailsPreview {
+  src: string;
+  width?: number;
+  height?: number;
+}
+
+/** A capture waiting on its name, tags, and folders; the overlay hands it back untouched. */
+export interface DetailsDraft {
+  kind: DetailsKind;
+  items: CaptureWebDraft["items"];
+  title: string;
+  url: string;
+  originUrl?: string;
+  trigger?: string;
+  preview: DetailsPreview | null;
+}
+
+export interface DetailsMetadata {
+  title: string;
+  notes: string;
+  rating: number;
+  tags: string[];
+  folderIds: string[];
+}
+
+export interface DragItem {
+  kind: "media" | "link";
+  url: string;
+  title?: string;
+}
+
 /** What the in-page overlay reports back once the person finishes a pick. */
 export type OverlayResult =
   | { kind: "region"; region: CaptureRegion }
-  | {
-      kind: "images";
-      urls: string[];
-      /** Raw comma-separated text; the background parses it so pages don't ship zod. */
-      tagText: string;
-      folderIds: string[];
-    };
+  | { kind: "images"; urls: string[]; tags: string[]; folderIds: string[] }
+  | { kind: "details"; draft: DetailsDraft; metadata: DetailsMetadata }
+  | { kind: "drop"; item: DragItem; folderId: string | null };
+
+export type Gesture =
+  | { kind: "alt-click"; item: DragItem }
+  | { kind: "drag-start"; item: DragItem };
 
 export type ToolResult = { ok: true } | { ok: false; message: string };
 
 interface PondProtocol {
   capture(payload: PondCapturePayload): CaptureOutcome;
-  savePage(input: SavePageInput): CaptureOutcome;
   runTool(input: { tabId: number; tool: CaptureTool }): ToolResult;
   overlayResult(result: OverlayResult): void;
-  folders(): Folder[];
+  gesture(gesture: Gesture): void;
   openPond(path: string | undefined): boolean;
   log(entry: PondLogEntry): void;
   probe(): ProbeResult;

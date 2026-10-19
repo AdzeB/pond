@@ -1,13 +1,13 @@
 import { z } from "zod";
 import { onMessage } from "@/utils/messaging";
 import { ensureSettings, getSettings, watchSettings } from "@/utils/settings";
-import { saveFromSite, savePage } from "./capture";
-import { listFolders, probeLibrary } from "./library";
+import { saveFromSite } from "./capture";
+import { probeLibrary } from "./library";
 import { createMenus, handleCommand, handleMenuClick } from "./menus";
 import { clearBadge, flashBadge } from "./overlay";
 import { startSessionConnect } from "./session";
 import { applyToolbarAction } from "./toolbar";
-import { handleOverlayResult, runTool } from "./tools";
+import { handleGesture, handleOverlayResult, runTool } from "./tools";
 
 const pondPathSchema = z
   .string()
@@ -26,7 +26,7 @@ export default defineBackground(() => {
   watchSettings((settings) => void applyToolbarAction(settings.toolbar));
 
   browser.action?.onClicked.addListener((tab) => {
-    void savePage(tab, { announce: true });
+    void runTool(tab, "page");
   });
   browser.contextMenus.onClicked.addListener(handleMenuClick);
   browser.commands?.onCommand.addListener((command) => {
@@ -47,15 +47,6 @@ export default defineBackground(() => {
     saveFromSite(data.url, data.trigger, sender.tab?.id),
   );
 
-  onMessage("savePage", async ({ data }) => {
-    const tab = await browser.tabs.get(data.tabId);
-    return savePage(tab, {
-      tags: data.tags,
-      folderIds: data.folderIds,
-      announce: false,
-    });
-  });
-
   onMessage("runTool", async ({ data }) => {
     const tab = await browser.tabs.get(data.tabId);
     return runTool(tab, data.tool);
@@ -65,7 +56,7 @@ export default defineBackground(() => {
     handleOverlayResult(data, sender.tab),
   );
 
-  onMessage("folders", () => listFolders());
+  onMessage("gesture", ({ data, sender }) => handleGesture(data, sender.tab));
   onMessage("probe", () => probeLibrary());
 
   onMessage("openPond", async ({ data }) => {
