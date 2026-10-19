@@ -68,6 +68,7 @@ import {
   resolveLaunchHidden,
   shouldStayResident,
 } from "./lifecycle";
+import { resolveLogFile } from "./logging";
 import { installAppMenu, setMenuRecents } from "./menu";
 import { writeNativeHostManifests } from "./native/manifests";
 import { startNativeServer, stopNativeServer } from "./native/server";
@@ -131,6 +132,9 @@ if (process.platform === "darwin") {
 
 if (process.platform === "win32") app.setAppUserModelId("so.pond.desktop");
 
+const logFile = resolveLogFile(app);
+if (logFile) log.transports.file.resolvePathFn = () => logFile;
+else log.transports.file.level = false;
 log.initialize();
 if (!consoleLoggingEnabled(process.argv)) log.transports.console.level = false;
 log.info("[pond] main starting", {

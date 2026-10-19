@@ -7,7 +7,6 @@ import { readLibraryPointer } from "./lib/library-pointer";
 export interface PondPaths {
   appData: string;
   cache: string;
-  logs: string;
   globalDb: string;
   indexDb: string;
   indexesDir: string;
@@ -44,7 +43,6 @@ export function resolvePaths(libraryRootOverride?: string): PondPaths {
   const appData = ensureDir(app.getPath("userData"));
   /** Keep Pond derivatives separate from Chromium's case-insensitive `Cache` directory. */
   const cache = ensureDir(join(appData, "pond-cache"));
-  const logs = ensureDir(app.getPath("logs"));
   const indexesDir = ensureDir(join(appData, "indexes"));
 
   const pointer = readLibraryPointer();
@@ -58,7 +56,6 @@ export function resolvePaths(libraryRootOverride?: string): PondPaths {
   const paths: PondPaths = {
     appData,
     cache,
-    logs,
     globalDb: join(appData, "global.db"),
     indexDb: join(indexesDir, `${libraryId}.db`),
     indexesDir,
