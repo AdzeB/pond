@@ -56,6 +56,7 @@ export const IPC = {
   libraryId: "pond:library-id",
   menuRecents: "pond:menu-recents",
   menuOpenSave: "pond:menu-open-save",
+  openFiles: "pond:open-files",
   archiveNavigate: "pond:archive-navigate",
   archiveBackfillStart: "pond:archive-backfill-start",
   archiveSite: "pond:archive-site",

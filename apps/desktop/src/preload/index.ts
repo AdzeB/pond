@@ -54,6 +54,11 @@ const navigation = createNavigationMailbox();
 ipcRenderer.on(IPC.nav, (_: IpcRendererEvent, path: string) =>
   navigation.receive(path),
 );
+/** Files dropped on the Dock icon can arrive before the renderer subscribes. */
+const openFiles = createNavigationMailbox<string[]>();
+ipcRenderer.on(IPC.openFiles, (_: IpcRendererEvent, paths: string[]) =>
+  openFiles.receive(paths),
+);
 
 const query: QueryClient = (name, ...args) =>
   ipcRenderer.invoke(IPC.query, name, args[0]);
@@ -169,6 +174,10 @@ const api = {
 
   onNavigate(cb: (path: string) => void): () => void {
     return navigation.subscribe(cb);
+  },
+
+  onOpenFiles(cb: (paths: string[]) => void): () => void {
+    return openFiles.subscribe(cb);
   },
 
   onEditUndoRequested(cb: () => void): () => void {
