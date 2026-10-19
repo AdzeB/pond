@@ -18,9 +18,7 @@ export function resolveLogFile(
       closeSync(openSync(file, "a"));
       app.setAppLogsPath(root);
       return file;
-    } catch {
-      // Try app data next; if both locations fail, keep console logging only.
-    }
+    } catch {}
   }
   return null;
 }

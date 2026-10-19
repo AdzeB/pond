@@ -92,7 +92,7 @@ describe("resolveLogFile", () => {
     },
   );
 
-  it("disables file logging when neither location is usable", () => {
+  it("returns null when neither location is usable", () => {
     const test = fixture();
     writeFileSync(test.logs, "blocked");
     writeFileSync(test.userData, "blocked");
