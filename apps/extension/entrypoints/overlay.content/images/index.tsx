@@ -9,7 +9,8 @@ import styles from "./styles.module.css";
 
 /** Pond accepts at most 500 items in one capture. */
 const MAX_IMAGES = 500;
-const SMALL_WIDTH = 200;
+/** Wordmarks and spacers are wide but short, so both edges count. */
+const SMALL_EDGE = 100;
 
 interface PageImage {
   url: string;
@@ -22,14 +23,12 @@ function pageImages(): PageImage[] {
   const images = new Map<string, PageImage>();
   for (const image of Array.from(document.images)) {
     const url = image.currentSrc || image.src;
-    if (image.naturalWidth === 0 || !/^https?:/i.test(url)) continue;
+    /** Lazy images below the fold haven't decoded yet, so fall back to their laid-out size. */
+    const width = image.naturalWidth || image.width;
+    const height = image.naturalHeight || image.height;
+    if (width === 0 || !/^https?:/i.test(url)) continue;
     if (images.has(url)) continue;
-    images.set(url, {
-      url,
-      width: image.naturalWidth,
-      height: image.naturalHeight,
-      alt: image.alt,
-    });
+    images.set(url, { url, width, height, alt: image.alt });
   }
   return [...images.values()];
 }
@@ -57,7 +56,9 @@ export function ImageCollector({
   useEffect(() => panel.current?.focus(), []);
 
   const shown = hideSmall
-    ? images.filter((image) => image.width >= SMALL_WIDTH)
+    ? images.filter(
+        (image) => image.width >= SMALL_EDGE * 2 && image.height >= SMALL_EDGE,
+      )
     : images;
   const allShown = shown.length > 0 && shown.every((i) => selected.has(i.url));
   const over = selected.size > MAX_IMAGES;
@@ -139,26 +140,27 @@ export function ImageCollector({
                   htmlFor={checkId}
                   data-checked={checked || undefined}
                 >
-                  <Checkbox.Root
-                    id={checkId}
-                    size="sm"
-                    className={styles.check}
-                    checked={checked}
-                    aria-label={
-                      image.alt || `${image.width} by ${image.height} image`
-                    }
-                    onCheckedChange={(next) => toggle(image.url, next)}
-                  >
-                    <Checkbox.Indicator />
-                  </Checkbox.Root>
                   <img
                     className={styles.image}
                     src={image.url}
                     alt=""
                     loading="lazy"
                   />
-                  <span className={styles.size}>
-                    {image.width} × {image.height}
+                  <span className={styles.meta}>
+                    <Checkbox.Root
+                      id={checkId}
+                      size="sm"
+                      checked={checked}
+                      aria-label={
+                        image.alt || `${image.width} by ${image.height} image`
+                      }
+                      onCheckedChange={(next) => toggle(image.url, next)}
+                    >
+                      <Checkbox.Indicator />
+                    </Checkbox.Root>
+                    <span className={styles.size}>
+                      {image.width} × {image.height}
+                    </span>
                   </span>
                 </label>
               );

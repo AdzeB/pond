@@ -1,8 +1,8 @@
 @import "@pond/ui/reset.css";
 @import "@pond/theme/theme.css";
 
-/* Pages can't load extension fonts into a shadow root without a web-accessible font, so use the system face. */
-:host {
+/* The host gets `all: initial`, so the face is set inside the shadow tree; extension fonts can't load on pages. */
+html {
   font-family:
     ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI",
     sans-serif;

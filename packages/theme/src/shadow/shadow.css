@@ -1,4 +1,5 @@
-:root {
+:root,
+[data-theme] {
   --ds-shadow-faint: var(--ds-gray-a2);
   --ds-shadow-soft: var(--ds-gray-a3);
   --ds-shadow-strong: var(--ds-gray-a4);
@@ -24,7 +25,7 @@
 }
 
 /* Gray alphas mix the light foreground in dark mode, so drop layers glow instead of casting depth. */
-:root[data-theme="dark"] {
+[data-theme="dark"] {
   --ds-shadow-faint: var(--ds-black-a4);
   --ds-shadow-soft: var(--ds-black-a6);
   --ds-shadow-strong: var(--ds-black-a7);

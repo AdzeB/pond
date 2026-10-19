@@ -4,7 +4,7 @@ import { Button } from "@pond/ui/button";
 import { Select } from "@pond/ui/select";
 import { Settings } from "@pond/ui/settings";
 import { Switch } from "@pond/ui/switch";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { HOOK_SOURCE_IDS, hasLikes } from "@/sources";
 import type { ToolbarAction } from "@/utils/types";
 import { useLibrary } from "@/utils/use-library";
@@ -141,52 +141,54 @@ export function App() {
 
         <Settings.Section>
           <Settings.SectionTitle>Sources</Settings.SectionTitle>
-          {HOOK_SOURCE_IDS.map((source) => {
-            const label = sourceLabel(source);
-            const on = settings.enabled[source];
-            const upvotes = source === "reddit";
-            return (
-              <Settings.List key={source}>
-                <Settings.Item>
-                  <Settings.ItemDetails>
-                    <Settings.ItemTitle>{label}</Settings.ItemTitle>
-                    <Settings.ItemDescription>
-                      {SAVES[source]}
-                    </Settings.ItemDescription>
-                  </Settings.ItemDetails>
-                  <Settings.ItemControl>
-                    <Switch.Root
-                      aria-label={label}
-                      checked={on}
-                      onCheckedChange={(next) => setSource(source, next)}
-                    />
-                  </Settings.ItemControl>
-                </Settings.Item>
-                {hasLikes(source) ? (
-                  <Settings.Item disabled={!on}>
+          <Settings.List>
+            {HOOK_SOURCE_IDS.map((source) => {
+              const label = sourceLabel(source);
+              const on = settings.enabled[source];
+              const upvotes = source === "reddit";
+              return (
+                <Fragment key={source}>
+                  <Settings.Item>
                     <Settings.ItemDetails>
-                      <Settings.ItemTitle>
-                        {upvotes ? "Include Upvotes" : "Include Likes"}
-                      </Settings.ItemTitle>
+                      <Settings.ItemTitle>{label}</Settings.ItemTitle>
                       <Settings.ItemDescription>
-                        {upvotes
-                          ? "Also save posts you upvote."
-                          : "Also save what you like."}
+                        {SAVES[source]}
                       </Settings.ItemDescription>
                     </Settings.ItemDetails>
                     <Settings.ItemControl>
                       <Switch.Root
-                        aria-label={`${label} ${upvotes ? "upvotes" : "likes"}`}
-                        disabled={!on}
-                        checked={settings.likes[source]}
-                        onCheckedChange={(next) => setLikes(source, next)}
+                        aria-label={label}
+                        checked={on}
+                        onCheckedChange={(next) => setSource(source, next)}
                       />
                     </Settings.ItemControl>
                   </Settings.Item>
-                ) : null}
-              </Settings.List>
-            );
-          })}
+                  {hasLikes(source) ? (
+                    <Settings.Item disabled={!on}>
+                      <Settings.ItemDetails>
+                        <Settings.ItemTitle>
+                          {upvotes ? "Include Upvotes" : "Include Likes"}
+                        </Settings.ItemTitle>
+                        <Settings.ItemDescription>
+                          {upvotes
+                            ? "Also save posts you upvote."
+                            : "Also save what you like."}
+                        </Settings.ItemDescription>
+                      </Settings.ItemDetails>
+                      <Settings.ItemControl>
+                        <Switch.Root
+                          aria-label={`${label} ${upvotes ? "upvotes" : "likes"}`}
+                          disabled={!on}
+                          checked={settings.likes[source]}
+                          onCheckedChange={(next) => setLikes(source, next)}
+                        />
+                      </Settings.ItemControl>
+                    </Settings.Item>
+                  ) : null}
+                </Fragment>
+              );
+            })}
+          </Settings.List>
         </Settings.Section>
 
         <Settings.Section>

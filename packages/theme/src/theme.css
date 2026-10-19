@@ -8,7 +8,8 @@
 @import "./empty/empty.css";
 @import "./popup/popup.css";
 
-:root {
+:root,
+[data-theme] {
   --ds-mac-inset: 16px;
 
   --ds-border-width: 0.5px;
