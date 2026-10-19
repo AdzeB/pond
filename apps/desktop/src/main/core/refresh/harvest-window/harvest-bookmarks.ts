@@ -11,8 +11,9 @@ import {
   buildBookmarksApiExpression,
   buildBookmarksExpression,
   buildLikesApiExpression,
+  buildOpenBookmarkFolderExpression,
   parseBookmarksResponses,
-  twitterBookmarkFolderUrl,
+  TWITTER_BOOKMARKS_URL,
 } from "../harvest/twitter";
 import { NAV_TIMEOUT_MS } from "./constants";
 import {
@@ -154,11 +155,11 @@ export async function harvestTwitterBookmarkFolder(
   } = {},
 ): Promise<BookmarksHarvestResult> {
   return harvestTwitterTimeline(
-    twitterBookmarkFolderUrl(folderId),
+    TWITTER_BOOKMARKS_URL,
     "bookmarks",
     buildBookmarkFolderApiExpression(args),
     args,
-    opts,
+    { ...opts, openView: buildOpenBookmarkFolderExpression(folderId) },
   );
 }
 
@@ -189,6 +190,8 @@ async function harvestTwitterTimeline(
   opts: {
     onProgress?: (p: BookmarksHarvestProgress) => void;
     partition?: string;
+    /** Runs after load to route the page to the list; resolves true once the list's own request went out. */
+    openView?: string;
   } = {},
 ): Promise<BookmarksHarvestResult> {
   const lease = await leaseWindow("twitter", { partition: opts.partition });
@@ -207,6 +210,16 @@ async function harvestTwitterTimeline(
     }
     if (looksLikeAuthWall(bookmarksUrl)) {
       return { ok: false, reason: "auth_required" };
+    }
+    if (opts.openView) {
+      const opened = await lease.win.webContents.executeJavaScript(
+        opts.openView,
+        true,
+      );
+      if (opened !== true) {
+        log.warn(`[pond ${logTag}] list view never loaded`);
+        return { ok: false, reason: "no_match" };
+      }
     }
 
     let lastSeen = -1;

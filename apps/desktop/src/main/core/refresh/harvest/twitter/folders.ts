@@ -10,8 +10,37 @@ declare global {
   var __pondBookmarkFoldersCaptures: Array<{ body?: string }> | undefined;
 }
 
-export function twitterBookmarkFolderUrl(folderId: string): string {
-  return `${TWITTER_BOOKMARKS_URL}/${encodeURIComponent(folderId)}`;
+/** X's folder page often fails when loaded by URL but renders when the open bookmarks page routes to it. */
+export function buildOpenBookmarkFolderExpression(folderId: string): string {
+  return `(${inPageOpenBookmarkFolder.toString()})(${JSON.stringify(folderId)})`;
+}
+
+async function inPageOpenBookmarkFolder(folderId: string): Promise<boolean> {
+  const sleep = (ms: number): Promise<void> =>
+    new Promise((r) => setTimeout(r, ms));
+  const mountDeadline = Date.now() + 15_000;
+  while (
+    !globalThis.__pondBookmarksCaptures?.length &&
+    Date.now() < mountDeadline
+  ) {
+    await sleep(250);
+  }
+  if (!document.querySelector('[data-testid="primaryColumn"]')) return false;
+  globalThis.__pondBookmarkFolderRequest = null;
+  /** The main list shares this buffer, and its posts must not be filed into the folder. */
+  globalThis.__pondBookmarksCaptures = [];
+  const base = location.pathname.startsWith("/i/history")
+    ? "/i/history/bookmarks/"
+    : "/i/bookmarks/";
+  history.pushState({}, "", base + encodeURIComponent(folderId));
+  dispatchEvent(new PopStateEvent("popstate", { state: {} }));
+  /** Only the folder's own request proves the view switched; otherwise a scroll would read the main list. */
+  const requestDeadline = Date.now() + 20_000;
+  while (!globalThis.__pondBookmarkFolderRequest) {
+    if (Date.now() > requestDeadline) return false;
+    await sleep(250);
+  }
+  return true;
 }
 
 /** The bookmarks page asks for your folders as it loads; accounts without folders never send the request. */

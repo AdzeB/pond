@@ -4,10 +4,10 @@ export {
   buildLikesApiExpression,
 } from "./api";
 export {
+  buildOpenBookmarkFolderExpression,
   buildReadBookmarkFoldersExpression,
   parseBookmarkFolders,
   TWITTER_BOOKMARKS_URL,
-  twitterBookmarkFolderUrl,
 } from "./folders";
 export { parseBookmarksResponses, type RichTweet } from "./graphql";
 export { adapt, buildExpression } from "./item";
