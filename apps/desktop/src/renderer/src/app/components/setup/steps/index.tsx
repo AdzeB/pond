@@ -1,5 +1,5 @@
 import type { ComponentType, ReactNode } from "react";
-import { THIS_DEVICE } from "@/shared/lib/platform";
+import { FILE_MANAGER, THIS_DEVICE } from "@/shared/lib/platform";
 import type { StepId, StepProps } from "../model";
 import { ThemeOptions, ThemePreview } from "./appearance";
 import { AssistantOptions, AssistantPreview } from "./assistant";
@@ -86,7 +86,7 @@ const STEPS = {
     layout: "hero",
     title: { new: "Create Your Library", existing: "Your Library" },
     description: {
-      new: "Your originals stay as regular files in this folder. Open them in Finder or back them up like any other folder.",
+      new: `Your originals stay as regular files in this folder. Open them in ${FILE_MANAGER} or back them up like any other folder.`,
       existing:
         "Your Library stays where it is unless you move it. Every Save moves with it.",
     },
