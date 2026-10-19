@@ -96,7 +96,6 @@ export function DownloadTable({
       getRowId={(row) => row.id}
       height={height}
       selectionCheckboxes
-      checkboxVisibility="hover"
       selectOnClick
       onRowClick={(row, event) => {
         if (event && event.detail < 2) return;

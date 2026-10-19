@@ -10,21 +10,31 @@ describe("downloads column layout", () => {
     downloadsColumnsLayout.reset();
   });
 
+  it("shows Name, Source, Status, Progress, and Added by default", () => {
+    const { order, hidden } = downloadsColumnsLayout.snapshot();
+    expect(order.filter((id) => !hidden.includes(id))).toEqual([
+      "name",
+      "source",
+      "stage",
+      "progress",
+      "added",
+    ]);
+  });
+
   it("keeps Name visible and restores a hidden column in its place", () => {
     downloadsColumnsLayout.setHidden("name", true);
-    downloadsColumnsLayout.setHidden("speed", true);
-    expect(downloadsColumnsLayout.snapshot().hidden).toEqual(["speed"]);
+    downloadsColumnsLayout.setHidden("source", true);
+    expect(downloadsColumnsLayout.snapshot().hidden).toContain("source");
+    expect(downloadsColumnsLayout.snapshot().hidden).not.toContain("name");
     downloadsColumnsLayout.setHidden("speed", false);
-    expect(downloadsColumnsLayout.snapshot().hidden).toEqual([]);
+    expect(downloadsColumnsLayout.snapshot().hidden).not.toContain("speed");
     expect(downloadsColumnsLayout.snapshot().order).toContain("speed");
   });
 
   it("reorders visible columns without moving a hidden one", () => {
-    downloadsColumnsLayout.setHidden("source", true);
-    const hidden = downloadsColumnsLayout.snapshot().hidden;
     const next = mergeVisibleColumnOrder(
       downloadsColumnsLayout.snapshot().order,
-      hidden,
+      ["source"],
       ["name", "stage", "speed", "size", "remaining", "progress", "added"],
     );
     expect(next.indexOf("source")).toBeLessThan(next.indexOf("stage"));

@@ -8,6 +8,7 @@ import {
   mergeDownloadRows,
   projectLiveDownloads,
   type StatusFilter,
+  showsCompletedDownloads,
   statusBucket,
 } from "./downloads";
 
@@ -188,14 +189,26 @@ describe("matchesDownloadFilters", () => {
   const row = rows[0];
   if (!row) throw new Error("expected a row");
 
-  it("shows every status when no filters are set", () => {
-    expect(matchesDownloadFilters(row, defaultDownloadFilters())).toBe(true);
+  it("hides only completed downloads by default", () => {
+    const filters = defaultDownloadFilters();
+    expect(matchesDownloadFilters(row, filters)).toBe(true);
     expect(
-      downloadFiltersActive({
-        ...defaultDownloadFilters(),
-        q: "clip",
-      }),
+      matchesDownloadFilters({ ...row, status: "complete" }, filters),
     ).toBe(false);
+    expect(showsCompletedDownloads(filters)).toBe(false);
+    expect(downloadFiltersActive({ ...filters, q: "clip" })).toBe(false);
+  });
+
+  it("shows every status when the status filter is cleared", () => {
+    const filters = {
+      ...defaultDownloadFilters(),
+      statuses: new Set<StatusFilter>(),
+    };
+    expect(
+      matchesDownloadFilters({ ...row, status: "complete" }, filters),
+    ).toBe(true);
+    expect(showsCompletedDownloads(filters)).toBe(true);
+    expect(downloadFiltersActive(filters)).toBe(true);
   });
 
   it("hides failed when that status is off", () => {

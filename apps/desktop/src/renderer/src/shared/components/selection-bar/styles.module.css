@@ -26,6 +26,8 @@
   gap: 4px;
   align-items: center;
   min-width: 0;
+  padding: 2px;
+  margin: -2px;
   overflow-x: auto;
   scrollbar-width: none;
 }

@@ -538,12 +538,45 @@ it("shows completed history in the table without opening a group", async () => {
       };
     throw new Error(`Unexpected query: ${name}`);
   });
+  downloadsFilters.setStatuses(new Set());
   await render();
   expect(host.querySelector('[title="Local file"]')).toBeNull();
   await click('[title="Saved clip"]');
   expect(primarySelection.get()).toBeNull();
   await click('[title="Saved clip"]', { detail: 2 });
   expect(primarySelection.get()).toBe("done");
+});
+
+it("hides completed downloads by default and shows them on request", async () => {
+  setSaves([]);
+  query.mockImplementation(async (name: string) => {
+    if (name === "downloads.history")
+      return {
+        rows: [
+          {
+            id: 1,
+            saveId: "done",
+            title: "Saved clip",
+            url: "https://example.com/done",
+            source: "youtube",
+            outcome: "complete",
+            durationMs: 3000,
+            attempts: 1,
+            failedOp: null,
+            error: null,
+            ts: 1000,
+          },
+        ],
+        nextCursor: { ts: 1000, id: 1 },
+      };
+    return defaultQuery(name);
+  });
+  await render();
+  expect(host.querySelector('[title="Saved clip"]')).toBeNull();
+  expect(host.textContent).toContain("No unfinished downloads");
+
+  await clickButton("Show Completed");
+  expect(host.querySelector('[title="Saved clip"]')).not.toBeNull();
 });
 
 it("keeps status out of the name and shows the normalized source", async () => {
@@ -591,8 +624,9 @@ it("keeps media previews out of the name column", async () => {
 it("filters active, waiting, and failed work from the filter toolbar", async () => {
   await render();
   await clickButton("Filter");
-  await clickButton("Status");
-  await clickFilterOption("Waiting");
+  await clickButton("Status: 5");
+  await clickFilterOption("Active");
+  await clickFilterOption("Failed");
   expect(host.querySelector('[title="Waiting video"]')).not.toBeNull();
   expect(host.querySelector('[title="Running video"]')).toBeNull();
   expect(host.querySelector('[title="Failed video"]')).toBeNull();
@@ -648,7 +682,7 @@ it("moves every unfinished download to Trash and leaves finished saves", async (
 
   await render();
   await clickButton("Filter");
-  await clickButton("Status");
+  await clickButton("Status: 5");
   await clickFilterOption("Failed");
   await clickButton("Clear Unfinished");
 

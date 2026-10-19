@@ -56,11 +56,13 @@ export function createTableColumnLayout<Id extends string>({
   columns,
   lockedId,
   defaultSort = null,
+  defaultHidden = [],
 }: {
   storageKey: string;
   columns: readonly TableColumnSpec<Id>[];
   lockedId: Id;
   defaultSort?: TableSort<Id> | null;
+  defaultHidden?: readonly Id[];
 }): TableColumnLayoutController<Id> {
   const columnIds = columns.map((column) => column.id);
 
@@ -69,7 +71,13 @@ export function createTableColumnLayout<Id extends string>({
   }
 
   function defaultLayout(): TableColumnLayout<Id> {
-    return { order: [...columnIds], hidden: [], sort: defaultSort };
+    return {
+      order: [...columnIds],
+      hidden: columnIds.filter(
+        (id) => id !== lockedId && defaultHidden.includes(id),
+      ),
+      sort: defaultSort,
+    };
   }
 
   function mergeVisibleOrder(
@@ -97,7 +105,7 @@ export function createTableColumnLayout<Id extends string>({
     for (const id of columnIds) {
       if (!seen.has(id)) order.push(id);
     }
-    const hidden = (value.hidden ?? []).filter(
+    const hidden = (value.hidden ?? defaultHidden).filter(
       (id): id is Id => isColumnId(id) && id !== lockedId && order.includes(id),
     );
     const storedSort = value.sort;

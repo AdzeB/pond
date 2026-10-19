@@ -5,7 +5,6 @@ import {
   IconTrashXmark,
 } from "@pond/icons";
 import { Button } from "@pond/ui";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useState } from "react";
 import {
   canCancelDownload,
@@ -19,8 +18,7 @@ import {
 } from "@/features/downloads/components/lib/actions";
 import type { DownloadRow } from "@/features/downloads/lib/status-feed";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
-import { gentleSpring } from "@/shared/lib/motion";
-import styles from "./styles.module.css";
+import { SelectionBar } from "@/shared/components/selection-bar";
 
 type BulkActionId = "retry" | "cancel" | "skip" | "trash";
 
@@ -63,58 +61,32 @@ const BULK_ACTIONS: readonly BulkAction[] = [
   },
 ];
 
-function SelectionActions({ rows }: { rows: readonly DownloadRow[] }) {
+export function DownloadSelectionBar() {
+  const rows = downloadsSelection.useRows();
   const [pending, setPending] = useState<BulkActionId | null>(null);
   const run = (action: BulkAction) => {
     setPending(action.id);
     void action.run(rows).finally(() => setPending(null));
   };
   return (
-    <div className={styles.content}>
-      <span className={styles.count} aria-live="polite">
-        {rows.length} selected
-      </span>
-      <div className={styles.actions}>
-        {BULK_ACTIONS.map((action) => (
-          <Button
-            key={action.id}
-            size="sm"
-            variant="secondary"
-            disabled={pending !== null || !rows.some(action.applies)}
-            loading={pending === action.id}
-            onClick={() => run(action)}
-          >
-            {action.icon}
-            {action.label}
-          </Button>
-        ))}
-      </div>
-      <Button size="sm" variant="ghost" onClick={downloadsSelection.clear}>
-        Clear Selection
-      </Button>
-    </div>
-  );
-}
-
-export function DownloadSelectionBar() {
-  const rows = downloadsSelection.useRows();
-  const reduceMotion = useReducedMotion();
-  return (
-    <AnimatePresence initial={false}>
-      {rows.length > 0 ? (
-        <motion.div
-          key="selection"
-          role="toolbar"
-          aria-label="Selected Downloads"
-          className={styles.bar}
-          initial={{ height: 0, opacity: 0, y: -4 }}
-          animate={{ height: "auto", opacity: 1, y: 0 }}
-          exit={{ height: 0, opacity: 0, y: -4, pointerEvents: "none" }}
-          transition={reduceMotion ? { duration: 0 } : gentleSpring}
+    <SelectionBar
+      label="Selected Downloads"
+      count={rows.length}
+      onClear={downloadsSelection.clear}
+    >
+      {BULK_ACTIONS.map((action) => (
+        <Button
+          key={action.id}
+          size="sm"
+          variant="secondary"
+          disabled={pending !== null || !rows.some(action.applies)}
+          loading={pending === action.id}
+          onClick={() => run(action)}
         >
-          <SelectionActions rows={rows} />
-        </motion.div>
-      ) : null}
-    </AnimatePresence>
+          {action.icon}
+          {action.label}
+        </Button>
+      ))}
+    </SelectionBar>
   );
 }

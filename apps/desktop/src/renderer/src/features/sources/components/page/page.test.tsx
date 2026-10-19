@@ -166,6 +166,60 @@ describe("Sources page selection", () => {
     expect(selectedRows()).toHaveLength(1);
   });
 
+  it("shows a checkbox on every row that toggles selection", async () => {
+    await render();
+    const checkboxes = bodyRows().map((row) =>
+      row.querySelector<HTMLElement>('[role="checkbox"]'),
+    );
+    expect(checkboxes.every((checkbox) => checkbox != null)).toBe(true);
+    expect(
+      host
+        .querySelector('[role="grid"][aria-label="Sources"]')
+        ?.closest("[data-checkboxes]")
+        ?.getAttribute("data-checkboxes"),
+    ).toBe("always");
+
+    const first =
+      rowWith("@oluwa.rafa").querySelector<HTMLElement>('[role="checkbox"]');
+    const last =
+      rowWith("@raphaelsalaja").querySelector<HTMLElement>('[role="checkbox"]');
+    await act(async () => first?.click());
+    await act(async () => last?.click());
+    expect(selectedIds()).toEqual(["ig", "tw"]);
+    expect(first?.getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("fetches every ticked source from the selection bar", async () => {
+    const syncRunNow = vi.fn(async (_id: string) => ({ ok: true }));
+    vi.stubGlobal("pond", { query, syncRunNow });
+    await render();
+    const toolbar = () =>
+      host.querySelector('[role="toolbar"][aria-label="Selected Sources"]');
+    expect(toolbar()).toBeNull();
+
+    for (const handle of ["@oluwa.rafa", "@pond"]) {
+      const checkbox =
+        rowWith(handle).querySelector<HTMLElement>('[role="checkbox"]');
+      await act(async () => checkbox?.click());
+    }
+    expect(toolbar()?.textContent).toContain("2 selected");
+
+    const fetch = [...(toolbar()?.querySelectorAll("button") ?? [])].find(
+      (button) => button.textContent === "Fetch New Saves",
+    );
+    await act(async () => fetch?.click());
+    expect(syncRunNow.mock.calls.map(([id]) => id).toSorted()).toEqual([
+      "ig",
+      "yt",
+    ]);
+
+    const clear = [...(toolbar()?.querySelectorAll("button") ?? [])].find(
+      (button) => button.textContent === "Clear Selection",
+    );
+    await act(async () => clear?.click());
+    expect(selectedIds()).toEqual([]);
+  });
+
   it("extends and toggles with Shift and Cmd click", async () => {
     await render();
     const first = rowWith("@oluwa.rafa");
