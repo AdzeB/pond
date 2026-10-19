@@ -15,13 +15,17 @@ import {
 } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import type { z } from "zod";
-import { DownloadsEmpty } from "@/features/downloads/components/empty";
+import {
+  DownloadsCompletedHidden,
+  DownloadsEmpty,
+} from "@/features/downloads/components/empty";
 import {
   canTrashDownload,
   clearUnfinishedDownloads,
 } from "@/features/downloads/components/lib/actions";
 import { useLiveDownloadHydration } from "@/features/downloads/hooks/use-live-download-hydration";
 import {
+  downloadFiltersActive,
   downloadRowSource,
   type HistoryCursor,
   HistoryPageSchema,
@@ -31,6 +35,7 @@ import {
   projectLiveDownloads,
   STATUS_FILTER_OPTIONS,
   type StatusFilter,
+  showsCompletedDownloads,
   statusFeed,
 } from "@/features/downloads/lib/status-feed";
 import {
@@ -146,16 +151,20 @@ export function DownloadsPage() {
       ),
   });
   const paused = pipeline.data?.paused === true;
-  const tableFiltersActive =
-    filters.sources.size > 0 || filters.statuses.size > 0;
+  const tableFiltersActive = downloadFiltersActive(filters);
   const filtering = filters.q.trim() !== "" || tableFiltersActive;
+  const showCompleted = showsCompletedDownloads(filters);
+  const nothingVisible =
+    rows.length === 0 && visibleCompleted.length === 0 && !history.isPending;
   const showPlaceEmpty =
     live.length === 0 && completed.length === 0 && !filtering;
+  const showCompletedHidden =
+    nothingVisible &&
+    !showPlaceEmpty &&
+    !showCompleted &&
+    scopedCompleted.some((row) => row.status === "complete");
   const showMatchesEmpty =
-    rows.length === 0 &&
-    visibleCompleted.length === 0 &&
-    !history.isPending &&
-    !showPlaceEmpty;
+    nothingVisible && !showPlaceEmpty && !showCompletedHidden;
 
   const pause = useMutation({
     mutationFn: () => window.pond.pipelinePause(!paused),
@@ -285,9 +294,9 @@ export function DownloadsPage() {
         completed={visibleCompleted}
         activities={activity.data ?? []}
         paused={paused}
-        historyLoading={history.isPending}
-        historyError={history.isError}
-        hasMore={history.hasNextPage}
+        historyLoading={showCompleted && history.isPending}
+        historyError={showCompleted && history.isError}
+        hasMore={showCompleted && history.hasNextPage}
         loadingMore={history.isFetchingNextPage}
         onLoadMore={() => void history.fetchNextPage()}
         onRetryHistory={() => void history.refetch()}
@@ -295,6 +304,16 @@ export function DownloadsPage() {
           showPlaceEmpty ? (
             <div className={styles.empty}>
               <DownloadsEmpty />
+            </div>
+          ) : showCompletedHidden ? (
+            <div className={styles.empty}>
+              <DownloadsCompletedHidden
+                onShowCompleted={() =>
+                  downloadsFilters.setStatuses(
+                    new Set([...filters.statuses, "complete"]),
+                  )
+                }
+              />
             </div>
           ) : showMatchesEmpty ? (
             <div className={styles.empty}>

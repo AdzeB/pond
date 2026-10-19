@@ -48,6 +48,7 @@ import {
   toSourceTableRow,
 } from "./lib/helpers";
 import { SourceOptionsMenu } from "./options";
+import { SourceSelectionBar } from "./selection-bar";
 import styles from "./styles.module.css";
 
 function openEntry(entry: SourceEntry): void {
@@ -174,33 +175,36 @@ export function SourcesPage() {
         </>
       }
       below={
-        <TableFilterBar
-          open={filtersOpen}
-          id="sources-filter-toolbar"
-          label="Source Filters"
-        >
-          <TableFilterChip
-            name="Status"
-            icon={<IconCircleCheck />}
-            options={SOURCE_STATUS_OPTIONS}
-            selected={filters.statuses}
-            onChange={sourcesFilters.setStatuses}
-          />
-          <TableFilterChip
-            name="Source"
-            icon={<IconLink2 />}
-            options={sourceOptions}
-            selected={filters.sources}
-            onChange={sourcesFilters.setSources}
-          />
-          <TableFilterChip
-            name="Type"
-            icon={<IconFile />}
-            options={typeOptions}
-            selected={filters.types}
-            onChange={sourcesFilters.setTypes}
-          />
-        </TableFilterBar>
+        <>
+          <TableFilterBar
+            open={filtersOpen}
+            id="sources-filter-toolbar"
+            label="Source Filters"
+          >
+            <TableFilterChip
+              name="Status"
+              icon={<IconCircleCheck />}
+              options={SOURCE_STATUS_OPTIONS}
+              selected={filters.statuses}
+              onChange={sourcesFilters.setStatuses}
+            />
+            <TableFilterChip
+              name="Source"
+              icon={<IconLink2 />}
+              options={sourceOptions}
+              selected={filters.sources}
+              onChange={sourcesFilters.setSources}
+            />
+            <TableFilterChip
+              name="Type"
+              icon={<IconFile />}
+              options={typeOptions}
+              selected={filters.types}
+              onChange={sourcesFilters.setTypes}
+            />
+          </TableFilterBar>
+          <SourceSelectionBar />
+        </>
       }
     >
       <SearchChrome.Input
@@ -244,7 +248,7 @@ export function SourcesPage() {
       height={
         showMatchesEmpty || tableHeight < 88 ? undefined : tableHeight - 40
       }
-      selectionCheckboxes={false}
+      selectOnClick
       onRowClick={onRowClick}
       renderRow={({ cells, rowProps, row }) => (
         <SourcesContextMenu row={row}>

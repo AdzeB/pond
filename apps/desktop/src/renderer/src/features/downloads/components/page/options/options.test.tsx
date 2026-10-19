@@ -43,12 +43,12 @@ describe("download options", () => {
     expect(text).not.toContain("Reset");
     expect(text).not.toContain("Columns");
 
-    const speed = [...document.querySelectorAll("button")].find(
-      (button) => button.textContent === "Speed",
+    const source = [...document.querySelectorAll("button")].find(
+      (button) => button.textContent === "Source",
     );
-    expect(speed?.getAttribute("aria-pressed")).toBe("true");
-    await act(async () => speed?.click());
-    expect(downloadsColumnsLayout.snapshot().hidden).toEqual(["speed"]);
-    expect(speed?.getAttribute("aria-pressed")).toBe("false");
+    expect(source?.getAttribute("aria-pressed")).toBe("true");
+    await act(async () => source?.click());
+    expect(downloadsColumnsLayout.snapshot().hidden).toContain("source");
+    expect(source?.getAttribute("aria-pressed")).toBe("false");
   });
 });

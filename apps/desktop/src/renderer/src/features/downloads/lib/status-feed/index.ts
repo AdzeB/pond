@@ -5,6 +5,7 @@ export type {
   StatusFilter,
 } from "./downloads";
 export {
+  downloadFiltersActive,
   downloadRowSource,
   HistoryPageSchema,
   historyToDownloadRow,
@@ -13,5 +14,6 @@ export {
   PipelineStatusSchema,
   projectLiveDownloads,
   STATUS_FILTER_OPTIONS,
+  showsCompletedDownloads,
   statusBucket,
 } from "./downloads";

@@ -88,16 +88,32 @@ export const STATUS_FILTER_OPTIONS: readonly {
   { id: "complete", label: "Completed" },
 ];
 
+const DEFAULT_STATUS_FILTERS: readonly StatusFilter[] =
+  STATUS_FILTER_OPTIONS.map((option) => option.id).filter(
+    (id) => id !== "complete",
+  );
+
 export function defaultDownloadFilters(): DownloadFilters {
   return {
-    statuses: new Set(),
+    statuses: new Set(DEFAULT_STATUS_FILTERS),
     sources: new Set(),
     q: "",
   };
 }
 
+function isDefaultStatuses(statuses: ReadonlySet<StatusFilter>): boolean {
+  return (
+    statuses.size === DEFAULT_STATUS_FILTERS.length &&
+    DEFAULT_STATUS_FILTERS.every((id) => statuses.has(id))
+  );
+}
+
 export function downloadFiltersActive(filters: DownloadFilters): boolean {
-  return filters.statuses.size > 0 || filters.sources.size > 0;
+  return !isDefaultStatuses(filters.statuses) || filters.sources.size > 0;
+}
+
+export function showsCompletedDownloads(filters: DownloadFilters): boolean {
+  return filters.statuses.size === 0 || filters.statuses.has("complete");
 }
 
 function wasCancelled(save: Save): boolean {

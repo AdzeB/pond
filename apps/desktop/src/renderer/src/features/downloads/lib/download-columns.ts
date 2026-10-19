@@ -17,3 +17,17 @@ export const DOWNLOAD_COLUMN_CATALOG = [
 export type DownloadColumnId = (typeof DOWNLOAD_COLUMN_CATALOG)[number]["id"];
 
 export const LOCKED_DOWNLOAD_COLUMN: DownloadColumnId = "name";
+
+export const DEFAULT_VISIBLE_DOWNLOAD_COLUMNS: readonly DownloadColumnId[] = [
+  "source",
+  "stage",
+  "progress",
+  "added",
+];
+
+export const DEFAULT_HIDDEN_DOWNLOAD_COLUMNS: readonly DownloadColumnId[] =
+  DOWNLOAD_COLUMN_CATALOG.map((column) => column.id).filter(
+    (id) =>
+      id !== LOCKED_DOWNLOAD_COLUMN &&
+      !DEFAULT_VISIBLE_DOWNLOAD_COLUMNS.includes(id),
+  );

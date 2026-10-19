@@ -4,6 +4,7 @@ import {
   type TableColumnLayout,
 } from "@/shared/lib/table-column-layout";
 import {
+  DEFAULT_HIDDEN_DOWNLOAD_COLUMNS,
   DOWNLOAD_COLUMN_CATALOG,
   type DownloadColumnId,
   LOCKED_DOWNLOAD_COLUMN,
@@ -15,6 +16,7 @@ const layout = createTableColumnLayout({
   storageKey: "pond:downloads-columns",
   columns: DOWNLOAD_COLUMN_CATALOG,
   lockedId: LOCKED_DOWNLOAD_COLUMN,
+  defaultHidden: DEFAULT_HIDDEN_DOWNLOAD_COLUMNS,
 });
 
 export function normalizeDownloadsColumnLayout(
