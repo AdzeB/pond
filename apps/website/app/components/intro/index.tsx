@@ -1,5 +1,12 @@
+"use client";
+
 import { Wordmark } from "@pond/ui/wordmark";
-import { dmgUrl, extensionZipUrl } from "@/lib/release";
+import { usePlatform } from "@/lib/platform";
+import {
+  extensionZipUrl,
+  otherDownloads,
+  primaryDownload,
+} from "@/lib/release";
 import { Cta } from "../cta";
 import styles from "./styles.module.css";
 
@@ -9,6 +16,8 @@ const BUY_ME_A_COFFEE = "https://buymeacoffee.com/raphaelsalaja";
 const RESPONSIBLE_USE = `${GITHUB}/blob/main/RESPONSIBLE-USE.md`;
 
 export function Intro() {
+  const platform = usePlatform();
+  const primary = primaryDownload(platform);
   return (
     <header className={styles.intro}>
       <h1 className={styles.title}>
@@ -16,19 +25,25 @@ export function Intro() {
       </h1>
       <p className={styles.text}>
         Keep what you save on X, Instagram, Pinterest, and more in a folder on
-        your Mac. Free and open source.
+        your Mac or Windows PC. Free and open source.
       </p>
       <nav className={styles.actions} aria-label="Downloads and links">
         <div className={styles.buttons}>
-          <Cta href={dmgUrl("arm64")}>Download for Mac</Cta>
+          <Cta href={primary.href}>{primary.label}</Cta>
           <Cta href={extensionZipUrl()} variant="soft">
             Browser Extension
           </Cta>
         </div>
         <div className={styles.links}>
-          <a className={styles.link} href={dmgUrl("x64")}>
-            Intel Mac
-          </a>
+          {otherDownloads(platform).map((download) => (
+            <a
+              key={download.label}
+              className={styles.link}
+              href={download.href}
+            >
+              {download.label}
+            </a>
+          ))}
           <a
             className={styles.link}
             href={GITHUB}
