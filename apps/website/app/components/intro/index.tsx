@@ -73,6 +73,9 @@ export function Intro() {
           >
             Responsible Use
           </a>
+          <a className={styles.link} href="/privacy">
+            Privacy
+          </a>
         </div>
       </nav>
     </header>
