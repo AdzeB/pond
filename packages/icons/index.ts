@@ -2229,8 +2229,30 @@ export const IconMediaPause = /* @__PURE__ */ createIcon(
   "MediaPause",
   "outline",
   [
-    ["rect", { x: "4.5", y: "3.25", width: "3", height: "11.5", rx: "1.25" }],
-    ["rect", { x: "10.5", y: "3.25", width: "3", height: "11.5", rx: "1.25" }],
+    [
+      "rect",
+      {
+        x: "4.75",
+        y: "3.25",
+        width: "2.5",
+        height: "11.5",
+        rx: "1.25",
+        fill: "currentColor",
+        stroke: "none",
+      },
+    ],
+    [
+      "rect",
+      {
+        x: "10.75",
+        y: "3.25",
+        width: "2.5",
+        height: "11.5",
+        rx: "1.25",
+        fill: "currentColor",
+        stroke: "none",
+      },
+    ],
   ],
 );
 export const IconMediaPauseFill = /* @__PURE__ */ createIcon(
@@ -2238,10 +2260,12 @@ export const IconMediaPauseFill = /* @__PURE__ */ createIcon(
   "fill",
   [
     [
-      "path",
-      {
-        d: "M5.75 2.5H6.25Q8.25 2.5 8.25 4.5V13.5Q8.25 15.5 6.25 15.5H5.75Q3.75 15.5 3.75 13.5V4.5Q3.75 3.672 4.336 3.086Q4.922 2.5 5.75 2.5ZM11.75 2.5H12.25Q14.25 2.5 14.25 4.5V13.5Q14.25 15.5 12.25 15.5H11.75Q9.75 15.5 9.75 13.5V4.5Q9.75 3.672 10.336 3.086Q10.922 2.5 11.75 2.5Z",
-      },
+      "rect",
+      { x: "4.75", y: "3.25", width: "2.5", height: "11.5", rx: "1.25" },
+    ],
+    [
+      "rect",
+      { x: "10.75", y: "3.25", width: "2.5", height: "11.5", rx: "1.25" },
     ],
   ],
 );
