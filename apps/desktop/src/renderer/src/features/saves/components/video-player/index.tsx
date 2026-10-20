@@ -8,7 +8,10 @@ import {
   useRef,
   useState,
 } from "react";
-import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
+import {
+  ChromePortal,
+  useViewerChromeRoot,
+} from "@/features/saves/components/viewers/media-viewer/chrome";
 import { useMediaReveal } from "@/features/saves/hooks/use-media-reveal";
 import { useSave } from "@/features/saves/hooks/use-saves";
 import { containImage } from "@/features/saves/lib/image-regions";
@@ -167,6 +170,7 @@ export function VideoPlayer({
   renderToolbar,
 }: VideoPlayerProps) {
   const save = useSave(saveId);
+  const chromeRoot = useViewerChromeRoot();
   const trackUrl = useChaptersTrackUrl(chapters);
   const subtitle = save?.files.find((file) => file.kind === "subtitle");
   const subtitleUrl = save && subtitle ? buildPondUrl(save.id, subtitle) : null;
@@ -228,7 +232,7 @@ export function VideoPlayer({
   );
 
   return (
-    <Video.Root frameRate={frameRate} chrome>
+    <Video.Root frameRate={frameRate} fullscreenTarget={chromeRoot} chrome>
       <MediaBridge
         key={src}
         src={src}

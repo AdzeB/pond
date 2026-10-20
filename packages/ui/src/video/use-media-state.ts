@@ -63,9 +63,14 @@ export interface MediaStateApi {
   registerVideo: (el: HTMLVideoElement | null) => void;
 }
 
-export function useMediaState(frameRate?: number | null): MediaStateApi {
+export function useMediaState(
+  frameRate?: number | null,
+  fullscreenTarget?: HTMLElement | null,
+): MediaStateApi {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const fullscreenTargetRef = useRef(fullscreenTarget);
+  fullscreenTargetRef.current = fullscreenTarget;
   const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null);
   const [state, setState] = useState<MediaState>(INITIAL);
 
@@ -117,9 +122,10 @@ export function useMediaState(frameRate?: number | null): MediaStateApi {
 
   useEffect(() => {
     const onFullscreen = () => {
+      const target = fullscreenTargetRef.current ?? rootRef.current;
       setState((s) => ({
         ...s,
-        fullscreen: document.fullscreenElement === rootRef.current,
+        fullscreen: target !== null && document.fullscreenElement === target,
       }));
     };
     document.addEventListener("fullscreenchange", onFullscreen);
@@ -167,12 +173,12 @@ export function useMediaState(frameRate?: number | null): MediaStateApi {
         if (v) v.playbackRate = rate;
       },
       toggleFullscreen: () => {
-        const root = rootRef.current;
-        if (!root) return;
-        if (document.fullscreenElement === root) {
+        const target = fullscreenTargetRef.current ?? rootRef.current;
+        if (!target) return;
+        if (document.fullscreenElement === target) {
           void document.exitFullscreen().catch(() => {});
         } else {
-          void root.requestFullscreen().catch(() => {});
+          void target.requestFullscreen().catch(() => {});
         }
       },
       stepFrame: (delta: number) => {

@@ -13,11 +13,17 @@ type Slot = "top" | "bottom";
 
 interface ChromeSlots {
   enabled: boolean;
+  root: HTMLElement | null;
   top: HTMLElement;
   bottom: HTMLElement;
 }
 
 const ChromeContext = createContext<ChromeSlots | null>(null);
+
+/** The viewer root, so full screen keeps the toolbars portaled into its slots. */
+export function useViewerChromeRoot(): HTMLElement | null {
+  return use(ChromeContext)?.root ?? null;
+}
 
 export function ChromePortal({
   slot,
@@ -62,10 +68,12 @@ export function ViewerChrome({
 }) {
   const [top, attachTop] = useSlot("top");
   const [bottom, attachBottom] = useSlot("bottom");
+  const [root, setRoot] = useState<HTMLDivElement | null>(null);
 
   return (
-    <ChromeContext value={{ enabled, top, bottom }}>
+    <ChromeContext value={{ enabled, root, top, bottom }}>
       <div
+        ref={setRoot}
         className={styles.root}
         data-chrome={enabled || undefined}
         data-viewer-root

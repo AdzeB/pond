@@ -221,6 +221,65 @@ it("lets the playback toolbar turn off automatic short-video looping", async () 
   expect(loop?.getAttribute("aria-pressed")).toBeNull();
 });
 
+it("puts the whole viewer, playback toolbar included, in full screen", async () => {
+  let fullscreenElement: Element | null = null;
+  const changeFullscreen = (element: Element | null) => {
+    fullscreenElement = element;
+    document.dispatchEvent(new Event("fullscreenchange"));
+    return Promise.resolve();
+  };
+  Object.defineProperties(document, {
+    fullscreenEnabled: { configurable: true, value: true },
+    fullscreenElement: { configurable: true, get: () => fullscreenElement },
+    exitFullscreen: {
+      configurable: true,
+      value: () => changeFullscreen(null),
+    },
+  });
+  Object.defineProperty(HTMLElement.prototype, "requestFullscreen", {
+    configurable: true,
+    value(this: HTMLElement) {
+      return changeFullscreen(this);
+    },
+  });
+  try {
+    await act(async () => {
+      root.render(<TestVideoPlayer />);
+    });
+    const enter = host.querySelector<HTMLButtonElement>(
+      'button[aria-label="Full screen"]',
+    );
+    expect(enter).not.toBeNull();
+
+    await act(async () => enter?.click());
+
+    const viewer = host.querySelector("[data-viewer-root]");
+    expect(fullscreenElement).toBe(viewer);
+    expect(
+      viewer?.contains(host.querySelector('[aria-label="Playback"]')),
+    ).toBe(true);
+    const exit = host.querySelector<HTMLButtonElement>(
+      'button[aria-label="Exit full screen"]',
+    );
+    expect(exit).toBe(enter);
+
+    await act(async () => exit?.click());
+
+    expect(fullscreenElement).toBeNull();
+    expect(
+      host.querySelector('button[aria-label="Full screen"]'),
+    ).not.toBeNull();
+  } finally {
+    for (const name of [
+      "fullscreenEnabled",
+      "fullscreenElement",
+      "exitFullscreen",
+    ])
+      Reflect.deleteProperty(document, name);
+    Reflect.deleteProperty(HTMLElement.prototype, "requestFullscreen");
+  }
+});
+
 it("fades the video in over the poster once the first frame loads", async () => {
   await act(async () => {
     root.render(

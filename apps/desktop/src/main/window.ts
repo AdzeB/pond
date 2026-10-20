@@ -178,6 +178,8 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
   };
   win.on("resize", saveBounds);
   win.on("move", saveBounds);
+  /** The zoom button keeps zooming; a granted video full-screen request enables full screen until it ends. */
+  win.on("leave-full-screen", () => win.setFullScreenable(false));
 
   win.on("close", (event) => {
     if (isQuitting) return;
