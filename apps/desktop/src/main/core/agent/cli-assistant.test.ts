@@ -150,6 +150,13 @@ process.stdin.on('end', () => {
   if (!codex && args.includes('--version')) {
     console.log(process.env.POND_CLI_LEGACY_CLAUDE ? '2.1.247' : '2.1.248'); return;
   }
+  if (!codex) {
+    const schema = JSON.parse(args[args.indexOf('--json-schema') + 1]);
+    if ('$schema' in schema) {
+      console.error('Error: --json-schema is not a valid JSON Schema: no schema with key or ref "' + schema.$schema + '"');
+      process.exit(1);
+    }
+  }
   if (codex) {
     const config = new Map();
     for (let index = 0; index < args.length - 1; index++)
