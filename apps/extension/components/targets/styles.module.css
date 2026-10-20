@@ -1,0 +1,15 @@
+.folders {
+  min-height: 0;
+}
+
+.list {
+  flex: 1 1 auto;
+}
+
+.row {
+  padding-inline-start: calc(12px + var(--folder-depth) * 16px);
+}
+
+.tags {
+  width: 100%;
+}

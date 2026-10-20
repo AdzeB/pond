@@ -3,7 +3,7 @@ const { existsSync, readdirSync, rmSync, statSync } = require("node:fs");
 const { join, sep } = require("node:path");
 const { z } = require("zod");
 
-/** Fails the pack when a bundled binary or the extension is missing; yt-dlp is fetched into userData at runtime. */
+/** Fails the pack when a bundled binary is missing; yt-dlp is fetched into userData at runtime. */
 exports.default = (context) => verify(context);
 
 async function verify(context, { runFfmpeg = runFfmpegVersion } = {}) {
@@ -42,10 +42,6 @@ async function verify(context, { runFfmpeg = runFfmpegVersion } = {}) {
       "sqlite-vec native module",
     );
     assertPresent(nativeHostPath, "pond-native-host");
-    assertPresent(
-      join(resourcesDir, "extension", "manifest.json"),
-      "browser extension",
-    );
   }
 
   console.log(`[pond verify] bundled ffmpeg OK (${platform})`);

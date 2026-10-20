@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ExtensionSettingsSchema } from "./browser-extension";
 import { FolderPresentationSchema } from "./folder-presentation";
 import { FolderRulesSchema } from "./folder-rules";
 import {
@@ -452,6 +453,7 @@ const PrefsObject = z.object({
   ai: ai.catch(ai.parse({})),
   agent: agent.catch(agent.parse({})),
   saveRecents: saveRecents.catch(saveRecents.parse({})),
+  extension: ExtensionSettingsSchema.catch(ExtensionSettingsSchema.parse({})),
 });
 
 export type Prefs = z.infer<typeof PrefsObject>;

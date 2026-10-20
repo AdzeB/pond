@@ -1,3 +1,4 @@
+import type { ExtensionSettings } from "@pond/schema/browser-extension";
 import type { CaptureReceipt, CaptureWebDraft } from "@pond/schema/capture";
 import type { Source } from "@pond/schema/db";
 import type { JsonValue } from "@pond/schema/json";
@@ -21,14 +22,31 @@ export interface EnqueueResult {
   reseeded?: boolean;
 }
 
+export interface NativeFolder {
+  id: string;
+  name: string;
+  parentId: string | null;
+  color: string | null;
+}
+
+export interface NativeTag {
+  name: string;
+  starred: boolean;
+  usageCount: number;
+  lastUsedAt: number | null;
+}
+
 export interface NativePorts {
   capture?: (
     draft: CaptureWebDraft,
     cookies?: ExtensionCookie[],
   ) => Promise<CaptureReceipt>;
+  captureStatus?: (id: string) => Promise<CaptureReceipt>;
   enqueue: (url: string, opts: EnqueueOpts) => Promise<EnqueueResult>;
   libraryInfo: () => Promise<LibraryInfo>;
-  foldersList?: () => Promise<{ id: string; name: string }[]>;
+  foldersList?: () => Promise<NativeFolder[]>;
+  tagsList?: () => Promise<NativeTag[]>;
+  extensionSettings?: () => Promise<ExtensionSettings>;
   sessionPending: () => { source: Source } | null;
   sessionImport: (
     source: Source,
@@ -52,6 +70,10 @@ export async function dispatchNative(
       case "capture.accept":
         if (!ports.capture) return { ok: false, error: "capture_unavailable" };
         return { ok: true, data: await ports.capture(req.draft, req.cookies) };
+      case "capture.status":
+        if (!ports.captureStatus)
+          return { ok: false, error: "capture_unavailable" };
+        return { ok: true, data: await ports.captureStatus(req.id) };
       case "hello":
         return {
           ok: true,
@@ -63,6 +85,13 @@ export async function dispatchNative(
         if (!ports.foldersList)
           return { ok: false, error: "folders_unavailable" };
         return { ok: true, data: await ports.foldersList() };
+      case "tags.list":
+        if (!ports.tagsList) return { ok: false, error: "tags_unavailable" };
+        return { ok: true, data: await ports.tagsList() };
+      case "extension.settings":
+        if (!ports.extensionSettings)
+          return { ok: false, error: "settings_unavailable" };
+        return { ok: true, data: await ports.extensionSettings() };
       case "session.pending":
         return { ok: true, data: ports.sessionPending() };
       case "enqueue": {

@@ -1,0 +1,22 @@
+/* Inline-block so the swap can move, so it carries the title's truncation itself. */
+.swap {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: top;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .swap[data-updated] {
+    animation: swap var(--ds-duration-snap) var(--ds-easing-standard);
+  }
+}
+
+@keyframes swap {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+    transform: translateY(4px);
+  }
+}

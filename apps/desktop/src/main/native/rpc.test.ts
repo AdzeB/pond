@@ -1,3 +1,4 @@
+import { ExtensionSettingsSchema } from "@pond/schema/browser-extension";
 import { nativeRequestSchema } from "@pond/schema/native";
 import { describe, expect, it, vi } from "vitest";
 import { UnsupportedError } from "../core/pipeline/extractors/errors";
@@ -82,14 +83,67 @@ describe("dispatchNative", () => {
   });
 
   it("returns folders.list from the injected port", async () => {
-    const foldersList = vi
-      .fn()
-      .mockResolvedValue([{ id: "refs", name: "Refs" }]);
+    const folder = { id: "refs", name: "Refs", parentId: null, color: null };
+    const foldersList = vi.fn().mockResolvedValue([folder]);
     await expect(
       dispatchNative({ type: "folders.list" }, ports({ foldersList })),
-    ).resolves.toEqual({
-      ok: true,
-      data: [{ id: "refs", name: "Refs" }],
-    });
+    ).resolves.toEqual({ ok: true, data: [folder] });
+  });
+
+  it("returns tags.list from the injected port", async () => {
+    const tag = { name: "pond", starred: true, usageCount: 3, lastUsedAt: 1 };
+    const tagsList = vi.fn().mockResolvedValue([tag]);
+    await expect(
+      dispatchNative({ type: "tags.list" }, ports({ tagsList })),
+    ).resolves.toEqual({ ok: true, data: [tag] });
+  });
+
+  it("reports tags.list as unavailable without a port", async () => {
+    await expect(
+      dispatchNative({ type: "tags.list" }, ports()),
+    ).resolves.toEqual({ ok: false, error: "tags_unavailable" });
+  });
+
+  it("returns the browser extension settings from the injected port", async () => {
+    const settings = ExtensionSettingsSchema.parse({ altClick: false });
+    const extensionSettings = vi.fn().mockResolvedValue(settings);
+    await expect(
+      dispatchNative(
+        { type: "extension.settings" },
+        ports({ extensionSettings }),
+      ),
+    ).resolves.toEqual({ ok: true, data: settings });
+  });
+
+  it("reports extension.settings as unavailable without a port", async () => {
+    await expect(
+      dispatchNative({ type: "extension.settings" }, ports()),
+    ).resolves.toEqual({ ok: false, error: "settings_unavailable" });
+  });
+
+  it("reads a capture receipt by draft id", async () => {
+    const receipt = {
+      id: "draft-1",
+      library: "/library",
+      state: "complete" as const,
+      completed: 1,
+      total: 1,
+      saveIds: ["save-1"],
+      duplicateCount: 0,
+    };
+    const captureStatus = vi.fn().mockResolvedValue(receipt);
+    await expect(
+      dispatchNative(
+        { type: "capture.status", id: "draft-1" },
+        ports({ captureStatus }),
+      ),
+    ).resolves.toEqual({ ok: true, data: receipt });
+    expect(captureStatus).toHaveBeenCalledWith("draft-1");
+  });
+
+  it("rejects a capture status id outside the draft id format", async () => {
+    await expect(
+      dispatchNative({ type: "capture.status", id: "../x" }, ports()),
+    ).resolves.toEqual({ ok: false, error: "invalid" });
   });
 });

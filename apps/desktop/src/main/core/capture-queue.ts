@@ -193,6 +193,9 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
       if (result.state === "accepted") run(await read(root, draft.id));
       return result;
     },
+    async status(id: string): Promise<CaptureReceipt> {
+      return receipt(await read(ports.root(), id));
+    },
     async list(): Promise<CaptureReceipt[]> {
       const root = ports.root();
       const entries = await readdir(directory(root)).catch((): string[] => []);

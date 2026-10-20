@@ -147,21 +147,25 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: pnpm --filter @pond/desktop dist:mac:publish
 
-      - name: Build extension zip
-        run: pnpm --filter @pond/extension zip
+      - name: Build extension store zips
+        run: pnpm --filter @pond/extension zip:store
 
-      - name: Upload extension zip to release
+      - name: Upload extension zips to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          ZIP=$(find apps/extension/.output -name "*.zip" -type f | head -1)
-          if [ -z "$ZIP" ]; then
-            echo "Extension zip not found under apps/extension/.output"
-            exit 1
-          fi
-          cp "$ZIP" "pond-extension-${VERSION}.zip"
-          gh release upload "$GITHUB_REF_NAME" "pond-extension-${VERSION}.zip" --clobber
+          OUT=apps/extension/.output
+          ZIPS=()
+          for kind in chrome firefox sources; do
+            ZIP="$OUT/pond-extension-${VERSION}-${kind}.zip"
+            if [ ! -f "$ZIP" ]; then
+              echo "Missing $ZIP"
+              exit 1
+            fi
+            ZIPS+=("$ZIP")
+          done
+          gh release upload "$GITHUB_REF_NAME" "${ZIPS[@]}" --clobber
 
   windows:
     needs: draft
@@ -241,7 +245,7 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           ASSETS="$(gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[].name')"
           missing=0
-          for name in             "Pond-${VERSION}-arm64.dmg"             "Pond-${VERSION}-x64.dmg"             "Pond-${VERSION}-arm64.zip"             "Pond-${VERSION}-x64.zip"             "latest-mac.yml"             "Pond-${VERSION}-x64.exe"             "Pond-${VERSION}-x64.exe.blockmap"             "latest.yml"             "pond-extension-${VERSION}.zip"; do
+          for name in             "Pond-${VERSION}-arm64.dmg"             "Pond-${VERSION}-x64.dmg"             "Pond-${VERSION}-arm64.zip"             "Pond-${VERSION}-x64.zip"             "latest-mac.yml"             "Pond-${VERSION}-x64.exe"             "Pond-${VERSION}-x64.exe.blockmap"             "latest.yml"             "pond-extension-${VERSION}-chrome.zip"             "pond-extension-${VERSION}-firefox.zip"             "pond-extension-${VERSION}-sources.zip"; do
             if ! grep -Fxq "$name" <<<"$ASSETS"; then
               echo "Missing release asset: $name"
               missing=1
@@ -254,6 +258,65 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: gh release edit "$GITHUB_REF_NAME" --draft=false --latest
+
+  # Submits the published extension zips for store review. Each store is
+  # skipped with a warning until its API credentials are set as secrets.
+  stores:
+    needs: publish
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --filter @pond/extension...
+
+      - name: Download extension zips
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download "$GITHUB_REF_NAME" \
+            --pattern "pond-extension-*.zip" \
+            --dir extension-zips
+
+      - name: Submit to browser stores
+        env:
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          FIREFOX_EXTENSION_ID: desktop@pond.so
+          FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
+          FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          DIR="$PWD/extension-zips"
+          ARGS=()
+          if [ -n "$CHROME_REFRESH_TOKEN" ] && [ -n "$CHROME_EXTENSION_ID" ]; then
+            ARGS+=(--chrome-zip "$DIR/pond-extension-${VERSION}-chrome.zip")
+          else
+            echo "::warning::Chrome Web Store secrets are not set; skipping Chrome."
+          fi
+          if [ -n "$FIREFOX_JWT_SECRET" ]; then
+            ARGS+=(--firefox-zip "$DIR/pond-extension-${VERSION}-firefox.zip")
+            ARGS+=(--firefox-sources-zip "$DIR/pond-extension-${VERSION}-sources.zip")
+          else
+            echo "::warning::AMO secrets are not set; skipping Firefox."
+          fi
+          if [ "${#ARGS[@]}" -eq 0 ]; then
+            exit 0
+          fi
+          pnpm --filter @pond/extension exec wxt submit "${ARGS[@]}"
 
   homebrew:
     needs: publish

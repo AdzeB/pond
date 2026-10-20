@@ -1,0 +1,27 @@
+@import "@pond/ui/reset.css";
+@import "@pond/theme/theme.css";
+
+/* The host gets `all: initial`, so type is set inside the shadow tree to match the app's `:root`. */
+html {
+  font-family:
+    pond-inter, ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
+    "Segoe UI", sans-serif;
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-md);
+  font-feature-settings:
+    "liga" 1,
+    "calt" 1,
+    "cv11" 1,
+    "ss01" 1;
+  color: var(--ds-gray-12);
+  color-scheme: light dark;
+}
+
+/* `light-dark()` compiles to variables that only these color-scheme declarations define. */
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+}

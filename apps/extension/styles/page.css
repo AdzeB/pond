@@ -1,0 +1,39 @@
+@import "@pond/ui/reset.css";
+@import "@pond/theme/theme.css";
+
+@font-face {
+  font-family: inter-variable;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/inter/variable.woff2") format("woff2");
+}
+
+/* One width for every popup view, so switching views never resizes the window. */
+body {
+  width: 320px;
+}
+
+/* Chrome sizes the popup to its scrollable width, so the slide between views must not add any; `body` would hand the clip to the viewport. */
+#root {
+  overflow-x: clip;
+}
+
+:root {
+  font-family:
+    inter-variable, ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
+    "Segoe UI", sans-serif;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-12);
+  color-scheme: light dark;
+  background: var(--ds-gray-1);
+}
+
+/* `light-dark()` compiles to variables that only these color-scheme declarations define. */
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+}

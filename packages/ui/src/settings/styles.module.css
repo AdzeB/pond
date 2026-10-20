@@ -276,3 +276,26 @@
     columns: 1;
   }
 }
+
+/* Narrow hosts like a browser extension popup: tighter rhythm, and descriptions wrap instead of clipping. */
+.page[data-density="compact"] {
+  --settings-margin-block: 12px;
+  --settings-width: 100%;
+  --settings-padding: 12px;
+
+  gap: 20px;
+  padding-inline: 12px;
+
+  & .section-title {
+    padding-bottom: 8px;
+  }
+
+  & .item {
+    gap: 12px;
+  }
+
+  & .item-description {
+    font-size: var(--ds-text-sm);
+    white-space: normal;
+  }
+}

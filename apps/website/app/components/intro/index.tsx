@@ -1,12 +1,8 @@
 "use client";
 
 import { Wordmark } from "@pond/ui/wordmark";
-import { usePlatform } from "@/lib/platform";
-import {
-  extensionZipUrl,
-  otherDownloads,
-  primaryDownload,
-} from "@/lib/release";
+import { useBrowser, usePlatform } from "@/lib/platform";
+import { extensionUrl, otherDownloads, primaryDownload } from "@/lib/release";
 import { Cta } from "../cta";
 import styles from "./styles.module.css";
 
@@ -17,6 +13,7 @@ const RESPONSIBLE_USE = `${GITHUB}/blob/main/RESPONSIBLE-USE.md`;
 
 export function Intro() {
   const platform = usePlatform();
+  const browser = useBrowser();
   const primary = primaryDownload(platform);
   return (
     <header className={styles.intro}>
@@ -30,7 +27,7 @@ export function Intro() {
       <nav className={styles.actions} aria-label="Downloads and links">
         <div className={styles.buttons}>
           <Cta href={primary.href}>{primary.label}</Cta>
-          <Cta href={extensionZipUrl()} variant="soft">
+          <Cta href={extensionUrl(browser)} variant="soft">
             Browser Extension
           </Cta>
         </div>
@@ -75,6 +72,9 @@ export function Intro() {
             rel="noreferrer"
           >
             Responsible Use
+          </a>
+          <a className={styles.link} href="/privacy">
+            Privacy
           </a>
         </div>
       </nav>

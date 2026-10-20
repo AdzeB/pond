@@ -4,7 +4,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import {
-  EXTENSION_ID,
+  CHROMIUM_EXTENSION_IDS,
   FIREFOX_EXTENSION_ID,
   NATIVE_HOST_NAME,
 } from "@pond/schema/native";
@@ -116,7 +116,9 @@ function hostManifest(
 
 export function chromiumNativeHostManifest(hostPath: string): string {
   return hostManifest(hostPath, {
-    allowed_origins: [`chrome-extension://${EXTENSION_ID}/`],
+    allowed_origins: CHROMIUM_EXTENSION_IDS.map(
+      (id) => `chrome-extension://${id}/`,
+    ),
   });
 }
 

@@ -1,0 +1,107 @@
+.page {
+  display: flex;
+  flex-direction: column;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+
+  & + &,
+  .center + & {
+    border-top: var(--ds-border-width) solid var(--ds-border-subtle);
+  }
+}
+
+.row {
+  justify-content: flex-start;
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: start;
+  white-space: nowrap;
+}
+
+.notice {
+  padding: 10px 12px 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-11);
+}
+
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.trailing {
+  color: var(--ds-gray-10);
+}
+
+/* Sections rise in one after another; coming back from Shortcuts slides the page in whole instead. */
+@media (prefers-reduced-motion: no-preference) {
+  .page > * {
+    animation: rise var(--ds-duration-emphasized) var(--ds-easing-snap) both;
+    animation-delay: calc((sibling-index() - 1) * 30ms);
+  }
+
+  .page > [data-error] {
+    animation:
+      rise var(--ds-duration-emphasized) var(--ds-easing-snap) both,
+      shake 360ms var(--ds-easing-snap);
+  }
+
+  .page[data-returned] {
+    animation: from-shortcuts var(--ds-duration-emphasized)
+      var(--ds-easing-snap);
+  }
+
+  .page[data-returned] > * {
+    animation: none;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+    transform: translateY(4px);
+  }
+}
+
+@keyframes from-shortcuts {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translateX(-8px);
+  }
+}
+
+@keyframes shake {
+  20% {
+    translate: -6px 0;
+  }
+
+  40% {
+    translate: 6px 0;
+  }
+
+  60% {
+    translate: -4px 0;
+  }
+
+  80% {
+    translate: 4px 0;
+  }
+}

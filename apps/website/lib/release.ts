@@ -1,4 +1,4 @@
-import type { Platform } from "./platform";
+import type { Browser, Platform } from "./platform";
 
 /** Keep in sync with apps/desktop and apps/extension package versions on each release. */
 const POND_VERSION = "1.1.1";
@@ -14,8 +14,16 @@ function windowsInstallerUrl(): string {
   return `${RELEASES_BASE}/Pond-${POND_VERSION}-x64.exe`;
 }
 
-export function extensionZipUrl(): string {
-  return `${RELEASES_BASE}/pond-extension-${POND_VERSION}.zip`;
+/** Mirrors `EXTENSION_STORE_URLS` in `@pond/schema/native`, which would pull zod into this client bundle. */
+const CHROME_WEB_STORE_URL: string | null = null;
+const FIREFOX_ADDONS_URL =
+  "https://addons.mozilla.org/firefox/addon/desktop%40pond.so/";
+
+/** Sends Chromium visitors to Firefox Add-ons until the Chrome Web Store listing is live. */
+export function extensionUrl(browser: Browser): string {
+  return (
+    (browser === "firefox" ? null : CHROME_WEB_STORE_URL) ?? FIREFOX_ADDONS_URL
+  );
 }
 
 interface Download {

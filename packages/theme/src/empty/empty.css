@@ -1,4 +1,5 @@
-:root {
+:root,
+[data-theme] {
   --ds-empty-max-width: 360px;
   --ds-empty-min-height: 280px;
   --ds-empty-padding-block-start: 48px;
