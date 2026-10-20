@@ -143,6 +143,8 @@ log.info("[pond] main starting", {
 });
 
 const wantsMcp = process.argv.includes("--mcp");
+/** Each MCP client spawns its own headless process, and none of them ever opens a window. */
+if (wantsMcp) app.dock?.hide();
 const initialDeepLink = deepLinkArg(process.argv);
 
 let nativeServer: NetServer | null = null;
