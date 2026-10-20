@@ -5,6 +5,11 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { DatePicker } from ".";
 
+/** The popover takes seconds to open on loaded macOS CI runners. */
+const OPEN_TIMEOUT = 15_000;
+
+vi.setConfig({ testTimeout: OPEN_TIMEOUT * 2 });
+
 let root: Root;
 let host: HTMLDivElement;
 
@@ -38,11 +43,14 @@ async function openPicker(props: {
   });
   const trigger = host.querySelector<HTMLElement>('[aria-label^="Date"]');
   await act(async () => trigger?.click());
-  return vi.waitFor(() => {
-    const grid = document.querySelector<HTMLElement>("table");
-    if (!grid) throw new Error("Calendar did not open");
-    return grid;
-  });
+  return vi.waitFor(
+    () => {
+      const grid = document.querySelector<HTMLElement>("table");
+      if (!grid) throw new Error("Calendar did not open");
+      return grid;
+    },
+    { timeout: OPEN_TIMEOUT },
+  );
 }
 
 function day(value: string): HTMLButtonElement {
