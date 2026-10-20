@@ -7,6 +7,7 @@ import {
   importsListKind,
   normalizeImportScope,
   sinceStart,
+  sourcesSkippingLikes,
 } from "./import-scope";
 
 describe("normalizeImportScope", () => {
@@ -162,6 +163,31 @@ describe("accountImportScope", () => {
       }),
     ).toEqual({ listKinds: ["liked"] });
     expect(accountImportScope("reddit", { syncLikes: false })).toBeUndefined();
+  });
+});
+
+describe("sourcesSkippingLikes", () => {
+  it("skips likes where every Account leaves them out", () => {
+    expect(
+      sourcesSkippingLikes([
+        { source: "twitter", sync: { importScope: { listKinds: ["saved"] } } },
+        { source: "instagram", sync: { syncLikes: false } },
+        { source: "reddit", sync: {} },
+      ]),
+    ).toEqual(new Set(["twitter"]));
+  });
+
+  it("keeps likes when any Account for the Source imports them", () => {
+    expect(
+      sourcesSkippingLikes([
+        { source: "twitter", sync: { importScope: { listKinds: ["saved"] } } },
+        { source: "twitter", sync: {} },
+      ]),
+    ).toEqual(new Set());
+  });
+
+  it("leaves Sources without an Account to the extension switch", () => {
+    expect(sourcesSkippingLikes([])).toEqual(new Set());
   });
 });
 

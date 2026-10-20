@@ -1,4 +1,5 @@
 import { app } from "electron";
+import { sourcesSkippingLikes } from "../../shared/import-scope";
 import { attachCaptureCookies, captures } from "../core/captures";
 import { enqueue, libraryInfo, sessionImport, sessionPending } from "../ops";
 import type { NativePorts } from "./rpc";
@@ -33,8 +34,15 @@ export function liveNativePorts(): NativePorts {
         }));
     },
     extensionSettings: async () => {
-      const { getPrefs } = await import("../core/prefs");
-      return (await getPrefs()).extension;
+      const [{ getPrefs }, { listAccounts }] = await Promise.all([
+        import("../core/prefs"),
+        import("../core/sync/accounts"),
+      ]);
+      const [prefs, accounts] = await Promise.all([getPrefs(), listAccounts()]);
+      const likes = { ...prefs.extension.likes };
+      for (const source of sourcesSkippingLikes(accounts))
+        likes[source] = false;
+      return { ...prefs.extension, likes };
     },
     sessionPending,
     sessionImport,
