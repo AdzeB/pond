@@ -1,6 +1,7 @@
 import {
   IconPalette as Appearance,
   IconArchive as Backups,
+  IconGlobe as Extension,
   IconGear3 as General,
   IconImage as Images,
   IconFolder as Library,
@@ -30,6 +31,7 @@ const ICONS = new Map<string, IconComponent>([
   ["viewer", Images],
   ["appearance", Appearance],
   ["shortcuts", Shortcuts],
+  ["extension", Extension],
   ["tags", Tags],
   ["library", Library],
   ["processing", Processing],

@@ -44,6 +44,7 @@ export const nativeRequestSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("library.info") }),
   z.object({ type: z.literal("folders.list") }),
   z.object({ type: z.literal("tags.list") }),
+  z.object({ type: z.literal("extension.settings") }),
   z.object({ type: z.literal("session.pending") }),
   enqueueRequestSchema.extend({ type: z.literal("enqueue") }),
   sessionImportPayloadSchema.extend({ type: z.literal("session.import") }),

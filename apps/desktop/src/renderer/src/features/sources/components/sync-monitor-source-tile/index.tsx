@@ -1,6 +1,6 @@
 import type { Source } from "@pond/schema/db";
+import { BrandTile as Tile } from "@pond/ui";
 import { getSourceDef } from "@/features/sources/lib/registry";
-import styles from "./styles.module.css";
 
 export function BrandTile({
   source,
@@ -12,16 +12,12 @@ export function BrandTile({
   const { icon: Icon, logo } = getSourceDef(source);
 
   return (
-    <span
-      className={styles["brand-tile"]}
-      style={{ width: size, height: size }}
-      aria-hidden
-    >
+    <Tile size={size}>
       {Icon ? (
         <Icon width={size} height={size} />
       ) : logo ? (
         <img src={logo} alt="" width={size} height={size} />
       ) : null}
-    </span>
+    </Tile>
   );
 }

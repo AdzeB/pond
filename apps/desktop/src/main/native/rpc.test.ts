@@ -1,3 +1,4 @@
+import { ExtensionSettingsSchema } from "@pond/schema/browser-extension";
 import { nativeRequestSchema } from "@pond/schema/native";
 import { describe, expect, it, vi } from "vitest";
 import { UnsupportedError } from "../core/pipeline/extractors/errors";
@@ -101,6 +102,23 @@ describe("dispatchNative", () => {
     await expect(
       dispatchNative({ type: "tags.list" }, ports()),
     ).resolves.toEqual({ ok: false, error: "tags_unavailable" });
+  });
+
+  it("returns the browser extension settings from the injected port", async () => {
+    const settings = ExtensionSettingsSchema.parse({ altClick: false });
+    const extensionSettings = vi.fn().mockResolvedValue(settings);
+    await expect(
+      dispatchNative(
+        { type: "extension.settings" },
+        ports({ extensionSettings }),
+      ),
+    ).resolves.toEqual({ ok: true, data: settings });
+  });
+
+  it("reports extension.settings as unavailable without a port", async () => {
+    await expect(
+      dispatchNative({ type: "extension.settings" }, ports()),
+    ).resolves.toEqual({ ok: false, error: "settings_unavailable" });
   });
 
   it("reads a capture receipt by draft id", async () => {

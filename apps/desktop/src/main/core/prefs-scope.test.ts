@@ -245,3 +245,18 @@ it("deep-merges app feedback and sidebar destination preferences", () => {
     sources: false,
   });
 });
+
+it("keeps browser extension settings with this computer and merges site flags", () => {
+  const { app, pond } = splitPrefsPatch({
+    extension: { enabled: { twitter: false } },
+  });
+  expect(app).toEqual({ extension: { enabled: { twitter: false } } });
+  expect(pond).toEqual({});
+
+  const next = mergeAppSlice(app, {
+    extension: { enabled: { reddit: false }, altClick: false },
+  });
+  expect(next.extension.enabled).toEqual({ twitter: false, reddit: false });
+  expect(next.extension.altClick).toBe(false);
+  expect(next.extension.askDetails).toBe(true);
+});

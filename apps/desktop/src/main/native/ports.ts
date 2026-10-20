@@ -32,6 +32,10 @@ export function liveNativePorts(): NativePorts {
           lastUsedAt: tag.lastUsedAt?.getTime() ?? null,
         }));
     },
+    extensionSettings: async () => {
+      const { getPrefs } = await import("../core/prefs");
+      return (await getPrefs()).extension;
+    },
     sessionPending,
     sessionImport,
     appVersion: () => app.getVersion(),

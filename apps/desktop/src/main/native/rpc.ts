@@ -1,3 +1,4 @@
+import type { ExtensionSettings } from "@pond/schema/browser-extension";
 import type { CaptureReceipt, CaptureWebDraft } from "@pond/schema/capture";
 import type { Source } from "@pond/schema/db";
 import type { JsonValue } from "@pond/schema/json";
@@ -45,6 +46,7 @@ export interface NativePorts {
   libraryInfo: () => Promise<LibraryInfo>;
   foldersList?: () => Promise<NativeFolder[]>;
   tagsList?: () => Promise<NativeTag[]>;
+  extensionSettings?: () => Promise<ExtensionSettings>;
   sessionPending: () => { source: Source } | null;
   sessionImport: (
     source: Source,
@@ -86,6 +88,10 @@ export async function dispatchNative(
       case "tags.list":
         if (!ports.tagsList) return { ok: false, error: "tags_unavailable" };
         return { ok: true, data: await ports.tagsList() };
+      case "extension.settings":
+        if (!ports.extensionSettings)
+          return { ok: false, error: "settings_unavailable" };
+        return { ok: true, data: await ports.extensionSettings() };
       case "session.pending":
         return { ok: true, data: ports.sessionPending() };
       case "enqueue": {

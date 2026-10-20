@@ -81,14 +81,19 @@ function resolveActor(meta: TxMeta | undefined) {
 }
 
 const SYNC_ACTIONS_RING = 5000;
-/** Queued Saves exist in SQLite before workers materialize their info directory. */
+/**
+ * Queued Saves exist in SQLite before workers materialize their info directory.
+ * @remarks Workers write the info file from the full row and skip locked titles, so these fields survive the harvest.
+ */
 function canPersistBeforeMaterialization(patch: Partial<NewSave>): boolean {
   const {
     createdAt: _createdAt,
     listKinds: _listKinds,
     notes: _notes,
+    rating: _rating,
     savedAt: _savedAt,
     tags: _tags,
+    title: _title,
     ...materializedFields
   } = patch;
   return Object.keys(materializedFields).length === 0;
@@ -290,6 +295,7 @@ async function applyToDisk(tx: Transaction): Promise<void> {
         current.files.length === 0 &&
         canPersistBeforeMaterialization(tx.patch)
       ) {
+        if (tx.titleLock) setUserTitleLock(tx.id, tx.titleLock.after);
         return;
       }
 

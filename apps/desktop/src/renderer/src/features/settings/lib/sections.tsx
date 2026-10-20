@@ -2,6 +2,7 @@ import { lazy } from "react";
 import type { SectionConfig } from "@/features/settings/components/engine";
 import { appearanceSection } from "@/features/settings/lib/config-appearance";
 import { backupsSection } from "@/features/settings/lib/config-backups";
+import { extensionSection } from "@/features/settings/lib/config-extension";
 import { generalSection } from "@/features/settings/lib/config-general";
 import { harvestingSection } from "@/features/settings/lib/config-harvesting";
 import { librarySection } from "@/features/settings/lib/config-library";
@@ -46,6 +47,7 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
   ["general", generalSection],
   ["viewer", viewerSection],
   ["appearance", appearanceSection],
+  ["extension", extensionSection],
   [
     "shortcuts",
     {

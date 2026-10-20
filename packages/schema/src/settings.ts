@@ -24,6 +24,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     label: "Hotkeys",
     group: "general",
   },
+  {
+    id: "extension",
+    path: "extension",
+    label: "Browser Extension",
+    group: "general",
+  },
   { id: "tags", path: "tags", label: "Tags", hidden: true, group: "library" },
   {
     id: "library",

@@ -1,4 +1,4 @@
-import { SOURCES, type Source } from "./db";
+import { SOURCES, type Source } from "./source-ids";
 import { descriptorFor } from "./sources/registry";
 
 export {
