@@ -5,6 +5,7 @@ import "./focus-modality";
 export { clsx as cn } from "clsx";
 export { Accordion } from "./accordion";
 export { Badge, type BadgeTone } from "./badge";
+export { BrandTile } from "./brand-tile";
 export { Button, type ButtonProps } from "./button";
 export { Checkbox } from "./checkbox";
 export { Chip, type ChipTone } from "./chip";
@@ -38,6 +39,7 @@ export {
   usePickerCursor,
 } from "./picker-panel";
 export { Popover } from "./popover";
+export { Rating } from "./rating";
 export { Reveal } from "./reveal";
 export { Select, type SelectItemSpec } from "./select";
 export { Settings } from "./settings";

@@ -65,6 +65,29 @@
   }
 }
 
+/* 17 is the check path's length in viewBox units, so the dash draws it exactly once. */
+.indicator > [data-mark="checked"] path {
+  stroke-dasharray: 17;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset var(--ds-duration-emphasized)
+    var(--ds-easing-snap);
+}
+
+.indicator[data-starting-style] > [data-mark="checked"] path,
+.indicator[data-ending-style] > [data-mark="checked"] path {
+  stroke-dashoffset: 17;
+}
+
+.indicator[data-ending-style] > [data-mark="checked"] path {
+  transition-duration: var(--ds-duration-snap);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indicator > [data-mark="checked"] path {
+    transition: none;
+  }
+}
+
 .indicator[data-indeterminate] > [data-mark="checked"],
 .indicator:not([data-indeterminate]) > [data-mark="indeterminate"] {
   display: none;

@@ -4,19 +4,27 @@ import styles from "./styles.module.css";
 
 interface PageProps extends React.ComponentPropsWithoutRef<"div"> {
   inset?: number;
+  density?: "default" | "compact";
 }
 
 interface PageStyle extends React.CSSProperties {
   "--settings-padding-inline-inset"?: string;
 }
 
-function Page({ className, inset, style, ...props }: PageProps) {
+function Page({
+  className,
+  inset,
+  density = "default",
+  style,
+  ...props
+}: PageProps) {
   const pageStyle: PageStyle = { ...style };
   if (inset) pageStyle["--settings-padding-inline-inset"] = `${inset}px`;
   return (
     <div
       className={cn(styles.page, className)}
       data-inset={inset}
+      data-density={density}
       style={pageStyle}
       {...props}
     />
