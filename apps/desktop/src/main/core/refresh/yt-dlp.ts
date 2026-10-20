@@ -11,6 +11,7 @@ import { partitionForIngest } from "../sync/accounts";
 import { binariesAvailable } from "./binaries";
 import { writeNetscapeCookies } from "./cookies";
 import {
+  cookieAttempts,
   formatSelector,
   maxFilesizeArg,
   YTDLP_TRANSFER_FLAGS,
@@ -92,7 +93,6 @@ export async function downloadVideo(
       ? await partitionForIngest(args.source, args.accountId)
       : undefined;
     cookies = await writeNetscapeCookies(partition);
-    outputDir = await mkdtemp(join(tmpdir(), "pond-ytdlp-out-"));
 
     const argv = [
       args.allowPlaylist ? "--yes-playlist" : "--no-playlist",
@@ -113,10 +113,6 @@ export async function downloadVideo(
       ...YTDLP_TRANSFER_FLAGS,
       "-f",
       formatSelector(args.source, prefs),
-      "--cookies",
-      cookies.path,
-      "-o",
-      join(outputDir, "%(id)s.%(ext)s"),
     ];
     if (args.source === "youtube" || prefs.embedThumbnail) {
       argv.push("--write-thumbnail", "--convert-thumbnails", "jpg");
@@ -150,37 +146,52 @@ export async function downloadVideo(
       if (ffmpeg) argv.push("--convert-subs", "srt");
     }
 
-    argv.push(args.url);
-
-    log.info(
-      "[pond yt-dlp] downloading",
-      args.url,
-      `(cookies=${cookies.count})`,
-    );
     const timeoutMs =
       HARD_TIMEOUT_MS *
       Math.min(
         MAX_PLAYLIST_TIMEOUT_FACTOR,
         Math.max(1, args.expectedCount ?? 1),
       );
-    args.reportActivity?.({ phase: "harvesting" });
-    const { code, stderr } = await runWithTimeout(
-      ytdlp,
-      argv,
-      timeoutMs,
-      args.signal,
-      args.reportActivity
-        ? createYtdlpProgressReporter(args.reportActivity)
-        : undefined,
-      VIDEO_WATCHDOG_MS,
-    );
-    if (code !== 0) {
+    let succeeded = false;
+    for (const withCookies of cookieAttempts(args.source, cookies.count)) {
+      if (outputDir) await rm(outputDir, { recursive: true, force: true });
+      outputDir = await mkdtemp(join(tmpdir(), "pond-ytdlp-out-"));
+      const attemptArgv = [
+        ...argv,
+        ...(withCookies ? ["--cookies", cookies.path] : []),
+        "-o",
+        join(outputDir, "%(id)s.%(ext)s"),
+        args.url,
+      ];
+      log.info(
+        "[pond yt-dlp] downloading",
+        args.url,
+        `(cookies=${withCookies ? cookies.count : 0})`,
+      );
+      args.reportActivity?.({ phase: "harvesting" });
+      const { code, stderr } = await runWithTimeout(
+        ytdlp,
+        attemptArgv,
+        timeoutMs,
+        args.signal,
+        args.reportActivity
+          ? createYtdlpProgressReporter(args.reportActivity)
+          : undefined,
+        VIDEO_WATCHDOG_MS,
+      );
+      if (code === 0) {
+        succeeded = true;
+        break;
+      }
       log.warn(
         "[pond yt-dlp] non-zero exit",
         code,
         args.url,
         stderr.slice(-400),
       );
+      if (args.signal?.aborted) break;
+    }
+    if (!succeeded || !outputDir) {
       await cleanup();
       return null;
     }
