@@ -1,10 +1,10 @@
 import {
+  IconArrowRotateClockwise,
   IconBan,
   IconCircleXmarkFill,
   IconCopy,
   IconLink2,
-  IconMediaPauseFill,
-  IconRefreshFill,
+  IconMediaPause,
   IconTrashXmark,
   IconWindowShare,
 } from "@pond/icons";
@@ -62,13 +62,13 @@ export function buildDownloadMenuItems(
     { type: "separator" },
     {
       label: plural ? "Retry Selected" : "Retry Download",
-      icon: <IconRefreshFill />,
+      icon: <IconArrowRotateClockwise />,
       disabled: !retryable,
       onClick: () => void retryDownloadRows(rows),
     },
     {
       label: plural ? "Cancel Selected" : "Cancel Download",
-      icon: <IconMediaPauseFill />,
+      icon: <IconMediaPause />,
       disabled: !cancellable,
       onClick: () => void cancelDownloadRows(rows),
     },

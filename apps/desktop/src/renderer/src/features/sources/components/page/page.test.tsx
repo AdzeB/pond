@@ -204,8 +204,8 @@ describe("Sources page selection", () => {
     }
     expect(toolbar()?.textContent).toContain("2 selected");
 
-    const fetch = [...(toolbar()?.querySelectorAll("button") ?? [])].find(
-      (button) => button.textContent === "Fetch New Saves",
+    const fetch = toolbar()?.querySelector<HTMLButtonElement>(
+      'button[aria-label="Fetch New Saves"]',
     );
     await act(async () => fetch?.click());
     expect(syncRunNow.mock.calls.map(([id]) => id).toSorted()).toEqual([
@@ -213,8 +213,8 @@ describe("Sources page selection", () => {
       "yt",
     ]);
 
-    const clear = [...(toolbar()?.querySelectorAll("button") ?? [])].find(
-      (button) => button.textContent === "Clear Selection",
+    const clear = toolbar()?.querySelector<HTMLButtonElement>(
+      'button[aria-label="Clear Selection"]',
     );
     await act(async () => clear?.click());
     expect(selectedIds()).toEqual([]);
