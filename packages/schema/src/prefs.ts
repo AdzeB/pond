@@ -50,7 +50,6 @@ const preferences = z.object({
   reduceMotion: z.enum(["system", "always", "never"]).catch("system"),
   tweetCover: z.enum(["media", "screenshot"]).catch("media"),
   soundsEnabled: z.boolean().catch(true),
-  autoSelectAfterImport: z.boolean().catch(true),
 });
 
 export const SIDEBAR_DESTINATIONS = [

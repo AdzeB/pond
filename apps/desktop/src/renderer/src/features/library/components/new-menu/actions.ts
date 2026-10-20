@@ -20,7 +20,6 @@ import { getAppRouter } from "@/shared/lib/app-router";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
 import { notify, updateNotification } from "@/shared/lib/toast";
-import { getPrefsSnapshot } from "@/shared/state/prefs";
 
 const SaveResultSchema = z.object({
   ok: z.boolean(),
@@ -121,9 +120,6 @@ export function createNewActions({
       );
     }
     reportSaved(result.ids.length);
-    const imported = result.ids.at(-1);
-    if (getPrefsSnapshot()?.preferences.autoSelectAfterImport && imported)
-      selectOnlySave(imported);
   }
 
   async function importLegacyLibrary(
@@ -155,9 +151,6 @@ export function createNewActions({
       );
     }
     reportSaved(result.ids.length);
-    const imported = result.ids.at(-1);
-    if (getPrefsSnapshot()?.preferences.autoSelectAfterImport && imported)
-      selectOnlySave(imported);
   }
 
   async function importBookmarks(): Promise<void> {
@@ -491,22 +484,19 @@ export function createNewActions({
   async function importLinks(text: string): Promise<string[]> {
     const urls = parseImportLinks(text);
     const failed: string[] = [];
-    const added: Array<string | null> = [];
+    let added = 0;
     for (const url of urls) {
       try {
         const result = SaveResultSchema.parse(
           await window.pond.query("saves.quickAdd", { url }),
         );
         if (!result.ok) failed.push(url);
-        else added.push(result.id ?? null);
+        else added += 1;
       } catch {
         failed.push(url);
       }
     }
-    if (added.length > 0) reportDownloading(added.length);
-    const newest = added.findLast((id) => id !== null);
-    if (newest && getPrefsSnapshot()?.preferences.autoSelectAfterImport)
-      selectSave(newest);
+    if (added > 0) reportDownloading(added);
     return failed;
   }
 

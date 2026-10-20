@@ -6,7 +6,6 @@ import { libraryChrome } from "@/features/library/state/library-chrome";
 import { primarySelection } from "@/features/saves/state/selection";
 import { ToastHost } from "@/shared/components/toast-host";
 import { toastManager } from "@/shared/lib/toast";
-import { getPrefsSnapshot, loadPrefs } from "@/shared/state/prefs";
 import { useCardActions } from "./use-card-actions";
 
 afterEach(() => {
@@ -118,8 +117,6 @@ it("starts a pasted link without selecting it or opening its Details", async () 
     operation === "saves.quickAdd" ? { ok: true, id: "pasted-save" } : {},
   );
   vi.stubGlobal("pond", { query });
-  await loadPrefs();
-  expect(getPrefsSnapshot()?.preferences.autoSelectAfterImport).toBe(true);
   const host = document.createElement("div");
   const root = createRoot(host);
   function Harness() {
