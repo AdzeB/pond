@@ -156,7 +156,7 @@ The `stores` job reads these repository secrets:
 | `CHROME_CLIENT_ID`, `CHROME_CLIENT_SECRET`, `CHROME_REFRESH_TOKEN` | Chrome Web Store API OAuth client |
 | `FIREFOX_JWT_ISSUER`, `FIREFOX_JWT_SECRET` | AMO API key |
 
-Run `pnpm --filter @pond/extension exec wxt submit init` locally to create the Chrome OAuth refresh token. The Chrome Web Store assigns its own extension ID, so after the first listing is approved, set `CHROME_WEB_STORE_ID` in [`packages/schema/src/native.ts`](packages/schema/src/native.ts). That adds the store ID to the native host's allowed origins and turns on the Add to Chrome button in Pond.
+Run `pnpm --filter @pond/extension exec wxt submit init` locally to create the Chrome OAuth refresh token. The Chrome Web Store assigns its own extension ID, set as `CHROME_WEB_STORE_ID` in [`packages/schema/src/native.ts`](packages/schema/src/native.ts). The native host allows both that ID and the pinned unpacked ID.
 
 ## CLI publishing
 

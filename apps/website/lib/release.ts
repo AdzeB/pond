@@ -15,15 +15,13 @@ function windowsInstallerUrl(): string {
 }
 
 /** Mirrors `EXTENSION_STORE_URLS` in `@pond/schema/native`, which would pull zod into this client bundle. */
-const CHROME_WEB_STORE_URL: string | null = null;
+const CHROME_WEB_STORE_URL =
+  "https://chromewebstore.google.com/detail/ghigndnldiagchoaifgndleogpkendbc";
 const FIREFOX_ADDONS_URL =
   "https://addons.mozilla.org/firefox/addon/desktop%40pond.so/";
 
-/** Sends Chromium visitors to Firefox Add-ons until the Chrome Web Store listing is live. */
 export function extensionUrl(browser: Browser): string {
-  return (
-    (browser === "firefox" ? null : CHROME_WEB_STORE_URL) ?? FIREFOX_ADDONS_URL
-  );
+  return browser === "firefox" ? FIREFOX_ADDONS_URL : CHROME_WEB_STORE_URL;
 }
 
 interface Download {
