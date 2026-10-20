@@ -2,8 +2,11 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 import "@/app/effects/save-library-bridge";
+import { libraryChrome } from "@/features/library/state/library-chrome";
+import { primarySelection } from "@/features/saves/state/selection";
 import { ToastHost } from "@/shared/components/toast-host";
 import { toastManager } from "@/shared/lib/toast";
+import { getPrefsSnapshot, loadPrefs } from "@/shared/state/prefs";
 import { useCardActions } from "./use-card-actions";
 
 afterEach(() => {
@@ -105,6 +108,51 @@ it("starts a dropped link immediately and does not claim it is saved", async () 
     });
     expect(toastText()).toContain("Downloading");
     expect(toastText()).not.toContain("Saved to Pond");
+  } finally {
+    await act(async () => root.unmount());
+  }
+});
+
+it("starts a pasted link without selecting it or opening its Details", async () => {
+  const query = vi.fn(async (operation: string) =>
+    operation === "saves.quickAdd" ? { ok: true, id: "pasted-save" } : {},
+  );
+  vi.stubGlobal("pond", { query });
+  await loadPrefs();
+  expect(getPrefsSnapshot()?.preferences.autoSelectAfterImport).toBe(true);
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  function Harness() {
+    useCardActions([], "library", "");
+    return null;
+  }
+  try {
+    await act(async () =>
+      root.render(
+        <>
+          <Harness />
+          <ToastHost />
+        </>,
+      ),
+    );
+    const event = new Event("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "clipboardData", {
+      value: {
+        files: [],
+        types: ["text/plain"],
+        getData: (type: string) =>
+          type === "text/plain" ? "https://example.com/clip" : "",
+      },
+    });
+    await act(async () => {
+      document.dispatchEvent(event);
+    });
+    expect(query).toHaveBeenCalledWith("saves.quickAdd", {
+      url: "https://example.com/clip",
+    });
+    expect(toastText()).toContain("Downloading");
+    expect(primarySelection.get()).toBeNull();
+    expect(libraryChrome.getState().inspectorSaveId).toBeNull();
   } finally {
     await act(async () => root.unmount());
   }

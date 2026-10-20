@@ -1,18 +1,14 @@
 import { useCallback, useEffect } from "react";
 import { z } from "zod";
 import type { SaveListMode } from "@/features/saves/lib/list";
-import {
-  clearSaveSelection,
-  clickSave,
-  selectOnlySave,
-} from "@/features/saves/lib/select";
+import { clearSaveSelection, clickSave } from "@/features/saves/lib/select";
 import { isLibrarySaveDrag } from "@/features/saves/lib/start-drag";
 import { asUrlList, filePathsFromText } from "@/features/saves/lib/url-list";
 import { runViewerAction } from "@/features/saves/lib/viewer-actions";
 import { importFilesWithDuplicateReview } from "@/features/saves/state/duplicate-import-review";
 import { useSelectionSize } from "@/features/saves/state/selection";
 import { notify } from "@/shared/lib/toast";
-import { getPrefsSnapshot, usePrefs } from "@/shared/state/prefs";
+import { usePrefs } from "@/shared/state/prefs";
 
 interface CardActions {
   selectionSize: number;
@@ -54,21 +50,18 @@ async function importFilesAndNotify(paths: readonly string[]): Promise<void> {
 }
 
 async function quickAddUrls(urls: readonly string[]): Promise<void> {
-  const added: Array<string | null> = [];
+  let added = 0;
   for (const url of urls) {
     const result = ImportReplySchema.parse(
       await window.pond.query("saves.quickAdd", { url }),
     );
-    if (result.ok) added.push(result.id ?? null);
+    if (result.ok) added += 1;
   }
-  if (added.length === 0) return;
+  if (added === 0) return;
   notify({
     id: "paste-import",
-    title: downloadingTitle(added.length),
+    title: downloadingTitle(added),
   });
-  const newest = added.findLast((id) => id !== null);
-  if (newest && getPrefsSnapshot()?.preferences.autoSelectAfterImport)
-    selectOnlySave(newest);
 }
 
 async function importClipboardAndNotify(): Promise<void> {
