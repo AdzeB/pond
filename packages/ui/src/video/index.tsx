@@ -24,16 +24,25 @@ const ICON = 16;
 interface RootProps extends React.ComponentPropsWithoutRef<"div"> {
   frameRate?: number | null;
   chrome?: boolean;
+  /** Element that enters full screen in place of the root, for controls rendered outside it. */
+  fullscreenTarget?: HTMLElement | null;
 }
 
-function Root({ className, children, frameRate, chrome, ...props }: RootProps) {
+function Root({
+  className,
+  children,
+  frameRate,
+  chrome,
+  fullscreenTarget,
+  ...props
+}: RootProps) {
   const {
     state,
     actions: mediaActions,
     videoRef,
     rootRef,
     registerVideo,
-  } = useMediaState(frameRate);
+  } = useMediaState(frameRate, fullscreenTarget);
   const { controlsVisible, showControls } = useAutoHide({
     rootRef,
     videoRef,

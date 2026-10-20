@@ -1,4 +1,4 @@
-import { app, session } from "electron";
+import { app, BrowserWindow, session } from "electron";
 import log from "electron-log/main.js";
 
 const PROD_CSP = [
@@ -38,11 +38,45 @@ export function productionResponseHeaders(
   return headers;
 }
 
+/** Only Pond's own renderer may enter full screen; pond:// is excluded because it also replays archived pages. */
+export function grantsPermission(input: {
+  permission: string;
+  isMainFrame: boolean;
+  requestingUrl: string;
+  rendererUrl: string | undefined;
+}): boolean {
+  const { requestingUrl, rendererUrl } = input;
+  const fromRenderer =
+    requestingUrl.startsWith("file://") ||
+    (!!rendererUrl && requestingUrl.startsWith(rendererUrl));
+  return input.permission === "fullscreen" && input.isMainFrame && fromRenderer;
+}
+
 export function configureSessionDefaults(): void {
-  const denyAll: Parameters<
+  type PermissionHandler = Parameters<
     Electron.Session["setPermissionRequestHandler"]
-  >[0] = (_wc, _permission, callback) => callback(false);
-  session.defaultSession.setPermissionRequestHandler(denyAll);
+  >[0];
+  const denyAll: PermissionHandler = (_wc, _permission, callback) =>
+    callback(false);
+  const grantAppFullscreen: PermissionHandler = (
+    wc,
+    permission,
+    callback,
+    details,
+  ) => {
+    const window = BrowserWindow.fromWebContents(wc);
+    const granted =
+      window?.webContents === wc &&
+      grantsPermission({
+        permission,
+        isMainFrame: "isMainFrame" in details && details.isMainFrame,
+        requestingUrl: details.requestingUrl ?? "",
+        rendererUrl: process.env.ELECTRON_RENDERER_URL,
+      });
+    if (granted) window.setFullScreenable(true);
+    callback(granted);
+  };
+  session.defaultSession.setPermissionRequestHandler(grantAppFullscreen);
   session.defaultSession.setPermissionCheckHandler(() => false);
   try {
     session
