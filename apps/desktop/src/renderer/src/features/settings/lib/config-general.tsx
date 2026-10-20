@@ -166,17 +166,6 @@ export const generalSection = defineCustomSection({
         },
       ],
     }),
-    group.prefs("preferences", {
-      title: "Imports",
-      items: [
-        {
-          control: "switch",
-          key: "autoSelectAfterImport",
-          title: "Select After Import",
-          description: "Select the newest Save after a manual import.",
-        },
-      ],
-    }),
     group.prefs("tagPicker", {
       title: "Tag Picker",
       items: [
