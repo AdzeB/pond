@@ -41,12 +41,6 @@
   border-bottom-width: 2px;
   border-radius: var(--ds-radius-xs);
 
-  &:only-child {
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-  }
-
   &[data-density="flat"] {
     width: auto;
     min-width: 0;
