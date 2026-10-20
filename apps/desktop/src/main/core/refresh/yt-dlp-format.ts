@@ -57,6 +57,18 @@ export function formatSelector(
   return chain.join("/");
 }
 
+/**
+ * Signed-in YouTube clients need a JS runtime the app does not ship, so try signed out first.
+ * @see https://github.com/yt-dlp/yt-dlp/wiki/EJS
+ */
+export function cookieAttempts(
+  source: Source | null,
+  cookieCount: number,
+): readonly boolean[] {
+  if (cookieCount === 0) return [false];
+  return source === "youtube" ? [false, true] : [true];
+}
+
 export function maxFilesizeArg(prefs: VideoDownloadSettings): string | null {
   const mb = prefs.maxFileSizeMb;
   if (mb === null || mb === undefined || mb <= 0) return null;
