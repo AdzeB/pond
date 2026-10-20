@@ -1,4 +1,4 @@
-import { type DragItem, sendMessage } from "@/utils/messaging";
+import { type PageItem, sendMessage } from "@/utils/messaging";
 import { getSettings, watchSettings } from "@/utils/settings";
 import type { PondSettings } from "@/utils/types";
 
@@ -6,7 +6,7 @@ function webUrl(url: string | undefined): string | null {
   return url && /^https?:\/\//i.test(url) ? url : null;
 }
 
-function itemAt(target: EventTarget | null): DragItem | null {
+function itemAt(target: EventTarget | null): PageItem | null {
   if (!(target instanceof Element) || target.closest("pond-overlay"))
     return null;
   const media = target.closest("img, video, picture");
@@ -52,21 +52,6 @@ export default defineContentScript({
         event.preventDefault();
         event.stopPropagation();
         void sendMessage("gesture", { kind: "alt-click", item }).catch(
-          () => {},
-        );
-      },
-      { capture: true },
-    );
-
-    ctx.addEventListener(
-      window,
-      "dragstart",
-      (event) => {
-        if (!settings?.dragToSave) return;
-        if (settings.dragBlocked.includes(location.hostname)) return;
-        const item = itemAt(event.target);
-        if (!item) return;
-        void sendMessage("gesture", { kind: "drag-start", item }).catch(
           () => {},
         );
       },

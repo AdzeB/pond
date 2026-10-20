@@ -18,7 +18,7 @@ export interface ToastData {
   saveId?: string;
 }
 
-const TOAST_TIMEOUT_MS = 4000;
+const TOAST_TIMEOUT_MS = 2500;
 
 const HEADINGS = {
   sending: "Saving to Pond",

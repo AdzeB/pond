@@ -15,7 +15,6 @@ Open Pond once so it can register the native host. On macOS this writes a manife
 - **Save Images** lists every image on the page with size, format, and domain filters. Pick folders and tags for the whole batch in its sidebar.
 - **Capture Region** highlights the element under the pointer. Click to snap to it or drag to draw, then move or resize the box and press Enter.
 - Right-click a page, link, image, or video to save it, or Alt-right-click an image or link to skip the menu.
-- Drag an image or link to show a dock with Pond and your recent folders as drop targets. Turn it off for one site from the panel.
 - On supported sites, the usual save or bookmark control also sends the item to your library. Likes are optional per source.
 - In settings, pick PNG or JPEG screenshots at full or page resolution, match the Library theme or a fixed one, and choose which sources to capture.
 - Keyboard shortcuts: `Alt+Shift+P` opens the panel, `Alt+Shift+S` saves the page, `Alt+Shift+I` saves images, `Alt+Shift+R` captures a region. Visible area and full page have no default shortcut.
@@ -33,10 +32,9 @@ See [`docs/supported-sources.md`](../../docs/supported-sources.md) for the full 
 | `entrypoints/background/` | Service worker: captures, screenshots, menus, session connect |
 | `entrypoints/hooks.content.ts` | Isolated-world bridge that validates and relays site saves |
 | `entrypoints/hooks-main.content.ts` | Main-world hooks that watch each site's save and like requests |
-| `entrypoints/gestures.content.ts` | Listens for Alt-right-click and drag starts, then asks the background for the overlay |
-| `entrypoints/overlay.content/` | On-page toasts, details window, region picker, image picker, and drag dock, in a shadow root |
-| `entrypoints/popup/` | Toolbar panel |
-| `entrypoints/options/` | Settings page |
+| `entrypoints/gestures.content.ts` | Listens for Alt-right-click and asks the background to save the image or link |
+| `entrypoints/overlay.content/` | On-page toasts, details window, region picker, and image picker, in a shadow root |
+| `entrypoints/popup/` | Toolbar panel: commands, and settings behind the Settings row |
 | `sources/` | One folder per supported site |
 
 ## Develop

@@ -6,6 +6,7 @@ import { probeLibrary } from "./library";
 import { createMenus, handleCommand, handleMenuClick } from "./menus";
 import { clearBadge, flashBadge } from "./overlay";
 import { startSessionConnect } from "./session";
+import { syncSettings } from "./settings";
 import { applyToolbarAction } from "./toolbar";
 import { handleGesture, handleOverlayResult, runTool } from "./tools";
 
@@ -22,6 +23,7 @@ export default defineBackground(() => {
   });
   browser.runtime.onStartup.addListener(clearBadge);
 
+  void syncSettings();
   void getSettings().then((settings) => applyToolbarAction(settings.toolbar));
   watchSettings((settings) => void applyToolbarAction(settings.toolbar));
 

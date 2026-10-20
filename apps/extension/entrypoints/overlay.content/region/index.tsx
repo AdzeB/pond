@@ -1,4 +1,6 @@
 import { Button } from "@pond/ui/button";
+import { Popover } from "@pond/ui/popover";
+import { Toolbar } from "@pond/ui/toolbar";
 import { type PointerEvent, useEffect, useEffectEvent, useState } from "react";
 import type { OverlayResult } from "@/utils/messaging";
 import {
@@ -19,7 +21,6 @@ import styles from "./styles.module.css";
 
 /** Under this many pixels a press counts as a click that snaps to the element. */
 const DRAG_THRESHOLD = 4;
-const TOOLBAR_SPACE = 48;
 
 type Gesture =
   | { kind: "draw"; start: Point; moved: boolean }
@@ -51,12 +52,14 @@ function boxStyle(rect: Rect) {
 }
 
 interface RegionPickerProps {
+  container: HTMLElement;
   onFinish: (result: OverlayResult | null) => void;
 }
 
-export function RegionPicker({ onFinish }: RegionPickerProps) {
+export function RegionPicker({ container, onFinish }: RegionPickerProps) {
   const [hover, setHover] = useState<Rect | null>(null);
   const [box, setBox] = useState<Rect | null>(null);
+  const [anchor, setAnchor] = useState<HTMLDivElement | null>(null);
   const [gesture, setGesture] = useState<Gesture | null>(null);
   useEscape(() => onFinish(null));
 
@@ -121,7 +124,6 @@ export function RegionPicker({ onFinish }: RegionPickerProps) {
   };
 
   const adjusting = box && gesture?.kind !== "draw";
-  const below = box ? box.y + box.height + TOOLBAR_SPACE <= innerHeight : true;
 
   return (
     <div
@@ -142,6 +144,7 @@ export function RegionPicker({ onFinish }: RegionPickerProps) {
       ) : null}
       {box ? (
         <div
+          ref={setAnchor}
           className={styles.box}
           style={boxStyle(box)}
           data-drawing={gesture?.kind === "draw" || undefined}
@@ -168,28 +171,37 @@ export function RegionPicker({ onFinish }: RegionPickerProps) {
                 />
               ))
             : null}
-          {adjusting && !gesture ? (
-            <div
-              className={styles.toolbar}
-              data-above={!below || undefined}
-              onPointerDown={(event) => event.stopPropagation()}
-            >
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => onFinish(null)}
-              >
-                Cancel
-              </Button>
-              <Button size="sm" variant="primary" onClick={save}>
-                Save
-              </Button>
-            </div>
-          ) : null}
         </div>
       ) : (
         <Hint>Click an element or drag to select. Press Esc to cancel.</Hint>
       )}
+      <Popover.Root open={Boolean(adjusting && !gesture && anchor)}>
+        <Popover.Portal container={container}>
+          <Popover.Positioner anchor={anchor} side="bottom" align="end">
+            <Popover.Popup
+              className={styles.actions}
+              initialFocus={false}
+              finalFocus={false}
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              <Toolbar.Root className={styles.toolbar} aria-label="Region">
+                <Toolbar.Button
+                  render={<Button size="sm" variant="secondary" />}
+                  onClick={() => onFinish(null)}
+                >
+                  Cancel
+                </Toolbar.Button>
+                <Toolbar.Button
+                  render={<Button size="sm" variant="primary" />}
+                  onClick={save}
+                >
+                  Save
+                </Toolbar.Button>
+              </Toolbar.Root>
+            </Popover.Popup>
+          </Popover.Positioner>
+        </Popover.Portal>
+      </Popover.Root>
     </div>
   );
 }

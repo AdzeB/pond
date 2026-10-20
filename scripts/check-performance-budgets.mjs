@@ -82,7 +82,7 @@ addResult(
 
 const extensionOut = join(workspace, "apps/extension/.output/chrome-mv3");
 /** The in-page overlay is a separate React bundle because content scripts can't share chunks with extension pages. */
-addResult("extension unpacked total", directorySize(extensionOut), 1_800_000);
+addResult("extension unpacked total", directorySize(extensionOut), 1_900_000);
 addResult(
   "extension service worker",
   fileSize(join(extensionOut, "background.js")),

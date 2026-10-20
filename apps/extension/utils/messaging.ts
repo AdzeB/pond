@@ -65,7 +65,7 @@ export interface DetailsMetadata {
   folderIds: string[];
 }
 
-export interface DragItem {
+export interface PageItem {
   kind: "media" | "link";
   url: string;
   title?: string;
@@ -75,12 +75,12 @@ export interface DragItem {
 export type OverlayResult =
   | { kind: "region"; region: CaptureRegion }
   | { kind: "images"; urls: string[]; tags: string[]; folderIds: string[] }
-  | { kind: "details"; draft: DetailsDraft; metadata: DetailsMetadata }
-  | { kind: "drop"; item: DragItem; folderId: string | null };
+  | { kind: "details"; draft: DetailsDraft; metadata: DetailsMetadata };
 
-export type Gesture =
-  | { kind: "alt-click"; item: DragItem }
-  | { kind: "drag-start"; item: DragItem };
+export interface Gesture {
+  kind: "alt-click";
+  item: PageItem;
+}
 
 export type ToolResult = { ok: true } | { ok: false; message: string };
 

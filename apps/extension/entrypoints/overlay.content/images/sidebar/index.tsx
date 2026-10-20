@@ -1,14 +1,12 @@
-import { IconMagnifier } from "@pond/icons";
-import { Button } from "@pond/ui/button";
-import { Checkbox } from "@pond/ui/checkbox";
+import { IconCheck } from "@pond/icons";
 import { Input } from "@pond/ui/input";
-import { type ReactNode, useId } from "react";
+import { Sidebar as Panel } from "@pond/ui/sidebar";
+import type { ReactNode } from "react";
 import { Targets } from "@/components/targets";
 import type { LibraryTargets } from "@/utils/messaging";
 import {
   type FacetCount,
   type ImageFilters,
-  MAX_IMAGES,
   SIZE_BUCKETS,
   type SizeBucket,
 } from "../discover";
@@ -28,8 +26,6 @@ interface SidebarProps {
   folderIds: string[];
   onFolderIdsChange: (folderIds: string[]) => void;
   container: HTMLElement;
-  count: number;
-  onSave: () => void;
 }
 
 function toggled<T>(set: ReadonlySet<T>, value: T, on: boolean): Set<T> {
@@ -39,12 +35,12 @@ function toggled<T>(set: ReadonlySet<T>, value: T, on: boolean): Set<T> {
   return next;
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className={styles.section}>
-      <h3 className={styles.heading}>{title}</h3>
+    <Panel.Group role="group" aria-label={title}>
+      <Panel.GroupLabel>{title}</Panel.GroupLabel>
       {children}
-    </section>
+    </Panel.Group>
   );
 }
 
@@ -56,22 +52,17 @@ interface FacetProps {
 }
 
 function Facet({ label, count, checked, onCheckedChange }: FacetProps) {
-  const id = useId();
   return (
-    <label className={styles.facet} htmlFor={id}>
-      <Checkbox.Root
-        id={id}
-        size="sm"
-        checked={checked}
-        onCheckedChange={onCheckedChange}
-      >
-        <Checkbox.Indicator />
-      </Checkbox.Root>
-      <span className={styles.label}>{label}</span>
-      <span className={styles.count}>
+    <Panel.Item
+      aria-pressed={checked}
+      onClick={() => onCheckedChange(!checked)}
+    >
+      <Panel.Icon>{checked ? <IconCheck size={12} /> : null}</Panel.Icon>
+      <Panel.ItemLabel>{label}</Panel.ItemLabel>
+      <Panel.Count>
         {count ? `${count.selected}/${count.total}` : "0"}
-      </span>
-    </label>
+      </Panel.Count>
+    </Panel.Item>
   );
 }
 
@@ -116,30 +107,22 @@ export function Sidebar({
   folderIds,
   onFolderIdsChange,
   container,
-  count,
-  onSave,
 }: SidebarProps) {
   const set = (change: Partial<ImageFilters>) =>
     onFiltersChange({ ...filters, ...change });
   const sizeCounts = new Map(sizes.map((size) => [size.id, size]));
-  const over = count > MAX_IMAGES;
 
   return (
-    <aside className={styles.sidebar}>
-      <div className={styles.scroll}>
-        <Input.Root size="sm">
-          <Input.Icon>
-            <IconMagnifier size={12} />
-          </Input.Icon>
-          <Input.Field
-            aria-label="Search images"
-            placeholder="Search images…"
-            value={filters.query}
-            onChange={(event) => set({ query: event.target.value })}
-          />
-        </Input.Root>
+    <Panel.Root width="full" className={styles.sidebar}>
+      <Panel.Scroll className={styles.scroll}>
+        <Panel.Search
+          aria-label="Search Images"
+          placeholder="Search images…"
+          value={filters.query}
+          onChange={(event) => set({ query: event.target.value })}
+        />
 
-        <Section title="Size">
+        <Group title="Size">
           {SIZE_BUCKETS.map((bucket) => (
             <Facet
               key={bucket.id}
@@ -165,10 +148,10 @@ export function Sidebar({
               onValueChange={(minHeight) => set({ minHeight })}
             />
           </div>
-        </Section>
+        </Group>
 
         {formats.length > 1 ? (
-          <Section title="Format">
+          <Group title="Format">
             {formats.map((format) => (
               <Facet
                 key={format.id}
@@ -186,11 +169,11 @@ export function Sidebar({
                 }
               />
             ))}
-          </Section>
+          </Group>
         ) : null}
 
         {domains.length > 1 ? (
-          <Section title="Domain">
+          <Group title="Domain">
             {domains.slice(0, MAX_DOMAINS).map((domain) => (
               <Facet
                 key={domain.id}
@@ -208,10 +191,10 @@ export function Sidebar({
                 }
               />
             ))}
-          </Section>
+          </Group>
         ) : null}
 
-        <Section title="Tags">
+        <Group title="Tags">
           <Targets.Tags
             tags={library.tags}
             recent={library.recentTags}
@@ -219,10 +202,10 @@ export function Sidebar({
             onValueChange={onTagsChange}
             container={container}
           />
-        </Section>
+        </Group>
 
         {library.folders.length > 0 ? (
-          <Section title="Folders">
+          <Group title="Folders">
             <Targets.Folders
               className={styles.folders}
               folders={library.folders}
@@ -230,25 +213,9 @@ export function Sidebar({
               value={folderIds}
               onValueChange={onFolderIdsChange}
             />
-          </Section>
+          </Group>
         ) : null}
-      </div>
-
-      <footer className={styles.footer}>
-        {over ? (
-          <p className={styles.limit} role="status">
-            Pick up to {MAX_IMAGES} images at a time.
-          </p>
-        ) : null}
-        <Button
-          variant="primary"
-          width="full"
-          disabled={count === 0 || over}
-          onClick={onSave}
-        >
-          {count === 1 ? "Save 1 Image" : `Save ${count} Images`}
-        </Button>
-      </footer>
-    </aside>
+      </Panel.Scroll>
+    </Panel.Root>
   );
 }

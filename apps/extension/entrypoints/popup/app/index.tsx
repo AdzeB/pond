@@ -1,72 +1,139 @@
 import {
   IconArrowsExpandY,
+  IconArrowUpRight,
   IconBookmark,
   IconCamera,
+  IconChevronRight,
   IconCrop,
   IconGear3,
   IconImages,
+  IconKeyboard,
 } from "@pond/icons";
+import {
+  IconBrandArena,
+  IconBrandCosmos,
+  IconBrandThreads,
+  IconInstagram,
+  IconPinterest,
+  IconReddit,
+  IconTikTok,
+  IconXTwitter,
+  IconYoutube,
+} from "@pond/icons/social-media";
+import type { ExternalSource } from "@pond/schema/sources";
+import { BrandTile } from "@pond/ui/brand-tile";
 import { Button } from "@pond/ui/button";
 import { Empty } from "@pond/ui/empty";
 import { Keyboard } from "@pond/ui/keyboard";
 import { Loader } from "@pond/ui/loader";
-import { Select } from "@pond/ui/select";
-import { type ReactNode, useState } from "react";
+import {
+  type ComponentType,
+  type ReactNode,
+  type SVGProps,
+  useState,
+} from "react";
+import { HOOK_SOURCES, harvestSourceForUrl } from "@/sources";
 import {
   type CaptureTool,
   sendMessage,
   type ToolResult,
 } from "@/utils/messaging";
 import { useLibrary } from "@/utils/use-library";
-import { useSettings } from "@/utils/use-settings";
 import { useActiveTab, useShortcuts } from "../hooks";
+import { ShortcutsPanel } from "./shortcuts";
 import styles from "./styles.module.css";
 
-const COMMANDS: readonly {
+interface Command {
   tool: CaptureTool;
   label: string;
   command: string;
   icon: ReactNode;
-}[] = [
+}
+
+const GROUPS: readonly { label: string; commands: readonly Command[] }[] = [
   {
-    tool: "page",
-    label: "Save Page",
-    command: "save-page",
-    icon: <IconBookmark size={16} />,
+    label: "Save",
+    commands: [
+      {
+        tool: "page",
+        label: "Save Page",
+        command: "save-page",
+        icon: <IconBookmark size={16} />,
+      },
+      {
+        tool: "images",
+        label: "Save Images",
+        command: "save-images",
+        icon: <IconImages size={16} />,
+      },
+    ],
   },
   {
-    tool: "images",
-    label: "Save Images",
-    command: "save-images",
-    icon: <IconImages size={16} />,
-  },
-  {
-    tool: "region",
-    label: "Capture Region",
-    command: "screenshot-region",
-    icon: <IconCrop size={16} />,
-  },
-  {
-    tool: "visible",
-    label: "Capture Visible Area",
-    command: "screenshot-visible",
-    icon: <IconCamera size={16} />,
-  },
-  {
-    tool: "full",
-    label: "Capture Full Page",
-    command: "screenshot-full",
-    icon: <IconArrowsExpandY size={16} />,
+    label: "Capture",
+    commands: [
+      {
+        tool: "region",
+        label: "Capture Region",
+        command: "screenshot-region",
+        icon: <IconCrop size={16} />,
+      },
+      {
+        tool: "visible",
+        label: "Capture Visible Area",
+        command: "screenshot-visible",
+        icon: <IconCamera size={16} />,
+      },
+      {
+        tool: "full",
+        label: "Capture Full Page",
+        command: "screenshot-full",
+        icon: <IconArrowsExpandY size={16} />,
+      },
+    ],
   },
 ];
 
-type DragMode = "on" | "site" | "off";
+const LOGOS = {
+  twitter: IconXTwitter,
+  instagram: IconInstagram,
+  pinterest: IconPinterest,
+  arena: IconBrandArena,
+  cosmos: IconBrandCosmos,
+  tiktok: IconTikTok,
+  youtube: IconYoutube,
+  reddit: IconReddit,
+  threads: IconBrandThreads,
+} satisfies Record<ExternalSource, ComponentType<SVGProps<SVGSVGElement>>>;
 
-const DRAG_ITEMS: { value: DragMode; label: string }[] = [
-  { value: "on", label: "On" },
-  { value: "site", label: "Off for This Site" },
-  { value: "off", label: "Off Everywhere" },
-];
+function Harvest({
+  source,
+  disabled,
+  onRun,
+}: {
+  source: ExternalSource;
+  disabled: boolean;
+  onRun: () => void;
+}) {
+  const Logo = LOGOS[source];
+  return (
+    <nav className={styles.group} aria-label="Harvest">
+      <Button
+        variant="ghost"
+        width="full"
+        className={styles.row}
+        disabled={disabled}
+        onClick={onRun}
+      >
+        <BrandTile size={16}>
+          <Logo />
+        </BrandTile>
+        <span className={styles.label}>
+          Harvest {HOOK_SOURCES[source].item}
+        </span>
+      </Button>
+    </nav>
+  );
+}
 
 function hostOf(url: string | undefined): string | null {
   if (!url || !/^https?:\/\//i.test(url)) return null;
@@ -77,87 +144,74 @@ function hostOf(url: string | undefined): string | null {
   }
 }
 
-function Shell({ name, children }: { name?: string; children: ReactNode }) {
+function Shell({
+  children,
+  returned,
+}: {
+  children: ReactNode;
+  returned?: boolean;
+}) {
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <img
-          className={styles.mark}
-          src="/icons/brand/icon.svg"
-          alt=""
-          width={18}
-          height={18}
-        />
-        <span className={styles.name}>{name ?? "Pond"}</span>
-      </header>
+    <div className={styles.page} data-returned={returned || undefined}>
       {children}
     </div>
   );
 }
 
-function SettingsRow() {
-  return (
-    <Button
-      variant="ghost"
-      width="full"
-      className={styles.row}
-      onClick={() => void browser.runtime.openOptionsPage()}
-    >
-      <IconGear3 size={16} />
-      <span className={styles.label}>Settings</span>
-    </Button>
-  );
+async function openPondSettings() {
+  if (await sendMessage("openPond", "settings/extension")) window.close();
 }
 
-function DragToSave({ host }: { host: string | null }) {
-  const { settings, update } = useSettings();
-  if (!settings) return null;
-  const mode: DragMode = !settings.dragToSave
-    ? "off"
-    : host && settings.dragBlocked.includes(host)
-      ? "site"
-      : "on";
-  const items = host
-    ? DRAG_ITEMS
-    : DRAG_ITEMS.filter((item) => item.value !== "site");
-
-  const choose = (next: DragMode) =>
-    update((current) => ({
-      ...current,
-      dragToSave: next !== "off",
-      dragBlocked:
-        next === "site" && host
-          ? [...current.dragBlocked.filter((h) => h !== host), host]
-          : current.dragBlocked.filter((h) => h !== host),
-    }));
-
+function MoreRows({ onShortcuts }: { onShortcuts: () => void }) {
   return (
-    <div className={styles.option}>
-      <span className={styles.label}>Drag to Save</span>
-      <Select.Root
-        items={items}
-        value={mode}
-        onValueChange={(next) => {
-          if (next) choose(next);
-        }}
+    <div className={styles.group}>
+      <Button
+        variant="ghost"
+        width="full"
+        className={styles.row}
+        onClick={onShortcuts}
       >
-        <Select.Trigger size="sm" aria-label="Drag to Save">
-          <Select.Value />
-        </Select.Trigger>
-        <Select.Portal>
-          <Select.Positioner>
-            <Select.Popup>
-              <Select.Items items={items} />
-            </Select.Popup>
-          </Select.Positioner>
-        </Select.Portal>
-      </Select.Root>
+        <IconKeyboard size={16} />
+        <span className={styles.label}>Shortcuts</span>
+        <IconChevronRight size={12} className={styles.trailing} />
+      </Button>
+      <Button
+        variant="ghost"
+        width="full"
+        className={styles.row}
+        onClick={() => void openPondSettings()}
+      >
+        <IconGear3 size={16} />
+        <span className={styles.label}>Settings</span>
+        <IconArrowUpRight size={12} className={styles.trailing} />
+      </Button>
     </div>
   );
 }
 
 export function App() {
-  const { result, refresh } = useLibrary();
+  const library = useLibrary();
+  const [view, setView] = useState<"commands" | "shortcuts" | "returned">(
+    "commands",
+  );
+
+  if (view === "shortcuts")
+    return <ShortcutsPanel onBack={() => setView("returned")} />;
+  return (
+    <Commands
+      {...library}
+      returned={view === "returned"}
+      onShortcuts={() => setView("shortcuts")}
+    />
+  );
+}
+
+interface CommandsProps extends ReturnType<typeof useLibrary> {
+  returned: boolean;
+  onShortcuts: () => void;
+}
+
+function Commands({ result, refresh, returned, onShortcuts }: CommandsProps) {
   const tab = useActiveTab();
   const shortcuts = useShortcuts();
   const [error, setError] = useState<string | null>(null);
@@ -176,7 +230,7 @@ export function App() {
 
   if (result.state === "offline") {
     return (
-      <Shell>
+      <Shell returned={returned}>
         <Empty.Root className={styles.center}>
           <Empty.Title>Pond isn't running</Empty.Title>
           <Empty.Description>
@@ -194,15 +248,14 @@ export function App() {
             </Button>
           </Empty.Action>
         </Empty.Root>
-        <div className={styles.footer}>
-          <SettingsRow />
-        </div>
+        <MoreRows onShortcuts={onShortcuts} />
       </Shell>
     );
   }
 
   const host = hostOf(tab?.url);
   const tabId = host ? tab?.id : undefined;
+  const harvest = host && tab?.url ? harvestSourceForUrl(tab.url) : null;
 
   const run = async (tool: CaptureTool) => {
     if (tabId === undefined) return;
@@ -217,40 +270,52 @@ export function App() {
   };
 
   return (
-    <Shell name={result.library.name}>
+    <Shell returned={returned}>
       {tabId === undefined ? (
         <p className={styles.notice} role="status">
           Pond can't capture this page. Open a regular web page to save it.
         </p>
       ) : null}
       {error ? (
-        <p className={styles.notice} role="alert">
+        <p key={error} className={styles.notice} role="alert" data-error>
           {error}
         </p>
       ) : null}
-      <nav className={styles.list} aria-label="Capture">
-        {COMMANDS.map(({ tool, label, command, icon }) => {
-          const keys = shortcuts.get(command);
-          return (
-            <Button
-              key={tool}
-              variant="ghost"
-              width="full"
-              className={styles.row}
-              disabled={tabId === undefined}
-              onClick={() => void run(tool)}
-            >
-              {icon}
-              <span className={styles.label}>{label}</span>
-              {keys ? <Keyboard.Cluster keys={keys} density="inline" /> : null}
-            </Button>
-          );
-        })}
-      </nav>
-      <div className={styles.footer}>
-        <DragToSave host={host} />
-        <SettingsRow />
-      </div>
+      {harvest ? (
+        <Harvest
+          source={harvest}
+          disabled={tabId === undefined}
+          onRun={() => void run("page")}
+        />
+      ) : null}
+      {GROUPS.map((group) => (
+        <nav
+          key={group.label}
+          className={styles.group}
+          aria-label={group.label}
+        >
+          {group.commands.map(({ tool, label, command, icon }) => {
+            const keys = shortcuts.get(command);
+            return (
+              <Button
+                key={tool}
+                variant="ghost"
+                width="full"
+                className={styles.row}
+                disabled={tabId === undefined}
+                onClick={() => void run(tool)}
+              >
+                {icon}
+                <span className={styles.label}>{label}</span>
+                {keys ? (
+                  <Keyboard.Cluster keys={keys} density="inline" />
+                ) : null}
+              </Button>
+            );
+          })}
+        </nav>
+      ))}
+      <MoreRows onShortcuts={onShortcuts} />
     </Shell>
   );
 }

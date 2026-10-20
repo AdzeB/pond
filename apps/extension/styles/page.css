@@ -9,6 +9,16 @@
   src: url("/fonts/inter/variable.woff2") format("woff2");
 }
 
+/* One width for every popup view, so switching views never resizes the window. */
+body {
+  width: 320px;
+}
+
+/* Chrome sizes the popup to its scrollable width, so the slide between views must not add any; `body` would hand the clip to the viewport. */
+#root {
+  overflow-x: clip;
+}
+
 :root {
   font-family:
     inter-variable, ui-sans-serif, system-ui, -apple-system, "SF Pro Text",

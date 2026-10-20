@@ -27,6 +27,9 @@
   pointer-events: none;
   outline: 2px solid var(--ds-accent-9);
   outline-offset: -1px;
+  transition-timing-function: var(--ds-easing-snap);
+  transition-duration: var(--ds-duration-emphasized);
+  transition-property: left, top, width, height;
 }
 
 .box {
@@ -80,6 +83,7 @@
   background: var(--ds-white-a12);
   border: 1px solid var(--ds-accent-9);
   border-radius: var(--ds-radius-full);
+  animation: pop var(--ds-duration-slow) var(--ds-easing-spring) both;
 
   &[data-handle="nw"] {
     top: 0;
@@ -130,21 +134,30 @@
   }
 }
 
-.toolbar {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  display: flex;
-  gap: 6px;
-  padding: 4px;
-  cursor: default;
-  background: var(--ds-gray-1);
-  border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-menu);
+.actions {
+  --ds-popup-width: max-content;
+  --ds-popup-min-width: 0px;
 
-  &[data-above] {
-    top: auto;
-    right: 8px;
-    bottom: 8px;
+  padding-inline: var(--popup-padding-block);
+  pointer-events: auto;
+}
+
+.toolbar {
+  flex-direction: row;
+  gap: 6px;
+  width: max-content;
+}
+
+@keyframes pop {
+  from {
+    scale: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .highlight,
+  .handle {
+    transition: none;
+    animation: none;
   }
 }

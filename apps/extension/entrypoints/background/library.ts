@@ -7,6 +7,7 @@ import { type ProbeResult, probe } from "@/utils/probe";
 import { readRecentTargets } from "@/utils/recent-targets";
 import { getSettings } from "@/utils/settings";
 import { type ThemeVars, themeVarsSchema } from "@/utils/theme";
+import { syncSettings } from "./settings";
 
 const THEME_KEY = "libraryTheme";
 const NAME_KEY = "libraryName";
@@ -39,6 +40,7 @@ const tagsSchema = z.array(
 export async function probeLibrary(): Promise<ProbeResult> {
   const result = await probe().catch((): ProbeResult => ({ state: "offline" }));
   if (result.state === "connected") {
+    void syncSettings(true);
     await browser.storage.session
       .set({
         [THEME_KEY]: result.library.theme ?? null,

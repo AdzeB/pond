@@ -1,5 +1,10 @@
+import { ExtensionSettingsSchema } from "@pond/schema/browser-extension";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SETTINGS, normalizeStoredSettings } from "./types";
+import {
+  DEFAULT_SETTINGS,
+  normalizeStoredSettings,
+  settingsFromPond,
+} from "./types";
 
 describe("normalizeStoredSettings", () => {
   it("falls back to the defaults when nothing is stored", () => {
@@ -35,7 +40,6 @@ describe("normalizeStoredSettings", () => {
       normalizeStoredSettings({
         askDetails: false,
         altClick: false,
-        dragToSave: false,
         screenshotFormat: "jpeg",
         retina: false,
         theme: "dark",
@@ -43,7 +47,6 @@ describe("normalizeStoredSettings", () => {
     ).toMatchObject({
       askDetails: false,
       altClick: false,
-      dragToSave: false,
       screenshotFormat: "jpeg",
       retina: false,
       theme: "dark",
@@ -52,12 +55,30 @@ describe("normalizeStoredSettings", () => {
       normalizeStoredSettings({ screenshotFormat: "gif", theme: "neon" }),
     ).toMatchObject({ screenshotFormat: "png", theme: "library" });
   });
+});
 
-  it("keeps only hostnames in the drag block list, once each", () => {
+describe("settingsFromPond", () => {
+  it("fills every site flag, keeping the ones Pond sent", () => {
+    const settings = settingsFromPond(
+      ExtensionSettingsSchema.parse({
+        enabled: { twitter: false },
+        likes: { reddit: false },
+        screenshotFormat: "jpeg",
+      }),
+    );
+    expect(settings.enabled).toEqual({
+      ...DEFAULT_SETTINGS.enabled,
+      twitter: false,
+    });
+    expect(settings.likes.reddit).toBe(false);
+    expect(settings.likes.twitter).toBe(true);
+    expect(settings.screenshotFormat).toBe("jpeg");
+    expect(settings.askDetails).toBe(true);
+  });
+
+  it("falls back to defaults for values Pond doesn't recognize", () => {
     expect(
-      normalizeStoredSettings({
-        dragBlocked: ["example.com", "example.com", "bad host", 4, "a.b-c.io"],
-      }).dragBlocked,
-    ).toEqual(["example.com", "a.b-c.io"]);
+      settingsFromPond(ExtensionSettingsSchema.parse({ toolbar: "dock" })),
+    ).toEqual(DEFAULT_SETTINGS);
   });
 });

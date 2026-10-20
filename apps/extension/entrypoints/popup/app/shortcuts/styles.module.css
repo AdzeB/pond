@@ -1,0 +1,32 @@
+/* Chrome caps extension popups at 600px tall, so the list scrolls under a fixed header. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  max-height: 580px;
+  animation: enter var(--ds-duration-emphasized) var(--ds-easing-snap);
+}
+
+.scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.unset {
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-10);
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translateX(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
+}

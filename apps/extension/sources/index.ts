@@ -1,5 +1,5 @@
 import { SOURCES } from "@pond/schema/source-ids";
-import type { ExternalSource } from "@pond/schema/sources";
+import { type ExternalSource, sourceIdFromUrl } from "@pond/schema/sources";
 import { MatchPattern } from "wxt/utils/match-patterns";
 import { matches as arena } from "./arena/matches";
 import { matches as cosmos } from "./cosmos/matches";
@@ -15,18 +15,19 @@ interface HookSource {
   matches: readonly string[];
   /** Triggers that record a like or upvote rather than an explicit save. */
   likes: readonly string[];
+  item: string;
 }
 
 export const HOOK_SOURCES = {
-  twitter: { matches: twitter, likes: ["twitter:like"] },
-  instagram: { matches: instagram, likes: ["instagram:like"] },
-  pinterest: { matches: pinterest, likes: [] },
-  arena: { matches: arena, likes: [] },
-  cosmos: { matches: cosmos, likes: [] },
-  tiktok: { matches: tiktok, likes: ["tiktok:like"] },
-  youtube: { matches: youtube, likes: ["youtube:like"] },
-  reddit: { matches: reddit, likes: ["reddit:upvote"] },
-  threads: { matches: threads, likes: ["threads:like"] },
+  twitter: { matches: twitter, likes: ["twitter:like"], item: "Post" },
+  instagram: { matches: instagram, likes: ["instagram:like"], item: "Post" },
+  pinterest: { matches: pinterest, likes: [], item: "Pin" },
+  arena: { matches: arena, likes: [], item: "Block" },
+  cosmos: { matches: cosmos, likes: [], item: "Element" },
+  tiktok: { matches: tiktok, likes: ["tiktok:like"], item: "Video" },
+  youtube: { matches: youtube, likes: ["youtube:like"], item: "Video" },
+  reddit: { matches: reddit, likes: ["reddit:upvote"], item: "Post" },
+  threads: { matches: threads, likes: ["threads:like"], item: "Post" },
 } as const satisfies Record<ExternalSource, HookSource>;
 
 export const HOOK_SOURCE_IDS: readonly ExternalSource[] = SOURCES.filter(
@@ -36,10 +37,6 @@ export const HOOK_SOURCE_IDS: readonly ExternalSource[] = SOURCES.filter(
 export const HOOK_MATCHES: string[] = HOOK_SOURCE_IDS.flatMap((source) => [
   ...HOOK_SOURCES[source].matches,
 ]);
-
-export function hasLikes(source: ExternalSource): boolean {
-  return HOOK_SOURCES[source].likes.length > 0;
-}
 
 export function isLikeTrigger(
   source: ExternalSource,
@@ -57,4 +54,10 @@ export function hookSourceForUrl(url: string): ExternalSource | null {
       ),
     ) ?? null
   );
+}
+
+/** The source when the URL is one item Pond can harvest, not a feed or profile. */
+export function harvestSourceForUrl(url: string): ExternalSource | null {
+  const source = hookSourceForUrl(url);
+  return source && sourceIdFromUrl(source, url) ? source : null;
 }

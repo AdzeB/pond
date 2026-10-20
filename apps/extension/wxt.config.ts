@@ -15,6 +15,11 @@ const ICONS = {
   128: "icons/128.png",
 };
 
+const FONT_RESOURCE = {
+  resources: ["fonts/inter/variable.woff2"],
+  matches: ["<all_urls>"],
+};
+
 export default defineConfig({
   modules: ["@wxt-dev/module-react"],
   /** Pin to 3001 with strictPort so dev never collides with the website's Next server. */
@@ -53,10 +58,7 @@ export default defineConfig({
       "packages/theme/**",
       "packages/ui/**",
     ],
-    excludeSources: [
-      "packages/icons/brand/**",
-      "packages/icons/social-media/**",
-    ],
+    excludeSources: ["packages/icons/brand/**"],
   },
   manifest: ({ browser }) => ({
     name: "Pond",
@@ -82,7 +84,7 @@ export default defineConfig({
         ? {}
         : { key: EXTENSION_KEY }),
     description:
-      "Save pages, screenshots, images, and your bookmarks from X, Instagram, Pinterest, YouTube, Reddit, and more into your local Pond library.",
+      "Save pages, screenshots, images, and your bookmarks from X, Instagram, Pinterest, and more into your local Pond library.",
     icons: ICONS,
     action: {
       default_title: "Pond",
@@ -123,5 +125,11 @@ export default defineConfig({
       "alarms",
     ],
     host_permissions: ["<all_urls>"],
+    /** The overlay registers Inter on the page; a per-session URL keeps sites from probing for the extension. */
+    web_accessible_resources: [
+      browser === "firefox"
+        ? FONT_RESOURCE
+        : { ...FONT_RESOURCE, use_dynamic_url: true },
+    ],
   }),
 });

@@ -2,7 +2,6 @@ import { useLayoutEffect, useState, useSyncExternalStore } from "react";
 import { type OverlayResult, sendMessage } from "@/utils/messaging";
 import { paintTheme } from "@/utils/paint-theme";
 import { Details } from "../details";
-import { Dock } from "../dock";
 import { ImagePicker } from "../images";
 import { RegionPicker } from "../region";
 import type { OverlayStore } from "../store";
@@ -41,7 +40,9 @@ export function Layer({ store, container }: LayerProps) {
 
   return (
     <div ref={setLayer} className={styles.layer}>
-      {tool?.view === "region" ? <RegionPicker onFinish={finish} /> : null}
+      {tool?.view === "region" && layer ? (
+        <RegionPicker container={layer} onFinish={finish} />
+      ) : null}
       {tool?.view === "images" && layer ? (
         <ImagePicker
           library={tool.library}
@@ -57,9 +58,6 @@ export function Layer({ store, container }: LayerProps) {
           container={layer}
           onFinish={finish}
         />
-      ) : null}
-      {tool?.view === "dock" ? (
-        <Dock item={tool.item} folders={tool.folders} onFinish={finish} />
       ) : null}
       {layer ? <Toasts manager={store.toasts} container={layer} /> : null}
     </div>

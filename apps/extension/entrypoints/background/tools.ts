@@ -3,9 +3,9 @@ import { z } from "zod";
 import type {
   CaptureRegion,
   CaptureTool,
-  DragItem,
   Gesture,
   OverlayResult,
+  PageItem,
   ToolResult,
 } from "@/utils/messaging";
 import { getSettings } from "@/utils/settings";
@@ -30,9 +30,9 @@ import {
   type ScreenshotOptions,
 } from "./screenshot";
 import { cookiesForUrl } from "./session";
+import { syncSettings } from "./settings";
 
 const BLOCKED = "Pond can't capture this page. Try a regular web page.";
-const DOCK_FOLDERS = 5;
 
 async function failOnPage(tab: chrome.tabs.Tab, message: string) {
   await announce(tab.id, {
@@ -71,6 +71,7 @@ export async function runTool(
     return { ok: false, message: BLOCKED };
   }
   const { id: tabId, windowId } = tab;
+  await syncSettings();
   if (tool === "page") {
     const draft = pageDraft(tab);
     if (!draft) return { ok: false, message: "Pond can only save web pages." };
@@ -126,10 +127,10 @@ const detailsSchema = z.object({
   }),
 });
 
-function draftFromDrag(item: DragItem, tab: chrome.tabs.Tab) {
+function draftFromItem(item: PageItem, tab: chrome.tabs.Tab) {
   return item.kind === "link"
-    ? linkDraft(item.url, item.title, "drag")
-    : mediaDraft(item.url, tab, "drag", item.title);
+    ? linkDraft(item.url, item.title, "alt-click")
+    : mediaDraft(item.url, tab, "alt-click", item.title);
 }
 
 export async function handleOverlayResult(
@@ -154,16 +155,6 @@ export async function handleOverlayResult(
     });
     return;
   }
-  if (result.kind === "drop") {
-    const draft = draftFromDrag(result.item, tab);
-    if (!draft) return;
-    if (result.folderId) {
-      await saveDraft(draft, tab.id, { folderIds: [result.folderId] });
-      return;
-    }
-    await offerDraft(draft, tab.id);
-    return;
-  }
   const pageUrl = isWebUrl(tab.url) ? tab.url : undefined;
   const urls = result.urls.filter((url) => isWebUrl(url));
   if (urls.length === 0) return;
@@ -181,38 +172,12 @@ export async function handleOverlayResult(
   });
 }
 
-function hostOf(url: string | undefined): string | null {
-  try {
-    return url ? new URL(url).hostname : null;
-  } catch {
-    return null;
-  }
-}
-
 export async function handleGesture(
   gesture: Gesture,
   tab: chrome.tabs.Tab | undefined,
 ): Promise<void> {
   if (tab?.id === undefined) return;
-  const settings = await getSettings();
-  if (gesture.kind === "alt-click") {
-    if (!settings.altClick) return;
-    await offerDraft(draftFromDrag(gesture.item, tab), tab.id);
-    return;
-  }
-  const host = hostOf(tab.url);
-  if (!settings.dragToSave || (host && settings.dragBlocked.includes(host)))
-    return;
-  if (!isWebUrl(gesture.item.url)) return;
-  const library = await libraryTargets();
-  const byId = new Map(library.folders.map((folder) => [folder.id, folder]));
-  const recent = library.recentFolderIds.flatMap((id) => {
-    const folder = byId.get(id);
-    return folder ? [folder] : [];
-  });
-  await showOverlay(tab.id, {
-    view: "dock",
-    item: gesture.item,
-    folders: recent.slice(0, DOCK_FOLDERS),
-  });
+  await syncSettings();
+  if (!(await getSettings()).altClick) return;
+  await offerDraft(draftFromItem(gesture.item, tab), tab.id);
 }

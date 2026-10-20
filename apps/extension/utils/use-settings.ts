@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { getSettings, updateSettings, watchSettings } from "./settings";
+import { getSettings, watchSettings } from "./settings";
 import type { PondSettings } from "./types";
 
-export function useSettings() {
+export function useSettings(): PondSettings | null {
   const [settings, setSettings] = useState<PondSettings | null>(null);
 
   useEffect(() => {
@@ -10,9 +10,5 @@ export function useSettings() {
     return watchSettings(setSettings);
   }, []);
 
-  const update = (change: (current: PondSettings) => PondSettings) => {
-    void updateSettings(change).then(setSettings);
-  };
-
-  return { settings, update };
+  return settings;
 }

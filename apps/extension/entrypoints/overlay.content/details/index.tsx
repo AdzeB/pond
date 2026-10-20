@@ -1,15 +1,15 @@
-import { IconGlobe, IconImage, IconXmark } from "@pond/icons";
-import { Button } from "@pond/ui/button";
+import { IconGlobe, IconImage } from "@pond/icons";
+import { Dialog } from "@pond/ui/dialog";
 import { Input } from "@pond/ui/input";
 import { Keyboard } from "@pond/ui/keyboard";
-import { useEffect, useId, useRef, useState } from "react";
+import { Rating } from "@pond/ui/rating";
+import { useRef, useState } from "react";
 import { Targets } from "@/components/targets";
 import type {
   DetailsDraft,
   LibraryTargets,
   OverlayResult,
 } from "@/utils/messaging";
-import { useEscape } from "../use-escape";
 import styles from "./styles.module.css";
 
 const MAC = navigator.userAgent.includes("Mac");
@@ -95,19 +95,12 @@ function Preview({ draft }: { draft: DetailsDraft }) {
 }
 
 export function Details({ draft, library, container, onFinish }: DetailsProps) {
-  const id = useId();
   const [title, setTitle] = useState(draft.title);
   const [notes, setNotes] = useState("");
   const [rating, setRating] = useState(0);
   const [tags, setTags] = useState<string[]>([]);
   const [folderIds, setFolderIds] = useState<string[]>([]);
   const name = useRef<HTMLInputElement>(null);
-  useEscape(() => onFinish(null));
-
-  useEffect(() => {
-    name.current?.focus();
-    name.current?.select();
-  }, []);
 
   const save = () =>
     onFinish({
@@ -117,90 +110,90 @@ export function Details({ draft, library, container, onFinish }: DetailsProps) {
     });
 
   return (
-    <div className={styles.backdrop}>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={`${id}-title`}
-        className={styles.window}
-        onKeyDown={(event) => {
-          if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey))
-            return;
-          event.preventDefault();
-          save();
-        }}
-      >
-        <header className={styles.header}>
-          <h2 id={`${id}-title`} className={styles.title}>
-            {draft.kind === "screenshot" ? "Save Screenshot" : "Save to Pond"}
-          </h2>
-          <Button
-            icon
-            size="xs"
-            variant="ghost"
-            aria-label="Close"
-            onClick={() => onFinish(null)}
-          >
-            <IconXmark size={12} />
-          </Button>
-        </header>
+    <Dialog.Root
+      open
+      disablePointerDismissal
+      onOpenChange={(open) => {
+        if (!open) onFinish(null);
+      }}
+    >
+      <Dialog.Portal container={container}>
+        <Dialog.Backdrop className={styles.backdrop} />
+        <Dialog.Popup
+          className={styles.popup}
+          initialFocus={() => {
+            name.current?.select();
+            return name.current;
+          }}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey))
+              return;
+            event.preventDefault();
+            save();
+          }}
+        >
+          <Dialog.Header>
+            <Dialog.Title>
+              {draft.kind === "screenshot" ? "Save Screenshot" : "Save to Pond"}
+            </Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Close />
 
-        <div className={styles.body}>
-          <div className={styles.fields}>
-            <Preview draft={draft} />
-            <Targets.Rating value={rating} onValueChange={setRating} />
-            <Input.Root size="sm">
-              <Input.Field
-                ref={name}
-                aria-label="Name"
-                placeholder="Name"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
+          <div className={styles.body}>
+            <div className={styles.fields}>
+              <Preview draft={draft} />
+              <Rating value={rating} onValueChange={setRating} />
+              <Input.Root>
+                <Input.Field
+                  ref={name}
+                  aria-label="Name"
+                  placeholder="Name"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                />
+              </Input.Root>
+              <Input.Root>
+                <Input.Textarea
+                  aria-label="Description"
+                  placeholder="Add a description"
+                  rows={3}
+                  value={notes}
+                  onValueChange={setNotes}
+                />
+              </Input.Root>
+              <Targets.Tags
+                tags={library.tags}
+                recent={library.recentTags}
+                value={tags}
+                onValueChange={setTags}
+                container={container}
               />
-            </Input.Root>
-            <Input.Root size="sm">
-              <Input.Textarea
-                aria-label="Description"
-                placeholder="Add a description"
-                rows={3}
-                value={notes}
-                onValueChange={setNotes}
-              />
-            </Input.Root>
-            <Targets.Tags
-              tags={library.tags}
-              recent={library.recentTags}
-              value={tags}
-              onValueChange={setTags}
-              container={container}
+            </div>
+            <Targets.Folders
+              className={styles.folders}
+              folders={library.folders}
+              recentIds={library.recentFolderIds}
+              value={folderIds}
+              onValueChange={setFolderIds}
             />
           </div>
-          <Targets.Folders
-            className={styles.folders}
-            folders={library.folders}
-            recentIds={library.recentFolderIds}
-            value={folderIds}
-            onValueChange={setFolderIds}
-          />
-        </div>
 
-        <footer className={styles.footer}>
-          <span className={styles.library}>Saving to {library.name}</span>
-          <span className={styles.hint}>
-            <Keyboard.Cluster
-              keys={[MAC ? "⌘" : "Ctrl", "↵"]}
-              density="inline"
-            />
-            Save
-          </span>
-          <Button size="sm" variant="secondary" onClick={() => onFinish(null)}>
-            Cancel
-          </Button>
-          <Button size="sm" variant="primary" onClick={save}>
-            Save
-          </Button>
-        </footer>
-      </div>
-    </div>
+          <Dialog.Footer
+            leading={
+              <span className={styles.leading}>
+                <span className={styles.library}>Saving to {library.name}</span>
+                <Keyboard.Cluster
+                  keys={[MAC ? "⌘" : "Ctrl", "↵"]}
+                  density="inline"
+                />
+              </span>
+            }
+          >
+            <Dialog.Cancel />
+            <Dialog.Confirm onClick={save}>Save</Dialog.Confirm>
+          </Dialog.Footer>
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

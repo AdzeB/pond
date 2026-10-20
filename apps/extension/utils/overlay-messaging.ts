@@ -1,10 +1,5 @@
 import { defineExtensionMessaging } from "@webext-core/messaging";
-import type {
-  DetailsDraft,
-  DragItem,
-  Folder,
-  LibraryTargets,
-} from "./messaging";
+import type { DetailsDraft, LibraryTargets } from "./messaging";
 import type { CaptureStatus } from "./outcome";
 import type { Appearance } from "./paint-theme";
 
@@ -21,8 +16,7 @@ export type OverlayRequest =
   | { view: "toast"; toast: OverlayToast }
   | { view: "region" }
   | { view: "images"; library: LibraryTargets }
-  | { view: "details"; draft: DetailsDraft; library: LibraryTargets }
-  | { view: "dock"; item: DragItem; folders: Folder[] };
+  | { view: "details"; draft: DetailsDraft; library: LibraryTargets };
 
 interface OverlayProtocol {
   show(input: { request: OverlayRequest; appearance: Appearance }): boolean;

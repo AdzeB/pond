@@ -1,6 +1,7 @@
 import { Toast } from "@pond/ui/toast";
 import { sendMessage } from "@/utils/messaging";
 import type { OverlayStore, ToastData } from "../store";
+import styles from "./styles.module.css";
 
 interface ToastsProps {
   manager: OverlayStore["toasts"];
@@ -18,7 +19,15 @@ function List({ container }: { container: HTMLElement }) {
             <Toast.Root key={toast.id} toast={toast}>
               <Toast.Content>
                 <Toast.Header>
-                  <Toast.Title>{toast.title}</Toast.Title>
+                  <Toast.Title>
+                    <span
+                      key={toast.data?.status}
+                      className={styles.swap}
+                      data-updated={(toast.updateKey ?? 0) > 0 || undefined}
+                    >
+                      {toast.title}
+                    </span>
+                  </Toast.Title>
                   {toast.description ? (
                     <Toast.Description>{toast.description}</Toast.Description>
                   ) : null}

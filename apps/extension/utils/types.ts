@@ -1,6 +1,7 @@
+import type { ExtensionSettings } from "@pond/schema/browser-extension";
 import type { SessionImportResponse } from "@pond/schema/session";
 import { SOURCES, type Source } from "@pond/schema/source-ids";
-import { asText, at, isRecord, type JsonValue } from "./json";
+import { at, isRecord, type JsonValue } from "./json";
 
 export const POND_EVENT = "pond:capture";
 
@@ -49,8 +50,6 @@ export type PondSettings = {
   confirmations: boolean;
   askDetails: boolean;
   altClick: boolean;
-  dragToSave: boolean;
-  dragBlocked: string[];
   screenshotFormat: ScreenshotFormat;
   retina: boolean;
   theme: ThemePreference;
@@ -77,8 +76,6 @@ export const DEFAULT_SETTINGS: PondSettings = {
   confirmations: true,
   askDetails: true,
   altClick: true,
-  dragToSave: true,
-  dragBlocked: [],
   screenshotFormat: "png",
   retina: true,
   theme: "library",
@@ -90,16 +87,6 @@ const THEMES: readonly ThemePreference[] = [
   "light",
   "dark",
 ];
-const MAX_BLOCKED_SITES = 500;
-
-function readHosts(value: JsonValue | undefined): string[] {
-  if (!Array.isArray(value)) return [];
-  const hosts = value.flatMap((entry) => {
-    const host = asText(entry);
-    return host && /^[\w.-]{1,253}$/.test(host) ? [host] : [];
-  });
-  return [...new Set(hosts)].slice(0, MAX_BLOCKED_SITES);
-}
 
 function readTheme(value: JsonValue | undefined): ThemePreference {
   return THEMES.find((theme) => theme === value) ?? "library";
@@ -114,6 +101,26 @@ function readFlags(value: JsonValue | undefined, fallback: SourceFlags) {
   return flags;
 }
 
+function flagsFromPond(
+  flags: ExtensionSettings["enabled"],
+  fallback: SourceFlags,
+) {
+  const next = { ...fallback };
+  for (const source of SOURCES) {
+    const flag = flags[source];
+    if (flag !== undefined) next[source] = flag;
+  }
+  return next;
+}
+
+export function settingsFromPond(settings: ExtensionSettings): PondSettings {
+  return {
+    ...settings,
+    enabled: flagsFromPond(settings.enabled, DEFAULT_SETTINGS.enabled),
+    likes: flagsFromPond(settings.likes, DEFAULT_SETTINGS.likes),
+  };
+}
+
 export function normalizeStoredSettings(stored: JsonValue): PondSettings {
   return {
     enabled: readFlags(at(stored, "enabled"), DEFAULT_SETTINGS.enabled),
@@ -122,8 +129,6 @@ export function normalizeStoredSettings(stored: JsonValue): PondSettings {
     confirmations: at(stored, "confirmations") !== false,
     askDetails: at(stored, "askDetails") !== false,
     altClick: at(stored, "altClick") !== false,
-    dragToSave: at(stored, "dragToSave") !== false,
-    dragBlocked: readHosts(at(stored, "dragBlocked")),
     screenshotFormat:
       at(stored, "screenshotFormat") === "jpeg" ? "jpeg" : "png",
     retina: at(stored, "retina") !== false,
