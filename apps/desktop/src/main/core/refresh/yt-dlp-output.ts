@@ -1,5 +1,5 @@
 import { readdir, readFile, stat } from "node:fs/promises";
-import { basename, extname, join } from "node:path";
+import { basename, extname, join, resolve } from "node:path";
 import type { RawYtdlp } from "@pond/schema/raw";
 import { RawYtdlpSchema } from "@pond/schema/raw-schema";
 
@@ -36,9 +36,44 @@ export interface ProducedFile {
   infoJson: RawYtdlp | null;
 }
 
+export async function readCompletedFiles(
+  manifest: string,
+): Promise<Set<string>> {
+  let text: string;
+  try {
+    text = await readFile(manifest, "utf8");
+  } catch {
+    return new Set();
+  }
+  return new Set(
+    text
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => resolve(line)),
+  );
+}
+
+/** yt-dlp exits 1 when any entry fails, including link cards an X post lists after its own videos. */
+export function keepsPartialDownload(
+  code: number,
+  completed: number,
+  expected: number,
+): boolean {
+  return code === 1 && completed >= Math.max(1, expected);
+}
+
 /** Playlist order from info.json; size must not win, or a quoted 4K clip outranks the parent. */
-export async function pickProducedFiles(dir: string): Promise<ProducedFile[]> {
-  const entries = await readdir(dir);
+export async function pickProducedFiles(
+  dir: string,
+  only?: ReadonlySet<string>,
+): Promise<ProducedFile[]> {
+  let entries: string[];
+  try {
+    entries = await readdir(dir);
+  } catch {
+    return [];
+  }
   if (entries.length === 0) return [];
 
   const sized = await Promise.all(
@@ -46,6 +81,7 @@ export async function pickProducedFiles(dir: string): Promise<ProducedFile[]> {
       .filter((name) => !/\.info\.json$/i.test(name))
       .filter((name) => !isThumbnail(name))
       .filter((name) => !isSubtitle(name))
+      .filter((name) => !only || only.has(resolve(dir, name)))
       .map(async (name) => {
         const full = join(dir, name);
         try {
