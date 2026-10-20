@@ -177,6 +177,24 @@ export function accountImportScope(
   return { ...scope, listKinds: ["saved"] };
 }
 
+/** Sources with Accounts where none imports Likes, so the extension stops saving likes there too. */
+export function sourcesSkippingLikes(
+  accounts: readonly {
+    source: Source;
+    sync: { importScope?: ImportScope; syncLikes?: boolean };
+  }[],
+): Set<Source> {
+  const skipping = new Set<Source>();
+  const importing = new Set<Source>();
+  for (const account of accounts) {
+    const scope = accountImportScope(account.source, account.sync);
+    if (importsListKind(scope, "liked")) importing.add(account.source);
+    else skipping.add(account.source);
+  }
+  for (const source of importing) skipping.delete(source);
+  return skipping;
+}
+
 export function importsListKind(
   scope: ImportScope | undefined,
   kind: ListKind,

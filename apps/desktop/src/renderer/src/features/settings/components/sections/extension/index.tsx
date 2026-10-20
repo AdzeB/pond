@@ -8,7 +8,9 @@ import {
   sourceLabel,
 } from "@pond/schema/sources";
 import { Settings, Switch } from "@pond/ui";
+import { sourcesSkippingLikes } from "@shared/import-scope";
 import { Fragment } from "react";
+import { useAccounts } from "@/features/sources";
 import { usePrefs } from "@/shared/state/prefs";
 
 const SAVES = {
@@ -29,6 +31,8 @@ const LIKE_SOURCES: ReadonlySet<ExternalSource> = new Set(
 
 export function ExtensionSources() {
   const [extension, patch, loaded] = usePrefs("extension");
+  const { accounts } = useAccounts();
+  const skipping = sourcesSkippingLikes(accounts);
 
   return (
     <Settings.List>
@@ -36,6 +40,7 @@ export function ExtensionSources() {
         const label = sourceLabel(source);
         const on = sourceFlag(extension.enabled, source);
         const upvotes = source === "reddit";
+        const accountSkips = skipping.has(source);
         return (
           <Fragment key={source}>
             <Settings.Item>
@@ -59,22 +64,26 @@ export function ExtensionSources() {
               </Settings.ItemControl>
             </Settings.Item>
             {LIKE_SOURCES.has(source) ? (
-              <Settings.Item disabled={!on}>
+              <Settings.Item disabled={!on || accountSkips}>
                 <Settings.ItemDetails>
                   <Settings.ItemTitle>
                     {upvotes ? "Include Upvotes" : "Include Likes"}
                   </Settings.ItemTitle>
                   <Settings.ItemDescription>
-                    {upvotes
-                      ? "Also save posts you upvote."
-                      : "Also save what you like."}
+                    {accountSkips
+                      ? `Off while your ${label} Account skips ${upvotes ? "Upvotes" : "Likes"}.`
+                      : upvotes
+                        ? "Also save posts you upvote."
+                        : "Also save what you like."}
                   </Settings.ItemDescription>
                 </Settings.ItemDetails>
                 <Settings.ItemControl>
                   <Switch.Root
                     aria-label={`${label} ${upvotes ? "Upvotes" : "Likes"}`}
-                    checked={sourceFlag(extension.likes, source)}
-                    disabled={!loaded || !on}
+                    checked={
+                      !accountSkips && sourceFlag(extension.likes, source)
+                    }
+                    disabled={!loaded || !on || accountSkips}
                     onCheckedChange={(next) =>
                       void patch({
                         likes: { ...extension.likes, [source]: next },
