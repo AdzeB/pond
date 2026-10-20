@@ -17,9 +17,11 @@ import {
   YTDLP_TRANSFER_FLAGS,
 } from "./yt-dlp-format";
 import {
+  keepsPartialDownload,
   pickProducedFiles,
   pickProducedPoster,
   pickSubtitleFiles,
+  readCompletedFiles,
   type SubtitleFile,
 } from "./yt-dlp-output";
 import { runWithTimeout } from "./yt-dlp-process";
@@ -72,17 +74,17 @@ export async function downloadVideo(
   }
 
   let cookies: Awaited<ReturnType<typeof writeNetscapeCookies>> | null = null;
-  let outputDir: string | null = null;
+  let attemptDir: string | null = null;
   let cleanupCalled = false;
   const cleanup = async () => {
     if (cleanupCalled) return;
     cleanupCalled = true;
     if (cookies) await cookies.cleanup();
-    if (outputDir) {
+    if (attemptDir) {
       try {
-        await rm(outputDir, { recursive: true, force: true });
+        await rm(attemptDir, { recursive: true, force: true });
       } catch (err) {
-        log.warn("[pond yt-dlp] tmpdir cleanup failed", outputDir, err);
+        log.warn("[pond yt-dlp] tmpdir cleanup failed", attemptDir, err);
       }
     }
   };
@@ -152,15 +154,23 @@ export async function downloadVideo(
         MAX_PLAYLIST_TIMEOUT_FACTOR,
         Math.max(1, args.expectedCount ?? 1),
       );
-    let succeeded = false;
+    let outcome: {
+      mediaDir: string;
+      completed: ReadonlySet<string> | undefined;
+    } | null = null;
     for (const withCookies of cookieAttempts(args.source, cookies.count)) {
-      if (outputDir) await rm(outputDir, { recursive: true, force: true });
-      outputDir = await mkdtemp(join(tmpdir(), "pond-ytdlp-out-"));
+      if (attemptDir) await rm(attemptDir, { recursive: true, force: true });
+      attemptDir = await mkdtemp(join(tmpdir(), "pond-ytdlp-out-"));
+      const mediaDir = join(attemptDir, "media");
+      const manifest = join(attemptDir, "completed.txt");
       const attemptArgv = [
         ...argv,
         ...(withCookies ? ["--cookies", cookies.path] : []),
+        "--print-to-file",
+        "after_move:%(filepath)s",
+        manifest,
         "-o",
-        join(outputDir, "%(id)s.%(ext)s"),
+        join(mediaDir, "%(id)s.%(ext)s"),
         args.url,
       ];
       log.info(
@@ -180,7 +190,7 @@ export async function downloadVideo(
         VIDEO_WATCHDOG_MS,
       );
       if (code === 0) {
-        succeeded = true;
+        outcome = { mediaDir, completed: undefined };
         break;
       }
       log.warn(
@@ -189,15 +199,26 @@ export async function downloadVideo(
         args.url,
         stderr.slice(-400),
       );
+      const completed = await readCompletedFiles(manifest);
+      if (keepsPartialDownload(code, completed.size, args.expectedCount ?? 1)) {
+        log.info(
+          "[pond yt-dlp] keeping finished files despite a failed entry",
+          args.url,
+          `(${completed.size})`,
+        );
+        outcome = { mediaDir, completed };
+        break;
+      }
       if (args.signal?.aborted) break;
     }
-    if (!succeeded || !outputDir) {
+    if (!outcome) {
       await cleanup();
       return null;
     }
+    const { mediaDir } = outcome;
 
     args.reportActivity?.({ phase: "processing" });
-    const produced = await pickProducedFiles(outputDir);
+    const produced = await pickProducedFiles(mediaDir, outcome.completed);
     if (produced.length === 0) {
       log.warn("[pond yt-dlp] no output file produced", args.url);
       await cleanup();
@@ -207,13 +228,13 @@ export async function downloadVideo(
     const wantPoster =
       args.source === "youtube" || Boolean(prefs.embedThumbnail);
     const subtitles =
-      prefs.subtitles === "download" ? await pickSubtitleFiles(outputDir) : [];
+      prefs.subtitles === "download" ? await pickSubtitleFiles(mediaDir) : [];
     const items: DownloadedVideoItem[] = [];
     for (let i = 0; i < produced.length; i++) {
       const file = produced[i];
       if (!file) continue;
       const poster = wantPoster
-        ? await pickProducedPoster(outputDir, file.path)
+        ? await pickProducedPoster(mediaDir, file.path)
         : null;
       items.push({
         path: file.path,
