@@ -1,10 +1,9 @@
 import {
+  IconArrowRotateClockwise,
   IconBan,
-  IconMediaPauseFill,
-  IconRefreshFill,
+  IconMediaPause,
   IconTrashXmark,
 } from "@pond/icons";
-import { Button } from "@pond/ui";
 import { type ReactNode, useState } from "react";
 import {
   canCancelDownload,
@@ -34,14 +33,14 @@ const BULK_ACTIONS: readonly BulkAction[] = [
   {
     id: "retry",
     label: "Retry",
-    icon: <IconRefreshFill />,
+    icon: <IconArrowRotateClockwise />,
     applies: canRetryDownload,
     run: retryDownloadRows,
   },
   {
     id: "cancel",
     label: "Cancel",
-    icon: <IconMediaPauseFill />,
+    icon: <IconMediaPause />,
     applies: canCancelDownload,
     run: cancelDownloadRows,
   },
@@ -69,24 +68,22 @@ export function DownloadSelectionBar() {
     void action.run(rows).finally(() => setPending(null));
   };
   return (
-    <SelectionBar
+    <SelectionBar.Root
       label="Selected Downloads"
       count={rows.length}
       onClear={downloadsSelection.clear}
     >
       {BULK_ACTIONS.map((action) => (
-        <Button
+        <SelectionBar.Action
           key={action.id}
-          size="sm"
-          variant="secondary"
+          label={action.label}
           disabled={pending !== null || !rows.some(action.applies)}
           loading={pending === action.id}
           onClick={() => run(action)}
         >
           {action.icon}
-          {action.label}
-        </Button>
+        </SelectionBar.Action>
       ))}
-    </SelectionBar>
+    </SelectionBar.Root>
   );
 }

@@ -331,8 +331,8 @@ function selectionBar(): HTMLElement | null {
 }
 
 function barButton(label: string): HTMLButtonElement {
-  const button = [...(selectionBar()?.querySelectorAll("button") ?? [])].find(
-    (node) => node.textContent === label,
+  const button = selectionBar()?.querySelector<HTMLButtonElement>(
+    `button[aria-label="${label}"]`,
   );
   if (!button) throw new Error(`Missing selection action ${label}`);
   return button;
@@ -383,8 +383,8 @@ it("shows bulk actions for the selection and cancels it in one request", async (
   await click('[title="Running video"]');
   await click('[title="Waiting video"]', { metaKey: true });
   expect(selectionBar()?.textContent).toContain("2 selected");
-  expect(barButton("Retry").disabled).toBe(true);
-  expect(barButton("Cancel").disabled).toBe(false);
+  expect(barButton("Retry").hasAttribute("data-disabled")).toBe(true);
+  expect(barButton("Cancel").hasAttribute("data-disabled")).toBe(false);
 
   await act(async () => barButton("Cancel").click());
   await settle();

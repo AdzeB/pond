@@ -1,5 +1,4 @@
 import { IconArrowRotateClockwise, IconGrid } from "@pond/icons";
-import { Button } from "@pond/ui";
 import { viewAccountItems } from "@/features/library";
 import { sourcesSelection } from "@/features/sources/state/sources-selection";
 import { SelectionBar } from "@/shared/components/selection-bar";
@@ -18,31 +17,27 @@ export function SourceSelectionBar() {
   const remote = rows.filter(isRemote);
   const fetchable = rows.filter(canFetch);
   return (
-    <SelectionBar
+    <SelectionBar.Root
       label="Selected Sources"
       count={rows.length}
       onClear={sourcesSelection.clear}
     >
-      <Button
-        size="sm"
-        variant="secondary"
+      <SelectionBar.Action
+        label="Show Saved Items"
         disabled={remote.length === 0}
         onClick={() => viewAccountItems(remote.map((row) => row.id))}
       >
         <IconGrid />
-        Show Saved Items
-      </Button>
-      <Button
-        size="sm"
-        variant="secondary"
+      </SelectionBar.Action>
+      <SelectionBar.Action
+        label="Fetch New Saves"
         disabled={fetchable.length === 0}
         onClick={() => {
           for (const row of fetchable) void window.pond.syncRunNow(row.id);
         }}
       >
         <IconArrowRotateClockwise />
-        Fetch New Saves
-      </Button>
-    </SelectionBar>
+      </SelectionBar.Action>
+    </SelectionBar.Root>
   );
 }

@@ -237,29 +237,26 @@ export function DownloadsPage() {
         </>
       }
       below={
-        <>
-          <TableFilterBar
-            open={filtersOpen}
-            id="downloads-filter-toolbar"
-            label="Download Filters"
-          >
-            <TableFilterChip
-              name="Status"
-              icon={<IconCircleCheck />}
-              options={STATUS_FILTER_OPTIONS}
-              selected={filters.statuses}
-              onChange={downloadsFilters.setStatuses}
-            />
-            <TableFilterChip
-              name="Source"
-              icon={<IconLink2 />}
-              options={sourceOptions}
-              selected={filters.sources}
-              onChange={downloadsFilters.setSources}
-            />
-          </TableFilterBar>
-          <DownloadSelectionBar />
-        </>
+        <TableFilterBar
+          open={filtersOpen}
+          id="downloads-filter-toolbar"
+          label="Download Filters"
+        >
+          <TableFilterChip
+            name="Status"
+            icon={<IconCircleCheck />}
+            options={STATUS_FILTER_OPTIONS}
+            selected={filters.statuses}
+            onChange={downloadsFilters.setStatuses}
+          />
+          <TableFilterChip
+            name="Source"
+            icon={<IconLink2 />}
+            options={sourceOptions}
+            selected={filters.sources}
+            onChange={downloadsFilters.setSources}
+          />
+        </TableFilterBar>
       }
     >
       <SearchChrome.Input
@@ -322,6 +319,7 @@ export function DownloadsPage() {
           ) : null
         }
       />
+      <DownloadSelectionBar />
     </div>
   );
 }
