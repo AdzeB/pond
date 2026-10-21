@@ -105,7 +105,7 @@ it("shows global values on a source page and locks them while it follows global"
   expect(row("maxHeight")?.textContent).toContain("720p");
 });
 
-it("unlocks a custom source and dims video rows until it downloads automatically", async () => {
+it("unlocks every row on a custom source, even with auto-download off", async () => {
   stubPond({ videoDownloadSources: { youtube: { maxHeight: 2160 } } });
   await render(
     <SettingsSectionView
@@ -116,7 +116,7 @@ it("unlocks a custom source and dims video rows until it downloads automatically
 
   expect(row("autoDownload")?.hasAttribute("data-disabled")).toBe(false);
   expect(row("maxLongEdge")?.hasAttribute("data-disabled")).toBe(false);
-  expect(row("maxHeight")?.hasAttribute("data-disabled")).toBe(true);
+  expect(row("maxHeight")?.hasAttribute("data-disabled")).toBe(false);
   expect(row("maxHeight")?.textContent).toContain("2160p");
 });
 

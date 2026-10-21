@@ -8,8 +8,6 @@ import {
 
 const subtitlesEnabled = (v: SettingsValues) => v.subtitles !== "off";
 const followsGlobal = (v: SettingsValues) => v.followsGlobal === true;
-const videoLocked = (v: SettingsValues) =>
-  followsGlobal(v) || v.autoDownload !== true;
 
 export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
   const useBinding = () => useVideoDownloadBinding(source);
@@ -33,7 +31,7 @@ export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
         {
           control: "select",
           key: "maxHeight",
-          disabled: videoLocked,
+          disabled: followsGlobal,
           title: "Maximum Resolution",
           description: "Higher means bigger files. 1080p suits most clips.",
           options: [
@@ -52,7 +50,7 @@ export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
         {
           control: "select",
           key: "maxFps",
-          disabled: videoLocked,
+          disabled: followsGlobal,
           title: "Maximum Frame Rate",
           description: "Cap the frame rate.",
           options: [
@@ -65,7 +63,7 @@ export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
         {
           control: "select",
           key: "maxFileSizeMb",
-          disabled: videoLocked,
+          disabled: followsGlobal,
           title: "Maximum File Size",
           description: "Skip downloads bigger than the cap.",
           options: [
@@ -89,7 +87,7 @@ export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
         {
           control: "select",
           key: "videoCodec",
-          disabled: videoLocked,
+          disabled: followsGlobal,
           title: "Preferred Video Codec",
           description: "H.264 is most compatible. AV1 and VP9 are smaller.",
           options: [
@@ -103,7 +101,7 @@ export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
         {
           control: "select",
           key: "audioCodec",
-          disabled: videoLocked,
+          disabled: followsGlobal,
           title: "Preferred Audio Codec",
           description: "Falls back if unavailable.",
           options: [
@@ -115,7 +113,7 @@ export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
         {
           control: "select",
           key: "container",
-          disabled: videoLocked,
+          disabled: followsGlobal,
           title: "Container",
           description:
             "Choose the video file format. Auto works for most downloads.",
@@ -135,7 +133,7 @@ export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
         {
           control: "select",
           key: "subtitles",
-          disabled: videoLocked,
+          disabled: followsGlobal,
           title: "Subtitles",
           description:
             "Save subtitles as a separate file or include them in the video.",
@@ -148,7 +146,7 @@ export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
         {
           control: "select",
           key: "subtitleLang",
-          disabled: videoLocked,
+          disabled: followsGlobal,
           title: "Subtitle Language",
           description: "Language to fetch when available.",
           visible: subtitlesEnabled,
@@ -175,21 +173,21 @@ export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
         {
           control: "switch",
           key: "embedMetadata",
-          disabled: videoLocked,
+          disabled: followsGlobal,
           title: "Embed Details",
           description: "Write title, uploader, and date into the file.",
         },
         {
           control: "switch",
           key: "embedThumbnail",
-          disabled: videoLocked,
+          disabled: followsGlobal,
           title: "Embed Thumbnail",
           description: "Attach the poster image as cover art.",
         },
         {
           control: "switch",
           key: "embedChapters",
-          disabled: videoLocked,
+          disabled: followsGlobal,
           title: "Embed Chapters",
           description: "Include chapters when the source has them.",
         },
@@ -201,7 +199,7 @@ export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
         {
           control: "switch",
           key: "sponsorblockRemove",
-          disabled: videoLocked,
+          disabled: followsGlobal,
           title: "Remove Sponsors",
           description: "Cut sponsor segments on YouTube.",
         },
