@@ -4,6 +4,7 @@ import {
   IconClipboardArrowIn,
   IconContrast,
   IconCopy,
+  IconDownload,
   IconFile,
   IconFocus,
   IconGrid,
@@ -12,6 +13,7 @@ import {
   IconMagicWand,
   IconMerge,
   IconRefresh,
+  IconTrash,
 } from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import { createElement } from "react";
@@ -96,6 +98,18 @@ export function buildViewerDisplayItems(
   ];
 }
 
+function downloadVideoTitle(queued: number): string {
+  if (queued === 0) return "No videos to download";
+  if (queued === 1) return "Downloading video";
+  return `Downloading ${queued} videos`;
+}
+
+function removeVideoTitle(removed: number): string {
+  if (removed === 0) return "No videos to remove";
+  if (removed === 1) return "Video removed";
+  return `${removed} videos removed`;
+}
+
 export interface DetailMenuItems {
   file: MenuItemSpec[];
   media: MenuItemSpec[];
@@ -111,6 +125,8 @@ export function buildDetailItems({
   opened,
   isGif,
   isVideo,
+  canDownloadVideo,
+  canRemoveVideo,
   fileIndex,
   hasFiles,
   hasCustomThumbnail,
@@ -200,6 +216,39 @@ export function buildDetailItems({
                   title: "Couldn't load subtitles",
                 });
             });
+        },
+      },
+      {
+        label: "Download Video",
+        icon: glyph(IconDownload),
+        hidden: !canDownloadVideo,
+        onClick: () => {
+          void window.pond
+            .query("saves.downloadVideo", { ids })
+            .then((result) =>
+              notify({
+                id: "download-video",
+                title: result.ok
+                  ? downloadVideoTitle(result.queued)
+                  : "Couldn't download video",
+              }),
+            );
+        },
+      },
+      {
+        label: "Remove Video",
+        icon: glyph(IconTrash),
+        variant: "destructive",
+        hidden: !canRemoveVideo,
+        onClick: () => {
+          void window.pond.query("saves.removeVideo", { ids }).then((result) =>
+            notify({
+              id: "remove-video",
+              title: result.ok
+                ? removeVideoTitle(result.removed)
+                : "Couldn't remove video",
+            }),
+          );
         },
       },
       {

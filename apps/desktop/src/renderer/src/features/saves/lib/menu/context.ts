@@ -1,3 +1,4 @@
+import { isVideoFile } from "@shared/media-index";
 import { isAuxiliaryKind, isThumbnailKind } from "@shared/save-file-names";
 import { resolveFileIndex } from "@/features/saves/lib/actions";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
@@ -16,6 +17,22 @@ function isHttpUrl(url: string | null | undefined): boolean {
   } catch {
     return false;
   }
+}
+
+function hasVideoFile(save: Save): boolean {
+  return save.files.some(isVideoFile);
+}
+
+function canDownloadVideo(save: Save): boolean {
+  return (
+    save.source !== "local" &&
+    deriveTypeKind(null, save) === "video" &&
+    !hasVideoFile(save)
+  );
+}
+
+function canRemoveVideo(save: Save): boolean {
+  return save.source !== "local" && hasVideoFile(save);
 }
 
 export function contextMenuSaves(clicked: Save): Save[] {
@@ -105,6 +122,8 @@ export function createSaveMenuContext(
     isGif,
     isWebp,
     isVideo,
+    canDownloadVideo: incomplete || saves.some(canDownloadVideo),
+    canRemoveVideo: incomplete || saves.some(canRemoveVideo),
     copyLabel: isVideo ? "Copy Video" : "Copy",
     archivable:
       incomplete ||
