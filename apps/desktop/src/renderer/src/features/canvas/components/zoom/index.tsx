@@ -13,12 +13,12 @@ export function Zoom() {
         <Tooltip label="Zoom Out" side="bottom">
           <Button
             icon
-            size="sm"
+            size="xs"
             variant="text"
             aria-label="Zoom Out"
             onClick={() => void flow.zoomOut({ duration: 150 })}
           >
-            <IconMinus />
+            <IconMinus size={12} />
           </Button>
         </Tooltip>
         <Tooltip
@@ -27,7 +27,7 @@ export function Zoom() {
           side="bottom"
         >
           <Button
-            size="sm"
+            size="xs"
             variant="text"
             className={styles.level}
             aria-label={`Zoom ${Math.round(zoom * 100)}%. Zoom to Fit`}
@@ -39,12 +39,12 @@ export function Zoom() {
         <Tooltip label="Zoom In" side="bottom">
           <Button
             icon
-            size="sm"
+            size="xs"
             variant="text"
             aria-label="Zoom In"
             onClick={() => void flow.zoomIn({ duration: 150 })}
           >
-            <IconPlus />
+            <IconPlus size={12} />
           </Button>
         </Tooltip>
       </fieldset>
