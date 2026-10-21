@@ -487,6 +487,16 @@ export const IconBookmarkSlashFill = /* @__PURE__ */ createIcon(
     ],
   ],
 );
+export const IconBorder = /* @__PURE__ */ createIcon("Border", "outline", [
+  ["path", { d: "M2.75 6V5.25A2.5 2.5 0 0 1 5.25 2.75H6" }],
+  ["path", { d: "M12 2.75H12.75A2.5 2.5 0 0 1 15.25 5.25V6" }],
+  ["path", { d: "M15.25 12V12.75A2.5 2.5 0 0 1 12.75 15.25H12" }],
+  ["path", { d: "M6 15.25H5.25A2.5 2.5 0 0 1 2.75 12.75V12" }],
+  ["path", { d: "M8.25 2.75H9.75" }],
+  ["path", { d: "M15.25 8.25V9.75" }],
+  ["path", { d: "M9.75 15.25H8.25" }],
+  ["path", { d: "M2.75 9.75V8.25" }],
+]);
 export const IconBracketsCurly = /* @__PURE__ */ createIcon(
   "BracketsCurly",
   "outline",
@@ -1352,6 +1362,17 @@ export const IconFiles2 = /* @__PURE__ */ createIcon("Files2", "outline", [
   ],
   ["path", { d: "M11.75 5.25V7.5A1.25 1.25 0 0 0 13 8.75H15.25" }],
   ["path", { d: "M2.75 12.25V4.5A2.25 2.25 0 0 1 5 2.25H9.75" }],
+]);
+export const IconFill = /* @__PURE__ */ createIcon("Fill", "outline", [
+  ["rect", { x: "2.75", y: "2.75", width: "12.5", height: "12.5", rx: "2.5" }],
+  [
+    "path",
+    {
+      d: "M2.75 9.5H15.25V12.75A2.5 2.5 0 0 1 12.75 15.25H5.25A2.5 2.5 0 0 1 2.75 12.75Z",
+      fill: "currentColor",
+      stroke: "none",
+    },
+  ],
 ]);
 export const IconFilterOff = /* @__PURE__ */ createIcon(
   "FilterOff",

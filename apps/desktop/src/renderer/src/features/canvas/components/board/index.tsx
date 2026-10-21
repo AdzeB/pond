@@ -1,7 +1,9 @@
 import {
+  IconBorder,
   IconBroom,
   IconCode2,
   IconContrast,
+  IconFill,
   IconGroup,
   IconLineWeight,
   IconLock,
@@ -76,8 +78,8 @@ import {
   alignItems,
   arrangeItems,
   boardItems,
-  type FigureLook,
-  figureStyleItems,
+  borderItems,
+  fillItems,
   fontItems,
   languageItems,
   type MenuTarget,
@@ -669,11 +671,9 @@ export function Board({ canvas }: BoardProps) {
     );
   };
 
-  const restyleFigures = (patch: FigureLook) => {
-    const data: FigureLook = {};
-    if (patch.fill) data.fill = patch.fill === "solid" ? undefined : patch.fill;
-    if (patch.border)
-      data.border = patch.border === "solid" ? undefined : patch.border;
+  const restyleFigures = (
+    data: Partial<Extract<CanvasNode, { type: "figure" }>["data"]>,
+  ) => {
     record();
     setNodes((existing) =>
       existing.map((node) =>
@@ -1430,21 +1430,32 @@ export function Board({ canvas }: BoardProps) {
         />
       ),
     });
-    style.push({
-      kind: "menu",
-      label: "Style",
-      icon: <IconLineWeight />,
-      buildItems: () =>
-        figureStyleItems(
-          {
-            fill: sharedValue(figures.map((node) => node.data.fill ?? "solid")),
-            border: sharedValue(
-              figures.map((node) => node.data.border ?? "solid"),
-            ),
-          },
-          restyleFigures,
-        ),
-    });
+    style.push(
+      {
+        kind: "menu",
+        label: "Fill",
+        icon: <IconFill />,
+        buildItems: () =>
+          fillItems(
+            sharedValue(figures.map((node) => node.data.fill ?? "solid")),
+            (fill) =>
+              restyleFigures({ fill: fill === "solid" ? undefined : fill }),
+          ),
+      },
+      {
+        kind: "menu",
+        label: "Border",
+        icon: <IconBorder />,
+        buildItems: () =>
+          borderItems(
+            sharedValue(figures.map((node) => node.data.border ?? "solid")),
+            (border) =>
+              restyleFigures({
+                border: border === "solid" ? undefined : border,
+              }),
+          ),
+      },
+    );
   }
   const codes = selected.filter((node) => node.type === "code");
   if (codes.length) {

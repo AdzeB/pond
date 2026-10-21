@@ -354,7 +354,7 @@ export function alignItems(
 }
 
 const FILL_LABELS = {
-  solid: "Fill",
+  solid: "Solid",
   transparent: "Transparent",
   none: "No Fill",
 } satisfies Record<CanvasFill, string>;
@@ -365,34 +365,22 @@ const BORDER_LABELS = {
   none: "No Border",
 } satisfies Record<CanvasBorder, string>;
 
-export interface FigureLook {
-  fill?: CanvasFill;
-  border?: CanvasBorder;
+export function fillItems(
+  current: CanvasFill | null,
+  pick: (fill: CanvasFill) => void,
+): MenuItemSpec[] {
+  return CANVAS_FILLS.map((fill) =>
+    choice(FILL_LABELS[fill], fill, current, pick),
+  );
 }
 
-export function figureStyleItems(
-  current: { fill: CanvasFill | null; border: CanvasBorder | null },
-  pick: (look: FigureLook) => void,
+export function borderItems(
+  current: CanvasBorder | null,
+  pick: (border: CanvasBorder) => void,
 ): MenuItemSpec[] {
-  return [
-    {
-      type: "group",
-      label: "Fill",
-      items: CANVAS_FILLS.map((fill) =>
-        choice(FILL_LABELS[fill], fill, current.fill, () => pick({ fill })),
-      ),
-    },
-    { type: "separator" },
-    {
-      type: "group",
-      label: "Border",
-      items: CANVAS_BORDERS.map((border) =>
-        choice(BORDER_LABELS[border], border, current.border, () =>
-          pick({ border }),
-        ),
-      ),
-    },
-  ];
+  return CANVAS_BORDERS.map((border) =>
+    choice(BORDER_LABELS[border], border, current, pick),
+  );
 }
 
 const WEIGHT_LABELS = {
