@@ -34,7 +34,15 @@ export async function enqueueHandler(c: Context) {
     if (parsed.data.folderId) {
       await addSavesToFolder(parsed.data.folderId, [result.id]);
     }
-    return c.json({ status: "success", data: result });
+    const [row] = await (await getDb())
+      .select({ status: saves.status })
+      .from(saves)
+      .where(eq(saves.id, result.id))
+      .limit(1);
+    return c.json({
+      status: "success",
+      data: { ...result, status: row?.status ?? "ingesting" },
+    });
   } catch (err) {
     if (err instanceof UnsupportedError) {
       return apiError(

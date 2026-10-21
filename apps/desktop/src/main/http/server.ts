@@ -13,12 +13,9 @@ import { createAuthLimiter, tokensMatch } from "./auth";
 import { enqueueHandler } from "./enqueue";
 import { apiError, handleApiError } from "./errors";
 import { libraryRoutes } from "./library";
-import { libraryInfoHandler } from "./library-info";
 import { libraryLocationRoutes } from "./library-locations";
 import { operationRoutes } from "./operations";
-import { saveInfoHandler } from "./save-info";
-import { saveThumbHandler } from "./save-thumb";
-import { savesGetHandler } from "./saves-get";
+import { savesRoutes } from "./saves";
 import { sessionImportHandler } from "./session-import";
 import { sessionPendingHandler } from "./session-pending";
 
@@ -128,11 +125,7 @@ function buildApp(): Hono {
   api.use("/api/v2/session/*", requireAuth);
 
   api.post("/api/v2/enqueue", enqueueHandler);
-  api.post("/api/v2/saves/get", savesGetHandler);
-  api.get("/api/v2/saves/get", savesGetHandler);
-  api.get("/api/v2/saves/info", saveInfoHandler);
-  api.get("/api/v2/saves/thumb", saveThumbHandler);
-  api.get("/api/v2/library/info", libraryInfoHandler);
+  api.route("/api/v2/saves", savesRoutes());
   api.route("/api/v2/library", libraryRoutes());
   api.route("/api/v2/library", libraryLocationRoutes());
   api.route("/api/v2/operations", operationRoutes());

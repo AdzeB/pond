@@ -14,6 +14,7 @@ const STATUS = {
   save_not_found: 404,
   no_thumbnail: 404,
   operation_not_found: 404,
+  folder_not_found: 404,
   operation_failed: 422,
   unsupported_url: 422,
   stale_cursor: 409,

@@ -1,3 +1,4 @@
+import { ApiSearchRequestSchema } from "@pond/schema/api";
 import { Hono } from "hono";
 import {
   ConversionApiRequestSchema,
@@ -12,9 +13,19 @@ import {
   conversionPresets,
   saveConversionPreset,
 } from "../core/conversion-jobs";
+import { libraryInfo } from "../ops";
+import {
+  libraryFolders,
+  librarySources,
+  libraryTags,
+  libraryViews,
+  searchSaves,
+} from "./api-library";
+import { type ApiRuntime, apiRuntime } from "./api-runtime";
+import { apiSavesByIds } from "./api-saves";
 import { handleApiError, invalidRequest } from "./errors";
 
-export function libraryRoutes() {
+export function libraryRoutes(runtime: ApiRuntime = apiRuntime) {
   const routes = new Hono();
   routes.get("/conversion/capabilities", async (c) =>
     c.json({ status: "success", data: await conversionCapabilities() }),
@@ -61,9 +72,38 @@ export function libraryRoutes() {
   routes.post("/query", async (c) => {
     const parsed = LibraryQueryRequestSchema.safeParse(await c.req.json());
     if (!parsed.success) return invalidRequest(c, parsed.error);
+    const page = await queryActiveLibraryPage(parsed.data);
+    const data = parsed.data.include?.includes("saves")
+      ? {
+          ...page,
+          saves: await apiSavesByIds(runtime, page.ids, {
+            includeDeleted: true,
+          }),
+        }
+      : page;
+    return c.json({ status: "success", data });
+  });
+  routes.get("/info", async (c) =>
+    c.json({ status: "success", data: await libraryInfo() }),
+  );
+  routes.get("/tags", async (c) =>
+    c.json({ status: "success", data: await libraryTags(runtime) }),
+  );
+  routes.get("/folders", async (c) =>
+    c.json({ status: "success", data: await libraryFolders(runtime) }),
+  );
+  routes.get("/views", async (c) =>
+    c.json({ status: "success", data: await libraryViews() }),
+  );
+  routes.get("/sources", async (c) =>
+    c.json({ status: "success", data: await librarySources(runtime) }),
+  );
+  routes.post("/search", async (c) => {
+    const parsed = ApiSearchRequestSchema.safeParse(await c.req.json());
+    if (!parsed.success) return invalidRequest(c, parsed.error);
     return c.json({
       status: "success",
-      data: await queryActiveLibraryPage(parsed.data),
+      data: await searchSaves(runtime, parsed.data),
     });
   });
   routes.onError(handleApiError);

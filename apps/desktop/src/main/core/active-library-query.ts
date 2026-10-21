@@ -1,9 +1,12 @@
-import { basename } from "node:path";
 import type { LibraryQueryRequest } from "../../shared/library-query";
 import { getDb } from "../db";
 import { resolvePaths } from "../paths";
 import { queryLibraryIds, queryLibraryPage } from "./library-query";
 import { getPrefs } from "./prefs";
+
+export function activeLibraryId(): string {
+  return resolvePaths().libraryId;
+}
 
 async function activeScope(request: LibraryQueryRequest) {
   const view = request.orderFolderId
@@ -11,7 +14,7 @@ async function activeScope(request: LibraryQueryRequest) {
     : undefined;
   return [
     await getDb(),
-    basename(resolvePaths().indexDb, ".db"),
+    activeLibraryId(),
     request,
     request.sortKey === "manual" ? (view?.manualOrder ?? []) : [],
     view?.pinnedIds ?? [],
