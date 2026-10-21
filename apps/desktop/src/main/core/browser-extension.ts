@@ -9,10 +9,10 @@ import type { QueryResult } from "../../shared/query-contracts";
 const REPO = "raphaelsalaja/pond";
 const DOWNLOAD_TIMEOUT_MS = 60_000;
 
-const FOLDERS: Record<ExtensionBrowser, string> = {
+const FOLDERS = {
   chrome: "Pond Extension",
   firefox: "Pond Extension Firefox",
-};
+} satisfies Record<ExtensionBrowser, string>;
 
 /** The release that shipped this copy of Pond, so the extension matches its native host. */
 export function extensionZipUrl(
