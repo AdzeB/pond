@@ -130,8 +130,9 @@ export function registerIntegrationCommands(
         query: { combinator: "and", rules: [] },
         keywords: line.trim(),
         limit: 20,
+        include: ["saves"],
       });
-      const saves = await api.saves({ ids: page.ids });
+      const saves = page.saves ?? [];
       results.push({ query: line.trim(), saves });
       process.stderr.write(
         `${saves.map((save) => `${save.id}  ${save.title ?? save.url}`).join("\n")}\n`,

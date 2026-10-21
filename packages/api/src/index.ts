@@ -1,39 +1,85 @@
-import type { EnqueueRequest } from "@pond/schema/ingest";
-import type { JsonObject, JsonValue } from "@pond/schema/json";
 import {
   ApiAppInfoSchema,
+  ApiEditResultSchema,
   ApiEnqueueResultSchema,
   ApiErrorBodySchema,
   ApiErrorSchema,
+  ApiFolderSchema,
   ApiJsonSchema,
+  ApiLibraryInfoSchema,
   ApiLibrarySchema,
   ApiOperationPreviewSchema,
   ApiOperationSchema,
   ApiQueryPageSchema,
   ApiSaveSchema,
+  ApiSaveStateSchema,
+  ApiSaveTextSchema,
+  ApiSearchResultSchema,
+  ApiSourceSchema,
   ApiSwitchResultSchema,
+  ApiTagSchema,
+  ApiViewSchema,
   apiSuccessSchema,
 } from "@pond/schema/api";
+import type { EnqueueRequest } from "@pond/schema/ingest";
+import type { JsonObject, JsonValue } from "@pond/schema/json";
 
-export type { JsonObject, JsonValue } from "@pond/schema/json";
 export type {
   ApiAppInfo,
   ApiCursor,
+  ApiEditFoldersRequest,
+  ApiEditTagsRequest,
   ApiErrorCode,
+  ApiFolder,
   ApiLibrary,
+  ApiLibraryInfo,
   ApiLibraryQueryRequest,
+  ApiQueryPage,
   ApiSave,
+  ApiSaveState,
   ApiSavesGetParams,
+  ApiSaveText,
+  ApiSearchRequest,
+  ApiSource,
+  ApiTag,
+  ApiThumbnailSize,
+  ApiView,
 } from "@pond/schema/api";
 export {
   API_ERROR_CODES,
+  API_SAVE_STATUSES,
+  API_THUMBNAIL_SIZES,
   API_VERSION,
 } from "@pond/schema/api";
+export type { JsonObject, JsonValue } from "@pond/schema/json";
 
 import type {
+  ApiEditFoldersRequest,
+  ApiEditTagsRequest,
   ApiLibraryQueryRequest,
+  ApiNoteRequest,
+  ApiOperationRunRequest,
+  ApiRatingRequest,
+  ApiSaveIdsRequest,
   ApiSavesGetParams,
+  ApiSearchRequest,
+  ApiSwitchLibraryRequest,
+  ApiThumbnailSize,
 } from "@pond/schema/api";
+
+type ApiRequestBody =
+  | ApiEditFoldersRequest
+  | ApiEditTagsRequest
+  | ApiLibraryQueryRequest
+  | ApiNoteRequest
+  | ApiOperationRunRequest
+  | ApiRatingRequest
+  | ApiSaveIdsRequest
+  | ApiSavesGetParams
+  | ApiSearchRequest
+  | ApiSwitchLibraryRequest
+  | EnqueueRequest
+  | JsonObject;
 
 interface Schema<Output> {
   safeParse(
@@ -46,9 +92,17 @@ interface ApiHeaders {
   "content-type": string;
 }
 
-export interface ApiThumbnail {
+export interface ApiBinary {
   type: string;
   bytes: Uint8Array;
+  etag: string | null;
+}
+
+function params(values: Record<string, string | number | undefined>): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(values))
+    if (value !== undefined) search.set(key, String(value));
+  return search.toString();
 }
 
 export type ApiFailure =
@@ -200,8 +254,7 @@ export class PondApi {
       await response.json().catch(() => null),
     );
     const payload = decoded.success ? decoded.data : null;
-    const envelope =
-      apiSuccessSchema(ApiJsonSchema).safeParse(payload);
+    const envelope = apiSuccessSchema(ApiJsonSchema).safeParse(payload);
     if (!envelope.success)
       throw new PondApiError(
         "Pond returned an unexpected response.",
@@ -218,46 +271,33 @@ export class PondApi {
     return parsed.data;
   }
 
+  private post<Output>(
+    path: string,
+    schema: Schema<Output>,
+    body: ApiRequestBody,
+  ) {
+    return this.request(path, schema, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  }
+
+  private async binary(path: string): Promise<ApiBinary> {
+    const response = await this.send(path);
+    if (!response.ok) throw await this.failure(response);
+    return {
+      type: response.headers.get("content-type") ?? "application/octet-stream",
+      bytes: new Uint8Array(await response.arrayBuffer()),
+      etag: response.headers.get("etag"),
+    };
+  }
+
   appInfo() {
     return this.request("/app/info", ApiAppInfoSchema);
   }
 
-  query(input: ApiLibraryQueryRequest) {
-    return this.request("/library/query", ApiQueryPageSchema, {
-      method: "POST",
-      body: JSON.stringify(input),
-    });
-  }
-
-  saves(input: ApiSavesGetParams) {
-    return this.request("/saves/get", ApiSaveSchema.array(), {
-      method: "POST",
-      body: JSON.stringify(input),
-    });
-  }
-
-  /** Resolves `null` when the Save has no image cover. */
-  async thumbnail(id: string): Promise<ApiThumbnail | null> {
-    const response = await this.send(
-      `/saves/thumb?id=${encodeURIComponent(id)}`,
-    );
-    if (response.status === 404) return null;
-    if (!response.ok) throw await this.failure(response);
-    const type = response.headers.get("content-type") ?? "";
-    if (!type.startsWith("image/"))
-      throw new PondApiError(
-        "Pond returned an unexpected response.",
-        "response",
-        response.status,
-      );
-    return { type, bytes: new Uint8Array(await response.arrayBuffer()) };
-  }
-
-  enqueue(input: EnqueueRequest) {
-    return this.request("/enqueue", ApiEnqueueResultSchema, {
-      method: "POST",
-      body: JSON.stringify(input),
-    });
+  libraryInfo() {
+    return this.request("/library/info", ApiLibraryInfoSchema);
   }
 
   libraries() {
@@ -265,9 +305,121 @@ export class PondApi {
   }
 
   switchLibrary(path: string) {
-    return this.request("/library/switch", ApiSwitchResultSchema, {
-      method: "POST",
-      body: JSON.stringify({ path }),
+    return this.post("/library/switch", ApiSwitchResultSchema, { path });
+  }
+
+  query(input: ApiLibraryQueryRequest) {
+    return this.post("/library/query", ApiQueryPageSchema, input);
+  }
+
+  search(input: ApiSearchRequest) {
+    return this.post("/library/search", ApiSearchResultSchema, input);
+  }
+
+  tags() {
+    return this.request("/library/tags", ApiTagSchema.array());
+  }
+
+  folders() {
+    return this.request("/library/folders", ApiFolderSchema.array());
+  }
+
+  views() {
+    return this.request("/library/views", ApiViewSchema.array());
+  }
+
+  sources() {
+    return this.request("/library/sources", ApiSourceSchema.array());
+  }
+
+  saves(input: ApiSavesGetParams) {
+    return this.post("/saves/get", ApiSaveSchema.array(), input);
+  }
+
+  save(id: string) {
+    return this.request(`/saves/info?${params({ id })}`, ApiSaveSchema);
+  }
+
+  text(id: string) {
+    return this.request(`/saves/text?${params({ id })}`, ApiSaveTextSchema);
+  }
+
+  related(id: string, limit?: number) {
+    return this.request(
+      `/saves/related?${params({ id, limit })}`,
+      ApiSaveSchema.array(),
+    );
+  }
+
+  status(ids: readonly string[]) {
+    return this.request(
+      `/saves/status?${params({ ids: ids.join(",") })}`,
+      ApiSaveStateSchema.array(),
+    );
+  }
+
+  /** Resolves `null` when the Save has no image cover. */
+  async thumbnail(
+    id: string,
+    size: ApiThumbnailSize = "original",
+  ): Promise<ApiBinary | null> {
+    try {
+      const thumbnail = await this.binary(
+        `/saves/thumb?${params({ id, size })}`,
+      );
+      if (!thumbnail.type.startsWith("image/"))
+        throw new PondApiError(
+          "Pond returned an unexpected response.",
+          "response",
+        );
+      return thumbnail;
+    } catch (error) {
+      if (error instanceof PondApiError && error.code === "no_thumbnail")
+        return null;
+      if (
+        error instanceof PondApiError &&
+        error.code === undefined &&
+        error.status === 404
+      )
+        return null;
+      throw error;
+    }
+  }
+
+  file(id: string, index = 0) {
+    return this.binary(`/saves/file?${params({ id, index })}`);
+  }
+
+  enqueue(input: EnqueueRequest) {
+    return this.post("/enqueue", ApiEnqueueResultSchema, input);
+  }
+
+  editTags(input: ApiEditTagsRequest) {
+    return this.post("/saves/tags", ApiEditResultSchema, input);
+  }
+
+  editFolders(input: ApiEditFoldersRequest) {
+    return this.post("/saves/folders", ApiEditResultSchema, input);
+  }
+
+  trash(ids: readonly string[]) {
+    return this.post("/saves/trash", ApiEditResultSchema, { ids: [...ids] });
+  }
+
+  restore(ids: readonly string[]) {
+    return this.post("/saves/restore", ApiEditResultSchema, {
+      ids: [...ids],
+    });
+  }
+
+  setNote(id: string, note: string | null) {
+    return this.post("/saves/note", ApiEditResultSchema, { id, note });
+  }
+
+  setRating(ids: readonly string[], rating: number) {
+    return this.post("/saves/rating", ApiEditResultSchema, {
+      ids: [...ids],
+      rating,
     });
   }
 
@@ -276,16 +428,52 @@ export class PondApi {
   }
 
   previewOperation(operation: string, args: JsonObject) {
-    return this.request("/operations/preview", ApiOperationPreviewSchema, {
-      method: "POST",
-      body: JSON.stringify({ operation, arguments: args }),
+    return this.post("/operations/preview", ApiOperationPreviewSchema, {
+      operation,
+      arguments: args,
     });
   }
 
   runOperation(operation: string, args: JsonObject, token?: string) {
-    return this.request("/operations/run", ApiJsonSchema, {
-      method: "POST",
-      body: JSON.stringify({ operation, arguments: args, token }),
+    return this.post("/operations/run", ApiJsonSchema, {
+      operation,
+      arguments: args,
+      token,
     });
+  }
+
+  conversionCapabilities() {
+    return this.request("/library/conversion/capabilities", ApiJsonSchema);
+  }
+
+  conversionPresets() {
+    return this.request("/library/conversion/presets", ApiJsonSchema);
+  }
+
+  saveConversionPreset(preset: JsonObject) {
+    return this.post("/library/conversion/presets", ApiJsonSchema, preset);
+  }
+
+  startConversion(input: JsonObject) {
+    return this.post("/library/conversion/start", ApiJsonSchema, input);
+  }
+
+  compressImages(input: JsonObject) {
+    return this.post("/library/conversion/compress", ApiJsonSchema, input);
+  }
+
+  conversion(id: string) {
+    return this.request(
+      `/library/conversion/${encodeURIComponent(id)}`,
+      ApiJsonSchema,
+    );
+  }
+
+  cancelConversion(id: string) {
+    return this.post(
+      `/library/conversion/${encodeURIComponent(id)}/cancel`,
+      ApiJsonSchema,
+      {},
+    );
   }
 }

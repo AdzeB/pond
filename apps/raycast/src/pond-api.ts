@@ -64,24 +64,11 @@ export async function searchLibrary(
       limit: 50,
       sortKey: "savedAt",
       sortDir: "desc",
+      include: ["saves"],
     }),
   );
-  if (page.ids.length === 0) {
-    return {
-      saves: [],
-      total: page.total,
-      nextCursor: page.nextCursor,
-      libraryId: page.libraryId,
-    };
-  }
-
-  const rows = await request(() => api().saves({ ids: page.ids }));
-  const byId = new Map(rows.map((save) => [save.id, save]));
   return {
-    saves: page.ids.flatMap((id) => {
-      const save = byId.get(id);
-      return save ? [save] : [];
-    }),
+    saves: page.saves ?? [],
     total: page.total,
     nextCursor: page.nextCursor,
     libraryId: page.libraryId,
@@ -116,7 +103,7 @@ export async function copySaveFile(id: string): Promise<void> {
 }
 
 export function fetchThumbnail(id: string) {
-  return request(() => api().thumbnail(id));
+  return request(() => api().thumbnail(id, "medium"));
 }
 
 export function enqueueUrl(url: string) {
