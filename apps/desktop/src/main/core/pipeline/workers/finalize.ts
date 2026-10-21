@@ -34,6 +34,7 @@ export async function runFinalize(saveId: string): Promise<void> {
       db.update(tasks)
         .set({
           status: "pending",
+          payload: { force: true },
           nextRunAt: new Date(Date.now() + 60_000),
           lastError: `finalize: missing required fields ${report.required.missing.join(", ")}`,
           updatedAt: new Date(),

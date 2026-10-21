@@ -10,6 +10,7 @@ import { extractorFor, resolveExtractor } from "../extractors";
 import type { Capture, RawJson } from "../extractors/types";
 import { isFreshHarvest } from "../harvest-freshness";
 import { applyImportFilter } from "../import-filter";
+import { saveAuthorFrom, withYtdlpAuthor } from "../ytdlp-author";
 import { readSave } from "./apply";
 
 interface HarvestPayload {
@@ -34,7 +35,7 @@ export async function runHarvestMetadata(
   }
 
   const extractor = extractorFor(save.source) ?? resolveExtractor(save.url);
-  const capture =
+  const harvested =
     save.source === "web" || save.source === "local"
       ? await extractor.extract({ url: new URL(save.url), signal: ctx.signal })
       : await captureFromSource({
@@ -44,6 +45,7 @@ export async function runHarvestMetadata(
           accountId: save.accountId,
           reportActivity: ctx.reportActivity,
         });
+  const capture = withYtdlpAuthor(harvested, save.rawJson?.ytdlp);
 
   const rawJson: RawJson = {
     capture,
@@ -83,7 +85,7 @@ function buildSavePatch(
     rawJson,
     title: capture.title ?? null,
     description: capture.description ?? null,
-    author: capture.author?.name ?? capture.author?.handle ?? null,
+    author: saveAuthorFrom(capture),
     lang: capture.lang ?? null,
     publishedAt: capture.publishedAt ? safeDate(capture.publishedAt) : null,
     mediaUrl,

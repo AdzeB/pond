@@ -20,6 +20,7 @@ import { type DownloadedVideoItem, downloadVideo } from "../../refresh/yt-dlp";
 import { isAutoVideoBlockedByStorageGuard } from "../../storage-watcher";
 import { TransientError } from "../extractors/errors";
 import { expectedVideoDownloads, resolveYtDlpTarget } from "../specs";
+import { saveAuthorFrom, withYtdlpAuthor } from "../ytdlp-author";
 import { readSave, type WriteFileArgs } from "./apply";
 
 export async function runFetchVideoYtdlp(
@@ -109,7 +110,12 @@ export async function runFetchVideoYtdlp(
       patch.height = primaryDims.height;
     }
     if (primary?.infoJson) {
-      patch.rawJson = mergeYtdlpInfo(save.rawJson, primary.infoJson);
+      const rawJson = mergeYtdlpInfo(save.rawJson, primary.infoJson);
+      patch.rawJson = rawJson;
+      if (!save.author) {
+        const author = saveAuthorFrom(rawJson.capture);
+        if (author) patch.author = author;
+      }
     }
     ctx?.signal?.throwIfAborted();
     ctx?.reportActivity?.({ phase: "saving" });
@@ -219,7 +225,8 @@ function mergeYtdlpInfo(
   info: RawYtdlp,
 ): RawJson {
   const base = rawJson ?? CAPTURELESS;
-  return { ...base, capture: base.capture ?? CAPTURELESS.capture, ytdlp: info };
+  const capture = withYtdlpAuthor(base.capture ?? CAPTURELESS.capture, info);
+  return { ...base, capture, ytdlp: info };
 }
 
 function dimsFromYtdlpInfo(
