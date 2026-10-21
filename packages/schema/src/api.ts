@@ -3,9 +3,9 @@ import { QuerySchema } from "./filters/schema";
 import { EMPTY_QUERY } from "./filters/types";
 
 /** Bumped on every change to the HTTP contract: minor for additions, major for breaks. */
-export const LOCAL_API_VERSION = "2.1.0";
+export const API_VERSION = "2.1.0";
 
-export const LOCAL_API_ERROR_CODES = [
+export const API_ERROR_CODES = [
   "invalid_json",
   "invalid_request",
   "unauthorized",
@@ -22,24 +22,24 @@ export const LOCAL_API_ERROR_CODES = [
   "library_unavailable",
   "internal",
 ] as const;
-export const LocalApiErrorCodeSchema = z.enum(LOCAL_API_ERROR_CODES);
-export type LocalApiErrorCode = z.infer<typeof LocalApiErrorCodeSchema>;
+export const ApiErrorCodeSchema = z.enum(API_ERROR_CODES);
+export type ApiErrorCode = z.infer<typeof ApiErrorCodeSchema>;
 
 /** `code` parses as any string so clients built against this version still read codes added later. */
-export const LocalApiErrorBodySchema = z.object({
+export const ApiErrorBodySchema = z.object({
   code: z.string(),
   message: z.string(),
 });
 
 /** `error` stays loose so clients can still read the bare strings Pond sent before 2.1. */
-export const LocalApiErrorSchema = z.object({
+export const ApiErrorSchema = z.object({
   status: z.literal("error"),
   error: z.unknown(),
 });
 
-export const LocalApiJsonSchema = z.json();
+export const ApiJsonSchema = z.json();
 
-export function localApiSuccessSchema<Schema extends z.ZodType>(
+export function apiSuccessSchema<Schema extends z.ZodType>(
   schema: Schema,
 ) {
   return z.object({
@@ -49,7 +49,7 @@ export function localApiSuccessSchema<Schema extends z.ZodType>(
   });
 }
 
-export const LocalApiAppInfoSchema = z.object({
+export const ApiAppInfoSchema = z.object({
   name: z.literal("pond"),
   version: z.string(),
   platform: z.string(),
@@ -60,7 +60,7 @@ export const LocalApiAppInfoSchema = z.object({
   mcp: z.object({ command: z.string(), args: z.array(z.string()) }).optional(),
 });
 
-export const LocalApiCursorSchema = z.object({
+export const ApiCursorSchema = z.object({
   value: z.union([z.string(), z.number(), z.null()]),
   id: z.string(),
   /** Pin position of the last row. Absent when it isn't pinned. */
@@ -85,7 +85,7 @@ export const KeywordSearchScopeSchema = z.enum([
 ]);
 export type KeywordSearchScope = z.infer<typeof KeywordSearchScopeSchema>;
 
-export const LocalApiLibraryQueryRequestSchema = z.object({
+export const ApiLibraryQueryRequestSchema = z.object({
   libraryId: z.string().optional(),
   query: QuerySchema.default(EMPTY_QUERY),
   keywords: z.string().max(4096).optional(),
@@ -107,18 +107,18 @@ export const LocalApiLibraryQueryRequestSchema = z.object({
   sortKey: z.string().optional(),
   sortDir: z.enum(["asc", "desc"]).optional(),
   limit: z.number().int().min(1).max(500).optional(),
-  cursor: LocalApiCursorSchema.nullish(),
+  cursor: ApiCursorSchema.nullish(),
 });
 
-export const LocalApiQueryPageSchema = z.object({
+export const ApiQueryPageSchema = z.object({
   ids: z.array(z.string()),
   total: z.number(),
-  nextCursor: LocalApiCursorSchema.nullable(),
+  nextCursor: ApiCursorSchema.nullable(),
   libraryId: z.string(),
   revision: z.number(),
 });
 
-export const LocalApiSavesGetParamsSchema = z
+export const ApiSavesGetParamsSchema = z
   .object({
     limit: z.union([z.string(), z.number()]).optional().catch(undefined),
     offset: z.union([z.string(), z.number()]).optional().catch(undefined),
@@ -134,7 +134,7 @@ export const LocalApiSavesGetParamsSchema = z
   })
   .catch({});
 
-export const LocalApiSaveSchema = z
+export const ApiSaveSchema = z
   .object({
     id: z.string(),
     source: z.string(),
@@ -147,7 +147,7 @@ export const LocalApiSaveSchema = z
   })
   .passthrough();
 
-export const LocalApiLibrarySchema = z.object({
+export const ApiLibrarySchema = z.object({
   path: z.string(),
   name: z.string(),
   active: z.boolean(),
@@ -157,53 +157,53 @@ export const LocalApiLibrarySchema = z.object({
   accent: z.string().nullable(),
 });
 
-export const LocalApiEnqueueResultSchema = z.object({
+export const ApiEnqueueResultSchema = z.object({
   id: z.string(),
   created: z.boolean(),
 });
 
-export const LocalApiSwitchResultSchema = z.object({
+export const ApiSwitchResultSchema = z.object({
   ok: z.literal(true),
   path: z.string(),
 });
 
-export const LocalApiSwitchLibraryRequestSchema = z.object({
+export const ApiSwitchLibraryRequestSchema = z.object({
   path: z.string().trim().min(1),
 });
 
-export const LocalApiOperationSchema = z.object({
+export const ApiOperationSchema = z.object({
   name: z.string(),
   description: z.string(),
   access: z.enum(["read", "review"]),
   inputSchema: z.json(),
 });
 
-export const LocalApiOperationRequestSchema = z.object({
+export const ApiOperationRequestSchema = z.object({
   operation: z.string().min(1),
   arguments: z.record(z.string(), z.json()).default({}),
 });
 
-export const LocalApiOperationPreviewSchema = z.object({
+export const ApiOperationPreviewSchema = z.object({
   token: z.string(),
   operation: z.string(),
   libraryId: z.string(),
   expiresAt: z.number(),
 });
 
-export const LocalApiOperationRunSchema = LocalApiOperationRequestSchema.extend(
+export const ApiOperationRunSchema = ApiOperationRequestSchema.extend(
   {
     token: z.string().optional(),
   },
 );
 
-export type LocalApiAppInfo = z.infer<typeof LocalApiAppInfoSchema>;
-export type LocalApiCursor = z.infer<typeof LocalApiCursorSchema>;
-export type LocalApiLibraryQueryRequest = z.infer<
-  typeof LocalApiLibraryQueryRequestSchema
+export type ApiAppInfo = z.infer<typeof ApiAppInfoSchema>;
+export type ApiCursor = z.infer<typeof ApiCursorSchema>;
+export type ApiLibraryQueryRequest = z.infer<
+  typeof ApiLibraryQueryRequestSchema
 >;
-export type LocalApiQueryPage = z.infer<typeof LocalApiQueryPageSchema>;
-export type LocalApiSavesGetParams = z.input<
-  typeof LocalApiSavesGetParamsSchema
+export type ApiQueryPage = z.infer<typeof ApiQueryPageSchema>;
+export type ApiSavesGetParams = z.input<
+  typeof ApiSavesGetParamsSchema
 >;
-export type LocalApiSave = z.infer<typeof LocalApiSaveSchema>;
-export type LocalApiLibrary = z.infer<typeof LocalApiLibrarySchema>;
+export type ApiSave = z.infer<typeof ApiSaveSchema>;
+export type ApiLibrary = z.infer<typeof ApiLibrarySchema>;

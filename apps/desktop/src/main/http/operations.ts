@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import {
-  LocalApiOperationRequestSchema,
-  LocalApiOperationRunSchema,
-} from "@pond/schema/local-api";
+  ApiOperationRequestSchema,
+  ApiOperationRunSchema,
+} from "@pond/schema/api";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import {
@@ -54,7 +54,7 @@ export function operationRoutes(): Hono {
   );
 
   routes.post("/preview", async (c) => {
-    const parsed = LocalApiOperationRequestSchema.safeParse(await c.req.json());
+    const parsed = ApiOperationRequestSchema.safeParse(await c.req.json());
     if (!parsed.success) return invalidRequest(c, parsed.error);
     const selected = operation(parsed.data.operation);
     if (!selected) return operationNotFound(c, parsed.data.operation);
@@ -76,7 +76,7 @@ export function operationRoutes(): Hono {
   });
 
   routes.post("/run", async (c) => {
-    const parsed = LocalApiOperationRunSchema.safeParse(await c.req.json());
+    const parsed = ApiOperationRunSchema.safeParse(await c.req.json());
     if (!parsed.success) return invalidRequest(c, parsed.error);
     const selected = operation(parsed.data.operation);
     if (!selected) return operationNotFound(c, parsed.data.operation);

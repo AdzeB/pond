@@ -1,7 +1,7 @@
 import { Server as HttpServer } from "node:http";
 import { type ServerType, serve } from "@hono/node-server";
 import { getConnInfo } from "@hono/node-server/conninfo";
-import { LOCAL_API_VERSION } from "@pond/schema/local-api";
+import { API_VERSION } from "@pond/schema/api";
 import { app as electronApp } from "electron";
 import log from "electron-log/main.js";
 import { Hono } from "hono";
@@ -83,7 +83,7 @@ function buildApp(): Hono {
         version: electronApp.getVersion(),
         platform: process.platform,
         arch: process.arch,
-        apiVersion: LOCAL_API_VERSION,
+        apiVersion: API_VERSION,
         ...(isLoopback(getConnInfo(c).remote.address) && {
           mcp: { command, args },
         }),

@@ -1,7 +1,7 @@
 import { readFileSync, realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { PondLocalApiError } from "@pond/local-api";
+import { PondApiError } from "@pond/api";
 import { Command, CommanderError } from "commander";
 import { z } from "zod";
 import { registerCommands } from "./commands";
@@ -40,7 +40,7 @@ export function createProgram(): Command {
 
 function exitCode(error: Error): number {
   if (error instanceof CommanderError) return error.exitCode;
-  if (error instanceof PondLocalApiError) {
+  if (error instanceof PondApiError) {
     if (error.kind === "connection") return 2;
     if (error.kind === "authentication") return 3;
     if (error.kind === "not-found") return 4;

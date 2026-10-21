@@ -33,7 +33,7 @@
       "project": ["src/**/*.ts"],
       "ignoreDependencies": ["tsx"]
     },
-    "packages/local-api": {
+    "packages/api": {
       "project": ["src/**/*.ts"]
     },
     ".": {

@@ -1,12 +1,12 @@
 import { QuerySchema } from "@pond/schema/filters";
 import {
-  type LocalApiLibraryQueryRequest,
-  LocalApiLibraryQueryRequestSchema,
-  type LocalApiQueryPage,
-} from "@pond/schema/local-api";
+  type ApiLibraryQueryRequest,
+  ApiLibraryQueryRequestSchema,
+  type ApiQueryPage,
+} from "@pond/schema/api";
 
-export type LibraryQueryRequest = LocalApiLibraryQueryRequest;
-export type LibraryQueryPage = LocalApiQueryPage;
+export type LibraryQueryRequest = ApiLibraryQueryRequest;
+export type LibraryQueryPage = ApiQueryPage;
 
 export const LibraryFilterSchema = QuerySchema;
-export const LibraryQueryRequestSchema = LocalApiLibraryQueryRequestSchema;
+export const LibraryQueryRequestSchema = ApiLibraryQueryRequestSchema;

@@ -37,7 +37,7 @@
     "./sources": "./src/sources.ts",
     "./domain": "./src/domain.ts",
     "./media-type": "./src/media-type.ts",
-    "./local-api": "./src/local-api.ts",
+    "./api": "./src/api.ts",
     "./query-plan": "./src/query-plan.ts",
     "./filters": "./src/filters/index.ts",
     "./filters/types": "./src/filters/types.ts",

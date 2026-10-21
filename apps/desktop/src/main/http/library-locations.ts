@@ -1,4 +1,4 @@
-import { LocalApiSwitchLibraryRequestSchema } from "@pond/schema/local-api";
+import { ApiSwitchLibraryRequestSchema } from "@pond/schema/api";
 import { Hono } from "hono";
 import type { QueryResult } from "../../shared/query-contracts";
 import { libraryLocationQueries } from "../ipc/queries/library-locations";
@@ -24,7 +24,7 @@ export function libraryLocationRoutes(
   );
 
   routes.post("/switch", async (c) => {
-    const parsed = LocalApiSwitchLibraryRequestSchema.safeParse(
+    const parsed = ApiSwitchLibraryRequestSchema.safeParse(
       await c.req.json(),
     );
     if (!parsed.success) {

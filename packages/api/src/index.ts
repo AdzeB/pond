@@ -1,39 +1,39 @@
 import type { EnqueueRequest } from "@pond/schema/ingest";
 import type { JsonObject, JsonValue } from "@pond/schema/json";
 import {
-  LocalApiAppInfoSchema,
-  LocalApiEnqueueResultSchema,
-  LocalApiErrorBodySchema,
-  LocalApiErrorSchema,
-  LocalApiJsonSchema,
-  LocalApiLibrarySchema,
-  LocalApiOperationPreviewSchema,
-  LocalApiOperationSchema,
-  LocalApiQueryPageSchema,
-  LocalApiSaveSchema,
-  LocalApiSwitchResultSchema,
-  localApiSuccessSchema,
-} from "@pond/schema/local-api";
+  ApiAppInfoSchema,
+  ApiEnqueueResultSchema,
+  ApiErrorBodySchema,
+  ApiErrorSchema,
+  ApiJsonSchema,
+  ApiLibrarySchema,
+  ApiOperationPreviewSchema,
+  ApiOperationSchema,
+  ApiQueryPageSchema,
+  ApiSaveSchema,
+  ApiSwitchResultSchema,
+  apiSuccessSchema,
+} from "@pond/schema/api";
 
 export type { JsonObject, JsonValue } from "@pond/schema/json";
 export type {
-  LocalApiAppInfo,
-  LocalApiCursor,
-  LocalApiErrorCode,
-  LocalApiLibrary,
-  LocalApiLibraryQueryRequest,
-  LocalApiSave,
-  LocalApiSavesGetParams,
-} from "@pond/schema/local-api";
+  ApiAppInfo,
+  ApiCursor,
+  ApiErrorCode,
+  ApiLibrary,
+  ApiLibraryQueryRequest,
+  ApiSave,
+  ApiSavesGetParams,
+} from "@pond/schema/api";
 export {
-  LOCAL_API_ERROR_CODES,
-  LOCAL_API_VERSION,
-} from "@pond/schema/local-api";
+  API_ERROR_CODES,
+  API_VERSION,
+} from "@pond/schema/api";
 
 import type {
-  LocalApiLibraryQueryRequest,
-  LocalApiSavesGetParams,
-} from "@pond/schema/local-api";
+  ApiLibraryQueryRequest,
+  ApiSavesGetParams,
+} from "@pond/schema/api";
 
 interface Schema<Output> {
   safeParse(
@@ -41,17 +41,17 @@ interface Schema<Output> {
   ): { success: true; data: Output } | { success: false };
 }
 
-interface LocalApiHeaders {
+interface ApiHeaders {
   [key: string]: string;
   "content-type": string;
 }
 
-export interface LocalApiThumbnail {
+export interface ApiThumbnail {
   type: string;
   bytes: Uint8Array;
 }
 
-export type LocalApiFailure =
+export type ApiFailure =
   | "authentication"
   | "connection"
   | "conflict"
@@ -60,27 +60,27 @@ export type LocalApiFailure =
   | "not-found"
   | "response";
 
-export class PondLocalApiError extends Error {
-  readonly kind: LocalApiFailure;
+export class PondApiError extends Error {
+  readonly kind: ApiFailure;
   readonly status?: number;
   /** Stable machine-readable reason. Absent for connection failures and Pond before 2.1. */
   readonly code?: string;
 
   constructor(
     message: string,
-    kind: LocalApiFailure,
+    kind: ApiFailure,
     status?: number,
     code?: string,
   ) {
     super(message);
-    this.name = "PondLocalApiError";
+    this.name = "PondApiError";
     this.kind = kind;
     this.status = status;
     this.code = code;
   }
 }
 
-export interface PondLocalApiOptions {
+export interface PondApiOptions {
   baseUrl?: string;
   token?: string | (() => string | Promise<string>);
   fetch?: typeof fetch;
@@ -93,11 +93,11 @@ function endpoint(value: string, allowRemote: boolean): string {
   try {
     url = new URL(value);
   } catch {
-    throw new PondLocalApiError("Enter a valid Local API URL.", "connection");
+    throw new PondApiError("Enter a valid Local API URL.", "connection");
   }
   const loopback = ["127.0.0.1", "localhost", "[::1]"].includes(url.hostname);
   if (url.protocol !== "http:" || (!loopback && !allowRemote)) {
-    throw new PondLocalApiError(
+    throw new PondApiError(
       "The Local API URL must use loopback HTTP.",
       "connection",
     );
@@ -105,7 +105,7 @@ function endpoint(value: string, allowRemote: boolean): string {
   return url.toString().replace(/\/+$/, "");
 }
 
-function failureKind(status: number, code?: string): LocalApiFailure {
+function failureKind(status: number, code?: string): ApiFailure {
   if (code === "invalid_json" || code === "invalid_request") return "invalid";
   if (status === 401 || status === 403) return "authentication";
   if (status === 404) return "not-found";
@@ -113,13 +113,13 @@ function failureKind(status: number, code?: string): LocalApiFailure {
   return status >= 500 ? "internal" : "response";
 }
 
-export class PondLocalApi {
+export class PondApi {
   readonly baseUrl: string;
   private readonly token: () => string | Promise<string> | undefined;
   private readonly fetcher: typeof fetch;
   private readonly ensureAvailable?: () => void | Promise<void>;
 
-  constructor(options: PondLocalApiOptions = {}) {
+  constructor(options: PondApiOptions = {}) {
     this.baseUrl = endpoint(
       options.baseUrl ?? "http://127.0.0.1:41610/api/v2",
       options.allowRemote ?? false,
@@ -142,7 +142,7 @@ export class PondLocalApi {
   private async send(path: string, init: RequestInit = {}): Promise<Response> {
     await this.ensureAvailable?.();
     const authorization = await this.authorization();
-    const headers: LocalApiHeaders = {
+    const headers: ApiHeaders = {
       "content-type": "application/json",
     };
     if (authorization) headers.authorization = authorization;
@@ -153,25 +153,25 @@ export class PondLocalApi {
         headers,
       });
     } catch (error) {
-      throw new PondLocalApiError(
+      throw new PondApiError(
         error instanceof Error ? error.message : "Pond is unavailable.",
         "connection",
       );
     }
   }
 
-  private async failure(response: Response): Promise<PondLocalApiError> {
-    const decoded = LocalApiJsonSchema.safeParse(
+  private async failure(response: Response): Promise<PondApiError> {
+    const decoded = ApiJsonSchema.safeParse(
       await response.json().catch(() => null),
     );
-    const parsed = LocalApiErrorSchema.safeParse(
+    const parsed = ApiErrorSchema.safeParse(
       decoded.success ? decoded.data : null,
     );
-    const body = LocalApiErrorBodySchema.safeParse(
+    const body = ApiErrorBodySchema.safeParse(
       parsed.success ? parsed.data.error : null,
     );
     if (body.success)
-      return new PondLocalApiError(
+      return new PondApiError(
         body.data.message,
         failureKind(response.status, body.data.code),
         response.status,
@@ -182,7 +182,7 @@ export class PondLocalApi {
         ? (JSON.stringify(parsed.data.error) ?? String(parsed.data.error))
         : String(parsed.data.error)
       : `Pond returned ${response.status}.`;
-    return new PondLocalApiError(
+    return new PondApiError(
       message,
       failureKind(response.status),
       response.status,
@@ -196,21 +196,21 @@ export class PondLocalApi {
   ): Promise<Output> {
     const response = await this.send(path, init);
     if (!response.ok) throw await this.failure(response);
-    const decoded = LocalApiJsonSchema.safeParse(
+    const decoded = ApiJsonSchema.safeParse(
       await response.json().catch(() => null),
     );
     const payload = decoded.success ? decoded.data : null;
     const envelope =
-      localApiSuccessSchema(LocalApiJsonSchema).safeParse(payload);
+      apiSuccessSchema(ApiJsonSchema).safeParse(payload);
     if (!envelope.success)
-      throw new PondLocalApiError(
+      throw new PondApiError(
         "Pond returned an unexpected response.",
         "response",
         response.status,
       );
     const parsed = schema.safeParse(envelope.data.data);
     if (!parsed.success)
-      throw new PondLocalApiError(
+      throw new PondApiError(
         "Pond returned an unexpected response.",
         "response",
         response.status,
@@ -219,25 +219,25 @@ export class PondLocalApi {
   }
 
   appInfo() {
-    return this.request("/app/info", LocalApiAppInfoSchema);
+    return this.request("/app/info", ApiAppInfoSchema);
   }
 
-  query(input: LocalApiLibraryQueryRequest) {
-    return this.request("/library/query", LocalApiQueryPageSchema, {
+  query(input: ApiLibraryQueryRequest) {
+    return this.request("/library/query", ApiQueryPageSchema, {
       method: "POST",
       body: JSON.stringify(input),
     });
   }
 
-  saves(input: LocalApiSavesGetParams) {
-    return this.request("/saves/get", LocalApiSaveSchema.array(), {
+  saves(input: ApiSavesGetParams) {
+    return this.request("/saves/get", ApiSaveSchema.array(), {
       method: "POST",
       body: JSON.stringify(input),
     });
   }
 
   /** Resolves `null` when the Save has no image cover. */
-  async thumbnail(id: string): Promise<LocalApiThumbnail | null> {
+  async thumbnail(id: string): Promise<ApiThumbnail | null> {
     const response = await this.send(
       `/saves/thumb?id=${encodeURIComponent(id)}`,
     );
@@ -245,7 +245,7 @@ export class PondLocalApi {
     if (!response.ok) throw await this.failure(response);
     const type = response.headers.get("content-type") ?? "";
     if (!type.startsWith("image/"))
-      throw new PondLocalApiError(
+      throw new PondApiError(
         "Pond returned an unexpected response.",
         "response",
         response.status,
@@ -254,36 +254,36 @@ export class PondLocalApi {
   }
 
   enqueue(input: EnqueueRequest) {
-    return this.request("/enqueue", LocalApiEnqueueResultSchema, {
+    return this.request("/enqueue", ApiEnqueueResultSchema, {
       method: "POST",
       body: JSON.stringify(input),
     });
   }
 
   libraries() {
-    return this.request("/library/recent", LocalApiLibrarySchema.array());
+    return this.request("/library/recent", ApiLibrarySchema.array());
   }
 
   switchLibrary(path: string) {
-    return this.request("/library/switch", LocalApiSwitchResultSchema, {
+    return this.request("/library/switch", ApiSwitchResultSchema, {
       method: "POST",
       body: JSON.stringify({ path }),
     });
   }
 
   operations() {
-    return this.request("/operations", LocalApiOperationSchema.array());
+    return this.request("/operations", ApiOperationSchema.array());
   }
 
   previewOperation(operation: string, args: JsonObject) {
-    return this.request("/operations/preview", LocalApiOperationPreviewSchema, {
+    return this.request("/operations/preview", ApiOperationPreviewSchema, {
       method: "POST",
       body: JSON.stringify({ operation, arguments: args }),
     });
   }
 
   runOperation(operation: string, args: JsonObject, token?: string) {
-    return this.request("/operations/run", LocalApiJsonSchema, {
+    return this.request("/operations/run", ApiJsonSchema, {
       method: "POST",
       body: JSON.stringify({ operation, arguments: args, token }),
     });

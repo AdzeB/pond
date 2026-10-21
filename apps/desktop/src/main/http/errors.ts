@@ -1,4 +1,4 @@
-import type { LocalApiErrorCode } from "@pond/schema/local-api";
+import type { ApiErrorCode } from "@pond/schema/api";
 import log from "electron-log/main.js";
 import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
@@ -21,11 +21,11 @@ const STATUS = {
   stale_preview: 409,
   library_unavailable: 409,
   internal: 500,
-} satisfies Record<LocalApiErrorCode, ContentfulStatusCode>;
+} satisfies Record<ApiErrorCode, ContentfulStatusCode>;
 
 export function apiError(
   c: Context,
-  code: LocalApiErrorCode,
+  code: ApiErrorCode,
   message: string,
 ): Response {
   return c.json({ status: "error", error: { code, message } }, STATUS[code]);

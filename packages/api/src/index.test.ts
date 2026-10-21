@@ -1,6 +1,6 @@
 import type { JsonValue } from "@pond/schema/json";
 import { describe, expect, it, vi } from "vitest";
-import { PondLocalApi, PondLocalApiError } from "./index";
+import { PondApi, PondApiError } from "./index";
 
 function response(body: JsonValue, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -9,10 +9,10 @@ function response(body: JsonValue, status = 200): Response {
   });
 }
 
-describe("PondLocalApi", () => {
+describe("PondApi", () => {
   it("rejects non-loopback endpoints by default", () => {
     expect(
-      () => new PondLocalApi({ baseUrl: "https://example.com/api/v2" }),
+      () => new PondApi({ baseUrl: "https://example.com/api/v2" }),
     ).toThrow("loopback");
   });
 
@@ -28,7 +28,7 @@ describe("PondLocalApi", () => {
         },
       }),
     );
-    const client = new PondLocalApi({
+    const client = new PondApi({
       token: async () => "secret",
       fetch: fetcher,
     });
@@ -50,7 +50,7 @@ describe("PondLocalApi", () => {
           headers: { "content-type": "image/png" },
         }),
     );
-    const client = new PondLocalApi({ token: "secret", fetch: fetcher });
+    const client = new PondApi({ token: "secret", fetch: fetcher });
     await expect(client.thumbnail("save 1")).resolves.toEqual({
       type: "image/png",
       bytes: new Uint8Array([137, 80, 78, 71]),
@@ -64,14 +64,14 @@ describe("PondLocalApi", () => {
   });
 
   it("returns no thumbnail when the Save has no cover", async () => {
-    const client = new PondLocalApi({
+    const client = new PondApi({
       fetch: async () => response({ status: "error", error: "no cover" }, 404),
     });
     await expect(client.thumbnail("save")).resolves.toBeNull();
   });
 
   it("rejects thumbnail requests with a stale token", async () => {
-    const client = new PondLocalApi({
+    const client = new PondApi({
       fetch: async () =>
         response({ status: "error", error: "unauthorized" }, 401),
     });
@@ -81,7 +81,7 @@ describe("PondLocalApi", () => {
   });
 
   it("reads the stable code and message from error bodies", async () => {
-    const client = new PondLocalApi({
+    const client = new PondApi({
       fetch: async () =>
         response(
           {
@@ -103,7 +103,7 @@ describe("PondLocalApi", () => {
   });
 
   it("reports rejected requests as invalid rather than conflicts", async () => {
-    const client = new PondLocalApi({
+    const client = new PondApi({
       fetch: async () =>
         response(
           {
@@ -120,11 +120,11 @@ describe("PondLocalApi", () => {
   });
 
   it("maps API failures to typed errors", async () => {
-    const client = new PondLocalApi({
+    const client = new PondApi({
       fetch: async () =>
         response({ status: "error", error: "unauthorized" }, 401),
     });
-    await expect(client.appInfo()).rejects.toBeInstanceOf(PondLocalApiError);
+    await expect(client.appInfo()).rejects.toBeInstanceOf(PondApiError);
     await expect(client.appInfo()).rejects.toMatchObject({
       kind: "authentication",
       status: 401,

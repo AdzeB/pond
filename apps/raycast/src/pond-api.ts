@@ -1,10 +1,10 @@
 import {
-  type LocalApiCursor,
-  type LocalApiLibrary,
-  type LocalApiSave,
-  PondLocalApi,
-  PondLocalApiError,
-} from "@pond/local-api";
+  type ApiCursor,
+  type ApiLibrary,
+  type ApiSave,
+  PondApi,
+  PondApiError,
+} from "@pond/api";
 import { getPreferenceValues } from "@raycast/api";
 import { z } from "zod";
 
@@ -13,15 +13,15 @@ interface PondPreferences {
   token: string;
 }
 
-export type PondSave = LocalApiSave;
-export type PondLibrary = LocalApiLibrary;
-export type PondCursor = LocalApiCursor;
+export type PondSave = ApiSave;
+export type PondLibrary = ApiLibrary;
+export type PondCursor = ApiCursor;
 
-export class PondApiError extends Error {}
+export class PondRequestError extends Error {}
 
-function api(): PondLocalApi {
+function api(): PondApi {
   const preferences = getPreferenceValues<PondPreferences>();
-  return new PondLocalApi({
+  return new PondApi({
     baseUrl: preferences.baseUrl,
     token: preferences.token,
   });
@@ -31,15 +31,15 @@ async function request<Result>(operation: () => Promise<Result>) {
   try {
     return await operation();
   } catch (error) {
-    if (error instanceof PondLocalApiError && error.kind === "authentication") {
-      throw new PondApiError(
+    if (error instanceof PondApiError && error.kind === "authentication") {
+      throw new PondRequestError(
         "Copy a fresh Local API Token from Pond Settings.",
       );
     }
-    if (error instanceof PondLocalApiError && error.kind === "connection") {
-      throw new PondApiError("Open Pond and check the Local API URL.");
+    if (error instanceof PondApiError && error.kind === "connection") {
+      throw new PondRequestError("Open Pond and check the Local API URL.");
     }
-    throw new PondApiError(
+    throw new PondRequestError(
       error instanceof Error ? error.message : "Pond returned an error.",
     );
   }
@@ -107,9 +107,9 @@ export async function copySaveFile(id: string): Promise<void> {
   });
   const parsed = CopyFileResultSchema.safeParse(result);
   if (!parsed.success)
-    throw new PondApiError("Pond returned an unexpected response.");
+    throw new PondRequestError("Pond returned an unexpected response.");
   if (!parsed.data.ok)
-    throw new PondApiError(
+    throw new PondRequestError(
       COPY_FILE_FAILURES.get(parsed.data.reason ?? "") ??
         "Couldn't copy the file. Try again.",
     );
@@ -140,7 +140,7 @@ export function itemLink(libraryId: string, saveId: string): string {
 export function validatedUrl(value: string): string {
   const parsed = z.string().trim().url().safeParse(value);
   if (!parsed.success || !/^https?:/.test(parsed.data)) {
-    throw new PondApiError("Enter an http or https URL.");
+    throw new PondRequestError("Enter an http or https URL.");
   }
   return parsed.data;
 }

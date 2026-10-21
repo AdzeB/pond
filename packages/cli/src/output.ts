@@ -1,4 +1,4 @@
-import type { JsonObject, JsonValue } from "@pond/local-api";
+import type { JsonObject, JsonValue } from "@pond/api";
 import { z } from "zod";
 
 export type OutputFormat = "human" | "json" | "ndjson" | "md" | "table";
