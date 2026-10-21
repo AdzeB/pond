@@ -295,6 +295,48 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: gh release edit "$GITHUB_REF_NAME" --draft=false --latest
 
+  # Scans the published Windows release with VirusTotal and reports detections
+  # in the job summary. It never blocks a release: submit a false positive to
+  # each vendor it lists. Skipped with a warning until VIRUSTOTAL_API_KEY is set.
+  virustotal:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Download and unpack the Windows installer
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release download "$GITHUB_REF_NAME" \
+            --pattern "Pond-${VERSION}-x64.exe" \
+            --dir virustotal
+          7z x -y -ovirustotal/unpacked "virustotal/Pond-${VERSION}-x64.exe" >/dev/null
+          NESTED='virustotal/unpacked/$PLUGINSDIR/app-64.7z'
+          if [ -f "$NESTED" ]; then
+            7z x -y -ovirustotal/unpacked "$NESTED" >/dev/null
+          fi
+
+      - name: Scan with VirusTotal
+        env:
+          VIRUSTOTAL_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          node scripts/virustotal-scan.mjs \
+            "virustotal/Pond-${VERSION}-x64.exe" \
+            virustotal/unpacked/Pond.exe \
+            virustotal/unpacked/resources/bin/pond-native-host.exe
+
   # Submits the published extension zips for store review. Each store is
   # skipped with a warning until its API credentials are set as secrets.
   stores:

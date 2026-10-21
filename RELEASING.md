@@ -103,7 +103,7 @@ And these repository variables:
 
 If you already hold a `.pfx` certificate, set `WIN_CSC_LINK` (Base64 of the `.pfx`, or a link to it) and `WIN_CSC_KEY_PASSWORD` instead.
 
-A signature gives a new release a known publisher, but reputation still builds per publisher. When an antivirus vendor flags a signed release, submit the installer as a false positive to that vendor, such as [Bitdefender](https://www.bitdefender.com/consumer/support/answer/29358/) or [Microsoft](https://www.microsoft.com/wdsi/filesubmission).
+A signature gives a new release a known publisher, but reputation still builds per publisher. After publishing, the `virustotal` job scans the installer, `Pond.exe`, and `pond-native-host.exe` with [VirusTotal](https://www.virustotal.com) and lists any detections in its job summary. It needs a `VIRUSTOTAL_API_KEY` secret and never blocks a release. When an engine flags a file, submit it as a false positive to that vendor, such as [Bitdefender](https://www.bitdefender.com/consumer/support/answer/29358/) or [Microsoft](https://www.microsoft.com/wdsi/filesubmission). Engines that time out on the large installer can be rescanned from its report page.
 
 ## Homebrew
 
