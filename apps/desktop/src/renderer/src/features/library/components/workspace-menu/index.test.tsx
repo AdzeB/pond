@@ -1,4 +1,3 @@
-import { EXTENSION_STORE_URLS } from "@pond/schema/native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -193,7 +192,7 @@ describe("workspace menu", () => {
     );
   });
 
-  it("opens the Firefox add-on listing from the extension dialog", async () => {
+  it("downloads the browser extension from its dialog", async () => {
     await openMenu();
     const item = [...document.querySelectorAll('[role="menuitem"]')].find(
       (entry) => entry.textContent?.includes("Browser Extension"),
@@ -205,11 +204,19 @@ describe("workspace menu", () => {
       expect(document.querySelector('[role="dialog"]')).not.toBeNull(),
     );
     const dialog = document.querySelector('[role="dialog"]');
-    const firefox = [...(dialog?.querySelectorAll("button") ?? [])].find(
-      (button) => button.textContent === "Add to Firefox",
+    expect(dialog?.querySelector("video")).not.toBeNull();
+    const download = [...(dialog?.querySelectorAll("button") ?? [])].find(
+      (button) => button.textContent === "Download",
     );
-    if (!firefox) throw new Error("Missing Add to Firefox button");
-    await act(async () => firefox.click());
-    expect(openExternal).toHaveBeenCalledWith(EXTENSION_STORE_URLS.firefox);
+    if (!download) throw new Error("Missing Download button");
+    await act(async () => download.click());
+    await vi.waitFor(() =>
+      expect(query).toHaveBeenCalledWith("extension.install", {}),
+    );
+    await vi.waitFor(() =>
+      expect(dialog?.textContent).toContain(
+        "Pond Extension is in your Downloads folder.",
+      ),
+    );
   });
 });
