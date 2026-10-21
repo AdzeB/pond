@@ -458,6 +458,71 @@ describe("buildSaveMenu", () => {
     );
   });
 
+  it("offers Download Video for a video save without a video file", () => {
+    const save = fileSave({
+      id: "poster-only",
+      sourceId: "poster-only",
+      mediaType: "video",
+      files: [
+        {
+          kind: "poster",
+          path: "poster.jpg",
+          mimeType: "image/jpeg",
+          sha256: "abc",
+          size: 1,
+        },
+      ],
+    });
+    const labels = visibleLabels(buildSaveMenu(save, { clipboardEmpty: true }));
+    expect(labels).toContain("Download Video");
+    expect(labels).not.toContain("Remove Video");
+  });
+
+  it("offers Remove Video when the video file is present", () => {
+    const save = fileSave({
+      id: "downloaded",
+      sourceId: "downloaded",
+      mediaType: "video",
+      files: [
+        {
+          kind: "video",
+          path: "clip.mp4",
+          mimeType: "video/mp4",
+          sha256: "abc",
+          size: 1,
+        },
+      ],
+    });
+    const labels = visibleLabels(buildSaveMenu(save, { clipboardEmpty: true }));
+    expect(labels).toContain("Remove Video");
+    expect(labels).not.toContain("Download Video");
+  });
+
+  it("offers Download Video for a batch of poster-only video saves", () => {
+    const posterOnly = (id: string) =>
+      fileSave({
+        id,
+        sourceId: id,
+        mediaType: "video",
+        files: [
+          {
+            kind: "poster",
+            path: "poster.jpg",
+            mimeType: "image/jpeg",
+            sha256: id,
+            size: 1,
+          },
+        ],
+      });
+    const labels = visibleLabels(
+      buildSaveMenu([posterOnly("first"), posterOnly("second")], {
+        clipboardEmpty: true,
+      }),
+    );
+    expect(labels).toContain("Download Video");
+    expect(labels).not.toContain("Remove Video");
+  });
+
   it("marks trash actions as destructive", () => {
     const liveItems = buildSaveMenu(fileSave(), { clipboardEmpty: true });
     expect(

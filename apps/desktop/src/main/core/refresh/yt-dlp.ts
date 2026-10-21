@@ -92,7 +92,7 @@ export async function downloadVideo(
   };
 
   try {
-    const prefs = await getVideoDownloadPrefs();
+    const prefs = await getVideoDownloadPrefs(args.source);
     const partition = args.source
       ? await partitionForIngest(args.source, args.accountId)
       : undefined;

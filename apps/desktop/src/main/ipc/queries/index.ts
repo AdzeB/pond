@@ -25,6 +25,7 @@ import { queueQueries } from "./queue";
 import { savedViewsQueries } from "./saved-views";
 import { savesQueries } from "./saves";
 import { settingsQueries } from "./settings";
+import { sourcesQueries } from "./sources";
 import { syncHistoryQueries } from "./sync-history";
 import { tagGroupsQueries } from "./tag-groups";
 import { tagsQueries } from "./tags";
@@ -59,6 +60,7 @@ const queryRegistry = {
   ...agentQueries,
   ...accountsQueries,
   ...watchesQueries,
+  ...sourcesQueries,
 } satisfies ContractHandlers;
 
 const QueryNameEnum = z.enum(Object.keys(queryRegistry));

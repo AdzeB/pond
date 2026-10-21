@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import type { NewSave, SaveFile, Source } from "@pond/schema/db";
+import type { NewSave, Save, SaveFile, Source } from "@pond/schema/db";
 import type { RawJson } from "@pond/schema/raw";
 import { isVideoFile } from "@shared/media-index";
 import log from "electron-log/main.js";
@@ -12,6 +12,7 @@ import {
   type PosterWrite,
   posterFilename,
   posterRepairIndexes,
+  remotePosterUrl,
   usesPlatformPoster,
   videoPosterSlots,
   youtubeThumbnailUrl,
@@ -40,6 +41,20 @@ interface EnsurePosterOptions {
   worker?: PosterWorkerContext;
 }
 
+export type RemotePosterSave = Pick<Save, "files" | "rawJson" | "mediaUrl">;
+
+interface RemotePosterRuntime {
+  fetchAvatarToTxFile: typeof fetchAvatarToTxFile;
+  persistSave: typeof persistSave;
+  ensureSaveThumbnail: typeof ensureSaveThumbnail;
+}
+
+const defaultRemotePosterRuntime: RemotePosterRuntime = {
+  fetchAvatarToTxFile,
+  persistSave,
+  ensureSaveThumbnail,
+};
+
 export function runEnsurePoster(
   saveId: string,
   opts: EnsurePosterOptions = {},
@@ -62,7 +77,10 @@ async function ensurePoster(
 
   let files = save.files ?? [];
   const slotted = videoPosterSlots(files);
-  if (slotted.videos.length === 0) return;
+  if (slotted.videos.length === 0) {
+    await ensureRemotePoster(saveId, save, Boolean(opts.force));
+    return;
+  }
 
   const hydrated = await hydrateVideoDims(saveId, files);
   files = hydrated.files;
@@ -199,13 +217,45 @@ async function producePoster(args: {
   return result ? { ...result, bytes: Buffer.from(result.bytes) } : null;
 }
 
+export async function ensureRemotePoster(
+  saveId: string,
+  save: RemotePosterSave,
+  force: boolean,
+  runtime: RemotePosterRuntime = defaultRemotePosterRuntime,
+): Promise<void> {
+  if (!force && videoPosterSlots(save.files ?? []).posters.length > 0) return;
+  const url = remotePosterUrl(save.rawJson, save.mediaUrl);
+  if (!url) return;
+  const poster = await posterFromUrl(url, 0, runtime.fetchAvatarToTxFile);
+  if (!poster) return;
+  const updated = await runtime.persistSave(
+    saveId,
+    {},
+    {
+      actorReason: "pipeline:ensure-poster",
+      replaceFilesWithKind: "poster",
+      newFiles: [poster],
+    },
+  );
+  await runtime.ensureSaveThumbnail(saveId, updated);
+  log.info("[pond pipeline:ensure-poster] wrote remote poster", saveId);
+}
+
 async function platformPosterFromSave(
   rawJson: RawJson | null,
   index: number,
 ): Promise<PosterWrite | null> {
   const url = youtubeThumbnailUrl(rawJson);
   if (!url) return null;
-  const outcome = await fetchAvatarToTxFile(url);
+  return posterFromUrl(url, index, fetchAvatarToTxFile);
+}
+
+async function posterFromUrl(
+  url: string,
+  index: number,
+  fetchImage: typeof fetchAvatarToTxFile,
+): Promise<PosterWrite | null> {
+  const outcome = await fetchImage(url);
   if (!("file" in outcome) || !outcome.file) return null;
   const bytes = Buffer.from(outcome.file.bytes);
   if (bytes.byteLength === 0) return null;

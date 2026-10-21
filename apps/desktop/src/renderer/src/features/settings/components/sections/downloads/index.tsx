@@ -1,17 +1,25 @@
+import { EXTERNAL_SOURCE_IDS, type ExternalSource } from "@pond/schema/sources";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import type { Binding } from "@/features/settings/components/engine";
 import {
+  hasSourceOverrides,
+  type ImageDownloadValues,
+  imageDownloadValues,
+  type VideoDownloadValues,
+  videoDownloadValues,
+} from "@/features/settings/lib/download-sources";
+import {
   DEFAULT_IMAGE_DOWNLOAD,
   DEFAULT_VIDEO_DOWNLOAD,
+  type DownloadSettings,
   type ImageDownloadPrefs,
-  type SettingsRow,
   type VideoDownloadPrefs,
 } from "@/features/settings/lib/section-types";
 import { notify } from "@/shared/lib/toast";
 
 const VideoDownloadSchema = z.object({
-  enabled: z.boolean(),
+  autoDownload: z.boolean(),
   maxHeight: z.number().nullable(),
   maxFps: z.number().nullable(),
   videoCodec: z.enum(["h264", "hevc", "av1", "vp9", "any"]),
@@ -36,79 +44,65 @@ const ImageDownloadSchema = z.object({
   maxFileSizeMb: z.number().nullable(),
 }) satisfies z.ZodType<ImageDownloadPrefs>;
 
-const SettingsRowSchema = z.object({
-  id: z.string().catch(""),
-  libraryRoot: z.string().nullable().catch(null),
+const SourceSchema = z.enum(EXTERNAL_SOURCE_IDS);
+
+const DownloadSettingsSchema = z.object({
   videoDownload: VideoDownloadSchema.partial().catch({}),
   imageDownload: ImageDownloadSchema.partial().catch({}),
+  videoDownloadSources: z
+    .partialRecord(SourceSchema, VideoDownloadSchema.partial())
+    .catch({}),
+  imageDownloadSources: z
+    .partialRecord(SourceSchema, ImageDownloadSchema.partial())
+    .catch({}),
 });
 
-const SavedSectionSchema = z.object({
-  videoDownload: VideoDownloadSchema.partial().optional().catch(undefined),
-  imageDownload: ImageDownloadSchema.partial().optional().catch(undefined),
-});
+const SavedDownloadsSchema = z.discriminatedUnion("ok", [
+  DownloadSettingsSchema.extend({ ok: z.literal(true) }),
+  z.object({ ok: z.literal(false) }),
+]);
 
-export function useVideoDownloadBinding(): Binding<VideoDownloadPrefs> {
-  return useDownloadBinding(
-    "videoDownload",
-    "settings.setVideoDownload",
-    DEFAULT_VIDEO_DOWNLOAD,
-  );
+const DOWNLOADS_KEY = ["settings", "downloads"] as const;
+
+function readDownloads(
+  row: z.infer<typeof DownloadSettingsSchema>,
+): DownloadSettings {
+  return {
+    videoDownload: { ...DEFAULT_VIDEO_DOWNLOAD, ...row.videoDownload },
+    imageDownload: { ...DEFAULT_IMAGE_DOWNLOAD, ...row.imageDownload },
+    videoDownloadSources: row.videoDownloadSources,
+    imageDownloadSources: row.imageDownloadSources,
+  };
 }
 
-export function useImageDownloadBinding(): Binding<ImageDownloadPrefs> {
-  return useDownloadBinding(
-    "imageDownload",
-    "settings.setImageDownload",
-    DEFAULT_IMAGE_DOWNLOAD,
-  );
-}
+const EMPTY_DOWNLOADS: DownloadSettings = {
+  videoDownload: DEFAULT_VIDEO_DOWNLOAD,
+  imageDownload: DEFAULT_IMAGE_DOWNLOAD,
+  videoDownloadSources: {},
+  imageDownloadSources: {},
+};
 
-type DownloadField = "videoDownload" | "imageDownload";
-type DownloadChannel =
-  | "settings.setVideoDownload"
-  | "settings.setImageDownload";
+export function useDownloadSettings() {
+  return useQuery<DownloadSettings>({
+    queryKey: DOWNLOADS_KEY,
+    queryFn: async () =>
+      readDownloads(
+        DownloadSettingsSchema.parse(
+          await window.pond.query("settings.get", {}),
+        ),
+      ),
+  });
+}
 
 let downloadSaveQueue = Promise.resolve();
 
-function useDownloadBinding<K extends DownloadField>(
-  field: K,
-  channel: DownloadChannel,
-  fallback: SettingsRow[K],
-): Binding<SettingsRow[K]> {
+function useSaveDownloads() {
   const qc = useQueryClient();
-
-  const { data } = useQuery<SettingsRow>({
-    queryKey: ["settings", "get"],
-    queryFn: async () => {
-      const row = SettingsRowSchema.parse(
-        await window.pond.query("settings.get", {}),
-      );
-      return {
-        ...row,
-        videoDownload: { ...DEFAULT_VIDEO_DOWNLOAD, ...row.videoDownload },
-        imageDownload: { ...DEFAULT_IMAGE_DOWNLOAD, ...row.imageDownload },
-      };
-    },
-  });
-
-  const values = data?.[field] ?? fallback;
-
-  const patch = (delta: Partial<SettingsRow[K]>) => {
-    if (!data) return;
-    const params: Partial<VideoDownloadPrefs> | Partial<ImageDownloadPrefs> =
-      delta;
+  return (run: () => Promise<object>) => {
     const operation = downloadSaveQueue.then(async () => {
-      const saved = await window.pond.query(channel, params);
-      const next = SavedSectionSchema.parse(saved)[field];
-      if (!next) throw new Error("Missing saved download settings");
-      qc.setQueryData<SettingsRow | undefined>(
-        ["settings", "get"],
-        (current) =>
-          current
-            ? { ...current, [field]: { ...current[field], ...next } }
-            : current,
-      );
+      const saved = SavedDownloadsSchema.parse(await run());
+      if (!saved.ok) throw new Error("Download settings were not saved");
+      qc.setQueryData<DownloadSettings>(DOWNLOADS_KEY, readDownloads(saved));
     });
     downloadSaveQueue = operation.catch(() => {
       notify({
@@ -119,6 +113,60 @@ function useDownloadBinding<K extends DownloadField>(
       });
     });
   };
+}
 
-  return { values, patch, loaded: Boolean(data) };
+export function useVideoDownloadBinding(
+  source?: ExternalSource,
+): Binding<VideoDownloadValues> {
+  const { data } = useDownloadSettings();
+  const save = useSaveDownloads();
+  return {
+    values: videoDownloadValues(data ?? EMPTY_DOWNLOADS, source),
+    loaded: Boolean(data),
+    patch: ({ followsGlobal: _locked, ...delta }) => {
+      if (!data) return;
+      save(() =>
+        window.pond.query("settings.setVideoDownload", { ...delta, source }),
+      );
+    },
+  };
+}
+
+export function useImageDownloadBinding(
+  source?: ExternalSource,
+): Binding<ImageDownloadValues> {
+  const { data } = useDownloadSettings();
+  const save = useSaveDownloads();
+  return {
+    values: imageDownloadValues(data ?? EMPTY_DOWNLOADS, source),
+    loaded: Boolean(data),
+    patch: ({ followsGlobal: _locked, ...delta }) => {
+      if (!data) return;
+      save(() =>
+        window.pond.query("settings.setImageDownload", { ...delta, source }),
+      );
+    },
+  };
+}
+
+export function useSourceCustomBinding(
+  source: ExternalSource,
+): Binding<{ useGlobal: boolean }> {
+  const { data } = useDownloadSettings();
+  const save = useSaveDownloads();
+  return {
+    values: {
+      useGlobal: !hasSourceOverrides(data ?? EMPTY_DOWNLOADS, source),
+    },
+    loaded: Boolean(data),
+    patch: ({ useGlobal }) => {
+      if (!data || useGlobal === undefined) return;
+      save(() =>
+        window.pond.query("settings.setSourceDownloadsCustom", {
+          source,
+          custom: !useGlobal,
+        }),
+      );
+    },
+  };
 }

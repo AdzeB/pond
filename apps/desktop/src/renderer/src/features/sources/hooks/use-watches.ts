@@ -2,6 +2,10 @@ import { SOURCES, type Source, type WatchKind } from "@pond/schema/db";
 import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 import {
+  SOURCE_FETCH_PREF_FIELDS,
+  type SourceFetchPrefs,
+} from "@/features/sources/lib/fetch-prefs";
+import {
   type SyncAccountStatus,
   syncMonitor,
 } from "@/features/sources/state/sync-monitor";
@@ -15,7 +19,7 @@ export interface WatchRow {
   avatarUrl?: string | null;
   via: string | null;
   addedAt: string;
-  sync: {
+  sync: SourceFetchPrefs & {
     lastSyncedAt: string | null;
     lastError: string | null;
     knownCount: number;
@@ -83,6 +87,7 @@ const WatchesReplySchema = z
               lastSyncedAt: z.string().nullable().catch(null),
               lastError: z.string().nullable().catch(null),
               knownCount: z.number().catch(0),
+              ...SOURCE_FETCH_PREF_FIELDS,
             })
             .catch({ lastSyncedAt: null, lastError: null, knownCount: 0 }),
           syncing: z.boolean().catch(false),

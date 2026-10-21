@@ -1,6 +1,20 @@
-import type { Prefs } from "@pond/schema";
+import type { Prefs, SourceSyncPrefs } from "@pond/schema";
 
 export type SyncSchedule = Prefs["sync"]["cron"];
+
+/** A source with its own interval runs on that clock; the rest wait for the global schedule. */
+export function isSourceFetchDue(
+  sync: Pick<SourceSyncPrefs, "paused" | "intervalHours" | "lastSyncedAt">,
+  globalDue: boolean,
+  now: number,
+  lastAttemptAt = 0,
+): boolean {
+  if (sync.paused) return false;
+  if (sync.intervalHours === undefined) return globalDue;
+  const synced = sync.lastSyncedAt ? Date.parse(sync.lastSyncedAt) : 0;
+  const last = Math.max(lastAttemptAt, Number.isNaN(synced) ? 0 : synced);
+  return now - last >= sync.intervalHours * 3_600_000;
+}
 
 export function isSyncScheduleDue(
   schedule: SyncSchedule,

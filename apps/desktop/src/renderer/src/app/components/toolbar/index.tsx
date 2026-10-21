@@ -38,6 +38,10 @@ import { useSave } from "@/features/saves/hooks/use-saves";
 import { getLastListPath } from "@/features/saves/lib/list-path";
 import { saveIdFromPath } from "@/features/saves/lib/save-nav";
 import { useViewFilteredCount } from "@/features/saves/state/view-context";
+import {
+  isSourceDetailPath,
+  useSourceDetailName,
+} from "@/features/sources/state/source-detail";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import { FOLDER_MENU_ICONS, FOLDER_SWATCHES } from "@/shared/lib/folder-icons";
 import { usePrefs } from "@/shared/state/prefs";
@@ -86,6 +90,7 @@ function Breadcrumbs() {
   const canvas = useCanvas(
     canvasIdFromPath(saveIdFromPath(pathname) ? listPath : pathname),
   );
+  const sourceName = useSourceDetailName();
   const hasActiveSearch = useHasActiveSearch();
   const filteredCount = useViewFilteredCount();
   const crumbs = buildBreadcrumbs({
@@ -95,6 +100,7 @@ function Breadcrumbs() {
     folders: folderRows,
     saveLabel: computeLabel(pathname, save),
     canvasLabel: canvas?.name,
+    sourceLabel: sourceName ?? undefined,
     searchResultCount: hasActiveSearch ? filteredCount : undefined,
   });
   const hidden = crumbs.length > 3 ? crumbs.slice(1, -2) : [];
@@ -285,7 +291,9 @@ export function Toolbar() {
     select: (s) => s.location.pathname,
   });
   const hideInspector =
-    pathname === "/assistant" || pathname.startsWith("/settings");
+    pathname === "/assistant" ||
+    pathname.startsWith("/settings") ||
+    isSourceDetailPath(pathname);
   const sidebarOpen = useSidebarOpen();
   const rightPane = useRightPane();
   return (

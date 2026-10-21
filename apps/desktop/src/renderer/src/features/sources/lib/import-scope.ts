@@ -132,6 +132,11 @@ export function hasImportChoices(source: Source): boolean {
   );
 }
 
+export function hasImportLists(source: Source): boolean {
+  const options = importScopeOptions(source);
+  return options.listKinds.length > 0 || options.collections !== null;
+}
+
 export function hasImportFilters(source: Source): boolean {
   const options = importScopeOptions(source);
   return options.mediaKinds.length > 0 || options.since;

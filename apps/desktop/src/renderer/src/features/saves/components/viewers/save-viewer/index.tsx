@@ -22,6 +22,7 @@ import {
   type ChapterCue,
   chaptersForSave,
 } from "@/features/saves/lib/media/chapters-vtt";
+import { needsVideoDownload } from "@/features/saves/lib/media/video-download";
 import {
   buildViewerItems,
   type ViewerItem,
@@ -30,6 +31,7 @@ import { openSave } from "@/features/saves/lib/save-nav";
 import type { Save } from "@/features/saves/types";
 import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
+import { VideoDownload } from "./video-download";
 
 interface SaveViewerProps {
   save: Save;
@@ -214,19 +216,23 @@ export function SaveViewer({
     };
   }, [navRef, step]);
 
-  if (!activeItem) return null;
+  const downloadable = needsVideoDownload(save);
+  if (!activeItem && !downloadable) return null;
 
   return (
     <MediaViewerFrame showControls={showControls}>
-      <ViewerItemContent
-        key={activeItem.key}
-        save={save}
-        item={activeItem}
-        active
-        navigation={navigation}
-        onNavigate={onNavigate}
-        chapters={chapters}
-      />
+      {activeItem ? (
+        <ViewerItemContent
+          key={activeItem.key}
+          save={save}
+          item={activeItem}
+          active
+          navigation={navigation}
+          onNavigate={onNavigate}
+          chapters={chapters}
+        />
+      ) : null}
+      {downloadable ? <VideoDownload key={save.id} save={save} /> : null}
     </MediaViewerFrame>
   );
 }

@@ -2,6 +2,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { saves } from "@pond/schema/db";
+import { EXTERNAL_SOURCE_IDS } from "@pond/schema/sources";
 import type { Transaction } from "@pond/schema/tx";
 import { classifyLibraryFile } from "@shared/file-format";
 import { SavesDerivedPatchSchema } from "@shared/saves-contracts-shared";
@@ -21,6 +22,11 @@ import { retryFailedSaves } from "../../core/pipeline/enqueue";
 import { skipSaves } from "../../core/pipeline/reconciler-client";
 import { runEnsurePoster } from "../../core/pipeline/workers/ensure-poster";
 import { runRenderTextCover } from "../../core/pipeline/workers/render-text-cover";
+import {
+  findSavesMissingVideo,
+  queueVideoDownloads,
+  removeVideos,
+} from "../../core/refresh/video-downloads";
 import { replaceSaveFile } from "../../core/replace-file";
 import { findSemanticDuplicateGroups } from "../../core/semantic-duplicates";
 import { readLibraryMedia } from "../../core/storage/library-media-storage";
@@ -105,6 +111,14 @@ async function analyzeSaveMetadata(
 }
 
 const SAVE_NOT_FOUND: OkFailure = { ok: false, error: "Save not found." };
+
+const SaveIdsParams = z.object({
+  ids: z.array(StringParam).min(1).max(100_000),
+});
+
+const OptionalSourceParams = z.object({
+  source: z.enum(EXTERNAL_SOURCE_IDS).optional(),
+});
 
 export const savesMutationQueries = {
   "saves.batchEditExtension": query(
@@ -329,6 +343,33 @@ export const savesMutationQueries = {
       await runEnsurePoster(id, { force: true });
       return { ok: true };
     },
+  ),
+
+  "saves.downloadVideo": query(SaveIdsParams, async ({ ids }) => ({
+    ok: true as const,
+    queued: await queueVideoDownloads(ids, { interactive: true }),
+  })),
+
+  "saves.removeVideo": query(SaveIdsParams, async ({ ids }) => ({
+    ok: true as const,
+    removed: await removeVideos(ids),
+  })),
+
+  "saves.missingVideoCount": query(
+    OptionalSourceParams,
+    async ({ source }) => ({
+      count: (await findSavesMissingVideo(source)).length,
+    }),
+  ),
+
+  "saves.downloadMissingVideos": query(
+    OptionalSourceParams,
+    async ({ source }) => ({
+      ok: true as const,
+      queued: await queueVideoDownloads(await findSavesMissingVideo(source), {
+        interactive: false,
+      }),
+    }),
   ),
 
   "saves.ensureTextCover": query(

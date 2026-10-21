@@ -13,9 +13,9 @@ import type { ListKind } from "./list-kinds";
 import {
   DEFAULT_IMAGE_DOWNLOAD,
   DEFAULT_VIDEO_DOWNLOAD,
-  type ImageDownloadSettings,
+  type StoredImageDownload,
   type StoredPrefsEnvelope,
-  type VideoDownloadSettings,
+  type StoredVideoDownload,
 } from "./prefs";
 import type { RawJson } from "./raw";
 import type { Source } from "./source-ids";
@@ -588,11 +588,11 @@ export const libraryScan = sqliteTable("library_scan", {
 export const settings = sqliteTable("settings", {
   id: text("id").primaryKey().default("singleton"),
   videoDownload: text("video_download", { mode: "json" })
-    .$type<VideoDownloadSettings>()
+    .$type<StoredVideoDownload>()
     .notNull()
     .$defaultFn(() => DEFAULT_VIDEO_DOWNLOAD),
   imageDownload: text("image_download", { mode: "json" })
-    .$type<ImageDownloadSettings>()
+    .$type<StoredImageDownload>()
     .notNull()
     .$defaultFn(() => DEFAULT_IMAGE_DOWNLOAD),
   prefs: text("prefs", { mode: "json" })

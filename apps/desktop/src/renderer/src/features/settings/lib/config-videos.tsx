@@ -1,22 +1,45 @@
+import type { ExternalSource } from "@pond/schema/sources";
+import type { SectionConfig } from "@/features/settings/components/engine";
+import { MissingVideos } from "@/features/settings/components/sections/download-sources";
 import { useVideoDownloadBinding } from "@/features/settings/components/sections/downloads";
 import {
-  defineCustomSection,
+  type GroupConfig,
   group,
   type SettingsValues,
 } from "@/features/settings/lib/engine-types";
 
 const subtitlesEnabled = (v: SettingsValues) => v.subtitles !== "off";
+const followsGlobal = (v: SettingsValues) => v.followsGlobal === true;
 
-export const videosSection = defineCustomSection({
-  title: "Videos",
-  description: "Quality, codecs, and extras for saved videos.",
-  groups: [
-    group.with(useVideoDownloadBinding, {
-      title: "Quality",
+export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
+  const useBinding = () => useVideoDownloadBinding(source);
+  /** Source pages mix image and video groups, so their titles name the kind. */
+  const title = (name: string) => (source ? `Video ${name}` : name);
+  return [
+    group.with(useBinding, {
+      title: title("Downloads"),
+      items: [
+        {
+          control: "switch",
+          key: "autoDownload",
+          disabled: followsGlobal,
+          title: "Download Videos Automatically",
+          description:
+            "Off keeps the link and poster, and you can download any video later.",
+        },
+      ],
+    }),
+    {
+      title: "Existing Saves",
+      render: () => <MissingVideos source={source} />,
+    },
+    group.with(useBinding, {
+      title: title("Quality"),
       items: [
         {
           control: "select",
           key: "maxHeight",
+          disabled: followsGlobal,
           title: "Maximum Resolution",
           description: "Higher means bigger files. 1080p suits most clips.",
           options: [
@@ -35,6 +58,7 @@ export const videosSection = defineCustomSection({
         {
           control: "select",
           key: "maxFps",
+          disabled: followsGlobal,
           title: "Maximum Frame Rate",
           description: "Cap the frame rate.",
           options: [
@@ -47,6 +71,7 @@ export const videosSection = defineCustomSection({
         {
           control: "select",
           key: "maxFileSizeMb",
+          disabled: followsGlobal,
           title: "Maximum File Size",
           description: "Skip downloads bigger than the cap.",
           options: [
@@ -64,12 +89,13 @@ export const videosSection = defineCustomSection({
         },
       ],
     }),
-    group.with(useVideoDownloadBinding, {
-      title: "Formats",
+    group.with(useBinding, {
+      title: title("Formats"),
       items: [
         {
           control: "select",
           key: "videoCodec",
+          disabled: followsGlobal,
           title: "Preferred Video Codec",
           description: "H.264 is most compatible. AV1 and VP9 are smaller.",
           options: [
@@ -83,6 +109,7 @@ export const videosSection = defineCustomSection({
         {
           control: "select",
           key: "audioCodec",
+          disabled: followsGlobal,
           title: "Preferred Audio Codec",
           description: "Falls back if unavailable.",
           options: [
@@ -94,6 +121,7 @@ export const videosSection = defineCustomSection({
         {
           control: "select",
           key: "container",
+          disabled: followsGlobal,
           title: "Container",
           description:
             "Choose the video file format. Auto works for most downloads.",
@@ -107,12 +135,13 @@ export const videosSection = defineCustomSection({
         },
       ],
     }),
-    group.with(useVideoDownloadBinding, {
-      title: "Subtitles",
+    group.with(useBinding, {
+      title: title("Subtitles"),
       items: [
         {
           control: "select",
           key: "subtitles",
+          disabled: followsGlobal,
           title: "Subtitles",
           description:
             "Save subtitles as a separate file or include them in the video.",
@@ -125,6 +154,7 @@ export const videosSection = defineCustomSection({
         {
           control: "select",
           key: "subtitleLang",
+          disabled: followsGlobal,
           title: "Subtitle Language",
           description: "Language to fetch when available.",
           visible: subtitlesEnabled,
@@ -145,39 +175,57 @@ export const videosSection = defineCustomSection({
         },
       ],
     }),
-    group.with(useVideoDownloadBinding, {
-      title: "File Details",
+    group.with(useBinding, {
+      title: title("File Details"),
       items: [
         {
           control: "switch",
           key: "embedMetadata",
+          disabled: followsGlobal,
           title: "Embed Details",
           description: "Write title, uploader, and date into the file.",
         },
         {
           control: "switch",
           key: "embedThumbnail",
+          disabled: followsGlobal,
           title: "Embed Thumbnail",
           description: "Attach the poster image as cover art.",
         },
         {
           control: "switch",
           key: "embedChapters",
+          disabled: followsGlobal,
           title: "Embed Chapters",
           description: "Include chapters when the source has them.",
         },
       ],
     }),
-    group.with(useVideoDownloadBinding, {
-      title: "Sponsor Block",
+    group.with(useBinding, {
+      title: title("Sponsor Block"),
       items: [
         {
           control: "switch",
           key: "sponsorblockRemove",
+          disabled: followsGlobal,
           title: "Remove Sponsors",
           description: "Cut sponsor segments on YouTube.",
         },
       ],
     }),
+  ];
+}
+
+export const videosSection: SectionConfig = {
+  title: "Videos",
+  description: "Quality, codecs, and extras for saved videos.",
+  keywords: [
+    "downloads",
+    "resolution",
+    "codec",
+    "subtitles",
+    "sponsorblock",
+    "missing",
   ],
-});
+  groups: videoDownloadGroups(),
+};

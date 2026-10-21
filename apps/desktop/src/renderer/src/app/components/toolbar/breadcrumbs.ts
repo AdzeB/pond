@@ -17,23 +17,41 @@ interface BreadcrumbInput {
   folders: readonly Pick<Folder, "id" | "name" | "parentId">[];
   saveLabel?: string;
   canvasLabel?: string;
+  sourceLabel?: string;
   searchResultCount?: number;
 }
 
-const SETTINGS_LABELS = new Map(
-  SETTINGS_SECTIONS.map((section) => [section.path, section.label]),
+const SETTINGS_BY_PATH = new Map(
+  SETTINGS_SECTIONS.map((section) => [section.path, section]),
+);
+const SETTINGS_BY_ID = new Map(
+  SETTINGS_SECTIONS.map((section) => [section.id, section]),
 );
 
-function settingsCrumb(section: string): string {
-  return SETTINGS_LABELS.get(section) ?? "Settings";
+function settingsCrumbs(path: string): Breadcrumb[] {
+  const section = SETTINGS_BY_PATH.get(path);
+  const crumb = {
+    label: section?.label ?? "Settings",
+    path: `/settings/${path}`,
+  };
+  const parent = section?.parent ? SETTINGS_BY_ID.get(section.parent) : null;
+  return parent
+    ? [{ label: parent.label, path: `/settings/${parent.path}` }, crumb]
+    : [crumb];
 }
 
 function destinationCrumbs(
   base: string,
   canvasLabel?: string,
+  sourceLabel?: string,
 ): Breadcrumb[] | null {
   if (base.startsWith("/canvas/"))
     return [{ label: canvasLabel || "Canvas", path: base }];
+  if (base.startsWith("/sources/"))
+    return [
+      { label: "Sources", path: "/sources", nav: { kind: "sources" } },
+      { label: sourceLabel || "Source", path: base },
+    ];
   switch (base) {
     case "/assistant":
       return [{ label: "Assistant", path: base }];
@@ -63,11 +81,7 @@ function destinationCrumbs(
   if (base.startsWith("/settings")) {
     const crumbs: Breadcrumb[] = [{ label: "Settings", path: "/settings" }];
     const [section] = base.slice("/settings/".length).split("/");
-    if (section)
-      crumbs.push({
-        label: settingsCrumb(section),
-        path: `/settings/${section}`,
-      });
+    if (section) crumbs.push(...settingsCrumbs(section));
     return crumbs;
   }
   if (base.startsWith("/source/")) {
@@ -90,11 +104,12 @@ export function buildBreadcrumbs({
   folders,
   saveLabel,
   canvasLabel,
+  sourceLabel,
   searchResultCount,
 }: BreadcrumbInput): Breadcrumb[] {
   const isSave = saveIdFromPath(pathname) !== null;
   const base = isSave ? listPath : pathname;
-  const destination = destinationCrumbs(base, canvasLabel);
+  const destination = destinationCrumbs(base, canvasLabel, sourceLabel);
   const searchCrumb =
     !isSave && searchResultCount !== undefined
       ? { label: `Search results (${searchResultCount})`, path: base }

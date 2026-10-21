@@ -1,3 +1,4 @@
+import type { ExternalSource } from "@pond/schema/sources";
 import type {
   BatchRenameInput,
   CancellableResult,
@@ -43,6 +44,10 @@ export interface SavesMutationQueryInputs {
   "saves.convertTextEncoding": SavesIdInput & { fileIndex: number };
   "saves.exportDotLottie": SavesIdInput & { fileIndex: number };
   "saves.regeneratePoster": SavesIdInput;
+  "saves.downloadVideo": { ids: string[] };
+  "saves.removeVideo": { ids: string[] };
+  "saves.missingVideoCount": { source?: ExternalSource };
+  "saves.downloadMissingVideos": { source?: ExternalSource };
   "saves.findDuplicates": { visualDistance?: number };
 }
 
@@ -95,6 +100,10 @@ export interface SavesMutationQueryResults {
   "saves.convertTextEncoding": OkResult<{ updated: boolean }>;
   "saves.exportDotLottie": CancellableResult;
   "saves.regeneratePoster": OkResult;
+  "saves.downloadVideo": OkResult<{ queued: number }>;
+  "saves.removeVideo": OkResult<{ removed: number }>;
+  "saves.missingVideoCount": { count: number };
+  "saves.downloadMissingVideos": OkResult<{ queued: number }>;
   "saves.findDuplicates": {
     groups: DuplicateGroupResult[];
     visualIndexed: number;

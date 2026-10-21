@@ -14,9 +14,8 @@ import styles from "./styles.module.css";
 const EASE = [0.25, 0.1, 0.25, 1] as const;
 
 function Glyph({ open, side }: { open: boolean; side: "left" | "right" }) {
-  const closed = side === "left" ? 3 : 15;
-  const expanded = side === "left" ? 6.25 : 11.75;
-  const x = open ? expanded : closed;
+  const x = side === "left" ? 4.75 : 13.25;
+  const inset = open ? 5.75 : 7.5;
   const label =
     side === "left"
       ? open
@@ -50,14 +49,14 @@ function Glyph({ open, side }: { open: boolean; side: "left" | "right" }) {
         strokeLinejoin="round"
       />
       <motion.line
-        y1="2.75"
-        y2="15.25"
+        x1={x}
+        x2={x}
         stroke="currentColor"
         strokeWidth={1.5}
         strokeLinecap="round"
         strokeLinejoin="round"
         initial={false}
-        animate={{ x1: x, x2: x }}
+        animate={{ y1: inset, y2: 18 - inset }}
         transition={{ duration: 0.18, ease: EASE }}
       />
     </svg>

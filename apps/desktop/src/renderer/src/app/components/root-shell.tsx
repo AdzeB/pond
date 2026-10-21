@@ -1,6 +1,5 @@
 import { Outlet, useRouterState } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect } from "react";
-import { DetailsDialogHost } from "@/app/components/details-dialog";
 import { RightPane } from "@/app/components/right-pane";
 import { Toolbar } from "@/app/components/toolbar";
 import { Tray } from "@/app/components/tray";
@@ -19,6 +18,11 @@ import { SaveHotkeys } from "@/features/saves/effects/save-hotkeys";
 import { ViewerPreload } from "@/features/saves/effects/viewer-preload";
 import { openSave, saveIdFromPath } from "@/features/saves/lib/save-nav";
 import { SourceFlowHost } from "@/features/sources/components/flow";
+import { SourceDetailSidebar } from "@/features/sources/components/inspector";
+import {
+  parseSourceDetailPath,
+  SourceDetailsPageSchema,
+} from "@/features/sources/state/source-detail";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { settingsHref } from "@/shared/lib/open-settings";
 
@@ -32,6 +36,14 @@ export function RootShell() {
   const isSettings = useRouterState({
     select: (state) => state.location.pathname.startsWith("/settings"),
   });
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+  const detailPage = useRouterState({
+    select: (state) =>
+      SourceDetailsPageSchema.safeParse(state.location.search.page).data,
+  });
+  const sourceDetail = parseSourceDetailPath(pathname, detailPage);
   useEffect(() => {
     return window.pond.onNavigate((path) => {
       const pathname = path.split("?")[0] ?? "";
@@ -79,17 +91,21 @@ export function RootShell() {
             <Suspense fallback={null}>
               <SettingsSidebar />
             </Suspense>
+          ) : sourceDetail ? (
+            <SourceDetailSidebar
+              key={`${sourceDetail.kind}:${sourceDetail.id}`}
+              {...sourceDetail}
+            />
           ) : (
             <FolderSidebar />
           )
         }
-        right={isSettings ? undefined : <RightPane />}
+        right={isSettings || sourceDetail ? undefined : <RightPane />}
       >
         <Outlet />
       </AppShell.Root>
       <Tray.Library />
       <SourceFlowHost />
-      <DetailsDialogHost />
     </>
   );
 }
