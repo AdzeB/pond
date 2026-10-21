@@ -6,6 +6,7 @@ import log from "electron-log/main.js";
 import type { TransferOptions } from "../../../lib/download-transfer";
 import { persistSave } from "../../persist-save";
 import { captureFromSource } from "../../refresh/harvest/capture";
+import { isPartitionSignedIn } from "../../refresh/harvest-window/session";
 import { extractorFor, resolveExtractor } from "../extractors";
 import type { Capture, RawJson } from "../extractors/types";
 import { isFreshHarvest } from "../harvest-freshness";
@@ -44,6 +45,7 @@ export async function runHarvestMetadata(
           sourceId: save.sourceId ?? undefined,
           accountId: save.accountId,
           reportActivity: ctx.reportActivity,
+          isSignedIn: isPartitionSignedIn,
         });
   const capture = withYtdlpAuthor(harvested, save.rawJson?.ytdlp);
 
