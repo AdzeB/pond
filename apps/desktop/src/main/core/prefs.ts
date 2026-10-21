@@ -5,15 +5,25 @@ import {
   DEFAULT_VIDEO_DOWNLOAD,
   type ImageDownloadSettings,
   type Prefs,
+  type Source,
+  type SourceOverrides,
   settings as settingsTable,
   type VideoDownloadSettings,
 } from "@pond/schema/db";
+import type { ExternalSource } from "@pond/schema/sources";
 import { eq } from "drizzle-orm";
 import { app } from "electron";
 import log from "electron-log/main.js";
 import { getGlobalDb } from "../db";
 import { createMemoCache } from "../lib/memo-cache";
-import { normalizeImage, normalizeVideo } from "./download-prefs";
+import {
+  imageSourceOverrides,
+  normalizeImage,
+  normalizeVideo,
+  resolveImage,
+  resolveVideo,
+  videoSourceOverrides,
+} from "./download-prefs";
 import { prepareGlobalShortcuts } from "./global-shortcuts";
 import {
   currentLibraryId,
@@ -40,6 +50,8 @@ interface SettingsCache {
   prefs: Prefs;
   videoDownload: VideoDownloadSettings;
   imageDownload: ImageDownloadSettings;
+  videoSources: SourceOverrides<VideoDownloadSettings>;
+  imageSources: SourceOverrides<ImageDownloadSettings>;
 }
 
 const settingsCache = createMemoCache<SettingsCache>(fetchSettings);
@@ -78,6 +90,8 @@ async function fetchSettings(): Promise<SettingsCache> {
     prefs: resolvedPrefs(mergePrefs(stored.app, pond)),
     videoDownload: normalizeVideo(row?.videoDownload ?? DEFAULT_VIDEO_DOWNLOAD),
     imageDownload: normalizeImage(row?.imageDownload ?? DEFAULT_IMAGE_DOWNLOAD),
+    videoSources: videoSourceOverrides(row?.videoDownload),
+    imageSources: imageSourceOverrides(row?.imageDownload),
   };
 }
 
@@ -129,6 +143,8 @@ async function loadSettings(): Promise<SettingsCache> {
       prefs: resolvedPrefs(DEFAULT_PREFS),
       videoDownload: DEFAULT_VIDEO_DOWNLOAD,
       imageDownload: DEFAULT_IMAGE_DOWNLOAD,
+      videoSources: {},
+      imageSources: {},
     };
   }
 }
@@ -160,12 +176,29 @@ export async function getPrefs(): Promise<Prefs> {
   return (await loadSettings()).prefs;
 }
 
-export async function getVideoDownloadPrefs(): Promise<VideoDownloadSettings> {
-  return (await loadSettings()).videoDownload;
+export async function getVideoDownloadPrefs(
+  source?: Source | null,
+): Promise<VideoDownloadSettings> {
+  const s = await loadSettings();
+  return resolveVideo(s.videoDownload, s.videoSources, source);
 }
 
-export async function getImageDownloadPrefs(): Promise<ImageDownloadSettings> {
-  return (await loadSettings()).imageDownload;
+export async function getImageDownloadPrefs(
+  source?: Source | null,
+): Promise<ImageDownloadSettings> {
+  const s = await loadSettings();
+  return resolveImage(s.imageDownload, s.imageSources, source);
+}
+
+type DownloadConfig = Pick<
+  SettingsCache,
+  "videoDownload" | "imageDownload" | "videoSources" | "imageSources"
+>;
+
+export async function getDownloadConfig(): Promise<DownloadConfig> {
+  const { videoDownload, imageDownload, videoSources, imageSources } =
+    await loadSettings();
+  return { videoDownload, imageDownload, videoSources, imageSources };
 }
 
 let prefsQueue = Promise.resolve();
@@ -221,6 +254,8 @@ async function applyPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
     prefs: merged,
     videoDownload: current.videoDownload,
     imageDownload: current.imageDownload,
+    videoSources: current.videoSources,
+    imageSources: current.imageSources,
   });
   for (const listener of prefsListeners) {
     try {
@@ -241,46 +276,77 @@ async function readRawStoredPrefs(): Promise<StoredPrefsInput> {
   return rows[0]?.prefs;
 }
 
-export async function setVideoDownloadPrefs(
-  next: Partial<VideoDownloadSettings>,
-): Promise<VideoDownloadSettings> {
-  const current = await loadSettings();
-  const merged = normalizeVideo({ ...current.videoDownload, ...next });
+async function writeDownloads(next: DownloadConfig): Promise<void> {
+  const videoDownload = { ...next.videoDownload, sources: next.videoSources };
+  const imageDownload = { ...next.imageDownload, sources: next.imageSources };
   const db = await getGlobalDb();
   await db
     .insert(settingsTable)
-    .values({
-      id: "singleton",
-      videoDownload: merged,
-    })
+    .values({ id: "singleton", videoDownload, imageDownload })
     .onConflictDoUpdate({
       target: settingsTable.id,
-      set: { videoDownload: merged, updatedAt: new Date() },
+      set: { videoDownload, imageDownload, updatedAt: new Date() },
     })
     .run();
   const cached = settingsCache.peek();
-  if (cached) settingsCache.set({ ...cached, videoDownload: merged });
-  return merged;
+  if (cached) {
+    settingsCache.set({
+      ...cached,
+      videoDownload: next.videoDownload,
+      imageDownload: next.imageDownload,
+      videoSources: videoSourceOverrides(videoDownload),
+      imageSources: imageSourceOverrides(imageDownload),
+    });
+  }
+}
+
+export async function setVideoDownloadPrefs(
+  patch: Partial<VideoDownloadSettings>,
+  source?: ExternalSource,
+): Promise<void> {
+  const current = await loadSettings();
+  if (source) {
+    const videoSources = {
+      ...current.videoSources,
+      [source]: { ...current.videoSources[source], ...patch },
+    };
+    await writeDownloads({ ...current, videoSources });
+    return;
+  }
+  const videoDownload = normalizeVideo({ ...current.videoDownload, ...patch });
+  await writeDownloads({ ...current, videoDownload });
 }
 
 export async function setImageDownloadPrefs(
-  next: Partial<ImageDownloadSettings>,
-): Promise<ImageDownloadSettings> {
+  patch: Partial<ImageDownloadSettings>,
+  source?: ExternalSource,
+): Promise<void> {
   const current = await loadSettings();
-  const merged = normalizeImage({ ...current.imageDownload, ...next });
-  const db = await getGlobalDb();
-  await db
-    .insert(settingsTable)
-    .values({
-      id: "singleton",
-      imageDownload: merged,
-    })
-    .onConflictDoUpdate({
-      target: settingsTable.id,
-      set: { imageDownload: merged, updatedAt: new Date() },
-    })
-    .run();
-  const cached = settingsCache.peek();
-  if (cached) settingsCache.set({ ...cached, imageDownload: merged });
-  return merged;
+  if (source) {
+    const imageSources = {
+      ...current.imageSources,
+      [source]: { ...current.imageSources[source], ...patch },
+    };
+    await writeDownloads({ ...current, imageSources });
+    return;
+  }
+  const imageDownload = normalizeImage({ ...current.imageDownload, ...patch });
+  await writeDownloads({ ...current, imageDownload });
+}
+
+export async function setSourceDownloadsCustom(
+  source: ExternalSource,
+  custom: boolean,
+): Promise<void> {
+  const current = await loadSettings();
+  const videoSources = { ...current.videoSources };
+  const imageSources = { ...current.imageSources };
+  if (custom) {
+    videoSources[source] ??= {};
+    imageSources[source] ??= {};
+  } else {
+    delete videoSources[source];
+    delete imageSources[source];
+  }
+  await writeDownloads({ ...current, videoSources, imageSources });
 }
