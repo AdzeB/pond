@@ -14,17 +14,12 @@ import {
   IconTable,
   IconText,
 } from "@pond/icons";
-import { Button, cssVars, Keyboard, Toolbar, Tooltip } from "@pond/ui";
-import {
-  CANVAS_COLORS,
-  type CanvasColor,
-  type CanvasOutline,
-} from "@shared/canvas-contracts";
+import { Button, Keyboard, Toolbar, Tooltip } from "@pond/ui";
+import type { CanvasColor, CanvasOutline } from "@shared/canvas-contracts";
 import { useLayoutEffect, useRef } from "react";
 import { platformGlyphs } from "@/shared/lib/shortcuts";
-import { CANVAS_COLOR_LABELS, SWATCH } from "../../lib/colors";
-import { OUTLINES } from "../../lib/outlines";
 import { AddSaves } from "../add-saves";
+import { Picker } from "../picker";
 import styles from "./styles.module.css";
 
 export type CanvasTool =
@@ -296,48 +291,11 @@ export function Tools({
               </Tooltip>
             </fieldset>
           ) : null}
-          {showOutlines ? (
-            <fieldset className={styles.choices} aria-label="Shape">
-              {OUTLINES.map(({ outline: option, label, Icon }) => (
-                <Tooltip key={option} label={label} side="top">
-                  <Button
-                    icon
-                    size="sm"
-                    variant="ghost"
-                    aria-label={label}
-                    aria-pressed={outline === option}
-                    data-pressed={outline === option || undefined}
-                    onClick={() => onOutline(option)}
-                  >
-                    <Icon />
-                  </Button>
-                </Tooltip>
-              ))}
-            </fieldset>
-          ) : null}
-          <fieldset className={styles.choices} aria-label="Color">
-            {CANVAS_COLORS.map((swatch) => (
-              <Tooltip
-                key={swatch}
-                label={CANVAS_COLOR_LABELS[swatch]}
-                side="top"
-              >
-                <Button
-                  icon
-                  size="sm"
-                  variant="text"
-                  aria-label={CANVAS_COLOR_LABELS[swatch]}
-                  aria-pressed={color === swatch}
-                  data-pressed={color === swatch || undefined}
-                  onClick={() => onColor(swatch)}
-                >
-                  <span
-                    className={styles.swatch}
-                    style={cssVars({ "--swatch": SWATCH[swatch] })}
-                  />
-                </Button>
-              </Tooltip>
-            ))}
+          <fieldset className={styles.choices} aria-label="Style">
+            {showOutlines ? (
+              <Picker.Outlines value={outline} size="sm" onChange={onOutline} />
+            ) : null}
+            <Picker.Colors value={color} size="sm" onChange={onColor} />
           </fieldset>
         </div>
       </div>

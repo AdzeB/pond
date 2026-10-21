@@ -2,7 +2,6 @@ import {
   IconBroom,
   IconCode2,
   IconContrast,
-  IconFigures,
   IconGroup,
   IconLineWeight,
   IconLock,
@@ -82,7 +81,6 @@ import {
   fontItems,
   languageItems,
   type MenuTarget,
-  outlineItems,
   sizeItems,
   type TableChange,
   tableItems,
@@ -147,7 +145,6 @@ import {
   turned,
 } from "../../lib/edit";
 import { renderBoard } from "../../lib/export";
-import { OUTLINES } from "../../lib/outlines";
 import type { TextStyle } from "../../lib/text-style";
 import {
   type Box,
@@ -166,6 +163,7 @@ import { DrawingItem } from "../drawing-item";
 import { FigureItem } from "../figure-item";
 import { Guides } from "../guides";
 import { NoteItem } from "../note-item";
+import { Picker } from "../picker";
 import { PlaceLayer } from "../place-layer";
 import { SaveItem } from "../save-item";
 import { SectionItem } from "../section-item";
@@ -1421,15 +1419,16 @@ export function Board({ canvas }: BoardProps) {
   const extras: SelectionControl[] = [];
   const figures = selected.filter((node) => node.type === "figure");
   if (figures.length) {
-    const outlineNow = sharedValue(figures.map((node) => node.data.outline));
-    const OutlineIcon =
-      OUTLINES.find((entry) => entry.outline === outlineNow)?.Icon ??
-      IconFigures;
     lead.push({
-      kind: "menu",
+      kind: "custom",
       label: "Shape",
-      icon: <OutlineIcon />,
-      buildItems: () => outlineItems(outlineNow, changeOutline),
+      element: (
+        <Picker.Outlines
+          value={sharedValue(figures.map((node) => node.data.outline))}
+          size="xs"
+          onChange={changeOutline}
+        />
+      ),
     });
     style.push({
       kind: "menu",

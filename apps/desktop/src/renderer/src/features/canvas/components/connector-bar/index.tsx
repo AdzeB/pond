@@ -38,11 +38,11 @@ export function ConnectorBar({ id, x, y, style }: ConnectorBarProps) {
         }}
       >
         <Bar.Root className="nodrag nopan" hidden={board.barsHidden}>
-          <Bar.Colors
-            value={style.color}
-            onChange={(color) => board.restyle({ color })}
-          />
           <Bar.Group aria-label="Line">
+            <Bar.Colors
+              value={style.color}
+              onChange={(color) => board.restyle({ color })}
+            />
             <Bar.Menu
               label="Stroke"
               buildItems={() =>

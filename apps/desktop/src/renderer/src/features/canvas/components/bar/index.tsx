@@ -1,17 +1,10 @@
-import {
-  Button,
-  cssVars,
-  Keyboard,
-  Menu,
-  type MenuItemSpec,
-  Tooltip,
-} from "@pond/ui";
-import { CANVAS_COLORS, type CanvasColor } from "@shared/canvas-contracts";
+import { Button, Keyboard, Menu, type MenuItemSpec, Tooltip } from "@pond/ui";
+import type { CanvasColor } from "@shared/canvas-contracts";
 import { clsx as cn } from "clsx";
 import type { ComponentPropsWithoutRef, ReactElement } from "react";
 import { SpecMenu } from "@/shared/components/spec-context-menu";
 import { platformGlyphs } from "@/shared/lib/shortcuts";
-import { CANVAS_COLOR_LABELS, SWATCH } from "../../lib/colors";
+import { Picker } from "../picker";
 import styles from "./styles.module.css";
 
 interface RootProps extends ComponentPropsWithoutRef<"div"> {
@@ -42,28 +35,7 @@ interface ColorsProps {
 }
 
 function Colors({ value, onChange }: ColorsProps) {
-  return (
-    <Group aria-label="Color">
-      {CANVAS_COLORS.map((swatch) => (
-        <Tooltip key={swatch} label={CANVAS_COLOR_LABELS[swatch]} side="top">
-          <Button
-            icon
-            size="xs"
-            variant="text"
-            aria-label={CANVAS_COLOR_LABELS[swatch]}
-            aria-pressed={value === swatch}
-            data-pressed={value === swatch || undefined}
-            onClick={() => onChange(swatch)}
-          >
-            <span
-              className={styles.swatch}
-              style={cssVars({ "--swatch": SWATCH[swatch] })}
-            />
-          </Button>
-        </Tooltip>
-      ))}
-    </Group>
-  );
+  return <Picker.Colors value={value} size="xs" onChange={onChange} />;
 }
 
 interface ActionProps {

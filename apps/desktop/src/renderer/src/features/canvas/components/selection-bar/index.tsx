@@ -21,6 +21,7 @@ export type SelectionControl =
       icon: ReactElement;
       buildItems: () => MenuItemSpec[];
     }
+  | { kind: "custom"; label: string; element: ReactElement }
   | {
       kind: "action";
       label: string;
@@ -35,6 +36,7 @@ interface ControlProps {
 }
 
 function Control({ control }: ControlProps) {
+  if (control.kind === "custom") return control.element;
   if (control.kind === "menu")
     return (
       <Bar.Menu label={control.label} buildItems={control.buildItems}>
@@ -60,9 +62,9 @@ interface SelectionBarProps {
   canCrop: boolean;
   onCanvas: ReadonlySet<string>;
   arrange: (() => MenuItemSpec[]) | null;
-  /** Item kind controls that come before the color row, like Shape. */
+  /** Item kind controls that share a group with Color, like Shape. */
   lead: readonly SelectionControl[];
-  /** Style controls after the color row, like Font and Bold. */
+  /** Style controls after Color, like Font and Bold. */
   style: readonly SelectionControl[];
   /** Selection actions before Duplicate, like Group and Lock. */
   extras: readonly SelectionControl[];
@@ -111,15 +113,15 @@ export function SelectionBar({
       offset={28}
     >
       <Bar.Root hidden={hidden}>
-        {lead.length ? (
+        {lead.length || colors.length ? (
           <Bar.Group aria-label="Kind">
             {lead.map((control) => (
               <Control key={control.label} control={control} />
             ))}
+            {colors.length ? (
+              <Bar.Colors value={shared(colors)} onChange={onColor} />
+            ) : null}
           </Bar.Group>
-        ) : null}
-        {colors.length ? (
-          <Bar.Colors value={shared(colors)} onChange={onColor} />
         ) : null}
         {style.length ? (
           <Bar.Group aria-label="Style">

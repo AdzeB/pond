@@ -38,7 +38,6 @@ import {
   type CanvasCap,
   type CanvasFill,
   type CanvasLine,
-  type CanvasOutline,
   type CanvasSide,
   type CanvasTheme,
   type CanvasValign,
@@ -48,7 +47,6 @@ import type { ComponentType, ReactElement, ReactNode } from "react";
 import { platformGlyphs } from "@/shared/lib/shortcuts";
 import { type CanvasCommand, glyphsFor } from "./commands";
 import type { AlignEdge, LayerMove } from "./document";
-import { OUTLINES } from "./outlines";
 import {
   ALIGN_LABELS,
   CODE_LANGUAGES,
@@ -286,15 +284,6 @@ function choice<Value>(
     checked: current === value,
     onCheckedChange: () => pick(value),
   };
-}
-
-export function outlineItems(
-  current: CanvasOutline | null,
-  pick: (outline: CanvasOutline) => void,
-): MenuItemSpec[] {
-  return OUTLINES.map(({ outline, label, Icon }) =>
-    choice(label, outline, current, pick, <Icon />),
-  );
 }
 
 export function sizeItems(
